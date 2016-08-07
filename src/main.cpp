@@ -22,7 +22,7 @@ std::string msg;
 int imgcount; // to measure fps
 cv::Mat resFrame;
 cv::VideoWriter outputVideoResults;
-cv::VideoWriter outputVideoRaw;
+cv::VideoWriter outputVideoRawL,outputVideoRawR;
 cv::VideoWriter outputVideoDisp;
 stopwatch_c stopWatch;
 std::string file;
@@ -75,14 +75,16 @@ void process_video() {
 #ifdef HASSCREEN
 
         //resFrame = cam.get_combined();
-        cv::imshow("Results", resFrame);
+        //cv::imshow("R", cam.frameR_mat);
+        cv::imshow("Results", cam.frameL_mat);
 #endif
 #ifdef VIDEORESULTS
         outputVideoResults.write(resFrame);
 #endif
 #endif
 #ifdef VIDEORAW
-	outputVideoRaw.write(cam.frameL_mat);
+	outputVideoRawL.write(cam.frameL_mat);
+	outputVideoRawR.write(cam.frameR_mat);
 #endif
 #ifdef VIDEODISPARITY
         outputVideoDisp.write(cam.get_disp_frame());	
@@ -211,9 +213,17 @@ int init(int argc, char **argv) {
 #ifdef VIDEORAW
 	std::cout << "Opening video file for raw video input at " << cam.getImWidth() << "x" << cam.getImHeight() << " pixels with " << cam.getFPS() << "fps " << std::endl;
     cv::Size sizeRaw(cam.getImWidth(),cam.getImHeight());
-    outputVideoRaw.open("videoRaw.avi",CV_FOURCC('F','M','P','4'),cam.getFPS(),sizeRaw,true);
+    outputVideoRawL.open("videoRawL.avi",CV_FOURCC('F','M','P','4'),cam.getFPS(),sizeRaw,true);
 
-    if (!outputVideoRaw.isOpened())
+    if (!outputVideoRawL.isOpened())
+    {
+        std::cerr << "Raw result video could not be opened!" << std::endl;
+        return 1;
+    }
+
+    outputVideoRawR.open("videoRawR.avi",CV_FOURCC('F','M','P','4'),cam.getFPS(),sizeRaw,true);
+
+    if (!outputVideoRawR.isOpened())
     {
         std::cerr << "Raw result video could not be opened!" << std::endl;
         return 1;
