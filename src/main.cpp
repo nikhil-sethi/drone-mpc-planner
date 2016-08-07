@@ -59,10 +59,10 @@ void process_video() {
     {
 
 
-		cam.waitForImage();
+	cam.waitForImage();
    
 
-		resFrame = cam.frameL_mat;
+	resFrame = cam.frameL_mat;
 
         if (mouseLDown>1) {mouseLDown--;}
         if (mouseRDown>1) {mouseRDown--;}
@@ -82,7 +82,7 @@ void process_video() {
 #endif
 #endif
 #ifdef VIDEORAW
-		outputVideoRaw.write(cam.frameL_mat);
+	outputVideoRaw.write(cam.frameL_mat);
 #endif
 #ifdef VIDEODISPARITY
         outputVideoDisp.write(cam.get_disp_frame());	

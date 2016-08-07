@@ -25,8 +25,6 @@ protected:
 
     int currentFrame;
 
-    void splitIm(cv::Mat frameC, cv::Mat * frameL,cv::Mat * frameR );
-
     int im_width;
     int im_height;
     int fps;
@@ -40,7 +38,7 @@ public:
     cv::Mat frameR_mat;
 
     //public properties:
-    virtual int getImWidth() {return im_width;}
+    int getImWidth() {return im_width;}
     int getImHeight() {return im_height;}
     int getFPS() {return fps;}
     bool getIsStereo() {return isStereo;}

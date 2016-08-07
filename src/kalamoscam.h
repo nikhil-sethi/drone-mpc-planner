@@ -18,13 +18,11 @@ private:
     std::thread thread_workaround;
 	void workaroundThread(void);
 
+	void CBstereo(kalamos::StereoYuvData const& data);
+	void CBdepth(kalamos::DepthmapData const& data);
+
 public:
     cv::Mat frameD_mat;
-   	float lastacc[3];	
-	float lastgyro[3];
-	float lastmag[3];
-	float lastbaro;
-	float lastsonar;
 
     bool init (void);
     void close (void);
@@ -32,10 +30,6 @@ public:
     void workerThread(void);
     cv::Mat get_raw_frame(void);
     cv::Mat get_disp_frame(void);
-    int getImWidth(){return im_width;}
-	
-	
-
 
     KalamosCam() {
         isStereo = true;

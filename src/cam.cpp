@@ -8,7 +8,10 @@ void Cam::start (void) {
     thread_cam = std::thread(&Cam::workerThread,this);
     waitForImage();
     waitForImage();
-    std::cout << "Camera started!" << im_width << "x" << im_height << std::endl;
+	im_width = frameL_mat.cols;
+	im_height = frameL_mat.rows;
+    fps = VIDEOFPS;
+    std::cout << "Camera started! " << im_width << "x" << im_height << std::endl;
 
 }
 
@@ -21,11 +24,7 @@ void Cam::close(void) {
     camRunning = false;
     g_lockWaitForImage1.unlock();
     g_lockWaitForImage2.unlock();
-    thread_cam.join();
+    //thread_cam.join();
 }
 
 
-void Cam::splitIm(cv::Mat frameC, cv::Mat * frameL,cv::Mat * frameR ) {
-    *frameL = cv::Mat(frameC,cv::Rect(0,0,frameC.cols/2,frameC.rows));
-    *frameR = cv::Mat(frameC,cv::Rect(frameC.cols/2,0,frameC.cols/2,frameC.rows));
-}
