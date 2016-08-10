@@ -13,8 +13,8 @@ using namespace kalamos;
 using namespace std::placeholders;
 
 bool KalamosCam::init (void) {
-	frameL_mat = cv::Mat::zeros(960,1280,CV_8UC3);
-	frameR_mat = cv::Mat::zeros(960,1280,CV_8UC3);
+	frameL_mat = cv::Mat::zeros(480,640,CV_8UC3);
+	frameR_mat = cv::Mat::zeros(480,640,CV_8UC3);
 	frameD_mat = cv::Mat::zeros(96,96,CV_32F);		
 }
 
@@ -29,33 +29,37 @@ void KalamosCam::CBstereo(StereoYuvData const& data) {
 	std::cout << "New im!!!"  << std::endl;
 	g_lockWaitForImage1.lock();
 
-	cv::Mat tmpL1;
-	cv::resize(*(data.leftYuv[1]),tmpL1,frameL_mat.size(),0,0);
 
-	cv::Mat tmpL2;	
-	cv::resize(*(data.leftYuv[2]),tmpL2,frameL_mat.size(),0,0);
+	cv::Mat tmpLy;
+	cv::resize(*(data.leftYuv[0]),tmpLy,frameL_mat.size(),0,0);
+
+	cv::Mat tmpLv;
+	cv::resize(*(data.leftYuv[1]),tmpLv,frameL_mat.size(),0,0);
+
+	cv::Mat tmpLu;	
+	cv::resize(*(data.leftYuv[2]),tmpLu,frameL_mat.size(),0,0);
 
 	std::vector<cv::Mat> channelsL;
-	channelsL.push_back(*(data.leftYuv[0]));
-	channelsL.push_back(tmpL2);
-	channelsL.push_back(tmpL1);
+	channelsL.push_back(tmpLy);
+	channelsL.push_back(tmpLu);
+	channelsL.push_back(tmpLv);
 	cv::Mat frameL_yuv;
 	cv::merge(channelsL,frameL_yuv);
 	cv::cvtColor(frameL_yuv,frameL_mat,CV_YUV2BGR);
 
+	cv::Mat tmpRy;
+	cv::resize(*(data.rightYuv[0]),tmpRy,frameR_mat.size(),0,0);
 
+	cv::Mat tmpRv;
+	cv::resize(*(data.rightYuv[1]),tmpRv,frameR_mat.size(),0,0);
 
-
-	cv::Mat tmpR1;
-	cv::resize(*(data.rightYuv[1]),tmpR1,frameR_mat.size(),0,0);
-
-	cv::Mat tmpR2;	
-	cv::resize(*(data.rightYuv[2]),tmpR2,frameR_mat.size(),0,0);
+	cv::Mat tmpRu;	
+	cv::resize(*(data.rightYuv[2]),tmpRu,frameR_mat.size(),0,0);
 
 	std::vector<cv::Mat> channelsR;
-	channelsR.push_back(*(data.rightYuv[0]));
-	channelsR.push_back(tmpR2);
-	channelsR.push_back(tmpR1);
+	channelsR.push_back(tmpRy);
+	channelsR.push_back(tmpRu);
+	channelsR.push_back(tmpRv);
 	cv::Mat frameR_yuv;
 	cv::merge(channelsR,frameR_yuv);
 	cv::cvtColor(frameR_yuv,frameR_mat,CV_YUV2BGR);
