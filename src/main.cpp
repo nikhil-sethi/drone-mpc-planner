@@ -62,7 +62,7 @@ void process_video() {
 	cam.waitForImage();
    
 
-	resFrame = cam.frameL_mat;
+	resFrame = cam.frameL;
 
         if (mouseLDown>1) {mouseLDown--;}
         if (mouseRDown>1) {mouseRDown--;}
@@ -74,23 +74,23 @@ void process_video() {
 #if defined(HASSCREEN) || defined(VIDEORESULTS)		
 #ifdef HASSCREEN
 
-        cv::imshow("Results", cam.frameL_mat);
+        cv::imshow("Results", cam.frameL);
 #endif
 #ifdef VIDEORESULTS
         outputVideoResults.write(resFrame);
 #endif
 #endif
 #ifdef VIDEORAW
-	outputVideoRawL.write(cam.frameL_mat);
-	outputVideoRawR.write(cam.frameR_mat);
+	outputVideoRawL.write(cam.frameL);
+	outputVideoRawR.write(cam.frameR);
 /*
 	std::stringstream sL;
 	sL << "/home/kalamos/kevin/nosquito/kalamos/build/tmp/" << imgcount << "L" << ".bmp";
-	imwrite(sL.str(),cam.frameL_mat);
+	imwrite(sL.str(),cam.frameL);
 
 	std::stringstream sR;
 	sR << "/home/kalamos/kevin/nosquito/kalamos/build/tmp/" << imgcount << "R" << ".bmp";
-	imwrite(sR.str(),cam.frameR_mat);
+	imwrite(sR.str(),cam.frameR);
 */
 
 #endif

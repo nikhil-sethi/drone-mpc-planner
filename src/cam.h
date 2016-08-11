@@ -34,8 +34,8 @@ protected:
     bool camRunning;
 
 public:
-    cv::Mat frameL_mat;
-    cv::Mat frameR_mat;
+    cv::Mat frameL;
+    cv::Mat frameR;
 
     //public properties:
     int getImWidth() {return im_width;}

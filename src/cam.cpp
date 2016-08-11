@@ -8,8 +8,8 @@ void Cam::start (void) {
     thread_cam = std::thread(&Cam::workerThread,this);
     waitForImage();
     waitForImage();
-	im_width = frameL_mat.cols;
-	im_height = frameL_mat.rows;
+	im_width = frameL.cols;
+	im_height = frameL.rows;
     fps = VIDEOFPS;
     std::cout << "Camera started! " << im_width << "x" << im_height << std::endl;
 

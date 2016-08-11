@@ -94,17 +94,17 @@ void FileCam::workerThread() {
             g_lockWaitForImage2.unlock();
             break;
         }
-        frameC.copyTo(frameL_mat);
+        frameC.copyTo(frameL);
 #ifdef DELFLY
         cvtColor(frameC,frameC,CV_RGB2GRAY,CV_8UC1);
         splitIm(frameC,&frameL,&frameR);
 
         cv::Point size(frameL.cols,frameL.rows);
-        cv::resize(frameL,frameL_mat,size);
+        cv::resize(frameL,frameL,size);
 
 
-        frameL.copyTo(frameL_mat);
-        frameR.copyTo(frameR_mat);
+        frameL.copyTo(frameL);
+        frameR.copyTo(frameR);
 #endif
 
         g_lockWaitForImage2.unlock();
