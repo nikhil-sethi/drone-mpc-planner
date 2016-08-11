@@ -74,8 +74,6 @@ void process_video() {
 #if defined(HASSCREEN) || defined(VIDEORESULTS)		
 #ifdef HASSCREEN
 
-        //resFrame = cam.get_combined();
-        //cv::imshow("R", cam.frameR_mat);
         cv::imshow("Results", cam.frameL_mat);
 #endif
 #ifdef VIDEORESULTS
@@ -85,6 +83,16 @@ void process_video() {
 #ifdef VIDEORAW
 	outputVideoRawL.write(cam.frameL_mat);
 	outputVideoRawR.write(cam.frameR_mat);
+/*
+	std::stringstream sL;
+	sL << "/home/kalamos/kevin/nosquito/kalamos/build/tmp/" << imgcount << "L" << ".bmp";
+	imwrite(sL.str(),cam.frameL_mat);
+
+	std::stringstream sR;
+	sR << "/home/kalamos/kevin/nosquito/kalamos/build/tmp/" << imgcount << "R" << ".bmp";
+	imwrite(sR.str(),cam.frameR_mat);
+*/
+
 #endif
 #ifdef VIDEODISPARITY
         outputVideoDisp.write(cam.get_disp_frame());	

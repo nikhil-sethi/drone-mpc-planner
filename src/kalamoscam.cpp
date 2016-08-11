@@ -13,8 +13,8 @@ using namespace kalamos;
 using namespace std::placeholders;
 
 bool KalamosCam::init (void) {
-	frameL_mat = cv::Mat::zeros(480,640,CV_8UC3);
-	frameR_mat = cv::Mat::zeros(480,640,CV_8UC3);
+	frameL_mat = cv::Mat::zeros(960,1280,CV_8UC3);
+	frameR_mat = cv::Mat::zeros(960,1280,CV_8UC3);
 	frameD_mat = cv::Mat::zeros(96,96,CV_32F);		
 }
 
@@ -29,41 +29,33 @@ void KalamosCam::CBstereo(StereoYuvData const& data) {
 	std::cout << "New im!!!"  << std::endl;
 	g_lockWaitForImage1.lock();
 
+	std::vector<cv::Mat> channelsLuv,channelsLyuv;
+	channelsLuv.push_back(*(data.leftYuv[2]));
+	channelsLuv.push_back(*(data.leftYuv[1]));
+	cv::Mat frameLuv,frameLyuv;
+	cv::merge(channelsLuv,frameLuv);
+	cv::resize(frameLuv,frameLuv,frameL_mat.size(),0,0);
+	cv::Mat tmpLuv[2];
+	cv::split(frameLuv,tmpLuv);
+	channelsLyuv.push_back(*(data.leftYuv[0]));
+	channelsLyuv.push_back(tmpLuv[0]);
+	channelsLyuv.push_back(tmpLuv[1]);
+	cv::merge(channelsLyuv,frameLyuv);
+	cv::cvtColor(frameLyuv,frameL_mat,CV_YUV2BGR);
 
-	cv::Mat tmpLy;
-	cv::resize(*(data.leftYuv[0]),tmpLy,frameL_mat.size(),0,0);
-
-	cv::Mat tmpLv;
-	cv::resize(*(data.leftYuv[1]),tmpLv,frameL_mat.size(),0,0);
-
-	cv::Mat tmpLu;	
-	cv::resize(*(data.leftYuv[2]),tmpLu,frameL_mat.size(),0,0);
-
-	std::vector<cv::Mat> channelsL;
-	channelsL.push_back(tmpLy);
-	channelsL.push_back(tmpLu);
-	channelsL.push_back(tmpLv);
-	cv::Mat frameL_yuv;
-	cv::merge(channelsL,frameL_yuv);
-	cv::cvtColor(frameL_yuv,frameL_mat,CV_YUV2BGR);
-
-	cv::Mat tmpRy;
-	cv::resize(*(data.rightYuv[0]),tmpRy,frameR_mat.size(),0,0);
-
-	cv::Mat tmpRv;
-	cv::resize(*(data.rightYuv[1]),tmpRv,frameR_mat.size(),0,0);
-
-	cv::Mat tmpRu;	
-	cv::resize(*(data.rightYuv[2]),tmpRu,frameR_mat.size(),0,0);
-
-	std::vector<cv::Mat> channelsR;
-	channelsR.push_back(tmpRy);
-	channelsR.push_back(tmpRu);
-	channelsR.push_back(tmpRv);
-	cv::Mat frameR_yuv;
-	cv::merge(channelsR,frameR_yuv);
-	cv::cvtColor(frameR_yuv,frameR_mat,CV_YUV2BGR);
-
+	std::vector<cv::Mat> channelsRuv,channelsRyuv;
+	channelsRuv.push_back(*(data.rightYuv[2]));
+	channelsRuv.push_back(*(data.rightYuv[1]));
+	cv::Mat frameRuv,frameRyuv;
+	cv::merge(channelsRuv,frameRuv);
+	cv::resize(frameRuv,frameRuv,frameR_mat.size(),0,0);
+	cv::Mat tmpRuv[2];
+	cv::split(frameRuv,tmpRuv);
+	channelsRyuv.push_back(*(data.rightYuv[0]));
+	channelsRyuv.push_back(tmpRuv[0]);
+	channelsRyuv.push_back(tmpRuv[1]);
+	cv::merge(channelsRyuv,frameRyuv);
+	cv::cvtColor(frameRyuv,frameR_mat,CV_YUV2BGR);
 
 	g_lockWaitForImage2.unlock();
 	
