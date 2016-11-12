@@ -1,10 +1,8 @@
 
-
-
 #ifndef KALAMOSCAM_H
 #define KALAMOSCAM_H
+#ifndef _PC
 #include "defines.h"
-#if CAMMODE == CAM_KALAMOSCAM
 #include "cam.h"
 //#include <kalamos/onboard-sdk/StereoDepthGrabber.hpp>
 #include <kalamos_context.hpp>

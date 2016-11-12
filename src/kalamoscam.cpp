@@ -1,6 +1,6 @@
-#include "kalamoscam.h"
-#if CAMMODE == CAM_KALAMOSCAM
 
+#include "kalamoscam.h"
+#ifndef _PC
 #include <iostream>
 #include <opencv2/highgui/highgui.hpp>
 
