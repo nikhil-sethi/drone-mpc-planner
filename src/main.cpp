@@ -9,6 +9,7 @@
 #include "smoother.h"
 #include "kalamoscam.h"
 #include "stopwatch.h"
+#include "stereoalg.h"
 
 #include "opencv2/features2d/features2d.hpp"
 #include <opencv2/features2d/features2d.hpp>
@@ -37,12 +38,8 @@ int mouseLDown;
 int mouseMDown;
 int mouseRDown;
 
-#ifdef USE_TERMINAL_INPUT
-std::thread thread_TerminalInput;
-#endif
-
 KalamosCam cam;
-
+stereoAlg stereo;
 
     //thresh params
     int iLowH1r = 0;
@@ -93,9 +90,6 @@ KalamosCam cam;
 
 /*******Private prototypes*********/
 void process_video();
-#ifdef USE_TERMINAL_INPUT
-void TerminalInputThread();
-#endif
 int main( int argc, char **argv);
 void CallBackFunc(int event, int x, int y, int flags, void* userdata);
 void handleKey();
@@ -105,8 +99,9 @@ void handleKey();
 void process_video() {
     std::cout << "Running...\n";
     stopWatch.Start();
-    //main while loop:
 
+//#define TUNING
+#ifdef TUNING
 
     namedWindow("Thresh Moeder1", WINDOW_NORMAL); //create a window called "Control"
     createTrackbar("LowH1", "Thresh Moeder1", &iLowH1b, 255);
@@ -119,7 +114,7 @@ void process_video() {
     createTrackbar("Closing1", "Thresh Moeder1", &iClose1b, 30);
 
 
- namedWindow("Blob Moeder", cv::WINDOW_NORMAL); //create a window called "Control"
+ 	namedWindow("Blob Moeder", cv::WINDOW_NORMAL); //create a window called "Control"
 
     createTrackbar("minThreshold", "Blob Moeder", &minThreshold, 255);
     createTrackbar("maxThreshold", "Blob Moeder", &maxThreshold, 255);
@@ -140,106 +135,125 @@ void process_video() {
 
     createTrackbar("filterByInertia", "Blob Moeder", &filterByInertia, 1);
     createTrackbar("minInertiaRatio", "Blob Moeder", &minInertiaRatio, 100);
-    createTrackbar("maxInertiaRatio", "Blob Moeder", &maxInertiaRatio, 100);
-    
+    createTrackbar("maxInertiaRatio", "Blob Moeder", &maxInertiaRatio, 100);    
 
+#endif
 
-
-    //    // Draw detected blobs as red circles.
-    // DrawMatchesFlags::DRAW_RICH_KEYPOINTS flag ensures the size of the circle corresponds to the size of blob
-  //    Mat im_with_keypoints;
- //    drawKeypoints( imgGray, keypoints, imgThresholded, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
-    //imgThresholded.copyTo(imBGR);
-
-
-
-
-
-
-
-
-
-	
-	cv::namedWindow("ori", CV_WINDOW_NORMAL);
-    cv::resizeWindow("ori", 1280, 720); //makes it slower
-	cv::namedWindow("Results", CV_WINDOW_NORMAL);
-    cv::resizeWindow("Results", 1280, 720); //makes it slower
-    while (key != 27 && cam.getCamRunning()) // ESC
-    {
-
-
-	cam.waitForImage();
-
-
-	resFrame = cv::Mat(cam.frameL.rows/4, cam.frameL.cols/4,CV_8UC3);
-	cv::resize(cam.frameL,resFrame,resFrame.size(),0,0);
-
-	
-    Mat imgHSV;
-    cvtColor(resFrame, imgHSV, COLOR_BGR2HSV);
-
-    Mat imgThresholdedr,imgThresholdedb,imgThresholded;
-    inRange(imgHSV, Scalar(iLowH1r, iLowS1r, iLowV1r), Scalar(iHighH1r, iHighS1r, iHighV1r), imgThresholdedr); //Threshold the image
-    inRange(imgHSV, Scalar(iLowH1b, iLowS1b, iLowV1b), Scalar(iHighH1b, iHighS1b, iHighV1b), imgThresholdedb); //Threshold the image
-
-	imgThresholded = imgThresholdedb;// + imgThresholdedr;
-
-    // Setup SimpleBlobDetector parameters.
+	// Setup SimpleBlobDetector parameters.
 	SimpleBlobDetector::Params params;
-
-  // Change thresholds
    	params.minThreshold = minThreshold+1;
 	params.maxThreshold = maxThreshold+1;
 
-     // Filter by Area.
+	// Filter by Area.
 	params.filterByArea = filterByArea;
 	params.minArea = minArea+1;
 	params.maxArea = maxArea+1;
 
-     // Filter by Circularity
+	// Filter by Circularity
 	params.filterByCircularity = filterByCircularity;
 	params.minCircularity = ((float)minCircularity)/100.0f;
 	params.maxCircularity = ((float)maxCircularity)/100.0f;
 
-    //    // Filter by Convexity
+	// Filter by Convexity
 	params.filterByConvexity = filterByConvexity;
 	params.minConvexity = ((float)minConvexity)/100.0f;
 	params.maxConvexity = ((float)maxConvexity)/100.0f;
 
-    //    // Filter by Inertia
+	// Filter by Inertia
 	params.filterByInertia = filterByInertia;
 	params.minInertiaRatio = ((float)minInertiaRatio)/100.0f;
 	params.maxInertiaRatio = ((float)maxInertiaRatio)/100.0f;
 
-    params.minRepeatability = 0;
-    params.minDistBetweenBlobs=0;
-    params.filterByColor = 0;
-    params.thresholdStep=1;
+	params.minRepeatability = 0;
+	params.minDistBetweenBlobs=0;
+	params.filterByColor = 0;
+	params.thresholdStep=1;
 
-    //    // Set up detector with params
-    SimpleBlobDetector detector(params);
+    //main while loop:
+    while (key != 27 && cam.getCamRunning()) // ESC
+    {
 
-    //    // Detect blobs.
-    std::vector<KeyPoint> keypointsr;
-    detector.detect( imgThresholdedr, keypointsr);
+#ifdef TUNING
+	  	// Change thresholds
+	   	params.minThreshold = minThreshold+1;
+		params.maxThreshold = maxThreshold+1;
 
-    Mat im_with_keypoints;
-    drawKeypoints( resFrame, keypointsr, resFrame, Scalar(0,255,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
-	cv::imshow("ori" , resFrame);
+		// Filter by Area.
+		params.filterByArea = filterByArea;
+		params.minArea = minArea+1;
+		params.maxArea = maxArea+1;
 
-std::cout << " Keypoints: " << keypointsr.size() << std::endl;
+		// Filter by Circularity
+		params.filterByCircularity = filterByCircularity;
+		params.minCircularity = ((float)minCircularity)/100.0f;
+		params.maxCircularity = ((float)maxCircularity)/100.0f;
 
-        if (mouseLDown>1) {mouseLDown--;}
-        if (mouseRDown>1) {mouseRDown--;}
-        if (mouseMDown>1) {mouseMDown--;}
+		// Filter by Convexity
+		params.filterByConvexity = filterByConvexity;
+		params.minConvexity = ((float)minConvexity)/100.0f;
+		params.maxConvexity = ((float)maxConvexity)/100.0f;
+
+		// Filter by Inertia
+		params.filterByInertia = filterByInertia;
+		params.minInertiaRatio = ((float)minInertiaRatio)/100.0f;
+		params.maxInertiaRatio = ((float)maxInertiaRatio)/100.0f;
+
+		params.minRepeatability = 0;
+		params.minDistBetweenBlobs=0;
+		params.filterByColor = 0;
+		params.thresholdStep=1;
+#endif
+
+		cam.waitForImage();
+		//stereo.rectify(cam.frameL, cam.frameR);
+
+		cv::Mat resFrameL,resFrameR;
+		resFrameL = cv::Mat(cam.frameL.rows/4, cam.frameL.cols/4,CV_8UC3);
+		resFrameR = cv::Mat(cam.frameR.rows/4, cam.frameR.cols/4,CV_8UC3);
+		cv::resize(cam.frameL,resFrameL,resFrameL.size(),0,0);
+		cv::resize(cam.frameR,resFrameR,resFrameR.size(),0,0);
+	
+		Mat imgHSVL,imgHSVR;
+		cvtColor(resFrameL, imgHSVL, COLOR_BGR2HSV);
+		cvtColor(resFrameR, imgHSVR, COLOR_BGR2HSV);
+
+		Mat imgTRedL,imgTBlueL,imgTRedR,imgTBlueR;
+		inRange(imgHSVL, Scalar(iLowH1r, iLowS1r, iLowV1r), Scalar(iHighH1r, iHighS1r, iHighV1r), imgTRedL); //Threshold the image
+		inRange(imgHSVL, Scalar(iLowH1b, iLowS1b, iLowV1b), Scalar(iHighH1b, iHighS1b, iHighV1b), imgTBlueL);
+		inRange(imgHSVR, Scalar(iLowH1r, iLowS1r, iLowV1r), Scalar(iHighH1r, iHighS1r, iHighV1r), imgTRedR);
+		inRange(imgHSVR, Scalar(iLowH1b, iLowS1b, iLowV1b), Scalar(iHighH1b, iHighS1b, iHighV1b), imgTBlueR);
+
+		// Set up detector with params
+		SimpleBlobDetector detector(params);
+
+		// Detect blobs.
+		std::vector<KeyPoint> keypRedL,keypBlueL, keypRedR,keypBlueR;
+		detector.detect( imgTRedL, keypRedL);
+		detector.detect( imgTBlueL, keypBlueL);
+		detector.detect( imgTRedR, keypRedR);
+		detector.detect( imgTBlueR, keypBlueR);
+
+		Mat im_with_keypoints;
+		drawKeypoints( resFrameL, keypRedL, resFrame, Scalar(255,255,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+		drawKeypoints( resFrameL, keypBlueL, resFrame, Scalar(0,255,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+		drawKeypoints( resFrameR, keypRedR, resFrame, Scalar(255,255,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+		drawKeypoints( resFrameR, keypBlueR, resFrame, Scalar(0,255,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
 
 
+//tmp
+stereo.combineImage(resFrameL,resFrameR);
+resFrame = stereo.frameC;
 
+std::cout << "Red: " << keypRedL.size() << ", " << keypRedR.size() << ", blue: " << keypBlueL.size() << ", " << keypBlueR.size()  << std::endl;
+	//calculate blob disparity
+	if (keypRedL.size() > 0 && keypRedR.size() > 0)
+		std::cout << "KeyRed: " << keypRedL[0].pt.x - keypRedR[0].pt.x << std::endl;
+	if (keypBlueL.size() > 0 && keypBlueR.size() > 0)
+		std::cout << "KeyBlue: " << keypBlueL[0].pt.x - keypBlueR[0].pt.x << std::endl;
 
 #if defined(HASSCREEN) || defined(VIDEORESULTS)		
 #ifdef HASSCREEN
-
-        cv::imshow("Results", imgThresholded);
+        cv::imshow("Results", resFrame);
 #endif
 #ifdef VIDEORESULTS
         outputVideoResults.write(resFrame);
@@ -248,15 +262,6 @@ std::cout << " Keypoints: " << keypointsr.size() << std::endl;
 #ifdef VIDEORAW
 	outputVideoRawL.write(cam.frameL);
 	outputVideoRawR.write(cam.frameR);
-/*
-	std::stringstream sL;
-	sL << "/home/kalamos/kevin/nosquito/kalamos/build/tmp/" << imgcount << "L" << ".bmp";
-	imwrite(sL.str(),cam.frameL);
-
-	std::stringstream sR;
-	sR << "/home/kalamos/kevin/nosquito/kalamos/build/tmp/" << imgcount << "R" << ".bmp";
-	imwrite(sR.str(),cam.frameR);
-*/
 
 #endif
 #ifdef VIDEODISPARITY
@@ -267,7 +272,7 @@ std::cout << " Keypoints: " << keypointsr.size() << std::endl;
 
         imgcount++;
         float time = ((float)stopWatch.Read())/1000.0;
-        std::cout << "LOG " << time << " #" << imgcount << " --> " << ((float)imgcount) / time << " fps" << std::endl;
+        //std::cout << "LOG " << time << " #" << imgcount << " --> " << ((float)imgcount) / time << " fps" << std::endl;
 
     } // main while loop
 
@@ -282,15 +287,15 @@ void CallBackFunc(int event, int x, int y, int flags, void* userdata)
     mouseY = y;
 
     if  ( event == cv::EVENT_LBUTTONDOWN ) {
-        mouseLDown=10;
+        mouseLDown=1;
     } else if  ( event == cv::EVENT_LBUTTONUP ) {
         mouseLDown=0;
     } else if  ( event == cv::EVENT_RBUTTONDOWN ) {
-        mouseRDown=10;
+        mouseRDown=1;
     } else if  ( event == cv::EVENT_RBUTTONUP ) {
         mouseRDown=0;
     } else if  ( event == cv::EVENT_MBUTTONDOWN ) {
-        mouseMDown=10;
+        mouseMDown=1;
     } else if  ( event == cv::EVENT_MBUTTONUP ) {
         mouseMDown=0;
     } else if ( event == cv::EVENT_MOUSEMOVE )  {
@@ -325,20 +330,6 @@ void handleKey() {
     key=0;
 }
 
-void TerminalInputThread() {
-#ifdef USE_TERMINAL_INPUT
-    std::cout << "Terminal input enabled! (This disrupts running in background)" << std::endl;
-    while(cam.getCamRunning()) {
-        std::cin >> key;
-        if (key==120 || key==113) {
-            key=27; // translate x to esc
-            cam.stopcam();
-            std::cout << "Exiting\n";
-        }
-    }
-#endif
-}
-
 int init(int argc, char **argv) {
 
     cam.init();
@@ -349,7 +340,7 @@ int init(int argc, char **argv) {
     
     /*****init the (G)UI*****/
 #ifdef HASSCREEN
-    //cv::namedWindow("Results", CV_WINDOW_AUTOSIZE);
+    cv::namedWindow("Results", CV_WINDOW_AUTOSIZE);
 	//cv::namedWindow("Results", CV_WINDOW_NORMAL);
     //cv::resizeWindow("Results", 1280, 720); //makes it slower
 
@@ -362,13 +353,14 @@ int init(int argc, char **argv) {
     cv::setMouseCallback("Results", CallBackFunc, NULL);
 
 #endif
-#ifdef USE_TERMINAL_INPUT
-    thread_TerminalInput = std::thread(TerminalInputThread);
-#endif
 
 #if defined(HASSCREEN) || defined(VIDEORESULTS)
     resFrame = cv::Mat::zeros(480, 640,CV_8UC3);
 #endif
+
+    /***init the stereo vision (groundtruth) algorithm ****/
+    std::cout << "Initialising manual stereo algorithm\n";
+    stereo.init();
 
     /*****init the video writer*****/
 #ifdef VIDEORESULTS    
@@ -424,9 +416,6 @@ void close() {
 
     /*****Close everything down*****/
     cam.close();
-#ifdef USE_TERMINAL_INPUT
-    thread_TerminalInput.detach();	//cin is blocking
-#endif
 
 }
 

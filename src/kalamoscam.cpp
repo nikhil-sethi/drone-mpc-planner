@@ -20,13 +20,11 @@ bool KalamosCam::init (void) {
 
 
 void KalamosCam::CBdepth(DepthmapData const& data) {
-	std::cout << "New depth!!!"  << std::endl;
 	data.depth.copyTo(frameD_mat);
 
 }
 
 void KalamosCam::CBstereo(StereoYuvData const& data) {
-	std::cout << "New im!!!"  << std::endl;
 	g_lockWaitForImage1.lock();
 
 	std::vector<cv::Mat> channelsLuv,channelsLyuv;
