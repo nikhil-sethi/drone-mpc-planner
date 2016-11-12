@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project( MuG )
+project(mu-g)
 
 # directories
 set (PROJECT_SRC_DIR ../src)
