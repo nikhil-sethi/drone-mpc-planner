@@ -10,8 +10,12 @@
 #include "kalamoscam.h"
 #include "stopwatch.h"
 
+#include "opencv2/features2d/features2d.hpp"
+#include <opencv2/features2d/features2d.hpp>
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/calib3d/calib3d.hpp"
 
-
+using namespace cv;
 
 /***********Enums****************/
 
@@ -39,6 +43,54 @@ std::thread thread_TerminalInput;
 
 KalamosCam cam;
 
+
+    //thresh params
+    int iLowH1r = 0;
+    int iHighH1r = 6;
+    int iLowS1r = 0;
+    int iHighS1r = 255;
+    int iLowV1r = 188;
+    int iHighV1r = 255;
+    int iOpen1r =1;
+    int iClose1r =1;
+
+    //thresh params
+    int iLowH1b = 92;
+    int iHighH1b = 117;
+    int iLowS1b = 0;
+    int iHighS1b = 255;
+    int iLowV1b = 165;
+    int iHighV1b = 255;
+    int iOpen1b =1;
+    int iClose1b =1;
+
+//blob params
+
+    // Change thresholds
+    int minThreshold = 10;
+    int maxThreshold = 91;
+
+    // Filter by Area.
+    int filterByArea = 1;
+    int minArea = 2;
+    int maxArea = 21;
+
+    // Filter by Circularity
+    int filterByCircularity = 0;
+    int minCircularity = 10;
+    int maxCircularity = 100;
+
+    // Filter by Convexity
+    int filterByConvexity = 0;
+    int minConvexity = 87;
+    int maxConvexity = 100;
+
+    // Filter by Inertia
+    int filterByInertia = 0;
+    int minInertiaRatio = 1;
+    int maxInertiaRatio = 100;
+
+
 /*******Private prototypes*********/
 void process_video();
 #ifdef USE_TERMINAL_INPUT
@@ -55,14 +107,127 @@ void process_video() {
     stopWatch.Start();
     //main while loop:
 
+
+    namedWindow("Thresh Moeder1", WINDOW_NORMAL); //create a window called "Control"
+    createTrackbar("LowH1", "Thresh Moeder1", &iLowH1b, 255);
+    createTrackbar("HighH1", "Thresh Moeder1", &iHighH1b, 255);
+    createTrackbar("LowS1", "Thresh Moeder1", &iLowS1b, 255);
+    createTrackbar("HighS1", "Thresh Moeder1", &iHighS1b, 255);
+    createTrackbar("LowV1", "Thresh Moeder1", &iLowV1b, 255);
+    createTrackbar("HighV1", "Thresh Moeder1", &iHighV1b, 255);
+    createTrackbar("Opening1", "Thresh Moeder1", &iOpen1b, 30);
+    createTrackbar("Closing1", "Thresh Moeder1", &iClose1b, 30);
+
+
+ namedWindow("Blob Moeder", cv::WINDOW_NORMAL); //create a window called "Control"
+
+    createTrackbar("minThreshold", "Blob Moeder", &minThreshold, 255);
+    createTrackbar("maxThreshold", "Blob Moeder", &maxThreshold, 255);
+
+    createTrackbar("filterByArea", "Blob Moeder", &filterByArea, 1);
+    createTrackbar("minArea", "Blob Moeder", &minArea, 10000);
+    createTrackbar("maxArea", "Blob Moeder", &maxArea, 10000);
+
+
+    createTrackbar("filterByCircularity", "Blob Moeder", &filterByCircularity, 1);
+    createTrackbar("minCircularity", "Blob Moeder", &minCircularity, 100);
+    createTrackbar("maxCircularity", "Blob Moeder", &maxCircularity, 100);
+
+    createTrackbar("filterByConvexity", "Blob Moeder", &filterByConvexity, 1);
+    createTrackbar("minConvexity", "Blob Moeder", &minConvexity, 100);
+    createTrackbar("maxConvexity", "Blob Moeder", &maxConvexity, 100);
+
+
+    createTrackbar("filterByInertia", "Blob Moeder", &filterByInertia, 1);
+    createTrackbar("minInertiaRatio", "Blob Moeder", &minInertiaRatio, 100);
+    createTrackbar("maxInertiaRatio", "Blob Moeder", &maxInertiaRatio, 100);
+    
+
+
+
+    //    // Draw detected blobs as red circles.
+    // DrawMatchesFlags::DRAW_RICH_KEYPOINTS flag ensures the size of the circle corresponds to the size of blob
+  //    Mat im_with_keypoints;
+ //    drawKeypoints( imgGray, keypoints, imgThresholded, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+    //imgThresholded.copyTo(imBGR);
+
+
+
+
+
+
+
+
+
+	
+	cv::namedWindow("ori", CV_WINDOW_NORMAL);
+    cv::resizeWindow("ori", 1280, 720); //makes it slower
+	cv::namedWindow("Results", CV_WINDOW_NORMAL);
+    cv::resizeWindow("Results", 1280, 720); //makes it slower
     while (key != 27 && cam.getCamRunning()) // ESC
     {
 
 
 	cam.waitForImage();
-   
 
-	resFrame = cam.frameL;
+
+	resFrame = cv::Mat(cam.frameL.rows/4, cam.frameL.cols/4,CV_8UC3);
+	cv::resize(cam.frameL,resFrame,resFrame.size(),0,0);
+
+	
+    Mat imgHSV;
+    cvtColor(resFrame, imgHSV, COLOR_BGR2HSV);
+
+    Mat imgThresholdedr,imgThresholdedb,imgThresholded;
+    inRange(imgHSV, Scalar(iLowH1r, iLowS1r, iLowV1r), Scalar(iHighH1r, iHighS1r, iHighV1r), imgThresholdedr); //Threshold the image
+    inRange(imgHSV, Scalar(iLowH1b, iLowS1b, iLowV1b), Scalar(iHighH1b, iHighS1b, iHighV1b), imgThresholdedb); //Threshold the image
+
+	imgThresholded = imgThresholdedb;// + imgThresholdedr;
+
+    // Setup SimpleBlobDetector parameters.
+	SimpleBlobDetector::Params params;
+
+  // Change thresholds
+   	params.minThreshold = minThreshold+1;
+	params.maxThreshold = maxThreshold+1;
+
+     // Filter by Area.
+	params.filterByArea = filterByArea;
+	params.minArea = minArea+1;
+	params.maxArea = maxArea+1;
+
+     // Filter by Circularity
+	params.filterByCircularity = filterByCircularity;
+	params.minCircularity = ((float)minCircularity)/100.0f;
+	params.maxCircularity = ((float)maxCircularity)/100.0f;
+
+    //    // Filter by Convexity
+	params.filterByConvexity = filterByConvexity;
+	params.minConvexity = ((float)minConvexity)/100.0f;
+	params.maxConvexity = ((float)maxConvexity)/100.0f;
+
+    //    // Filter by Inertia
+	params.filterByInertia = filterByInertia;
+	params.minInertiaRatio = ((float)minInertiaRatio)/100.0f;
+	params.maxInertiaRatio = ((float)maxInertiaRatio)/100.0f;
+
+    params.minRepeatability = 0;
+    params.minDistBetweenBlobs=0;
+    params.filterByColor = 0;
+    params.thresholdStep=1;
+
+    //    // Set up detector with params
+    SimpleBlobDetector detector(params);
+
+    //    // Detect blobs.
+    std::vector<KeyPoint> keypointsr;
+    detector.detect( imgThresholdedr, keypointsr);
+
+    Mat im_with_keypoints;
+    drawKeypoints( resFrame, keypointsr, resFrame, Scalar(0,255,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+	cv::imshow("ori" , resFrame);
+
+std::cout << " Keypoints: " << keypointsr.size() << std::endl;
 
         if (mouseLDown>1) {mouseLDown--;}
         if (mouseRDown>1) {mouseRDown--;}
@@ -74,7 +239,7 @@ void process_video() {
 #if defined(HASSCREEN) || defined(VIDEORESULTS)		
 #ifdef HASSCREEN
 
-        cv::imshow("Results", cam.frameL);
+        cv::imshow("Results", imgThresholded);
 #endif
 #ifdef VIDEORESULTS
         outputVideoResults.write(resFrame);
@@ -184,7 +349,7 @@ int init(int argc, char **argv) {
     
     /*****init the (G)UI*****/
 #ifdef HASSCREEN
-    cv::namedWindow("Results", CV_WINDOW_AUTOSIZE);
+    //cv::namedWindow("Results", CV_WINDOW_AUTOSIZE);
 	//cv::namedWindow("Results", CV_WINDOW_NORMAL);
     //cv::resizeWindow("Results", 1280, 720); //makes it slower
 
