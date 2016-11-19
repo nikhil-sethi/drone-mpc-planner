@@ -41,6 +41,8 @@ int mouseX, mouseY;
 int mouseLDown;
 int mouseMDown;
 int mouseRDown;
+bool pausecam = false;
+
 #ifdef _PC
 KalamosFileCam cam;
 #else
@@ -210,9 +212,10 @@ void process_video() {
         params.filterByColor = 0;
         params.thresholdStep=1;
 #endif
-
-        cam.waitForImage();
-        //stereo.rectify(cam.frameL, cam.frameR);
+        if (!pausecam) {
+            cam.waitForImage();
+        }
+        stereo.rectify(cam.frameL, cam.frameR);
 
         cv::Mat resFrameL,resFrameR;
         resFrameL = cv::Mat(cam.frameL.rows/4, cam.frameL.cols/4,CV_8UC3);
@@ -326,6 +329,9 @@ void handleKey() {
         imgcount=0;
         stopWatch.Restart();
         msg="fps Reset";
+        break;
+    case ' ':
+        pausecam=!pausecam;
         break;
 
     } // end switch key
