@@ -36,27 +36,26 @@ bool stereoAlg::init (std::string calib_folder) {
         return -1;
     }
 
-    Mat R, T;
-    fs["R"] >> R;
-    fs["T"] >> T;
     Size img_size = cv::Size(ROIsize,ROIsize);
-
-
     Mat R1, R2;
     fs["R1"] >> R1;
     fs["R2"] >> R2;
+
+    //Mat R, T;
+    //fs["R"] >> R;
+    //fs["T"] >> T;
     //fisheye::stereoRectify( M1, D1, M2, D2, img_size, R, T, R1, R2, pt1, pt2, Qf, CALIB_ZERO_DISPARITY); // gives wrong P matrices!
-    float fx0 = (ROIsize  / 2) / std::abs(std::tan((ROIsize / 2) / M1.at<double>(0,0)));
-    float fy0 = (ROIsize / 2) / std::abs(std::tan((ROIsize / 2) / M1.at<double>(1,1)));
-    float cx = 0;
-    float cy = 0;
+    float fx0 = (ROIsize  / 2) / std::fabs(std::tan((ROIsize / 2) / M1.at<double>(0,0)));
+    float fy0 = (ROIsize / 2) / std::fabs(std::tan((ROIsize / 2) / M1.at<double>(1,1)));
+    float cx =  0;//(ROIsize  / 2.0f);
+    float cy = 0;//(ROIsize  / 2.0f);
 
     cv::Matx33f P1(fx0, 0. , cx,
                    0. , fy0, cy,
                    0. , 0. , 1.);
     float fx1 = fx0;
     float fy1 = fy0;
-    int maxdisp = 0;
+    int maxdisp = 64;
     cv::Matx33f P2(fx1, 0. , cx + maxdisp,
                    0. , fy1, cy,
                    0. , 0. , 1.);
@@ -83,8 +82,8 @@ void stereoAlg::rectify(cv::Mat frameL,cv::Mat frameR) {
    	cv::Point pr1(1280/2+ROIsize/2, 960/2+ROIsize/2);
    	cv::Mat roiL = cv::Mat(frameL, cv::Rect(pr1, pr2));
    	cv::Mat roiR = cv::Mat(frameR, cv::Rect(pr1, pr2));
-   	remap(roiL, frameLrect, map11, map12, INTER_LINEAR);
-   	remap(roiR, frameRrect, map21, map22, INTER_LINEAR);
+    remap(roiL, frameLrect, map11, map12, INTER_LINEAR);
+    remap(roiR, frameRrect, map21, map22, INTER_LINEAR);
 }
 
 void stereoAlg::calcDisparityMap() {

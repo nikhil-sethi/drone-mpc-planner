@@ -220,8 +220,8 @@ void process_video() {
         cv::Mat resFrameL,resFrameR;
         resFrameL = cv::Mat(cam.frameL.rows/4, cam.frameL.cols/4,CV_8UC3);
         resFrameR = cv::Mat(cam.frameR.rows/4, cam.frameR.cols/4,CV_8UC3);
-        cv::resize(cam.frameL,resFrameL,resFrameL.size(),0,0);
-        cv::resize(cam.frameR,resFrameR,resFrameR.size(),0,0);
+        cv::resize(stereo.frameLrect,resFrameL,resFrameL.size(),0,0);
+        cv::resize(stereo.frameRrect,resFrameR,resFrameR.size(),0,0);
 
         Mat imgHSVL,imgHSVR;
         cvtColor(resFrameL, imgHSVL, COLOR_BGR2HSV);
@@ -252,7 +252,11 @@ void process_video() {
 
         //tmp
         stereo.combineImage(resFrameL,resFrameR);
-        resFrame = stereo.frameC;
+        resFrame = stereo.frameC.clone();
+        stereo.combineImage(cam.frameL,cam.frameR);
+        cv::Mat frameTMP = cv::Mat(stereo.frameC.rows/2, stereo.frameC.cols/2,CV_8UC3);
+        cv::resize(stereo.frameC,frameTMP,frameTMP.size(),0,0);
+        cv::imshow("unrect", frameTMP);
 
         std::cout << "Red: " << keypRedL.size() << ", " << keypRedR.size() << ", blue: " << keypBlueL.size() << ", " << keypBlueR.size()  << std::endl;
         //calculate blob disparity
