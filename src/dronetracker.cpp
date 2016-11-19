@@ -114,11 +114,12 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR) {
     drawKeypoints( resFrameR, keypBlueR, resFrame, Scalar(0,255,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
 
 
-    cv::imshow("L", resFrameL);
-    cv::imshow("R", resFrameR);
+    cv::Mat frameC;
+    combineImage(resFrameL,resFrameR,&frameC);
+    cv::imshow("In", frameC);
 
     //tmp
-    combineImage(resFrameL,resFrameR,resFrame);
+    combineImage(resFrameL,resFrameR,&resFrame);
 
     std::cout << "Red: " << keypRedL.size() << ", " << keypRedR.size() << ", blue: " << keypBlueL.size() << ", " << keypBlueR.size()  << std::endl;
     //calculate blob disparity

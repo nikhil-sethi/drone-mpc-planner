@@ -130,20 +130,3 @@ void stereoAlg::calcDisparityMap() {
 }
 
 
-
-//combines a sperate left and right image into one combined concenated image
-void stereoAlg::combineImage(cv::Mat iml,cv::Mat imr,cv::Mat *frameC) {
-
-    *frameC = cv::Mat(iml.rows,iml.cols + imr.cols,CV_8UC3);
-    cv::Point pl1(0, 0);
-    cv::Point pl2(iml.cols, iml.rows);
-    cv::Mat roil = cv::Mat(*frameC, cv::Rect(pl1, pl2));
-    iml.copyTo(roil);
-
-    cv::Point pr1(iml.cols, 0);
-    cv::Point pr2(iml.cols+imr.cols, imr.rows);
-    cv::Mat roir = cv::Mat(*frameC, cv::Rect(pr1, pr2));
-    imr.copyTo(roir);
-
-}
-
