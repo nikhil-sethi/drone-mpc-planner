@@ -41,7 +41,7 @@ int mouseX, mouseY;
 int mouseLDown;
 int mouseMDown;
 int mouseRDown;
-bool pausecam = false;
+bool pausecam = true;
 
 #ifdef _PC
 KalamosFileCam cam;
@@ -218,8 +218,8 @@ void process_video() {
         stereo.rectify(cam.frameL, cam.frameR);
 
         cv::Mat resFrameL,resFrameR;
-        resFrameL = cv::Mat(cam.frameL.rows/4, cam.frameL.cols/4,CV_8UC3);
-        resFrameR = cv::Mat(cam.frameR.rows/4, cam.frameR.cols/4,CV_8UC3);
+        resFrameL = cv::Mat(cam.frameL.rows/2, cam.frameL.cols/2,CV_8UC3);
+        resFrameR = cv::Mat(cam.frameR.rows/2, cam.frameR.cols/2,CV_8UC3);
         cv::resize(stereo.frameLrect,resFrameL,resFrameL.size(),0,0);
         cv::resize(stereo.frameRrect,resFrameR,resFrameR.size(),0,0);
 
@@ -251,14 +251,20 @@ void process_video() {
 
 
         //tmp
-        stereo.combineImage(resFrameL,resFrameR);
-        resFrame = stereo.frameC.clone();
-        stereo.combineImage(cam.frameL,cam.frameR);
-        cv::Mat frameTMP = cv::Mat(stereo.frameC.rows/2, stereo.frameC.cols/2,CV_8UC3);
-        cv::resize(stereo.frameC,frameTMP,frameTMP.size(),0,0);
-        cv::imshow("unrect", frameTMP);
+        stereo.combineImage(resFrameL,resFrameR,&resFrame);
+        cv::Mat frameTMP2;
+        stereo.combineImage(cam.frameL,cam.frameR,&frameTMP2);
+        cv::Mat frameTMP = cv::Mat(frameTMP2.rows/2, frameTMP2.cols/2,CV_8UC3);
+        cv::resize(frameTMP2,frameTMP,frameTMP.size(),0,0);
+        //cv::imshow("unrect", frameTMP);
+        cv::line(resFrame,cv::Point(0,resFrame.rows/2), cv::Point(resFrame.cols,resFrame.rows/2),cv::Scalar(0,0,255));
+        cv::line(resFrame,cv::Point(resFrame.cols/4,0), cv::Point(resFrame.cols/4,resFrame.rows),cv::Scalar(0,0,255));
+        cv::line(resFrame,cv::Point(3*resFrame.cols/4,0), cv::Point(3*resFrame.cols/4,resFrame.rows),cv::Scalar(0,0,255));
 
-        std::cout << "Red: " << keypRedL.size() << ", " << keypRedR.size() << ", blue: " << keypBlueL.size() << ", " << keypBlueR.size()  << std::endl;
+
+
+
+        std::cout << "#"<< cam.getCurrentFrameID() << ": Red: " << keypRedL.size() << ", " << keypRedR.size() << ", blue: " << keypBlueL.size() << ", " << keypBlueR.size()  << std::endl;
         //calculate blob disparity
         if (keypRedL.size() > 0 && keypRedR.size() > 0)
             std::cout << "KeyRed: " << keypRedL[0].pt.x - keypRedR[0].pt.x << std::endl;

@@ -78,12 +78,18 @@ bool stereoAlg::init (std::string calib_folder) {
 }
 
 void stereoAlg::rectify(cv::Mat frameL,cv::Mat frameR) {
-	cv::Point pr2(1280/2-ROIsize/2, 960/2-ROIsize/2);
-   	cv::Point pr1(1280/2+ROIsize/2, 960/2+ROIsize/2);
+    cv::Point pr2(1280/2-ROIsize/2, 960/2-ROIsize/2);
+    cv::Point pr1(1280/2+ROIsize/2, 960/2+ROIsize/2);
    	cv::Mat roiL = cv::Mat(frameL, cv::Rect(pr1, pr2));
+    pr1.y -=15; // rectification v1 :)
+    pr2.y -=15;
    	cv::Mat roiR = cv::Mat(frameR, cv::Rect(pr1, pr2));
-    remap(roiL, frameLrect, map11, map12, INTER_LINEAR);
-    remap(roiR, frameRrect, map21, map22, INTER_LINEAR);
+
+    //Normal opencv remap does not seem to work properly (which is why rectification v1 has been put in place):
+    //remap(roiL, frameLrect, map11, map12, INTER_LINEAR);
+    //remap(roiR, frameRrect, map21, map22, INTER_LINEAR);
+    frameLrect = roiL.clone();
+    frameRrect = roiR.clone();
 }
 
 void stereoAlg::calcDisparityMap() {
@@ -126,17 +132,17 @@ void stereoAlg::calcDisparityMap() {
 
 
 //combines a sperate left and right image into one combined concenated image
-void stereoAlg::combineImage(cv::Mat iml,cv::Mat imr) {
+void stereoAlg::combineImage(cv::Mat iml,cv::Mat imr,cv::Mat *frameC) {
 
-    frameC = cv::Mat(iml.rows,iml.cols + imr.cols,CV_8UC3);
+    *frameC = cv::Mat(iml.rows,iml.cols + imr.cols,CV_8UC3);
     cv::Point pl1(0, 0);
     cv::Point pl2(iml.cols, iml.rows);
-    cv::Mat roil = cv::Mat(frameC, cv::Rect(pl1, pl2));
+    cv::Mat roil = cv::Mat(*frameC, cv::Rect(pl1, pl2));
     iml.copyTo(roil);
 
     cv::Point pr1(iml.cols, 0);
     cv::Point pr2(iml.cols+imr.cols, imr.rows);
-    cv::Mat roir = cv::Mat(frameC, cv::Rect(pr1, pr2));
+    cv::Mat roir = cv::Mat(*frameC, cv::Rect(pr1, pr2));
     imr.copyTo(roir);
 
 }

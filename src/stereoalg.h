@@ -18,16 +18,15 @@ private:
     cv::StereoSGBM sgbm;
     float dispScale;
 
-    const int ROIsize = 576;
+    const int ROIsize = 864;
 
 public:
     cv::Mat frameD;
     cv::Mat frameLrect,frameRrect;
-    float avgDisparity;
-    cv::Mat frameC;
+    float avgDisparity;    
 
     bool init (std::string calib_folder);
-    void combineImage(cv::Mat iml,cv::Mat imr);
+    void combineImage(cv::Mat iml,cv::Mat imr,cv::Mat *frameC);
 	void rectify(cv::Mat frameL,cv::Mat frameR);
     void calcDisparityMap();
 

@@ -17,7 +17,9 @@ void Cam::start (void) {
 
 void Cam::waitForImage() {
     g_lockWaitForImage1.unlock();
+    actualcurrentFrame++;
     g_lockWaitForImage2.lock();
+
 }
 
 void Cam::close(void) {    

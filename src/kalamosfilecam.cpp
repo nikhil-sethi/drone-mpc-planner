@@ -15,7 +15,7 @@ inline bool fileExists (const std::string& name) {
     return f.good();
 }
 
-int skipframes = 0;
+int skipframes = 63;
 bool KalamosFileCam::init (std::string folder) {
     this->folder = folder;
     fps = VIDEOFPS;

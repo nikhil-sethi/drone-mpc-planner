@@ -24,6 +24,7 @@ protected:
     std::mutex g_lockWaitForImage2;
 
     int currentFrame;
+    int actualcurrentFrame = 0;
 
     int im_width;
     int im_height;
@@ -44,7 +45,7 @@ public:
     bool getIsStereo() {return isStereo;}
     int getNFrames() {return nFrames;}
     bool getCamRunning() {return camRunning;}
-    int getCurrentFrameID() { return currentFrame;}
+    int getCurrentFrameID() { return actualcurrentFrame;}
 
     void stopcam (void) {camRunning=false;}
     void waitForImage(void);
