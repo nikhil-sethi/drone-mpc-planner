@@ -15,6 +15,7 @@
 #include "stopwatch.h"
 #include "stereoalg.h"
 #include "dronetracker.h"
+#include "dronecontroller.h"
 
 #include "opencv2/features2d/features2d.hpp"
 
@@ -48,6 +49,7 @@ KalamosCam cam;
 #endif
 stereoAlg stereo;
 DroneTracker dtrk;
+DroneController dctrl;
 
 /*******Private prototypes*********/
 void process_video();
@@ -73,6 +75,7 @@ void process_video() {
         stereo.rectify(cam.frameL, cam.frameR);
 
         dtrk.track(stereo.frameLrect,stereo.frameRrect);
+        dctrl.control(0.0,0.0,0.0);
         resFrame = dtrk.resFrame;
 #if defined(HASSCREEN) || defined(VIDEORESULTS)		
 #ifdef HASSCREEN
@@ -248,6 +251,7 @@ int init(int argc, char **argv) {
     }
 #endif
     dtrk.init();
+    dctrl.init();
 
     msg="";
     return 0;
@@ -258,6 +262,7 @@ void close() {
     /*****Close everything down*****/
     dtrk.close();
     cam.close();
+    dctrl.close();
 
 
 }

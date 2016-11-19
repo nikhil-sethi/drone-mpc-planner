@@ -67,7 +67,7 @@ int RS232_OpenComport( int baudrate)
                    break;
   }
 
-  Cport= open("/dev/ttyUSB0", O_RDWR | O_NOCTTY | O_NDELAY);
+  Cport= open("/dev/ttyACM0", O_RDWR | O_NOCTTY | O_NDELAY);
   if(Cport==-1)
   {
     perror("unable to open comport ");
