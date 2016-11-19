@@ -16,9 +16,11 @@ MESSAGE( STATUS "OpenCV_CONFIG_PATH: " ${OpenCV_CONFIG_PATH} )
 MESSAGE( STATUS "OpenCV_INSTALL_PATH: " ${OpenCV_INSTALL_PATH} )
 
 MESSAGE( STATUS "OPENCV_VERSION: " ${OpenCV_VERSION} )
+set (CEREAL_SRC_DIR ../src/)
+include_directories("${CEREAL_SRC_DIR}")
 
 # sources
-FILE(GLOB MY_SRC_FILES "../src/*.cpp" "../src/*.h" "../src/*.c")
+FILE(GLOB MY_SRC_FILES "../src/*.cpp" "../src/*.h" "../src/*.c" "../src/cereal*.hpp")
 
 # use sse3 instruction set for libelas and c11 for threading (among others)
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3 -std=c++11 -pthread")

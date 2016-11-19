@@ -247,7 +247,7 @@ int init(int argc, char **argv) {
         return 1;
     }
 #endif
-
+    dtrk.init();
 
     msg="";
     return 0;
@@ -256,7 +256,9 @@ int init(int argc, char **argv) {
 void close() {
 
     /*****Close everything down*****/
+    dtrk.close();
     cam.close();
+
 
 }
 
