@@ -14,6 +14,7 @@ float transformPixelToAngle(cv::Point2f p, cv::Point2f pix2rad,cv::Point center)
 cv::Mat getStabilizedCrop(float phi, float theta, cv::Mat frameL, int sdx, int sdy);
 bool checkFileExist (const std::string& name);
 void combineImage(cv::Mat iml, cv::Mat imr, cv::Mat *res);
+void combineGrayImage(cv::Mat iml,cv::Mat imr,cv::Mat *res);
 
 const float FOV = 180.0f ;
 const float FOV_size = 1280.0;

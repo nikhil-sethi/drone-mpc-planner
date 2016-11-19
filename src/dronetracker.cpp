@@ -21,16 +21,25 @@ bool DroneTracker::init(void) {
     #define TUNING
 #ifdef TUNING
 
-    namedWindow("Thresh Moeder1", WINDOW_NORMAL); //create a window called "Control"
-    createTrackbar("LowH1", "Thresh Moeder1", &settings.iLowH1b, 255);
-    createTrackbar("HighH1", "Thresh Moeder1", &settings.iHighH1b, 255);
-    createTrackbar("LowS1", "Thresh Moeder1", &settings.iLowS1b, 255);
-    createTrackbar("HighS1", "Thresh Moeder1", &settings.iHighS1b, 255);
-    createTrackbar("LowV1", "Thresh Moeder1", &settings.iLowV1b, 255);
-    createTrackbar("HighV1", "Thresh Moeder1", &settings.iHighV1b, 255);
-    createTrackbar("Opening1", "Thresh Moeder1", &settings.iOpen1b, 30);
-    createTrackbar("Closing1", "Thresh Moeder1", &settings.iClose1b, 30);
+    namedWindow("Thresh Blue", WINDOW_NORMAL); //create a window called "Control"
+    createTrackbar("LowH1", "Thresh Blue", &settings.iLowH1b, 255);
+    createTrackbar("HighH1", "Thresh Blue", &settings.iHighH1b, 255);
+    createTrackbar("LowS1", "Thresh Blue", &settings.iLowS1b, 255);
+    createTrackbar("HighS1", "Thresh Blue", &settings.iHighS1b, 255);
+    createTrackbar("LowV1", "Thresh Blue", &settings.iLowV1b, 255);
+    createTrackbar("HighV1", "Thresh Blue", &settings.iHighV1b, 255);
+    createTrackbar("Opening1", "Thresh Blue", &settings.iOpen1b, 30);
+    createTrackbar("Closing1", "Thresh Blue", &settings.iClose1b, 30);
 
+    namedWindow("Thresh Red", WINDOW_NORMAL); //create a window called "Control"
+    createTrackbar("LowH1", "Thresh Red", &settings.iLowH1r, 255);
+    createTrackbar("HighH1", "Thresh Red", &settings.iHighH1r, 255);
+    createTrackbar("LowS1", "Thresh Red", &settings.iLowS1r, 255);
+    createTrackbar("HighS1", "Thresh Red", &settings.iHighS1r, 255);
+    createTrackbar("LowV1", "Thresh Red", &settings.iLowV1r, 255);
+    createTrackbar("HighV1", "Thresh Red", &settings.iHighV1r, 255);
+    createTrackbar("Opening1", "Thresh Red", &settings.iOpen1r, 30);
+    createTrackbar("Closing1", "Thresh Red", &settings.iClose1r, 30);
 
     namedWindow("Blob Moeder", cv::WINDOW_NORMAL); //create a window called "Control"
 
@@ -122,11 +131,28 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR) {
     drawKeypoints( resFrameR, keypRedR, resFrame, Scalar(255,255,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
     drawKeypoints( resFrameR, keypBlueR, resFrame, Scalar(0,255,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
 
+#ifdef TUNING
+    cv::Mat greenDummy = cv::Mat::zeros(imgTBlueL.rows,imgTBlueL.cols,CV_8UC1);
+    std::vector<cv::Mat> channelsTL;
+    channelsTL.push_back(imgTBlueL);
+    channelsTL.push_back(greenDummy);
+    channelsTL.push_back(imgTRedL);
+    cv::Mat frameTrgbL;
+    cv::merge(channelsTL,frameTrgbL);
+    std::vector<cv::Mat> channelsTR;
+    channelsTR.push_back(imgTBlueL);
+    channelsTR.push_back(greenDummy);
+    channelsTR.push_back(imgTRedL);
+    cv::Mat frameTrgbR;
+    cv::merge(channelsTR,frameTrgbR);
 
-    //tmp
     cv::Mat frameC;
-    combineImage(frameL,frameR,&frameC);
-    cv::imshow("In", frameC);    
+    combineImage(frameTrgbL,frameTrgbR,&frameC);
+
+    cv::imshow("Thresh", frameC);
+#endif
+
+
     combineImage(resFrameL,resFrameR,&resFrame);
 
     std::cout << "Red: " << keypRedL.size() << ", " << keypRedR.size() << ", blue: " << keypBlueL.size() << ", " << keypBlueR.size()  << std::endl;
