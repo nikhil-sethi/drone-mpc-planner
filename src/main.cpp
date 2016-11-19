@@ -339,7 +339,7 @@ void handleKey() {
 
 int init(int argc, char **argv) {
 #ifdef _PC
-    if (argc != 2) {
+    if (argc != 3) {
         std::cout << "Wrong arguments. Specify the location to load images..." << std::endl;
         return 1;
     }
@@ -347,8 +347,11 @@ int init(int argc, char **argv) {
     if (cam.init(std::string(argv[1]))) {
         return 1;
     }
+
+    std::string calib_folder = std::string(argv[2]);
 #else
     cam.init();
+    std::string calib_folder = "/factory/";
 #endif
 
 
@@ -356,6 +359,10 @@ int init(int argc, char **argv) {
     std::cout << "Start cam\n";
     cam.start();
     
+    /***init the stereo vision (groundtruth) algorithm ****/
+    std::cout << "Initialising manual stereo algorithm\n";
+    stereo.init(calib_folder);
+
     /*****init the (G)UI*****/
 #ifdef HASSCREEN
     cv::namedWindow("Results", CV_WINDOW_AUTOSIZE);
@@ -376,9 +383,7 @@ int init(int argc, char **argv) {
     resFrame = cv::Mat::zeros(480, 640,CV_8UC3);
 #endif
 
-    /***init the stereo vision (groundtruth) algorithm ****/
-    std::cout << "Initialising manual stereo algorithm\n";
-    stereo.init();
+
 
     /*****init the video writer*****/
 #ifdef VIDEORESULTS    

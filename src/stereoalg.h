@@ -26,7 +26,7 @@ public:
     float avgDisparity;
     cv::Mat frameC;
 
-    bool init ();
+    bool init (std::string calib_folder);
     void combineImage(cv::Mat iml,cv::Mat imr);
 	void rectify(cv::Mat frameL,cv::Mat frameR);
     void calcDisparityMap();

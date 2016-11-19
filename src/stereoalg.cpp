@@ -13,11 +13,11 @@
 
 using namespace cv;
 
-bool stereoAlg::init () {
+bool stereoAlg::init (std::string calib_folder) {
 
     frameD = cv::Mat::zeros(96,96, CV_8UC3);
 
-    FileStorage fs("/factory/intrinsics.yml", CV_STORAGE_READ);
+    FileStorage fs(calib_folder + "intrinsics.yml", CV_STORAGE_READ);
     if(!fs.isOpened())
     {
         std::cout << "Error did not find intrinsics" << std::endl;
@@ -29,7 +29,7 @@ bool stereoAlg::init () {
     fs["M2"] >> M2;
     fs["D2"] >> D2;
 
-    fs.open("/factory/extrinsics.yml", CV_STORAGE_READ);
+    fs.open(calib_folder + "extrinsics.yml", CV_STORAGE_READ);
     if(!fs.isOpened())
     {
         std::cout << "Error did not find extrinsics" << std::endl;
