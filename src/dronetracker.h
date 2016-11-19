@@ -3,7 +3,7 @@
 #include "defines.h"
 #include <opencv2/features2d/features2d.hpp>
 
-
+#include "stopwatch.h"
 
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/memory.hpp>
@@ -79,6 +79,8 @@ private:
     };
     mugSettings settings;
 
+    stopwatch_c stopWatch;
+
     void updateParams();
 
 public:
@@ -88,6 +90,11 @@ public:
     void close (void);
     bool init(void);
     void track(cv::Mat frameL, cv::Mat frameR);
+
+    struct trackData {
+        float posX,posY,posZ,dx,dy,dz,velX,velY,velZ,dt;
+    };
+    trackData data;
 
 };
 

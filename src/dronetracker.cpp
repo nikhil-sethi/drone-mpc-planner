@@ -43,8 +43,9 @@ bool DroneTracker::init(void) {
 
     namedWindow("Blob Moeder", cv::WINDOW_NORMAL); //create a window called "Control"
 
-    createTrackbar("minThreshold", "Blob Moeder", &settings.minThreshold, 255);
-    createTrackbar("maxThreshold", "Blob Moeder", &settings.maxThreshold, 255);
+    //the thresholds are not to be tuned
+//    createTrackbar("minThreshold", "Blob Moeder", &settings.minThreshold, 255);
+//    createTrackbar("maxThreshold", "Blob Moeder", &settings.maxThreshold, 255);
 
     createTrackbar("filterByArea", "Blob Moeder", &settings.filterByArea, 1);
     createTrackbar("minArea", "Blob Moeder", &settings.minArea, 10000);
@@ -95,8 +96,11 @@ bool DroneTracker::init(void) {
     params.filterByColor = 0;
     params.thresholdStep=1;
 
-}
+    stopWatch.Start();
 
+}
+float prevTime = 0;
+float prevX,prevY,prevZ = 0;
 void DroneTracker::track(cv::Mat frameL, cv::Mat frameR) {
     updateParams();
 
@@ -116,6 +120,16 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR) {
     inRange(imgHSVR, Scalar(settings.iLowH1r, settings.iLowS1r, settings.iLowV1r), Scalar(settings.iHighH1r, settings.iHighS1r, settings.iHighV1r), imgTRedR);
     inRange(imgHSVR, Scalar(settings.iLowH1b, settings.iLowS1b, settings.iLowV1b), Scalar(settings.iHighH1b, settings.iHighS1b, settings.iHighV1b), imgTBlueR);
 
+    //erode(imgTRedL, imgTRedL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iOpen1r+1, settings.iOpen1r+1)));
+    dilate( imgTRedL, imgTRedL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iClose1r+1, settings.iClose1r+1)));
+    //erode(imgTBlueL, imgTBlueL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iOpen1b+1, settings.iOpen1b+1)));
+    dilate( imgTBlueL, imgTBlueL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iClose1b+1, settings.iClose1b+1)));
+
+    //erode(imgTRedR, imgTRedR, getStructuringElement(MORPH_ELLIPSE, Size(settings.iOpen1r+1, settings.iOpen1r+1)));
+    dilate( imgTRedR, imgTRedR, getStructuringElement(MORPH_ELLIPSE, Size(settings.iClose1r+1, settings.iClose1r+1)));
+    //erode(imgTBlueR, imgTBlueR, getStructuringElement(MORPH_ELLIPSE, Size(settings.iOpen1b+1, settings.iOpen1b+1)));
+    dilate( imgTBlueR, imgTBlueR, getStructuringElement(MORPH_ELLIPSE, Size(settings.iClose1b+1, settings.iClose1b+1)));
+
     // Set up detector with params
     SimpleBlobDetector detector(params);
 
@@ -126,10 +140,12 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR) {
     detector.detect( imgTRedR, keypRedR);
     detector.detect( imgTBlueR, keypBlueR);
 
-    drawKeypoints( resFrameL, keypRedL, resFrame, Scalar(255,255,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
-    drawKeypoints( resFrameL, keypBlueL, resFrame, Scalar(0,255,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
-    drawKeypoints( resFrameR, keypRedR, resFrame, Scalar(255,255,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
-    drawKeypoints( resFrameR, keypBlueR, resFrame, Scalar(0,255,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+    cv::Mat frameLBlob = cv::Mat::zeros(resFrameL.cols,resFrameL.rows,CV_8UC3);
+    cv::Mat frameRBlob = cv::Mat::zeros(resFrameR.cols,resFrameR.rows,CV_8UC3);
+    drawKeypoints( frameLBlob, keypRedL, frameLBlob, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+    drawKeypoints( frameLBlob, keypBlueL, frameLBlob, Scalar(255,0,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+    drawKeypoints( frameRBlob, keypRedR, frameRBlob, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+    drawKeypoints( frameRBlob, keypBlueR, frameRBlob, Scalar(255,0,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
 
 #ifdef TUNING
     cv::Mat greenDummy = cv::Mat::zeros(imgTBlueL.rows,imgTBlueL.cols,CV_8UC1);
@@ -145,13 +161,14 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR) {
     channelsTR.push_back(imgTRedL);
     cv::Mat frameTrgbR;
     cv::merge(channelsTR,frameTrgbR);
+    cv::Mat frameCT;
+    combineImage(frameTrgbL,frameTrgbR,&frameCT);
+    cv::imshow("Thresh", frameCT);
 
-    cv::Mat frameC;
-    combineImage(frameTrgbL,frameTrgbR,&frameC);
-
-    cv::imshow("Thresh", frameC);
+    cv::Mat frameCB;
+    combineImage(frameLBlob,frameRBlob,&frameCB);
+    cv::imshow("Blob", frameCB);
 #endif
-
 
     combineImage(resFrameL,resFrameR,&resFrame);
 
@@ -161,6 +178,23 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR) {
         std::cout << "KeyRed: " << keypRedL[0].pt.x - keypRedR[0].pt.x << std::endl;
     if (keypBlueL.size() > 0 && keypBlueR.size() > 0)
         std::cout << "KeyBlue: " << keypBlueL[0].pt.x - keypBlueR[0].pt.x << std::endl;
+
+
+    float time = ((float)stopWatch.Read())/1000.0;
+    float dt = time - prevTime;
+    prevTime = time;
+
+    data.posX = keypRedL[0].pt.x;
+    data.posY = keypRedL[0].pt.y;
+    data.posZ = 1.0f / (keypRedL[0].pt.x -keypRedR[0].pt.x);
+    data.dx = data.posX - prevX;
+    data.dy = data.posY - prevY;
+    data.dy = data.posZ - prevZ;
+    data.velX = data.dx / dt;
+    data.velY = data.dy / dt;
+    data.velZ = data.dz / dt;
+    data.dt = dt;
+
 
 }
 
