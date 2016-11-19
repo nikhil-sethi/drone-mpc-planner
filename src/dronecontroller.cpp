@@ -7,7 +7,7 @@ RS232_OpenComport(baudrate);
    
 }
 
-void DroneController::control(float pos_X, float pos_Y, float pos_Z) {
+void DroneController::control(trackData data) {
 
 
 

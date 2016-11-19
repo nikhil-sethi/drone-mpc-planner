@@ -2,6 +2,7 @@
 #define DRONECONTROLLER_H
 
 #include "rs232.h"
+#include "dronetracker.h"
 
 /*
  * This class will control a micro drone via a Serial link
@@ -23,7 +24,7 @@ public:
 
     void close (void);
     bool init(void);
-    void control(float pos_X, float pos_Y, float pos_Z);
+    void control(trackData data);
 
 };
 

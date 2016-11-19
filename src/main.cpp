@@ -74,8 +74,8 @@ void process_video() {
         }
         stereo.rectify(cam.frameL, cam.frameR);
 
-        dtrk.track(stereo.frameLrect,stereo.frameRrect);
-        dctrl.control(0.0,0.0,0.0);
+        dtrk.track(stereo.frameLrect,stereo.frameRrect);        
+        dctrl.control(dtrk.data);
         resFrame = dtrk.resFrame;
 #if defined(HASSCREEN) || defined(VIDEORESULTS)		
 #ifdef HASSCREEN

@@ -10,6 +10,10 @@
 #include <cereal/archives/binary.hpp>
 #include <fstream>
 
+struct trackData {
+    float posX,posY,posZ,dx,dy,dz,velX,velY,velZ,dt;
+};
+
 /*
  * This class will track a micro drone with leds
  *
@@ -91,11 +95,10 @@ public:
     bool init(void);
     void track(cv::Mat frameL, cv::Mat frameR);
 
-    struct trackData {
-        float posX,posY,posZ,dx,dy,dz,velX,velY,velZ,dt;
-    };
+
     trackData data;
 
+    void test(trackData bla);
 };
 
 
