@@ -24,7 +24,9 @@ void Cam::close(void) {
     camRunning = false;
     g_lockWaitForImage1.unlock();
     g_lockWaitForImage2.unlock();
-    //thread_cam.join();
+#ifdef _PC
+    thread_cam.join();
+#endif
 }
 
 

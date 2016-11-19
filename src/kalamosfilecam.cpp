@@ -110,5 +110,7 @@ cv::Mat KalamosFileCam::get_combined() {
 
 void KalamosFileCam::close (void) {
     Cam::close();
+    videoL.release();
+    videoR.release();
 }
 
