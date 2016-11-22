@@ -5,6 +5,8 @@
 #include <iostream>
 #include <iomanip>
 
+#include "common.h"
+
 #include "defines.h"
 #include "smoother.h"
 #ifdef _PC
@@ -74,7 +76,7 @@ void process_video() {
         }
         stereo.rectify(cam.frameL, cam.frameR);
 
-        dtrk.track(stereo.frameLrect,stereo.frameRrect);        
+        dtrk.track(stereo.frameLrect,stereo.frameRrect);
         dctrl.control(dtrk.data);
         resFrame = dtrk.resFrame;
 #if defined(HASSCREEN) || defined(VIDEORESULTS)		

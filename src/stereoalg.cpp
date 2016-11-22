@@ -47,15 +47,21 @@ bool stereoAlg::init (std::string calib_folder) {
     //fisheye::stereoRectify( M1, D1, M2, D2, img_size, R, T, R1, R2, pt1, pt2, Qf, CALIB_ZERO_DISPARITY); // gives wrong P matrices!
     float fx0 = (ROIsize  / 2) / std::fabs(std::tan((ROIsize / 2) / M1.at<double>(0,0)));
     float fy0 = (ROIsize / 2) / std::fabs(std::tan((ROIsize / 2) / M1.at<double>(1,1)));
-    float cx =  0;//(ROIsize  / 2.0f);
-    float cy = 0;//(ROIsize  / 2.0f);
+    float cx =  (ROIsize  / 2.0f);
+    float cy =  (ROIsize  / 2.0f);
+
+    M1.at<double>(0,2) +=  (ROIsize  / 2.0f);
+    M1.at<double>(1,2) +=  (ROIsize  / 2.0f);
+
+    M2.at<double>(0,2) +=  (ROIsize  / 2.0f);
+    M2.at<double>(1,2) +=  (ROIsize  / 2.0f);
 
     cv::Matx33f P1(fx0, 0. , cx,
                    0. , fy0, cy,
                    0. , 0. , 1.);
     float fx1 = fx0;
     float fy1 = fy0;
-    int maxdisp = 64;
+    int maxdisp = 0;
     cv::Matx33f P2(fx1, 0. , cx + maxdisp,
                    0. , fy1, cy,
                    0. , 0. , 1.);
@@ -81,15 +87,15 @@ void stereoAlg::rectify(cv::Mat frameL,cv::Mat frameR) {
     cv::Point pr2(1280/2-ROIsize/2, 960/2-ROIsize/2);
     cv::Point pr1(1280/2+ROIsize/2, 960/2+ROIsize/2);
    	cv::Mat roiL = cv::Mat(frameL, cv::Rect(pr1, pr2));
-    pr1.y -=15; // rectification v1 :)
-    pr2.y -=15;
+//    pr1.y -=15; // rectification v1 :)
+//    pr2.y -=15;
    	cv::Mat roiR = cv::Mat(frameR, cv::Rect(pr1, pr2));
 
     //Normal opencv remap does not seem to work properly (which is why rectification v1 has been put in place):
-    //remap(roiL, frameLrect, map11, map12, INTER_LINEAR);
-    //remap(roiR, frameRrect, map21, map22, INTER_LINEAR);
-    frameLrect = roiL.clone();
-    frameRrect = roiR.clone();
+    remap(roiL, frameLrect, map11, map12, INTER_LINEAR);
+    remap(roiR, frameRrect, map21, map22, INTER_LINEAR);
+    //frameLrect = roiL.clone();
+    //frameRrect = roiR.clone();
 }
 
 void stereoAlg::calcDisparityMap() {
