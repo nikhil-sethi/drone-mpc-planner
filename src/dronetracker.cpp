@@ -18,7 +18,7 @@ bool DroneTracker::init(void) {
         archive(settings);
     }
 
-    #define TUNING
+    //#define TUNING
 #ifdef TUNING
 
     namedWindow("Thresh Blue", WINDOW_NORMAL); //create a window called "Control"
@@ -171,7 +171,6 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR) {
 #endif
 
     combineImage(resFrameL,resFrameR,&resFrame);
-
     std::cout << "Red: " << keypRedL.size() << ", " << keypRedR.size() << ", blue: " << keypBlueL.size() << ", " << keypBlueR.size()  << std::endl;
     //calculate blob disparity
     if (keypRedL.size() > 0 && keypRedR.size() > 0)
@@ -179,11 +178,11 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR) {
     if (keypBlueL.size() > 0 && keypBlueR.size() > 0)
         std::cout << "KeyBlue: " << keypBlueL[0].pt.x - keypBlueR[0].pt.x << std::endl;
 
-
     float time = ((float)stopWatch.Read())/1000.0;
     float dt = time - prevTime;
     prevTime = time;
 
+if (keypRedL.size() > 0 && keypRedR.size() > 0) {
     data.posX = keypRedL[0].pt.x;
     data.posY = keypRedL[0].pt.y;
     data.posZ = 1.0f / (keypRedL[0].pt.x -keypRedR[0].pt.x);
@@ -194,7 +193,7 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR) {
     data.velY = data.dy / dt;
     data.velZ = data.dz / dt;
     data.dt = dt;
-
+}
 
 }
 

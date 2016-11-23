@@ -30,11 +30,14 @@ MESSAGE( STATUS "KALAMOS_CONTEXT_LIBRARY_DIRS : " ${KALAMOS_CONTEXT_LIBRARY_DIRS
 MESSAGE( STATUS "KALAMOS_CONTEXT_LDFLAGS : " ${KALAMOS_CONTEXT_LDFLAGS} )
 MESSAGE( STATUS "KALAMOS_CONTEXT_CFLAGS : " ${KALAMOS_CONTEXT_CFLAGS} )
 
+set (CEREAL_SRC_DIR ../src/)
+include_directories("${CEREAL_SRC_DIR}")
+
 include_directories(${KALAMOS_CONTEXT_INCLUDE_DIRS})
 link_directories(${KALAMOS_CONTEXT_LIBRARY_DIRS})
 
 # sources
-FILE(GLOB MY_SRC_FILES "../src/*.cpp" "../src/*.h" "../src/*.c")
+FILE(GLOB MY_SRC_FILES "../src/*.cpp" "../src/*.h" "../src/*.c" "../src/cereal*.hpp")
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3 -std=c++0x -pthread")

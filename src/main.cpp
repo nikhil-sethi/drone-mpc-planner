@@ -77,6 +77,7 @@ void process_video() {
         stereo.rectify(cam.frameL, cam.frameR);
 
         dtrk.track(stereo.frameLrect,stereo.frameRrect);
+        std::cout << "HOER0" << std::endl;
         dctrl.control(dtrk.data);
         resFrame = dtrk.resFrame;
 #if defined(HASSCREEN) || defined(VIDEORESULTS)		
@@ -100,7 +101,7 @@ void process_video() {
 
         imgcount++;
         float time = ((float)stopWatch.Read())/1000.0;
-        //std::cout << "LOG " << time << " #" << imgcount << " --> " << ((float)imgcount) / time << " fps" << std::endl;
+        //std::cout << "HOERA " << std::endl;
 
     } // main while loop
 
