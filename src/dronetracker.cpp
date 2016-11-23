@@ -18,7 +18,7 @@ bool DroneTracker::init(void) {
         archive(settings);
     }
 
-    //#define TUNING
+    #define TUNING
 #ifdef TUNING
 
     namedWindow("Thresh Blue", WINDOW_NORMAL); //create a window called "Control"
@@ -110,9 +110,15 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR) {
     cv::resize(frameL,resFrameL,resFrameL.size(),0,0);
     cv::resize(frameR,resFrameR,resFrameR.size(),0,0);
 
+	cv::Rect myROI(resFrameL.cols/4,resFrameL.rows/2,resFrameL.cols/2,resFrameL.rows/2);
+	cv::Mat croppedResFrameL = resFrameL(myROI);
+	cv::Mat croppedResFrameR = resFrameR(myROI);
+
     Mat imgHSVL,imgHSVR;
-    cvtColor(resFrameL, imgHSVL, COLOR_BGR2HSV);
-    cvtColor(resFrameR, imgHSVR, COLOR_BGR2HSV);
+ 	//cvtColor(resFrameL, imgHSVL, COLOR_BGR2HSV);
+    //cvtColor(resFrameR, imgHSVR, COLOR_BGR2HSV)
+    cvtColor(croppedResFrameL, imgHSVL, COLOR_BGR2HSV);
+    cvtColor(croppedResFrameR, imgHSVR, COLOR_BGR2HSV);
 
     Mat imgTRedL,imgTBlueL,imgTRedR,imgTBlueR;
     inRange(imgHSVL, Scalar(settings.iLowH1r, settings.iLowS1r, settings.iLowV1r), Scalar(settings.iHighH1r, settings.iHighS1r, settings.iHighV1r), imgTRedL); //Threshold the image
@@ -171,12 +177,15 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR) {
 #endif
 
     combineImage(resFrameL,resFrameR,&resFrame);
+/*
     std::cout << "Red: " << keypRedL.size() << ", " << keypRedR.size() << ", blue: " << keypBlueL.size() << ", " << keypBlueR.size()  << std::endl;
     //calculate blob disparity
+
     if (keypRedL.size() > 0 && keypRedR.size() > 0)
         std::cout << "KeyRed: " << keypRedL[0].pt.x - keypRedR[0].pt.x << std::endl;
     if (keypBlueL.size() > 0 && keypBlueR.size() > 0)
         std::cout << "KeyBlue: " << keypBlueL[0].pt.x - keypBlueR[0].pt.x << std::endl;
+*/
 
     float time = ((float)stopWatch.Read())/1000.0;
     float dt = time - prevTime;
