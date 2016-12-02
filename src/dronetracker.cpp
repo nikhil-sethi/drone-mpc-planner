@@ -18,7 +18,7 @@ bool DroneTracker::init(void) {
         archive(settings);
     }
 
-    #define TUNING
+   // #define TUNING
 #ifdef TUNING
 
     namedWindow("Thresh Blue", WINDOW_NORMAL); //create a window called "Control"

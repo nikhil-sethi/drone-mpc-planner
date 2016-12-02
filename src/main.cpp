@@ -74,12 +74,11 @@ void process_video() {
         if (!pausecam) {
             cam.waitForImage();
         }
-        stereo.rectify(cam.frameL, cam.frameR);
+        //stereo.rectify(cam.frameL, cam.frameR);
 
-        dtrk.track(stereo.frameLrect,stereo.frameRrect);
-        std::cout << "HOER0" << std::endl;
-        dctrl.control(dtrk.data);
-        resFrame = dtrk.resFrame;
+        //dtrk.track(stereo.frameLrect,stereo.frameRrect);
+        //dctrl.control(dtrk.data);
+        //resFrame = dtrk.resFrame;
 #if defined(HASSCREEN) || defined(VIDEORESULTS)		
 #ifdef HASSCREEN
         cv::imshow("Results", resFrame);
