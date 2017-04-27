@@ -248,7 +248,7 @@ static void cb_need_data (GstElement *appsrc, guint unused_size, gpointer user_d
 }
 
 int initgst(int argc, char **argv) {
-   GstElement *conv, *capsf, *encoder, *videosink;
+   GstElement *conv, *capsf, *encoder, *mux, *videosink;
 
   //for (int i = 0; i < 385*288; i++) { b_black[i] = 0; b_white[i] = 0xFFFF; }
 
@@ -262,6 +262,7 @@ int initgst(int argc, char **argv) {
   conv = gst_element_factory_make ("videoconvert", "conv");
   encoder = gst_element_factory_make ("omxh264enc", "encoder");
   capsf = gst_element_factory_make ("capsfilter", "capsf");  
+  mux = gst_element_factory_make ("avimux", "mux");  
   videosink = gst_element_factory_make ("filesink", "videosink");
   
 
@@ -275,9 +276,9 @@ int initgst(int argc, char **argv) {
   g_object_set (G_OBJECT (capsf), "caps",
   		gst_caps_new_simple ("video/x-h264",
 				     "stream-format", G_TYPE_STRING, "byte-stream", NULL), NULL);
-  g_object_set (G_OBJECT (videosink), "location", "testv.h264", NULL);
-  gst_bin_add_many (GST_BIN (pipeline), appsrc, conv, encoder, capsf, videosink, NULL);
-  gst_element_link_many (appsrc, conv, encoder, capsf, videosink, NULL);
+  g_object_set (G_OBJECT (videosink), "location", "testv.avi", NULL);
+  gst_bin_add_many (GST_BIN (pipeline), appsrc, conv, encoder, capsf, mux, videosink, NULL);
+  gst_element_link_many (appsrc, conv, encoder, capsf, mux, videosink, NULL);
 
   /* setup appsrc */
   g_object_set (G_OBJECT (appsrc),
