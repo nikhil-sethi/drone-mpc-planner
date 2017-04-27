@@ -5,7 +5,7 @@ project( Mug )
 set (PROJECT_SRC_DIR ../src)
 
 # add packages
-set( ENV{PATH} /opt/x86/gst/bin/ )
+#set( ENV{PATH} /opt/x86/gst/bin/ )
 find_package(PkgConfig REQUIRED)
 #find_package( Boost REQUIRED)
 find_package( OpenCV REQUIRED )
@@ -18,23 +18,30 @@ find_package( OpenCV REQUIRED )
 #MESSAGE( STATUS "OpenCV_CONFIG_PATH: " ${OpenCV_CONFIG_PATH} )
 #MESSAGE( STATUS "OpenCV_INSTALL_PATH: " ${OpenCV_INSTALL_PATH} )
 
+#gstreamer:
+pkg_search_module(GST REQUIRED gstreamer-1.0)
+pkg_search_module(GST REQUIRED gstreamer-sdp-1.0)
+pkg_search_module(GST REQUIRED gstreamer-video-1.0)
+pkg_search_module(GST REQUIRED gstreamer-app-1.0)
+pkg_search_module(GLIB2 REQUIRED gstreamer-app-1.0)
+include_directories(${GST_INCLUDE_DIRS})
+link_directories(${GST_LIBRARY_DIRS})
+include_directories(${GLIB2_INCLUDE_DIRS})
+link_directories(${GLIB2_LIBRARY_DIRS})
 MESSAGE( STATUS "OPENCV_VERSION: " ${OpenCV_VERSION} )
 
+#slamdunk:
 pkg_search_module(KALAMOS_CONTEXT REQUIRED kalamos-context)
-
 MESSAGE( STATUS "KALAMOS_CONTEXT_INCLUDE_DIRS: " ${KALAMOS_CONTEXT_INCLUDE_DIRS} )
 MESSAGE( STATUS "KALAMOS_CONTEXT_LIBRARIES: " ${KALAMOS_CONTEXT_LIBRARIES} )
-
-
 MESSAGE( STATUS "KALAMOS_CONTEXT_LIBRARY_DIRS : " ${KALAMOS_CONTEXT_LIBRARY_DIRS} )
 MESSAGE( STATUS "KALAMOS_CONTEXT_LDFLAGS : " ${KALAMOS_CONTEXT_LDFLAGS} )
 MESSAGE( STATUS "KALAMOS_CONTEXT_CFLAGS : " ${KALAMOS_CONTEXT_CFLAGS} )
+include_directories(${KALAMOS_CONTEXT_INCLUDE_DIRS})
+link_directories(${KALAMOS_CONTEXT_LIBRARY_DIRS})
 
 set (CEREAL_SRC_DIR ../src/)
 include_directories("${CEREAL_SRC_DIR}")
-
-include_directories(${KALAMOS_CONTEXT_INCLUDE_DIRS})
-link_directories(${KALAMOS_CONTEXT_LIBRARY_DIRS})
 
 # sources
 FILE(GLOB MY_SRC_FILES "../src/*.cpp" "../src/*.h" "../src/*.c" "../src/cereal*.hpp")
@@ -60,7 +67,7 @@ ENDIF(CMAKE_BUILD_TYPE STREQUAL Debug)
 # build program
 add_executable( MUG ${MY_SRC_FILES})
 
-target_link_libraries( MUG ${OpenCV_LIBS} ${KALAMOS_LIBRARIES} )
+target_link_libraries( MUG ${OpenCV_LIBS} ${KALAMOS_LIBRARIES} ${GST_LIBRARIES} ${GLIB2_LIBRARIES})
 
 
 target_include_directories(MUG

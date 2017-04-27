@@ -66,7 +66,7 @@ void KalamosCam::workerThread(void) {
 
 
 	if (std::unique_ptr<kalamos::Context> kalamosContext = kalamos::init(cbs)) {	
-		std::unique_ptr<kalamos::ServiceHandle> captureHandle = kalamosContext->startService(ServiceType::CAPTURE);	
+	    std::unique_ptr<kalamos::ServiceHandle> captureHandle = kalamosContext->startService(ServiceType::CAPTURE);	
 	    std::cout << "Kalamos init succes!" << std::endl;
 	    kalamosContext->run();
   	}
