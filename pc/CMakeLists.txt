@@ -5,7 +5,9 @@ project(mu-g)
 set (PROJECT_SRC_DIR ../src)
 
 # add packages
+find_package(PkgConfig REQUIRED)
 find_package( OpenCV REQUIRED )
+#find_package( GStreamer REQUIRED )
 MESSAGE( STATUS "OpenCV_DIR: " ${OpenCV_DIR} )
 MESSAGE( STATUS "OpenCV_LIBS: " ${OpenCV_LIBS} )
 MESSAGE( STATUS "OpenCV_LIB_DIR: " ${OpenCV_LIB_DIR} )
@@ -14,8 +16,25 @@ MESSAGE( STATUS "OpenCV_COMPUTE_CAPABILITIES: " ${OpenCV_COMPUTE_CAPABILITIES} )
 MESSAGE( STATUS "OpenCV_SHARED: " ${OpenCV_SHARED} )
 MESSAGE( STATUS "OpenCV_CONFIG_PATH: " ${OpenCV_CONFIG_PATH} )
 MESSAGE( STATUS "OpenCV_INSTALL_PATH: " ${OpenCV_INSTALL_PATH} )
-
 MESSAGE( STATUS "OPENCV_VERSION: " ${OpenCV_VERSION} )
+
+#gstreamer:
+pkg_search_module(GST REQUIRED gstreamer-1.0)
+pkg_search_module(GST REQUIRED gstreamer-sdp-1.0)
+pkg_search_module(GST REQUIRED gstreamer-video-1.0)
+pkg_search_module(GST REQUIRED gstreamer-app-1.0)
+pkg_search_module(GST REQUIRED libgstapp-1.0)
+
+#pkg_search_module(GST REQUIRED gstreamer-plugins_base-1.0)
+pkg_search_module(GLIB2 REQUIRED glib-2.0)
+
+include_directories(${GST_INCLUDE_DIRS})
+link_directories(${GST_LIBRARY_DIRS})
+include_directories(${GLIB2_INCLUDE_DIRS})
+link_directories(${GLIB2_LIBRARY_DIRS})
+
+MESSAGE( STATUS "GSTREAMER libraries: " ${GST_INCLUDE_DIRS} )
+
 set (CEREAL_SRC_DIR ../src/)
 include_directories("${CEREAL_SRC_DIR}")
 
@@ -44,4 +63,4 @@ ENDIF(CMAKE_BUILD_TYPE STREQUAL Debug)
 # build program
 add_executable( OCV ${MY_SRC_FILES} )
 
-target_link_libraries( OCV ${OpenCV_LIBS} )
+target_link_libraries( OCV ${OpenCV_LIBS} ${GST_LIBRARIES} ${GLIB2_LIBRARIES})
