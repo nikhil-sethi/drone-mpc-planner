@@ -20,20 +20,11 @@ MESSAGE( STATUS "OPENCV_VERSION: " ${OpenCV_VERSION} )
 
 #gstreamer:
 pkg_search_module(GST REQUIRED gstreamer-1.0)
-pkg_search_module(GST REQUIRED gstreamer-sdp-1.0)
-pkg_search_module(GST REQUIRED gstreamer-video-1.0)
-pkg_search_module(GST REQUIRED gstreamer-app-1.0)
-pkg_search_module(GST REQUIRED libgstapp-1.0)
-
-#pkg_search_module(GST REQUIRED gstreamer-plugins_base-1.0)
-pkg_search_module(GLIB2 REQUIRED glib-2.0)
-
+pkg_search_module(GSTVIDEO REQUIRED gstreamer-video-1.0)
+pkg_search_module(GSTSDP REQUIRED gstreamer-sdp-1.0)
+pkg_search_module(GSTAPP REQUIRED gstreamer-app-1.0)
 include_directories(${GST_INCLUDE_DIRS})
 link_directories(${GST_LIBRARY_DIRS})
-include_directories(${GLIB2_INCLUDE_DIRS})
-link_directories(${GLIB2_LIBRARY_DIRS})
-
-MESSAGE( STATUS "GSTREAMER libraries: " ${GST_INCLUDE_DIRS} )
 
 set (CEREAL_SRC_DIR ../src/)
 include_directories("${CEREAL_SRC_DIR}")
@@ -61,6 +52,6 @@ IF(CMAKE_BUILD_TYPE STREQUAL Debug)
 ENDIF(CMAKE_BUILD_TYPE STREQUAL Debug)
 
 # build program
-add_executable( OCV ${MY_SRC_FILES} )
+add_executable( MUG ${MY_SRC_FILES} )
 
-target_link_libraries( OCV ${OpenCV_LIBS} ${GST_LIBRARIES} ${GLIB2_LIBRARIES})
+target_link_libraries( MUG ${OpenCV_LIBS} ${GST_LIBRARIES} ${GSTSDP_LIBRARIES} ${GSTAPP_LIBRARIES})
