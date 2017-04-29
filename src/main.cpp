@@ -250,8 +250,6 @@ static void cb_need_data (GstElement *appsrc, guint unused_size, gpointer user_d
 int initgst(int argc, char **argv) {
    GstElement *conv, *capsf, *encoder, *mux, *rtp, *videosink;
 
-  //for (int i = 0; i < 385*288; i++) { b_black[i] = 0; b_white[i] = 0xFFFF; }
-
   /* init GStreamer */
   gst_init (&argc, &argv);
 
