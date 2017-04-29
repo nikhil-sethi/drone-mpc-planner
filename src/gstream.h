@@ -1,0 +1,33 @@
+#ifndef GSTREAM_H
+#define GSTREAM_H
+
+#include "opencv2/features2d/features2d.hpp"
+
+#include <gst/gst.h>
+#include <gst/app/gstappsrc.h>
+#include <glib.h>
+
+/*
+ * This class wraps video writer / streamer through gstreamer
+ *
+ */
+class GStream {
+
+
+private:
+ 	GstElement *pipeline,*appsrc;
+
+
+    void prepare_buffer(GstAppSrc* appsrc, cv::Mat * image);
+   	//void cb_need_data (GstElement *appsrc, guint unused_size, gpointer user_data);
+
+public:
+    int init(int argc, char **argv, int mode, std::string file, int sizeX, int sizeY, std::string ip, int port);
+	void write(cv::Mat frame);   
+    void close (void);
+};
+
+
+
+
+#endif //GSTREAM_H

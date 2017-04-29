@@ -4,7 +4,6 @@
 #ifndef _PC
 #include "defines.h"
 #include "cam.h"
-//#include <kalamos/onboard-sdk/StereoDepthGrabber.hpp>
 #include <kalamos_context.hpp>
 
 class KalamosCam : public Cam{
@@ -12,9 +11,6 @@ class KalamosCam : public Cam{
 
 private:
     kalamos::Callbacks cbs;
-
-    std::thread thread_workaround;
-	void workaroundThread(void);
 
 	void CBstereo(kalamos::StereoYuvData const& data);
 	void CBdepth(kalamos::DepthmapData const& data);

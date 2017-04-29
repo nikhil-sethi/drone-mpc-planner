@@ -1,25 +1,37 @@
 #ifndef DEFINES_H
 #define DEFINES_H
+
+#define VIDEOMODE_DISABLED 0
+#define VIDEOMODE_AVI 1
+#define VIDEOMODE_STREAM 2 
+
+
 #ifndef _PC
 
 #define NEON
+//#define HASSCREEN
 
-#define HASSCREEN // dont disable in qt debugger!
+// due to hardware accelerated encoding, only one gstream can be enabled at the same time!
+#define VIDEORAWL VIDEOMODE_DISABLED
+#define VIDEORAWR VIDEOMODE_DISABLED
+#define VIDEORESULTS VIDEOMODE_DISABLED
 
-//#define VIDEORAW
-//s#define VIDEODISPARITY // render a video of the disparity map. Currently only works form STEREO_PARROT
-//#define VIDEORESULTS
-#define VIDEOSTREAM
-#define VIDEOFPS 30.0f // the estimated frame rate of the video used for creating output videos
+//non-hw accelerated custom 16b grayscale 96x96 video render:
+#define VIDEODISPARITY VIDEOMODE_DISABLED 
+
+#define VIDEOFPS 15 // the estimated frame rate of the video used for creating output videos
+
 #else
+
 #define SSE2
 
 #define HASSCREEN // dont disable in qt debugger!
 
-//#define VIDEORAW
-//#define VIDEODISPARITY // render a video of the disparity map. Currently only works form STEREO_PARROT
-//#define VIDEORESULTS
-#define VIDEOFPS 5.2f // the estimated frame rate of the video used for creating output videos
+#define VIDEORAWL 0
+#define VIDEORAWR 0
+#define VIDEODISPARITY 0
+#define VIDEORESULTS 0
+#define VIDEOFPS 15 // the estimated frame rate of the video used for creating output videos
 
 
 #endif

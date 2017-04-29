@@ -18,21 +18,9 @@
 #include "stereoalg.h"
 #include "dronetracker.h"
 #include "dronecontroller.h"
+#include "gstream.h"
 
 #include "opencv2/features2d/features2d.hpp"
-
-/************gst stuff *****/
-#include <gst/gst.h>
-#include <gst/app/gstappsrc.h>
-#include <glib.h>
-
-int want = 1;
-GstElement *pipeline,*appsrc;
-
-int initgst(int argc, char **argv);
-static void cb_need_data (GstElement *appsrc, guint unused_size, gpointer user_data);
-static void prepare_buffer(GstAppSrc* appsrc, cv::Mat * image);
-
 
 using namespace cv;
 
@@ -44,8 +32,7 @@ unsigned char key = 0;
 std::string msg;
 int imgcount; // to measure fps
 cv::Mat resFrame;
-cv::VideoWriter outputVideoResults;
-cv::VideoWriter outputVideoRawL,outputVideoRawR;
+GStream outputVideoResults,outputVideoRawL,outputVideoRawR;
 cv::VideoWriter outputVideoDisp;
 stopwatch_c stopWatch;
 std::string file;
@@ -78,39 +65,32 @@ void process_video() {
     std::cout << "Running...\n";
     stopWatch.Start();
 
-
     //main while loop:
     while (key != 27 && cam.getCamRunning()) // ESC
     {
-
-
         if (!pausecam) {
             cam.waitForImage();
         }
-        stereo.rectify(cam.frameL, cam.frameR);
+        //stereo.rectify(cam.frameL, cam.frameR);
 
-        dtrk.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
-        dctrl.control(dtrk.data);
-        resFrame = dtrk.resFrame;
-#if defined(HASSCREEN) || defined(VIDEORESULTS)		
+        //dtrk.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
+        //dctrl.control(dtrk.data);
+        //resFrame = dtrk.resFrame;
+
 #ifdef HASSCREEN
-        cv::imshow("Results", resFrame);
-
+        cv::imshow("Results", cam.frameL);
 #endif
-#ifdef VIDEORESULTS
+#if VIDEORESULTS
         outputVideoResults.write(resFrame);
 #endif
-#endif
-#ifdef VIDEORAW
+#if VIDEORAWL
         outputVideoRawL.write(cam.frameL);
-        outputVideoRawR.write(cam.frameR);
 #endif
-#ifdef VIDEODISPARITY
+#if VIDEORAWR
+       outputVideoRawR.write(cam.frameR);
+#endif
+#if VIDEODISPARITY
         outputVideoDisp.write(cam.get_disp_frame());
-#endif
-#ifdef VIDEOSTREAM
-    prepare_buffer((GstAppSrc*)appsrc,&cam.frameL);
-    g_main_context_iteration(g_main_context_default(),FALSE);
 #endif
 
         handleKey();
@@ -178,164 +158,7 @@ void handleKey() {
     key=0;
 }
 
-static gboolean bus_call (GstBus *bus, GstMessage *msg, gpointer data)
-{
-  GMainLoop *loop = (GMainLoop *) data;
-
-  switch (GST_MESSAGE_TYPE (msg)) {
-
-    case GST_MESSAGE_EOS:
-      std::cout << "Error: End of stream" << std::endl;
-      g_print ("End of stream\n");
-      g_main_loop_quit (loop);
-      break;
-
-    case GST_MESSAGE_ERROR: {
-      gchar  *debug;
-      GError *error;
-
-      gst_message_parse_error (msg, &error, &debug);
-      g_free (debug);
-
-      std::cout << "Error: " << error->message << std::endl;
-      g_printerr ("Error: %s\n", error->message);
-      g_error_free (error);
-
-      g_main_loop_quit (loop);
-      break;
-    }
-    default:
-      break;
-  }
-
-  return TRUE;
-}
-
-static void prepare_buffer(GstAppSrc* appsrc, cv::Mat *image) {
-
-  static GstClockTime timestamp = 0;
-  GstBuffer *buffer;
-  GstFlowReturn ret;
-
-  if (!want) return;
-  want = 0;
-
-  gsize size = image->size().width * image->size().height*3 ;
-
-  buffer = gst_buffer_new_allocate (NULL, size, NULL);
-  GstMapInfo info;
-  gst_buffer_map(buffer, &info, (GstMapFlags)GST_MAP_READ);
-  memcpy(info.data, (guint8*)image->data, size);
-  gst_buffer_unmap(buffer, &info);
-
-  GST_BUFFER_PTS (buffer) = timestamp;
-  GST_BUFFER_DURATION (buffer) = gst_util_uint64_scale_int (1, GST_SECOND, 4);
-
-  timestamp += GST_BUFFER_DURATION (buffer);
-
-  ret = gst_app_src_push_buffer(GST_APP_SRC(appsrc), buffer);
-  if (ret != GST_FLOW_OK) {
-    std::cout << "GST ERROR DE PERROR" << std::endl;    
-       
-  }
-
-
-}
-
-
-static void cb_need_data (GstElement *appsrc, guint unused_size, gpointer user_data) {
-  want = 1;
-}
-
-int initgst(int argc, char **argv) {
-   GstElement *conv, *capsf, *encoder, *mux, *rtp, *videosink;
-
-  /* init GStreamer */
-  gst_init (&argc, &argv);
-
-  /* setup pipeline */
-
-#ifdef VIDEOSTREAMING
-  //write to file:
-  //gst-launch-1.0 videotestsrc ! omxh264enc ! 'video/x-h264, stream-format=(string)byte-stream'  ! avimux ! filesink location=test.avi
-  pipeline = gst_pipeline_new ("pipeline");
-  appsrc = gst_element_factory_make ("appsrc", "source");
-  conv = gst_element_factory_make ("videoconvert", "conv");
-  encoder = gst_element_factory_make ("omxh264enc", "encoder");
-  capsf = gst_element_factory_make ("capsfilter", "capsf");  
-  mux = gst_element_factory_make ("avimux", "mux");  
-  videosink = gst_element_factory_make ("filesink", "videosink");
-  
-
-  /* setup */
-  g_object_set (G_OBJECT (appsrc), "caps",
-  		gst_caps_new_simple ("video/x-raw",
-				     "format", G_TYPE_STRING, "BGR",
-				     "width", G_TYPE_INT, 1280,
-				     "height", G_TYPE_INT, 960,
-				     "framerate", GST_TYPE_FRACTION, 15, 1,NULL), NULL);
-  g_object_set (G_OBJECT (capsf), "caps",
-  		gst_caps_new_simple ("video/x-h264",
-				     "stream-format", G_TYPE_STRING, "byte-stream", NULL), NULL);
-  g_object_set (G_OBJECT (videosink), "location", "testv.avi", NULL);
-  gst_bin_add_many (GST_BIN (pipeline), appsrc, conv, encoder, capsf, mux, videosink, NULL);
-  gst_element_link_many (appsrc, conv, encoder, capsf, mux, videosink, NULL);
-
-  /* setup appsrc */
-  g_object_set (G_OBJECT (appsrc),
-		"stream-type", 0, // GST_APP_STREAM_TYPE_STREAM
-		"format", GST_FORMAT_TIME,
-    "is-live", TRUE,
-    NULL);
-
-#else
-  //streaming:
-  //from: gst-launch-1.0 videotestsrc ! omxh264enc ! 'video/x-h264, stream-format=(string)byte-stream'  ! rtph264pay ! udpsink host=127.0.0.1
-  //to: gst-launch-1.0 udpsrc ! 'application/x-rtp, encoding-name=H264, payload=96' ! rtph264depay ! avdec_h264 ! autovideosink
-  pipeline = gst_pipeline_new ("pipeline");
-  appsrc = gst_element_factory_make ("appsrc", "source");
-  conv = gst_element_factory_make ("videoconvert", "conv");
-  encoder = gst_element_factory_make ("omxh264enc", "encoder");
-  capsf = gst_element_factory_make ("capsfilter", "capsf");  
-  rtp = gst_element_factory_make ("rtph264pay", "rtp");  
-  videosink = gst_element_factory_make ("udpsink", "videosink");
-  
-
-  /* setup */
-  g_object_set (G_OBJECT (appsrc), "caps",
-  		gst_caps_new_simple ("video/x-raw",
-				     "format", G_TYPE_STRING, "BGR",
-				     "width", G_TYPE_INT, 1280,
-				     "height", G_TYPE_INT, 960,
-				     "framerate", GST_TYPE_FRACTION, 15, 1,NULL), NULL);
-  g_object_set (G_OBJECT (capsf), "caps",
-  		gst_caps_new_simple ("video/x-h264",
-				     "stream-format", G_TYPE_STRING, "byte-stream", NULL), NULL);
-  g_object_set (G_OBJECT (videosink), "host", "192.168.1.28", NULL);
-  gst_bin_add_many (GST_BIN (pipeline), appsrc, conv, encoder, capsf, rtp, videosink, NULL);
-  gst_element_link_many (appsrc, conv, encoder, capsf, rtp, videosink, NULL);
-
-  /* setup appsrc */
-  g_object_set (G_OBJECT (appsrc),
-		"stream-type", 0, // GST_APP_STREAM_TYPE_STREAM
-		"format", GST_FORMAT_TIME,
-    "is-live", TRUE,
-    NULL);
-
-#endif
-
-
-  g_signal_connect (appsrc, "need-data", G_CALLBACK (cb_need_data), NULL);
-
-  /* play */
-  gst_element_set_state (pipeline, GST_STATE_PLAYING);
-  
-  return 0;
-}
-
-
 int init(int argc, char **argv) {
-initgst(argc,argv);
 
 #ifdef _PC
     if (argc != 3) {
@@ -385,38 +208,19 @@ initgst(argc,argv);
 
 
     /*****init the video writer*****/
-#ifdef VIDEORESULTS    
-    std::cout << "Opening video file for processed results at " << resFrame.cols << "x" << resFrame.rows << " pixels with " << cam.getFPS() << "fps " << std::endl;
-    cv::Size sizeRes(resFrame.cols,resFrame.rows);
-    outputVideoResults.open("videoResults.avi",CV_FOURCC('H','J','P','G'),cam.getFPS(),sizeRes,true);
 
-    if (!outputVideoResults.isOpened())
-    {
-        std::cerr << "Output result video could not be opened!" << std::endl;
-        return 1;
-    }
+#if VIDEORESULTS   
+    if (outputVideoResults.init(argc,argv,VIDEORESULTS, "videoResult.avi",1280,960,"192.168.1.10",5004)) {return 1;} 
+#endif
+#ifdef VIDEORAWL
+	if (outputVideoRawL.init(argc,argv,VIDEORAWL,"videoRawL.avi",1280,960,"192.168.1.10",5004)) {return 1;} 
+#endif
+#ifdef VIDEORAWR
+	if (outputVideoRawR.init(argc,argv,VIDEORAWR,"videoRawR.avi",1280,960,"192.168.1.10",5005)) {return 1;} 
 #endif
 
-#ifdef VIDEORAW
-    std::cout << "Opening video file for raw video input at " << cam.getImWidth() << "x" << cam.getImHeight() << " pixels with " << cam.getFPS() << "fps " << std::endl;
-    cv::Size sizeRaw(cam.getImWidth(),cam.getImHeight());
-    outputVideoRawL.open("videoRawL.avi",CV_FOURCC('F','M','P','4'),cam.getFPS(),sizeRaw,true);
 
-    if (!outputVideoRawL.isOpened())
-    {
-        std::cerr << "Raw result video could not be opened!" << std::endl;
-        return 1;
-    }
-
-    outputVideoRawR.open("videoRawR.avi",CV_FOURCC('F','M','P','4'),cam.getFPS(),sizeRaw,true);
-
-    if (!outputVideoRawR.isOpened())
-    {
-        std::cerr << "Raw result video could not be opened!" << std::endl;
-        return 1;
-    }
-#endif
-#ifdef VIDEODISPARITY
+#if VIDEODISPARITY
     cv::Mat fd = cam.get_disp_frame();
     std::cout << "Opening video file for disparity at " << fd.cols << "x" << fd.rows	 << " pixels with " << cam.getFPS() << "fps " << std::endl;
     cv::Size sizeDisp(fd.cols,fd.rows);
@@ -428,6 +232,7 @@ initgst(argc,argv);
         return 1;
     }
 #endif
+
     dtrk.init();
     dctrl.init();
 
@@ -442,10 +247,15 @@ void close() {
     cam.close();
     dctrl.close();
 
-
-    /* clean up */
-    gst_element_set_state (pipeline, GST_STATE_NULL);
-    gst_object_unref (GST_OBJECT (pipeline));
+#if VIDEORESULTS   
+    outputVideoResults.close(); 
+#endif
+#ifdef VIDEORAWL
+	outputVideoRawL.close();
+#endif
+#ifdef VIDEORAWR
+	outputVideoRawR.close();
+#endif
 
 }
 

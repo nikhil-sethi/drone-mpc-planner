@@ -20,7 +20,7 @@ bool DroneController::init(void) {
         archive(params);
     }
 
-    #define TUNING
+   // #define TUNING
 #ifdef TUNING
     // create GUI to set control parameters
     namedWindow("Control parameters", WINDOW_NORMAL); //create a window called "Control"
