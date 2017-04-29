@@ -18,15 +18,13 @@ bool KalamosCam::init (void) {
 	frameD_mat = cv::Mat::zeros(96,96,CV_32F);		
 }
 
-
 void KalamosCam::CBdepth(DepthmapData const& data) {
 	data.depth.copyTo(frameD_mat);
-
 }
 
 void KalamosCam::CBstereo(StereoYuvData const& data) {
-	g_lockWaitForImage1.lock();
 
+	//prepare left frame:
 	std::vector<cv::Mat> channelsLuv,channelsLyuv;
 	channelsLuv.push_back(*(data.leftYuv[2]));
 	channelsLuv.push_back(*(data.leftYuv[1]));
@@ -39,8 +37,8 @@ void KalamosCam::CBstereo(StereoYuvData const& data) {
 	channelsLyuv.push_back(tmpLuv[0]);
 	channelsLyuv.push_back(tmpLuv[1]);
 	cv::merge(channelsLyuv,frameLyuv);
-	cv::cvtColor(frameLyuv,frameL,CV_YUV2BGR);
 
+	//prepare right frame
 	std::vector<cv::Mat> channelsRuv,channelsRyuv;
 	channelsRuv.push_back(*(data.rightYuv[2]));
 	channelsRuv.push_back(*(data.rightYuv[1]));
@@ -53,8 +51,11 @@ void KalamosCam::CBstereo(StereoYuvData const& data) {
 	channelsRyuv.push_back(tmpRuv[0]);
 	channelsRyuv.push_back(tmpRuv[1]);
 	cv::merge(channelsRyuv,frameRyuv);
-	cv::cvtColor(frameRyuv,frameR,CV_YUV2BGR);
 
+	//synchronously copy buffers:
+	g_lockWaitForImage1.lock();
+	cv::cvtColor(frameLyuv,frameL,CV_YUV2BGR);
+	cv::cvtColor(frameRyuv,frameR,CV_YUV2BGR);
 	g_lockWaitForImage2.unlock();
 	
 }
@@ -64,14 +65,11 @@ void KalamosCam::workerThread(void) {
 	cbs.stereoYuvCallback = std::bind(&KalamosCam::CBstereo, this,_1);
 	cbs.depthmapCallback = std::bind(&KalamosCam::CBdepth, this,_1);
 
-
 	if (std::unique_ptr<kalamos::Context> kalamosContext = kalamos::init(cbs)) {	
 	    std::unique_ptr<kalamos::ServiceHandle> captureHandle = kalamosContext->startService(ServiceType::CAPTURE);	
 	    std::cout << "Kalamos init succes!" << std::endl;
 	    kalamosContext->run();
   	}
-
-
 }
 
 cv::Mat KalamosCam::get_raw_frame() {
