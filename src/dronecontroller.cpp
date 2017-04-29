@@ -53,11 +53,10 @@ void DroneController::control(trackData data) {
     thrust = data.posY * params.heightP + data.velY * params.heightD +  params.heightI;
 
     char buff[21];
-    sprintf( (char*) buff,"%ud,%ud,%ud,%ud\n",thrust,roll,pitch,yaw);
+    sprintf( (char*) buff,"%u,%u,%u,%u\n",thrust,roll,pitch,yaw);
     RS232_SendBuf( (unsigned char*) buff, 20);
 
-    std::string hoer (buff);
-    std::cout << hoer << std::endl;
+    std::cout << std::string(buff) << std::endl;
 
 }
 
