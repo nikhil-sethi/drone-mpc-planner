@@ -94,7 +94,7 @@ void process_video() {
         //resFrame = dtrk.resFrame;
 #if defined(HASSCREEN) || defined(VIDEORESULTS)		
 #ifdef HASSCREEN
-        //cv::imshow("Results", resFrame);
+        cv::imshow("Results", cam.frameL);
 
 #endif
 #ifdef VIDEORESULTS
@@ -248,7 +248,7 @@ static void cb_need_data (GstElement *appsrc, guint unused_size, gpointer user_d
 }
 
 int initgst(int argc, char **argv) {
-   GstElement *conv, *capsf, *encoder, *mux, *videosink;
+   GstElement *conv, *capsf, *encoder, *mux, *rtp, *videosink;
 
   //for (int i = 0; i < 385*288; i++) { b_black[i] = 0; b_white[i] = 0xFFFF; }
 
@@ -256,7 +256,10 @@ int initgst(int argc, char **argv) {
   gst_init (&argc, &argv);
 
   /* setup pipeline */
-  //gst-launch-1.0 videotestsrc ! omxh264enc ! 'video/x-h264, stream-format=(string)byte-stream' ! filesink location=test.h264  
+
+#ifdef VIDEOSTREAMING
+  //write to file:
+  //gst-launch-1.0 videotestsrc ! omxh264enc ! 'video/x-h264, stream-format=(string)byte-stream'  ! avimux ! filesink location=test.avi
   pipeline = gst_pipeline_new ("pipeline");
   appsrc = gst_element_factory_make ("appsrc", "source");
   conv = gst_element_factory_make ("videoconvert", "conv");
@@ -286,6 +289,44 @@ int initgst(int argc, char **argv) {
 		"format", GST_FORMAT_TIME,
     "is-live", TRUE,
     NULL);
+
+#else
+  //streaming:
+  //from: gst-launch-1.0 videotestsrc ! omxh264enc ! 'video/x-h264, stream-format=(string)byte-stream'  ! rtph264pay ! udpsink host=127.0.0.1
+  //to: gst-launch-1.0 udpsrc ! 'application/x-rtp, encoding-name=H264, payload=96' ! rtph264depay ! avdec_h264 ! autovideosink
+  pipeline = gst_pipeline_new ("pipeline");
+  appsrc = gst_element_factory_make ("appsrc", "source");
+  conv = gst_element_factory_make ("videoconvert", "conv");
+  encoder = gst_element_factory_make ("omxh264enc", "encoder");
+  capsf = gst_element_factory_make ("capsfilter", "capsf");  
+  rtp = gst_element_factory_make ("rtph264pay", "rtp");  
+  videosink = gst_element_factory_make ("udpsink", "videosink");
+  
+
+  /* setup */
+  g_object_set (G_OBJECT (appsrc), "caps",
+  		gst_caps_new_simple ("video/x-raw",
+				     "format", G_TYPE_STRING, "BGR",
+				     "width", G_TYPE_INT, 1280,
+				     "height", G_TYPE_INT, 960,
+				     "framerate", GST_TYPE_FRACTION, 15, 1,NULL), NULL);
+  g_object_set (G_OBJECT (capsf), "caps",
+  		gst_caps_new_simple ("video/x-h264",
+				     "stream-format", G_TYPE_STRING, "byte-stream", NULL), NULL);
+  g_object_set (G_OBJECT (videosink), "host", "192.168.1.28", NULL);
+  gst_bin_add_many (GST_BIN (pipeline), appsrc, conv, encoder, capsf, rtp, videosink, NULL);
+  gst_element_link_many (appsrc, conv, encoder, capsf, rtp, videosink, NULL);
+
+  /* setup appsrc */
+  g_object_set (G_OBJECT (appsrc),
+		"stream-type", 0, // GST_APP_STREAM_TYPE_STREAM
+		"format", GST_FORMAT_TIME,
+    "is-live", TRUE,
+    NULL);
+
+#endif
+
+
   g_signal_connect (appsrc, "need-data", G_CALLBACK (cb_need_data), NULL);
 
   /* play */
