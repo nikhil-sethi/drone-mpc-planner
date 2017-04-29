@@ -23,6 +23,7 @@ private:
 public:
     cv::Mat frameD;
     cv::Mat frameLrect,frameRrect;
+    cv::Mat Qf;
     float avgDisparity;    
 
     bool init (std::string calib_folder);

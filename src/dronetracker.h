@@ -4,6 +4,7 @@
 #include <opencv2/features2d/features2d.hpp>
 
 #include "stopwatch.h"
+#include "stereoalg.h"
 
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/memory.hpp>
@@ -93,7 +94,7 @@ public:
 
     void close (void);
     bool init(void);
-    void track(cv::Mat frameL, cv::Mat frameR);
+    void track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf);
 
 
     trackData data;
