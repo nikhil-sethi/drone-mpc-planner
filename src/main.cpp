@@ -223,10 +223,10 @@ int init(int argc, char **argv) {
 #if VIDEORESULTS   
     if (outputVideoResults.init(argc,argv,VIDEORESULTS, "videoResult.avi",1280,960,"192.168.1.10",5004)) {return 1;} 
 #endif
-#ifdef VIDEORAWL
+#if VIDEORAWL
 	if (outputVideoRawL.init(argc,argv,VIDEORAWL,"videoRawL.avi",1280,960,"192.168.1.10",5004)) {return 1;} 
 #endif
-#ifdef VIDEORAWR
+#if VIDEORAWR
 	if (outputVideoRawR.init(argc,argv,VIDEORAWR,"videoRawR.avi",1280,960,"192.168.1.10",5005)) {return 1;} 
 #endif
 
@@ -261,10 +261,10 @@ void close() {
 #if VIDEORESULTS   
     outputVideoResults.close(); 
 #endif
-#ifdef VIDEORAWL
+#if VIDEORAWL
 	outputVideoRawL.close();
 #endif
-#ifdef VIDEORAWR
+#if VIDEORAWR
 	outputVideoRawR.close();
 #endif
 
@@ -278,7 +278,6 @@ int main( int argc, char **argv )
     if (init(argc,argv)) {return 1;}
     process_video();
     close();
-
     return 0;
 }
 
