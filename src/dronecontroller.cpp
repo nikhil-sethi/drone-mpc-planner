@@ -51,9 +51,9 @@ void DroneController::control(trackData data) {
 	
 
     //tmp
-    roll = 1000 + params.rollI*3.92;
-    pitch = 1000 + params.pitchI*3.92;
-    yaw = 1000 + params.yawI*3.92;
+    roll = 1500;
+    pitch = 1500;
+    yaw = 1500;
 
 
     //std::cout << data.posX  << "   " << data.posY << std::endl;
@@ -62,12 +62,12 @@ void DroneController::control(trackData data) {
 
     }
 
-    thrust = params.heightP;
+    //thrust = params.heightP;
 
-    if ( thrust < 1000 )
-	thrust = 1000;
-    if ( thrust > 2000 )
-	thrust = 2000;
+    if ( thrust < 1050 )
+	thrust = 1050;
+    if ( thrust > 1950 )
+	thrust = 1950;
 
    
 
@@ -89,11 +89,17 @@ void DroneController::control(trackData data) {
     inbuf[1] = 0;
     std::stringstream tmp;
     int n = 1;
+    int totn = 0;
     while (n)    {
         n = RS232_PollComport(inbuf,1);
-        tmp << inbuf[0];
+		if (n > 0) {
+        	tmp << inbuf[0];
+			totn += n;
+		}
     }
-    tmp << std::endl;
+	if (totn > 0) {
+	    std::cout << totn << ": " << tmp.str();
+	}
 
 }
 
@@ -102,7 +108,7 @@ void DroneController::control(trackData data) {
 
 void DroneController::close () {
     char buff[21];
-    sprintf( (char*) buff,"1000,1500,1500,1500\n");
+    sprintf( (char*) buff,"1050,1500,1500,1500\n");
     RS232_SendBuf( (unsigned char*) buff, 20);
     RS232_CloseComport();
 
