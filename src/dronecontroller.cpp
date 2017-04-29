@@ -4,7 +4,8 @@
 #include "defines.h"
 
 const string paramsFile = "../controlParameters.dat";
-unsigned int thrust,roll,pitch,yaw = 0;
+unsigned int roll,pitch,yaw = 1500;
+unsigned int thrust = 1000;
 
 bool DroneController::init(void) {
 
@@ -19,12 +20,12 @@ bool DroneController::init(void) {
         archive(params);
     }
 
-    //#define TUNING
+    #define TUNING
 #ifdef TUNING
     // create GUI to set control parameters
     namedWindow("Control parameters", WINDOW_NORMAL); //create a window called "Control"
     // height control
-    createTrackbar("Height - P", "Control parameters", &params.heightP, 255);
+    createTrackbar("Height - P", "Control parameters", &params.heightP, 2000);
     createTrackbar("Height - I", "Control parameters", &params.heightI, 255);
     createTrackbar("Height - D", "Control parameters", &params.heightD, 255);
     // roll control
@@ -35,6 +36,10 @@ bool DroneController::init(void) {
     createTrackbar("Pitch - P", "Control parameters", &params.pitchP, 255);
     createTrackbar("Pitch - I", "Control parameters", &params.pitchI, 255);
     createTrackbar("Pitch - D", "Control parameters", &params.pitchD, 255);
+    // yaw control
+    createTrackbar("Yaw - P", "Control parameters", &params.yawP, 255);
+    createTrackbar("Yaw - I", "Control parameters", &params.yawI, 255);
+    createTrackbar("Yaw - D", "Control parameters", &params.yawD, 255);
 
 
 #endif
@@ -42,21 +47,42 @@ bool DroneController::init(void) {
 
 void DroneController::control(trackData data) {
 
+    if ( data.valid ) {
+	
+
     //tmp
-    roll = 0;
-    pitch = 0;
-    yaw = 0;
+    roll = 1000 + params.rollI*3.92;
+    pitch = 1000 + params.pitchI*3.92;
+    yaw = 1000 + params.yawI*3.92;
 
 
-    std::cout << data.posX  << "   " << data.posY << std::endl;
+    //std::cout << data.posX  << "   " << data.posY << std::endl;
 
-    thrust = data.posY * params.heightP + data.velY * params.heightD +  params.heightI;
+    thrust = -data.posY * params.heightP - data.velY * params.heightD +  (1000 + params.heightI*3.92);
+
+    }
+
+    thrust = params.heightP;
+
+    if ( thrust < 1000 )
+	thrust = 1000;
+    if ( thrust > 2000 )
+	thrust = 2000;
+
+   
 
     char buff[21];
     sprintf( (char*) buff,"%u,%u,%u,%u\n",thrust,roll,pitch,yaw);
-    RS232_SendBuf( (unsigned char*) buff, 20);
+    //sprintf( (char*) buff,"1200,1500,1500,1500\n");
+    
+    if ( data.valid ) {
 
-    std::cout << std::string(buff) << std::endl;
+    std::setprecision(2);
+    std::cout << data.posY << " " << data.velY << " - ";
+    std::cout << std::string(buff) << std::flush;
+    }
+
+    RS232_SendBuf( (unsigned char*) buff, 20);
 
 }
 
@@ -64,8 +90,12 @@ void DroneController::control(trackData data) {
 
 
 void DroneController::close () {
-
+    char buff[21];
+    sprintf( (char*) buff,"1000,1500,1500,1500\n");
+    RS232_SendBuf( (unsigned char*) buff, 20);
     RS232_CloseComport();
+
+    std::cout << "closing controller" << std::endl;
 
     std::ofstream os(paramsFile, std::ios::binary);
     cereal::BinaryOutputArchive archive( os );

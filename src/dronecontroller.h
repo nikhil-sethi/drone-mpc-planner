@@ -8,6 +8,7 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/archives/binary.hpp>
 #include <fstream>
+#include <iomanip>
 
 using namespace cv;
 
@@ -29,13 +30,18 @@ private:
 
 		//roll control
         int rollP = 0;
-		int rollI = 0;
+		int rollI = 128;
 		int rollD = 0;
 
 		//pitch control
         int pitchP = 0;
-		int pitchI = 0;
+		int pitchI = 128;
 		int pitchD = 0;
+
+		//yaw control
+        int yawP = 0;
+		int yawI = 128;
+		int yawD = 0;
 
 		template <class Archive>
         void serialize( Archive & ar )

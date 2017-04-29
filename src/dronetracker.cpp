@@ -18,7 +18,7 @@ bool DroneTracker::init(void) {
         archive(settings);
     }
 
-    #define TUNING
+    //#define TUNING
 #ifdef TUNING
 
     namedWindow("Thresh Blue", WINDOW_NORMAL); //create a window called "Control"
@@ -193,6 +193,7 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     prevTime = time;
 
 if (keypRedL.size() > 0 && keypRedR.size() > 0) {
+/*
     data.posX = keypRedL[0].pt.x;
     data.posY = keypRedL[0].pt.y;
     data.posZ = 1.0f / (keypRedL[0].pt.x -keypRedR[0].pt.x);
@@ -203,24 +204,41 @@ if (keypRedL.size() > 0 && keypRedR.size() > 0) {
     data.velY = data.dy / dt;
     data.velZ = data.dz / dt;
     data.dt = dt;
-
+*/
+    
+	
     if (keypRedL.size() == 1) {	
 	std::vector<Point3f> camera_coordinates;   
     	std::vector<Point3f> world_coordinates;
-    	camera_coordinates.push_back(Point3f(data.posX*4,data.posY*4,(keypRedL[0].pt.x - keypRedR[0].pt.x)*4));
+    	camera_coordinates.push_back(Point3f(keypRedL[0].pt.x*4,keypRedL[0].pt.y*4,(keypRedL[0].pt.x - keypRedR[0].pt.x)*4));
     	cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
 
 	Point3f output = world_coordinates[0];
-	std::cout << "XYZ: " << data.posX << " " << data.posY << " " << keypRedL[0].pt.x -keypRedR[0].pt.x << std::endl;
-	std::cout << "Point3: " << output.x << " " << output.y << " " << output.z << std::endl;
+	//std::cout << "XYZ: " << data.posX << " " << data.posY << " " << keypRedL[0].pt.x -keypRedR[0].pt.x << std::endl;
+	//std::cout << "Point3: " << output.x << " " << output.y << " " << output.z << std::endl;
 	
-	std::cout << Qf.at<double>(0,0)<< " " << Qf.at<double>(0,1) << " " << Qf.at<double>(0,2) << " " << Qf.at<double>(0,3) << std::endl;
-	std::cout << Qf.at<double>(1,0)<< " " << Qf.at<double>(1,1) << " " << Qf.at<double>(1,2) << " " << Qf.at<double>(1,3) << std::endl;
-	std::cout << Qf.at<double>(2,0)<< " " << Qf.at<double>(2,1) << " " << Qf.at<double>(0,2) << " " << Qf.at<double>(2,3) << std::endl;
-	std::cout << Qf.at<double>(3,0)<< " " << Qf.at<double>(3,1) << " " << Qf.at<double>(3,2) << " " << Qf.at<double>(3,3) << std::endl;
+	//std::cout << Qf.at<double>(0,0)<< " " << Qf.at<double>(0,1) << " " << Qf.at<double>(0,2) << " " << Qf.at<double>(0,3) << std::endl;
+	//std::cout << Qf.at<double>(1,0)<< " " << Qf.at<double>(1,1) << " " << Qf.at<double>(1,2) << " " << Qf.at<double>(1,3) << std::endl;
+	//std::cout << Qf.at<double>(2,0)<< " " << Qf.at<double>(2,1) << " " << Qf.at<double>(0,2) << " " << Qf.at<double>(2,3) << std::endl;
+	//std::cout << Qf.at<double>(3,0)<< " " << Qf.at<double>(3,1) << " " << Qf.at<double>(3,2) << " " << Qf.at<double>(3,3) << std::endl;
 	
-	
-    }
+	data.posX = output.x;
+    	data.posY = -output.y;
+    	data.posZ = output.z;
+    	data.dx = data.posX - prevX;
+    	data.dy = data.posY - prevY;
+    	data.dy = data.posZ - prevZ;
+    	data.velX = data.dx / dt;
+    	data.velY = data.dy / dt;
+    	data.velZ = data.dz / dt;
+    	data.dt = dt;
+        data.valid = true;
+
+	prevX = data.posX;
+	prevY = data.posY;
+	prevZ = data.posZ;
+    } else
+	data.valid = false;
 }
 
 }

@@ -13,6 +13,7 @@
 
 struct trackData {
     float posX,posY,posZ,dx,dy,dz,velX,velY,velZ,dt;
+    bool valid;	
 };
 
 /*
