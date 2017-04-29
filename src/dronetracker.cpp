@@ -18,7 +18,7 @@ bool DroneTracker::init(void) {
         archive(settings);
     }
 
-   // #define TUNING
+    #define TUNING
 #ifdef TUNING
 
     namedWindow("Thresh Blue", WINDOW_NORMAL); //create a window called "Control"
@@ -101,7 +101,7 @@ bool DroneTracker::init(void) {
 }
 float prevTime = 0;
 float prevX,prevY,prevZ = 0;
-void DroneTracker::track(cv::Mat frameL, cv::Mat frameR) {
+void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     updateParams();
 
     cv::Mat resFrameL,resFrameR;
@@ -115,10 +115,11 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR) {
 	cv::Mat croppedResFrameR = resFrameR(myROI);
 
     Mat imgHSVL,imgHSVR;
- 	//cvtColor(resFrameL, imgHSVL, COLOR_BGR2HSV);
-    //cvtColor(resFrameR, imgHSVR, COLOR_BGR2HSV)
-    cvtColor(croppedResFrameL, imgHSVL, COLOR_BGR2HSV);
-    cvtColor(croppedResFrameR, imgHSVR, COLOR_BGR2HSV);
+    cvtColor(resFrameL, imgHSVL, COLOR_BGR2HSV);
+    cvtColor(resFrameR, imgHSVR, COLOR_BGR2HSV);
+    
+    //cvtColor(croppedResFrameL, imgHSVL, COLOR_BGR2HSV);
+    //cvtColor(croppedResFrameR, imgHSVR, COLOR_BGR2HSV);
 
     Mat imgTRedL,imgTBlueL,imgTRedR,imgTBlueR;
     inRange(imgHSVL, Scalar(settings.iLowH1r, settings.iLowS1r, settings.iLowV1r), Scalar(settings.iHighH1r, settings.iHighS1r, settings.iHighV1r), imgTRedL); //Threshold the image
@@ -202,6 +203,24 @@ if (keypRedL.size() > 0 && keypRedR.size() > 0) {
     data.velY = data.dy / dt;
     data.velZ = data.dz / dt;
     data.dt = dt;
+
+    if (keypRedL.size() == 1) {	
+	std::vector<Point3f> camera_coordinates;   
+    	std::vector<Point3f> world_coordinates;
+    	camera_coordinates.push_back(Point3f(data.posX*4,data.posY*4,(keypRedL[0].pt.x - keypRedR[0].pt.x)*4));
+    	cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
+
+	Point3f output = world_coordinates[0];
+	std::cout << "XYZ: " << data.posX << " " << data.posY << " " << keypRedL[0].pt.x -keypRedR[0].pt.x << std::endl;
+	std::cout << "Point3: " << output.x << " " << output.y << " " << output.z << std::endl;
+	
+	std::cout << Qf.at<double>(0,0)<< " " << Qf.at<double>(0,1) << " " << Qf.at<double>(0,2) << " " << Qf.at<double>(0,3) << std::endl;
+	std::cout << Qf.at<double>(1,0)<< " " << Qf.at<double>(1,1) << " " << Qf.at<double>(1,2) << " " << Qf.at<double>(1,3) << std::endl;
+	std::cout << Qf.at<double>(2,0)<< " " << Qf.at<double>(2,1) << " " << Qf.at<double>(0,2) << " " << Qf.at<double>(2,3) << std::endl;
+	std::cout << Qf.at<double>(3,0)<< " " << Qf.at<double>(3,1) << " " << Qf.at<double>(3,2) << " " << Qf.at<double>(3,3) << std::endl;
+	
+	
+    }
 }
 
 }

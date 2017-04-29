@@ -66,9 +66,17 @@ bool stereoAlg::init (std::string calib_folder) {
                    0. , fy1, cy,
                    0. , 0. , 1.);
 
+    Mat R, T;
+    fs["R"] >> R;
+    fs["T"] >> T;
+    Mat R1fake, R2fake, P1fake, P2fake;    
+    fisheye::stereoRectify( M1, D1, M2, D2, img_size, R, T, R1fake, R2fake, P1fake, P2fake, Qf, CALIB_ZERO_DISPARITY);
+    Qf.at<double>(3,2) = 5.0; // baseline is approx 0.2 m, so 1/baseline = 5
+
     fisheye::initUndistortRectifyMap(M1, D1, R1, P1, img_size, CV_16SC2, map11, map12);
     fisheye::initUndistortRectifyMap(M2, D2, R2, P2, img_size, CV_16SC2, map21, map22);
 
+    
 
     //SGBM = cv::StereoSGBM.create (5, 256, 5) ; // ,50,500,10,100,10,0,0,false);
     int nDisparity = 64;
