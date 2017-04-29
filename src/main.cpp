@@ -24,6 +24,17 @@
 
 using namespace cv;
 
+/*
+Benchmark:
+Een camera uitlezen en yuv->rgb: 30 fps
+Beide camera's uitlezen en yuv->rgb: 16.8 fps
+	+ HASSCREEN (imshow frameL): 11.2 fps
+	+ rectify: 12.4 fps
+	+ rectify + drone tracker: 4.8 fps
+	+ rectify + drone tracker + controller: 4.8 fps
+	+ HASSCREEN + rectify + drone tracker: 3.3 fps
+*/
+
 /***********Enums****************/
 
 
@@ -71,11 +82,11 @@ void process_video() {
         if (!pausecam) {
             cam.waitForImage();
         }
-        //stereo.rectify(cam.frameL, cam.frameR);
+        stereo.rectify(cam.frameL, cam.frameR);
 
-        //dtrk.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
-        //dctrl.control(dtrk.data);
-        //resFrame = dtrk.resFrame;
+        dtrk.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
+        dctrl.control(dtrk.data);
+        resFrame = dtrk.resFrame;
 
 #ifdef HASSCREEN
         cv::imshow("Results", cam.frameL);
