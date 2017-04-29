@@ -84,6 +84,17 @@ void DroneController::control(trackData data) {
 
     RS232_SendBuf( (unsigned char*) buff, 20);
 
+
+    unsigned char inbuf[1];
+    inbuf[1] = 0;
+    std::stringstream tmp;
+    int n = 1;
+    while (n)    {
+        n = RS232_PollComport(inbuf,1);
+        tmp << inbuf[0];
+    }
+    tmp << std::endl;
+
 }
 
 
