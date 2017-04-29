@@ -1,6 +1,7 @@
 #include "dronecontroller.h"
 
 
+#include "defines.h"
 
 const string paramsFile = "../controlParameters.dat";
 unsigned int thrust,roll,pitch,yaw = 0;
@@ -51,9 +52,12 @@ void DroneController::control(trackData data) {
 
     thrust = data.posY * params.heightP + data.velY * params.heightD +  params.heightI;
 
-    unsigned char buff[21];
+    char buff[21];
     sprintf( (char*) buff,"%ud,%ud,%ud,%ud\n",thrust,roll,pitch,yaw);
     RS232_SendBuf( (unsigned char*) buff, 20);
+
+    std::string hoer (buff);
+    std::cout << hoer << std::endl;
 
 }
 
