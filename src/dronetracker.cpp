@@ -18,9 +18,9 @@ bool DroneTracker::init(void) {
         archive(settings);
     }
 
-    //#define TUNING
+    #define TUNING
 #ifdef TUNING
-
+/*
     namedWindow("Thresh Blue", WINDOW_NORMAL); //create a window called "Control"
     createTrackbar("LowH1", "Thresh Blue", &settings.iLowH1b, 255);
     createTrackbar("HighH1", "Thresh Blue", &settings.iHighH1b, 255);
@@ -30,17 +30,26 @@ bool DroneTracker::init(void) {
     createTrackbar("HighV1", "Thresh Blue", &settings.iHighV1b, 255);
     createTrackbar("Opening1", "Thresh Blue", &settings.iOpen1b, 30);
     createTrackbar("Closing1", "Thresh Blue", &settings.iClose1b, 30);
+*/
+    namedWindow("Tuning", WINDOW_NORMAL); //create a window called "Control"
+    createTrackbar("LowH1", "Tuning", &settings.iLowH1r, 255);
+    createTrackbar("HighH1", "Tuning", &settings.iHighH1r, 255);
+    createTrackbar("filterByArea", "Tuning", &settings.filterByArea, 1);
+    createTrackbar("minArea", "Tuning", &settings.minArea, 10000);
+    createTrackbar("maxArea", "Tuning", &settings.maxArea, 10000);
+    createTrackbar("Opening1", "Tuning", &settings.iOpen1r, 30);
+    createTrackbar("Closing1", "Tuning", &settings.iClose1r, 30);
 
-    namedWindow("Thresh Red", WINDOW_NORMAL); //create a window called "Control"
-    createTrackbar("LowH1", "Thresh Red", &settings.iLowH1r, 255);
-    createTrackbar("HighH1", "Thresh Red", &settings.iHighH1r, 255);
+    /*
     createTrackbar("LowS1", "Thresh Red", &settings.iLowS1r, 255);
     createTrackbar("HighS1", "Thresh Red", &settings.iHighS1r, 255);
     createTrackbar("LowV1", "Thresh Red", &settings.iLowV1r, 255);
     createTrackbar("HighV1", "Thresh Red", &settings.iHighV1r, 255);
     createTrackbar("Opening1", "Thresh Red", &settings.iOpen1r, 30);
     createTrackbar("Closing1", "Thresh Red", &settings.iClose1r, 30);
+    */
 
+    /*
     namedWindow("Blob Moeder", cv::WINDOW_NORMAL); //create a window called "Control"
 
     //the thresholds are not to be tuned
@@ -64,7 +73,7 @@ bool DroneTracker::init(void) {
     createTrackbar("filterByInertia", "Blob Moeder", &settings.filterByInertia, 1);
     createTrackbar("minInertiaRatio", "Blob Moeder", &settings.minInertiaRatio, 100);
     createTrackbar("maxInertiaRatio", "Blob Moeder", &settings.maxInertiaRatio, 100);
-
+*/
 #endif
 
     // Setup SimpleBlobDetector parameters.
@@ -99,6 +108,7 @@ bool DroneTracker::init(void) {
     stopWatch.Start();
 
 }
+/*
 float prevTime = 0;
 float prevX,prevY,prevZ = 0;
 void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
@@ -178,7 +188,7 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
 #endif
 
     combineImage(resFrameL,resFrameR,&resFrame);
-/*
+/**
     std::cout << "Red: " << keypRedL.size() << ", " << keypRedR.size() << ", blue: " << keypBlueL.size() << ", " << keypBlueR.size()  << std::endl;
     //calculate blob disparity
 
@@ -186,7 +196,7 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         std::cout << "KeyRed: " << keypRedL[0].pt.x - keypRedR[0].pt.x << std::endl;
     if (keypBlueL.size() > 0 && keypBlueR.size() > 0)
         std::cout << "KeyBlue: " << keypBlueL[0].pt.x - keypBlueR[0].pt.x << std::endl;
-*/
+* /
 
     float time = ((float)stopWatch.Read())/1000.0;
     float dt = time - prevTime;
@@ -204,7 +214,7 @@ if (keypRedL.size() > 0 && keypRedR.size() > 0) {
     data.velY = data.dy / dt;
     data.velZ = data.dz / dt;
     data.dt = dt;
-*/
+* /
     
 	
     if (keypRedL.size() == 1) {	
@@ -240,6 +250,91 @@ if (keypRedL.size() > 0 && keypRedR.size() > 0) {
     } else
 	data.valid = false;
 }
+
+}
+*/
+
+cv::Mat prevFrame;
+bool firstFrame;
+cv::Mat backf;
+
+std::vector<KeyPoint> dronepath;
+
+void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
+    updateParams();
+    resFrame = frameL.clone();
+
+
+    cv::Mat tmpf;
+    tmpf = cv::Mat(frameL.rows/4, frameL.cols/4,CV_8UC3);
+    cv::resize(frameL,tmpf,tmpf.size(),0,0);
+    cv::Mat framegray;
+    cvtColor(tmpf,framegray,COLOR_BGR2GRAY);
+
+
+    if (!firstFrame) {
+        firstFrame = true;
+        prevFrame = framegray.clone();
+        backf = framegray.clone();
+    }
+
+
+    cv::Mat diff = framegray - prevFrame;
+    prevFrame = framegray.clone();
+
+    cv::Mat treshf;
+    inRange(diff, settings.iLowH1r, settings.iHighH1r, treshf);
+
+
+    dilate( treshf, treshf, getStructuringElement(MORPH_ELLIPSE, Size(settings.iClose1r+1, settings.iClose1r+1)));
+    erode(treshf, treshf, getStructuringElement(MORPH_ELLIPSE, Size(settings.iOpen1r+1, settings.iOpen1r+1)));
+
+
+
+    // Set up detector with params
+    SimpleBlobDetector detector(params);
+    // Detect blobs.
+    std::vector<KeyPoint> keypoints;
+    detector.detect( treshf, keypoints);
+
+
+    if (keypoints.size() == 1 && dronepath.size() == 0) {
+        dronepath.push_back(keypoints.at(0));
+    } else if (keypoints.size()>0 &&  dronepath.size() > 0) {
+        //find closest keypoint to last previously known location
+        int mind = 999999999;
+        cv::KeyPoint p = dronepath.at(dronepath.size()-1);
+        cv::KeyPoint closest;
+        for (int i = 0 ; i < keypoints.size();i++) {
+            cv::KeyPoint k =keypoints.at(i);
+            int d = (p.pt.x-k.pt.x) * (p.pt.x-k.pt.x) + (p.pt.y-k.pt.y)*(p.pt.y-k.pt.y);
+            if (d < mind ) {
+                mind = d;
+                closest = keypoints.at(i);
+            }
+
+        }
+
+        dronepath.push_back(closest);
+
+    }
+
+
+
+
+    if (dronepath.size() > 0) {
+        drawKeypoints( framegray, dronepath, framegray, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+        framegray.copyTo(resFrame(cv::Rect(0,0,framegray.cols, framegray.rows)));
+    }
+
+    if (dronepath.size() > 30)
+        dronepath.erase(dronepath.begin());
+
+
+
+    //imshow("FrameL",frameL);
+
+
 
 }
 

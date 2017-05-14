@@ -85,11 +85,11 @@ void process_video() {
         stereo.rectify(cam.frameL, cam.frameR);
 
         dtrk.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
-        dctrl.control(dtrk.data);
+        //dctrl.control(dtrk.data);
         resFrame = dtrk.resFrame;
 
 #ifdef HASSCREEN
-        cv::imshow("Results", cam.frameL);
+        cv::imshow("Results", resFrame);
 #endif
 #if VIDEORESULTS
         outputVideoResults.write(resFrame);
@@ -221,7 +221,7 @@ int init(int argc, char **argv) {
     /*****init the video writer*****/
 
 #if VIDEORESULTS   
-    if (outputVideoResults.init(argc,argv,VIDEORESULTS, "videoResult.avi",1280,960,"192.168.1.10",5004)) {return 1;} 
+    if (outputVideoResults.init(argc,argv,VIDEORESULTS, "videoResult.avi",864,864,"192.168.1.10",5004)) {return 1;}
 #endif
 #if VIDEORAWL
 	if (outputVideoRawL.init(argc,argv,VIDEORAWL,"videoRawL.avi",1280,960,"192.168.1.10",5004)) {return 1;} 

@@ -15,7 +15,7 @@ inline bool fileExists (const std::string& name) {
     return f.good();
 }
 
-int skipframes = 0;
+int skipframes = 300;
 bool KalamosFileCam::init (std::string folder) {
     this->folder = folder;
     fps = VIDEOFPS;
@@ -30,7 +30,7 @@ bool KalamosFileCam::init (std::string folder) {
     res &= fileExists(sD.str());
 
     videoL =cv::VideoCapture (folder + "/videoRawL.avi");
-    videoR =cv::VideoCapture (folder + "/videoRawR.avi");
+    videoR =cv::VideoCapture (folder + "/videoRawL.avi"); //R->L TMP!!!
 
 
     if (!videoL.isOpened()) {
@@ -44,7 +44,6 @@ bool KalamosFileCam::init (std::string folder) {
 
         std::cout << "Opened filecam L, nFrames: " << nFrames << std::endl;
         currentFrame=0;
-        return false;
     }
 
     if (!videoR.isOpened()) {
@@ -52,7 +51,6 @@ bool KalamosFileCam::init (std::string folder) {
         return true;
     } else {
         std::cout << "Opened filecam R, nFrames: " << nFrames << std::endl;
-        return false;
     }
 
     if (res) {
