@@ -30,7 +30,7 @@
 #define VIDEORAWLR VIDEO_AVI_OPENCV
 #define VIDEODISPARITY VIDEOMODE_DISABLED
 #define VIDEORESULTS VIDEOMODE_DISABLED
-#define VIDEOFPS 15 // the estimated frame rate of the video used for creating output videos
+#define VIDEOFPS 12 // the estimated frame rate of the video used for creating output videos
 
 
 #endif

@@ -8,7 +8,7 @@
 using namespace cv;
 using namespace std;
 
-//#define DRAWVIZSL
+#define DRAWVIZSL
 #define DRAWVIZSR
 //#define TUNING
 
@@ -24,7 +24,7 @@ bool DroneTracker::init(void) {
 
 
 #ifdef TUNING
-/*
+    /*
     namedWindow("Thresh Blue", WINDOW_NORMAL); //create a window called "Control"
     createTrackbar("LowH1", "Thresh Blue", &settings.iLowH1b, 255);
     createTrackbar("HighH1", "Thresh Blue", &settings.iHighH1b, 255);
@@ -170,9 +170,9 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     cv::resize(frameL,resFrameL,resFrameL.size(),0,0);
     cv::resize(frameR,resFrameR,resFrameR.size(),0,0);
 
-	cv::Rect myROI(resFrameL.cols/4,resFrameL.rows/2,resFrameL.cols/2,resFrameL.rows/2);
-	cv::Mat croppedResFrameL = resFrameL(myROI);
-	cv::Mat croppedResFrameR = resFrameR(myROI);
+    cv::Rect myROI(resFrameL.cols/4,resFrameL.rows/2,resFrameL.cols/2,resFrameL.rows/2);
+    cv::Mat croppedResFrameL = resFrameL(myROI);
+    cv::Mat croppedResFrameR = resFrameR(myROI);
 
     Mat imgHSVL,imgHSVR;
     cvtColor(resFrameL, imgHSVL, COLOR_BGR2HSV);
@@ -265,44 +265,49 @@ if (keypRedL.size() > 0 && keypRedR.size() > 0) {
     data.velZ = data.dz / dt;
     data.dt = dt;
 * /
-    
-	
-    if (keypRedL.size() == 1) {	
-	std::vector<Point3f> camera_coordinates;   
-    	std::vector<Point3f> world_coordinates;
-    	camera_coordinates.push_back(Point3f(keypRedL[0].pt.x*4,keypRedL[0].pt.y*4,(keypRedL[0].pt.x - keypRedR[0].pt.x)*4));
-    	cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
 
-	Point3f output = world_coordinates[0];
-	//std::cout << "XYZ: " << data.posX << " " << data.posY << " " << keypRedL[0].pt.x -keypRedR[0].pt.x << std::endl;
-	//std::cout << "Point3: " << output.x << " " << output.y << " " << output.z << std::endl;
-	
-	//std::cout << Qf.at<double>(0,0)<< " " << Qf.at<double>(0,1) << " " << Qf.at<double>(0,2) << " " << Qf.at<double>(0,3) << std::endl;
-	//std::cout << Qf.at<double>(1,0)<< " " << Qf.at<double>(1,1) << " " << Qf.at<double>(1,2) << " " << Qf.at<double>(1,3) << std::endl;
-	//std::cout << Qf.at<double>(2,0)<< " " << Qf.at<double>(2,1) << " " << Qf.at<double>(0,2) << " " << Qf.at<double>(2,3) << std::endl;
-	//std::cout << Qf.at<double>(3,0)<< " " << Qf.at<double>(3,1) << " " << Qf.at<double>(3,2) << " " << Qf.at<double>(3,3) << std::endl;
-	
-	data.posX = output.x;
-    	data.posY = -output.y;
-    	data.posZ = output.z;
-    	data.dx = data.posX - prevX;
-    	data.dy = data.posY - prevY;
-    	data.dy = data.posZ - prevZ;
-    	data.velX = data.dx / dt;
-    	data.velY = data.dy / dt;
-    	data.velZ = data.dz / dt;
-    	data.dt = dt;
+
+    if (keypRedL.size() == 1) {
+    std::vector<Point3f> camera_coordinates;
+        std::vector<Point3f> world_coordinates;
+        camera_coordinates.push_back(Point3f(keypRedL[0].pt.x*4,keypRedL[0].pt.y*4,(keypRedL[0].pt.x - keypRedR[0].pt.x)*4));
+        cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
+
+    Point3f output = world_coordinates[0];
+    //std::cout << "XYZ: " << data.posX << " " << data.posY << " " << keypRedL[0].pt.x -keypRedR[0].pt.x << std::endl;
+    //std::cout << "Point3: " << output.x << " " << output.y << " " << output.z << std::endl;
+
+    //std::cout << Qf.at<double>(0,0)<< " " << Qf.at<double>(0,1) << " " << Qf.at<double>(0,2) << " " << Qf.at<double>(0,3) << std::endl;
+    //std::cout << Qf.at<double>(1,0)<< " " << Qf.at<double>(1,1) << " " << Qf.at<double>(1,2) << " " << Qf.at<double>(1,3) << std::endl;
+    //std::cout << Qf.at<double>(2,0)<< " " << Qf.at<double>(2,1) << " " << Qf.at<double>(0,2) << " " << Qf.at<double>(2,3) << std::endl;
+    //std::cout << Qf.at<double>(3,0)<< " " << Qf.at<double>(3,1) << " " << Qf.at<double>(3,2) << " " << Qf.at<double>(3,3) << std::endl;
+
+    data.posX = output.x;
+        data.posY = -output.y;
+        data.posZ = output.z;
+        data.dx = data.posX - prevX;
+        data.dy = data.posY - prevY;
+        data.dy = data.posZ - prevZ;
+        data.velX = data.dx / dt;
+        data.velY = data.dy / dt;
+        data.velZ = data.dz / dt;
+        data.dt = dt;
         data.valid = true;
 
-	prevX = data.posX;
-	prevY = data.posY;
-	prevZ = data.posZ;
+    prevX = data.posX;
+    prevY = data.posY;
+    prevZ = data.posZ;
     } else
-	data.valid = false;
+    data.valid = false;
 }
 
 }
 */
+
+
+float calculateDistance(float xr, float yr, float xl, float yl) {
+    return 1.0 /(xr - xl); // kaihard kebowned
+}
 
 cv::Mat prevFrameL,prevFrameR;
 bool firstFrame;
@@ -317,12 +322,12 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     int t = stopWatch.Read();
     float dt= (t-t_prev)/1000.0;
     t_prev = t;
-
+    cv::Mat resFrameL,resFrameR;
 #ifdef DRAWVIZSL
-    resFrame = frameL.clone();
+    resFrameL = frameL.clone();
 #endif
 #ifdef DRAWVIZSR
-    resFrame = frameR.clone();
+    resFrameR = frameR.clone();
 #endif
 
     cv::Mat tmpfL,tmpfR;
@@ -360,7 +365,8 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     static int notFoundCountL =0;
     static int notFoundCountR =0;
 
-    cv::Point predicted_drone_locationL,predicted_drone_locationR;
+    cv::Point3f predicted_drone_locationL;
+    cv::Point predicted_drone_locationR;
     if (foundL) {
         kfL.transitionMatrix.at<float>(2) = dt;
         kfL.transitionMatrix.at<float>(9) = dt;
@@ -373,8 +379,12 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
 
         predicted_drone_locationL.x = stateL.at<float>(0);
         predicted_drone_locationL.y = stateL.at<float>(1);
+        predicted_drone_locationL.z = stateL.at<float>(2);
         cv::KeyPoint t;
-        t.pt = predicted_drone_locationL;
+        cv::Point beun;
+        beun.x = predicted_drone_locationL.x;
+        beun.y = predicted_drone_locationL.y;
+        t.pt = beun;
         t.size = 3;
         predicted_dronepathL.push_back(t);
         cout << "PredictionL: " << predicted_drone_locationL << std::endl;
@@ -391,11 +401,11 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         kfR.transitionMatrix.at<float>(2) = dt;
         kfR.transitionMatrix.at<float>(9) = dt;
         stateR = kfR.predict();
-        cv::Rect predRect;
-        predRect.width = stateR.at<float>(4);
-        predRect.height = stateR.at<float>(5);
-        predRect.x = stateR.at<float>(0) - predRect.width / 2;
-        predRect.y = stateR.at<float>(1) - predRect.height / 2;
+        //        cv::Rect predRect;
+        //        predRect.width = stateR.at<float>(4);
+        //        predRect.height = stateR.at<float>(5);
+        //        predRect.x = stateR.at<float>(0) - predRect.width / 2;
+        //        predRect.y = stateR.at<float>(1) - predRect.height / 2;
 
         predicted_drone_locationR.x = stateR.at<float>(0);
         predicted_drone_locationR.y = stateR.at<float>(1);
@@ -458,22 +468,40 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
 
         cout << "MeasuredR: " <<  closestR.pt << std::endl;
 
-        dronepathR.push_back(closestR);
+        //turbo beuntje
+        closestR.pt.x = closestL.pt.x - (closestL.pt.x - closestR.pt.x);
 
+
+        dronepathR.push_back(closestR);
     }
 
-    if (keypointsL.size() == 0) {
-        notFoundCountL++;
-        cout << "notFoundCountL:" << notFoundCountL << endl;
-        if( notFoundCountL >= 100 )
-            foundL = false;
+    if (keypointsL.size() == 0 || keypointsR.size() == 0) {
+        if (keypointsL.size() == 0) {
+            notFoundCountL++;
+            cout << "notFoundCountL:" << notFoundCountL << endl;
+            if( notFoundCountL >= 100 )
+                foundL = false;
+        }
+
+        if (keypointsR.size() == 0) {
+            notFoundCountR++;
+            cout << "notFoundCountR:" << notFoundCountR << endl;
+            if( notFoundCountR >= 100 )
+                foundR = false;
+        }
+
     } else {
+
+
+        float dist = 1.0 / (closestL.pt.x -closestR.pt.x );
+
         notFoundCountL = 0;
-        cv::Mat meas(measSize, 1, type);
-        meas.at<float>(0) = closestL.pt.x;
-        meas.at<float>(1) = closestL.pt.y;
-        meas.at<float>(2) = 0;
-        meas.at<float>(3) = 0;
+        cv::Mat measL(measSize, 1, type);
+        measL.at<float>(0) = closestL.pt.x;
+        measL.at<float>(1) = closestL.pt.y;
+        measL.at<float>(2) = dist;
+        measL.at<float>(3) = 0;
+
 
         if (!foundL) { // First detection!
             kfL.errorCovPre.at<float>(0) = 1; // px
@@ -483,32 +511,27 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
             kfL.errorCovPre.at<float>(28) = 1; // px
             kfL.errorCovPre.at<float>(35) = 1; // px
 
-            stateL.at<float>(0) = meas.at<float>(0);
-            stateL.at<float>(1) = meas.at<float>(1);
+            stateL.at<float>(0) = measL.at<float>(0);
+            stateL.at<float>(1) = measL.at<float>(1);
             stateL.at<float>(2) = 0;
             stateL.at<float>(3) = 0;
-            stateL.at<float>(4) = meas.at<float>(2);
-            stateL.at<float>(5) = meas.at<float>(3);
+            stateL.at<float>(4) = measL.at<float>(2);
+            stateL.at<float>(5) = measL.at<float>(3);
 
             kfL.statePost = stateL;
 
             foundL = true;
         }
         else
-            kfL.correct(meas);
-    }
-    if (keypointsR.size() == 0) {
-        notFoundCountR++;
-        cout << "notFoundCountR:" << notFoundCountR << endl;
-        if( notFoundCountR >= 100 )
-            foundR = false;
-    } else {
+            kfL.correct(measL);
+
+
         notFoundCountR = 0;
-        cv::Mat meas(measSize, 1, type);
-        meas.at<float>(0) = closestR.pt.x;
-        meas.at<float>(1) = closestR.pt.y;
-        meas.at<float>(2) = 0;
-        meas.at<float>(3) = 0;
+        cv::Mat measR(measSize, 1, type);
+        measR.at<float>(0) = closestR.pt.x;
+        measR.at<float>(1) = closestR.pt.y;
+        measR.at<float>(2) = 0;
+        measR.at<float>(3) = 0;
 
         if (!foundR) { // First detection!
             kfR.errorCovPre.at<float>(0) = 1; // px
@@ -518,37 +541,87 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
             kfR.errorCovPre.at<float>(28) = 1; // px
             kfR.errorCovPre.at<float>(35) = 1; // px
 
-            stateR.at<float>(0) = meas.at<float>(0);
-            stateR.at<float>(1) = meas.at<float>(1);
+            stateR.at<float>(0) = measR.at<float>(0);
+            stateR.at<float>(1) = measR.at<float>(1);
             stateR.at<float>(2) = 0;
             stateR.at<float>(3) = 0;
-            stateR.at<float>(4) = meas.at<float>(2);
-            stateR.at<float>(5) = meas.at<float>(3);
+            stateR.at<float>(4) = measR.at<float>(2);
+            stateR.at<float>(5) = measR.at<float>(3);
 
             kfR.statePost = stateR;
 
             foundR = true;
         }
         else
-            kfR.correct(meas);
+            kfR.correct(measR);
+
+
+
+
+
+
+
+
+        //calculate everything for the dronecontroller:
+
+
+        std::vector<Point3f> camera_coordinates;
+        std::vector<Point3f> world_coordinates;
+        camera_coordinates.push_back(Point3f(closestL.pt.x*4,closestL.pt.y*4,(closestL.pt.x - closestR.pt.x)*4));
+        cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
+
+        Point3f output = world_coordinates[0];
+        //std::cout << "XYZ: " << data.posX << " " << data.posY << " " << keypRedL[0].pt.x -keypRedR[0].pt.x << std::endl;
+        //std::cout << "Point3: " << output.x << " " << output.y << " " << output.z << std::endl;
+
+        //std::cout << Qf.at<double>(0,0)<< " " << Qf.at<double>(0,1) << " " << Qf.at<double>(0,2) << " " << Qf.at<double>(0,3) << std::endl;
+        //std::cout << Qf.at<double>(1,0)<< " " << Qf.at<double>(1,1) << " " << Qf.at<double>(1,2) << " " << Qf.at<double>(1,3) << std::endl;
+        //std::cout << Qf.at<double>(2,0)<< " " << Qf.at<double>(2,1) << " " << Qf.at<double>(0,2) << " " << Qf.at<double>(2,3) << std::endl;
+        //std::cout << Qf.at<double>(3,0)<< " " << Qf.at<double>(3,1) << " " << Qf.at<double>(3,2) << " " << Qf.at<double>(3,3) << std::endl;
+
+        static float prevX,prevY,prevZ =0;
+        data.posX = output.x;
+        data.posY = -output.y;
+        data.posZ = output.z;
+        data.dx = data.posX - prevX;
+        data.dy = data.posY - prevY;
+        data.dy = data.posZ - prevZ;
+        data.velX = data.dx / dt;
+        data.velY = data.dy / dt;
+        data.velZ = data.dz / dt;
+        data.dt = dt;
+        data.valid = true;
+
+        prevX = data.posX;
+        prevY = data.posY;
+        prevZ = data.posZ;
+
+
     }
 
 #ifdef DRAWVIZSL
     cvtColor(treshfL,treshfL,CV_GRAY2BGR);
-    treshfL.copyTo(resFrame(cv::Rect(resFrame.cols - treshfL.cols,0,treshfL.cols, treshfL.rows)));
+    treshfL.copyTo(resFrameL(cv::Rect(resFrameL.cols - treshfL.cols,0,treshfL.cols, treshfL.rows)));
     if (dronepathL.size() > 0) {
-        drawKeypoints( framegrayL, dronepathL, framegrayL, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );        
+        drawKeypoints( framegrayL, dronepathL, framegrayL, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
     }
-    framegrayL.copyTo(resFrame(cv::Rect(0,0,framegrayL.cols, framegrayL.rows)));
+    framegrayL.copyTo(resFrameL(cv::Rect(0,0,framegrayL.cols, framegrayL.rows)));
 #endif
 #ifdef DRAWVIZSR
     cvtColor(treshfR,treshfR,CV_GRAY2BGR);
-    treshfR.copyTo(resFrame(cv::Rect(resFrame.cols - treshfR.cols,0,treshfR.cols, treshfR.rows)));
+    treshfR.copyTo(resFrameR(cv::Rect(resFrameR.cols - treshfR.cols,0,treshfR.cols, treshfR.rows)));
     if (dronepathR.size() > 0) {
         drawKeypoints( framegrayR, dronepathR, framegrayR, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
     }
-    framegrayR.copyTo(resFrame(cv::Rect(0,0,framegrayR.cols, framegrayR.rows)));
+    framegrayR.copyTo(resFrameR(cv::Rect(0,0,framegrayR.cols, framegrayR.rows)));
+
+
+    resFrame = cv::Mat(resFrameL.rows,resFrameL.cols +resFrameR.cols ,CV_8UC3);
+    resFrameL.copyTo(resFrame(cv::Rect(0,0,resFrameL.cols, resFrameL.rows)));
+    resFrameR.copyTo(resFrame(cv::Rect(resFrameL.cols,0,resFrameL.cols, resFrameL.rows)));
 #endif
+
+
 
     if (dronepathL.size() > 30)
         dronepathL.erase(dronepathL.begin());
@@ -564,39 +637,39 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
 
 void DroneTracker::updateParams(){
 #ifdef TUNING
-        // Change thresholds
-        params.minThreshold = settings.minThreshold+1;
-        params.maxThreshold = settings.maxThreshold+1;
+    // Change thresholds
+    params.minThreshold = settings.minThreshold+1;
+    params.maxThreshold = settings.maxThreshold+1;
 
-        // Filter by Area.
-        params.filterByArea = settings.filterByArea;
-        params.minArea = settings.minArea+1;
-        params.maxArea = settings.maxArea+1;
+    // Filter by Area.
+    params.filterByArea = settings.filterByArea;
+    params.minArea = settings.minArea+1;
+    params.maxArea = settings.maxArea+1;
 
-        // Filter by Circularity
-        params.filterByCircularity = settings.filterByCircularity;
-        params.minCircularity = ((float)settings.minCircularity)/100.0f;
-        params.maxCircularity = ((float)settings.maxCircularity)/100.0f;
+    // Filter by Circularity
+    params.filterByCircularity = settings.filterByCircularity;
+    params.minCircularity = ((float)settings.minCircularity)/100.0f;
+    params.maxCircularity = ((float)settings.maxCircularity)/100.0f;
 
-        // Filter by Convexity
-        params.filterByConvexity = settings.filterByConvexity;
-        params.minConvexity = ((float)settings.minConvexity)/100.0f;
-        params.maxConvexity = ((float)settings.maxConvexity)/100.0f;
+    // Filter by Convexity
+    params.filterByConvexity = settings.filterByConvexity;
+    params.minConvexity = ((float)settings.minConvexity)/100.0f;
+    params.maxConvexity = ((float)settings.maxConvexity)/100.0f;
 
-        // Filter by Inertia
-        params.filterByInertia = settings.filterByInertia;
-        params.minInertiaRatio = ((float)settings.minInertiaRatio)/100.0f;
-        params.maxInertiaRatio = ((float)settings.maxInertiaRatio)/100.0f;
+    // Filter by Inertia
+    params.filterByInertia = settings.filterByInertia;
+    params.minInertiaRatio = ((float)settings.minInertiaRatio)/100.0f;
+    params.maxInertiaRatio = ((float)settings.maxInertiaRatio)/100.0f;
 
-        params.minRepeatability = 0;
-        params.minDistBetweenBlobs=0;
-        params.filterByColor = 0;
-        params.thresholdStep=1;
+    params.minRepeatability = 0;
+    params.minDistBetweenBlobs=0;
+    params.filterByColor = 0;
+    params.thresholdStep=1;
 #endif
 }
 
 void DroneTracker::close () {
     std::ofstream os(settingsFile, std::ios::binary);
-     cereal::BinaryOutputArchive archive( os );
-     archive( settings );
+    cereal::BinaryOutputArchive archive( os );
+    archive( settings );
 }
