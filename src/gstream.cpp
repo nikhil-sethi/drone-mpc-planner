@@ -25,7 +25,7 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
 
         std::cout << "Opening video file for processed results at " << sizeX << "x" << sizeY << " pixels with " << VIDEOFPS << "fps " << std::endl;
         cv::Size sizeRes(sizeX,sizeY);
-        cvvideo.open("videoResults.avi",CV_FOURCC('F','M','P','4'),VIDEOFPS,sizeRes,true);
+        cvvideo.open(file,CV_FOURCC('F','M','P','4'),VIDEOFPS,sizeRes,true);
         if (!cvvideo.isOpened())
         {
             std::cerr << "Output result video could not be opened!" << std::endl;
@@ -175,6 +175,20 @@ void GStream::prepare_buffer(GstAppSrc* appsrc, cv::Mat *image) {
     if (ret != GST_FLOW_OK) {
         std::cout << "GST ERROR DE PERROR" << std::endl;
 
+    }
+}
+
+void GStream::write(cv::Mat frameL,cv::Mat frameR) {
+    cv::Mat frame(960,2560,CV_8UC3);
+    frameL.copyTo(frame(cv::Rect(0,0,frameL.cols, frameL.rows)));
+    frameR.copyTo(frame(cv::Rect(frameL.cols,0,frameL.cols, frameL.rows)));
+
+    if (videomode == VIDEO_AVI_OPENCV) {
+        cvvideo.write(frame);
+    }
+    else {
+        prepare_buffer((GstAppSrc*)appsrc,&frame);
+        g_main_context_iteration(g_main_context_default(),FALSE);
     }
 }
 

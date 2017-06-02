@@ -43,7 +43,7 @@ unsigned char key = 0;
 std::string msg;
 int imgcount; // to measure fps
 cv::Mat resFrame;
-GStream outputVideoResults,outputVideoRawL,outputVideoRawR;
+GStream outputVideoResults,outputVideoRawLR;
 cv::VideoWriter outputVideoDisp;
 stopwatch_c stopWatch;
 std::string file;
@@ -94,11 +94,8 @@ void process_video() {
 #if VIDEORESULTS
         outputVideoResults.write(resFrame);
 #endif
-#if VIDEORAWL
-        outputVideoRawL.write(cam.frameL);
-#endif
-#if VIDEORAWR
-       outputVideoRawR.write(cam.frameR);
+#if VIDEORAWLR
+        outputVideoRawLR.write(cam.frameL,cam.frameR);
 #endif
 #if VIDEODISPARITY
         outputVideoDisp.write(cam.get_disp_frame());
@@ -223,13 +220,9 @@ int init(int argc, char **argv) {
 #if VIDEORESULTS   
     if (outputVideoResults.init(argc,argv,VIDEORESULTS, "videoResult.avi",864,864,"192.168.1.10",5004)) {return 1;}
 #endif
-#if VIDEORAWL
-	if (outputVideoRawL.init(argc,argv,VIDEORAWL,"videoRawL.avi",1280,960,"192.168.1.10",5004)) {return 1;} 
+#if VIDEORAWLR
+    if (outputVideoRawLR.init(argc,argv,VIDEORAWLR,"videoRawLR.avi",2560,960,"192.168.1.10",5004)) {return 1;}
 #endif
-#if VIDEORAWR
-	if (outputVideoRawR.init(argc,argv,VIDEORAWR,"videoRawR.avi",1280,960,"192.168.1.10",5005)) {return 1;} 
-#endif
-
 
 #if VIDEODISPARITY
     cv::Mat fd = cam.get_disp_frame();
@@ -261,11 +254,8 @@ void close() {
 #if VIDEORESULTS   
     outputVideoResults.close(); 
 #endif
-#if VIDEORAWL
-	outputVideoRawL.close();
-#endif
-#if VIDEORAWR
-	outputVideoRawR.close();
+#if VIDEORAWLR
+    outputVideoRawLR.close();
 #endif
 
 }

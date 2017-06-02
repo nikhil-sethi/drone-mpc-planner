@@ -23,7 +23,8 @@ private:
 
 public:
     int init(int argc, char **argv, int mode, std::string file, int sizeX, int sizeY, std::string ip, int port);
-	void write(cv::Mat frame);   
+    void write(cv::Mat frame);
+    void write(cv::Mat frameL,cv::Mat frameR);
     void close (void);
 };
 

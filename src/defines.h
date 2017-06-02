@@ -13,8 +13,7 @@
 //#define HASSCREEN
 
 // due to hardware accelerated encoding, only one gstream can be enabled at the same time!
-#define VIDEORAWL VIDEOMODE_DISABLED
-#define VIDEORAWR VIDEOMODE_DISABLED
+#define VIDEORAWLR VIDEOMODE_DISABLED
 #define VIDEORESULTS VIDEOMODE_DISABLED
 
 //non-hw accelerated custom 16b grayscale 96x96 video render:
@@ -28,8 +27,7 @@
 
 #define HASSCREEN // dont disable in qt debugger!
 
-#define VIDEORAWL VIDEOMODE_DISABLED
-#define VIDEORAWR VIDEOMODE_DISABLED
+#define VIDEORAWLR VIDEO_AVI_OPENCV
 #define VIDEODISPARITY VIDEOMODE_DISABLED
 #define VIDEORESULTS VIDEOMODE_DISABLED
 #define VIDEOFPS 20 // the estimated frame rate of the video used for creating output videos
