@@ -2,6 +2,8 @@
 
 #include "defines.h"
 
+#define TUNING
+
 const string paramsFile = "../controlParameters.dat";
 unsigned int roll,pitch,yaw = 1500;
 unsigned int thrust = 1000;
@@ -101,6 +103,7 @@ void DroneController::control(trackData data) {
 		}
       }
     }
+    roll += data.posX * params.rollP + data.velX * params.rollD;
    
     char buff[21];
     sprintf( (char*) buff,"%u,%u,%u,%u\n",thrust,roll,pitch,yaw);
