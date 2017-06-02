@@ -9,8 +9,7 @@ class KalamosFileCam : public Cam{
 
 private:
     std::string folder;
-    cv::VideoCapture videoL;
-    cv::VideoCapture videoR;
+    cv::VideoCapture videoLR;
 
 public:
 

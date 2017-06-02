@@ -20,37 +20,27 @@ bool KalamosFileCam::init (std::string folder) {
     this->folder = folder;
     fps = VIDEOFPS;
 
-
     std::cout << "Kalamos init succes!" << std::endl;
-    std::stringstream sL;
-    sL << folder << "/videoRawL.avi";
-    bool res = fileExists(sL.str());
+    std::stringstream sLR;
+    sLR << folder << "/videoRawLR.avi";
+    bool res = fileExists(sLR.str());
     std::stringstream sD;
     sD << folder << "/videoDisp.avi";
     res &= fileExists(sD.str());
 
-    videoL =cv::VideoCapture (folder + "/videoRawL.avi");
-    videoR =cv::VideoCapture (folder + "/videoRawL.avi"); //TMP!!!
+    videoLR =cv::VideoCapture (sLR.str());
 
-
-    if (!videoL.isOpened()) {
-        std::cerr << "Error opening video L file!\n";
+    if (!videoLR.isOpened()) {
+        std::cerr << "Error opening video raw LR file!\n";
         return true;
     } else {
-        im_width = (int) videoL.get(CV_CAP_PROP_FRAME_WIDTH);
-        im_height = (int)videoL.get(CV_CAP_PROP_FRAME_HEIGHT);
-        nFrames = (int) videoL.get(CV_CAP_PROP_FRAME_COUNT);
-        //videoL.set(CV_CAP_PROP_POS_FRAMES,0);
+        im_width = (int) videoLR.get(CV_CAP_PROP_FRAME_WIDTH)/2;
+        im_height = (int)videoLR.get(CV_CAP_PROP_FRAME_HEIGHT);
+        nFrames = (int) videoLR.get(CV_CAP_PROP_FRAME_COUNT);
+        //videoLR.set(CV_CAP_PROP_POS_FRAMES,0);
 
-        std::cout << "Opened filecam L, nFrames: " << nFrames << std::endl;
+        std::cout << "Opened filecam LR, nFrames: " << nFrames << std::endl;
         currentFrame=0;
-    }
-
-    if (!videoR.isOpened()) {
-        std::cerr << "Error opening video R file!\n";
-        return true;
-    } else {
-        std::cout << "Opened filecam R, nFrames: " << nFrames << std::endl;
     }
 
     if (res) {
@@ -63,10 +53,11 @@ bool KalamosFileCam::init (std::string folder) {
 
 void KalamosFileCam::workerThread(void) {
     frameL = cv::Mat::zeros(960,1280,CV_8UC3);
+    frameR = cv::Mat::zeros(960,1280,CV_8UC3);
+    cv::Mat frameLR(960,2560,CV_8UC3);
     std::cout << "Starting main fileKalamos loop!" << std::endl;
     while (skipframes>0) {
-        videoL >> frameL;
-        videoR >> frameR;
+        videoLR >> frameLR;
         skipframes--;
         currentFrame++;
     }
@@ -76,14 +67,14 @@ void KalamosFileCam::workerThread(void) {
         //std::cout << "t: " << round(1000.0/(float)VIDEOFPS) << " --- " << std::endl << slr.str() << std::endl << sd.str() << std::endl;
 
         g_lockWaitForImage1.lock();
-        videoL >> frameL;
-        videoR >> frameR;
+        videoLR >> frameLR;
 
-        if (!frameL.empty())
-        {
+        if (!frameLR.empty()) {
             currentFrame++;
-            im_width = frameL.cols;
-            im_height = frameL.rows;
+            im_width = frameLR.cols / 2;
+            im_height = frameLR.rows;
+            frameL = frameLR(cv::Range(0, im_height),cv::Range(0, im_width));
+            frameR = frameLR(cv::Range(0, im_height),cv::Range(im_width, 2*im_width));
             g_lockWaitForImage2.unlock();
         } else {
             camRunning=false;
@@ -108,7 +99,6 @@ cv::Mat KalamosFileCam::get_combined() {
 
 void KalamosFileCam::close (void) {
     Cam::close();
-    videoL.release();
-    videoR.release();
+    videoLR.release();
 }
 
