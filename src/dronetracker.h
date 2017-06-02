@@ -2,6 +2,10 @@
 #define DRONETRACKER_H
 #include "defines.h"
 #include <opencv2/features2d/features2d.hpp>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/video/video.hpp>
 
 #include "stopwatch.h"
 #include "stereoalg.h"
@@ -89,7 +93,20 @@ private:
 
     void updateParams();
 
-public:
+
+
+    // Kalman Filter
+    int stateSize = 6;
+    int measSize = 4;
+    int contrSize = 0;
+
+    unsigned int type = CV_32F;
+    cv::KalmanFilter kfL,kfR;
+    cv::Mat stateL,stateR;
+    cv::Mat measL,measR;
+
+
+public:       
 
     cv::Mat resFrame;
 

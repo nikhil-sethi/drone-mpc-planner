@@ -4,6 +4,7 @@
 #define VIDEOMODE_DISABLED 0
 #define VIDEOMODE_AVI 1
 #define VIDEOMODE_STREAM 2 
+#define VIDEO_AVI_OPENCV 3
 
 
 #ifndef _PC
@@ -30,8 +31,8 @@
 #define VIDEORAWL VIDEOMODE_DISABLED
 #define VIDEORAWR VIDEOMODE_DISABLED
 #define VIDEODISPARITY VIDEOMODE_DISABLED
-#define VIDEORESULTS VIDEOMODE_AVI
-#define VIDEOFPS 15 // the estimated frame rate of the video used for creating output videos
+#define VIDEORESULTS VIDEOMODE_DISABLED
+#define VIDEOFPS 20 // the estimated frame rate of the video used for creating output videos
 
 
 #endif
