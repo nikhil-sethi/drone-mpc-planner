@@ -22,7 +22,7 @@ bool DroneController::init(void) {
 	// Ensure that it was found and that we can use it
 	if (!joystick.isFound())
 	  {
-		printf("open failed.\n");
+		printf("joystick failed.\n");
 		exit(1);
 	  }
 
@@ -103,7 +103,7 @@ void DroneController::control(trackData data) {
 		}
       }
     }
-    roll += data.posX * params.rollP + data.velX * params.rollD;
+    //roll += data.posX * params.rollP ;//+ data.velX * params.rollD;
    
     char buff[21];
     sprintf( (char*) buff,"%u,%u,%u,%u\n",thrust,roll,pitch,yaw);
