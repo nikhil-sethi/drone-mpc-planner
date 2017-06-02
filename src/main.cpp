@@ -82,9 +82,9 @@ void process_video() {
         if (!pausecam) {
             cam.waitForImage();
         }
-        stereo.rectify(cam.frameL, cam.frameR);
+        //stereo.rectify(cam.frameL, cam.frameR);
 
-        dtrk.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
+        //dtrk.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
         //dctrl.control(dtrk.data);
         resFrame = dtrk.resFrame;
 

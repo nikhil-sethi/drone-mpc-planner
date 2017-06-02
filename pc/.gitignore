@@ -8,3 +8,6 @@ CMakeLists.txt.user
 images*
 qt-build
 build
+videoDisp.avi
+videoRawL.avi
+videoRawLR.avi
