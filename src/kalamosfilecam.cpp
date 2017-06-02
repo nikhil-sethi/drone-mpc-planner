@@ -30,7 +30,7 @@ bool KalamosFileCam::init (std::string folder) {
     res &= fileExists(sD.str());
 
     videoL =cv::VideoCapture (folder + "/videoRawL.avi");
-    videoR =cv::VideoCapture (folder + "/videoRawL.avi"); //R->L TMP!!!
+    videoR =cv::VideoCapture (folder + "/videoRawR.avi");
 
 
     if (!videoL.isOpened()) {

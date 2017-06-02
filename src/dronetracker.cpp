@@ -8,8 +8,9 @@
 using namespace cv;
 using namespace std;
 
-#define DRAWVIZSL
-//#define DRAWVIZSR
+//#define DRAWVIZSL
+#define DRAWVIZSR
+//#define TUNING
 
 const string settingsFile = "../settings.dat";
 bool DroneTracker::init(void) {
@@ -21,7 +22,7 @@ bool DroneTracker::init(void) {
         archive(settings);
     }
 
-    #define TUNING
+
 #ifdef TUNING
 /*
     namedWindow("Thresh Blue", WINDOW_NORMAL); //create a window called "Control"
@@ -317,14 +318,18 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     float dt= (t-t_prev)/1000.0;
     t_prev = t;
 
+#ifdef DRAWVIZSL
     resFrame = frameL.clone();
-
+#endif
+#ifdef DRAWVIZSR
+    resFrame = frameR.clone();
+#endif
 
     cv::Mat tmpfL,tmpfR;
     tmpfL = cv::Mat(frameL.rows/4, frameL.cols/4,CV_8UC3);
     tmpfR = cv::Mat(frameR.rows/4, frameR.cols/4,CV_8UC3);
     cv::resize(frameL,tmpfL,tmpfL.size(),0,0);
-    cv::resize(frameR,tmpfL,tmpfR.size(),0,0);
+    cv::resize(frameR,tmpfR,tmpfR.size(),0,0);
 
     cv::Mat framegrayL,framegrayR;
     cvtColor(tmpfL,framegrayL,COLOR_BGR2GRAY);
@@ -377,6 +382,10 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         drawKeypoints( framegrayL, predicted_dronepathL, framegrayL, Scalar(0,255,0), DrawMatchesFlags::DEFAULT );
 #endif
 
+    } else {
+#ifdef DRAWVIZSL
+        cvtColor(framegrayL,framegrayL,CV_GRAY2BGR);
+#endif
     }
     if (foundR) {
         kfR.transitionMatrix.at<float>(2) = dt;
@@ -399,6 +408,10 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         drawKeypoints( framegrayR, predicted_dronepathR, framegrayR, Scalar(0,255,0), DrawMatchesFlags::DEFAULT );
 #endif
 
+    } else {
+#ifdef DRAWVIZSR
+        cvtColor(framegrayR,framegrayR,CV_GRAY2BGR);
+#endif
     }
 
 
@@ -524,17 +537,17 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     cvtColor(treshfL,treshfL,CV_GRAY2BGR);
     treshfL.copyTo(resFrame(cv::Rect(resFrame.cols - treshfL.cols,0,treshfL.cols, treshfL.rows)));
     if (dronepathL.size() > 0) {
-        drawKeypoints( framegrayL, dronepathL, framegrayL, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
-        framegrayL.copyTo(resFrame(cv::Rect(0,0,framegrayL.cols, framegrayL.rows)));
+        drawKeypoints( framegrayL, dronepathL, framegrayL, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );        
     }
+    framegrayL.copyTo(resFrame(cv::Rect(0,0,framegrayL.cols, framegrayL.rows)));
 #endif
 #ifdef DRAWVIZSR
     cvtColor(treshfR,treshfR,CV_GRAY2BGR);
     treshfR.copyTo(resFrame(cv::Rect(resFrame.cols - treshfR.cols,0,treshfR.cols, treshfR.rows)));
     if (dronepathR.size() > 0) {
         drawKeypoints( framegrayR, dronepathR, framegrayR, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
-        framegrayR.copyTo(resFrame(cv::Rect(0,0,framegrayR.cols, framegrayR.rows)));
     }
+    framegrayR.copyTo(resFrame(cv::Rect(0,0,framegrayR.cols, framegrayR.rows)));
 #endif
 
     if (dronepathL.size() > 30)
