@@ -3,12 +3,14 @@
 
 #include "rs232.h"
 #include "dronetracker.h"
+#include "joystick.hpp"
 #include "common.h"
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/archives/binary.hpp>
 #include <fstream>
 #include <iomanip>
+#include <unistd.h>
 
 using namespace cv;
 

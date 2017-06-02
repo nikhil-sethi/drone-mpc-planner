@@ -1,17 +1,29 @@
 #include "dronecontroller.h"
 
-
 #include "defines.h"
 
 const string paramsFile = "../controlParameters.dat";
 unsigned int roll,pitch,yaw = 1500;
 unsigned int thrust = 1000;
+// Create an instance of Joystick
+Joystick joystick("/dev/input/js0");
+JoystickEvent event;
 
 bool DroneController::init(void) {
 
     // setup connection with Arduino
     baudrate = 115200;
     RS232_OpenComport(baudrate);
+
+	
+
+	// Ensure that it was found and that we can use it
+	if (!joystick.isFound())
+	  {
+		printf("open failed.\n");
+		exit(1);
+	  }
+
 
     // Load saved control paremeters
     if (checkFileExist(paramsFile)) {
@@ -69,12 +81,32 @@ void DroneController::control(trackData data) {
     if ( thrust > 1950 )
 	thrust = 1950;
 
-   
 
+	// joystick 
+	while (joystick.sample(&event))
+    {
+      if (event.isAxis())
+      {		
+		if ( event.number == 0 ) {// roll
+			roll = 1500 + (event.value >> 6);			
+		}
+		if ( event.number == 1 ) {// pitch
+			pitch = 1500 - (event.value >> 6);			
+		}
+		if ( event.number == 2 ) {// thrust
+			thrust = 1500 - (event.value >> 6);			
+		}
+		if ( event.number == 5 ) {// yaw
+			yaw = 1500 + (event.value >> 6);			
+		}
+      }
+    }
+   
     char buff[21];
     sprintf( (char*) buff,"%u,%u,%u,%u\n",thrust,roll,pitch,yaw);
     //sprintf( (char*) buff,"1200,1500,1500,1500\n");
-    
+
+
     if ( data.valid ) {
 
     std::setprecision(2);
@@ -84,7 +116,7 @@ void DroneController::control(trackData data) {
 
     RS232_SendBuf( (unsigned char*) buff, 20);
 
-
+	//TODO: disable uart polling after bind confirmed!
     unsigned char inbuf[1];
     inbuf[1] = 0;
     std::stringstream tmp;
@@ -100,6 +132,7 @@ void DroneController::control(trackData data) {
 	if (totn > 0) {
 	    std::cout << totn << ": " << tmp.str();
 	}
+
 
 }
 
