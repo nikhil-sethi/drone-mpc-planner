@@ -82,9 +82,9 @@ void process_video() {
         if (!pausecam) {
             cam.waitForImage();
         }
-        stereo.rectify(cam.frameL, cam.frameR);
+        //stereo.rectify(cam.frameL, cam.frameR);
 
-        dtrk.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
+        //dtrk.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
         dctrl.control(dtrk.data);
         resFrame = dtrk.resFrame;
 
@@ -160,7 +160,7 @@ void handleKey() {
     } // end switch key
 #ifndef HASSCREEN
     if (key!=0) {
-        std::cout << "Terminal: "  << msg << std::endl;
+        //std::cout << "Terminal: "  << msg << std::endl;
     }
 #endif
     key=0;

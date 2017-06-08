@@ -387,7 +387,7 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         t.pt = beun;
         t.size = 3;
         predicted_dronepathL.push_back(t);
-        cout << "PredictionL: " << predicted_drone_locationL << std::endl;
+       // cout << "PredictionL: " << predicted_drone_locationL << std::endl;
 #ifdef DRAWVIZSL
         drawKeypoints( framegrayL, predicted_dronepathL, framegrayL, Scalar(0,255,0), DrawMatchesFlags::DEFAULT );
 #endif
@@ -413,7 +413,7 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         t.pt = predicted_drone_locationR;
         t.size = 3;
         predicted_dronepathR.push_back(t);
-        cout << "PredictionR: " << predicted_drone_locationR << std::endl;
+        //cout << "PredictionR: " << predicted_drone_locationR << std::endl;
 #ifdef DRAWVIZSR
         drawKeypoints( framegrayR, predicted_dronepathR, framegrayR, Scalar(0,255,0), DrawMatchesFlags::DEFAULT );
 #endif
@@ -447,7 +447,7 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
             }
         }
 
-        cout << "MeasuredL: " <<  closestL.pt << std::endl;
+        //cout << "MeasuredL: " <<  closestL.pt << std::endl;
 
         dronepathL.push_back(closestL);
 
@@ -466,7 +466,7 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
             }
         }
 
-        cout << "MeasuredR: " <<  closestR.pt << std::endl;
+        //cout << "MeasuredR: " <<  closestR.pt << std::endl;
 
         //turbo beuntje
         closestR.pt.x = closestL.pt.x - (closestL.pt.x - closestR.pt.x);
@@ -478,14 +478,14 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     if (keypointsL.size() == 0 || keypointsR.size() == 0) {
         if (keypointsL.size() == 0) {
             notFoundCountL++;
-            cout << "notFoundCountL:" << notFoundCountL << endl;
+            //cout << "notFoundCountL:" << notFoundCountL << endl;
             if( notFoundCountL >= 100 )
                 foundL = false;
         }
 
         if (keypointsR.size() == 0) {
             notFoundCountR++;
-            cout << "notFoundCountR:" << notFoundCountR << endl;
+            //cout << "notFoundCountR:" << notFoundCountR << endl;
             if( notFoundCountR >= 100 )
                 foundR = false;
         }
