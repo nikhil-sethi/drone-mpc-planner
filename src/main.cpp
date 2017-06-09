@@ -71,6 +71,10 @@ void CallBackFunc(int event, int x, int y, int flags, void* userdata);
 void handleKey();
 
 /************ code ***********/
+void plot(cv::Mat data1,cv::Mat data2, std::string name);
+cv::Mat rolldata1(1,1,CV_32FC1);
+cv::Mat rolldata2(1,1,CV_32FC1);
+
 
 void process_video() {
     std::cout << "Running...\n";
@@ -82,14 +86,22 @@ void process_video() {
         if (!pausecam) {
             cam.waitForImage();
         }
-        //stereo.rectify(cam.frameL, cam.frameR);
+        stereo.rectify(cam.frameL, cam.frameR);
 
-        //dtrk.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
+        dtrk.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
         dctrl.control(dtrk.data);
         resFrame = dtrk.resFrame;
 
+#ifdef _PC
+        std::cout << "Log: " << cam.getCurrentThrust()  << ", " << cam.getCurrentRoll() << ", " << cam.getCurrentPitch() << ", " << cam.getCurrentYaw() << std::endl;
+#endif
+
 #ifdef HASSCREEN
         cv::imshow("Results", resFrame);
+
+        rolldata1.push_back(cam.getCurrentRoll());
+        rolldata2.push_back((float)dctrl.commandedRoll);
+        plot(rolldata1,rolldata2, "Roll");
 #endif
 #if VIDEORESULTS
         outputVideoResults.write(resFrame);
@@ -112,6 +124,44 @@ void process_video() {
 #ifdef HASSCREEN
     cv::destroyAllWindows();
 #endif
+}
+
+
+void plot(cv::Mat data1,cv::Mat data2, const std::string name) {
+
+    int line_width = 1;
+
+    const int fsizex = 500;
+    const int fsizey = 300;
+    double min,max;
+
+    cv::Mat tmp;
+    tmp.push_back(data1);
+    tmp.push_back(data2);
+    cv::minMaxIdx(tmp,&min,&max,NULL,NULL);
+
+    min-=1;
+    max+=1;
+
+    const float scaleX = (float)((fsizex))/(data1.rows);
+    const float scaleY = (fsizey)/(max-min);
+
+    cv::Mat frame = cv::Mat::zeros(fsizey+4*line_width, fsizex+4*line_width, CV_8UC3);
+
+    int prev_y1 =0;
+    int prev_y2 =0;
+    for (int j = 0; j < data1.rows-1; j++)  {
+        int y1 = data1.at<float>(j,1) - min;
+        int y2 = data2.at<float>(j,1) - min;
+        cv::line(frame, cv::Point(j*scaleX + 2*line_width , fsizey- prev_y1*scaleY +line_width*2) , cv::Point((j+1)*scaleX + 2*line_width, fsizey -  y1*scaleY +2*line_width), cv::Scalar(0,255,0), line_width, CV_AA, 0);
+        cv::line(frame, cv::Point(j*scaleX + 2*line_width , fsizey- prev_y2*scaleY +line_width*2) , cv::Point((j+1)*scaleX + 2*line_width, fsizey -  y2*scaleY +2*line_width), cv::Scalar(255,0,0), line_width, CV_AA, 0);
+        prev_y1 = y1;
+        prev_y2 = y2;
+    }
+
+    imshow(name,frame);
+
+
 }
 
 void CallBackFunc(int event, int x, int y, int flags, void* userdata)
@@ -265,6 +315,9 @@ void close() {
 
 int main( int argc, char **argv )
 {
+
+    rolldata1.pop_back();
+    rolldata2.pop_back();
     if (init(argc,argv)) {return 1;}
     process_video();
     close();

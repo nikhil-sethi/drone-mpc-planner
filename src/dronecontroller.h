@@ -57,8 +57,9 @@ private:
     int baudrate;
 
 
-public:
 
+public:
+int commandedRoll=6;
     void close (void);
     bool init(void);
     void control(trackData data);

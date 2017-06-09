@@ -27,7 +27,7 @@
 
 #define HASSCREEN // dont disable in qt debugger!
 
-#define VIDEORAWLR VIDEO_AVI_OPENCV
+#define VIDEORAWLR VIDEOMODE_DISABLED
 #define VIDEODISPARITY VIDEOMODE_DISABLED
 #define VIDEORESULTS VIDEOMODE_DISABLED
 #define VIDEOFPS 12 // the estimated frame rate of the video used for creating output videos

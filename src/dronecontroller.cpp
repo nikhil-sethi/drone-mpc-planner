@@ -1,7 +1,7 @@
 #include "dronecontroller.h"
 #include "defines.h"
 
-//#define TUNING
+#define TUNING
 
 const string paramsFile = "../controlParameters.dat";
 unsigned int roll,pitch,yaw = 1500;
@@ -10,11 +10,13 @@ unsigned int thrust = 1000;
 Joystick joystick("/dev/input/js0");
 JoystickEvent event;
 
+int notconnected;
+
 bool DroneController::init(void) {
 	std::cout << "Initialising control." << std::endl;
     // setup connection with Arduino
     baudrate = 115200;
-    RS232_OpenComport(baudrate);
+    notconnected = RS232_OpenComport(baudrate);
 
 	// Ensure that it was found and that we can use it
 	if (!joystick.isFound()) {
@@ -58,7 +60,7 @@ void DroneController::control(trackData data) {
 
     if ( data.valid ) {
 		//thrust = -data.posY * params.heightP - data.velY * params.heightD +  (1000 + params.heightI*3.92);
-	    //roll -= data.posX * params.rollP + data.velX * params.rollD;
+        roll -= data.posX * params.rollP + data.velX * params.rollD;
     }
 
 	// joystick 
@@ -92,13 +94,15 @@ void DroneController::control(trackData data) {
 		roll = 1050;
     if ( roll > 1950 )
 		roll = 1950;
+    commandedRoll = roll;
 
 	int mode = 1500; // <min = mode 1, 1500 = mode 2, >max = mode 3 
 
     char buff[64];
-    sprintf( (char*) buff,"%u,%u,%u,%u,1500,0,0,0,0,0,0,0\n",thrust,roll,pitch,yaw);
-    //sprintf( (char*) buff,"%u,%u,%u,%u,0,0,0,0,0,0,0,2000\n",thrust,roll,pitch,yaw);
-    RS232_SendBuf( (unsigned char*) buff, 63);
+    sprintf( (char*) buff,"%u,%u,%u,%u,1500,0,0,0,0,0,0,0\n",thrust,roll,pitch,yaw);    
+    if (!notconnected) {
+        RS232_SendBuf( (unsigned char*) buff, 63);
+    }
 
 
     //if ( data.valid ) {
@@ -107,7 +111,7 @@ void DroneController::control(trackData data) {
 		std::cout << "JoyCommands:" << std::string(buff) << std::flush;
     //}
 
-
+if (!notconnected) {
     unsigned char inbuf[1];
     inbuf[1] = 0;
     std::stringstream tmp;
@@ -123,6 +127,7 @@ void DroneController::control(trackData data) {
 	if (totn > 0) {
 	   // std::cout << totn << ": " << tmp.str() << std::endl;
 	}
+}
 
 	//TODO: disable uart polling after bind confirmed!
 //check if input string is the same as the commanded strning, if so bind was succesfull!
@@ -136,8 +141,10 @@ void DroneController::control(trackData data) {
 void DroneController::close () {
     char buff[64];
     sprintf( (char*) buff,"1050,1500,1500,1500,0,0,0,0,0,0,0,2000\n");
+    if (!notconnected) {
     RS232_SendBuf( (unsigned char*) buff, 63);
     RS232_CloseComport();
+    }
 
     std::cout << "closing controller" << std::endl;
 
