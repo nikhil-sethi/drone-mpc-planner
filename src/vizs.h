@@ -14,6 +14,7 @@ class Visualizer{
 
 private:
     void plot(cv::Mat data1,cv::Mat data2, std::string name);
+    void plot(cv::Mat data1,cv::Mat data2, cv::Mat *frame, std::string name);
     void addSample(void);
     KalamosFileCam *cam;
     DroneController *dctrl;
@@ -23,11 +24,19 @@ public:
     Visualizer(void){
         roll_joystick = cv::Mat(1,1,CV_32FC1);
         roll_calculated = cv::Mat (1,1,CV_32FC1);
+        pitch_joystick = cv::Mat(1,1,CV_32FC1);
+        pitch_calculated = cv::Mat (1,1,CV_32FC1);
+        yaw_joystick = cv::Mat(1,1,CV_32FC1);
+        yaw_calculated = cv::Mat (1,1,CV_32FC1);
         throttle_joystick = cv::Mat(1,1,CV_32FC1);
         throttle_calculated = cv::Mat (1,1,CV_32FC1);
 
         roll_joystick.pop_back();
         roll_calculated.pop_back();
+        pitch_joystick.pop_back();
+        pitch_calculated.pop_back();
+        yaw_joystick.pop_back();
+        yaw_calculated.pop_back();
         throttle_joystick.pop_back();
         throttle_calculated.pop_back();
     }
