@@ -85,15 +85,13 @@ void process_video() {
         if (!pausecam) {
             cam.waitForImage();
         }
-#ifdef _PC
+
         stereo.rectify(cam.frameL, cam.frameR);
-        dtrk.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
-        resFrame = dtrk.resFrame;
-#endif
+        dtrk.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);       
         dctrl.control(dtrk.data);
 
-
 #ifdef _PC
+        resFrame = dtrk.resFrame;
         logger << "TRPY: " << cam.getCurrentThrust()  << ", " << cam.getCurrentRoll() << ", " << cam.getCurrentPitch() << ", " << cam.getCurrentYaw() << std::endl;
         std::cout << "TRPY: " << cam.getCurrentThrust()  << ", " << cam.getCurrentRoll() << ", " << cam.getCurrentPitch() << ", " << cam.getCurrentYaw() << std::endl;
         visualizer.plot();

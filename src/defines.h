@@ -13,11 +13,11 @@
 //#define HASSCREEN
 
 // due to hardware accelerated encoding, only one gstream can be enabled at the same time!
-#define VIDEORAWLR VIDEOMODE_AVI
+#define VIDEORAWLR VIDEOMODE_DISABLED
 #define VIDEORESULTS VIDEOMODE_DISABLED
 
 //non-hw accelerated custom 16b grayscale 96x96 video render:
-#define VIDEODISPARITY VIDEOMODE_AVI
+#define VIDEODISPARITY VIDEOMODE_DISABLED
 
 #define VIDEOFPS 14 // the estimated frame rate of the video used for creating output videos
 

@@ -62,10 +62,10 @@ bool DroneController::init(std::ofstream *logger) {
 
 void DroneController::control(trackData data) {
 
-    if ( data.valid ) {
+    if ( data.valid && joySwitch ) {
         throttle = -data.posY * params.throttleP - data.velY * params.throttleD +  (1000 + params.throttleI*3.92);
-        roll -= data.posX * params.rollP + data.velX * params.rollD;
-        pitch -= data.posZ * params.pitchP + data.velZ * params.pitchD;
+        //roll -= data.posX * params.rollP + data.velX * params.rollD;
+        //pitch -= data.posZ * params.pitchP + data.velZ * params.pitchD;
     }
 
     // joystick
