@@ -323,16 +323,18 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     float dt= (t-t_prev)/1000.0;
     t_prev = t;
     cv::Mat resFrameL,resFrameR;
-#ifdef DRAWVIZSL
-    resFrameL = frameL.clone();
+#ifdef DRAWVIZSL    
+    cv::resize(frameL,resFrameL,cv::Size(2*frameL.cols,frameL.rows*2));
+//    resFrameL = frameL.clone();
 #endif
 #ifdef DRAWVIZSR
-    resFrameR = frameR.clone();
+    cv::resize(frameR,resFrameR,cv::Size(2*frameR.cols,frameR.rows*2));
+//    resFrameR = frameR.clone();
 #endif
 
     cv::Mat tmpfL,tmpfR;
-    tmpfL = cv::Mat(frameL.rows/4, frameL.cols/4,CV_8UC3);
-    tmpfR = cv::Mat(frameR.rows/4, frameR.cols/4,CV_8UC3);
+    tmpfL = cv::Mat(frameL.rows/2, frameL.cols/2,CV_8UC3);
+    tmpfR = cv::Mat(frameR.rows/2, frameR.cols/2,CV_8UC3);
     cv::resize(frameL,tmpfL,tmpfL.size(),0,0);
     cv::resize(frameR,tmpfR,tmpfR.size(),0,0);
 
