@@ -29,7 +29,7 @@ bool KalamosFileCam::init (std::string folder) {
     res &= fileExists(sD.str());
 
     std::stringstream slog;
-    slog << folder << "controllog.txt";
+    slog << folder << "log.txt";
     if (fileExists(slog.str())) {
         //read the log here, and process it
         std::ifstream infile(slog.str());

@@ -5,24 +5,29 @@
 
 const string paramsFile = "../controlParameters.dat";
 unsigned int roll,pitch,yaw = 1500;
-unsigned int thrust = 1000;
+unsigned int throttle = 1000;
 // Create an instance of Joystick
 Joystick joystick("/dev/input/js0");
 JoystickEvent event;
 
+
+bool joySwitch = false;
+int joyDial =0;
+
 int notconnected;
 
-bool DroneController::init(void) {
-	std::cout << "Initialising control." << std::endl;
+bool DroneController::init(std::ofstream *logger) {
+    _logger = logger;
+    std::cout << "Initialising control." << std::endl;
     // setup connection with Arduino
     baudrate = 115200;
     notconnected = RS232_OpenComport(baudrate);
 
-	// Ensure that it was found and that we can use it
-	if (!joystick.isFound()) {
-		printf("joystick failed.\n");
-		exit(1);
-	}
+    // Ensure that it was found and that we can use it
+    if (!joystick.isFound()) {
+        printf("joystick failed.\n");
+        exit(1);
+    }
 
     // Load saved control paremeters
     if (checkFileExist(paramsFile)) {
@@ -32,7 +37,7 @@ bool DroneController::init(void) {
     }
 
 #ifdef TUNING
-	std::cout << "Creating control tuning window." << std::endl;
+    std::cout << "Creating control tuning window." << std::endl;
     // create GUI to set control parameters
     namedWindow("Control", WINDOW_NORMAL);
     // height control
@@ -59,82 +64,93 @@ bool DroneController::init(void) {
 void DroneController::control(trackData data) {
 
     if ( data.valid ) {
-		//thrust = -data.posY * params.heightP - data.velY * params.heightD +  (1000 + params.heightI*3.92);
+        //thrust = -data.posY * params.heightP - data.velY * params.heightD +  (1000 + params.heightI*3.92);
         roll -= data.posX * params.rollP + data.velX * params.rollD;
     }
 
-	// joystick 
-	while (joystick.sample(&event))
+    // joystick
+    while (joystick.sample(&event))
     {
-      if (event.isAxis())
-      {		
-		if ( event.number == 0 ) {// roll
-			std::cout <<  "Roll override!" << std::endl;	
-			roll = 1500 + (event.value >> 6);			
-		}
-		if ( event.number == 1 ) {// pitch
-			pitch = 1500 - (event.value >> 6);			
-		}
-		if ( event.number == 2 ) {// thrust
-			thrust = 1500 - (event.value >> 6);		
-			
-		}
-		if ( event.number == 5 ) {// yaw
-			yaw = 1500 + (event.value >> 6);			
-		}
-      }
+        if (event.isAxis()) {
+            switch ( event.number ) {
+            case 0: // roll
+                //std::cout <<  "Roll override!" << std::endl;
+                roll = 1500 + (event.value >> 6);
+                break;
+            case 1: // pitch
+                pitch = 1500 - (event.value >> 6);
+                break;
+            case 2: //throttle
+                throttle = 1500 - (event.value >> 6);
+                break;
+            case 3: //switch
+                joySwitch = event.number>0; // goes between +/-32768
+                break;
+            case 4: //dial
+                joyDial = event.number; // goes between +/-32768
+                break;
+            case 5: //yaw
+                yaw = 1500 + (event.value >> 6);
+                break;
+            default:
+                std::cout << "Unkown joystick event: " << std::to_string(event.number) << ". Value: " << std::to_string(event.value) << std::endl;
+                break;
+            }
+        }
     }
 
-    if ( thrust < 1050 )
-		thrust = 1050;
-    if ( thrust > 1950 )
-		thrust = 1950;
+    if ( throttle < 1050 )
+        throttle = 1050;
+    if ( throttle > 1950 )
+        throttle = 1950;
 
     if ( roll < 1050 )
-		roll = 1050;
+        roll = 1050;
     if ( roll > 1950 )
-		roll = 1950;
+        roll = 1950;
     commandedRoll = roll;
-    commandedThrottle = thrust;
+    commandedThrottle = throttle;
 
-	int mode = 1500; // <min = mode 1, 1500 = mode 2, >max = mode 3 
+    int mode = 1500; // <min = mode 1, 1500 = mode 2, >max = mode 3
 
     char buff[64];
-    sprintf( (char*) buff,"%u,%u,%u,%u,1500,0,0,0,0,0,0,0\n",thrust,roll,pitch,yaw);    
+    sprintf( (char*) buff,"%u,%u,%u,%u,1500,0,0,0,0,0,0,0\n",throttle,roll,pitch,yaw);
     if (!notconnected) {
         RS232_SendBuf( (unsigned char*) buff, 63);
     }
 
 
     //if ( data.valid ) {
-		//std::setprecision(2);
-		//std::cout << data.posY << " " << data.velY << " - ";
-		std::cout << "JoyCommands:" << std::string(buff) << std::flush;
+    //std::setprecision(2);
+    //std::cout << data.posY << " " << data.velY << " - ";
+    std::cout << "JoyCommands:" << std::string(buff) << std::flush;
+    (*_logger) << "JoyCommands:" << std::string(buff) << std::flush;
+
     //}
 
-if (!notconnected) {
-    unsigned char inbuf[1];
-    inbuf[1] = 0;
-    std::stringstream tmp;
-    int n = 1;
-    int totn = 0;
-    while (n)    {
-        n = RS232_PollComport(inbuf,1);
-		if (n > 0) {
-        	tmp << inbuf[0];
-			totn += n;
-		}
+    if (!notconnected) {
+        unsigned char inbuf[1];
+        inbuf[1] = 0;
+        std::stringstream tmp;
+        int n = 1;
+        int totn = 0;
+        while (n)    {
+            n = RS232_PollComport(inbuf,1);
+            if (n > 0) {
+                tmp << inbuf[0];
+                totn += n;
+            }
+        }
+        if (totn > 0) {
+            // std::cout << totn << ": " << tmp.str() << std::endl;
+        }
     }
-	if (totn > 0) {
-	   // std::cout << totn << ": " << tmp.str() << std::endl;
-	}
-}
 
-	//TODO: disable uart polling after bind confirmed!
-//check if input string is the same as the commanded strning, if so bind was succesfull!
-//	for (int i = 0 to tmp.count;i++) {
-		//if tmp.str.c_str[i] == buff[i] ...
-//	}
+    //TODO: disable uart polling after bind confirmed!
+    //check if input string is the same as the commanded strning, if so bind was succesfull!
+    //	for (int i = 0 to tmp.count;i++) {
+    //if tmp.str.c_str[i] == buff[i] ...
+    //	}
 
 
 }
@@ -143,8 +159,8 @@ void DroneController::close () {
     char buff[64];
     sprintf( (char*) buff,"1050,1500,1500,1500,0,0,0,0,0,0,0,2000\n");
     if (!notconnected) {
-    RS232_SendBuf( (unsigned char*) buff, 63);
-    RS232_CloseComport();
+        RS232_SendBuf( (unsigned char*) buff, 63);
+        RS232_CloseComport();
     }
 
     std::cout << "closing controller" << std::endl;

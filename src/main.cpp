@@ -85,11 +85,13 @@ void process_video() {
         if (!pausecam) {
             cam.waitForImage();
         }
+#ifdef _PC
         stereo.rectify(cam.frameL, cam.frameR);
-
-        //dtrk.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
+        dtrk.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
+        resFrame = dtrk.resFrame;
+#endif
         dctrl.control(dtrk.data);
-        //resFrame = dtrk.resFrame;
+
 
 #ifdef _PC
         logger << "TRPY: " << cam.getCurrentThrust()  << ", " << cam.getCurrentRoll() << ", " << cam.getCurrentPitch() << ", " << cam.getCurrentYaw() << std::endl;
@@ -186,14 +188,14 @@ int init(int argc, char **argv) {
 
 #ifdef _PC
     if (argc != 3) {
-        std::cout << "Wrong arguments. Specify the location to load images..." << std::endl;
+        std::cout << "Wrong arguments. Specify the locations for: (1) loading images, (2) the calib folder..." << std::endl;
         return 1;
     }
     std::cout << "Loading images from: " << std::string(argv[1]) << std::endl;
     if (cam.init(std::string(argv[1]))) {
         return 1;
     }
-
+    std::cout << "Calib folder: " << std::string(argv[2]) << std::endl;
     std::string calib_folder = std::string(argv[2]);
 #else
     cam.init();
@@ -254,7 +256,7 @@ int init(int argc, char **argv) {
 #endif
 
     dtrk.init();
-    dctrl.init();
+    dctrl.init(&logger);
 #ifdef _PC
     visualizer.init(&cam,&dctrl);
 #endif

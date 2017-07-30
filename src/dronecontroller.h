@@ -55,7 +55,7 @@ private:
 
     controlParameters params;
     int baudrate;
-
+    std::ofstream *_logger;
 
 
 public:
@@ -65,7 +65,7 @@ int commandedYaw=6;
 int commandedThrottle=6;
 
     void close (void);
-    bool init(void);
+    bool init(std::ofstream *logger);
     void control(trackData data);
 
 };
