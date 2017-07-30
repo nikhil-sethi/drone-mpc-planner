@@ -60,6 +60,10 @@ private:
 
 public:
 int commandedRoll=6;
+int commandedPitch=6;
+int commandedYaw=6;
+int commandedThrottle=6;
+
     void close (void);
     bool init(void);
     void control(trackData data);

@@ -95,6 +95,7 @@ void DroneController::control(trackData data) {
     if ( roll > 1950 )
 		roll = 1950;
     commandedRoll = roll;
+    commandedThrottle = thrust;
 
 	int mode = 1500; // <min = mode 1, 1500 = mode 2, >max = mode 3 
 

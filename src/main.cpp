@@ -72,8 +72,11 @@ void handleKey();
 
 /************ code ***********/
 void plot(cv::Mat data1,cv::Mat data2, std::string name);
-cv::Mat rolldata1(1,1,CV_32FC1);
-cv::Mat rolldata2(1,1,CV_32FC1);
+cv::Mat roll_joystick(1,1,CV_32FC1);
+cv::Mat roll_calculated(1,1,CV_32FC1);
+cv::Mat throttle_joystick(1,1,CV_32FC1);
+cv::Mat throttle_calculated(1,1,CV_32FC1);
+
 
 
 void process_video() {
@@ -99,9 +102,13 @@ void process_video() {
 #ifdef HASSCREEN
         cv::imshow("Results", resFrame);
 
-        rolldata1.push_back(cam.getCurrentRoll());
-        rolldata2.push_back((float)dctrl.commandedRoll);
-        plot(rolldata1,rolldata2, "Roll");
+        roll_joystick.push_back(cam.getCurrentRoll());
+        roll_calculated.push_back((float)dctrl.commandedRoll);
+        plot(roll_joystick,roll_calculated, "Roll");
+
+        throttle_joystick.push_back(cam.getCurrentThrust());
+        throttle_calculated.push_back((float)dctrl.commandedThrottle);
+        plot(throttle_joystick,throttle_calculated, "Throttle");
 #endif
 #if VIDEORESULTS
         outputVideoResults.write(resFrame);
@@ -316,8 +323,10 @@ void close() {
 int main( int argc, char **argv )
 {
 
-    rolldata1.pop_back();
-    rolldata2.pop_back();
+    roll_joystick.pop_back();
+    roll_calculated.pop_back();
+    throttle_joystick.pop_back();
+    throttle_calculated.pop_back();
     if (init(argc,argv)) {return 1;}
     process_video();
     close();
