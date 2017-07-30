@@ -18,14 +18,15 @@ private:
  	GstElement *pipeline,*appsrc;
 
 
-    void prepare_buffer(GstAppSrc* appsrc, cv::Mat * image);
+    int prepare_buffer(GstAppSrc* appsrc, cv::Mat * image);
    	//void cb_need_data (GstElement *appsrc, guint unused_size, gpointer user_data);
 
 public:
     int init(int argc, char **argv, int mode, std::string file, int sizeX, int sizeY, std::string ip, int port);
-    void write(cv::Mat frame);
-    void write(cv::Mat frameL,cv::Mat frameR);
+    int write(cv::Mat frame);
+    int write(cv::Mat frameL,cv::Mat frameR);
     void close (void);
+int getWanted(void);
 };
 
 

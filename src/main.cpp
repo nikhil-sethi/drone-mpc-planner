@@ -89,9 +89,9 @@ void process_video() {
         if (!pausecam) {
             cam.waitForImage();
         }
-        stereo.rectify(cam.frameL, cam.frameR);
+        //stereo.rectify(cam.frameL, cam.frameR);
 
-        dtrk.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
+        //dtrk.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
         dctrl.control(dtrk.data);
         resFrame = dtrk.resFrame;
 
@@ -109,23 +109,28 @@ void process_video() {
         throttle_joystick.push_back(cam.getCurrentThrust());
         throttle_calculated.push_back((float)dctrl.commandedThrottle);
         plot(throttle_joystick,throttle_calculated, "Throttle");
+
+#endif
+		int frameWritten = 0;
+
+
+#if VIDEORAWLR
+//while (!outputVideoRawLR.getWanted()) {usleep(10000);}
+        frameWritten = outputVideoRawLR.write(cam.frameL,cam.frameR);
+#endif
+		if (frameWritten == 0) {
+#if VIDEODISPARITY
+    	    outputVideoDisp.write(cam.get_disp_frame());
 #endif
 #if VIDEORESULTS
-        outputVideoResults.write(resFrame);
+	        outputVideoResults.write(resFrame);
 #endif
-#if VIDEORAWLR
-        outputVideoRawLR.write(cam.frameL,cam.frameR);
-#endif
-#if VIDEODISPARITY
-        outputVideoDisp.write(cam.get_disp_frame());
-#endif
+	        handleKey();
 
-        handleKey();
-
-        imgcount++;
-        float time = ((float)stopWatch.Read())/1000.0;
-        std::cout << "Frame: " <<imgcount << ". FPS: " << imgcount / time << std::endl;
-
+	        imgcount++;
+	        float time = ((float)stopWatch.Read())/1000.0;
+    	    std::cout << "Frame: " <<imgcount << ". FPS: " << imgcount / time << std::endl;
+		}
     } // main while loop
 
 #ifdef HASSCREEN
@@ -278,7 +283,7 @@ int init(int argc, char **argv) {
     if (outputVideoResults.init(argc,argv,VIDEORESULTS, "videoResult.avi",864,864,"192.168.1.10",5004)) {return 1;}
 #endif
 #if VIDEORAWLR
-    if (outputVideoRawLR.init(argc,argv,VIDEORAWLR,"videoRawLR.avi",2560,960,"192.168.1.10",5004)) {return 1;}
+    if (outputVideoRawLR.init(argc,argv,VIDEORAWLR,"videoRawLR.avi",cam.getImWidth()*2,cam.getImHeight(),"192.168.1.10",5004)) {return 1;}
 #endif
 
 #if VIDEODISPARITY

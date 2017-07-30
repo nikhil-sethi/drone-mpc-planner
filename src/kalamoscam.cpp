@@ -12,9 +12,11 @@
 using namespace kalamos;
 using namespace std::placeholders;
 
+cv::Size oriSize(1280,960);
+
 bool KalamosCam::init (void) {
-	frameL = cv::Mat::zeros(960,1280,CV_8UC3);
-	frameR = cv::Mat::zeros(960,1280,CV_8UC3);
+	frameL = cv::Mat::zeros(oriSize.height/IMSCALEF,oriSize.width/IMSCALEF,CV_8UC3);
+	frameR = cv::Mat::zeros(oriSize.height/IMSCALEF,oriSize.width/IMSCALEF,CV_8UC3);
 	frameD_mat = cv::Mat::zeros(96,96,CV_32F);		
 }
 
@@ -30,13 +32,14 @@ void KalamosCam::CBstereo(StereoYuvData const& data) {
 	channelsLuv.push_back(*(data.leftYuv[1]));
 	cv::Mat frameLuv,frameLyuv;
 	cv::merge(channelsLuv,frameLuv);
-	cv::resize(frameLuv,frameLuv,frameL.size(),0,0);
+	cv::resize(frameLuv,frameLuv,oriSize,0,0);
 	cv::Mat tmpLuv[2];
 	cv::split(frameLuv,tmpLuv);
 	channelsLyuv.push_back(*(data.leftYuv[0]));
 	channelsLyuv.push_back(tmpLuv[0]);
 	channelsLyuv.push_back(tmpLuv[1]);
 	cv::merge(channelsLyuv,frameLyuv);
+	cv::resize(frameLyuv,frameLyuv,frameL.size()); // make it smaller. Optional if IMSCALEF<>1
 
 	//prepare right frame
 	std::vector<cv::Mat> channelsRuv,channelsRyuv;
@@ -44,20 +47,20 @@ void KalamosCam::CBstereo(StereoYuvData const& data) {
 	channelsRuv.push_back(*(data.rightYuv[1]));
 	cv::Mat frameRuv,frameRyuv;
 	cv::merge(channelsRuv,frameRuv);
-	cv::resize(frameRuv,frameRuv,frameR.size(),0,0);
+	cv::resize(frameRuv,frameRuv,oriSize,0,0);
 	cv::Mat tmpRuv[2];
 	cv::split(frameRuv,tmpRuv);
 	channelsRyuv.push_back(*(data.rightYuv[0]));
 	channelsRyuv.push_back(tmpRuv[0]);
 	channelsRyuv.push_back(tmpRuv[1]);
 	cv::merge(channelsRyuv,frameRyuv);
+	cv::resize(frameRyuv,frameRyuv,frameL.size());  // make it smaller. Optional if IMSCALEF<>1
 
 	//synchronously copy buffers:
 	g_lockWaitForImage1.lock();
 	cv::cvtColor(frameLyuv,frameL,CV_YUV2BGR);
 	cv::cvtColor(frameRyuv,frameR,CV_YUV2BGR);
 	g_lockWaitForImage2.unlock();
-	
 }
 
 

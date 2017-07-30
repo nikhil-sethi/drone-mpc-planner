@@ -18,7 +18,7 @@ private:
     cv::StereoSGBM sgbm;
     float dispScale;
 
-    const int ROIsize = 864;
+    const int ROIsize = 864/IMSCALEF;
 
 public:
     cv::Mat frameD;

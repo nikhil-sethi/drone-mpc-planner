@@ -18,10 +18,14 @@ static void cb_need_data (GstElement *appsrc, guint unused_size, gpointer user_d
     want = 1;
 }
 
+int GStream::getWanted(void) {
+return want;
+}
+
 int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, int sizeY,std::string ip, int port) {
     videomode = mode;
 
-    if (mode == VIDEO_AVI_OPENCV) {
+    if (mode == VIDEOMODE_AVI_OPENCV) {
 
         std::cout << "Opening video file for processed results at " << sizeX << "x" << sizeY << " pixels with " << VIDEOFPS << "fps " << std::endl;
         cv::Size sizeRes(sizeX,sizeY);
@@ -149,13 +153,13 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
     }
 }
 
-void GStream::prepare_buffer(GstAppSrc* appsrc, cv::Mat *image) {
+int GStream::prepare_buffer(GstAppSrc* appsrc, cv::Mat *image) {
 
     static GstClockTime timestamp = 0;
     GstBuffer *buffer;
     GstFlowReturn ret;
 
-    if (!want) return;
+    if (!want) return 1;
     want = 0;
 
     gsize size = image->size().width * image->size().height*3 ;
@@ -174,36 +178,43 @@ void GStream::prepare_buffer(GstAppSrc* appsrc, cv::Mat *image) {
     ret = gst_app_src_push_buffer(GST_APP_SRC(appsrc), buffer);
     if (ret != GST_FLOW_OK) {
         std::cout << "GST ERROR DE PERROR" << std::endl;
+		return 2;
 
     }
+    return 0;
 }
 
-void GStream::write(cv::Mat frameL,cv::Mat frameR) {
-    cv::Mat frame(960,2560,CV_8UC3);
+int GStream::write(cv::Mat frameL,cv::Mat frameR) {
+    cv::Mat frame(frameL.rows,frameL.cols+frameR.cols,CV_8UC3);
+
     frameL.copyTo(frame(cv::Rect(0,0,frameL.cols, frameL.rows)));
-    frameR.copyTo(frame(cv::Rect(frameL.cols,0,frameL.cols, frameL.rows)));
+    frameR.copyTo(frame(cv::Rect(frameL.cols,0,frameR.cols, frameR.rows)));
 
-    if (videomode == VIDEO_AVI_OPENCV) {
+    if (videomode == VIDEOMODE_AVI_OPENCV) {
         cvvideo.write(frame);
+		return 0;
     }
     else {
-        prepare_buffer((GstAppSrc*)appsrc,&frame);
+		int res = prepare_buffer((GstAppSrc*)appsrc,&frame);
         g_main_context_iteration(g_main_context_default(),FALSE);
+        return res;
     }
 }
 
-void GStream::write(cv::Mat frame) {
-    if (videomode == VIDEO_AVI_OPENCV) {
+int GStream::write(cv::Mat frame) {
+    if (videomode == VIDEOMODE_AVI_OPENCV) {
         cvvideo.write(frame.clone());
+		return 0;
     }
     else {
-        prepare_buffer((GstAppSrc*)appsrc,&frame);
+		int res = prepare_buffer((GstAppSrc*)appsrc,&frame);
         g_main_context_iteration(g_main_context_default(),FALSE);
+        return res;
     }
 }
 
 void GStream::close () {
-    if (videomode != VIDEO_AVI_OPENCV) {
+    if (videomode != VIDEOMODE_AVI_OPENCV) {
         gst_element_set_state (pipeline, GST_STATE_NULL);
         gst_object_unref (GST_OBJECT (pipeline));
     }

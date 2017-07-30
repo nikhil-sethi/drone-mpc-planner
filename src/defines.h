@@ -4,9 +4,9 @@
 #define VIDEOMODE_DISABLED 0
 #define VIDEOMODE_AVI 1
 #define VIDEOMODE_STREAM 2 
-#define VIDEO_AVI_OPENCV 3
+#define VIDEOMODE_AVI_OPENCV 3
 
-
+#define IMSCALEF 2
 #ifndef _PC
 
 #define NEON

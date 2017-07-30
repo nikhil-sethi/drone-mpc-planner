@@ -92,8 +92,8 @@ bool stereoAlg::init (std::string calib_folder) {
 }
 
 void stereoAlg::rectify(cv::Mat frameL,cv::Mat frameR) {
-    cv::Point pr2(1280/2-ROIsize/2, 960/2-ROIsize/2);
-    cv::Point pr1(1280/2+ROIsize/2, 960/2+ROIsize/2);
+    cv::Point pr2(frameL.cols/2-ROIsize/2, frameL.rows/2-ROIsize/2);
+    cv::Point pr1(frameL.cols/2+ROIsize/2, frameL.rows/2+ROIsize/2);
    	cv::Mat roiL = cv::Mat(frameL, cv::Rect(pr1, pr2));
 //    pr1.y -=15; // rectification v1 :)
 //    pr2.y -=15;
