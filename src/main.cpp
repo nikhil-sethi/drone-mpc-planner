@@ -88,7 +88,7 @@ void process_video() {
         stereo.rectify(cam.frameL, cam.frameR);
 
         //dtrk.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
-        //dctrl.control(dtrk.data);
+        dctrl.control(dtrk.data);
         //resFrame = dtrk.resFrame;
 
 #ifdef _PC
@@ -226,8 +226,8 @@ int init(int argc, char **argv) {
 
 #endif
 
-#if defined(HASSCREEN) || defined(VIDEORESULTS)
-    resFrame = cv::Mat::zeros(480, 640,CV_8UC3);
+#if defined(HASSCREEN) || VIDEORESULTS
+    resFrame = cv::Mat::zeros(480, 640,CV_8UC3);    
 #endif
 
 
@@ -260,6 +260,8 @@ int init(int argc, char **argv) {
 #endif
 
     msg="";
+
+    std::cout << "Main init successfull" << std::endl;
     return 0;
 }
 

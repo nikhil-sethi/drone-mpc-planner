@@ -1,7 +1,7 @@
 #include "dronecontroller.h"
 #include "defines.h"
 
-#define TUNING
+//#define TUNING
 
 const string paramsFile = "../controlParameters.dat";
 unsigned int roll,pitch,yaw = 1500;

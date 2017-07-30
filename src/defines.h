@@ -19,7 +19,7 @@
 //non-hw accelerated custom 16b grayscale 96x96 video render:
 #define VIDEODISPARITY VIDEOMODE_AVI
 
-#define VIDEOFPS 15 // the estimated frame rate of the video used for creating output videos
+#define VIDEOFPS 14 // the estimated frame rate of the video used for creating output videos
 
 #else
 
