@@ -87,9 +87,9 @@ void process_video() {
         }
         stereo.rectify(cam.frameL, cam.frameR);
 
-        dtrk.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
-        dctrl.control(dtrk.data);
-        resFrame = dtrk.resFrame;
+        //dtrk.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
+        //dctrl.control(dtrk.data);
+        //resFrame = dtrk.resFrame;
 
 #ifdef _PC
         logger << "TRPY: " << cam.getCurrentThrust()  << ", " << cam.getCurrentRoll() << ", " << cam.getCurrentPitch() << ", " << cam.getCurrentYaw() << std::endl;
