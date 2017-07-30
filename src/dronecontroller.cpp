@@ -40,10 +40,10 @@ bool DroneController::init(std::ofstream *logger) {
     std::cout << "Creating control tuning window." << std::endl;
     // create GUI to set control parameters
     namedWindow("Control", WINDOW_NORMAL);
-    // height control
-    createTrackbar("Height P", "Control", &params.heightP, 2000);
-    createTrackbar("Height I", "Control", &params.heightI, 255);
-    createTrackbar("Height D", "Control", &params.heightD, 255);
+    // throttle control
+    createTrackbar("Throttle P", "Control", &params.throttleP, 2000);
+    createTrackbar("Throttle I", "Control", &params.throttleI, 255);
+    createTrackbar("Throttle D", "Control", &params.throttleD, 255);
 
     // roll control
     createTrackbar("Roll P", "Control", &params.rollP, 5000);
@@ -57,15 +57,15 @@ bool DroneController::init(std::ofstream *logger) {
     createTrackbar("Yaw P", "Control", &params.yawP, 255);
     createTrackbar("Yaw I", "Control", &params.yawI, 255);
     createTrackbar("Yaw D", "Control", &params.yawD, 255);
-
 #endif
 }
 
 void DroneController::control(trackData data) {
 
     if ( data.valid ) {
-        //thrust = -data.posY * params.heightP - data.velY * params.heightD +  (1000 + params.heightI*3.92);
+        throttle = -data.posY * params.throttleP - data.velY * params.throttleD +  (1000 + params.throttleI*3.92);
         roll -= data.posX * params.rollP + data.velX * params.rollD;
+        pitch -= data.posZ * params.pitchP + data.velZ * params.pitchD;
     }
 
     // joystick
@@ -81,13 +81,15 @@ void DroneController::control(trackData data) {
                 pitch = 1500 - (event.value >> 6);
                 break;
             case 2: //throttle
-                throttle = 1500 - (event.value >> 6);
+                if (!joySwitch) {
+                    throttle = 1500 - (event.value >> 6);
+                }
                 break;
             case 3: //switch
-                joySwitch = event.number>0; // goes between +/-32768
+                joySwitch = event.value>0; // goes between +/-32768
                 break;
             case 4: //dial
-                joyDial = event.number; // goes between +/-32768
+                joyDial = event.value; // goes between +/-32768
                 break;
             case 5: //yaw
                 yaw = 1500 + (event.value >> 6);
@@ -108,7 +110,20 @@ void DroneController::control(trackData data) {
         roll = 1050;
     if ( roll > 1950 )
         roll = 1950;
+
+    if ( pitch < 1050 )
+        pitch = 1050;
+    if ( pitch > 1950 )
+        pitch = 1950;
+
+    if ( yaw < 1050 )
+        yaw = 1050;
+    if ( yaw > 1950 )
+        yaw = 1950;
+
     commandedRoll = roll;
+    commandedPitch = pitch;
+    commandedYaw = yaw;
     commandedThrottle = throttle;
 
     int mode = 1500; // <min = mode 1, 1500 = mode 2, >max = mode 3

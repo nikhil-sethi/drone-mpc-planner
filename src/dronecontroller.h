@@ -26,9 +26,9 @@ private:
     struct controlParameters{
 
 		//height control
-        int heightP = 0;
-		int heightI = 0;
-		int heightD = 0;
+        int throttleP = 0;
+		int throttleI = 0;
+		int throttleD = 0;
 
 		//roll control
         int rollP = 0;
@@ -48,7 +48,7 @@ private:
 		template <class Archive>
         void serialize( Archive & ar )
         {
-          ar( heightP,heightI,heightD,rollP,rollI,rollD,pitchP,pitchI,pitchD);
+          ar( throttleP,throttleI,throttleD,rollP,rollI,rollD,pitchP,pitchI,pitchD);
         }
 
     };
