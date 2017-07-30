@@ -19,6 +19,7 @@
 #include "dronetracker.h"
 #include "dronecontroller.h"
 #include "gstream.h"
+#include "vizs.h"
 
 #include "opencv2/features2d/features2d.hpp"
 
@@ -55,8 +56,11 @@ int mouseMDown;
 int mouseRDown;
 bool pausecam = false;
 
+std::ofstream logger;
+
 #ifdef _PC
 KalamosFileCam cam;
+Visualizer visualizer;
 #else
 KalamosCam cam;
 #endif
@@ -71,14 +75,6 @@ void CallBackFunc(int event, int x, int y, int flags, void* userdata);
 void handleKey();
 
 /************ code ***********/
-void plot(cv::Mat data1,cv::Mat data2, std::string name);
-cv::Mat roll_joystick(1,1,CV_32FC1);
-cv::Mat roll_calculated(1,1,CV_32FC1);
-cv::Mat throttle_joystick(1,1,CV_32FC1);
-cv::Mat throttle_calculated(1,1,CV_32FC1);
-
-
-
 void process_video() {
     std::cout << "Running...\n";
     stopWatch.Start();
@@ -89,27 +85,20 @@ void process_video() {
         if (!pausecam) {
             cam.waitForImage();
         }
-        //stereo.rectify(cam.frameL, cam.frameR);
+        stereo.rectify(cam.frameL, cam.frameR);
 
-        //dtrk.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
+        dtrk.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
         dctrl.control(dtrk.data);
         resFrame = dtrk.resFrame;
 
 #ifdef _PC
-        std::cout << "Log: " << cam.getCurrentThrust()  << ", " << cam.getCurrentRoll() << ", " << cam.getCurrentPitch() << ", " << cam.getCurrentYaw() << std::endl;
+        logger << "TRPY: " << cam.getCurrentThrust()  << ", " << cam.getCurrentRoll() << ", " << cam.getCurrentPitch() << ", " << cam.getCurrentYaw() << std::endl;
+        std::cout << "TRPY: " << cam.getCurrentThrust()  << ", " << cam.getCurrentRoll() << ", " << cam.getCurrentPitch() << ", " << cam.getCurrentYaw() << std::endl;
+        visualizer.plot();
 #endif
 
 #ifdef HASSCREEN
         cv::imshow("Results", resFrame);
-
-        roll_joystick.push_back(cam.getCurrentRoll());
-        roll_calculated.push_back((float)dctrl.commandedRoll);
-        plot(roll_joystick,roll_calculated, "Roll");
-
-        throttle_joystick.push_back(cam.getCurrentThrust());
-        throttle_calculated.push_back((float)dctrl.commandedThrottle);
-        plot(throttle_joystick,throttle_calculated, "Throttle");
-
 #endif
 		int frameWritten = 0;
 
@@ -129,51 +118,14 @@ void process_video() {
 
 	        imgcount++;
 	        float time = ((float)stopWatch.Read())/1000.0;
-    	    std::cout << "Frame: " <<imgcount << ". FPS: " << imgcount / time << std::endl;
+            logger << "Frame: " <<imgcount << ". FPS: " << imgcount / time << std::endl;
+            std::cout << "Frame: " <<imgcount << ". FPS: " << imgcount / time << std::endl;
 		}
     } // main while loop
 
 #ifdef HASSCREEN
     cv::destroyAllWindows();
 #endif
-}
-
-
-void plot(cv::Mat data1,cv::Mat data2, const std::string name) {
-
-    int line_width = 1;
-
-    const int fsizex = 500;
-    const int fsizey = 300;
-    double min,max;
-
-    cv::Mat tmp;
-    tmp.push_back(data1);
-    tmp.push_back(data2);
-    cv::minMaxIdx(tmp,&min,&max,NULL,NULL);
-
-    min-=1;
-    max+=1;
-
-    const float scaleX = (float)((fsizex))/(data1.rows);
-    const float scaleY = (fsizey)/(max-min);
-
-    cv::Mat frame = cv::Mat::zeros(fsizey+4*line_width, fsizex+4*line_width, CV_8UC3);
-
-    int prev_y1 =0;
-    int prev_y2 =0;
-    for (int j = 0; j < data1.rows-1; j++)  {
-        int y1 = data1.at<float>(j,1) - min;
-        int y2 = data2.at<float>(j,1) - min;
-        cv::line(frame, cv::Point(j*scaleX + 2*line_width , fsizey- prev_y1*scaleY +line_width*2) , cv::Point((j+1)*scaleX + 2*line_width, fsizey -  y1*scaleY +2*line_width), cv::Scalar(0,255,0), line_width, CV_AA, 0);
-        cv::line(frame, cv::Point(j*scaleX + 2*line_width , fsizey- prev_y2*scaleY +line_width*2) , cv::Point((j+1)*scaleX + 2*line_width, fsizey -  y2*scaleY +2*line_width), cv::Scalar(255,0,0), line_width, CV_AA, 0);
-        prev_y1 = y1;
-        prev_y2 = y2;
-    }
-
-    imshow(name,frame);
-
-
 }
 
 void CallBackFunc(int event, int x, int y, int flags, void* userdata)
@@ -229,6 +181,8 @@ void handleKey() {
 }
 
 int init(int argc, char **argv) {
+
+   logger.open("log.txt",std::ofstream::out);
 
 #ifdef _PC
     if (argc != 3) {
@@ -301,6 +255,9 @@ int init(int argc, char **argv) {
 
     dtrk.init();
     dctrl.init();
+#ifdef _PC
+    visualizer.init(&cam,&dctrl);
+#endif
 
     msg="";
     return 0;
@@ -326,12 +283,7 @@ void close() {
 
 
 int main( int argc, char **argv )
-{
-
-    roll_joystick.pop_back();
-    roll_calculated.pop_back();
-    throttle_joystick.pop_back();
-    throttle_calculated.pop_back();
+{   
     if (init(argc,argv)) {return 1;}
     process_video();
     close();
