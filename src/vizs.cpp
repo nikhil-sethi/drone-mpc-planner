@@ -28,8 +28,8 @@ void Visualizer::plot(void) {
     cv::Mat framePitch = cv::Mat(frame, cv::Rect(cv::Point(0, frame.rows/3),cv::Point(frame.cols, frame.rows/3*2)));
     cv::Mat frameThrottle = cv::Mat(frame, cv::Rect(cv::Point(0, frame.rows/3*2),cv::Point(frame.cols, frame.rows)));
 
-    plot(roll_joystick,roll_calculated, &frameRoll,"Roll");
-    plot(pitch_joystick,pitch_calculated, &framePitch,"Pitch");
+    //plot(roll_joystick,roll_calculated, &frameRoll,"Roll");
+    //plot(pitch_joystick,pitch_calculated, &framePitch,"Pitch");
     plot(throttle_joystick,throttle_calculated, &frameThrottle,"Throttle");
 
     imshow("Shizzle",frame);

@@ -4,14 +4,14 @@
 //#define TUNING
 
 const string paramsFile = "../controlParameters.dat";
-unsigned int roll,pitch,yaw = 1500;
-unsigned int throttle = 1000;
+int roll,pitch,yaw = 1500;
+int throttle = 1000;
 // Create an instance of Joystick
 Joystick joystick("/dev/input/js0");
 JoystickEvent event;
 
 
-bool joySwitch = false;
+bool joySwitch = true;
 int joyDial =0;
 
 int notconnected;
@@ -60,12 +60,34 @@ bool DroneController::init(std::ofstream *logger) {
 #endif
 }
 
+
+//gain thrust 18
+
+float scaledjoydial = 0;
+float joythrottle = 0;
+int throttleErrSum = 0;
+
+float hoverthrottle = 1565;
+
 void DroneController::control(trackData data) {
 
-    if ( data.valid && joySwitch ) {
-        throttle = -data.posY * params.throttleP - data.velY * params.throttleD +  (1000 + params.throttleI*3.92);
+    if ( data.valid && joySwitch || notconnected) {
+        throttle = hoverthrottle  - (data.posY * params.throttleP + data.velY * params.throttleD +  params.throttleI*throttleErrSum);
         //roll -= data.posX * params.rollP + data.velX * params.rollD;
         //pitch -= data.posZ * params.pitchP + data.velZ * params.pitchD;
+    } else if (!joySwitch) {
+        throttle = joythrottle;
+    }
+
+    if (!notconnected){
+        params.throttleP = scaledjoydial;
+        std::cout << "P:" << params.throttleP << " Throttle: " << throttle << " HT: " << hoverthrottle << std::endl;
+    }
+    throttleErrSum += data.posY;
+
+
+    if (throttle > 1450 && throttle < 1650) { // during normal-ish flight regime.
+        hoverthrottle += 0.005 * (float)(throttle-hoverthrottle);
     }
 
     // joystick
@@ -74,22 +96,21 @@ void DroneController::control(trackData data) {
         if (event.isAxis()) {
             switch ( event.number ) {
             case 0: // roll
-                //std::cout <<  "Roll override!" << std::endl;
                 roll = 1500 + (event.value >> 6);
                 break;
             case 1: // pitch
                 pitch = 1500 - (event.value >> 6);
                 break;
             case 2: //throttle
-                if (!joySwitch) {
-                    throttle = 1500 - (event.value >> 6);
-                }
+                joythrottle = 1500 - (event.value >> 6);
                 break;
             case 3: //switch
                 joySwitch = event.value>0; // goes between +/-32768
                 break;
             case 4: //dial
-                joyDial = event.value; // goes between +/-32768
+                joyDial = event.value; // goes between +/-32768                
+                scaledjoydial = joyDial+32767;
+                scaledjoydial = (scaledjoydial / 65536)*50;
                 break;
             case 5: //yaw
                 yaw = 1500 + (event.value >> 6);
@@ -126,10 +147,10 @@ void DroneController::control(trackData data) {
     commandedYaw = yaw;
     commandedThrottle = throttle;
 
-    int mode = 1500; // <min = mode 1, 1500 = mode 2, >max = mode 3
+    uint16_t mode = 1500; // <min = mode 1, 1500 = mode 2, >max = mode 3
 
     char buff[64];
-    sprintf( (char*) buff,"%u,%u,%u,%u,1500,0,0,0,0,0,0,0\n",throttle,roll,pitch,yaw);
+    sprintf( (char*) buff,"%u,%u,%u,%u,%u,0,0,0,0,0,0,0\n",throttle,roll,pitch,yaw,mode);
     if (!notconnected) {
         RS232_SendBuf( (unsigned char*) buff, 63);
     }

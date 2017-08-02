@@ -93,7 +93,7 @@ private:
 
     void updateParams();
 
-
+    cv::Point3d setpoint;
 
     // Kalman Filter
     int stateSize = 6;

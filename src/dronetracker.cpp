@@ -11,7 +11,7 @@ using namespace std;
 #ifdef _PC
 #define DRAWVIZSL
 #define DRAWVIZSR
-#define TUNING
+//#define TUNING
 #endif
 
 const string settingsFile = "../settings.dat";
@@ -364,14 +364,21 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         else
             kfR.correct(measR);
 
-        //calculate everything for the dronecontroller:
 
+        //TMP SOLUTION UNTIL MOSQUITO IS DETECTED:
+        setpoint.x = framegrayR.cols/2; // closestL.pt.x;
+        setpoint.y = framegrayR.rows/2; //closestL.pt.y-5;
+        setpoint.z = closestL.pt.x - closestR.pt.x; // TMP!
+
+        //calculate everything for the dronecontroller:
         std::vector<Point3f> camera_coordinates;
         std::vector<Point3f> world_coordinates;
         camera_coordinates.push_back(Point3f(closestL.pt.x*4,closestL.pt.y*4,(closestL.pt.x - closestR.pt.x)*4));
+        camera_coordinates.push_back(Point3f(setpoint.x*4,setpoint.y*4,setpoint.z*4)); // TMP
         cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
 
         Point3f output = world_coordinates[0];
+        Point3f setpointw = world_coordinates[1];
 
         static float prevX,prevY,prevZ =0;
         data.posX = output.x;
@@ -390,6 +397,9 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         prevY = data.posY;
         prevZ = data.posZ;
 
+        data.posX -= setpointw.x;
+        data.posY += setpointw.y;
+        data.posZ -= setpointw.z;
 
     }
 
@@ -399,6 +409,7 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     if (dronepathL.size() > 0) {
         drawKeypoints( framegrayL, dronepathL, framegrayL, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
     }
+    cv::circle(framegrayL,cv::Point(setpoint.x,setpoint.y),2,cv::Scalar(150,255,200));
     framegrayL.copyTo(resFrameL(cv::Rect(0,0,framegrayL.cols, framegrayL.rows)));
 #endif
 #ifdef DRAWVIZSR
@@ -407,8 +418,8 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     if (dronepathR.size() > 0) {
         drawKeypoints( framegrayR, dronepathR, framegrayR, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
     }
-    framegrayR.copyTo(resFrameR(cv::Rect(0,0,framegrayR.cols, framegrayR.rows)));
 
+    framegrayR.copyTo(resFrameR(cv::Rect(0,0,framegrayR.cols, framegrayR.rows)));
 
     resFrame = cv::Mat(resFrameL.rows,resFrameL.cols +resFrameR.cols ,CV_8UC3);
     resFrameL.copyTo(resFrame(cv::Rect(0,0,resFrameL.cols, resFrameL.rows)));
