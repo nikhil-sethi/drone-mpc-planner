@@ -15,9 +15,13 @@ class Visualizer{
 private:
     void plot(cv::Mat data1,cv::Mat data2, std::string name);
     void plot(cv::Mat data1,cv::Mat data2, cv::Mat *frame, std::string name);
+    void plotxy(cv::Mat datax, cv::Mat datay, cv::Mat *frame, Point setpoint, std::string name);
     void addSample(void);
     KalamosFileCam *cam;
     DroneController *dctrl;
+    DroneTracker *dtrkr;
+
+    const int bufsize = 200;
 
 public:
 
@@ -30,6 +34,9 @@ public:
         yaw_calculated = cv::Mat (1,1,CV_32FC1);
         throttle_joystick = cv::Mat(1,1,CV_32FC1);
         throttle_calculated = cv::Mat (1,1,CV_32FC1);
+        posX = cv::Mat (1,1,CV_32FC1);
+        posY = cv::Mat (1,1,CV_32FC1);
+        posZ = cv::Mat (1,1,CV_32FC1);
 
         roll_joystick.pop_back();
         roll_calculated.pop_back();
@@ -39,6 +46,9 @@ public:
         yaw_calculated.pop_back();
         throttle_joystick.pop_back();
         throttle_calculated.pop_back();
+        posX.pop_back();
+        posY.pop_back();
+        posZ.pop_back();
     }
 
     cv::Mat throttle_joystick;
@@ -50,10 +60,23 @@ public:
     cv::Mat yaw_joystick;
     cv::Mat yaw_calculated;
 
+    cv::Mat posX;
+    cv::Mat posY;
+    cv::Mat posZ;
+
+    bool hack = false;
+
     void plot(void);
-    void init(KalamosFileCam *cam, DroneController *dctrl){
+    void init(KalamosFileCam *cam, DroneController *dctrl, DroneTracker *dtrkr){
         this->dctrl = dctrl;
+        this->dtrkr = dtrkr;
         this->cam = cam;
+    }
+
+    void init(DroneController *dctrl, DroneTracker *dtrkr){
+        this->dctrl = dctrl;
+        this->dtrkr = dtrkr;
+        hack = true;
     }
 
 };

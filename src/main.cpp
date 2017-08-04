@@ -58,14 +58,15 @@ bool pausecam = false;
 
 std::ofstream logger;
 
+Visualizer visualizer;
 #ifdef _PC
 KalamosFileCam cam;
-Visualizer visualizer;
+
 #else
 KalamosCam cam;
 #endif
 stereoAlg stereo;
-DroneTracker dtrk;
+DroneTracker dtrkr;
 DroneController dctrl;
 
 /*******Private prototypes*********/
@@ -87,17 +88,20 @@ void process_video() {
         }
 
         stereo.rectify(cam.frameL, cam.frameR);
-        dtrk.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);       
-        dctrl.control(dtrk.data);
+        dtrkr.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
+        dctrl.control(dtrkr.data);
 
 #ifdef _PC
-        resFrame = dtrk.resFrame;
+
         logger << "TRPY: " << cam.getCurrentThrust()  << ", " << cam.getCurrentRoll() << ", " << cam.getCurrentPitch() << ", " << cam.getCurrentYaw() << std::endl;
         std::cout << "TRPY: " << cam.getCurrentThrust()  << ", " << cam.getCurrentRoll() << ", " << cam.getCurrentPitch() << ", " << cam.getCurrentYaw() << std::endl;
-        visualizer.plot();
+
 #endif
 
+        visualizer.plot();
+
 #ifdef HASSCREEN
+        resFrame = dtrkr.resFrame;
         cv::imshow("Results", resFrame);
 #endif
 		int frameWritten = 0;
@@ -106,6 +110,7 @@ void process_video() {
 #if VIDEORAWLR
 //while (!outputVideoRawLR.getWanted()) {usleep(10000);}
         frameWritten = outputVideoRawLR.write(cam.frameL,cam.frameR);
+
 #endif
 		if (frameWritten == 0) {
 #if VIDEODISPARITY
@@ -152,14 +157,14 @@ void CallBackFunc(int event, int x, int y, int flags, void* userdata)
 
 void handleKey() {
 
-#ifdef HASSCREEN
+//#ifdef HASSCREEN
     key = cv::waitKey(1);
     key = key & 0xff;
     if (key == 27) {  //esc
         cam.stopcam();
         return; // don't clear key, just exit
     }
-#endif
+//#endif
 
     switch(key) {
     case 114: // [r]: reset stopwatch
@@ -253,10 +258,12 @@ int init(int argc, char **argv) {
     }
 #endif
 
-    dtrk.init();
+    dtrkr.init();
     dctrl.init(&logger);
 #ifdef _PC
-    visualizer.init(&cam,&dctrl);
+    visualizer.init(&cam,&dctrl,&dtrkr);
+#else
+    visualizer.init(&dctrl,&dtrkr);
 #endif
 
     msg="";
@@ -268,7 +275,7 @@ int init(int argc, char **argv) {
 void close() {
 
     /*****Close everything down*****/
-    dtrk.close();
+    dtrkr.close();
     cam.close();
     dctrl.close();
 

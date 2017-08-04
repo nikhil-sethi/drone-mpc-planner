@@ -64,9 +64,16 @@ int commandedPitch=6;
 int commandedYaw=6;
 int commandedThrottle=6;
 
+int tmpThrottle=1000;
+float joythrottle = 0;
+
+
     void close (void);
     bool init(std::ofstream *logger);
     void control(trackData data);
+
+    int roll,pitch,yaw = 1500;
+    int throttle = 1000;
 
 };
 

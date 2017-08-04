@@ -1,11 +1,10 @@
 #include "dronecontroller.h"
 #include "defines.h"
 
-//#define TUNING
+#define TUNING
 
 const string paramsFile = "../controlParameters.dat";
-int roll,pitch,yaw = 1500;
-int throttle = 1000;
+
 // Create an instance of Joystick
 Joystick joystick("/dev/input/js0");
 JoystickEvent event;
@@ -64,26 +63,30 @@ bool DroneController::init(std::ofstream *logger) {
 //gain thrust 18
 
 float scaledjoydial = 0;
-float joythrottle = 0;
+
 int throttleErrSum = 0;
 
 float hoverthrottle = 1565;
 
 void DroneController::control(trackData data) {
 
+    tmpThrottle =  hoverthrottle  + (data.posErrY * params.throttleP + data.velY * params.throttleD +  params.throttleI*throttleErrSum);
     if ( data.valid && joySwitch || notconnected) {
-        throttle = hoverthrottle  - (data.posY * params.throttleP + data.velY * params.throttleD +  params.throttleI*throttleErrSum);
-        //roll -= data.posX * params.rollP + data.velX * params.rollD;
-        //pitch -= data.posZ * params.pitchP + data.velZ * params.pitchD;
+        throttle = tmpThrottle;
+        //roll = 1500 - (data.posErrX * params.rollP + data.velX * params.rollD);
+        //pitch -= data.posErrZ * params.pitchP + data.velZ * params.pitchD;
     } else if (!joySwitch) {
         throttle = joythrottle;
     }
 
+    std::cout << data.posX << " " << data.posY  << " " << data.posZ << std::endl;
+
     if (!notconnected){
         params.throttleP = scaledjoydial;
-        std::cout << "P:" << params.throttleP << " Throttle: " << throttle << " HT: " << hoverthrottle << std::endl;
+        //std::cout << "P:" << params.throttleP << " Throttle: " << throttle << " HT: " << hoverthrottle << std::endl;
+        //std::cout << "RollP:" << params.rollP << std::endl;
     }
-    throttleErrSum += data.posY;
+    throttleErrSum += data.posErrY;
 
 
     if (throttle > 1450 && throttle < 1650) { // during normal-ish flight regime.
@@ -110,7 +113,7 @@ void DroneController::control(trackData data) {
             case 4: //dial
                 joyDial = event.value; // goes between +/-32768                
                 scaledjoydial = joyDial+32767;
-                scaledjoydial = (scaledjoydial / 65536)*50;
+                scaledjoydial = (scaledjoydial / 65536)*100;
                 break;
             case 5: //yaw
                 yaw = 1500 + (event.value >> 6);
@@ -159,7 +162,7 @@ void DroneController::control(trackData data) {
     //if ( data.valid ) {
     //std::setprecision(2);
     //std::cout << data.posY << " " << data.velY << " - ";
-    std::cout << "JoyCommands:" << std::string(buff) << std::flush;
+    //std::cout << "JoyCommands:" << std::string(buff) << std::flush;
     (*_logger) << "JoyCommands:" << std::string(buff) << std::flush;
 
     //}

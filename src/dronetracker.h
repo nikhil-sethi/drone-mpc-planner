@@ -16,7 +16,7 @@
 #include <fstream>
 
 struct trackData {
-    float posX,posY,posZ,dx,dy,dz,velX,velY,velZ,dt;
+    float posX,posY,posZ,posErrX,posErrY,posErrZ, dx,dy,dz,velX,velY,velZ,dt;
     bool valid;	
 };
 
@@ -93,7 +93,7 @@ private:
 
     void updateParams();
 
-    cv::Point3d setpoint;
+
 
     // Kalman Filter
     int stateSize = 6;
@@ -107,6 +107,9 @@ private:
 
 
 public:       
+
+     cv::Point3d setpoint;
+     cv::Point3f setpointw;
 
     cv::Mat resFrame;
 

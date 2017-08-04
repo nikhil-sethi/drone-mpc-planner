@@ -139,11 +139,11 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
 //    resFrameR = frameR.clone();
 #endif
 
+#define IMSCALEF2 2
     cv::Mat tmpfL,tmpfR;
-    tmpfL = cv::Mat(frameL.rows/2, frameL.cols/2,CV_8UC3);
-    tmpfR = cv::Mat(frameR.rows/2, frameR.cols/2,CV_8UC3);
-    cv::resize(frameL,tmpfL,tmpfL.size(),0,0);
-    cv::resize(frameR,tmpfR,tmpfR.size(),0,0);
+    cv::Size smalsize(frameL.rows/IMSCALEF2, frameL.cols/IMSCALEF2);
+    cv::resize(frameL,tmpfL,smalsize);
+    cv::resize(frameR,tmpfR,smalsize);
 
     cv::Mat framegrayL,framegrayR;
     cvtColor(tmpfL,framegrayL,COLOR_BGR2GRAY);
@@ -364,25 +364,35 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         else
             kfR.correct(measR);
 
+        // attention: original image (1280x960) --> IMSCALEF factor 2 --> 640x480 ( = ook video size)
+        // plaatje 640x480 --> ROI --> 432x432 (864/IMSCALEF)
+        // 432x432 --> rectify --> 432x432 (met zwarte randen eventueel)(op deze size is Qf gebaseerd)
+        // de track functie begint hierboven weer met nog een resize factor 2 --> 216x216
+
+        double Qf_scale = IMSCALEF2*2; // very weird their is another factor 2...?
+
+        float disparity = ((closestR.pt.x - closestL.pt.x)*Qf_scale);
 
         //TMP SOLUTION UNTIL MOSQUITO IS DETECTED:
-        setpoint.x = framegrayR.cols/2; // closestL.pt.x;
-        setpoint.y = framegrayR.rows/2; //closestL.pt.y-5;
-        setpoint.z = closestL.pt.x - closestR.pt.x; // TMP!
+        setpoint.x = framegrayR.cols/2*Qf_scale; // closestL.pt.x;
+        setpoint.y = framegrayR.rows/2*Qf_scale; //closestL.pt.y-5;
+        setpoint.z = -17*Qf_scale; // disparity TMP!
 
         //calculate everything for the dronecontroller:
         std::vector<Point3f> camera_coordinates;
         std::vector<Point3f> world_coordinates;
-        camera_coordinates.push_back(Point3f(closestL.pt.x*4,closestL.pt.y*4,(closestL.pt.x - closestR.pt.x)*4));
-        camera_coordinates.push_back(Point3f(setpoint.x*4,setpoint.y*4,setpoint.z*4)); // TMP
+
+        //float depth = 1/disparity;
+        camera_coordinates.push_back(Point3f(closestL.pt.x*Qf_scale,closestL.pt.y*Qf_scale,disparity));
+        camera_coordinates.push_back(Point3f(setpoint.x,setpoint.y,setpoint.z));
         cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
 
         Point3f output = world_coordinates[0];
-        Point3f setpointw = world_coordinates[1];
+        setpointw = world_coordinates[1];
 
         static float prevX,prevY,prevZ =0;
         data.posX = output.x;
-        data.posY = -output.y;
+        data.posY = output.y;
         data.posZ = output.z;
         data.dx = data.posX - prevX;
         data.dy = data.posY - prevY;
@@ -397,9 +407,10 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         prevY = data.posY;
         prevZ = data.posZ;
 
-        data.posX -= setpointw.x;
-        data.posY += setpointw.y;
-        data.posZ -= setpointw.z;
+        data.posErrX = data.posX - setpointw.x;
+        data.posErrY = data.posY - setpointw.y;
+        data.posErrZ = data.posZ - setpointw.z;
+
 
     }
 
