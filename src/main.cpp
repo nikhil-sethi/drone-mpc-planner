@@ -23,6 +23,11 @@
 
 #include "opencv2/features2d/features2d.hpp"
 
+#include "opencv2/calib3d/calib3d.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/contrib/contrib.hpp"
+
 using namespace cv;
 
 /*
@@ -87,9 +92,9 @@ void process_video() {
             cam.waitForImage();
         }
 
-        stereo.rectify(cam.frameL, cam.frameR);
-        dtrkr.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
-        dctrl.control(dtrkr.data);
+        //stereo.rectify(cam.frameL, cam.frameR);
+        //dtrkr.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
+        //dctrl.control(dtrkr.data);
 
 #ifdef _PC
 
@@ -101,7 +106,9 @@ void process_video() {
         visualizer.plot();
 
 #ifdef HASSCREEN
-        resFrame = dtrkr.resFrame;
+        resFrame = cam.get_disp_frame();
+        cv::resize(resFrame,resFrame,cv::Size(480,480));
+        cv::applyColorMap(resFrame, resFrame, cv::COLORMAP_JET);
         cv::imshow("Results", resFrame);
 #endif
 		int frameWritten = 0;
@@ -213,7 +220,8 @@ int init(int argc, char **argv) {
     std::cout << "Started cam\n";
     /***init the stereo vision (groundtruth) algorithm ****/
     std::cout << "Initialising manual stereo algorithm\n";
-    stereo.init(calib_folder);
+    if (stereo.init(calib_folder))
+        return 1;
 
     /*****init the (G)UI*****/
 #ifdef HASSCREEN

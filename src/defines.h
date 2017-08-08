@@ -10,7 +10,7 @@
 #ifndef _PC
 
 #define NEON
-//#define HASSCREEN
+#define HASSCREEN
 
 // due to hardware accelerated encoding, only one gstream can be enabled at the same time!
 #define VIDEORAWLR VIDEOMODE_DISABLED
@@ -27,7 +27,7 @@
 
 #define HASSCREEN // dont disable in qt debugger!
 
-#define VIDEORAWLR VIDEOMODE_DISABLED
+#define VIDEORAWLR VIDEOMODE_AVI
 #define VIDEODISPARITY VIDEOMODE_DISABLED
 #define VIDEORESULTS VIDEOMODE_DISABLED
 #define VIDEOFPS 12 // the estimated frame rate of the video used for creating output videos

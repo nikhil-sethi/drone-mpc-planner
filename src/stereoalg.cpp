@@ -87,7 +87,7 @@ bool stereoAlg::init (std::string calib_folder) {
                           false);
     dispScale = 4096/(256/nDisparity);
 
-    return 1;
+    return 0;
 
 }
 
