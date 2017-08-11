@@ -45,16 +45,13 @@ bool stereoAlg::init (std::string calib_folder) {
     //fs["R"] >> R;
     //fs["T"] >> T;
     //fisheye::stereoRectify( M1, D1, M2, D2, img_size, R, T, R1, R2, pt1, pt2, Qf, CALIB_ZERO_DISPARITY); // gives wrong P matrices!
-    float fx0 = (ROIsize  / 2) / std::fabs(std::tan((ROIsize / 2) / M1.at<double>(0,0)));
-    float fy0 = (ROIsize / 2) / std::fabs(std::tan((ROIsize / 2) / M1.at<double>(1,1)));
-    float cx =  (ROIsize  / 2.0f);
-    float cy =  (ROIsize  / 2.0f);
 
-    M1.at<double>(0,2) +=  (ROIsize  / 2.0f);
-    M1.at<double>(1,2) +=  (ROIsize  / 2.0f);
+    float fx0 = M1.at<double>(0,0) / IMSCALEF;
+    float fy0 = M1.at<double>(1,1) / IMSCALEF;
+    float cx =  ROIsizeH;
+    float cy =  ROIsizeH;
 
-    M2.at<double>(0,2) +=  (ROIsize  / 2.0f);
-    M2.at<double>(1,2) +=  (ROIsize  / 2.0f);
+
 
     cv::Matx33f P1(fx0, 0. , cx,
                    0. , fy0, cy,
@@ -66,6 +63,27 @@ bool stereoAlg::init (std::string calib_folder) {
                    0. , fy1, cy,
                    0. , 0. , 1.);
 
+        std::cout << "P1: " << P1 << std::endl;
+        std::cout << "P2: " << P2 << std::endl;
+
+    M1.at<double>(0,2) /=IMSCALEF; // cx
+    M1.at<double>(1,2) /=IMSCALEF; // cy
+    M1.at<double>(0,2) +=  ROIsizeH;
+    M1.at<double>(1,2) +=  ROIsizeH;
+
+    M2.at<double>(0,2) /=IMSCALEF;
+    M2.at<double>(1,2) /=IMSCALEF;
+    M2.at<double>(0,2) +=  ROIsizeH;
+    M2.at<double>(1,2) +=  ROIsizeH;
+
+
+    M1.at<double>(0,0) /=IMSCALEF; //fx
+    M1.at<double>(1,1) /=IMSCALEF; //fy
+    M2.at<double>(0,0) /=IMSCALEF;
+    M2.at<double>(1,1) /=IMSCALEF;
+
+    //the D matrices are scaleless
+
     Mat R, T;
     fs["R"] >> R;
     fs["T"] >> T;
@@ -74,9 +92,7 @@ bool stereoAlg::init (std::string calib_folder) {
     Qf.at<double>(3,2) = 5.0; // baseline is approx 0.2 m, so 1/baseline = 5
 
     fisheye::initUndistortRectifyMap(M1, D1, R1, P1, img_size, CV_16SC2, map11, map12);
-    fisheye::initUndistortRectifyMap(M2, D2, R2, P2, img_size, CV_16SC2, map21, map22);
-
-    
+    fisheye::initUndistortRectifyMap(M2, D2, R2, P2, img_size, CV_16SC2, map21, map22);    
 
     //SGBM = cv::StereoSGBM.create (5, 256, 5) ; // ,50,500,10,100,10,0,0,false);
     int nDisparity = 64;
@@ -92,18 +108,12 @@ bool stereoAlg::init (std::string calib_folder) {
 }
 
 void stereoAlg::rectify(cv::Mat frameL,cv::Mat frameR) {
-    cv::Point pr2(frameL.cols/2-ROIsize/2, frameL.rows/2-ROIsize/2);
-    cv::Point pr1(frameL.cols/2+ROIsize/2, frameL.rows/2+ROIsize/2);
+    cv::Point pr2(frameL.cols/2-ROIsizeH, frameL.rows/2-ROIsizeH);
+    cv::Point pr1(frameL.cols/2+ROIsizeH, frameL.rows/2+ROIsizeH);
    	cv::Mat roiL = cv::Mat(frameL, cv::Rect(pr1, pr2));
-//    pr1.y -=15; // rectification v1 :)
-//    pr2.y -=15;
    	cv::Mat roiR = cv::Mat(frameR, cv::Rect(pr1, pr2));
-
-    //Normal opencv remap does not seem to work properly (which is why rectification v1 has been put in place):
     remap(roiL, frameLrect, map11, map12, INTER_LINEAR);
     remap(roiR, frameRrect, map21, map22, INTER_LINEAR);
-    //frameLrect = roiL.clone();
-    //frameRrect = roiR.clone();
 }
 
 void stereoAlg::calcDisparityMap() {

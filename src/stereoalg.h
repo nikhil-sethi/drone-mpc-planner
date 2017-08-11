@@ -19,6 +19,7 @@ private:
     float dispScale;
 
     const int ROIsize = 864/IMSCALEF;
+    const float ROIsizeH = ROIsize /2.0f;
 
 public:
     cv::Mat frameD;
