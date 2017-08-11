@@ -10,7 +10,7 @@
 #ifndef _PC
 
 #define NEON
-#define HASSCREEN
+//#define HASSCREEN
 
 // due to hardware accelerated encoding, only one gstream can be enabled at the same time!
 #define VIDEORAWLR VIDEOMODE_DISABLED

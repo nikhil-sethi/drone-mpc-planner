@@ -25,30 +25,30 @@ private:
     
     struct controlParameters{
 
-		//height control
+        //height control
         int throttleP = 0;
-		int throttleI = 0;
-		int throttleD = 0;
+        int throttleI = 0;
+        int throttleD = 0;
 
-		//roll control
+        //roll control
         int rollP = 0;
-		int rollI = 128;
-		int rollD = 0;
+        int rollI = 128;
+        int rollD = 0;
 
-		//pitch control
+        //pitch control
         int pitchP = 0;
-		int pitchI = 128;
-		int pitchD = 0;
+        int pitchI = 128;
+        int pitchD = 0;
 
-		//yaw control
+        //yaw control
         int yawP = 0;
-		int yawI = 128;
-		int yawD = 0;
+        int yawI = 128;
+        int yawD = 0;
 
-		template <class Archive>
+        template <class Archive>
         void serialize( Archive & ar )
         {
-          ar( throttleP,throttleI,throttleD,rollP,rollI,rollD,pitchP,pitchI,pitchD);
+            ar( throttleP,throttleI,throttleD,rollP,rollI,rollD,pitchP,pitchI,pitchD);
         }
 
     };
@@ -59,13 +59,19 @@ private:
 
 
 public:
-int commandedRoll=6;
-int commandedPitch=6;
-int commandedYaw=6;
-int commandedThrottle=6;
 
-int tmpThrottle=1000;
-float joythrottle = 0;
+    int autoThrottle = 1000;
+    int autoRoll = 1500;
+    int autoPitch = 1500;
+
+    bool joySwitch = true;
+    int joyDial = 0;
+    float scaledjoydial = 0;
+    int joyThrottle = 0;
+    int joyRoll = 0;
+    int joyPitch = 0;
+    int joyYaw = 0;
+
 
 
     void close (void);

@@ -13,7 +13,7 @@ void Visualizer::addSample(void) {
         roll_joystick.push_back((float)dctrl->roll);
         pitch_joystick.push_back((float)dctrl->pitch);
         yaw_joystick.push_back((float)dctrl->yaw);
-        throttle_joystick.push_back((float)dctrl->joythrottle);
+        throttle_joystick.push_back((float)dctrl->joyThrottle);
 
     } else {
         roll_joystick.push_back(cam->getCurrentRoll());
@@ -23,16 +23,16 @@ void Visualizer::addSample(void) {
     }
 
 
-    roll_calculated.push_back((float)dctrl->commandedRoll);
+    roll_calculated.push_back((float)dctrl->autoRoll);
 
 
-    pitch_calculated.push_back((float)dctrl->commandedPitch);
+    pitch_calculated.push_back((float)dctrl->autoPitch);
 
 
-    yaw_calculated.push_back((float)dctrl->commandedYaw);
+    //yaw_calculated.push_back((float)dctrl->commandedYaw);
 
 
-    throttle_calculated.push_back((float)dctrl->tmpThrottle);
+    throttle_calculated.push_back((float)dctrl->autoThrottle);
 
     posX.push_back(-(float)dtrkr->data.posX);
     posY.push_back((float)dtrkr->data.posY);
@@ -68,7 +68,8 @@ void Visualizer::plot(void) {
     cv::Point sp2(dtrkr->setpointw.x,dtrkr->setpointw.y);
     plotxy(posX,posY,&framePosXY, sp2, "PosXY");
 
-    plot(throttle_joystick,throttle_calculated, &frameThrottle,"Throttle");
+    //plot(throttle_joystick,throttle_calculated, &frameThrottle,"Throttle");
+    plot(roll_joystick,roll_calculated, &frameThrottle,"Roll");
 
     imshow("Shizzle",frame);
 }

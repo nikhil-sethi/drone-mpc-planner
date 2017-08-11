@@ -103,9 +103,10 @@ void process_video() {
 
 #endif
 
-        visualizer.plot();
+
 
 #ifdef HASSCREEN
+        visualizer.plot();
 //        resFrame = cam.get_disp_frame();
 //        cv::resize(resFrame,resFrame,cv::Size(480,480));
 //        cv::applyColorMap(resFrame, resFrame, cv::COLORMAP_JET);
