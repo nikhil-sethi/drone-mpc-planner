@@ -109,14 +109,16 @@ void process_video() {
 //        resFrame = cam.get_disp_frame();
 //        cv::resize(resFrame,resFrame,cv::Size(480,480));
 //        cv::applyColorMap(resFrame, resFrame, cv::COLORMAP_JET);
+
 //        cv::Mat frameL = stereo.frameLrect;
 //        cv::Mat frameR = stereo.frameRrect;
-
 //        cv::Mat frame(frameL.rows,frameL.cols+frameR.cols,CV_8UC3);
 //        frameL.copyTo(frame(cv::Rect(0,0,frameL.cols, frameL.rows)));
 //        frameR.copyTo(frame(cv::Rect(frameL.cols,0,frameR.cols, frameR.rows)));
+//        resFrame = frame;
 
         resFrame = dtrkr.resFrame;
+
         cv::imshow("Results", resFrame);
 #endif
 		int frameWritten = 0;

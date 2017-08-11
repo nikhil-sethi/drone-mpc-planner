@@ -34,9 +34,9 @@ void Visualizer::addSample(void) {
 
     throttle_calculated.push_back((float)dctrl->tmpThrottle);
 
-    posX.push_back((float)dtrkr->data.posX);
-    posY.push_back(-(float)dtrkr->data.posY);
-    posZ.push_back((float)dtrkr->data.posZ);
+    posX.push_back(-(float)dtrkr->data.posX);
+    posY.push_back((float)dtrkr->data.posY);
+    posZ.push_back(-(float)dtrkr->data.posZ);
 
 
 }

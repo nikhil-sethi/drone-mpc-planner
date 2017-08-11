@@ -63,8 +63,8 @@ bool stereoAlg::init (std::string calib_folder) {
                    0. , fy1, cy,
                    0. , 0. , 1.);
 
-        std::cout << "P1: " << P1 << std::endl;
-        std::cout << "P2: " << P2 << std::endl;
+//        std::cout << "P1: " << P1 << std::endl;
+//        std::cout << "P2: " << P2 << std::endl;
 
     M1.at<double>(0,2) /=IMSCALEF; // cx
     M1.at<double>(1,2) /=IMSCALEF; // cy
