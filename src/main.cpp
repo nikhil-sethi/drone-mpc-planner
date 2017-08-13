@@ -98,8 +98,8 @@ void process_video() {
 
 #ifdef _PC
 
-        logger << "TRPY: " << cam.getCurrentThrust()  << ", " << cam.getCurrentRoll() << ", " << cam.getCurrentPitch() << ", " << cam.getCurrentYaw() << std::endl;
-        std::cout << "TRPY: " << cam.getCurrentThrust()  << ", " << cam.getCurrentRoll() << ", " << cam.getCurrentPitch() << ", " << cam.getCurrentYaw() << std::endl;
+//        logger << "TRPY: " << cam.getCurrentThrust()  << ", " << cam.getCurrentRoll() << ", " << cam.getCurrentPitch() << ", " << cam.getCurrentYaw() << std::endl;
+//        std::cout << "TRPY: " << cam.getCurrentThrust()  << ", " << cam.getCurrentRoll() << ", " << cam.getCurrentPitch() << ", " << cam.getCurrentYaw() << std::endl;
 
 #endif
 
@@ -141,8 +141,8 @@ void process_video() {
 
 	        imgcount++;
 	        float time = ((float)stopWatch.Read())/1000.0;
-            logger << "Frame: " <<imgcount << ". FPS: " << imgcount / time << std::endl;
-            std::cout << "Frame: " <<imgcount << ". FPS: " << imgcount / time << std::endl;
+//            logger << "Frame: " <<imgcount << ". FPS: " << imgcount / time << std::endl;
+//            std::cout << "Frame: " <<imgcount << ". FPS: " << imgcount / time << std::endl;
 		}
     } // main while loop
 
@@ -206,6 +206,7 @@ void handleKey() {
 int init(int argc, char **argv) {
 
    logger.open("log.txt",std::ofstream::out);
+   dctrl.init(&logger);
 
 #ifdef _PC
     if (argc != 3) {
@@ -278,7 +279,7 @@ int init(int argc, char **argv) {
 #endif
 
     dtrkr.init();
-    dctrl.init(&logger);
+
 #ifdef _PC
     visualizer.init(&cam,&dctrl,&dtrkr);
 #else

@@ -9,6 +9,7 @@
 
 #include "stopwatch.h"
 #include "stereoalg.h"
+#include "smoother.h"
 
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/memory.hpp>
@@ -119,8 +120,10 @@ public:
 
 
     trackData data;
+    Smoother sposX;
+    Smoother sposY;
+    Smoother sposZ;
 
-    void test(trackData bla);
 };
 
 

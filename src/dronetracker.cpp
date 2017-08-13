@@ -110,6 +110,10 @@ bool DroneTracker::init(void) {
     params.thresholdStep=1;
 
     stopWatch.Start();
+
+    sposX.init(5);
+    sposY.init(5);
+    sposZ.init(5);
 }
 
 float calculateDistance(float xr, float yr, float xl, float yl) {
@@ -284,6 +288,8 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         dronepathR.push_back(closestR);
     }
 
+
+    data.valid = false;
     if (keypointsL.size() == 0 || keypointsR.size() == 0) {
         if (keypointsL.size() == 0) {
             notFoundCountL++;
@@ -388,27 +394,32 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         Point3f output = world_coordinates[0];
         setpointw = world_coordinates[1];
 
-        static float prevX,prevY,prevZ =0;
         data.posX = output.x;
         data.posY = output.y;
         data.posZ = output.z;
-        data.dx = data.posX - prevX;
-        data.dy = data.posY - prevY;
-        data.dy = data.posZ - prevZ;
+
+        float csposX = sposX.addSample(data.posX);
+        float csposY = sposY.addSample(data.posY);
+        float csposZ = sposZ.addSample(data.posZ);
+
+        static float prevX,prevY,prevZ =0;
+
+        data.dx = csposX - prevX;
+        data.dy = csposY - prevY;
+        data.dy = csposZ - prevZ;
         data.velX = data.dx / dt;
         data.velY = data.dy / dt;
         data.velZ = data.dz / dt;
         data.dt = dt;
         data.valid = true;
 
-        prevX = data.posX;
-        prevY = data.posY;
-        prevZ = data.posZ;
+        prevX = csposX;
+        prevY = csposY;
+        prevZ = csposZ;
 
         data.posErrX = data.posX - setpointw.x;
         data.posErrY = data.posY - setpointw.y;
         data.posErrZ = data.posZ - setpointw.z;
-
 
     }
 

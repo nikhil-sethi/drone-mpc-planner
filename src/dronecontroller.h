@@ -30,25 +30,27 @@ private:
         int throttleI = 0;
         int throttleD = 0;
 
+        int autoTakeoffFactor = 1;
+
         //roll control
         int rollP = 0;
-        int rollI = 128;
+        int rollI = 0;
         int rollD = 0;
 
         //pitch control
         int pitchP = 0;
-        int pitchI = 128;
+        int pitchI = 0;
         int pitchD = 0;
 
         //yaw control
         int yawP = 0;
-        int yawI = 128;
+        int yawI = 0;
         int yawD = 0;
 
         template <class Archive>
         void serialize( Archive & ar )
         {
-            ar( throttleP,throttleI,throttleD,rollP,rollI,rollD,pitchP,pitchI,pitchD);
+            ar( throttleP,throttleI,throttleD,rollP,rollI,rollD,pitchP,pitchI,pitchD,yawP,yawI,yawD,autoTakeoffFactor);
         }
 
     };
@@ -63,6 +65,7 @@ public:
     int autoThrottle = 1000;
     int autoRoll = 1500;
     int autoPitch = 1500;
+    int autoYaw = 1500;
 
     bool joySwitch = true;
     int joyDial = 0;
