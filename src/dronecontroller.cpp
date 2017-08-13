@@ -72,6 +72,8 @@ bool autoTakeOff = true;
 
 void DroneController::control(trackData data) {
 
+    readJoystick();
+
     if (autoTakeOff && !data.valid && joySwitch && hoverthrottle   < 1600)
         hoverthrottle  +=params.autoTakeoffFactor;
 
@@ -121,8 +123,6 @@ void DroneController::control(trackData data) {
         //std::cout << "AutoTakeOff:" << (int)autoTakeOff <<  " HT: " << hoverthrottle << " Valid: " << data.valid << "VelY: " << data.velY <<std::endl;
     }
 
-
-
     if (params.throttleI <= 1)
         throttleErrI = 0;
     if (params.rollI <= 1)
@@ -130,13 +130,38 @@ void DroneController::control(trackData data) {
     if (params.pitchI <= 1)
         pitchErrI = 0;
 
-
 //    //maybe change to if (accY = 0 and higher then 30cm and no pitch or roll)
 //    if (throttle > 1200 && throttle < 1650) { // during normal-ish flight regime.
 //        hoverthrottle += (((float)params.throttleI-1.0f)/5000.0f) * (float)(throttle-hoverthrottle);
 //    }
 
-    // joystick
+    if ( throttle < 1050 )
+        throttle = 1050;
+    if ( throttle > 1950 )
+        throttle = 1950;
+
+    if ( roll < 1050 )
+        roll = 1050;
+    if ( roll > 1950 )
+        roll = 1950;
+
+    if ( pitch < 1050 )
+        pitch = 1050;
+    if ( pitch > 1950 )
+        pitch = 1950;
+
+    if ( yaw < 1050 )
+        yaw = 1050;
+    if ( yaw > 1950 )
+        yaw = 1950;
+
+    uint16_t mode = 1500; // <min = mode 1, 1500 = mode 2, >max = mode 3
+
+    sendData(throttle,roll,pitch,yaw,mode);
+
+}
+
+void DroneController::readJoystick(void) {
     while (joystick.sample(&event))
     {
         if (event.isAxis()) {
@@ -167,29 +192,9 @@ void DroneController::control(trackData data) {
             }
         }
     }
+}
 
-    if ( throttle < 1050 )
-        throttle = 1050;
-    if ( throttle > 1950 )
-        throttle = 1950;
-
-    if ( roll < 1050 )
-        roll = 1050;
-    if ( roll > 1950 )
-        roll = 1950;
-
-    if ( pitch < 1050 )
-        pitch = 1050;
-    if ( pitch > 1950 )
-        pitch = 1950;
-
-    if ( yaw < 1050 )
-        yaw = 1050;
-    if ( yaw > 1950 )
-        yaw = 1950;
-
-    uint16_t mode = 1500; // <min = mode 1, 1500 = mode 2, >max = mode 3
-
+void DroneController::sendData(int throttle,int roll,int pitch,int yaw,int mode) {
     char buff[64];
     sprintf( (char*) buff,"%u,%u,%u,%u,%u,0,0,0,0,0,0,0\n",throttle,roll,pitch,yaw,mode);
     if (!notconnected) {
@@ -228,7 +233,6 @@ void DroneController::control(trackData data) {
     //	for (int i = 0 to tmp.count;i++) {
     //if tmp.str.c_str[i] == buff[i] ...
     //	}
-
 
 }
 

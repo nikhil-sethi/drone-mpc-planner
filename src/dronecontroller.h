@@ -58,7 +58,8 @@ private:
     controlParameters params;
     int baudrate;
     std::ofstream *_logger;
-
+    void sendData(int throttle,int roll,int pitch,int yaw,int mode);
+    void readJoystick(void);
 
 public:
 
