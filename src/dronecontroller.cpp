@@ -13,7 +13,7 @@ int notconnected;
 
 bool DroneController::init(std::ofstream *logger) {
     _logger = logger;
-    (*_logger) << "valid; posErrX; posErrY; posErrZ; velX; velY; velZ; hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; joyThrottle; joyRoll; joyPitch; joyYaw; joySwitch; throttleP; throttleI; throttleD" << std::endl;
+    (*_logger) << "valid; posErrX; posErrY; posErrZ; velX; velY; velZ; hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; joyThrottle; joyRoll; joyPitch; joyYaw; joySwitch; throttleP; throttleI; throttleD; dt; dx; dy; dz" << std::endl;
     std::cout << "Initialising control." << std::endl;
     // setup connection with Arduino
     baudrate = 115200;
@@ -43,35 +43,29 @@ bool DroneController::init(std::ofstream *logger) {
 
     createTrackbar("Take off", "Control", &params.autoTakeoffFactor, 255);
 
-//    // roll control
-//    createTrackbar("Roll P", "Control", &params.rollP, 5000);
-//    createTrackbar("Roll I", "Control", &params.rollI, 255);
-//    createTrackbar("Roll D", "Control", &params.rollD, 255);
-//    // pitch control
-//    createTrackbar("Pitch P", "Control", &params.pitchP, 255);
-//    createTrackbar("Pitch I", "Control", &params.pitchI, 255);
-//    createTrackbar("Pitch D", "Control", &params.pitchD, 255);
-//    // yaw control
-//    createTrackbar("Yaw P", "Control", &params.yawP, 255);
-//    createTrackbar("Yaw I", "Control", &params.yawI, 255);
-//    createTrackbar("Yaw D", "Control", &params.yawD, 255);
+    createTrackbar("Rebind", "Control", &rebindValue, 1);
+
+    //    // roll control
+    //    createTrackbar("Roll P", "Control", &params.rollP, 5000);
+    //    createTrackbar("Roll I", "Control", &params.rollI, 255);
+    //    createTrackbar("Roll D", "Control", &params.rollD, 255);
+    //    // pitch control
+    //    createTrackbar("Pitch P", "Control", &params.pitchP, 255);
+    //    createTrackbar("Pitch I", "Control", &params.pitchI, 255);
+    //    createTrackbar("Pitch D", "Control", &params.pitchD, 255);
+    //    // yaw control
+    //    createTrackbar("Yaw P", "Control", &params.yawP, 255);
+    //    createTrackbar("Yaw I", "Control", &params.yawI, 255);
+    //    createTrackbar("Yaw D", "Control", &params.yawD, 255);
 #endif
+
+    thread_nrf = std::thread(&DroneController::workerThread,this);
+
 }
-
-
-//gain thrust 18
-
-float throttleErrI = 0;
-float rollErrI = 0;
-float pitchErrI = 0;
-
-#define INITIALTHROTTLE 1050
-float hoverthrottle = INITIALTHROTTLE;
-
-bool autoTakeOff = true;
 
 void DroneController::control(trackData data) {
 
+    rebind();
     readJoystick();
 
     if (autoTakeOff && !data.valid && joySwitch && hoverthrottle   < 1600)
@@ -90,6 +84,7 @@ void DroneController::control(trackData data) {
     autoPitch =1500 - (data.posErrZ * params.pitchP + data.velZ * params.pitchD +  params.pitchI*pitchErrI);
     //TODO: Yaw
 
+    g_lockData.lock();
     if ( ((data.valid || autoTakeOff) && joySwitch) || notconnected) {
         throttle = autoThrottle;
         //roll = autoRoll;
@@ -113,27 +108,12 @@ void DroneController::control(trackData data) {
         yaw = joyYaw;
     }
 
-    (*_logger) << (int)data.valid  << "; " << data.posErrX << "; " << data.posErrY  << "; " << data.posErrZ << "; " << data.velX << "; " << data.velY  << "; " << data.velZ << "; " << hoverthrottle << "; " << autoThrottle << "; " << autoRoll << "; " << autoPitch << "; " << autoYaw <<  "; " << joyThrottle <<  "; " << joyRoll <<  "; " << joyPitch <<  "; " << joyYaw << "; " << (int)joySwitch << "; " << params.throttleP << "; " << params.throttleI << "; " << params.throttleD << std::endl;
-
-
-    if (!notconnected){
-        params.throttleP = scaledjoydial;
-        std::cout << "P:" << params.throttleP << " Throttle: " << throttle << " HT: " << hoverthrottle << std::endl;
-        //std::cout << "RollP:" << params.rollP << std::endl;
-        //std::cout << "AutoTakeOff:" << (int)autoTakeOff <<  " HT: " << hoverthrottle << " Valid: " << data.valid << "VelY: " << data.velY <<std::endl;
-    }
-
     if (params.throttleI <= 1)
         throttleErrI = 0;
     if (params.rollI <= 1)
         rollErrI = 0;
     if (params.pitchI <= 1)
         pitchErrI = 0;
-
-//    //maybe change to if (accY = 0 and higher then 30cm and no pitch or roll)
-//    if (throttle > 1200 && throttle < 1650) { // during normal-ish flight regime.
-//        hoverthrottle += (((float)params.throttleI-1.0f)/5000.0f) * (float)(throttle-hoverthrottle);
-//    }
 
     if ( throttle < 1050 )
         throttle = 1050;
@@ -155,10 +135,25 @@ void DroneController::control(trackData data) {
     if ( yaw > 1950 )
         yaw = 1950;
 
-    uint16_t mode = 1500; // <min = mode 1, 1500 = mode 2, >max = mode 3
+    g_lockData.unlock();
 
-    sendData(throttle,roll,pitch,yaw,mode);
+    (*_logger) << (int)data.valid  << "; " << data.posErrX << "; " << data.posErrY  << "; " << data.posErrZ << "; " << data.velX << "; " << data.velY  << "; " << data.velZ << "; " << hoverthrottle << "; " << autoThrottle << "; " << autoRoll << "; " << autoPitch << "; " << autoYaw <<  "; " << joyThrottle <<  "; " << joyRoll <<  "; " << joyPitch <<  "; " << joyYaw << "; " << (int)joySwitch << "; " << params.throttleP << "; " << params.throttleI << "; " << params.throttleD << "; " << data.dt << "; " << data.dx << "; " << data.dy << "; " << data.dz << std::endl;
+    if (!notconnected){
+        //params.throttleP = scaledjoydial;
+        //std::cout << "P:" << params.throttleP << " Throttle: " << throttle << " HT: " << hoverthrottle << std::endl;
+        //std::cout << "RollP:" << params.rollP << std::endl;
+        std::cout << "AutoTakeOff:" << (int)autoTakeOff <<  " HT: " << hoverthrottle << " Valid: " << data.valid << "VelY: " << data.velY <<std::endl;
+    }
+}
 
+void DroneController::workerThread(void) {
+    std::cout << "Send nrf thread started!" << std::endl;
+    while (!exitSendThread) {
+        g_lockData.lock();
+        sendData();
+        g_lockData.unlock();
+        usleep(20000);
+    }
 }
 
 void DroneController::readJoystick(void) {
@@ -194,19 +189,18 @@ void DroneController::readJoystick(void) {
     }
 }
 
-void DroneController::sendData(int throttle,int roll,int pitch,int yaw,int mode) {
+void DroneController::sendData(void) {
     char buff[64];
     sprintf( (char*) buff,"%u,%u,%u,%u,%u,0,0,0,0,0,0,0\n",throttle,roll,pitch,yaw,mode);
     if (!notconnected) {
         RS232_SendBuf( (unsigned char*) buff, 63);
     }
 
-
     //if ( data.valid ) {
     //std::setprecision(2);
     //std::cout << data.posY << " " << data.velY << " - ";
     //std::cout << "JoyCommands:" << std::string(buff) << std::flush;
-//    (*_logger) << "JoyCommands:" << std::string(buff) << std::flush;
+    //    (*_logger) << "JoyCommands:" << std::string(buff) << std::flush;
 
     //}
 
@@ -236,7 +230,31 @@ void DroneController::sendData(int throttle,int roll,int pitch,int yaw,int mode)
 
 }
 
+void DroneController::rebind(void){
+
+    if (rebindValue) {
+        rebindValue=0;
+
+        char buff[64];
+        sprintf( (char*) buff,"1050,1500,1500,1500,0,0,0,0,0,0,0,2000\n");
+        if (!notconnected) {
+            RS232_SendBuf( (unsigned char*) buff, 63);
+            RS232_CloseComport();
+        }
+        usleep(100000);
+        notconnected = RS232_OpenComport(baudrate);
+
+        if (notconnected)
+            std::cout << "Bind failure" << std::endl;
+    }
+}
+
 void DroneController::close () {
+    exitSendThread = true;
+    g_lockData.unlock();
+    g_lockWaitForData2.unlock();
+    thread_nrf.join();
+
     char buff[64];
     sprintf( (char*) buff,"1050,1500,1500,1500,0,0,0,0,0,0,0,2000\n");
     if (!notconnected) {

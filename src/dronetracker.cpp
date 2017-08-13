@@ -406,7 +406,7 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
 
         data.dx = csposX - prevX;
         data.dy = csposY - prevY;
-        data.dy = csposZ - prevZ;
+        data.dz = csposZ - prevZ;
         data.velX = data.dx / dt;
         data.velY = data.dy / dt;
         data.velZ = data.dz / dt;

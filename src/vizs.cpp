@@ -24,14 +24,8 @@ void Visualizer::addSample(void) {
 
 
     roll_calculated.push_back((float)dctrl->autoRoll);
-
-
     pitch_calculated.push_back((float)dctrl->autoPitch);
-
-
     //yaw_calculated.push_back((float)dctrl->commandedYaw);
-
-
     throttle_calculated.push_back((float)dctrl->autoThrottle);
 
     posX.push_back(-(float)dtrkr->data.posX);

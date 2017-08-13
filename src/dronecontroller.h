@@ -12,6 +12,9 @@
 #include <iomanip>
 #include <unistd.h>
 
+#include <thread>
+#include <mutex>
+
 using namespace cv;
 
 /*
@@ -55,11 +58,33 @@ private:
 
     };
 
+
+    float throttleErrI = 0;
+    float rollErrI = 0;
+    float pitchErrI = 0;
+
+    int rebindValue = 0;
+
+    std::thread thread_nrf;
+
+    bool exitSendThread = false;
+
+    #define INITIALTHROTTLE 1050
+    float hoverthrottle = INITIALTHROTTLE;
+
+    bool autoTakeOff = true;
+
+    std::mutex g_lockData;
+    std::mutex g_lockWaitForData2;
+
     controlParameters params;
     int baudrate;
     std::ofstream *_logger;
-    void sendData(int throttle,int roll,int pitch,int yaw,int mode);
+    void sendData(void);
     void readJoystick(void);
+    void rebind(void);
+
+    void workerThread(void);
 
 public:
 
@@ -82,8 +107,10 @@ public:
     bool init(std::ofstream *logger);
     void control(trackData data);
 
+    uint16_t mode = 1500; // <min = mode 1, 1500 = mode 2, >max = mode 3
     int roll,pitch,yaw = 1500;
     int throttle = 1000;
+
 
 };
 
