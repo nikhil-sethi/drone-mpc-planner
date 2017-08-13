@@ -63,7 +63,8 @@ void Visualizer::plot(void) {
     plotxy(posX,posY,&framePosXY, sp2, "PosXY");
 
     //plot(throttle_joystick,throttle_calculated, &frameThrottle,"Throttle");
-    plot(roll_joystick,roll_calculated, &frameThrottle,"Roll");
+    //plot(roll_joystick,roll_calculated, &frameThrottle,"Roll");
+    plot(pitch_joystick,pitch_calculated, &frameThrottle,"Pitch");
 
     imshow("Shizzle",frame);
 }
