@@ -107,6 +107,14 @@ private:
     cv::Mat measL,measR;
 
 
+#define SETPOINTXMAX 3000 // in mm
+#define SETPOINTYMAX 3000 // in mm
+#define SETPOINTZMAX 5000 // in mm
+
+    int setpointX = SETPOINTXMAX / 2;
+    int setpointY = SETPOINTYMAX / 2;
+    int setpointZ = 1000;
+
 public:       
 
      cv::Point3d setpoint;

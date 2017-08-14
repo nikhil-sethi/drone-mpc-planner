@@ -142,7 +142,7 @@ void process_video() {
 	        imgcount++;
 	        float time = ((float)stopWatch.Read())/1000.0;
 //            logger << "Frame: " <<imgcount << ". FPS: " << imgcount / time << std::endl;
-//            std::cout << "Frame: " <<imgcount << ". FPS: " << imgcount / time << std::endl;
+            std::cout << "Frame: " <<imgcount << ". FPS: " << imgcount / time << std::endl;
 		}
     } // main while loop
 

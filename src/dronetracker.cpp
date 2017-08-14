@@ -14,6 +14,8 @@ using namespace std;
 //#define TUNING
 #endif
 
+#define POSITIONTRACKBARS
+
 const string settingsFile = "../settings.dat";
 bool DroneTracker::init(void) {
 
@@ -24,7 +26,7 @@ bool DroneTracker::init(void) {
     }
 
 #ifdef TUNING
-    namedWindow("Tuning", WINDOW_NORMAL); //create a window called "Control"
+    namedWindow("Tuning", WINDOW_NORMAL);
     createTrackbar("LowH1", "Tuning", &settings.iLowH1r, 255);
     createTrackbar("HighH1", "Tuning", &settings.iHighH1r, 255);
     createTrackbar("filterByArea", "Tuning", &settings.filterByArea, 1);
@@ -32,6 +34,13 @@ bool DroneTracker::init(void) {
     createTrackbar("maxArea", "Tuning", &settings.maxArea, 10000);
     createTrackbar("Opening1", "Tuning", &settings.iOpen1r, 30);
     createTrackbar("Closing1", "Tuning", &settings.iClose1r, 30);
+#endif
+#ifdef POSITIONTRACKBARS
+    namedWindow("Setpoint", WINDOW_NORMAL);
+    createTrackbar("X [mm]", "Setpoint", &setpointX, SETPOINTXMAX);
+    createTrackbar("Y [mm]", "Setpoint", &setpointY, SETPOINTYMAX);
+    createTrackbar("Z [mm]", "Setpoint", &setpointZ, SETPOINTZMAX);
+
 #endif
 
     kfL = cv::KalmanFilter(stateSize, measSize, contrSize, type);
@@ -392,7 +401,13 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
 
         Point3f output = world_coordinates[0];
+#ifdef POSITIONTRACKBARS
+        setpointw.x = (setpointX - SETPOINTXMAX/2) / 1000.0f;
+        setpointw.y = (setpointY - SETPOINTYMAX/2) / 1000.0f;
+        setpointw.z = -(setpointZ) / 1000.0f;
+#else
         setpointw = world_coordinates[1];
+#endif
 
         data.posX = output.x;
         data.posY = output.y;
