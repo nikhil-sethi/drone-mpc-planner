@@ -38,6 +38,7 @@ bool DroneController::init(std::ofstream *logger) {
     namedWindow("Control", WINDOW_NORMAL);
 
     createTrackbar("Rebind", "Control", &rebindValue, 1);
+    createTrackbar("AutoLand", "Control", &autoLand, 1);
 
     // throttle control
     createTrackbar("Throttle P", "Control", &params.throttleP, 2000);
@@ -54,6 +55,8 @@ bool DroneController::init(std::ofstream *logger) {
     createTrackbar("Pitch P", "Control", &params.pitchP, 5000);
     createTrackbar("Pitch I", "Control", &params.pitchI, 255);
     createTrackbar("Pitch D", "Control", &params.pitchD, 255);
+
+
     //    // yaw control
     //    createTrackbar("Yaw P", "Control", &params.yawP, 255);
     //    createTrackbar("Yaw I", "Control", &params.yawI, 255);
@@ -66,16 +69,29 @@ bool DroneController::init(std::ofstream *logger) {
 
 }
 
+float startY = -100;
+
 void DroneController::control(trackData data) {
 
     rebind();
     readJoystick();
 
+    if(autoLand) {
+        autoTakeOff=false;
+
+        if (fabs(data.posErrY - startY) < 0.1) {
+           hoverthrottle  = 0; //params.autoTakeoffFactor;
+        }
+        data.posErrY = -startY-0.2;
+    }
+
     if (autoTakeOff && !data.valid && joySwitch && hoverthrottle   < 1600)
         hoverthrottle  +=params.autoTakeoffFactor;
 
-    if (data.valid && data.velY > 0 && joySwitch)
+    if (data.valid && data.velY > 0 && joySwitch && autoTakeOff) {
         autoTakeOff = false;
+        startY = data.posErrY;
+    }
 
     if (!data.valid && !joySwitch && joyThrottle < 1100) {
         autoTakeOff = true;
@@ -145,8 +161,9 @@ void DroneController::control(trackData data) {
     if (!notconnected){
         //params.throttleP = scaledjoydial;
         //std::cout << "P:" << params.throttleP << " Throttle: " << throttle << " HT: " << hoverthrottle << std::endl;
-        std::cout << "Roll: " << roll << " RollP: " << params.rollP << std::endl;
+        //std::cout << "Roll: " << roll << " RollP: " << params.rollP << std::endl;
         //std::cout << "AutoTakeOff:" << (int)autoTakeOff <<  " HT: " << hoverthrottle << " Valid: " << data.valid << "VelY: " << data.velY <<std::endl;
+        //std::cout << "AutoLand:" << autoLand <<  " HT: " << hoverthrottle << " Valid: " << data.valid << " PosY: " << data.posErrY << " startY:" << startY << " VelY: " << data.velY <<std::endl;
     }
 }
 

@@ -73,6 +73,7 @@ private:
     float hoverthrottle = INITIALTHROTTLE;
 
     bool autoTakeOff = true;
+    int autoLand = 0;
 
     std::mutex g_lockData;
     std::mutex g_lockWaitForData2;
