@@ -206,6 +206,7 @@ void handleKey() {
 int init(int argc, char **argv) {
 
    logger.open("log.txt",std::ofstream::out);
+   dtrkr.init(&logger);
    dctrl.init(&logger);
 
 #ifdef _PC
@@ -278,7 +279,7 @@ int init(int argc, char **argv) {
     }
 #endif
 
-    dtrkr.init();
+
 
 #ifdef _PC
     visualizer.init(&cam,&dctrl,&dtrkr);

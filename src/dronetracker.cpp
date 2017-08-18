@@ -17,8 +17,9 @@ using namespace std;
 #define POSITIONTRACKBARS
 
 const string settingsFile = "../settings.dat";
-bool DroneTracker::init(void) {
-
+bool DroneTracker::init(std::ofstream *logger) {
+    _logger = logger;
+    (*_logger) << "imLx; imLy; imRx; imRy;";
     if (checkFileExist(settingsFile)) {
         std::ifstream is(settingsFile, std::ios::binary);
         cereal::BinaryInputArchive archive( is );
@@ -470,6 +471,8 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         dronepathR.erase(dronepathR.begin());
     if (predicted_dronepathR.size() > 30)
         predicted_dronepathR.erase(predicted_dronepathR.begin());
+
+    (*_logger) << closestL.pt.x  << "; " << closestL.pt.y  << "; " << closestR.pt.x  << "; " << closestR.pt.y  << "; ";
 
 }
 

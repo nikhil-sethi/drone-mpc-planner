@@ -115,6 +115,8 @@ private:
     int setpointY = SETPOINTYMAX / 2;
     int setpointZ = 1000;
 
+    std::ofstream *_logger;
+
 public:       
 
      cv::Point3d setpoint;
@@ -123,7 +125,7 @@ public:
     cv::Mat resFrame;
 
     void close (void);
-    bool init(void);
+    bool init(std::ofstream *logger);
     void track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf);
 
 
