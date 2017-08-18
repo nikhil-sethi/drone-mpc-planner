@@ -9,19 +9,10 @@ cv::Scalar red(0,0,255);
 
 void Visualizer::addSample(void) {
 
-    if (hack){
-        roll_joystick.push_back((float)dctrl->roll);
-        pitch_joystick.push_back((float)dctrl->pitch);
-        yaw_joystick.push_back((float)dctrl->yaw);
-        throttle_joystick.push_back((float)dctrl->joyThrottle);
-
-    } else {
-        roll_joystick.push_back(cam->getCurrentRoll());
-        pitch_joystick.push_back(cam->getCurrentPitch());
-        yaw_joystick.push_back(cam->getCurrentYaw());
-        throttle_joystick.push_back(cam->getCurrentThrust());
-    }
-
+    roll_joystick.push_back((float)dctrl->roll);
+    pitch_joystick.push_back((float)dctrl->pitch);
+    yaw_joystick.push_back((float)dctrl->yaw);
+    throttle_joystick.push_back((float)dctrl->joyThrottle);
 
     roll_calculated.push_back((float)dctrl->autoRoll);
     pitch_calculated.push_back((float)dctrl->autoPitch);
