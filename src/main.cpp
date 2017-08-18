@@ -92,18 +92,10 @@ void process_video() {
             cam.waitForImage();
         }
 
+        logger << imgcount << ";";
         stereo.rectify(cam.frameL, cam.frameR);
         dtrkr.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
         dctrl.control(dtrkr.data);
-
-#ifdef _PC
-
-//        logger << "TRPY: " << cam.getCurrentThrust()  << ", " << cam.getCurrentRoll() << ", " << cam.getCurrentPitch() << ", " << cam.getCurrentYaw() << std::endl;
-//        std::cout << "TRPY: " << cam.getCurrentThrust()  << ", " << cam.getCurrentRoll() << ", " << cam.getCurrentPitch() << ", " << cam.getCurrentYaw() << std::endl;
-
-#endif
-
-
 
 #ifdef HASSCREEN
         visualizer.plot();
@@ -140,8 +132,7 @@ void process_video() {
 	        handleKey();
 
 	        imgcount++;
-	        float time = ((float)stopWatch.Read())/1000.0;
-//            logger << "Frame: " <<imgcount << ". FPS: " << imgcount / time << std::endl;
+	        float time = ((float)stopWatch.Read())/1000.0;            
             std::cout << "Frame: " <<imgcount << ". FPS: " << imgcount / time << std::endl;
 		}
     } // main while loop
@@ -206,6 +197,7 @@ void handleKey() {
 int init(int argc, char **argv) {
 
    logger.open("log.txt",std::ofstream::out);
+   logger << "ID;";
    dtrkr.init(&logger);
    dctrl.init(&logger);
 

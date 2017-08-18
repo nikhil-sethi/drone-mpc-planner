@@ -114,6 +114,7 @@ private:
     int setpointX = SETPOINTXMAX / 2;
     int setpointY = SETPOINTYMAX / 2;
     int setpointZ = 1000;
+    int wpid = 0;
 
     std::ofstream *_logger;
 

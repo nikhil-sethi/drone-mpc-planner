@@ -41,6 +41,7 @@ bool DroneTracker::init(std::ofstream *logger) {
     createTrackbar("X [mm]", "Setpoint", &setpointX, SETPOINTXMAX);
     createTrackbar("Y [mm]", "Setpoint", &setpointY, SETPOINTYMAX);
     createTrackbar("Z [mm]", "Setpoint", &setpointZ, SETPOINTZMAX);
+    createTrackbar("WP id", "Setpoint", &wpid, 5);
 
 #endif
 
