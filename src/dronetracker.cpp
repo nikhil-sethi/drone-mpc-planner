@@ -151,7 +151,7 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     static int t_prev = 0;
     int t = stopWatch.Read();
     float dt= (t-t_prev)/1000.0;
-    t_prev = t;
+
     cv::Mat resFrameL,resFrameR;
 #ifdef DRAWVIZSL    
     cv::resize(frameL,resFrameL,cv::Size(2*frameL.cols,frameL.rows*2));
@@ -437,6 +437,7 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         data.velY = data.dy / dt;
         data.velZ = data.dz / dt;
         data.dt = dt;
+        t_prev = t; // update dt only if data valid
         data.valid = true;
 
         prevX = csposX;
