@@ -26,6 +26,14 @@ bool DroneTracker::init(std::ofstream *logger) {
         archive(settings);
     }
 
+
+    setpoints.push_back(cv::Point3i(SETPOINTXMAX / 2,SETPOINTYMAX / 2,1000)); // this is overwritten by position trackbars!!!
+    setpoints.push_back(cv::Point3i(1300,1500,800));
+    setpoints.push_back(cv::Point3i(1300,1500,1200));
+    setpoints.push_back(cv::Point3i(1700,1500,1200));
+    setpoints.push_back(cv::Point3i(1700,1500,800));
+
+
 #ifdef TUNING
     namedWindow("Tuning", WINDOW_NORMAL);
     createTrackbar("LowH1", "Tuning", &settings.iLowH1r, 255);
@@ -41,7 +49,7 @@ bool DroneTracker::init(std::ofstream *logger) {
     createTrackbar("X [mm]", "Setpoint", &setpointX, SETPOINTXMAX);
     createTrackbar("Y [mm]", "Setpoint", &setpointY, SETPOINTYMAX);
     createTrackbar("Z [mm]", "Setpoint", &setpointZ, SETPOINTZMAX);
-    createTrackbar("WP id", "Setpoint", &wpid, 5);
+    createTrackbar("WP id", "Setpoint", &wpid, 4);
 
 #endif
 
@@ -388,28 +396,29 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
 
         float disparity = ((closestR.pt.x - closestL.pt.x)*IMSCALEF2);
 
-        //TMP SOLUTION UNTIL MOSQUITO IS DETECTED:
-        setpoint.x = framegrayR.cols/2*IMSCALEF2; // closestL.pt.x;
-        setpoint.y = framegrayR.rows/2*IMSCALEF2; //closestL.pt.y-5;
-        setpoint.z = -17*IMSCALEF2; // disparity TMP!
-
         //calculate everything for the dronecontroller:
         std::vector<Point3f> camera_coordinates;
         std::vector<Point3f> world_coordinates;
 
-        //float depth = 1/disparity;
         camera_coordinates.push_back(Point3f(closestL.pt.x*IMSCALEF2,closestL.pt.y*IMSCALEF2,disparity));
-        camera_coordinates.push_back(Point3f(setpoint.x,setpoint.y,setpoint.z));
+        //camera_coordinates.push_back(Point3f(setpoint.x,setpoint.y,setpoint.z));
         cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
 
         Point3f output = world_coordinates[0];
-#ifdef POSITIONTRACKBARS
-        setpointw.x = (setpointX - SETPOINTXMAX/2) / 1000.0f;
-        setpointw.y = (setpointY - SETPOINTYMAX/2) / 1000.0f;
-        setpointw.z = -(setpointZ) / 1000.0f;
-#else
-        setpointw = world_coordinates[1];
-#endif
+
+        cv::Point3i tmps;
+        if (wpid > 0)
+            tmps = setpoints[wpid];
+        else { // read from position trackbars
+            tmps.x = setpointX;
+            tmps.y = setpointY;
+            tmps.z = setpointZ;
+        }
+
+        setpointw.x = (tmps.x - SETPOINTXMAX/2) / 1000.0f;
+        setpointw.y = (tmps.y - SETPOINTYMAX/2) / 1000.0f;
+        setpointw.z = -(tmps.z) / 1000.0f;
+
 
         data.posX = output.x;
         data.posY = output.y;

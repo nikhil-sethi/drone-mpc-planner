@@ -116,6 +116,8 @@ private:
     int setpointZ = 1000;
     int wpid = 0;
 
+    std::vector<cv::Point3i> setpoints;
+
     std::ofstream *_logger;
 
 public:       
