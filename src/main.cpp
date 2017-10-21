@@ -59,7 +59,8 @@ GStream outputVideoResults,outputVideoRawLR;
 cv::VideoWriter outputVideoDisp;
 stopwatch_c stopWatch;
 std::string file;
-std::string imageOutputDir;
+std::string data_output_dir;
+std::string calib_folder;
 
 int mouseX, mouseY;
 int mouseLDown;
@@ -140,8 +141,8 @@ void process_video() {
         cv::imshow("Results", resFrame);
 #endif
 
-        frameBL[frame_buffer_write_id] = cam.frameL;
-        frameBR[frame_buffer_write_id] = cam.frameR;
+        frameBL[frame_buffer_write_id] = cam.frameL.clone();
+        frameBR[frame_buffer_write_id] = cam.frameR.clone();
 
         frame_buffer_write_id = (frame_buffer_write_id + 1) % FRAME_BUF_SIZE;
         if (insect.data.valid) {
@@ -170,6 +171,8 @@ void process_video() {
         float time = ((float)stopWatch.Read())/1000.0;
         std::cout << "Frame: " <<imgcount << " (" << detectcount << "). FPS: " << imgcount / time << std::endl;
         handleKey();
+        if (imgcount > 60000)
+            break;
     } // main while loop
 
 #ifdef HASSCREEN
@@ -237,29 +240,31 @@ void my_handler(int s){
 
 int init(int argc, char **argv) {
 
-   logger.open("log.txt",std::ofstream::out);
-//   logger << "ID;";
+    if (argc > 3) {
+        data_output_dir = std::string(argv[1]) + "/";
+        std::cout << "Data output dir: " << data_output_dir << std::endl;
+        std::cout << "Calib folder: " << std::string(argv[2]) << std::endl;
+        calib_folder = std::string(argv[2]) + "/";
+    } else {
+        std::cout << "Missing arguments. Format [data_output_dir, calibration dir,|data_input_dir|]" << std::endl;
+        return 1;
+    }
+
+   logger.open(data_output_dir  + "log.txt",std::ofstream::out);
+   logger << "ID;";
 //   dtrkr.init(&logger);
 //   dctrl.init(&logger);
      insect.init(&logger);
 
 #ifdef _PC
-    if (argc != 3) {
-        std::cout << "Wrong arguments. Specify the locations for: (1) loading images, (2) the calib folder..." << std::endl;
+    std::string data_in_dir = std::string(argv[3])+ "/";
+     std::cout << "Loading images from: " << data_in_dir << std::endl;
+    if (cam.init(data_in_dir)) {
         return 1;
     }
-    std::cout << "Loading images from: " << std::string(argv[1]) << std::endl;
-    if (cam.init(std::string(argv[1]))) {
-        return 1;
-    }
-    std::cout << "Calib folder: " << std::string(argv[2]) << std::endl;
-    std::string calib_folder = std::string(argv[2]);
 #else
     cam.init();
-    std::string calib_folder = "/factory/";
-
 #endif
-
 
     /*****Start capturing images*****/
     std::cout << "Start cam\n";
@@ -290,21 +295,19 @@ int init(int argc, char **argv) {
     resFrame = cv::Mat::zeros(480, 640,CV_8UC3);    
 #endif
 
-
     /*****init the video writer*****/
-
 #if VIDEORESULTS   
-    if (outputVideoResults.init(argc,argv,VIDEORESULTS, "videoResult.avi",864,864,"192.168.1.10",5004)) {return 1;}
+    if (outputVideoResults.init(argc,argv,VIDEORESULTS, data_output_dir + "videoResult.avi",864,864,"192.168.1.10",5004)) {return 1;}
 #endif
 #if VIDEORAWLR
-    if (outputVideoRawLR.init(argc,argv,VIDEORAWLR,"videoRawLR.avi",cam.getImWidth()*2,cam.getImHeight(),"192.168.1.10",5004)) {return 1;}
+    if (outputVideoRawLR.init(argc,argv,VIDEORAWLR,data_output_dir + "videoRawLR.avi",cam.getImWidth()*2,cam.getImHeight(),"192.168.1.10",5004)) {return 1;}
 #endif
 
 #if VIDEODISPARITY
     cv::Mat fd = cam.get_disp_frame();
     std::cout << "Opening video file for disparity at " << fd.cols << "x" << fd.rows	 << " pixels with " << cam.getFPS() << "fps " << std::endl;
     cv::Size sizeDisp(fd.cols,fd.rows);
-    outputVideoDisp.open("videoDisp.avi",CV_FOURCC('F','M','P','4'),cam.getFPS(),sizeDisp,false);
+    outputVideoDisp.open(data_output_dir + "videoDisp.avi",CV_FOURCC('F','M','P','4'),cam.getFPS(),sizeDisp,false);
 
     if (!outputVideoDisp.isOpened())
     {
@@ -312,8 +315,6 @@ int init(int argc, char **argv) {
         return 1;
     }
 #endif
-
-
 
 #ifdef _PC
     visualizer.init(&cam,&dctrl,&dtrkr);
@@ -323,17 +324,12 @@ int init(int argc, char **argv) {
 
     msg="";
 
-
     //init ctrl - c catch
     struct sigaction sigIntHandler;
-
     sigIntHandler.sa_handler = my_handler;
     sigemptyset(&sigIntHandler.sa_mask);
     sigIntHandler.sa_flags = 0;
-
     sigaction(SIGINT, &sigIntHandler, NULL);
-
-
 
     std::cout << "Main init successfull" << std::endl;
     return 0;

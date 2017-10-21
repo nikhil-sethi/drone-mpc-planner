@@ -108,8 +108,8 @@ private:
     cv::Mat prevFrameL,prevFrameR;
     bool firstFrame;
 
-    std::vector<cv::KeyPoint> dronepathL,dronepathR;
-    std::vector<cv::KeyPoint> predicted_dronepathL,predicted_dronepathR;
+    std::vector<cv::KeyPoint> insect_pathL,insect_pathR;
+    std::vector<cv::KeyPoint> predicted_insect_pathL,predicted_insect_pathR;
 
 
 public:

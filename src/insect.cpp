@@ -10,13 +10,13 @@ using namespace std;
 
 //#define USERIGHTCAM
 
-//#ifdef _PC
+#ifdef _PC
 #define DRAWVIZSL
 #ifdef USERIGHTCAM
 #define DRAWVIZSR
 #endif
 #define TUNING
-//#endif
+#endif
 
 const string settingsFile = "../settings2.dat";
 bool Insect::init(std::ofstream *logger) {
@@ -151,7 +151,7 @@ void Insect::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     erode(treshfL, treshfL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iOpen1r+1, settings.iOpen1r+1)));
     static bool foundL = false;
     static int notFoundCountL =0;
-    cv::Point3f predicted_drone_locationL;
+    cv::Point3f predicted_insect_locationL;
 
     if (foundL) {
         kfL.transitionMatrix.at<float>(2) = dt;
@@ -163,34 +163,34 @@ void Insect::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         predRect.x = stateL.at<float>(0) - predRect.width / 2;
         predRect.y = stateL.at<float>(1) - predRect.height / 2;
 
-        predicted_drone_locationL.x = stateL.at<float>(0);
-        predicted_drone_locationL.y = stateL.at<float>(1);
-        predicted_drone_locationL.z = stateL.at<float>(2);
+        predicted_insect_locationL.x = stateL.at<float>(0);
+        predicted_insect_locationL.y = stateL.at<float>(1);
+        predicted_insect_locationL.z = stateL.at<float>(2);
         cv::KeyPoint t;
         cv::Point beun;
-        beun.x = predicted_drone_locationL.x;
-        beun.y = predicted_drone_locationL.y;
+        beun.x = predicted_insect_locationL.x;
+        beun.y = predicted_insect_locationL.y;
         t.pt = beun;
         t.size = 3;
-        predicted_dronepathL.push_back(t);
+        predicted_insect_pathL.push_back(t);
     }
     std::vector<KeyPoint> keypointsL;
-    cv::KeyPoint closestL;
+    cv::KeyPoint closestL,closestR;
     detector.detect( treshfL, keypointsL);
-    if (keypointsL.size() == 1 && dronepathL.size() == 0) {
-        dronepathL.push_back(keypointsL.at(0));
-    } else if (keypointsL.size()>0 &&  dronepathL.size() > 0) {
+    if (keypointsL.size() == 1 && insect_pathL.size() == 0) {
+        insect_pathL.push_back(keypointsL.at(0));
+    } else if (keypointsL.size()>0 &&  insect_pathL.size() > 0) {
         //find closest keypoint to new predicted location
         int mind = 999999999;
         for (int i = 0 ; i < keypointsL.size();i++) {
             cv::KeyPoint k =keypointsL.at(i);
-            int d = (predicted_drone_locationL.x-k.pt.x) * (predicted_drone_locationL.x-k.pt.x) + (predicted_drone_locationL.y-k.pt.y)*(predicted_drone_locationL.y-k.pt.y);
+            int d = (predicted_insect_locationL.x-k.pt.x) * (predicted_insect_locationL.x-k.pt.x) + (predicted_insect_locationL.y-k.pt.y)*(predicted_insect_locationL.y-k.pt.y);
             if (d < mind ) {
                 mind = d;
                 closestL = keypointsL.at(i);
             }
         }
-        dronepathL.push_back(closestL);
+        insect_pathL.push_back(closestL);
     }
     if (keypointsL.size() == 0) {
         notFoundCountL++;
@@ -213,7 +213,7 @@ void Insect::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     cvtColor(tmpfR,framegrayR,COLOR_BGR2GRAY);
 
 
-    cv::KeyPoint closestR;
+    //cv::KeyPoint closestR;
     cv::Mat treshfR;
     if (found_keypoints_in_bothLR) {
         std::vector<KeyPoint> keypointsR;
@@ -224,7 +224,7 @@ void Insect::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         erode(treshfR, treshfR, getStructuringElement(MORPH_ELLIPSE, Size(settings.iOpen1r+1, settings.iOpen1r+1)));
         static bool foundR = false;
         static int notFoundCountR =0;
-        cv::Point predicted_drone_locationR;
+        cv::Point predicted_insect_locationR;
         if (foundR) {
             kfR.transitionMatrix.at<float>(2) = dt;
             kfR.transitionMatrix.at<float>(9) = dt;
@@ -235,24 +235,24 @@ void Insect::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
             //        predRect.x = stateR.at<float>(0) - predRect.width / 2;
             //        predRect.y = stateR.at<float>(1) - predRect.height / 2;
 
-            predicted_drone_locationR.x = stateR.at<float>(0);
-            predicted_drone_locationR.y = stateR.at<float>(1);
+            predicted_insect_locationR.x = stateR.at<float>(0);
+            predicted_insect_locationR.y = stateR.at<float>(1);
             cv::KeyPoint t;
-            t.pt = predicted_drone_locationR;
+            t.pt = predicted_insect_locationR;
             t.size = 3;
-            predicted_dronepathR.push_back(t);
-            //cout << "PredictionR: " << predicted_drone_locationR << std::endl;
+            predicted_insect_pathR.push_back(t);
+            //cout << "PredictionR: " << predicted_insect_locationR << std::endl;
         }
         detector.detect( treshfR, keypointsR);
 
-        if (keypointsR.size() == 1 && dronepathR.size() == 0) {
-            dronepathR.push_back(keypointsR.at(0));
-        } else if (keypointsR.size()>0 &&  dronepathR.size() > 0) {
+        if (keypointsR.size() == 1 && insect_pathR.size() == 0) {
+            insect_pathR.push_back(keypointsR.at(0));
+        } else if (keypointsR.size()>0 &&  insect_pathR.size() > 0) {
             //find closest keypoint to new predicted location
             int mind = 999999999;
             for (int i = 0 ; i < keypointsR.size();i++) {
                 cv::KeyPoint k =keypointsR.at(i);
-                int d = (predicted_drone_locationR.x-k.pt.x) * (predicted_drone_locationR.x-k.pt.x) + (predicted_drone_locationR.y-k.pt.y)*(predicted_drone_locationR.y-k.pt.y);
+                int d = (predicted_insect_locationR.x-k.pt.x) * (predicted_insect_locationR.x-k.pt.x) + (predicted_insect_locationR.y-k.pt.y)*(predicted_insect_locationR.y-k.pt.y);
                 if (d < mind ) {
                     mind = d;
                     closestR = keypointsR.at(i);
@@ -261,7 +261,7 @@ void Insect::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
 
             //turbo beuntje
             closestR.pt.x = closestL.pt.x - (closestL.pt.x - closestR.pt.x);
-            dronepathR.push_back(closestR);
+            insect_pathR.push_back(closestR);
         }
         if (keypointsR.size() == 0) {
             notFoundCountR++;
@@ -379,19 +379,16 @@ void Insect::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
 
 #ifdef DRAWVIZSR
         cv::Mat resFrameR;
-        if (found_keypoints_in_bothLR) {
-            drawKeypoints( framegrayR, predicted_dronepathR, framegrayR, Scalar(0,255,0), DrawMatchesFlags::DEFAULT );
-            cv::resize(frameR,resFrameR,cv::Size(2*frameR.cols,frameR.rows*2));
-            cvtColor(treshfR,treshfR,CV_GRAY2BGR);
-            treshfR.copyTo(resFrameR(cv::Rect(resFrameR.cols - treshfR.cols,0,treshfR.cols, treshfR.rows)));
-            if (dronepathR.size() > 0) {
-                drawKeypoints( framegrayR, dronepathR, framegrayR, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
-            }
-
-            framegrayR.copyTo(resFrameR(cv::Rect(0,0,framegrayR.cols, framegrayR.rows)));
-            resFrame = cv::Mat(resFrameL.rows,2*resFrameL.cols  ,CV_8UC3);
-            resFrameR.copyTo(resFrame(cv::Rect(resFrameL.cols,0,resFrameL.cols, resFrameL.rows)));
+        drawKeypoints( framegrayR, predicted_insect_pathR, framegrayR, Scalar(0,255,0), DrawMatchesFlags::DEFAULT );
+        cv::resize(frameR,resFrameR,cv::Size(2*frameR.cols,frameR.rows*2));
+        cvtColor(treshfR,treshfR,CV_GRAY2BGR);
+        treshfR.copyTo(resFrameR(cv::Rect(resFrameR.cols - treshfR.cols,0,treshfR.cols, treshfR.rows)));
+        if (insect_pathR.size() > 0) {
+            drawKeypoints( framegrayR, insect_pathR, framegrayR, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
         }
+        framegrayR.copyTo(resFrameR(cv::Rect(0,0,framegrayR.cols, framegrayR.rows)));
+        resFrame = cv::Mat(resFrameR.rows,2*resFrameR.cols  ,CV_8UC3);
+        resFrameR.copyTo(resFrame(cv::Rect(resFrameR.cols,0,resFrameR.cols, resFrameR.rows)));
 #endif
 #ifdef DRAWVIZSL
         cv::Mat resFrameL;
@@ -401,26 +398,26 @@ void Insect::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
 #endif
         cvtColor(treshfL,treshfL,CV_GRAY2BGR);
         treshfL.copyTo(resFrameL(cv::Rect(resFrameL.cols - treshfL.cols,0,treshfL.cols, treshfL.rows)));
-        drawKeypoints( framegrayL, predicted_dronepathL, framegrayL, Scalar(0,255,0), DrawMatchesFlags::DEFAULT );
-        if (dronepathL.size() > 0) {
-            drawKeypoints( framegrayL, dronepathL, framegrayL, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+        drawKeypoints( framegrayL, predicted_insect_pathL, framegrayL, Scalar(0,255,0), DrawMatchesFlags::DEFAULT );
+        if (insect_pathL.size() > 0) {
+            drawKeypoints( framegrayL, insect_pathL, framegrayL, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
         }
         framegrayL.copyTo(resFrameL(cv::Rect(0,0,framegrayL.cols, framegrayL.rows)));
         resFrameL.copyTo(resFrame(cv::Rect(0,0,resFrameL.cols, resFrameL.rows)));
 #endif       
     }
 
-    if (dronepathL.size() > 30)
-        dronepathL.erase(dronepathL.begin());
-    if (predicted_dronepathL.size() > 30)
-        predicted_dronepathL.erase(predicted_dronepathL.begin());
+    if (insect_pathL.size() > 30)
+        insect_pathL.erase(insect_pathL.begin());
+    if (predicted_insect_pathL.size() > 30)
+        predicted_insect_pathL.erase(predicted_insect_pathL.begin());
 
-    if (dronepathR.size() > 30)
-        dronepathR.erase(dronepathR.begin());
-    if (predicted_dronepathR.size() > 30)
-        predicted_dronepathR.erase(predicted_dronepathR.begin());
+    if (insect_pathR.size() > 30)
+        insect_pathR.erase(insect_pathR.begin());
+    if (predicted_insect_pathR.size() > 30)
+        predicted_insect_pathR.erase(predicted_insect_pathR.begin());
 
-    //(*_logger) << closestL.pt.x  << "; " << closestL.pt.y  << "; " << closestR.pt.x  << "; " << closestR.pt.y  << "; ";
+    (*_logger) << closestL.pt.x  << "; " << closestL.pt.y  << "; " << closestR.pt.x  << "; " << closestR.pt.y  << "; ";
     firstFrame = true;
 }
 
