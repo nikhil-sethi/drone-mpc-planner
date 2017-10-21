@@ -33,7 +33,7 @@ while [ 1 ]; do
 	    echo 255 > $file
 	done
 
-	/home/slamdunk/kevin/mu-g/SLAMdunk/build/MUG $OUTDIR /factory . > >( sudo tee -a  $OUTDIR/stdlog.txt) 2> >(sudo tee -a $OUTDIR/errorlog.txt >&2) || true 
+	sudo /home/slamdunk/kevin/mu-g/SLAMdunk/build/MUG $OUTDIR /factory . > >( sudo tee -a  $OUTDIR/stdlog.txt) 2> >(sudo tee -a $OUTDIR/errorlog.txt >&2) || true 
 	#sudo /home/slamdunk/hv/share/mu-g/SLAMdunk/build/MUG $OUTDIR /factory . > >( sudo tee -a  $OUTDIR/stdlog.txt) 2> >(sudo tee -a $OUTDIR/errorlog.txt >&2) || true 
 
 	for file in "/sys/class/leds/"{front,rear}":"{left,right}":"{blue,green,red}"/brightness"; do
