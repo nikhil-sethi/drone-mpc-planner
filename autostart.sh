@@ -13,7 +13,7 @@ while [ 1 ]; do
 	    echo 255 > $file
 	done
 
-	sleep 1s
+	sleep 20s
 
 	COUNTER=1
 	while [  $COUNTER -lt 1000 ]; do
