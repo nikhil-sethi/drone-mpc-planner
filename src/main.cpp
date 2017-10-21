@@ -173,6 +173,7 @@ void process_video() {
         handleKey();
         if (imgcount > 60000)
             break;
+        logger << std::endl;
     } // main while loop
 
 #ifdef HASSCREEN
