@@ -2,5 +2,5 @@
 
 set -e
 
-./autostart.sh &
-./tunnel.sh &
+/home/slamdunk/kevin/mu-g/autostart.sh &
+/home/slamdunk/kevin/mu-g/tunnel.sh &
