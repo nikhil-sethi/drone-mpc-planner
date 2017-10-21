@@ -3,4 +3,5 @@
 set -e
 
 ./autostart.sh &
-ssh -TR 16666:localhost:22 houjebek@dinstech.nl  &
+ssh -i /home/slamdunk/kevin/mu-g/id_rsa -fNR 16666:localhost:22 houjebek@dinstech.nl  &
+
