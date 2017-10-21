@@ -26,7 +26,7 @@ public:
     int write(cv::Mat frame);
     int write(cv::Mat frameL,cv::Mat frameR);
     void close (void);
-int getWanted(void);
+    int getWanted(void);
 };
 
 

@@ -5,6 +5,11 @@
 #include <iostream>
 #include <iomanip>
 
+#include <signal.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+
 #include "common.h"
 
 #include "defines.h"
@@ -20,6 +25,7 @@
 #include "dronecontroller.h"
 #include "gstream.h"
 #include "vizs.h"
+#include "insect.h"
 
 #include "opencv2/features2d/features2d.hpp"
 
@@ -47,7 +53,7 @@ Beide camera's uitlezen en yuv->rgb: 16.8 fps
 /***********Variables****************/
 unsigned char key = 0;
 std::string msg;
-int imgcount; // to measure fps
+int imgcount,detectcount; // to measure fps
 cv::Mat resFrame;
 GStream outputVideoResults,outputVideoRawLR;
 cv::VideoWriter outputVideoDisp;
@@ -73,6 +79,17 @@ KalamosCam cam;
 stereoAlg stereo;
 DroneTracker dtrkr;
 DroneController dctrl;
+Insect insect;
+
+#define FRAME_BUF_SIZE 10
+int frame_buffer_write_id = 0;
+int frame_buffer_read_id = 2*FRAME_BUF_SIZE;
+int frame_write_id_during_event = 0;
+cv::Mat frameBL[FRAME_BUF_SIZE];
+cv::Mat frameBR[FRAME_BUF_SIZE];
+cv::Mat frameBD[FRAME_BUF_SIZE];
+
+
 
 /*******Private prototypes*********/
 void process_video();
@@ -85,6 +102,13 @@ void process_video() {
     std::cout << "Running...\n";
     stopWatch.Start();
 
+    //init the buffer:
+    cam.waitForImage();
+    for (int i = 0; i<FRAME_BUF_SIZE;i++){
+        frameBL[i] = cam.frameL;
+        frameBR[i] = cam.frameR;
+    }
+
     //main while loop:
     while (key != 27 && cam.getCamRunning()) // ESC
     {
@@ -94,11 +118,12 @@ void process_video() {
 
         logger << imgcount << ";";
         stereo.rectify(cam.frameL, cam.frameR);
-        dtrkr.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
-        dctrl.control(dtrkr.data);
+        insect.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
+        //dtrkr.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
+        //dctrl.control(dtrkr.data);
 
 #ifdef HASSCREEN
-        visualizer.plot();
+//        visualizer.plot();
 //        resFrame = cam.get_disp_frame();
 //        cv::resize(resFrame,resFrame,cv::Size(480,480));
 //        cv::applyColorMap(resFrame, resFrame, cv::COLORMAP_JET);
@@ -110,31 +135,41 @@ void process_video() {
 //        frameR.copyTo(frame(cv::Rect(frameL.cols,0,frameR.cols, frameR.rows)));
 //        resFrame = frame;
 
-        resFrame = dtrkr.resFrame;
+        resFrame = insect.resFrame;
 
         cv::imshow("Results", resFrame);
 #endif
-		int frameWritten = 0;
 
+        frameBL[frame_buffer_write_id] = cam.frameL;
+        frameBR[frame_buffer_write_id] = cam.frameR;
 
+        frame_buffer_write_id = (frame_buffer_write_id + 1) % FRAME_BUF_SIZE;
+        if (insect.data.valid) {
+            frame_buffer_read_id = 0;
+            frame_write_id_during_event = (frame_buffer_write_id + FRAME_BUF_SIZE - 1 ) % FRAME_BUF_SIZE;
+        }
+
+        if (frame_buffer_read_id<2*FRAME_BUF_SIZE) {
+            detectcount++;
+            frame_buffer_read_id++;
+            int id = (frame_write_id_during_event + frame_buffer_read_id)  % FRAME_BUF_SIZE;
+            int frameWritten = 0;
 #if VIDEORAWLR
-//while (!outputVideoRawLR.getWanted()) {usleep(10000);}
-        frameWritten = outputVideoRawLR.write(cam.frameL,cam.frameR);
-
+            frameWritten = outputVideoRawLR.write(frameBL[id],frameBR[id]);
 #endif
-		if (frameWritten == 0) {
+            if (frameWritten == 0) {
 #if VIDEODISPARITY
-    	    outputVideoDisp.write(cam.get_disp_frame());
+                outputVideoDisp.write(cam.get_disp_frame());
 #endif
 #if VIDEORESULTS
-	        outputVideoResults.write(resFrame);
+                outputVideoResults.write(resFrame);
 #endif
-	        handleKey();
-
-	        imgcount++;
-	        float time = ((float)stopWatch.Read())/1000.0;            
-            std::cout << "Frame: " <<imgcount << ". FPS: " << imgcount / time << std::endl;
-		}
+            }
+        }
+        imgcount++;
+        float time = ((float)stopWatch.Read())/1000.0;
+        std::cout << "Frame: " <<imgcount << " (" << detectcount << "). FPS: " << imgcount / time << std::endl;
+        handleKey();
     } // main while loop
 
 #ifdef HASSCREEN
@@ -178,6 +213,7 @@ void handleKey() {
     switch(key) {
     case 114: // [r]: reset stopwatch
         imgcount=0;
+        detectcount=0;
         stopWatch.Restart();
         msg="fps Reset";
         break;
@@ -194,12 +230,18 @@ void handleKey() {
     key=0;
 }
 
+void my_handler(int s){
+    std::cout << "Caught ctrl-c:" << s << std::endl;
+         cam.stopcam();
+}
+
 int init(int argc, char **argv) {
 
    logger.open("log.txt",std::ofstream::out);
-   logger << "ID;";
-   dtrkr.init(&logger);
-   dctrl.init(&logger);
+//   logger << "ID;";
+//   dtrkr.init(&logger);
+//   dctrl.init(&logger);
+     insect.init(&logger);
 
 #ifdef _PC
     if (argc != 3) {
@@ -281,16 +323,28 @@ int init(int argc, char **argv) {
 
     msg="";
 
+
+    //init ctrl - c catch
+    struct sigaction sigIntHandler;
+
+    sigIntHandler.sa_handler = my_handler;
+    sigemptyset(&sigIntHandler.sa_mask);
+    sigIntHandler.sa_flags = 0;
+
+    sigaction(SIGINT, &sigIntHandler, NULL);
+
+
+
     std::cout << "Main init successfull" << std::endl;
     return 0;
 }
 
 void close() {
-
+    std::cout <<"Closing"<< std::endl;
     /*****Close everything down*****/
-    dtrkr.close();
+//    dtrkr.close();
     cam.close();
-    dctrl.close();
+//    dctrl.close();
 
 #if VIDEORESULTS   
     outputVideoResults.close(); 
@@ -299,10 +353,8 @@ void close() {
     outputVideoRawLR.close();
 #endif
 
+    std::cout <<"Closed"<< std::endl;
 }
-
-
-
 
 int main( int argc, char **argv )
 {   
@@ -311,5 +363,3 @@ int main( int argc, char **argv )
     close();
     return 0;
 }
-
-

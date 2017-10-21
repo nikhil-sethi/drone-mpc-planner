@@ -15,7 +15,7 @@ inline bool fileExists (const std::string& name) {
     return f.good();
 }
 
-int skipframes = 0;
+int skipframes = 140;
 bool KalamosFileCam::init (std::string folder) {
     this->folder = folder;
     fps = VIDEOFPS;
@@ -24,50 +24,9 @@ bool KalamosFileCam::init (std::string folder) {
     std::stringstream sLR;
     sLR << folder << "/videoRawLR.avi";
     bool res = fileExists(sLR.str());
-    std::stringstream sD;
-    sD << folder << "/videoDisp.avi";
-    res &= fileExists(sD.str());
-
-//    std::stringstream slog;
-//    slog << folder << "log.txt";
-//    if (fileExists(slog.str())) {
-//        //read the log here, and process it
-//        std::ifstream infile(slog.str());
-//        std::string line;
-//        int lastframe = 0;
-//        while (std::getline(infile, line)) {
-//            std::istringstream iss(line);
-//            //std::cout << line  << std::endl;
-//            if (line.find("JoyCommands:")  == 0 ) {
-
-//                std::string strc = line.substr(12,line.length()-1);
-//                std::stringstream commandss(strc);
-//                std::string thrust_s,roll_s,pitch_s,yaw_s;
-//                std::getline(commandss, thrust_s, ',');
-//                std::getline(commandss, roll_s, ',');
-//                std::getline(commandss, pitch_s, ',');
-//                std::getline(commandss, yaw_s, ',');
-
-//                int thrust = std::stoi(thrust_s);
-//                int roll = std::stoi(roll_s);
-//                int pitch = std::stoi(pitch_s);
-//                int yaw = std::stoi(yaw_s);
-
-//                if (skipframes == 0){
-//                    skipframes  = lastframe+0;
-//                }
-
-//                thrusts.push_back((thrust));
-//                rolls.push_back((roll));
-//                pitchs.push_back((pitch));
-//                yaws.push_back((yaw));
-
-//            }
-//            if (line.find("LOG")  == 0 ) {
-//                lastframe = std::stod(line.substr(line.find("#")+1,line.find(" --> ")-5));
-//            }
-//        }
-//    }
+//    std::stringstream sD;
+//    sD << folder << "/videoDisp.avi";
+//    res &= fileExists(sD.str());
 
     videoLR =cv::VideoCapture (sLR.str());
 

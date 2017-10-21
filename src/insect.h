@@ -1,5 +1,6 @@
-#ifndef DRONETRACKER_H
-#define DRONETRACKER_H
+#ifndef INSECT_H
+#define INSECT_H
+
 #include "defines.h"
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/core/core.hpp>
@@ -17,12 +18,11 @@
 #include <cereal/archives/binary.hpp>
 #include <fstream>
 
-
 /*
- * This class will track a micro drone with leds
+ * This class will detect and track an insect
  *
  */
-class DroneTracker {
+class Insect {
 
 
 private:
@@ -32,7 +32,7 @@ private:
 
         //thresh params
         int iLowH1r = 0;
-        int iHighH1r = 6;
+        int iHighH1r = 15;
         int iLowS1r = 0;
         int iHighS1r = 255;
         int iLowV1r = 188;
@@ -59,7 +59,7 @@ private:
         // Filter by Area.
         int filterByArea = 1;
         int minArea = 2;
-        int maxArea = 21;
+        int maxArea = 8;
 
         // Filter by Circularity
         int filterByCircularity = 0;
@@ -102,20 +102,8 @@ private:
     cv::KalmanFilter kfL,kfR;
     cv::Mat stateL,stateR;
     cv::Mat measL,measR;
-
-
-#define SETPOINTXMAX 3000 // in mm
-#define SETPOINTYMAX 3000 // in mm
-#define SETPOINTZMAX 5000 // in mm
-
-    int setpointX = SETPOINTXMAX / 2;
-    int setpointY = SETPOINTYMAX / 2;
-    int setpointZ = 1000;
-    int wpid = 0;
-
-    std::vector<cv::Point3i> setpoints;
-
     std::ofstream *_logger;
+
 
     cv::Mat prevFrameL,prevFrameR;
     bool firstFrame;
@@ -123,10 +111,8 @@ private:
     std::vector<cv::KeyPoint> dronepathL,dronepathR;
     std::vector<cv::KeyPoint> predicted_dronepathL,predicted_dronepathR;
 
-public:       
 
-     cv::Point3d setpoint;
-     cv::Point3f setpointw;
+public:
 
     cv::Mat resFrame;
 
@@ -142,7 +128,4 @@ public:
 
 };
 
-
-
-
-#endif //DRONETRACKER_H
+#endif //INSECT_H

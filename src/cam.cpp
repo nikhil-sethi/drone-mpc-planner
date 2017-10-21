@@ -28,6 +28,8 @@ void Cam::close(void) {
     g_lockWaitForImage2.unlock();
 #ifdef _PC
     thread_cam.join();
+#else
+    thread_cam.detach();
 #endif
 }
 

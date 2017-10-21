@@ -39,5 +39,12 @@ const float pix2degy_dmB = (FOVy_dm / (float)height_dmB);
 
 const float depthscale = 256.0f;
 
+
+struct trackData {
+    float posX,posY,posZ,posErrX,posErrY,posErrZ, dx,dy,dz,velX,velY,velZ,dt;
+    bool valid;
+};
+
+
 #endif //COMMON_H
 
