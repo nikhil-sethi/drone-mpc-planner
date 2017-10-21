@@ -1,1 +1,0 @@
-ssh -R 16666:localhost:22 houjebek@dinstech.nl &
