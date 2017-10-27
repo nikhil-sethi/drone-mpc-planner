@@ -1,7 +1,9 @@
 #include "dronecontroller.h"
 #include "defines.h"
 
+#ifdef _PC
 #define TUNING
+#endif
 
 const string paramsFile = "../controlParameters.dat";
 
@@ -20,10 +22,10 @@ bool DroneController::init(std::ofstream *logger) {
     notconnected = RS232_OpenComport(baudrate);
 
     // Ensure that it was found and that we can use it
-    if (!joystick.isFound()) {
-        printf("joystick failed.\n");
-        exit(1);
-    }
+//    if (!joystick.isFound()) {
+//        printf("joystick failed.\n");
+//        exit(1);
+//    }
 
     // Load saved control paremeters
     if (checkFileExist(paramsFile)) {
@@ -55,6 +57,8 @@ bool DroneController::init(std::ofstream *logger) {
     createTrackbar("Pitch P", "Control", &params.pitchP, 5000);
     createTrackbar("Pitch I", "Control", &params.pitchI, 255);
     createTrackbar("Pitch D", "Control", &params.pitchD, 255);
+
+    createTrackbar("LED", "Control", &ledpower, 255);
 
 
     //    // yaw control
@@ -227,10 +231,11 @@ void DroneController::sendData(void) {
     if (true) {
         //tmp led power hack
         char buff[1];
-        sprintf( (char*) buff,"%u",ledpower);
+        buff[0] = ledpower;
         if (!notconnected) {
             RS232_SendBuf( (unsigned char*) buff, 1);
         }
+        usleep(100000);
     } else {
 
         char buff[64];
@@ -299,12 +304,12 @@ void DroneController::close () {
     g_lockWaitForData2.unlock();
     thread_nrf.join();
 
-    char buff[64];
-    sprintf( (char*) buff,"1050,1500,1500,1500,0,0,0,0,0,0,0,2000\n");
-    if (!notconnected) {
-        RS232_SendBuf( (unsigned char*) buff, 63);
-        RS232_CloseComport();
-    }
+//    char buff[64];
+//    sprintf( (char*) buff,"1050,1500,1500,1500,0,0,0,0,0,0,0,2000\n");
+//    if (!notconnected) {
+//        RS232_SendBuf( (unsigned char*) buff, 63);
+//        RS232_CloseComport();
+//    }
 
     std::cout << "closing controller" << std::endl;
 

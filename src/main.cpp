@@ -254,7 +254,7 @@ int init(int argc, char **argv) {
    logger.open(data_output_dir  + "log.txt",std::ofstream::out);
    logger << "ID;";
 //   dtrkr.init(&logger);
-//   dctrl.init(&logger);
+   dctrl.init(&logger); // for led driver
      insect.init(&logger);
 
 #ifdef _PC

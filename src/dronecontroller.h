@@ -102,7 +102,7 @@ public:
     int joyPitch = 0;
     int joyYaw = 0;
 
-    unsigned char ledpower = 100;
+    int ledpower = 125; // 666mAh. limited to 150 in arduino
 
     void close (void);
     bool init(std::ofstream *logger);
