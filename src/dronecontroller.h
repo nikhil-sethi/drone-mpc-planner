@@ -102,7 +102,7 @@ public:
     int joyPitch = 0;
     int joyYaw = 0;
 
-
+    unsigned char ledpower = 100;
 
     void close (void);
     bool init(std::ofstream *logger);

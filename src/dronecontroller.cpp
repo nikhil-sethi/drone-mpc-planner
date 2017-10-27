@@ -80,7 +80,7 @@ void DroneController::control(trackData data) {
         autoTakeOff=false;
 
         if (fabs(data.posErrY - startY) < 0.1) {
-           hoverthrottle  = 0; //params.autoTakeoffFactor;
+            hoverthrottle  = 0; //params.autoTakeoffFactor;
         }
         data.posErrY = -startY-0.2;
     }
@@ -223,44 +223,55 @@ void DroneController::readJoystick(void) {
 }
 
 void DroneController::sendData(void) {
-    char buff[64];
-    sprintf( (char*) buff,"%u,%u,%u,%u,%u,0,0,0,0,0,0,0\n",throttle,roll,pitch,yaw,mode);
-    if (!notconnected) {
-        RS232_SendBuf( (unsigned char*) buff, 63);
-    }
 
-    //if ( data.valid ) {
-    //std::setprecision(2);
-    //std::cout << data.posY << " " << data.velY << " - ";
-    //std::cout << "JoyCommands:" << std::string(buff) << std::flush;
-    //    (*_logger) << "JoyCommands:" << std::string(buff) << std::flush;
+    if (true) {
+        //tmp led power hack
+        char buff[1];
+        sprintf( (char*) buff,"%u",ledpower);
+        if (!notconnected) {
+            RS232_SendBuf( (unsigned char*) buff, 1);
+        }
+    } else {
 
-    //}
+        char buff[64];
+        sprintf( (char*) buff,"%u,%u,%u,%u,%u,%u,0,0,0,0,0,0\n",throttle,roll,pitch,yaw,mode, ledpower);
+        if (!notconnected) {
+            RS232_SendBuf( (unsigned char*) buff, 63);
+        }
 
-    if (!notconnected) {
-        unsigned char inbuf[1];
-        inbuf[1] = 0;
-        std::stringstream tmp;
-        int n = 1;
-        int totn = 0;
-        while (n)    {
-            n = RS232_PollComport(inbuf,1);
-            if (n > 0) {
-                tmp << inbuf[0];
-                totn += n;
+        //if ( data.valid ) {
+        //std::setprecision(2);
+        //std::cout << data.posY << " " << data.velY << " - ";
+        //std::cout << "JoyCommands:" << std::string(buff) << std::flush;
+        //    (*_logger) << "JoyCommands:" << std::string(buff) << std::flush;
+
+        //}
+
+        if (!notconnected) {
+            unsigned char inbuf[1];
+            inbuf[1] = 0;
+            std::stringstream tmp;
+            int n = 1;
+            int totn = 0;
+            while (n)    {
+                n = RS232_PollComport(inbuf,1);
+                if (n > 0) {
+                    tmp << inbuf[0];
+                    totn += n;
+                }
+            }
+            if (totn > 0) {
+                // std::cout << totn << ": " << tmp.str() << std::endl;
             }
         }
-        if (totn > 0) {
-            // std::cout << totn << ": " << tmp.str() << std::endl;
-        }
+
+        //TODO: disable uart polling after bind confirmed!
+        //check if input string is the same as the commanded strning, if so bind was succesfull!
+        //	for (int i = 0 to tmp.count;i++) {
+        //if tmp.str.c_str[i] == buff[i] ...
+        //	}
+
     }
-
-    //TODO: disable uart polling after bind confirmed!
-    //check if input string is the same as the commanded strning, if so bind was succesfull!
-    //	for (int i = 0 to tmp.count;i++) {
-    //if tmp.str.c_str[i] == buff[i] ...
-    //	}
-
 }
 
 void DroneController::rebind(void){
