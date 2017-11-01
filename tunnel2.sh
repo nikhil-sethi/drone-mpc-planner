@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-echo waiting 10s for starting tunnel
+echo waiting 11s for starting tunnel
 
 while [ 1 ]; do
-	sleep 10s
-	echo starting tunnel 1!
-	/usr/local/bin/autossh -M 20000 -i /home/slamdunk/.ssh/id_rsa -NR 16667:localhost:22 houjebek@dinstech.nl -p 16666
+	sleep 12s
+	echo also starting backup tunnel!
+	/usr/local/bin/autossh -M 21000 -i /home/slamdunk/.ssh/id_rsa -NR 16668:localhost:22 kevin@131.180.117.41
  	#ssh -i /home/slamdunk/.ssh/id_rsa -NR 16667:localhost:22 houjebek@dinstech.nl -p 16666
 	#configure firewall to forward port 16666 to the correct nat ip
 	#from that ip, do ssh slamdunk@localhost -p 16667
