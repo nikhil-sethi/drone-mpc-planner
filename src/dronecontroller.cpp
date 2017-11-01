@@ -230,10 +230,12 @@ void DroneController::sendData(void) {
 
     if (true) {
         //tmp led power hack
-        char buff[1];
-        buff[0] = ledpower;
+        char buff[3];
+        buff[0] = 'B';
+        buff[1] = 't';
+        buff[2] = ledpower;
         if (!notconnected) {
-            RS232_SendBuf( (unsigned char*) buff, 1);
+            RS232_SendBuf( (unsigned char*) buff, 3);
         }
         usleep(100000);
     } else {
