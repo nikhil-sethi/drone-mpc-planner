@@ -169,7 +169,7 @@ void process_video() {
         }
         imgcount++;
         float time = ((float)stopWatch.Read())/1000.0;
-        std::cout << "Frame: " <<imgcount << " (" << detectcount << "). FPS: " << imgcount / time << std::endl;
+        std::cout << "Frame: " <<imgcount << " (" << detectcount << "). FPS: " << imgcount / time << ". Time: " << time << std::endl;
         handleKey();
         if (imgcount > 60000)
             break;
@@ -333,6 +333,10 @@ int init(int argc, char **argv) {
     sigaction(SIGINT, &sigIntHandler, NULL);
 
     std::cout << "Main init successfull" << std::endl;
+
+    auto start = std::chrono::system_clock::now();
+    std::time_t time = std::chrono::system_clock::to_time_t(start);
+    std::cout << "Starting at " << std::ctime(&time) << std::endl;
     return 0;
 }
 

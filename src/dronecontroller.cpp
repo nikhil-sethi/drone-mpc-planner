@@ -71,6 +71,7 @@ bool DroneController::init(std::ofstream *logger) {
 
     thread_nrf = std::thread(&DroneController::workerThread,this);
 
+    std::cout << "led power: " << ledpower << std::endl;
 }
 
 float startY = -100;
