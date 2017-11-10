@@ -82,14 +82,12 @@ DroneTracker dtrkr;
 DroneController dctrl;
 Insect insect;
 
-#define FRAME_BUF_SIZE 10
+#define FRAME_BUF_SIZE 20
 int frame_buffer_write_id = 0;
 int frame_buffer_read_id = 2*FRAME_BUF_SIZE;
 int frame_write_id_during_event = 0;
 cv::Mat frameBL[FRAME_BUF_SIZE];
 cv::Mat frameBR[FRAME_BUF_SIZE];
-cv::Mat frameBD[FRAME_BUF_SIZE];
-
 
 
 /*******Private prototypes*********/
@@ -106,8 +104,8 @@ void process_video() {
     //init the buffer:
     cam.waitForImage();
     for (int i = 0; i<FRAME_BUF_SIZE;i++){
-        frameBL[i] = cam.frameL;
-        frameBR[i] = cam.frameR;
+        frameBL[i] = cam.frameL.clone();
+        frameBR[i] = cam.frameR.clone();
     }
 
     //main while loop:
@@ -122,6 +120,7 @@ void process_video() {
         insect.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
         //dtrkr.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
         //dctrl.control(dtrkr.data);
+        putText(cam.frameR,std::to_string(imgcount),cv::Point(100,100),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(125,125,255));
 
 #ifdef HASSCREEN
 //        visualizer.plot();
@@ -251,11 +250,13 @@ int init(int argc, char **argv) {
         return 1;
     }
 
-   logger.open(data_output_dir  + "log.txt",std::ofstream::out);
-   logger << "ID;";
+    logger.open(data_output_dir  + "log.txt",std::ofstream::out);
+    logger << "ID;";
 //   dtrkr.init(&logger);
-   dctrl.init(&logger); // for led driver
-     insect.init(&logger);
+    dctrl.init(&logger); // for led driver
+    insect.init(&logger);
+
+     std::cout << "Frame buf size: " << FRAME_BUF_SIZE << std::endl;
 
 #ifdef _PC
     std::string data_in_dir = std::string(argv[3])+ "/";
