@@ -120,7 +120,7 @@ void process_video() {
         insect.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
         //dtrkr.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
         //dctrl.control(dtrkr.data);
-        putText(cam.frameR,std::to_string(imgcount),cv::Point(100,100),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(125,125,255));
+        //putText(cam.frameR,std::to_string(imgcount),cv::Point(100,100),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(125,125,255));
 
 #ifdef HASSCREEN
 //        visualizer.plot();
