@@ -15,9 +15,9 @@ for root, dirs, files in os.walk(path):
                 #call convert script here  ffmpeg -i tmp.avi -c:v libx264 -crf 18 -preset slow -c:a copy output.avi
                 inf = os.path.join(fdir,'videoRawLR.avi')
                 outf = os.path.join(fdir,'videoRawLR_fixed.avi')
-                print(**********************************************************************)
+                print('**********************************************************************')
                 print(['ffmpeg -i ' + inf + ' -c:v libx264 -crf 18 -preset slow -c:a copy ' + outf])
-                print(**********************************************************************)
+                print('**********************************************************************')
 
                 subprocess.call(['ffmpeg -i ' + inf + ' -c:v libx264 -crf 18 -preset slow -c:a copy ' + outf], shell=True)
             else:
