@@ -16,9 +16,10 @@ for root, dirs, files in os.walk(path):
                 inf = os.path.join(fdir,'videoRawLR.avi')
                 outf = os.path.join(fdir,'videoRawLR_fixed.avi')
                 print('**********************************************************************')
-                print(['ffmpeg -i ' + inf + ' -c:v libx264 -crf 18 -preset slow -c:a copy ' + outf])
+                print(inf)
                 print('**********************************************************************')
 
+                subprocess.call('touch ' + -outf, shell=True)
                 subprocess.call(['ffmpeg -i ' + inf + ' -c:v libx264 -crf 18 -preset slow -c:a copy ' + outf], shell=True)
             else:
                 print('Skipping: '+ fdir)
