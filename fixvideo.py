@@ -13,14 +13,18 @@ for root, dirs, files in os.walk(path):
         for root2, dirs2, files2 in os.walk(fdir):
             if "videoRawLR.avi" in files2 and "videoRawLR_fixed.avi" not in files2:
                 #call convert script here  ffmpeg -i tmp.avi -c:v libx264 -crf 18 -preset slow -c:a copy output.avi
+                
                 inf = os.path.join(fdir,'videoRawLR.avi')
+                statinfo = os.stat(inf)
+
                 outf = os.path.join(fdir,'videoRawLR_fixed.avi')
                 print('**********************************************************************')
                 print(inf)
                 print('**********************************************************************')
-
-                subprocess.call('touch ' + -outf, shell=True)
-                subprocess.call(['ffmpeg -i ' + inf + ' -c:v libx264 -crf 18 -preset slow -c:a copy ' + outf], shell=True)
+                if (statinfo.st_size > 0):
+                    subprocess.call('touch ' + outf, shell=True)
+                    subprocess.call(['ffmpeg -i ' + inf + ' -y -c:v libx264 -crf 18 -preset slow -c:a copy ' + outf], shell=True)
+                else:
+                    print('Skipping (empty): '+ fdir)
             else:
-                print('Skipping: '+ fdir)
-
+                print('Skipping (already done): '+ fdir)
