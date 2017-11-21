@@ -15,16 +15,7 @@ while [ 1 ]; do
 
 	sleep 20s
 
-	COUNTER=1
-	while [  $COUNTER -lt 1000 ]; do
-		OUTDIR=/home/slamdunk/kevin/data/$COUNTER
-		if [ ! -d "$OUTDIR" ]; then
-			echo "Making new data dir: $OUTDIR" 
-			COUNTER=1001             
-		fi
-		let COUNTER=COUNTER+1 
-	done
-	sudo mkdir -p $OUTDIR
+	startMUG.sh
 
 	for file in "/sys/class/leds/"{front,rear}":"{left,right}":"{blue,green,red}"/brightness"; do
 	    echo 0 > $file
