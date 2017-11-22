@@ -6,7 +6,7 @@ import datetime
 import time
 
 last_reboot_time = datetime.datetime.now()
-print('starting autorebooter' + last_reboot_time)
+print('starting autorebooter' + str(last_reboot_time))
 while(1):
     now = datetime.datetime.now()    
     diff = (now - last_reboot_time).total_seconds()
