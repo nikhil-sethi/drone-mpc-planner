@@ -15,7 +15,7 @@ while [ 1 ]; do
 
 	sleep 20s
 
-	startMUG.sh
+	/home/slamdunk/kevin/mu-g/startMUG.sh
 
 	for file in "/sys/class/leds/"{front,rear}":"{left,right}":"{blue,green,red}"/brightness"; do
 	    echo 0 > $file
