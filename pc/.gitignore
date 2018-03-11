@@ -11,3 +11,4 @@ build*
 videoDisp.avi
 videoRawL.avi
 videoRawLR.avi
+settings*.dat

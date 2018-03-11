@@ -27,7 +27,7 @@ class Insect {
 private:
     cv::SimpleBlobDetector::Params params;
 
-    struct mugSettings{
+    struct patsSettings{
 
         //thresh params
         int iLowH1r = 0;
@@ -84,7 +84,7 @@ private:
 
 
     };
-    mugSettings settings;
+    patsSettings settings;
 
     stopwatch_c stopWatch;
 
