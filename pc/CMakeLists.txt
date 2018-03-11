@@ -1,9 +1,10 @@
-cmake_minimum_required(VERSION 2.8)
-project(mu-g)
+cmake_minimum_required(VERSION 3.1.0)
+project(pats)
 
-# directories
-set (PROJECT_SRC_DIR ../src)
+# Save the command line compile commands in the build output
+set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
+set(REALSENSE realsense2)
 # add packages
 find_package(PkgConfig REQUIRED)
 find_package( OpenCV REQUIRED )
@@ -30,11 +31,17 @@ set (CEREAL_SRC_DIR ../src/)
 include_directories("${CEREAL_SRC_DIR}")
 
 # sources
-FILE(GLOB MY_SRC_FILES "../src/*.cpp" "../src/*.h" "../src/*.c" "../src/cereal*.hpp")
+FILE(GLOB SRCS "../src/*.cpp" "../src/*.h" "../src/*.c" "../src/cereal*.hpp")
 
 # use sse3 instruction set for libelas and c11 for threading (among others)
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3 -std=c++11 -pthread")
-#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3 -std=c++0x -pthread")
+include(CheckCXXCompilerFlag)
+CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
+CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
+if(COMPILER_SUPPORTS_CXX11)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -msse3 -pthread")
+elseif(COMPILER_SUPPORTS_CXX0X)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -msse3 -pthread")
+endif()
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
@@ -52,6 +59,6 @@ IF(CMAKE_BUILD_TYPE STREQUAL Debug)
 ENDIF(CMAKE_BUILD_TYPE STREQUAL Debug)
 
 # build program
-add_executable( MUG ${MY_SRC_FILES} )
+add_executable(pats ${SRCS})
 
-target_link_libraries( MUG ${OpenCV_LIBS} ${GST_LIBRARIES} ${GSTSDP_LIBRARIES} ${GSTAPP_LIBRARIES})
+target_link_libraries( pats ${OpenCV_LIBS} ${REALSENSE} ${GST_LIBRARIES} ${GSTSDP_LIBRARIES} ${GSTAPP_LIBRARIES})

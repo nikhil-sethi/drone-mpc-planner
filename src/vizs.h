@@ -7,7 +7,6 @@
 #include <math.h>
 #include <opencv2/highgui/highgui.hpp>
 #include "opencv2/features2d/features2d.hpp"
-#include "kalamosfilecam.h"
 #include "dronecontroller.h"
 
 class Visualizer{
@@ -17,7 +16,6 @@ private:
     void plot(cv::Mat data1,cv::Mat data2, cv::Mat *frame, std::string name);
     void plotxy(cv::Mat datax, cv::Mat datay, cv::Mat *frame, Point setpoint, std::string name);
     void addSample(void);
-    KalamosFileCam *cam;
     DroneController *dctrl;
     DroneTracker *dtrkr;
 
@@ -64,19 +62,11 @@ public:
     cv::Mat posY;
     cv::Mat posZ;
 
-    bool hack = false;
-
     void plot(void);
-    void init(KalamosFileCam *cam, DroneController *dctrl, DroneTracker *dtrkr){
-        this->dctrl = dctrl;
-        this->dtrkr = dtrkr;
-        this->cam = cam;
-    }
 
     void init(DroneController *dctrl, DroneTracker *dtrkr){
         this->dctrl = dctrl;
         this->dtrkr = dtrkr;
-        hack = true;
     }
 
 };

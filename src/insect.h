@@ -9,7 +9,6 @@
 #include <opencv2/video/video.hpp>
 
 #include "stopwatch.h"
-#include "stereoalg.h"
 #include "smoother.h"
 #include "common.h"
 

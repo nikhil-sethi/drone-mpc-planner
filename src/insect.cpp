@@ -134,10 +134,10 @@ void Insect::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     float dt= (t-t_prev)/1000.0;
 
 #define IMSCALEF2 2
-    cv::Mat tmpfL,framegrayL;
+    cv::Mat framegrayL;
     cv::Size smalsize(frameL.rows/IMSCALEF2, frameL.cols/IMSCALEF2);
-    cv::resize(frameL,tmpfL,smalsize);
-    cvtColor(tmpfL,framegrayL,COLOR_BGR2GRAY);
+    cv::resize(frameL,framegrayL,smalsize);
+    //cvtColor(tmpfL,framegrayL,COLOR_BGR2GRAY);
 
     if (!firstFrame) {
         prevFrameL = framegrayL.clone();
