@@ -48,10 +48,7 @@ std::string calib_folder;
 
 // Declare RealSense pipeline, encapsulating the actual device and sensors
 rs2::pipeline cam;
-const int img_w = 848;
-const int img_h = 480;
-int fps = 90;
-Size imgsize(img_w, img_h);
+Size imgsize(IMG_W, IMG_H);
 cv::Mat Qf;
 #define IR_ID_LEFT 1 //as seen from the camera itself
 #define IR_ID_RIGHT 2
@@ -95,7 +92,7 @@ void process_video() {
 
 
         logger << imgcount << ";";
-        insect.track(frameL,frameR, Qf);
+        //insect.track(frameL,frameR, Qf);
         //dtrkr.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
         //dctrl.control(dtrkr.data);
         //putText(cam.frameR,std::to_string(imgcount),cv::Point(100,100),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(125,125,255));
@@ -122,7 +119,7 @@ void process_video() {
         frameBR[frame_buffer_write_id] = frameR.clone();
 
         frame_buffer_write_id = (frame_buffer_write_id + 1) % FRAME_BUF_SIZE;
-        if (insect.data.valid) {
+        if (true) { // insect.data.valid
             frame_buffer_read_id = 0;
             frame_write_id_during_event = (frame_buffer_write_id + FRAME_BUF_SIZE - 1 ) % FRAME_BUF_SIZE;
         }
@@ -208,8 +205,8 @@ int init(int argc, char **argv) {
     std::cout << "Initializing cam\n";
     // Declare config
     rs2::config cfg;
-    cfg.enable_stream(RS2_STREAM_INFRARED, 1, img_w, img_h, RS2_FORMAT_Y8, fps);
-    cfg.enable_stream(RS2_STREAM_INFRARED, 2, img_w, img_h, RS2_FORMAT_Y8, fps);
+    cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
+    cfg.enable_stream(RS2_STREAM_INFRARED, 2, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
     rs2::pipeline_profile selection = cam.start(cfg);
     std::cout << "Started cam\n";
 
@@ -232,10 +229,10 @@ int init(int argc, char **argv) {
 
     /*****init the video writer*****/
 #if VIDEORESULTS
-    if (outputVideoResults.init(argc,argv,VIDEORESULTS, data_output_dir + "videoResult.avi",864,864,"192.168.1.10",5004)) {return 1;}
+    if (outputVideoResults.init(argc,argv,VIDEORESULTS, data_output_dir + "videoResult.avi",864,864,VIDEOFPS,"192.168.1.10",5004,true)) {return 1;}
 #endif
 #if VIDEORAWLR
-    if (outputVideoRawLR.init(argc,argv,VIDEORAWLR,data_output_dir + "videoRawLR.avi",img_w*2,img_h,"192.168.1.10",5004)) {return 1;}
+    if (outputVideoRawLR.init(argc,argv,VIDEORAWLR,data_output_dir + "videoRawLR.avi",IMG_W*2,IMG_H,VIDEOFPS, "127.0.0.1",5004,false)) {return 1;}
 #endif
 
 #if VIDEODISPARITY
@@ -264,8 +261,8 @@ int init(int argc, char **argv) {
     for (int i = 0; i<FRAME_BUF_SIZE;i++){
         rs2::frameset tmpdata = cam.wait_for_frames(); // Wait for next set of frames from the camera
         cv::Mat image = cv::Mat(imgsize, CV_8UC1, (void*)tmpdata.get_data(), cv::Mat::AUTO_STEP);
-        frameBL[i] = Mat(imgsize, CV_8UC1, (void*)tmpdata.get_infrared_frame(IR_ID_LEFT).get_data(), Mat::AUTO_STEP);
-        frameBR[i] = Mat(imgsize, CV_8UC1, (void*)tmpdata.get_infrared_frame(IR_ID_RIGHT).get_data(), Mat::AUTO_STEP);
+        frameBL[i] = Mat(imgsize, CV_8UC1, (void*)tmpdata.get_infrared_frame(IR_ID_LEFT).get_data(), Mat::AUTO_STEP).clone();
+        frameBR[i] = Mat(imgsize, CV_8UC1, (void*)tmpdata.get_infrared_frame(IR_ID_RIGHT).get_data(), Mat::AUTO_STEP).clone();
     }
 
     

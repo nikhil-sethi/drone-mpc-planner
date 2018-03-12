@@ -22,7 +22,7 @@ private:
    	//void cb_need_data (GstElement *appsrc, guint unused_size, gpointer user_data);
 
 public:
-    int init(int argc, char **argv, int mode, std::string file, int sizeX, int sizeY, std::string ip, int port);
+    int init(int argc, char **argv, int mode, std::string file, int sizeX, int sizeY, int fps, std::string ip, int port, bool color);
     int write(cv::Mat frame);
     int write(cv::Mat frameL,cv::Mat frameR);
     void close (void);
