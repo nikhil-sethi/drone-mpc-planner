@@ -210,7 +210,7 @@ int init(int argc, char **argv) {
     rs2::config cfg;
     cfg.enable_stream(RS2_STREAM_INFRARED, 1, img_w, img_h, RS2_FORMAT_Y8, fps);
     cfg.enable_stream(RS2_STREAM_INFRARED, 2, img_w, img_h, RS2_FORMAT_Y8, fps);
-    cam.start(cfg);
+    rs2::pipeline_profile selection = cam.start(cfg);
     std::cout << "Started cam\n";
 
     /*****init the (G)UI*****/
@@ -268,10 +268,24 @@ int init(int argc, char **argv) {
         frameBR[i] = Mat(imgsize, CV_8UC1, (void*)tmpdata.get_infrared_frame(IR_ID_RIGHT).get_data(), Mat::AUTO_STEP);
     }
 
-    //init Qf:
-    Qf = cv::Mat::zeros(cv::Size(3,3),CV_32F);
-    //TODO: init Qf with proper values
+    
+    
+    // Obtain focal length and principal point (from intrinsics)
+    auto depth_stream = selection.get_stream(RS2_STREAM_INFRARED, 1).as<rs2::video_stream_profile>();
+    auto i = depth_stream.get_intrinsics();
+    float focal_length = i.fx; // same as fy
+    float cx = i.ppx; // same for both cameras
+    float cy = i.ppy;
+    
+    // Obtain baseline (from extrinsics)
+    auto ir1_stream = selection.get_stream(RS2_STREAM_INFRARED, 1);
+    auto ir2_stream = selection.get_stream(RS2_STREAM_INFRARED, 2);
+    rs2_extrinsics e = ir2_stream.get_extrinsics_to(ir1_stream);
+    float baseline = e.translation[0];
 
+    //init Qf: https://stackoverflow.com/questions/27374970/q-matrix-for-the-reprojectimageto3d-function-in-opencv
+    Qf = (Mat_<double>(4, 4) << 1.0, 0.0, 0.0, -cx, 0.0, 1.0, 0.0, -cy, 0.0, 0.0, 0.0, focal_length, 0.0, 0.0, 1/baseline, 0.0);
+    
     std::cout << "Main init successfull" << std::endl;
 
     return 0;
