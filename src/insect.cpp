@@ -10,7 +10,7 @@ using namespace std;
 
 //#define USERIGHTCAM
 
-#ifdef _PC
+#if 0
 #define DRAWVIZSL
 #ifdef USERIGHTCAM
 #define DRAWVIZSR
@@ -133,9 +133,8 @@ void Insect::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     int t = stopWatch.Read();
     float dt= (t-t_prev)/1000.0;
 
-#define IMSCALEF2 2
     cv::Mat framegrayL;
-    cv::Size smalsize(frameL.rows/IMSCALEF2, frameL.cols/IMSCALEF2);
+    cv::Size smalsize(frameL.rows/IMSCALEF, frameL.cols/IMSCALEF);
     cv::resize(frameL,framegrayL,smalsize);
     //cvtColor(tmpfL,framegrayL,COLOR_BGR2GRAY);
 
@@ -273,7 +272,7 @@ void Insect::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
 
         if (found_keypoints_in_bothLR) {
             dist = 1.0 / (closestL.pt.x -closestR.pt.x );
-            disparity = ((closestR.pt.x - closestL.pt.x)*IMSCALEF2);
+            disparity = ((closestR.pt.x - closestL.pt.x)*IMSCALEF);
 
             cv::Mat measR(measSize, 1, type);
             measR.at<float>(0) = closestR.pt.x;
@@ -343,13 +342,13 @@ void Insect::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         // attention: original image (1280x960) --> IMSCALEF factor 2 --> 640x480 ( = ook video size)
         // plaatje 640x480 --> ROI --> 432x432 (864/IMSCALEF)
         // 432x432 --> rectify --> 432x432 (met zwarte randen eventueel)(op deze size is Qf gebaseerd)
-        // de track functie begint hierboven weer met nog een resize factor IMSCALEF2 --> 216x216
+        // de track functie begint hierboven weer met nog een resize factor IMSCALEF --> 216x216
 
         //calculate everything for the dronecontroller:
         std::vector<Point3f> camera_coordinates;
         std::vector<Point3f> world_coordinates;
 
-        camera_coordinates.push_back(Point3f(closestL.pt.x*IMSCALEF2,closestL.pt.y*IMSCALEF2,disparity));
+        camera_coordinates.push_back(Point3f(closestL.pt.x*IMSCALEF,closestL.pt.y*IMSCALEF,disparity));
         cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
 
         Point3f output = world_coordinates[0];
@@ -393,6 +392,7 @@ void Insect::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
 #ifdef DRAWVIZSL
         cv::Mat resFrameL;
         cv::resize(frameL,resFrameL,cv::Size(2*frameL.cols,frameL.rows*2));
+        cvtColor(resFrameL,resFrameL,CV_GRAY2BGR);
 #ifndef DRAWVIZSR
         resFrame = cv::Mat(resFrameL.rows,resFrameL.cols  ,CV_8UC3);
 #endif

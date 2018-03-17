@@ -74,10 +74,10 @@ void handleKey();
 
 /************ code ***********/
 void process_video() {
-    auto start = std::chrono::system_clock::now();
-    std::time_t time = std::chrono::system_clock::to_time_t(start);
-    std::cout << "Starting at " << std::ctime(&time) << std::endl; // something weird is going on with this line, it seems to crash the debugger if it is in another function...?
-    std::cout << "Running..." << std::endl;
+//    auto start = std::chrono::system_clock::now();
+//    std::time_t time = std::chrono::system_clock::to_time_t(start);
+//    std::cout << "Starting at " << std::ctime(&time) << std::endl; // something weird is going on with this line, it seems to crash the debugger if it is in another function...?
+//    std::cout << "Running..." << std::endl;
     stopWatch.Start();
 
     cv::Mat image,frameR,frameL ;
@@ -93,8 +93,8 @@ void process_video() {
 
         logger << imgcount << ";";
         //insect.track(frameL,frameR, Qf);
-        //dtrkr.track(stereo.frameLrect,stereo.frameRrect, stereo.Qf);
-        //dctrl.control(dtrkr.data);
+        dtrkr.track(frameL,frameR, Qf);
+        dctrl.control(dtrkr.data);
         //putText(cam.frameR,std::to_string(imgcount),cv::Point(100,100),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(125,125,255));
 
 #ifdef HASSCREEN
@@ -110,16 +110,16 @@ void process_video() {
         //        frameR.copyTo(frame(cv::Rect(frameL.cols,0,frameR.cols, frameR.rows)));
         //        resFrame = frame;
 
-        //resFrame = insect.resFrame;
+        resFrame = dtrkr.resFrame;
 
-        cv::imshow("Results", frameL);
+        cv::imshow("Results", resFrame);
 #endif
 
         frameBL[frame_buffer_write_id] = frameL.clone();
         frameBR[frame_buffer_write_id] = frameR.clone();
 
         frame_buffer_write_id = (frame_buffer_write_id + 1) % FRAME_BUF_SIZE;
-        if (true) { // insect.data.valid
+        if (insect.data.valid) { //
             frame_buffer_read_id = 0;
             frame_write_id_during_event = (frame_buffer_write_id + FRAME_BUF_SIZE - 1 ) % FRAME_BUF_SIZE;
         }
@@ -143,7 +143,7 @@ void process_video() {
         }
         imgcount++;
         float time = ((float)stopWatch.Read())/1000.0;
-        std::cout << "Frame: " <<imgcount << " (" << detectcount << "). FPS: " << imgcount / time << ". Time: " << time << std::endl;
+        //std::cout << "Frame: " <<imgcount << " (" << detectcount << "). FPS: " << imgcount / time << ". Time: " << time << std::endl;
         handleKey();
         if (imgcount > 60000)
             break;
@@ -196,7 +196,7 @@ int init(int argc, char **argv) {
     logger.open(data_output_dir  + "log.txt",std::ofstream::out);
     logger << "ID;";
     dtrkr.init(&logger);
-    dctrl.init(&logger); // for led driver
+    dctrl.init(&logger);
     insect.init(&logger);
 
     std::cout << "Frame buf size: " << FRAME_BUF_SIZE << std::endl;
@@ -205,6 +205,7 @@ int init(int argc, char **argv) {
     std::cout << "Initializing cam\n";
     // Declare config
     rs2::config cfg;
+    cfg.disable_all_streams();
     cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
     cfg.enable_stream(RS2_STREAM_INFRARED, 2, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
     rs2::pipeline_profile selection = cam.start(cfg);
@@ -232,7 +233,7 @@ int init(int argc, char **argv) {
     if (outputVideoResults.init(argc,argv,VIDEORESULTS, data_output_dir + "videoResult.avi",864,864,VIDEOFPS,"192.168.1.10",5004,true)) {return 1;}
 #endif
 #if VIDEORAWLR
-    if (outputVideoRawLR.init(argc,argv,VIDEORAWLR,data_output_dir + "videoRawLR.avi",IMG_W*2,IMG_H,VIDEOFPS, "127.0.0.1",5004,false)) {return 1;}
+    if (outputVideoRawLR.init(argc,argv,VIDEORAWLR,data_output_dir + "videoRawLR.avi",IMG_W*2,IMG_H,VIDEOFPS, "127.0.0.1",5000,false)) {return 1;}
 #endif
 
 #if VIDEODISPARITY

@@ -8,13 +8,13 @@
 using namespace cv;
 using namespace std;
 
-#ifdef _PC
+#if 1
 #define DRAWVIZSL
 #define DRAWVIZSR
 //#define TUNING
 #endif
 
-#define POSITIONTRACKBARS
+//#define POSITIONTRACKBARS
 
 const string settingsFile = "../settings.dat";
 bool DroneTracker::init(std::ofstream *logger) {
@@ -148,23 +148,22 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
 
     cv::Mat resFrameL,resFrameR;
 #ifdef DRAWVIZSL    
-    cv::resize(frameL,resFrameL,cv::Size(2*frameL.cols,frameL.rows*2));
-//    resFrameL = frameL.clone();
+    cv::resize(frameL,resFrameL,cv::Size(frameL.cols,frameL.rows));
+    cvtColor(resFrameL,resFrameL,CV_GRAY2BGR);
 #endif
 #ifdef DRAWVIZSR
-    cv::resize(frameR,resFrameR,cv::Size(2*frameR.cols,frameR.rows*2));
-//    resFrameR = frameR.clone();
+    cv::resize(frameR,resFrameR,cv::Size(frameR.cols,frameR.rows));
+    cvtColor(resFrameR,resFrameR,CV_GRAY2BGR);
 #endif
 
-#define IMSCALEF2 2
     cv::Mat tmpfL,tmpfR;
-    cv::Size smalsize(frameL.rows/IMSCALEF2, frameL.cols/IMSCALEF2);
+    cv::Size smalsize(frameL.cols/IMSCALEF,frameL.rows/IMSCALEF);
     cv::resize(frameL,tmpfL,smalsize);
     cv::resize(frameR,tmpfR,smalsize);
 
     cv::Mat framegrayL,framegrayR;
-    cvtColor(tmpfL,framegrayL,COLOR_BGR2GRAY);
-    cvtColor(tmpfR,framegrayR,COLOR_BGR2GRAY);
+    framegrayL = tmpfL.clone();
+    framegrayR = tmpfR.clone();
 
     if (!firstFrame) {
         firstFrame = true;
@@ -383,18 +382,13 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         else
             kfR.correct(measR);
 
-        // attention: original image (1280x960) --> IMSCALEF factor 2 --> 640x480 ( = ook video size)
-        // plaatje 640x480 --> ROI --> 432x432 (864/IMSCALEF)
-        // 432x432 --> rectify --> 432x432 (met zwarte randen eventueel)(op deze size is Qf gebaseerd)
-        // de track functie begint hierboven weer met nog een resize factor IMSCALEF2 --> 216x216
-
-        float disparity = ((closestR.pt.x - closestL.pt.x)*IMSCALEF2);
+        float disparity = ((closestR.pt.x - closestL.pt.x)*IMSCALEF);
 
         //calculate everything for the dronecontroller:
         std::vector<Point3f> camera_coordinates;
         std::vector<Point3f> world_coordinates;
 
-        camera_coordinates.push_back(Point3f(closestL.pt.x*IMSCALEF2,closestL.pt.y*IMSCALEF2,disparity));
+        camera_coordinates.push_back(Point3f(closestL.pt.x*IMSCALEF,closestL.pt.y*IMSCALEF,disparity));
         //camera_coordinates.push_back(Point3f(setpoint.x,setpoint.y,setpoint.z));
         cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
 
@@ -464,7 +458,7 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
 
     resFrame = cv::Mat(resFrameL.rows,resFrameL.cols +resFrameR.cols ,CV_8UC3);
     resFrameL.copyTo(resFrame(cv::Rect(0,0,resFrameL.cols, resFrameL.rows)));
-    resFrameR.copyTo(resFrame(cv::Rect(resFrameL.cols,0,resFrameL.cols, resFrameL.rows)));
+    resFrameR.copyTo(resFrame(cv::Rect(resFrameR.cols,0,resFrameR.cols, resFrameR.rows)));
 #endif
 
     if (dronepathL.size() > 30)

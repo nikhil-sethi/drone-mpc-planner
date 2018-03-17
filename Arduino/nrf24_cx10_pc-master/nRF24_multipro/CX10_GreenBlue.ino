@@ -43,19 +43,14 @@ uint32_t process_CX10()
 void CX10_init()
 {
     uint8_t i;
-    switch(current_protocol) {
-        case PROTO_CX10_BLUE:
-            for(i=0; i<4; i++) {
-                packet[5+i] = 0xFF; // clear aircraft ID
-            }
-            CX10_packet_length = CX10_BLUE_PACKET_LENGTH;
-            CX10_packet_period = CX10_BLUE_PACKET_PERIOD;
-            break;
-        case PROTO_CX10_GREEN:
-            CX10_packet_length = CX10_GREEN_PACKET_LENGTH;
-            CX10_packet_period = CX10_GREEN_PACKET_PERIOD;
-            break;
+
+    for(i=0; i<4; i++) {
+        packet[5+i] = 0xFF; // clear aircraft ID
     }
+    CX10_packet_length = CX10_BLUE_PACKET_LENGTH;
+    CX10_packet_period = CX10_BLUE_PACKET_PERIOD;
+
+
 
     for(i=0; i<4; i++) {
         CX10_txid[i] = transmitterID[i];
@@ -85,55 +80,40 @@ void CX10_init()
     delay(150);
 }
 
-void CX10_bind()
+bool CX10_bind()
 {
-    uint16_t counter=CX10_GREEN_BIND_COUNT;
-    bool bound=false;
     uint32_t timeout;
-    while(!bound) {
-        NRF24L01_SetTxRxMode(TX_EN);
-        XN297_Configure(_BV(NRF24L01_00_EN_CRC) | _BV(NRF24L01_00_CRCO) | _BV(NRF24L01_00_PWR_UP));
-        NRF24L01_WriteReg(NRF24L01_05_RF_CH, CX10_RF_BIND_CHANNEL);
-        NRF24L01_WriteReg(NRF24L01_07_STATUS, 0x70);
-        NRF24L01_FlushTx();
-        CX10_Write_Packet(0xAA); // send bind packet
-        switch(current_protocol) {
-            case PROTO_CX10_GREEN:
-                delayMicroseconds(CX10_packet_period);
-                if(counter==0)
-                    bound = true;
-                break;
-            case PROTO_CX10_BLUE:
-                delay(1);
-                NRF24L01_SetTxRxMode(RX_EN);
-                NRF24L01_WriteReg(NRF24L01_07_STATUS, 0x70);
-                NRF24L01_FlushRx();
-                XN297_Configure(_BV(NRF24L01_00_EN_CRC) | _BV(NRF24L01_00_CRCO) | _BV(NRF24L01_00_PWR_UP) | _BV(NRF24L01_00_PRIM_RX));
-                timeout = millis()+5;
-                while(millis()<timeout) {
-                    if(NRF24L01_ReadReg(NRF24L01_07_STATUS) & _BV(NRF24L01_07_RX_DR)) { // data received from aircraft
-                        XN297_ReadPayload(packet, CX10_packet_length);
-                        if( packet[9] == 0x01)
-                        bound = true;
-                        break;
-                    }
-                }
-                break;
-        }
-        digitalWrite(ledPin, counter-- & 0x10);
-        if(ppm[AUX8] > PPM_MAX_COMMAND) {
-            reset = true;
-            return;
+
+    NRF24L01_SetTxRxMode(TX_EN);
+    XN297_Configure(_BV(NRF24L01_00_EN_CRC) | _BV(NRF24L01_00_CRCO) | _BV(NRF24L01_00_PWR_UP));
+    NRF24L01_WriteReg(NRF24L01_05_RF_CH, CX10_RF_BIND_CHANNEL);
+    NRF24L01_WriteReg(NRF24L01_07_STATUS, 0x70);
+    NRF24L01_FlushTx();
+    CX10_Write_Packet(0xAA); // send bind packet
+
+    delay(1);
+    NRF24L01_SetTxRxMode(RX_EN);
+    NRF24L01_WriteReg(NRF24L01_07_STATUS, 0x70);
+    NRF24L01_FlushRx();
+    XN297_Configure(_BV(NRF24L01_00_EN_CRC) | _BV(NRF24L01_00_CRCO) | _BV(NRF24L01_00_PWR_UP) | _BV(NRF24L01_00_PRIM_RX));
+    timeout = millis()+5;
+    while(millis()<timeout) {
+        if(NRF24L01_ReadReg(NRF24L01_07_STATUS) & _BV(NRF24L01_07_RX_DR)) { // data received from aircraft
+          digitalWrite(LED_pin, 255);
+            XN297_ReadPayload(packet, CX10_packet_length);
+            if( packet[9] == 0x01) {
+              return true;
+            }
+            break;
         }
     }
-    digitalWrite(ledPin, HIGH);
+        
+    return false;
 }
 
 void CX10_Write_Packet(uint8_t init)
 {
-    uint8_t offset = 0;
-    if(current_protocol == PROTO_CX10_BLUE)
-        offset = 4;
+    uint8_t offset = 4;
     packet[0] = init;
     packet[1] = CX10_txid[0];
     packet[2] = CX10_txid[1];
@@ -158,14 +138,14 @@ void CX10_Write_Packet(uint8_t init)
     else // mode 2
         packet[13+offset] = 0x01;
     packet[14+offset] = 0x00;
-    if(current_protocol == PROTO_CX10_BLUE) {
-        // snapshot (CX10-C)
-        if(ppm[AUX3] < PPM_MAX_COMMAND)
-            packet[13+offset] |= 0x10;
-        // video recording (CX10-C)
-        if(ppm[AUX4] > PPM_MAX_COMMAND)
-            packet[13+offset] |= 0x08;
-    }    
+ 
+    // snapshot (CX10-C)
+    if(ppm[AUX3] < PPM_MAX_COMMAND)
+        packet[13+offset] |= 0x10;
+    // video recording (CX10-C)
+    if(ppm[AUX4] > PPM_MAX_COMMAND)
+        packet[13+offset] |= 0x08;
+    
 
     XN297_WritePayload(packet, CX10_packet_length);
 }

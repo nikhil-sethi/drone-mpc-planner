@@ -1,69 +1,3 @@
-/*
- ******************************************************************************
- This is a fork of the Multi-Protocol nRF24L01 Tx project
- from goebish on RCgroups / github
- This version accepts serial port strings and converts
- them to ppm commands which are then transmitted via
- the nRF24L01. 
-
- The purpose of this code is to enable control over the Cheerson CX-10 
- drone via code running on a PC.  In my case, I am developing Python code to
- fly the drone. 
- 
- This code can be easily adapted to the other mini-drones 
- that the Multi-protocol board supports. 
-
- The format for the serial command is:
- ch1value,ch2value,ch3value,...
- e.g.:  1500,1800,1200,1100, ...
-
- Up to 12 channel commands can be submitted. The channel order is defined
- by chan_order. The serial port here is running at 115200bps. 
-
- Python code in serial_test.py was written to generate the serial strings.  
-
- Hardware used:
- This code was tested on the Arduino Uno and nRF24L01 module. 
- Wiring diagrams and more info on this project at www.makehardware.com/pc-mini-drone-controller.html
- 
- I believe this code will remain compatible with goebish's 
- nRF24L01 Multi-Protocol board.  A way to 
- connect to the serial port will be needed (such as the FTDI). 
- 
- Perry Tsao 29 Feb 2016
- perrytsao on github.com
- *********************************************************************************
-
- 
- ##########################################
- #####   MultiProtocol nRF24L01 Tx   ######
- ##########################################
- #        by goebish on rcgroups          #
- #                                        #
- #   Parts of this project are derived    #
- #     from existing work, thanks to:     #
- #                                        #
- #   - PhracturedBlue for DeviationTX     #
- #   - victzh for XN297 emulation layer   #
- #   - Hasi for Arduino PPM decoder       #
- #   - hexfet, midelic, closedsink ...    #
- ##########################################
-
-
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License.
- If not, see <http://www.gnu.org/licenses/>.
- */
-
 #include <util/atomic.h>
 #include <EEPROM.h>
 #include "iface_nrf24l01.h"
@@ -71,27 +5,29 @@
 
 
 // ############ Wiring ################
-#define PPM_pin   2  // PPM in
+//#define PPM_pin   2  // PPM in
 //SPI Comm.pins with nRF24L01
-#define MOSI_pin  3  // MOSI - D3
+#define MOSI_pin  2  // MOSI - D2
 #define SCK_pin   4  // SCK  - D4
 #define CE_pin    5  // CE   - D5
-#define MISO_pin  A0 // MISO - A0
+#define MISO_pin  0 // MISO - A0. Weird, this pin really is connected to A0, but the A0 define seems to be screwed up?
 #define CS_pin    A1 // CS   - A1
+#define LED_pin    13 // LED  - D13
+#define POWERLED_pin 6
 
-#define ledPin    13 // LED  - D13
+unsigned char pwm_value = 10;
 
 // SPI outputs
-#define MOSI_on PORTD |= _BV(3)  // PD3
-#define MOSI_off PORTD &= ~_BV(3)// PD3
-#define SCK_on PORTD |= _BV(4)   // PD4
-#define SCK_off PORTD &= ~_BV(4) // PD4
-#define CE_on PORTD |= _BV(5)    // PD5
-#define CE_off PORTD &= ~_BV(5)  // PD5
-#define CS_on PORTC |= _BV(1)    // PC1
-#define CS_off PORTC &= ~_BV(1)  // PC1
+#define MOSI_on PORTD |= _BV(MOSI_pin)
+#define MOSI_off PORTD &= ~_BV(MOSI_pin)
+#define SCK_on PORTD |= _BV(SCK_pin)
+#define SCK_off PORTD &= ~_BV(SCK_pin)
+#define CE_on PORTD |= _BV(CE_pin)
+#define CE_off PORTD &= ~_BV(CE_pin)
+#define CS_on PORTC |= _BV(1)
+#define CS_off PORTC &= ~_BV(1)
 // SPI input
-#define  MISO_on (PINC & _BV(0)) // PC0
+#define  MISO_on (PINC & _BV(MISO_pin))
 
 #define RF_POWER TX_POWER_80mW 
 
@@ -118,34 +54,16 @@ enum chan_order{
 #define PPM_MAX 2000
 #define PPM_MIN_COMMAND 1300
 #define PPM_MAX_COMMAND 1700
-#define GET_FLAG(ch, mask) (ppm[ch] > PPM_MAX_COMMAND ? mask : 0)
-
-// supported protocols
-enum {
-    PROTO_V2X2 = 0,     // WLToys V2x2, JXD JD38x, JD39x, JJRC H6C, Yizhan Tarantula X6 ...
-    PROTO_CG023,        // EAchine CG023, CG032, 3D X4
-    PROTO_CX10_BLUE,    // Cheerson CX-10 blue board, newer red board, CX-10A, CX-10C, Floureon FX-10, CX-Stars (todo: add DM007 variant)
-    PROTO_CX10_GREEN,   // Cheerson CX-10 green board
-    PROTO_H7,           // EAchine H7, MoonTop M99xx
-    PROTO_BAYANG,       // EAchine H8(C) mini, H10, BayangToys X6, X7, X9, JJRC JJ850, Floureon H101
-    PROTO_SYMAX5C1,     // Syma X5C-1 (not older X5C), X11, X11C, X12
-    PROTO_YD829,        // YD-829, YD-829C, YD-822 ...
-    PROTO_H8_3D,        // EAchine H8 mini 3D, JJRC H20, H22
-    PROTO_END
-};
 
 // EEPROM locations
 enum{
-    ee_PROTOCOL_ID = 0,
     ee_TXID0,
     ee_TXID1,
     ee_TXID2,
     ee_TXID3
 };
 
-uint16_t overrun_cnt=0;
 uint8_t transmitterID[4];
-uint8_t current_protocol;
 static volatile bool ppm_ok = false;
 uint8_t packet[32];
 static bool reset=true;
@@ -163,11 +81,10 @@ uint8_t ppm_cnt;
 
 void setup()
 {
-    
+     
     randomSeed((analogRead(A4) & 0x1F) | (analogRead(A5) << 5));
-    pinMode(ledPin, OUTPUT);
-    digitalWrite(ledPin, LOW); //start LED off
-    pinMode(PPM_pin, INPUT);
+    pinMode(LED_pin, OUTPUT);
+    digitalWrite(LED_pin, LOW); //start LED off
     pinMode(MOSI_pin, OUTPUT);
     pinMode(SCK_pin, OUTPUT);
     pinMode(CS_pin, OUTPUT);
@@ -182,68 +99,54 @@ void setup()
 
     set_txid(false);
 
-    // Serial port input/output setup
     Serial.begin(115200);
     // reserve 200 bytes for the inputString:
     inputString.reserve(200);
+
+    setPwmFrequency(9, 1); 
+    pinMode(LED_BUILTIN, OUTPUT);
+
+    
 }
 
+void do_power_led() {
+    if (pwm_value > 120) {
+        pwm_value = 120;
+      }
+      // put your main code here, to run repeatedly:
+      analogWrite(POWERLED_pin, pwm_value);
+}
+
+bool binding = false;
 void loop()
 {    
+  do_power_led();
+   
     uint32_t timeout;
-    // reset / rebind
-    //Serial.println("begin loop");
-    if(reset || ppm[AUX8] > PPM_MAX_COMMAND) {
-        Serial.println(ppm[AUX8]);
-        Serial.println(reset);
-        reset = false;        
-        Serial.println("selecting protocol");
-        selectProtocol();        
-        Serial.println("selected protocol.");
+    
+    if(reset || ppm[AUX8] > PPM_MAX_COMMAND) { // rebind
+        //TODO: disable power led during bind process
+        reset = false;    
+        binding = true;    
+        ppm_ok = false; // wait for multiple complete ppm frames
+        set_txid(true); // Renew Transmitter ID      
         NRF24L01_Reset();
-        Serial.println("nrf24l01 reset.");
+        Serial.println("nrf24l01 reset");
         NRF24L01_Initialize();
-        Serial.println("nrf24l01 init.");
-        init_protocol();
-        Serial.println("init protocol complete.");
-	      
+        Serial.println("nrf24l01 init");
+        CX10_init();	      
+        Serial.println("Waiting for binding...");
     }
-    // process protocol
-    //Serial.println("processing protocol.");
-    switch(current_protocol) {
-        case PROTO_CG023: 
-        case PROTO_YD829:
-            timeout = process_CG023();
-            break;
-        case PROTO_V2X2: 
-            timeout = process_V2x2();
-            break;
-        case PROTO_CX10_GREEN:
-        case PROTO_CX10_BLUE:
-            timeout = process_CX10(); // returns micros()+6000 for time to next packet. 
-            break;
-        case PROTO_H7:
-            timeout = process_H7();
-            break;
-        case PROTO_BAYANG:
-            timeout = process_Bayang();
-            break;
-        case PROTO_SYMAX5C1:
-            timeout = process_SymaX(); 
-            break;
-        case PROTO_H8_3D:
-            timeout = process_H8_3D();
-            break;
+    if (binding) {
+      if (CX10_bind()) {
+        Serial.println("cx10-initialized and bound!");
+        binding = false;
+      }
+    } else {
+      timeout = process_CX10(); // returns micros()+6000 for time to next packet. 
     }
-    // updates ppm values out of ISR
-    //update_ppm();
-    overrun_cnt=0;
 
-
-    // Process string into tokens and assign values to ppm
-    // The Arduino will also echo the command values that it assigned
-    // to ppm
-    if (stringComplete) {
+    if (stringComplete) { //process a string received over usb
         //Serial.println(inputString);
         // process string
         
@@ -254,20 +157,24 @@ void loop()
           //Serial.print(p);
           int val=strtol(p, &errpt, 10);
           if (!*errpt) {
-            Serial.print(val);
-            ppm[ppm_cnt]=val;
+            if (!binding)
+              Serial.print(val);
+            if (ppm_cnt == 5)
+              pwm_value = val;
+            else
+              ppm[ppm_cnt]=val;
           }
           else
-            Serial.print("x"); // prints "x" if it could not decipher the command. Other values in string may still be assigned.
-          Serial.print(";"); // a separator between ppm values
+            if (!binding)
+              Serial.print("x"); // prints "x" if it could not decipher the command. Other values in string may still be assigned.
+          if (!binding)
+            Serial.print(";"); // a separator between ppm values
           p = strtok_r(NULL,",",&i);
           ppm_cnt+=1;
         }
-        Serial.println("."); // prints "." at end of command
-        //ppm[0]=
-        
-        
-        
+        if (!binding)
+          Serial.println("."); // prints "." at end of command
+      
         // clear the string:
         inputString = "";
         stringComplete = false;
@@ -290,16 +197,11 @@ void loop()
       }
       
     }
-    // wait before sending next packet
-    while(micros() < timeout) // timeout for CX-10 blue = 6000microseconds. 
+  
+    while(micros() < timeout && !binding) // timeout for CX-10 blue = 6000microseconds. 
     {
       //overrun_cnt+=1;
     };
-    /* // Compare counter to debug for overruns
-    if ((overrun_cnt<1000)||(stringComplete)) {
-      Serial.println(overrun_cnt);
-    }
-    */
 }
 
 void set_txid(bool renew)
@@ -315,126 +217,65 @@ void set_txid(bool renew)
     }
 }
 
-void selectProtocol()
-{
-    // Modified and commented out lines so that Cheerson CX-10 Blue is always selected
-  
-    // wait for multiple complete ppm frames
-    ppm_ok = false;
-    /*
-    uint8_t count = 10;
-    while(count) {
-        while(!ppm_ok) {} // wait
-        update_ppm();
-        if(ppm[AUX8] < PPM_MAX_COMMAND) // reset chan released
-            count--;
-        ppm_ok = false;
+/**
+ * Divides a given PWM pin frequency by a divisor.
+ * 
+ * The resulting frequency is equal to the base frequency divided by
+ * the given divisor:
+ *   - Base frequencies:
+ *      o The base frequency for pins 3, 9, 10, and 11 is 31250 Hz.
+ *      o The base frequency for pins 5 and 6 is 62500 Hz.
+ *   - Divisors:
+ *      o The divisors available on pins 5, 6, 9 and 10 are: 1, 8, 64,
+ *        256, and 1024.
+ *      o The divisors available on pins 3 and 11 are: 1, 8, 32, 64,
+ *        128, 256, and 1024.
+ * 
+ * PWM frequencies are tied together in pairs of pins. If one in a
+ * pair is changed, the other is also changed to match:
+ *   - Pins 5 and 6 are paired on timer0
+ *   - Pins 9 and 10 are paired on timer1
+ *   - Pins 3 and 11 are paired on timer2
+ * 
+ * Note that this function will have side effects on anything else
+ * that uses timers:
+ *   - Changes on pins 3, 5, 6, or 11 may cause the delay() and
+ *     millis() functions to stop working. Other timing-related
+ *     functions may also be affected.
+ *   - Changes on pins 9 or 10 will cause the Servo library to function
+ *     incorrectly.
+ * 
+ * Thanks to macegr of the Arduino forums for his documentation of the
+ * PWM frequency divisors. His post can be viewed at:
+ *   http://forum.arduino.cc/index.php?topic=16612#msg121031
+ */
+void setPwmFrequency(int pin, int divisor) {
+  byte mode;
+  if(pin == 5 || pin == 6 || pin == 9 || pin == 10) {
+    switch(divisor) {
+      case 1: mode = 0x01; break;
+      case 8: mode = 0x02; break;
+      case 64: mode = 0x03; break;
+      case 256: mode = 0x04; break;
+      case 1024: mode = 0x05; break;
+      default: return;
     }
-    */
-    // startup stick commands
-    
-    //if(ppm[RUDDER] < PPM_MIN_COMMAND)        // Rudder left
-    set_txid(true);                      // Renew Transmitter ID
-    
-    // protocol selection
-    /*
-    // Rudder right + Aileron left
-    if(ppm[RUDDER] > PPM_MAX_COMMAND && ppm[AILERON] < PPM_MIN_COMMAND)
-        current_protocol = PROTO_H8_3D; // H8 mini 3D, H20 ...
-    
-    // Elevator down + Aileron right
-    else if(ppm[ELEVATOR] < PPM_MIN_COMMAND && ppm[AILERON] > PPM_MAX_COMMAND)
-        current_protocol = PROTO_YD829; // YD-829, YD-829C, YD-822 ...
-    
-    // Elevator down + Aileron left
-    else if(ppm[ELEVATOR] < PPM_MIN_COMMAND && ppm[AILERON] < PPM_MIN_COMMAND)
-        current_protocol = PROTO_SYMAX5C1; // Syma X5C-1, X11, X11C, X12
-    
-    // Elevator up + Aileron right
-    else if(ppm[ELEVATOR] > PPM_MAX_COMMAND && ppm[AILERON] > PPM_MAX_COMMAND)
-        current_protocol = PROTO_BAYANG;    // EAchine H8(C) mini, BayangToys X6/X7/X9, JJRC JJ850 ...
-    
-    // Elevator up + Aileron left
-    else if(ppm[ELEVATOR] > PPM_MAX_COMMAND && ppm[AILERON] < PPM_MIN_COMMAND) 
-        current_protocol = PROTO_H7;        // EAchine H7, MT99xx
-    
-    // Elevator up  
-    else if(ppm[ELEVATOR] > PPM_MAX_COMMAND)
-        current_protocol = PROTO_V2X2;       // WLToys V202/252/272, JXD 385/388, JJRC H6C ...
-        
-    // Elevator down
-    else if(ppm[ELEVATOR] < PPM_MIN_COMMAND) 
-        current_protocol = PROTO_CG023;      // EAchine CG023/CG031/3D X4, (todo :ATTOP YD-836/YD-836C) ...
-    
-    // Aileron right
-    else if(ppm[AILERON] > PPM_MAX_COMMAND)  
-    */
-    current_protocol = PROTO_CX10_BLUE;  // Cheerson CX10(blue pcb, newer red pcb)/CX10-A/CX11/CX12 ... 
-    /*
-    // Aileron left
-    else if(ppm[AILERON] < PPM_MIN_COMMAND)  
-        current_protocol = PROTO_CX10_GREEN;  // Cheerson CX10(green pcb)... 
-    
-    // read last used protocol from eeprom
-    else 
-        current_protocol = constrain(EEPROM.read(ee_PROTOCOL_ID),0,PROTO_END-1);      
-    */
-    // update eeprom 
-    EEPROM.update(ee_PROTOCOL_ID, current_protocol);
-    // wait for safe throttle
-    /*while(ppm[THROTTLE] > PPM_SAFE_THROTTLE) {
-        delay(100);
-        update_ppm();
+    if(pin == 5 || pin == 6) {
+      TCCR0B = TCCR0B & 0b11111000 | mode;
+    } else {
+      TCCR1B = TCCR1B & 0b11111000 | mode;
     }
-    */
-}
-
-void init_protocol()
-{
-    switch(current_protocol) {
-        case PROTO_CG023:
-        case PROTO_YD829:
-            CG023_init();
-            CG023_bind();
-            break;
-        case PROTO_V2X2:
-            V2x2_init();
-            V2x2_bind();
-            break;
-        case PROTO_CX10_GREEN:
-        case PROTO_CX10_BLUE:
-            CX10_init();
-            CX10_bind();
-            Serial.println("cx10-initialized and bound");
-            break;
-        case PROTO_H7:
-            H7_init();
-            H7_bind();
-            break;
-        case PROTO_BAYANG:
-            Bayang_init();
-            Bayang_bind();
-            break;
-        case PROTO_SYMAX5C1:
-            Symax_init();
-            SymaX_bind();
-            break;
-        case PROTO_H8_3D:
-            H8_3D_init();
-            H8_3D_bind();
-            break;
+  } else if(pin == 3 || pin == 11) {
+    switch(divisor) {
+      case 1: mode = 0x01; break;
+      case 8: mode = 0x02; break;
+      case 32: mode = 0x03; break;
+      case 64: mode = 0x04; break;
+      case 128: mode = 0x05; break;
+      case 256: mode = 0x06; break;
+      case 1024: mode = 0x07; break;
+      default: return;
     }
+    TCCR2B = TCCR2B & 0b11111000 | mode;
+  }
 }
-
-/* This function not needed - ppm values are updated in main loop
-// update ppm values out of ISR    
-void update_ppm()
-{
-    for(uint8_t ch=0; ch<CHANNELS; ch++) {
-        ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-            ppm[ch] = Servo_data[ch];
-        }
-    }    
-}
-*/
-

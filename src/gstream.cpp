@@ -56,7 +56,6 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
             appsrc = gst_element_factory_make ("appsrc", "source");
             conv = gst_element_factory_make ("videoconvert", "conv");
             encoder = gst_element_factory_make ("x264enc", "encoder");
-//            capsf = gst_element_factory_make ("capsfilter", "capsf");
             mux = gst_element_factory_make ("avimux", "mux");
             videosink = gst_element_factory_make ("filesink", "videosink");
 
@@ -124,8 +123,8 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
 
         } else if (mode == VIDEOMODE_STREAM) {
             //streaming:
-            //from: gst-launch-1.0 videotestsrc ! x264enc ! 'video/x-h264, stream-format=(string)byte-stream'  ! rtph264pay ! udpsink host=127.0.0.1
-            //to: gst-launch-1.0 udpsrc ! 'application/x-rtp, encoding-name=H264, payload=96' ! rtph264depay ! avdec_h264 ! videoconvert ! xvimagesink sync=false
+            //from: gst-launch-1.0 videotestsrc pattern=snow ! video/x-raw,format=GRAY8,framerate=\(fraction\)90/1,width=1696,height=484 ! videoconvert ! videorate ! video/x-raw,framerate=15/1 ! x264enc ! 'video/x-h264, stream-format=(string)byte-stream' ! rtph264pay pt=96 ! udpsink host=127.0.0.1 port=5000
+            //to: gst-launch-1.0 udpsrc port=5000 ! 'application/x-rtp, encoding-name=H264, payload=96' ! queue2 max-size-buffers=1 ! rtph264depay ! avdec_h264 ! videoconvert ! xvimagesink sync=false
             pipeline = gst_pipeline_new ("pipeline");
             appsrc = gst_element_factory_make ("appsrc", "source");
             conv = gst_element_factory_make ("videoconvert", "conv");
@@ -150,13 +149,13 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
                                                    "height", G_TYPE_INT, sizeY,
                                                    "framerate", GST_TYPE_FRACTION, VIDEOFPS, 1,NULL), NULL);
             }
-            g_object_set (G_OBJECT (encoder), "caps",
-                          gst_caps_new_simple ("video/x-h264",
-                                               "stream-format", G_TYPE_STRING, "byte-stream", NULL), NULL);
             g_object_set (G_OBJECT (rate), "caps",
                           gst_caps_new_simple ("video/x-raw",
                                                "framerate", GST_TYPE_FRACTION, 15, 1,NULL), NULL);
-            g_object_set (G_OBJECT (videosink), "host", ip.c_str(), NULL);
+            g_object_set (G_OBJECT (encoder), "caps",
+                          gst_caps_new_simple ("video/x-h264",
+                                               "stream-format", G_TYPE_STRING, "byte-stream", NULL), NULL);
+            g_object_set (G_OBJECT (videosink), "host", ip.c_str(), "port", port, NULL);
 
             gst_bin_add_many (GST_BIN (pipeline), appsrc, rate, conv, encoder, rtp, videosink, NULL);
             gst_element_link_many (appsrc, rate, conv, encoder, rtp, videosink, NULL);

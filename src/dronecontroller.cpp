@@ -21,11 +21,16 @@ bool DroneController::init(std::ofstream *logger) {
     baudrate = 115200;
     notconnected = RS232_OpenComport(baudrate);
 
-    // Ensure that it was found and that we can use it
-//    if (!joystick.isFound()) {
-//        printf("joystick failed.\n");
-//        exit(1);
-//    }
+    if (notconnected) {
+        printf("Arduino failed.\n");
+        exit(1);
+    }
+
+    // Ensure that joystick was found and that we can use it
+    if (!joystick.isFound()) {
+        printf("joystick failed.\n");
+        exit(1);
+    }
 
     // Load saved control paremeters
     if (checkFileExist(paramsFile)) {
@@ -163,13 +168,13 @@ void DroneController::control(trackData data) {
     g_lockData.unlock();
 
     (*_logger) << (int)data.valid  << "; " << data.posErrX << "; " << data.posErrY  << "; " << data.posErrZ << "; " << data.velX << "; " << data.velY  << "; " << data.velZ << "; " << hoverthrottle << "; " << autoThrottle << "; " << autoRoll << "; " << autoPitch << "; " << autoYaw <<  "; " << joyThrottle <<  "; " << joyRoll <<  "; " << joyPitch <<  "; " << joyYaw << "; " << (int)joySwitch << "; " << params.throttleP << "; " << params.throttleI << "; " << params.throttleD << "; " << data.dt << "; " << data.dx << "; " << data.dy << "; " << data.dz;
-    if (!notconnected){
-        //params.throttleP = scaledjoydial;
-        //std::cout << "P:" << params.throttleP << " Throttle: " << throttle << " HT: " << hoverthrottle << std::endl;
-        //std::cout << "Roll: " << roll << " RollP: " << params.rollP << std::endl;
-        //std::cout << "AutoTakeOff:" << (int)autoTakeOff <<  " HT: " << hoverthrottle << " Valid: " << data.valid << "VelY: " << data.velY <<std::endl;
-        //std::cout << "AutoLand:" << autoLand <<  " HT: " << hoverthrottle << " Valid: " << data.valid << " PosY: " << data.posErrY << " startY:" << startY << " VelY: " << data.velY <<std::endl;
-    }
+//    if (!notconnected){
+//        params.throttleP = scaledjoydial;
+//        std::cout << "P:" << params.throttleP << " Throttle: " << throttle << " HT: " << hoverthrottle << std::endl;
+//        std::cout << "Roll: " << roll << " RollP: " << params.rollP << std::endl;
+//        std::cout << "AutoTakeOff:" << (int)autoTakeOff <<  " HT: " << hoverthrottle << " Valid: " << data.valid << "VelY: " << data.velY <<std::endl;
+//        std::cout << "AutoLand:" << autoLand <<  " HT: " << hoverthrottle << " Valid: " << data.valid << " PosY: " << data.posErrY << " startY:" << startY << " VelY: " << data.velY <<std::endl;
+//    }
 }
 
 void DroneController::workerThread(void) {
@@ -229,7 +234,7 @@ void DroneController::readJoystick(void) {
 
 void DroneController::sendData(void) {
 
-    if (true) {
+    if (false) {
         //tmp led power hack
         char buff[3];
         buff[0] = 'B';
@@ -242,7 +247,7 @@ void DroneController::sendData(void) {
     } else {
 
         char buff[64];
-        sprintf( (char*) buff,"%u,%u,%u,%u,%u,%u,0,0,0,0,0,0\n",throttle,roll,pitch,yaw,mode, ledpower);
+        sprintf( (char*) buff,"%u,%u,%u,%u,%u,%u,0,0,0,0,0,0\n",throttle,roll,pitch,yaw,mode,ledpower);
         if (!notconnected) {
             RS232_SendBuf( (unsigned char*) buff, 63);
         }
@@ -269,7 +274,7 @@ void DroneController::sendData(void) {
                 }
             }
             if (totn > 0) {
-                // std::cout << totn << ": " << tmp.str() << std::endl;
+                 std::cout << "Arduino: " << totn << ": " << tmp.str() << std::endl;
             }
         }
 

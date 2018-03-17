@@ -1,9 +1,10 @@
-int ledPin = 9;
+int ledPin = 3;
 unsigned char pwm_value = 10;
 
 void setup() {
     Serial.begin(115200);   
     setPwmFrequency(9, 1); 
+    pinMode(LED_BUILTIN, OUTPUT);
 }
 
 void loop() {
@@ -21,6 +22,7 @@ void loop() {
   switch(state) {
     case 0:
       if (b == 66)
+        digitalWrite(LED_BUILTIN, LOW);
         state++;
       break;
    case 1:
@@ -30,6 +32,7 @@ void loop() {
         state =0;
       break;
    case 2:
+      digitalWrite(LED_BUILTIN, HIGH);
       pwm_value = b;
       state = 0;
       break;
