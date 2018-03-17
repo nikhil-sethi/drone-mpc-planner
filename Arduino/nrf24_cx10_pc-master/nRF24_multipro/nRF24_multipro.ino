@@ -78,10 +78,19 @@ char* c = new char[200 + 1]; // match 200 characters reserved for inputString la
 char* errpt;
 uint8_t ppm_cnt;
 
+void set_txid(bool renew) {
+    uint8_t i;
+    for(i=0; i<4; i++)
+        transmitterID[i] = EEPROM.read(ee_TXID0+i);
+    if(renew || (transmitterID[0]==0xFF && transmitterID[1]==0x0FF)) {
+        for(i=0; i<4; i++) {
+            transmitterID[i] = random() & 0xFF;
+            EEPROM.update(ee_TXID0+i, transmitterID[i]); 
+        }            
+    }
+}
 
-void setup()
-{
-     
+void setup() {
     randomSeed((analogRead(A4) & 0x1F) | (analogRead(A5) << 5));
     pinMode(LED_pin, OUTPUT);
     digitalWrite(LED_pin, LOW); //start LED off
@@ -104,12 +113,10 @@ void setup()
     inputString.reserve(200);
 
     setPwmFrequency(9, 1); 
-    pinMode(LED_BUILTIN, OUTPUT);
-
-    
+    pinMode(LED_BUILTIN, OUTPUT);    
 }
 
-void do_power_led() {
+void set_power_led() {
     if (pwm_value > 120) {
         pwm_value = 120;
       }
@@ -118,13 +125,9 @@ void do_power_led() {
 }
 
 bool binding = false;
-void loop()
-{    
-  do_power_led();
-   
-    uint32_t timeout;
-    
-    if(reset || ppm[AUX8] > PPM_MAX_COMMAND) { // rebind
+uint32_t timeout;
+void send_cx10() {
+  if(reset || ppm[AUX8] > PPM_MAX_COMMAND) { // rebind
         //TODO: disable power led during bind process
         reset = false;    
         binding = true;    
@@ -134,7 +137,7 @@ void loop()
         Serial.println("nrf24l01 reset");
         NRF24L01_Initialize();
         Serial.println("nrf24l01 init");
-        CX10_init();	      
+        CX10_init();        
         Serial.println("Waiting for binding...");
     }
     if (binding) {
@@ -145,76 +148,74 @@ void loop()
     } else {
       timeout = process_CX10(); // returns micros()+6000 for time to next packet. 
     }
-
-    if (stringComplete) { //process a string received over usb
-        //Serial.println(inputString);
-        // process string
-        
-        strcpy(c, inputString.c_str());
-        p = strtok_r(c,",",&i); // returns substring up to first "," delimiter
-        ppm_cnt=0;
-        while (p !=0){
-          //Serial.print(p);
-          int val=strtol(p, &errpt, 10);
-          if (!*errpt) {
-            if (!binding)
-              Serial.print(val);
-            if (ppm_cnt == 5)
-              pwm_value = val;
-            else
-              ppm[ppm_cnt]=val;
-          }
-          else
-            if (!binding)
-              Serial.print("x"); // prints "x" if it could not decipher the command. Other values in string may still be assigned.
-          if (!binding)
-            Serial.print(";"); // a separator between ppm values
-          p = strtok_r(NULL,",",&i);
-          ppm_cnt+=1;
-        }
-        if (!binding)
-          Serial.println("."); // prints "." at end of command
-      
-        // clear the string:
-        inputString = "";
-        stringComplete = false;
-    }
-
-    
-    
-    // Read the string from the serial buffer
-    while (Serial.available()) {
-      // get the new byte:
-      char inChar = (char)Serial.read();
-      // if the incoming character is a newline, set a flag
-      // so the main loop can do something about it:
-      if (inChar == '\n') {
-        stringComplete = true;
-      }
-      else {      
-        // add it to the inputString:
-        inputString += inChar;        
-      }
-      
-    }
-  
-    while(micros() < timeout && !binding) // timeout for CX-10 blue = 6000microseconds. 
-    {
-      //overrun_cnt+=1;
-    };
 }
 
-void set_txid(bool renew)
-{
-    uint8_t i;
-    for(i=0; i<4; i++)
-        transmitterID[i] = EEPROM.read(ee_TXID0+i);
-    if(renew || (transmitterID[0]==0xFF && transmitterID[1]==0x0FF)) {
-        for(i=0; i<4; i++) {
-            transmitterID[i] = random() & 0xFF;
-            EEPROM.update(ee_TXID0+i, transmitterID[i]); 
-        }            
+void process_serial_string() {
+  if (stringComplete) { //process a string received over usb
+      //Serial.println(inputString);
+      // process string
+      
+      strcpy(c, inputString.c_str());
+      p = strtok_r(c,",",&i); // returns substring up to first "," delimiter
+      ppm_cnt=0;
+      while (p !=0){
+        //Serial.print(p);
+        int val=strtol(p, &errpt, 10);
+        if (!*errpt) {
+          if (!binding)
+            Serial.print(val);
+          if (ppm_cnt == 5)
+            pwm_value = val;
+          else
+            ppm[ppm_cnt]=val;
+        }
+        else
+          if (!binding)
+            Serial.print("x"); // prints "x" if it could not decipher the command. Other values in string may still be assigned.
+        if (!binding)
+          Serial.print(";"); // a separator between ppm values
+        p = strtok_r(NULL,",",&i);
+        ppm_cnt+=1;
+      }
+      if (!binding)
+        Serial.println("."); // prints "." at end of command
+    
+      // clear the string:
+      inputString = "";
+      stringComplete = false;
+  }
+
+}
+
+void receive_serial() {
+  // Read the string from the serial buffer
+  while (Serial.available()) {
+    // get the new byte:
+    char inChar = (char)Serial.read();
+    // if the incoming character is a newline, set a flag
+    // so the main loop can do something about it:
+    if (inChar == '\n') {
+      stringComplete = true;
     }
+    else {      
+      // add it to the inputString:
+      inputString += inChar;        
+    }
+  }
+}
+
+
+void loop()
+{    
+  set_power_led();
+  send_cx10();
+  process_serial_string();  
+  receive_serial();
+    
+  while(micros() < timeout && !binding) // timeout for CX-10 blue = 6000microseconds. 
+  {
+    //overrun_cnt+=1;
+  }
 }
 
 /**
