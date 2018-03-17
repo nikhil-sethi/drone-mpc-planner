@@ -1,8 +1,0 @@
-nRF to Arduino UNO pinout:
-
-van links naar rechts:
-CE -> 5 (ZWART)
-CSN -> A1 (ROOD)
-SCK -> 4 (ZWART)
-MO -> 3 (ROOD)
-MI -> A0 (GEEL)
