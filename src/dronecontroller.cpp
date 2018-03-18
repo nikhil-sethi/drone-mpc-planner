@@ -1,7 +1,7 @@
 #include "dronecontroller.h"
 #include "defines.h"
 
-#ifdef _PC
+#if 1
 #define TUNING
 #endif
 
@@ -13,21 +13,21 @@ JoystickEvent event;
 
 int notconnected;
 
-bool DroneController::init(std::ofstream *logger) {
+bool DroneController::init(std::ofstream *logger,bool fromfile) {
     _logger = logger;
-    (*_logger) << "valid; posErrX; posErrY; posErrZ; velX; velY; velZ; hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; joyThrottle; joyRoll; joyPitch; joyYaw; joySwitch; throttleP; throttleI; throttleD; dt; dx; dy; dz" << std::endl;
+    (*_logger) << "valid; posErrX; posErrY; posErrZ; velX; velY; velZ; hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; joyThrottle; joyRoll; joyPitch; joyYaw; joySwitch; throttleP; throttleI; throttleD; dt; dx; dy; dz";
     std::cout << "Initialising control." << std::endl;
     // setup connection with Arduino
     baudrate = 115200;
     notconnected = RS232_OpenComport(baudrate);
 
-    if (notconnected) {
+    if (notconnected && !fromfile) {
         printf("Arduino failed.\n");
         exit(1);
     }
 
     // Ensure that joystick was found and that we can use it
-    if (!joystick.isFound()) {
+    if (!joystick.isFound() && !fromfile) {
         printf("joystick failed.\n");
         exit(1);
     }
@@ -274,7 +274,7 @@ void DroneController::sendData(void) {
                 }
             }
             if (totn > 0) {
-                 std::cout << "Arduino: " << totn << ": " << tmp.str() << std::endl;
+                 //std::cout << "Arduino: " << totn << ": " << tmp.str() << std::endl;
             }
         }
 

@@ -92,13 +92,15 @@ void process_video() {
 
 
         logger << imgcount << ";";
-        //insect.track(frameL,frameR, Qf);
+
         dtrkr.track(frameL,frameR, Qf);
         dctrl.control(dtrkr.data);
+        //insect.track(frameL,frameR, Qf);
+
         //putText(cam.frameR,std::to_string(imgcount),cv::Point(100,100),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(125,125,255));
 
 #ifdef HASSCREEN
-        //        visualizer.plot();
+                visualizer.plot();
         //        resFrame = cam.get_disp_frame();
         //        cv::resize(resFrame,resFrame,cv::Size(480,480));
         //        cv::applyColorMap(resFrame, resFrame, cv::COLORMAP_JET);
@@ -119,7 +121,7 @@ void process_video() {
         frameBR[frame_buffer_write_id] = frameR.clone();
 
         frame_buffer_write_id = (frame_buffer_write_id + 1) % FRAME_BUF_SIZE;
-        if (insect.data.valid) { //
+        if (true) { // (insect.data.valid) { //
             frame_buffer_read_id = 0;
             frame_write_id_during_event = (frame_buffer_write_id + FRAME_BUF_SIZE - 1 ) % FRAME_BUF_SIZE;
         }
@@ -191,13 +193,18 @@ void my_handler(int s){
 
 int init(int argc, char **argv) {
 
+    bool fromfile = false;
+    if (argc ==2 ) {
+       fromfile = true;
+    }
     data_output_dir = "./";
 
     logger.open(data_output_dir  + "log.txt",std::ofstream::out);
     logger << "ID;";
     dtrkr.init(&logger);
-    dctrl.init(&logger);
-    insect.init(&logger);
+    dctrl.init(&logger,fromfile);
+    //insect.init(&logger);
+    logger << std::endl;
 
     std::cout << "Frame buf size: " << FRAME_BUF_SIZE << std::endl;
 
@@ -208,20 +215,62 @@ int init(int argc, char **argv) {
     cfg.disable_all_streams();
     cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
     cfg.enable_stream(RS2_STREAM_INFRARED, 2, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
+
+    if (argc ==2 ) {
+        cfg.enable_device_from_file(argv[1]);
+
+    }
+
+    //cfg.enable_record_to_file("test");
+
     rs2::pipeline_profile selection = cam.start(cfg);
     std::cout << "Started cam\n";
+
+    rs2::device selected_device = selection.get_device();
+    auto depth_sensor = selected_device.first<rs2::depth_sensor>();
+    if (depth_sensor.supports(RS2_OPTION_GAIN)) {
+        auto range = depth_sensor.get_option_range(RS2_OPTION_GAIN);
+        depth_sensor.set_option(RS2_OPTION_GAIN, (range.max - range.min)/2 + range.min);
+    }
+    if (!fromfile) {
+
+
+        if (depth_sensor.supports(RS2_OPTION_EMITTER_ENABLED))
+        {
+            depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 1.f);
+        }
+        if (depth_sensor.supports(RS2_OPTION_LASER_POWER)) {
+            auto range = depth_sensor.get_option_range(RS2_OPTION_LASER_POWER);
+            depth_sensor.set_option(RS2_OPTION_LASER_POWER, (range.max - range.min)/2 + range.min);
+        }
+        if (depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
+            depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,1.0);
+        }
+
+        cam.stop();
+        selection = cam.start(cfg);
+        std::cout << "Set cam config\n";
+    }
+
+    // Obtain focal length and principal point (from intrinsics)
+    auto depth_stream = selection.get_stream(RS2_STREAM_INFRARED, 1).as<rs2::video_stream_profile>();
+    auto i = depth_stream.get_intrinsics();
+    float focal_length = i.fx; // same as fy
+    float cx = i.ppx; // same for both cameras
+    float cy = i.ppy;
+
+    // Obtain baseline (from extrinsics)
+    auto ir1_stream = selection.get_stream(RS2_STREAM_INFRARED, 1);
+    auto ir2_stream = selection.get_stream(RS2_STREAM_INFRARED, 2);
+    rs2_extrinsics e = ir2_stream.get_extrinsics_to(ir1_stream);
+    float baseline = e.translation[0];
+
+    //init Qf: https://stackoverflow.com/questions/27374970/q-matrix-for-the-reprojectimageto3d-function-in-opencv
+    Qf = (Mat_<double>(4, 4) << 1.0, 0.0, 0.0, -cx, 0.0, 1.0, 0.0, -cy, 0.0, 0.0, 0.0, focal_length, 0.0, 0.0, 1/baseline, 0.0);
 
     /*****init the (G)UI*****/
 #ifdef HASSCREEN
     cv::namedWindow("Results", CV_WINDOW_AUTOSIZE);
-    //cv::namedWindow("Results", CV_WINDOW_NORMAL);
-    //cv::resizeWindow("Results", 1280, 720); //makes it slower
-
-    //cv::namedWindow("Results", CV_WINDOW_FULLSCREEN); // faster, but it is still windowed
-
-    //real fullscreen opencv hack:
-    //cv::namedWindow("Results", CV_WINDOW_NORMAL);
-    //cv::setWindowProperty("Results", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
 #endif
 
 #if defined(HASSCREEN) || VIDEORESULTS
@@ -230,7 +279,7 @@ int init(int argc, char **argv) {
 
     /*****init the video writer*****/
 #if VIDEORESULTS
-    if (outputVideoResults.init(argc,argv,VIDEORESULTS, data_output_dir + "videoResult.avi",864,864,VIDEOFPS,"192.168.1.10",5004,true)) {return 1;}
+    if (outputVideoResults.init(argc,argv,VIDEORESULTS, data_output_dir + "videoResult.avi",IMG_W*2,IMG_H,VIDEOFPS,"192.168.1.10",5004,true)) {return 1;}
 #endif
 #if VIDEORAWLR
     if (outputVideoRawLR.init(argc,argv,VIDEORAWLR,data_output_dir + "videoRawLR.avi",IMG_W*2,IMG_H,VIDEOFPS, "127.0.0.1",5000,false)) {return 1;}
@@ -266,24 +315,6 @@ int init(int argc, char **argv) {
         frameBR[i] = Mat(imgsize, CV_8UC1, (void*)tmpdata.get_infrared_frame(IR_ID_RIGHT).get_data(), Mat::AUTO_STEP).clone();
     }
 
-    
-    
-    // Obtain focal length and principal point (from intrinsics)
-    auto depth_stream = selection.get_stream(RS2_STREAM_INFRARED, 1).as<rs2::video_stream_profile>();
-    auto i = depth_stream.get_intrinsics();
-    float focal_length = i.fx; // same as fy
-    float cx = i.ppx; // same for both cameras
-    float cy = i.ppy;
-    
-    // Obtain baseline (from extrinsics)
-    auto ir1_stream = selection.get_stream(RS2_STREAM_INFRARED, 1);
-    auto ir2_stream = selection.get_stream(RS2_STREAM_INFRARED, 2);
-    rs2_extrinsics e = ir2_stream.get_extrinsics_to(ir1_stream);
-    float baseline = e.translation[0];
-
-    //init Qf: https://stackoverflow.com/questions/27374970/q-matrix-for-the-reprojectimageto3d-function-in-opencv
-    Qf = (Mat_<double>(4, 4) << 1.0, 0.0, 0.0, -cx, 0.0, 1.0, 0.0, -cy, 0.0, 0.0, 0.0, focal_length, 0.0, 0.0, 1/baseline, 0.0);
-    
     std::cout << "Main init successfull" << std::endl;
 
     return 0;

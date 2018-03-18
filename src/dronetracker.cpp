@@ -11,7 +11,7 @@ using namespace std;
 #if 1
 #define DRAWVIZSL
 #define DRAWVIZSR
-//#define TUNING
+#define TUNING
 #endif
 
 //#define POSITIONTRACKBARS
@@ -149,17 +149,19 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     cv::Mat resFrameL,resFrameR;
 #ifdef DRAWVIZSL    
     cv::resize(frameL,resFrameL,cv::Size(frameL.cols,frameL.rows));
+//    equalizeHist( resFrameL, resFrameL);
     cvtColor(resFrameL,resFrameL,CV_GRAY2BGR);
 #endif
 #ifdef DRAWVIZSR
     cv::resize(frameR,resFrameR,cv::Size(frameR.cols,frameR.rows));
+//    equalizeHist( resFrameR, resFrameR);
     cvtColor(resFrameR,resFrameR,CV_GRAY2BGR);
 #endif
 
     cv::Mat tmpfL,tmpfR;
-    cv::Size smalsize(frameL.cols/IMSCALEF,frameL.rows/IMSCALEF);
-    cv::resize(frameL,tmpfL,smalsize);
-    cv::resize(frameR,tmpfR,smalsize);
+    cv::Size smallsize(frameL.cols/IMSCALEF,frameL.rows/IMSCALEF);
+    cv::resize(frameL,tmpfL,smallsize);
+    cv::resize(frameR,tmpfR,smallsize);
 
     cv::Mat framegrayL,framegrayR;
     framegrayL = tmpfL.clone();
@@ -439,21 +441,30 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     }
 
 #ifdef DRAWVIZSL
+    cv::Size vizsizeL(resFrameL.cols/4,resFrameL.rows/4);
+    cv::resize(treshfL,treshfL,vizsizeL);
     cvtColor(treshfL,treshfL,CV_GRAY2BGR);
+
     treshfL.copyTo(resFrameL(cv::Rect(resFrameL.cols - treshfL.cols,0,treshfL.cols, treshfL.rows)));
+
+
     if (dronepathL.size() > 0) {
         drawKeypoints( framegrayL, dronepathL, framegrayL, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
     }
     cv::circle(framegrayL,cv::Point(setpoint.x,setpoint.y),2,cv::Scalar(150,255,200));
+    cv::resize(framegrayL,framegrayL,vizsizeL);
     framegrayL.copyTo(resFrameL(cv::Rect(0,0,framegrayL.cols, framegrayL.rows)));
 #endif
 #ifdef DRAWVIZSR
+    cv::Size vizsizeR(resFrameR.cols/4,resFrameR.rows/4);
+    cv::resize(treshfR,treshfR,vizsizeR);
     cvtColor(treshfR,treshfR,CV_GRAY2BGR);
+
     treshfR.copyTo(resFrameR(cv::Rect(resFrameR.cols - treshfR.cols,0,treshfR.cols, treshfR.rows)));
     if (dronepathR.size() > 0) {
         drawKeypoints( framegrayR, dronepathR, framegrayR, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
     }
-
+    cv::resize(framegrayR,framegrayR,vizsizeR);
     framegrayR.copyTo(resFrameR(cv::Rect(0,0,framegrayR.cols, framegrayR.rows)));
 
     resFrame = cv::Mat(resFrameL.rows,resFrameL.cols +resFrameR.cols ,CV_8UC3);

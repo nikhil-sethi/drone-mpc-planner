@@ -102,7 +102,12 @@ void Visualizer::plot(cv::Mat data1,cv::Mat data2, cv::Mat *frame, std::string n
 }
 
 void Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Mat *frame, cv::Point setpoint, std::string name) {
-    putText(*frame,name,cv::Point(0, 30),cv::FONT_HERSHEY_SIMPLEX,0.5,black);
+    std::stringstream ss;
+    ss.precision(2);
+    ss << name << " " << datax.at<float>(datax.rows-1) << "; " << datay.at<float>(datay.rows-1);
+
+
+    putText(*frame,ss.str() ,cv::Point(0, 30),cv::FONT_HERSHEY_SIMPLEX,0.5,black);
     cv::line(*frame,cv::Point(0,frame->rows-1),cv::Point(frame->cols,frame->rows-1),black);
 
     double minx,maxx;

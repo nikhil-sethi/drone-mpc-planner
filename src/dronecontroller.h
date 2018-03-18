@@ -105,7 +105,7 @@ public:
     int ledpower = 100; // 666mAh. limited to 150 in arduino
 
     void close (void);
-    bool init(std::ofstream *logger);
+    bool init(std::ofstream *logger,bool fromfile);
     void control(trackData data);
 
     uint16_t mode = 1500; // <min = mode 1, 1500 = mode 2, >max = mode 3
