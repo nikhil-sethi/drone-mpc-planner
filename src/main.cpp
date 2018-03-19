@@ -228,11 +228,13 @@ int init(int argc, char **argv) {
 
     rs2::device selected_device = selection.get_device();
     auto depth_sensor = selected_device.first<rs2::depth_sensor>();
-    if (depth_sensor.supports(RS2_OPTION_GAIN)) {
-        auto range = depth_sensor.get_option_range(RS2_OPTION_GAIN);
-        depth_sensor.set_option(RS2_OPTION_GAIN, (range.max - range.min)/2 + range.min);
-    }
+    
     if (!fromfile) {
+        
+        if (depth_sensor.supports(RS2_OPTION_GAIN)) {
+            auto range = depth_sensor.get_option_range(RS2_OPTION_GAIN);
+            depth_sensor.set_option(RS2_OPTION_GAIN, (range.max - range.min)/2 + range.min);
+        }
 
 
         if (depth_sensor.supports(RS2_OPTION_EMITTER_ENABLED))
