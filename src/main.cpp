@@ -226,29 +226,26 @@ int init(int argc, char **argv) {
     rs2::pipeline_profile selection = cam.start(cfg);
     std::cout << "Started cam\n";
 
-    rs2::device selected_device = selection.get_device();
-    auto depth_sensor = selected_device.first<rs2::depth_sensor>();
-    
     if (!fromfile) {
-        
-        if (depth_sensor.supports(RS2_OPTION_GAIN)) {
-            auto range = depth_sensor.get_option_range(RS2_OPTION_GAIN);
-            depth_sensor.set_option(RS2_OPTION_GAIN, (range.max - range.min)/2 + range.min);
-        }
-
+        rs2::device selected_device = selection.get_device();
+        auto depth_sensor = selected_device.first<rs2::depth_sensor>();
 
         if (depth_sensor.supports(RS2_OPTION_EMITTER_ENABLED))
         {
-            depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 1.f);
+            depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f);
         }
-        if (depth_sensor.supports(RS2_OPTION_LASER_POWER)) {
-            auto range = depth_sensor.get_option_range(RS2_OPTION_LASER_POWER);
-            depth_sensor.set_option(RS2_OPTION_LASER_POWER, (range.max - range.min)/2 + range.min);
-        }
+//        if (depth_sensor.supports(RS2_OPTION_LASER_POWER)) {
+//            auto range = depth_sensor.get_option_range(RS2_OPTION_LASER_POWER);
+//            depth_sensor.set_option(RS2_OPTION_LASER_POWER, (range.max - range.min)/2 + range.min);
+//        }
         if (depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
             depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,1.0);
         }
-
+//weird with D435 this is totally unneccesary...?
+//        if (depth_sensor.supports(RS2_OPTION_GAIN)) {
+//            auto range = depth_sensor.get_option_range(RS2_OPTION_GAIN);
+//            depth_sensor.set_option(RS2_OPTION_GAIN, (range.max - range.min)/2 + range.min);
+//        }
         cam.stop();
         selection = cam.start(cfg);
         std::cout << "Set cam config\n";

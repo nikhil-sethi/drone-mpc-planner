@@ -27,27 +27,18 @@ class DroneTracker {
 private:
     cv::SimpleBlobDetector::Params params;
 
+
     struct patsSettings{
 
         //thresh params
-        int iLowH1r = 0;
-        int iHighH1r = 6;
+        int iLowH1r = 10;
+        int iHighH1r = 255;
         int iLowS1r = 0;
         int iHighS1r = 255;
         int iLowV1r = 188;
         int iHighV1r = 255;
-        int iOpen1r =1;
-        int iClose1r =1;
-
-        //thresh params
-        int iLowH1b = 92;
-        int iHighH1b = 117;
-        int iLowS1b = 0;
-        int iHighS1b = 255;
-        int iLowV1b = 165;
-        int iHighV1b = 255;
-        int iOpen1b =1;
-        int iClose1b =1;
+        int iOpen1r =0;
+        int iClose1r =2;
 
         //blob params
 
@@ -57,8 +48,8 @@ private:
 
         // Filter by Area.
         int filterByArea = 1;
-        int minArea = 2;
-        int maxArea = 21;
+        int minArea = 1;
+        int maxArea = 40;
 
         // Filter by Circularity
         int filterByCircularity = 0;
@@ -75,11 +66,14 @@ private:
         int minInertiaRatio = 1;
         int maxInertiaRatio = 100;
 
+        int min_disparity=5;
+        int max_disparity=30;
+
 
         template <class Archive>
         void serialize( Archive & ar )
         {
-          ar( iLowH1r,iHighH1r,iLowS1r,iHighS1r,iLowV1r,iHighV1r,iOpen1r,iClose1r,iLowH1b,iHighH1b,iLowS1b,iHighS1b,iLowV1b,iHighV1b,iOpen1b,iClose1b,minThreshold,maxThreshold,filterByArea,minArea,maxArea,filterByCircularity,minCircularity,maxCircularity,filterByConvexity,minConvexity,maxConvexity,filterByInertia,minInertiaRatio,maxInertiaRatio );
+          ar( iLowH1r,iHighH1r,iLowS1r,iHighS1r,iLowV1r,iHighV1r,iOpen1r,iClose1r,minThreshold,maxThreshold,filterByArea,minArea,maxArea,filterByCircularity,minCircularity,maxCircularity,filterByConvexity,minConvexity,maxConvexity,filterByInertia,minInertiaRatio,maxInertiaRatio,min_disparity,max_disparity);
         }
 
 
@@ -116,7 +110,8 @@ private:
 
     std::ofstream *_logger;
 
-    cv::Mat prevFrameL,prevFrameR;
+    cv::Mat prevFrameL;
+    cv::Mat prevFrameL_big;
     bool firstFrame;
 
     std::vector<cv::KeyPoint> dronepathL,dronepathR;

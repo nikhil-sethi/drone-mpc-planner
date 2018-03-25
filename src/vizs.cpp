@@ -19,9 +19,9 @@ void Visualizer::addSample(void) {
     //yaw_calculated.push_back((float)dctrl->commandedYaw);
     throttle_calculated.push_back((float)dctrl->autoThrottle);
 
-    posX.push_back(-(float)dtrkr->data.posX);
-    posY.push_back((float)dtrkr->data.posY);
-    posZ.push_back(-(float)dtrkr->data.posZ);
+    posX.push_back(-(float)dtrkr->data.csposX);
+    posY.push_back((float)dtrkr->data.csposY);
+    posZ.push_back(-(float)dtrkr->data.csposZ);
 
 
 }

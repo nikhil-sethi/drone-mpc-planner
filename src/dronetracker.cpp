@@ -43,6 +43,8 @@ bool DroneTracker::init(std::ofstream *logger) {
     createTrackbar("maxArea", "Tuning", &settings.maxArea, 10000);
     createTrackbar("Opening1", "Tuning", &settings.iOpen1r, 30);
     createTrackbar("Closing1", "Tuning", &settings.iClose1r, 30);
+    createTrackbar("Min disparity", "Tuning", &settings.min_disparity, 255);
+    createTrackbar("Max disparity", "Tuning", &settings.max_disparity, 255);
 #endif
 #ifdef POSITIONTRACKBARS
     namedWindow("Setpoint", WINDOW_NORMAL);
@@ -130,8 +132,8 @@ bool DroneTracker::init(std::ofstream *logger) {
 
     stopWatch.Start();
 
-    sposX.init(5);
-    sposY.init(5);
+    sposX.init(3);
+    sposY.init(3);
     sposZ.init(5);
 }
 
@@ -146,54 +148,35 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     int t = stopWatch.Read();
     float dt= (t-t_prev)/1000.0;
 
-    cv::Mat resFrameL,resFrameR;
+    cv::Mat resFrameL;
 #ifdef DRAWVIZSL    
     cv::resize(frameL,resFrameL,cv::Size(frameL.cols,frameL.rows));
-//    equalizeHist( resFrameL, resFrameL);
+    //    equalizeHist( resFrameL, resFrameL);
     cvtColor(resFrameL,resFrameL,CV_GRAY2BGR);
 #endif
-#ifdef DRAWVIZSR
-    cv::resize(frameR,resFrameR,cv::Size(frameR.cols,frameR.rows));
-//    equalizeHist( resFrameR, resFrameR);
-    cvtColor(resFrameR,resFrameR,CV_GRAY2BGR);
-#endif
 
-    cv::Mat tmpfL,tmpfR;
+    cv::Mat tmpfL;
     cv::Size smallsize(frameL.cols/IMSCALEF,frameL.rows/IMSCALEF);
     cv::resize(frameL,tmpfL,smallsize);
-    cv::resize(frameR,tmpfR,smallsize);
 
-    cv::Mat framegrayL,framegrayR;
+    cv::Mat framegrayL;
     framegrayL = tmpfL.clone();
-    framegrayR = tmpfR.clone();
-
     if (!firstFrame) {
         firstFrame = true;
         prevFrameL = framegrayL.clone();
-        prevFrameR = framegrayR.clone();
     }
-
     cv::Mat diffL = framegrayL - prevFrameL;
-    cv::Mat diffR = framegrayR - prevFrameR;
     prevFrameL = framegrayL.clone();
-    prevFrameR = framegrayR.clone();
-    cv::Mat treshfL,treshfR;
 
+    cv::Mat treshfL;
     inRange(diffL, settings.iLowH1r, settings.iHighH1r, treshfL);
     dilate( treshfL, treshfL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iClose1r+1, settings.iClose1r+1)));
     erode(treshfL, treshfL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iOpen1r+1, settings.iOpen1r+1)));
-    inRange(diffR, settings.iLowH1r, settings.iHighH1r, treshfR);
-    dilate( treshfR, treshfR, getStructuringElement(MORPH_ELLIPSE, Size(settings.iClose1r+1, settings.iClose1r+1)));
-    erode(treshfR, treshfR, getStructuringElement(MORPH_ELLIPSE, Size(settings.iOpen1r+1, settings.iOpen1r+1)));
-
 
     static bool foundL = false;
-    static bool foundR = false;
     static int notFoundCountL =0;
-    static int notFoundCountR =0;
 
     cv::Point3f predicted_drone_locationL;
-    cv::Point predicted_drone_locationR;
     if (foundL) {
         kfL.transitionMatrix.at<float>(2) = dt;
         kfL.transitionMatrix.at<float>(9) = dt;
@@ -214,7 +197,7 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         t.pt = beun;
         t.size = 3;
         predicted_dronepathL.push_back(t);
-       // cout << "PredictionL: " << predicted_drone_locationL << std::endl;
+        // cout << "PredictionL: " << predicted_drone_locationL << std::endl;
 #ifdef DRAWVIZSL
         drawKeypoints( framegrayL, predicted_dronepathL, framegrayL, Scalar(0,255,0), DrawMatchesFlags::DEFAULT );
 #endif
@@ -224,42 +207,15 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         cvtColor(framegrayL,framegrayL,CV_GRAY2BGR);
 #endif
     }
-    if (foundR) {
-        kfR.transitionMatrix.at<float>(2) = dt;
-        kfR.transitionMatrix.at<float>(9) = dt;
-        stateR = kfR.predict();
-        //        cv::Rect predRect;
-        //        predRect.width = stateR.at<float>(4);
-        //        predRect.height = stateR.at<float>(5);
-        //        predRect.x = stateR.at<float>(0) - predRect.width / 2;
-        //        predRect.y = stateR.at<float>(1) - predRect.height / 2;
-
-        predicted_drone_locationR.x = stateR.at<float>(0);
-        predicted_drone_locationR.y = stateR.at<float>(1);
-        cv::KeyPoint t;
-        t.pt = predicted_drone_locationR;
-        t.size = 3;
-        predicted_dronepathR.push_back(t);
-        //cout << "PredictionR: " << predicted_drone_locationR << std::endl;
-#ifdef DRAWVIZSR
-        drawKeypoints( framegrayR, predicted_dronepathR, framegrayR, Scalar(0,255,0), DrawMatchesFlags::DEFAULT );
-#endif
-
-    } else {
-#ifdef DRAWVIZSR
-        cvtColor(framegrayR,framegrayR,CV_GRAY2BGR);
-#endif
-    }
-
 
     // Set up detector with params
     SimpleBlobDetector detector(params);
     // Detect blobs.
-    std::vector<KeyPoint> keypointsL,keypointsR;
+    std::vector<KeyPoint> keypointsL;
     detector.detect( treshfL, keypointsL);
-    detector.detect( treshfR, keypointsR);
 
-    cv::KeyPoint closestL,closestR;
+    cv::KeyPoint closestL;
+    int disparity = 0;
     if (keypointsL.size() == 1 && dronepathL.size() == 0) {
         dronepathL.push_back(keypointsL.at(0));
     } else if (keypointsL.size()>0 &&  dronepathL.size() > 0) {
@@ -278,51 +234,96 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
 
         dronepathL.push_back(closestL);
 
-    }
-    if (keypointsR.size() == 1 && dronepathR.size() == 0) {
-        dronepathR.push_back(keypointsR.at(0));
-    } else if (keypointsR.size()>0 &&  dronepathR.size() > 0) {
-        //find closest keypoint to new predicted location
-        int mind = 999999999;
-        for (int i = 0 ; i < keypointsR.size();i++) {
-            cv::KeyPoint k =keypointsR.at(i);
-            int d = (predicted_drone_locationR.x-k.pt.x) * (predicted_drone_locationR.x-k.pt.x) + (predicted_drone_locationR.y-k.pt.y)*(predicted_drone_locationR.y-k.pt.y);
-            if (d < mind ) {
-                mind = d;
-                closestR = keypointsR.at(i);
+
+        //match the thresholdedL pixels in the gray images
+
+
+        //calc retangle around blob / changed pixels
+        float rectsize = closestL.size+1;
+        if (rectsize < 3)
+                rectsize = 3;
+        rectsize = ceil(rectsize);
+        int x1,y1,x2,y2;
+        x1 = (closestL.pt.x-rectsize)*IMSCALEF;
+        x2 = 2*rectsize*IMSCALEF;
+        y1 = (closestL.pt.y-rectsize)*IMSCALEF;
+        y2 = 2*rectsize*IMSCALEF;
+        if (x1 < 0)
+            x1=0;
+        if (y1 < 0)
+            y1=0;
+        if (x1+x2 >= frameL.cols)
+            x2=frameL.cols-x1;
+        if (y1+y2 >= frameL.rows)
+            y2=frameL.rows-y1;
+
+        cv::Rect roi(x1,y1,x2,y2);
+
+        //retrieve changed pixels (through time)
+        cv::Mat a = frameL(roi);
+        cv::Mat b = prevFrameL_big(roi);
+        cv::Mat diffroi = a-b;
+        inRange(diffroi, settings.iLowH1r, settings.iHighH1r, diffroi);
+        dilate( diffroi, diffroi, getStructuringElement(MORPH_ELLIPSE, Size(settings.iClose1r+1, settings.iClose1r+1)));
+
+        cv::Mat fL;
+        frameL(roi).copyTo(fL, diffroi); //mask out the static pixels
+
+        //find the minumum MSE over the disparity range
+        float minmse = std::numeric_limits<float>::max();
+        int tmp_max_disp = settings.max_disparity;
+        if (x1 - tmp_max_disp < 0)
+            tmp_max_disp = x1;
+        for (int i=settings.min_disparity; i<tmp_max_disp;i++) {
+            cv::Rect roiR(x1-i,y1,x2,y2);
+            cv::Mat fR;
+            frameR(roiR).copyTo(fR, diffroi); //mask the static pixels
+            cv::Mat err = cv::abs(fL-fR);
+            float mse = cv::sum(err)[0];
+            if (mse < minmse ) { //update min MSE
+                disparity  = i;
+                minmse = mse;
             }
         }
 
-        //cout << "MeasuredR: " <<  closestR.pt << std::endl;
+//        if (disparity < 5 || disparity > 125) {
 
-        //turbo beuntje
-        closestR.pt.x = closestL.pt.x - (closestL.pt.x - closestR.pt.x);
+//            for (int i=1; i<tmp_max_disp;i++) {
+//                cv::Rect roiR(x1-i,y1,x2,y2);
+//                cv::Mat fR;
+//                frameR(roiR).copyTo(fR, diffroi); //mask the static pixels
+//                cv::Mat err = cv::abs(fL-fR);
+//                float mse = cv::sum(err)[0];
+//                if (mse < minmse ) { //update min MSE
+//                    disparity  = i;
+//                    minmse = mse;
+//                }
+//                std::cout << mse << std::endl;
+//                cv::imshow("Test1", frameR(roiR));
+//                cv::imshow("Test2", frameL(roi));
+//                cv::imshow("Test3", fL);
+//                cv::imshow("Test4", fR);
+//                cv::waitKey();
+//            }
+//            std::cout << "Min MSE: " << minmse << " @ " << disparity << std::endl;
+//            cv::waitKey();
+//        }
 
-
-        dronepathR.push_back(closestR);
     }
 
 
+
     data.valid = false;
-    if (keypointsL.size() == 0 || keypointsR.size() == 0) {
-        if (keypointsL.size() == 0) {
-            notFoundCountL++;
-            //cout << "notFoundCountL:" << notFoundCountL << endl;
-            if( notFoundCountL >= 100 )
-                foundL = false;
-        }
 
-        if (keypointsR.size() == 0) {
-            notFoundCountR++;
-            //cout << "notFoundCountR:" << notFoundCountR << endl;
-            if( notFoundCountR >= 100 )
-                foundR = false;
-        }
-
+    if (keypointsL.size() == 0) {
+        notFoundCountL++;
+        //cout << "notFoundCountL:" << notFoundCountL << endl;
+        if( notFoundCountL >= 100 )
+            foundL = false;
     } else {
 
 
-        float dist = 1.0 / (closestL.pt.x -closestR.pt.x );
+        float dist = 1.0 / disparity;
 
         notFoundCountL = 0;
         cv::Mat measL(measSize, 1, type);
@@ -355,42 +356,11 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
             kfL.correct(measL);
 
 
-        notFoundCountR = 0;
-        cv::Mat measR(measSize, 1, type);
-        measR.at<float>(0) = closestR.pt.x;
-        measR.at<float>(1) = closestR.pt.y;
-        measR.at<float>(2) = 0;
-        measR.at<float>(3) = 0;
-
-        if (!foundR) { // First detection!
-            kfR.errorCovPre.at<float>(0) = 1; // px
-            kfR.errorCovPre.at<float>(7) = 1; // px
-            kfR.errorCovPre.at<float>(14) = 1;
-            kfR.errorCovPre.at<float>(21) = 1;
-            kfR.errorCovPre.at<float>(28) = 1; // px
-            kfR.errorCovPre.at<float>(35) = 1; // px
-
-            stateR.at<float>(0) = measR.at<float>(0);
-            stateR.at<float>(1) = measR.at<float>(1);
-            stateR.at<float>(2) = 0;
-            stateR.at<float>(3) = 0;
-            stateR.at<float>(4) = measR.at<float>(2);
-            stateR.at<float>(5) = measR.at<float>(3);
-
-            kfR.statePost = stateR;
-
-            foundR = true;
-        }
-        else
-            kfR.correct(measR);
-
-        float disparity = ((closestR.pt.x - closestL.pt.x)*IMSCALEF);
-
         //calculate everything for the dronecontroller:
         std::vector<Point3f> camera_coordinates;
         std::vector<Point3f> world_coordinates;
 
-        camera_coordinates.push_back(Point3f(closestL.pt.x*IMSCALEF,closestL.pt.y*IMSCALEF,disparity));
+        camera_coordinates.push_back(Point3f(closestL.pt.x*IMSCALEF,closestL.pt.y*IMSCALEF,-disparity));
         //camera_coordinates.push_back(Point3f(setpoint.x,setpoint.y,setpoint.z));
         cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
 
@@ -417,6 +387,10 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         float csposX = sposX.addSample(data.posX);
         float csposY = sposY.addSample(data.posY);
         float csposZ = sposZ.addSample(data.posZ);
+
+        data.csposX = csposX;
+        data.csposY = csposY;
+        data.csposZ = csposZ;
 
         static float prevX,prevY,prevZ =0;
 
@@ -456,20 +430,9 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     framegrayL.copyTo(resFrameL(cv::Rect(0,0,framegrayL.cols, framegrayL.rows)));
 #endif
 #ifdef DRAWVIZSR
-    cv::Size vizsizeR(resFrameR.cols/4,resFrameR.rows/4);
-    cv::resize(treshfR,treshfR,vizsizeR);
-    cvtColor(treshfR,treshfR,CV_GRAY2BGR);
-
-    treshfR.copyTo(resFrameR(cv::Rect(resFrameR.cols - treshfR.cols,0,treshfR.cols, treshfR.rows)));
-    if (dronepathR.size() > 0) {
-        drawKeypoints( framegrayR, dronepathR, framegrayR, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
-    }
-    cv::resize(framegrayR,framegrayR,vizsizeR);
-    framegrayR.copyTo(resFrameR(cv::Rect(0,0,framegrayR.cols, framegrayR.rows)));
-
-    resFrame = cv::Mat(resFrameL.rows,resFrameL.cols +resFrameR.cols ,CV_8UC3);
+    resFrame = cv::Mat(resFrameL.rows,resFrameL.cols ,CV_8UC3);
     resFrameL.copyTo(resFrame(cv::Rect(0,0,resFrameL.cols, resFrameL.rows)));
-    resFrameR.copyTo(resFrame(cv::Rect(resFrameR.cols,0,resFrameR.cols, resFrameR.rows)));
+//    resFrameR.copyTo(resFrame(cv::Rect(resFrameR.cols,0,resFrameR.cols, resFrameR.rows)));
 #endif
 
     if (dronepathL.size() > 30)
@@ -477,12 +440,10 @@ void DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     if (predicted_dronepathL.size() > 30)
         predicted_dronepathL.erase(predicted_dronepathL.begin());
 
-    if (dronepathR.size() > 30)
-        dronepathR.erase(dronepathR.begin());
-    if (predicted_dronepathR.size() > 30)
-        predicted_dronepathR.erase(predicted_dronepathR.begin());
+    (*_logger) << closestL.pt.x  << "; " << closestL.pt.y << "; " << disparity << "; ";
+    std::cout << closestL.pt.x  << "; " << closestL.pt.y << "; " << disparity << "; " << std::endl;
 
-    (*_logger) << closestL.pt.x  << "; " << closestL.pt.y  << "; " << closestR.pt.x  << "; " << closestR.pt.y  << "; ";
+    prevFrameL_big = frameL.clone();
 
 }
 
