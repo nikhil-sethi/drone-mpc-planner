@@ -9,8 +9,7 @@ using namespace cv;
 using namespace std;
 
 #if 1
-#define DRAWVIZSL
-#define DRAWVIZSR
+//#define DRAWVIZS
 //#define TUNING
 #endif
 
@@ -32,7 +31,6 @@ bool DroneTracker::init(std::ofstream *logger) {
     setpoints.push_back(cv::Point3i(0,0,1200));
     setpoints.push_back(cv::Point3i(0,0,1200));
     setpoints.push_back(cv::Point3i(0,0,1200));
-
 
 #ifdef TUNING
     namedWindow("Tuning", WINDOW_NORMAL);
@@ -56,7 +54,6 @@ bool DroneTracker::init(std::ofstream *logger) {
 #endif
 
     kfL = cv::KalmanFilter(stateSize, measSize, contrSize, type);
-
     stateL =cv::Mat(stateSize, 1, type);  // [x,y,v_x,v_y,w,h]
     measL = cv::Mat (measSize, 1, type);    // [z_x,z_y,z_w,z_h]
 
@@ -79,7 +76,6 @@ bool DroneTracker::init(std::ofstream *logger) {
 
 
     kfR = cv::KalmanFilter(stateSize, measSize, contrSize, type);
-
     stateR =cv::Mat(stateSize, 1, type);  // [x,y,v_x,v_y,w,h]
     measR = cv::Mat (measSize, 1, type);    // [z_x,z_y,z_w,z_h]
 
@@ -163,6 +159,9 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         frameL_big_prev_OK = frameL.clone();
         frameR_big_prev_OK = frameR.clone();
     }
+
+    resFrame = frameL;
+
     //attempt to detect changed blobs
     cv::Mat treshfL = segment_drone(frameL_small,frameL_prev);
     SimpleBlobDetector detector(params);
@@ -183,7 +182,6 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     cv::Point3f predicted_drone_locationL = predict_drone(dt);
 
     bool bam = false;
-    std::stringstream ss1,ss2,ss3;
     static int notFoundCountL =0;
     if (keypointsL.size() == 0) {
         notFoundCountL++;
@@ -193,7 +191,6 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     } else {
         notFoundCountL = 0;
 
-        //static cv::KeyPoint closestL_prev;
         cv::KeyPoint closestL = match_closest_to_prediciton(predicted_drone_locationL,keypointsL);
 
         static float disparity_prev =0;
@@ -208,7 +205,6 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
             bam = true;
         }
 
-
         update_prediction_state(cv::Point3f(closestL.pt.x,closestL.pt.y,disparity));
 
         //calculate everything for the dronecontroller:
@@ -219,7 +215,6 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         Point3f output = world_coordinates[0];
         Point3f predicted_output = world_coordinates[1];
         static Point3f output_prev;
-        outlier_filter(output,output_prev,&ss1,&ss2,&ss3);
         update_tracker_ouput(output,dt);
 
         output_prev = output;
@@ -227,14 +222,12 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         t_prev = t; // update dt only if data valid
 
         (*_logger) << closestL.pt.x  << "; " << closestL.pt.y << "; " << disparity << "; ";
-        ss3 << " " << disparity;
+
+#ifdef DRAWVIZS
+        drawviz(frameL,treshfL,frameL_small,output,predicted_output);
+#endif
     }
 
-    if (bam) {
-        ss3 << " BAM!";
-    }
-
-    drawviz(frameL,treshfL,frameL_small, &ss1,&ss2,&ss3);
     if (!bam && !breakpause) { //TMP
         if (update_prev) {
             frameL_big_prev_OK = frameL_big_prev.clone();
@@ -245,7 +238,7 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         frameL_big_prev = frameL.clone();
         frameR_big_prev = frameR.clone();
     }
-    return bam;
+    return false;
 }
 
 void DroneTracker::updateParams(){
@@ -349,16 +342,11 @@ cv::KeyPoint DroneTracker::match_closest_to_prediciton(cv::Point3f predicted_dro
 }
 
 int DroneTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::Mat prevFrameR_big, cv::Mat frameL,cv::Mat frameR,int prevDisparity){
-    int disparity_cor = 0;
-    int disparity_err = 0;
 
-    /****match the thresholdedL pixels in the gray images***/
-
-    //calc retangle around blob / changed pixels
+    //get retangle around blob / changed pixels
     float rectsize = closestL.size+1;
     if (rectsize < 3)
         rectsize = 3;
-//    rectsize = ceil(rectsize);
     float rectsizeX = ceil(rectsize*2.0f);
     float rectsizeY = ceil(rectsize*1.4f);
 
@@ -376,22 +364,21 @@ int DroneTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::
     if (y1+y2 >= frameL.rows)
         y2=frameL.rows-y1;
 
-    cv::Rect roi(x1,y1,x2,y2);
+    cv::Rect roiL(x1,y1,x2,y2);
 
-    //retrieve changed pixels (through time)
-    cv::Mat a = frameL(roi);
-    cv::Mat b = prevFrameL_big(roi);
-    cv::Mat diffroi = a-b;
-    inRange(diffroi, settings.iLowH1r, settings.iHighH1r, diffroi);
-    dilate( diffroi, diffroi, getStructuringElement(MORPH_ELLIPSE, Size(settings.iClose1r+10, settings.iClose1r+3)));
+    //retrieve changed pixels (through time) for left camera
+    cv::Mat aL = frameL(roiL);
+    cv::Mat bL = prevFrameL_big(roiL);
+    cv::Mat diff_L_roi = aL-bL;
+    cv::Mat diff_L_roi_16;
+    diff_L_roi.convertTo(diff_L_roi_16, CV_16UC1);
 
-    cv::Mat fL,fL_16;
-    frameL(roi).copyTo(fL, diffroi); //mask out the static pixels
-    fL.convertTo(fL_16, CV_16UC1);
+#ifdef DRAWVIZS
+    cv::Mat aR_viz,bR_viz,diff_R_roi_viz;
+#endif
 
-    cv::Mat fR = fL; // init it to something random
-
-    //find the minumum MSE over the disparity range
+    //shift over the image to find the best match, shift = disparity
+    int disparity_cor = 0,disparity_err = 0;
     float maxcor = std::numeric_limits<float>::min();
     float minerr = std::numeric_limits<float>::max();
     int tmp_max_disp = settings.max_disparity;
@@ -399,51 +386,62 @@ int DroneTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::
         tmp_max_disp = x1;
     for (int i=settings.min_disparity; i<tmp_max_disp;i++) {
         cv::Rect roiR(x1-i,y1,x2,y2);
-        cv::Mat fR_tmp;
-        frameR(roiR).copyTo(fR_tmp, diffroi); //mask the static pixels
 
-        cv::Mat fR_tmp_16;
-        fR_tmp.convertTo(fR_tmp_16, CV_16UC1);
-        cv::Mat corV_16 = fL_16.mul(fR_tmp_16);
-        cv::Mat errV = abs(fL - fR_tmp);
+        cv::Mat aR = frameR(roiR);
+        cv::Mat bR = prevFrameR_big(roiR);
+        cv::Mat diff_R_roi = aR-bR;
+        cv::Mat diff_R_roi_16;
+        diff_R_roi.convertTo(diff_R_roi_16, CV_16UC1);
+
+        cv::Mat corV_16 = diff_L_roi_16.mul(diff_R_roi_16);
+        cv::Mat errV = abs(diff_L_roi - diff_R_roi);
 
         int cor_16 = cv::sum(corV_16 )[0]/256;
         int err = cv::sum(errV)[0];
 
          if (cor_16 > maxcor ) {
-            fR = fR_tmp.clone();
             disparity_cor  = i;
             maxcor = cor_16;
         }
-         if (err < minerr ) { //update min MSE
-            //fR = fR_tmp.clone();
+         if (err < minerr ) { //update min MSE       
             disparity_err  = i;
             minerr = err;
-        }
-        if (breakpause) {
-            cv::resize(fR_tmp,fR_tmp,cv::Size(fR_tmp.cols*4, fR_tmp.rows*4));
-            std::stringstream ss;
-            ss << i << "; " << cor_16 << " " << err;
-            putText(fR_tmp,ss.str() ,cv::Point(0,12),cv::FONT_HERSHEY_SIMPLEX,0.5,255);
+#ifdef DRAWVIZS
+            diff_R_roi_viz = diff_R_roi.clone();
+            aR_viz = aR;
+            bR_viz = bR;
+#endif
+        } // for shift
 
-            imshow("shift",fR_tmp);
+#ifdef DRAWVIZS
+        if (breakpause) {
+            cv::Mat aL_shift,bL_shift,diff_L_roi_shift,aR_shift,bR_shift,diff_R_roi_shift;
+            cv::resize(aL,aL_shift,cv::Size(aL.cols*4, aL.rows*4));
+            cv::resize(bL,bL_shift,cv::Size(aL.cols*4, aL.rows*4));
+            cv::resize(diff_L_roi,diff_L_roi_shift,cv::Size(aL.cols*4, aL.rows*4));
+            cv::resize(aR,aR_shift,cv::Size(aL.cols*4, aL.rows*4));
+            cv::resize(bR,bR_shift,cv::Size(aL.cols*4, aL.rows*4));
+            cv::resize(diff_R_roi,diff_R_roi_shift,cv::Size(aL.cols*4, aL.rows*4));
+            std::stringstream ss;
+            ss << i << "; cor: " << cor_16 << " err: " << err;
+            putText(aL_shift,ss.str() ,cv::Point(0,12),cv::FONT_HERSHEY_SIMPLEX,0.5,255);
+
+            std::vector<cv::Mat> ims;
+            ims.push_back(aL_shift);
+            ims.push_back(bL_shift);
+            ims.push_back(diff_L_roi_shift);
+            ims.push_back(aR_shift);
+            ims.push_back(bR_shift);
+            ims.push_back(diff_R_roi_shift);
+            showColumnImage(ims, "shift");
 
             unsigned char key = cv::waitKey(0);
             if (key == 'c')
                 breakpause = false;
 
         }
+#endif
 
-    }
-
-    if (tmp_max_disp > settings.min_disparity) {
-        std::vector<cv::Mat> ims;
-        ims.push_back(a);
-        ims.push_back(b);
-        ims.push_back(diffroi);
-        ims.push_back(fL);
-        ims.push_back(fR);
-        showColumnImage(ims);
     }
     int disparity;
     if (disparity_cor != disparity_err) {
@@ -454,47 +452,26 @@ int DroneTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::
     } else
         disparity = disparity_cor;
 
+#ifdef DRAWVIZS
+    if (tmp_max_disp > settings.min_disparity) {
+        std::vector<cv::Mat> ims;
+        ims.push_back(aL);
+        ims.push_back(bL);
+        ims.push_back(diff_L_roi);
+        ims.push_back(aR_viz);
+        ims.push_back(bR_viz);
+        ims.push_back(diff_R_roi_viz);
+        showColumnImage(ims, "col");
+    }
+#endif
+
     return disparity;
 }
 
-int trackingOK = 0;
-#define OUTLIER_DISTANCE 5.0f
-#define TRACKINGOK_THRESHOLD 3
-bool DroneTracker::outlier_filter(Point3f measured_world_coordinates, Point3f predicted_world_coordinates, stringstream *ss1,stringstream *ss2,stringstream *ss3) {
-    Point3f err;
-    err.x = measured_world_coordinates.x-predicted_world_coordinates.x;
-    err.y = measured_world_coordinates.y-predicted_world_coordinates.y;
-    err.z = measured_world_coordinates.z-predicted_world_coordinates.z;
-    float dist = sqrt(err.x*err.x + err.y*err.y + err.z*err.z);
-
-    (*ss1).precision(2);
-    (*ss2).precision(2);
-    (*ss3).precision(2);
-
-    (*ss1) << "[" << measured_world_coordinates.x << ", " << measured_world_coordinates.y << ", " << measured_world_coordinates.z << "] " ;
-    (*ss2) << "[" << predicted_world_coordinates.x << ", " << predicted_world_coordinates.y << ", " << predicted_world_coordinates.z << "] " ;
-
-    (*ss3) << dist << ":  ";
-    if (dist > OUTLIER_DISTANCE) {
-        trackingOK =0;
-        (*ss3) << "TRACKING LOST";
-    } else {
-        (*ss3) << "TRACKING ...";
-        trackingOK++;
-    }
-
-    if (trackingOK > TRACKINGOK_THRESHOLD) {
-        (*ss3) << "OK";
-        return true;
-    } else {
-        return false;
-    }
-}
-
-void DroneTracker::drawviz(cv::Mat frameL,cv::Mat treshfL,cv::Mat framegrayL, stringstream *ss1,stringstream *ss2,stringstream *ss3) {
-
+void DroneTracker::drawviz(cv::Mat frameL,cv::Mat treshfL,cv::Mat framegrayL,Point3f measured_world_coordinates, Point3f predicted_world_coordinates) {
+#ifdef DRAWVIZS
     cv::Mat resFrameL;
-#ifdef DRAWVIZSL
+
     cv::resize(frameL,resFrameL,cv::Size(frameL.cols,frameL.rows));
     //    equalizeHist( resFrameL, resFrameL);
     cvtColor(resFrameL,resFrameL,CV_GRAY2BGR);
@@ -519,14 +496,20 @@ void DroneTracker::drawviz(cv::Mat frameL,cv::Mat treshfL,cv::Mat framegrayL, st
     cv::circle(framegrayL,cv::Point(setpoint.x,setpoint.y),2,cv::Scalar(150,255,200));
     cv::resize(framegrayL,framegrayL,vizsizeL);
     framegrayL.copyTo(resFrameL(cv::Rect(0,0,framegrayL.cols, framegrayL.rows)));
-#endif
-#ifdef DRAWVIZSR
-    putText(resFrameL,(*ss1).str() ,cv::Point(220,20),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-    putText(resFrameL,(*ss2).str() ,cv::Point(220,40),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-    putText(resFrameL,(*ss3).str() ,cv::Point(220,60),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-    resFrame = cv::Mat(resFrameL.rows,resFrameL.cols ,CV_8UC3);
-    resFrameL.copyTo(resFrame(cv::Rect(0,0,resFrameL.cols, resFrameL.rows)));
-    //    resFrameR.copyTo(resFrame(cv::Rect(resFrameR.cols,0,resFrameR.cols, resFrameR.rows)));
+
+    std::stringstream ss1,ss2,ss3;
+    ss1.precision(2);
+    ss2.precision(2);
+    ss3.precision(2);
+
+    ss1 << "[" << data.posX << ", " << data.posY << ", " << data.posZ << "] " ;
+    ss2 << "[" << data.posErrX << ", " << data.posErrY << ", " << data.posErrZ << "] " ;
+    ss3 << "Delta: " << sqrtf(data.posErrX*data.posErrX+data.posErrY*data.posErrY+data.posErrZ*data.posErrZ);
+
+    putText(resFrameL,ss1.str() ,cv::Point(220,20),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrameL,ss2.str() ,cv::Point(220,40),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrameL,ss3.str() ,cv::Point(220,60),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    resFrame = resFrameL;
 #endif
 }
 
@@ -560,7 +543,7 @@ void DroneTracker::update_prediction_state(cv::Point3f p) {
         kfL.correct(measL);
 }
 
-void DroneTracker::update_tracker_ouput(Point3f output,float dt) {
+void DroneTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt) {
     cv::Point3i tmps;
     if (wpid > 0)
         tmps = setpoints[wpid];
@@ -574,9 +557,9 @@ void DroneTracker::update_tracker_ouput(Point3f output,float dt) {
     setpointw.y = (tmps.y - SETPOINTYMAX/2) / 1000.0f;
     setpointw.z = -(tmps.z) / 1000.0f;
 
-    data.posX = output.x;
-    data.posY = output.y;
-    data.posZ = output.z;
+    data.posX = measured_world_coordinates.x;
+    data.posY = measured_world_coordinates.y;
+    data.posZ = measured_world_coordinates.z;
 
     float csposX = sposX.addSample(data.posX);
     float csposY = sposY.addSample(data.posY);

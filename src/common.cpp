@@ -108,8 +108,8 @@ void combineGrayImage(cv::Mat iml,cv::Mat imr,cv::Mat *res) {
     imr.copyTo(roir);
 }
 
-/* combines a bunch of images into one column, and shows it */
-void showColumnImage(std::vector<cv::Mat> ims) {
+
+void createColumnImage(std::vector<cv::Mat> ims, cv::Mat * res) {
     //find max width and total height:
     int width =-1;
     int height = 0;
@@ -120,19 +120,24 @@ void showColumnImage(std::vector<cv::Mat> ims) {
         height+=ims.at(i).rows;
     }
 
-    cv::Mat res(height,width,CV_8UC1);
+    *res = cv::Mat(height,width,CV_8UC1);
 
     cv::Point p1(0, 0);
 
     for (int i = 0; i < ims.size();i++) {
         cv::Point p2(ims.at(0).cols, p1.y+ims.at(0).rows);
-        cv::Mat roi = cv::Mat(res, cv::Rect(p1, p2));
+        cv::Mat roi = cv::Mat(*res, cv::Rect(p1, p2));
         ims.at(i).copyTo(roi);
         p1.y+=ims.at(i).rows;
     }
+}
 
-    cv::resize(res,res,cv::Size(width*4,height*4));
+/* combines a bunch of images into one column, and shows it */
+void showColumnImage(std::vector<cv::Mat> ims, std::string window_name) {
 
-    cv::imshow("col", res);
+    cv::Mat res;
+    createColumnImage(ims,&res);
+    //cv::resize(res,res,cv::Size(width*4,height*4));
+    cv::imshow(window_name, res);
 
 }

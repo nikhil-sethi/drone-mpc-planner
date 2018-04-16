@@ -17,7 +17,8 @@ cv::Mat getStabilizedCrop(float phi, float theta, cv::Mat frameL, int sdx, int s
 bool checkFileExist (const std::string& name);
 void combineImage(cv::Mat iml, cv::Mat imr, cv::Mat *res);
 void combineGrayImage(cv::Mat iml,cv::Mat imr,cv::Mat *res);
-void showColumnImage(std::vector<cv::Mat> ims);
+void createColumnImage(std::vector<cv::Mat> ims, cv::Mat * res);
+void showColumnImage(std::vector<cv::Mat> ims, std::string window_name);
 
 const float FOV = 180.0f ;
 const float FOV_size = 1280.0;

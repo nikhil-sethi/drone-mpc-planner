@@ -87,10 +87,9 @@ private:
     cv::Point3f predict_drone(float dt);
     cv::KeyPoint match_closest_to_prediciton(cv::Point3f predicted_drone_locationL, std::vector<cv::KeyPoint> keypointsL);
     int stereo_match(cv::KeyPoint closestL, cv::Mat frameL_big_prev, cv::Mat prevFrameR_big, cv::Mat frameL, cv::Mat frameR, int prevDisparity);
-    bool outlier_filter(cv::Point3f measured_world_coordinates,cv::Point3f predicted_world_coordinates,std::stringstream * ss1,std::stringstream *ss2,std::stringstream *ss3);
     void update_prediction_state(cv::Point3f p);
-    void update_tracker_ouput(cv::Point3f output, float dt);
-    void drawviz(cv::Mat frameL, cv::Mat treshfL, cv::Mat framegrayL, std::stringstream *ss1, std::stringstream *ss2, std::stringstream *ss3 );
+    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt);
+    void drawviz(cv::Mat frameL, cv::Mat treshfL, cv::Mat framegrayL, cv::Point3f measured_world_coordinates, cv::Point3f predicted_world_coordinates);
 
     // Kalman Filter
     int stateSize = 6;
