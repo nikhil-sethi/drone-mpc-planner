@@ -39,15 +39,20 @@ using namespace std;
 unsigned char key = 0;
 int imgcount,detectcount; // to measure fps
 cv::Mat resFrame;
-GStream outputVideoResults,outputVideoRawLR;
+GStream outputVideoColor,outputVideoRawLR;
 cv::VideoWriter outputVideoDisp;
 stopwatch_c stopWatch;
 std::string file;
 std::string data_output_dir;
 std::string calib_folder;
 
+int breakpause =-1;
+
+
 // Declare RealSense pipeline, encapsulating the actual device and sensors
 rs2::pipeline cam;
+rs2::device pd;
+
 Size imgsize(IMG_W, IMG_H);
 cv::Mat Qf;
 #define IR_ID_LEFT 1 //as seen from the camera itself
@@ -58,6 +63,7 @@ DroneTracker dtrkr;
 DroneController dctrl;
 Insect insect;
 Visualizer visualizer;
+
 
 //tmp for capturing moth data
 #define FRAME_BUF_SIZE 20
@@ -74,10 +80,10 @@ void handleKey();
 
 /************ code ***********/
 void process_video() {
-//    auto start = std::chrono::system_clock::now();
-//    std::time_t time = std::chrono::system_clock::to_time_t(start);
-//    std::cout << "Starting at " << std::ctime(&time) << std::endl; // something weird is going on with this line, it seems to crash the debugger if it is in another function...?
-//    std::cout << "Running..." << std::endl;
+    //    auto start = std::chrono::system_clock::now();
+    //    std::time_t time = std::chrono::system_clock::to_time_t(start);
+    //    std::cout << "Starting at " << std::ctime(&time) << std::endl; // something weird is going on with this line, it seems to crash the debugger if it is in another function...?
+    //    std::cout << "Running..." << std::endl;
     stopWatch.Start();
 
     cv::Mat image,frameR,frameL ;
@@ -85,22 +91,38 @@ void process_video() {
     while (key != 27) // ESC
     {
 
-        rs2::frameset frame = cam.wait_for_frames();
-        image = Mat(imgsize, CV_8UC1, (void*)frame.get_data(), Mat::AUTO_STEP);
-        frameL = Mat(imgsize, CV_8UC1, (void*)frame.get_infrared_frame(IR_ID_LEFT).get_data(), Mat::AUTO_STEP);
-        frameR = Mat(imgsize, CV_8UC1, (void*)frame.get_infrared_frame(IR_ID_RIGHT).get_data(), Mat::AUTO_STEP);
+        static int breakpause_prev =-1;
+        if (breakpause == 0 && breakpause_prev!=0) {
+            ((rs2::playback)pd).pause();
+            dtrkr.breakpause = true;
+        } else if (breakpause != 0 && breakpause_prev==0) {
+            ((rs2::playback)pd).resume();
+            dtrkr.breakpause = false;
+        }
+        breakpause_prev = breakpause;
 
+        if (breakpause != 0) {
+            rs2::frameset frame = cam.wait_for_frames();
+            //image = Mat(imgsize, CV_8UC1, (void*)frame.get_data(), Mat::AUTO_STEP);
+            frameL = Mat(imgsize, CV_8UC1, (void*)frame.get_infrared_frame(IR_ID_LEFT).get_data(), Mat::AUTO_STEP).clone();
+            frameR = Mat(imgsize, CV_8UC1, (void*)frame.get_infrared_frame(IR_ID_RIGHT).get_data(), Mat::AUTO_STEP).clone();
+            if (breakpause > 0)
+                breakpause--;
+        }
 
         logger << imgcount << ";";
 
-        dtrkr.track(frameL,frameR, Qf);
+        if (dtrkr.track(frameL,frameR, Qf)) {
+                breakpause = 0;
+    }
         dctrl.control(dtrkr.data);
         //insect.track(frameL,frameR, Qf);
 
         //putText(cam.frameR,std::to_string(imgcount),cv::Point(100,100),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(125,125,255));
 
 #ifdef HASSCREEN
-                visualizer.plot();
+        visualizer.plot();
+
         //        resFrame = cam.get_disp_frame();
         //        cv::resize(resFrame,resFrame,cv::Size(480,480));
         //        cv::applyColorMap(resFrame, resFrame, cv::COLORMAP_JET);
@@ -139,7 +161,7 @@ void process_video() {
                 outputVideoDisp.write(cam.get_disp_frame());
 #endif
 #if VIDEORESULTS
-                outputVideoResults.write(resFrame);
+                outputVideoColor.write(resFrame);
 #endif
             }
         }
@@ -159,14 +181,14 @@ void process_video() {
 
 void handleKey() {
 
-//#ifdef HASSCREEN
+    //#ifdef HASSCREEN
     key = cv::waitKey(1);
     key = key & 0xff;
     if (key == 27) {  //esc
-//        cam.stopcam();
+        //        cam.stopcam();
         return; // don't clear key, just exit
     }
-//#endif
+    //#endif
 
     switch(key) {
     case 114: // [r]: reset stopwatch
@@ -174,8 +196,17 @@ void handleKey() {
         detectcount=0;
         stopWatch.Restart();
         break;
-    case ' ':
-//        pausecam=!pausecam;
+    case ' ': // [r]: reset stopwatch
+        //dtrkr.breakpause = true;
+        if (breakpause >-1) {
+            breakpause =-1;
+        } else {
+            breakpause = 0;
+        }
+        break;
+    case 'n': // next frame
+        //dtrkr.breakpause = true;
+        breakpause = 1;
         break;
 
     } // end switch key
@@ -195,7 +226,7 @@ int init(int argc, char **argv) {
 
     bool fromfile = false;
     if (argc ==2 ) {
-       fromfile = true;
+        fromfile = true;
     }
     data_output_dir = "./";
 
@@ -218,36 +249,47 @@ int init(int argc, char **argv) {
 
     if (argc ==2 ) {
         cfg.enable_device_from_file(argv[1]);
-
+        fromfile = true;
+    } else {
+       // cfg.enable_record_to_file("test");
     }
-
-    //cfg.enable_record_to_file("test");
 
     rs2::pipeline_profile selection = cam.start(cfg);
     std::cout << "Started cam\n";
 
-    if (!fromfile) {
+    if (fromfile ) {
+        pd = selection.get_device();
+        ((rs2::playback)pd).set_real_time(0);
+    } else {
         rs2::device selected_device = selection.get_device();
         auto depth_sensor = selected_device.first<rs2::depth_sensor>();
+
 
         if (depth_sensor.supports(RS2_OPTION_EMITTER_ENABLED))
         {
             depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f);
         }
-//        if (depth_sensor.supports(RS2_OPTION_LASER_POWER)) {
-//            auto range = depth_sensor.get_option_range(RS2_OPTION_LASER_POWER);
-//            depth_sensor.set_option(RS2_OPTION_LASER_POWER, (range.max - range.min)/2 + range.min);
-//        }
+        //        if (depth_sensor.supports(RS2_OPTION_LASER_POWER)) {
+        //            auto range = depth_sensor.get_option_range(RS2_OPTION_LASER_POWER);
+        //            depth_sensor.set_option(RS2_OPTION_LASER_POWER, (range.max - range.min)/2 + range.min);
+        //        }
         if (depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
-            depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,1.0);
+            depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,0.0);
         }
-//weird with D435 this is totally unneccesary...?
-//        if (depth_sensor.supports(RS2_OPTION_GAIN)) {
-//            auto range = depth_sensor.get_option_range(RS2_OPTION_GAIN);
-//            depth_sensor.set_option(RS2_OPTION_GAIN, (range.max - range.min)/2 + range.min);
-//        }
+
+        if (depth_sensor.supports(RS2_OPTION_EXPOSURE)) {
+            auto range = depth_sensor.get_option_range(RS2_OPTION_EXPOSURE);
+            depth_sensor.set_option(RS2_OPTION_EXPOSURE, 24000); //TODO: automate this setting.
+        }
+        //weird with D435 this is totally unneccesary...? probably ROI related
+        if (depth_sensor.supports(RS2_OPTION_GAIN)) {
+            auto range = depth_sensor.get_option_range(RS2_OPTION_GAIN);
+            //depth_sensor.set_option(RS2_OPTION_GAIN, (range.max - range.min)/2 + range.min);
+            depth_sensor.set_option(RS2_OPTION_GAIN, range.min); // increasing this causes noise
+        }
         cam.stop();
         selection = cam.start(cfg);
+
         std::cout << "Set cam config\n";
     }
 
@@ -278,7 +320,7 @@ int init(int argc, char **argv) {
 
     /*****init the video writer*****/
 #if VIDEORESULTS
-    if (outputVideoResults.init(argc,argv,VIDEORESULTS, data_output_dir + "videoResult.avi",IMG_W*2,IMG_H,VIDEOFPS,"192.168.1.10",5004,true)) {return 1;}
+    if (outputVideoColor.init(argc,argv,VIDEORESULTS, data_output_dir + "videoResult.avi",IMG_W,IMG_H,VIDEOFPS,"192.168.1.10",5004,true)) {return 1;}
 #endif
 #if VIDEORAWLR
     if (outputVideoRawLR.init(argc,argv,VIDEORAWLR,data_output_dir + "videoRawLR.avi",IMG_W*2,IMG_H,VIDEOFPS, "127.0.0.1",5000,false)) {return 1;}
@@ -323,12 +365,12 @@ void close() {
     std::cout <<"Closing"<< std::endl;
     /*****Close everything down*****/
     dtrkr.close();
-//    cam.close();
+    //    cam.close();
     dctrl.close();
     insect.close();
 
 #if VIDEORESULTS   
-    outputVideoResults.close(); 
+    outputVideoColor.close();
 #endif
 #if VIDEORAWLR
     outputVideoRawLR.close();

@@ -14,7 +14,7 @@ class Visualizer{
 private:
     void plot(cv::Mat data1,cv::Mat data2, std::string name);
     void plot(cv::Mat data1,cv::Mat data2, cv::Mat *frame, std::string name);
-    void plotxy(cv::Mat datax, cv::Mat datay, cv::Mat *frame, Point setpoint, std::string name);
+    void plotxy(cv::Mat datax, cv::Mat datay, cv::Mat *frame, Point setpoint, std::string name, Point minaxis, Point maxaxis);
     void addSample(void);
     DroneController *dctrl;
     DroneTracker *dtrkr;

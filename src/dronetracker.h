@@ -73,7 +73,7 @@ private:
         template <class Archive>
         void serialize( Archive & ar )
         {
-          ar( iLowH1r,iHighH1r,iLowS1r,iHighS1r,iLowV1r,iHighV1r,iOpen1r,iClose1r,minThreshold,maxThreshold,filterByArea,minArea,maxArea,filterByCircularity,minCircularity,maxCircularity,filterByConvexity,minConvexity,maxConvexity,filterByInertia,minInertiaRatio,maxInertiaRatio,min_disparity,max_disparity);
+            ar( iLowH1r,iHighH1r,iLowS1r,iHighS1r,iLowV1r,iHighV1r,iOpen1r,iClose1r,minThreshold,maxThreshold,filterByArea,minArea,maxArea,filterByCircularity,minCircularity,maxCircularity,filterByConvexity,minConvexity,maxConvexity,filterByInertia,minInertiaRatio,maxInertiaRatio,min_disparity,max_disparity);
         }
 
 
@@ -83,8 +83,14 @@ private:
     stopwatch_c stopWatch;
 
     void updateParams();
-
-
+    cv::Mat segment_drone(cv::Mat frame,cv::Mat frame_prev);
+    cv::Point3f predict_drone(float dt);
+    cv::KeyPoint match_closest_to_prediciton(cv::Point3f predicted_drone_locationL, std::vector<cv::KeyPoint> keypointsL);
+    int stereo_match(cv::KeyPoint closestL, cv::Mat frameL_big_prev, cv::Mat prevFrameR_big, cv::Mat frameL, cv::Mat frameR, int prevDisparity);
+    bool outlier_filter(cv::Point3f measured_world_coordinates,cv::Point3f predicted_world_coordinates,std::stringstream * ss1,std::stringstream *ss2,std::stringstream *ss3);
+    void update_prediction_state(cv::Point3f p);
+    void update_tracker_ouput(cv::Point3f output, float dt);
+    void drawviz(cv::Mat frameL, cv::Mat treshfL, cv::Mat framegrayL, std::stringstream *ss1, std::stringstream *ss2, std::stringstream *ss3 );
 
     // Kalman Filter
     int stateSize = 6;
@@ -103,30 +109,37 @@ private:
 
     int setpointX = SETPOINTXMAX / 2;
     int setpointY = SETPOINTYMAX / 2;
-    int setpointZ = 1000;
+    int setpointZ = 2300;
     int wpid = 0;
 
     std::vector<cv::Point3i> setpoints;
 
     std::ofstream *_logger;
 
-    cv::Mat prevFrameL;
-    cv::Mat prevFrameL_big;
     bool firstFrame;
+    cv::Mat frameL_prev;
+    cv::Mat frameL_prev_OK;
+
+    cv::Mat frameL_big_prev;
+    cv::Mat frameL_big_prev_OK;
+    cv::Mat frameR_big_prev;
+    cv::Mat frameR_big_prev_OK;
+
+
 
     std::vector<cv::KeyPoint> dronepathL,dronepathR;
     std::vector<cv::KeyPoint> predicted_dronepathL,predicted_dronepathR;
 
 public:       
 
-     cv::Point3d setpoint;
-     cv::Point3f setpointw;
+    cv::Point3d setpoint;
+    cv::Point3f setpointw;
 
     cv::Mat resFrame;
 
     void close (void);
     bool init(std::ofstream *logger);
-    void track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf);
+    bool track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf);
 
 
     trackData data;
@@ -134,6 +147,10 @@ public:
     Smoother sposY;
     Smoother sposZ;
 
+    Smoother disp_smoothed;
+
+
+    bool breakpause;
 };
 
 

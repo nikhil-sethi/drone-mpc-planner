@@ -45,13 +45,23 @@ void Visualizer::plot(void) {
 
 
     //plot(roll_joystick,roll_calculated, &frameRoll,"Roll");
-    cv::Point sp1(dtrkr->setpointw.x,dtrkr->setpointw.z);
-    plotxy(posX,posZ, &framePosXZ,sp1,"PosXZ");
+    cv::Point sp1(dtrkr->setpointw.x,-dtrkr->setpointw.z);
+    cv::Point min_xz_range,max_xz_range;
+    min_xz_range.x =-3000;
+    max_xz_range.x = 3000;
+    min_xz_range.y = 0; // z
+    max_xz_range.y = 5000; // z
+    plotxy(posX,posZ, &framePosXZ,sp1,"PosXZ",min_xz_range,max_xz_range);
 
     //plot(pitch_joystick,pitch_calculated, &framePitch,"Pitch");
 
     cv::Point sp2(dtrkr->setpointw.x,dtrkr->setpointw.y);
-    plotxy(posX,posY,&framePosXY, sp2, "PosXY");
+    cv::Point min_xy_range,max_xy_range;
+    min_xy_range.x =-3000;
+    max_xy_range.x = 3000;
+    min_xy_range.y =-3000;
+    max_xy_range.y = 3000;
+    plotxy(posX,posY,&framePosXY, sp2, "PosXY",min_xy_range,max_xy_range);
 
     //plot(throttle_joystick,throttle_calculated, &frameThrottle,"Throttle");
     //plot(roll_joystick,roll_calculated, &frameThrottle,"Roll");
@@ -101,7 +111,7 @@ void Visualizer::plot(cv::Mat data1,cv::Mat data2, cv::Mat *frame, std::string n
     }
 }
 
-void Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Mat *frame, cv::Point setpoint, std::string name) {
+void Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Mat *frame, cv::Point setpoint, std::string name,cv::Point minaxis,cv::Point maxaxis) {
     std::stringstream ss;
     ss.precision(2);
     ss << name << " " << datax.at<float>(datax.rows-1) << "; " << datay.at<float>(datay.rows-1);
@@ -124,15 +134,15 @@ void Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Mat *frame, cv::Point s
     tmpy.push_back(yS);
     cv::minMaxIdx(tmpy,&miny,&maxy,NULL,NULL);
 
-    minx-=1;
-    maxx+=1;
-    miny-=1;
-    maxy+=1;
+    minx=minaxis.x;
+    maxx=maxaxis.x;
+    miny=minaxis.y;
+    maxy=maxaxis.y;
 
-    minx=-3000;
-    maxx=3000;
-    miny=-3000;
-    maxy=3000;
+//    minx=-3000;
+//    maxx=3000;
+//    miny=-3000;
+//    maxy=3000;
 
     const float scaleX = (fsizex)/(maxx-minx);
     const float scaleY = (fsizey)/(maxy-miny);

@@ -1,7 +1,7 @@
 #include "dronecontroller.h"
 #include "defines.h"
 
-#if 1
+#if 0
 #define TUNING
 #endif
 
@@ -112,6 +112,13 @@ void DroneController::control(trackData data) {
     autoRoll = 1500 + (data.posErrX * params.rollP + data.velX * params.rollD +  params.rollI*rollErrI);
     autoPitch =1500 + (data.posErrZ * params.pitchP + data.velZ * params.pitchD +  params.pitchI*pitchErrI);
     //TODO: Yaw
+
+    //tmp only for vizs
+    if (autoPitch > 1950) {
+        autoPitch = 1950;
+    } else if (autoPitch < 1050) {
+        autoPitch = 1050;
+    }
 
     g_lockData.lock();
     if ( ((data.valid || autoTakeOff) && joySwitch) || notconnected) {
