@@ -66,14 +66,16 @@ private:
         int minInertiaRatio = 1;
         int maxInertiaRatio = 100;
 
-        int min_disparity=5;
-        int max_disparity=30;
+        int min_disparity=3;
+        int max_disparity=20;
 
+        int uncertainty_multiplier = 2;
+        int uncertainty_power = 6;
 
         template <class Archive>
         void serialize( Archive & ar )
         {
-            ar( iLowH1r,iHighH1r,iLowS1r,iHighS1r,iLowV1r,iHighV1r,iOpen1r,iClose1r,minThreshold,maxThreshold,filterByArea,minArea,maxArea,filterByCircularity,minCircularity,maxCircularity,filterByConvexity,minConvexity,maxConvexity,filterByInertia,minInertiaRatio,maxInertiaRatio,min_disparity,max_disparity);
+            ar( iLowH1r,iHighH1r,iLowS1r,iHighS1r,iLowV1r,iHighV1r,iOpen1r,iClose1r,minThreshold,maxThreshold,filterByArea,minArea,maxArea,filterByCircularity,minCircularity,maxCircularity,filterByConvexity,minConvexity,maxConvexity,filterByInertia,minInertiaRatio,maxInertiaRatio,min_disparity,max_disparity,uncertainty_power,uncertainty_multiplier);
         }
 
 
@@ -89,7 +91,7 @@ private:
     int stereo_match(cv::KeyPoint closestL, cv::Mat frameL_big_prev, cv::Mat prevFrameR_big, cv::Mat frameL, cv::Mat frameR, int prevDisparity);
     void update_prediction_state(cv::Point3f p);
     void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt);
-    void drawviz(cv::Mat frameL, cv::Mat treshfL, cv::Mat framegrayL, cv::Point3f measured_world_coordinates, cv::Point3f predicted_world_coordinates);
+    void drawviz(cv::Mat frameL, cv::Mat treshfL, cv::Mat framegrayL);
 
     void collect_no_drone_frames(cv::Mat diff);
 
@@ -129,9 +131,6 @@ private:
     cv::Mat empty_diffs;
     cv::Mat uncertainty_map;
     int n_empty_diffs;
-
-    int uncertainty_multiplier = 5;
-    int uncertainty_power = 3;
 
     std::vector<cv::KeyPoint> dronepathL,dronepathR;
     std::vector<cv::KeyPoint> predicted_dronepathL,predicted_dronepathR;

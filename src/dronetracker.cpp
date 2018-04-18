@@ -43,6 +43,10 @@ bool DroneTracker::init(std::ofstream *logger) {
     createTrackbar("Closing1", "Tuning", &settings.iClose1r, 30);
     createTrackbar("Min disparity", "Tuning", &settings.min_disparity, 255);
     createTrackbar("Max disparity", "Tuning", &settings.max_disparity, 255);
+
+    createTrackbar("Uncertain mult", "Tuning", &settings.uncertainty_multiplier, 255);
+    createTrackbar("Uncertain pow", "Tuning", &settings.uncertainty_power, 255);
+
 #endif
 #ifdef POSITIONTRACKBARS
     namedWindow("Setpoint", WINDOW_NORMAL);
@@ -176,13 +180,11 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     bool update_prev = false;
     //check if changed blobs were detected
     if (keypointsL.size() == 0) { // if not, use the last frame that was confirmed to be working before...
-        treshfL = segment_drone(frameL_small,frameL_prev_OK,false);
+        treshfL = segment_drone(frameL_small,frameL_prev_OK,true);
         detector.detect( treshfL, keypointsL);
     } else {
         update_prev = true;
     }
-
-update_prev = true; // TMP!!!!
 
     data.valid = false; // reset the flag, set to true when drone is detected properly
 
@@ -229,11 +231,11 @@ update_prev = true; // TMP!!!!
         t_prev = t; // update dt only if data valid
 
         (*_logger) << closestL.pt.x  << "; " << closestL.pt.y << "; " << disparity << "; ";
+    }
 
 #ifdef DRAWVIZS
-        drawviz(frameL,treshfL,frameL_small,output,predicted_output);
+        drawviz(frameL,treshfL,frameL_small);
 #endif
-    }
 
     if (!bam && !breakpause) { //TMP
         if (update_prev) {
@@ -253,10 +255,10 @@ void DroneTracker::collect_no_drone_frames(cv::Mat diff) {
     cv::Mat mask = diff > max_uncertainty_map;
     diff.copyTo(max_uncertainty_map,mask);
 
-    uncertainty_map = 255 - max_uncertainty_map * uncertainty_multiplier;
+    uncertainty_map = 255 - max_uncertainty_map * settings.uncertainty_multiplier;
     uncertainty_map.convertTo(uncertainty_map ,CV_32F);
     uncertainty_map /=255.0f;
-    cv::pow(uncertainty_map,uncertainty_power,uncertainty_map);
+    cv::pow(uncertainty_map,settings.uncertainty_power,uncertainty_map);
 
 
     //    cv::Mat diff16;
@@ -353,7 +355,7 @@ cv::Mat DroneTracker::segment_drone(cv::Mat frame,cv::Mat frame_prev, bool build
     ims.push_back(diffL*10);
     ims.push_back(treshfL);
     ims.push_back(diff_of_diff);
-    ims.push_back(diffL_eq);
+    //ims.push_back(diffL_eq);
     showColumnImage(ims,"uncertainty");
 
     return treshfL;
@@ -541,7 +543,7 @@ int DroneTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::
     return disparity;
 }
 
-void DroneTracker::drawviz(cv::Mat frameL,cv::Mat treshfL,cv::Mat framegrayL,Point3f measured_world_coordinates, Point3f predicted_world_coordinates) {
+void DroneTracker::drawviz(cv::Mat frameL,cv::Mat treshfL,cv::Mat framegrayL) {
 #ifdef DRAWVIZS
     cv::Mat resFrameL;
 

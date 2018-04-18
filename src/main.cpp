@@ -86,7 +86,8 @@ void process_video() {
     //    std::cout << "Running..." << std::endl;
     stopWatch.Start();
 
-    cv::Mat image,frameR,frameL ;
+    cv::Mat frameR,frameL ;
+    rs2::frameset frame;
     //main while loop:
     while (key != 27) // ESC
     {
@@ -94,7 +95,7 @@ void process_video() {
         static int breakpause_prev =-1;
         if (breakpause == 0 && breakpause_prev!=0) {
             ((rs2::playback)pd).pause();
-            dtrkr.breakpause = true;
+            //dtrkr.breakpause = true;
         } else if (breakpause != 0 && breakpause_prev==0) {
             ((rs2::playback)pd).resume();
             dtrkr.breakpause = false;
@@ -102,7 +103,7 @@ void process_video() {
         breakpause_prev = breakpause;
 
         if (breakpause != 0) {
-            rs2::frameset frame = cam.wait_for_frames();
+            frame = cam.wait_for_frames();
             //image = Mat(imgsize, CV_8UC1, (void*)frame.get_data(), Mat::AUTO_STEP);
             frameL = Mat(imgsize, CV_8UC1, (void*)frame.get_infrared_frame(IR_ID_LEFT).get_data(), Mat::AUTO_STEP).clone();
             frameR = Mat(imgsize, CV_8UC1, (void*)frame.get_infrared_frame(IR_ID_RIGHT).get_data(), Mat::AUTO_STEP).clone();
@@ -110,7 +111,7 @@ void process_video() {
                 breakpause--;
         }
 
-        logger << imgcount << ";";
+        logger << imgcount << ";" << frame.get_frame_number() << ";" ;
 
         if (dtrkr.track(frameL,frameR, Qf)) {
             breakpause = 0;
@@ -122,7 +123,7 @@ void process_video() {
         //putText(cam.frameR,std::to_string(imgcount),cv::Point(100,100),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(125,125,255));
 
 #ifdef HASSCREEN
-        //visualizer.plot();
+        visualizer.plot();
 
         resFrame = dtrkr.resFrame;
 
@@ -157,8 +158,8 @@ void process_video() {
         }
         imgcount++;
         float time = ((float)stopWatch.Read())/1000.0;
-        dtrkr.build_uncertainty_map = (time < 10);
-        std::cout << "Frame: " <<imgcount << " (" << detectcount << "). FPS: " << imgcount / time << ". Time: " << time << std::endl;
+        dtrkr.build_uncertainty_map = (time < 15);
+        std::cout << "Frame: " <<imgcount << " (" << detectcount << ", " << frame.get_frame_number() << "). FPS: " << imgcount / time << ". Time: " << time << std::endl;
         handleKey();
         if (imgcount > 60000)
             break;
@@ -222,7 +223,7 @@ int init(int argc, char **argv) {
     data_output_dir = "./";
 
     logger.open(data_output_dir  + "log.txt",std::ofstream::out);
-    logger << "ID;";
+    logger << "ID;RS_ID;";
     dtrkr.init(&logger);
     dctrl.init(&logger,fromfile);
     //insect.init(&logger);
