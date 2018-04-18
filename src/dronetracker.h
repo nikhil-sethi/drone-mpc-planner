@@ -71,11 +71,12 @@ private:
 
         int uncertainty_multiplier = 2;
         int uncertainty_power = 6;
+        int uncertainty_background = 0.3*255.0;
 
         template <class Archive>
         void serialize( Archive & ar )
         {
-            ar( iLowH1r,iHighH1r,iLowS1r,iHighS1r,iLowV1r,iHighV1r,iOpen1r,iClose1r,minThreshold,maxThreshold,filterByArea,minArea,maxArea,filterByCircularity,minCircularity,maxCircularity,filterByConvexity,minConvexity,maxConvexity,filterByInertia,minInertiaRatio,maxInertiaRatio,min_disparity,max_disparity,uncertainty_power,uncertainty_multiplier);
+            ar( iLowH1r,iHighH1r,iLowS1r,iHighS1r,iLowV1r,iHighV1r,iOpen1r,iClose1r,minThreshold,maxThreshold,filterByArea,minArea,maxArea,filterByCircularity,minCircularity,maxCircularity,filterByConvexity,minConvexity,maxConvexity,filterByInertia,minInertiaRatio,maxInertiaRatio,min_disparity,max_disparity,uncertainty_power,uncertainty_multiplier,uncertainty_background);
         }
 
 
@@ -85,8 +86,10 @@ private:
     stopwatch_c stopWatch;
 
     void updateParams();
-    cv::Mat segment_drone(cv::Mat frame, cv::Mat frame_prev, bool build_uncertainty_map2);
+    cv::Mat createBlurryCircle(int size, float background);
+    cv::Mat segment_drone(cv::Mat frame, cv::Mat frame_prev, bool build_uncertainty_map2, cv::Point previous_imageL_location);
     cv::Point3f predict_drone(float dt);
+    cv::Mat get_uncertainty_map_with_drone(cv::Point p);
     cv::KeyPoint match_closest_to_prediciton(cv::Point3f predicted_drone_locationL, std::vector<cv::KeyPoint> keypointsL);
     int stereo_match(cv::KeyPoint closestL, cv::Mat frameL_big_prev, cv::Mat prevFrameR_big, cv::Mat frameL, cv::Mat frameR, int prevDisparity);
     void update_prediction_state(cv::Point3f p);
@@ -132,8 +135,10 @@ private:
     cv::Mat uncertainty_map;
     int n_empty_diffs;
 
-    std::vector<cv::KeyPoint> dronepathL,dronepathR;
-    std::vector<cv::KeyPoint> predicted_dronepathL,predicted_dronepathR;
+    cv::Mat blurred_circle;
+
+    std::vector<cv::KeyPoint> dronepathL;
+    std::vector<cv::KeyPoint> predicted_dronepathL;
 
 public:       
 

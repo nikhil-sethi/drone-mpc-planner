@@ -1,4 +1,5 @@
 #include "common.h"
+#include <iostream>
 
 cv::Point2f transformPixelToEarth(int x, int y, int centerX, int centerY, float depth, float pix2radx,float pix2rady) {
     //calculate pixel to angle:

@@ -46,6 +46,7 @@ bool DroneTracker::init(std::ofstream *logger) {
 
     createTrackbar("Uncertain mult", "Tuning", &settings.uncertainty_multiplier, 255);
     createTrackbar("Uncertain pow", "Tuning", &settings.uncertainty_power, 255);
+    createTrackbar("Uncertain back", "Tuning", &settings.uncertainty_background, 255);
 
 #endif
 #ifdef POSITIONTRACKBARS
@@ -141,6 +142,22 @@ bool DroneTracker::init(std::ofstream *logger) {
     svelZ.init(5);
 
     disp_smoothed.init(5);
+
+    blurred_circle = createBlurryCircle(60,settings.uncertainty_background/255.0);
+}
+
+cv::Mat DroneTracker::createBlurryCircle(int size, float background) {
+    float tmp = roundf(size/4);
+    if (fabs((tmp / 2.f) - roundf(tmp / 2.f)) < 0.01)
+        tmp +=1;
+
+    cv::Mat res(size,size,CV_32F);
+    res = background;
+    cv::circle(res,cv::Point(size/2,size/2),tmp,1.0f,CV_FILLED);
+    cv::GaussianBlur( res, res, cv::Size( tmp, tmp ), 0, 0 );
+    cv::GaussianBlur( res, res, cv::Size( tmp, tmp ), 0, 0 );
+    cv::GaussianBlur( res, res, cv::Size( tmp, tmp ), 0, 0 );
+    return res;
 }
 
 float calculateDistance(float xr, float yr, float xl, float yl) {
@@ -154,6 +171,8 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
 
     int t = stopWatch.Read();
     float dt= (t-t_prev)/1000.0;
+    cv::Point3f predicted_drone_locationL = predict_drone(dt);
+    static cv::Point previous_drone_location;
 
     cv::Mat frameL_small;
     cv::Size smallsize(frameL.cols/IMSCALEF,frameL.rows/IMSCALEF);
@@ -172,7 +191,7 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     resFrame = frameL;
 
     //attempt to detect changed blobs
-    cv::Mat treshfL = segment_drone(frameL_small,frameL_prev,true);
+    cv::Mat treshfL = segment_drone(frameL_small,frameL_prev,true,previous_drone_location);
     SimpleBlobDetector detector(params);
     std::vector<KeyPoint> keypointsL;
     detector.detect( treshfL, keypointsL);
@@ -180,7 +199,7 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     bool update_prev = false;
     //check if changed blobs were detected
     if (keypointsL.size() == 0) { // if not, use the last frame that was confirmed to be working before...
-        treshfL = segment_drone(frameL_small,frameL_prev_OK,true);
+        treshfL = segment_drone(frameL_small,frameL_prev_OK,true,previous_drone_location);
         detector.detect( treshfL, keypointsL);
     } else {
         update_prev = true;
@@ -188,7 +207,7 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
 
     data.valid = false; // reset the flag, set to true when drone is detected properly
 
-    cv::Point3f predicted_drone_locationL = predict_drone(dt);
+
 
     bool bam = false;
     static int notFoundCountL =0;
@@ -201,6 +220,7 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         notFoundCountL = 0;
 
         cv::KeyPoint closestL = match_closest_to_prediciton(predicted_drone_locationL,keypointsL);
+        previous_drone_location = closestL.pt;
 
         static float disparity_prev =0;
         int disparity = stereo_match(closestL,frameL_big_prev_OK,frameR_big_prev_OK,frameL,frameR,disparity_prev);
@@ -209,9 +229,10 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
 
         if (fabs((float)abs(disparity) - fabs(disparity_prev)) > 3) {
             //do better matching?
-         //   std::cout << disparity << "-> BAM <-" << disparity_prev << std::endl;
+            std::cout << disparity << "-> BAM <-" << disparity_prev << std::endl;
             disparity = disparity_prev;
             bam = true;
+            update_prev = false;
         }
 
         update_prediction_state(cv::Point3f(closestL.pt.x,closestL.pt.y,disparity));
@@ -250,31 +271,6 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     return false;
 }
 
-void DroneTracker::collect_no_drone_frames(cv::Mat diff) {
-    static cv::Mat max_uncertainty_map = diff.clone();
-    cv::Mat mask = diff > max_uncertainty_map;
-    diff.copyTo(max_uncertainty_map,mask);
-
-    uncertainty_map = 255 - max_uncertainty_map * settings.uncertainty_multiplier;
-    uncertainty_map.convertTo(uncertainty_map ,CV_32F);
-    uncertainty_map /=255.0f;
-    cv::pow(uncertainty_map,settings.uncertainty_power,uncertainty_map);
-
-
-    //    cv::Mat diff16;
-//    diff.convertTo(diff16, CV_32SC1);
-
-//    empty_diffs += diff16;
-//    n_empty_diffs+=1;
-//    uncertainty_map = 255 - (empty_diffs / n_empty_diffs) * 10;
-//    uncertainty_map.convertTo(uncertainty_map ,CV_32F);
-//    uncertainty_map /=255.0f;
-//    cv::pow(uncertainty_map,3,uncertainty_map);
-
-
-
-}
-
 void DroneTracker::updateParams(){
 #ifdef TUNING
     // Change thresholds
@@ -308,25 +304,41 @@ void DroneTracker::updateParams(){
 #endif
 }
 
-cv::Mat DroneTracker::segment_drone(cv::Mat frame,cv::Mat frame_prev, bool build_uncertainty_map2) {
+void DroneTracker::collect_no_drone_frames(cv::Mat diff) {
+    static cv::Mat max_uncertainty_map = diff.clone();
+    cv::Mat mask = diff > max_uncertainty_map;
+    diff.copyTo(max_uncertainty_map,mask);
+
+    uncertainty_map = 255 - max_uncertainty_map * settings.uncertainty_multiplier;
+    uncertainty_map.convertTo(uncertainty_map ,CV_32F);
+    uncertainty_map /=255.0f;
+    cv::pow(uncertainty_map,settings.uncertainty_power,uncertainty_map);
+
+    double min, max;
+    cv::minMaxLoc(uncertainty_map, &min, &max);
+    std::cout << "start min max " << min << " " << max << std::endl;
+}
+
+cv::Mat DroneTracker::segment_drone(cv::Mat frame,cv::Mat frame_prev, bool build_uncertainty_map2, cv::Point previous_imageL_location) {
     cv::Mat diffL;
     cv::absdiff( frame ,frame_prev,diffL);
 
     if (build_uncertainty_map && build_uncertainty_map2)
-        collect_no_drone_frames(diffL);
+        collect_no_drone_frames(diffL); // calibration of background uncertainty map
 
-
-    double min, max;
-
+    //filter out changes in areas that were noisy during calibration period
     cv::Mat diff_of_diff = diffL.clone();
     cv::Mat diff_before_uncertainty = diffL.clone();;
     diffL.convertTo(diffL, CV_32F);
+
+    cv::Mat uncertainty_map = get_uncertainty_map_with_drone(previous_imageL_location);
+
     diffL = diffL.mul(uncertainty_map);
     //diffL *=10;
     diffL.convertTo(diffL, CV_8UC1);
 
 
-
+#ifdef DRAWVIZS
     cv::absdiff( diff_of_diff ,diffL,diff_of_diff);
     equalizeHist(diff_of_diff, diff_of_diff);
     if (build_uncertainty_map && build_uncertainty_map2)
@@ -338,17 +350,15 @@ cv::Mat DroneTracker::segment_drone(cv::Mat frame,cv::Mat frame_prev, bool build
     uncertainty_map_8 = uncertainty_map.clone();
     uncertainty_map_8 = uncertainty_map_8 * 255.0f;
     uncertainty_map_8.convertTo(uncertainty_map_8, CV_8UC1);
-
-    cv::minMaxLoc(uncertainty_map, &min, &max);
-    std::cout << "min max " << min << " " << max << std::endl;
+#endif
 
     cv::Mat treshfL;
     inRange(diffL, settings.iLowH1r, settings.iHighH1r, treshfL);
     dilate( treshfL, treshfL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iClose1r+1, settings.iClose1r+1)));
     erode(treshfL, treshfL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iOpen1r+1, settings.iOpen1r+1)));
 
-
-    equalizeHist(uncertainty_map_8, uncertainty_map_8);
+#ifdef DRAWVIZS
+    //equalizeHist(uncertainty_map_8, uncertainty_map_8);
     std::vector<cv::Mat> ims;
     ims.push_back(uncertainty_map_8);
     ims.push_back(diff_before_uncertainty*10);
@@ -357,8 +367,40 @@ cv::Mat DroneTracker::segment_drone(cv::Mat frame,cv::Mat frame_prev, bool build
     ims.push_back(diff_of_diff);
     //ims.push_back(diffL_eq);
     showColumnImage(ims,"uncertainty");
-
+#endif
     return treshfL;
+}
+
+/* Takes the calibrated uncertainty map, and augments it with a highlight around p */
+cv::Mat DroneTracker::get_uncertainty_map_with_drone(cv::Point p) {
+
+    cv::Mat res = uncertainty_map.clone();
+
+    int x1 = p.x-blurred_circle.cols/2;
+    if (x1 < 0)
+        x1 = 0;
+    if (x1 + blurred_circle.cols >= res.cols)
+        x1 = res.cols-blurred_circle.cols -1;
+    int y1 = p.y-blurred_circle.rows/2;
+    if (y1 < 0)
+        y1 = 0;
+    if (y1 + blurred_circle.rows >= res.rows)
+        y1 = res.rows- blurred_circle.rows - 1;
+    int x2 = blurred_circle.cols;
+    int y2 = blurred_circle.rows;
+    cv::Rect roi(x1,y1,x2,y2);
+
+    cv::Mat gray = cv::Mat::zeros(res.rows,res.cols,CV_32F);
+    gray = settings.uncertainty_background/255.0;
+    blurred_circle.copyTo(gray(roi));
+
+    res = gray.mul(res);
+
+//    double min, max;
+//    cv::minMaxLoc(blurred_circle, &min, &max);
+//    std::cout << "min max " << min << " " << max << std::endl;
+
+    return res;
 }
 
 cv::Point3f DroneTracker::predict_drone(float dt) {

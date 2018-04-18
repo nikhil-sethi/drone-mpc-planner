@@ -159,7 +159,7 @@ void process_video() {
         imgcount++;
         float time = ((float)stopWatch.Read())/1000.0;
         dtrkr.build_uncertainty_map = (time < 15);
-        std::cout << "Frame: " <<imgcount << " (" << detectcount << ", " << frame.get_frame_number() << "). FPS: " << imgcount / time << ". Time: " << time << std::endl;
+        //std::cout << "Frame: " <<imgcount << " (" << detectcount << ", " << frame.get_frame_number() << "). FPS: " << imgcount / time << ". Time: " << time << std::endl;
         handleKey();
         if (imgcount > 60000)
             break;
