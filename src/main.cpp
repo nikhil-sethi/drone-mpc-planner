@@ -113,26 +113,16 @@ void process_video() {
         logger << imgcount << ";";
 
         if (dtrkr.track(frameL,frameR, Qf)) {
-                breakpause = 0;
-    }
+            breakpause = 0;
+        }
+
         dctrl.control(dtrkr.data);
         //insect.track(frameL,frameR, Qf);
 
         //putText(cam.frameR,std::to_string(imgcount),cv::Point(100,100),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(125,125,255));
 
 #ifdef HASSCREEN
-        visualizer.plot();
-
-        //        resFrame = cam.get_disp_frame();
-        //        cv::resize(resFrame,resFrame,cv::Size(480,480));
-        //        cv::applyColorMap(resFrame, resFrame, cv::COLORMAP_JET);
-
-        //        cv::Mat frameL = stereo.frameLrect;
-        //        cv::Mat frameR = stereo.frameRrect;
-        //        cv::Mat frame(frameL.rows,frameL.cols+frameR.cols,CV_8UC3);
-        //        frameL.copyTo(frame(cv::Rect(0,0,frameL.cols, frameL.rows)));
-        //        frameR.copyTo(frame(cv::Rect(frameL.cols,0,frameR.cols, frameR.rows)));
-        //        resFrame = frame;
+        //visualizer.plot();
 
         resFrame = dtrkr.resFrame;
 
@@ -167,7 +157,8 @@ void process_video() {
         }
         imgcount++;
         float time = ((float)stopWatch.Read())/1000.0;
-        //std::cout << "Frame: " <<imgcount << " (" << detectcount << "). FPS: " << imgcount / time << ". Time: " << time << std::endl;
+        dtrkr.build_uncertainty_map = (time < 10);
+        std::cout << "Frame: " <<imgcount << " (" << detectcount << "). FPS: " << imgcount / time << ". Time: " << time << std::endl;
         handleKey();
         if (imgcount > 60000)
             break;
@@ -279,12 +270,12 @@ int init(int argc, char **argv) {
 
         if (depth_sensor.supports(RS2_OPTION_EXPOSURE)) {
             auto range = depth_sensor.get_option_range(RS2_OPTION_EXPOSURE);
-            depth_sensor.set_option(RS2_OPTION_EXPOSURE, 24000); //TODO: automate this setting.
+            depth_sensor.set_option(RS2_OPTION_EXPOSURE, 1000); //TODO: automate this setting.
         }
         //weird with D435 this is totally unneccesary...? probably ROI related
         if (depth_sensor.supports(RS2_OPTION_GAIN)) {
             auto range = depth_sensor.get_option_range(RS2_OPTION_GAIN);
-            //depth_sensor.set_option(RS2_OPTION_GAIN, (range.max - range.min)/2 + range.min);
+            depth_sensor.set_option(RS2_OPTION_GAIN, (range.max - range.min)/2 + range.min);
             depth_sensor.set_option(RS2_OPTION_GAIN, range.min); // increasing this causes noise
         }
         cam.stop();

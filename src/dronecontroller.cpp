@@ -1,7 +1,7 @@
 #include "dronecontroller.h"
 #include "defines.h"
 
-#if 0
+#if 1
 #define TUNING
 #endif
 
@@ -98,7 +98,7 @@ void DroneController::control(trackData data) {
     if (autoTakeOff && !data.valid && joySwitch && hoverthrottle   < 1600)
         hoverthrottle  +=params.autoTakeoffFactor;
 
-    if (data.valid && data.velY > 0 && joySwitch && autoTakeOff) {
+    if (data.valid && data.svelY > 0.1 && joySwitch && autoTakeOff) {
         autoTakeOff = false;
         startY = data.posErrY;
     }
@@ -119,6 +119,18 @@ void DroneController::control(trackData data) {
     } else if (autoPitch < 1050) {
         autoPitch = 1050;
     }
+    if (autoRoll > 1950) {
+        autoRoll = 1950;
+    } else if (autoRoll < 1050) {
+        autoRoll = 1050;
+    }
+    if (autoThrottle> 1950) {
+        autoThrottle = 1950;
+    } else if (autoThrottle < 1050) {
+        autoThrottle = 1050;
+    }
+
+    //std::cout << autoTakeOff << " " << autoThrottle << std::endl;
 
     g_lockData.lock();
     if ( ((data.valid || autoTakeOff) && joySwitch) || notconnected) {

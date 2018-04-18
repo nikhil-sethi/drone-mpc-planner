@@ -65,7 +65,7 @@ void Visualizer::plot(void) {
 
     //plot(throttle_joystick,throttle_calculated, &frameThrottle,"Throttle");
     //plot(roll_joystick,roll_calculated, &frameThrottle,"Roll");
-    plot(pitch_joystick,pitch_calculated, &frameThrottle,"Pitch");
+    plot(throttle_joystick,throttle_calculated, &frameThrottle,"Throttle");
 
     imshow("Shizzle",frame);
 }

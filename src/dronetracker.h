@@ -83,13 +83,15 @@ private:
     stopwatch_c stopWatch;
 
     void updateParams();
-    cv::Mat segment_drone(cv::Mat frame,cv::Mat frame_prev);
+    cv::Mat segment_drone(cv::Mat frame, cv::Mat frame_prev, bool build_uncertainty_map2);
     cv::Point3f predict_drone(float dt);
     cv::KeyPoint match_closest_to_prediciton(cv::Point3f predicted_drone_locationL, std::vector<cv::KeyPoint> keypointsL);
     int stereo_match(cv::KeyPoint closestL, cv::Mat frameL_big_prev, cv::Mat prevFrameR_big, cv::Mat frameL, cv::Mat frameR, int prevDisparity);
     void update_prediction_state(cv::Point3f p);
     void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt);
     void drawviz(cv::Mat frameL, cv::Mat treshfL, cv::Mat framegrayL, cv::Point3f measured_world_coordinates, cv::Point3f predicted_world_coordinates);
+
+    void collect_no_drone_frames(cv::Mat diff);
 
     // Kalman Filter
     int stateSize = 6;
@@ -124,7 +126,12 @@ private:
     cv::Mat frameR_big_prev;
     cv::Mat frameR_big_prev_OK;
 
+    cv::Mat empty_diffs;
+    cv::Mat uncertainty_map;
+    int n_empty_diffs;
 
+    int uncertainty_multiplier = 5;
+    int uncertainty_power = 3;
 
     std::vector<cv::KeyPoint> dronepathL,dronepathR;
     std::vector<cv::KeyPoint> predicted_dronepathL,predicted_dronepathR;
@@ -136,15 +143,16 @@ public:
 
     cv::Mat resFrame;
 
+    bool build_uncertainty_map = true;
+
     void close (void);
     bool init(std::ofstream *logger);
     bool track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf);
 
 
     trackData data;
-    Smoother sposX;
-    Smoother sposY;
-    Smoother sposZ;
+    Smoother sposX, sposY, sposZ;
+    Smoother svelX, svelY, svelZ;
 
     Smoother disp_smoothed;
 

@@ -9,8 +9,8 @@ using namespace cv;
 using namespace std;
 
 #if 1
-//#define DRAWVIZS
-//#define TUNING
+#define DRAWVIZS
+#define TUNING
 #endif
 
 //#define POSITIONTRACKBARS
@@ -132,6 +132,10 @@ bool DroneTracker::init(std::ofstream *logger) {
     sposY.init(3);
     sposZ.init(5);
 
+    svelX.init(3);
+    svelY.init(3);
+    svelZ.init(5);
+
     disp_smoothed.init(5);
 }
 
@@ -158,12 +162,13 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
         frameR_big_prev = frameR.clone();
         frameL_big_prev_OK = frameL.clone();
         frameR_big_prev_OK = frameR.clone();
+        empty_diffs = cv::Mat::zeros(frameL_small.rows,frameL_small.cols,CV_32SC1);
     }
 
     resFrame = frameL;
 
     //attempt to detect changed blobs
-    cv::Mat treshfL = segment_drone(frameL_small,frameL_prev);
+    cv::Mat treshfL = segment_drone(frameL_small,frameL_prev,true);
     SimpleBlobDetector detector(params);
     std::vector<KeyPoint> keypointsL;
     detector.detect( treshfL, keypointsL);
@@ -171,11 +176,13 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     bool update_prev = false;
     //check if changed blobs were detected
     if (keypointsL.size() == 0) { // if not, use the last frame that was confirmed to be working before...
-        treshfL = segment_drone(frameL_small,frameL_prev_OK);
+        treshfL = segment_drone(frameL_small,frameL_prev_OK,false);
         detector.detect( treshfL, keypointsL);
     } else {
         update_prev = true;
     }
+
+update_prev = true; // TMP!!!!
 
     data.valid = false; // reset the flag, set to true when drone is detected properly
 
@@ -200,7 +207,7 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
 
         if (fabs((float)abs(disparity) - fabs(disparity_prev)) > 3) {
             //do better matching?
-            std::cout << disparity << "-> BAM <-" << disparity_prev << std::endl;
+         //   std::cout << disparity << "-> BAM <-" << disparity_prev << std::endl;
             disparity = disparity_prev;
             bam = true;
         }
@@ -241,6 +248,31 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     return false;
 }
 
+void DroneTracker::collect_no_drone_frames(cv::Mat diff) {
+    static cv::Mat max_uncertainty_map = diff.clone();
+    cv::Mat mask = diff > max_uncertainty_map;
+    diff.copyTo(max_uncertainty_map,mask);
+
+    uncertainty_map = 255 - max_uncertainty_map * uncertainty_multiplier;
+    uncertainty_map.convertTo(uncertainty_map ,CV_32F);
+    uncertainty_map /=255.0f;
+    cv::pow(uncertainty_map,uncertainty_power,uncertainty_map);
+
+
+    //    cv::Mat diff16;
+//    diff.convertTo(diff16, CV_32SC1);
+
+//    empty_diffs += diff16;
+//    n_empty_diffs+=1;
+//    uncertainty_map = 255 - (empty_diffs / n_empty_diffs) * 10;
+//    uncertainty_map.convertTo(uncertainty_map ,CV_32F);
+//    uncertainty_map /=255.0f;
+//    cv::pow(uncertainty_map,3,uncertainty_map);
+
+
+
+}
+
 void DroneTracker::updateParams(){
 #ifdef TUNING
     // Change thresholds
@@ -274,14 +306,55 @@ void DroneTracker::updateParams(){
 #endif
 }
 
-cv::Mat DroneTracker::segment_drone(cv::Mat frame,cv::Mat frame_prev) {
-    cv::Mat diffL = frame - frame_prev;
+cv::Mat DroneTracker::segment_drone(cv::Mat frame,cv::Mat frame_prev, bool build_uncertainty_map2) {
+    cv::Mat diffL;
+    cv::absdiff( frame ,frame_prev,diffL);
 
+    if (build_uncertainty_map && build_uncertainty_map2)
+        collect_no_drone_frames(diffL);
+
+
+    double min, max;
+
+    cv::Mat diff_of_diff = diffL.clone();
+    cv::Mat diff_before_uncertainty = diffL.clone();;
+    diffL.convertTo(diffL, CV_32F);
+    diffL = diffL.mul(uncertainty_map);
+    //diffL *=10;
+    diffL.convertTo(diffL, CV_8UC1);
+
+
+
+    cv::absdiff( diff_of_diff ,diffL,diff_of_diff);
+    equalizeHist(diff_of_diff, diff_of_diff);
+    if (build_uncertainty_map && build_uncertainty_map2)
+        putText(diff_of_diff,"Building" ,cv::Point(0,12),cv::FONT_HERSHEY_SIMPLEX,0.5,255);
+    cv::Mat diffL_eq;
+    equalizeHist(diffL, diffL_eq);
+
+    cv::Mat uncertainty_map_8;
+    uncertainty_map_8 = uncertainty_map.clone();
+    uncertainty_map_8 = uncertainty_map_8 * 255.0f;
+    uncertainty_map_8.convertTo(uncertainty_map_8, CV_8UC1);
+
+    cv::minMaxLoc(uncertainty_map, &min, &max);
+    std::cout << "min max " << min << " " << max << std::endl;
 
     cv::Mat treshfL;
     inRange(diffL, settings.iLowH1r, settings.iHighH1r, treshfL);
     dilate( treshfL, treshfL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iClose1r+1, settings.iClose1r+1)));
     erode(treshfL, treshfL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iOpen1r+1, settings.iOpen1r+1)));
+
+
+    equalizeHist(uncertainty_map_8, uncertainty_map_8);
+    std::vector<cv::Mat> ims;
+    ims.push_back(uncertainty_map_8);
+    ims.push_back(diff_before_uncertainty*10);
+    ims.push_back(diffL*10);
+    ims.push_back(treshfL);
+    ims.push_back(diff_of_diff);
+    ims.push_back(diffL_eq);
+    showColumnImage(ims,"uncertainty");
 
     return treshfL;
 }
@@ -461,7 +534,7 @@ int DroneTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::
         ims.push_back(aR_viz);
         ims.push_back(bR_viz);
         ims.push_back(diff_R_roi_viz);
-        showColumnImage(ims, "col");
+//        showColumnImage(ims, "col");
     }
 #endif
 
@@ -577,6 +650,9 @@ void DroneTracker::update_tracker_ouput(Point3f measured_world_coordinates,float
     data.velX = data.dx / dt;
     data.velY = data.dy / dt;
     data.velZ = data.dz / dt;
+    data.svelX = svelX.addSample(data.velX);
+    data.svelY = svelX.addSample(data.velY);
+    data.svelZ = svelX.addSample(data.velZ);
     data.dt = dt;
     data.valid = true;
 
