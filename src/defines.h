@@ -18,4 +18,7 @@
 #define IMG_H 480
 #define IMSCALEF 4
 
+#define DRONE_IM_X_START 424/IMSCALEF
+#define DRONE_IM_Y_START 360/IMSCALEF
+
 #endif //DEFINES_H

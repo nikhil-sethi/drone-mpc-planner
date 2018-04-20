@@ -17,8 +17,8 @@ cv::Mat getStabilizedCrop(float phi, float theta, cv::Mat frameL, int sdx, int s
 bool checkFileExist (const std::string& name);
 void combineImage(cv::Mat iml, cv::Mat imr, cv::Mat *res);
 void combineGrayImage(cv::Mat iml,cv::Mat imr,cv::Mat *res);
-void createColumnImage(std::vector<cv::Mat> ims, cv::Mat * res);
-void showColumnImage(std::vector<cv::Mat> ims, std::string window_name);
+void createColumnImage(std::vector<cv::Mat> ims, cv::Mat * res, int type);
+void showColumnImage(std::vector<cv::Mat> ims, std::string window_name, int type);
 
 const float FOV = 180.0f ;
 const float FOV_size = 1280.0;
@@ -46,6 +46,9 @@ const float depthscale = 256.0f;
 
 struct trackData {
     float posX,posY,posZ,posErrX,posErrY,posErrZ, dx,dy,dz,velX,velY,velZ,dt,csposX,csposY,csposZ,svelX,svelY,svelZ;
+    bool landed;
+    cv::Point drone_image_locationL;
+    bool background_calibrated;
     bool valid;
 };
 

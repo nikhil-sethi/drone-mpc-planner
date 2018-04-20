@@ -58,7 +58,6 @@ private:
 
     };
 
-
     float throttleErrI = 0;
     float rollErrI = 0;
     float pitchErrI = 0;
@@ -85,6 +84,7 @@ private:
     void readJoystick(void);
     void rebind(void);
 
+
     void workerThread(void);
 
 public:
@@ -106,7 +106,7 @@ public:
 
     void close (void);
     bool init(std::ofstream *logger,bool fromfile);
-    void control(trackData data);
+    void control(trackData *data);
 
     uint16_t mode = 1500; // <min = mode 1, 1500 = mode 2, >max = mode 3
     int roll,pitch,yaw = 1500;

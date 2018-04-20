@@ -9,14 +9,14 @@ cv::Scalar red(0,0,255);
 
 void Visualizer::addSample(void) {
 
-    roll_joystick.push_back((float)dctrl->roll);
-    pitch_joystick.push_back((float)dctrl->pitch);
-    yaw_joystick.push_back((float)dctrl->yaw);
+    roll_joystick.push_back((float)dctrl->joyRoll);
+    pitch_joystick.push_back((float)dctrl->joyPitch);
+    yaw_joystick.push_back((float)dctrl->joyPitch);
     throttle_joystick.push_back((float)dctrl->joyThrottle);
 
     roll_calculated.push_back((float)dctrl->autoRoll);
     pitch_calculated.push_back((float)dctrl->autoPitch);
-    //yaw_calculated.push_back((float)dctrl->commandedYaw);
+//    yaw_calculated.push_back((float)dctrl->commandedYaw);
     throttle_calculated.push_back((float)dctrl->autoThrottle);
 
     posX.push_back(-(float)dtrkr->data.csposX);
@@ -32,42 +32,52 @@ const int line_width = 1;
 void Visualizer::plot(void) {
     addSample();
 
-    cv::Mat frame = cv::Mat::zeros((fsizey+4*line_width)*3, fsizex+4*line_width, CV_8UC3);
-    frame.setTo(cv::Scalar(255,255,255));
-
-    //cv::Mat frameRoll = cv::Mat(frame, cv::Rect(cv::Point(0, 0),cv::Point(frame.cols, frame.rows/3)));
-    cv::Mat framePosXZ = cv::Mat(frame, cv::Rect(cv::Point(0, 0),cv::Point(frame.cols, frame.rows/3)));
-
-    //cv::Mat framePitch = cv::Mat(frame, cv::Rect(cv::Point(0, frame.rows/3),cv::Point(frame.cols, frame.rows/3*2)));
-    cv::Mat framePosXY = cv::Mat(frame, cv::Rect(cv::Point(0, frame.rows/3),cv::Point(frame.cols, frame.rows/3*2)));
-
-    cv::Mat frameThrottle = cv::Mat(frame, cv::Rect(cv::Point(0, frame.rows/3*2),cv::Point(frame.cols, frame.rows)));
-
-
-    //plot(roll_joystick,roll_calculated, &frameRoll,"Roll");
+    cv::Mat frame_xz = cv::Mat::zeros((fsizey+4*line_width), fsizex+4*line_width, CV_8UC3);
+    frame_xz.setTo(cv::Scalar(255,255,255));
     cv::Point sp1(dtrkr->setpointw.x,-dtrkr->setpointw.z);
     cv::Point min_xz_range,max_xz_range;
     min_xz_range.x =-3000;
     max_xz_range.x = 3000;
     min_xz_range.y = 0; // z
     max_xz_range.y = 5000; // z
-    plotxy(posX,posZ, &framePosXZ,sp1,"PosXZ",min_xz_range,max_xz_range);
+    plotxy(posX,posZ, &frame_xz,sp1,"PosXZ",min_xz_range,max_xz_range);
 
-    //plot(pitch_joystick,pitch_calculated, &framePitch,"Pitch");
-
+    cv::Mat frame_xy = cv::Mat::zeros((fsizey+4*line_width), fsizex+4*line_width, CV_8UC3);
+    frame_xy.setTo(cv::Scalar(255,255,255));
     cv::Point sp2(dtrkr->setpointw.x,dtrkr->setpointw.y);
     cv::Point min_xy_range,max_xy_range;
     min_xy_range.x =-3000;
     max_xy_range.x = 3000;
     min_xy_range.y =-3000;
     max_xy_range.y = 3000;
-    plotxy(posX,posY,&framePosXY, sp2, "PosXY",min_xy_range,max_xy_range);
+    plotxy(posX,posY,&frame_xy, sp2, "PosXY",min_xy_range,max_xy_range);
 
-    //plot(throttle_joystick,throttle_calculated, &frameThrottle,"Throttle");
-    //plot(roll_joystick,roll_calculated, &frameThrottle,"Roll");
-    plot(throttle_joystick,throttle_calculated, &frameThrottle,"Throttle");
+    std::vector<cv::Mat> ims_detect;
+    ims_detect.push_back(frame_xz);
+    ims_detect.push_back(frame_xy);
+    showColumnImage(ims_detect, "Detection",CV_8UC3);
 
-    imshow("Shizzle",frame);
+    cv::Mat frame_throttle = cv::Mat::zeros((fsizey+4*line_width), fsizex+4*line_width, CV_8UC3);
+    frame_throttle.setTo(cv::Scalar(255,255,255));
+    plot(throttle_joystick,throttle_calculated, &frame_throttle,"Throttle");
+
+    cv::Mat frame_pitch = cv::Mat::zeros((fsizey+4*line_width), fsizex+4*line_width, CV_8UC3);
+    frame_pitch.setTo(cv::Scalar(255,255,255));
+    plot(pitch_joystick,pitch_calculated, &frame_pitch,"Pitch");
+
+    cv::Mat frame_roll = cv::Mat::zeros((fsizey+4*line_width), fsizex+4*line_width, CV_8UC3);
+    frame_roll.setTo(cv::Scalar(255,255,255));
+    plot(roll_joystick,roll_calculated, &frame_roll,"Roll");
+
+    std::vector<cv::Mat> ims_joy;
+    ims_joy.push_back(frame_roll);
+    ims_joy.push_back(frame_pitch);
+    ims_joy.push_back(frame_throttle);
+    showColumnImage(ims_joy, "Joystick",CV_8UC3);
+
+
+    //cv::imshow("test2", frame_xz);
+
 }
 
 void Visualizer::plot(cv::Mat data1,cv::Mat data2, const std::string name) {
@@ -85,6 +95,10 @@ void Visualizer::plot(cv::Mat data1,cv::Mat data2, cv::Mat *frame, std::string n
     tmp.push_back(data1);
     tmp.push_back(data2);
     cv::minMaxIdx(tmp,&min,&max,NULL,NULL);
+
+    putText(*frame,"[" + std::to_string((int)min) + " - " + std::to_string((int)max) + "]",cv::Point(frame->cols-130, 12),cv::FONT_HERSHEY_SIMPLEX,0.5,red);
+
+
     min-=1;
     max+=1;
 

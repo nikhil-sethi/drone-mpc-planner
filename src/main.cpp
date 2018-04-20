@@ -117,7 +117,7 @@ void process_video() {
             breakpause = 0;
         }
 
-        dctrl.control(dtrkr.data);
+        dctrl.control(&(dtrkr.data));
         //insect.track(frameL,frameR, Qf);
 
         //putText(cam.frameR,std::to_string(imgcount),cv::Point(100,100),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(125,125,255));
@@ -158,7 +158,7 @@ void process_video() {
         }
         imgcount++;
         float time = ((float)stopWatch.Read())/1000.0;
-        dtrkr.build_uncertainty_map = (time < 15);
+        dtrkr.data.background_calibrated= (time > 15);
         //std::cout << "Frame: " <<imgcount << " (" << detectcount << ", " << frame.get_frame_number() << "). FPS: " << imgcount / time << ". Time: " << time << std::endl;
         handleKey();
         if (imgcount > 60000)
@@ -243,7 +243,7 @@ int init(int argc, char **argv) {
         cfg.enable_device_from_file(argv[1]);
         fromfile = true;
     } else {
-       // cfg.enable_record_to_file("test");
+        cfg.enable_record_to_file("test");
     }
 
     rs2::pipeline_profile selection = cam.start(cfg);
@@ -271,7 +271,7 @@ int init(int argc, char **argv) {
 
         if (depth_sensor.supports(RS2_OPTION_EXPOSURE)) {
             auto range = depth_sensor.get_option_range(RS2_OPTION_EXPOSURE);
-            depth_sensor.set_option(RS2_OPTION_EXPOSURE, 1000); //TODO: automate this setting.
+            depth_sensor.set_option(RS2_OPTION_EXPOSURE, 24000); //TODO: automate this setting.
         }
         //weird with D435 this is totally unneccesary...? probably ROI related
         if (depth_sensor.supports(RS2_OPTION_GAIN)) {

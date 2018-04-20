@@ -81,7 +81,7 @@ bool DroneController::init(std::ofstream *logger,bool fromfile) {
 
 float startY = -100;
 
-void DroneController::control(trackData data) {
+void DroneController::control(trackData * data) {
 
     rebind();
     readJoystick();
@@ -89,28 +89,28 @@ void DroneController::control(trackData data) {
     if(autoLand) {
         autoTakeOff=false;
 
-        if (fabs(data.posErrY - startY) < 0.1) {
+        if (fabs(data->posErrY - startY) < 0.1) {
             hoverthrottle  = 0; //params.autoTakeoffFactor;
         }
-        data.posErrY = -startY-0.2;
+        data->posErrY = -startY-0.2;
     }
 
-    if (autoTakeOff && !data.valid && joySwitch && hoverthrottle   < 1600)
+    if (autoTakeOff && !data->valid && joySwitch && hoverthrottle   < 1600)
         hoverthrottle  +=params.autoTakeoffFactor;
 
-    if (data.valid && data.svelY > 0.1 && joySwitch && autoTakeOff) {
+    if (data->valid && data->svelY > 0.1 && joySwitch && autoTakeOff) {
         autoTakeOff = false;
-        startY = data.posErrY;
+        startY = data->posErrY;
     }
 
-    if (!data.valid && !joySwitch && joyThrottle < 1100) {
+    if (!data->valid && !joySwitch && joyThrottle < 1100) {
         autoTakeOff = true;
         hoverthrottle = INITIALTHROTTLE;
     }
 
-    autoThrottle =  hoverthrottle  - (data.posErrY * params.throttleP + data.velY * params.throttleD + throttleErrI * params.throttleI);
-    autoRoll = 1500 + (data.posErrX * params.rollP + data.velX * params.rollD +  params.rollI*rollErrI);
-    autoPitch =1500 + (data.posErrZ * params.pitchP + data.velZ * params.pitchD +  params.pitchI*pitchErrI);
+    autoThrottle =  hoverthrottle  - (data->posErrY * params.throttleP + data->velY * params.throttleD + throttleErrI * params.throttleI);
+    autoRoll = 1500 + (data->posErrX * params.rollP + data->velX * params.rollD +  params.rollI*rollErrI);
+    autoPitch =1500 + (data->posErrZ * params.pitchP + data->velZ * params.pitchD +  params.pitchI*pitchErrI);
     //TODO: Yaw
 
     //tmp only for vizs
@@ -133,7 +133,7 @@ void DroneController::control(trackData data) {
     //std::cout << autoTakeOff << " " << autoThrottle << std::endl;
 
     g_lockData.lock();
-    if ( ((data.valid || autoTakeOff) && joySwitch) || notconnected) {
+    if ( ((data->valid || autoTakeOff) && joySwitch) || notconnected) {
         throttle = autoThrottle;
         if (!autoTakeOff) {
             roll = autoRoll;
@@ -146,9 +146,9 @@ void DroneController::control(trackData data) {
         yaw = joyYaw;
 
         //calc integrated errors
-        throttleErrI += data.posErrY;
-        rollErrI += data.posErrX;
-        pitchErrI += data.posErrZ;
+        throttleErrI += data->posErrY;
+        rollErrI += data->posErrX;
+        pitchErrI += data->posErrZ;
 
     } else if (!joySwitch) {
         throttle = joyThrottle;
@@ -184,15 +184,21 @@ void DroneController::control(trackData data) {
     if ( yaw > 1950 )
         yaw = 1950;
 
+
+    if ((autoThrottle <= 1050 && joySwitch) || (joyThrottle <= 1050 && !joySwitch)) {
+        data->landed = true;
+    } else
+        data->landed = false;
+
     g_lockData.unlock();
 
-    (*_logger) << (int)data.valid  << "; " << data.posErrX << "; " << data.posErrY  << "; " << data.posErrZ << "; " << data.velX << "; " << data.velY  << "; " << data.velZ << "; " << hoverthrottle << "; " << autoThrottle << "; " << autoRoll << "; " << autoPitch << "; " << autoYaw <<  "; " << joyThrottle <<  "; " << joyRoll <<  "; " << joyPitch <<  "; " << joyYaw << "; " << (int)joySwitch << "; " << params.throttleP << "; " << params.throttleI << "; " << params.throttleD << "; " << data.dt << "; " << data.dx << "; " << data.dy << "; " << data.dz;
+    (*_logger) << (int)data->valid  << "; " << data->posErrX << "; " << data->posErrY  << "; " << data->posErrZ << "; " << data->velX << "; " << data->velY  << "; " << data->velZ << "; " << hoverthrottle << "; " << autoThrottle << "; " << autoRoll << "; " << autoPitch << "; " << autoYaw <<  "; " << joyThrottle <<  "; " << joyRoll <<  "; " << joyPitch <<  "; " << joyYaw << "; " << (int)joySwitch << "; " << params.throttleP << "; " << params.throttleI << "; " << params.throttleD << "; " << data->dt << "; " << data->dx << "; " << data->dy << "; " << data->dz;
 //    if (!notconnected){
 //        params.throttleP = scaledjoydial;
 //        std::cout << "P:" << params.throttleP << " Throttle: " << throttle << " HT: " << hoverthrottle << std::endl;
 //        std::cout << "Roll: " << roll << " RollP: " << params.rollP << std::endl;
-//        std::cout << "AutoTakeOff:" << (int)autoTakeOff <<  " HT: " << hoverthrottle << " Valid: " << data.valid << "VelY: " << data.velY <<std::endl;
-//        std::cout << "AutoLand:" << autoLand <<  " HT: " << hoverthrottle << " Valid: " << data.valid << " PosY: " << data.posErrY << " startY:" << startY << " VelY: " << data.velY <<std::endl;
+//        std::cout << "AutoTakeOff:" << (int)autoTakeOff <<  " HT: " << hoverthrottle << " Valid: " << data->valid << "VelY: " << data->velY <<std::endl;
+//        std::cout << "AutoLand:" << autoLand <<  " HT: " << hoverthrottle << " Valid: " << data->valid << " PosY: " << data->posErrY << " startY:" << startY << " VelY: " << data->velY <<std::endl;
 //    }
 }
 
@@ -271,9 +277,9 @@ void DroneController::sendData(void) {
             RS232_SendBuf( (unsigned char*) buff, 63);
         }
 
-        //if ( data.valid ) {
+        //if ( data->valid ) {
         //std::setprecision(2);
-        //std::cout << data.posY << " " << data.velY << " - ";
+        //std::cout << data->posY << " " << data->velY << " - ";
         //std::cout << "JoyCommands:" << std::string(buff) << std::flush;
         //    (*_logger) << "JoyCommands:" << std::string(buff) << std::flush;
 

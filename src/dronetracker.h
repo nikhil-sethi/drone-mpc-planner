@@ -83,6 +83,13 @@ private:
     };
     patsSettings settings;
 
+    struct Find_drone_result {
+      cv::Mat treshfL;
+      std::vector<cv::KeyPoint> keypointsL;
+      bool update_prev;
+    };
+    Find_drone_result find_drone_result;
+
     stopwatch_c stopWatch;
 
     void updateParams();
@@ -93,8 +100,9 @@ private:
     cv::KeyPoint match_closest_to_prediciton(cv::Point3f predicted_drone_locationL, std::vector<cv::KeyPoint> keypointsL);
     int stereo_match(cv::KeyPoint closestL, cv::Mat frameL_big_prev, cv::Mat prevFrameR_big, cv::Mat frameL, cv::Mat frameR, int prevDisparity);
     void update_prediction_state(cv::Point3f p);
-    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt);
+    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, cv::Point measured_drone_image_location);
     void drawviz(cv::Mat frameL, cv::Mat treshfL, cv::Mat framegrayL);
+    void find_drone(cv::Mat frameL_small);
 
     void collect_no_drone_frames(cv::Mat diff);
 
@@ -123,8 +131,8 @@ private:
     std::ofstream *_logger;
 
     bool firstFrame;
-    cv::Mat frameL_prev;
-    cv::Mat frameL_prev_OK;
+    cv::Mat frameL_s_prev;
+    cv::Mat frameL_s_prev_OK;
 
     cv::Mat frameL_big_prev;
     cv::Mat frameL_big_prev_OK;
@@ -146,8 +154,6 @@ public:
     cv::Point3f setpointw;
 
     cv::Mat resFrame;
-
-    bool build_uncertainty_map = true;
 
     void close (void);
     bool init(std::ofstream *logger);

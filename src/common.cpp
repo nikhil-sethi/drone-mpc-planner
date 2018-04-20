@@ -110,7 +110,7 @@ void combineGrayImage(cv::Mat iml,cv::Mat imr,cv::Mat *res) {
 }
 
 
-void createColumnImage(std::vector<cv::Mat> ims, cv::Mat * res) {
+void createColumnImage(std::vector<cv::Mat> ims, cv::Mat * res, int type) {
     //find max width and total height:
     int width =-1;
     int height = 0;
@@ -121,7 +121,7 @@ void createColumnImage(std::vector<cv::Mat> ims, cv::Mat * res) {
         height+=ims.at(i).rows;
     }
 
-    *res = cv::Mat(height,width,CV_8UC1);
+    *res = cv::Mat(height,width,type);
 
     cv::Point p1(0, 0);
 
@@ -134,10 +134,10 @@ void createColumnImage(std::vector<cv::Mat> ims, cv::Mat * res) {
 }
 
 /* combines a bunch of images into one column, and shows it */
-void showColumnImage(std::vector<cv::Mat> ims, std::string window_name) {
+void showColumnImage(std::vector<cv::Mat> ims, std::string window_name, int type) {
 
     cv::Mat res;
-    createColumnImage(ims,&res);
+    createColumnImage(ims,&res,type);
     //cv::resize(res,res,cv::Size(width*4,height*4));
     cv::imshow(window_name, res);
 
