@@ -20,6 +20,7 @@
 #include "gstream.h"
 #include "vizs.h"
 #include "insect.h"
+#include "logreader.h"
 
 #include "opencv2/features2d/features2d.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
@@ -63,6 +64,8 @@ DroneTracker dtrkr;
 DroneController dctrl;
 Insect insect;
 Visualizer visualizer;
+LogReader logreader;
+bool fromfile = false;
 
 
 //tmp for capturing moth data
@@ -88,6 +91,8 @@ void process_video() {
 
     cv::Mat frameR,frameL ;
     rs2::frameset frame;
+    frame = cam.wait_for_frames(); // init it with something
+
     //main while loop:
     while (key != 27) // ESC
     {
@@ -104,25 +109,36 @@ void process_video() {
 
         if (breakpause != 0) {
             frame = cam.wait_for_frames();
-            //image = Mat(imgsize, CV_8UC1, (void*)frame.get_data(), Mat::AUTO_STEP);
             frameL = Mat(imgsize, CV_8UC1, (void*)frame.get_infrared_frame(IR_ID_LEFT).get_data(), Mat::AUTO_STEP).clone();
             frameR = Mat(imgsize, CV_8UC1, (void*)frame.get_infrared_frame(IR_ID_RIGHT).get_data(), Mat::AUTO_STEP).clone();
+
+
             if (breakpause > 0)
                 breakpause--;
         }
 
         logger << imgcount << ";" << frame.get_frame_number() << ";" ;
-
-        if (dtrkr.track(frameL,frameR, Qf)) {
-            breakpause = 0;
+        if (!INSECT_DATA_LOGGING_MODE) {
+            if (dtrkr.track(frameL,frameR, Qf)) {
+                breakpause = 0;
+            }
+            dctrl.control(&(dtrkr.data));
         }
+        insect.track(frameL,frameR, Qf);
 
-        dctrl.control(&(dtrkr.data));
-        //insect.track(frameL,frameR, Qf);
-
-        //putText(cam.frameR,std::to_string(imgcount),cv::Point(100,100),cv::FONT_HERSHEY_SIMPLEX,1,cv::Scalar(125,125,255));
 
 #ifdef HASSCREEN
+        if (fromfile) {
+            int rs_id = frame.get_frame_number();
+            LogReader::Log_Entry tmp  = logreader.getItem(rs_id);
+            if (tmp.RS_ID == rs_id) {
+                dctrl.joyRoll = tmp.joyRoll;
+                dctrl.joyPitch = tmp.joyPitch;
+                dctrl.joyYaw = tmp.joyYaw;
+                dctrl.joyThrottle = tmp.joyThrottle;
+                dctrl.joySwitch = tmp.joySwitch;
+            }
+        }
         visualizer.plot();
 
         resFrame = dtrkr.resFrame;
@@ -134,7 +150,7 @@ void process_video() {
         frameBR[frame_buffer_write_id] = frameR.clone();
 
         frame_buffer_write_id = (frame_buffer_write_id + 1) % FRAME_BUF_SIZE;
-        if (true) { // (insect.data.valid) { //
+        if (insect.data.valid) { //
             frame_buffer_read_id = 0;
             frame_write_id_during_event = (frame_buffer_write_id + FRAME_BUF_SIZE - 1 ) % FRAME_BUF_SIZE;
         }
@@ -159,7 +175,7 @@ void process_video() {
         imgcount++;
         float time = ((float)stopWatch.Read())/1000.0;
         dtrkr.data.background_calibrated= (time > 15);
-        //std::cout << "Frame: " <<imgcount << " (" << detectcount << ", " << frame.get_frame_number() << "). FPS: " << imgcount / time << ". Time: " << time << std::endl;
+        std::cout << "Frame: " <<imgcount << " (" << detectcount << ", " << frame.get_frame_number() << "). FPS: " << imgcount / time << ". Time: " << time << std::endl;
         handleKey();
         if (imgcount > 60000)
             break;
@@ -216,7 +232,7 @@ void my_handler(int s){
 
 int init(int argc, char **argv) {
 
-    bool fromfile = false;
+
     if (argc ==2 ) {
         fromfile = true;
     }
@@ -224,9 +240,11 @@ int init(int argc, char **argv) {
 
     logger.open(data_output_dir  + "log.txt",std::ofstream::out);
     logger << "ID;RS_ID;";
-    dtrkr.init(&logger);
-    dctrl.init(&logger,fromfile);
-    //insect.init(&logger);
+    if (!INSECT_DATA_LOGGING_MODE) {
+        dtrkr.init(&logger);
+        dctrl.init(&logger,fromfile);
+    }
+    insect.init(&logger);
     logger << std::endl;
 
     std::cout << "Frame buf size: " << FRAME_BUF_SIZE << std::endl;
@@ -240,8 +258,9 @@ int init(int argc, char **argv) {
     cfg.enable_stream(RS2_STREAM_INFRARED, 2, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
 
     if (argc ==2 ) {
-        cfg.enable_device_from_file(argv[1]);
+        cfg.enable_device_from_file(string(argv[1]) + ".bag");
         fromfile = true;
+        logreader.init(string(argv[1]) + ".txt");
     } else {
         cfg.enable_record_to_file("test");
     }
@@ -251,11 +270,10 @@ int init(int argc, char **argv) {
 
     if (fromfile ) {
         pd = selection.get_device();
-        ((rs2::playback)pd).set_real_time(0);
+        ((rs2::playback)pd).set_real_time(false);
     } else {
         rs2::device selected_device = selection.get_device();
         auto depth_sensor = selected_device.first<rs2::depth_sensor>();
-
 
         if (depth_sensor.supports(RS2_OPTION_EMITTER_ENABLED))
         {
@@ -266,21 +284,21 @@ int init(int argc, char **argv) {
         //            depth_sensor.set_option(RS2_OPTION_LASER_POWER, (range.max - range.min)/2 + range.min);
         //        }
         if (depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
-            depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,0.0);
+            depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,.0);
         }
 
         if (depth_sensor.supports(RS2_OPTION_EXPOSURE)) {
             auto range = depth_sensor.get_option_range(RS2_OPTION_EXPOSURE);
-            depth_sensor.set_option(RS2_OPTION_EXPOSURE, 24000); //TODO: automate this setting.
+            depth_sensor.set_option(RS2_OPTION_EXPOSURE, 1000); //TODO: automate this setting.
         }
         //weird with D435 this is totally unneccesary...? probably ROI related
         if (depth_sensor.supports(RS2_OPTION_GAIN)) {
             auto range = depth_sensor.get_option_range(RS2_OPTION_GAIN);
             depth_sensor.set_option(RS2_OPTION_GAIN, (range.max - range.min)/2 + range.min);
-            depth_sensor.set_option(RS2_OPTION_GAIN, range.min); // increasing this causes noise
+            //depth_sensor.set_option(RS2_OPTION_GAIN, range.min); // increasing this causes noise
         }
-        cam.stop();
-        selection = cam.start(cfg);
+        //        cam.stop();
+        //        selection = cam.start(cfg);
 
         std::cout << "Set cam config\n";
     }
@@ -307,7 +325,7 @@ int init(int argc, char **argv) {
 #endif
 
 #if defined(HASSCREEN) || VIDEORESULTS
-    resFrame = cv::Mat::zeros(480, 640,CV_8UC3);
+    resFrame = cv::Mat::zeros(IMG_H, IMG_W,CV_8UC3);
 #endif
 
     /*****init the video writer*****/
@@ -356,9 +374,10 @@ int init(int argc, char **argv) {
 void close() {
     std::cout <<"Closing"<< std::endl;
     /*****Close everything down*****/
-    dtrkr.close();
-    //    cam.close();
-    dctrl.close();
+    if (!INSECT_DATA_LOGGING_MODE) {
+        dtrkr.close();
+        dctrl.close();
+    }
     insect.close();
 
 #if VIDEORESULTS   

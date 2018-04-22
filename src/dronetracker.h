@@ -86,6 +86,8 @@ private:
     struct Find_drone_result {
       cv::Mat treshfL;
       std::vector<cv::KeyPoint> keypointsL;
+      cv::KeyPoint best_image_locationL;
+      int disparity;
       bool update_prev;
     };
     Find_drone_result find_drone_result;

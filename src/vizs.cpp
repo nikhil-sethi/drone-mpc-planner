@@ -23,17 +23,27 @@ void Visualizer::addSample(void) {
     posY.push_back((float)dtrkr->data.csposY);
     posZ.push_back(-(float)dtrkr->data.csposZ);
 
+    velX.push_back(-(float)dtrkr->data.velX*1000);
+    velY.push_back((float)dtrkr->data.velY*1000);
+    velZ.push_back(-(float)dtrkr->data.velZ*1000);
+
+    svelX.push_back(-(float)dtrkr->data.svelX*1000);
+    svelY.push_back((float)dtrkr->data.svelY*1000);
+    svelZ.push_back(-(float)dtrkr->data.svelZ*1000);
 
 }
 const int fsizex = 500;
 const int fsizey = 300;
 const int line_width = 1;
 
+//cv::Scalar background_color(255,255,255);
+cv::Scalar background_color(0,0,0);
+
 void Visualizer::plot(void) {
     addSample();
 
     cv::Mat frame_xz = cv::Mat::zeros((fsizey+4*line_width), fsizex+4*line_width, CV_8UC3);
-    frame_xz.setTo(cv::Scalar(255,255,255));
+    frame_xz.setTo(background_color);
     cv::Point sp1(dtrkr->setpointw.x,-dtrkr->setpointw.z);
     cv::Point min_xz_range,max_xz_range;
     min_xz_range.x =-3000;
@@ -43,7 +53,7 @@ void Visualizer::plot(void) {
     plotxy(posX,posZ, &frame_xz,sp1,"PosXZ",min_xz_range,max_xz_range);
 
     cv::Mat frame_xy = cv::Mat::zeros((fsizey+4*line_width), fsizex+4*line_width, CV_8UC3);
-    frame_xy.setTo(cv::Scalar(255,255,255));
+    frame_xy.setTo(background_color);
     cv::Point sp2(dtrkr->setpointw.x,dtrkr->setpointw.y);
     cv::Point min_xy_range,max_xy_range;
     min_xy_range.x =-3000;
@@ -58,15 +68,15 @@ void Visualizer::plot(void) {
     showColumnImage(ims_detect, "Detection",CV_8UC3);
 
     cv::Mat frame_throttle = cv::Mat::zeros((fsizey+4*line_width), fsizex+4*line_width, CV_8UC3);
-    frame_throttle.setTo(cv::Scalar(255,255,255));
+    frame_throttle.setTo(background_color);
     plot(throttle_joystick,throttle_calculated, &frame_throttle,"Throttle");
 
     cv::Mat frame_pitch = cv::Mat::zeros((fsizey+4*line_width), fsizex+4*line_width, CV_8UC3);
-    frame_pitch.setTo(cv::Scalar(255,255,255));
+    frame_pitch.setTo(background_color);
     plot(pitch_joystick,pitch_calculated, &frame_pitch,"Pitch");
 
     cv::Mat frame_roll = cv::Mat::zeros((fsizey+4*line_width), fsizex+4*line_width, CV_8UC3);
-    frame_roll.setTo(cv::Scalar(255,255,255));
+    frame_roll.setTo(background_color);
     plot(roll_joystick,roll_calculated, &frame_roll,"Roll");
 
     std::vector<cv::Mat> ims_joy;
@@ -76,7 +86,24 @@ void Visualizer::plot(void) {
     showColumnImage(ims_joy, "Joystick",CV_8UC3);
 
 
-    //cv::imshow("test2", frame_xz);
+
+    cv::Mat frame_velX= cv::Mat::zeros((fsizey+4*line_width), fsizex+4*line_width, CV_8UC3);
+    frame_velX.setTo(background_color);
+    plot(velX,svelX, &frame_velX,"VelX");
+
+    cv::Mat frame_velY= cv::Mat::zeros((fsizey+4*line_width), fsizex+4*line_width, CV_8UC3);
+    frame_velY.setTo(background_color);
+    plot(velY,svelY, &frame_velY,"VelY");
+
+    cv::Mat frame_velZ= cv::Mat::zeros((fsizey+4*line_width), fsizex+4*line_width, CV_8UC3);
+    frame_velZ.setTo(background_color);
+    plot(velZ,svelZ, &frame_velZ,"VelZ");
+
+    std::vector<cv::Mat> ims_vel;
+    ims_vel.push_back(frame_velX);
+    ims_vel.push_back(frame_velY);
+    ims_vel.push_back(frame_velZ);
+    showColumnImage(ims_vel, "Velocities",CV_8UC3);
 
 }
 
@@ -102,7 +129,7 @@ void Visualizer::plot(cv::Mat data1,cv::Mat data2, cv::Mat *frame, std::string n
     min-=1;
     max+=1;
 
-    const float scaleX = (float)((fsizex))/(data1.rows);
+    const float scaleX = (float)((fsizex))/(bufsize);
     const float scaleY = (fsizey)/(max-min);
 
     int start = data1.rows -bufsize;
@@ -111,17 +138,16 @@ void Visualizer::plot(cv::Mat data1,cv::Mat data2, cv::Mat *frame, std::string n
 
     int prev_y1 =0;
     int prev_y2 =0;
+    int prev_x=0;
     for (int j = start; j < data1.rows-1; j++)  {
         int y1 = data1.at<float>(j,1) - min;
         int y2 = data2.at<float>(j,1) - min;
-        if (j > start) {
-            j-=start;
-            cv::line(*frame, cv::Point(j*scaleX + 2*line_width , fsizey- prev_y1*scaleY +line_width*2) , cv::Point((j+1)*scaleX + 2*line_width, fsizey - y1*scaleY +2*line_width), green, line_width, CV_AA, 0);
-            cv::line(*frame, cv::Point(j*scaleX + 2*line_width , fsizey- prev_y2*scaleY +line_width*2) , cv::Point((j+1)*scaleX + 2*line_width, fsizey - y2*scaleY +2*line_width), blue, line_width, CV_AA, 0);
-            j+=start;
-        }
+        int x = (j-start)*scaleX + 2*line_width;
+        cv::line(*frame, cv::Point(prev_x, fsizey- prev_y1*scaleY +line_width*2) , cv::Point(x, fsizey - y1*scaleY +2*line_width), green, line_width, CV_AA, 0);
+        cv::line(*frame, cv::Point(prev_x, fsizey- prev_y2*scaleY +line_width*2) , cv::Point(x, fsizey - y2*scaleY +2*line_width), blue, line_width, CV_AA, 0);
         prev_y1 = y1;
         prev_y2 = y2;
+        prev_x = x;
     }
 }
 

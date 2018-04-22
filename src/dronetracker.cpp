@@ -13,7 +13,7 @@ using namespace std;
 #define TUNING
 #endif
 
-//#define POSITIONTRACKBARS
+#define POSITIONTRACKBARS
 
 const string settingsFile = "../settings.dat";
 bool DroneTracker::init(std::ofstream *logger) {
@@ -196,8 +196,6 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
 
     data.valid = false; // reset the flag, set to true when drone is detected properly
 
-
-
     bool bam = false;
     static int notFoundCountL =0;
     if (find_drone_result.keypointsL.size() == 0) {
@@ -208,11 +206,11 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     } else {
         notFoundCountL = 0;
 
-        cv::KeyPoint closestL = match_closest_to_prediciton(predicted_drone_locationL,find_drone_result.keypointsL);
+        find_drone_result.best_image_locationL = match_closest_to_prediciton(predicted_drone_locationL,find_drone_result.keypointsL);
 
         static float disparity_prev =0;
-        int disparity = stereo_match(closestL,frameL_big_prev_OK,frameR_big_prev_OK,frameL,frameR,disparity_prev);
-
+        int disparity = stereo_match(find_drone_result.best_image_locationL,frameL_big_prev_OK,frameR_big_prev_OK,frameL,frameR,disparity_prev);
+        find_drone_result.disparity = disparity;
         disparity_prev =  disp_smoothed.addSample(disparity);
 
         if (fabs((float)abs(disparity) - fabs(disparity_prev)) > 3) {
@@ -223,24 +221,26 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
             find_drone_result.update_prev = false;
         }
 
-        update_prediction_state(cv::Point3f(closestL.pt.x,closestL.pt.y,disparity));
+        update_prediction_state(cv::Point3f(find_drone_result.best_image_locationL.pt.x,find_drone_result.best_image_locationL.pt.y,disparity));
 
         //calculate everything for the dronecontroller:
         std::vector<Point3f> camera_coordinates, world_coordinates;
-        camera_coordinates.push_back(Point3f(closestL.pt.x*IMSCALEF,closestL.pt.y*IMSCALEF,-disparity));
+        camera_coordinates.push_back(Point3f(find_drone_result.best_image_locationL.pt.x*IMSCALEF,find_drone_result.best_image_locationL.pt.y*IMSCALEF,-disparity));
         camera_coordinates.push_back(Point3f(predicted_drone_locationL.x*IMSCALEF,predicted_drone_locationL.y*IMSCALEF,-predicted_drone_locationL.z));
         cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
         Point3f output = world_coordinates[0];
         Point3f predicted_output = world_coordinates[1];
         static Point3f output_prev;
-        update_tracker_ouput(output,dt,closestL.pt);
+        update_tracker_ouput(output,dt,find_drone_result.best_image_locationL.pt);
 
         output_prev = output;
 
         t_prev = t; // update dt only if data valid
 
-        (*_logger) << closestL.pt.x  << "; " << closestL.pt.y << "; " << disparity << "; ";
+
     }
+
+    (*_logger) << find_drone_result.best_image_locationL.pt.x  << "; " << find_drone_result.best_image_locationL.pt.y << "; " << find_drone_result.disparity << "; ";
 
 #ifdef DRAWVIZS
         drawviz(frameL,find_drone_result.treshfL,frameL_small);
@@ -737,8 +737,8 @@ void DroneTracker::update_tracker_ouput(Point3f measured_world_coordinates,float
     data.velY = data.dy / dt;
     data.velZ = data.dz / dt;
     data.svelX = svelX.addSample(data.velX);
-    data.svelY = svelX.addSample(data.velY);
-    data.svelZ = svelX.addSample(data.velZ);
+    data.svelY = svelY.addSample(data.velY);
+    data.svelZ = svelZ.addSample(data.velZ);
     data.dt = dt;
     data.valid = true;
 

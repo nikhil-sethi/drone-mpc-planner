@@ -21,7 +21,7 @@ using namespace std;
 const string settingsFile = "../settings2.dat";
 bool Insect::init(std::ofstream *logger) {
     _logger = logger;
-    (*_logger) << "imLx; imLy; imRx; imRy;";
+    (*_logger) << "insect_imLx; insect_imLy; insect_imRx; insect_imRy;";
     if (checkFileExist(settingsFile)) {
         std::ifstream is(settingsFile, std::ios::binary);
         cereal::BinaryInputArchive archive( is );

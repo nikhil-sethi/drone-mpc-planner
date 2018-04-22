@@ -62,6 +62,14 @@ public:
     cv::Mat posY;
     cv::Mat posZ;
 
+    cv::Mat velX;
+    cv::Mat velY;
+    cv::Mat velZ;
+
+    cv::Mat svelX;
+    cv::Mat svelY;
+    cv::Mat svelZ;
+
     void plot(void);
 
     void init(DroneController *dctrl, DroneTracker *dtrkr){

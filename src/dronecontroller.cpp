@@ -15,19 +15,19 @@ int notconnected;
 
 bool DroneController::init(std::ofstream *logger,bool fromfile) {
     _logger = logger;
-    (*_logger) << "valid; posErrX; posErrY; posErrZ; velX; velY; velZ; hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; joyThrottle; joyRoll; joyPitch; joyYaw; joySwitch; throttleP; throttleI; throttleD; dt; dx; dy; dz";
+    (*_logger) << "valid; posErrX; posErrY; posErrZ; velX; velY; velZ; hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; joyThrottle; joyRoll; joyPitch; joyYaw; joySwitch; throttleP; throttleI; throttleD; dt; dx; dy; dz;";
     std::cout << "Initialising control." << std::endl;
     // setup connection with Arduino
     baudrate = 115200;
     notconnected = RS232_OpenComport(baudrate);
 
-    if (notconnected && !fromfile) {
+    if (notconnected && !fromfile && !INSECT_DATA_LOGGING_MODE) {
         printf("Arduino failed.\n");
         exit(1);
     }
 
     // Ensure that joystick was found and that we can use it
-    if (!joystick.isFound() && !fromfile) {
+    if (!joystick.isFound() && !fromfile && !INSECT_DATA_LOGGING_MODE) {
         printf("joystick failed.\n");
         exit(1);
     }
@@ -98,7 +98,7 @@ void DroneController::control(trackData * data) {
     if (autoTakeOff && !data->valid && joySwitch && hoverthrottle   < 1600)
         hoverthrottle  +=params.autoTakeoffFactor;
 
-    if (data->valid && data->svelY > 0.1 && joySwitch && autoTakeOff) {
+    if (data->valid && data->svelY > 0.5 && joySwitch && autoTakeOff) {
         autoTakeOff = false;
         startY = data->posErrY;
     }
@@ -141,8 +141,8 @@ void DroneController::control(trackData * data) {
             //yaw= autoYaw;
         }
         //TMP:
-        //roll = joyRoll;
-        //pitch = joyPitch;
+        roll = joyRoll;
+        pitch = joyPitch;
         yaw = joyYaw;
 
         //calc integrated errors
@@ -192,7 +192,7 @@ void DroneController::control(trackData * data) {
 
     g_lockData.unlock();
 
-    (*_logger) << (int)data->valid  << "; " << data->posErrX << "; " << data->posErrY  << "; " << data->posErrZ << "; " << data->velX << "; " << data->velY  << "; " << data->velZ << "; " << hoverthrottle << "; " << autoThrottle << "; " << autoRoll << "; " << autoPitch << "; " << autoYaw <<  "; " << joyThrottle <<  "; " << joyRoll <<  "; " << joyPitch <<  "; " << joyYaw << "; " << (int)joySwitch << "; " << params.throttleP << "; " << params.throttleI << "; " << params.throttleD << "; " << data->dt << "; " << data->dx << "; " << data->dy << "; " << data->dz;
+    (*_logger) << (int)data->valid  << "; " << data->posErrX << "; " << data->posErrY  << "; " << data->posErrZ << "; " << data->velX << "; " << data->velY  << "; " << data->velZ << "; " << hoverthrottle << "; " << autoThrottle << "; " << autoRoll << "; " << autoPitch << "; " << autoYaw <<  "; " << joyThrottle <<  "; " << joyRoll <<  "; " << joyPitch <<  "; " << joyYaw << "; " << (int)joySwitch << "; " << params.throttleP << "; " << params.throttleI << "; " << params.throttleD << "; " << data->dt << "; " << data->dx << "; " << data->dy << "; " << data->dz << "; ";
 //    if (!notconnected){
 //        params.throttleP = scaledjoydial;
 //        std::cout << "P:" << params.throttleP << " Throttle: " << throttle << " HT: " << hoverthrottle << std::endl;
@@ -244,6 +244,17 @@ void DroneController::readJoystick(void) {
             }
         }
     }
+
+
+    static bool joySwitch_prev = joySwitch;
+    if (joySwitch && !joySwitch_prev) {
+        //check special functions
+        if (joyPitch > 1800) {
+            rebindValue = 1;
+            joySwitch = false;
+        }
+    }
+    joySwitch_prev = joySwitch;
 
     // prevent accidental take offs at start up
     if (firstTime > 0) {
