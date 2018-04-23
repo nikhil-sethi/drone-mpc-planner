@@ -5,6 +5,7 @@ cv::Scalar black(0,0,0);
 cv::Scalar green(0,255,0);
 cv::Scalar blue(255,0,0);
 cv::Scalar red(0,0,255);
+cv::Scalar linecolors[] = {green,blue,red,cv::Scalar(0,255,255),cv::Scalar(255,255,0),cv::Scalar(255,0,255)};
 
 
 void Visualizer::addSample(void) {
@@ -16,20 +17,27 @@ void Visualizer::addSample(void) {
 
     roll_calculated.push_back((float)dctrl->autoRoll);
     pitch_calculated.push_back((float)dctrl->autoPitch);
-//    yaw_calculated.push_back((float)dctrl->commandedYaw);
+    //    yaw_calculated.push_back((float)dctrl->commandedYaw);
     throttle_calculated.push_back((float)dctrl->autoThrottle);
+    throttle_hover.push_back((float)dctrl->hoverthrottle);
 
-    posX.push_back(-(float)dtrkr->data.csposX);
-    posY.push_back((float)dtrkr->data.csposY);
-    posZ.push_back(-(float)dtrkr->data.csposZ);
+    posX.push_back(-(float)dtrkr->data.posX);
+    posY.push_back((float)dtrkr->data.posY);
+    posZ.push_back(-(float)dtrkr->data.posZ);
 
-    velX.push_back(-(float)dtrkr->data.velX*1000);
-    velY.push_back((float)dtrkr->data.velY*1000);
-    velZ.push_back(-(float)dtrkr->data.velZ*1000);
+    sposX.push_back(-(float)dtrkr->data.csposX);
+    sposY.push_back((float)dtrkr->data.csposY);
+    sposZ.push_back(-(float)dtrkr->data.csposZ);
 
-    svelX.push_back(-(float)dtrkr->data.svelX*1000);
-    svelY.push_back((float)dtrkr->data.svelY*1000);
-    svelZ.push_back(-(float)dtrkr->data.svelZ*1000);
+    velX.push_back(-(float)dtrkr->data.velX);
+    velY.push_back((float)dtrkr->data.velY);
+    velZ.push_back(-(float)dtrkr->data.velZ);
+
+    svelX.push_back(-(float)dtrkr->data.svelX);
+    svelY.push_back((float)dtrkr->data.svelY);
+    svelZ.push_back(-(float)dtrkr->data.svelZ);
+
+    autotakeoff_velY_thresh.push_back(15.0f);
 
 }
 const int fsizex = 500;
@@ -38,127 +46,131 @@ const int line_width = 1;
 
 //cv::Scalar background_color(255,255,255);
 cv::Scalar background_color(0,0,0);
+cv::Scalar fore_color(255,255,255);
 
 void Visualizer::plot(void) {
     addSample();
 
-    cv::Mat frame_xz = cv::Mat::zeros((fsizey+4*line_width), fsizex+4*line_width, CV_8UC3);
-    frame_xz.setTo(background_color);
-    cv::Point sp1(dtrkr->setpointw.x,-dtrkr->setpointw.z);
-    cv::Point min_xz_range,max_xz_range;
-    min_xz_range.x =-3000;
-    max_xz_range.x = 3000;
-    min_xz_range.y = 0; // z
-    max_xz_range.y = 5000; // z
-    plotxy(posX,posZ, &frame_xz,sp1,"PosXZ",min_xz_range,max_xz_range);
+//    cv::Point sp1(dtrkr->setpointw.x,-dtrkr->setpointw.z);
+//    cv::Point min_xz_range,max_xz_range;
+//    min_xz_range.x =-3000;
+//    max_xz_range.x = 3000;
+//    min_xz_range.y = 0; // z
+//    max_xz_range.y = 5000; // z
+//    cv::Mat frame_xz = plotxy(posX,posZ, sp1,"PosXZ",min_xz_range,max_xz_range);
 
-    cv::Mat frame_xy = cv::Mat::zeros((fsizey+4*line_width), fsizex+4*line_width, CV_8UC3);
-    frame_xy.setTo(background_color);
-    cv::Point sp2(dtrkr->setpointw.x,dtrkr->setpointw.y);
-    cv::Point min_xy_range,max_xy_range;
-    min_xy_range.x =-3000;
-    max_xy_range.x = 3000;
-    min_xy_range.y =-3000;
-    max_xy_range.y = 3000;
-    plotxy(posX,posY,&frame_xy, sp2, "PosXY",min_xy_range,max_xy_range);
+//    cv::Point sp2(dtrkr->setpointw.x,dtrkr->setpointw.y);
+//    cv::Point min_xy_range,max_xy_range;
+//    min_xy_range.x =-3000;
+//    max_xy_range.x = 3000;
+//    min_xy_range.y =-3000;
+//    max_xy_range.y = 3000;
+//    cv::Mat frame_xy = plotxy(posX,posY, sp2, "PosXY",min_xy_range,max_xy_range);
 
-    std::vector<cv::Mat> ims_detect;
-    ims_detect.push_back(frame_xz);
-    ims_detect.push_back(frame_xy);
-    showColumnImage(ims_detect, "Detection",CV_8UC3);
+//    std::vector<cv::Mat> ims_detect;
+//    ims_detect.push_back(frame_xz);
+//    ims_detect.push_back(frame_xy);
+//    showColumnImage(ims_detect, "Detection",CV_8UC3);
 
-    cv::Mat frame_throttle = cv::Mat::zeros((fsizey+4*line_width), fsizex+4*line_width, CV_8UC3);
-    frame_throttle.setTo(background_color);
-    plot(throttle_joystick,throttle_calculated, &frame_throttle,"Throttle");
+    std::vector<cv::Mat> ims_trk;
+    ims_trk.push_back(plot_all_position());
+    ims_trk.push_back(plot_all_velocity());
+    ims_trk.push_back(plot_all_control());
+    showRowImage(ims_trk, "Tracking",CV_8UC3);
 
-    cv::Mat frame_pitch = cv::Mat::zeros((fsizey+4*line_width), fsizex+4*line_width, CV_8UC3);
-    frame_pitch.setTo(background_color);
-    plot(pitch_joystick,pitch_calculated, &frame_pitch,"Pitch");
+}
 
-    cv::Mat frame_roll = cv::Mat::zeros((fsizey+4*line_width), fsizex+4*line_width, CV_8UC3);
-    frame_roll.setTo(background_color);
-    plot(roll_joystick,roll_calculated, &frame_roll,"Roll");
-
+cv::Mat Visualizer::plot_all_control(void) {
     std::vector<cv::Mat> ims_joy;
-    ims_joy.push_back(frame_roll);
-    ims_joy.push_back(frame_pitch);
-    ims_joy.push_back(frame_throttle);
-    showColumnImage(ims_joy, "Joystick",CV_8UC3);
+    ims_joy.push_back(plot({roll_joystick,roll_calculated},"Roll"));
+    ims_joy.push_back(plot({pitch_joystick,pitch_calculated},"Pitch"));
+    ims_joy.push_back(plot({throttle_joystick,throttle_calculated,throttle_hover},"Throttle"));
+    return createColumnImage(ims_joy, CV_8UC3);
+}
 
-
-
-    cv::Mat frame_velX= cv::Mat::zeros((fsizey+4*line_width), fsizex+4*line_width, CV_8UC3);
-    frame_velX.setTo(background_color);
-    plot(velX,svelX, &frame_velX,"VelX");
-
-    cv::Mat frame_velY= cv::Mat::zeros((fsizey+4*line_width), fsizex+4*line_width, CV_8UC3);
-    frame_velY.setTo(background_color);
-    plot(velY,svelY, &frame_velY,"VelY");
-
-    cv::Mat frame_velZ= cv::Mat::zeros((fsizey+4*line_width), fsizex+4*line_width, CV_8UC3);
-    frame_velZ.setTo(background_color);
-    plot(velZ,svelZ, &frame_velZ,"VelZ");
-
+cv::Mat Visualizer::plot_all_velocity(void) {
     std::vector<cv::Mat> ims_vel;
-    ims_vel.push_back(frame_velX);
-    ims_vel.push_back(frame_velY);
-    ims_vel.push_back(frame_velZ);
-    showColumnImage(ims_vel, "Velocities",CV_8UC3);
-
+    ims_vel.push_back(plot({velX,svelX}, "VelX"));
+    ims_vel.push_back(plot({velY,svelY,autotakeoff_velY_thresh},"VelY"));
+    ims_vel.push_back(plot({velZ,svelZ},"VelZ"));
+    return createColumnImage(ims_vel,CV_8UC3);
 }
 
-void Visualizer::plot(cv::Mat data1,cv::Mat data2, const std::string name) {
-    cv::Mat frame = cv::Mat::zeros(fsizey+4*line_width, fsizex+4*line_width, CV_8UC3);
-    plot(data1,data2, &frame,name);
-    imshow(name,frame);
+cv::Mat Visualizer::plot_all_position(void) {
+    std::vector<cv::Mat> ims_pos;
+    ims_pos.push_back(plot({posX,sposX},"PosX"));
+    ims_pos.push_back(plot({posY,sposY},"PosY"));
+    ims_pos.push_back(plot({posZ,sposZ},"PosZ"));
+    return createColumnImage(ims_pos, CV_8UC3);
 }
 
-void Visualizer::plot(cv::Mat data1,cv::Mat data2, cv::Mat *frame, std::string name) {
-    putText(*frame,name,cv::Point(0, 30),cv::FONT_HERSHEY_SIMPLEX,0.5,black);
-    cv::line(*frame,cv::Point(0,frame->rows-1),cv::Point(frame->cols,frame->rows-1),black);
+cv::Mat Visualizer::plot(std::vector<cv::Mat> data, const std::string name) {
+    cv::Mat frame(fsizey+4*line_width, fsizex+4*line_width, CV_8UC3);
+    frame.setTo(background_color);
+    plot(data, &frame,name);
+    return frame;
+}
+
+void Visualizer::plot(std::vector<cv::Mat> data, cv::Mat *frame, std::string name) {
+    putText(*frame,name,cv::Point(0, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,fore_color);
+    cv::line(*frame,cv::Point(0,frame->rows-1),cv::Point(frame->cols,frame->rows-1),fore_color);
+    cv::line(*frame,cv::Point(frame->cols-1,0),cv::Point(frame->cols-1,frame->rows-1),fore_color);
 
     double min,max;
     cv::Mat tmp;
-    tmp.push_back(data1);
-    tmp.push_back(data2);
+    for (int i = 0 ; i< data.size();i++) {
+        tmp.push_back(data.at(i));
+    }
     cv::minMaxIdx(tmp,&min,&max,NULL,NULL);
 
-    putText(*frame,"[" + std::to_string((int)min) + " - " + std::to_string((int)max) + "]",cv::Point(frame->cols-130, 12),cv::FONT_HERSHEY_SIMPLEX,0.5,red);
 
+    std::stringstream ss;
+    ss << std::setprecision(2);
+    ss << "[" << min << " - " << max << "]";
+    putText(*frame,ss.str(),cv::Point(0, 28),cv::FONT_HERSHEY_SIMPLEX,0.5,red);
+
+    float range = max - min;
+    float amplify_y = 1;
+
+    amplify_y = fsizey / range;
+
+    min *=amplify_y;
+    max *=amplify_y;
 
     min-=1;
     max+=1;
 
     const float scaleX = (float)((fsizex))/(bufsize);
-    const float scaleY = (fsizey)/(max-min);
+    const float scaleY = ((float)fsizey)/(max-min);
 
-    int start = data1.rows -bufsize;
+    int start = data.at(0).rows -bufsize;
     if (start < 0)
         start = 0;
 
-    int prev_y1 =0;
-    int prev_y2 =0;
-    int prev_x=0;
-    for (int j = start; j < data1.rows-1; j++)  {
-        int y1 = data1.at<float>(j,1) - min;
-        int y2 = data2.at<float>(j,1) - min;
-        int x = (j-start)*scaleX + 2*line_width;
-        cv::line(*frame, cv::Point(prev_x, fsizey- prev_y1*scaleY +line_width*2) , cv::Point(x, fsizey - y1*scaleY +2*line_width), green, line_width, CV_AA, 0);
-        cv::line(*frame, cv::Point(prev_x, fsizey- prev_y2*scaleY +line_width*2) , cv::Point(x, fsizey - y2*scaleY +2*line_width), blue, line_width, CV_AA, 0);
-        prev_y1 = y1;
-        prev_y2 = y2;
-        prev_x = x;
+
+    for (int i = 0 ; i< data.size();i++) {
+        int prev_y =0;
+        int prev_x=0;
+        for (int j = start; j < data.at(i).rows-1; j++)  {
+            int y = data.at(i).at<float>(j,1)*amplify_y - min;
+            int x = (j-start)*scaleX + 2*line_width;
+            cv::line(*frame, cv::Point(prev_x, fsizey- prev_y*scaleY +line_width*2) , cv::Point(x, fsizey - y*scaleY +2*line_width), linecolors[i], line_width, CV_AA, 0);
+            prev_y = y;
+            prev_x = x;
+        }
     }
 }
 
-void Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Mat *frame, cv::Point setpoint, std::string name,cv::Point minaxis,cv::Point maxaxis) {
+cv::Mat Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Point setpoint, std::string name,cv::Point minaxis,cv::Point maxaxis) {
+    cv::Mat frame = cv::Mat::zeros((fsizey+4*line_width), fsizex+4*line_width, CV_8UC3);
+    frame.setTo(background_color);
     std::stringstream ss;
     ss.precision(2);
     ss << name << " " << datax.at<float>(datax.rows-1) << "; " << datay.at<float>(datay.rows-1);
 
 
-    putText(*frame,ss.str() ,cv::Point(0, 30),cv::FONT_HERSHEY_SIMPLEX,0.5,black);
-    cv::line(*frame,cv::Point(0,frame->rows-1),cv::Point(frame->cols,frame->rows-1),black);
+    putText(frame,ss.str() ,cv::Point(0, 30),cv::FONT_HERSHEY_SIMPLEX,0.5,fore_color);
+    cv::line(frame,cv::Point(0,frame.rows-1),cv::Point(frame.cols,frame.rows-1),fore_color);
 
     double minx,maxx;
     double miny,maxy;
@@ -179,11 +191,6 @@ void Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Mat *frame, cv::Point s
     miny=minaxis.y;
     maxy=maxaxis.y;
 
-//    minx=-3000;
-//    maxx=3000;
-//    miny=-3000;
-//    maxy=3000;
-
     const float scaleX = (fsizex)/(maxx-minx);
     const float scaleY = (fsizey)/(maxy-miny);
 
@@ -200,20 +207,21 @@ void Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Mat *frame, cv::Point s
         y = yS.at<float>(j,1) - miny;
         y= fsizey - y*scaleY + 2*line_width;
         if (j > start)
-            cv::line(*frame, cv::Point(prev_x, prev_y) , cv::Point(x, y), green, line_width, CV_AA, 0);
+            cv::line(frame, cv::Point(prev_x, prev_y) , cv::Point(x, y), green, line_width, CV_AA, 0);
         prev_x = x;
         prev_y = y;
     }
 
     //draw current position more clearly
-    cv::circle(*frame,cv::Point(x,y),2,red);
+    cv::circle(frame,cv::Point(x,y),2,red);
 
     //draw the setpoint
     x = setpoint.x*1000 - minx;
     x = x* scaleX + 2*line_width;
     y = setpoint.y*1000 - miny;
     y= fsizey - y*scaleY + 2*line_width;
-    cv::line(*frame,cv::Point(0,y),cv::Point(frame->cols,y),cv::Scalar(80,80,150));
-    cv::line(*frame,cv::Point(x,0),cv::Point(x,frame->rows),cv::Scalar(80,80,150));
+    cv::line(frame,cv::Point(0,y),cv::Point(frame.cols,y),cv::Scalar(80,80,150));
+    cv::line(frame,cv::Point(x,0),cv::Point(x,frame.rows),cv::Scalar(80,80,150));
 
+    return frame;
 }

@@ -69,10 +69,11 @@ private:
     bool exitSendThread = false;
 
     #define INITIALTHROTTLE 1050
-    float hoverthrottle = INITIALTHROTTLE;
 
-    bool autoTakeOff = true;
+
+    bool autoTakeOff = false;
     int autoLand = 0;
+    bool autoControl = false;
 
     std::mutex g_lockData;
     std::mutex g_lockWaitForData2;
@@ -93,6 +94,8 @@ public:
     int autoRoll = 1500;
     int autoPitch = 1500;
     int autoYaw = 1500;
+
+    float hoverthrottle = INITIALTHROTTLE;
 
     bool joySwitch = true;
     int joyDial = 0;

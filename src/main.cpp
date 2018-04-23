@@ -117,9 +117,10 @@ void process_video() {
                 breakpause--;
         }
 
+        float time = ((float)stopWatch.Read())/1000.0;
         logger << imgcount << ";" << frame.get_frame_number() << ";" ;
         if (!INSECT_DATA_LOGGING_MODE) {
-            if (dtrkr.track(frameL,frameR, Qf)) {
+            if (dtrkr.track(frameL,frameR, Qf, time)) {
                 breakpause = 0;
             }
             dctrl.control(&(dtrkr.data));
@@ -139,6 +140,7 @@ void process_video() {
                 dctrl.joySwitch = tmp.joySwitch;
             }
         }
+
         visualizer.plot();
 
         resFrame = dtrkr.resFrame;
@@ -173,8 +175,7 @@ void process_video() {
             }
         }
         imgcount++;
-        float time = ((float)stopWatch.Read())/1000.0;
-        dtrkr.data.background_calibrated= (time > 15);
+
         std::cout << "Frame: " <<imgcount << " (" << detectcount << ", " << frame.get_frame_number() << "). FPS: " << imgcount / time << ". Time: " << time << std::endl;
         handleKey();
         if (imgcount > 60000)
@@ -270,7 +271,7 @@ int init(int argc, char **argv) {
 
     if (fromfile ) {
         pd = selection.get_device();
-        ((rs2::playback)pd).set_real_time(false);
+        ((rs2::playback)pd).set_real_time(true);
     } else {
         rs2::device selected_device = selection.get_device();
         auto depth_sensor = selected_device.first<rs2::depth_sensor>();
@@ -284,17 +285,17 @@ int init(int argc, char **argv) {
         //            depth_sensor.set_option(RS2_OPTION_LASER_POWER, (range.max - range.min)/2 + range.min);
         //        }
         if (depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
-            depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,.0);
+            depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,1.0);
         }
 
         if (depth_sensor.supports(RS2_OPTION_EXPOSURE)) {
             auto range = depth_sensor.get_option_range(RS2_OPTION_EXPOSURE);
-            depth_sensor.set_option(RS2_OPTION_EXPOSURE, 1000); //TODO: automate this setting.
+//            depth_sensor.set_option(RS2_OPTION_EXPOSURE, 10000); //TODO: automate this setting.
         }
         //weird with D435 this is totally unneccesary...? probably ROI related
         if (depth_sensor.supports(RS2_OPTION_GAIN)) {
             auto range = depth_sensor.get_option_range(RS2_OPTION_GAIN);
-            depth_sensor.set_option(RS2_OPTION_GAIN, (range.max - range.min)/2 + range.min);
+//            depth_sensor.set_option(RS2_OPTION_GAIN, (range.max - range.min)/2 + range.min);
             //depth_sensor.set_option(RS2_OPTION_GAIN, range.min); // increasing this causes noise
         }
         //        cam.stop();

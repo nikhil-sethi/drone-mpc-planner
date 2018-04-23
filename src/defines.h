@@ -9,6 +9,9 @@
 #define SSE2
 
 #define HASSCREEN // dont disable in qt debugger!
+#define INSECT_DATA_LOGGING_MODE false
+#define BEEP
+
 
 #define VIDEORAWLR VIDEOMODE_DISABLED
 #define VIDEODISPARITY VIDEOMODE_DISABLED
@@ -21,6 +24,5 @@
 #define DRONE_IM_X_START 424/IMSCALEF
 #define DRONE_IM_Y_START 360/IMSCALEF
 
-#define INSECT_DATA_LOGGING_MODE false
 
 #endif //DEFINES_H

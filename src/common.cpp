@@ -110,7 +110,32 @@ void combineGrayImage(cv::Mat iml,cv::Mat imr,cv::Mat *res) {
 }
 
 
-void createColumnImage(std::vector<cv::Mat> ims, cv::Mat * res, int type) {
+
+cv::Mat createRowImage(std::vector<cv::Mat> ims, int type) {
+    //find max height and total width:
+    int width =0;
+    int height = -1;
+    for (int i = 0; i < ims.size();i++) {
+        if (ims.at(i).rows > height) {
+            height = ims.at(i).rows;
+        }
+        width+=ims.at(i).cols;
+    }
+
+    cv::Mat res = cv::Mat(height,width,type);
+
+    cv::Point p1(0, 0);
+
+    for (int i = 0; i < ims.size();i++) {
+        cv::Point p2(p1.x+ims.at(0).cols, ims.at(0).rows);
+        cv::Mat roi = cv::Mat(res, cv::Rect(p1, p2));
+        ims.at(i).copyTo(roi);
+        p1.x+=ims.at(i).cols;
+    }
+    return res;
+}
+
+cv::Mat createColumnImage(std::vector<cv::Mat> ims, int type) {
     //find max width and total height:
     int width =-1;
     int height = 0;
@@ -121,24 +146,35 @@ void createColumnImage(std::vector<cv::Mat> ims, cv::Mat * res, int type) {
         height+=ims.at(i).rows;
     }
 
-    *res = cv::Mat(height,width,type);
+    cv::Mat res = cv::Mat(height,width,type);
 
     cv::Point p1(0, 0);
 
     for (int i = 0; i < ims.size();i++) {
         cv::Point p2(ims.at(0).cols, p1.y+ims.at(0).rows);
-        cv::Mat roi = cv::Mat(*res, cv::Rect(p1, p2));
+        cv::Mat roi = cv::Mat(res, cv::Rect(p1, p2));
         ims.at(i).copyTo(roi);
         p1.y+=ims.at(i).rows;
     }
+    return res;
 }
 
 /* combines a bunch of images into one column, and shows it */
 void showColumnImage(std::vector<cv::Mat> ims, std::string window_name, int type) {
-
-    cv::Mat res;
-    createColumnImage(ims,&res,type);
+    cv::Mat res = createColumnImage(ims,type);
     //cv::resize(res,res,cv::Size(width*4,height*4));
     cv::imshow(window_name, res);
+}
 
+/* combines a bunch of images into one row, and shows it */
+void showRowImage(std::vector<cv::Mat> ims, std::string window_name, int type) {
+    cv::Mat res = createRowImage(ims,type);
+    //cv::resize(res,res,cv::Size(width*4,height*4));
+    cv::imshow(window_name, res);
+}
+
+void alert(std::string cmd) {
+#ifdef BEEP
+    system(cmd.c_str());
+#endif
 }

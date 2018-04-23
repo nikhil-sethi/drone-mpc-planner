@@ -18,11 +18,13 @@ private:
 	int _kernelsize; 	// filter kernel width
 	int _rotater;		//pointer to current sample in rotary buffer
 	float _runner; // current filter output value
+    bool _ready = false;
 
 public:
 
 	void init(int width);
 	float addSample(float sample);
+    void reset(void);
 
 };
 

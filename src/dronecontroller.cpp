@@ -1,8 +1,10 @@
 #include "dronecontroller.h"
 #include "defines.h"
 
+#ifdef HASSCREEN
 #if 1
 #define TUNING
+#endif
 #endif
 
 const string paramsFile = "../controlParameters.dat";
@@ -50,7 +52,7 @@ bool DroneController::init(std::ofstream *logger,bool fromfile) {
     // throttle control
     createTrackbar("Throttle P", "Control", &params.throttleP, 2000);
     createTrackbar("Throttle I", "Control", &params.throttleI, 255);
-    createTrackbar("Throttle D", "Control", &params.throttleD, 255);
+    createTrackbar("Throttle D", "Control", &params.throttleD, 2000);
 
     createTrackbar("Take off", "Control", &params.autoTakeoffFactor, 255);
 
@@ -90,27 +92,29 @@ void DroneController::control(trackData * data) {
         autoTakeOff=false;
 
         if (fabs(data->posErrY - startY) < 0.1) {
-            hoverthrottle  = 0; //params.autoTakeoffFactor;
+            hoverthrottle  = INITIALTHROTTLE; //?
         }
         data->posErrY = -startY-0.2;
     }
 
-    if (autoTakeOff && !data->valid && joySwitch && hoverthrottle   < 1600)
+    if (autoTakeOff) {
         hoverthrottle  +=params.autoTakeoffFactor;
+    }
 
-    if (data->valid && data->svelY > 0.5 && joySwitch && autoTakeOff) {
+    if (data->svelY > 1.0 && autoTakeOff) {
         autoTakeOff = false;
+        hoverthrottle -= 2*params.autoTakeoffFactor; // to compensate for ground effect and delay
         startY = data->posErrY;
+        alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
+        std::cout << "HHHHHHHHHHHHHHH"<< data->svelY << std::endl;
     }
 
-    if (!data->valid && !joySwitch && joyThrottle < 1100) {
-        autoTakeOff = true;
-        hoverthrottle = INITIALTHROTTLE;
-    }
-
-    autoThrottle =  hoverthrottle  - (data->posErrY * params.throttleP + data->velY * params.throttleD + throttleErrI * params.throttleI);
-    autoRoll = 1500 + (data->posErrX * params.rollP + data->velX * params.rollD +  params.rollI*rollErrI);
-    autoPitch =1500 + (data->posErrZ * params.pitchP + data->velZ * params.pitchD +  params.pitchI*pitchErrI);
+    if (autoTakeOff)
+        autoThrottle = hoverthrottle;
+    else
+        autoThrottle =  hoverthrottle  - (data->posErrY * params.throttleP + data->velY * (params.throttleD/1000.0f) + throttleErrI * params.throttleI);
+    autoRoll = 1500 + (data->posErrX * params.rollP + data->velX * (params.rollD/1000.0f) +  params.rollI*rollErrI);
+    autoPitch =1500 + (data->posErrZ * params.pitchP + data->velZ * (params.pitchD/1000.0f) +  params.pitchI*pitchErrI);
     //TODO: Yaw
 
     //tmp only for vizs
@@ -133,7 +137,7 @@ void DroneController::control(trackData * data) {
     //std::cout << autoTakeOff << " " << autoThrottle << std::endl;
 
     g_lockData.lock();
-    if ( ((data->valid || autoTakeOff) && joySwitch) || notconnected) {
+    if ( autoControl ) {
         throttle = autoThrottle;
         if (!autoTakeOff) {
             roll = autoRoll;
@@ -150,18 +154,18 @@ void DroneController::control(trackData * data) {
         rollErrI += data->posErrX;
         pitchErrI += data->posErrZ;
 
-    } else if (!joySwitch) {
+    } else {
         throttle = joyThrottle;
         roll = joyRoll;
         pitch = joyPitch;
         yaw = joyYaw;
     }
 
-    if (params.throttleI <= 1 || autoTakeOff)
+    if (params.throttleI <= 1 || autoTakeOff || autoLand || !autoControl)
         throttleErrI = 0;
-    if (params.rollI <= 1 || autoTakeOff)
+    if (params.rollI <= 1 || autoTakeOff || autoLand || !autoControl)
         rollErrI = 0;
-    if (params.pitchI <= 1 || autoTakeOff)
+    if (params.pitchI <= 1 || autoTakeOff || autoLand || !autoControl)
         pitchErrI = 0;
 
     if ( throttle < 1050 )
@@ -185,7 +189,7 @@ void DroneController::control(trackData * data) {
         yaw = 1950;
 
 
-    if ((autoThrottle <= 1050 && joySwitch) || (joyThrottle <= 1050 && !joySwitch)) {
+    if ((autoThrottle <= 1050 && autoLand) || (joyThrottle <= 1050 && !autoControl)) {
         data->landed = true;
     } else
         data->landed = false;
@@ -245,17 +249,6 @@ void DroneController::readJoystick(void) {
         }
     }
 
-
-    static bool joySwitch_prev = joySwitch;
-    if (joySwitch && !joySwitch_prev) {
-        //check special functions
-        if (joyPitch > 1800) {
-            rebindValue = 1;
-            joySwitch = false;
-        }
-    }
-    joySwitch_prev = joySwitch;
-
     // prevent accidental take offs at start up
     if (firstTime > 0) {
         if (joySwitch || joyThrottle > 1080 ) {
@@ -266,6 +259,33 @@ void DroneController::readJoystick(void) {
         }
         firstTime--;
     }
+
+    //check switch functions
+    static bool joySwitch_prev = joySwitch;
+    if (joySwitch && !joySwitch_prev) {
+        if (joyPitch > 1800) {
+            rebindValue = 1;
+            alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Amsterdam.ogg &");
+            joySwitch = false;
+        } else if(joyThrottle < 1100) {
+            autoTakeOff = true;
+            autoLand = false;
+            hoverthrottle = INITIALTHROTTLE;
+            autoControl = true;
+        } else {
+            autoControl = true;
+        }
+    } else if (!joySwitch && joySwitch_prev) {
+        if (joyPitch < 1100) {
+            autoLand=1;
+            alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/desktop-logout.ogg &");
+        } else {
+            autoTakeOff = false;
+            autoControl = false;
+            autoLand = false;
+        }
+    }
+    joySwitch_prev = joySwitch;
 }
 
 void DroneController::sendData(void) {

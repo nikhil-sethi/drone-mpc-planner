@@ -7,7 +7,6 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/video/video.hpp>
 
-#include "stopwatch.h"
 #include "smoother.h"
 #include "common.h"
 
@@ -92,8 +91,6 @@ private:
     };
     Find_drone_result find_drone_result;
 
-    stopwatch_c stopWatch;
-
     void updateParams();
     cv::Mat createBlurryCircle(int size, float background);
     cv::Mat segment_drone(cv::Mat frame, cv::Mat frame_prev, bool build_uncertainty_map2, cv::Point previous_imageL_location);
@@ -102,9 +99,10 @@ private:
     cv::KeyPoint match_closest_to_prediciton(cv::Point3f predicted_drone_locationL, std::vector<cv::KeyPoint> keypointsL);
     int stereo_match(cv::KeyPoint closestL, cv::Mat frameL_big_prev, cv::Mat prevFrameR_big, cv::Mat frameL, cv::Mat frameR, int prevDisparity);
     void update_prediction_state(cv::Point3f p);
-    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, cv::Point measured_drone_image_location);
+    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, cv::Point measured_drone_image_location, int notFoundCountL);
     void drawviz(cv::Mat frameL, cv::Mat treshfL, cv::Mat framegrayL);
     void find_drone(cv::Mat frameL_small);
+    void beep(cv::Point2f drone, bool bam, int notFoundCountL, float time, cv::Mat frameL_small);
 
     void collect_no_drone_frames(cv::Mat diff);
 
@@ -125,7 +123,7 @@ private:
 
     int setpointX = SETPOINTXMAX / 2;
     int setpointY = SETPOINTYMAX / 2;
-    int setpointZ = 2300;
+    int setpointZ = 2000;
     int wpid = 0;
 
     std::vector<cv::Point3i> setpoints;
@@ -159,12 +157,14 @@ public:
 
     void close (void);
     bool init(std::ofstream *logger);
-    bool track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf);
+    bool track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time);
 
 
     trackData data;
     Smoother sposX, sposY, sposZ;
     Smoother svelX, svelY, svelZ;
+    const int smooth_width_vel = 10;
+    const int smooth_width_pos = 5;
 
     Smoother disp_smoothed;
 

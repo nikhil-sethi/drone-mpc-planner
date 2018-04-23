@@ -12,9 +12,12 @@
 class Visualizer{
 
 private:
-    void plot(cv::Mat data1,cv::Mat data2, std::string name);
-    void plot(cv::Mat data1,cv::Mat data2, cv::Mat *frame, std::string name);
-    void plotxy(cv::Mat datax, cv::Mat datay, cv::Mat *frame, Point setpoint, std::string name, Point minaxis, Point maxaxis);
+    Mat plot(std::vector<Mat> data, std::string name);
+    void plot(std::vector<Mat> data, cv::Mat *frame, std::string name);
+    cv::Mat plotxy(cv::Mat datax, cv::Mat datay, Point setpoint, std::string name, Point minaxis, Point maxaxis);
+    cv::Mat plot_all_control(void);
+    cv::Mat plot_all_velocity(void);
+    cv::Mat plot_all_position(void);
     void addSample(void);
     DroneController *dctrl;
     DroneTracker *dtrkr;
@@ -32,6 +35,7 @@ public:
         yaw_calculated = cv::Mat (1,1,CV_32FC1);
         throttle_joystick = cv::Mat(1,1,CV_32FC1);
         throttle_calculated = cv::Mat (1,1,CV_32FC1);
+        throttle_hover = cv::Mat (1,1,CV_32FC1);
         posX = cv::Mat (1,1,CV_32FC1);
         posY = cv::Mat (1,1,CV_32FC1);
         posZ = cv::Mat (1,1,CV_32FC1);
@@ -44,6 +48,7 @@ public:
         yaw_calculated.pop_back();
         throttle_joystick.pop_back();
         throttle_calculated.pop_back();
+        throttle_hover.pop_back();
         posX.pop_back();
         posY.pop_back();
         posZ.pop_back();
@@ -51,6 +56,7 @@ public:
 
     cv::Mat throttle_joystick;
     cv::Mat throttle_calculated;
+    cv::Mat throttle_hover;
     cv::Mat roll_joystick;
     cv::Mat roll_calculated;
     cv::Mat pitch_joystick;
@@ -62,6 +68,10 @@ public:
     cv::Mat posY;
     cv::Mat posZ;
 
+    cv::Mat sposX;
+    cv::Mat sposY;
+    cv::Mat sposZ;
+
     cv::Mat velX;
     cv::Mat velY;
     cv::Mat velZ;
@@ -69,6 +79,8 @@ public:
     cv::Mat svelX;
     cv::Mat svelY;
     cv::Mat svelZ;
+
+    cv::Mat autotakeoff_velY_thresh;
 
     void plot(void);
 
