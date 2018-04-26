@@ -136,14 +136,14 @@ bool DroneTracker::init(std::ofstream *logger) {
     sposX.init(smooth_width_pos);
     sposY.init(smooth_width_pos);
     sposZ.init(smooth_width_pos);
+    disp_smoothed.init(smooth_width_pos);
 
     svelX.init(smooth_width_vel);
     svelY.init(smooth_width_vel);
     svelZ.init(smooth_width_vel);
 
-    disp_smoothed.init(smooth_width_vel);
-
     data.drone_image_locationL = cv::Point(DRONE_IM_X_START,DRONE_IM_Y_START);
+    find_drone_result.smoothed_disparity = DRONE_DISPARITY_START;
     data.landed = true;
 
     blurred_circle = createBlurryCircle(60,settings.uncertainty_background/255.0);
@@ -173,7 +173,7 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time)
     updateParams();
 
     //int t = stopWatch.Read();
-    float dt= (time-t_prev)/1000.0;
+    float dt= (time-t_prev);
     cv::Point3f predicted_drone_locationL = predict_drone(dt);
 
     cv::Mat frameL_small;
@@ -197,48 +197,37 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time)
     data.valid = false; // reset the flag, set to true when drone is detected properly
 
     bool bam = false;
-    static int notFoundCountL =100;
+    static int n_frames_lost =100;
     if (find_drone_result.keypointsL.size() == 0) {
-        notFoundCountL++;
-        if( notFoundCountL >= 10 )
+        n_frames_lost++;
+        if( n_frames_lost >= 10 )
             foundL = false;
         update_prediction_state(cv::Point3f(predicted_drone_locationL.x,predicted_drone_locationL.y,predicted_drone_locationL.z));
+        reset_tracker_ouput(n_frames_lost);
     } else {
         find_drone_result.best_image_locationL = match_closest_to_prediciton(predicted_drone_locationL,find_drone_result.keypointsL);
 
-        static float disparity_prev =0;
-        int disparity = stereo_match(find_drone_result.best_image_locationL,frameL_big_prev_OK,frameR_big_prev_OK,frameL,frameR,disparity_prev);
-        find_drone_result.disparity = disparity;
-        disparity_prev =  disp_smoothed.addSample(disparity);
 
-        if (fabs((float)abs(disparity) - fabs(disparity_prev)) > 3) {
-            //do better matching?
-            std::cout << disparity << "-> BAM <-" << disparity_prev << std::endl;
-            //disparity = disparity_prev;
-            bam = true;
-            find_drone_result.update_prev = false;
-        }
+        find_drone_result.disparity = stereo_match(find_drone_result.best_image_locationL,frameL_big_prev_OK,frameR_big_prev_OK,frameL,frameR,find_drone_result.smoothed_disparity);
 
-        update_prediction_state(cv::Point3f(find_drone_result.best_image_locationL.pt.x,find_drone_result.best_image_locationL.pt.y,disparity));
+        update_prediction_state(cv::Point3f(find_drone_result.best_image_locationL.pt.x,find_drone_result.best_image_locationL.pt.y,find_drone_result.disparity));
 
         //calculate everything for the dronecontroller:
         std::vector<Point3f> camera_coordinates, world_coordinates;
-        camera_coordinates.push_back(Point3f(find_drone_result.best_image_locationL.pt.x*IMSCALEF,find_drone_result.best_image_locationL.pt.y*IMSCALEF,-disparity));
+        camera_coordinates.push_back(Point3f(find_drone_result.best_image_locationL.pt.x*IMSCALEF,find_drone_result.best_image_locationL.pt.y*IMSCALEF,-find_drone_result.disparity));
         camera_coordinates.push_back(Point3f(predicted_drone_locationL.x*IMSCALEF,predicted_drone_locationL.y*IMSCALEF,-predicted_drone_locationL.z));
         cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
         Point3f output = world_coordinates[0];
         Point3f predicted_output = world_coordinates[1];
-        static Point3f output_prev;
-        update_tracker_ouput(output,dt,find_drone_result.best_image_locationL.pt,notFoundCountL);
-
-        output_prev = output;
-
-        t_prev = time; // update dt only if data valid
-
-        notFoundCountL = 0;
+        update_tracker_ouput(output,dt,n_frames_lost);
+        n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
+        t_prev = time; // update dt only if drone was detected
     }
+
+
+
 #ifdef BEEP
-    beep(find_drone_result.best_image_locationL.pt,bam,notFoundCountL,time,frameL_small);
+    beep(find_drone_result.best_image_locationL.pt,bam,n_frames_lost,time,frameL_small);
 #endif
 
     if (!data.background_calibrated && time > 15)
@@ -250,16 +239,16 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time)
     drawviz(frameL,find_drone_result.treshfL,frameL_small);
 #endif
 
-    if (!bam && !breakpause) { //TMP
-        if (find_drone_result.update_prev) {
-            frameL_big_prev_OK = frameL_big_prev.clone();
-            frameL_s_prev_OK = frameL_s_prev.clone();
-            frameR_big_prev_OK = frameR_big_prev.clone();
-        }
-        frameL_s_prev = frameL_small.clone();
-        frameL_big_prev = frameL.clone();
-        frameR_big_prev = frameR.clone();
+
+    if (find_drone_result.update_prev_frames) {
+        frameL_big_prev_OK = frameL_big_prev.clone();
+        frameL_s_prev_OK = frameL_s_prev.clone();
+        frameR_big_prev_OK = frameR_big_prev.clone();
     }
+    frameL_s_prev = frameL_small.clone();
+    frameL_big_prev = frameL.clone();
+    frameR_big_prev = frameR.clone();
+
     return false;
 }
 void DroneTracker::beep(cv::Point2f drone, bool bam, int notFoundCountL, float time,cv::Mat frameL_small) {
@@ -269,12 +258,12 @@ void DroneTracker::beep(cv::Point2f drone, bool bam, int notFoundCountL, float t
     }
 
     if (bam) {
-        system("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Soft\ delay.ogg &");
+        //system("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Soft\ delay.ogg &");
     }
 
     static bool lost = false;
     if( notFoundCountL == 3 && !lost ) {
-       // system("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Rhodes.ogg &");
+        // system("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Rhodes.ogg &");
         lost =true;
     }
 
@@ -301,7 +290,7 @@ void DroneTracker::beep(cv::Point2f drone, bool bam, int notFoundCountL, float t
 
 
         if (time-time_beep_prev > 0.1 / beep_speed) {
-           // system("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Blip.ogg &");
+            // system("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Blip.ogg &");
             time_beep_prev = time;
         }
     }
@@ -354,8 +343,10 @@ void DroneTracker::collect_no_drone_frames(cv::Mat diff) {
 
 void DroneTracker::find_drone(cv::Mat frameL_small) {
     cv::Point previous_drone_location;
-    if (data.landed)
+    if (data.landed) {
         data.drone_image_locationL = cv::Point(DRONE_IM_X_START,DRONE_IM_Y_START);
+        find_drone_result.smoothed_disparity = DRONE_DISPARITY_START;
+    }
     previous_drone_location = data.drone_image_locationL;
 
     //attempt to detect changed blobs
@@ -382,7 +373,7 @@ void DroneTracker::find_drone(cv::Mat frameL_small) {
         update_prev = 0;
     find_drone_result.keypointsL = keypointsL;
     find_drone_result.treshfL = treshfL;
-    find_drone_result.update_prev = update_prev == 0 || update_prev > 5 ;
+    find_drone_result.update_prev_frames = update_prev == 0 || update_prev > 5 ;
 
 }
 
@@ -746,7 +737,10 @@ void DroneTracker::update_prediction_state(cv::Point3f p) {
         kfL.correct(measL);
 }
 
-void DroneTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt, cv::Point measured_drone_image_location, int notFoundCountL) {
+void DroneTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  int n_frames_lost) {
+
+    cv::Point measured_drone_image_location = find_drone_result.best_image_locationL.pt;
+
     cv::Point3i tmps;
     if (wpid > 0)
         tmps = setpoints[wpid];
@@ -765,51 +759,75 @@ void DroneTracker::update_tracker_ouput(Point3f measured_world_coordinates,float
     data.posX = measured_world_coordinates.x;
     data.posY = measured_world_coordinates.y;
     data.posZ = measured_world_coordinates.z;
+    data.disparity = find_drone_result.disparity; // tmp, should not be in data
+
 
     float csposX = sposX.addSample(data.posX);
     float csposY = sposY.addSample(data.posY);
     float csposZ = sposZ.addSample(data.posZ);
+    static float sdisparity= disp_smoothed.addSample(data.disparity);
+    data.sdisparity = sdisparity; // tmp, should not be in data
+
+    if (fabs((float)abs(find_drone_result.disparity) - fabs(find_drone_result.smoothed_disparity)) > 3) {
+        //do better matching?
+        std::cout << find_drone_result.disparity << "-> BAM <-" << find_drone_result.smoothed_disparity << std::endl;
+        //find_drone_result.update_prev_frames = false;
+    }
+    find_drone_result.smoothed_disparity = sdisparity;
 
     data.csposX = csposX;
     data.csposY = csposY;
     data.csposZ = csposZ;
 
     static float prevX,prevY,prevZ =0;
-
     static int detected_after_take_off = 0;
 
-    if (notFoundCountL == 0 && detected_after_take_off == 0) {
-        detected_after_take_off++;
-        if (detected_after_take_off > smooth_width_pos) {
-            data.dx = csposX - prevX;
-            data.dy = csposY - prevY;
-            data.dz = csposZ - prevZ;
-            data.velX = data.dx / dt;
-            data.velY = data.dy / dt;
-            data.velZ = data.dz / dt;
-        }
-        float tsvelX = svelX.addSample(data.velX);
-        float tsvelY = svelY.addSample(data.velY);
-        float tsvelZ = svelZ.addSample(data.velZ);
-        if (detected_after_take_off > smooth_width_pos) { // + smooth_width_vel, but than it is too late for autotakeoff...
-            data.svelX = tsvelX;
-            data.svelY = tsvelY;
-            data.svelZ = tsvelZ;
-        }
-    } else if (notFoundCountL > 10 || data.landed){
+    if (n_frames_lost >= smooth_width_vel || data.reset_filters) { // tracking was regained, after n_frames_lost frames
+        data.sdisparity = -1;
+        disp_smoothed.reset();
         sposX.reset();
         sposY.reset();
         sposZ.reset();
         svelX.reset();
         svelY.reset();
         svelZ.reset();
+
+        detected_after_take_off = 0;
+        data.reset_filters = false; // TODO also reset t_prev?
+    }
+
+    if (data.landed) {
+        prevX = data.csposX;
+        prevY = data.csposY;
+        prevZ = data.csposZ;
+    }
+
+    if (detected_after_take_off > smooth_width_pos) {
+        data.dx = csposX - prevX;
+        data.dy = csposY - prevY;
+        data.dz = csposZ - prevZ;
+        data.velX = data.dx / dt;
+        data.velY = data.dy / dt;
+        data.velZ = data.dz / dt;
+    } else {
+        data.dx = 0;
+        data.dy = 0;
+        data.dz = 0;
         data.velX = 0;
         data.velY = 0;
         data.velZ = 0;
+    }
+    float tsvelX = svelX.addSample(data.velX);
+    float tsvelY = svelY.addSample(data.velY);
+    float tsvelZ = svelZ.addSample(data.velZ);
+    if (detected_after_take_off > smooth_width_pos) { // + smooth_width_vel, but than it is too late for autotakeoff... (by filling the smoother with 0's we assume vel = 0 , which is true at take off)
+        data.svelX = tsvelX;
+        data.svelY = tsvelY;
+        data.svelZ = tsvelZ;
+    } else {
         data.svelX = 0;
         data.svelY = 0;
         data.svelZ = 0;
-        detected_after_take_off = 0;
     }
 
     prevX = csposX;
@@ -822,6 +840,24 @@ void DroneTracker::update_tracker_ouput(Point3f measured_world_coordinates,float
 
     data.valid = true;
     data.dt = dt;
+    detected_after_take_off++;
+}
+
+void DroneTracker::reset_tracker_ouput(int n_frames_lost) {
+
+
+    if (n_frames_lost > 10 || data.landed){
+        data.reset_filters = true;
+        data.velX = 0;
+        data.velY = 0;
+        data.velZ = 0;
+        data.svelX = 0;
+        data.svelY = 0;
+        data.svelZ = 0;
+    }
+
+
+
 }
 
 void DroneTracker::close () {

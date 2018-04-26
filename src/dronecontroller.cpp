@@ -101,7 +101,7 @@ void DroneController::control(trackData * data) {
         hoverthrottle  +=params.autoTakeoffFactor;
     }
 
-    if (data->svelY > 1.0 && autoTakeOff) {
+    if (data->svelY > AUTOTAKEOFF_SPEED && autoTakeOff) {
         autoTakeOff = false;
         hoverthrottle -= 2*params.autoTakeoffFactor; // to compensate for ground effect and delay
         startY = data->posErrY;

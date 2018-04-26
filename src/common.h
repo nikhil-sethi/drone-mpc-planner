@@ -50,10 +50,13 @@ const float depthscale = 256.0f;
 struct trackData {
     float posX,posY,posZ,posErrX,posErrY,posErrZ, dx,dy,dz,velX,velY,velZ,dt,csposX,csposY,csposZ,svelX,svelY,svelZ;
     bool landed;
+    float disparity;
+    float sdisparity;
     cv::Point drone_image_locationL;
     bool background_calibrated;
     bool valid;
     int detected_after_take_off;
+    bool reset_filters;
 };
 
 

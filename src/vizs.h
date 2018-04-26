@@ -39,6 +39,8 @@ public:
         posX = cv::Mat (1,1,CV_32FC1);
         posY = cv::Mat (1,1,CV_32FC1);
         posZ = cv::Mat (1,1,CV_32FC1);
+        disparity = cv::Mat (1,1,CV_32FC1);
+        sdisparity = cv::Mat (1,1,CV_32FC1);
 
         roll_joystick.pop_back();
         roll_calculated.pop_back();
@@ -52,6 +54,8 @@ public:
         posX.pop_back();
         posY.pop_back();
         posZ.pop_back();
+        disparity.pop_back();
+        sdisparity.pop_back();
     }
 
     cv::Mat throttle_joystick;
@@ -67,6 +71,8 @@ public:
     cv::Mat posX;
     cv::Mat posY;
     cv::Mat posZ;
+    cv::Mat disparity;
+    cv::Mat sdisparity;
 
     cv::Mat sposX;
     cv::Mat sposY;
@@ -75,6 +81,8 @@ public:
     cv::Mat velX;
     cv::Mat velY;
     cv::Mat velZ;
+
+
 
     cv::Mat svelX;
     cv::Mat svelY;

@@ -24,6 +24,8 @@ void Visualizer::addSample(void) {
     posX.push_back(-(float)dtrkr->data.posX);
     posY.push_back((float)dtrkr->data.posY);
     posZ.push_back(-(float)dtrkr->data.posZ);
+    disparity.push_back(-(float)dtrkr->data.disparity);
+    sdisparity.push_back(-(float)dtrkr->data.sdisparity);
 
     sposX.push_back(-(float)dtrkr->data.csposX);
     sposY.push_back((float)dtrkr->data.csposY);
@@ -37,7 +39,7 @@ void Visualizer::addSample(void) {
     svelY.push_back((float)dtrkr->data.svelY);
     svelZ.push_back(-(float)dtrkr->data.svelZ);
 
-    autotakeoff_velY_thresh.push_back(15.0f);
+    autotakeoff_velY_thresh.push_back(AUTOTAKEOFF_SPEED);
 
 }
 const int fsizex = 500;
@@ -77,6 +79,9 @@ void Visualizer::plot(void) {
     ims_trk.push_back(plot_all_velocity());
     ims_trk.push_back(plot_all_control());
     showRowImage(ims_trk, "Tracking",CV_8UC3);
+
+    cv::imshow("disparity", plot({disparity,sdisparity},"Disparity"));
+
 
 }
 

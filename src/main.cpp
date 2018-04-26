@@ -125,7 +125,7 @@ void process_video() {
             }
             dctrl.control(&(dtrkr.data));
         }
-        insect.track(frameL,frameR, Qf);
+        //insect.track(frameL,frameR, Qf);
 
 
 #ifdef HASSCREEN
