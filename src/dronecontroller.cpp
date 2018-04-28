@@ -13,20 +13,13 @@ const string paramsFile = "../controlParameters.dat";
 Joystick joystick("/dev/input/js0");
 JoystickEvent event;
 
-int notconnected;
 
-bool DroneController::init(std::ofstream *logger,bool fromfile) {
+
+bool DroneController::init(std::ofstream *logger,bool fromfile, Arduino * arduino) {
+    _arduino = arduino;
     _logger = logger;
     (*_logger) << "valid; posErrX; posErrY; posErrZ; velX; velY; velZ; hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; joyThrottle; joyRoll; joyPitch; joyYaw; joySwitch; throttleP; throttleI; throttleD; dt; dx; dy; dz;";
     std::cout << "Initialising control." << std::endl;
-    // setup connection with Arduino
-    baudrate = 115200;
-    notconnected = RS232_OpenComport(baudrate);
-
-    if (notconnected && !fromfile && !INSECT_DATA_LOGGING_MODE) {
-        printf("Arduino failed.\n");
-        exit(1);
-    }
 
     // Ensure that joystick was found and that we can use it
     if (!joystick.isFound() && !fromfile && !INSECT_DATA_LOGGING_MODE) {
@@ -46,7 +39,7 @@ bool DroneController::init(std::ofstream *logger,bool fromfile) {
     // create GUI to set control parameters
     namedWindow("Control", WINDOW_NORMAL);
 
-    createTrackbar("Rebind", "Control", &rebindValue, 1);
+    createTrackbar("Rebind", "Control", &(_arduino->rebindValue), 1);
     createTrackbar("AutoLand", "Control", &autoLand, 1);
 
     // throttle control
@@ -65,7 +58,7 @@ bool DroneController::init(std::ofstream *logger,bool fromfile) {
     createTrackbar("Pitch I", "Control", &params.pitchI, 255);
     createTrackbar("Pitch D", "Control", &params.pitchD, 255);
 
-    createTrackbar("LED", "Control", &ledpower, 255);
+
 
 
     //    // yaw control
@@ -76,16 +69,15 @@ bool DroneController::init(std::ofstream *logger,bool fromfile) {
 
 #endif
 
-    thread_nrf = std::thread(&DroneController::workerThread,this);
 
-    std::cout << "led power: " << ledpower << std::endl;
+
 }
 
 float startY = -100;
 
 void DroneController::control(trackData * data) {
 
-    rebind();
+    _arduino->rebind();
     readJoystick();
 
     if(autoLand) {
@@ -137,8 +129,8 @@ void DroneController::control(trackData * data) {
     }
 
     //std::cout << autoTakeOff << " " << autoThrottle << std::endl;
+    int throttle,roll,pitch,yaw;
 
-    g_lockData.lock();
     if ( autoControl ) {
         throttle = autoThrottle;
         if (!autoTakeOff) {
@@ -196,7 +188,16 @@ void DroneController::control(trackData * data) {
     } else
         data->landed = false;
 
-    g_lockData.unlock();
+
+    _arduino->g_lockData.lock();
+
+    _arduino->throttle = throttle;
+    _arduino->roll = roll;
+    _arduino->pitch = pitch;
+    _arduino->yaw = yaw;
+
+
+    _arduino->g_lockData.unlock();
 
     (*_logger) << (int)data->valid  << "; " << data->posErrX << "; " << data->posErrY  << "; " << data->posErrZ << "; " << data->velX << "; " << data->velY  << "; " << data->velZ << "; " << hoverthrottle << "; " << autoThrottle << "; " << autoRoll << "; " << autoPitch << "; " << autoYaw <<  "; " << joyThrottle <<  "; " << joyRoll <<  "; " << joyPitch <<  "; " << joyYaw << "; " << (int)joySwitch << "; " << params.throttleP << "; " << params.throttleI << "; " << params.throttleD << "; " << data->dt << "; " << data->dx << "; " << data->dy << "; " << data->dz << "; ";
 //    if (!notconnected){
@@ -206,16 +207,6 @@ void DroneController::control(trackData * data) {
 //        std::cout << "AutoTakeOff:" << (int)autoTakeOff <<  " HT: " << hoverthrottle << " Valid: " << data->valid << "VelY: " << data->velY <<std::endl;
 //        std::cout << "AutoLand:" << autoLand <<  " HT: " << hoverthrottle << " Valid: " << data->valid << " PosY: " << data->posErrY << " startY:" << startY << " VelY: " << data->velY <<std::endl;
 //    }
-}
-
-void DroneController::workerThread(void) {
-    std::cout << "Send nrf thread started!" << std::endl;
-    while (!exitSendThread) {
-        g_lockData.lock();
-        sendData();
-        g_lockData.unlock();
-        usleep(20000);
-    }
 }
 
 int firstTime = 3;
@@ -266,7 +257,7 @@ void DroneController::readJoystick(void) {
     static bool joySwitch_prev = joySwitch;
     if (joySwitch && !joySwitch_prev) {
         if (joyPitch > 1800) {
-            rebindValue = 1;
+            _arduino->rebindValue = 1;
             alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Amsterdam.ogg &");
             joySwitch = false;
         } else if(joyThrottle < 1100) {
@@ -290,85 +281,8 @@ void DroneController::readJoystick(void) {
     joySwitch_prev = joySwitch;
 }
 
-void DroneController::sendData(void) {
-
-    if (false) {
-        //tmp led power hack
-        char buff[3];
-        buff[0] = 'B';
-        buff[1] = 't';
-        buff[2] = ledpower;
-        if (!notconnected) {
-            RS232_SendBuf( (unsigned char*) buff, 3);
-        }
-        usleep(100000);
-    } else {
-
-        char buff[64];
-        sprintf( (char*) buff,"%u,%u,%u,%u,%u,%u,0,0,0,0,0,0\n",throttle,roll,pitch,yaw,mode,ledpower);
-        if (!notconnected) {
-            RS232_SendBuf( (unsigned char*) buff, 63);
-        }
-
-        //if ( data->valid ) {
-        //std::setprecision(2);
-        //std::cout << data->posY << " " << data->velY << " - ";
-        //std::cout << "JoyCommands:" << std::string(buff) << std::flush;
-        //    (*_logger) << "JoyCommands:" << std::string(buff) << std::flush;
-
-        //}
-
-        if (!notconnected) {
-            unsigned char inbuf[1];
-            inbuf[1] = 0;
-            std::stringstream tmp;
-            int n = 1;
-            int totn = 0;
-            while (n)    {
-                n = RS232_PollComport(inbuf,1);
-                if (n > 0) {
-                    tmp << inbuf[0];
-                    totn += n;
-                }
-            }
-            if (totn > 0) {
-                 //std::cout << "Arduino: " << totn << ": " << tmp.str() << std::endl;
-            }
-        }
-
-        //TODO: disable uart polling after bind confirmed!
-        //check if input string is the same as the commanded strning, if so bind was succesfull!
-        //	for (int i = 0 to tmp.count;i++) {
-        //if tmp.str.c_str[i] == buff[i] ...
-        //	}
-
-    }
-}
-
-void DroneController::rebind(void){
-
-    if (rebindValue) {
-        rebindValue=0;
-
-        char buff[64];
-        sprintf( (char*) buff,"1050,1500,1500,1500,0,0,0,0,0,0,0,2000\n");
-        if (!notconnected) {
-            RS232_SendBuf( (unsigned char*) buff, 63);
-            RS232_CloseComport();
-        }
-        usleep(100000);
-        notconnected = RS232_OpenComport(baudrate);
-
-        if (notconnected)
-            std::cout << "Bind failure" << std::endl;
-    }
-}
-
 void DroneController::close () {
-    exitSendThread = true;
-    g_lockData.unlock();
-    g_lockWaitForData2.unlock();
-    thread_nrf.join();
+
 
 //    char buff[64];
 //    sprintf( (char*) buff,"1050,1500,1500,1500,0,0,0,0,0,0,0,2000\n");

@@ -38,6 +38,7 @@ bool Insect::init(std::ofstream *logger) {
     createTrackbar("maxArea", "Tuning", &settings.maxArea, 10000);
     createTrackbar("Opening1", "Tuning", &settings.iOpen1r, 30);
     createTrackbar("Closing1", "Tuning", &settings.iClose1r, 30);
+    createTrackbar("LED", "Control", &ledpower, 255);
 #endif
 
     kfL = cv::KalmanFilter(stateSize, measSize, contrSize, type);

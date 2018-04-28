@@ -61,6 +61,7 @@ cv::Mat Qf;
 #define IR_ID_RIGHT 2
 
 std::ofstream logger;
+Arduino arduino;
 DroneTracker dtrkr;
 DroneController dctrl;
 Insect insect;
@@ -253,9 +254,12 @@ int init(int argc, char **argv) {
 
     logger.open(data_output_dir  + "log.txt",std::ofstream::out);
     logger << "ID;RS_ID;";
+
+    arduino.init(fromfile);
+
     if (!INSECT_DATA_LOGGING_MODE) {
         dtrkr.init(&logger);
-        dctrl.init(&logger,fromfile);
+        dctrl.init(&logger,fromfile,&arduino);
     }
     insect.init(&logger);
     logger << std::endl;
@@ -392,6 +396,7 @@ void close() {
         dctrl.close();
     }
     insect.close();
+    arduino.close();
 
 #if VIDEORESULTS   
     outputVideoColor.close();

@@ -1,7 +1,7 @@
 #ifndef DRONECONTROLLER_H
 #define DRONECONTROLLER_H
 
-#include "rs232.h"
+
 #include "dronetracker.h"
 #include "joystick.hpp"
 #include "common.h"
@@ -12,8 +12,7 @@
 #include <iomanip>
 #include <unistd.h>
 
-#include <thread>
-#include <mutex>
+#include "arduino.h"
 
 using namespace cv;
 
@@ -62,12 +61,6 @@ private:
     float rollErrI = 0;
     float pitchErrI = 0;
 
-    int rebindValue = 0;
-
-    std::thread thread_nrf;
-
-    bool exitSendThread = false;
-
     #define INITIALTHROTTLE 1050
     #define AUTOTAKEOFF_SPEED 0.03f
 
@@ -76,18 +69,17 @@ private:
     int autoLand = 0;
     bool autoControl = false;
 
-    std::mutex g_lockData;
-    std::mutex g_lockWaitForData2;
+    Arduino * _arduino;
 
     controlParameters params;
-    int baudrate;
+
     std::ofstream *_logger;
     void sendData(void);
     void readJoystick(void);
     void rebind(void);
 
 
-    void workerThread(void);
+
 
 public:
 
@@ -106,16 +98,11 @@ public:
     int joyPitch = 0;
     int joyYaw = 0;
 
-    int ledpower = 100; // 666mAh. limited to 150 in arduino
+
 
     void close (void);
-    bool init(std::ofstream *logger,bool fromfile);
+    bool init(std::ofstream *logger, bool fromfile, Arduino * arduino);
     void control(trackData *data);
-
-    uint16_t mode = 1500; // <min = mode 1, 1500 = mode 2, >max = mode 3
-    int roll,pitch,yaw = 1500;
-    int throttle = 1000;
-
 
 };
 
