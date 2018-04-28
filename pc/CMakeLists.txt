@@ -62,4 +62,3 @@ ENDIF(CMAKE_BUILD_TYPE STREQUAL Debug)
 add_executable(pats ${SRCS})
 
 target_link_libraries( pats ${OpenCV_LIBS} ${REALSENSE} ${GST_LIBRARIES} ${GSTSDP_LIBRARIES} ${GSTAPP_LIBRARIES})
-

@@ -261,7 +261,7 @@ int init(int argc, char **argv) {
         dtrkr.init(&logger);
         dctrl.init(&logger,fromfile,&arduino);
     }
-    insect.init(&logger);
+    insect.init(&logger,&arduino);
     logger << std::endl;
 
     std::cout << "Frame buf size: " << FRAME_BUF_SIZE << std::endl;

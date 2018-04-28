@@ -10,7 +10,7 @@ using namespace std;
 
 //#define USERIGHTCAM
 
-#if 0
+#if 1
 #define DRAWVIZSL
 #ifdef USERIGHTCAM
 #define DRAWVIZSR
@@ -19,8 +19,9 @@ using namespace std;
 #endif
 
 const string settingsFile = "../settings2.dat";
-bool Insect::init(std::ofstream *logger) {
+bool Insect::init(std::ofstream *logger, Arduino * arduino) {
     _logger = logger;
+    _arduino = arduino;
     (*_logger) << "insect_imLx; insect_imLy; insect_imRx; insect_imRy;";
     if (checkFileExist(settingsFile)) {
         std::ifstream is(settingsFile, std::ios::binary);
@@ -38,7 +39,7 @@ bool Insect::init(std::ofstream *logger) {
     createTrackbar("maxArea", "Tuning", &settings.maxArea, 10000);
     createTrackbar("Opening1", "Tuning", &settings.iOpen1r, 30);
     createTrackbar("Closing1", "Tuning", &settings.iClose1r, 30);
-    createTrackbar("LED", "Control", &ledpower, 255);
+    createTrackbar("LED", "Tuning", &(_arduino->ledpower), 255);
 #endif
 
     kfL = cv::KalmanFilter(stateSize, measSize, contrSize, type);

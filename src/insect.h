@@ -17,6 +17,8 @@
 #include <cereal/archives/binary.hpp>
 #include <fstream>
 
+#include "arduino.h"
+
 /*
  * This class will detect and track an insect
  *
@@ -26,6 +28,8 @@ class Insect {
 
 private:
     cv::SimpleBlobDetector::Params params;
+
+    Arduino * _arduino;
 
     struct patsSettings{
 
@@ -116,7 +120,7 @@ public:
     cv::Mat resFrame;
 
     void close (void);
-    bool init(std::ofstream *logger);
+    bool init(std::ofstream *logger, Arduino * arduino);
     void track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf);
 
 
