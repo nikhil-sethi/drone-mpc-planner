@@ -189,7 +189,7 @@ void process_video() {
         }
         imgcount++;
 
-        std::cout << "Frame: " <<imgcount << " (" << detectcount << ", " << frame.get_frame_number() << "). FPS: " << imgcount / time << ". Time: " << time << ". Break: " << ((float)stopWatch_break.Read())/1000.0 << std::endl;
+        //std::cout << "Frame: " <<imgcount << " (" << detectcount << ", " << frame.get_frame_number() << "). FPS: " << imgcount / time << ". Time: " << time << ". Break: " << ((float)stopWatch_break.Read())/1000.0 << std::endl;
         handleKey();
         if (imgcount > 60000)
             break;

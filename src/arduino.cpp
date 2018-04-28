@@ -70,7 +70,7 @@ void Arduino::sendData(void) {
                 }
             }
             if (totn > 0) {
-                //std::cout << "Arduino: " << totn << ": " << tmp.str() << std::endl;
+                std::cout << "Arduino: " << totn << ": " << tmp.str() << std::endl;
             }
         }
 

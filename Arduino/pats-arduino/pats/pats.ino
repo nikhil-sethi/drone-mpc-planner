@@ -15,7 +15,7 @@
 #define LED_pin    13 // LED  - D13
 #define POWERLED_pin 6
 
-unsigned char pwm_value = 10;
+unsigned char pwm_value = 0;
 
 // SPI outputs
 #define MOSI_on PORTD |= _BV(MOSI_pin)
@@ -117,8 +117,8 @@ void setup() {
 }
 
 void set_power_led() {
-    if (pwm_value > 120) {
-        pwm_value = 120;
+    if (pwm_value > 3) {
+        pwm_value = 3;
       }
       // put your main code here, to run repeatedly:
       analogWrite(POWERLED_pin, pwm_value);
