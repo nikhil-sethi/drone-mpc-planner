@@ -132,7 +132,9 @@ void process_video() {
             }
             dctrl.control(&(dtrkr.data));
         }
-        //insect.track(frameL,frameR, Qf);
+#if INSECT_DATA_LOGGING_MODE
+        insect.track(frameL,frameR, Qf);
+#endif
 
 
 #ifdef HASSCREEN
@@ -148,8 +150,10 @@ void process_video() {
             }
         }
 
+#if !INSECT_DATA_LOGGING_MODE
         if (breakpause_prev != 0)
             visualizer.plot();
+#endif
 
         resFrame = dtrkr.resFrame;
 
