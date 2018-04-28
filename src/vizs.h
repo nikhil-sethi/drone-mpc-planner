@@ -15,6 +15,7 @@ private:
     Mat plot(std::vector<Mat> data, std::string name);
     void plot(std::vector<Mat> data, cv::Mat *frame, std::string name);
     cv::Mat plotxy(cv::Mat datax, cv::Mat datay, Point setpoint, std::string name, Point minaxis, Point maxaxis);
+    cv::Mat plot_xyd(void);
     cv::Mat plot_all_control(void);
     cv::Mat plot_all_velocity(void);
     cv::Mat plot_all_position(void);
@@ -22,7 +23,7 @@ private:
     DroneController *dctrl;
     DroneTracker *dtrkr;
 
-    const int bufsize = 200;
+    const int bufsize = 100;
 
 public:
 

@@ -43,6 +43,7 @@ cv::Mat resFrame;
 GStream outputVideoColor,outputVideoRawLR;
 cv::VideoWriter outputVideoDisp;
 stopwatch_c stopWatch;
+stopwatch_c stopWatch_break;
 std::string file;
 std::string data_output_dir;
 std::string calib_folder;
@@ -100,9 +101,11 @@ void process_video() {
         static int breakpause_prev =-1;
         if (breakpause == 0 && breakpause_prev!=0) {
             ((rs2::playback)pd).pause();
-            //dtrkr.breakpause = true;
+            stopWatch_break.Resume();
+            dtrkr.breakpause = true;
         } else if (breakpause != 0 && breakpause_prev==0) {
             ((rs2::playback)pd).resume();
+            stopWatch_break.Stop();
             dtrkr.breakpause = false;
         }
         breakpause_prev = breakpause;
@@ -112,12 +115,16 @@ void process_video() {
             frameL = Mat(imgsize, CV_8UC1, (void*)frame.get_infrared_frame(IR_ID_LEFT).get_data(), Mat::AUTO_STEP).clone();
             frameR = Mat(imgsize, CV_8UC1, (void*)frame.get_infrared_frame(IR_ID_RIGHT).get_data(), Mat::AUTO_STEP).clone();
 
-
             if (breakpause > 0)
                 breakpause--;
         }
 
-        float time = ((float)stopWatch.Read())/1000.0;
+
+        static float time =0;
+        static float break_time =0;
+        if (breakpause_prev != 0)
+            time = ((float)stopWatch.Read())/1000.0 - ((float)stopWatch_break.Read())/1000.0 ;
+
         logger << imgcount << ";" << frame.get_frame_number() << ";" ;
         if (!INSECT_DATA_LOGGING_MODE) {
             if (dtrkr.track(frameL,frameR, Qf, time)) {
@@ -141,11 +148,12 @@ void process_video() {
             }
         }
 
-        visualizer.plot();
+        if (breakpause_prev != 0)
+            visualizer.plot();
 
         resFrame = dtrkr.resFrame;
 
-        cv::imshow("Results", resFrame);
+
 #endif
 
         frameBL[frame_buffer_write_id] = frameL.clone();
@@ -176,7 +184,7 @@ void process_video() {
         }
         imgcount++;
 
-        std::cout << "Frame: " <<imgcount << " (" << detectcount << ", " << frame.get_frame_number() << "). FPS: " << imgcount / time << ". Time: " << time << std::endl;
+        std::cout << "Frame: " <<imgcount << " (" << detectcount << ", " << frame.get_frame_number() << "). FPS: " << imgcount / time << ". Time: " << time << ". Break: " << ((float)stopWatch_break.Read())/1000.0 << std::endl;
         handleKey();
         if (imgcount > 60000)
             break;

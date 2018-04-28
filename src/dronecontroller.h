@@ -69,7 +69,7 @@ private:
     bool exitSendThread = false;
 
     #define INITIALTHROTTLE 1050
-    #define AUTOTAKEOFF_SPEED 1.0f
+    #define AUTOTAKEOFF_SPEED 0.03f
 
 
     bool autoTakeOff = false;

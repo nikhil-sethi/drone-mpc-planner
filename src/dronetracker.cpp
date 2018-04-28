@@ -11,7 +11,7 @@ using namespace std;
 #ifdef HASSCREEN
 #if 1
 #define DRAWVIZS
-//#define TUNING
+#define TUNING
 #endif
 
 #define POSITIONTRACKBARS
@@ -144,6 +144,7 @@ bool DroneTracker::init(std::ofstream *logger) {
 
     data.drone_image_locationL = cv::Point(DRONE_IM_X_START,DRONE_IM_Y_START);
     find_drone_result.smoothed_disparity = DRONE_DISPARITY_START;
+    find_drone_result.disparity = DRONE_DISPARITY_START;
     data.landed = true;
 
     blurred_circle = createBlurryCircle(60,settings.uncertainty_background/255.0);
@@ -190,13 +191,10 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time)
         empty_diffs = cv::Mat::zeros(frameL_small.rows,frameL_small.cols,CV_32SC1);
     }
 
-    //    resFrame = frameL;
-
     find_drone(frameL_small);
 
     data.valid = false; // reset the flag, set to true when drone is detected properly
 
-    bool bam = false;
     static int n_frames_lost =100;
     if (find_drone_result.keypointsL.size() == 0) {
         n_frames_lost++;
@@ -206,7 +204,6 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time)
         reset_tracker_ouput(n_frames_lost);
     } else {
         find_drone_result.best_image_locationL = match_closest_to_prediciton(predicted_drone_locationL,find_drone_result.keypointsL);
-
 
         find_drone_result.disparity = stereo_match(find_drone_result.best_image_locationL,frameL_big_prev_OK,frameR_big_prev_OK,frameL,frameR,find_drone_result.smoothed_disparity);
 
@@ -227,7 +224,7 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time)
 
 
 #ifdef BEEP
-    beep(find_drone_result.best_image_locationL.pt,bam,n_frames_lost,time,frameL_small);
+    beep(find_drone_result.best_image_locationL.pt,n_frames_lost,time,frameL_small);
 #endif
 
     if (!data.background_calibrated && time > 15)
@@ -240,7 +237,7 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time)
 #endif
 
 
-    if (find_drone_result.update_prev_frames) {
+    if (find_drone_result.update_prev_frames && ! breakpause) {
         frameL_big_prev_OK = frameL_big_prev.clone();
         frameL_s_prev_OK = frameL_s_prev.clone();
         frameR_big_prev_OK = frameR_big_prev.clone();
@@ -251,17 +248,17 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time)
 
     return false;
 }
-void DroneTracker::beep(cv::Point2f drone, bool bam, int notFoundCountL, float time,cv::Mat frameL_small) {
+void DroneTracker::beep(cv::Point2f drone, int notFoundCountL, float time, cv::Mat frameL_small) {
 
     if (!data.background_calibrated && time > 15) {
         system("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Mallet.ogg &");
     }
 
-    if (bam) {
+    //if (bam) {
         //system("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Soft\ delay.ogg &");
-    }
+    //}
 
-    static bool lost = false;
+    static bool lost = true;
     if( notFoundCountL == 3 && !lost ) {
         // system("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Rhodes.ogg &");
         lost =true;
@@ -346,6 +343,7 @@ void DroneTracker::find_drone(cv::Mat frameL_small) {
     if (data.landed) {
         data.drone_image_locationL = cv::Point(DRONE_IM_X_START,DRONE_IM_Y_START);
         find_drone_result.smoothed_disparity = DRONE_DISPARITY_START;
+        find_drone_result.disparity = DRONE_DISPARITY_START;
     }
     previous_drone_location = data.drone_image_locationL;
 
@@ -542,8 +540,8 @@ int DroneTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::
     float rectsize = closestL.size+1;
     if (rectsize < 3)
         rectsize = 3;
-    float rectsizeX = ceil(rectsize*2.0f);
-    float rectsizeY = ceil(rectsize*1.4f);
+    float rectsizeX = ceil(rectsize*4.0f);
+    float rectsizeY = ceil(rectsize*3.f);
 
     int x1,y1,x2,y2;
     x1 = (closestL.pt.x-rectsizeX)*IMSCALEF;
@@ -564,7 +562,8 @@ int DroneTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::
     //retrieve changed pixels (through time) for left camera
     cv::Mat aL = frameL(roiL);
     cv::Mat bL = prevFrameL_big(roiL);
-    cv::Mat diff_L_roi = aL-bL;
+    cv::Mat diff_L_roi;
+    cv::absdiff(aL,bL,diff_L_roi);
     cv::Mat diff_L_roi_16;
     diff_L_roi.convertTo(diff_L_roi_16, CV_16UC1);
 
@@ -584,7 +583,8 @@ int DroneTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::
 
         cv::Mat aR = frameR(roiR);
         cv::Mat bR = prevFrameR_big(roiR);
-        cv::Mat diff_R_roi = aR-bR;
+        cv::Mat diff_R_roi;
+        cv::absdiff(aR,bR,diff_R_roi);
         cv::Mat diff_R_roi_16;
         diff_R_roi.convertTo(diff_R_roi_16, CV_16UC1);
 
@@ -609,32 +609,32 @@ int DroneTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::
         } // for shift
 
 #ifdef DRAWVIZS
-        if (breakpause) {
-            cv::Mat aL_shift,bL_shift,diff_L_roi_shift,aR_shift,bR_shift,diff_R_roi_shift;
-            cv::resize(aL,aL_shift,cv::Size(aL.cols*4, aL.rows*4));
-            cv::resize(bL,bL_shift,cv::Size(aL.cols*4, aL.rows*4));
-            cv::resize(diff_L_roi,diff_L_roi_shift,cv::Size(aL.cols*4, aL.rows*4));
-            cv::resize(aR,aR_shift,cv::Size(aL.cols*4, aL.rows*4));
-            cv::resize(bR,bR_shift,cv::Size(aL.cols*4, aL.rows*4));
-            cv::resize(diff_R_roi,diff_R_roi_shift,cv::Size(aL.cols*4, aL.rows*4));
-            std::stringstream ss;
-            ss << i << "; cor: " << cor_16 << " err: " << err;
-            putText(aL_shift,ss.str() ,cv::Point(0,12),cv::FONT_HERSHEY_SIMPLEX,0.5,255);
+//        if (breakpause) {
+//            cv::Mat aL_shift,bL_shift,diff_L_roi_shift,aR_shift,bR_shift,diff_R_roi_shift;
+//            cv::resize(aL,aL_shift,cv::Size(aL.cols*4, aL.rows*4));
+//            cv::resize(bL,bL_shift,cv::Size(aL.cols*4, aL.rows*4));
+//            cv::resize(diff_L_roi,diff_L_roi_shift,cv::Size(aL.cols*4, aL.rows*4));
+//            cv::resize(aR,aR_shift,cv::Size(aL.cols*4, aL.rows*4));
+//            cv::resize(bR,bR_shift,cv::Size(aL.cols*4, aL.rows*4));
+//            cv::resize(diff_R_roi,diff_R_roi_shift,cv::Size(aL.cols*4, aL.rows*4));
+//            std::stringstream ss;
+//            ss << i << "; cor: " << cor_16 << " err: " << err;
+//            putText(aL_shift,ss.str() ,cv::Point(0,12),cv::FONT_HERSHEY_SIMPLEX,0.5,255);
 
-            std::vector<cv::Mat> ims;
-            ims.push_back(aL_shift);
-            ims.push_back(bL_shift);
-            ims.push_back(diff_L_roi_shift);
-            ims.push_back(aR_shift);
-            ims.push_back(bR_shift);
-            ims.push_back(diff_R_roi_shift);
-            showColumnImage(ims, "shift",CV_8UC1);
+//            std::vector<cv::Mat> ims;
+//            ims.push_back(aL_shift);
+//            ims.push_back(bL_shift);
+//            ims.push_back(diff_L_roi_shift);
+//            ims.push_back(aR_shift);
+//            ims.push_back(bR_shift);
+//            ims.push_back(diff_R_roi_shift);
+//            showColumnImage(ims, "shift",CV_8UC1);
 
-            unsigned char key = cv::waitKey(0);
-            if (key == 'c')
-                breakpause = false;
+//            unsigned char key = cv::waitKey(0);
+//            if (key == 'c')
+//                breakpause = false;
 
-        }
+//        }
 #endif
 
     }
@@ -649,14 +649,23 @@ int DroneTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::
 
 #ifdef DRAWVIZS
     if (tmp_max_disp > settings.min_disparity) {
-        std::vector<cv::Mat> ims;
-        ims.push_back(aL);
-        ims.push_back(bL);
-        ims.push_back(diff_L_roi);
-        ims.push_back(aR_viz);
-        ims.push_back(bR_viz);
-        ims.push_back(diff_R_roi_viz);
-        //        showColumnImage(ims, "col");
+//        std::vector<cv::Mat> ims;
+//        cv::Mat aL_eq,bL_eq,diff_L_roi_eq,aR_viz_eq,bR_viz_eq,diff_R_roi_viz_eq;
+//        equalizeHist(aL, aL_eq);
+//        equalizeHist(bL, bL_eq);
+//        equalizeHist(diff_L_roi, diff_L_roi_eq);
+
+//        equalizeHist(aR_viz, aR_viz_eq);
+//        equalizeHist(bR_viz, bR_viz_eq);
+//        equalizeHist(diff_R_roi_viz, diff_R_roi_viz_eq);
+
+//        ims.push_back(aL_eq);
+//        ims.push_back(bL_eq);
+//        ims.push_back(diff_L_roi_eq);
+//        ims.push_back(aR_viz_eq);
+//        ims.push_back(bR_viz_eq);
+//        ims.push_back(diff_R_roi_viz_eq);
+//        showColumnImage(ims, "col", CV_8UC1);
     }
 #endif
 
@@ -704,6 +713,7 @@ void DroneTracker::drawviz(cv::Mat frameL,cv::Mat treshfL,cv::Mat framegrayL) {
     putText(resFrameL,ss2.str() ,cv::Point(220,40),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     putText(resFrameL,ss3.str() ,cv::Point(220,60),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     resFrame = resFrameL;
+    cv::imshow("Results", resFrame);
 #endif
 }
 
@@ -761,11 +771,27 @@ void DroneTracker::update_tracker_ouput(Point3f measured_world_coordinates,float
     data.posZ = measured_world_coordinates.z;
     data.disparity = find_drone_result.disparity; // tmp, should not be in data
 
+    static float prevX,prevY,prevZ =0;
+    static int detected_after_take_off = 0;
+    if (n_frames_lost >= smooth_width_vel || data.reset_filters) { // tracking was regained, after n_frames_lost frames
+       // data.sdisparity = -1;
+        disp_smoothed.reset();
+        sposX.reset();
+        sposY.reset();
+        sposZ.reset();
+        svelX.reset();
+        svelY.reset();
+        svelZ.reset();
+
+        detected_after_take_off = 0;
+        data.reset_filters = false; // TODO also reset t_prev?
+    }
 
     float csposX = sposX.addSample(data.posX);
     float csposY = sposY.addSample(data.posY);
     float csposZ = sposZ.addSample(data.posZ);
-    static float sdisparity= disp_smoothed.addSample(data.disparity);
+    static float sdisparity;
+    sdisparity = disp_smoothed.addSample(data.disparity);
     data.sdisparity = sdisparity; // tmp, should not be in data
 
     if (fabs((float)abs(find_drone_result.disparity) - fabs(find_drone_result.smoothed_disparity)) > 3) {
@@ -779,29 +805,14 @@ void DroneTracker::update_tracker_ouput(Point3f measured_world_coordinates,float
     data.csposY = csposY;
     data.csposZ = csposZ;
 
-    static float prevX,prevY,prevZ =0;
-    static int detected_after_take_off = 0;
-
-    if (n_frames_lost >= smooth_width_vel || data.reset_filters) { // tracking was regained, after n_frames_lost frames
-        data.sdisparity = -1;
-        disp_smoothed.reset();
-        sposX.reset();
-        sposY.reset();
-        sposZ.reset();
-        svelX.reset();
-        svelY.reset();
-        svelZ.reset();
-
-        detected_after_take_off = 0;
-        data.reset_filters = false; // TODO also reset t_prev?
-    }
-
     if (data.landed) {
         prevX = data.csposX;
         prevY = data.csposY;
         prevZ = data.csposZ;
     }
-
+    float tsvelX = 0;
+    float tsvelY = 0;
+    float tsvelZ = 0;
     if (detected_after_take_off > smooth_width_pos) {
         data.dx = csposX - prevX;
         data.dy = csposY - prevY;
@@ -809,7 +820,10 @@ void DroneTracker::update_tracker_ouput(Point3f measured_world_coordinates,float
         data.velX = data.dx / dt;
         data.velY = data.dy / dt;
         data.velZ = data.dz / dt;
-    } else {
+        tsvelX = svelX.addSample(data.velX);
+        tsvelY = svelY.addSample(data.velY);
+        tsvelZ = svelZ.addSample(data.velZ);
+    } else { // should be done earlier???
         data.dx = 0;
         data.dy = 0;
         data.dz = 0;
@@ -817,18 +831,16 @@ void DroneTracker::update_tracker_ouput(Point3f measured_world_coordinates,float
         data.velY = 0;
         data.velZ = 0;
     }
-    float tsvelX = svelX.addSample(data.velX);
-    float tsvelY = svelY.addSample(data.velY);
-    float tsvelZ = svelZ.addSample(data.velZ);
-    if (detected_after_take_off > smooth_width_pos) { // + smooth_width_vel, but than it is too late for autotakeoff... (by filling the smoother with 0's we assume vel = 0 , which is true at take off)
-        data.svelX = tsvelX;
-        data.svelY = tsvelY;
-        data.svelZ = tsvelZ;
-    } else {
-        data.svelX = 0;
-        data.svelY = 0;
-        data.svelZ = 0;
-    }
+
+    //if (detected_after_take_off > smooth_width_pos) { // + smooth_width_vel, but than it is too late for autotakeoff... (by filling the smoother with 0's we assume vel = 0 , which is true at take off)
+    data.svelX = tsvelX;
+    data.svelY = tsvelY;
+    data.svelZ = tsvelZ;
+//    } else {
+//        data.svelX = 0;
+//        data.svelY = 0;
+//        data.svelZ = 0;
+//    }
 
     prevX = csposX;
     prevY = csposY;
@@ -836,7 +848,7 @@ void DroneTracker::update_tracker_ouput(Point3f measured_world_coordinates,float
 
     data.posErrX = data.csposX - setpointw.x;
     data.posErrY = data.csposY - setpointw.y;
-    data.posErrZ = data.csposZ - setpointw.z; // smoothed disparity, since kinda noisy
+    data.posErrZ = data.csposZ - setpointw.z;
 
     data.valid = true;
     data.dt = dt;

@@ -65,7 +65,7 @@ private:
         int minInertiaRatio = 1;
         int maxInertiaRatio = 100;
 
-        int min_disparity=3;
+        int min_disparity=10;
         int max_disparity=20;
 
         int uncertainty_multiplier = 2;
@@ -104,7 +104,7 @@ private:
     void reset_tracker_ouput(int n_frames_lost);
     void drawviz(cv::Mat frameL, cv::Mat treshfL, cv::Mat framegrayL);
     void find_drone(cv::Mat frameL_small);
-    void beep(cv::Point2f drone, bool bam, int notFoundCountL, float time, cv::Mat frameL_small);
+    void beep(cv::Point2f drone, int notFoundCountL, float time, cv::Mat frameL_small);
 
     void collect_no_drone_frames(cv::Mat diff);
 
@@ -165,8 +165,8 @@ public:
     trackData data;
     Smoother sposX, sposY, sposZ;
     Smoother svelX, svelY, svelZ;
-    const int smooth_width_vel = 10;
-    const int smooth_width_pos = 5;
+    const int smooth_width_vel = 5;
+    const int smooth_width_pos = 3;
 
     Smoother disp_smoothed;
 

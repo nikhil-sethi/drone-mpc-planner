@@ -24,8 +24,8 @@ void Visualizer::addSample(void) {
     posX.push_back(-(float)dtrkr->data.posX);
     posY.push_back((float)dtrkr->data.posY);
     posZ.push_back(-(float)dtrkr->data.posZ);
-    disparity.push_back(-(float)dtrkr->data.disparity);
-    sdisparity.push_back(-(float)dtrkr->data.sdisparity);
+    disparity.push_back((float)dtrkr->data.disparity);
+    sdisparity.push_back((float)dtrkr->data.sdisparity);
 
     sposX.push_back(-(float)dtrkr->data.csposX);
     sposY.push_back((float)dtrkr->data.csposY);
@@ -53,36 +53,37 @@ cv::Scalar fore_color(255,255,255);
 void Visualizer::plot(void) {
     addSample();
 
-//    cv::Point sp1(dtrkr->setpointw.x,-dtrkr->setpointw.z);
-//    cv::Point min_xz_range,max_xz_range;
-//    min_xz_range.x =-3000;
-//    max_xz_range.x = 3000;
-//    min_xz_range.y = 0; // z
-//    max_xz_range.y = 5000; // z
-//    cv::Mat frame_xz = plotxy(posX,posZ, sp1,"PosXZ",min_xz_range,max_xz_range);
-
-//    cv::Point sp2(dtrkr->setpointw.x,dtrkr->setpointw.y);
-//    cv::Point min_xy_range,max_xy_range;
-//    min_xy_range.x =-3000;
-//    max_xy_range.x = 3000;
-//    min_xy_range.y =-3000;
-//    max_xy_range.y = 3000;
-//    cv::Mat frame_xy = plotxy(posX,posY, sp2, "PosXY",min_xy_range,max_xy_range);
-
-//    std::vector<cv::Mat> ims_detect;
-//    ims_detect.push_back(frame_xz);
-//    ims_detect.push_back(frame_xy);
-//    showColumnImage(ims_detect, "Detection",CV_8UC3);
-
     std::vector<cv::Mat> ims_trk;
+    ims_trk.push_back(plot_xyd());
     ims_trk.push_back(plot_all_position());
     ims_trk.push_back(plot_all_velocity());
     ims_trk.push_back(plot_all_control());
     showRowImage(ims_trk, "Tracking",CV_8UC3);
 
-    cv::imshow("disparity", plot({disparity,sdisparity},"Disparity"));
+}
+
+cv::Mat Visualizer::plot_xyd(void) {
+    std::vector<cv::Mat> ims_xyd;
+    ims_xyd.push_back(plot({disparity,sdisparity},"Disparity"));
 
 
+    cv::Point sp1(dtrkr->setpointw.x,-dtrkr->setpointw.z);
+    cv::Point min_xz_range,max_xz_range;
+    min_xz_range.x =-3000;
+    max_xz_range.x = 3000;
+    min_xz_range.y = 0; // z
+    max_xz_range.y = 5000; // z
+    ims_xyd.push_back(plotxy(posX,posZ, sp1,"PosXZ",min_xz_range,max_xz_range));
+
+    cv::Point sp2(dtrkr->setpointw.x,dtrkr->setpointw.y);
+    cv::Point min_xy_range,max_xy_range;
+    min_xy_range.x =-3000;
+    max_xy_range.x = 3000;
+    min_xy_range.y =-3000;
+    max_xy_range.y = 3000;
+    ims_xyd.push_back(plotxy(posX,posY, sp2, "PosXY",min_xy_range,max_xy_range));
+
+    return createColumnImage(ims_xyd, CV_8UC3);
 }
 
 cv::Mat Visualizer::plot_all_control(void) {
@@ -121,37 +122,34 @@ void Visualizer::plot(std::vector<cv::Mat> data, cv::Mat *frame, std::string nam
     cv::line(*frame,cv::Point(0,frame->rows-1),cv::Point(frame->cols,frame->rows-1),fore_color);
     cv::line(*frame,cv::Point(frame->cols-1,0),cv::Point(frame->cols-1,frame->rows-1),fore_color);
 
+    int current_buf_size = bufsize;
+    if (current_buf_size > data.at(0).rows)
+        current_buf_size = data.at(0).rows;
+    int start = data.at(0).rows -current_buf_size;
+
     double min,max;
     cv::Mat tmp;
     for (int i = 0 ; i< data.size();i++) {
-        tmp.push_back(data.at(i));
+        cv::Mat vec = data.at(i);
+        cv::Mat vect = cv::Mat(vec,cv::Rect(cv::Point(0,start),cv::Point(1,start+current_buf_size)));
+        tmp.push_back(vect);
     }
     cv::minMaxIdx(tmp,&min,&max,NULL,NULL);
 
-
     std::stringstream ss;
-    ss << std::setprecision(2);
+    ss << std::setprecision(4);
     ss << "[" << min << " - " << max << "]";
     putText(*frame,ss.str(),cv::Point(0, 28),cv::FONT_HERSHEY_SIMPLEX,0.5,red);
 
     float range = max - min;
     float amplify_y = 1;
-
     amplify_y = fsizey / range;
-
     min *=amplify_y;
     max *=amplify_y;
-
     min-=1;
     max+=1;
-
     const float scaleX = (float)((fsizex))/(bufsize);
     const float scaleY = ((float)fsizey)/(max-min);
-
-    int start = data.at(0).rows -bufsize;
-    if (start < 0)
-        start = 0;
-
 
     for (int i = 0 ; i< data.size();i++) {
         int prev_y =0;
@@ -159,7 +157,7 @@ void Visualizer::plot(std::vector<cv::Mat> data, cv::Mat *frame, std::string nam
         for (int j = start; j < data.at(i).rows-1; j++)  {
             int y = data.at(i).at<float>(j,1)*amplify_y - min;
             int x = (j-start)*scaleX + 2*line_width;
-            cv::line(*frame, cv::Point(prev_x, fsizey- prev_y*scaleY +line_width*2) , cv::Point(x, fsizey - y*scaleY +2*line_width), linecolors[i], line_width, CV_AA, 0);
+            cv::line(*frame, cv::Point(prev_x, fsizey- prev_y*scaleY +line_width*2) , cv::Point(x, fsizey - y*scaleY +2*line_width), linecolors[i], line_width, CV_NORMAL, 0);
             prev_y = y;
             prev_x = x;
         }
@@ -173,9 +171,9 @@ cv::Mat Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Point setpoint, std:
     ss.precision(2);
     ss << name << " " << datax.at<float>(datax.rows-1) << "; " << datay.at<float>(datay.rows-1);
 
-
     putText(frame,ss.str() ,cv::Point(0, 30),cv::FONT_HERSHEY_SIMPLEX,0.5,fore_color);
     cv::line(frame,cv::Point(0,frame.rows-1),cv::Point(frame.cols,frame.rows-1),fore_color);
+    cv::line(frame,cv::Point(frame.cols-1,0),cv::Point(frame.cols-1,frame.rows-1),fore_color);
 
     double minx,maxx;
     double miny,maxy;
