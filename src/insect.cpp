@@ -10,7 +10,7 @@ using namespace std;
 
 //#define USERIGHTCAM
 
-#if 1
+#if INSECT_DATA_LOGGING_MODE
 #define DRAWVIZSL
 #ifdef USERIGHTCAM
 #define DRAWVIZSR

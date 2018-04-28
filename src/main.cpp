@@ -112,7 +112,9 @@ void process_video() {
         breakpause_prev = breakpause;
 
         if (breakpause != 0) {
-            frame = cam.wait_for_frames();
+            int current_frame_id = frame.get_frame_number();
+            while(current_frame_id == frame.get_frame_number())
+                frame = cam.wait_for_frames();
             frameL = Mat(imgsize, CV_8UC1, (void*)frame.get_infrared_frame(IR_ID_LEFT).get_data(), Mat::AUTO_STEP).clone();
             frameR = Mat(imgsize, CV_8UC1, (void*)frame.get_infrared_frame(IR_ID_RIGHT).get_data(), Mat::AUTO_STEP).clone();
 
@@ -187,9 +189,10 @@ void process_video() {
 #endif
             }
         }
+
+        std::cout << "Frame: " <<imgcount << " (" << detectcount << ", " << frame.get_frame_number() << "). FPS: " << imgcount / time << ". Time: " << time << ". Break: " << ((float)stopWatch_break.Read())/1000.0 << std::endl;
         imgcount++;
 
-        //std::cout << "Frame: " <<imgcount << " (" << detectcount << ", " << frame.get_frame_number() << "). FPS: " << imgcount / time << ". Time: " << time << ". Break: " << ((float)stopWatch_break.Read())/1000.0 << std::endl;
         handleKey();
         if (imgcount > 60000)
             break;

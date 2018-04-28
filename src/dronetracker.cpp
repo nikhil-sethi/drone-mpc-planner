@@ -169,7 +169,7 @@ float calculateDistance(float xr, float yr, float xl, float yl) {
 }
 
 bool foundL = false;
-int t_prev = 0;
+float t_prev = 0;
 bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time) {
     updateParams();
 

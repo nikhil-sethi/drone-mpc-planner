@@ -100,7 +100,6 @@ void DroneController::control(trackData * data) {
         hoverthrottle -= 5*params.autoTakeoffFactor; // to compensate for ground effect and delay
         startY = data->posErrY;
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
-        std::cout << "HHHHHHHHHHHHHHH"<< data->svelY << std::endl;
     }
 
     if (autoTakeOff)

@@ -9,11 +9,11 @@
 #define SSE2
 
 #define HASSCREEN // dont disable in qt debugger!
-#define INSECT_DATA_LOGGING_MODE true
+#define INSECT_DATA_LOGGING_MODE false
 #define BEEP
 
 
-#define VIDEORAWLR VIDEOMODE_AVI
+#define VIDEORAWLR VIDEOMODE_DISABLED
 #define VIDEODISPARITY VIDEOMODE_DISABLED
 #define VIDEORESULTS VIDEOMODE_DISABLED
 #define VIDEOFPS 30 // the estimated frame rate of the video used for creating output videos
