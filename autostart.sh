@@ -3,21 +3,13 @@
 set -e
 
 while [ 1 ]; do
-	echo "Starting mu-g in 20s..."
-
-	for file in "/sys/class/leds/"{front,rear}":"{left,right}":"{blue,green,red}"/brightness"; do
-	    echo 0 > $file
-	done
-
-	for file in "/sys/class/leds/"{front,rear}":"{left,right}":blue/brightness"; do
-	    echo 255 > $file
-	done
+	echo "Starting pats in 20s..."
 
 	sleep 20s
 
 	COUNTER=1
 	while [  $COUNTER -lt 1000 ]; do
-		OUTDIR=/home/slamdunk/kevin/data/$COUNTER
+		OUTDIR=/home/pats/data/$COUNTER
 		if [ ! -d "$OUTDIR" ]; then
 			echo "Making new data dir: $OUTDIR" 
 			COUNTER=1001             
@@ -25,23 +17,10 @@ while [ 1 ]; do
 		let COUNTER=COUNTER+1 
 	done
 	sudo mkdir -p $OUTDIR
+	
 
-	for file in "/sys/class/leds/"{front,rear}":"{left,right}":"{blue,green,red}"/brightness"; do
-	    echo 0 > $file
-	done
-	for file in "/sys/class/leds/"{front,rear}":"{left,right}":green/brightness"; do
-	    echo 255 > $file
-	done
-
-	sudo /home/slamdunk/kevin/mu-g/SLAMdunk/build/MUG $OUTDIR /factory . > >( sudo tee -a  $OUTDIR/stdlog.txt) 2> >(sudo tee -a $OUTDIR/errorlog.txt >&2) || true 
+	sudo /home/pats/code/pats/pc/build/pats $OUTDIR > >( sudo tee -a  $OUTDIR/stdlog.txt) 2> >(sudo tee -a $OUTDIR/errorlog.txt >&2) || true 
 	#sudo /home/slamdunk/hv/share/mu-g/SLAMdunk/build/MUG $OUTDIR /factory . > >( sudo tee -a  $OUTDIR/stdlog.txt) 2> >(sudo tee -a $OUTDIR/errorlog.txt >&2) || true 
-
-	for file in "/sys/class/leds/"{front,rear}":"{left,right}":"{blue,green,red}"/brightness"; do
-	    echo 0 > $file
-	done
-	for file in "/sys/class/leds/"{front,rear}":"{left,right}":"{red,green}"/brightness"; do
-	    echo 255 > $file
-	done
 
 	sleep 1s
 done

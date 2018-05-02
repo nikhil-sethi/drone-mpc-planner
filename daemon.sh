@@ -1,8 +1,10 @@
 #! /usr/bin/env bash
 
+# add /home/pats/code/pats/daemon.sh to /etc/rc.local for autostart
+
 set -e
 
-#/home/slamdunk/kevin/mu-g/autoreboot.py &
-/home/slamdunk/kevin/mu-g/tunnel.sh &
-/home/slamdunk/kevin/mu-g/tunnel2.sh &
-#/home/slamdunk/kevin/mu-g/autostart.sh >>/home/slamdunk/kevin/pats_daemon.log 2>&1 &
+#/home/pats/code/pats/autoreboot.py &
+/home/pats/code/pats/tunnel.sh &
+/home/pats/code/pats/tunnel2.sh &
+/home/pats/code/pats/autostart.sh >>/home/pats/pats_daemon.log 2>&1 &

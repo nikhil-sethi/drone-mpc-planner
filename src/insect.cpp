@@ -11,11 +11,13 @@ using namespace std;
 //#define USERIGHTCAM
 
 #if INSECT_DATA_LOGGING_MODE
+#ifdef HASSCREEN
 #define DRAWVIZSL
 #ifdef USERIGHTCAM
 #define DRAWVIZSR
 #endif
 #define TUNING
+#endif
 #endif
 
 const string settingsFile = "../settings2.dat";

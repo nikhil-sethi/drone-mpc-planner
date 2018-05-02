@@ -250,10 +250,21 @@ void my_handler(int s){
 int init(int argc, char **argv) {
 
 
+
+#if INSECT_DATA_LOGGING_MODE
+    if (argc !=2 ) {
+        cout << "Error: command line argument missing. Missing argument Output dir." << endl;
+        exit(1);
+    }
+    data_output_dir = string(argv[1]) + "/";
+#else
     if (argc ==2 ) {
         fromfile = true;
     }
     data_output_dir = "./";
+#endif
+
+    cout << "data_output_dir: " << data_output_dir << endl;
 
     logger.open(data_output_dir  + "log.txt",std::ofstream::out);
     logger << "ID;RS_ID;";
@@ -277,13 +288,15 @@ int init(int argc, char **argv) {
     cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
     cfg.enable_stream(RS2_STREAM_INFRARED, 2, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
 
+#if !INSECT_DATA_LOGGING_MODE
     if (argc ==2 ) {
         cfg.enable_device_from_file(string(argv[1]) + ".bag");
         fromfile = true;
         logreader.init(string(argv[1]) + ".txt");
     } else {
         cfg.enable_record_to_file("test");
-    }
+    }    
+#endif
 
     rs2::pipeline_profile selection = cam.start(cfg);
     std::cout << "Started cam\n";
