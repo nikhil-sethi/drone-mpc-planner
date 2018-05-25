@@ -47,7 +47,8 @@ bool DroneController::init(std::ofstream *logger,bool fromfile, Arduino * arduin
     createTrackbar("Throttle I", "Control", &params.throttleI, 255);
     createTrackbar("Throttle D", "Control", &params.throttleD, 2000);
 
-    createTrackbar("Take off", "Control", &params.autoTakeoffFactor, 255);
+    createTrackbar("Take off factor", "Control", &params.autoTakeoffFactor, 255);
+    createTrackbar("Take off speed", "Control", &params.auto_takeoff_speed, 1000); // /100
 
     // roll control
     createTrackbar("Roll P", "Control", &params.rollP, 5000);
@@ -95,9 +96,9 @@ void DroneController::control(trackData * data) {
             hoverthrottle = 1300;
     }
 
-    if (data->svelY > AUTOTAKEOFF_SPEED && autoTakeOff) {
+    if (data->svelY > ((float)params.auto_takeoff_speed) / 100.f && autoTakeOff) {
         autoTakeOff = false;
-        hoverthrottle -= 5*params.autoTakeoffFactor; // to compensate for ground effect and delay
+        hoverthrottle -= 2*params.autoTakeoffFactor; // to compensate for ground effect and delay
         startY = data->posErrY;
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
     }

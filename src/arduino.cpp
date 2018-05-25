@@ -48,14 +48,6 @@ void Arduino::sendData(void) {
             RS232_SendBuf( (unsigned char*) buff, 63);
         }
 
-        //if ( data->valid ) {
-        //std::setprecision(2);
-        //std::cout << data->posY << " " << data->velY << " - ";
-        //std::cout << "JoyCommands:" << std::string(buff) << std::flush;
-        //    (*_logger) << "JoyCommands:" << std::string(buff) << std::flush;
-
-        //}
-
         if (!notconnected) {
             unsigned char inbuf[1];
             inbuf[1] = 0;
@@ -107,5 +99,4 @@ void Arduino::close() {
     exitSendThread = true;
     g_lockData.unlock();
     thread_nrf.join();
-
 }

@@ -122,15 +122,17 @@ void process_video() {
                 breakpause--;
         }
 
+//        if (frame.get_frame_number() ==270){
+//            breakpause =0;
+//        }
 
-        static float time =0;
-        static float break_time =0;
+        static float time =0;        
         if (breakpause_prev != 0)
             time = ((float)stopWatch.Read())/1000.0 - ((float)stopWatch_break.Read())/1000.0 ;
 
         logger << imgcount << ";" << frame.get_frame_number() << ";" ;
         if (!INSECT_DATA_LOGGING_MODE) {
-            if (dtrkr.track(frameL,frameR, Qf, time)) {
+            if (dtrkr.track(frameL,frameR, Qf, time, frame.get_frame_number()  )) {
                 breakpause = 0;
             }
             dctrl.control(&(dtrkr.data));
@@ -157,10 +159,6 @@ void process_video() {
         if (breakpause_prev != 0)
             visualizer.plot();
 #endif
-
-        resFrame = dtrkr.resFrame;
-
-
 #endif
 
         frameBL[frame_buffer_write_id] = frameL.clone();
@@ -185,6 +183,7 @@ void process_video() {
                 outputVideoDisp.write(cam.get_disp_frame());
 #endif
 #if VIDEORESULTS
+                resFrame = dtrkr.resFrame;
                 outputVideoColor.write(resFrame);
 #endif
             }

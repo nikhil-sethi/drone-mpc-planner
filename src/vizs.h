@@ -23,7 +23,7 @@ private:
     DroneController *dctrl;
     DroneTracker *dtrkr;
 
-    const int bufsize = 100;
+    const int bufsize = 300;
 
 public:
 

@@ -32,7 +32,8 @@ private:
         int throttleI = 0;
         int throttleD = 0;
 
-        int autoTakeoffFactor = 1;
+        int autoTakeoffFactor = 10;
+        int auto_takeoff_speed = 20; // /100
 
         //roll control
         int rollP = 0;
@@ -52,7 +53,7 @@ private:
         template <class Archive>
         void serialize( Archive & ar )
         {
-            ar( throttleP,throttleI,throttleD,rollP,rollI,rollD,pitchP,pitchI,pitchD,yawP,yawI,yawD,autoTakeoffFactor);
+            ar( throttleP,throttleI,throttleD,rollP,rollI,rollD,pitchP,pitchI,pitchD,yawP,yawI,yawD,autoTakeoffFactor,auto_takeoff_speed);
         }
 
     };
@@ -62,7 +63,7 @@ private:
     float pitchErrI = 0;
 
     #define INITIALTHROTTLE 1050
-    #define AUTOTAKEOFF_SPEED 0.03f
+
 
 
     bool autoTakeOff = false;
@@ -71,7 +72,7 @@ private:
 
     Arduino * _arduino;
 
-    controlParameters params;
+
 
     std::ofstream *_logger;
     void sendData(void);
@@ -83,12 +84,15 @@ private:
 
 public:
 
+    controlParameters params;
+
     int autoThrottle = 1000;
     int autoRoll = 1500;
     int autoPitch = 1500;
     int autoYaw = 1500;
 
     float hoverthrottle = INITIALTHROTTLE;
+
 
     bool joySwitch = true;
     int joyDial = 0;

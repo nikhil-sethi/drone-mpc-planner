@@ -39,7 +39,7 @@ void Visualizer::addSample(void) {
     svelY.push_back((float)dtrkr->data.svelY);
     svelZ.push_back(-(float)dtrkr->data.svelZ);
 
-    autotakeoff_velY_thresh.push_back(AUTOTAKEOFF_SPEED);
+    autotakeoff_velY_thresh.push_back((float)(dctrl->params.auto_takeoff_speed) / 100.f);
 
 }
 const int fsizex = 500;

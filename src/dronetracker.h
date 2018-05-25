@@ -25,8 +25,6 @@ class DroneTracker {
 
 private:
     cv::SimpleBlobDetector::Params params;
-
-
     struct patsSettings{
 
         //thresh params
@@ -88,7 +86,7 @@ private:
       cv::KeyPoint best_image_locationL;
       int disparity;
       float smoothed_disparity;
-      bool update_prev_frames;
+      bool update_prev_frame;
     };
     Find_drone_result find_drone_result;
 
@@ -103,9 +101,11 @@ private:
     void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, int n_frames_lost);
     void reset_tracker_ouput(int n_frames_lost);
     void drawviz(cv::Mat frameL, cv::Mat treshfL, cv::Mat framegrayL);
-    void find_drone(cv::Mat frameL_small);
-    void beep(cv::Point2f drone, int notFoundCountL, float time, cv::Mat frameL_small);
+    void find_drone(cv::Mat frameL_small,cv::Mat frameL_s_prev, cv::Mat frameL_s_prev_OK, int frame_id);
+    void beep(cv::Point2f drone, int n_frames_lost, float time, cv::Mat frameL_small);
 
+    void init_avg_prev_frame(void);
+    void collect_avg_prev_frame(cv::Mat frame);
     void collect_no_drone_frames(cv::Mat diff);
 
     // Kalman Filter
@@ -141,11 +141,11 @@ private:
     cv::Mat frameR_big_prev;
     cv::Mat frameR_big_prev_OK;
 
-    cv::Mat empty_diffs;
     cv::Mat uncertainty_map;
-    int n_empty_diffs;
-
     cv::Mat blurred_circle;
+
+    cv::Mat avg_prev_frame;
+    int n_avg_prev_frames = 0;
 
     std::vector<cv::KeyPoint> dronepathL;
     std::vector<cv::KeyPoint> predicted_dronepathL;
@@ -159,7 +159,8 @@ public:
 
     void close (void);
     bool init(std::ofstream *logger);
-    bool track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time);
+    bool track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time, int frame_id);
+
 
 
     trackData data;
