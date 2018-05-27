@@ -10,12 +10,15 @@ cv::Scalar linecolors[] = {green,blue,red,cv::Scalar(0,255,255),cv::Scalar(255,2
 
 void Visualizer::addSample(void) {
 
+    g_lockData.lock();
+
     roll_joystick.push_back((float)dctrl->joyRoll);
     pitch_joystick.push_back((float)dctrl->joyPitch);
     yaw_joystick.push_back((float)dctrl->joyPitch);
     throttle_joystick.push_back((float)dctrl->joyThrottle);
 
-    roll_calculated.push_back((float)dctrl->autoRoll);
+    //roll_calculated.push_back((float)dctrl->autoRoll);
+    roll_calculated.push_back((float)dtrkr->data.dt);
     pitch_calculated.push_back((float)dctrl->autoPitch);
     //    yaw_calculated.push_back((float)dctrl->commandedYaw);
     throttle_calculated.push_back((float)dctrl->autoThrottle);
@@ -27,9 +30,13 @@ void Visualizer::addSample(void) {
     disparity.push_back((float)dtrkr->data.disparity);
     sdisparity.push_back((float)dtrkr->data.sdisparity);
 
-    sposX.push_back(-(float)dtrkr->data.csposX);
-    sposY.push_back((float)dtrkr->data.csposY);
-    sposZ.push_back(-(float)dtrkr->data.csposZ);
+    sposX.push_back(-(float)dtrkr->data.sposX);
+    sposY.push_back((float)dtrkr->data.sposY);
+    sposZ.push_back(-(float)dtrkr->data.sposZ);
+
+    setposX.push_back(-(float)dtrkr->setpointw.x);
+    setposY.push_back((float)dtrkr->setpointw.y);
+    setposZ.push_back(-(float)dtrkr->setpointw.z);
 
     velX.push_back(-(float)dtrkr->data.velX);
     velY.push_back((float)dtrkr->data.velY);
@@ -41,9 +48,11 @@ void Visualizer::addSample(void) {
 
     autotakeoff_velY_thresh.push_back((float)(dctrl->params.auto_takeoff_speed) / 100.f);
 
+    g_lockData.unlock();
+
 }
-const int fsizex = 500;
-const int fsizey = 300;
+const int fsizex = 1850/4;
+const int fsizey = 1070/3;
 const int line_width = 1;
 
 //cv::Scalar background_color(255,255,255);
@@ -51,8 +60,6 @@ cv::Scalar background_color(0,0,0);
 cv::Scalar fore_color(255,255,255);
 
 void Visualizer::plot(void) {
-    addSample();
-
     std::vector<cv::Mat> ims_trk;
     ims_trk.push_back(plot_xyd());
     ims_trk.push_back(plot_all_position());
@@ -88,7 +95,8 @@ cv::Mat Visualizer::plot_xyd(void) {
 
 cv::Mat Visualizer::plot_all_control(void) {
     std::vector<cv::Mat> ims_joy;
-    ims_joy.push_back(plot({roll_joystick,roll_calculated},"Roll"));
+    ims_joy.push_back(plot({roll_calculated},"Roll"));
+    //ims_joy.push_back(plot({roll_joystick,roll_calculated},"Roll"));
     ims_joy.push_back(plot({pitch_joystick,pitch_calculated},"Pitch"));
     ims_joy.push_back(plot({throttle_joystick,throttle_calculated,throttle_hover},"Throttle"));
     return createColumnImage(ims_joy, CV_8UC3);
@@ -104,9 +112,9 @@ cv::Mat Visualizer::plot_all_velocity(void) {
 
 cv::Mat Visualizer::plot_all_position(void) {
     std::vector<cv::Mat> ims_pos;
-    ims_pos.push_back(plot({posX,sposX},"PosX"));
-    ims_pos.push_back(plot({posY,sposY},"PosY"));
-    ims_pos.push_back(plot({posZ,sposZ},"PosZ"));
+    ims_pos.push_back(plot({posX,sposX,setposX},"PosX"));
+    ims_pos.push_back(plot({posY,sposY,setposY},"PosY"));
+    ims_pos.push_back(plot({posZ,sposZ,setposZ},"PosZ"));
     return createColumnImage(ims_pos, CV_8UC3);
 }
 
@@ -227,4 +235,21 @@ cv::Mat Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Point setpoint, std:
     cv::line(frame,cv::Point(x,0),cv::Point(x,frame.rows),cv::Scalar(80,80,150));
 
     return frame;
+}
+
+void Visualizer::workerThread(void) {
+    std::cout << "Viz thread started!" << std::endl;
+    while (!exitVizThread) {
+        if (roll_joystick.rows > 0) {
+            g_lockData.lock();
+            plot();
+            g_lockData.unlock();
+        }
+        usleep(20000);
+    }
+}
+void Visualizer::close() {
+    exitVizThread = true;
+    g_lockData.unlock();
+    thread_viz.join();
 }

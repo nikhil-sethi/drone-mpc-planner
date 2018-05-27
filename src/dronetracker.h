@@ -164,8 +164,8 @@ public:
 
 
     trackData data;
-    Smoother sposX, sposY, sposZ;
-    Smoother svelX, svelY, svelZ;
+    Smoother smoother_posX, smoother_posY, smoother_posZ;
+    Smoother smoother_velX, smoother_velY, smoother_velZ;
     const int smooth_width_vel = 5;
     const int smooth_width_pos = 3;
 

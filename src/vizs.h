@@ -19,11 +19,17 @@ private:
     cv::Mat plot_all_control(void);
     cv::Mat plot_all_velocity(void);
     cv::Mat plot_all_position(void);
-    void addSample(void);
+
     DroneController *dctrl;
     DroneTracker *dtrkr;
 
     const int bufsize = 300;
+
+    std::mutex g_lockData;
+    std::thread thread_viz;
+    bool exitVizThread = false;
+    void workerThread(void);
+    void plot(void);
 
 public:
 
@@ -79,11 +85,13 @@ public:
     cv::Mat sposY;
     cv::Mat sposZ;
 
+    cv::Mat setposX;
+    cv::Mat setposY;
+    cv::Mat setposZ;
+
     cv::Mat velX;
     cv::Mat velY;
     cv::Mat velZ;
-
-
 
     cv::Mat svelX;
     cv::Mat svelY;
@@ -91,12 +99,13 @@ public:
 
     cv::Mat autotakeoff_velY_thresh;
 
-    void plot(void);
-
+    void addSample(void);
     void init(DroneController *dctrl, DroneTracker *dtrkr){
         this->dctrl = dctrl;
         this->dtrkr = dtrkr;
+        thread_viz = std::thread(&Visualizer::workerThread,this);
     }
+    void close();
 
 };
 

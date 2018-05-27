@@ -2,7 +2,7 @@
 #include "defines.h"
 
 #ifdef HASSCREEN
-#if 1
+#if 0
 #define TUNING
 #endif
 #endif

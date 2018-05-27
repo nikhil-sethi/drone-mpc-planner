@@ -34,9 +34,7 @@ private:
     int baudrate;
 
     std::thread thread_nrf;
-
     bool exitSendThread = false;
-
     void workerThread(void);
     void sendData(void);
 

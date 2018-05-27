@@ -10,11 +10,11 @@ using namespace std;
 
 #ifdef HASSCREEN
 #if 1
-#define DRAWVIZS
-#define TUNING
+//#define DRAWVIZS 30fps!
+//#define TUNING
 #endif
 
-#define POSITIONTRACKBARS
+//#define POSITIONTRACKBARS
 #endif
 
 const string settingsFile = "../settings.dat";
@@ -133,14 +133,14 @@ bool DroneTracker::init(std::ofstream *logger) {
     params.filterByColor = 0;
     params.thresholdStep=1;
 
-    sposX.init(smooth_width_pos);
-    sposY.init(smooth_width_pos);
-    sposZ.init(smooth_width_pos);
+    smoother_posX.init(smooth_width_pos);
+    smoother_posY.init(smooth_width_pos);
+    smoother_posZ.init(smooth_width_pos);
     disp_smoothed.init(smooth_width_pos);
 
-    svelX.init(smooth_width_vel);
-    svelY.init(smooth_width_vel);
-    svelZ.init(smooth_width_vel);
+    smoother_velX.init(smooth_width_vel);
+    smoother_velY.init(smooth_width_vel);
+    smoother_velZ.init(smooth_width_vel);
 
     data.drone_image_locationL = cv::Point(DRONE_IM_X_START,DRONE_IM_Y_START);
     find_drone_result.smoothed_disparity = DRONE_DISPARITY_START;
@@ -212,7 +212,11 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time,
         camera_coordinates.push_back(Point3f(find_drone_result.best_image_locationL.pt.x*IMSCALEF,find_drone_result.best_image_locationL.pt.y*IMSCALEF,-find_drone_result.disparity));
         camera_coordinates.push_back(Point3f(predicted_drone_locationL.x*IMSCALEF,predicted_drone_locationL.y*IMSCALEF,-predicted_drone_locationL.z));
         cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
-        Point3f output = world_coordinates[0];
+        Point3f output = world_coordinates[0];        
+//        float theta = CAMERA_ANGLE / (360/6.28318530718);
+//        output.y = output.y * cosf(theta) + output.z * sinf(theta);
+//        output.z = -output.y * sinf(theta) + output.z * cosf(theta);
+
         Point3f predicted_output = world_coordinates[1];
         update_tracker_ouput(output,dt,n_frames_lost);
         n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
@@ -788,20 +792,17 @@ void DroneTracker::update_tracker_ouput(Point3f measured_world_coordinates,float
     if (n_frames_lost >= smooth_width_vel || data.reset_filters) { // tracking was regained, after n_frames_lost frames
        // data.sdisparity = -1;
         disp_smoothed.reset();
-        sposX.reset();
-        sposY.reset();
-        sposZ.reset();
-        svelX.reset();
-        svelY.reset();
-        svelZ.reset();
+        smoother_posX.reset();
+        smoother_posY.reset();
+        smoother_posZ.reset();
+        smoother_velX.reset();
+        smoother_velY.reset();
+        smoother_velZ.reset();
 
         detected_after_take_off = 0;
         data.reset_filters = false; // TODO also reset t_prev?
     }
 
-    float csposX = sposX.addSample(data.posX);
-    float csposY = sposY.addSample(data.posY);
-    float csposZ = sposZ.addSample(data.posZ);
     static float sdisparity;
     sdisparity = disp_smoothed.addSample(data.disparity);
     data.sdisparity = sdisparity; // tmp, should not be in data
@@ -813,28 +814,28 @@ void DroneTracker::update_tracker_ouput(Point3f measured_world_coordinates,float
     }
     find_drone_result.smoothed_disparity = sdisparity;
 
-    data.csposX = csposX;
-    data.csposY = csposY;
-    data.csposZ = csposZ;
+    data.sposX = smoother_posX.addSample(data.posX);;
+    data.sposY = smoother_posY.addSample(data.posY);;
+    data.sposZ = smoother_posZ.addSample(data.posZ);;
 
     if (data.landed) {
-        prevX = data.csposX;
-        prevY = data.csposY;
-        prevZ = data.csposZ;
+        prevX = data.sposX;
+        prevY = data.sposY;
+        prevZ = data.sposZ;
     }
     float tsvelX = 0;
     float tsvelY = 0;
     float tsvelZ = 0;
     if (detected_after_take_off > smooth_width_pos) {
-        data.dx = csposX - prevX;
-        data.dy = csposY - prevY;
-        data.dz = csposZ - prevZ;
+        data.dx = data.sposX - prevX;
+        data.dy = data.sposY - prevY;
+        data.dz = data.sposZ - prevZ;
         data.velX = data.dx / dt;
         data.velY = data.dy / dt;
         data.velZ = data.dz / dt;
-        tsvelX = svelX.addSample(data.velX);
-        tsvelY = svelY.addSample(data.velY);
-        tsvelZ = svelZ.addSample(data.velZ);
+        tsvelX = smoother_velX.addSample(data.velX);
+        tsvelY = smoother_velY.addSample(data.velY);
+        tsvelZ = smoother_velZ.addSample(data.velZ);
     } else { // should be done earlier???
         data.dx = 0;
         data.dy = 0;
@@ -854,13 +855,13 @@ void DroneTracker::update_tracker_ouput(Point3f measured_world_coordinates,float
 //        data.svelZ = 0;
 //    }
 
-    prevX = csposX;
-    prevY = csposY;
-    prevZ = csposZ;
+    data.posErrX = data.sposX - setpointw.x;
+    data.posErrY = data.sposY - setpointw.y;
+    data.posErrZ = data.sposZ - setpointw.z;
 
-    data.posErrX = data.csposX - setpointw.x;
-    data.posErrY = data.csposY - setpointw.y;
-    data.posErrZ = data.csposZ - setpointw.z;
+    prevX = data.sposX;
+    prevY = data.sposY;
+    prevZ = data.sposZ;
 
     data.valid = true;
     data.dt = dt;

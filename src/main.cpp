@@ -21,14 +21,13 @@
 #include "vizs.h"
 #include "insect.h"
 #include "logreader.h"
+#include "cam.h"
 
 #include "opencv2/features2d/features2d.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/contrib/contrib.hpp"
-
-#include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 
 using namespace cv;
 using namespace std;
@@ -39,26 +38,15 @@ using namespace std;
 /***********Variables****************/
 unsigned char key = 0;
 int imgcount,detectcount; // to measure fps
-cv::Mat resFrame;
 GStream outputVideoColor,outputVideoRawLR;
 cv::VideoWriter outputVideoDisp;
-stopwatch_c stopWatch;
+
 stopwatch_c stopWatch_break;
 std::string file;
 std::string data_output_dir;
 std::string calib_folder;
 
 int breakpause =-1;
-
-
-// Declare RealSense pipeline, encapsulating the actual device and sensors
-rs2::pipeline cam;
-rs2::device pd;
-
-Size imgsize(IMG_W, IMG_H);
-cv::Mat Qf;
-#define IR_ID_LEFT 1 //as seen from the camera itself
-#define IR_ID_RIGHT 2
 
 std::ofstream logger;
 Arduino arduino;
@@ -67,6 +55,7 @@ DroneController dctrl;
 Insect insect;
 Visualizer visualizer;
 LogReader logreader;
+Cam cam;
 bool fromfile = false;
 
 
@@ -85,15 +74,9 @@ void handleKey();
 
 /************ code ***********/
 void process_video() {
-    //    auto start = std::chrono::system_clock::now();
-    //    std::time_t time = std::chrono::system_clock::to_time_t(start);
-    //    std::cout << "Starting at " << std::ctime(&time) << std::endl; // something weird is going on with this line, it seems to crash the debugger if it is in another function...?
-    //    std::cout << "Running..." << std::endl;
-    stopWatch.Start();
 
-    cv::Mat frameR,frameL ;
-    rs2::frameset frame;
-    frame = cam.wait_for_frames(); // init it with something
+
+    float start_time = cam.frame_time;
 
     //main while loop:
     while (key != 27) // ESC
@@ -101,38 +84,33 @@ void process_video() {
 
         static int breakpause_prev =-1;
         if (breakpause == 0 && breakpause_prev!=0) {
-            ((rs2::playback)pd).pause();
+            cam.pause();
             stopWatch_break.Resume();
             dtrkr.breakpause = true;
         } else if (breakpause != 0 && breakpause_prev==0) {
-            ((rs2::playback)pd).resume();
+            cam.resume();
             stopWatch_break.Stop();
             dtrkr.breakpause = false;
         }
         breakpause_prev = breakpause;
 
         if (breakpause != 0) {
-            int current_frame_id = frame.get_frame_number();
-            while(current_frame_id == frame.get_frame_number())
-                frame = cam.wait_for_frames();
-            frameL = Mat(imgsize, CV_8UC1, (void*)frame.get_infrared_frame(IR_ID_LEFT).get_data(), Mat::AUTO_STEP).clone();
-            frameR = Mat(imgsize, CV_8UC1, (void*)frame.get_infrared_frame(IR_ID_RIGHT).get_data(), Mat::AUTO_STEP).clone();
+
+            cam.update();
 
             if (breakpause > 0)
                 breakpause--;
         }
 
-//        if (frame.get_frame_number() ==270){
-//            breakpause =0;
-//        }
 
-        static float time =0;        
+        static float time =0;
         if (breakpause_prev != 0)
-            time = ((float)stopWatch.Read())/1000.0 - ((float)stopWatch_break.Read())/1000.0 ;
+            time = cam.frame_time - ((float)stopWatch_break.Read())/1000.0 ;
 
-        logger << imgcount << ";" << frame.get_frame_number() << ";" ;
+
+        logger << imgcount << ";" << cam.frame_number << ";" ;
         if (!INSECT_DATA_LOGGING_MODE) {
-            if (dtrkr.track(frameL,frameR, Qf, time, frame.get_frame_number()  )) {
+            if (dtrkr.track(cam.frameL,cam.frameR, cam.Qf, cam.frame_time-start_time, cam.frame_number)) {
                 breakpause = 0;
             }
             dctrl.control(&(dtrkr.data));
@@ -144,7 +122,7 @@ void process_video() {
 
 #ifdef HASSCREEN
         if (fromfile) {
-            int rs_id = frame.get_frame_number();
+            int rs_id = cam.frame_number;
             LogReader::Log_Entry tmp  = logreader.getItem(rs_id);
             if (tmp.RS_ID == rs_id) {
                 dctrl.joyRoll = tmp.joyRoll;
@@ -157,12 +135,12 @@ void process_video() {
 
 #if !INSECT_DATA_LOGGING_MODE
         if (breakpause_prev != 0)
-            visualizer.plot();
+            visualizer.addSample();
 #endif
 #endif
 
-        frameBL[frame_buffer_write_id] = frameL.clone();
-        frameBR[frame_buffer_write_id] = frameR.clone();
+        frameBL[frame_buffer_write_id] = cam.frameL.clone();
+        frameBR[frame_buffer_write_id] = cam.frameR.clone();
 
         frame_buffer_write_id = (frame_buffer_write_id + 1) % FRAME_BUF_SIZE;
         if (insect.data.valid) { //
@@ -189,7 +167,7 @@ void process_video() {
             }
         }
 
-        std::cout << "Frame: " <<imgcount << " (" << detectcount << ", " << frame.get_frame_number() << "). FPS: " << imgcount / time << ". Time: " << time << ". Break: " << ((float)stopWatch_break.Read())/1000.0 << std::endl;
+        std::cout << "Frame: " <<imgcount << " (" << detectcount << ", " << cam.frame_number << "). FPS: " << imgcount / time << ". Time: " << time << ". Break: " << ((float)stopWatch_break.Read())/1000.0 << std::endl;
         imgcount++;
 
         handleKey();
@@ -214,12 +192,7 @@ void handleKey() {
     }
     //#endif
 
-    switch(key) {
-    case 114: // [r]: reset stopwatch
-        imgcount=0;
-        detectcount=0;
-        stopWatch.Restart();
-        break;
+    switch(key) {    
     case ' ': // [r]: reset stopwatch
         //dtrkr.breakpause = true;
         if (breakpause >-1) {
@@ -248,8 +221,6 @@ void my_handler(int s){
 
 int init(int argc, char **argv) {
 
-
-
 #if INSECT_DATA_LOGGING_MODE
     if (argc !=2 ) {
         cout << "Error: command line argument missing. Missing argument Output dir." << endl;
@@ -259,6 +230,7 @@ int init(int argc, char **argv) {
 #else
     if (argc ==2 ) {
         fromfile = true;
+        logreader.init(string(argv[1]) + ".txt");
     }
     data_output_dir = "./";
 #endif
@@ -280,85 +252,7 @@ int init(int argc, char **argv) {
     std::cout << "Frame buf size: " << FRAME_BUF_SIZE << std::endl;
 
     /*****Start capturing images*****/
-    std::cout << "Initializing cam\n";
-    // Declare config
-    rs2::config cfg;
-    cfg.disable_all_streams();
-    cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
-    cfg.enable_stream(RS2_STREAM_INFRARED, 2, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
-
-#if !INSECT_DATA_LOGGING_MODE
-    if (argc ==2 ) {
-        cfg.enable_device_from_file(string(argv[1]) + ".bag");
-        fromfile = true;
-        logreader.init(string(argv[1]) + ".txt");
-    } else {
-        cfg.enable_record_to_file("test");
-    }    
-#endif
-
-    rs2::pipeline_profile selection = cam.start(cfg);
-    std::cout << "Started cam\n";
-
-    if (fromfile ) {
-        pd = selection.get_device();
-        ((rs2::playback)pd).set_real_time(true);
-    } else {
-        rs2::device selected_device = selection.get_device();
-        auto depth_sensor = selected_device.first<rs2::depth_sensor>();
-
-        if (depth_sensor.supports(RS2_OPTION_EMITTER_ENABLED))
-        {
-            depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f);
-        }
-        //        if (depth_sensor.supports(RS2_OPTION_LASER_POWER)) {
-        //            auto range = depth_sensor.get_option_range(RS2_OPTION_LASER_POWER);
-        //            depth_sensor.set_option(RS2_OPTION_LASER_POWER, (range.max - range.min)/2 + range.min);
-        //        }
-        if (depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
-            depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,1.0);
-        }
-
-        if (depth_sensor.supports(RS2_OPTION_EXPOSURE)) {
-            auto range = depth_sensor.get_option_range(RS2_OPTION_EXPOSURE);
-//            depth_sensor.set_option(RS2_OPTION_EXPOSURE, 10000); //TODO: automate this setting.
-        }
-        //weird with D435 this is totally unneccesary...? probably ROI related
-        if (depth_sensor.supports(RS2_OPTION_GAIN)) {
-            auto range = depth_sensor.get_option_range(RS2_OPTION_GAIN);
-//            depth_sensor.set_option(RS2_OPTION_GAIN, (range.max - range.min)/2 + range.min);
-            //depth_sensor.set_option(RS2_OPTION_GAIN, range.min); // increasing this causes noise
-        }
-        //        cam.stop();
-        //        selection = cam.start(cfg);
-
-        std::cout << "Set cam config\n";
-    }
-
-    // Obtain focal length and principal point (from intrinsics)
-    auto depth_stream = selection.get_stream(RS2_STREAM_INFRARED, 1).as<rs2::video_stream_profile>();
-    auto i = depth_stream.get_intrinsics();
-    float focal_length = i.fx; // same as fy
-    float cx = i.ppx; // same for both cameras
-    float cy = i.ppy;
-
-    // Obtain baseline (from extrinsics)
-    auto ir1_stream = selection.get_stream(RS2_STREAM_INFRARED, 1);
-    auto ir2_stream = selection.get_stream(RS2_STREAM_INFRARED, 2);
-    rs2_extrinsics e = ir2_stream.get_extrinsics_to(ir1_stream);
-    float baseline = e.translation[0];
-
-    //init Qf: https://stackoverflow.com/questions/27374970/q-matrix-for-the-reprojectimageto3d-function-in-opencv
-    Qf = (Mat_<double>(4, 4) << 1.0, 0.0, 0.0, -cx, 0.0, 1.0, 0.0, -cy, 0.0, 0.0, 0.0, focal_length, 0.0, 0.0, 1/baseline, 0.0);
-
-    /*****init the (G)UI*****/
-#ifdef HASSCREEN
-    cv::namedWindow("Results", CV_WINDOW_AUTOSIZE);
-#endif
-
-#if defined(HASSCREEN) || VIDEORESULTS
-    resFrame = cv::Mat::zeros(IMG_H, IMG_W,CV_8UC3);
-#endif
+    cam.init(argc,argv);
 
     /*****init the video writer*****/
 #if VIDEORESULTS
@@ -392,10 +286,9 @@ int init(int argc, char **argv) {
 
     //init pre-capture buffer
     for (int i = 0; i<FRAME_BUF_SIZE;i++){
-        rs2::frameset tmpdata = cam.wait_for_frames(); // Wait for next set of frames from the camera
-        cv::Mat image = cv::Mat(imgsize, CV_8UC1, (void*)tmpdata.get_data(), cv::Mat::AUTO_STEP);
-        frameBL[i] = Mat(imgsize, CV_8UC1, (void*)tmpdata.get_infrared_frame(IR_ID_LEFT).get_data(), Mat::AUTO_STEP).clone();
-        frameBR[i] = Mat(imgsize, CV_8UC1, (void*)tmpdata.get_infrared_frame(IR_ID_RIGHT).get_data(), Mat::AUTO_STEP).clone();
+        cam.update(); // Wait for next set of frames from the camera
+        frameBL[i] = cam.frameL.clone();
+        frameBR[i] = cam.frameR.clone();
     }
 
     std::cout << "Main init successfull" << std::endl;
@@ -412,6 +305,8 @@ void close() {
     }
     insect.close();
     arduino.close();
+    visualizer.close();
+    cam.close();
 
 #if VIDEORESULTS   
     outputVideoColor.close();

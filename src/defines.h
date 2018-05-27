@@ -8,21 +8,22 @@
 
 #define SSE2
 
-//#define HASSCREEN // dont disable in qt debugger!
-#define INSECT_DATA_LOGGING_MODE true
-//#define BEEP
+#define HASSCREEN // dont disable in qt debugger!
+#define INSECT_DATA_LOGGING_MODE false
+#define BEEP
 
 
-#define VIDEORAWLR VIDEOMODE_AVI
+#define VIDEORAWLR VIDEOMODE_DISABLED
 #define VIDEODISPARITY VIDEOMODE_DISABLED
 #define VIDEORESULTS VIDEOMODE_DISABLED
-#define VIDEOFPS 30 // the estimated frame rate of the video used for creating output videos
+#define VIDEOFPS 90 // the estimated frame rate of the video used for creating output videos
 #define IMG_W 848
 #define IMG_H 480
 #define IMSCALEF 4
+#define CAMERA_ANGLE 0.f
 
 #define DRONE_IM_X_START 424/IMSCALEF
-#define DRONE_IM_Y_START 360/IMSCALEF
+#define DRONE_IM_Y_START 100/IMSCALEF
 #define DRONE_DISPARITY_START 64/IMSCALEF
 
 
