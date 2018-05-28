@@ -31,6 +31,9 @@ private:
     void workerThread(void);
     void plot(void);
 
+
+    cv::Mat resframe;
+    bool paint;
 public:
 
     Visualizer(void){
@@ -48,6 +51,8 @@ public:
         posZ = cv::Mat (1,1,CV_32FC1);
         disparity = cv::Mat (1,1,CV_32FC1);
         sdisparity = cv::Mat (1,1,CV_32FC1);
+        dt = cv::Mat(1,1,CV_32FC1);
+        dt_target = cv::Mat(1,1,CV_32FC1);
 
         roll_joystick.pop_back();
         roll_calculated.pop_back();
@@ -63,6 +68,8 @@ public:
         posZ.pop_back();
         disparity.pop_back();
         sdisparity.pop_back();
+        dt.pop_back();
+        dt_target.pop_back();
     }
 
     cv::Mat throttle_joystick;
@@ -75,6 +82,8 @@ public:
     cv::Mat yaw_joystick;
     cv::Mat yaw_calculated;
 
+    cv::Mat dt;
+    cv::Mat dt_target;
     cv::Mat posX;
     cv::Mat posY;
     cv::Mat posZ;

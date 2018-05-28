@@ -9,6 +9,13 @@ cv::Scalar linecolors[] = {green,blue,red,cv::Scalar(0,255,255),cv::Scalar(255,2
 
 
 void Visualizer::addSample(void) {
+    static int div = 0;
+    if (paint && div++ % 4 == 1) {
+        //imshow("Tracking",resframe);
+        paint = false;
+
+        imshow("dt", plot({dt,dt_target},"dt"));
+    }
 
     g_lockData.lock();
 
@@ -17,12 +24,14 @@ void Visualizer::addSample(void) {
     yaw_joystick.push_back((float)dctrl->joyPitch);
     throttle_joystick.push_back((float)dctrl->joyThrottle);
 
-    //roll_calculated.push_back((float)dctrl->autoRoll);
-    roll_calculated.push_back((float)dtrkr->data.dt);
+    roll_calculated.push_back((float)dctrl->autoRoll);
     pitch_calculated.push_back((float)dctrl->autoPitch);
     //    yaw_calculated.push_back((float)dctrl->commandedYaw);
     throttle_calculated.push_back((float)dctrl->autoThrottle);
     throttle_hover.push_back((float)dctrl->hoverthrottle);
+
+    dt.push_back((float)dtrkr->data.dt);
+    dt_target.push_back((float)1.f/VIDEOFPS);
 
     posX.push_back(-(float)dtrkr->data.posX);
     posY.push_back((float)dtrkr->data.posY);
@@ -65,8 +74,9 @@ void Visualizer::plot(void) {
     ims_trk.push_back(plot_all_position());
     ims_trk.push_back(plot_all_velocity());
     ims_trk.push_back(plot_all_control());
-    showRowImage(ims_trk, "Tracking",CV_8UC3);
-
+    //showRowImage(ims_trk, "Tracking",CV_8UC3);
+    resframe = createRowImage(ims_trk,CV_8UC3);
+    paint=true;
 }
 
 cv::Mat Visualizer::plot_xyd(void) {
@@ -94,9 +104,8 @@ cv::Mat Visualizer::plot_xyd(void) {
 }
 
 cv::Mat Visualizer::plot_all_control(void) {
-    std::vector<cv::Mat> ims_joy;
-    ims_joy.push_back(plot({roll_calculated},"Roll"));
-    //ims_joy.push_back(plot({roll_joystick,roll_calculated},"Roll"));
+    std::vector<cv::Mat> ims_joy;    
+    ims_joy.push_back(plot({roll_joystick,roll_calculated},"Roll"));
     ims_joy.push_back(plot({pitch_joystick,pitch_calculated},"Pitch"));
     ims_joy.push_back(plot({throttle_joystick,throttle_calculated,throttle_hover},"Throttle"));
     return createColumnImage(ims_joy, CV_8UC3);
@@ -245,7 +254,7 @@ void Visualizer::workerThread(void) {
             plot();
             g_lockData.unlock();
         }
-        usleep(20000);
+        usleep(2000);
     }
 }
 void Visualizer::close() {

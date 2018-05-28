@@ -114,7 +114,7 @@ void Cam::workerThread(void) {
     frame = cam.wait_for_frames(); // init it with something
 
     rs2_timestamp_domain d = frame.get_frame_timestamp_domain();
-    if (d == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME || d == RS2_TIMESTAMP_DOMAIN_COUNT) {
+    if ((d == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME || d == RS2_TIMESTAMP_DOMAIN_COUNT) && !fromfile) {
         std::cout << "Error: Realsense hardware clock not working... " << std::endl;
         exit(1);
     }

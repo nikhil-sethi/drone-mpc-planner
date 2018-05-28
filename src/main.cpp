@@ -104,8 +104,10 @@ void process_video() {
 
 
         static float time =0;
+        float dt = cam.frame_time - time;
+        float break_time = ((float)stopWatch_break.Read())/1000.0;
         if (breakpause_prev != 0)
-            time = cam.frame_time - ((float)stopWatch_break.Read())/1000.0 ;
+            time = cam.frame_time - break_time;
 
 
         logger << imgcount << ";" << cam.frame_number << ";" ;
@@ -167,7 +169,7 @@ void process_video() {
             }
         }
 
-        std::cout << "Frame: " <<imgcount << " (" << detectcount << ", " << cam.frame_number << "). FPS: " << imgcount / time << ". Time: " << time << ". Break: " << ((float)stopWatch_break.Read())/1000.0 << std::endl;
+        std::cout << "Frame: " <<imgcount << ", " << cam.frame_number << ". FPS: " << imgcount / (time-start_time-break_time ) << ". Time: " << time << ", dt " << dt << std::endl;
         imgcount++;
 
         handleKey();

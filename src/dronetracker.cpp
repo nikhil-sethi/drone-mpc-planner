@@ -10,7 +10,7 @@ using namespace std;
 
 #ifdef HASSCREEN
 #if 1
-//#define DRAWVIZS 30fps!
+//#define DRAWVIZS //slow!
 //#define TUNING
 #endif
 
@@ -408,7 +408,7 @@ cv::Mat DroneTracker::segment_drone(cv::Mat frame,cv::Mat frame_prev, bool updat
         collect_no_drone_frames(diffL); // calibration of background uncertainty map
 
     //filter out changes in areas that were noisy during calibration period
-#ifdef DRAWVIZS
+#ifdef DRAWVIZS2
     cv::Mat diff_of_diff = diffL.clone();
     cv::Mat diff_before_uncertainty = diffL.clone();;
 #endif
@@ -424,7 +424,7 @@ cv::Mat DroneTracker::segment_drone(cv::Mat frame,cv::Mat frame_prev, bool updat
     dilate( treshfL, treshfL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iClose1r+1, settings.iClose1r+1)));
     erode(treshfL, treshfL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iOpen1r+1, settings.iOpen1r+1)));
 
-#ifdef DRAWVIZS
+#ifdef DRAWVIZS2
     cv::absdiff( diff_of_diff ,diffL,diff_of_diff);
     equalizeHist(diff_of_diff, diff_of_diff);
     if (!data.background_calibrated)
@@ -809,7 +809,7 @@ void DroneTracker::update_tracker_ouput(Point3f measured_world_coordinates,float
 
     if (fabs((float)abs(find_drone_result.disparity) - fabs(find_drone_result.smoothed_disparity)) > 3) {
         //do better matching?
-        std::cout << find_drone_result.disparity << "-> BAM <-" << find_drone_result.smoothed_disparity << std::endl;
+        //std::cout << find_drone_result.disparity << "-> BAM <-" << find_drone_result.smoothed_disparity << std::endl;
         //find_drone_result.update_prev_frames = false;
     }
     find_drone_result.smoothed_disparity = sdisparity;
