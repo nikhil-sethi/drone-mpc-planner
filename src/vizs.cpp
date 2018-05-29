@@ -11,10 +11,10 @@ cv::Scalar linecolors[] = {green,blue,red,cv::Scalar(0,255,255),cv::Scalar(255,2
 void Visualizer::addSample(void) {
     static int div = 0;
     if (paint && div++ % 4 == 1) {
-        //imshow("Tracking",resframe);
+        imshow("Tracking",resframe);
         paint = false;
 
-        imshow("dt", plot({dt,dt_target},"dt"));
+        //imshow("dt", plot({dt,dt_target},"dt"));
     }
 
     g_lockData.lock();
