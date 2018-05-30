@@ -113,6 +113,8 @@ private:
     int measSize = 4;
     int contrSize = 0;
 
+    const float background_calib_time = 7.5;
+
     unsigned int type = CV_32F;
     cv::KalmanFilter kfL,kfR;
     cv::Mat stateL,stateR;
@@ -166,8 +168,8 @@ public:
     trackData data;
     Smoother smoother_posX, smoother_posY, smoother_posZ;
     Smoother smoother_velX, smoother_velY, smoother_velZ;
-    const int smooth_width_vel = 5;
-    const int smooth_width_pos = 3;
+    const int smooth_width_vel = 10;
+    const int smooth_width_pos = 10;
 
     Smoother disp_smoothed;
 

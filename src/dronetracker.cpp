@@ -10,7 +10,7 @@ using namespace std;
 
 #ifdef HASSCREEN
 #if 1
-//#define DRAWVIZS //slow!
+#define DRAWVIZS //slow!
 //#define TUNING
 #endif
 
@@ -212,10 +212,10 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time,
         camera_coordinates.push_back(Point3f(find_drone_result.best_image_locationL.pt.x*IMSCALEF,find_drone_result.best_image_locationL.pt.y*IMSCALEF,-find_drone_result.disparity));
         camera_coordinates.push_back(Point3f(predicted_drone_locationL.x*IMSCALEF,predicted_drone_locationL.y*IMSCALEF,-predicted_drone_locationL.z));
         cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
-        Point3f output = world_coordinates[0];        
-//        float theta = CAMERA_ANGLE / (360/6.28318530718);
-//        output.y = output.y * cosf(theta) + output.z * sinf(theta);
-//        output.z = -output.y * sinf(theta) + output.z * cosf(theta);
+        Point3f output = world_coordinates[0];
+        //        float theta = CAMERA_ANGLE / (360/6.28318530718);
+        //        output.y = output.y * cosf(theta) + output.z * sinf(theta);
+        //        output.z = -output.y * sinf(theta) + output.z * cosf(theta);
 
         Point3f predicted_output = world_coordinates[1];
         update_tracker_ouput(output,dt,n_frames_lost);
@@ -229,7 +229,7 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time,
     beep(find_drone_result.best_image_locationL.pt,n_frames_lost,time,frameL_small);
 #endif
 
-    if (!data.background_calibrated && time > 15)
+    if (!data.background_calibrated && time > background_calib_time)
         data.background_calibrated= true;
 
     (*_logger) << find_drone_result.best_image_locationL.pt.x  << "; " << find_drone_result.best_image_locationL.pt.y << "; " << find_drone_result.disparity << "; ";
@@ -252,12 +252,12 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time,
 }
 void DroneTracker::beep(cv::Point2f drone, int n_frames_lost, float time, cv::Mat frameL_small) {
 
-    if (!data.background_calibrated && time > 15) {
+    if (!data.background_calibrated && time > background_calib_time) {
         system("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Mallet.ogg &");
     }
 
     //if (bam) {
-        //system("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Soft\ delay.ogg &");
+    //system("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Soft\ delay.ogg &");
     //}
 
     static bool lost = true;
@@ -268,7 +268,7 @@ void DroneTracker::beep(cv::Point2f drone, int n_frames_lost, float time, cv::Ma
 
     if (n_frames_lost < 3) {
         if (lost) {
-            system("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Positive.ogg &");
+            //system("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Positive.ogg &");
             lost =false;
         }
 
@@ -380,21 +380,21 @@ void DroneTracker::find_drone(cv::Mat frameL_small,cv::Mat frameL_s_prev, cv::Ma
         if (keypointsL.size() == 0 )
             still_nothing = true;
 
-//        //TMP
-//        if (keypointsL.size() == 0 && frame_id == 275) {
-//            cout << "still nothing" << endl;
-//            nframes_since_update_prev = 0;
-//        } else if (frame_id == 275) {
-//            cout << "refound" << endl;
-//        }
+        //        //TMP
+        //        if (keypointsL.size() == 0 && frame_id == 275) {
+        //            cout << "still nothing" << endl;
+        //            nframes_since_update_prev = 0;
+        //        } else if (frame_id == 275) {
+        //            cout << "refound" << endl;
+        //        }
 
     } else {
         blurred_circle = createBlurryCircle(60,settings.uncertainty_background/255.0);
         nframes_since_update_prev = 0;
     }
 
-//    if (data.landed) TMP DISABLED?
-//        nframes_since_update_prev = 0;
+    //    if (data.landed) TMP DISABLED?
+    //        nframes_since_update_prev = 0;
     find_drone_result.keypointsL = keypointsL;
     find_drone_result.treshfL = treshfL;
     find_drone_result.update_prev_frame = nframes_since_update_prev == 0 || (nframes_since_update_prev > 49 && !data.landed );
@@ -627,32 +627,32 @@ int DroneTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::
         } // for shift
 
 #ifdef DRAWVIZS
-//        if (breakpause) {
-//            cv::Mat aL_shift,bL_shift,diff_L_roi_shift,aR_shift,bR_shift,diff_R_roi_shift;
-//            cv::resize(aL,aL_shift,cv::Size(aL.cols*4, aL.rows*4));
-//            cv::resize(bL,bL_shift,cv::Size(aL.cols*4, aL.rows*4));
-//            cv::resize(diff_L_roi,diff_L_roi_shift,cv::Size(aL.cols*4, aL.rows*4));
-//            cv::resize(aR,aR_shift,cv::Size(aL.cols*4, aL.rows*4));
-//            cv::resize(bR,bR_shift,cv::Size(aL.cols*4, aL.rows*4));
-//            cv::resize(diff_R_roi,diff_R_roi_shift,cv::Size(aL.cols*4, aL.rows*4));
-//            std::stringstream ss;
-//            ss << i << "; cor: " << cor_16 << " err: " << err;
-//            putText(aL_shift,ss.str() ,cv::Point(0,12),cv::FONT_HERSHEY_SIMPLEX,0.5,255);
+        //        if (breakpause) {
+        //            cv::Mat aL_shift,bL_shift,diff_L_roi_shift,aR_shift,bR_shift,diff_R_roi_shift;
+        //            cv::resize(aL,aL_shift,cv::Size(aL.cols*4, aL.rows*4));
+        //            cv::resize(bL,bL_shift,cv::Size(aL.cols*4, aL.rows*4));
+        //            cv::resize(diff_L_roi,diff_L_roi_shift,cv::Size(aL.cols*4, aL.rows*4));
+        //            cv::resize(aR,aR_shift,cv::Size(aL.cols*4, aL.rows*4));
+        //            cv::resize(bR,bR_shift,cv::Size(aL.cols*4, aL.rows*4));
+        //            cv::resize(diff_R_roi,diff_R_roi_shift,cv::Size(aL.cols*4, aL.rows*4));
+        //            std::stringstream ss;
+        //            ss << i << "; cor: " << cor_16 << " err: " << err;
+        //            putText(aL_shift,ss.str() ,cv::Point(0,12),cv::FONT_HERSHEY_SIMPLEX,0.5,255);
 
-//            std::vector<cv::Mat> ims;
-//            ims.push_back(aL_shift);
-//            ims.push_back(bL_shift);
-//            ims.push_back(diff_L_roi_shift);
-//            ims.push_back(aR_shift);
-//            ims.push_back(bR_shift);
-//            ims.push_back(diff_R_roi_shift);
-//            showColumnImage(ims, "shift",CV_8UC1);
+        //            std::vector<cv::Mat> ims;
+        //            ims.push_back(aL_shift);
+        //            ims.push_back(bL_shift);
+        //            ims.push_back(diff_L_roi_shift);
+        //            ims.push_back(aR_shift);
+        //            ims.push_back(bR_shift);
+        //            ims.push_back(diff_R_roi_shift);
+        //            showColumnImage(ims, "shift",CV_8UC1);
 
-//            unsigned char key = cv::waitKey(0);
-//            if (key == 'c')
-//                breakpause = false;
+        //            unsigned char key = cv::waitKey(0);
+        //            if (key == 'c')
+        //                breakpause = false;
 
-//        }
+        //        }
 #endif
 
     }
@@ -667,23 +667,23 @@ int DroneTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::
 
 #ifdef DRAWVIZS
     if (tmp_max_disp > settings.min_disparity) {
-//        std::vector<cv::Mat> ims;
-//        cv::Mat aL_eq,bL_eq,diff_L_roi_eq,aR_viz_eq,bR_viz_eq,diff_R_roi_viz_eq;
-//        equalizeHist(aL, aL_eq);
-//        equalizeHist(bL, bL_eq);
-//        equalizeHist(diff_L_roi, diff_L_roi_eq);
+        //        std::vector<cv::Mat> ims;
+        //        cv::Mat aL_eq,bL_eq,diff_L_roi_eq,aR_viz_eq,bR_viz_eq,diff_R_roi_viz_eq;
+        //        equalizeHist(aL, aL_eq);
+        //        equalizeHist(bL, bL_eq);
+        //        equalizeHist(diff_L_roi, diff_L_roi_eq);
 
-//        equalizeHist(aR_viz, aR_viz_eq);
-//        equalizeHist(bR_viz, bR_viz_eq);
-//        equalizeHist(diff_R_roi_viz, diff_R_roi_viz_eq);
+        //        equalizeHist(aR_viz, aR_viz_eq);
+        //        equalizeHist(bR_viz, bR_viz_eq);
+        //        equalizeHist(diff_R_roi_viz, diff_R_roi_viz_eq);
 
-//        ims.push_back(aL_eq);
-//        ims.push_back(bL_eq);
-//        ims.push_back(diff_L_roi_eq);
-//        ims.push_back(aR_viz_eq);
-//        ims.push_back(bR_viz_eq);
-//        ims.push_back(diff_R_roi_viz_eq);
-//        showColumnImage(ims, "col", CV_8UC1);
+        //        ims.push_back(aL_eq);
+        //        ims.push_back(bL_eq);
+        //        ims.push_back(diff_L_roi_eq);
+        //        ims.push_back(aR_viz_eq);
+        //        ims.push_back(bR_viz_eq);
+        //        ims.push_back(diff_R_roi_viz_eq);
+        //        showColumnImage(ims, "col", CV_8UC1);
     }
 #endif
 
@@ -692,46 +692,51 @@ int DroneTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::
 
 void DroneTracker::drawviz(cv::Mat frameL,cv::Mat treshfL,cv::Mat framegrayL) {
 #ifdef DRAWVIZS
-    cv::Mat resFrameL;
 
-    cv::resize(frameL,resFrameL,cv::Size(frameL.cols,frameL.rows));
-    //    equalizeHist( resFrameL, resFrameL);
-    cvtColor(resFrameL,resFrameL,CV_GRAY2BGR);
+    static int div = 0;
+    if (div++ % 4 == 1) {
+
+        cv::Mat resFrameL;
+
+        cv::resize(frameL,resFrameL,cv::Size(frameL.cols,frameL.rows));
+        //    equalizeHist( resFrameL, resFrameL);
+        cvtColor(resFrameL,resFrameL,CV_GRAY2BGR);
 
 
-    if (foundL) {
-        drawKeypoints( framegrayL, predicted_dronepathL, framegrayL, Scalar(0,255,0), DrawMatchesFlags::DEFAULT );
-    } else {
-        cvtColor(framegrayL,framegrayL,CV_GRAY2BGR);
+        if (foundL) {
+            drawKeypoints( framegrayL, predicted_dronepathL, framegrayL, Scalar(0,255,0), DrawMatchesFlags::DEFAULT );
+        } else {
+            cvtColor(framegrayL,framegrayL,CV_GRAY2BGR);
+        }
+
+        cv::Size vizsizeL(resFrameL.cols/4,resFrameL.rows/4);
+        cv::resize(treshfL,treshfL,vizsizeL);
+        cvtColor(treshfL,treshfL,CV_GRAY2BGR);
+
+        treshfL.copyTo(resFrameL(cv::Rect(resFrameL.cols - treshfL.cols,0,treshfL.cols, treshfL.rows)));
+
+        if (dronepathL.size() > 0) {
+            drawKeypoints( framegrayL, dronepathL, framegrayL, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+        }
+        cv::circle(framegrayL,cv::Point(setpoint.x,setpoint.y),2,cv::Scalar(150,255,200));
+        cv::resize(framegrayL,framegrayL,vizsizeL);
+        framegrayL.copyTo(resFrameL(cv::Rect(0,0,framegrayL.cols, framegrayL.rows)));
+
+        std::stringstream ss1,ss2,ss3;
+        ss1.precision(2);
+        ss2.precision(2);
+        ss3.precision(2);
+
+        ss1 << "[" << data.posX << ", " << data.posY << ", " << data.posZ << "] " ;
+        ss2 << "[" << data.posErrX << ", " << data.posErrY << ", " << data.posErrZ << "] " ;
+        ss3 << "Delta: " << sqrtf(data.posErrX*data.posErrX+data.posErrY*data.posErrY+data.posErrZ*data.posErrZ);
+
+        putText(resFrameL,ss1.str() ,cv::Point(220,20),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+        putText(resFrameL,ss2.str() ,cv::Point(220,40),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+        putText(resFrameL,ss3.str() ,cv::Point(220,60),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+        resFrame = resFrameL;
+        cv::imshow("Results", resFrame);
     }
-
-    cv::Size vizsizeL(resFrameL.cols/4,resFrameL.rows/4);
-    cv::resize(treshfL,treshfL,vizsizeL);
-    cvtColor(treshfL,treshfL,CV_GRAY2BGR);
-
-    treshfL.copyTo(resFrameL(cv::Rect(resFrameL.cols - treshfL.cols,0,treshfL.cols, treshfL.rows)));
-
-    if (dronepathL.size() > 0) {
-        drawKeypoints( framegrayL, dronepathL, framegrayL, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
-    }
-    cv::circle(framegrayL,cv::Point(setpoint.x,setpoint.y),2,cv::Scalar(150,255,200));
-    cv::resize(framegrayL,framegrayL,vizsizeL);
-    framegrayL.copyTo(resFrameL(cv::Rect(0,0,framegrayL.cols, framegrayL.rows)));
-
-    std::stringstream ss1,ss2,ss3;
-    ss1.precision(2);
-    ss2.precision(2);
-    ss3.precision(2);
-
-    ss1 << "[" << data.posX << ", " << data.posY << ", " << data.posZ << "] " ;
-    ss2 << "[" << data.posErrX << ", " << data.posErrY << ", " << data.posErrZ << "] " ;
-    ss3 << "Delta: " << sqrtf(data.posErrX*data.posErrX+data.posErrY*data.posErrY+data.posErrZ*data.posErrZ);
-
-    putText(resFrameL,ss1.str() ,cv::Point(220,20),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-    putText(resFrameL,ss2.str() ,cv::Point(220,40),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-    putText(resFrameL,ss3.str() ,cv::Point(220,60),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-    resFrame = resFrameL;
-    cv::imshow("Results", resFrame);
 #endif
 }
 
@@ -790,7 +795,7 @@ void DroneTracker::update_tracker_ouput(Point3f measured_world_coordinates,float
     static float prevX,prevY,prevZ =0;
     static int detected_after_take_off = 0;
     if (n_frames_lost >= smooth_width_vel || data.reset_filters) { // tracking was regained, after n_frames_lost frames
-       // data.sdisparity = -1;
+        // data.sdisparity = -1;
         disp_smoothed.reset();
         smoother_posX.reset();
         smoother_posY.reset();
@@ -849,11 +854,11 @@ void DroneTracker::update_tracker_ouput(Point3f measured_world_coordinates,float
     data.svelX = tsvelX;
     data.svelY = tsvelY;
     data.svelZ = tsvelZ;
-//    } else {
-//        data.svelX = 0;
-//        data.svelY = 0;
-//        data.svelZ = 0;
-//    }
+    //    } else {
+    //        data.svelX = 0;
+    //        data.svelY = 0;
+    //        data.svelZ = 0;
+    //    }
 
     data.posErrX = data.sposX - setpointw.x;
     data.posErrY = data.sposY - setpointw.y;

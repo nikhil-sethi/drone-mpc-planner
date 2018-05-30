@@ -2,7 +2,7 @@
 #include "defines.h"
 
 #ifdef HASSCREEN
-#if 0
+#if 1
 #define TUNING
 #endif
 #endif
@@ -106,9 +106,9 @@ void DroneController::control(trackData * data) {
     if (autoTakeOff)
         autoThrottle = hoverthrottle;
     else
-        autoThrottle =  hoverthrottle  - (data->posErrY * params.throttleP + data->velY * (params.throttleD/1000.0f) + throttleErrI * params.throttleI);
-    autoRoll = 1500 + (data->posErrX * params.rollP + data->velX * (params.rollD/1000.0f) +  params.rollI*rollErrI);
-    autoPitch =1500 + (data->posErrZ * params.pitchP + data->velZ * (params.pitchD/1000.0f) +  params.pitchI*pitchErrI);
+        autoThrottle =  hoverthrottle  - (data->posErrY * params.throttleP + data->svelY * (params.throttleD) + throttleErrI * params.throttleI);
+    autoRoll = 1500 + (data->posErrX * params.rollP + data->svelX * (params.rollD) +  params.rollI*rollErrI);
+    autoPitch =1500 + (data->posErrZ * params.pitchP + data->svelZ * (params.pitchD) +  params.pitchI*pitchErrI);
     //TODO: Yaw
 
     //tmp only for vizs

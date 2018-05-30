@@ -138,7 +138,7 @@ void Cam::workerThread(void) {
         g_lockData.lock();
         frame_time_tmp = frame.get_timestamp()/1000.f; //stopWatch.Read()/1000.f;
         frame_number_tmp = frame.get_frame_number();
-        std::cout << frame.get_frame_number() << ": " << frame_time_tmp << std::endl;
+        //std::cout << frame.get_frame_number() << ": " << frame_time_tmp << std::endl;
         frameL_tmp = Mat(imgsize, CV_8UC1, (void*)frame.get_infrared_frame(IR_ID_LEFT).get_data(), Mat::AUTO_STEP);
         frameR_tmp = Mat(imgsize, CV_8UC1, (void*)frame.get_infrared_frame(IR_ID_RIGHT).get_data(), Mat::AUTO_STEP);
 

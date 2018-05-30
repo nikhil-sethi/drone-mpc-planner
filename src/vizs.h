@@ -23,7 +23,12 @@ private:
     DroneController *dctrl;
     DroneTracker *dtrkr;
 
-    const int bufsize = 300;
+    const int bufsize = 600;
+
+    const int fsizex = 925/4;
+    const int fsizey = 535/3;
+    const int line_width = 1;
+    const float text_size = 0.3;
 
     std::mutex g_lockData;
     std::thread thread_viz;

@@ -7,8 +7,16 @@ cv::Scalar blue(255,0,0);
 cv::Scalar red(0,0,255);
 cv::Scalar linecolors[] = {green,blue,red,cv::Scalar(0,255,255),cv::Scalar(255,255,0),cv::Scalar(255,0,255)};
 
+//cv::Scalar background_color(255,255,255);
+cv::Scalar background_color(0,0,0);
+cv::Scalar fore_color(255,255,255);
 
 void Visualizer::addSample(void) {
+
+
+    g_lockData.lock();
+
+
     static int div = 0;
     if (paint && div++ % 4 == 1) {
         imshow("Tracking",resframe);
@@ -17,7 +25,6 @@ void Visualizer::addSample(void) {
         //imshow("dt", plot({dt,dt_target},"dt"));
     }
 
-    g_lockData.lock();
 
     roll_joystick.push_back((float)dctrl->joyRoll);
     pitch_joystick.push_back((float)dctrl->joyPitch);
@@ -60,13 +67,6 @@ void Visualizer::addSample(void) {
     g_lockData.unlock();
 
 }
-const int fsizex = 1850/4;
-const int fsizey = 1070/3;
-const int line_width = 1;
-
-//cv::Scalar background_color(255,255,255);
-cv::Scalar background_color(0,0,0);
-cv::Scalar fore_color(255,255,255);
 
 void Visualizer::plot(void) {
     std::vector<cv::Mat> ims_trk;
@@ -135,7 +135,7 @@ cv::Mat Visualizer::plot(std::vector<cv::Mat> data, const std::string name) {
 }
 
 void Visualizer::plot(std::vector<cv::Mat> data, cv::Mat *frame, std::string name) {
-    putText(*frame,name,cv::Point(0, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,fore_color);
+    putText(*frame,name,cv::Point(0, 13),cv::FONT_HERSHEY_SIMPLEX,text_size,fore_color);
     cv::line(*frame,cv::Point(0,frame->rows-1),cv::Point(frame->cols,frame->rows-1),fore_color);
     cv::line(*frame,cv::Point(frame->cols-1,0),cv::Point(frame->cols-1,frame->rows-1),fore_color);
 
@@ -156,7 +156,7 @@ void Visualizer::plot(std::vector<cv::Mat> data, cv::Mat *frame, std::string nam
     std::stringstream ss;
     ss << std::setprecision(4);
     ss << "[" << min << " - " << max << "]";
-    putText(*frame,ss.str(),cv::Point(0, 28),cv::FONT_HERSHEY_SIMPLEX,0.5,red);
+    putText(*frame,ss.str(),cv::Point(0, 28),cv::FONT_HERSHEY_SIMPLEX,text_size,red);
 
     float range = max - min;
     float amplify_y = 1;
@@ -188,7 +188,7 @@ cv::Mat Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Point setpoint, std:
     ss.precision(2);
     ss << name << " " << datax.at<float>(datax.rows-1) << "; " << datay.at<float>(datay.rows-1);
 
-    putText(frame,ss.str() ,cv::Point(0, 30),cv::FONT_HERSHEY_SIMPLEX,0.5,fore_color);
+    putText(frame,ss.str() ,cv::Point(0, 30),cv::FONT_HERSHEY_SIMPLEX,text_size,fore_color);
     cv::line(frame,cv::Point(0,frame.rows-1),cv::Point(frame.cols,frame.rows-1),fore_color);
     cv::line(frame,cv::Point(frame.cols-1,0),cv::Point(frame.cols-1,frame.rows-1),fore_color);
 

@@ -169,7 +169,7 @@ void process_video() {
             }
         }
 
-        std::cout << "Frame: " <<imgcount << ", " << cam.frame_number << ". FPS: " << imgcount / (time-start_time-break_time ) << ". Time: " << time << ", dt " << dt << std::endl;
+        std::cout << "Frame: " <<imgcount << ", " << cam.frame_number << ". FPS: " << imgcount / (time-start_time-break_time ) << ". Time: " << time-start_time-break_time  << ", dt " << dt << std::endl;
         imgcount++;
 
         handleKey();
