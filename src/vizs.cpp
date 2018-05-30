@@ -8,8 +8,8 @@ cv::Scalar red(0,0,255);
 cv::Scalar linecolors[] = {green,blue,red,cv::Scalar(0,255,255),cv::Scalar(255,255,0),cv::Scalar(255,0,255)};
 
 //cv::Scalar background_color(255,255,255);
-cv::Scalar background_color(0,0,0);
-cv::Scalar fore_color(255,255,255);
+cv::Scalar fore_color(0,0,0);
+cv::Scalar background_color(255,255,255);
 
 void Visualizer::addSample(void) {
 

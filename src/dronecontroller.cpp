@@ -53,7 +53,7 @@ bool DroneController::init(std::ofstream *logger,bool fromfile, Arduino * arduin
     // roll control
     createTrackbar("Roll P", "Control", &params.rollP, 5000);
     createTrackbar("Roll I", "Control", &params.rollI, 255);
-    createTrackbar("Roll D", "Control", &params.rollD, 255);
+    createTrackbar("Roll D", "Control", &params.rollD, 1000);
     // pitch control
     createTrackbar("Pitch P", "Control", &params.pitchP, 5000);
     createTrackbar("Pitch I", "Control", &params.pitchI, 255);
@@ -103,12 +103,16 @@ void DroneController::control(trackData * data) {
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
     }
 
-    if (autoTakeOff)
+    if (autoTakeOff) {
         autoThrottle = hoverthrottle;
-    else
+        autoRoll = 1500 ;
+        autoPitch =1500;
+    }
+    else {
         autoThrottle =  hoverthrottle  - (data->posErrY * params.throttleP + data->svelY * (params.throttleD) + throttleErrI * params.throttleI);
-    autoRoll = 1500 + (data->posErrX * params.rollP + data->svelX * (params.rollD) +  params.rollI*rollErrI);
-    autoPitch =1500 + (data->posErrZ * params.pitchP + data->svelZ * (params.pitchD) +  params.pitchI*pitchErrI);
+        autoRoll = 1500 + (data->posErrX * params.rollP + data->svelX * (params.rollD) +  params.rollI*rollErrI);
+        autoPitch =1500 + (data->posErrZ * params.pitchP + data->svelZ * (params.pitchD) +  params.pitchI*pitchErrI);
+    }
     //TODO: Yaw
 
     //tmp only for vizs
@@ -137,10 +141,14 @@ void DroneController::control(trackData * data) {
             roll = autoRoll;
             pitch = autoPitch;
             //yaw= autoYaw;
+        } else {
+            roll = 1500;
+            pitch = 1500;
+            //yaw= 1500;
         }
         //TMP:
-        roll = joyRoll;
-        pitch = joyPitch;
+        //roll = joyRoll;
+        //pitch = joyPitch;
         yaw = joyYaw;
 
         //calc integrated errors

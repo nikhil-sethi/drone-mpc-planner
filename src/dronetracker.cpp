@@ -14,7 +14,7 @@ using namespace std;
 //#define TUNING
 #endif
 
-//#define POSITIONTRACKBARS
+#define POSITIONTRACKBARS
 #endif
 
 const string settingsFile = "../settings.dat";
@@ -29,10 +29,10 @@ bool DroneTracker::init(std::ofstream *logger) {
 
 
     setpoints.push_back(cv::Point3i(SETPOINTXMAX / 2,SETPOINTYMAX / 2,1000)); // this is overwritten by position trackbars!!!
-    setpoints.push_back(cv::Point3i(0,0,1200));
-    setpoints.push_back(cv::Point3i(0,0,1200));
-    setpoints.push_back(cv::Point3i(0,0,1200));
-    setpoints.push_back(cv::Point3i(0,0,1200));
+    setpoints.push_back(cv::Point3i(1250,1500,2000));
+    setpoints.push_back(cv::Point3i(1750,1500,2000));
+    setpoints.push_back(cv::Point3i(1750,1500,1800));
+    setpoints.push_back(cv::Point3i(1750,1500,1000));
 
 #ifdef TUNING
     namedWindow("Tuning", WINDOW_NORMAL);
