@@ -50,7 +50,7 @@ public:
 private:
 
     rs2::pipeline_profile selection;
-    int exposure = 16500; // >11000 -> 60fps, >16500 -> 30fps
+    int exposure = 20; // >11000 -> 60fps, >16500 -> 30fps
     int gain = 16;
     bool fromfile;
     bool ready;
