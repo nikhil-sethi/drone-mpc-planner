@@ -30,9 +30,19 @@ bool DroneTracker::init(std::ofstream *logger) {
 
     setpoints.push_back(cv::Point3i(SETPOINTXMAX / 2,SETPOINTYMAX / 2,1000)); // this is overwritten by position trackbars!!!
     setpoints.push_back(cv::Point3i(1500,1500,1200));
-    setpoints.push_back(cv::Point3i(1750,1500,2000));
-    setpoints.push_back(cv::Point3i(1750,1500,1800));
-    setpoints.push_back(cv::Point3i(1750,1500,1000));
+    setpoints.push_back(cv::Point3i(1750,1500,1200));
+    setpoints.push_back(cv::Point3i(1250,1500,1200));
+    setpoints.push_back(cv::Point3i(1500,1500,1200));
+    setpoints.push_back(cv::Point3i(1500,1200,1200));
+    setpoints.push_back(cv::Point3i(1500,1800,1200));
+
+    //far
+    setpoints.push_back(cv::Point3i(1500,1500,2300));
+    setpoints.push_back(cv::Point3i(1000,1500,2300));
+    setpoints.push_back(cv::Point3i(2000,1500,2300));
+    setpoints.push_back(cv::Point3i(1500,1500,2300));
+    setpoints.push_back(cv::Point3i(1500,1000,2300));
+    setpoints.push_back(cv::Point3i(1500,2500,2300));
 
 #ifdef TUNING
     namedWindow("Tuning", WINDOW_NORMAL);
@@ -56,7 +66,7 @@ bool DroneTracker::init(std::ofstream *logger) {
     createTrackbar("X [mm]", "Setpoint", &setpointX, SETPOINTXMAX);
     createTrackbar("Y [mm]", "Setpoint", &setpointY, SETPOINTYMAX);
     createTrackbar("Z [mm]", "Setpoint", &setpointZ, SETPOINTZMAX);
-    createTrackbar("WP id", "Setpoint", &wpid, 4);
+    createTrackbar("WP id", "Setpoint", &wpid, setpoints.size());
 
 #endif
 
@@ -188,39 +198,62 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time,
         init_avg_prev_frame();
     }
 
+    if (data.landed)
+    {
+        frameL_s_prev_OK = frameL_s_prev;
+        frameL_big_prev_OK = frameL_big_prev;
+        frameR_big_prev_OK = frameR_big_prev;
+    }
+
     find_drone(frameL_small, frameL_s_prev, frameL_s_prev_OK);
 
     data.valid = false; // reset the flag, set to true when drone is detected properly
 
     static int n_frames_lost =100;
-    if (find_drone_result.keypointsL.size() == 0) { //if lost
-        n_frames_lost++;
-        if( n_frames_lost >= 10 )
-            foundL = false;
-        update_prediction_state(cv::Point3f(predicted_drone_locationL.x,predicted_drone_locationL.y,predicted_drone_locationL.z));
-        reset_tracker_ouput(n_frames_lost);
-    } else {
+    if (find_drone_result.keypointsL.size() > 0) { //if not lost
+
         cv::Point3f previous_drone_location(find_drone_result.best_image_locationL .pt.x,find_drone_result.best_image_locationL .pt.y,0);
-        find_drone_result.best_image_locationL = match_closest_to_prediciton(previous_drone_location,find_drone_result.keypointsL);
+        std::vector<cv::KeyPoint> keypoint_candidates = find_drone_result.keypointsL;
+        Point3f output;
+        int disparity;
+        cv::KeyPoint match;
+        while (keypoint_candidates.size() > 0) {
+            int match_id = match_closest_to_prediciton(previous_drone_location,find_drone_result.keypointsL);
+            match = find_drone_result.keypointsL.at(match_id);
 
-        find_drone_result.disparity = stereo_match(find_drone_result.best_image_locationL,frameL_big_prev_OK,frameR_big_prev_OK,frameL,frameR,find_drone_result.smoothed_disparity);
+            disparity = stereo_match(match,frameL_big_prev_OK,frameR_big_prev_OK,frameL,frameR,find_drone_result.smoothed_disparity);
 
-        update_prediction_state(cv::Point3f(find_drone_result.best_image_locationL.pt.x,find_drone_result.best_image_locationL.pt.y,find_drone_result.disparity));
 
-        //calculate everything for the dronecontroller:
-        std::vector<Point3f> camera_coordinates, world_coordinates;
-        camera_coordinates.push_back(Point3f(find_drone_result.best_image_locationL.pt.x*IMSCALEF,find_drone_result.best_image_locationL.pt.y*IMSCALEF,-find_drone_result.disparity));
-        camera_coordinates.push_back(Point3f(predicted_drone_locationL.x*IMSCALEF,predicted_drone_locationL.y*IMSCALEF,-predicted_drone_locationL.z));
-        cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
-        Point3f output = world_coordinates[0];
-                float theta = CAMERA_ANGLE / (360/6.28318530718);
-                output.y = output.y * cosf(theta) + output.z * sinf(theta);
-                output.z = -output.y * sinf(theta) + output.z * cosf(theta);
 
-        Point3f predicted_output = world_coordinates[1];
-        update_tracker_ouput(output,dt,n_frames_lost);
-        n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
-        t_prev = time; // update dt only if drone was detected
+            //calculate everything for the dronecontroller:
+            std::vector<Point3f> camera_coordinates, world_coordinates;
+            camera_coordinates.push_back(Point3f(match.pt.x*IMSCALEF,match.pt.y*IMSCALEF,-disparity));
+            //camera_coordinates.push_back(Point3f(predicted_drone_locationL.x*IMSCALEF,predicted_drone_locationL.y*IMSCALEF,-predicted_drone_locationL.z));
+            cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
+            output = world_coordinates[0];
+            float theta = CAMERA_ANGLE / (360/6.28318530718);
+//            output.y = output.y * cosf(theta) + output.z * sinf(theta);
+//            output.z = -output.y * sinf(theta) + output.z * cosf(theta);
+
+            if ((output.z < -4.f) || (output.y > 0.8f)) {
+                keypoint_candidates.erase(keypoint_candidates.begin() + match_id);
+            } else {
+                break;
+            }
+        }
+        if (keypoint_candidates.size() == 0) { // if lost
+            n_frames_lost++;
+            if( n_frames_lost >= 10 )
+                foundL = false;
+            update_prediction_state(cv::Point3f(predicted_drone_locationL.x,predicted_drone_locationL.y,predicted_drone_locationL.z));
+            reset_tracker_ouput(n_frames_lost);
+        } else {
+            //Point3f predicted_output = world_coordinates[1];
+            update_prediction_state(cv::Point3f(match.pt.x,match.pt.y,disparity));
+            update_tracker_ouput(output,dt,n_frames_lost,match,disparity);
+            n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
+            t_prev = time; // update dt only if drone was detected
+        }
     }
 
 
@@ -235,7 +268,7 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time,
     (*_logger) << find_drone_result.best_image_locationL.pt.x *IMSCALEF << "; " << find_drone_result.best_image_locationL.pt.y *IMSCALEF << "; " << find_drone_result.disparity << "; ";
 
 #ifdef DRAWVIZS
-    drawviz(frameL,find_drone_result.treshfL,frameL_small);
+    drawviz(frameL,find_drone_result.treshfL,frameL_small,data.drone_image_locationL);
 #endif
 
 
@@ -489,6 +522,53 @@ cv::Mat DroneTracker::get_uncertainty_map_with_drone(cv::Point p) {
     return res;
 }
 
+/* Takes the calibrated uncertainty map, and augments it with a highlight around p */
+cv::Mat DroneTracker::show_uncertainty_map_in_image(cv::Point pd4, cv::Mat res) {
+
+    cv::Point p;
+    p.x = pd4.x *IMSCALEF;
+    p.y = pd4.y *IMSCALEF;
+
+    cv::Mat blurred_circle_big;
+    cv::resize(blurred_circle,blurred_circle_big,cv::Size (blurred_circle.cols*IMSCALEF,blurred_circle.rows*IMSCALEF));
+
+    cv::Rect roi_circle(0,0,blurred_circle_big.cols,blurred_circle_big.rows);
+    int x1 = p.x-blurred_circle_big.cols/2;
+    if (x1 < 0) {
+        roi_circle.x = abs(p.x-blurred_circle_big.cols/2);
+        roi_circle.width-=roi_circle.x;
+    } else if (x1 + blurred_circle_big.cols >= res.cols)
+        roi_circle.width = roi_circle.width  - abs(x1 + blurred_circle_big.cols - res.cols);
+
+    int y1 = p.y-blurred_circle_big.rows/2;
+    if (y1 < 0) {
+        roi_circle.y = abs(p.y-blurred_circle_big.rows/2);
+        roi_circle.height-=roi_circle.y;
+    } else if (y1 + blurred_circle_big.rows >= res.rows)
+        roi_circle.height = roi_circle.height - abs(y1 + blurred_circle_big.rows - res.rows);
+
+    cv::Mat gray = cv::Mat::zeros(res.rows,res.cols,CV_32F);
+    gray = settings.uncertainty_background/255.0;
+    cv::Mat a = blurred_circle_big(roi_circle);
+
+
+
+    x1 = p.x-blurred_circle_big.cols/2+roi_circle.x;
+    int x2 = a.cols;
+    y1 = p.y-blurred_circle_big.rows/2+roi_circle.y;
+    int y2 = a.rows;
+
+    cv::Rect roi(x1,y1,x2,y2);
+    a.copyTo(gray(roi));
+    cvtColor(res,res,CV_BGR2GRAY);
+    res.convertTo(res,CV_32F);
+    res = gray.mul(res);
+    res.convertTo(res,CV_8UC1);
+    cvtColor(res,res,CV_GRAY2BGR);
+
+    return res;
+}
+
 cv::Point3f DroneTracker::predict_drone(float dt) {
     cv::Point3f predicted_drone_locationL;
     if (foundL) {
@@ -520,10 +600,10 @@ cv::Point3f DroneTracker::predict_drone(float dt) {
     return predicted_drone_locationL;
 }
 
-cv::KeyPoint DroneTracker::match_closest_to_prediciton(cv::Point3f predicted_drone_locationL,std::vector<KeyPoint> keypointsL) {
-    cv::KeyPoint closestL;
+int DroneTracker::match_closest_to_prediciton(cv::Point3f predicted_drone_locationL,std::vector<KeyPoint> keypointsL) {
+    int closestL;
     if (keypointsL.size() == 1 && dronepathL.size() == 0) {
-        closestL = keypointsL.at(0);
+        closestL = 0;
     } else if (dronepathL.size() > 0) {
         //find closest keypoint to new predicted location
         int mind = 999999999;
@@ -532,15 +612,15 @@ cv::KeyPoint DroneTracker::match_closest_to_prediciton(cv::Point3f predicted_dro
             int d = (predicted_drone_locationL.x-k.pt.x) * (predicted_drone_locationL.x-k.pt.x) + (predicted_drone_locationL.y-k.pt.y)*(predicted_drone_locationL.y-k.pt.y);
             if (d < mind ) {
                 mind = d;
-                closestL = keypointsL.at(i);
+                closestL = i;
             }
         }
     } else {
         //the case that we have multiple drone candidates, no good way to figure out which one is the drone
         //guess we'll just take the first one...
-        closestL = keypointsL.at(0);
+        closestL = 0;
     }
-    dronepathL.push_back(closestL);
+
     return closestL;
 }
 
@@ -682,7 +762,7 @@ int DroneTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::
     return disparity;
 }
 
-void DroneTracker::drawviz(cv::Mat frameL,cv::Mat treshfL,cv::Mat framegrayL) {
+void DroneTracker::drawviz(cv::Mat frameL,cv::Mat treshfL,cv::Mat framegrayL,cv::Point  previous_imageL_location) {
 #ifdef DRAWVIZS
 
     static int div = 0;
@@ -726,6 +806,9 @@ void DroneTracker::drawviz(cv::Mat frameL,cv::Mat treshfL,cv::Mat framegrayL) {
         putText(resFrameL,ss1.str() ,cv::Point(220,20),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
         putText(resFrameL,ss2.str() ,cv::Point(220,40),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
         putText(resFrameL,ss3.str() ,cv::Point(220,60),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+
+
+        //resFrameL = show_uncertainty_map_in_image(previous_imageL_location,  resFrameL);
         resFrame = resFrameL;
         cv::imshow("Results", resFrame);
     }
@@ -762,7 +845,7 @@ void DroneTracker::update_prediction_state(cv::Point3f p) {
         kfL.correct(measL);
 }
 
-void DroneTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  int n_frames_lost) {
+void DroneTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  int n_frames_lost, cv::KeyPoint match, int disparity) {
 
     cv::Point3i tmps;
     if (wpid > 0)
@@ -773,7 +856,10 @@ void DroneTracker::update_tracker_ouput(Point3f measured_world_coordinates,float
         tmps.z = setpointZ;
     }
 
+    find_drone_result.best_image_locationL = match;
+    find_drone_result.disparity = disparity;
     data.drone_image_locationL = find_drone_result.best_image_locationL.pt;
+    dronepathL.push_back(find_drone_result.best_image_locationL);
 
     setpointw.x = (tmps.x - SETPOINTXMAX/2) / 1000.0f;
     setpointw.y = (tmps.y - SETPOINTYMAX/2) / 1000.0f;

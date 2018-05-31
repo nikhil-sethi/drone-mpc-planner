@@ -63,7 +63,7 @@ private:
         int minInertiaRatio = 1;
         int maxInertiaRatio = 100;
 
-        int min_disparity=10;
+        int min_disparity=0;
         int max_disparity=20;
 
         int uncertainty_multiplier = 2;
@@ -95,14 +95,16 @@ private:
     cv::Mat segment_drone(cv::Mat frame, cv::Mat frame_prev, bool build_uncertainty_map2, cv::Point previous_imageL_location);
     cv::Point3f predict_drone(float dt);
     cv::Mat get_uncertainty_map_with_drone(cv::Point p);
-    cv::KeyPoint match_closest_to_prediciton(cv::Point3f predicted_drone_locationL, std::vector<cv::KeyPoint> keypointsL);
+    int match_closest_to_prediciton(cv::Point3f predicted_drone_locationL, std::vector<cv::KeyPoint> keypointsL);
     int stereo_match(cv::KeyPoint closestL, cv::Mat frameL_big_prev, cv::Mat prevFrameR_big, cv::Mat frameL, cv::Mat frameR, int prevDisparity);
     void update_prediction_state(cv::Point3f p);
-    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, int n_frames_lost);
+    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, int n_frames_lost, cv::KeyPoint match, int disparity);
     void reset_tracker_ouput(int n_frames_lost);
-    void drawviz(cv::Mat frameL, cv::Mat treshfL, cv::Mat framegrayL);
+    void drawviz(cv::Mat frameL, cv::Mat treshfL, cv::Mat framegrayL, cv::Point previous_imageL_location);
     void find_drone(cv::Mat frameL_small, cv::Mat frameL_s_prev, cv::Mat frameL_s_prev_OK);
     void beep(cv::Point2f drone, int n_frames_lost, float time, cv::Mat frameL_small);
+
+    cv::Mat show_uncertainty_map_in_image(cv::Point p, cv::Mat resframeL);
 
     void init_avg_prev_frame(void);
     void collect_avg_prev_frame(cv::Mat frame);
