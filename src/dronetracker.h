@@ -101,7 +101,7 @@ private:
     void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, int n_frames_lost);
     void reset_tracker_ouput(int n_frames_lost);
     void drawviz(cv::Mat frameL, cv::Mat treshfL, cv::Mat framegrayL);
-    void find_drone(cv::Mat frameL_small,cv::Mat frameL_s_prev, cv::Mat frameL_s_prev_OK, int frame_id);
+    void find_drone(cv::Mat frameL_small, cv::Mat frameL_s_prev, cv::Mat frameL_s_prev_OK);
     void beep(cv::Point2f drone, int n_frames_lost, float time, cv::Mat frameL_small);
 
     void init_avg_prev_frame(void);
@@ -113,7 +113,7 @@ private:
     int measSize = 4;
     int contrSize = 0;
 
-    const float background_calib_time = 7.5;
+    const float background_calib_time = 15.0;
 
     unsigned int type = CV_32F;
     cv::KalmanFilter kfL,kfR;

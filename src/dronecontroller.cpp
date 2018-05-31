@@ -57,7 +57,7 @@ bool DroneController::init(std::ofstream *logger,bool fromfile, Arduino * arduin
     // pitch control
     createTrackbar("Pitch P", "Control", &params.pitchP, 5000);
     createTrackbar("Pitch I", "Control", &params.pitchI, 255);
-    createTrackbar("Pitch D", "Control", &params.pitchD, 255);
+    createTrackbar("Pitch D", "Control", &params.pitchD, 1000);
 
 
 
