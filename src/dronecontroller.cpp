@@ -74,8 +74,6 @@ bool DroneController::init(std::ofstream *logger,bool fromfile, Arduino * arduin
 
 }
 
-float startY = -100;
-
 void DroneController::control(trackData * data) {
 
     _arduino->rebind();
@@ -83,11 +81,6 @@ void DroneController::control(trackData * data) {
 
     if(autoLand) {
         autoTakeOff=false;
-
-        if (fabs(data->posErrY - startY) < 0.1) {
-            hoverthrottle  = INITIALTHROTTLE; //?
-        }
-        data->posErrY = -startY-0.2;
     }
 
     if (autoTakeOff) {
@@ -99,7 +92,6 @@ void DroneController::control(trackData * data) {
     if (data->svelY > ((float)params.auto_takeoff_speed) / 100.f && autoTakeOff) {
         autoTakeOff = false;
         hoverthrottle -= 2*params.autoTakeoffFactor; // to compensate for ground effect and delay
-        startY = data->posErrY;
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
     }
 
@@ -191,11 +183,11 @@ void DroneController::control(trackData * data) {
         yaw = 1950;
 
 
-    if ((autoThrottle <= 1050 && autoLand) || (joyThrottle <= 1050 && !autoControl)) {
+    if ((data->landed && !autoTakeOff )|| (joyThrottle <= 1050 && !autoControl)) {
+        hoverthrottle  = INITIALTHROTTLE; //?
         data->landed = true;
     } else
         data->landed = false;
-
 
     _arduino->g_lockData.lock();
 

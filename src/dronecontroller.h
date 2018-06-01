@@ -100,6 +100,7 @@ public:
     bool getAutoControl() {return autoControl;}
     bool getAutoTakeOff() {return autoTakeOff;}
     bool getAutoLand() {return autoLand;}
+    void doAutoLand() {autoLand = true;}
 
 };
 

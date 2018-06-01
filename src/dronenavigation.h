@@ -25,12 +25,11 @@ private:
 #define SETPOINTYMAX 3000 // in mm
 #define SETPOINTZMAX 5000 // in mm
 
-#define DRONE_MAX_BORDER_Z 4.f
-#define DRONE_MAX_BORDER_Y 2.1f
-
-    int setpointX = SETPOINTXMAX / 2;
-    int setpointY = 600;
-    int setpointZ = 1000;
+    float land_incr = 0;
+    int land_incr_f_mm = 10;
+    int setpoint_slider_X = SETPOINTXMAX / 2;
+    int setpoint_slider_Y = 600;
+    int setpoint_slider_Z = 1000;
     int wpid = 0;
 
 
