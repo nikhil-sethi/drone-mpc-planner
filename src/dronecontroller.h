@@ -64,23 +64,16 @@ private:
 
     #define INITIALTHROTTLE 1050
 
-
-
     bool autoTakeOff = false;
-    int autoLand = 0;
+    bool autoLand = false;
     bool autoControl = false;
 
     Arduino * _arduino;
-
-
 
     std::ofstream *_logger;
     void sendData(void);
     void readJoystick(void);
     void rebind(void);
-
-
-
 
 public:
 
@@ -93,7 +86,6 @@ public:
 
     float hoverthrottle = INITIALTHROTTLE;
 
-
     bool joySwitch = true;
     int joyDial = 0;
     float scaledjoydial = 0;
@@ -102,15 +94,13 @@ public:
     int joyPitch = 0;
     int joyYaw = 0;
 
-
-
     void close (void);
     bool init(std::ofstream *logger, bool fromfile, Arduino * arduino);
     void control(trackData *data);
+    bool getAutoControl() {return autoControl;}
+    bool getAutoTakeOff() {return autoTakeOff;}
+    bool getAutoLand() {return autoLand;}
 
 };
-
-
-
 
 #endif //DRONECONTROLLER_H

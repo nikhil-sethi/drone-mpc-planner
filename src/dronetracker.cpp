@@ -232,6 +232,7 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time,
             update_tracker_ouput(output,dt,n_frames_lost,match,disparity,setpoint_world);
             n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
             t_prev = time; // update dt only if drone was detected
+            n_frames_tracking++;
         }
     }
 
@@ -927,6 +928,8 @@ void DroneTracker::reset_tracker_ouput(int n_frames_lost) {
         data.svelY = 0;
         data.svelZ = 0;
     }
+    if (n_frames_lost != 0)
+        n_frames_tracking = 0;
 }
 
 void DroneTracker::close () {

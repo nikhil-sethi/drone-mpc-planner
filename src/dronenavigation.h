@@ -33,6 +33,8 @@ private:
     int setpointZ = 1000;
     int wpid = 0;
 
+
+    int distance_threshold_mm = 40;
     std::vector<cv::Point3i> setpoints;
 
     std::ofstream *_logger;

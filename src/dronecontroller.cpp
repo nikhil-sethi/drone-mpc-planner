@@ -40,7 +40,7 @@ bool DroneController::init(std::ofstream *logger,bool fromfile, Arduino * arduin
     namedWindow("Control", WINDOW_NORMAL);
 
     createTrackbar("Rebind", "Control", &(_arduino->rebindValue), 1);
-    createTrackbar("AutoLand", "Control", &autoLand, 1);
+    //createTrackbar("AutoLand", "Control", &autoLand, 1);
 
     // throttle control
     createTrackbar("Throttle P", "Control", &params.throttleP, 2000);

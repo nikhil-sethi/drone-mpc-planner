@@ -149,7 +149,7 @@ private:
 
 public:       
 
-
+    int n_frames_tracking =0;
     cv::Mat resFrame;
 
     void close (void);
