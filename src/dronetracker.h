@@ -77,6 +77,7 @@ private:
         }
 
 
+
     };
     patsSettings settings;
 
@@ -98,9 +99,9 @@ private:
     int match_closest_to_prediciton(cv::Point3f predicted_drone_locationL, std::vector<cv::KeyPoint> keypointsL);
     int stereo_match(cv::KeyPoint closestL, cv::Mat frameL_big_prev, cv::Mat prevFrameR_big, cv::Mat frameL, cv::Mat frameR, int prevDisparity);
     void update_prediction_state(cv::Point3f p);
-    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, int n_frames_lost, cv::KeyPoint match, int disparity);
+    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, int n_frames_lost, cv::KeyPoint match, int disparity, cv::Point3f setpoint_world);
     void reset_tracker_ouput(int n_frames_lost);
-    void drawviz(cv::Mat frameL, cv::Mat treshfL, cv::Mat framegrayL, cv::Point previous_imageL_location);
+    void drawviz(cv::Mat frameL, cv::Mat treshfL, cv::Mat framegrayL, cv::Point previous_imageL_location, cv::Point3d setpoint);
     void find_drone(cv::Mat frameL_small, cv::Mat frameL_s_prev, cv::Mat frameL_s_prev_OK);
     void beep(cv::Point2f drone, int n_frames_lost, float time, cv::Mat frameL_small);
 
@@ -123,21 +124,10 @@ private:
     cv::Mat measL,measR;
 
 
-#define SETPOINTXMAX 3000 // in mm
-#define SETPOINTYMAX 3000 // in mm
-#define SETPOINTZMAX 5000 // in mm
-
 #define DRONE_MAX_BORDER_Z 4.f
 #define DRONE_MAX_BORDER_Y 2.1f
 
-    int setpointX = SETPOINTXMAX / 2;
-    int setpointY = 600;
-    int setpointZ = 1000;
-    int wpid = 0;
-
-    std::vector<cv::Point3i> setpoints;
-
-    std::ofstream *_logger;
+    std::ofstream *_logger;    
 
     bool firstFrame;
     cv::Mat frameL_s_prev;
@@ -159,14 +149,12 @@ private:
 
 public:       
 
-    cv::Point3d setpoint;
-    cv::Point3f setpointw;
 
     cv::Mat resFrame;
 
     void close (void);
     bool init(std::ofstream *logger);
-    bool track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time, int frame_id);
+    bool track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time, int frame_id, cv::Point3d setpoint, cv::Point3f setpoint_world);
 
 
 

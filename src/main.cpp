@@ -52,6 +52,7 @@ std::ofstream logger;
 Arduino arduino;
 DroneTracker dtrkr;
 DroneController dctrl;
+DroneNavigation dnav;
 Insect insect;
 Visualizer visualizer;
 LogReader logreader;
@@ -112,9 +113,10 @@ void process_video() {
 
         logger << imgcount << ";" << cam.frame_number << ";" ;
         if (!INSECT_DATA_LOGGING_MODE) {
-            if (dtrkr.track(cam.frameL,cam.frameR, cam.Qf, cam.frame_time-start_time, cam.frame_number)) {
+            if (dtrkr.track(cam.frameL,cam.frameR, cam.Qf, cam.frame_time-start_time, cam.frame_number,dnav.setpoint,dnav.setpoint_world)) {
                 breakpause = 0;
             }
+            dnav.update();
             dctrl.control(&(dtrkr.data));
         }
 #if INSECT_DATA_LOGGING_MODE
@@ -247,6 +249,7 @@ int init(int argc, char **argv) {
     if (!INSECT_DATA_LOGGING_MODE) {
         dtrkr.init(&logger);
         dctrl.init(&logger,fromfile,&arduino);
+        dnav.init(&logger,&dtrkr,&dctrl);
     }
     insect.init(&logger,&arduino);
     logger << std::endl;
@@ -277,7 +280,7 @@ int init(int argc, char **argv) {
     }
 #endif
 
-    visualizer.init(&dctrl,&dtrkr);
+    visualizer.init(&dctrl,&dtrkr,&dnav);
 
     //init ctrl - c catch
     struct sigaction sigIntHandler;

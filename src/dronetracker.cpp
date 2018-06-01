@@ -14,12 +14,13 @@ using namespace std;
 #define TUNING
 #endif
 
-#define POSITIONTRACKBARS
+
 #endif
 
 const string settingsFile = "../settings.dat";
 bool DroneTracker::init(std::ofstream *logger) {
     _logger = logger;
+
     (*_logger) << "imLx; imLy; disparity;";
     if (checkFileExist(settingsFile)) {
         std::ifstream is(settingsFile, std::ios::binary);
@@ -27,21 +28,6 @@ bool DroneTracker::init(std::ofstream *logger) {
         archive(settings);
     }
 
-
-    setpoints.push_back(cv::Point3i(SETPOINTXMAX / 2,SETPOINTYMAX / 2,1000)); // this is overwritten by position trackbars!!!
-    setpoints.push_back(cv::Point3i(1500,600,1000));
-    setpoints.push_back(cv::Point3i(1800,600,1200));
-    setpoints.push_back(cv::Point3i(1200,600,1000));
-    setpoints.push_back(cv::Point3i(1000,600,2000));
-    setpoints.push_back(cv::Point3i(2000,600,2000));
-    setpoints.push_back(cv::Point3i(1800,600,1200));
-
-    //far
-    setpoints.push_back(cv::Point3i(1800,1000,1200));
-    setpoints.push_back(cv::Point3i(1200,1000,1000));
-    setpoints.push_back(cv::Point3i(1000,1000,2000));
-    setpoints.push_back(cv::Point3i(2000,1000,2000));
-    setpoints.push_back(cv::Point3i(1800,1000,1200));
 
 
 #ifdef TUNING
@@ -61,14 +47,7 @@ bool DroneTracker::init(std::ofstream *logger) {
     createTrackbar("Uncertain back", "Tuning", &settings.uncertainty_background, 255);
 
 #endif
-#ifdef POSITIONTRACKBARS
-    namedWindow("Setpoint", WINDOW_NORMAL);
-    createTrackbar("X [mm]", "Setpoint", &setpointX, SETPOINTXMAX);
-    createTrackbar("Y [mm]", "Setpoint", &setpointY, SETPOINTYMAX);
-    createTrackbar("Z [mm]", "Setpoint", &setpointZ, SETPOINTZMAX);
-    createTrackbar("WP id", "Setpoint", &wpid, setpoints.size()-1);
 
-#endif
 
     kfL = cv::KalmanFilter(stateSize, measSize, contrSize, type);
     stateL =cv::Mat(stateSize, 1, type);  // [x,y,v_x,v_y,w,h]
@@ -178,7 +157,7 @@ float calculateDistance(float xr, float yr, float xl, float yl) {
 
 bool foundL = false;
 float t_prev = 0;
-bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time, int frame_id) {
+bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time, int frame_id, cv::Point3d setpoint, cv::Point3f setpoint_world) {
     updateParams();
 
     float dt= (time-t_prev);
@@ -235,7 +214,7 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time,
             output.y = output.y * cosf(theta) + output.z * sinf(theta);
             output.z = -output.y * sinf(theta) + output.z * cosf(theta);
 
-            if ((output.z < -4.f) || (output.y < -2.10f)) {
+            if ((output.z < -DRONE_MAX_BORDER_Z) || (output.y < -DRONE_MAX_BORDER_Z)) {
                 keypoint_candidates.erase(keypoint_candidates.begin() + match_id);
             } else {
                 break;
@@ -250,7 +229,7 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time,
         } else {
             //Point3f predicted_output = world_coordinates[1];
             update_prediction_state(cv::Point3f(match.pt.x,match.pt.y,disparity));
-            update_tracker_ouput(output,dt,n_frames_lost,match,disparity);
+            update_tracker_ouput(output,dt,n_frames_lost,match,disparity,setpoint_world);
             n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
             t_prev = time; // update dt only if drone was detected
         }
@@ -268,7 +247,7 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time,
     (*_logger) << find_drone_result.best_image_locationL.pt.x *IMSCALEF << "; " << find_drone_result.best_image_locationL.pt.y *IMSCALEF << "; " << find_drone_result.disparity << "; ";
 
 #ifdef DRAWVIZS
-    drawviz(frameL,find_drone_result.treshfL,frameL_small,data.drone_image_locationL);
+    drawviz(frameL,find_drone_result.treshfL,frameL_small,data.drone_image_locationL, setpoint);
 #endif
 
 
@@ -762,7 +741,7 @@ int DroneTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::
     return disparity;
 }
 
-void DroneTracker::drawviz(cv::Mat frameL,cv::Mat treshfL,cv::Mat framegrayL,cv::Point  previous_imageL_location) {
+void DroneTracker::drawviz(cv::Mat frameL,cv::Mat treshfL,cv::Mat framegrayL,cv::Point  previous_imageL_location, cv::Point3d setpoint) {
 #ifdef DRAWVIZS
 
     static int div = 0;
@@ -845,25 +824,12 @@ void DroneTracker::update_prediction_state(cv::Point3f p) {
         kfL.correct(measL);
 }
 
-void DroneTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  int n_frames_lost, cv::KeyPoint match, int disparity) {
-
-    cv::Point3i tmps;
-    if (wpid > 0)
-        tmps = setpoints[wpid];
-    else { // read from position trackbars
-        tmps.x = setpointX;
-        tmps.y = setpointY;
-        tmps.z = setpointZ;
-    }
+void DroneTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  int n_frames_lost, cv::KeyPoint match, int disparity,cv::Point3f setpoint_world) {
 
     find_drone_result.best_image_locationL = match;
     find_drone_result.disparity = disparity;
     data.drone_image_locationL = find_drone_result.best_image_locationL.pt;
     dronepathL.push_back(find_drone_result.best_image_locationL);
-
-    setpointw.x = (tmps.x - SETPOINTXMAX/2) / 1000.0f;
-    setpointw.y = (tmps.y - SETPOINTYMAX/2) / 1000.0f;
-    setpointw.z = -(tmps.z) / 1000.0f;
 
     data.posX = measured_world_coordinates.x;
     data.posY = measured_world_coordinates.y;
@@ -938,9 +904,9 @@ void DroneTracker::update_tracker_ouput(Point3f measured_world_coordinates,float
     //        data.svelZ = 0;
     //    }
 
-    data.posErrX = data.sposX - setpointw.x;
-    data.posErrY = data.sposY - setpointw.y;
-    data.posErrZ = data.sposZ - setpointw.z;
+    data.posErrX = data.sposX - setpoint_world.x;
+    data.posErrY = data.sposY - setpoint_world.y;
+    data.posErrZ = data.sposZ - setpoint_world.z;
 
     prevX = data.sposX;
     prevY = data.sposY;
@@ -952,8 +918,6 @@ void DroneTracker::update_tracker_ouput(Point3f measured_world_coordinates,float
 }
 
 void DroneTracker::reset_tracker_ouput(int n_frames_lost) {
-
-
     if (n_frames_lost > 10 || data.landed){
         data.reset_filters = true;
         data.velX = 0;
@@ -963,9 +927,6 @@ void DroneTracker::reset_tracker_ouput(int n_frames_lost) {
         data.svelY = 0;
         data.svelZ = 0;
     }
-
-
-
 }
 
 void DroneTracker::close () {

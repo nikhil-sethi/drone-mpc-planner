@@ -8,6 +8,8 @@
 #include <opencv2/highgui/highgui.hpp>
 #include "opencv2/features2d/features2d.hpp"
 #include "dronecontroller.h"
+#include "dronetracker.h"
+#include "dronenavigation.h"
 
 class Visualizer{
 
@@ -22,6 +24,7 @@ private:
 
     DroneController *dctrl;
     DroneTracker *dtrkr;
+    DroneNavigation *dnav;
 
     const int bufsize = 600;
 
@@ -114,9 +117,10 @@ public:
     cv::Mat autotakeoff_velY_thresh;
 
     void addSample(void);
-    void init(DroneController *dctrl, DroneTracker *dtrkr){
+    void init(DroneController *dctrl, DroneTracker *dtrkr, DroneNavigation *dnav){
         this->dctrl = dctrl;
         this->dtrkr = dtrkr;
+        this->dnav = dnav;
         thread_viz = std::thread(&Visualizer::workerThread,this);
     }
     void close();
