@@ -127,9 +127,12 @@ private:
 #define SETPOINTYMAX 3000 // in mm
 #define SETPOINTZMAX 5000 // in mm
 
+#define DRONE_MAX_BORDER_Z 4.f
+#define DRONE_MAX_BORDER_Y 2.1f
+
     int setpointX = SETPOINTXMAX / 2;
-    int setpointY = SETPOINTYMAX / 2;
-    int setpointZ = 2000;
+    int setpointY = 600;
+    int setpointZ = 1000;
     int wpid = 0;
 
     std::vector<cv::Point3i> setpoints;

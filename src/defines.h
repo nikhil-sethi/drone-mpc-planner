@@ -20,7 +20,7 @@
 #define IMG_W 848
 #define IMG_H 480
 #define IMSCALEF 4
-#define CAMERA_ANGLE 0.f
+#define CAMERA_ANGLE 32.f
 
 #define DRONE_IM_X_START 424/IMSCALEF
 #define DRONE_IM_Y_START 420/IMSCALEF

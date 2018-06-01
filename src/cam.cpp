@@ -150,6 +150,8 @@ void Cam::workerThread(void) {
 
         if (!fromfile) {
             if (exposure != old_exposure) {
+                if (exposure < 20)
+                    exposure =20;
                 auto range = depth_sensor.get_option_range(RS2_OPTION_EXPOSURE);
                 depth_sensor.set_option(RS2_OPTION_EXPOSURE, exposure); //TODO: automate this setting.
             }

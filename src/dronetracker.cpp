@@ -29,20 +29,20 @@ bool DroneTracker::init(std::ofstream *logger) {
 
 
     setpoints.push_back(cv::Point3i(SETPOINTXMAX / 2,SETPOINTYMAX / 2,1000)); // this is overwritten by position trackbars!!!
-    setpoints.push_back(cv::Point3i(1500,1500,1200));
-    setpoints.push_back(cv::Point3i(1750,1500,1200));
-    setpoints.push_back(cv::Point3i(1250,1500,1200));
-    setpoints.push_back(cv::Point3i(1500,1500,1200));
-    setpoints.push_back(cv::Point3i(1500,1200,1200));
-    setpoints.push_back(cv::Point3i(1500,1800,1200));
+    setpoints.push_back(cv::Point3i(1500,600,1000));
+    setpoints.push_back(cv::Point3i(1800,600,1200));
+    setpoints.push_back(cv::Point3i(1200,600,1000));
+    setpoints.push_back(cv::Point3i(1000,600,2000));
+    setpoints.push_back(cv::Point3i(2000,600,2000));
+    setpoints.push_back(cv::Point3i(1800,600,1200));
 
     //far
-    setpoints.push_back(cv::Point3i(1500,1500,2300));
-    setpoints.push_back(cv::Point3i(1000,1500,2300));
-    setpoints.push_back(cv::Point3i(2000,1500,2300));
-    setpoints.push_back(cv::Point3i(1500,1500,2300));
-    setpoints.push_back(cv::Point3i(1500,1000,2300));
-    setpoints.push_back(cv::Point3i(1500,2500,2300));
+    setpoints.push_back(cv::Point3i(1800,1000,1200));
+    setpoints.push_back(cv::Point3i(1200,1000,1000));
+    setpoints.push_back(cv::Point3i(1000,1000,2000));
+    setpoints.push_back(cv::Point3i(2000,1000,2000));
+    setpoints.push_back(cv::Point3i(1800,1000,1200));
+
 
 #ifdef TUNING
     namedWindow("Tuning", WINDOW_NORMAL);
@@ -66,7 +66,7 @@ bool DroneTracker::init(std::ofstream *logger) {
     createTrackbar("X [mm]", "Setpoint", &setpointX, SETPOINTXMAX);
     createTrackbar("Y [mm]", "Setpoint", &setpointY, SETPOINTYMAX);
     createTrackbar("Z [mm]", "Setpoint", &setpointZ, SETPOINTZMAX);
-    createTrackbar("WP id", "Setpoint", &wpid, setpoints.size());
+    createTrackbar("WP id", "Setpoint", &wpid, setpoints.size()-1);
 
 #endif
 
@@ -232,10 +232,10 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time,
             cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
             output = world_coordinates[0];
             float theta = CAMERA_ANGLE / (360/6.28318530718);
-//            output.y = output.y * cosf(theta) + output.z * sinf(theta);
-//            output.z = -output.y * sinf(theta) + output.z * cosf(theta);
+            output.y = output.y * cosf(theta) + output.z * sinf(theta);
+            output.z = -output.y * sinf(theta) + output.z * cosf(theta);
 
-            if ((output.z < -4.f) || (output.y > 0.8f)) {
+            if ((output.z < -4.f) || (output.y < -2.10f)) {
                 keypoint_candidates.erase(keypoint_candidates.begin() + match_id);
             } else {
                 break;
@@ -322,7 +322,7 @@ void DroneTracker::beep(cv::Point2f drone, int n_frames_lost, float time, cv::Ma
 
 
         if (time-time_beep_prev > 0.1 / beep_speed) {
-            // system("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Blip.ogg &");
+            system("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Blip.ogg &");
             time_beep_prev = time;
         }
     }

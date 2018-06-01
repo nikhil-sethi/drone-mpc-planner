@@ -208,13 +208,13 @@ void DroneController::control(trackData * data) {
     _arduino->g_lockData.unlock();
 
     (*_logger) << (int)data->valid  << "; " << data->posErrX << "; " << data->posErrY  << "; " << data->posErrZ << "; " << data->velX << "; " << data->velY  << "; " << data->velZ << "; " << hoverthrottle << "; " << autoThrottle << "; " << autoRoll << "; " << autoPitch << "; " << autoYaw <<  "; " << joyThrottle <<  "; " << joyRoll <<  "; " << joyPitch <<  "; " << joyYaw << "; " << (int)joySwitch << "; " << params.throttleP << "; " << params.throttleI << "; " << params.throttleD << "; " << data->dt << "; " << data->dx << "; " << data->dy << "; " << data->dz << "; ";
-//    if (!notconnected){
-//        params.throttleP = scaledjoydial;
-//        std::cout << "P:" << params.throttleP << " Throttle: " << throttle << " HT: " << hoverthrottle << std::endl;
-//        std::cout << "Roll: " << roll << " RollP: " << params.rollP << std::endl;
-//        std::cout << "AutoTakeOff:" << (int)autoTakeOff <<  " HT: " << hoverthrottle << " Valid: " << data->valid << "VelY: " << data->velY <<std::endl;
-//        std::cout << "AutoLand:" << autoLand <<  " HT: " << hoverthrottle << " Valid: " << data->valid << " PosY: " << data->posErrY << " startY:" << startY << " VelY: " << data->velY <<std::endl;
-//    }
+    //    if (!notconnected){
+    //        params.throttleP = scaledjoydial;
+    //        std::cout << "P:" << params.throttleP << " Throttle: " << throttle << " HT: " << hoverthrottle << std::endl;
+    //        std::cout << "Roll: " << roll << " RollP: " << params.rollP << std::endl;
+    //        std::cout << "AutoTakeOff:" << (int)autoTakeOff <<  " HT: " << hoverthrottle << " Valid: " << data->valid << "VelY: " << data->velY <<std::endl;
+    //        std::cout << "AutoLand:" << autoLand <<  " HT: " << hoverthrottle << " Valid: " << data->valid << " PosY: " << data->posErrY << " startY:" << startY << " VelY: " << data->velY <<std::endl;
+    //    }
 }
 
 int firstTime = 3;
@@ -277,27 +277,27 @@ void DroneController::readJoystick(void) {
             autoControl = true;
         }
     } else if (!joySwitch && joySwitch_prev) {
-        if (joyPitch < 1100) {
-            autoLand=1;
-            alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/desktop-logout.ogg &");
-        } else {
-            autoTakeOff = false;
-            autoControl = false;
-            autoLand = false;
-        }
+        autoTakeOff = false;
+        autoControl = false;
+        autoLand = false;
     }
     joySwitch_prev = joySwitch;
+
+    if (autoControl && joyPitch < 1100) {
+        autoLand=true;
+        alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/desktop-logout.ogg &");
+    }
 }
 
 void DroneController::close () {
 
 
-//    char buff[64];
-//    sprintf( (char*) buff,"1050,1500,1500,1500,0,0,0,0,0,0,0,2000\n");
-//    if (!notconnected) {
-//        RS232_SendBuf( (unsigned char*) buff, 63);
-//        RS232_CloseComport();
-//    }
+    //    char buff[64];
+    //    sprintf( (char*) buff,"1050,1500,1500,1500,0,0,0,0,0,0,0,2000\n");
+    //    if (!notconnected) {
+    //        RS232_SendBuf( (unsigned char*) buff, 63);
+    //        RS232_CloseComport();
+    //    }
 
     std::cout << "closing controller" << std::endl;
 
