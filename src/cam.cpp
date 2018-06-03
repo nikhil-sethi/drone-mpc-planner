@@ -124,21 +124,24 @@ void Cam::workerThread(void) {
         exit(1);
     }
 
-    rs2::device selected_device = selection.get_device();
-    auto depth_sensor = selected_device.first<rs2::depth_sensor>();
+    if (enable_auto_exposure && !fromfile) {
+        rs2::device selected_device = selection.get_device();
+        auto depth_sensor = selected_device.first<rs2::depth_sensor>();
+        
+        exposure = frame.get_infrared_frame(IR_ID_LEFT).get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE) ;
+        gain = frame.get_infrared_frame(IR_ID_LEFT).get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_GAIN_LEVEL) ;
+        std::cout << "Auto exposure = " << frame.get_infrared_frame(IR_ID_LEFT).get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE) << ", ";
+        std::cout << "Auto gain = " << frame.get_infrared_frame(IR_ID_LEFT).get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_GAIN_LEVEL) << std::endl;
+        
+        depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,0.0);
+        depth_sensor.set_option(RS2_OPTION_EXPOSURE, exposure);
+        depth_sensor.set_option(RS2_OPTION_GAIN, gain);
 
-    exposure = frame.get_infrared_frame(IR_ID_LEFT).get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE) ;
-    gain = frame.get_infrared_frame(IR_ID_LEFT).get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_GAIN_LEVEL) ;
-    std::cout << "Auto exposure = " << frame.get_infrared_frame(IR_ID_LEFT).get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE) << ", ";
-    std::cout << "Auto gain = " << frame.get_infrared_frame(IR_ID_LEFT).get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_GAIN_LEVEL) << std::endl;
-
-    depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,0.0);
-    depth_sensor.set_option(RS2_OPTION_EXPOSURE, exposure);
-    depth_sensor.set_option(RS2_OPTION_GAIN, gain);
+        frame = cam.wait_for_frames(); // init it with something
+    }
 
     static int old_exposure = exposure;
     static int old_gain = gain;
-    frame = cam.wait_for_frames(); // init it with something
 
     while (!exitCamThread) {
 
