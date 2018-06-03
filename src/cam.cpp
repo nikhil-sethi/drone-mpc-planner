@@ -23,7 +23,7 @@ void Cam::update(void) {
 
 void Cam::init(int argc, char **argv) {
 
-    std::cout << "Initializing cam\n";
+    std::cout << "Initializing cam\n" << std::endl;
     // Declare config
     rs2::config cfg;
     cfg.disable_all_streams();
@@ -57,7 +57,7 @@ void Cam::init(int argc, char **argv) {
         //            auto range = depth_sensor.get_option_range(RS2_OPTION_LASER_POWER);
         //            depth_sensor.set_option(RS2_OPTION_LASER_POWER, (range.max - range.min)/2 + range.min);
         //        }
-        if (enable_auto_exposure) {
+        if (enable_auto_exposure == only_at_startup || enable_auto_exposure == enabled) {
             if (depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
                 depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,1.0);
             }
@@ -111,7 +111,7 @@ void Cam::workerThread(void) {
 
 
     cv::Size imgsize(IMG_W, IMG_H);
-    if (enable_auto_exposure) {
+    if (enable_auto_exposure == only_at_startup) {
         usleep(1e6); // give auto exposure some time
     }
 
@@ -126,7 +126,7 @@ void Cam::workerThread(void) {
 
     rs2::device selected_device = selection.get_device();
     auto depth_sensor = selected_device.first<rs2::depth_sensor>();
-    if (enable_auto_exposure && !fromfile) {
+    if (enable_auto_exposure == only_at_startup && !fromfile) {
 
         exposure = frame.get_infrared_frame(IR_ID_LEFT).get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE) ;
         gain = frame.get_infrared_frame(IR_ID_LEFT).get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_GAIN_LEVEL) ;
@@ -138,11 +138,11 @@ void Cam::workerThread(void) {
         depth_sensor.set_option(RS2_OPTION_GAIN, gain);
 
         usleep(1e6); // give auto exposure some time
+        frame = cam.wait_for_frames(); // init it with something
     }
 
     static int old_exposure = exposure;
     static int old_gain = gain;
-    frame = cam.wait_for_frames(); // init it with something
 
     while (!exitCamThread) {
 
@@ -166,15 +166,27 @@ void Cam::workerThread(void) {
         g_waitforimage.unlock();
         ready = true;
 
-        if (!fromfile && !enable_auto_exposure) {
+        if (!fromfile && !enable_auto_exposure == enabled) {
             if (exposure != old_exposure) {
                 if (exposure < 20)
                     exposure =20;
                 auto range = depth_sensor.get_option_range(RS2_OPTION_EXPOSURE);
+                if (exposure < range.min) {
+                    exposure = range.min;
+                }
+                if (exposure > range.max) {
+                    exposure = range.max;
+                }
                 depth_sensor.set_option(RS2_OPTION_EXPOSURE, exposure);
             }
             if (gain != old_gain) {
                 auto range = depth_sensor.get_option_range(RS2_OPTION_GAIN);
+                if (gain < range.min) {
+                    gain = range.min;
+                }
+                if (gain > range.max) {
+                    gain = range.max;
+                }
                 depth_sensor.set_option(RS2_OPTION_GAIN, gain); // increasing this causes noise
             }
         }

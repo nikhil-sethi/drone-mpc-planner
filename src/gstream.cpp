@@ -48,7 +48,6 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
 
         /* setup pipeline */
         if (mode == VIDEOMODE_AVI) {
-#ifdef _PC
             //write to file:
             //gst-launch-1.0 videotestsrc ! videocovert ! x264enc ! 'video/x-h264, stream-format=(string)byte-stream'  ! avimux ! filesink location=test.avi
             //gst-launch-1.0 videotestsrc ! video/x-raw,format=GRAY8,framerate=\(fraction\)90/1,width=1280,height=720 ! videoconvert ! x264enc ! 'video/x-h264, stream-format=(string)byte-stream'  ! avimux ! filesink location=test.avi
@@ -66,14 +65,14 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
                                                    "format", G_TYPE_STRING, "BGR",
                                                    "width", G_TYPE_INT, sizeX,
                                                    "height", G_TYPE_INT, sizeY,
-                                                   "framerate", GST_TYPE_FRACTION, VIDEOFPS, 1,NULL), NULL);
+                                                   "framerate", GST_TYPE_FRACTION, fps, 1,NULL), NULL);
             } else {
                 g_object_set (G_OBJECT (appsrc), "caps",
                               gst_caps_new_simple ("video/x-raw",
                                                    "format", G_TYPE_STRING, "GRAY8",
                                                    "width", G_TYPE_INT, sizeX,
                                                    "height", G_TYPE_INT, sizeY,
-                                                   "framerate", GST_TYPE_FRACTION, VIDEOFPS, 1,NULL), NULL);
+                                                   "framerate", GST_TYPE_FRACTION, fps, 1,NULL), NULL);
             }
 //            g_object_set (G_OBJECT (capsf), "caps",
 //                          gst_caps_new_simple ("video/x-h264",
@@ -88,38 +87,7 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
                           "format", GST_FORMAT_TIME,
                           "is-live", TRUE,
                           NULL);
-#else
-            //write to file:
-            //gst-launch-1.0 videotestsrc ! omxh264enc ! 'video/x-h264, stream-format=(string)byte-stream'  ! avimux ! filesink location=test.avi
-            pipeline = gst_pipeline_new ("pipeline");
-            appsrc = gst_element_factory_make ("appsrc", "source");
-            conv = gst_element_factory_make ("videoconvert", "conv");
-            encoder = gst_element_factory_make ("omxh264enc", "encoder");
-            capsf = gst_element_factory_make ("capsfilter", "capsf");
-            mux = gst_element_factory_make ("avimux", "mux");
-            videosink = gst_element_factory_make ("filesink", "videosink");
 
-            /* setup */
-            g_object_set (G_OBJECT (appsrc), "caps",
-                          gst_caps_new_simple ("video/x-raw",
-                                               "format", G_TYPE_STRING, "BGR",
-                                               "width", G_TYPE_INT, sizeX,
-                                               "height", G_TYPE_INT, sizeY,
-                                               "framerate", GST_TYPE_FRACTION, VIDEOFPS, 1,NULL), NULL);
-            g_object_set (G_OBJECT (capsf), "caps",
-                          gst_caps_new_simple ("video/x-h264",
-                                               "stream-format", G_TYPE_STRING, "byte-stream", NULL), NULL);
-            g_object_set (G_OBJECT (videosink), "location", file.c_str(), NULL);
-            gst_bin_add_many (GST_BIN (pipeline), appsrc, conv, encoder, capsf, mux, videosink, NULL);
-            gst_element_link_many (appsrc, conv, encoder, capsf, mux, videosink, NULL);
-
-            /* setup appsrc */
-            g_object_set (G_OBJECT (appsrc),
-                          "stream-type", 0, // GST_APP_STREAM_TYPE_STREAM
-                          "format", GST_FORMAT_TIME,
-                          "is-live", TRUE,
-                          NULL);
-#endif
 
         } else if (mode == VIDEOMODE_STREAM) {
             //streaming:
@@ -140,14 +108,14 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
                                                    "format", G_TYPE_STRING, "BGR",
                                                    "width", G_TYPE_INT, sizeX,
                                                    "height", G_TYPE_INT, sizeY,
-                                                   "framerate", GST_TYPE_FRACTION, VIDEOFPS, 1,NULL), NULL);
+                                                   "framerate", GST_TYPE_FRACTION, fps, 1,NULL), NULL);
             } else {
                 g_object_set (G_OBJECT (appsrc), "caps",
                               gst_caps_new_simple ("video/x-raw",
                                                    "format", G_TYPE_STRING, "GRAY8",
                                                    "width", G_TYPE_INT, sizeX,
                                                    "height", G_TYPE_INT, sizeY,
-                                                   "framerate", GST_TYPE_FRACTION, VIDEOFPS, 1,NULL), NULL);
+                                                   "framerate", GST_TYPE_FRACTION, fps, 1,NULL), NULL);
             }
             g_object_set (G_OBJECT (rate), "caps",
                           gst_caps_new_simple ("video/x-raw",

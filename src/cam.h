@@ -45,7 +45,8 @@ public:
     float frame_time;
     cv::Mat frameL,frameR;
 
-    const bool enable_auto_exposure = true;
+    enum auto_exposure_enum{disabled = 0, enabled = 1, only_at_startup=2};
+    const auto_exposure_enum enable_auto_exposure = enabled;
 
 private:
 
