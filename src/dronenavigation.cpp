@@ -4,14 +4,24 @@
 using namespace cv;
 using namespace std;
 
-#define POSITIONTRACKBARS
+#define TUNING
+
+const string paramsFile = "../navigationParameters.dat";
 
 bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneController * dctrl) {
     _logger = logger;
     _dtrk = dtrk;
     _dctrl = dctrl;
 
+    // Load saved control paremeters
+    if (checkFileExist(paramsFile)) {
+        std::ifstream is(paramsFile, std::ios::binary);
+        cereal::BinaryInputArchive archive( is );
+        archive(params);
+    }
+
     //(*_logger) << "imLx; imLy; disparity;";
+
 
 
     setpoints.push_back(cv::Point3i(SETPOINTXMAX / 2,SETPOINTYMAX / 2,1000)); // this is overwritten by position trackbars!!!
@@ -33,14 +43,14 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     */
 
 
-#ifdef POSITIONTRACKBARS
+#ifdef TUNING
     namedWindow("Setpoint", WINDOW_NORMAL);
-    createTrackbar("X [mm]", "Setpoint", &setpoint_slider_X, SETPOINTXMAX);
-    createTrackbar("Y [mm]", "Setpoint", &setpoint_slider_Y, SETPOINTYMAX);
-    createTrackbar("Z [mm]", "Setpoint", &setpoint_slider_Z, SETPOINTZMAX);
+    createTrackbar("X [mm]", "Setpoint", &params.setpoint_slider_X, SETPOINTXMAX);
+    createTrackbar("Y [mm]", "Setpoint", &params.setpoint_slider_Y, SETPOINTYMAX);
+    createTrackbar("Z [mm]", "Setpoint", &params.setpoint_slider_Z, SETPOINTZMAX);
     createTrackbar("WP id", "Setpoint", &wpid, setpoints.size()-1);
-    createTrackbar("d threshold", "Setpoint", &distance_threshold_mm, 1000);
-    createTrackbar("land_incr_f_mm", "Setpoint", &land_incr_f_mm, 50);
+    createTrackbar("d threshold", "Setpoint", &params.distance_threshold_mm, 1000);
+    createTrackbar("land_incr_f_mm", "Setpoint", &params.land_incr_f_mm, 50);
 
 #endif
 
@@ -48,7 +58,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
 
 void DroneNavigation::update() {
     float dis = sqrtf(_dtrk->data.posErrX*_dtrk->data.posErrX + _dtrk->data.posErrY*_dtrk->data.posErrY + _dtrk->data.posErrZ*_dtrk->data.posErrZ);
-    if (dis *1000 < distance_threshold_mm && !_dctrl->getAutoLand() && _dctrl->getAutoControl() && !_dctrl->getAutoTakeOff() && _dtrk->n_frames_tracking>5) {
+    if (dis *1000 < params.distance_threshold_mm && !_dctrl->getAutoLand() && _dctrl->getAutoControl() && !_dctrl->getAutoTakeOff() && _dtrk->n_frames_tracking>5) {
         wpid++;
         if (wpid >= setpoints.size()-1) {
             wpid = setpoints.size()-1;
@@ -66,9 +76,9 @@ void DroneNavigation::update() {
     if (wpid > 0)
         tmps = setpoints[wpid];
     else { // read from position trackbars
-        tmps.x = setpoint_slider_X;
-        tmps.y = setpoint_slider_Y;
-        tmps.z = setpoint_slider_Z;
+        tmps.x = params.setpoint_slider_X;
+        tmps.y = params.setpoint_slider_Y;
+        tmps.z = params.setpoint_slider_Z;
     }
 
     setpoint_world.x = (tmps.x - SETPOINTXMAX/2) / 1000.0f;
@@ -76,7 +86,7 @@ void DroneNavigation::update() {
     setpoint_world.z = -(tmps.z) / 1000.0f;
 
     if (_dctrl->getAutoLand()) {
-        land_incr += ((float)land_incr_f_mm)/1000.f;
+        land_incr += ((float)params.land_incr_f_mm)/1000.f;
         setpoint_world.y -= land_incr;
     } else {
         land_incr = 0;
@@ -84,4 +94,10 @@ void DroneNavigation::update() {
 
     cout << "WP ID: " <<  wpid << " distance: " <<  dis*1000 << endl;
 
+}
+
+void DroneNavigation::close() {
+    std::ofstream os(paramsFile, std::ios::binary);
+    cereal::BinaryOutputArchive archive( os );
+    archive( params );
 }

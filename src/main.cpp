@@ -307,6 +307,7 @@ void close() {
     if (!INSECT_DATA_LOGGING_MODE) {
         dtrkr.close();
         dctrl.close();
+        dnav.close();
     }
     insect.close();
     arduino.close();
