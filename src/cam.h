@@ -45,7 +45,7 @@ public:
     float frame_time;
     cv::Mat frameL,frameR;
 
-
+    const bool enable_auto_exposure = true;
 
 private:
 
@@ -63,8 +63,8 @@ private:
     rs2::pipeline cam;
     rs2::device pd;
 
-    #define IR_ID_LEFT 1 //as seen from the camera itself
-    #define IR_ID_RIGHT 2
+#define IR_ID_LEFT 1 //as seen from the camera itself
+#define IR_ID_RIGHT 2
 
     std::thread thread_cam;
     bool exitCamThread = false;

@@ -4,7 +4,7 @@
 using namespace cv;
 using namespace std;
 
-
+#define TUNING
 
 void Cam::update(void) {
     if (!ready) {
@@ -57,27 +57,29 @@ void Cam::init(int argc, char **argv) {
         //            auto range = depth_sensor.get_option_range(RS2_OPTION_LASER_POWER);
         //            depth_sensor.set_option(RS2_OPTION_LASER_POWER, (range.max - range.min)/2 + range.min);
         //        }
-        if (depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
-            depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,0.0);
+        if (enable_auto_exposure) {
+            if (depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
+                depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,1.0);
+            }
+        } else {
+            if (depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
+                depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,0.0);
+            }
+            if (depth_sensor.supports(RS2_OPTION_EXPOSURE)) {
+                // auto range = depth_sensor.get_option_range(RS2_OPTION_EXPOSURE);
+                depth_sensor.set_option(RS2_OPTION_EXPOSURE, exposure);
+            }
+            if (depth_sensor.supports(RS2_OPTION_GAIN)) {
+                // auto range = depth_sensor.get_option_range(RS2_OPTION_GAIN);
+                depth_sensor.set_option(RS2_OPTION_GAIN, gain); // increasing this causes noise
+            }
         }
 
-        if (depth_sensor.supports(RS2_OPTION_EXPOSURE)) {
-            auto range = depth_sensor.get_option_range(RS2_OPTION_EXPOSURE);
-            depth_sensor.set_option(RS2_OPTION_EXPOSURE, exposure); //TODO: automate this setting.
-        }
-        //weird with D435 this is totally unneccesary...? probably ROI related
-        if (depth_sensor.supports(RS2_OPTION_GAIN)) {
-            auto range = depth_sensor.get_option_range(RS2_OPTION_GAIN);
-            //            depth_sensor.set_option(RS2_OPTION_GAIN, (range.max - range.min)/2 + range.min);
-            depth_sensor.set_option(RS2_OPTION_GAIN, gain); // increasing this causes noise
-        }
-
+#ifdef TUNING
         namedWindow("Cam tuning", WINDOW_NORMAL);
         createTrackbar("Exposure", "Cam tuning", &exposure, 32768);
         createTrackbar("Gain", "Cam tuning", &gain, 32768);
-
-        //        cam.stop();
-        //        selection = cam.start(cfg);
+#endif
 
         std::cout << "Set cam config\n";
     }
@@ -109,6 +111,9 @@ void Cam::workerThread(void) {
 
 
     cv::Size imgsize(IMG_W, IMG_H);
+    if (enable_auto_exposure) {
+        usleep(1e6); // give auto exposure some time
+    }
 
     rs2::frameset frame;
     frame = cam.wait_for_frames(); // init it with something
@@ -119,15 +124,21 @@ void Cam::workerThread(void) {
         exit(1);
     }
 
-    static int old_exposure;
-    static int old_gain;
     rs2::device selected_device = selection.get_device();
     auto depth_sensor = selected_device.first<rs2::depth_sensor>();
 
-    //    auto start = std::chrono::system_clock::now();
-    //    std::time_t time = std::chrono::system_clock::to_time_t(start);
-    //    std::cout << "Starting at " << std::ctime(&time) << std::endl; // something weird is going on with this line, it seems to crash the debugger if it is in another function...?
-    //    std::cout << "Running..." << std::endl;
+    exposure = frame.get_infrared_frame(IR_ID_LEFT).get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE) ;
+    gain = frame.get_infrared_frame(IR_ID_LEFT).get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_GAIN_LEVEL) ;
+    std::cout << "Auto exposure = " << frame.get_infrared_frame(IR_ID_LEFT).get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE) << ", ";
+    std::cout << "Auto gain = " << frame.get_infrared_frame(IR_ID_LEFT).get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_GAIN_LEVEL) << std::endl;
+
+    depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,0.0);
+    depth_sensor.set_option(RS2_OPTION_EXPOSURE, exposure);
+    depth_sensor.set_option(RS2_OPTION_GAIN, gain);
+
+    static int old_exposure = exposure;
+    static int old_gain = gain;
+    frame = cam.wait_for_frames(); // init it with something
 
     while (!exitCamThread) {
 
@@ -137,7 +148,6 @@ void Cam::workerThread(void) {
                 frame = cam.wait_for_frames();
             } catch (rs2::error) {}
         }
-
 
         g_lockData.lock();
         frame_time_tmp = frame.get_timestamp()/1000.f; //stopWatch.Read()/1000.f;
@@ -152,12 +162,12 @@ void Cam::workerThread(void) {
         g_waitforimage.unlock();
         ready = true;
 
-        if (!fromfile) {
+        if (!fromfile && !enable_auto_exposure) {
             if (exposure != old_exposure) {
                 if (exposure < 20)
                     exposure =20;
                 auto range = depth_sensor.get_option_range(RS2_OPTION_EXPOSURE);
-                depth_sensor.set_option(RS2_OPTION_EXPOSURE, exposure); //TODO: automate this setting.
+                depth_sensor.set_option(RS2_OPTION_EXPOSURE, exposure);
             }
             if (gain != old_gain) {
                 auto range = depth_sensor.get_option_range(RS2_OPTION_GAIN);
