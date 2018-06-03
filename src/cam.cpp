@@ -132,8 +132,12 @@ void Cam::workerThread(void) {
     while (!exitCamThread) {
 
         int current_frame_id = frame.get_frame_number();
-        while(current_frame_id == frame.get_frame_number())
-            frame = cam.wait_for_frames();
+        while(current_frame_id == frame.get_frame_number()) {
+            try {
+                frame = cam.wait_for_frames();
+            } catch (rs2::error) {}
+        }
+
 
         g_lockData.lock();
         frame_time_tmp = frame.get_timestamp()/1000.f; //stopWatch.Read()/1000.f;

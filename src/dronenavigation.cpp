@@ -71,8 +71,6 @@ void DroneNavigation::update() {
         tmps.z = setpoint_slider_Z;
     }
 
-
-
     setpoint_world.x = (tmps.x - SETPOINTXMAX/2) / 1000.0f;
     setpoint_world.y = (tmps.y - SETPOINTYMAX/2) / 1000.0f;
     setpoint_world.z = -(tmps.z) / 1000.0f;
@@ -84,9 +82,6 @@ void DroneNavigation::update() {
         land_incr = 0;
     }
 
-
-
     cout << "WP ID: " <<  wpid << " distance: " <<  dis*1000 << endl;
-
 
 }
