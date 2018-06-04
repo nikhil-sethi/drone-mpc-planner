@@ -46,7 +46,7 @@ public:
     cv::Mat frameL,frameR;
 
     enum auto_exposure_enum{disabled = 0, enabled = 1, only_at_startup=2};
-    const auto_exposure_enum enable_auto_exposure = enabled;
+    const auto_exposure_enum enable_auto_exposure = only_at_startup;
 
 private:
 

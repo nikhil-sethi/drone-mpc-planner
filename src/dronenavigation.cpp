@@ -26,7 +26,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
 
     setpoints.push_back(cv::Point3i(SETPOINTXMAX / 2,SETPOINTYMAX / 2,1000)); // this is overwritten by position trackbars!!!
     setpoints.push_back(cv::Point3i(1000,600,2000));
-    setpoints.push_back(cv::Point3i(1500,600,1000));
+    setpoints.push_back(cv::Point3i(1500,600,1300));
 
 
     /* // fly squares
@@ -51,6 +51,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     createTrackbar("WP id", "Setpoint", &wpid, setpoints.size()-1);
     createTrackbar("d threshold", "Setpoint", &params.distance_threshold_mm, 1000);
     createTrackbar("land_incr_f_mm", "Setpoint", &params.land_incr_f_mm, 50);
+    createTrackbar("Land Decrease  ", "Setpoint", &params.autoLandThrottleDecreaseFactor, 50);
 
 #endif
 
@@ -59,16 +60,27 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
 void DroneNavigation::update() {
     float dis = sqrtf(_dtrk->data.posErrX*_dtrk->data.posErrX + _dtrk->data.posErrY*_dtrk->data.posErrY + _dtrk->data.posErrZ*_dtrk->data.posErrZ);
     if (dis *1000 < params.distance_threshold_mm && !_dctrl->getAutoLand() && _dctrl->getAutoControl() && !_dctrl->getAutoTakeOff() && _dtrk->n_frames_tracking>5) {
-        wpid++;
-        if (wpid >= setpoints.size()-1) {
-            wpid = setpoints.size()-1;
-            _dctrl->doAutoLand();
-        }
+        if (wpid < setpoints.size()-1)
+            wpid++;
+        else if (wpid == setpoints.size()-1)
+            _dctrl->setAutoLand(true);
     }
 
-    if (_dctrl->getAutoLand() && _dtrk->data.reset_filters){
+    if (_dctrl->getAutoLand() && !_dtrk->data.landed && ((_dtrk->data.sposY < -(DRONE_MAX_BORDER_Y-0.1f) && fabs(_dtrk->data.svelY) <0.3) || autoLandThrottleDecrease > 0)){
+        if (autoLandThrottleDecrease == 0)
+            alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
+        autoLandThrottleDecrease+=params.autoLandThrottleDecreaseFactor;
+        _dctrl->setAutoLandThrottleDecrease(autoLandThrottleDecrease);
+
+
+
+    }
+    if (autoLandThrottleDecrease >1000 || (autoLandThrottleDecrease > 0 && !_dctrl->getAutoControl())) {
         _dtrk->data.landed = true;
         wpid = 0;
+        autoLandThrottleDecrease = 0;
+        _dctrl->setAutoLandThrottleDecrease(0);
+        _dctrl->setAutoLand(false);
     }
 
 
@@ -86,8 +98,10 @@ void DroneNavigation::update() {
     setpoint_world.z = -(tmps.z) / 1000.0f;
 
     if (_dctrl->getAutoLand()) {
-        land_incr += ((float)params.land_incr_f_mm)/1000.f;
+        if ( setpoint_world.y - land_incr> -(DRONE_MAX_BORDER_Y-0.2f))
+            land_incr += ((float)params.land_incr_f_mm)/1000.f;
         setpoint_world.y -= land_incr;
+
     } else {
         land_incr = 0;
     }

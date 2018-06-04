@@ -32,12 +32,13 @@ private:
         int setpoint_slider_Y = 600;
         int setpoint_slider_Z = 1000;
 
-        int land_incr_f_mm = 10;
+        int land_incr_f_mm = 5;
+        int autoLandThrottleDecreaseFactor = 20;
 
         template <class Archive>
         void serialize( Archive & ar )
         {
-            ar( distance_threshold_mm,setpoint_slider_X,setpoint_slider_Y,setpoint_slider_Z,land_incr_f_mm);
+            ar( distance_threshold_mm,setpoint_slider_X,setpoint_slider_Y,setpoint_slider_Z,land_incr_f_mm,autoLandThrottleDecreaseFactor);
         }
     };
 
@@ -45,6 +46,9 @@ private:
     float land_incr = 0;
     int wpid = 0;
     std::vector<cv::Point3i> setpoints;
+
+    int autoLandThrottleDecrease = 0;
+
 
     std::ofstream *_logger;
     DroneTracker * _dtrk;

@@ -95,6 +95,13 @@ void DroneController::control(trackData * data) {
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
     }
 
+    if (params.throttleI <= 1 || autoTakeOff || !autoControl)
+        throttleErrI = 0;
+    if (params.rollI <= 1 || autoTakeOff  || !autoControl)
+        rollErrI = 0;
+    if (params.pitchI <= 1 || autoTakeOff || !autoControl)
+        pitchErrI = 0;
+
     if (autoTakeOff) {
         autoThrottle = hoverthrottle;
         autoRoll = 1500 ;
@@ -128,16 +135,26 @@ void DroneController::control(trackData * data) {
     int throttle,roll,pitch,yaw;
 
     if ( autoControl ) {
-        throttle = autoThrottle;
-        if (!autoTakeOff) {
-            roll = autoRoll;
-            pitch = autoPitch;
-            //yaw= autoYaw;
-        } else {
+        if (data->landed)
+        {
+            throttle = INITIALTHROTTLE;
             roll = 1500;
             pitch = 1500;
-            //yaw= 1500;
+        } else
+        {
+            throttle = autoThrottle - autoLandThrottleDecrease;
+            if (!autoTakeOff) {
+                roll = autoRoll;
+                pitch = autoPitch;
+                //yaw= autoYaw;
+            } else {
+                roll = 1500;
+                pitch = 1500;
+                //yaw= 1500;
+            }
         }
+
+
         //TMP:
         //roll = joyRoll;
         //pitch = joyPitch;
@@ -155,12 +172,7 @@ void DroneController::control(trackData * data) {
         yaw = joyYaw;
     }
 
-    if (params.throttleI <= 1 || autoTakeOff || autoLand || !autoControl)
-        throttleErrI = 0;
-    if (params.rollI <= 1 || autoTakeOff || autoLand || !autoControl)
-        rollErrI = 0;
-    if (params.pitchI <= 1 || autoTakeOff || autoLand || !autoControl)
-        pitchErrI = 0;
+
 
     if ( throttle < 1050 )
         throttle = 1050;
@@ -182,14 +194,14 @@ void DroneController::control(trackData * data) {
     if ( yaw > 1950 )
         yaw = 1950;
 
-
-    if ((data->landed && !autoTakeOff )|| (joyThrottle <= 1050 && !autoControl)) {
+    if ((data->landed && autoTakeOff ) || (joyThrottle > 1050 && !autoControl))  {
+        data->landed = false;
+    } else if ((data->landed && !autoTakeOff )|| (joyThrottle <= 1050 && !autoControl)) {
         hoverthrottle  = INITIALTHROTTLE; //?
         data->landed = true;
-    } else
-        data->landed = false;
+    }
 
-    _arduino->g_lockData.lock();
+        _arduino->g_lockData.lock();
 
     _arduino->throttle = throttle;
     _arduino->roll = roll;
