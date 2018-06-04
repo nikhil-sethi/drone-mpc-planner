@@ -302,7 +302,7 @@ void DroneTracker::beep(cv::Point2f drone, int n_frames_lost, float time, cv::Ma
 
 
         if (time-time_beep_prev > 0.1 / beep_speed) {
-            system("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Blip.ogg &");
+           // system("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Blip.ogg &");
             time_beep_prev = time;
         }
     }

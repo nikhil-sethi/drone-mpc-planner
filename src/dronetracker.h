@@ -116,7 +116,7 @@ private:
     int measSize = 4;
     int contrSize = 0;
 
-    const float background_calib_time = 15.0;
+    const float background_calib_time = 5.0;
 
     unsigned int type = CV_32F;
     cv::KalmanFilter kfL,kfR;
@@ -125,7 +125,7 @@ private:
 
 
 #define DRONE_MAX_BORDER_Z 4.f
-#define DRONE_MAX_BORDER_Y 2.1f
+#define DRONE_MAX_BORDER_Y 2.2f
 
     std::ofstream *_logger;    
 

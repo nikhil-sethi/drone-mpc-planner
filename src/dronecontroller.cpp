@@ -91,29 +91,37 @@ void DroneController::control(trackData * data) {
 
     if (data->svelY > ((float)params.auto_takeoff_speed) / 100.f && autoTakeOff) {
         autoTakeOff = false;
-        hoverthrottle -= 2*params.autoTakeoffFactor; // to compensate for ground effect and delay
+        hoverthrottle -= 50*params.autoTakeoffFactor; // to compensate for ground effect and delay
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
     }
 
-    if (params.throttleI <= 1 || autoTakeOff || !autoControl)
+    if (params.throttleI < 1 || autoTakeOff || !autoControl)
         throttleErrI = 0;
-    if (params.rollI <= 1 || autoTakeOff  || !autoControl)
+    if (params.rollI < 1 || autoTakeOff  || !autoControl)
         rollErrI = 0;
-    if (params.pitchI <= 1 || autoTakeOff || !autoControl)
+    if (params.pitchI < 1 || autoTakeOff || !autoControl)
         pitchErrI = 0;
+
+
+    //static int autoLandThrottleDecrease_prev = 0;
 
     if (autoTakeOff) {
         autoThrottle = hoverthrottle;
-        autoRoll = 1500 ;
-        autoPitch =1500;
+//        autoRoll = 1500 ;
+//        autoPitch =1500;
+    //} //else if (autoLandThrottleDecrease > 0 && autoLandThrottleDecrease_prev == 0) {
+     //   hoverthrottle = hoverthrottle + throttleErrI * params.throttleI - autoLandThrottleDecrease;
+     //   autoThrottle =hoverthrottle ;
+    } else if (autoLandThrottleDecrease > 0 ) {
+        hoverthrottle -= autoLandThrottleDecrease;
+        autoThrottle =hoverthrottle ;
+    } else {
+        autoThrottle =  hoverthrottle  - (data->posErrY * params.throttleP + data->svelY * params.throttleD + throttleErrI * params.throttleI);
     }
-    else {
-        autoThrottle =  hoverthrottle  - (data->posErrY * params.throttleP + data->svelY * (params.throttleD) + throttleErrI * params.throttleI);
-        autoRoll = 1500 + (data->posErrX * params.rollP + data->svelX * (params.rollD) +  params.rollI*rollErrI);
-        autoPitch =1500 + (data->posErrZ * params.pitchP + data->svelZ * (params.pitchD) +  params.pitchI*pitchErrI);
-    }
+    autoRoll = 1500 + (data->posErrX * params.rollP + data->svelX * (params.rollD) +  params.rollI*rollErrI);
+    autoPitch =1500 + (data->posErrZ * params.pitchP + data->svelZ * (params.pitchD) +  params.pitchI*pitchErrI);
     //TODO: Yaw
-
+    //autoLandThrottleDecrease_prev = autoLandThrottleDecrease;
     //tmp only for vizs
     if (autoPitch > 1950) {
         autoPitch = 1950;
@@ -142,7 +150,7 @@ void DroneController::control(trackData * data) {
             pitch = 1500;
         } else
         {
-            throttle = autoThrottle - autoLandThrottleDecrease;
+            throttle = autoThrottle ;
             if (!autoTakeOff) {
                 roll = autoRoll;
                 pitch = autoPitch;
@@ -201,7 +209,7 @@ void DroneController::control(trackData * data) {
         data->landed = true;
     }
 
-        _arduino->g_lockData.lock();
+    _arduino->g_lockData.lock();
 
     _arduino->throttle = throttle;
     _arduino->roll = roll;

@@ -234,14 +234,14 @@ int init(int argc, char **argv) {
 #else
     if (argc ==2 ) {
         fromfile = true;
-        logreader.init(string(argv[1]) + ".txt");
+        logreader.init(string(argv[1]) + ".log");
     }
     data_output_dir = "./";
 #endif
 
     cout << "data_output_dir: " << data_output_dir << endl;
 
-    logger.open(data_output_dir  + "log.txt",std::ofstream::out);
+    logger.open(data_output_dir  + "test.log",std::ofstream::out);
     logger << "ID;RS_ID;";
 
     arduino.init(fromfile);
