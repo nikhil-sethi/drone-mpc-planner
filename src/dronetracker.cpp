@@ -12,7 +12,7 @@ using namespace std;
 #if 1
 #define DRAWVIZS //slow!
 #define TUNING
-//#define DRAWVIZS2
+#define DRAWVIZS2
 #endif
 
 
@@ -147,7 +147,7 @@ cv::Mat DroneTracker::createBlurryCircle(int size, float background) {
 
     cv::Mat res(size,size,CV_32F);
     res = background;
-    cv::circle(res,cv::Point(size/2,size/2),tmp,1.0f,1.0f,CV_FILLED);
+    cv::circle(res,cv::Point(size/2,size/2),tmp,1.0f,CV_FILLED);
     cv::GaussianBlur( res, res, cv::Size( tmp, tmp ), 0, 0 );
     return res;
 }
