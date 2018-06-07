@@ -28,22 +28,23 @@ private:
     struct controlParameters{
 
         //height control
-        int throttleP = 0;
-        int throttleI = 0;
-        int throttleD = 0;
+        int throttleP = 180;
+        int throttleI = 1;
+        int throttleD = 220;
 
-        int autoTakeoffFactor = 10;
-        int auto_takeoff_speed = 20; // /100
+        int autoTakeoffFactor = 4;
+        int auto_takeoff_speed = 10; // /100
+        int hoverOffset = 30;
 
         //roll control
-        int rollP = 0;
-        int rollI = 0;
-        int rollD = 0;
+        int rollP = 660;
+        int rollI = 3;
+        int rollD = 450;
 
         //pitch control
-        int pitchP = 0;
-        int pitchI = 0;
-        int pitchD = 0;
+        int pitchP = 660;
+        int pitchI = 3;
+        int pitchD = 450;
 
         //yaw control
         int yawP = 0;
@@ -53,7 +54,7 @@ private:
         template <class Archive>
         void serialize( Archive & ar )
         {
-            ar( throttleP,throttleI,throttleD,rollP,rollI,rollD,pitchP,pitchI,pitchD,yawP,yawI,yawD,autoTakeoffFactor,auto_takeoff_speed);
+            ar( throttleP,throttleI,throttleD,rollP,rollI,rollD,pitchP,pitchI,pitchD,yawP,yawI,yawD,autoTakeoffFactor,auto_takeoff_speed,hoverOffset);
         }
 
     };
