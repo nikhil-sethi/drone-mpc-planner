@@ -243,17 +243,17 @@ void DroneController::readJoystick(void) {
                 joyPitch = 1500 - (event.value >> 6);
                 break;
             case 2: //throttle
-                joyThrottle = 1500 - (event.value >> 6);
+                joyThrottle = 1500 + (event.value >> 6);
                 break;
-            case 3: //switch
+            case 5: //switch
                 joySwitch = event.value>0; // goes between +/-32768
                 break;
-            case 4: //dial
+            case 3: //dial
                 joyDial = event.value; // goes between +/-32768
                 scaledjoydial = joyDial+32767;
                 scaledjoydial = (scaledjoydial / 65536)*100+35;
                 break;
-            case 5: //yaw
+            case 4: //yaw
                 joyYaw = 1500 + (event.value >> 6);
                 break;
             default:
