@@ -25,8 +25,17 @@ private:
 #define SETPOINTYMAX 3000 // in mm
 #define SETPOINTZMAX 5000 // in mm
 
+    struct waypoint{
+        waypoint(cv::Point3i xyz, int distance_threshold_mm) {
+            this->xyz = xyz;
+            this->distance_threshold_mm = distance_threshold_mm;
+        }
+        cv::Point3i xyz;
+        int distance_threshold_mm;
+    };
+
     struct navigationParameters{
-        int distance_threshold_mm = 40;
+        int distance_threshold_f = 1;
 
         int setpoint_slider_X = SETPOINTXMAX / 2;
         int setpoint_slider_Y = 600;
@@ -38,14 +47,14 @@ private:
         template <class Archive>
         void serialize( Archive & ar )
         {
-            ar( distance_threshold_mm,setpoint_slider_X,setpoint_slider_Y,setpoint_slider_Z,land_incr_f_mm,autoLandThrottleDecreaseFactor);
+            ar( distance_threshold_f,setpoint_slider_X,setpoint_slider_Y,setpoint_slider_Z,land_incr_f_mm,autoLandThrottleDecreaseFactor);
         }
     };
 
 
     float land_incr = 0;
     int wpid = 0;
-    std::vector<cv::Point3i> setpoints;
+    std::vector<waypoint> setpoints;
 
     int autoLandThrottleDecrease = 0;
 
