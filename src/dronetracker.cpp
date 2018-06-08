@@ -32,20 +32,20 @@ bool DroneTracker::init(std::ofstream *logger) {
 
 
 #ifdef TUNING
-    namedWindow("Tuning", WINDOW_NORMAL);
-    createTrackbar("LowH1", "Tuning", &settings.iLowH1r, 255);
-    createTrackbar("HighH1", "Tuning", &settings.iHighH1r, 255);
-    createTrackbar("filterByArea", "Tuning", &settings.filterByArea, 1);
-    createTrackbar("minArea", "Tuning", &settings.minArea, 10000);
-    createTrackbar("maxArea", "Tuning", &settings.maxArea, 10000);
-    createTrackbar("Opening1", "Tuning", &settings.iOpen1r, 30);
-    createTrackbar("Closing1", "Tuning", &settings.iClose1r, 30);
-    createTrackbar("Min disparity", "Tuning", &settings.min_disparity, 255);
-    createTrackbar("Max disparity", "Tuning", &settings.max_disparity, 255);
+    namedWindow("Tracking", WINDOW_NORMAL);
+    createTrackbar("LowH1", "Tracking", &settings.iLowH1r, 255);
+    createTrackbar("HighH1", "Tracking", &settings.iHighH1r, 255);
+    createTrackbar("filterByArea", "Tracking", &settings.filterByArea, 1);
+    createTrackbar("minArea", "Tracking", &settings.minArea, 10000);
+    createTrackbar("maxArea", "Tracking", &settings.maxArea, 10000);
+    createTrackbar("Opening1", "Tracking", &settings.iOpen1r, 30);
+    createTrackbar("Closing1", "Tracking", &settings.iClose1r, 30);
+    createTrackbar("Min disparity", "Tracking", &settings.min_disparity, 255);
+    createTrackbar("Max disparity", "Tracking", &settings.max_disparity, 255);
 
-    createTrackbar("Uncertain mult", "Tuning", &settings.uncertainty_multiplier, 255);
-    createTrackbar("Uncertain pow", "Tuning", &settings.uncertainty_power, 255);
-    createTrackbar("Uncertain back", "Tuning", &settings.uncertainty_background, 255);
+    createTrackbar("Uncertain mult", "Tracking", &settings.uncertainty_multiplier, 255);
+    createTrackbar("Uncertain pow", "Tracking", &settings.uncertainty_power, 255);
+    createTrackbar("Uncertain back", "Tracking", &settings.uncertainty_background, 255);
 
 #endif
 
