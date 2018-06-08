@@ -70,7 +70,7 @@ void DroneNavigation::update() {
             _dctrl->recalibrateHover();
     }
 
-    if (_dctrl->getAutoLand() && !_dtrk->data.landed && ((_dtrk->data.sposY < -(_dtrk->drone_max_border_y-0.2f) && fabs(_dtrk->data.svelY) < 0.2) || autoLandThrottleDecrease > 0)){
+    if (_dctrl->getAutoLand() && !_dtrk->data.landed && ((_dtrk->data.sposY < -(_dtrk->drone_max_border_y-0.3f)) || autoLandThrottleDecrease > 0)){
         if (autoLandThrottleDecrease == 0)
             alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
         autoLandThrottleDecrease = params.autoLandThrottleDecreaseFactor;
@@ -107,7 +107,7 @@ void DroneNavigation::update() {
     setpoint_world.z = -(wp->xyz.z) / 1000.0f;
 
     if (_dctrl->getAutoLand()) {
-        if ( setpoint_world.y - land_incr> -(_dtrk->drone_max_border_y-0.2f))
+        if ( setpoint_world.y - land_incr> -(_dtrk->drone_max_border_y+100000.0f))
             land_incr += ((float)params.land_incr_f_mm)/1000.f;
         setpoint_world.y -= land_incr;
 
