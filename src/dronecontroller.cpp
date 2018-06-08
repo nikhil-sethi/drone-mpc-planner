@@ -86,6 +86,7 @@ void DroneController::control(trackData * data) {
 
     if (autoTakeOff) {
         hoverthrottle  +=params.autoTakeoffFactor;
+        beforeTakeOffFactor = 1.5;
         if (hoverthrottle < 1300)
             hoverthrottle = 1300;
     }
@@ -117,7 +118,7 @@ void DroneController::control(trackData * data) {
         hoverthrottle -= autoLandThrottleDecrease;
         autoThrottle =hoverthrottle ;
     } else {
-        autoThrottle =  hoverthrottle  - (data->posErrY * params.throttleP + data->svelY * params.throttleD + throttleErrI * params.throttleI);
+        autoThrottle =  hoverthrottle  - (data->posErrY * params.throttleP + data->svelY * params.throttleD + throttleErrI * params.throttleI*beforeTakeOffFactor);
     }
     autoRoll = 1500 + (data->posErrX * params.rollP + data->svelX * (params.rollD) +  params.rollI*rollErrI);
     autoPitch =1500 + (data->posErrZ * params.pitchP + data->svelZ * (params.pitchD) +  params.pitchI*pitchErrI);
@@ -300,6 +301,12 @@ void DroneController::readJoystick(void) {
         autoLand=true;
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/desktop-logout.ogg &");
     }
+}
+
+void DroneController::recalibrateHover() {
+    hoverthrottle = hoverthrottle + throttleErrI;
+    throttleErrI = 0;
+    beforeTakeOffFactor =1;
 }
 
 void DroneController::close () {

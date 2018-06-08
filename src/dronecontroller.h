@@ -63,6 +63,7 @@ private:
     float rollErrI = 0;
     float pitchErrI = 0;
     int autoLandThrottleDecrease = 0;
+    float beforeTakeOffFactor = 1.0f;
 
     #define INITIALTHROTTLE 1050
 
@@ -104,6 +105,7 @@ public:
     bool getAutoLand() {return autoLand;}
     void setAutoLand(bool b) {autoLand = b;}
     void setAutoLandThrottleDecrease(int value) {autoLandThrottleDecrease = value;}
+    void recalibrateHover();
 
 };
 

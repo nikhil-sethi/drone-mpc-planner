@@ -64,9 +64,10 @@ void DroneNavigation::update() {
         if (wpid < setpoints.size()-1) {
             wpid++;
             alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/window-slide.ogg &");
-        }
-        else if (wpid == setpoints.size()-1)
+        } else if (wpid == setpoints.size()-1)
             _dctrl->setAutoLand(true);
+        if (wpid == 2)
+            _dctrl->recalibrateHover();
     }
 
     if (_dctrl->getAutoLand() && !_dtrk->data.landed && ((_dtrk->data.sposY < -(_dtrk->drone_max_border_y-0.2f) && fabs(_dtrk->data.svelY) < 0.2) || autoLandThrottleDecrease > 0)){
