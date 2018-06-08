@@ -19,7 +19,7 @@ void Visualizer::addSample(void) {
 
     static int div = 0;
     if (paint && div++ % 4 == 1) {
-        imshow("Tracking",resframe);
+        imshow("Plots",resframe);
         paint = false;
 
         //imshow("dt", plot({dt,dt_target},"dt"));

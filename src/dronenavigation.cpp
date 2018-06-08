@@ -27,7 +27,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,SETPOINTYMAX / 2,1000),40)); // this is overwritten by position trackbars!!!
     setpoints.push_back(waypoint(cv::Point3i(1000,600,2000),150));
     setpoints.push_back(waypoint(cv::Point3i(1500,600,1300),40));
-    setpoints.push_back(waypoint(cv::Point3i(1500,300,1300),60));
+    //setpoints.push_back(waypoint(cv::Point3i(1500,300,1300),60));
 
 
     /* // fly squares
