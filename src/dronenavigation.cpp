@@ -97,7 +97,7 @@ void DroneNavigation::update() {
         wp->xyz.z = params.setpoint_slider_Z;
     }
 
-    setpoint = setpoints[wpid];
+    setpoint = setpoints[wpid].xyz;
 
     setpoint_world.x = (wp->xyz.x - SETPOINTXMAX/2) / 1000.0f;
     setpoint_world.y = (wp->xyz.y - SETPOINTYMAX/2) / 1000.0f;
