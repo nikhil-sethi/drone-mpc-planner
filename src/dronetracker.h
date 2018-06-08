@@ -124,8 +124,7 @@ private:
     cv::Mat measL,measR;
 
 
-#define DRONE_MAX_BORDER_Z 4.f
-#define DRONE_MAX_BORDER_Y 2.1f
+
 
     std::ofstream *_logger;    
 
@@ -148,6 +147,11 @@ private:
     std::vector<cv::KeyPoint> predicted_dronepathL;
 
 public:       
+
+#define DRONE_MAX_BORDER_Y_DEFAULT 2.1f
+#define DRONE_MAX_BORDER_Z_DEFAULT 4.0f
+    float drone_max_border_z = DRONE_MAX_BORDER_Z_DEFAULT;
+    float drone_max_border_y = DRONE_MAX_BORDER_Y_DEFAULT;
 
     int n_frames_tracking =0;
     cv::Mat resFrame;

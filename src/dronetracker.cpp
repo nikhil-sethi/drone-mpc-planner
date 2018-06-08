@@ -215,7 +215,7 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time,
             output.y = output.y * cosf(theta) + output.z * sinf(theta);
             output.z = -output.y * sinf(theta) + output.z * cosf(theta);
 
-            if ((output.z < -DRONE_MAX_BORDER_Z) || (output.y < -DRONE_MAX_BORDER_Y)) {
+            if ((output.z < -drone_max_border_z) || (output.y < -drone_max_border_y)) {
                 keypoint_candidates.erase(keypoint_candidates.begin() + match_id);
             } else {
                 break;
