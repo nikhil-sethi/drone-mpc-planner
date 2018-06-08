@@ -244,7 +244,8 @@ int init(int argc, char **argv) {
     logger.open(data_output_dir  + "test.log",std::ofstream::out);
     logger << "ID;RS_ID;";
 
-    arduino.init(fromfile);
+    if (!fromfile)
+        arduino.init(fromfile);
 
     if (!INSECT_DATA_LOGGING_MODE) {
         dtrkr.init(&logger);
@@ -310,7 +311,8 @@ void close() {
         dnav.close();
     }
     insect.close();
-    arduino.close();
+    if (!fromfile)
+        arduino.close();
     visualizer.close();
     cam.close();
 
