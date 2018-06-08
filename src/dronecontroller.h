@@ -28,18 +28,18 @@ private:
     struct controlParameters{
 
         //height control
-        int throttleP = 180;
+        int throttleP = 150;
         int throttleI = 1;
-        int throttleD = 220;
+        int throttleD = 180;
 
         int autoTakeoffFactor = 4;
         int auto_takeoff_speed = 10; // /100
         int hoverOffset = 30;
 
         //roll control
-        int rollP = 660;
+        int rollP = 550;
         int rollI = 3;
-        int rollD = 450;
+        int rollD = 350;
 
         //pitch control
         int pitchP = 660;

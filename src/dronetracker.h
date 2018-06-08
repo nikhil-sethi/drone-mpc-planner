@@ -125,7 +125,7 @@ private:
 
 
 #define DRONE_MAX_BORDER_Z 4.f
-#define DRONE_MAX_BORDER_Y 2.0f
+#define DRONE_MAX_BORDER_Y 2.1f
 
     std::ofstream *_logger;    
 

@@ -12,7 +12,7 @@ using namespace std;
 #if 1
 #define DRAWVIZS //slow!
 #define TUNING
-#define DRAWVIZS2
+//#define DRAWVIZS2
 #endif
 
 

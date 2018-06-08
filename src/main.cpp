@@ -236,7 +236,7 @@ int init(int argc, char **argv) {
         fromfile = true;
         logreader.init(string(argv[1]) + ".log");
     }
-    data_output_dir = "./";
+    data_output_dir = "./logging/";
 #endif
 
     cout << "data_output_dir: " << data_output_dir << endl;
