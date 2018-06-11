@@ -7,7 +7,7 @@
 #endif
 #endif
 
-const string paramsFile = "../controlParameters.dat";
+const std::string paramsFile = "../controlParameters.dat";
 
 // Create an instance of Joystick
 Joystick joystick("/dev/input/js0");
@@ -86,7 +86,7 @@ void DroneController::control(trackData * data) {
 
     if (autoTakeOff) {
         hoverthrottle  +=params.autoTakeoffFactor;
-        beforeTakeOffFactor = 1.5;
+        beforeTakeOffFactor = 0.15;
         if (hoverthrottle < 1300)
             hoverthrottle = 1300;
     }
@@ -304,9 +304,9 @@ void DroneController::readJoystick(void) {
 }
 
 void DroneController::recalibrateHover() {
-    hoverthrottle = hoverthrottle + throttleErrI;
+    hoverthrottle = hoverthrottle - throttleErrI;
     throttleErrI = 0;
-    beforeTakeOffFactor =1;
+    beforeTakeOffFactor =0.1f;
 }
 
 void DroneController::close () {

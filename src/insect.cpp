@@ -129,7 +129,13 @@ bool Insect::init(std::ofstream *logger, Arduino * arduino) {
 void Insect::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     updateParams();
     // Set up detector with params
-    SimpleBlobDetector detector(params);
+#if CV_MAJOR_VERSION==3
+    cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
+#else
+    SimpleBlobDetector * detector;
+    detector = *SimpleBlobDetector(params);
+#endif
+
 
     bool found_keypoints_in_bothLR = false;
 
@@ -179,7 +185,7 @@ void Insect::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf) {
     }
     std::vector<KeyPoint> keypointsL;
     cv::KeyPoint closestL,closestR;
-    detector.detect( treshfL, keypointsL);
+    detector->detect( treshfL, keypointsL);
     if (keypointsL.size() == 1 && insect_pathL.size() == 0) {
         insect_pathL.push_back(keypointsL.at(0));
     } else if (keypointsL.size()>0 &&  insect_pathL.size() > 0) {

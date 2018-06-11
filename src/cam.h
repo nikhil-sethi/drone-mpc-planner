@@ -19,7 +19,9 @@
 #include "opencv2/calib3d/calib3d.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui/highgui.hpp"
-#include "opencv2/contrib/contrib.hpp"
+#if CV_MAJOR_VERSION==2
+#include <opencv2/contrib/contrib.hpp>
+#endif
 
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 

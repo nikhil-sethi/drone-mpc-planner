@@ -377,16 +377,22 @@ void DroneTracker::find_drone(cv::Mat frameL_small,cv::Mat frameL_s_prev, cv::Ma
 
     //attempt to detect changed blobs
     cv::Mat treshfL = segment_drone(frameL_small,frameL_s_prev,true,previous_drone_location);
-    SimpleBlobDetector detector(params);
+#if CV_MAJOR_VERSION==3
+    cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
+#else
+    SimpleBlobDetector * detector;
+    detector = *SimpleBlobDetector(params);
+#endif
+
     std::vector<KeyPoint> keypointsL;
-    detector.detect( treshfL, keypointsL);
+    detector->detect( treshfL, keypointsL);
 
     static int nframes_since_update_prev = 0;
     bool still_nothing = false;
     //check if changed blobs were detected
     if (keypointsL.size() == 0) { // if not, use the last frame that was confirmed to be working before...
         treshfL = segment_drone(frameL_small,frameL_s_prev_OK,false,previous_drone_location);
-        detector.detect( treshfL, keypointsL);
+        detector->detect( treshfL, keypointsL);
         nframes_since_update_prev +=1;
         if (nframes_since_update_prev > 50)
             nframes_since_update_prev = 50;

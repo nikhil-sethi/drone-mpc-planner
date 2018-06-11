@@ -66,11 +66,11 @@ void DroneNavigation::update() {
             alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/window-slide.ogg &");
         } else if (wpid == setpoints.size()-1)
             _dctrl->setAutoLand(true);
-        if (wpid == 2)
+        if (wpid == 1)
             _dctrl->recalibrateHover();
     }
 
-    if (_dctrl->getAutoLand() && !_dtrk->data.landed && ((_dtrk->data.sposY < -(_dtrk->drone_max_border_y-0.3f)) || autoLandThrottleDecrease > 0)){
+    if (_dctrl->getAutoLand() && !_dtrk->data.landed && ((_dtrk->data.sposY < -(_dtrk->drone_max_border_y-0.18f)) || autoLandThrottleDecrease > 0)){
         if (autoLandThrottleDecrease == 0)
             alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
         autoLandThrottleDecrease = params.autoLandThrottleDecreaseFactor;

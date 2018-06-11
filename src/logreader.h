@@ -7,7 +7,7 @@
 #include <math.h>
 #include <iomanip>
 #include <unistd.h>
-
+#include <map>
 
 #include <opencv2/core/core.hpp>
 

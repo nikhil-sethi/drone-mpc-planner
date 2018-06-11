@@ -10,7 +10,9 @@
 int want = 1;
 
 #include <opencv2/highgui/highgui.hpp>
+#if CV_MAJOR_VERSION==2
 #include <opencv2/contrib/contrib.hpp>
+#endif
 cv::VideoWriter cvvideo;
 int videomode;
 int colormode;
