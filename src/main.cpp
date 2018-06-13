@@ -76,6 +76,7 @@ void process_video() {
 
 
     float start_time = cam.frame_time;
+    visdat.update(cam.frameL,cam.frameR,cam.frame_time-start_time);
 
     //main while loop:
     while (key != 27) // ESC

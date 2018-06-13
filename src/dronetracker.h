@@ -67,12 +67,13 @@ private:
         int min_disparity=0;
         int max_disparity=20;
 
-
+        int roi_start_size = 200;
+        int roi_grow_speed = 64;
 
         template <class Archive>
         void serialize( Archive & ar )
         {
-            ar( iLowH1r,iHighH1r,iLowS1r,iHighS1r,iLowV1r,iHighV1r,iOpen1r,iClose1r,minThreshold,maxThreshold,filterByArea,minArea,maxArea,filterByCircularity,minCircularity,maxCircularity,filterByConvexity,minConvexity,maxConvexity,filterByInertia,minInertiaRatio,maxInertiaRatio,min_disparity,max_disparity);
+            ar( iLowH1r,iHighH1r,iLowS1r,iHighS1r,iLowV1r,iHighV1r,iOpen1r,iClose1r,minThreshold,maxThreshold,filterByArea,minArea,maxArea,filterByCircularity,minCircularity,maxCircularity,filterByConvexity,minConvexity,maxConvexity,filterByInertia,minInertiaRatio,maxInertiaRatio,min_disparity,max_disparity,roi_start_size,roi_grow_speed);
         }
 
 
@@ -84,6 +85,7 @@ private:
       cv::Mat treshfL;
       std::vector<cv::KeyPoint> keypointsL;
       cv::KeyPoint best_image_locationL;
+      cv::Rect roi_offset;
       int disparity;
       float smoothed_disparity;
       bool update_prev_frame;
@@ -91,17 +93,17 @@ private:
     Find_drone_result find_drone_result;
 
     void updateParams();
-    cv::Mat createBlurryCircle(int size, float background);
-    cv::Mat segment_drone(cv::Mat diffL, cv::Point previous_imageL_location);
+    cv::Mat createBlurryCircle(cv::Point size);
+    cv::Mat segment_drone(cv::Mat diffL, cv::Point previous_imageL_location, cv::Point roi_size);
     cv::Point3f predict_drone(float dt);
-    cv::Mat get_uncertainty_map_with_drone(cv::Point p);
+    cv::Mat get_approx_drone_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size);
     int match_closest_to_prediciton(cv::Point3f predicted_drone_locationL, std::vector<cv::KeyPoint> keypointsL);
     int stereo_match(cv::KeyPoint closestL, cv::Mat frameL_prev, cv::Mat prevFrameR_big, cv::Mat frameL, cv::Mat frameR, int prevDisparity);
     void update_prediction_state(cv::Point3f p);
     void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, int n_frames_lost, cv::KeyPoint match, int disparity, cv::Point3f setpoint_world);
     void reset_tracker_ouput(int n_frames_lost);
-    void drawviz(cv::Mat frameL, cv::Mat treshfL, cv::Mat framegrayL, cv::Point previous_imageL_location, cv::Point3d setpoint);
-    void find_drone(cv::Mat frameL_small, cv::Mat frameL_s_prev, cv::Mat frameL_s_prev_OK);
+    void drawviz(cv::Mat frameL, cv::Mat framegrayL, cv::Point3d setpoint);
+    void find_drone(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK);
     void beep(cv::Point2f drone, int n_frames_lost, float time, cv::Mat frameL_small);
 
     cv::Mat show_uncertainty_map_in_image(cv::Point p, cv::Mat resframeL);
@@ -111,7 +113,7 @@ private:
     int measSize = 4;
     int contrSize = 0;
 
-
+    cv::Mat cir8,bkg8,dif8;
 
     unsigned int type = CV_32F;
     cv::KalmanFilter kfL,kfR;
@@ -130,10 +132,7 @@ private:
     cv::Mat frameL_prev_OK;
     cv::Mat frameR_prev_OK;
 
-
-
-
-    cv::Mat blurred_circle;
+    cv::Mat blurred_circle; //TODO: create LUT
 
 
     std::vector<cv::KeyPoint> dronepathL;

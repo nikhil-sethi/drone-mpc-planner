@@ -34,6 +34,7 @@ void VisionData::init(cv::Mat Qf, cv::Mat frameL,cv::Mat frameR){
 
 }
 
+
 void VisionData::update(cv::Mat frameL,cv::Mat frameR,float time) {
     this->frameL_prev = this->frameL.clone();
     this->frameR_prev = this->frameR.clone();
@@ -47,7 +48,6 @@ void VisionData::update(cv::Mat frameL,cv::Mat frameR,float time) {
     cv::absdiff( frameL_small ,frameL_s_prev,diffL);
     if (!background_calibrated )
         collect_no_drone_frames(diffL); // calibration of background uncertainty map
-
 
 #ifdef BEEP
     if (!background_calibrated && time > settings.background_calib_time) {

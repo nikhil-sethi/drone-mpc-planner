@@ -29,7 +29,6 @@ bool DroneTracker::init(std::ofstream *logger, VisionData *visdat) {
 
 
 #ifdef TUNING
-
     createTrackbar("LowH1", "Tracking", &settings.iLowH1r, 255);
     createTrackbar("HighH1", "Tracking", &settings.iHighH1r, 255);
     createTrackbar("filterByArea", "Tracking", &settings.filterByArea, 1);
@@ -39,10 +38,9 @@ bool DroneTracker::init(std::ofstream *logger, VisionData *visdat) {
     createTrackbar("Closing1", "Tracking", &settings.iClose1r, 30);
     createTrackbar("Min disparity", "Tracking", &settings.min_disparity, 255);
     createTrackbar("Max disparity", "Tracking", &settings.max_disparity, 255);
-
-
+    createTrackbar("roi_start_size", "Tracking", &settings.roi_start_size, 500);
+    createTrackbar("roi_grow_speed", "Tracking", &settings.roi_grow_speed, 256);
 #endif
-
 
     kfL = cv::KalmanFilter(stateSize, measSize, contrSize, type);
     stateL =cv::Mat(stateSize, 1, type);  // [x,y,v_x,v_y,w,h]
@@ -130,19 +128,21 @@ bool DroneTracker::init(std::ofstream *logger, VisionData *visdat) {
     find_drone_result.smoothed_disparity = DRONE_DISPARITY_START;
     find_drone_result.disparity = DRONE_DISPARITY_START;
     data.landed = true;
-
-    blurred_circle = createBlurryCircle(60,visdat->get_uncertainty_background());
 }
 
-cv::Mat DroneTracker::createBlurryCircle(int size, float background) {
-    float tmp = roundf(((float)size)/4.f);
-    if (fabs((tmp / 2.f) - roundf(tmp / 2.f)) < 0.01)
-        tmp +=1;
+cv::Mat DroneTracker::createBlurryCircle(cv::Point size) {
+    cv::Point2f tmp;
+    tmp.x = roundf(((float)size.x)/4.f);
+    tmp.y = roundf(((float)size.y)/4.f);
+    if (fabs((tmp.x / 2.f) - roundf(tmp.x / 2.f)) < 0.01)
+        tmp.x +=1;
+    if (fabs((tmp.y / 2.f) - roundf(tmp.y / 2.f)) < 0.01)
+        tmp.y +=1;
 
-    cv::Mat res(size,size,CV_32F);
-    res = background;
-    cv::circle(res,cv::Point(size/2,size/2),tmp,1.0f,CV_FILLED);
-    cv::GaussianBlur( res, res, cv::Size( tmp, tmp ), 0, 0 );
+    cv::Mat res = cv::Mat::zeros(size.y,size.x,CV_32F);
+
+    cv::ellipse(res,cv::Point(size.x/2,size.y/2),cv::Size(tmp.x,tmp.y),0,0,360,1.0f,CV_FILLED);
+    cv::GaussianBlur( res, res, cv::Size( tmp.x, tmp.y ), 0, 0 );
     return res;
 }
 
@@ -160,7 +160,7 @@ bool DroneTracker::track(float time,cv::Point3d setpoint, cv::Point3f setpoint_w
 
 
     if (!firstFrame) {
-        firstFrame = true;        
+        firstFrame = true;
         frameL_s_prev_OK = visdat->frameL_s_prev;
         frameL_prev_OK = visdat->frameL.clone();
         frameR_prev_OK = visdat->frameR.clone();
@@ -173,7 +173,7 @@ bool DroneTracker::track(float time,cv::Point3d setpoint, cv::Point3f setpoint_w
         frameR_prev_OK = visdat->frameR_prev;
     }
 
-    find_drone(visdat->frameL_small, visdat->frameL_s_prev, frameL_s_prev_OK);
+    find_drone(visdat->frameL_small, frameL_s_prev_OK);
 
     data.valid = false; // reset the flag, set to true when drone is detected properly
 
@@ -201,7 +201,7 @@ bool DroneTracker::track(float time,cv::Point3d setpoint, cv::Point3f setpoint_w
             output.y = output.y * cosf(theta) + output.z * sinf(theta);
             output.z = -output.y * sinf(theta) + output.z * cosf(theta);
 
-            if ((output.z < -drone_max_border_z) || (output.y < -drone_max_border_y)) {
+            if ((output.z < -drone_max_border_z) || (output.y < -drone_max_border_y) || disparity < settings.min_disparity || disparity > settings.max_disparity) { //TODO check min/max disparity > or =>!!!
                 keypoint_candidates.erase(keypoint_candidates.begin() + match_id);
             } else {
                 break;
@@ -232,7 +232,7 @@ bool DroneTracker::track(float time,cv::Point3d setpoint, cv::Point3f setpoint_w
     (*_logger) << find_drone_result.best_image_locationL.pt.x *IMSCALEF << "; " << find_drone_result.best_image_locationL.pt.y *IMSCALEF << "; " << find_drone_result.disparity << "; ";
 
 #ifdef DRAWVIZS
-    drawviz(visdat->frameL,find_drone_result.treshfL,visdat->frameL_small,data.drone_image_locationL, setpoint);
+    drawviz(visdat->frameL,visdat->frameL_small,setpoint);
 #endif
 
 
@@ -279,7 +279,7 @@ void DroneTracker::beep(cv::Point2f drone, int n_frames_lost, float time, cv::Ma
 
 
         if (time-time_beep_prev > 0.1 / beep_speed) {
-           // system("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Blip.ogg &");
+            // system("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Blip.ogg &");
             time_beep_prev = time;
         }
     }
@@ -319,17 +319,24 @@ void DroneTracker::updateParams(){
 }
 
 
-void DroneTracker::find_drone(cv::Mat frameL_small,cv::Mat frameL_s_prev, cv::Mat frameL_s_prev_OK) {
+void DroneTracker::find_drone(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK) {
+    static int nframes_since_update_prev = 0;
     cv::Point previous_drone_location;
+
     if (data.landed) {
         data.drone_image_locationL = cv::Point(DRONE_IM_X_START,DRONE_IM_Y_START);
         find_drone_result.smoothed_disparity = DRONE_DISPARITY_START;
         find_drone_result.disparity = DRONE_DISPARITY_START;
+        nframes_since_update_prev = 0;
     }
     previous_drone_location = data.drone_image_locationL;
 
+    cv::Point roi_size;
+    roi_size.x=settings.roi_start_size/IMSCALEF+nframes_since_update_prev*(settings.roi_grow_speed / 16 / IMSCALEF);
+    roi_size.y=settings.roi_start_size/IMSCALEF+nframes_since_update_prev*(settings.roi_grow_speed / 16 / IMSCALEF);
+
     //attempt to detect changed blobs
-    cv::Mat treshfL = segment_drone(visdat->diffL,previous_drone_location);
+    cv::Mat treshfL = segment_drone(visdat->diffL,previous_drone_location,roi_size);
 #if CV_MAJOR_VERSION==3
     cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
 #else
@@ -340,121 +347,103 @@ void DroneTracker::find_drone(cv::Mat frameL_small,cv::Mat frameL_s_prev, cv::Ma
     std::vector<KeyPoint> keypointsL;
     detector->detect( treshfL, keypointsL);
 
-    static int nframes_since_update_prev = 0;
+
     bool still_nothing = false;
     //check if changed blobs were detected
     if (keypointsL.size() == 0) { // if not, use the last frame that was confirmed to be working before...
         cv::Mat diffL_OK;
         cv::absdiff( frameL_small ,frameL_s_prev_OK,diffL_OK);
-        treshfL = segment_drone(diffL_OK,previous_drone_location);
+        treshfL = segment_drone(diffL_OK,previous_drone_location,roi_size);
         detector->detect( treshfL, keypointsL);
         nframes_since_update_prev +=1;
         if (nframes_since_update_prev > 50)
             nframes_since_update_prev = 50;
-        blurred_circle = createBlurryCircle(60+nframes_since_update_prev,visdat->get_uncertainty_background());
         if (keypointsL.size() == 0 )
             still_nothing = true;
 
     } else {
-        blurred_circle = createBlurryCircle(60,visdat->get_uncertainty_background());
         nframes_since_update_prev = 0;
     }
 
-    //    if (data.landed) TMP DISABLED?
-    //        nframes_since_update_prev = 0;
+
+
+
+    for (int i = 0 ; i < keypointsL.size();i++) {
+        keypointsL.at(i).pt.x += find_drone_result.roi_offset.x;
+        keypointsL.at(i).pt.y += find_drone_result.roi_offset.y;
+    }
+
     find_drone_result.keypointsL = keypointsL;
     find_drone_result.treshfL = treshfL;
     find_drone_result.update_prev_frame = nframes_since_update_prev == 0 || (nframes_since_update_prev > 49 && !data.landed );
 }
 
-cv::Mat DroneTracker::segment_drone(cv::Mat diffL, cv::Point previous_imageL_location) {
+cv::Mat DroneTracker::segment_drone(cv::Mat diffL, cv::Point previous_imageL_location, cv::Point roi_size) {
 
-    //filter out changes in areas that were noisy during calibration period
-#ifdef DRAWVIZS2
-    cv::Mat diff_of_diff = diffL.clone();
-    cv::Mat diff_before_uncertainty = diffL.clone();;
-#endif
-    diffL.convertTo(diffL, CV_32F);
-
-    cv::Mat uncertainty_drone_map = get_uncertainty_map_with_drone(previous_imageL_location);
-
-    diffL = diffL.mul(uncertainty_drone_map);
-    diffL.convertTo(diffL, CV_8UC1);
+    cv::Mat approx = get_approx_drone_cutout_filtered(previous_imageL_location,diffL,roi_size);
 
     cv::Mat treshfL;
-    inRange(diffL, settings.iLowH1r, settings.iHighH1r, treshfL);
+    inRange(approx, settings.iLowH1r, settings.iHighH1r, treshfL);
     dilate( treshfL, treshfL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iClose1r+1, settings.iClose1r+1)));
     erode(treshfL, treshfL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iOpen1r+1, settings.iOpen1r+1)));
 
 #ifdef DRAWVIZS2
-    cv::absdiff( diff_of_diff ,diffL,diff_of_diff);
-    equalizeHist(diff_of_diff, diff_of_diff);
-//    if (!data.background_calibrated)
-//        putText(diff_of_diff,"Building" ,cv::Point(0,12),cv::FONT_HERSHEY_SIMPLEX,0.5,255);
-    //    cv::Mat diffL_eq;
-    //    equalizeHist(diffL, diffL_eq);
-
-    cv::Mat uncertainty_drone_map_8;
-    uncertainty_drone_map_8 = uncertainty_drone_map.clone();
-    uncertainty_drone_map_8 = uncertainty_drone_map_8 * 255.0f;
-    uncertainty_drone_map_8.convertTo(uncertainty_drone_map_8, CV_8UC1);
-
-    cv::Mat uncertainty_ori_map_8;
-    uncertainty_ori_map_8 = visdat->uncertainty_map.clone();
-    uncertainty_ori_map_8 = uncertainty_ori_map_8 * 255.0f;
-    uncertainty_ori_map_8.convertTo(uncertainty_ori_map_8, CV_8UC1);
-
-    //equalizeHist(uncertainty_map_8, uncertainty_map_8);
     std::vector<cv::Mat> ims;
-    ims.push_back(uncertainty_ori_map_8);
-    ims.push_back(uncertainty_drone_map_8);
-    ims.push_back(diff_before_uncertainty*10);
-    ims.push_back(diffL*10);
+    ims.push_back(cir8);
+    ims.push_back(bkg8);
+    ims.push_back(dif8);
+    ims.push_back(approx);
     ims.push_back(treshfL);
-    ims.push_back(diff_of_diff);
-    //    ims.push_back(diffL_eq);
-//    if (update_uncertainty_map)
-        showColumnImage(ims,"uncertainty1",CV_8UC1);
-//    else
-//        showColumnImage(ims,"uncertainty2",CV_8UC1);
+    showColumnImage(ims,"roi",CV_8UC1);
 #endif
     return treshfL;
 }
 
 /* Takes the calibrated uncertainty map, and augments it with a highlight around p */
-cv::Mat DroneTracker::get_uncertainty_map_with_drone(cv::Point p) {
+cv::Mat DroneTracker::get_approx_drone_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size) {
 
-    cv::Mat res = visdat->uncertainty_map.clone();
-
-
-    cv::Rect roi_circle(0,0,blurred_circle.cols,blurred_circle.rows);
-    int x1 = p.x-blurred_circle.cols/2;
+    //calc roi:
+    cv::Rect roi_circle(0,0,size.x,size.y);
+    int x1 = p.x-size.x/2;
     if (x1 < 0) {
-        roi_circle.x = abs(p.x-blurred_circle.cols/2);
+        roi_circle.x = abs(p.x-size.x/2);
         roi_circle.width-=roi_circle.x;
-    } else if (x1 + blurred_circle.cols >= res.cols)
-        roi_circle.width = roi_circle.width  - abs(x1 + blurred_circle.cols - res.cols);
+    } else if (x1 + size.x >= diffL.cols)
+        roi_circle.width = roi_circle.width  - abs(x1 + size.x - diffL.cols);
 
-    int y1 = p.y-blurred_circle.rows/2;
+    int y1 = p.y-size.y/2;
     if (y1 < 0) {
-        roi_circle.y = abs(p.y-blurred_circle.rows/2);
+        roi_circle.y = abs(p.y-size.y/2);
         roi_circle.height-=roi_circle.y;
-    } else if (y1 + blurred_circle.rows >= res.rows)
-        roi_circle.height = roi_circle.height - abs(y1 + blurred_circle.rows - res.rows);
+    } else if (y1 + size.y >= diffL.rows)
+        roi_circle.height = roi_circle.height - abs(y1 + size.y - diffL.rows);
 
-    cv::Mat gray = cv::Mat::zeros(res.rows,res.cols,CV_32F);
-    gray = visdat->get_uncertainty_background();
-    cv::Mat a = blurred_circle(roi_circle);
+    cv::Mat blurred_circle = createBlurryCircle(size);
+    cv::Mat cir = blurred_circle(roi_circle);
 
-
-    x1 = p.x-blurred_circle.cols/2+roi_circle.x;
-    int x2 = a.cols;
-    y1 = p.y-blurred_circle.rows/2+roi_circle.y;
-    int y2 = a.rows;
+    x1 = p.x-size.x/2+roi_circle.x;
+    int x2 = cir.cols;
+    y1 = p.y-size.y/2+roi_circle.y;
+    int y2 = cir.rows;
 
     cv::Rect roi(x1,y1,x2,y2);
-    a.copyTo(gray(roi));
-    res = gray.mul(res);
+    find_drone_result.roi_offset = roi;
+
+    cv::Mat bkg = visdat->uncertainty_map(roi);
+    cv::Mat dif;
+    diffL(roi).convertTo(dif, CV_32F);
+    cv::Mat res;
+    res = cir.mul(dif).mul(bkg);
+    res.convertTo(res, CV_8UC1);
+
+#ifdef DRAWVIZS2
+    cir8 = cir*255;
+    bkg8 = bkg*255;
+    dif8 = dif*10;
+    cir8.convertTo(cir8, CV_8UC1);
+    bkg8.convertTo(bkg8, CV_8UC1);
+    dif8.convertTo(dif8, CV_8UC1);
+#endif
 
     return res;
 }
@@ -697,7 +686,7 @@ int DroneTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::
     return disparity;
 }
 
-void DroneTracker::drawviz(cv::Mat frameL,cv::Mat treshfL,cv::Mat framegrayL,cv::Point  previous_imageL_location, cv::Point3d setpoint) {
+void DroneTracker::drawviz(cv::Mat frameL,cv::Mat framegrayL, cv::Point3d setpoint) {
 #ifdef DRAWVIZS
 
     static int div = 0;
@@ -717,10 +706,7 @@ void DroneTracker::drawviz(cv::Mat frameL,cv::Mat treshfL,cv::Mat framegrayL,cv:
         }
 
         cv::Size vizsizeL(resFrameL.cols/4,resFrameL.rows/4);
-        cv::resize(treshfL,treshfL,vizsizeL);
-        cvtColor(treshfL,treshfL,CV_GRAY2BGR);
-
-        treshfL.copyTo(resFrameL(cv::Rect(resFrameL.cols - treshfL.cols,0,treshfL.cols, treshfL.rows)));
+        cv::rectangle(framegrayL,find_drone_result.roi_offset,cv::Scalar(180,100,240),4*IMSCALEF);
 
         if (dronepathL.size() > 0) {
             drawKeypoints( framegrayL, dronepathL, framegrayL, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
@@ -742,8 +728,6 @@ void DroneTracker::drawviz(cv::Mat frameL,cv::Mat treshfL,cv::Mat framegrayL,cv:
         putText(resFrameL,ss2.str() ,cv::Point(220,40),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
         putText(resFrameL,ss3.str() ,cv::Point(220,60),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
 
-
-        //resFrameL = show_uncertainty_map_in_image(previous_imageL_location,  resFrameL);
         resFrame = resFrameL;
         cv::imshow("Results", resFrame);
     }
