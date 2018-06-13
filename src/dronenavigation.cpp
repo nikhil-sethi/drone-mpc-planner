@@ -28,7 +28,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
 
     setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,SETPOINTYMAX / 2,1000),40)); // this is overwritten by position trackbars!!!
     setpoints.push_back(waypoint(cv::Point3i(1000,600,2000),150));
-    setpoints.push_back(waypoint(cv::Point3i(1500,600,1300),40));
+    setpoints.push_back(waypoint(cv::Point3i(1500,600,1000),40));
     //setpoints.push_back(waypoint(cv::Point3i(1500,300,1300),60));
 
 
@@ -79,7 +79,7 @@ void DroneNavigation::update() {
         _dctrl->setAutoLandThrottleDecrease(autoLandThrottleDecrease);
         _dtrk->drone_max_border_y = 0;
     }
-    if (autoLandThrottleDecrease >1000 || (autoLandThrottleDecrease > 0 && !_dctrl->getAutoControl()) || (autoLandThrottleDecrease > 500 && _dtrk->data.reset_filters)) {
+    if (autoLandThrottleDecrease >1000 || (_dctrl->autoThrottle <= 1050 && _dctrl->getAutoControl()) || (autoLandThrottleDecrease > 0 && !_dctrl->getAutoControl()) || (autoLandThrottleDecrease > 500 && _dtrk->data.reset_filters)) {
         _dtrk->data.landed = true;
         wpid = 0;
         autoLandThrottleDecrease = 0;

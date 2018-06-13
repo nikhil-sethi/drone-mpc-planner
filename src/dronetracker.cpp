@@ -706,7 +706,7 @@ void DroneTracker::drawviz(cv::Mat frameL,cv::Mat framegrayL, cv::Point3d setpoi
         }
 
         cv::Size vizsizeL(resFrameL.cols/4,resFrameL.rows/4);
-        cv::rectangle(framegrayL,find_drone_result.roi_offset,cv::Scalar(180,100,240),4*IMSCALEF);
+        cv::rectangle(framegrayL,find_drone_result.roi_offset,cv::Scalar(180,100,240),4/IMSCALEF);
 
         if (dronepathL.size() > 0) {
             drawKeypoints( framegrayL, dronepathL, framegrayL, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );

@@ -200,9 +200,9 @@ void DroneController::control(trackData * data) {
     if ( yaw > 1950 )
         yaw = 1950;
 
-    if ((data->landed && autoTakeOff ) || (joyThrottle > 1050 && !autoControl))  {
+    if ((data->landed && autoTakeOff ) || (joyThrottle > 1070 && !autoControl))  {
         data->landed = false;
-    } else if ((data->landed && !autoTakeOff )|| (joyThrottle <= 1050 && !autoControl)) {
+    } else if ((data->landed && !autoTakeOff )|| (joyThrottle <= 1070 && !autoControl)) {
         hoverthrottle  = INITIALTHROTTLE; //?
         data->landed = true;
     }

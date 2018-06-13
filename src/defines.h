@@ -18,7 +18,7 @@
 #define VIDEOFPS 60 // the estimated frame rate of the video used for creating output videos
 #define IMG_W 848
 #define IMG_H 480
-#define IMSCALEF 1
+#define IMSCALEF 4
 #define CAMERA_ANGLE 32.f
 
 #define DRONE_IM_X_START 424/IMSCALEF

@@ -132,7 +132,7 @@ private:
     cv::Mat frameL_prev_OK;
     cv::Mat frameR_prev_OK;
 
-    cv::Mat blurred_circle; //TODO: create LUT
+    cv::Mat blurred_circle;
 
 
     std::vector<cv::KeyPoint> dronepathL;
