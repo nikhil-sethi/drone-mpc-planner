@@ -10,7 +10,6 @@ using namespace std;
 
 //#define USERIGHTCAM
 
-#if INSECT_DATA_LOGGING_MODE
 #ifdef HASSCREEN
 #define DRAWVIZSL
 #ifdef USERIGHTCAM
@@ -18,7 +17,7 @@ using namespace std;
 #endif
 #define TUNING
 #endif
-#endif
+
 
 const string settingsFile = "../settings2.dat";
 bool Insect::init(std::ofstream *logger, Arduino * arduino) {

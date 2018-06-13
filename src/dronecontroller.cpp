@@ -2,9 +2,7 @@
 #include "defines.h"
 
 #ifdef HASSCREEN
-#if 1
-#define TUNING
-#endif
+//#define TUNING
 #endif
 
 const std::string paramsFile = "../controlParameters.dat";
@@ -22,7 +20,7 @@ bool DroneController::init(std::ofstream *logger,bool fromfile, Arduino * arduin
     std::cout << "Initialising control." << std::endl;
 
     // Ensure that joystick was found and that we can use it
-    if (!joystick.isFound() && !fromfile && !INSECT_DATA_LOGGING_MODE) {
+    if (!joystick.isFound() && !fromfile) {
         printf("joystick failed.\n");
         exit(1);
     }

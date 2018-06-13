@@ -9,18 +9,15 @@ using namespace cv;
 using namespace std;
 
 #ifdef HASSCREEN
-#if 1
 #define DRAWVIZS //slow!
 #define TUNING
-//#define DRAWVIZS2
-#endif
-
-
+#define DRAWVIZS2
 #endif
 
 const string settingsFile = "../settings.dat";
-bool DroneTracker::init(std::ofstream *logger) {
+bool DroneTracker::init(std::ofstream *logger, VisionData *visdat) {
     _logger = logger;
+    this->visdat = visdat;
 
     (*_logger) << "imLx; imLy; disparity;";
     if (checkFileExist(settingsFile)) {
@@ -158,34 +155,29 @@ float calculateDistance(float xr, float yr, float xl, float yl) {
 
 bool foundL = false;
 float t_prev = 0;
-bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time, int frame_id, cv::Point3d setpoint, cv::Point3f setpoint_world) {
+bool DroneTracker::track(float time,cv::Point3d setpoint, cv::Point3f setpoint_world) {
     updateParams();
 
     float dt= (time-t_prev);
     cv::Point3f predicted_drone_locationL = predict_drone(dt);
 
-    cv::Mat frameL_small;
-    cv::Size smallsize(frameL.cols/IMSCALEF,frameL.rows/IMSCALEF);
-    cv::resize(frameL,frameL_small,smallsize);
+
     if (!firstFrame) {
-        firstFrame = true;
-        frameL_s_prev = frameL_small.clone();
-        frameL_s_prev_OK = frameL_s_prev;
-        frameL_big_prev = frameL.clone();
-        frameR_big_prev = frameR.clone();
-        frameL_big_prev_OK = frameL.clone();
-        frameR_big_prev_OK = frameR.clone();
+        firstFrame = true;        
+        frameL_s_prev_OK = visdat->frameL_s_prev;
+        frameL_prev_OK = visdat->frameL.clone();
+        frameR_prev_OK = visdat->frameR.clone();
         init_avg_prev_frame();
     }
 
     if (data.landed)
     {
-        frameL_s_prev_OK = frameL_s_prev;
-        frameL_big_prev_OK = frameL_big_prev;
-        frameR_big_prev_OK = frameR_big_prev;
+        frameL_s_prev_OK = visdat->frameL_s_prev;
+        frameL_prev_OK = visdat->frameL_prev;
+        frameR_prev_OK = visdat->frameR_prev;
     }
 
-    find_drone(frameL_small, frameL_s_prev, frameL_s_prev_OK);
+    find_drone(visdat->frameL_small, visdat->frameL_s_prev, frameL_s_prev_OK);
 
     data.valid = false; // reset the flag, set to true when drone is detected properly
 
@@ -201,15 +193,13 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time,
             int match_id = match_closest_to_prediciton(previous_drone_location,find_drone_result.keypointsL);
             match = find_drone_result.keypointsL.at(match_id);
 
-            disparity = stereo_match(match,frameL_big_prev_OK,frameR_big_prev_OK,frameL,frameR,find_drone_result.smoothed_disparity);
-
-
+            disparity = stereo_match(match,frameL_prev_OK,frameR_prev_OK,visdat->frameL,visdat->frameR,find_drone_result.smoothed_disparity);
 
             //calculate everything for the dronecontroller:
             std::vector<Point3f> camera_coordinates, world_coordinates;
             camera_coordinates.push_back(Point3f(match.pt.x*IMSCALEF,match.pt.y*IMSCALEF,-disparity));
             //camera_coordinates.push_back(Point3f(predicted_drone_locationL.x*IMSCALEF,predicted_drone_locationL.y*IMSCALEF,-predicted_drone_locationL.z));
-            cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
+            cv::perspectiveTransform(camera_coordinates,world_coordinates,visdat->Qf);
             output = world_coordinates[0];
             float theta = CAMERA_ANGLE / (360/6.28318530718);
             output.y = output.y * cosf(theta) + output.z * sinf(theta);
@@ -240,7 +230,7 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time,
 
 
 #ifdef BEEP
-    beep(find_drone_result.best_image_locationL.pt,n_frames_lost,time,frameL_small);
+    beep(find_drone_result.best_image_locationL.pt,n_frames_lost,time,visdat->frameL_small);
 #endif
 
     if (!data.background_calibrated && time > background_calib_time)
@@ -249,18 +239,15 @@ bool DroneTracker::track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time,
     (*_logger) << find_drone_result.best_image_locationL.pt.x *IMSCALEF << "; " << find_drone_result.best_image_locationL.pt.y *IMSCALEF << "; " << find_drone_result.disparity << "; ";
 
 #ifdef DRAWVIZS
-    drawviz(frameL,find_drone_result.treshfL,frameL_small,data.drone_image_locationL, setpoint);
+    drawviz(visdat->frameL,find_drone_result.treshfL,visdat->frameL_small,data.drone_image_locationL, setpoint);
 #endif
 
 
     if (find_drone_result.update_prev_frame && ! breakpause) {
-        frameL_big_prev_OK = frameL_big_prev.clone();
-        frameL_s_prev_OK = frameL_s_prev.clone();
-        frameR_big_prev_OK = frameR_big_prev.clone();
+        frameL_prev_OK = visdat->frameL_prev.clone();
+        frameL_s_prev_OK = visdat->frameL_s_prev.clone();
+        frameR_prev_OK = visdat->frameR_prev.clone();
     }
-    frameL_s_prev = frameL_small.clone();
-    frameL_big_prev = frameL.clone();
-    frameR_big_prev = frameR.clone();
 
     return false;
 }

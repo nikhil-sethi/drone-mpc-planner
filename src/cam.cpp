@@ -30,14 +30,12 @@ void Cam::init(int argc, char **argv) {
     cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
     cfg.enable_stream(RS2_STREAM_INFRARED, 2, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
 
-#if !INSECT_DATA_LOGGING_MODE
     if (argc ==2 ) {
         cfg.enable_device_from_file(string(argv[1]) + ".bag");
         fromfile=true;
     } else {
         //cfg.enable_record_to_file("./logging/test.bag");
     }
-#endif
 
     selection = cam.start(cfg);
     std::cout << "Started cam\n";

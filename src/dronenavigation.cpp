@@ -4,7 +4,9 @@
 using namespace cv;
 using namespace std;
 
-#define TUNING
+#ifdef HASSCREEN
+//#define TUNING
+#endif
 
 const string paramsFile = "../navigationParameters.dat";
 
@@ -114,8 +116,6 @@ void DroneNavigation::update() {
     } else {
         land_incr = 0;
     }
-
-    cout << "WP ID: " <<  wpid << " distance: " <<  dis*1000 << endl;
 
 }
 

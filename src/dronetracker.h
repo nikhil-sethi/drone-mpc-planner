@@ -9,6 +9,7 @@
 
 #include "smoother.h"
 #include "common.h"
+#include "visiondata.h"
 
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/memory.hpp>
@@ -97,7 +98,7 @@ private:
     cv::Point3f predict_drone(float dt);
     cv::Mat get_uncertainty_map_with_drone(cv::Point p);
     int match_closest_to_prediciton(cv::Point3f predicted_drone_locationL, std::vector<cv::KeyPoint> keypointsL);
-    int stereo_match(cv::KeyPoint closestL, cv::Mat frameL_big_prev, cv::Mat prevFrameR_big, cv::Mat frameL, cv::Mat frameR, int prevDisparity);
+    int stereo_match(cv::KeyPoint closestL, cv::Mat frameL_prev, cv::Mat prevFrameR_big, cv::Mat frameL, cv::Mat frameR, int prevDisparity);
     void update_prediction_state(cv::Point3f p);
     void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, int n_frames_lost, cv::KeyPoint match, int disparity, cv::Point3f setpoint_world);
     void reset_tracker_ouput(int n_frames_lost);
@@ -124,18 +125,18 @@ private:
     cv::Mat measL,measR;
 
 
-
+    VisionData * visdat;
 
     std::ofstream *_logger;    
 
     bool firstFrame;
-    cv::Mat frameL_s_prev;
-    cv::Mat frameL_s_prev_OK;
 
-    cv::Mat frameL_big_prev;
-    cv::Mat frameL_big_prev_OK;
-    cv::Mat frameR_big_prev;
-    cv::Mat frameR_big_prev_OK;
+
+    cv::Mat frameL_s_prev_OK;
+    cv::Mat frameL_prev_OK;
+    cv::Mat frameR_prev_OK;
+
+
 
     cv::Mat uncertainty_map;
     cv::Mat blurred_circle;
@@ -157,8 +158,8 @@ public:
     cv::Mat resFrame;
 
     void close (void);
-    bool init(std::ofstream *logger);
-    bool track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf, float time, int frame_id, cv::Point3d setpoint, cv::Point3f setpoint_world);
+    bool init(std::ofstream *logger, VisionData *visdat);
+    bool track(float time, cv::Point3d setpoint, cv::Point3f setpoint_world);
 
 
 

@@ -8,7 +8,7 @@ void Arduino::init(bool fromfile) {
     baudrate = 115200;
     notconnected = RS232_OpenComport(baudrate);
 
-    if (notconnected && !fromfile && !INSECT_DATA_LOGGING_MODE) {
+    if (notconnected && !fromfile) {
         printf("Arduino failed.\n");
         exit(1);
     }

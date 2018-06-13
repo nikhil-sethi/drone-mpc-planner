@@ -14,6 +14,8 @@
 #include "defines.h"
 #include "smoother.h"
 
+
+
 #include "stopwatch.h"
 #include "dronetracker.h"
 #include "dronecontroller.h"
@@ -22,6 +24,7 @@
 #include "insect.h"
 #include "logreader.h"
 #include "cam.h"
+#include "visiondata.h"
 
 #include "opencv2/features2d/features2d.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
@@ -59,16 +62,9 @@ Insect insect;
 Visualizer visualizer;
 LogReader logreader;
 Cam cam;
+VisionData visdat;
 bool fromfile = false;
 
-
-//tmp for capturing moth data
-#define FRAME_BUF_SIZE 20
-int frame_buffer_write_id = 0;
-int frame_buffer_read_id = 2*FRAME_BUF_SIZE;
-int frame_write_id_during_event = 0;
-cv::Mat frameBL[FRAME_BUF_SIZE];
-cv::Mat frameBR[FRAME_BUF_SIZE];
 
 /*******Private prototypes*********/
 void process_video();
@@ -100,6 +96,7 @@ void process_video() {
         if (breakpause != 0) {
 
             cam.update();
+            visdat.update(cam.frameL,cam.frameR);
 
             if (breakpause > 0)
                 breakpause--;
@@ -112,19 +109,15 @@ void process_video() {
         if (breakpause_prev != 0)
             time = cam.frame_time - break_time;
 
-
         logger << imgcount << ";" << cam.frame_number << ";" ;
-        if (!INSECT_DATA_LOGGING_MODE) {
-            if (dtrkr.track(cam.frameL,cam.frameR, cam.Qf, cam.frame_time-start_time, cam.frame_number,dnav.setpoint,dnav.setpoint_world)) {
-                breakpause = 0;
-            }
-            dnav.update();
-            dctrl.control(&(dtrkr.data));
-        }
-#if INSECT_DATA_LOGGING_MODE
-        insect.track(frameL,frameR, Qf);
-#endif
 
+        if (dtrkr.track(cam.frame_time-start_time, dnav.setpoint, dnav.setpoint_world)) {
+            breakpause = 0;
+        }
+        dnav.update();
+        dctrl.control(&(dtrkr.data));
+
+        // insect.track(frameL,frameR, Qf);
 
 #ifdef HASSCREEN
         if (fromfile) {
@@ -139,39 +132,24 @@ void process_video() {
             }
         }
 
-#if !INSECT_DATA_LOGGING_MODE
         if (breakpause_prev != 0)
             visualizer.addSample();
 #endif
-#endif
 
-        frameBL[frame_buffer_write_id] = cam.frameL.clone();
-        frameBR[frame_buffer_write_id] = cam.frameR.clone();
-
-        frame_buffer_write_id = (frame_buffer_write_id + 1) % FRAME_BUF_SIZE;
-        if (insect.data.valid) { //
-            frame_buffer_read_id = 0;
-            frame_write_id_during_event = (frame_buffer_write_id + FRAME_BUF_SIZE - 1 ) % FRAME_BUF_SIZE;
-        }
-
-        if (frame_buffer_read_id<2*FRAME_BUF_SIZE) {
-            detectcount++;
-            frame_buffer_read_id++;
-            int id = (frame_write_id_during_event + frame_buffer_read_id)  % FRAME_BUF_SIZE;
-            int frameWritten = 0;
+        int frameWritten = 0;
 #if VIDEORAWLR
-            frameWritten = outputVideoRawLR.write(frameBL[id],frameBR[id]);
+        frameWritten = outputVideoRawLR.write(visdat.frameL,visdat.frameR);
 #endif
-            if (frameWritten == 0) {
+        if (frameWritten == 0) {
 #if VIDEODISPARITY
-                outputVideoDisp.write(cam.get_disp_frame());
+            outputVideoDisp.write(cam.get_disp_frame());
 #endif
 #if VIDEORESULTS
-                resFrame = dtrkr.resFrame;
-                outputVideoColor.write(resFrame);
+            resFrame = dtrkr.resFrame;
+            outputVideoColor.write(resFrame);
 #endif
-            }
         }
+
 
         std::cout << "Frame: " <<imgcount << ", " << cam.frame_number << ". FPS: " << imgcount / (time-start_time-break_time ) << ". Time: " << time-start_time-break_time  << ", dt " << dt << std::endl;
         imgcount++;
@@ -198,7 +176,7 @@ void handleKey() {
     }
     //#endif
 
-    switch(key) {    
+    switch(key) {
     case ' ': // [r]: reset stopwatch
         //dtrkr.breakpause = true;
         if (breakpause >-1) {
@@ -249,18 +227,21 @@ int init(int argc, char **argv) {
     if (!fromfile)
         arduino.init(fromfile);
 
-    if (!INSECT_DATA_LOGGING_MODE) {
-        dtrkr.init(&logger);
-        dctrl.init(&logger,fromfile,&arduino);
-        dnav.init(&logger,&dtrkr,&dctrl);
-    }
-    insect.init(&logger,&arduino);
-    logger << std::endl;
-
-    std::cout << "Frame buf size: " << FRAME_BUF_SIZE << std::endl;
+    dctrl.init(&logger,fromfile,&arduino);
 
     /*****Start capturing images*****/
     cam.init(argc,argv);
+    cam.update(); // wait for first frames
+
+    visdat.init(cam.Qf, cam.frameL,cam.frameR); // do after cam update to populate frames
+
+    dtrkr.init(&logger,&visdat);
+    dnav.init(&logger,&dtrkr,&dctrl);
+    insect.init(&logger,&arduino);
+
+    logger << std::endl;
+
+    visualizer.init(&dctrl,&dtrkr,&dnav);
 
     /*****init the video writer*****/
 #if VIDEORESULTS
@@ -283,8 +264,6 @@ int init(int argc, char **argv) {
     }
 #endif
 
-    visualizer.init(&dctrl,&dtrkr,&dnav);
-
     //init ctrl - c catch
     struct sigaction sigIntHandler;
     sigIntHandler.sa_handler = my_handler;
@@ -292,12 +271,8 @@ int init(int argc, char **argv) {
     sigIntHandler.sa_flags = 0;
     sigaction(SIGINT, &sigIntHandler, NULL);
 
-    //init pre-capture buffer
-    for (int i = 0; i<FRAME_BUF_SIZE;i++){
-        cam.update(); // Wait for next set of frames from the camera
-        frameBL[i] = cam.frameL.clone();
-        frameBR[i] = cam.frameR.clone();
-    }
+
+
 
     std::cout << "Main init successfull" << std::endl;
 
@@ -307,11 +282,9 @@ int init(int argc, char **argv) {
 void close() {
     std::cout <<"Closing"<< std::endl;
     /*****Close everything down*****/
-    if (!INSECT_DATA_LOGGING_MODE) {
-        dtrkr.close();
-        dctrl.close();
-        dnav.close();
-    }
+    dtrkr.close();
+    dctrl.close();
+    dnav.close();
     insect.close();
     if (!fromfile)
         arduino.close();
