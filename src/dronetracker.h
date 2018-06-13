@@ -26,7 +26,7 @@ class DroneTracker {
 
 private:
     cv::SimpleBlobDetector::Params params;
-    struct patsSettings{
+    struct DroneTrackerSettings{
 
         //thresh params
         int iLowH1r = 10;
@@ -67,20 +67,18 @@ private:
         int min_disparity=0;
         int max_disparity=20;
 
-        int uncertainty_multiplier = 2;
-        int uncertainty_power = 6;
-        int uncertainty_background = 0.3*255.0;
+
 
         template <class Archive>
         void serialize( Archive & ar )
         {
-            ar( iLowH1r,iHighH1r,iLowS1r,iHighS1r,iLowV1r,iHighV1r,iOpen1r,iClose1r,minThreshold,maxThreshold,filterByArea,minArea,maxArea,filterByCircularity,minCircularity,maxCircularity,filterByConvexity,minConvexity,maxConvexity,filterByInertia,minInertiaRatio,maxInertiaRatio,min_disparity,max_disparity,uncertainty_power,uncertainty_multiplier,uncertainty_background);
+            ar( iLowH1r,iHighH1r,iLowS1r,iHighS1r,iLowV1r,iHighV1r,iOpen1r,iClose1r,minThreshold,maxThreshold,filterByArea,minArea,maxArea,filterByCircularity,minCircularity,maxCircularity,filterByConvexity,minConvexity,maxConvexity,filterByInertia,minInertiaRatio,maxInertiaRatio,min_disparity,max_disparity);
         }
 
 
 
     };
-    patsSettings settings;
+    DroneTrackerSettings settings;
 
     struct Find_drone_result {
       cv::Mat treshfL;
@@ -94,7 +92,7 @@ private:
 
     void updateParams();
     cv::Mat createBlurryCircle(int size, float background);
-    cv::Mat segment_drone(cv::Mat frame, cv::Mat frame_prev, bool build_uncertainty_map2, cv::Point previous_imageL_location);
+    cv::Mat segment_drone(cv::Mat diffL, cv::Point previous_imageL_location);
     cv::Point3f predict_drone(float dt);
     cv::Mat get_uncertainty_map_with_drone(cv::Point p);
     int match_closest_to_prediciton(cv::Point3f predicted_drone_locationL, std::vector<cv::KeyPoint> keypointsL);
@@ -108,16 +106,12 @@ private:
 
     cv::Mat show_uncertainty_map_in_image(cv::Point p, cv::Mat resframeL);
 
-    void init_avg_prev_frame(void);
-    void collect_avg_prev_frame(cv::Mat frame);
-    void collect_no_drone_frames(cv::Mat diff);
-
     // Kalman Filter
     int stateSize = 6;
     int measSize = 4;
     int contrSize = 0;
 
-    const float background_calib_time = 5.0;
+
 
     unsigned int type = CV_32F;
     cv::KalmanFilter kfL,kfR;
@@ -138,11 +132,9 @@ private:
 
 
 
-    cv::Mat uncertainty_map;
+
     cv::Mat blurred_circle;
 
-    cv::Mat avg_prev_frame;
-    int n_avg_prev_frames = 0;
 
     std::vector<cv::KeyPoint> dronepathL;
     std::vector<cv::KeyPoint> predicted_dronepathL;

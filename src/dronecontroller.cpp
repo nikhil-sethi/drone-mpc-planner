@@ -11,8 +11,6 @@ const std::string paramsFile = "../controlParameters.dat";
 Joystick joystick("/dev/input/js0");
 JoystickEvent event;
 
-
-
 bool DroneController::init(std::ofstream *logger,bool fromfile, Arduino * arduino) {
     _arduino = arduino;
     _logger = logger;

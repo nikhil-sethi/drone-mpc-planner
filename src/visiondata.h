@@ -8,6 +8,11 @@
 #include <opencv2/highgui/highgui.hpp>
 #include "opencv2/features2d/features2d.hpp"
 
+#include <cereal/types/unordered_map.hpp>
+#include <cereal/types/memory.hpp>
+#include <cereal/archives/binary.hpp>
+#include <fstream>
+
 #include "cam.h"
 #include "defines.h"
 
@@ -15,6 +20,30 @@ class VisionData{
 
 private:
 
+
+    cv::Mat avg_prev_frame;
+    int n_avg_prev_frames = 0;
+    bool background_calibrated;
+
+    struct BaseVisionSettings{
+
+        int uncertainty_multiplier = 2;
+        int uncertainty_power = 6;
+        int uncertainty_background = 0.3*255.0;
+        int background_calib_time = 5;
+
+        template <class Archive>
+        void serialize( Archive & ar )
+        {
+            ar(uncertainty_power,uncertainty_multiplier,uncertainty_background,background_calib_time);
+        }
+
+
+
+    };
+
+    const std::string settingsFile = "../basevisionsettings.dat";
+    BaseVisionSettings settings;
 
 public:
     cv::Mat frameL,frameR;
@@ -24,32 +53,24 @@ public:
     cv::Mat frameL_small;
     cv::Mat frameL_s_prev;
 
-    cv::Mat threshL;
     cv::Mat Qf;
-    void init(cv::Mat Qf, cv::Mat frameL,cv::Mat frameR){
-        this->Qf = Qf;
-        this->frameL = frameL;
-        this->frameR = frameR;
-        this->frameL_prev = frameL;
-        this->frameR_prev = frameR;
 
-        smallsize =cv::Size(frameL.cols/IMSCALEF,frameL.rows/IMSCALEF);
-        cv::resize(frameL,frameL_small,smallsize);
-        frameL_s_prev = frameL_small.clone();
+    cv::Mat uncertainty_map,threshL,diffL;
 
+
+
+
+    void init(cv::Mat Qf, cv::Mat frameL,cv::Mat frameR);
+    void close() {
+        std::ofstream os(settingsFile, std::ios::binary);
+        cereal::BinaryOutputArchive archive( os );
+        archive( settings );
     }
-
-    void update(cv::Mat frameL,cv::Mat frameR) { // TODO: get rid of this function by direct pointers...?
-        this->frameL_prev = this->frameL.clone();
-        this->frameR_prev = this->frameR.clone();
-        this->frameL = frameL;
-        this->frameR = frameR;
-
-        frameL_s_prev = frameL_small.clone();
-        cv::resize(frameL,frameL_small,smallsize);
-
-    }
-
+    void update(cv::Mat frameL, cv::Mat frameR, float time);
+    void init_avg_prev_frame(void);
+    void collect_avg_prev_frame(cv::Mat frame);
+    void collect_no_drone_frames(cv::Mat diff);
+    float get_uncertainty_background() {return settings.uncertainty_background / 255.0;}
 };
 
 #endif // VIZDAT_H

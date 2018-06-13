@@ -15,7 +15,7 @@ using namespace std;
 #ifdef USERIGHTCAM
 #define DRAWVIZSR
 #endif
-#define TUNING
+//#define TUNING
 #endif
 
 

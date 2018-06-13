@@ -96,7 +96,7 @@ void process_video() {
         if (breakpause != 0) {
 
             cam.update();
-            visdat.update(cam.frameL,cam.frameR);
+
 
             if (breakpause > 0)
                 breakpause--;
@@ -110,6 +110,8 @@ void process_video() {
             time = cam.frame_time - break_time;
 
         logger << imgcount << ";" << cam.frame_number << ";" ;
+
+        visdat.update(cam.frameL,cam.frameR,cam.frame_time-start_time);
 
         if (dtrkr.track(cam.frame_time-start_time, dnav.setpoint, dnav.setpoint_world)) {
             breakpause = 0;
@@ -289,6 +291,7 @@ void close() {
     if (!fromfile)
         arduino.close();
     visualizer.close();
+    visdat.close();
     cam.close();
 
 #if VIDEORESULTS   

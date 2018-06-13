@@ -52,8 +52,7 @@ struct trackData {
     bool landed;
     float disparity;
     float sdisparity;
-    cv::Point drone_image_locationL;
-    bool background_calibrated;
+    cv::Point drone_image_locationL;    
     bool valid;
     int detected_after_take_off;
     bool reset_filters;
