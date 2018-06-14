@@ -2,7 +2,7 @@
 #include "defines.h"
 
 #ifdef HASSCREEN
-//#define TUNING
+#define TUNING
 #endif
 
 const std::string paramsFile = "../controlParameters.dat";
@@ -115,6 +115,8 @@ void DroneController::control(trackData * data) {
         autoThrottle =hoverthrottle ;
     } else {
         autoThrottle =  hoverthrottle  - (data->posErrY * params.throttleP + data->svelY * params.throttleD + throttleErrI * params.throttleI*beforeTakeOffFactor);
+        if (autoThrottle < 1300)
+            autoThrottle = 1300;
     }
     autoRoll = 1500 + (data->posErrX * params.rollP + data->svelX * (params.rollD) +  params.rollI*rollErrI);
     autoPitch =1500 + (data->posErrZ * params.pitchP + data->svelZ * (params.pitchD) +  params.pitchI*pitchErrI);
