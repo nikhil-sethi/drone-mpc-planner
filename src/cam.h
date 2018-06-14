@@ -48,13 +48,13 @@ public:
     cv::Mat frameL,frameR;
 
     enum auto_exposure_enum{disabled = 0, enabled = 1, only_at_startup=2};
-    const auto_exposure_enum enable_auto_exposure = only_at_startup;
+    const auto_exposure_enum enable_auto_exposure = disabled;
 
 private:
 
     rs2::pipeline_profile selection;
-    int exposure = 10000; // >11000 -> 60fps, >16500 -> 30fps, < 20 = crash
-    int gain = 200;
+    int exposure = 84*(31250/256); // >11000 -> 60fps, >16500 -> 30fps, < 20 = crash
+    int gain = 248;
     bool fromfile;
     bool ready;
 

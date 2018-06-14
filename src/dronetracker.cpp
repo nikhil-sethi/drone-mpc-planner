@@ -38,7 +38,7 @@ bool DroneTracker::init(std::ofstream *logger, VisionData *visdat) {
     createTrackbar("Closing1", "Tracking", &settings.iClose1r, 30);
     createTrackbar("Min disparity", "Tracking", &settings.min_disparity, 255);
     createTrackbar("Max disparity", "Tracking", &settings.max_disparity, 255);
-    createTrackbar("roi_start_size", "Tracking", &settings.roi_start_size, 500);
+    createTrackbar("roi_start_size", "Tracking", &settings.roi_start_size, 2000);
     createTrackbar("roi_grow_speed", "Tracking", &settings.roi_grow_speed, 256);
 #endif
 
@@ -334,6 +334,10 @@ void DroneTracker::find_drone(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK) {
     cv::Point roi_size;
     roi_size.x=settings.roi_start_size/IMSCALEF+nframes_since_update_prev*(settings.roi_grow_speed / 16 / IMSCALEF);
     roi_size.y=settings.roi_start_size/IMSCALEF+nframes_since_update_prev*(settings.roi_grow_speed / 16 / IMSCALEF);
+    if (roi_size.x > visdat->frameL_small.cols)
+        roi_size.x = visdat->frameL_small.cols;
+    if (roi_size.y > visdat->frameL_small.rows)
+        roi_size.y = visdat->frameL_small.rows;
 
     //attempt to detect changed blobs
     cv::Mat treshfL = segment_drone(visdat->diffL,previous_drone_location,roi_size);

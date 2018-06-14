@@ -21,7 +21,7 @@ public:
     void rebind(void);
     void close();
 
-    int ledpower = 10;
+    int ledpower = 75;
     uint16_t mode = 1500; // <min = mode 1, 1500 = mode 2, >max = mode 3
     int roll,pitch,yaw = 1500;
     int throttle = 1000;

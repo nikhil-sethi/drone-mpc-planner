@@ -15,7 +15,7 @@ using namespace std;
 #ifdef USERIGHTCAM
 #define DRAWVIZSR
 #endif
-//#define TUNING
+#define TUNING
 #endif
 
 
@@ -32,15 +32,15 @@ bool Insect::init(std::ofstream *logger, Arduino * arduino) {
     resFrame = cv::Mat::zeros(480, 1280,CV_8UC3);
 
 #ifdef TUNING
-    namedWindow("Tuning", WINDOW_NORMAL);
-    createTrackbar("LowH1", "Tuning", &settings.iLowH1r, 255);
-    createTrackbar("HighH1", "Tuning", &settings.iHighH1r, 255);
-    createTrackbar("filterByArea", "Tuning", &settings.filterByArea, 1);
-    createTrackbar("minArea", "Tuning", &settings.minArea, 10000);
-    createTrackbar("maxArea", "Tuning", &settings.maxArea, 10000);
-    createTrackbar("Opening1", "Tuning", &settings.iOpen1r, 30);
-    createTrackbar("Closing1", "Tuning", &settings.iClose1r, 30);
-    createTrackbar("LED", "Tuning", &(_arduino->ledpower), 255);
+//    namedWindow("Tuning", WINDOW_NORMAL);
+//    createTrackbar("LowH1", "Tuning", &settings.iLowH1r, 255);
+//    createTrackbar("HighH1", "Tuning", &settings.iHighH1r, 255);
+//    createTrackbar("filterByArea", "Tuning", &settings.filterByArea, 1);
+//    createTrackbar("minArea", "Tuning", &settings.minArea, 10000);
+//    createTrackbar("maxArea", "Tuning", &settings.maxArea, 10000);
+//    createTrackbar("Opening1", "Tuning", &settings.iOpen1r, 30);
+//    createTrackbar("Closing1", "Tuning", &settings.iClose1r, 30);
+    createTrackbar("LED", "Control", &(_arduino->ledpower), 255);
 #endif
 
     kfL = cv::KalmanFilter(stateSize, measSize, contrSize, type);

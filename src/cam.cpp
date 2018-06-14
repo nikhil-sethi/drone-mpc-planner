@@ -34,7 +34,7 @@ void Cam::init(int argc, char **argv) {
         cfg.enable_device_from_file(string(argv[1]) + ".bag");
         fromfile=true;
     } else {
-        //cfg.enable_record_to_file("./logging/test.bag");
+        cfg.enable_record_to_file("./logging/test.bag");
     }
 
     selection = cam.start(cfg);

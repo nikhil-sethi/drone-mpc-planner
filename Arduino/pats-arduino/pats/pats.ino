@@ -112,13 +112,13 @@ void setup() {
     // reserve 200 bytes for the inputString:
     inputString.reserve(200);
 
-    setPwmFrequency(9, 1); 
+    setPwmFrequency(9, 256); 
     pinMode(LED_BUILTIN, OUTPUT);    
 }
 
 void set_power_led() {
-    if (pwm_value > 3) {
-        pwm_value = 3;
+    if (pwm_value > 75) {
+        pwm_value = 75;
       }
       // put your main code here, to run repeatedly:
       analogWrite(POWERLED_pin, pwm_value);
