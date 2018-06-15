@@ -111,7 +111,8 @@ void process_video() {
 
         visdat.update(cam.frameL,cam.frameR,cam.frame_time-start_time);
 
-       // itrkr.track(cam.frame_time-start_time, dnav.setpoint, dnav.setpoint_world);
+        //WARNING: changing the order of the functions with logging must be match with the init functions!
+        itrkr.track(cam.frame_time-start_time, dnav.setpoint, dnav.setpoint_world);
         dtrkr.track(cam.frame_time-start_time, dnav.setpoint, dnav.setpoint_world);
 
         dnav.update();
@@ -216,18 +217,17 @@ int init(int argc, char **argv) {
     if (!fromfile)
         arduino.init(fromfile);
 
-    dctrl.init(&logger,fromfile,&arduino);
-
     /*****Start capturing images*****/
     cam.init(argc,argv);
     cam.update(); // wait for first frames
 
     visdat.init(cam.Qf, cam.frameL,cam.frameR); // do after cam update to populate frames
 
+    //WARNING: changing the order of the inits with logging must be match with the process_video functions!
     itrkr.init(&logger,&visdat);
     dtrkr.init(&logger,&visdat);
     dnav.init(&logger,&dtrkr,&dctrl);
-
+    dctrl.init(&logger,fromfile,&arduino);
 
     logger << std::endl;
 
