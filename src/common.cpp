@@ -178,3 +178,19 @@ void alert(std::string cmd) {
     system(cmd.c_str());
 #endif
 }
+
+cv::Mat createBlurryCircle(cv::Point size) {
+    cv::Point2f tmp;
+    tmp.x = roundf(((float)size.x)/4.f);
+    tmp.y = roundf(((float)size.y)/4.f);
+    if (fabs((tmp.x / 2.f) - roundf(tmp.x / 2.f)) < 0.01)
+        tmp.x +=1;
+    if (fabs((tmp.y / 2.f) - roundf(tmp.y / 2.f)) < 0.01)
+        tmp.y +=1;
+
+    cv::Mat res = cv::Mat::zeros(size.y,size.x,CV_32F);
+
+    cv::ellipse(res,cv::Point(size.x/2,size.y/2),cv::Size(tmp.x,tmp.y),0,0,360,1.0f,CV_FILLED);
+    cv::GaussianBlur( res, res, cv::Size( tmp.x, tmp.y ), 0, 0 );
+    return res;
+}

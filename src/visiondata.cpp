@@ -1,7 +1,7 @@
 #include "visiondata.h"
 #include <opencv2/highgui/highgui.hpp>
 
-#define TUNING
+//#define TUNING
 using namespace cv;
 using namespace std;
 

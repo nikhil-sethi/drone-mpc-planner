@@ -67,13 +67,14 @@ private:
         int min_disparity=0;
         int max_disparity=20;
 
-        int roi_start_size = 200;
+        int roi_min_size = 200;
+        int roi_max_grow = 250;
         int roi_grow_speed = 64;
 
         template <class Archive>
         void serialize( Archive & ar )
         {
-            ar( iLowH1r,iHighH1r,iLowS1r,iHighS1r,iLowV1r,iHighV1r,iOpen1r,iClose1r,minThreshold,maxThreshold,filterByArea,minArea,maxArea,filterByCircularity,minCircularity,maxCircularity,filterByConvexity,minConvexity,maxConvexity,filterByInertia,minInertiaRatio,maxInertiaRatio,min_disparity,max_disparity,roi_start_size,roi_grow_speed);
+            ar( iLowH1r,iHighH1r,iLowS1r,iHighS1r,iLowV1r,iHighV1r,iOpen1r,iClose1r,minThreshold,maxThreshold,filterByArea,minArea,maxArea,filterByCircularity,minCircularity,maxCircularity,filterByConvexity,minConvexity,maxConvexity,filterByInertia,minInertiaRatio,maxInertiaRatio,min_disparity,max_disparity,roi_min_size,roi_max_grow,roi_grow_speed);
         }
 
 
@@ -93,7 +94,6 @@ private:
     Find_drone_result find_drone_result;
 
     void updateParams();
-    cv::Mat createBlurryCircle(cv::Point size);
     cv::Mat segment_drone(cv::Mat diffL, cv::Point previous_imageL_location, cv::Point roi_size);
     cv::Point3f predict_drone(float dt);
     cv::Mat get_approx_drone_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size);
@@ -104,7 +104,6 @@ private:
     void reset_tracker_ouput(int n_frames_lost);
     void drawviz(cv::Mat frameL, cv::Mat framegrayL, cv::Point3d setpoint);
     void find_drone(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK);
-    void beep(cv::Point2f drone, int n_frames_lost, float time, cv::Mat frameL_small);
 
     cv::Mat show_uncertainty_map_in_image(cv::Point p, cv::Mat resframeL);
 
@@ -135,22 +134,23 @@ private:
     cv::Mat blurred_circle;
 
 
-    std::vector<cv::KeyPoint> dronepathL;
-    std::vector<cv::KeyPoint> predicted_dronepathL;
+    std::vector<cv::KeyPoint> drone_pathL;
+    std::vector<cv::KeyPoint> predicted_drone_pathL;
+
+    bool foundL = false;
+    float t_prev = 0;
 
 public:       
 
-#define DRONE_MAX_BORDER_Y_DEFAULT 2.1f
-#define DRONE_MAX_BORDER_Z_DEFAULT 4.0f
-    float drone_max_border_z = DRONE_MAX_BORDER_Z_DEFAULT;
-    float drone_max_border_y = DRONE_MAX_BORDER_Y_DEFAULT;
+    float drone_max_border_z = MAX_BORDER_Z_DEFAULT;
+    float drone_max_border_y = MAX_BORDER_Y_DEFAULT;
 
     int n_frames_tracking =0;
     cv::Mat resFrame;
 
     void close (void);
     bool init(std::ofstream *logger, VisionData *visdat);
-    bool track(float time, cv::Point3d setpoint, cv::Point3f setpoint_world);
+    void track(float time, cv::Point3d setpoint, cv::Point3f setpoint_world);
 
 
 

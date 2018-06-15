@@ -1,6 +1,5 @@
-#ifndef INSECT_H
-#define INSECT_H
-
+#ifndef INSECTTRACKER_H
+#define INSECTTRACKER_H
 #include "defines.h"
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/core/core.hpp>
@@ -8,50 +7,36 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/video/video.hpp>
 
-#include "stopwatch.h"
 #include "smoother.h"
 #include "common.h"
+#include "visiondata.h"
 
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/archives/binary.hpp>
 #include <fstream>
 
-#include "arduino.h"
 
 /*
- * This class will detect and track an insect
+ * This class will track insects
  *
  */
-class Insect {
+class InsectTracker {
 
 
 private:
     cv::SimpleBlobDetector::Params params;
-
-    Arduino * _arduino;
-
-    struct patsSettings{
+    struct InsectTrackerSettings{
 
         //thresh params
-        int iLowH1r = 0;
-        int iHighH1r = 15;
+        int iLowH1r = 10;
+        int iHighH1r = 255;
         int iLowS1r = 0;
         int iHighS1r = 255;
         int iLowV1r = 188;
         int iHighV1r = 255;
-        int iOpen1r =1;
-        int iClose1r =1;
-
-        //thresh params
-        int iLowH1b = 92;
-        int iHighH1b = 117;
-        int iLowS1b = 0;
-        int iHighS1b = 255;
-        int iLowV1b = 165;
-        int iHighV1b = 255;
-        int iOpen1b =1;
-        int iClose1b =1;
+        int iOpen1r =0;
+        int iClose1r =2;
 
         //blob params
 
@@ -61,8 +46,8 @@ private:
 
         // Filter by Area.
         int filterByArea = 1;
-        int minArea = 2;
-        int maxArea = 8;
+        int minArea = 1;
+        int maxArea = 40;
 
         // Filter by Circularity
         int filterByCircularity = 0;
@@ -79,56 +64,102 @@ private:
         int minInertiaRatio = 1;
         int maxInertiaRatio = 100;
 
+        int min_disparity=0;
+        int max_disparity=20;
+
+        int roi_min_size = 200;
+        int roi_max_grow = 160;
+        int roi_grow_speed = 64;
 
         template <class Archive>
         void serialize( Archive & ar )
         {
-          ar( iLowH1r,iHighH1r,iLowS1r,iHighS1r,iLowV1r,iHighV1r,iOpen1r,iClose1r,iLowH1b,iHighH1b,iLowS1b,iHighS1b,iLowV1b,iHighV1b,iOpen1b,iClose1b,minThreshold,maxThreshold,filterByArea,minArea,maxArea,filterByCircularity,minCircularity,maxCircularity,filterByConvexity,minConvexity,maxConvexity,filterByInertia,minInertiaRatio,maxInertiaRatio );
+            ar( iLowH1r,iHighH1r,iLowS1r,iHighS1r,iLowV1r,iHighV1r,iOpen1r,iClose1r,minThreshold,maxThreshold,filterByArea,minArea,maxArea,filterByCircularity,minCircularity,maxCircularity,filterByConvexity,minConvexity,maxConvexity,filterByInertia,minInertiaRatio,maxInertiaRatio,min_disparity,max_disparity,roi_min_size,roi_max_grow,roi_grow_speed);
         }
 
-
     };
-    patsSettings settings;
+    InsectTrackerSettings settings;
 
-    stopwatch_c stopWatch;
+    struct Find_insect_result {
+      cv::Mat treshfL;
+      std::vector<cv::KeyPoint> keypointsL;
+      cv::KeyPoint best_image_locationL;
+      cv::Rect roi_offset;
+      int disparity;
+      float smoothed_disparity;
+      bool update_prev_frame;
+    };
+    Find_insect_result find_insect_result;
 
     void updateParams();
+    cv::Mat segment_insect(cv::Mat diffL, cv::Point previous_imageL_location, cv::Point roi_size);
+    cv::Point3f predict_insect(float dt);
+    cv::Mat get_approx_insect_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size);
+    int match_closest_to_prediciton(cv::Point3f predicted_insect_locationL, std::vector<cv::KeyPoint> keypointsL);
+    int stereo_match(cv::KeyPoint closestL, cv::Mat frameL_prev, cv::Mat prevFrameR_big, cv::Mat frameL, cv::Mat frameR, int prevDisparity);
+    void update_prediction_state(cv::Point3f p);
+    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, int n_frames_lost, cv::KeyPoint match, int disparity, cv::Point3f setpoint_world);
+    void reset_tracker_ouput(int n_frames_lost);
+    void drawviz(cv::Mat frameL, cv::Mat framegrayL, cv::Point3d setpoint);
+    void find_insect(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK);
 
-
+    cv::Mat show_uncertainty_map_in_image(cv::Point p, cv::Mat resframeL);
 
     // Kalman Filter
     int stateSize = 6;
     int measSize = 4;
     int contrSize = 0;
 
+    cv::Mat cir8,bkg8,dif8;
+
     unsigned int type = CV_32F;
     cv::KalmanFilter kfL,kfR;
     cv::Mat stateL,stateR;
     cv::Mat measL,measR;
+
+
+    VisionData * visdat;
+
     std::ofstream *_logger;
 
-
-    cv::Mat prevFrameL,prevFrameR;
     bool firstFrame;
 
-    std::vector<cv::KeyPoint> insect_pathL,insect_pathR;
-    std::vector<cv::KeyPoint> predicted_insect_pathL,predicted_insect_pathR;
 
+    cv::Mat frameL_s_prev_OK;
+    cv::Mat frameL_prev_OK;
+    cv::Mat frameR_prev_OK;
+
+    cv::Mat blurred_circle;
+
+
+    std::vector<cv::KeyPoint> insect_pathL;
+    std::vector<cv::KeyPoint> predicted_insect_pathL;
+
+    bool foundL = false;
+    float t_prev = 0;
 
 public:
 
+    int n_frames_tracking =0;
     cv::Mat resFrame;
 
     void close (void);
-    bool init(std::ofstream *logger, Arduino * arduino);
-    void track(cv::Mat frameL, cv::Mat frameR, cv::Mat Qf);
-
+    bool init(std::ofstream *logger, VisionData *visdat);
+    bool track(float time, cv::Point3d setpoint, cv::Point3f setpoint_world);
 
     trackData data;
-    Smoother sposX;
-    Smoother sposY;
-    Smoother sposZ;
+    Smoother smoother_posX, smoother_posY, smoother_posZ;
+    Smoother smoother_velX, smoother_velY, smoother_velZ;
+    const int smooth_width_vel = 10;
+    const int smooth_width_pos = 10;
 
+    Smoother disp_smoothed;
+
+
+    bool breakpause;
 };
 
-#endif //INSECT_H
+
+
+
+#endif //INSECTTRACKER_H

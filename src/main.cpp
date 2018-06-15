@@ -58,7 +58,7 @@ Arduino arduino;
 DroneTracker dtrkr;
 DroneController dctrl;
 DroneNavigation dnav;
-Insect insect;
+InsectTracker itrkr;
 Visualizer visualizer;
 LogReader logreader;
 Cam cam;
@@ -95,10 +95,7 @@ void process_video() {
         breakpause_prev = breakpause;
 
         if (breakpause != 0) {
-
             cam.update();
-
-
             if (breakpause > 0)
                 breakpause--;
         }
@@ -114,13 +111,11 @@ void process_video() {
 
         visdat.update(cam.frameL,cam.frameR,cam.frame_time-start_time);
 
-        if (dtrkr.track(cam.frame_time-start_time, dnav.setpoint, dnav.setpoint_world)) {
-            breakpause = 0;
-        }
+       // itrkr.track(cam.frame_time-start_time, dnav.setpoint, dnav.setpoint_world);
+        dtrkr.track(cam.frame_time-start_time, dnav.setpoint, dnav.setpoint_world);
+
         dnav.update();
         dctrl.control(&(dtrkr.data));
-
-        // insect.track(frameL,frameR, Qf);
 
 #ifdef HASSCREEN
         if (fromfile) {
@@ -135,8 +130,8 @@ void process_video() {
             }
         }
 
-        if (breakpause_prev != 0)
-            visualizer.addSample();
+        //if (breakpause_prev != 0)
+            //visualizer.addSample();
 #endif
 
         int frameWritten = 0;
@@ -208,20 +203,11 @@ void my_handler(int s){
 
 int init(int argc, char **argv) {
 
-#if INSECT_DATA_LOGGING_MODE
-    if (argc !=2 ) {
-        cout << "Error: command line argument missing. Missing argument Output dir." << endl;
-        exit(1);
-    }
-    data_output_dir = string(argv[1]) + "/";
-#else
     if (argc ==2 ) {
         fromfile = true;
         logreader.init(string(argv[1]) + ".log");
     }
     data_output_dir = "./logging/";
-#endif
-
     cout << "data_output_dir: " << data_output_dir << endl;
 
     logger.open(data_output_dir  + "test.log",std::ofstream::out);
@@ -238,13 +224,14 @@ int init(int argc, char **argv) {
 
     visdat.init(cam.Qf, cam.frameL,cam.frameR); // do after cam update to populate frames
 
+    itrkr.init(&logger,&visdat);
     dtrkr.init(&logger,&visdat);
     dnav.init(&logger,&dtrkr,&dctrl);
-    insect.init(&logger,&arduino);
+
 
     logger << std::endl;
 
-    visualizer.init(&dctrl,&dtrkr,&dnav);
+    //visualizer.init(&dctrl,&dtrkr,&dnav);
 
     /*****init the video writer*****/
 #if VIDEORESULTS
@@ -288,10 +275,10 @@ void close() {
     dtrkr.close();
     dctrl.close();
     dnav.close();
-    insect.close();
+    itrkr.close();
     if (!fromfile)
         arduino.close();
-    visualizer.close();
+    //visualizer.close();
     visdat.close();
     cam.close();
 

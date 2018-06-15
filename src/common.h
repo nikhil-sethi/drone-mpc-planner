@@ -22,6 +22,7 @@ cv::Mat createRowImage(std::vector<cv::Mat> ims, int type);
 void showColumnImage(std::vector<cv::Mat> ims, std::string window_name, int type);
 void showRowImage(std::vector<cv::Mat> ims, std::string window_name, int type);
 void alert(std::string cmd);
+cv::Mat createBlurryCircle(cv::Point size);
 
 const float FOV = 180.0f ;
 const float FOV_size = 1280.0;
@@ -52,7 +53,8 @@ struct trackData {
     bool landed;
     float disparity;
     float sdisparity;
-    cv::Point drone_image_locationL;    
+    cv::Point drone_image_locationL;
+    cv::Point insect_image_locationL;
     bool valid;
     int detected_after_take_off;
     bool reset_filters;

@@ -85,7 +85,7 @@ void DroneNavigation::update() {
         autoLandThrottleDecrease = 0;
         _dctrl->setAutoLandThrottleDecrease(0);
         _dctrl->setAutoLand(false);
-        _dtrk->drone_max_border_y = DRONE_MAX_BORDER_Y_DEFAULT;
+        _dtrk->drone_max_border_y = MAX_BORDER_Y_DEFAULT;
     }
 
     if (!_dctrl->getAutoControl())
