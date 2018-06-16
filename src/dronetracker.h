@@ -83,7 +83,7 @@ private:
     DroneTrackerSettings settings;
 
     struct Find_drone_result {
-      cv::Mat treshfL;
+      cv::Mat treshL;
       std::vector<cv::KeyPoint> keypointsL;
       cv::KeyPoint best_image_locationL;
       cv::Rect roi_offset;
@@ -91,7 +91,7 @@ private:
       float smoothed_disparity;
       bool update_prev_frame;
     };
-    Find_drone_result find_drone_result;
+
 
     void updateParams();
     cv::Mat segment_drone(cv::Mat diffL, cv::Point previous_imageL_location, cv::Point roi_size);
@@ -111,8 +111,6 @@ private:
     int stateSize = 6;
     int measSize = 4;
     int contrSize = 0;
-
-    cv::Mat cir8,bkg8,dif8;
 
     unsigned int type = CV_32F;
     cv::KalmanFilter kfL,kfR;
@@ -134,23 +132,26 @@ private:
     cv::Mat blurred_circle;
 
 
-    std::vector<cv::KeyPoint> drone_pathL;
-    std::vector<cv::KeyPoint> predicted_drone_pathL;
+
 
     bool foundL = false;
     float t_prev = 0;
 
 public:       
 
+    cv::Mat cir,bkg,dif,treshL,approx;
+    Find_drone_result find_drone_result;
+    std::vector<cv::KeyPoint> drone_pathL;
+    std::vector<cv::KeyPoint> predicted_drone_pathL;
+
     float drone_max_border_z = MAX_BORDER_Z_DEFAULT;
     float drone_max_border_y = MAX_BORDER_Y_DEFAULT;
 
-    int n_frames_tracking =0;
-    cv::Mat resFrame;
+    int n_frames_tracking =0;   
 
     void close (void);
     bool init(std::ofstream *logger, VisionData *visdat);
-    void track(float time, cv::Point3d setpoint, cv::Point3f setpoint_world);
+    void track(float time, cv::Point3f setpoint_world);
 
 
 

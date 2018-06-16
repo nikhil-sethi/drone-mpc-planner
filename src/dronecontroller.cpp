@@ -5,6 +5,8 @@
 #define TUNING
 #endif
 
+using namespace cv;
+
 const std::string paramsFile = "../controlParameters.dat";
 
 // Create an instance of Joystick

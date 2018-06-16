@@ -1,4 +1,6 @@
 #include "vizs.h"
+using namespace cv;
+using namespace std;
 
 cv::Scalar white(255,255,255);
 cv::Scalar black(0,0,0);
@@ -11,7 +13,7 @@ cv::Scalar linecolors[] = {green,blue,red,cv::Scalar(0,255,255),cv::Scalar(255,2
 cv::Scalar fore_color(0,0,0);
 cv::Scalar background_color(255,255,255);
 
-void Visualizer::addSample(void) {
+void Visualizer::addPlotSample(void) {
 
 
     g_lockData.lock();
@@ -245,6 +247,103 @@ cv::Mat Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Point setpoint, std:
 
     return frame;
 }
+
+void Visualizer::draw_segment_viz(){
+
+
+
+    std::vector<cv::Mat> ims;
+    ims.push_back(cir8);
+    ims.push_back(bkg8);
+    ims.push_back(dif8);
+    ims.push_back(dtrkr->approx);
+    ims.push_back(dtrkr->treshL);
+    showColumnImage(ims,"drone_roi",CV_8UC1);
+}
+
+void Visualizer::draw_target_text(cv::Mat resFrame) {
+    std::stringstream ss1,ss2,ss3;
+    ss1.precision(2);
+    ss2.precision(2);
+    ss3.precision(2);
+
+    ss1 << "[" << dtrkr->data.posX << ", " << dtrkr->data.posY << ", " << dtrkr->data.posZ << "] " ;
+    ss2 << "[" << dtrkr->data.posErrX << ", " << dtrkr->data.posErrY << ", " << dtrkr->data.posErrZ << "] " ;
+    ss3 << "Delta: " << sqrtf(dtrkr->data.posErrX*dtrkr->data.posErrX+dtrkr->data.posErrY*dtrkr->data.posErrY+dtrkr->data.posErrZ*dtrkr->data.posErrZ);
+
+    putText(resFrame,ss1.str() ,cv::Point(220,20),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame,ss2.str() ,cv::Point(220,40),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame,ss3.str() ,cv::Point(220,60),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+
+}
+
+cv::Mat Visualizer::draw_sub_tracking_drone_viz(cv::Mat frameL_small,cv::Size vizsizeL,cv::Point3d setpoint) {
+    cv::Mat frameL_small_drone;
+    if (dtrkr->predicted_drone_pathL.size()>0) {
+        drawKeypoints( frameL_small, dtrkr->predicted_drone_pathL, frameL_small_drone, Scalar(0,255,0), DrawMatchesFlags::DEFAULT );
+    } else {
+        cvtColor(frameL_small,frameL_small_drone,CV_GRAY2BGR);
+    }
+
+    cv::rectangle(frameL_small_drone,dtrkr->find_drone_result.roi_offset,cv::Scalar(180,100,240),4/IMSCALEF);
+
+    if (dtrkr->drone_pathL.size() > 0) {
+        drawKeypoints( frameL_small_drone, dtrkr->drone_pathL, frameL_small_drone, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+    }
+    cv::circle(frameL_small_drone,cv::Point(setpoint.x,setpoint.y),2,cv::Scalar(150,255,200));
+    cv::resize(frameL_small_drone,frameL_small_drone,vizsizeL);
+
+    return frameL_small_drone;
+}
+cv::Mat Visualizer::draw_sub_tracking_insect_viz(cv::Mat frameL_small,cv::Size vizsizeL,cv::Point3d setpoint) { // TODO: make a generic tracker class
+    cv::Mat frameL_small_drone;
+    if (itrkr->predicted_insect_pathL.size()>0) {
+        drawKeypoints( frameL_small, itrkr->predicted_insect_pathL, frameL_small_drone, Scalar(0,255,0), DrawMatchesFlags::DEFAULT );
+    } else {
+        cvtColor(frameL_small,frameL_small_drone,CV_GRAY2BGR);
+    }
+
+    cv::rectangle(frameL_small_drone,itrkr->find_insect_result.roi_offset,cv::Scalar(180,100,240),4/IMSCALEF);
+
+    if (itrkr->insect_pathL.size() > 0) {
+        drawKeypoints( frameL_small_drone, itrkr->insect_pathL, frameL_small_drone, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+    }
+    cv::circle(frameL_small_drone,cv::Point(setpoint.x,setpoint.y),2,cv::Scalar(150,255,200));
+    cv::resize(frameL_small_drone,frameL_small_drone,vizsizeL);
+
+    return frameL_small_drone;
+}
+
+
+void Visualizer::draw_tracker_viz(cv::Mat frameL,cv::Mat frameL_small, cv::Point3d setpoint) {
+
+    static int div = 0;
+    if (div++ % 4 == 1) {
+
+        cv::Mat resFrame;
+        cvtColor(frameL,resFrame,CV_GRAY2BGR);
+
+        cir8 = dtrkr->cir*255;
+        bkg8 = dtrkr->bkg*255;
+        dif8 = dtrkr->dif*10;
+        cir8.convertTo(cir8, CV_8UC1);
+        bkg8.convertTo(bkg8, CV_8UC1);
+        dif8.convertTo(dif8, CV_8UC1);
+
+        draw_segment_viz();
+
+        cv::Size vizsizeL(resFrame.cols/4,resFrame.rows/4);
+        cv::Mat frameL_small_drone = draw_sub_tracking_drone_viz(frameL_small,vizsizeL,setpoint);
+        cv::Mat frameL_small_insect = draw_sub_tracking_insect_viz(frameL_small,vizsizeL,setpoint);
+        frameL_small_drone.copyTo(resFrame(cv::Rect(0,0,frameL_small_drone.cols, frameL_small_drone.rows)));
+        frameL_small_insect.copyTo(resFrame(cv::Rect(resFrame.cols-frameL_small_drone.cols,0,frameL_small_drone.cols, frameL_small_drone.rows)));
+        draw_target_text(resFrame);
+
+
+        cv::imshow("tracking results", resFrame);
+    }
+}
+
 
 void Visualizer::workerThread(void) {
     std::cout << "Viz thread started!" << std::endl;

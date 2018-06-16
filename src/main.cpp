@@ -112,8 +112,15 @@ void process_video() {
         visdat.update(cam.frameL,cam.frameR,cam.frame_time-start_time);
 
         //WARNING: changing the order of the functions with logging must be match with the init functions!
-        itrkr.track(cam.frame_time-start_time, dnav.setpoint, dnav.setpoint_world);
-        dtrkr.track(cam.frame_time-start_time, dnav.setpoint, dnav.setpoint_world);
+        itrkr.track(cam.frame_time-start_time, dnav.setpoint_world);
+        dtrkr.track(cam.frame_time-start_time, dnav.setpoint_world);
+
+#ifdef HASSCREEN
+        if (breakpause_prev != 0) {
+            visualizer.addPlotSample();
+            visualizer.draw_tracker_viz(visdat.frameL,visdat.frameL_small,dnav.setpoint);
+        }
+#endif
 
         dnav.update();
         dctrl.control(&(dtrkr.data));
@@ -131,8 +138,7 @@ void process_video() {
             }
         }
 
-        //if (breakpause_prev != 0)
-            //visualizer.addSample();
+
 #endif
 
         int frameWritten = 0;
@@ -231,7 +237,7 @@ int init(int argc, char **argv) {
 
     logger << std::endl;
 
-    //visualizer.init(&dctrl,&dtrkr,&dnav);
+    visualizer.init(&dctrl,&dtrkr,&itrkr,&dnav);
 
     /*****init the video writer*****/
 #if VIDEORESULTS
@@ -278,7 +284,7 @@ void close() {
     itrkr.close();
     if (!fromfile)
         arduino.close();
-    //visualizer.close();
+    visualizer.close();
     visdat.close();
     cam.close();
 

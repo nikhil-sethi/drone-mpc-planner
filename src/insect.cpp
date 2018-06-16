@@ -9,9 +9,7 @@ using namespace cv;
 using namespace std;
 
 #ifdef HASSCREEN
-#define DRAWVIZS //slow!
 #define TUNING
-#define DRAWVIZS2
 #endif
 
 const string settingsFile = "../insecttrackersettings.dat";
@@ -126,7 +124,7 @@ bool InsectTracker::init(std::ofstream *logger, VisionData *visdat) {
     find_insect_result.disparity = 0;
 }
 
-bool InsectTracker::track(float time,cv::Point3d setpoint, cv::Point3f setpoint_world) {
+bool InsectTracker::track(float time, cv::Point3f setpoint_world) {
     updateParams();
 
     float dt= (time-t_prev);
@@ -189,10 +187,6 @@ bool InsectTracker::track(float time,cv::Point3d setpoint, cv::Point3f setpoint_
         }
     }
 
-#ifdef DRAWVIZS
-    drawviz(visdat->frameL,visdat->frameL_small,setpoint);
-#endif
-
     if (find_insect_result.update_prev_frame && ! breakpause) {
         frameL_prev_OK = visdat->frameL_prev.clone();
         frameL_s_prev_OK = visdat->frameL_s_prev.clone();
@@ -243,6 +237,8 @@ void InsectTracker::find_insect(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK) 
     previous_insect_location = data.insect_image_locationL;
 
     cv::Point roi_size;
+    if (settings.roi_min_size < 1)
+        settings.roi_min_size = 1;
     roi_size.x=settings.roi_min_size/IMSCALEF+nframes_since_update_prev*(settings.roi_grow_speed / 16 / IMSCALEF);
     roi_size.y=settings.roi_min_size/IMSCALEF+nframes_since_update_prev*(settings.roi_grow_speed / 16 / IMSCALEF);
     if (roi_size.x > visdat->frameL_small.cols)
@@ -251,7 +247,7 @@ void InsectTracker::find_insect(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK) 
         roi_size.y = visdat->frameL_small.rows;
 
     //attempt to detect changed blobs
-    cv::Mat treshfL = segment_insect(visdat->diffL,previous_insect_location,roi_size);
+    treshL = segment_insect(visdat->diffL,previous_insect_location,roi_size);
 #if CV_MAJOR_VERSION==3
     cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
 #else
@@ -260,7 +256,7 @@ void InsectTracker::find_insect(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK) 
 #endif
 
     std::vector<KeyPoint> keypointsL;
-    detector->detect( treshfL, keypointsL);
+    detector->detect( treshL, keypointsL);
 
 
     bool still_nothing = false;
@@ -268,8 +264,8 @@ void InsectTracker::find_insect(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK) 
     if (keypointsL.size() == 0) { // if not, use the last frame that was confirmed to be working before...
         cv::Mat diffL_OK;
         cv::absdiff( frameL_small ,frameL_s_prev_OK,diffL_OK);
-        treshfL = segment_insect(diffL_OK,previous_insect_location,roi_size);
-        detector->detect( treshfL, keypointsL);
+        treshL = segment_insect(diffL_OK,previous_insect_location,roi_size);
+        detector->detect( treshL, keypointsL);
         nframes_since_update_prev +=1;
         if (nframes_since_update_prev > settings.roi_max_grow)
             nframes_since_update_prev = settings.roi_max_grow;
@@ -289,29 +285,19 @@ void InsectTracker::find_insect(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK) 
     }
 
     find_insect_result.keypointsL = keypointsL;
-    find_insect_result.treshfL = treshfL;
+    find_insect_result.treshL = treshL;
     find_insect_result.update_prev_frame = nframes_since_update_prev == 0 || (nframes_since_update_prev >= settings.roi_max_grow  );
 }
 
 cv::Mat InsectTracker::segment_insect(cv::Mat diffL, cv::Point previous_imageL_location, cv::Point roi_size) {
 
-    cv::Mat approx = get_approx_insect_cutout_filtered(previous_imageL_location,diffL,roi_size);
+    approx = get_approx_insect_cutout_filtered(previous_imageL_location,diffL,roi_size);
 
-    cv::Mat treshfL;
-    inRange(approx, settings.iLowH1r, settings.iHighH1r, treshfL);
-    dilate( treshfL, treshfL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iClose1r+1, settings.iClose1r+1)));
-    erode(treshfL, treshfL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iOpen1r+1, settings.iOpen1r+1)));
+    inRange(approx, settings.iLowH1r, settings.iHighH1r, treshL);
+    dilate( treshL, treshL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iClose1r+1, settings.iClose1r+1)));
+    erode(treshL, treshL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iOpen1r+1, settings.iOpen1r+1)));
 
-#ifdef DRAWVIZS2
-    std::vector<cv::Mat> ims;
-    //ims.push_back(cir8);
-    ims.push_back(bkg8);
-    ims.push_back(dif8);
-    ims.push_back(approx);
-    ims.push_back(treshfL);
-    showColumnImage(ims,"insect_roi",CV_8UC1);
-#endif
-    return treshfL;
+    return treshL;
 }
 
 /* Takes the calibrated uncertainty map, and augments it with a highlight around p */
@@ -344,21 +330,11 @@ cv::Mat InsectTracker::get_approx_insect_cutout_filtered(cv::Point p, cv::Mat di
     cv::Rect roi(x1,y1,x2,y2);
     find_insect_result.roi_offset = roi;
 
-    cv::Mat bkg = visdat->uncertainty_map(roi);
-    cv::Mat dif;
+    bkg = visdat->uncertainty_map(roi);
     diffL(roi).convertTo(dif, CV_32F);
     cv::Mat res;
     res = dif.mul(bkg);
     res.convertTo(res, CV_8UC1);
-
-#ifdef DRAWVIZS2
-//    cir8 = cir*255;
-    bkg8 = bkg*255;
-    dif8 = dif*10;
-//    cir8.convertTo(cir8, CV_8UC1);
-    bkg8.convertTo(bkg8, CV_8UC1);
-    dif8.convertTo(dif8, CV_8UC1);
-#endif
 
     return res;
 }
@@ -496,10 +472,6 @@ int InsectTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv:
     cv::Mat diff_L_roi_16;
     diff_L_roi.convertTo(diff_L_roi_16, CV_16UC1);
 
-#ifdef DRAWVIZS
-    cv::Mat aR_viz,bR_viz,diff_R_roi_viz;
-#endif
-
     //shift over the image to find the best match, shift = disparity
     int disparity_cor = 0,disparity_err = 0;
     float maxcor = std::numeric_limits<float>::min();
@@ -530,41 +502,7 @@ int InsectTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv:
         if (err < minerr ) { //update min MSE
             disparity_err  = i;
             minerr = err;
-#ifdef DRAWVIZS
-            diff_R_roi_viz = diff_R_roi.clone();
-            aR_viz = aR;
-            bR_viz = bR;
-#endif
         } // for shift
-
-#ifdef DRAWVIZS
-        //        if (breakpause) {
-        //            cv::Mat aL_shift,bL_shift,diff_L_roi_shift,aR_shift,bR_shift,diff_R_roi_shift;
-        //            cv::resize(aL,aL_shift,cv::Size(aL.cols*4, aL.rows*4));
-        //            cv::resize(bL,bL_shift,cv::Size(aL.cols*4, aL.rows*4));
-        //            cv::resize(diff_L_roi,diff_L_roi_shift,cv::Size(aL.cols*4, aL.rows*4));
-        //            cv::resize(aR,aR_shift,cv::Size(aL.cols*4, aL.rows*4));
-        //            cv::resize(bR,bR_shift,cv::Size(aL.cols*4, aL.rows*4));
-        //            cv::resize(diff_R_roi,diff_R_roi_shift,cv::Size(aL.cols*4, aL.rows*4));
-        //            std::stringstream ss;
-        //            ss << i << "; cor: " << cor_16 << " err: " << err;
-        //            putText(aL_shift,ss.str() ,cv::Point(0,12),cv::FONT_HERSHEY_SIMPLEX,0.5,255);
-
-        //            std::vector<cv::Mat> ims;
-        //            ims.push_back(aL_shift);
-        //            ims.push_back(bL_shift);
-        //            ims.push_back(diff_L_roi_shift);
-        //            ims.push_back(aR_shift);
-        //            ims.push_back(bR_shift);
-        //            ims.push_back(diff_R_roi_shift);
-        //            showColumnImage(ims, "shift",CV_8UC1);
-
-        //            unsigned char key = cv::waitKey(0);
-        //            if (key == 'c')
-        //                breakpause = false;
-
-        //        }
-#endif
 
     }
     int disparity;
@@ -576,78 +514,9 @@ int InsectTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv:
     } else
         disparity = disparity_cor;
 
-#ifdef DRAWVIZS
-    if (tmp_max_disp > settings.min_disparity) {
-        //        std::vector<cv::Mat> ims;
-        //        cv::Mat aL_eq,bL_eq,diff_L_roi_eq,aR_viz_eq,bR_viz_eq,diff_R_roi_viz_eq;
-        //        equalizeHist(aL, aL_eq);
-        //        equalizeHist(bL, bL_eq);
-        //        equalizeHist(diff_L_roi, diff_L_roi_eq);
-
-        //        equalizeHist(aR_viz, aR_viz_eq);
-        //        equalizeHist(bR_viz, bR_viz_eq);
-        //        equalizeHist(diff_R_roi_viz, diff_R_roi_viz_eq);
-
-        //        ims.push_back(aL_eq);
-        //        ims.push_back(bL_eq);
-        //        ims.push_back(diff_L_roi_eq);
-        //        ims.push_back(aR_viz_eq);
-        //        ims.push_back(bR_viz_eq);
-        //        ims.push_back(diff_R_roi_viz_eq);
-        //        showColumnImage(ims, "col", CV_8UC1);
-    }
-#endif
-
     return disparity;
 }
 
-void InsectTracker::drawviz(cv::Mat frameL,cv::Mat framegrayL, cv::Point3d setpoint) {
-#ifdef DRAWVIZS
-
-    static int div = 0;
-    if (div++ % 4 == 1) {
-
-        cv::Mat resFrameL;
-
-        cv::resize(frameL,resFrameL,cv::Size(frameL.cols,frameL.rows));
-        //    equalizeHist( resFrameL, resFrameL);
-        cvtColor(resFrameL,resFrameL,CV_GRAY2BGR);
-
-
-        if (foundL) {
-            drawKeypoints( framegrayL, predicted_insect_pathL, framegrayL, Scalar(0,255,0), DrawMatchesFlags::DEFAULT );
-        } else {
-            cvtColor(framegrayL,framegrayL,CV_GRAY2BGR);
-        }
-
-        cv::Size vizsizeL(resFrameL.cols/4,resFrameL.rows/4);
-        cv::rectangle(framegrayL,find_insect_result.roi_offset,cv::Scalar(180,100,240),4/IMSCALEF);
-
-        if (insect_pathL.size() > 0) {
-            drawKeypoints( framegrayL, insect_pathL, framegrayL, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
-        }
-        cv::circle(framegrayL,cv::Point(setpoint.x,setpoint.y),2,cv::Scalar(150,255,200));
-        cv::resize(framegrayL,framegrayL,vizsizeL);
-        framegrayL.copyTo(resFrameL(cv::Rect(0,0,framegrayL.cols, framegrayL.rows)));
-
-        std::stringstream ss1,ss2,ss3;
-        ss1.precision(2);
-        ss2.precision(2);
-        ss3.precision(2);
-
-        ss1 << "[" << data.posX << ", " << data.posY << ", " << data.posZ << "] " ;
-        ss2 << "[" << data.posErrX << ", " << data.posErrY << ", " << data.posErrZ << "] " ;
-        ss3 << "Delta: " << sqrtf(data.posErrX*data.posErrX+data.posErrY*data.posErrY+data.posErrZ*data.posErrZ);
-
-        putText(resFrameL,ss1.str() ,cv::Point(220,20),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-        putText(resFrameL,ss2.str() ,cv::Point(220,40),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-        putText(resFrameL,ss3.str() ,cv::Point(220,60),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-
-        resFrame = resFrameL;
-        cv::imshow("insect results", resFrame);
-    }
-#endif
-}
 
 void InsectTracker::update_prediction_state(cv::Point3f p) {
     cv::Mat measL(measSize, 1, type);

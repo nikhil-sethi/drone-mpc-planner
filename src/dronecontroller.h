@@ -14,8 +14,6 @@
 
 #include "arduino.h"
 
-using namespace cv;
-
 /*
  * This class will control a micro drone via a Serial link
  *

@@ -5,25 +5,32 @@
 #include <fstream>
 #include <vector>
 #include <math.h>
+//#include <queue>
 #include <opencv2/highgui/highgui.hpp>
 #include "opencv2/features2d/features2d.hpp"
 #include "dronecontroller.h"
 #include "dronetracker.h"
+#include "insect.h"
 #include "dronenavigation.h"
 
 class Visualizer{
 
 private:
-    Mat plot(std::vector<Mat> data, std::string name);
-    void plot(std::vector<Mat> data, cv::Mat *frame, std::string name);
-    cv::Mat plotxy(cv::Mat datax, cv::Mat datay, Point setpoint, std::string name, Point minaxis, Point maxaxis);
+    cv::Mat plot(std::vector<cv::Mat> data, std::string name);
+    void plot(std::vector<cv::Mat> data, cv::Mat *frame, std::string name);
+    cv::Mat plotxy(cv::Mat datax, cv::Mat datay, cv::Point setpoint, std::string name, cv::Point minaxis, cv::Point maxaxis);
     cv::Mat plot_xyd(void);
     cv::Mat plot_all_control(void);
     cv::Mat plot_all_velocity(void);
     cv::Mat plot_all_position(void);
+    void draw_segment_viz();
+    void draw_target_text(cv::Mat resFrame);
+    cv::Mat draw_sub_tracking_drone_viz(cv::Mat resFrame, cv::Size vizsizeL, cv::Point3d setpoint);
+    cv::Mat draw_sub_tracking_insect_viz(cv::Mat resFrame, cv::Size vizsizeL, cv::Point3d setpoint);
 
     DroneController *dctrl;
     DroneTracker *dtrkr;
+    InsectTracker *itrkr;
     DroneNavigation *dnav;
 
     const int bufsize = 600;
@@ -41,6 +48,7 @@ private:
 
 
     cv::Mat resframe;
+    cv::Mat cir8,bkg8,dif8;
     bool paint;
 public:
 
@@ -78,6 +86,7 @@ public:
         sdisparity.pop_back();
         dt.pop_back();
         dt_target.pop_back();
+
     }
 
     cv::Mat throttle_joystick;
@@ -116,10 +125,12 @@ public:
 
     cv::Mat autotakeoff_velY_thresh;
 
-    void addSample(void);
-    void init(DroneController *dctrl, DroneTracker *dtrkr, DroneNavigation *dnav){
+    void addPlotSample(void);
+    void draw_tracker_viz(cv::Mat frameL, cv::Mat frameL_small, cv::Point3d setpoint);
+    void init(DroneController *dctrl, DroneTracker *dtrkr, InsectTracker *itrkr, DroneNavigation *dnav){
         this->dctrl = dctrl;
         this->dtrkr = dtrkr;
+        this->itrkr = itrkr;
         this->dnav = dnav;
         thread_viz = std::thread(&Visualizer::workerThread,this);
     }

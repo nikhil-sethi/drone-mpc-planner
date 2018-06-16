@@ -81,7 +81,7 @@ private:
     InsectTrackerSettings settings;
 
     struct Find_insect_result {
-      cv::Mat treshfL;
+      cv::Mat treshL;
       std::vector<cv::KeyPoint> keypointsL;
       cv::KeyPoint best_image_locationL;
       cv::Rect roi_offset;
@@ -89,7 +89,6 @@ private:
       float smoothed_disparity;
       bool update_prev_frame;
     };
-    Find_insect_result find_insect_result;
 
     void updateParams();
     cv::Mat segment_insect(cv::Mat diffL, cv::Point previous_imageL_location, cv::Point roi_size);
@@ -99,8 +98,7 @@ private:
     int stereo_match(cv::KeyPoint closestL, cv::Mat frameL_prev, cv::Mat prevFrameR_big, cv::Mat frameL, cv::Mat frameR, int prevDisparity);
     void update_prediction_state(cv::Point3f p);
     void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, int n_frames_lost, cv::KeyPoint match, int disparity, cv::Point3f setpoint_world);
-    void reset_tracker_ouput(int n_frames_lost);
-    void drawviz(cv::Mat frameL, cv::Mat framegrayL, cv::Point3d setpoint);
+    void reset_tracker_ouput(int n_frames_lost);    
     void find_insect(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK);
 
     cv::Mat show_uncertainty_map_in_image(cv::Point p, cv::Mat resframeL);
@@ -131,21 +129,22 @@ private:
 
     cv::Mat blurred_circle;
 
-
-    std::vector<cv::KeyPoint> insect_pathL;
-    std::vector<cv::KeyPoint> predicted_insect_pathL;
-
     bool foundL = false;
     float t_prev = 0;
 
 public:
 
-    int n_frames_tracking =0;
-    cv::Mat resFrame;
+    cv::Mat cir,bkg,dif,treshL,approx;
+    Find_insect_result find_insect_result;
+    std::vector<cv::KeyPoint> insect_pathL;
+    std::vector<cv::KeyPoint> predicted_insect_pathL;
+
+
+    int n_frames_tracking =0;    
 
     void close (void);
     bool init(std::ofstream *logger, VisionData *visdat);
-    bool track(float time, cv::Point3d setpoint, cv::Point3f setpoint_world);
+    bool track(float time, cv::Point3f setpoint_world);
 
     trackData data;
     Smoother smoother_posX, smoother_posY, smoother_posZ;
