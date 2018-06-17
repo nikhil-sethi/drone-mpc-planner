@@ -281,16 +281,16 @@ void Visualizer::draw_target_text(cv::Mat resFrame) {
 
 cv::Mat Visualizer::draw_sub_tracking_drone_viz(cv::Mat frameL_small,cv::Size vizsizeL,cv::Point3d setpoint) {
     cv::Mat frameL_small_drone;
-    if (dtrkr->predicted_drone_pathL.size()>0) {
-        drawKeypoints( frameL_small, dtrkr->predicted_drone_pathL, frameL_small_drone, Scalar(0,255,0), DrawMatchesFlags::DEFAULT );
+    if (dtrkr->predicted_item_pathL.size()>0) {
+        drawKeypoints( frameL_small, dtrkr->predicted_item_pathL, frameL_small_drone, Scalar(0,255,0), DrawMatchesFlags::DEFAULT );
     } else {
         cvtColor(frameL_small,frameL_small_drone,CV_GRAY2BGR);
     }
 
-    cv::rectangle(frameL_small_drone,dtrkr->find_drone_result.roi_offset,cv::Scalar(180,100,240),4/IMSCALEF);
+    cv::rectangle(frameL_small_drone,dtrkr->find_item_result.roi_offset,cv::Scalar(180,100,240),4/IMSCALEF);
 
-    if (dtrkr->drone_pathL.size() > 0) {
-        drawKeypoints( frameL_small_drone, dtrkr->drone_pathL, frameL_small_drone, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+    if (dtrkr->item_pathL.size() > 0) {
+        drawKeypoints( frameL_small_drone, dtrkr->item_pathL, frameL_small_drone, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
     }
     cv::circle(frameL_small_drone,cv::Point(setpoint.x,setpoint.y),2,cv::Scalar(150,255,200));
     cv::resize(frameL_small_drone,frameL_small_drone,vizsizeL);
@@ -299,16 +299,16 @@ cv::Mat Visualizer::draw_sub_tracking_drone_viz(cv::Mat frameL_small,cv::Size vi
 }
 cv::Mat Visualizer::draw_sub_tracking_insect_viz(cv::Mat frameL_small,cv::Size vizsizeL,cv::Point3d setpoint) { // TODO: make a generic tracker class
     cv::Mat frameL_small_drone;
-    if (itrkr->predicted_insect_pathL.size()>0) {
-        drawKeypoints( frameL_small, itrkr->predicted_insect_pathL, frameL_small_drone, Scalar(0,255,0), DrawMatchesFlags::DEFAULT );
+    if (itrkr->predicted_item_pathL.size()>0) {
+        drawKeypoints( frameL_small, itrkr->predicted_item_pathL, frameL_small_drone, Scalar(0,255,0), DrawMatchesFlags::DEFAULT );
     } else {
         cvtColor(frameL_small,frameL_small_drone,CV_GRAY2BGR);
     }
 
-    cv::rectangle(frameL_small_drone,itrkr->find_insect_result.roi_offset,cv::Scalar(180,100,240),4/IMSCALEF);
+    cv::rectangle(frameL_small_drone,itrkr->find_item_result.roi_offset,cv::Scalar(180,100,240),4/IMSCALEF);
 
-    if (itrkr->insect_pathL.size() > 0) {
-        drawKeypoints( frameL_small_drone, itrkr->insect_pathL, frameL_small_drone, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+    if (itrkr->item_pathL.size() > 0) {
+        drawKeypoints( frameL_small_drone, itrkr->item_pathL, frameL_small_drone, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
     }
     cv::circle(frameL_small_drone,cv::Point(setpoint.x,setpoint.y),2,cv::Scalar(150,255,200));
     cv::resize(frameL_small_drone,frameL_small_drone,vizsizeL);

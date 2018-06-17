@@ -1,5 +1,5 @@
-#ifndef INSECTTRACKER_H
-#define INSECTTRACKER_H
+#ifndef ITEMTRACKER_H
+#define ITEMTRACKER_H
 #include "defines.h"
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/core/core.hpp>
@@ -18,15 +18,15 @@
 
 
 /*
- * This class will track insects
+ * This class will track items
  *
  */
-class InsectTracker {
+class ItemTracker {
 
 
 private:
     cv::SimpleBlobDetector::Params params;
-    struct InsectTrackerSettings{
+    struct ItemTrackerSettings{
 
         //thresh params
         int iLowH1r = 10;
@@ -78,9 +78,8 @@ private:
         }
 
     };
-    InsectTrackerSettings settings;
-
-    struct Find_insect_result {
+    std::string settingsFile;
+    struct Find_item_result {
       cv::Mat treshL;
       std::vector<cv::KeyPoint> keypointsL;
       cv::KeyPoint best_image_locationL;
@@ -91,15 +90,15 @@ private:
     };
 
     void updateParams();
-    cv::Mat segment_insect(cv::Mat diffL, cv::Point previous_imageL_location, cv::Point roi_size);
-    cv::Point3f predict_insect(float dt);
-    cv::Mat get_approx_insect_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size);
-    int match_closest_to_prediciton(cv::Point3f predicted_insect_locationL, std::vector<cv::KeyPoint> keypointsL);
+    cv::Mat segment_item(cv::Mat diffL, cv::Point previous_imageL_location, cv::Point roi_size);
+    cv::Point3f predict_item(float dt);
+    cv::Mat get_approx_item_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size);
+    int match_closest_to_prediciton(cv::Point3f predicted_item_locationL, std::vector<cv::KeyPoint> keypointsL);
     int stereo_match(cv::KeyPoint closestL, cv::Mat frameL_prev, cv::Mat prevFrameR_big, cv::Mat frameL, cv::Mat frameR, int prevDisparity);
     void update_prediction_state(cv::Point3f p);
     void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, int n_frames_lost, cv::KeyPoint match, int disparity, cv::Point3f setpoint_world);
-    void reset_tracker_ouput(int n_frames_lost);    
-    void find_insect(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK);
+    void reset_tracker_ouput(int n_frames_lost);
+    void find_item(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK);
     std::vector<cv::KeyPoint> remove_ignores(std::vector<cv::KeyPoint> keypoints, cv::Point2f ignore);
     cv::Mat show_uncertainty_map_in_image(cv::Point p, cv::Mat resframeL);
 
@@ -108,43 +107,45 @@ private:
     int measSize = 4;
     int contrSize = 0;
 
-    cv::Mat cir8,bkg8,dif8;
-
     unsigned int type = CV_32F;
     cv::KalmanFilter kfL,kfR;
     cv::Mat stateL,stateR;
     cv::Mat measL,measR;
 
-
-    VisionData * visdat;
-
-    std::ofstream *_logger;
-
     bool firstFrame;
 
 
-    cv::Mat frameL_s_prev_OK;
-    cv::Mat frameL_prev_OK;
-    cv::Mat frameR_prev_OK;
+
 
     cv::Mat blurred_circle;
 
     bool foundL = false;
     float t_prev = 0;
+protected:
+    std::ofstream *_logger;
+    cv::Mat frameL_s_prev_OK;
+    cv::Mat frameL_prev_OK;
+    cv::Mat frameR_prev_OK;
+    VisionData * visdat;
+    int nframes_since_update_prev = 0;
+    ItemTrackerSettings settings;
 
+    void reset_tracker_ouput();
+    virtual cv::Mat get_probability_cloud(cv::Point size);
+    virtual void init_settings() = 0;
 public:
 
     cv::Mat cir,bkg,dif,treshL,approx;
-    Find_insect_result find_insect_result;
-    std::vector<cv::KeyPoint> insect_pathL;
-    std::vector<cv::KeyPoint> predicted_insect_pathL;
+    Find_item_result find_item_result;
+    std::vector<cv::KeyPoint> item_pathL;
+    std::vector<cv::KeyPoint> predicted_item_pathL;
 
 
-    int n_frames_tracking =0;    
+    int n_frames_tracking =0;
 
     void close (void);
-    bool init(std::ofstream *logger, VisionData *visdat);
-    bool track(float time, cv::Point3f setpoint_world, cv::Point2f ignore);
+    bool init(std::ofstream *logger, VisionData *visdat, std::string name);
+    virtual bool track(float time, cv::Point3f setpoint_world, cv::Point2f ignore, float drone_max_border_y, float drone_max_border_z);
 
     trackData data;
     Smoother smoother_posX, smoother_posY, smoother_posZ;
@@ -161,4 +162,4 @@ public:
 
 
 
-#endif //INSECTTRACKER_H
+#endif //ITEMTRACKER_H

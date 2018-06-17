@@ -2,7 +2,7 @@
 #include <opencv2/highgui/highgui.hpp>
 
 #ifdef HASSCREEN
-#define TUNING
+//#define TUNING
 #endif
 
 using namespace cv;
@@ -30,9 +30,9 @@ void VisionData::init(cv::Mat Qf, cv::Mat frameL,cv::Mat frameR){
 
 #ifdef TUNING
     namedWindow("Tracking", WINDOW_NORMAL);
-    createTrackbar("Uncertain mult", "Tracking", &settings.uncertainty_multiplier, 255);
-    createTrackbar("Uncertain pow", "Tracking", &settings.uncertainty_power, 255);
-    createTrackbar("Uncertain back", "Tracking", &settings.uncertainty_background, 255);
+    createTrackbar("Uncertain mult", "Background", &settings.uncertainty_multiplier, 255);
+    createTrackbar("Uncertain pow", "Background", &settings.uncertainty_power, 255);
+    createTrackbar("Uncertain back", "Background", &settings.uncertainty_background, 255);
 #endif
 
 }

@@ -1,5 +1,5 @@
 #include <iostream>
-#include "insect.h"
+#include "itemtracker.h"
 #include <opencv2/features2d/features2d.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
@@ -12,31 +12,35 @@ using namespace std;
 #define TUNING
 #endif
 
-const string settingsFile = "../insecttrackersettings.dat";
-bool InsectTracker::init(std::ofstream *logger, VisionData *visdat) {
+
+bool ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string name) {
     _logger = logger;
     this->visdat = visdat;
+    this->settingsFile = "../" + name + "settings.dat";
+    std::string window_name = name + "_trkr";
 
     if (checkFileExist(settingsFile)) {
         std::ifstream is(settingsFile, std::ios::binary);
         cereal::BinaryInputArchive archive( is );
         archive(settings);
+    } else {
+        init_settings();
     }
 
 #ifdef TUNING
-    namedWindow("InsectTracking", WINDOW_NORMAL);
-    createTrackbar("LowH1", "InsectTracking", &settings.iLowH1r, 255);
-    createTrackbar("HighH1", "InsectTracking", &settings.iHighH1r, 255);
-    createTrackbar("filterByArea", "InsectTracking", &settings.filterByArea, 1);
-    createTrackbar("minArea", "InsectTracking", &settings.minArea, 10000);
-    createTrackbar("maxArea", "InsectTracking", &settings.maxArea, 10000);
-    createTrackbar("Opening1", "InsectTracking", &settings.iOpen1r, 30);
-    createTrackbar("Closing1", "InsectTracking", &settings.iClose1r, 30);
-    createTrackbar("Min disparity", "InsectTracking", &settings.min_disparity, 255);
-    createTrackbar("Max disparity", "InsectTracking", &settings.max_disparity, 255);
-    createTrackbar("roi_min_size", "InsectTracking", &settings.roi_min_size, 2000);
-    createTrackbar("roi_max_grow", "InsectTracking", &settings.roi_max_grow, 500);
-    createTrackbar("roi_grow_speed", "InsectTracking", &settings.roi_grow_speed, 256);
+    namedWindow(window_name, WINDOW_NORMAL);
+    createTrackbar("LowH1", window_name, &settings.iLowH1r, 255);
+    createTrackbar("HighH1", window_name, &settings.iHighH1r, 255);
+    createTrackbar("filterByArea", window_name, &settings.filterByArea, 1);
+    createTrackbar("minArea", window_name, &settings.minArea, 10000);
+    createTrackbar("maxArea", window_name, &settings.maxArea, 10000);
+    createTrackbar("Opening1", window_name, &settings.iOpen1r, 30);
+    createTrackbar("Closing1", window_name, &settings.iClose1r, 30);
+    createTrackbar("Min disparity", window_name, &settings.min_disparity, 255);
+    createTrackbar("Max disparity", window_name, &settings.max_disparity, 255);
+    createTrackbar("roi_min_size", window_name, &settings.roi_min_size, 2000);
+    createTrackbar("roi_max_grow", window_name, &settings.roi_max_grow, 500);
+    createTrackbar("roi_grow_speed", window_name, &settings.roi_grow_speed, 256);
 #endif
 
     kfL = cv::KalmanFilter(stateSize, measSize, contrSize, type);
@@ -119,12 +123,12 @@ bool InsectTracker::init(std::ofstream *logger, VisionData *visdat) {
     smoother_velY.init(smooth_width_vel);
     smoother_velZ.init(smooth_width_vel);
 
-    data.insect_image_locationL = cv::Point(848/2/IMSCALEF,480/2/IMSCALEF);
-    find_insect_result.smoothed_disparity = 0;
-    find_insect_result.disparity = 0;
+    data.image_locationL = cv::Point(848/2/IMSCALEF,480/2/IMSCALEF);
+    find_item_result.smoothed_disparity = 0;
+    find_item_result.disparity = 0;
 }
 
-std::vector<KeyPoint> InsectTracker::remove_ignores(std::vector<KeyPoint> keypoints, cv::Point2f ignore) {
+std::vector<KeyPoint> ItemTracker::remove_ignores(std::vector<KeyPoint> keypoints, cv::Point2f ignore) {
     std::vector<KeyPoint> tmp = keypoints;
     for (int i = 0 ; i< tmp.size();i++){
         float dis = (tmp.at(i).pt.x - ignore.x)*(tmp.at(i).pt.x - ignore.x) +(tmp.at(i).pt.y - ignore.y)*(tmp.at(i).pt.y - ignore.y);
@@ -134,11 +138,11 @@ std::vector<KeyPoint> InsectTracker::remove_ignores(std::vector<KeyPoint> keypoi
     return keypoints;
 }
 
-bool InsectTracker::track(float time, cv::Point3f setpoint_world, cv::Point2f ignore) {
+bool ItemTracker::track(float time, cv::Point3f setpoint_world, cv::Point2f ignore, float drone_max_border_y,float drone_max_border_z) {
     updateParams();
 
     float dt= (time-t_prev);
-    cv::Point3f predicted_insect_locationL = predict_insect(dt);
+    cv::Point3f predicted_item_locationL = predict_item(dt);
 
     if (!firstFrame) {
         firstFrame = true;
@@ -147,36 +151,36 @@ bool InsectTracker::track(float time, cv::Point3f setpoint_world, cv::Point2f ig
         frameR_prev_OK = visdat->frameR.clone();
     }
 
-    find_insect(visdat->frameL_small, frameL_s_prev_OK);
+    find_item(visdat->frameL_small, frameL_s_prev_OK);
 
-    data.valid = false; // reset the flag, set to true when insect is detected properly
+    data.valid = false; // reset the flag, set to true when item is detected properly
 
     static int n_frames_lost =100;
-    if (find_insect_result.keypointsL.size() > 0) { //if not lost
+    if (find_item_result.keypointsL.size() > 0) { //if not lost
 
-        cv::Point3f previous_insect_location(find_insect_result.best_image_locationL .pt.x,find_insect_result.best_image_locationL .pt.y,0);
-        std::vector<cv::KeyPoint> keypoint_candidates = remove_ignores(find_insect_result.keypointsL,ignore);
+        cv::Point3f previous_item_location(find_item_result.best_image_locationL .pt.x,find_item_result.best_image_locationL .pt.y,0);
+        std::vector<cv::KeyPoint> keypoint_candidates = remove_ignores(find_item_result.keypointsL,ignore);
 
         Point3f output;
         int disparity;
         cv::KeyPoint match;
         while (keypoint_candidates.size() > 0) {
-            int match_id = match_closest_to_prediciton(previous_insect_location,find_insect_result.keypointsL);
-            match = find_insect_result.keypointsL.at(match_id);
+            int match_id = match_closest_to_prediciton(previous_item_location,find_item_result.keypointsL);
+            match = find_item_result.keypointsL.at(match_id);
 
-            disparity = stereo_match(match,frameL_prev_OK,frameR_prev_OK,visdat->frameL,visdat->frameR,find_insect_result.smoothed_disparity);
+            disparity = stereo_match(match,frameL_prev_OK,frameR_prev_OK,visdat->frameL,visdat->frameR,find_item_result.smoothed_disparity);
 
-            //calculate everything for the insectcontroller:
+            //calculate everything for the itemcontroller:
             std::vector<Point3f> camera_coordinates, world_coordinates;
             camera_coordinates.push_back(Point3f(match.pt.x*IMSCALEF,match.pt.y*IMSCALEF,-disparity));
-            //camera_coordinates.push_back(Point3f(predicted_insect_locationL.x*IMSCALEF,predicted_insect_locationL.y*IMSCALEF,-predicted_insect_locationL.z));
+            //camera_coordinates.push_back(Point3f(predicted_item_locationL.x*IMSCALEF,predicted_item_locationL.y*IMSCALEF,-predicted_item_locationL.z));
             cv::perspectiveTransform(camera_coordinates,world_coordinates,visdat->Qf);
             output = world_coordinates[0];
             float theta = CAMERA_ANGLE / (360/6.28318530718);
             output.y = output.y * cosf(theta) + output.z * sinf(theta);
             output.z = -output.y * sinf(theta) + output.z * cosf(theta);
 
-            if ((output.z < -MAX_BORDER_Z_DEFAULT) || (output.y < -MAX_BORDER_Y_DEFAULT) || disparity < settings.min_disparity || disparity > settings.max_disparity) { //TODO check min/max disparity > or =>!!!
+            if ((output.z < -drone_max_border_z) || (output.y < -drone_max_border_y) || disparity < settings.min_disparity || disparity > settings.max_disparity) { //TODO check min/max disparity > or =>!!!
                 keypoint_candidates.erase(keypoint_candidates.begin() + match_id);
             } else {
                 break;
@@ -186,19 +190,19 @@ bool InsectTracker::track(float time, cv::Point3f setpoint_world, cv::Point2f ig
             n_frames_lost++;
             if( n_frames_lost >= 10 )
                 foundL = false;
-            update_prediction_state(cv::Point3f(predicted_insect_locationL.x,predicted_insect_locationL.y,predicted_insect_locationL.z));
+            update_prediction_state(cv::Point3f(predicted_item_locationL.x,predicted_item_locationL.y,predicted_item_locationL.z));
             reset_tracker_ouput(n_frames_lost);
         } else {
             //Point3f predicted_output = world_coordinates[1];
             update_prediction_state(cv::Point3f(match.pt.x,match.pt.y,disparity));
             update_tracker_ouput(output,dt,n_frames_lost,match,disparity,setpoint_world);
             n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
-            t_prev = time; // update dt only if insect was detected
+            t_prev = time; // update dt only if item was detected
             n_frames_tracking++;
         }
     }
 
-    if (find_insect_result.update_prev_frame && ! breakpause) {
+    if (find_item_result.update_prev_frame && ! breakpause) {
         frameL_prev_OK = visdat->frameL_prev.clone();
         frameL_s_prev_OK = visdat->frameL_s_prev.clone();
         frameR_prev_OK = visdat->frameR_prev.clone();
@@ -207,7 +211,7 @@ bool InsectTracker::track(float time, cv::Point3f setpoint_world, cv::Point2f ig
     return false;
 }
 
-void InsectTracker::updateParams(){
+void ItemTracker::updateParams(){
 #ifdef TUNING
     // Change thresholds
     params.minThreshold = settings.minThreshold+1;
@@ -240,12 +244,10 @@ void InsectTracker::updateParams(){
 #endif
 }
 
-void InsectTracker::find_insect(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK) {
-    static int nframes_since_update_prev = 0;
-    cv::Point previous_insect_location;
+void ItemTracker::find_item(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK) {
+    cv::Point previous_item_location;
 
-
-    previous_insect_location = data.insect_image_locationL;
+    previous_item_location = data.image_locationL;
 
     cv::Point roi_size;
     if (settings.roi_min_size < 1)
@@ -258,7 +260,7 @@ void InsectTracker::find_insect(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK) 
         roi_size.y = visdat->frameL_small.rows;
 
     //attempt to detect changed blobs
-    treshL = segment_insect(visdat->diffL,previous_insect_location,roi_size);
+    treshL = segment_item(visdat->diffL,previous_item_location,roi_size);
 #if CV_MAJOR_VERSION==3
     cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
 #else
@@ -275,7 +277,7 @@ void InsectTracker::find_insect(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK) 
     if (keypointsL.size() == 0) { // if not, use the last frame that was confirmed to be working before...
         cv::Mat diffL_OK;
         cv::absdiff( frameL_small ,frameL_s_prev_OK,diffL_OK);
-        treshL = segment_insect(diffL_OK,previous_insect_location,roi_size);
+        treshL = segment_item(diffL_OK,previous_item_location,roi_size);
         detector->detect( treshL, keypointsL);
         nframes_since_update_prev +=1;
         if (nframes_since_update_prev > settings.roi_max_grow)
@@ -291,18 +293,18 @@ void InsectTracker::find_insect(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK) 
 
 
     for (int i = 0 ; i < keypointsL.size();i++) {
-        keypointsL.at(i).pt.x += find_insect_result.roi_offset.x;
-        keypointsL.at(i).pt.y += find_insect_result.roi_offset.y;
+        keypointsL.at(i).pt.x += find_item_result.roi_offset.x;
+        keypointsL.at(i).pt.y += find_item_result.roi_offset.y;
     }
 
-    find_insect_result.keypointsL = keypointsL;
-    find_insect_result.treshL = treshL;
-    find_insect_result.update_prev_frame = nframes_since_update_prev == 0 || (nframes_since_update_prev >= settings.roi_max_grow  );
+    find_item_result.keypointsL = keypointsL;
+    find_item_result.treshL = treshL;
+    find_item_result.update_prev_frame = nframes_since_update_prev == 0 || (nframes_since_update_prev >= settings.roi_max_grow  );
 }
 
-cv::Mat InsectTracker::segment_insect(cv::Mat diffL, cv::Point previous_imageL_location, cv::Point roi_size) {
+cv::Mat ItemTracker::segment_item(cv::Mat diffL, cv::Point previous_imageL_location, cv::Point roi_size) {
 
-    approx = get_approx_insect_cutout_filtered(previous_imageL_location,diffL,roi_size);
+    approx = get_approx_item_cutout_filtered(previous_imageL_location,diffL,roi_size);
 
     inRange(approx, settings.iLowH1r, settings.iHighH1r, treshL);
     dilate( treshL, treshL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iClose1r+1, settings.iClose1r+1)));
@@ -311,8 +313,13 @@ cv::Mat InsectTracker::segment_insect(cv::Mat diffL, cv::Point previous_imageL_l
     return treshL;
 }
 
+
+cv::Mat ItemTracker::get_probability_cloud(cv::Point size) {
+    return cv::Mat::ones(size.y,size.x,CV_32F); // dummy implementation. TODO: create proper probablity estimate
+}
+
 /* Takes the calibrated uncertainty map, and augments it with a highlight around p */
-cv::Mat InsectTracker::get_approx_insect_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size) {
+cv::Mat ItemTracker::get_approx_item_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size) {
 
     //calc roi:
     cv::Rect roi_circle(0,0,size.x,size.y);
@@ -330,8 +337,8 @@ cv::Mat InsectTracker::get_approx_insect_cutout_filtered(cv::Point p, cv::Mat di
     } else if (y1 + size.y >= diffL.rows)
         roi_circle.height = roi_circle.height - abs(y1 + size.y - diffL.rows);
 
-    //cv::Mat blurred_circle = createBlurryCircle(size);
-    //cv::Mat cir = blurred_circle(roi_circle);
+    cv::Mat blurred_circle = get_probability_cloud(size);
+    cv::Mat cir = blurred_circle(roi_circle);
 
     x1 = p.x-size.x/2+roi_circle.x;
     int x2 = roi_circle.width;
@@ -339,19 +346,19 @@ cv::Mat InsectTracker::get_approx_insect_cutout_filtered(cv::Point p, cv::Mat di
     int y2 = roi_circle.height;
 
     cv::Rect roi(x1,y1,x2,y2);
-    find_insect_result.roi_offset = roi;
+    find_item_result.roi_offset = roi;
 
     bkg = visdat->uncertainty_map(roi);
     diffL(roi).convertTo(dif, CV_32F);
     cv::Mat res;
-    res = dif.mul(bkg);
+    res = cir.mul(dif).mul(bkg);
     res.convertTo(res, CV_8UC1);
 
     return res;
 }
 
 /* Takes the calibrated uncertainty map, and augments it with a highlight around p */
-cv::Mat InsectTracker::show_uncertainty_map_in_image(cv::Point pd4, cv::Mat res) {
+cv::Mat ItemTracker::show_uncertainty_map_in_image(cv::Point pd4, cv::Mat res) {
 
     cv::Point p;
     p.x = pd4.x *IMSCALEF;
@@ -395,8 +402,8 @@ cv::Mat InsectTracker::show_uncertainty_map_in_image(cv::Point pd4, cv::Mat res)
     return res;
 }
 
-cv::Point3f InsectTracker::predict_insect(float dt) {
-    cv::Point3f predicted_insect_locationL;
+cv::Point3f ItemTracker::predict_item(float dt) {
+    cv::Point3f predicted_item_locationL;
     if (foundL) {
         kfL.transitionMatrix.at<float>(2) = dt;
         kfL.transitionMatrix.at<float>(9) = dt;
@@ -407,42 +414,42 @@ cv::Point3f InsectTracker::predict_insect(float dt) {
         predRect.x = stateL.at<float>(0) - predRect.width / 2;
         predRect.y = stateL.at<float>(1) - predRect.height / 2;
 
-        predicted_insect_locationL.x = stateL.at<float>(0);
-        predicted_insect_locationL.y = stateL.at<float>(1);
-        predicted_insect_locationL.z = stateL.at<float>(2);
+        predicted_item_locationL.x = stateL.at<float>(0);
+        predicted_item_locationL.y = stateL.at<float>(1);
+        predicted_item_locationL.z = stateL.at<float>(2);
         cv::KeyPoint t;
         cv::Point beun;
-        beun.x = predicted_insect_locationL.x;
-        beun.y = predicted_insect_locationL.y;
+        beun.x = predicted_item_locationL.x;
+        beun.y = predicted_item_locationL.y;
         t.pt = beun;
         t.size = 3;
-        predicted_insect_pathL.push_back(t);
-        if (insect_pathL.size() > 30)
-            insect_pathL.erase(insect_pathL.begin());
-        if (predicted_insect_pathL.size() > 30)
-            predicted_insect_pathL.erase(predicted_insect_pathL.begin());
-        // cout << "PredictionL: " << predicted_insect_locationL << std::endl;
+        predicted_item_pathL.push_back(t);
+        if (item_pathL.size() > 30)
+            item_pathL.erase(item_pathL.begin());
+        if (predicted_item_pathL.size() > 30)
+            predicted_item_pathL.erase(predicted_item_pathL.begin());
+        // cout << "PredictionL: " << predicted_item_locationL << std::endl;
     }
-    return predicted_insect_locationL;
+    return predicted_item_locationL;
 }
 
-int InsectTracker::match_closest_to_prediciton(cv::Point3f predicted_insect_locationL, std::vector<KeyPoint> keypointsL) {
+int ItemTracker::match_closest_to_prediciton(cv::Point3f predicted_item_locationL, std::vector<KeyPoint> keypointsL) {
     int closestL;
-    if (keypointsL.size() == 1 && insect_pathL.size() == 0) {
+    if (keypointsL.size() == 1 && item_pathL.size() == 0) {
         closestL = 0;
-    } else if (insect_pathL.size() > 0) {
+    } else if (item_pathL.size() > 0) {
         //find closest keypoint to new predicted location
         int mind = 999999999;
         for (int i = 0 ; i < keypointsL.size();i++) {
             cv::KeyPoint k =keypointsL.at(i);
-            int d = (predicted_insect_locationL.x-k.pt.x) * (predicted_insect_locationL.x-k.pt.x) + (predicted_insect_locationL.y-k.pt.y)*(predicted_insect_locationL.y-k.pt.y);
+            int d = (predicted_item_locationL.x-k.pt.x) * (predicted_item_locationL.x-k.pt.x) + (predicted_item_locationL.y-k.pt.y)*(predicted_item_locationL.y-k.pt.y);
             if (d < mind ) {
                 mind = d;
                 closestL = i;
             }
         }
     } else {
-        //the case that we have multiple insect candidates, no good way to figure out which one is the insect
+        //the case that we have multiple item candidates, no good way to figure out which one is the item
         //guess we'll just take the first one...
         closestL = 0;
     }
@@ -450,7 +457,7 @@ int InsectTracker::match_closest_to_prediciton(cv::Point3f predicted_insect_loca
     return closestL;
 }
 
-int InsectTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::Mat prevFrameR_big, cv::Mat frameL,cv::Mat frameR,int prevDisparity){
+int ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::Mat prevFrameR_big, cv::Mat frameL,cv::Mat frameR,int prevDisparity){
 
     //get retangle around blob / changed pixels
     float rectsize = closestL.size+1;
@@ -529,7 +536,7 @@ int InsectTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv:
 }
 
 
-void InsectTracker::update_prediction_state(cv::Point3f p) {
+void ItemTracker::update_prediction_state(cv::Point3f p) {
     cv::Mat measL(measSize, 1, type);
     measL.at<float>(0) = p.x;
     measL.at<float>(1) = p.y;
@@ -559,17 +566,17 @@ void InsectTracker::update_prediction_state(cv::Point3f p) {
         kfL.correct(measL);
 }
 
-void InsectTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  int n_frames_lost, cv::KeyPoint match, int disparity,cv::Point3f setpoint_world) {
+void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  int n_frames_lost, cv::KeyPoint match, int disparity,cv::Point3f setpoint_world) {
 
-    find_insect_result.best_image_locationL = match;
-    find_insect_result.disparity = disparity;
-    data.insect_image_locationL = find_insect_result.best_image_locationL.pt;
-    insect_pathL.push_back(find_insect_result.best_image_locationL);
+    find_item_result.best_image_locationL = match;
+    find_item_result.disparity = disparity;
+    data.image_locationL = find_item_result.best_image_locationL.pt;
+    item_pathL.push_back(find_item_result.best_image_locationL);
 
     data.posX = measured_world_coordinates.x;
     data.posY = measured_world_coordinates.y;
     data.posZ = measured_world_coordinates.z;
-    data.disparity = find_insect_result.disparity; // tmp, should not be in data
+    data.disparity = find_item_result.disparity; // tmp, should not be in data
 
     static float prevX,prevY,prevZ =0;
     static int detected_after_take_off = 0;
@@ -591,12 +598,12 @@ void InsectTracker::update_tracker_ouput(Point3f measured_world_coordinates,floa
     sdisparity = disp_smoothed.addSample(data.disparity);
     data.sdisparity = sdisparity; // tmp, should not be in data
 
-    if (fabs((float)abs(find_insect_result.disparity) - fabs(find_insect_result.smoothed_disparity)) > 3) {
+    if (fabs((float)abs(find_item_result.disparity) - fabs(find_item_result.smoothed_disparity)) > 3) {
         //do better matching?
-        //std::cout << find_insect_result.disparity << "-> BAM <-" << find_insect_result.smoothed_disparity << std::endl;
-        //find_insect_result.update_prev_frames = false;
+        //std::cout << find_item_result.disparity << "-> BAM <-" << find_item_result.smoothed_disparity << std::endl;
+        //find_item_result.update_prev_frames = false;
     }
-    find_insect_result.smoothed_disparity = sdisparity;
+    find_item_result.smoothed_disparity = sdisparity;
 
     data.sposX = smoother_posX.addSample(data.posX);;
     data.sposY = smoother_posY.addSample(data.posY);;
@@ -647,8 +654,8 @@ void InsectTracker::update_tracker_ouput(Point3f measured_world_coordinates,floa
     detected_after_take_off++;
 }
 
-void InsectTracker::reset_tracker_ouput(int n_frames_lost) {
-    if (n_frames_lost > 10){
+void ItemTracker::reset_tracker_ouput() {
+
         data.reset_filters = true;
         data.velX = 0;
         data.velY = 0;
@@ -656,12 +663,17 @@ void InsectTracker::reset_tracker_ouput(int n_frames_lost) {
         data.svelX = 0;
         data.svelY = 0;
         data.svelZ = 0;
+}
+
+void ItemTracker::reset_tracker_ouput(int n_frames_lost) {
+    if (n_frames_lost > 10){
+        reset_tracker_ouput();
     }
     if (n_frames_lost != 0)
         n_frames_tracking = 0;
 }
 
-void InsectTracker::close () {
+void ItemTracker::close () {
     std::ofstream os(settingsFile, std::ios::binary);
     cereal::BinaryOutputArchive archive( os );
     archive( settings );

@@ -10,7 +10,7 @@
 #include "opencv2/features2d/features2d.hpp"
 #include "dronecontroller.h"
 #include "dronetracker.h"
-#include "insect.h"
+#include "insecttracker.h"
 #include "dronenavigation.h"
 
 class Visualizer{

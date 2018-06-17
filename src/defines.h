@@ -9,7 +9,6 @@
 #define SSE2
 
 #define HASSCREEN // dont disable in qt debugger!
-#define INSECT_DATA_LOGGING_MODE false
 #define BEEP
 
 #define VIDEORAWLR VIDEOMODE_DISABLED
