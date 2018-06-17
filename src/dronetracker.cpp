@@ -7,8 +7,8 @@ bool DroneTracker::init(std::ofstream *logger, VisionData *visdat) {
     (*_logger) << "imLx; imLy; disparity;";
 
     data.image_locationL = cv::Point(DRONE_IM_X_START,DRONE_IM_Y_START);
-    find_item_result.smoothed_disparity = DRONE_DISPARITY_START;
-    find_item_result.disparity = DRONE_DISPARITY_START;
+    find_result.smoothed_disparity = DRONE_DISPARITY_START;
+    find_result.disparity = DRONE_DISPARITY_START;
     data.landed = true;
 }
 void DroneTracker::init_settings() {
@@ -64,19 +64,19 @@ void DroneTracker::track(float time, cv::Point3f setpoint_world, cv::Point2f ign
         frameR_prev_OK = visdat->frameR_prev;
 
         data.image_locationL = cv::Point(DRONE_IM_X_START,DRONE_IM_Y_START);
-        find_item_result.smoothed_disparity = DRONE_DISPARITY_START;
-        find_item_result.disparity = DRONE_DISPARITY_START;
+        find_result.smoothed_disparity = DRONE_DISPARITY_START;
+        find_result.disparity = DRONE_DISPARITY_START;
         nframes_since_update_prev = 0;
     }
 
     ItemTracker::track(time,setpoint_world,ignore,drone_max_border_y,drone_max_border_z);
 
     if (data.landed) {
-        find_item_result.update_prev_frame = true;
+        find_result.update_prev_frame = true;
         reset_tracker_ouput();
     }
 
-    (*_logger) << find_item_result.best_image_locationL.pt.x *IMSCALEF << "; " << find_item_result.best_image_locationL.pt.y *IMSCALEF << "; " << find_item_result.disparity << "; ";
+    (*_logger) << find_result.best_image_locationL.pt.x *IMSCALEF << "; " << find_result.best_image_locationL.pt.y *IMSCALEF << "; " << find_result.disparity << "; ";
 
 
 }

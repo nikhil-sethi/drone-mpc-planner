@@ -26,7 +26,7 @@ class ItemTracker {
 
 private:
     cv::SimpleBlobDetector::Params params;
-    struct ItemTrackerSettings{
+    struct TrackerSettings{
 
         //thresh params
         int iLowH1r = 10;
@@ -79,7 +79,7 @@ private:
 
     };
     std::string settingsFile;
-    struct Find_item_result {
+    struct Find_result {
       cv::Mat treshL;
       std::vector<cv::KeyPoint> keypointsL;
       cv::KeyPoint best_image_locationL;
@@ -90,15 +90,15 @@ private:
     };
 
     void updateParams();
-    cv::Mat segment_item(cv::Mat diffL, cv::Point previous_imageL_location, cv::Point roi_size);
-    cv::Point3f predict_item(float dt);
-    cv::Mat get_approx_item_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size);
-    int match_closest_to_prediciton(cv::Point3f predicted_item_locationL, std::vector<cv::KeyPoint> keypointsL);
+    cv::Mat segment(cv::Mat diffL, cv::Point previous_imageL_location, cv::Point roi_size);
+    cv::Point3f predict(float dt);
+    cv::Mat get_approx_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size);
+    int match_closest_to_prediciton(cv::Point3f predicted_locationL, std::vector<cv::KeyPoint> keypointsL);
     int stereo_match(cv::KeyPoint closestL, cv::Mat frameL_prev, cv::Mat prevFrameR_big, cv::Mat frameL, cv::Mat frameR, int prevDisparity);
     void update_prediction_state(cv::Point3f p);
     void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, int n_frames_lost, cv::KeyPoint match, int disparity, cv::Point3f setpoint_world);
     void reset_tracker_ouput(int n_frames_lost);
-    void find_item(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK);
+    void find(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK);
     std::vector<cv::KeyPoint> remove_ignores(std::vector<cv::KeyPoint> keypoints, cv::Point2f ignore);
     cv::Mat show_uncertainty_map_in_image(cv::Point p, cv::Mat resframeL);
 
@@ -128,7 +128,7 @@ protected:
     cv::Mat frameR_prev_OK;
     VisionData * visdat;
     int nframes_since_update_prev = 0;
-    ItemTrackerSettings settings;
+    TrackerSettings settings;
 
     void reset_tracker_ouput();
     virtual cv::Mat get_probability_cloud(cv::Point size);
@@ -136,9 +136,9 @@ protected:
 public:
 
     cv::Mat cir,bkg,dif,treshL,approx;
-    Find_item_result find_item_result;
-    std::vector<cv::KeyPoint> item_pathL;
-    std::vector<cv::KeyPoint> predicted_item_pathL;
+    Find_result find_result;
+    std::vector<cv::KeyPoint> pathL;
+    std::vector<cv::KeyPoint> predicted_pathL;
 
 
     int n_frames_tracking =0;

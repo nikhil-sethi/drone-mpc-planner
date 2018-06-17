@@ -124,8 +124,8 @@ bool ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     smoother_velZ.init(smooth_width_vel);
 
     data.image_locationL = cv::Point(848/2/IMSCALEF,480/2/IMSCALEF);
-    find_item_result.smoothed_disparity = 0;
-    find_item_result.disparity = 0;
+    find_result.smoothed_disparity = 0;
+    find_result.disparity = 0;
 }
 
 std::vector<KeyPoint> ItemTracker::remove_ignores(std::vector<KeyPoint> keypoints, cv::Point2f ignore) {
@@ -142,7 +142,7 @@ bool ItemTracker::track(float time, cv::Point3f setpoint_world, cv::Point2f igno
     updateParams();
 
     float dt= (time-t_prev);
-    cv::Point3f predicted_item_locationL = predict_item(dt);
+    cv::Point3f predicted_locationL = predict(dt);
 
     if (!firstFrame) {
         firstFrame = true;
@@ -151,29 +151,29 @@ bool ItemTracker::track(float time, cv::Point3f setpoint_world, cv::Point2f igno
         frameR_prev_OK = visdat->frameR.clone();
     }
 
-    find_item(visdat->frameL_small, frameL_s_prev_OK);
+    find(visdat->frameL_small, frameL_s_prev_OK);
 
     data.valid = false; // reset the flag, set to true when item is detected properly
 
     static int n_frames_lost =100;
-    if (find_item_result.keypointsL.size() > 0) { //if not lost
+    if (find_result.keypointsL.size() > 0) { //if not lost
 
-        cv::Point3f previous_item_location(find_item_result.best_image_locationL .pt.x,find_item_result.best_image_locationL .pt.y,0);
-        std::vector<cv::KeyPoint> keypoint_candidates = remove_ignores(find_item_result.keypointsL,ignore);
+        cv::Point3f previous_location(find_result.best_image_locationL .pt.x,find_result.best_image_locationL .pt.y,0);
+        std::vector<cv::KeyPoint> keypoint_candidates = remove_ignores(find_result.keypointsL,ignore);
 
         Point3f output;
         int disparity;
         cv::KeyPoint match;
         while (keypoint_candidates.size() > 0) {
-            int match_id = match_closest_to_prediciton(previous_item_location,find_item_result.keypointsL);
-            match = find_item_result.keypointsL.at(match_id);
+            int match_id = match_closest_to_prediciton(previous_location,find_result.keypointsL);
+            match = find_result.keypointsL.at(match_id);
 
-            disparity = stereo_match(match,frameL_prev_OK,frameR_prev_OK,visdat->frameL,visdat->frameR,find_item_result.smoothed_disparity);
+            disparity = stereo_match(match,frameL_prev_OK,frameR_prev_OK,visdat->frameL,visdat->frameR,find_result.smoothed_disparity);
 
             //calculate everything for the itemcontroller:
             std::vector<Point3f> camera_coordinates, world_coordinates;
             camera_coordinates.push_back(Point3f(match.pt.x*IMSCALEF,match.pt.y*IMSCALEF,-disparity));
-            //camera_coordinates.push_back(Point3f(predicted_item_locationL.x*IMSCALEF,predicted_item_locationL.y*IMSCALEF,-predicted_item_locationL.z));
+            //camera_coordinates.push_back(Point3f(predicted_locationL.x*IMSCALEF,predicted_locationL.y*IMSCALEF,-predicted_locationL.z));
             cv::perspectiveTransform(camera_coordinates,world_coordinates,visdat->Qf);
             output = world_coordinates[0];
             float theta = CAMERA_ANGLE / (360/6.28318530718);
@@ -190,7 +190,7 @@ bool ItemTracker::track(float time, cv::Point3f setpoint_world, cv::Point2f igno
             n_frames_lost++;
             if( n_frames_lost >= 10 )
                 foundL = false;
-            update_prediction_state(cv::Point3f(predicted_item_locationL.x,predicted_item_locationL.y,predicted_item_locationL.z));
+            update_prediction_state(cv::Point3f(predicted_locationL.x,predicted_locationL.y,predicted_locationL.z));
             reset_tracker_ouput(n_frames_lost);
         } else {
             //Point3f predicted_output = world_coordinates[1];
@@ -202,7 +202,7 @@ bool ItemTracker::track(float time, cv::Point3f setpoint_world, cv::Point2f igno
         }
     }
 
-    if (find_item_result.update_prev_frame && ! breakpause) {
+    if (find_result.update_prev_frame && ! breakpause) {
         frameL_prev_OK = visdat->frameL_prev.clone();
         frameL_s_prev_OK = visdat->frameL_s_prev.clone();
         frameR_prev_OK = visdat->frameR_prev.clone();
@@ -244,10 +244,10 @@ void ItemTracker::updateParams(){
 #endif
 }
 
-void ItemTracker::find_item(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK) {
-    cv::Point previous_item_location;
+void ItemTracker::find(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK) {
+    cv::Point previous_location;
 
-    previous_item_location = data.image_locationL;
+    previous_location = data.image_locationL;
 
     cv::Point roi_size;
     if (settings.roi_min_size < 1)
@@ -260,7 +260,7 @@ void ItemTracker::find_item(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK) {
         roi_size.y = visdat->frameL_small.rows;
 
     //attempt to detect changed blobs
-    treshL = segment_item(visdat->diffL,previous_item_location,roi_size);
+    treshL = segment(visdat->diffL,previous_location,roi_size);
 #if CV_MAJOR_VERSION==3
     cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
 #else
@@ -277,7 +277,7 @@ void ItemTracker::find_item(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK) {
     if (keypointsL.size() == 0) { // if not, use the last frame that was confirmed to be working before...
         cv::Mat diffL_OK;
         cv::absdiff( frameL_small ,frameL_s_prev_OK,diffL_OK);
-        treshL = segment_item(diffL_OK,previous_item_location,roi_size);
+        treshL = segment(diffL_OK,previous_location,roi_size);
         detector->detect( treshL, keypointsL);
         nframes_since_update_prev +=1;
         if (nframes_since_update_prev > settings.roi_max_grow)
@@ -293,18 +293,18 @@ void ItemTracker::find_item(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK) {
 
 
     for (int i = 0 ; i < keypointsL.size();i++) {
-        keypointsL.at(i).pt.x += find_item_result.roi_offset.x;
-        keypointsL.at(i).pt.y += find_item_result.roi_offset.y;
+        keypointsL.at(i).pt.x += find_result.roi_offset.x;
+        keypointsL.at(i).pt.y += find_result.roi_offset.y;
     }
 
-    find_item_result.keypointsL = keypointsL;
-    find_item_result.treshL = treshL;
-    find_item_result.update_prev_frame = nframes_since_update_prev == 0 || (nframes_since_update_prev >= settings.roi_max_grow  );
+    find_result.keypointsL = keypointsL;
+    find_result.treshL = treshL;
+    find_result.update_prev_frame = nframes_since_update_prev == 0 || (nframes_since_update_prev >= settings.roi_max_grow  );
 }
 
-cv::Mat ItemTracker::segment_item(cv::Mat diffL, cv::Point previous_imageL_location, cv::Point roi_size) {
+cv::Mat ItemTracker::segment(cv::Mat diffL, cv::Point previous_imageL_location, cv::Point roi_size) {
 
-    approx = get_approx_item_cutout_filtered(previous_imageL_location,diffL,roi_size);
+    approx = get_approx_cutout_filtered(previous_imageL_location,diffL,roi_size);
 
     inRange(approx, settings.iLowH1r, settings.iHighH1r, treshL);
     dilate( treshL, treshL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iClose1r+1, settings.iClose1r+1)));
@@ -319,7 +319,7 @@ cv::Mat ItemTracker::get_probability_cloud(cv::Point size) {
 }
 
 /* Takes the calibrated uncertainty map, and augments it with a highlight around p */
-cv::Mat ItemTracker::get_approx_item_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size) {
+cv::Mat ItemTracker::get_approx_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size) {
 
     //calc roi:
     cv::Rect roi_circle(0,0,size.x,size.y);
@@ -346,7 +346,7 @@ cv::Mat ItemTracker::get_approx_item_cutout_filtered(cv::Point p, cv::Mat diffL,
     int y2 = roi_circle.height;
 
     cv::Rect roi(x1,y1,x2,y2);
-    find_item_result.roi_offset = roi;
+    find_result.roi_offset = roi;
 
     bkg = visdat->uncertainty_map(roi);
     diffL(roi).convertTo(dif, CV_32F);
@@ -402,8 +402,8 @@ cv::Mat ItemTracker::show_uncertainty_map_in_image(cv::Point pd4, cv::Mat res) {
     return res;
 }
 
-cv::Point3f ItemTracker::predict_item(float dt) {
-    cv::Point3f predicted_item_locationL;
+cv::Point3f ItemTracker::predict(float dt) {
+    cv::Point3f predicted_locationL;
     if (foundL) {
         kfL.transitionMatrix.at<float>(2) = dt;
         kfL.transitionMatrix.at<float>(9) = dt;
@@ -414,35 +414,35 @@ cv::Point3f ItemTracker::predict_item(float dt) {
         predRect.x = stateL.at<float>(0) - predRect.width / 2;
         predRect.y = stateL.at<float>(1) - predRect.height / 2;
 
-        predicted_item_locationL.x = stateL.at<float>(0);
-        predicted_item_locationL.y = stateL.at<float>(1);
-        predicted_item_locationL.z = stateL.at<float>(2);
+        predicted_locationL.x = stateL.at<float>(0);
+        predicted_locationL.y = stateL.at<float>(1);
+        predicted_locationL.z = stateL.at<float>(2);
         cv::KeyPoint t;
         cv::Point beun;
-        beun.x = predicted_item_locationL.x;
-        beun.y = predicted_item_locationL.y;
+        beun.x = predicted_locationL.x;
+        beun.y = predicted_locationL.y;
         t.pt = beun;
         t.size = 3;
-        predicted_item_pathL.push_back(t);
-        if (item_pathL.size() > 30)
-            item_pathL.erase(item_pathL.begin());
-        if (predicted_item_pathL.size() > 30)
-            predicted_item_pathL.erase(predicted_item_pathL.begin());
-        // cout << "PredictionL: " << predicted_item_locationL << std::endl;
+        predicted_pathL.push_back(t);
+        if (pathL.size() > 30)
+            pathL.erase(pathL.begin());
+        if (predicted_pathL.size() > 30)
+            predicted_pathL.erase(predicted_pathL.begin());
+        // cout << "PredictionL: " << predicted_locationL << std::endl;
     }
-    return predicted_item_locationL;
+    return predicted_locationL;
 }
 
-int ItemTracker::match_closest_to_prediciton(cv::Point3f predicted_item_locationL, std::vector<KeyPoint> keypointsL) {
+int ItemTracker::match_closest_to_prediciton(cv::Point3f predicted_locationL, std::vector<KeyPoint> keypointsL) {
     int closestL;
-    if (keypointsL.size() == 1 && item_pathL.size() == 0) {
+    if (keypointsL.size() == 1 && pathL.size() == 0) {
         closestL = 0;
-    } else if (item_pathL.size() > 0) {
+    } else if (pathL.size() > 0) {
         //find closest keypoint to new predicted location
         int mind = 999999999;
         for (int i = 0 ; i < keypointsL.size();i++) {
             cv::KeyPoint k =keypointsL.at(i);
-            int d = (predicted_item_locationL.x-k.pt.x) * (predicted_item_locationL.x-k.pt.x) + (predicted_item_locationL.y-k.pt.y)*(predicted_item_locationL.y-k.pt.y);
+            int d = (predicted_locationL.x-k.pt.x) * (predicted_locationL.x-k.pt.x) + (predicted_locationL.y-k.pt.y)*(predicted_locationL.y-k.pt.y);
             if (d < mind ) {
                 mind = d;
                 closestL = i;
@@ -568,15 +568,15 @@ void ItemTracker::update_prediction_state(cv::Point3f p) {
 
 void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  int n_frames_lost, cv::KeyPoint match, int disparity,cv::Point3f setpoint_world) {
 
-    find_item_result.best_image_locationL = match;
-    find_item_result.disparity = disparity;
-    data.image_locationL = find_item_result.best_image_locationL.pt;
-    item_pathL.push_back(find_item_result.best_image_locationL);
+    find_result.best_image_locationL = match;
+    find_result.disparity = disparity;
+    data.image_locationL = find_result.best_image_locationL.pt;
+    pathL.push_back(find_result.best_image_locationL);
 
     data.posX = measured_world_coordinates.x;
     data.posY = measured_world_coordinates.y;
     data.posZ = measured_world_coordinates.z;
-    data.disparity = find_item_result.disparity; // tmp, should not be in data
+    data.disparity = find_result.disparity; // tmp, should not be in data
 
     static float prevX,prevY,prevZ =0;
     static int detected_after_take_off = 0;
@@ -598,12 +598,12 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
     sdisparity = disp_smoothed.addSample(data.disparity);
     data.sdisparity = sdisparity; // tmp, should not be in data
 
-    if (fabs((float)abs(find_item_result.disparity) - fabs(find_item_result.smoothed_disparity)) > 3) {
+    if (fabs((float)abs(find_result.disparity) - fabs(find_result.smoothed_disparity)) > 3) {
         //do better matching?
-        //std::cout << find_item_result.disparity << "-> BAM <-" << find_item_result.smoothed_disparity << std::endl;
-        //find_item_result.update_prev_frames = false;
+        //std::cout << find_result.disparity << "-> BAM <-" << find__result.smoothed_disparity << std::endl;
+        //find_result.update_prev_frames = false;
     }
-    find_item_result.smoothed_disparity = sdisparity;
+    find_result.smoothed_disparity = sdisparity;
 
     data.sposX = smoother_posX.addSample(data.posX);;
     data.sposY = smoother_posY.addSample(data.posY);;

@@ -112,8 +112,8 @@ void process_video() {
         visdat.update(cam.frameL,cam.frameR,cam.frame_time-start_time);
 
         //WARNING: changing the order of the functions with logging must be match with the init functions!
-        itrkr.track(cam.frame_time-start_time, dnav.setpoint_world, dtrkr.find_item_result.best_image_locationL.pt);
-        dtrkr.track(cam.frame_time-start_time, dnav.setpoint_world,itrkr.find_item_result.best_image_locationL.pt);
+        itrkr.track(cam.frame_time-start_time, dnav.setpoint_world, dtrkr.find_result.best_image_locationL.pt);
+        dtrkr.track(cam.frame_time-start_time, dnav.setpoint_world,itrkr.find_result.best_image_locationL.pt);
 
 #ifdef HASSCREEN
         if (breakpause_prev != 0) {
