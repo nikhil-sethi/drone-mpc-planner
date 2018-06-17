@@ -9,7 +9,7 @@ using namespace cv;
 using namespace std;
 
 #ifdef HASSCREEN
-//#define TUNING
+#define TUNING
 #endif
 
 const string settingsFile = "../dronetrackersettings.dat";
@@ -129,7 +129,20 @@ bool DroneTracker::init(std::ofstream *logger, VisionData *visdat) {
     data.landed = true;
 }
 
-void DroneTracker::track(float time, cv::Point3f setpoint_world) {
+std::vector<KeyPoint> DroneTracker::remove_ignores(std::vector<KeyPoint> keypoints, cv::Point2f ignore) {
+    std::vector<KeyPoint> tmp = keypoints;
+    for (int i = 0 ; i< tmp.size();i++){
+        float dis = (tmp.at(i).pt.x - ignore.x)*(tmp.at(i).pt.x - ignore.x) +(tmp.at(i).pt.y - ignore.y)*(tmp.at(i).pt.y - ignore.y);
+
+        if (dis < 200 || (ignore.x == 0 && ignore.y == 0))
+            keypoints.erase(keypoints.begin() + i);
+        else if (dis > 0)
+            std::cout << dis << std::endl;
+    }
+    return keypoints;
+}
+
+void DroneTracker::track(float time, cv::Point3f setpoint_world, cv::Point2f ignore) {
     updateParams();
 
     float dt= (time-t_prev);
@@ -157,8 +170,8 @@ void DroneTracker::track(float time, cv::Point3f setpoint_world) {
     static int n_frames_lost =100;
     if (find_drone_result.keypointsL.size() > 0) { //if not lost
 
-        cv::Point3f previous_drone_location(find_drone_result.best_image_locationL .pt.x,find_drone_result.best_image_locationL .pt.y,0);
-        std::vector<cv::KeyPoint> keypoint_candidates = find_drone_result.keypointsL;
+        cv::Point3f previous_drone_location(find_drone_result.best_image_locationL .pt.x,find_drone_result.best_image_locationL .pt.y,0);        
+        std::vector<cv::KeyPoint> keypoint_candidates = remove_ignores(find_drone_result.keypointsL,ignore);
         Point3f output;
         int disparity;
         cv::KeyPoint match;

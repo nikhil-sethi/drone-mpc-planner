@@ -100,7 +100,7 @@ private:
     void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, int n_frames_lost, cv::KeyPoint match, int disparity, cv::Point3f setpoint_world);
     void reset_tracker_ouput(int n_frames_lost);    
     void find_insect(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK);
-
+    std::vector<cv::KeyPoint> remove_ignores(std::vector<cv::KeyPoint> keypoints, cv::Point2f ignore);
     cv::Mat show_uncertainty_map_in_image(cv::Point p, cv::Mat resframeL);
 
     // Kalman Filter
@@ -144,7 +144,7 @@ public:
 
     void close (void);
     bool init(std::ofstream *logger, VisionData *visdat);
-    bool track(float time, cv::Point3f setpoint_world);
+    bool track(float time, cv::Point3f setpoint_world, cv::Point2f ignore);
 
     trackData data;
     Smoother smoother_posX, smoother_posY, smoother_posZ;

@@ -104,6 +104,7 @@ private:
     void reset_tracker_ouput(int n_frames_lost);
     void drawviz(cv::Mat frameL, cv::Mat framegrayL, cv::Point3d setpoint);
     void find_drone(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK);
+    std::vector<cv::KeyPoint> remove_ignores(std::vector<cv::KeyPoint> keypoints, cv::Point2f ignore);
 
     cv::Mat show_uncertainty_map_in_image(cv::Point p, cv::Mat resframeL);
 
@@ -151,7 +152,7 @@ public:
 
     void close (void);
     bool init(std::ofstream *logger, VisionData *visdat);
-    void track(float time, cv::Point3f setpoint_world);
+    void track(float time, cv::Point3f setpoint_world, cv::Point2f ignore);
 
 
 

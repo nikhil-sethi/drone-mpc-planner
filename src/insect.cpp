@@ -124,7 +124,17 @@ bool InsectTracker::init(std::ofstream *logger, VisionData *visdat) {
     find_insect_result.disparity = 0;
 }
 
-bool InsectTracker::track(float time, cv::Point3f setpoint_world) {
+std::vector<KeyPoint> InsectTracker::remove_ignores(std::vector<KeyPoint> keypoints, cv::Point2f ignore) {
+    std::vector<KeyPoint> tmp = keypoints;
+    for (int i = 0 ; i< tmp.size();i++){
+        float dis = (tmp.at(i).pt.x - ignore.x)*(tmp.at(i).pt.x - ignore.x) +(tmp.at(i).pt.y - ignore.y)*(tmp.at(i).pt.y - ignore.y);
+        if (dis < 1)
+            keypoints.erase(keypoints.begin() + i);
+    }
+    return keypoints;
+}
+
+bool InsectTracker::track(float time, cv::Point3f setpoint_world, cv::Point2f ignore) {
     updateParams();
 
     float dt= (time-t_prev);
@@ -145,7 +155,8 @@ bool InsectTracker::track(float time, cv::Point3f setpoint_world) {
     if (find_insect_result.keypointsL.size() > 0) { //if not lost
 
         cv::Point3f previous_insect_location(find_insect_result.best_image_locationL .pt.x,find_insect_result.best_image_locationL .pt.y,0);
-        std::vector<cv::KeyPoint> keypoint_candidates = find_insect_result.keypointsL;
+        std::vector<cv::KeyPoint> keypoint_candidates = remove_ignores(find_insect_result.keypointsL,ignore);
+
         Point3f output;
         int disparity;
         cv::KeyPoint match;

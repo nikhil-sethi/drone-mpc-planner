@@ -1,7 +1,10 @@
 #include "visiondata.h"
 #include <opencv2/highgui/highgui.hpp>
 
-//#define TUNING
+#ifdef HASSCREEN
+#define TUNING
+#endif
+
 using namespace cv;
 using namespace std;
 

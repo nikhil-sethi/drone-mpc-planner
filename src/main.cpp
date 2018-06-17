@@ -112,8 +112,8 @@ void process_video() {
         visdat.update(cam.frameL,cam.frameR,cam.frame_time-start_time);
 
         //WARNING: changing the order of the functions with logging must be match with the init functions!
-        itrkr.track(cam.frame_time-start_time, dnav.setpoint_world);
-        dtrkr.track(cam.frame_time-start_time, dnav.setpoint_world);
+        itrkr.track(cam.frame_time-start_time, dnav.setpoint_world, dtrkr.find_drone_result.best_image_locationL.pt);
+        dtrkr.track(cam.frame_time-start_time, dnav.setpoint_world,itrkr.find_insect_result.best_image_locationL.pt);
 
 #ifdef HASSCREEN
         if (breakpause_prev != 0) {
@@ -236,8 +236,9 @@ int init(int argc, char **argv) {
     dctrl.init(&logger,fromfile,&arduino);
 
     logger << std::endl;
-
+#ifdef HASSCREEN
     visualizer.init(&dctrl,&dtrkr,&itrkr,&dnav);
+#endif
 
     /*****init the video writer*****/
 #if VIDEORESULTS
@@ -284,7 +285,9 @@ void close() {
     itrkr.close();
     if (!fromfile)
         arduino.close();
+#ifdef HASSCREEN
     visualizer.close();
+#endif
     visdat.close();
     cam.close();
 

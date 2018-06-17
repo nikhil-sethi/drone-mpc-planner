@@ -2,6 +2,11 @@
 using namespace cv;
 using namespace std;
 
+#ifdef HASSCREEN
+//#define DRAWPLOTS
+#define DRAWTRACKING
+#endif
+
 cv::Scalar white(255,255,255);
 cv::Scalar black(0,0,0);
 cv::Scalar green(0,255,0);
@@ -14,7 +19,7 @@ cv::Scalar fore_color(0,0,0);
 cv::Scalar background_color(255,255,255);
 
 void Visualizer::addPlotSample(void) {
-
+#ifdef DRAWPLOTS
 
     g_lockData.lock();
 
@@ -67,7 +72,7 @@ void Visualizer::addPlotSample(void) {
     autotakeoff_velY_thresh.push_back((float)(dctrl->params.auto_takeoff_speed) / 100.f);
 
     g_lockData.unlock();
-
+#endif
 }
 
 void Visualizer::plot(void) {
@@ -106,7 +111,7 @@ cv::Mat Visualizer::plot_xyd(void) {
 }
 
 cv::Mat Visualizer::plot_all_control(void) {
-    std::vector<cv::Mat> ims_joy;    
+    std::vector<cv::Mat> ims_joy;
     ims_joy.push_back(plot({roll_joystick,roll_calculated},"Roll"));
     ims_joy.push_back(plot({pitch_joystick,pitch_calculated},"Pitch"));
     ims_joy.push_back(plot({throttle_joystick,throttle_calculated,throttle_hover},"Throttle"));
@@ -249,9 +254,6 @@ cv::Mat Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Point setpoint, std:
 }
 
 void Visualizer::draw_segment_viz(){
-
-
-
     std::vector<cv::Mat> ims;
     ims.push_back(cir8);
     ims.push_back(bkg8);
@@ -316,7 +318,7 @@ cv::Mat Visualizer::draw_sub_tracking_insect_viz(cv::Mat frameL_small,cv::Size v
 
 
 void Visualizer::draw_tracker_viz(cv::Mat frameL,cv::Mat frameL_small, cv::Point3d setpoint) {
-
+#ifdef DRAWTRACKING
     static int div = 0;
     if (div++ % 4 == 1) {
 
@@ -330,7 +332,7 @@ void Visualizer::draw_tracker_viz(cv::Mat frameL,cv::Mat frameL_small, cv::Point
         bkg8.convertTo(bkg8, CV_8UC1);
         dif8.convertTo(dif8, CV_8UC1);
 
-        draw_segment_viz();
+//        draw_segment_viz();
 
         cv::Size vizsizeL(resFrame.cols/4,resFrame.rows/4);
         cv::Mat frameL_small_drone = draw_sub_tracking_drone_viz(frameL_small,vizsizeL,setpoint);
@@ -342,6 +344,7 @@ void Visualizer::draw_tracker_viz(cv::Mat frameL,cv::Mat frameL_small, cv::Point
 
         cv::imshow("tracking results", resFrame);
     }
+#endif
 }
 
 
@@ -350,7 +353,9 @@ void Visualizer::workerThread(void) {
     while (!exitVizThread) {
         if (roll_joystick.rows > 0) {
             g_lockData.lock();
+#ifdef DRAWPLOTS
             plot();
+#endif
             g_lockData.unlock();
         }
         usleep(2000);
