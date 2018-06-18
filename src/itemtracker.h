@@ -91,12 +91,12 @@ private:
 
     void updateParams();
     cv::Mat segment(cv::Mat diffL, cv::Point previous_imageL_location, cv::Point roi_size);
-    cv::Point3f predict(float dt);
+    cv::Point3f predict(float dt, int frame_id);
     cv::Mat get_approx_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size);
     int match_closest_to_prediciton(cv::Point3f predicted_locationL, std::vector<cv::KeyPoint> keypointsL);
     int stereo_match(cv::KeyPoint closestL, cv::Mat frameL_prev, cv::Mat prevFrameR_big, cv::Mat frameL, cv::Mat frameR, int prevDisparity);
     void update_prediction_state(cv::Point3f p);
-    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, int n_frames_lost, cv::KeyPoint match, int disparity, cv::Point3f setpoint_world);
+    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, int n_frames_lost, cv::KeyPoint match, int disparity, cv::Point3f setpoint_world, int frame_id);
     void reset_tracker_ouput(int n_frames_lost);
     void find(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK);
     std::vector<cv::KeyPoint> remove_ignores(std::vector<cv::KeyPoint> keypoints, cv::Point2f ignore);
@@ -122,6 +122,14 @@ private:
     bool foundL = false;
     float t_prev = 0;
 protected:
+    struct track_item {
+      cv::KeyPoint k;
+      int frame_id;
+      track_item(cv::KeyPoint k, int frame_id){
+          this->k = k;
+          this->frame_id = frame_id;
+      }
+    };
     std::ofstream *_logger;
     cv::Mat frameL_s_prev_OK;
     cv::Mat frameL_prev_OK;
@@ -137,8 +145,8 @@ public:
 
     cv::Mat cir,bkg,dif,treshL,approx;
     Find_result find_result;
-    std::vector<cv::KeyPoint> pathL;
-    std::vector<cv::KeyPoint> predicted_pathL;
+    std::vector<track_item> pathL;
+    std::vector<track_item> predicted_pathL;
 
 
     int n_frames_tracking =0;

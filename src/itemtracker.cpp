@@ -142,7 +142,7 @@ bool ItemTracker::track(float time, cv::Point3f setpoint_world, cv::Point2f igno
     updateParams();
 
     float dt= (time-t_prev);
-    cv::Point3f predicted_locationL = predict(dt);
+    cv::Point3f predicted_locationL = predict(dt,visdat->frame_id);
 
     if (!firstFrame) {
         firstFrame = true;
@@ -195,7 +195,7 @@ bool ItemTracker::track(float time, cv::Point3f setpoint_world, cv::Point2f igno
         } else {
             //Point3f predicted_output = world_coordinates[1];
             update_prediction_state(cv::Point3f(match.pt.x,match.pt.y,disparity));
-            update_tracker_ouput(output,dt,n_frames_lost,match,disparity,setpoint_world);
+            update_tracker_ouput(output,dt,n_frames_lost,match,disparity,setpoint_world,visdat->frame_id);
             n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
             t_prev = time; // update dt only if item was detected
             n_frames_tracking++;
@@ -402,7 +402,7 @@ cv::Mat ItemTracker::show_uncertainty_map_in_image(cv::Point pd4, cv::Mat res) {
     return res;
 }
 
-cv::Point3f ItemTracker::predict(float dt) {
+cv::Point3f ItemTracker::predict(float dt, int frame_id) {
     cv::Point3f predicted_locationL;
     if (foundL) {
         kfL.transitionMatrix.at<float>(2) = dt;
@@ -423,7 +423,7 @@ cv::Point3f ItemTracker::predict(float dt) {
         beun.y = predicted_locationL.y;
         t.pt = beun;
         t.size = 3;
-        predicted_pathL.push_back(t);
+        predicted_pathL.push_back(track_item(t,frame_id));
         if (pathL.size() > 30)
             pathL.erase(pathL.begin());
         if (predicted_pathL.size() > 30)
@@ -566,12 +566,12 @@ void ItemTracker::update_prediction_state(cv::Point3f p) {
         kfL.correct(measL);
 }
 
-void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  int n_frames_lost, cv::KeyPoint match, int disparity,cv::Point3f setpoint_world) {
+void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  int n_frames_lost, cv::KeyPoint match, int disparity,cv::Point3f setpoint_world, int frame_id) {
 
     find_result.best_image_locationL = match;
     find_result.disparity = disparity;
     data.image_locationL = find_result.best_image_locationL.pt;
-    pathL.push_back(find_result.best_image_locationL);
+    pathL.push_back(track_item(find_result.best_image_locationL,frame_id));
 
     data.posX = measured_world_coordinates.x;
     data.posY = measured_world_coordinates.y;

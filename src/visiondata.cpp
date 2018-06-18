@@ -14,7 +14,7 @@ void VisionData::init(cv::Mat Qf, cv::Mat frameL,cv::Mat frameR){
     this->frameL = frameL;
     this->frameR = frameR;
     this->frameL_prev = frameL;
-    this->frameR_prev = frameR;
+    this->frameR_prev = frameR;    
 
     if (checkFileExist(settingsFile)) {
         std::ifstream is(settingsFile, std::ios::binary);
@@ -38,11 +38,12 @@ void VisionData::init(cv::Mat Qf, cv::Mat frameL,cv::Mat frameR){
 }
 
 
-void VisionData::update(cv::Mat frameL,cv::Mat frameR,float time) {
+void VisionData::update(cv::Mat frameL,cv::Mat frameR,float time, int frame_id) {
     this->frameL_prev = this->frameL.clone();
     this->frameR_prev = this->frameR.clone();
     this->frameL = frameL;
     this->frameR = frameR;
+    this->frame_id = frame_id;
 
     frameL_s_prev = frameL_small.clone();
     cv::resize(frameL,frameL_small,smallsize);

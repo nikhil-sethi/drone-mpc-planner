@@ -11,6 +11,7 @@
 #include "dronecontroller.h"
 #include "dronetracker.h"
 #include "insecttracker.h"
+#include "itemtracker.h"
 #include "dronenavigation.h"
 
 class Visualizer{
@@ -25,8 +26,7 @@ private:
     cv::Mat plot_all_position(void);
     void draw_segment_viz();
     void draw_target_text(cv::Mat resFrame);
-    cv::Mat draw_sub_tracking_drone_viz(cv::Mat resFrame, cv::Size vizsizeL, cv::Point3d setpoint);
-    cv::Mat draw_sub_tracking_insect_viz(cv::Mat resFrame, cv::Size vizsizeL, cv::Point3d setpoint);
+    cv::Mat draw_sub_tracking_viz(cv::Mat frameL_small,cv::Size vizsizeL,cv::Point3d setpoint, ItemTracker * trkr);
 
     DroneController *dctrl;
     DroneTracker *dtrkr;

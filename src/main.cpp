@@ -76,7 +76,7 @@ void process_video() {
 
 
     float start_time = cam.frame_time;
-    visdat.update(cam.frameL,cam.frameR,cam.frame_time-start_time);
+    visdat.update(cam.frameL,cam.frameR,cam.frame_time-start_time,cam.frame_number);
 
     //main while loop:
     while (key != 27) // ESC
@@ -109,7 +109,7 @@ void process_video() {
 
         logger << imgcount << ";" << cam.frame_number << ";" ;
 
-        visdat.update(cam.frameL,cam.frameR,cam.frame_time-start_time);
+        visdat.update(cam.frameL,cam.frameR,cam.frame_time-start_time,cam.frame_number);
 
         //WARNING: changing the order of the functions with logging must be match with the init functions!
         itrkr.track(cam.frame_time-start_time, dnav.setpoint_world, dtrkr.find_result.best_image_locationL.pt);
