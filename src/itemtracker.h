@@ -23,6 +23,15 @@
  */
 class ItemTracker {
 
+protected:
+    struct track_item {
+      cv::KeyPoint k;
+      int frame_id;
+      track_item(cv::KeyPoint k, int frame_id){
+          this->k = k;
+          this->frame_id = frame_id;
+      }
+    };
 
 private:
     cv::SimpleBlobDetector::Params params;
@@ -99,7 +108,7 @@ private:
     void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, int n_frames_lost, cv::KeyPoint match, int disparity, cv::Point3f setpoint_world, int frame_id);
     void reset_tracker_ouput(int n_frames_lost);
     void find(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK);
-    std::vector<cv::KeyPoint> remove_ignores(std::vector<cv::KeyPoint> keypoints, cv::Point2f ignore);
+    std::vector<cv::KeyPoint> remove_ignores(std::vector<cv::KeyPoint> keypoints, std::vector<track_item> ignore_path);
     cv::Mat show_uncertainty_map_in_image(cv::Point p, cv::Mat resframeL);
 
     // Kalman Filter
@@ -122,14 +131,7 @@ private:
     bool foundL = false;
     float t_prev = 0;
 protected:
-    struct track_item {
-      cv::KeyPoint k;
-      int frame_id;
-      track_item(cv::KeyPoint k, int frame_id){
-          this->k = k;
-          this->frame_id = frame_id;
-      }
-    };
+
     std::ofstream *_logger;
     cv::Mat frameL_s_prev_OK;
     cv::Mat frameL_prev_OK;
@@ -153,7 +155,7 @@ public:
 
     void close (void);
     bool init(std::ofstream *logger, VisionData *visdat, std::string name);
-    virtual bool track(float time, cv::Point3f setpoint_world, cv::Point2f ignore, float drone_max_border_y, float drone_max_border_z);
+    virtual bool track(float time, cv::Point3f setpoint_world, std::vector<track_item> ignore, float drone_max_border_y, float drone_max_border_z);
 
     trackData data;
     Smoother smoother_posX, smoother_posY, smoother_posZ;

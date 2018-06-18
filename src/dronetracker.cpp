@@ -56,7 +56,7 @@ void DroneTracker::init_settings() {
     settings.roi_grow_speed = 64;
 }
 
-void DroneTracker::track(float time, cv::Point3f setpoint_world, cv::Point2f ignore) {
+void DroneTracker::track(float time, cv::Point3f setpoint_world, std::vector<track_item> ignore) {
 
     if (data.landed) {
         frameL_s_prev_OK = visdat->frameL_s_prev;

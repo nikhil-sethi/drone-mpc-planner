@@ -22,7 +22,7 @@ public:
     float drone_max_border_y = MAX_BORDER_Y_DEFAULT;
 
     bool init(std::ofstream *logger, VisionData *visdat);
-    void track(float time, cv::Point3f setpoint_world, cv::Point2f ignore);
+    void track(float time, cv::Point3f setpoint_world, std::vector<track_item> ignore);
 
 };
 

@@ -128,17 +128,29 @@ bool ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     find_result.disparity = 0;
 }
 
-std::vector<KeyPoint> ItemTracker::remove_ignores(std::vector<KeyPoint> keypoints, cv::Point2f ignore) {
-    std::vector<KeyPoint> tmp = keypoints;
-    for (int i = 0 ; i< tmp.size();i++){
-        float dis = (tmp.at(i).pt.x - ignore.x)*(tmp.at(i).pt.x - ignore.x) +(tmp.at(i).pt.y - ignore.y)*(tmp.at(i).pt.y - ignore.y);
-        if (dis < 1)
-            keypoints.erase(keypoints.begin() + i);
+std::vector<KeyPoint> ItemTracker::remove_ignores(std::vector<KeyPoint> keypoints, std::vector<track_item> ignore_path) {
+    if (ignore_path.size() > 0) {
+        cv::Point2f ignore = ignore_path.at(ignore_path.size()-1).k.pt;
+        cv::Point2f ignore_prev = ignore;
+        if (ignore_path.size() > 1) {
+            ignore_prev = ignore_path.at(ignore_path.size()-2).k.pt;
+        }
+        std::vector<KeyPoint> tmp = keypoints;
+        for (int i = 0 ; i< tmp.size();i++){
+            float dis = (tmp.at(i).pt.x - ignore.x)*(tmp.at(i).pt.x - ignore.x) +(tmp.at(i).pt.y - ignore.y)*(tmp.at(i).pt.y - ignore.y);
+            if (dis < 1)
+                keypoints.erase(keypoints.begin() + i);
+            else  if (ignore_path.size() > 1) {
+                dis = (tmp.at(i).pt.x - ignore_prev.x)*(tmp.at(i).pt.x - ignore_prev.x) +(tmp.at(i).pt.y - ignore_prev.y)*(tmp.at(i).pt.y - ignore_prev.y);
+                if (dis < 1)
+                    keypoints.erase(keypoints.begin() + i);
+            }
+        }
     }
     return keypoints;
 }
 
-bool ItemTracker::track(float time, cv::Point3f setpoint_world, cv::Point2f ignore, float drone_max_border_y,float drone_max_border_z) {
+bool ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<track_item> ignore, float drone_max_border_y, float drone_max_border_z) {
     updateParams();
 
     float dt= (time-t_prev);
@@ -656,13 +668,13 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
 
 void ItemTracker::reset_tracker_ouput() {
 
-        data.reset_filters = true;
-        data.velX = 0;
-        data.velY = 0;
-        data.velZ = 0;
-        data.svelX = 0;
-        data.svelY = 0;
-        data.svelZ = 0;
+    data.reset_filters = true;
+    data.velX = 0;
+    data.velY = 0;
+    data.velZ = 0;
+    data.svelX = 0;
+    data.svelY = 0;
+    data.svelZ = 0;
 }
 
 void ItemTracker::reset_tracker_ouput(int n_frames_lost) {

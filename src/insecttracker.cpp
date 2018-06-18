@@ -52,6 +52,6 @@ void InsectTracker::init_settings() {
 
 }
 
-bool InsectTracker::track(float time, cv::Point3f setpoint_world, cv::Point2f ignore) {
+bool InsectTracker::track(float time, cv::Point3f setpoint_world, std::vector<track_item> ignore) {
     ItemTracker::track(time,setpoint_world,ignore,MAX_BORDER_Y_DEFAULT,MAX_BORDER_Z_DEFAULT);
 }
