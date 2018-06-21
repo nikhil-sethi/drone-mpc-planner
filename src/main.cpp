@@ -112,7 +112,7 @@ void process_video() {
         visdat.update(cam.frameL,cam.frameR,cam.frame_time-start_time,cam.frame_number);
 
         //WARNING: changing the order of the functions with logging must be match with the init functions!
-        itrkr.track(cam.frame_time-start_time, dnav.setpoint_world, dtrkr.pathL);
+        //itrkr.track(cam.frame_time-start_time, dnav.setpoint_world, dtrkr.pathL);
         dtrkr.track(cam.frame_time-start_time, dnav.setpoint_world,itrkr.pathL);
 
 #ifdef HASSCREEN

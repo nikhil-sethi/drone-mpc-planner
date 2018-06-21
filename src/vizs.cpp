@@ -295,8 +295,8 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
 
     if (trkr->pathL.size() > 0) {
         std::vector<cv::KeyPoint> keypoints;
-        for (int i = 0; i< trkr->predicted_pathL.size();i++) {
-            keypoints.push_back(trkr->predicted_pathL.at(i).k);
+        for (int i = 0; i< trkr->pathL.size();i++) {
+            keypoints.push_back(trkr->pathL.at(i).k);
         }
         drawKeypoints( frameL_small_drone, keypoints, frameL_small_drone, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
     }
