@@ -3,12 +3,12 @@
 
 cv::Point2f transformPixelToEarth(int x, int y, int centerX, int centerY, float depth, float pix2radx,float pix2rady) {
     //calculate pixel to angle:
-    float radX = float(x - centerX)  * pix2radx*(M_PI/180);
-    float radY = float(y - centerY)  * pix2rady*(M_PI/180);
+    float radX = float(x - centerX)  * pix2radx*((float)M_PI/180);
+    float radY = float(y - centerY)  * pix2rady*((float)M_PI/180);
 
     //calculate distance on ground
-    float disX = -tan(radX) * depth;
-    float disY = tan(radY) * depth;
+    float disX = -tanf(radX) * depth;
+    float disY = tanf(radY) * depth;
 
     cv::Point2f p(disX,disY);
     return p;
@@ -32,19 +32,19 @@ float transformPixelToAngle(cv::Point2f p, cv::Point2f pix2rad,cv::Point center)
 int getCenterPixel(float angle, float imFOV, int imWidth) {
     //calculate the center pixel based on the angle measured by an IMU
     //the 0.5 is because the IMU goes from [-PI .. PI], while the image goes from [0 .. imsize]
-    return round(((angle/(imFOV/FOV)) / M_PI + 0.5) * imWidth);
+    return round(((angle/(imFOV/FOV)) / (float)M_PI + 0.5f) * imWidth);
 }
 
 void acc_orientation(float accx, float accy, float accz, float *out) {
     float R;
     float tx,ty,tz,pitch,roll;
-    R = sqrt((float)accx * (float)accx + (float)accy * (float)accy +(float)accz * (float)accz);
-    float pi2 = 0.5 * M_PI;
-    tx = acos(accx/R)-pi2;
-    ty = acos(accy/R)-pi2;
-    tz = acos(accz/R)-pi2;
-    pitch = atan2(-ty, -tz) + M_PI;
-    roll =  atan2(-tz, -tx) + M_PI;
+    R = sqrtf(accx * accx + accy * accy +accz * accz);
+
+    tx = acosf(accx/R)-(float)M_PI_2;
+    ty = acosf(accy/R)-(float)M_PI_2;
+    tz = acosf(accz/R)-(float)M_PI_2;
+    pitch = atan2f(-ty, -tz) + (float)M_PI;
+    roll =  atan2f(-tz, -tx) + (float)M_PI;
     out[0] = roll;
     out[1] = pitch;
     out[2] = 0;
@@ -53,7 +53,7 @@ void acc_orientation(float accx, float accy, float accz, float *out) {
 float scaleStereoHeight(float height) {
     float h = height/depthscale;
     if (h > 20 ) {
-        h = sqrt((h - 15.0)) +15.0;
+        h = sqrtf((h - 15.0f)) +15.0f;
     }
     return h;
 }
@@ -115,7 +115,7 @@ cv::Mat createRowImage(std::vector<cv::Mat> ims, int type) {
     //find max height and total width:
     int width =0;
     int height = -1;
-    for (int i = 0; i < ims.size();i++) {
+    for (uint i = 0; i < ims.size();i++) {
         if (ims.at(i).rows > height) {
             height = ims.at(i).rows;
         }
@@ -126,7 +126,7 @@ cv::Mat createRowImage(std::vector<cv::Mat> ims, int type) {
 
     cv::Point p1(0, 0);
 
-    for (int i = 0; i < ims.size();i++) {
+    for (uint i = 0; i < ims.size();i++) {
         cv::Point p2(p1.x+ims.at(0).cols, ims.at(0).rows);
         cv::Mat roi = cv::Mat(res, cv::Rect(p1, p2));
         ims.at(i).copyTo(roi);
@@ -139,7 +139,7 @@ cv::Mat createColumnImage(std::vector<cv::Mat> ims, int type) {
     //find max width and total height:
     int width =-1;
     int height = 0;
-    for (int i = 0; i < ims.size();i++) {
+    for (uint i = 0; i < ims.size();i++) {
         if (ims.at(i).cols > width) {
             width = ims.at(i).cols;
         }
@@ -150,7 +150,7 @@ cv::Mat createColumnImage(std::vector<cv::Mat> ims, int type) {
 
     cv::Point p1(0, 0);
 
-    for (int i = 0; i < ims.size();i++) {
+    for (uint i = 0; i < ims.size();i++) {
         cv::Point p2(ims.at(0).cols, p1.y+ims.at(0).rows);
         cv::Mat roi = cv::Mat(res, cv::Rect(p1, p2));
         ims.at(i).copyTo(roi);

@@ -10,11 +10,11 @@ using namespace std;
 
 
 void VisionData::init(cv::Mat Qf, cv::Mat frameL,cv::Mat frameR){
-    this->Qf = Qf;
-    this->frameL = frameL;
-    this->frameR = frameR;
-    this->frameL_prev = frameL;
-    this->frameR_prev = frameR;    
+    _Qf = Qf;
+    _frameL = frameL;
+    _frameR = frameR;
+    _frameL_prev = frameL;
+    _frameR_prev = frameR;
 
     if (checkFileExist(settingsFile)) {
         std::ifstream is(settingsFile, std::ios::binary);
@@ -23,8 +23,8 @@ void VisionData::init(cv::Mat Qf, cv::Mat frameL,cv::Mat frameR){
     }
 
     smallsize =cv::Size(frameL.cols/IMSCALEF,frameL.rows/IMSCALEF);
-    cv::resize(frameL,frameL_small,smallsize);
-    frameL_s_prev = frameL_small.clone();
+    cv::resize(frameL,_frameL_small,smallsize);
+    _frameL_s_prev = _frameL_small.clone();
 
     init_avg_prev_frame();
 
@@ -39,17 +39,17 @@ void VisionData::init(cv::Mat Qf, cv::Mat frameL,cv::Mat frameR){
 
 
 void VisionData::update(cv::Mat frameL,cv::Mat frameR,float time, int frame_id) {
-    this->frameL_prev = this->frameL.clone();
-    this->frameR_prev = this->frameR.clone();
-    this->frameL = frameL;
-    this->frameR = frameR;
-    this->frame_id = frame_id;
+    _frameL_prev = this->_frameL.clone();
+    _frameR_prev = this->_frameR.clone();
+    _frameL = frameL;
+    _frameR = frameR;
+    _frame_id = frame_id;
 
-    frameL_s_prev = frameL_small.clone();
-    cv::resize(frameL,frameL_small,smallsize);
+    _frameL_s_prev = _frameL_small.clone();
+    cv::resize(frameL,_frameL_small,smallsize);
 
 
-    cv::absdiff( frameL_small ,frameL_s_prev,diffL);
+    cv::absdiff( _frameL_small ,_frameL_s_prev,diffL);
     if (!background_calibrated )
         collect_no_drone_frames(diffL); // calibration of background uncertainty map
 
@@ -76,7 +76,7 @@ void VisionData::collect_no_drone_frames(cv::Mat diff) {
 }
 
 void VisionData::init_avg_prev_frame(void) {
-    avg_prev_frame = cv::Mat::zeros(frameL_s_prev.rows,frameL_s_prev.cols,CV_32SC1);
+    avg_prev_frame = cv::Mat::zeros(_frameL_s_prev.rows,_frameL_s_prev.cols,CV_32SC1);
     n_avg_prev_frames = 0;
 }
 

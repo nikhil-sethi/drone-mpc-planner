@@ -96,7 +96,7 @@ public:
     int joyYaw = 0;
 
     void close (void);
-    bool init(std::ofstream *logger, bool fromfile, Arduino * arduino);
+    void init(std::ofstream *logger, bool fromfile, Arduino * arduino);
     void control(trackData *data);
     bool getAutoControl() {return autoControl;}
     bool getAutoTakeOff() {return autoTakeOff;}

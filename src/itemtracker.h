@@ -25,11 +25,11 @@ class ItemTracker {
 
 protected:
     struct track_item {
-      cv::KeyPoint k;
-      int frame_id;
+      cv::KeyPoint _k;
+      int _frame_id;
       track_item(cv::KeyPoint k, int frame_id){
-          this->k = k;
-          this->frame_id = frame_id;
+          _k = k;
+          _frame_id = frame_id;
       }
     };
 
@@ -87,7 +87,7 @@ private:
         }
 
     };
-    std::string settingsFile;
+    std::string _settingsFile;
     struct Find_result {
       cv::Mat treshL;
       std::vector<cv::KeyPoint> keypointsL;
@@ -107,7 +107,7 @@ private:
     void update_prediction_state(cv::Point3f p);
     void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, int n_frames_lost, cv::KeyPoint match, int disparity, cv::Point3f setpoint_world, int frame_id);
     void reset_tracker_ouput(int n_frames_lost);
-    void find(cv::Mat frameL_small, cv::Mat frameL_s_prev_OK);
+    void find(cv::Mat frameL_small);
     std::vector<cv::KeyPoint> remove_ignores(std::vector<cv::KeyPoint> keypoints, std::vector<track_item> ignore_path);
     cv::Mat show_uncertainty_map_in_image(cv::Point p, cv::Mat resframeL);
 
@@ -119,14 +119,14 @@ private:
     unsigned int type = CV_32F;
     cv::KalmanFilter kfL,kfR;
     cv::Mat stateL,stateR;
-    cv::Mat measL,measR;
+    cv::Mat _measL,_measR;
 
     bool firstFrame;
 
 
 
 
-    cv::Mat blurred_circle;
+    cv::Mat _blurred_circle;
 
     bool foundL = false;
     float t_prev = 0;
@@ -136,7 +136,7 @@ protected:
     cv::Mat frameL_s_prev_OK;
     cv::Mat frameL_prev_OK;
     cv::Mat frameR_prev_OK;
-    VisionData * visdat;
+    VisionData * _visdat;
     int nframes_since_update_prev = 0;
     TrackerSettings settings;
 
@@ -145,7 +145,7 @@ protected:
     virtual void init_settings() = 0;
 public:
 
-    cv::Mat cir,bkg,dif,treshL,approx;
+    cv::Mat _cir,_bkg,_dif,_treshL,_approx;
     Find_result find_result;
     std::vector<track_item> pathL;
     std::vector<track_item> predicted_pathL;
@@ -154,8 +154,8 @@ public:
     int n_frames_tracking =0;
 
     void close (void);
-    bool init(std::ofstream *logger, VisionData *visdat, std::string name);
-    virtual bool track(float time, cv::Point3f setpoint_world, std::vector<track_item> ignore, float drone_max_border_y, float drone_max_border_z);
+    void init(std::ofstream *logger, VisionData *_visdat, std::string name);
+    virtual void track(float time, cv::Point3f setpoint_world, std::vector<track_item> ignore, float drone_max_border_y, float drone_max_border_z);
 
     trackData data;
     Smoother smoother_posX, smoother_posY, smoother_posZ;

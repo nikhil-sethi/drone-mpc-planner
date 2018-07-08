@@ -10,6 +10,7 @@ bool DroneTracker::init(std::ofstream *logger, VisionData *visdat) {
     find_result.smoothed_disparity = DRONE_DISPARITY_START;
     find_result.disparity = DRONE_DISPARITY_START;
     data.landed = true;
+    return false;
 }
 void DroneTracker::init_settings() {
     //thresh params
@@ -59,9 +60,9 @@ void DroneTracker::init_settings() {
 void DroneTracker::track(float time, cv::Point3f setpoint_world, std::vector<track_item> ignore) {
 
     if (data.landed) {
-        frameL_s_prev_OK = visdat->frameL_s_prev;
-        frameL_prev_OK = visdat->frameL_prev;
-        frameR_prev_OK = visdat->frameR_prev;
+        frameL_s_prev_OK = _visdat->_frameL_s_prev;
+        frameL_prev_OK = _visdat->_frameL_prev;
+        frameR_prev_OK = _visdat->_frameR_prev;
 
         data.image_locationL = cv::Point(DRONE_IM_X_START,DRONE_IM_Y_START);
         find_result.smoothed_disparity = DRONE_DISPARITY_START;

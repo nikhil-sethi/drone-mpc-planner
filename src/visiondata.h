@@ -47,15 +47,15 @@ private:
     BaseVisionSettings settings;
 
 public:
-    cv::Mat frameL,frameR;
-    cv::Mat frameL_prev,frameR_prev;
-    int frame_id;
+    cv::Mat _frameL,_frameR;
+    cv::Mat _frameL_prev,_frameR_prev;
+    int _frame_id;
 
     cv::Size smallsize;
-    cv::Mat frameL_small;
-    cv::Mat frameL_s_prev;
+    cv::Mat _frameL_small;
+    cv::Mat _frameL_s_prev;
 
-    cv::Mat Qf;
+    cv::Mat _Qf;
 
     cv::Mat uncertainty_map,threshL,diffL;
 

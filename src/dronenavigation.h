@@ -27,11 +27,11 @@ private:
 
     struct waypoint{
         waypoint(cv::Point3i xyz, int distance_threshold_mm) {
-            this->xyz = xyz;
-            this->distance_threshold_mm = distance_threshold_mm;
+            _xyz = xyz;
+            _distance_threshold_mm = distance_threshold_mm;
         }
-        cv::Point3i xyz;
-        int distance_threshold_mm;
+        cv::Point3i _xyz;
+        int _distance_threshold_mm;
     };
 
     struct navigationParameters{
@@ -53,7 +53,7 @@ private:
 
 
     float land_incr = 0;
-    int wpid = 0;
+    uint wpid = 0;
     std::vector<waypoint> setpoints;
 
     int autoLandThrottleDecrease = 0;

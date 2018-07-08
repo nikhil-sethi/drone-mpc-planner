@@ -15,7 +15,7 @@ class GStream {
 
 
 private:
- 	GstElement *pipeline,*appsrc;
+    GstElement *_pipeline,*_appsrc;
 
 
     int prepare_buffer(GstAppSrc* appsrc, cv::Mat * image);

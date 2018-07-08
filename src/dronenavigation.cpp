@@ -58,11 +58,12 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
 
 #endif
 
+    return false;
 }
 
 void DroneNavigation::update() {
     float dis = sqrtf(_dtrk->data.posErrX*_dtrk->data.posErrX + _dtrk->data.posErrY*_dtrk->data.posErrY + _dtrk->data.posErrZ*_dtrk->data.posErrZ);
-    if (dis *1000 < setpoints[wpid].distance_threshold_mm * params.distance_threshold_f && !_dctrl->getAutoLand() && _dctrl->getAutoControl() && !_dctrl->getAutoTakeOff() && _dtrk->n_frames_tracking>5) {
+    if (dis *1000 < setpoints[wpid]._distance_threshold_mm * params.distance_threshold_f && !_dctrl->getAutoLand() && _dctrl->getAutoControl() && !_dctrl->getAutoTakeOff() && _dtrk->n_frames_tracking>5) {
         if (wpid < setpoints.size()-1) {
             wpid++;
             alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/window-slide.ogg &");
@@ -97,16 +98,16 @@ void DroneNavigation::update() {
         wp = &setpoints[wpid];
     else { // read from position trackbars
         wp = &setpoints[wpid];
-        wp->xyz.x = params.setpoint_slider_X;
-        wp->xyz.y = params.setpoint_slider_Y;
-        wp->xyz.z = params.setpoint_slider_Z;
+        wp->_xyz.x = params.setpoint_slider_X;
+        wp->_xyz.y = params.setpoint_slider_Y;
+        wp->_xyz.z = params.setpoint_slider_Z;
     }
 
-    setpoint = setpoints[wpid].xyz;
+    setpoint = setpoints[wpid]._xyz;
 
-    setpoint_world.x = (wp->xyz.x - SETPOINTXMAX/2) / 1000.0f;
-    setpoint_world.y = (wp->xyz.y - SETPOINTYMAX/2) / 1000.0f;
-    setpoint_world.z = -(wp->xyz.z) / 1000.0f;
+    setpoint_world.x = (wp->_xyz.x - SETPOINTXMAX/2) / 1000.0f;
+    setpoint_world.y = (wp->_xyz.y - SETPOINTYMAX/2) / 1000.0f;
+    setpoint_world.z = -(wp->_xyz.z) / 1000.0f;
 
     if (_dctrl->getAutoLand()) {
         if ( setpoint_world.y - land_incr> -(_dtrk->drone_max_border_y+100000.0f))

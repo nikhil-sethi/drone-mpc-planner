@@ -28,10 +28,10 @@ private:
     void draw_target_text(cv::Mat resFrame);
     cv::Mat draw_sub_tracking_viz(cv::Mat frameL_small,cv::Size vizsizeL,cv::Point3d setpoint, ItemTracker * trkr);
 
-    DroneController *dctrl;
-    DroneTracker *dtrkr;
-    InsectTracker *itrkr;
-    DroneNavigation *dnav;
+    DroneController *_dctrl;
+    DroneTracker *_dtrkr;
+    InsectTracker *_itrkr;
+    DroneNavigation *_dnav;
 
     const int bufsize = 600;
 
@@ -128,10 +128,10 @@ public:
     void addPlotSample(void);
     void draw_tracker_viz(cv::Mat frameL, cv::Mat frameL_small, cv::Point3d setpoint);
     void init(DroneController *dctrl, DroneTracker *dtrkr, InsectTracker *itrkr, DroneNavigation *dnav){
-        this->dctrl = dctrl;
-        this->dtrkr = dtrkr;
-        this->itrkr = itrkr;
-        this->dnav = dnav;
+        _dctrl = dctrl;
+        _dtrkr = dtrkr;
+        _itrkr = itrkr;
+        _dnav = dnav;
         thread_viz = std::thread(&Visualizer::workerThread,this);
     }
     void close();

@@ -103,7 +103,7 @@ void process_video() {
 
         static float time =0;
         float dt = cam.frame_time - time;
-        float break_time = ((float)stopWatch_break.Read())/1000.0;
+        float break_time = ((float)stopWatch_break.Read())/1000.0f;
         if (breakpause_prev != 0)
             time = cam.frame_time - break_time;
 
@@ -118,7 +118,7 @@ void process_video() {
 #ifdef HASSCREEN
         if (breakpause_prev != 0) {
             visualizer.addPlotSample();
-            visualizer.draw_tracker_viz(visdat.frameL,visdat.frameL_small,dnav.setpoint);
+            visualizer.draw_tracker_viz(visdat._frameL,visdat._frameL_small,dnav.setpoint);
         }
 #endif
 

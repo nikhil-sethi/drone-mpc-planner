@@ -12,7 +12,8 @@ void Cam::update(void) {
         while (!ready)
             usleep(1000);
     }
-    g_waitforimage.lock();
+    std::unique_lock<std::mutex> lk(m);
+    g_waitforimage.wait(lk);
     g_lockData.lock();
     frameL = frameL_tmp.clone();
     frameR = frameR_tmp.clone();
@@ -105,6 +106,8 @@ void Cam::init(int argc, char **argv) {
 
 void Cam::workerThread(void) {
 
+    //std::unique_lock<std::mutex> lk(m); //hmmm???
+
     std::cout << "Cam thread started!" << std::endl;
 
 
@@ -144,7 +147,7 @@ void Cam::workerThread(void) {
 
     while (!exitCamThread) {
 
-        int current_frame_id = frame.get_frame_number();
+        uint current_frame_id = frame.get_frame_number();
         while(current_frame_id == frame.get_frame_number()) {
             try {
                 frame = cam.wait_for_frames();
@@ -152,7 +155,7 @@ void Cam::workerThread(void) {
         }
 
         g_lockData.lock();
-        frame_time_tmp = frame.get_timestamp()/1000.f; //stopWatch.Read()/1000.f;
+        frame_time_tmp = (float)frame.get_timestamp()/1000.f; //stopWatch.Read()/1000.f;
         frame_number_tmp = frame.get_frame_number();
         //std::cout << frame.get_frame_number() << ": " << frame_time_tmp << std::endl;
         frameL_tmp = Mat(imgsize, CV_8UC1, (void*)frame.get_infrared_frame(IR_ID_LEFT).get_data(), Mat::AUTO_STEP);
@@ -161,10 +164,11 @@ void Cam::workerThread(void) {
 
         g_lockData.unlock();
 
-        g_waitforimage.unlock();
+
+        g_waitforimage.notify_one();
         ready = true;
 
-        if (!fromfile && !enable_auto_exposure == enabled) {
+        if (!fromfile && !(enable_auto_exposure == enabled)) {
             if (exposure != old_exposure) {
                 if (exposure < 20)
                     exposure =20;

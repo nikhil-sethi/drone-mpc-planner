@@ -14,6 +14,7 @@
 
 #include <thread>
 #include <mutex>
+#include <condition_variable>
 
 #include "opencv2/features2d/features2d.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
@@ -40,7 +41,8 @@ public:
     void update(void);
 
     std::mutex g_lockData;
-    std::mutex g_waitforimage;
+    std::condition_variable g_waitforimage;
+    std::mutex m;
 
     cv::Mat Qf;
     int frame_number;

@@ -3,7 +3,7 @@
 using namespace cv;
 using namespace std;
 
-bool InsectTracker::init(std::ofstream *logger, VisionData *visdat) {
+void InsectTracker::init(std::ofstream *logger, VisionData *visdat) {
     ItemTracker::init(logger,visdat,"insect");
 }
 void InsectTracker::init_settings() {
@@ -52,6 +52,6 @@ void InsectTracker::init_settings() {
 
 }
 
-bool InsectTracker::track(float time, cv::Point3f setpoint_world, std::vector<track_item> ignore) {
+void InsectTracker::track(float time, cv::Point3f setpoint_world, std::vector<track_item> ignore) {
     ItemTracker::track(time,setpoint_world,ignore,MAX_BORDER_Y_DEFAULT,MAX_BORDER_Z_DEFAULT);
 }

@@ -91,7 +91,7 @@ cv::Mat Visualizer::plot_xyd(void) {
     ims_xyd.push_back(plot({disparity,sdisparity},"Disparity"));
 
 
-    cv::Point sp1(dnav->setpoint_world.x,-dnav->setpoint_world.z);
+    cv::Point sp1(_dnav->setpoint_world.x,-_dnav->setpoint_world.z);
     cv::Point min_xz_range,max_xz_range;
     min_xz_range.x =-3000;
     max_xz_range.x = 3000;
@@ -99,7 +99,7 @@ cv::Mat Visualizer::plot_xyd(void) {
     max_xz_range.y = 5000; // z
     ims_xyd.push_back(plotxy(posX,posZ, sp1,"PosXZ",min_xz_range,max_xz_range));
 
-    cv::Point sp2(dnav->setpoint_world.x,dnav->setpoint_world.y);
+    cv::Point sp2(_dnav->setpoint_world.x,_dnav->setpoint_world.y);
     cv::Point min_xy_range,max_xy_range;
     min_xy_range.x =-3000;
     max_xy_range.x = 3000;
@@ -151,15 +151,18 @@ void Visualizer::plot(std::vector<cv::Mat> data, cv::Mat *frame, std::string nam
         current_buf_size = data.at(0).rows;
     int start = data.at(0).rows -current_buf_size;
 
-    double min,max;
+    double mind,maxd;
     cv::Mat tmp;
-    for (int i = 0 ; i< data.size();i++) {
+    for (uint i = 0 ; i< data.size();i++) {
         cv::Mat vec = data.at(i);
         cv::Mat vect = cv::Mat(vec,cv::Rect(cv::Point(0,start),cv::Point(1,start+current_buf_size)));
         tmp.push_back(vect);
     }
-    cv::minMaxIdx(tmp,&min,&max,NULL,NULL);
+    cv::minMaxIdx(tmp,&mind,&maxd,NULL,NULL);
 
+    float min,max;
+    min = (float)mind;
+    max = (float)maxd;
     std::stringstream ss;
     ss << std::setprecision(4);
     ss << "[" << min << " - " << max << "]";
@@ -175,7 +178,7 @@ void Visualizer::plot(std::vector<cv::Mat> data, cv::Mat *frame, std::string nam
     const float scaleX = (float)((fsizex))/(bufsize);
     const float scaleY = ((float)fsizey)/(max-min);
 
-    for (int i = 0 ; i< data.size();i++) {
+    for (uint i = 0 ; i< data.size();i++) {
         int prev_y =0;
         int prev_x=0;
         for (int j = start; j < data.at(i).rows-1; j++)  {
@@ -229,9 +232,9 @@ cv::Mat Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Point setpoint, std:
 
     float x,y;
     for (int j = start; j < xS.rows-1; j++)  {
-        x = xS.at<float>(j,1) - minx;
+        x = xS.at<float>(j,1) - (float)minx;
         x =x*scaleX + 2*line_width;
-        y = yS.at<float>(j,1) - miny;
+        y = yS.at<float>(j,1) - (float)miny;
         y= fsizey - y*scaleY + 2*line_width;
         if (j > start)
             cv::line(frame, cv::Point(prev_x, prev_y) , cv::Point(x, y), green, line_width, CV_AA, 0);
@@ -258,8 +261,8 @@ void Visualizer::draw_segment_viz(){
     ims.push_back(cir8);
     ims.push_back(bkg8);
     ims.push_back(dif8);
-    ims.push_back(dtrkr->approx);
-    ims.push_back(dtrkr->treshL);
+    ims.push_back(_dtrkr->_approx);
+    ims.push_back(_dtrkr->_treshL);
     showColumnImage(ims,"drone_roi",CV_8UC1);
 }
 
@@ -269,9 +272,9 @@ void Visualizer::draw_target_text(cv::Mat resFrame) {
     ss2.precision(2);
     ss3.precision(2);
 
-    ss1 << "[" << dtrkr->data.posX << ", " << dtrkr->data.posY << ", " << dtrkr->data.posZ << "] " ;
-    ss2 << "[" << dtrkr->data.posErrX << ", " << dtrkr->data.posErrY << ", " << dtrkr->data.posErrZ << "] " ;
-    ss3 << "Delta: " << sqrtf(dtrkr->data.posErrX*dtrkr->data.posErrX+dtrkr->data.posErrY*dtrkr->data.posErrY+dtrkr->data.posErrZ*dtrkr->data.posErrZ);
+    ss1 << "[" << _dtrkr->data.posX << ", " << _dtrkr->data.posY << ", " << _dtrkr->data.posZ << "] " ;
+    ss2 << "[" << _dtrkr->data.posErrX << ", " << _dtrkr->data.posErrY << ", " << _dtrkr->data.posErrZ << "] " ;
+    ss3 << "Delta: " << sqrtf(_dtrkr->data.posErrX*_dtrkr->data.posErrX+_dtrkr->data.posErrY*_dtrkr->data.posErrY+_dtrkr->data.posErrZ*_dtrkr->data.posErrZ);
 
     putText(resFrame,ss1.str() ,cv::Point(220,20),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     putText(resFrame,ss2.str() ,cv::Point(220,40),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
@@ -283,8 +286,8 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
     cv::Mat frameL_small_drone;
     if (trkr->predicted_pathL.size()>0) {
         std::vector<cv::KeyPoint> keypoints;
-        for (int i = 0; i< trkr->predicted_pathL.size();i++) {
-            keypoints.push_back(trkr->predicted_pathL.at(i).k);
+        for (uint i = 0; i< trkr->predicted_pathL.size();i++) {
+            keypoints.push_back(trkr->predicted_pathL.at(i)._k);
         }
         drawKeypoints( frameL_small, keypoints, frameL_small_drone, Scalar(0,255,0), DrawMatchesFlags::DEFAULT );
     } else {
@@ -295,8 +298,8 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
 
     if (trkr->pathL.size() > 0) {
         std::vector<cv::KeyPoint> keypoints;
-        for (int i = 0; i< trkr->pathL.size();i++) {
-            keypoints.push_back(trkr->pathL.at(i).k);
+        for (uint i = 0; i< trkr->pathL.size();i++) {
+            keypoints.push_back(trkr->pathL.at(i)._k);
         }
         drawKeypoints( frameL_small_drone, keypoints, frameL_small_drone, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
     }
@@ -315,9 +318,9 @@ void Visualizer::draw_tracker_viz(cv::Mat frameL,cv::Mat frameL_small, cv::Point
         cv::Mat resFrame;
         cvtColor(frameL,resFrame,CV_GRAY2BGR);
 
-        cir8 = dtrkr->cir*255;
-        bkg8 = dtrkr->bkg*255;
-        dif8 = dtrkr->dif*10;
+        cir8 = _dtrkr->_cir*255;
+        bkg8 = _dtrkr->_bkg*255;
+        dif8 = _dtrkr->_dif*10;
         cir8.convertTo(cir8, CV_8UC1);
         bkg8.convertTo(bkg8, CV_8UC1);
         dif8.convertTo(dif8, CV_8UC1);
@@ -325,8 +328,8 @@ void Visualizer::draw_tracker_viz(cv::Mat frameL,cv::Mat frameL_small, cv::Point
 //        draw_segment_viz();
 
         cv::Size vizsizeL(resFrame.cols/4,resFrame.rows/4);
-        cv::Mat frameL_small_drone = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,dtrkr);
-        cv::Mat frameL_small_insect = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,itrkr);
+        cv::Mat frameL_small_drone = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,_dtrkr);
+        cv::Mat frameL_small_insect = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,_itrkr);
         frameL_small_drone.copyTo(resFrame(cv::Rect(0,0,frameL_small_drone.cols, frameL_small_drone.rows)));
         frameL_small_insect.copyTo(resFrame(cv::Rect(resFrame.cols-frameL_small_drone.cols,0,frameL_small_drone.cols, frameL_small_drone.rows)));
         draw_target_text(resFrame);

@@ -17,11 +17,11 @@ protected:
     void init_settings();
 public:       
 
-    cv::Mat cir;
+    cv::Mat _cir;
     float drone_max_border_z = MAX_BORDER_Z_DEFAULT;
     float drone_max_border_y = MAX_BORDER_Y_DEFAULT;
 
-    bool init(std::ofstream *logger, VisionData *visdat);
+    bool init(std::ofstream *logger, VisionData *_visdat);
     void track(float time, cv::Point3f setpoint_world, std::vector<track_item> ignore);
 
 };
