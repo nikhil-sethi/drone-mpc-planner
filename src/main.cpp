@@ -143,7 +143,7 @@ void process_video() {
 
         int frameWritten = 0;
 #if VIDEORAWLR
-        frameWritten = outputVideoRawLR.write(visdat.frameL,visdat.frameR);
+        frameWritten = outputVideoRawLR.write(cam.frameL);
 #endif
         if (frameWritten == 0) {
 #if VIDEODISPARITY

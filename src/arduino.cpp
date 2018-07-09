@@ -9,7 +9,7 @@ void Arduino::init(bool fromfile) {
     notconnected = RS232_OpenComport(baudrate);
 
     if (notconnected && !fromfile) {
-        printf("Arduino failed.\n");
+        std::cout << "Arduino failed." << std::endl;
         exit(1);
     }
 
