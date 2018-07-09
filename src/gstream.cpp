@@ -51,7 +51,7 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
         /* setup pipeline */
         if (mode == VIDEOMODE_AVI) {
             //write to file:
-            //gst-launch-1.0 videotestsrc ! videocovert ! x264enc ! 'video/x-h264, stream-format=(string)byte-stream'  ! avimux ! filesink location=test.avi
+            //gst-launch-1.0 videotestsrc ! videoconvert ! x264enc ! 'video/x-h264, stream-format=(string)byte-stream'  ! avimux ! filesink location=test.avi
             //gst-launch-1.0 videotestsrc ! video/x-raw,format=GRAY8,framerate=\(fraction\)90/1,width=1280,height=720 ! videoconvert ! x264enc ! 'video/x-h264, stream-format=(string)byte-stream'  ! avimux ! filesink location=test.avi
             _pipeline = gst_pipeline_new ("pipeline");
             _appsrc = gst_element_factory_make ("appsrc", "source");
@@ -121,7 +121,7 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
             }
             g_object_set (G_OBJECT (rate), "caps",
                           gst_caps_new_simple ("video/x-raw",
-                                               "framerate", GST_TYPE_FRACTION, 15, 1,NULL), NULL);
+                                               "framerate", GST_TYPE_FRACTION, fps, 1,NULL), NULL);
             g_object_set (G_OBJECT (encoder), "caps",
                           gst_caps_new_simple ("video/x-h264",
                                                "stream-format", G_TYPE_STRING, "byte-stream", NULL), NULL);
