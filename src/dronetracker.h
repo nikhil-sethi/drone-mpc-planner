@@ -15,6 +15,7 @@ private:
 protected:
     cv::Mat get_probability_cloud(cv::Point size);
     void init_settings();
+    cv::Mat get_approx_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size);
 public:       
 
     cv::Mat _cir;

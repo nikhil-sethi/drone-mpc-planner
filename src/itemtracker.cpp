@@ -264,9 +264,12 @@ void ItemTracker::find(cv::Mat frameL_small) {
         settings.roi_min_size = 1;
     roi_size.x=settings.roi_min_size/IMSCALEF+nframes_since_update_prev*(settings.roi_grow_speed / 16 / IMSCALEF);
     roi_size.y=settings.roi_min_size/IMSCALEF+nframes_since_update_prev*(settings.roi_grow_speed / 16 / IMSCALEF);
-    if (roi_size.x > _visdat->_frameL_small.cols)
+
+    if (roi_size.x  >= _visdat->_frameL_small.cols) {
         roi_size.x = _visdat->_frameL_small.cols;
-    if (roi_size.y > _visdat->_frameL_small.rows)
+    }
+
+    if (roi_size.y >= _visdat->_frameL_small.rows)
         roi_size.y = _visdat->_frameL_small.rows;
 
     //attempt to detect changed blobs
@@ -322,45 +325,6 @@ cv::Mat ItemTracker::segment(cv::Mat diffL, cv::Point previous_imageL_location, 
 
 cv::Mat ItemTracker::get_probability_cloud(cv::Point size) {
     return cv::Mat::ones(size.y,size.x,CV_32F); // dummy implementation. TODO: create proper probablity estimate
-}
-
-/* Takes the calibrated uncertainty map, and augments it with a highlight around p */
-cv::Mat ItemTracker::get_approx_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size) {
-
-    //calc roi:
-    cv::Rect roi_circle(0,0,size.x,size.y);
-    int x1 = p.x-size.x/2;
-    if (x1 < 0) {
-        roi_circle.x = abs(p.x-size.x/2);
-        roi_circle.width-=roi_circle.x;
-    } else if (x1 + size.x >= diffL.cols)
-        roi_circle.width = roi_circle.width  - abs(x1 + size.x - diffL.cols);
-
-    int y1 = p.y-size.y/2;
-    if (y1 < 0) {
-        roi_circle.y = abs(p.y-size.y/2);
-        roi_circle.height-=roi_circle.y;
-    } else if (y1 + size.y >= diffL.rows)
-        roi_circle.height = roi_circle.height - abs(y1 + size.y - diffL.rows);
-
-    cv::Mat blurred_circle = get_probability_cloud(size);
-    cv::Mat cir = blurred_circle(roi_circle);
-
-    x1 = p.x-size.x/2+roi_circle.x;
-    int x2 = roi_circle.width;
-    y1 = p.y-size.y/2+roi_circle.y;
-    int y2 = roi_circle.height;
-
-    cv::Rect roi(x1,y1,x2,y2);
-    find_result.roi_offset = roi;
-
-    _bkg = _visdat->uncertainty_map(roi);
-    diffL(roi).convertTo(_dif, CV_32F);
-    cv::Mat res;
-    res = cir.mul(_dif).mul(_bkg);
-    res.convertTo(res, CV_8UC1);
-
-    return res;
 }
 
 /* Takes the calibrated uncertainty map, and augments it with a highlight around p */

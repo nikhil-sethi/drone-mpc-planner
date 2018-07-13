@@ -101,7 +101,7 @@ private:
     void updateParams();
     cv::Mat segment(cv::Mat diffL, cv::Point previous_imageL_location, cv::Point roi_size);
     cv::Point3f predict(float dt, int frame_id);
-    cv::Mat get_approx_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size);
+    virtual cv::Mat get_approx_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size) = 0;
     int match_closest_to_prediciton(cv::Point3f predicted_locationL, std::vector<cv::KeyPoint> keypointsL);
     int stereo_match(cv::KeyPoint closestL, cv::Mat frameL_prev, cv::Mat prevFrameR_big, cv::Mat frameL, cv::Mat frameR, int prevDisparity);
     void update_prediction_state(cv::Point3f p);
