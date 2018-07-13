@@ -17,7 +17,7 @@ void Cam::update(void) {
     g_lockData.lock();
     frameL = frameL_tmp.clone();
     frameR = frameR_tmp.clone();
-    frame_number = frame_number_tmp;
+    frame_id = frame_id_tmp;
     frame_time = frame_time_tmp;
     g_lockData.unlock();
 }
@@ -144,6 +144,7 @@ void Cam::workerThread(void) {
 
     static int old_exposure = exposure;
     static int old_gain = gain;
+    int frame_start_time = frame.get_timestamp();
 
     while (!exitCamThread) {
 
@@ -155,8 +156,8 @@ void Cam::workerThread(void) {
         }
 
         g_lockData.lock();
-        frame_time_tmp = (float)frame.get_timestamp()/1000.f; //stopWatch.Read()/1000.f;
-        frame_number_tmp = frame.get_frame_number();
+        frame_time_tmp = ((float)frame.get_timestamp()-frame_start_time)/1000.f; //stopwatch.Read()/1000.f;
+        frame_id_tmp = frame.get_frame_number();
         //std::cout << frame.get_frame_number() << ": " << frame_time_tmp << std::endl;
         frameL_tmp = Mat(imgsize, CV_8UC1, (void*)frame.get_infrared_frame(IR_ID_LEFT).get_data(), Mat::AUTO_STEP);
         frameR_tmp = Mat(imgsize, CV_8UC1, (void*)frame.get_infrared_frame(IR_ID_RIGHT).get_data(), Mat::AUTO_STEP);

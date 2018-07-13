@@ -44,9 +44,11 @@ public:
     std::condition_variable g_waitforimage;
     std::mutex m;
 
+
+    int get_frame_id() {return frame_id;}
+    float get_frame_time() {return frame_time;}
     cv::Mat Qf;
-    int frame_number;
-    float frame_time;
+
     cv::Mat frameL,frameR;
 
     enum auto_exposure_enum{disabled = 0, enabled = 1, only_at_startup=2};
@@ -54,6 +56,8 @@ public:
 
 private:
 
+    int frame_id;
+    float frame_time;
     rs2::pipeline_profile selection;
     int exposure = 84*(31250/256); // >11000 -> 60fps, >16500 -> 30fps, < 20 = crash
     int gain = 248;
@@ -61,7 +65,7 @@ private:
     bool ready;
 
     float frame_time_tmp;
-    int frame_number_tmp;
+    int frame_id_tmp;
     cv::Mat frameL_tmp,frameR_tmp;
 
     // Declare RealSense pipeline, encapsulating the actual device and sensors

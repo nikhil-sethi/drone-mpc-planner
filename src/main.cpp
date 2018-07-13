@@ -23,7 +23,13 @@
 #include "vizs.h"
 #include "insecttracker.h"
 #include "logreader.h"
+#if CAMMODE == CAMMODE_FROMVIDEOFILE
+#include "filecam.h"
+#elif CAMMODE == CAMMODE_AIRSIM
+#include "airsim.h"
+#elif CAMMODE == CAMMODE_REALSENSE
 #include "cam.h"
+#endif
 #include "visiondata.h"
 
 #include "opencv2/features2d/features2d.hpp"
@@ -61,7 +67,15 @@ DroneNavigation dnav;
 InsectTracker itrkr;
 Visualizer visualizer;
 LogReader logreader;
+#if CAMMODE == CAMMODE_FROMVIDEOFILE
+FileCam cam;
+#define Cam FileCam //wow that is pretty hacky :)
+#elif CAMMODE == CAMMODE_AIRSIM
+Airsim cam;
+#define Cam Airsim //wow that is pretty hacky :)
+#elif CAMMODE == CAMMODE_REALSENSE
 Cam cam;
+#endif
 VisionData visdat;
 bool fromfile = false;
 
@@ -75,8 +89,7 @@ void handleKey();
 void process_video() {
 
 
-    float start_time = cam.frame_time;
-    visdat.update(cam.frameL,cam.frameR,cam.frame_time-start_time,cam.frame_number);
+    visdat.update(cam.frameL,cam.frameR,cam.get_frame_time(),cam.get_frame_id());
 
     //main while loop:
     while (key != 27) // ESC
@@ -102,18 +115,18 @@ void process_video() {
 
 
         static float time =0;
-        float dt = cam.frame_time - time;
+        float dt = cam.get_frame_time() - time;
         float break_time = ((float)stopWatch_break.Read())/1000.0f;
         if (breakpause_prev != 0)
-            time = cam.frame_time - break_time;
+            time = cam.get_frame_time() - break_time;
 
-        logger << imgcount << ";" << cam.frame_number << ";" ;
+        logger << imgcount << ";" << cam.get_frame_id() << ";" ;
 
-        visdat.update(cam.frameL,cam.frameR,cam.frame_time-start_time,cam.frame_number);
+        visdat.update(cam.frameL,cam.frameR,cam.get_frame_time(),cam.get_frame_id());
 
         //WARNING: changing the order of the functions with logging must be match with the init functions!
         //itrkr.track(cam.frame_time-start_time, dnav.setpoint_world, dtrkr.pathL);
-        dtrkr.track(cam.frame_time-start_time, dnav.setpoint_world,itrkr.pathL);
+        dtrkr.track(cam.get_frame_time(), dnav.setpoint_world,itrkr.pathL);
 
 #ifdef HASSCREEN
         if (breakpause_prev != 0) {
@@ -127,7 +140,7 @@ void process_video() {
 
 #ifdef HASSCREEN
         if (fromfile) {
-            int rs_id = cam.frame_number;
+            int rs_id = cam.get_frame_time();
             LogReader::Log_Entry tmp  = logreader.getItem(rs_id);
             if (tmp.RS_ID == rs_id) {
                 dctrl.joyRoll = tmp.joyRoll;
@@ -156,7 +169,7 @@ void process_video() {
         }
 
 
-        std::cout << "Frame: " <<imgcount << ", " << cam.frame_number << ". FPS: " << imgcount / (time-start_time-break_time ) << ". Time: " << time-start_time-break_time  << ", dt " << dt << std::endl;
+        std::cout << "Frame: " <<imgcount << ", " << cam.get_frame_id() << ". FPS: " << imgcount / (time-break_time ) << ". Time: " << time-break_time  << ", dt " << dt << std::endl;
         imgcount++;
 
         handleKey();

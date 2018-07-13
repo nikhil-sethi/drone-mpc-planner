@@ -31,6 +31,48 @@ link_directories(SYSTEM ${GST_LIBRARY_DIRS})
 set (CEREAL_SRC_DIR ../src/)
 include_directories(SYSTEM "${CEREAL_SRC_DIR}")
 
+
+
+#************airsim******************
+if(WITH_AIRSIM)
+ set (AIRSIM_ROOT /home/houjebek/code/AirSim)
+
+ add_subdirectory("${AIRSIM_ROOT}/cmake/rpclib_wrapper" rpclib_wrapper)
+ add_subdirectory("${AIRSIM_ROOT}/cmake/AirLib" AirLib)
+ add_subdirectory("${AIRSIM_ROOT}/cmake/MavLinkCom" MavLinkCom)
+
+ LIST(APPEND CMAKE_MODULE_PATH "${AIRSIM_ROOT}/cmake")
+ LIST(APPEND CMAKE_MODULE_PATH "${AIRSIM_ROOT}/cmake/cmake-modules")
+ INCLUDE("${AIRSIM_ROOT}/cmake/cmake-modules/CommonSetup.cmake")
+
+ #setup include and lib for rpclib which will be referenced by other projects
+ set(RPCLIB_VERSION_FOLDER rpclib-2.2.1)
+ set(RPC_LIB_INCLUDES " ${AIRSIM_ROOT}/external/rpclib/${RPCLIB_VERSION_FOLDER}/include")
+ #name of .a file with lib prefix
+ set(RPC_LIB rpc)
+ message(STATUS "found RPC_LIB_INCLUDES=${RPC_LIB_INCLUDES}")
+
+ include_directories(SYSTEM ${AIRSIM_ROOT}/AirLib/deps/eigen3)
+
+ set(CMAKE_CXX_FLAGS "\
+  -ggdb -fdiagnostics-show-option \
+  ${RPC_LIB_DEFINES} ${CMAKE_CXX_FLAGS}")
+ set(CXX_EXP_LIB "-lstdc++fs -fmax-errors=10 -Wnoexcept -Wstrict-null-sentinel")
+
+ include_directories(
+  SYSTEM ${AIRSIM_ROOT}/../airsim-test
+  SYSTEM ${AIRSIM_ROOT}/AirLib/deps/eigen3
+  SYSTEM ${AIRSIM_ROOT}/AirLib/include
+  SYSTEM ${RPC_LIB_INCLUDES}
+  SYSTEM ${AIRSIM_ROOT}/MavLinkCom/include
+  SYSTEM ${AIRSIM_ROOT}/MavLinkCom/common_utils
+  )
+
+ link_directories(${AIRSIM_ROOT}/build_debug/output/lib/)
+endif()
+#/airsim*******************
+
+
 # sources
 FILE(GLOB SRCS "../src/*.cpp" "../src/*.h" "../src/*.c" "../src/cereal*.hpp")
 
@@ -46,14 +88,14 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 
 STRING(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_LOWER)
 IF(CMAKE_BUILD_TYPE_LOWER STREQUAL debug)
-        set(DEBUG_FLAG 1)
-        ADD_DEFINITIONS(-DDEBUG_FLAG=${DEBUG_FLAG})
-        MESSAGE( STATUS "DEBUG MODE" )
+set(DEBUG_FLAG 1)
+ADD_DEFINITIONS(-DDEBUG_FLAG=${DEBUG_FLAG})
+MESSAGE( STATUS "DEBUG MODE" )
 ENDIF(CMAKE_BUILD_TYPE_LOWER STREQUAL debug)
 
 #detect whether we build for ARM drone or pc
 IF (NOT DEFINED _PC)
-    SET(_PC TRUE)
+SET(_PC TRUE)
 ENDIF()
 ADD_DEFINITIONS(-D_PC=${_PC})
 
@@ -62,4 +104,8 @@ add_executable(pats ${SRCS})
 
 
 target_link_libraries(${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT} ${OpenCV_LIBS} ${REALSENSE} ${GST_LIBRARIES} ${GSTSDP_LIBRARIES} ${GSTAPP_LIBRARIES})
-
+if(WITH_AIRSIM)
+ target_link_libraries(${PROJECT_NAME} AirLib)
+ target_link_libraries(${PROJECT_NAME} ${RPC_LIB})
+ target_link_libraries(${PROJECT_NAME} MavLinkCom)
+endif()

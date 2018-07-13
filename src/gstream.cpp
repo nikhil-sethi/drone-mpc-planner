@@ -33,7 +33,7 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
 
         std::cout << "Opening video file for processed results at " << sizeX << "x" << sizeY << " pixels with " << fps << "fps " << std::endl;
         cv::Size sizeRes(sizeX,sizeY);
-        cvvideo.open(file,CV_FOURCC('F','M','P','4'),fps,sizeRes,color);
+        cvvideo.open(file,CV_FOURCC('X','2','6','4'),fps,sizeRes,color);
         if (!cvvideo.isOpened())
         {
             std::cerr << "Output result video could not be opened!" << std::endl;
