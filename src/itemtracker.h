@@ -23,7 +23,7 @@
  */
 class ItemTracker {
 
-protected:
+public:
     struct track_item {
       cv::KeyPoint _k;
       int _frame_id;

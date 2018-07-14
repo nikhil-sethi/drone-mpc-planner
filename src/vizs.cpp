@@ -33,43 +33,43 @@ void Visualizer::addPlotSample(void) {
     }
 
 
-    roll_joystick.push_back((float)dctrl->joyRoll);
-    pitch_joystick.push_back((float)dctrl->joyPitch);
-    yaw_joystick.push_back((float)dctrl->joyPitch);
-    throttle_joystick.push_back((float)dctrl->joyThrottle);
+    roll_joystick.push_back((float)_dctrl->joyRoll);
+    pitch_joystick.push_back((float)_dctrl->joyPitch);
+    yaw_joystick.push_back((float)_dctrl->joyPitch);
+    throttle_joystick.push_back((float)_dctrl->joyThrottle);
 
-    roll_calculated.push_back((float)dctrl->autoRoll);
-    pitch_calculated.push_back((float)dctrl->autoPitch);
-    //    yaw_calculated.push_back((float)dctrl->commandedYaw);
-    throttle_calculated.push_back((float)dctrl->autoThrottle);
-    throttle_hover.push_back((float)dctrl->hoverthrottle);
+    roll_calculated.push_back((float)_dctrl->autoRoll);
+    pitch_calculated.push_back((float)_dctrl->autoPitch);
+    //    yaw_calculated.push_back((float)_dctrl->commandedYaw);
+    throttle_calculated.push_back((float)_dctrl->autoThrottle);
+    throttle_hover.push_back(_dctrl->hoverthrottle);
 
-    dt.push_back((float)dtrkr->data.dt);
-    dt_target.push_back((float)1.f/VIDEOFPS);
+    dt.push_back(_dtrkr->data.dt);
+    dt_target.push_back(1.f/VIDEOFPS);
 
-    posX.push_back(-(float)dtrkr->data.posX);
-    posY.push_back((float)dtrkr->data.posY);
-    posZ.push_back(-(float)dtrkr->data.posZ);
-    disparity.push_back((float)dtrkr->data.disparity);
-    sdisparity.push_back((float)dtrkr->data.sdisparity);
+    posX.push_back(-_dtrkr->data.posX);
+    posY.push_back(_dtrkr->data.posY);
+    posZ.push_back(-_dtrkr->data.posZ);
+    disparity.push_back(_dtrkr->data.disparity);
+    sdisparity.push_back(_dtrkr->data.sdisparity);
 
-    sposX.push_back(-(float)dtrkr->data.sposX);
-    sposY.push_back((float)dtrkr->data.sposY);
-    sposZ.push_back(-(float)dtrkr->data.sposZ);
+    sposX.push_back(-_dtrkr->data.sposX);
+    sposY.push_back(_dtrkr->data.sposY);
+    sposZ.push_back(-_dtrkr->data.sposZ);
 
-    setposX.push_back(-(float)dnav->setpoint_world.x);
-    setposY.push_back((float)dnav->setpoint_world.y);
-    setposZ.push_back(-(float)dnav->setpoint_world.z);
+    setposX.push_back(-_dnav->setpoint_world.x);
+    setposY.push_back(_dnav->setpoint_world.y);
+    setposZ.push_back(-_dnav->setpoint_world.z);
 
-    velX.push_back(-(float)dtrkr->data.velX);
-    velY.push_back((float)dtrkr->data.velY);
-    velZ.push_back(-(float)dtrkr->data.velZ);
+    velX.push_back(-_dtrkr->data.velX);
+    velY.push_back(_dtrkr->data.velY);
+    velZ.push_back(-_dtrkr->data.velZ);
 
-    svelX.push_back(-(float)dtrkr->data.svelX);
-    svelY.push_back((float)dtrkr->data.svelY);
-    svelZ.push_back(-(float)dtrkr->data.svelZ);
+    svelX.push_back(-_dtrkr->data.svelX);
+    svelY.push_back(_dtrkr->data.svelY);
+    svelZ.push_back(-_dtrkr->data.svelZ);
 
-    autotakeoff_velY_thresh.push_back((float)(dctrl->params.auto_takeoff_speed) / 100.f);
+    autotakeoff_velY_thresh.push_back((float)(_dctrl->params.auto_takeoff_speed) / 100.f);
 
     g_lockData.unlock();
 #endif
@@ -284,10 +284,11 @@ void Visualizer::draw_target_text(cv::Mat resFrame) {
 
 cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, ItemTracker *trkr) {
     cv::Mat frameL_small_drone;
-    if (trkr->predicted_pathL.size()>0) {
+    std::vector<ItemTracker::track_item> tmp = trkr->predicted_pathL;
+    if (tmp.size()>0) {
         std::vector<cv::KeyPoint> keypoints;
-        for (uint i = 0; i< trkr->predicted_pathL.size();i++) {
-            keypoints.push_back(trkr->predicted_pathL.at(i)._k);
+        for (uint i = 0; i< tmp.size();i++) {
+            keypoints.push_back(tmp.at(i)._k);
         }
         drawKeypoints( frameL_small, keypoints, frameL_small_drone, Scalar(0,255,0), DrawMatchesFlags::DEFAULT );
     } else {

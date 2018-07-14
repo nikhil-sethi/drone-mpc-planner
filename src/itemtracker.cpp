@@ -218,7 +218,23 @@ void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<trac
         frameL_prev_OK = _visdat->_frameL_prev.clone();
         frameL_s_prev_OK = _visdat->_frameL_s_prev.clone();
         frameR_prev_OK = _visdat->_frameR_prev.clone();
-    }    
+    }
+
+    if (!breakpause) {
+        if (pathL.size() > 0) {
+            if (pathL.begin()->_frame_id < _visdat->_frame_id - 30)
+                pathL.erase(pathL.begin());
+            if (pathL.begin()->_frame_id > _visdat->_frame_id ) //at the end of a realsense video loop, frame_id resets
+                pathL.clear();
+        }
+        if (predicted_pathL.size() > 0) {
+            if (predicted_pathL.begin()->_frame_id < _visdat->_frame_id - 30)
+                predicted_pathL.erase(predicted_pathL.begin());
+            if (predicted_pathL.begin()->_frame_id > _visdat->_frame_id ) //at the end of a realsense video loop, frame_id resets
+                predicted_pathL.clear();
+        }
+
+    }
 }
 
 void ItemTracker::updateParams(){
@@ -394,11 +410,6 @@ cv::Point3f ItemTracker::predict(float dt, int frame_id) {
         t.pt = beun;
         t.size = 3;
         predicted_pathL.push_back(track_item(t,frame_id));
-        if (pathL.size() > 30)
-            pathL.erase(pathL.begin());
-        if (predicted_pathL.size() > 30)
-            predicted_pathL.erase(predicted_pathL.begin());
-        // cout << "PredictionL: " << predicted_locationL << std::endl;
     }
     return predicted_locationL;
 }

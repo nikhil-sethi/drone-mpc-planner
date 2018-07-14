@@ -99,6 +99,7 @@ public:
     void init(std::ofstream *logger, bool fromfile, Arduino * arduino);
     void control(trackData *data);
     bool getAutoControl() {return autoControl;}
+    bool getDroneIsActive() {return autoControl && autoThrottle > INITIALTHROTTLE;}
     bool getAutoTakeOff() {return autoTakeOff;}
     bool getAutoLand() {return autoLand;}
     void setAutoLand(bool b) {autoLand = b;}

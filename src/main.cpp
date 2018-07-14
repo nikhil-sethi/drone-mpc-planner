@@ -124,8 +124,9 @@ void process_video() {
 
         visdat.update(cam.frameL,cam.frameR,cam.get_frame_time(),cam.get_frame_id());
 
-        //WARNING: changing the order of the functions with logging must be match with the init functions!
-        itrkr.track(cam.get_frame_time(), dnav.setpoint_world, dtrkr.pathL);
+
+        //WARNING: changing the order of the functions with logging must be matched with the init functions!
+        itrkr.track(cam.get_frame_time(), dnav.setpoint_world, dtrkr.pathL,dctrl.getDroneIsActive());
         dtrkr.track(cam.get_frame_time(), dnav.setpoint_world,itrkr.pathL);
 
 #ifdef HASSCREEN
@@ -140,7 +141,7 @@ void process_video() {
 
 #ifdef HASSCREEN
         if (fromfile) {
-            int rs_id = cam.get_frame_time();
+            int rs_id = cam.get_frame_id();
             LogReader::Log_Entry tmp  = logreader.getItem(rs_id);
             if (tmp.RS_ID == rs_id) {
                 dctrl.joyRoll = tmp.joyRoll;
@@ -150,8 +151,6 @@ void process_video() {
                 dctrl.joySwitch = tmp.joySwitch;
             }
         }
-
-
 #endif
 
         int frameWritten = 0;
@@ -168,11 +167,12 @@ void process_video() {
 #endif
         }
 
-
         std::cout << "Frame: " <<imgcount << ", " << cam.get_frame_id() << ". FPS: " << imgcount / (time-break_time ) << ". Time: " << time-break_time  << ", dt " << dt << std::endl;
         imgcount++;
 
+#ifdef HASSCREEN
         handleKey();
+#endif
         if (imgcount > 60000)
             break;
         logger << std::endl;
@@ -185,17 +185,15 @@ void process_video() {
 
 void handleKey() {
 
-    //#ifdef HASSCREEN
     key = cv::waitKey(1);
     key = key & 0xff;
     if (key == 27) {  //esc
         //        cam.stopcam();
         return; // don't clear key, just exit
-    }
-    //#endif
+    }    
 
     switch(key) {
-    case ' ': // [r]: reset stopwatch
+    case ' ':
         //dtrkr.breakpause = true;
         if (breakpause >-1) {
             breakpause =-1;
@@ -209,16 +207,12 @@ void handleKey() {
         break;
 
     } // end switch key
-#ifndef HASSCREEN
-    if (key!=0) {
-        //std::cout << "Terminal: "  << msg << std::endl;
-    }
-#endif
     key=0;
 }
 
 void my_handler(int s){
     std::cout << "Caught ctrl-c:" << s << std::endl;
+    key=27;
 }
 
 int init(int argc, char **argv) {
@@ -280,9 +274,6 @@ int init(int argc, char **argv) {
     sigemptyset(&sigIntHandler.sa_mask);
     sigIntHandler.sa_flags = 0;
     sigaction(SIGINT, &sigIntHandler, NULL);
-
-
-
 
     std::cout << "Main init successfull" << std::endl;
 
