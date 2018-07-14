@@ -91,6 +91,7 @@ private:
     struct Find_result {
       cv::Mat treshL;
       std::vector<cv::KeyPoint> keypointsL;
+      std::vector<cv::KeyPoint> keypointsL_wihout_voids;
       cv::KeyPoint best_image_locationL;
       cv::Rect roi_offset;
       int disparity;
@@ -110,6 +111,7 @@ private:
     void find(cv::Mat frameL_small);
     std::vector<cv::KeyPoint> remove_ignores(std::vector<cv::KeyPoint> keypoints, std::vector<track_item> ignore_path);
     cv::Mat show_uncertainty_map_in_image(cv::Point p, cv::Mat resframeL);
+    std::vector<cv::KeyPoint> remove_voids(std::vector<cv::KeyPoint> keyps,std::vector<cv::KeyPoint> keyps_prev);
 
     // Kalman Filter
     int stateSize = 6;

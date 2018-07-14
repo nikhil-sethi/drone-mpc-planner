@@ -3,7 +3,7 @@ using namespace cv;
 using namespace std;
 
 #ifdef HASSCREEN
-//#define DRAWPLOTS
+#define DRAWPLOTS
 #define DRAWTRACKING
 #endif
 

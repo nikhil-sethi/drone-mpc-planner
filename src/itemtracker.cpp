@@ -4,7 +4,8 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
 #include "common.h"
-
+#include "vector"
+#include "algorithm"
 using namespace cv;
 using namespace std;
 
@@ -168,16 +169,16 @@ void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<trac
     data.valid = false; // reset the flag, set to true when item is detected properly
 
     static int n_frames_lost =100;
-    if (find_result.keypointsL.size() > 0) { //if not lost
+    if (find_result.keypointsL_wihout_voids.size() > 0) { //if not lost
 
         cv::Point3f previous_location(find_result.best_image_locationL .pt.x,find_result.best_image_locationL .pt.y,0);
-        std::vector<cv::KeyPoint> keypoint_candidates = remove_ignores(find_result.keypointsL,ignore);
+        std::vector<cv::KeyPoint> keypoint_candidates = remove_ignores(find_result.keypointsL_wihout_voids,ignore);
 
         Point3f output;
         int disparity;
         cv::KeyPoint match;
         while (keypoint_candidates.size() > 0) {
-            int match_id = match_closest_to_prediciton(previous_location,find_result.keypointsL);
+            int match_id = match_closest_to_prediciton(previous_location,find_result.keypointsL_wihout_voids);
             match = find_result.keypointsL.at(match_id);
 
             disparity = stereo_match(match,frameL_prev_OK,frameR_prev_OK,_visdat->_frameL,_visdat->_frameR,find_result.smoothed_disparity);
@@ -315,16 +316,66 @@ void ItemTracker::find(cv::Mat frameL_small) {
     }
 
 
-
-
     for (uint i = 0 ; i < keypointsL.size();i++) {
         keypointsL.at(i).pt.x += find_result.roi_offset.x;
         keypointsL.at(i).pt.y += find_result.roi_offset.y;
     }
 
+    find_result.keypointsL_wihout_voids = remove_voids(keypointsL,find_result.keypointsL);
+    //    find_result.keypointsL_wihout_voids = keypointsL;
+
     find_result.keypointsL = keypointsL;
     find_result.treshL = _treshL;
     find_result.update_prev_frame = nframes_since_update_prev == 0 || (nframes_since_update_prev >= settings.roi_max_grow  );
+}
+
+//filter out keypoints that are caused by the drone leaving the spot (voids)
+//we prefer keypoints that are of the new location of the drone (an appearance)
+//this is somewhat ambigious, because the drone might 'move' to the almost same position in some cases
+//todo: smooth extrapolate if the drone did not move enough to generate two seperate keypoints
+vector<KeyPoint> ItemTracker::remove_voids(vector<KeyPoint> keyps,vector<KeyPoint> keyps_prev) {
+    vector<KeyPoint> keyps_no_voids =  keyps; // init with a copy of all current keypoints
+    int n_erased_items = 0;
+    if (keyps.size() > 1 && keyps_prev.size() > 0) { // in order to detect a void-appearance pair, there should be at least two current keypoints now, and one in the past
+        for (uint i = 0 ; i < keyps.size();i++) {
+            for (uint j = 0 ; j < keyps_prev.size();j++) {
+                KeyPoint k1,k2;
+                k1 = keyps.at(i);
+                k2 = keyps_prev.at(j);
+                float d1_2 = pow(k1.pt.x - k2.pt.x,2) + pow(k1.pt.y - k2.pt.y,2);
+                if (d1_2 < 3) { // found a keypoint in the prev list that is very close to one in the current list
+                    KeyPoint closest_k1;
+                    int closest_k1_id = -1;
+                    float closest_k1_d = 99999999;
+                    for (uint k = 0 ; k < keyps.size();k++) {
+                        //find the closest item to k1 in the current list and assume it together forms a void-appearance pair
+                        if (k!=i) {
+                            KeyPoint  k1_mate = keyps.at(k);
+                            float k1_mate_d = pow(k1.pt.x - k1_mate.pt.x,2) + pow(k1.pt.y - k1_mate.pt.y,2);
+                            if (k1_mate_d < closest_k1_d) {
+                                closest_k1 = k1_mate;
+                                closest_k1_d = k1_mate_d;
+                                closest_k1_id = k;
+                            }
+                        }
+                    }
+
+                    // If there is no mate, don't do anything.
+                    if (closest_k1_d < 10 && closest_k1_id >= 0) { // the threshold number depends on the speed of the drone, and dt
+                        // If a mate is found we need to verify which of the items in the pair is the void.
+                        // The void should be the one closest to k2
+                        float dmate_2 = pow(k2.pt.x - closest_k1.pt.x,2) + pow(k2.pt.y - closest_k1.pt.y,2);
+                        if (d1_2< dmate_2) { //k1 is apparantely the one closest to k2, k3 should be the new position of the item
+                            keyps_no_voids.erase(keyps_no_voids.begin() -n_erased_items + i,keyps_no_voids.begin() -n_erased_items + i+1);
+                            n_erased_items++;
+                            j=keyps_prev.size()+1; //break from for j
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return keyps_no_voids;
 }
 
 cv::Mat ItemTracker::segment(cv::Mat diffL, cv::Point previous_imageL_location, cv::Point roi_size) {
