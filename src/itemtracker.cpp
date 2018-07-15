@@ -43,6 +43,10 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     createTrackbar("roi_min_size", window_name, &settings.roi_min_size, 2000);
     createTrackbar("roi_max_grow", window_name, &settings.roi_max_grow, 500);
     createTrackbar("roi_grow_speed", window_name, &settings.roi_grow_speed, 256);
+    createTrackbar("appear_void_max2_distance", window_name, &settings.appear_void_max2_distance, 250);
+    createTrackbar("void_void_max2_distance", window_name, &settings.void_void_max2_distance, 20);
+    createTrackbar("exclude_min2_distance", window_name, &settings.exclude_min2_distance, 250);
+
 #endif
 
     kfL = cv::KalmanFilter(stateSize, measSize, contrSize, type);
@@ -143,12 +147,12 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<tr
         for (uint i = 0 ; i< tmp.size();i++){
             dis1 = pow(tmp.at(i).k.pt.x - exclude.x,2) +pow(tmp.at(i).k.pt.y - exclude.y,2);
             dis2 = pow(tmp.at(i).k_void.pt.x - exclude.x,2) +pow(tmp.at(i).k_void.pt.y - exclude.y,2);
-            if (dis1 < 100 || dis2 < 100) {
+            if (dis1 < settings.exclude_min2_distance || dis2 < settings.exclude_min2_distance) {
                 keypoints.erase(keypoints.begin() + i - erase_cnt);
                 erase_cnt++;
             } else  if (exclude_path.size() > 1) {
                 dis = pow(tmp.at(i).x() - exclude_prev.x,2) +pow(tmp.at(i).y() - exclude_prev.y,2);
-                if (dis < 100) {
+                if (dis < settings.exclude_min2_distance) {
                     keypoints.erase(keypoints.begin() + i - erase_cnt);
                     erase_cnt++;
                 }
@@ -359,7 +363,7 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_voids(std::vector<track
                 k1 = keyps.at(i).k;
                 k2 = keyps_prev.at(j).k;
                 float d1_2 = pow(k1.pt.x - k2.pt.x,2) + pow(k1.pt.y - k2.pt.y,2);
-                if (d1_2 < 9) { // found a keypoint in the prev list that is very close to one in the current list
+                if (d1_2 < settings.appear_void_max2_distance) { // found a keypoint in the prev list that is very close to one in the current list
                     KeyPoint closest_k1;
                     int closest_k1_id = -1;
                     float closest_k1_d = 99999999;
@@ -377,7 +381,7 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_voids(std::vector<track
                     }
 
                     // If there is no mate, don't do anything.
-                    if (closest_k1_d < 100 && closest_k1_id >= 0) { // the threshold number depends on the speed of the drone, and dt
+                    if (closest_k1_d < settings.void_void_max2_distance && closest_k1_id >= 0) { // the threshold number depends on the speed of the drone, and dt
                         // If a mate is found we need to verify which of the items in the pair is the void.
                         // The void should be the one closest to k2
                         float dmate_2 = pow(k2.pt.x - closest_k1.pt.x,2) + pow(k2.pt.y - closest_k1.pt.y,2);

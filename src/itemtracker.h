@@ -83,6 +83,10 @@ private:
         int roi_max_grow = 160;
         int roi_grow_speed = 64;
 
+        int appear_void_max2_distance = 9;
+        int void_void_max2_distance = 100;
+        int exclude_min2_distance = 100;
+
         template <class Archive>
         void serialize( Archive & ar )
         {
