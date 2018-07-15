@@ -126,8 +126,8 @@ void process_video() {
 
 
         //WARNING: changing the order of the functions with logging must be matched with the init functions!
-        itrkr.track(cam.get_frame_time(), dnav.setpoint_world, dtrkr.pathL,dctrl.getDroneIsActive());
         dtrkr.track(cam.get_frame_time(), dnav.setpoint_world,itrkr.pathL);
+        itrkr.track(cam.get_frame_time(), dnav.setpoint_world, dtrkr.pathL,dctrl.getDroneIsActive());
 
 #ifdef HASSCREEN
         if (breakpause_prev != 0) {
@@ -236,9 +236,9 @@ int init(int argc, char **argv) {
 
     visdat.init(cam.Qf, cam.frameL,cam.frameR); // do after cam update to populate frames
 
-    //WARNING: changing the order of the inits with logging must be match with the process_video functions!
-    itrkr.init(&logger,&visdat);
+    //WARNING: changing the order of the inits with logging must be match with the process_video functions!    
     dtrkr.init(&logger,&visdat);
+    itrkr.init(&logger,&visdat);
     dnav.init(&logger,&dtrkr,&dctrl);
     dctrl.init(&logger,fromfile,&arduino);
 

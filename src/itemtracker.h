@@ -25,12 +25,15 @@ class ItemTracker {
 
 public:
     struct track_item {
-      cv::KeyPoint _k;
-      int _frame_id;
-      track_item(cv::KeyPoint k, int frame_id){
-          _k = k;
-          _frame_id = frame_id;
+      cv::KeyPoint k;
+      cv::KeyPoint k_void;
+      int frame_id;
+      track_item(cv::KeyPoint kp, int frameid){
+          k = kp;
+          frame_id = frameid;
       }
+      int x() {return k.pt.x;}
+      int y() {return k.pt.y;}
     };
 
 private:
@@ -90,8 +93,8 @@ private:
     std::string _settingsFile;
     struct Find_result {
       cv::Mat treshL;
-      std::vector<cv::KeyPoint> keypointsL;
-      std::vector<cv::KeyPoint> keypointsL_wihout_voids;
+      std::vector<track_item> keypointsL;
+      std::vector<track_item> keypointsL_wihout_voids;
       cv::KeyPoint best_image_locationL;
       cv::Rect roi_offset;
       int disparity;
@@ -103,15 +106,15 @@ private:
     cv::Mat segment(cv::Mat diffL, cv::Point previous_imageL_location, cv::Point roi_size);
     cv::Point3f predict(float dt, int frame_id);
     virtual cv::Mat get_approx_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size) = 0;
-    int match_closest_to_prediciton(cv::Point3f predicted_locationL, std::vector<cv::KeyPoint> keypointsL);
+    int match_closest_to_prediciton(cv::Point3f predicted_locationL, std::vector<track_item> keypointsL);
     int stereo_match(cv::KeyPoint closestL, cv::Mat frameL_prev, cv::Mat prevFrameR_big, cv::Mat frameL, cv::Mat frameR, int prevDisparity);
     void update_prediction_state(cv::Point3f p);
     void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, int n_frames_lost, cv::KeyPoint match, int disparity, cv::Point3f setpoint_world, int frame_id);
     void reset_tracker_ouput(int n_frames_lost);
-    void find(cv::Mat frameL_small);
-    std::vector<cv::KeyPoint> remove_ignores(std::vector<cv::KeyPoint> keypoints, std::vector<track_item> ignore_path);
+    void find(cv::Mat frameL_small, std::vector<track_item> exclude);
+    std::vector<ItemTracker::track_item> remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path);
     cv::Mat show_uncertainty_map_in_image(cv::Point p, cv::Mat resframeL);
-    std::vector<cv::KeyPoint> remove_voids(std::vector<cv::KeyPoint> keyps,std::vector<cv::KeyPoint> keyps_prev);
+    std::vector<track_item> remove_voids(std::vector<track_item> keyps, std::vector<track_item> keyps_prev);
 
     // Kalman Filter
     int stateSize = 6;
@@ -125,13 +128,11 @@ private:
 
     bool firstFrame;
 
-
-
-
     cv::Mat _blurred_circle;
 
     bool foundL = false;
     float t_prev = 0;
+    std::string _name;
 protected:
 
     std::ofstream *_logger;

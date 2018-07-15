@@ -288,7 +288,7 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
     if (tmp.size()>0) {
         std::vector<cv::KeyPoint> keypoints;
         for (uint i = 0; i< tmp.size();i++) {
-            keypoints.push_back(tmp.at(i)._k);
+            keypoints.push_back(tmp.at(i).k);
         }
         drawKeypoints( frameL_small, keypoints, frameL_small_drone, Scalar(0,255,0), DrawMatchesFlags::DEFAULT );
     } else {
@@ -300,7 +300,7 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
     if (trkr->pathL.size() > 0) {
         std::vector<cv::KeyPoint> keypoints;
         for (uint i = 0; i< trkr->pathL.size();i++) {
-            keypoints.push_back(trkr->pathL.at(i)._k);
+            keypoints.push_back(trkr->pathL.at(i).k);
         }
         drawKeypoints( frameL_small_drone, keypoints, frameL_small_drone, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
     }

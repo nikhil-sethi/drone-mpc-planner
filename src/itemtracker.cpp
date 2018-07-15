@@ -17,6 +17,7 @@ using namespace std;
 void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string name) {
     _logger = logger;
     _visdat = visdat;
+    _name = name;
     _settingsFile = "../" + name + "settings.dat";
     std::string window_name = name + "_trkr";
 
@@ -129,29 +130,38 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     find_result.disparity = 0;
 }
 
-std::vector<KeyPoint> ItemTracker::remove_ignores(std::vector<KeyPoint> keypoints, std::vector<track_item> ignore_path) {
-    if (ignore_path.size() > 0) {
-        cv::Point2f ignore = ignore_path.at(ignore_path.size()-1)._k.pt;
-        cv::Point2f ignore_prev = ignore;
-        if (ignore_path.size() > 1) {
-            ignore_prev = ignore_path.at(ignore_path.size()-2)._k.pt;
+std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path) {
+    float dis1,dis2,dis = 0;
+    if (exclude_path.size() > 0) {
+        cv::Point2f exclude = exclude_path.at(exclude_path.size()-1).k.pt;
+        cv::Point2f exclude_prev = exclude;
+        if (exclude_path.size() > 1) {
+            exclude_prev = exclude_path.at(exclude_path.size()-2).k.pt;
         }
-        std::vector<KeyPoint> tmp = keypoints;
+        std::vector<track_item> tmp = keypoints;
+        int erase_cnt =0;
         for (uint i = 0 ; i< tmp.size();i++){
-            float dis = (tmp.at(i).pt.x - ignore.x)*(tmp.at(i).pt.x - ignore.x) +(tmp.at(i).pt.y - ignore.y)*(tmp.at(i).pt.y - ignore.y);
-            if (dis < 1)
-                keypoints.erase(keypoints.begin() + i);
-            else  if (ignore_path.size() > 1) {
-                dis = (tmp.at(i).pt.x - ignore_prev.x)*(tmp.at(i).pt.x - ignore_prev.x) +(tmp.at(i).pt.y - ignore_prev.y)*(tmp.at(i).pt.y - ignore_prev.y);
-                if (dis < 1)
-                    keypoints.erase(keypoints.begin() + i);
+            dis1 = pow(tmp.at(i).k.pt.x - exclude.x,2) +pow(tmp.at(i).k.pt.y - exclude.y,2);
+            dis2 = pow(tmp.at(i).k_void.pt.x - exclude.x,2) +pow(tmp.at(i).k_void.pt.y - exclude.y,2);
+            if (dis1 < 100 || dis2 < 100) {
+                keypoints.erase(keypoints.begin() + i - erase_cnt);
+                erase_cnt++;
+            } else  if (exclude_path.size() > 1) {
+                dis = pow(tmp.at(i).x() - exclude_prev.x,2) +pow(tmp.at(i).y() - exclude_prev.y,2);
+                if (dis < 100) {
+                    keypoints.erase(keypoints.begin() + i - erase_cnt);
+                    erase_cnt++;
+                }
             }
         }
     }
+    //if (exclude_path.size() > 10 && keypoints.size()>0 && _name == "insect") {
+    //    std::cout << "hmmm" << std::endl;
+    //}
     return keypoints;
 }
 
-void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<track_item> ignore, float drone_max_border_y, float drone_max_border_z) {
+void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<track_item> exclude, float drone_max_border_y, float drone_max_border_z) {
     updateParams();
 
     float dt= (time-t_prev);
@@ -164,22 +174,23 @@ void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<trac
         frameR_prev_OK = _visdat->_frameR.clone();
     }
 
-    find(_visdat->_frameL_small);
+    find(_visdat->_frameL_small,exclude);
 
     data.valid = false; // reset the flag, set to true when item is detected properly
 
     static int n_frames_lost =100;
-    if (find_result.keypointsL_wihout_voids.size() > 0) { //if not lost
+    std::vector<track_item> keypoint_candidates = find_result.keypointsL_wihout_voids;
+    if (keypoint_candidates.size() > 0) { //if not lost
 
         cv::Point3f previous_location(find_result.best_image_locationL .pt.x,find_result.best_image_locationL .pt.y,0);
-        std::vector<cv::KeyPoint> keypoint_candidates = remove_ignores(find_result.keypointsL_wihout_voids,ignore);
 
         Point3f output;
         int disparity;
         cv::KeyPoint match;
+
         while (keypoint_candidates.size() > 0) {
             int match_id = match_closest_to_prediciton(previous_location,find_result.keypointsL_wihout_voids);
-            match = find_result.keypointsL.at(match_id);
+            match = find_result.keypointsL.at(match_id).k;
 
             disparity = stereo_match(match,frameL_prev_OK,frameR_prev_OK,_visdat->_frameL,_visdat->_frameR,find_result.smoothed_disparity);
 
@@ -223,15 +234,15 @@ void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<trac
 
     if (!breakpause) {
         if (pathL.size() > 0) {
-            if (pathL.begin()->_frame_id < _visdat->_frame_id - 30)
+            if (pathL.begin()->frame_id < _visdat->_frame_id - 30)
                 pathL.erase(pathL.begin());
-            if (pathL.begin()->_frame_id > _visdat->_frame_id ) //at the end of a realsense video loop, frame_id resets
+            if (pathL.begin()->frame_id > _visdat->_frame_id ) //at the end of a realsense video loop, frame_id resets
                 pathL.clear();
         }
         if (predicted_pathL.size() > 0) {
-            if (predicted_pathL.begin()->_frame_id < _visdat->_frame_id - 30)
+            if (predicted_pathL.begin()->frame_id < _visdat->_frame_id - 30)
                 predicted_pathL.erase(predicted_pathL.begin());
-            if (predicted_pathL.begin()->_frame_id > _visdat->_frame_id ) //at the end of a realsense video loop, frame_id resets
+            if (predicted_pathL.begin()->frame_id > _visdat->_frame_id ) //at the end of a realsense video loop, frame_id resets
                 predicted_pathL.clear();
         }
 
@@ -271,7 +282,7 @@ void ItemTracker::updateParams(){
 #endif
 }
 
-void ItemTracker::find(cv::Mat frameL_small) {
+void ItemTracker::find(cv::Mat frameL_small,std::vector<track_item> exclude) {
     cv::Point previous_location;
 
     previous_location = data.image_locationL;
@@ -307,6 +318,20 @@ void ItemTracker::find(cv::Mat frameL_small) {
         cv::absdiff( frameL_small ,frameL_s_prev_OK,diffL_OK);
         _treshL = segment(diffL_OK,previous_location,roi_size);
         detector->detect( _treshL, keypointsL);
+    }
+
+    vector<track_item> kps;
+    for (uint i = 0 ; i < keypointsL.size();i++) {
+        keypointsL.at(i).pt.x += find_result.roi_offset.x;
+        keypointsL.at(i).pt.y += find_result.roi_offset.y;
+        track_item t( keypointsL.at(i),_visdat->_frame_id);
+        kps.push_back(t);
+    }
+
+    std::vector<track_item> keypoint_candidates = remove_voids(kps,find_result.keypointsL);
+    find_result.keypointsL_wihout_voids = remove_excludes(keypoint_candidates,exclude);
+
+    if (find_result.keypointsL_wihout_voids.size() ==0) {
         nframes_since_update_prev +=1;
         if (nframes_since_update_prev > settings.roi_max_grow)
             nframes_since_update_prev = settings.roi_max_grow;
@@ -315,16 +340,7 @@ void ItemTracker::find(cv::Mat frameL_small) {
         nframes_since_update_prev = 0;
     }
 
-
-    for (uint i = 0 ; i < keypointsL.size();i++) {
-        keypointsL.at(i).pt.x += find_result.roi_offset.x;
-        keypointsL.at(i).pt.y += find_result.roi_offset.y;
-    }
-
-    find_result.keypointsL_wihout_voids = remove_voids(keypointsL,find_result.keypointsL);
-    //    find_result.keypointsL_wihout_voids = keypointsL;
-
-    find_result.keypointsL = keypointsL;
+    find_result.keypointsL = kps;
     find_result.treshL = _treshL;
     find_result.update_prev_frame = nframes_since_update_prev == 0 || (nframes_since_update_prev >= settings.roi_max_grow  );
 }
@@ -333,24 +349,24 @@ void ItemTracker::find(cv::Mat frameL_small) {
 //we prefer keypoints that are of the new location of the drone (an appearance)
 //this is somewhat ambigious, because the drone might 'move' to the almost same position in some cases
 //todo: smooth extrapolate if the drone did not move enough to generate two seperate keypoints
-vector<KeyPoint> ItemTracker::remove_voids(vector<KeyPoint> keyps,vector<KeyPoint> keyps_prev) {
-    vector<KeyPoint> keyps_no_voids =  keyps; // init with a copy of all current keypoints
+std::vector<ItemTracker::track_item> ItemTracker::remove_voids(std::vector<track_item> keyps,std::vector<track_item> keyps_prev) {
+    vector<track_item> keyps_no_voids =  keyps; // init with a copy of all current keypoints
     int n_erased_items = 0;
     if (keyps.size() > 1 && keyps_prev.size() > 0) { // in order to detect a void-appearance pair, there should be at least two current keypoints now, and one in the past
         for (uint i = 0 ; i < keyps.size();i++) {
             for (uint j = 0 ; j < keyps_prev.size();j++) {
                 KeyPoint k1,k2;
-                k1 = keyps.at(i);
-                k2 = keyps_prev.at(j);
+                k1 = keyps.at(i).k;
+                k2 = keyps_prev.at(j).k;
                 float d1_2 = pow(k1.pt.x - k2.pt.x,2) + pow(k1.pt.y - k2.pt.y,2);
-                if (d1_2 < 3) { // found a keypoint in the prev list that is very close to one in the current list
+                if (d1_2 < 9) { // found a keypoint in the prev list that is very close to one in the current list
                     KeyPoint closest_k1;
                     int closest_k1_id = -1;
                     float closest_k1_d = 99999999;
                     for (uint k = 0 ; k < keyps.size();k++) {
-                        //find the closest item to k1 in the current list and assume it together forms a void-appearance pair
+                        //find the closest item to k1 in the current list and *assume* together it forms a void-appearance pair
                         if (k!=i) {
-                            KeyPoint  k1_mate = keyps.at(k);
+                            KeyPoint  k1_mate = keyps.at(k).k;
                             float k1_mate_d = pow(k1.pt.x - k1_mate.pt.x,2) + pow(k1.pt.y - k1_mate.pt.y,2);
                             if (k1_mate_d < closest_k1_d) {
                                 closest_k1 = k1_mate;
@@ -361,12 +377,14 @@ vector<KeyPoint> ItemTracker::remove_voids(vector<KeyPoint> keyps,vector<KeyPoin
                     }
 
                     // If there is no mate, don't do anything.
-                    if (closest_k1_d < 10 && closest_k1_id >= 0) { // the threshold number depends on the speed of the drone, and dt
+                    if (closest_k1_d < 100 && closest_k1_id >= 0) { // the threshold number depends on the speed of the drone, and dt
                         // If a mate is found we need to verify which of the items in the pair is the void.
                         // The void should be the one closest to k2
                         float dmate_2 = pow(k2.pt.x - closest_k1.pt.x,2) + pow(k2.pt.y - closest_k1.pt.y,2);
-                        if (d1_2< dmate_2) { //k1 is apparantely the one closest to k2, k3 should be the new position of the item
+                        if (d1_2< dmate_2) { //k1 is apparantely the one closest to k2, closest_k1 should be the new position of the item
                             keyps_no_voids.erase(keyps_no_voids.begin() -n_erased_items + i,keyps_no_voids.begin() -n_erased_items + i+1);
+                            keyps.at(closest_k1_id).k_void = k1;
+                            keyps.at(i).k_void = closest_k1;
                             n_erased_items++;
                             j=keyps_prev.size()+1; //break from for j
                         }
@@ -378,6 +396,7 @@ vector<KeyPoint> ItemTracker::remove_voids(vector<KeyPoint> keyps,vector<KeyPoin
     return keyps_no_voids;
 }
 
+/* binary segment the motion subtraction, and apply some filtering */
 cv::Mat ItemTracker::segment(cv::Mat diffL, cv::Point previous_imageL_location, cv::Point roi_size) {
 
     _approx = get_approx_cutout_filtered(previous_imageL_location,diffL,roi_size);
@@ -388,7 +407,6 @@ cv::Mat ItemTracker::segment(cv::Mat diffL, cv::Point previous_imageL_location, 
 
     return _treshL;
 }
-
 
 cv::Mat ItemTracker::get_probability_cloud(cv::Point size) {
     return cv::Mat::ones(size.y,size.x,CV_32F); // dummy implementation. TODO: create proper probablity estimate
@@ -465,7 +483,7 @@ cv::Point3f ItemTracker::predict(float dt, int frame_id) {
     return predicted_locationL;
 }
 
-int ItemTracker::match_closest_to_prediciton(cv::Point3f predicted_locationL, std::vector<KeyPoint> keypointsL) {
+int ItemTracker::match_closest_to_prediciton(cv::Point3f predicted_locationL, std::vector<track_item> keypointsL) {
     int closestL;
     if (keypointsL.size() == 1 && pathL.size() == 0) {
         closestL = 0;
@@ -473,8 +491,8 @@ int ItemTracker::match_closest_to_prediciton(cv::Point3f predicted_locationL, st
         //find closest keypoint to new predicted location
         int mind = 999999999;
         for (uint i = 0 ; i < keypointsL.size();i++) {
-            cv::KeyPoint k =keypointsL.at(i);
-            int d = (predicted_locationL.x-k.pt.x) * (predicted_locationL.x-k.pt.x) + (predicted_locationL.y-k.pt.y)*(predicted_locationL.y-k.pt.y);
+            track_item k =keypointsL.at(i);
+            int d = (predicted_locationL.x-k.x()) * (predicted_locationL.x-k.x()) + (predicted_locationL.y-k.y())*(predicted_locationL.y-k.y());
             if (d < mind ) {
                 mind = d;
                 closestL = i;
@@ -566,7 +584,6 @@ int ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::M
 
     return disparity;
 }
-
 
 void ItemTracker::update_prediction_state(cv::Point3f p) {
     cv::Mat measL(measSize, 1, type);
