@@ -47,10 +47,14 @@ private:
     void plot(void);
 
 
-    cv::Mat resframe;
+
     cv::Mat cir8,bkg8,dif8;
     bool paint;
+
+
 public:
+    cv::Mat trackframe;
+    cv::Mat plotframe;
 
     Visualizer(void){
         roll_joystick = cv::Mat(1,1,CV_32FC1);

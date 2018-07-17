@@ -204,7 +204,7 @@ void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<trac
             //camera_coordinates.push_back(Point3f(predicted_locationL.x*IMSCALEF,predicted_locationL.y*IMSCALEF,-predicted_locationL.z));
             cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->_Qf);
             output = world_coordinates[0];
-            float theta = CAMERA_ANGLE / (180/(float)M_PI);
+            float theta = CAMERA_ANGLE / (180.f/(float)M_PI);
             output.y = output.y * cosf(theta) + output.z * sinf(theta);
             output.z = -output.y * sinf(theta) + output.z * cosf(theta);
 
@@ -215,6 +215,10 @@ void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<trac
             }
         }
         if (keypoint_candidates.size() == 0) { // if lost
+            nframes_since_update_prev +=1;
+            if (nframes_since_update_prev > settings.roi_max_grow)
+                nframes_since_update_prev = settings.roi_max_grow;
+
             n_frames_lost++;
             if( n_frames_lost >= 10 )
                 foundL = false;
@@ -227,6 +231,8 @@ void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<trac
             n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
             t_prev = time; // update dt only if item was detected
             n_frames_tracking++;
+						nframes_since_update_prev = 0;
+
         }
     }
 
@@ -340,8 +346,6 @@ void ItemTracker::find(cv::Mat frameL_small,std::vector<track_item> exclude) {
         if (nframes_since_update_prev > settings.roi_max_grow)
             nframes_since_update_prev = settings.roi_max_grow;
 
-    } else {
-        nframes_since_update_prev = 0;
     }
 
     find_result.keypointsL = kps;

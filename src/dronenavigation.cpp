@@ -5,7 +5,7 @@ using namespace cv;
 using namespace std;
 
 #ifdef HASSCREEN
-//#define TUNING
+#define TUNING
 #endif
 
 const string paramsFile = "../navigationParameters.dat";
@@ -26,9 +26,10 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
 
 
 
-    setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,SETPOINTYMAX / 2,1000),40)); // this is overwritten by position trackbars!!!
-    setpoints.push_back(waypoint(cv::Point3i(1000,600,2000),150));
-    setpoints.push_back(waypoint(cv::Point3i(1500,600,1000),40));
+    //setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,SETPOINTYMAX / 2,1000),40)); // this is overwritten by position trackbars!!!
+    setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,1,1000),40)); // this is overwritten by position trackbars!!!
+    setpoints.push_back(waypoint(cv::Point3i(1000,2000,2000),150));
+    setpoints.push_back(waypoint(cv::Point3i(1500,2000,1000),40));
     //setpoints.push_back(waypoint(cv::Point3i(1500,300,1300),60));
 
 
@@ -51,7 +52,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     createTrackbar("X [mm]", "Nav", &params.setpoint_slider_X, SETPOINTXMAX);
     createTrackbar("Y [mm]", "Nav", &params.setpoint_slider_Y, SETPOINTYMAX);
     createTrackbar("Z [mm]", "Nav", &params.setpoint_slider_Z, SETPOINTZMAX);
-    createTrackbar("WP id", "Nav", &wpid, setpoints.size()-1);
+    createTrackbar("WP id", "Nav", (int*)&wpid, setpoints.size()-1);
     createTrackbar("d threshold factor", "Nav", &params.distance_threshold_f, 10);
     createTrackbar("land_incr_f_mm", "Nav", &params.land_incr_f_mm, 50);
     createTrackbar("Land Decrease  ", "Nav", &params.autoLandThrottleDecreaseFactor, 50);

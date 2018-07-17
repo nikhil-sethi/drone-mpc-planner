@@ -26,7 +26,7 @@ void Visualizer::addPlotSample(void) {
 
     static int div = 0;
     if (paint && div++ % 4 == 1) {
-        imshow("Plots",resframe);
+        imshow("Plots",plotframe);
         paint = false;
 
         //imshow("dt", plot({dt,dt_target},"dt"));
@@ -82,7 +82,7 @@ void Visualizer::plot(void) {
     ims_trk.push_back(plot_all_velocity());
     ims_trk.push_back(plot_all_control());
     //showRowImage(ims_trk, "Tracking",CV_8UC3);
-    resframe = createRowImage(ims_trk,CV_8UC3);
+    plotframe = createRowImage(ims_trk,CV_8UC3);
     paint=true;
 }
 
@@ -337,6 +337,7 @@ void Visualizer::draw_tracker_viz(cv::Mat frameL,cv::Mat frameL_small, cv::Point
 
 
         cv::imshow("tracking results", resFrame);
+        trackframe   = resFrame;
     }
 #endif
 }

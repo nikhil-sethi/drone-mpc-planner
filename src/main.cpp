@@ -161,9 +161,8 @@ void process_video() {
 #if VIDEODISPARITY
             outputVideoDisp.write(cam.get_disp_frame());
 #endif
-#if VIDEORESULTS
-            resFrame = dtrkr.resFrame;
-            outputVideoColor.write(resFrame);
+#if VIDEORESULTS            
+            outputVideoColor.write(visualizer.trackframe);
 #endif
         }
 
