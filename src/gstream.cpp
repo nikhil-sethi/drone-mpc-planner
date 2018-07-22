@@ -10,23 +10,24 @@
 int want = 1;
 
 #include <opencv2/highgui/highgui.hpp>
-#if CV_MAJOR_VERSION==2
-#include <opencv2/contrib/contrib.hpp>
-#endif
+#include <opencv2/imgproc.hpp>
 cv::VideoWriter cvvideo;
 int videomode;
 int colormode;
 
-static void cb_need_data (GstElement *appsrc __attribute((unused)), guint unused_size __attribute((unused)), gpointer user_data __attribute((unused))) {
+static void cb_need_data (GstElement *appsrc __attribute__((unused)), guint unused_size __attribute__((unused)), gpointer user_data __attribute__((unused))) {
     want = 1;
-}
-
-int GStream::getWanted(void) {
-    return want;
 }
 
 int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, int sizeY,int fps, std::string ip, int port, bool color) {
     videomode = mode;
+    if (videomode == VIDEOMODE_STREAM) {
+        sizeX = sizeX/4;
+        sizeY = sizeY/4;
+    }
+    _cols = sizeX;
+    _rows = sizeY;
+
     colormode = color;
 
     if (mode == VIDEOMODE_AVI_OPENCV) {
@@ -52,11 +53,25 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
         if (mode == VIDEOMODE_AVI) {
             //write to file:
             //gst-launch-1.0 videotestsrc ! videoconvert ! x264enc ! 'video/x-h264, stream-format=(string)byte-stream'  ! avimux ! filesink location=test.avi
+            //gst-launch-1.0 videotestsrc ! video/x-raw,format=RGB,framerate=\(fraction\)15/1,width=1920,height=1080 ! videoconvert ! x264enc speed-preset=ultrafast bitrate=16000 ! 'video/x-h264, stream-format=(string)byte-stream'  ! avimux ! filesink location=test.avi
             //gst-launch-1.0 videotestsrc ! video/x-raw,format=GRAY8,framerate=\(fraction\)90/1,width=1280,height=720 ! videoconvert ! x264enc ! 'video/x-h264, stream-format=(string)byte-stream'  ! avimux ! filesink location=test.avi
             _pipeline = gst_pipeline_new ("pipeline");
             _appsrc = gst_element_factory_make ("appsrc", "source");
             conv = gst_element_factory_make ("videoconvert", "conv");
+#ifdef _PC
             encoder = gst_element_factory_make ("x264enc", "encoder");
+            g_object_set (G_OBJECT (encoder), "caps",
+                          gst_caps_new_simple ("video/x-h264",
+                                               "speed-preset", G_TYPE_STRING, "ultrafast",
+                                               "bitrate",G_TYPE_INT, 16000, NULL), NULL);
+#else
+            //encoder = gst_element_factory_make ("v4l2video11h264enc", "encoder");
+            encoder = gst_element_factory_make ("x264enc", "encoder");
+            g_object_set (G_OBJECT (encoder), "caps",
+                          gst_caps_new_simple ("video/x-h264",
+                                               "speed-preset", G_TYPE_STRING, "ultrafast",
+                                               "bitrate",G_TYPE_INT, 16000, NULL), NULL);
+#endif
             mux = gst_element_factory_make ("avimux", "mux");
             videosink = gst_element_factory_make ("filesink", "videosink");
 
@@ -76,9 +91,7 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
                                                    "height", G_TYPE_INT, sizeY,
                                                    "framerate", GST_TYPE_FRACTION, fps, 1,NULL), NULL);
             }
-//            g_object_set (G_OBJECT (capsf), "caps",
-//                          gst_caps_new_simple ("video/x-h264",
-//                                               "stream-format", G_TYPE_STRING, "byte-stream", NULL), NULL);
+
             g_object_set (G_OBJECT (videosink), "location", file.c_str(), NULL);
             gst_bin_add_many (GST_BIN (_pipeline), _appsrc, conv, encoder,  mux, videosink, NULL);
             gst_element_link_many (_appsrc, conv, encoder,  mux, videosink, NULL);
@@ -89,7 +102,6 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
                           "format", GST_FORMAT_TIME,
                           "is-live", TRUE,
                           NULL);
-
 
         } else if (mode == VIDEOMODE_STREAM) {
             //streaming:
@@ -154,7 +166,6 @@ int GStream::prepare_buffer(GstAppSrc* appsrc, cv::Mat *image) {
     GstFlowReturn ret;
 
     if (!want) return 1;
-    want = 0;
 
     int cmult = 1;
     if (colormode) {
@@ -174,6 +185,7 @@ int GStream::prepare_buffer(GstAppSrc* appsrc, cv::Mat *image) {
     timestamp += GST_BUFFER_DURATION (buffer);
 
     ret = gst_app_src_push_buffer(GST_APP_SRC(appsrc), buffer);
+    want = 0;
     if (ret != GST_FLOW_OK) {
         std::cout << "GST ERROR DE PERROR" << std::endl;
         return 2;
@@ -200,12 +212,18 @@ int GStream::write(cv::Mat frameL,cv::Mat frameR) {
 }
 
 int GStream::write(cv::Mat frame) {
+    if (frame.cols != _cols || frame.rows != _rows) {
+        std::cout << "Warning: video sizes don't match in recorder!?" << std::endl;
+    }
     if (videomode == VIDEOMODE_AVI_OPENCV) {
         cvvideo.write(frame.clone());
         return 0;
-    }
-    else {
-        int res = prepare_buffer((GstAppSrc*)_appsrc,&frame);
+    } else {
+        cv::Mat tmpframe = frame.clone();
+        if (videomode == VIDEOMODE_STREAM) {
+            cv::resize(tmpframe,tmpframe,cv::Size(frame.cols/4,frame.rows/4));
+        }
+        int res = prepare_buffer((GstAppSrc*)_appsrc,&tmpframe);
         g_main_context_iteration(g_main_context_default(),FALSE);
         return res;
     }

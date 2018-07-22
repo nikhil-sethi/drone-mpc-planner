@@ -49,7 +49,7 @@ using namespace std;
 /***********Variables****************/
 unsigned char key = 0;
 int imgcount,detectcount; // to measure fps
-GStream outputVideoColor,outputVideoRawLR;
+GStream outputVideoColor,outputVideoRawL;
 cv::VideoWriter outputVideoDisp;
 
 stopwatch_c stopWatch_break;

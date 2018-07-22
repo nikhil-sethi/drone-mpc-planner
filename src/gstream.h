@@ -18,6 +18,7 @@ private:
     GstElement *_pipeline,*_appsrc;
 
 
+    int _cols,_rows;
     int prepare_buffer(GstAppSrc* appsrc, cv::Mat * image);
    	//void cb_need_data (GstElement *appsrc, guint unused_size, gpointer user_data);
 
@@ -26,7 +27,6 @@ public:
     int write(cv::Mat frame);
     int write(cv::Mat frameL,cv::Mat frameR);
     void close (void);
-    int getWanted(void);
 };
 
 
