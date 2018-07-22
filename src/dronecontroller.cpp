@@ -21,7 +21,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile, Arduino * arduin
 
     // Ensure that joystick was found and that we can use it
     if (!joystick.isFound() && !fromfile) {
-        printf("joystick failed.\n");
+        std::cout << "joystick failed." << std::endl;
         //exit(1);
     }
 

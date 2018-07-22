@@ -24,7 +24,7 @@ void Cam::update(void) {
 
 void Cam::init(int argc, char **argv) {
 
-    std::cout << "Initializing cam\n" << std::endl;
+    std::cout << "Initializing cam" << std::endl;
     // Declare config
     rs2::config cfg;
     cfg.disable_all_streams();
@@ -39,7 +39,7 @@ void Cam::init(int argc, char **argv) {
     }
 
     selection = cam.start(cfg);
-    std::cout << "Started cam\n";
+    std::cout << "Started cam" << std::endl;
 
     if (argc ==2 ) {
         pd = selection.get_device();
@@ -80,7 +80,7 @@ void Cam::init(int argc, char **argv) {
         createTrackbar("Gain", "Cam tuning", &gain, 32768);
 #endif
 
-        std::cout << "Set cam config\n";
+        std::cout << "Set cam config" << std::endl;
     }
 
     // Obtain focal length and principal point (from intrinsics)

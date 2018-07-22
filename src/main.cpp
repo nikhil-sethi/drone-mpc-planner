@@ -306,8 +306,9 @@ void close() {
 
 int main( int argc, char **argv )
 {
-    if (init(argc,argv)) {return 1;}
-    process_video();
+    if (!init(argc,argv)) {
+        process_video();
+    }
     close();
     return 0;
 }
