@@ -17,14 +17,15 @@ int colormode;
 
 static void cb_need_data (GstElement *appsrc __attribute__((unused)), guint unused_size __attribute__((unused)), gpointer user_data __attribute__((unused))) {
     want = 1;
+    std::cout << "hoehe" << std::endl;
 }
 
 int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, int sizeY,int fps, std::string ip, int port, bool color) {
     videomode = mode;
-    if (videomode == VIDEOMODE_STREAM) {
-        sizeX = sizeX/4;
-        sizeY = sizeY/4;
-    }
+//    if (videomode == VIDEOMODE_STREAM) {
+//        sizeX = sizeX/4;
+//        sizeY = sizeY/4;
+//    }
     _cols = sizeX;
     _rows = sizeY;
 
@@ -103,11 +104,15 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
             //streaming:
             //from: gst-launch-1.0 videotestsrc pattern=snow ! video/x-raw,format=GRAY8,framerate=\(fraction\)90/1,width=1696,height=484 ! videoconvert ! videorate ! video/x-raw,framerate=15/1 ! x264enc ! 'video/x-h264, stream-format=(string)byte-stream' ! rtph264pay pt=96 ! udpsink host=127.0.0.1 port=5000
             //to: gst-launch-1.0 udpsrc port=5004 ! 'application/x-rtp, encoding-name=H264, payload=96' ! queue2 max-size-buffers=1 ! rtph264depay ! avdec_h264 ! videoconvert ! xvimagesink sync=false
+            //to test fps: fpsdisplaysink
             _pipeline = gst_pipeline_new ("pipeline");
             _appsrc = gst_element_factory_make ("appsrc", "source");
             conv = gst_element_factory_make ("videoconvert", "conv");
             rate = gst_element_factory_make ("videorate", "rate");
 #ifdef _PC
+
+//            encoder = gst_element_factory_make ("x264enc", "encoder");
+//            g_object_set (G_OBJECT (encoder),  "speed-preset", 1 ,"bitrate", 2048, "tune", 0x00000004,NULL);
             encoder = gst_element_factory_make ("vaapih264enc", "encoder");
 #else
             encoder = gst_element_factory_make ("x264enc", "encoder");
@@ -134,10 +139,6 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
             g_object_set (G_OBJECT (rate), "caps",
                           gst_caps_new_simple ("video/x-raw",
                                                "framerate", GST_TYPE_FRACTION, fps, 1,NULL), NULL);
-//            g_object_set (G_OBJECT (encoder), "caps",
-//                          gst_caps_new_simple ("video/x-h264",
-//                                               "stream-format", G_TYPE_STRING, "byte-stream", NULL), NULL);
-            g_object_set (G_OBJECT (encoder),  "speed-preset", 1,"bitrate", 16000, NULL);
             g_object_set (G_OBJECT (videosink), "host", ip.c_str(), "port", port, NULL);
 
             gst_bin_add_many (GST_BIN (_pipeline), _appsrc, rate, conv, encoder, rtp, videosink, NULL);
@@ -181,7 +182,7 @@ int GStream::prepare_buffer(GstAppSrc* appsrc, cv::Mat *image) {
     gst_buffer_unmap(buffer, &info);
 
     GST_BUFFER_PTS (buffer) = timestamp;
-    GST_BUFFER_DURATION (buffer) = gst_util_uint64_scale_int (1, GST_SECOND, 4);
+    GST_BUFFER_DURATION (buffer) = gst_util_uint64_scale_int (1, GST_SECOND, VIDEOFPS);
 
     timestamp += GST_BUFFER_DURATION (buffer);
 
@@ -213,17 +214,19 @@ int GStream::write(cv::Mat frameL,cv::Mat frameR) {
 }
 
 int GStream::write(cv::Mat frame) {
-    if (frame.cols != _cols || frame.rows != _rows) {
+    if (frame.empty())
+        return 1;
+    cv::Mat tmpframe = frame.clone();
+//    if (videomode == VIDEOMODE_STREAM) {
+//        cv::resize(tmpframe,tmpframe,cv::Size(frame.cols/4,frame.rows/4));
+//    }
+    if (tmpframe.cols != _cols || tmpframe.rows != _rows) {
         std::cout << "Warning: video sizes don't match in recorder!?" << std::endl;
     }
     if (videomode == VIDEOMODE_AVI_OPENCV) {
-        cvvideo.write(frame.clone());
+        cvvideo.write(tmpframe);
         return 0;
     } else {
-        cv::Mat tmpframe = frame.clone();
-        if (videomode == VIDEOMODE_STREAM) {
-            cv::resize(tmpframe,tmpframe,cv::Size(frame.cols/4,frame.rows/4));
-        }
         int res = prepare_buffer((GstAppSrc*)_appsrc,&tmpframe);
         g_main_context_iteration(g_main_context_default(),FALSE);
         return res;

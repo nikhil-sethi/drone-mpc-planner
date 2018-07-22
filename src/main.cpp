@@ -49,8 +49,8 @@ using namespace std;
 /***********Variables****************/
 unsigned char key = 0;
 int imgcount,detectcount; // to measure fps
-GStream outputVideoColor,outputVideoRawL;
-cv::VideoWriter outputVideoDisp;
+GStream output_video_results,output_video_L;
+cv::VideoWriter output_video_disp;
 
 stopwatch_c stopWatch_break;
 std::string file;
@@ -154,15 +154,15 @@ void process_video() {
 #endif
 
         int frameWritten = 0;
-#if VIDEORAWLR
-        frameWritten = outputVideoRawLR.write(cam.frameL);
+#if VIDEORAWL
+        frameWritten = output_video_L.write(cam.frameL);
 #endif
         if (frameWritten == 0) {
 #if VIDEODISPARITY
-            outputVideoDisp.write(cam.get_disp_frame());
+            output_video_disp.write(cam.get_disp_frame());
 #endif
 #if VIDEORESULTS            
-            outputVideoColor.write(visualizer.trackframe);
+            output_video_results.write(visualizer.trackframe);
 #endif
         }
 
@@ -248,19 +248,19 @@ int init(int argc, char **argv) {
 
     /*****init the video writer*****/
 #if VIDEORESULTS
-    if (outputVideoColor.init(argc,argv,VIDEORESULTS, data_output_dir + "videoResult.avi",IMG_W,IMG_H,VIDEOFPS,"192.168.1.10",5004,true)) {return 1;}
+    if (output_video_results.init(argc,argv,VIDEORESULTS, data_output_dir + "videoResult.avi",IMG_W,IMG_H,VIDEOFPS,"192.168.1.255",5000,true)) {return 1;}
 #endif
-#if VIDEORAWLR
-    if (outputVideoRawLR.init(argc,argv,VIDEORAWLR,data_output_dir + "videoRawLR.avi",IMG_W*2,IMG_H,VIDEOFPS, "127.0.0.1",5000,false)) {return 1;}
+#if VIDEORAWL
+    if (output_video_L.init(argc,argv,VIDEORAWL,data_output_dir + "VIDEORAWL.avi",IMG_W,IMG_H,VIDEOFPS, "192.168.1.255",5000,false)) {return 1;}
 #endif
 
 #if VIDEODISPARITY
     cv::Mat fd = cam.get_disp_frame();
     std::cout << "Opening video file for disparity at " << fd.cols << "x" << fd.rows	 << " pixels with " << cam.getFPS() << "fps " << std::endl;
     cv::Size sizeDisp(fd.cols,fd.rows);
-    outputVideoDisp.open(data_output_dir + "videoDisp.avi",CV_FOURCC('F','M','P','4'),cam.getFPS(),sizeDisp,false);
+    output_video_disp.open(data_output_dir + "videoDisp.avi",CV_FOURCC('F','M','P','4'),cam.getFPS(),sizeDisp,false);
 
-    if (!outputVideoDisp.isOpened())
+    if (!output_video_disp.isOpened())
     {
         std::cerr << "Disparity result video could not be opened!" << std::endl;
         return 1;
@@ -295,10 +295,10 @@ void close() {
     cam.close();
 
 #if VIDEORESULTS   
-    outputVideoColor.close();
+    output_video_results.close();
 #endif
-#if VIDEORAWLR
-    outputVideoRawLR.close();
+#if VIDEORAWL
+    output_video_L.close();
 #endif
 
     std::cout <<"Closed"<< std::endl;
