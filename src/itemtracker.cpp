@@ -334,7 +334,7 @@ void ItemTracker::find(cv::Mat frameL_small,std::vector<track_item> exclude) {
     for (uint i = 0 ; i < keypointsL.size();i++) {
         keypointsL.at(i).pt.x += find_result.roi_offset.x;
         keypointsL.at(i).pt.y += find_result.roi_offset.y;
-        track_item t( keypointsL.at(i),_visdat->_frame_id);
+        track_item t( keypointsL.at(i),_visdat->_frame_id,0);
         kps.push_back(t);
     }
 
@@ -486,7 +486,15 @@ cv::Point3f ItemTracker::predict(float dt, int frame_id) {
         beun.y = predicted_locationL.y;
         t.pt = beun;
         t.size = 3;
-        predicted_pathL.push_back(track_item(t,frame_id));
+
+        float certainty = 0.1; // TODO: tune this value?
+        for (uint i=0; i<predicted_pathL.size(); i++){
+            //TODO: older predictions should count less for certainty, poison?
+            certainty +=predicted_pathL.at(i).tracking_certainty;
+        }
+        if (nframes_since_update_prev > 0)
+            certainty  *= 1.f/sqrtf(nframes_since_update_prev); // approximation (attempt...) of poison distribution
+        predicted_pathL.push_back(track_item(t,frame_id,certainty) );
     }
     return predicted_locationL;
 }
@@ -628,7 +636,15 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
     find_result.best_image_locationL = match;
     find_result.disparity = disparity;
     data.image_locationL = find_result.best_image_locationL.pt;
-    pathL.push_back(track_item(find_result.best_image_locationL,frame_id));
+
+    float new_tracking_uncertainty;
+    if (predicted_pathL.size() > 0) {
+        new_tracking_uncertainty = 1.f / (powf(predicted_pathL.back().k.pt.x - match.pt.x,2) + powf(predicted_pathL.back().k.pt.y - match.pt.y,2));
+        new_tracking_uncertainty*= predicted_pathL.back().tracking_certainty;
+    } else // if there was no prediciton, certainty prolly is quite low
+        new_tracking_uncertainty = 0.1;
+
+    pathL.push_back(track_item(find_result.best_image_locationL,frame_id,new_tracking_uncertainty));
 
     data.posX = measured_world_coordinates.x;
     data.posY = measured_world_coordinates.y;

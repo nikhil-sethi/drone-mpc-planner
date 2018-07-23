@@ -20,8 +20,6 @@ cv::VideoWriter cvvideo;
 int videomode;
 int colormode;
 
-
-
 static void cb_need_data (GstElement *appsrc __attribute__((unused)), guint unused_size __attribute__((unused)), gpointer user_data __attribute__((unused))) {
     want = 1;
     want_cnt++;

@@ -28,9 +28,11 @@ public:
       cv::KeyPoint k;
       cv::KeyPoint k_void;
       int frame_id;
-      track_item(cv::KeyPoint kp, int frameid){
+      float tracking_certainty;
+      track_item(cv::KeyPoint kp, int frameid,float trackingCertainty){
           k = kp;
           frame_id = frameid;
+          tracking_certainty = trackingCertainty;
       }
       int x() {return k.pt.x;}
       int y() {return k.pt.y;}
