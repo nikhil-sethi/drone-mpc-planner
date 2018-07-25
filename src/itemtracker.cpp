@@ -492,15 +492,16 @@ cv::Point3f ItemTracker::predict(float dt, int frame_id) {
         const float certainty_init = 0.1f; // TODO: tune
 
         float certainty;
-        if (nframes_since_update_prev == 1 )
-            certainty   = predicted_pathL.back().tracking_certainty - certainty_init;
-        else if (nframes_since_update_prev > 1 )
-            certainty  = 1-((1 - predicted_pathL.back().tracking_certainty) * certainty_factor);
-        else {
-            if (predicted_pathL.size() > 0.f)
+        if (predicted_pathL.size() > 0.f) {
+            if (nframes_since_update_prev == 1 )
+                certainty   = predicted_pathL.back().tracking_certainty - certainty_init;
+            else if (nframes_since_update_prev > 1 )
+                certainty  = 1-((1 - predicted_pathL.back().tracking_certainty) * certainty_factor);
+            else {
                 certainty = 1-((1 - predicted_pathL.back().tracking_certainty) / certainty_factor);
-            else
-                certainty = certainty_init;
+            }
+        }   else {
+            certainty = certainty_init;
         }
 
         if (certainty < 0)
