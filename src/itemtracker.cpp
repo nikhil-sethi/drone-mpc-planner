@@ -43,9 +43,9 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     createTrackbar("roi_min_size", window_name, &settings.roi_min_size, 2000);
     createTrackbar("roi_max_grow", window_name, &settings.roi_max_grow, 500);
     createTrackbar("roi_grow_speed", window_name, &settings.roi_grow_speed, 256);
-    createTrackbar("appear_void_max2_distance", window_name, &settings.appear_void_max2_distance, 250);
-    createTrackbar("void_void_max2_distance", window_name, &settings.void_void_max2_distance, 20);
-    createTrackbar("exclude_min2_distance", window_name, &settings.exclude_min2_distance, 250);
+    createTrackbar("appear_void_max2_distance", window_name, &settings.appear_void_max_distance, 250);
+    createTrackbar("void_void_max2_distance", window_name, &settings.void_void_max_distance, 20);
+    createTrackbar("exclude_min2_distance", window_name, &settings.exclude_min_distance, 250);
 
 #endif
 
@@ -145,14 +145,14 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<tr
         std::vector<track_item> tmp = keypoints;
         int erase_cnt =0;
         for (uint i = 0 ; i< tmp.size();i++){
-            dis1 = pow(tmp.at(i).k.pt.x - exclude.x,2) +pow(tmp.at(i).k.pt.y - exclude.y,2);
-            dis2 = pow(tmp.at(i).k_void.pt.x - exclude.x,2) +pow(tmp.at(i).k_void.pt.y - exclude.y,2);
-            if (dis1 < settings.exclude_min2_distance || dis2 < settings.exclude_min2_distance) {
+            dis1 = sqrtf(powf(tmp.at(i).k.pt.x - exclude.x,2) +powf(tmp.at(i).k.pt.y - exclude.y,2));
+            dis2 = sqrtf(powf(tmp.at(i).k_void.pt.x - exclude.x,2) +powf(tmp.at(i).k_void.pt.y - exclude.y,2));
+            if (dis1 < settings.exclude_min_distance || dis2 < settings.exclude_min_distance) {
                 keypoints.erase(keypoints.begin() + i - erase_cnt);
                 erase_cnt++;
             } else  if (exclude_path.size() > 1) {
-                dis = pow(tmp.at(i).x() - exclude_prev.x,2) +pow(tmp.at(i).y() - exclude_prev.y,2);
-                if (dis < settings.exclude_min2_distance) {
+                dis = sqrtf(powf(tmp.at(i).x() - exclude_prev.x,2) +powf(tmp.at(i).y() - exclude_prev.y,2));
+                if (dis < settings.exclude_min_distance) {
                     keypoints.erase(keypoints.begin() + i - erase_cnt);
                     erase_cnt++;
                 }
@@ -231,7 +231,7 @@ void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<trac
             n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
             t_prev = time; // update dt only if item was detected
             n_frames_tracking++;
-						nframes_since_update_prev = 0;
+            nframes_since_update_prev = 0;
 
         }
     }
@@ -366,8 +366,8 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_voids(std::vector<track
                 KeyPoint k1,k2;
                 k1 = keyps.at(i).k;
                 k2 = keyps_prev.at(j).k;
-                float d1_2 = pow(k1.pt.x - k2.pt.x,2) + pow(k1.pt.y - k2.pt.y,2);
-                if (d1_2 < settings.appear_void_max2_distance) { // found a keypoint in the prev list that is very close to one in the current list
+                float d1_2 = sqrtf(pow(k1.pt.x - k2.pt.x,2) + pow(k1.pt.y - k2.pt.y,2));
+                if (d1_2 < settings.appear_void_max_distance) { // found a keypoint in the prev list that is very close to one in the current list
                     KeyPoint closest_k1;
                     int closest_k1_id = -1;
                     float closest_k1_d = 99999999;
@@ -375,7 +375,7 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_voids(std::vector<track
                         //find the closest item to k1 in the current list and *assume* together it forms a void-appearance pair
                         if (k!=i) {
                             KeyPoint  k1_mate = keyps.at(k).k;
-                            float k1_mate_d = pow(k1.pt.x - k1_mate.pt.x,2) + pow(k1.pt.y - k1_mate.pt.y,2);
+                            float k1_mate_d = sqrtf(pow(k1.pt.x - k1_mate.pt.x,2) + pow(k1.pt.y - k1_mate.pt.y,2))  ;
                             if (k1_mate_d < closest_k1_d) {
                                 closest_k1 = k1_mate;
                                 closest_k1_d = k1_mate_d;
@@ -385,10 +385,10 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_voids(std::vector<track
                     }
 
                     // If there is no mate, don't do anything.
-                    if (closest_k1_d < settings.void_void_max2_distance && closest_k1_id >= 0) { // the threshold number depends on the speed of the drone, and dt
+                    if (closest_k1_d < settings.void_void_max_distance && closest_k1_id >= 0) { // the threshold number depends on the speed of the drone, and dt
                         // If a mate is found we need to verify which of the items in the pair is the void.
                         // The void should be the one closest to k2
-                        float dmate_2 = pow(k2.pt.x - closest_k1.pt.x,2) + pow(k2.pt.y - closest_k1.pt.y,2);
+                        float dmate_2 = sqrtf(powf(k2.pt.x - closest_k1.pt.x,2) + powf(k2.pt.y - closest_k1.pt.y,2));
                         if (d1_2< dmate_2) { //k1 is apparantely the one closest to k2, closest_k1 should be the new position of the item
                             keyps_no_voids.erase(keyps_no_voids.begin() -n_erased_items + i,keyps_no_voids.begin() -n_erased_items + i+1);
                             keyps.at(closest_k1_id).k_void = k1;
@@ -487,13 +487,27 @@ cv::Point3f ItemTracker::predict(float dt, int frame_id) {
         t.pt = beun;
         t.size = 3;
 
-        float certainty = 0.1; // TODO: tune this value?
-        for (uint i=0; i<predicted_pathL.size(); i++){
-            //TODO: older predictions should count less for certainty, poison?
-            certainty +=predicted_pathL.at(i).tracking_certainty;
+
+        const float certainty_factor = 1.1; // TODO: tune
+        const float certainty_init = 0.1f; // TODO: tune
+
+        float certainty;
+        if (nframes_since_update_prev == 1 )
+            certainty   = predicted_pathL.back().tracking_certainty - certainty_init;
+        else if (nframes_since_update_prev > 1 )
+            certainty  = 1-((1 - predicted_pathL.back().tracking_certainty) * certainty_factor);
+        else {
+            if (predicted_pathL.size() > 0.f)
+                certainty = 1-((1 - predicted_pathL.back().tracking_certainty) / certainty_factor);
+            else
+                certainty = certainty_init;
         }
-        if (nframes_since_update_prev > 0)
-            certainty  *= 1.f/sqrtf(nframes_since_update_prev); // approximation (attempt...) of poison distribution
+
+        if (certainty < 0)
+            certainty = 0;
+        if (certainty > 1)
+            certainty = 1;
+
         predicted_pathL.push_back(track_item(t,frame_id,certainty) );
     }
     return predicted_locationL;
@@ -637,14 +651,14 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
     find_result.disparity = disparity;
     data.image_locationL = find_result.best_image_locationL.pt;
 
-    float new_tracking_uncertainty;
+    float new_tracking_certainty;
     if (predicted_pathL.size() > 0) {
-        new_tracking_uncertainty = 1.f / (powf(predicted_pathL.back().k.pt.x - match.pt.x,2) + powf(predicted_pathL.back().k.pt.y - match.pt.y,2));
-        new_tracking_uncertainty*= predicted_pathL.back().tracking_certainty;
+        new_tracking_certainty = 1.f / sqrtf(powf(predicted_pathL.back().k.pt.x - match.pt.x,2) + powf(predicted_pathL.back().k.pt.y - match.pt.y,2));
+        new_tracking_certainty*= predicted_pathL.back().tracking_certainty;
     } else // if there was no prediciton, certainty prolly is quite low
-        new_tracking_uncertainty = 0.1;
+        new_tracking_certainty = 0.3;
 
-    pathL.push_back(track_item(find_result.best_image_locationL,frame_id,new_tracking_uncertainty));
+    pathL.push_back(track_item(find_result.best_image_locationL,frame_id,new_tracking_certainty));
 
     data.posX = measured_world_coordinates.x;
     data.posY = measured_world_coordinates.y;
