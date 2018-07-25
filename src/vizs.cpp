@@ -91,7 +91,7 @@ cv::Mat Visualizer::plot_xyd(void) {
     ims_xyd.push_back(plot({disparity,sdisparity},"Disparity"));
 
 
-    cv::Point sp1(_dnav->setpoint_world.x,-_dnav->setpoint_world.z);
+    cv::Point sp1(-_dnav->setpoint_world.x*1000.f,-_dnav->setpoint_world.z*1000.f);
     cv::Point min_xz_range,max_xz_range;
     min_xz_range.x =-3000;
     max_xz_range.x = 3000;
@@ -99,7 +99,7 @@ cv::Mat Visualizer::plot_xyd(void) {
     max_xz_range.y = 5000; // z
     ims_xyd.push_back(plotxy(posX,posZ, sp1,"PosXZ",min_xz_range,max_xz_range));
 
-    cv::Point sp2(_dnav->setpoint_world.x,_dnav->setpoint_world.y);
+    cv::Point sp2(-_dnav->setpoint_world.x*1000.f,_dnav->setpoint_world.y*1000.f);
     cv::Point min_xy_range,max_xy_range;
     min_xy_range.x =-3000;
     max_xy_range.x = 3000;
@@ -246,9 +246,9 @@ cv::Mat Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Point setpoint, std:
     cv::circle(frame,cv::Point(x,y),2,red);
 
     //draw the setpoint
-    x = setpoint.x*1000 - minx;
+    x = setpoint.x - minx;
     x = x* scaleX + 2*line_width;
-    y = setpoint.y*1000 - miny;
+    y = setpoint.y - miny;
     y= fsizey - y*scaleY + 2*line_width;
     cv::line(frame,cv::Point(0,y),cv::Point(frame.cols,y),cv::Scalar(80,80,150));
     cv::line(frame,cv::Point(x,0),cv::Point(x,frame.rows),cv::Scalar(80,80,150));
