@@ -147,12 +147,12 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<tr
         for (uint i = 0 ; i< tmp.size();i++){
             dis1 = sqrtf(powf(tmp.at(i).k.pt.x - exclude.x,2) +powf(tmp.at(i).k.pt.y - exclude.y,2));
             dis2 = sqrtf(powf(tmp.at(i).k_void.pt.x - exclude.x,2) +powf(tmp.at(i).k_void.pt.y - exclude.y,2));
-            if (dis1 < settings.exclude_min_distance || dis2 < settings.exclude_min_distance) {
+            if (dis1 < settings.exclude_min_distance * tmp.at(i).tracking_certainty || dis2 < settings.exclude_min_distance * tmp.at(i).tracking_certainty) {
                 keypoints.erase(keypoints.begin() + i - erase_cnt);
                 erase_cnt++;
             } else  if (exclude_path.size() > 1) {
                 dis = sqrtf(powf(tmp.at(i).x() - exclude_prev.x,2) +powf(tmp.at(i).y() - exclude_prev.y,2));
-                if (dis < settings.exclude_min_distance) {
+                if (dis < settings.exclude_min_distance * tmp.at(i).tracking_certainty) {
                     keypoints.erase(keypoints.begin() + i - erase_cnt);
                     erase_cnt++;
                 }
@@ -656,6 +656,9 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
     if (predicted_pathL.size() > 0) {
         new_tracking_certainty = 1.f / sqrtf(powf(predicted_pathL.back().k.pt.x - match.pt.x,2) + powf(predicted_pathL.back().k.pt.y - match.pt.y,2));
         new_tracking_certainty*= predicted_pathL.back().tracking_certainty;
+        if (new_tracking_certainty>1) {
+            new_tracking_certainty = 1;
+        }
     } else // if there was no prediciton, certainty prolly is quite low
         new_tracking_certainty = 0.3;
 
