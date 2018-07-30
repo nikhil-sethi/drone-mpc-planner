@@ -23,10 +23,10 @@ MESSAGE( STATUS "OPENCV_VERSION: " ${OpenCV_VERSION} )
 
 #gstreamer:
 #SET(CMAKE_PREFIX_PATH, "/apps/gstreamer/")
-pkg_check_modules(GST REQUIRED gstreamer-1.0>=1.15
- gstreamer-sdp-1.0>=1.15
- gstreamer-video-1.0>=1.15
- gstreamer-app-1.0>=1.15)
+pkg_check_modules(GST REQUIRED gstreamer-1.0>=1.8
+ gstreamer-sdp-1.0>=1.8
+ gstreamer-video-1.0>=1.8
+ gstreamer-app-1.0>=1.8)
 #pkg_search_module(GST REQUIRED gstreamer-1.0)
 #pkg_search_module(GSTVIDEO REQUIRED gstreamer-video-1.0)
 #pkg_search_module(GSTSDP REQUIRED gstreamer-sdp-1.0)
