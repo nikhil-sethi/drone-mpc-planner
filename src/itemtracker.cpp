@@ -205,8 +205,9 @@ void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<trac
             cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->_Qf);
             output = world_coordinates[0];
             float theta = CAMERA_ANGLE / (180.f/(float)M_PI);
-            output.y = output.y * cosf(theta) + output.z * sinf(theta);
+            float temp_y = output.y * cosf(theta) + output.z * sinf(theta);
             output.z = -output.y * sinf(theta) + output.z * cosf(theta);
+            output.y = temp_y;
 
             if ((output.z < -drone_max_border_z) || (output.y < -drone_max_border_y) || disparity < settings.min_disparity || disparity > settings.max_disparity) { //TODO check min/max disparity > or =>!!!
                 keypoint_candidates.erase(keypoint_candidates.begin() + match_id);
