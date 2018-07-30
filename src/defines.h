@@ -33,4 +33,6 @@
 #define MAX_BORDER_Y_DEFAULT 2.20f
 #define MAX_BORDER_Z_DEFAULT 4.0f
 
+#define JOYSTICK_TYPE 0 // [0: normal remote] [1: USB remote]
+
 #endif //DEFINES_H

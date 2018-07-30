@@ -236,31 +236,60 @@ void DroneController::readJoystick(void) {
     while (joystick.sample(&event))
     {
         if (event.isAxis()) {
-            switch ( event.number ) {
-            case 0: // roll
-                joyRoll = 1500 + (event.value >> 6);
-                break;
-            case 1: // pitch
-                joyPitch = 1500 - (event.value >> 6);
-                break;
-            case 2: //throttle
-                joyThrottle = 1500 + (event.value >> 6);
-                break;
-            case 5: //switch
-                joySwitch = event.value>0; // goes between +/-32768
-                break;
-            case 3: //dial
-                joyDial = event.value; // goes between +/-32768
-                scaledjoydial = joyDial+32767;
-                scaledjoydial = (scaledjoydial / 65536)*100+35;
-                break;
-            case 4: //yaw
-                joyYaw = 1500 + (event.value >> 6);
-                break;
-            default:
-                std::cout << "Unkown joystick event: " << std::to_string(event.number) << ". Value: " << std::to_string(event.value) << std::endl;
-                break;
+            if (JOYSTICK_TYPE == 0) {
+                switch ( event.number ) {
+                case 0: // roll
+                    joyRoll = 1500 + (event.value >> 6);
+                    break;
+                case 1: // pitch
+                    joyPitch = 1500 - (event.value >> 6);
+                    break;
+                case 2: //throttle
+                    joyThrottle = 1500 + (event.value >> 6);
+                    break;
+                case 5: //switch
+                    joySwitch = event.value>0; // goes between +/-32768
+                    break;
+                case 3: //dial
+                    joyDial = event.value; // goes between +/-32768
+                    scaledjoydial = joyDial+32767;
+                    scaledjoydial = (scaledjoydial / 65536)*100+35;
+                    break;
+                case 4: //yaw
+                    joyYaw = 1500 + (event.value >> 6);
+                    break;
+                default:
+                    std::cout << "Unkown joystick event: " << std::to_string(event.number) << ". Value: " << std::to_string(event.value) << std::endl;
+                    break;
+                }
+        } else if (JOYSTICK_TYPE == 1) {
+                switch ( event.number ) {
+                case 0: // roll
+                    joyRoll = 1500 + (event.value >> 6);
+                    break;
+                case 1: // pitch
+                    joyPitch = 1500 - (event.value >> 6);
+                    break;
+                case 2: //throttle
+                    joyThrottle = 1500 - (event.value >> 6);
+                    break;
+                case 3: //switch
+                    joySwitch = event.value>0; // goes between +/-32768
+                    break;
+                case 4: //dial
+                    joyDial = event.value; // goes between +/-32768
+                    scaledjoydial = joyDial+32767;
+                    scaledjoydial = (scaledjoydial / 65536)*100+35;
+                    break;
+                case 5: //yaw
+                    joyYaw = 1500 + (event.value >> 6);
+                    break;
+                default:
+                    std::cout << "Unkown joystick event: " << std::to_string(event.number) << ". Value: " << std::to_string(event.value) << std::endl;
+                    break;
+                }
             }
+
         }
     }
 
