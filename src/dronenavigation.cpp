@@ -5,7 +5,7 @@ using namespace cv;
 using namespace std;
 
 #ifdef HASSCREEN
-//#define TUNING
+#define TUNING
 #endif
 
 const string paramsFile = "../navigationParameters.dat";
@@ -25,12 +25,20 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     //(*_logger) << "imLx; imLy; disparity;";
 
 
-
+    // large scale flight plan
     //setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,SETPOINTYMAX / 2,1000),40)); // this is overwritten by position trackbars!!!
     setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,1,1000),40)); // this is overwritten by position trackbars!!!
     setpoints.push_back(waypoint(cv::Point3i(1000,1000,2000),150));
     setpoints.push_back(waypoint(cv::Point3i(1500,50,1000),40));
     //setpoints.push_back(waypoint(cv::Point3i(1500,300,1300),60));
+
+
+    /* // small scale flight plan
+    setpoints.push_back(waypoint(cv::Point3i(1500,900,1000),40)); // this is overwritten by position trackbars!!!
+    setpoints.push_back(waypoint(cv::Point3i(1200,900,1000),40));
+    setpoints.push_back(waypoint(cv::Point3i(1500,900,1000),40));
+    */
+
 
 
     /* // fly squares
