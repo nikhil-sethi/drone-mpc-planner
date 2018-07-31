@@ -79,6 +79,9 @@ add
 service network-manager start
 to /etc/rc.local
 
+to fix the 4g stick:
+sudo usb_modeswitch -v 12d1 -p 1f01 -M 55534243123456780000000000000a11062000000000000100000000000000
+
 to fix the leds:
 sudo nano /usr/bin/factory_mode.sh
 put exit 1 just after #######
