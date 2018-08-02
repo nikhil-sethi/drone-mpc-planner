@@ -137,22 +137,22 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
 std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path) {
     float dis1,dis2,dis = 0;
     if (exclude_path.size() > 0) {
-        cv::Point2f exclude = exclude_path.at(exclude_path.size()-1).k.pt;
-        cv::Point2f exclude_prev = exclude;
+        track_item exclude = exclude_path.at(exclude_path.size()-1);
+        track_item exclude_prev = exclude;
         if (exclude_path.size() > 1) {
-            exclude_prev = exclude_path.at(exclude_path.size()-2).k.pt;
+            exclude_prev = exclude_path.at(exclude_path.size()-2);
         }
         std::vector<track_item> tmp = keypoints;
         int erase_cnt =0;
         for (uint i = 0 ; i< tmp.size();i++){
-            dis1 = sqrtf(powf(tmp.at(i).k.pt.x - exclude.x,2) +powf(tmp.at(i).k.pt.y - exclude.y,2));
-            dis2 = sqrtf(powf(tmp.at(i).k_void.pt.x - exclude.x,2) +powf(tmp.at(i).k_void.pt.y - exclude.y,2));
-            if (dis1 < settings.exclude_min_distance * tmp.at(i).tracking_certainty || dis2 < settings.exclude_min_distance * tmp.at(i).tracking_certainty) {
+            dis1 = sqrtf(powf(tmp.at(i).k.pt.x - exclude.x(),2) +powf(tmp.at(i).k.pt.y - exclude.y(),2));
+            dis2 = sqrtf(powf(tmp.at(i).k_void.pt.x - exclude.x(),2) +powf(tmp.at(i).k_void.pt.y - exclude.y(),2));
+            if (dis1 < settings.exclude_min_distance / exclude.tracking_certainty|| dis2 < settings.exclude_min_distance / exclude.tracking_certainty) {
                 keypoints.erase(keypoints.begin() + i - erase_cnt);
                 erase_cnt++;
             } else  if (exclude_path.size() > 1) {
-                dis = sqrtf(powf(tmp.at(i).x() - exclude_prev.x,2) +powf(tmp.at(i).y() - exclude_prev.y,2));
-                if (dis < settings.exclude_min_distance * tmp.at(i).tracking_certainty) {
+                dis = sqrtf(powf(tmp.at(i).x() - exclude_prev.x(),2) +powf(tmp.at(i).y() - exclude_prev.y(),2));
+                if (dis < settings.exclude_min_distance / exclude_prev.tracking_certainty) {
                     keypoints.erase(keypoints.begin() + i - erase_cnt);
                     erase_cnt++;
                 }

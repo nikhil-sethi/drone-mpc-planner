@@ -25,11 +25,17 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     //(*_logger) << "imLx; imLy; disparity;";
 
 
+    //waypoints work as follows:
+    //(cv::Point3i(x,y,z),
+    // x = 1500 means the middle of the camera, x = 0 means 1.5m right!!! of the middle. (counter intuitive)
+    // y = 1500 is on the same height as the camera position itself, y = 0 means 1.5m below the cam position
+    //z = 0 means distance from the camera is zero. z = 1500 means 1.5m from the camera
+
     // large scale flight plan
     //setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,SETPOINTYMAX / 2,1000),40)); // this is overwritten by position trackbars!!!
     setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,1,1000),40)); // this is overwritten by position trackbars!!!
     setpoints.push_back(waypoint(cv::Point3i(1000,1000,2000),150));
-    setpoints.push_back(waypoint(cv::Point3i(1500,50,1000),40));
+    setpoints.push_back(waypoint(cv::Point3i(1500,1000,1000),40));
     //setpoints.push_back(waypoint(cv::Point3i(1500,300,1300),60));
 
 
