@@ -61,6 +61,10 @@ void VisionData::update(cv::Mat frameL,cv::Mat frameR,float time, int frame_id) 
     if (!background_calibrated && time > settings.background_calib_time)
         background_calibrated= true;
 
+#if CAMMODE == CAMMODE_GENERATOR
+    background_calibrated = true;
+#endif
+
 }
 
 void VisionData::collect_no_drone_frames(cv::Mat diff) {

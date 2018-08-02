@@ -30,6 +30,8 @@
 #include "airsim.h"
 #elif CAMMODE == CAMMODE_REALSENSE
 #include "cam.h"
+#elif CAMMODE == CAMMODE_GENERATOR
+#include "generatorcam.h"
 #endif
 #include "visiondata.h"
 
@@ -76,6 +78,8 @@ Airsim cam;
 #define Cam Airsim //wow that is pretty hacky :)
 #elif CAMMODE == CAMMODE_REALSENSE
 Cam cam;
+#elif CAMMODE == CAMMODE_GENERATOR
+GeneratorCam cam;
 #endif
 VisionData visdat;
 bool fromfile = false;
@@ -228,8 +232,10 @@ int init(int argc, char **argv) {
     logger.open(data_output_dir  + "test.log",std::ofstream::out);
     logger << "ID;RS_ID;";
 
+#if CAMMODE == CAMMODE_REALSENSE
     if (!fromfile)
         arduino.init(fromfile);
+#endif
 
     /*****Start capturing images*****/
     cam.init(argc,argv);
@@ -288,8 +294,10 @@ void close() {
     dctrl.close();
     dnav.close();
     itrkr.close();
+#if CAMMODE == CAMMODE_REALSENSE
     if (!fromfile)
         arduino.close();
+#endif
 #ifdef HASSCREEN
     visualizer.close();
 #endif

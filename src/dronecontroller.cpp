@@ -326,10 +326,18 @@ void DroneController::readJoystick(void) {
     }
     joySwitch_prev = joySwitch;
 
+#if CAMMODE == CAMMODE_GENERATOR
+   autoControl = true;
+   autoTakeOff = true;
+   joyPitch = 1500;
+#endif
+
     if (autoControl && joyPitch < 1100) {
         autoLand=true;
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/desktop-logout.ogg &");
     }
+
+
 }
 
 void DroneController::recalibrateHover() {
