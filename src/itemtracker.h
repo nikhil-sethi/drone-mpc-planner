@@ -123,6 +123,7 @@ private:
     std::vector<ItemTracker::track_item> remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path);
     cv::Mat show_uncertainty_map_in_image(cv::Point p, cv::Mat resframeL);
     std::vector<track_item> remove_voids(std::vector<track_item> keyps, std::vector<track_item> keyps_prev);
+    float calc_certainty(cv::KeyPoint item);
 
     // Kalman Filter
     int stateSize = 6;
@@ -149,6 +150,9 @@ protected:
     cv::Mat frameR_prev_OK;
     VisionData * _visdat;
     int nframes_since_update_prev = 0;
+
+    const float certainty_factor = 1.1; // TODO: tune
+    const float certainty_init = 0.1f; // TODO: tune
 
 
     void reset_tracker_ouput();

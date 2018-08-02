@@ -43,9 +43,9 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     createTrackbar("roi_min_size", window_name, &settings.roi_min_size, 2000);
     createTrackbar("roi_max_grow", window_name, &settings.roi_max_grow, 500);
     createTrackbar("roi_grow_speed", window_name, &settings.roi_grow_speed, 256);
-    createTrackbar("appear_void_max2_distance", window_name, &settings.appear_void_max_distance, 250);
-    createTrackbar("void_void_max2_distance", window_name, &settings.void_void_max_distance, 20);
-    createTrackbar("exclude_min2_distance", window_name, &settings.exclude_min_distance, 250);
+    createTrackbar("appear_void_max_distance", window_name, &settings.appear_void_max_distance, 250);
+    createTrackbar("void_void_max_distance", window_name, &settings.void_void_max_distance, 20);
+    createTrackbar("exclude_min_distance", window_name, &settings.exclude_min_distance, 250);
 
 #endif
 
@@ -136,9 +136,17 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
 
 std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path) {
     float dis1,dis2,dis = 0;
-    if (exclude_path.size() > 0) {
+
+    if (_name.compare("insect")==0 && keypoints.size()>0){
+        std::cout << "insect" << std::endl;
+    }
+
+    if (_name.compare("drone")==0 && keypoints.size()>0){
+        std::cout << "drone" << std::endl;
+    }
+
+    if (exclude_path.size() > 0 && keypoints.size ()>0) {
         track_item exclude = exclude_path.at(exclude_path.size()-1);
-        find_result.excludes = exclude_path;
         track_item exclude_prev = exclude;
         if (exclude_path.size() > 1) {
             exclude_prev = exclude_path.at(exclude_path.size()-2);
@@ -148,11 +156,12 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<tr
         for (uint i = 0 ; i< tmp.size();i++){
             dis1 = sqrtf(powf(tmp.at(i).k.pt.x - exclude.x(),2) +powf(tmp.at(i).k.pt.y - exclude.y(),2));
             dis2 = sqrtf(powf(tmp.at(i).k_void.pt.x - exclude.x(),2) +powf(tmp.at(i).k_void.pt.y - exclude.y(),2));
+            float certainty_this_kp = calc_certainty(tmp.at(i).k);
 
             float threshold_dis = settings.exclude_min_distance / sqrtf(exclude.tracking_certainty);
             if (threshold_dis > settings.exclude_max_distance)
                 threshold_dis = settings.exclude_max_distance;
-            if (dis1 < threshold_dis|| dis2 < threshold_dis) {
+            if ((dis1 < threshold_dis|| dis2 < threshold_dis) && certainty_this_kp <= exclude.tracking_certainty) {
                 keypoints.erase(keypoints.begin() + i - erase_cnt);
                 erase_cnt++;
             } else  if (exclude_path.size() > 1) {
@@ -160,7 +169,7 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<tr
                 threshold_dis = settings.exclude_min_distance / sqrtf(exclude_prev.tracking_certainty);
                 if (threshold_dis > settings.exclude_max_distance)
                     threshold_dis = settings.exclude_max_distance;
-                if (dis < threshold_dis) {
+                if (dis < threshold_dis && certainty_this_kp < exclude_prev.tracking_certainty) {
                     keypoints.erase(keypoints.begin() + i - erase_cnt);
                     erase_cnt++;
                 }
@@ -192,7 +201,7 @@ void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<trac
 
     static int n_frames_lost =100;
     std::vector<track_item> keypoint_candidates = find_result.keypointsL_wihout_voids;
-    if (keypoint_candidates.size() > 0) { //if not lost
+    if (keypoint_candidates.size() > 0) { //if nokeypointsLt lost
 
         cv::Point3f previous_location(find_result.best_image_locationL .pt.x,find_result.best_image_locationL .pt.y,0);
 
@@ -202,7 +211,7 @@ void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<trac
 
         while (keypoint_candidates.size() > 0) {
             int match_id = match_closest_to_prediciton(previous_location,find_result.keypointsL_wihout_voids);
-            match = find_result.keypointsL.at(match_id).k;
+            match = find_result.keypointsL_wihout_voids.at(match_id).k;
 
             disparity = stereo_match(match,frameL_prev_OK,frameR_prev_OK,_visdat->_frameL,_visdat->_frameR,find_result.smoothed_disparity);
 
@@ -356,7 +365,7 @@ void ItemTracker::find(cv::Mat frameL_small,std::vector<track_item> exclude) {
             nframes_since_update_prev = settings.roi_max_grow;
 
     }
-
+    find_result.excludes = exclude;
     find_result.keypointsL = kps;
     find_result.treshL = _treshL;
     find_result.update_prev_frame = nframes_since_update_prev == 0 || (nframes_since_update_prev >= settings.roi_max_grow  );
@@ -495,10 +504,6 @@ cv::Point3f ItemTracker::predict(float dt, int frame_id) {
         beun.y = predicted_locationL.y;
         t.pt = beun;
         t.size = 3;
-
-
-        const float certainty_factor = 1.1; // TODO: tune
-        const float certainty_init = 0.1f; // TODO: tune
 
         float certainty;
         if (predicted_pathL.size() > 0.f) {
@@ -661,15 +666,7 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
     find_result.disparity = disparity;
     data.image_locationL = find_result.best_image_locationL.pt;
 
-    float new_tracking_certainty;
-    if (predicted_pathL.size() > 0) {
-        new_tracking_certainty = 1.f / powf(powf(predicted_pathL.back().k.pt.x - match.pt.x,2) + powf(predicted_pathL.back().k.pt.y - match.pt.y,2),0.3f);
-        new_tracking_certainty*= predicted_pathL.back().tracking_certainty;
-        if (new_tracking_certainty>1 || new_tracking_certainty<0 || isnan(new_tracking_certainty)) { // weird -nan sometimes???
-            new_tracking_certainty = 1;
-        }
-    } else // if there was no prediciton, certainty prolly is quite low
-        new_tracking_certainty = 0.3;
+    float new_tracking_certainty = calc_certainty(match);
 
     pathL.push_back(track_item(find_result.best_image_locationL,frame_id,new_tracking_certainty));
 
@@ -752,6 +749,19 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
     data.valid = true;
     data.dt = dt;
     detected_after_take_off++;
+}
+
+float ItemTracker::calc_certainty(KeyPoint item) {
+    float new_tracking_certainty;
+    if (predicted_pathL.size() > 0) {
+        new_tracking_certainty = 1.f / powf(powf(predicted_pathL.back().k.pt.x - item.pt.x,2) + powf(predicted_pathL.back().k.pt.y - item.pt.y,2),0.3f);
+        new_tracking_certainty*= predicted_pathL.back().tracking_certainty;
+        if (new_tracking_certainty>1 || new_tracking_certainty<0 || isnan(new_tracking_certainty)) { // weird -nan sometimes???
+            new_tracking_certainty = 1;
+        }
+    } else // if there was no prediciton, certainty prolly is quite low
+        new_tracking_certainty = certainty_init;
+    return new_tracking_certainty;
 }
 
 void ItemTracker::reset_tracker_ouput() {

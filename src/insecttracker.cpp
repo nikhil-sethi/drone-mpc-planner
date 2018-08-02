@@ -53,16 +53,16 @@ void InsectTracker::init_settings() {
 
 }
 
-void InsectTracker::track(float time, cv::Point3f setpoint_world, std::vector<track_item> ignore, bool drone_is_active) {
+void InsectTracker::track(float time, cv::Point3f setpoint_world, std::vector<track_item> exclude, bool drone_is_active) {
     std::vector<track_item> tmp;
-    if (drone_is_active ) {
-        if (ignore.size() == 0) {
+//    if (drone_is_active ) { // tmp disabled for testing
+        if (exclude.size() == 0) {
             cv::KeyPoint k(DRONE_IM_X_START,DRONE_IM_Y_START,1);
-            tmp.push_back(track_item(k,3,1));
+            tmp.push_back(track_item(k,3,0.5));
         } else {
-            tmp = ignore;
+            tmp = exclude;
         }
-    }
+//    }
 
     ItemTracker::track(time,setpoint_world,tmp,MAX_BORDER_Y_DEFAULT,MAX_BORDER_Z_DEFAULT);
 
