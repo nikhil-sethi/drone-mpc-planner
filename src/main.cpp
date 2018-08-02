@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <ctime>
+#include <sys/stat.h>
 
 #include "common.h"
 #include "defines.h"
@@ -221,6 +222,7 @@ int init(int argc, char **argv) {
         logreader.init(string(argv[1]) + ".log");
     }
     data_output_dir = "./logging/";
+    mkdir("./logging/", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     cout << "data_output_dir: " << data_output_dir << endl;
 
     logger.open(data_output_dir  + "test.log",std::ofstream::out);

@@ -1,5 +1,5 @@
 #include "cam.h"
-
+#include <sys/stat.h>
 
 using namespace cv;
 using namespace std;
@@ -35,6 +35,7 @@ void Cam::init(int argc, char **argv) {
         cfg.enable_device_from_file(string(argv[1]) + ".bag");
         fromfile=true;
     } else {
+        mkdir("./logging", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
         cfg.enable_record_to_file("./logging/test.bag");
     }
 
