@@ -68,6 +68,7 @@ public:
 
     cv::Point3d setpoint;
     cv::Point3f setpoint_world;
+    int distance_threshold_mm;
 
     void close (void);
     bool init(std::ofstream *logger, DroneTracker *dtrk, DroneController *dctrl);

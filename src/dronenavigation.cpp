@@ -35,7 +35,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     //setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,SETPOINTYMAX / 2,1000),40)); // this is overwritten by position trackbars!!!
     setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,1,1000),40)); // this is overwritten by position trackbars!!!
     setpoints.push_back(waypoint(cv::Point3i(1000,1000,2000),150));
-    setpoints.push_back(waypoint(cv::Point3i(1500,1000,1000),40));
+    setpoints.push_back(waypoint(cv::Point3i(1500,500,1000),40)); // landing waypoint (=last one), must be 1 meter above the ground in world coordinatates
     //setpoints.push_back(waypoint(cv::Point3i(1500,300,1300),60));
 
 
@@ -44,8 +44,6 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     setpoints.push_back(waypoint(cv::Point3i(1200,900,1000),40));
     setpoints.push_back(waypoint(cv::Point3i(1500,900,1000),40));
     */
-
-
 
     /* // fly squares
     setpoints.push_back(cv::Point3i(1800,600,1200));
@@ -123,6 +121,7 @@ void DroneNavigation::update() {
     setpoint_world.x = (wp->_xyz.x - SETPOINTXMAX/2) / 1000.0f;
     setpoint_world.y = (wp->_xyz.y - SETPOINTYMAX/2) / 1000.0f;
     setpoint_world.z = -(wp->_xyz.z) / 1000.0f;
+    distance_threshold_mm = wp->_distance_threshold_mm;
 
     if (_dctrl->getAutoLand()) {
         if ( setpoint_world.y - land_incr> -(_dtrk->drone_max_border_y+100000.0f))

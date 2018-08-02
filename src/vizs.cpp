@@ -3,7 +3,7 @@ using namespace cv;
 using namespace std;
 
 #ifdef HASSCREEN
-//#define DRAWPLOTS
+#define DRAWPLOTS
 #define DRAWTRACKING
 #endif
 
@@ -253,6 +253,11 @@ cv::Mat Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Point setpoint, std:
     cv::line(frame,cv::Point(0,y),cv::Point(frame.cols,y),cv::Scalar(80,80,150));
     cv::line(frame,cv::Point(x,0),cv::Point(x,frame.rows),cv::Scalar(80,80,150));
 
+
+    float dist_th_x = (_dnav->distance_threshold_mm)* scaleX + 2*line_width;
+    float dist_th_y = (_dnav->distance_threshold_mm)* scaleY + 2*line_width;
+    cv::rectangle(frame,Point(x-dist_th_x,y-dist_th_y),Point(x+dist_th_x,y+dist_th_y),cv::Scalar(255,0,0));
+
     return frame;
 }
 
@@ -296,6 +301,15 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
     }
 
     cv::rectangle(frameL_small_drone,trkr->find_result.roi_offset,cv::Scalar(180,100,240),4/IMSCALEF);
+
+    if (trkr->find_result.excludes.size() > 0) {
+        ItemTracker::track_item exclude = trkr->find_result.excludes.at(trkr->find_result.excludes.size()-1);
+        float threshold_dis = trkr->settings.exclude_min_distance / sqrtf(exclude.tracking_certainty);
+        if (threshold_dis > trkr->settings.exclude_max_distance)
+            threshold_dis = trkr->settings.exclude_max_distance;
+        cv::circle(frameL_small_drone,exclude.k.pt,threshold_dis,cv::Scalar(255,0,0),4/IMSCALEF);
+    }
+
 
     if (trkr->pathL.size() > 0) {
         std::vector<cv::KeyPoint> keypoints;

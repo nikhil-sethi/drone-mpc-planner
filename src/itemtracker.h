@@ -87,7 +87,8 @@ private:
 
         int appear_void_max_distance = 3;
         int void_void_max_distance = 10;
-        int exclude_min_distance = 10;
+        int exclude_min_distance = 5; // in res/IMSCALEF resolution
+        int exclude_max_distance = 50; // in res/IMSCALEF resolution
 
         template <class Archive>
         void serialize( Archive & ar )
@@ -101,6 +102,7 @@ private:
       cv::Mat treshL;
       std::vector<track_item> keypointsL;
       std::vector<track_item> keypointsL_wihout_voids;
+      std::vector<track_item> excludes;
       cv::KeyPoint best_image_locationL;
       cv::Rect roi_offset;
       int disparity;
@@ -147,13 +149,14 @@ protected:
     cv::Mat frameR_prev_OK;
     VisionData * _visdat;
     int nframes_since_update_prev = 0;
-    TrackerSettings settings;
+
 
     void reset_tracker_ouput();
     virtual cv::Mat get_probability_cloud(cv::Point size);
     virtual void init_settings() = 0;
 public:
 
+    TrackerSettings settings;
     cv::Mat _cir,_bkg,_dif,_treshL,_approx;
     Find_result find_result;
     std::vector<track_item> pathL;

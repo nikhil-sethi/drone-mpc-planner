@@ -138,21 +138,29 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<tr
     float dis1,dis2,dis = 0;
     if (exclude_path.size() > 0) {
         track_item exclude = exclude_path.at(exclude_path.size()-1);
+        find_result.excludes = exclude_path;
         track_item exclude_prev = exclude;
         if (exclude_path.size() > 1) {
             exclude_prev = exclude_path.at(exclude_path.size()-2);
-        }
+        }        
         std::vector<track_item> tmp = keypoints;
         int erase_cnt =0;
         for (uint i = 0 ; i< tmp.size();i++){
             dis1 = sqrtf(powf(tmp.at(i).k.pt.x - exclude.x(),2) +powf(tmp.at(i).k.pt.y - exclude.y(),2));
             dis2 = sqrtf(powf(tmp.at(i).k_void.pt.x - exclude.x(),2) +powf(tmp.at(i).k_void.pt.y - exclude.y(),2));
-            if (dis1 < settings.exclude_min_distance / exclude.tracking_certainty|| dis2 < settings.exclude_min_distance / exclude.tracking_certainty) {
+
+            float threshold_dis = settings.exclude_min_distance / sqrtf(exclude.tracking_certainty);
+            if (threshold_dis > settings.exclude_max_distance)
+                threshold_dis = settings.exclude_max_distance;
+            if (dis1 < threshold_dis|| dis2 < threshold_dis) {
                 keypoints.erase(keypoints.begin() + i - erase_cnt);
                 erase_cnt++;
             } else  if (exclude_path.size() > 1) {
                 dis = sqrtf(powf(tmp.at(i).x() - exclude_prev.x(),2) +powf(tmp.at(i).y() - exclude_prev.y(),2));
-                if (dis < settings.exclude_min_distance / exclude_prev.tracking_certainty) {
+                threshold_dis = settings.exclude_min_distance / sqrtf(exclude_prev.tracking_certainty);
+                if (threshold_dis > settings.exclude_max_distance)
+                    threshold_dis = settings.exclude_max_distance;
+                if (dis < threshold_dis) {
                     keypoints.erase(keypoints.begin() + i - erase_cnt);
                     erase_cnt++;
                 }
@@ -655,9 +663,9 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
 
     float new_tracking_certainty;
     if (predicted_pathL.size() > 0) {
-        new_tracking_certainty = 1.f / sqrtf(powf(predicted_pathL.back().k.pt.x - match.pt.x,2) + powf(predicted_pathL.back().k.pt.y - match.pt.y,2));
+        new_tracking_certainty = 1.f / powf(powf(predicted_pathL.back().k.pt.x - match.pt.x,2) + powf(predicted_pathL.back().k.pt.y - match.pt.y,2),0.3f);
         new_tracking_certainty*= predicted_pathL.back().tracking_certainty;
-        if (new_tracking_certainty>1) {
+        if (new_tracking_certainty>1 || new_tracking_certainty<0 || isnan(new_tracking_certainty)) { // weird -nan sometimes???
             new_tracking_certainty = 1;
         }
     } else // if there was no prediciton, certainty prolly is quite low
