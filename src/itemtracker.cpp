@@ -182,6 +182,51 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<tr
     return keypoints;
 }
 
+std::vector<ItemTracker::track_item> ItemTracker::remove_excludes_improved(std::vector<track_item> keypoints, std::vector<track_item> exclude_path) {
+    float dis1,dis3,certainty_prediction = 0;
+    bool check1,check2,check3;
+
+/*    if (_name.compare("insect")==0 && keypoints.size()>0){
+        std::cout << "insect" << std::endl;
+    }
+
+    if (_name.compare("drone")==0 && keypoints.size()>0){
+        std::cout << "drone" << std::endl;
+    }*/
+
+
+
+    if (exclude_path.size() > 0 && keypoints.size () > 0 && this->predicted_pathL.size() > 0) {
+        track_item exclude = exclude_path.at(exclude_path.size()-1);
+        track_item exclude_prev = exclude;
+        if (exclude_path.size() > 1) {
+            exclude_prev = exclude_path.at(exclude_path.size()-2);
+        }
+        std::vector<track_item> tmp = keypoints;
+        int erase_cnt =0;
+        for (uint i = 0 ; i< tmp.size();i++){
+
+            dis1 = sqrtf(powf(tmp.at(i).k.pt.x - exclude.x(),2) +powf(tmp.at(i).k.pt.y - exclude.y(),2));
+            dis3 = sqrtf(powf(tmp.at(i).k.pt.x - this->predicted_pathL.back().x(),2) +powf(tmp.at(i).k.pt.y - this->predicted_pathL.back().y(),2));
+            certainty_prediction = this->predicted_pathL.back().tracking_certainty;
+
+            float threshold_dis = settings.exclude_min_distance / sqrtf(exclude.tracking_certainty);
+            if (threshold_dis > settings.exclude_max_distance)
+                threshold_dis = settings.exclude_max_distance;
+
+            check1 = (dis1 < dis3 && dis1 < threshold_dis);
+            check2 = abs(dis1-dis3) < 2.0;
+            check3 = dis3 > (settings.exclude_min_distance / sqrtf(certainty_prediction));
+            if ( check1 || check2 || check3 ) {
+                keypoints.erase(keypoints.begin() + i - erase_cnt);
+                erase_cnt++;
+            }
+        }
+    }
+
+    return keypoints;
+}
+
 void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<track_item> exclude, float drone_max_border_y, float drone_max_border_z) {
     updateParams();
 
@@ -362,7 +407,7 @@ void ItemTracker::find(cv::Mat frameL_small,std::vector<track_item> exclude) {
     //       When it is does exclude keypoints, these are often 'good' keypoints, that are excluded because they seem to form a pair with keypoints which
     //       are actually 'bad' detections that are too far away to be correct.
     //std::vector<track_item> keypoint_candidates = remove_voids(kps,find_result.keypointsL);
-    find_result.keypointsL_wihout_voids = remove_excludes(kps,exclude);
+    find_result.keypointsL_wihout_voids = remove_excludes_improved(kps,exclude);
 
     if (find_result.keypointsL_wihout_voids.size() ==0) {
         nframes_since_update_prev +=1;
