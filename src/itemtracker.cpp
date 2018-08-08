@@ -185,8 +185,10 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<tr
 void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<track_item> exclude, float drone_max_border_y, float drone_max_border_z) {
     updateParams();
 
-    float dt= (time-t_prev);
-    cv::Point3f predicted_locationL = predict(dt,_visdat->_frame_id);
+    float dt_tracking= (time-t_prev_tracking);
+    float dt_predict= (time-t_prev_predict);
+    cv::Point3f predicted_locationL = predict(dt_predict,_visdat->_frame_id);
+    t_prev_predict = time;
 
     if (!firstFrame) {
         firstFrame = true;
@@ -245,9 +247,9 @@ void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<trac
         } else {
             //Point3f predicted_output = world_coordinates[1];
             update_prediction_state(cv::Point3f(match.pt.x,match.pt.y,disparity));
-            update_tracker_ouput(output,dt,n_frames_lost,match,disparity,setpoint_world,_visdat->_frame_id);
+            update_tracker_ouput(output,dt_tracking,n_frames_lost,match,disparity,setpoint_world,_visdat->_frame_id);
             n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
-            t_prev = time; // update dt only if item was detected
+            t_prev_tracking = time; // update dt only if item was detected
             n_frames_tracking++;
             nframes_since_update_prev = 0;
 
