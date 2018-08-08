@@ -358,8 +358,11 @@ void ItemTracker::find(cv::Mat frameL_small,std::vector<track_item> exclude) {
         kps.push_back(t);
     }
 
-    std::vector<track_item> keypoint_candidates = remove_voids(kps,find_result.keypointsL);
-    find_result.keypointsL_wihout_voids = remove_excludes(keypoint_candidates,exclude);
+    // TODO: verify if remove_voids() can help improve tracking. Currently it does not seem to do so, as it does not exclude keypoints very frequently
+    //       When it is does exclude keypoints, these are often 'good' keypoints, that are excluded because they seem to form a pair with keypoints which
+    //       are actually 'bad' detections that are too far away to be correct.
+    //std::vector<track_item> keypoint_candidates = remove_voids(kps,find_result.keypointsL);
+    find_result.keypointsL_wihout_voids = remove_excludes(kps,exclude);
 
     if (find_result.keypointsL_wihout_voids.size() ==0) {
         nframes_since_update_prev +=1;
