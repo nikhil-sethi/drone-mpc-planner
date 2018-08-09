@@ -109,52 +109,74 @@ void combineGrayImage(cv::Mat iml,cv::Mat imr,cv::Mat *res) {
     imr.copyTo(roir);
 }
 
-
-
-cv::Mat createRowImage(std::vector<cv::Mat> ims, int type) {
+cv::Mat createRowImage(std::vector<cv::Mat> ims, int type)
+{
     //find max height and total width:
-    int width =0;
+    int width = 0;
     int height = -1;
-    for (uint i = 0; i < ims.size();i++) {
-        if (ims.at(i).rows > height) {
+    for (uint i = 0; i < ims.size(); i++)
+    {
+        if (ims.at(i).rows > height)
+        {
             height = ims.at(i).rows;
         }
-        width+=ims.at(i).cols;
+        width += ims.at(i).cols;
     }
 
-    cv::Mat res = cv::Mat(height,width,type);
+    cv::Mat res = cv::Mat(height, width, type);
 
     cv::Point p1(0, 0);
 
-    for (uint i = 0; i < ims.size();i++) {
-        cv::Point p2(p1.x+ims.at(0).cols, ims.at(0).rows);
+    for (uint i = 0; i < ims.size(); i++)
+    {
+        cv::Point p2(p1.x + ims.at(0).cols, ims.at(0).rows);
         cv::Mat roi = cv::Mat(res, cv::Rect(p1, p2));
-        ims.at(i).copyTo(roi);
-        p1.x+=ims.at(i).cols;
+        if (ims.at(i).type() != type)
+        {
+            if (type == CV_8UC1)
+                cv::cvtColor(ims.at(i), roi, CV_BGR2GRAY);
+            else
+                cv::cvtColor(ims.at(i), roi, CV_GRAY2BGR);
+        }
+        else
+            ims.at(i).copyTo(roi);
+        p1.x += ims.at(i).cols;
     }
     return res;
 }
 
-cv::Mat createColumnImage(std::vector<cv::Mat> ims, int type) {
+cv::Mat createColumnImage(std::vector<cv::Mat> ims, int type)
+{
     //find max width and total height:
-    int width =-1;
+    int width = -1;
     int height = 0;
-    for (uint i = 0; i < ims.size();i++) {
-        if (ims.at(i).cols > width) {
+    for (uint i = 0; i < ims.size(); i++)
+    {
+        if (ims.at(i).cols > width)
+        {
             width = ims.at(i).cols;
         }
-        height+=ims.at(i).rows;
+        height += ims.at(i).rows;
     }
 
-    cv::Mat res = cv::Mat(height,width,type);
+    cv::Mat res = cv::Mat(height, width, type);
 
     cv::Point p1(0, 0);
 
-    for (uint i = 0; i < ims.size();i++) {
-        cv::Point p2(ims.at(0).cols, p1.y+ims.at(0).rows);
+    for (uint i = 0; i < ims.size(); i++)
+    {
+        cv::Point p2(ims.at(0).cols, p1.y + ims.at(0).rows);
         cv::Mat roi = cv::Mat(res, cv::Rect(p1, p2));
-        ims.at(i).copyTo(roi);
-        p1.y+=ims.at(i).rows;
+        if (ims.at(i).type() != type)
+        {
+            if (type == CV_8UC1)
+                cv::cvtColor(ims.at(i), roi, CV_BGR2GRAY);
+            else
+                cv::cvtColor(ims.at(i), roi, CV_GRAY2BGR);
+        }
+        else
+            ims.at(i).copyTo(roi);
+        p1.y += ims.at(i).rows;
     }
     return res;
 }
