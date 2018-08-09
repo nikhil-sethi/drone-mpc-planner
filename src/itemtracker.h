@@ -145,6 +145,11 @@ private:
     float t_prev_tracking = 0;
     float t_prev_predict = 0;
     std::string _name;
+
+    float prevX,prevY,prevZ =0;
+    int detected_after_take_off = 0;
+    int n_frames_lost =100;
+    float sdisparity;
 protected:
 
     std::ofstream *_logger;

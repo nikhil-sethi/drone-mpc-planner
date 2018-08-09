@@ -29,7 +29,7 @@ void VisionData::init(cv::Mat Qf, cv::Mat frameL,cv::Mat frameR){
     init_avg_prev_frame();
 
 #ifdef TUNING
-    namedWindow("Tracking", WINDOW_NORMAL);
+    namedWindow("Background", WINDOW_NORMAL);
     createTrackbar("Uncertain mult", "Background", &settings.uncertainty_multiplier, 255);
     createTrackbar("Uncertain pow", "Background", &settings.uncertainty_power, 255);
     createTrackbar("Uncertain back", "Background", &settings.uncertainty_background, 255);

@@ -34,8 +34,32 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     // large scale flight plan
     //setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,SETPOINTYMAX / 2,1000),40)); // this is overwritten by position trackbars!!!
     setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,1,1000),40)); // this is overwritten by position trackbars!!!
-    setpoints.push_back(waypoint(cv::Point3i(1000,1000,2000),150));
-    setpoints.push_back(waypoint(cv::Point3i(1500,500,1000),40)); // landing waypoint (=last one), must be 1 meter above the ground in world coordinatates
+    setpoints.push_back(waypoint(cv::Point3i(1000,400,1500),25));
+    setpoints.push_back(waypoint(cv::Point3i(2000,1000,1500),25));
+    setpoints.push_back(waypoint(cv::Point3i(1000,400,1500),25));
+    setpoints.push_back(waypoint(cv::Point3i(2000,1000,1500),25));
+    setpoints.push_back(waypoint(cv::Point3i(1000,400,1500),25));
+    setpoints.push_back(waypoint(cv::Point3i(2000,1000,1500),25));
+    setpoints.push_back(waypoint(cv::Point3i(1000,400,1500),25));
+    setpoints.push_back(waypoint(cv::Point3i(2000,1000,1500),25));
+    setpoints.push_back(waypoint(cv::Point3i(1000,400,1500),25));
+    setpoints.push_back(waypoint(cv::Point3i(2000,1000,1500),25));
+    setpoints.push_back(waypoint(cv::Point3i(1000,400,1500),25));
+    setpoints.push_back(waypoint(cv::Point3i(2000,1000,1500),25));
+    setpoints.push_back(waypoint(cv::Point3i(1000,400,1500),25));
+    setpoints.push_back(waypoint(cv::Point3i(2000,1000,1500),25));
+    setpoints.push_back(waypoint(cv::Point3i(1000,400,1500),25));
+    setpoints.push_back(waypoint(cv::Point3i(2000,1000,1500),25));
+    setpoints.push_back(waypoint(cv::Point3i(1000,400,1500),25));
+    setpoints.push_back(waypoint(cv::Point3i(2000,1000,1500),25));
+    setpoints.push_back(waypoint(cv::Point3i(1000,400,1500),25));
+    setpoints.push_back(waypoint(cv::Point3i(2000,1000,1500),25));
+    setpoints.push_back(waypoint(cv::Point3i(1000,400,1500),25));
+    setpoints.push_back(waypoint(cv::Point3i(2000,1000,1500),25));
+    setpoints.push_back(waypoint(cv::Point3i(1000,400,1500),25));
+    setpoints.push_back(waypoint(cv::Point3i(2000,1000,1500),25));
+
+    setpoints.push_back(waypoint(cv::Point3i(1500,200,1300),40)); // landing waypoint (=last one), must be 1 meter above the ground in world coordinatates
     //setpoints.push_back(waypoint(cv::Point3i(1500,300,1300),60));
 
 

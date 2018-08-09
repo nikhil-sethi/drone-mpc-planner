@@ -137,13 +137,13 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
 std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path) {
     float dis1,dis2,dis = 0;
 
-    if (_name.compare("insect")==0 && keypoints.size()>0){
-        std::cout << "insect" << std::endl;
-    }
+//    if (_name.compare("insect")==0 && keypoints.size()>0){
+//        std::cout << "insect" << std::endl;
+//    }
 
-    if (_name.compare("drone")==0 && keypoints.size()>0){
-        std::cout << "drone" << std::endl;
-    }
+//    if (_name.compare("drone")==0 && keypoints.size()>0){
+//        std::cout << "drone" << std::endl;
+//    }
 
     if (exclude_path.size() > 0 && keypoints.size ()>0) {
         track_item exclude = exclude_path.at(exclude_path.size()-1);
@@ -246,7 +246,6 @@ void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<trac
 
     data.valid = false; // reset the flag, set to true when item is detected properly
 
-    static int n_frames_lost =100;
     std::vector<track_item> keypoint_candidates = find_result.keypointsL_wihout_voids;
     if (keypoint_candidates.size() > 0) { //if nokeypointsLt lost
 
@@ -422,7 +421,7 @@ void ItemTracker::find(cv::Mat frameL_small,std::vector<track_item> exclude) {
     //       are actually 'bad' detections that are too far away to be correct.
     std::vector<track_item> keypoint_candidates;
     keypoint_candidates = remove_voids(kps,find_result.keypointsL);
-    find_result.keypointsL_wihout_voids = remove_excludes_improved(keypoint_candidates,exclude);
+    find_result.keypointsL_wihout_voids = remove_excludes(keypoint_candidates,exclude);
 
     if (find_result.keypointsL_wihout_voids.size() ==0) {
         nframes_since_update_prev +=1;
@@ -739,8 +738,6 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
     data.posZ = measured_world_coordinates.z;
     data.disparity = find_result.disparity; // tmp, should not be in data
 
-    static float prevX,prevY,prevZ =0;
-    static int detected_after_take_off = 0;
     if (n_frames_lost >= smooth_width_vel || data.reset_filters) { // tracking was regained, after n_frames_lost frames
         // data.sdisparity = -1;
         disp_smoothed.reset();
@@ -755,7 +752,6 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
         data.reset_filters = false; // TODO also reset t_prev?
     }
 
-    static float sdisparity;
     sdisparity = disp_smoothed.addSample(data.disparity);
     data.sdisparity = sdisparity; // tmp, should not be in data
 

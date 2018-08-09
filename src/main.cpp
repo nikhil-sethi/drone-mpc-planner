@@ -132,7 +132,8 @@ void process_video() {
 
         //WARNING: changing the order of the functions with logging must be matched with the init functions!
         dtrkr.track(cam.get_frame_time(), dnav.setpoint_world,itrkr.pathL);
-        //itrkr.track(cam.get_frame_time(), dnav.setpoint_world, dtrkr.pathL,dctrl.getDroneIsActive());
+        itrkr.track(cam.get_frame_time(), dnav.setpoint_world, dtrkr.pathL,dctrl.getDroneIsActive());
+
         std::cout << "Found drone location:      [" << dtrkr.find_result.best_image_locationL.pt.x << "," << dtrkr.find_result.best_image_locationL.pt.y << "]" << std::endl;
 #ifdef HASSCREEN
         if (breakpause_prev != 0) {
@@ -228,8 +229,11 @@ int init(int argc, char **argv) {
     data_output_dir = "./logging/";
     mkdir("./logging/", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     cout << "data_output_dir: " << data_output_dir << endl;
+    if (fromfile)
+        logger.open(data_output_dir  + "test_fromfile.log",std::ofstream::out);
+    else
+        logger.open(data_output_dir  + "test.log",std::ofstream::out);
 
-    logger.open(data_output_dir  + "test.log",std::ofstream::out);
     logger << "ID;RS_ID;";
 
 #if CAMMODE == CAMMODE_REALSENSE
