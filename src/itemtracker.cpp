@@ -297,14 +297,14 @@ void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<trac
             t_prev_tracking = time; // update dt only if item was detected
             n_frames_tracking++;
             nframes_since_update_prev = 0;
-            find_result.update_prev_frame = (nframes_since_update_prev == 0 && !using_old_frame) || (using_old_frame >= settings.roi_max_grow);
+            find_result.update_prev_frame = (nframes_since_update_prev == 0 && !using_old_frame_since) || (using_old_frame_since >= settings.roi_max_grow);
             bool tmp = find_result.update_prev_frame;
             std::cout << tmp << std::endl;
         }
     }
 
     if (find_result.update_prev_frame && ! breakpause) {
-        using_old_frame = 0;
+        using_old_frame_since = 0;
         frameL_prev_OK = _visdat->_frameL_prev.clone();
         frameL_s_prev_OK = _visdat->_frameL_s_prev.clone();
         frameR_prev_OK = _visdat->_frameR_prev.clone();
@@ -404,9 +404,9 @@ void ItemTracker::find(cv::Mat frameL_small,std::vector<track_item> exclude) {
         cv::absdiff( frameL_small ,frameL_s_prev_OK,diffL_OK);
         _treshL = segment(diffL_OK,previous_location,roi_size);
         detector->detect( _treshL, keypointsL);
-        using_old_frame++;
+        using_old_frame_since++;
     } else {
-        using_old_frame = 0;
+        using_old_frame_since = 0;
     }
 
     vector<track_item> kps;
