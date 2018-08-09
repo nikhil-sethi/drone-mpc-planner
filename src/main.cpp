@@ -52,7 +52,7 @@ using namespace std;
 /***********Variables****************/
 unsigned char key = 0;
 int imgcount,detectcount; // to measure fps
-GStream output_video_results,output_video_L;
+GStream output_video_results,output_video_LR;
 cv::VideoWriter output_video_disp;
 
 stopwatch_c stopWatch_break;
@@ -160,8 +160,8 @@ void process_video() {
 #endif
 
         int frameWritten = 0;
-#if VIDEORAWL
-        frameWritten = output_video_L.write(cam.frameL);
+#if VIDEORAWLR
+        frameWritten = output_video_LR.write(cam.frameL,cam.frameR);
 #endif
         if (frameWritten == 0) {
 #if VIDEODISPARITY
@@ -262,8 +262,8 @@ int init(int argc, char **argv) {
 #if VIDEORESULTS
     if (output_video_results.init(argc,argv,VIDEORESULTS, data_output_dir + "videoResult.avi",IMG_W,IMG_H,VIDEOFPS,"192.168.1.255",5000,true)) {return 1;}
 #endif
-#if VIDEORAWL
-    if (output_video_L.init(argc,argv,VIDEORAWL,data_output_dir + "VIDEORAWL.avi",IMG_W,IMG_H,VIDEOFPS, "192.168.1.255",5000,false)) {return 1;}
+#if VIDEORAWLR
+    if (output_video_LR.init(argc,argv,VIDEORAWLR,data_output_dir + "test_videoRawLR.avi",IMG_W*2,IMG_H,VIDEOFPS, "192.168.1.255",5000,false)) {return 1;}
 #endif
 
 #if VIDEODISPARITY
@@ -311,8 +311,8 @@ void close() {
 #if VIDEORESULTS   
     output_video_results.close();
 #endif
-#if VIDEORAWL
-    output_video_L.close();
+#if VIDEORAWLR
+    output_video_LR.close();
 #endif
 
     std::cout <<"Closed"<< std::endl;

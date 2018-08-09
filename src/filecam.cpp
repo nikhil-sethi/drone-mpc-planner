@@ -3,16 +3,17 @@
 #include <string.h>
 #include <unistd.h>       //usleep
 
+#include "opencv2/imgproc/imgproc.hpp"
 
 bool FileCam::init (int argc __attribute__((unused)), char **argv __attribute__((unused))) {
-    file_rgb = std::string(argv[1]) + "videoRawRGB.avi";
-    file_stereo = std::string(argv[1]) + "videoRawL.avi";
+    file_rgb = std::string(argv[1]) + "_videoRawRGB.avi";
+    file_stereo = std::string(argv[1]) + "_videoRawLR.avi";
 
     videoLength_rgb = 999999;
     video_rgb = cv::VideoCapture(file_rgb);
     video_stereo = cv::VideoCapture(file_stereo);
 
-    if (!video_rgb.isOpened()) {
+    if (!video_stereo.isOpened()) {
         std::cerr << "Error opening video file!\n";
         return true;
     } else {
@@ -31,8 +32,7 @@ bool FileCam::init (int argc __attribute__((unused)), char **argv __attribute__(
             video_rgb >> frame_rgb;
             frame_id_rgb++;
         }
-        camRunning = true;
-        return false;
+        camRunning = true;        
     }
 
     float focal_length = 425.680267; // same as fy
@@ -40,7 +40,8 @@ bool FileCam::init (int argc __attribute__((unused)), char **argv __attribute__(
     float cy = 235.088562;
     float baseline = 0.0499379635;
     Qf = (cv::Mat_<double>(4, 4) << 1.0, 0.0, 0.0, -cx, 0.0, 1.0, 0.0, -cy, 0.0, 0.0, 0.0, focal_length, 0.0, 0.0, 1/baseline, 0.0);
-
+    switch_mode(cam_mode_stereo);
+    return false;
 }
 
 void FileCam::switch_mode(cam_mode_enum mode){
@@ -81,10 +82,13 @@ void FileCam::update() {
         frame_id_rgb++;
         if (frame_rgb.empty() || frame_id_rgb >= videoLength_rgb)
             camRunning=false;
-    } else if(_mode == cam_mode_stereo) {
-        video_stereo >> frameL;
+    } else if(_mode == cam_mode_stereo) {        
+        video_stereo >> frameLR;
+        cvtColor(frameLR,frameLR,CV_BGR2GRAY);
         frame_id_stereo++;
-        if (frameL.empty() || frame_id_stereo >= videoLength_stereo)
+        frameL = frameLR(cv::Rect(cv::Point(0,0),cv::Point(frameLR.cols/2,frameLR.rows)));
+        frameR = frameLR(cv::Rect(cv::Point(frameLR.cols/2,0),cv::Point(frameLR.cols,frameLR.rows)));
+        if (frameL.empty())
             camRunning=false;
     }
     frame_id++;

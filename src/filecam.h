@@ -9,7 +9,7 @@ class FileCam {
 public:
 
     enum cam_mode_enum{cam_mode_stopped = 0, cam_mode_disabled = 1, cam_mode_color = 2, cam_mode_stereo=3 };
-    cv::Mat frameL,frameR,frameD,frame_rgb;
+    cv::Mat frameLR,frameL,frameR,frameD,frame_rgb;
 
     cam_mode_enum get_mode() {return _mode;}
     void switch_mode(cam_mode_enum mode);

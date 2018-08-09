@@ -16,7 +16,7 @@
 #define HASSCREEN // dont disable in qt debugger!
 #define BEEP
 
-#define VIDEORAWL VIDEOMODE_DISABLED
+#define VIDEORAWLR VIDEOMODE_DISABLED
 #define VIDEODISPARITY VIDEOMODE_DISABLED
 #define VIDEORESULTS VIDEOMODE_DISABLED
 #define VIDEOFPS 60 // the estimated frame rate of the video used for creating output videos
@@ -25,7 +25,7 @@
 #define IMSCALEF 4
 #define CAMERA_ANGLE 35.f
 
-#define CAMMODE CAMMODE_REALSENSE
+#define CAMMODE CAMMODE_FROMVIDEOFILE
 
 #define DRONE_IM_X_START 424/IMSCALEF
 #define DRONE_IM_Y_START 420/IMSCALEF
