@@ -380,12 +380,13 @@ void ItemTracker::find(cv::Mat frameL_small,std::vector<track_item> exclude) {
 
     //attempt to detect changed blobs
     _treshL = segment(_visdat->diffL,previous_location,roi_size);
-    //cv::imwrite("treshL.png", _treshL);
-    //cv::imwrite("diffL.png", _visdat->diffL);
-    //cv::imwrite("frameL_small.png", _visdat->_frameL_small);
-    //cv::imwrite("frameL_small_prev.png", _visdat->_frameL_s_prev);
-    //cv::imwrite("frameL_small_prev_ok.png", frameL_s_prev_OK);
-
+    // cv::imwrite("treshL.png", _treshL);
+    // cv::imwrite("diffL.png", _visdat->diffL);
+    // cv::imwrite("frameL_small.png", _visdat->_frameL_small);
+    // cv::imwrite("frameL_small_prev.png", _visdat->_frameL_s_prev);
+    // cv::imwrite("frameL_small_prev_ok.png", frameL_s_prev_OK);
+    // cv::Mat tmp = createColumnImage({_visdat->diffL,_visdat->_frameL_small,_visdat->_frameL_s_prev,frameL_s_prev_OK},CV_8UC1);
+    // cv::imwrite("all.png", tmp);
 #if CV_MAJOR_VERSION==3
     cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
 #else
@@ -419,9 +420,8 @@ void ItemTracker::find(cv::Mat frameL_small,std::vector<track_item> exclude) {
     //       When it is does exclude keypoints, these are often 'good' keypoints, that are excluded because they seem to form a pair with keypoints which
     //       are actually 'bad' detections that are too far away to be correct.
     std::vector<track_item> keypoint_candidates;
-    //keypoint_candidates = remove_voids(kps,find_result.keypointsL);
-
-    find_result.keypointsL_wihout_voids = remove_excludes_improved(kps,exclude);
+    keypoint_candidates = remove_voids(kps,find_result.keypointsL);
+    find_result.keypointsL_wihout_voids = remove_excludes_improved(keypoint_candidates,exclude);
 
     if (find_result.keypointsL_wihout_voids.size() ==0) {
         nframes_since_update_prev +=1;
