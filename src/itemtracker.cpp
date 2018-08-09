@@ -215,7 +215,7 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes_improved(std::
                 threshold_dis = settings.exclude_max_distance;
 
             check1 = (dis1 < dis3 && dis1 < threshold_dis);
-            check2 = abs(dis1-dis3) < 2.0;
+            check2 = fabs(dis1-dis3) < 2.0f;
             check3 = dis3 > (settings.exclude_min_distance / sqrtf(certainty_prediction));
             if ( check1 || check2 || check3 ) {
                 keypoints.erase(keypoints.begin() + i - erase_cnt);
@@ -297,7 +297,9 @@ void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<trac
             t_prev_tracking = time; // update dt only if item was detected
             n_frames_tracking++;
             nframes_since_update_prev = 0;
-
+            find_result.update_prev_frame = (nframes_since_update_prev == 0 && !using_old_frame); //|| (nframes_since_update_prev >= settings.roi_max_grow);
+            bool tmp = find_result.update_prev_frame;
+            std::cout << tmp << std::endl;
         }
     }
 
@@ -357,6 +359,7 @@ void ItemTracker::updateParams(){
 #endif
 }
 
+
 void ItemTracker::find(cv::Mat frameL_small,std::vector<track_item> exclude) {
     cv::Point previous_location;
 
@@ -377,6 +380,12 @@ void ItemTracker::find(cv::Mat frameL_small,std::vector<track_item> exclude) {
 
     //attempt to detect changed blobs
     _treshL = segment(_visdat->diffL,previous_location,roi_size);
+    //cv::imwrite("treshL.png", _treshL);
+    //cv::imwrite("diffL.png", _visdat->diffL);
+    //cv::imwrite("frameL_small.png", _visdat->_frameL_small);
+    //cv::imwrite("frameL_small_prev.png", _visdat->_frameL_s_prev);
+    //cv::imwrite("frameL_small_prev_ok.png", frameL_s_prev_OK);
+
 #if CV_MAJOR_VERSION==3
     cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
 #else
@@ -393,6 +402,9 @@ void ItemTracker::find(cv::Mat frameL_small,std::vector<track_item> exclude) {
         cv::absdiff( frameL_small ,frameL_s_prev_OK,diffL_OK);
         _treshL = segment(diffL_OK,previous_location,roi_size);
         detector->detect( _treshL, keypointsL);
+        using_old_frame = true;
+    } else {
+        using_old_frame = false;
     }
 
     vector<track_item> kps;
@@ -406,7 +418,9 @@ void ItemTracker::find(cv::Mat frameL_small,std::vector<track_item> exclude) {
     // TODO: verify if remove_voids() can help improve tracking. Currently it does not seem to do so, as it does not exclude keypoints very frequently
     //       When it is does exclude keypoints, these are often 'good' keypoints, that are excluded because they seem to form a pair with keypoints which
     //       are actually 'bad' detections that are too far away to be correct.
-    //std::vector<track_item> keypoint_candidates = remove_voids(kps,find_result.keypointsL);
+    std::vector<track_item> keypoint_candidates;
+    //keypoint_candidates = remove_voids(kps,find_result.keypointsL);
+
     find_result.keypointsL_wihout_voids = remove_excludes_improved(kps,exclude);
 
     if (find_result.keypointsL_wihout_voids.size() ==0) {
@@ -418,7 +432,6 @@ void ItemTracker::find(cv::Mat frameL_small,std::vector<track_item> exclude) {
     find_result.excludes = exclude;
     find_result.keypointsL = kps;
     find_result.treshL = _treshL;
-    find_result.update_prev_frame = nframes_since_update_prev == 0 || (nframes_since_update_prev >= settings.roi_max_grow  );
 }
 
 //filter out keypoints that are caused by the drone leaving the spot (voids)

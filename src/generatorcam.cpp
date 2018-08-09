@@ -76,19 +76,20 @@ void GeneratorCam::generateStereo() {
 //    static bool bounce = -1;
 //    drone.x = (drone.x + bounce ) % (IMG_W-3);
 //    drone.y = (drone.y + bounce ) % (IMG_H-3);
-    drone.x = DRONE_IM_X_START*IMSCALEF + sinf((float)(frame_id_stereo+550)/100.f)*100 + 75;
-    drone.y = DRONE_IM_Y_START*IMSCALEF + cosf((float)(frame_id_stereo+550)/100.f)*100 - 75;
+    drone.x = DRONE_IM_X_START*IMSCALEF + sinf((float)(frame_id_stereo-2)/1000.f)*100 ;
+    drone.y = DRONE_IM_Y_START*IMSCALEF + cosf((float)(frame_id_stereo-2)/1000.f)*100 - 100;
 
+    std::cout << "Generated drone location: [" << drone.x/IMSCALEF << "," << drone.y/IMSCALEF << "]" << std::endl;
 
     insect.x = (insect.x + 1 ) % (IMG_W-1);
     insect.y = (insect.y + 1 ) % (IMG_H-1);
 
     bound(&drone,2);
     bound(&insect,1);
-
-    cv::circle(resL,drone,2,255,2);
-    cv::circle(resL,insect,1,200,1);
-
+    if (frame_id_stereo > 2) { // circumvent background calib
+        cv::circle(resL,drone,2,255,2);
+        // cv::circle(resL,insect,1,200,1);
+    }
 }
 
 void GeneratorCam::bound(cv::Point * p,int radius){
