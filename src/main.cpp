@@ -130,7 +130,7 @@ void process_video() {
         visdat.update(cam.frameL,cam.frameR,cam.get_frame_time(),cam.get_frame_id());
 
         //WARNING: changing the order of the functions with logging must be matched with the init functions!
-        dtrkr.track(cam.get_frame_time(), dnav.setpoint_world,itrkr.pathL,dctrl.getDroneIsActive());
+        dtrkr.track(cam.get_frame_time(), dnav.setpoint_world,itrkr.predicted_pathL,dctrl.getDroneIsActive());
         itrkr.track(cam.get_frame_time(), dnav.setpoint_world, dtrkr.pathL,dctrl.getDroneIsActive());
 
         std::cout << "Found drone location:      [" << dtrkr.find_result.best_image_locationL.pt.x << "," << dtrkr.find_result.best_image_locationL.pt.y << "]" << std::endl;
