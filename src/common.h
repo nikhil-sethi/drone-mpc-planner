@@ -49,11 +49,12 @@ const float depthscale = 256.0f;
 
 
 struct trackData {
-    float posX,posY,posZ,posErrX,posErrY,posErrZ, dx,dy,dz,velX,velY,velZ,dt,sposX,sposY,sposZ,svelX,svelY,svelZ;
+    float posX,posY,posZ,posErrX,posErrY,posErrZ;
+    float dx,dy,dz,dt;
+    float velX,velY,velZ,accX,accY,accZ;
+    float sposX,sposY,sposZ,svelX,svelY,svelZ,saccX,saccY,saccZ;
+
     bool landed = true;
-    float disparity;
-    float sdisparity;
-    cv::Point image_locationL;
     bool valid;
     int detected_after_take_off;
     bool reset_filters;

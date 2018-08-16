@@ -147,8 +147,7 @@ private:
     std::string _name;
 
     float prevX,prevY,prevZ =0;
-    int detected_after_take_off = 0;
-    float sdisparity;
+    int detected_after_take_off = 0;    
 protected:
     int n_frames_lost = 100;
     std::ofstream *_logger;
@@ -181,10 +180,13 @@ public:
     virtual void track(float time, cv::Point3f setpoint_world, std::vector<track_item> ignore, float drone_max_border_y, float drone_max_border_z);
 
     trackData data;
+    std::vector<trackData> track_history;
     Smoother smoother_posX, smoother_posY, smoother_posZ;
     Smoother smoother_velX, smoother_velY, smoother_velZ;
+    Smoother smoother_accX, smoother_accY, smoother_accZ;
     const int smooth_width_vel = 10;
     const int smooth_width_pos = 10;
+    const int smooth_width_acc = 10;
 
     Smoother disp_smoothed;
 

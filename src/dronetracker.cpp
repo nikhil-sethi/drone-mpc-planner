@@ -6,7 +6,8 @@ bool DroneTracker::init(std::ofstream *logger, VisionData *visdat) {
 
     (*_logger) << "imLx; imLy; disparity;";
 
-    data.image_locationL = cv::Point(DRONE_IM_X_START,DRONE_IM_Y_START);
+    find_result.best_image_locationL.pt.x = DRONE_IM_X_START;
+    find_result.best_image_locationL.pt.y = DRONE_IM_Y_START;
     find_result.smoothed_disparity = DRONE_DISPARITY_START;
     find_result.disparity = DRONE_DISPARITY_START;
     data.landed = true;
@@ -67,7 +68,8 @@ void DroneTracker::track(float time, cv::Point3f setpoint_world, std::vector<tra
         frameL_prev_OK = _visdat->_frameL_prev;
         frameR_prev_OK = _visdat->_frameR_prev;
 
-        data.image_locationL = cv::Point(DRONE_IM_X_START,DRONE_IM_Y_START);
+        find_result.best_image_locationL.pt.x = DRONE_IM_X_START;
+        find_result.best_image_locationL.pt.y =  DRONE_IM_Y_START;
         find_result.smoothed_disparity = DRONE_DISPARITY_START;
         find_result.disparity = DRONE_DISPARITY_START;
         nframes_since_update_prev = 0;
@@ -83,9 +85,8 @@ void DroneTracker::track(float time, cv::Point3f setpoint_world, std::vector<tra
         found_after_takeoff = true;
     }
     if (!found_after_takeoff) {
-        cv::KeyPoint k(data.image_locationL,1);
         predicted_pathL.clear();
-        predicted_pathL.push_back(track_item(k,_visdat->_frame_id,1.f));
+        predicted_pathL.push_back(track_item(find_result.best_image_locationL,_visdat->_frame_id,1.f));
     }
 
     (*_logger) << find_result.best_image_locationL.pt.x *IMSCALEF << "; " << find_result.best_image_locationL.pt.y *IMSCALEF << "; " << find_result.disparity << "; ";

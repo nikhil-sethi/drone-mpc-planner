@@ -129,7 +129,12 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     smoother_velY.init(smooth_width_vel);
     smoother_velZ.init(smooth_width_vel);
 
-    data.image_locationL = cv::Point(848/2/IMSCALEF,480/2/IMSCALEF);
+    smoother_accX.init(smooth_width_acc);
+    smoother_accY.init(smooth_width_acc);
+    smoother_accZ.init(smooth_width_acc);
+
+    find_result.best_image_locationL.pt.x = IMG_W/2/IMSCALEF;
+    find_result.best_image_locationL.pt.y = IMG_H/2/IMSCALEF;
     find_result.smoothed_disparity = 0;
     find_result.disparity = 0;
 }
@@ -137,20 +142,20 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
 std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path) {
     float dis1,dis2,dis = 0;
 
-//    if (_name.compare("insect")==0 && keypoints.size()>0){
-//        std::cout << "insect" << std::endl;
-//    }
+    //    if (_name.compare("insect")==0 && keypoints.size()>0){
+    //        std::cout << "insect" << std::endl;
+    //    }
 
-//    if (_name.compare("drone")==0 && keypoints.size()>0){
-//        std::cout << "drone" << std::endl;
-//    }
+    //    if (_name.compare("drone")==0 && keypoints.size()>0){
+    //        std::cout << "drone" << std::endl;
+    //    }
 
     if (exclude_path.size() > 0 && keypoints.size ()>0) {
         track_item exclude = exclude_path.at(exclude_path.size()-1);
         track_item exclude_prev = exclude;
         if (exclude_path.size() > 1) {
             exclude_prev = exclude_path.at(exclude_path.size()-2);
-        }        
+        }
         std::vector<track_item> tmp = keypoints;
         int erase_cnt =0;
         for (uint i = 0 ; i< tmp.size();i++){
@@ -186,7 +191,7 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes_improved(std::
     float dis1,dis3,certainty_prediction = 0;
     bool check1,check2,check3;
 
-/*    if (_name.compare("insect")==0 && keypoints.size()>0){
+    /*    if (_name.compare("insect")==0 && keypoints.size()>0){
         std::cout << "insect" << std::endl;
     }
 
@@ -363,7 +368,7 @@ void ItemTracker::updateParams(){
 void ItemTracker::find(cv::Mat frameL_small,std::vector<track_item> exclude) {
     cv::Point previous_location;
 
-    previous_location = data.image_locationL;
+    previous_location = find_result.best_image_locationL.pt;
 
     cv::Point roi_size;
     if (settings.roi_min_size < 1)
@@ -727,7 +732,6 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
 
     find_result.best_image_locationL = match;
     find_result.disparity = disparity;
-    data.image_locationL = find_result.best_image_locationL.pt;
 
     float new_tracking_certainty = calc_certainty(match);
 
@@ -736,7 +740,6 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
     data.posX = measured_world_coordinates.x;
     data.posY = measured_world_coordinates.y;
     data.posZ = measured_world_coordinates.z;
-    data.disparity = find_result.disparity; // tmp, should not be in data
 
     if (n_frames_lost >= smooth_width_vel || data.reset_filters) { // tracking was regained, after n_frames_lost frames
         // data.sdisparity = -1;
@@ -747,13 +750,15 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
         smoother_velX.reset();
         smoother_velY.reset();
         smoother_velZ.reset();
+        smoother_accX.reset();
+        smoother_accY.reset();
+        smoother_accZ.reset();
 
         detected_after_take_off = 0;
         data.reset_filters = false; // TODO also reset t_prev?
     }
 
-    sdisparity = disp_smoothed.addSample(data.disparity);
-    data.sdisparity = sdisparity; // tmp, should not be in data
+    float sdisparity = disp_smoothed.addSample(find_result.disparity);
 
     if (fabs((float)abs(find_result.disparity) - fabs(find_result.smoothed_disparity)) > 3) {
         //do better matching?
@@ -787,16 +792,29 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
         data.velY = 0;
         data.velZ = 0;
     }
+    float tsaccX = 0;
+    float tsaccY = 0;
+    float tsaccZ = 0;
+    if (detected_after_take_off > smooth_width_pos+smooth_width_vel) {
+        data.accX = tsvelX / dt;
+        data.accY = tsvelY / dt;
+        data.accZ = tsvelZ / dt;
+        tsaccX = smoother_accX.addSample(data.accX);
+        tsaccY = smoother_accY.addSample(data.accY);
+        tsaccZ = smoother_accZ.addSample(data.accZ);
 
-    //if (detected_after_take_off > smooth_width_pos) { // + smooth_width_vel, but than it is too late for autotakeoff... (by filling the smoother with 0's we assume vel = 0 , which is true at take off)
+    } else {
+        data.accX = 0;
+        data.accY = 0;
+        data.accZ = 0;
+    }
+
     data.svelX = tsvelX;
     data.svelY = tsvelY;
     data.svelZ = tsvelZ;
-    //    } else {
-    //        data.svelX = 0;
-    //        data.svelY = 0;
-    //        data.svelZ = 0;
-    //    }
+    data.saccX = tsaccX;
+    data.saccY = tsaccY;
+    data.saccZ = tsaccZ;
 
     data.posErrX = data.sposX - setpoint_world.x;
     data.posErrY = data.sposY - setpoint_world.y;
