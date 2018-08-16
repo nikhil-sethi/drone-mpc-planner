@@ -137,6 +137,13 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     find_result.best_image_locationL.pt.y = IMG_H/2/IMSCALEF;
     find_result.smoothed_disparity = 0;
     find_result.disparity = 0;
+
+    (*_logger) << "imLx_" << _name << "; ";
+    (*_logger) << "imLy_" << _name << "; ";
+    (*_logger) << "disparity_" << _name << "; ";
+    (*_logger) << "posX_" << _name << "; ";
+    (*_logger) << "posY_" << _name << "; ";
+    (*_logger) << "posZ_" << _name << "; ";
 }
 
 std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path) {
@@ -331,6 +338,8 @@ void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<trac
         }
 
     }
+
+    (*_logger) << find_result.best_image_locationL.pt.x *IMSCALEF << "; " << find_result.best_image_locationL.pt.y *IMSCALEF << "; " << find_result.disparity << "; " << get_last_track_data().posX << "; " << get_last_track_data().posY << "; " << get_last_track_data().posZ << ";" ;
 }
 
 void ItemTracker::updateParams(){

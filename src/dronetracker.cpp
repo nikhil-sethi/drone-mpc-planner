@@ -4,8 +4,6 @@
 bool DroneTracker::init(std::ofstream *logger, VisionData *visdat) {
     ItemTracker::init(logger,visdat,"drone");
 
-    (*_logger) << "imLx; imLy; disparity;";
-
     find_result.best_image_locationL.pt.x = DRONE_IM_X_START;
     find_result.best_image_locationL.pt.y = DRONE_IM_Y_START;
     find_result.smoothed_disparity = DRONE_DISPARITY_START;
@@ -87,8 +85,6 @@ void DroneTracker::track(float time, cv::Point3f setpoint_world, std::vector<tra
         predicted_pathL.clear();
         predicted_pathL.push_back(track_item(find_result.best_image_locationL,_visdat->_frame_id,1.f));
     }
-
-    (*_logger) << find_result.best_image_locationL.pt.x *IMSCALEF << "; " << find_result.best_image_locationL.pt.y *IMSCALEF << "; " << find_result.disparity << "; ";
 
 
 }
