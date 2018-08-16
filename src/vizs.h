@@ -22,6 +22,7 @@ private:
     cv::Mat plotxy(cv::Mat datax, cv::Mat datay, cv::Point setpoint, std::string name, cv::Point minaxis, cv::Point maxaxis);
     cv::Mat plot_xyd(void);
     cv::Mat plot_all_control(void);
+    cv::Mat plot_all_acceleration(void);
     cv::Mat plot_all_velocity(void);
     cv::Mat plot_all_position(void);
     void draw_segment_viz();
@@ -123,9 +124,17 @@ public:
     cv::Mat velY;
     cv::Mat velZ;
 
+    cv::Mat accX;
+    cv::Mat accY;
+    cv::Mat accZ;
+
     cv::Mat svelX;
     cv::Mat svelY;
     cv::Mat svelZ;
+
+    cv::Mat saccX;
+    cv::Mat saccY;
+    cv::Mat saccZ;
 
     cv::Mat autotakeoff_velY_thresh;
 

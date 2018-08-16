@@ -70,6 +70,14 @@ void Visualizer::addPlotSample(void) {
     svelY.push_back(data.svelY);
     svelZ.push_back(-data.svelZ);
 
+    accX.push_back(-data.accX);
+    accY.push_back(data.accY);
+    accZ.push_back(-data.accZ);
+
+    saccX.push_back(-data.saccX);
+    saccY.push_back(data.saccY);
+    saccZ.push_back(-data.saccZ);
+
     autotakeoff_velY_thresh.push_back((float)(_dctrl->params.auto_takeoff_speed) / 100.f);
 
     g_lockData.unlock();
@@ -81,6 +89,7 @@ void Visualizer::plot(void) {
     ims_trk.push_back(plot_xyd());
     ims_trk.push_back(plot_all_position());
     ims_trk.push_back(plot_all_velocity());
+    ims_trk.push_back(plot_all_acceleration());
     ims_trk.push_back(plot_all_control());
     //showRowImage(ims_trk, "Tracking",CV_8UC3);
     plotframe = createRowImage(ims_trk,CV_8UC3);
@@ -125,6 +134,14 @@ cv::Mat Visualizer::plot_all_velocity(void) {
     ims_vel.push_back(plot({velY,svelY,autotakeoff_velY_thresh},"VelY"));
     ims_vel.push_back(plot({velZ,svelZ},"VelZ"));
     return createColumnImage(ims_vel,CV_8UC3);
+}
+
+cv::Mat Visualizer::plot_all_acceleration(void) {
+    std::vector<cv::Mat> ims_acc;
+    ims_acc.push_back(plot({accX,saccX}, "AccX"));
+    ims_acc.push_back(plot({accY,saccY,autotakeoff_velY_thresh},"AccY"));
+    ims_acc.push_back(plot({accZ,saccZ},"AccZ"));
+    return createColumnImage(ims_acc,CV_8UC3);
 }
 
 cv::Mat Visualizer::plot_all_position(void) {

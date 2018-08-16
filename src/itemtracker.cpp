@@ -144,6 +144,15 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     (*_logger) << "posX_" << _name << "; ";
     (*_logger) << "posY_" << _name << "; ";
     (*_logger) << "posZ_" << _name << "; ";
+    (*_logger) << "sposX_" << _name << "; ";
+    (*_logger) << "sposY_" << _name << "; ";
+    (*_logger) << "sposZ_" << _name << "; ";
+    (*_logger) << "velX_" << _name << "; ";
+    (*_logger) << "velY_" << _name << "; ";
+    (*_logger) << "velZ_" << _name << "; ";
+    (*_logger) << "accX_" << _name << "; ";
+    (*_logger) << "accY_" << _name << "; ";
+    (*_logger) << "accZ_" << _name << "; ";
 }
 
 std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path) {
@@ -340,6 +349,9 @@ void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<trac
     }
 
     (*_logger) << find_result.best_image_locationL.pt.x *IMSCALEF << "; " << find_result.best_image_locationL.pt.y *IMSCALEF << "; " << find_result.disparity << "; " << get_last_track_data().posX << "; " << get_last_track_data().posY << "; " << get_last_track_data().posZ << ";" ;
+    (*_logger) << get_last_track_data().sposX << "; " << get_last_track_data().sposY << "; " << get_last_track_data().sposZ << ";";
+    (*_logger) << get_last_track_data().velX << "; " << get_last_track_data().velY << "; " << get_last_track_data().velZ << ";";
+    (*_logger) << get_last_track_data().accX << "; " << get_last_track_data().accY << "; " << get_last_track_data().accZ << ";";
 }
 
 void ItemTracker::updateParams(){
@@ -814,7 +826,6 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
         tsaccX = smoother_accX.addSample(data.accX);
         tsaccY = smoother_accY.addSample(data.accY);
         tsaccZ = smoother_accZ.addSample(data.accZ);
-
     } else {
         data.accX = 0;
         data.accY = 0;

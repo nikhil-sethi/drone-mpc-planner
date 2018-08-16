@@ -191,7 +191,7 @@ public:
     trackData get_last_track_data() {
         if (track_history.empty())
             return trackData();
-        return track_history.front();
+        return track_history.back();
     }
 
 
