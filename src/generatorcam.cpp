@@ -84,11 +84,25 @@ void GeneratorCam::generateStereo() {
     insect.x = (insect.x + 1 ) % (IMG_W-1);
     insect.y = (insect.y + 1 ) % (IMG_H-1);
 
-    bound(&drone,2);
+    bound(&drone,1);
     bound(&insect,1);
+
+    cv::Point insectR;
+    cv::Point droneR;
+    droneR.x = drone.x-15;
+    droneR.y = drone.y;
+    insectR.x = insect.x-15;
+    insectR.y = insect.y;
+
+    bound(&droneR,2);
+    bound(&insectR,1);
+
     if (frame_id_stereo > 2) { // circumvent background calib
         cv::circle(resL,drone,2,255,2);
         cv::circle(resL,insect,1,200,1);
+
+        cv::circle(resR,droneR,2,255,2);
+        cv::circle(resR,insectR,1,200,1);
     }
 }
 
