@@ -666,7 +666,7 @@ int ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::M
 
     //shift over the image to find the best match, shift = disparity
     int disparity_cor = 0,disparity_err = 0;
-    float maxcor = std::numeric_limits<float>::min();
+    float maxcor = -std::numeric_limits<float>::max();
     float minerr = std::numeric_limits<float>::max();
     int tmp_max_disp = settings.max_disparity;
     if (x1 - tmp_max_disp < 0)
