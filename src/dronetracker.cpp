@@ -10,7 +10,6 @@ bool DroneTracker::init(std::ofstream *logger, VisionData *visdat) {
     find_result.best_image_locationL.pt.y = DRONE_IM_Y_START;
     find_result.smoothed_disparity = DRONE_DISPARITY_START;
     find_result.disparity = DRONE_DISPARITY_START;
-    data.landed = true;
     return false;
 }
 void DroneTracker::init_settings() {

@@ -118,8 +118,7 @@ private:
     int match_closest_to_prediciton(cv::Point3f predicted_locationL, std::vector<track_item> keypointsL);
     int stereo_match(cv::KeyPoint closestL, cv::Mat frameL_prev, cv::Mat prevFrameR_big, cv::Mat frameL, cv::Mat frameR, int prevDisparity);
     void update_prediction_state(cv::Point3f p);
-    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, int n_frames_lost, cv::KeyPoint match, int disparity, cv::Point3f setpoint_world, int frame_id);
-    void reset_tracker_ouput(int n_frames_lost);
+    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, int n_frames_lost, cv::KeyPoint match, int disparity, cv::Point3f setpoint_world, int frame_id);    
     void find(cv::Mat frameL_small, std::vector<track_item> exclude);
     std::vector<ItemTracker::track_item> remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path);
     std::vector<ItemTracker::track_item> remove_excludes_improved(std::vector<track_item> keypoints, std::vector<track_item> exclude_path);
@@ -172,15 +171,19 @@ public:
     std::vector<track_item> pathL;
     std::vector<track_item> predicted_pathL;
 
-
     int n_frames_tracking =0;
 
     void close (void);
     void init(std::ofstream *logger, VisionData *_visdat, std::string name);
     virtual void track(float time, cv::Point3f setpoint_world, std::vector<track_item> ignore, float drone_max_border_y, float drone_max_border_z);
 
-    trackData data;
+//    trackData data;
     std::vector<trackData> track_history;
+    trackData get_last_track_data() {
+        if (track_history.empty())
+            return trackData();
+        return track_history.front();
+    }
     Smoother smoother_posX, smoother_posY, smoother_posZ;
     Smoother smoother_velX, smoother_velY, smoother_velZ;
     Smoother smoother_accX, smoother_accY, smoother_accZ;

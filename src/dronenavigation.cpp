@@ -99,7 +99,8 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
 }
 
 void DroneNavigation::update() {
-    float dis = sqrtf(_dtrk->data.posErrX*_dtrk->data.posErrX + _dtrk->data.posErrY*_dtrk->data.posErrY + _dtrk->data.posErrZ*_dtrk->data.posErrZ);
+    trackData data = _dtrk->get_last_track_data();
+    float dis = sqrtf(data.posErrX*data.posErrX + data.posErrY*data.posErrY + data.posErrZ*data.posErrZ);
     if (dis *1000 < setpoints[wpid]._distance_threshold_mm * params.distance_threshold_f && !_dctrl->getAutoLand() && _dctrl->getAutoControl() && !_dctrl->getAutoTakeOff() && _dtrk->n_frames_tracking>5) {
         if (wpid < setpoints.size()-1) {
             wpid++;
@@ -110,15 +111,15 @@ void DroneNavigation::update() {
             _dctrl->recalibrateHover();
     }
 
-    if (_dctrl->getAutoLand() && !_dtrk->data.landed && ((_dtrk->data.sposY < -(_dtrk->drone_max_border_y-0.18f)) || autoLandThrottleDecrease > 0)){
+    if (_dctrl->getAutoLand() && !_dctrl->landed && ((data.sposY < -(_dtrk->drone_max_border_y-0.18f)) || autoLandThrottleDecrease > 0)){
         if (autoLandThrottleDecrease == 0)
             alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
         autoLandThrottleDecrease = params.autoLandThrottleDecreaseFactor;
         _dctrl->setAutoLandThrottleDecrease(autoLandThrottleDecrease);
         _dtrk->drone_max_border_y = 0;
     }
-    if (autoLandThrottleDecrease >1000 || (_dctrl->autoThrottle <= 1050 && _dctrl->getAutoControl()) || (autoLandThrottleDecrease > 0 && !_dctrl->getAutoControl()) || (autoLandThrottleDecrease > 500 && _dtrk->data.reset_filters)) {
-        _dtrk->data.landed = true;
+    if (autoLandThrottleDecrease >1000 || (_dctrl->autoThrottle <= 1050 && _dctrl->getAutoControl()) || (autoLandThrottleDecrease > 0 && !_dctrl->getAutoControl()) || (autoLandThrottleDecrease > 500 && data.reset_filters)) {
+        _dctrl->landed = true;
         wpid = 0;
         autoLandThrottleDecrease = 0;
         _dctrl->setAutoLandThrottleDecrease(0);

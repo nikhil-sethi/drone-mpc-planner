@@ -249,8 +249,6 @@ void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<trac
 
     find(_visdat->_frameL_small,exclude);
 
-    data.valid = false; // reset the flag, set to true when item is detected properly
-
     std::vector<track_item> keypoint_candidates = find_result.keypointsL_wihout_voids;
     if (keypoint_candidates.size() > 0) { //if nokeypointsLt lost
 
@@ -292,7 +290,11 @@ void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<trac
             if( n_frames_lost >= 10 )
                 foundL = false;
             update_prediction_state(cv::Point3f(predicted_locationL.x,predicted_locationL.y,predicted_locationL.z));
-            reset_tracker_ouput(n_frames_lost);
+            if (n_frames_lost > 10){
+                reset_tracker_ouput();
+            }
+            if (n_frames_lost != 0)
+                n_frames_tracking = 0;
         } else {
             //Point3f predicted_output = world_coordinates[1];
             update_prediction_state(cv::Point3f(match.pt.x,match.pt.y,disparity));
@@ -737,6 +739,8 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
 
     pathL.push_back(track_item(find_result.best_image_locationL,frame_id,new_tracking_certainty));
 
+    trackData data;
+    data.valid = true;
     data.posX = measured_world_coordinates.x;
     data.posY = measured_world_coordinates.y;
     data.posZ = measured_world_coordinates.z;
@@ -827,6 +831,8 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
     data.valid = true;
     data.dt = dt;
     detected_after_take_off++;
+
+    track_history.push_back(data);
 }
 
 float ItemTracker::calc_certainty(KeyPoint item) {
@@ -843,7 +849,7 @@ float ItemTracker::calc_certainty(KeyPoint item) {
 }
 
 void ItemTracker::reset_tracker_ouput() {
-
+    trackData data;
     data.reset_filters = true;
     data.velX = 0;
     data.velY = 0;
@@ -851,14 +857,6 @@ void ItemTracker::reset_tracker_ouput() {
     data.svelX = 0;
     data.svelY = 0;
     data.svelZ = 0;
-}
-
-void ItemTracker::reset_tracker_ouput(int n_frames_lost) {
-    if (n_frames_lost > 10){
-        reset_tracker_ouput();
-    }
-    if (n_frames_lost != 0)
-        n_frames_tracking = 0;
 }
 
 void ItemTracker::close () {

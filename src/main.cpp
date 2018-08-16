@@ -142,7 +142,7 @@ void process_video() {
 #endif
 
         dnav.update();
-        dctrl.control(&(dtrkr.data));
+        dctrl.control(dtrkr.get_last_track_data());
 
 #ifdef HASSCREEN
         if (fromfile) {

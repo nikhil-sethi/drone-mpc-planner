@@ -44,30 +44,31 @@ void Visualizer::addPlotSample(void) {
     throttle_calculated.push_back((float)_dctrl->autoThrottle);
     throttle_hover.push_back(_dctrl->hoverthrottle);
 
-    dt.push_back(_dtrkr->data.dt);
+    trackData data = _dtrk->get_last_track_data();
+    dt.push_back(data.dt);
     dt_target.push_back(1.f/VIDEOFPS);
 
-    posX.push_back(-_dtrkr->data.posX);
-    posY.push_back(_dtrkr->data.posY);
-    posZ.push_back(-_dtrkr->data.posZ);
-    disparity.push_back(_dtrkr->data.disparity);
-    sdisparity.push_back(_dtrkr->data.sdisparity);
+    posX.push_back(-data.posX);
+    posY.push_back(data.posY);
+    posZ.push_back(-data.posZ);
+    disparity.push_back(data.disparity);
+    sdisparity.push_back(data.sdisparity);
 
-    sposX.push_back(-_dtrkr->data.sposX);
-    sposY.push_back(_dtrkr->data.sposY);
-    sposZ.push_back(-_dtrkr->data.sposZ);
+    sposX.push_back(-data.sposX);
+    sposY.push_back(data.sposY);
+    sposZ.push_back(-data.sposZ);
 
     setposX.push_back(-_dnav->setpoint_world.x);
     setposY.push_back(_dnav->setpoint_world.y);
     setposZ.push_back(-_dnav->setpoint_world.z);
 
-    velX.push_back(-_dtrkr->data.velX);
-    velY.push_back(_dtrkr->data.velY);
-    velZ.push_back(-_dtrkr->data.velZ);
+    velX.push_back(-data.velX);
+    velY.push_back(data.velY);
+    velZ.push_back(-data.velZ);
 
-    svelX.push_back(-_dtrkr->data.svelX);
-    svelY.push_back(_dtrkr->data.svelY);
-    svelZ.push_back(-_dtrkr->data.svelZ);
+    svelX.push_back(-data.svelX);
+    svelY.push_back(data.svelY);
+    svelZ.push_back(-data.svelZ);
 
     autotakeoff_velY_thresh.push_back((float)(_dctrl->params.auto_takeoff_speed) / 100.f);
 
@@ -277,9 +278,10 @@ void Visualizer::draw_target_text(cv::Mat resFrame) {
     ss2.precision(2);
     ss3.precision(2);
 
-    ss1 << "[" << _dtrkr->data.posX << ", " << _dtrkr->data.posY << ", " << _dtrkr->data.posZ << "] " ;
-    ss2 << "[" << _dtrkr->data.posErrX << ", " << _dtrkr->data.posErrY << ", " << _dtrkr->data.posErrZ << "] " ;
-    ss3 << "Delta: " << sqrtf(_dtrkr->data.posErrX*_dtrkr->data.posErrX+_dtrkr->data.posErrY*_dtrkr->data.posErrY+_dtrkr->data.posErrZ*_dtrkr->data.posErrZ);
+    trackData data = _dtrkr->get_last_track_data();
+    ss1 << "[" << data.posX << ", " << data.posY << ", " << data.posZ << "] " ;
+    ss2 << "[" << data.posErrX << ", " << data.posErrY << ", " << data.posErrZ << "] " ;
+    ss3 << "Delta: " << sqrtf(data.posErrX*data.posErrX+data.posErrY*data.posErrY+data.posErrZ*data.posErrZ);
 
     putText(resFrame,ss1.str() ,cv::Point(220,20),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     putText(resFrame,ss2.str() ,cv::Point(220,40),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));

@@ -73,7 +73,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile, Arduino * arduin
 
 }
 
-void DroneController::control(trackData * data) {
+void DroneController::control(trackData data) {
 
     _arduino->rebind();
     readJoystick();
@@ -89,7 +89,7 @@ void DroneController::control(trackData * data) {
             hoverthrottle = 1300;
     }
 
-    if (data->svelY > ((float)params.auto_takeoff_speed) / 100.f && autoTakeOff) {
+    if (data.svelY > ((float)params.auto_takeoff_speed) / 100.f && autoTakeOff) {
         autoTakeOff = false;
         hoverthrottle -= params.hoverOffset*params.autoTakeoffFactor; // to compensate for ground effect and delay
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
@@ -116,12 +116,12 @@ void DroneController::control(trackData * data) {
         hoverthrottle -= autoLandThrottleDecrease;
         autoThrottle =hoverthrottle ;
     } else {
-        autoThrottle =  hoverthrottle  - (data->posErrY * params.throttleP + data->svelY * params.throttleD + throttleErrI * params.throttleI*beforeTakeOffFactor);
+        autoThrottle =  hoverthrottle  - (data.posErrY * params.throttleP + data.svelY * params.throttleD + throttleErrI * params.throttleI*beforeTakeOffFactor);
         if (autoThrottle < 1300)
             autoThrottle = 1300;
     }
-    autoRoll = 1500 + (data->posErrX * params.rollP + data->svelX * (params.rollD) +  params.rollI*rollErrI);
-    autoPitch =1500 + (data->posErrZ * params.pitchP + data->svelZ * (params.pitchD) +  params.pitchI*pitchErrI);
+    autoRoll = 1500 + (data.posErrX * params.rollP + data.svelX * (params.rollD) +  params.rollI*rollErrI);
+    autoPitch =1500 + (data.posErrZ * params.pitchP + data.svelZ * (params.pitchD) +  params.pitchI*pitchErrI);
     //TODO: Yaw
     //autoLandThrottleDecrease_prev = autoLandThrottleDecrease;
     //tmp only for vizs
@@ -145,7 +145,7 @@ void DroneController::control(trackData * data) {
     int throttle,roll,pitch,yaw;
 
     if ( autoControl ) {
-        if (data->landed)
+        if (landed)
         {
             throttle = INITIALTHROTTLE;
             roll = 1500;
@@ -171,9 +171,9 @@ void DroneController::control(trackData * data) {
         yaw = joyYaw;
 
         //calc integrated errors
-        throttleErrI += data->posErrY;
-        rollErrI += data->posErrX;
-        pitchErrI += data->posErrZ;
+        throttleErrI += data.posErrY;
+        rollErrI += data.posErrX;
+        pitchErrI += data.posErrZ;
 
     } else {
         throttle = joyThrottle;
@@ -204,11 +204,11 @@ void DroneController::control(trackData * data) {
     if ( yaw > 1950 )
         yaw = 1950;
 
-    if ((data->landed && autoTakeOff ) || (joyThrottle > 1070 && !autoControl))  {
-        data->landed = false;
-    } else if ((data->landed && !autoTakeOff )|| (joyThrottle <= 1070 && !autoControl)) {
+    if ((landed && autoTakeOff ) || (joyThrottle > 1070 && !autoControl))  {
+        landed = false;
+    } else if ((landed && !autoTakeOff )|| (joyThrottle <= 1070 && !autoControl)) {
         hoverthrottle  = INITIALTHROTTLE; //?
-        data->landed = true;
+        landed = true;
     }
 
     _arduino->g_lockData.lock();
@@ -221,7 +221,7 @@ void DroneController::control(trackData * data) {
 
     _arduino->g_lockData.unlock();
 
-    (*_logger) << (int)data->valid  << "; " << data->posErrX << "; " << data->posErrY  << "; " << data->posErrZ << "; " << data->velX << "; " << data->velY  << "; " << data->velZ << "; " << hoverthrottle << "; " << autoThrottle << "; " << autoRoll << "; " << autoPitch << "; " << autoYaw <<  "; " << joyThrottle <<  "; " << joyRoll <<  "; " << joyPitch <<  "; " << joyYaw << "; " << (int)joySwitch << "; " << params.throttleP << "; " << params.throttleI << "; " << params.throttleD << "; " << data->dt << "; " << data->dx << "; " << data->dy << "; " << data->dz << "; ";
+    (*_logger) << (int)data.valid  << "; " << data.posErrX << "; " << data.posErrY  << "; " << data.posErrZ << "; " << data.velX << "; " << data.velY  << "; " << data.velZ << "; " << hoverthrottle << "; " << autoThrottle << "; " << autoRoll << "; " << autoPitch << "; " << autoYaw <<  "; " << joyThrottle <<  "; " << joyRoll <<  "; " << joyPitch <<  "; " << joyYaw << "; " << (int)joySwitch << "; " << params.throttleP << "; " << params.throttleI << "; " << params.throttleD << "; " << data.dt << "; " << data.dx << "; " << data.dy << "; " << data.dz << "; ";
     //    if (!notconnected){
     //        params.throttleP = scaledjoydial;
     //        std::cout << "P:" << params.throttleP << " Throttle: " << throttle << " HT: " << hoverthrottle << std::endl;

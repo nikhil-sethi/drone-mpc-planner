@@ -66,7 +66,7 @@ void InsectTracker::track(float time, cv::Point3f setpoint_world, std::vector<tr
 
     ItemTracker::track(time,setpoint_world,tmp,MAX_BORDER_Y_DEFAULT,MAX_BORDER_Z_DEFAULT);
 
-    (*_logger) << find_result.best_image_locationL.pt.x *IMSCALEF << "; " << find_result.best_image_locationL.pt.y *IMSCALEF << "; " << find_result.disparity << "; " << data.posX << "; " << data.posY << "; " << data.posZ << ";" ;
+    (*_logger) << find_result.best_image_locationL.pt.x *IMSCALEF << "; " << find_result.best_image_locationL.pt.y *IMSCALEF << "; " << find_result.disparity << "; " << get_last_track_data().posX << "; " << get_last_track_data().posY << "; " << get_last_track_data().posZ << ";" ;
 }
 
 
