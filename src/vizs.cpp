@@ -3,7 +3,7 @@ using namespace cv;
 using namespace std;
 
 #ifdef HASSCREEN
-//#define DRAWPLOTS
+#define DRAWPLOTS
 #define DRAWTRACKING
 #endif
 
@@ -44,15 +44,15 @@ void Visualizer::addPlotSample(void) {
     throttle_calculated.push_back((float)_dctrl->autoThrottle);
     throttle_hover.push_back(_dctrl->hoverthrottle);
 
-    trackData data = _dtrk->get_last_track_data();
+    trackData data = _dtrkr->get_last_track_data();
     dt.push_back(data.dt);
     dt_target.push_back(1.f/VIDEOFPS);
 
     posX.push_back(-data.posX);
     posY.push_back(data.posY);
     posZ.push_back(-data.posZ);
-    disparity.push_back(data.disparity);
-    sdisparity.push_back(data.sdisparity);
+    disparity.push_back((float)_dtrkr->find_result.disparity);
+    sdisparity.push_back(_dtrkr->find_result.smoothed_disparity);
 
     sposX.push_back(-data.sposX);
     sposY.push_back(data.sposY);
