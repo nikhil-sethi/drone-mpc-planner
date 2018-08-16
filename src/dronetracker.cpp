@@ -57,9 +57,12 @@ void DroneTracker::init_settings() {
     settings.roi_grow_speed = 64;
 }
 
-void DroneTracker::track(float time, cv::Point3f setpoint_world, std::vector<track_item> ignore) {
 
-    if (data.landed) {
+bool found_after_takeoff = false;
+
+void DroneTracker::track(float time, cv::Point3f setpoint_world, std::vector<track_item> ignore, bool drone_is_active) {
+
+    if (!drone_is_active) {
         frameL_s_prev_OK = _visdat->_frameL_s_prev;
         frameL_prev_OK = _visdat->_frameL_prev;
         frameR_prev_OK = _visdat->_frameR_prev;
@@ -72,9 +75,17 @@ void DroneTracker::track(float time, cv::Point3f setpoint_world, std::vector<tra
 
     ItemTracker::track(time,setpoint_world,ignore,drone_max_border_y,drone_max_border_z);
 
-    if (data.landed) {
+    if (!drone_is_active) {
         find_result.update_prev_frame = true;
         reset_tracker_ouput();
+        found_after_takeoff = false;
+    } else if (!found_after_takeoff && drone_is_active && n_frames_lost==0) {
+        found_after_takeoff = true;
+    }
+    if (!found_after_takeoff) {
+        cv::KeyPoint k(data.image_locationL,1);
+        predicted_pathL.clear();
+        predicted_pathL.push_back(track_item(k,_visdat->_frame_id,1.f));
     }
 
     (*_logger) << find_result.best_image_locationL.pt.x *IMSCALEF << "; " << find_result.best_image_locationL.pt.y *IMSCALEF << "; " << find_result.disparity << "; ";

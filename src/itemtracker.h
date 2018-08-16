@@ -25,17 +25,17 @@ class ItemTracker {
 
 public:
     struct track_item {
-      cv::KeyPoint k;
-      cv::KeyPoint k_void;
-      int frame_id;
-      float tracking_certainty;
-      track_item(cv::KeyPoint kp, int frameid,float trackingCertainty){
-          k = kp;
-          frame_id = frameid;
-          tracking_certainty = trackingCertainty;
-      }
-      int x() {return k.pt.x;}
-      int y() {return k.pt.y;}
+        cv::KeyPoint k;
+        cv::KeyPoint k_void;
+        int frame_id;
+        float tracking_certainty;
+        track_item(cv::KeyPoint kp, int frameid,float trackingCertainty){
+            k = kp;
+            frame_id = frameid;
+            tracking_certainty = trackingCertainty;
+        }
+        int x() {return k.pt.x;}
+        int y() {return k.pt.y;}
     };
 
 private:
@@ -99,15 +99,15 @@ private:
     };
     std::string _settingsFile;
     struct Find_result {
-      cv::Mat treshL;
-      std::vector<track_item> keypointsL;
-      std::vector<track_item> keypointsL_wihout_voids;
-      std::vector<track_item> excludes;
-      cv::KeyPoint best_image_locationL;
-      cv::Rect roi_offset;
-      int disparity;
-      float smoothed_disparity;
-      bool update_prev_frame;
+        cv::Mat treshL;
+        std::vector<track_item> keypointsL;
+        std::vector<track_item> keypointsL_wihout_voids;
+        std::vector<track_item> excludes;
+        cv::KeyPoint best_image_locationL;
+        cv::Rect roi_offset;
+        int disparity;
+        float smoothed_disparity;
+        bool update_prev_frame;
     };
     int using_old_frame_since =0;
 
@@ -148,10 +148,9 @@ private:
 
     float prevX,prevY,prevZ =0;
     int detected_after_take_off = 0;
-    int n_frames_lost =100;
     float sdisparity;
 protected:
-
+    int n_frames_lost = 100;
     std::ofstream *_logger;
     cv::Mat frameL_s_prev_OK;
     cv::Mat frameL_prev_OK;
