@@ -118,7 +118,7 @@ private:
     int match_closest_to_prediciton(cv::Point3f predicted_locationL, std::vector<track_item> keypointsL);
     int stereo_match(cv::KeyPoint closestL, cv::Mat frameL_prev, cv::Mat prevFrameR_big, cv::Mat frameL, cv::Mat frameR, int prevDisparity);
     void update_prediction_state(cv::Point3f p);
-    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, int n_frames_lost, cv::KeyPoint match, int disparity, cv::Point3f setpoint_world, int frame_id);    
+    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, cv::KeyPoint match, int disparity, cv::Point3f setpoint_world, int frame_id);
     void find(cv::Mat frameL_small, std::vector<track_item> exclude);
     std::vector<ItemTracker::track_item> remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path);
     std::vector<ItemTracker::track_item> remove_excludes_improved(std::vector<track_item> keypoints, std::vector<track_item> exclude_path);
@@ -146,7 +146,16 @@ private:
     std::string _name;
 
     float prevX,prevY,prevZ =0;
-    int detected_after_take_off = 0;    
+    Smoother smoother_posX, smoother_posY, smoother_posZ;
+    Smoother smoother_velX, smoother_velY, smoother_velZ;
+    Smoother smoother_accX, smoother_accY, smoother_accZ;
+    const int smooth_width_vel = 10;
+    const int smooth_width_pos = 10;
+    const int smooth_width_acc = 10;
+    Smoother disp_smoothed;
+    bool reset_filters;
+
+    int detected_after_take_off = 0;
 protected:
     int n_frames_lost = 100;
     std::ofstream *_logger;
@@ -184,14 +193,8 @@ public:
             return trackData();
         return track_history.front();
     }
-    Smoother smoother_posX, smoother_posY, smoother_posZ;
-    Smoother smoother_velX, smoother_velY, smoother_velZ;
-    Smoother smoother_accX, smoother_accY, smoother_accZ;
-    const int smooth_width_vel = 10;
-    const int smooth_width_pos = 10;
-    const int smooth_width_acc = 10;
 
-    Smoother disp_smoothed;
+
 
 
     bool breakpause;

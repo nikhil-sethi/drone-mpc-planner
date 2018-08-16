@@ -118,7 +118,7 @@ void DroneNavigation::update() {
         _dctrl->setAutoLandThrottleDecrease(autoLandThrottleDecrease);
         _dtrk->drone_max_border_y = 0;
     }
-    if (autoLandThrottleDecrease >1000 || (_dctrl->autoThrottle <= 1050 && _dctrl->getAutoControl()) || (autoLandThrottleDecrease > 0 && !_dctrl->getAutoControl()) || (autoLandThrottleDecrease > 500 && data.reset_filters)) {
+    if (autoLandThrottleDecrease >1000 || (_dctrl->autoThrottle <= 1050 && _dctrl->getAutoControl()) || (autoLandThrottleDecrease > 0 && !_dctrl->getAutoControl()) || (autoLandThrottleDecrease > 500 && _dtrk->n_frames_tracking>0)) {
         _dctrl->landed = true;
         wpid = 0;
         autoLandThrottleDecrease = 0;

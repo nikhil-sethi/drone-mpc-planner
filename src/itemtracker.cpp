@@ -305,7 +305,7 @@ void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<trac
         } else {
             //Point3f predicted_output = world_coordinates[1];
             update_prediction_state(cv::Point3f(match.pt.x,match.pt.y,disparity));
-            update_tracker_ouput(output,dt_tracking,n_frames_lost,match,disparity,setpoint_world,_visdat->_frame_id);
+            update_tracker_ouput(output,dt_tracking,match,disparity,setpoint_world,_visdat->_frame_id);
             n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
             t_prev_tracking = time; // update dt only if item was detected
             n_frames_tracking++;
@@ -739,7 +739,7 @@ void ItemTracker::update_prediction_state(cv::Point3f p) {
         kfL.correct(measL);
 }
 
-void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  int n_frames_lost, cv::KeyPoint match, int disparity,cv::Point3f setpoint_world, int frame_id) {
+void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  cv::KeyPoint match, int disparity,cv::Point3f setpoint_world, int frame_id) {
 
     find_result.best_image_locationL = match;
     find_result.disparity = disparity;
@@ -754,8 +754,7 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
     data.posY = measured_world_coordinates.y;
     data.posZ = measured_world_coordinates.z;
 
-    if (n_frames_lost >= smooth_width_vel || data.reset_filters) { // tracking was regained, after n_frames_lost frames
-        // data.sdisparity = -1;
+    if (n_frames_lost >= smooth_width_vel || reset_filters) { // tracking was regained, after n_frames_lost frames
         disp_smoothed.reset();
         smoother_posX.reset();
         smoother_posY.reset();
@@ -768,7 +767,7 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
         smoother_accZ.reset();
 
         detected_after_take_off = 0;
-        data.reset_filters = false; // TODO also reset t_prev?
+        reset_filters = false;
     }
 
     float sdisparity = disp_smoothed.addSample(find_result.disparity);
@@ -859,13 +858,9 @@ float ItemTracker::calc_certainty(KeyPoint item) {
 
 void ItemTracker::reset_tracker_ouput() {
     trackData data;
-    data.reset_filters = true;
-    data.velX = 0;
-    data.velY = 0;
-    data.velZ = 0;
-    data.svelX = 0;
-    data.svelY = 0;
-    data.svelZ = 0;
+    reset_filters = true;
+
+    track_history.push_back(data);
 }
 
 void ItemTracker::close () {
