@@ -217,30 +217,34 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes_improved(std::
 
 
 
-    if (exclude_path.size() > 0 && keypoints.size () > 0 && this->predicted_pathL.size() > 0) {
-        track_item exclude = exclude_path.at(exclude_path.size()-1);
-        track_item exclude_prev = exclude;
-        if (exclude_path.size() > 1) {
-            exclude_prev = exclude_path.at(exclude_path.size()-2);
-        }
+    if (exclude_path.size() > 0 && keypoints.size () > 0 && (this->predicted_pathL.size() > 0 || !this->foundL )  ) {
         std::vector<track_item> tmp = keypoints;
         int erase_cnt =0;
         for (uint i = 0 ; i< tmp.size();i++){
+            for (uint j = 0; j<exclude_path.size(); j++){
+                track_item exclude = exclude_path.at(j);
 
-            dis1 = sqrtf(powf(tmp.at(i).k.pt.x - exclude.x(),2) +powf(tmp.at(i).k.pt.y - exclude.y(),2));
-            dis3 = sqrtf(powf(tmp.at(i).k.pt.x - this->predicted_pathL.back().x(),2) +powf(tmp.at(i).k.pt.y - this->predicted_pathL.back().y(),2));
-            certainty_prediction = this->predicted_pathL.back().tracking_certainty;
+                float threshold_dis = settings.exclude_min_distance / sqrtf(exclude.tracking_certainty);
+                if (threshold_dis > settings.exclude_max_distance)
+                    threshold_dis = settings.exclude_max_distance;
 
-            float threshold_dis = settings.exclude_min_distance / sqrtf(exclude.tracking_certainty);
-            if (threshold_dis > settings.exclude_max_distance)
-                threshold_dis = settings.exclude_max_distance;
+                dis1 = sqrtf(powf(tmp.at(i).k.pt.x - exclude.x(),2) +powf(tmp.at(i).k.pt.y - exclude.y(),2));
+                if (this->predicted_pathL.size() > 0) {
+                    dis3 = sqrtf(powf(tmp.at(i).k.pt.x - this->predicted_pathL.back().x(),2) +powf(tmp.at(i).k.pt.y - this->predicted_pathL.back().y(),2));
+                    certainty_prediction = this->predicted_pathL.back().tracking_certainty;
+                } else {
+                    dis3 = threshold_dis;
+                    certainty_prediction = 0.1f;
+                }
 
-            check1 = (dis1 < dis3 && dis1 < threshold_dis);
-            check2 = fabs(dis1-dis3) < 2.0f;
-            check3 = dis3 > (settings.exclude_min_distance / sqrtf(certainty_prediction));
-            if ( check1 || check2 || check3 ) {
-                keypoints.erase(keypoints.begin() + i - erase_cnt);
-                erase_cnt++;
+                check1 = (dis1 < dis3 && dis1 < threshold_dis);
+                check2 = fabs(dis1-dis3) < 2.0f && dis3 < 2.0f;
+                check3 = dis3 > (settings.exclude_min_distance / sqrtf(certainty_prediction));
+                if ( check1 || check2 || check3 ) {
+                    keypoints.erase(keypoints.begin() + i - erase_cnt);
+                    erase_cnt++;
+                    break;
+                }
             }
         }
     }
