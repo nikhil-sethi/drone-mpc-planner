@@ -54,7 +54,12 @@ void InsectTracker::init_settings() {
 
 void InsectTracker::track(float time, cv::Point3f setpoint_world, std::vector<track_item> exclude, bool drone_is_active) {
     std::vector<track_item> tmp;
-    if (drone_is_active ) {
+    if (drone_is_active)
+        drone_still_active = 100;
+    else if (drone_still_active>0) // drone/props still moving
+        drone_still_active--;
+
+    if (drone_still_active){
         if (exclude.size() == 0) {
             cv::KeyPoint k(DRONE_IM_X_START,DRONE_IM_Y_START,1);
             tmp.push_back(track_item(k,3,0.5));
