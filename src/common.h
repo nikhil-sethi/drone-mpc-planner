@@ -6,7 +6,7 @@
 #include "opencv2/imgproc/imgproc.hpp"
 
 
-cv::Point2f transformPixelToEarth(int x, int y, int centerX, int centerY, float depth,float pix2radx,float pix2rady);
+cv::Point2f transformPixelToEarth(int x, int y, int centerX, int centerY, float depth, float pix2degx, float pix2degy);
 float transformPixelToAngle(float x, float pix2radx);
 int getCenterPixel(float angle, float imFOV, int imWidth);
 void acc_orientation(float accx, float accy, float accz, float *out);
