@@ -65,10 +65,15 @@ void DroneController::init(std::ofstream *logger,bool fromfile, Arduino * arduin
 
 }
 
-void DroneController::control(trackData data) {
+void DroneController::control(trackData data,cv::Point3f setpoint_world) {
 
     _arduino->rebind();
     readJoystick();
+
+    posErrX = data.sposX - setpoint_world.x;
+    posErrY = data.sposY - setpoint_world.y;
+    posErrZ = data.sposZ - setpoint_world.z;
+
 
     if(autoLand) {
         autoTakeOff=false;
@@ -101,12 +106,12 @@ void DroneController::control(trackData data) {
         hoverthrottle -= autoLandThrottleDecrease;
         autoThrottle =hoverthrottle ;
     } else {
-        autoThrottle =  hoverthrottle  - (data.posErrY * params.throttleP + data.svelY * params.throttleD + throttleErrI * params.throttleI*beforeTakeOffFactor);
+        autoThrottle =  hoverthrottle  - (posErrY * params.throttleP + data.svelY * params.throttleD + throttleErrI * params.throttleI*beforeTakeOffFactor);
         if (autoThrottle < 1300)
             autoThrottle = 1300;
     }
-    autoRoll = 1500 + (data.posErrX * params.rollP + data.svelX * (params.rollD) +  params.rollI*rollErrI);
-    autoPitch =1500 + (data.posErrZ * params.pitchP + data.svelZ * (params.pitchD) +  params.pitchI*pitchErrI);
+    autoRoll = 1500 + (posErrX * params.rollP + data.svelX * (params.rollD) +  params.rollI*rollErrI);
+    autoPitch =1500 + (posErrZ * params.pitchP + data.svelZ * (params.pitchD) +  params.pitchI*pitchErrI);
     //TODO: Yaw    
     if (autoPitch > 1950) {
         autoPitch = 1950;
@@ -152,9 +157,9 @@ void DroneController::control(trackData data) {
         yaw = joyYaw;
 
         //calc integrated errors
-        throttleErrI += data.posErrY;
-        rollErrI += data.posErrX;
-        pitchErrI += data.posErrZ;
+        throttleErrI += posErrY;
+        rollErrI += posErrX;
+        pitchErrI += posErrZ;
 
     } else {
         throttle = joyThrottle;
@@ -200,7 +205,7 @@ void DroneController::control(trackData data) {
 
     _arduino->g_lockData.unlock();
 
-    (*_logger) << (int)data.valid  << "; " << data.posErrX << "; " << data.posErrY  << "; " << data.posErrZ << "; " << data.velX << "; " << data.velY  << "; " << data.velZ << "; " << data.accX << "; " << data.accY  << "; " << data.accZ << "; " << hoverthrottle << "; " << autoThrottle << "; " << autoRoll << "; " << autoPitch << "; " << autoYaw <<  "; " << joyThrottle <<  "; " << joyRoll <<  "; " << joyPitch <<  "; " << joyYaw << "; " << (int)joySwitch << "; " << params.throttleP << "; " << params.throttleI << "; " << params.throttleD << "; " << data.dt << "; " << data.dx << "; " << data.dy << "; " << data.dz << "; ";
+    (*_logger) << (int)data.valid  << "; " << posErrX << "; " << posErrY  << "; " << posErrZ << "; " << data.velX << "; " << data.velY  << "; " << data.velZ << "; " << data.accX << "; " << data.accY  << "; " << data.accZ << "; " << hoverthrottle << "; " << autoThrottle << "; " << autoRoll << "; " << autoPitch << "; " << autoYaw <<  "; " << joyThrottle <<  "; " << joyRoll <<  "; " << joyPitch <<  "; " << joyYaw << "; " << (int)joySwitch << "; " << params.throttleP << "; " << params.throttleI << "; " << params.throttleD << "; " << data.dt << "; " << data.dx << "; " << data.dy << "; " << data.dz << "; ";
 }
 
 int firstTime = 3;

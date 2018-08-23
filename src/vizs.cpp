@@ -297,8 +297,8 @@ void Visualizer::draw_target_text(cv::Mat resFrame) {
 
     trackData data = _dtrkr->get_last_track_data();
     ss1 << "[" << data.posX << ", " << data.posY << ", " << data.posZ << "] " ;
-    ss2 << "[" << data.posErrX << ", " << data.posErrY << ", " << data.posErrZ << "] " ;
-    ss3 << "Delta: " << sqrtf(data.posErrX*data.posErrX+data.posErrY*data.posErrY+data.posErrZ*data.posErrZ);
+    ss2 << "[" << _dctrl->posErrX << ", " << _dctrl->posErrY << ", " << _dctrl->posErrZ << "] " ;
+    ss3 << "Delta: " << sqrtf(_dctrl->posErrX*_dctrl->posErrX+_dctrl->posErrY*_dctrl->posErrY+_dctrl->posErrZ*_dctrl->posErrZ);
 
     putText(resFrame,ss1.str() ,cv::Point(220,20),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     putText(resFrame,ss2.str() ,cv::Point(220,40),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));

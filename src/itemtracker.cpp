@@ -252,7 +252,7 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes_improved(std::
     return keypoints;
 }
 
-void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<track_item> exclude, float drone_max_border_y, float drone_max_border_z) {
+void ItemTracker::track(float time, std::vector<track_item> exclude, float drone_max_border_y, float drone_max_border_z) {
     updateParams();
 
     float dt_tracking= (time-t_prev_tracking);
@@ -318,7 +318,7 @@ void ItemTracker::track(float time, cv::Point3f setpoint_world, std::vector<trac
         } else {
             //Point3f predicted_output = world_coordinates[1];
             update_prediction_state(cv::Point3f(match.pt.x,match.pt.y,disparity));
-            update_tracker_ouput(output,dt_tracking,match,disparity,setpoint_world,_visdat->_frame_id);
+            update_tracker_ouput(output,dt_tracking,match,disparity,_visdat->_frame_id);
             n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
             t_prev_tracking = time; // update dt only if item was detected
             n_frames_tracking++;
@@ -755,7 +755,7 @@ void ItemTracker::update_prediction_state(cv::Point3f p) {
         kfL.correct(measL);
 }
 
-void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  cv::KeyPoint match, int disparity,cv::Point3f setpoint_world, int frame_id) {
+void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  cv::KeyPoint match, int disparity, int frame_id) {
 
     find_result.best_image_locationL = match;
     find_result.disparity = disparity;
@@ -842,10 +842,6 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
     data.saccX = tsaccX;
     data.saccY = tsaccY;
     data.saccZ = tsaccZ;
-
-    data.posErrX = data.sposX - setpoint_world.x;
-    data.posErrY = data.sposY - setpoint_world.y;
-    data.posErrZ = data.sposZ - setpoint_world.z;
 
     prevX = data.sposX;
     prevY = data.sposY;

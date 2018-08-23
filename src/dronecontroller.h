@@ -96,10 +96,12 @@ public:
     int joyYaw = 0;
 
     bool landed;
+    float posErrX,posErrY,posErrZ;
+    float velErrX,velErrY,velErrZ;
 
     void close (void);
     void init(std::ofstream *logger, bool fromfile, Arduino * arduino);
-    void control(trackData data);
+    void control(trackData data, cv::Point3f setpoint_world);
     bool getAutoControl() {return autoControl;}
     bool getDroneIsActive() {return (autoControl && autoThrottle > INITIALTHROTTLE) || (!autoControl && joyThrottle > INITIALTHROTTLE);}
     bool getAutoTakeOff() {return autoTakeOff;}

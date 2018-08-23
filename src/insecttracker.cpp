@@ -52,7 +52,7 @@ void InsectTracker::init_settings() {
 
 }
 
-void InsectTracker::track(float time, cv::Point3f setpoint_world, std::vector<track_item> exclude, bool drone_is_active) {
+void InsectTracker::track(float time, std::vector<track_item> exclude, bool drone_is_active) {
     std::vector<track_item> tmp;
     if (drone_is_active)
         drone_still_active = 100;
@@ -68,7 +68,7 @@ void InsectTracker::track(float time, cv::Point3f setpoint_world, std::vector<tr
         }
     }
 
-    ItemTracker::track(time,setpoint_world,tmp,MAX_BORDER_Y_DEFAULT,MAX_BORDER_Z_DEFAULT);    
+    ItemTracker::track(time,tmp,MAX_BORDER_Y_DEFAULT,MAX_BORDER_Z_DEFAULT);
 }
 
 

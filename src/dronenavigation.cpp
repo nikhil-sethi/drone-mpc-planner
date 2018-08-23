@@ -100,7 +100,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
 
 void DroneNavigation::update() {
     trackData data = _dtrk->get_last_track_data();
-    float dis = sqrtf(data.posErrX*data.posErrX + data.posErrY*data.posErrY + data.posErrZ*data.posErrZ);
+    float dis = sqrtf(_dctrl->posErrX*_dctrl->posErrX + _dctrl->posErrY*_dctrl->posErrY + _dctrl->posErrZ*_dctrl->posErrZ);
     if (dis *1000 < setpoints[wpid]._distance_threshold_mm * params.distance_threshold_f && !_dctrl->getAutoLand() && _dctrl->getAutoControl() && !_dctrl->getAutoTakeOff() && _dtrk->n_frames_tracking>5) {
         if (wpid < setpoints.size()-1) {
             wpid++;

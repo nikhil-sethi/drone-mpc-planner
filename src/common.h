@@ -49,7 +49,7 @@ const float depthscale = 256.0f;
 
 
 struct trackData {
-    float posX,posY,posZ,posErrX,posErrY,posErrZ;
+    float posX,posY,posZ;
     float dx,dy,dz,dt;
     float velX,velY,velZ,accX,accY,accZ;
     float sposX,sposY,sposZ,svelX,svelY,svelZ,saccX,saccY,saccZ;

@@ -58,7 +58,7 @@ void DroneTracker::init_settings() {
 
 bool found_after_takeoff = false;
 
-void DroneTracker::track(float time, cv::Point3f setpoint_world, std::vector<track_item> ignore, bool drone_is_active) {
+void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_is_active) {
 
     if (!drone_is_active) {
         frameL_s_prev_OK = _visdat->_frameL_s_prev;
@@ -72,7 +72,7 @@ void DroneTracker::track(float time, cv::Point3f setpoint_world, std::vector<tra
         nframes_since_update_prev = 0;
     }
 
-    ItemTracker::track(time,setpoint_world,ignore,drone_max_border_y,drone_max_border_z);
+    ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
 
     if (!drone_is_active) {
         find_result.update_prev_frame = true;
