@@ -17,10 +17,10 @@ cv::Mat getStabilizedCrop(float phi, float theta, cv::Mat frameL, int sdx, int s
 bool checkFileExist (const std::string& name);
 void combineImage(cv::Mat iml, cv::Mat imr, cv::Mat *res);
 void combineGrayImage(cv::Mat iml,cv::Mat imr,cv::Mat *res);
-cv::Mat createColumnImage(std::vector<cv::Mat> ims, int type);
-cv::Mat createRowImage(std::vector<cv::Mat> ims, int type);
-void showColumnImage(std::vector<cv::Mat> ims, std::string window_name, int type);
-void showRowImage(std::vector<cv::Mat> ims, std::string window_name, int type);
+cv::Mat createColumnImage(std::vector<cv::Mat> ims, int type,int resizef = 1);
+cv::Mat createRowImage(std::vector<cv::Mat> ims, int type,int resizef = 1);
+void showColumnImage(std::vector<cv::Mat> ims, std::string window_name, int type,int resizef = 1);
+void showRowImage(std::vector<cv::Mat> ims, std::string window_name, int type,int resizef = 1);
 void alert(std::string cmd);
 cv::Mat createBlurryCircle(cv::Point size);
 

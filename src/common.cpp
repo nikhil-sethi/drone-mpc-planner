@@ -109,7 +109,7 @@ void combineGrayImage(cv::Mat iml,cv::Mat imr,cv::Mat *res) {
     imr.copyTo(roir);
 }
 
-cv::Mat createRowImage(std::vector<cv::Mat> ims, int type)
+cv::Mat createRowImage(std::vector<cv::Mat> ims, int type,int resizef)
 {
     //find max height and total width:
     int width = 0;
@@ -123,29 +123,30 @@ cv::Mat createRowImage(std::vector<cv::Mat> ims, int type)
         width += ims.at(i).cols;
     }
 
-    cv::Mat res = cv::Mat(height, width, type);
+    cv::Mat res = cv::Mat(height*resizef, width*resizef, type);
 
     cv::Point p1(0, 0);
 
     for (uint i = 0; i < ims.size(); i++)
     {
-        cv::Point p2(p1.x + ims.at(0).cols, ims.at(0).rows);
+        cv::Mat im = ims.at(i);
+        cv::Point p2(p1.x + im.cols*resizef, im.rows*resizef);
         cv::Mat roi = cv::Mat(res, cv::Rect(p1, p2));
-        if (ims.at(i).type() != type)
+        if (im.type() != type)
         {
             if (type == CV_8UC1)
-                cv::cvtColor(ims.at(i), roi, CV_BGR2GRAY);
+                cv::cvtColor(im, im, CV_BGR2GRAY);
             else
-                cv::cvtColor(ims.at(i), roi, CV_GRAY2BGR);
+                cv::cvtColor(im, im, CV_GRAY2BGR);
         }
-        else
-            ims.at(i).copyTo(roi);
-        p1.x += ims.at(i).cols;
+
+        cv::resize(im,roi,cv::Size(im.cols*resizef,im.rows*resizef));
+        p1.x += im.cols*resizef;
     }
     return res;
 }
 
-cv::Mat createColumnImage(std::vector<cv::Mat> ims, int type)
+cv::Mat createColumnImage(std::vector<cv::Mat> ims, int type,int resizef)
 {
     //find max width and total height:
     int width = -1;
@@ -159,39 +160,39 @@ cv::Mat createColumnImage(std::vector<cv::Mat> ims, int type)
         height += ims.at(i).rows;
     }
 
-    cv::Mat res = cv::Mat(height, width, type);
+    cv::Mat res = cv::Mat::zeros(height*resizef, width*resizef, type);
 
     cv::Point p1(0, 0);
 
     for (uint i = 0; i < ims.size(); i++)
     {
-        cv::Point p2(ims.at(0).cols, p1.y + ims.at(0).rows);
+        cv::Mat im = ims.at(i);
+        cv::Point p2(im.cols*resizef, p1.y + im.rows*resizef);
         cv::Mat roi = cv::Mat(res, cv::Rect(p1, p2));
-        if (ims.at(i).type() != type)
+
+        if (im.type() != type)
         {
             if (type == CV_8UC1)
-                cv::cvtColor(ims.at(i), roi, CV_BGR2GRAY);
+                cv::cvtColor(im, im, CV_BGR2GRAY);
             else
-                cv::cvtColor(ims.at(i), roi, CV_GRAY2BGR);
+                cv::cvtColor(im, im, CV_GRAY2BGR);
         }
-        else
-            ims.at(i).copyTo(roi);
-        p1.y += ims.at(i).rows;
+
+        cv::resize(im,roi,cv::Size(im.cols*resizef,im.rows*resizef));
+        p1.y += im.rows*resizef;
     }
     return res;
 }
 
 /* combines a bunch of images into one column, and shows it */
-void showColumnImage(std::vector<cv::Mat> ims, std::string window_name, int type) {
-    cv::Mat res = createColumnImage(ims,type);
-    //cv::resize(res,res,cv::Size(width*4,height*4));
+void showColumnImage(std::vector<cv::Mat> ims, std::string window_name, int type, int resizef) {
+    cv::Mat res = createColumnImage(ims,type,resizef);
     cv::imshow(window_name, res);
 }
 
 /* combines a bunch of images into one row, and shows it */
-void showRowImage(std::vector<cv::Mat> ims, std::string window_name, int type) {
-    cv::Mat res = createRowImage(ims,type);
-    //cv::resize(res,res,cv::Size(width*4,height*4));
+void showRowImage(std::vector<cv::Mat> ims, std::string window_name, int type,int resizef) {
+    cv::Mat res = createRowImage(ims,type,resizef);
     cv::imshow(window_name, res);
 }
 
