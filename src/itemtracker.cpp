@@ -412,8 +412,8 @@ void ItemTracker::find(std::vector<track_item> exclude) {
     //attempt to detect changed blobs
     _treshL = segment(_visdat->diffL_small,previous_location,roi_size);
 
-     cv::Mat tmp = createColumnImage({_treshL,_visdat->diffL,_visdat->frameL},CV_8UC1,0.25f);
-     cv::imshow("trek",tmp);
+//     cv::Mat tmp = createColumnImage({_treshL,_visdat->diffL,_visdat->frameL},CV_8UC1,0.25f);
+//     cv::imshow("trek",tmp);
 
 #if CV_MAJOR_VERSION==3
     cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
