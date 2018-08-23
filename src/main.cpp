@@ -131,13 +131,13 @@ void process_video() {
 
         //WARNING: changing the order of the functions with logging must be matched with the init functions!
         dtrkr.track(cam.get_frame_time(),itrkr.predicted_pathL,dctrl.getDroneIsActive());
-        itrkr.track(cam.get_frame_time(), dtrkr.pathL,dctrl.getDroneIsActive());
+        //itrkr.track(cam.get_frame_time(), dtrkr.pathL,dctrl.getDroneIsActive());
 
         std::cout << "Found drone location:      [" << dtrkr.find_result.best_image_locationL.pt.x << "," << dtrkr.find_result.best_image_locationL.pt.y << "]" << std::endl;
 #ifdef HASSCREEN
         if (breakpause_prev != 0) {
             visualizer.addPlotSample();
-            visualizer.draw_tracker_viz(visdat._frameL,visdat._frameL_small,dnav.setpoint);
+            visualizer.draw_tracker_viz(visdat.frameL,visdat.frameL_small,dnav.setpoint);
         }
 #endif
 
@@ -189,7 +189,7 @@ void process_video() {
 
 void handleKey() {
 
-    key = cv::waitKey(1);
+    key = cv::waitKey(0);
     key = key & 0xff;
     if (key == 27) {  //esc
         //        cam.stopcam();

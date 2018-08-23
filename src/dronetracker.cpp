@@ -61,9 +61,9 @@ bool found_after_takeoff = false;
 void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_is_active) {
 
     if (!drone_is_active) {
-        frameL_s_prev_OK = _visdat->_frameL_s_prev;
-        frameL_prev_OK = _visdat->_frameL_prev;
-        frameR_prev_OK = _visdat->_frameR_prev;
+        _visdat->frameL_s_prev16_OK = _visdat->frameL_s_prev16;
+        frameL_prev_OK = _visdat->frameL_prev;
+        frameR_prev_OK = _visdat->frameR_prev;
 
         find_result.best_image_locationL.pt.x = DRONE_IM_X_START;
         find_result.best_image_locationL.pt.y =  DRONE_IM_Y_START;
@@ -83,7 +83,7 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
     }
     if (!found_after_takeoff) {
         predicted_pathL.clear();
-        predicted_pathL.push_back(track_item(find_result.best_image_locationL,_visdat->_frame_id,1.f));
+        predicted_pathL.push_back(track_item(find_result.best_image_locationL,_visdat->frame_id,1.f));
     }
 
 

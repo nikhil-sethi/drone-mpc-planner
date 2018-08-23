@@ -257,17 +257,17 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
 
     float dt_tracking= (time-t_prev_tracking);
     float dt_predict= (time-t_prev_predict);
-    cv::Point3f predicted_locationL = predict(dt_predict,_visdat->_frame_id);
+    cv::Point3f predicted_locationL = predict(dt_predict,_visdat->frame_id);
     t_prev_predict = time;
 
     if (!firstFrame) {
         firstFrame = true;
-        frameL_s_prev_OK = _visdat->_frameL_s_prev;
-        frameL_prev_OK = _visdat->_frameL.clone();
-        frameR_prev_OK = _visdat->_frameR.clone();
+        //TODO: move to visdata and init there:
+        frameL_prev_OK = _visdat->frameL.clone();
+        frameR_prev_OK = _visdat->frameR.clone();
     }
 
-    find(_visdat->_frameL_small,exclude);
+    find(exclude);
 
     std::vector<track_item> keypoint_candidates = find_result.keypointsL_wihout_voids;
     if (keypoint_candidates.size() > 0) { //if nokeypointsLt lost
@@ -282,13 +282,13 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
             int match_id = match_closest_to_prediciton(previous_location,find_result.keypointsL_wihout_voids);
             match = find_result.keypointsL_wihout_voids.at(match_id).k;
 
-            disparity = stereo_match(match,frameL_prev_OK,frameR_prev_OK,_visdat->_frameL,_visdat->_frameR,find_result.smoothed_disparity);
+            disparity = stereo_match(match,frameL_prev_OK,frameR_prev_OK,_visdat->frameL,_visdat->frameR,find_result.smoothed_disparity);
 
             //calculate everything for the itemcontroller:
             std::vector<Point3f> camera_coordinates, world_coordinates;
             camera_coordinates.push_back(Point3f(match.pt.x*IMSCALEF,match.pt.y*IMSCALEF,-disparity));
             //camera_coordinates.push_back(Point3f(predicted_locationL.x*IMSCALEF,predicted_locationL.y*IMSCALEF,-predicted_locationL.z));
-            cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->_Qf);
+            cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
             output = world_coordinates[0];
             float theta = CAMERA_ANGLE / (180.f/(float)M_PI);
             float temp_y = output.y * cosf(theta) + output.z * sinf(theta);
@@ -318,7 +318,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
         } else {
             //Point3f predicted_output = world_coordinates[1];
             update_prediction_state(cv::Point3f(match.pt.x,match.pt.y,disparity));
-            update_tracker_ouput(output,dt_tracking,match,disparity,_visdat->_frame_id);
+            update_tracker_ouput(output,dt_tracking,match,disparity,_visdat->frame_id);
             n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
             t_prev_tracking = time; // update dt only if item was detected
             n_frames_tracking++;
@@ -331,25 +331,24 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
 
     if (find_result.update_prev_frame && ! breakpause) {
         using_old_frame_since = 0;
-        frameL_prev_OK = _visdat->_frameL_prev.clone();
-        frameL_s_prev_OK = _visdat->_frameL_s_prev.clone();
-        frameR_prev_OK = _visdat->_frameR_prev.clone();
+        frameL_prev_OK = _visdat->frameL_prev.clone();
+        _visdat->frameL_s_prev16_OK = _visdat->frameL_s_prev16.clone();
+        frameR_prev_OK = _visdat->frameR_prev.clone();
     }
 
     if (!breakpause) {
         if (pathL.size() > 0) {
-            if (pathL.begin()->frame_id < _visdat->_frame_id - 30)
+            if (pathL.begin()->frame_id < _visdat->frame_id - 30)
                 pathL.erase(pathL.begin());
-            if (pathL.begin()->frame_id > _visdat->_frame_id ) //at the end of a realsense video loop, frame_id resets
+            if (pathL.begin()->frame_id > _visdat->frame_id ) //at the end of a realsense video loop, frame_id resets
                 pathL.clear();
         }
         if (predicted_pathL.size() > 0) {
-            if (predicted_pathL.begin()->frame_id < _visdat->_frame_id - 30)
+            if (predicted_pathL.begin()->frame_id < _visdat->frame_id - 30)
                 predicted_pathL.erase(predicted_pathL.begin());
-            if (predicted_pathL.begin()->frame_id > _visdat->_frame_id ) //at the end of a realsense video loop, frame_id resets
+            if (predicted_pathL.begin()->frame_id > _visdat->frame_id ) //at the end of a realsense video loop, frame_id resets
                 predicted_pathL.clear();
         }
-
     }
 
     (*_logger) << find_result.best_image_locationL.pt.x *IMSCALEF << "; " << find_result.best_image_locationL.pt.y *IMSCALEF << "; " << find_result.disparity << "; " << get_last_track_data().posX << "; " << get_last_track_data().posY << "; " << get_last_track_data().posZ << ";" ;
@@ -392,7 +391,7 @@ void ItemTracker::updateParams(){
 }
 
 
-void ItemTracker::find(cv::Mat frameL_small,std::vector<track_item> exclude) {
+void ItemTracker::find(std::vector<track_item> exclude) {
     cv::Point previous_location;
 
     previous_location = find_result.best_image_locationL.pt;
@@ -403,22 +402,19 @@ void ItemTracker::find(cv::Mat frameL_small,std::vector<track_item> exclude) {
     roi_size.x=settings.roi_min_size/IMSCALEF+nframes_since_update_prev*(settings.roi_grow_speed / 16 / IMSCALEF);
     roi_size.y=settings.roi_min_size/IMSCALEF+nframes_since_update_prev*(settings.roi_grow_speed / 16 / IMSCALEF);
 
-    if (roi_size.x  >= _visdat->_frameL_small.cols) {
-        roi_size.x = _visdat->_frameL_small.cols;
+    if (roi_size.x  >= _visdat->frameL_small.cols) {
+        roi_size.x = _visdat->frameL_small.cols;
     }
 
-    if (roi_size.y >= _visdat->_frameL_small.rows)
-        roi_size.y = _visdat->_frameL_small.rows;
+    if (roi_size.y >= _visdat->frameL_small.rows)
+        roi_size.y = _visdat->frameL_small.rows;
 
     //attempt to detect changed blobs
     _treshL = segment(_visdat->diffL,previous_location,roi_size);
-    // cv::imwrite("treshL.png", _treshL);
-    // cv::imwrite("diffL.png", _visdat->diffL);
-    // cv::imwrite("frameL_small.png", _visdat->_frameL_small);
-    // cv::imwrite("frameL_small_prev.png", _visdat->_frameL_s_prev);
-    // cv::imwrite("frameL_small_prev_ok.png", frameL_s_prev_OK);
-    // cv::Mat tmp = createColumnImage({_visdat->diffL,_visdat->_frameL_small,_visdat->_frameL_s_prev,frameL_s_prev_OK},CV_8UC1);
-    // cv::imwrite("all.png", tmp);
+
+     cv::Mat tmp = createColumnImage({_treshL,_visdat->diffL,_visdat->frameL_small},CV_8UC1,2);
+     cv::imshow("trek",tmp);
+
 #if CV_MAJOR_VERSION==3
     cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
 #else
@@ -430,10 +426,9 @@ void ItemTracker::find(cv::Mat frameL_small,std::vector<track_item> exclude) {
     detector->detect( _treshL, keypointsL);
 
     //check if changed blobs were detected
-    if (keypointsL.size() == 0) { // if not, use the last frame that was confirmed to be working before...
-        cv::Mat diffL_OK;
-        cv::absdiff( frameL_small ,frameL_s_prev_OK,diffL_OK);
-        _treshL = segment(diffL_OK,previous_location,roi_size);
+    if (keypointsL.size() == 0) { // if not, use the last frame that was confirmed to be working before...        
+        _visdat->update_prevOK();
+        _treshL = segment(_visdat->diffL_prevOK,previous_location,roi_size);
         detector->detect( _treshL, keypointsL);
         using_old_frame_since++;
     } else {
@@ -444,7 +439,7 @@ void ItemTracker::find(cv::Mat frameL_small,std::vector<track_item> exclude) {
     for (uint i = 0 ; i < keypointsL.size();i++) {
         keypointsL.at(i).pt.x += find_result.roi_offset.x;
         keypointsL.at(i).pt.y += find_result.roi_offset.y;
-        track_item t( keypointsL.at(i),_visdat->_frame_id,0);
+        track_item t( keypointsL.at(i),_visdat->frame_id,0);
         kps.push_back(t);
     }
 

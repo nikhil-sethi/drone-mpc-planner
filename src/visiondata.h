@@ -25,7 +25,6 @@ private:
     int n_avg_prev_frames = 0;
     bool background_calibrated;
 
-
     struct BaseVisionSettings{
 
         int uncertainty_multiplier = 2;
@@ -47,28 +46,33 @@ private:
     BaseVisionSettings settings;
 
 public:
-    cv::Mat _frameL,_frameR;
-    cv::Mat _frameL_prev,_frameR_prev;
-    int _frame_id;
+    cv::Mat frameL,frameR;
+    cv::Mat frameL_prev,frameR_prev;
+    int frame_id;
 
     cv::Size smallsize;
-    cv::Mat _frameL_small;
-    cv::Mat _frameL_s_prev;
-
-    cv::Mat _Qf;
-
-    cv::Mat uncertainty_map,threshL,diffL;
+    cv::Mat frameL_small;
+    cv::Mat frameL_small16;
+    cv::Mat frameL_s_prev16;
+    cv::Mat frameL_s_prev16_OK;
 
 
 
+    cv::Mat Qf;
 
-    void init(cv::Mat Qf, cv::Mat frameL, cv::Mat frameR);
+    cv::Mat uncertainty_map,threshL,diffL16,diffL;
+    cv::Mat diffL16_prevOK,diffL_prevOK;
+
+
+
+    void init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR);
     void close() {
         std::ofstream os(settingsFile, std::ios::binary);
         cereal::BinaryOutputArchive archive( os );
         archive( settings );
     }
-    void update(cv::Mat frameL, cv::Mat frameR, float time, int frame_id);
+    void update(cv::Mat new_frameL, cv::Mat new_frameR, float time, int new_frame_id);
+    void update_prevOK();
     void init_avg_prev_frame(void);
     void collect_avg_prev_frame(cv::Mat frame);
     void collect_no_drone_frames(cv::Mat diff);
