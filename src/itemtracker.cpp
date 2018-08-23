@@ -332,7 +332,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
     if (find_result.update_prev_frame && ! breakpause) {
         using_old_frame_since = 0;
         frameL_prev_OK = _visdat->frameL_prev.clone();
-        _visdat->frameL_s_prev16_OK = _visdat->frameL_s_prev16.clone();
+        _visdat->frameL_prev16_OK = _visdat->frameL_prev16.clone();
         frameR_prev_OK = _visdat->frameR_prev.clone();
     }
 
@@ -402,17 +402,17 @@ void ItemTracker::find(std::vector<track_item> exclude) {
     roi_size.x=settings.roi_min_size/IMSCALEF+nframes_since_update_prev*(settings.roi_grow_speed / 16 / IMSCALEF);
     roi_size.y=settings.roi_min_size/IMSCALEF+nframes_since_update_prev*(settings.roi_grow_speed / 16 / IMSCALEF);
 
-    if (roi_size.x  >= _visdat->frameL_small.cols) {
-        roi_size.x = _visdat->frameL_small.cols;
+    if (roi_size.x  >= _visdat->smallsize.width) {
+        roi_size.x = _visdat->smallsize.width;
     }
 
-    if (roi_size.y >= _visdat->frameL_small.rows)
-        roi_size.y = _visdat->frameL_small.rows;
+    if (roi_size.y >= _visdat->smallsize.height)
+        roi_size.y = _visdat->smallsize.height;
 
     //attempt to detect changed blobs
-    _treshL = segment(_visdat->diffL,previous_location,roi_size);
+    _treshL = segment(_visdat->diffL_small,previous_location,roi_size);
 
-     cv::Mat tmp = createColumnImage({_treshL,_visdat->diffL,_visdat->frameL_small},CV_8UC1,2);
+     cv::Mat tmp = createColumnImage({_treshL,_visdat->diffL,_visdat->frameL},CV_8UC1,0.25f);
      cv::imshow("trek",tmp);
 
 #if CV_MAJOR_VERSION==3
@@ -428,7 +428,7 @@ void ItemTracker::find(std::vector<track_item> exclude) {
     //check if changed blobs were detected
     if (keypointsL.size() == 0) { // if not, use the last frame that was confirmed to be working before...        
         _visdat->update_prevOK();
-        _treshL = segment(_visdat->diffL_prevOK,previous_location,roi_size);
+        _treshL = segment(_visdat->diffL_prevOK_small,previous_location,roi_size);
         detector->detect( _treshL, keypointsL);
         using_old_frame_since++;
     } else {

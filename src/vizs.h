@@ -139,7 +139,7 @@ public:
     cv::Mat autotakeoff_velY_thresh;
 
     void addPlotSample(void);
-    void draw_tracker_viz(cv::Mat frameL, cv::Mat frameL_small, cv::Point3d setpoint);
+    void draw_tracker_viz(cv::Mat frameL, cv::Point3d setpoint);
     void init(DroneController *dctrl, DroneTracker *dtrkr, InsectTracker *itrkr, DroneNavigation *dnav){
         _dctrl = dctrl;
         _dtrkr = dtrkr;

@@ -23,11 +23,10 @@ void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL,cv::Mat new_frameR){
     }
 
     smallsize =cv::Size(frameL.cols/IMSCALEF,frameL.rows/IMSCALEF);
-    cv::resize(frameL,frameL_small,smallsize);
-    frameL_small.convertTo(frameL_small16, CV_16SC1);
-    frameL_s_prev16_OK = frameL_small16.clone();
-    diffL16 = cv::Mat::zeros(smallsize,CV_16SC1);
-    diffL16_prevOK = cv::Mat::zeros(smallsize,CV_16SC1);
+    frameL.convertTo(frameL16, CV_16SC1);
+    frameL_prev16_OK = frameL16.clone();
+    diffL16 = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
+    diffL16_prevOK = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
 
     init_avg_prev_frame();
 
@@ -41,23 +40,23 @@ void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL,cv::Mat new_frameR){
 }
 
 void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int new_frame_id) {
-    frameL_prev = this->frameL.clone();
-    frameR_prev = this->frameR.clone();
+    frameL_prev = frameL.clone();
+    frameR_prev = frameR.clone();
     frameL = new_frameL;
     frameR = new_frameR;
     frame_id = new_frame_id;
 
-    frameL_s_prev16 = frameL_small16.clone();
-    cv::resize(frameL,frameL_small,smallsize);
-    frameL_small.convertTo(frameL_small16, CV_16SC1);
+    frameL_prev16 = frameL16.clone();
+    frameL.convertTo(frameL16, CV_16SC1);
 
     //calcuate the motion difference, through the integral over time (over each pixel)
-    cv::Mat d = frameL_small16 - frameL_s_prev16;
+    cv::Mat d = frameL16 - frameL_prev16;
     diffL16 += d;
     diffL16.convertTo(diffL, CV_8UC1);
+    cv::resize(diffL,diffL_small,smallsize);
 
     if (!background_calibrated )
-        collect_no_drone_frames(diffL); // calibration of background uncertainty map
+        collect_no_drone_frames(diffL_small); // calibration of background uncertainty map
 
 #ifdef BEEP
     if (!background_calibrated && time > settings.background_calib_time) {
@@ -75,9 +74,10 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
 
 /*calcuate motion differences, same code as above except performed on the last frame that was good*/
 void VisionData::update_prevOK() {
-    cv::Mat d = frameL_small16 - frameL_s_prev16_OK;
+    cv::Mat d = frameL16 - frameL_prev16_OK;
     diffL16_prevOK += d;
     diffL16_prevOK.convertTo(diffL_prevOK, CV_8UC1);
+    cv::resize(diffL_prevOK,diffL_prevOK_small,smallsize);
 }
 
 void VisionData::collect_no_drone_frames(cv::Mat diff) {
@@ -93,7 +93,7 @@ void VisionData::collect_no_drone_frames(cv::Mat diff) {
 }
 
 void VisionData::init_avg_prev_frame(void) {
-    avg_prev_frame = cv::Mat::zeros(frameL_small.rows,frameL_small.cols,CV_32SC1);
+    avg_prev_frame = cv::Mat::zeros(frameL.rows,frameL.cols,CV_32SC1);
     n_avg_prev_frames = 0;
 }
 

@@ -51,17 +51,17 @@ public:
     int frame_id;
 
     cv::Size smallsize;
-    cv::Mat frameL_small;
-    cv::Mat frameL_small16;
-    cv::Mat frameL_s_prev16;
-    cv::Mat frameL_s_prev16_OK;
+//    cv::Mat frameL_small;
+    cv::Mat frameL16;
+    cv::Mat frameL_prev16;
+    cv::Mat frameL_prev16_OK;
 
 
 
     cv::Mat Qf;
 
-    cv::Mat uncertainty_map,threshL,diffL16,diffL;
-    cv::Mat diffL16_prevOK,diffL_prevOK;
+    cv::Mat uncertainty_map,threshL,diffL16,diffL,diffL_small;
+    cv::Mat diffL16_prevOK,diffL_prevOK,diffL_prevOK_small;
 
 
 

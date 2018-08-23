@@ -61,7 +61,7 @@ bool found_after_takeoff = false;
 void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_is_active) {
 
     if (!drone_is_active) {
-        _visdat->frameL_s_prev16_OK = _visdat->frameL_s_prev16;
+        _visdat->frameL_prev16_OK = _visdat->frameL_prev16;
         frameL_prev_OK = _visdat->frameL_prev;
         frameR_prev_OK = _visdat->frameR_prev;
 

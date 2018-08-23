@@ -93,7 +93,6 @@ void handleKey();
 /************ code ***********/
 void process_video() {
 
-
     visdat.update(cam.frameL,cam.frameR,cam.get_frame_time(),cam.get_frame_id());
 
     //main while loop:
@@ -137,7 +136,7 @@ void process_video() {
 #ifdef HASSCREEN
         if (breakpause_prev != 0) {
             visualizer.addPlotSample();
-            visualizer.draw_tracker_viz(visdat.frameL,visdat.frameL_small,dnav.setpoint);
+            visualizer.draw_tracker_viz(visdat.frameL,dnav.setpoint);
         }
 #endif
 

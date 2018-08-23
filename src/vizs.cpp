@@ -312,9 +312,10 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
     if (tmp.size()>0) {
         std::vector<cv::KeyPoint> keypoints;
         for (uint i = 0; i< tmp.size();i++) {
+            tmp.at(i).k.size = 24/IMSCALEF;
             keypoints.push_back(tmp.at(i).k);
         }
-        drawKeypoints( frameL_small, keypoints, frameL_small_drone, Scalar(0,255,0), DrawMatchesFlags::DEFAULT );
+        drawKeypoints( frameL_small, keypoints, frameL_small_drone, Scalar(0,255,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
     } else {
         cvtColor(frameL_small,frameL_small_drone,CV_GRAY2BGR);
     }
@@ -333,6 +334,7 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
     if (trkr->pathL.size() > 0) {
         std::vector<cv::KeyPoint> keypoints;
         for (uint i = 0; i< trkr->pathL.size();i++) {
+            trkr->pathL.at(i).k.size = 12/IMSCALEF;
             keypoints.push_back(trkr->pathL.at(i).k);
         }
         drawKeypoints( frameL_small_drone, keypoints, frameL_small_drone, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
@@ -344,7 +346,7 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
 }
 
 
-void Visualizer::draw_tracker_viz(cv::Mat frameL,cv::Mat frameL_small, cv::Point3d setpoint) {
+void Visualizer::draw_tracker_viz(cv::Mat frameL, cv::Point3d setpoint) {
 #ifdef DRAWTRACKING
     static int div = 0;
     if (div++ % 4 == 1) {
@@ -362,6 +364,8 @@ void Visualizer::draw_tracker_viz(cv::Mat frameL,cv::Mat frameL_small, cv::Point
 //        draw_segment_viz();
 
         cv::Size vizsizeL(resFrame.cols/4,resFrame.rows/4);
+        cv::Mat frameL_small;
+        cv::resize(frameL,frameL_small,cv::Size(frameL.cols/IMSCALEF,frameL.rows/IMSCALEF));
         cv::Mat frameL_small_drone = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,_dtrkr);
         cv::Mat frameL_small_insect = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,_itrkr);
         frameL_small_drone.copyTo(resFrame(cv::Rect(0,0,frameL_small_drone.cols, frameL_small_drone.rows)));
