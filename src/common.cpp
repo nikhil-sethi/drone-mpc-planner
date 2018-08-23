@@ -109,7 +109,7 @@ void combineGrayImage(cv::Mat iml,cv::Mat imr,cv::Mat *res) {
     imr.copyTo(roir);
 }
 
-cv::Mat createRowImage(std::vector<cv::Mat> ims, int type,int resizef)
+cv::Mat createRowImage(std::vector<cv::Mat> ims, int type,float resizef)
 {
     //find max height and total width:
     int width = 0;
@@ -146,7 +146,7 @@ cv::Mat createRowImage(std::vector<cv::Mat> ims, int type,int resizef)
     return res;
 }
 
-cv::Mat createColumnImage(std::vector<cv::Mat> ims, int type,int resizef)
+cv::Mat createColumnImage(std::vector<cv::Mat> ims, int type,float resizef)
 {
     //find max width and total height:
     int width = -1;
@@ -185,13 +185,13 @@ cv::Mat createColumnImage(std::vector<cv::Mat> ims, int type,int resizef)
 }
 
 /* combines a bunch of images into one column, and shows it */
-void showColumnImage(std::vector<cv::Mat> ims, std::string window_name, int type, int resizef) {
+void showColumnImage(std::vector<cv::Mat> ims, std::string window_name, int type, float resizef) {
     cv::Mat res = createColumnImage(ims,type,resizef);
     cv::imshow(window_name, res);
 }
 
 /* combines a bunch of images into one row, and shows it */
-void showRowImage(std::vector<cv::Mat> ims, std::string window_name, int type,int resizef) {
+void showRowImage(std::vector<cv::Mat> ims, std::string window_name, int type,float resizef) {
     cv::Mat res = createRowImage(ims,type,resizef);
     cv::imshow(window_name, res);
 }
