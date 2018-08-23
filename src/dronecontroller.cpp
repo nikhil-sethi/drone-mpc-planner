@@ -57,19 +57,11 @@ void DroneController::init(std::ofstream *logger,bool fromfile, Arduino * arduin
     createTrackbar("Pitch P", "Control", &params.pitchP, 5000);
     createTrackbar("Pitch I", "Control", &params.pitchI, 255);
     createTrackbar("Pitch D", "Control", &params.pitchD, 1000);
-
-
-
-
     //    // yaw control
     //    createTrackbar("Yaw P", "Control", &params.yawP, 255);
     //    createTrackbar("Yaw I", "Control", &params.yawI, 255);
     //    createTrackbar("Yaw D", "Control", &params.yawD, 255);
-
-
 #endif
-
-
 
 }
 
@@ -103,15 +95,8 @@ void DroneController::control(trackData data) {
         pitchErrI = 0;
 
 
-    //static int autoLandThrottleDecrease_prev = 0;
-
     if (autoTakeOff) {
         autoThrottle = hoverthrottle;
-//        autoRoll = 1500 ;
-//        autoPitch =1500;
-    //} //else if (autoLandThrottleDecrease > 0 && autoLandThrottleDecrease_prev == 0) {
-     //   hoverthrottle = hoverthrottle + throttleErrI * params.throttleI - autoLandThrottleDecrease;
-     //   autoThrottle =hoverthrottle ;
     } else if (autoLandThrottleDecrease > 0 ) {
         hoverthrottle -= autoLandThrottleDecrease;
         autoThrottle =hoverthrottle ;
@@ -122,9 +107,7 @@ void DroneController::control(trackData data) {
     }
     autoRoll = 1500 + (data.posErrX * params.rollP + data.svelX * (params.rollD) +  params.rollI*rollErrI);
     autoPitch =1500 + (data.posErrZ * params.pitchP + data.svelZ * (params.pitchD) +  params.pitchI*pitchErrI);
-    //TODO: Yaw
-    //autoLandThrottleDecrease_prev = autoLandThrottleDecrease;
-    //tmp only for vizs
+    //TODO: Yaw    
     if (autoPitch > 1950) {
         autoPitch = 1950;
     } else if (autoPitch < 1050) {
@@ -141,7 +124,6 @@ void DroneController::control(trackData data) {
         autoThrottle = 1050;
     }
 
-    //std::cout << autoTakeOff << " " << autoThrottle << std::endl;
     int throttle,roll,pitch,yaw;
 
     if ( autoControl ) {
@@ -164,7 +146,6 @@ void DroneController::control(trackData data) {
             }
         }
 
-
         //TMP:
         //roll = joyRoll;
         //pitch = joyPitch;
@@ -181,8 +162,6 @@ void DroneController::control(trackData data) {
         pitch = joyPitch;
         yaw = joyYaw;
     }
-
-
 
     if ( throttle < 1050 )
         throttle = 1050;
@@ -222,13 +201,6 @@ void DroneController::control(trackData data) {
     _arduino->g_lockData.unlock();
 
     (*_logger) << (int)data.valid  << "; " << data.posErrX << "; " << data.posErrY  << "; " << data.posErrZ << "; " << data.velX << "; " << data.velY  << "; " << data.velZ << "; " << data.accX << "; " << data.accY  << "; " << data.accZ << "; " << hoverthrottle << "; " << autoThrottle << "; " << autoRoll << "; " << autoPitch << "; " << autoYaw <<  "; " << joyThrottle <<  "; " << joyRoll <<  "; " << joyPitch <<  "; " << joyYaw << "; " << (int)joySwitch << "; " << params.throttleP << "; " << params.throttleI << "; " << params.throttleD << "; " << data.dt << "; " << data.dx << "; " << data.dy << "; " << data.dz << "; ";
-    //    if (!notconnected){
-    //        params.throttleP = scaledjoydial;
-    //        std::cout << "P:" << params.throttleP << " Throttle: " << throttle << " HT: " << hoverthrottle << std::endl;
-    //        std::cout << "Roll: " << roll << " RollP: " << params.rollP << std::endl;
-    //        std::cout << "AutoTakeOff:" << (int)autoTakeOff <<  " HT: " << hoverthrottle << " Valid: " << data->valid << "VelY: " << data->velY <<std::endl;
-    //        std::cout << "AutoLand:" << autoLand <<  " HT: " << hoverthrottle << " Valid: " << data->valid << " PosY: " << data->posErrY << " startY:" << startY << " VelY: " << data->velY <<std::endl;
-    //    }
 }
 
 int firstTime = 3;
@@ -336,8 +308,6 @@ void DroneController::readJoystick(void) {
         autoLand=true;
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/desktop-logout.ogg &");
     }
-
-
 }
 
 void DroneController::recalibrateHover() {
@@ -347,19 +317,8 @@ void DroneController::recalibrateHover() {
 }
 
 void DroneController::close () {
-
-
-    //    char buff[64];
-    //    sprintf( (char*) buff,"1050,1500,1500,1500,0,0,0,0,0,0,0,2000\n");
-    //    if (!notconnected) {
-    //        RS232_SendBuf( (unsigned char*) buff, 63);
-    //        RS232_CloseComport();
-    //    }
-
     std::cout << "closing controller" << std::endl;
-
     std::ofstream os(paramsFile, std::ios::binary);
     cereal::BinaryOutputArchive archive( os );
     archive( params );
-
 }
