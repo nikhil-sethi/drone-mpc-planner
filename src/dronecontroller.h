@@ -49,6 +49,10 @@ private:
         int yawI = 0;
         int yawD = 0;
 
+        int vref_gain = 1400;
+        int vref_max = 2000;
+        int v_vs_pos_control_gain = 100;
+
         template <class Archive>
         void serialize( Archive & ar )
         {
@@ -69,11 +73,14 @@ private:
     bool autoLand = false;
     bool autoControl = false;
 
+    bool _fromfile;
+
     Arduino * _arduino;
 
     std::ofstream *_logger;
     void sendData(void);
     void readJoystick(void);
+    void process_joystick();
     void rebind(void);
 
 public:

@@ -16,13 +16,14 @@ JoystickEvent event;
 void DroneController::init(std::ofstream *logger,bool fromfile, Arduino * arduino) {
     _arduino = arduino;
     _logger = logger;
+    _fromfile = fromfile;
     (*_logger) << "valid; posErrX; posErrY; posErrZ; velX; velY; velZ; accX; accY; accZ; hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; joyThrottle; joyRoll; joyPitch; joyYaw; joySwitch; throttleP; throttleI; throttleD; dt; dx; dy; dz;";
     std::cout << "Initialising control." << std::endl;
 
     // Ensure that joystick was found and that we can use it
     if (!joystick.isFound() && !fromfile) {
         std::cout << "joystick failed." << std::endl;
-        //exit(1);
+        exit(1);
     }
 
     // Load saved control paremeters
@@ -61,19 +62,45 @@ void DroneController::init(std::ofstream *logger,bool fromfile, Arduino * arduin
     //    createTrackbar("Yaw P", "Control", &params.yawP, 255);
     //    createTrackbar("Yaw I", "Control", &params.yawI, 255);
     //    createTrackbar("Yaw D", "Control", &params.yawD, 255);
+
+    createTrackbar("vref gain", "Control", &params.vref_gain, 10000);
+    createTrackbar("vref max", "Control", &params.vref_max, 10000);
+    createTrackbar("v vs pos gain", "Control", &params.v_vs_pos_control_gain, 10000);
 #endif
 
 }
 
 void DroneController::control(trackData data,cv::Point3f setpoint_world) {
 
-    _arduino->rebind();
-    readJoystick();
+    if (!_fromfile) {
+        _arduino->rebind();
+        readJoystick();
+    }
+    process_joystick();
 
     posErrX = data.sposX - setpoint_world.x;
     posErrY = data.sposY - setpoint_world.y;
     posErrZ = data.sposZ - setpoint_world.z;
 
+    float velx_sp = posErrX*params.vref_gain/1000.f;
+    if (velx_sp > params.vref_max/1000.f)
+        velx_sp = params.vref_max/1000.f;
+    velErrX = data.svelX - velx_sp; //desired speed
+    posErrX = posErrX/(velErrX*(params.v_vs_pos_control_gain/100.f));
+    float vely_sp = posErrY*params.vref_gain/1000.f;
+    if (vely_sp > params.vref_max/1000.f)
+        vely_sp = params.vref_max/1000.f;
+    velErrY = data.svelY - vely_sp;
+//    posErrY = posErrY/(velErrY*(params.v_vs_pos_control_gain/100.f));
+    float velz_sp = posErrZ*params.vref_gain/1000.f;
+    if (velz_sp > params.vref_max/1000.f)
+        velz_sp = params.vref_max/1000.f;
+    velErrZ = data.svelZ - velz_sp;
+//    posErrZ = posErrZ/(velErrZ*(params.v_vs_pos_control_gain/100.f));
+
+//    velErrX = data.svelX;
+    velErrY = data.svelY;
+    velErrZ = data.svelZ;
 
     if(autoLand) {
         autoTakeOff=false;
@@ -106,12 +133,12 @@ void DroneController::control(trackData data,cv::Point3f setpoint_world) {
         hoverthrottle -= autoLandThrottleDecrease;
         autoThrottle =hoverthrottle ;
     } else {
-        autoThrottle =  hoverthrottle  - (posErrY * params.throttleP + data.svelY * params.throttleD + throttleErrI * params.throttleI*beforeTakeOffFactor);
+        autoThrottle =  hoverthrottle  - (posErrY * params.throttleP + velErrY * params.throttleD + throttleErrI * params.throttleI*beforeTakeOffFactor);
         if (autoThrottle < 1300)
             autoThrottle = 1300;
     }
-    autoRoll = 1500 + (posErrX * params.rollP + data.svelX * (params.rollD) +  params.rollI*rollErrI);
-    autoPitch =1500 + (posErrZ * params.pitchP + data.svelZ * (params.pitchD) +  params.pitchI*pitchErrI);
+    autoRoll = 1500 + (posErrX * params.rollP + velErrX * params.rollD +  params.rollI*rollErrI);
+    autoPitch =1500 + (posErrZ * params.pitchP + velErrZ * params.pitchD +  params.pitchI*pitchErrI);
     //TODO: Yaw    
     if (autoPitch > 1950) {
         autoPitch = 1950;
@@ -195,15 +222,16 @@ void DroneController::control(trackData data,cv::Point3f setpoint_world) {
         landed = true;
     }
 
-    _arduino->g_lockData.lock();
+    if (!_fromfile) {
+        _arduino->g_lockData.lock();
 
-    _arduino->throttle = throttle;
-    _arduino->roll = roll;
-    _arduino->pitch = pitch;
-    _arduino->yaw = yaw;
+        _arduino->throttle = throttle;
+        _arduino->roll = roll;
+        _arduino->pitch = pitch;
+        _arduino->yaw = yaw;
 
-
-    _arduino->g_lockData.unlock();
+        _arduino->g_lockData.unlock();
+    }
 
     (*_logger) << (int)data.valid  << "; " << posErrX << "; " << posErrY  << "; " << posErrZ << "; " << data.velX << "; " << data.velY  << "; " << data.velZ << "; " << data.accX << "; " << data.accY  << "; " << data.accZ << "; " << hoverthrottle << "; " << autoThrottle << "; " << autoRoll << "; " << autoPitch << "; " << autoYaw <<  "; " << joyThrottle <<  "; " << joyRoll <<  "; " << joyPitch <<  "; " << joyYaw << "; " << (int)joySwitch << "; " << params.throttleP << "; " << params.throttleI << "; " << params.throttleD << "; " << data.dt << "; " << data.dx << "; " << data.dy << "; " << data.dz << "; ";
 }
@@ -269,7 +297,10 @@ void DroneController::readJoystick(void) {
 
         }
     }
+}
 
+
+void DroneController::process_joystick() {
     // prevent accidental take offs at start up
     if (firstTime > 0) {
         if (joySwitch || joyThrottle > 1080 ) {
@@ -304,8 +335,9 @@ void DroneController::readJoystick(void) {
     joySwitch_prev = joySwitch;
 
 #if CAMMODE == CAMMODE_GENERATOR
-   autoControl = true;
-   autoTakeOff = true;
+   if (!autoControl)
+       autoTakeOff = true;
+    autoControl = true;
    joyPitch = 1500;
 #endif
 

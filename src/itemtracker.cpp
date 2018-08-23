@@ -764,7 +764,7 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
 
     pathL.push_back(track_item(find_result.best_image_locationL,frame_id,new_tracking_certainty));
 
-    trackData data;
+    trackData data ={0};
     data.valid = true;
     data.posX = measured_world_coordinates.x;
     data.posY = measured_world_coordinates.y;
@@ -868,7 +868,7 @@ float ItemTracker::calc_certainty(KeyPoint item) {
 }
 
 void ItemTracker::reset_tracker_ouput() {
-    trackData data;
+    trackData data = {0};
     reset_filters = true;
 
     track_history.push_back(data);
