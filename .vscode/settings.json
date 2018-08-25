@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "deque": "cpp",
+        "vector": "cpp",
+        "condition_variable": "cpp"
+    },
+    "editor.autoIndent": true,
+    "editor.autoClosingBrackets": false,        
+}
