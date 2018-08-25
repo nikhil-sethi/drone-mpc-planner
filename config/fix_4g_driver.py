@@ -6,7 +6,6 @@
 #Made by Kevin
 
 from __future__ import print_function
-import psutil
 import time
 import os
 from subprocess import Popen
