@@ -81,15 +81,15 @@ cv::Mat InsectTracker::get_approx_cutout_filtered(cv::Point p, cv::Mat diffL, cv
     if (x < 0)
         x = 0;
     int width = size.x;
-    if (x+width > _visdat->diffL.cols)
-        x -= (x+width) - _visdat->diffL.cols;
+    if (x+width > _visdat->uncertainty_map.cols)
+        x -= (x+width) - _visdat->uncertainty_map.cols;
 
     int y = p.y-size.y/2;
     if (y < 0)
         y = 0;
     int height = size.y;
-    if (y+height>_visdat->diffL.rows)
-        y -= (y+height) - _visdat->diffL.rows;
+    if (y+height>_visdat->uncertainty_map.rows)
+        y -= (y+height) - _visdat->uncertainty_map.rows;
 
     cv::Rect roi(x,y,width,height);
     find_result.roi_offset = roi;
