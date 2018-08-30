@@ -412,8 +412,8 @@ void ItemTracker::find(std::vector<track_item> exclude) {
     //attempt to detect changed blobs
     _treshL = segment(_visdat->diffL_small,previous_location,roi_size);
 
-//     cv::Mat tmp = createColumnImage({_treshL,_visdat->diffL,_visdat->frameL},CV_8UC1,0.25f);
-//     cv::imshow("trek",tmp);
+     // cv::Mat tmp = createColumnImage({_treshL,_visdat->diffL*100,_visdat->frameL},CV_8UC1,0.25f);
+     // cv::imshow("trek",tmp);
 
 #if CV_MAJOR_VERSION==3
     cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
@@ -426,14 +426,14 @@ void ItemTracker::find(std::vector<track_item> exclude) {
     detector->detect( _treshL, keypointsL);
 
     //check if changed blobs were detected
-    if (keypointsL.size() == 0) { // if not, use the last frame that was confirmed to be working before...        
-        _visdat->update_prevOK();
-        _treshL = segment(_visdat->diffL_prevOK_small,previous_location,roi_size);
-        detector->detect( _treshL, keypointsL);
-        using_old_frame_since++;
-    } else {
+//    if (keypointsL.size() == 0) { // if not, use the last frame that was confirmed to be working before...
+//        _visdat->update_prevOK();
+//        _treshL = segment(_visdat->diffL_prevOK_small,previous_location,roi_size);
+//        detector->detect( _treshL, keypointsL);
+//        using_old_frame_since++;
+//    } else {
         using_old_frame_since = 0;
-    }
+//    }
 
     vector<track_item> kps;
     for (uint i = 0 ; i < keypointsL.size();i++) {

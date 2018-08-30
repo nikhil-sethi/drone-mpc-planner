@@ -52,7 +52,32 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
     //calcuate the motion difference, through the integral over time (over each pixel)
     cv::Mat d = frameL16 - frameL_prev16;
     diffL16 += d;
-    diffL16 = (diffL16 * 595) / 600;
+
+
+    cv::Mat test(5,1,CV_16SC1);
+    int16_t tmp2[] = {-20000,-2, -1, 0 , 1, 2,30000};
+    test= Mat(1, 7, CV_16SC1,tmp2 );
+
+//    cv::Mat test_pos = min((test > 0),1);
+//    cv::Mat test_neg = min((test < 0),1);
+//    test_pos.convertTo(test_pos,CV_16SC1);
+//    test_neg.convertTo(test_neg,CV_16SC1);
+//    std::cout << test  << std::endl;
+//    std::cout << test_pos  << std::endl;
+//    std::cout << test_neg << std::endl;
+//    test -= test_pos;
+//    test += test_neg;
+//    std::cout << test  << std::endl;
+
+
+    cv::Mat diffL16_neg,diffL16_pos;
+    diffL16_pos = min(diffL16 >= 1,1);
+    diffL16_neg = min(diffL16 <= -1,1);
+    diffL16_pos.convertTo(diffL16_pos,CV_16SC1);
+    diffL16_neg.convertTo(diffL16_neg,CV_16SC1);
+    diffL16 -= diffL16_pos;
+    diffL16 += diffL16_neg;
+
     diffL16.convertTo(diffL, CV_8UC1);
     cv::resize(diffL,diffL_small,smallsize);
 
@@ -75,6 +100,7 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
 
 /*calcuate motion differences, same code as above except performed on the last frame that was good*/
 void VisionData::update_prevOK() {
+    std::cout << "HELEMAAL KUT. LET OP!" << std::endl;
     cv::Mat d = frameL16 - frameL_prev16_OK;
     diffL16_prevOK += d;
     diffL16_prevOK.convertTo(diffL_prevOK, CV_8UC1);

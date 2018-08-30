@@ -89,7 +89,7 @@ void Visualizer::plot(void) {
     ims_trk.push_back(plot_xyd());
     ims_trk.push_back(plot_all_position());
     ims_trk.push_back(plot_all_velocity());
-    ims_trk.push_back(plot_all_acceleration());
+//    ims_trk.push_back(plot_all_acceleration());
     ims_trk.push_back(plot_all_control());
     //showRowImage(ims_trk, "Tracking",CV_8UC3);
     plotframe = createRowImage(ims_trk,CV_8UC3);
