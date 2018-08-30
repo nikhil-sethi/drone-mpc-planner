@@ -85,22 +85,26 @@ void DroneController::control(trackData data,cv::Point3f setpoint_world) {
     float velx_sp = posErrX*params.vref_gain/1000.f;
     if (velx_sp > params.vref_max/1000.f)
         velx_sp = params.vref_max/1000.f;
-    velErrX = data.svelX - velx_sp; //desired speed
-    posErrX = posErrX/(velErrX*(params.v_vs_pos_control_gain/100.f));
+    if (velx_sp < -params.vref_max/1000.f)
+        velx_sp = -params.vref_max/1000.f;
+    velErrX = data.svelX + velx_sp; //desired speed
+//    posErrX = posErrX/(1+(abs(velErrX)*(params.v_vs_pos_control_gain/100.f)));
     float vely_sp = posErrY*params.vref_gain/1000.f;
     if (vely_sp > params.vref_max/1000.f)
         vely_sp = params.vref_max/1000.f;
-    velErrY = data.svelY - vely_sp;
+    velErrY = data.svelY + vely_sp;
 //    posErrY = posErrY/(velErrY*(params.v_vs_pos_control_gain/100.f));
     float velz_sp = posErrZ*params.vref_gain/1000.f;
     if (velz_sp > params.vref_max/1000.f)
         velz_sp = params.vref_max/1000.f;
-    velErrZ = data.svelZ - velz_sp;
+    if (velz_sp < -params.vref_max/1000.f)
+        velz_sp = -params.vref_max/1000.f;
+    velErrZ = data.svelZ + velz_sp;
 //    posErrZ = posErrZ/(velErrZ*(params.v_vs_pos_control_gain/100.f));
 
 //    velErrX = data.svelX;
-    velErrY = data.svelY;
-    velErrZ = data.svelZ;
+//    velErrY = data.svelY;
+//    velErrZ = data.svelZ;
 
     if(autoLand) {
         autoTakeOff=false;
@@ -173,7 +177,7 @@ void DroneController::control(trackData data,cv::Point3f setpoint_world) {
                 //yaw= autoYaw;
             } else {
                 roll = 1500;
-                pitch = 1500;
+                pitch = 1600;
                 //yaw= 1500;
             }
         }
