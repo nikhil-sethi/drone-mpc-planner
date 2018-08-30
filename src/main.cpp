@@ -56,6 +56,7 @@ GStream output_video_results,output_video_LR;
 cv::VideoWriter output_video_disp;
 
 stopwatch_c stopWatch_break;
+stopwatch_c stopWatch;
 std::string file;
 std::string data_output_dir;
 std::string calib_folder;
@@ -84,7 +85,6 @@ GeneratorCam cam;
 VisionData visdat;
 bool fromfile = false;
 
-
 /*******Private prototypes*********/
 void process_video();
 int main( int argc, char **argv);
@@ -93,6 +93,9 @@ void handleKey();
 /************ code ***********/
 void process_video() {
 
+    Smoother fps_smoothed;
+    fps_smoothed.init(100);
+    stopWatch.Start();
     visdat.update(cam.frameL,cam.frameR,cam.get_frame_time(),cam.get_frame_id());
 
     //main while loop:
@@ -130,9 +133,9 @@ void process_video() {
 
         //WARNING: changing the order of the functions with logging must be matched with the init functions!
         dtrkr.track(cam.get_frame_time(),itrkr.predicted_pathL,dctrl.getDroneIsActive());
-        itrkr.track(cam.get_frame_time(), dtrkr.pathL,dctrl.getDroneIsActive());
+//        itrkr.track(cam.get_frame_time(), dtrkr.pathL,dctrl.getDroneIsActive());
 
-        std::cout << "Found drone location:      [" << dtrkr.find_result.best_image_locationL.pt.x << "," << dtrkr.find_result.best_image_locationL.pt.y << "]" << std::endl;
+//        std::cout << "Found drone location:      [" << dtrkr.find_result.best_image_locationL.pt.x << "," << dtrkr.find_result.best_image_locationL.pt.y << "]" << std::endl;
 #ifdef HASSCREEN
         if (breakpause_prev != 0) {
             visualizer.addPlotSample();
@@ -170,8 +173,18 @@ void process_video() {
 #endif
         }
 
-        std::cout << "Frame: " <<imgcount << ", " << cam.get_frame_id() << ". FPS: " << imgcount / (time-break_time ) << ". Time: " << time-break_time  << ", dt " << dt << std::endl;
+
+        float t = stopWatch.Read() / 1000.f;
+        static float prev_time = 0;
+
+        float fps = fps_smoothed.addSample( 1.f / (t - prev_time));
+
+        std::cout << "Frame: " <<imgcount << ", " << cam.get_frame_id() << ". FPS: " << imgcount / (time-break_time ) << ". Time: " << time-break_time  << ", dt " << dt << " FPS now: " << fps << std::endl;
+
+        if (fps < 50)
+            std::cout << "FPS WARNING!" << std::endl;
         imgcount++;
+        prev_time = t;
 
 #ifdef HASSCREEN
         handleKey();
