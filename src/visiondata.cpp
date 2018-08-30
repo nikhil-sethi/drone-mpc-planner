@@ -54,10 +54,9 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
     diffL16 += d;
 
 
-    cv::Mat test(5,1,CV_16SC1);
-    int16_t tmp2[] = {-20000,-2, -1, 0 , 1, 2,30000};
-    test= Mat(1, 7, CV_16SC1,tmp2 );
-
+//    cv::Mat test(5,1,CV_16SC1);
+//    int16_t tmp2[] = {-20000,-2, -1, 0 , 1, 2,30000};
+//    test= Mat(1, 7, CV_16SC1,tmp2 );
 //    cv::Mat test_pos = min((test > 0),1);
 //    cv::Mat test_neg = min((test < 0),1);
 //    test_pos.convertTo(test_pos,CV_16SC1);
@@ -99,10 +98,17 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
 }
 
 /*calcuate motion differences, same code as above except performed on the last frame that was good*/
-void VisionData::update_prevOK() {
-    std::cout << "HELEMAAL KUT. LET OP!" << std::endl;
+void VisionData::update_prevOK() {    
     cv::Mat d = frameL16 - frameL_prev16_OK;
     diffL16_prevOK += d;
+    cv::Mat diffL16_neg,diffL16_pos;
+    diffL16_pos = min(diffL16_prevOK >= 1,1);
+    diffL16_neg = min(diffL16_prevOK <= -1,1);
+    diffL16_pos.convertTo(diffL16_pos,CV_16SC1);
+    diffL16_neg.convertTo(diffL16_neg,CV_16SC1);
+    diffL16_prevOK -= diffL16_pos;
+    diffL16_prevOK += diffL16_neg;
+
     diffL16_prevOK.convertTo(diffL_prevOK, CV_8UC1);
     cv::resize(diffL_prevOK,diffL_prevOK_small,smallsize);
 }
