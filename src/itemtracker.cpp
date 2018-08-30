@@ -10,7 +10,7 @@ using namespace cv;
 using namespace std;
 
 #ifdef HASSCREEN
-//#define TUNING
+#define TUNING
 #endif
 
 
@@ -91,34 +91,7 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     // Measures Noise Covariance Matrix R
     cv::setIdentity(kfR.measurementNoiseCov, cv::Scalar(1e-1));
 
-    // Setup SimpleBlobDetector parameters.
-    params.minThreshold = settings.minThreshold+1;
-    params.maxThreshold = settings.maxThreshold+1;
-
-    // Filter by Area.
-    params.filterByArea = settings.filterByArea;
-    params.minArea = settings.minArea+1;
-    params.maxArea = settings.maxArea+1;
-
-    // Filter by Circularity
-    params.filterByCircularity = settings.filterByCircularity;
-    params.minCircularity = ((float)settings.minCircularity)/100.0f;
-    params.maxCircularity = ((float)settings.maxCircularity)/100.0f;
-
-    // Filter by Convexity
-    params.filterByConvexity = settings.filterByConvexity;
-    params.minConvexity = ((float)settings.minConvexity)/100.0f;
-    params.maxConvexity = ((float)settings.maxConvexity)/100.0f;
-
-    // Filter by Inertia
-    params.filterByInertia = settings.filterByInertia;
-    params.minInertiaRatio = ((float)settings.minInertiaRatio)/100.0f;
-    params.maxInertiaRatio = ((float)settings.maxInertiaRatio)/100.0f;
-
-    params.minRepeatability = 0;
-    params.minDistBetweenBlobs=0;
-    params.filterByColor = 0;
-    params.thresholdStep=1;
+   updateParams();
 
     smoother_posX.init(smooth_width_pos);
     smoother_posY.init(smooth_width_pos);
@@ -253,7 +226,9 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes_improved(std::
 }
 
 void ItemTracker::track(float time, std::vector<track_item> exclude, float drone_max_border_y, float drone_max_border_z) {
+#ifdef TUNING
     updateParams();
+#endif
 
     float dt_tracking= (time-t_prev_tracking);
     float dt_predict= (time-t_prev_predict);
@@ -358,15 +333,14 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
 }
 
 void ItemTracker::updateParams(){
-#ifdef TUNING
     // Change thresholds
     params.minThreshold = settings.minThreshold+1;
     params.maxThreshold = settings.maxThreshold+1;
 
     // Filter by Area.
     params.filterByArea = settings.filterByArea;
-    params.minArea = settings.minArea+1;
-    params.maxArea = settings.maxArea+1;
+    params.minArea = (settings.minArea/(IMSCALEF*IMSCALEF))+1;
+    params.maxArea = (settings.maxArea/(IMSCALEF*IMSCALEF))+1;
 
     // Filter by Circularity
     params.filterByCircularity = settings.filterByCircularity;
@@ -387,7 +361,8 @@ void ItemTracker::updateParams(){
     params.minDistBetweenBlobs=0;
     params.filterByColor = 0;
     params.thresholdStep=1;
-#endif
+
+
 }
 
 
