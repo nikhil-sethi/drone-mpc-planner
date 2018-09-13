@@ -423,7 +423,7 @@ void ItemTracker::find(std::vector<track_item> exclude) {
     //       are actually 'bad' detections that are too far away to be correct.
     std::vector<track_item> keypoint_candidates;
     keypoint_candidates = remove_voids(kps,find_result.keypointsL);
-    find_result.keypointsL_wihout_voids = remove_excludes(keypoint_candidates,exclude);
+    find_result.keypointsL_wihout_voids = remove_excludes_improved(keypoint_candidates,exclude);
 
     if (find_result.keypointsL_wihout_voids.size() ==0) {
         nframes_since_update_prev +=1;

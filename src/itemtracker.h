@@ -140,7 +140,6 @@ private:
 
     cv::Mat _blurred_circle;
 
-    bool foundL = false;
     float t_prev_tracking = 0;
     float t_prev_predict = 0;
     std::string _name;
@@ -180,6 +179,8 @@ public:
     std::vector<track_item> predicted_pathL;
 
     int n_frames_tracking =0;
+
+    bool foundL = false;
 
     void close (void);
     void init(std::ofstream *logger, VisionData *_visdat, std::string name);

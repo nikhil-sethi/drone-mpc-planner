@@ -133,7 +133,7 @@ void process_video() {
 
         //WARNING: changing the order of the functions with logging must be matched with the init functions!
         dtrkr.track(cam.get_frame_time(),itrkr.predicted_pathL,dctrl.getDroneIsActive());
-//        itrkr.track(cam.get_frame_time(), dtrkr.pathL,dctrl.getDroneIsActive());
+        itrkr.track(cam.get_frame_time(),dtrkr.predicted_pathL,dctrl.getDroneIsActive());
 
 //        std::cout << "Found drone location:      [" << dtrkr.find_result.best_image_locationL.pt.x << "," << dtrkr.find_result.best_image_locationL.pt.y << "]" << std::endl;
 #ifdef HASSCREEN
