@@ -83,7 +83,7 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
     }
     if (!found_after_takeoff) {
         predicted_pathL.clear();
-        predicted_pathL.push_back(track_item(find_result.best_image_locationL,_visdat->frame_id,1.f));
+        predicted_pathL.push_back(track_item(find_result.best_image_locationL,_visdat->frame_id,0.1f));
         foundL = false;
     }
 
