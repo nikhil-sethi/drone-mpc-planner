@@ -23,6 +23,7 @@ private:
 
     cv::Mat avg_prev_frame;
     int n_avg_prev_frames = 0;
+    int motion_update_iterator = 0;
     bool background_calibrated;
 
     struct BaseVisionSettings{

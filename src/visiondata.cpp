@@ -2,7 +2,7 @@
 #include <opencv2/highgui/highgui.hpp>
 
 #ifdef HASSCREEN
-//#define TUNING
+#define TUNING
 #endif
 
 using namespace cv;
@@ -70,8 +70,16 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
 
 
     cv::Mat diffL16_neg,diffL16_pos;
-    diffL16_pos = min(diffL16 >= 1,1);
-    diffL16_neg = min(diffL16 <= -1,1);
+    if (motion_update_iterator==10) {
+        diffL16_pos = min(diffL16 >= 1,1);
+        diffL16_neg = min(diffL16 <= -1,1);
+        motion_update_iterator = 0;
+    } else { // TODO: seems optimizable:
+        diffL16_pos = min(diffL16 >= 1,0);
+        diffL16_neg = min(diffL16 <= -1,0);
+        motion_update_iterator++;
+    }
+
     diffL16_pos.convertTo(diffL16_pos,CV_16SC1);
     diffL16_neg.convertTo(diffL16_neg,CV_16SC1);
     diffL16 -= diffL16_pos;
@@ -79,6 +87,9 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
 
     diffL16.convertTo(diffL, CV_8UC1);
     cv::resize(diffL,diffL_small,smallsize);
+
+    //cv::imshow("motion", diffL*10);
+
 
     if (!background_calibrated )
         collect_no_drone_frames(diffL_small); // calibration of background uncertainty map
