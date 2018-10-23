@@ -116,6 +116,7 @@ public:
     void setAutoLand(bool b) {autoLand = b;}
     void setAutoLandThrottleDecrease(int value) {autoLandThrottleDecrease = value;}
     void recalibrateHover();
+    bool joystick_ready();
 
 };
 

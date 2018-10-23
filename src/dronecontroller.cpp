@@ -13,18 +13,15 @@ const std::string paramsFile = "../controlParameters.dat";
 Joystick joystick("/dev/input/js0");
 JoystickEvent event;
 
+bool DroneController::joystick_ready(){
+    return joystick.isFound();
+}
 void DroneController::init(std::ofstream *logger,bool fromfile, Arduino * arduino) {
     _arduino = arduino;
     _logger = logger;
     _fromfile = fromfile;
     (*_logger) << "valid; posErrX; posErrY; posErrZ; velX; velY; velZ; accX; accY; accZ; hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; joyThrottle; joyRoll; joyPitch; joyYaw; joySwitch; throttleP; throttleI; throttleD; dt; dx; dy; dz;";
     std::cout << "Initialising control." << std::endl;
-
-    // Ensure that joystick was found and that we can use it
-    if (!joystick.isFound() && !fromfile) {
-        std::cout << "joystick failed." << std::endl;
-        exit(1);
-    }
 
     // Load saved control paremeters
     if (checkFileExist(paramsFile)) {

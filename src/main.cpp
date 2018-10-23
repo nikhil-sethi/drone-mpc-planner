@@ -264,6 +264,14 @@ int init(int argc, char **argv) {
     dnav.init(&logger,&dtrkr,&dctrl);
     dctrl.init(&logger,fromfile,&arduino);
 
+#if CAMMODE == CAMMODE_REALSENSE
+    // Ensure that joystick was found and that we can use it
+    if (!dctrl.joystick_ready() && !fromfile) {
+        std::cout << "joystick failed." << std::endl;
+        exit(1);
+    }
+#endif
+
     logger << std::endl;
 #ifdef HASSCREEN
     visualizer.init(&dctrl,&dtrkr,&itrkr,&dnav);
