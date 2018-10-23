@@ -62,7 +62,7 @@ void InsectTracker::track(float time, std::vector<track_item> exclude, bool dron
     if (drone_still_active){
         if (exclude.size() == 0) {
             cv::KeyPoint k(DRONE_IM_X_START,DRONE_IM_Y_START,1);
-            tmp.push_back(track_item(k,3,0.5));
+            tmp.push_back(track_item(k,3,0.1));
         } else {
             tmp = exclude;
         }
