@@ -266,34 +266,79 @@ void DroneController::readJoystick(void) {
                     std::cout << "Unkown joystick event: " << std::to_string(event.number) << ". Value: " << std::to_string(event.value) << std::endl;
                     break;
                 }
-        } else if (JOYSTICK_TYPE == 1) {
+            } else if (JOYSTICK_TYPE == 1) {
+		            switch ( event.number ) {
+		            case 0: // roll
+		                joyRoll = 1500 + (event.value >> 6);
+		                break;
+		            case 1: // pitch
+		                joyPitch = 1500 - (event.value >> 6);
+		                break;
+		            case 2: //throttle
+		                joyThrottle = 1500 - (event.value >> 6) -50; //TODO: remove when HK16 is fixed!!!
+		                break;
+		            case 3: //switch
+		                joySwitch = event.value>0; // goes between +/-32768
+		                break;
+		            case 4: //dial
+		                joyDial = event.value; // goes between +/-32768
+		                scaledjoydial = joyDial+32767;
+		                scaledjoydial = (scaledjoydial / 65536)*100+35;
+		                break;
+		            case 5: //yaw
+		                joyYaw = 1500 + (event.value >> 6);
+		                break;
+		            default:
+		                std::cout << "Unkown joystick event: " << std::to_string(event.number) << ". Value: " << std::to_string(event.value) << std::endl;
+		                break;
+		            }
+            } else if (JOYSTICK_TYPE == 2) {
                 switch ( event.number ) {
-                case 0: // roll
+                case 2: // roll
                     joyRoll = 1500 + (event.value >> 6);
+                    std::cout << "roll" << std::endl;
                     break;
-                case 1: // pitch
+                case 3: // pitch
                     joyPitch = 1500 - (event.value >> 6);
+                    std::cout << "pitch" << std::endl;
                     break;
-                case 2: //throttle
-                    joyThrottle = 1500 - (event.value >> 6) -50; //TODO: remove when HK16 is fixed!!!
+                case 1: //throttle
+                    joyThrottle = 1000 - (event.value >> 6);
+                    std::cout << "throttle" << std::endl;
                     break;
-                case 3: //switch
-                    joySwitch = event.value>0; // goes between +/-32768
-                    break;
-                case 4: //dial
-                    joyDial = event.value; // goes between +/-32768
-                    scaledjoydial = joyDial+32767;
-                    scaledjoydial = (scaledjoydial / 65536)*100+35;
-                    break;
-                case 5: //yaw
+                case 0: //yaw
                     joyYaw = 1500 + (event.value >> 6);
+                    std::cout << "yaw" << std::endl;
                     break;
                 default:
                     std::cout << "Unkown joystick event: " << std::to_string(event.number) << ". Value: " << std::to_string(event.value) << std::endl;
                     break;
                 }
             }
-
+        } else if (event.isButton() && JOYSTICK_TYPE == 2) {
+            switch ( event.number ) {
+            case 2: //bind
+                if (event.value>0) {
+                    joySwitch = 1;
+                    joyPitch = 1900;
+                } else {
+                    joySwitch = 0;
+                    joyPitch = 1500;
+                }
+                break;
+            case 9: //auto mode
+                joySwitch = 1;
+                break;
+            case 4: //manual mode
+                joySwitch = 0;
+                break;
+            case 6: //manual mode
+                joySwitch = 0;
+                break;
+            default:
+                std::cout << "Unkown joystick button: " << std::to_string(event.number) << ". Value: " << std::to_string(event.value) << std::endl;
+                break;
+            }
         }
     }
 }
