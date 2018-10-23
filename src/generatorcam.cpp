@@ -2,6 +2,8 @@
 #include <iostream>
 #include <string.h>
 #include <unistd.h>       //usleep
+#include "stopwatch.h"
+stopwatch_c gen_stopw;
 
 #include "opencv2/imgproc.hpp"
 
@@ -19,6 +21,7 @@ bool GeneratorCam::init (int argc __attribute__((unused)), char **argv __attribu
     insect.x = 245;
     insect.y = 0;
 
+    gen_stopw.Start();
     return false;
 }
 
@@ -59,10 +62,17 @@ void GeneratorCam::update() {
     }
     frame_id++;
 
+
+//    while(gen_stopw.Read() < (1.f/VIDEOFPS)*1e3f){
+//        usleep(10);
+//    }
+
     float delay = VIDEOFPS;
     delay = 1/delay;
     delay *=1e6f;
     usleep(delay);
+
+    gen_stopw.Restart();
 }
 
 void GeneratorCam::generateStereo() {
