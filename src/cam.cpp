@@ -45,6 +45,7 @@ void Cam::init(int argc, char **argv) {
     if (argc ==2 ) {
         pd = selection.get_device();
         ((rs2::playback)pd).set_real_time(true);
+        ((rs2::playback)pd).set_playback_speed(1.0);
     } else {
         rs2::device selected_device = selection.get_device();
         auto depth_sensor = selected_device.first<rs2::depth_sensor>();
