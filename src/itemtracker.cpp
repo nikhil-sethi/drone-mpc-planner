@@ -111,6 +111,9 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     find_result.smoothed_disparity = 0;
     find_result.disparity = 0;
 
+    sub_disparity = 0;
+    disparity_smoothed = 0;
+
     (*_logger) << "imLx_" << _name << "; ";
     (*_logger) << "imLy_" << _name << "; ";
     (*_logger) << "disparity_" << _name << "; ";
@@ -250,14 +253,14 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
         cv::Point3f previous_location(find_result.best_image_locationL .pt.x,find_result.best_image_locationL .pt.y,0);
 
         Point3f output;
-        int disparity;
+        float disparity;
         cv::KeyPoint match;
 
         while (keypoint_candidates.size() > 0) {
             int match_id = match_closest_to_prediciton(previous_location,find_result.keypointsL_wihout_voids);
             match = find_result.keypointsL_wihout_voids.at(match_id).k;
 
-            disparity = stereo_match(match,frameL_prev_OK,frameR_prev_OK,_visdat->frameL,_visdat->frameR,find_result.smoothed_disparity);
+            disparity = stereo_match(match,frameL_prev_OK,frameR_prev_OK,_visdat->frameL,_visdat->frameR,dt_predict);
 
             //calculate everything for the itemcontroller:
             std::vector<Point3f> camera_coordinates, world_coordinates;
@@ -292,8 +295,10 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
                 n_frames_tracking = 0;
         } else {
             //Point3f predicted_output = world_coordinates[1];
-            update_prediction_state(cv::Point3f(match.pt.x,match.pt.y,disparity));
+            check_consistency(cv::Point3f(this->prevX,this->prevY,this->prevZ),output);
+            disparity = update_disparity(disparity, n_frames_lost,dt_tracking);
             update_tracker_ouput(output,dt_tracking,match,disparity,_visdat->frame_id);
+            update_prediction_state(cv::Point3f(match.pt.x,match.pt.y,disparity));
             n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
             t_prev_tracking = time; // update dt only if item was detected
             n_frames_tracking++;
@@ -617,7 +622,7 @@ int ItemTracker::match_closest_to_prediciton(cv::Point3f predicted_locationL, st
     return closestL;
 }
 
-int ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::Mat prevFrameR_big, cv::Mat frameL,cv::Mat frameR,int prevDisparity){
+float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::Mat prevFrameR_big, cv::Mat frameL,cv::Mat frameR,float dt){
 
     //get retangle around blob / changed pixels
     float rectsize = closestL.size+1;
@@ -656,7 +661,7 @@ int ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::M
     float minerr = std::numeric_limits<float>::max();
     int tmp_max_disp = settings.max_disparity;
     if (x1 - tmp_max_disp < 0)
-        tmp_max_disp = x1;
+        tmp_max_disp = x1;    
     for (int i=settings.min_disparity; i<tmp_max_disp;i++) {
         cv::Rect roiR(x1-i,y1,x2,y2);
 
@@ -670,30 +675,104 @@ int ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::M
         cv::Mat corV_16 = diff_L_roi_16.mul(diff_R_roi_16);
         cv::Mat errV = abs(diff_L_roi - diff_R_roi);
 
-        int cor_16 = cv::sum(corV_16 )[0]/256;
-        int err = cv::sum(errV)[0];
+        cor_16[i] = cv::sum(corV_16 )[0]/256;
+        err[i] = cv::sum(errV)[0];
 
-        if (cor_16 > maxcor ) {
+        if (cor_16[i] > maxcor ) {
             disparity_cor  = i;
-            maxcor = cor_16;
+            maxcor = cor_16[i];
         }
-        if (err < minerr ) { //update min MSE
+        if (err[i] < minerr ) { //update min MSE
             disparity_err  = i;
-            minerr = err;
+            minerr = err[i];
         } // for shift
 
     }
-    int disparity;
-    if (disparity_cor != disparity_err) {
-        if (abs(prevDisparity - disparity_cor) > abs(prevDisparity - disparity_err))
-            disparity = disparity_err;
-        else
-            disparity = disparity_cor;
-    } else
-        disparity = disparity_cor;
+    int disparity = disparity_err;
 
-    return disparity;
+    // measured disparity value
+
+    if (disparity>0)
+        sub_disparity = estimate_sub_disparity(disparity);
+    else
+        sub_disparity = 0;
+
+    return sub_disparity;
 }
+
+float ItemTracker::estimate_sub_disparity(int disparity) {
+
+    float sub_disparity;
+
+    // matching costs of neighbors
+    float y1 = err[disparity-1];
+    float y2 = err[disparity];
+    float y3 = err[disparity+1];
+
+    // by assuming a hyperbola shape, the x-location of the hyperbola minimum is determined and used as best guess
+    float h31 = (y3 - y1);
+    float h21 = (y2 - y1) * 4;
+    sub_disparity = ((h21 - h31)) / (h21 - h31 * 2);
+    sub_disparity += sinf(sub_disparity*2.0f*(float)M_PI)*0.13;
+    sub_disparity += (disparity-1);
+
+    if (sub_disparity<disparity-1 || sub_disparity>disparity+1)
+        return disparity;
+
+    return sub_disparity;
+}
+
+float ItemTracker::update_disparity(float disparity, int n_frames_lost, float dt) {
+
+    if (n_frames_lost>0 || isnan(disparity_smoothed) || reset_filters || reset_disp)
+    {
+        disparity_smoothed = disparity;
+        disp_rate_smoothed2.reset();
+        reset_disp = false;
+
+    } else {
+
+        cout << "\t\t\t\t\t\t\t\t sub_disparity: " << disparity << endl;
+        cout << "\t\t\t\t\t\t\t\t sub_disparity_smoothed: " << disparity_smoothed << endl;
+
+        // predicted disparity value
+        float disp_predict = disparity_smoothed + disp_rate*dt;
+
+        float disp_filt_rate;
+        float disp_filt_pred;
+        if (abs(disparity-disp_predict)<0.5f) {
+            disp_filt_rate = 0.4;
+            disparity_smoothed = disparity*disp_filt_rate + disparity_smoothed*(1.0f-disp_filt_rate);
+        }
+        else if (abs(disparity-disp_predict)<1.0f) {
+            disp_filt_rate = 0.4;
+            disp_filt_pred = 0.1;
+            disparity_smoothed = disparity*disp_filt_pred + disp_predict*(disp_filt_rate-disp_filt_pred) + disparity_smoothed*(1.0f-disp_filt_rate);
+        }
+        else {
+            disp_filt_rate = 0.4;
+            disp_filt_pred = 0.01;
+            disparity_smoothed = disparity*disp_filt_pred + disp_predict*(disp_filt_rate-disp_filt_pred) + disparity_smoothed*(1.0f-disp_filt_rate);
+
+            if (abs(disparity-disp_prev)<1.0f)
+                reset_disp = true;
+        }
+
+        disp_rate = disp_rate_smoothed2.addSample(disparity_smoothed,dt);
+        disp_prev = disparity;
+    }
+
+    return disparity_smoothed;
+}
+
+void ItemTracker::check_consistency(cv::Point3f prevLoc,cv::Point3f measLoc) {
+
+    float abs_dist = (prevLoc.x-measLoc.x)*(prevLoc.x-measLoc.x) + (prevLoc.y-measLoc.y)*(prevLoc.y-measLoc.y) + (prevLoc.z-measLoc.z)*(prevLoc.z-measLoc.z);
+
+    if (abs_dist > 0.15f)
+        reset_filters = true;
+}
+
 
 void ItemTracker::update_prediction_state(cv::Point3f p) {
     cv::Mat measL(measSize, 1, type);
@@ -725,7 +804,7 @@ void ItemTracker::update_prediction_state(cv::Point3f p) {
         kfL.correct(measL);
 }
 
-void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  cv::KeyPoint match, int disparity, int frame_id) {
+void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  cv::KeyPoint match, float disparity, int frame_id) {
 
     find_result.best_image_locationL = match;
     find_result.disparity = disparity;
@@ -756,14 +835,7 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
         reset_filters = false;
     }
 
-    float sdisparity = disp_smoothed.addSample(find_result.disparity);
 
-    if (fabs((float)abs(find_result.disparity) - fabs(find_result.smoothed_disparity)) > 3) {
-        //do better matching?
-        //std::cout << find_result.disparity << "-> BAM <-" << find__result.smoothed_disparity << std::endl;
-        //find_result.update_prev_frames = false;
-    }
-    find_result.smoothed_disparity = sdisparity;
 
     data.sposX = smoother_posX.addSample(data.posX);;
     data.sposY = smoother_posY.addSample(data.posY);;
