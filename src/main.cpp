@@ -181,8 +181,15 @@ void process_video() {
 
         std::cout << "Frame: " <<imgcount << ", " << cam.get_frame_id() << ". FPS: " << imgcount / (time-break_time ) << ". Time: " << time-break_time  << ", dt " << dt << " FPS now: " << fps << std::endl;
 
-        if (fps < 50)
+        if (fps < 50) {
             std::cout << "FPS WARNING!" << std::endl;
+            static float limit_fps_warning_sound = t;
+            if (t - limit_fps_warning_sound > 3.f ) {
+                alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/phone-incoming-call.ogg &");
+                limit_fps_warning_sound = t;
+            }
+
+        }
         imgcount++;
         prev_time = t;
 
