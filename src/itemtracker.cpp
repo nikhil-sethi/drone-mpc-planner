@@ -96,11 +96,21 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     smoother_posX.init(smooth_width_pos);
     smoother_posY.init(smooth_width_pos);
     smoother_posZ.init(smooth_width_pos);
+
+    disp_rate_smoothed2.init(6,0.4);
     disp_smoothed.init(smooth_width_pos);
+
+    smoother_velX2.init(6,0.4);
+    smoother_velY2.init(6,0.4);
+    smoother_velZ2.init(6,0.4);
 
     smoother_velX.init(smooth_width_vel);
     smoother_velY.init(smooth_width_vel);
     smoother_velZ.init(smooth_width_vel);
+
+    smoother_accX2.init(6,0.4);
+    smoother_accY2.init(6,0.4);
+    smoother_accZ2.init(6,0.4);
 
     smoother_accX.init(smooth_width_acc);
     smoother_accY.init(smooth_width_acc);
@@ -213,9 +223,9 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes_improved(std::
                     certainty_prediction = 0.1f;
                 }
 
-                check1 = (dis1 < dis3 && dis1 < threshold_dis);
-                check2 = fabs(dis1-dis3) < 2.0f && dis3 < 2.0f;
-                check3 = dis3 > (settings.exclude_min_distance / sqrtf(certainty_prediction));
+                check1 = (dis1 < dis3 && dis1 < threshold_dis); // if keypoint is nearer to and close to other item
+                check2 = fabs(dis1-dis3) < 2.0f && dis3 < 2.0f; // ignore zone
+                check3 = dis3 > (settings.exclude_min_distance / sqrtf(certainty_prediction)); // if keypoint is too far away
                 if ( check1 || check2 || check3 ) {
                     keypoints.erase(keypoints.begin() + i - erase_cnt);
                     erase_cnt++;
@@ -331,10 +341,11 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
         }
     }
 
-    (*_logger) << find_result.best_image_locationL.pt.x *IMSCALEF << "; " << find_result.best_image_locationL.pt.y *IMSCALEF << "; " << find_result.disparity << "; " << get_last_track_data().posX << "; " << get_last_track_data().posY << "; " << get_last_track_data().posZ << ";" ;
+    (*_logger) << find_result.best_image_locationL.pt.x *IMSCALEF << "; " << sub_disparity << "; " << find_result.disparity << "; " << get_last_track_data().posX << "; " << get_last_track_data().posY << "; " << get_last_track_data().posZ << ";" ;
     (*_logger) << get_last_track_data().sposX << "; " << get_last_track_data().sposY << "; " << get_last_track_data().sposZ << ";";
-    (*_logger) << get_last_track_data().velX << "; " << get_last_track_data().velY << "; " << get_last_track_data().velZ << ";";
-    (*_logger) << get_last_track_data().accX << "; " << get_last_track_data().accY << "; " << get_last_track_data().accZ << ";";
+    (*_logger) << get_last_track_data().svelX << "; " << get_last_track_data().svelY << "; " << get_last_track_data().svelZ << ";";
+    (*_logger) << get_last_track_data().saccX << "; " << get_last_track_data().saccY << "; " << get_last_track_data().saccZ << ";";
+
 }
 
 void ItemTracker::updateParams(){
@@ -820,70 +831,57 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
     data.posZ = measured_world_coordinates.z;
 
     if (n_frames_lost >= smooth_width_vel || reset_filters) { // tracking was regained, after n_frames_lost frames
+        disp_rate_smoothed2.reset();
         disp_smoothed.reset();
         smoother_posX.reset();
         smoother_posY.reset();
         smoother_posZ.reset();
+        smoother_velX2.reset();
+        smoother_velY2.reset();
+        smoother_velZ2.reset();
         smoother_velX.reset();
         smoother_velY.reset();
         smoother_velZ.reset();
+        smoother_accX2.reset();
+        smoother_accY2.reset();
+        smoother_accZ2.reset();
         smoother_accX.reset();
         smoother_accY.reset();
         smoother_accZ.reset();
 
         detected_after_take_off = 0;
-        reset_filters = false;
     }
 
+    // Position estimation
 
+    // smooth position data with simple filter
 
-    data.sposX = smoother_posX.addSample(data.posX);;
-    data.sposY = smoother_posY.addSample(data.posY);;
-    data.sposZ = smoother_posZ.addSample(data.posZ);;
+    if (reset_filters) {
+        posX_smoothed = data.posX;
+        posY_smoothed = data.posY;
+        posZ_smoothed = data.posZ;
 
-    float tsvelX = 0;
-    float tsvelY = 0;
-    float tsvelZ = 0;
-    if (detected_after_take_off > smooth_width_pos) {
-        data.dx = data.sposX - prevX;
-        data.dy = data.sposY - prevY;
-        data.dz = data.sposZ - prevZ;
-        data.velX = data.dx / dt;
-        data.velY = data.dy / dt;
-        data.velZ = data.dz / dt;
-        tsvelX = smoother_velX.addSample(data.velX);
-        tsvelY = smoother_velY.addSample(data.velY);
-        tsvelZ = smoother_velZ.addSample(data.velZ);
-    } else { // should be done earlier???
-        data.dx = 0;
-        data.dy = 0;
-        data.dz = 0;
-        data.velX = 0;
-        data.velY = 0;
-        data.velZ = 0;
-    }
-    float tsaccX = 0;
-    float tsaccY = 0;
-    float tsaccZ = 0;
-    if (detected_after_take_off > smooth_width_pos+smooth_width_vel) {
-        data.accX = tsvelX / dt;
-        data.accY = tsvelY / dt;
-        data.accZ = tsvelZ / dt;
-        tsaccX = smoother_accX.addSample(data.accX);
-        tsaccY = smoother_accY.addSample(data.accY);
-        tsaccZ = smoother_accZ.addSample(data.accZ);
     } else {
-        data.accX = 0;
-        data.accY = 0;
-        data.accZ = 0;
-    }
+        float pos_filt_rate = 0.3;
+        posX_smoothed = data.posX*pos_filt_rate + posX_smoothed*(1.0f-pos_filt_rate);
+        posY_smoothed = data.posY*pos_filt_rate + posY_smoothed*(1.0f-pos_filt_rate);
+        posZ_smoothed = data.posZ*pos_filt_rate + posZ_smoothed*(1.0f-pos_filt_rate);
 
-    data.svelX = tsvelX;
-    data.svelY = tsvelY;
-    data.svelZ = tsvelZ;
-    data.saccX = tsaccX;
-    data.saccY = tsaccY;
-    data.saccZ = tsaccZ;
+    }
+\
+
+    data.sposX = posX_smoothed;
+    data.sposY = posY_smoothed;
+    data.sposZ = posZ_smoothed;
+
+    data.svelX = smoother_velX2.addSample(posX_smoothed,dt);
+    data.svelY = smoother_velY2.addSample(posY_smoothed,dt);
+    data.svelZ = smoother_velZ2.addSample(posZ_smoothed,dt);
+
+    data.saccX = smoother_accX2.addSample(data.svelX,dt);
+    data.saccY = smoother_accY2.addSample(data.svelY,dt);
+    data.saccZ = smoother_accZ2.addSample(data.svelZ,dt);
+
 
     prevX = data.sposX;
     prevY = data.sposY;
@@ -892,6 +890,8 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
     data.valid = true;
     data.dt = dt;
     detected_after_take_off++;
+
+    reset_filters = false;
 
     track_history.push_back(data);
 }

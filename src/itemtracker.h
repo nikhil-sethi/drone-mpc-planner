@@ -6,8 +6,9 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/video/video.hpp>
-
+#include "smoother2.h"
 #include "smoother.h"
+
 #include "common.h"
 #include "visiondata.h"
 
@@ -149,12 +150,15 @@ private:
 
     float prevX,prevY,prevZ =0;
     Smoother smoother_posX, smoother_posY, smoother_posZ;
+    Smoother2 smoother_velX2,smoother_velY2,smoother_velZ2;
     Smoother smoother_velX, smoother_velY, smoother_velZ;
+    Smoother2 smoother_accX2,smoother_accY2,smoother_accZ2;
     Smoother smoother_accX, smoother_accY, smoother_accZ;
     const int smooth_width_vel = 10;
     const int smooth_width_pos = 10;
     const int smooth_width_acc = 45;
     Smoother disp_smoothed;
+    Smoother2 disp_rate_smoothed2;
     bool reset_filters;
     bool reset_disp = false;
 
@@ -203,7 +207,12 @@ public:
 
     float sub_disparity;
     float disparity_smoothed;
+    float disp_rate;
+    float disp_prev;
 
+    float posX_smoothed = 0;
+    float posY_smoothed = 0;
+    float posZ_smoothed = 0;
 
     bool breakpause;
 };
