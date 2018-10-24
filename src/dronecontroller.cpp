@@ -261,7 +261,7 @@ void DroneController::control(trackData data,cv::Point3f setpoint_world, cv::Poi
     //if (posErr < rangeParam && targetSpeed > 0)
         posErrY = posErrY/(1+(abs(velErrY)*(params.v_vs_pos_control_gain/100.f)));
     //else
-        //posErrY /= 4; //*= (30.0/params.throttleP);
+        //posErrY /= 4; //= (30.0/params.throttleP);
         */
 
 
@@ -317,7 +317,7 @@ void DroneController::control(trackData data,cv::Point3f setpoint_world, cv::Poi
     } else if (autoLandThrottleDecrease > 0 ) {
         hoverthrottle -= autoLandThrottleDecrease;
         autoThrottle =hoverthrottle ;
-    } else { TODO: check why + 100 ....
+    } else { //TODO: check why + 100 ....
         if (true || posErrY<0) {
             autoThrottle =  hoverthrottle + 100 - (velErrY * params.vref_max + throttleErrI * params.throttleI*beforeTakeOffFactor);
         } else {
