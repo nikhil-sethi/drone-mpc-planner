@@ -204,6 +204,8 @@ void DroneController::control(trackData data,cv::Point3f setpoint_world, cv::Poi
     std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t\t posErrZ: " << posErrZ << " pitchErrI: " << pitchErrI  << std::endl;
 */
     /*
+    // Roll Control - X
+
     velx_sp = posErrX*params.vref_gain/1000.f;
     if (velx_sp > params.vref_max/1000.f)
         velx_sp = params.vref_max/1000.f;
@@ -224,6 +226,32 @@ void DroneController::control(trackData data,cv::Point3f setpoint_world, cv::Poi
     velErrX = accErrX;
     posErrX = 0;
 
+
+    // Altitude Control - Y
+
+    if (true || posErrY<0) {
+        vely_sp = posErrY*params.vref_gain/1000.f;
+        velErrY = data.svelY + vely_sp;
+        float accy_sp = velErrY*params.pitchD/100; // desired accelleration
+        float accErrY = data.saccY + accy_sp;
+
+        velErrY = accErrY;
+
+    } else {
+
+        vely_sp = posErrY*1300/1000.f;
+        if (vely_sp > 1000/1000.f)
+            vely_sp = 1000/1000.f;
+        if (vely_sp < -1000/1000.f)
+            vely_sp = -1000/1000.f;
+        velErrY = data.svelY + vely_sp;
+        //if (posErr < rangeParam && targetSpeed > 0)
+            posErrY = posErrY/(1+(abs(velErrY)*(params.v_vs_pos_control_gain/100.f)));
+        //else
+            //posErrY /= 4; //*= (30.0/params.throttleP);
+    }
+
+/*
     vely_sp = posErrY*params.vref_gain/1000.f;
     if (vely_sp > params.vref_max/1000.f)
         vely_sp = params.vref_max/1000.f;
@@ -234,8 +262,11 @@ void DroneController::control(trackData data,cv::Point3f setpoint_world, cv::Poi
         posErrY = posErrY/(1+(abs(velErrY)*(params.v_vs_pos_control_gain/100.f)));
     //else
         //posErrY /= 4; //*= (30.0/params.throttleP);
+        */
+
 
         /*
+    // Pitch Control - Z
     velz_sp = posErrZ*params.vref_gain/1000.f;
     if (velz_sp > params.vref_max/1000.f)
         velz_sp = params.vref_max/1000.f;
@@ -286,13 +317,19 @@ void DroneController::control(trackData data,cv::Point3f setpoint_world, cv::Poi
     } else if (autoLandThrottleDecrease > 0 ) {
         hoverthrottle -= autoLandThrottleDecrease;
         autoThrottle =hoverthrottle ;
-    } else { //TODO: check +100...?
-        autoThrottle =  hoverthrottle + 100 - (posErrY * params.throttleP + velErrY * params.throttleD + throttleErrI * params.throttleI*beforeTakeOffFactor);
+    } else { TODO: check why + 100 ....
+        if (true || posErrY<0) {
+            autoThrottle =  hoverthrottle + 100 - (velErrY * params.vref_max + throttleErrI * params.throttleI*beforeTakeOffFactor);
+        } else {
+            autoThrottle =  hoverthrottle + 100 - (posErrY * params.throttleP + velErrY * params.throttleD + throttleErrI * params.throttleI*beforeTakeOffFactor);
+
+        }
         if (autoThrottle < 1300)
             autoThrottle = 1300;
     }
     autoRoll = 1500 + (velErrX * params.rollD +  params.rollI*rollErrI);
-    autoPitch =1500 + (velErrZ * params.pitchD +  params.pitchI*pitchErrI);
+    //autoPitch =1500 + (posErrZ * params.pitchP + velErrZ * params.pitchD +  params.pitchI*pitchErrI);
+    autoPitch =1500 + (velErrZ * params.rollD +  params.pitchI*pitchErrI);
 
     //TODO: Yaw    
     if (autoPitch > 1950) {
