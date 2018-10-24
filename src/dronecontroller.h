@@ -68,6 +68,7 @@ private:
     float beforeTakeOffFactor = 1.0f;
 
     #define INITIALTHROTTLE 1050
+    const int take_off_throttle_boost = 100;
 
     bool autoTakeOff = false;
     bool autoLand = false;

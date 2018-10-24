@@ -317,18 +317,12 @@ void DroneController::control(trackData data,cv::Point3f setpoint_world, cv::Poi
     } else if (autoLandThrottleDecrease > 0 ) {
         hoverthrottle -= autoLandThrottleDecrease;
         autoThrottle =hoverthrottle ;
-    } else { //TODO: check why + 100 ....
-        if (true || posErrY<0) {
+    } else {
             autoThrottle =  hoverthrottle + 100 - (velErrY * params.vref_max + throttleErrI * params.throttleI*beforeTakeOffFactor);
-        } else {
-            autoThrottle =  hoverthrottle + 100 - (posErrY * params.throttleP + velErrY * params.throttleD + throttleErrI * params.throttleI*beforeTakeOffFactor);
-
-        }
         if (autoThrottle < 1300)
             autoThrottle = 1300;
     }
     autoRoll = 1500 + (velErrX * params.rollD +  params.rollI*rollErrI);
-    //autoPitch =1500 + (posErrZ * params.pitchP + velErrZ * params.pitchD +  params.pitchI*pitchErrI);
     autoPitch =1500 + (velErrZ * params.rollD +  params.pitchI*pitchErrI);
 
     //TODO: Yaw    
