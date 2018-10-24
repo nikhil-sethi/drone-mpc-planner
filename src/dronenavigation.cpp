@@ -34,12 +34,14 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
 
     // large scale flight plan
     //setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,SETPOINTYMAX / 2,1000),40)); // this is overwritten by position trackbars!!!
-    setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,1,1000),10)); // this is overwritten by position trackbars!!!
+    setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,1,1000),15)); // this is overwritten by position trackbars!!!
 
-    setpoints.push_back(waypoint(cv::Point3i(1500,0,1500),0));
+    setpoints.push_back(waypoint(cv::Point3i(1500,300,1500),0));
+    setpoints.push_back(waypoint(cv::Point3i(1500,-200,1500),0));
 
-    setpoints.push_back(waypoint(cv::Point3i(1000,-125,1500),0));
-    setpoints.push_back(waypoint(cv::Point3i(2000,-125,1500),0));
+
+    //setpoints.push_back(waypoint(cv::Point3i(1000,-125,1500),0));
+    //setpoints.push_back(waypoint(cv::Point3i(2000,-125,1500),0));
 
 
 

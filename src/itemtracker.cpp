@@ -699,6 +699,8 @@ float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv:
         } // for shift
 
     }
+
+    // TODO: check if disparity_err OR disparity_cor is a better choice, or a mix
     int disparity = disparity_err;
 
     // measured disparity value

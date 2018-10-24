@@ -99,7 +99,7 @@ void DroneController::control(trackData data,cv::Point3f setpoint_world, cv::Poi
 
         if (!convergedTarget) {
 
-            timeToTarget = 1.5;
+            timeToTarget = 1.0;
             convergedTarget = true;
 
         }
