@@ -459,10 +459,10 @@ void DroneController::readJoystick(void) {
 		                joyRoll = 1500 + (event.value >> 6);
 		                break;
 		            case 1: // pitch
-		                joyPitch = 1500 - (event.value >> 6);
+                        joyPitch = 1500 + (event.value >> 5);
 		                break;
 		            case 2: //throttle
-		                joyThrottle = 1500 - (event.value >> 6) -50; //TODO: remove when HK16 is fixed!!!
+                        joyThrottle = 1500 - (event.value >> 5) -50; //TODO: remove when HK16 is fixed!!!
 		                break;
 		            case 3: //switch
 		                joySwitch = event.value>0; // goes between +/-32768
@@ -572,7 +572,7 @@ void DroneController::process_joystick() {
    joyPitch = 1500;
 #endif
 
-    if (autoControl && joyPitch < 1100) {
+    if (autoControl && joyPitch < 1150) {
         autoLand=true;
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/desktop-logout.ogg &");
     }

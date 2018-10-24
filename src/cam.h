@@ -59,7 +59,7 @@ private:
     int frame_id;
     float frame_time;
     rs2::pipeline_profile selection;
-    int exposure = 16000; //84*(31250/256); // >11000 -> 60fps, >16500 -> 30fps, < 20 = crash
+    int exposure = 15500; //84*(31250/256); // >11000 -> 60fps, >15500 -> 30fps, < 20 = crash
     int gain = 0;
     bool fromfile;
     bool ready;
