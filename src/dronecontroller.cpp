@@ -462,7 +462,7 @@ void DroneController::readJoystick(void) {
                         joyPitch = 1500 + (event.value >> 5);
 		                break;
 		            case 2: //throttle
-                        joyThrottle = 1500 - (event.value >> 5) -50; //TODO: remove when HK16 is fixed!!!
+                        joyThrottle = 1500 - (event.value >> 5);
 		                break;
 		            case 3: //switch
 		                joySwitch = event.value>0; // goes between +/-32768
