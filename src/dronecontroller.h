@@ -51,12 +51,12 @@ private:
 
         int vref_gain = 1400;
         int vref_max = 2000;
-        int v_vs_pos_control_gain = 100;
+        int v_vs_pos_control_gain = 0;
 
         template <class Archive>
         void serialize( Archive & ar )
         {
-            ar( throttleP,throttleI,throttleD,rollP,rollI,rollD,pitchP,pitchI,pitchD,yawP,yawI,yawD,autoTakeoffFactor,auto_takeoff_speed,hoverOffset);
+            ar( throttleP,throttleI,throttleD,rollP,rollI,rollD,pitchP,pitchI,pitchD,yawP,yawI,yawD,autoTakeoffFactor,auto_takeoff_speed,hoverOffset,vref_gain,vref_max);
         }
 
     };
@@ -72,6 +72,10 @@ private:
     bool autoTakeOff = false;
     bool autoLand = false;
     bool autoControl = false;
+
+    cv::Point3f predictTarget;
+    bool convergedTarget;
+    double timeToTarget;
 
     bool _fromfile;
 
@@ -102,13 +106,14 @@ public:
     int joyPitch = 0;
     int joyYaw = 0;
 
-    bool landed;
+    bool landed,rangeAlert;
     float posErrX,posErrY,posErrZ;
     float velErrX,velErrY,velErrZ;
+    float velx_sp,vely_sp,velz_sp;
 
     void close (void);
     void init(std::ofstream *logger, bool fromfile, Arduino * arduino);
-    void control(trackData data, cv::Point3f setpoint_world);
+    void control(trackData data, cv::Point3f setpoint_world,cv::Point3f setspeed_world);
     bool getAutoControl() {return autoControl;}
     bool getDroneIsActive() {return (autoControl && autoThrottle > INITIALTHROTTLE) || (!autoControl && joyThrottle > INITIALTHROTTLE);}
     bool getAutoTakeOff() {return autoTakeOff;}

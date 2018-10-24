@@ -144,7 +144,7 @@ void process_video() {
 #endif
 
         dnav.update();
-        dctrl.control(dtrkr.get_last_track_data(),dnav.setpoint_world);
+        dctrl.control(dtrkr.get_last_track_data(),dnav.setpoint_world,dnav.setspeed_world);
 
 #ifdef HASSCREEN
         if (fromfile) {
@@ -261,7 +261,7 @@ int init(int argc, char **argv) {
     //WARNING: changing the order of the inits with logging must be match with the process_video functions!    
     dtrkr.init(&logger,&visdat);
     itrkr.init(&logger,&visdat);
-    dnav.init(&logger,&dtrkr,&dctrl);
+    dnav.init(&logger,&dtrkr,&dctrl,&itrkr);
     dctrl.init(&logger,fromfile,&arduino);
 
 #if CAMMODE == CAMMODE_REALSENSE

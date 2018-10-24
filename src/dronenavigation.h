@@ -5,6 +5,7 @@
 #include "common.h"
 #include "dronetracker.h"
 #include "dronecontroller.h"
+#include "insecttracker.h"
 
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/memory.hpp>
@@ -62,16 +63,18 @@ private:
     std::ofstream *_logger;
     DroneTracker * _dtrk;
     DroneController * _dctrl;
+    InsectTracker * _itrkr;
 
     navigationParameters params;
 public:
 
     cv::Point3d setpoint;
     cv::Point3f setpoint_world;
+    cv::Point3f setspeed_world;
     int distance_threshold_mm;
 
     void close (void);
-    bool init(std::ofstream *logger, DroneTracker *dtrk, DroneController *dctrl);
+    bool init(std::ofstream *logger, DroneTracker *dtrk, DroneController *dctrl, InsectTracker *itrkr);
     void update();
 
 };

@@ -10,10 +10,11 @@ using namespace std;
 
 const string paramsFile = "../navigationParameters.dat";
 
-bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneController * dctrl) {
+bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneController * dctrl, InsectTracker * itrkr) {
     _logger = logger;
     _dtrk = dtrk;
     _dctrl = dctrl;
+    _itrkr = itrkr;
 
     // Load saved control paremeters
     if (checkFileExist(paramsFile)) {
@@ -138,6 +139,35 @@ void DroneNavigation::update() {
     setpoint_world.y = (wp->_xyz.y - SETPOINTYMAX/2) / 1000.0f;
     setpoint_world.z = -(wp->_xyz.z) / 1000.0f;
     distance_threshold_mm = wp->_distance_threshold_mm;
+
+    setspeed_world.x = 0;
+    setspeed_world.y = 0;
+    setspeed_world.z = 0;
+
+    if (wpid == 1) {
+        if (_itrkr->get_last_track_data().sposY > -2.0 && _itrkr->get_last_track_data().sposY < -0.5) {
+
+
+
+            if (_itrkr->get_last_track_data().sposX > -1.5 && _itrkr->get_last_track_data().sposX < 1.5) {
+                if (_itrkr->get_last_track_data().sposZ > -2.5 && _itrkr->get_last_track_data().sposZ < -1.0) {
+
+                    setspeed_world.x = _itrkr->get_last_track_data().svelX;
+                    setspeed_world.y = _itrkr->get_last_track_data().svelY;
+                    setspeed_world.z = _itrkr->get_last_track_data().svelZ;
+
+                    if (norm(setspeed_world)>0.01)
+                    {
+                        setpoint_world.x = _itrkr->get_last_track_data().sposX;
+                        setpoint_world.y = _itrkr->get_last_track_data().sposY;
+                        setpoint_world.z = _itrkr->get_last_track_data().sposZ;
+                    }
+
+                }
+
+            }
+        }
+    }
 
     if (_dctrl->getAutoLand()) {
         if ( setpoint_world.y - land_incr> -(_dtrk->drone_max_border_y+100000.0f))
