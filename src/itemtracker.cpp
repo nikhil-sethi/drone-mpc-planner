@@ -271,7 +271,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
             int match_id = match_closest_to_prediciton(previous_location,find_result.keypointsL_wihout_voids);
             match = find_result.keypointsL_wihout_voids.at(match_id).k;
 
-            disparity = stereo_match(match,frameL_prev_OK,frameR_prev_OK,_visdat->frameL,_visdat->frameR,dt_predict);
+            disparity = stereo_match(match,frameL_prev_OK,frameR_prev_OK,_visdat->frameL,_visdat->frameR);
 
             //calculate everything for the itemcontroller:
             std::vector<Point3f> camera_coordinates, world_coordinates;
@@ -294,7 +294,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
         if (keypoint_candidates.size() > 0) { // if !lost
             //Point3f predicted_output = world_coordinates[1];
             check_consistency(cv::Point3f(this->prevX,this->prevY,this->prevZ),output);
-            disparity = update_disparity(disparity, n_frames_lost,dt_tracking);
+            disparity = update_disparity(disparity, dt_tracking);
             update_tracker_ouput(output,dt_tracking,match,disparity,_visdat->frame_id);
             update_prediction_state(cv::Point3f(match.pt.x,match.pt.y,disparity));
             n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
@@ -636,7 +636,7 @@ int ItemTracker::match_closest_to_prediciton(cv::Point3f predicted_locationL, st
     return closestL;
 }
 
-float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::Mat prevFrameR_big, cv::Mat frameL,cv::Mat frameR,float dt){
+float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::Mat prevFrameR_big, cv::Mat frameL,cv::Mat frameR){
 
     //get retangle around blob / changed pixels
     float rectsize = closestL.size+1;
@@ -670,7 +670,7 @@ float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv:
     diff_L_roi.convertTo(diff_L_roi_16, CV_16UC1);
 
     //shift over the image to find the best match, shift = disparity
-    int disparity_cor = 0,disparity_err = 0;
+    int disparity_err = 0;
     float maxcor = -std::numeric_limits<float>::max();
     float minerr = std::numeric_limits<float>::max();
     int tmp_max_disp = settings.max_disparity;
@@ -692,8 +692,7 @@ float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv:
         cor_16[i] = cv::sum(corV_16 )[0]/256;
         err[i] = cv::sum(errV)[0];
 
-        if (cor_16[i] > maxcor ) {
-            disparity_cor  = i;
+        if (cor_16[i] > maxcor ) {            
             maxcor = cor_16[i];
         }
         if (err[i] < minerr ) { //update min MSE
@@ -718,7 +717,7 @@ float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv:
 
 float ItemTracker::estimate_sub_disparity(int disparity) {
 
-    float sub_disparity;
+    float sub_disp;
 
     // matching costs of neighbors
     float y1 = err[disparity-1];
@@ -728,17 +727,17 @@ float ItemTracker::estimate_sub_disparity(int disparity) {
     // by assuming a hyperbola shape, the x-location of the hyperbola minimum is determined and used as best guess
     float h31 = (y3 - y1);
     float h21 = (y2 - y1) * 4;
-    sub_disparity = ((h21 - h31)) / (h21 - h31 * 2);
-    sub_disparity += sinf(sub_disparity*2.0f*(float)M_PI)*0.13;
-    sub_disparity += (disparity-1);
+    sub_disp = ((h21 - h31)) / (h21 - h31 * 2);
+    sub_disp += sinf(sub_disp*2.0f*(float)M_PI)*0.13f;
+    sub_disp += (disparity-1);
 
-    if (sub_disparity<disparity-1 || sub_disparity>disparity+1)
+    if (sub_disp<disparity-1 || sub_disp>disparity+1)
         return disparity;
 
-    return sub_disparity;
+    return sub_disp;
 }
 
-float ItemTracker::update_disparity(float disparity, int n_frames_lost, float dt) {
+float ItemTracker::update_disparity(float disparity, float dt) {
 
     if (n_frames_lost>0 || isnan(disparity_smoothed) || reset_filters || reset_disp)
     {

@@ -81,9 +81,7 @@ void DroneController::control(trackData data,cv::Point3f setpoint_world, cv::Poi
     process_joystick();
 
     //cv::Point3f predictTarget = {0,0,0};
-    double posErr,rangeParam,targetSpeed,posErrHor,prevTimeToTarget = 0;
-    prevTimeToTarget = 1000;
-
+    double posErr,rangeParam,targetSpeed;
 
     //targetSpeed = sqrt(setspeed_world.x*setspeed_world.x + setspeed_world.y*setspeed_world.y + setspeed_world.z*setspeed_world.z);
     rangeParam = 0.4;

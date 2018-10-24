@@ -147,12 +147,12 @@ void DroneNavigation::update() {
     setspeed_world.z = 0;
 
     if (wpid == 1) {
-        if (_itrkr->get_last_track_data().sposY > -2.0 && _itrkr->get_last_track_data().sposY < -0.5) {
+        if (_itrkr->get_last_track_data().sposY > -2.0f && _itrkr->get_last_track_data().sposY < -0.5f) {
 
 
 
-            if (_itrkr->get_last_track_data().sposX > -1.5 && _itrkr->get_last_track_data().sposX < 1.5) {
-                if (_itrkr->get_last_track_data().sposZ > -2.5 && _itrkr->get_last_track_data().sposZ < -1.0) {
+            if (_itrkr->get_last_track_data().sposX > -1.5f && _itrkr->get_last_track_data().sposX < 1.5f) {
+                if (_itrkr->get_last_track_data().sposZ > -2.5f && _itrkr->get_last_track_data().sposZ < -1.0f) {
 
                     setspeed_world.x = _itrkr->get_last_track_data().svelX;
                     setspeed_world.y = _itrkr->get_last_track_data().svelY;
