@@ -258,7 +258,8 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
     find(exclude);
 
     std::vector<track_item> keypoint_candidates = find_result.keypointsL_wihout_voids;
-    if (keypoint_candidates.size() > 0) { //if nokeypointsLt lost
+    int nCandidates = keypoint_candidates.size();
+    if (nCandidates) { //if nokeypointsLt lost
 
         cv::Point3f previous_location(find_result.best_image_locationL .pt.x,find_result.best_image_locationL .pt.y,0);
 
@@ -289,21 +290,8 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
                 break;
             }
         }
-        if (keypoint_candidates.size() == 0) { // if lost
-            nframes_since_update_prev +=1;
-            if (nframes_since_update_prev > settings.roi_max_grow)
-                nframes_since_update_prev = settings.roi_max_grow;
-
-            n_frames_lost++;
-            if( n_frames_lost >= 10 )
-                foundL = false;
-            update_prediction_state(cv::Point3f(predicted_locationL.x,predicted_locationL.y,predicted_locationL.z));
-            if (n_frames_lost > 10){
-                reset_tracker_ouput();
-            }
-            if (n_frames_lost != 0)
-                n_frames_tracking = 0;
-        } else {
+        nCandidates = keypoint_candidates.size();
+        if (keypoint_candidates.size() > 0) { // if !lost
             //Point3f predicted_output = world_coordinates[1];
             check_consistency(cv::Point3f(this->prevX,this->prevY,this->prevZ),output);
             disparity = update_disparity(disparity, n_frames_lost,dt_tracking);
@@ -317,6 +305,21 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
             bool tmp = find_result.update_prev_frame;
             std::cout << tmp << std::endl;
         }
+    }
+    if (nCandidates == 0) {
+        nframes_since_update_prev +=1;
+        if (nframes_since_update_prev > settings.roi_max_grow)
+            nframes_since_update_prev = settings.roi_max_grow;
+
+        n_frames_lost++;
+        if( n_frames_lost >= 10 )
+            foundL = false;
+        update_prediction_state(cv::Point3f(predicted_locationL.x,predicted_locationL.y,predicted_locationL.z));
+        if (n_frames_lost > 10){
+            reset_tracker_ouput();
+        }
+        if (n_frames_lost != 0)
+            n_frames_tracking = 0;
     }
 
     if (find_result.update_prev_frame && ! breakpause) {

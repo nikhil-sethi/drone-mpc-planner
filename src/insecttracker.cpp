@@ -69,6 +69,12 @@ void InsectTracker::track(float time, std::vector<track_item> exclude, bool dron
     }
 
     ItemTracker::track(time,tmp,MAX_BORDER_Y_DEFAULT,MAX_BORDER_Z_DEFAULT);
+
+    if (n_frames_lost > 10) {
+        predicted_pathL.clear();
+        foundL = false;
+    }
+
 }
 
 
