@@ -239,7 +239,7 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
         _arduino->g_lockData.unlock();
     }
 
-    (*_logger) << (int)data.valid  << "; " << posErrX << "; " << posErrY  << "; " << posErrZ << "; " << setpoint_v.x << "; " << setpoint_v.y  << "; " << setpoint_v.z << "; " << predictTarget.x << "; " << predictTarget.y  << "; " << predictTarget.z << "; " << hoverthrottle << "; " << autoThrottle << "; " << autoRoll << "; " << autoPitch << "; " << autoYaw <<  "; " << joyThrottle <<  "; " << joyRoll <<  "; " << joyPitch <<  "; " << joyYaw << "; " << (int)joySwitch << "; " << params.throttle_Pos << "; " << params.throttleI << "; " << params.throttle_Acc << "; " << timeToTarget << "; " << data.dx << "; " << data.dy << "; " << data.dz << "; " << velx_sp << "; " << vely_sp << "; " << velz_sp << "; ";
+    (*_logger) << (int)data.valid  << "; " << posErrX << "; " << posErrY  << "; " << posErrZ << "; " << setpoint_v.x << "; " << setpoint_v.y  << "; " << setpoint_v.z << "; " << accx_sp << "; " << accy_sp  << "; " << accx_sp << "; " << hoverthrottle << "; " << autoThrottle << "; " << autoRoll << "; " << autoPitch << "; " << autoYaw <<  "; " << joyThrottle <<  "; " << joyRoll <<  "; " << joyPitch <<  "; " << joyYaw << "; " << (int)joySwitch << "; " << params.throttle_Pos << "; " << params.throttleI << "; " << params.throttle_Acc << "; " << data.dt << "; " << data.dx << "; " << data.dy << "; " << data.dz << "; " << velx_sp << "; " << vely_sp << "; " << velz_sp << "; ";
 }
 
 int firstTime = 3;
