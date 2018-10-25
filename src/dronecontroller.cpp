@@ -109,7 +109,7 @@ void DroneController::control(trackData data,cv::Point3f setpoint_world, cv::Poi
             timeToTarget = posErr/targetSpeed;
         }
 
-        std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t\t timeToTarget: " << timeToTarget << std::endl;
+//        std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t\t timeToTarget: " << timeToTarget << std::endl;
 
         predictTarget = setpoint_world + (setspeed_world*timeToTarget);
 
