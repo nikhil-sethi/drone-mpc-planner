@@ -310,24 +310,24 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
             nframes_since_update_prev = settings.roi_max_grow;
 
         n_frames_lost++;
-        if( n_frames_lost >= 10 )
+        if( n_frames_lost >= 10 ) {
             foundL = false;
-        update_prediction_state(cv::Point3f(predicted_locationL.x,predicted_locationL.y,predicted_locationL.z));
-        if (n_frames_lost > 10){
             reset_tracker_ouput();
-        }
-        if (n_frames_lost != 0)
+        } else if (n_frames_lost != 0)
             n_frames_tracking = 0;
-    }
 
-    if (find_result.update_prev_frame && ! breakpause) {
-        using_old_frame_since = 0;
-        frameL_prev_OK = _visdat->frameL_prev.clone();
-        _visdat->frameL_prev16_OK = _visdat->frameL_prev16.clone();
-        frameR_prev_OK = _visdat->frameR_prev.clone();
+        update_prediction_state(cv::Point3f(predicted_locationL.x,predicted_locationL.y,predicted_locationL.z));
     }
 
     if (!breakpause) {
+
+        if (find_result.update_prev_frame ) {
+            using_old_frame_since = 0;
+            frameL_prev_OK = _visdat->frameL_prev;
+            _visdat->frameL_prev16_OK = _visdat->frameL_prev16;
+            frameR_prev_OK = _visdat->frameR_prev;
+        }
+
         if (pathL.size() > 0) {
             if (pathL.begin()->frame_id < _visdat->frame_id - 30)
                 pathL.erase(pathL.begin());
@@ -342,10 +342,12 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
         }
     }
 
-    (*_logger) << find_result.best_image_locationL.pt.x *IMSCALEF << "; " << sub_disparity << "; " << find_result.disparity << "; " << get_last_track_data().posX << "; " << get_last_track_data().posY << "; " << get_last_track_data().posZ << ";" ;
-    (*_logger) << get_last_track_data().sposX << "; " << get_last_track_data().sposY << "; " << get_last_track_data().sposZ << ";";
-    (*_logger) << get_last_track_data().svelX << "; " << get_last_track_data().svelY << "; " << get_last_track_data().svelZ << ";";
-    (*_logger) << get_last_track_data().saccX << "; " << get_last_track_data().saccY << "; " << get_last_track_data().saccZ << ";";
+    trackData last = get_last_track_data();
+    (*_logger) << find_result.best_image_locationL.pt.x *IMSCALEF << "; " << sub_disparity << "; " << find_result.disparity << "; ";
+    (*_logger) << last.posX << "; " << last.posY << "; " << last.posZ << ";" ;
+    (*_logger) << last.sposX << "; " << last.sposY << "; " << last.sposZ << ";";
+    (*_logger) << last.svelX << "; " << last.svelY << "; " << last.svelZ << ";";
+    (*_logger) << last.saccX << "; " << last.saccY << "; " << last.saccZ << ";";
 
 }
 

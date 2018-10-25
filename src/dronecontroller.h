@@ -75,10 +75,6 @@ private:
     bool autoLand = false;
     bool autoControl = false;
 
-    cv::Point3f predictTarget;
-    bool convergedTarget;
-    double timeToTarget;
-
     bool _fromfile;
 
     Arduino * _arduino;

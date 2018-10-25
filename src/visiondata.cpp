@@ -40,8 +40,8 @@ void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL,cv::Mat new_frameR){
 }
 
 void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int new_frame_id) {
-    frameL_prev = frameL.clone();
-    frameR_prev = frameR.clone();
+    frameL_prev = frameL;
+    frameR_prev = frameR;
     frameL = new_frameL;
     frameR = new_frameR;
     frame_id = new_frame_id;

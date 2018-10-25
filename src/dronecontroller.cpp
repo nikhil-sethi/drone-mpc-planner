@@ -30,11 +30,6 @@ void DroneController::init(std::ofstream *logger,bool fromfile, Arduino * arduin
         archive(params);
     }
 
-    predictTarget = {0,0,0};
-    convergedTarget = false;
-    timeToTarget = 0;
-
-
 #ifdef TUNING
     std::cout << "Creating control tuning window." << std::endl;
     // create GUI to set control parameters
@@ -70,6 +65,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile, Arduino * arduin
     //    createTrackbar("Yaw P", "Control", &params.yawP, 255);
     //    createTrackbar("Yaw I", "Control", &params.yawI, 255);
     //    createTrackbar("Yaw D", "Control", &params.yawD, 255);
+
 
 #endif
 
@@ -109,7 +105,6 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
     velErrZ = data.svelZ + velz_sp + setpoint_v.z;  // velocity error
     accz_sp = velErrZ*params.pitch_Vel/100;         // desired acceleration
     accErrZ = data.saccZ + accz_sp;                 // acceleration error
-
 
 
     if(autoLand) {

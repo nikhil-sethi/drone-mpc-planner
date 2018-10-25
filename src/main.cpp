@@ -179,7 +179,7 @@ void process_video() {
 
         float fps = fps_smoothed.addSample( 1.f / (t - prev_time));
 
-        std::cout << "Frame: " <<imgcount << ", " << cam.get_frame_id() << ". FPS: " << imgcount / (time-break_time ) << ". Time: " << time-break_time  << ", dt " << dt << " FPS now: " << fps << std::endl;
+        std::cout << "Frame: " <<imgcount << ", " << cam.get_frame_id() << ". FPS: " << to_string_with_precision(imgcount / (time-break_time ),1) << ". Time: " << to_string_with_precision(time-break_time,2)  << ", dt " << to_string_with_precision(dt,3) << " FPS now: " << to_string_with_precision(fps,1) << std::endl;
 
         if (fps < 50) {
             std::cout << "FPS WARNING!" << std::endl;

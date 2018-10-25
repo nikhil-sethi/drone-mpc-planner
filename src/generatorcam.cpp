@@ -63,14 +63,14 @@ void GeneratorCam::update() {
     frame_id++;
 
 
-//    while(gen_stopw.Read() < (1.f/VIDEOFPS)*1e3f){
-//        usleep(10);
-//    }
+    while(gen_stopw.Read() < (1.f/VIDEOFPS)*1e3f){
+        usleep(10);
+    }
 
-    float delay = VIDEOFPS;
-    delay = 1/delay;
-    delay *=1e6f;
-    usleep(delay);
+//    float delay = VIDEOFPS;
+//    delay = 1/delay;
+//    delay *=1e6f;
+//    usleep(delay);
 
     gen_stopw.Restart();
 }
