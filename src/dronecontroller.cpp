@@ -185,7 +185,7 @@ void DroneController::control(trackData data,cv::Point3f setpoint_world, cv::Poi
 
     if (posErr < rangeParam && targetSpeed > 0 && !rangeAlert) {
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Rhodes.ogg &");
-        std::cout << "\t\t\t\t\t\t\t\t ALERT" << std::endl;
+//        std::cout << "\t\t\t\t\t\t\t\t ALERT" << std::endl;
         rangeAlert = true;
     } else if (targetSpeed==0)
         rangeAlert = false;

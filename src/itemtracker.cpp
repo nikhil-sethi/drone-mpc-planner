@@ -302,8 +302,6 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
             n_frames_tracking++;
             nframes_since_update_prev = 0;
             find_result.update_prev_frame = (nframes_since_update_prev == 0 && !using_old_frame_since) || (using_old_frame_since >= settings.roi_max_grow);
-            bool tmp = find_result.update_prev_frame;
-            std::cout << tmp << std::endl;
         }
     }
     if (nCandidates == 0) {
@@ -747,8 +745,8 @@ float ItemTracker::update_disparity(float disparity, float dt) {
 
     } else {
 
-        cout << "\t\t\t\t\t\t\t\t sub_disparity: " << disparity << endl;
-        cout << "\t\t\t\t\t\t\t\t sub_disparity_smoothed: " << disparity_smoothed << endl;
+//        cout << "\t\t\t\t\t\t\t\t sub_disparity: " << disparity << endl;
+//        cout << "\t\t\t\t\t\t\t\t sub_disparity_smoothed: " << disparity_smoothed << endl;
 
         // predicted disparity value
         float disp_predict = disparity_smoothed + disp_rate*dt;
