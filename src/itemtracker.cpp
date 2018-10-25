@@ -301,7 +301,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
             t_prev_tracking = time; // update dt only if item was detected
             n_frames_tracking++;
             nframes_since_update_prev = 0;
-            find_result.update_prev_frame = (nframes_since_update_prev == 0 && !using_old_frame_since) || (using_old_frame_since >= settings.roi_max_grow);
+            find_result.update_prev_frame = (nframes_since_update_prev == 0 );
         }
     }
     if (nCandidates == 0) {
@@ -322,7 +322,6 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
     if (!breakpause) {
 
         if (find_result.update_prev_frame ) {
-            using_old_frame_since = 0;
             frameL_prev_OK = _visdat->frameL_prev;
             _visdat->frameL_prev16_OK = _visdat->frameL_prev16;
             frameR_prev_OK = _visdat->frameR_prev;
@@ -418,16 +417,6 @@ void ItemTracker::find(std::vector<track_item> exclude) {
 
     std::vector<KeyPoint> keypointsL;
     detector->detect( _treshL, keypointsL);
-
-    //check if changed blobs were detected
-//    if (keypointsL.size() == 0) { // if not, use the last frame that was confirmed to be working before...
-//        _visdat->update_prevOK();
-//        _treshL = segment(_visdat->diffL_prevOK_small,previous_location,roi_size);
-//        detector->detect( _treshL, keypointsL);
-//        using_old_frame_since++;
-//    } else {
-        using_old_frame_since = 0;
-//    }
 
     vector<track_item> kps;
     for (uint i = 0 ; i < keypointsL.size();i++) {

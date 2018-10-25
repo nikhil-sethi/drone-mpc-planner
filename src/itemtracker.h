@@ -110,7 +110,6 @@ private:
         float smoothed_disparity;
         bool update_prev_frame;
     };
-    int using_old_frame_since =0;
 
     void updateParams();
     cv::Mat segment(cv::Mat diffL, cv::Point previous_imageL_location, cv::Point roi_size);
