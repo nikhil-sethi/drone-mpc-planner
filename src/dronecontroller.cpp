@@ -44,35 +44,38 @@ void DroneController::init(std::ofstream *logger,bool fromfile, Arduino * arduin
     //createTrackbar("AutoLand", "Control", &autoLand, 1);
 
     // throttle control
-    createTrackbar("Throttle P", "Control", &params.throttleP, 2000);
-    createTrackbar("Throttle I", "Control", &params.throttleI, 255);
-    createTrackbar("Throttle D", "Control", &params.throttleD, 2000);
+    createTrackbar("Throttle Pos", "Control", &params.throttle_Pos, 3000);
+    createTrackbar("Throttle Vel", "Control", &params.throttle_Vel, 1000);
+    createTrackbar("Throttle Acc", "Control", &params.throttle_Acc, 100);
+    createTrackbar("Throttle I", "Control", &params.throttleI, 50);
 
     createTrackbar("Take off factor", "Control", &params.autoTakeoffFactor, 255);
     createTrackbar("Take off speed", "Control", &params.auto_takeoff_speed, 1000); // /100
     createTrackbar("Hover offset", "Control", &params.hoverOffset, 100);
 
     // roll control
-    createTrackbar("Roll P", "Control", &params.rollP, 5000);
-    createTrackbar("Roll I", "Control", &params.rollI, 255);
-    createTrackbar("Roll D", "Control", &params.rollD, 1000);
+    createTrackbar("Roll Pos", "Control", &params.roll_Pos, 3000);
+    createTrackbar("Roll Vel", "Control", &params.roll_Vel, 2000);
+    createTrackbar("Roll Acc", "Control", &params.roll_Acc, 100);
+    createTrackbar("Roll I", "Control", &params.rollI, 50);
+
     // pitch control
-    createTrackbar("Pitch P", "Control", &params.pitchP, 5000);
-    createTrackbar("Pitch I", "Control", &params.pitchI, 255);
-    createTrackbar("Pitch D", "Control", &params.pitchD, 1000);
+    createTrackbar("Pitch Pos", "Control", &params.pitch_Pos, 3000);
+    createTrackbar("Pitch Vel", "Control", &params.pitch_Vel, 2000);
+    createTrackbar("Pitch Acc", "Control", &params.pitch_Acc, 100);
+    createTrackbar("Pitch I", "Control", &params.pitchI, 50);
+
+
     //    // yaw control
     //    createTrackbar("Yaw P", "Control", &params.yawP, 255);
     //    createTrackbar("Yaw I", "Control", &params.yawI, 255);
     //    createTrackbar("Yaw D", "Control", &params.yawD, 255);
 
-    createTrackbar("vref gain", "Control", &params.vref_gain, 10000);
-    createTrackbar("vref max", "Control", &params.vref_max, 10000);
-    createTrackbar("v vs pos gain", "Control", &params.v_vs_pos_control_gain, 10000);
 #endif
 
 }
 
-void DroneController::control(trackData data,cv::Point3f setpoint_world, cv::Point3f setspeed_world) {
+void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f setpoint_v) {
 
     if (!_fromfile) {
         _arduino->rebind();
@@ -80,210 +83,34 @@ void DroneController::control(trackData data,cv::Point3f setpoint_world, cv::Poi
     }
     process_joystick();
 
-    //cv::Point3f predictTarget = {0,0,0};
-    double posErr,rangeParam,targetSpeed;
 
-    //targetSpeed = sqrt(setspeed_world.x*setspeed_world.x + setspeed_world.y*setspeed_world.y + setspeed_world.z*setspeed_world.z);
-    rangeParam = 0.4;
-
-    //bool convergedTarget = false;
-
-
-    targetSpeed = norm(setspeed_world);
-
-    if (targetSpeed > 0)
-    {
-
-
-        if (!convergedTarget) {
-
-            timeToTarget = 1.0;
-            convergedTarget = true;
-
-        }
-        else {
-
-            posErr = norm(predictTarget-setpoint_world);
-            //posErr = sqrt(posErrX*posErrX + posErrY*posErrY + posErrZ*posErrZ);
-
-            timeToTarget = posErr/targetSpeed;
-        }
-
-        std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t\t timeToTarget: " << timeToTarget << std::endl;
-
-        predictTarget = setpoint_world + (setspeed_world*timeToTarget);
-
-        //predictTarget.x = setpoint_world.x + setspeed_world.x;
-        //predictTarget.y = setpoint_world.y + setspeed_world.y;
-        //predictTarget.z = setpoint_world.z + setspeed_world.z;
-
-        setpoint_world = predictTarget;
-
-    } else
-        convergedTarget = false;
-
-
-
-
-
-    //std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t\t etspeed_world.x: " << setspeed_world.x << std::endl;
-    //std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t\t etspeed_world.z: " << setspeed_world.z << std::endl;
-
-/*
-    int convergeCount = 0;
-    while ( !convergedTarget) {
-
-        posErrX = data.sposX - setpoint_world.x - predictTarget.x;
-        posErrY = data.sposY - setpoint_world.y - predictTarget.y;
-        posErrZ = data.sposZ - setpoint_world.z - predictTarget.z;
-
-        posErr = sqrt(posErrX*posErrX + posErrY*posErrY + posErrZ*posErrZ);
-
-        if ( targetSpeed > 0 ) {
-            posErrHor = sqrt(posErrX*posErrX + posErrZ*posErrZ);
-            timeToTarget = posErrHor*1000/(params.vref_max*2);
-
-            if (abs(timeToTarget-prevTimeToTarget) < 0.1) {
-                convergedTarget = true;
-                //std::cout << std::endl << "\t\t\t\t\t\t\t\t\t\t\t\t\t convergeCount: " << convergeCount << std::endl;
-            } else if ( prevTimeToTarget < 1000 )
-                timeToTarget = (timeToTarget+prevTimeToTarget)/2;
-            else if (timeToTarget > 10 ) {
-                convergedTarget = true;
-                timeToTarget = 3;
-            }
-
-            if (convergedTarget) {
-                //std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t\t predictTarget.x: " << setpoint_world.x+predictTarget.x << std::endl;
-                //std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t\t predictTarget.y: " << setpoint_world.y+predictTarget.y << std::endl;
-            }
-
-
-            predictTarget.x = timeToTarget*setspeed_world.x;
-            predictTarget.z = timeToTarget*setspeed_world.z;
-            prevTimeToTarget = timeToTarget;
-            convergeCount++;
-            //std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t\t timeToTarget: " << timeToTarget << std::endl;
-
-
-
-        } else
-            convergedTarget = true;
-
-    }
-
-    posErrX = data.sposX - setpoint_world.x - predictTarget.x;
-    posErrY = data.sposY - setpoint_world.y - predictTarget.y;
-    posErrZ = data.sposZ - setpoint_world.z - predictTarget.z;
-
-*/
-    posErrX = data.sposX - setpoint_world.x;
-    posErrY = data.sposY - setpoint_world.y;
-    posErrZ = data.sposZ - setpoint_world.z;
-
-    posErr = sqrt(posErrX*posErrX + posErrY*posErrY + posErrZ*posErrZ);
-
-    if (posErr < rangeParam && targetSpeed > 0 && !rangeAlert) {
-        alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Rhodes.ogg &");
-//        std::cout << "\t\t\t\t\t\t\t\t ALERT" << std::endl;
-        rangeAlert = true;
-    } else if (targetSpeed==0)
-        rangeAlert = false;
-
-
-    //setspeed_world.x = 0;
-    //setspeed_world.y = 0;
-    //setspeed_world.z = 0;
-
-/*
-    std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t\t posErr: " << posErr << std::endl;
-    std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t\t posErrX: " << posErrX << " rollErrI: " << rollErrI <<  std::endl;
-    std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t\t posErrY: " << posErrY << " throttleErrI: " << throttleErrI  << std::endl;
-    std::cout << "\t\t\t\t\t\t\t\t\t\t\t\t\t posErrZ: " << posErrZ << " pitchErrI: " << pitchErrI  << std::endl;
-*/
-    /*
     // Roll Control - X
 
-    velx_sp = posErrX*params.vref_gain/1000.f;
-    if (velx_sp > params.vref_max/1000.f)
-        velx_sp = params.vref_max/1000.f;
-    if (velx_sp < -params.vref_max/1000.f)
-        velx_sp = -params.vref_max/1000.f;
-    velErrX = data.svelX + velx_sp; //desired speed
-    //if (posErr < rangeParam && targetSpeed > 0)
-        posErrX = posErrX/(1+(abs(velErrX)*(params.v_vs_pos_control_gain/100.f)));
-    //else
-        //posErrX /= 10;
-
-        */
-    velx_sp = posErrX*params.pitchP/1000.f; //desired speed
-    velErrX = data.svelX + velx_sp;
-    float accx_sp = velErrX*params.rollP/100; // desired accelleration
-    float accErrX = data.saccX + accx_sp;
-
-    velErrX = accErrX;
-    posErrX = 0;
+    posErrX = data.sposX - setpoint.x;              // position error
+    velx_sp = posErrX*params.roll_Pos/1000.f;       // desired velocity
+    velErrX = data.svelX + velx_sp + setpoint_v.x;  // velocity error
+    accx_sp = velErrX*params.roll_Vel/100;          // desired acceleration
+    accErrX = data.saccX + accx_sp;                 // acceleration error
 
 
     // Altitude Control - Y
 
-    if (true || posErrY<0) {
-        vely_sp = posErrY*params.vref_gain/1000.f;
-        velErrY = data.svelY + vely_sp;
-        float accy_sp = velErrY*params.pitchD/100; // desired accelleration
-        float accErrY = data.saccY + accy_sp;
-
-        velErrY = accErrY;
-
-    } else {
-
-        vely_sp = posErrY*1300/1000.f;
-        if (vely_sp > 1000/1000.f)
-            vely_sp = 1000/1000.f;
-        if (vely_sp < -1000/1000.f)
-            vely_sp = -1000/1000.f;
-        velErrY = data.svelY + vely_sp;
-        //if (posErr < rangeParam && targetSpeed > 0)
-            posErrY = posErrY/(1+(abs(velErrY)*(params.v_vs_pos_control_gain/100.f)));
-        //else
-            //posErrY /= 4; //*= (30.0/params.throttleP);
-    }
-
-/*
-    vely_sp = posErrY*params.vref_gain/1000.f;
-    if (vely_sp > params.vref_max/1000.f)
-        vely_sp = params.vref_max/1000.f;
-    if (vely_sp < -params.vref_max/1000.f)
-        vely_sp = -params.vref_max/1000.f;
-    velErrY = data.svelY + vely_sp;
-    //if (posErr < rangeParam && targetSpeed > 0)
-        posErrY = posErrY/(1+(abs(velErrY)*(params.v_vs_pos_control_gain/100.f)));
-    //else
-        //posErrY /= 4; //= (30.0/params.throttleP);
-        */
+    posErrY = data.sposY - setpoint.y;              // position error
+    vely_sp = posErrY*params.throttle_Pos/1000.f;   // desired velocity
+    velErrY = data.svelY + vely_sp + setpoint_v.y;  // velocity error
+    accy_sp = velErrY*params.throttle_Vel/100;      // desired acceleration
+    accErrY = data.saccY + accy_sp;                 // acceleration error
 
 
-        /*
     // Pitch Control - Z
-    velz_sp = posErrZ*params.vref_gain/1000.f;
-    if (velz_sp > params.vref_max/1000.f)
-        velz_sp = params.vref_max/1000.f;
-    if (velz_sp < -params.vref_max/1000.f)
-        velz_sp = -params.vref_max/1000.f;
-    velErrZ = data.svelZ + velz_sp;
-    //if (posErr < rangeParam && targetSpeed > 0)
-        posErrZ = posErrZ/(1+(abs(velErrZ)*(params.v_vs_pos_control_gain/100.f)));
-    //else
-        //posErrZ /=10;
-        */
 
-    velz_sp = posErrZ*params.pitchP/1000.f; //desired speed
-    velErrZ = data.svelZ + velz_sp;
-    float accz_sp = velErrZ*params.rollP/100; // desired accelleration
-    float accErrZ = data.saccZ + accz_sp;
+    posErrZ = data.sposZ - setpoint.z;              // position error
+    velz_sp = posErrZ*params.pitch_Pos/1000.f;      // desired velocity
+    velErrZ = data.svelZ + velz_sp + setpoint_v.z;  // velocity error
+    accz_sp = velErrZ*params.pitch_Vel/100;         // desired acceleration
+    accErrZ = data.saccZ + accz_sp;                 // acceleration error
 
-    velErrZ = accErrZ;
-    posErrZ = 0;
+
 
     if(autoLand) {
         autoTakeOff=false;
@@ -315,13 +142,13 @@ void DroneController::control(trackData data,cv::Point3f setpoint_world, cv::Poi
     } else if (autoLandThrottleDecrease > 0 ) {
         hoverthrottle -= autoLandThrottleDecrease;
         autoThrottle =hoverthrottle ;
-    } else {
-            autoThrottle =  hoverthrottle + 100 - (velErrY * params.vref_max + throttleErrI * params.throttleI*beforeTakeOffFactor);
+    } else { //TODO: check +100
+            autoThrottle =  hoverthrottle + 100 - (accErrY * params.throttle_Acc + throttleErrI * params.throttleI*beforeTakeOffFactor);
         if (autoThrottle < 1300)
             autoThrottle = 1300;
     }
-    autoRoll = 1500 + (velErrX * params.rollD +  params.rollI*rollErrI);
-    autoPitch =1500 + (velErrZ * params.rollD +  params.pitchI*pitchErrI);
+    autoRoll =  1500 + (accErrX * params.roll_Acc +  params.rollI*rollErrI);
+    autoPitch = 1500 + (accErrZ * params.pitch_Acc +  params.pitchI*pitchErrI);
 
     //TODO: Yaw    
     if (autoPitch > 1950) {
@@ -417,7 +244,7 @@ void DroneController::control(trackData data,cv::Point3f setpoint_world, cv::Poi
         _arduino->g_lockData.unlock();
     }
 
-    (*_logger) << (int)data.valid  << "; " << posErrX << "; " << posErrY  << "; " << posErrZ << "; " << setspeed_world.x << "; " << setspeed_world.y  << "; " << setspeed_world.z << "; " << predictTarget.x << "; " << predictTarget.y  << "; " << predictTarget.z << "; " << hoverthrottle << "; " << autoThrottle << "; " << autoRoll << "; " << autoPitch << "; " << autoYaw <<  "; " << joyThrottle <<  "; " << joyRoll <<  "; " << joyPitch <<  "; " << joyYaw << "; " << (int)joySwitch << "; " << params.throttleP << "; " << params.throttleI << "; " << params.throttleD << "; " << timeToTarget << "; " << data.dx << "; " << data.dy << "; " << data.dz << "; " << velx_sp << "; " << vely_sp << "; " << velz_sp << "; ";
+    (*_logger) << (int)data.valid  << "; " << posErrX << "; " << posErrY  << "; " << posErrZ << "; " << setpoint_v.x << "; " << setpoint_v.y  << "; " << setpoint_v.z << "; " << predictTarget.x << "; " << predictTarget.y  << "; " << predictTarget.z << "; " << hoverthrottle << "; " << autoThrottle << "; " << autoRoll << "; " << autoPitch << "; " << autoYaw <<  "; " << joyThrottle <<  "; " << joyRoll <<  "; " << joyPitch <<  "; " << joyYaw << "; " << (int)joySwitch << "; " << params.throttle_Pos << "; " << params.throttleI << "; " << params.throttle_Acc << "; " << timeToTarget << "; " << data.dx << "; " << data.dy << "; " << data.dz << "; " << velx_sp << "; " << vely_sp << "; " << velz_sp << "; ";
 }
 
 int firstTime = 3;

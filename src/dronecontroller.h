@@ -26,37 +26,38 @@ private:
     struct controlParameters{
 
         //height control
-        int throttleP = 150;
-        int throttleI = 1;
-        int throttleD = 180;
+        int throttle_Pos = 1300;
+        int throttle_Vel = 800;
+        int throttle_Acc = 22;
+        int throttleI = 15;
 
-        int autoTakeoffFactor = 4;
-        int auto_takeoff_speed = 10; // /100
+        int autoTakeoffFactor = 2;
+        int auto_takeoff_speed = 3; // /100
         int hoverOffset = 30;
 
         //roll control
-        int rollP = 550;
-        int rollI = 3;
-        int rollD = 350;
+        int roll_Pos = 1750;
+        int roll_Vel = 1100;
+        int roll_Acc = 75;
+        int rollI = 10;
+
 
         //pitch control
-        int pitchP = 660;
-        int pitchI = 3;
-        int pitchD = 450;
+        int pitch_Pos = 1750;
+        int pitch_Vel = 1100;
+        int pitch_Acc = 60;
+        int pitchI = 10;
 
         //yaw control
         int yawP = 0;
         int yawI = 0;
         int yawD = 0;
 
-        int vref_gain = 1400;
-        int vref_max = 2000;
-        int v_vs_pos_control_gain = 0;
 
         template <class Archive>
         void serialize( Archive & ar )
         {
-            ar( throttleP,throttleI,throttleD,rollP,rollI,rollD,pitchP,pitchI,pitchD,yawP,yawI,yawD,autoTakeoffFactor,auto_takeoff_speed,hoverOffset,vref_gain,vref_max);
+            ar( throttle_Pos,throttle_Vel,throttle_Acc,throttleI,roll_Pos,roll_Vel,roll_Acc,rollI,pitch_Pos,pitch_Vel,pitch_Acc,pitchI,yawP,yawI,yawD,autoTakeoffFactor,auto_takeoff_speed,hoverOffset);
         }
 
     };
@@ -110,7 +111,9 @@ public:
     bool landed,rangeAlert;
     float posErrX,posErrY,posErrZ;
     float velErrX,velErrY,velErrZ;
+    float accErrX,accErrY,accErrZ;
     float velx_sp,vely_sp,velz_sp;
+    float accx_sp,accy_sp,accz_sp;
 
     void close (void);
     void init(std::ofstream *logger, bool fromfile, Arduino * arduino);

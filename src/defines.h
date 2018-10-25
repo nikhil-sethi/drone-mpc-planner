@@ -23,7 +23,7 @@
 #define IMG_W 848
 #define IMG_H 480
 #define IMSCALEF 2
-#define CAMERA_ANGLE 40.f
+#define CAMERA_ANGLE 40.5f
 
 #define CAMMODE CAMMODE_REALSENSE
 
@@ -31,7 +31,7 @@
 #define DRONE_IM_Y_START 420/IMSCALEF
 #define DRONE_DISPARITY_START 36
 
-#define MAX_BORDER_Y_DEFAULT 2.3f  // 2.20 for large scale flight plan  // 1.3 for small scale flight plan
+#define MAX_BORDER_Y_DEFAULT 2.25f  // 2.20 for large scale flight plan  // 1.3 for small scale flight plan
 #define MAX_BORDER_Z_DEFAULT 4.0f
 
 #define JOYSTICK_TYPE 1 // [0: normal remote] [1: USB remote]

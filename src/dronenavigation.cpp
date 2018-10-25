@@ -39,6 +39,9 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     setpoints.push_back(waypoint(cv::Point3i(1500,300,1500),0));
     setpoints.push_back(waypoint(cv::Point3i(1500,-200,1500),0));
 
+    setpoints.push_back(waypoint(cv::Point3i(1000,-200,1500),0));
+    setpoints.push_back(waypoint(cv::Point3i(2000,-200,1500),0));
+
 
     //setpoints.push_back(waypoint(cv::Point3i(1000,-125,1500),0));
     //setpoints.push_back(waypoint(cv::Point3i(2000,-125,1500),0));
@@ -146,7 +149,7 @@ void DroneNavigation::update() {
     setspeed_world.y = 0;
     setspeed_world.z = 0;
 
-    if (wpid == 1) {
+    if (wpid == 1 && false) {
         if (_itrkr->get_last_track_data().sposY > -2.0f && _itrkr->get_last_track_data().sposY < -0.5f) {
 
 
