@@ -154,7 +154,9 @@ void Cam::workerThread(void) {
         while(current_frame_id == frame.get_frame_number()) {
             try {
                 frame = cam.wait_for_frames();
-            } catch (rs2::error) {}
+            } catch (rs2::error) {
+                std::cout << "RS error" << std::endl;
+            }
         }
 
         g_lockData.lock();
@@ -163,11 +165,7 @@ void Cam::workerThread(void) {
         //std::cout << frame.get_frame_number() << ": " << frame_time_tmp << std::endl;
         frameL_tmp = Mat(imgsize, CV_8UC1, (void*)frame.get_infrared_frame(IR_ID_LEFT).get_data(), Mat::AUTO_STEP);
         frameR_tmp = Mat(imgsize, CV_8UC1, (void*)frame.get_infrared_frame(IR_ID_RIGHT).get_data(), Mat::AUTO_STEP);
-
-
         g_lockData.unlock();
-
-
         g_waitforimage.notify_one();
         ready = true;
 
