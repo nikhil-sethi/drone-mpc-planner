@@ -23,6 +23,7 @@ void showColumnImage(std::vector<cv::Mat> ims, std::string window_name, int type
 void showRowImage(std::vector<cv::Mat> ims, std::string window_name, int type, float resizef = 1);
 void alert(std::string cmd);
 cv::Mat createBlurryCircle(cv::Point size);
+std::string to_string_with_precision(float f, const int n);
 
 const float FOV = 180.0f ;
 const float FOV_size = 1280.0;

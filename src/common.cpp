@@ -1,5 +1,7 @@
 #include "common.h"
 #include <iostream>
+#include <sstream>
+#include <iomanip>
 
 cv::Point2f transformPixelToEarth(int x, int y, int centerX, int centerY, float depth, float pix2degx,float pix2degy) {
     //calculate pixel to angle:
@@ -216,4 +218,12 @@ cv::Mat createBlurryCircle(cv::Point size) {
     cv::ellipse(res,cv::Point(size.x/2,size.y/2),cv::Size(tmp.x,tmp.y),0,0,360,1.0f,CV_FILLED);
     cv::GaussianBlur( res, res, cv::Size( tmp.x, tmp.y ), 0, 0 );
     return res;
+}
+
+std::string to_string_with_precision(float f, const int n)
+{
+    std::ostringstream out;
+
+    out << std::fixed << std::setprecision(n) << f;
+    return out.str();
 }
