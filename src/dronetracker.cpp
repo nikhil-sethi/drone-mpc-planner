@@ -12,7 +12,7 @@ bool DroneTracker::init(std::ofstream *logger, VisionData *visdat) {
 }
 void DroneTracker::init_settings() {
     //thresh params
-    settings.iLowH1r = 10;
+    settings.iLowH1r = 18;
     settings.iHighH1r = 255;
     settings.iLowS1r = 0;
     settings.iHighS1r = 255;
@@ -29,8 +29,8 @@ void DroneTracker::init_settings() {
 
     // Filter by Area.
     settings.filterByArea = 1;
-    settings.minArea = 1;
-    settings.maxArea = 40;
+    settings.minArea = 40;
+    settings.maxArea = 640;
 
     // Filter by Circularity
     settings.filterByCircularity = 0;
@@ -48,7 +48,7 @@ void DroneTracker::init_settings() {
     settings.maxInertiaRatio = 100;
 
     settings.min_disparity=0;
-    settings.max_disparity=20;
+    settings.max_disparity=43;
 
     settings.roi_min_size = 200;
     settings.roi_max_grow = 50;
