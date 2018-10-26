@@ -39,14 +39,14 @@ private:
         int roll_Pos = 1750;
         int roll_Vel = 1100;
         int roll_Acc = 75;
-        int rollI = 10;
+        int rollI = 1;
 
 
         //pitch control
         int pitch_Pos = 1750;
         int pitch_Vel = 1100;
         int pitch_Acc = 60;
-        int pitchI = 10;
+        int pitchI = 1;
 
         //yaw control
         int yawP = 0;

@@ -52,13 +52,13 @@ void DroneController::init(std::ofstream *logger,bool fromfile, Arduino * arduin
     createTrackbar("Roll Pos", "Control", &params.roll_Pos, 3000);
     createTrackbar("Roll Vel", "Control", &params.roll_Vel, 2000);
     createTrackbar("Roll Acc", "Control", &params.roll_Acc, 100);
-    createTrackbar("Roll I", "Control", &params.rollI, 50);
+    createTrackbar("Roll I", "Control", &params.rollI, 10);
 
     // pitch control
     createTrackbar("Pitch Pos", "Control", &params.pitch_Pos, 3000);
     createTrackbar("Pitch Vel", "Control", &params.pitch_Vel, 2000);
     createTrackbar("Pitch Acc", "Control", &params.pitch_Acc, 100);
-    createTrackbar("Pitch I", "Control", &params.pitchI, 50);
+    createTrackbar("Pitch I", "Control", &params.pitchI, 10);
 
 
     //    // yaw control
