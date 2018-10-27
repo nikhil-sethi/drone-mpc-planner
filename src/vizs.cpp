@@ -324,7 +324,7 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
 
     if (trkr->find_result.excludes.size() > 0) {
         ItemTracker::track_item exclude = trkr->find_result.excludes.at(trkr->find_result.excludes.size()-1);
-        float threshold_dis = trkr->settings.exclude_min_distance / sqrtf(exclude.tracking_certainty);
+        float threshold_dis = trkr->settings.exclude_min_distance / sqrtf(exclude.tracking_certainty)+exclude.k.size;
         if (threshold_dis > trkr->settings.exclude_max_distance)
             threshold_dis = trkr->settings.exclude_max_distance;
         cv::circle(frameL_small_drone,exclude.k.pt,threshold_dis,cv::Scalar(255,0,0),4/IMSCALEF);

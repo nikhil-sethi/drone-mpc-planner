@@ -119,7 +119,7 @@ private:
     float estimate_sub_disparity(int disparity);
     void check_consistency(cv::Point3f previous_location,cv::Point3f measured_world_coordinates);
     float update_disparity(float disparity, float dt);
-    void update_prediction_state(cv::Point3f p);
+    void update_prediction_state(cv::Point3f p, float blob_size);
     void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, cv::KeyPoint match, float disparity, int frame_id);
     void find(std::vector<track_item> exclude);
     std::vector<ItemTracker::track_item> remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path);
@@ -168,6 +168,7 @@ protected:
     int roi_size_cnt = 0;
 
     cv::Point3f predicted_locationL_last = {0};
+    float blob_size_last = DRONE_IM_START_SIZE;
 
     const float certainty_factor = 1.1; // TODO: tune
     const float certainty_init = 0.1f; // TODO: tune

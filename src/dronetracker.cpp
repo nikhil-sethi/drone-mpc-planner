@@ -6,6 +6,7 @@ bool DroneTracker::init(std::ofstream *logger, VisionData *visdat) {
 
     find_result.best_image_locationL.pt.x = DRONE_IM_X_START;
     find_result.best_image_locationL.pt.y = DRONE_IM_Y_START;
+    find_result.best_image_locationL.size = DRONE_IM_START_SIZE;
     find_result.smoothed_disparity = DRONE_DISPARITY_START;
     find_result.disparity = DRONE_DISPARITY_START;
     return false;
