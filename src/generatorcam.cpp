@@ -108,11 +108,19 @@ void GeneratorCam::generateStereo() {
     bound(&insectR,1);
 
     if (frame_id_stereo > 2) { // circumvent background calib
-        cv::circle(resL,drone,2,255,2);
-//        cv::circle(resL,insect,1,200,1);
+        static int drone_blink = 0;
+        if (drone_blink >= 1) {
+            cv::circle(resL,drone,2,255,2);
+            cv::circle(resR,droneR,2,255,2);
+        }
 
-        cv::circle(resR,droneR,2,255,2);
-//        cv::circle(resR,insectR,1,200,1);
+        drone_blink++;
+        if (drone_blink >= 10)
+            drone_blink =0;
+
+
+        cv::circle(resL,insect,1,200,1);
+        cv::circle(resR,insectR,1,200,1);
     }
 }
 
