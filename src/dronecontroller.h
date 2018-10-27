@@ -115,7 +115,7 @@ public:
     void init(std::ofstream *logger, bool fromfile, Arduino * arduino);
     void control(trackData data, cv::Point3f setpoint_world,cv::Point3f setspeed_world);
     bool getAutoControl() {return autoControl;}
-    bool getDroneIsActive() {return (autoControl && autoThrottle > INITIALTHROTTLE) || (!autoControl && joyThrottle > INITIALTHROTTLE);}
+    bool getDroneIsActive() {return (!landed && autoControl && autoThrottle > INITIALTHROTTLE) || (!autoControl && joyThrottle > INITIALTHROTTLE);}
     bool getAutoTakeOff() {return autoTakeOff;}
     bool getAutoLand() {return autoLand;}
     void setAutoLand(bool b) {autoLand = b;}

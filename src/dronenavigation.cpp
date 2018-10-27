@@ -108,14 +108,17 @@ void DroneNavigation::update() {
             _dctrl->recalibrateHover();
     }
 
-    if (_dctrl->getAutoLand() && !_dctrl->landed && ((data.sposY < -(_dtrk->drone_max_border_y-0.10f)) || autoLandThrottleDecrease > 0)){
+    if (_dctrl->getAutoLand() && !_dctrl->landed){
         if (autoLandThrottleDecrease == 0)
             alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
-        autoLandThrottleDecrease = params.autoLandThrottleDecreaseFactor;
+        autoLandThrottleDecrease += params.autoLandThrottleDecreaseFactor;
         _dctrl->setAutoLandThrottleDecrease(autoLandThrottleDecrease);
-        _dtrk->drone_max_border_y = 0;
+        std::cout << "AL: " << autoLandThrottleDecrease << std::endl;
+        _dtrk->drone_max_border_y = -9999; // keep tracking to the last possible end. TODO: earlier in the descend this may be disturbed by ground shadows
     }
-    if (autoLandThrottleDecrease >1000 || (_dctrl->autoThrottle <= 1050 && _dctrl->getAutoControl()) || (autoLandThrottleDecrease > 0 && !_dctrl->getAutoControl()) || (autoLandThrottleDecrease > 500 && _dtrk->n_frames_tracking>0)) {
+
+    if (  (_dctrl->getAutoLand() && data.sposY < -(MAX_BORDER_Y_DEFAULT-0.15f)) || (autoLandThrottleDecrease >1000) || (_dctrl->autoThrottle <= 1050 && _dctrl->getAutoControl()) || (autoLandThrottleDecrease > 0 && !_dctrl->getAutoControl()) ) {
+        alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
         _dctrl->landed = true;
         wpid = 0;
         autoLandThrottleDecrease = 0;
@@ -127,6 +130,8 @@ void DroneNavigation::update() {
     if (!_dctrl->getAutoControl())
         wpid = 0;
 
+    if (!_dctrl->getAutoLand())
+        autoLandThrottleDecrease = 0;
 
     waypoint * wp;
     if (wpid > 0)

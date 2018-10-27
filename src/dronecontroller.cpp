@@ -134,9 +134,8 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
 
     if (autoTakeOff) {
         autoThrottle = hoverthrottle;
-    } else if (autoLandThrottleDecrease > 0 ) {
-        hoverthrottle -= autoLandThrottleDecrease;
-        autoThrottle =hoverthrottle ;
+    } else if (autoLand)
+        autoThrottle = hoverthrottle - autoLandThrottleDecrease;
     } else { //TODO: check +100
             autoThrottle =  hoverthrottle + 100 - (accErrY * params.throttle_Acc + throttleErrI * params.throttleI*beforeTakeOffFactor);
         if (autoThrottle < 1300)
