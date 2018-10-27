@@ -10,7 +10,7 @@ using namespace cv;
 using namespace std;
 
 #ifdef HASSCREEN
-#define TUNING
+//#define TUNING
 #endif
 
 

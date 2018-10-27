@@ -4,7 +4,9 @@
 using namespace cv;
 using namespace std;
 
-#define TUNING
+#ifdef HASSCREEN
+//#define TUNING
+#endif
 
 void Cam::update(void) {
     if (!ready) {

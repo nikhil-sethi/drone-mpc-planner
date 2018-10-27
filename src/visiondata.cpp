@@ -2,7 +2,7 @@
 #include <opencv2/highgui/highgui.hpp>
 
 #ifdef HASSCREEN
-#define TUNING
+//#define TUNING
 #endif
 
 using namespace cv;
