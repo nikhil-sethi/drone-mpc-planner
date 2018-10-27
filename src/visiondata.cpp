@@ -24,9 +24,7 @@ void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL,cv::Mat new_frameR){
 
     smallsize =cv::Size(frameL.cols/IMSCALEF,frameL.rows/IMSCALEF);
     frameL.convertTo(frameL16, CV_16SC1);
-    frameL_prev16_OK = frameL16.clone();
     diffL16 = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
-    diffL16_prevOK = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
 
     init_avg_prev_frame();
 
@@ -70,7 +68,7 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
 
 
     cv::Mat diffL16_neg,diffL16_pos;
-    if (motion_update_iterator==10) {
+    if (motion_update_iterator==motion_update_iterator_max) {
         diffL16_pos = min(diffL16 >= 1,1);
         diffL16_neg = min(diffL16 <= -1,1);
         motion_update_iterator = 0;
@@ -106,22 +104,6 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
     background_calibrated = true;
 #endif
 
-}
-
-/*calcuate motion differences, same code as above except performed on the last frame that was good*/
-void VisionData::update_prevOK() {    
-    cv::Mat d = frameL16 - frameL_prev16_OK;
-    diffL16_prevOK += d;
-    cv::Mat diffL16_neg,diffL16_pos;
-    diffL16_pos = min(diffL16_prevOK >= 1,1);
-    diffL16_neg = min(diffL16_prevOK <= -1,1);
-    diffL16_pos.convertTo(diffL16_pos,CV_16SC1);
-    diffL16_neg.convertTo(diffL16_neg,CV_16SC1);
-    diffL16_prevOK -= diffL16_pos;
-    diffL16_prevOK += diffL16_neg;
-
-    diffL16_prevOK.convertTo(diffL_prevOK, CV_8UC1);
-    cv::resize(diffL_prevOK,diffL_prevOK_small,smallsize);
 }
 
 void VisionData::collect_no_drone_frames(cv::Mat diff) {

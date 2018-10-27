@@ -49,47 +49,7 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
 
 #endif
 
-    kfL = cv::KalmanFilter(stateSize, measSize, contrSize, type);
-    stateL =cv::Mat(stateSize, 1, type);  // [x,y,v_x,v_y,w,h]
-    _measL = cv::Mat (measSize, 1, type);    // [z_x,z_y,z_w,z_h]
-
-    cv::setIdentity(kfL.transitionMatrix);
-    kfL.measurementMatrix = cv::Mat::zeros(measSize, stateSize, type);
-    kfL.measurementMatrix.at<float>(0) = 1.0f;
-    kfL.measurementMatrix.at<float>(7) = 1.0f;
-    kfL.measurementMatrix.at<float>(16) = 1.0f;
-    kfL.measurementMatrix.at<float>(23) = 1.0f;
-
-    kfL.processNoiseCov.at<float>(0) = 1e-2;
-    kfL.processNoiseCov.at<float>(7) = 1e-2;
-    kfL.processNoiseCov.at<float>(14) = 5.0f;
-    kfL.processNoiseCov.at<float>(21) = 5.0f;
-    kfL.processNoiseCov.at<float>(28) = 1e-2;
-    kfL.processNoiseCov.at<float>(35) = 1e-2;
-
-    // Measures Noise Covariance Matrix R
-    cv::setIdentity(kfL.measurementNoiseCov, cv::Scalar(1e-1));
-
-    kfR = cv::KalmanFilter(stateSize, measSize, contrSize, type);
-    stateR =cv::Mat(stateSize, 1, type);  // [x,y,v_x,v_y,w,h]
-    _measR = cv::Mat (measSize, 1, type);    // [z_x,z_y,z_w,z_h]
-
-    cv::setIdentity(kfR.transitionMatrix);
-    kfR.measurementMatrix = cv::Mat::zeros(measSize, stateSize, type);
-    kfR.measurementMatrix.at<float>(0) = 1.0f;
-    kfR.measurementMatrix.at<float>(7) = 1.0f;
-    kfR.measurementMatrix.at<float>(16) = 1.0f;
-    kfR.measurementMatrix.at<float>(23) = 1.0f;
-
-    kfR.processNoiseCov.at<float>(0) = 1e-2;
-    kfR.processNoiseCov.at<float>(7) = 1e-2;
-    kfR.processNoiseCov.at<float>(14) = 5.0f;
-    kfR.processNoiseCov.at<float>(21) = 5.0f;
-    kfR.processNoiseCov.at<float>(28) = 1e-2;
-    kfR.processNoiseCov.at<float>(35) = 1e-2;
-
-    // Measures Noise Covariance Matrix R
-    cv::setIdentity(kfR.measurementNoiseCov, cv::Scalar(1e-1));
+    init_kalman();
 
    updateParams();
 
@@ -139,6 +99,30 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     (*_logger) << "accX_" << _name << "; ";
     (*_logger) << "accY_" << _name << "; ";
     (*_logger) << "accZ_" << _name << "; ";
+}
+
+void ItemTracker::init_kalman() {
+    kfL = cv::KalmanFilter(stateSize, measSize, contrSize, type);
+    stateL =cv::Mat(stateSize, 1, type);  // [x,y,v_x,v_y,w,h]
+    _measL = cv::Mat (measSize, 1, type);    // [z_x,z_y,z_w,z_h]
+
+    //TODO: tune kalman init values
+    cv::setIdentity(kfL.transitionMatrix);
+    kfL.measurementMatrix = cv::Mat::zeros(measSize, stateSize, type);
+    kfL.measurementMatrix.at<float>(0) = 1.0f;
+    kfL.measurementMatrix.at<float>(7) = 1.0f;
+    kfL.measurementMatrix.at<float>(16) = 1.0f;
+    kfL.measurementMatrix.at<float>(23) = 1.0f;
+
+    kfL.processNoiseCov.at<float>(0) = 1e-2f;
+    kfL.processNoiseCov.at<float>(7) = 1e-2f;
+    kfL.processNoiseCov.at<float>(14) = 0.1f;
+    kfL.processNoiseCov.at<float>(21) = 0.1f;
+    kfL.processNoiseCov.at<float>(28) = 1e-2f;
+    kfL.processNoiseCov.at<float>(35) = 1e-2f;
+
+    // Measures Noise Covariance Matrix R
+    cv::setIdentity(kfL.measurementNoiseCov, cv::Scalar(1e-1));
 }
 
 std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path) {
@@ -245,14 +229,14 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
 
     float dt_tracking= (time-t_prev_tracking);
     float dt_predict= (time-t_prev_predict);
-    cv::Point3f predicted_locationL = predict(dt_predict,_visdat->frame_id);
     t_prev_predict = time;
 
-    if (!firstFrame) {
-        firstFrame = true;
-        //TODO: move to visdata and init there:
-        frameL_prev_OK = _visdat->frameL.clone();
-        frameR_prev_OK = _visdat->frameR.clone();
+    cv::Point3f predicted_locationL;
+    if (foundL) {
+        predicted_locationL = predict(dt_predict,_visdat->frame_id);
+        predicted_locationL_last = predicted_locationL;
+    } else {
+       predicted_locationL = predicted_locationL_last;
     }
 
     find(exclude);
@@ -271,7 +255,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
             int match_id = match_closest_to_prediciton(previous_location,find_result.keypointsL_wihout_voids);
             match = find_result.keypointsL_wihout_voids.at(match_id).k;
 
-            disparity = stereo_match(match,frameL_prev_OK,frameR_prev_OK,_visdat->frameL,_visdat->frameR);
+            disparity = stereo_match(match,_visdat->frameL_prev,_visdat->frameR_prev,_visdat->frameL,_visdat->frameR);
 
             //calculate everything for the itemcontroller:
             std::vector<Point3f> camera_coordinates, world_coordinates;
@@ -300,32 +284,28 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
             n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
             t_prev_tracking = time; // update dt only if item was detected
             n_frames_tracking++;
-            nframes_since_update_prev = 0;
-            find_result.update_prev_frame = (nframes_since_update_prev == 0 );
+            roi_size_cnt = 0;
+
         }
     }
     if (nCandidates == 0) {
-        nframes_since_update_prev +=1;
-        if (nframes_since_update_prev > settings.roi_max_grow)
-            nframes_since_update_prev = settings.roi_max_grow;
-
+        roi_size_cnt ++; //TODO: samen as n_frames_lost?
         n_frames_lost++;
-        if( n_frames_lost >= 10 ) {
+        if (roi_size_cnt > settings.roi_max_grow)
+            roi_size_cnt = settings.roi_max_grow;
+
+        if( n_frames_lost >= n_frames_lost_threshold || !foundL ) {
             foundL = false;
             reset_tracker_ouput();
-        } else if (n_frames_lost != 0)
+        } else
+            update_prediction_state(cv::Point3f(predicted_locationL.x,predicted_locationL.y,predicted_locationL.z));
+
+        if (n_frames_lost != 0)
             n_frames_tracking = 0;
 
-        update_prediction_state(cv::Point3f(predicted_locationL.x,predicted_locationL.y,predicted_locationL.z));
     }
 
     if (!breakpause) {
-
-        if (find_result.update_prev_frame ) {
-            frameL_prev_OK = _visdat->frameL_prev;
-            _visdat->frameL_prev16_OK = _visdat->frameL_prev16;
-            frameR_prev_OK = _visdat->frameR_prev;
-        }
 
         if (pathL.size() > 0) {
             if (pathL.begin()->frame_id < _visdat->frame_id - 30)
@@ -392,8 +372,8 @@ void ItemTracker::find(std::vector<track_item> exclude) {
     cv::Point roi_size;
     if (settings.roi_min_size < 1)
         settings.roi_min_size = 1;
-    roi_size.x=settings.roi_min_size/IMSCALEF+nframes_since_update_prev*(settings.roi_grow_speed / 16 / IMSCALEF);
-    roi_size.y=settings.roi_min_size/IMSCALEF+nframes_since_update_prev*(settings.roi_grow_speed / 16 / IMSCALEF);
+    roi_size.x=settings.roi_min_size/IMSCALEF+roi_size_cnt*(settings.roi_grow_speed / 16 / IMSCALEF);
+    roi_size.y=settings.roi_min_size/IMSCALEF+roi_size_cnt*(settings.roi_grow_speed / 16 / IMSCALEF);
 
     if (roi_size.x  >= _visdat->smallsize.width) {
         roi_size.x = _visdat->smallsize.width;
@@ -434,9 +414,9 @@ void ItemTracker::find(std::vector<track_item> exclude) {
     find_result.keypointsL_wihout_voids = remove_excludes_improved(keypoint_candidates,exclude);
 
     if (find_result.keypointsL_wihout_voids.size() ==0) {
-        nframes_since_update_prev +=1;
-        if (nframes_since_update_prev > settings.roi_max_grow)
-            nframes_since_update_prev = settings.roi_max_grow;
+        roi_size_cnt +=1;
+        if (roi_size_cnt > settings.roi_max_grow)
+            roi_size_cnt = settings.roi_max_grow;
 
     }
     find_result.excludes = exclude;
@@ -499,10 +479,10 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_voids(std::vector<track
 cv::Mat ItemTracker::segment(cv::Mat diffL, cv::Point previous_imageL_location, cv::Point roi_size) {
 
     _approx = get_approx_cutout_filtered(previous_imageL_location,diffL,roi_size);
-
     inRange(_approx, settings.iLowH1r, settings.iHighH1r, _treshL);
-    dilate( _treshL, _treshL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iClose1r+1, settings.iClose1r+1)));
-    erode(_treshL, _treshL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iOpen1r+1, settings.iOpen1r+1)));
+    //TODO: remove erode dilate and related if really obsolete:
+//    dilate( _treshL, _treshL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iClose1r+1, settings.iClose1r+1)));
+//    erode(_treshL, _treshL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iOpen1r+1, settings.iOpen1r+1)));
 
     return _treshL;
 }
@@ -558,46 +538,40 @@ cv::Mat ItemTracker::show_uncertainty_map_in_image(cv::Point pd4, cv::Mat res) {
 
 cv::Point3f ItemTracker::predict(float dt, int frame_id) {
     cv::Point3f predicted_locationL;
-    if (foundL) {
-        kfL.transitionMatrix.at<float>(2) = dt;
-        kfL.transitionMatrix.at<float>(9) = dt;
-        stateL = kfL.predict();
-        cv::Rect predRect;
-        predRect.width = stateL.at<float>(4);
-        predRect.height = stateL.at<float>(5);
-        predRect.x = stateL.at<float>(0) - predRect.width / 2;
-        predRect.y = stateL.at<float>(1) - predRect.height / 2;
+    kfL.transitionMatrix.at<float>(2) = dt;
+    kfL.transitionMatrix.at<float>(9) = dt;
+    stateL = kfL.predict();
+    cv::Rect predRect;
+    predRect.width = stateL.at<float>(4);
+    predRect.height = stateL.at<float>(5);
+    predRect.x = stateL.at<float>(0) - predRect.width / 2;
+    predRect.y = stateL.at<float>(1) - predRect.height / 2;
 
-        predicted_locationL.x = stateL.at<float>(0);
-        predicted_locationL.y = stateL.at<float>(1);
-        predicted_locationL.z = stateL.at<float>(2);
-        cv::KeyPoint t;
-        cv::Point beun;
-        beun.x = predicted_locationL.x;
-        beun.y = predicted_locationL.y;
-        t.pt = beun;
-        t.size = 3;
+    predicted_locationL.x = stateL.at<float>(0);
+    predicted_locationL.y = stateL.at<float>(1);
+    predicted_locationL.z = stateL.at<float>(2);
+    cv::KeyPoint t(predicted_locationL.x,predicted_locationL.y,3);
 
-        float certainty;
-        if (predicted_pathL.size() > 0.f) {
-            if (nframes_since_update_prev == 1 )
-                certainty   = predicted_pathL.back().tracking_certainty - certainty_init;
-            else if (nframes_since_update_prev > 1 )
-                certainty  = 1-((1 - predicted_pathL.back().tracking_certainty) * certainty_factor);
-            else {
-                certainty = 1-((1 - predicted_pathL.back().tracking_certainty) / certainty_factor);
-            }
-        }   else {
-            certainty = certainty_init;
+    float certainty;
+    if (predicted_pathL.size() > 0.f) {
+        if (roi_size_cnt == 1 )
+            certainty   = predicted_pathL.back().tracking_certainty - certainty_init;
+        else if (roi_size_cnt > 1 )
+            certainty  = 1-((1 - predicted_pathL.back().tracking_certainty) * certainty_factor);
+        else {
+            certainty = 1-((1 - predicted_pathL.back().tracking_certainty) / certainty_factor);
         }
-
-        if (certainty < 0)
-            certainty = 0;
-        if (certainty > 1)
-            certainty = 1;
-
-        predicted_pathL.push_back(track_item(t,frame_id,certainty) );
+    }   else {
+        certainty = certainty_init;
     }
+
+    if (certainty < 0)
+        certainty = 0;
+    if (certainty > 1)
+        certainty = 1;
+
+    predicted_pathL.push_back(track_item(t,frame_id,certainty) );
+
     return predicted_locationL;
 }
 
@@ -783,7 +757,7 @@ void ItemTracker::update_prediction_state(cv::Point3f p) {
     measL.at<float>(0) = p.x;
     measL.at<float>(1) = p.y;
     measL.at<float>(2) = p.z;
-    //measL.at<float>(3) = 0;
+    measL.at<float>(3) = 0; //TODO; remove...?
 
 
     if (!foundL) { // First detection!
@@ -907,6 +881,7 @@ void ItemTracker::reset_tracker_ouput() {
     reset_filters = true;
 
     track_history.push_back(data);
+    init_kalman();
 }
 
 void ItemTracker::close () {

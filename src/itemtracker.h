@@ -108,7 +108,6 @@ private:
         cv::Rect roi_offset;
         float disparity;
         float smoothed_disparity;
-        bool update_prev_frame;
     };
 
     void updateParams();
@@ -128,6 +127,7 @@ private:
     cv::Mat show_uncertainty_map_in_image(cv::Point p, cv::Mat resframeL);
     std::vector<track_item> remove_voids(std::vector<track_item> keyps, std::vector<track_item> keyps_prev);
     float calc_certainty(cv::KeyPoint item);
+    void init_kalman();
 
     // Kalman Filter
     int stateSize = 6;
@@ -135,11 +135,9 @@ private:
     int contrSize = 0;
 
     unsigned int type = CV_32F;
-    cv::KalmanFilter kfL,kfR;
-    cv::Mat stateL,stateR;
-    cv::Mat _measL,_measR;
-
-    bool firstFrame;
+    cv::KalmanFilter kfL;
+    cv::Mat stateL;
+    cv::Mat _measL;
 
     cv::Mat _blurred_circle;
 
@@ -164,11 +162,12 @@ private:
     int detected_after_take_off = 0;
 protected:
     int n_frames_lost = 100;
+    const int n_frames_lost_threshold = 10;
     std::ofstream *_logger;
-    cv::Mat frameL_prev_OK;
-    cv::Mat frameR_prev_OK;
     VisionData * _visdat;
-    int nframes_since_update_prev = 0;
+    int roi_size_cnt = 0;
+
+    cv::Point3f predicted_locationL_last = {0};
 
     const float certainty_factor = 1.1; // TODO: tune
     const float certainty_init = 0.1f; // TODO: tune
@@ -194,7 +193,7 @@ public:
     virtual void track(float time, std::vector<track_item> ignore, float drone_max_border_y, float drone_max_border_z);
 
 //    trackData data;
-    std::vector<trackData> track_history;
+    std::vector<trackData> track_history; // TODO: this will build up indefenitely.... and only last track data is used,
     trackData get_last_track_data() {
         if (track_history.empty())
             return trackData();

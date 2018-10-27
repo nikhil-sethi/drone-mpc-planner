@@ -61,22 +61,18 @@ bool found_after_takeoff = false;
 void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_is_active) {
 
     if (!drone_is_active) {
-        _visdat->frameL_prev16_OK = _visdat->frameL_prev16;
-        frameL_prev_OK = _visdat->frameL_prev;
-        frameR_prev_OK = _visdat->frameR_prev;
-
         find_result.best_image_locationL.pt.x = DRONE_IM_X_START;
         find_result.best_image_locationL.pt.y =  DRONE_IM_Y_START;
         find_result.smoothed_disparity = DRONE_DISPARITY_START;
         find_result.disparity = DRONE_DISPARITY_START;
-        nframes_since_update_prev = 0;
+        predicted_locationL_last.x = DRONE_IM_X_START;
+        predicted_locationL_last.y = DRONE_IM_Y_START;
     }
 
     ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
 
     if (!drone_is_active) {
-        find_result.update_prev_frame = true;
-        reset_tracker_ouput();
+        reset_tracker_ouput(); //TODO: double?
         found_after_takeoff = false;
     } else if (!found_after_takeoff && drone_is_active && n_frames_lost==0) {
         found_after_takeoff = true;
@@ -85,9 +81,8 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
         predicted_pathL.clear();
         predicted_pathL.push_back(track_item(find_result.best_image_locationL,_visdat->frame_id,0.1f));
         foundL = false;
+        roi_size_cnt = 0;
     }
-
-
 }
 
 cv::Mat DroneTracker::get_probability_cloud(cv::Point size) {
