@@ -25,8 +25,8 @@ void InsectTracker::init_settings() {
 
     // Filter by Area.
     settings.filterByArea = 1;
-    settings.minArea = 1;
-    settings.maxArea = 40;
+    settings.minArea = 0;
+    settings.maxArea = 80;
 
     // Filter by Circularity
     settings.filterByCircularity = 0;

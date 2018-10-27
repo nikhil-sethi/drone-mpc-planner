@@ -30,7 +30,7 @@ void DroneTracker::init_settings() {
 
     // Filter by Area.
     settings.filterByArea = 1;
-    settings.minArea = 40;
+    settings.minArea = 20;
     settings.maxArea = 640;
 
     // Filter by Circularity

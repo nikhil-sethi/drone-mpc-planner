@@ -339,8 +339,8 @@ void ItemTracker::updateParams(){
 
     // Filter by Area.
     params.filterByArea = settings.filterByArea;
-    params.minArea = (settings.minArea/(IMSCALEF*IMSCALEF))+1;
-    params.maxArea = (settings.maxArea/(IMSCALEF*IMSCALEF))+1;
+    params.minArea = (settings.minArea/(IMSCALEF*IMSCALEF));
+    params.maxArea = (settings.maxArea/(IMSCALEF*IMSCALEF));
 
     // Filter by Circularity
     params.filterByCircularity = settings.filterByCircularity;
@@ -387,8 +387,8 @@ void ItemTracker::find(std::vector<track_item> exclude) {
     //attempt to detect changed blobs
     _treshL = segment(_visdat->diffL_small,previous_location,roi_size);
 
-     // cv::Mat tmp = createColumnImage({_treshL,_visdat->diffL*100,_visdat->frameL},CV_8UC1,0.25f);
-     // cv::imshow("trek",tmp);
+//    cv::Mat tmp = createColumnImage({_treshL,_visdat->diffL*100,_visdat->frameL},CV_8UC1,0.25f);
+//    cv::imshow("trek",tmp);
 
 #if CV_MAJOR_VERSION==3
     cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
@@ -483,8 +483,10 @@ cv::Mat ItemTracker::segment(cv::Mat diffL, cv::Point previous_imageL_location, 
     _approx = get_approx_cutout_filtered(previous_imageL_location,diffL,roi_size);
     inRange(_approx, settings.iLowH1r, settings.iHighH1r, _treshL);
     //TODO: remove erode dilate and related if really obsolete:
-//    dilate( _treshL, _treshL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iClose1r+1, settings.iClose1r+1)));
-//    erode(_treshL, _treshL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iOpen1r+1, settings.iOpen1r+1)));
+    if (settings.iClose1r > 0)
+        dilate( _treshL, _treshL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iClose1r, settings.iClose1r)));
+    if (settings.iOpen1r > 0)
+        erode(_treshL, _treshL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iOpen1r, settings.iOpen1r)));
 
     return _treshL;
 }
