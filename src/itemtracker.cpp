@@ -24,7 +24,19 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     if (checkFileExist(_settingsFile)) {
         std::ifstream is(_settingsFile, std::ios::binary);
         cereal::BinaryInputArchive archive( is );
-        archive(settings);
+        try {
+            archive(settings);
+        }catch (cereal::Exception e) {
+            std::cout << "Itemtracker settings file error: " << e.what() << std::endl;
+            std::cout << "Maybe delete the file: " << _settingsFile << std::endl;
+            exit (1);
+        }
+        TrackerSettings tmp;
+        if (settings.version < tmp.version){
+            std::cout << "Itemtracker settings version too low!" << std::endl;
+            std::cout << "Maybe delete the file: " << _settingsFile << std::endl;
+            exit(1);
+        }
     } else {
         init_settings();
     }

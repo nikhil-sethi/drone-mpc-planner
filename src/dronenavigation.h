@@ -45,10 +45,12 @@ private:
         int land_incr_f_mm = 50;
         int autoLandThrottleDecreaseFactor = 10;
 
+        float version = 1.0f;
+
         template <class Archive>
         void serialize( Archive & ar )
         {
-            ar( distance_threshold_f,setpoint_slider_X,setpoint_slider_Y,setpoint_slider_Z,land_incr_f_mm,autoLandThrottleDecreaseFactor);
+            ar( version, distance_threshold_f,setpoint_slider_X,setpoint_slider_Y,setpoint_slider_Z,land_incr_f_mm,autoLandThrottleDecreaseFactor);
         }
     };
 

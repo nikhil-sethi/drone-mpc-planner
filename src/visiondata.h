@@ -34,10 +34,12 @@ private:
         int uncertainty_background = 0.3*255.0;
         int background_calib_time = 5;
 
+        float version = 1.0f;
+
         template <class Archive>
         void serialize( Archive & ar )
         {
-            ar(uncertainty_power,uncertainty_multiplier,uncertainty_background,background_calib_time);
+            ar(version, uncertainty_power,uncertainty_multiplier,uncertainty_background,background_calib_time);
         }
     };
 

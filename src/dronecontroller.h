@@ -51,13 +51,14 @@ private:
         //yaw control
         int yawP = 0;
         int yawI = 0;
-        int yawD = 0;
+        int yawD = 666;
 
+        float version = 1.0f;
 
         template <class Archive>
         void serialize( Archive & ar )
         {
-            ar( throttle_Pos,throttle_Vel,throttle_Acc,throttleI,roll_Pos,roll_Vel,roll_Acc,rollI,pitch_Pos,pitch_Vel,pitch_Acc,pitchI,yawP,yawI,yawD,autoTakeoffFactor,auto_takeoff_speed,hoverOffset);
+            ar(version,throttle_Pos,throttle_Vel,throttle_Acc,throttleI,roll_Pos,roll_Vel,roll_Acc,rollI,pitch_Pos,pitch_Vel,pitch_Acc,pitchI,yawP,yawI,yawD,autoTakeoffFactor,auto_takeoff_speed,hoverOffset);
         }
 
     };

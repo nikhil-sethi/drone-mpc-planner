@@ -27,7 +27,19 @@ void DroneController::init(std::ofstream *logger,bool fromfile, Arduino * arduin
     if (checkFileExist(paramsFile)) {
         std::ifstream is(paramsFile, std::ios::binary);
         cereal::BinaryInputArchive archive( is );
-        archive(params);
+        try {
+            archive(params);
+        }catch (cereal::Exception e) {
+            std::cout << "Dronecontroller settings file error: " << e.what() << std::endl;
+            std::cout << "Maybe delete the file: " << paramsFile << std::endl;
+            exit (1);
+        }
+        controlParameters tmp;
+        if (params.version < tmp.version){
+            std::cout << "Dronecontroller settings version too low!" << std::endl;
+            std::cout << "Maybe delete the file: " << paramsFile << std::endl;
+            exit(1);
+        }
     }
 
 #ifdef TUNING

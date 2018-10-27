@@ -19,7 +19,19 @@ void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL,cv::Mat new_frameR){
     if (checkFileExist(settingsFile)) {
         std::ifstream is(settingsFile, std::ios::binary);
         cereal::BinaryInputArchive archive( is );
-        archive(settings);
+        try {
+            archive(settings);
+        }catch (cereal::Exception e) {
+            std::cout << "Visiondata settings file error: " << e.what() << std::endl;
+            std::cout << "Maybe delete the file: " << settingsFile << std::endl;
+            exit (1);
+        }
+        BaseVisionSettings tmp;
+        if (settings.version < tmp.version){
+            std::cout << "Visiondata settings version too low!" << std::endl;
+            std::cout << "Maybe delete the file: " << settingsFile << std::endl;
+            exit(1);
+        }
     }
 
     smallsize =cv::Size(frameL.cols/IMSCALEF,frameL.rows/IMSCALEF);

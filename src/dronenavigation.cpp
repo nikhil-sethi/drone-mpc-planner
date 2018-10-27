@@ -20,7 +20,19 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     if (checkFileExist(paramsFile)) {
         std::ifstream is(paramsFile, std::ios::binary);
         cereal::BinaryInputArchive archive( is );
-        archive(params);
+        try {
+            archive(params);
+        }catch (cereal::Exception e) {
+            std::cout << "Dronecontroller settings file error: " << e.what() << std::endl;
+            std::cout << "Maybe delete the file: " << paramsFile << std::endl;
+            exit (1);
+        }
+        navigationParameters tmp;
+        if (params.version < tmp.version){
+            std::cout << "Dronecontroller settings version too low!" << std::endl;
+            std::cout << "Maybe delete the file: " << paramsFile << std::endl;
+            exit(1);
+        }
     }
 
     //(*_logger) << "imLx; imLy; disparity;";
