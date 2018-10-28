@@ -115,8 +115,7 @@ void DroneNavigation::update() {
 
     waypoint * wp;
 
-    trackData data = _dtrk->get_last_track_data();
-    _iceptor.update();
+    _iceptor.update(navigation_status == navigation_status_wait_for_insect);
 
     switch (navigation_status) {
     case navigation_status_init: {
@@ -136,6 +135,7 @@ void DroneNavigation::update() {
         navigation_status=navigation_status_taking_off;
         break;
     } case navigation_status_taking_off: {
+        trackData data = _dtrk->get_last_track_data();
         if (data.svelY > ((float)params.auto_takeoff_speed) / 100.f ) {
             navigation_status = navigation_status_take_off_completed;
         }
@@ -157,7 +157,8 @@ void DroneNavigation::update() {
 
     } case navigation_status_chasing_insect: {
 
-        //TODO: update chasing waypoint, speed, etc
+        //update target chasing waypoint and speed
+        //TODO: _dctrl.waypoint = iceptor.get_target(); or something
 
         if (_dctrl->get_flight_mode() == DroneController::fm_manual)
             navigation_status=navigation_status_manual;
@@ -214,6 +215,7 @@ void DroneNavigation::update() {
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
         navigation_status = navigation_status_landing;
     } case navigation_status_landing: {
+        trackData data = _dtrk->get_last_track_data();
         if (data.sposY < -(MAX_BORDER_Y_DEFAULT-0.15f) || autoLandThrottleDecrease >1000)
             navigation_status = navigation_status_landed;
 

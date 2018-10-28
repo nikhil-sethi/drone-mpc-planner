@@ -14,13 +14,18 @@
 class Interceptor{
 
 private:
-    DroneTracker * _dtrk;
+    DroneTracker * _dtrkr;
     InsectTracker * _itrkr;
+    bool _insect_in_range;
+    cv::Point3f _estimated_interception_location;
+    cv::Point3f _estimated_interception_speed;
+
+    const float estimated_take_off_time = 1.f;
 
 public:
 
-    void init(DroneTracker * dtrk, InsectTracker * itrkr);
-    void update();
+    void init(DroneTracker * dtrkr, InsectTracker * itrkr);
+    void update(bool drone_at_base);
     bool get_insect_in_range();
 
 };
