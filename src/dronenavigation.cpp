@@ -10,12 +10,16 @@ using namespace std;
 
 const string paramsFile = "../navigationParameters.dat";
 
+bool _manual_take_off_commanded;
+
+
 bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneController * dctrl, InsectTracker * itrkr) {
     _logger = logger;
     _dtrk = dtrk;
     _dctrl = dctrl;
     _itrkr = itrkr;
-
+    _iceptor.init(dtrk,itrkr);
+    
     // Load saved control paremeters
     if (checkFileExist(paramsFile)) {
         std::ifstream is(paramsFile, std::ios::binary);
@@ -34,50 +38,50 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
             exit(1);
         }
     }
-
+    
     //(*_logger) << "imLx; imLy; disparity;";
-
-
+    
+    
     //waypoints work as follows:
     //(cv::Point3i(x,y,z),
     // x = 1500 means the middle of the camera, x = 0 means 1.5m right!!! of the middle. (counter intuitive)
     // y = 1500 is on the same height as the camera position itself, y = 0 means 1.5m below the cam position
     //z = 0 means distance from the camera is zero. z = 1500 means 1.5m from the camera
-
+    
     // large scale flight plan
     //setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,SETPOINTYMAX / 2,1000),40)); // this is overwritten by position trackbars!!!
     setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,1,1000),15)); // this is overwritten by position trackbars!!!
-
+    
     setpoints.push_back(waypoint(cv::Point3i(1500,300,1500),0));
     setpoints.push_back(waypoint(cv::Point3i(1500,-200,1500),0));
-
+    
     setpoints.push_back(waypoint(cv::Point3i(1000,-200,1500),0));
     setpoints.push_back(waypoint(cv::Point3i(2000,-200,1500),0));
-
-
+    
+    
     //setpoints.push_back(waypoint(cv::Point3i(1000,-125,1500),0));
     //setpoints.push_back(waypoint(cv::Point3i(2000,-125,1500),0));
-
-
-
+    
+    
+    
     //setpoints.push_back(waypoint(cv::Point3i(1500,-250,1500),5));
     //setpoints.push_back(waypoint(cv::Point3i(1500,0,1500),5));
-
-
-
-
-
-
+    
+    
+    
+    
+    
+    
     setpoints.push_back(waypoint(cv::Point3i(1500,200,1070),10)); // landing waypoint (=last one), must be 1 meter above the ground in world coordinatates
     //setpoints.push_back(waypoint(cv::Point3i(1500,300,1300),60));
-
-
+    
+    
     /* // small scale flight plan
     setpoints.push_back(waypoint(cv::Point3i(1500,900,1000),40)); // this is overwritten by position trackbars!!!
     setpoints.push_back(waypoint(cv::Point3i(1200,900,1000),40));
     setpoints.push_back(waypoint(cv::Point3i(1500,900,1000),40));
     */
-
+    
     /* // fly squares
     setpoints.push_back(cv::Point3i(1800,600,1200));
     setpoints.push_back(cv::Point3i(1200,600,1000));
@@ -90,8 +94,8 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     setpoints.push_back(cv::Point3i(2000,1000,2000));
     setpoints.push_back(cv::Point3i(1800,1000,1200));
     */
-
-
+    
+    
 #ifdef TUNING
     namedWindow("Nav", WINDOW_NORMAL);
     createTrackbar("X [mm]", "Nav", &params.setpoint_slider_X, SETPOINTXMAX);
@@ -101,105 +105,147 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     createTrackbar("d threshold factor", "Nav", &params.distance_threshold_f, 10);
     createTrackbar("land_incr_f_mm", "Nav", &params.land_incr_f_mm, 50);
     createTrackbar("Land Decrease  ", "Nav", &params.autoLandThrottleDecreaseFactor, 50);
-
+    
 #endif
-
+    
     return false;
 }
 
 void DroneNavigation::update() {
-    trackData data = _dtrk->get_last_track_data();
-    float dis = sqrtf(_dctrl->posErrX*_dctrl->posErrX + _dctrl->posErrY*_dctrl->posErrY + _dctrl->posErrZ*_dctrl->posErrZ);
-    if (dis *1000 < setpoints[wpid]._distance_threshold_mm * params.distance_threshold_f && !_dctrl->getAutoLand() && _dctrl->getAutoControl() && !_dctrl->getAutoTakeOff() && _dtrk->n_frames_tracking>5) {
-        if (wpid < setpoints.size()-1) {
-            wpid++;
-            alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/window-slide.ogg &");
-        } else if (wpid == setpoints.size()-1)
-            _dctrl->setAutoLand(true);
-        if (wpid == 1)
-            _dctrl->recalibrateHover();
-    }
-
-    if (_dctrl->getAutoLand() && !_dctrl->landed){
-        if (autoLandThrottleDecrease == 0)
-            alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
-        autoLandThrottleDecrease += params.autoLandThrottleDecreaseFactor;
-        _dctrl->setAutoLandThrottleDecrease(autoLandThrottleDecrease);
-        std::cout << "AL: " << autoLandThrottleDecrease << std::endl;
-        _dtrk->drone_max_border_y = -9999; // keep tracking to the last possible end. TODO: earlier in the descend this may be disturbed by ground shadows
-    }
-
-    if (  (_dctrl->getAutoLand() && data.sposY < -(MAX_BORDER_Y_DEFAULT-0.15f)) || (autoLandThrottleDecrease >1000) || (_dctrl->autoThrottle <= 1050 && _dctrl->getAutoControl()) || (autoLandThrottleDecrease > 0 && !_dctrl->getAutoControl()) ) {
-        alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
-        _dctrl->landed = true;
-        wpid = 0;
-        autoLandThrottleDecrease = 0;
-        _dctrl->setAutoLandThrottleDecrease(0);
-        _dctrl->setAutoLand(false);
-        _dtrk->drone_max_border_y = MAX_BORDER_Y_DEFAULT;
-    }
-
-    if (!_dctrl->getAutoControl())
-        wpid = 0;
-
-    if (!_dctrl->getAutoLand())
-        autoLandThrottleDecrease = 0;
 
     waypoint * wp;
-    if (wpid > 0)
+
+    trackData data = _dtrk->get_last_track_data();
+    _iceptor.update();
+
+    switch (navigation_status) {
+    case navigation_status_init: {
+        navigation_status = navigation_status_wait_for_insect;
+        break;
+    } case navigation_status_wait_for_insect: {
+        if (_dctrl->get_flight_mode() == DroneController::fm_manual)
+            navigation_status=navigation_status_manual;
+        else if (_iceptor.get_insect_in_range() || _dctrl->manual_override_take_off_now )
+            navigation_status = navigation_status_takeoff;
+        break;
+    } case navigation_status_takeoff: {
+        _dctrl->manual_override_take_off_now = false;
+        _dctrl->manual_override_land_now = false;
+
+        _dctrl->set_flight_mode(DroneController::fm_taking_off);
+        navigation_status=navigation_status_taking_off;
+        break;
+    } case navigation_status_taking_off: {
+        if (data.svelY > ((float)params.auto_takeoff_speed) / 100.f ) {
+            navigation_status = navigation_status_take_off_completed;
+        }
+        if (_dctrl->get_flight_mode() == DroneController::fm_manual)
+            navigation_status=navigation_status_manual;
+        break;
+    } case navigation_status_take_off_completed: {
+        _dctrl->init_ground_effect_compensation();
+        alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
+        _dctrl->set_flight_mode(DroneController::fm_flying);
+        //TODO: choose whether to fly waypoints (e.g. for testing or demos) or to start the chase
+        //for now, just chase always
+        navigation_status = navigation_status_start_the_chase;
+    } case navigation_status_start_the_chase: {
+        if (_iceptor.get_insect_in_range())
+            navigation_status = navigation_status_chasing_insect;
+        else
+            navigation_status = navigation_status_goto_landing_waypoint;
+
+    } case navigation_status_chasing_insect: {
+
+        //TODO: update chasing waypoint, speed, etc
+
+        if (_dctrl->get_flight_mode() == DroneController::fm_manual)
+            navigation_status=navigation_status_manual;
+        else if (!_iceptor.get_insect_in_range())
+            navigation_status = navigation_status_goto_landing_waypoint;
+        break;
+    } case navigation_status_goto_landing_waypoint: {
+        wpid = setpoints.size()-1; // last waypoint is the landing waypoint
+        navigation_status = navigation_status_set_waypoint_in_flightplan;
+    } case navigation_status_set_waypoint_in_flightplan: {
         wp = &setpoints[wpid];
-    else { // read from position trackbars
+
+        setpoint_world.x = (wp->_xyz.x - SETPOINTXMAX/2) / 1000.0f;
+        setpoint_world.y = (wp->_xyz.y - SETPOINTYMAX/2) / 1000.0f;
+        setpoint_world.z = -(wp->_xyz.z) / 1000.0f;
+        distance_threshold_mm = wp->_distance_threshold_mm;
+
+        setspeed_world.x = 0;
+        setspeed_world.y = 0;
+        setspeed_world.z = 0;
+
+        navigation_status = navigation_status_approach_waypoint_in_flightplan;
+    } case navigation_status_approach_waypoint_in_flightplan: {
+        float dis = sqrtf(_dctrl->posErrX*_dctrl->posErrX + _dctrl->posErrY*_dctrl->posErrY + _dctrl->posErrZ*_dctrl->posErrZ);
+        if (dis *1000 < setpoints[wpid]._distance_threshold_mm * params.distance_threshold_f && _dtrk->n_frames_tracking>5) {
+            if (wpid < setpoints.size()-1) {
+                wpid++;
+                alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/window-slide.ogg &");
+                navigation_status = navigation_status_set_waypoint_in_flightplan;
+            } else if (wpid == setpoints.size()-1)
+                navigation_status = navigation_status_landing;
+            if (wpid == 1)
+                _dctrl->recalibrateHover();
+        }
+        if (_dctrl->get_flight_mode() == DroneController::fm_manual)
+            navigation_status=navigation_status_manual;
+        break;
+    } case navigation_status_stay_waypoint_in_flightplan: {
+        //TODO: implement
+        if (_dctrl->get_flight_mode() == DroneController::fm_manual)
+            navigation_status=navigation_status_manual;
+        break;
+    } case navigation_status_stay_slider_waypoint: {
         wp = &setpoints[wpid];
         wp->_xyz.x = params.setpoint_slider_X;
         wp->_xyz.y = params.setpoint_slider_Y;
         wp->_xyz.z = params.setpoint_slider_Z;
-    }
+        if (_dctrl->get_flight_mode() == DroneController::fm_manual)
+            navigation_status=navigation_status_manual;
+        break;
+    } case navigation_status_land: {
+        _dtrk->drone_max_border_y = -9999; // keep tracking to the last possible end. TODO: earlier in the descend this may be disturbed by ground shadows
+        _dctrl->set_flight_mode(DroneController::fm_landing);
+        alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
+        navigation_status = navigation_status_landing;
+    } case navigation_status_landing: {
+        if (data.sposY < -(MAX_BORDER_Y_DEFAULT-0.15f) || autoLandThrottleDecrease >1000)
+            navigation_status = navigation_status_landed;
 
-    setpoint = setpoints[wpid]._xyz;
+        autoLandThrottleDecrease += params.autoLandThrottleDecreaseFactor;
+        _dctrl->setAutoLandThrottleDecrease(autoLandThrottleDecrease);
 
-    setpoint_world.x = (wp->_xyz.x - SETPOINTXMAX/2) / 1000.0f;
-    setpoint_world.y = (wp->_xyz.y - SETPOINTYMAX/2) / 1000.0f;
-    setpoint_world.z = -(wp->_xyz.z) / 1000.0f;
-    distance_threshold_mm = wp->_distance_threshold_mm;
-
-    setspeed_world.x = 0;
-    setspeed_world.y = 0;
-    setspeed_world.z = 0;
-
-    if (wpid == 1 && false) {
-        if (_itrkr->get_last_track_data().sposY > -2.0f && _itrkr->get_last_track_data().sposY < -0.5f) {
-
-
-
-            if (_itrkr->get_last_track_data().sposX > -1.5f && _itrkr->get_last_track_data().sposX < 1.5f) {
-                if (_itrkr->get_last_track_data().sposZ > -2.5f && _itrkr->get_last_track_data().sposZ < -1.0f) {
-
-                    setspeed_world.x = _itrkr->get_last_track_data().svelX;
-                    setspeed_world.y = _itrkr->get_last_track_data().svelY;
-                    setspeed_world.z = _itrkr->get_last_track_data().svelZ;
-
-                    if (norm(setspeed_world)>0.01)
-                    {
-                        setpoint_world.x = _itrkr->get_last_track_data().sposX;
-                        setpoint_world.y = _itrkr->get_last_track_data().sposY;
-                        setpoint_world.z = _itrkr->get_last_track_data().sposZ;
-                    }
-
-                }
-
-            }
-        }
-    }
-
-    if (_dctrl->getAutoLand()) {
         if ( setpoint_world.y - land_incr> -(_dtrk->drone_max_border_y+100000.0f))
             land_incr += ((float)params.land_incr_f_mm)/1000.f;
         setpoint_world.y -= land_incr;
-
-    } else {
+        if (_dctrl->get_flight_mode() == DroneController::fm_manual)
+            navigation_status=navigation_status_manual;
+        break;
+    } case navigation_status_landed: {
+        alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
+        wpid = 0;
+        autoLandThrottleDecrease = 0;
+        _dctrl->setAutoLandThrottleDecrease(0);
+        _dctrl->set_flight_mode(DroneController::fm_inactive);
+        _dtrk->drone_max_border_y = MAX_BORDER_Y_DEFAULT;
         land_incr = 0;
-    }
+        navigation_status = navigation_status_wait_for_insect;
+    } case navigation_status_manual: {
+        wpid = 0;
+        if (_dctrl->get_flight_mode() == DroneController::fm_inactive)
+            navigation_status=navigation_status_wait_for_insect;
+        break;
+    } case navigation_status_drone_problem: {
 
+        break;
+    } default:
+        break;
+    }
 }
 
 void DroneNavigation::close() {

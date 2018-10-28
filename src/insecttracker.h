@@ -18,6 +18,9 @@ protected:
 public:
     void init(std::ofstream *logger, VisionData *_visdat);
     void track(float time, std::vector<track_item>  ignore, bool drone_is_active);
+    bool get_insect_detected() {
+
+    }
 
 };
 

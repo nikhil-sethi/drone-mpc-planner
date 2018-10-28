@@ -83,6 +83,24 @@ void DroneController::init(std::ofstream *logger,bool fromfile, Arduino * arduin
 
 }
 
+int bound_joystick_value(int v) {
+    if ( v < 1050 )
+        v = 1050;
+    if ( v > 1950 )
+        v = 1950;
+    return v;
+}
+void DroneController::queue_commands(int throttle,int roll, int pitch, int yaw) {
+    if (!_fromfile) {
+        _arduino->g_lockData.lock();
+        _arduino->throttle = throttle;
+        _arduino->roll = roll;
+        _arduino->pitch = pitch;
+        _arduino->yaw = yaw;
+        _arduino->g_lockData.unlock();
+    }
+}
+
 void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f setpoint_v) {
 
     if (!_fromfile) {
@@ -93,167 +111,123 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
 
 
     // Roll Control - X
-
     posErrX = data.sposX - setpoint.x;              // position error
     velx_sp = posErrX*params.roll_Pos/1000.f;       // desired velocity
     velErrX = data.svelX + velx_sp + setpoint_v.x;  // velocity error
     accx_sp = velErrX*params.roll_Vel/100;          // desired acceleration
     accErrX = data.saccX + accx_sp;                 // acceleration error
 
-
     // Altitude Control - Y
-
     posErrY = data.sposY - setpoint.y;              // position error
     vely_sp = posErrY*params.throttle_Pos/1000.f;   // desired velocity
     velErrY = data.svelY + vely_sp + setpoint_v.y;  // velocity error
     accy_sp = velErrY*params.throttle_Vel/100;      // desired acceleration
     accErrY = data.saccY + accy_sp;                 // acceleration error
 
-
     // Pitch Control - Z
-
     posErrZ = data.sposZ - setpoint.z;              // position error
     velz_sp = posErrZ*params.pitch_Pos/1000.f;      // desired velocity
     velErrZ = data.svelZ + velz_sp + setpoint_v.z;  // velocity error
     accz_sp = velErrZ*params.pitch_Vel/100;         // desired acceleration
     accErrZ = data.saccZ + accz_sp;                 // acceleration error
 
-
-    if(autoLand) {
-        autoTakeOff=false;
-    }
-
-    if (autoTakeOff) {
-        hoverthrottle  +=params.autoTakeoffFactor;
-        beforeTakeOffFactor = 0.15;
-        if (hoverthrottle < 1300)
-            hoverthrottle = 1300;
-    }
-
-    if (data.svelY > ((float)params.auto_takeoff_speed) / 100.f && autoTakeOff) {
-        autoTakeOff = false;
-        hoverthrottle -= params.hoverOffset*params.autoTakeoffFactor; // to compensate for ground effect and delay
-        alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
-    }
-
-    if (params.throttleI < 1 || autoTakeOff || !autoControl)
+    //when tuning, reset integrators when I gain set to 0:
+    if (params.throttleI < 1)
         throttleErrI = 0;
-    if (params.rollI < 1 || autoTakeOff  || !autoControl)
+    if (params.rollI < 1)
         rollErrI = 0;
-    if (params.pitchI < 1 || autoTakeOff || !autoControl)
+    if (params.pitchI < 1)
         pitchErrI = 0;
 
-
-    if (autoTakeOff) {
-        autoThrottle = hoverthrottle;
-    } else if (autoLand) {
-        autoThrottle = hoverthrottle - autoLandThrottleDecrease;
-    } else {
-            autoThrottle =  hoverthrottle + take_off_throttle_boost - (accErrY * params.throttle_Acc + throttleErrI * params.throttleI*beforeTakeOffFactor);
-        if (autoThrottle < 1300)
-            autoThrottle = 1300;
-    }
-    autoRoll =  1500 + (accErrX * params.roll_Acc +  params.rollI*rollErrI);
-    autoPitch = 1500 + (accErrZ * params.pitch_Acc +  params.pitchI*pitchErrI);
-
-    //TODO: Yaw    
-    if (autoPitch > 1950) {
-        autoPitch = 1950;
-    } else if (autoPitch < 1050) {
-        autoPitch = 1050;
-    }
-    if (autoRoll > 1950) {
-        autoRoll = 1950;
-    } else if (autoRoll < 1050) {
-        autoRoll = 1050;
-    }
-    if (autoThrottle> 1950) {
-        autoThrottle = 1950;
-    } else if (autoThrottle < 1050) {
-        autoThrottle = 1050;
-    }
-
     int throttle,roll,pitch,yaw;
+    switch(_flight_mode) {
+    case fm_manual : {
+        //reset integrators (prevent ever increasing error)
+        rollErrI = 0;
+        pitchErrI = 0;
+        throttleErrI = 0;
 
-    if ( autoControl ) {
-        if (landed)
-        {
-            throttle = INITIALTHROTTLE;
-            roll = 1500;
-            pitch = 1500;
-        } else
-        {
-            throttle = autoThrottle ;
-            if (!autoTakeOff) {
-                roll = autoRoll;
-                pitch = autoPitch;
-                //yaw= autoYaw;
-            } else {
-                roll = 1500;
-                pitch = 1530; //TODO: check why this is neces
-                //yaw= 1500;
-            }
-        }
-
-        //TMP:
-        //roll = joyRoll;
-        //pitch = joyPitch;
-        yaw = joyYaw;
-
-        //calc integrated errors
-        throttleErrI += velErrY; //posErrY;
-        rollErrI += posErrX;
-        pitchErrI += posErrZ;
-
-    } else {
         throttle = joyThrottle;
         roll = joyRoll;
         pitch = joyPitch;
         yaw = joyYaw;
+    } case fm_taking_off : {
+        //reset integrators
+        rollErrI = 0;
+        pitchErrI = 0;
+        throttleErrI = 0;
+
+        autoThrottle = hoverthrottle;
+        hoverthrottle  +=params.autoTakeoffFactor;
+        if (hoverthrottle < 1300)
+            hoverthrottle = 1300;
+
+        //only control throttle:
+        throttle = autoThrottle ;
+        roll = 1500;
+        pitch = 1530;
+        break;
+    } case fm_flying : {
+        //update integrators
+        throttleErrI += velErrY; //posErrY;
+        rollErrI += posErrX;
+        pitchErrI += posErrZ;
+
+        autoThrottle =  hoverthrottle + take_off_throttle_boost - (accErrY * params.throttle_Acc + throttleErrI * params.throttleI*0.1f);
+        if (autoThrottle < 1300)
+            autoThrottle = 1300;
+        autoRoll =  1500 + (accErrX * params.roll_Acc +  params.rollI*rollErrI);
+        autoPitch = 1500 + (accErrZ * params.pitch_Acc +  params.pitchI*pitchErrI);
+
+
+        throttle = autoThrottle ;
+        roll = autoRoll;
+        pitch = autoPitch;
+        break;
+    } case fm_landing : {
+
+        //fix integrators
+
+        //slowly decrease throttle
+        autoThrottle = hoverthrottle - autoLandThrottleDecrease;
+
+        //same as fm_flying:
+        autoRoll =  1500 + (accErrX * params.roll_Acc +  params.rollI*rollErrI);
+        autoPitch = 1500 + (accErrZ * params.pitch_Acc +  params.pitchI*pitchErrI);
+
+        throttle = autoThrottle ;
+        roll = autoRoll;
+        pitch = autoPitch;
+        break;
+    } case fm_inactive: {
+        //reset integrators (prevent ever increasing error)
+        rollErrI = 0;
+        pitchErrI = 0;
+        throttleErrI = 0;
+
+        throttle = INITIALTHROTTLE;
+        roll = 1500;
+        pitch = 1500;
+        yaw = 1500;
+        break;
+    }
+    default:
+        break;
     }
 
-    if ( throttle < 1050 )
-        throttle = 1050;
-    if ( throttle > 1950 )
-        throttle = 1950;
+    yaw = joyYaw; // tmp until auto yaw control is fixed
 
-    if ( roll < 1050 )
-        roll = 1050;
-    if ( roll > 1950 )
-        roll = 1950;
+    throttle = bound_joystick_value(throttle);
+    roll = bound_joystick_value(roll);
+    pitch = bound_joystick_value(pitch);
+    yaw = bound_joystick_value(yaw);
 
-    if ( pitch < 1050 )
-        pitch = 1050;
-    if ( pitch > 1950 )
-        pitch = 1950;
-
-    if ( yaw < 1050 )
-        yaw = 1050;
-    if ( yaw > 1950 )
-        yaw = 1950;
-
-    if ((landed && autoTakeOff ) || (joyThrottle > 1070 && !autoControl))  {
-        landed = false;
-    } else if ((landed && !autoTakeOff )|| (joyThrottle <= 1070 && !autoControl)) {
-        hoverthrottle  = INITIALTHROTTLE; //?
-        landed = true;
-    }
-
-    if (!_fromfile) {
-        _arduino->g_lockData.lock();
-
-        _arduino->throttle = throttle;
-        _arduino->roll = roll;
-        _arduino->pitch = pitch;
-        _arduino->yaw = yaw;
-
-        _arduino->g_lockData.unlock();
-    }
+    queue_commands(throttle,roll,pitch,yaw);
 
     (*_logger) << (int)data.valid  << "; " << posErrX << "; " << posErrY  << "; " << posErrZ << "; " << setpoint_v.x << "; " << setpoint_v.y  << "; " << setpoint_v.z << "; " << accx_sp << "; " << accy_sp  << "; " << accx_sp << "; " << hoverthrottle << "; " << autoThrottle << "; " << autoRoll << "; " << autoPitch << "; " << autoYaw <<  "; " << joyThrottle <<  "; " << joyRoll <<  "; " << joyPitch <<  "; " << joyYaw << "; " << (int)joySwitch << "; " << params.throttle_Pos << "; " << params.throttleI << "; " << params.throttle_Acc << "; " << data.dt << "; " << data.dx << "; " << data.dy << "; " << data.dz << "; " << velx_sp << "; " << vely_sp << "; " << velz_sp << "; ";
 }
 
-int firstTime = 3;
+int first_joy_time = 3;
 void DroneController::readJoystick(void) {
     while (joystick.sample(&event))
     {
@@ -285,31 +259,31 @@ void DroneController::readJoystick(void) {
                     break;
                 }
             } else if (JOYSTICK_TYPE == 1) {
-		            switch ( event.number ) {
-		            case 0: // roll
-		                joyRoll = 1500 + (event.value >> 6);
-		                break;
-		            case 1: // pitch
-                        joyPitch = 1500 + (event.value >> 5);
-		                break;
-		            case 2: //throttle
-                        joyThrottle = 1500 - (event.value >> 5);
-		                break;
-		            case 3: //switch
-		                joySwitch = event.value>0; // goes between +/-32768
-		                break;
-		            case 4: //dial
-		                joyDial = event.value; // goes between +/-32768
-		                scaledjoydial = joyDial+32767;
-		                scaledjoydial = (scaledjoydial / 65536)*100+35;
-		                break;
-		            case 5: //yaw
-		                joyYaw = 1500 + (event.value >> 6);
-		                break;
-		            default:
-		                std::cout << "Unkown joystick event: " << std::to_string(event.number) << ". Value: " << std::to_string(event.value) << std::endl;
-		                break;
-		            }
+                switch ( event.number ) {
+                case 0: // roll
+                    joyRoll = 1500 + (event.value >> 6);
+                    break;
+                case 1: // pitch
+                    joyPitch = 1500 + (event.value >> 5);
+                    break;
+                case 2: //throttle
+                    joyThrottle = 1500 - (event.value >> 5);
+                    break;
+                case 3: //switch
+                    joySwitch = event.value>0; // goes between +/-32768
+                    break;
+                case 4: //dial
+                    joyDial = event.value; // goes between +/-32768
+                    scaledjoydial = joyDial+32767;
+                    scaledjoydial = (scaledjoydial / 65536)*100+35;
+                    break;
+                case 5: //yaw
+                    joyYaw = 1500 + (event.value >> 6);
+                    break;
+                default:
+                    std::cout << "Unkown joystick event: " << std::to_string(event.number) << ". Value: " << std::to_string(event.value) << std::endl;
+                    break;
+                }
             } else if (JOYSTICK_TYPE == 2) {
                 switch ( event.number ) {
                 case 2: // roll
@@ -361,17 +335,16 @@ void DroneController::readJoystick(void) {
     }
 }
 
-
 void DroneController::process_joystick() {
     // prevent accidental take offs at start up
-    if (firstTime > 0) {
+    if (first_joy_time > 0) {
         if (joySwitch || joyThrottle > 1080 ) {
             std::cout << "Joystick not centered warning!" << std::endl;
             joySwitch = false;
             joyThrottle = 1050;
-            firstTime++;
+            first_joy_time++;
         }
-        firstTime--;
+        first_joy_time--;
     }
 
     //check switch functions
@@ -382,29 +355,19 @@ void DroneController::process_joystick() {
             alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Amsterdam.ogg &");
             joySwitch = false;
         } else if(joyThrottle < 1100) {
-            autoTakeOff = true;
-            autoLand = false;
-            hoverthrottle = INITIALTHROTTLE;
-            autoControl = true;
-        } else {
-            autoControl = true;
+            manual_override_take_off_now = true;
         }
     } else if (!joySwitch && joySwitch_prev) {
-        autoTakeOff = false;
-        autoControl = false;
-        autoLand = false;
+        _flight_mode = fm_manual;
     }
     joySwitch_prev = joySwitch;
 
 #if CAMMODE == CAMMODE_GENERATOR
-   if (!autoControl)
-       autoTakeOff = true;
-    autoControl = true;
-   joyPitch = 1500;
+    joyPitch = 1500;
 #endif
 
-    if (autoControl && joyPitch < 1150) {
-        autoLand=true;
+    if (_flight_mode == fm_flying && joyPitch < 1150) {
+        manual_override_land_now = true;
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/desktop-logout.ogg &");
     }
 }
@@ -412,7 +375,6 @@ void DroneController::process_joystick() {
 void DroneController::recalibrateHover() {
     hoverthrottle = hoverthrottle - throttleErrI;
     throttleErrI = 0;
-    beforeTakeOffFactor =0.1f;
 }
 
 void DroneController::close () {

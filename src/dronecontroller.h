@@ -20,7 +20,14 @@
  */
 class DroneController {
 
-
+public:
+    enum flight_mode{
+        fm_inactive,
+        fm_taking_off,
+        fm_flying,
+        fm_landing,
+        fm_manual
+    };
 private:
     
     struct controlParameters{
@@ -32,7 +39,7 @@ private:
         int throttleI = 15;
 
         int autoTakeoffFactor = 2;
-        int auto_takeoff_speed = 3; // /100
+
         int hoverOffset = 30;
 
         //roll control
@@ -53,12 +60,12 @@ private:
         int yawI = 0;
         int yawD = 666;
 
-        float version = 1.0f;
+        float version = 2.0f;
 
         template <class Archive>
         void serialize( Archive & ar )
         {
-            ar(version,throttle_Pos,throttle_Vel,throttle_Acc,throttleI,roll_Pos,roll_Vel,roll_Acc,rollI,pitch_Pos,pitch_Vel,pitch_Acc,pitchI,yawP,yawI,yawD,autoTakeoffFactor,auto_takeoff_speed,hoverOffset);
+            ar(version,throttle_Pos,throttle_Vel,throttle_Acc,throttleI,roll_Pos,roll_Vel,roll_Acc,rollI,pitch_Pos,pitch_Vel,pitch_Acc,pitchI,yawP,yawI,yawD,autoTakeoffFactor,hoverOffset);
         }
 
     };
@@ -67,28 +74,14 @@ private:
     float rollErrI = 0;
     float pitchErrI = 0;
     int autoLandThrottleDecrease = 0;
-    float beforeTakeOffFactor = 1.0f;
 
-    #define INITIALTHROTTLE 1050
+
+#define INITIALTHROTTLE 1050
     const int take_off_throttle_boost = 100;
 
-    bool autoTakeOff = false;
-    bool autoLand = false;
-    bool autoControl = false;
-
     bool _fromfile;
-
-    Arduino * _arduino;
-
-    std::ofstream *_logger;
-    void sendData(void);
-    void readJoystick(void);
-    void process_joystick();
-    void rebind(void);
-
-public:
-
     controlParameters params;
+    flight_mode _flight_mode;
 
     int autoThrottle = 1000;
     int autoRoll = 1500;
@@ -96,6 +89,24 @@ public:
     int autoYaw = 1500;
 
     float hoverthrottle = INITIALTHROTTLE;
+
+    Arduino * _arduino;
+
+    std::ofstream *_logger;
+    void sendData(void);
+    void queue_commands(int throttle,int roll, int pitch, int yaw);
+    void readJoystick(void);
+    void process_joystick();
+    void rebind(void);
+
+public:   
+    flight_mode get_flight_mode() {
+        return _flight_mode;
+    }
+    void set_flight_mode(flight_mode f){
+        if (_flight_mode != fm_manual)
+            _flight_mode = f;
+    }
 
     bool joySwitch = true;
     int joyDial = 0;
@@ -105,7 +116,9 @@ public:
     int joyPitch = 0;
     int joyYaw = 0;
 
-    bool landed,rangeAlert;
+    bool manual_override_take_off_now;
+    bool manual_override_land_now;
+
     float posErrX,posErrY,posErrZ;
     float velErrX,velErrY,velErrZ;
     float accErrX,accErrY,accErrZ;
@@ -115,14 +128,17 @@ public:
     void close (void);
     void init(std::ofstream *logger, bool fromfile, Arduino * arduino);
     void control(trackData data, cv::Point3f setpoint_world,cv::Point3f setspeed_world);
-    bool getAutoControl() {return autoControl;}
-    bool getDroneIsActive() {return (!landed && autoControl && autoThrottle > INITIALTHROTTLE) || (!autoControl && joyThrottle > INITIALTHROTTLE);}
-    bool getAutoTakeOff() {return autoTakeOff;}
-    bool getAutoLand() {return autoLand;}
-    void setAutoLand(bool b) {autoLand = b;}
+    bool getDroneIsActive() {
+        if (_flight_mode != fm_manual && joyThrottle > INITIALTHROTTLE)
+            return true;
+        return (_flight_mode != fm_inactive && autoThrottle > INITIALTHROTTLE);
+    }
     void setAutoLandThrottleDecrease(int value) {autoLandThrottleDecrease = value;}
     void recalibrateHover();
     bool joystick_ready();
+    void init_ground_effect_compensation(){
+        hoverthrottle -= params.hoverOffset*params.autoTakeoffFactor; // to compensate for ground effect and delay
+    }
 
 };
 
