@@ -5,7 +5,7 @@ using namespace cv;
 using namespace std;
 
 #ifdef HASSCREEN
-//#define TUNING
+#define TUNING
 #endif
 
 const string paramsFile = "../navigationParameters.dat";
@@ -72,7 +72,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     
     
     
-    setpoints.push_back(waypoint(cv::Point3i(1500,200,1070),10)); // landing waypoint (=last one), must be 1 meter above the ground in world coordinatates
+    setpoints.push_back(waypoint(cv::Point3i(1500,200,1070),15)); // landing waypoint (=last one), must be 1 meter above the ground in world coordinatates
     //setpoints.push_back(waypoint(cv::Point3i(1500,300,1300),60));
     
     
@@ -189,7 +189,7 @@ void DroneNavigation::update() {
                 alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/window-slide.ogg &");
                 navigation_status = navigation_status_set_waypoint_in_flightplan;
             } else if (wpid == setpoints.size()-1)
-                navigation_status = navigation_status_landing;
+                navigation_status = navigation_status_land;
             if (wpid == 1)
                 _dctrl->recalibrateHover();
         }
@@ -210,20 +210,20 @@ void DroneNavigation::update() {
             navigation_status=navigation_status_manual;
         break;
     } case navigation_status_land: {
-        _dtrk->drone_max_border_y = -9999; // keep tracking to the last possible end. TODO: earlier in the descend this may be disturbed by ground shadows
+        _dtrk->drone_max_border_y = 9999; // keep tracking to the last possible end. TODO: earlier in the descend this may be disturbed by ground shadows
         _dctrl->set_flight_mode(DroneController::fm_landing);
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
         navigation_status = navigation_status_landing;
     } case navigation_status_landing: {
         trackData data = _dtrk->get_last_track_data();
-        if (data.sposY < -(MAX_BORDER_Y_DEFAULT-0.15f) || autoLandThrottleDecrease >1000)
+        if (data.sposY < -(MAX_BORDER_Y_DEFAULT-0.05f) || autoLandThrottleDecrease >1000)
             navigation_status = navigation_status_landed;
 
         autoLandThrottleDecrease += params.autoLandThrottleDecreaseFactor;
         _dctrl->setAutoLandThrottleDecrease(autoLandThrottleDecrease);
 
         if ( setpoint_world.y - land_incr> -(_dtrk->drone_max_border_y+100000.0f))
-            land_incr += ((float)params.land_incr_f_mm)/1000.f;
+            land_incr = ((float)params.land_incr_f_mm)/1000.f;
         setpoint_world.y -= land_incr;
         if (_dctrl->get_flight_mode() == DroneController::fm_manual)
             navigation_status=navigation_status_manual;

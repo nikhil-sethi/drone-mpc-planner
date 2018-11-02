@@ -2,7 +2,7 @@
 #include "defines.h"
 
 #ifdef HASSCREEN
-//#define TUNING
+#define TUNING
 #endif
 
 using namespace cv;
@@ -57,7 +57,6 @@ void DroneController::init(std::ofstream *logger,bool fromfile, Arduino * arduin
     createTrackbar("Throttle I", "Control", &params.throttleI, 50);
 
     createTrackbar("Take off factor", "Control", &params.autoTakeoffFactor, 255);
-    createTrackbar("Take off speed", "Control", &params.auto_takeoff_speed, 1000); // /100
     createTrackbar("Hover offset", "Control", &params.hoverOffset, 100);
 
     // roll control
@@ -151,6 +150,7 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
         roll = joyRoll;
         pitch = joyPitch;
         yaw = joyYaw;
+        break;
     } case fm_taking_off : {
         //reset integrators
         rollErrI = 0;
@@ -189,7 +189,7 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
         //fix integrators
 
         //slowly decrease throttle
-        autoThrottle = hoverthrottle - autoLandThrottleDecrease;
+        autoThrottle = hoverthrottle + take_off_throttle_boost - (accErrY * params.throttle_Acc + throttleErrI * params.throttleI*0.1f);
 
         //same as fm_flying:
         autoRoll =  1500 + (accErrX * params.roll_Acc +  params.rollI*rollErrI);
@@ -355,7 +355,11 @@ void DroneController::process_joystick() {
             alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Amsterdam.ogg &");
             joySwitch = false;
         } else if(joyThrottle < 1100) {
-            manual_override_take_off_now = true;
+            if (joyPitch < 1200) {
+                _flight_mode = fm_inactive;
+                if (joyRoll > 1700)
+                    manual_override_take_off_now = true;
+            }
         }
     } else if (!joySwitch && joySwitch_prev) {
         _flight_mode = fm_manual;

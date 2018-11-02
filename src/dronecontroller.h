@@ -22,11 +22,11 @@ class DroneController {
 
 public:
     enum flight_mode{
-        fm_inactive,
+        fm_manual,
         fm_taking_off,
         fm_flying,
         fm_landing,
-        fm_manual
+        fm_inactive
     };
 private:
     
