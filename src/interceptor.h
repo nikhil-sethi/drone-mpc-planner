@@ -27,6 +27,7 @@ public:
     void init(DroneTracker * dtrkr, InsectTracker * itrkr);
     void update(bool drone_at_base);
     bool get_insect_in_range();
+    cv::Point3f get_intercept_position();
 
 };
 

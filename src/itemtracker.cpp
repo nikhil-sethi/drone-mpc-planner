@@ -10,7 +10,7 @@ using namespace cv;
 using namespace std;
 
 #ifdef HASSCREEN
-//#define TUNING
+#define TUNING
 #endif
 
 
@@ -336,7 +336,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
     }
 
     trackData last = get_last_track_data();
-    (*_logger) << find_result.best_image_locationL.pt.x *IMSCALEF << "; " << sub_disparity << "; " << find_result.disparity << "; ";
+    (*_logger) << find_result.best_image_locationL.pt.x *IMSCALEF << "; " << find_result.best_image_locationL.pt.y *IMSCALEF << "; " << find_result.disparity << "; ";
     (*_logger) << last.posX << "; " << last.posY << "; " << last.posZ << ";" ;
     (*_logger) << last.sposX << "; " << last.sposY << "; " << last.sposZ << ";";
     (*_logger) << last.svelX << "; " << last.svelY << "; " << last.svelZ << ";";
@@ -423,9 +423,9 @@ void ItemTracker::find(std::vector<track_item> exclude) {
     // TODO: verify if remove_voids() can help improve tracking. Currently it does not seem to do so, as it does not exclude keypoints very frequently
     //       When it is does exclude keypoints, these are often 'good' keypoints, that are excluded because they seem to form a pair with keypoints which
     //       are actually 'bad' detections that are too far away to be correct.
-    std::vector<track_item> keypoint_candidates;
-    keypoint_candidates = remove_voids(kps,find_result.keypointsL);
-    find_result.keypointsL_wihout_voids = remove_excludes(keypoint_candidates,exclude);
+    //std::vector<track_item> keypoint_candidates;
+    //keypoint_candidates = remove_voids(kps,find_result.keypointsL);
+    find_result.keypointsL_wihout_voids = remove_excludes(kps,exclude);
 
     if (find_result.keypointsL_wihout_voids.size() ==0) {
         roi_size_cnt +=1;
@@ -618,11 +618,11 @@ int ItemTracker::match_closest_to_prediciton(cv::Point3f predicted_locationL, st
 float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::Mat prevFrameR_big, cv::Mat frameL,cv::Mat frameR){
 
     //get retangle around blob / changed pixels
-    float rectsize = closestL.size+1;
+    float rectsize = closestL.size; // keypoint.size is the diameter of the blob
     if (rectsize < 3)
         rectsize = 3;
-    float rectsizeX = ceil(rectsize*4.0f);
-    float rectsizeY = ceil(rectsize*3.f);
+    float rectsizeX = ceil(rectsize*0.5f); // *4.0 results in drone-insect disparity interaction
+    float rectsizeY = ceil(rectsize*0.5f);  // *3.0
 
     int x1,y1,x2,y2;
     x1 = (closestL.pt.x-rectsizeX)*IMSCALEF;

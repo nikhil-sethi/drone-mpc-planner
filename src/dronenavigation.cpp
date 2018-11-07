@@ -148,7 +148,7 @@ void DroneNavigation::update() {
         _dctrl->set_flight_mode(DroneController::fm_flying);
         //TODO: choose whether to fly waypoints (e.g. for testing or demos) or to start the chase
         //for now, just chase always
-        navigation_status = navigation_status_start_the_chase;
+        navigation_status = navigation_status_chasing_insect;
     } case navigation_status_start_the_chase: {
         if (_iceptor.get_insect_in_range())
             navigation_status = navigation_status_chasing_insect;
@@ -158,12 +158,14 @@ void DroneNavigation::update() {
     } case navigation_status_chasing_insect: {
 
         //update target chasing waypoint and speed
-        //TODO: _dctrl.waypoint = iceptor.get_target(); or something
+        if (_iceptor.get_insect_in_range())
+            setpoint_world = _iceptor.get_intercept_position();
 
         if (_dctrl->get_flight_mode() == DroneController::fm_manual)
             navigation_status=navigation_status_manual;
-        else if (!_iceptor.get_insect_in_range())
-            navigation_status = navigation_status_goto_landing_waypoint;
+        // TODO: return to landing waypoint after the insect was lost for several frames
+        //else if (!_iceptor.get_insect_in_range())
+            //navigation_status = navigation_status_goto_landing_waypoint;
         break;
     } case navigation_status_goto_landing_waypoint: {
         wpid = setpoints.size()-1; // last waypoint is the landing waypoint
@@ -239,8 +241,10 @@ void DroneNavigation::update() {
         navigation_status = navigation_status_wait_for_insect;
     } case navigation_status_manual: {
         wpid = 0;
-        if (_dctrl->get_flight_mode() == DroneController::fm_inactive)
+        if (_dctrl->get_flight_mode() == DroneController::fm_inactive) {
             navigation_status=navigation_status_wait_for_insect;
+            alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Rhodes.ogg &");
+        }
         break;
     } case navigation_status_drone_problem: {
 
