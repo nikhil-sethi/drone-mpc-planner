@@ -25,7 +25,7 @@ void Interceptor::update(bool drone_at_base) {
         //flight time is simply assumed to be linear with distance
         //float tti = norm(insectPos-dronePos)*2;
 
-        float tti = 0.6;
+        float tti = 0.2;
 
         if (drone_at_base)
             tti += estimated_take_off_time; // take off t
@@ -39,7 +39,7 @@ void Interceptor::update(bool drone_at_base) {
         //calculate worst case deviation:
 
         //calculate if the drone will stay within the borders where it still can be controlled:
-        if (_estimated_interception_location.x > -1.0f && _estimated_interception_location.x < 1.0f) {
+        if (_estimated_interception_location.x > -0.5f && _estimated_interception_location.x < 1.0f) {
             if (_estimated_interception_location.y > -2.0f && _estimated_interception_location.y < -0.5f) {
                 if (_estimated_interception_location.z > -2.5f && _estimated_interception_location.z < -0.5f) {
                     _insect_in_range = true;

@@ -72,7 +72,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     
     
     
-    setpoints.push_back(waypoint(cv::Point3i(1500,200,1070),15)); // landing waypoint (=last one), must be 1 meter above the ground in world coordinatates
+    setpoints.push_back(waypoint(cv::Point3i(1500,200,1110),15)); // landing waypoint (=last one), must be 1 meter above the ground in world coordinatates
     //setpoints.push_back(waypoint(cv::Point3i(1500,300,1300),60));
     
     
@@ -214,6 +214,7 @@ void DroneNavigation::update() {
     } case navigation_status_land: {
         _dtrk->drone_max_border_y = 9999; // keep tracking to the last possible end. TODO: earlier in the descend this may be disturbed by ground shadows
         _dctrl->set_flight_mode(DroneController::fm_landing);
+        _dctrl->recalibrateHover();
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
         navigation_status = navigation_status_landing;
     } case navigation_status_landing: {

@@ -174,11 +174,12 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
         pitchErrI += posErrZ;
 
         autoThrottle =  hoverthrottle + take_off_throttle_boost - (accErrY * params.throttle_Acc + throttleErrI * params.throttleI*0.1f);
-        if (autoThrottle < 1300)
-            autoThrottle = 1300;
         autoRoll =  1500 + (accErrX * params.roll_Acc +  params.rollI*rollErrI);
         autoPitch = 1500 + (accErrZ * params.pitch_Acc +  params.pitchI*pitchErrI);
 
+        int minThrottle = 1300 + min(abs(autoRoll-1500)/10,50) + min(abs(autoPitch-1500)/10,50);
+        if (autoThrottle<minThrottle)
+            autoThrottle = minThrottle;
 
         throttle = autoThrottle ;
         roll = autoRoll;
@@ -377,7 +378,7 @@ void DroneController::process_joystick() {
 }
 
 void DroneController::recalibrateHover() {
-    hoverthrottle = hoverthrottle - throttleErrI;
+    hoverthrottle = hoverthrottle - (throttleErrI*params.throttleI*0.1f);
     throttleErrI = 0;
 }
 

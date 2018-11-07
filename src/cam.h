@@ -55,8 +55,8 @@ private:
     int frame_id;
     float frame_time;
 
-    int exposure = 3000; //84*(31250/256); // >11000 -> 60fps, >15500 -> 30fps, < 20 = crash
-    int gain = 30;
+    int exposure = 15500; //84*(31250/256); // >11000 -> 60fps, >15500 -> 30fps, < 20 = crash
+    int gain = 20;
     bool fromfile;
     bool ready;
 
