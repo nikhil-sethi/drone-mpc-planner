@@ -9,48 +9,119 @@ using namespace std;
 #endif
 
 void Cam::update(void) {
-    if (!ready) {
-        std::cout << "Waiting for realsense..." << std::endl;
-        while (!ready)
-            usleep(1000);
-    }
     std::unique_lock<std::mutex> lk(m);
     g_waitforimage.wait(lk);
+    frameL = Mat(Size(848, 480), CV_8UC1, (void*)rs_frameL.get_data(), Mat::AUTO_STEP);
+    frameR = Mat(Size(848, 480), CV_8UC1, (void*)rs_frameR.get_data(), Mat::AUTO_STEP);
+    frame_id = rs_frameL.get_frame_number();
+    frame_time = rs_frameL.get_timestamp() ;
     g_lockData.lock();
-    frameL = frameL_tmp.clone();
-    frameR = frameR_tmp.clone();
-    frame_id = frame_id_tmp;
-    frame_time = frame_time_tmp;
+    new_frameL = false;
+    new_frameR = false;
+    ready = true;
     g_lockData.unlock();
 }
+
+void Cam::rs_callback(rs2::frame f) {
+    g_lockData.lock();
+    if (f.get_profile().stream_index() == 1 && !new_frameL) {
+        rs_frameL  = f;
+        new_frameL = true;
+    } else if (f.get_profile().stream_index() == 2 && !new_frameR) {
+        rs_frameR = f;        
+        new_frameR = true;
+    }
+    if (new_frameL && new_frameR) {
+        if (rs_frameL.get_frame_number() == rs_frameR.get_frame_number()) {
+            g_waitforimage.notify_all();
+        } else { // somehow frames are not in sync, resync
+            if (f.get_profile().stream_index() == 1)
+                new_frameR = false;
+            else
+                new_frameL = false;
+            std::cout << "Warning: frames not in sync" << std::endl;
+        }
+    }
+
+    g_lockData.unlock();
+}
+
 
 void Cam::init(int argc, char **argv) {
 
     std::cout << "Initializing cam" << std::endl;
-    // Declare config
-    rs2::config cfg;
-    cfg.disable_all_streams();
-    cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
-    cfg.enable_stream(RS2_STREAM_INFRARED, 2, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
+
+    rs2::stream_profile infared1,infared2;
 
     if (argc ==2 ) {
-        cfg.enable_device_from_file(string(argv[1]) + ".bag");
+
+        rs2::context ctx; // The context represents the current platform with respect to connected devices
+        dev = ctx.load_device(string(argv[1]) + ".bag");
+        //dev = rs2::playback(dev);
+
         fromfile=true;
-    } else {
-        mkdir("./logging", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-        cfg.enable_record_to_file("./logging/test.bag");
-    }
+        ((rs2::playback)dev).set_real_time(true);
+        ((rs2::playback)dev).set_playback_speed(1.0);
 
-    selection = cam.start(cfg);
-    std::cout << "Started cam" << std::endl;
+        std::vector<rs2::sensor> sensors = dev.query_sensors();
+        depth_sensor = sensors[0]; // 0 = depth module
 
-    if (argc ==2 ) {
-        pd = selection.get_device();
-        ((rs2::playback)pd).set_real_time(true);
-        ((rs2::playback)pd).set_playback_speed(1.0);
+
+        std::cout << depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_NAME) << std::endl;
+
+        std::vector<rs2::stream_profile> stream_profiles = depth_sensor.get_stream_profiles();
+
+        for (uint i = 0; i < stream_profiles.size();i++) {
+            rs2::stream_profile sp = stream_profiles.at(i);
+            std::cout << sp.stream_index() << " -  " << sp.stream_name() << " ; " << sp.stream_type() << std::endl;
+            if ( sp.stream_name().compare("Infrared 1") == 0)
+                infared1 = sp;
+            else if ( sp.stream_name().compare("Infrared 2") == 0)
+                infared2 = sp;
+        }
+
     } else {
-        rs2::device selected_device = selection.get_device();
-        auto depth_sensor = selected_device.first<rs2::depth_sensor>();
+        rs2::context ctx; // The context represents the current platform with respect to connected devices
+        rs2::device_list devices = ctx.query_devices();
+        if (devices.size() == 0) {
+            std::cerr << "No device connected, please connect a RealSense device" << std::endl;
+            exit(1);
+        } else if (devices.size() > 1) {
+            std::cerr << "More than one device connected...." << std::endl;
+            exit(1);
+        } else {
+            dev = devices[0];
+
+            //record
+            mkdir("./logging", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+            dev = rs2::recorder("./logging/test.bag",dev);
+
+            std::cout << "Found the following device:\n" << std::endl;
+
+            // Each device provides some information on itself, such as name:
+            std::string name = "Unknown Device";
+            if (dev.supports(RS2_CAMERA_INFO_NAME))
+                name = dev.get_info(RS2_CAMERA_INFO_NAME);
+
+            // and the serial number of the device:
+            std::string sn = "########";
+            if (dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER))
+                sn = std::string("#") + dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+
+            std::cout << name << std::endl;
+
+        }
+
+        std::vector<rs2::sensor> sensors = dev.query_sensors();
+        depth_sensor = sensors[0]; // 0 = depth module
+
+        std::cout << depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_NAME) << std::endl;
+        std::cout << depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION) << std::endl;
+        std::cout << depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_PRODUCT_ID) << std::endl;
+        std::cout << depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION) << std::endl;
+        //TODO: check firmware version
+
+        depth_sensor.set_option(RS2_OPTION_FRAMES_QUEUE_SIZE, 0);
 
         if (depth_sensor.supports(RS2_OPTION_EMITTER_ENABLED))
         {
@@ -78,6 +149,10 @@ void Cam::init(int argc, char **argv) {
             }
         }
 
+        std::vector<rs2::stream_profile> stream_profiles = depth_sensor.get_stream_profiles();
+        infared1 = stream_profiles[17]; // infared 1 864x480 60fps
+        infared2 = stream_profiles[16]; // infared 2 864x480 60fps
+
 #ifdef TUNING
         namedWindow("Cam tuning", WINDOW_NORMAL);
         createTrackbar("Exposure", "Cam tuning", &exposure, 32768);
@@ -87,130 +162,33 @@ void Cam::init(int argc, char **argv) {
         std::cout << "Set cam config" << std::endl;
     }
 
+    depth_sensor.open({infared1,infared2});
+    depth_sensor.start([&](rs2::frame f) { rs_callback(f); });
+
     // Obtain focal length and principal point (from intrinsics)
-    auto depth_stream = selection.get_stream(RS2_STREAM_INFRARED, 1).as<rs2::video_stream_profile>();
+    auto depth_stream = infared1.as<rs2::video_stream_profile>();
     auto i = depth_stream.get_intrinsics();
     float focal_length = i.fx; // same as fy
     float cx = i.ppx; // same for both cameras
     float cy = i.ppy;
 
     // Obtain baseline (from extrinsics)
-    auto ir1_stream = selection.get_stream(RS2_STREAM_INFRARED, 1);
-    auto ir2_stream = selection.get_stream(RS2_STREAM_INFRARED, 2);
-    rs2_extrinsics e = ir2_stream.get_extrinsics_to(ir1_stream);
+    rs2_extrinsics e = infared2.get_extrinsics_to(infared1);
     float baseline = e.translation[0];
 
     //init Qf: https://stackoverflow.com/questions/27374970/q-matrix-for-the-reprojectimageto3d-function-in-opencv
     Qf = (Mat_<double>(4, 4) << 1.0, 0.0, 0.0, -cx, 0.0, 1.0, 0.0, -cy, 0.0, 0.0, 0.0, focal_length, 0.0, 0.0, 1/baseline, 0.0);
 
-
-    thread_cam = std::thread(&Cam::workerThread,this);
-
-}
-
-void Cam::workerThread(void) {
-
-    //std::unique_lock<std::mutex> lk(m); //hmmm???
-
-    std::cout << "Cam thread started!" << std::endl;
-
-
-    cv::Size imgsize(IMG_W, IMG_H);
-    if (enable_auto_exposure == only_at_startup) {
-        usleep(1e6); // give auto exposure some time
-    }
-
-    rs2::frameset frame;
-    frame = cam.wait_for_frames(); // init it with something
-
-    rs2_timestamp_domain d = frame.get_frame_timestamp_domain();
-    if ((d == RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME || d == RS2_TIMESTAMP_DOMAIN_COUNT) && !fromfile) {
-        std::cout << "Error: Realsense hardware clock not working... " << std::endl;
-        exit(1);
-    }
-
-    rs2::device selected_device = selection.get_device();
-    auto depth_sensor = selected_device.first<rs2::depth_sensor>();
-    if (enable_auto_exposure == only_at_startup && !fromfile) {
-
-        exposure = frame.get_infrared_frame(IR_ID_LEFT).get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE) ;
-        gain = frame.get_infrared_frame(IR_ID_LEFT).get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_GAIN_LEVEL) ;
-        std::cout << "Auto exposure = " << frame.get_infrared_frame(IR_ID_LEFT).get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE) << ", ";
-        std::cout << "Auto gain = " << frame.get_infrared_frame(IR_ID_LEFT).get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_GAIN_LEVEL) << std::endl;
-
-        depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,0.0);
-        depth_sensor.set_option(RS2_OPTION_EXPOSURE, exposure);
-        depth_sensor.set_option(RS2_OPTION_GAIN, gain);
-
-        usleep(1e6); // give auto exposure some time
-        frame = cam.wait_for_frames(); // init it with something
-    }
-
-    static int old_exposure = exposure;
-    static int old_gain = gain;
-    int frame_start_time = frame.get_timestamp();
-
-    while (!exitCamThread) {
-
-        uint current_frame_id = frame.get_frame_number();
-        while(current_frame_id == frame.get_frame_number()) {
-            try {
-                frame = cam.wait_for_frames();
-            } catch (rs2::error) {
-                std::cout << "RS error" << std::endl;
-            }
-        }
-
-        g_lockData.lock();
-        frame_time_tmp = ((float)frame.get_timestamp()-frame_start_time)/1000.f; //stopwatch.Read()/1000.f;
-        frame_id_tmp = frame.get_frame_number();
-        //std::cout << frame.get_frame_number() << ": " << frame_time_tmp << std::endl;
-        frameL_tmp = Mat(imgsize, CV_8UC1, (void*)frame.get_infrared_frame(IR_ID_LEFT).get_data(), Mat::AUTO_STEP);
-        frameR_tmp = Mat(imgsize, CV_8UC1, (void*)frame.get_infrared_frame(IR_ID_RIGHT).get_data(), Mat::AUTO_STEP);
-        g_lockData.unlock();
-        g_waitforimage.notify_one();
-        ready = true;
-
-        if (!fromfile && !(enable_auto_exposure == enabled)) {
-            if (exposure != old_exposure) {
-                if (exposure < 20)
-                    exposure =20;
-                auto range = depth_sensor.get_option_range(RS2_OPTION_EXPOSURE);
-                if (exposure < range.min) {
-                    exposure = range.min;
-                }
-                if (exposure > range.max) {
-                    exposure = range.max;
-                }
-                depth_sensor.set_option(RS2_OPTION_EXPOSURE, exposure);
-            }
-            if (gain != old_gain) {
-                auto range = depth_sensor.get_option_range(RS2_OPTION_GAIN);
-                if (gain < range.min) {
-                    gain = range.min;
-                }
-                if (gain > range.max) {
-                    gain = range.max;
-                }
-                depth_sensor.set_option(RS2_OPTION_GAIN, gain); // increasing this causes noise
-            }
-        }
-        old_exposure = exposure;
-        old_gain = gain;
-
-    }
-    usleep(1000);
 }
 
 void Cam::pause(){
-    ((rs2::playback)pd).pause();
+//    ((rs2::playback)pd).pause();
 }
 void Cam::resume() {
-    ((rs2::playback)pd).resume();
+//    ((rs2::playback)pd).resume();
 }
 
 void Cam::close() {
-    exitCamThread = true;
-    g_lockData.unlock();
-    thread_cam.join();
+    depth_sensor.stop();
+    depth_sensor.close();
 }

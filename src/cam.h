@@ -27,7 +27,6 @@
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 
 
-
 class Cam{
 
 public:
@@ -40,9 +39,6 @@ public:
 
     void update(void);
 
-    std::mutex g_lockData;
-    std::condition_variable g_waitforimage;
-    std::mutex m;
 
 
     int get_frame_id() {return frame_id;}
@@ -58,26 +54,24 @@ private:
 
     int frame_id;
     float frame_time;
-    rs2::pipeline_profile selection;
-    int exposure = 15500; //84*(31250/256); // >11000 -> 60fps, >15500 -> 30fps, < 20 = crash
+
+    int exposure = 3000; //84*(31250/256); // >11000 -> 60fps, >15500 -> 30fps, < 20 = crash
     int gain = 30;
     bool fromfile;
     bool ready;
 
-    float frame_time_tmp;
-    int frame_id_tmp;
-    cv::Mat frameL_tmp,frameR_tmp;
+    std::mutex g_lockData;
+    std::condition_variable g_waitforimage;
+    std::mutex m;
+    rs2::device dev;
 
-    // Declare RealSense pipeline, encapsulating the actual device and sensors
-    rs2::pipeline cam;
-    rs2::device pd;
+    void rs_callback(rs2::frame f);
 
-#define IR_ID_LEFT 1 //as seen from the camera itself
-#define IR_ID_RIGHT 2
+    rs2::sensor depth_sensor;
+    bool new_frameL = false;
+    bool new_frameR = false;
 
-    std::thread thread_cam;
-    bool exitCamThread = false;
-    void workerThread(void);
+    rs2::frame rs_frameL,rs_frameR;
 
 
 };
