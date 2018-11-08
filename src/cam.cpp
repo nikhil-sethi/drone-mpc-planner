@@ -91,18 +91,21 @@ void Cam::rs_callback_playback(rs2::frame f) {
     g_lockData.unlock();
 }
 
+uint last_sync_id = 0;
 void Cam::rs_callback(rs2::frame f) {
     g_lockData.lock();
-    if (f.get_profile().stream_index() == 1 && !new_frame1) {
+    if (f.get_profile().stream_index() == 1 && !new_frame1 && f.get_frame_number() >= last_sync_id) {
         rs_frameL  = f;
         new_frame1 = true;
-    } else if (f.get_profile().stream_index() == 2 && !new_frame2) {
+    } else if (f.get_profile().stream_index() == 2 && !new_frame2 && f.get_frame_number() >= last_sync_id) {
         rs_frameR = f;
         new_frame2 = true;
     }
     if (new_frame1 && new_frame2) {
-        if (rs_frameL.get_frame_number() == rs_frameR.get_frame_number())
+        if (rs_frameL.get_frame_number() == rs_frameR.get_frame_number()) {
             g_waitforimage.notify_all();
+            last_sync_id = rs_frameL.get_frame_number();
+        }
         else { // somehow frames are not in sync, resync
             if (f.get_profile().stream_index() == 1)
                 new_frame2 = false;
