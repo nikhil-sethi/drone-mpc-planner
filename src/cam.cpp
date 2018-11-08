@@ -52,7 +52,7 @@ void Cam::update(void) {
     frame_id = rs_frameL.get_frame_number();
     if (frame_time_start <0)
         frame_time_start = rs_frameL.get_timestamp();
-    frame_time = (rs_frameL.get_timestamp() -frame_time_start)/1000.f;
+    frame_time = ((float)rs_frameL.get_timestamp() -frame_time_start)/1000.f;
 //    std::cout << "-------------frame id: " << frame_id << " seek time: " << incremented_playback_frametime << std::endl;
 
 
