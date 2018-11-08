@@ -78,7 +78,7 @@ void Visualizer::addPlotSample(void) {
     saccY.push_back(data.saccY);
     saccZ.push_back(-data.saccZ);
 
-    autotakeoff_velY_thresh.push_back((float)(_dctrl->params.auto_takeoff_speed) / 100.f);
+    autotakeoff_velY_thresh.push_back((float)(_dnav->params.    auto_takeoff_speed) / 100.f);
 
     g_lockData.unlock();
 #endif

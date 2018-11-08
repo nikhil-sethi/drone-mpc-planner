@@ -36,25 +36,7 @@ private:
         int _distance_threshold_mm;
     };
 
-    struct navigationParameters{
-        int distance_threshold_f = 1;
 
-        int setpoint_slider_X = SETPOINTXMAX / 2;
-        int setpoint_slider_Y = 600;
-        int setpoint_slider_Z = 1000;
-
-        int land_incr_f_mm = 50;
-        int autoLandThrottleDecreaseFactor = 10;
-        int auto_takeoff_speed = 3;
-
-        float version = 2.0f;
-
-        template <class Archive>
-        void serialize( Archive & ar )
-        {
-            ar( version, distance_threshold_f,setpoint_slider_X,setpoint_slider_Y,setpoint_slider_Z,land_incr_f_mm,autoLandThrottleDecreaseFactor,auto_takeoff_speed);
-        }
-    };
 
     enum Navigation_Status {
         navigation_status_init,
@@ -90,8 +72,29 @@ private:
     InsectTracker * _itrkr;
     Interceptor _iceptor;
 
-    navigationParameters params;
 public:
+
+    struct navigationParameters{
+        int distance_threshold_f = 1;
+
+        int setpoint_slider_X = SETPOINTXMAX / 2;
+        int setpoint_slider_Y = 600;
+        int setpoint_slider_Z = 1000;
+
+        int land_incr_f_mm = 50;
+        int autoLandThrottleDecreaseFactor = 10;
+        int auto_takeoff_speed = 3;
+
+        float version = 2.0f;
+
+        template <class Archive>
+        void serialize( Archive & ar )
+        {
+            ar( version, distance_threshold_f,setpoint_slider_X,setpoint_slider_Y,setpoint_slider_Z,land_incr_f_mm,autoLandThrottleDecreaseFactor,auto_takeoff_speed);
+        }
+    };
+
+    navigationParameters params;
 
     cv::Point3d setpoint;
     cv::Point3f setpoint_world;

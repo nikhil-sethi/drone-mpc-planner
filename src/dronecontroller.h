@@ -83,12 +83,7 @@ private:
     controlParameters params;
     flight_mode _flight_mode;
 
-    int autoThrottle = 1000;
-    int autoRoll = 1500;
-    int autoPitch = 1500;
-    int autoYaw = 1500;
 
-    float hoverthrottle = INITIALTHROTTLE;
 
     Arduino * _arduino;
 
@@ -115,6 +110,14 @@ public:
     int joyRoll = 0;
     int joyPitch = 0;
     int joyYaw = 0;
+
+    int autoThrottle = 1000;
+    int autoRoll = 1500;
+    int autoPitch = 1500;
+    int autoYaw = 1500;
+
+    float hoverthrottle = INITIALTHROTTLE;
+
 
     bool manual_override_take_off_now;
     bool manual_override_land_now;
