@@ -181,7 +181,7 @@ void process_video() {
 
         std::cout << "Frame: " <<imgcount << ", " << cam.get_frame_id() << ". FPS: " << to_string_with_precision(imgcount / (time-break_time ),1) << ". Time: " << to_string_with_precision(time-break_time,2)  << ", dt " << to_string_with_precision(dt,3) << " FPS now: " << to_string_with_precision(fps,1) << std::endl;
 
-        if (fps < 50) {
+        if (fps < 50 && !fromfile) {
             std::cout << "FPS WARNING!" << std::endl;
             static float limit_fps_warning_sound = t;
             if (t - limit_fps_warning_sound > 3.f ) {

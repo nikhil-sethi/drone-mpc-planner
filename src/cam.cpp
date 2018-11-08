@@ -16,7 +16,7 @@ int last_2_id =-1;
 float incremented_playback_frametime = (1.f/VIDEOFPS)/2.f;
 void Cam::update(void) {
     if( fromfile) {
-        incremented_playback_frametime = requested_id_in*(1.f/VIDEOFPS) - (1.f/VIDEOFPS)/2.f ; //halfway before the next frame
+        incremented_playback_frametime = requested_id_in*(1.f/VIDEOFPS) - (1.f/VIDEOFPS)*0.1f ; //halfway before the next frame
         if (incremented_playback_frametime < 0)
             incremented_playback_frametime = 0;
         seek(incremented_playback_frametime);
@@ -38,7 +38,7 @@ void Cam::update(void) {
         }
 //        while(requested_id_in > 5){
 //            unsigned char k = cv::waitKey(1);
-//            if (k== ' ')
+//            if (k== 'f')
 //                break;
 //        };
         swc.Restart();
@@ -53,8 +53,7 @@ void Cam::update(void) {
     if (frame_time_start <0)
         frame_time_start = rs_frameL.get_timestamp();
     frame_time = ((float)rs_frameL.get_timestamp() -frame_time_start)/1000.f;
-//    std::cout << "-------------frame id: " << frame_id << " seek time: " << incremented_playback_frametime << std::endl;
-
+    //std::cout << "-------------frame id: " << frame_id << " seek time: " << incremented_playback_frametime << std::endl;
 
     if(!fromfile) {
         g_lockData.lock();
@@ -68,10 +67,10 @@ void Cam::update(void) {
 void Cam::rs_callback_playback(rs2::frame f) {
     g_lockData.lock();
 
-    //    if (f.get_profile().stream_index() == 1 )
-    //        std::cout << "Received id " << f.get_frame_number()   << "@" << f.get_profile().stream_index() << "         Last: " << last_1_id << "@1 and " << last_2_id << "@2 and synced id:" << requested_id_in << " time: " << incremented_playback_frametime << std::endl;
-    //    if (f.get_profile().stream_index() == 2 )
-    //        std::cout << "Received id         " << f.get_frame_number()   << "@" << f.get_profile().stream_index() << " Last: " << last_1_id << "@1 and " << last_2_id << "@2 and synced id:" << requested_id_in << " time: " << incremented_playback_frametime << std::endl;
+//    if (f.get_profile().stream_index() == 1 )
+//        std::cout << "Received id " << f.get_frame_number()   << "@" << f.get_profile().stream_index() << "         Last: " << last_1_id << "@1 and " << last_2_id << "@2 and synced id:" << requested_id_in << " time: " << incremented_playback_frametime << std::endl;
+//    if (f.get_profile().stream_index() == 2 )
+//        std::cout << "Received id         " << f.get_frame_number()   << "@" << f.get_profile().stream_index() << " Last: " << last_1_id << "@1 and " << last_2_id << "@2 and synced id:" << requested_id_in << " time: " << incremented_playback_frametime << std::endl;
 
     if (f.get_profile().stream_index() == 1 && f.get_frame_number() >= requested_id_in) {
         rs_frameL  = f;
@@ -86,7 +85,7 @@ void Cam::rs_callback_playback(rs2::frame f) {
     if (new_frame1 && new_frame2) {
         g_waitforimage.notify_all();
         ready = false;
-        requested_id_in = f.get_frame_number();
+        //requested_id_in = f.get_frame_number();
     }
 
     g_lockData.unlock();
@@ -263,7 +262,7 @@ void Cam::resume() {
     ((rs2::playback)dev).resume();
 }
 void Cam::seek(float time) {
-    std::chrono::nanoseconds nano((uint)(1e9f*time));
+    std::chrono::nanoseconds nano((ulong)(1e9f*time));
     ((rs2::playback)dev).seek(nano);
 }
 
