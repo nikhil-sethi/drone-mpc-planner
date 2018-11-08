@@ -15,6 +15,9 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <atomic>
+#include <chrono>
+#include <vector>
 
 #include "opencv2/features2d/features2d.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
@@ -36,6 +39,7 @@ public:
 
     void pause();
     void resume();
+    void seek(float time);
 
     void update(void);
 
@@ -53,11 +57,13 @@ public:
 private:
 
     int frame_id;
-    float frame_time;
+    float frame_time = 0;
 
     int exposure = 15500; //84*(31250/256); // >11000 -> 60fps, >15500 -> 30fps, < 20 = crash
     int gain = 20;
     bool fromfile;
+    bool real_time_playback = false;
+    float real_time_playback_speed = 1;
     bool ready;
 
     std::mutex g_lockData;
@@ -66,10 +72,12 @@ private:
     rs2::device dev;
 
     void rs_callback(rs2::frame f);
+    void rs_callback_playback(rs2::frame f);
 
     rs2::sensor depth_sensor;
-    bool new_frameL = false;
-    bool new_frameR = false;
+
+    bool new_frame1 = false;
+    bool new_frame2 = false;
 
     rs2::frame rs_frameL,rs_frameR;
 

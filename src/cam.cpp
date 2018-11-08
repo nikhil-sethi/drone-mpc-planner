@@ -8,41 +8,108 @@ using namespace std;
 #define TUNING
 #endif
 
+stopwatch_c swc;
+
+uint requested_id_in =0;
+int last_1_id =-1;
+int last_2_id =-1;
+float incremented_playback_frametime = (1.f/VIDEOFPS)/2.f;
 void Cam::update(void) {
+    if( fromfile) {
+        incremented_playback_frametime = requested_id_in*(1.f/VIDEOFPS) - (1.f/VIDEOFPS)/2.f ; //halfway before the next frame
+        if (incremented_playback_frametime < 0)
+            incremented_playback_frametime = 0;
+        seek(incremented_playback_frametime);
+        g_lockData.lock();
+        new_frame1 = false;
+        new_frame2 = false;
+        requested_id_in++;
+        g_lockData.unlock();
+        resume();
+    }
+
     std::unique_lock<std::mutex> lk(m);
     g_waitforimage.wait(lk);
+
+    if( fromfile) {
+        pause();
+        while(swc.Read() < (1.f/VIDEOFPS)*1e3f){
+            usleep(10);
+        }
+//        while(requested_id_in > 5){
+//            unsigned char k = cv::waitKey(1);
+//            if (k== ' ')
+//                break;
+//        };
+        swc.Restart();
+
+        if (last_2_id != last_2_id)
+            std::cout << "Playback sync problem" << std::endl;
+    }
+
     frameL = Mat(Size(848, 480), CV_8UC1, (void*)rs_frameL.get_data(), Mat::AUTO_STEP);
     frameR = Mat(Size(848, 480), CV_8UC1, (void*)rs_frameR.get_data(), Mat::AUTO_STEP);
     frame_id = rs_frameL.get_frame_number();
     frame_time = rs_frameL.get_timestamp() ;
+//    std::cout << "-------------frame id: " << frame_id << " seek time: " << incremented_playback_frametime << std::endl;
+
+
+    if(!fromfile) {
+        g_lockData.lock();
+        new_frame1 = false;
+        new_frame2 = false;
+        ready = true;
+        g_lockData.unlock();
+    }
+}
+
+void Cam::rs_callback_playback(rs2::frame f) {
     g_lockData.lock();
-    new_frameL = false;
-    new_frameR = false;
-    ready = true;
+
+    //    if (f.get_profile().stream_index() == 1 )
+    //        std::cout << "Received id " << f.get_frame_number()   << "@" << f.get_profile().stream_index() << "         Last: " << last_1_id << "@1 and " << last_2_id << "@2 and synced id:" << requested_id_in << " time: " << incremented_playback_frametime << std::endl;
+    //    if (f.get_profile().stream_index() == 2 )
+    //        std::cout << "Received id         " << f.get_frame_number()   << "@" << f.get_profile().stream_index() << " Last: " << last_1_id << "@1 and " << last_2_id << "@2 and synced id:" << requested_id_in << " time: " << incremented_playback_frametime << std::endl;
+
+    if (f.get_profile().stream_index() == 1 && f.get_frame_number() >= requested_id_in) {
+        rs_frameL  = f;
+        new_frame1 = true;
+        last_1_id = f.get_frame_number();
+    } else if (f.get_profile().stream_index() == 2 && f.get_frame_number() >= requested_id_in) {
+        rs_frameR = f;
+        new_frame2 = true;
+        last_2_id = f.get_frame_number();
+    }
+
+    if (new_frame1 && new_frame2) {
+        g_waitforimage.notify_all();
+        ready = false;
+        requested_id_in = f.get_frame_number();
+    }
+
     g_lockData.unlock();
 }
 
 void Cam::rs_callback(rs2::frame f) {
     g_lockData.lock();
-    if (f.get_profile().stream_index() == 1 && !new_frameL) {
+    if (f.get_profile().stream_index() == 1 && !new_frame1) {
         rs_frameL  = f;
-        new_frameL = true;
-    } else if (f.get_profile().stream_index() == 2 && !new_frameR) {
-        rs_frameR = f;        
-        new_frameR = true;
+        new_frame1 = true;
+    } else if (f.get_profile().stream_index() == 2 && !new_frame2) {
+        rs_frameR = f;
+        new_frame2 = true;
     }
-    if (new_frameL && new_frameR) {
-        if (rs_frameL.get_frame_number() == rs_frameR.get_frame_number()) {
+    if (new_frame1 && new_frame2) {
+        if (rs_frameL.get_frame_number() == rs_frameR.get_frame_number())
             g_waitforimage.notify_all();
-        } else { // somehow frames are not in sync, resync
+        else { // somehow frames are not in sync, resync
             if (f.get_profile().stream_index() == 1)
-                new_frameR = false;
+                new_frame2 = false;
             else
-                new_frameL = false;
+                new_frame1 = false;
             std::cout << "Warning: frames not in sync" << std::endl;
         }
     }
-
     g_lockData.unlock();
 }
 
@@ -60,8 +127,9 @@ void Cam::init(int argc, char **argv) {
         //dev = rs2::playback(dev);
 
         fromfile=true;
-        ((rs2::playback)dev).set_real_time(true);
-        ((rs2::playback)dev).set_playback_speed(1.0);
+        ((rs2::playback)dev).set_real_time(real_time_playback);
+        if (real_time_playback)
+            ((rs2::playback)dev).set_playback_speed(real_time_playback_speed);
 
         std::vector<rs2::sensor> sensors = dev.query_sensors();
         depth_sensor = sensors[0]; // 0 = depth module
@@ -79,6 +147,8 @@ void Cam::init(int argc, char **argv) {
             else if ( sp.stream_name().compare("Infrared 2") == 0)
                 infared2 = sp;
         }
+        depth_sensor.open({infared1,infared2});
+        depth_sensor.start([&](rs2::frame f) { rs_callback_playback(f); });
 
     } else {
         rs2::context ctx; // The context represents the current platform with respect to connected devices
@@ -153,6 +223,8 @@ void Cam::init(int argc, char **argv) {
         infared1 = stream_profiles[17]; // infared 1 864x480 60fps
         infared2 = stream_profiles[16]; // infared 2 864x480 60fps
 
+        depth_sensor.open({infared1,infared2});
+        depth_sensor.start([&](rs2::frame f) { rs_callback(f); });
 #ifdef TUNING
         namedWindow("Cam tuning", WINDOW_NORMAL);
         createTrackbar("Exposure", "Cam tuning", &exposure, 32768);
@@ -162,8 +234,8 @@ void Cam::init(int argc, char **argv) {
         std::cout << "Set cam config" << std::endl;
     }
 
-    depth_sensor.open({infared1,infared2});
-    depth_sensor.start([&](rs2::frame f) { rs_callback(f); });
+    if (fromfile)
+        pause();
 
     // Obtain focal length and principal point (from intrinsics)
     auto depth_stream = infared1.as<rs2::video_stream_profile>();
@@ -179,13 +251,18 @@ void Cam::init(int argc, char **argv) {
     //init Qf: https://stackoverflow.com/questions/27374970/q-matrix-for-the-reprojectimageto3d-function-in-opencv
     Qf = (Mat_<double>(4, 4) << 1.0, 0.0, 0.0, -cx, 0.0, 1.0, 0.0, -cy, 0.0, 0.0, 0.0, focal_length, 0.0, 0.0, 1/baseline, 0.0);
 
+    swc.Start();
 }
 
 void Cam::pause(){
-//    ((rs2::playback)pd).pause();
+    ((rs2::playback)dev).pause();
 }
 void Cam::resume() {
-//    ((rs2::playback)pd).resume();
+    ((rs2::playback)dev).resume();
+}
+void Cam::seek(float time) {
+    std::chrono::nanoseconds nano((uint)(1e9f*time));
+    ((rs2::playback)dev).seek(nano);
 }
 
 void Cam::close() {
