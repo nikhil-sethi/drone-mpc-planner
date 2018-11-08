@@ -131,7 +131,7 @@ public:
     void init(std::ofstream *logger, bool fromfile, Arduino * arduino);
     void control(trackData data, cv::Point3f setpoint_world,cv::Point3f setspeed_world);
     bool getDroneIsActive() {
-        if (_flight_mode != fm_manual && joyThrottle > INITIALTHROTTLE)
+        if ((_flight_mode != fm_manual && joyThrottle > INITIALTHROTTLE) || _flight_mode == fm_inactive)
             return true;
         return (_flight_mode != fm_inactive && autoThrottle > INITIALTHROTTLE);
     }

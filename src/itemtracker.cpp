@@ -293,7 +293,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
             //Point3f predicted_output = world_coordinates[1];
             check_consistency(cv::Point3f(this->prevX,this->prevY,this->prevZ),output);
             disparity = update_disparity(disparity, dt_tracking);
-            update_tracker_ouput(output,dt_tracking/1000.f,match,disparity,_visdat->frame_id);
+            update_tracker_ouput(output,dt_tracking,match,disparity,_visdat->frame_id);
             update_prediction_state(cv::Point3f(match.pt.x,match.pt.y,disparity),match.size);
             n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
             t_prev_tracking = time; // update dt only if item was detected

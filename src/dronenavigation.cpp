@@ -52,8 +52,8 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     //setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,SETPOINTYMAX / 2,1000),40)); // this is overwritten by position trackbars!!!
     setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,1,1000),15)); // this is overwritten by position trackbars!!!
     
-    setpoints.push_back(waypoint(cv::Point3i(1500,300,1500),0));
-    setpoints.push_back(waypoint(cv::Point3i(1500,-200,1500),0));
+    //setpoints.push_back(waypoint(cv::Point3i(1500,300,1500),0));
+    //setpoints.push_back(waypoint(cv::Point3i(1500,-200,1500),0));
     
     setpoints.push_back(waypoint(cv::Point3i(1000,-200,1500),0));
     setpoints.push_back(waypoint(cv::Point3i(2000,-200,1500),0));
@@ -72,7 +72,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     
     
     
-    setpoints.push_back(waypoint(cv::Point3i(1460,200,1070),20)); // landing waypoint (=last one), must be 1 meter above the ground in world coordinatates
+    setpoints.push_back(waypoint(cv::Point3i(1480,200,1090),20)); // landing waypoint (=last one), must be 1 meter above the ground in world coordinatates
     //setpoints.push_back(waypoint(cv::Point3i(1500,300,1300),60));
     
     
@@ -148,7 +148,10 @@ void DroneNavigation::update() {
         _dctrl->set_flight_mode(DroneController::fm_flying);
         //TODO: choose whether to fly waypoints (e.g. for testing or demos) or to start the chase
         //for now, just chase always
-        navigation_status = navigation_status_chasing_insect;
+        //navigation_status = navigation_status_chasing_insect;
+        //OR fly waypoints
+        navigation_status = navigation_status_set_waypoint_in_flightplan;
+        break;
     } case navigation_status_start_the_chase: {
         if (_iceptor.get_insect_in_range())
             navigation_status = navigation_status_chasing_insect;
@@ -195,6 +198,8 @@ void DroneNavigation::update() {
             if (wpid == 1)
                 _dctrl->recalibrateHover();
         }
+        navigation_status_set_waypoint_in_flightplan;
+
         if (_dctrl->get_flight_mode() == DroneController::fm_manual)
             navigation_status=navigation_status_manual;
         break;
