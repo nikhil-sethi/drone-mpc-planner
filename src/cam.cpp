@@ -50,7 +50,9 @@ void Cam::update(void) {
     frameL = Mat(Size(848, 480), CV_8UC1, (void*)rs_frameL.get_data(), Mat::AUTO_STEP);
     frameR = Mat(Size(848, 480), CV_8UC1, (void*)rs_frameR.get_data(), Mat::AUTO_STEP);
     frame_id = rs_frameL.get_frame_number();
-    frame_time = rs_frameL.get_timestamp() ;
+    if (frame_time_start <0)
+        frame_time_start = rs_frameL.get_timestamp();
+    frame_time = (rs_frameL.get_timestamp() -frame_time_start)/1000.f;
 //    std::cout << "-------------frame id: " << frame_id << " seek time: " << incremented_playback_frametime << std::endl;
 
 
