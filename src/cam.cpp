@@ -20,11 +20,11 @@ void Cam::update(void) {
         if (incremented_playback_frametime < 0)
             incremented_playback_frametime = 0;
         seek(incremented_playback_frametime);
-        g_lockData.lock();
+        g_lockFlags.lock();
         new_frame1 = false;
         new_frame2 = false;
         requested_id_in++;
-        g_lockData.unlock();
+        g_lockFlags.unlock();
         resume();
     }
 
@@ -47,6 +47,7 @@ void Cam::update(void) {
             std::cout << "Playback sync problem" << std::endl;
     }
 
+    g_lockFrameData.lock();
     frameL = Mat(Size(848, 480), CV_8UC1, (void*)rs_frameL.get_data(), Mat::AUTO_STEP);
     frameR = Mat(Size(848, 480), CV_8UC1, (void*)rs_frameR.get_data(), Mat::AUTO_STEP);
     frame_id = rs_frameL.get_frame_number();
@@ -54,18 +55,19 @@ void Cam::update(void) {
         frame_time_start = rs_frameL.get_timestamp();
     frame_time = ((float)rs_frameL.get_timestamp() -frame_time_start)/1000.f;
     //std::cout << "-------------frame id: " << frame_id << " seek time: " << incremented_playback_frametime << std::endl;
+    g_lockFrameData.unlock();
 
     if(!fromfile) {
-        g_lockData.lock();
+        g_lockFlags.lock();
         new_frame1 = false;
         new_frame2 = false;
         ready = true;
-        g_lockData.unlock();
+        g_lockFlags.unlock();
     }
 }
 
 void Cam::rs_callback_playback(rs2::frame f) {
-    g_lockData.lock();
+    g_lockFlags.lock();
 
 //    if (f.get_profile().stream_index() == 1 )
 //        std::cout << "Received id " << f.get_frame_number()   << "@" << f.get_profile().stream_index() << "         Last: " << last_1_id << "@1 and " << last_2_id << "@2 and synced id:" << requested_id_in << " time: " << incremented_playback_frametime << std::endl;
@@ -88,21 +90,27 @@ void Cam::rs_callback_playback(rs2::frame f) {
         //requested_id_in = f.get_frame_number();
     }
 
-    g_lockData.unlock();
+    g_lockFlags.unlock();
 }
 
 uint last_sync_id = 0;
 void Cam::rs_callback(rs2::frame f) {
-    g_lockData.lock();
+
+    g_lockFlags.lock();
     if (f.get_profile().stream_index() == 1 && !new_frame1 && f.get_frame_number() >= last_sync_id) {
-        rs_frameL  = f;
+        rs_frameL_cbtmp  = f;
         new_frame1 = true;
     } else if (f.get_profile().stream_index() == 2 && !new_frame2 && f.get_frame_number() >= last_sync_id) {
-        rs_frameR = f;
+        rs_frameR_cbtmp = f;
         new_frame2 = true;
     }
+    g_lockFlags.unlock();
     if (new_frame1 && new_frame2) {
-        if (rs_frameL.get_frame_number() == rs_frameR.get_frame_number()) {
+        if (rs_frameL_cbtmp.get_frame_number() == rs_frameR_cbtmp.get_frame_number()) {
+            g_lockFrameData.lock();
+            rs_frameL = rs_frameL_cbtmp;
+            rs_frameR = rs_frameR_cbtmp;
+            g_lockFrameData.unlock();
             g_waitforimage.notify_all();
             last_sync_id = rs_frameL.get_frame_number();
         }
@@ -114,7 +122,7 @@ void Cam::rs_callback(rs2::frame f) {
             std::cout << "Warning: frames not in sync" << std::endl;
         }
     }
-    g_lockData.unlock();
+
 }
 
 

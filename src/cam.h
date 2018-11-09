@@ -67,7 +67,8 @@ private:
     float real_time_playback_speed = 1;
     bool ready;
 
-    std::mutex g_lockData;
+    std::mutex g_lockFlags;
+    std::mutex g_lockFrameData;
     std::condition_variable g_waitforimage;
     std::mutex m;
     rs2::device dev;
@@ -80,6 +81,7 @@ private:
     bool new_frame1 = false;
     bool new_frame2 = false;
 
+    rs2::frame rs_frameL_cbtmp,rs_frameR_cbtmp;
     rs2::frame rs_frameL,rs_frameR;
 
 
