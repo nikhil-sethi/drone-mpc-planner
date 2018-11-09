@@ -229,10 +229,18 @@ void handleKey() {
         break;
     case 'n': // next frame
         //dtrkr.breakpause = true;
-        breakpause = 1;
+        //breakpause = 1;
+        cam.pause();
         break;
-    case 's':
+    case 'f':
+        cam.frame_by_frame = true;
+        break;
+    case '.':
         cam.skip_one_sec();
+        break;
+    case ',':
+        cam.back_one_sec();
+        break;
     } // end switch key
     key=0;
 }

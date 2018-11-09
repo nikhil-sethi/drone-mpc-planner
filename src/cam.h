@@ -42,8 +42,12 @@ public:
     void seek(float time);
 
     void skip_one_sec() {
-        requested_id_in +=VIDEOFPS;
+        requested_id_in += VIDEOFPS*2;
     }
+    void back_one_sec() {
+        requested_id_in -= VIDEOFPS*2;
+    }
+    bool frame_by_frame;
 
 
     void update(void);

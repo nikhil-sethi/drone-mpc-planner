@@ -36,11 +36,15 @@ void Cam::update(void) {
         while(swc.Read() < (1.f/VIDEOFPS)*1e3f){
             usleep(10);
         }
-//        while(requested_id_in > 5){
-//            unsigned char k = cv::waitKey(1);
-//            if (k== 'f')
-//                break;
-//        };
+        while(frame_by_frame){
+            unsigned char k = cv::waitKey(1);
+            if (k== 'f')
+                break;
+            else if (k== ' '){
+                frame_by_frame = false;
+                break;
+            }
+        };
         swc.Restart();
 
         if (last_2_id != last_2_id)
