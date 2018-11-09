@@ -174,7 +174,8 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
         autoRoll =  1500 + (accErrX * params.roll_Acc +  params.rollI*rollErrI);
         autoPitch = 1500 + (accErrZ * params.pitch_Acc +  params.pitchI*pitchErrI);
 
-        int minThrottle = 1300 + min(abs(autoRoll-1500)/10,50) + min(abs(autoPitch-1500)/10,50);
+        //int minThrottle = 1300 + min(abs(autoRoll-1500)/10,50) + min(abs(autoPitch-1500)/10,50);
+        int minThrottle = 1300;
         if (autoThrottle<minThrottle)
             autoThrottle = minThrottle;
 

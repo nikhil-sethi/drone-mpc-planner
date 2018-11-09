@@ -43,7 +43,7 @@ void InsectTracker::init_settings() {
     settings.minInertiaRatio = 1;
     settings.maxInertiaRatio = 100;
 
-    settings.min_disparity=0;
+    settings.min_disparity=1;
     settings.max_disparity=20;
 
     settings.roi_min_size = 200;

@@ -164,7 +164,7 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<tr
             float threshold_dis = settings.exclude_min_distance / sqrtf(exclude.tracking_certainty);
             if (threshold_dis > settings.exclude_max_distance)
                 threshold_dis = settings.exclude_max_distance;
-            if ((dis1 < threshold_dis|| dis2 < threshold_dis) && certainty_this_kp <= exclude.tracking_certainty) {
+            if ((dis1 < threshold_dis|| dis2 < threshold_dis)) {// TODO: && certainty_this_kp <= exclude.tracking_certainty) {
                 keypoints.erase(keypoints.begin() + i - erase_cnt);
                 erase_cnt++;
             } else  if (exclude_path.size() > 1) {
@@ -282,7 +282,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
             output.z = -output.y * sinf(theta) + output.z * cosf(theta);
             output.y = temp_y;
 
-            if ((output.z < -drone_max_border_z) || (output.y < -drone_max_border_y) || disparity < settings.min_disparity || disparity > settings.max_disparity) { //TODO check min/max disparity > or =>!!!
+            if ((output.x < -1.0f) || (output.x > 0.75f) ||(output.z < -drone_max_border_z) || (output.y < -drone_max_border_y) || disparity < settings.min_disparity || disparity > settings.max_disparity) { //TODO check min/max disparity > or =>!!!
                 keypoint_candidates.erase(keypoint_candidates.begin() + match_id);
             } else {
                 break;

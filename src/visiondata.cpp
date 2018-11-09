@@ -11,8 +11,8 @@ using namespace std;
 
 void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL,cv::Mat new_frameR){
     Qf = new_Qf;
-    frameL = new_frameL;
-    frameR = new_frameR;
+    frameL = new_frameL.clone();
+    frameR = new_frameR.clone();
     frameL_prev = frameL;
     frameR_prev = frameR;
 
