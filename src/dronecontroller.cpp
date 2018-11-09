@@ -47,9 +47,6 @@ void DroneController::init(std::ofstream *logger,bool fromfile, Arduino * arduin
     // create GUI to set control parameters
     namedWindow("Control", WINDOW_NORMAL);
 
-    createTrackbar("Rebind", "Control", &(_arduino->rebindValue), 1);
-    //createTrackbar("AutoLand", "Control", &autoLand, 1);
-
     // throttle control
     createTrackbar("Throttle Pos", "Control", &params.throttle_Pos, 3000);
     createTrackbar("Throttle Vel", "Control", &params.throttle_Vel, 1000);
@@ -103,7 +100,7 @@ void DroneController::queue_commands(int throttle,int roll, int pitch, int yaw) 
 void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f setpoint_v) {
 
     if (!_fromfile) {
-        _arduino->rebind();
+        _arduino->check_bind_command();
         readJoystick();
     }
     process_joystick();
@@ -352,8 +349,7 @@ void DroneController::process_joystick() {
     static bool joySwitch_prev = joySwitch;
     if (joySwitch && !joySwitch_prev) {
         if (joyPitch > 1800) {
-            _arduino->rebindValue = 1;
-            alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Amsterdam.ogg &");
+            _arduino->bind();
             joySwitch = false;
         } else if(joyThrottle < 1100) {
             if (joyPitch < 1200) {

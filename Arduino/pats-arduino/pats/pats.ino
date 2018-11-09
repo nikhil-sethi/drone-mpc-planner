@@ -158,6 +158,8 @@ void process_serial_string() {
       strcpy(c, inputString.c_str());
       p = strtok_r(c,",",&i); // returns substring up to first "," delimiter
       ppm_cnt=0;
+      if (!binding)
+        Serial.print('#');
       while (p !=0){
         //Serial.print(p);
         int val=strtol(p, &errpt, 10);
@@ -178,7 +180,7 @@ void process_serial_string() {
         ppm_cnt+=1;
       }
       if (!binding)
-        Serial.println("."); // prints "." at end of command
+        Serial.println(".");
     
       // clear the string:
       inputString = "";

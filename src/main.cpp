@@ -224,6 +224,9 @@ void handleKey() {
             breakpause = 0;
         }
         break;
+    case 'b':
+        arduino.bind();
+        break;
     case 'n': // next frame
         //dtrkr.breakpause = true;
         breakpause = 1;
