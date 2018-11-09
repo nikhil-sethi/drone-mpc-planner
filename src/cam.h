@@ -41,6 +41,11 @@ public:
     void resume();
     void seek(float time);
 
+    void skip_one_sec() {
+        requested_id_in +=VIDEOFPS;
+    }
+
+
     void update(void);
 
 
@@ -56,6 +61,7 @@ public:
 
 private:
 
+    uint requested_id_in =0;
     int frame_id;
     float frame_time = 0;
     float frame_time_start = -1;

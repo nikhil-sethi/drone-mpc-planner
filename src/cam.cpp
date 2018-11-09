@@ -10,13 +10,13 @@ using namespace std;
 
 stopwatch_c swc;
 
-uint requested_id_in =0;
+
 int last_1_id =-1;
 int last_2_id =-1;
 float incremented_playback_frametime = (1.f/VIDEOFPS)/2.f;
 void Cam::update(void) {
     if( fromfile) {
-        incremented_playback_frametime = requested_id_in*(1.f/VIDEOFPS) - (1.f/VIDEOFPS)*0.1f ; //halfway before the next frame
+        incremented_playback_frametime = requested_id_in*(1.f/VIDEOFPS) - (1.f/VIDEOFPS)*0.1f; //halfway before the next frame
         if (incremented_playback_frametime < 0)
             incremented_playback_frametime = 0;
         seek(incremented_playback_frametime);
