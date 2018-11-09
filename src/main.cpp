@@ -228,7 +228,8 @@ void handleKey() {
         //dtrkr.breakpause = true;
         breakpause = 1;
         break;
-
+    case 's':
+        cam.skip_one_sec();
     } // end switch key
     key=0;
 }
