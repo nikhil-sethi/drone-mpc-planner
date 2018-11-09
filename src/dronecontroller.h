@@ -92,7 +92,6 @@ private:
     void queue_commands(int throttle,int roll, int pitch, int yaw);
     void readJoystick(void);
     void process_joystick();
-    void rebind(void);
 
 public:   
     flight_mode get_flight_mode() {
