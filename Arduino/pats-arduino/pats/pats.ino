@@ -66,6 +66,7 @@ enum{
 uint8_t transmitterID[4];
 static volatile bool ppm_ok = false;
 uint8_t packet[32];
+uint8_t in_packet[32];
 static bool reset=true;
 volatile uint16_t Servo_data[12];
 static uint16_t ppm[12] = {PPM_MIN,PPM_MID,PPM_MID,PPM_MID,PPM_MID,PPM_MID,
@@ -77,18 +78,6 @@ char *p, *i;
 char* c = new char[200 + 1]; // match 200 characters reserved for inputString later
 char* errpt;
 uint8_t ppm_cnt;
-
-void set_txid(bool renew) {
-    uint8_t i;
-    for(i=0; i<4; i++)
-        transmitterID[i] = EEPROM.read(ee_TXID0+i);
-    if(renew || (transmitterID[0]==0xFF && transmitterID[1]==0x0FF)) {
-        for(i=0; i<4; i++) {
-            transmitterID[i] = random() & 0xFF;
-            EEPROM.update(ee_TXID0+i, transmitterID[i]); 
-        }            
-    }
-}
 
 void setup() {
     randomSeed((analogRead(A4) & 0x1F) | (analogRead(A5) << 5));
@@ -106,8 +95,12 @@ void setup() {
     TCCR1B = 0;
     TCCR1B |= (1 << CS11);  //set timer1 to increment every 1 us @ 8MHz, 0.5 us @16MHz
 
-    set_txid(false);
-
+    //fixed transmitter id for binding:
+    transmitterID[0] = 6;
+    transmitterID[1] = 66;
+    transmitterID[2] = 6;
+    transmitterID[3] = 66;
+    
     Serial.begin(115200);
     // reserve 200 bytes for the inputString:
     inputString.reserve(200);
@@ -132,7 +125,6 @@ void send_cx10() {
         reset = false;    
         binding = true;    
         ppm_ok = false; // wait for multiple complete ppm frames
-        set_txid(true); // Renew Transmitter ID      
         NRF24L01_Reset();
         Serial.println("nrf24l01 reset");
         NRF24L01_Initialize();
