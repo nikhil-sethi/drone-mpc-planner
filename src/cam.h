@@ -18,6 +18,8 @@
 #include <atomic>
 #include <chrono>
 #include <vector>
+#include <queue>
+#include <deque>
 
 #include "opencv2/features2d/features2d.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
@@ -45,7 +47,13 @@ public:
         requested_id_in += VIDEOFPS*2;
     }
     void back_one_sec() {
+        pause();
+        usleep(1000);
+        g_lockFrameData.lock();
+        playback_bufferR.clear();
+        playback_bufferL.clear();
         requested_id_in -= VIDEOFPS*2;
+        g_lockFrameData.unlock();
     }
     bool frame_by_frame;
 
@@ -74,7 +82,6 @@ private:
     bool fromfile;
     bool real_time_playback = false;
     float real_time_playback_speed = 1;
-    bool ready;
 
     std::mutex g_lockFlags;
     std::mutex g_lockFrameData;
@@ -82,6 +89,10 @@ private:
     std::mutex m;
     rs2::device dev;
 
+    bool _paused;
+
+    void update_real(void);
+    void update_playback(void);
     void rs_callback(rs2::frame f);
     void rs_callback_playback(rs2::frame f);
 
@@ -92,6 +103,16 @@ private:
 
     rs2::frame rs_frameL_cbtmp,rs_frameR_cbtmp;
     rs2::frame rs_frameL,rs_frameR;
+
+
+
+    struct frame_data{
+        cv::Mat frame;
+        uint id;
+        float time;
+    };
+    std::deque<frame_data> playback_bufferL;
+    std::deque<frame_data> playback_bufferR;
 
 
 };

@@ -10,46 +10,148 @@ using namespace std;
 
 stopwatch_c swc;
 
+void Cam::update(void) {
+    if (fromfile)
+        update_playback();
+    else
+        update_real();
+}
 
 int last_1_id =-1;
 int last_2_id =-1;
 float incremented_playback_frametime = (1.f/VIDEOFPS)/2.f;
-void Cam::update(void) {
-    if( fromfile) {
-        incremented_playback_frametime = requested_id_in*(1.f/VIDEOFPS) - (1.f/VIDEOFPS)*0.1f; //halfway before the next frame
-        if (incremented_playback_frametime < 0)
-            incremented_playback_frametime = 0;
-        seek(incremented_playback_frametime);
-        g_lockFlags.lock();
-        new_frame1 = false;
-        new_frame2 = false;
-        requested_id_in++;
-        g_lockFlags.unlock();
-        resume();
-    }
+void Cam::update_playback(void) {
 
-    std::unique_lock<std::mutex> lk(m);
-    g_waitforimage.wait(lk);
+    frame_data fL,fR;
 
-    if( fromfile) {
-        pause();
-        while(swc.Read() < (1.f/VIDEOFPS)*1e3f){
-            usleep(10);
+
+    bool foundL=false,foundR = false;
+    while (true) {
+
+        g_lockFrameData.lock();
+        std::deque<frame_data> playback_bufferL_cleaned;
+        std::deque<frame_data> playback_bufferR_cleaned;
+        for (uint i = 0 ; i <playback_bufferR.size();i++) {
+            if (    playback_bufferR.at(i).id >= requested_id_in &&
+                    playback_bufferR.at(i).id < requested_id_in+100)
+                playback_bufferR_cleaned.push_back(playback_bufferR.at(i));
         }
-        while(frame_by_frame){
-            unsigned char k = cv::waitKey(1);
-            if (k== 'f')
-                break;
-            else if (k== ' '){
-                frame_by_frame = false;
+        for (uint i = 0 ; i <playback_bufferL.size();i++) {
+            if (    playback_bufferL.at(i).id >= requested_id_in &&
+                    playback_bufferL.at(i).id < requested_id_in+100)
+                playback_bufferL_cleaned.push_back(playback_bufferL.at(i));
+        }
+
+        playback_bufferR = playback_bufferR_cleaned;
+        playback_bufferL = playback_bufferL_cleaned;
+        g_lockFrameData.unlock();
+
+        for (uint i = 0 ; i <playback_bufferL_cleaned.size();i++) {
+            if (playback_bufferL_cleaned.at(i).id == requested_id_in){
+                fL = playback_bufferL_cleaned.at(i);                
+                foundL = true;
                 break;
             }
-        };
-        swc.Restart();
+        }
+        if (foundL)
+            for (uint i = 0 ; i <playback_bufferR_cleaned.size();i++) {
+                if (playback_bufferR_cleaned.at(i).id == requested_id_in){
+                    fR = playback_bufferR_cleaned.at(i);                    
+                    foundR = true;
+                    break;
+                }
+            }
 
-        if (last_2_id != last_2_id)
-            std::cout << "Playback sync problem" << std::endl;
+        if (_paused && playback_bufferR.size() < 3 ){ // 3 to start buffering 3 frames before the buffer runs empty
+            incremented_playback_frametime = (requested_id_in-2)*(1.f/VIDEOFPS) - (1.f/VIDEOFPS)*0.1f;  //requested_id_in-2 -> -2 seems to be necessary because the RS api skips a frame of either the left or right camera after resuming
+            if (incremented_playback_frametime < 0)
+                incremented_playback_frametime = 0;
+//            std::cout << "Resuming RS: " << incremented_playback_frametime << std::endl;
+            seek(incremented_playback_frametime);
+            resume();
+        }
+
+        if (foundL && foundR){
+            break;
+        }
+
+        std::unique_lock<std::mutex> lk(m);
+        g_waitforimage.wait(lk);
     }
+    requested_id_in++;
+
+
+
+    while(swc.Read() < (1.f/VIDEOFPS)*1e3f){
+        usleep(10);
+    }
+    swc.Restart();
+    if (playback_bufferR.size() >= 10 && !_paused) {
+        pause();
+//        std::cout << "Pausing playback_bufferL/R size:" << playback_bufferL.size() << " / " << playback_bufferR.size() << std::endl;
+    }
+
+    while(frame_by_frame){
+        unsigned char k = cv::waitKey(1);
+        if (k== 'f')
+            break;
+        else if (k== ' '){
+            frame_by_frame = false;
+            break;
+        }
+    }
+
+    frameL = fL.frame.clone();
+    frameR = fR.frame.clone();
+    frame_id = fL.id;
+    frame_time = fL.time;
+
+    //std::cout << "-------------frame id: " << frame_id << " seek time: " << incremented_playback_frametime << std::endl;
+
+}
+
+void Cam::rs_callback_playback(rs2::frame f) {
+
+    g_lockFrameData.lock();
+//    if (f.get_profile().stream_index() == 1 )
+//        std::cout << "Received id "         << f.get_frame_number() << ":" << ((float)f.get_timestamp()-frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << "         Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << incremented_playback_frametime << " bufsize: " << playback_bufferL.size() << std::endl;
+//    if (f.get_profile().stream_index() == 2 )
+//        std::cout << "Received id         " << f.get_frame_number() << ":" << ((float)f.get_timestamp()-frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << " Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << incremented_playback_frametime << " bufsize: " << playback_bufferL.size() << std::endl;
+
+    if (f.get_profile().stream_index() == 1 && f.get_frame_number() >= requested_id_in && playback_bufferL.size() < 100) {
+        frame_data fL;
+        fL.frame = Mat(Size(848, 480), CV_8UC1, (void*)f.get_data(), Mat::AUTO_STEP).clone();
+        fL.id= f.get_frame_number();
+        if (frame_time_start <0)
+            frame_time_start = f.get_timestamp();
+        fL.time = ((float)f.get_timestamp() -frame_time_start)/1000.f;
+
+        playback_bufferL.push_back(fL);
+        new_frame1 = true;
+        last_1_id = fL.id;
+    } else if (f.get_profile().stream_index() == 2 && f.get_frame_number() >= requested_id_in && playback_bufferR.size() < 100) {
+        frame_data fR;
+        fR.frame = Mat(Size(848, 480), CV_8UC1, (void*)f.get_data(), Mat::AUTO_STEP).clone();
+        fR.id= f.get_frame_number();
+        if (frame_time_start <0)
+            frame_time_start = f.get_timestamp();
+        fR.time = ((float)f.get_timestamp() -frame_time_start)/1000.f;
+        playback_bufferR.push_back(fR);
+        new_frame2 = true;
+        last_2_id = fR.id;
+    }
+    g_lockFrameData.unlock();
+    if (new_frame1 && new_frame2) {
+        new_frame1 = false;
+        new_frame2 = false;
+        g_waitforimage.notify_all();
+    }
+
+}
+
+void Cam::update_real(void) {
+    std::unique_lock<std::mutex> lk(m);
+    g_waitforimage.wait(lk);
 
     g_lockFrameData.lock();
     frameL = Mat(Size(848, 480), CV_8UC1, (void*)rs_frameL.get_data(), Mat::AUTO_STEP);
@@ -61,40 +163,11 @@ void Cam::update(void) {
     //std::cout << "-------------frame id: " << frame_id << " seek time: " << incremented_playback_frametime << std::endl;
     g_lockFrameData.unlock();
 
-    if(!fromfile) {
-        g_lockFlags.lock();
-        new_frame1 = false;
-        new_frame2 = false;
-        ready = true;
-        g_lockFlags.unlock();
-    }
-}
-
-void Cam::rs_callback_playback(rs2::frame f) {
     g_lockFlags.lock();
-
-//    if (f.get_profile().stream_index() == 1 )
-//        std::cout << "Received id " << f.get_frame_number()   << "@" << f.get_profile().stream_index() << "         Last: " << last_1_id << "@1 and " << last_2_id << "@2 and synced id:" << requested_id_in << " time: " << incremented_playback_frametime << std::endl;
-//    if (f.get_profile().stream_index() == 2 )
-//        std::cout << "Received id         " << f.get_frame_number()   << "@" << f.get_profile().stream_index() << " Last: " << last_1_id << "@1 and " << last_2_id << "@2 and synced id:" << requested_id_in << " time: " << incremented_playback_frametime << std::endl;
-
-    if (f.get_profile().stream_index() == 1 && f.get_frame_number() >= requested_id_in) {
-        rs_frameL  = f;
-        new_frame1 = true;
-        last_1_id = f.get_frame_number();
-    } else if (f.get_profile().stream_index() == 2 && f.get_frame_number() >= requested_id_in) {
-        rs_frameR = f;
-        new_frame2 = true;
-        last_2_id = f.get_frame_number();
-    }
-
-    if (new_frame1 && new_frame2) {
-        g_waitforimage.notify_all();
-        ready = false;
-        //requested_id_in = f.get_frame_number();
-    }
-
+    new_frame1 = false;
+    new_frame2 = false;
     g_lockFlags.unlock();
+
 }
 
 uint last_sync_id = 0;
@@ -126,7 +199,6 @@ void Cam::rs_callback(rs2::frame f) {
             std::cout << "Warning: frames not in sync" << std::endl;
         }
     }
-
 }
 
 
@@ -270,11 +342,20 @@ void Cam::init(int argc, char **argv) {
     swc.Start();
 }
 
+
 void Cam::pause(){
-    ((rs2::playback)dev).pause();
+    if (!_paused) {
+        _paused = true;
+        ((rs2::playback)dev).pause();
+//        std::cout << "Paused" << std::endl;
+    }
 }
-void Cam::resume() {
-    ((rs2::playback)dev).resume();
+void Cam::resume() {    
+    if (_paused){
+        _paused = false;
+        ((rs2::playback)dev).resume();
+//        std::cout << "Resumed" << std::endl;
+    }
 }
 void Cam::seek(float time) {
     std::chrono::nanoseconds nano((ulong)(1e9f*time));
