@@ -296,10 +296,10 @@ void Visualizer::draw_target_text(cv::Mat resFrame, float time, float dis,float 
     ss_min << "Closest: " << (roundf(min_dis*100)/100) << " [m]";
     ss_dis << "|" << (roundf(dis*100)/100) << "|";
 
-    putText(resFrame,ss_time.str() ,cv::Point(220*res_mult,20*res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame,ss_time.str() ,cv::Point(220*res_mult,10*res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     if (min_dis<9999){
-        putText(resFrame,ss_dis.str() ,cv::Point(300*res_mult,20*res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-        putText(resFrame,ss_min.str() ,cv::Point(360*res_mult,20*res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+        putText(resFrame,ss_dis.str() ,cv::Point(300*res_mult,10*res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+        putText(resFrame,ss_min.str() ,cv::Point(360*res_mult,10*res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     }
 
 }
@@ -349,21 +349,23 @@ void Visualizer::draw_tracker_viz(cv::Mat frameL, cv::Point3d setpoint, float ti
     static int div = 0;
     if (!(div++ % speed_div)) {
 
-        cv::Mat resFrame;
-        cvtColor(frameL,resFrame,CV_GRAY2BGR);
-        if (res_mult > 1)
-            cv::resize(resFrame,resFrame,cv::Size(frameL.cols*res_mult,frameL.rows*res_mult));
+        cv::Mat resFrame = cv::Mat::zeros(frameL.rows*res_mult+frameL.rows*res_mult/4,frameL.cols*res_mult,CV_8UC3);
+        cv::Mat frameL_color;
+        cvtColor(frameL,frameL_color,CV_GRAY2BGR);
+        cv::Rect rect(0,frameL.rows*res_mult/4,frameL.cols*res_mult,frameL.rows*res_mult);
+        cv::Mat roi = resFrame(rect);
+        cv::Size size (frameL.cols*res_mult,frameL.rows*res_mult);
+        cv::resize(frameL_color,roi,size);
 
-        cir8 = _dtrkr->_cir*255;
-        bkg8 = _dtrkr->_bkg*255;
-        dif8 = _dtrkr->_dif*10;
-        cir8.convertTo(cir8, CV_8UC1);
-        bkg8.convertTo(bkg8, CV_8UC1);
-        dif8.convertTo(dif8, CV_8UC1);
-
+//        cir8 = _dtrkr->_cir*255;
+//        bkg8 = _dtrkr->_bkg*255;
+//        dif8 = _dtrkr->_dif*10;
+//        cir8.convertTo(cir8, CV_8UC1);
+//        bkg8.convertTo(bkg8, CV_8UC1);
+//        dif8.convertTo(dif8, CV_8UC1);
 //        draw_segment_viz();
 
-        cv::Size vizsizeL(resFrame.cols/4,resFrame.rows/4);
+        cv::Size vizsizeL(size.width/4,size.height/4);
         cv::Mat frameL_small;
         cv::resize(frameL,frameL_small,cv::Size(frameL.cols/IMSCALEF,frameL.rows/IMSCALEF));
         cv::Mat frameL_small_drone = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,_dtrkr);
@@ -372,13 +374,11 @@ void Visualizer::draw_tracker_viz(cv::Mat frameL, cv::Point3d setpoint, float ti
         frameL_small_insect.copyTo(resFrame(cv::Rect(resFrame.cols-frameL_small_drone.cols,0,frameL_small_drone.cols, frameL_small_drone.rows)));
         draw_target_text(resFrame,time,dis,min_dis);
 
-
         cv::imshow("tracking results", resFrame);
         trackframe   = resFrame;
     }
 #endif
 }
-
 
 void Visualizer::workerThread(void) {
     std::cout << "Viz thread started!" << std::endl;
