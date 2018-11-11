@@ -50,6 +50,7 @@ void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL,cv::Mat new_frameR){
 }
 
 void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int new_frame_id) {
+    lock_data.lock();
     frameL_prev = frameL;
     frameR_prev = frameR;
     frameL = new_frameL;
@@ -97,6 +98,7 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
     background_calibrated = true;
 #endif
 
+    lock_data.unlock();
 }
 
 void VisionData::collect_no_drone_frames(cv::Mat diff) {

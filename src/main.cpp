@@ -87,16 +87,23 @@ bool fromfile = false;
 
 /****Threadpool*******/
 #define NUM_OF_THREADS 4
+struct Stereo_Frame_Data{
+    cv::Mat frameL,frameR;
+    uint number;
+    float time;
+};
 struct Processer {
     int id;
     std::thread * thread;
     std::mutex m;
     std::condition_variable newdata;
+    std::mutex lock_data;
+    Stereo_Frame_Data data;
 };
 Processer tp[NUM_OF_THREADS];
 
 /*******Private prototypes*********/
-void process_frame();
+void process_frame(Stereo_Frame_Data data);
 void process_video();
 int main( int argc, char **argv);
 void handleKey();
@@ -118,7 +125,13 @@ void process_video() {
         time = cam.frame_time();
         logger << imgcount << ";" << cam.frame_number() << ";" ;
 
-        process_frame();
+        Stereo_Frame_Data data;
+        data.frameL = cam.frameL;
+        data.frameR = cam.frameR;
+        data.number = cam.frame_number();
+        data.time = cam.frame_time();
+
+        process_frame(data);
 
         int frameWritten = 0;
 #if VIDEORAWLR
@@ -226,14 +239,15 @@ void handleKey() {
     key=0;
 }
 
-void worker_dowork() {
-
-}
 void pool_worker(int id __attribute__((unused))){
     std::unique_lock<std::mutex> lk(tp[id].m,std::defer_lock);
-    while(key != 27) {
+    while(true) {
         tp[id].newdata.wait(lk);
-        worker_dowork();
+        if (key == 27)
+            break;
+        tp[id].lock_data.lock();
+        process_frame(tp->data);
+        tp[id].lock_data.unlock();
     }
 }
 void init_thread_pool() {

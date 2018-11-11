@@ -12,6 +12,8 @@
 #include <cereal/archives/binary.hpp>
 #include <fstream>
 
+#include <condition_variable>
+
 #include "cam.h"
 #include "defines.h"
 
@@ -23,6 +25,7 @@ private:
     int n_avg_prev_frames = 0;
     int motion_update_iterator = 0;    
     bool background_calibrated;
+    std::mutex lock_data;
 
     struct BaseVisionSettings{
 
