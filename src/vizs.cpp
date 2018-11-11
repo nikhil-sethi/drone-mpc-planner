@@ -289,20 +289,18 @@ void Visualizer::draw_segment_viz(){
     showColumnImage(ims,"drone_roi",CV_8UC1);
 }
 
-void Visualizer::draw_target_text(cv::Mat resFrame) {
-    std::stringstream ss1,ss2,ss3;
-    ss1.precision(2);
-    ss2.precision(2);
-    ss3.precision(2);
+void Visualizer::draw_target_text(cv::Mat resFrame, float time, float dis,float min_dis) {
+    std::stringstream ss_time,ss_dis,ss_min;
 
-    trackData data = _dtrkr->get_last_track_data();
-    ss1 << "[" << data.posX << ", " << data.posY << ", " << data.posZ << "] " ;
-    ss2 << "[" << _dctrl->posErrX << ", " << _dctrl->posErrY << ", " << _dctrl->posErrZ << "] " ;
-    ss3 << "Delta: " << sqrtf(_dctrl->posErrX*_dctrl->posErrX+_dctrl->posErrY*_dctrl->posErrY+_dctrl->posErrZ*_dctrl->posErrZ);
+    ss_time << "T: " << (roundf(time*100)/100);
+    ss_min << "Closest: " << (roundf(min_dis*100)/100) << " [m]";
+    ss_dis << "|" << (roundf(dis*100)/100) << "|";
 
-    putText(resFrame,ss1.str() ,cv::Point(220,20),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-    putText(resFrame,ss2.str() ,cv::Point(220,40),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-    putText(resFrame,ss3.str() ,cv::Point(220,60),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame,ss_time.str() ,cv::Point(220,20),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    if (min_dis<9999){
+        putText(resFrame,ss_dis.str() ,cv::Point(300,20),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+        putText(resFrame,ss_min.str() ,cv::Point(360,20),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    }
 
 }
 
@@ -346,7 +344,7 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
 }
 
 
-void Visualizer::draw_tracker_viz(cv::Mat frameL, cv::Point3d setpoint) {
+void Visualizer::draw_tracker_viz(cv::Mat frameL, cv::Point3d setpoint, float time, float dis,float min_dis) {
 #ifdef DRAWTRACKING
     static int div = 0;
     if (div++ % 4 == 1) {
@@ -370,7 +368,7 @@ void Visualizer::draw_tracker_viz(cv::Mat frameL, cv::Point3d setpoint) {
         cv::Mat frameL_small_insect = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,_itrkr);
         frameL_small_drone.copyTo(resFrame(cv::Rect(0,0,frameL_small_drone.cols, frameL_small_drone.rows)));
         frameL_small_insect.copyTo(resFrame(cv::Rect(resFrame.cols-frameL_small_drone.cols,0,frameL_small_drone.cols, frameL_small_drone.rows)));
-        draw_target_text(resFrame);
+        draw_target_text(resFrame,time,dis,min_dis);
 
 
         cv::imshow("tracking results", resFrame);

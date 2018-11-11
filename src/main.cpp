@@ -139,7 +139,21 @@ void process_video() {
 #ifdef HASSCREEN
         if (breakpause_prev != 0) {
             visualizer.addPlotSample();
-            visualizer.draw_tracker_viz(visdat.frameL,dnav.setpoint);
+
+            static float min_dis = 9999;
+            float dis = 0;
+            if (dtrkr.n_frames_tracking>0 && itrkr.n_frames_tracking>0) {
+                dis = powf(dtrkr.get_last_track_data().posX-itrkr.get_last_track_data().posX,2) +
+                        powf(dtrkr.get_last_track_data().posY-itrkr.get_last_track_data().posY,2) +
+                        powf(dtrkr.get_last_track_data().posZ-itrkr.get_last_track_data().posZ,2);
+                dis = sqrtf(dis);
+
+                if (dis < min_dis)
+                    min_dis = dis;
+            }
+
+
+            visualizer.draw_tracker_viz(visdat.frameL,dnav.setpoint,cam.get_frame_time(),dis, min_dis);
         }
 #endif
 

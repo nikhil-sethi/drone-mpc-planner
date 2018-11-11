@@ -26,7 +26,7 @@ private:
     cv::Mat plot_all_velocity(void);
     cv::Mat plot_all_position(void);
     void draw_segment_viz();
-    void draw_target_text(cv::Mat resFrame);
+    void draw_target_text(cv::Mat resFrame, float time, float dis, float min_dis);
     cv::Mat draw_sub_tracking_viz(cv::Mat frameL_small,cv::Size vizsizeL,cv::Point3d setpoint, ItemTracker * trkr);
 
     DroneController *_dctrl;
@@ -139,7 +139,7 @@ public:
     cv::Mat autotakeoff_velY_thresh;
 
     void addPlotSample(void);
-    void draw_tracker_viz(cv::Mat frameL, cv::Point3d setpoint);
+    void draw_tracker_viz(cv::Mat frameL, cv::Point3d setpoint, float time, float dis, float min_dis);
     void init(DroneController *dctrl, DroneTracker *dtrkr, InsectTracker *itrkr, DroneNavigation *dnav){
         _dctrl = dctrl;
         _dtrkr = dtrkr;
