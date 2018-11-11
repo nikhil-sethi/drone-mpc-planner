@@ -96,7 +96,6 @@ void process_video() {
     Smoother fps_smoothed;
     fps_smoothed.init(100);
     stopWatch.Start();
-    visdat.update(cam.frameL,cam.frameR,cam.get_frame_time(),cam.get_frame_id());
 
     //main while loop:
     while (key != 27) // ESC
@@ -290,6 +289,7 @@ int init(int argc, char **argv) {
     cam.update(); // wait for first frames
 
     visdat.init(cam.Qf, cam.frameL,cam.frameR); // do after cam update to populate frames
+    visdat.update(cam.frameL,cam.frameR,cam.get_frame_time(),cam.get_frame_id()); //TODO: necessary? If so, streamline
 
     //WARNING: changing the order of the inits with logging must be match with the process_video functions!    
     dtrkr.init(&logger,&visdat);
