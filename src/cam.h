@@ -12,25 +12,12 @@
 #include <unistd.h>
 #include "common.h"
 
-#include <thread>
-#include <mutex>
 #include <condition_variable>
-#include <atomic>
-#include <chrono>
-#include <vector>
-#include <queue>
 #include <deque>
 
-#include "opencv2/features2d/features2d.hpp"
-#include "opencv2/calib3d/calib3d.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui/highgui.hpp"
-#if CV_MAJOR_VERSION==2
-#include <opencv2/contrib/contrib.hpp>
-#endif
 
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
-
 
 class Cam{
 
