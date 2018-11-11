@@ -15,7 +15,9 @@
 #include "defines.h"
 #include "smoother.h"
 
-
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 #include "stopwatch.h"
 #include "dronetracker.h"
@@ -83,6 +85,16 @@ GeneratorCam cam;
 VisionData visdat;
 bool fromfile = false;
 
+/****Threadpool*******/
+#define NUM_OF_THREADS 4
+struct Processer {
+    int id;
+    std::thread * thread;
+    std::mutex m;
+    std::condition_variable newdata;
+};
+Processer tp[NUM_OF_THREADS];
+
 /*******Private prototypes*********/
 void process_frame();
 void process_video();
@@ -116,7 +128,7 @@ void process_video() {
 #if VIDEODISPARITY
             output_video_disp.write(cam.get_disp_frame());
 #endif
-#if VIDEORESULTS            
+#if VIDEORESULTS
             output_video_results.write(visualizer.trackframe);
 #endif
         }
@@ -214,6 +226,30 @@ void handleKey() {
     key=0;
 }
 
+void worker_dowork() {
+
+}
+void pool_worker(int id __attribute__((unused))){
+    std::unique_lock<std::mutex> lk(tp[id].m,std::defer_lock);
+    while(key != 27) {
+        tp[id].newdata.wait(lk);
+        worker_dowork();
+    }
+}
+void init_thread_pool() {
+    for (uint i = 0; i < NUM_OF_THREADS; i++) {
+        tp[i].thread = new thread(&pool_worker,i);
+    }
+}
+void close_thread_pool(){
+    for (uint i = 0; i < NUM_OF_THREADS; i++) {
+        tp[i].newdata.notify_all();
+    }
+    for (uint i = 0; i < NUM_OF_THREADS; i++) {
+        tp[i].thread->join();
+    }
+}
+
 void kill_sig_handler(int s){
     std::cout << "Caught ctrl-c:" << s << std::endl;
     key=27;
@@ -228,7 +264,6 @@ void init_sig(){
 }
 
 int init(int argc, char **argv) {
-
     if (argc ==2 ) {
         fromfile = true;
         logreader.init(string(argv[1]) + ".log");
@@ -255,7 +290,7 @@ int init(int argc, char **argv) {
     visdat.init(cam.Qf, cam.frameL,cam.frameR); // do after cam update to populate frames
     visdat.update(cam.frameL,cam.frameR,cam.get_frame_time(),cam.get_frame_id()); //TODO: necessary? If so, streamline
 
-    //WARNING: changing the order of the inits with logging must be match with the process_video functions!    
+    //WARNING: changing the order of the inits with logging must be match with the process_video functions!
     dtrkr.init(&logger,&visdat);
     itrkr.init(&logger,&visdat);
     dnav.init(&logger,&dtrkr,&dctrl,&itrkr);
@@ -265,7 +300,7 @@ int init(int argc, char **argv) {
     // Ensure that joystick was found and that we can use it
     if (!dctrl.joystick_ready() && !fromfile) {
         std::cout << "joystick failed." << std::endl;
-        exit(1);
+        //        exit(1);
     }
 #endif
 
@@ -295,6 +330,7 @@ int init(int argc, char **argv) {
     }
 #endif
 
+    init_thread_pool();
 
     std::cout << "Main init successfull" << std::endl;
 
@@ -323,13 +359,14 @@ void close() {
     visdat.close();
     cam.close();
 
-#if VIDEORESULTS   
+#if VIDEORESULTS
     output_video_results.close();
 #endif
 #if VIDEORAWLR
     output_video_LR.close();
 #endif
 
+    close_thread_pool();
     std::cout <<"Closed"<< std::endl;
 }
 
