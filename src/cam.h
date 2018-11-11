@@ -43,7 +43,7 @@ public:
         g_lockFrameData.unlock();
     }
     bool frame_by_frame;
-
+    bool turbo;
 
     void update(void);
 

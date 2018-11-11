@@ -66,7 +66,7 @@ void Cam::update_playback(void) {
             incremented_playback_frametime = (requested_id_in-2)*(1.f/VIDEOFPS) - (1.f/VIDEOFPS)*0.1f;  //requested_id_in-2 -> -2 seems to be necessary because the RS api skips a frame of either the left or right camera after resuming
             if (incremented_playback_frametime < 0)
                 incremented_playback_frametime = 0;
-//            std::cout << "Resuming RS: " << incremented_playback_frametime << std::endl;
+            //            std::cout << "Resuming RS: " << incremented_playback_frametime << std::endl;
             seek(incremented_playback_frametime);
             resume();
         }
@@ -81,14 +81,16 @@ void Cam::update_playback(void) {
     requested_id_in++;
 
 
-
-    while(swc.Read() < (1.f/VIDEOFPS)*1e3f){
-        usleep(10);
+    if (!turbo) {
+        while(swc.Read() < (1.f/VIDEOFPS)*1e3f){
+            usleep(10);
+        }
+        swc.Restart();
     }
-    swc.Restart();
+
     if (playback_bufferR.size() >= 10 && !_paused) {
         pause();
-//        std::cout << "Pausing playback_bufferL/R size:" << playback_bufferL.size() << " / " << playback_bufferR.size() << std::endl;
+        //        std::cout << "Pausing playback_bufferL/R size:" << playback_bufferL.size() << " / " << playback_bufferR.size() << std::endl;
     }
 
     while(frame_by_frame){
@@ -113,10 +115,10 @@ void Cam::update_playback(void) {
 void Cam::rs_callback_playback(rs2::frame f) {
 
     g_lockFrameData.lock();
-//    if (f.get_profile().stream_index() == 1 )
-//        std::cout << "Received id "         << f.get_frame_number() << ":" << ((float)f.get_timestamp()-frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << "         Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << incremented_playback_frametime << " bufsize: " << playback_bufferL.size() << std::endl;
-//    if (f.get_profile().stream_index() == 2 )
-//        std::cout << "Received id         " << f.get_frame_number() << ":" << ((float)f.get_timestamp()-frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << " Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << incremented_playback_frametime << " bufsize: " << playback_bufferL.size() << std::endl;
+    //    if (f.get_profile().stream_index() == 1 )
+    //        std::cout << "Received id "         << f.get_frame_number() << ":" << ((float)f.get_timestamp()-frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << "         Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << incremented_playback_frametime << " bufsize: " << playback_bufferL.size() << std::endl;
+    //    if (f.get_profile().stream_index() == 2 )
+    //        std::cout << "Received id         " << f.get_frame_number() << ":" << ((float)f.get_timestamp()-frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << " Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << incremented_playback_frametime << " bufsize: " << playback_bufferL.size() << std::endl;
 
     if (f.get_profile().stream_index() == 1 && f.get_frame_number() >= requested_id_in && playback_bufferL.size() < 100) {
         frame_data fL;
@@ -347,14 +349,14 @@ void Cam::pause(){
     if (!_paused) {
         _paused = true;
         ((rs2::playback)dev).pause();
-//        std::cout << "Paused" << std::endl;
+        //        std::cout << "Paused" << std::endl;
     }
 }
 void Cam::resume() {
     if (_paused){
         _paused = false;
         ((rs2::playback)dev).resume();
-//        std::cout << "Resumed" << std::endl;
+        //        std::cout << "Resumed" << std::endl;
     }
 }
 void Cam::seek(float time) {

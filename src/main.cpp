@@ -229,6 +229,9 @@ void handleKey() {
     case 'f':
         cam.frame_by_frame = true;
         break;
+    case 't':
+        cam.turbo = !cam.turbo;
+        break;
     case '.':
         cam.skip_one_sec();
         break;
