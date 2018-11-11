@@ -63,43 +63,22 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
     cv::Mat d = frameL16 - frameL_prev16;
     diffL16 += d;
 
-
-//    cv::Mat test(5,1,CV_16SC1);
-//    int16_t tmp2[] = {-20000,-2, -1, 0 , 1, 2,30000};
-//    test= Mat(1, 7, CV_16SC1,tmp2 );
-//    cv::Mat test_pos = min((test > 0),1);
-//    cv::Mat test_neg = min((test < 0),1);
-//    test_pos.convertTo(test_pos,CV_16SC1);
-//    test_neg.convertTo(test_neg,CV_16SC1);
-//    std::cout << test  << std::endl;
-//    std::cout << test_pos  << std::endl;
-//    std::cout << test_neg << std::endl;
-//    test -= test_pos;
-//    test += test_neg;
-//    std::cout << test  << std::endl;
-
-
-    cv::Mat diffL16_neg,diffL16_pos;
-    if (motion_update_iterator==motion_update_iterator_max) {
+    //slowly fade out motion
+    if (!(motion_update_iterator++ % motion_update_iterator_max)) {
+        //split negative and positive motion
+        cv::Mat diffL16_neg,diffL16_pos;
         diffL16_pos = min(diffL16 >= 1,1);
         diffL16_neg = min(diffL16 <= -1,1);
-        motion_update_iterator = 0;
-    } else { // TODO: seems optimizable:
-        diffL16_pos = min(diffL16 >= 1,0);
-        diffL16_neg = min(diffL16 <= -1,0);
-        motion_update_iterator++;
+        diffL16_pos.convertTo(diffL16_pos,CV_16SC1);
+        diffL16_neg.convertTo(diffL16_neg,CV_16SC1);
+        diffL16 -= diffL16_pos;
+        diffL16 += diffL16_neg;
     }
-
-    diffL16_pos.convertTo(diffL16_pos,CV_16SC1);
-    diffL16_neg.convertTo(diffL16_neg,CV_16SC1);
-    diffL16 -= diffL16_pos;
-    diffL16 += diffL16_neg;
 
     diffL16.convertTo(diffL, CV_8UC1);
     cv::resize(diffL,diffL_small,smallsize);
 
     //cv::imshow("motion", diffL*10);
-
 
     if (!background_calibrated )
         collect_no_drone_frames(diffL_small); // calibration of background uncertainty map
