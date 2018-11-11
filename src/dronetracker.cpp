@@ -20,7 +20,7 @@ void DroneTracker::init_settings() {
     settings.iLowV1r = 188;
     settings.iHighV1r = 255;
     settings.iOpen1r =0;
-    settings.iClose1r =2;
+    settings.iClose1r =0;
 
     //blob params
 

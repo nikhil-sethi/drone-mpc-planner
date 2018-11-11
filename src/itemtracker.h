@@ -91,7 +91,7 @@ private:
         int exclude_min_distance = 5; // in res/IMSCALEF resolution
         int exclude_max_distance = 50; // in res/IMSCALEF resolution
 
-        float version = 1.0f;
+        float version = 1.1f;
 
         template <class Archive>
         void serialize( Archive & ar )
@@ -213,7 +213,7 @@ public:
 
     float posX_smoothed = 0;
     float posY_smoothed = 0;
-    float posZ_smoothed = 0;  
+    float posZ_smoothed = 0;
 };
 
 
