@@ -213,9 +213,7 @@ public:
 
     float posX_smoothed = 0;
     float posY_smoothed = 0;
-    float posZ_smoothed = 0;
-
-    bool breakpause;
+    float posZ_smoothed = 0;  
 };
 
 

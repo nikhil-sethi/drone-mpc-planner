@@ -63,7 +63,7 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
 
     init_kalman();
 
-   updateParams();
+    updateParams();
 
     smoother_posX.init(smooth_width_pos);
     smoother_posY.init(smooth_width_pos);
@@ -250,7 +250,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
         predicted_locationL = predict(dt_predict,_visdat->frame_id);
         predicted_locationL_last = predicted_locationL;
     } else {
-       predicted_locationL = predicted_locationL_last;
+        predicted_locationL = predicted_locationL_last;
     }
 
     find(exclude);
@@ -319,20 +319,17 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
 
     }
 
-    if (!breakpause) {
-
-        if (pathL.size() > 0) {
-            if (pathL.begin()->frame_id < _visdat->frame_id - 30)
-                pathL.erase(pathL.begin());
-            if (pathL.begin()->frame_id > _visdat->frame_id ) //at the end of a realsense video loop, frame_id resets
-                pathL.clear();
-        }
-        if (predicted_pathL.size() > 0) {
-            if (predicted_pathL.begin()->frame_id < _visdat->frame_id - 30)
-                predicted_pathL.erase(predicted_pathL.begin());
-            if (predicted_pathL.begin()->frame_id > _visdat->frame_id ) //at the end of a realsense video loop, frame_id resets
-                predicted_pathL.clear();
-        }
+    if (pathL.size() > 0) {
+        if (pathL.begin()->frame_id < _visdat->frame_id - 30)
+            pathL.erase(pathL.begin());
+        if (pathL.begin()->frame_id > _visdat->frame_id ) //at the end of a realsense video loop, frame_id resets
+            pathL.clear();
+    }
+    if (predicted_pathL.size() > 0) {
+        if (predicted_pathL.begin()->frame_id < _visdat->frame_id - 30)
+            predicted_pathL.erase(predicted_pathL.begin());
+        if (predicted_pathL.begin()->frame_id > _visdat->frame_id ) //at the end of a realsense video loop, frame_id resets
+            predicted_pathL.clear();
     }
 
     trackData last = get_last_track_data();
@@ -399,8 +396,8 @@ void ItemTracker::find(std::vector<track_item> exclude) {
     //attempt to detect changed blobs
     _treshL = segment(_visdat->diffL_small,previous_location,roi_size);
 
-//    cv::Mat tmp = createColumnImage({_treshL,_visdat->diffL*100,_visdat->frameL},CV_8UC1,0.25f);
-//    cv::imshow("trek",tmp);
+    //    cv::Mat tmp = createColumnImage({_treshL,_visdat->diffL*100,_visdat->frameL},CV_8UC1,0.25f);
+    //    cv::imshow("trek",tmp);
 
 #if CV_MAJOR_VERSION==3
     cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
@@ -654,7 +651,7 @@ float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv:
     float minerr = std::numeric_limits<float>::max();
     int tmp_max_disp = settings.max_disparity;
     if (x1 - tmp_max_disp < 0)
-        tmp_max_disp = x1;    
+        tmp_max_disp = x1;
     for (int i=settings.min_disparity; i<tmp_max_disp;i++) {
         cv::Rect roiR(x1-i,y1,x2,y2);
 
@@ -671,7 +668,7 @@ float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv:
         cor_16[i] = cv::sum(corV_16 )[0]/256;
         err[i] = cv::sum(errV)[0];
 
-        if (cor_16[i] > maxcor ) {            
+        if (cor_16[i] > maxcor ) {
             maxcor = cor_16[i];
         }
         if (err[i] < minerr ) { //update min MSE
@@ -726,8 +723,8 @@ float ItemTracker::update_disparity(float disparity, float dt) {
 
     } else {
 
-//        cout << "\t\t\t\t\t\t\t\t sub_disparity: " << disparity << endl;
-//        cout << "\t\t\t\t\t\t\t\t sub_disparity_smoothed: " << disparity_smoothed << endl;
+        //        cout << "\t\t\t\t\t\t\t\t sub_disparity: " << disparity << endl;
+        //        cout << "\t\t\t\t\t\t\t\t sub_disparity_smoothed: " << disparity_smoothed << endl;
 
         // predicted disparity value
         float disp_predict = disparity_smoothed + disp_rate*dt;
@@ -840,7 +837,6 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
     // Position estimation
 
     // smooth position data with simple filter
-
     if (reset_filters) {
         posX_smoothed = data.posX;
         posY_smoothed = data.posY;
@@ -853,7 +849,6 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
         posZ_smoothed = data.posZ*pos_filt_rate + posZ_smoothed*(1.0f-pos_filt_rate);
 
     }
-\
 
     data.sposX = posX_smoothed;
     data.sposY = posY_smoothed;

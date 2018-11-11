@@ -61,8 +61,6 @@ std::string file;
 std::string data_output_dir;
 std::string calib_folder;
 
-int breakpause =-1;
-
 std::ofstream logger;
 Arduino arduino;
 DroneTracker dtrkr;
@@ -86,6 +84,7 @@ VisionData visdat;
 bool fromfile = false;
 
 /*******Private prototypes*********/
+void process_frame();
 void process_video();
 int main( int argc, char **argv);
 void handleKey();
@@ -100,78 +99,14 @@ void process_video() {
     //main while loop:
     while (key != 27) // ESC
     {
-
-        static int breakpause_prev =-1;
-        if (breakpause == 0 && breakpause_prev!=0) {
-            cam.pause();
-            stopWatch_break.Resume();
-            dtrkr.breakpause = true;
-        } else if (breakpause != 0 && breakpause_prev==0) {
-            cam.resume();
-            stopWatch_break.Stop();
-            dtrkr.breakpause = false;
-        }
-        breakpause_prev = breakpause;
-
-        if (breakpause != 0) {
-            cam.update();
-            if (breakpause > 0)
-                breakpause--;
-        }
-
+        cam.update();
 
         static float time =0;
         float dt = cam.get_frame_time() - time;
-        float break_time = ((float)stopWatch_break.Read())/1000.0f;
-        if (breakpause_prev != 0)
-            time = cam.get_frame_time() - break_time;
-
+        time = cam.get_frame_time();
         logger << imgcount << ";" << cam.get_frame_id() << ";" ;
 
-        visdat.update(cam.frameL,cam.frameR,cam.get_frame_time(),cam.get_frame_id());
-
-        //WARNING: changing the order of the functions with logging must be matched with the init functions!
-        dtrkr.track(cam.get_frame_time(),itrkr.predicted_pathL,dctrl.getDroneIsActive());
-        itrkr.track(cam.get_frame_time(),dtrkr.predicted_pathL,dctrl.getDroneIsActive());
-
-//        std::cout << "Found drone location:      [" << dtrkr.find_result.best_image_locationL.pt.x << "," << dtrkr.find_result.best_image_locationL.pt.y << "]" << std::endl;
-#ifdef HASSCREEN
-        if (breakpause_prev != 0) {
-            visualizer.addPlotSample();
-
-            static float min_dis = 9999;
-            float dis = 0;
-            if (dtrkr.n_frames_tracking>0 && itrkr.n_frames_tracking>0) {
-                dis = powf(dtrkr.get_last_track_data().posX-itrkr.get_last_track_data().posX,2) +
-                        powf(dtrkr.get_last_track_data().posY-itrkr.get_last_track_data().posY,2) +
-                        powf(dtrkr.get_last_track_data().posZ-itrkr.get_last_track_data().posZ,2);
-                dis = sqrtf(dis);
-
-                if (dis < min_dis)
-                    min_dis = dis;
-            }
-
-
-            visualizer.draw_tracker_viz(visdat.frameL,dnav.setpoint,cam.get_frame_time(),dis, min_dis);
-        }
-#endif
-
-        dnav.update();
-        dctrl.control(dtrkr.get_last_track_data(),dnav.setpoint_world,dnav.setspeed_world);
-
-#ifdef HASSCREEN
-        if (fromfile) {
-            int rs_id = cam.get_frame_id();
-            LogReader::Log_Entry tmp  = logreader.getItem(rs_id);
-            if (tmp.RS_ID == rs_id) {
-                dctrl.joyRoll = tmp.joyRoll;
-                dctrl.joyPitch = tmp.joyPitch;
-                dctrl.joyYaw = tmp.joyYaw;
-                dctrl.joyThrottle = tmp.joyThrottle;
-                dctrl.joySwitch = tmp.joySwitch;
-            }
-        }
-#endif
+        process_frame();
 
         int frameWritten = 0;
 #if VIDEORAWLR
@@ -186,14 +121,10 @@ void process_video() {
 #endif
         }
 
-
+        //keep track of time and fps
         float t = stopWatch.Read() / 1000.f;
         static float prev_time = 0;
-
         float fps = fps_smoothed.addSample( 1.f / (t - prev_time));
-
-        std::cout << "Frame: " <<imgcount << ", " << cam.get_frame_id() << ". FPS: " << to_string_with_precision(imgcount / (time-break_time ),1) << ". Time: " << to_string_with_precision(time-break_time,2)  << ", dt " << to_string_with_precision(dt,3) << " FPS now: " << to_string_with_precision(fps,1) << std::endl;
-
         if (fps < 50 && !fromfile) {
             std::cout << "FPS WARNING!" << std::endl;
             static float limit_fps_warning_sound = t;
@@ -201,50 +132,75 @@ void process_video() {
                 alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/phone-incoming-call.ogg &");
                 limit_fps_warning_sound = t;
             }
-
         }
+        std::cout << "Frame: " <<imgcount << ", " << cam.get_frame_id() << ". FPS: " << to_string_with_precision(imgcount / time,1) << ". Time: " << to_string_with_precision(time,2)  << ", dt " << to_string_with_precision(dt,3) << " FPS now: " << to_string_with_precision(fps,1) << std::endl;
         imgcount++;
         prev_time = t;
 
 #ifdef HASSCREEN
+        //TODO: do this less often?
         handleKey();
 #endif
-        if (imgcount > 60000)
-            break;
         logger << std::endl;
     } // main while loop
+}
+
+void process_frame() {
+    visdat.update(cam.frameL,cam.frameR,cam.get_frame_time(),cam.get_frame_id());
+
+    //WARNING: changing the order of the functions with logging must be matched with the init functions!
+    dtrkr.track(cam.get_frame_time(),itrkr.predicted_pathL,dctrl.getDroneIsActive());
+    itrkr.track(cam.get_frame_time(),dtrkr.predicted_pathL,dctrl.getDroneIsActive());
+    //        std::cout << "Found drone location:      [" << dtrkr.find_result.best_image_locationL.pt.x << "," << dtrkr.find_result.best_image_locationL.pt.y << "]" << std::endl;
+    dnav.update();
+    dctrl.control(dtrkr.get_last_track_data(),dnav.setpoint_world,dnav.setspeed_world);
 
 #ifdef HASSCREEN
-    cv::destroyAllWindows();
+    visualizer.addPlotSample();
+
+    static float min_dis = 9999;
+    float dis = 0;
+    if (dtrkr.n_frames_tracking>0 && itrkr.n_frames_tracking>0) {
+        dis = powf(dtrkr.get_last_track_data().posX-itrkr.get_last_track_data().posX,2) +
+                powf(dtrkr.get_last_track_data().posY-itrkr.get_last_track_data().posY,2) +
+                powf(dtrkr.get_last_track_data().posZ-itrkr.get_last_track_data().posZ,2);
+        dis = sqrtf(dis);
+
+        if (dis < min_dis)
+            min_dis = dis;
+    }
+
+    visualizer.draw_tracker_viz(visdat.frameL,dnav.setpoint,cam.get_frame_time(),dis, min_dis);
+
+    if (fromfile) {
+        int rs_id = cam.get_frame_id();
+        LogReader::Log_Entry tmp  = logreader.getItem(rs_id);
+        if (tmp.RS_ID == rs_id) {
+            dctrl.joyRoll = tmp.joyRoll;
+            dctrl.joyPitch = tmp.joyPitch;
+            dctrl.joyYaw = tmp.joyYaw;
+            dctrl.joyThrottle = tmp.joyThrottle;
+            dctrl.joySwitch = tmp.joySwitch;
+        }
+    }
 #endif
 }
 
 void handleKey() {
-
+    if (key == 27) { // set by an external ctrl-c
+        return;
+    }
     key = cv::waitKey(1);
     key = key & 0xff;
     if (key == 27) {  //esc
-        //        cam.stopcam();
         return; // don't clear key, just exit
-    }    
+    }
 
     switch(key) {
-    case ' ':
-        //dtrkr.breakpause = true;
-        if (breakpause >-1) {
-            breakpause =-1;
-        } else {
-            breakpause = 0;
-        }
-        break;
     case 'b':
         arduino.bind();
         break;
-    case 'n': // next frame
-        //dtrkr.breakpause = true;
-        //breakpause = 1;
-        cam.pause();
-        break;
+    case ' ':
     case 'f':
         cam.frame_by_frame = true;
         break;
@@ -258,9 +214,17 @@ void handleKey() {
     key=0;
 }
 
-void my_handler(int s){
+void kill_sig_handler(int s){
     std::cout << "Caught ctrl-c:" << s << std::endl;
     key=27;
+}
+void init_sig(){
+    //init ctrl - c catch
+    struct sigaction sigIntHandler;
+    sigIntHandler.sa_handler = kill_sig_handler;
+    sigemptyset(&sigIntHandler.sa_mask);
+    sigIntHandler.sa_flags = 0;
+    sigaction(SIGINT, &sigIntHandler, NULL);
 }
 
 int init(int argc, char **argv) {
@@ -331,12 +295,6 @@ int init(int argc, char **argv) {
     }
 #endif
 
-    //init ctrl - c catch
-    struct sigaction sigIntHandler;
-    sigIntHandler.sa_handler = my_handler;
-    sigemptyset(&sigIntHandler.sa_mask);
-    sigIntHandler.sa_flags = 0;
-    sigaction(SIGINT, &sigIntHandler, NULL);
 
     std::cout << "Main init successfull" << std::endl;
 
@@ -345,6 +303,11 @@ int init(int argc, char **argv) {
 
 void close() {
     std::cout <<"Closing"<< std::endl;
+
+#ifdef HASSCREEN
+    cv::destroyAllWindows();
+#endif
+
     /*****Close everything down*****/
     dtrkr.close();
     dctrl.close();
