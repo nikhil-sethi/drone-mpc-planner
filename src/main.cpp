@@ -114,9 +114,9 @@ void process_video() {
         cam.update();
 
         static float time =0;
-        float dt = cam.get_frame_time() - time;
-        time = cam.get_frame_time();
-        logger << imgcount << ";" << cam.get_frame_id() << ";" ;
+        float dt = cam.frame_time() - time;
+        time = cam.frame_time();
+        logger << imgcount << ";" << cam.frame_number() << ";" ;
 
         process_frame();
 
@@ -145,7 +145,7 @@ void process_video() {
                 limit_fps_warning_sound = t;
             }
         }
-        std::cout << "Frame: " <<imgcount << ", " << cam.get_frame_id() << ". FPS: " << to_string_with_precision(imgcount / time,1) << ". Time: " << to_string_with_precision(time,2)  << ", dt " << to_string_with_precision(dt,3) << " FPS now: " << to_string_with_precision(fps,1) << std::endl;
+        std::cout << "Frame: " <<imgcount << ", " << cam.frame_number() << ". FPS: " << to_string_with_precision(imgcount / time,1) << ". Time: " << to_string_with_precision(time,2)  << ", dt " << to_string_with_precision(dt,3) << " FPS now: " << to_string_with_precision(fps,1) << std::endl;
         imgcount++;
         prev_time = t;
 
@@ -157,12 +157,12 @@ void process_video() {
     } // main while loop
 }
 
-void process_frame() {
-    visdat.update(cam.frameL,cam.frameR,cam.get_frame_time(),cam.get_frame_id());
+void process_frame(Stereo_Frame_Data data) {
+    visdat.update(data.frameL,data.frameR,data.time,data.number);
 
     //WARNING: changing the order of the functions with logging must be matched with the init functions!
-    dtrkr.track(cam.get_frame_time(),itrkr.predicted_pathL,dctrl.getDroneIsActive());
-    itrkr.track(cam.get_frame_time(),dtrkr.predicted_pathL,dctrl.getDroneIsActive());
+    dtrkr.track(data.time,itrkr.predicted_pathL,dctrl.getDroneIsActive());
+    itrkr.track(data.time,dtrkr.predicted_pathL,dctrl.getDroneIsActive());
     //        std::cout << "Found drone location:      [" << dtrkr.find_result.best_image_locationL.pt.x << "," << dtrkr.find_result.best_image_locationL.pt.y << "]" << std::endl;
     dnav.update();
     dctrl.control(dtrkr.get_last_track_data(),dnav.setpoint_world,dnav.setspeed_world);
@@ -182,10 +182,10 @@ void process_frame() {
             min_dis = dis;
     }
 
-    visualizer.draw_tracker_viz(visdat.frameL,dnav.setpoint,cam.get_frame_time(),dis, min_dis);
+    visualizer.draw_tracker_viz(visdat.frameL,dnav.setpoint,cam.frame_time(),dis, min_dis);
 
     if (fromfile) {
-        int rs_id = cam.get_frame_id();
+        int rs_id = cam.frame_number();
         LogReader::Log_Entry tmp  = logreader.getItem(rs_id);
         if (tmp.RS_ID == rs_id) {
             dctrl.joyRoll = tmp.joyRoll;
@@ -288,7 +288,7 @@ int init(int argc, char **argv) {
     cam.update(); // wait for first frames
 
     visdat.init(cam.Qf, cam.frameL,cam.frameR); // do after cam update to populate frames
-    visdat.update(cam.frameL,cam.frameR,cam.get_frame_time(),cam.get_frame_id()); //TODO: necessary? If so, streamline
+    visdat.update(cam.frameL,cam.frameR,cam.frame_time(),cam.frame_number()); //TODO: necessary? If so, streamline
 
     //WARNING: changing the order of the inits with logging must be match with the process_video functions!
     dtrkr.init(&logger,&visdat);

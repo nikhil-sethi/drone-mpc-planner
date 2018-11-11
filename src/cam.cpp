@@ -48,7 +48,7 @@ void Cam::update_playback(void) {
 
         for (uint i = 0 ; i <playback_bufferL_cleaned.size();i++) {
             if (playback_bufferL_cleaned.at(i).id == requested_id_in){
-                fL = playback_bufferL_cleaned.at(i);                
+                fL = playback_bufferL_cleaned.at(i);
                 foundL = true;
                 break;
             }
@@ -56,7 +56,7 @@ void Cam::update_playback(void) {
         if (foundL)
             for (uint i = 0 ; i <playback_bufferR_cleaned.size();i++) {
                 if (playback_bufferR_cleaned.at(i).id == requested_id_in){
-                    fR = playback_bufferR_cleaned.at(i);                    
+                    fR = playback_bufferR_cleaned.at(i);
                     foundR = true;
                     break;
                 }
@@ -103,8 +103,8 @@ void Cam::update_playback(void) {
 
     frameL = fL.frame.clone();
     frameR = fR.frame.clone();
-    frame_id = fL.id;
-    frame_time = fL.time;
+    _frame_number = fL.id;
+    _frame_time = fL.time;
 
     //std::cout << "-------------frame id: " << frame_id << " seek time: " << incremented_playback_frametime << std::endl;
 
@@ -122,9 +122,9 @@ void Cam::rs_callback_playback(rs2::frame f) {
         frame_data fL;
         fL.frame = Mat(Size(848, 480), CV_8UC1, (void*)f.get_data(), Mat::AUTO_STEP).clone();
         fL.id= f.get_frame_number();
-        if (frame_time_start <0)
-            frame_time_start = f.get_timestamp();
-        fL.time = ((float)f.get_timestamp() -frame_time_start)/1000.f;
+        if (_frame_time_start <0)
+            _frame_time_start = f.get_timestamp();
+        fL.time = ((float)f.get_timestamp() -_frame_time_start)/1000.f;
 
         playback_bufferL.push_back(fL);
         new_frame1 = true;
@@ -133,9 +133,9 @@ void Cam::rs_callback_playback(rs2::frame f) {
         frame_data fR;
         fR.frame = Mat(Size(848, 480), CV_8UC1, (void*)f.get_data(), Mat::AUTO_STEP).clone();
         fR.id= f.get_frame_number();
-        if (frame_time_start <0)
-            frame_time_start = f.get_timestamp();
-        fR.time = ((float)f.get_timestamp() -frame_time_start)/1000.f;
+        if (_frame_time_start <0)
+            _frame_time_start = f.get_timestamp();
+        fR.time = ((float)f.get_timestamp() -_frame_time_start)/1000.f;
         playback_bufferR.push_back(fR);
         new_frame2 = true;
         last_2_id = fR.id;
@@ -156,10 +156,10 @@ void Cam::update_real(void) {
     g_lockFrameData.lock();
     frameL = Mat(Size(848, 480), CV_8UC1, (void*)rs_frameL.get_data(), Mat::AUTO_STEP);
     frameR = Mat(Size(848, 480), CV_8UC1, (void*)rs_frameR.get_data(), Mat::AUTO_STEP);
-    frame_id = rs_frameL.get_frame_number();
-    if (frame_time_start <0)
-        frame_time_start = rs_frameL.get_timestamp();
-    frame_time = ((float)rs_frameL.get_timestamp() -frame_time_start)/1000.f;
+    _frame_number = rs_frameL.get_frame_number();
+    if (_frame_time_start <0)
+        _frame_time_start = rs_frameL.get_timestamp();
+    _frame_time = ((float)rs_frameL.get_timestamp() -_frame_time_start)/1000.f;
     //std::cout << "-------------frame id: " << frame_id << " seek time: " << incremented_playback_frametime << std::endl;
     g_lockFrameData.unlock();
 
@@ -350,7 +350,7 @@ void Cam::pause(){
 //        std::cout << "Paused" << std::endl;
     }
 }
-void Cam::resume() {    
+void Cam::resume() {
     if (_paused){
         _paused = false;
         ((rs2::playback)dev).resume();

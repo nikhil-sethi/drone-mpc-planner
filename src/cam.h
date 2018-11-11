@@ -48,8 +48,8 @@ public:
     void update(void);
 
 
-    int get_frame_id() {return frame_id;}
-    float get_frame_time() {return frame_time;}
+    int frame_number() {return _frame_number;}
+    float frame_time() {return _frame_time;}
     cv::Mat Qf;
 
     cv::Mat frameL,frameR;
@@ -57,12 +57,18 @@ public:
     enum auto_exposure_enum{disabled = 0, enabled = 1, only_at_startup=2};
     const auto_exposure_enum enable_auto_exposure = only_at_startup;
 
+    struct stereo_frame{
+         cv::Mat frameL,frameR;
+         uint id;
+         float time;
+    };
+
 private:
 
     uint requested_id_in =0;
-    int frame_id;
-    float frame_time = 0;
-    float frame_time_start = -1;
+    int _frame_number;
+    float _frame_time = 0;
+    float _frame_time_start = -1;
 
     int exposure = 15500; //84*(31250/256); // >11000 -> 60fps, >15500 -> 30fps, < 20 = crash
     int gain = 20;
@@ -90,8 +96,6 @@ private:
 
     rs2::frame rs_frameL_cbtmp,rs_frameR_cbtmp;
     rs2::frame rs_frameL,rs_frameR;
-
-
 
     struct frame_data{
         cv::Mat frame;
