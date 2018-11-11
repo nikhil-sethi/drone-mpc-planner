@@ -47,7 +47,9 @@ private:
     void workerThread(void);
     void plot(void);
 
-
+    bool _fromfile;
+    int speed_div;
+    float res_mult;
 
     cv::Mat cir8,bkg8,dif8;
     bool paint;
@@ -140,11 +142,21 @@ public:
 
     void addPlotSample(void);
     void draw_tracker_viz(cv::Mat frameL, cv::Point3d setpoint, float time, float dis, float min_dis);
-    void init(DroneController *dctrl, DroneTracker *dtrkr, InsectTracker *itrkr, DroneNavigation *dnav){
+    void init(DroneController *dctrl, DroneTracker *dtrkr, InsectTracker *itrkr, DroneNavigation *dnav, bool fromfile){
         _dctrl = dctrl;
         _dtrkr = dtrkr;
         _itrkr = itrkr;
         _dnav = dnav;
+
+        _fromfile = fromfile;
+        if (fromfile) {
+            res_mult = 1.5f;
+            speed_div = 1;
+        } else {
+            res_mult = 1;
+            speed_div = 4;
+        }
+
         thread_viz = std::thread(&Visualizer::workerThread,this);
     }
     void close();

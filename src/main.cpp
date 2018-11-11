@@ -306,7 +306,7 @@ int init(int argc, char **argv) {
 
     logger << std::endl;
 #ifdef HASSCREEN
-    visualizer.init(&dctrl,&dtrkr,&itrkr,&dnav);
+    visualizer.init(&dctrl,&dtrkr,&itrkr,&dnav,fromfile);
 #endif
 
     /*****init the video writer*****/

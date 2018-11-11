@@ -25,7 +25,7 @@ void Visualizer::addPlotSample(void) {
 
 
     static int div = 0;
-    if (paint && div++ % 4 == 1) {
+    if (paint && !(div++ % speed_div )) {
         imshow("Plots",plotframe);
         paint = false;
 
@@ -296,10 +296,10 @@ void Visualizer::draw_target_text(cv::Mat resFrame, float time, float dis,float 
     ss_min << "Closest: " << (roundf(min_dis*100)/100) << " [m]";
     ss_dis << "|" << (roundf(dis*100)/100) << "|";
 
-    putText(resFrame,ss_time.str() ,cv::Point(220,20),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame,ss_time.str() ,cv::Point(220*res_mult,20*res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     if (min_dis<9999){
-        putText(resFrame,ss_dis.str() ,cv::Point(300,20),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-        putText(resFrame,ss_min.str() ,cv::Point(360,20),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+        putText(resFrame,ss_dis.str() ,cv::Point(300*res_mult,20*res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+        putText(resFrame,ss_min.str() ,cv::Point(360*res_mult,20*res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     }
 
 }
@@ -344,13 +344,15 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
 }
 
 
-void Visualizer::draw_tracker_viz(cv::Mat frameL, cv::Point3d setpoint, float time, float dis,float min_dis) {
+void Visualizer::draw_tracker_viz(cv::Mat frameL, cv::Point3d setpoint, float time, float dis, float min_dis) {
 #ifdef DRAWTRACKING
     static int div = 0;
-    if (div++ % 4 == 1) {
+    if (!(div++ % speed_div)) {
 
         cv::Mat resFrame;
         cvtColor(frameL,resFrame,CV_GRAY2BGR);
+        if (res_mult > 1)
+            cv::resize(resFrame,resFrame,cv::Size(frameL.cols*res_mult,frameL.rows*res_mult));
 
         cir8 = _dtrkr->_cir*255;
         bkg8 = _dtrkr->_bkg*255;
