@@ -66,7 +66,7 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
     diffL16 += d;
 
     //slowly fade out motion
-    if (!(motion_update_iterator++ % motion_update_iterator_max)) {
+    if (!(motion_update_iterator++ % settings.motion_update_iterator_max)) {
         //split negative and positive motion
         cv::Mat diffL16_neg,diffL16_pos;
         diffL16_pos = min(diffL16 >= 1,1);

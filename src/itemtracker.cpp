@@ -533,7 +533,7 @@ cv::Mat ItemTracker::show_uncertainty_map_in_image(cv::Point pd4, cv::Mat res) {
         roi_circle.height = roi_circle.height - abs(y1 + blurred_circle_big.rows - res.rows);
 
     cv::Mat gray = cv::Mat::zeros(res.rows,res.cols,CV_32F);
-    gray = _visdat->get_uncertainty_background();
+    gray = _visdat->uncertainty_background();
     cv::Mat a = blurred_circle_big(roi_circle);
 
     x1 = p.x-blurred_circle_big.cols/2+roi_circle.x;
