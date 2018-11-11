@@ -4,7 +4,7 @@ using namespace cv;
 using namespace std;
 
 void InsectTracker::init(std::ofstream *logger, VisionData *visdat) {
-    ItemTracker::init(logger,visdat,"insect");    
+    ItemTracker::init(logger,visdat,"insect");
 }
 void InsectTracker::init_settings() {
     //thresh params
