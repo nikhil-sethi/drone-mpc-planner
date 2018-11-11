@@ -56,8 +56,10 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
     frameR = new_frameR;
     frame_id = new_frame_id;
 
-    frameL_prev16 = frameL16.clone();
-    frameL.convertTo(frameL16, CV_16SC1);
+    frameL_prev16 = frameL16;
+    cv::Mat tmp;
+    frameL.convertTo(tmp, CV_16SC1);
+    frameL16 = tmp;
 
     //calcuate the motion difference, through the integral over time (over each pixel)
     cv::Mat d = frameL16 - frameL_prev16;
