@@ -5,7 +5,9 @@
 #include <fstream>
 #include <vector>
 #include <math.h>
-//#include <queue>
+#include <mutex>
+#include <condition_variable>
+
 #include <opencv2/highgui/highgui.hpp>
 #include "opencv2/features2d/features2d.hpp"
 #include "dronecontroller.h"
@@ -27,7 +29,8 @@ private:
     cv::Mat plot_all_position(void);
     void draw_segment_viz();
     void draw_target_text(cv::Mat resFrame, float time, float dis, float min_dis);
-    cv::Mat draw_sub_tracking_viz(cv::Mat frameL_small,cv::Size vizsizeL,cv::Point3d setpoint, ItemTracker * trkr);
+    cv::Mat draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, std::vector<ItemTracker::track_item> path,std::vector<ItemTracker::track_item> predicted_path,std::vector<ItemTracker::track_item> exclude_path,cv::Rect roi_offset,int exclude_max_distance, int exclude_min_distance);
+    void draw_tracker_viz();
 
     DroneController *_dctrl;
     DroneTracker *_dtrkr;
@@ -41,23 +44,46 @@ private:
     const int line_width = 1;
     const float text_size = 0.3;
 
-    std::mutex g_lockData;
+    std::mutex lock_plot_data;
+    std::mutex lock_frame_data;
     std::thread thread_viz;
+    std::mutex m;
+    std::condition_variable newdata;
+    bool new_tracker_viz_data_requested = true;
     bool exitVizThread = false;
     void workerThread(void);
     void plot(void);
 
     bool _fromfile;
-    int speed_div;
-    float res_mult;
+    float _res_mult;
 
     cv::Mat cir8,bkg8,dif8;
-    bool paint;
 
+
+    struct Tracker_viz_base_data{
+        cv::Mat frameL;
+        cv::Point3d setpoint;
+        float time;
+        float dis;
+        float min_dis;
+
+        std::vector<ItemTracker::track_item> drn_path;
+        std::vector<ItemTracker::track_item> drn_predicted_path;
+        std::vector<ItemTracker::track_item> ins_path;
+        std::vector<ItemTracker::track_item> ins_predicted_path;
+        cv::Rect drn_roi_offset;
+        cv::Rect ins_roi_offset;
+        int exclude_min_distance;
+        int exclude_max_distance;
+
+    };
+    Tracker_viz_base_data tracker_viz_base_data;
 
 public:
     cv::Mat trackframe;
+    bool request_trackframe_paint;
     cv::Mat plotframe;
+    bool request_plotframe_paint;
 
     Visualizer(void){
         roll_joystick = cv::Mat(1,1,CV_32FC1);
@@ -140,8 +166,9 @@ public:
 
     cv::Mat autotakeoff_velY_thresh;
 
+    void paint();
     void addPlotSample(void);
-    void draw_tracker_viz(cv::Mat frameL, cv::Point3d setpoint, float time, float dis, float min_dis);
+    void update_tracker_data(cv::Mat frameL, cv::Point3d setpoint, float time, DroneTracker *dtrk, InsectTracker *itrk);
     void init(DroneController *dctrl, DroneTracker *dtrkr, InsectTracker *itrkr, DroneNavigation *dnav, bool fromfile){
         _dctrl = dctrl;
         _dtrkr = dtrkr;
@@ -150,11 +177,9 @@ public:
 
         _fromfile = fromfile;
         if (fromfile) {
-            res_mult = 1.5f;
-            speed_div = 1;
+            _res_mult = 1.5f;
         } else {
-            res_mult = 1;
-            speed_div = 4;
+            _res_mult = 1;
         }
 
         thread_viz = std::thread(&Visualizer::workerThread,this);

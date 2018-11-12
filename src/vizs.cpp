@@ -20,19 +20,7 @@ cv::Scalar background_color(255,255,255);
 
 void Visualizer::addPlotSample(void) {
 #ifdef DRAWPLOTS
-
-    g_lockData.lock();
-
-
-    static int div = 0;
-    if (paint && !(div++ % speed_div )) {
-        imshow("Plots",plotframe);
-        paint = false;
-
-        //imshow("dt", plot({dt,dt_target},"dt"));
-    }
-
-
+    lock_plot_data.lock();
     roll_joystick.push_back((float)_dctrl->joyRoll);
     pitch_joystick.push_back((float)_dctrl->joyPitch);
     yaw_joystick.push_back((float)_dctrl->joyPitch);
@@ -51,7 +39,7 @@ void Visualizer::addPlotSample(void) {
     posX.push_back(-data.posX);
     posY.push_back(data.posY);
     posZ.push_back(-data.posZ);
-    disparity.push_back((float)_dtrkr->find_result.disparity);
+    disparity.push_back(_dtrkr->find_result.disparity);
     sdisparity.push_back(_dtrkr->find_result.smoothed_disparity);
 
     sposX.push_back(-data.sposX);
@@ -80,7 +68,8 @@ void Visualizer::addPlotSample(void) {
 
     autotakeoff_velY_thresh.push_back((float)(_dnav->params.    auto_takeoff_speed) / 100.f);
 
-    g_lockData.unlock();
+    lock_plot_data.unlock();
+    newdata.notify_all();
 #endif
 }
 
@@ -89,11 +78,10 @@ void Visualizer::plot(void) {
     ims_trk.push_back(plot_xyd());
     ims_trk.push_back(plot_all_position());
     ims_trk.push_back(plot_all_velocity());
-//    ims_trk.push_back(plot_all_acceleration());
+    //    ims_trk.push_back(plot_all_acceleration());
     ims_trk.push_back(plot_all_control());
     //showRowImage(ims_trk, "Tracking",CV_8UC3);
     plotframe = createRowImage(ims_trk,CV_8UC3);
-    paint=true;
 }
 
 cv::Mat Visualizer::plot_xyd(void) {
@@ -279,7 +267,7 @@ cv::Mat Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Point setpoint, std:
     return frame;
 }
 
-void Visualizer::draw_segment_viz(){
+void Visualizer::draw_segment_viz(void){
     std::vector<cv::Mat> ims;
     ims.push_back(cir8);
     ims.push_back(bkg8);
@@ -296,17 +284,18 @@ void Visualizer::draw_target_text(cv::Mat resFrame, float time, float dis,float 
     ss_min << "Closest: " << (roundf(min_dis*100)/100) << " [m]";
     ss_dis << "|" << (roundf(dis*100)/100) << "|";
 
-    putText(resFrame,ss_time.str() ,cv::Point(220*res_mult,10*res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame,ss_time.str() ,cv::Point(220*_res_mult,10*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     if (min_dis<9999){
-        putText(resFrame,ss_dis.str() ,cv::Point(300*res_mult,10*res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-        putText(resFrame,ss_min.str() ,cv::Point(360*res_mult,10*res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+        putText(resFrame,ss_dis.str() ,cv::Point(300*_res_mult,10*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+        putText(resFrame,ss_min.str() ,cv::Point(360*_res_mult,10*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     }
 
 }
 
-cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, ItemTracker *trkr) {
+cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, std::vector<ItemTracker::track_item> path,std::vector<ItemTracker::track_item> predicted_path,std::vector<ItemTracker::track_item> exclude_path,cv::Rect roi_offset,int exclude_max_distance, int exclude_min_distance) {
+
     cv::Mat frameL_small_drone;
-    std::vector<ItemTracker::track_item> tmp = trkr->predicted_pathL;
+    std::vector<ItemTracker::track_item> tmp = predicted_path;
     if (tmp.size()>0) {
         std::vector<cv::KeyPoint> keypoints;
         for (uint i = 0; i< tmp.size();i++) {
@@ -318,22 +307,22 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
         cvtColor(frameL_small,frameL_small_drone,CV_GRAY2BGR);
     }
 
-    cv::rectangle(frameL_small_drone,trkr->find_result.roi_offset,cv::Scalar(180,100,240),4/IMSCALEF);
+    cv::rectangle(frameL_small_drone,roi_offset,cv::Scalar(180,100,240),4/IMSCALEF);
 
-    if (trkr->find_result.excludes.size() > 0) {
-        ItemTracker::track_item exclude = trkr->find_result.excludes.at(trkr->find_result.excludes.size()-1);
-        float threshold_dis = trkr->settings.exclude_min_distance / sqrtf(exclude.tracking_certainty)+exclude.k.size;
-        if (threshold_dis > trkr->settings.exclude_max_distance)
-            threshold_dis = trkr->settings.exclude_max_distance;
+    if (exclude_path.size() > 0) {
+        ItemTracker::track_item exclude = exclude_path.at(exclude_path.size()-1);
+        float threshold_dis = exclude_min_distance / sqrtf(exclude.tracking_certainty)+exclude.k.size;
+        if (threshold_dis > exclude_max_distance)
+            threshold_dis = exclude_max_distance;
         cv::circle(frameL_small_drone,exclude.k.pt,threshold_dis,cv::Scalar(255,0,0),4/IMSCALEF);
     }
 
 
-    if (trkr->pathL.size() > 0) {
+    if (path.size() > 0) {
         std::vector<cv::KeyPoint> keypoints;
-        for (uint i = 0; i< trkr->pathL.size();i++) {
-            trkr->pathL.at(i).k.size = 12/IMSCALEF;
-            keypoints.push_back(trkr->pathL.at(i).k);
+        for (uint i = 0; i< path.size();i++) {
+            path.at(i).k.size = 12/IMSCALEF;
+            keypoints.push_back(path.at(i).k);
         }
         drawKeypoints( frameL_small_drone, keypoints, frameL_small_drone, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
     }
@@ -344,57 +333,125 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
 }
 
 
-void Visualizer::draw_tracker_viz(cv::Mat frameL, cv::Point3d setpoint, float time, float dis, float min_dis) {
-#ifdef DRAWTRACKING
-    static int div = 0;
-    if (!(div++ % speed_div)) {
+void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3d setpoint, float time, DroneTracker * dtrk, InsectTracker * itrk) {
+    if (new_tracker_viz_data_requested) {
+        lock_frame_data.lock();
 
-        cv::Mat resFrame = cv::Mat::zeros(frameL.rows*res_mult+frameL.rows*res_mult/4,frameL.cols*res_mult,CV_8UC3);
-        cv::Mat frameL_color;
-        cvtColor(frameL,frameL_color,CV_GRAY2BGR);
-        cv::Rect rect(0,frameL.rows*res_mult/4,frameL.cols*res_mult,frameL.rows*res_mult);
-        cv::Mat roi = resFrame(rect);
-        cv::Size size (frameL.cols*res_mult,frameL.rows*res_mult);
-        cv::resize(frameL_color,roi,size);
+        static float min_dis = 9999;
+        float dis = 0;
+        if (dtrk->n_frames_tracking>0 && itrk->n_frames_tracking>0) {
+            dis = powf(dtrk->get_last_track_data().posX-itrk->get_last_track_data().posX,2) +
+                    powf(dtrk->get_last_track_data().posY-itrk->get_last_track_data().posY,2) +
+                    powf(dtrk->get_last_track_data().posZ-itrk->get_last_track_data().posZ,2);
+            dis = sqrtf(dis);
 
-//        cir8 = _dtrkr->_cir*255;
-//        bkg8 = _dtrkr->_bkg*255;
-//        dif8 = _dtrkr->_dif*10;
-//        cir8.convertTo(cir8, CV_8UC1);
-//        bkg8.convertTo(bkg8, CV_8UC1);
-//        dif8.convertTo(dif8, CV_8UC1);
-//        draw_segment_viz();
+            if (dis < min_dis)
+                min_dis = dis;
+        }
 
-        cv::Size vizsizeL(size.width/4,size.height/4);
-        cv::Mat frameL_small;
-        cv::resize(frameL,frameL_small,cv::Size(frameL.cols/IMSCALEF,frameL.rows/IMSCALEF));
-        cv::Mat frameL_small_drone = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,_dtrkr);
-        cv::Mat frameL_small_insect = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,_itrkr);
-        frameL_small_drone.copyTo(resFrame(cv::Rect(0,0,frameL_small_drone.cols, frameL_small_drone.rows)));
-        frameL_small_insect.copyTo(resFrame(cv::Rect(resFrame.cols-frameL_small_drone.cols,0,frameL_small_drone.cols, frameL_small_drone.rows)));
-        draw_target_text(resFrame,time,dis,min_dis);
 
-        cv::imshow("tracking results", resFrame);
-        trackframe   = resFrame;
+        tracker_viz_base_data.frameL = frameL;
+        tracker_viz_base_data.dis = dis;
+        tracker_viz_base_data.min_dis = min_dis;
+        tracker_viz_base_data.setpoint = setpoint;
+        tracker_viz_base_data.time = time;
+        tracker_viz_base_data.drn_path = dtrk->pathL;
+        tracker_viz_base_data.drn_predicted_path = dtrk->predicted_pathL;
+        tracker_viz_base_data.ins_path = itrk->pathL;
+        tracker_viz_base_data.ins_predicted_path = itrk->predicted_pathL;
+        tracker_viz_base_data.drn_roi_offset = dtrk->find_result.roi_offset;
+        tracker_viz_base_data.ins_roi_offset = itrk->find_result.roi_offset;
+        tracker_viz_base_data.exclude_min_distance = dtrk->settings.exclude_min_distance;
+        tracker_viz_base_data.exclude_max_distance = dtrk->settings.exclude_max_distance;
+
+        new_tracker_viz_data_requested = false;
+        lock_frame_data.unlock();
+        newdata.notify_all();
     }
-#endif
+
+}
+
+void Visualizer::draw_tracker_viz() {
+    cv::Mat frameL = tracker_viz_base_data.frameL;
+    float dis = tracker_viz_base_data.dis;
+    float min_dis = tracker_viz_base_data.min_dis;
+    cv::Point3f setpoint = tracker_viz_base_data.setpoint;
+    float time = tracker_viz_base_data.time;
+
+    std::vector<ItemTracker::track_item> drn_path = tracker_viz_base_data.drn_path;
+    std::vector<ItemTracker::track_item> drn_predicted_path = tracker_viz_base_data.drn_predicted_path;
+    std::vector<ItemTracker::track_item> ins_path = tracker_viz_base_data.ins_path;
+    std::vector<ItemTracker::track_item> ins_predicted_path = tracker_viz_base_data.ins_predicted_path;
+    cv::Rect drn_roi_offset = tracker_viz_base_data.drn_roi_offset;
+    cv::Rect ins_roi_offset = tracker_viz_base_data.ins_roi_offset;
+    int exclude_min_distance = tracker_viz_base_data.exclude_min_distance;
+    int exclude_max_distance = tracker_viz_base_data.exclude_max_distance;
+
+    cv::Mat resFrame = cv::Mat::zeros(frameL.rows*_res_mult+frameL.rows*_res_mult/4,frameL.cols*_res_mult,CV_8UC3);
+    cv::Mat frameL_color;
+    cvtColor(frameL,frameL_color,CV_GRAY2BGR);
+    cv::Rect rect(0,frameL.rows*_res_mult/4,frameL.cols*_res_mult,frameL.rows*_res_mult);
+    cv::Mat roi = resFrame(rect);
+    cv::Size size (frameL.cols*_res_mult,frameL.rows*_res_mult);
+    cv::resize(frameL_color,roi,size);
+
+    //        cir8 = _dtrkr->_cir*255;
+    //        bkg8 = _dtrkr->_bkg*255;
+    //        dif8 = _dtrkr->_dif*10;
+    //        cir8.convertTo(cir8, CV_8UC1);
+    //        bkg8.convertTo(bkg8, CV_8UC1);
+    //        dif8.convertTo(dif8, CV_8UC1);
+    //        draw_segment_viz(); //warning NOT THREAD SAFE, do not uncomment here anymore!
+
+    cv::Size vizsizeL(size.width/4,size.height/4);
+    cv::Mat frameL_small;
+    cv::resize(frameL,frameL_small,cv::Size(frameL.cols/IMSCALEF,frameL.rows/IMSCALEF));
+    cv::Mat frameL_small_drone = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,drn_path,drn_predicted_path,ins_predicted_path,drn_roi_offset,exclude_max_distance, exclude_min_distance);
+    cv::Mat frameL_small_insect = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,ins_path,ins_predicted_path,drn_predicted_path,ins_roi_offset,exclude_max_distance, exclude_min_distance);
+    frameL_small_drone.copyTo(resFrame(cv::Rect(0,0,frameL_small_drone.cols, frameL_small_drone.rows)));
+    frameL_small_insect.copyTo(resFrame(cv::Rect(resFrame.cols-frameL_small_drone.cols,0,frameL_small_drone.cols, frameL_small_drone.rows)));
+    draw_target_text(resFrame,time,dis,min_dis);
+
+    trackframe   = resFrame;
+}
+
+void Visualizer::paint() {
+    if (request_trackframe_paint) {
+        request_trackframe_paint = false;
+        cv::imshow("tracking results", trackframe);
+        new_tracker_viz_data_requested = true;
+    }
+    if (request_plotframe_paint) {
+        request_plotframe_paint = false;
+        imshow("Plots",plotframe);
+    }
 }
 
 void Visualizer::workerThread(void) {
     std::cout << "Viz thread started!" << std::endl;
+    std::unique_lock<std::mutex> lk(m,std::defer_lock);
     while (!exitVizThread) {
+        newdata.wait(lk);
         if (roll_joystick.rows > 0) {
-            g_lockData.lock();
 #ifdef DRAWPLOTS
+            lock_plot_data.lock();
             plot();
+            request_plotframe_paint = true;
+            lock_plot_data.unlock();
 #endif
-            g_lockData.unlock();
         }
-        usleep(2000);
+#ifdef DRAWTRACKING
+            lock_frame_data.lock();
+            draw_tracker_viz();
+            request_trackframe_paint=true;
+            lock_frame_data.unlock();
+#endif
+
     }
 }
 void Visualizer::close() {
     exitVizThread = true;
-    g_lockData.unlock();
+    newdata.notify_all();
+    lock_plot_data.unlock();
     thread_viz.join();
 }
