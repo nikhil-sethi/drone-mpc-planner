@@ -21,14 +21,10 @@ int last_1_id =-1;
 int last_2_id =-1;
 float incremented_playback_frametime = (1.f/VIDEOFPS)/2.f;
 void Cam::update_playback(void) {
-
     frame_data fL,fR;
-
-
     bool foundL=false,foundR = false;
     while (true) {
-
-        g_lockFrameData.lock();
+        lock_frame_data.lock();
         std::deque<frame_data> playback_bufferL_cleaned;
         std::deque<frame_data> playback_bufferR_cleaned;
         for (uint i = 0 ; i <playback_bufferR.size();i++) {
@@ -44,7 +40,7 @@ void Cam::update_playback(void) {
 
         playback_bufferR = playback_bufferR_cleaned;
         playback_bufferL = playback_bufferL_cleaned;
-        g_lockFrameData.unlock();
+        lock_frame_data.unlock();
 
         for (uint i = 0 ; i <playback_bufferL_cleaned.size();i++) {
             if (playback_bufferL_cleaned.at(i).id == requested_id_in){
@@ -76,7 +72,9 @@ void Cam::update_playback(void) {
         }
 
         std::unique_lock<std::mutex> lk(m);
-        g_waitforimage.wait(lk);
+        wait_for_image.wait(lk,[this](){return new_frame1 && new_frame2;});
+        new_frame1 = false;
+        new_frame2 = false;
     }
     requested_id_in++;
 
@@ -114,7 +112,7 @@ void Cam::update_playback(void) {
 
 void Cam::rs_callback_playback(rs2::frame f) {
 
-    g_lockFrameData.lock();
+    lock_frame_data.lock();
     //    if (f.get_profile().stream_index() == 1 )
     //        std::cout << "Received id "         << f.get_frame_number() << ":" << ((float)f.get_timestamp()-frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << "         Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << incremented_playback_frametime << " bufsize: " << playback_bufferL.size() << std::endl;
     //    if (f.get_profile().stream_index() == 2 )
@@ -142,20 +140,18 @@ void Cam::rs_callback_playback(rs2::frame f) {
         new_frame2 = true;
         last_2_id = fR.id;
     }
-    g_lockFrameData.unlock();
+    lock_frame_data.unlock();
     if (new_frame1 && new_frame2) {
-        new_frame1 = false;
-        new_frame2 = false;
-        g_waitforimage.notify_all();
+        wait_for_image.notify_all();
     }
 
 }
 
 void Cam::update_real(void) {
     std::unique_lock<std::mutex> lk(m);
-    g_waitforimage.wait(lk);
+    wait_for_image.wait(lk); //TODO: possible deadlock when notification is given before this wait is reached. Make conditional on new_frame1 && new_frame2...!?
 
-    g_lockFrameData.lock();
+    lock_frame_data.lock();
     frameL = Mat(Size(848, 480), CV_8UC1, (void*)rs_frameL.get_data(), Mat::AUTO_STEP);
     frameR = Mat(Size(848, 480), CV_8UC1, (void*)rs_frameR.get_data(), Mat::AUTO_STEP);
     _frame_number = rs_frameL.get_frame_number();
@@ -163,19 +159,19 @@ void Cam::update_real(void) {
         _frame_time_start = rs_frameL.get_timestamp();
     _frame_time = ((float)rs_frameL.get_timestamp() -_frame_time_start)/1000.f;
     //std::cout << "-------------frame id: " << frame_id << " seek time: " << incremented_playback_frametime << std::endl;
-    g_lockFrameData.unlock();
+    lock_frame_data.unlock();
 
-    g_lockFlags.lock();
+    lock_flags.lock();
     new_frame1 = false;
     new_frame2 = false;
-    g_lockFlags.unlock();
+    lock_flags.unlock();
 
 }
 
 uint last_sync_id = 0;
 void Cam::rs_callback(rs2::frame f) {
 
-    g_lockFlags.lock();
+    lock_flags.lock();
     if (f.get_profile().stream_index() == 1 && !new_frame1 && f.get_frame_number() >= last_sync_id) {
         rs_frameL_cbtmp  = f;
         new_frame1 = true;
@@ -183,14 +179,14 @@ void Cam::rs_callback(rs2::frame f) {
         rs_frameR_cbtmp = f;
         new_frame2 = true;
     }
-    g_lockFlags.unlock();
+    lock_flags.unlock();
     if (new_frame1 && new_frame2) {
         if (rs_frameL_cbtmp.get_frame_number() == rs_frameR_cbtmp.get_frame_number()) {
-            g_lockFrameData.lock();
+            lock_frame_data.lock();
             rs_frameL = rs_frameL_cbtmp;
             rs_frameR = rs_frameR_cbtmp;
-            g_lockFrameData.unlock();
-            g_waitforimage.notify_all();
+            lock_frame_data.unlock();
+            wait_for_image.notify_all();
             last_sync_id = rs_frameL.get_frame_number();
         }
         else { // somehow frames are not in sync, resync

@@ -36,11 +36,11 @@ public:
     void back_one_sec() {
         pause();
         usleep(1000);
-        g_lockFrameData.lock();
+        lock_frame_data.lock();
         playback_bufferR.clear();
         playback_bufferL.clear();
         requested_id_in -= VIDEOFPS*2;
-        g_lockFrameData.unlock();
+        lock_frame_data.unlock();
     }
     bool frame_by_frame;
     bool turbo;
@@ -76,9 +76,9 @@ private:
     bool real_time_playback = false;
     float real_time_playback_speed = 1;
 
-    std::mutex g_lockFlags;
-    std::mutex g_lockFrameData;
-    std::condition_variable g_waitforimage;
+    std::mutex lock_flags;
+    std::mutex lock_frame_data;
+    std::condition_variable wait_for_image;
     std::mutex m;
     rs2::device dev;
 

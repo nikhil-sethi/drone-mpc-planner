@@ -122,8 +122,6 @@ void process_video() {
     {
         cam.update();
 
-
-
         Stereo_Frame_Data data;
         data.frameL = cam.frameL;
         data.frameR = cam.frameR;
