@@ -166,14 +166,14 @@ void DroneNavigation::update() {
         //update target chasing waypoint and speed
         if (_iceptor.get_insect_in_range()) {
             setpoint_world = _iceptor.get_intercept_position();
-            setpoint_world.y = -1.85f;
+            setpoint_world.y = -2.0f;
         }
 
         if (setpoint_world.z == 0) { // fly to landing waypoint (but do not land)
             setpoint_world.x = (setpoints.back()._xyz.x - SETPOINTXMAX/2) / 1000.0f;
-            setpoint_world.y = -1.85f;
+            setpoint_world.y = -2.0f;
             //setpoint_world.z = -(setpoints.back()._xyz.z) / 1000.0f;
-            setpoint_world.z = -1.0f;
+            setpoint_world.z = -1.5f;
         }
 
         if (_dctrl->get_flight_mode() == DroneController::fm_manual)

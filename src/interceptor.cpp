@@ -34,12 +34,15 @@ void Interceptor::update(bool drone_at_base) {
         //calculate estimated interception location and speed:
         _estimated_interception_location = insectPos + (insectVel*tti);
 
+        if (_estimated_interception_location.y < -2.0f)
+            _estimated_interception_location.y = -2.0f;
+
         //TODO: _estimated_interception_speed = ...
 
         //calculate worst case deviation:
 
         //calculate if the drone will stay within the borders where it still can be controlled:
-        if (_estimated_interception_location.x > -0.5f && _estimated_interception_location.x < 0.75f) {
+        if (_estimated_interception_location.x > -2.0f && _estimated_interception_location.x < 0.75f) {
             if (_estimated_interception_location.y > -2.0f && _estimated_interception_location.y < -0.1f) {
                 if (_estimated_interception_location.z > -3.3f && _estimated_interception_location.z < -0.8f) {
                     _insect_in_range = true;
