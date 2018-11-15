@@ -55,7 +55,7 @@ public:
     cv::Mat frameL,frameR;
 
     enum auto_exposure_enum{disabled = 0, enabled = 1, only_at_startup=2};
-    const auto_exposure_enum enable_auto_exposure = only_at_startup;
+    const auto_exposure_enum enable_auto_exposure = disabled;
 
     struct stereo_frame{
          cv::Mat frameL,frameR;
@@ -71,7 +71,7 @@ private:
     float _frame_time_start = -1;
 
     int exposure = 15500; //84*(31250/256); // >11000 -> 60fps, >15500 -> 30fps, < 20 = crash
-    int gain = 20;
+    int gain = 0;
     bool fromfile;
     bool real_time_playback = false;
     float real_time_playback_speed = 1;
