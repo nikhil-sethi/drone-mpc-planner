@@ -95,11 +95,11 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
             }
 
             conv = gst_element_factory_make ("videoconvert", "conv");
+            g_object_set (G_OBJECT (conv),  "chroma-mode", 0, "chroma-resampler", 3, NULL);
 #ifdef _PC
-            //            encoder = gst_element_factory_make ("x264enc", "encoder");
-            //            g_object_set (G_OBJECT (encoder) ,"speed-preset" , 1, "tune" , 0x00000002, "bitrate", 16384, NULL);
-            encoder = gst_element_factory_make ("vaapih264enc", "encoder");
-
+            //encoder = gst_element_factory_make ("vaapih264enc", "encoder"); // hardware encoding
+            encoder = gst_element_factory_make ("x264enc", "encoder");
+            g_object_set (G_OBJECT (encoder),  "speed-preset", 8,"bitrate", 32000, NULL); // higher quality soft encoder
 #else
             //encoder = gst_element_factory_make ("v4l2video11h264enc", "encoder");
             encoder = gst_element_factory_make ("x264enc", "encoder");
