@@ -93,7 +93,7 @@ void Cam::update_playback(void) {
 
     while(frame_by_frame){
         unsigned char k = cv::waitKey(1);
-        if (k== 'f')
+        if (k== 'f' || k == 27)
             break;
         else if (k== ' '){
             frame_by_frame = false;
