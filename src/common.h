@@ -56,7 +56,7 @@ struct trackData {
     float sposX,sposY,sposZ,svelX,svelY,svelZ,saccX,saccY,saccZ;
 
     bool valid;
-    int detected_after_take_off;    
+    int detected_after_take_off;
 };
 
 

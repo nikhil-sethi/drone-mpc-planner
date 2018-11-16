@@ -412,7 +412,8 @@ void Visualizer::draw_tracker_viz() {
     frameL_small_insect.copyTo(resFrame(cv::Rect(resFrame.cols-frameL_small_drone.cols,0,frameL_small_drone.cols, frameL_small_drone.rows)));
     draw_target_text(resFrame,time,dis,min_dis);
 
-    trackframe   = resFrame;
+    trackframe = resFrame;
+
 }
 
 void Visualizer::paint() {

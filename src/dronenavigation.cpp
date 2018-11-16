@@ -19,7 +19,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     _dctrl = dctrl;
     _itrkr = itrkr;
     _iceptor.init(dtrk,itrkr);
-    
+
     // Load saved control paremeters
     if (checkFileExist(paramsFile)) {
         std::ifstream is(paramsFile, std::ios::binary);
@@ -38,16 +38,16 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
             exit(1);
         }
     }
-    
+
     //(*_logger) << "imLx; imLy; disparity;";
-    
-    
+
+
     //waypoints work as follows:
     //(cv::Point3i(x,y,z),
     // x = 1500 means the middle of the camera, x = 0 means 1.5m right!!! of the middle. (counter intuitive)
     // y = 1500 is on the same height as the camera position itself, y = 0 means 1.5m below the cam position
     //z = 0 means distance from the camera is zero. z = 1500 means 1.5m from the camera
-    
+
     // large scale flight plan
     //setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,SETPOINTYMAX / 2,1000),40)); // this is overwritten by position trackbars!!!
     setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,1,1000),20)); // this is overwritten by position trackbars!!!
@@ -64,9 +64,9 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     
     //setpoints.push_back(waypoint(cv::Point3i(1000,-125,1500),0));
     //setpoints.push_back(waypoint(cv::Point3i(2000,-125,1500),0));
-    
-    
-    
+
+
+
     //setpoints.push_back(waypoint(cv::Point3i(1500,-250,1500),5));
     //setpoints.push_back(waypoint(cv::Point3i(1500,0,1500),5));
     
@@ -77,14 +77,14 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     
     setpoints.push_back(waypoint(cv::Point3i(1480,200,1090),20)); // landing waypoint (=last one), must be 1 meter above the ground in world coordinatates
     //setpoints.push_back(waypoint(cv::Point3i(1500,300,1300),60));
-    
-    
+
+
     /* // small scale flight plan
     setpoints.push_back(waypoint(cv::Point3i(1500,900,1000),40)); // this is overwritten by position trackbars!!!
     setpoints.push_back(waypoint(cv::Point3i(1200,900,1000),40));
     setpoints.push_back(waypoint(cv::Point3i(1500,900,1000),40));
     */
-    
+
     /* // fly squares
     setpoints.push_back(cv::Point3i(1800,600,1200));
     setpoints.push_back(cv::Point3i(1200,600,1000));
@@ -97,8 +97,8 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     setpoints.push_back(cv::Point3i(2000,1000,2000));
     setpoints.push_back(cv::Point3i(1800,1000,1200));
     */
-    
-    
+
+
 #ifdef TUNING
     namedWindow("Nav", WINDOW_NORMAL);
     createTrackbar("X [mm]", "Nav", &params.setpoint_slider_X, SETPOINTXMAX);
@@ -108,9 +108,9 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     createTrackbar("d threshold factor", "Nav", &params.distance_threshold_f, 10);
     createTrackbar("land_incr_f_mm", "Nav", &params.land_incr_f_mm, 50);
     createTrackbar("Land Decrease  ", "Nav", &params.autoLandThrottleDecreaseFactor, 50);
-    
+
 #endif
-    
+
     return false;
 }
 
