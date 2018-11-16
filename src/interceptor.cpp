@@ -1,5 +1,5 @@
 #include "interceptor.h"
-
+#include "opencv2/imgproc.hpp"
 
 void Interceptor::init(DroneTracker * dtrkr, InsectTracker * itrkr) {
     _dtrkr = dtrkr;
@@ -8,6 +8,46 @@ void Interceptor::init(DroneTracker * dtrkr, InsectTracker * itrkr) {
 void Interceptor::update(bool drone_at_base) {
 
     cv::Point3f insectVel = {_itrkr->get_last_track_data().svelX,_itrkr->get_last_track_data().svelY,_itrkr->get_last_track_data().svelZ};
+
+
+    //1. asume moth will spiral down.
+    //2. assume the radius of the spiral is inversely proportional to vertical speed
+    //3. assume that the insect will go straight down when achieving some vertical speed v_t
+
+    //below v_t, the current center of the spiral can be calculated as follows:
+    //[x_center,y_center] = normalize([vx_insect,vy_insect]) * r - [ x_insect,y_insect]
+
+//    cv::Point2f ccircle;
+//    float r = 1.f / _itrkr->get_last_track_data().svelZ;
+//    cv::Point2f v2d_insect(_itrkr->get_last_track_data().svelX,_itrkr->get_last_track_data().svelY);
+//    cv::Point2f direction_insect = v2d_insect/ cv::norm(v2d_insect);
+//    ccircle.x = direction_insect.x*r - _itrkr->get_last_track_data().posX;
+//    ccircle.y = direction_insect.y*r - _itrkr->get_last_track_data().posY;
+
+
+//    if (_itrkr->n_frames_tracking>2) {
+//        std::vector<cv::Point2f> pts;
+//        cv::Point2f p0(_itrkr->track_history.at(0).posX,_itrkr->track_history.at(0).posZ);
+//        cv::Point2f p1(_itrkr->track_history.at(1).posX,_itrkr->track_history.at(1).posZ);
+//        cv::Point2f p2(_itrkr->track_history.at(2).posX,_itrkr->track_history.at(2).posZ);
+
+//        cv::Point2f a = p0-p2;
+//        float d = fabs(a.x*p1.x + a.y+p1.y) / (powf(a.x,2) + powf(a.y,2));
+
+
+//        for (uint i = _itrkr->track_history.size()-5; i<_itrkr->track_history.size(); i++){
+//            if (_itrkr->track_history.at(i).valid) {
+//                float x = _itrkr->track_history.at(i).posX;
+//                float z = _itrkr->track_history.at(i).posZ;
+
+//                pts.push_back(cv::Point2f(x,z));
+//            }
+//        }
+
+//        cv::RotatedRect rr = cv::fitEllipse(pts);
+//    }
+
+
 
     double insectVelNorm = norm(insectVel);
     _insect_in_range = false;
