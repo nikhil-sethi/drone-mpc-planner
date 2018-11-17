@@ -27,10 +27,6 @@ public:
     void init(int argc, char **argv);
     void close();
 
-    void pause();
-    void resume();
-    void seek(float time);
-
     void skip_one_sec() {
         requested_id_in += VIDEOFPS*2;
     }
@@ -83,6 +79,9 @@ private:
 
     bool _paused;
 
+    void pause();
+    void resume();
+    void seek(float time);
     void set_calibration(rs2::stream_profile infared1,rs2::stream_profile infared2);
     void update_real(void);
     void update_playback(void);

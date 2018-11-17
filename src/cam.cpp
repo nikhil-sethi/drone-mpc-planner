@@ -259,7 +259,13 @@ void Cam::init() {
     std::cout << depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION) << std::endl;
     std::cout << depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_PRODUCT_ID) << std::endl;
     std::cout << depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION) << std::endl;
-    //TODO: check firmware version
+
+    std::string current_firmware_version = depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION);
+    std::string required_firmwar_version = "05.10.06.00";
+    if (current_firmware_version.compare(required_firmwar_version)) {
+        std::cout << "Detected wrong realsense firmware version!" << std::endl;
+        exit(1);
+    }
 
     depth_sensor.set_option(RS2_OPTION_FRAMES_QUEUE_SIZE, 0);
 

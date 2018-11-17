@@ -76,13 +76,6 @@ void Arduino::sendData(void) {
 
 
         }
-
-        //TODO: disable uart polling after bind confirmed!
-        //check if input string is the same as the commanded strning, if so bind was succesfull!
-        //	for (int i = 0 to tmp.count;i++) {
-        //if tmp.str.c_str[i] == buff[i] ...
-        //	}
-
     }
     lock_rs232.unlock();
 }
