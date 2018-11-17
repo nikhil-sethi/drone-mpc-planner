@@ -10,7 +10,7 @@ using namespace cv;
 using namespace std;
 
 #ifdef HASSCREEN
-#define TUNING
+//#define TUNING
 #endif
 
 
@@ -99,6 +99,11 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     (*_logger) << "imLx_" << _name << "; ";
     (*_logger) << "imLy_" << _name << "; ";
     (*_logger) << "disparity_" << _name << "; ";
+    (*_logger) << "imLx_pred_" << _name << "; ";
+    (*_logger) << "imLy_pred_" << _name << "; ";
+    (*_logger) << "n_frames_lost_" << _name << "; ";
+    (*_logger) << "n_frames_tracking_" << _name << "; ";
+    (*_logger) << "foundL_" << _name << "; ";
     (*_logger) << "posX_" << _name << "; ";
     (*_logger) << "posY_" << _name << "; ";
     (*_logger) << "posZ_" << _name << "; ";
@@ -320,24 +325,36 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
     }
 
     if (pathL.size() > 0) {
-        if (pathL.begin()->frame_id < _visdat->frame_id - 30)
+        if (pathL.begin()->frame_id < _visdat->frame_id - path_buf_size)
             pathL.erase(pathL.begin());
         if (pathL.begin()->frame_id > _visdat->frame_id ) //at the end of a realsense video loop, frame_id resets
             pathL.clear();
     }
     if (predicted_pathL.size() > 0) {
-        if (predicted_pathL.begin()->frame_id < _visdat->frame_id - 30)
+        if (predicted_pathL.begin()->frame_id < _visdat->frame_id - path_buf_size)
             predicted_pathL.erase(predicted_pathL.begin());
         if (predicted_pathL.begin()->frame_id > _visdat->frame_id ) //at the end of a realsense video loop, frame_id resets
             predicted_pathL.clear();
     }
 
+    //log all image stuff
+    if (pathL.size()>0)
+        (*_logger) << pathL.at(pathL.size()-1).x() * IMSCALEF << "; " << pathL.at(pathL.size()-1).y() * IMSCALEF << "; " << find_result.disparity << "; ";
+    else
+        (*_logger) << -1 << "; " << -1 << "; " << -1 << "; ";
+    if (predicted_pathL.size()>0)
+        (*_logger) << predicted_pathL.at(predicted_pathL.size()-1).x() * IMSCALEF << "; " << predicted_pathL.at(predicted_pathL.size()-1).y() * IMSCALEF << "; ";
+    else
+        (*_logger) << -1 << "; " << -1   << "; ";
+
+    (*_logger) << n_frames_lost << "; " << n_frames_tracking << "; " << foundL << "; ";
+    //log all world stuff
     trackData last = get_last_track_data();
-    (*_logger) << find_result.best_image_locationL.pt.x *IMSCALEF << "; " << find_result.best_image_locationL.pt.y *IMSCALEF << "; " << find_result.disparity << "; ";
     (*_logger) << last.posX << "; " << last.posY << "; " << last.posZ << ";" ;
     (*_logger) << last.sposX << "; " << last.sposY << "; " << last.sposZ << ";";
     (*_logger) << last.svelX << "; " << last.svelY << "; " << last.svelZ << ";";
     (*_logger) << last.saccX << "; " << last.saccY << "; " << last.saccZ << ";";
+
 
 }
 

@@ -35,8 +35,8 @@ public:
             frame_id = frameid;
             tracking_certainty = trackingCertainty;
         }
-        int x() {return k.pt.x;}
-        int y() {return k.pt.y;}
+        float x() {return k.pt.x;}
+        float y() {return k.pt.y;}
     };
 
 private:
@@ -174,6 +174,7 @@ protected:
 
     const float certainty_factor = 1.1; // TODO: tune
     const float certainty_init = 0.1f; // TODO: tune
+    const int path_buf_size = 30;
 
 
     void reset_tracker_ouput();

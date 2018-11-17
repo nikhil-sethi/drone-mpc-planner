@@ -284,10 +284,10 @@ void Visualizer::draw_target_text(cv::Mat resFrame, float time, float dis,float 
     ss_min << "Closest: " << (roundf(min_dis*100)/100) << " [m]";
     ss_dis << "|" << (roundf(dis*100)/100) << "|";
 
-    putText(resFrame,ss_time.str() ,cv::Point(220*_res_mult,10*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame,ss_time.str() ,cv::Point(220*_res_mult,12*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     if (min_dis<9999){
-        putText(resFrame,ss_dis.str() ,cv::Point(300*_res_mult,10*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-        putText(resFrame,ss_min.str() ,cv::Point(360*_res_mult,10*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+        putText(resFrame,ss_dis.str() ,cv::Point(300*_res_mult,12*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+        putText(resFrame,ss_min.str() ,cv::Point(360*_res_mult,12*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     }
 
 }

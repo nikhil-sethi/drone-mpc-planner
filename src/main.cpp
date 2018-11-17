@@ -83,7 +83,12 @@ Cam cam;
 GeneratorCam cam;
 #endif
 VisionData visdat;
-bool fromfile = false;
+enum log_mode{
+    log_mode_none,
+    log_mode_full,
+    log_mode_insect_only
+};
+log_mode fromfile = log_mode_none;
 
 /****Threadpool*******/
 #define NUM_OF_THREADS 1
@@ -153,7 +158,7 @@ void process_video() {
         float t = stopWatch.Read() / 1000.f;
         static float prev_time = -1.f/VIDEOFPS;
         float fps = fps_smoothed.addSample( 1.f / (t - prev_time));
-        if (fps < 50 && !fromfile) {
+        if (fps < 50 && fromfile!=log_mode_none) {
             std::cout << "FPS WARNING!" << std::endl;
             static float limit_fps_warning_sound = t;
             if (t - limit_fps_warning_sound > 3.f ) {
@@ -172,7 +177,7 @@ void process_video() {
 
 #ifdef HASSCREEN
         static int speed_div;
-        if (!(speed_div++ % 4) || fromfile){
+        if (!(speed_div++ % 4) || fromfile==log_mode_none){
             visualizer.paint();
             handleKey();
         }
@@ -183,32 +188,37 @@ void process_video() {
 
 void process_frame(Stereo_Frame_Data data) {
 
+    if (fromfile!=log_mode_none)
+        logreader.set_current_frame_number(data.number);
+
     visdat.update(data.frameL,data.frameR,data.time,data.number);
-    logger << data.imgcount << ";" << cam.frame_number() << ";" ;
+    logger << data.imgcount << ";" << data.number << ";" ;
     //WARNING: changing the order of the functions with logging must be matched with the init functions!
+
     dtrkr.track(data.time,itrkr.predicted_pathL,dctrl.getDroneIsActive());
-    itrkr.track(data.time,dtrkr.predicted_pathL,dctrl.getDroneIsActive());
+    if (fromfile==log_mode_insect_only){
+        itrkr.update_from_log(logreader.current_item,data.number);
+    } else
+        itrkr.track(data.time,dtrkr.predicted_pathL,dctrl.getDroneIsActive());
     //        std::cout << "Found drone location:      [" << dtrkr.find_result.best_image_locationL.pt.x << "," << dtrkr.find_result.best_image_locationL.pt.y << "]" << std::endl;
     dnav.update();
     dctrl.control(dtrkr.get_last_track_data(),dnav.setpoint_world,dnav.setspeed_world);
+
     logger << std::endl;
+
 
 #ifdef HASSCREEN
 
-    if (fromfile) {
-        int rs_id = cam.frame_number();
-        LogReader::Log_Entry tmp  = logreader.getItem(rs_id);
-        if (tmp.RS_ID == rs_id) {
-            dctrl.joyRoll = tmp.joyRoll;
-            dctrl.joyPitch = tmp.joyPitch;
-            dctrl.joyYaw = tmp.joyYaw;
-            dctrl.joyThrottle = tmp.joyThrottle;
-            dctrl.joySwitch = tmp.joySwitch;
-        }
+    if (fromfile==log_mode_full) {
+        dctrl.joyRoll = logreader.current_item.joyRoll;
+        dctrl.joyPitch = logreader.current_item.joyPitch;
+        dctrl.joyYaw = logreader.current_item.joyYaw;
+        dctrl.joyThrottle = logreader.current_item.joyThrottle;
+        dctrl.joySwitch = logreader.current_item.joySwitch;
     }
 
     visualizer.addPlotSample();
-    visualizer.update_tracker_data(visdat.frameL,dnav.setpoint,cam.frame_time(),&dtrkr,&itrkr);
+    visualizer.update_tracker_data(visdat.frameL,dnav.setpoint,data.time,&dtrkr,&itrkr);
 
 #endif
 }
@@ -289,26 +299,35 @@ void init_sig(){
 
 int init(int argc, char **argv) {
     if (argc ==2 ) {
-        fromfile = true;
-        logreader.init(string(argv[1]) + ".log");
+        string fn = string(argv[1]);
+        string ending = ".log";
+        bool ends_with_log = fn.compare (fn.length() - ending.length(), ending.length(), ending) == 0;
+        if (ends_with_log){
+            logreader.init(fn);
+            fromfile = log_mode_insect_only;
+        } else {
+            logreader.init(fn + ".log");
+            fromfile = log_mode_full;
+        }
     }
     data_output_dir = "./logging/";
     mkdir("./logging/", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     cout << "data_output_dir: " << data_output_dir << endl;
-    if (fromfile)
+    if (fromfile==log_mode_full)
         logger.open(data_output_dir  + "test_fromfile.log",std::ofstream::out);
     else
         logger.open(data_output_dir  + "test.log",std::ofstream::out);
 
     logger << "ID;RS_ID;";
 
-#if CAMMODE == CAMMODE_REALSENSE
-    if (!fromfile)
+    if (fromfile!=log_mode_full)
         arduino.init(fromfile);
-#endif
 
     /*****Start capturing images*****/
-    cam.init(argc,argv);
+    if (fromfile == log_mode_full)
+        cam.init(argc,argv);
+    else
+        cam.init();
     cam.update(); // wait for first frames
 
     visdat.init(cam.Qf, cam.frameL,cam.frameR); // do after cam update to populate frames
@@ -318,11 +337,11 @@ int init(int argc, char **argv) {
     dtrkr.init(&logger,&visdat);
     itrkr.init(&logger,&visdat);
     dnav.init(&logger,&dtrkr,&dctrl,&itrkr);
-    dctrl.init(&logger,fromfile,&arduino);
+    dctrl.init(&logger,fromfile==log_mode_full,&arduino);
 
 #if CAMMODE == CAMMODE_REALSENSE
     // Ensure that joystick was found and that we can use it
-    if (!dctrl.joystick_ready() && !fromfile) {
+    if (!dctrl.joystick_ready() && fromfile!=log_mode_full) {
         std::cout << "joystick failed." << std::endl;
         //        exit(1);
     }
@@ -330,7 +349,7 @@ int init(int argc, char **argv) {
 
     logger << std::endl;
 #ifdef HASSCREEN
-    visualizer.init(&dctrl,&dtrkr,&itrkr,&dnav,fromfile);
+    visualizer.init(&dctrl,&dtrkr,&itrkr,&dnav,fromfile==log_mode_full);
 #endif
 
     /*****init the video writer*****/
@@ -373,10 +392,8 @@ void close() {
     dctrl.close();
     dnav.close();
     itrkr.close();
-#if CAMMODE == CAMMODE_REALSENSE
-    if (!fromfile)
+    if (fromfile!=log_mode_full)
         arduino.close();
-#endif
 #ifdef HASSCREEN
     visualizer.close();
 #endif

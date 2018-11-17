@@ -2,7 +2,7 @@
 #include "defines.h"
 
 #ifdef HASSCREEN
-#define TUNING
+//#define TUNING
 #endif
 
 using namespace cv;

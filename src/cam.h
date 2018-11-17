@@ -23,6 +23,7 @@ class Cam{
 
 public:
 
+    void init();
     void init(int argc, char **argv);
     void close();
 
@@ -55,7 +56,7 @@ public:
     cv::Mat frameL,frameR;
 
     enum auto_exposure_enum{disabled = 0, enabled = 1, only_at_startup=2};
-    const auto_exposure_enum enable_auto_exposure = disabled;
+    const auto_exposure_enum enable_auto_exposure = only_at_startup;
 
     struct stereo_frame{
          cv::Mat frameL,frameR;
@@ -73,8 +74,6 @@ private:
     int exposure = 15500; //84*(31250/256); // >11000 -> 60fps, >15500 -> 30fps, < 20 = crash
     int gain = 0;
     bool fromfile;
-    bool real_time_playback = false;
-    float real_time_playback_speed = 1;
 
     std::mutex lock_flags;
     std::mutex lock_frame_data;
@@ -84,6 +83,7 @@ private:
 
     bool _paused;
 
+    void set_calibration(rs2::stream_profile infared1,rs2::stream_profile infared2);
     void update_real(void);
     void update_playback(void);
     void rs_callback(rs2::frame f);

@@ -69,7 +69,6 @@ private:
     std::ofstream *_logger;
     DroneTracker * _dtrk;
     DroneController * _dctrl;
-    InsectTracker * _itrkr;
     Interceptor _iceptor;
 
 public:

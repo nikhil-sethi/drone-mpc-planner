@@ -52,6 +52,56 @@ void InsectTracker::init_settings() {
 
 }
 
+void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) {
+
+    trackData data ={0};
+    data.valid = true;
+    data.posX = log.ins_pos_x;
+    data.posY = log.ins_pos_y;
+    data.posZ = log.ins_pos_z;
+
+    data.sposX = log.ins_spos_x;
+    data.sposY = log.ins_spos_y;
+    data.sposZ = log.ins_spos_z;
+
+    data.svelX = log.ins_svel_x;
+    data.svelY = log.ins_svel_y;
+    data.svelZ = log.ins_svel_z;
+
+    data.saccX = log.ins_sacc_x;
+    data.saccY = log.ins_sacc_y;
+    data.saccZ = log.ins_sacc_z;
+
+    track_history.push_back(data);
+
+    track_item ti(cv::KeyPoint(cv::Point2f(log.ins_im_x/IMSCALEF,log.ins_im_y/IMSCALEF),1),frame_number,1);
+    track_item tip(cv::KeyPoint(cv::Point2f(log.ins_pred_im_x/IMSCALEF,log.ins_pred_im_y/IMSCALEF),1),frame_number,1);
+
+    std::cout << "insect:      [" << log.ins_im_x << " " << log.ins_im_y << "]" << std::endl;
+    std::cout << "pred_insect: [" << log.ins_pred_im_x << " " << log.ins_pred_im_y << "] " << log.ins_n_frames_lost << " " <<  log.ins_n_frames_tracking << " " << log.ins_foundL << std::endl;
+
+    pathL.push_back(ti);
+    predicted_pathL.push_back(tip);
+
+    n_frames_lost = log.ins_n_frames_lost;
+    n_frames_tracking = log.ins_n_frames_tracking;
+    foundL = log.ins_foundL;
+
+    if (pathL.size() > 0) {
+        if (pathL.begin()->frame_id < _visdat->frame_id - path_buf_size)
+            pathL.erase(pathL.begin());
+    }
+    if (predicted_pathL.size() > 0) {
+        if (predicted_pathL.begin()->frame_id < _visdat->frame_id - path_buf_size)
+            predicted_pathL.erase(predicted_pathL.begin());
+    }
+
+    if (n_frames_lost > n_frames_lost_threshold || !foundL) {
+        predicted_pathL.clear();
+        foundL = false;
+    }
+}
+
 void InsectTracker::track(float time, std::vector<track_item> exclude, bool drone_is_active) {
     std::vector<track_item> tmp;
     if (drone_is_active)

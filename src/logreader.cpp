@@ -40,12 +40,10 @@ void LogReader::init(std::string file) {
     std::string heads;
     std::getline(infile, heads);
     setHeadMap(heads);
-    //        int lastframe = 0;
     std::string line;
     while (std::getline(infile, line)) {
         std::istringstream iss(line);
         Log_Entry entry = createLogEntry(line);
-//        std::pair<const int, Log_Entry> item(entry.RS_ID,entry);
         std::map<const int, Log_Entry>::value_type item(entry.RS_ID,entry);
         log.insert(item);
     }
@@ -61,7 +59,6 @@ void LogReader::setHeadMap(std::string heads) {
         std::string tmp;
         std::getline(heads_ss,tmp , ';');
         trim(tmp);
-//        std::pair<const std::string, int> head(tmp,cnt);
         std::map<const std::string, int>::value_type head(tmp,cnt);
         headmap.insert(head);
         cnt++;
@@ -81,7 +78,6 @@ LogReader::Log_Entry LogReader::createLogEntry(std::string line) {
         linedata.push_back(tmp);
     }
 
-
     Log_Entry entry;
     entry.ID = std::stoi(linedata.at(headmap["ID"]));
     entry.RS_ID = std::stoi(linedata.at(headmap["RS_ID"]));
@@ -92,11 +88,35 @@ LogReader::Log_Entry LogReader::createLogEntry(std::string line) {
     entry.joyYaw = std::stoi(linedata.at(headmap["joyYaw"]));
     entry.joySwitch = std::stoi(linedata.at(headmap["joySwitch"]));
 
+    entry.ins_pos_x = std::stof(linedata.at(headmap["posX_insect"]));
+    entry.ins_pos_y = std::stof(linedata.at(headmap["posY_insect"]));
+    entry.ins_pos_z = std::stof(linedata.at(headmap["posZ_insect"]));
+
+    entry.ins_spos_x = std::stof(linedata.at(headmap["sposX_insect"]));
+    entry.ins_spos_y = std::stof(linedata.at(headmap["sposY_insect"]));
+    entry.ins_spos_z = std::stof(linedata.at(headmap["sposZ_insect"]));
+
+    entry.ins_svel_x = std::stof(linedata.at(headmap["velX_insect"]));
+    entry.ins_svel_y = std::stof(linedata.at(headmap["velY_insect"]));
+    entry.ins_svel_z = std::stof(linedata.at(headmap["velZ_insect"]));
+
+    entry.ins_sacc_x = std::stof(linedata.at(headmap["accX_insect"]));
+    entry.ins_sacc_y = std::stof(linedata.at(headmap["accY_insect"]));
+    entry.ins_sacc_z = std::stof(linedata.at(headmap["accZ_insect"]));
+
+    entry.ins_im_x = std::stof(linedata.at(headmap["imLx_insect"]));
+    entry.ins_im_y = std::stof(linedata.at(headmap["imLy_insect"]));
+    entry.ins_disparity = std::stof(linedata.at(headmap["disparity_insect"]));
+    entry.ins_pred_im_x = std::stof(linedata.at(headmap["imLx_pred_insect"]));
+    entry.ins_pred_im_y = std::stof(linedata.at(headmap["imLy_pred_insect"]));
+
+    entry.ins_n_frames_lost = std::stoi(linedata.at(headmap["n_frames_lost_insect"]));
+    entry.ins_n_frames_tracking = std::stoi(linedata.at(headmap["n_frames_tracking_insect"]));
+    entry.ins_foundL = std::stoi(linedata.at(headmap["foundL_insect"]));
+
     return entry;
 }
 
-LogReader::Log_Entry LogReader::getItem(int _RS_frame_number) {
-    return log[_RS_frame_number];
+void LogReader::set_current_frame_number(int _RS_frame_number) {
+    current_item = log[_RS_frame_number];
 }
-
-
