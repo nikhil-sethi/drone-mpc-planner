@@ -66,7 +66,6 @@ enum{
 uint8_t transmitterID[4];
 static volatile bool ppm_ok = false;
 uint8_t packet[32];
-uint8_t in_packet[32];
 static bool reset=true;
 volatile uint16_t Servo_data[12];
 static uint16_t ppm[12] = {PPM_MIN,PPM_MID,PPM_MID,PPM_MID,PPM_MID,PPM_MID,

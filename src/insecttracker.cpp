@@ -77,9 +77,6 @@ void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) 
     track_item ti(cv::KeyPoint(cv::Point2f(log.ins_im_x/IMSCALEF,log.ins_im_y/IMSCALEF),1),frame_number,1);
     track_item tip(cv::KeyPoint(cv::Point2f(log.ins_pred_im_x/IMSCALEF,log.ins_pred_im_y/IMSCALEF),1),frame_number,1);
 
-    std::cout << "insect:      [" << log.ins_im_x << " " << log.ins_im_y << "]" << std::endl;
-    std::cout << "pred_insect: [" << log.ins_pred_im_x << " " << log.ins_pred_im_y << "] " << log.ins_n_frames_lost << " " <<  log.ins_n_frames_tracking << " " << log.ins_foundL << std::endl;
-
     pathL.push_back(ti);
     predicted_pathL.push_back(tip);
 

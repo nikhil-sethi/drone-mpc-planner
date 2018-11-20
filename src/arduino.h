@@ -36,6 +36,7 @@ public:
     }
 private:
 
+    int notconnected;
     stopwatch_c binding_sw;
     int baudrate;
     bool bind_next_cycle = false;

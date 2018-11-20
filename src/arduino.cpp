@@ -1,8 +1,5 @@
 #include "arduino.h"
 
-
-int notconnected;
-
 void Arduino::init(bool fromfile) {
     // setup connection with Arduino
     baudrate = 115200;
@@ -24,7 +21,7 @@ void Arduino::workerThread(void) {
         g_lockData.lock();
         sendData();
         g_lockData.unlock();
-        usleep(20000);
+        usleep(20000); //TODO: replace for conditional wait
     }
 }
 
