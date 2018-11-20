@@ -35,6 +35,10 @@
 #define MAX_BORDER_Y_DEFAULT 2.25f  // 2.20 for large scale flight plan  // 1.3 for small scale flight plan
 #define MAX_BORDER_Z_DEFAULT 4.0f
 
-#define JOYSTICK_TYPE 1 // [0: normal remote] [1: USB remote]
+#define RC_DEVO 0
+#define RC_USB_HOBBYKING 1
+#define RC_PLAYSTATION 2
+
+#define JOYSTICK_TYPE RC_DEVO // [0: normal remote] [1: USB remote]
 
 #endif //DEFINES_H

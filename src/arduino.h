@@ -24,7 +24,7 @@ public:
 
     int ledpower = 75;
     uint16_t mode = 1900; // <min = mode 1, 1500 = mode 2, >max = mode 3
-    int roll,pitch,yaw = 1500;
+    int roll=1500,pitch=1500,yaw = 1500;
     int throttle = 1000;
 
 

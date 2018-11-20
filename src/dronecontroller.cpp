@@ -16,8 +16,8 @@ JoystickEvent event;
 bool DroneController::joystick_ready(){
     return joystick.isFound();
 }
-void DroneController::init(std::ofstream *logger,bool fromfile, Arduino * arduino) {
-    _arduino = arduino;
+void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc) {
+    _rc = rc;
     _logger = logger;
     _fromfile = fromfile;
     (*_logger) << "valid; posErrX; posErrY; posErrZ; velX; velY; velZ; accX; accY; accZ; hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; joyThrottle; joyRoll; joyPitch; joyYaw; joySwitch; throttleP; throttleI; throttleD; dt; dx; dy; dz; velx_sp; vely_sp; velz_sp;";
@@ -80,29 +80,27 @@ void DroneController::init(std::ofstream *logger,bool fromfile, Arduino * arduin
 }
 
 int bound_joystick_value(int v) {
-    if ( v < 1050 )
-        v = 1050;
-    if ( v > 1950 )
-        v = 1950;
+    if ( v < JOY_BOUND_MIN )
+        v = JOY_BOUND_MIN;
+    if ( v > JOY_BOUND_MAX )
+        v = JOY_BOUND_MAX;
     return v;
 }
 void DroneController::queue_commands(int throttle,int roll, int pitch, int yaw) {
     if (!_fromfile) {
-        _arduino->g_lockData.lock();
-        _arduino->throttle = throttle;
-        _arduino->roll = roll;
-        _arduino->pitch = pitch;
-        _arduino->yaw = yaw;
-        _arduino->g_lockData.unlock();
+        _rc->g_lockData.lock();
+        _rc->throttle = throttle;
+        _rc->roll = roll;
+        _rc->pitch = pitch;
+        _rc->yaw = yaw;
+        _rc->g_lockData.unlock();
     }
 }
 
 void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f setpoint_v) {
 
-    if (!_fromfile) {
-        _arduino->check_bind_command();
+    if (!_fromfile)
         readJoystick();
-    }
     process_joystick();
 
 
@@ -156,13 +154,13 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
 
         autoThrottle = hoverthrottle;
         hoverthrottle  +=params.autoTakeoffFactor;
-        if (hoverthrottle < 1300)
-            hoverthrottle = 1300;
+        if (hoverthrottle < min_throttle)
+            hoverthrottle = min_throttle;
 
         //only control throttle:
         throttle = autoThrottle ;
-        roll = 1500;
-        pitch = 1530;
+        roll = JOY_MIDDLE;
+        pitch = JOY_MIDDLE + forward_pitch_take_off_boost;
         break;
     } case fm_flying : {
         //update integrators
@@ -171,13 +169,12 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
         pitchErrI += posErrZ;
 
         autoThrottle =  hoverthrottle + take_off_throttle_boost - (accErrY * params.throttle_Acc + throttleErrI * params.throttleI*0.1f);
-        autoRoll =  1500 + (accErrX * params.roll_Acc +  params.rollI*rollErrI);
-        autoPitch = 1500 + (accErrZ * params.pitch_Acc +  params.pitchI*pitchErrI);
+        autoRoll =  JOY_MIDDLE + (accErrX * params.roll_Acc +  params.rollI*rollErrI);
+        autoPitch = JOY_MIDDLE + (accErrZ * params.pitch_Acc +  params.pitchI*pitchErrI);
 
         //int minThrottle = 1300 + min(abs(autoRoll-1500)/10,50) + min(abs(autoPitch-1500)/10,50);
-        int minThrottle = 1300;
-        if (autoThrottle<minThrottle)
-            autoThrottle = minThrottle;
+        if (autoThrottle<min_throttle)
+            autoThrottle = min_throttle;
 
         throttle = autoThrottle ;
         roll = autoRoll;
@@ -191,8 +188,8 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
         autoThrottle = hoverthrottle + take_off_throttle_boost - (accErrY * params.throttle_Acc + throttleErrI * params.throttleI*0.1f);
 
         //same as fm_flying:
-        autoRoll =  1500 + (accErrX * params.roll_Acc +  params.rollI*rollErrI);
-        autoPitch = 1500 + (accErrZ * params.pitch_Acc +  params.pitchI*pitchErrI);
+        autoRoll =  JOY_MIDDLE + (accErrX * params.roll_Acc +  params.rollI*rollErrI);
+        autoPitch = JOY_MIDDLE + (accErrZ * params.pitch_Acc +  params.pitchI*pitchErrI);
 
         throttle = autoThrottle ;
         roll = autoRoll;
@@ -205,9 +202,9 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
         throttleErrI = 0;
 
         throttle = INITIALTHROTTLE;
-        roll = 1500;
-        pitch = 1500;
-        yaw = 1500;
+        roll = JOY_MIDDLE;
+        pitch = JOY_MIDDLE;
+        yaw = JOY_MIDDLE;
         break;
     }
     default:
@@ -231,16 +228,16 @@ void DroneController::readJoystick(void) {
     while (joystick.sample(&event))
     {
         if (event.isAxis()) {
-            if (JOYSTICK_TYPE == 0) {
+            if (JOYSTICK_TYPE == RC_DEVO) {
                 switch ( event.number ) {
                 case 0: // roll
-                    joyRoll = 1500 + (event.value >> 6);
+                    joyRoll = (event.value >> 5) + JOY_MIDDLE;
                     break;
                 case 1: // pitch
-                    joyPitch = 1500 - (event.value >> 6);
+                    joyPitch =  (event.value >> 5) + JOY_MIDDLE;
                     break;
                 case 2: //throttle
-                    joyThrottle = 1500 + (event.value >> 6);
+                    joyThrottle =  (event.value >> 5) + JOY_MIDDLE - 100;
                     break;
                 case 5: //switch
                     joySwitch = event.value>0; // goes between +/-32768
@@ -251,22 +248,22 @@ void DroneController::readJoystick(void) {
                     scaledjoydial = (scaledjoydial / 65536)*100+35;
                     break;
                 case 4: //yaw
-                    joyYaw = 1500 + (event.value >> 6);
+                    joyYaw =  (event.value >> 5) + JOY_MIDDLE;
                     break;
                 default:
                     std::cout << "Unkown joystick event: " << std::to_string(event.number) << ". Value: " << std::to_string(event.value) << std::endl;
                     break;
                 }
-            } else if (JOYSTICK_TYPE == 1) {
+            } else if (JOYSTICK_TYPE == RC_USB_HOBBYKING) {
                 switch ( event.number ) {
                 case 0: // roll
-                    joyRoll = 1500 + (event.value >> 6);
+                    joyRoll = JOY_MIDDLE + (event.value >> 5);
                     break;
                 case 1: // pitch
-                    joyPitch = 1500 + (event.value >> 5);
+                    joyPitch = JOY_MIDDLE + (event.value >> 5);
                     break;
                 case 2: //throttle
-                    joyThrottle = 1500 - (event.value >> 5);
+                    joyThrottle = JOY_MIDDLE - (event.value >> 5);
                     break;
                 case 3: //switch
                     joySwitch = event.value>0; // goes between +/-32768
@@ -277,28 +274,27 @@ void DroneController::readJoystick(void) {
                     scaledjoydial = (scaledjoydial / 65536)*100+35;
                     break;
                 case 5: //yaw
-                    joyYaw = 1500 + (event.value >> 6);
+                    joyYaw = JOY_MIDDLE + (event.value >> 5);
                     break;
                 default:
                     std::cout << "Unkown joystick event: " << std::to_string(event.number) << ". Value: " << std::to_string(event.value) << std::endl;
                     break;
                 }
-            } else if (JOYSTICK_TYPE == 2) {
+            } else if (JOYSTICK_TYPE == RC_PLAYSTATION) {
                 switch ( event.number ) {
                 case 2: // roll
-                    joyRoll = 1500 + (event.value >> 6);
+                    joyRoll = JOY_MIDDLE + (event.value >> 5);
                     std::cout << "roll" << std::endl;
                     break;
                 case 3: // pitch
-                    joyPitch = 1500 - (event.value >> 6);
+                    joyPitch = JOY_MIDDLE - (event.value >> 5);
                     std::cout << "pitch" << std::endl;
                     break;
                 case 1: //throttle
-                    joyThrottle = 1000 - (event.value >> 6);
-                    std::cout << "throttle" << std::endl;
+                    joyThrottle = JOY_MIN - (event.value >> 5);
                     break;
                 case 0: //yaw
-                    joyYaw = 1500 + (event.value >> 6);
+                    joyYaw = JOY_MIDDLE + (event.value >> 5);
                     std::cout << "yaw" << std::endl;
                     break;
                 default:
@@ -306,15 +302,15 @@ void DroneController::readJoystick(void) {
                     break;
                 }
             }
-        } else if (event.isButton() && JOYSTICK_TYPE == 2) {
+        } else if (event.isButton() && JOYSTICK_TYPE == RC_PLAYSTATION) {
             switch ( event.number ) {
             case 2: //bind
                 if (event.value>0) {
                     joySwitch = 1;
-                    joyPitch = 1900;
+                    joyPitch = JOY_MAX_THRESH;
                 } else {
                     joySwitch = 0;
-                    joyPitch = 1500;
+                    joyPitch = JOY_MIDDLE;
                 }
                 break;
             case 9: //auto mode
@@ -337,10 +333,10 @@ void DroneController::readJoystick(void) {
 void DroneController::process_joystick() {
     // prevent accidental take offs at start up
     if (first_joy_time > 0) {
-        if (joySwitch || joyThrottle > 1080 ) {
+        if (joySwitch || joyThrottle > JOY_MIN_THRESH ) {
             std::cout << "Joystick not centered warning!" << std::endl;
             joySwitch = false;
-            joyThrottle = 1050;
+            joyThrottle = JOY_BOUND_MIN;
             first_joy_time++;
         }
         first_joy_time--;
@@ -349,13 +345,13 @@ void DroneController::process_joystick() {
     //check switch functions
     static bool joySwitch_prev = joySwitch;
     if (joySwitch && !joySwitch_prev) {
-        if (joyPitch > 1800) {
-            _arduino->bind();
+        if (joyPitch > JOY_MAX_THRESH) {
+            _rc->bind();
             joySwitch = false;
-        } else if(joyThrottle < 1100) {
-            if (joyPitch < 1200) {
+        } else if(joyThrottle < JOY_MIN + 100) {
+            if (joyPitch < JOY_MIN + 100) {
                 _flight_mode = fm_inactive;
-                if (joyRoll > 1700)
+                if (joyRoll > JOY_MAX_THRESH)
                     manual_override_take_off_now = true;
             }
         }
@@ -365,10 +361,10 @@ void DroneController::process_joystick() {
     joySwitch_prev = joySwitch;
 
 #if CAMMODE == CAMMODE_GENERATOR
-    joyPitch = 1500;
+    joyPitch = JOY_MIDDLE;
 #endif
 
-    if (_flight_mode == fm_flying && joyPitch < 1150) {
+    if (_flight_mode == fm_flying && joyPitch < JOY_MIN + 100) {
         manual_override_land_now = true;
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/desktop-logout.ogg &");
     }

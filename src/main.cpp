@@ -15,6 +15,8 @@
 #include "defines.h"
 #include "smoother.h"
 
+#include "multimodule.h"
+
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -64,7 +66,8 @@ std::string data_output_dir;
 std::string calib_folder;
 
 std::ofstream logger;
-Arduino arduino;
+//Arduino rc;
+MultiModule rc;
 DroneTracker dtrkr;
 DroneController dctrl;
 DroneNavigation dnav;
@@ -159,10 +162,10 @@ void process_video() {
         static float prev_time = -1.f/VIDEOFPS;
         float fps = fps_smoothed.addSample( 1.f / (t - prev_time));
         if (fps < 50 && fromfile!=log_mode_none) {
-            std::cout << "FPS WARNING!" << std::endl;
+//            std::cout << "FPS WARNING!" << std::endl;
             static float limit_fps_warning_sound = t;
             if (t - limit_fps_warning_sound > 3.f ) {
-                alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/phone-incoming-call.ogg &");
+//                alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/phone-incoming-call.ogg &");
                 limit_fps_warning_sound = t;
             }
         }
@@ -171,7 +174,7 @@ void process_video() {
         float dt = cam.frame_time() - time;
         time = cam.frame_time();
 
-        std::cout << "Frame: " <<imgcount << ", " << cam.frame_number() << ". FPS: " << to_string_with_precision(imgcount / time,1) << ". Time: " << to_string_with_precision(time,2)  << ", dt " << to_string_with_precision(dt,3) << " FPS now: " << to_string_with_precision(fps,1) << std::endl;
+        //std::cout << "Frame: " <<imgcount << ", " << cam.frame_number() << ". FPS: " << to_string_with_precision(imgcount / time,1) << ". Time: " << to_string_with_precision(time,2)  << ", dt " << to_string_with_precision(dt,3) << " FPS now: " << to_string_with_precision(fps,1) << std::endl;
         imgcount++;
         prev_time = t;
 
@@ -235,7 +238,7 @@ void handleKey() {
 
     switch(key) {
     case 'b':
-        arduino.bind();
+        rc.bind();
         break;
     case ' ':
     case 'f':
@@ -249,6 +252,12 @@ void handleKey() {
         break;
     case ',':
         cam.back_one_sec();
+        break;
+    case 'a':
+        rc.arm(true);
+        break;
+    case 's':
+        rc.arm(false);
         break;
     } // end switch key
     key=0;
@@ -321,7 +330,7 @@ int init(int argc, char **argv) {
     logger << "ID;RS_ID;";
 
     if (fromfile!=log_mode_full)
-        arduino.init(fromfile);
+        rc.init(fromfile);
 
     /*****Start capturing images*****/
     if (fromfile == log_mode_full)
@@ -337,13 +346,13 @@ int init(int argc, char **argv) {
     dtrkr.init(&logger,&visdat);
     itrkr.init(&logger,&visdat);
     dnav.init(&logger,&dtrkr,&dctrl,&itrkr);
-    dctrl.init(&logger,fromfile==log_mode_full,&arduino);
+    dctrl.init(&logger,fromfile==log_mode_full,&rc);
 
 #if CAMMODE == CAMMODE_REALSENSE
     // Ensure that joystick was found and that we can use it
     if (!dctrl.joystick_ready() && fromfile!=log_mode_full) {
         std::cout << "joystick failed." << std::endl;
-        //        exit(1);
+        //exit(1);
     }
 #endif
 
@@ -393,7 +402,7 @@ void close() {
     dnav.close();
     itrkr.close();
     if (fromfile!=log_mode_full)
-        arduino.close();
+        rc.close();
 #ifdef HASSCREEN
     visualizer.close();
 #endif

@@ -3,7 +3,7 @@
 void Arduino::init(bool fromfile) {
     // setup connection with Arduino
     baudrate = 115200;
-    notconnected = RS232_OpenComport(baudrate);
+    notconnected = RS232_OpenComport_USBX(baudrate);
 
     if (notconnected && !fromfile) {
         std::cout << "Arduino failed." << std::endl;
@@ -70,8 +70,6 @@ void Arduino::sendData(void) {
             }else {
                 received.clear();
             }
-
-
         }
     }
     lock_rs232.unlock();
@@ -93,7 +91,7 @@ void Arduino::check_bind_command(void){
             RS232_CloseComport();
         }
         usleep(100000);
-        notconnected = RS232_OpenComport(baudrate);
+        notconnected = RS232_OpenComport_USBX(baudrate);
         lock_rs232.unlock();
         if (notconnected) {
             bound = cx10_not_bound;

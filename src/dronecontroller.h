@@ -13,6 +13,7 @@
 #include <unistd.h>
 
 #include "arduino.h"
+#include "multimodule.h"
 
 /*
  * This class will control a micro drone via a Serial link
@@ -29,7 +30,7 @@ public:
         fm_inactive
     };
 private:
-    
+
     struct controlParameters{
 
         //height control
@@ -75,17 +76,18 @@ private:
     float pitchErrI = 0;
     int autoLandThrottleDecrease = 0;
 
+    const int forward_pitch_take_off_boost = 60;
+    const int min_throttle = 800;
 
-#define INITIALTHROTTLE 1050
+
+#define INITIALTHROTTLE JOY_MIN_THRESH
     const int take_off_throttle_boost = 100;
 
     bool _fromfile;
     controlParameters params;
     flight_mode _flight_mode;
 
-
-
-    Arduino * _arduino;
+    MultiModule * _rc;
 
     std::ofstream *_logger;
     void sendData(void);
@@ -93,7 +95,7 @@ private:
     void readJoystick(void);
     void process_joystick();
 
-public:   
+public:
     flight_mode get_flight_mode() {
         return _flight_mode;
     }
@@ -105,15 +107,15 @@ public:
     bool joySwitch = true;
     int joyDial = 0;
     float scaledjoydial = 0;
-    int joyThrottle = 0;
-    int joyRoll = 0;
-    int joyPitch = 0;
-    int joyYaw = 0;
+    int joyThrottle = JOY_BOUND_MIN;
+    int joyRoll = JOY_MIDDLE;
+    int joyPitch = JOY_MIDDLE;
+    int joyYaw = JOY_MIDDLE;
 
-    int autoThrottle = 1000;
-    int autoRoll = 1500;
-    int autoPitch = 1500;
-    int autoYaw = 1500;
+    int autoThrottle = JOY_BOUND_MIN;
+    int autoRoll = JOY_MIDDLE;
+    int autoPitch = JOY_MIDDLE;
+    int autoYaw = JOY_MIDDLE;
 
     float hoverthrottle = INITIALTHROTTLE;
 
@@ -128,7 +130,7 @@ public:
     float accx_sp,accy_sp,accz_sp;
 
     void close (void);
-    void init(std::ofstream *logger, bool fromfile, Arduino * arduino);
+    void init(std::ofstream *logger, bool fromfile, MultiModule *rc);
     void control(trackData data, cv::Point3f setpoint_world,cv::Point3f setspeed_world);
     bool getDroneIsActive() {
         if ((_flight_mode != fm_manual && joyThrottle > INITIALTHROTTLE) || _flight_mode == fm_inactive)
