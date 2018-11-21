@@ -275,6 +275,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
             match = find_result.keypointsL_wihout_voids.at(match_id).k;
 
             disparity = stereo_match(match,_visdat->frameL_prev,_visdat->frameR_prev,_visdat->frameL,_visdat->frameR);
+            disparity = update_disparity(disparity, dt_tracking);
 
             //calculate everything for the itemcontroller:
             std::vector<Point3f> camera_coordinates, world_coordinates;
@@ -297,7 +298,6 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
         if (keypoint_candidates.size() > 0) { // if !lost
             //Point3f predicted_output = world_coordinates[1];
             check_consistency(cv::Point3f(this->prevX,this->prevY,this->prevZ),output);
-            disparity = update_disparity(disparity, dt_tracking);
             update_tracker_ouput(output,dt_tracking,match,disparity,_visdat->frame_id);
             update_prediction_state(cv::Point3f(match.pt.x,match.pt.y,disparity),match.size);
             n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
@@ -418,7 +418,7 @@ void ItemTracker::find(std::vector<track_item> exclude) {
 
 #if CV_MAJOR_VERSION==3
     cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
-#else
+#else./logging/test
     SimpleBlobDetector * detector;
     detector = *SimpleBlobDetector(params);
 #endif
@@ -664,6 +664,7 @@ float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv:
 
     //shift over the image to find the best match, shift = disparity
     int disparity_err = 0;
+    int disparity_cor = 0;
     float maxcor = -std::numeric_limits<float>::max();
     float minerr = std::numeric_limits<float>::max();
     int tmp_max_disp = settings.max_disparity;
@@ -682,11 +683,12 @@ float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv:
         cv::Mat corV_16 = diff_L_roi_16.mul(diff_R_roi_16);
         cv::Mat errV = abs(diff_L_roi - diff_R_roi);
 
-        cor_16[i] = cv::sum(corV_16 )[0]/256;
+        cor_16[i] = cv::sum(corV_16 )[0];
         err[i] = cv::sum(errV)[0];
 
         if (cor_16[i] > maxcor ) {
             maxcor = cor_16[i];
+            disparity_cor = i;
         }
         if (err[i] < minerr ) { //update min MSE
             disparity_err  = i;
@@ -713,6 +715,12 @@ float ItemTracker::estimate_sub_disparity(int disparity) {
     float sub_disp;
 
     // matching costs of neighbors
+    /*
+    float y1 = -cor_16[disparity-1];
+    float y2 = -cor_16[disparity];
+    float y3 = -cor_16[disparity+1];
+    */
+
     float y1 = err[disparity-1];
     float y2 = err[disparity];
     float y3 = err[disparity+1];
@@ -732,7 +740,7 @@ float ItemTracker::estimate_sub_disparity(int disparity) {
 
 float ItemTracker::update_disparity(float disparity, float dt) {
 
-    if (n_frames_lost>0 || isnan(disparity_smoothed) || reset_filters || reset_disp)
+    if (n_frames_lost>0 || isnan(disparity_smoothed) || reset_disp)
     {
         disparity_smoothed = disparity;
         disp_rate_smoothed2.reset();
@@ -759,7 +767,7 @@ float ItemTracker::update_disparity(float disparity, float dt) {
         }
         else {
             disp_filt_rate = 0.4;
-            disp_filt_pred = 0.01;
+            disp_filt_pred = 0.0;
             disparity_smoothed = disparity*disp_filt_pred + disp_predict*(disp_filt_rate-disp_filt_pred) + disparity_smoothed*(1.0f-disp_filt_rate);
 
             if (abs(disparity-disp_prev)<1.0f)
