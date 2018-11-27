@@ -169,8 +169,13 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
         pitchErrI += posErrZ;
 
         autoThrottle =  hoverthrottle + take_off_throttle_boost - (accErrY * params.throttle_Acc + throttleErrI * params.throttleI*0.1f);
-        autoRoll =  JOY_MIDDLE + (accErrX * params.roll_Acc +  params.rollI*rollErrI);
-        autoPitch = JOY_MIDDLE + (accErrZ * params.pitch_Acc +  params.pitchI*pitchErrI);
+        autoRoll =  accErrX * params.roll_Acc;
+        autoPitch = accErrZ * params.pitch_Acc;
+
+        autoThrottle += abs(autoRoll/4)+abs(autoRoll/4);
+
+        autoRoll    += JOY_MIDDLE + (params.rollI*rollErrI);
+        autoPitch   += JOY_MIDDLE + (params.pitchI*pitchErrI);
 
         //int minThrottle = 1300 + min(abs(autoRoll-1500)/10,50) + min(abs(autoPitch-1500)/10,50);
         if (autoThrottle<min_throttle)
@@ -257,13 +262,13 @@ void DroneController::readJoystick(void) {
             } else if (JOYSTICK_TYPE == RC_USB_HOBBYKING) {
                 switch ( event.number ) {
                 case 0: // roll
-                    joyRoll = JOY_MIDDLE + (event.value >> 5);
+                    joyRoll = JOY_MIDDLE + (event.value*(JOY_MAX-JOY_MIN)/33000);
                     break;
                 case 1: // pitch
-                    joyPitch = JOY_MIDDLE + (event.value >> 5);
+                    joyPitch = JOY_MIDDLE + (event.value*(JOY_MAX-JOY_MIN)/33000);
                     break;
                 case 2: //throttle
-                    joyThrottle = JOY_MIDDLE - (event.value >> 5);
+                    joyThrottle = JOY_MIDDLE - (event.value*(JOY_MAX-JOY_MIN)/44000);
                     break;
                 case 3: //switch
                     joySwitch = event.value>0; // goes between +/-32768
@@ -274,7 +279,7 @@ void DroneController::readJoystick(void) {
                     scaledjoydial = (scaledjoydial / 65536)*100+35;
                     break;
                 case 5: //yaw
-                    joyYaw = JOY_MIDDLE + (event.value >> 5);
+                    joyYaw = JOY_MIDDLE + (event.value*(JOY_MAX-JOY_MIN)/33000);
                     break;
                 default:
                     std::cout << "Unkown joystick event: " << std::to_string(event.number) << ". Value: " << std::to_string(event.value) << std::endl;

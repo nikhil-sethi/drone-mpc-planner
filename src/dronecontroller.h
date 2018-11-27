@@ -76,12 +76,20 @@ private:
     float pitchErrI = 0;
     int autoLandThrottleDecrease = 0;
 
-    const int forward_pitch_take_off_boost = 60;
-    const int min_throttle = 800;
+    const int forward_pitch_take_off_boost = 0; // CX10 - 60
+    const int min_throttle = 600; // CX10 - 800
 
+#if TX_TYPE == TX_CX10
+#define INITIALTHROTTLE 800
+#endif
+#if TX_TYPE == TX_FRSKYD
+#define INITIALTHROTTLE 300
+#endif
+#ifndef INITIALTHROTTLE
+    INITIALTHROTTLE 200
+#endif
 
-#define INITIALTHROTTLE JOY_MIN_THRESH
-    const int take_off_throttle_boost = 100;
+    const int take_off_throttle_boost = 0;
 
     bool _fromfile;
     controlParameters params;

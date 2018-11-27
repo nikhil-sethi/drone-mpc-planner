@@ -52,13 +52,16 @@ void MultiModule::send_data(void) {
 
     unsigned char packet[26] = {0}; // a packet is 26 bytes, see multimodule.h
     packet[0] = 0x55; // headerbyte
-    packet[1] = 6; //sub_protocol|BindBit|RangeCheckBit|AutoBindBit;
+    packet[1] = TX_PROTOCOL; //sub_protocol|BindBit|RangeCheckBit|AutoBindBit;
+
     if (_bind) {
         packet[1] |= MULTI_BINDBIT;
     }
-    packet[2]   = 6 | 0 | 3 << 4; //RxNum | Power | Type
-    packet[3]   = 7; //option_protocol, number of channels for DSM
-
+    packet[2]   = 6 | 0 | TX_SUB_PROTOCOL << 4; //RxNum | Power | Type
+    if (TX_TYPE==TX_DSMX)
+        packet[3] = TX_OPTION; //option_protocol, number of channels for DSM
+    else
+        packet[3] = 0;
 
     //packet[4] to [25] = Channels, 16 channels of 11 bits (-> which makes 22 bytes)
 
@@ -68,10 +71,15 @@ void MultiModule::send_data(void) {
     }
     //AETR
     channels[0] = roll;
+    if (TX_TYPE==TX_CX10)
+        channels[0] = JOY_MAX-roll;
     channels[1] = pitch;
     channels[2] = throttle;
     channels[3] = yaw;
-    channels[5] = arm_switch;
+    if (TX_TYPE==TX_DSMX || TX_TYPE==TX_FRSKYD)
+        channels[4] = arm_switch;
+    if (TX_TYPE==TX_CX10)
+        channels[5] = TX_RATE;
 
     convert_channels(channels , &packet[4]);
 

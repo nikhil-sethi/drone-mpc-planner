@@ -39,6 +39,12 @@
 #define RC_USB_HOBBYKING 1
 #define RC_PLAYSTATION 2
 
-#define JOYSTICK_TYPE RC_DEVO // [0: normal remote] [1: USB remote]
+#define JOYSTICK_TYPE RC_USB_HOBBYKING // [0: normal remote] [1: USB remote]
+
+#define TX_DSMX 0
+#define TX_CX10 1
+#define TX_FRSKYD 2
+
+#define TX_TYPE TX_FRSKYD
 
 #endif //DEFINES_H
