@@ -24,7 +24,7 @@
 #define JOY_BOUND_MIN                       50   // 1050
 #define JOY_BOUND_MAX                       1950 // 1950
 #define JOY_MIN_THRESH                      130   // 1080
-#define JOY_MAX_THRESH                      1900 // 1800
+#define JOY_MAX_THRESH                      1800 // 1800
 #define JOY_MIN                             0   //  1000
 #define JOY_MAX                             2048 // 2000
 #define JOY_MIDDLE                          1024 // 1500
@@ -67,7 +67,7 @@ public:
     void close();
 
     int ledpower = 75;
-    uint16_t mode = JOY_MAX_THRESH; // <min = mode 1, 1500 = mode 2, >max = mode 3
+    uint16_t mode = JOY_MAX; // <min = mode 1, 1500 = mode 2, >max = mode 3
     int roll=JOY_MIDDLE,pitch=JOY_MIDDLE,yaw=JOY_MIDDLE;
     int throttle = JOY_BOUND_MIN;
     int arm_switch = JOY_MIN_THRESH;

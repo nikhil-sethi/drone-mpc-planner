@@ -180,7 +180,7 @@ void process_video() {
 
 #ifdef HASSCREEN
         static int speed_div;
-        if (!(speed_div++ % 4) || fromfile==log_mode_none){
+        if (!(speed_div++ % 4) || fromfile!=log_mode_none){
             visualizer.paint();
             handleKey();
         }

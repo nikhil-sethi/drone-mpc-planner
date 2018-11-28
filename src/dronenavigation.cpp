@@ -49,7 +49,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
 
     // large scale flight plan
     //setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,SETPOINTYMAX / 2,1000),40)); // this is overwritten by position trackbars!!!
-    setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,600,1370),0)); // this is overwritten by position trackbars!!!
+    setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,400,1370),18)); // this is overwritten by position trackbars!!!
     
     //setpoints.push_back(waypoint(cv::Point3i(1500,300,1500),0));
     //setpoints.push_back(waypoint(cv::Point3i(1500,-200,1500),0));
@@ -57,11 +57,11 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     //setpoints.push_back(waypoint(cv::Point3i(1000,-200,1500),0));
     //setpoints.push_back(waypoint(cv::Point3i(2000,-200,1500),0));
 
-    setpoints.push_back(waypoint(cv::Point3i(1500,400,1370),0));
+    //setpoints.push_back(waypoint(cv::Point3i(1500,400,1370),30));
 
 
-    setpoints.push_back(waypoint(cv::Point3i(500,400,2000),0));
-    setpoints.push_back(waypoint(cv::Point3i(2500,400,2000),0));
+    setpoints.push_back(waypoint(cv::Point3i(500,400,2000),30));
+    setpoints.push_back(waypoint(cv::Point3i(2500,400,2000),30));
 
 
     //setpoints.push_back(waypoint(cv::Point3i(1000,-125,1500),0));
@@ -77,7 +77,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     
     
     
-    setpoints.push_back(waypoint(cv::Point3i(1500,-400,1370),20)); // landing waypoint (=last one), must be 1 meter above the ground in world coordinatates
+    setpoints.push_back(waypoint(cv::Point3i(1500,-400,1370),10)); // landing waypoint (=last one), must be 1 meter above the ground in world coordinatates
     //setpoints.push_back(waypoint(cv::Point3i(1500,300,1300),60));
 
 
@@ -200,6 +200,7 @@ void DroneNavigation::update() {
         setspeed_world.z = 0;
 
         navigation_status = navigation_status_approach_waypoint_in_flightplan;
+        break;
     } case navigation_status_approach_waypoint_in_flightplan: {
         float dis = sqrtf(_dctrl->posErrX*_dctrl->posErrX + _dctrl->posErrY*_dctrl->posErrY + _dctrl->posErrZ*_dctrl->posErrZ);
         if (dis *1000 < setpoints[wpid]._distance_threshold_mm * params.distance_threshold_f && _dtrk->n_frames_tracking>5) {

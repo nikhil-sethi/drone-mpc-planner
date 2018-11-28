@@ -51,7 +51,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     createTrackbar("Throttle Pos", "Control", &params.throttle_Pos, 3000);
     createTrackbar("Throttle Vel", "Control", &params.throttle_Vel, 1000);
     createTrackbar("Throttle Acc", "Control", &params.throttle_Acc, 100);
-    createTrackbar("Throttle I", "Control", &params.throttleI, 50);
+    createTrackbar("Throttle I", "Control", &params.throttleI, 100);
 
     createTrackbar("Take off factor", "Control", &params.autoTakeoffFactor, 255);
     createTrackbar("Hover offset", "Control", &params.hoverOffset, 100);
@@ -60,13 +60,13 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     createTrackbar("Roll Pos", "Control", &params.roll_Pos, 3000);
     createTrackbar("Roll Vel", "Control", &params.roll_Vel, 2000);
     createTrackbar("Roll Acc", "Control", &params.roll_Acc, 100);
-    createTrackbar("Roll I", "Control", &params.rollI, 10);
+    createTrackbar("Roll I", "Control", &params.rollI, 100);
 
     // pitch control
     createTrackbar("Pitch Pos", "Control", &params.pitch_Pos, 3000);
     createTrackbar("Pitch Vel", "Control", &params.pitch_Vel, 2000);
     createTrackbar("Pitch Acc", "Control", &params.pitch_Acc, 100);
-    createTrackbar("Pitch I", "Control", &params.pitchI, 10);
+    createTrackbar("Pitch I", "Control", &params.pitchI, 100);
 
 
     //    // yaw control
@@ -165,14 +165,16 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
     } case fm_flying : {
         //update integrators
         throttleErrI += velErrY; //posErrY;
-        rollErrI += posErrX;
-        pitchErrI += posErrZ;
+        if (abs(posErrX)<integratorThresholdDistance)
+            rollErrI += posErrX;
+        if (abs(posErrZ)<integratorThresholdDistance)
+            pitchErrI += posErrZ;
 
         autoThrottle =  hoverthrottle + take_off_throttle_boost - (accErrY * params.throttle_Acc + throttleErrI * params.throttleI*0.1f);
         autoRoll =  accErrX * params.roll_Acc;
         autoPitch = accErrZ * params.pitch_Acc;
 
-        autoThrottle += abs(autoRoll/4)+abs(autoRoll/4);
+        autoThrottle += abs(autoRoll/throttleBankFactor)+abs(autoPitch/throttleBankFactor);
 
         autoRoll    += JOY_MIDDLE + (params.rollI*rollErrI);
         autoPitch   += JOY_MIDDLE + (params.pitchI*pitchErrI);
@@ -354,13 +356,13 @@ void DroneController::process_joystick() {
             _rc->bind();
             joySwitch = false;
         } else if(joyThrottle < JOY_MIN + 100) {
-            if (joyPitch < JOY_MIN + 100) {
+            if (joyPitch < JOY_MIN + 200) {
                 _flight_mode = fm_inactive;
                 if (joyRoll > JOY_MAX_THRESH)
                     manual_override_take_off_now = true;
             }
         }
-    } else if (!joySwitch && joySwitch_prev) {
+    } else if (!joySwitch && joySwitch_prev && !_fromfile) {
         _flight_mode = fm_manual;
     }
     joySwitch_prev = joySwitch;
