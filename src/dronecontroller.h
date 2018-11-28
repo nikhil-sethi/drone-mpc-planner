@@ -79,17 +79,20 @@ private:
     const int forward_pitch_take_off_boost = 0; // CX10 - 60
     const int min_throttle = 600; // CX10 - 800
     const float integratorThresholdDistance = 0.2f;
-    float throttleBankFactor = 2.0;
+    float throttleBankFactor = 3.0;
 
 
 #if TX_TYPE == TX_CX10
 #define INITIALTHROTTLE 800
+#define PITCH_MIDDLE JOY_MIDDLE
 #endif
 #if TX_TYPE == TX_FRSKYD
 #define INITIALTHROTTLE 300
+#define PITCH_MIDDLE JOY_MIDDLE+60
 #endif
 #ifndef INITIALTHROTTLE
-    INITIALTHROTTLE 200
+#define INITIALTHROTTLE 200
+#define PITCH_MIDDLE JOY_MIDDLE
 #endif
 
     const int take_off_throttle_boost = 0;

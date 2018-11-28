@@ -160,11 +160,12 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
         //only control throttle:
         throttle = autoThrottle ;
         roll = JOY_MIDDLE;
-        pitch = JOY_MIDDLE + forward_pitch_take_off_boost;
+        pitch = PITCH_MIDDLE;
         break;
     } case fm_flying : {
         //update integrators
-        throttleErrI += velErrY; //posErrY;
+        if (abs(posErrX)<integratorThresholdDistance && abs(posErrZ)<integratorThresholdDistance)
+            throttleErrI += velErrY; //posErrY;
         if (abs(posErrX)<integratorThresholdDistance)
             rollErrI += posErrX;
         if (abs(posErrZ)<integratorThresholdDistance)
@@ -177,7 +178,7 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
         autoThrottle += abs(autoRoll/throttleBankFactor)+abs(autoPitch/throttleBankFactor);
 
         autoRoll    += JOY_MIDDLE + (params.rollI*rollErrI);
-        autoPitch   += JOY_MIDDLE + (params.pitchI*pitchErrI);
+        autoPitch   += PITCH_MIDDLE + (params.pitchI*pitchErrI);
 
         //int minThrottle = 1300 + min(abs(autoRoll-1500)/10,50) + min(abs(autoPitch-1500)/10,50);
         if (autoThrottle<min_throttle)
@@ -196,7 +197,7 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
 
         //same as fm_flying:
         autoRoll =  JOY_MIDDLE + (accErrX * params.roll_Acc +  params.rollI*rollErrI);
-        autoPitch = JOY_MIDDLE + (accErrZ * params.pitch_Acc +  params.pitchI*pitchErrI);
+        autoPitch = PITCH_MIDDLE + (accErrZ * params.pitch_Acc +  params.pitchI*pitchErrI);
 
         throttle = autoThrottle ;
         roll = autoRoll;

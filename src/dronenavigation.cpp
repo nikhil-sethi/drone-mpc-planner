@@ -60,8 +60,8 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     //setpoints.push_back(waypoint(cv::Point3i(1500,400,1370),30));
 
 
-    setpoints.push_back(waypoint(cv::Point3i(500,400,2000),30));
-    setpoints.push_back(waypoint(cv::Point3i(2500,400,2000),30));
+    setpoints.push_back(waypoint(cv::Point3i(500,400,2000),0));
+    setpoints.push_back(waypoint(cv::Point3i(2500,400,2000),0));
 
 
     //setpoints.push_back(waypoint(cv::Point3i(1000,-125,1500),0));
@@ -77,7 +77,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     
     
     
-    setpoints.push_back(waypoint(cv::Point3i(1500,-400,1370),10)); // landing waypoint (=last one), must be 1 meter above the ground in world coordinatates
+    setpoints.push_back(waypoint(cv::Point3i(1500,-300,1370),10)); // landing waypoint (=last one), must be 1 meter above the ground in world coordinatates
     //setpoints.push_back(waypoint(cv::Point3i(1500,300,1300),60));
 
 

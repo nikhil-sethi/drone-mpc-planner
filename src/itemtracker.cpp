@@ -274,7 +274,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
             int match_id = match_closest_to_prediciton(previous_location,find_result.keypointsL_wihout_voids);
             match = find_result.keypointsL_wihout_voids.at(match_id).k;
 
-            disparity = stereo_match(match,_visdat->frameL_prev,_visdat->frameR_prev,_visdat->frameL,_visdat->frameR);
+            disparity = stereo_match(match,_visdat->frameL_prev,_visdat->frameR_prev,_visdat->frameL,_visdat->frameR,n_frames_tracking,find_result.disparity);
             disparity = update_disparity(disparity, dt_tracking);
 
             //calculate everything for the itemcontroller:
@@ -629,7 +629,7 @@ int ItemTracker::match_closest_to_prediciton(cv::Point3f predicted_locationL, st
     return closestL;
 }
 
-float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::Mat prevFrameR_big, cv::Mat frameL,cv::Mat frameR){
+float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::Mat prevFrameR_big, cv::Mat frameL,cv::Mat frameR, int n_frames_tracking, float prev_disparity){
 
     //get retangle around blob / changed pixels
     float rectsize = closestL.size; // keypoint.size is the diameter of the blob
@@ -670,7 +670,15 @@ float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv:
     int tmp_max_disp = settings.max_disparity;
     if (x1 - tmp_max_disp < 0)
         tmp_max_disp = x1;
-    for (int i=settings.min_disparity; i<tmp_max_disp;i++) {
+
+    int disp_start = settings.min_disparity;
+    int disp_end = tmp_max_disp;
+    if (n_frames_tracking>5) {
+        disp_start = std::max(static_cast<int>(floor(prev_disparity))-2,disp_start);
+        disp_end = std::min(static_cast<int>(ceil(prev_disparity))+2,disp_end);
+    }
+
+    for (int i=disp_start; i<disp_end;i++) {
         cv::Rect roiR(x1-i,y1,x2,y2);
 
         cv::Mat aR = frameR(roiR);
