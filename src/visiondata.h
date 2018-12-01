@@ -64,8 +64,10 @@ public:
     int frame_id;
     cv::Size smallsize;
     cv::Mat Qf;
+    float camera_angle;
+    cv::Mat depth_background;
 
-    void init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR);
+    void init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, cv::Mat new_depth_background);
     void close() {
         std::ofstream os(settingsFile, std::ios::binary);
         cereal::BinaryOutputArchive archive( os );

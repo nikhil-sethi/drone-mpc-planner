@@ -24,6 +24,7 @@ class Cam{
 public:
 
     void init();
+    void calib_pose();
     void init(int argc, char **argv);
     void close();
 
@@ -50,6 +51,13 @@ public:
     cv::Mat Qf;
 
     cv::Mat frameL,frameR;
+
+    cv::Mat depth_background;
+
+    float _camera_angle_x,_camera_angle_y;
+    float camera_angle(){
+        return _camera_angle_y;
+    }
 
     enum auto_exposure_enum{disabled = 0, enabled = 1, only_at_startup=2};
     const auto_exposure_enum enable_auto_exposure = only_at_startup;

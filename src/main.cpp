@@ -171,7 +171,7 @@ void process_video() {
         }
 
         static float time =0;
-        float dt = cam.frame_time() - time;
+        float dt __attribute__((unused)) = cam.frame_time() - time;
         time = cam.frame_time();
 
         //std::cout << "Frame: " <<imgcount << ", " << cam.frame_number() << ". FPS: " << to_string_with_precision(imgcount / time,1) << ". Time: " << to_string_with_precision(time,2)  << ", dt " << to_string_with_precision(dt,3) << " FPS now: " << to_string_with_precision(fps,1) << std::endl;
@@ -339,7 +339,7 @@ int init(int argc, char **argv) {
         cam.init();
     cam.update(); // wait for first frames
 
-    visdat.init(cam.Qf, cam.frameL,cam.frameR); // do after cam update to populate frames
+    visdat.init(cam.Qf, cam.frameL,cam.frameR,cam.camera_angle(),cam.depth_background); // do after cam update to populate frames
     visdat.update(cam.frameL,cam.frameR,cam.frame_time(),cam.frame_number()); //TODO: necessary? If so, streamline
 
     //WARNING: changing the order of the inits with logging must be match with the process_video functions!

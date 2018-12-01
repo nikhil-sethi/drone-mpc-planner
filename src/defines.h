@@ -23,7 +23,6 @@
 #define IMG_W 848
 #define IMG_H 480
 #define IMSCALEF 2
-#define CAMERA_ANGLE 33.0f
 
 #define CAMMODE CAMMODE_REALSENSE
 

@@ -9,12 +9,14 @@ using namespace cv;
 using namespace std;
 
 
-void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL,cv::Mat new_frameR){
+void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL,cv::Mat new_frameR, float new_camera_angle, cv::Mat new_depth_background){
     Qf = new_Qf;
     frameL = new_frameL.clone();
     frameR = new_frameR.clone();
     frameL_prev = frameL;
     frameR_prev = frameR;
+    depth_background = new_depth_background;
+    camera_angle = new_camera_angle;
 
     if (checkFileExist(settingsFile)) {
         std::ifstream is(settingsFile, std::ios::binary);

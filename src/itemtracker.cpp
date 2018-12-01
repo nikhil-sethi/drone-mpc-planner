@@ -283,7 +283,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
             //camera_coordinates.push_back(Point3f(predicted_locationL.x*IMSCALEF,predicted_locationL.y*IMSCALEF,-predicted_locationL.z));
             cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
             output = world_coordinates[0];
-            float theta = CAMERA_ANGLE / (180.f/(float)M_PI);
+            float theta = _visdat->camera_angle / (180.f/(float)M_PI);
             float temp_y = output.y * cosf(theta) + output.z * sinf(theta);
             output.z = -output.y * sinf(theta) + output.z * cosf(theta);
             output.y = temp_y;
@@ -416,13 +416,7 @@ void ItemTracker::find(std::vector<track_item> exclude) {
     //    cv::Mat tmp = createColumnImage({_treshL,_visdat->diffL*100,_visdat->frameL},CV_8UC1,0.25f);
     //    cv::imshow("trek",tmp);
 
-#if CV_MAJOR_VERSION==3
     cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
-#else./logging/test
-    SimpleBlobDetector * detector;
-    detector = *SimpleBlobDetector(params);
-#endif
-
     std::vector<KeyPoint> keypointsL;
     detector->detect( _treshL, keypointsL);
 

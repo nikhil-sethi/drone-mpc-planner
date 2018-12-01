@@ -1,6 +1,8 @@
 #include "cam.h"
 #include <sys/stat.h>
 
+#include "opencv2/imgproc/imgproc.hpp"
+
 using namespace cv;
 using namespace std;
 
@@ -220,6 +222,8 @@ void Cam::init() {
 
     std::cout << "Initializing cam" << std::endl;
 
+    calib_pose();
+
     rs2::stream_profile infared1,infared2;
     rs2::context ctx; // The context represents the current platform with respect to connected devices
     rs2::device_list devices = ctx.query_devices();
@@ -234,7 +238,9 @@ void Cam::init() {
 
         //record
         mkdir("./logging", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#if VIDEORAWLR == VIDEOMODE_BAG
         dev = rs2::recorder("./logging/test.bag",dev);
+#endif
 
         std::cout << "Found the following device:\n" << std::endl;
 
@@ -312,6 +318,60 @@ void Cam::init() {
     swc.Start();
 }
 
+void Cam::calib_pose(){
+    rs2::config cfg;
+    cfg.disable_all_streams();
+    //cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
+    cfg.enable_stream(RS2_STREAM_DEPTH, IMG_W, IMG_H, RS2_FORMAT_Z16, VIDEOFPS);
+    rs2::pipeline cam;
+    rs2::pipeline_profile selection = cam.start(cfg);
+
+    //wait 2 seconds
+    for (uint i = 0; i < VIDEOFPS*2; i++)
+        cam.wait_for_frames();
+
+    rs2::frameset frame = cam.wait_for_frames();
+    cv::Size im_size(IMG_W, IMG_H);
+    depth_background = Mat(im_size, CV_16UC1, (void *)frame.get_depth_frame().get_data(), Mat::AUTO_STEP).clone();
+    //cv::Mat frameL = Mat(im_size, CV_8UC1, (void *)frame.get_infrared_frame(1).get_data(), Mat::AUTO_STEP);
+    //select the lower middle quadrant of the image:
+    cv::Mat ground_plane_roi = depth_background(cv::Rect(IMG_W/4,IMG_H/2,IMG_W/2,IMG_H/2));
+    imwrite("./logging/background_depth.png",depth_background);
+    //cv::Mat ground_plane_roiL = frameL(cv::Rect(IMG_W/4,IMG_H/2,IMG_W/2,IMG_H/2));
+
+    //calculate differential
+    cv::Mat sobelx;
+    cv::Mat sobely;
+    cv::Sobel(ground_plane_roi,sobelx,CV_32F,1,0,5);
+    cv::Sobel(ground_plane_roi,sobely,CV_32F,0,1,5);
+
+    cv::Scalar x3 = mean(sobelx);
+    cv::Scalar y3 = mean(sobely);
+    cv::Scalar z3 = mean(ground_plane_roi);
+    float x = x3(0);
+    float y = y3(0);
+    float z = z3(0);
+
+    const float FOV_x_d = 91.2f;
+    const float FOV_y_d = 65.5f;
+    const float FOVrad_x_d = (FOV_x_d / 180.f) * (float)M_PI;
+    const float FOVrad_y_d = (FOV_y_d / 180.f) * (float)M_PI;
+
+    float scale_x = (float)ground_plane_roi.cols / (float)depth_background.cols;
+    float scale_y = (float)ground_plane_roi.rows / (float)depth_background.rows;
+
+    float world_width = tanf(FOVrad_x_d/2)*z*2.f*scale_x; //  [mm]
+    float world_height = tanf(FOVrad_y_d/2)*z*2.f*scale_y; // [mm]
+    float alpha_x = atanf(x/world_width);
+    float alpha_y = atanf(y/world_height);
+    _camera_angle_x = -(alpha_x/(float)M_PI)*180.f; //        [degrees]
+    _camera_angle_y =  90 + (alpha_y/(float)M_PI)*180.f; //        [degrees]
+
+    std::cout << "Camera pose x,y [ " << to_string_with_precision(_camera_angle_x,0) << "   ,   " <<
+                 to_string_with_precision(_camera_angle_y,0) << " ]" << std::endl;
+
+    cam.stop();
+}
 
 void Cam::init(int argc __attribute__((unused)), char **argv) {
 
@@ -346,7 +406,6 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
     set_calibration(infared1,infared2);
     swc.Start();
 }
-
 
 void Cam::pause(){
     if (!_paused) {
