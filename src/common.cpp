@@ -198,7 +198,7 @@ void showRowImage(std::vector<cv::Mat> ims, std::string window_name, int type,fl
     cv::imshow(window_name, res);
 }
 
-void alert(std::string cmd) {
+void alert(std::string cmd __attribute__((unused))) {
 #ifdef BEEP
     system(cmd.c_str());
 #endif

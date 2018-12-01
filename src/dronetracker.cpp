@@ -80,7 +80,10 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
     }
     if (!found_after_takeoff) {
         predicted_pathL.clear();
+#ifndef INSECT_LOGGING_MODE
+        //hack to disable the dronetracker
         predicted_pathL.push_back(track_item(find_result.best_image_locationL,_visdat->frame_id,0.1f));
+#endif
         foundL = false;
         roi_size_cnt = 0;
     }

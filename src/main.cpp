@@ -145,7 +145,7 @@ void process_video() {
         tp[0].new_data.notify_one();
 
         int frameWritten = 0;
-#if VIDEORAWLR
+#if VIDEORAWLR && VIDEORAWLR != VIDEOMODE_BAG
         frameWritten = output_video_LR.write(cam.frameL,cam.frameR);
 #endif
         if (frameWritten == 0) {
@@ -173,8 +173,7 @@ void process_video() {
         static float time =0;
         float dt __attribute__((unused)) = cam.frame_time() - time;
         time = cam.frame_time();
-
-        //std::cout << "Frame: " <<imgcount << ", " << cam.frame_number() << ". FPS: " << to_string_with_precision(imgcount / time,1) << ". Time: " << to_string_with_precision(time,2)  << ", dt " << to_string_with_precision(dt,3) << " FPS now: " << to_string_with_precision(fps,1) << std::endl;
+        std::cout << "Frame: " <<imgcount << ", " << cam.frame_number() << ". FPS: " << to_string_with_precision(imgcount / time,1) << ". Time: " << to_string_with_precision(time,2)  << ", dt " << to_string_with_precision(dt,3) << " FPS now: " << to_string_with_precision(fps,1) << std::endl;
         imgcount++;
         prev_time = t;
 
@@ -186,6 +185,11 @@ void process_video() {
         }
 #endif
 
+#ifdef INSECT_LOGGING_MODE
+        if (imgcount > 60000)
+            key =27;
+#endif
+
     } // main while loop
 }
 
@@ -195,7 +199,10 @@ void process_frame(Stereo_Frame_Data data) {
         logreader.set_current_frame_number(data.number);
 
     visdat.update(data.frameL,data.frameR,data.time,data.number);
-    logger << data.imgcount << ";" << data.number << ";" ;
+
+    auto timenow = chrono::system_clock::to_time_t(chrono::system_clock::now());
+    logger << data.imgcount << ";" << data.number << ";" << std::put_time(std::localtime(&timenow), "%Y/%m/%d %T") << ";";
+
     //WARNING: changing the order of the functions with logging must be matched with the init functions!
 
     dtrkr.track(data.time,itrkr.predicted_pathL,dctrl.getDroneIsActive());
@@ -327,10 +334,12 @@ int init(int argc, char **argv) {
     else
         logger.open(data_output_dir  + "test.log",std::ofstream::out);
 
-    logger << "ID;RS_ID;";
+    logger << "ID;RS_ID;time;";
 
+#ifndef INSECT_LOGGING_MODE
     if (fromfile!=log_mode_full)
         rc.init(fromfile);
+#endif
 
     /*****Start capturing images*****/
     if (fromfile == log_mode_full)
@@ -365,7 +374,7 @@ int init(int argc, char **argv) {
 #if VIDEORESULTS
     if (output_video_results.init(argc,argv,VIDEORESULTS, data_output_dir + "videoResult.avi",IMG_W,IMG_H,VIDEOFPS,"192.168.1.255",5000,true)) {return 1;}
 #endif
-#if VIDEORAWLR
+#if VIDEORAWLR && VIDEORAWLR != VIDEOMODE_BAG
     if (output_video_LR.init(argc,argv,VIDEORAWLR,data_output_dir + "test_videoRawLR.avi",IMG_W*2,IMG_H,VIDEOFPS, "192.168.1.255",5000,false)) {return 1;}
 #endif
 
@@ -412,7 +421,7 @@ void close() {
 #if VIDEORESULTS
     output_video_results.close();
 #endif
-#if VIDEORAWLR
+#if VIDEORAWLR && VIDEORAWLR != VIDEOMODE_BAG
     output_video_LR.close();
 #endif
 

@@ -48,6 +48,7 @@ void MultiModule::convert_channels(uint16_t * channels, unsigned char * packet) 
 }
 
 void MultiModule::send_data(void) {
+#ifndef INSECT_LOGGING_MODE
     lock_rs232.lock();
 
     unsigned char packet[26] = {0}; // a packet is 26 bytes, see multimodule.h
@@ -88,6 +89,7 @@ void MultiModule::send_data(void) {
     }
 
     lock_rs232.unlock();
+#endif
 }
 
 void MultiModule::receive_data() {
@@ -122,7 +124,9 @@ void MultiModule::receive_data() {
 
 
 void MultiModule::close() {
+#ifndef INSECT_LOGGING_MODE
     exitSendThread = true;
     g_lockData.unlock();
     thread_mm.join();
+#endif
 }
