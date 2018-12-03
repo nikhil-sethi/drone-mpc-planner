@@ -272,7 +272,7 @@ void handleKey() {
 
 void pool_worker(int id __attribute__((unused))){
     std::unique_lock<std::mutex> lk(tp[id].m1,std::defer_lock);
-    while(true) {
+    while(key!=27) {
         tp[id].new_data.wait(lk,[](){return tp[0].data_is_send;});
         if (key == 27)
             break;
@@ -289,6 +289,7 @@ void init_thread_pool() {
 }
 void close_thread_pool(){
     std::cout <<"Stopping threads in pool"<< std::endl;
+    usleep(1000);
     for (uint i = 0; i < NUM_OF_THREADS; i++) {
         tp[i].data_is_send = true;
         tp[i].new_data.notify_all();
@@ -298,6 +299,7 @@ void close_thread_pool(){
     for (uint i = 0; i < NUM_OF_THREADS; i++) {
         tp[i].thread->join();
     }
+    std::cout <<"Threads in pool closed"<< std::endl;
 }
 
 void kill_sig_handler(int s){
