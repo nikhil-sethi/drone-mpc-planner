@@ -1,0 +1,50 @@
+Host *
+ServerAliveInterval 240
+ForwardAgent yes
+
+Host dinstech
+	Hostname dinstech.nl
+	Port 16666
+	User pats
+
+# MAVLab
+Host mavlab-gpu
+	Hostname 131.180.117.41
+	User pats
+
+Host mavlab-godzilla
+	Hostname mavlab-godzilla-compute.lr.tudelft.nl
+	User pats
+
+Host pats1
+	Hostname localhost
+	User pats
+	ProxyJump mavlab-gpu	
+	Port 6100
+
+Host pats1b
+	Hostname localhost
+	User pats
+	ProxyJump mavlab-gpu	
+	Port 6100
+
+Host pats2
+	Hostname localhost
+	User pats
+	ProxyJump dinstech
+	Port 6200
+
+Host pats2b
+	Hostname localhost
+	User pats
+	ProxyJump dinstech
+	Port 6200
+
+
+# Pats
+Host pats_old
+	Hostname localhost
+	User pats
+	ProxyJump mavlab-gpu
+	#ProxyCommand ssh -i ~/.ssh/mavlab_gpu_id_rsa -W %h:%p mavlab-gpu	
+	Port 16668
