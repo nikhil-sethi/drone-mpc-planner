@@ -19,32 +19,43 @@ Host mavlab-godzilla
 Host pats1
 	Hostname localhost
 	User pats
-	ProxyJump mavlab-gpu	
+	ProxyCommand ssh -i ~/.ssh/mavlab_gpu_id_rsa -W %h:%p mavlab-gpu	
 	Port 6100
 
 Host pats1b
 	Hostname localhost
 	User pats
-	ProxyJump mavlab-gpu	
+	ProxyCommand ssh -i ~/.ssh/dinstech_id_rsa -W %h:%p dinstech
+	Port 6100
+
+Host pats1c
+	Hostname localhost
+	User pats
+	ProxyCommand ssh -i ~/.ssh/mavlab-godzilla_id_rsa -W %h:%p mavlab-godzilla
 	Port 6100
 
 Host pats2
 	Hostname localhost
 	User pats
-	ProxyJump dinstech
+	ProxyCommand ssh -i ~/.ssh/dinstech_id_rsa -W %h:%p dinstech
 	Port 6200
 
 Host pats2b
 	Hostname localhost
 	User pats
-	ProxyJump dinstech
+	ProxyCommand ssh -i ~/.ssh/dinstech_id_rsa -W %h:%p dinstech
 	Port 6200
 
+Host pats2c
+	Hostname localhost
+	User pats
+	ProxyCommand ssh -i ~/.ssh/mavlab-godzilla_id_rsa -W %h:%p mavlab-godzilla
+	Port 6200
 
 # Pats
 Host pats_old
 	Hostname localhost
 	User pats
-	ProxyJump mavlab-gpu
-	#ProxyCommand ssh -i ~/.ssh/mavlab_gpu_id_rsa -W %h:%p mavlab-gpu	
+	#ProxyJump mavlab-gpu
+	ProxyCommand ssh -i ~/.ssh/mavlab_gpu_id_rsa -W %h:%p mavlab-gpu	
 	Port 16668
