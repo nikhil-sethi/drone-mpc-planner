@@ -28,7 +28,7 @@
     #define VIDEORAWLR VIDEOMODE_DISABLED
     #define JOYSTICK_TYPE RC_DISABLED
     #define TX_TYPE TX_DISABLED
-    #define HASSCREEN
+//    #define HASSCREEN
 #else
     #define HASSCREEN
     #define BEEP

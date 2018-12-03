@@ -1,13 +1,25 @@
 #!/usr/bin/env bash
-echo waiting 10s for starting tunnel
+# First argument is the address
+# Second argument the ssh port of the server
 
+#direct log in: ssh -i ~/.ssh/id_rsa kevin@131.180.117.41 -t "ssh pats@localhost -p 16669 -i~/.ssh/id_rsa"
+#tunnel for sftp: ssh -i ~/.ssh/id_rsa kevin@131.180.117.41 -L 6002:localhost:16669 -N
+
+# Settings
+USER=pats
+BASE_PORT=6000
+IP=$1
+HOSTNAME=$( hostname )
+HOST_ID=$( hostname | tr -dc '0-9' )
+PORT=$(( $BASE_PORT + $HOST_ID * 100 ))
+SSH_PORT=${2:-22}
+
+# Retry tunnel
+echo "Creating tunnel at $IP:$SSH_PORT with port $PORT"
 while [ 1 ]; do
+ 	/usr/bin/autossh -M 0 -o "ExitOnForwardFailure yes" -o "ServerAliveInterval 10" -o "ServerAliveCountMax 3" -NR $PORT:localhost:22 $USER@$IP -p $SSH_PORT
+
+	echo waiting 10s for starting tunnel
 	sleep 10s
-	echo starting tunnel 1!
-	/usr/bin/autossh -M 20000 -i /home/pats/.ssh/id_rsa -NR 16667:localhost:22 houjebek@dinstech.nl -p 16666
- 	#ssh -i /home/slamdunk/.ssh/id_rsa -NR 16667:localhost:22 houjebek@dinstech.nl -p 16666
-	#configure firewall to forward port 16666 to the correct nat ip
-	#from that ip, do ssh slamdunk@localhost -p 16667
-	#Add id_rsa.pub to the authorized_keys e.g. with ssh-copy-id
-	#ssh-copy-id -i ~/.ssh/id_rsa.pub kevin@131.180.117.41
+
 done
