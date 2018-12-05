@@ -280,7 +280,10 @@ void Cam::init() {
     //            auto range = depth_sensor.get_option_range(RS2_OPTION_LASER_POWER);
     //            depth_sensor.set_option(RS2_OPTION_LASER_POWER, (range.max - range.min)/2 + range.min);
     //        }
-    if (enable_auto_exposure == only_at_startup || enable_auto_exposure == enabled) {
+    if (enable_auto_exposure == only_at_startup ) {
+        exposure = _measured_exposure;
+    }
+    if ( enable_auto_exposure == enabled) {
         if (depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
             depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,1.0);
         }
