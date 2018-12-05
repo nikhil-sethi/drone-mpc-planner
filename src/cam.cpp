@@ -151,7 +151,7 @@ void Cam::rs_callback_playback(rs2::frame f) {
 
 void Cam::update_real(void) {
     std::unique_lock<std::mutex> lk(m);
-    wait_for_image.wait(lk); //TODO: possible deadlock when notification is given before this wait is reached. Make conditional on new_frame1 && new_frame2...!?
+    wait_for_image.wait(lk,[this](){return new_frame1 && new_frame2;});
 
     lock_frame_data.lock();
     frameL = Mat(Size(848, 480), CV_8UC1, (void*)rs_frameL.get_data(), Mat::AUTO_STEP);
@@ -163,17 +163,14 @@ void Cam::update_real(void) {
     //std::cout << "-------------frame id: " << frame_id << " seek time: " << incremented_playback_frametime << std::endl;
     lock_frame_data.unlock();
 
-    lock_flags.lock();
     new_frame1 = false;
     new_frame2 = false;
-    lock_flags.unlock();
 
 }
 
 uint last_sync_id = 0;
 void Cam::rs_callback(rs2::frame f) {
 
-    lock_flags.lock();
     if (f.get_profile().stream_index() == 1 && !new_frame1 && f.get_frame_number() >= last_sync_id) {
         rs_frameL_cbtmp  = f;
         new_frame1 = true;
@@ -181,7 +178,6 @@ void Cam::rs_callback(rs2::frame f) {
         rs_frameR_cbtmp = f;
         new_frame2 = true;
     }
-    lock_flags.unlock();
     if (new_frame1 && new_frame2) {
         if (rs_frameL_cbtmp.get_frame_number() == rs_frameR_cbtmp.get_frame_number()) {
             lock_frame_data.lock();
