@@ -24,6 +24,7 @@ class Cam{
 public:
 
     void init();
+    void sense_light_level();
     void calib_pose();
     void init(int argc, char **argv);
     void close();
@@ -58,6 +59,9 @@ public:
     float camera_angle(){
         return _camera_angle_y;
     }
+    float measured_exposure(){
+        return _measured_exposure;
+    }
 
     enum auto_exposure_enum{disabled = 0, enabled = 1, only_at_startup=2};
     const auto_exposure_enum enable_auto_exposure = only_at_startup;
@@ -75,6 +79,7 @@ private:
     float _frame_time = 0;
     float _frame_time_start = -1;
 
+    float _measured_exposure = -1; // measured from sense_light_level
     int exposure = 15500; //84*(31250/256); // >11000 -> 60fps, >15500 -> 30fps, < 20 = crash
     int gain = 0;
     bool fromfile;

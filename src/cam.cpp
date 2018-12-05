@@ -219,6 +219,7 @@ void Cam::init() {
     std::cout << "Initializing cam" << std::endl;
 
     calib_pose();
+    sense_light_level();
 
     rs2::stream_profile infared1,infared2;
     rs2::context ctx; // The context represents the current platform with respect to connected devices
@@ -314,20 +315,58 @@ void Cam::init() {
     swc.Start();
 }
 
-void Cam::calib_pose(){
+void Cam::sense_light_level(){
+    std::cout << "Measuring exposure..." << std::endl;
     rs2::config cfg;
     cfg.disable_all_streams();
-    //cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
+    cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
+    rs2::pipeline cam;
+    rs2::pipeline_profile selection = cam.start(cfg);
+
+    rs2::device selected_device = selection.get_device();
+    auto rs_dev = selected_device.first<rs2::depth_sensor>();
+    rs_dev.set_option(RS2_OPTION_GAIN, 0);
+    rs_dev.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);
+    rs_dev.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f);
+
+    cv::Size im_size(IMG_W, IMG_H);
+
+    //wait 2 seconds
+    rs2::frameset frame;
+    for (uint i = 0; i < VIDEOFPS*2; i++)
+        frame = cam.wait_for_frames();
+
+    if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
+        _measured_exposure = frame.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
+        std::cout << "Measured exposure: " << _measured_exposure << std::endl;
+    }
+    cv::Mat frameLt = Mat(im_size, CV_8UC1, (void *)frame.get_infrared_frame(1).get_data(), Mat::AUTO_STEP);
+
+    imwrite("./logging/brightness.png",frameLt);
+    cam.stop();
+}
+
+void Cam::calib_pose(){
+
+    std::cout << "Measuring pose..." << std::endl;
+    rs2::config cfg;
+    cfg.disable_all_streams();
     cfg.enable_stream(RS2_STREAM_DEPTH, IMG_W, IMG_H, RS2_FORMAT_Z16, VIDEOFPS);
     rs2::pipeline cam;
     rs2::pipeline_profile selection = cam.start(cfg);
 
-    //wait 2 seconds
-    for (uint i = 0; i < VIDEOFPS*2; i++)
-        cam.wait_for_frames();
+    rs2::device selected_device = selection.get_device();
+    auto rs_dev = selected_device.first<rs2::depth_sensor>();
+    rs_dev.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);
+    rs_dev.set_option(RS2_OPTION_EMITTER_ENABLED, 1.f);
 
-    rs2::frameset frame = cam.wait_for_frames();
     cv::Size im_size(IMG_W, IMG_H);
+
+    //wait 2 seconds
+    rs2::frameset frame;
+    for (uint i = 0; i < VIDEOFPS*2; i++)
+        frame = cam.wait_for_frames();
+
     depth_background = Mat(im_size, CV_16UC1, (void *)frame.get_depth_frame().get_data(), Mat::AUTO_STEP).clone();
     //cv::Mat frameL = Mat(im_size, CV_8UC1, (void *)frame.get_infrared_frame(1).get_data(), Mat::AUTO_STEP);
     //select the lower middle quadrant of the image:

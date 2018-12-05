@@ -433,6 +433,17 @@ void close() {
 
 int main( int argc, char **argv )
 {
+#ifdef INSECT_LOGGING_MODE
+    //don't start  until lights are off
+        while(true) {
+            cam.sense_light_level();
+            if (cam.measured_exposure() >15000) {
+                break;
+            }
+            usleep(60000000); // measure every 1 minute
+        }
+#endif
+
     if (!init(argc,argv)) {
         process_video();
     }
