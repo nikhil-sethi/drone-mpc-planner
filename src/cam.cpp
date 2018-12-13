@@ -342,6 +342,8 @@ void Cam::sense_light_level(){
     if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
         _measured_exposure = frame.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
         std::cout << "Measured exposure: " << _measured_exposure << std::endl;
+        if (VIDEOFPS==60 && _measured_exposure>15500) //guarantee 60 FPS when requested
+            _measured_exposure = 15500;
     }
     cv::Mat frameLt = Mat(im_size, CV_8UC1, (void *)frame.get_infrared_frame(1).get_data(), Mat::AUTO_STEP);
 
@@ -371,42 +373,63 @@ void Cam::calib_pose(){
         frame = cam.wait_for_frames();
 
     depth_background = Mat(im_size, CV_16UC1, (void *)frame.get_depth_frame().get_data(), Mat::AUTO_STEP).clone();
-    //cv::Mat frameL = Mat(im_size, CV_8UC1, (void *)frame.get_infrared_frame(1).get_data(), Mat::AUTO_STEP);
-    //select the lower middle quadrant of the image:
-    cv::Mat ground_plane_roi = depth_background(cv::Rect(IMG_W/4,IMG_H/2,IMG_W/2,IMG_H/2));
-    imwrite("./logging/background_depth.png",depth_background);
-    //cv::Mat ground_plane_roiL = frameL(cv::Rect(IMG_W/4,IMG_H/2,IMG_W/2,IMG_H/2));
 
-    //calculate differential
-    cv::Mat sobelx;
-    cv::Mat sobely;
-    cv::Sobel(ground_plane_roi,sobelx,CV_32F,1,0,5);
-    cv::Sobel(ground_plane_roi,sobely,CV_32F,0,1,5);
+    // obtain Point Cloud
+    rs2::pointcloud pc;
+    rs2::points points;
+    points = pc.calculate(frame.get_depth_frame());
 
-    cv::Scalar x3 = mean(sobelx);
-    cv::Scalar y3 = mean(sobely);
-    cv::Scalar z3 = mean(ground_plane_roi);
-    float x = x3(0);
-    float y = y3(0);
-    float z = z3(0);
+    // init variables for plane fitting
+    auto ptr = points.get_vertices();
+    int pp;
+    int p_smooth = 200;
+    int nr_p_far = 100;
+    int nr_p_close = 100;
+    int ppp;
 
-    const float FOV_x_d = 91.2f;
-    const float FOV_y_d = 65.5f;
-    const float FOVrad_x_d = (FOV_x_d / 180.f) * (float)M_PI;
-    const float FOVrad_y_d = (FOV_y_d / 180.f) * (float)M_PI;
+    std::vector<cv::Point3f> pointsFar;
+    std::vector<cv::Point3f> pointsClose;
+    cv::Point3f point_ = {0,0,0};
+    cv::Point3f point_diff = {0,0,0};
+    float alpha = 0;
 
-    float scale_x = (float)ground_plane_roi.cols / (float)depth_background.cols;
-    float scale_y = (float)ground_plane_roi.rows / (float)depth_background.rows;
+    // obtain a set of points 'far away' (half way the image) that are averaged over image lines
+    for (ppp=0;ppp<nr_p_far;ppp++) {
+        auto ptr_new = ptr+points.size()/2+IMG_W/2-p_smooth/2+IMG_W*ppp;
+        for (pp=0;pp<p_smooth;pp++) {
+            point_.x += ptr_new->x;
+            point_.y += ptr_new->y;
+            point_.z += ptr_new->z;
+            ptr_new++;
+        }
+        point_/=p_smooth;
+        pointsFar.push_back(point_);
+    }
 
-    float world_width = tanf(FOVrad_x_d/2)*z*2.f*scale_x; //  [mm]
-    float world_height = tanf(FOVrad_y_d/2)*z*2.f*scale_y; // [mm]
-    float alpha_x = atanf(x/world_width);
-    float alpha_y = atanf(y/world_height);
-    _camera_angle_x = -(alpha_x/(float)M_PI)*180.f; //        [degrees]
-    _camera_angle_y =  90 + (alpha_y/(float)M_PI)*180.f; //        [degrees]
+    // obtain a set of points 'close by' (bottom of the image) that are averaged over image lines
+    for (ppp=0;ppp<nr_p_close;ppp++) {
+        auto ptr_new = ptr+points.size()-IMG_W/2-p_smooth/2-IMG_W*ppp;
+        for (pp=0;pp<p_smooth;pp++) {
+            point_.x += ptr_new->x;
+            point_.y += ptr_new->y;
+            point_.z += ptr_new->z;
+            ptr_new++;
+        }
+        point_/=p_smooth;
+        pointsClose.push_back(point_);
+    }
 
-    std::cout << "Camera pose x,y [ " << to_string_with_precision(_camera_angle_x,0) << "   ,   " <<
-                 to_string_with_precision(_camera_angle_y,0) << " ]" << std::endl;
+    // calculate angle between 'far away' and 'close by' points, by avaraging over all combinations between both sets
+    for (ppp=0;ppp<nr_p_close;ppp++) {
+        for (pp=0;pp<nr_p_far;pp++) {
+            point_diff = pointsFar.at(pp)-pointsClose.at(ppp);
+            alpha += atanf(point_diff.y/point_diff.z);
+        }
+    }
+    alpha/=(nr_p_close*nr_p_far);
+
+    _camera_angle_y =  (-alpha/(float)M_PI)*180.f; //        [degrees]
+    std::cout << "Measured pose: " << _camera_angle_y << std::endl;
 
     cam.stop();
 }

@@ -77,13 +77,13 @@ private:
     int autoLandThrottleDecrease = 0;
 
     const int forward_pitch_take_off_boost = 0; // CX10 - 60
-    const int min_throttle = 600; // CX10 - 800
+    const int min_throttle = 800; //Whoop - 600    CX10 - 800
     const float integratorThresholdDistance = 0.2f;
-    float throttleBankFactor = 3.0;
+    float throttleBankFactor = 0.0; // Whoop 0.33
 
 
 #if TX_TYPE == TX_CX10
-#define INITIALTHROTTLE 800
+#define INITIALTHROTTLE 700
 #define PITCH_MIDDLE JOY_MIDDLE
 #endif
 #if TX_TYPE == TX_FRSKYD

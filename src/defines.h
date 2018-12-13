@@ -22,7 +22,7 @@
 #define TX_CX10 2
 #define TX_FRSKYD 3
 
-#define INSECT_LOGGING_MODE
+//#define INSECT_LOGGING_MODE
 
 #ifdef INSECT_LOGGING_MODE
     #define VIDEORAWLR VIDEOMODE_DISABLED
@@ -34,7 +34,7 @@
     #define BEEP
     #define VIDEORAWLR VIDEOMODE_BAG
     #define JOYSTICK_TYPE RC_USB_HOBBYKING
-    #define TX_TYPE TX_FRSKYD
+    #define TX_TYPE TX_CX10
 #endif
 
 #define VIDEODISPARITY VIDEOMODE_DISABLED
@@ -51,7 +51,7 @@
 #define DRONE_DISPARITY_START 19/IMSCALEF
 #define DRONE_IM_START_SIZE 4.2f
 
-#define MAX_BORDER_Y_DEFAULT 2.09f  // 2.20 for large scale flight plan  // 1.3 for small scale flight plan
+#define MAX_BORDER_Y_DEFAULT 2.17f  // 2.20 for large scale flight plan  // 1.3 for small scale flight plan
 #define MAX_BORDER_Z_DEFAULT 4.0f
 
 #endif //DEFINES_H

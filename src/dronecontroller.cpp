@@ -175,7 +175,7 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
         autoRoll =  accErrX * params.roll_Acc;
         autoPitch = accErrZ * params.pitch_Acc;
 
-        autoThrottle += abs(autoRoll/throttleBankFactor)+abs(autoPitch/throttleBankFactor);
+        autoThrottle += abs(autoRoll*throttleBankFactor)+abs(autoPitch*throttleBankFactor);
 
         autoRoll    += JOY_MIDDLE + (params.rollI*rollErrI);
         autoPitch   += PITCH_MIDDLE + (params.pitchI*pitchErrI);
