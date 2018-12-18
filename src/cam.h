@@ -23,7 +23,7 @@ class Cam{
 
 public:
 
-    void init();
+    void init(std::ofstream *logger);
     void sense_light_level();
     void calib_pose();
     void init(int argc, char **argv);
@@ -116,6 +116,9 @@ private:
     };
     std::deque<frame_data> playback_bufferL;
     std::deque<frame_data> playback_bufferR;
+
+protected:
+    std::ofstream *_logger;
 
 
 };

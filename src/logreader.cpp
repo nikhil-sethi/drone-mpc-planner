@@ -113,6 +113,7 @@ LogReader::Log_Entry LogReader::createLogEntry(std::string line) {
     entry.ins_n_frames_lost = std::stoi(linedata.at(headmap["n_frames_lost_insect"]));
     entry.ins_n_frames_tracking = std::stoi(linedata.at(headmap["n_frames_tracking_insect"]));
     entry.ins_foundL = std::stoi(linedata.at(headmap["foundL_insect"]));
+    entry.camera_angle_y = std::stoi(linedata.at(headmap["camera_angle_y"]));
 
     return entry;
 }

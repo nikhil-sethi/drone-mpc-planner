@@ -214,9 +214,11 @@ void Cam::set_calibration(rs2::stream_profile infared1,rs2::stream_profile infar
 
 }
 
-void Cam::init() {
+void Cam::init(std::ofstream *logger) {
 
     std::cout << "Initializing cam" << std::endl;
+    _logger = logger;
+    (*_logger) << "RS_ID" << ";" << "camera_angle_y" << ";\n";
 
     calib_pose();
     sense_light_level();
@@ -328,9 +330,12 @@ void Cam::sense_light_level(){
 
     rs2::device selected_device = selection.get_device();
     auto rs_dev = selected_device.first<rs2::depth_sensor>();
-    rs_dev.set_option(RS2_OPTION_GAIN, 0);
-    rs_dev.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);
-    rs_dev.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f);
+    if (rs_dev.supports(RS2_OPTION_GAIN))
+        rs_dev.set_option(RS2_OPTION_GAIN, 0);
+    if (rs_dev.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+        rs_dev.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);
+    if (rs_dev.supports(RS2_OPTION_EMITTER_ENABLED))
+        rs_dev.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f);
 
     cv::Size im_size(IMG_W, IMG_H);
 
@@ -362,8 +367,10 @@ void Cam::calib_pose(){
 
     rs2::device selected_device = selection.get_device();
     auto rs_dev = selected_device.first<rs2::depth_sensor>();
-    rs_dev.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);
-    rs_dev.set_option(RS2_OPTION_EMITTER_ENABLED, 1.f);
+    if (rs_dev.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+        rs_dev.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);
+    if (rs_dev.supports(RS2_OPTION_EMITTER_ENABLED))
+        rs_dev.set_option(RS2_OPTION_EMITTER_ENABLED, 1.f);
 
     cv::Size im_size(IMG_W, IMG_H);
 
@@ -430,6 +437,7 @@ void Cam::calib_pose(){
 
     _camera_angle_y =  (-alpha/(float)M_PI)*180.f; //        [degrees]
     std::cout << "Measured pose: " << _camera_angle_y << std::endl;
+    (*_logger) << 0 << ";" << _camera_angle_y*10000.f << "; ";
 
     cam.stop();
 }

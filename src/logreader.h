@@ -54,6 +54,8 @@ public:
         float ins_sacc_y;
         float ins_sacc_z;
 
+        float camera_angle_y;
+
     };
     void init(std::string file);
     void set_current_frame_number(int frame_number);
