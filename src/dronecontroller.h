@@ -83,7 +83,7 @@ private:
 
 
 #if TX_TYPE == TX_CX10
-#define INITIALTHROTTLE 700
+#define INITIALTHROTTLE 200
 #define PITCH_MIDDLE JOY_MIDDLE
 #endif
 #if TX_TYPE == TX_FRSKYD

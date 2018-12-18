@@ -231,7 +231,7 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
     (*_logger) << (int)data.valid  << "; " << posErrX << "; " << posErrY  << "; " << posErrZ << "; " << setpoint.x << "; " << setpoint.y  << "; " << setpoint.z << "; " << accx_sp << "; " << accy_sp  << "; " << accx_sp << "; " << hoverthrottle << "; " << autoThrottle << "; " << autoRoll << "; " << autoPitch << "; " << autoYaw <<  "; " << joyThrottle <<  "; " << joyRoll <<  "; " << joyPitch <<  "; " << joyYaw << "; " << (int)joySwitch << "; " << params.throttle_Pos << "; " << params.throttleI << "; " << params.throttle_Acc << "; " << data.dt << "; " << data.dx << "; " << data.dy << "; " << data.dz << "; " << velx_sp << "; " << vely_sp << "; " << velz_sp << "; ";
 }
 
-int first_joy_time = 3;
+int first_joy_time = 1;
 void DroneController::readJoystick(void) {
     while (joystick.sample(&event))
     {
@@ -342,39 +342,43 @@ void DroneController::process_joystick() {
     // prevent accidental take offs at start up
     if (first_joy_time > 0) {
         if (joySwitch || joyThrottle > JOY_MIN_THRESH ) {
-            std::cout << "Joystick not centered warning!" << std::endl;
-            joySwitch = false;
-            joyThrottle = JOY_BOUND_MIN;
-            first_joy_time++;
+            if (joySwitch)
+                std::cout << "Joystick Switch ACTIVE!" << std::endl;
+            if (joyThrottle > JOY_MIN_THRESH )
+                std::cout << "Joystick Throttle NON-ZERO!" << std::endl;
+            _flight_mode = fm_inactive;
+        } else {
+            first_joy_time--;
+            _flight_mode = fm_manual;
         }
-        first_joy_time--;
-    }
+    } else {
 
-    //check switch functions
-    static bool joySwitch_prev = joySwitch;
-    if (joySwitch && !joySwitch_prev) {
-        if (joyPitch > JOY_MAX_THRESH) {
-            _rc->bind();
-            joySwitch = false;
-        } else if(joyThrottle < JOY_MIN + 100) {
-            if (joyPitch < JOY_MIN + 200) {
-                _flight_mode = fm_inactive;
-                if (joyRoll > JOY_MAX_THRESH)
-                    manual_override_take_off_now = true;
+        //check switch functions
+        static bool joySwitch_prev = joySwitch;
+        if (joySwitch && !joySwitch_prev) {
+            if (joyPitch > JOY_MAX_THRESH) {
+                _rc->bind();
+                joySwitch = false;
+            } else if(joyThrottle < JOY_MIN + 100) {
+                if (joyPitch < JOY_MIN + 200) {
+                    _flight_mode = fm_inactive;
+                    if (joyRoll > JOY_MAX_THRESH)
+                        manual_override_take_off_now = true;
+                }
             }
+        } else if (!joySwitch && joySwitch_prev && !_fromfile) {
+            _flight_mode = fm_manual;
         }
-    } else if (!joySwitch && joySwitch_prev && !_fromfile) {
-        _flight_mode = fm_manual;
-    }
-    joySwitch_prev = joySwitch;
+        joySwitch_prev = joySwitch;
 
 #if CAMMODE == CAMMODE_GENERATOR
     joyPitch = JOY_MIDDLE;
 #endif
 
-    if (_flight_mode == fm_flying && joyPitch < JOY_MIN + 100) {
-        manual_override_land_now = true;
-        alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/desktop-logout.ogg &");
+        if (_flight_mode == fm_flying && joyPitch < JOY_MIN + 100) {
+            manual_override_land_now = true;
+            alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/desktop-logout.ogg &");
+        }
     }
 }
 

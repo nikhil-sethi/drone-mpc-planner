@@ -125,6 +125,17 @@ void MultiModule::receive_data() {
 
 void MultiModule::close() {
 #ifndef INSECT_LOGGING_MODE
+
+    // kill throttle when closing the module
+    throttle = JOY_MIN_THRESH;
+    roll = JOY_MIDDLE;
+    pitch = JOY_MIDDLE;
+    yaw = JOY_MIDDLE;
+
+    g_lockData.lock();
+    send_data();
+    g_lockData.unlock();
+
     exitSendThread = true;
     g_lockData.unlock();
     thread_mm.join();
