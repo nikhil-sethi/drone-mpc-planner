@@ -6,6 +6,11 @@
 set -ex
 cd /home/pats/code/pats/pc/build/
 #export LRS_LOG_LEVEL="DEBUG"
+
+#perform a one time hardware reset (fixes some issues with cold boot and plugged realsense)
+./pats rs_reset | /usr/bin/tee terminal.log || true
+sleep 3s
+
 while [ 1 ]; do
         dt=$(date '+%d/%m/%Y %H:%M:%S');
         echo "$dt"
