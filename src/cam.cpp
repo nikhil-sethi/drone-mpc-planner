@@ -499,3 +499,27 @@ void Cam::close() {
     depth_sensor.stop();
     depth_sensor.close();
 }
+
+void Cam::reset() {
+    std::cout << "Resetting cam" << std::endl;
+
+    rs2::stream_profile infared1,infared2;
+    rs2::context ctx; // The context represents the current platform with respect to connected devices
+    rs2::device_list devices = ctx.query_devices();
+    if (devices.size() == 0) {
+        std::cerr << "No device connected, please connect a RealSense device" << std::endl;
+        exit(1);
+    } else if (devices.size() > 1) {
+        std::cerr << "More than one device connected...." << std::endl;
+        exit(1);
+    } else {
+        dev = devices[0];
+
+        std::cout << "Sending hardware reset..." << std::endl;
+        dev.hardware_reset();
+
+        usleep(1000000);
+
+        exit (0);
+    }
+}

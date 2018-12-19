@@ -28,6 +28,7 @@ public:
     void calib_pose();
     void init(int argc, char **argv);
     void close();
+    void reset();
 
     void skip_one_sec() {
         requested_id_in += VIDEOFPS*2;

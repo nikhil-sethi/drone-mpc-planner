@@ -444,6 +444,12 @@ void close() {
 
 int main( int argc, char **argv )
 {
+    //manually reset the rs camera from the command line with the rs_reset command
+    if (string(argv[1]).compare("rs_reset") == 0){
+        cam.reset();
+        exit(0);
+    }
+
 #ifdef INSECT_LOGGING_MODE
     //don't start  until lights are off
         while(true) {
