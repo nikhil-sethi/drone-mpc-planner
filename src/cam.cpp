@@ -122,7 +122,7 @@ void Cam::rs_callback_playback(rs2::frame f) {
 
     if (f.get_profile().stream_index() == 1 && f.get_frame_number() >= requested_id_in && playback_bufferL.size() < 100) {
         frame_data fL;
-        fL.frame = Mat(Size(848, 480), CV_8UC1, (void*)f.get_data(), Mat::AUTO_STEP).clone();
+        fL.frame = Mat(Size(IMG_W, IMG_H), CV_8UC1, (void*)f.get_data(), Mat::AUTO_STEP).clone();
         fL.id= f.get_frame_number();
         if (_frame_time_start <0)
             _frame_time_start = f.get_timestamp();
@@ -133,7 +133,7 @@ void Cam::rs_callback_playback(rs2::frame f) {
         last_1_id = fL.id;
     } else if (f.get_profile().stream_index() == 2 && f.get_frame_number() >= requested_id_in && playback_bufferR.size() < 100) {
         frame_data fR;
-        fR.frame = Mat(Size(848, 480), CV_8UC1, (void*)f.get_data(), Mat::AUTO_STEP).clone();
+        fR.frame = Mat(Size(IMG_W, IMG_H), CV_8UC1, (void*)f.get_data(), Mat::AUTO_STEP).clone();
         fR.id= f.get_frame_number();
         if (_frame_time_start <0)
             _frame_time_start = f.get_timestamp();
@@ -154,8 +154,8 @@ void Cam::update_real(void) {
     wait_for_image.wait(lk,[this](){return new_frame1 && new_frame2;});
 
     lock_frame_data.lock();
-    frameL = Mat(Size(848, 480), CV_8UC1, (void*)rs_frameL.get_data(), Mat::AUTO_STEP);
-    frameR = Mat(Size(848, 480), CV_8UC1, (void*)rs_frameR.get_data(), Mat::AUTO_STEP);
+    frameL = Mat(Size(IMG_W, IMG_H), CV_8UC1, (void*)rs_frameL.get_data(), Mat::AUTO_STEP);
+    frameR = Mat(Size(IMG_W, IMG_H), CV_8UC1, (void*)rs_frameR.get_data(), Mat::AUTO_STEP);
     _frame_number = rs_frameL.get_frame_number();
     if (_frame_time_start <0)
         _frame_time_start = rs_frameL.get_timestamp();
