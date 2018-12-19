@@ -284,6 +284,8 @@ void Cam::init(std::ofstream *logger) {
     //        }
     if (enable_auto_exposure == only_at_startup ) {
         exposure = _measured_exposure;
+        if (VIDEOFPS==60 && _measured_exposure>15500) //guarantee 60 FPS when requested
+            exposure = 15500;
     }
     if ( enable_auto_exposure == enabled) {
         if (depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
@@ -347,8 +349,6 @@ void Cam::sense_light_level(){
     if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
         _measured_exposure = frame.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
         std::cout << "Measured exposure: " << _measured_exposure << std::endl;
-        if (VIDEOFPS==60 && _measured_exposure>15500) //guarantee 60 FPS when requested
-            _measured_exposure = 15500;
     }
     cv::Mat frameLt = Mat(im_size, CV_8UC1, (void *)frame.get_infrared_frame(1).get_data(), Mat::AUTO_STEP);
 
