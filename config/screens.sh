@@ -1,7 +1,7 @@
 #! /usr/bin/env bash
 
 # Configuration
-tunnels=( 131.180.117.41 dinstech.nl )
+tunnels=( mavlab-gpu dinstech )
 tunnels_port=( 22 16666 )
 
 # Start tunnels

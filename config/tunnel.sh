@@ -5,6 +5,7 @@
 #direct log in: ssh -i ~/.ssh/id_rsa kevin@131.180.117.41 -t "ssh pats@localhost -p 16669 -i~/.ssh/id_rsa"
 #tunnel for sftp: ssh -i ~/.ssh/id_rsa kevin@131.180.117.41 -L 6002:localhost:16669 -N
 
+set -ex
 # Settings
 USER=pats
 BASE_PORT=6000
