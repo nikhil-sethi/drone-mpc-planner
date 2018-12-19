@@ -164,10 +164,10 @@ void process_video() {
         static float prev_time = -1.f/VIDEOFPS;
         float fps = fps_smoothed.addSample( 1.f / (t - prev_time));
         if (fps < 50 && fromfile!=log_mode_none) {
-//            std::cout << "FPS WARNING!" << std::endl;
+            //            std::cout << "FPS WARNING!" << std::endl;
             static float limit_fps_warning_sound = t;
             if (t - limit_fps_warning_sound > 3.f ) {
-//                alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/phone-incoming-call.ogg &");
+                //                alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/phone-incoming-call.ogg &");
                 limit_fps_warning_sound = t;
             }
         }
@@ -445,20 +445,21 @@ void close() {
 int main( int argc, char **argv )
 {
     //manually reset the rs camera from the command line with the rs_reset command
-    if (string(argv[1]).compare("rs_reset") == 0){
-        cam.reset();
-        exit(0);
-    }
+    if (argc == 2)
+        if (string(argv[1]).compare("rs_reset") == 0){
+            cam.reset();
+            exit(0);
+        }
 
 #ifdef INSECT_LOGGING_MODE
     //don't start  until lights are off
-        while(true) {
-            cam.sense_light_level();
-            if (cam.measured_exposure() >15000) {
-                break;
-            }
-            usleep(60000000); // measure every 1 minute
+    while(true) {
+        cam.sense_light_level();
+        if (cam.measured_exposure() >15000) {
+            break;
         }
+        usleep(60000000); // measure every 1 minute
+    }
 #endif
 
     if (!init(argc,argv)) {
