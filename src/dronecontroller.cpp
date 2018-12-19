@@ -101,7 +101,9 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
 
     if (!_fromfile)
         readJoystick();
+#ifndef INSECT_LOGGING_MODE
     process_joystick();
+#endif
 
 
     // Roll Control - X
