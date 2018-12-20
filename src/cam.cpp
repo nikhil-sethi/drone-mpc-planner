@@ -389,9 +389,9 @@ void Cam::calib_pose(){
     // init variables for plane fitting
     auto ptr = points.get_vertices();
     int pp;
-    int p_smooth = 200;
-    int nr_p_far = 100;
-    int nr_p_close = 100;
+    int p_smooth = 400;
+    int nr_p_far = 50;
+    int nr_p_close = 50;
     int ppp;
 
     std::vector<cv::Point3f> pointsFar;
@@ -402,7 +402,7 @@ void Cam::calib_pose(){
 
     // obtain a set of points 'far away' (half way the image) that are averaged over image lines
     for (ppp=0;ppp<nr_p_far;ppp++) {
-        auto ptr_new = ptr+points.size()/2+IMG_W/2-p_smooth/2+IMG_W*ppp;
+        auto ptr_new = ptr+points.size()-IMG_W/2-p_smooth/2-IMG_W*(nr_p_close+1+ppp);
         for (pp=0;pp<p_smooth;pp++) {
             point_.x += ptr_new->x;
             point_.y += ptr_new->y;
@@ -440,6 +440,16 @@ void Cam::calib_pose(){
     (*_logger) << 0 << ";" << _camera_angle_y*10000.f << "; ";
 
     cam.stop();
+}
+
+cv::Point3f Cam::rotate_point(cv::Point3f point){
+
+    float theta = 33.3f / (180.f/(float)M_PI);
+    float temp_y = point.y * cosf(theta) + point.z * sinf(theta);
+    point.z = -point.y * sinf(theta) + point.z * cosf(theta);
+    point.y = temp_y;
+
+    return point;
 }
 
 void Cam::init(int argc __attribute__((unused)), char **argv) {

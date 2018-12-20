@@ -26,6 +26,7 @@ public:
     void init(std::ofstream *logger);
     void sense_light_level();
     void calib_pose();
+    cv::Point3f rotate_point(cv::Point3f point);
     void init(int argc, char **argv);
     void close();
     void reset();
