@@ -76,6 +76,7 @@ public:
 
 private:
 
+    bool hasIMU = false;
     uint requested_id_in =0;
     int _frame_number;
     float _frame_time = 0;

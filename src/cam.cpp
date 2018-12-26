@@ -220,8 +220,6 @@ void Cam::init(std::ofstream *logger) {
     _logger = logger;
     (*_logger) << "RS_ID" << ";" << "camera_angle_y" << ";\n";
 
-    calib_pose();
-    sense_light_level();
 
     rs2::stream_profile infared1,infared2;
     rs2::context ctx; // The context represents the current platform with respect to connected devices
@@ -253,9 +251,15 @@ void Cam::init(std::ofstream *logger) {
         if (dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER))
             sn = std::string("#") + dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
 
+        std::size_t found = name.find("D435I");
+        hasIMU = found!=std::string::npos;
+
         std::cout << name << std::endl;
 
     }
+
+    calib_pose();
+    sense_light_level();
 
     std::vector<rs2::sensor> sensors = dev.query_sensors();
     depth_sensor = sensors[0]; // 0 = depth module
@@ -362,6 +366,10 @@ void Cam::calib_pose(){
     rs2::config cfg;
     cfg.disable_all_streams();
     cfg.enable_stream(RS2_STREAM_DEPTH, IMG_W, IMG_H, RS2_FORMAT_Z16, VIDEOFPS);
+    if (hasIMU) {
+        cfg.enable_stream(RS2_STREAM_ACCEL);
+        cfg.enable_stream(RS2_STREAM_GYRO);
+    }
     rs2::pipeline cam;
     rs2::pipeline_profile selection = cam.start(cfg);
 
@@ -372,12 +380,23 @@ void Cam::calib_pose(){
     if (rs_dev.supports(RS2_OPTION_EMITTER_ENABLED))
         rs_dev.set_option(RS2_OPTION_EMITTER_ENABLED, 1.f);
 
+
     cv::Size im_size(IMG_W, IMG_H);
 
     //wait 2 seconds
     rs2::frameset frame;
-    for (uint i = 0; i < VIDEOFPS*2; i++)
+    for (uint i = 0; i < VIDEOFPS*2; i++) {
         frame = cam.wait_for_frames();
+
+        if (hasIMU){
+            if (frame.is<rs2::motion_frame>()) {
+                rs2::motion_frame mf = frame.as<rs2::motion_frame>();
+                rs2_vector xyz = mf.get_motion_data();
+                cout << frame.get_profile().stream_type() << ": "
+                     << xyz.x << ", " << xyz.y << ", " << xyz.z << endl;
+            }
+        }
+    }
 
     depth_background = Mat(im_size, CV_16UC1, (void *)frame.get_depth_frame().get_data(), Mat::AUTO_STEP).clone();
 
