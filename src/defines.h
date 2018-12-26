@@ -16,6 +16,7 @@
 #define RC_DEVO 1
 #define RC_USB_HOBBYKING 2
 #define RC_PLAYSTATION 3
+#define RC_XLITE 4
 
 #define TX_DISABLED 0
 #define TX_DSMX 1
