@@ -51,8 +51,9 @@ void Interceptor::update(bool drone_at_base) {
 
     double insectVelNorm = norm(insectVel);
     _insect_in_range = false;
+    _count_insect_not_in_range++;
 
-    if ( insectVelNorm > 0 ) {
+    if ( insectVelNorm > 0 || _itrkr->foundL ) {
 
         cv::Point3f insectPos = {_itrkr->get_last_track_data().sposX,_itrkr->get_last_track_data().sposY,_itrkr->get_last_track_data().sposZ};
         cv::Point3f dronePos = {_dtrkr->get_last_track_data().sposX,_dtrkr->get_last_track_data().sposY,_dtrkr->get_last_track_data().sposZ};
@@ -82,10 +83,11 @@ void Interceptor::update(bool drone_at_base) {
         //calculate worst case deviation:
 
         //calculate if the drone will stay within the borders where it still can be controlled:
-        if (_estimated_interception_location.x > -2.0f && _estimated_interception_location.x < 0.75f) {
+        if (_estimated_interception_location.x > -1.5f && _estimated_interception_location.x < 0.75f) {
             if (_estimated_interception_location.y > -2.0f && _estimated_interception_location.y < -0.1f) {
                 if (_estimated_interception_location.z > -3.3f && _estimated_interception_location.z < -0.8f) {
                     _insect_in_range = true;
+                    _count_insect_not_in_range = 0;
                 }
             }
         }
@@ -96,6 +98,14 @@ void Interceptor::update(bool drone_at_base) {
 
 bool Interceptor::get_insect_in_range() {
     return _insect_in_range;
+}
+
+bool Interceptor::get_insect_cleared() {
+    return _count_insect_not_in_range > 60;
+}
+
+void Interceptor::reset_insect_cleared() {
+    _count_insect_not_in_range = 0;
 }
 
 cv::Point3f Interceptor::get_intercept_position() {

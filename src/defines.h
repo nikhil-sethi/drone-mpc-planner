@@ -35,7 +35,7 @@
     #define BEEP
     #define VIDEORAWLR VIDEOMODE_BAG
     #define JOYSTICK_TYPE RC_USB_HOBBYKING
-    #define TX_TYPE TX_CX10
+    #define TX_TYPE TX_FRSKYD
 #endif
 
 #define VIDEODISPARITY VIDEOMODE_DISABLED
