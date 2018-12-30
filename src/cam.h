@@ -55,7 +55,9 @@ public:
 
     cv::Mat frameL,frameR;
 
+    float depth_scale;
     cv::Mat depth_background;
+    cv::Mat disparity_background;
 
     float _camera_angle_x,_camera_angle_y;
     float camera_angle(){

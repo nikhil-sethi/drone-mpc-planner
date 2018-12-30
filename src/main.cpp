@@ -366,7 +366,7 @@ int init(int argc, char **argv) {
         cam.init(&calibration_logger);
     cam.update(); // wait for first frames
 
-    visdat.init(cam.Qf, cam.frameL,cam.frameR,cam.camera_angle(),cam.depth_background); // do after cam update to populate frames
+    visdat.init(cam.Qf, cam.frameL,cam.frameR,cam.camera_angle(),cam.depth_background,cam.depth_scale,cam.disparity_background); // do after cam update to populate frames
     visdat.update(cam.frameL,cam.frameR,cam.frame_time(),cam.frame_number()); //TODO: necessary? If so, streamline
 
     //WARNING: changing the order of the inits with logging must be match with the process_video functions!

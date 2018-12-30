@@ -9,13 +9,15 @@ using namespace cv;
 using namespace std;
 
 
-void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL,cv::Mat new_frameR, float new_camera_angle, cv::Mat new_depth_background){
+void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, cv::Mat new_depth_background, float new_depth_scale, Mat new_disparity_background){
     Qf = new_Qf;
     frameL = new_frameL.clone();
     frameR = new_frameR.clone();
     frameL_prev = frameL;
     frameR_prev = frameR;
     depth_background = new_depth_background;
+    depth_scale = new_depth_scale;
+    disparity_background = new_disparity_background;
     camera_angle = new_camera_angle;
 
     if (checkFileExist(settingsFile)) {

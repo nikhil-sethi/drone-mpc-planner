@@ -385,10 +385,17 @@ void Cam::calib_pose(){
     if (rs_dev.supports(RS2_OPTION_EMITTER_ENABLED))
         rs_dev.set_option(RS2_OPTION_EMITTER_ENABLED, 1.f);
 
+    // Find the High-Density preset by name
+    // We do this to reduce the number of black pixels
+    // The hardware can perform hole-filling much better and much more power efficient then our software
+    auto range = rs_dev.get_option_range(RS2_OPTION_VISUAL_PRESET);
+    for (auto i = range.min; i < range.max; i += range.step)
+        if (std::string(rs_dev.get_option_value_description(RS2_OPTION_VISUAL_PRESET, i)) == "High Density")
+            rs_dev.set_option(RS2_OPTION_VISUAL_PRESET, i);
+
+    depth_scale = rs_dev.get_option(RS2_OPTION_DEPTH_UNITS);
 
     cv::Size im_size(IMG_W, IMG_H);
-
-    //wait 2 seconds
 
     uint nframes = VIDEOFPS*2;
     if (hasIMU)
@@ -399,8 +406,6 @@ void Cam::calib_pose(){
     smz.init(static_cast<int>(nframes));
     float x = 0,y = 0,z = 0, roll = 0, pitch = 0;
     rs2::frameset frame;
-
-
     for (uint i = 0; i < nframes; i++) {
         frame = cam.wait_for_frames();
 
@@ -422,12 +427,59 @@ void Cam::calib_pose(){
         }
     }
 
-     depth_background = Mat(im_size, CV_16UC1, const_cast<void *>(frame.get_depth_frame().get_data()), Mat::AUTO_STEP).clone();
+    // Decimation filter reduces the amount of data (while preserving best samples)
+    rs2::decimation_filter dec;
+    // If the demo is too slow, make sure you run in Release (-DCMAKE_BUILD_TYPE=Release)
+    // but you can also increase the following parameter to decimate depth more (reducing quality)
+    dec.set_option(RS2_OPTION_FILTER_MAGNITUDE, 2);
+    // Define transformations from and to Disparity domain
+    rs2::disparity_transform depth2disparity;
+    rs2::disparity_transform disparity2depth(false);
+    // Define spatial filter (edge-preserving)
+    rs2::spatial_filter spat;
+    // Enable hole-filling
+    // Hole filling is an aggressive heuristic and it gets the depth wrong many times
+    // However, this demo is not built to handle holes
+    // (the shortest-path will always prefer to "cut" through the holes since they have zero 3D distance)
+    spat.set_option(RS2_OPTION_HOLES_FILL, 5); // 5 = fill all the zero pixels
+    // Define temporal filter
+    rs2::temporal_filter temp;
+    // Spatially align all streams to depth viewport
+    // We do this because:
+    //   a. Usually depth has wider FOV, and we only really need depth for this demo
+    //   b. We don't want to introduce new holes
+    rs2::align align_to(RS2_STREAM_DEPTH);
+    auto depth = dec.process(frame.get_depth_frame());
+    // To make sure far-away objects are filtered proportionally
+    // we try to switch to disparity domain
+    depth = depth2disparity.process(depth);
+    // Apply spatial filtering
+    depth = spat.process(depth);
+    // Apply temporal filtering
+    depth = temp.process(depth);
+    // If we are in disparity domain, switch back to depth
+    cv::Size im_size_dec(IMG_W/2, IMG_H/2);
+    disparity_background = Mat(im_size_dec, CV_32F, const_cast<void *>(depth.get_data()), Mat::AUTO_STEP).clone();
+    cv::resize(disparity_background,disparity_background,im_size,0,0,INTER_CUBIC);
+    depth = disparity2depth.process(depth);
+
+    //to get a x,y distance
+    //frame.get_depth_frame().get_distance()
+
+    //original depth map:
+    depth_background = Mat(im_size, CV_16UC1, const_cast<void *>(frame.get_depth_frame().get_data()), Mat::AUTO_STEP).clone();
+    imwrite("./logging/depth.png",depth_background);
+    //filtered depth map:
+    depth_background = Mat(im_size_dec, CV_16UC1, const_cast<void *>(depth.get_data()), Mat::AUTO_STEP).clone();
+    cv::resize(depth_background,depth_background,im_size,0,0,INTER_CUBIC);
+    imwrite("./logging/depth_filtered.png",depth_background);
+
+    imwrite("./logging/disparity.png",disparity_background);
 
     if (hasIMU){
         _camera_angle_y = pitch;
 
-        if (fabs(roll) > 1.f) {
+        if (fabs(roll) > 5.f) {
             cout << "Camera is tilted in roll axis!" << std::endl;
             exit(1);
         }
