@@ -383,7 +383,7 @@ void ItemTracker::updateParams(){
     params.minInertiaRatio = ((float)settings.minInertiaRatio)/100.0f;
     params.maxInertiaRatio = ((float)settings.maxInertiaRatio)/100.0f;
 
-    params.minRepeatability = 0;
+    params.minRepeatability = 1;
     params.minDistBetweenBlobs=0;
     params.filterByColor = 0;
     params.thresholdStep=1;
