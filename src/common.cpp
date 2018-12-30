@@ -5,8 +5,8 @@
 
 cv::Point2f transformPixelToEarth(int x, int y, int centerX, int centerY, float depth, float pix2degx,float pix2degy) {
     //calculate pixel to angle:
-    float radX = float(x - centerX)  * pix2degx*((float)M_PI/180);
-    float radY = float(y - centerY)  * pix2degy*((float)M_PI/180);
+    float radX = float(x - centerX)  * pix2degx*deg2rad;
+    float radY = float(y - centerY)  * pix2degy*deg2rad;
 
     //calculate distance on ground
     float disX = -tanf(radX) * depth;

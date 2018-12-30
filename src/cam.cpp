@@ -416,8 +416,8 @@ void Cam::calib_pose(){
                 x = smx.addSample(xyz.x);
                 y = smy.addSample(xyz.y);
                 z = smz.addSample(xyz.z);
-                roll = atanf(-x/sqrtf(y*x + z*z)) * 180.f/(float)M_PI;
-                pitch = 90.f-atanf(y/z) * 180.f/(float)M_PI;
+                roll = atanf(-x/sqrtf(y*x + z*z)) * rad2deg;
+                pitch = 90.f-atanf(y/z) * rad2deg;
             }
         }
     }
@@ -487,7 +487,7 @@ void Cam::calib_pose(){
         }
         alpha/=(nr_p_close*nr_p_far);
 
-        _camera_angle_y =  (-alpha/(float)M_PI)*180.f; //        [degrees]
+        _camera_angle_y =  (-alpha*rad2deg; //        [degrees]
     }
     std::cout << "Measured pose: " << _camera_angle_y << std::endl;
     (*_logger) << 0 << ";" << _camera_angle_y*10000.f << "; ";
@@ -497,7 +497,7 @@ void Cam::calib_pose(){
 
 cv::Point3f Cam::rotate_point(cv::Point3f point){
 
-    float theta = 33.3f / (180.f/(float)M_PI);
+    float theta = 33.3f * deg2rad;
     float temp_y = point.y * cosf(theta) + point.z * sinf(theta);
     point.z = -point.y * sinf(theta) + point.z * cosf(theta);
     point.y = temp_y;

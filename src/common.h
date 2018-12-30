@@ -29,7 +29,7 @@ const float FOV = 180.0f ;
 const float FOV_size = 1280.0;
 const int width_ff = 1280;
 const int height_ff = 960;
-const float FOVx_ff = FOV * (static_cast<float>(width_ff)/FOV_size); // * (M_PI/180.0f)
+const float FOVx_ff = FOV * (static_cast<float>(width_ff)/FOV_size);
 const float FOVy_ff = FOV * (static_cast<float>(height_ff)/FOV_size);
 const float pix2degx_ff = (FOVx_ff / static_cast<float>(width_ff));
 const float pix2degy_ff = (FOVy_ff / static_cast<float>(height_ff));
@@ -47,6 +47,9 @@ const float pix2degx_dmB = (FOVx_dm / static_cast<float>(width_dmB));
 const float pix2degy_dmB = (FOVy_dm / static_cast<float>(height_dmB));
 
 const float depthscale = 256.0f;
+
+const float rad2deg = 180.f/static_cast<float>(M_PI);
+const float deg2rad = static_cast<float>(M_PI)/180.f;
 
 
 struct trackData {
