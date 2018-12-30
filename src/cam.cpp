@@ -487,7 +487,7 @@ void Cam::calib_pose(){
         }
         alpha/=(nr_p_close*nr_p_far);
 
-        _camera_angle_y =  (-alpha*rad2deg; //        [degrees]
+        _camera_angle_y = -alpha*rad2deg; //[degrees]
     }
     std::cout << "Measured pose: " << _camera_angle_y << std::endl;
     (*_logger) << 0 << ";" << _camera_angle_y*10000.f << "; ";
