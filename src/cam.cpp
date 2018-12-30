@@ -275,9 +275,9 @@ void Cam::init(std::ofstream *logger) {
     std::string current_firmware_version = depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION);
     current_firmware_version  = current_firmware_version.substr (0,required_firmwar_version.length()); //fix for what seems to be appended garbage...? 255.255.255.255 on a newline
 
-    if (current_firmware_version.compare(required_firmwar_version)) {
+    if (current_firmware_version != required_firmwar_version) { // wtf, string equality check is reversed!??
         std::cout << "Detected wrong realsense firmware version!" << std::endl;
-        std::cout << "Detected:" << current_firmware_version << " Required: "  << required_firmwar_version << std::endl;
+        std::cout << "Detected: " << current_firmware_version << ". Required: "  << required_firmwar_version << "." << std::endl;
         exit(1);
     }
 
