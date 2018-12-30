@@ -267,12 +267,17 @@ void Cam::init(std::ofstream *logger) {
     std::cout << depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_NAME) << std::endl;
     std::cout << depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION) << std::endl;
     std::cout << depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_PRODUCT_ID) << std::endl;
-    std::cout << depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_RECOMMENDED_FIRMWARE_VERSION) << std::endl;
+
+    std::string required_firmwar_version = "05.10.06.00";
+    if (hasIMU)
+        required_firmwar_version = "05.10.13.00";
 
     std::string current_firmware_version = depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION);
-    std::string required_firmwar_version = "05.10.06.00";
+    current_firmware_version  = current_firmware_version.substr (0,required_firmwar_version.length()); //fix for what seems to be appended garbage...? 255.255.255.255 on a newline
+
     if (current_firmware_version.compare(required_firmwar_version)) {
         std::cout << "Detected wrong realsense firmware version!" << std::endl;
+        std::cout << "Detected:" << current_firmware_version << " Required: "  << required_firmwar_version << std::endl;
         exit(1);
     }
 
