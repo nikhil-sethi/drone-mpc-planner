@@ -368,6 +368,8 @@ void DroneController::readJoystick(void) {
 
 void DroneController::process_joystick() {
     // prevent accidental take offs at start up
+    if (!joystick.isFound())
+        return;
     if (first_joy_time > 0) {
         if (joySwitch || joyThrottle > JOY_MIN_THRESH ) {
             if (joySwitch)
