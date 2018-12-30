@@ -743,7 +743,7 @@ float ItemTracker::estimate_sub_disparity(int disparity) {
 
 float ItemTracker::update_disparity(float disparity, float dt) {
 
-    if (n_frames_lost>0 || isnan(disparity_smoothed) || reset_disp)
+    if (n_frames_lost>0 || isnanf(disparity_smoothed) || reset_disp)
     {
         disparity_smoothed = disparity;
         disp_rate_smoothed2.reset();
@@ -909,7 +909,7 @@ float ItemTracker::calc_certainty(KeyPoint item) {
     if (predicted_pathL.size() > 0) {
         new_tracking_certainty = 1.f / powf(powf(predicted_pathL.back().k.pt.x - item.pt.x,2) + powf(predicted_pathL.back().k.pt.y - item.pt.y,2),0.3f);
         new_tracking_certainty*= predicted_pathL.back().tracking_certainty;
-        if (new_tracking_certainty>1 || new_tracking_certainty<0 || isnan(new_tracking_certainty)) { // weird -nan sometimes???
+        if (new_tracking_certainty>1 || new_tracking_certainty<0 || isnanf(new_tracking_certainty)) { // weird -nan sometimes???
             new_tracking_certainty = 1;
         }
     } else // if there was no prediciton, certainty prolly is quite low
