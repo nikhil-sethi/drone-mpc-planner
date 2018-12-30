@@ -10,9 +10,11 @@ void MultiModule::init(bool fromfile) {
     if (notconnected && !fromfile) {
         std::cout << "MultiModule failed." << std::endl;
         exit(1);
+    } else {
+        thread_mm = std::thread(&MultiModule::worker_thread,this);
+        initialised = true;
     }
 
-    thread_mm = std::thread(&MultiModule::worker_thread,this);
 }
 
 void MultiModule::worker_thread(void) {
@@ -124,20 +126,22 @@ void MultiModule::receive_data() {
 
 
 void MultiModule::close() {
+    if (initialised) {
 #ifndef INSECT_LOGGING_MODE
 
-    // kill throttle when closing the module
-    throttle = JOY_MIN_THRESH;
-    roll = JOY_MIDDLE;
-    pitch = JOY_MIDDLE;
-    yaw = JOY_MIDDLE;
+        // kill throttle when closing the module
+        throttle = JOY_MIN_THRESH;
+        roll = JOY_MIDDLE;
+        pitch = JOY_MIDDLE;
+        yaw = JOY_MIDDLE;
 
-    g_lockData.lock();
-    send_data();
-    g_lockData.unlock();
+        g_lockData.lock();
+        send_data();
+        g_lockData.unlock();
 
-    exitSendThread = true;
-    g_lockData.unlock();
-    thread_mm.join();
+        exitSendThread = true;
+        g_lockData.unlock();
+        thread_mm.join();
 #endif
+    }
 }
