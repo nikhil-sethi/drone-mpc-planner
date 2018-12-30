@@ -7,7 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <math.h>
+#include <cmath>
 #include <iomanip>
 #include <unistd.h>
 #include "common.h"
@@ -46,7 +46,7 @@ public:
     bool frame_by_frame;
     bool turbo;
 
-    void update(void);
+    void update();
 
 
     int frame_number() {return _frame_number;}
@@ -99,8 +99,8 @@ private:
     void resume();
     void seek(float time);
     void set_calibration(rs2::stream_profile infared1,rs2::stream_profile infared2);
-    void update_real(void);
-    void update_playback(void);
+    void update_real();
+    void update_playback();
     void rs_callback(rs2::frame f);
     void rs_callback_playback(rs2::frame f);
 

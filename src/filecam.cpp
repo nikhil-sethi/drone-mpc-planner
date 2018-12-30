@@ -17,9 +17,9 @@ bool FileCam::init (int argc __attribute__((unused)), char **argv __attribute__(
         std::cerr << "Error opening video file!\n";
         return true;
     } else {
-        im_width_rgb = (int) video_rgb.get(CV_CAP_PROP_FRAME_WIDTH);
-        im_height_rgb = (int)video_rgb.get(CV_CAP_PROP_FRAME_HEIGHT);
-        nFrames_rgb = (int) video_rgb.get(CV_CAP_PROP_FRAME_COUNT);
+        im_width_rgb = static_cast<int>(video_rgb.get(CV_CAP_PROP_FRAME_WIDTH));
+        im_height_rgb = static_cast<int>(video_rgb.get(CV_CAP_PROP_FRAME_HEIGHT));
+        nFrames_rgb = static_cast<int>(video_rgb.get(CV_CAP_PROP_FRAME_COUNT));
         video_rgb.set(CV_CAP_PROP_POS_FRAMES,0);
         if (videoLength_rgb > nFrames_rgb) {
             //videoLength = nFrames;
@@ -32,7 +32,7 @@ bool FileCam::init (int argc __attribute__((unused)), char **argv __attribute__(
             video_rgb >> frame_rgb;
             frame_id_rgb++;
         }
-        camRunning = true;        
+        camRunning = true;
     }
 
     float focal_length = 425.680267; // same as fy
@@ -82,7 +82,7 @@ void FileCam::update() {
         frame_id_rgb++;
         if (frame_rgb.empty() || frame_id_rgb >= videoLength_rgb)
             camRunning=false;
-    } else if(_mode == cam_mode_stereo) {        
+    } else if(_mode == cam_mode_stereo) {
         video_stereo >> frameLR;
         cvtColor(frameLR,frameLR,CV_BGR2GRAY);
         frame_id_stereo++;

@@ -35,7 +35,7 @@ void Smoother2::reset() {
 float Smoother2::addSample(float data, float time) {
     //performs online smoothing filter
 
-    if (isnan(data)) // fixes nan, which forever destroy the output
+    if (isnanf(data)) // fixes nan, which forever destroy the output
         data = 0;
     if (_kernelsize==1) { // disable smoothing... to be sure:
         return data;

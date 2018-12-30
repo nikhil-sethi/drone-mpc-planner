@@ -122,22 +122,22 @@ void Cam::rs_callback_playback(rs2::frame f) {
 
     if (f.get_profile().stream_index() == 1 && f.get_frame_number() >= requested_id_in && playback_bufferL.size() < 100) {
         frame_data fL;
-        fL.frame = Mat(Size(IMG_W, IMG_H), CV_8UC1, (void*)f.get_data(), Mat::AUTO_STEP).clone();
+        fL.frame = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(f.get_data()), Mat::AUTO_STEP).clone();
         fL.id= f.get_frame_number();
         if (_frame_time_start <0)
             _frame_time_start = f.get_timestamp();
-        fL.time = ((float)f.get_timestamp() -_frame_time_start)/1000.f;
+        fL.time = (static_cast<float>(f.get_timestamp()) -_frame_time_start)/1000.f;
 
         playback_bufferL.push_back(fL);
         new_frame1 = true;
         last_1_id = fL.id;
     } else if (f.get_profile().stream_index() == 2 && f.get_frame_number() >= requested_id_in && playback_bufferR.size() < 100) {
         frame_data fR;
-        fR.frame = Mat(Size(IMG_W, IMG_H), CV_8UC1, (void*)f.get_data(), Mat::AUTO_STEP).clone();
+        fR.frame = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(f.get_data()), Mat::AUTO_STEP).clone();
         fR.id= f.get_frame_number();
         if (_frame_time_start <0)
             _frame_time_start = f.get_timestamp();
-        fR.time = ((float)f.get_timestamp() -_frame_time_start)/1000.f;
+        fR.time = (static_cast<float>(f.get_timestamp()) -_frame_time_start)/1000.f;
         playback_bufferR.push_back(fR);
         new_frame2 = true;
         last_2_id = fR.id;
@@ -154,12 +154,12 @@ void Cam::update_real(void) {
     wait_for_image.wait(lk,[this](){return new_frame1 && new_frame2;});
 
     lock_frame_data.lock();
-    frameL = Mat(Size(IMG_W, IMG_H), CV_8UC1, (void*)rs_frameL.get_data(), Mat::AUTO_STEP);
-    frameR = Mat(Size(IMG_W, IMG_H), CV_8UC1, (void*)rs_frameR.get_data(), Mat::AUTO_STEP);
+    frameL = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(rs_frameL.get_data()), Mat::AUTO_STEP);
+    frameR = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(rs_frameR.get_data()), Mat::AUTO_STEP);
     _frame_number = rs_frameL.get_frame_number();
     if (_frame_time_start <0)
         _frame_time_start = rs_frameL.get_timestamp();
-    _frame_time = ((float)rs_frameL.get_timestamp() -_frame_time_start)/1000.f;
+    _frame_time = (static_cast<float>(rs_frameL.get_timestamp()) -_frame_time_start)/1000.f;
     //std::cout << "-------------frame id: " << frame_id << " seek time: " << incremented_playback_frametime << std::endl;
     lock_frame_data.unlock();
 
@@ -359,7 +359,7 @@ void Cam::sense_light_level(){
         _measured_exposure = frame.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
         std::cout << "Measured exposure: " << _measured_exposure << std::endl;
     }
-    cv::Mat frameLt = Mat(im_size, CV_8UC1, (void *)frame.get_infrared_frame(1).get_data(), Mat::AUTO_STEP);
+    cv::Mat frameLt = Mat(im_size, CV_8UC1, const_cast<void *>(frame.get_infrared_frame(1).get_data()), Mat::AUTO_STEP);
 
     imwrite("./logging/brightness.png",frameLt);
     cam.stop();
@@ -394,9 +394,9 @@ void Cam::calib_pose(){
     if (hasIMU)
         nframes = 10;
     Smoother smx,smy,smz;
-    smx.init((int)nframes);
-    smy.init((int)nframes);
-    smz.init((int)nframes);
+    smx.init(static_cast<int>(nframes));
+    smy.init(static_cast<int>(nframes));
+    smz.init(static_cast<int>(nframes));
     float x = 0,y = 0,z = 0, roll = 0, pitch = 0;
     rs2::frameset frame;
 
@@ -422,7 +422,7 @@ void Cam::calib_pose(){
         }
     }
 
-     depth_background = Mat(im_size, CV_16UC1, (void *)frame.get_depth_frame().get_data(), Mat::AUTO_STEP).clone();
+     depth_background = Mat(im_size, CV_16UC1, const_cast<void *>(frame.get_depth_frame().get_data()), Mat::AUTO_STEP).clone();
 
     if (hasIMU){
         _camera_angle_y = pitch;
@@ -514,7 +514,7 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
     rs2::context ctx; // The context represents the current platform with respect to connected devices
     dev = ctx.load_device(string(argv[1]) + ".bag");
 
-    ((rs2::playback)dev).set_real_time(false);
+    static_cast<rs2::playback>(dev).set_real_time(false);
 
     std::vector<rs2::sensor> sensors = dev.query_sensors();
     depth_sensor = sensors[0]; // 0 = depth module
@@ -542,20 +542,20 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
 void Cam::pause(){
     if (!_paused) {
         _paused = true;
-        ((rs2::playback)dev).pause();
+        static_cast<rs2::playback>(dev).pause();
         //        std::cout << "Paused" << std::endl;
     }
 }
 void Cam::resume() {
     if (_paused){
         _paused = false;
-        ((rs2::playback)dev).resume();
+        static_cast<rs2::playback>(dev).resume();
         //        std::cout << "Resumed" << std::endl;
     }
 }
 void Cam::seek(float time) {
-    std::chrono::nanoseconds nano((ulong)(1e9f*time));
-    ((rs2::playback)dev).seek(nano);
+    std::chrono::nanoseconds nano(static_cast<ulong>(1e9f*time));
+    static_cast<rs2::playback>(dev).seek(nano);
 }
 
 void Cam::close() {

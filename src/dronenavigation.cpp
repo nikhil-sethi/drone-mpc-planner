@@ -10,9 +10,6 @@ using namespace std;
 
 const string paramsFile = "../navigationParameters.dat";
 
-bool _manual_take_off_commanded;
-
-
 bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneController * dctrl, InsectTracker * itrkr) {
     _logger = logger;
     _dtrk = dtrk;
@@ -50,7 +47,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     // large scale flight plan
     //setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,SETPOINTYMAX / 2,1000),40)); // this is overwritten by position trackbars!!!
     setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,400,1370),30)); // this is overwritten by position trackbars!!!
-    
+
     //setpoints.push_back(waypoint(cv::Point3i(1500,300,1500),0));
     //setpoints.push_back(waypoint(cv::Point3i(1500,-200,1500),0));
 
@@ -71,12 +68,12 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
 
     //setpoints.push_back(waypoint(cv::Point3i(1500,-250,1500),5));
     //setpoints.push_back(waypoint(cv::Point3i(1500,0,1500),5));
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
     setpoints.push_back(waypoint(cv::Point3i(1500,-300,1370),20)); // landing waypoint (=last one), must be 1 meter above the ground in world coordinatates
     //setpoints.push_back(waypoint(cv::Point3i(1500,300,1300),60));
 
@@ -141,7 +138,7 @@ void DroneNavigation::update() {
         break;
     } case navigation_status_taking_off: {
         trackData data = _dtrk->get_last_track_data();
-        if (data.svelY > ((float)params.auto_takeoff_speed) / 100.f ) {
+        if (data.svelY > static_cast<float>(params.auto_takeoff_speed) / 100.f ) {
             navigation_status = navigation_status_take_off_completed;
         }
         if (_dctrl->get_flight_mode() == DroneController::fm_manual)
@@ -163,7 +160,7 @@ void DroneNavigation::update() {
         else
             navigation_status = navigation_status_goto_landing_waypoint;
 
-    } case navigation_status_chasing_insect: {
+    } [[fallthrough]]; case navigation_status_chasing_insect: {
 
         //update target chasing waypoint and speed
         if (_iceptor.get_insect_in_range()) {
@@ -182,12 +179,12 @@ void DroneNavigation::update() {
             navigation_status=navigation_status_manual;
         // TODO: return to landing waypoint after the insect was lost for several frames
         //else if (!_iceptor.get_insect_in_range())
-            //navigation_status = navigation_status_goto_landing_waypoint;
+        //navigation_status = navigation_status_goto_landing_waypoint;
         break;
     } case navigation_status_goto_landing_waypoint: {
-        wpid = setpoints.size()-1; // last waypoint is the landing waypoint
+        wpid = static_cast<uint>(setpoints.size())-1; // last waypoint is the landing waypoint
         navigation_status = navigation_status_set_waypoint_in_flightplan;
-    } case navigation_status_set_waypoint_in_flightplan: {
+    } [[fallthrough]]; case navigation_status_set_waypoint_in_flightplan: {
         wp = &setpoints[wpid];
 
         setpoint_world.x = (wp->_xyz.x - SETPOINTXMAX/2) / 1000.0f;
@@ -237,7 +234,7 @@ void DroneNavigation::update() {
         _dctrl->recalibrateHover();
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
         navigation_status = navigation_status_landing;
-    } case navigation_status_landing: {
+    } [[fallthrough]]; case navigation_status_landing: {
         trackData data = _dtrk->get_last_track_data();
         if (data.sposY < -(MAX_BORDER_Y_DEFAULT-0.08f) || autoLandThrottleDecrease >1000)
             navigation_status = navigation_status_landed;
@@ -246,7 +243,7 @@ void DroneNavigation::update() {
         _dctrl->setAutoLandThrottleDecrease(autoLandThrottleDecrease);
 
         if ( setpoint_world.y - land_incr> -(_dtrk->drone_max_border_y+100000.0f))
-            land_incr = ((float)params.land_incr_f_mm)/1000.f;
+            land_incr = static_cast<float>(params.land_incr_f_mm)/1000.f;
         setpoint_world.y -= land_incr;
         if (_dctrl->get_flight_mode() == DroneController::fm_manual)
             navigation_status=navigation_status_manual;
@@ -260,7 +257,7 @@ void DroneNavigation::update() {
         _dtrk->drone_max_border_y = MAX_BORDER_Y_DEFAULT;
         land_incr = 0;
         navigation_status = navigation_status_wait_for_insect;
-    } case navigation_status_manual: {
+    } [[fallthrough]]; case navigation_status_manual: {
         wpid = 0;
         if (_dctrl->get_flight_mode() == DroneController::fm_inactive) {
             navigation_status=navigation_status_wait_for_insect;
@@ -268,10 +265,8 @@ void DroneNavigation::update() {
         }
         break;
     } case navigation_status_drone_problem: {
-
         break;
-    } default:
-        break;
+    }
     }
 }
 

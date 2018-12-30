@@ -69,20 +69,20 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     smoother_posY.init(smooth_width_pos);
     smoother_posZ.init(smooth_width_pos);
 
-    disp_rate_smoothed2.init(6,0.4);
+    disp_rate_smoothed2.init(6,0.4f);
     disp_smoothed.init(smooth_width_pos);
 
-    smoother_velX2.init(6,0.4);
-    smoother_velY2.init(6,0.4);
-    smoother_velZ2.init(6,0.4);
+    smoother_velX2.init(6,0.4f);
+    smoother_velY2.init(6,0.4f);
+    smoother_velZ2.init(6,0.4f);
 
     smoother_velX.init(smooth_width_vel);
     smoother_velY.init(smooth_width_vel);
     smoother_velZ.init(smooth_width_vel);
 
-    smoother_accX2.init(6,0.4);
-    smoother_accY2.init(6,0.4);
-    smoother_accZ2.init(6,0.4);
+    smoother_accX2.init(6,0.4f);
+    smoother_accY2.init(6,0.4f);
+    smoother_accZ2.init(6,0.4f);
 
     smoother_accX.init(smooth_width_acc);
     smoother_accY.init(smooth_width_acc);
@@ -261,17 +261,17 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
     find(exclude);
 
     std::vector<track_item> keypoint_candidates = find_result.keypointsL_wihout_voids;
-    int nCandidates = keypoint_candidates.size();
+    uint nCandidates = static_cast<uint>(keypoint_candidates.size());
     if (nCandidates) { //if nokeypointsLt lost
 
         cv::Point3f previous_location(find_result.best_image_locationL .pt.x,find_result.best_image_locationL .pt.y,0);
 
         Point3f output;
-        float disparity;
+        float disparity = 0;
         cv::KeyPoint match;
 
         while (keypoint_candidates.size() > 0) {
-            int match_id = match_closest_to_prediciton(previous_location,find_result.keypointsL_wihout_voids);
+            uint match_id = match_closest_to_prediciton(previous_location,find_result.keypointsL_wihout_voids);
             match = find_result.keypointsL_wihout_voids.at(match_id).k;
 
             disparity = stereo_match(match,_visdat->frameL_prev,_visdat->frameR_prev,_visdat->frameL,_visdat->frameR,n_frames_tracking,find_result.disparity);
@@ -283,7 +283,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
             //camera_coordinates.push_back(Point3f(predicted_locationL.x*IMSCALEF,predicted_locationL.y*IMSCALEF,-predicted_locationL.z));
             cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
             output = world_coordinates[0];
-            float theta = _visdat->camera_angle / (180.f/(float)M_PI);
+            float theta = _visdat->camera_angle / (180.f/static_cast<float>(M_PI));
             float temp_y = output.y * cosf(theta) + output.z * sinf(theta);
             output.z = -output.y * sinf(theta) + output.z * cosf(theta);
             output.y = temp_y;
@@ -294,7 +294,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
                 break;
             }
         }
-        nCandidates = keypoint_candidates.size();
+        nCandidates = static_cast<uint>(keypoint_candidates.size());
         if (keypoint_candidates.size() > 0) { // if !lost
             //Point3f predicted_output = world_coordinates[1];
             check_consistency(cv::Point3f(this->prevX,this->prevY,this->prevZ),output);
@@ -308,7 +308,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
         }
     }
     if (nCandidates == 0) {
-        roi_size_cnt ++; //TODO: samen as n_frames_lost?
+        roi_size_cnt ++; //TODO: same as n_frames_lost?
         n_frames_lost++;
         if (roi_size_cnt > settings.roi_max_grow)
             roi_size_cnt = settings.roi_max_grow;
@@ -370,18 +370,18 @@ void ItemTracker::updateParams(){
 
     // Filter by Circularity
     params.filterByCircularity = settings.filterByCircularity;
-    params.minCircularity = ((float)settings.minCircularity)/100.0f;
-    params.maxCircularity = ((float)settings.maxCircularity)/100.0f;
+    params.minCircularity = static_cast<float>(settings.minCircularity)/100.0f;
+    params.maxCircularity = static_cast<float>(settings.maxCircularity)/100.0f;
 
     // Filter by Convexity
     params.filterByConvexity = settings.filterByConvexity;
-    params.minConvexity = ((float)settings.minConvexity)/100.0f;
-    params.maxConvexity = ((float)settings.maxConvexity)/100.0f;
+    params.minConvexity = static_cast<float>(settings.minConvexity)/100.0f;
+    params.maxConvexity = static_cast<float>(settings.maxConvexity)/100.0f;
 
     // Filter by Inertia
     params.filterByInertia = settings.filterByInertia;
-    params.minInertiaRatio = ((float)settings.minInertiaRatio)/100.0f;
-    params.maxInertiaRatio = ((float)settings.maxInertiaRatio)/100.0f;
+    params.minInertiaRatio = static_cast<float>(settings.minInertiaRatio)/100.0f;
+    params.maxInertiaRatio = static_cast<float>(settings.maxInertiaRatio)/100.0f;
 
     params.minRepeatability = 1;
     params.minDistBetweenBlobs=0;
@@ -459,7 +459,7 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_voids(std::vector<track
                 KeyPoint k1,k2;
                 k1 = keyps.at(i).k;
                 k2 = keyps_prev.at(j).k;
-                float d1_2 = sqrtf(pow(k1.pt.x - k2.pt.x,2) + pow(k1.pt.y - k2.pt.y,2));
+                float d1_2 = sqrtf(static_cast<float>(pow(k1.pt.x - k2.pt.x,2) + pow(k1.pt.y - k2.pt.y,2)));
                 if (d1_2 < settings.appear_void_max_distance) { // found a keypoint in the prev list that is very close to one in the current list
                     KeyPoint closest_k1;
                     int closest_k1_id = -1;
@@ -468,11 +468,11 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_voids(std::vector<track
                         //find the closest item to k1 in the current list and *assume* together it forms a void-appearance pair
                         if (k!=i) {
                             KeyPoint  k1_mate = keyps.at(k).k;
-                            float k1_mate_d = sqrtf(pow(k1.pt.x - k1_mate.pt.x,2) + pow(k1.pt.y - k1_mate.pt.y,2))  ;
+                            float k1_mate_d = sqrtf(static_cast<float>(pow(k1.pt.x - k1_mate.pt.x,2) + pow(k1.pt.y - k1_mate.pt.y,2)));
                             if (k1_mate_d < closest_k1_d) {
                                 closest_k1 = k1_mate;
                                 closest_k1_d = k1_mate_d;
-                                closest_k1_id = k;
+                                closest_k1_id = static_cast<int>(k);
                             }
                         }
                     }
@@ -484,10 +484,10 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_voids(std::vector<track
                         float dmate_2 = sqrtf(powf(k2.pt.x - closest_k1.pt.x,2) + powf(k2.pt.y - closest_k1.pt.y,2));
                         if (d1_2< dmate_2) { //k1 is apparantely the one closest to k2, closest_k1 should be the new position of the item
                             keyps_no_voids.erase(keyps_no_voids.begin() -n_erased_items + i,keyps_no_voids.begin() -n_erased_items + i+1);
-                            keyps.at(closest_k1_id).k_void = k1;
+                            keyps.at(static_cast<unsigned long>(closest_k1_id)).k_void = k1;
                             keyps.at(i).k_void = closest_k1;
                             n_erased_items++;
-                            j=keyps_prev.size()+1; //break from for j
+                            j=static_cast<uint>(keyps_prev.size())+1; //break from for j
                         }
                     }
                 }
@@ -541,7 +541,7 @@ cv::Mat ItemTracker::show_uncertainty_map_in_image(cv::Point pd4, cv::Mat res) {
         roi_circle.height = roi_circle.height - abs(y1 + blurred_circle_big.rows - res.rows);
 
     cv::Mat gray = cv::Mat::zeros(res.rows,res.cols,CV_32F);
-    gray = _visdat->uncertainty_background();
+    gray = static_cast<double>(_visdat->uncertainty_background());
     cv::Mat a = blurred_circle_big(roi_circle);
 
     x1 = p.x-blurred_circle_big.cols/2+roi_circle.x;
@@ -566,10 +566,10 @@ cv::Point3f ItemTracker::predict(float dt, int frame_id) {
     kfL.transitionMatrix.at<float>(9) = dt;
     stateL = kfL.predict();
     cv::Rect predRect;
-    predRect.width = stateL.at<float>(4);
-    predRect.height = stateL.at<float>(5);
-    predRect.x = stateL.at<float>(0) - predRect.width / 2;
-    predRect.y = stateL.at<float>(1) - predRect.height / 2;
+    predRect.width = static_cast<int>(stateL.at<float>(4));
+    predRect.height = static_cast<int>(stateL.at<float>(5));
+    predRect.x = static_cast<int>(stateL.at<float>(0)) - predRect.width / 2;
+    predRect.y = static_cast<int>(stateL.at<float>(1)) - predRect.height / 2;
 
     predicted_locationL.x = stateL.at<float>(0);
     predicted_locationL.y = stateL.at<float>(1);
@@ -599,16 +599,17 @@ cv::Point3f ItemTracker::predict(float dt, int frame_id) {
     return predicted_locationL;
 }
 
-int ItemTracker::match_closest_to_prediciton(cv::Point3f predicted_locationL, std::vector<track_item> keypointsL) {
-    int closestL;
+uint ItemTracker::match_closest_to_prediciton(cv::Point3f predicted_locationL, std::vector<track_item> keypointsL) {
+    uint closestL;
     if (keypointsL.size() == 1 && pathL.size() == 0) {
         closestL = 0;
     } else if (pathL.size() > 0) {
         //find closest keypoint to new predicted location
-        int mind = 999999999;
+        float mind = 999999999;
+        closestL=0;
         for (uint i = 0 ; i < keypointsL.size();i++) {
             track_item k =keypointsL.at(i);
-            int d = (predicted_locationL.x-k.x()) * (predicted_locationL.x-k.x()) + (predicted_locationL.y-k.y())*(predicted_locationL.y-k.y());
+            float d = (predicted_locationL.x-k.x()) * (predicted_locationL.x-k.x()) + (predicted_locationL.y-k.y())*(predicted_locationL.y-k.y());
             if (d < mind ) {
                 mind = d;
                 closestL = i;
@@ -633,10 +634,10 @@ float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv:
     float rectsizeY = ceil(rectsize*0.5f);  // *3.0
 
     int x1,y1,x2,y2;
-    x1 = (closestL.pt.x-rectsizeX)*IMSCALEF;
-    x2 = 2*rectsizeX*IMSCALEF;
-    y1 = (closestL.pt.y-rectsizeY)*IMSCALEF;
-    y2 = 2*rectsizeY*IMSCALEF;
+    x1 = static_cast<int>((closestL.pt.x-rectsizeX)*IMSCALEF);
+    x2 = static_cast<int>(2*rectsizeX*IMSCALEF);
+    y1 = static_cast<int>((closestL.pt.y-rectsizeY)*IMSCALEF);
+    y2 = static_cast<int>(2*rectsizeY*IMSCALEF);
     if (x1 < 0)
         x1=0;
     if (y1 < 0)
@@ -685,8 +686,8 @@ float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv:
         cv::Mat corV_16 = diff_L_roi_16.mul(diff_R_roi_16);
         cv::Mat errV = abs(diff_L_roi - diff_R_roi);
 
-        cor_16[i] = cv::sum(corV_16 )[0];
-        err[i] = cv::sum(errV)[0];
+        cor_16[i] = static_cast<int>(cv::sum(corV_16 )[0]);
+        err[i] = static_cast<int>(cv::sum(errV)[0]);
 
         if (cor_16[i] > maxcor ) {
             maxcor = cor_16[i];
@@ -731,7 +732,7 @@ float ItemTracker::estimate_sub_disparity(int disparity) {
     float h31 = (y3 - y1);
     float h21 = (y2 - y1) * 4;
     sub_disp = ((h21 - h31)) / (h21 - h31 * 2);
-    sub_disp += sinf(sub_disp*2.0f*(float)M_PI)*0.13f;
+    sub_disp += sinf(sub_disp*2.0f*static_cast<float>(M_PI))*0.13f;
     sub_disp += (disparity-1);
 
     if (sub_disp<disparity-1 || sub_disp>disparity+1)
@@ -759,17 +760,17 @@ float ItemTracker::update_disparity(float disparity, float dt) {
         float disp_filt_rate;
         float disp_filt_pred;
         if (abs(disparity-disp_predict)<0.5f) {
-            disp_filt_rate = 0.4;
+            disp_filt_rate = 0.4f;
             disparity_smoothed = disparity*disp_filt_rate + disparity_smoothed*(1.0f-disp_filt_rate);
         }
         else if (abs(disparity-disp_predict)<1.0f) {
-            disp_filt_rate = 0.4;
-            disp_filt_pred = 0.1;
+            disp_filt_rate = 0.4f;
+            disp_filt_pred = 0.1f;
             disparity_smoothed = disparity*disp_filt_pred + disp_predict*(disp_filt_rate-disp_filt_pred) + disparity_smoothed*(1.0f-disp_filt_rate);
         }
         else {
-            disp_filt_rate = 0.4;
-            disp_filt_pred = 0.0;
+            disp_filt_rate = 0.4f;
+            disp_filt_pred = 0.0f;
             disparity_smoothed = disparity*disp_filt_pred + disp_predict*(disp_filt_rate-disp_filt_pred) + disparity_smoothed*(1.0f-disp_filt_rate);
 
             if (abs(disparity-disp_prev)<1.0f)
@@ -870,7 +871,7 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
         posZ_smoothed = data.posZ;
 
     } else {
-        float pos_filt_rate = 0.3;
+        float pos_filt_rate = 0.3f;
         posX_smoothed = data.posX*pos_filt_rate + posX_smoothed*(1.0f-pos_filt_rate);
         posY_smoothed = data.posY*pos_filt_rate + posY_smoothed*(1.0f-pos_filt_rate);
         posZ_smoothed = data.posZ*pos_filt_rate + posZ_smoothed*(1.0f-pos_filt_rate);

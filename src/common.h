@@ -29,22 +29,22 @@ const float FOV = 180.0f ;
 const float FOV_size = 1280.0;
 const int width_ff = 1280;
 const int height_ff = 960;
-const float FOVx_ff = FOV * ((float)width_ff/FOV_size); // * (M_PI/180.0f)
-const float FOVy_ff = FOV * ((float)height_ff/FOV_size);
-const float pix2degx_ff = (FOVx_ff / (float)width_ff);
-const float pix2degy_ff = (FOVy_ff / (float)height_ff);
+const float FOVx_ff = FOV * (static_cast<float>(width_ff)/FOV_size); // * (M_PI/180.0f)
+const float FOVy_ff = FOV * (static_cast<float>(height_ff)/FOV_size);
+const float pix2degx_ff = (FOVx_ff / static_cast<float>(width_ff));
+const float pix2degy_ff = (FOVy_ff / static_cast<float>(height_ff));
 
 
 const int width_dm = 96;
 const int height_dm = 96;
 const int width_dmB = 576;
 const int height_dmB = 576;
-const float FOVx_dm = FOVx_ff*((float)width_dmB/(float)width_ff);
-const float FOVy_dm = FOVy_ff*((float)height_dmB/(float)height_ff);
-const float pix2degx_dm = (FOVx_dm / (float)width_dm);
-const float pix2degy_dm = (FOVy_dm / (float)height_dm);
-const float pix2degx_dmB = (FOVx_dm / (float)width_dmB);
-const float pix2degy_dmB = (FOVy_dm / (float)height_dmB);
+const float FOVx_dm = FOVx_ff*(static_cast<float>(width_dmB)/static_cast<float>(width_ff));
+const float FOVy_dm = FOVy_ff*(static_cast<float>(height_dmB)/static_cast<float>(height_ff));
+const float pix2degx_dm = (FOVx_dm / static_cast<float>(width_dm));
+const float pix2degy_dm = (FOVy_dm / static_cast<float>(height_dm));
+const float pix2degx_dmB = (FOVx_dm / static_cast<float>(width_dmB));
+const float pix2degy_dmB = (FOVy_dm / static_cast<float>(height_dmB));
 
 const float depthscale = 256.0f;
 

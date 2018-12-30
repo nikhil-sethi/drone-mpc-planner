@@ -5,7 +5,7 @@
 
 #include <fstream>
 #include <vector>
-#include <math.h>
+#include <cmath>
 
 /*
  * This class performs moving average filtering
@@ -16,10 +16,10 @@ class Smoother2{
 private:
     std::vector<float> _rbuf_data; // rotary buffer
     std::vector<float> _rbuf_time; // rotary buffer
-	int _kernelsize; 	// filter kernel width
+    int _kernelsize; 	// filter kernel width
     int _rotater_data;		//pointer to current sample in rotary buffer
     int _rotater_time;		//pointer to current sample in rotary buffer
-	float _runner; // current filter output value
+    float _runner; // current filter output value
     float _diff_data;
     float _derivative;
     float _derivative_filtered;

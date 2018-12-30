@@ -230,7 +230,7 @@ int GStream::write(cv::Mat frameL,cv::Mat frameR) {
         return 0;
     }
     else {
-        int res = prepare_buffer((GstAppSrc*)_appsrc,&frame);
+        int res = prepare_buffer(reinterpret_cast<GstAppSrc*>(_appsrc),&frame);
         g_main_context_iteration(g_main_context_default(),FALSE);
         return res;
     }
@@ -250,7 +250,7 @@ int GStream::write(cv::Mat frame) {
         cvvideo.write(tmpframe);
         return 0;
     } else {
-        int res = prepare_buffer((GstAppSrc*)_appsrc,&tmpframe);
+        int res = prepare_buffer(reinterpret_cast<GstAppSrc*>(_appsrc),&tmpframe);
         g_main_context_iteration(g_main_context_default(),FALSE);
         return res;
     }

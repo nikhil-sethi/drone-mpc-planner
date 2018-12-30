@@ -86,8 +86,8 @@ void GeneratorCam::generateStereo() {
 //    static bool bounce = -1;
 //    drone.x = (drone.x + bounce ) % (IMG_W-3);
 //    drone.y = (drone.y + bounce ) % (IMG_H-3);
-    drone.x = DRONE_IM_X_START*IMSCALEF + sinf((float)(frame_id_stereo-2)/100.f)*100 ;
-    drone.y = DRONE_IM_Y_START*IMSCALEF + cosf((float)(frame_id_stereo-2)/100.f)*100 - 100;
+    drone.x = DRONE_IM_X_START*IMSCALEF + sinf(static_cast<float>(frame_id_stereo-2)/100.f)*100 ;
+    drone.y = DRONE_IM_Y_START*IMSCALEF + cosf(static_cast<float>(frame_id_stereo-2)/100.f)*100 - 100;
 
     std::cout << "Generated drone location: [" << drone.x/IMSCALEF << "," << drone.y/IMSCALEF << "]" << std::endl;
 

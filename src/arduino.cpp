@@ -35,15 +35,15 @@ void Arduino::sendData(void) {
         buff[1] = 't';
         buff[2] = ledpower;
         if (!notconnected) {
-            RS232_SendBuf( (unsigned char*) buff, 3);
+            RS232_SendBuf( reinterpret_cast<unsigned char*>(buff), 3);
         }
         usleep(100000);
     } else {
 
         char buff[64];
-        sprintf( (char*) buff,"%u,%u,%u,%u,%u,%u,0,0,0,0,0,0\n",throttle,roll,pitch,yaw,mode,ledpower);
+        sprintf( static_cast<char*> (buff),"%u,%u,%u,%u,%u,%u,0,0,0,0,0,0\n",throttle,roll,pitch,yaw,mode,ledpower);
         if (!notconnected) {
-            RS232_SendBuf( (unsigned char*) buff, 63);
+            RS232_SendBuf( reinterpret_cast<unsigned char*>(buff), 63);
         }
 
         if (!notconnected) {
@@ -75,7 +75,7 @@ void Arduino::sendData(void) {
     lock_rs232.unlock();
 }
 
-void Arduino::check_bind_command(void){
+void Arduino::check_bind_command(){
 
     if (bind_next_cycle) {
                     alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Amsterdam.ogg &");
@@ -85,9 +85,9 @@ void Arduino::check_bind_command(void){
         binding_sw.Start();
 
         char buff[64];
-        sprintf( (char*) buff,"1050,1500,1500,1500,0,0,0,0,0,0,0,2000\n");
+        sprintf( static_cast<char*>(buff),"1050,1500,1500,1500,0,0,0,0,0,0,0,2000\n");
         if (!notconnected) {
-            RS232_SendBuf( (unsigned char*) buff, 63);
+            RS232_SendBuf( reinterpret_cast<unsigned char*>(buff), 63);
             RS232_CloseComport();
         }
         usleep(100000);

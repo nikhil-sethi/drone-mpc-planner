@@ -21,6 +21,9 @@ MESSAGE( STATUS "OpenCV_CONFIG_PATH: " ${OpenCV_CONFIG_PATH} )
 MESSAGE( STATUS "OpenCV_INSTALL_PATH: " ${OpenCV_INSTALL_PATH} )
 MESSAGE( STATUS "OPENCV_VERSION: " ${OpenCV_VERSION} )
 
+#get rid unused variable warning:
+set(ignoreMe "${QT_QMAKE_EXECUTABLE}")
+
 #gstreamer:
 #SET(CMAKE_PREFIX_PATH, "/apps/gstreamer/")
 pkg_check_modules(GST REQUIRED gstreamer-1.0>=1.8
@@ -83,8 +86,7 @@ set(REALSENSE realsense2) #supports D4** series
 FILE(GLOB SRCS "../src/*.cpp" "../src/*.h" "../src/*.c" "../src/cereal*.hpp")
 
 include(CheckCXXCompilerFlag)
-#-Wold-style-cast
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3 -Wall -Wextra -Wlogical-op -Wuseless-cast -Wdouble-promotion -Wshadow -Wformat=2 -Wno-missing-field-initializers")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3 -Wall -Wextra -Wlogical-op -Wuseless-cast -Wold-style-cast -Wdouble-promotion -Wshadow -Wformat=2 -Wimplicit-fallthrough -Wno-missing-field-initializers")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)

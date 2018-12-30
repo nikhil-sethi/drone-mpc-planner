@@ -167,8 +167,8 @@ void Visualizer::plot(std::vector<cv::Mat> data, cv::Mat *frame, std::string nam
     cv::minMaxIdx(tmp,&mind,&maxd,NULL,NULL);
 
     float min,max;
-    min = (float)mind;
-    max = (float)maxd;
+    min = static_cast<float>(mind);
+    max = static_cast<float>(maxd);
     std::stringstream ss;
     ss << std::setprecision(4);
     ss << "[" << min << " - " << max << "]";
@@ -181,8 +181,8 @@ void Visualizer::plot(std::vector<cv::Mat> data, cv::Mat *frame, std::string nam
     max *=amplify_y;
     min-=1;
     max+=1;
-    const float scaleX = (float)((fsizex))/(bufsize);
-    const float scaleY = ((float)fsizey)/(max-min);
+    const float scaleX = static_cast<float>(fsizex)/(bufsize);
+    const float scaleY = static_cast<float>(fsizey)/(max-min);
 
     for (uint i = 0 ; i< data.size();i++) {
         int prev_y =0;
@@ -238,9 +238,9 @@ cv::Mat Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Point setpoint, std:
 
     float x,y;
     for (int j = start; j < xS.rows-1; j++)  {
-        x = xS.at<float>(j,1) - (float)minx;
+        x = xS.at<float>(j,1) - static_cast<float>(minx);
         x =x*scaleX + 2*line_width;
-        y = yS.at<float>(j,1) - (float)miny;
+        y = yS.at<float>(j,1) - static_cast<float>(miny);
         y= fsizey - y*scaleY + 2*line_width;
         if (j > start)
             cv::line(frame, cv::Point(prev_x, prev_y) , cv::Point(x, y), green, line_width, CV_AA, 0);

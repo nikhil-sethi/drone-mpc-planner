@@ -116,7 +116,7 @@ private:
     cv::Mat segment(cv::Mat diffL, cv::Point previous_imageL_location, cv::Point roi_size);
     cv::Point3f predict(float dt, int frame_id);
     virtual cv::Mat get_approx_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size) = 0;
-    int match_closest_to_prediciton(cv::Point3f predicted_locationL, std::vector<track_item> keypointsL);
+    uint match_closest_to_prediciton(cv::Point3f predicted_locationL, std::vector<track_item> keypointsL);
     float stereo_match(cv::KeyPoint closestL, cv::Mat frameL_prev, cv::Mat prevFrameR_big, cv::Mat frameL, cv::Mat frameR, int n_frames_tracking, float disparity);
     float estimate_sub_disparity(int disparity);
     void check_consistency(cv::Point3f previous_location,cv::Point3f measured_world_coordinates);
@@ -136,7 +136,7 @@ private:
     int measSize = 4;
     int contrSize = 0;
 
-    unsigned int type = CV_32F;
+    int type = CV_32F;
     cv::KalmanFilter kfL;
     cv::Mat stateL;
     cv::Mat _measL;
@@ -172,7 +172,7 @@ protected:
     cv::Point3f predicted_locationL_last = {0};
     float blob_size_last = DRONE_IM_START_SIZE;
 
-    const float certainty_factor = 1.1; // TODO: tune
+    const float certainty_factor = 1.1f; // TODO: tune
     const float certainty_init = 0.1f; // TODO: tune
     const int path_buf_size = 30;
 

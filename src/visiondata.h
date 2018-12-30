@@ -3,7 +3,7 @@
 
 #include <fstream>
 #include <vector>
-#include <math.h>
+#include <cmath>
 #include <opencv2/highgui/highgui.hpp>
 #include "opencv2/features2d/features2d.hpp"
 
@@ -74,7 +74,7 @@ public:
         archive( settings );
     }
     void update(cv::Mat new_frameL, cv::Mat new_frameR, float time, int new_frame_id);
-    float uncertainty_background() {return settings.uncertainty_background / 255.0;}
+    float uncertainty_background() {return settings.uncertainty_background / 255.0f;}
 };
 
 #endif // VIZDAT_H

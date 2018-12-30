@@ -206,8 +206,8 @@ void alert(std::string cmd __attribute__((unused))) {
 
 cv::Mat createBlurryCircle(cv::Point size) {
     cv::Point2f tmp;
-    tmp.x = roundf(((float)size.x)/4.f);
-    tmp.y = roundf(((float)size.y)/4.f);
+    tmp.x = roundf((static_cast<float>(size.x))/4.f);
+    tmp.y = roundf((static_cast<float>(size.y))/4.f);
     if (fabs((tmp.x / 2.f) - roundf(tmp.x / 2.f)) < 0.01)
         tmp.x +=1;
     if (fabs((tmp.y / 2.f) - roundf(tmp.y / 2.f)) < 0.01)

@@ -4,7 +4,7 @@
 
 #include <fstream>
 #include <vector>
-#include <math.h>
+#include <cmath>
 #include <mutex>
 #include <condition_variable>
 

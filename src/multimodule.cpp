@@ -87,7 +87,7 @@ void MultiModule::send_data(void) {
     convert_channels(channels , &packet[4]);
 
     if (!notconnected) {
-        RS232_SendBuf( (unsigned char*) packet, 26);
+        RS232_SendBuf( static_cast<unsigned char*>( packet), 26);
     }
 
     lock_rs232.unlock();

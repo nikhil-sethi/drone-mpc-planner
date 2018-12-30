@@ -4,7 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <math.h>
+#include <cmath>
 #include <iomanip>
 #include <unistd.h>
 #include "common.h"
