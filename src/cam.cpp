@@ -1,6 +1,6 @@
 #include "cam.h"
 #include <sys/stat.h>
-
+#include "smoother.h"
 #include "opencv2/imgproc/imgproc.hpp"
 
 using namespace cv;
@@ -389,77 +389,106 @@ void Cam::calib_pose(){
     cv::Size im_size(IMG_W, IMG_H);
 
     //wait 2 seconds
+
+    uint nframes = VIDEOFPS*2;
+    if (hasIMU)
+        nframes = 10;
+    Smoother smx,smy,smz;
+    smx.init((int)nframes);
+    smy.init((int)nframes);
+    smz.init((int)nframes);
+    float x = 0,y = 0,z = 0, roll = 0, pitch = 0;
     rs2::frameset frame;
-    for (uint i = 0; i < VIDEOFPS*2; i++) {
+
+
+    for (uint i = 0; i < nframes; i++) {
         frame = cam.wait_for_frames();
 
         if (hasIMU){
-            if (frame.is<rs2::motion_frame>()) {
-                rs2::motion_frame mf = frame.as<rs2::motion_frame>();
+            auto frame_acc = frame.first(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F);
+
+            if (frame_acc.is<rs2::motion_frame>()) {
+                rs2::motion_frame mf = frame_acc.as<rs2::motion_frame>();
                 rs2_vector xyz = mf.get_motion_data();
-                cout << frame.get_profile().stream_type() << ": "
-                     << xyz.x << ", " << xyz.y << ", " << xyz.z << endl;
+                cout << frame_acc.get_profile().stream_type() << ": "
+                     << xyz.x << ", " << xyz.y << ", " << xyz.z;
+                cout << " roll: " << roll << " pitch: " << pitch << endl;
+                x = smx.addSample(xyz.x);
+                y = smy.addSample(xyz.y);
+                z = smz.addSample(xyz.z);
+                roll = atanf(-x/sqrtf(y*x + z*z)) * 180.f/(float)M_PI;
+                pitch = 90.f-atanf(y/z) * 180.f/(float)M_PI;
             }
         }
     }
 
-    depth_background = Mat(im_size, CV_16UC1, (void *)frame.get_depth_frame().get_data(), Mat::AUTO_STEP).clone();
+     depth_background = Mat(im_size, CV_16UC1, (void *)frame.get_depth_frame().get_data(), Mat::AUTO_STEP).clone();
 
-    // obtain Point Cloud
-    rs2::pointcloud pc;
-    rs2::points points;
-    points = pc.calculate(frame.get_depth_frame());
+    if (hasIMU){
+        _camera_angle_y = pitch;
 
-    // init variables for plane fitting
-    auto ptr = points.get_vertices();
-    int pp;
-    int p_smooth = 400;
-    int nr_p_far = 50;
-    int nr_p_close = 50;
-    int ppp;
-
-    std::vector<cv::Point3f> pointsFar;
-    std::vector<cv::Point3f> pointsClose;
-    cv::Point3f point_ = {0,0,0};
-    cv::Point3f point_diff = {0,0,0};
-    float alpha = 0;
-
-    // obtain a set of points 'far away' (half way the image) that are averaged over image lines
-    for (ppp=0;ppp<nr_p_far;ppp++) {
-        auto ptr_new = ptr+points.size()-IMG_W/2-p_smooth/2-IMG_W*(nr_p_close+1+ppp);
-        for (pp=0;pp<p_smooth;pp++) {
-            point_.x += ptr_new->x;
-            point_.y += ptr_new->y;
-            point_.z += ptr_new->z;
-            ptr_new++;
+        if (fabs(roll) > 1.f) {
+            cout << "Camera is tilted in roll axis!" << std::endl;
+            exit(1);
         }
-        point_/=p_smooth;
-        pointsFar.push_back(point_);
-    }
+    } else { // determine camera angle from the depth map:
 
-    // obtain a set of points 'close by' (bottom of the image) that are averaged over image lines
-    for (ppp=0;ppp<nr_p_close;ppp++) {
-        auto ptr_new = ptr+points.size()-IMG_W/2-p_smooth/2-IMG_W*ppp;
-        for (pp=0;pp<p_smooth;pp++) {
-            point_.x += ptr_new->x;
-            point_.y += ptr_new->y;
-            point_.z += ptr_new->z;
-            ptr_new++;
+        // obtain Point Cloud
+        rs2::pointcloud pc;
+        rs2::points points;
+        points = pc.calculate(frame.get_depth_frame());
+
+        // init variables for plane fitting
+        auto ptr = points.get_vertices();
+        int pp;
+        int p_smooth = 400;
+        int nr_p_far = 50;
+        int nr_p_close = 50;
+        int ppp;
+
+        std::vector<cv::Point3f> pointsFar;
+        std::vector<cv::Point3f> pointsClose;
+        cv::Point3f point_ = {0,0,0};
+        cv::Point3f point_diff = {0,0,0};
+        float alpha = 0;
+
+        // obtain a set of points 'far away' (half way the image) that are averaged over image lines
+        for (ppp=0;ppp<nr_p_far;ppp++) {
+            auto ptr_new = ptr+points.size()-IMG_W/2-p_smooth/2-IMG_W*(nr_p_close+1+ppp);
+            for (pp=0;pp<p_smooth;pp++) {
+                point_.x += ptr_new->x;
+                point_.y += ptr_new->y;
+                point_.z += ptr_new->z;
+                ptr_new++;
+            }
+            point_/=p_smooth;
+            pointsFar.push_back(point_);
         }
-        point_/=p_smooth;
-        pointsClose.push_back(point_);
-    }
 
-    // calculate angle between 'far away' and 'close by' points, by avaraging over all combinations between both sets
-    for (ppp=0;ppp<nr_p_close;ppp++) {
-        for (pp=0;pp<nr_p_far;pp++) {
-            point_diff = pointsFar.at(pp)-pointsClose.at(ppp);
-            alpha += atanf(point_diff.y/point_diff.z);
+        // obtain a set of points 'close by' (bottom of the image) that are averaged over image lines
+        for (ppp=0;ppp<nr_p_close;ppp++) {
+            auto ptr_new = ptr+points.size()-IMG_W/2-p_smooth/2-IMG_W*ppp;
+            for (pp=0;pp<p_smooth;pp++) {
+                point_.x += ptr_new->x;
+                point_.y += ptr_new->y;
+                point_.z += ptr_new->z;
+                ptr_new++;
+            }
+            point_/=p_smooth;
+            pointsClose.push_back(point_);
         }
-    }
-    alpha/=(nr_p_close*nr_p_far);
 
-    _camera_angle_y =  (-alpha/(float)M_PI)*180.f; //        [degrees]
+        // calculate angle between 'far away' and 'close by' points, by avaraging over all combinations between both sets
+        for (ppp=0;ppp<nr_p_close;ppp++) {
+            for (pp=0;pp<nr_p_far;pp++) {
+                point_diff = pointsFar.at(pp)-pointsClose.at(ppp);
+                alpha += atanf(point_diff.y/point_diff.z);
+            }
+        }
+        alpha/=(nr_p_close*nr_p_far);
+
+        _camera_angle_y =  (-alpha/(float)M_PI)*180.f; //        [degrees]
+    }
     std::cout << "Measured pose: " << _camera_angle_y << std::endl;
     (*_logger) << 0 << ";" << _camera_angle_y*10000.f << "; ";
 
