@@ -176,7 +176,6 @@ protected:
     const float certainty_init = 0.1f; // TODO: tune
     const int path_buf_size = 30;
 
-
     void reset_tracker_ouput();
     virtual cv::Mat get_probability_cloud(cv::Point size);
     virtual void init_settings() = 0;

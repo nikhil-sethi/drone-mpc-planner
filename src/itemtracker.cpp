@@ -277,18 +277,38 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
             disparity = stereo_match(match,_visdat->frameL_prev,_visdat->frameR_prev,_visdat->frameL,_visdat->frameR,n_frames_tracking,find_result.disparity);
             disparity = update_disparity(disparity, dt_tracking);
 
-            //calculate everything for the itemcontroller:
-            std::vector<Point3f> camera_coordinates, world_coordinates;
-            camera_coordinates.push_back(Point3f(match.pt.x*IMSCALEF,match.pt.y*IMSCALEF,-disparity));
-            //camera_coordinates.push_back(Point3f(predicted_locationL.x*IMSCALEF,predicted_locationL.y*IMSCALEF,-predicted_locationL.z));
-            cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
-            output = world_coordinates[0];
-            float theta = _visdat->camera_angle / (180.f/static_cast<float>(M_PI));
-            float temp_y = output.y * cosf(theta) + output.z * sinf(theta);
-            output.z = -output.y * sinf(theta) + output.z * cosf(theta);
-            output.y = temp_y;
 
-            if ((output.x < -2.0f) || (output.x > 2.0f) ||(output.z < -drone_max_border_z) || (output.y < -drone_max_border_y) || disparity < settings.min_disparity || disparity > settings.max_disparity) { //TODO check min/max disparity > or =>!!!
+            bool background_check_ok = true;
+            bool disparity_in_range = true;
+            if (disparity < settings.min_disparity || disparity > settings.max_disparity) //TODO check min/max disparity > or =>!!!
+                disparity_in_range = false;
+            else {
+                //calculate everything for the itemcontroller:
+                std::vector<Point3f> camera_coordinates, world_coordinates;
+                camera_coordinates.push_back(Point3f(match.pt.x*IMSCALEF,match.pt.y*IMSCALEF,-disparity));
+                //camera_coordinates.push_back(Point3f(predicted_locationL.x*IMSCALEF,predicted_locationL.y*IMSCALEF,-predicted_locationL.z));
+                cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
+                output = world_coordinates[0];
+
+                uint16_t back = _visdat->depth_background.at<uint16_t>(match.pt.x*IMSCALEF,match.pt.y*IMSCALEF);
+                float backf = static_cast<float>(back)/1000.f;
+                float dis = sqrtf(powf(output.x,2) + powf(output.y,2) +powf(output.z,2)); //FIXME: should use directly output.z...?
+                if (dis > backf)
+                    background_check_ok = false;
+
+                //std::cout << output.x << ",  " << output.y << ", " << output.z << ", |" << dis << "|, " << backf << " - ";
+
+                float theta = _visdat->camera_angle * deg2rad;
+                float temp_y = output.y * cosf(theta) + output.z * sinf(theta);
+                output.z = -output.y * sinf(theta) + output.z * cosf(theta);
+                output.y = temp_y;
+
+
+
+            }
+            if ((output.x < -2.0f) || (output.x > 2.0f) ||
+                    (output.z < -drone_max_border_z) || (output.y < -drone_max_border_y) ||
+                    !background_check_ok || !disparity_in_range) {
                 keypoint_candidates.erase(keypoint_candidates.begin() + match_id);
             } else {
                 break;
