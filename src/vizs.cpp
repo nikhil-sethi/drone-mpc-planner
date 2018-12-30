@@ -442,17 +442,19 @@ void Visualizer::workerThread(void) {
 #endif
         }
 #ifdef DRAWTRACKING
-            lock_frame_data.lock();
-            draw_tracker_viz();
-            request_trackframe_paint=true;
-            lock_frame_data.unlock();
+        lock_frame_data.lock();
+        draw_tracker_viz();
+        request_trackframe_paint=true;
+        lock_frame_data.unlock();
 #endif
 
     }
 }
 void Visualizer::close() {
-    exitVizThread = true;
-    newdata.notify_all();
-    lock_plot_data.unlock();
-    thread_viz.join();
+    if (initialised){
+        exitVizThread = true;
+        newdata.notify_all();
+        lock_plot_data.unlock();
+        thread_viz.join();
+    }
 }

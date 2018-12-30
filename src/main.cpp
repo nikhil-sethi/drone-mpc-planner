@@ -119,6 +119,7 @@ void process_frame(Stereo_Frame_Data data);
 void process_video();
 int main( int argc, char **argv);
 void handleKey();
+void close();
 
 /************ code ***********/
 void process_video() {
@@ -284,24 +285,28 @@ void pool_worker(int id __attribute__((unused))){
         tp[id].data_processed.notify_one();
     }
 }
+bool threads_initialised = false;
 void init_thread_pool() {
     for (uint i = 0; i < NUM_OF_THREADS; i++) {
         tp[i].thread = new thread(&pool_worker,i);
     }
+    threads_initialised=true;
 }
 void close_thread_pool(){
-    std::cout <<"Stopping threads in pool"<< std::endl;
-    usleep(1000);
-    for (uint i = 0; i < NUM_OF_THREADS; i++) {
-        tp[i].data_is_send = true;
-        tp[i].new_data.notify_all();
-        tp[i].data_is_processed = true;
-        tp[i].data_processed.notify_all();
+    if (threads_initialised){
+        std::cout <<"Stopping threads in pool"<< std::endl;
+        usleep(1000);
+        for (uint i = 0; i < NUM_OF_THREADS; i++) {
+            tp[i].data_is_send = true;
+            tp[i].new_data.notify_all();
+            tp[i].data_is_processed = true;
+            tp[i].data_processed.notify_all();
+        }
+        for (uint i = 0; i < NUM_OF_THREADS; i++) {
+            tp[i].thread->join();
+        }
+        std::cout <<"Threads in pool closed"<< std::endl;
     }
-    for (uint i = 0; i < NUM_OF_THREADS; i++) {
-        tp[i].thread->join();
-    }
-    std::cout <<"Threads in pool closed"<< std::endl;
 }
 
 void kill_sig_handler(int s){
@@ -374,7 +379,8 @@ int init(int argc, char **argv) {
     // Ensure that joystick was found and that we can use it
     if (!dctrl.joystick_ready() && fromfile!=log_mode_full) {
         std::cout << "joystick failed." << std::endl;
-        //exit(1);
+//        close();
+//        exit(1);
     }
 #endif
 
