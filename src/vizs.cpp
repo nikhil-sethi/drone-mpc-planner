@@ -21,15 +21,15 @@ cv::Scalar background_color(255,255,255);
 void Visualizer::addPlotSample(void) {
 #ifdef DRAWPLOTS
     lock_plot_data.lock();
-    roll_joystick.push_back((float)_dctrl->joyRoll);
-    pitch_joystick.push_back((float)_dctrl->joyPitch);
-    yaw_joystick.push_back((float)_dctrl->joyPitch);
-    throttle_joystick.push_back((float)_dctrl->joyThrottle);
+    roll_joystick.push_back(static_cast<float>(_dctrl->joyRoll));
+    pitch_joystick.push_back(static_cast<float>(_dctrl->joyPitch));
+    yaw_joystick.push_back(static_cast<float>(_dctrl->joyPitch));
+    throttle_joystick.push_back(static_cast<float>(_dctrl->joyThrottle));
 
-    roll_calculated.push_back((float)_dctrl->autoRoll);
-    pitch_calculated.push_back((float)_dctrl->autoPitch);
-    //    yaw_calculated.push_back((float)_dctrl->commandedYaw);
-    throttle_calculated.push_back((float)_dctrl->autoThrottle);
+    roll_calculated.push_back(static_cast<float>(_dctrl->autoRoll));
+    pitch_calculated.push_back(static_cast<float>(_dctrl->autoPitch));
+    //    yaw_calculated.push_back(static_cast<float>(_dctrl->commandedYaw));
+    throttle_calculated.push_back(static_cast<float>(_dctrl->autoThrottle));
     throttle_hover.push_back(_dctrl->hoverthrottle);
 
     trackData data = _dtrkr->get_last_track_data();
@@ -66,7 +66,7 @@ void Visualizer::addPlotSample(void) {
     saccY.push_back(data.saccY);
     saccZ.push_back(-data.saccZ);
 
-    autotakeoff_velY_thresh.push_back((float)(_dnav->params.    auto_takeoff_speed) / 100.f);
+    autotakeoff_velY_thresh.push_back(static_cast<float>(_dnav->params.auto_takeoff_speed) / 100.f);
 
     lock_plot_data.unlock();
     newdata.notify_all();
