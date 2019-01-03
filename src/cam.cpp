@@ -115,10 +115,10 @@ void Cam::update_playback(void) {
 void Cam::rs_callback_playback(rs2::frame f) {
 
     lock_frame_data.lock();
-    //    if (f.get_profile().stream_index() == 1 )
-    //        std::cout << "Received id "         << f.get_frame_number() << ":" << ((float)f.get_timestamp()-frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << "         Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << incremented_playback_frametime << " bufsize: " << playback_bufferL.size() << std::endl;
-    //    if (f.get_profile().stream_index() == 2 )
-    //        std::cout << "Received id         " << f.get_frame_number() << ":" << ((float)f.get_timestamp()-frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << " Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << incremented_playback_frametime << " bufsize: " << playback_bufferL.size() << std::endl;
+//    if (f.get_profile().stream_index() == 1 )
+//        std::cout << "Received id "         << f.get_frame_number() << ":" << ((float)f.get_timestamp()-_frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << "         Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << incremented_playback_frametime << " bufsize: " << playback_bufferL.size() << std::endl;
+//    if (f.get_profile().stream_index() == 2 )
+//        std::cout << "Received id         " << f.get_frame_number() << ":" << ((float)f.get_timestamp()-_frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << " Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << incremented_playback_frametime << " bufsize: " << playback_bufferL.size() << std::endl;
 
     if (f.get_profile().stream_index() == 1 && f.get_frame_number() >= requested_id_in && playback_bufferL.size() < 100) {
         frame_data fL;
@@ -160,7 +160,7 @@ void Cam::update_real(void) {
     if (_frame_time_start <0)
         _frame_time_start = rs_frameL.get_timestamp();
     _frame_time = (static_cast<float>(rs_frameL.get_timestamp()) -_frame_time_start)/1000.f;
-    //std::cout << "-------------frame id: " << frame_id << " seek time: " << incremented_playback_frametime << std::endl;
+//    std::cout << "-------------frame id: " << _frame_number << " seek time: " << incremented_playback_frametime << std::endl;
     lock_frame_data.unlock();
 
     new_frame1 = false;
@@ -170,6 +170,16 @@ void Cam::update_real(void) {
 
 uint last_sync_id = 0;
 void Cam::rs_callback(rs2::frame f) {
+
+//    if (f.get_profile().stream_index() == 1 )
+//        std::cout << "Received id "         << f.get_frame_number() << ":" << (static_cast<float>(f.get_timestamp()) -_frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << "         Last: " << last_sync_id << std::endl;
+//    if (f.get_profile().stream_index() == 2 )
+//        std::cout << "Received id         " << f.get_frame_number() << ":" << (static_cast<float>(f.get_timestamp()) -_frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << " Last: " << last_sync_id << std::endl;
+
+    if (f.get_frame_number() < last_sync_id-50) {
+        std::cout << "Warning: rs frame number reset happened!!!" << std::endl;
+        last_sync_id = f.get_frame_number();
+    }
 
     if (f.get_profile().stream_index() == 1 && !new_frame1 && f.get_frame_number() >= last_sync_id) {
         rs_frameL_cbtmp  = f;
