@@ -17,6 +17,9 @@
 #include "cam.h"
 #include "defines.h"
 
+#include <librealsense2/rs.hpp>
+#include <librealsense2/rsutil.h>
+
 class VisionData{
 
 private:
@@ -55,6 +58,8 @@ private:
     void collect_avg_prev_frame(cv::Mat frame);
     void collect_no_drone_frames(cv::Mat diff);
 
+    const rs2_intrinsics * intr;
+
 public:
     cv::Mat frameL,frameR;
     cv::Mat frameL_prev,frameR_prev;
@@ -69,7 +74,9 @@ public:
     cv::Mat depth_background;
     cv::Mat disparity_background;
 
-    void init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, cv::Mat new_depth_background,float new_depth_scale,cv::Mat new_disparity_background);
+
+
+    void init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, cv::Mat new_depth_background, float new_depth_scale, cv::Mat new_disparity_background, rs2_intrinsics *new_intr);
     void close() {
         std::ofstream os(settingsFile, std::ios::binary);
         cereal::BinaryOutputArchive archive( os );
@@ -77,6 +84,9 @@ public:
     }
     void update(cv::Mat new_frameL, cv::Mat new_frameR, float time, int new_frame_id);
     float uncertainty_background() {return settings.uncertainty_background / 255.0f;}
+    void deproject(float pixel[2],float dist, float p[3]) {
+        rs2_deproject_pixel_to_point(p, intr, pixel, dist);
+    }
 };
 
 #endif // VIZDAT_H

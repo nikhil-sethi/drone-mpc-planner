@@ -58,6 +58,7 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     createTrackbar("appear_void_max_distance", window_name, &settings.appear_void_max_distance, 250);
     createTrackbar("void_void_max_distance", window_name, &settings.void_void_max_distance, 20);
     createTrackbar("exclude_min_distance", window_name, &settings.exclude_min_distance, 250);
+    createTrackbar("background_subtract_zone_factor", window_name, &settings.background_subtract_zone_factor, 90);
 
 #endif
 
@@ -264,7 +265,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
     uint nCandidates = static_cast<uint>(keypoint_candidates.size());
     if (nCandidates) { //if nokeypointsLt lost
 
-        cv::Point3f previous_location(find_result.best_image_locationL .pt.x,find_result.best_image_locationL .pt.y,0);
+        cv::Point3f previous_location(find_result.best_image_locationL.pt.x,find_result.best_image_locationL.pt.y,0);
 
         Point3f output;
         float disparity = 0;
@@ -283,22 +284,28 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
 
             bool background_check_ok = true;
             bool disparity_in_range = true;
-            if (disparity < settings.min_disparity || disparity > settings.max_disparity) //TODO check min/max disparity > or =>!!!
+            if (disparity < settings.min_disparity || disparity > settings.max_disparity){
                 disparity_in_range = false;
-            else {
+            } else {
                 //calculate everything for the itemcontroller:
                 std::vector<Point3f> camera_coordinates, world_coordinates;
                 camera_coordinates.push_back(Point3f(match.pt.x*IMSCALEF,match.pt.y*IMSCALEF,-disparity));
                 cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
                 output = world_coordinates[0];
 
-                uint16_t back = _visdat->depth_background.at<uint16_t>(match.pt.x*IMSCALEF,match.pt.y*IMSCALEF);
-                float backf = static_cast<float>(back)* _visdat->depth_scale;
-                float dis = sqrtf(powf(output.x,2) + powf(output.y,2) +powf(output.z,2));
-                if (dis > backf)
+                uint16_t back = _visdat->depth_background.at<uint16_t>(match.pt.y*IMSCALEF,match.pt.x*IMSCALEF);
+                float backf = static_cast<float>(back) * _visdat->depth_scale;
+                float pixel[2];
+                pixel[0] = match.pt.x*IMSCALEF;
+                pixel[1] = match.pt.y*IMSCALEF;
+                float res[3]; // From point (in 3D)
+                _visdat->deproject(pixel,backf,res);
+                float dist_back = sqrtf(powf(res[0],2) + powf(res[1],2) +powf(res[2],2));
+
+                float dist_meas = sqrtf(powf(output.x,2) + powf(output.y,2) +powf(output.z,2));
+                if (dist_meas > dist_back*(static_cast<float>(settings.background_subtract_zone_factor)/100.f))
                     background_check_ok = false;
 
-                std::cout << output.x << ",  " << output.y << ", " << output.z << ", |" << dis << "|, " << backf << " - ";
 
                 float theta = _visdat->camera_angle * deg2rad;
                 float temp_y = output.y * cosf(theta) + output.z * sinf(theta);

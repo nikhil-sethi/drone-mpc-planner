@@ -9,8 +9,9 @@ using namespace cv;
 using namespace std;
 
 
-void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, cv::Mat new_depth_background, float new_depth_scale, Mat new_disparity_background){
+void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, cv::Mat new_depth_background, float new_depth_scale, Mat new_disparity_background, rs2_intrinsics *new_intr){
     Qf = new_Qf;
+    intr = new_intr;
     frameL = new_frameL.clone();
     frameR = new_frameR.clone();
     frameL_prev = frameL;

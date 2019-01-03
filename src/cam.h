@@ -52,6 +52,7 @@ public:
     int frame_number() {return _frame_number;}
     float frame_time() {return _frame_time;}
     cv::Mat Qf;
+    rs2_intrinsics * intr;
 
     cv::Mat frameL,frameR;
 

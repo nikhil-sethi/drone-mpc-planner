@@ -91,12 +91,22 @@ private:
         int exclude_min_distance = 5; // in res/IMSCALEF resolution
         int exclude_max_distance = 50; // in res/IMSCALEF resolution
 
-        float version = 1.1f;
+        int background_subtract_zone_factor =90;
+        float version = 1.2f;
 
         template <class Archive>
         void serialize( Archive & ar )
         {
-            ar(version, iLowH1r,iHighH1r,iLowS1r,iHighS1r,iLowV1r,iHighV1r,iOpen1r,iClose1r,minThreshold,maxThreshold,filterByArea,minArea,maxArea,filterByCircularity,minCircularity,maxCircularity,filterByConvexity,minConvexity,maxConvexity,filterByInertia,minInertiaRatio,maxInertiaRatio,min_disparity,max_disparity,roi_min_size,roi_max_grow,roi_grow_speed,appear_void_max_distance,void_void_max_distance,appear_void_max_distance,exclude_max_distance);
+            ar(version, iLowH1r,iHighH1r,iLowS1r,iHighS1r,
+               iLowV1r,iHighV1r,iOpen1r,iClose1r,minThreshold,
+               maxThreshold,filterByArea,minArea,maxArea,
+               filterByCircularity,minCircularity,maxCircularity,
+               filterByConvexity,minConvexity,maxConvexity,
+               filterByInertia,minInertiaRatio,maxInertiaRatio,
+               min_disparity,max_disparity,roi_min_size,
+               roi_max_grow,roi_grow_speed,appear_void_max_distance,
+               void_void_max_distance,appear_void_max_distance,
+               exclude_max_distance,background_subtract_zone_factor);
         }
 
     };
