@@ -269,18 +269,14 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
 
         Point3f output;
         float disparity = 0;
-        cv::KeyPoint match;
+        track_item * match;
 
         while (keypoint_candidates.size() > 0) {
             uint match_id = match_closest_to_prediciton(previous_location,find_result.keypointsL_wihout_voids);
-            match = find_result.keypointsL_wihout_voids.at(match_id).k;
+            match = &find_result.keypointsL_wihout_voids.at(match_id);
 
-            disparity = stereo_match(match,_visdat->frameL_prev,_visdat->frameR_prev,_visdat->frameL,_visdat->frameR,n_frames_tracking,find_result.disparity);
+            disparity = stereo_match(match->k,_visdat->frameL_prev,_visdat->frameR_prev,_visdat->frameL,_visdat->frameR,n_frames_tracking,find_result.disparity);
             disparity = update_disparity(disparity, dt_tracking);
-
-            float disp_back = _visdat->disparity_background.at<float>(match.pt.x*IMSCALEF,match.pt.y*IMSCALEF) ;
-
-            std::cout << "[" << disparity << " | " << disp_back << "] - ";
 
             bool background_check_ok = true;
             bool disparity_in_range = true;
@@ -289,15 +285,15 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
             } else {
                 //calculate everything for the itemcontroller:
                 std::vector<Point3f> camera_coordinates, world_coordinates;
-                camera_coordinates.push_back(Point3f(match.pt.x*IMSCALEF,match.pt.y*IMSCALEF,-disparity));
+                camera_coordinates.push_back(Point3f(match->x()*IMSCALEF,match->y()*IMSCALEF,-disparity));
                 cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
                 output = world_coordinates[0];
 
-                uint16_t back = _visdat->depth_background.at<uint16_t>(match.pt.y*IMSCALEF,match.pt.x*IMSCALEF);
+                uint16_t back = _visdat->depth_background.at<uint16_t>(match->y()*IMSCALEF,match->x()*IMSCALEF);
                 float backf = static_cast<float>(back) * _visdat->depth_scale;
                 float pixel[2];
-                pixel[0] = match.pt.x*IMSCALEF;
-                pixel[1] = match.pt.y*IMSCALEF;
+                pixel[0] = match->x()*IMSCALEF;
+                pixel[1] = match->y()*IMSCALEF;
                 float res[3]; // From point (in 3D)
                 _visdat->deproject(pixel,backf,res);
                 float dist_back = sqrtf(powf(res[0],2) + powf(res[1],2) +powf(res[2],2));
@@ -306,6 +302,8 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
                 if (dist_meas > dist_back*(static_cast<float>(settings.background_subtract_zone_factor)/100.f))
                     background_check_ok = false;
 
+                find_result.keypointsL_wihout_voids.at(match_id).distance = dist_meas;
+                find_result.keypointsL_wihout_voids.at(match_id).distance_background = dist_back;
 
                 float theta = _visdat->camera_angle * deg2rad;
                 float temp_y = output.y * cosf(theta) + output.z * sinf(theta);
@@ -325,7 +323,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
             //Point3f predicted_output = world_coordinates[1];
             check_consistency(cv::Point3f(this->prevX,this->prevY,this->prevZ),output);
             update_tracker_ouput(output,dt_tracking,match,disparity,_visdat->frame_id);
-            update_prediction_state(cv::Point3f(match.pt.x,match.pt.y,disparity),match.size);
+            update_prediction_state(cv::Point3f(match->x(),match->y(),disparity),match->k.size);
             n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
             t_prev_tracking = time; // update dt only if item was detected
             n_frames_tracking++;
@@ -851,14 +849,17 @@ void ItemTracker::update_prediction_state(cv::Point3f p, float blob_size) {
     blob_size_last = blob_size;
 }
 
-void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  cv::KeyPoint match, float disparity, int frame_id) {
+void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  track_item * best_match, float disparity, int frame_id) {
 
-    find_result.best_image_locationL = match;
+    find_result.best_image_locationL = best_match->k;
     find_result.disparity = disparity;
 
-    float new_tracking_certainty = calc_certainty(match);
+    float new_tracking_certainty = calc_certainty(best_match->k);
 
-    pathL.push_back(track_item(find_result.best_image_locationL,frame_id,new_tracking_certainty));
+    track_item t(*best_match);
+    t.tracking_certainty = new_tracking_certainty;
+
+    pathL.push_back(t);
 
     trackData data ={0};
     data.valid = true;

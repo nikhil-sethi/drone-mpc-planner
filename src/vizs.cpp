@@ -393,6 +393,25 @@ void Visualizer::draw_tracker_viz() {
     cv::Rect rect(0,frameL.rows*_res_mult/4,frameL.cols*_res_mult,frameL.rows*_res_mult);
     cv::Mat roi = resFrame(rect);
     cv::Size size (frameL.cols*_res_mult,frameL.rows*_res_mult);
+
+    if (ins_path.size()>0){
+        std::stringstream ss;
+        ss << "i " << to_string_with_precision(ins_path.back().distance_background,1) << " vs "  << to_string_with_precision(ins_path.back().distance,1) << " ";
+        cv::Scalar c(0,0,255);
+        if (ins_path.back().distance_background >ins_path.back().distance )
+            c = cv::Scalar(180,180,255);
+        putText(frameL_color,ss.str(),cv::Point(ins_path.back().x()*IMSCALEF+10,ins_path.back().y()*IMSCALEF),cv::FONT_HERSHEY_SIMPLEX,0.5,c);
+        cv::circle(frameL_color,cv::Point(ins_path.back().x()*IMSCALEF,ins_path.back().y()*IMSCALEF),4,c,2);
+    }
+    if (drn_path.size()>0){
+        std::stringstream ss;
+        ss << "d " << to_string_with_precision(drn_path.back().distance_background,1) << " vs "  << to_string_with_precision(drn_path.back().distance,1) << " ";
+        cv::Scalar c(0,0,255);
+        if (drn_path.back().distance_background >drn_path.back().distance )
+            c = cv::Scalar(180,180,255);
+        putText(frameL_color,ss.str(),cv::Point(drn_path.back().x()*IMSCALEF+10,drn_path.back().y()*IMSCALEF),cv::FONT_HERSHEY_SIMPLEX,0.5,c);
+        cv::circle(frameL_color,cv::Point(drn_path.back().x()*IMSCALEF,drn_path.back().y()*IMSCALEF),4,c,2);
+    }
     cv::resize(frameL_color,roi,size);
 
     //        cir8 = _dtrkr->_cir*255;

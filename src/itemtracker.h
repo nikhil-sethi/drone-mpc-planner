@@ -30,10 +30,21 @@ public:
         cv::KeyPoint k_void;
         int frame_id;
         float tracking_certainty;
+        float distance;
+        float distance_background;
+
         track_item(cv::KeyPoint kp, int frameid,float trackingCertainty){
             k = kp;
             frame_id = frameid;
             tracking_certainty = trackingCertainty;
+        }
+        track_item(track_item const &t){
+            k = t.k;
+            k_void = t.k_void;
+            frame_id = t.frame_id;
+            tracking_certainty = t.tracking_certainty;
+            distance = t.distance;
+            distance_background = t.distance_background;
         }
         float x() {return k.pt.x;}
         float y() {return k.pt.y;}
@@ -132,7 +143,7 @@ private:
     void check_consistency(cv::Point3f previous_location,cv::Point3f measured_world_coordinates);
     float update_disparity(float disparity, float dt);
     void update_prediction_state(cv::Point3f p, float blob_size);
-    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, cv::KeyPoint match, float disparity, int frame_id);
+    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, track_item *best_match, float disparity, int frame_id);
     void find(std::vector<track_item> exclude);
     std::vector<ItemTracker::track_item> remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path);
     std::vector<ItemTracker::track_item> remove_excludes_improved(std::vector<track_item> keypoints, std::vector<track_item> exclude_path);
