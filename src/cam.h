@@ -18,15 +18,43 @@
 #include "opencv2/highgui/highgui.hpp"
 
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
+#include "tinyxml/XMLSerialization.h"
+using namespace xmls;
 
 class Cam{
 
+private:
+    class CamCalibrationData: public Serializable
+    {
+    public:
+
+        xFloat Angle_X;
+        xFloat Angle_Y;
+        xFloat Exposure;
+
+
+        CamCalibrationData():
+            Angle_X(0),
+            Angle_Y(30),
+            Exposure(0)
+        {
+            // Set the XML class name.
+            // This name can differ from the C++ class name
+            setClassName("CamCalibrationData");
+
+            // Set class version
+            setVersion("1.0");
+
+            // Register members. Like the class name, member names can differ from their xml depandants
+            Register("Angle_X", &Angle_X);
+            Register("Angle_Y", &Angle_Y);
+            Register("Exposure", &Exposure);
+        };
+    };
+
 public:
 
-    void init(std::ofstream *logger);
-    void sense_light_level();
-    void calib_pose();
-    cv::Point3f rotate_point(cv::Point3f point);
+    void init();
     void init(int argc, char **argv);
     void close();
     void reset();
@@ -60,7 +88,8 @@ public:
     cv::Mat depth_background;
     cv::Mat disparity_background;
 
-    float _camera_angle_x,_camera_angle_y;
+    float _camera_angle_x = 0;
+    float _camera_angle_y = 30;
     float camera_angle(){
         return _camera_angle_y;
     }
@@ -72,9 +101,9 @@ public:
     const auto_exposure_enum enable_auto_exposure = only_at_startup;
 
     struct stereo_frame{
-         cv::Mat frameL,frameR;
-         uint id;
-         float time;
+        cv::Mat frameL,frameR;
+        uint id;
+        float time;
     };
 
 private:
@@ -98,6 +127,8 @@ private:
 
     bool _paused;
 
+    const std::string calib_fn = "./logging/cam_calib.xml";
+
     void pause();
     void resume();
     void seek(float time);
@@ -106,6 +137,12 @@ private:
     void update_playback();
     void rs_callback(rs2::frame f);
     void rs_callback_playback(rs2::frame f);
+
+    void sense_light_level();
+    void calib_pose();
+    cv::Point3f rotate_point(cv::Point3f point);
+    void serialize_calib();
+    void deserialize_calib();
 
     rs2::sensor depth_sensor;
 
@@ -122,10 +159,6 @@ private:
     };
     std::deque<frame_data> playback_bufferL;
     std::deque<frame_data> playback_bufferR;
-
-protected:
-    std::ofstream *_logger;
-
 
 };
 

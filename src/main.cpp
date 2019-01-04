@@ -66,7 +66,6 @@ std::string data_output_dir;
 std::string calib_folder;
 
 std::ofstream logger;
-std::ofstream calibration_logger;
 //Arduino rc;
 MultiModule rc;
 DroneTracker dtrkr;
@@ -75,7 +74,6 @@ DroneNavigation dnav;
 InsectTracker itrkr;
 Visualizer visualizer;
 LogReader logreader;
-LogReader calibration_reader;
 #if CAMMODE == CAMMODE_FROMVIDEOFILE
 FileCam cam;
 #define Cam FileCam //wow that is pretty hacky :)
@@ -333,11 +331,6 @@ int init(int argc, char **argv) {
         } else {
             logreader.init(fn + ".log");
             fromfile = log_mode_full;
-            std::size_t found = fn.find_last_of("/");
-            string fnc = fn;
-            fnc.erase(found+1);
-            calibration_reader.init(fnc + "calibration.log");
-            calibration_reader.set_current_frame_number(0);
         }
     }
     data_output_dir = "./logging/";
@@ -347,7 +340,6 @@ int init(int argc, char **argv) {
         logger.open(data_output_dir  + "test_fromfile.log",std::ofstream::out);
     else {
         logger.open(data_output_dir  + "test.log",std::ofstream::out);
-        calibration_logger.open(data_output_dir  + "calibration.log",std::ofstream::out);
     }
 
     logger << "ID;RS_ID;time;";
@@ -360,10 +352,9 @@ int init(int argc, char **argv) {
     /*****Start capturing images*****/
     if (fromfile == log_mode_full) {
         cam.init(argc,argv);
-        cam._camera_angle_y = calibration_reader.current_item.camera_angle_y/10000.f;
     }
     else
-        cam.init(&calibration_logger);
+        cam.init();
     cam.update(); // wait for first frames
 
     visdat.init(cam.Qf, cam.frameL,cam.frameR,cam.camera_angle(),cam.depth_background,cam.depth_scale,cam.disparity_background,cam.intr); // do after cam update to populate frames

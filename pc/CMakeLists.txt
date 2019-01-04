@@ -38,8 +38,8 @@ MESSAGE( STATUS "GST_INCLUDE_DIRS: " ${GST_INCLUDE_DIRS} )
 include_directories(SYSTEM ${GST_INCLUDE_DIRS})
 link_directories(SYSTEM ${GST_LIBRARY_DIRS})
 
-set (CEREAL_SRC_DIR ../src/)
-include_directories(SYSTEM "${CEREAL_SRC_DIR}")
+set (SRC_DIR ../src/)
+include_directories(SYSTEM "${SRC_DIR}")
 
 #************airsim******************
 if(WITH_AIRSIM)
@@ -83,7 +83,7 @@ endif()
 set(REALSENSE realsense2) #supports D4** series
 
 # sources
-FILE(GLOB SRCS "../src/*.cpp" "../src/*.h" "../src/*.c" "../src/cereal*.hpp")
+FILE(GLOB SRCS "../src/*.cpp" "../src/*.h" "../src/*.c" "../src/cereal/*.hpp" "../src/tinyxml/*.h" "../src/tinyxml/*.cpp")
 
 include(CheckCXXCompilerFlag)
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3 -Wall -Wextra -Wlogical-op -Wuseless-cast -Wold-style-cast -Wdouble-promotion -Wshadow -Wformat=2 -Wimplicit-fallthrough -Wno-missing-field-initializers")

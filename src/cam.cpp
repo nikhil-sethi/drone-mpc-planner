@@ -115,10 +115,10 @@ void Cam::update_playback(void) {
 void Cam::rs_callback_playback(rs2::frame f) {
 
     lock_frame_data.lock();
-//    if (f.get_profile().stream_index() == 1 )
-//        std::cout << "Received id "         << f.get_frame_number() << ":" << ((float)f.get_timestamp()-_frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << "         Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << incremented_playback_frametime << " bufsize: " << playback_bufferL.size() << std::endl;
-//    if (f.get_profile().stream_index() == 2 )
-//        std::cout << "Received id         " << f.get_frame_number() << ":" << ((float)f.get_timestamp()-_frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << " Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << incremented_playback_frametime << " bufsize: " << playback_bufferL.size() << std::endl;
+    //    if (f.get_profile().stream_index() == 1 )
+    //        std::cout << "Received id "         << f.get_frame_number() << ":" << ((float)f.get_timestamp()-_frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << "         Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << incremented_playback_frametime << " bufsize: " << playback_bufferL.size() << std::endl;
+    //    if (f.get_profile().stream_index() == 2 )
+    //        std::cout << "Received id         " << f.get_frame_number() << ":" << ((float)f.get_timestamp()-_frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << " Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << incremented_playback_frametime << " bufsize: " << playback_bufferL.size() << std::endl;
 
     if (f.get_profile().stream_index() == 1 && f.get_frame_number() >= requested_id_in && playback_bufferL.size() < 100) {
         frame_data fL;
@@ -160,7 +160,7 @@ void Cam::update_real(void) {
     if (_frame_time_start <0)
         _frame_time_start = rs_frameL.get_timestamp();
     _frame_time = (static_cast<float>(rs_frameL.get_timestamp()) -_frame_time_start)/1000.f;
-//    std::cout << "-------------frame id: " << _frame_number << " seek time: " << incremented_playback_frametime << std::endl;
+    //    std::cout << "-------------frame id: " << _frame_number << " seek time: " << incremented_playback_frametime << std::endl;
     lock_frame_data.unlock();
 
     new_frame1 = false;
@@ -171,10 +171,10 @@ void Cam::update_real(void) {
 uint last_sync_id = 0;
 void Cam::rs_callback(rs2::frame f) {
 
-//    if (f.get_profile().stream_index() == 1 )
-//        std::cout << "Received id "         << f.get_frame_number() << ":" << (static_cast<float>(f.get_timestamp()) -_frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << "         Last: " << last_sync_id << std::endl;
-//    if (f.get_profile().stream_index() == 2 )
-//        std::cout << "Received id         " << f.get_frame_number() << ":" << (static_cast<float>(f.get_timestamp()) -_frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << " Last: " << last_sync_id << std::endl;
+    //    if (f.get_profile().stream_index() == 1 )
+    //        std::cout << "Received id "         << f.get_frame_number() << ":" << (static_cast<float>(f.get_timestamp()) -_frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << "         Last: " << last_sync_id << std::endl;
+    //    if (f.get_profile().stream_index() == 2 )
+    //        std::cout << "Received id         " << f.get_frame_number() << ":" << (static_cast<float>(f.get_timestamp()) -_frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << " Last: " << last_sync_id << std::endl;
 
     if (f.get_frame_number() < last_sync_id-50) {
         std::cout << "Warning: rs frame number reset happened!!!" << std::endl;
@@ -226,12 +226,9 @@ void Cam::set_calibration(rs2::stream_profile infared1,rs2::stream_profile infar
 
 }
 
-void Cam::init(std::ofstream *logger) {
+void Cam::init() {
 
     std::cout << "Initializing cam" << std::endl;
-    _logger = logger;
-    (*_logger) << "RS_ID" << ";" << "camera_angle_y" << ";\n";
-
 
     rs2::stream_profile infared1,infared2;
     rs2::context ctx; // The context represents the current platform with respect to connected devices
@@ -339,8 +336,40 @@ void Cam::init(std::ofstream *logger) {
 #endif
 
     set_calibration(infared1,infared2);
-
+    serialize_calib();
     swc.Start();
+}
+
+void Cam::deserialize_calib() {
+    std::cout << "Reading calibration from: " << calib_fn << std::endl;
+    std::ifstream infile(calib_fn);
+
+    std::string xmlData((std::istreambuf_iterator<char>(infile)),
+                     std::istreambuf_iterator<char>());
+
+
+    CamCalibrationData* dser=new CamCalibrationData; // Create new object
+    if (Serializable::fromXML(xmlData, dser)) // perform deserialization
+    { // Deserialization successful
+        _camera_angle_x = dser->Angle_X.value();
+        _camera_angle_y = dser->Angle_Y.value();
+        _measured_exposure = dser->Exposure.value();
+    } else { // Deserialization not successful
+        std::cout << "Error reading camera calibration file." << std::endl;
+        exit(1);
+    }
+}
+
+void Cam::serialize_calib() {
+    CamCalibrationData *calib_settings=new CamCalibrationData; // Create new object
+    calib_settings->Angle_X = _camera_angle_x;
+    calib_settings->Angle_Y = _camera_angle_y;
+    calib_settings->Exposure = _measured_exposure;
+
+    std::string xmlData = calib_settings->toXML();
+    std::ofstream outfile(calib_fn);
+    outfile << xmlData ;
+    outfile.close();
 }
 
 void Cam::sense_light_level(){
@@ -554,7 +583,6 @@ void Cam::calib_pose(){
         _camera_angle_y = -alpha*rad2deg; //[degrees]
     }
     std::cout << "Measured pose: " << _camera_angle_y << std::endl;
-    (*_logger) << 0 << ";" << _camera_angle_y*10000.f << "; ";
 
     cam.stop();
 }
@@ -600,6 +628,7 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
     pause();
 
     set_calibration(infared1,infared2);
+    deserialize_calib();
     swc.Start();
 }
 
