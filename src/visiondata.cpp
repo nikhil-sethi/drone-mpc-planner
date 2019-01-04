@@ -56,6 +56,9 @@ void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, fl
 
 void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int new_frame_id) {
     lock_data.lock();
+
+    track_avg_brightness(frameL,time);
+
     frameL_prev = frameL;
     frameR_prev = frameR;
     frameL = new_frameL;
@@ -128,4 +131,20 @@ void VisionData::collect_avg_prev_frame(cv::Mat frame) {
     frame.convertTo(frame32,CV_32SC1);
     n_avg_prev_frames+=1;
     avg_prev_frame +=frame32;
+}
+
+//Keep track of the average brightness, and reset the motion integration frame when it changes to much. (e.g. when someone turns on the lights or something)
+void VisionData::track_avg_brightness(cv::Mat frame,float time) {
+    if (time - prev_time_brightness_check > settings.brightness_check_period){ // only check once in a while
+        prev_time_brightness_check = time;
+        cv::Mat frame_small;
+        cv::resize(frame,frame_small,cv::Size(frame.cols/8,frame.rows/8));
+        float brightness = mean( frame_small )[0];
+        if (fabs(brightness - prev_brightness) > settings.brightness_event_tresh ) {
+            std::cout << "Warning, large brightness change: " << prev_brightness << " -> " << brightness  << std::endl;
+            frameL_prev16 = frame.clone();
+            diffL16 = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
+        }
+        prev_brightness = brightness;
+    }
 }

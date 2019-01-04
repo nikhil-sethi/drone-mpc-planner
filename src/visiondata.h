@@ -37,13 +37,17 @@ private:
         int uncertainty_background = 0.3*255.0;
         int background_calib_time = 5;
         int motion_update_iterator_max = 10;
+        float brightness_event_tresh = 5;
+        float brightness_check_period = 1;
 
-        float version = 1.1f;
+        float version = 1.2f;
 
         template <class Archive>
         void serialize( Archive & ar )
         {
-            ar(version, uncertainty_power,uncertainty_multiplier,uncertainty_background,background_calib_time,motion_update_iterator_max);
+            ar(version, uncertainty_power,uncertainty_multiplier,
+               uncertainty_background,background_calib_time,motion_update_iterator_max,
+               brightness_event_tresh,brightness_check_period);
         }
     };
 
@@ -54,9 +58,13 @@ private:
     cv::Mat frameL16;
     cv::Mat frameL_prev16;
 
+    float prev_time_brightness_check = 0;
+    float prev_brightness;
+
     void init_avg_prev_frame(void);
     void collect_avg_prev_frame(cv::Mat frame);
     void collect_no_drone_frames(cv::Mat diff);
+    void track_avg_brightness(cv::Mat frame,float time);
 
     const rs2_intrinsics * intr;
 
@@ -73,8 +81,6 @@ public:
     float depth_scale;
     cv::Mat depth_background;
     cv::Mat disparity_background;
-
-
 
     void init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, cv::Mat new_depth_background, float new_depth_scale, cv::Mat new_disparity_background, rs2_intrinsics *new_intr);
     void close() {
