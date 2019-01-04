@@ -275,7 +275,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
             uint match_id = match_closest_to_prediciton(previous_location,find_result.keypointsL_wihout_voids);
             match = &find_result.keypointsL_wihout_voids.at(match_id);
 
-            disparity = stereo_match(match->k,_visdat->frameL_prev,_visdat->frameR_prev,_visdat->frameL,_visdat->frameR,n_frames_tracking,find_result.disparity);
+            disparity = stereo_match(match->k,_visdat->frameL_prev,_visdat->frameR_prev,_visdat->frameL,_visdat->frameR,find_result.disparity);
             disparity = update_disparity(disparity, dt_tracking);
 
             bool background_check_ok = true;
@@ -322,7 +322,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
         if (keypoint_candidates.size() > 0) { // if !lost
             //Point3f predicted_output = world_coordinates[1];
             check_consistency(cv::Point3f(this->prevX,this->prevY,this->prevZ),output);
-            update_tracker_ouput(output,dt_tracking,match,disparity,_visdat->frame_id);
+            update_tracker_ouput(output,dt_tracking,match,disparity);
             update_prediction_state(cv::Point3f(match->x(),match->y(),disparity),match->k.size);
             n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
             t_prev_tracking = time; // update dt only if item was detected
@@ -648,7 +648,7 @@ uint ItemTracker::match_closest_to_prediciton(cv::Point3f predicted_locationL, s
     return closestL;
 }
 
-float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::Mat prevFrameR_big, cv::Mat frameL,cv::Mat frameR, int n_frames_tracking, float prev_disparity){
+float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::Mat prevFrameR_big, cv::Mat frameL,cv::Mat frameR, float prev_disparity){
 
     //get retangle around blob / changed pixels
     float rectsize = closestL.size; // keypoint.size is the diameter of the blob
@@ -683,7 +683,7 @@ float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv:
 
     //shift over the image to find the best match, shift = disparity
     int disparity_err = 0;
-    int disparity_cor = 0;
+    __attribute__((unused)) int disparity_cor = 0;
     float maxcor = -std::numeric_limits<float>::max();
     float minerr = std::numeric_limits<float>::max();
     int tmp_max_disp = settings.max_disparity;
@@ -849,7 +849,7 @@ void ItemTracker::update_prediction_state(cv::Point3f p, float blob_size) {
     blob_size_last = blob_size;
 }
 
-void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  track_item * best_match, float disparity, int frame_id) {
+void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  track_item * best_match, float disparity) {
 
     find_result.best_image_locationL = best_match->k;
     find_result.disparity = disparity;

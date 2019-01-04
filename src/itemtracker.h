@@ -138,12 +138,12 @@ private:
     cv::Point3f predict(float dt, int frame_id);
     virtual cv::Mat get_approx_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size) = 0;
     uint match_closest_to_prediciton(cv::Point3f predicted_locationL, std::vector<track_item> keypointsL);
-    float stereo_match(cv::KeyPoint closestL, cv::Mat frameL_prev, cv::Mat prevFrameR_big, cv::Mat frameL, cv::Mat frameR, int n_frames_tracking, float disparity);
+    float stereo_match(cv::KeyPoint closestL, cv::Mat frameL_prev, cv::Mat prevFrameR_big, cv::Mat frameL, cv::Mat frameR, float disparity);
     float estimate_sub_disparity(int disparity);
     void check_consistency(cv::Point3f previous_location,cv::Point3f measured_world_coordinates);
     float update_disparity(float disparity, float dt);
     void update_prediction_state(cv::Point3f p, float blob_size);
-    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, track_item *best_match, float disparity, int frame_id);
+    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, track_item *best_match, float disparity);
     void find(std::vector<track_item> exclude);
     std::vector<ItemTracker::track_item> remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path);
     std::vector<ItemTracker::track_item> remove_excludes_improved(std::vector<track_item> keypoints, std::vector<track_item> exclude_path);
