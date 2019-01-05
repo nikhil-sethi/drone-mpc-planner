@@ -34,7 +34,7 @@ float transformPixelToAngle(cv::Point2f p, cv::Point2f pix2rad,cv::Point center)
 int getCenterPixel(float angle, float imFOV, int imWidth) {
     //calculate the center pixel based on the angle measured by an IMU
     //the 0.5 is because the IMU goes from [-PI .. PI], while the image goes from [0 .. imsize]
-    return round(((angle/(imFOV/FOV)) / (float)M_PI + 0.5f) * imWidth);
+    return roundf(((angle/(imFOV/FOV)) / static_cast<float>(M_PI) + 0.5f) * imWidth);
 }
 
 void acc_orientation(float accx, float accy, float accz, float *out) {

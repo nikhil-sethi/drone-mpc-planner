@@ -116,9 +116,9 @@ void Cam::rs_callback_playback(rs2::frame f) {
 
     lock_frame_data.lock();
     //    if (f.get_profile().stream_index() == 1 )
-    //        std::cout << "Received id "         << f.get_frame_number() << ":" << ((float)f.get_timestamp()-_frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << "         Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << incremented_playback_frametime << " bufsize: " << playback_bufferL.size() << std::endl;
+    //        std::cout << "Received id "         << f.get_frame_number() << ":" << (static_cast<float>(f.get_timestamp())-_frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << "         Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << incremented_playback_frametime << " bufsize: " << playback_bufferL.size() << std::endl;
     //    if (f.get_profile().stream_index() == 2 )
-    //        std::cout << "Received id         " << f.get_frame_number() << ":" << ((float)f.get_timestamp()-_frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << " Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << incremented_playback_frametime << " bufsize: " << playback_bufferL.size() << std::endl;
+    //        std::cout << "Received id         " << f.get_frame_number() << ":" << (static_cast<float>(f.get_timestamp())-_frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << " Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << incremented_playback_frametime << " bufsize: " << playback_bufferL.size() << std::endl;
 
     if (f.get_profile().stream_index() == 1 && f.get_frame_number() >= requested_id_in && playback_bufferL.size() < 100) {
         frame_data fL;
