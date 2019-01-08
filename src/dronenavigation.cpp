@@ -107,6 +107,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     createTrackbar("d threshold factor", "Nav", &params.distance_threshold_f, 10);
     createTrackbar("land_incr_f_mm", "Nav", &params.land_incr_f_mm, 50);
     createTrackbar("Land Decrease  ", "Nav", &params.autoLandThrottleDecreaseFactor, 50);
+    createTrackbar("Take off speed threshold  ", "Nav", &params.auto_takeoff_speed, 50);
 
 #endif
 
@@ -176,7 +177,7 @@ void DroneNavigation::update() {
             setpoint_world.x = (setpoints.back()._xyz.x - SETPOINTXMAX/2) / 1000.0f;
             setpoint_world.y = -1.70f;;
             //setpoint_world.z = -(setpoints.back()._xyz.z) / 1000.0f;
-            setpoint_world.z = -1.0f;
+            setpoint_world.z = -1.37f;
         }
 
         if (_dctrl->get_flight_mode() == DroneController::fm_manual)
