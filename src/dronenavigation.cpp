@@ -151,7 +151,7 @@ void DroneNavigation::update() {
         _dctrl->set_flight_mode(DroneController::fm_flying);
         //TODO: choose whether to fly waypoints (e.g. for testing or demos) or to start the chase
         //for now, just chase always
-        //navigation_status = navigation_status_chasing_insect;
+        //navigation_status = navigation_status_start_the_chase;
         //OR fly waypoints
         navigation_status = navigation_status_set_waypoint_in_flightplan;
         break;
