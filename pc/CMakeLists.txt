@@ -86,7 +86,8 @@ set(REALSENSE realsense2) #supports D4** series
 FILE(GLOB SRCS "../src/*.cpp" "../src/*.h" "../src/*.c" "../src/cereal/*.hpp" "../src/tinyxml/*.h" "../src/tinyxml/*.cpp")
 
 include(CheckCXXCompilerFlag)
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3 -Wall -Wextra -Wlogical-op -Wuseless-cast -Wold-style-cast -Wdouble-promotion -Wshadow -Wformat=2 -Wimplicit-fallthrough -Wno-missing-field-initializers")
+#-Wimplicit-fallthrough -> only supported by gcc >7 (ubuntu 18)
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3 -Wall -Wextra -Wlogical-op -Wuseless-cast -Wold-style-cast -Wdouble-promotion -Wshadow -Wformat=2  -Wno-missing-field-initializers")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)

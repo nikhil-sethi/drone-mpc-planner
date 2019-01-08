@@ -29,6 +29,16 @@ distribution.
 #   include <cstddef>
 #endif
 
+#ifndef FALLTHROUGH_INTENDED
+#if defined(__clang__)
+#define FALLTHROUGH_INTENDED [[clang::fallthrough]]
+#elif defined(__GNUC__) && __GNUC__ >= 7
+#define FALLTHROUGH_INTENDED [[gnu::fallthrough]]
+#else
+#define FALLTHROUGH_INTENDED do {} while (0)
+#endif
+#endif
+
 static const char LINE_FEED				= 0x0a;			// all line endings are normalized to LF
 static const char LF = LINE_FEED;
 static const char CARRIAGE_RETURN		= 0x0d;			// CR gets filtered out
@@ -310,15 +320,15 @@ void XMLUtil::ConvertUTF32ToUTF8( unsigned long input, char* output, int* length
             --output;
             *output = static_cast<char>((input | BYTE_MARK) & BYTE_MASK);
             input >>= 6;
-        [[fallthrough]]; case 3:
+        FALLTHROUGH_INTENDED; case 3:
             --output;
             *output = static_cast<char>((input | BYTE_MARK) & BYTE_MASK);
             input >>= 6;
-        [[fallthrough]]; case 2:
+        FALLTHROUGH_INTENDED; case 2:
             --output;
             *output = static_cast<char>((input | BYTE_MARK) & BYTE_MASK);
             input >>= 6;
-        [[fallthrough]]; case 1:
+        FALLTHROUGH_INTENDED; case 1:
             --output;
             *output = static_cast<char>(input | FIRST_BYTE_MARK[*length]);
         default:

@@ -160,7 +160,7 @@ void DroneNavigation::update() {
         else
             navigation_status = navigation_status_goto_landing_waypoint;
 
-    } [[fallthrough]]; case navigation_status_chasing_insect: {
+    } FALLTHROUGH_INTENDED; case navigation_status_chasing_insect: {
 
         //update target chasing waypoint and speed
         if (_iceptor.get_insect_in_range()) {
@@ -184,7 +184,7 @@ void DroneNavigation::update() {
     } case navigation_status_goto_landing_waypoint: {
         wpid = static_cast<uint>(setpoints.size())-1; // last waypoint is the landing waypoint
         navigation_status = navigation_status_set_waypoint_in_flightplan;
-    } [[fallthrough]]; case navigation_status_set_waypoint_in_flightplan: {
+    } FALLTHROUGH_INTENDED; case navigation_status_set_waypoint_in_flightplan: {
         wp = &setpoints[wpid];
 
         setpoint_world.x = (wp->_xyz.x - SETPOINTXMAX/2) / 1000.0f;
@@ -234,7 +234,7 @@ void DroneNavigation::update() {
         _dctrl->recalibrateHover();
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
         navigation_status = navigation_status_landing;
-    } [[fallthrough]]; case navigation_status_landing: {
+    } FALLTHROUGH_INTENDED; case navigation_status_landing: {
         trackData data = _dtrk->get_last_track_data();
         if (data.sposY < -(MAX_BORDER_Y_DEFAULT-0.08f) || autoLandThrottleDecrease >1000)
             navigation_status = navigation_status_landed;
@@ -257,7 +257,7 @@ void DroneNavigation::update() {
         _dtrk->drone_max_border_y = MAX_BORDER_Y_DEFAULT;
         land_incr = 0;
         navigation_status = navigation_status_wait_for_insect;
-    } [[fallthrough]]; case navigation_status_manual: {
+    } FALLTHROUGH_INTENDED; case navigation_status_manual: {
         wpid = 0;
         if (_dctrl->get_flight_mode() == DroneController::fm_inactive) {
             navigation_status=navigation_status_wait_for_insect;
