@@ -267,6 +267,7 @@ void Cam::init() {
 
     }
 
+    deserialize_calib(); // the values loaded here may be (partially) overwritten by measurements below
     calib_pose();
     sense_light_level();
 
@@ -339,6 +340,7 @@ void Cam::init() {
     serialize_calib();
     swc.Start();
 }
+
 
 void Cam::deserialize_calib() {
     std::cout << "Reading calibration from: " << calib_fn << std::endl;
@@ -438,7 +440,7 @@ void Cam::calib_pose(){
 
     cv::Size im_size(IMG_W, IMG_H);
 
-    uint nframes = VIDEOFPS*2;
+    uint nframes = 1;
     if (hasIMU)
         nframes = 10;
     Smoother smx,smy,smz;
@@ -524,6 +526,7 @@ void Cam::calib_pose(){
             cout << "Camera is tilted in roll axis!" << std::endl;
             exit(1);
         }
+        std::cout << "Measured pose: " << _camera_angle_y << std::endl;
     } else { // determine camera angle from the depth map:
 
         // obtain Point Cloud
@@ -580,9 +583,18 @@ void Cam::calib_pose(){
         }
         alpha/=(nr_p_close*nr_p_far);
 
-        _camera_angle_y = -alpha*rad2deg; //[degrees]
+        float old = _camera_angle_y_measured_from_depth;
+
+        _camera_angle_y_measured_from_depth = -alpha*rad2deg; //[degrees]
+        std::cout << "Estimated angle change: " << _camera_angle_y_measured_from_depth - old << std::endl;
+        std::cout << "Set angle_y: " << _camera_angle_y << std::endl;
+
+        if (_camera_angle_y_measured_from_depth - old > 10) {
+            std::cout << "Warning: angle change to big!" << std::endl;
+            exit(1);
+        }
     }
-    std::cout << "Measured pose: " << _camera_angle_y << std::endl;
+
 
     cam.stop();
 }

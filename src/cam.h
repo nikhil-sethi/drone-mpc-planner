@@ -30,12 +30,14 @@ private:
 
         xFloat Angle_X;
         xFloat Angle_Y;
+        xFloat Angle_Y_Measured_From_Depthmap;
         xFloat Exposure;
 
 
         CamCalibrationData():
             Angle_X(0),
             Angle_Y(30),
+            Angle_Y_Measured_From_Depthmap(30),
             Exposure(0)
         {
             // Set the XML class name.
@@ -43,11 +45,12 @@ private:
             setClassName("CamCalibrationData");
 
             // Set class version
-            setVersion("1.0");
+            setVersion("1.1");
 
             // Register members. Like the class name, member names can differ from their xml depandants
             Register("Angle_X", &Angle_X);
             Register("Angle_Y", &Angle_Y);
+            Register("Angle_Y_Measured_From_Depthmap", &Angle_Y_Measured_From_Depthmap);
             Register("Exposure", &Exposure);
         };
     };
@@ -90,6 +93,7 @@ public:
 
     float _camera_angle_x = 0;
     float _camera_angle_y = 30;
+    float _camera_angle_y_measured_from_depth = 30;
     float camera_angle(){
         return _camera_angle_y;
     }
