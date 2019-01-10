@@ -630,6 +630,7 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
 
     std::vector<rs2::sensor> sensors = dev.query_sensors();
     depth_sensor = sensors[0]; // 0 = depth module
+    depth_scale = depth_sensor.get_option(RS2_OPTION_DEPTH_UNITS);
 
     std::cout << depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_NAME) << std::endl;
 
