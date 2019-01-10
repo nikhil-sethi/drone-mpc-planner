@@ -133,6 +133,10 @@ private:
 
     const std::string calib_log_fn = "./logging/cam_calib.xml";
     const std::string calib_template_fn = "../cam_calib.xml";
+    const std::string depth_map_fn = "./logging/depth_filtered.png";
+    const std::string depth_unfiltered_map_fn = "./logging/depth.png";
+    const std::string disparity_map_fn = "./logging/disparity.png";
+
 
     void pause();
     void resume();

@@ -517,13 +517,13 @@ void Cam::calib_pose(){
 
     //original depth map:
     depth_background = Mat(im_size, CV_16UC1, const_cast<void *>(frame.get_depth_frame().get_data()), Mat::AUTO_STEP).clone();
-    imwrite("./logging/depth.png",depth_background);
+    imwrite(depth_unfiltered_map_fn,depth_background);
     //filtered depth map:
     depth_background = Mat(im_size_dec, CV_16UC1, const_cast<void *>(depth.get_data()), Mat::AUTO_STEP).clone();
     cv::resize(depth_background,depth_background,im_size,0,0,INTER_CUBIC);
-    imwrite("./logging/depth_filtered.png",depth_background);
+    imwrite(depth_map_fn,depth_background);
 
-    imwrite("./logging/disparity.png",disparity_background);
+    imwrite(disparity_map_fn,disparity_background);
 
     if (hasIMU){
         _camera_angle_y = pitch;
@@ -620,8 +620,16 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
     std::cout << "Initializing cam from .bag" << std::endl;
     fromfile=true;
 
-    depth_background = imread("./logging/depth_filtered.png",CV_LOAD_IMAGE_ANYDEPTH);
-    disparity_background = imread("./logging/disparity.png");
+    if (!checkFileExist(depth_map_fn)) {
+        std::cout << "Could not find " << depth_map_fn << std::endl;
+        exit(1);
+    }
+    depth_background = imread(depth_map_fn,CV_LOAD_IMAGE_ANYDEPTH);
+
+    if (!checkFileExist(argv[1]) + ".bag") {
+        std::cout << "Could not find " << string(argv[1]) + ".bag" << std::endl;
+        exit(1);
+    }
     rs2::stream_profile infared1,infared2;
     rs2::context ctx; // The context represents the current platform with respect to connected devices
     dev = ctx.load_device(string(argv[1]) + ".bag");
