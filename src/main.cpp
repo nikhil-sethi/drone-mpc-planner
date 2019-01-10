@@ -143,6 +143,13 @@ void process_video() {
         tp[0].data = data;
         tp[0].data_is_send = true;
         tp[0].data_is_processed= false;
+#ifdef HASSCREEN
+        static int speed_div;
+        if (!(speed_div++ % 4) || fromfile!=log_mode_none){
+            visualizer.paint();
+            handleKey();
+        }
+#endif
         tp[0].new_data.notify_one();
 
         int frameWritten = 0;
@@ -178,13 +185,7 @@ void process_video() {
         imgcount++;
         prev_time = t;
 
-#ifdef HASSCREEN
-        static int speed_div;
-        if (!(speed_div++ % 4) || fromfile!=log_mode_none){
-            visualizer.paint();
-            handleKey();
-        }
-#endif
+
 
 #ifdef INSECT_LOGGING_MODE
         if (imgcount > 60000)
