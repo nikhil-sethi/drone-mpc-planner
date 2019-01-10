@@ -267,7 +267,11 @@ void Cam::init() {
 
     }
 
-    deserialize_calib(); // the values loaded here may be (partially) overwritten by measurements below
+    // load xml, the values loaded may be (partially) overwritten by measurements below
+    if (checkFileExist(calib_log_fn))
+        deserialize_calib(calib_log_fn);
+    else
+        deserialize_calib(calib_template_fn);
     calib_pose();
     sense_light_level();
 
@@ -342,9 +346,9 @@ void Cam::init() {
 }
 
 
-void Cam::deserialize_calib() {
-    std::cout << "Reading calibration from: " << calib_fn << std::endl;
-    std::ifstream infile(calib_fn);
+void Cam::deserialize_calib(std::string file) {
+    std::cout << "Reading calibration from: " << file << std::endl;
+    std::ifstream infile(file);
 
     std::string xmlData((std::istreambuf_iterator<char>(infile)),
                      std::istreambuf_iterator<char>());
@@ -355,6 +359,7 @@ void Cam::deserialize_calib() {
     { // Deserialization successful
         _camera_angle_x = dser->Angle_X.value();
         _camera_angle_y = dser->Angle_Y.value();
+        _camera_angle_y_measured_from_depth= dser->Angle_Y_Measured_From_Depthmap.value();
         _measured_exposure = dser->Exposure.value();
     } else { // Deserialization not successful
         std::cout << "Error reading camera calibration file." << std::endl;
@@ -367,9 +372,10 @@ void Cam::serialize_calib() {
     calib_settings->Angle_X = _camera_angle_x;
     calib_settings->Angle_Y = _camera_angle_y;
     calib_settings->Exposure = _measured_exposure;
+    calib_settings->Angle_Y_Measured_From_Depthmap = _camera_angle_y_measured_from_depth;
 
     std::string xmlData = calib_settings->toXML();
-    std::ofstream outfile(calib_fn);
+    std::ofstream outfile(calib_log_fn);
     outfile << xmlData ;
     outfile.close();
 }
@@ -589,7 +595,7 @@ void Cam::calib_pose(){
         std::cout << "Estimated angle change: " << _camera_angle_y_measured_from_depth - old << std::endl;
         std::cout << "Set angle_y: " << _camera_angle_y << std::endl;
 
-        if (_camera_angle_y_measured_from_depth - old > 10) {
+        if (_camera_angle_y_measured_from_depth - old > 10 && checkFileExist(calib_log_fn)) {
             std::cout << "Warning: angle change to big!" << std::endl;
             exit(1);
         }
@@ -640,7 +646,11 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
     pause();
 
     set_calibration(infared1,infared2);
-    deserialize_calib();
+    if (checkFileExist(calib_log_fn))
+        deserialize_calib(calib_log_fn);
+    else
+        deserialize_calib(calib_template_fn);
+
     swc.Start();
 }
 

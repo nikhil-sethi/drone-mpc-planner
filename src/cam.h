@@ -131,7 +131,8 @@ private:
 
     bool _paused;
 
-    const std::string calib_fn = "./logging/cam_calib.xml";
+    const std::string calib_log_fn = "./logging/cam_calib.xml";
+    const std::string calib_template_fn = "../cam_calib.xml";
 
     void pause();
     void resume();
@@ -146,7 +147,7 @@ private:
     void calib_pose();
     cv::Point3f rotate_point(cv::Point3f point);
     void serialize_calib();
-    void deserialize_calib();
+    void deserialize_calib(string file);
 
     rs2::sensor depth_sensor;
 
