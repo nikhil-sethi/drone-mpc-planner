@@ -620,6 +620,8 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
     std::cout << "Initializing cam from .bag" << std::endl;
     fromfile=true;
 
+    depth_background = imread("./logging/depth_filtered.png",CV_LOAD_IMAGE_ANYDEPTH);
+    disparity_background = imread("./logging/disparity.png");
     rs2::stream_profile infared1,infared2;
     rs2::context ctx; // The context represents the current platform with respect to connected devices
     dev = ctx.load_device(string(argv[1]) + ".bag");
