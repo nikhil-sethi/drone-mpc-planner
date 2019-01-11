@@ -102,8 +102,12 @@ private:
         int exclude_min_distance = 5; // in res/IMSCALEF resolution
         int exclude_max_distance = 50; // in res/IMSCALEF resolution
 
-        int background_subtract_zone_factor =90;
-        float version = 1.2f;
+        int max_points_per_frame = 10;
+        int ignore_circle_r_around_motion_max = 15;
+        int motion_thresh = 10;
+
+        int background_subtract_zone_factor = 90;
+        float version = 1.3f;
 
         template <class Archive>
         void serialize( Archive & ar )
@@ -117,7 +121,8 @@ private:
                min_disparity,max_disparity,roi_min_size,
                roi_max_grow,roi_grow_speed,appear_void_max_distance,
                void_void_max_distance,appear_void_max_distance,
-               exclude_max_distance,background_subtract_zone_factor);
+               exclude_max_distance,background_subtract_zone_factor,
+               max_points_per_frame,ignore_circle_r_around_motion_max,motion_thresh);
         }
 
     };
@@ -149,6 +154,7 @@ private:
     std::vector<ItemTracker::track_item> remove_excludes_improved(std::vector<track_item> keypoints, std::vector<track_item> exclude_path);
     cv::Mat show_uncertainty_map_in_image(cv::Point p, cv::Mat resframeL);
     std::vector<track_item> remove_voids(std::vector<track_item> keyps, std::vector<track_item> keyps_prev);
+    void find_max_change(cv::Point prev, cv::Point roi_size, cv::Mat diff, std::vector<cv::KeyPoint> *scored_points);
     float calc_certainty(cv::KeyPoint item);
     void init_kalman();
 

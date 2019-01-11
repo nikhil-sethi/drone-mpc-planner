@@ -1,8 +1,8 @@
 #include <iostream>
 #include "itemtracker.h"
-#include <opencv2/features2d/features2d.hpp>
-#include "opencv2/imgproc/imgproc.hpp"
-#include "opencv2/calib3d/calib3d.hpp"
+#include <opencv2/features2d.hpp>
+#include "opencv2/imgproc.hpp"
+#include "opencv2/calib3d.hpp"
 #include "common.h"
 #include "vector"
 #include "algorithm"
@@ -10,9 +10,11 @@ using namespace cv;
 using namespace std;
 
 #ifdef HASSCREEN
-//#define TUNING
+#define TUNING
 #endif
 
+//#define OPENCV_BLOBTRACKER
+//TODO: remove _treshL when removing OPENCV_BLOBTRACKER
 
 void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string name) {
     _logger = logger;
@@ -43,6 +45,7 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
 
 #ifdef TUNING
     namedWindow(window_name, WINDOW_NORMAL);
+#ifdef OPENCV_BLOBTRACKER
     createTrackbar("LowH1", window_name, &settings.iLowH1r, 255);
     createTrackbar("HighH1", window_name, &settings.iHighH1r, 255);
     createTrackbar("filterByArea", window_name, &settings.filterByArea, 1);
@@ -50,6 +53,11 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     createTrackbar("maxArea", window_name, &settings.maxArea, 10000);
     createTrackbar("Opening1", window_name, &settings.iOpen1r, 30);
     createTrackbar("Closing1", window_name, &settings.iClose1r, 30);
+#else
+    createTrackbar("#points / frame", window_name, &settings.max_points_per_frame, 255);
+    createTrackbar("ignore circle size", window_name, &settings.ignore_circle_r_around_motion_max, 255);
+    createTrackbar("Motion threshold", window_name, &settings.motion_thresh, 255);
+#endif
     createTrackbar("Min disparity", window_name, &settings.min_disparity, 255);
     createTrackbar("Max disparity", window_name, &settings.max_disparity, 255);
     createTrackbar("roi_min_size", window_name, &settings.roi_min_size, 2000);
@@ -434,15 +442,17 @@ void ItemTracker::find(std::vector<track_item> exclude) {
     if (roi_size.y >= _visdat->smallsize.height)
         roi_size.y = _visdat->smallsize.height;
 
+    std::vector<KeyPoint> keypointsL;
+#ifdef OPENCV_BLOBTRACKER
     //attempt to detect changed blobs
     _treshL = segment(_visdat->diffL_small,previous_location,roi_size);
-
-    //    cv::Mat tmp = createColumnImage({_treshL,_visdat->diffL*100,_visdat->frameL},CV_8UC1,0.25f);
-    //    cv::imshow("trek",tmp);
-
+   //    cv::Mat tmp = createColumnImage({_treshL,_visdat->diffL*100,_visdat->frameL},CV_8UC1,0.25f);
+   //    cv::imshow("trek",tmp);
     cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
-    std::vector<KeyPoint> keypointsL;
     detector->detect( _treshL, keypointsL);
+#else
+    find_max_change(previous_location,roi_size,_visdat->diffL_small,&keypointsL);
+#endif
 
     vector<track_item> kps;
     for (uint i = 0 ; i < keypointsL.size();i++) {
@@ -470,6 +480,69 @@ void ItemTracker::find(std::vector<track_item> exclude) {
     find_result.treshL = _treshL;
 }
 
+void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff,std::vector<KeyPoint> * scored_points) {
+
+    _approx = get_approx_cutout_filtered(prev,diff,roi_size);
+    cv::Mat frame = _approx;
+
+//    cv::Rect r1(prev.x-roi_size.x/2, prev.y-roi_size.y/2, roi_size.x,roi_size.y);
+//    if (r1.x < 0)
+//        r1.x = 0;
+//    else if (r1.x+r1.width >= diff.cols)
+//        r1.x -= (r1.x+r1.width+1) - diff.cols;
+//    if (r1.y < 0)
+//        r1.y = 0;
+//    else if (r1.y+r1.height >= diff.rows)
+//        r1.y -= (r1.y+r1.height+1) - diff.rows ;
+//    cv::Mat frame(diff,r1);
+//    find_result.roi_offset = r1;
+
+
+    int radius = settings.ignore_circle_r_around_motion_max;
+
+    for (int i = 0; i < settings.max_points_per_frame; i++) {
+        cv::Point mint;
+        cv::Point maxt;
+        double min, max;
+        cv::minMaxLoc(frame, &min, &max, &mint, &maxt);
+
+        if (max > settings.motion_thresh) {
+
+            //find the COG:
+            //get the Rect containing the max movement:
+            cv::Rect r2(maxt.x-radius, maxt.y-radius, radius*2,radius*2);
+            if (r2.x < 0)
+                r2.x = 0;
+            else if (r2.x+r2.width >= frame.cols)
+                r2.x -= (r2.x+r2.width+1) - frame.cols;
+            if (r2.y < 0)
+                r2.y = 0;
+            else if (r2.y+r2.height >= frame.rows)
+                r2.y -= (r2.y+r2.height+1) - frame.rows ;
+            cv::Mat roi(frame,r2);
+
+
+            // make a black mask, same size:
+            cv::Mat mask = cv::Mat::zeros(roi.size(), roi.type());
+            // with a white, filled circle in it:
+            circle(mask, Point(radius,radius), radius, 32765, -1);
+            // combine roi & mask:
+            cv::Mat cropped = roi & mask;
+
+            cv::Moments mo = cv::moments(cropped,false);
+            cv::Point2f COG = cv::Point(static_cast<float>(mo.m10) / static_cast<float>(mo.m00), static_cast<float>(mo.m01) / static_cast<float>(mo.m00));
+            COG.x += maxt.x-radius;
+            COG.y += maxt.y-radius;
+            scored_points->push_back(cv::KeyPoint(COG, max));
+
+            //remove this maximum:
+            cv::circle(frame, maxt, 1, cv::Scalar(0), radius);
+
+        } else {
+            break;
+        }
+    }
+}
 //filter out keypoints that are caused by the drone leaving the spot (voids)
 //we prefer keypoints that are of the new location of the drone (an appearance)
 //this is somewhat ambigious, because the drone might 'move' to the almost same position in some cases
