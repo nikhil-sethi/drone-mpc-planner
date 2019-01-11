@@ -58,7 +58,7 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     createTrackbar("appear_void_max_distance", window_name, &settings.appear_void_max_distance, 250);
     createTrackbar("void_void_max_distance", window_name, &settings.void_void_max_distance, 20);
     createTrackbar("exclude_min_distance", window_name, &settings.exclude_min_distance, 250);
-    createTrackbar("background_subtract_zone_factor", window_name, &settings.background_subtract_zone_factor, 90);
+    createTrackbar("background_subtract_zone_factor", window_name, &settings.background_subtract_zone_factor, 100);
 
 #endif
 
@@ -708,7 +708,7 @@ float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv:
         diff_R_roi.convertTo(diff_R_roi_16, CV_16UC1);
 
         cv::Mat corV_16 = diff_L_roi_16.mul(diff_R_roi_16);
-        cv::Mat errV = abs(diff_L_roi - diff_R_roi);
+        cv::Mat errV = abs(aL - aR); //TO DO: find the best method for robust stereo matching
 
         cor_16[i] = static_cast<int>(cv::sum(corV_16 )[0]);
         err[i] = static_cast<int>(cv::sum(errV)[0]);
