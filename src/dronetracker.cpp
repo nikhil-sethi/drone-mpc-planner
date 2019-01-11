@@ -54,6 +54,8 @@ void DroneTracker::init_settings() {
     settings.roi_min_size = 200;
     settings.roi_max_grow = 50;
     settings.roi_grow_speed = 64;
+
+    settings.background_subtract_zone_factor = 97;
 }
 
 
