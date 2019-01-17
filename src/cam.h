@@ -118,9 +118,9 @@ private:
     float _frame_time = 0;
     float _frame_time_start = -1;
 
-    float _measured_exposure = -1; // measured from sense_light_level
-    int exposure = 15500; //84*(31250/256); // >11000 -> 60fps, >15500 -> 30fps, < 20 = crash
-    int gain = 0;
+    float _measured_exposure = 15400; // measured from sense_light_level
+    int exposure = 11000; //84*(31250/256); // >11000 -> 60fps, >15500 -> 30fps, < 20 = crash
+    int gain = 200;
     bool fromfile;
 
     std::mutex lock_flags;
