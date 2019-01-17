@@ -65,8 +65,6 @@ void LogReader::setHeadMap(std::string heads) {
         std::string grr = head.first;
     }
 
-    std::cout << heads<< std::endl;
-
 }
 
 LogReader::Log_Entry LogReader::createLogEntry(std::string line) {
