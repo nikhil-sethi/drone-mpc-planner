@@ -13,7 +13,7 @@ using namespace std;
 #define TUNING
 #endif
 
-//#define OPENCV_BLOBTRACKER
+#define OPENCV_BLOBTRACKER
 //TODO: remove _treshL when removing OPENCV_BLOBTRACKER
 
 void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string name) {

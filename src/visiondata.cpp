@@ -1,5 +1,4 @@
 #include "visiondata.h"
-#include <opencv2/highgui/highgui.hpp>
 
 #ifdef HASSCREEN
 //#define TUNING
