@@ -155,7 +155,8 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
         throttleErrI = 0;
 
         autoThrottle = hoverthrottle;
-        hoverthrottle  +=params.autoTakeoffFactor;
+        if (!hoverthrottleInitialized)
+            hoverthrottle  +=params.autoTakeoffFactor;
         if (hoverthrottle < min_throttle)
             hoverthrottle = min_throttle;
 
@@ -415,6 +416,7 @@ void DroneController::process_joystick() {
 void DroneController::recalibrateHover() {
     hoverthrottle = hoverthrottle - (throttleErrI*params.throttleI*0.1f);
     throttleErrI = 0;
+    hoverthrottleInitialized = true;
 }
 
 void DroneController::close () {

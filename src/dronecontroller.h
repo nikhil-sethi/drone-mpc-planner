@@ -131,7 +131,8 @@ public:
     int autoPitch = JOY_MIDDLE;
     int autoYaw = JOY_MIDDLE;
 
-    float hoverthrottle = INITIALTHROTTLE;
+    float hoverthrottle = 800;
+    bool hoverthrottleInitialized = false;
 
 
     bool manual_override_take_off_now;
