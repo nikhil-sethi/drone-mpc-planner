@@ -80,6 +80,27 @@ if(WITH_AIRSIM)
 endif()
 #/airsim*******************
 
+
+#**************QML***********
+if(WITH_GUI)
+ # Find includes in corresponding build directories
+ set(CMAKE_INCLUDE_CURRENT_DIR ON)
+ # Instruct CMake to run moc automatically when needed
+ set(CMAKE_AUTOMOC ON)
+ # Create code from a list of Qt designer ui files
+ set(CMAKE_AUTOUIC ON)
+
+ find_package(Qt5 COMPONENTS Widgets Qml Quick REQUIRED)
+ qt5_add_resources(QT_RESOURCES ../src/gui/qml.qrc)
+
+ FILE(GLOB GUI_SRCS "../src/gui/*.cpp" "../src/gui/*.h")
+
+ SET(HASGUI TRUE)
+ ADD_DEFINITIONS(-DHASGUI=${HASGUI})
+
+endif()
+#**************/QML***********
+
 set(REALSENSE realsense2) #supports D4** series
 
 # sources
@@ -92,15 +113,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
-#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
-
-#detect whether we build for ARM drone or pc
-IF (NOT DEFINED _PC)
-SET(_PC TRUE)
-ENDIF()
-ADD_DEFINITIONS(-D_PC=${_PC})
-
 #STRING(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_LOWER)
 #IF(CMAKE_BUILD_TYPE_LOWER STREQUAL debug)
 #        set(DEBUG_FLAG 1)
@@ -109,13 +121,24 @@ ADD_DEFINITIONS(-D_PC=${_PC})
 #ENDIF(CMAKE_BUILD_TYPE_LOWER STREQUAL debug)
 
 # build program
-add_executable(${PROJECT_NAME} ${SRCS})
+add_executable(${PROJECT_NAME} ${SRCS} ${GUI_SRCS} ${QT_RESOURCES})
 
+if(WITH_GUI)
+ qt5_use_modules(${PROJECT_NAME} Widgets)
+ qt5_use_modules(${PROJECT_NAME} Qml)
+ qt5_use_modules(${PROJECT_NAME} Quick)
+endif()
 
 target_link_libraries(${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
 target_link_libraries(${PROJECT_NAME} ${REALSENSE})
 target_link_libraries(${PROJECT_NAME} ${GST_LIBRARIES} ${GSTSDP_LIBRARIES} ${GSTAPP_LIBRARIES})
+
+if(WITH_GUI)
+ target_link_libraries(Qt5::Quick)
+ target_link_libraries(Qt5::Qml)
+ target_link_libraries(Qt5::Widgets)
+endif()
 
 if(WITH_AIRSIM)
  target_link_libraries(${PROJECT_NAME} AirLib)

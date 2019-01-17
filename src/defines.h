@@ -31,7 +31,9 @@
     #define TX_TYPE TX_DISABLED
 //    #define HASSCREEN
 #else
-    #define HASSCREEN
+    #ifndef HASGUI
+        #define HASSCREEN
+    #endif
     #define BEEP
     #define VIDEORAWLR VIDEOMODE_BAG
     #define JOYSTICK_TYPE RC_USB_HOBBYKING

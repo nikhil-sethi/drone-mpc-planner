@@ -43,8 +43,9 @@
 #include "opencv2/calib3d/calib3d.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui/highgui.hpp"
-#if CV_MAJOR_VERSION==2
-#include <opencv2/contrib/contrib.hpp>
+
+#ifdef HASGUI
+#include "gui/mainwindow.h"
 #endif
 
 using namespace cv;
@@ -111,6 +112,10 @@ struct Processer {
     Stereo_Frame_Data data;
 };
 Processer tp[NUM_OF_THREADS];
+
+#ifdef HASGUI
+MainWindow gui;
+#endif
 
 /*******Private prototypes*********/
 void process_frame(Stereo_Frame_Data data);
@@ -322,6 +327,11 @@ void init_sig(){
 }
 
 int init(int argc, char **argv) {
+
+#ifdef HASGUI
+    gui.init(argc,argv);
+#endif
+
     if (argc ==2 ) {
         string fn = string(argv[1]);
         string ending = ".log";
@@ -414,6 +424,9 @@ void close() {
 
 #ifdef HASSCREEN
     cv::destroyAllWindows();
+#endif
+#ifdef HASGUI
+    gui.close();
 #endif
 
     /*****Close everything down*****/
