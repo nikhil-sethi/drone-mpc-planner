@@ -88,11 +88,15 @@ private:
 #endif
 #if TX_TYPE == TX_FRSKYD
 #define INITIALTHROTTLE 200
+#define INITIAL_HOVER_THROTTLE 850
 #define PITCH_MIDDLE JOY_MIDDLE
 #endif
 #ifndef INITIALTHROTTLE
 #define INITIALTHROTTLE 200
 #define PITCH_MIDDLE JOY_MIDDLE
+#endif
+#ifndef INITIAL_HOVER_THROTTLE
+#define INITIAL_HOVER_THROTTLE INITIALTHROTTLE
 #endif
 
     const int take_off_throttle_boost = 0;
@@ -131,7 +135,7 @@ public:
     int autoPitch = JOY_MIDDLE;
     int autoYaw = JOY_MIDDLE;
 
-    float hoverthrottle = 800;
+    float hoverthrottle = INITIAL_HOVER_THROTTLE;
     bool hoverthrottleInitialized = false;
 
 

@@ -318,8 +318,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
                 output.z = -output.y * sinf(theta) + output.z * cosf(theta);
                 output.y = temp_y;
             }
-            if ((output.x < -2.0f) || (output.x > 2.0f) ||
-                    (output.z < -drone_max_border_z) || (output.y < -drone_max_border_y) ||
+            if ((output.z < -drone_max_border_z) || (output.y < -drone_max_border_y) ||
                     !background_check_ok || !disparity_in_range) {
                 keypoint_candidates.erase(keypoint_candidates.begin() + match_id);
             } else {

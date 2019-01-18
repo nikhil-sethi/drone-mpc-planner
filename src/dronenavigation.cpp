@@ -46,7 +46,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
 
     // large scale flight plan
     //setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,SETPOINTYMAX / 2,1000),40)); // this is overwritten by position trackbars!!!
-    setpoints.push_back(waypoint(cv::Point3i(2200,1000,1370),30)); // this is overwritten by position trackbars!!!
+    setpoints.push_back(waypoint(cv::Point3i(2200,400,1370),30)); // this is overwritten by position trackbars!!!
 
     //setpoints.push_back(waypoint(cv::Point3i(1500,300,1500),0));
     //setpoints.push_back(waypoint(cv::Point3i(1500,-200,1500),0));
@@ -57,8 +57,8 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     //setpoints.push_back(waypoint(cv::Point3i(1500,400,1370),30));
 
 
-    setpoints.push_back(waypoint(cv::Point3i(500,1000,1500),50));
-    setpoints.push_back(waypoint(cv::Point3i(2000,1000,4000),50));
+        //setpoints.push_back(waypoint(cv::Point3i(500,400,2000),50));
+        //setpoints.push_back(waypoint(cv::Point3i(2000,400,2000),50));
 
 
     //setpoints.push_back(waypoint(cv::Point3i(1000,-125,1500),0));
@@ -74,7 +74,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
 
 
 
-    setpoints.push_back(waypoint(cv::Point3i(2350,200,1200),10)); // landing waypoint (=last one), must be 1 meter above the ground in world coordinatates
+    setpoints.push_back(waypoint(cv::Point3i(2500,200,1300),10)); // landing waypoint (=last one), must be 1 meter above the ground in world coordinatates
     //setpoints.push_back(waypoint(cv::Point3i(1500,300,1300),60));
 
 
@@ -153,7 +153,10 @@ void DroneNavigation::update() {
         //for now, just chase always
         //navigation_status = navigation_status_start_the_chase;
         //OR fly waypoints
-        navigation_status = navigation_status_set_waypoint_in_flightplan;
+        if(_dctrl->hoverthrottleInitialized)
+            navigation_status = navigation_status_start_the_chase;
+        else
+            navigation_status = navigation_status_set_waypoint_in_flightplan;
         break;
     } case navigation_status_start_the_chase: {
         _iceptor.reset_insect_cleared();
@@ -170,14 +173,13 @@ void DroneNavigation::update() {
         //update target chasing waypoint and speed
         if (_iceptor.get_insect_in_range()) {
             setpoint_world = _iceptor.get_intercept_position();
-            setpoint_world.y = -1.70f;
+            setpoint_world.y = -1.30f;
         }
 
         if (setpoint_world.z == 0) { // fly to landing waypoint (but do not land)
-            setpoint_world.x = (setpoints.back()._xyz.x - SETPOINTXMAX/2) / 1000.0f;
-            setpoint_world.y = -1.70f;;
-            //setpoint_world.z = -(setpoints.back()._xyz.z) / 1000.0f;
-            setpoint_world.z = -1.37f;
+            setpoint_world.x = -1.0f;
+            setpoint_world.y = -1.30f;
+            setpoint_world.z = -1.3f;
         }
 
         if (_dctrl->get_flight_mode() == DroneController::fm_manual)
