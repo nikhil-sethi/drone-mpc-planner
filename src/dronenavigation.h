@@ -8,13 +8,6 @@
 #include "insecttracker.h"
 #include "interceptor.h"
 
-#include <cereal/types/unordered_map.hpp>
-#include <cereal/types/memory.hpp>
-#include <cereal/archives/binary.hpp>
-#include <fstream>
-#include <iomanip>
-#include <unistd.h>
-
 /*
  * This class will navigate a micro drone
  *

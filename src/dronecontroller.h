@@ -1,17 +1,8 @@
 #ifndef DRONECONTROLLER_H
 #define DRONECONTROLLER_H
 
-
 #include "dronetracker.h"
 #include "joystick.hpp"
-#include "common.h"
-#include <cereal/types/unordered_map.hpp>
-#include <cereal/types/memory.hpp>
-#include <cereal/archives/binary.hpp>
-#include <fstream>
-#include <iomanip>
-#include <unistd.h>
-
 #include "arduino.h"
 #include "multimodule.h"
 
