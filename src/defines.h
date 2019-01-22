@@ -49,12 +49,12 @@
 
 #define CAMMODE CAMMODE_REALSENSE
 
-#define DRONE_IM_X_START 110
-#define DRONE_IM_Y_START 420/IMSCALEF
+#define DRONE_IM_X_START 217
+#define DRONE_IM_Y_START 124/IMSCALEF
 #define DRONE_DISPARITY_START 19/IMSCALEF
 #define DRONE_IM_START_SIZE 4.2f
 
 #define MAX_BORDER_Y_DEFAULT 1.85f  // 2.20 for large scale flight plan  // 1.3 for small scale flight plan
-#define MAX_BORDER_Z_DEFAULT 4.0f
+#define MAX_BORDER_Z_DEFAULT 10.0f
 
 #endif //DEFINES_H
