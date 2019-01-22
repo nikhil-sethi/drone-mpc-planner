@@ -176,7 +176,14 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
 
         autoThrottle =  hoverthrottle + take_off_throttle_boost - (accErrY * params.throttle_Acc + throttleErrI * params.throttleI*0.1f);
         autoRoll =  accErrX * params.roll_Acc;
-        autoPitch = accErrZ * params.pitch_Acc;
+
+        float depth_gain = 1;
+        if (-data.sposZ - 2 > 0) // if further then 2 meters
+            depth_gain  = 1 + powf((-data.sposZ-2),2) * depth_precision_gain;
+        else // closer then 2 meters, do nothing:
+            depth_gain = 1;
+
+        autoPitch = accErrZ * params.pitch_Acc / depth_gain;
 
         autoThrottle += abs(autoRoll*throttleBankFactor)+abs(autoPitch*throttleBankFactor);
 
