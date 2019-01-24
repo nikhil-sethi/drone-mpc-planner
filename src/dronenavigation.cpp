@@ -110,7 +110,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     createTrackbar("X [mm]", "Nav", &params.setpoint_slider_X, SETPOINTXMAX);
     createTrackbar("Y [mm]", "Nav", &params.setpoint_slider_Y, SETPOINTYMAX);
     createTrackbar("Z [mm]", "Nav", &params.setpoint_slider_Z, SETPOINTZMAX);
-    createTrackbar("WP id", "Nav", (int*)&wpid, setpoints.size()-1);
+    createTrackbar("WP id", "Nav", reinterpret_cast<int*>(wpid), setpoints.size()-1);
     createTrackbar("d threshold factor", "Nav", &params.distance_threshold_f, 10);
     createTrackbar("land_incr_f_mm", "Nav", &params.land_incr_f_mm, 50);
     createTrackbar("Land Decrease  ", "Nav", &params.autoLandThrottleDecreaseFactor, 50);
