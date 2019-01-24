@@ -35,8 +35,8 @@
         #define HASSCREEN
     #endif
     #define BEEP
-    #define VIDEORAWLR VIDEOMODE_BAG
-    #define JOYSTICK_TYPE RC_USB_HOBBYKING
+    #define VIDEORAWLR VIDEOMODE_DISABLED
+    #define JOYSTICK_TYPE RC_XLITE
     #define TX_TYPE TX_FRSKYD
 #endif
 

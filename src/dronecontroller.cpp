@@ -319,56 +319,61 @@ void DroneController::readJoystick(void) {
                     std::cout << "Unkown joystick event: " << std::to_string(event.number) << ". Value: " << std::to_string(event.value) << std::endl;
                     break;
                 }
-            }
-        } else if (JOYSTICK_TYPE == RC_XLITE) {
-            switch ( event.number ) {
-            case 0: // roll
-                joyRoll = JOY_MIDDLE + (event.value*(JOY_MAX-JOY_MIN)/33000);
-                break;
-            case 1: // pitch
-                joyPitch = JOY_MIDDLE + (event.value*(JOY_MAX-JOY_MIN)/33000);
-                break;
-            case 2: //throttle
-                joyThrottle = JOY_MIDDLE - (event.value*(JOY_MAX-JOY_MIN)/44000);
-                break;
-            case 3: //switch
-                joySwitch = event.value>0; // goes between +/-32768
-                break;
-            case 4: //dial
-                joyDial = event.value; // goes between +/-32768
-                scaledjoydial = joyDial+32767;
-                scaledjoydial = (scaledjoydial / 65536)*100+35;
-                break;
-            case 5: //yaw
-                joyYaw = JOY_MIDDLE + (event.value*(JOY_MAX-JOY_MIN)/33000);
-                break;
-            default:
-                std::cout << "Unkown joystick event: " << std::to_string(event.number) << ". Value: " << std::to_string(event.value) << std::endl;
-                break;
-            }
-        } else if (event.isButton() && JOYSTICK_TYPE == RC_PLAYSTATION) {
-            switch ( event.number ) {
-            case 2: //bind
-                if (event.value>0) {
-                    joySwitch = 1;
-                    joyPitch = JOY_MAX_THRESH;
-                } else {
-                    joySwitch = 0;
-                    joyPitch = JOY_MIDDLE;
+            } else if (JOYSTICK_TYPE == RC_XLITE) {
+                switch ( event.number ) {
+                case 0: // roll
+                    joyRoll = (event.value >> 5)*0.8 + JOY_MIDDLE;
+                    break;
+                case 1: // pitch
+                    joyPitch = (event.value >> 5)*0.8 + JOY_MIDDLE;
+                    break;
+                case 2: //throttle
+                    joyThrottle =  (event.value >> 5)*0.8 + JOY_MIDDLE;
+                    break;
+                case 3: //yaw
+                    joyYaw = (event.value >> 5)*0.8 + JOY_MIDDLE;
+                    break;
+                case 4: //arm switch (two way)
+                    _rc->arm(event.value>0);
+                    break;
+                case 5: //mode switch (3 way)
+
+                    break;
+                case 6: //switch (3 way)
+
+                    break;
+                case 7: //switch (2 way)
+                    joySwitch = event.value>0; // goes between +/-32768
+                    break;
+                default:
+                    //this joystick seems to have 16 extra buttons... weird whatever
+                    //                std::cout << "Unkown joystick event: " << std::to_string(event.number) << ". Value: " << std::to_string(event.value) << std::endl;
+                    break;
                 }
-                break;
-            case 9: //auto mode
-                joySwitch = 1;
-                break;
-            case 4: //manual mode
-                joySwitch = 0;
-                break;
-            case 6: //manual mode
-                joySwitch = 0;
-                break;
-            default:
-                std::cout << "Unkown joystick button: " << std::to_string(event.number) << ". Value: " << std::to_string(event.value) << std::endl;
-                break;
+            } else if (event.isButton() && JOYSTICK_TYPE == RC_PLAYSTATION) {
+                switch ( event.number ) {
+                case 2: //bind
+                    if (event.value>0) {
+                        joySwitch = 1;
+                        joyPitch = JOY_MAX_THRESH;
+                    } else {
+                        joySwitch = 0;
+                        joyPitch = JOY_MIDDLE;
+                    }
+                    break;
+                case 9: //auto mode
+                    joySwitch = 1;
+                    break;
+                case 4: //manual mode
+                    joySwitch = 0;
+                    break;
+                case 6: //manual mode
+                    joySwitch = 0;
+                    break;
+                default:
+                    std::cout << "Unkown joystick button: " << std::to_string(event.number) << ". Value: " << std::to_string(event.value) << std::endl;
+                    break;
+                }
             }
         }
     }

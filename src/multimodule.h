@@ -21,10 +21,10 @@
 #define MULTI_CHANS                         16
 #define MULTI_CHAN_BITS                     11
 
-#define JOY_BOUND_MIN                       50   // 1050
-#define JOY_BOUND_MAX                       1950 // 1950
-#define JOY_MIN_THRESH                      130   // 1080
-#define JOY_MAX_THRESH                      1800 // 1800
+#define JOY_BOUND_MIN                       228   // 1050
+#define JOY_BOUND_MAX                       1820 // 1950
+#define JOY_MIN_THRESH                      300   // 1080
+#define JOY_MAX_THRESH                      1750 // 1800
 #define JOY_MIN                             0   //  1000
 #define JOY_MAX                             2048 // 2000
 #define JOY_MIDDLE                          1024 // 1500
@@ -83,9 +83,9 @@ public:
     }
     void arm(bool v) {
         if (v)
-            arm_switch = JOY_MAX_THRESH;
+            arm_switch = JOY_BOUND_MAX;
         else
-            arm_switch = JOY_MIN_THRESH;
+            arm_switch = JOY_BOUND_MIN;
     }
 private:
 

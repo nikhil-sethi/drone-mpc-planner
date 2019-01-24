@@ -381,8 +381,8 @@ int init(int argc, char **argv) {
     // Ensure that joystick was found and that we can use it
     if (!dctrl.joystick_ready() && fromfile!=log_mode_full) {
         std::cout << "joystick failed." << std::endl;
-//        close();
-//        exit(1);
+        close();
+        exit(1);
     }
 #endif
 
