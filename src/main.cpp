@@ -255,6 +255,7 @@ void handleKey() {
         rc.bind();
         break;
     case ' ':
+#if CAMMODE == CAMMODE_FROMVIDEOFILE
     case 'f':
         cam.frame_by_frame = true;
         break;
@@ -267,6 +268,7 @@ void handleKey() {
     case ',':
         cam.back_one_sec();
         break;
+#endif
     case 'a':
         rc.arm(true);
         break;

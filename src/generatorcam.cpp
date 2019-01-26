@@ -8,6 +8,9 @@ stopwatch_c gen_stopw;
 #include "opencv2/imgproc.hpp"
 
 bool GeneratorCam::init (int argc __attribute__((unused)), char **argv __attribute__((unused))) {
+    return init();
+}
+bool GeneratorCam::init () {
     camRunning = true;
     float focal_length = 425.680267; // same as fy
     float cx = 419.639923; // same for both cameras
@@ -20,6 +23,9 @@ bool GeneratorCam::init (int argc __attribute__((unused)), char **argv __attribu
     drone.y = DRONE_IM_Y_START*IMSCALEF;
     insect.x = 245;
     insect.y = 0;
+
+    depth_background = cv::Mat::ones(IMG_H,IMG_W,CV_16UC1);
+    depth_background = 10000; //  disable the depth background map
 
     gen_stopw.Start();
     return false;
@@ -60,7 +66,7 @@ void GeneratorCam::update() {
         generateStereo();
         frame_id_stereo++;
     }
-    frame_id++;
+    _frame_number++;
 
 
     while(gen_stopw.Read() < (1.f/VIDEOFPS)*1e3f){
@@ -140,5 +146,5 @@ void GeneratorCam::generateRGB() {
 }
 
 void GeneratorCam::nextFrame() {
-    frame_id++;
+    _frame_number++;
 }

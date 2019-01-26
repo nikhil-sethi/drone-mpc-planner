@@ -16,26 +16,29 @@ public:
     void go_stereo();
     void go_color();
     void go_disabled();
-    int get_frame_id() {return frame_id;}
-    float get_frame_time() {return frame_id * (1.f/VIDEOFPS);}
+    int frame_number() {return _frame_number;}
+    float frame_time() {return _frame_number * (1.f/VIDEOFPS);}
+    float camera_angle(){return 35.f;}
 
     void close (void);
-    bool init (int argc, char **argv);
+    bool init ();
+    bool init (int argc __attribute__((unused)), char **argv __attribute__((unused)));
     void update (void);
     bool get_cam_is_running() {return camRunning;}
 
     void nextFrame();
     void pause() {paused = true;};
     void resume() {paused = false;};
+    void reset () {}
 
     cv::Mat Qf;
+    cv::Mat depth_background;
 
 private:
-    int nFrames_stereo,frame_id,frame_id_rgb,frame_id_stereo;
+    int nFrames_stereo,_frame_number,frame_id_rgb,frame_id_stereo;
     bool camRunning;
 
     cam_mode_enum _mode = cam_mode_stopped;
-    float frame_time;
     bool paused = false;
 
     cv::Point drone;
