@@ -104,7 +104,7 @@ void setup() {
     // reserve 200 bytes for the inputString:
     inputString.reserve(200);
 
-    setPwmFrequency(9, 256); 
+    setPwmFrequency(POWERLED_pin, 1); 
     pinMode(LED_BUILTIN, OUTPUT);    
 }
 
