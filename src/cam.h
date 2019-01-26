@@ -89,6 +89,7 @@ public:
 
     float depth_scale;
     cv::Mat depth_background;
+    cv::Mat depth_background_mm; // todo: check if this one works!
     cv::Mat disparity_background;
 
     float _camera_angle_x = 0;
@@ -152,6 +153,7 @@ private:
     cv::Point3f rotate_point(cv::Point3f point);
     void serialize_calib();
     void deserialize_calib(string file);
+    void convert_depth_background_to_world();
 
     rs2::sensor depth_sensor;
 

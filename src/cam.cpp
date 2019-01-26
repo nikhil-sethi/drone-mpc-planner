@@ -2,6 +2,7 @@
 #include <sys/stat.h>
 #include "smoother.h"
 #include "opencv2/imgproc/imgproc.hpp"
+#include <librealsense2/rsutil.h>
 
 using namespace cv;
 using namespace std;
@@ -345,6 +346,24 @@ void Cam::init() {
     swc.Start();
 }
 
+//Converting the raw depths of depth_background distances to
+//world coordinates in the IR camera frame
+//There's probably a way to do this more efficient...
+void Cam::convert_depth_background_to_world() {
+    depth_background_mm = cv::Mat::zeros(depth_background.rows,depth_background.cols,CV_32FC3);
+    for (int i = 0; i < depth_background.cols;i++)
+        for (int j = 0; j < depth_background.rows;j++) {
+            uint16_t back = depth_background.at<uint16_t>(j,i);
+            float backf = static_cast<float>(back) * depth_scale;
+            float pixel[2];
+            pixel[0] = i;
+            pixel[1] = j;
+            float p[3];
+            rs2_deproject_pixel_to_point(p, intr, pixel, backf);
+            cv::Vec3f pixelColor(p[0],p[1],p[2]);
+            depth_background_mm.at<cv::Vec3f>(j,i) = pixelColor;
+        }
+}
 
 void Cam::deserialize_calib(std::string file) {
     std::cout << "Reading calibration from: " << file << std::endl;
@@ -600,8 +619,6 @@ void Cam::calib_pose(){
             exit(1);
         }
     }
-
-
     cam.stop();
 }
 
@@ -621,6 +638,7 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
     fromfile=true;
 
     if (!checkFileExist(depth_map_fn)) { //FIXME: use full path to folder (involves changing to using the folder name instead of the bag file name)
+        //todo: make gui warning of this:
         std::cout << "Warning: could not find " << depth_map_fn << std::endl;
         depth_background = cv::Mat::ones(IMG_H,IMG_W,CV_16UC1);
         depth_background = 10000; // basically disable the depth background map if it is not found

@@ -82,7 +82,12 @@ public:
     cv::Mat depth_background;
     cv::Mat disparity_background;
 
-    void init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, cv::Mat new_depth_background, float new_depth_scale, cv::Mat new_disparity_background, rs2_intrinsics *new_intr);
+
+#if CAMMODE == CAMMODE_GENERATOR
+    void init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, cv::Mat new_depth_background);
+#else
+    void init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, cv::Mat new_depth_background, float new_depth_scale, rs2_intrinsics *new_intr);
+#endif
     void close() {
         std::ofstream os(settingsFile, std::ios::binary);
         cereal::BinaryOutputArchive archive( os );
