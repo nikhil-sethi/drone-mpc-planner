@@ -35,8 +35,8 @@
         #define HASSCREEN
     #endif
     #define BEEP
-    #define VIDEORAWLR VIDEOMODE_DISABLED
-    #define JOYSTICK_TYPE RC_XLITE
+    #define VIDEORAWLR VIDEOMODE_BAG
+    #define JOYSTICK_TYPE RC_USB_HOBBYKING
     #define TX_TYPE TX_FRSKYD
 #endif
 
@@ -54,7 +54,7 @@
 #define DRONE_DISPARITY_START 19/IMSCALEF
 #define DRONE_IM_START_SIZE 4.2f
 
-#define MAX_BORDER_Y_DEFAULT 1.85f  // 2.20 for large scale flight plan  // 1.3 for small scale flight plan
+#define MAX_BORDER_Y_DEFAULT 1.9f  // 2.20 for large scale flight plan  // 1.3 for small scale flight plan
 #define MAX_BORDER_Z_DEFAULT 10.0f
 
 #endif //DEFINES_H

@@ -46,7 +46,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
 
     // large scale flight plan
     //setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,SETPOINTYMAX / 2,1000),40)); // this is overwritten by position trackbars!!!
-    setpoints.push_back(waypoint(cv::Point3i(1500,600,2500),30)); // this is overwritten by position trackbars!!!
+    setpoints.push_back(waypoint(cv::Point3i(1700,600,2300),30)); // this is overwritten by position trackbars!!!
 
     //setpoints.push_back(waypoint(cv::Point3i(1500,300,1500),0));
     //setpoints.push_back(waypoint(cv::Point3i(1500,-200,1500),0));
@@ -61,8 +61,8 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
         //setpoints.push_back(waypoint(cv::Point3i(2200,400,3000),50));
         //setpoints.push_back(waypoint(cv::Point3i(2200,400,4000),50));
         //setpoints.push_back(waypoint(cv::Point3i(2200,400,5000),50));
-    setpoints.push_back(waypoint(cv::Point3i(1500,600,2500),0));
-    setpoints.push_back(waypoint(cv::Point3i(1500,600,3000),0));
+    //setpoints.push_back(waypoint(cv::Point3i(1000,600,1500),30));
+    //setpoints.push_back(waypoint(cv::Point3i(2000,600,1500),30));
     //setpoints.push_back(waypoint(cv::Point3i(1500,600,3500),0));
     //setpoints.push_back(waypoint(cv::Point3i(1500,600,4000),0));
 
@@ -81,7 +81,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
 
 
 
-    //setpoints.push_back(waypoint(cv::Point3i(1500,600,4200),10)); // landing waypoint (=last one), must be 1 meter above the ground in world coordinatates
+    setpoints.push_back(waypoint(cv::Point3i(1750,600,2310),10)); // landing waypoint (=last one), must be 1 meter above the ground in world coordinatates
     //setpoints.push_back(waypoint(cv::Point3i(1500,300,1300),60));
 
 
@@ -160,34 +160,35 @@ void DroneNavigation::update() {
         //for now, just chase always
         navigation_status = navigation_status_start_the_chase;
         //OR fly waypoints
-        /*
-        if(_dctrl->hoverthrottleInitialized)
-            navigation_status = navigation_status_start_the_chase;
-        else
-            navigation_status = navigation_status_set_waypoint_in_flightplan;
-        break;*/
+
+        //if(_dctrl->hoverthrottleInitialized)
+            //navigation_status = navigation_status_start_the_chase;
+        //else
+            //navigation_status = navigation_status_set_waypoint_in_flightplan;
+        break;
     } case navigation_status_start_the_chase: {
         _iceptor.reset_insect_cleared();
         navigation_status = navigation_status_chasing_insect;
-        /*
+
         if (_iceptor.get_insect_in_range())
             navigation_status = navigation_status_chasing_insect;
         else
             navigation_status = navigation_status_goto_landing_waypoint;
-            */
+
 
     } FALLTHROUGH_INTENDED; case navigation_status_chasing_insect: {
 
         //update target chasing waypoint and speed
         if (_iceptor.get_insect_in_range()) {
             setpoint_world = _iceptor.get_intercept_position();
-            setpoint_world.y = -1.30f;
+            if (setpoint_world.y < -1.2)
+                setpoint_world.y = -1.20f;
         }
 
         if (setpoint_world.z == 0) { // fly to landing waypoint (but do not land)
             setpoint_world.x = -1.0f;
-            setpoint_world.y = -1.30f;
-            setpoint_world.z = -1.3f;
+            setpoint_world.y = -1.20f;
+            setpoint_world.z = -2.2f;
         }
 
         if (_dctrl->get_flight_mode() == DroneController::fm_manual)
@@ -251,7 +252,7 @@ void DroneNavigation::update() {
         navigation_status = navigation_status_landing;
     } FALLTHROUGH_INTENDED; case navigation_status_landing: {
         trackData data = _dtrk->get_last_track_data();
-        if (data.sposY < -(MAX_BORDER_Y_DEFAULT-0.08f) || autoLandThrottleDecrease >1000)
+        if (data.sposY < -(MAX_BORDER_Y_DEFAULT-0.18f) || autoLandThrottleDecrease >1000)
             navigation_status = navigation_status_landed;
 
         autoLandThrottleDecrease += params.autoLandThrottleDecreaseFactor;

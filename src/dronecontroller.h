@@ -44,7 +44,7 @@ private:
         //pitch control
         int pitch_Pos = 1750;
         int pitch_Vel = 1100;
-        int pitch_Acc = 60;
+        int pitch_Acc = 22;
         int pitchI = 1;
 
         //yaw control
@@ -80,7 +80,7 @@ private:
 #endif
 #if TX_TYPE == TX_FRSKYD
 #define INITIALTHROTTLE 200
-#define INITIAL_HOVER_THROTTLE 900
+#define INITIAL_HOVER_THROTTLE 800
 #define PITCH_MIDDLE JOY_MIDDLE
 #endif
 #ifndef INITIALTHROTTLE
