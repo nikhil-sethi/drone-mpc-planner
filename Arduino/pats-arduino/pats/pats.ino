@@ -109,6 +109,7 @@ void setup() {
 }
 
 void set_power_led() {
+    pwm_value = 75;
     if (pwm_value > 75) {
         pwm_value = 75;
       }
