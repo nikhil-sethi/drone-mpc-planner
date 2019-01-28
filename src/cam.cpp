@@ -374,7 +374,7 @@ void Cam::deserialize_calib(std::string file) {
 
 
     CamCalibrationData* dser=new CamCalibrationData; // Create new object
-    if (Serializable::fromXML(xmlData, dser)) // perform deserialization
+    if (xmls::Serializable::fromXML(xmlData, dser)) // perform deserialization
     { // Deserialization successful
         _camera_angle_x = dser->Angle_X.value();
         _camera_angle_y = dser->Angle_Y.value();

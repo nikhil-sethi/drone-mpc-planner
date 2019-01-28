@@ -218,7 +218,7 @@ void process_frame(Stereo_Frame_Data data) {
         if (dnav.disable_insect_detection())
             itrkr.append_log(); // write dummy data
         else
-            itrkr.track(data.time,dtrkr.predicted_pathL,dctrl.getDroneIsActive());
+            itrkr.track(data.time,dtrkr.predicted_pathL);
     //        std::cout << "Found drone location:      [" << dtrkr.find_result.best_image_locationL.pt.x << "," << dtrkr.find_result.best_image_locationL.pt.y << "]" << std::endl;
     dnav.update();
     dctrl.control(dtrkr.get_last_track_data(),dnav.setpoint_world,dnav.setspeed_world);
@@ -382,7 +382,7 @@ int init(int argc, char **argv) {
     visdat.update(cam.frameL,cam.frameR,cam.frame_time(),cam.frame_number()); //TODO: necessary? If so, streamline
 
     //WARNING: changing the order of the inits with logging must be match with the process_video functions!
-    dtrkr.init(&logger,&visdat);
+    dtrkr.init(&logger,&visdat,fromfile==log_mode_full);
     itrkr.init(&logger,&visdat);
     dnav.init(&logger,&dtrkr,&dctrl,&itrkr,&visdat);
     dctrl.init(&logger,fromfile==log_mode_full,&rc);

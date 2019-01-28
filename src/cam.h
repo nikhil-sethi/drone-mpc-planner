@@ -19,19 +19,18 @@
 
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include "tinyxml/XMLSerialization.h"
-using namespace xmls;
 
 class Cam{
 
 private:
-    class CamCalibrationData: public Serializable
+    class CamCalibrationData: public xmls::Serializable
     {
     public:
 
-        xFloat Angle_X;
-        xFloat Angle_Y;
-        xFloat Angle_Y_Measured_From_Depthmap;
-        xFloat Exposure;
+        xmls::xFloat Angle_X;
+        xmls::xFloat Angle_Y;
+        xmls::xFloat Angle_Y_Measured_From_Depthmap;
+        xmls::xFloat Exposure;
 
 
         CamCalibrationData():

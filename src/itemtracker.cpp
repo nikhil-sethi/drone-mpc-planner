@@ -99,7 +99,6 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
 
     find_result.best_image_locationL.pt.x = IMG_W/2/IMSCALEF;
     find_result.best_image_locationL.pt.y = IMG_H/2/IMSCALEF;
-    find_result.smoothed_disparity = 0;
     find_result.disparity = 0;
 
     sub_disparity = 0;
@@ -283,9 +282,9 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
             uint match_id = match_closest_to_prediciton(previous_location,find_result.keypointsL_wihout_voids);
             match = &find_result.keypointsL_wihout_voids.at(match_id);
 
-//            disparity = stereo_match(match->k,_visdat->frameL_prev,_visdat->frameR_prev,_visdat->frameL,_visdat->frameR,find_result.disparity);
-//            disparity = update_disparity(disparity, dt_tracking);
-disparity = 15.1;
+            disparity = stereo_match(match->k,_visdat->frameL_prev,_visdat->frameR_prev,_visdat->frameL,_visdat->frameR,find_result.disparity);
+            disparity = update_disparity(disparity, dt_tracking);
+
             bool background_check_ok = true;
             bool disparity_in_range = true;
             if (disparity < settings.min_disparity || disparity > settings.max_disparity){
@@ -844,7 +843,7 @@ float ItemTracker::estimate_sub_disparity(int disparity) {
     sub_disp += sinf(sub_disp*2.0f*static_cast<float>(M_PI))*0.13f;
     sub_disp += (disparity-1);
 
-    if (sub_disp<disparity-1 || sub_disp>disparity+1)
+    if (sub_disp<disparity-1 || sub_disp>disparity+1 || sub_disp != sub_disp)
         return disparity;
 
     return sub_disp;

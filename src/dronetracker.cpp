@@ -1,14 +1,12 @@
 #include "dronetracker.h"
 
 
-bool DroneTracker::init(std::ofstream *logger, VisionData *visdat) {
+bool DroneTracker::init(std::ofstream *logger, VisionData *visdat, bool fromfile) {
     ItemTracker::init(logger,visdat,"drone");
 
-    find_result.best_image_locationL.pt.x = DRONE_IM_X_START;
-    find_result.best_image_locationL.pt.y = DRONE_IM_Y_START;
-    find_result.best_image_locationL.size = DRONE_IM_START_SIZE;
-    find_result.smoothed_disparity = DRONE_DISPARITY_START;
-    find_result.disparity = DRONE_DISPARITY_START;
+    if (fromfile){
+        deserialize_calib(calib_fn);
+    }
     return false;
 }
 void DroneTracker::init_settings() {
@@ -61,21 +59,81 @@ void DroneTracker::init_settings() {
 void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_is_active) {
 
     switch (_drone_tracking_state) {
-    case dts_initialize_blink_locater: {
-        _blinking_drone_located = bds_start;
+    case dts_waiting_for_init: {
+        append_log(); // no tracking needed in this stage
         break;
-    } case dts_blinking: {
-        //can only be taken out of this state externally
-        break;
-    } case dts_inactive: {
-        //todo: change start up location to detected
-        //todo: really no point in trying to detect the drone when it is inactive... (currently only necessary to properly write the log)
-        find_result.best_image_locationL.pt.x = DRONE_IM_X_START;
-        find_result.best_image_locationL.pt.y =  DRONE_IM_Y_START;
-        find_result.smoothed_disparity = DRONE_DISPARITY_START;
-        find_result.disparity = DRONE_DISPARITY_START;
-        predicted_locationL_last.x = DRONE_IM_X_START;
-        predicted_locationL_last.y = DRONE_IM_Y_START;
+    } case dts_blinking:
+        switch (_blinking_drone_located) {
+        case bds_start: {
+            _enable_roi = false;
+            pathL.clear();
+            predicted_pathL.clear();
+            foundL = false; // todo: is this necessary?
+            //todo: also disable background depth map?
+            _blinking_drone_located = bds_resetting_background;
+            _visdat->reset_motion_integration();
+            ItemTracker::append_log(); // write a dummy entry
+            break;
+        } case bds_resetting_background: {
+            _blinking_drone_located = bds_searching; // -> wait 1 frame
+            ItemTracker::append_log(); // write a dummy entry
+            break;
+        } case bds_searching: {
+            ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
+            if (foundL) {
+                blink_location = find_result.best_image_locationL;
+                _blinking_drone_located = bds_blink_off;
+                _enable_roi = true;
+                blink_time_start = time;
+            }
+            break;
+        } case bds_blink_off: {
+            ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
+            _blinking_drone_located = detect_blink(time, n_frames_tracking == 0);
+            break;
+        } case bds_blink_on: {
+            ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
+            _blinking_drone_located = detect_blink(time, n_frames_lost == 0);
+            break;
+        } case bds_2nd_blink_off: {
+            ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
+            _blinking_drone_located = detect_blink(time, n_frames_tracking == 0);
+            break;
+        } case bds_2nd_blink_on: {
+            ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
+            _blinking_drone_located = detect_blink(time, n_frames_lost == 0);
+            break;
+        } case bds_3th_blink_off: {
+            ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
+            _blinking_drone_located = detect_blink(time, n_frames_tracking == 0);
+            break;
+        } case bds_3th_blink_on: {
+            ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
+            _blinking_drone_located = detect_blink(time, n_frames_lost == 0);
+            break;
+        } case bds_found: {
+            append_log(); // no tracking needed in this stage
+
+            //save found drone location
+            _drone_blink_image_location = find_result.best_image_locationL.pt;
+            trackData d = get_last_track_data();
+            _drone_blink_world_location.x = d.sposX;
+            _drone_blink_world_location.y = d.sposY;
+            _drone_blink_world_location.z = d.sposZ;
+
+            //write to xml
+            serialize_calib();
+
+            //progress to the next stage in the main tracker state machine
+            _drone_tracking_state = dts_inactive;
+            break;
+        }
+        }
+            break;
+    case dts_inactive: {
+        find_result.best_image_locationL.pt = _drone_blink_image_location;
+        predicted_locationL_last = _drone_blink_world_location;
+        ItemTracker::append_log(); //really no point in trying to detect the drone when it is inactive...
         if (drone_is_active)
             _drone_tracking_state = dts_active_detecting;
         break;
@@ -85,66 +143,10 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
             _drone_tracking_state = dts_inactive;
         } else if (n_frames_lost==0)
             _drone_tracking_state = dts_found_after_takeoff;
-
+        ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
         break;
     } case dts_found_after_takeoff: {
-        break;
-    }
-    }
-
-    switch (_blinking_drone_located) {
-    case bds_none: {
         ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
-        break;
-    } case bds_start: {
-        _enable_roi = false;
-        pathL.clear();
-        predicted_pathL.clear();
-        foundL = false; // todo: is this necessary?
-        //todo: also disable background depth map?
-        _blinking_drone_located = bds_resetting_background;
-        _visdat->reset_motion_integration();
-        ItemTracker::append_log(); // write a dummy entry
-        break;
-    } case bds_resetting_background: {
-        _blinking_drone_located = bds_searching; // -> wait 1 frame
-        ItemTracker::append_log(); // write a dummy entry
-        break;
-    } case bds_searching: {
-        ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
-        if (foundL) {
-            blink_location = find_result.best_image_locationL;
-            _blinking_drone_located = bds_blink_off;
-            _enable_roi = false;
-            blink_time_start = time;
-        }
-        break;
-    } case bds_blink_off: {
-        ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
-        _blinking_drone_located = detect_blink(time, !foundL);
-        break;
-    } case bds_blink_on: {
-        ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
-        _blinking_drone_located = detect_blink(time, foundL);
-        break;
-    } case bds_2nd_blink_off: {
-        ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
-        _blinking_drone_located = detect_blink(time, !foundL);
-        break;
-    } case bds_2nd_blink_on: {
-        ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
-        _blinking_drone_located = detect_blink(time, foundL);
-        break;
-    } case bds_3th_blink_off: {
-        ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
-        _blinking_drone_located = detect_blink(time, !foundL);
-        break;
-    } case bds_3th_blink_on: {
-        ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
-        _blinking_drone_located = detect_blink(time, foundL);
-        break;
-    } case bds_found: {
-        //todo: do something profound here :)
         break;
     }
     }
@@ -163,14 +165,14 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
 DroneTracker::blinking_drone_state DroneTracker::detect_blink(float time, bool found) {
     float blink_period = time - blink_time_start;
     if (found) {
-        if ( blink_period > bind_blink_time - 0.16f && blink_period < bind_blink_time+0.16f) { //todo: figure out what's up with the 0.16
+        if ( blink_period > bind_blink_time - 0.1f && blink_period < bind_blink_time+0.1f) {
             blink_time_start = time;
             int tmp  =static_cast<int>(_blinking_drone_located)+1;
             return static_cast<blinking_drone_state>(tmp);
         } else {
             return bds_searching;
         }
-    } else if (!found && blink_period > bind_blink_time +0.16f) {
+    } else if (!found && blink_period > bind_blink_time +0.1f) {
         return bds_searching;
     }
     return _blinking_drone_located;
@@ -225,4 +227,41 @@ cv::Mat DroneTracker::get_approx_cutout_filtered(cv::Point p, cv::Mat diffL, cv:
         find_result.roi_offset = cv::Rect(0,0,diffL.cols,diffL.rows);
         return diffL;
     }
+}
+
+void DroneTracker::deserialize_calib(std::string file) {
+    std::cout << "Reading calibration from: " << file << std::endl;
+    std::ifstream infile(file);
+
+    std::string xmlData((std::istreambuf_iterator<char>(infile)),
+                        std::istreambuf_iterator<char>());
+
+
+    DroneTrackerCalibrationData* dser=new DroneTrackerCalibrationData; // Create new object
+    if (xmls::Serializable::fromXML(xmlData, dser)) // perform deserialization
+    { // Deserialization successful
+        _drone_blink_image_location.x = dser->Drone_startup_image_location_x.value();
+        _drone_blink_image_location.y = dser->Drone_startup_image_location_y.value();
+        _drone_blink_world_location.x = dser->Drone_startup_world_location_x.value();
+        _drone_blink_world_location.y = dser->Drone_startup_world_location_y.value();
+        _drone_blink_world_location.z = dser->Drone_startup_world_location_z.value();
+    } else { // Deserialization not successful
+        std::cout << "Error reading drone tracker calibration file." << std::endl;
+        exit(1);
+    }
+}
+
+void DroneTracker::serialize_calib() {
+    DroneTrackerCalibrationData *calib_settings=new DroneTrackerCalibrationData; // Create new object
+    calib_settings->Drone_startup_image_location_x = _drone_blink_image_location.x;
+    calib_settings->Drone_startup_image_location_y = _drone_blink_image_location.y;
+
+    calib_settings->Drone_startup_world_location_x = _drone_blink_world_location.x;
+    calib_settings->Drone_startup_world_location_y = _drone_blink_world_location.y;
+    calib_settings->Drone_startup_world_location_z = _drone_blink_world_location.z;
+
+    std::string xmlData = calib_settings->toXML();
+    std::ofstream outfile(calib_fn);
+    outfile << xmlData ;
+    outfile.close();
 }

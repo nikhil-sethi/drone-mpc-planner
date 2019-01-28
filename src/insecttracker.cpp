@@ -99,23 +99,9 @@ void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) 
     }
 }
 
-void InsectTracker::track(float time, std::vector<track_item> exclude, bool drone_is_active) {
-    std::vector<track_item> tmp;
-    if (drone_is_active)
-        drone_still_active = 100;
-    else if (drone_still_active>0) // drone/props still moving
-        drone_still_active--;
+void InsectTracker::track(float time, std::vector<track_item> exclude) {
 
-    if (drone_still_active){
-        if (exclude.size() == 0) {
-            cv::KeyPoint k(DRONE_IM_X_START,DRONE_IM_Y_START,1);
-            tmp.push_back(track_item(k,3,1.0));
-        } else {
-            tmp = exclude;
-        }
-    }
-
-    ItemTracker::track(time,tmp,MAX_BORDER_Y_DEFAULT,MAX_BORDER_Z_DEFAULT);
+    ItemTracker::track(time,exclude,MAX_BORDER_Y_DEFAULT,MAX_BORDER_Z_DEFAULT);
 
     if (n_frames_lost > n_frames_lost_threshold || !foundL) {
         predicted_pathL.clear();

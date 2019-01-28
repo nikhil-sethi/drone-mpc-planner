@@ -135,7 +135,6 @@ private:
         cv::KeyPoint best_image_locationL;
         cv::Rect roi_offset;
         float disparity;
-        float smoothed_disparity;
     };
 
     void updateParams();

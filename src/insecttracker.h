@@ -18,7 +18,7 @@ protected:
 
 public:
     void init(std::ofstream *logger, VisionData *_visdat);
-    void track(float time, std::vector<track_item>  ignore, bool drone_is_active);
+    void track(float time, std::vector<track_item>  ignore);
     void update_from_log(LogReader::Log_Entry entry, int frame_number);
 
 };
