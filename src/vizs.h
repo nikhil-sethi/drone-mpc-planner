@@ -58,7 +58,7 @@ private:
     bool _fromfile;
     float _res_mult;
 
-    cv::Mat cir8,bkg8,dif8;
+    cv::Mat cir8,bkg8,dif8,approx,tresh;
 
 
     struct Tracker_viz_base_data{

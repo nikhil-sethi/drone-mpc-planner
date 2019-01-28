@@ -10,7 +10,7 @@ using namespace cv;
 using namespace std;
 
 #ifdef HASSCREEN
-#define TUNING
+//#define TUNING
 #endif
 
 #define OPENCV_BLOBTRACKER
@@ -283,9 +283,9 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
             uint match_id = match_closest_to_prediciton(previous_location,find_result.keypointsL_wihout_voids);
             match = &find_result.keypointsL_wihout_voids.at(match_id);
 
-            disparity = stereo_match(match->k,_visdat->frameL_prev,_visdat->frameR_prev,_visdat->frameL,_visdat->frameR,find_result.disparity);
-            disparity = update_disparity(disparity, dt_tracking);
-
+//            disparity = stereo_match(match->k,_visdat->frameL_prev,_visdat->frameR_prev,_visdat->frameL,_visdat->frameR,find_result.disparity);
+//            disparity = update_disparity(disparity, dt_tracking);
+disparity = 15.1;
             bool background_check_ok = true;
             bool disparity_in_range = true;
             if (disparity < settings.min_disparity || disparity > settings.max_disparity){
@@ -368,6 +368,12 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
             predicted_pathL.clear();
     }
 
+
+    append_log();
+
+}
+
+void ItemTracker::append_log() {
     //log all image stuff
     if (pathL.size()>0)
         (*_logger) << pathL.at(pathL.size()-1).x() * IMSCALEF << "; " << pathL.at(pathL.size()-1).y() * IMSCALEF << "; " << find_result.disparity << "; ";
@@ -385,8 +391,6 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
     (*_logger) << last.sposX << "; " << last.sposY << "; " << last.sposZ << ";";
     (*_logger) << last.svelX << "; " << last.svelY << "; " << last.svelZ << ";";
     (*_logger) << last.saccX << "; " << last.saccY << "; " << last.saccZ << ";";
-
-
 }
 
 void ItemTracker::updateParams(){
@@ -431,15 +435,24 @@ void ItemTracker::find(std::vector<track_item> exclude) {
     cv::Point roi_size;
     if (settings.roi_min_size < 1)
         settings.roi_min_size = 1;
-    roi_size.x=settings.roi_min_size/IMSCALEF+roi_size_cnt*(settings.roi_grow_speed / 16 / IMSCALEF);
-    roi_size.y=settings.roi_min_size/IMSCALEF+roi_size_cnt*(settings.roi_grow_speed / 16 / IMSCALEF);
 
-    if (roi_size.x  >= _visdat->smallsize.width) {
+    if (_enable_roi) {
+        roi_size.x=settings.roi_min_size/IMSCALEF+roi_size_cnt*(settings.roi_grow_speed / 16 / IMSCALEF);
+        roi_size.y=settings.roi_min_size/IMSCALEF+roi_size_cnt*(settings.roi_grow_speed / 16 / IMSCALEF);
+
+        if (roi_size.x  >= _visdat->smallsize.width) {
+            roi_size.x = _visdat->smallsize.width;
+        }
+
+        if (roi_size.y >= _visdat->smallsize.height)
+            roi_size.y = _visdat->smallsize.height;
+    } else {
         roi_size.x = _visdat->smallsize.width;
+        roi_size.y = _visdat->smallsize.height;
+        previous_location.x = roi_size.x / 2;
+        previous_location.y = roi_size.y / 2;
     }
 
-    if (roi_size.y >= _visdat->smallsize.height)
-        roi_size.y = _visdat->smallsize.height;
 
     std::vector<KeyPoint> keypointsL;
 #ifdef OPENCV_BLOBTRACKER

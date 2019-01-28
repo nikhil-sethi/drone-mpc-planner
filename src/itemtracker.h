@@ -203,6 +203,8 @@ protected:
     const float certainty_init = 0.1f; // TODO: tune
     const int path_buf_size = 30;
 
+    bool _enable_roi = true;
+
     void reset_tracker_ouput();
     virtual cv::Mat get_probability_cloud(cv::Point size);
     virtual void init_settings() = 0;
@@ -214,6 +216,7 @@ public:
     std::vector<track_item> pathL;
     std::vector<track_item> predicted_pathL;
 
+
     int n_frames_tracking =0;
 
     bool foundL = false;
@@ -221,7 +224,7 @@ public:
     void close (void);
     void init(std::ofstream *logger, VisionData *_visdat, std::string name);
     virtual void track(float time, std::vector<track_item> ignore, float drone_max_border_y, float drone_max_border_z);
-
+    void append_log();
 //    trackData data;
     std::vector<trackData> track_history; // TODO: this will build up indefenitely.... and only last track data is used,
     std::vector<trackData> track_prediction_history;

@@ -95,7 +95,7 @@ private:
 
     bool _fromfile;
     controlParameters params;
-    flight_mode _flight_mode;
+    flight_mode _flight_mode = fm_manual;
 
     MultiModule * _rc;
 
@@ -144,15 +144,19 @@ public:
     void init(std::ofstream *logger, bool fromfile, MultiModule *rc);
     void control(trackData data, cv::Point3f setpoint_world,cv::Point3f setspeed_world);
     bool getDroneIsActive() {
-        if ((_flight_mode != fm_manual && joyThrottle > INITIALTHROTTLE) || _flight_mode == fm_inactive)
+        if ((_flight_mode != fm_manual && joyThrottle > JOY_BOUND_MIN) || _flight_mode == fm_inactive)
             return true;
-        return (_flight_mode != fm_inactive && autoThrottle > INITIALTHROTTLE);
+        return (_flight_mode != fm_inactive && autoThrottle > JOY_BOUND_MIN);
     }
     void setAutoLandThrottleDecrease(int value) {autoLandThrottleDecrease = value;}
     void recalibrateHover();
     bool joystick_ready();
     void init_ground_effect_compensation(){
         hoverthrottle -= params.hoverOffset*params.autoTakeoffFactor; // to compensate for ground effect and delay
+    }
+
+    void blink_drone(bool b) {
+        _rc->bind(b); // tmp trick until we create a dedicated feature for this
     }
 
 };

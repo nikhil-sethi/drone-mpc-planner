@@ -27,7 +27,7 @@ private:
     cv::Mat avg_prev_frame;
     int n_avg_prev_frames = 0;
     int motion_update_iterator = 0;
-    bool background_calibrated;
+    bool _background_calibrated;
     std::mutex lock_data;
 
     struct BaseVisionSettings{
@@ -60,6 +60,7 @@ private:
 
     float prev_time_brightness_check = 0;
     float prev_brightness;
+    bool _reset_motion_integration = false;
 
     void init_avg_prev_frame(void);
     void collect_avg_prev_frame(cv::Mat frame);
@@ -96,8 +97,21 @@ public:
     void update(cv::Mat new_frameL, cv::Mat new_frameR, float time, int new_frame_id);
     float uncertainty_background() {return settings.uncertainty_background / 255.0f;}
     void deproject(float pixel[2],float dist, float p[3]) {
+#if CAMMODE != CAMMODE_GENERATOR
+        //todo remove this dependency (#39)
         rs2_deproject_pixel_to_point(p, intr, pixel, dist);
+#else
+        dist++; // kill warning
+        p[0] = pixel[0];
+        p[1] = pixel[1];
+        p[2] = 10000;
+#endif
+
     }
+    void reset_motion_integration() {
+        _reset_motion_integration = true;
+    }
+    bool background_calibrated() {return _background_calibrated;}
 };
 
 #endif // VIZDAT_H

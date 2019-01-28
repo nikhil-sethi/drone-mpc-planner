@@ -77,9 +77,13 @@ public:
     void check_bind_command(void);
     bool _bind = false;
     stopwatch_c sw_bind;
-    void bind() {
+    void bind(bool b) {
+        if (b){
         sw_bind.Restart();
         _bind = true;
+        } else {
+            _bind = false;
+        }
     }
     void arm(bool v) {
         if (v)

@@ -35,8 +35,8 @@
         #define HASSCREEN
     #endif
     #define BEEP
-    #define VIDEORAWLR VIDEOMODE_BAG
-    #define JOYSTICK_TYPE RC_USB_HOBBYKING
+    #define VIDEORAWLR VIDEOMODE_DISABLED
+    #define JOYSTICK_TYPE RC_DISABLED
     #define TX_TYPE TX_FRSKYD
 #endif
 
@@ -47,7 +47,7 @@
 #define IMG_H 480
 #define IMSCALEF 2
 
-#define CAMMODE CAMMODE_REALSENSE
+#define CAMMODE CAMMODE_GENERATOR
 
 #define DRONE_IM_X_START 193
 #define DRONE_IM_Y_START 267/IMSCALEF

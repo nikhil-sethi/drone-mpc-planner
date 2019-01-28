@@ -29,26 +29,28 @@ private:
         int _distance_threshold_mm;
     };
 
-
-
     enum Navigation_Status {
-        navigation_status_init,
-        navigation_status_wait_for_insect,
-        navigation_status_takeoff,
-        navigation_status_taking_off,
-        navigation_status_take_off_completed,
-        navigation_status_start_the_chase,
-        navigation_status_chasing_insect,
-        navigation_status_set_waypoint_in_flightplan,
-        navigation_status_approach_waypoint_in_flightplan,
-        navigation_status_stay_waypoint_in_flightplan,
-        navigation_status_stay_slider_waypoint,
-        navigation_status_goto_landing_waypoint,
-        navigation_status_land,
-        navigation_status_landing,
-        navigation_status_landed,
-        navigation_status_manual,
-        navigation_status_drone_problem,
+        navigation_status_init = 0,
+        navigation_status_calibrating_motion_background = 1,
+        navigation_status_locate_drone = 2,
+        navigation_status_wait_locate_drone = 3,
+        navigation_status_located_drone = 4,
+        navigation_status_wait_for_insect=5,
+        navigation_status_takeoff=6,
+        navigation_status_taking_off=7,
+        navigation_status_take_off_completed=8,
+        navigation_status_start_the_chase=9,
+        navigation_status_chasing_insect=10,
+        navigation_status_set_waypoint_in_flightplan=11,
+        navigation_status_approach_waypoint_in_flightplan=12,
+        navigation_status_stay_waypoint_in_flightplan=13,
+        navigation_status_stay_slider_waypoint=14,
+        navigation_status_goto_landing_waypoint=15,
+        navigation_status_land=16,
+        navigation_status_landing=17,
+        navigation_status_landed=18,
+        navigation_status_manual=19,
+        navigation_status_drone_problem=99
     };
     Navigation_Status navigation_status = navigation_status_init;
 
@@ -63,6 +65,7 @@ private:
     DroneTracker * _dtrk;
     DroneController * _dctrl;
     Interceptor _iceptor;
+    VisionData *_visdat;
 
 public:
 
@@ -94,8 +97,12 @@ public:
     int distance_threshold_mm;
 
     void close (void);
-    bool init(std::ofstream *logger, DroneTracker *dtrk, DroneController *dctrl, InsectTracker *itrkr);
+    bool init(std::ofstream *logger, DroneTracker *dtrk, DroneController *dctrl, InsectTracker *itrkr, VisionData *visdat);
     void update();
+    bool disable_insect_detection() {
+        return navigation_status < navigation_status_wait_for_insect;
+    }
+
 
 };
 

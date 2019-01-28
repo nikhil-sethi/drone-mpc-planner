@@ -5,15 +5,16 @@ using namespace cv;
 using namespace std;
 
 #ifdef HASSCREEN
-#define TUNING
+//#define TUNING
 #endif
 
 const string paramsFile = "../navigationParameters.dat";
 
-bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneController * dctrl, InsectTracker * itrkr) {
+bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneController * dctrl, InsectTracker * itrkr, VisionData *visdat) {
     _logger = logger;
     _dtrk = dtrk;
     _dctrl = dctrl;
+    _visdat = visdat;
     _iceptor.init(dtrk,itrkr);
 
     // Load saved control paremeters
@@ -57,10 +58,10 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     //setpoints.push_back(waypoint(cv::Point3i(1500,400,1370),30));
 
 
-        //setpoints.push_back(waypoint(cv::Point3i(2200,400,2000),50));
-        //setpoints.push_back(waypoint(cv::Point3i(2200,400,3000),50));
-        //setpoints.push_back(waypoint(cv::Point3i(2200,400,4000),50));
-        //setpoints.push_back(waypoint(cv::Point3i(2200,400,5000),50));
+    //setpoints.push_back(waypoint(cv::Point3i(2200,400,2000),50));
+    //setpoints.push_back(waypoint(cv::Point3i(2200,400,3000),50));
+    //setpoints.push_back(waypoint(cv::Point3i(2200,400,4000),50));
+    //setpoints.push_back(waypoint(cv::Point3i(2200,400,5000),50));
     //setpoints.push_back(waypoint(cv::Point3i(1000,600,1500),30));
     //setpoints.push_back(waypoint(cv::Point3i(2000,600,1500),30));
     //setpoints.push_back(waypoint(cv::Point3i(1500,600,3500),0));
@@ -129,6 +130,28 @@ void DroneNavigation::update() {
 
     switch (navigation_status) {
     case navigation_status_init: {
+        navigation_status = navigation_status_calibrating_motion_background;
+        break;
+    } case navigation_status_calibrating_motion_background: {
+        //wait until motion background done
+        if (_visdat->background_calibrated()) {
+            navigation_status = navigation_status_locate_drone;
+#ifdef BEEP
+            system("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Mallet.ogg &");
+#endif
+        }
+        break;
+    } case navigation_status_locate_drone: {
+        _dctrl->blink_drone(true);
+        _dtrk->Locate_Startup_Location();
+        navigation_status = navigation_status_wait_locate_drone;
+        break;
+    } case navigation_status_wait_locate_drone: {
+        if (_dtrk->blinking_drone_located())
+            navigation_status = navigation_status_located_drone;
+        break;
+    } case navigation_status_located_drone: {
+        _dctrl->blink_drone(false);
         navigation_status = navigation_status_wait_for_insect;
         break;
     } case navigation_status_wait_for_insect: {
@@ -162,9 +185,9 @@ void DroneNavigation::update() {
         //OR fly waypoints
 
         //if(_dctrl->hoverthrottleInitialized)
-            //navigation_status = navigation_status_start_the_chase;
+        //navigation_status = navigation_status_start_the_chase;
         //else
-            //navigation_status = navigation_status_set_waypoint_in_flightplan;
+        //navigation_status = navigation_status_set_waypoint_in_flightplan;
         break;
     } case navigation_status_start_the_chase: {
         _iceptor.reset_insect_cleared();
@@ -181,7 +204,7 @@ void DroneNavigation::update() {
         //update target chasing waypoint and speed
         if (_iceptor.get_insect_in_range()) {
             setpoint_world = _iceptor.get_intercept_position();
-            if (setpoint_world.y < -1.2)
+            if (setpoint_world.y < -1.2f)
                 setpoint_world.y = -1.20f;
         }
 

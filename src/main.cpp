@@ -108,7 +108,6 @@ struct Processer {
     std::mutex m1,m2;
     std::condition_variable data_processed,new_data;
     bool data_is_processed = true;
-    bool data_is_send = false;
     Stereo_Frame_Data data;
 };
 Processer tp[NUM_OF_THREADS];
@@ -146,7 +145,7 @@ void process_video() {
         std::unique_lock<std::mutex> lk(tp[0].m2,std::defer_lock);
         tp[0].data_processed.wait(lk, [](){return tp[0].data_is_processed; });
         tp[0].data = data;
-        tp[0].data_is_send = true;
+        //        tp[0].data_is_send = true;
         tp[0].data_is_processed= false;
 #ifdef HASSCREEN
         static int speed_div;
@@ -216,16 +215,17 @@ void process_frame(Stereo_Frame_Data data) {
     if (fromfile==log_mode_insect_only){
         itrkr.update_from_log(logreader.current_item,data.number);
     } else
-        itrkr.track(data.time,dtrkr.predicted_pathL,dctrl.getDroneIsActive());
+        if (dnav.disable_insect_detection())
+            itrkr.append_log(); // write dummy data
+        else
+            itrkr.track(data.time,dtrkr.predicted_pathL,dctrl.getDroneIsActive());
     //        std::cout << "Found drone location:      [" << dtrkr.find_result.best_image_locationL.pt.x << "," << dtrkr.find_result.best_image_locationL.pt.y << "]" << std::endl;
     dnav.update();
     dctrl.control(dtrkr.get_last_track_data(),dnav.setpoint_world,dnav.setspeed_world);
 
     logger << std::endl;
 
-
 #ifdef HASSCREEN
-
     if (fromfile==log_mode_full) {
         dctrl.joyRoll = logreader.current_item.joyRoll;
         dctrl.joyPitch = logreader.current_item.joyPitch;
@@ -236,7 +236,6 @@ void process_frame(Stereo_Frame_Data data) {
 
     visualizer.addPlotSample();
     visualizer.update_tracker_data(visdat.frameL,dnav.setpoint,data.time,&dtrkr,&itrkr);
-
 #endif
 }
 
@@ -252,7 +251,7 @@ void handleKey() {
 
     switch(key) {
     case 'b':
-        rc.bind();
+        rc.bind(true);
         break;
     case ' ':
 #if CAMMODE == CAMMODE_FROMVIDEOFILE
@@ -279,14 +278,15 @@ void handleKey() {
     key=0;
 }
 
+//This is where frames get processed after it was received from the cam in the main thread
 void pool_worker(int id __attribute__((unused))){
     std::unique_lock<std::mutex> lk(tp[id].m1,std::defer_lock);
     while(key!=27) {
-        tp[id].new_data.wait(lk,[](){return tp[0].data_is_send;});
+        tp[id].new_data.wait(lk,[](){return !tp[0].data_is_processed;});
         if (key == 27)
             break;
         process_frame(tp->data);
-        tp[0].data_is_send = false;
+        //        tp[0].data_is_send = false;
         tp[id].data_is_processed = true;
         tp[id].data_processed.notify_one();
     }
@@ -303,9 +303,11 @@ void close_thread_pool(){
         std::cout <<"Stopping threads in pool"<< std::endl;
         usleep(1000);
         for (uint i = 0; i < NUM_OF_THREADS; i++) {
-            tp[i].data_is_send = true;
+            tp[i].data_is_processed = false;
+            usleep(100);
             tp[i].new_data.notify_all();
             tp[i].data_is_processed = true;
+            usleep(100);
             tp[i].data_processed.notify_all();
         }
         for (uint i = 0; i < NUM_OF_THREADS; i++) {
@@ -358,8 +360,10 @@ int init(int argc, char **argv) {
     logger << "ID;RS_ID;time;";
 
 #ifndef INSECT_LOGGING_MODE
+#if CAMMODE == CAMMODE_REALSENSE
     if (fromfile!=log_mode_full)
         rc.init(fromfile);
+#endif
 #endif
 
     /*****Start capturing images*****/
@@ -380,17 +384,15 @@ int init(int argc, char **argv) {
     //WARNING: changing the order of the inits with logging must be match with the process_video functions!
     dtrkr.init(&logger,&visdat);
     itrkr.init(&logger,&visdat);
-    dnav.init(&logger,&dtrkr,&dctrl,&itrkr);
+    dnav.init(&logger,&dtrkr,&dctrl,&itrkr,&visdat);
     dctrl.init(&logger,fromfile==log_mode_full,&rc);
 
-#if CAMMODE == CAMMODE_REALSENSE
     // Ensure that joystick was found and that we can use it
-    if (!dctrl.joystick_ready() && fromfile!=log_mode_full) {
+    if (!dctrl.joystick_ready() && fromfile!=log_mode_full && JOYSTICK_TYPE != RC_DISABLED) {
         std::cout << "joystick failed." << std::endl;
         close();
         exit(1);
     }
-#endif
 
     logger << std::endl;
 #ifdef HASSCREEN

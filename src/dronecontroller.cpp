@@ -2,7 +2,7 @@
 #include "defines.h"
 
 #ifdef HASSCREEN
-#define TUNING
+//#define TUNING
 #endif
 
 using namespace cv;
@@ -400,7 +400,7 @@ void DroneController::process_joystick() {
         static bool joySwitch_prev = joySwitch;
         if (joySwitch && !joySwitch_prev) {
             if (joyPitch > JOY_MAX_THRESH) {
-                _rc->bind();
+                _rc->bind(true);
                 joySwitch = false;
             } else if(joyThrottle < JOY_MIN + 100) {
                 if (joyPitch < JOY_MIN + 200) {

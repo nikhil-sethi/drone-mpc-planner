@@ -62,8 +62,6 @@ void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, fl
 void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int new_frame_id) {
     lock_data.lock();
 
-    track_avg_brightness(frameL,time);
-
     frameL_prev = frameL;
     frameR_prev = frameR;
     frameL = new_frameL;
@@ -75,40 +73,46 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
     frameL.convertTo(tmp, CV_16SC1);
     frameL16 = tmp;
 
+    track_avg_brightness(frameL16,time); //todo: check if this still works!
+    if (_reset_motion_integration) {
+        frameL_prev16 = frameL16.clone();
+        diffL16 = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
+        _reset_motion_integration = false;
+        motion_update_iterator = 0;
+    }
+
     //calcuate the motion difference, through the integral over time (over each pixel)
     cv::Mat d = frameL16 - frameL_prev16;
     diffL16 += d;
 
     //slowly fade out motion
-    if (!(motion_update_iterator++ % settings.motion_update_iterator_max)) {
-        //split negative and positive motion
-        cv::Mat diffL16_neg,diffL16_pos;
-        diffL16_pos = min(diffL16 >= 1,1);
-        diffL16_neg = min(diffL16 <= -1,1);
-        diffL16_pos.convertTo(diffL16_pos,CV_16SC1);
-        diffL16_neg.convertTo(diffL16_neg,CV_16SC1);
-        diffL16 -= diffL16_pos;
-        diffL16 += diffL16_neg;
-    }
+//    if (!(motion_update_iterator++ % settings.motion_update_iterator_max)) {
+//        //split negative and positive motion
+//        cv::Mat diffL16_neg,diffL16_pos;
+//        diffL16_pos = min(diffL16 >= 1,1);
+//        diffL16_neg = min(diffL16 <= -1,1);
+//        diffL16_pos.convertTo(diffL16_pos,CV_16SC1);
+//        diffL16_neg.convertTo(diffL16_neg,CV_16SC1);
+//        diffL16 -= diffL16_pos;
+//        diffL16 += diffL16_neg;
+//    }
 
-    diffL16.convertTo(diffL, CV_8UC1);
+    //todo abs this???? Does not function as expected with negative change?
+    diffL = abs(diffL16);
+    diffL.convertTo(diffL, CV_8UC1);
     cv::resize(diffL,diffL_small,smallsize);
 
-    //cv::imshow("motion", diffL*10);
+    cv::imshow("motion", diffL);
 
-    if (!background_calibrated )
+    if (!_background_calibrated )
         collect_no_drone_frames(diffL_small); // calibration of background uncertainty map
 
-#ifdef BEEP
-    if (!background_calibrated && time > settings.background_calib_time) {
-        system("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Mallet.ogg &");
-    }
-#endif
-    if (!background_calibrated && time > settings.background_calib_time)
-        background_calibrated= true;
+
+    if (!_background_calibrated && time > settings.background_calib_time)
+        _background_calibrated= true;
 
 #if CAMMODE == CAMMODE_GENERATOR
-    background_calibrated = true;
+    _background_calibrated = true;
 #endif
 
     lock_data.unlock();
@@ -147,8 +151,7 @@ void VisionData::track_avg_brightness(cv::Mat frame,float time) {
         float brightness = mean( frame_small )[0];
         if (fabs(brightness - prev_brightness) > settings.brightness_event_tresh ) {
             std::cout << "Warning, large brightness change: " << prev_brightness << " -> " << brightness  << std::endl;
-            frameL_prev16 = frame.clone();
-            diffL16 = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
+            _reset_motion_integration = true;
         }
         prev_brightness = brightness;
     }
