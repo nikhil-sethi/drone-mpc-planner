@@ -47,7 +47,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
 
     // large scale flight plan
     //setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,SETPOINTYMAX / 2,1000),40)); // this is overwritten by position trackbars!!!
-    setpoints.push_back(waypoint(cv::Point3i(1700,600,2300),30)); // this is overwritten by position trackbars!!!
+    setpoints.push_back(waypoint(cv::Point3i(0,1.5f,-2.3f),30,FM_FLYING)); // this is overwritten by position trackbars!!!
 
     //setpoints.push_back(waypoint(cv::Point3i(1500,300,1500),0));
     //setpoints.push_back(waypoint(cv::Point3i(1500,-200,1500),0));
@@ -79,10 +79,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
 
 
 
-
-
-
-    setpoints.push_back(waypoint(cv::Point3i(1750,600,2310),10)); // landing waypoint (=last one), must be 1 meter above the ground in world coordinatates
+    setpoints.push_back(waypoint(cv::Point3i(0,1.f,0),10,FM_LANDING));
     //setpoints.push_back(waypoint(cv::Point3i(1500,300,1300),60));
 
 
@@ -108,9 +105,9 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
 
 #ifdef TUNING
     namedWindow("Nav", WINDOW_NORMAL);
-    createTrackbar("X [mm]", "Nav", &params.setpoint_slider_X, SETPOINTXMAX);
-    createTrackbar("Y [mm]", "Nav", &params.setpoint_slider_Y, SETPOINTYMAX);
-    createTrackbar("Z [mm]", "Nav", &params.setpoint_slider_Z, SETPOINTZMAX);
+//    createTrackbar("X [mm]", "Nav", &params.setpoint_slider_X, SETPOINTXMAX);
+//    createTrackbar("Y [mm]", "Nav", &params.setpoint_slider_Y, SETPOINTYMAX);
+//    createTrackbar("Z [mm]", "Nav", &params.setpoint_slider_Z, SETPOINTZMAX);
     createTrackbar("WP id", "Nav", reinterpret_cast<int*>(wpid), setpoints.size()-1);
     createTrackbar("d threshold factor", "Nav", &params.distance_threshold_f, 10);
     createTrackbar("land_incr_f_mm", "Nav", &params.land_incr_f_mm, 50);
@@ -152,6 +149,8 @@ void DroneNavigation::update() {
         break;
     } case navigation_status_located_drone: {
         _dctrl->blink_drone(false);
+        cv::Point3f p = _dtrk->Drone_Startup_Location();
+        std::cout << "Drone located at: " << p.x << ", " << p.y << ", " << p.z << std::endl;
         navigation_status = navigation_status_wait_for_insect;
         break;
     } case navigation_status_wait_for_insect: {
@@ -168,7 +167,7 @@ void DroneNavigation::update() {
         navigation_status=navigation_status_taking_off;
         break;
     } case navigation_status_taking_off: {
-        trackData data = _dtrk->get_last_track_data();
+        trackData data = _dtrk->Last_track_data();
         if (data.svelY > static_cast<float>(params.auto_takeoff_speed) / 100.f ) {
             navigation_status = navigation_status_take_off_completed;
         }
@@ -179,15 +178,14 @@ void DroneNavigation::update() {
         _dctrl->init_ground_effect_compensation();
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
         _dctrl->set_flight_mode(DroneController::fm_flying);
-        //TODO: choose whether to fly waypoints (e.g. for testing or demos) or to start the chase
-        //for now, just chase always
-        navigation_status = navigation_status_start_the_chase;
-        //OR fly waypoints
-
-        //if(_dctrl->hoverthrottleInitialized)
-        //navigation_status = navigation_status_start_the_chase;
-        //else
-        //navigation_status = navigation_status_set_waypoint_in_flightplan;
+        if (_hunt)
+            navigation_status = navigation_status_start_the_chase;
+        else {
+            if(_dctrl->hoverthrottleInitialized)
+                navigation_status = navigation_status_start_the_chase;
+            else
+                navigation_status = navigation_status_set_waypoint_in_flightplan;
+        }
         break;
     } case navigation_status_start_the_chase: {
         _iceptor.reset_insect_cleared();
@@ -226,11 +224,14 @@ void DroneNavigation::update() {
     } FALLTHROUGH_INTENDED; case navigation_status_set_waypoint_in_flightplan: {
         wp = &setpoints[wpid];
 
-        setpoint_world.x = (wp->_xyz.x - SETPOINTXMAX/2) / 1000.0f;
-        setpoint_world.y = (wp->_xyz.y - SETPOINTYMAX/2) / 1000.0f;
-        setpoint_world.z = -(wp->_xyz.z) / 1000.0f;
-        distance_threshold_mm = wp->_distance_threshold_mm;
+        if (wp->mode == FM_LANDING) {
+            cv::Point3f p = _dtrk->Drone_Startup_Location();
+            setpoint_world =  p + wp->_xyz;
+        } else {
+            setpoint_world =  wp->_xyz;
+        }
 
+        distance_threshold_mm = wp->_distance_threshold_mm;
         setspeed_world.x = 0;
         setspeed_world.y = 0;
         setspeed_world.z = 0;
@@ -240,12 +241,15 @@ void DroneNavigation::update() {
     } case navigation_status_approach_waypoint_in_flightplan: {
         float dis = sqrtf(_dctrl->posErrX*_dctrl->posErrX + _dctrl->posErrY*_dctrl->posErrY + _dctrl->posErrZ*_dctrl->posErrZ);
         if (dis *1000 < setpoints[wpid]._distance_threshold_mm * params.distance_threshold_f && _dtrk->n_frames_tracking>5) {
-            if (wpid < setpoints.size()-1) {
+            if (setpoints[wpid].mode == FM_LANDING) {
+                navigation_status = navigation_status_landing;
+            } else if (wpid < setpoints.size()-1) {
                 wpid++;
                 alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/window-slide.ogg &");
                 navigation_status = navigation_status_set_waypoint_in_flightplan;
             } else if (wpid == setpoints.size()-1)
-                navigation_status = navigation_status_land;
+                wpid = 0; // another round
+
             if (wpid == 1)
                 _dctrl->recalibrateHover();
         } else
@@ -274,8 +278,8 @@ void DroneNavigation::update() {
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
         navigation_status = navigation_status_landing;
     } FALLTHROUGH_INTENDED; case navigation_status_landing: {
-        trackData data = _dtrk->get_last_track_data();
-        if (data.sposY < _dtrk->get_Drone_Startup_Location().y+0.1f || autoLandThrottleDecrease >1000)
+        trackData data = _dtrk->Last_track_data();
+        if (data.sposY < _dtrk->Drone_Startup_Location().y+0.1f || autoLandThrottleDecrease >1000)
             navigation_status = navigation_status_landed;
 
         autoLandThrottleDecrease += params.autoLandThrottleDecreaseFactor;

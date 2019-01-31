@@ -16,17 +16,22 @@ class DroneNavigation {
 
 private:
 
-#define SETPOINTXMAX 3000 // in mm
-#define SETPOINTYMAX 3000 // in mm
-#define SETPOINTZMAX 5000 // in mm
+    enum waypoint_flight_mode {
+        FM_TAKEOFF,
+        FM_FLYING,
+        FM_LANDING
+    };
 
+    //todo: make inherited landing waypoint
     struct waypoint{
-        waypoint(cv::Point3i xyz, int distance_threshold_mm) {
+        waypoint(cv::Point3f xyz, int distance_threshold_mm,waypoint_flight_mode w) {
             _xyz = xyz;
             _distance_threshold_mm = distance_threshold_mm;
+            mode  = w;
         }
-        cv::Point3i _xyz;
+        cv::Point3f _xyz;
         int _distance_threshold_mm;
+        waypoint_flight_mode mode;
     };
 
     enum Navigation_Status {
@@ -72,7 +77,7 @@ public:
     struct navigationParameters{
         int distance_threshold_f = 1;
 
-        int setpoint_slider_X = SETPOINTXMAX / 2;
+        int setpoint_slider_X = 0 ; //SETPOINTXMAX / 2;
         int setpoint_slider_Y = 600;
         int setpoint_slider_Z = 1000;
 
