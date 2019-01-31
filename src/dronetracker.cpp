@@ -117,7 +117,7 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
 
             //save found drone location
             _drone_blink_image_location = find_result.best_image_locationL.pt;
-            trackData d = get_last_track_data();
+            trackData d = Last_track_data();
             _drone_blink_world_location.x = d.sposX;
             _drone_blink_world_location.y = d.sposY;
             _drone_blink_world_location.z = d.sposZ;

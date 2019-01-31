@@ -342,9 +342,9 @@ void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3d setpoint, float
         static float min_dis = 9999;
         float dis = 0;
         if (dtrk->n_frames_tracking>0 && itrk->n_frames_tracking>0) {
-            dis = powf(dtrk->get_last_track_data().posX-itrk->get_last_track_data().posX,2) +
-                    powf(dtrk->get_last_track_data().posY-itrk->get_last_track_data().posY,2) +
-                    powf(dtrk->get_last_track_data().posZ-itrk->get_last_track_data().posZ,2);
+            dis = powf(dtrk->Last_track_data().posX-itrk->Last_track_data().posX,2) +
+                    powf(dtrk->Last_track_data().posY-itrk->Last_track_data().posY,2) +
+                    powf(dtrk->Last_track_data().posZ-itrk->Last_track_data().posZ,2);
             dis = sqrtf(dis);
 
             if (dis < min_dis)

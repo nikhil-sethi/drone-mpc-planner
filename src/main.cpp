@@ -221,7 +221,7 @@ void process_frame(Stereo_Frame_Data data) {
             itrkr.track(data.time,dtrkr.predicted_pathL);
     //        std::cout << "Found drone location:      [" << dtrkr.find_result.best_image_locationL.pt.x << "," << dtrkr.find_result.best_image_locationL.pt.y << "]" << std::endl;
     dnav.update();
-    dctrl.control(dtrkr.get_last_track_data(),dnav.setpoint_world,dnav.setspeed_world);
+    dctrl.control(dtrkr.Last_track_data(),dnav.setpoint_world,dnav.setspeed_world);
 
     logger << std::endl;
 

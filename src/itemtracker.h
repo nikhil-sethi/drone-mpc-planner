@@ -227,7 +227,7 @@ public:
 //    trackData data;
     std::vector<trackData> track_history; // TODO: this will build up indefenitely.... and only last track data is used,
     std::vector<trackData> track_prediction_history;
-    trackData get_last_track_data() {
+    trackData Last_track_data() {
         if (track_history.empty())
             return trackData();
         return track_history.back();

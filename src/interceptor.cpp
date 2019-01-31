@@ -7,7 +7,7 @@ void Interceptor::init(DroneTracker * dtrkr, InsectTracker * itrkr) {
 }
 void Interceptor::update(bool drone_at_base) {
 
-    cv::Point3f insectVel = {_itrkr->get_last_track_data().svelX,_itrkr->get_last_track_data().svelY,_itrkr->get_last_track_data().svelZ};
+    cv::Point3f insectVel = {_itrkr->Last_track_data().svelX,_itrkr->Last_track_data().svelY,_itrkr->Last_track_data().svelZ};
 
 
     //1. asume moth will spiral down.
@@ -55,8 +55,8 @@ void Interceptor::update(bool drone_at_base) {
 
     if ( insectVelNorm > 0 || _itrkr->foundL ) {
 
-        cv::Point3f insectPos = {_itrkr->get_last_track_data().sposX,_itrkr->get_last_track_data().sposY,_itrkr->get_last_track_data().sposZ};
-        cv::Point3f dronePos = {_dtrkr->get_last_track_data().sposX,_dtrkr->get_last_track_data().sposY,_dtrkr->get_last_track_data().sposZ};
+        cv::Point3f insectPos = {_itrkr->Last_track_data().sposX,_itrkr->Last_track_data().sposY,_itrkr->Last_track_data().sposZ};
+        cv::Point3f dronePos = {_dtrkr->Last_track_data().sposX,_dtrkr->Last_track_data().sposY,_dtrkr->Last_track_data().sposZ};
 
         if (drone_at_base)
             dronePos = {0.f,-MAX_BORDER_Y_DEFAULT,-1.07f}; // TODO: define this in a consistent way with flightplan waypoints
