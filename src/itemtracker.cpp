@@ -13,7 +13,7 @@ using namespace std;
 //#define TUNING
 #endif
 
-#define OPENCV_BLOBTRACKER
+//#define OPENCV_BLOBTRACKER
 //TODO: remove _treshL when removing OPENCV_BLOBTRACKER
 
 void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string name) {
@@ -740,7 +740,6 @@ float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv:
         rectsize = 3;
     float rectsizeX = ceil(rectsize*0.5f); // *4.0 results in drone-insect disparity interaction
     float rectsizeY = ceil(rectsize*0.5f);  // *3.0
-
     int x1,y1,x2,y2;
     x1 = static_cast<int>((closestL.pt.x-rectsizeX)*IMSCALEF);
     x2 = static_cast<int>(2*rectsizeX*IMSCALEF);
@@ -748,15 +747,17 @@ float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv:
     y2 = static_cast<int>(2*rectsizeY*IMSCALEF);
     if (x1 < 0)
         x1=0;
+    else if (x1 >= frameL.cols)
+        x1  = frameL.cols-1;
     if (y1 < 0)
         y1=0;
+    else if (y1 >= frameL.rows)
+        y1  = frameL.rows-1;
     if (x1+x2 >= frameL.cols)
         x2=frameL.cols-x1;
     if (y1+y2 >= frameL.rows)
         y2=frameL.rows-y1;
-
     cv::Rect roiL(x1,y1,x2,y2);
-
     //retrieve changed pixels (through time) for left camera
     cv::Mat aL = frameL(roiL);
     cv::Mat bL = prevFrameL_big(roiL);
@@ -764,7 +765,6 @@ float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv:
     cv::absdiff(aL,bL,diff_L_roi);
     cv::Mat diff_L_roi_16;
     diff_L_roi.convertTo(diff_L_roi_16, CV_16UC1);
-
     //shift over the image to find the best match, shift = disparity
     int disparity_err = 0;
     __attribute__((unused)) int disparity_cor = 0;
