@@ -620,7 +620,7 @@ void Cam::calib_pose(){
 
         if (_camera_angle_y_measured_from_depth - old > 10 && checkFileExist(calib_log_fn)) {
             std::cout << "Warning: angle change to big!" << std::endl;
-            exit(1);
+            //exit(1);
         }
     }
     cam.stop();
