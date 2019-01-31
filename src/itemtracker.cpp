@@ -385,7 +385,7 @@ void ItemTracker::append_log() {
 
     (*_logger) << n_frames_lost << "; " << n_frames_tracking << "; " << foundL << "; ";
     //log all world stuff
-    trackData last = get_last_track_data();
+    trackData last = Last_track_data();
     (*_logger) << last.posX << "; " << last.posY << "; " << last.posZ << ";" ;
     (*_logger) << last.sposX << "; " << last.sposY << "; " << last.sposZ << ";";
     (*_logger) << last.svelX << "; " << last.svelY << "; " << last.svelZ << ";";
