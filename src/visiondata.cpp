@@ -86,16 +86,16 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
     diffL16 += d;
 
     //slowly fade out motion
-//    if (!(motion_update_iterator++ % settings.motion_update_iterator_max)) {
-//        //split negative and positive motion
-//        cv::Mat diffL16_neg,diffL16_pos;
-//        diffL16_pos = min(diffL16 >= 1,1);
-//        diffL16_neg = min(diffL16 <= -1,1);
-//        diffL16_pos.convertTo(diffL16_pos,CV_16SC1);
-//        diffL16_neg.convertTo(diffL16_neg,CV_16SC1);
-//        diffL16 -= diffL16_pos;
-//        diffL16 += diffL16_neg;
-//    }
+    if (!(motion_update_iterator++ % settings.motion_update_iterator_max)) {
+        //split negative and positive motion
+        cv::Mat diffL16_neg,diffL16_pos;
+        diffL16_pos = min(diffL16 >= 1,1);
+        diffL16_neg = min(diffL16 <= -1,1);
+        diffL16_pos.convertTo(diffL16_pos,CV_16SC1);
+        diffL16_neg.convertTo(diffL16_neg,CV_16SC1);
+        diffL16 -= diffL16_pos;
+        diffL16 += diffL16_neg;
+    }
 
     //todo abs this???? Does not function as expected with negative change?
     diffL = abs(diffL16);
