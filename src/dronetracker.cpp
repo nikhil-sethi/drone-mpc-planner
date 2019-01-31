@@ -80,15 +80,16 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
             ItemTracker::append_log(); // write a dummy entry
             break;
         } case bds_searching: {
+            _enable_roi = false;
             ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
             if (foundL) {
-                blink_location = find_result.best_image_locationL;
                 _blinking_drone_located = bds_blink_off;
-                _enable_roi = true;
                 blink_time_start = time;
             }
             break;
         } case bds_blink_off: {
+            _enable_roi = true;
+            blink_location = find_result.best_image_locationL;
             ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
             _blinking_drone_located = detect_blink(time, n_frames_tracking == 0);
             break;

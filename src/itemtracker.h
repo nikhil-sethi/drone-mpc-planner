@@ -203,6 +203,7 @@ protected:
     const int path_buf_size = 30;
 
     bool _enable_roi = true;
+    bool _enable_background_check = true;
 
     void reset_tracker_ouput();
     virtual cv::Mat get_probability_cloud(cv::Point size);
