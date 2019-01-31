@@ -66,6 +66,7 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
         switch (_blinking_drone_located) {
         case bds_start: {
             _enable_roi = false;
+            _enable_background_check = false;
             pathL.clear();
             predicted_pathL.clear();
             foundL = false; // todo: is this necessary?
@@ -120,6 +121,7 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
             _drone_blink_world_location.x = d.sposX;
             _drone_blink_world_location.y = d.sposY;
             _drone_blink_world_location.z = d.sposZ;
+            _enable_background_check = true;
 
             //write to xml
             serialize_calib();
