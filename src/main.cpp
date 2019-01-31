@@ -189,7 +189,8 @@ void process_video() {
         imgcount++;
         prev_time = t;
 
-
+        if (fps != fps)
+            fps_smoothed.reset();
 
 #ifdef INSECT_LOGGING_MODE
         if (imgcount > 60000)
