@@ -101,6 +101,9 @@ public:
     bool blinking_drone_located() {
         return _blinking_drone_located >= bds_found;
     }
+    cv::Point3f Drone_Startup_Location() {
+        return _drone_blink_world_location;
+    }
 };
 
 
