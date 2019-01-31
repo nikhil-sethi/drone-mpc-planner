@@ -31,26 +31,28 @@ private:
         xmls::xFloat Angle_Y;
         xmls::xFloat Angle_Y_Measured_From_Depthmap;
         xmls::xFloat Exposure;
-
+        xmls::xFloat Gain;
 
         CamCalibrationData():
             Angle_X(0),
             Angle_Y(30),
             Angle_Y_Measured_From_Depthmap(30),
-            Exposure(0)
+            Exposure(0),
+            Gain(0)
         {
             // Set the XML class name.
             // This name can differ from the C++ class name
             setClassName("CamCalibrationData");
 
             // Set class version
-            setVersion("1.1");
+            setVersion("1.2");
 
             // Register members. Like the class name, member names can differ from their xml depandants
             Register("Angle_X", &Angle_X);
             Register("Angle_Y", &Angle_Y);
             Register("Angle_Y_Measured_From_Depthmap", &Angle_Y_Measured_From_Depthmap);
             Register("Exposure", &Exposure);
+            Register("Gain", &Gain);
         };
     };
 
@@ -119,6 +121,7 @@ private:
     float _frame_time_start = -1;
 
     float _measured_exposure = 15400; // measured from sense_light_level
+    int _measured_gain = 0;
     int exposure = 11000; //84*(31250/256); // >11000 -> 60fps, >15500 -> 30fps, < 20 = crash
     int gain = 0;
     bool fromfile;

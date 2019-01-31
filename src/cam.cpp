@@ -310,6 +310,7 @@ void Cam::init() {
         exposure = _measured_exposure;
         if (VIDEOFPS==60 && _measured_exposure>15500) //guarantee 60 FPS when requested
             exposure = 15500;
+        gain = _measured_gain;
     }
     if ( enable_auto_exposure == enabled) {
         if (depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
@@ -380,6 +381,7 @@ void Cam::deserialize_calib(std::string file) {
         _camera_angle_y = dser->Angle_Y.value();
         _camera_angle_y_measured_from_depth= dser->Angle_Y_Measured_From_Depthmap.value();
         _measured_exposure = dser->Exposure.value();
+        _measured_gain = dser->Gain.value();
     } else { // Deserialization not successful
         std::cout << "Error reading camera calibration file." << std::endl;
         exit(1);
@@ -391,6 +393,7 @@ void Cam::serialize_calib() {
     calib_settings->Angle_X = _camera_angle_x;
     calib_settings->Angle_Y = _camera_angle_y;
     calib_settings->Exposure = _measured_exposure;
+    calib_settings->Gain = _measured_gain;
     calib_settings->Angle_Y_Measured_From_Depthmap = _camera_angle_y_measured_from_depth;
 
     std::string xmlData = calib_settings->toXML();
@@ -425,7 +428,8 @@ void Cam::sense_light_level(){
 
     if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
         _measured_exposure = frame.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
-        std::cout << "Measured exposure: " << _measured_exposure << std::endl;
+        _measured_gain = rs_dev.get_option(RS2_OPTION_GAIN);
+        std::cout << "Measured exposure: " << _measured_exposure << " gain: " << _measured_gain << std::endl;
     }
     cv::Mat frameLt = Mat(im_size, CV_8UC1, const_cast<void *>(frame.get_infrared_frame(1).get_data()), Mat::AUTO_STEP);
 
