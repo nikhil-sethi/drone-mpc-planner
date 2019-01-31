@@ -275,7 +275,7 @@ void DroneNavigation::update() {
         navigation_status = navigation_status_landing;
     } FALLTHROUGH_INTENDED; case navigation_status_landing: {
         trackData data = _dtrk->get_last_track_data();
-        if (data.sposY < -(MAX_BORDER_Y_DEFAULT-0.18f) || autoLandThrottleDecrease >1000)
+        if (data.sposY < _dtrk->get_Drone_Startup_Location().y+0.1f || autoLandThrottleDecrease >1000)
             navigation_status = navigation_status_landed;
 
         autoLandThrottleDecrease += params.autoLandThrottleDecreaseFactor;
