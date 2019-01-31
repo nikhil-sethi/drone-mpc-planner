@@ -36,7 +36,7 @@ private:
         int uncertainty_power = 6;
         int uncertainty_background = 0.3*255.0;
         int background_calib_time = 5;
-        int motion_update_iterator_max = 10;
+        int motion_update_iterator_max = 1;
         float brightness_event_tresh = 5;
         float brightness_check_period = 1;
 
