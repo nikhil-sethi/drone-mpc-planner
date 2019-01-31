@@ -271,8 +271,13 @@ void handleKey() {
     case 'a':
         rc.arm(true);
         break;
+    case 'h':
+        rc.arm(true);
+        dnav.Hunt(true);
+        break;
     case 's':
         rc.arm(false);
+        dnav.Hunt(false);
         break;
     } // end switch key
     key=0;

@@ -100,12 +100,17 @@ public:
     cv::Point3f setpoint_world;
     cv::Point3f setspeed_world;
     int distance_threshold_mm;
+    bool _hunt = false;
 
     void close (void);
     bool init(std::ofstream *logger, DroneTracker *dtrk, DroneController *dctrl, InsectTracker *itrkr, VisionData *visdat);
     void update();
     bool disable_insect_detection() {
         return navigation_status < navigation_status_wait_for_insect;
+    }
+
+    void Hunt(bool b) {
+        _hunt = b;
     }
 
 
