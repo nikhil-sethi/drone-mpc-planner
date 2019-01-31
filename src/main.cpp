@@ -254,7 +254,7 @@ void handleKey() {
         rc.bind(true);
         break;
     case ' ':
-#if CAMMODE == CAMMODE_FROMVIDEOFILE
+#if CAMMODE == CAMMODE_REALSENSE
     case 'f':
         cam.frame_by_frame = true;
         break;
