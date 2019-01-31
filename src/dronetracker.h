@@ -11,7 +11,7 @@
  */
 class DroneTracker : public ItemTracker {
 
-    const float bind_blink_time = 0.5f;
+    const float bind_blink_time = 0.45f;
 private:
     enum blinking_drone_state {
         bds_start=1,
