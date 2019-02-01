@@ -46,10 +46,10 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     //z = 0 means distance from the camera is zero. z = 1500 means 1.5m from the camera
 
 
-    setpoints.push_back(waypoint(cv::Point3f(0,-1.5f,-3.5f),30,FM_FLYING)); // this is overwritten by position trackbars!!!
+    setpoints.push_back(waypoint(cv::Point3f(0,-1.5f,-3.5f),30)); // this is overwritten by position trackbars!!!
 
 
-    setpoints.push_back(waypoint(cv::Point3f(0,1.f,0),10,FM_LANDING));
+    setpoints.push_back(landing_waypoint());
 
 
 #ifdef TUNING
@@ -69,8 +69,6 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
 }
 
 void DroneNavigation::update() {
-
-    waypoint * wp;
 
     _iceptor.update(navigation_status == navigation_status_wait_for_insect);
 
@@ -100,13 +98,32 @@ void DroneNavigation::update() {
         _dctrl->blink_drone(false);
         cv::Point3f p = _dtrk->Drone_Startup_Location();
         std::cout << "Drone located at: " << p.x << ", " << p.y << ", " << p.z << std::endl;
-        navigation_status = navigation_status_wait_for_insect;
+        if (_hunt)
+            navigation_status = navigation_status_wait_for_insect;
+        else
+            navigation_status = navigation_status_wait_for_takeoff_command;
+        break;
+    } case navigation_status_wait_for_takeoff_command: {
+        if (_dctrl->get_flight_mode() == DroneController::fm_manual)
+            navigation_status=navigation_status_manual;
+        else if (_hunt)
+            navigation_status=navigation_status_wait_for_insect;
+        else if (_dctrl->manual_override_take_off_now )
+            navigation_status = navigation_status_takeoff;
         break;
     } case navigation_status_wait_for_insect: {
         if (_dctrl->get_flight_mode() == DroneController::fm_manual)
             navigation_status=navigation_status_manual;
-        else if (_iceptor.get_insect_in_range() || _dctrl->manual_override_take_off_now )
+        else if (!_hunt)
+            navigation_status=navigation_status_wait_for_takeoff_command;
+        else if (!_dctrl->hoverthrottleInitialized)
+            navigation_status = navigation_status_init_calibrate_hover;
+        else if (_iceptor.get_insect_in_range())
             navigation_status = navigation_status_takeoff;
+        break;
+    } case navigation_status_init_calibrate_hover: {
+        navigation_status = navigation_status_takeoff;
+        _calibrating_hover = true;
         break;
     } case navigation_status_takeoff: {
         _dctrl->manual_override_take_off_now = false;
@@ -127,17 +144,17 @@ void DroneNavigation::update() {
         _dctrl->init_ground_effect_compensation();
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
         _dctrl->set_flight_mode(DroneController::fm_flying);
-        if (_hunt) {
-            if(_dctrl->hoverthrottleInitialized)
-                navigation_status = navigation_status_start_the_chase;
-            else {
-                //todo: do a fly land maneuvre to determine hover throttle
-                //tmp hack:
-                navigation_status = navigation_status_set_waypoint_in_flightplan;
-            }
+        if (_calibrating_hover)
+            navigation_status = navigation_status_calibrate_hover;
+        else if (_hunt) {
+            navigation_status = navigation_status_start_the_chase;
         }  else {
             navigation_status = navigation_status_set_waypoint_in_flightplan;
         }
+        break;
+    } case navigation_status_calibrate_hover: {
+        set_next_waypoint(hovercalib_waypoint());
+        navigation_status = navigation_status_approach_waypoint_in_flightplan;
         break;
     } case navigation_status_start_the_chase: {
         _iceptor.reset_insect_cleared();
@@ -171,42 +188,33 @@ void DroneNavigation::update() {
             navigation_status = navigation_status_goto_landing_waypoint;
         break;
     } case navigation_status_goto_landing_waypoint: {
-        wpid = static_cast<uint>(setpoints.size())-1; // last waypoint is the landing waypoint
-        navigation_status = navigation_status_set_waypoint_in_flightplan;
+        set_next_waypoint(landing_waypoint());
+        navigation_status = navigation_status_approach_waypoint_in_flightplan;
     } FALLTHROUGH_INTENDED; case navigation_status_set_waypoint_in_flightplan: {
-        wp = &setpoints[wpid];
-
-        if (wp->mode == FM_LANDING) {
-            cv::Point3f p = _dtrk->Drone_Startup_Location();
-            setpoint_world =  p + wp->_xyz;
-        } else {
-            setpoint_world =  wp->_xyz;
-        }
-
-        distance_threshold_mm = wp->_distance_threshold_mm;
-        setspeed_world.x = 0;
-        setspeed_world.y = 0;
-        setspeed_world.z = 0;
-
+        set_next_waypoint(setpoints[wpid]);
         navigation_status = navigation_status_approach_waypoint_in_flightplan;
         break;
     } case navigation_status_approach_waypoint_in_flightplan: {
         float dis = sqrtf(_dctrl->posErrX*_dctrl->posErrX + _dctrl->posErrY*_dctrl->posErrY + _dctrl->posErrZ*_dctrl->posErrZ);
-        if (dis *1000 < setpoints[wpid]._distance_threshold_mm * params.distance_threshold_f && _dtrk->n_frames_tracking>5) {
-            if (setpoints[wpid].mode == FM_LANDING) {
+        if (dis *1000 < current_setpoint->threshold_mm * params.distance_threshold_f && _dtrk->n_frames_tracking>5) {
+            if (current_setpoint->mode == FM_LANDING) {
                 navigation_status = navigation_status_landing;
-            } else if (wpid < setpoints.size()-1) {
+            } else if (current_setpoint->mode == FM_HOVER_CALIB) {
+                _dctrl->recalibrateHover();
+                _calibrating_hover = false;
+                navigation_status = navigation_status_goto_landing_waypoint;
+            } else if (wpid < setpoints.size()-1) { // next waypoint in flight plan
                 wpid++;
                 alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/window-slide.ogg &");
+                if (wpid == 1)
+                    _dctrl->recalibrateHover();
                 navigation_status = navigation_status_set_waypoint_in_flightplan;
-            } else if (wpid == setpoints.size()-1)
+            } else if (wpid == setpoints.size()-1){
                 wpid = 0; // another round
-
-            if (wpid == 1)
-                _dctrl->recalibrateHover();
-        } else
-            navigation_status = navigation_status_set_waypoint_in_flightplan;
-
+                alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/window-slide.ogg &");
+                navigation_status = navigation_status_set_waypoint_in_flightplan;
+            }
+        }
         if (_dctrl->get_flight_mode() == DroneController::fm_manual)
             navigation_status=navigation_status_manual;
         break;
@@ -263,6 +271,21 @@ void DroneNavigation::update() {
         break;
     }
     }
+}
+
+void DroneNavigation::set_next_waypoint(waypoint wp) {
+    current_setpoint = &wp;
+    if (wp.mode == FM_LANDING || wp.mode == FM_HOVER_CALIB || wp.mode == FM_TAKEOFF) {
+        cv::Point3f p = _dtrk->Drone_Startup_Location();
+        setpoint_world =  p + wp.xyz;
+    } else {
+        setpoint_world =  wp.xyz;
+    }
+
+    setspeed_world.x = 0;
+    setspeed_world.y = 0;
+    setspeed_world.z = 0;
+
 }
 
 void DroneNavigation::close() {

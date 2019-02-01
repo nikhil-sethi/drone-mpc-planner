@@ -260,8 +260,8 @@ cv::Mat Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Point setpoint, std:
     cv::line(frame,cv::Point(x,0),cv::Point(x,frame.rows),cv::Scalar(80,80,150));
 
 
-    float dist_th_x = (_dnav->distance_threshold_mm)* scaleX + 2*line_width;
-    float dist_th_y = (_dnav->distance_threshold_mm)* scaleY + 2*line_width;
+    float dist_th_x = (_dnav->distance_threshold_mm())* scaleX + 2*line_width;
+    float dist_th_y = (_dnav->distance_threshold_mm())* scaleY + 2*line_width;
     cv::rectangle(frame,Point(x-dist_th_x,y-dist_th_y),Point(x+dist_th_x,y+dist_th_y),cv::Scalar(255,0,0));
 
     return frame;
