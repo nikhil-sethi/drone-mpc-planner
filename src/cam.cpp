@@ -371,7 +371,7 @@ void Cam::deserialize_calib(std::string file) {
     std::ifstream infile(file);
 
     std::string xmlData((std::istreambuf_iterator<char>(infile)),
-                     std::istreambuf_iterator<char>());
+                        std::istreambuf_iterator<char>());
 
 
     CamCalibrationData* dser=new CamCalibrationData; // Create new object
@@ -420,18 +420,52 @@ void Cam::sense_light_level(){
         rs_dev.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f);
 
     cv::Size im_size(IMG_W, IMG_H);
+    cv::Mat frameLt;
 
-    //wait 2 seconds
-    rs2::frameset frame;
-    for (uint i = 0; i < VIDEOFPS*2; i++)
-        frame = cam.wait_for_frames();
+    _measured_gain = rs_dev.get_option(RS2_OPTION_GAIN);
+    int search_speed=9;
+    while(true) {
+        //search for the best gain, keeping exposure at max 15500 (higher and the fps will decrease).
+        //lower gain is better because less noise
+        //this loop will do a quick search with increasing gain, and then a slower search decreasing the gain again
+        //the slower search has smaller gain steps, and longer delays between reading
+        //the resulting exposure (camera does not respond instantaniously)
 
-    if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
-        _measured_exposure = frame.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
-        _measured_gain = rs_dev.get_option(RS2_OPTION_GAIN);
-        std::cout << "Measured exposure: " << _measured_exposure << " gain: " << _measured_gain << std::endl;
+        rs2::frameset frame;
+        for (int i = 0; i< 10-search_speed;i++)
+            frame = cam.wait_for_frames();
+
+        if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
+            _measured_exposure = frame.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
+            if (search_speed>0){
+                if (_measured_exposure >= 15500 && _measured_gain <= 255 ) {
+                    _measured_gain+=search_speed;
+                    std::cout << "Measured exposure: " << _measured_exposure << " -> increasing gain: " << _measured_gain << std::endl;
+                    rs_dev.set_option(RS2_OPTION_GAIN, _measured_gain);
+                } else {
+                    search_speed=-1;
+                }
+            }
+             if (search_speed<0){
+                if (_measured_exposure < 15500 && _measured_gain > 16 ) {
+                    if (_measured_gain > 255)
+                        _measured_gain = 255;
+                    else
+                        _measured_gain+=search_speed;
+                    std::cout << "Measured exposure: " << _measured_exposure << " -> decreasing gain: " << _measured_gain << std::endl;
+                    rs_dev.set_option(RS2_OPTION_GAIN, _measured_gain);
+                } else {
+
+                    std::cout << "Measured exposure: " << _measured_exposure << " gain: " << _measured_gain << std::endl;
+                    frameLt = Mat(im_size, CV_8UC1, const_cast<void *>(frame.get_infrared_frame(1).get_data()), Mat::AUTO_STEP);
+                    break;
+                }
+            }
+        }
+
     }
-    cv::Mat frameLt = Mat(im_size, CV_8UC1, const_cast<void *>(frame.get_infrared_frame(1).get_data()), Mat::AUTO_STEP);
+    _measured_gain = rs_dev.get_option(RS2_OPTION_GAIN);
+
 
     imwrite("./logging/brightness.png",frameLt);
     cam.stop();
