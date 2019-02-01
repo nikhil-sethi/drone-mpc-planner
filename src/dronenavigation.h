@@ -49,7 +49,7 @@ private:
         navigation_status_set_waypoint_in_flightplan=11,
         navigation_status_approach_waypoint_in_flightplan=12,
         navigation_status_stay_waypoint_in_flightplan=13,
-        navigation_status_stay_slider_waypoint=14,
+        //navigation_status_stay_slider_waypoint=14,
         navigation_status_goto_landing_waypoint=15,
         navigation_status_land=16,
         navigation_status_landing=17,

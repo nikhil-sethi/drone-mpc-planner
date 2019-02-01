@@ -38,76 +38,25 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
 
     //(*_logger) << "imLx; imLy; disparity;";
 
-
+    //TODO: update description
     //waypoints work as follows:
     //(cv::Point3i(x,y,z),
     // x = 1500 means the middle of the camera, x = 0 means 1.5m right!!! of the middle. (counter intuitive)
     // y = 1500 is on the same height as the camera position itself, y = 0 means 1.5m below the cam position
     //z = 0 means distance from the camera is zero. z = 1500 means 1.5m from the camera
 
-    // large scale flight plan
-    //setpoints.push_back(waypoint(cv::Point3i(SETPOINTXMAX / 2,SETPOINTYMAX / 2,1000),40)); // this is overwritten by position trackbars!!!
-    setpoints.push_back(waypoint(cv::Point3i(0,1.5f,-2.3f),30,FM_FLYING)); // this is overwritten by position trackbars!!!
 
-    //setpoints.push_back(waypoint(cv::Point3i(1500,300,1500),0));
-    //setpoints.push_back(waypoint(cv::Point3i(1500,-200,1500),0));
-
-    //setpoints.push_back(waypoint(cv::Point3i(1000,-200,1500),0));
-    //setpoints.push_back(waypoint(cv::Point3i(2000,-200,1500),0));
-
-    //setpoints.push_back(waypoint(cv::Point3i(1500,400,1370),30));
+    setpoints.push_back(waypoint(cv::Point3f(0,-1.5f,-3.5f),30,FM_FLYING)); // this is overwritten by position trackbars!!!
 
 
-    //setpoints.push_back(waypoint(cv::Point3i(2200,400,2000),50));
-    //setpoints.push_back(waypoint(cv::Point3i(2200,400,3000),50));
-    //setpoints.push_back(waypoint(cv::Point3i(2200,400,4000),50));
-    //setpoints.push_back(waypoint(cv::Point3i(2200,400,5000),50));
-    //setpoints.push_back(waypoint(cv::Point3i(1000,600,1500),30));
-    //setpoints.push_back(waypoint(cv::Point3i(2000,600,1500),30));
-    //setpoints.push_back(waypoint(cv::Point3i(1500,600,3500),0));
-    //setpoints.push_back(waypoint(cv::Point3i(1500,600,4000),0));
-
-
-
-    //setpoints.push_back(waypoint(cv::Point3i(1000,-125,1500),0));
-    //setpoints.push_back(waypoint(cv::Point3i(2000,-125,1500),0));
-
-
-
-    //setpoints.push_back(waypoint(cv::Point3i(1500,-250,1500),5));
-    //setpoints.push_back(waypoint(cv::Point3i(1500,0,1500),5));
-
-
-
-    setpoints.push_back(waypoint(cv::Point3i(0,1.f,0),10,FM_LANDING));
-    //setpoints.push_back(waypoint(cv::Point3i(1500,300,1300),60));
-
-
-    /* // small scale flight plan
-    setpoints.push_back(waypoint(cv::Point3i(1500,900,1000),40)); // this is overwritten by position trackbars!!!
-    setpoints.push_back(waypoint(cv::Point3i(1200,900,1000),40));
-    setpoints.push_back(waypoint(cv::Point3i(1500,900,1000),40));
-    */
-
-    /* // fly squares
-    setpoints.push_back(cv::Point3i(1800,600,1200));
-    setpoints.push_back(cv::Point3i(1200,600,1000));
-    setpoints.push_back(cv::Point3i(1000,600,2000));
-    setpoints.push_back(cv::Point3i(2000,600,2000));
-    setpoints.push_back(cv::Point3i(1800,600,1200));
-    setpoints.push_back(cv::Point3i(1800,1000,1200));
-    setpoints.push_back(cv::Point3i(1200,1000,1000));
-    setpoints.push_back(cv::Point3i(1000,1000,2000));
-    setpoints.push_back(cv::Point3i(2000,1000,2000));
-    setpoints.push_back(cv::Point3i(1800,1000,1200));
-    */
+    setpoints.push_back(waypoint(cv::Point3f(0,1.f,0),10,FM_LANDING));
 
 
 #ifdef TUNING
     namedWindow("Nav", WINDOW_NORMAL);
-//    createTrackbar("X [mm]", "Nav", &params.setpoint_slider_X, SETPOINTXMAX);
-//    createTrackbar("Y [mm]", "Nav", &params.setpoint_slider_Y, SETPOINTYMAX);
-//    createTrackbar("Z [mm]", "Nav", &params.setpoint_slider_Z, SETPOINTZMAX);
+    //    createTrackbar("X [mm]", "Nav", &params.setpoint_slider_X, SETPOINTXMAX);
+    //    createTrackbar("Y [mm]", "Nav", &params.setpoint_slider_Y, SETPOINTYMAX);
+    //    createTrackbar("Z [mm]", "Nav", &params.setpoint_slider_Z, SETPOINTZMAX);
     createTrackbar("WP id", "Nav", reinterpret_cast<int*>(wpid), setpoints.size()-1);
     createTrackbar("d threshold factor", "Nav", &params.distance_threshold_f, 10);
     createTrackbar("land_incr_f_mm", "Nav", &params.land_incr_f_mm, 50);
@@ -178,13 +127,16 @@ void DroneNavigation::update() {
         _dctrl->init_ground_effect_compensation();
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
         _dctrl->set_flight_mode(DroneController::fm_flying);
-        if (_hunt)
-            navigation_status = navigation_status_start_the_chase;
-        else {
+        if (_hunt) {
             if(_dctrl->hoverthrottleInitialized)
                 navigation_status = navigation_status_start_the_chase;
-            else
+            else {
+                //todo: do a fly land maneuvre to determine hover throttle
+                //tmp hack:
                 navigation_status = navigation_status_set_waypoint_in_flightplan;
+            }
+        }  else {
+            navigation_status = navigation_status_set_waypoint_in_flightplan;
         }
         break;
     } case navigation_status_start_the_chase: {
@@ -263,14 +215,14 @@ void DroneNavigation::update() {
         if (_dctrl->get_flight_mode() == DroneController::fm_manual)
             navigation_status=navigation_status_manual;
         break;
-    } case navigation_status_stay_slider_waypoint: {
-        wp = &setpoints[wpid];
-        wp->_xyz.x = params.setpoint_slider_X;
-        wp->_xyz.y = params.setpoint_slider_Y;
-        wp->_xyz.z = params.setpoint_slider_Z;
-        if (_dctrl->get_flight_mode() == DroneController::fm_manual)
-            navigation_status=navigation_status_manual;
-        break;
+        //    } case navigation_status_stay_slider_waypoint: {
+        //        wp = &setpoints[wpid];
+        //        wp->_xyz.x = params.setpoint_slider_X;
+        //        wp->_xyz.y = params.setpoint_slider_Y;
+        //        wp->_xyz.z = params.setpoint_slider_Z;
+        //        if (_dctrl->get_flight_mode() == DroneController::fm_manual)
+        //            navigation_status=navigation_status_manual;
+        //        break;
     } case navigation_status_land: {
         _dtrk->drone_max_border_y = 9999; // keep tracking to the last possible end. TODO: earlier in the descend this may be disturbed by ground shadows
         _dctrl->set_flight_mode(DroneController::fm_landing);

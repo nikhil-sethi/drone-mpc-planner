@@ -271,6 +271,7 @@ void handleKey() {
 #endif
     case 'a':
         rc.arm(true);
+        dnav.Hunt(false);
         break;
     case 'h':
         rc.arm(true);
