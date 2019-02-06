@@ -9,7 +9,24 @@
  * This class will track a micro drone with leds
  *
  */
+static const char* blinking_drone_state_names[] = { "",
+                                                    "bds_start",
+                                                    "bds_resetting_background",
+                                                    "bds_searching",
+                                                    "bds_blink_off",
+                                                    "bds_blink_on",
+                                                    "bds_2nd_blink_off",
+                                                    "bds_2nd_blink_on",
+                                                    "bds_3th_blink_off",
+                                                    "bds_3th_blink_on",
+                                                    "bds_found" };
+static const char* drone_tracking_state_names[] = { "dts_waiting_for_init",
+                                                    "dts_blinking",
+                                                    "dts_inactive",
+                                                    "dts_active_detecting",
+                                                    "dts_found_after_takeoff" };
 class DroneTracker : public ItemTracker {
+
 
     const float bind_blink_time = 0.45f;
 private:
@@ -81,11 +98,19 @@ private:
     void deserialize_calib(string file);
     const std::string calib_fn = "./logging/drone_calib.xml";
 
+
+
 protected:
     cv::Mat get_probability_cloud(cv::Point size);
     void init_settings();
     cv::Mat get_approx_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size);
 public:
+    std::string blinking_drone_state_str() {
+        return blinking_drone_state_names[_blinking_drone_located];
+    }
+    std::string drone_tracking_state_str() {
+        return drone_tracking_state_names[_drone_tracking_state];
+    }
 
     cv::Mat _cir;
     float drone_max_border_z = MAX_BORDER_Z_DEFAULT;
