@@ -15,6 +15,7 @@ using namespace std;
 
 //#define OPENCV_BLOBTRACKER
 //TODO: remove _treshL when removing OPENCV_BLOBTRACKER
+// also remove the uncertainty_map, the max_uncertainty_map should give all necesary info
 
 void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string name) {
     _logger = logger;
@@ -517,8 +518,9 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
         double min, max;
         cv::minMaxLoc(frame, &min, &max, &mint, &maxt);
 
-        if (max > settings.motion_thresh) {
+        uint8_t bkg = _visdat->max_uncertainty_map.at<uint8_t>(maxt.y,maxt.x);
 
+        if (max > bkg+settings.motion_thresh) {
             //find the COG:
             //get the Rect containing the max movement:
             cv::Rect r2(maxt.x-radius, maxt.y-radius, radius*2,radius*2);

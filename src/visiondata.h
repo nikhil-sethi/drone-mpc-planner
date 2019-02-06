@@ -73,6 +73,7 @@ public:
     cv::Mat frameL,frameR;
     cv::Mat frameL_prev,frameR_prev;
     cv::Mat uncertainty_map;
+    cv::Mat max_uncertainty_map;
     cv::Mat diffL_small;
 
     int frame_id;

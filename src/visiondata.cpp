@@ -102,7 +102,7 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
     diffL.convertTo(diffL, CV_8UC1);
     cv::resize(diffL,diffL_small,smallsize);
 
-    cv::imshow("motion", diffL);
+    cv::imshow("motion", diffL*10);
 
     if (!_background_calibrated )
         collect_no_drone_frames(diffL_small); // calibration of background uncertainty map
@@ -119,7 +119,9 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
 }
 
 void VisionData::collect_no_drone_frames(cv::Mat diff) {
-    static cv::Mat max_uncertainty_map = diff.clone();
+
+    if (max_uncertainty_map.cols == 0)
+        max_uncertainty_map = diff.clone();
     cv::Mat mask = diff > max_uncertainty_map;
     diff.copyTo(max_uncertainty_map,mask);
 
