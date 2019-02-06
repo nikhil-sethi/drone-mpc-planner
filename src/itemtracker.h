@@ -104,10 +104,10 @@ private:
 
         int max_points_per_frame = 10;
         int ignore_circle_r_around_motion_max = 15;
-        int motion_thresh = 10;
+        int motion_thresh = 30;
 
         int background_subtract_zone_factor = 90;
-        float version = 1.3f;
+        float version = 1.31f;
 
         template <class Archive>
         void serialize( Archive & ar )
