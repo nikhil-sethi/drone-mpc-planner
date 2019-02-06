@@ -423,7 +423,7 @@ void Cam::sense_light_level(){
     cv::Mat frameLt;
 
     _measured_gain = rs_dev.get_option(RS2_OPTION_GAIN);
-    int search_speed=9;
+    int search_speed=5;
     while(true) {
         //search for the best gain, keeping exposure at max 15500 (higher and the fps will decrease).
         //lower gain is better because less noise
@@ -432,7 +432,7 @@ void Cam::sense_light_level(){
         //the resulting exposure (camera does not respond instantaniously)
 
         rs2::frameset frame;
-        for (int i = 0; i< 10-search_speed;i++)
+        for (int i = 0; i< 15-search_speed;i++)
             frame = cam.wait_for_frames();
 
         if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
