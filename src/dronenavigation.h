@@ -145,7 +145,7 @@ public:
 
     void close (void);
     bool init(std::ofstream *logger, DroneTracker *dtrk, DroneController *dctrl, InsectTracker *itrkr, VisionData *visdat);
-    void update();
+    void update(float time);
     bool disable_insect_detection() {
         return navigation_status < navigation_status_wait_for_insect;
     }

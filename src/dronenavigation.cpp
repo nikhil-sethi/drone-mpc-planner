@@ -68,7 +68,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     return false;
 }
 
-void DroneNavigation::update() {
+void DroneNavigation::update(float time) {
 
     _iceptor.update(navigation_status == navigation_status_wait_for_insect);
 
@@ -91,6 +91,13 @@ void DroneNavigation::update() {
         navigation_status = navigation_status_wait_locate_drone;
         break;
     } case navigation_status_wait_locate_drone: {
+        static float prev_time = time = 0;
+        if (time - prev_time > 7 && time - prev_time < 8) {
+            _dctrl->blink_drone(false); // refresh the blinking
+        } else if (time - prev_time > 8) {
+            prev_time = time;
+            _dctrl->blink_drone(true);
+        }
         if (_dtrk->blinking_drone_located())
             navigation_status = navigation_status_located_drone;
         break;
