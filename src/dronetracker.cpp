@@ -63,6 +63,7 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
         append_log(); // no tracking needed in this stage
         break;
     } case dts_blinking:
+        roi_size_cnt = 0; // don't grow roi in this stage
         switch (_blinking_drone_located) {
         case bds_start: {
             _enable_roi = false;
@@ -132,36 +133,35 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
             break;
         }
         }
-            break;
+        break;
     case dts_inactive: {
+        roi_size_cnt = 0; // don't grow roi in this stage
+        predicted_pathL.clear();
+        foundL = false;
         find_result.best_image_locationL.pt = _drone_blink_image_location;
         predicted_locationL_last = _drone_blink_world_location;
+        reset_tracker_ouput(); //TODO: double?
         ItemTracker::append_log(); //really no point in trying to detect the drone when it is inactive...
         if (drone_is_active)
             _drone_tracking_state = dts_active_detecting;
-        break;
-    } case dts_active_detecting: {
-        if (!drone_is_active) {
-            reset_tracker_ouput(); //TODO: double?
-            _drone_tracking_state = dts_inactive;
-        } else if (n_frames_lost==0)
-            _drone_tracking_state = dts_found_after_takeoff;
+        else
+            break;
+    } FALLTHROUGH_INTENDED; case dts_active_detecting: {
+        roi_size_cnt = 0; // don't grow roi in this stage
         ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
+        if (!drone_is_active)
+            _drone_tracking_state = dts_inactive;
+        else if (n_frames_lost==0)
+            _drone_tracking_state = dts_found_after_takeoff;
         break;
     } case dts_found_after_takeoff: {
         ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
+        if (!drone_is_active)
+            _drone_tracking_state = dts_inactive;
+        else if (!foundL)
+           _drone_tracking_state = dts_active_detecting;
         break;
     }
-    }
-
-    if (_drone_tracking_state == dts_active_detecting) {
-        predicted_pathL.clear();
-#ifndef INSECT_LOGGING_MODE
-        //hack to disable the dronetracker
-        predicted_pathL.push_back(track_item(find_result.best_image_locationL,_visdat->frame_id,0.1f));
-#endif
-        foundL = false;
-        roi_size_cnt = 0;
     }
 }
 
