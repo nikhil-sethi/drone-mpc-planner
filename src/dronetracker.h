@@ -11,50 +11,50 @@
  */
 static const char* blinking_drone_state_names[] = { "",
                                                     "bds_start",
-                                                    "bds_resetting_background",
+                                                    "bds_reset_bkg",
                                                     "bds_searching",
-                                                    "bds_blink_off",
-                                                    "bds_blink_on",
-                                                    "bds_2nd_blink_off",
-                                                    "bds_2nd_blink_on",
-                                                    "bds_3th_blink_off",
-                                                    "bds_3th_blink_on",
+                                                    "bds_1_blink_off",
+                                                    "bds_1_blink_on",
+                                                    "bds_2_blink_off",
+                                                    "bds_2_blink_on",
+                                                    "bds_3_blink_off",
+                                                    "bds_3_blink_on",
                                                     "bds_found" };
-static const char* drone_tracking_state_names[] = { "dts_waiting_for_init",
+static const char* drone_tracking_state_names[] = { "dts_init",
                                                     "dts_blinking",
                                                     "dts_inactive",
-                                                    "dts_active_detecting",
-                                                    "dts_found_after_takeoff" };
+                                                    "dts_detecting",
+                                                    "dts_detected" };
 class DroneTracker : public ItemTracker {
 
 
     const float bind_blink_time = 0.45f;
 private:
-    enum blinking_drone_state {
+    enum blinking_drone_states {
         bds_start=1,
-        bds_resetting_background=2,
+        bds_reset_bkg=2,
         bds_searching=3,
-        bds_blink_off=4,
-        bds_blink_on=5,
-        bds_2nd_blink_off=6,
-        bds_2nd_blink_on=7,
-        bds_3th_blink_off=8,
-        bds_3th_blink_on=9,
+        bds_1_blink_off=4,
+        bds_1_blink_on=5,
+        bds_2_blink_off=6,
+        bds_2_blink_on=7,
+        bds_3_blink_off=8,
+        bds_3_blink_on=9,
         bds_found=10
     };
-    blinking_drone_state _blinking_drone_located = bds_start;
+    blinking_drone_states _blinking_drone_status = bds_start;
     float blink_time_start = 0;
 
-    enum drone_tracking_state {
-        dts_waiting_for_init = 0,
+    enum drone_tracking_states {
+        dts_init = 0,
         dts_blinking = 1,
         dts_inactive = 2,
-        dts_active_detecting = 3,
-        dts_found_after_takeoff=4
+        dts_detecting = 3,
+        dts_detected=4
     };
-    drone_tracking_state _drone_tracking_state = dts_waiting_for_init;
+    drone_tracking_states _drone_tracking_status = dts_init;
 
-    blinking_drone_state detect_blink(float time, bool found);
+    blinking_drone_states detect_blink(float time, bool found);
     cv::KeyPoint blink_location;
 
     cv::Point2f _drone_blink_image_location;
@@ -105,11 +105,11 @@ protected:
     void init_settings();
     cv::Mat get_approx_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size);
 public:
-    std::string blinking_drone_state_str() {
-        return blinking_drone_state_names[_blinking_drone_located];
+    std::string Blinking_Drone_State() {
+        return blinking_drone_state_names[_blinking_drone_status];
     }
-    std::string drone_tracking_state_str() {
-        return drone_tracking_state_names[_drone_tracking_state];
+    std::string Drone_Tracking_State() {
+        return drone_tracking_state_names[_drone_tracking_status];
     }
 
     cv::Mat _cir;
@@ -120,11 +120,11 @@ public:
     void track(float time, std::vector<track_item> ignore, bool drone_is_active);
 
     void Locate_Startup_Location() {
-        _drone_tracking_state = dts_blinking;
-        _blinking_drone_located = bds_start;
+        _drone_tracking_status = dts_blinking;
+        _blinking_drone_status = bds_start;
     }
     bool blinking_drone_located() {
-        return _blinking_drone_located >= bds_found;
+        return _blinking_drone_status >= bds_found;
     }
     cv::Point3f Drone_Startup_Location() {
         return _drone_blink_world_location;

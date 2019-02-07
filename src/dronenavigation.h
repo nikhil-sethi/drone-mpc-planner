@@ -12,87 +12,116 @@
  * This class will navigate a micro drone
  *
  */
-class DroneNavigation {
+static const char* navigation_status_names[] = {"ns_init",
+                                                "ns_calib_background",
+                                                "ns_locate_drone",
+                                                "ns_wait_locate_drone",
+                                                "ns_located_drone",
+                                                "ns_wait_for_takeoff",
+                                                "ns_wait_for_insect",
+                                                "ns_init_calibrate_hover",
+                                                "ns_takeoff",
+                                                "ns_taking_off",
+                                                "ns_take_off_completed",
+                                                "ns_calibrate_hover",
+                                                "ns_start_the_chase",
+                                                "ns_chasing_insect",
+                                                "ns_set_waypoint",
+                                                "ns_approach_waypoint",
+                                                "ns_stay_waypoint",
+                                                "ns_goto_landing",
+                                                "ns_land",
+                                                "ns_landing",
+                                                "ns_landed",
+                                                "ns_manual",
+                                                "ns_drone_problem"};
 
+class DroneNavigation {
+public:
+    enum nav_flight_modes {
+        nfm_manual,
+        nfm_waypoint,
+        nfm_slider,
+        nfm_hunt
+    };
 private:
 
+    nav_flight_modes _nav_flight_mode;
 
-
-    enum waypoint_flight_mode {
+    enum waypoint_flight_modes {
         //todo: replace this enum with a type check https://stackoverflow.com/questions/351845/finding-the-type-of-an-object-in-c
-        FM_TAKEOFF,
-        FM_HOVER_CALIB,
-        FM_FLYING,
-        FM_SLIDER,
-        FM_LANDING
+        fm_takeoff,
+        fm_hover_calib,
+        fm_flying,
+        fm_slider,
+        fm_landing
     };
 
     struct waypoint{
         waypoint(cv::Point3f p, int distance_threshold_mm) {
             xyz = p;
             threshold_mm = distance_threshold_mm;
-            mode  = FM_FLYING;
+            mode  = fm_flying;
         }
         cv::Point3f xyz;
         int threshold_mm;
-        waypoint_flight_mode mode;
+        waypoint_flight_modes mode;
     protected:
         waypoint(){}
     };
     struct landing_waypoint : waypoint{
         landing_waypoint(){
-           xyz = cv::Point3f(0,1.f,0); // 1 meter over, relative to the startup location
-           threshold_mm = 10;
-           mode = FM_LANDING;
+            xyz = cv::Point3f(0,1.f,0); // 1 meter over, relative to the startup location
+            threshold_mm = 10;
+            mode = fm_landing;
         }
     };
     struct takeoff_waypoint : waypoint{
         takeoff_waypoint(){
-           mode = FM_TAKEOFF;
+            mode = fm_takeoff;
         }
     };
     struct hovercalib_waypoint : waypoint{
         hovercalib_waypoint(){
             xyz = cv::Point3f(0,1.f,0); // 1 meter over, relative to the startup location
             threshold_mm = 50;
-            mode = FM_HOVER_CALIB;
+            mode = fm_hover_calib;
         }
     };
     struct slider_waypoint : waypoint{
         slider_waypoint(){
             //todo: implement
-            mode = FM_SLIDER;
+            mode = fm_slider;
         }
     };
     void set_next_waypoint(waypoint wp);
 
-    enum Navigation_Status {
-        navigation_status_init = 0,
-        navigation_status_calibrating_motion_background = 1,
-        navigation_status_locate_drone = 2,
-        navigation_status_wait_locate_drone = 3,
-        navigation_status_located_drone = 4,
-        navigation_status_wait_for_takeoff_command=41,
-        navigation_status_wait_for_insect=5,
-        navigation_status_init_calibrate_hover=51,
-        navigation_status_takeoff=6,
-        navigation_status_taking_off=7,
-        navigation_status_take_off_completed=8,
-        navigation_status_calibrate_hover=81,
-        navigation_status_start_the_chase=9,
-        navigation_status_chasing_insect=10,
-        navigation_status_set_waypoint_in_flightplan=11,
-        navigation_status_approach_waypoint_in_flightplan=12,
-        navigation_status_stay_waypoint_in_flightplan=13,
-        //navigation_status_stay_slider_waypoint=14,
-        navigation_status_goto_landing_waypoint=15,
-        navigation_status_land=16,
-        navigation_status_landing=17,
-        navigation_status_landed=18,
-        navigation_status_manual=19,
-        navigation_status_drone_problem=99
+    enum navigation_states {
+        ns_init=0,
+        ns_calib_motion_background,
+        ns_locate_drone,
+        ns_wait_locate_drone,
+        ns_located_drone,
+        ns_wait_for_takeoff_command,
+        ns_wait_for_insect,
+        ns_init_calibrate_hover,
+        ns_takeoff,
+        ns_taking_off,
+        ns_take_off_completed,
+        ns_calibrate_hover,
+        ns_start_the_chase,
+        ns_chasing_insect,
+        ns_set_waypoint,
+        ns_approach_waypoint,
+        ns_stay_waypoint,
+        ns_goto_landing_waypoint,
+        ns_land,
+        ns_landing,
+        ns_landed,
+        ns_manual, // also for disarmed
+        ns_drone_problem
     };
-    Navigation_Status navigation_status = navigation_status_init;
+    navigation_states _navigation_status = ns_init;
 
     float land_incr = 0;
     uint wpid = 0;
@@ -101,7 +130,6 @@ private:
 
     int autoLandThrottleDecrease = 0;
 
-
     std::ofstream *_logger;
     DroneTracker * _dtrk;
     DroneController * _dctrl;
@@ -109,9 +137,18 @@ private:
     VisionData *_visdat;
 
     bool _calibrating_hover = false;
-    bool _hunt = false;
 
 public:
+
+    nav_flight_modes Nav_Flight_Mode(){
+        return _nav_flight_mode;
+    }
+    void set_nav_flight_mode(nav_flight_modes m){
+        _nav_flight_mode = m;
+    }
+    std::string Navigation_Status() {
+        return navigation_status_names[_navigation_status];
+    }
 
     struct navigationParameters{
         int distance_threshold_f = 1;
@@ -139,7 +176,7 @@ public:
     cv::Point3f setpoint_world;
     cv::Point3f setspeed_world;
     int distance_threshold_mm() {
-     return current_setpoint->threshold_mm;
+        return current_setpoint->threshold_mm;
     }
 
 
@@ -147,13 +184,8 @@ public:
     bool init(std::ofstream *logger, DroneTracker *dtrk, DroneController *dctrl, InsectTracker *itrkr, VisionData *visdat);
     void update(float time);
     bool disable_insect_detection() {
-        return navigation_status < navigation_status_wait_for_insect;
+        return _navigation_status < ns_wait_for_insect;
     }
-
-    void Hunt(bool b) {
-        _hunt = b;
-    }
-
 
 };
 

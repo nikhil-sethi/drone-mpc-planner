@@ -36,6 +36,7 @@ private:
     DroneTracker *_dtrkr;
     InsectTracker *_itrkr;
     DroneNavigation *_dnav;
+    MultiModule *_rc;
 
     const int bufsize = 600;
 
@@ -170,11 +171,12 @@ public:
     void paint();
     void addPlotSample(void);
     void update_tracker_data(cv::Mat frameL, cv::Point3d setpoint, float time, DroneTracker *dtrk, InsectTracker *itrk);
-    void init(DroneController *dctrl, DroneTracker *dtrkr, InsectTracker *itrkr, DroneNavigation *dnav, bool fromfile){
+    void init(DroneController *dctrl, DroneTracker *dtrkr, InsectTracker *itrkr, DroneNavigation *dnav, MultiModule *rc, bool fromfile){
         _dctrl = dctrl;
         _dtrkr = dtrkr;
         _itrkr = itrkr;
         _dnav = dnav;
+        _rc = rc;
 
         _fromfile = fromfile;
         if (fromfile) {

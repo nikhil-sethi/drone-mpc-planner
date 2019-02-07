@@ -6,6 +6,13 @@
 #include "arduino.h"
 #include "multimodule.h"
 
+static const char* joy_states_names[] = { "js_manual",
+                                          "js_waypoint",
+                                          "js_slider",
+                                          "js_hunt",
+                                          "js_disarmed",
+                                          "js_none"
+                                                  };
 /*
  * This class will control a micro drone via a Serial link
  *
@@ -13,12 +20,28 @@
 class DroneController {
 
 public:
-    enum flight_mode{
+    enum flight_modes{
+        fm_disarmed,
+        fm_inactive,
         fm_manual,
         fm_taking_off,
         fm_flying,
-        fm_landing,
-        fm_inactive
+        fm_landing
+    };
+    enum joy_mode_switch_modes{ // raw switch modes
+        jmsm_manual,
+        jmsm_waypoint,
+        jmsm_slider,
+        jmsm_hunt,
+        jmsm_none, // in case the joystick does not have this switch
+    };
+    enum joy_states{ // end result after checking and processing
+        js_manual,
+        js_waypoint,
+        js_slider,
+        js_hunt,
+        js_disarmed,
+        js_none // in case of no joystick
     };
 private:
 
@@ -95,7 +118,9 @@ private:
 
     bool _fromfile;
     controlParameters params;
-    flight_mode _flight_mode = fm_manual;
+    flight_modes _flight_mode = fm_disarmed; // only set externally (except for disarming), used internally
+    joy_mode_switch_modes _joy_mode_switch = jmsm_none;
+    joy_states _joy_state = js_none;
 
     MultiModule * _rc;
 
@@ -106,15 +131,21 @@ private:
     void process_joystick();
 
 public:
-    flight_mode get_flight_mode() {
-        return _flight_mode;
+//    flight_modes Flight_mode() {
+//        return _flight_mode;
+//    }
+    void set_flight_mode(flight_modes f){
+        _flight_mode = f;
     }
-    void set_flight_mode(flight_mode f){
-        if (_flight_mode != fm_manual)
-            _flight_mode = f;
+    joy_states Joy_State() {
+        return _joy_state;
+    }
+    std::string Joy_State_str() {
+        return joy_states_names[_joy_state];
     }
 
-    bool joySwitch = true;
+    bool _joy_arm_switch = true; // todo: make private
+
     int joyDial = 0;
     float scaledjoydial = 0;
     int joyThrottle = JOY_BOUND_MIN;
@@ -144,9 +175,12 @@ public:
     void init(std::ofstream *logger, bool fromfile, MultiModule *rc);
     void control(trackData data, cv::Point3f setpoint_world,cv::Point3f setspeed_world);
     bool getDroneIsActive() {
-        if ((_flight_mode != fm_manual && joyThrottle > JOY_BOUND_MIN) || _flight_mode == fm_inactive)
+        if ( _flight_mode == fm_inactive || _flight_mode != fm_disarmed)
+            return false;
+        else if (_joy_mode_switch != jmsm_manual && joyThrottle > JOY_BOUND_MIN)
             return true;
-        return (_flight_mode != fm_inactive && autoThrottle > JOY_BOUND_MIN);
+        else
+            return (autoThrottle > JOY_BOUND_MIN); //FIXME: check if this goes well if due to extreme control throttle is set to 0
     }
     void setAutoLandThrottleDecrease(int value) {autoLandThrottleDecrease = value;}
     void recalibrateHover();

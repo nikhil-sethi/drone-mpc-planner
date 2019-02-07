@@ -70,27 +70,37 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
 
 void DroneNavigation::update(float time) {
 
-    _iceptor.update(navigation_status == navigation_status_wait_for_insect);
+    if (_dctrl->Joy_State() != DroneController::js_none) {
+        //copy the (processed) joy mode switch, but only if the switch is available
+        //(otherwise assume _nav_flight_mode is set in another way externally)
+        if (_dctrl->Joy_State() != DroneController::js_disarmed)
+            _nav_flight_mode = static_cast<nav_flight_modes>(_dctrl->Joy_State());
+        else { // if disarmed use the manual state:
+            _nav_flight_mode = nfm_manual;
+        }
 
-    switch (navigation_status) {
-    case navigation_status_init: {
-        navigation_status = navigation_status_calibrating_motion_background;
+    }
+    _iceptor.update(_navigation_status == ns_wait_for_insect);
+
+    switch (_navigation_status) {
+    case ns_init: {
+        _navigation_status = ns_calib_motion_background;
         break;
-    } case navigation_status_calibrating_motion_background: {
+    } case ns_calib_motion_background: {
         //wait until motion background done
         if (_visdat->background_calibrated()) {
-            navigation_status = navigation_status_locate_drone;
+            _navigation_status = ns_locate_drone;
 #ifdef BEEP
             system("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Mallet.ogg &");
 #endif
         }
         break;
-    } case navigation_status_locate_drone: {
+    } case ns_locate_drone: {
         _dctrl->blink_drone(true);
         _dtrk->Locate_Startup_Location();
-        navigation_status = navigation_status_wait_locate_drone;
+        _navigation_status = ns_wait_locate_drone;
         break;
-    } case navigation_status_wait_locate_drone: {
+    } case ns_wait_locate_drone: {
         static float prev_time = time = 0;
         if (time - prev_time > 7 && time - prev_time < 8) {
             _dctrl->blink_drone(false); // refresh the blinking
@@ -99,81 +109,91 @@ void DroneNavigation::update(float time) {
             _dctrl->blink_drone(true);
         }
         if (_dtrk->blinking_drone_located())
-            navigation_status = navigation_status_located_drone;
+            _navigation_status = ns_located_drone;
         break;
-    } case navigation_status_located_drone: {
+    } case ns_located_drone: {
         _dctrl->blink_drone(false);
         cv::Point3f p = _dtrk->Drone_Startup_Location();
         std::cout << "Drone located at: " << p.x << ", " << p.y << ", " << p.z << std::endl;
-        if (_hunt)
-            navigation_status = navigation_status_wait_for_insect;
+        if (_nav_flight_mode == nfm_hunt)
+            _navigation_status = ns_wait_for_insect;
+        else if (_nav_flight_mode == nfm_manual)
+            _navigation_status = ns_manual;
         else
-            navigation_status = navigation_status_wait_for_takeoff_command;
+            _navigation_status = ns_wait_for_takeoff_command;
         break;
-    } case navigation_status_wait_for_takeoff_command: {
-        if (_dctrl->get_flight_mode() == DroneController::fm_manual)
-            navigation_status=navigation_status_manual;
-        else if (_hunt)
-            navigation_status=navigation_status_wait_for_insect;
+    } case ns_wait_for_takeoff_command: {
+        _dctrl->set_flight_mode(DroneController::fm_inactive);
+        if (_nav_flight_mode == nfm_hunt)
+            _navigation_status = ns_wait_for_insect;
+        else if (_nav_flight_mode == nfm_manual)
+            _navigation_status = ns_manual;
         else if (_dctrl->manual_override_take_off_now )
-            navigation_status = navigation_status_takeoff;
+            _navigation_status = ns_takeoff;
         break;
-    } case navigation_status_wait_for_insect: {
-        if (_dctrl->get_flight_mode() == DroneController::fm_manual)
-            navigation_status=navigation_status_manual;
-        else if (!_hunt)
-            navigation_status=navigation_status_wait_for_takeoff_command;
-        else if (!_dctrl->hoverthrottleInitialized)
-            navigation_status = navigation_status_init_calibrate_hover;
-        else if (_iceptor.get_insect_in_range())
-            navigation_status = navigation_status_takeoff;
+    } case ns_wait_for_insect: {
+        _dctrl->set_flight_mode(DroneController::fm_inactive);
+        if (_nav_flight_mode == nfm_manual)
+            _navigation_status = ns_manual;
+        else if (_nav_flight_mode == nfm_hunt) {
+            if (!_dctrl->hoverthrottleInitialized) {
+                _navigation_status = ns_init_calibrate_hover;
+            } else if (_iceptor.get_insect_in_range()) {
+                _navigation_status = ns_takeoff;
+            }
+        } else //waypoint modes
+            _navigation_status = ns_wait_for_takeoff_command;
         break;
-    } case navigation_status_init_calibrate_hover: {
-        navigation_status = navigation_status_takeoff;
+    } case ns_init_calibrate_hover: {
+        _navigation_status = ns_takeoff;
         _calibrating_hover = true;
         break;
-    } case navigation_status_takeoff: {
+    } case ns_takeoff: {
         _dctrl->manual_override_take_off_now = false;
         _dctrl->manual_override_land_now = false;
 
         _dctrl->set_flight_mode(DroneController::fm_taking_off);
-        navigation_status=navigation_status_taking_off;
+        _navigation_status=ns_taking_off;
         break;
-    } case navigation_status_taking_off: {
+    } case ns_taking_off: {
         trackData data = _dtrk->Last_track_data();
         if (data.svelY > static_cast<float>(params.auto_takeoff_speed) / 100.f ) {
-            navigation_status = navigation_status_take_off_completed;
+            _navigation_status = ns_take_off_completed;
         }
-        if (_dctrl->get_flight_mode() == DroneController::fm_manual)
-            navigation_status=navigation_status_manual;
+        if (_nav_flight_mode == nfm_manual)
+            _navigation_status = ns_manual;
         break;
-    } case navigation_status_take_off_completed: {
+    } case ns_take_off_completed: {
         _dctrl->init_ground_effect_compensation();
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
         _dctrl->set_flight_mode(DroneController::fm_flying);
         if (_calibrating_hover)
-            navigation_status = navigation_status_calibrate_hover;
-        else if (_hunt) {
-            navigation_status = navigation_status_start_the_chase;
-        }  else {
-            navigation_status = navigation_status_set_waypoint_in_flightplan;
-        }
+            _navigation_status = ns_calibrate_hover;
+        else if (_nav_flight_mode == nfm_hunt)
+            _navigation_status = ns_start_the_chase;
+        else if (_nav_flight_mode == nfm_manual)
+            _navigation_status = ns_manual;
+        else
+            _navigation_status = ns_set_waypoint;
         break;
-    } case navigation_status_calibrate_hover: {
+    } case ns_calibrate_hover: {
         set_next_waypoint(hovercalib_waypoint());
-        navigation_status = navigation_status_approach_waypoint_in_flightplan;
+        _navigation_status = ns_approach_waypoint;
+        if (_nav_flight_mode == nfm_manual)
+                    _navigation_status = ns_manual;
         break;
-    } case navigation_status_start_the_chase: {
+    } case ns_start_the_chase: {
         _iceptor.reset_insect_cleared();
-        navigation_status = navigation_status_chasing_insect;
+        _navigation_status = ns_chasing_insect;
 
         if (_iceptor.get_insect_in_range())
-            navigation_status = navigation_status_chasing_insect;
+            _navigation_status = ns_chasing_insect;
         else
-            navigation_status = navigation_status_goto_landing_waypoint;
+            _navigation_status = ns_goto_landing_waypoint;
 
-
-    } FALLTHROUGH_INTENDED; case navigation_status_chasing_insect: {
+        if (_nav_flight_mode == nfm_manual)
+                    _navigation_status = ns_manual;
+    } FALLTHROUGH_INTENDED; case ns_chasing_insect: {
 
         //update target chasing waypoint and speed
         if (_iceptor.get_insect_in_range()) {
@@ -188,47 +208,49 @@ void DroneNavigation::update(float time) {
             setpoint_world.z = -2.2f;
         }
 
-        if (_dctrl->get_flight_mode() == DroneController::fm_manual)
-            navigation_status=navigation_status_manual;
-        // TODO: return to landing waypoint after the insect was lost for several frames
+        if (_nav_flight_mode == nfm_manual)
+            _navigation_status=ns_manual;
         else if (_iceptor.get_insect_cleared())
-            navigation_status = navigation_status_goto_landing_waypoint;
+            _navigation_status = ns_goto_landing_waypoint;
+
+        // TODO: return to landing waypoint after the insect was lost for several frames
+
         break;
-    } case navigation_status_goto_landing_waypoint: {
+    } case ns_goto_landing_waypoint: {
         set_next_waypoint(landing_waypoint());
-        navigation_status = navigation_status_approach_waypoint_in_flightplan;
-    } FALLTHROUGH_INTENDED; case navigation_status_set_waypoint_in_flightplan: {
+        _navigation_status = ns_approach_waypoint;
+    } FALLTHROUGH_INTENDED; case ns_set_waypoint: {
         set_next_waypoint(setpoints[wpid]);
-        navigation_status = navigation_status_approach_waypoint_in_flightplan;
+        _navigation_status = ns_approach_waypoint;
         break;
-    } case navigation_status_approach_waypoint_in_flightplan: {
+    } case ns_approach_waypoint: {
         float dis = sqrtf(_dctrl->posErrX*_dctrl->posErrX + _dctrl->posErrY*_dctrl->posErrY + _dctrl->posErrZ*_dctrl->posErrZ);
         if (dis *1000 < current_setpoint->threshold_mm * params.distance_threshold_f && _dtrk->n_frames_tracking>5) {
-            if (current_setpoint->mode == FM_LANDING) {
-                navigation_status = navigation_status_landing;
-            } else if (current_setpoint->mode == FM_HOVER_CALIB) {
+            if (current_setpoint->mode == fm_landing) {
+                _navigation_status = ns_landing;
+            } else if (current_setpoint->mode == fm_hover_calib) {
                 _dctrl->recalibrateHover();
                 _calibrating_hover = false;
-                navigation_status = navigation_status_goto_landing_waypoint;
+                _navigation_status = ns_goto_landing_waypoint;
             } else if (wpid < setpoints.size()-1) { // next waypoint in flight plan
                 wpid++;
                 alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/window-slide.ogg &");
                 if (wpid == 1)
                     _dctrl->recalibrateHover();
-                navigation_status = navigation_status_set_waypoint_in_flightplan;
+                _navigation_status = ns_set_waypoint;
             } else if (wpid == setpoints.size()-1){
                 wpid = 0; // another round
                 alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/window-slide.ogg &");
-                navigation_status = navigation_status_set_waypoint_in_flightplan;
+                _navigation_status = ns_set_waypoint;
             }
         }
-        if (_dctrl->get_flight_mode() == DroneController::fm_manual)
-            navigation_status=navigation_status_manual;
+        if (_nav_flight_mode == nfm_manual)
+            _navigation_status=ns_manual;
         break;
-    } case navigation_status_stay_waypoint_in_flightplan: {
+    } case ns_stay_waypoint: {
         //TODO: implement
-        if (_dctrl->get_flight_mode() == DroneController::fm_manual)
-            navigation_status=navigation_status_manual;
+        if (_nav_flight_mode == nfm_manual)
+            _navigation_status=ns_manual;
         break;
         //    } case navigation_status_stay_slider_waypoint: {
         //        wp = &setpoints[wpid];
@@ -238,16 +260,16 @@ void DroneNavigation::update(float time) {
         //        if (_dctrl->get_flight_mode() == DroneController::fm_manual)
         //            navigation_status=navigation_status_manual;
         //        break;
-    } case navigation_status_land: {
+    } case ns_land: {
         _dtrk->drone_max_border_y = 9999; // keep tracking to the last possible end. TODO: earlier in the descend this may be disturbed by ground shadows
         _dctrl->set_flight_mode(DroneController::fm_landing);
         _dctrl->recalibrateHover();
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
-        navigation_status = navigation_status_landing;
-    } FALLTHROUGH_INTENDED; case navigation_status_landing: {
+        _navigation_status = ns_landing;
+    } FALLTHROUGH_INTENDED; case ns_landing: {
         trackData data = _dtrk->Last_track_data();
         if (data.sposY < _dtrk->Drone_Startup_Location().y+0.1f || autoLandThrottleDecrease >1000)
-            navigation_status = navigation_status_landed;
+            _navigation_status = ns_landed;
 
         autoLandThrottleDecrease += params.autoLandThrottleDecreaseFactor;
         _dctrl->setAutoLandThrottleDecrease(autoLandThrottleDecrease);
@@ -255,10 +277,10 @@ void DroneNavigation::update(float time) {
         if ( setpoint_world.y - land_incr> -(_dtrk->drone_max_border_y+100000.0f))
             land_incr = static_cast<float>(params.land_incr_f_mm)/1000.f;
         setpoint_world.y -= land_incr;
-        if (_dctrl->get_flight_mode() == DroneController::fm_manual)
-            navigation_status=navigation_status_manual;
+        if (_nav_flight_mode == nfm_manual)
+            _navigation_status=ns_manual;
         break;
-    } case navigation_status_landed: {
+    } case ns_landed: {
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
         wpid = 0;
         autoLandThrottleDecrease = 0;
@@ -266,15 +288,17 @@ void DroneNavigation::update(float time) {
         _dctrl->set_flight_mode(DroneController::fm_inactive);
         _dtrk->drone_max_border_y = MAX_BORDER_Y_DEFAULT;
         land_incr = 0;
-        navigation_status = navigation_status_wait_for_insect;
-    } FALLTHROUGH_INTENDED; case navigation_status_manual: {
+        _navigation_status = ns_wait_for_insect;
+    } FALLTHROUGH_INTENDED; case ns_manual: { // also used for disarmed
         wpid = 0;
-        if (_dctrl->get_flight_mode() == DroneController::fm_inactive) {
-            navigation_status=navigation_status_wait_for_insect;
+        if (_nav_flight_mode == nfm_hunt) {
+            _navigation_status=ns_wait_for_insect;
             alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Rhodes.ogg &");
+        } else if (_nav_flight_mode != nfm_manual) { // waypoint mode
+            _navigation_status=ns_wait_for_takeoff_command;
         }
         break;
-    } case navigation_status_drone_problem: {
+    } case ns_drone_problem: {
         break;
     }
     }
@@ -282,7 +306,7 @@ void DroneNavigation::update(float time) {
 
 void DroneNavigation::set_next_waypoint(waypoint wp) {
     current_setpoint = &wp;
-    if (wp.mode == FM_LANDING || wp.mode == FM_HOVER_CALIB || wp.mode == FM_TAKEOFF) {
+    if (wp.mode == fm_landing || wp.mode == fm_hover_calib || wp.mode == fm_takeoff) {
         cv::Point3f p = _dtrk->Drone_Startup_Location();
         setpoint_world =  p + wp.xyz;
     } else {

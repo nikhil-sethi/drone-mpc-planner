@@ -232,7 +232,7 @@ void process_frame(Stereo_Frame_Data data) {
         dctrl.joyPitch = logreader.current_item.joyPitch;
         dctrl.joyYaw = logreader.current_item.joyYaw;
         dctrl.joyThrottle = logreader.current_item.joyThrottle;
-        dctrl.joySwitch = logreader.current_item.joySwitch;
+        dctrl._joy_arm_switch = logreader.current_item.joySwitch;
     }
 
     visualizer.addPlotSample();
@@ -271,15 +271,15 @@ void handleKey() {
 #endif
     case 'a':
         rc.arm(true);
-        dnav.Hunt(false);
+        dnav.set_nav_flight_mode(DroneNavigation::nfm_waypoint);
         break;
     case 'h':
         rc.arm(true);
-        dnav.Hunt(true);
+        dnav.set_nav_flight_mode(DroneNavigation::nfm_hunt);
         break;
-    case 's':
+    case 'd':
         rc.arm(false);
-        dnav.Hunt(false);
+        dnav.set_nav_flight_mode(DroneNavigation::nfm_manual);
         break;
     } // end switch key
     key=0;
@@ -403,7 +403,7 @@ int init(int argc, char **argv) {
 
     logger << std::endl;
 #ifdef HASSCREEN
-    visualizer.init(&dctrl,&dtrkr,&itrkr,&dnav,fromfile==log_mode_full);
+    visualizer.init(&dctrl,&dtrkr,&itrkr,&dnav,&rc,fromfile==log_mode_full);
 #endif
 
     /*****init the video writer*****/

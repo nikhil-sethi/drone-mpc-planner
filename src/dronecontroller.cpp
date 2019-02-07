@@ -213,6 +213,17 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
         roll = autoRoll;
         pitch = autoPitch;
         break;
+    } case fm_disarmed: {
+        //reset integrators (prevent ever increasing error)
+        rollErrI = 0;
+        pitchErrI = 0;
+        throttleErrI = 0;
+
+        throttle = INITIALTHROTTLE;
+        roll = JOY_MIDDLE;
+        pitch = JOY_MIDDLE;
+        yaw = JOY_MIDDLE;
+        break;
     } case fm_inactive: {
         //reset integrators (prevent ever increasing error)
         rollErrI = 0;
@@ -225,8 +236,6 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
         yaw = JOY_MIDDLE;
         break;
     }
-    default:
-        break;
     }
 
     yaw = joyYaw; // tmp until auto yaw control is fixed
@@ -238,7 +247,7 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
 
     queue_commands(throttle,roll,pitch,yaw);
 
-    (*_logger) << static_cast<int>(data.valid)  << "; " << posErrX << "; " << posErrY  << "; " << posErrZ << "; " << setpoint.x << "; " << setpoint.y  << "; " << setpoint.z << "; " << accx_sp << "; " << accy_sp  << "; " << accx_sp << "; " << hoverthrottle << "; " << autoThrottle << "; " << autoRoll << "; " << autoPitch << "; " << autoYaw <<  "; " << joyThrottle <<  "; " << joyRoll <<  "; " << joyPitch <<  "; " << joyYaw << "; " << static_cast<int>(joySwitch) << "; " << params.throttle_Pos << "; " << params.throttleI << "; " << params.throttle_Acc << "; " << data.dt << "; " << data.dx << "; " << data.dy << "; " << data.dz << "; " << velx_sp << "; " << vely_sp << "; " << velz_sp << "; ";
+    (*_logger) << static_cast<int>(data.valid)  << "; " << posErrX << "; " << posErrY  << "; " << posErrZ << "; " << setpoint.x << "; " << setpoint.y  << "; " << setpoint.z << "; " << accx_sp << "; " << accy_sp  << "; " << accx_sp << "; " << hoverthrottle << "; " << autoThrottle << "; " << autoRoll << "; " << autoPitch << "; " << autoYaw <<  "; " << joyThrottle <<  "; " << joyRoll <<  "; " << joyPitch <<  "; " << joyYaw << "; " << static_cast<int>(_joy_arm_switch) << "; " << params.throttle_Pos << "; " << params.throttleI << "; " << params.throttle_Acc << "; " << data.dt << "; " << data.dx << "; " << data.dy << "; " << data.dz << "; " << velx_sp << "; " << vely_sp << "; " << velz_sp << "; ";
 }
 
 int first_joy_time = 1;
@@ -258,7 +267,7 @@ void DroneController::readJoystick(void) {
                     joyThrottle =  (event.value >> 5) + JOY_MIDDLE - 100;
                     break;
                 case 5: //switch
-                    joySwitch = event.value>0; // goes between +/-32768
+                    _joy_arm_switch = event.value>0; // goes between +/-32768
                     break;
                 case 3: //dial
                     joyDial = event.value; // goes between +/-32768
@@ -284,7 +293,7 @@ void DroneController::readJoystick(void) {
                     joyThrottle = JOY_MIDDLE - (event.value*(JOY_MAX-JOY_MIN)/44000);
                     break;
                 case 3: //switch
-                    joySwitch = event.value>0; // goes between +/-32768
+                    _joy_arm_switch = event.value>0; // goes between +/-32768
                     break;
                 case 4: //dial
                     joyDial = event.value; // goes between +/-32768
@@ -334,16 +343,21 @@ void DroneController::readJoystick(void) {
                     joyYaw = (event.value >> 5)*0.8 + JOY_MIDDLE;
                     break;
                 case 4: //arm switch (two way)
-                    _rc->arm(event.value>0);
+                    _joy_arm_switch = event.value>0;
+                    //                    _rc->arm(event.value>0);
                     break;
                 case 5: //mode switch (3 way)
-
+                    if (event.value<-16384 ){
+                        _joy_mode_switch = jmsm_manual;
+                    } else if (event.value>16384) {
+                        _joy_mode_switch = jmsm_hunt;
+                    } else {
+                        _joy_mode_switch = jmsm_waypoint;
+                    }
                     break;
                 case 6: //switch (3 way)
-
                     break;
                 case 7: //switch (2 way)
-                    joySwitch = event.value>0; // goes between +/-32768
                     break;
                 default:
                     //this joystick seems to have 16 extra buttons... weird whatever
@@ -354,21 +368,21 @@ void DroneController::readJoystick(void) {
                 switch ( event.number ) {
                 case 2: //bind
                     if (event.value>0) {
-                        joySwitch = 1;
+                        _joy_arm_switch = 1;
                         joyPitch = JOY_MAX_THRESH;
                     } else {
-                        joySwitch = 0;
+                        _joy_arm_switch = 0;
                         joyPitch = JOY_MIDDLE;
                     }
                     break;
                 case 9: //auto mode
-                    joySwitch = 1;
+                    _joy_arm_switch = 1;
                     break;
                 case 4: //manual mode
-                    joySwitch = 0;
+                    _joy_arm_switch = 0;
                     break;
                 case 6: //manual mode
-                    joySwitch = 0;
+                    _joy_arm_switch = 0;
                     break;
                 default:
                     std::cout << "Unkown joystick button: " << std::to_string(event.number) << ". Value: " << std::to_string(event.value) << std::endl;
@@ -384,44 +398,59 @@ void DroneController::process_joystick() {
     if (!joystick.isFound())
         return;
     if (first_joy_time > 0) {
-        if (joySwitch || joyThrottle > JOY_MIN_THRESH ) {
-            if (joySwitch)
-                std::cout << "Joystick Switch ACTIVE!" << std::endl;
+        if (_joy_arm_switch || joyThrottle > JOY_MIN_THRESH ) {
+            if (_joy_arm_switch)
+                std::cout << "Joystick Arm Switch ACTIVE!" << std::endl;
             if (joyThrottle > JOY_MIN_THRESH )
                 std::cout << "Joystick Throttle NON-ZERO!" << std::endl;
-            _flight_mode = fm_inactive;
+            _flight_mode = fm_disarmed;
+            _joy_state = js_disarmed;
+            _rc->arm(false);
         } else {
             first_joy_time--;
-            _flight_mode = fm_manual;
         }
     } else {
 
-        //check switch functions
-        static bool joySwitch_prev = joySwitch;
-        if (joySwitch && !joySwitch_prev) {
-            if (joyPitch > JOY_MAX_THRESH) {
-                _rc->bind(true);
-                joySwitch = false;
-            } else if(joyThrottle < JOY_MIN + 100) {
-                if (joyPitch < JOY_MIN + 200) {
-                    _flight_mode = fm_inactive;
-                    if (joyRoll > JOY_MAX_THRESH)
-                        manual_override_take_off_now = true;
+        if  (JOYSTICK_TYPE == RC_USB_HOBBYKING) {
+            //check switch functions
+            static bool joySwitch_prev = _joy_arm_switch;
+            if (_joy_arm_switch && !joySwitch_prev) {
+                if (joyPitch > JOY_MAX_THRESH) {
+                    _rc->bind(true);
+                    _joy_arm_switch = false;
+                } else if(joyThrottle < JOY_MIN + 100) {
+                    if (joyPitch < JOY_MIN + 200) {
+                        _flight_mode = fm_inactive;
+                        if (joyRoll > JOY_MAX_THRESH)
+                            manual_override_take_off_now = true;
+                    }
                 }
+            } else if (!_joy_arm_switch && joySwitch_prev && !_fromfile) {
+                _joy_mode_switch = jmsm_manual;
             }
-        } else if (!joySwitch && joySwitch_prev && !_fromfile) {
-            _flight_mode = fm_manual;
-        }
-        joySwitch_prev = joySwitch;
+            joySwitch_prev = _joy_arm_switch;
+        } else if  (JOYSTICK_TYPE == RC_XLITE) {
+            if (!_joy_arm_switch){
+                _rc->arm(false);
+                _joy_state = js_disarmed;
+                _flight_mode = fm_disarmed;
+            }else {
+                _rc->arm(true);
+                if (_joy_mode_switch == jmsm_manual){
+                    _joy_state = js_manual;
+                    _flight_mode = fm_manual;
+                } else if (_joy_mode_switch == jmsm_waypoint)
+                    _joy_state = js_waypoint;
+                else if (_joy_mode_switch == jmsm_slider)
+                    _joy_state = js_slider;
+                else if (_joy_mode_switch == jmsm_hunt)
+                    _joy_state = js_hunt;
+            }
 
+        }
 #if CAMMODE == CAMMODE_GENERATOR
         joyPitch = JOY_MIDDLE;
 #endif
-
-        if (_flight_mode == fm_flying && joyPitch < JOY_MIN + 100) {
-            manual_override_land_now = true;
-            alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/desktop-logout.ogg &");
-        }
     }
 }
 

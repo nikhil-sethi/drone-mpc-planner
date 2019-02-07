@@ -56,7 +56,7 @@
 #define TX_OPTION 0
 #endif
 
-
+static const char* armed_names[] = {"disarmed","armed"};
 
 class MultiModule{
 
@@ -71,6 +71,10 @@ public:
     int roll=JOY_MIDDLE,pitch=JOY_MIDDLE,yaw=JOY_MIDDLE;
     int throttle = JOY_BOUND_MIN;
     int arm_switch = JOY_MIN_THRESH;
+
+    std::string Armed(){
+        return armed_names[arm_switch>JOY_MIDDLE];
+    }
 
     std::mutex g_lockData;
 
