@@ -358,6 +358,11 @@ void DroneController::readJoystick(void) {
                 case 6: //switch (3 way)
                     break;
                 case 7: //switch (2 way)
+                    if (_flight_mode == fm_inactive){
+                        manual_override_take_off_now = event.value>0;
+                    } else if (_flight_mode == fm_flying) {
+                        manual_override_land_now = event.value<0;
+                    }
                     break;
                 default:
                     //this joystick seems to have 16 extra buttons... weird whatever
@@ -446,7 +451,6 @@ void DroneController::process_joystick() {
                 else if (_joy_mode_switch == jmsm_hunt)
                     _joy_state = js_hunt;
             }
-
         }
 #if CAMMODE == CAMMODE_GENERATOR
         joyPitch = JOY_MIDDLE;
