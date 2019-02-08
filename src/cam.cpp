@@ -45,6 +45,23 @@ void Cam::update_playback(void) {
         playback_bufferL = playback_bufferL_cleaned;
         lock_frame_data.unlock();
 
+        uint lowest_complete_id=0;
+        for (uint i = 0 ; i <playback_bufferL_cleaned.size();i++) {
+            for (uint j = 0 ; j <playback_bufferR_cleaned.size();j++) {
+                if (playback_bufferL_cleaned.at(i).id == playback_bufferR_cleaned.at(j).id ) {
+                    lowest_complete_id = playback_bufferL_cleaned.at(i).id;
+                    break;
+                }
+                if (lowest_complete_id>0)
+                    break;
+            }
+        }
+
+        if (lowest_complete_id > requested_id_in){
+            std::cout << "Warning, frame jump detected. " << requested_id_in << " -> " << lowest_complete_id  << std::endl;
+            requested_id_in = lowest_complete_id;
+        }
+
         for (uint i = 0 ; i <playback_bufferL_cleaned.size();i++) {
             if (playback_bufferL_cleaned.at(i).id == requested_id_in){
                 fL = playback_bufferL_cleaned.at(i);
@@ -61,7 +78,7 @@ void Cam::update_playback(void) {
                 }
             }
 
-        if (_paused && playback_bufferR.size() < 3 ){ // 3 to start buffering 3 frames before the buffer runs empty
+        if (_paused && playback_bufferR.size() < 10 ){ // 3 to start buffering 3 frames before the buffer runs empty
             incremented_playback_frametime = (requested_id_in-2)*(1.f/VIDEOFPS) - (1.f/VIDEOFPS)*0.1f;  //requested_id_in-2 -> -2 seems to be necessary because the RS api skips a frame of either the left or right camera after resuming
             if (incremented_playback_frametime < 0)
                 incremented_playback_frametime = 0;
@@ -109,7 +126,7 @@ void Cam::update_playback(void) {
     _frame_number = fL.id;
     _frame_time = fL.time;
 
-    //std::cout << "-------------frame id: " << frame_id << " seek time: " << incremented_playback_frametime << std::endl;
+    //std::cout << "-------------frame id: " << _frame_number << " seek time: " << incremented_playback_frametime << std::endl;
 
 }
 
@@ -117,9 +134,9 @@ void Cam::rs_callback_playback(rs2::frame f) {
 
     lock_frame_data.lock();
     //    if (f.get_profile().stream_index() == 1 )
-    //        std::cout << "Received id "         << f.get_frame_number() << ":" << (static_cast<float>(f.get_timestamp())-_frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << "         Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << incremented_playback_frametime << " bufsize: " << playback_bufferL.size() << std::endl;
+    //        std::cout << "Received id "         << f.get_frame_number() << ":" << to_string_with_precision((static_cast<float>(f.get_timestamp())-_frame_time_start)/1e3f,2) << "@" << f.get_profile().stream_index() << "         Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << to_string_with_precision(incremented_playback_frametime,2) << " bufsize: " << playback_bufferL.size() << std::endl;
     //    if (f.get_profile().stream_index() == 2 )
-    //        std::cout << "Received id         " << f.get_frame_number() << ":" << (static_cast<float>(f.get_timestamp())-_frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << " Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << incremented_playback_frametime << " bufsize: " << playback_bufferL.size() << std::endl;
+    //        std::cout << "Received id         " << f.get_frame_number() << ":" << to_string_with_precision((static_cast<float>(f.get_timestamp())-_frame_time_start)/1e3f,2) << "@" << f.get_profile().stream_index() << " Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << to_string_with_precision(incremented_playback_frametime,2) << " bufsize: " << playback_bufferL.size() << std::endl;
 
     if (f.get_profile().stream_index() == 1 && f.get_frame_number() >= requested_id_in && playback_bufferL.size() < 100) {
         frame_data fL;
