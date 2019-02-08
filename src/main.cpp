@@ -351,7 +351,7 @@ int init(int argc, char **argv) {
             logreader.init(fn);
             fromfile = log_mode_insect_only;
         } else {
-            logreader.init(fn + ".log");
+            logreader.init(fn + "/test.log");
             fromfile = log_mode_full;
         }
     }

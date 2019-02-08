@@ -684,13 +684,13 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
         depth_background = imread(depth_map_fn,CV_LOAD_IMAGE_ANYDEPTH);
     }
 
-    if (!checkFileExist(std::string(argv[1]) + ".bag")) {
-        std::cout << "Could not find " << string(argv[1]) + ".bag" << std::endl;
+    if (!checkFileExist(std::string(argv[1]) + "/test.bag")) {
+        std::cout << "Could not find " << string(argv[1]) + "/test.bag" << std::endl;
         exit(1);
     }
     rs2::stream_profile infared1,infared2;
     rs2::context ctx; // The context represents the current platform with respect to connected devices
-    dev = ctx.load_device(string(argv[1]) + ".bag");
+    dev = ctx.load_device(string(argv[1]) + "/test.bag");
 
     static_cast<rs2::playback>(dev).set_real_time(false);
 
