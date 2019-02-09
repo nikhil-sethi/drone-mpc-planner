@@ -506,17 +506,17 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
     _approx = get_approx_cutout_filtered(prev,diff,roi_size);
     cv::Mat frame = _approx;
 
-//    cv::Rect r1(prev.x-roi_size.x/2, prev.y-roi_size.y/2, roi_size.x,roi_size.y);
-//    if (r1.x < 0)
-//        r1.x = 0;
-//    else if (r1.x+r1.width >= diff.cols)
-//        r1.x -= (r1.x+r1.width+1) - diff.cols;
-//    if (r1.y < 0)
-//        r1.y = 0;
-//    else if (r1.y+r1.height >= diff.rows)
-//        r1.y -= (r1.y+r1.height+1) - diff.rows ;
-//    cv::Mat frame(diff,r1);
-//    find_result.roi_offset = r1;
+    //    cv::Rect r1(prev.x-roi_size.x/2, prev.y-roi_size.y/2, roi_size.x,roi_size.y);
+    //    if (r1.x < 0)
+    //        r1.x = 0;
+    //    else if (r1.x+r1.width >= diff.cols)
+    //        r1.x -= (r1.x+r1.width+1) - diff.cols;
+    //    if (r1.y < 0)
+    //        r1.y = 0;
+    //    else if (r1.y+r1.height >= diff.rows)
+    //        r1.y -= (r1.y+r1.height+1) - diff.rows ;
+    //    cv::Mat frame(diff,r1);
+    //    find_result.roi_offset = r1;
 
 
     int radius = settings.ignore_circle_r_around_motion_max;
@@ -527,7 +527,8 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
         double min, max;
         cv::minMaxLoc(frame, &min, &max, &mint, &maxt);
 
-        uint8_t bkg = _visdat->max_uncertainty_map.at<uint8_t>(maxt.y,maxt.x);
+        cv::Mat bkg_frame_cutout = _visdat->max_uncertainty_map(find_result.roi_offset);
+        uint8_t bkg = bkg_frame_cutout.at<uint8_t>(maxt.y,maxt.x);
 
         if (max > bkg+settings.motion_thresh) {
             //find the COG:
@@ -541,8 +542,7 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
                 r2.y = 0;
             else if (r2.y+r2.height >= frame.rows)
                 r2.y -= (r2.y+r2.height+1) - frame.rows ;
-            cv::Mat roi(frame,r2);
-
+            cv::Mat roi(frame,r2); // so, this is the cut out around the max point, in the cut out of _approx roi
 
             // make a black mask, same size:
             cv::Mat mask = cv::Mat::zeros(roi.size(), roi.type());
@@ -553,8 +553,11 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
 
             cv::Moments mo = cv::moments(cropped,false);
             cv::Point2f COG = cv::Point(static_cast<float>(mo.m10) / static_cast<float>(mo.m00), static_cast<float>(mo.m01) / static_cast<float>(mo.m00));
-            COG.x += maxt.x-radius;
-            COG.y += maxt.y-radius;
+
+            // relative it back to the _approx frame
+            COG.x += r2.x;
+            COG.y += r2.y;
+
             scored_points->push_back(cv::KeyPoint(COG, max));
 
             //remove this maximum:
