@@ -95,7 +95,7 @@ void Cam::update_playback(void) {
             incremented_playback_frametime = (requested_id_in+funky_RS_frame_time_fixer_frame_count-2)*(1.f/VIDEOFPS) - (1.f/VIDEOFPS)*0.1f;  //requested_id_in-2 -> -2 seems to be necessary because the RS api skips a frame of either the left or right camera after resuming
             if (incremented_playback_frametime < 0)
                 incremented_playback_frametime = 0;
-//            std::cout << "Resuming RS: " << incremented_playback_frametime << std::endl;
+            //            std::cout << "Resuming RS: " << incremented_playback_frametime << std::endl;
             float duration = static_cast<float>(static_cast<rs2::playback>(dev).get_duration().count()) / 1e9f;
 
             if (duration > incremented_playback_frametime){
@@ -116,7 +116,6 @@ void Cam::update_playback(void) {
         new_frame2 = false;
     }
     requested_id_in++;
-
 
     if (!turbo) {
         while(swc.Read() < (1.f/VIDEOFPS)*1e3f){
@@ -144,17 +143,17 @@ void Cam::update_playback(void) {
     frameR = fR.frame.clone();
     _frame_number = fL.id;
     _frame_time = fL.time;
-//    std::cout << "-------------frame id: " << _frame_number << " seek time: " << incremented_playback_frametime << std::endl;
+    //    std::cout << "-------------frame id: " << _frame_number << " seek time: " << incremented_playback_frametime << std::endl;
 
 }
 
 void Cam::rs_callback_playback(rs2::frame f) {
 
     lock_frame_data.lock();
-//    if (f.get_profile().stream_index() == 1 )
-//        std::cout << "Received id "         << f.get_frame_number() << ":" << to_string_with_precision((static_cast<float>(f.get_timestamp())-_frame_time_start)/1e3f,2) << "@" << f.get_profile().stream_index() << "         Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << to_string_with_precision(incremented_playback_frametime,2) << " bufsize: " << playback_bufferL.size() << std::endl;
-//    if (f.get_profile().stream_index() == 2 )
-//        std::cout << "Received id         " << f.get_frame_number() << ":" << to_string_with_precision((static_cast<float>(f.get_timestamp())-_frame_time_start)/1e3f,2) << "@" << f.get_profile().stream_index() << " Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << to_string_with_precision(incremented_playback_frametime,2) << " bufsize: " << playback_bufferL.size() << std::endl;
+    //    if (f.get_profile().stream_index() == 1 )
+    //        std::cout << "Received id "         << f.get_frame_number() << ":" << to_string_with_precision((static_cast<float>(f.get_timestamp())-_frame_time_start)/1e3f,2) << "@" << f.get_profile().stream_index() << "         Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << to_string_with_precision(incremented_playback_frametime,2) << " bufsize: " << playback_bufferL.size() << std::endl;
+    //    if (f.get_profile().stream_index() == 2 )
+    //        std::cout << "Received id         " << f.get_frame_number() << ":" << to_string_with_precision((static_cast<float>(f.get_timestamp())-_frame_time_start)/1e3f,2) << "@" << f.get_profile().stream_index() << " Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << to_string_with_precision(incremented_playback_frametime,2) << " bufsize: " << playback_bufferL.size() << std::endl;
 
     if (f.get_profile().stream_index() == 1 && f.get_frame_number() >= requested_id_in && playback_bufferL.size() < 100) {
         frame_data fL;
@@ -484,7 +483,7 @@ void Cam::sense_light_level(){
                     search_speed=-1;
                 }
             }
-             if (search_speed<0){
+            if (search_speed<0){
                 if (_measured_exposure < 15500 && _measured_gain > 16 ) {
                     if (_measured_gain > 255)
                         _measured_gain = 255;
