@@ -128,6 +128,7 @@ private:
     flight_modes _flight_mode = fm_disarmed; // only set externally (except for disarming), used internally
     joy_mode_switch_modes _joy_mode_switch = jmsm_none;
     bool _joy_arm_switch = true;
+    bool _joy_takeoff_switch = false;
     joy_states _joy_state = js_none;
     int joyDial = 0;
     float scaledjoydial = 0;
@@ -163,13 +164,14 @@ public:
     bool joy_mode_swtich(){
         return _joy_mode_switch;
     }
-    void insert_log(int joy_roll, int joy_pitch, int joy_yaw, int joy_throttle, int joyArmSwitch, int joyModeSwitch){
+    void insert_log(int joy_roll, int joy_pitch, int joy_yaw, int joy_throttle, int joyArmSwitch, int joyModeSwitch, int joyTakeOffSwitch){
         joyRoll = joy_roll;
         joyPitch= joy_pitch;
         joyYaw = joy_yaw;
         joyThrottle = joy_throttle;
         _joy_arm_switch = joyArmSwitch;
         _joy_mode_switch = static_cast<joy_mode_switch_modes>(joyModeSwitch);
+        _joy_takeoff_switch = joyTakeOffSwitch;
     }
 
 
@@ -199,9 +201,9 @@ public:
     void init(std::ofstream *logger, bool fromfile, MultiModule *rc);
     void control(trackData data, cv::Point3f setpoint_world,cv::Point3f setspeed_world);
     bool getDroneIsActive() {
-        if ( _flight_mode == fm_inactive || _flight_mode != fm_disarmed)
+        if ( _flight_mode == fm_inactive || _flight_mode == fm_disarmed)
             return false;
-        else if (_joy_mode_switch != jmsm_manual && joyThrottle > JOY_BOUND_MIN)
+        else if (_joy_mode_switch == jmsm_manual && joyThrottle > JOY_BOUND_MIN)
             return true;
         else
             return (autoThrottle > JOY_BOUND_MIN); //FIXME: check if this goes well if due to extreme control throttle is set to 0

@@ -29,6 +29,7 @@ public:
         int joyYaw;
         int joyArmSwitch;
         int joyModeSwitch;
+        int joyTakeoffSwitch;
 
         float ins_im_x;
         float ins_im_y;

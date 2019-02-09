@@ -20,7 +20,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     _rc = rc;
     _logger = logger;
     _fromfile = fromfile;
-    (*_logger) << "valid; posErrX; posErrY; posErrZ; velX; velY; velZ; accX; accY; accZ; hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; joyThrottle; joyRoll; joyPitch; joyYaw; joyArmSwitch; joyModeSwitch; throttleP; throttleI; throttleD; dt; dx; dy; dz; velx_sp; vely_sp; velz_sp;";
+    (*_logger) << "valid; posErrX; posErrY; posErrZ; velX; velY; velZ; accX; accY; accZ; hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; joyThrottle; joyRoll; joyPitch; joyYaw; joyArmSwitch; joyModeSwitch; joyTakeoffSwitch; throttleP; throttleI; throttleD; dt; dx; dy; dz; velx_sp; vely_sp; velz_sp;";
     std::cout << "Initialising control." << std::endl;
 
     // Load saved control paremeters
@@ -268,6 +268,7 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
                   joyYaw << "; " <<
                   static_cast<int>(_joy_arm_switch) << "; " <<
                   static_cast<int>(_joy_mode_switch) << "; " <<
+                  static_cast<int>(_joy_takeoff_switch) << "; " <<
                   params.throttle_Pos << "; " <<
                   params.throttleI << "; " <<
                   params.throttle_Acc << "; " <<
@@ -388,11 +389,7 @@ void DroneController::readJoystick(void) {
                 case 6: //switch (3 way)
                     break;
                 case 7: //switch (2 way)
-                    if (_flight_mode == fm_inactive){
-                        manual_override_take_off_now = event.value>0;
-                    } else if (_flight_mode == fm_flying) {
-                        manual_override_land_now = event.value<0;
-                    }
+                    _joy_takeoff_switch = event.value>0;
                     break;
                 default:
                     //this joystick seems to have 16 extra buttons... weird whatever
@@ -445,6 +442,12 @@ void DroneController::process_joystick() {
             first_joy_time--;
         }
     } else {
+
+        if (_flight_mode == fm_inactive){
+            manual_override_take_off_now = _joy_takeoff_switch;
+        } else if (_flight_mode == fm_flying) {
+            manual_override_land_now = _joy_takeoff_switch;
+        }
 
         if  (JOYSTICK_TYPE == RC_USB_HOBBYKING) {
             //check switch functions
