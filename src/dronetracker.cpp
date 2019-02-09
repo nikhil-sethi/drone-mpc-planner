@@ -57,7 +57,7 @@ void DroneTracker::init_settings() {
 }
 
 void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_is_active) {
-
+    std::vector<cv::Point2f> additional_ignores;
     switch (_drone_tracking_status) {
     case dts_init: {
         append_log(); // no tracking needed in this stage
@@ -82,7 +82,7 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
             break;
         } case bds_searching: {
             _enable_roi = false;
-            ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
+            ItemTracker::track(time,ignore,additional_ignores);
             if (foundL) {
                 _blinking_drone_status = bds_1_blink_off;
                 blink_time_start = time;
@@ -91,27 +91,27 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
         } case bds_1_blink_off: {
             _enable_roi = true;
             blink_location = find_result.best_image_locationL;
-            ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
+            ItemTracker::track(time,ignore,additional_ignores);
             _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
             break;
         } case bds_1_blink_on: {
-            ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
+            ItemTracker::track(time,ignore,additional_ignores);
             _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
             break;
         } case bds_2_blink_off: {
-            ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
+            ItemTracker::track(time,ignore,additional_ignores);
             _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
             break;
         } case bds_2_blink_on: {
-            ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
+            ItemTracker::track(time,ignore,additional_ignores);
             _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
             break;
         } case bds_3_blink_off: {
-            ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
+            ItemTracker::track(time,ignore,additional_ignores);
             _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
             break;
         } case bds_3_blink_on: {
-            ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
+            ItemTracker::track(time,ignore,additional_ignores);
             _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
             break;
         } case bds_found: {
@@ -148,14 +148,16 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
             break;
     } FALLTHROUGH_INTENDED; case dts_detecting: {
         roi_size_cnt = 0; // don't grow roi in this stage
-        ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
+        additional_ignores.push_back(Drone_Startup_Im_Location());
+        ItemTracker::track(time,ignore,additional_ignores);
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
         else if (n_frames_lost==0)
             _drone_tracking_status = dts_detected;
         break;
     } case dts_detected: {
-        ItemTracker::track(time,ignore,drone_max_border_y,drone_max_border_z);
+        additional_ignores.push_back(Drone_Startup_Im_Location());
+        ItemTracker::track(time,ignore,additional_ignores);
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
         else if (!foundL)

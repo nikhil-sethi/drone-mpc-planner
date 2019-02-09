@@ -112,9 +112,11 @@ public:
         return drone_tracking_state_names[_drone_tracking_status];
     }
 
+    cv::Point2f Drone_Startup_Im_Location(){
+        return _drone_blink_image_location;
+    }
+
     cv::Mat _cir;
-    float drone_max_border_z = MAX_BORDER_Z_DEFAULT;
-    float drone_max_border_y = MAX_BORDER_Y_DEFAULT;
 
     bool init(std::ofstream *logger, VisionData *_visdat, bool fromfile);
     void track(float time, std::vector<track_item> ignore, bool drone_is_active);

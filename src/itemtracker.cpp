@@ -151,7 +151,7 @@ void ItemTracker::init_kalman() {
     cv::setIdentity(kfL.measurementNoiseCov, cv::Scalar(1e-1));
 }
 
-std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path) {
+std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path,std::vector<cv::Point2f> additional_ignores) {
     float dis1,dis2,dis = 0;
 
     //    if (_name.compare("insect")==0 && keypoints.size()>0){
@@ -161,6 +161,23 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<tr
     //    if (_name.compare("drone")==0 && keypoints.size()>0){
     //        std::cout << "drone" << std::endl;
     //    }
+
+
+    for (uint j=0; j<additional_ignores.size();j++){
+        float min_dis = 9999;
+        uint min_dis_i;
+        for (uint i=0; i<keypoints.size();i++){
+            //find the keypoint closest to the ignore
+            float d = sqrtf(powf(keypoints.at(i).x()-additional_ignores.at(j).x,2) + powf(keypoints.at(i).y()-additional_ignores.at(j).y,2));
+            if (min_dis > d) {
+                min_dis = d;
+                min_dis_i = i;
+            }
+        }
+        //and delete it, if it is close enough
+        if (min_dis < settings.exclude_max_distance)
+            keypoints.erase(keypoints.begin() + min_dis_i);
+    }
 
     if (exclude_path.size() > 0 && keypoints.size ()>0) {
         track_item exclude = exclude_path.at(exclude_path.size()-1);
@@ -250,7 +267,7 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes_improved(std::
     return keypoints;
 }
 
-void ItemTracker::track(float time, std::vector<track_item> exclude, float drone_max_border_y, float drone_max_border_z) {
+void ItemTracker::track(float time, std::vector<track_item> exclude,std::vector<cv::Point2f> additional_ignores) {
 #ifdef TUNING
     updateParams();
 #endif
@@ -267,7 +284,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
         predicted_locationL = predicted_locationL_last;
     }
 
-    find(exclude);
+    find(exclude,additional_ignores);
 
     std::vector<track_item> keypoint_candidates = find_result.keypointsL_wihout_voids;
     uint nCandidates = static_cast<uint>(keypoint_candidates.size());
@@ -311,8 +328,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
                 output.z = -output.y * sinf(theta) + output.z * cosf(theta);
                 output.y = temp_y;
             }
-            if ((output.z < -drone_max_border_z) || (output.y < -drone_max_border_y) ||
-                    (!background_check_ok && _enable_background_check)|| !disparity_in_range) {
+            if ((!background_check_ok && _enable_background_check) || !disparity_in_range) {
                 keypoint_candidates.erase(keypoint_candidates.begin() + match_id);
             } else {
                 break;
@@ -420,7 +436,7 @@ void ItemTracker::updateParams(){
 }
 
 
-void ItemTracker::find(std::vector<track_item> exclude) {
+void ItemTracker::find(std::vector<track_item> exclude,std::vector<cv::Point2f> additional_ignores) {
     cv::Point previous_location;
 
     previous_location = find_result.best_image_locationL.pt;
@@ -451,14 +467,14 @@ void ItemTracker::find(std::vector<track_item> exclude) {
 #ifdef OPENCV_BLOBTRACKER
     //attempt to detect changed blobs
     _treshL = segment(_visdat->diffL_small,previous_location,roi_size);
-   //    cv::Mat tmp = createColumnImage({_treshL,_visdat->diffL*100,_visdat->frameL},CV_8UC1,0.25f);
-   //    cv::imshow("trek",tmp);
+    //    cv::Mat tmp = createColumnImage({_treshL,_visdat->diffL*100,_visdat->frameL},CV_8UC1,0.25f);
+    //    cv::imshow("trek",tmp);
     cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
     detector->detect( _treshL, keypointsL);
 #else
     find_max_change(previous_location,roi_size,_visdat->diffL_small,&keypointsL);
-#endif
 
+#endif
     vector<track_item> kps;
     for (uint i = 0 ; i < keypointsL.size();i++) {
         keypointsL.at(i).pt.x += find_result.roi_offset.x;
@@ -472,7 +488,7 @@ void ItemTracker::find(std::vector<track_item> exclude) {
     //       are actually 'bad' detections that are too far away to be correct.
     //std::vector<track_item> keypoint_candidates;
     //keypoint_candidates = remove_voids(kps,find_result.keypointsL);
-    find_result.keypointsL_wihout_voids = remove_excludes(kps,exclude);
+    find_result.keypointsL_wihout_voids = remove_excludes(kps,exclude,additional_ignores);
 
     if (find_result.keypointsL_wihout_voids.size() ==0) {
         roi_size_cnt +=1;

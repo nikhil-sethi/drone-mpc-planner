@@ -148,8 +148,8 @@ private:
     float update_disparity(float disparity, float dt);
     void update_prediction_state(cv::Point3f p, float blob_size);
     void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, track_item *best_match, float disparity);
-    void find(std::vector<track_item> exclude);
-    std::vector<ItemTracker::track_item> remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path);
+    void find(std::vector<track_item> exclude, std::vector<cv::Point2f> additional_ignores);
+    std::vector<ItemTracker::track_item> remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path, std::vector<cv::Point2f> additional_ignores);
     std::vector<ItemTracker::track_item> remove_excludes_improved(std::vector<track_item> keypoints, std::vector<track_item> exclude_path);
     cv::Mat show_uncertainty_map_in_image(cv::Point p, cv::Mat resframeL);
     std::vector<track_item> remove_voids(std::vector<track_item> keyps, std::vector<track_item> keyps_prev);
@@ -215,6 +215,7 @@ public:
     Find_result find_result;
     std::vector<track_item> pathL;
     std::vector<track_item> predicted_pathL;
+    std::vector<track_item> ignores; // keeps the item locations that should be ignored by other itemtrackers
 
 
     int n_frames_tracking =0;
@@ -223,7 +224,7 @@ public:
 
     void close (void);
     void init(std::ofstream *logger, VisionData *_visdat, std::string name);
-    virtual void track(float time, std::vector<track_item> ignore, float drone_max_border_y, float drone_max_border_z);
+    virtual void track(float time, std::vector<track_item> ignore, std::vector<cv::Point2f> additional_ignores);
     void append_log();
 //    trackData data;
     std::vector<trackData> track_history; // TODO: this will build up indefenitely.... and only last track data is used,

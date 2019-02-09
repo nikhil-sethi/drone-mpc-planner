@@ -99,9 +99,9 @@ void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) 
     }
 }
 
-void InsectTracker::track(float time, std::vector<track_item> exclude) {
+void InsectTracker::track(float time, std::vector<track_item> exclude,std::vector<cv::Point2f> additional_ignores) {
 
-    ItemTracker::track(time,exclude,MAX_BORDER_Y_DEFAULT,MAX_BORDER_Z_DEFAULT);
+    ItemTracker::track(time,exclude,additional_ignores);
 
     if (n_frames_lost > n_frames_lost_threshold || !foundL) {
         predicted_pathL.clear();

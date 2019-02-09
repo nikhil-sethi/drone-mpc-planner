@@ -59,7 +59,7 @@ void Interceptor::update(bool drone_at_base) {
         cv::Point3f dronePos = {_dtrkr->Last_track_data().sposX,_dtrkr->Last_track_data().sposY,_dtrkr->Last_track_data().sposZ};
 
         if (drone_at_base)
-            dronePos = {0.f,-MAX_BORDER_Y_DEFAULT,-1.07f}; // TODO: define this in a consistent way with flightplan waypoints
+            dronePos = {_dtrkr->Drone_Startup_Location().x,_dtrkr->Drone_Startup_Location().y,_dtrkr->Drone_Startup_Location().z};
 
         //estimated time to interception
 

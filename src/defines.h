@@ -54,7 +54,4 @@
 #define DRONE_DISPARITY_START 19/IMSCALEF
 #define DRONE_IM_START_SIZE 4.2f
 
-#define MAX_BORDER_Y_DEFAULT 3.6f  // 2.20 for large scale flight plan  // 1.3 for small scale flight plan
-#define MAX_BORDER_Z_DEFAULT 5.0f
-
 #endif //DEFINES_H

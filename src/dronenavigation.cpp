@@ -261,7 +261,6 @@ void DroneNavigation::update(float time) {
         //            navigation_status=navigation_status_manual;
         //        break;
     } case ns_land: {
-        _dtrk->drone_max_border_y = 9999; // keep tracking to the last possible end. TODO: earlier in the descend this may be disturbed by ground shadows
         _dctrl->set_flight_mode(DroneController::fm_landing);
         _dctrl->recalibrateHover();
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
@@ -274,7 +273,7 @@ void DroneNavigation::update(float time) {
         autoLandThrottleDecrease += params.autoLandThrottleDecreaseFactor;
         _dctrl->setAutoLandThrottleDecrease(autoLandThrottleDecrease);
 
-        if ( setpoint_world.y - land_incr> -(_dtrk->drone_max_border_y+100000.0f))
+        if ( setpoint_world.y - land_incr> -(_dtrk->Drone_Startup_Location().y+100000.0f))
             land_incr = static_cast<float>(params.land_incr_f_mm)/1000.f;
         setpoint_world.y -= land_incr;
         if (_nav_flight_mode == nfm_manual)
@@ -286,7 +285,6 @@ void DroneNavigation::update(float time) {
         autoLandThrottleDecrease = 0;
         _dctrl->setAutoLandThrottleDecrease(0);
         _dctrl->set_flight_mode(DroneController::fm_inactive);
-        _dtrk->drone_max_border_y = MAX_BORDER_Y_DEFAULT;
         land_incr = 0;
         _navigation_status = ns_wait_for_insect;
     } FALLTHROUGH_INTENDED; case ns_manual: { // also used for disarmed

@@ -218,8 +218,13 @@ void process_frame(Stereo_Frame_Data data) {
     } else
         if (dnav.disable_insect_detection())
             itrkr.append_log(); // write dummy data
-        else
-            itrkr.track(data.time,dtrkr.predicted_pathL);
+        else {
+            std::vector<cv::Point2f> additional_ignores;
+            if (dctrl.getDroneIsActive()) {
+                additional_ignores.push_back(dtrkr.Drone_Startup_Im_Location());
+            }
+            itrkr.track(data.time,dtrkr.predicted_pathL,additional_ignores);
+        }
     //        std::cout << "Found drone location:      [" << dtrkr.find_result.best_image_locationL.pt.x << "," << dtrkr.find_result.best_image_locationL.pt.y << "]" << std::endl;
     if (fromfile==log_mode_full) {
         dctrl.insert_log(logreader.current_item.joyRoll, logreader.current_item.joyPitch, logreader.current_item.joyYaw, logreader.current_item.joyThrottle,logreader.current_item.joyArmSwitch,logreader.current_item.joyModeSwitch);
