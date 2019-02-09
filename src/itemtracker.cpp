@@ -300,7 +300,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude,std::vector<
             uint match_id = match_closest_to_prediciton(previous_location,find_result.keypointsL_wihout_voids);
             match = &find_result.keypointsL_wihout_voids.at(match_id);
 
-            disparity = stereo_match(match->k,_visdat->frameL_prev,_visdat->frameR_prev,_visdat->frameL,_visdat->frameR,find_result.disparity);
+            disparity = stereo_match(match->k,_visdat->diffL,_visdat->diffR,find_result.disparity);
             disparity = update_disparity(disparity, dt_tracking);
 
             bool background_check_ok = true;
@@ -745,12 +745,11 @@ uint ItemTracker::match_closest_to_prediciton(cv::Point3f predicted_locationL, s
     return closestL;
 }
 
-float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv::Mat prevFrameR_big, cv::Mat frameL,cv::Mat frameR, float prev_disparity){
-
+float ItemTracker::stereo_match(cv::KeyPoint closestL, cv::Mat diffL,cv::Mat diffR, float prev_disparity){
     //get retangle around blob / changed pixels
-    float rectsize = closestL.size; // keypoint.size is the diameter of the blob
-    if (rectsize < 3)
-        rectsize = 3;
+    float rectsize = settings.max_disparity;
+
+
     float rectsizeX = ceil(rectsize*0.5f); // *4.0 results in drone-insect disparity interaction
     float rectsizeY = ceil(rectsize*0.5f);  // *3.0
     int x1,y1,x2,y2;
@@ -760,24 +759,18 @@ float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv:
     y2 = static_cast<int>(2*rectsizeY*IMSCALEF);
     if (x1 < 0)
         x1=0;
-    else if (x1 >= frameL.cols)
-        x1  = frameL.cols-1;
+    else if (x1 >= diffL.cols)
+        x1  = diffL.cols-1;
     if (y1 < 0)
         y1=0;
-    else if (y1 >= frameL.rows)
-        y1  = frameL.rows-1;
-    if (x1+x2 >= frameL.cols)
-        x2=frameL.cols-x1;
-    if (y1+y2 >= frameL.rows)
-        y2=frameL.rows-y1;
+    else if (y1 >= diffL.rows)
+        y1  = diffL.rows-1;
+    if (x1+x2 >= diffL.cols)
+        x2=diffL.cols-x1;
+    if (y1+y2 >= diffL.rows)
+        y2=diffL.rows-y1;
     cv::Rect roiL(x1,y1,x2,y2);
-    //retrieve changed pixels (through time) for left camera
-    cv::Mat aL = frameL(roiL);
-    cv::Mat bL = prevFrameL_big(roiL);
-    cv::Mat diff_L_roi;
-    cv::absdiff(aL,bL,diff_L_roi);
-    cv::Mat diff_L_roi_16;
-    diff_L_roi.convertTo(diff_L_roi_16, CV_16UC1);
+
     //shift over the image to find the best match, shift = disparity
     int disparity_err = 0;
     __attribute__((unused)) int disparity_cor = 0;
@@ -794,18 +787,12 @@ float ItemTracker::stereo_match(cv::KeyPoint closestL,cv::Mat prevFrameL_big,cv:
         disp_end = std::min(static_cast<int>(ceil(prev_disparity))+2,disp_end);
     }
 
+    cv::Mat diffLroi = diffL(roiL);
     for (int i=disp_start; i<disp_end;i++) {
         cv::Rect roiR(x1-i,y1,x2,y2);
 
-        cv::Mat aR = frameR(roiR);
-        cv::Mat bR = prevFrameR_big(roiR);
-        cv::Mat diff_R_roi;
-        cv::absdiff(aR,bR,diff_R_roi);
-        cv::Mat diff_R_roi_16;
-        diff_R_roi.convertTo(diff_R_roi_16, CV_16UC1);
-
-        cv::Mat corV_16 = diff_L_roi_16.mul(diff_R_roi_16);
-        cv::Mat errV = abs(aL - aR); //TO DO: find the best method for robust stereo matching
+        cv::Mat corV_16 = diffL(roiL).mul(diffR(roiR));
+        cv::Mat errV = abs(diffL(roiL) - diffR(roiR));
 
         cor_16[i] = static_cast<int>(cv::sum(corV_16 )[0]);
         err[i] = static_cast<int>(cv::sum(errV)[0]);

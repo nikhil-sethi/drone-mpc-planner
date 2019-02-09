@@ -37,9 +37,9 @@ void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, fl
 
     smallsize =cv::Size(frameL.cols/IMSCALEF,frameL.rows/IMSCALEF);
     frameL.convertTo(frameL16, CV_16SC1);
+    frameR.convertTo(frameR16, CV_16SC1);
     diffL16 = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
-
-    init_avg_prev_frame();
+    diffR16 = cv::Mat::zeros(cv::Size(frameR.cols,frameR.rows),CV_16SC1);
 
 #ifdef TUNING
     namedWindow("Background", WINDOW_NORMAL);
@@ -60,32 +60,35 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
     frame_id = new_frame_id;
 
     frameL_prev16 = frameL16;
-    cv::Mat tmp;
-    frameL.convertTo(tmp, CV_16SC1);
-    frameL16 = tmp;
+    frameR_prev16 = frameR16;
+    cv::Mat tmpL;
+    frameL.convertTo(tmpL, CV_16SC1);
+    frameL16 = tmpL;
+    cv::Mat tmpR;
+    frameR.convertTo(tmpR, CV_16SC1);
+    frameR16 = tmpR;
 
     track_avg_brightness(frameL16,time); //todo: check if this still works!
     if (_reset_motion_integration) {
         frameL_prev16 = frameL16.clone();
+        frameR_prev16 = frameR16.clone();
         diffL16 = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
+        diffR16 = cv::Mat::zeros(cv::Size(frameR.cols,frameR.rows),CV_16SC1);
         _reset_motion_integration = false;
         motion_update_iterator = 0;
     }
 
     //calcuate the motion difference, through the integral over time (over each pixel)
-    cv::Mat d = frameL16 - frameL_prev16;
-    diffL16 += d;
+    cv::Mat dL = frameL16 - frameL_prev16;
+    diffL16 += dL;
+    cv::Mat dR = frameR16 - frameR_prev16;
+    diffR16 += dR;
 
     //slowly fade out motion
     if (!(motion_update_iterator++ % settings.motion_update_iterator_max)) {
         //split negative and positive motion
-        cv::Mat diffL16_neg,diffL16_pos;
-        diffL16_pos = min(diffL16 >= 1,1);
-        diffL16_neg = min(diffL16 <= -1,1);
-        diffL16_pos.convertTo(diffL16_pos,CV_16SC1);
-        diffL16_neg.convertTo(diffL16_neg,CV_16SC1);
-        diffL16 -= diffL16_pos;
-        diffL16 += diffL16_neg;
+        fade(diffL16);
+        fade(diffR16);
     }
 
     //todo abs this???? Does not function as expected with negative change?
@@ -93,11 +96,14 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
     diffL.convertTo(diffL, CV_8UC1);
     cv::resize(diffL,diffL_small,smallsize);
 
-    cv::imshow("motion", diffL*10);
+    diffR = abs(diffR16);
+    diffR.convertTo(diffR, CV_8UC1);
+    cv::resize(diffR,diffR_small,smallsize);
+
+    showRowImage({diffL*10,diffR*10},"motion",CV_8UC1,1.f);
 
     if (!_background_calibrated )
         collect_no_drone_frames(diffL_small); // calibration of background uncertainty map
-
 
     if (!_background_calibrated && time > settings.background_calib_time)
         _background_calibrated= true;
@@ -107,6 +113,16 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
 #endif
 
     lock_data.unlock();
+}
+
+void VisionData::fade(cv::Mat diff16) {
+    cv::Mat diffL16_neg,diffL16_pos;
+    diffL16_pos = min(diff16 >= 1,1);
+    diffL16_neg = min(diff16 <= -1,1);
+    diffL16_pos.convertTo(diffL16_pos,CV_16SC1);
+    diffL16_neg.convertTo(diffL16_neg,CV_16SC1);
+    diff16 -= diffL16_pos;
+    diff16 += diffL16_neg;
 }
 
 void VisionData::collect_no_drone_frames(cv::Mat diff) {
@@ -121,18 +137,6 @@ void VisionData::collect_no_drone_frames(cv::Mat diff) {
     uncertainty_map /=255.0f;
     cv::pow(uncertainty_map,settings.uncertainty_power,uncertainty_map);
 
-}
-
-void VisionData::init_avg_prev_frame(void) {
-    avg_prev_frame = cv::Mat::zeros(frameL.rows,frameL.cols,CV_32SC1);
-    n_avg_prev_frames = 0;
-}
-
-void VisionData::collect_avg_prev_frame(cv::Mat frame) {
-    cv::Mat frame32;
-    frame.convertTo(frame32,CV_32SC1);
-    n_avg_prev_frames+=1;
-    avg_prev_frame +=frame32;
 }
 
 //Keep track of the average brightness, and reset the motion integration frame when it changes to much. (e.g. when someone turns on the lights or something)

@@ -21,8 +21,6 @@ class VisionData{
 
 private:
 
-    cv::Mat avg_prev_frame;
-    int n_avg_prev_frames = 0;
     int motion_update_iterator = 0;
     bool _background_calibrated;
     std::mutex lock_data;
@@ -51,25 +49,29 @@ private:
     const std::string settingsFile = "../basevisionsettings.dat";
     BaseVisionSettings settings;
 
-    cv::Mat threshL,diffL16,diffL;
+    cv::Mat diffL16;
     cv::Mat frameL16;
     cv::Mat frameL_prev16;
+
+    cv::Mat diffR16;
+    cv::Mat frameR16;
+    cv::Mat frameR_prev16;
 
     float prev_time_brightness_check = 0;
     float prev_brightness;
     bool _reset_motion_integration = false;
 
-    void init_avg_prev_frame(void);
-    void collect_avg_prev_frame(cv::Mat frame);
     void collect_no_drone_frames(cv::Mat diff);
     void track_avg_brightness(cv::Mat frame,float time);
+
+    void fade(cv::Mat diff16);
 
 public:
     cv::Mat frameL,frameR;
     cv::Mat frameL_prev,frameR_prev;
     cv::Mat uncertainty_map;
     cv::Mat max_uncertainty_map; // IMSCALEF smaller than original, CV8UC1 max motion background map
-    cv::Mat diffL_small;
+    cv::Mat diffL,diffR,diffL_small,diffR_small;
 
     int frame_id;
     cv::Size smallsize;
