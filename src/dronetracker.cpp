@@ -1,12 +1,13 @@
 #include "dronetracker.h"
 
 
-bool DroneTracker::init(std::ofstream *logger, VisionData *visdat, bool fromfile) {
+bool DroneTracker::init(std::ofstream *logger, VisionData *visdat, bool fromfile, std::string bag_dir) {
     ItemTracker::init(logger,visdat,"drone");
 
-    if (fromfile){
-        deserialize_calib(calib_fn);
-    }
+    if (fromfile)
+        deserialize_calib(bag_dir + '/' + calib_fn );
+    calib_fn = "./logging/" + calib_fn ;
+
     return false;
 }
 void DroneTracker::init_settings() {

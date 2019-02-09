@@ -96,9 +96,7 @@ private:
     };
     void serialize_calib();
     void deserialize_calib(string file);
-    const std::string calib_fn = "./logging/drone_calib.xml";
-
-
+    std::string calib_fn = "drone_calib.xml";
 
 protected:
     cv::Mat get_probability_cloud(cv::Point size);
@@ -118,7 +116,7 @@ public:
 
     cv::Mat _cir;
 
-    bool init(std::ofstream *logger, VisionData *_visdat, bool fromfile);
+    bool init(std::ofstream *logger, VisionData *_visdat, bool fromfile,std::string bag_dir);
     void track(float time, std::vector<track_item> ignore, bool drone_is_active);
 
     void Locate_Startup_Location() {

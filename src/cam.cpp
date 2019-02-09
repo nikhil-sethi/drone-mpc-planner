@@ -265,6 +265,11 @@ void Cam::init() {
 
     std::cout << "Initializing cam" << std::endl;
 
+    calib_log_fn = "./logging" + calib_log_fn;
+    depth_map_fn = "./logging" + depth_map_fn;
+    depth_unfiltered_map_fn = "./logging" + depth_unfiltered_map_fn;
+    disparity_map_fn = "./logging" + disparity_map_fn;
+
     rs2::stream_profile infared1,infared2;
     rs2::context ctx; // The context represents the current platform with respect to connected devices
     rs2::device_list devices = ctx.query_devices();
@@ -709,8 +714,13 @@ cv::Point3f Cam::rotate_point(cv::Point3f point){
 
 void Cam::init(int argc __attribute__((unused)), char **argv) {
 
-    std::cout << "Initializing cam from .bag" << std::endl;
+    std::string datadir = argv[1];
+    std::cout << "Initializing cam from " << datadir << "test.bag" << std::endl;
     fromfile=true;
+    calib_log_fn = datadir + '/' + calib_log_fn;
+    depth_map_fn = datadir + '/' + depth_map_fn;
+    depth_unfiltered_map_fn = datadir + '/' + depth_unfiltered_map_fn;
+    disparity_map_fn = datadir + '/' + disparity_map_fn;
 
     if (!checkFileExist(depth_map_fn)) { //FIXME: use full path to folder
         //todo: make gui warning of this:
@@ -721,13 +731,13 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
         depth_background = imread(depth_map_fn,CV_LOAD_IMAGE_ANYDEPTH);
     }
 
-    if (!checkFileExist(std::string(argv[1]) + "/test.bag")) {
-        std::cout << "Could not find " << string(argv[1]) + "/test.bag" << std::endl;
+    if (!checkFileExist(datadir + "/test.bag")) {
+        std::cout << "Could not find " << datadir + "/test.bag" << std::endl;
         throw my_exit(1);
     }
     rs2::stream_profile infared1,infared2;
     rs2::context ctx; // The context represents the current platform with respect to connected devices
-    dev = ctx.load_device(string(argv[1]) + "/test.bag");
+    dev = ctx.load_device(datadir + "/test.bag");
 
     static_cast<rs2::playback>(dev).set_real_time(false);
 

@@ -346,6 +346,7 @@ int init(int argc, char **argv) {
     gui.init(argc,argv);
 #endif
 
+    std::string data_in_dir = "";
     if (argc ==2 ) {
         string fn = string(argv[1]);
         string ending = ".log";
@@ -356,6 +357,7 @@ int init(int argc, char **argv) {
         } else {
             logreader.init(fn + "/test.log");
             fromfile = log_mode_full;
+            data_in_dir = fn;
         }
     }
     data_output_dir = "./logging/";
@@ -389,7 +391,7 @@ int init(int argc, char **argv) {
     visdat.update(cam.frameL,cam.frameR,cam.frame_time(),cam.frame_number()); //TODO: necessary? If so, streamline
 
     //WARNING: changing the order of the inits with logging must be match with the process_video functions!
-    dtrkr.init(&logger,&visdat,fromfile==log_mode_full);
+    dtrkr.init(&logger,&visdat,fromfile==log_mode_full,data_in_dir);
     itrkr.init(&logger,&visdat);
     dnav.init(&logger,&dtrkr,&dctrl,&itrkr,&visdat);
     dctrl.init(&logger,fromfile==log_mode_full,&rc);
