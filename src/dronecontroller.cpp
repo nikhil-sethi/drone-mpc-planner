@@ -38,7 +38,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
         if (params.version < tmp.version){
             std::cout << "Dronecontroller settings version too low!" << std::endl;
             std::cout << "Maybe delete the file: " << paramsFile << std::endl;
-            exit(1);
+            throw my_exit(1);
         }
     }
 

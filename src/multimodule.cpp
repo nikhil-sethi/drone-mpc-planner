@@ -6,7 +6,7 @@ void MultiModule::init(bool fromfile) {
 
     if (notconnected && !fromfile) {
         std::cout << "MultiModule failed." << std::endl;
-        exit(1);
+        throw my_exit(1);
     } else {
         thread_mm = std::thread(&MultiModule::worker_thread,this);
         initialised = true;

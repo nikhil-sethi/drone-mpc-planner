@@ -32,7 +32,7 @@ void LogReader::init(std::string file) {
 
     if (!checkFileExist(file)) {
         std::cout << "Error: log file not found!" <<std::endl;
-        exit(1);
+        throw my_exit(1);
     }
     //read the whole log here, and process it into a table that can easily be searched
     std::ifstream infile(file);

@@ -40,7 +40,7 @@ void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, fl
         if (settings.version < tmp.version){
             std::cout << "Visiondata settings version too low!" << std::endl;
             std::cout << "Maybe delete the file: " << settingsFile << std::endl;
-            exit(1);
+            throw my_exit(1);
         }
     }
 

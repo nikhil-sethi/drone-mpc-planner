@@ -62,6 +62,11 @@ struct trackData {
     int detected_after_take_off;
 };
 
+struct my_exit : public std::exception {
+    int value;
+    my_exit(int return_value) : value(return_value) {}
+};
+
 
 #ifndef FALLTHROUGH_INTENDED
 #if defined(__clang__)

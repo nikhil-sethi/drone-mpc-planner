@@ -253,10 +253,10 @@ void Cam::init() {
     rs2::device_list devices = ctx.query_devices();
     if (devices.size() == 0) {
         std::cerr << "No device connected, please connect a RealSense device" << std::endl;
-        exit(1);
+        throw my_exit(1);
     } else if (devices.size() > 1) {
         std::cerr << "More than one device connected...." << std::endl;
-        exit(1);
+        throw my_exit(1);
     } else {
         dev = devices[0];
 
@@ -310,7 +310,7 @@ void Cam::init() {
     if (current_firmware_version != required_firmwar_version) { // wtf, string equality check is reversed!??
         std::cout << "Detected wrong realsense firmware version!" << std::endl;
         std::cout << "Detected: " << current_firmware_version << ". Required: "  << required_firmwar_version << "." << std::endl;
-        exit(1);
+        throw my_exit(1);
     }
 
     depth_sensor.set_option(RS2_OPTION_FRAMES_QUEUE_SIZE, 0);
@@ -401,7 +401,7 @@ void Cam::deserialize_calib(std::string file) {
         _measured_gain = dser->Gain.value();
     } else { // Deserialization not successful
         std::cout << "Error reading camera calibration file." << std::endl;
-        exit(1);
+        throw my_exit(1);
     }
 }
 
@@ -604,7 +604,7 @@ void Cam::calib_pose(){
 
         if (fabs(roll) > 5.f) {
             cout << "Camera is tilted in roll axis!" << std::endl;
-            exit(1);
+            throw my_exit(1);
         }
         std::cout << "Measured pose: " << _camera_angle_y << std::endl;
     } else { // determine camera angle from the depth map:
@@ -671,7 +671,7 @@ void Cam::calib_pose(){
 
         if (_camera_angle_y_measured_from_depth - old > 10 && checkFileExist(calib_log_fn)) {
             std::cout << "Warning: angle change to big!" << std::endl;
-            //exit(1);
+            //throw my_exit(1);
         }
     }
     cam.stop();
@@ -703,7 +703,7 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
 
     if (!checkFileExist(std::string(argv[1]) + "/test.bag")) {
         std::cout << "Could not find " << string(argv[1]) + "/test.bag" << std::endl;
-        exit(1);
+        throw my_exit(1);
     }
     rs2::stream_profile infared1,infared2;
     rs2::context ctx; // The context represents the current platform with respect to connected devices
@@ -772,10 +772,10 @@ void Cam::reset() {
     rs2::device_list devices = ctx.query_devices();
     if (devices.size() == 0) {
         std::cerr << "No device connected, please connect a RealSense device" << std::endl;
-        exit(1);
+        throw my_exit(1);
     } else if (devices.size() > 1) {
         std::cerr << "More than one device connected...." << std::endl;
-        exit(1);
+        throw my_exit(1);
     } else {
         dev = devices[0];
 

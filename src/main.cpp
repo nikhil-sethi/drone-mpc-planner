@@ -398,7 +398,7 @@ int init(int argc, char **argv) {
     if (!dctrl.joystick_ready() && fromfile!=log_mode_full && JOYSTICK_TYPE != RC_DISABLED) {
         std::cout << "joystick failed." << std::endl;
         close();
-        exit(1);
+        throw my_exit(1);
     }
 
     logger << std::endl;
@@ -470,27 +470,31 @@ void close() {
 
 int main( int argc, char **argv )
 {
-    //manually reset the rs camera from the command line with the rs_reset command
-    if (argc == 2)
-        if (string(argv[1]).compare("rs_reset") == 0){
-            cam.reset();
-            exit(0);
-        }
+    try {
+        //manually reset the rs camera from the command line with the rs_reset command
+        if (argc == 2)
+            if (string(argv[1]).compare("rs_reset") == 0){
+                cam.reset();
+                throw my_exit(0);
+            }
 
 #ifdef INSECT_LOGGING_MODE
-    //don't start  until lights are off
-    while(true) {
-        cam.sense_light_level();
-        if (cam.measured_exposure() >15000) {
-            break;
+        //don't start  until lights are off
+        while(true) {
+            cam.sense_light_level();
+            if (cam.measured_exposure() >15000) {
+                break;
+            }
+            usleep(60000000); // measure every 1 minute
         }
-        usleep(60000000); // measure every 1 minute
-    }
 #endif
 
-    if (!init(argc,argv)) {
-        process_video();
+        if (!init(argc,argv)) {
+            process_video();
+        }
+        close();
+    } catch(my_exit const &e) {
+        return e.value;
     }
-    close();
     return 0;
 }

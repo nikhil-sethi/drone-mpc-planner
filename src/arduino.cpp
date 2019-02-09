@@ -7,7 +7,7 @@ void Arduino::init(bool fromfile) {
 
     if (notconnected && !fromfile) {
         std::cout << "Arduino failed." << std::endl;
-        //        exit(1);
+        //        throw my_exit(1);
     }
 
     thread_nrf = std::thread(&Arduino::workerThread,this);
@@ -96,7 +96,7 @@ void Arduino::check_bind_command(){
         if (notconnected) {
             bound = cx10_not_bound;
             std::cout << "Bind failure, could not reconnect to arduino" << std::endl;
-            exit(1);
+            throw my_exit(1);
         }
     }
     if (binding_sw.Read() > 2000 && bound == cx10_binding) {

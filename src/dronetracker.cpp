@@ -250,7 +250,7 @@ void DroneTracker::deserialize_calib(std::string file) {
         _drone_blink_world_location.z = dser->Drone_startup_world_location_z.value();
     } else { // Deserialization not successful
         std::cout << "Error reading drone tracker calibration file." << std::endl;
-        exit(1);
+        throw my_exit(1);
     }
 }
 
