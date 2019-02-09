@@ -781,8 +781,11 @@ void Cam::seek(float time) {
 }
 
 void Cam::close() {
+    std::cout << "Closing camera" << std::endl;
     depth_sensor.stop();
     depth_sensor.close();
+    usleep(1000);
+    std::cout << "Camera closed" << std::endl;
 }
 
 void Cam::reset() {
