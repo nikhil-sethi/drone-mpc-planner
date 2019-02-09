@@ -17,9 +17,6 @@
 #include "cam.h"
 #include "defines.h"
 
-#include <librealsense2/rs.hpp>
-#include <librealsense2/rsutil.h>
-
 class VisionData{
 
 private:
@@ -67,8 +64,6 @@ private:
     void collect_no_drone_frames(cv::Mat diff);
     void track_avg_brightness(cv::Mat frame,float time);
 
-    const rs2_intrinsics * intr;
-
 public:
     cv::Mat frameL,frameR;
     cv::Mat frameL_prev,frameR_prev;
@@ -80,16 +75,11 @@ public:
     cv::Size smallsize;
     cv::Mat Qf;
     float camera_angle;
-    float depth_scale;
     cv::Mat depth_background;
     cv::Mat disparity_background;
+    cv::Mat depth_background_mm;
 
-
-#if CAMMODE == CAMMODE_GENERATOR
-    void init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, cv::Mat new_depth_background);
-#else
-    void init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, cv::Mat new_depth_background, float new_depth_scale, rs2_intrinsics *new_intr);
-#endif
+    void init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, cv::Mat new_depth_background_mm);
     void close() {
         std::ofstream os(settingsFile, std::ios::binary);
         cereal::BinaryOutputArchive archive( os );
@@ -97,18 +87,6 @@ public:
     }
     void update(cv::Mat new_frameL, cv::Mat new_frameR, float time, int new_frame_id);
     float uncertainty_background() {return settings.uncertainty_background / 255.0f;}
-    void deproject(float pixel[2],float dist, float p[3]) {
-#if CAMMODE != CAMMODE_GENERATOR
-        //todo remove this dependency (#39)
-        rs2_deproject_pixel_to_point(p, intr, pixel, dist);
-#else
-        dist++; // kill warning
-        p[0] = pixel[0];
-        p[1] = pixel[1];
-        p[2] = 10000;
-#endif
-
-    }
     void reset_motion_integration() {
         _reset_motion_integration = true;
     }

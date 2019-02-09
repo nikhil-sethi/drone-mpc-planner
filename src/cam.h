@@ -90,7 +90,8 @@ public:
 
     float depth_scale;
     cv::Mat depth_background;
-    cv::Mat depth_background_mm; // todo: check if this one works!
+    cv::Mat depth_background_3mm;
+    cv::Mat depth_background_mm;
     cv::Mat disparity_background;
 
     float _camera_angle_x = 0;

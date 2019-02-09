@@ -361,6 +361,7 @@ void Cam::init() {
 
     set_calibration(infared1,infared2);
     serialize_calib();
+    convert_depth_background_to_world();
     swc.Start();
 }
 
@@ -368,7 +369,8 @@ void Cam::init() {
 //world coordinates in the IR camera frame
 //There's probably a way to do this more efficient...
 void Cam::convert_depth_background_to_world() {
-    depth_background_mm = cv::Mat::zeros(depth_background.rows,depth_background.cols,CV_32FC3);
+    depth_background_3mm = cv::Mat::zeros(depth_background.rows,depth_background.cols,CV_32FC3);
+    depth_background_mm = cv::Mat::zeros(depth_background.rows,depth_background.cols,CV_32FC1);
     for (int i = 0; i < depth_background.cols;i++)
         for (int j = 0; j < depth_background.rows;j++) {
             uint16_t back = depth_background.at<uint16_t>(j,i);
@@ -379,7 +381,8 @@ void Cam::convert_depth_background_to_world() {
             float p[3];
             rs2_deproject_pixel_to_point(p, intr, pixel, backf);
             cv::Vec3f pixelColor(p[0],p[1],p[2]);
-            depth_background_mm.at<cv::Vec3f>(j,i) = pixelColor;
+            depth_background_3mm.at<cv::Vec3f>(j,i) = pixelColor;
+            depth_background_mm.at<float>(j,i) = sqrtf(powf(p[0],2)+powf(p[1],2)+powf(p[2],2));
         }
 }
 
@@ -736,7 +739,7 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
         deserialize_calib(calib_log_fn);
     else
         deserialize_calib(calib_template_fn);
-
+    convert_depth_background_to_world();
     swc.Start();
 }
 

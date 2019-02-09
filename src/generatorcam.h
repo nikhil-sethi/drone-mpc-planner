@@ -32,7 +32,7 @@ public:
     void reset () {}
 
     cv::Mat Qf;
-    cv::Mat depth_background;
+    cv::Mat depth_background_mm;
 
 private:
     int nFrames_stereo,_frame_number,frame_id_rgb,frame_id_stereo;

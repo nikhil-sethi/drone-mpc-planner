@@ -7,22 +7,13 @@
 using namespace cv;
 using namespace std;
 
-
-#if CAMMODE == CAMMODE_GENERATOR
-void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, cv::Mat new_depth_background){
-#else
-void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, cv::Mat new_depth_background, float new_depth_scale, rs2_intrinsics *new_intr){
-#endif
+void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, cv::Mat new_depth_background_mm){
     Qf = new_Qf;
-#if CAMMODE == CAMMODE_REALSENSE
-    depth_scale = new_depth_scale;
-    intr = new_intr;
-#endif
     frameL = new_frameL.clone();
     frameR = new_frameR.clone();
     frameL_prev = frameL;
     frameR_prev = frameR;
-    depth_background = new_depth_background;
+    depth_background_mm = new_depth_background_mm;
 
     camera_angle = new_camera_angle;
 

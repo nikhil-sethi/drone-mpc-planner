@@ -297,14 +297,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude, float drone
                 cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
                 output = world_coordinates[0];
 
-                uint16_t back = _visdat->depth_background.at<uint16_t>(match->y()*IMSCALEF,match->x()*IMSCALEF);
-                float backf = static_cast<float>(back) * _visdat->depth_scale;
-                float pixel[2];
-                pixel[0] = match->x()*IMSCALEF;
-                pixel[1] = match->y()*IMSCALEF;
-                float res[3]; // From point (in 3D)
-                _visdat->deproject(pixel,backf,res);
-                float dist_back = sqrtf(powf(res[0],2) + powf(res[1],2) +powf(res[2],2));
+                float dist_back = _visdat->depth_background_mm.at<float>(match->y()*IMSCALEF,match->x()*IMSCALEF);
 
                 float dist_meas = sqrtf(powf(output.x,2) + powf(output.y,2) +powf(output.z,2));
                 if (dist_meas > dist_back*(static_cast<float>(settings.background_subtract_zone_factor)/100.f))

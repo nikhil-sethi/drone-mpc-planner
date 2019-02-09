@@ -24,8 +24,8 @@ bool GeneratorCam::init () {
     insect.x = 245;
     insect.y = 0;
 
-    depth_background = cv::Mat::ones(IMG_H,IMG_W,CV_16UC1);
-    depth_background = 10000; //  disable the depth background map
+    depth_background_mm = cv::Mat::zeros(IMG_H,IMG_W,CV_32FC1);
+    depth_background_mm = 10000; //  disable the depth background map
 
     gen_stopw.Start();
     return false;
