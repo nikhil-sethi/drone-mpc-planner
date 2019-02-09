@@ -309,13 +309,12 @@ void ItemTracker::track(float time, std::vector<track_item> exclude,std::vector<
                 disparity_in_range = false;
             } else {
                 //calculate everything for the itemcontroller:
-                std::vector<Point3f> camera_coordinates, world_coordinates;
-                camera_coordinates.push_back(Point3f(match->x()*IMSCALEF,match->y()*IMSCALEF,-disparity));
+                std::vector<Point3d> camera_coordinates, world_coordinates;
+                camera_coordinates.push_back(Point3d(match->x()*IMSCALEF,match->y()*IMSCALEF,disparity));
                 cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
                 output = world_coordinates[0];
 
                 float dist_back = _visdat->depth_background_mm.at<float>(match->y()*IMSCALEF,match->x()*IMSCALEF);
-
                 float dist_meas = sqrtf(powf(output.x,2) + powf(output.y,2) +powf(output.z,2));
                 if (dist_meas > dist_back*(static_cast<float>(settings.background_subtract_zone_factor)/100.f))
                     background_check_ok = false;
