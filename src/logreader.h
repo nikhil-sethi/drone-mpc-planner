@@ -27,7 +27,8 @@ public:
         int joyRoll;
         int joyPitch;
         int joyYaw;
-        int joySwitch;
+        int joyArmSwitch;
+        int joyModeSwitch;
 
         float ins_im_x;
         float ins_im_y;

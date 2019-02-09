@@ -84,7 +84,8 @@ LogReader::Log_Entry LogReader::createLogEntry(std::string line) {
     entry.joyRoll = std::stoi(linedata.at(headmap["joyRoll"]));
     entry.joyPitch = std::stoi(linedata.at(headmap["joyPitch"]));
     entry.joyYaw = std::stoi(linedata.at(headmap["joyYaw"]));
-    entry.joySwitch = std::stoi(linedata.at(headmap["joySwitch"]));
+    entry.joyArmSwitch = std::stoi(linedata.at(headmap["joyArmSwitch"]));
+    entry.joyModeSwitch = std::stoi(linedata.at(headmap["joyModeSwitch"]));
 
     entry.ins_pos_x = std::stof(linedata.at(headmap["posX_insect"]));
     entry.ins_pos_y = std::stof(linedata.at(headmap["posY_insect"]));

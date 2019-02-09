@@ -127,7 +127,10 @@ private:
     controlParameters params;
     flight_modes _flight_mode = fm_disarmed; // only set externally (except for disarming), used internally
     joy_mode_switch_modes _joy_mode_switch = jmsm_none;
+    bool _joy_arm_switch = true;
     joy_states _joy_state = js_none;
+    int joyDial = 0;
+    float scaledjoydial = 0;
 
     MultiModule * _rc;
 
@@ -138,9 +141,9 @@ private:
     void process_joystick();
 
 public:
-//    flight_modes Flight_mode() {
-//        return _flight_mode;
-//    }
+    //    flight_modes Flight_mode() {
+    //        return _flight_mode;
+    //    }
     void set_flight_mode(flight_modes f){
         _flight_mode = f;
     }
@@ -154,10 +157,22 @@ public:
         return flight_mode_names[_flight_mode];
     }
 
-    bool _joy_arm_switch = true; // todo: make private
+    bool joy_arm_swtich(){
+        return _joy_arm_switch;
+    }
+    bool joy_mode_swtich(){
+        return _joy_mode_switch;
+    }
+    void insert_log(int joy_roll, int joy_pitch, int joy_yaw, int joy_throttle, int joyArmSwitch, int joyModeSwitch){
+        joyRoll = joy_roll;
+        joyPitch= joy_pitch;
+        joyYaw = joy_yaw;
+        joyThrottle = joy_throttle;
+        _joy_arm_switch = joyArmSwitch;
+        _joy_mode_switch = static_cast<joy_mode_switch_modes>(joyModeSwitch);
+    }
 
-    int joyDial = 0;
-    float scaledjoydial = 0;
+
     int joyThrottle = JOY_BOUND_MIN;
     int joyRoll = JOY_MIDDLE;
     int joyPitch = JOY_MIDDLE;
@@ -170,7 +185,6 @@ public:
 
     float hoverthrottle = INITIAL_HOVER_THROTTLE;
     bool hoverthrottleInitialized = false;
-
 
     bool manual_override_take_off_now;
     bool manual_override_land_now;

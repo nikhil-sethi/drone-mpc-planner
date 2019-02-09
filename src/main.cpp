@@ -221,19 +221,17 @@ void process_frame(Stereo_Frame_Data data) {
         else
             itrkr.track(data.time,dtrkr.predicted_pathL);
     //        std::cout << "Found drone location:      [" << dtrkr.find_result.best_image_locationL.pt.x << "," << dtrkr.find_result.best_image_locationL.pt.y << "]" << std::endl;
+    if (fromfile==log_mode_full) {
+        dctrl.insert_log(logreader.current_item.joyRoll, logreader.current_item.joyPitch, logreader.current_item.joyYaw, logreader.current_item.joyThrottle,logreader.current_item.joyArmSwitch,logreader.current_item.joyModeSwitch);
+    }
     dnav.update(data.time);
+
     dctrl.control(dtrkr.Last_track_data(),dnav.setpoint_world,dnav.setspeed_world);
 
     logger << std::endl;
 
 #ifdef HASSCREEN
-    if (fromfile==log_mode_full) {
-        dctrl.joyRoll = logreader.current_item.joyRoll;
-        dctrl.joyPitch = logreader.current_item.joyPitch;
-        dctrl.joyYaw = logreader.current_item.joyYaw;
-        dctrl.joyThrottle = logreader.current_item.joyThrottle;
-        dctrl._joy_arm_switch = logreader.current_item.joySwitch;
-    }
+
 
     visualizer.addPlotSample();
     visualizer.update_tracker_data(visdat.frameL,dnav.setpoint,data.time,&dtrkr,&itrkr);
@@ -392,7 +390,7 @@ int init(int argc, char **argv) {
     dctrl.init(&logger,fromfile==log_mode_full,&rc);
 
     // Ensure that joystick was found and that we can use it
-    if (!dctrl.joystick_ready() && fromfile!=log_mode_full && JOYSTICK_TYPE != RC_DISABLED) {
+    if (!dctrl.joystick_ready() && fromfile!=log_mode_full && JOYSTICK_TYPE != RC_NONE) {
         std::cout << "joystick failed." << std::endl;
         close();
         throw my_exit(1);

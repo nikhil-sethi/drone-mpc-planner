@@ -12,7 +12,7 @@
 #define VIDEOMODE_AVI_OPENCV 3
 #define VIDEOMODE_BAG 4
 
-#define RC_DISABLED 0
+#define RC_NONE 0
 #define RC_DEVO 1
 #define RC_USB_HOBBYKING 2
 #define RC_PLAYSTATION 3
