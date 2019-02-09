@@ -12,7 +12,14 @@ static const char* joy_states_names[] = { "js_manual",
                                           "js_hunt",
                                           "js_disarmed",
                                           "js_none"
-                                                  };
+                                        };
+static const char* flight_mode_names[] = { "fm_disarmed",
+                                          "fm_inactive",
+                                          "fm_manual",
+                                          "fm_taking_off",
+                                          "fm_flying",
+                                          "fm_landing"
+                                        };
 /*
  * This class will control a micro drone via a Serial link
  *
@@ -142,6 +149,9 @@ public:
     }
     std::string Joy_State_str() {
         return joy_states_names[_joy_state];
+    }
+    std::string Flight_Mode() {
+        return flight_mode_names[_flight_mode];
     }
 
     bool _joy_arm_switch = true; // todo: make private
