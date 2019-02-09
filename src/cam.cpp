@@ -713,7 +713,7 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
     std::cout << "Initializing cam from .bag" << std::endl;
     fromfile=true;
 
-    if (!checkFileExist(depth_map_fn)) { //FIXME: use full path to folder (involves changing to using the folder name instead of the bag file name)
+    if (!checkFileExist(depth_map_fn)) { //FIXME: use full path to folder
         //todo: make gui warning of this:
         std::cout << "Warning: could not find " << depth_map_fn << std::endl;
         depth_background = cv::Mat::ones(IMG_H,IMG_W,CV_16UC1);
