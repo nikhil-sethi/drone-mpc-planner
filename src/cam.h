@@ -120,6 +120,7 @@ private:
     int _frame_number;
     float _frame_time = 0;
     float _frame_time_start = -1;
+    float funky_RS_frame_time_fixer_frame_count = 0;
 
     float _measured_exposure = 15400; // measured from sense_light_level
     int _measured_gain = 0;

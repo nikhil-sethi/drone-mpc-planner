@@ -46,7 +46,13 @@ void Cam::update_playback(void) {
         lock_frame_data.unlock();
 
         uint lowest_complete_id=0;
+        uint highest_id = 0;
+        float frame_time_higest_id = 0;
         for (uint i = 0 ; i <playback_bufferL_cleaned.size();i++) {
+            if (playback_bufferL_cleaned.at(i).id > highest_id){
+                highest_id = playback_bufferL_cleaned.at(i).id ;
+                frame_time_higest_id = playback_bufferL_cleaned.at(i).time;
+            }
             for (uint j = 0 ; j <playback_bufferR_cleaned.size();j++) {
                 if (playback_bufferL_cleaned.at(i).id == playback_bufferR_cleaned.at(j).id ) {
                     lowest_complete_id = playback_bufferL_cleaned.at(i).id;
@@ -58,7 +64,14 @@ void Cam::update_playback(void) {
         }
 
         if (lowest_complete_id > requested_id_in){
+            //sometimes not all frames are saved, causing a frame jump
             std::cout << "Warning, frame jump detected. " << requested_id_in << " -> " << lowest_complete_id  << std::endl;
+            requested_id_in = lowest_complete_id;
+        }
+        if (frame_time_higest_id < _frame_time){
+            //for some reason the frame time and id counter sometimes resets in the bag files...
+            std::cout << "Warning, frame reset detected. " << _frame_time << " -> " << frame_time_higest_id  << std::endl;
+            funky_RS_frame_time_fixer_frame_count += requested_id_in;
             requested_id_in = lowest_complete_id;
         }
 
@@ -79,12 +92,18 @@ void Cam::update_playback(void) {
             }
 
         if (_paused && playback_bufferR.size() < 10 ){ // 3 to start buffering 3 frames before the buffer runs empty
-            incremented_playback_frametime = (requested_id_in-2)*(1.f/VIDEOFPS) - (1.f/VIDEOFPS)*0.1f;  //requested_id_in-2 -> -2 seems to be necessary because the RS api skips a frame of either the left or right camera after resuming
+            incremented_playback_frametime = (requested_id_in+funky_RS_frame_time_fixer_frame_count-2)*(1.f/VIDEOFPS) - (1.f/VIDEOFPS)*0.1f;  //requested_id_in-2 -> -2 seems to be necessary because the RS api skips a frame of either the left or right camera after resuming
             if (incremented_playback_frametime < 0)
                 incremented_playback_frametime = 0;
-            //            std::cout << "Resuming RS: " << incremented_playback_frametime << std::endl;
-            seek(incremented_playback_frametime);
-            resume();
+//            std::cout << "Resuming RS: " << incremented_playback_frametime << std::endl;
+            float duration = static_cast<float>(static_cast<rs2::playback>(dev).get_duration().count()) / 1e9f;
+
+            if (duration > incremented_playback_frametime){
+                seek(incremented_playback_frametime);
+                resume();
+            } else {
+                throw my_exit(0);
+            }
         }
 
         if (foundL && foundR){
@@ -125,18 +144,17 @@ void Cam::update_playback(void) {
     frameR = fR.frame.clone();
     _frame_number = fL.id;
     _frame_time = fL.time;
-
-    //std::cout << "-------------frame id: " << _frame_number << " seek time: " << incremented_playback_frametime << std::endl;
+//    std::cout << "-------------frame id: " << _frame_number << " seek time: " << incremented_playback_frametime << std::endl;
 
 }
 
 void Cam::rs_callback_playback(rs2::frame f) {
 
     lock_frame_data.lock();
-    //    if (f.get_profile().stream_index() == 1 )
-    //        std::cout << "Received id "         << f.get_frame_number() << ":" << to_string_with_precision((static_cast<float>(f.get_timestamp())-_frame_time_start)/1e3f,2) << "@" << f.get_profile().stream_index() << "         Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << to_string_with_precision(incremented_playback_frametime,2) << " bufsize: " << playback_bufferL.size() << std::endl;
-    //    if (f.get_profile().stream_index() == 2 )
-    //        std::cout << "Received id         " << f.get_frame_number() << ":" << to_string_with_precision((static_cast<float>(f.get_timestamp())-_frame_time_start)/1e3f,2) << "@" << f.get_profile().stream_index() << " Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << to_string_with_precision(incremented_playback_frametime,2) << " bufsize: " << playback_bufferL.size() << std::endl;
+//    if (f.get_profile().stream_index() == 1 )
+//        std::cout << "Received id "         << f.get_frame_number() << ":" << to_string_with_precision((static_cast<float>(f.get_timestamp())-_frame_time_start)/1e3f,2) << "@" << f.get_profile().stream_index() << "         Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << to_string_with_precision(incremented_playback_frametime,2) << " bufsize: " << playback_bufferL.size() << std::endl;
+//    if (f.get_profile().stream_index() == 2 )
+//        std::cout << "Received id         " << f.get_frame_number() << ":" << to_string_with_precision((static_cast<float>(f.get_timestamp())-_frame_time_start)/1e3f,2) << "@" << f.get_profile().stream_index() << " Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << to_string_with_precision(incremented_playback_frametime,2) << " bufsize: " << playback_bufferL.size() << std::endl;
 
     if (f.get_profile().stream_index() == 1 && f.get_frame_number() >= requested_id_in && playback_bufferL.size() < 100) {
         frame_data fL;
