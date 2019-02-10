@@ -27,21 +27,17 @@ private:
 
     struct BaseVisionSettings{
 
-        int uncertainty_multiplier = 2;
-        int uncertainty_power = 6;
-        int uncertainty_background = 0.3*255.0;
         int background_calib_time = 5;
         int motion_update_iterator_max = 1;
         float brightness_event_tresh = 5;
         float brightness_check_period = 1;
 
-        float version = 1.2f;
+        float version = 1.3f;
 
         template <class Archive>
         void serialize( Archive & ar )
         {
-            ar(version, uncertainty_power,uncertainty_multiplier,
-               uncertainty_background,background_calib_time,motion_update_iterator_max,
+            ar(version, background_calib_time,motion_update_iterator_max,
                brightness_event_tresh,brightness_check_period);
         }
     };
@@ -70,7 +66,6 @@ private:
 public:
     cv::Mat frameL,frameR;
     cv::Mat frameL_prev,frameR_prev;
-    cv::Mat uncertainty_map;
     cv::Mat max_uncertainty_map; // IMSCALEF smaller than original, CV8UC1 max motion background map
     cv::Mat diffL,diffR,diffL_small,diffR_small;
 
@@ -89,7 +84,6 @@ public:
         archive( settings );
     }
     void update(cv::Mat new_frameL, cv::Mat new_frameR, float time, int new_frame_id);
-    float uncertainty_background() {return settings.uncertainty_background / 255.0f;}
     void reset_motion_integration() {
         _reset_motion_integration = true;
     }

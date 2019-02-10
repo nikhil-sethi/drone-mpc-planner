@@ -21,10 +21,10 @@ void VisionData::init(bool fromfile, std::string log_in_dir,cv::Mat new_Qf, cv::
         motion_noise_map_fn = log_in_dir + motion_noise_map_fn;
     else
         motion_noise_map_fn = "./logging/" + motion_noise_map_fn;
-    max_uncertainty_map = imread(motion_noise_map_fn);
+    max_uncertainty_map = imread(motion_noise_map_fn,false);
 
-    if (getSecondsSinceFileCreation(motion_noise_map_fn) < 60*60) {
-//        _background_calibrated = true;
+    if (getSecondsSinceFileCreation(motion_noise_map_fn) < 60*60 || fromfile) {
+        _background_calibrated = true;
         //todo: remove the old uncertainty map stuff, I don't think it works any more anyway
     }
 
@@ -109,7 +109,7 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
     diffR.convertTo(diffR, CV_8UC1);
     cv::resize(diffR,diffR_small,smallsize);
 
-    showRowImage({diffL*10,diffR*10},"motion",CV_8UC1,1.f);
+//    showRowImage({diffL*10,diffR*10},"motion",CV_8UC1,1.f);
 
     if (!_background_calibrated )
         collect_no_drone_frames(diffL_small); // calibration of background uncertainty map
@@ -142,12 +142,6 @@ void VisionData::collect_no_drone_frames(cv::Mat diff) {
         max_uncertainty_map = diff.clone();
     cv::Mat mask = diff > max_uncertainty_map;
     diff.copyTo(max_uncertainty_map,mask);
-
-    uncertainty_map = 255 - max_uncertainty_map * settings.uncertainty_multiplier;
-    uncertainty_map.convertTo(uncertainty_map ,CV_32F);
-    uncertainty_map /=255.0f;
-    cv::pow(uncertainty_map,settings.uncertainty_power,uncertainty_map);
-
 }
 
 //Keep track of the average brightness, and reset the motion integration frame when it changes to much. (e.g. when someone turns on the lights or something)
