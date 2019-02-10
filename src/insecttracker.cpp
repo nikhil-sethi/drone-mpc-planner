@@ -112,7 +112,7 @@ void InsectTracker::track(float time, std::vector<track_item> exclude,std::vecto
 
 
 /* Takes the calibrated uncertainty map, and augments it with a highlight around p */
-cv::Mat InsectTracker::get_approx_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size) {
+cv::Mat InsectTracker::get_approx_cutout_filtered(cv::Point p, cv::Mat diffL_small, cv::Point size) {
 
     cv::Mat blurred_circle = get_probability_cloud(size);
 
@@ -120,23 +120,22 @@ cv::Mat InsectTracker::get_approx_cutout_filtered(cv::Point p, cv::Mat diffL, cv
     if (x < 0)
         x = 0;
     int width = size.x;
-    if (x+width > _visdat->uncertainty_map.cols)
-        x -= (x+width) - _visdat->uncertainty_map.cols;
+    if (x+width > diffL_small.cols)
+        x -= (x+width) - diffL_small.cols;
 
     int y = p.y-size.y/2;
     if (y < 0)
         y = 0;
     int height = size.y;
-    if (y+height>_visdat->uncertainty_map.rows)
-        y -= (y+height) - _visdat->uncertainty_map.rows;
+    if (y+height>diffL_small.rows)
+        y -= (y+height) - diffL_small.rows;
 
     cv::Rect roi(x,y,width,height);
     find_result.roi_offset = roi;
 
-    _bkg = _visdat->uncertainty_map(roi);
-    diffL(roi).convertTo(_dif, CV_32F);
+    diffL_small(roi).convertTo(_dif, CV_32F);
     cv::Mat res;
-    res = blurred_circle.mul(_dif).mul(_bkg);
+    res = blurred_circle.mul(_dif);
     res.convertTo(res, CV_8UC1);
 
     return res;

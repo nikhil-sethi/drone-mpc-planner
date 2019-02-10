@@ -269,9 +269,8 @@ cv::Mat Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Point setpoint, std:
 
 void Visualizer::draw_segment_viz(void){
     std::vector<cv::Mat> ims;
-    if (cir8.cols > 0 && bkg8.cols > 0 && dif8.cols > 0 && approx.cols > 0 && tresh.cols > 0 ){
+    if (cir8.cols > 0 && dif8.cols > 0 && approx.cols > 0 && tresh.cols > 0 ){
         ims.push_back(cir8);
-        ims.push_back(bkg8);
         ims.push_back(dif8);
         ims.push_back(approx);
         ims.push_back(tresh);
@@ -374,10 +373,8 @@ void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3d setpoint, float
         tracker_viz_base_data.exclude_max_distance = dtrk->settings.exclude_max_distance;
 
         cir8 = _dtrkr->_cir*255;
-        bkg8 = _dtrkr->_bkg*255;
         dif8 = _dtrkr->_dif*10;
         cir8.convertTo(cir8, CV_8UC1);
-        bkg8.convertTo(bkg8, CV_8UC1);
         dif8.convertTo(dif8, CV_8UC1);
         approx = _dtrkr->_approx.clone();
         tresh = _dtrkr->_treshL.clone();
@@ -452,7 +449,7 @@ void Visualizer::paint() {
         draw_segment_viz();
         new_tracker_viz_data_requested = true;
     }
-    if (request_plotframe_paint) {
+    if (request_plotframe_paint && plotframe.rows > 0) {
         request_plotframe_paint = false;
         imshow("Plots",plotframe);
     }
@@ -473,8 +470,10 @@ void Visualizer::workerThread(void) {
         }
 #ifdef DRAWTRACKING
         lock_frame_data.lock();
-        draw_tracker_viz();
-        request_trackframe_paint=true;
+        if (tracker_viz_base_data.frameL.rows>0) {
+            draw_tracker_viz();
+            request_trackframe_paint=true;
+        }
         lock_frame_data.unlock();
 #endif
 

@@ -115,9 +115,9 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
 
     // Altitude Control - Y
     posErrY = data.sposY - setpoint.y;              // position error
-    vely_sp = posErrY*params.throttle_Pos/1000.f;   // desired velocity
+    vely_sp = posErrY*params.throttle_Pos/1000.f;   // (inversed) desired velocity
     velErrY = data.svelY + vely_sp + setpoint_v.y;  // velocity error
-    accy_sp = velErrY*params.throttle_Vel/100;      // desired acceleration
+    accy_sp = velErrY*params.throttle_Vel/100;      // (inversed) desired acceleration
     accErrY = data.saccY + accy_sp;                 // acceleration error
 
     // Pitch Control - Z
@@ -183,7 +183,7 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
         else // closer then 2 meters, do nothing:
             depth_gain = 1;
 
-        autoPitch = accErrZ * params.pitch_Acc / depth_gain;
+        autoPitch = accErrZ * static_cast<float>(params.pitch_Acc) / depth_gain;
 
         autoThrottle += abs(autoRoll*throttleBankFactor)+abs(autoPitch*throttleBankFactor);
 

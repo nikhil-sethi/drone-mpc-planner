@@ -310,7 +310,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude,std::vector<
             } else {
                 //calculate everything for the itemcontroller:
                 std::vector<Point3d> camera_coordinates, world_coordinates;
-                camera_coordinates.push_back(Point3d(match->x()*IMSCALEF,match->y()*IMSCALEF,disparity));
+                camera_coordinates.push_back(Point3d(match->x()*IMSCALEF,match->y()*IMSCALEF,-disparity));
                 cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
                 output = world_coordinates[0];
 
@@ -661,8 +661,6 @@ cv::Mat ItemTracker::show_uncertainty_map_in_image(cv::Point pd4, cv::Mat res) {
     } else if (y1 + blurred_circle_big.rows >= res.rows)
         roi_circle.height = roi_circle.height - abs(y1 + blurred_circle_big.rows - res.rows);
 
-    cv::Mat gray = cv::Mat::zeros(res.rows,res.cols,CV_32F);
-    gray = static_cast<double>(_visdat->uncertainty_background());
     cv::Mat a = blurred_circle_big(roi_circle);
 
     x1 = p.x-blurred_circle_big.cols/2+roi_circle.x;
@@ -671,10 +669,8 @@ cv::Mat ItemTracker::show_uncertainty_map_in_image(cv::Point pd4, cv::Mat res) {
     int y2 = a.rows;
 
     cv::Rect roi(x1,y1,x2,y2);
-    a.copyTo(gray(roi));
     cvtColor(res,res,CV_BGR2GRAY);
     res.convertTo(res,CV_32F);
-    res = gray.mul(res);
     res.convertTo(res,CV_8UC1);
     cvtColor(res,res,CV_GRAY2BGR);
 

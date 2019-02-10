@@ -36,21 +36,14 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
         }
     }
 
-    //(*_logger) << "imLx; imLy; disparity;";
+    //Waypoints are relative to the camera position. The camera is 0,0,0.
+    //X goes from negative left, to positive right.
+    //Everything below the camera is negative Y, heigher than the camera is positive
+    //Farther away from the camera is negative Z, positive Z should be impossible because the camera can't see that.
 
-    //TODO: update description
-    //waypoints work as follows:
-    //(cv::Point3i(x,y,z),
-    // x = 1500 means the middle of the camera, x = 0 means 1.5m right!!! of the middle. (counter intuitive)
-    // y = 1500 is on the same height as the camera position itself, y = 0 means 1.5m below the cam position
-    //z = 0 means distance from the camera is zero. z = 1500 means 1.5m from the camera
-
-
-    setpoints.push_back(waypoint(cv::Point3f(0,-1.5f,-3.5f),30)); // this is overwritten by position trackbars!!!
-
-
+    //The flight plan will be repeated indefinetely, unless there is a landing waypoint somewhere in the list.
+    setpoints.push_back(waypoint(cv::Point3f(0,-1.5f,-1.5f),30));
     setpoints.push_back(landing_waypoint());
-
 
 #ifdef TUNING
     namedWindow("Nav", WINDOW_NORMAL);
@@ -232,13 +225,13 @@ void DroneNavigation::update(float time) {
                 _dctrl->recalibrateHover();
                 _calibrating_hover = false;
                 _navigation_status = ns_goto_landing_waypoint;
-            } else if (wpid < setpoints.size()-1) { // next waypoint in flight plan
+            } else if (wpid < setpoints.size()) { // next waypoint in flight plan
                 wpid++;
                 alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/window-slide.ogg &");
                 if (wpid == 1)
                     _dctrl->recalibrateHover();
                 _navigation_status = ns_set_waypoint;
-            } else if (wpid == setpoints.size()-1){
+            } else if (wpid == setpoints.size()){
                 wpid = 0; // another round
                 alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/window-slide.ogg &");
                 _navigation_status = ns_set_waypoint;
@@ -303,7 +296,7 @@ void DroneNavigation::update(float time) {
 }
 
 void DroneNavigation::set_next_waypoint(waypoint wp) {
-    current_setpoint = &wp;
+    current_setpoint = new waypoint(wp);
     if (wp.mode == fm_landing || wp.mode == fm_hover_calib || wp.mode == fm_takeoff) {
         cv::Point3f p = _dtrk->Drone_Startup_Location();
         setpoint_world =  p + wp.xyz;

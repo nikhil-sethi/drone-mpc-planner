@@ -211,7 +211,7 @@ protected:
 public:
 
     TrackerSettings settings;
-    cv::Mat _cir,_bkg,_dif,_treshL,_approx;
+    cv::Mat _cir,_dif,_treshL,_approx;
     Find_result find_result;
     std::vector<track_item> pathL;
     std::vector<track_item> predicted_pathL;

@@ -191,7 +191,7 @@ cv::Mat DroneTracker::get_probability_cloud(cv::Point size) {
 
 
 /* Takes the calibrated uncertainty map, and augments it with a highlight around p */
-cv::Mat DroneTracker::get_approx_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size) {
+cv::Mat DroneTracker::get_approx_cutout_filtered(cv::Point p, cv::Mat diffL_small, cv::Point size) {
 
     if (_enable_roi) {
         //calc roi:
@@ -200,15 +200,15 @@ cv::Mat DroneTracker::get_approx_cutout_filtered(cv::Point p, cv::Mat diffL, cv:
         if (x1 < 0) {
             roi_circle.x = abs(x1);
             roi_circle.width-=roi_circle.x;
-        } else if (x1 + size.x >= diffL.cols)
-            roi_circle.width = roi_circle.width  - abs(x1 + size.x - diffL.cols);
+        } else if (x1 + size.x >= diffL_small.cols)
+            roi_circle.width = roi_circle.width  - abs(x1 + size.x - diffL_small.cols);
 
         int y1 = p.y-size.y/2;
         if (y1 < 0) {
             roi_circle.y = abs(y1);
             roi_circle.height-=roi_circle.y;
-        } else if (y1 + size.y >= diffL.rows)
-            roi_circle.height = roi_circle.height - abs(y1 + size.y - diffL.rows);
+        } else if (y1 + size.y >= diffL_small.rows)
+            roi_circle.height = roi_circle.height - abs(y1 + size.y - diffL_small.rows);
 
         cv::Mat blurred_circle = get_probability_cloud(size);
         cv::Mat cir = blurred_circle(roi_circle);
@@ -222,16 +222,15 @@ cv::Mat DroneTracker::get_approx_cutout_filtered(cv::Point p, cv::Mat diffL, cv:
         cv::Rect roi(x1,y1,x2,y2);
         find_result.roi_offset = roi;
 
-        _bkg = _visdat->uncertainty_map(roi);
-        diffL(roi).convertTo(_dif, CV_32F);
+        diffL_small(roi).convertTo(_dif, CV_32F);
         cv::Mat res;
-        res = cir.mul(_dif).mul(_bkg);
+        res = cir.mul(_dif);
         res.convertTo(res, CV_8UC1);
 
         return res;
     } else {
-        find_result.roi_offset = cv::Rect(0,0,diffL.cols,diffL.rows);
-        return diffL;
+        find_result.roi_offset = cv::Rect(0,0,diffL_small.cols,diffL_small.rows);
+        return diffL_small;
     }
 }
 

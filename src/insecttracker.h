@@ -14,7 +14,7 @@ private:
     uint drone_still_active;
 protected:
     void init_settings();
-    cv::Mat get_approx_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size);
+    cv::Mat get_approx_cutout_filtered(cv::Point p, cv::Mat diffL_small, cv::Point size);
 
 public:
     void init(std::ofstream *logger, VisionData *_visdat);

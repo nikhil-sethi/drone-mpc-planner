@@ -126,7 +126,7 @@ private:
     float land_incr = 0;
     uint wpid = 0;
     std::vector<waypoint> setpoints;
-    waypoint * current_setpoint;
+    waypoint * current_setpoint = new landing_waypoint();
 
     int autoLandThrottleDecrease = 0;
 
