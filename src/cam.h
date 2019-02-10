@@ -141,6 +141,8 @@ private:
     std::string depth_map_fn = "depth_filtered.png";
     std::string depth_unfiltered_map_fn = "depth.png";
     std::string disparity_map_fn = "disparity.png";
+    std::string brightness_map_fn = "brightness.png";
+    std::string bag_fn = "test.bag";
 
 
     void pause();

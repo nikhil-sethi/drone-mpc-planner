@@ -2,6 +2,8 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <sys/stat.h>
+#include <chrono>
 
 cv::Point2f transformPixelToEarth(int x, int y, int centerX, int centerY, float depth, float pix2degx,float pix2degy) {
     //calculate pixel to angle:
@@ -226,4 +228,20 @@ std::string to_string_with_precision(float f, const int n)
 
     out << std::fixed << std::setprecision(n) << f;
     return out.str();
+}
+
+int getSecondsSinceFileCreation(std::string filePath)
+{
+    if (!checkFileExist(filePath))
+        return std::numeric_limits<int>::max();
+    struct stat attrib;
+    stat(filePath.c_str(), &attrib);
+//    auto t1 = localtime(&(attrib.st_ctime));
+//    std::cout << std::asctime( localtime(&(attrib.st_ctime)));
+    auto curtime=  std::chrono::system_clock::now();
+    auto in_time_t = std::chrono::system_clock::to_time_t(curtime);
+//    std::cout << std::asctime(std::localtime(&in_time_t)) << std::endl;
+//    auto now = std::localtime(&in_time_t);
+    double diff = difftime(in_time_t,attrib.st_ctime);
+    return static_cast<int>(diff);
 }

@@ -265,10 +265,14 @@ void Cam::init() {
 
     std::cout << "Initializing cam" << std::endl;
 
-    calib_log_fn = "./logging" + calib_log_fn;
-    depth_map_fn = "./logging" + depth_map_fn;
-    depth_unfiltered_map_fn = "./logging" + depth_unfiltered_map_fn;
-    disparity_map_fn = "./logging" + disparity_map_fn;
+    calib_log_fn = "./logging/" + calib_log_fn;
+    depth_map_fn = "./logging/" + depth_map_fn;
+    depth_unfiltered_map_fn = "./logging/" + depth_unfiltered_map_fn;
+    disparity_map_fn = "./logging/" + disparity_map_fn;
+    bag_fn = "./logging/" + bag_fn;
+    brightness_map_fn = "./logging/" + brightness_map_fn;
+
+
 
     rs2::stream_profile infared1,infared2;
     rs2::context ctx; // The context represents the current platform with respect to connected devices
@@ -285,7 +289,7 @@ void Cam::init() {
         //record
         mkdir("./logging", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 #if VIDEORAWLR == VIDEOMODE_BAG
-        dev = rs2::recorder("./logging/test.bag",dev);
+        dev = rs2::recorder(bag_fn,dev);
 #endif
 
         std::cout << "Found the following device:\n" << std::endl;
@@ -312,8 +316,19 @@ void Cam::init() {
         deserialize_calib(calib_log_fn);
     else
         deserialize_calib(calib_template_fn);
-    calib_pose();
-    sense_light_level();
+
+    bool reloaded_calib;
+    if (getSecondsSinceFileCreation(calib_log_fn) < 60*60 &&
+            checkFileExist(depth_map_fn) &&
+            checkFileExist(calib_log_fn)) {
+        std::cout << "Calibration files recent, reusing..."   << std::endl;
+        depth_background = imread(depth_map_fn,CV_LOAD_IMAGE_ANYDEPTH);
+        reloaded_calib= true;
+    } else{
+        calib_pose();
+        sense_light_level();
+        reloaded_calib = false;
+    }
 
     std::vector<rs2::sensor> sensors = dev.query_sensors();
     depth_sensor = sensors[0]; // 0 = depth module
@@ -382,7 +397,8 @@ void Cam::init() {
 #endif
 
     set_calibration(infared1,infared2);
-    serialize_calib();
+    if (!reloaded_calib)
+        serialize_calib();
     convert_depth_background_to_world();
     swc.Start();
 }
@@ -508,8 +524,8 @@ void Cam::sense_light_level(){
     }
     _measured_gain = rs_dev.get_option(RS2_OPTION_GAIN);
 
+    imwrite(brightness_map_fn,frameLt);
 
-    imwrite("./logging/brightness.png",frameLt);
     cam.stop();
 }
 
@@ -715,12 +731,15 @@ cv::Point3f Cam::rotate_point(cv::Point3f point){
 void Cam::init(int argc __attribute__((unused)), char **argv) {
 
     std::string datadir = argv[1];
-    std::cout << "Initializing cam from " << datadir << "test.bag" << std::endl;
+
     fromfile=true;
     calib_log_fn = datadir + '/' + calib_log_fn;
     depth_map_fn = datadir + '/' + depth_map_fn;
     depth_unfiltered_map_fn = datadir + '/' + depth_unfiltered_map_fn;
     disparity_map_fn = datadir + '/' + disparity_map_fn;
+    brightness_map_fn = datadir + '/' + brightness_map_fn;
+    bag_fn = datadir + '/' + bag_fn;
+    std::cout << "Initializing cam from " << bag_fn << std::endl;
 
     if (!checkFileExist(depth_map_fn)) { //FIXME: use full path to folder
         //todo: make gui warning of this:
@@ -731,13 +750,13 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
         depth_background = imread(depth_map_fn,CV_LOAD_IMAGE_ANYDEPTH);
     }
 
-    if (!checkFileExist(datadir + "/test.bag")) {
-        std::cout << "Could not find " << datadir + "/test.bag" << std::endl;
+    if (!checkFileExist(bag_fn)) {
+        std::cout << "Could not find " << bag_fn << std::endl;
         throw my_exit(1);
     }
     rs2::stream_profile infared1,infared2;
     rs2::context ctx; // The context represents the current platform with respect to connected devices
-    dev = ctx.load_device(datadir + "/test.bag");
+    dev = ctx.load_device(bag_fn);
 
     static_cast<rs2::playback>(dev).set_real_time(false);
 

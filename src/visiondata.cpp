@@ -7,7 +7,7 @@
 using namespace cv;
 using namespace std;
 
-void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, cv::Mat new_depth_background_mm){
+void VisionData::init(bool fromfile, std::string log_in_dir,cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, cv::Mat new_depth_background_mm){
     Qf = new_Qf;
     frameL = new_frameL.clone();
     frameR = new_frameR.clone();
@@ -16,6 +16,17 @@ void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, fl
     depth_background_mm = new_depth_background_mm;
 
     camera_angle = new_camera_angle;
+
+    if (fromfile)
+        motion_noise_map_fn = log_in_dir + motion_noise_map_fn;
+    else
+        motion_noise_map_fn = "./logging/" + motion_noise_map_fn;
+    max_uncertainty_map = imread(motion_noise_map_fn);
+
+    if (getSecondsSinceFileCreation(motion_noise_map_fn) < 60*60) {
+//        _background_calibrated = true;
+        //todo: remove the old uncertainty map stuff, I don't think it works any more anyway
+    }
 
     if (checkFileExist(settingsFile)) {
         std::ifstream is(settingsFile, std::ios::binary);
@@ -84,14 +95,12 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
     cv::Mat dR = frameR16 - frameR_prev16;
     diffR16 += dR;
 
-    //slowly fade out motion
     if (!(motion_update_iterator++ % settings.motion_update_iterator_max)) {
         //split negative and positive motion
         fade(diffL16);
         fade(diffR16);
     }
 
-    //todo abs this???? Does not function as expected with negative change?
     diffL = abs(diffL16);
     diffL.convertTo(diffL, CV_8UC1);
     cv::resize(diffL,diffL_small,smallsize);
@@ -105,8 +114,10 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
     if (!_background_calibrated )
         collect_no_drone_frames(diffL_small); // calibration of background uncertainty map
 
-    if (!_background_calibrated && time > settings.background_calib_time)
+    if (!_background_calibrated && time > settings.background_calib_time) {
         _background_calibrated= true;
+        imwrite(motion_noise_map_fn,max_uncertainty_map);
+    }
 
 #if CAMMODE == CAMMODE_GENERATOR
     _background_calibrated = true;

@@ -46,6 +46,7 @@ private:
         }
     };
 
+    std::string motion_noise_map_fn = "max_motion_noise.png";
     const std::string settingsFile = "../basevisionsettings.dat";
     BaseVisionSettings settings;
 
@@ -81,7 +82,7 @@ public:
     cv::Mat disparity_background;
     cv::Mat depth_background_mm;
 
-    void init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, cv::Mat new_depth_background_mm);
+    void init(bool fromfile, string bag_dir, cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, cv::Mat new_depth_background_mm);
     void close() {
         std::ofstream os(settingsFile, std::ios::binary);
         cereal::BinaryOutputArchive archive( os );
