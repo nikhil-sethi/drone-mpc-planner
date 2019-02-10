@@ -339,7 +339,7 @@ void Cam::init() {
 
     std::string required_firmwar_version = "05.10.06.00";
     if (hasIMU)
-        required_firmwar_version = "05.10.13.00";
+        required_firmwar_version = "05.11.01.00";
 
     std::string current_firmware_version = depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION);
     current_firmware_version  = current_firmware_version.substr (0,required_firmwar_version.length()); //fix for what seems to be appended garbage...? 255.255.255.255 on a newline

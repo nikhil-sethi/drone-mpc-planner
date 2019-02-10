@@ -3,15 +3,15 @@
 void MultiModule::init(bool fromfile) {
     // setup connection with MultiModule
     notconnected = RS232_OpenComport(115200,"/dev/ttyACM0");
-
-    if (notconnected && !fromfile) {
-        std::cout << "MultiModule failed." << std::endl;
-        throw my_exit(1);
-    } else {
-        thread_mm = std::thread(&MultiModule::worker_thread,this);
-        initialised = true;
+    if (TX_TYPE!=TX_DISABLED) {
+        if (notconnected && !fromfile) {
+            std::cout << "MultiModule failed." << std::endl;
+            throw my_exit(1);
+        } else {
+            thread_mm = std::thread(&MultiModule::worker_thread,this);
+            initialised = true;
+        }
     }
-
 }
 
 void MultiModule::worker_thread(void) {
