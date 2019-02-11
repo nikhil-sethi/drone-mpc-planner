@@ -48,7 +48,6 @@ void Arduino::sendData(void) {
 
         if (!notconnected) {
             unsigned char inbuf[1];
-            inbuf[1] = 0;
             std::stringstream tmp;
             int n = 1;
             int totn = 0;
