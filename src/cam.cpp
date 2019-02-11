@@ -707,12 +707,14 @@ void Cam::calib_pose(){
         float old = _camera_angle_y_measured_from_depth;
 
         _camera_angle_y_measured_from_depth = -alpha*rad2deg; //[degrees]
+        std::cout << "Measured angle: " << _camera_angle_y_measured_from_depth << std::endl;
         std::cout << "Estimated angle change: " << _camera_angle_y_measured_from_depth - old << std::endl;
         std::cout << "Set angle_y: " << _camera_angle_y << std::endl;
 
-        if (_camera_angle_y_measured_from_depth - old > 10 && checkFileExist(calib_log_fn)) {
+        if (fabs(_camera_angle_y_measured_from_depth - old) > 15 && checkFileExist(calib_log_fn) || _camera_angle_y_measured_from_depth != _camera_angle_y_measured_from_depth) {
             std::cout << "Warning: angle change to big!" << std::endl;
-            //throw my_exit(1);
+            _camera_angle_y_measured_from_depth = 0;
+            throw my_exit(1);
         }
     }
     cam.stop();
