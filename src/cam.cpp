@@ -307,7 +307,7 @@ void Cam::init() {
         std::size_t found = name.find("D435I");
         hasIMU = found!=std::string::npos;
 
-        std::cout << name << std::endl;
+        std::cout << name << " ser: " << sn << std::endl;
 
     }
 
@@ -711,23 +711,13 @@ void Cam::calib_pose(){
         std::cout << "Estimated angle change: " << _camera_angle_y_measured_from_depth - old << std::endl;
         std::cout << "Set angle_y: " << _camera_angle_y << std::endl;
 
-        if (fabs(_camera_angle_y_measured_from_depth - old) > 15 && checkFileExist(calib_log_fn) || _camera_angle_y_measured_from_depth != _camera_angle_y_measured_from_depth) {
+        if ((fabs(_camera_angle_y_measured_from_depth - old) > 15 && checkFileExist(calib_log_fn)) || _camera_angle_y_measured_from_depth != _camera_angle_y_measured_from_depth) {
             std::cout << "Warning: angle change to big!" << std::endl;
             _camera_angle_y_measured_from_depth = 0;
             throw my_exit(1);
         }
     }
     cam.stop();
-}
-
-cv::Point3f Cam::rotate_point(cv::Point3f point){
-
-    float theta = 33.3f * deg2rad;
-    float temp_y = point.y * cosf(theta) + point.z * sinf(theta);
-    point.z = -point.y * sinf(theta) + point.z * cosf(theta);
-    point.y = temp_y;
-
-    return point;
 }
 
 void Cam::init(int argc __attribute__((unused)), char **argv) {
