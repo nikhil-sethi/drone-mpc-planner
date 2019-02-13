@@ -34,7 +34,7 @@
     #ifndef HASGUI
         #define HASSCREEN
     #endif
-//    #define BEEP
+    #define BEEP
     #define VIDEORAWLR VIDEOMODE_BAG
     #define JOYSTICK_TYPE RC_XLITE
     #define TX_TYPE TX_FRSKYD
