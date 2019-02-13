@@ -99,7 +99,7 @@ private:
     int autoLandThrottleDecrease = 0;
 
     const int forward_pitch_take_off_boost = 0; // CX10 - 60
-    const int min_throttle = 200; //Whoop - 600    CX10 - 800
+    const int min_throttle = JOY_BOUND_MIN+1; //Whoop - 600    CX10 - 800
     const float integratorThresholdDistance = 0.2f;
     float throttleBankFactor = 0.33; // Whoop 0.33
 

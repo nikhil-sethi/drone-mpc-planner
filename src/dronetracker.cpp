@@ -173,7 +173,6 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
         else
             break;
     } FALLTHROUGH_INTENDED; case dts_detecting: {
-        roi_size_cnt = 0; // don't grow roi in this stage
         additional_ignores.push_back(Drone_Startup_Im_Location());
         ItemTracker::track(time,ignore,additional_ignores);
         if (!drone_is_active)
