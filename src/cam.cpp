@@ -490,7 +490,7 @@ void Cam::sense_light_level(){
         //the resulting exposure (camera does not respond instantaniously)
 
         rs2::frameset frame;
-        for (int i = 0; i< 15-search_speed;i++)
+        for (int i = 0; i< 60-search_speed;i++)
             frame = cam.wait_for_frames();
 
         if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
