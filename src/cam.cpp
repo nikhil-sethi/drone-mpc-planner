@@ -323,6 +323,9 @@ void Cam::init() {
             checkFileExist(calib_log_fn)) {
         std::cout << "Calibration files recent, reusing..."   << std::endl;
         depth_background = imread(depth_map_fn,CV_LOAD_IMAGE_ANYDEPTH);
+
+        depth_scale = 0.001; //FIXME, get real value!!!
+
         reloaded_calib= true;
     } else{
         calib_pose();
