@@ -18,7 +18,7 @@ void VisionData::init(bool fromfile, std::string log_in_dir,cv::Mat new_Qf, cv::
     camera_angle = new_camera_angle;
 
     if (fromfile)
-        motion_noise_map_fn = log_in_dir + motion_noise_map_fn;
+        motion_noise_map_fn = log_in_dir + "/" +  motion_noise_map_fn;
     else
         motion_noise_map_fn = "./logging/" + motion_noise_map_fn;
     max_uncertainty_map = imread(motion_noise_map_fn,false);
