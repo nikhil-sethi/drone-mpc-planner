@@ -82,11 +82,11 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
             ItemTracker::append_log(); // write a dummy entry
             break;
         } case bds_searching: {
-            //TMP!!!!!!!!!!!!!
-            append_log();
-            _blinking_drone_status = bds_found;
-            break;
-            //!!!!!!!!!!!!!!!
+//            //TMP!!!!!!!!!!!!!
+//            append_log();
+//            _blinking_drone_status = bds_found;
+//            break;
+//            //!!!!!!!!!!!!!!!
 
             _enable_roi = false;
             ItemTracker::track(time,ignore,additional_ignores);
@@ -123,22 +123,22 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
             break;
         } case bds_found: {
 
-            //*******TMP!
-            _enable_roi = true;
-            append_log();
-            _drone_blink_image_location = cv::Point(192,192);
-            _drone_blink_world_location.x = 0.190292642;
-            _drone_blink_world_location.y = -1.64084888;
-            _drone_blink_world_location.z = -1.32899487;
-            _enable_background_check = true;
+//            //*******TMP!
+//            _enable_roi = true;
+//            append_log();
+//            _drone_blink_image_location = cv::Point(192,192);
+//            _drone_blink_world_location.x = 0.190292642;
+//            _drone_blink_world_location.y = -1.64084888;
+//            _drone_blink_world_location.z = -1.32899487;
+//            _enable_background_check = true;
 
-            //write to xml
-            serialize_calib();
+//            //write to xml
+//            serialize_calib();
 
-            //progress to the next stage in the main tracker state machine
-            _drone_tracking_status = dts_inactive;
-            break;
-            //**********
+//            //progress to the next stage in the main tracker state machine
+//            _drone_tracking_status = dts_inactive;
+//            break;
+//            //**********
 
 
             append_log(); // no tracking needed in this stage
