@@ -143,6 +143,8 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
         pitchErrI = 0;
         throttleErrI = 0;
 
+        if (!hoverthrottleInitialized)
+            hoverthrottle = INITIAL_HOVER_THROTTLE;
         throttle = joyThrottle;
         roll = joyRoll;
         pitch = joyPitch;
@@ -209,6 +211,8 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
         autoRoll =  JOY_MIDDLE + (accErrX * params.roll_Acc +  params.rollI*rollErrI);
         autoPitch = PITCH_MIDDLE + (accErrZ * params.pitch_Acc +  params.pitchI*pitchErrI);
 
+        if (!hoverthrottleInitialized)
+            hoverthrottle = INITIAL_HOVER_THROTTLE;
         throttle = autoThrottle ;
         roll = autoRoll;
         pitch = autoPitch;
@@ -218,6 +222,9 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
         rollErrI = 0;
         pitchErrI = 0;
         throttleErrI = 0;
+
+        if (!hoverthrottleInitialized)
+            hoverthrottle = INITIAL_HOVER_THROTTLE;
 
         throttle = INITIALTHROTTLE;
         roll = JOY_MIDDLE;
@@ -229,6 +236,9 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
         rollErrI = 0;
         pitchErrI = 0;
         throttleErrI = 0;
+
+        if (!hoverthrottleInitialized)
+            hoverthrottle = INITIAL_HOVER_THROTTLE;
 
         throttle = INITIALTHROTTLE;
         roll = JOY_MIDDLE;
