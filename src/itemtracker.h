@@ -50,6 +50,7 @@ public:
         float y() {return k.pt.y;}
     };
 
+    cv::Point3f predicted_locationL_last = {0};
 private:
     cv::SimpleBlobDetector::Params params;
     struct TrackerSettings{
@@ -195,7 +196,7 @@ protected:
     VisionData * _visdat;
     int roi_size_cnt = 0;
 
-    cv::Point3f predicted_locationL_last = {0};
+
     float blob_size_last = DRONE_IM_START_SIZE;
 
     const float certainty_factor = 1.1f; // TODO: tune

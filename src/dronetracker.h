@@ -123,6 +123,20 @@ public:
         _drone_tracking_status = dts_blinking;
         _blinking_drone_status = bds_start;
     }
+    void do_post_takeoff_detection() {
+        cv::Point p = Drone_Startup_Im_Location();
+        p.y-=5;
+        DroneTracker::track_item ti(cv::KeyPoint(p,10),_visdat->frame_id,0.75);
+        cv::Point3f p3 = Drone_Startup_Location();
+        p3.y+=0.15f;
+        predicted_locationL_last = p3;
+        _drone_tracking_status = dts_inactive;
+        pathL.clear();
+        predicted_pathL.clear();
+        predicted_pathL.push_back(ti);
+        foundL = false;
+    }
+
     bool blinking_drone_located() {
         return _blinking_drone_status >= bds_found;
     }
