@@ -54,9 +54,7 @@ void VisionData::init(bool fromfile, std::string log_in_dir,cv::Mat new_Qf, cv::
 
 #ifdef TUNING
     namedWindow("Background", WINDOW_NORMAL);
-    createTrackbar("Uncertain mult", "Background", &settings.uncertainty_multiplier, 255);
-    createTrackbar("Uncertain pow", "Background", &settings.uncertainty_power, 255);
-    createTrackbar("Uncertain back", "Background", &settings.uncertainty_background, 255);
+    createTrackbar("motion_update_iterator_max", "Background", &settings.motion_update_iterator_max, 255);
 #endif
 
 }
@@ -81,6 +79,7 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
 
     track_avg_brightness(frameL16,time); //todo: check if this still works!
     if (_reset_motion_integration) {
+        std::cout << "Resetting motion" << std::endl;
         frameL_prev16 = frameL16.clone();
         frameR_prev16 = frameR16.clone();
         diffL16 = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
