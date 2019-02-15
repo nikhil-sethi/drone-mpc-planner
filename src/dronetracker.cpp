@@ -173,11 +173,12 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
         find_result.best_image_locationL.pt = _drone_blink_image_location;
         predicted_locationL_last = _drone_blink_world_location;
         reset_tracker_ouput(); //TODO: double?
-        ItemTracker::append_log(); //really no point in trying to detect the drone when it is inactive...
         if (drone_is_active)
             _drone_tracking_status = dts_detecting;
-        else
+        else {
+            ItemTracker::append_log(); //really no point in trying to detect the drone when it is inactive...
             break;
+        }
     } FALLTHROUGH_INTENDED; case dts_detecting: {
         additional_ignores.push_back(Drone_Startup_Im_Location());
         ItemTracker::track(time,ignore,additional_ignores);
