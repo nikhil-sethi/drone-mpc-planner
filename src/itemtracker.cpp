@@ -288,7 +288,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude,std::vector<
 
     std::vector<track_item> keypoint_candidates = find_result.keypointsL_wihout_voids;
     uint nCandidates = static_cast<uint>(keypoint_candidates.size());
-    if (nCandidates) { //if nokeypointsLt lost
+    if (nCandidates) { //if lost
 
         cv::Point3f previous_location(find_result.best_image_locationL.pt.x,find_result.best_image_locationL.pt.y,0);
 
