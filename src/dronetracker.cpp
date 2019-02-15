@@ -97,27 +97,33 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
             break;
         } case bds_1_blink_off: {
             _enable_roi = true;
+            roi_size_cnt = 0;
             blink_location = find_result.best_image_locationL;
             ItemTracker::track(time,ignore,additional_ignores);
             _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
             break;
         } case bds_1_blink_on: {
+            roi_size_cnt = 0;
             ItemTracker::track(time,ignore,additional_ignores);
             _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
             break;
         } case bds_2_blink_off: {
+            roi_size_cnt = 0;
             ItemTracker::track(time,ignore,additional_ignores);
             _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
             break;
         } case bds_2_blink_on: {
+            roi_size_cnt = 0;
             ItemTracker::track(time,ignore,additional_ignores);
             _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
             break;
         } case bds_3_blink_off: {
+            roi_size_cnt = 0;
             ItemTracker::track(time,ignore,additional_ignores);
             _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
             break;
         } case bds_3_blink_on: {
+            roi_size_cnt = 0;
             ItemTracker::track(time,ignore,additional_ignores);
             _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
             break;
