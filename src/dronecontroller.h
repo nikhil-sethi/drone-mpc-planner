@@ -28,6 +28,7 @@ class DroneController {
 
 public:
     enum flight_modes{
+        fm_joystick_check,
         fm_disarmed,
         fm_inactive,
         fm_manual,
@@ -48,6 +49,7 @@ public:
         js_slider,
         js_hunt,
         js_disarmed,
+        js_checking, // waiting for sticks to be reset
         js_none // in case of no joystick
     };
 private:
@@ -125,7 +127,7 @@ private:
 
     bool _fromfile;
     controlParameters params;
-    flight_modes _flight_mode = fm_disarmed; // only set externally (except for disarming), used internally
+    flight_modes _flight_mode = fm_joystick_check; // only set externally (except for disarming), used internally
     joy_mode_switch_modes _joy_mode_switch = jmsm_none;
     bool _joy_arm_switch = true;
     bool _joy_takeoff_switch = false;

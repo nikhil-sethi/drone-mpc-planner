@@ -245,6 +245,21 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
         pitch = JOY_MIDDLE;
         yaw = JOY_MIDDLE;
         break;
+    } case fm_joystick_check: {
+        //reset integrators (prevent ever increasing error)
+        rollErrI = 0;
+        pitchErrI = 0;
+        throttleErrI = 0;
+
+        if (!hoverthrottleInitialized)
+            hoverthrottle = INITIAL_HOVER_THROTTLE;
+
+        throttle = INITIALTHROTTLE;
+        roll = JOY_MIDDLE;
+        pitch = JOY_MIDDLE;
+        yaw = JOY_MIDDLE;
+        _joy_state = js_checking;
+        break;
     }
     }
 
@@ -291,7 +306,6 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
                   velz_sp << "; ";
 }
 
-int first_joy_time = 1;
 void DroneController::readJoystick(void) {
     while (joystick.sample(&event))
     {
@@ -439,17 +453,16 @@ void DroneController::process_joystick() {
     // prevent accidental take offs at start up
     if (JOYSTICK_TYPE == RC_NONE)
         return;
-    if (first_joy_time > 0) {
-        if (_joy_arm_switch || joyThrottle > JOY_MIN_THRESH ) {
-            if (_joy_arm_switch)
-                std::cout << "Joystick Arm Switch ACTIVE!" << std::endl;
-            if (joyThrottle > JOY_MIN_THRESH )
-                std::cout << "Joystick Throttle NON-ZERO!" << std::endl;
+
+    if (_joy_state == js_checking){
+        if (!_joy_arm_switch &&
+                joyThrottle <= JOY_MIN_THRESH &&
+                !_joy_takeoff_switch) {
             _flight_mode = fm_disarmed;
             _joy_state = js_disarmed;
-            _rc->arm(false);
         } else {
-            first_joy_time--;
+            _flight_mode = fm_joystick_check;
+            _rc->arm(false);
         }
     } else {
 
