@@ -120,4 +120,11 @@ LogReader::Log_Entry LogReader::createLogEntry(std::string line) {
 
 void LogReader::set_current_frame_number(int _RS_frame_number) {
     current_item = log[_RS_frame_number];
+    if (current_item.RS_ID != _RS_frame_number) {
+        std::cout << "Warning, frame not found in log" << std::endl;
+        while(current_item.RS_ID != _RS_frame_number){
+            _RS_frame_number++;
+            current_item = log[_RS_frame_number];
+        }
+    }
 }
