@@ -103,12 +103,14 @@ private:
         int exclude_min_distance = 5; // in res/IMSCALEF resolution
         int exclude_max_distance = 50; // in res/IMSCALEF resolution
 
+        int exclude_additional_max_distance = 15; // in res/IMSCALEF resolution
+
         int max_points_per_frame = 10;
         int ignore_circle_r_around_motion_max = 15;
         int motion_thresh = 30;
 
         int background_subtract_zone_factor = 90;
-        float version = 1.31f;
+        float version = 1.4f;
 
         template <class Archive>
         void serialize( Archive & ar )
@@ -123,7 +125,8 @@ private:
                roi_max_grow,roi_grow_speed,appear_void_max_distance,
                void_void_max_distance,appear_void_max_distance,
                exclude_max_distance,background_subtract_zone_factor,
-               max_points_per_frame,ignore_circle_r_around_motion_max,motion_thresh);
+               max_points_per_frame,ignore_circle_r_around_motion_max,
+               motion_thresh,exclude_additional_max_distance);
         }
 
     };

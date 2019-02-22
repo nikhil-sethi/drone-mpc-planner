@@ -175,7 +175,7 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<tr
             }
         }
         //and delete it, if it is close enough
-        if (min_dis < settings.exclude_max_distance)
+        if (min_dis < settings.exclude_additional_max_distance)
             keypoints.erase(keypoints.begin() + min_dis_i);
     }
 
