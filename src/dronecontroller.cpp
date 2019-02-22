@@ -258,7 +258,6 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
         roll = JOY_MIDDLE;
         pitch = JOY_MIDDLE;
         yaw = JOY_MIDDLE;
-        _joy_state = js_checking;
         break;
     }
     }
@@ -453,6 +452,9 @@ void DroneController::process_joystick() {
     // prevent accidental take offs at start up
     if (JOYSTICK_TYPE == RC_NONE)
         return;
+    else if (_joy_state == js_none)
+        _joy_state = js_checking;
+
 
     if (_joy_state == js_checking){
         if (!_joy_arm_switch &&

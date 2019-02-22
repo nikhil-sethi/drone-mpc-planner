@@ -11,9 +11,11 @@ static const char* joy_states_names[] = { "js_manual",
                                           "js_slider",
                                           "js_hunt",
                                           "js_disarmed",
+                                          "js_checking",
                                           "js_none"
                                         };
-static const char* flight_mode_names[] = { "fm_disarmed",
+static const char* flight_mode_names[] = { "fm_joystick_check",
+                                           "fm_disarmed",
                                           "fm_inactive",
                                           "fm_manual",
                                           "fm_taking_off",
