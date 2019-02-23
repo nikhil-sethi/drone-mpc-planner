@@ -128,6 +128,8 @@ private:
     int gain = 0;
     bool fromfile;
 
+    uint playback_buffer_size_max = 100;
+
     std::mutex lock_flags;
     std::mutex lock_frame_data;
     std::condition_variable wait_for_image;
