@@ -32,12 +32,12 @@ void Cam::update_playback(void) {
         std::deque<frame_data> playback_bufferR_cleaned;
         for (uint i = 0 ; i <playback_bufferR.size();i++) {
             if (    playback_bufferR.at(i).id >= requested_id_in &&
-                    playback_bufferR.at(i).id < requested_id_in+100)
+                    playback_bufferR.at(i).id < requested_id_in+playback_buffer_size_max)
                 playback_bufferR_cleaned.push_back(playback_bufferR.at(i));
         }
         for (uint i = 0 ; i <playback_bufferL.size();i++) {
             if (    playback_bufferL.at(i).id >= requested_id_in &&
-                    playback_bufferL.at(i).id < requested_id_in+100)
+                    playback_bufferL.at(i).id < requested_id_in+playback_buffer_size_max)
                 playback_bufferL_cleaned.push_back(playback_bufferL.at(i));
         }
 
@@ -91,17 +91,23 @@ void Cam::update_playback(void) {
                 }
             }
 
-        if (_paused && playback_bufferR.size() < 10 ){ // 3 to start buffering 3 frames before the buffer runs empty
+        auto duration = static_cast<float>(static_cast<rs2::playback>(dev).get_duration().count()) / 1e9f;
+        if (frame_time() > duration-0.5f){
+            std::cout << "Video end, exiting" << std::endl;
+            throw my_exit(0);
+        }
+
+        if (_paused && playback_bufferR.size() < 3 ){ // 3 to start buffering 3 frames before the buffer runs empty
             incremented_playback_frametime = (requested_id_in+funky_RS_frame_time_fixer_frame_count-2)*(1.f/VIDEOFPS) - (1.f/VIDEOFPS)*0.1f;  //requested_id_in-2 -> -2 seems to be necessary because the RS api skips a frame of either the left or right camera after resuming
             if (incremented_playback_frametime < 0)
                 incremented_playback_frametime = 0;
-            //            std::cout << "Resuming RS: " << incremented_playback_frametime << std::endl;
-            float duration = static_cast<float>(static_cast<rs2::playback>(dev).get_duration().count()) / 1e9f;
+                        std::cout << "Resuming RS: " << incremented_playback_frametime << std::endl;
 
-            if (duration > incremented_playback_frametime){
+            if (duration-0.4f >= incremented_playback_frametime){
                 seek(incremented_playback_frametime);
                 resume();
             } else {
+                std::cout << "Video end, exiting" << std::endl;
                 throw my_exit(0);
             }
         }
@@ -124,7 +130,7 @@ void Cam::update_playback(void) {
         swc.Restart();
     }
 
-    if (playback_bufferR.size() >= 10 && !_paused) {
+    if (playback_bufferR.size() >= playback_buffer_size_max*(2.f/3.f) && !_paused) {
         pause();
         //        std::cout << "Pausing playback_bufferL/R size:" << playback_bufferL.size() << " / " << playback_bufferR.size() << std::endl;
     }
@@ -155,7 +161,7 @@ void Cam::rs_callback_playback(rs2::frame f) {
     //    if (f.get_profile().stream_index() == 2 )
     //        std::cout << "Received id         " << f.get_frame_number() << ":" << to_string_with_precision((static_cast<float>(f.get_timestamp())-_frame_time_start)/1e3f,2) << "@" << f.get_profile().stream_index() << " Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << to_string_with_precision(incremented_playback_frametime,2) << " bufsize: " << playback_bufferL.size() << std::endl;
 
-    if (f.get_profile().stream_index() == 1 && f.get_frame_number() >= requested_id_in && playback_bufferL.size() < 100) {
+    if (f.get_profile().stream_index() == 1 && f.get_frame_number() >= requested_id_in && playback_bufferL.size() < playback_buffer_size_max) {
         frame_data fL;
         fL.frame = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(f.get_data()), Mat::AUTO_STEP).clone();
         fL.id= f.get_frame_number();
