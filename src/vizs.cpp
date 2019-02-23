@@ -416,7 +416,7 @@ void Visualizer::draw_tracker_viz() {
         if (ins_path.back().distance_background >ins_path.back().distance )
             c = cv::Scalar(180,180,255);
         putText(frameL_color,ss.str(),cv::Point(ins_path.back().x()*IMSCALEF+10,ins_path.back().y()*IMSCALEF),cv::FONT_HERSHEY_SIMPLEX,0.5,c);
-        cv::circle(frameL_color,cv::Point(ins_path.back().x()*IMSCALEF,ins_path.back().y()*IMSCALEF),4,c,2);
+        cv::line(frameL_color,cv::Point(ins_path.back().x()*IMSCALEF,ins_path.back().y()*IMSCALEF),cv::Point(drn_path.back().x()*IMSCALEF,drn_path.back().y()*IMSCALEF),c,2);
     }
     if (drn_path.size()>0){
         std::stringstream ss;
@@ -425,7 +425,7 @@ void Visualizer::draw_tracker_viz() {
         if (drn_path.back().distance_background >drn_path.back().distance )
             c = cv::Scalar(180,180,255);
         putText(frameL_color,ss.str(),cv::Point(drn_path.back().x()*IMSCALEF+10,drn_path.back().y()*IMSCALEF),cv::FONT_HERSHEY_SIMPLEX,0.5,c);
-        cv::circle(frameL_color,cv::Point(drn_path.back().x()*IMSCALEF,drn_path.back().y()*IMSCALEF),4,c,2);
+        cv::line(frameL_color,cv::Point(drn_path.back().x()*IMSCALEF,drn_path.back().y()*IMSCALEF),cv::Point(drn_path.back().x()*IMSCALEF,drn_path.back().y()*IMSCALEF),c,2);
     }
     cv::resize(frameL_color,roi,size);
 

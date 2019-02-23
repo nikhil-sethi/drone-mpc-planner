@@ -505,19 +505,6 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
     _approx = get_approx_cutout_filtered(prev,diff,roi_size);
     cv::Mat frame = _approx;
 
-    //    cv::Rect r1(prev.x-roi_size.x/2, prev.y-roi_size.y/2, roi_size.x,roi_size.y);
-    //    if (r1.x < 0)
-    //        r1.x = 0;
-    //    else if (r1.x+r1.width >= diff.cols)
-    //        r1.x -= (r1.x+r1.width+1) - diff.cols;
-    //    if (r1.y < 0)
-    //        r1.y = 0;
-    //    else if (r1.y+r1.height >= diff.rows)
-    //        r1.y -= (r1.y+r1.height+1) - diff.rows ;
-    //    cv::Mat frame(diff,r1);
-    //    find_result.roi_offset = r1;
-
-
     int radius = settings.ignore_circle_r_around_motion_max;
 
     for (int i = 0; i < settings.max_points_per_frame; i++) {
@@ -550,18 +537,25 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
             // combine roi & mask:
             cv::Mat cropped = roi & mask;
 
-            cv::Moments mo = cv::moments(cropped,false);
-            cv::Point2f COG = cv::Point(static_cast<float>(mo.m10) / static_cast<float>(mo.m00), static_cast<float>(mo.m01) / static_cast<float>(mo.m00));
+            cv::GaussianBlur(cropped,cropped,cv::Size(5,5),0);
+            mask = cropped > max*0.5;
+            cropped = mask;
+
+            cv::Moments mo = cv::moments(cropped,true);
+            cv::Point2f COG = cv::Point2f(static_cast<float>(mo.m10) / static_cast<float>(mo.m00), static_cast<float>(mo.m01) / static_cast<float>(mo.m00));
+
 
             // relative it back to the _approx frame
             COG.x += r2.x;
             COG.y += r2.y;
 
-            scored_points->push_back(cv::KeyPoint(COG, max));
 
             //remove this maximum:
             cv::circle(frame, maxt, 1, cv::Scalar(0), radius);
 
+
+            if (COG.x == COG.x) // if not nan
+                scored_points->push_back(cv::KeyPoint(COG, max));
         } else {
             break;
         }
