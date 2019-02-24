@@ -538,7 +538,7 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
             cv::Mat cropped = roi & mask;
 
             cv::GaussianBlur(cropped,cropped,cv::Size(5,5),0);
-            mask = cropped > max*0.5;
+            mask = cropped > max*0.3; // TODO: maybe take some level halfway between the noise and the max?
             cropped = mask;
 
             cv::Moments mo = cv::moments(cropped,true);
