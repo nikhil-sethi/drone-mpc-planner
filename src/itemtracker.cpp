@@ -119,12 +119,12 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     (*_logger) << "sposX_" << _name << "; ";
     (*_logger) << "sposY_" << _name << "; ";
     (*_logger) << "sposZ_" << _name << "; ";
-    (*_logger) << "velX_" << _name << "; ";
-    (*_logger) << "velY_" << _name << "; ";
-    (*_logger) << "velZ_" << _name << "; ";
-    (*_logger) << "accX_" << _name << "; ";
-    (*_logger) << "accY_" << _name << "; ";
-    (*_logger) << "accZ_" << _name << "; ";
+    (*_logger) << "svelX_" << _name << "; ";
+    (*_logger) << "svelY_" << _name << "; ";
+    (*_logger) << "svelZ_" << _name << "; ";
+    (*_logger) << "saccX_" << _name << "; ";
+    (*_logger) << "saccY_" << _name << "; ";
+    (*_logger) << "saccZ_" << _name << "; ";
 }
 
 void ItemTracker::init_kalman() {
