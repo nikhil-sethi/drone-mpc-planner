@@ -260,6 +260,8 @@ void Cam::set_calibration(rs2::stream_profile infared1,rs2::stream_profile infar
     rs2_extrinsics e = infared2.get_extrinsics_to(infared1);
     float baseline = e.translation[0];
 
+    baseline = fabs(baseline); //TODO: make an issue for this at Intel
+
     //init Qf: https://stackoverflow.com/questions/27374970/q-matrix-for-the-reprojectimageto3d-function-in-opencv
     Qf = (Mat_<double>(4, 4) << 1.0, 0.0, 0.0, -cx, 0.0, 1.0, 0.0, -cy, 0.0, 0.0, 0.0, focal_length, 0.0, 0.0, 1/baseline, 0.0);
     intr = new rs2_intrinsics(i);
