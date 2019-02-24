@@ -411,21 +411,23 @@ void Visualizer::draw_tracker_viz() {
 
     if (ins_path.size()>0){
         std::stringstream ss;
-        ss << "i " << to_string_with_precision(ins_path.back().distance_background,1) << " vs "  << to_string_with_precision(ins_path.back().distance,1) << " ";
+        ItemTracker::track_item ti = ins_path.back();
+        ss << "i " << to_string_with_precision(ti.distance_background,1) << " vs "  << to_string_with_precision(ins_path.back().distance,1) << " ";
         cv::Scalar c(0,0,255);
-        if (ins_path.back().distance_background >ins_path.back().distance )
+        if (ti.distance_background >ti.distance )
             c = cv::Scalar(180,180,255);
-        putText(frameL_color,ss.str(),cv::Point(ins_path.back().x()*IMSCALEF+10,ins_path.back().y()*IMSCALEF),cv::FONT_HERSHEY_SIMPLEX,0.5,c);
-        cv::line(frameL_color,cv::Point(ins_path.back().x()*IMSCALEF,ins_path.back().y()*IMSCALEF),cv::Point(drn_path.back().x()*IMSCALEF,drn_path.back().y()*IMSCALEF),c,2);
+        putText(frameL_color,ss.str(),cv::Point(ti.x()*IMSCALEF+10,ti.y()*IMSCALEF),cv::FONT_HERSHEY_SIMPLEX,0.5,c);
+        cv::line(frameL_color,cv::Point(ti.x()*IMSCALEF,ti.y()*IMSCALEF),cv::Point(ti.x()*IMSCALEF,ti.y()*IMSCALEF),c,2);
     }
     if (drn_path.size()>0){
         std::stringstream ss;
-        ss << "d " << to_string_with_precision(drn_path.back().distance_background,1) << " vs "  << to_string_with_precision(drn_path.back().distance,1) << " ";
+        ItemTracker::track_item ti = drn_path.back();
+        ss << "d " << to_string_with_precision(ti.distance_background,1) << " vs "  << to_string_with_precision(ti.distance,1) << " ";
         cv::Scalar c(0,0,255);
-        if (drn_path.back().distance_background >drn_path.back().distance )
+        if (ti.distance_background >ti.distance )
             c = cv::Scalar(180,180,255);
-        putText(frameL_color,ss.str(),cv::Point(drn_path.back().x()*IMSCALEF+10,drn_path.back().y()*IMSCALEF),cv::FONT_HERSHEY_SIMPLEX,0.5,c);
-        cv::line(frameL_color,cv::Point(drn_path.back().x()*IMSCALEF,drn_path.back().y()*IMSCALEF),cv::Point(drn_path.back().x()*IMSCALEF,drn_path.back().y()*IMSCALEF),c,2);
+        putText(frameL_color,ss.str(),cv::Point(ti.x()*IMSCALEF+10,ti.y()*IMSCALEF),cv::FONT_HERSHEY_SIMPLEX,0.5,c);
+        cv::line(frameL_color,cv::Point(ti.x()*IMSCALEF,ti.y()*IMSCALEF),cv::Point(ti.x()*IMSCALEF,ti.y()*IMSCALEF),c,2);
     }
     cv::resize(frameL_color,roi,size);
 
