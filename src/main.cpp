@@ -220,9 +220,9 @@ void process_frame(Stereo_Frame_Data data) {
             itrkr.append_log(); // write dummy data
         else {
             std::vector<cv::Point2f> additional_ignores;
-            if (dctrl.getDroneIsActive()) {
+            //if (dctrl.getDroneIsActive()) {
                 additional_ignores.push_back(dtrkr.Drone_Startup_Im_Location());
-            }
+            //}
             itrkr.track(data.time,dtrkr.predicted_pathL,additional_ignores);
         }
     //        std::cout << "Found drone location:      [" << dtrkr.find_result.best_image_locationL.pt.x << "," << dtrkr.find_result.best_image_locationL.pt.y << "]" << std::endl;

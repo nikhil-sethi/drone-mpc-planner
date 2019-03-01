@@ -71,8 +71,8 @@ private:
     };
     struct landing_waypoint : waypoint{
         landing_waypoint(){
-            xyz = cv::Point3f(0,1.f,0); // 1 meter over, relative to the startup location
-            threshold_mm = 10;
+            xyz = cv::Point3f(0,.5f,0); // 1 meter over, relative to the startup location
+            threshold_mm = 20;
             mode = fm_landing;
         }
     };
@@ -83,8 +83,8 @@ private:
     };
     struct hovercalib_waypoint : waypoint{
         hovercalib_waypoint(){
-            xyz = cv::Point3f(0,1.f,0); // 1 meter over, relative to the startup location
-            threshold_mm = 50;
+            xyz = cv::Point3f(0,.5f,0); // 1 meter over, relative to the startup location
+            threshold_mm = 20;
             mode = fm_hover_calib;
         }
     };

@@ -42,7 +42,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     //Farther away from the camera is negative Z, positive Z should be impossible because the camera can't see that.
 
     //The flight plan will be repeated indefinetely, unless there is a landing waypoint somewhere in the list.
-    setpoints.push_back(waypoint(cv::Point3f(0,-1.5f,-1.5f),30));
+    //setpoints.push_back(waypoint(cv::Point3f(0,-1.5f,-1.5f),30));
     setpoints.push_back(landing_waypoint());
 
 #ifdef TUNING
@@ -261,7 +261,7 @@ void DroneNavigation::update(float time) {
         _navigation_status = ns_landing;
     } FALLTHROUGH_INTENDED; case ns_landing: {
         trackData data = _dtrk->Last_track_data();
-        if (data.sposY < _dtrk->Drone_Startup_Location().y+0.1f || autoLandThrottleDecrease >1000)
+        if (data.sposY < _dtrk->Drone_Startup_Location().y+0.05f || autoLandThrottleDecrease >1000)
             _navigation_status = ns_landed;
 
         autoLandThrottleDecrease += params.autoLandThrottleDecreaseFactor;
