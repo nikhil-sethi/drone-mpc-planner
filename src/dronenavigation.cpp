@@ -216,8 +216,10 @@ void DroneNavigation::update(float time) {
         _navigation_status = ns_approach_waypoint;
         break;
     } case ns_approach_waypoint: {
+#ifdef MANUAL_DRONE_LOCATE
         if (_calibrating_hover)
             set_next_waypoint(landing_waypoint()); // re-update the location, important when manually setting take off location
+#endif
 
         float dis = sqrtf(_dctrl->posErrX*_dctrl->posErrX + _dctrl->posErrY*_dctrl->posErrY + _dctrl->posErrZ*_dctrl->posErrZ);
         if (dis *1000 < current_setpoint->threshold_mm * params.distance_threshold_f && _dtrk->n_frames_tracking>5) {
