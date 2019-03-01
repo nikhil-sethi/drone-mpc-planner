@@ -211,6 +211,7 @@ void DroneNavigation::update(float time) {
     } case ns_goto_landing_waypoint: {
         set_next_waypoint(landing_waypoint());
         _navigation_status = ns_approach_waypoint;
+        break;
     } FALLTHROUGH_INTENDED; case ns_set_waypoint: {
         set_next_waypoint(setpoints[wpid]);
         _navigation_status = ns_approach_waypoint;
