@@ -292,7 +292,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude,std::vector<
 
         cv::Point3f previous_location(find_result.best_image_locationL.pt.x,find_result.best_image_locationL.pt.y,0);
 
-        Point3f output;
+        cv::Point3f output;
         float disparity = 0;
         track_item * match;
 
@@ -300,7 +300,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude,std::vector<
             uint match_id = match_closest_to_prediciton(previous_location,find_result.keypointsL_wihout_voids);
             match = &find_result.keypointsL_wihout_voids.at(match_id);
 
-            disparity = stereo_match(match->k,_visdat->diffL,_visdat->diffR,find_result.disparity);
+            disparity = stereo_match(match->k.pt,_visdat->diffL,_visdat->diffR,find_result.disparity);
             disparity = update_disparity(disparity, dt_tracking);
 
             bool background_check_ok = true;
@@ -736,7 +736,7 @@ uint ItemTracker::match_closest_to_prediciton(cv::Point3f predicted_locationL, s
     return closestL;
 }
 
-float ItemTracker::stereo_match(cv::KeyPoint closestL, cv::Mat diffL,cv::Mat diffR, float prev_disparity){
+float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR, float prev_disparity){
     //get retangle around blob / changed pixels
     float rectsize = settings.max_disparity;
 
@@ -744,9 +744,9 @@ float ItemTracker::stereo_match(cv::KeyPoint closestL, cv::Mat diffL,cv::Mat dif
     float rectsizeX = ceil(rectsize*0.5f); // *4.0 results in drone-insect disparity interaction
     float rectsizeY = ceil(rectsize*0.5f);  // *3.0
     int x1,y1,x2,y2;
-    x1 = static_cast<int>((closestL.pt.x-rectsizeX)*IMSCALEF);
+    x1 = static_cast<int>((closestL.x-rectsizeX)*IMSCALEF);
     x2 = static_cast<int>(2*rectsizeX*IMSCALEF);
-    y1 = static_cast<int>((closestL.pt.y-rectsizeY)*IMSCALEF);
+    y1 = static_cast<int>((closestL.y-rectsizeY)*IMSCALEF);
     y2 = static_cast<int>(2*rectsizeY*IMSCALEF);
     if (x1 < 0)
         x1=0;

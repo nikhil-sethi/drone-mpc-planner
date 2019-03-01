@@ -33,6 +33,7 @@ static const char* navigation_status_names[] = {"ns_init",
                                                 "ns_land",
                                                 "ns_landing",
                                                 "ns_landed",
+                                                "ns_wait_after_landing",
                                                 "ns_manual",
                                                 "ns_drone_problem"};
 
@@ -46,6 +47,7 @@ public:
     };
 private:
 
+    float landed_time = 0;
     nav_flight_modes _nav_flight_mode;
 
     enum waypoint_flight_modes {
@@ -118,6 +120,7 @@ private:
         ns_land,
         ns_landing,
         ns_landed,
+        ns_wait_after_landing,
         ns_manual, // also for disarmed
         ns_drone_problem
     };
@@ -160,13 +163,14 @@ public:
         int land_incr_f_mm = 50;
         int autoLandThrottleDecreaseFactor = 10;
         int auto_takeoff_speed = 3;
+        float time_out_after_landing = 2.5f;
 
-        float version = 2.0f;
+        float version = 2.1f;
 
         template <class Archive>
         void serialize( Archive & ar )
         {
-            ar( version, distance_threshold_f,setpoint_slider_X,setpoint_slider_Y,setpoint_slider_Z,land_incr_f_mm,autoLandThrottleDecreaseFactor,auto_takeoff_speed);
+            ar( version, distance_threshold_f,setpoint_slider_X,setpoint_slider_Y,setpoint_slider_Z,land_incr_f_mm,autoLandThrottleDecreaseFactor,auto_takeoff_speed,time_out_after_landing);
         }
     };
 

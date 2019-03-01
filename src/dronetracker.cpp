@@ -82,12 +82,11 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
             ItemTracker::append_log(); // write a dummy entry
             break;
         } case bds_searching: {
-//            //TMP!!!!!!!!!!!!!
-//            append_log();
-//            _blinking_drone_status = bds_found;
-//            break;
-//            //!!!!!!!!!!!!!!!
-
+#ifdef MANUAL_DRONE_LOCATE
+            append_log();
+            _blinking_drone_status = bds_found;
+            break;
+#endif
             _enable_roi = false;
             ItemTracker::track(time,ignore,additional_ignores);
             if (foundL) {
@@ -128,24 +127,23 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
             _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
             break;
         } case bds_found: {
+#ifdef MANUAL_DRONE_LOCATE
+            _enable_roi = true;
+            append_log();
 
-//            //*******TMP!
-//            _enable_roi = true;
-//            append_log();
-//            _drone_blink_image_location = cv::Point(192,192);
-//            _drone_blink_world_location.x = 0.190292642;
-//            _drone_blink_world_location.y = -1.64084888;
-//            _drone_blink_world_location.z = -1.32899487;
-//            _enable_background_check = true;
+            //TMP solution:
+            _drone_blink_world_location.x = 0.190292642;
+            _drone_blink_world_location.y = -1.64084888;
+            _drone_blink_world_location.z = -1.32899487;
+            _enable_background_check = true;
 
-//            //write to xml
-//            serialize_calib();
+            //write to xml
+            serialize_calib();
 
-//            //progress to the next stage in the main tracker state machine
-//            _drone_tracking_status = dts_inactive;
-//            break;
-//            //**********
-
+            //progress to the next stage in the main tracker state machine
+            _drone_tracking_status = dts_inactive;
+            break;
+#endif
 
             append_log(); // no tracking needed in this stage
 
@@ -192,8 +190,22 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
                 float dist2take_off = sqrt(pow(k.x() - Drone_Startup_Im_Location().x,2)+pow(k.y() - Drone_Startup_Im_Location().y,2));
                 if (dist2take_off < 4)
                     takeoff_spot_detected = true;
-                else if (dist2take_off > 6 && dist2take_off < 10)
+                else if (dist2take_off > 6 && dist2take_off < 10){
                     drone_detected_near_takeoff_spot = true;
+#ifdef MANUAL_DRONE_LOCATE
+                    float disparity = stereo_match(k.k.pt,_visdat->diffL,_visdat->diffR,find_result.disparity);
+                    std::vector<cv::Point3d> camera_coordinates, world_coordinates;
+                    camera_coordinates.push_back(cv::Point3d(k.k.pt.x*IMSCALEF,k.k.pt.y*IMSCALEF,-disparity));
+                    cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
+                    cv::Point3f output = world_coordinates[0];
+                    float theta = _visdat->camera_angle * deg2rad;
+                    float temp_y = output.y * cosf(theta) + output.z * sinf(theta);
+                    output.z = -output.y * sinf(theta) + output.z * cosf(theta);
+                    output.y = temp_y;
+                    _drone_blink_world_location = output;
+#endif
+
+                }
             }
             if (takeoff_spot_detected &&drone_detected_near_takeoff_spot ) {
                 _drone_tracking_status = dts_detected;

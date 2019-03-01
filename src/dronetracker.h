@@ -138,6 +138,9 @@ public:
         predicted_pathL.push_back(ti);
         foundL = false;
     }
+    void set_drone_location(cv::Point p){
+       _drone_blink_image_location = p/IMSCALEF;
+    }
 
     bool blinking_drone_located() {
         return _blinking_drone_status >= bds_found;

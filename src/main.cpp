@@ -66,6 +66,9 @@ std::string file;
 std::string data_output_dir;
 std::string calib_folder;
 
+int mouseX, mouseY;
+int mouseLDown;
+
 std::ofstream logger;
 //Arduino rc;
 MultiModule rc;
@@ -122,6 +125,11 @@ void process_video();
 int main( int argc, char **argv);
 void handleKey();
 void close();
+
+void manual_drone_locater(cv::Mat frame);
+void CallBackFunc(int event, int x, int y, int flags, void* userdata);
+
+
 
 /************ code ***********/
 void process_video() {
@@ -396,6 +404,14 @@ int init(int argc, char **argv) {
     dnav.init(&logger,&dtrkr,&dctrl,&itrkr,&visdat);
     dctrl.init(&logger,fromfile==log_mode_full,&rc);
 
+#ifdef MANUAL_DRONE_LOCATE
+    if (!fromfile){
+        manual_drone_locater(cam.frameL);
+        dtrkr.set_drone_location(cv::Point(mouseX,mouseY));
+    }
+#endif
+
+
     // Ensure that joystick was found and that we can use it
     if (!dctrl.joystick_ready() && fromfile!=log_mode_full && JOYSTICK_TYPE != RC_NONE) {
         std::cout << "joystick failed." << std::endl;
@@ -499,4 +515,33 @@ int main( int argc, char **argv )
         return e.value;
     }
     return 0;
+}
+
+void manual_drone_locater(cv::Mat frame){
+    cv::namedWindow("Manual_drone_locator", CV_WINDOW_NORMAL);
+    cv::setWindowProperty("Manual_drone_locator", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+    cv::setMouseCallback("Manual_drone_locator", CallBackFunc, NULL);
+
+    while(1) {
+        cv::Mat f2;
+        cvtColor(frame,f2,CV_GRAY2BGR);
+        cv::circle(f2,cv::Point(mouseX,mouseY),3,cv::Scalar(0,255,0),2);
+        cv::imshow("Manual_drone_locator", f2);
+        unsigned char k = cv::waitKey(20);
+        if (k==' ')
+            break;
+
+    }
+
+    cv::destroyWindow("Manual_drone_locator");
+
+}
+
+void CallBackFunc(int event, int x, int y , int flags __attribute__((unused)), void* userdata __attribute__((unused)))
+{
+    if  ( event == cv::EVENT_LBUTTONDOWN ) {
+        mouseLDown=10;
+        mouseX = x;
+        mouseY = y;
+    }
 }

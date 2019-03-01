@@ -114,6 +114,7 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
     diffR.convertTo(diffR, CV_8UC1);
     cv::resize(diffR,diffR_small,smallsize);
 
+//    cv::imshow("diff", diffL*10);
 //    showRowImage({diffL*10,diffR*10},"motion",CV_8UC1,1.f);
 
     if (!_background_calibrated )

@@ -147,7 +147,7 @@ private:
     cv::Point3f predict(float dt, int frame_id);
     virtual cv::Mat get_approx_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size) = 0;
     uint match_closest_to_prediciton(cv::Point3f predicted_locationL, std::vector<track_item> keypointsL);
-    float stereo_match(cv::KeyPoint closestL, cv::Mat diffL, cv::Mat diffR, float prev_disparity);
+
     float estimate_sub_disparity(int disparity);
     void check_consistency(cv::Point3f previous_location,cv::Point3f measured_world_coordinates);
     float update_disparity(float disparity, float dt);
@@ -210,6 +210,7 @@ protected:
     bool _enable_roi = true;
     bool _enable_background_check = true;
 
+    float stereo_match(cv::Point closestL, cv::Mat diffL, cv::Mat diffR, float prev_disparity);
     void reset_tracker_ouput();
     virtual cv::Mat get_probability_cloud(cv::Point size);
     virtual void init_settings() = 0;

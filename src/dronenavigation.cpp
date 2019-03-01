@@ -42,7 +42,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     //Farther away from the camera is negative Z, positive Z should be impossible because the camera can't see that.
 
     //The flight plan will be repeated indefinetely, unless there is a landing waypoint somewhere in the list.
-    //setpoints.push_back(waypoint(cv::Point3f(0,-1.5f,-1.5f),30));
+    setpoints.push_back(waypoint(cv::Point3f(0,-1.0f,-1.5f),30));
     setpoints.push_back(landing_waypoint());
 
 #ifdef TUNING
@@ -106,8 +106,6 @@ void DroneNavigation::update(float time) {
         break;
     } case ns_located_drone: {
         _dctrl->blink_drone(false);
-        cv::Point3f p = _dtrk->Drone_Startup_Location();
-        std::cout << "Drone located at: " << p.x << ", " << p.y << ", " << p.z << std::endl;
         if (_nav_flight_mode == nfm_hunt)
             _navigation_status = ns_wait_for_insect;
         else if (_nav_flight_mode == nfm_manual)
@@ -218,6 +216,9 @@ void DroneNavigation::update(float time) {
         _navigation_status = ns_approach_waypoint;
         break;
     } case ns_approach_waypoint: {
+        if (_calibrating_hover)
+            set_next_waypoint(landing_waypoint()); // re-update the location, important when manually setting take off location
+
         float dis = sqrtf(_dctrl->posErrX*_dctrl->posErrX + _dctrl->posErrY*_dctrl->posErrY + _dctrl->posErrZ*_dctrl->posErrZ);
         if (dis *1000 < current_setpoint->threshold_mm * params.distance_threshold_f && _dtrk->n_frames_tracking>5) {
             if (current_setpoint->mode == fm_landing) {
@@ -280,7 +281,13 @@ void DroneNavigation::update(float time) {
         _dctrl->setAutoLandThrottleDecrease(0);
         _dctrl->set_flight_mode(DroneController::fm_inactive);
         land_incr = 0;
-        _navigation_status = ns_wait_for_insect;
+        _navigation_status = ns_wait_after_landing;
+        landed_time = time;
+    } case ns_wait_after_landing: {
+        _visdat->delete_from_motion_map(_dtrk->Drone_Startup_Im_Location()*IMSCALEF,10);
+        if (time - landed_time > params.time_out_after_landing )
+         _navigation_status = ns_wait_for_takeoff_command;
+        break;
     } FALLTHROUGH_INTENDED; case ns_manual: { // also used for disarmed
         wpid = 0;
         if (_nav_flight_mode == nfm_hunt) {
