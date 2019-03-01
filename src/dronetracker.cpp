@@ -167,7 +167,6 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
         }
         break;
     case dts_inactive: {
-        _visdat->delete_from_motion_map(Drone_Startup_Im_Location()*IMSCALEF, 10);
         roi_size_cnt = 0; // don't grow roi in this stage
         predicted_pathL.clear();
         foundL = false;
@@ -175,13 +174,34 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
         predicted_locationL_last = _drone_blink_world_location;
         reset_tracker_ouput(); //TODO: double?
         if (drone_is_active)
-            _drone_tracking_status = dts_detecting;
+            _drone_tracking_status = dts_detecting_takeoff;
         else {
             ItemTracker::append_log(); //really no point in trying to detect the drone when it is inactive...
             break;
         }
-    } FALLTHROUGH_INTENDED; case dts_detecting: {
-        _visdat->delete_from_motion_map(Drone_Startup_Im_Location()*IMSCALEF, 10);
+
+    } FALLTHROUGH_INTENDED; case dts_detecting_takeoff: {
+        ItemTracker::track(time,ignore,additional_ignores);
+        if (!drone_is_active)
+            _drone_tracking_status = dts_inactive;
+        else if (n_frames_lost==0 && find_result.keypointsL_candidates.size() > 1 ){
+            bool takeoff_spot_detected = false;
+            bool drone_detected_near_takeoff_spot = false;
+            for (uint i = 0; i< find_result.keypointsL_candidates.size(); i++){
+                track_item k = find_result.keypointsL_candidates.at(i);
+                float dist2take_off = sqrt(pow(k.x() - Drone_Startup_Im_Location().x,2)+pow(k.y() - Drone_Startup_Im_Location().y,2));
+                if (dist2take_off < 4)
+                    takeoff_spot_detected = true;
+                else if (dist2take_off > 6 && dist2take_off < 10)
+                    drone_detected_near_takeoff_spot = true;
+            }
+            if (takeoff_spot_detected &&drone_detected_near_takeoff_spot ) {
+                _drone_tracking_status = dts_detected;
+                _visdat->delete_from_motion_map(Drone_Startup_Im_Location()*IMSCALEF, 10);
+            }
+        }
+        break;
+    } case dts_detecting: {
         ItemTracker::track(time,ignore,additional_ignores);
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
@@ -189,7 +209,6 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
             _drone_tracking_status = dts_detected;
         break;
     } case dts_detected: {
-        _visdat->delete_from_motion_map(Drone_Startup_Im_Location()*IMSCALEF, 10);
         ItemTracker::track(time,ignore,additional_ignores);
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;

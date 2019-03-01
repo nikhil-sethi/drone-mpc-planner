@@ -23,6 +23,7 @@ static const char* blinking_drone_state_names[] = { "",
 static const char* drone_tracking_state_names[] = { "dts_init",
                                                     "dts_blinking",
                                                     "dts_inactive",
+                                                    "dts_detecting_takeoff",
                                                     "dts_detecting",
                                                     "dts_detected" };
 class DroneTracker : public ItemTracker {
@@ -47,10 +48,11 @@ private:
 
     enum drone_tracking_states {
         dts_init = 0,
-        dts_blinking = 1,
-        dts_inactive = 2,
-        dts_detecting = 3,
-        dts_detected=4
+        dts_blinking,
+        dts_inactive,
+        dts_detecting_takeoff,
+        dts_detecting,
+        dts_detected
     };
     drone_tracking_states _drone_tracking_status = dts_init;
 

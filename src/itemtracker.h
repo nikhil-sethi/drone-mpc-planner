@@ -135,6 +135,7 @@ private:
         cv::Mat treshL;
         std::vector<track_item> keypointsL;
         std::vector<track_item> keypointsL_wihout_voids;
+        std::vector<track_item> keypointsL_candidates;
         std::vector<track_item> excludes;
         cv::KeyPoint best_image_locationL;
         cv::Rect roi_offset;

@@ -333,6 +333,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude,std::vector<
                 break;
             }
         }
+        find_result.keypointsL_candidates = keypoint_candidates;
         nCandidates = static_cast<uint>(keypoint_candidates.size());
         if (keypoint_candidates.size() > 0) { // if !lost
             //Point3f predicted_output = world_coordinates[1];
