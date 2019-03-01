@@ -161,12 +161,11 @@ public:
         int setpoint_slider_Z = 1000;
 
         int land_incr_f_mm = 5;
-        int land_incr_f_mm = 50;
         int autoLandThrottleDecreaseFactor = 10;
         int auto_takeoff_speed = 3;
         float time_out_after_landing = 2.5f;
 
-        float version = 2.1f;
+        float version = 2.2f;
 
         template <class Archive>
         void serialize( Archive & ar )
