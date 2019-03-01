@@ -298,6 +298,15 @@ void Visualizer::draw_target_text(cv::Mat resFrame, float time, float dis,float 
     putText(resFrame,_dtrkr->Blinking_Drone_State() ,cv::Point(220*_res_mult,96*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     putText(resFrame,_dtrkr->Drone_Tracking_State() ,cv::Point(450*_res_mult,96*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
 
+    if (_fromfile) {
+        static int popcorn_cnt = 0;
+        popcorn_cnt++;
+        if (popcorn_cnt < 20)
+            putText(resFrame,"POPCORN TIME!" ,cv::Point(400*_res_mult,12*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
+        if (popcorn_cnt > 35)
+            popcorn_cnt  = 0;
+    }
+
 }
 
 cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, std::vector<ItemTracker::track_item> path,std::vector<ItemTracker::track_item> predicted_path,std::vector<ItemTracker::track_item> exclude_path,cv::Rect roi_offset,int exclude_max_distance, int exclude_min_distance) {
