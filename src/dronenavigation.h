@@ -160,6 +160,7 @@ public:
         int setpoint_slider_Y = 600;
         int setpoint_slider_Z = 1000;
 
+        int land_incr_f_mm = 5;
         int land_incr_f_mm = 50;
         int autoLandThrottleDecreaseFactor = 10;
         int auto_takeoff_speed = 3;
