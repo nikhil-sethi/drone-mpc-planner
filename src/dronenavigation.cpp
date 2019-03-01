@@ -195,6 +195,7 @@ void DroneNavigation::update(float time) {
         }
 
         if (setpoint_world.z == 0) { // fly to landing waypoint (but do not land)
+            //FIXME, use set_new_waypoint
             setpoint_world.x = -1.0f;
             setpoint_world.y = -1.20f;
             setpoint_world.z = -2.2f;
