@@ -100,6 +100,12 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
         fade(diffR16);
     }
 
+    if (delete_motion){
+        cv::circle(diffL16,delete_motion_spot,delete_motion_r,0,CV_FILLED);
+        cv::circle(diffR16,delete_motion_spot,delete_motion_r,0,CV_FILLED); //todo: add disparity
+        delete_motion = false;
+    }
+
     diffL = abs(diffL16);
     diffL.convertTo(diffL, CV_8UC1);
     cv::resize(diffL,diffL_small,smallsize);
@@ -156,4 +162,10 @@ void VisionData::track_avg_brightness(cv::Mat frame,float time) {
         }
         prev_brightness = brightness;
     }
+}
+
+void VisionData::delete_from_motion_map(cv::Point p, int radius) {
+    delete_motion = true;
+    delete_motion_spot = p;
+    delete_motion_r = radius;
 }

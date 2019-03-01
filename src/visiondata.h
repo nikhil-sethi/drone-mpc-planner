@@ -57,6 +57,9 @@ private:
     float prev_time_brightness_check = 0;
     float prev_brightness;
     bool _reset_motion_integration = false;
+    bool delete_motion = false;
+    cv::Point delete_motion_spot = {0};
+    int delete_motion_r = 0;
 
     void collect_no_drone_frames(cv::Mat diff);
     void track_avg_brightness(cv::Mat frame,float time);
@@ -88,6 +91,8 @@ public:
         _reset_motion_integration = true;
     }
     bool background_calibrated() {return _background_calibrated;}
+
+    void delete_from_motion_map(cv::Point p, int radius);
 };
 
 #endif // VIZDAT_H
