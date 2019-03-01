@@ -302,7 +302,7 @@ void Visualizer::draw_target_text(cv::Mat resFrame, float time, float dis,float 
         static int popcorn_cnt = 0;
         popcorn_cnt++;
         if (popcorn_cnt < 20)
-            putText(resFrame,"POPCORN TIME!" ,cv::Point(400*_res_mult,12*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
+            putText(resFrame,"POPCORN TIME!" ,cv::Point(400*_res_mult,24*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
         if (popcorn_cnt > 35)
             popcorn_cnt  = 0;
     }
