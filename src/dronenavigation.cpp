@@ -288,7 +288,7 @@ void DroneNavigation::update(float time) {
     } case ns_wait_after_landing: {
         _visdat->delete_from_motion_map(_dtrk->Drone_Startup_Im_Location()*IMSCALEF,10);
         if (time - landed_time > params.time_out_after_landing )
-         _navigation_status = ns_wait_for_takeoff_command;
+         _navigation_status = ns_locate_drone;
         break;
     } FALLTHROUGH_INTENDED; case ns_manual: { // also used for disarmed
         wpid = 0;
