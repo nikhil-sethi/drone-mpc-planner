@@ -103,6 +103,9 @@ public:
     float measured_exposure(){
         return _measured_exposure;
     }
+    float measured_gain(){
+        return _measured_gain;
+    }
 
     enum auto_exposure_enum{disabled = 0, enabled = 1, only_at_startup=2};
     const auto_exposure_enum enable_auto_exposure = only_at_startup;

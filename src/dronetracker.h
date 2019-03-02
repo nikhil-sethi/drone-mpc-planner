@@ -17,6 +17,7 @@ static const char* blinking_drone_state_names[] = { "",
                                                     "bds_1_blink_on",
                                                     "bds_2_blink_off",
                                                     "bds_2_blink_on",
+                                                    "bds_3_blink_off_calib",
                                                     "bds_3_blink_off",
                                                     "bds_3_blink_on",
                                                     "bds_found" };
@@ -33,15 +34,16 @@ class DroneTracker : public ItemTracker {
 private:
     enum blinking_drone_states {
         bds_start=1,
-        bds_reset_bkg=2,
-        bds_searching=3,
-        bds_1_blink_off=4,
-        bds_1_blink_on=5,
-        bds_2_blink_off=6,
-        bds_2_blink_on=7,
-        bds_3_blink_off=8,
-        bds_3_blink_on=9,
-        bds_found=10
+        bds_reset_bkg,
+        bds_searching,
+        bds_1_blink_off,
+        bds_1_blink_on,
+        bds_2_blink_off,
+        bds_2_blink_on,
+        bds_3_blink_off_calib,
+        bds_3_blink_off,
+        bds_3_blink_on,
+        bds_found
     };
     blinking_drone_states _blinking_drone_status = bds_start;
     float blink_time_start = 0;

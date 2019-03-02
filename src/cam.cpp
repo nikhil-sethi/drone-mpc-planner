@@ -101,7 +101,7 @@ void Cam::update_playback(void) {
             incremented_playback_frametime = (requested_id_in+funky_RS_frame_time_fixer_frame_count-2)*(1.f/VIDEOFPS) - (1.f/VIDEOFPS)*0.1f;  //requested_id_in-2 -> -2 seems to be necessary because the RS api skips a frame of either the left or right camera after resuming
             if (incremented_playback_frametime < 0)
                 incremented_playback_frametime = 0;
-                        std::cout << "Resuming RS: " << incremented_playback_frametime << std::endl;
+//            std::cout << "Resuming RS: " << incremented_playback_frametime << std::endl;
 
             if (duration-0.4f >= incremented_playback_frametime){
                 seek(incremented_playback_frametime);

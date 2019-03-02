@@ -77,16 +77,7 @@ void DroneNavigation::update(float time) {
 
     switch (_navigation_status) {
     case ns_init: {
-        _navigation_status = ns_calib_motion_background;
-        break;
-    } case ns_calib_motion_background: {
-        //wait until motion background done
-        if (_visdat->background_calibrated()) {
-            _navigation_status = ns_locate_drone;
-#ifdef BEEP
-            system("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Mallet.ogg &");
-#endif
-        }
+        _navigation_status = ns_locate_drone;
         break;
     } case ns_locate_drone: {
         _dctrl->blink_drone(true);

@@ -7,7 +7,7 @@
 using namespace cv;
 using namespace std;
 
-void VisionData::init(bool fromfile, std::string log_in_dir,cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, cv::Mat new_depth_background_mm){
+void VisionData::init(bool fromfile, std::string log_in_dir,cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, float new_camera_gain, cv::Mat new_depth_background_mm){
     Qf = new_Qf;
     frameL = new_frameL.clone();
     frameR = new_frameR.clone();
@@ -16,17 +16,12 @@ void VisionData::init(bool fromfile, std::string log_in_dir,cv::Mat new_Qf, cv::
     depth_background_mm = new_depth_background_mm;
 
     camera_angle = new_camera_angle;
+    camera_gain = new_camera_gain;
 
     if (fromfile)
         motion_noise_map_fn = log_in_dir + "/" +  motion_noise_map_fn;
     else
         motion_noise_map_fn = "./logging/" + motion_noise_map_fn;
-    max_uncertainty_map = imread(motion_noise_map_fn,false);
-
-    if (getSecondsSinceFileCreation(motion_noise_map_fn) < 60*60 || fromfile) {
-        _background_calibrated = true;
-        //todo: remove the old uncertainty map stuff, I don't think it works any more anyway
-    }
 
     if (checkFileExist(settingsFile)) {
         std::ifstream is(settingsFile, std::ios::binary);
@@ -51,6 +46,8 @@ void VisionData::init(bool fromfile, std::string log_in_dir,cv::Mat new_Qf, cv::
     frameR.convertTo(frameR16, CV_16SC1);
     diffL16 = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
     diffR16 = cv::Mat::zeros(cv::Size(frameR.cols,frameR.rows),CV_16SC1);
+    max_uncertainty_map = cv::Mat::zeros(smallsize,CV_8UC1);
+    diffL16_back = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
 
 #ifdef TUNING
     namedWindow("Background", WINDOW_NORMAL);
@@ -67,9 +64,10 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
     frameL = new_frameL;
     frameR = new_frameR;
     frame_id = new_frame_id;
+    _current_frame_time = time;
 
-    frameL_prev16 = frameL16;
-    frameR_prev16 = frameR16;
+    cv::Mat frameL_prev16 = frameL16;
+    cv::Mat frameR_prev16 = frameR16;
     cv::Mat tmpL;
     frameL.convertTo(tmpL, CV_16SC1);
     frameL16 = tmpL;
@@ -117,17 +115,8 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
 //    cv::imshow("diff", diffL*10);
 //    showRowImage({diffL*10,diffR*10},"motion",CV_8UC1,1.f);
 
-    if (!_background_calibrated )
-        collect_no_drone_frames(diffL_small); // calibration of background uncertainty map
-
-    if (!_background_calibrated && time > settings.background_calib_time) {
-        _background_calibrated= true;
-        imwrite(motion_noise_map_fn,max_uncertainty_map);
-    }
-
-#if CAMMODE == CAMMODE_GENERATOR
-    _background_calibrated = true;
-#endif
+    if (_calibrating_background )
+        collect_no_drone_frames(dL); // calibration of background uncertainty map
 
     lock_data.unlock();
 }
@@ -142,12 +131,39 @@ void VisionData::fade(cv::Mat diff16) {
     diff16 += diffL16_neg;
 }
 
-void VisionData::collect_no_drone_frames(cv::Mat diff) {
+void VisionData::collect_no_drone_frames(cv::Mat dL) {
 
-    if (max_uncertainty_map.cols == 0)
-        max_uncertainty_map = diff.clone();
-    cv::Mat mask = diff > max_uncertainty_map;
-    diff.copyTo(max_uncertainty_map,mask);
+    if (skip_background_frames > 0){ // during the first frame or two, there is still residual blink
+        skip_background_frames--;
+        return;
+    }
+
+    diffL16_back += dL;
+    cv::Mat diffL_back = abs(diffL16_back);
+    diffL_back.convertTo(diffL_back, CV_8UC1);
+    cv::resize(diffL_back,diffL_back,smallsize);
+
+    cv::Mat mask = diffL_back > max_uncertainty_map;
+    diffL_back.copyTo(max_uncertainty_map,mask);
+
+    double minv,maxv;
+    cv::minMaxLoc(max_uncertainty_map,&minv,&maxv);
+    if (maxv > 100)
+        std::cout << "Warning: max background motion during calibration too high: " << maxv << std::endl;
+
+    if (_current_frame_time > calibrating_background_end_time) {
+        _calibrating_background = false;
+        imwrite(motion_noise_map_fn,max_uncertainty_map);
+    }
+
+}
+
+void VisionData::enable_background_motion_map_calibration(float duration){
+    max_uncertainty_map = cv::Mat::zeros(smallsize,CV_8UC1);
+    diffL16_back = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
+    calibrating_background_end_time = _current_frame_time+duration;
+    _calibrating_background = true;
+    skip_background_frames = 2;
 }
 
 //Keep track of the average brightness, and reset the motion integration frame when it changes to much. (e.g. when someone turns on the lights or something)

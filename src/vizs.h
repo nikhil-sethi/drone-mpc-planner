@@ -32,6 +32,7 @@ private:
     cv::Mat draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, std::vector<ItemTracker::track_item> path,std::vector<ItemTracker::track_item> predicted_path,std::vector<ItemTracker::track_item> exclude_path,cv::Rect roi_offset,int exclude_max_distance, int exclude_min_distance);
     void draw_tracker_viz();
 
+    VisionData * _visdat;
     DroneController *_dctrl;
     DroneTracker *_dtrkr;
     InsectTracker *_itrkr;
@@ -171,7 +172,8 @@ public:
     void paint();
     void addPlotSample(void);
     void update_tracker_data(cv::Mat frameL, cv::Point3d setpoint, float time, DroneTracker *dtrk, InsectTracker *itrk);
-    void init(DroneController *dctrl, DroneTracker *dtrkr, InsectTracker *itrkr, DroneNavigation *dnav, MultiModule *rc, bool fromfile){
+    void init(VisionData * visdat, DroneController *dctrl, DroneTracker *dtrkr, InsectTracker *itrkr, DroneNavigation *dnav, MultiModule *rc, bool fromfile){
+        _visdat = visdat;
         _dctrl = dctrl;
         _dtrkr = dtrkr;
         _itrkr = itrkr;

@@ -208,7 +208,8 @@ protected:
     const int path_buf_size = 30;
 
     bool _enable_roi = true;
-    bool _enable_background_check = true;
+    bool _enable_depth_background_check = true;
+    bool _enable_motion_background_check = true;
 
     float stereo_match(cv::Point closestL, cv::Mat diffL, cv::Mat diffR, float prev_disparity);
     void reset_tracker_ouput();

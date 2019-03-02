@@ -68,7 +68,8 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
         switch (_blinking_drone_status) {
         case bds_start: {
             _enable_roi = false;
-            _enable_background_check = false;
+            _enable_depth_background_check = false;
+            _enable_motion_background_check = false;
             pathL.clear();
             predicted_pathL.clear();
             foundL = false; // todo: is this necessary?
@@ -89,7 +90,7 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
 #endif
             _enable_roi = false;
             ItemTracker::track(time,ignore,additional_ignores);
-            if (foundL) {
+            if (n_frames_lost == 0) {
                 _blinking_drone_status = bds_1_blink_off;
                 blink_time_start = time;
             }
@@ -116,7 +117,10 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
             ItemTracker::track(time,ignore,additional_ignores);
             _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
             break;
-        } case bds_3_blink_off: {
+        } case bds_3_blink_off_calib: {
+            _visdat->enable_background_motion_map_calibration(bind_blink_time*0.8f);  //0.8 to prevent picking up the upcoming blink in the background calib
+            _blinking_drone_status = bds_3_blink_off;
+        } FALLTHROUGH_INTENDED; case bds_3_blink_off: {
             roi_size_cnt = 0;
             ItemTracker::track(time,ignore,additional_ignores);
             _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
@@ -153,7 +157,8 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
             _drone_blink_world_location.x = d.sposX;
             _drone_blink_world_location.y = d.sposY;
             _drone_blink_world_location.z = d.sposZ;
-            _enable_background_check = true;
+            _enable_depth_background_check = true;
+            _enable_motion_background_check = true;
 
             //write to xml
             serialize_calib();

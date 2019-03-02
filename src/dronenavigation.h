@@ -100,7 +100,6 @@ private:
 
     enum navigation_states {
         ns_init=0,
-        ns_calib_motion_background,
         ns_locate_drone,
         ns_wait_locate_drone,
         ns_located_drone,

@@ -327,7 +327,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude,std::vector<
                 output.z = -output.y * sinf(theta) + output.z * cosf(theta);
                 output.y = temp_y;
             }
-            if ((!background_check_ok && _enable_background_check) || !disparity_in_range) {
+            if ((!background_check_ok && _enable_depth_background_check) || !disparity_in_range) {
                 keypoint_candidates.erase(keypoint_candidates.begin() + match_id);
             } else {
                 break;
@@ -516,6 +516,8 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
 
         cv::Mat bkg_frame_cutout = _visdat->max_uncertainty_map(find_result.roi_offset);
         uint8_t bkg = bkg_frame_cutout.at<uint8_t>(maxt.y,maxt.x);
+        if (!_enable_motion_background_check)
+            bkg = 0;
 
         if (max > bkg+settings.motion_thresh) {
             //find the COG:

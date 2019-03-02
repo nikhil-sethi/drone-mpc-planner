@@ -394,7 +394,7 @@ int init(int argc, char **argv) {
         cam.init();
     cam.update(); // wait for first frames
 
-    visdat.init(fromfile==log_mode_full,data_in_dir,cam.Qf, cam.frameL,cam.frameR,cam.camera_angle(),cam.depth_background_mm); // do after cam update to populate frames
+    visdat.init(fromfile==log_mode_full,data_in_dir,cam.Qf, cam.frameL,cam.frameR,cam.camera_angle(),cam.measured_gain(),cam.depth_background_mm); // do after cam update to populate frames
 
     visdat.update(cam.frameL,cam.frameR,cam.frame_time(),cam.frame_number()); //TODO: necessary? If so, streamline
 
@@ -421,7 +421,7 @@ int init(int argc, char **argv) {
 
     logger << std::endl;
 #ifdef HASSCREEN
-    visualizer.init(&dctrl,&dtrkr,&itrkr,&dnav,&rc,fromfile==log_mode_full);
+    visualizer.init(&visdat,&dctrl,&dtrkr,&itrkr,&dnav,&rc,fromfile==log_mode_full);
 #endif
 
     /*****init the video writer*****/
