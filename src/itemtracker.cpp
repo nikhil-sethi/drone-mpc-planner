@@ -69,6 +69,10 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     createTrackbar("exclude_min_distance", window_name, &settings.exclude_min_distance, 250);
     createTrackbar("background_subtract_zone_factor", window_name, &settings.background_subtract_zone_factor, 100);
 
+    createTrackbar("pixel_dist_landing_spot", window_name, &settings.pixel_dist_landing_spot, 100);
+    createTrackbar("pixel_dist_seperation_min", window_name, &settings.pixel_dist_seperation_min, 100);
+    createTrackbar("pixel_dist_seperation_max", window_name, &settings.pixel_dist_seperation_max, 100);
+
 #endif
 
     init_kalman();

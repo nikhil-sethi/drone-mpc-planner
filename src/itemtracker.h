@@ -110,7 +110,13 @@ private:
         int motion_thresh = 30;
 
         int background_subtract_zone_factor = 90;
-        float version = 1.4f;
+
+        //only for dronetracker:
+        int pixel_dist_landing_spot = 4;
+        int pixel_dist_seperation_min = 6;
+        int pixel_dist_seperation_max = 10;
+
+        float version = 1.5f;
 
         template <class Archive>
         void serialize( Archive & ar )
@@ -126,7 +132,9 @@ private:
                void_void_max_distance,appear_void_max_distance,
                exclude_max_distance,background_subtract_zone_factor,
                max_points_per_frame,ignore_circle_r_around_motion_max,
-               motion_thresh,exclude_additional_max_distance);
+               motion_thresh,exclude_additional_max_distance,
+               pixel_dist_landing_spot,pixel_dist_seperation_min,
+               pixel_dist_seperation_max);
         }
 
     };
