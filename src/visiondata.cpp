@@ -34,7 +34,7 @@ void VisionData::init(bool fromfile, std::string log_in_dir,cv::Mat new_Qf, cv::
             exit (1);
         }
         BaseVisionSettings tmp;
-        if (settings.version < tmp.version){
+        if (tmp.version-settings.version > 0.001f){
             std::cout << "Visiondata settings version too low!" << std::endl;
             std::cout << "Maybe delete the file: " << settingsFile << std::endl;
             throw my_exit(1);

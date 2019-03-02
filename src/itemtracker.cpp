@@ -35,7 +35,7 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
             exit (1);
         }
         TrackerSettings tmp;
-        if (settings.version < tmp.version){
+        if (tmp.version-settings.version > 0.001f){
             std::cout << "Itemtracker settings version too low!" << std::endl;
             std::cout << "Maybe delete the file: " << _settingsFile << std::endl;
             throw my_exit(1);

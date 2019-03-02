@@ -24,13 +24,13 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
         try {
             archive(params);
         }catch (cereal::Exception e) {
-            std::cout << "Dronecontroller settings file error: " << e.what() << std::endl;
+            std::cout << "Drone navigation settings file error: " << e.what() << std::endl;
             std::cout << "Maybe delete the file: " << paramsFile << std::endl;
             exit (1);
         }
         navigationParameters tmp;
-        if (params.version < tmp.version){
-            std::cout << "Dronecontroller settings version too low!" << std::endl;
+        if (tmp.version-params.version > 0.001f){
+            std::cout << "Drone navigation settings version too low!" << std::endl;
             std::cout << "Maybe delete the file: " << paramsFile << std::endl;
             throw my_exit(1);
         }
