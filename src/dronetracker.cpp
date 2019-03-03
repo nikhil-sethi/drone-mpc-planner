@@ -131,26 +131,21 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
             _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
             break;
         } case bds_found: {
+            _enable_depth_background_check = true;
+            _enable_motion_background_check = true;
+            append_log(); // no tracking needed in this stage
+            _drone_tracking_status = dts_inactive; //progress to the next stage in the main tracker state machine
+
 #ifdef MANUAL_DRONE_LOCATE
             _enable_roi = true;
-            append_log();
-
             //TMP solution:
             _drone_blink_world_location.x = 0.190292642;
             _drone_blink_world_location.y = -1.64084888;
             _drone_blink_world_location.z = -1.32899487;
-            _enable_background_check = true;
-
             //write to xml
             serialize_calib();
-
-            //progress to the next stage in the main tracker state machine
-            _drone_tracking_status = dts_inactive;
             break;
 #endif
-
-            append_log(); // no tracking needed in this stage
-
             //save found drone location
             _drone_blink_image_location = find_result.best_image_locationL.pt;
             trackData d = Last_track_data();
@@ -162,9 +157,6 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
 
             //write to xml
             serialize_calib();
-
-            //progress to the next stage in the main tracker state machine
-            _drone_tracking_status = dts_inactive;
             break;
         }
         }
