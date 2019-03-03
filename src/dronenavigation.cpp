@@ -278,12 +278,12 @@ void DroneNavigation::update(float time) {
         land_incr = 0;
         _navigation_status = ns_wait_after_landing;
         landed_time = time;
-    } case ns_wait_after_landing: {
+    } FALLTHROUGH_INTENDED; case ns_wait_after_landing: {
         _visdat->delete_from_motion_map(_dtrk->Drone_Startup_Im_Location()*IMSCALEF,10);
         if (time - landed_time > params.time_out_after_landing )
          _navigation_status = ns_locate_drone;
         break;
-    } FALLTHROUGH_INTENDED; case ns_manual: { // also used for disarmed
+    } case ns_manual: { // also used for disarmed
         wpid = 0;
         if (_nav_flight_mode == nfm_hunt) {
             _navigation_status=ns_wait_for_insect;
