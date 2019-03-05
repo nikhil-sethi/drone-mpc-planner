@@ -219,6 +219,8 @@ void Cam::rs_callback(rs2::frame f) {
 
     if (f.get_frame_number() < last_sync_id-50) {
         std::cout << "Warning: rs frame number reset happened!!!" << std::endl;
+        if (last_sync_id > 300)
+            return;
         last_sync_id = f.get_frame_number();
     }
 
