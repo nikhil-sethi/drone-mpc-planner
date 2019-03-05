@@ -130,6 +130,17 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
             ItemTracker::track(time,ignore,additional_ignores);
             _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
             break;
+        } case bds_dedicated_calib: {
+            append_log();
+            _visdat->enable_background_motion_map_calibration(5.f);
+            manual_calib_time_start = time;
+            _blinking_drone_status = bds_calib_wait;
+            break;
+        } case bds_calib_wait: {
+            append_log();
+            if (time  - manual_calib_time_start > 5.1f)
+                _blinking_drone_status = bds_found;
+            break;
         } case bds_found: {
             _enable_depth_background_check = true;
             _enable_motion_background_check = true;

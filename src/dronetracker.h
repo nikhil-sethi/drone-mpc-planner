@@ -20,6 +20,8 @@ static const char* blinking_drone_state_names[] = { "",
                                                     "bds_3_blink_off_calib",
                                                     "bds_3_blink_off",
                                                     "bds_3_blink_on",
+                                                    "bds_dedicated_calib",
+                                                    "bds_calib_wait",
                                                     "bds_found" };
 static const char* drone_tracking_state_names[] = { "dts_init",
                                                     "dts_blinking",
@@ -43,10 +45,13 @@ private:
         bds_3_blink_off_calib,
         bds_3_blink_off,
         bds_3_blink_on,
+        bds_dedicated_calib,
+        bds_calib_wait,
         bds_found
     };
     blinking_drone_states _blinking_drone_status = bds_start;
     float blink_time_start = 0;
+    float manual_calib_time_start = 0;
 
     enum drone_tracking_states {
         dts_init = 0,
