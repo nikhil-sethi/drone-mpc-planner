@@ -201,7 +201,7 @@ void Cam::update_real(void) {
     if (_frame_time_start <0)
         _frame_time_start = rs_frameL.get_timestamp();
     _frame_time = (static_cast<float>(rs_frameL.get_timestamp()) -_frame_time_start)/1000.f;
-    //    std::cout << "-------------frame id: " << _frame_number << " seek time: " << incremented_playback_frametime << std::endl;
+//    std::cout << "-------------frame id: " << _frame_number << " time: " << _frame_time << std::endl;
     lock_frame_data.unlock();
 
     new_frame1 = false;
@@ -217,7 +217,7 @@ void Cam::rs_callback(rs2::frame f) {
     //    if (f.get_profile().stream_index() == 2 )
     //        std::cout << "Received id         " << f.get_frame_number() << ":" << (static_cast<float>(f.get_timestamp()) -_frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << " Last: " << last_sync_id << std::endl;
 
-    if (f.get_frame_number() < last_sync_id-50) {
+    if (f.get_frame_number() < last_sync_id-50 && last_sync_id > 300) {
         std::cout << "Warning: rs frame number reset happened!!!" << std::endl;
         if (last_sync_id > 300)
             return;
@@ -539,6 +539,7 @@ void Cam::sense_light_level(){
 
     imwrite(brightness_map_fn,frameLt);
 
+    cfg.disable_all_streams();
     cam.stop();
 }
 
@@ -730,6 +731,7 @@ void Cam::calib_pose(){
             throw my_exit(1);
         }
     }
+    cfg.disable_all_streams();
     cam.stop();
 }
 
