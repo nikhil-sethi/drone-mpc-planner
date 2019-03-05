@@ -519,7 +519,6 @@ int main( int argc, char **argv )
 
 void manual_drone_locater(cv::Mat frame){
     cv::namedWindow("Manual_drone_locator", CV_WINDOW_NORMAL);
-    cv::setWindowProperty("Manual_drone_locator", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
     cv::setMouseCallback("Manual_drone_locator", CallBackFunc, NULL);
 
     while(1) {
