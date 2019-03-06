@@ -22,6 +22,7 @@
 #define TX_DSMX 1
 #define TX_CX10 2
 #define TX_FRSKYD 3
+#define TX_FRSKYX 4
 
 //#define INSECT_LOGGING_MODE
 

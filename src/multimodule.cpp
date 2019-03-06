@@ -76,7 +76,7 @@ void MultiModule::send_data(void) {
     channels[1] = pitch;
     channels[2] = throttle;
     channels[3] = yaw;
-    if (TX_TYPE==TX_DSMX || TX_TYPE==TX_FRSKYD) {
+    if (TX_TYPE==TX_DSMX || TX_TYPE==TX_FRSKYD || TX_TYPE==TX_FRSKYX) {
         channels[4] = arm_switch;
         channels[5] = JOY_BOUND_MIN; // set to angle mode in BF
     }

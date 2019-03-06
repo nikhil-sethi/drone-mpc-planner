@@ -52,6 +52,11 @@
 #define TX_SUB_PROTOCOL 0
 #endif
 
+#if TX_TYPE == TX_FRSKYX
+#define TX_PROTOCOL 15
+#define TX_SUB_PROTOCOL 1
+#endif
+
 
 #ifndef TX_RATE
 #define TX_RATE 0
