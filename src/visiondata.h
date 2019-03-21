@@ -74,6 +74,8 @@ public:
     cv::Mat max_uncertainty_map; // IMSCALEF smaller than original, CV8UC1 max motion background map
     cv::Mat diffL,diffR,diffL_small,diffR_small;
 
+    cv::Mat viz_frame;
+
     int frame_id;
     cv::Size smallsize;
     cv::Mat Qf;

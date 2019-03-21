@@ -2,6 +2,7 @@
 
 #ifdef HASSCREEN
 //#define TUNING
+#define VIZ
 #endif
 
 using namespace cv;
@@ -112,8 +113,10 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
     diffR.convertTo(diffR, CV_8UC1);
     cv::resize(diffR,diffR_small,smallsize);
 
-//    cv::imshow("diff", diffL*10);
-//    showRowImage({diffL*10,diffR*10},"motion",CV_8UC1,1.f);
+#ifdef VIZ
+    viz_frame = diffL*10;
+//    viz_frame = createRowImage({diffL*10,diffR*10},CV_8UC1,1.f);
+#endif
 
     if (_calibrating_background )
         collect_no_drone_frames(dL); // calibration of background uncertainty map
