@@ -42,6 +42,7 @@ void LogReader::init(std::string file) {
     setHeadMap(heads);
     std::string line;
     while (std::getline(infile, line)) {
+//        std::cout << line << std::endl;
         std::istringstream iss(line);
         Log_Entry entry = createLogEntry(line);
         std::map<const int, Log_Entry>::value_type item(entry.RS_ID,entry);
