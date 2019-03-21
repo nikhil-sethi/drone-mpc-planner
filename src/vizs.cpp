@@ -454,9 +454,9 @@ void Visualizer::paint() {
     if (request_trackframe_paint) {
         request_trackframe_paint = false;
         cv::imshow("tracking results", trackframe);
-        if (_visdat->viz_frame.cols > 0)
-            cv::imshow("diff", _visdat->viz_frame);
-        draw_segment_viz();
+//        if (_visdat->viz_frame.cols > 0)
+//            cv::imshow("diff", _visdat->viz_frame);
+//        draw_segment_viz();
         new_tracker_viz_data_requested = true;
     }
     if (request_plotframe_paint && plotframe.rows > 0) {
