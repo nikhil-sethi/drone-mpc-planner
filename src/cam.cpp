@@ -68,7 +68,7 @@ void Cam::update_playback(void) {
             std::cout << "Warning, frame jump detected. " << requested_id_in << " -> " << lowest_complete_id  << std::endl;
             requested_id_in = lowest_complete_id;
         }
-        if (frame_time_higest_id < _frame_time){
+        if (frame_time_higest_id < _frame_time && playback_bufferR_cleaned.size()>0){
             //for some reason the frame time and id counter sometimes resets in the bag files...
             std::cout << "Warning, frame reset detected. " << _frame_time << " -> " << frame_time_higest_id  << std::endl;
             funky_RS_frame_time_fixer_frame_count += requested_id_in;
