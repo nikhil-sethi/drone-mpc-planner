@@ -7,42 +7,6 @@ void InsectTracker::init(std::ofstream *logger, VisionData *visdat) {
     ItemTracker::init(logger,visdat,"insect");
 }
 void InsectTracker::init_settings() {
-    //thresh params
-    settings.iLowH1r = 10;
-    settings.iHighH1r = 255;
-    settings.iLowS1r = 0;
-    settings.iHighS1r = 255;
-    settings.iLowV1r = 188;
-    settings.iHighV1r = 255;
-    settings.iOpen1r =0;
-    settings.iClose1r =0;
-
-    //blob params
-
-    // Change thresholds
-    settings.minThreshold = 10;
-    settings.maxThreshold = 91;
-
-    // Filter by Area.
-    settings.filterByArea = 1;
-    settings.minArea = 0;
-    settings.maxArea = 80;
-
-    // Filter by Circularity
-    settings.filterByCircularity = 0;
-    settings.minCircularity = 10;
-    settings.maxCircularity = 100;
-
-    // Filter by Convexity
-    settings.filterByConvexity = 0;
-    settings.minConvexity = 87;
-    settings.maxConvexity = 100;
-
-    // Filter by Inertia
-    settings.filterByInertia = 0;
-    settings.minInertiaRatio = 1;
-    settings.maxInertiaRatio = 100;
-
     settings.min_disparity=1;
     settings.max_disparity=20;
 

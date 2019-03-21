@@ -13,10 +13,6 @@ using namespace std;
 //#define TUNING
 #endif
 
-//#define OPENCV_BLOBTRACKER
-//TODO: remove _treshL when removing OPENCV_BLOBTRACKER
-// also remove the uncertainty_map, the max_uncertainty_map should give all necesary info
-
 void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string name) {
     _logger = logger;
     _visdat = visdat;
@@ -46,19 +42,10 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
 
 #ifdef TUNING
     namedWindow(window_name, WINDOW_NORMAL);
-#ifdef OPENCV_BLOBTRACKER
-    createTrackbar("LowH1", window_name, &settings.iLowH1r, 255);
-    createTrackbar("HighH1", window_name, &settings.iHighH1r, 255);
-    createTrackbar("filterByArea", window_name, &settings.filterByArea, 1);
-    createTrackbar("minArea", window_name, &settings.minArea, 10000);
-    createTrackbar("maxArea", window_name, &settings.maxArea, 10000);
-    createTrackbar("Opening1", window_name, &settings.iOpen1r, 30);
-    createTrackbar("Closing1", window_name, &settings.iClose1r, 30);
-#else
+
     createTrackbar("#points / frame", window_name, &settings.max_points_per_frame, 255);
     createTrackbar("ignore circle size", window_name, &settings.ignore_circle_r_around_motion_max, 255);
     createTrackbar("Motion threshold", window_name, &settings.motion_thresh, 255);
-#endif
     createTrackbar("Min disparity", window_name, &settings.min_disparity, 255);
     createTrackbar("Max disparity", window_name, &settings.max_disparity, 255);
     createTrackbar("roi_min_size", window_name, &settings.roi_min_size, 2000);
@@ -76,8 +63,6 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
 #endif
 
     init_kalman();
-
-    updateParams();
 
     smoother_posX.init(smooth_width_pos);
     smoother_posY.init(smooth_width_pos);
@@ -406,40 +391,6 @@ void ItemTracker::append_log() {
     (*_logger) << last.saccX << "; " << last.saccY << "; " << last.saccZ << ";";
 }
 
-void ItemTracker::updateParams(){
-    // Change thresholds
-    params.minThreshold = settings.minThreshold+1;
-    params.maxThreshold = settings.maxThreshold+1;
-
-    // Filter by Area.
-    params.filterByArea = settings.filterByArea;
-    params.minArea = (settings.minArea/(IMSCALEF*IMSCALEF));
-    params.maxArea = (settings.maxArea/(IMSCALEF*IMSCALEF));
-
-    // Filter by Circularity
-    params.filterByCircularity = settings.filterByCircularity;
-    params.minCircularity = static_cast<float>(settings.minCircularity)/100.0f;
-    params.maxCircularity = static_cast<float>(settings.maxCircularity)/100.0f;
-
-    // Filter by Convexity
-    params.filterByConvexity = settings.filterByConvexity;
-    params.minConvexity = static_cast<float>(settings.minConvexity)/100.0f;
-    params.maxConvexity = static_cast<float>(settings.maxConvexity)/100.0f;
-
-    // Filter by Inertia
-    params.filterByInertia = settings.filterByInertia;
-    params.minInertiaRatio = static_cast<float>(settings.minInertiaRatio)/100.0f;
-    params.maxInertiaRatio = static_cast<float>(settings.maxInertiaRatio)/100.0f;
-
-    params.minRepeatability = 1;
-    params.minDistBetweenBlobs=0;
-    params.filterByColor = 0;
-    params.thresholdStep=1;
-
-
-}
-
-
 void ItemTracker::find(std::vector<track_item> exclude,std::vector<cv::Point2f> additional_ignores) {
     cv::Point previous_location;
 
@@ -468,17 +419,8 @@ void ItemTracker::find(std::vector<track_item> exclude,std::vector<cv::Point2f> 
 
 
     std::vector<KeyPoint> keypointsL;
-#ifdef OPENCV_BLOBTRACKER
-    //attempt to detect changed blobs
-    _treshL = segment(_visdat->diffL_small,previous_location,roi_size);
-    //    cv::Mat tmp = createColumnImage({_treshL,_visdat->diffL*100,_visdat->frameL},CV_8UC1,0.25f);
-    //    cv::imshow("trek",tmp);
-    cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
-    detector->detect( _treshL, keypointsL);
-#else
     find_max_change(previous_location,roi_size,_visdat->diffL_small,&keypointsL);
 
-#endif
     vector<track_item> kps;
     for (uint i = 0 ; i < keypointsL.size();i++) {
         keypointsL.at(i).pt.x += find_result.roi_offset.x;
@@ -502,7 +444,6 @@ void ItemTracker::find(std::vector<track_item> exclude,std::vector<cv::Point2f> 
     }
     find_result.excludes = exclude;
     find_result.keypointsL = kps;
-    find_result.treshL = _treshL;
 }
 
 void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff,std::vector<KeyPoint> * scored_points) {
@@ -617,20 +558,6 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_voids(std::vector<track
         }
     }
     return keyps_no_voids;
-}
-
-/* binary segment the motion subtraction, and apply some filtering */
-cv::Mat ItemTracker::segment(cv::Mat diffL, cv::Point previous_imageL_location, cv::Point roi_size) {
-
-    _approx = get_approx_cutout_filtered(previous_imageL_location,diffL,roi_size);
-    inRange(_approx, settings.iLowH1r, settings.iHighH1r, _treshL);
-    //TODO: remove erode dilate and related if really obsolete:
-    if (settings.iClose1r > 0)
-        dilate( _treshL, _treshL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iClose1r, settings.iClose1r)));
-    if (settings.iOpen1r > 0)
-        erode(_treshL, _treshL, getStructuringElement(MORPH_ELLIPSE, Size(settings.iOpen1r, settings.iOpen1r)));
-
-    return _treshL;
 }
 
 cv::Mat ItemTracker::get_probability_cloud(cv::Point size) {

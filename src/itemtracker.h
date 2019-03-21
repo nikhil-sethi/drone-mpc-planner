@@ -52,44 +52,7 @@ public:
 
     cv::Point3f predicted_locationL_last = {0};
 private:
-    cv::SimpleBlobDetector::Params params;
     struct TrackerSettings{
-
-        //thresh params
-        int iLowH1r = 10;
-        int iHighH1r = 255;
-        int iLowS1r = 0;
-        int iHighS1r = 255;
-        int iLowV1r = 188;
-        int iHighV1r = 255;
-        int iOpen1r =0;
-        int iClose1r =2;
-
-        //blob params
-
-        // Change thresholds
-        int minThreshold = 10;
-        int maxThreshold = 91;
-
-        // Filter by Area.
-        int filterByArea = 1;
-        int minArea = 1;
-        int maxArea = 40;
-
-        // Filter by Circularity
-        int filterByCircularity = 0;
-        int minCircularity = 10;
-        int maxCircularity = 100;
-
-        // Filter by Convexity
-        int filterByConvexity = 0;
-        int minConvexity = 87;
-        int maxConvexity = 100;
-
-        // Filter by Inertia
-        int filterByInertia = 0;
-        int minInertiaRatio = 1;
-        int maxInertiaRatio = 100;
 
         int min_disparity=0;
         int max_disparity=20;
@@ -116,18 +79,12 @@ private:
         int pixel_dist_seperation_min = 6;
         int pixel_dist_seperation_max = 10;
 
-        float version = 1.5f;
+        float version = 1.6f;
 
         template <class Archive>
         void serialize( Archive & ar )
         {
-            ar(version, iLowH1r,iHighH1r,iLowS1r,iHighS1r,
-               iLowV1r,iHighV1r,iOpen1r,iClose1r,minThreshold,
-               maxThreshold,filterByArea,minArea,maxArea,
-               filterByCircularity,minCircularity,maxCircularity,
-               filterByConvexity,minConvexity,maxConvexity,
-               filterByInertia,minInertiaRatio,maxInertiaRatio,
-               min_disparity,max_disparity,roi_min_size,
+            ar(version,min_disparity,max_disparity,roi_min_size,
                roi_max_grow,roi_grow_speed,appear_void_max_distance,
                void_void_max_distance,appear_void_max_distance,
                exclude_max_distance,background_subtract_zone_factor,
@@ -140,7 +97,6 @@ private:
     };
     std::string _settingsFile;
     struct Find_result {
-        cv::Mat treshL;
         std::vector<track_item> keypointsL;
         std::vector<track_item> keypointsL_wihout_voids;
         std::vector<track_item> keypointsL_candidates;
@@ -150,8 +106,6 @@ private:
         float disparity;
     };
 
-    void updateParams();
-    cv::Mat segment(cv::Mat diffL, cv::Point previous_imageL_location, cv::Point roi_size);
     cv::Point3f predict(float dt, int frame_id);
     virtual cv::Mat get_approx_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size) = 0;
     uint match_closest_to_prediciton(cv::Point3f predicted_locationL, std::vector<track_item> keypointsL);
@@ -226,7 +180,7 @@ protected:
 public:
 
     TrackerSettings settings;
-    cv::Mat _cir,_dif,_treshL,_approx;
+    cv::Mat _cir,_dif,_approx;
     Find_result find_result;
     std::vector<track_item> pathL;
     std::vector<track_item> predicted_pathL;
@@ -262,8 +216,5 @@ public:
     float posY_smoothed = 0;
     float posZ_smoothed = 0;
 };
-
-
-
 
 #endif //ITEMTRACKER_H

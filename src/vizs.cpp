@@ -269,11 +269,10 @@ cv::Mat Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Point setpoint, std:
 
 void Visualizer::draw_segment_viz(void){
     std::vector<cv::Mat> ims;
-    if (cir8.cols > 0 && dif8.cols > 0 && approx.cols > 0 && tresh.cols > 0 ){
+    if (cir8.cols > 0 && dif8.cols > 0 && approx.cols > 0 ){
         ims.push_back(cir8);
         ims.push_back(dif8);
         ims.push_back(approx);
-        ims.push_back(tresh);
         showColumnImage(ims,"drone_roi",CV_8UC1);
     }
 }
@@ -366,7 +365,6 @@ void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3d setpoint, float
                 min_dis = dis;
         }
 
-
         tracker_viz_base_data.frameL = frameL;
         tracker_viz_base_data.dis = dis;
         tracker_viz_base_data.min_dis = min_dis;
@@ -386,7 +384,6 @@ void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3d setpoint, float
         cir8.convertTo(cir8, CV_8UC1);
         dif8.convertTo(dif8, CV_8UC1);
         approx = _dtrkr->_approx.clone();
-        tresh = _dtrkr->_treshL.clone();
 
         new_tracker_viz_data_requested = false;
         lock_frame_data.unlock();
