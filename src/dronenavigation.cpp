@@ -163,7 +163,7 @@ void DroneNavigation::update(float time) {
         set_next_waypoint(hovercalib_waypoint());
         _navigation_status = ns_approach_waypoint;
         if (_nav_flight_mode == nfm_manual)
-                    _navigation_status = ns_manual;
+            _navigation_status = ns_manual;
         break;
     } case ns_start_the_chase: {
         _iceptor.reset_insect_cleared();
@@ -175,7 +175,7 @@ void DroneNavigation::update(float time) {
             _navigation_status = ns_goto_landing_waypoint;
 
         if (_nav_flight_mode == nfm_manual)
-                    _navigation_status = ns_manual;
+            _navigation_status = ns_manual;
     } FALLTHROUGH_INTENDED; case ns_chasing_insect: {
 
         //update target chasing waypoint and speed
@@ -210,8 +210,15 @@ void DroneNavigation::update(float time) {
         break;
     } case ns_approach_waypoint: {
 #ifdef MANUAL_DRONE_LOCATE
-        if (_calibrating_hover)
+
+        if (current_setpoint->mode == fm_landing){
             set_next_waypoint(landing_waypoint()); // re-update the location, important when manually setting take off location
+        } else if (current_setpoint->mode == fm_hover_calib){
+            set_next_waypoint(hovercalib_waypoint()); // re-update the location, important when manually setting take off location
+        } else if (current_setpoint->mode == fm_takeoff){
+            set_next_waypoint(takeoff_waypoint()); // re-update the location, important when manually setting take off location
+        }
+
 #endif
 
         float dis = sqrtf(_dctrl->posErrX*_dctrl->posErrX + _dctrl->posErrY*_dctrl->posErrY + _dctrl->posErrZ*_dctrl->posErrZ);
@@ -281,7 +288,7 @@ void DroneNavigation::update(float time) {
     } FALLTHROUGH_INTENDED; case ns_wait_after_landing: {
         _visdat->delete_from_motion_map(_dtrk->Drone_Startup_Im_Location()*IMSCALEF,10);
         if (time - landed_time > params.time_out_after_landing )
-         _navigation_status = ns_locate_drone;
+            _navigation_status = ns_locate_drone;
         break;
     } case ns_manual: { // also used for disarmed
         wpid = 0;

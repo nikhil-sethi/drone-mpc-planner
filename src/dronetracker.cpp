@@ -165,10 +165,8 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
             for (uint i = 0; i< find_result.keypointsL_candidates.size(); i++){
                 track_item k = find_result.keypointsL_candidates.at(i);
                 float dist2take_off = sqrt(pow(k.x() - Drone_Startup_Im_Location().x,2)+pow(k.y() - Drone_Startup_Im_Location().y,2));
-                if (dist2take_off < settings.pixel_dist_landing_spot)
+                if (dist2take_off < settings.pixel_dist_landing_spot){
                     takeoff_spot_detected = true;
-                else if (dist2take_off > settings.pixel_dist_seperation_min && dist2take_off < settings.pixel_dist_seperation_max){
-                    drone_detected_near_takeoff_spot = true;
 #ifdef MANUAL_DRONE_LOCATE
                     float disparity = stereo_match(k.k.pt,_visdat->diffL,_visdat->diffR,find_result.disparity);
                     std::vector<cv::Point3d> camera_coordinates, world_coordinates;
@@ -181,7 +179,8 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
                     output.y = temp_y;
                     _drone_blink_world_location = output;
 #endif
-
+                } else if (dist2take_off > settings.pixel_dist_seperation_min && dist2take_off < settings.pixel_dist_seperation_max){
+                    drone_detected_near_takeoff_spot = true;
                 }
             }
             if (takeoff_spot_detected &&drone_detected_near_takeoff_spot ) {
