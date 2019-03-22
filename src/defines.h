@@ -38,7 +38,7 @@
 //    #define BEEP // leave of, causes realsense resets! Prolly needs moving to main UI thread...
     #define VIDEORAWLR VIDEOMODE_BAG
     #define JOYSTICK_TYPE RC_XLITE
-    #define TX_TYPE TX_FRSKYD
+    #define TX_TYPE TX_FRSKYX
 #endif
 
 #define VIDEODISPARITY VIDEOMODE_DISABLED
