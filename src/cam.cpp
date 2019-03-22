@@ -97,7 +97,7 @@ void Cam::update_playback(void) {
             throw my_exit(0);
         }
 
-        if (_paused && playback_bufferR.size() < 3 ){ // 3 to start buffering 3 frames before the buffer runs empty
+        if (_paused && playback_bufferR_cleaned.size() < 3 ){ // 3 to start buffering 3 frames before the buffer runs empty
             incremented_playback_frametime = (requested_id_in+funky_RS_frame_time_fixer_frame_count-2)*(1.f/VIDEOFPS) - (1.f/VIDEOFPS)*0.1f;  //requested_id_in-2 -> -2 seems to be necessary because the RS api skips a frame of either the left or right camera after resuming
             if (incremented_playback_frametime < 0)
                 incremented_playback_frametime = 0;
