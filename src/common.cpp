@@ -145,6 +145,9 @@ cv::Mat createRowImage(std::vector<cv::Mat> ims, int type,float resizef)
         }
 
         cv::resize(im,roi,cv::Size(im.cols*resizef,im.rows*resizef));
+        if (i<ims.size()-1)
+            cv::line(roi,cv::Point(roi.cols-1,0),cv::Point(roi.cols-1,roi.rows-1),cv::Scalar(255,255,255));
+
         p1.x += im.cols*resizef;
     }
     return res;
@@ -183,6 +186,8 @@ cv::Mat createColumnImage(std::vector<cv::Mat> ims, int type,float resizef)
         }
 
         cv::resize(im,roi,cv::Size(im.cols*resizef,im.rows*resizef));
+        if (i<ims.size()-1)
+            cv::line(roi,cv::Point(0,roi.rows-1),cv::Point(roi.cols,roi.rows-1),cv::Scalar(255,255,255));
         p1.y += im.rows*resizef;
     }
     return res;
