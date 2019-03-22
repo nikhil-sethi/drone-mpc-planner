@@ -11,7 +11,7 @@ using namespace std;
 
 #ifdef HASSCREEN
 //#define TUNING
-#define VIZ
+//#define VIZ
 #endif
 
 void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string name) {
@@ -178,7 +178,7 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<tr
         std::vector<track_item> tmp = keypoints;
         int erase_cnt =0;
         for (uint i = 0 ; i< tmp.size();i++){
-            dis1 = sqrtf(powf(tmp.at(i).k.pt.x - exclude.x(),2) +powf(tmp.at(i).k.pt.y - exclude.y(),2)) - exclude.k.size;
+            dis1 = sqrtf(powf(tmp.at(i).k.pt.x - exclude.x(),2) +powf(tmp.at(i).k.pt.y - exclude.y(),2));
             dis2 = sqrtf(powf(tmp.at(i).k_void.pt.x - exclude.x(),2) +powf(tmp.at(i).k_void.pt.y - exclude.y(),2));
             float certainty_this_kp = calc_certainty(tmp.at(i).k);
 
@@ -231,11 +231,11 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes_improved(std::
                 if (threshold_dis > settings.exclude_max_distance)
                     threshold_dis = settings.exclude_max_distance;
 
-                dis1 = sqrtf(powf(tmp.at(i).k.pt.x - exclude.x(),2) +powf(tmp.at(i).k.pt.y - exclude.y(),2)) - exclude.k.size;
+                dis1 = sqrtf(powf(tmp.at(i).k.pt.x - exclude.x(),2) +powf(tmp.at(i).k.pt.y - exclude.y(),2));
                 if (dis1 < 0)
                     dis1 = 0;
                 if (this->predicted_pathL.size() > 0) {
-                    dis3 = sqrtf(powf(tmp.at(i).k.pt.x - this->predicted_pathL.back().x(),2) +powf(tmp.at(i).k.pt.y - this->predicted_pathL.back().y(),2)) + exclude.k.size;
+                    dis3 = sqrtf(powf(tmp.at(i).k.pt.x - this->predicted_pathL.back().x(),2) +powf(tmp.at(i).k.pt.y - this->predicted_pathL.back().y(),2));
                     certainty_prediction = this->predicted_pathL.back().tracking_certainty;
                 } else {
                     dis3 = threshold_dis;
