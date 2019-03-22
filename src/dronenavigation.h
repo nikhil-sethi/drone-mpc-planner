@@ -13,7 +13,6 @@
  *
  */
 static const char* navigation_status_names[] = {"ns_init",
-                                                "ns_calib_background",
                                                 "ns_locate_drone",
                                                 "ns_wait_locate_drone",
                                                 "ns_located_drone",
