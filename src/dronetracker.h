@@ -142,11 +142,11 @@ public:
         cv::Point3f p3 = Drone_Startup_Location();
         p3.y+=0.15f;
         predicted_locationL_last = p3;
-        _drone_tracking_status = dts_inactive;
-        pathL.clear();
-        predicted_pathL.clear();
-        predicted_pathL.push_back(ti);
-        foundL = false;
+//        _drone_tracking_status = dts_inactive;
+//        pathL.clear();
+//        predicted_pathL.clear();
+//        predicted_pathL.push_back(ti);
+//        foundL = false;
     }
     void set_drone_location(cv::Point p){
        _drone_blink_image_location = p/IMSCALEF;
