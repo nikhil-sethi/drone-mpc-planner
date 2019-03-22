@@ -186,6 +186,7 @@ public:
     std::vector<track_item> predicted_pathL;
     std::vector<track_item> ignores; // keeps the item locations that should be ignored by other itemtrackers
 
+    cv::Mat viz_max_points;
 
     int n_frames_tracking =0;
 

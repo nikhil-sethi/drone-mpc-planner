@@ -228,11 +228,7 @@ void process_frame(Stereo_Frame_Data data) {
         if (dnav.disable_insect_detection())
             itrkr.append_log(); // write dummy data
         else {
-            std::vector<cv::Point2f> additional_ignores;
-            //if (dctrl.getDroneIsActive()) {
-                additional_ignores.push_back(dtrkr.Drone_Startup_Im_Location());
-            //}
-            itrkr.track(data.time,dtrkr.predicted_pathL,additional_ignores);
+            itrkr.track(data.time,dtrkr.predicted_pathL,dtrkr.ignores_for_insect_tracker);
         }
     //        std::cout << "Found drone location:      [" << dtrkr.find_result.best_image_locationL.pt.x << "," << dtrkr.find_result.best_image_locationL.pt.y << "]" << std::endl;
     if (fromfile==log_mode_full) {
@@ -298,7 +294,7 @@ void handleKey() {
 }
 
 //This is where frames get processed after it was received from the cam in the main thread
-void pool_worker(int id __attribute__((unused))){
+void pool_worker(int id ){
     std::unique_lock<std::mutex> lk(tp[id].m1,std::defer_lock);
     while(key!=27) {
         tp[id].new_data.wait(lk,[](){return !tp[0].data_is_processed;});

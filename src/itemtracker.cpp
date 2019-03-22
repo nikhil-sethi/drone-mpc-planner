@@ -11,6 +11,7 @@ using namespace std;
 
 #ifdef HASSCREEN
 //#define TUNING
+#define VIZ
 #endif
 
 void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string name) {
@@ -453,6 +454,10 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
 
     int radius = settings.ignore_circle_r_around_motion_max;
 
+#ifdef VIZ
+    std::vector<cv::Mat> vizs;
+#endif
+
     for (int i = 0; i < settings.max_points_per_frame; i++) {
         cv::Point mint;
         cv::Point maxt;
@@ -484,30 +489,83 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
             circle(mask, Point(radius,radius), radius, 32765, -1);
             // combine roi & mask:
             cv::Mat cropped = roi & mask;
-
+            cv::Scalar avg = cv::mean(cropped);
             cv::GaussianBlur(cropped,cropped,cv::Size(5,5),0);
-            mask = cropped > max*0.3; // TODO: maybe take some level halfway between the noise and the max?
+            mask = cropped > (max-avg(0)) * 0.5;
             cropped = mask;
 
             cv::Moments mo = cv::moments(cropped,true);
             cv::Point2f COG = cv::Point2f(static_cast<float>(mo.m10) / static_cast<float>(mo.m00), static_cast<float>(mo.m01) / static_cast<float>(mo.m00));
 
 
+#ifdef VIZ
+            cv::Mat viz = createRowImage({roi,mask},CV_8UC1,4);
+            cv::cvtColor(viz,viz,CV_GRAY2BGR);
+            cv::circle(viz,COG*4,1,cv::Scalar(0,0,255),1);
+            cv::putText(viz,std::to_string(i),cv::Point(0, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,255,0));
+
+            vizs.push_back(viz);
+#endif
+
             // relative it back to the _approx frame
             COG.x += r2.x;
             COG.y += r2.y;
 
+            //check distance between COG and max:
+            float dist = pow(COG.x-maxt.x,2) + pow(COG.y-maxt.y,2);
+            if (dist > 4) {
 
-            //remove this maximum:
-            cv::circle(frame, maxt, 1, cv::Scalar(0), radius);
+                vector<vector<Point>> contours; // Vector for storing contour
+                cv::findContours(cropped,contours,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_NONE);
+                if (contours.size()>1) {
+
+                    for (uint j = 0; j< contours.size();j++) {
+                        cv::Moments mo2 = cv::moments(contours.at(j),true);
+                        cv::Point2f COG2 = cv::Point2f(static_cast<float>(mo2.m10) / static_cast<float>(mo2.m00), static_cast<float>(mo2.m01) / static_cast<float>(mo2.m00));
 
 
-            if (COG.x == COG.x) // if not nan
-                scored_points->push_back(cv::KeyPoint(COG, max));
+                        if (COG2.x == COG2.x) {// if not nan
+                            COG2.x += r2.x;
+                            COG2.y += r2.y;
+                            scored_points->push_back(cv::KeyPoint(COG2, max));
+
+                            //remove this maximum:
+                            cv::circle(frame, COG2, 1, cv::Scalar(0), radius);
+                        } else {
+                            cv::circle(frame, maxt, 1, cv::Scalar(0), radius);
+                        }
+                    }
+                } else {
+                    //remove this maximum:
+                    cv::circle(frame, COG, 1, cv::Scalar(0), radius);
+
+                    if (COG.x == COG.x) // if not nan
+                        scored_points->push_back(cv::KeyPoint(COG, max));
+                }
+
+            } else {
+
+
+
+                if (COG.x == COG.x) { // if not nan
+                    scored_points->push_back(cv::KeyPoint(COG, max));
+                    //remove this maximum:
+                    cv::circle(frame, COG, 1, cv::Scalar(0), radius);
+                } else {
+                    //remove this maximum:
+                    cv::circle(frame, maxt, 1, cv::Scalar(0), radius);
+                }
+            }
         } else {
             break;
         }
     }
+
+#ifdef VIZ
+    if (vizs.size()>0)
+        viz_max_points = createColumnImage(vizs,CV_8UC3,1);
+#endif
+
 }
 //filter out keypoints that are caused by the drone leaving the spot (voids)
 //we prefer keypoints that are of the new location of the drone (an appearance)

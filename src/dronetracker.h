@@ -124,6 +124,9 @@ public:
     }
 
     cv::Mat _cir;
+    cv::Mat diff_viz;
+
+    std::vector<cv::Point2f> ignores_for_insect_tracker;
 
     bool init(std::ofstream *logger, VisionData *_visdat, bool fromfile,std::string bag_dir);
     void track(float time, std::vector<track_item> ignore, bool drone_is_active);
