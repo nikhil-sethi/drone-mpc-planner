@@ -76,8 +76,8 @@ void Interceptor::update(bool drone_at_base) {
         _estimated_interception_location = insectPos + (insectVel*tti);
 
         // safe zone above flowers
-        if (_estimated_interception_location.y < -1.7f)
-            _estimated_interception_location.y = -1.7f;
+        if (_estimated_interception_location.y < -1.3f)
+            _estimated_interception_location.y = -1.3f;
 
         //TODO: _estimated_interception_speed = ...
 
