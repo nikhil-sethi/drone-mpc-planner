@@ -117,6 +117,11 @@ private:
 #define INITIAL_HOVER_THROTTLE 800
 #define PITCH_MIDDLE JOY_MIDDLE
 #endif
+#if TX_TYPE == TX_FRSKYX
+#define INITIALTHROTTLE 200
+#define INITIAL_HOVER_THROTTLE 896
+#define PITCH_MIDDLE JOY_MIDDLE
+#endif
 #ifndef INITIALTHROTTLE
 #define INITIALTHROTTLE 200
 #define PITCH_MIDDLE JOY_MIDDLE
@@ -190,7 +195,7 @@ public:
     int autoYaw = JOY_MIDDLE;
 
     float hoverthrottle = INITIAL_HOVER_THROTTLE;
-    bool hoverthrottleInitialized = false;
+    bool hoverthrottleInitialized = true;
 
     bool manual_override_take_off_now;
     bool manual_override_land_now;
