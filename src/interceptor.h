@@ -23,6 +23,8 @@ private:
     const float estimated_take_off_time = 1.f;
     uint _count_insect_not_in_range = 0;
 
+    bool final_approach = false;
+
 public:
 
     void init(DroneTracker * dtrkr, InsectTracker * itrkr);

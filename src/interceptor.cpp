@@ -71,9 +71,27 @@ void Interceptor::update(bool drone_at_base) {
         if (drone_at_base)
             tti += estimated_take_off_time; // take off t
 
+        cv::Point2f insectPos2D,dronePos2D;
+        insectPos2D.x = insectPos.x;
+        insectPos2D.y = insectPos.z;
+        dronePos2D.x = dronePos.x;
+        dronePos2D.y = dronePos.z;
 
-        //calculate estimated interception location and speed:
-        _estimated_interception_location = insectPos + (insectVel*tti);
+        if (norm(dronePos2D-insectPos2D)<0.3 && _estimated_interception_location.y-dronePos.y<0.05f){
+            final_approach = true;
+        } else {
+            _estimated_interception_location = insectPos + (insectVel*tti);
+            _estimated_interception_location.y -= 0.3f;
+        }
+
+        if (insectPos.y<dronePos.y )
+            final_approach = false;
+
+        if (final_approach){
+            cv::Point3f vector = insectPos-dronePos;
+            _estimated_interception_location = dronePos + 2*vector;
+        }
+        //_estimated_interception_location.y += 0.1f;
 
         // safe zone above flowers
         if (_estimated_interception_location.y < -1.3f)
