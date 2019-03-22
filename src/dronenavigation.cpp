@@ -149,7 +149,9 @@ void DroneNavigation::update(float time) {
         _dctrl->init_ground_effect_compensation();
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
         _dctrl->set_flight_mode(DroneController::fm_flying);
+#ifdef MANUAL_DRONE_LOCATE
         _dtrk->do_post_takeoff_detection();
+#endif
         if (_calibrating_hover)
             _navigation_status = ns_calibrate_hover;
         else if (_nav_flight_mode == nfm_hunt)
