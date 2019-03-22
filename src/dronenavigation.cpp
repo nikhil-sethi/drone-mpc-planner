@@ -183,8 +183,8 @@ void DroneNavigation::update(float time) {
         //update target chasing waypoint and speed
         if (_iceptor.get_insect_in_range()) {
             setpoint_world = _iceptor.get_intercept_position();
-            if (setpoint_world.y < -1.2f)
-                setpoint_world.y = -1.20f;
+//            if (setpoint_world.y < -1.2f)
+//                setpoint_world.y = -1.20f;
         }
 
         if (setpoint_world.z == 0) { // fly to landing waypoint (but do not land)
