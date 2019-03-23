@@ -6,6 +6,7 @@
 #include <cmath>
 #include <opencv2/highgui/highgui.hpp>
 #include "opencv2/features2d/features2d.hpp"
+#include <opencv2/imgproc.hpp>
 
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/memory.hpp>
@@ -16,6 +17,7 @@
 
 #include "cam.h"
 #include "defines.h"
+#include "common.h"
 
 class VisionData{
 
@@ -87,7 +89,7 @@ public:
 
     float current_time() {return _current_frame_time;}
 
-    void init(bool fromfile, string bag_dir, cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, float new_camera_gain, cv::Mat new_depth_background_mm);
+    void init(bool fromfile, std::string bag_dir, cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, float new_camera_gain, cv::Mat new_depth_background_mm);
     void close() {
         std::ofstream os(settingsFile, std::ios::binary);
         cereal::BinaryOutputArchive archive( os );
