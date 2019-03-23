@@ -110,6 +110,7 @@ struct Processer {
     std::thread * thread;
     std::mutex m1,m2;
     std::condition_variable data_processed,new_data;
+    bool data_is_new = false;
     bool data_is_processed = true;
     Stereo_Frame_Data data;
 };
@@ -152,8 +153,6 @@ void process_video() {
 
         std::unique_lock<std::mutex> lk(tp[0].m2,std::defer_lock);
         tp[0].data_processed.wait(lk, [](){return tp[0].data_is_processed; });
-        tp[0].data = data;
-        //        tp[0].data_is_send = true;
         tp[0].data_is_processed= false;
 #ifdef HASSCREEN
         static int speed_div;
@@ -162,6 +161,8 @@ void process_video() {
             handleKey();
         }
 #endif
+        tp[0].data = data;
+        tp[0].data_is_new = true;
         tp[0].new_data.notify_one();
 
         int frameWritten = 0;
@@ -297,11 +298,11 @@ void handleKey() {
 void pool_worker(int id ){
     std::unique_lock<std::mutex> lk(tp[id].m1,std::defer_lock);
     while(key!=27) {
-        tp[id].new_data.wait(lk,[](){return !tp[0].data_is_processed;});
+        tp[id].new_data.wait(lk,[](){return tp[0].data_is_new;});
+        tp[0].data_is_new = false;
         if (key == 27)
             break;
         process_frame(tp->data);
-        //        tp[0].data_is_send = false;
         tp[id].data_is_processed = true;
         tp[id].data_processed.notify_one();
     }
