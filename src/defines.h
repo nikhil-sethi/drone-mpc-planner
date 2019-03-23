@@ -18,7 +18,7 @@
 #define RC_PLAYSTATION 3
 #define RC_XLITE 4
 
-#define TX_DISABLED 0
+#define TX_NONE 0
 #define TX_DSMX 1
 #define TX_CX10 2
 #define TX_FRSKYD 3
@@ -29,7 +29,7 @@
 #ifdef INSECT_LOGGING_MODE
     #define VIDEORAWLR VIDEOMODE_DISABLED
     #define JOYSTICK_TYPE RC_DISABLED
-    #define TX_TYPE TX_DISABLED
+    #define TX_TYPE TX_NONE
 //    #define HASSCREEN
 #else
     #ifndef HASGUI

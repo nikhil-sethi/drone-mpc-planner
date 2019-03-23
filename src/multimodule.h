@@ -29,7 +29,7 @@
 #define JOY_MAX                             2048 // 2000
 #define JOY_MIDDLE                          1024 // 1500
 
-#if TX_TYPE == TX_DISABLED
+#if TX_TYPE == TX_NONE
 #define TX_PROTOCOL 0
 #define TX_SUB_PROTOCOL 0
 #define TX_OPTION 0
