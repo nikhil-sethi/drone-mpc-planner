@@ -19,7 +19,7 @@
 
 
 /*
- * This class will track items
+ * This class tracks one item
  *
  */
 class ItemTracker {
@@ -98,7 +98,7 @@ private:
     std::string _settingsFile;
     struct Find_result {
         std::vector<track_item> keypointsL;
-        std::vector<track_item> keypointsL_wihout_voids;
+        std::vector<track_item> keypointsL_wihout_excludes;
         std::vector<track_item> keypointsL_candidates;
         std::vector<track_item> excludes;
         cv::KeyPoint best_image_locationL;
@@ -117,9 +117,6 @@ private:
     void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, track_item *best_match, float disparity);
     void find(std::vector<track_item> exclude, std::vector<cv::Point2f> additional_ignores);
     std::vector<ItemTracker::track_item> remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path, std::vector<cv::Point2f> additional_ignores);
-    std::vector<ItemTracker::track_item> remove_excludes_improved(std::vector<track_item> keypoints, std::vector<track_item> exclude_path);
-    cv::Mat show_uncertainty_map_in_image(cv::Point p, cv::Mat resframeL);
-    std::vector<track_item> remove_voids(std::vector<track_item> keyps, std::vector<track_item> keyps_prev);
     void find_max_change(cv::Point prev, cv::Point roi_size, cv::Mat diff, std::vector<cv::KeyPoint> *scored_points);
     float calc_certainty(cv::KeyPoint item);
     void init_kalman();
@@ -196,7 +193,7 @@ public:
     void init(std::ofstream *logger, VisionData *_visdat, std::string name);
     virtual void track(float time, std::vector<track_item> ignore, std::vector<cv::Point2f> additional_ignores);
     void append_log();
-//    trackData data;
+
     std::vector<trackData> track_history; // TODO: this will build up indefenitely.... and only last track data is used,
     std::vector<trackData> track_prediction_history;
     trackData Last_track_data() {

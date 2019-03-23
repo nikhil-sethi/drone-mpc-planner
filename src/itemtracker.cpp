@@ -206,57 +206,6 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<tr
     return keypoints;
 }
 
-std::vector<ItemTracker::track_item> ItemTracker::remove_excludes_improved(std::vector<track_item> keypoints, std::vector<track_item> exclude_path) {
-    float dis1,dis3,certainty_prediction = 0;
-    bool check1,check2,check3;
-
-    /*    if (_name.compare("insect")==0 && keypoints.size()>0){
-        std::cout << "insect" << std::endl;
-    }
-
-    if (_name.compare("drone")==0 && keypoints.size()>0){
-        std::cout << "drone" << std::endl;
-    }*/
-
-
-
-    if (exclude_path.size() > 0 && keypoints.size () > 0 && (this->predicted_pathL.size() > 0 || !this->foundL )  ) {
-        std::vector<track_item> tmp = keypoints;
-        int erase_cnt =0;
-        for (uint i = 0 ; i< tmp.size();i++){
-            for (uint j = 0; j<exclude_path.size(); j++){
-                track_item exclude = exclude_path.at(j);
-
-                float threshold_dis = settings.exclude_min_distance / sqrtf(exclude.tracking_certainty);
-                if (threshold_dis > settings.exclude_max_distance)
-                    threshold_dis = settings.exclude_max_distance;
-
-                dis1 = sqrtf(powf(tmp.at(i).k.pt.x - exclude.x(),2) +powf(tmp.at(i).k.pt.y - exclude.y(),2));
-                if (dis1 < 0)
-                    dis1 = 0;
-                if (this->predicted_pathL.size() > 0) {
-                    dis3 = sqrtf(powf(tmp.at(i).k.pt.x - this->predicted_pathL.back().x(),2) +powf(tmp.at(i).k.pt.y - this->predicted_pathL.back().y(),2));
-                    certainty_prediction = this->predicted_pathL.back().tracking_certainty;
-                } else {
-                    dis3 = threshold_dis;
-                    certainty_prediction = 0.1f;
-                }
-
-                check1 = (dis1 < dis3 && dis1 < threshold_dis); // if keypoint is nearer to and close to other item
-                check2 = fabs(dis1-dis3) < 2.0f && dis3 < 2.0f; // ignore zone
-                check3 = dis3 > (settings.exclude_min_distance / sqrtf(certainty_prediction)); // if keypoint is too far away
-                if ( check1 || check2 || check3 ) {
-                    keypoints.erase(keypoints.begin() + i - erase_cnt);
-                    erase_cnt++;
-                    break;
-                }
-            }
-        }
-    }
-
-    return keypoints;
-}
-
 void ItemTracker::track(float time, std::vector<track_item> exclude,std::vector<cv::Point2f> additional_ignores) {
 #ifdef TUNING
     updateParams();
@@ -276,7 +225,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude,std::vector<
 
     find(exclude,additional_ignores);
 
-    std::vector<track_item> keypoint_candidates = find_result.keypointsL_wihout_voids;
+    std::vector<track_item> keypoint_candidates = find_result.keypointsL_wihout_excludes;
     uint nCandidates = static_cast<uint>(keypoint_candidates.size());
     if (nCandidates) { //if lost
 
@@ -287,8 +236,8 @@ void ItemTracker::track(float time, std::vector<track_item> exclude,std::vector<
         track_item * match;
 
         while (keypoint_candidates.size() > 0) {
-            uint match_id = match_closest_to_prediciton(previous_location,find_result.keypointsL_wihout_voids);
-            match = &find_result.keypointsL_wihout_voids.at(match_id);
+            uint match_id = match_closest_to_prediciton(previous_location,find_result.keypointsL_wihout_excludes);
+            match = &find_result.keypointsL_wihout_excludes.at(match_id);
 
             disparity = stereo_match(match->k.pt,_visdat->diffL,_visdat->diffR,find_result.disparity);
             disparity = update_disparity(disparity, dt_tracking);
@@ -309,8 +258,8 @@ void ItemTracker::track(float time, std::vector<track_item> exclude,std::vector<
                 if (dist_meas > dist_back*(static_cast<float>(settings.background_subtract_zone_factor)/100.f))
                     background_check_ok = false;
 
-                find_result.keypointsL_wihout_voids.at(match_id).distance = dist_meas;
-                find_result.keypointsL_wihout_voids.at(match_id).distance_background = dist_back;
+                find_result.keypointsL_wihout_excludes.at(match_id).distance = dist_meas;
+                find_result.keypointsL_wihout_excludes.at(match_id).distance_background = dist_back;
 
                 float theta = _visdat->camera_angle * deg2rad;
                 float temp_y = output.y * cosf(theta) + output.z * sinf(theta);
@@ -430,14 +379,9 @@ void ItemTracker::find(std::vector<track_item> exclude,std::vector<cv::Point2f> 
         kps.push_back(t);
     }
 
-    // TODO: verify if remove_voids() can help improve tracking. Currently it does not seem to do so, as it does not exclude keypoints very frequently
-    //       When it is does exclude keypoints, these are often 'good' keypoints, that are excluded because they seem to form a pair with keypoints which
-    //       are actually 'bad' detections that are too far away to be correct.
-    //std::vector<track_item> keypoint_candidates;
-    //keypoint_candidates = remove_voids(kps,find_result.keypointsL);
-    find_result.keypointsL_wihout_voids = remove_excludes(kps,exclude,additional_ignores);
+    find_result.keypointsL_wihout_excludes = remove_excludes(kps,exclude,additional_ignores);
 
-    if (find_result.keypointsL_wihout_voids.size() ==0) {
+    if (find_result.keypointsL_wihout_excludes.size() ==0) {
         roi_size_cnt +=1;
         if (roi_size_cnt > settings.roi_max_grow)
             roi_size_cnt = settings.roi_max_grow;
@@ -571,100 +515,9 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
 #endif
 
 }
-//filter out keypoints that are caused by the drone leaving the spot (voids)
-//we prefer keypoints that are of the new location of the drone (an appearance)
-//this is somewhat ambigious, because the drone might 'move' to the almost same position in some cases
-//todo: smooth extrapolate if the drone did not move enough to generate two seperate keypoints
-std::vector<ItemTracker::track_item> ItemTracker::remove_voids(std::vector<track_item> keyps,std::vector<track_item> keyps_prev) {
-    vector<track_item> keyps_no_voids =  keyps; // init with a copy of all current keypoints
-    int n_erased_items = 0;
-    if (keyps.size() > 1 && keyps_prev.size() > 0) { // in order to detect a void-appearance pair, there should be at least two current keypoints now, and one in the past
-        for (uint i = 0 ; i < keyps.size();i++) {
-            for (uint j = 0 ; j < keyps_prev.size();j++) {
-                KeyPoint k1,k2;
-                k1 = keyps.at(i).k;
-                k2 = keyps_prev.at(j).k;
-                float d1_2 = sqrtf(static_cast<float>(pow(k1.pt.x - k2.pt.x,2) + pow(k1.pt.y - k2.pt.y,2)));
-                if (d1_2 < settings.appear_void_max_distance) { // found a keypoint in the prev list that is very close to one in the current list
-                    KeyPoint closest_k1;
-                    int closest_k1_id = -1;
-                    float closest_k1_d = 99999999;
-                    for (uint k = 0 ; k < keyps.size();k++) {
-                        //find the closest item to k1 in the current list and *assume* together it forms a void-appearance pair
-                        if (k!=i) {
-                            KeyPoint  k1_mate = keyps.at(k).k;
-                            float k1_mate_d = sqrtf(static_cast<float>(pow(k1.pt.x - k1_mate.pt.x,2) + pow(k1.pt.y - k1_mate.pt.y,2)));
-                            if (k1_mate_d < closest_k1_d) {
-                                closest_k1 = k1_mate;
-                                closest_k1_d = k1_mate_d;
-                                closest_k1_id = static_cast<int>(k);
-                            }
-                        }
-                    }
-
-                    // If there is no mate, don't do anything.
-                    if (closest_k1_d < settings.void_void_max_distance && closest_k1_id >= 0) { // the threshold number depends on the speed of the drone, and dt
-                        // If a mate is found we need to verify which of the items in the pair is the void.
-                        // The void should be the one closest to k2
-                        float dmate_2 = sqrtf(powf(k2.pt.x - closest_k1.pt.x,2) + powf(k2.pt.y - closest_k1.pt.y,2));
-                        if (d1_2< dmate_2) { //k1 is apparantely the one closest to k2, closest_k1 should be the new position of the item
-                            keyps_no_voids.erase(keyps_no_voids.begin() -n_erased_items + i,keyps_no_voids.begin() -n_erased_items + i+1);
-                            keyps.at(static_cast<unsigned long>(closest_k1_id)).k_void = k1;
-                            keyps.at(i).k_void = closest_k1;
-                            n_erased_items++;
-                            j=static_cast<uint>(keyps_prev.size())+1; //break from for j
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return keyps_no_voids;
-}
 
 cv::Mat ItemTracker::get_probability_cloud(cv::Point size) {
     return cv::Mat::ones(size.y,size.x,CV_32F); // dummy implementation. TODO: create proper probablity estimate
-}
-
-/* Takes the calibrated uncertainty map, and augments it with a highlight around p */
-cv::Mat ItemTracker::show_uncertainty_map_in_image(cv::Point pd4, cv::Mat res) {
-
-    cv::Point p;
-    p.x = pd4.x *IMSCALEF;
-    p.y = pd4.y *IMSCALEF;
-
-    cv::Mat blurred_circle_big;
-    cv::resize(_blurred_circle,blurred_circle_big,cv::Size (_blurred_circle.cols*IMSCALEF,_blurred_circle.rows*IMSCALEF));
-
-    cv::Rect roi_circle(0,0,blurred_circle_big.cols,blurred_circle_big.rows);
-    int x1 = p.x-blurred_circle_big.cols/2;
-    if (x1 < 0) {
-        roi_circle.x = abs(p.x-blurred_circle_big.cols/2);
-        roi_circle.width-=roi_circle.x;
-    } else if (x1 + blurred_circle_big.cols >= res.cols)
-        roi_circle.width = roi_circle.width  - abs(x1 + blurred_circle_big.cols - res.cols);
-
-    int y1 = p.y-blurred_circle_big.rows/2;
-    if (y1 < 0) {
-        roi_circle.y = abs(p.y-blurred_circle_big.rows/2);
-        roi_circle.height-=roi_circle.y;
-    } else if (y1 + blurred_circle_big.rows >= res.rows)
-        roi_circle.height = roi_circle.height - abs(y1 + blurred_circle_big.rows - res.rows);
-
-    cv::Mat a = blurred_circle_big(roi_circle);
-
-    x1 = p.x-blurred_circle_big.cols/2+roi_circle.x;
-    int x2 = a.cols;
-    y1 = p.y-blurred_circle_big.rows/2+roi_circle.y;
-    int y2 = a.rows;
-
-    cv::Rect roi(x1,y1,x2,y2);
-    cvtColor(res,res,CV_BGR2GRAY);
-    res.convertTo(res,CV_32F);
-    res.convertTo(res,CV_8UC1);
-    cvtColor(res,res,CV_GRAY2BGR);
-
-    return res;
 }
 
 cv::Point3f ItemTracker::predict(float dt, int frame_id) {
@@ -885,7 +738,6 @@ void ItemTracker::check_consistency(cv::Point3f prevLoc,cv::Point3f measLoc) {
     if (abs_dist > 0.15f)
         reset_filters = true;
 }
-
 
 void ItemTracker::update_prediction_state(cv::Point3f p, float blob_size) {
     cv::Mat measL(measSize, 1, type);
