@@ -141,13 +141,22 @@ private:
 
     bool _paused;
 
-    std::string calib_log_fn = "cam_calib.xml";
-    const std::string calib_template_fn = "../" + calib_log_fn;
-    std::string depth_map_fn = "depth_filtered.png";
-    std::string depth_unfiltered_map_fn = "depth.png";
-    std::string disparity_map_fn = "disparity.png";
-    std::string brightness_map_fn = "brightness.png";
     std::string bag_fn = "test.bag";
+
+    //read file names
+    std::string calib_rfn = "cam_calib.xml";
+    const std::string calib_template_rfn = "../" + calib_rfn;
+    std::string depth_map_rfn = "depth_filtered.png";
+    std::string depth_unfiltered_map_rfn = "depth.png";
+    std::string disparity_map_rfn = "disparity.png";
+    std::string brightness_map_rfn = "brightness.png";
+
+    //write file names:
+    std::string calib_wfn;
+    std::string depth_map_wfn;
+    std::string depth_unfiltered_map_wfn;
+    std::string disparity_map_wfn;
+    std::string brightness_map_wfn;
 
 
     void pause();

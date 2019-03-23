@@ -275,14 +275,19 @@ void Cam::init() {
 
     std::cout << "Initializing cam" << std::endl;
 
-    calib_log_fn = "./logging/" + calib_log_fn;
-    depth_map_fn = "./logging/" + depth_map_fn;
-    depth_unfiltered_map_fn = "./logging/" + depth_unfiltered_map_fn;
-    disparity_map_fn = "./logging/" + disparity_map_fn;
     bag_fn = "./logging/" + bag_fn;
-    brightness_map_fn = "./logging/" + brightness_map_fn;
 
+    calib_rfn = "./logging/" + calib_rfn;
+    depth_map_rfn = "./logging/" + depth_map_rfn;
+    depth_unfiltered_map_rfn = "./logging/" + depth_unfiltered_map_rfn;
+    disparity_map_rfn = "./logging/" + disparity_map_rfn;
+    brightness_map_rfn = "./logging/" + brightness_map_rfn;
 
+    calib_wfn = calib_rfn;
+    depth_map_wfn = depth_map_rfn;
+    depth_unfiltered_map_wfn = depth_unfiltered_map_rfn;
+    disparity_map_wfn = disparity_map_rfn;
+    brightness_map_wfn = brightness_map_rfn;
 
     rs2::stream_profile infared1,infared2;
     rs2::context ctx; // The context represents the current platform with respect to connected devices
@@ -322,17 +327,17 @@ void Cam::init() {
     }
 
     // load xml, the values loaded may be (partially) overwritten by measurements below
-    if (checkFileExist(calib_log_fn))
-        deserialize_calib(calib_log_fn);
+    if (checkFileExist(calib_rfn))
+        deserialize_calib(calib_rfn);
     else
-        deserialize_calib(calib_template_fn);
+        deserialize_calib(calib_template_rfn);
 
     bool reloaded_calib;
-    if (getSecondsSinceFileCreation(calib_log_fn) < 60*60 &&
-            checkFileExist(depth_map_fn) &&
-            checkFileExist(calib_log_fn)) {
+    if (getSecondsSinceFileCreation(calib_rfn) < 60*60 &&
+            checkFileExist(depth_map_rfn) &&
+            checkFileExist(calib_rfn)) {
         std::cout << "Calibration files recent, reusing..."   << std::endl;
-        depth_background = imread(depth_map_fn,CV_LOAD_IMAGE_ANYDEPTH);
+        depth_background = imread(depth_map_rfn,CV_LOAD_IMAGE_ANYDEPTH);
 
         depth_scale = 0.001; //FIXME, get real value!!!
 
@@ -468,7 +473,7 @@ void Cam::serialize_calib() {
     calib_settings->Angle_Y_Measured_From_Depthmap = _camera_angle_y_measured_from_depth;
 
     std::string xmlData = calib_settings->toXML();
-    std::ofstream outfile(calib_log_fn);
+    std::ofstream outfile = std::ofstream (calib_wfn);
     outfile << xmlData ;
     outfile.close();
 }
@@ -535,9 +540,9 @@ void Cam::sense_light_level(){
         }
 
     }
+    imwrite(brightness_map_wfn,frameLt);
     _measured_gain = rs_dev.get_option(RS2_OPTION_GAIN);
 
-    imwrite(brightness_map_fn,frameLt);
 
     cfg.disable_all_streams();
     cam.stop();
@@ -646,13 +651,13 @@ void Cam::calib_pose(){
 
     //original depth map:
     depth_background = Mat(im_size, CV_16UC1, const_cast<void *>(frame.get_depth_frame().get_data()), Mat::AUTO_STEP).clone();
-    imwrite(depth_unfiltered_map_fn,depth_background);
+    imwrite(depth_unfiltered_map_wfn,depth_background);
     //filtered depth map:
     depth_background = Mat(im_size_dec, CV_16UC1, const_cast<void *>(depth.get_data()), Mat::AUTO_STEP).clone();
     cv::resize(depth_background,depth_background,im_size,0,0,INTER_CUBIC);
-    imwrite(depth_map_fn,depth_background);
+    imwrite(depth_map_wfn,depth_background);
 
-    imwrite(disparity_map_fn,disparity_background);
+    imwrite(disparity_map_wfn,disparity_background);
 
     if (hasIMU){
         _camera_angle_y = pitch;
@@ -725,7 +730,7 @@ void Cam::calib_pose(){
         std::cout << "Estimated angle change: " << _camera_angle_y_measured_from_depth - old << std::endl;
         std::cout << "Set angle_y: " << _camera_angle_y << std::endl;
 
-        if ((fabs(_camera_angle_y_measured_from_depth - old) > 15 && checkFileExist(calib_log_fn)) || _camera_angle_y_measured_from_depth != _camera_angle_y_measured_from_depth) {
+        if ((fabs(_camera_angle_y_measured_from_depth - old) > 15 && checkFileExist(calib_rfn)) || _camera_angle_y_measured_from_depth != _camera_angle_y_measured_from_depth) {
             std::cout << "Warning: angle change to big!" << std::endl;
             _camera_angle_y_measured_from_depth = 0;
             throw my_exit(1);
@@ -740,21 +745,29 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
     std::string datadir = argv[1];
 
     fromfile=true;
-    calib_log_fn = datadir + '/' + calib_log_fn;
-    depth_map_fn = datadir + '/' + depth_map_fn;
-    depth_unfiltered_map_fn = datadir + '/' + depth_unfiltered_map_fn;
-    disparity_map_fn = datadir + '/' + disparity_map_fn;
-    brightness_map_fn = datadir + '/' + brightness_map_fn;
+    calib_rfn = datadir + '/' + calib_rfn;
+    depth_map_rfn = datadir + '/' + depth_map_rfn;
+    depth_unfiltered_map_rfn = datadir + '/' + depth_unfiltered_map_rfn;
+    disparity_map_rfn = datadir + '/' + disparity_map_rfn;
+    brightness_map_rfn = datadir + '/' + brightness_map_rfn;
     bag_fn = datadir + '/' + bag_fn;
+
+    //make sure the origirnam files are not overwritten when playing bags:
+    calib_wfn = "./logging/fromfile_" + calib_rfn;
+    depth_map_wfn = "./logging/fromfile_" + depth_map_rfn;
+    depth_unfiltered_map_wfn = "./logging/fromfile_" + depth_unfiltered_map_rfn;
+    disparity_map_wfn = "./logging/fromfile_" + disparity_map_rfn;
+    brightness_map_wfn = "./logging/fromfile_" + brightness_map_rfn;
+
     std::cout << "Initializing cam from " << bag_fn << std::endl;
 
-    if (!checkFileExist(depth_map_fn)) { //FIXME: use full path to folder
+    if (!checkFileExist(depth_map_rfn)) {
         //todo: make gui warning of this:
-        std::cout << "Warning: could not find " << depth_map_fn << std::endl;
+        std::cout << "Warning: could not find " << depth_map_rfn << std::endl;
         depth_background = cv::Mat::ones(IMG_H,IMG_W,CV_16UC1);
         depth_background = 10000; // basically disable the depth background map if it is not found
     } else {
-        depth_background = imread(depth_map_fn,CV_LOAD_IMAGE_ANYDEPTH);
+        depth_background = imread(depth_map_rfn,CV_LOAD_IMAGE_ANYDEPTH);
     }
 
     if (!checkFileExist(bag_fn)) {
@@ -788,10 +801,10 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
     pause();
 
     set_calibration(infared1,infared2);
-    if (checkFileExist(calib_log_fn))
-        deserialize_calib(calib_log_fn);
+    if (checkFileExist(calib_rfn))
+        deserialize_calib(calib_rfn);
     else
-        deserialize_calib(calib_template_fn);
+        deserialize_calib(calib_template_rfn);
     convert_depth_background_to_world();
     swc.Start();
 }
