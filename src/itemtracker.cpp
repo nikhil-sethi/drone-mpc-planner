@@ -447,6 +447,10 @@ void ItemTracker::find(std::vector<track_item> exclude,std::vector<cv::Point2f> 
     find_result.keypointsL = kps;
 }
 
+//Blob finder in the tracking ROI of the motion image. Looks for a limited number of
+//maxima that are higher than a threshold, the area around the maximum
+//is segmented from the background noise, and seen as a blob. It then
+//tries if this blob can be further splitted if necessary.
 void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff,std::vector<KeyPoint> * scored_points) {
 
     _approx = get_approx_cutout_filtered(prev,diff,roi_size);
@@ -501,9 +505,7 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
 #ifdef VIZ
             cv::Mat viz = createRowImage({roi,mask},CV_8UC1,4);
             cv::cvtColor(viz,viz,CV_GRAY2BGR);
-            cv::circle(viz,COG*4,1,cv::Scalar(0,0,255),1);
             cv::putText(viz,std::to_string(i),cv::Point(0, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,255,0));
-
             vizs.push_back(viz);
 #endif
 
@@ -511,53 +513,55 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
             COG.x += r2.x;
             COG.y += r2.y;
 
-            //check distance between COG and max:
+            //check if the blob may be multiple blobs, first check distance between COG and max:
             float dist = pow(COG.x-maxt.x,2) + pow(COG.y-maxt.y,2);
-            if (dist > 4) {
-
-                vector<vector<Point>> contours; // Vector for storing contour
+            bool single_blob = true;
+            bool COG_is_nan = false;
+            if (dist > 4) {//todo: instead of just check the distance, we could also check the pixel value of the COG, if it is black it is probably multiple blobs
+                //the distance between the COG and the max is quite large, now check if there are multiple contours:
+                vector<vector<Point>> contours;
                 cv::findContours(cropped,contours,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_NONE);
                 if (contours.size()>1) {
-
+                    //ok, definetely multiple blobs. Split them, and find the COG for each.
+                    single_blob = false;
                     for (uint j = 0; j< contours.size();j++) {
                         cv::Moments mo2 = cv::moments(contours.at(j),true);
                         cv::Point2f COG2 = cv::Point2f(static_cast<float>(mo2.m10) / static_cast<float>(mo2.m00), static_cast<float>(mo2.m01) / static_cast<float>(mo2.m00));
 
-
                         if (COG2.x == COG2.x) {// if not nan
+#ifdef VIZ
+                            cv::circle(viz,COG2*4,1,cv::Scalar(0,0,255),1);
+#endif
+                            // relative COG back to the _approx frame, and save it:
                             COG2.x += r2.x;
                             COG2.y += r2.y;
                             scored_points->push_back(cv::KeyPoint(COG2, max));
 
-                            //remove this maximum:
+                            //remove this COG from the ROI:
                             cv::circle(frame, COG2, 1, cv::Scalar(0), radius);
                         } else {
-                            cv::circle(frame, maxt, 1, cv::Scalar(0), radius);
+                            COG_is_nan = true;
                         }
                     }
-                } else {
-                    //remove this maximum:
-                    cv::circle(frame, COG, 1, cv::Scalar(0), radius);
-
-                    if (COG.x == COG.x) // if not nan
-                        scored_points->push_back(cv::KeyPoint(COG, max));
-                }
-
-            } else {
-
-
-
-                if (COG.x == COG.x) { // if not nan
-                    scored_points->push_back(cv::KeyPoint(COG, max));
-                    //remove this maximum:
-                    cv::circle(frame, COG, 1, cv::Scalar(0), radius);
-                } else {
-                    //remove this maximum:
-                    cv::circle(frame, maxt, 1, cv::Scalar(0), radius);
                 }
             }
+            if (single_blob) { // we could not split this blob, so we can use the original COG
+                if (COG.x == COG.x) { // if not nan
+                    scored_points->push_back(cv::KeyPoint(COG, max));
+#ifdef VIZ
+                    cv::circle(viz,COG*4,1,cv::Scalar(0,0,255),1);
+#endif
+                    //remove this COG from the ROI:
+                    cv::circle(frame, COG, 1, cv::Scalar(0), radius);
+                } else {
+                    COG_is_nan = true;
+                }
+            }
+            if (COG_is_nan)  //remove the actual maximum from the ROI if the COG algorithm failed:
+                cv::circle(frame, maxt, 1, cv::Scalar(0), radius);
+
         } else {
-            break;
+            break; // done searching for maxima, they are too small now
         }
     }
 
