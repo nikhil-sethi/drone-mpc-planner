@@ -25,6 +25,9 @@ public:
     bool init (int argc __attribute__((unused)), char **argv __attribute__((unused)));
     void update (void);
     bool get_cam_is_running() {return camRunning;}
+    float measured_gain() {
+        return 16;
+    }
 
     void nextFrame();
     void pause() {paused = true;};
