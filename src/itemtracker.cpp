@@ -493,7 +493,10 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
                 if (COG.x == COG.x) { // if not nan
                     scored_points->push_back(cv::KeyPoint(COG, max));
 #ifdef VIZ
-                    cv::circle(viz,COG*4,1,cv::Scalar(0,0,255),1);
+                    cv::Point tmpCOG;
+                    tmpCOG.x = COG.x - r2.x;
+                    tmpCOG.y = COG.y - r2.y;
+                    cv::circle(viz,tmpCOG*4,1,cv::Scalar(0,0,255),1);
 #endif
                     //remove this COG from the ROI:
                     cv::circle(frame, COG, 1, cv::Scalar(0), radius);
