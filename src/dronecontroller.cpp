@@ -262,6 +262,7 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
     }
     }
 
+    throttle = joyThrottle;
     yaw = joyYaw; // tmp until auto yaw control is fixed
 
     throttle = bound_joystick_value(throttle);

@@ -14,6 +14,13 @@ void MultiModule::init(bool fromfile) {
     }
 }
 
+void MultiModule::set_LED(bool value){
+    if (value)
+        led_on = true;
+    else
+        led_on = false;
+}
+
 void MultiModule::worker_thread(void) {
     std::cout << "Send multimodule thread started!" << std::endl;
     while (!exitSendThread) {
@@ -76,12 +83,19 @@ void MultiModule::send_data(void) {
     channels[1] = pitch;
     channels[2] = throttle;
     channels[3] = yaw;
-    if (TX_TYPE==TX_DSMX || TX_TYPE==TX_FRSKYD || TX_TYPE==TX_FRSKYX) {
+    if (TX_TYPE==TX_DSMX || TX_TYPE==TX_FRSKYD || TX_TYPE==TX_FRSKYX || TX_TYPE==TX_FRSKYX_TC){
         channels[4] = arm_switch;
         channels[5] = JOY_BOUND_MIN; // set to angle mode in BF
     }
     if (TX_TYPE==TX_CX10)
         channels[5] = TX_RATE;
+
+    if (TX_TYPE==TX_FRSKYX_TC){
+        if(led_on)
+            channels[7] = JOY_BOUND_MAX;
+        else
+            channels[7] = JOY_BOUND_MIN;
+    }
 
     convert_channels(channels , &packet[4]);
 

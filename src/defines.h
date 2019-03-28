@@ -23,6 +23,7 @@
 #define TX_CX10 2
 #define TX_FRSKYD 3
 #define TX_FRSKYX 4
+#define TX_FRSKYX_TC 5
 
 //#define INSECT_LOGGING_MODE
 
@@ -38,7 +39,7 @@
 //    #define BEEP // leave of, causes realsense resets! Prolly needs moving to main UI thread...
     #define VIDEORAWLR VIDEOMODE_BAG
     #define JOYSTICK_TYPE RC_XLITE
-    #define TX_TYPE TX_FRSKYX
+    #define TX_TYPE TX_FRSKYX_TC
 #endif
 
 #define VIDEODISPARITY VIDEOMODE_DISABLED
@@ -54,6 +55,6 @@
 #define DRONE_IM_Y_START 267/IMSCALEF
 #define DRONE_DISPARITY_START 19/IMSCALEF
 #define DRONE_IM_START_SIZE 4.2f
-#define MANUAL_DRONE_LOCATE
+//#define MANUAL_DRONE_LOCATE
 
 #endif //DEFINES_H

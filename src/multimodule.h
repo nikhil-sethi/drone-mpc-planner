@@ -52,7 +52,7 @@
 #define TX_SUB_PROTOCOL 0
 #endif
 
-#if TX_TYPE == TX_FRSKYX
+#if TX_TYPE == TX_FRSKYX || TX_TYPE == TX_FRSKYX_TC
 #define TX_PROTOCOL 15
 #define TX_SUB_PROTOCOL 0
 #endif
@@ -75,6 +75,10 @@ public:
     void init(bool fromfile);
 
     void close();
+
+    void set_LED(bool value);
+
+    bool led_on = true;
 
     int ledpower = 75;
     uint16_t mode = JOY_MAX; // <min = mode 1, 1500 = mode 2, >max = mode 3

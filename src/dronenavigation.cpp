@@ -80,23 +80,36 @@ void DroneNavigation::update(float time) {
         _navigation_status = ns_locate_drone;
         break;
     } case ns_locate_drone: {
+#if TX_TYPE == TX_FRSKYD || TX_TYPE == TX_FRSKYX
         _dctrl->blink_drone(true);
+#endif
         _dtrk->Locate_Startup_Location();
         _navigation_status = ns_wait_locate_drone;
         break;
     } case ns_wait_locate_drone: {
         static float prev_time = time = 0;
+#if TX_TYPE == TX_FRSKYD || TX_TYPE == TX_FRSKYX
         if (time - prev_time > 7 && time - prev_time < 8) {
             _dctrl->blink_drone(false); // refresh the blinking
         } else if (time - prev_time > 8) {
             prev_time = time;
             _dctrl->blink_drone(true);
         }
+#endif
         if (_dtrk->blinking_drone_located())
             _navigation_status = ns_located_drone;
+#if TX_TYPE == TX_FRSKYX_TC
+        if (time - prev_time > _dtrk->bind_blink_time)
+            _dctrl->blink_drone(true,time);
+#endif
         break;
     } case ns_located_drone: {
+#if TX_TYPE == TX_FRSKYD || TX_TYPE == TX_FRSKYX
         _dctrl->blink_drone(false);
+#endif
+#if TX_TYPE == TX_FRSKYX_TC
+        _dctrl->blink_drone(false,time);
+#endif
         if (_nav_flight_mode == nfm_hunt)
             _navigation_status = ns_wait_for_insect;
         else if (_nav_flight_mode == nfm_manual)

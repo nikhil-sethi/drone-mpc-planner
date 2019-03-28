@@ -122,6 +122,11 @@ private:
 #define INITIAL_HOVER_THROTTLE 950
 #define PITCH_MIDDLE JOY_MIDDLE
 #endif
+#if TX_TYPE == TX_FRSKYX_TC
+#define INITIALTHROTTLE 200
+#define INITIAL_HOVER_THROTTLE 950
+#define PITCH_MIDDLE JOY_MIDDLE
+#endif
 #ifndef INITIALTHROTTLE
 #define INITIALTHROTTLE 200
 #define PITCH_MIDDLE JOY_MIDDLE
@@ -143,6 +148,7 @@ private:
     float scaledjoydial = 0;
 
     MultiModule * _rc;
+    DroneTracker * _dtrk;
 
     std::ofstream *_logger;
     void sendData(void);
@@ -226,6 +232,23 @@ public:
 
     void blink_drone(bool b) {
         _rc->bind(b); // tmp trick until we create a dedicated feature for this
+    }
+
+    void blink_drone(bool b, float time) {
+        static float last_blink_time = time;
+        static bool blink_state;
+        if (b) {
+            if (time-last_blink_time>0.45f) {
+                if (blink_state)
+                    blink_state = false;
+                else
+                    blink_state = true;
+             last_blink_time = time;
+            }
+        } else
+            blink_state = true;
+
+        _rc->set_LED(blink_state);
     }
 
 };

@@ -32,7 +32,6 @@ static const char* drone_tracking_state_names[] = { "dts_init",
 class DroneTracker : public ItemTracker {
 
 
-    const float bind_blink_time = 0.45f;
 private:
     enum blinking_drone_states {
         bds_start=1,
@@ -158,6 +157,9 @@ public:
     cv::Point3f Drone_Startup_Location() {
         return _drone_blink_world_location;
     }
+
+    const float bind_blink_time = 0.45f;
+
 };
 
 
