@@ -16,8 +16,9 @@ JoystickEvent event;
 bool DroneController::joystick_ready(){
     return joystick.isFound();
 }
-void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc) {
+void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc, DroneTracker *dtrk) {
     _rc = rc;
+    _dtrk = dtrk;
     _logger = logger;
     _fromfile = fromfile;
     (*_logger) << "valid; posErrX; posErrY; posErrZ; velX; velY; velZ; accX; accY; accZ; hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; joyThrottle; joyRoll; joyPitch; joyYaw; joyArmSwitch; joyModeSwitch; joyTakeoffSwitch; throttleP; throttleI; throttleD; dt; dx; dy; dz; velx_sp; vely_sp; velz_sp;";
@@ -262,7 +263,6 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
     }
     }
 
-    throttle = joyThrottle;
     yaw = joyYaw; // tmp until auto yaw control is fixed
 
     throttle = bound_joystick_value(throttle);

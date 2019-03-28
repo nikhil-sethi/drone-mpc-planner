@@ -400,7 +400,7 @@ int init(int argc, char **argv) {
     dtrkr.init(&logger,&visdat,fromfile==log_mode_full,data_in_dir);
     itrkr.init(&logger,&visdat);
     dnav.init(&logger,&dtrkr,&dctrl,&itrkr,&visdat);
-    dctrl.init(&logger,fromfile==log_mode_full,&rc);
+    dctrl.init(&logger,fromfile==log_mode_full,&rc,&dtrkr);
 
 #ifdef MANUAL_DRONE_LOCATE
     if (!fromfile){

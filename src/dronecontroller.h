@@ -213,7 +213,7 @@ public:
     float accx_sp,accy_sp,accz_sp;
 
     void close (void);
-    void init(std::ofstream *logger, bool fromfile, MultiModule *rc);
+    void init(std::ofstream *logger, bool fromfile, MultiModule *rc, DroneTracker *dtrk);
     void control(trackData data, cv::Point3f setpoint_world,cv::Point3f setspeed_world);
     bool getDroneIsActive() {
         if ( _flight_mode == fm_inactive || _flight_mode == fm_disarmed)
@@ -238,7 +238,7 @@ public:
         static float last_blink_time = time;
         static bool blink_state;
         if (b) {
-            if (time-last_blink_time>0.45f) {
+            if (time-last_blink_time>_dtrk->bind_blink_time) {
                 if (blink_state)
                     blink_state = false;
                 else
