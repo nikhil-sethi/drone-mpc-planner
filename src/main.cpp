@@ -263,6 +263,9 @@ void handleKey() {
     case 'b':
         rc.bind(true);
         break;
+    case 'l':
+        dnav.redetect_drone_location();
+        break;
     case ' ':
 #if CAMMODE == CAMMODE_REALSENSE
     case 'f':

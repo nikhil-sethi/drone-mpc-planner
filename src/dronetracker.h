@@ -68,6 +68,11 @@ private:
     cv::Point2f _drone_blink_image_location;
     cv::Point3f _drone_blink_world_location;
 
+    bool _landing_pad_location_set = false;
+    cv::Point3f _landing_pad_world_location;
+    cv::Point2f _landing_pad_image_location;
+
+
     class DroneTrackerCalibrationData: public xmls::Serializable
     {
     public:

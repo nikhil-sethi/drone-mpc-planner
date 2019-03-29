@@ -189,6 +189,10 @@ public:
         return _navigation_status < ns_wait_for_insect;
     }
 
+    void redetect_drone_location(){
+        _navigation_status = ns_locate_drone;
+    }
+
 };
 
 #endif //DRONENAVIGATION

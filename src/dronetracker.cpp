@@ -140,6 +140,15 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
             _drone_blink_world_location.x = d.sposX;
             _drone_blink_world_location.y = d.sposY;
             _drone_blink_world_location.z = d.sposZ;
+
+#ifndef MANUAL_DRONE_LOCATE
+            if (!_landing_pad_location_set){
+                _landing_pad_location_set = true;
+                _landing_pad_image_location = _drone_blink_image_location;
+                _landing_pad_world_location = _drone_blink_world_location;
+            }
+#endif
+
             _enable_depth_background_check = true;
             _enable_motion_background_check = true;
 
@@ -204,6 +213,11 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
                     output.z = -output.y * sinf(theta) + output.z * cosf(theta);
                     output.y = temp_y;
                     _drone_blink_world_location = output;
+                    if (_landing_pad_location_set){
+                        _landing_pad_location_set = true;
+                        _landing_pad_image_location = _drone_blink_image_location;
+                        _landing_pad_world_location = _drone_blink_world_location;
+                    }
 #endif
                 } else if (dist2take_off > settings.pixel_dist_seperation_min && dist2take_off < settings.pixel_dist_seperation_max){
                     drone_detected_near_takeoff_spot = true;
