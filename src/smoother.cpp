@@ -6,11 +6,11 @@ void Smoother::init(int width, float value)
     _rbuf.resize(_kernelsize + 1);
     _rotater = 0;
     _runner = value*_kernelsize;
-
     for (int i = 0; i <= _kernelsize; i++)
     {
         _rbuf.at(i) = value;
     }
+    _ready = true;
 }
 
 void Smoother::init(int width)
