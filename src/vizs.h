@@ -151,14 +151,6 @@ public:
     cv::Mat setposY;
     cv::Mat setposZ;
 
-    cv::Mat velX;
-    cv::Mat velY;
-    cv::Mat velZ;
-
-    cv::Mat accX;
-    cv::Mat accY;
-    cv::Mat accZ;
-
     cv::Mat svelX;
     cv::Mat svelY;
     cv::Mat svelZ;

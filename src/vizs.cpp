@@ -50,17 +50,9 @@ void Visualizer::addPlotSample(void) {
     setposY.push_back(_dnav->setpoint_world.y);
     setposZ.push_back(-_dnav->setpoint_world.z);
 
-    velX.push_back(-data.velX);
-    velY.push_back(data.velY);
-    velZ.push_back(-data.velZ);
-
     svelX.push_back(-data.svelX);
     svelY.push_back(data.svelY);
     svelZ.push_back(-data.svelZ);
-
-    accX.push_back(-data.accX);
-    accY.push_back(data.accY);
-    accZ.push_back(-data.accZ);
 
     saccX.push_back(-data.saccX);
     saccY.push_back(data.saccY);
@@ -118,17 +110,17 @@ cv::Mat Visualizer::plot_all_control(void) {
 
 cv::Mat Visualizer::plot_all_velocity(void) {
     std::vector<cv::Mat> ims_vel;
-    ims_vel.push_back(plot({velX,svelX}, "VelX"));
-    ims_vel.push_back(plot({velY,svelY,autotakeoff_velY_thresh},"VelY"));
-    ims_vel.push_back(plot({velZ,svelZ},"VelZ"));
+    ims_vel.push_back(plot({svelX}, "VelX"));
+    ims_vel.push_back(plot({svelY,autotakeoff_velY_thresh},"VelY"));
+    ims_vel.push_back(plot({svelZ},"VelZ"));
     return createColumnImage(ims_vel,CV_8UC3);
 }
 
 cv::Mat Visualizer::plot_all_acceleration(void) {
     std::vector<cv::Mat> ims_acc;
-    ims_acc.push_back(plot({accX,saccX}, "AccX"));
-    ims_acc.push_back(plot({accY,saccY,autotakeoff_velY_thresh},"AccY"));
-    ims_acc.push_back(plot({accZ,saccZ},"AccZ"));
+    ims_acc.push_back(plot({saccX}, "AccX"));
+    ims_acc.push_back(plot({saccY,autotakeoff_velY_thresh},"AccY"));
+    ims_acc.push_back(plot({saccZ},"AccZ"));
     return createColumnImage(ims_acc,CV_8UC3);
 }
 
