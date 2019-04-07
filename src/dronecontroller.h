@@ -179,7 +179,7 @@ public:
     bool joy_mode_swtich(){
         return _joy_mode_switch;
     }
-    void insert_log(int joy_roll, int joy_pitch, int joy_yaw, int joy_throttle, int joyArmSwitch, int joyModeSwitch, int joyTakeOffSwitch){
+    void insert_log(int joy_roll, int joy_pitch, int joy_yaw, int joy_throttle, int joyArmSwitch, int joyModeSwitch, int joyTakeOffSwitch,int auto_roll, int auto_pitch, int auto_throttle){
         joyRoll = joy_roll;
         joyPitch= joy_pitch;
         joyYaw = joy_yaw;
@@ -187,6 +187,9 @@ public:
         _joy_arm_switch = joyArmSwitch;
         _joy_mode_switch = static_cast<joy_mode_switch_modes>(joyModeSwitch);
         _joy_takeoff_switch = joyTakeOffSwitch;
+        _log_auto_roll = auto_roll;
+        _log_auto_pitch= auto_pitch;
+        _log_auto_throttle = auto_throttle;
     }
 
 
@@ -200,6 +203,38 @@ public:
     int autoPitch = JOY_MIDDLE;
     int autoYaw = JOY_MIDDLE;
 
+    //Normalized throttle, between [-1 .. 1].
+    //0 equals hoverthrottle
+    float _log_auto_throttle;
+    float Throttle(){
+        float throttle = _rc->throttle;
+        if (_fromfile)
+            throttle  = _log_auto_throttle;
+        throttle -= hoverthrottle;
+        throttle /= static_cast<float>(JOY_BOUND_MAX - JOY_BOUND_MIN);
+        return throttle;
+    }
+    //Normalized roll, between [-1 .. 1].
+    float _log_auto_roll;
+    float Roll() {
+        float roll = _rc->roll;
+        if (_fromfile)
+            roll  = _log_auto_roll;
+        roll -= JOY_MIDDLE;
+        roll /= static_cast<float>(JOY_BOUND_MAX - JOY_BOUND_MIN);
+        return roll;
+    }
+    //Normalized pitch, between [0 .. 1].
+    float _log_auto_pitch;
+    float Pitch() {
+        float pitch = _rc->pitch;
+        if (_fromfile)
+            pitch = _log_auto_pitch;
+        pitch -= JOY_MIDDLE;
+        pitch /= static_cast<float>(JOY_BOUND_MAX - JOY_BOUND_MIN);
+        return pitch;
+    }
+
     float hoverthrottle = INITIAL_HOVER_THROTTLE;
     bool hoverthrottleInitialized = true;
 
@@ -212,10 +247,13 @@ public:
     float velx_sp,vely_sp,velz_sp;
     float accx_sp,accy_sp,accz_sp;
 
+    uint control_history_max_size = VIDEOFPS;
+    std::vector<control_data> control_history;
+
     void close (void);
     void init(std::ofstream *logger, bool fromfile, MultiModule *rc, DroneTracker *dtrk);
-    void control(trackData data, cv::Point3f setpoint_world,cv::Point3f setspeed_world);
-    bool getDroneIsActive() {
+    void control(track_data data, cv::Point3f setpoint_world,cv::Point3f setspeed_world);
+    bool drone_is_active() {
         if ( _flight_mode == fm_inactive || _flight_mode == fm_disarmed)
             return false;
         else if (_joy_mode_switch == jmsm_manual && joyThrottle > JOY_BOUND_MIN)

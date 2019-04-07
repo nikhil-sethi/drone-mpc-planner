@@ -32,7 +32,7 @@ void Visualizer::addPlotSample(void) {
     throttle_calculated.push_back(static_cast<float>(_dctrl->autoThrottle));
     throttle_hover.push_back(_dctrl->hoverthrottle);
 
-    trackData data = _dtrkr->Last_track_data();
+    track_data data = _dtrkr->Last_track_data();
     dt.push_back(data.dt);
     dt_target.push_back(1.f/VIDEOFPS);
 
@@ -72,7 +72,6 @@ void Visualizer::plot(void) {
     ims_trk.push_back(plot_all_velocity());
     //    ims_trk.push_back(plot_all_acceleration());
     ims_trk.push_back(plot_all_control());
-    //showRowImage(ims_trk, "Tracking",CV_8UC3);
     plotframe = createRowImage(ims_trk,CV_8UC3);
 }
 
@@ -450,7 +449,7 @@ void Visualizer::paint() {
             cv::imshow("diff", _dtrkr->diff_viz);
         if (_dtrkr->viz_max_points.cols> 0)
             cv::imshow("maxs", _dtrkr->viz_max_points);
-//        draw_segment_viz();
+        //        draw_segment_viz();
         new_tracker_viz_data_requested = true;
     }
     if (request_plotframe_paint && plotframe.rows > 0) {

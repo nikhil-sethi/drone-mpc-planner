@@ -18,8 +18,8 @@ void InsectTracker::init_settings() {
 
 void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) {
 
-    trackData data ={0};
-    data.valid = true;
+    track_data data ={0};
+    data.pos_valid = true;
     data.posX = log.ins_pos_x;
     data.posY = log.ins_pos_y;
     data.posZ = log.ins_pos_z;

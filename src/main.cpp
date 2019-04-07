@@ -24,6 +24,7 @@
 #include "stopwatch.h"
 #include "dronetracker.h"
 #include "dronecontroller.h"
+#include "dronepredictor.h"
 #include "gstream.h"
 #include "vizs.h"
 #include "insecttracker.h"
@@ -74,6 +75,7 @@ std::ofstream logger;
 MultiModule rc;
 DroneTracker dtrkr;
 DroneController dctrl;
+DronePredictor dprdct;
 DroneNavigation dnav;
 InsectTracker itrkr;
 Visualizer visualizer;
@@ -220,9 +222,11 @@ void process_frame(Stereo_Frame_Data data) {
     auto timenow = chrono::system_clock::to_time_t(chrono::system_clock::now());
     logger << data.imgcount << ";" << data.number << ";" << std::put_time(std::localtime(&timenow), "%Y/%m/%d %T") << ";";
 
+
+
     //WARNING: changing the order of the functions with logging must be matched with the init functions!
 
-    dtrkr.track(data.time,itrkr.predicted_pathL,dctrl.getDroneIsActive());
+    dtrkr.track(data.time,itrkr.predicted_pathL,dctrl.drone_is_active());
     if (fromfile==log_mode_insect_only){
         itrkr.update_from_log(logreader.current_item,data.number);
     } else
@@ -233,11 +237,12 @@ void process_frame(Stereo_Frame_Data data) {
         }
     //        std::cout << "Found drone location:      [" << dtrkr.find_result.best_image_locationL.pt.x << "," << dtrkr.find_result.best_image_locationL.pt.y << "]" << std::endl;
     if (fromfile==log_mode_full) {
-        dctrl.insert_log(logreader.current_item.joyRoll, logreader.current_item.joyPitch, logreader.current_item.joyYaw, logreader.current_item.joyThrottle,logreader.current_item.joyArmSwitch,logreader.current_item.joyModeSwitch,logreader.current_item.joyTakeoffSwitch);
+        dctrl.insert_log(logreader.current_item.joyRoll, logreader.current_item.joyPitch, logreader.current_item.joyYaw, logreader.current_item.joyThrottle,logreader.current_item.joyArmSwitch,logreader.current_item.joyModeSwitch,logreader.current_item.joyTakeoffSwitch,logreader.current_item.auto_roll,logreader.current_item.auto_pitch,logreader.current_item.auto_throttle);
     }
     dnav.update(data.time);
 
     dctrl.control(dtrkr.Last_track_data(),dnav.setpoint_world,dnav.setspeed_world);
+    dprdct.update(dctrl.drone_is_active(),data.time);
 
     logger << std::endl;
 
@@ -404,6 +409,7 @@ int init(int argc, char **argv) {
     itrkr.init(&logger,&visdat);
     dnav.init(&logger,&dtrkr,&dctrl,&itrkr,&visdat);
     dctrl.init(&logger,fromfile==log_mode_full,&rc,&dtrkr);
+    dprdct.init(&visdat,&dtrkr,&itrkr,&dctrl);
 
 #ifdef MANUAL_DRONE_LOCATE
     if (!fromfile){

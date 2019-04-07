@@ -155,7 +155,7 @@ void DroneNavigation::update(float time) {
         _navigation_status=ns_taking_off;
         break;
     } case ns_taking_off: {
-        trackData data = _dtrk->Last_track_data();
+        track_data data = _dtrk->Last_track_data();
         if (data.svelY > static_cast<float>(params.auto_takeoff_speed) / 100.f ) {
             _navigation_status = ns_take_off_completed;
         }
@@ -200,8 +200,8 @@ void DroneNavigation::update(float time) {
         //update target chasing waypoint and speed
         if (_iceptor.get_insect_in_range()) {
             setpoint_world = _iceptor.get_intercept_position();
-//            if (setpoint_world.y < -1.2f)
-//                setpoint_world.y = -1.20f;
+            //            if (setpoint_world.y < -1.2f)
+            //                setpoint_world.y = -1.20f;
         }
 
         if (setpoint_world.z == 0) { // fly to landing waypoint (but do not land)
@@ -282,7 +282,7 @@ void DroneNavigation::update(float time) {
         alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
         _navigation_status = ns_landing;
     } FALLTHROUGH_INTENDED; case ns_landing: {
-        trackData data = _dtrk->Last_track_data();
+        track_data data = _dtrk->Last_track_data();
         if (data.sposY < _dtrk->Drone_Startup_Location().y+0.05f || autoLandThrottleDecrease >1000)
             _navigation_status = ns_landed;
 

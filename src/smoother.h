@@ -24,14 +24,14 @@ class Smoother
     void init(int width);
     void init(int width, float value);
     float addSample(float sample);
-    float get_latest();
+    float latest();
     void reset(void);
     void reset_to(float v);
-    bool get_ready()
+    bool ready()
     {
         return _ready;
     }
-    int get_kernselsize() { return _kernelsize;}
+    int kernselsize() { return _kernelsize;}
 };
 
 #endif

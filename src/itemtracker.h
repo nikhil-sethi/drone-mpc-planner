@@ -33,6 +33,9 @@ public:
         float distance;
         float distance_background;
 
+        track_item() {
+
+        }
         track_item(cv::KeyPoint kp, int frameid,float trackingCertainty){
             k = kp;
             frame_id = frameid;
@@ -49,8 +52,20 @@ public:
         float x() {return k.pt.x;}
         float y() {return k.pt.y;}
     };
+    struct world_track_item {
+        cv::Point3f world_coordinates;
+        track_item  ti;
+        cv::Point2f image_coordinates(){
+            return ti.k.pt;
+        }
+        float disparity = 0;
+        bool background_check_ok = false;
+        bool disparity_in_range = false;
+
+    };
 
     cv::Point3f predicted_locationL_last = {0};
+
 private:
     struct TrackerSettings{
 
@@ -99,7 +114,6 @@ private:
     struct Find_result {
         std::vector<track_item> keypointsL;
         std::vector<track_item> keypointsL_wihout_excludes;
-        std::vector<track_item> keypointsL_candidates;
         std::vector<track_item> excludes;
         cv::KeyPoint best_image_locationL;
         cv::Rect roi_offset;
@@ -112,10 +126,11 @@ private:
 
     float estimate_sub_disparity(int disparity);
     void check_consistency(cv::Point3f previous_location,cv::Point3f measured_world_coordinates);
-    float update_disparity(float disparity, float dt);
+    void update_disparity(float disparity, float dt);
     void update_prediction_state(cv::Point3f p, float blob_size);
-    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, track_item *best_match, float disparity);
+    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, float time, track_item *best_match, float disparity);
     void find(std::vector<track_item> exclude, std::vector<cv::Point2f> additional_ignores);
+    void select_best_candidate();
     std::vector<ItemTracker::track_item> remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path, std::vector<cv::Point2f> additional_ignores);
     void find_max_change(cv::Point prev, cv::Point roi_size, cv::Mat diff, std::vector<cv::KeyPoint> *scored_points);
     float calc_certainty(cv::KeyPoint item);
@@ -153,6 +168,9 @@ private:
 
     int detected_after_take_off = 0;
 protected:
+
+    std::vector<world_track_item> wti;
+
     int n_frames_lost = 100;
     const int n_frames_lost_threshold = 10;
     std::ofstream *_logger;
@@ -171,7 +189,7 @@ protected:
     bool _enable_motion_background_check = true;
 
     float stereo_match(cv::Point closestL, cv::Mat diffL, cv::Mat diffR, float prev_disparity);
-    void reset_tracker_ouput();
+    void reset_tracker_ouput(float time);
     virtual cv::Mat get_probability_cloud(cv::Point size);
     virtual void init_settings() = 0;
 public:
@@ -194,11 +212,11 @@ public:
     virtual void track(float time, std::vector<track_item> ignore, std::vector<cv::Point2f> additional_ignores);
     void append_log();
 
-    std::vector<trackData> track_history; // TODO: this will build up indefenitely.... and only last track data is used,
-    std::vector<trackData> track_prediction_history;
-    trackData Last_track_data() {
+    uint track_history_max_size = VIDEOFPS;
+    std::vector<track_data> track_history;
+    track_data Last_track_data() {
         if (track_history.empty())
-            return trackData();
+            return track_data();
         return track_history.back();
     }
 

@@ -59,7 +59,6 @@ void VisionData::init(bool fromfile, std::string log_in_dir,cv::Mat new_Qf, cv::
 
 void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int new_frame_id) {
     lock_data.lock();
-
     frameL_prev = frameL;
     frameR_prev = frameR;
     frameL = new_frameL;

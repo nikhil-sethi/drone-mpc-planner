@@ -53,15 +53,28 @@ const float rad2deg = 180.f/static_cast<float>(M_PI);
 const float deg2rad = static_cast<float>(M_PI)/180.f;
 
 
-struct trackData {
+struct track_data {
     float posX,posY,posZ;
     float dx,dy,dz,dt;
-    float velX,velY,velZ,accX,accY,accZ;
     float sposX,sposY,sposZ,svelX,svelY,svelZ,saccX,saccY,saccZ;
 
-    bool valid;
-    int detected_after_take_off;
+    bool pos_valid;
+    bool vel_valid;
+    bool acc_valid;
+    float time;
 };
+
+struct control_data {
+    control_data(float r, float tr, float p, float t){
+        throttle = tr;
+        roll = r;
+        pitch = p;
+        time = t;
+    }
+    float throttle,roll,pitch;
+    float time;
+};
+
 
 struct my_exit : public std::exception {
     int value;

@@ -31,6 +31,7 @@ public:
     void init(int width, float filt_rate);
     float addSample(float data, float time);
     void reset(void);
+    bool ready(){ return _ready;}
 
 };
 

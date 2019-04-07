@@ -31,6 +31,10 @@ public:
         int joyModeSwitch;
         int joyTakeoffSwitch;
 
+        int auto_throttle;
+        int auto_roll;
+        int auto_pitch;
+
         float ins_im_x;
         float ins_im_y;
         float ins_disparity;

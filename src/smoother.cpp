@@ -65,7 +65,7 @@ float Smoother::addSample(float sample)
     return _runner / _kernelsize;
 }
 
-float Smoother::get_latest()
+float Smoother::latest()
 {
     return _runner / _kernelsize;
 }

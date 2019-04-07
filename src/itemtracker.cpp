@@ -11,7 +11,7 @@ using namespace std;
 
 #ifdef HASSCREEN
 //#define TUNING
-//#define VIZ
+#define VIZ
 #endif
 
 void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string name) {
@@ -141,6 +141,63 @@ void ItemTracker::init_kalman() {
     cv::setIdentity(kfL.measurementNoiseCov, cv::Scalar(1e-1));
 }
 
+void ItemTracker::select_best_candidate(){
+
+
+
+    std::vector<track_item> keypoint_candidates = find_result.keypointsL_wihout_excludes;
+    uint nCandidates = static_cast<uint>(keypoint_candidates.size());
+    wti.clear();
+    if (nCandidates) {
+
+        cv::Point3f previous_location(find_result.best_image_locationL.pt.x,find_result.best_image_locationL.pt.y,0);
+
+        //first sort candidates based on image location odds, and check disparity range and background checks
+        int n = keypoint_candidates.size();
+
+//        if (_name.compare("drone")==0 && n > 0 )
+//            cout << std::endl;
+//        if (_name.compare("drone")==0 && n > 1 )
+//            cout << std::endl;
+        for (int i=0; i<n;i++)   {
+            world_track_item w;
+            uint match_id = match_closest_to_prediciton(previous_location,keypoint_candidates);
+            w.ti = keypoint_candidates.at(match_id);
+
+            w.disparity = stereo_match(w.image_coordinates(),_visdat->diffL,_visdat->diffR,find_result.disparity);
+
+            if (w.disparity < settings.min_disparity || w.disparity > settings.max_disparity){
+                w.disparity_in_range = false;
+            } else {
+                w.disparity_in_range = true;
+                //calculate everything for the itemcontroller:
+                std::vector<Point3d> camera_coordinates, world_coordinates;
+                camera_coordinates.push_back(Point3d(w.image_coordinates().x*IMSCALEF,w.image_coordinates().y*IMSCALEF,-w.disparity));
+                cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
+                w.world_coordinates = world_coordinates[0];
+
+                float dist_back = _visdat->depth_background_mm.at<float>(w.image_coordinates().y*IMSCALEF,w.image_coordinates().x*IMSCALEF);
+                float dist_meas = sqrtf(powf(w.world_coordinates.x,2) + powf(w.world_coordinates.y,2) +powf(w.world_coordinates.z,2));
+                if ((dist_meas > dist_back*(static_cast<float>(settings.background_subtract_zone_factor)/100.f)) && _enable_depth_background_check)
+                    w.background_check_ok = false;
+                else
+                    w.background_check_ok = true;
+
+                w.ti.distance = dist_meas;
+                w.ti.distance_background = dist_back;
+
+                float theta = _visdat->camera_angle * deg2rad;
+                float temp_y = w.world_coordinates.y * cosf(theta) + w.world_coordinates.z * sinf(theta);
+                w.world_coordinates.z = -w.world_coordinates.y * sinf(theta) + w.world_coordinates.z * cosf(theta);
+                w.world_coordinates.y = temp_y;
+            }
+            if (w.background_check_ok && w.disparity_in_range)
+                wti.push_back(w);
+            keypoint_candidates.erase(keypoint_candidates.begin() + match_id);
+        }
+    }
+}
+
 std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path,std::vector<cv::Point2f> additional_ignores) {
     float dis1,dis2,dis = 0;
 
@@ -224,69 +281,22 @@ void ItemTracker::track(float time, std::vector<track_item> exclude,std::vector<
     }
 
     find(exclude,additional_ignores);
+    select_best_candidate();
 
-    std::vector<track_item> keypoint_candidates = find_result.keypointsL_wihout_excludes;
-    uint nCandidates = static_cast<uint>(keypoint_candidates.size());
-    if (nCandidates) { //if lost
+    if ( wti.size()>0) {
+        world_track_item w = wti.at(0);
+        update_disparity(wti.at(0).disparity, dt_tracking);
 
-        cv::Point3f previous_location(find_result.best_image_locationL.pt.x,find_result.best_image_locationL.pt.y,0);
+        //Point3f predicted_output = world_coordinates[1];
+        check_consistency(cv::Point3f(this->prevX,this->prevY,this->prevZ),w.world_coordinates);
+        update_tracker_ouput(w.world_coordinates,dt_tracking,time,&w.ti,w.disparity);
+        update_prediction_state(cv::Point3f(w.image_coordinates().x,w.image_coordinates().y,w.disparity),w.ti.k.size);
+        n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
+        t_prev_tracking = time; // update dt only if item was detected
+        n_frames_tracking++;
+        roi_size_cnt = 0;
+    } else {
 
-        cv::Point3f output;
-        float disparity = 0;
-        track_item * match;
-
-        while (keypoint_candidates.size() > 0) {
-            uint match_id = match_closest_to_prediciton(previous_location,find_result.keypointsL_wihout_excludes);
-            match = &find_result.keypointsL_wihout_excludes.at(match_id);
-
-            disparity = stereo_match(match->k.pt,_visdat->diffL,_visdat->diffR,find_result.disparity);
-            disparity = update_disparity(disparity, dt_tracking);
-
-            bool background_check_ok = true;
-            bool disparity_in_range = true;
-            if (disparity < settings.min_disparity || disparity > settings.max_disparity){
-                disparity_in_range = false;
-            } else {
-                //calculate everything for the itemcontroller:
-                std::vector<Point3d> camera_coordinates, world_coordinates;
-                camera_coordinates.push_back(Point3d(match->x()*IMSCALEF,match->y()*IMSCALEF,-disparity));
-                cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
-                output = world_coordinates[0];
-
-                float dist_back = _visdat->depth_background_mm.at<float>(match->y()*IMSCALEF,match->x()*IMSCALEF);
-                float dist_meas = sqrtf(powf(output.x,2) + powf(output.y,2) +powf(output.z,2));
-                if (dist_meas > dist_back*(static_cast<float>(settings.background_subtract_zone_factor)/100.f))
-                    background_check_ok = false;
-
-                find_result.keypointsL_wihout_excludes.at(match_id).distance = dist_meas;
-                find_result.keypointsL_wihout_excludes.at(match_id).distance_background = dist_back;
-
-                float theta = _visdat->camera_angle * deg2rad;
-                float temp_y = output.y * cosf(theta) + output.z * sinf(theta);
-                output.z = -output.y * sinf(theta) + output.z * cosf(theta);
-                output.y = temp_y;
-            }
-            if ((!background_check_ok && _enable_depth_background_check) || !disparity_in_range) {
-                keypoint_candidates.erase(keypoint_candidates.begin() + match_id);
-            } else {
-                break;
-            }
-        }
-        find_result.keypointsL_candidates = keypoint_candidates;
-        nCandidates = static_cast<uint>(keypoint_candidates.size());
-        if (keypoint_candidates.size() > 0) { // if !lost
-            //Point3f predicted_output = world_coordinates[1];
-            check_consistency(cv::Point3f(this->prevX,this->prevY,this->prevZ),output);
-            update_tracker_ouput(output,dt_tracking,match,disparity);
-            update_prediction_state(cv::Point3f(match->x(),match->y(),disparity),match->k.size);
-            n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
-            t_prev_tracking = time; // update dt only if item was detected
-            n_frames_tracking++;
-            roi_size_cnt = 0;
-
-        }
-    }
-    if (nCandidates == 0) {
         roi_size_cnt ++; //TODO: same as n_frames_lost?
         n_frames_lost++;
         if (roi_size_cnt > settings.roi_max_grow)
@@ -294,7 +304,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude,std::vector<
 
         if( n_frames_lost >= n_frames_lost_threshold || !foundL ) {
             foundL = false;
-            reset_tracker_ouput();
+            reset_tracker_ouput(time);
         } else
             update_prediction_state(cv::Point3f(predicted_locationL.x,predicted_locationL.y,predicted_locationL.z),blob_size_last);
 
@@ -316,8 +326,10 @@ void ItemTracker::track(float time, std::vector<track_item> exclude,std::vector<
             predicted_pathL.clear();
     }
 
-
     append_log();
+
+    while (track_history.size() > track_history_max_size)
+        track_history.erase(track_history.begin());
 
 }
 
@@ -334,7 +346,7 @@ void ItemTracker::append_log() {
 
     (*_logger) << n_frames_lost << "; " << n_frames_tracking << "; " << foundL << "; ";
     //log all world stuff
-    trackData last = Last_track_data();
+    track_data last = Last_track_data();
     (*_logger) << last.posX << "; " << last.posY << "; " << last.posZ << ";" ;
     (*_logger) << last.sposX << "; " << last.sposY << "; " << last.sposZ << ";";
     (*_logger) << last.svelX << "; " << last.svelY << "; " << last.svelZ << ";";
@@ -475,6 +487,7 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
                         if (COG2.x == COG2.x) {// if not nan
 #ifdef VIZ
                             cv::circle(viz,COG2*4,1,cv::Scalar(0,0,255),1);
+                            cv::putText(viz,to_string_with_precision(COG2.y*4+find_result.roi_offset.y,0),COG2*4,cv::FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(100,0,255));
 #endif
                             // relative COG back to the _approx frame, and save it:
                             COG2.x += r2.x;
@@ -483,6 +496,7 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
 
                             //remove this COG from the ROI:
                             cv::circle(frame, COG2, 1, cv::Scalar(0), radius);
+
                         } else {
                             COG_is_nan = true;
                         }
@@ -629,7 +643,6 @@ float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR,
         disp_end = std::min(static_cast<int>(ceil(prev_disparity))+2,disp_end);
     }
 
-    cv::Mat diffLroi = diffL(roiL);
     for (int i=disp_start; i<disp_end;i++) {
         cv::Rect roiR(x1-i,y1,x2,y2);
 
@@ -686,52 +699,47 @@ float ItemTracker::estimate_sub_disparity(int disparity) {
     sub_disp += (disparity-1);
 
     if (sub_disp<disparity-1 || sub_disp>disparity+1 || sub_disp != sub_disp)
-        return disparity;
+        sub_disp = disparity;
+
+
 
     return sub_disp;
+
 }
 
-float ItemTracker::update_disparity(float disparity, float dt) {
+void ItemTracker::update_disparity(float disparity, float dt) {
+
+
+    float disparity_prev_smoothed = disparity_smoothed;
+
+    // predicted disparity value
+    float disp_predict = disparity + disp_rate*dt;
+
+    if (abs(disparity-disp_predict)<0.5f) {
+        float disp_filt_rate = 0.4f;
+        disparity_smoothed = disparity*disp_filt_rate + disparity_prev_smoothed*(1.0f-disp_filt_rate);
+    } else if (abs(disparity-disp_predict)<1.0f) {
+        float disp_filt_rate = 0.4f;
+        float disp_filt_pred = 0.1f;
+        disparity_smoothed = disparity*disp_filt_pred + disp_predict*(disp_filt_rate-disp_filt_pred) + disparity_prev_smoothed*(1.0f-disp_filt_rate);
+    } else {
+        float disp_filt_rate = 0.4f;
+        float disp_filt_pred = 0.0f;
+        disparity_smoothed = disparity*disp_filt_pred + disp_predict*(disp_filt_rate-disp_filt_pred) + disparity_prev_smoothed*(1.0f-disp_filt_rate);
+
+        if (abs(disparity-disp_prev)<1.0f)
+            reset_disp = true;
+    }
 
     if (n_frames_lost>0 || isnanf(disparity_smoothed) || reset_disp)
     {
-        disparity_smoothed = disparity;
         disp_rate_smoothed2.reset();
         reset_disp = false;
 
     } else {
-
-        //        cout << "\t\t\t\t\t\t\t\t sub_disparity: " << disparity << endl;
-        //        cout << "\t\t\t\t\t\t\t\t sub_disparity_smoothed: " << disparity_smoothed << endl;
-
-        // predicted disparity value
-        float disp_predict = disparity_smoothed + disp_rate*dt;
-
-        float disp_filt_rate;
-        float disp_filt_pred;
-        if (abs(disparity-disp_predict)<0.5f) {
-            disp_filt_rate = 0.4f;
-            disparity_smoothed = disparity*disp_filt_rate + disparity_smoothed*(1.0f-disp_filt_rate);
-        }
-        else if (abs(disparity-disp_predict)<1.0f) {
-            disp_filt_rate = 0.4f;
-            disp_filt_pred = 0.1f;
-            disparity_smoothed = disparity*disp_filt_pred + disp_predict*(disp_filt_rate-disp_filt_pred) + disparity_smoothed*(1.0f-disp_filt_rate);
-        }
-        else {
-            disp_filt_rate = 0.4f;
-            disp_filt_pred = 0.0f;
-            disparity_smoothed = disparity*disp_filt_pred + disp_predict*(disp_filt_rate-disp_filt_pred) + disparity_smoothed*(1.0f-disp_filt_rate);
-
-            if (abs(disparity-disp_prev)<1.0f)
-                reset_disp = true;
-        }
-
         disp_rate = disp_rate_smoothed2.addSample(disparity_smoothed,dt);
         disp_prev = disparity;
     }
-
-    return disparity_smoothed;
 }
 
 void ItemTracker::check_consistency(cv::Point3f prevLoc,cv::Point3f measLoc) {
@@ -774,7 +782,7 @@ void ItemTracker::update_prediction_state(cv::Point3f p, float blob_size) {
     blob_size_last = blob_size;
 }
 
-void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  track_item * best_match, float disparity) {
+void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  float time, track_item * best_match, float disparity) {
 
     find_result.best_image_locationL = best_match->k;
     find_result.disparity = disparity;
@@ -786,8 +794,8 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
 
     pathL.push_back(t);
 
-    trackData data ={0};
-    data.valid = true;
+    track_data data ={0};
+    data.pos_valid = true;
     data.posX = measured_world_coordinates.x;
     data.posY = measured_world_coordinates.y;
     data.posZ = measured_world_coordinates.z;
@@ -842,12 +850,14 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
     data.saccY = smoother_accY2.addSample(data.svelY,dt);
     data.saccZ = smoother_accZ2.addSample(data.svelZ,dt);
 
+    data.vel_valid = smoother_velX2.ready();
+    data.acc_valid = smoother_accX2.ready();
 
     prevX = data.sposX;
     prevY = data.sposY;
     prevZ = data.sposZ;
 
-    data.valid = true;
+    data.time = time;
     data.dt = dt;
     detected_after_take_off++;
 
@@ -869,10 +879,10 @@ float ItemTracker::calc_certainty(KeyPoint item) {
     return new_tracking_certainty;
 }
 
-void ItemTracker::reset_tracker_ouput() {
-    trackData data = {0};
+void ItemTracker::reset_tracker_ouput(float time) {
+    track_data data = {0};
     reset_filters = true;
-
+    data.time = time;
     track_history.push_back(data);
     init_kalman();
 }

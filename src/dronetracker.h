@@ -72,6 +72,9 @@ private:
     cv::Point3f _landing_pad_world_location;
     cv::Point2f _landing_pad_image_location;
 
+    bool _drone_control_prediction_valid = false;
+    cv::Point2f _drone_control_predicted_image_location = {0};
+    cv::Point3f _drone_control_predicted_world_location = {0};
 
     class DroneTrackerCalibrationData: public xmls::Serializable
     {
@@ -127,6 +130,10 @@ public:
         return _drone_blink_image_location;
     }
 
+    bool taking_off(){
+        return _drone_tracking_status == dts_detecting_takeoff;
+    }
+
     cv::Mat _cir;
     cv::Mat diff_viz;
 
@@ -154,6 +161,19 @@ public:
     }
     void set_drone_location(cv::Point p){
        _drone_blink_image_location = p/IMSCALEF;
+    }
+
+    void insert_control_predicted_drone_location(){
+        if (_drone_control_prediction_valid){
+            find_result.best_image_locationL.pt = _drone_control_predicted_image_location;
+            _drone_control_prediction_valid = false;
+        }
+    }
+
+    void set_control_predicted_drone_location(cv::Point2f drone_control_predicted_image_location, cv::Point3f drone_control_predicted_world_location){
+        _drone_control_predicted_image_location = drone_control_predicted_image_location;
+        _drone_control_predicted_world_location = drone_control_predicted_world_location;
+        _drone_control_prediction_valid = true;
     }
 
     bool blinking_drone_located() {

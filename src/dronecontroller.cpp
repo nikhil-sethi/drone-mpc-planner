@@ -98,7 +98,7 @@ void DroneController::queue_commands(int throttle,int roll, int pitch, int yaw) 
     }
 }
 
-void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f setpoint_v) {
+void DroneController::control(track_data data,cv::Point3f setpoint, cv::Point3f setpoint_v) {
 
     if (!_fromfile)
         readJoystick();
@@ -276,7 +276,12 @@ void DroneController::control(trackData data,cv::Point3f setpoint, cv::Point3f s
 
     queue_commands(throttle,roll,pitch,yaw);
 
-    (*_logger) << static_cast<int>(data.valid)  << "; " <<
+    control_data c(Throttle(),Roll(),Pitch(),data.time);
+    control_history.push_back(c);
+    while (control_history.size() > control_history_max_size)
+        control_history.erase(control_history.begin());
+
+    (*_logger) << static_cast<int>(data.pos_valid)  << "; " <<
                   posErrX << "; " <<
                   posErrY  << "; " <<
                   posErrZ << "; " <<
