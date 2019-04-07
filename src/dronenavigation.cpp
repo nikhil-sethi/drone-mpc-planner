@@ -87,7 +87,7 @@ void DroneNavigation::update(float time) {
         _navigation_status = ns_wait_locate_drone;
         break;
     } case ns_wait_locate_drone: {
-        static float prev_time = time = 0;
+        static float prev_time = 0;
 #if TX_TYPE == TX_FRSKYD || TX_TYPE == TX_FRSKYX
         if (time - prev_time > 7 && time - prev_time < 8) {
             _dctrl->blink_drone(false); // refresh the blinking
