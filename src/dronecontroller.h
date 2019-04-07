@@ -105,7 +105,7 @@ private:
     const int forward_pitch_take_off_boost = 0; // CX10 - 60
     const int min_throttle = JOY_BOUND_MIN+1; //Whoop - 600    CX10 - 800
     const float integratorThresholdDistance = 0.2f;
-    float throttleBankFactor = 0.33; // Whoop 0.33
+public : const float throttle_bank_factor = 0.33; // Whoop 0.33
 
 
 #if TX_TYPE == TX_CX10
