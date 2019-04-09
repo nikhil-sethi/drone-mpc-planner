@@ -48,9 +48,11 @@ void DronePredictor::update(bool drone_is_active, float time) {
     float roll = roll_smth.addSample(_dctrl->Roll());
 
     if (fabs(roll) > fabs(pitch))
-        throttle -= throttle *_dctrl->throttle_bank_factor*fabs(roll);
+        throttle -= _dctrl->throttle_bank_factor*fabs(roll);
     else
-        throttle -= throttle *_dctrl->throttle_bank_factor*fabs(pitch);
+        throttle -= _dctrl->throttle_bank_factor*fabs(pitch);
+    if (throttle< -1)
+        throttle = -1;
 
     cv::Point3f rtp(roll,throttle,pitch);
     swap_check(rtp);

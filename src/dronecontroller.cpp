@@ -190,9 +190,9 @@ void DroneController::control(track_data data,cv::Point3f setpoint, cv::Point3f 
 
         //FIXME: test this!
         if (fabs(autoRoll) > fabs(autoPitch))
-            autoThrottle += autoThrottle * throttle_bank_factor*abs(autoRoll);
+            autoThrottle += throttle_bank_factor*abs(autoRoll);
         else
-            autoThrottle += autoThrottle * throttle_bank_factor*abs(autoPitch);
+            autoThrottle += throttle_bank_factor*abs(autoPitch);
 
         autoRoll    += JOY_MIDDLE + (params.rollI*rollErrI);
         autoPitch   += PITCH_MIDDLE + (params.pitchI*pitchErrI);
@@ -200,6 +200,8 @@ void DroneController::control(track_data data,cv::Point3f setpoint, cv::Point3f 
         //int minThrottle = 1300 + min(abs(autoRoll-1500)/10,50) + min(abs(autoPitch-1500)/10,50);
         if (autoThrottle<min_throttle)
             autoThrottle = min_throttle;
+        if (autoThrottle>JOY_BOUND_MAX)
+            autoThrottle = JOY_BOUND_MAX;
 
         throttle = autoThrottle ;
         roll = autoRoll;
