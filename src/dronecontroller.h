@@ -114,12 +114,12 @@ public : const float throttle_bank_factor = 0.33; // Whoop 0.33
 #endif
 #if TX_TYPE == TX_FRSKYD
 #define INITIALTHROTTLE 200
-#define INITIAL_HOVER_THROTTLE 800
+#define INITIAL_HOVER_THROTTLE 950
 #define PITCH_MIDDLE JOY_MIDDLE
 #endif
 #if TX_TYPE == TX_FRSKYX
 #define INITIALTHROTTLE 200
-#define INITIAL_HOVER_THROTTLE 950
+#define INITIAL_HOVER_THROTTLE 900
 #define PITCH_MIDDLE JOY_MIDDLE
 #endif
 #if TX_TYPE == TX_FRSKYX_TC
