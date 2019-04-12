@@ -127,7 +127,7 @@ void DroneNavigation::update(float time) {
             _navigation_status = ns_wait_for_insect;
         else if (_nav_flight_mode == nfm_manual)
             _navigation_status = ns_manual;
-        else if (_dctrl->manual_override_take_off_now )
+        else if (_dctrl->manual_override_take_off_now() )
             _navigation_status = ns_takeoff;
         break;
     } case ns_wait_for_insect: {
@@ -148,9 +148,7 @@ void DroneNavigation::update(float time) {
         _calibrating_hover = true;
         break;
     } case ns_takeoff: {
-        _dctrl->manual_override_take_off_now = false;
-        _dctrl->manual_override_land_now = false;
-
+        _dctrl->reset_manual_override_take_off_now();
         _dctrl->set_flight_mode(DroneController::fm_taking_off);
         _navigation_status=ns_taking_off;
         break;

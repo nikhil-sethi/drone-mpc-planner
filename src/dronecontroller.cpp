@@ -481,9 +481,7 @@ void DroneController::process_joystick() {
     } else {
 
         if (_flight_mode == fm_inactive){
-            manual_override_take_off_now = _joy_takeoff_switch;
-        } else if (_flight_mode == fm_flying) {
-            manual_override_land_now = _joy_takeoff_switch;
+            _manual_override_take_off_now = _joy_takeoff_switch;
         }
 
         if  (JOYSTICK_TYPE == RC_USB_HOBBYKING) {
@@ -497,7 +495,7 @@ void DroneController::process_joystick() {
                     if (joyPitch < JOY_MIN + 200) {
                         _flight_mode = fm_inactive;
                         if (joyRoll > JOY_MAX_THRESH)
-                            manual_override_take_off_now = true;
+                            _manual_override_take_off_now = true;
                     }
                 }
             } else if (!_joy_arm_switch && joySwitch_prev && !_fromfile) {
@@ -507,6 +505,8 @@ void DroneController::process_joystick() {
         } else if  (JOYSTICK_TYPE == RC_XLITE) {
             if (!_joy_arm_switch){
                 _rc->arm(false);
+                _joy_takeoff_switch = false;
+                _manual_override_take_off_now = false;
                 _joy_state = js_disarmed;
                 _flight_mode = fm_disarmed;
             }else {

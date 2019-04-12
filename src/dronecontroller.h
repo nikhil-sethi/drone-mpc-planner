@@ -209,7 +209,7 @@ public:
     float Throttle(){
         float throttle = _rc->throttle;
         if (_fromfile)
-            throttle  = _log_auto_throttle;
+            throttle  = _log_auto_throttle;       
         throttle -= hoverthrottle;
         throttle /= static_cast<float>(JOY_BOUND_MAX - JOY_BOUND_MIN);
         return throttle;
@@ -238,8 +238,12 @@ public:
     float hoverthrottle = INITIAL_HOVER_THROTTLE;
     bool hoverthrottleInitialized = true;
 
-    bool manual_override_take_off_now;
-    bool manual_override_land_now;
+    bool _manual_override_take_off_now;
+    bool manual_override_take_off_now() { return _manual_override_take_off_now;}
+    void reset_manual_override_take_off_now() {
+        _manual_override_take_off_now = false;
+        _joy_takeoff_switch = false;
+    }
 
     float posErrX,posErrY,posErrZ;
     float velErrX,velErrY,velErrZ;
