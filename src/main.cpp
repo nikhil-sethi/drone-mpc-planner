@@ -169,7 +169,12 @@ void process_video() {
 
         int frameWritten = 0;
 #if VIDEORAWLR && VIDEORAWLR != VIDEOMODE_BAG
-        frameWritten = output_video_LR.write(cam.frameL,cam.frameR);
+
+        float dtr = data.time - itrkr.last_sighting_time;
+        if (dtr < 3.f) {
+            frameWritten = output_video_LR.write(cam.frameL,cam.frameR);
+            std::cout << "Recording!" << std::endl;
+        }
 #endif
         if (frameWritten == 0) {
 #if VIDEODISPARITY
@@ -225,7 +230,6 @@ void process_frame(Stereo_Frame_Data data) {
 
 
     //WARNING: changing the order of the functions with logging must be matched with the init functions!
-
     dtrkr.track(data.time,itrkr.predicted_pathL,dctrl.drone_is_active());
     if (fromfile==log_mode_insect_only){
         itrkr.update_from_log(logreader.current_item,data.number);
@@ -506,8 +510,9 @@ int main( int argc, char **argv )
 #ifdef INSECT_LOGGING_MODE
         //don't start  until lights are off
         while(true) {
-            cam.sense_light_level();
-            if (cam.measured_exposure() >15000) {
+            float expo = cam.measure_auto_exposure();
+            std::cout << "Measured exposure: " << expo << std::endl;
+            if (expo >500) {
                 break;
             }
             usleep(60000000); // measure every 1 minute

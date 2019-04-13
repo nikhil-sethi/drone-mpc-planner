@@ -80,6 +80,7 @@ public:
 
     void update();
 
+    float measure_auto_exposure();
 
     int frame_number() {return _frame_number;}
     float frame_time() {return _frame_time;}
@@ -118,6 +119,7 @@ public:
 
 private:
 
+    rs2::config cfg; // for some reason if this is put on the stack we end up in a deadlock when its destructor is called.
     bool hasIMU = false;
     uint requested_id_in =0;
     int _frame_number;
@@ -168,7 +170,8 @@ private:
     void rs_callback(rs2::frame f);
     void rs_callback_playback(rs2::frame f);
 
-    void sense_light_level();
+    void check_light_level();
+
     void calib_pose();
     void serialize_calib();
     void deserialize_calib(string file);

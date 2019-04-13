@@ -858,6 +858,7 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
     prevZ = data.sposZ;
 
     data.time = time;
+    last_sighting_time = time;
     data.dt = dt;
     detected_after_take_off++;
 

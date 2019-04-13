@@ -332,7 +332,7 @@ void Cam::init() {
     else
         deserialize_calib(calib_template_rfn);
 
-    sense_light_level();
+    check_light_level();
     if (getSecondsSinceFileCreation(calib_rfn) < 60*60 &&
             checkFileExist(depth_map_rfn) &&
             checkFileExist(calib_rfn)) {
@@ -469,20 +469,16 @@ void Cam::serialize_calib() {
     outfile.close();
 }
 
-void Cam::sense_light_level(){
+void Cam::check_light_level(){
 
     std::cout << "Checking if scene brightness has changed" << std::endl;
     //boot the camera and set it to the same settings as the previous session
-    rs2::config cfg;
     cfg.disable_all_streams();
     cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
     rs2::pipeline cam;
     rs2::pipeline_profile selection = cam.start(cfg);
-
-
-
     rs2::device selected_device = selection.get_device();
-    auto rs_dev = selected_device.first<rs2::depth_sensor>();
+    rs2::depth_sensor rs_dev = selected_device.first<rs2::depth_sensor>();
 
     float tmp_set_gain = rs_dev.get_option(RS2_OPTION_GAIN);
     rs_dev.set_option(RS2_OPTION_GAIN,_measured_gain);
@@ -593,10 +589,50 @@ void Cam::sense_light_level(){
     cam.stop();
 }
 
+float Cam::measure_auto_exposure(){
+    cfg.disable_all_streams();
+    cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
+    rs2::pipeline cam;
+    rs2::pipeline_profile selection = cam.start(cfg);
+    rs2::device selected_device = selection.get_device();
+    rs2::depth_sensor rs_dev = selected_device.first<rs2::depth_sensor>();
+
+    float tmp_set_gain = rs_dev.get_option(RS2_OPTION_GAIN);
+    rs_dev.set_option(RS2_OPTION_GAIN,_measured_gain);
+    rs_dev.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);
+    rs_dev.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f);
+
+    cv::Size im_size(IMG_W, IMG_H);
+    cv::Mat frameLt;
+
+    rs2::frameset frame;
+    float new_expos;
+    int nframes_delay = (fabs(_measured_gain-tmp_set_gain)/248.f)*30.f;
+    for (int i = 0; i< nframes_delay;i++) // allow some time to settle
+        frame = cam.wait_for_frames();
+
+    float tmp_exposure =-1;
+    int tmp_last_exposure_frame_id = 0;
+    for (int i = 0; i< 120;i++) { // check for large change in exposure
+        frame = cam.wait_for_frames();
+        frameLt = Mat(im_size, CV_8UC1, const_cast<void *>(frame.get_infrared_frame(1).get_data()), Mat::AUTO_STEP);
+        if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
+            new_expos = frame.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
+            if (new_expos - tmp_exposure > 0.5f )
+                tmp_last_exposure_frame_id = i;
+            if (i - tmp_last_exposure_frame_id >= 5)
+                break;
+            tmp_exposure = new_expos;
+        }
+    }
+    cfg.disable_all_streams();
+    cam.stop();
+    return new_expos;
+}
+
 void Cam::calib_pose(){
 
     std::cout << "Measuring pose..." << std::endl;
-    rs2::config cfg;
     cfg.disable_all_streams();
     cfg.enable_stream(RS2_STREAM_DEPTH, IMG_W, IMG_H, RS2_FORMAT_Z16, VIDEOFPS);
     if (hasIMU) {

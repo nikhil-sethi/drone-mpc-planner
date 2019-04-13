@@ -204,6 +204,7 @@ public:
     cv::Mat viz_max_points;
 
     int n_frames_tracking =0;
+    float last_sighting_time = 0;
 
     bool foundL = false;
 
