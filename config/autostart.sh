@@ -25,6 +25,7 @@ while [ 1 ]; do
 		done
 		echo Moving old data to $OUTDIR
 		/bin/mkdir -p $OUTDIR
+		/bin/mv terminal.log $OUTDIR || true
 		/bin/mv logging $OUTDIR || true
 
 	echo "$dt" > terminal.log
