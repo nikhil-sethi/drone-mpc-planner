@@ -215,7 +215,7 @@ void process_video() {
             fps_smoothed.reset();
 
 #ifdef INSECT_LOGGING_MODE
-        if (imgcount > 60000)
+        if (imgcount > 360000)
             key =27;
 #endif
 
