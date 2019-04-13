@@ -171,12 +171,12 @@ void process_video() {
         int frameWritten = 0;
 #if VIDEORAWLR && VIDEORAWLR != VIDEOMODE_BAG
         static float dtr =0;
-        if (itrkr.foundL && dtr > 5.f && dtr > 0) {
+        if (itrkr.foundL && dtr > 5.f && dtr > 0 && data.time > 5.f) {
             auto time_insect_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
             logger_insect << "New detection at: " << std::put_time(std::localtime(&time_insect_now), "%Y/%m/%d %T") << std::endl;
         }
         dtr = data.time - itrkr.last_sighting_time;
-        if (dtr < 3.f && dtr >0) {
+        if (dtr < 3.f && dtr >0 && data.time > 5.f) {
             frameWritten = output_video_LR.write(cam.frameL,cam.frameR);
             std::cout << "Recording!" << std::endl;
         }
