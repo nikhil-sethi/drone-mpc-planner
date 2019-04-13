@@ -512,7 +512,7 @@ int main( int argc, char **argv )
         while(true) {
             float expo = cam.measure_auto_exposure();
             std::cout << "Measured exposure: " << expo << std::endl;
-            if (expo >500) {
+            if (expo >10000) {
                 break;
             }
             usleep(60000000); // measure every 1 minute
