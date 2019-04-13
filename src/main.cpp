@@ -71,6 +71,7 @@ int mouseX, mouseY;
 int mouseLDown;
 
 std::ofstream logger;
+std::ofstream logger_insect;
 //Arduino rc;
 MultiModule rc;
 DroneTracker dtrkr;
@@ -169,8 +170,12 @@ void process_video() {
 
         int frameWritten = 0;
 #if VIDEORAWLR && VIDEORAWLR != VIDEOMODE_BAG
-
-        float dtr = data.time - itrkr.last_sighting_time;
+        static float dtr =0;
+        if (itrkr.foundL && dtr > 5.f) {
+            auto time_insect_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
+            logger_insect << "New detection at: " << std::put_time(std::localtime(&time_insect_now), "%Y/%m/%d %T") << std::endl;
+        }
+        dtr = data.time - itrkr.last_sighting_time;
         if (dtr < 3.f) {
             frameWritten = output_video_LR.write(cam.frameL,cam.frameR);
             std::cout << "Recording!" << std::endl;
@@ -388,6 +393,8 @@ int init(int argc, char **argv) {
     }
 
     logger << "ID;RS_ID;time;";
+
+    logger_insect.open(data_output_dir  + "insect.log",std::ofstream::out);
 
 #ifndef INSECT_LOGGING_MODE
 #if CAMMODE == CAMMODE_REALSENSE
