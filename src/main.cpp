@@ -518,7 +518,8 @@ int main( int argc, char **argv )
         //don't start  until lights are off
         while(true) {
             float expo = cam.measure_auto_exposure();
-            std::cout << "Measured exposure: " << expo << std::endl;
+            auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
+            std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << " Measured exposure: " << expo << std::endl;
             if (expo >10000) {
                 break;
             }
