@@ -178,7 +178,7 @@ void process_video() {
         dtr = data.time - itrkr.last_sighting_time;
         if (dtr < 3.f && dtr >0 && data.time > 5.f) {
             frameWritten = output_video_LR.write(cam.frameL,cam.frameR);
-            std::cout << "Recording!" << std::endl;
+            std::cout << "Recording! Frame written: " << frameWritten << std::endl;
         }
 #endif
         if (frameWritten == 0) {
