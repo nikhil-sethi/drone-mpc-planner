@@ -516,6 +516,7 @@ int main( int argc, char **argv )
 
 #ifdef INSECT_LOGGING_MODE
         //don't start  until lights are off
+        std::cout << "Insect logging mode, check if dark." << std::endl;
         while(true) {
             float expo = cam.measure_auto_exposure();
             auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
