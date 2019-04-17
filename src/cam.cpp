@@ -503,7 +503,7 @@ void Cam::check_light_level(){
             new_expos = frame.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
             if (new_expos - tmp_exposure > 0.5f )
                 tmp_last_exposure_frame_id = i;
-            if (i - tmp_last_exposure_frame_id >= 15)
+            if (i - tmp_last_exposure_frame_id >= 10)
                 break;
             tmp_exposure = new_expos;
         }
@@ -544,7 +544,7 @@ void Cam::check_light_level(){
                     if (fabs(_measured_exposure-tmp_measured_exposure)>0.5f){
                         tmp_measured_exposure = _measured_exposure;
                         last_exposure_frame_id = i;
-                    } else if (i - last_exposure_frame_id >= 15) { // no change in exposure for too long
+                    } else if (i - last_exposure_frame_id >= 10) { // no change in exposure for too long
                         break;
                     }
 
@@ -621,6 +621,7 @@ float Cam::measure_auto_exposure(){
                 tmp_last_exposure_frame_id = i;
             if (i - tmp_last_exposure_frame_id >= 15)
                 break;
+            std::cout << "i: " << i << " " << tmp_exposure << " vs " << new_expos << std::endl;
             tmp_exposure = new_expos;
         }
     }
