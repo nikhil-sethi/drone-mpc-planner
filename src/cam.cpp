@@ -503,7 +503,7 @@ void Cam::check_light_level(){
             new_expos = frame.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
             if (new_expos - tmp_exposure > 0.5f )
                 tmp_last_exposure_frame_id = i;
-            if (i - tmp_last_exposure_frame_id >= 5)
+            if (i - tmp_last_exposure_frame_id >= 15)
                 break;
             tmp_exposure = new_expos;
         }
@@ -511,7 +511,7 @@ void Cam::check_light_level(){
 
     if (fabs(_measured_exposure - new_expos) > 1000){
         std::cout << "Large exposure difference found, recalibrating..." << std::endl;
-        rs_dev.set_option(RS2_OPTION_GAIN,16);
+        rs_dev.set_option(RS2_OPTION_GAIN,0);
 
         //assuming we need to wait one second to go from max to min gain, for the camera to settle
         nframes_delay = (_measured_gain/248.f)*60.f;
@@ -544,7 +544,7 @@ void Cam::check_light_level(){
                     if (fabs(_measured_exposure-tmp_measured_exposure)>0.5f){
                         tmp_measured_exposure = _measured_exposure;
                         last_exposure_frame_id = i;
-                    } else if (i - last_exposure_frame_id >= 5) { // no change in exposure for too long
+                    } else if (i - last_exposure_frame_id >= 15) { // no change in exposure for too long
                         break;
                     }
 
@@ -597,7 +597,7 @@ float Cam::measure_auto_exposure(){
     rs2::device selected_device = selection.get_device();
     rs2::depth_sensor rs_dev = selected_device.first<rs2::depth_sensor>();
 
-    rs_dev.set_option(RS2_OPTION_GAIN,16);
+    rs_dev.set_option(RS2_OPTION_GAIN,0);
     rs_dev.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);
     rs_dev.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f);
 
@@ -619,7 +619,7 @@ float Cam::measure_auto_exposure(){
             actual_exposure_was_measured++;
             if (new_expos - tmp_exposure > 0.5f )
                 tmp_last_exposure_frame_id = i;
-            if (i - tmp_last_exposure_frame_id >= 5)
+            if (i - tmp_last_exposure_frame_id >= 15)
                 break;
             tmp_exposure = new_expos;
         }
