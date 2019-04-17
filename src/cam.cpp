@@ -597,7 +597,6 @@ float Cam::measure_auto_exposure(){
     rs2::device selected_device = selection.get_device();
     rs2::depth_sensor rs_dev = selected_device.first<rs2::depth_sensor>();
 
-    float tmp_set_gain = rs_dev.get_option(RS2_OPTION_GAIN);
     rs_dev.set_option(RS2_OPTION_GAIN,16);
     rs_dev.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);
     rs_dev.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f);
@@ -607,17 +606,17 @@ float Cam::measure_auto_exposure(){
 
     rs2::frameset frame;
     float new_expos;
-    int nframes_delay = (fabs(_measured_gain-tmp_set_gain)/248.f)*30.f;
-    for (int i = 0; i< nframes_delay;i++) // allow some time to settle
-        frame = cam.wait_for_frames();
 
-    float tmp_exposure =-1;
+    float tmp_exposure =0;
     int tmp_last_exposure_frame_id = 0;
-    for (int i = 0; i< 120;i++) { // check for large change in exposure
+    int actual_exposure_was_measured = 0;
+    int i =0;
+    for (i= 0; i< 120;i++) { // check for large change in exposure
         frame = cam.wait_for_frames();
         frameLt = Mat(im_size, CV_8UC1, const_cast<void *>(frame.get_infrared_frame(1).get_data()), Mat::AUTO_STEP);
         if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
             new_expos = frame.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
+            actual_exposure_was_measured++;
             if (new_expos - tmp_exposure > 0.5f )
                 tmp_last_exposure_frame_id = i;
             if (i - tmp_last_exposure_frame_id >= 5)
@@ -627,6 +626,11 @@ float Cam::measure_auto_exposure(){
     }
     cfg.disable_all_streams();
     cam.stop();
+    if (!actual_exposure_was_measured)
+        std::cout << "Error: no exposure data could be found!!!" << std::endl;
+    else if (actual_exposure_was_measured!=i+1)
+        std::cout << "Not all frames contained exosure info: " << actual_exposure_was_measured << " / " << i << std::endl;
+
     return new_expos;
 }
 
