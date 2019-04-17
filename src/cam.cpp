@@ -598,7 +598,7 @@ float Cam::measure_auto_exposure(){
     rs2::depth_sensor rs_dev = selected_device.first<rs2::depth_sensor>();
 
     float tmp_set_gain = rs_dev.get_option(RS2_OPTION_GAIN);
-    rs_dev.set_option(RS2_OPTION_GAIN,_measured_gain);
+    rs_dev.set_option(RS2_OPTION_GAIN,16);
     rs_dev.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);
     rs_dev.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f);
 
