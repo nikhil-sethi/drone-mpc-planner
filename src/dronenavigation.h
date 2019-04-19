@@ -147,6 +147,8 @@ public:
         return _nav_flight_mode;
     }
     void set_nav_flight_mode(nav_flight_modes m){
+        if (m == nfm_manual)
+            _navigation_status = ns_manual;
         _nav_flight_mode = m;
     }
     std::string Navigation_Status() {

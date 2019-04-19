@@ -280,6 +280,9 @@ void handleKey() {
     case 'l':
         dnav.redetect_drone_location();
         break;
+    case 'o':
+        dnav.set_nav_flight_mode(DroneNavigation::nfm_manual);
+        break;
     case ' ':
 #if CAMMODE == CAMMODE_REALSENSE
     case 'f':
