@@ -67,6 +67,7 @@ private:
 
     cv::Point2f _drone_blink_image_location;
     cv::Point3f _drone_blink_world_location;
+    cv::Point3f _drone_blink_world_location_start;
 
     bool _landing_pad_location_set = false;
     cv::Point3f _landing_pad_world_location;
@@ -180,7 +181,7 @@ public:
         return _blinking_drone_status >= bds_found;
     }
     cv::Point3f Drone_Startup_Location() {
-        return _drone_blink_world_location;
+        return _drone_blink_world_location_start;
     }
 
     const float bind_blink_time = 0.45f;

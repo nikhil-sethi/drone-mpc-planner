@@ -140,6 +140,8 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
             _drone_blink_world_location.x = d.sposX;
             _drone_blink_world_location.y = d.sposY;
             _drone_blink_world_location.z = d.sposZ;
+            if (!_drone_blink_world_location_start.x)
+                _drone_blink_world_location_start = _drone_blink_world_location;
 
 #ifndef MANUAL_DRONE_LOCATE
             if (!_landing_pad_location_set){

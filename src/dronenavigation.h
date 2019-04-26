@@ -163,7 +163,7 @@ public:
         int setpoint_slider_Z = 1000;
 
         int land_incr_f_mm = 5;
-        int autoLandThrottleDecreaseFactor = 10;
+        int autoLandThrottleDecreaseFactor = 3;
         int auto_takeoff_speed = 3;
         float time_out_after_landing = 2.5f;
 
