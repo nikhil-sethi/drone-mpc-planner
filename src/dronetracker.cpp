@@ -199,7 +199,7 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
             for (uint i = 0; i< wti.size(); i++){
                 world_track_item k = wti.at(i);
                 float dist2take_off = sqrt(pow(k.image_coordinates().x - Drone_Startup_Im_Location().x,2)+pow(k.image_coordinates().y - Drone_Startup_Im_Location().y,2));
-                if (dist2take_off < settings.pixel_dist_landing_spot){
+                if (dist2take_off < settings.pixel_dist_landing_spot + DRONE_IM_START_SIZE){
                     takeoff_spot_detected = true;
                     ignores_for_insect_tracker.push_back(k.image_coordinates());
 #ifdef MANUAL_DRONE_LOCATE
@@ -219,16 +219,16 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
                         _landing_pad_world_location = _drone_blink_world_location;
                     }
 #endif
-                } else if (dist2take_off > settings.pixel_dist_seperation_min && dist2take_off < settings.pixel_dist_seperation_max){
+                } else if (dist2take_off > settings.pixel_dist_seperation_min + DRONE_IM_START_SIZE && dist2take_off < settings.pixel_dist_seperation_max + DRONE_IM_START_SIZE){
                     drone_detected_near_takeoff_spot = true;
                     ignores_for_insect_tracker.push_back(k.image_coordinates());
-                } else if (dist2take_off < settings.pixel_dist_seperation_max){
+                } else if (dist2take_off < settings.pixel_dist_seperation_max + DRONE_IM_START_SIZE){
                     ignores_for_insect_tracker.push_back(k.image_coordinates());
                 }
             }
             if (takeoff_spot_detected &&drone_detected_near_takeoff_spot ) {
                 _drone_tracking_status = dts_detected;
-                _visdat->delete_from_motion_map(Drone_Startup_Im_Location()*IMSCALEF, 10);
+                _visdat->delete_from_motion_map(Drone_Startup_Im_Location()*IMSCALEF, DRONE_IM_START_SIZE);
             }
         }
         roi_size_cnt = 0; // don't grow roi in this stage

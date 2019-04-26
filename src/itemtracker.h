@@ -90,9 +90,9 @@ private:
         int background_subtract_zone_factor = 90;
 
         //only for dronetracker:
-        int pixel_dist_landing_spot = 4;
-        int pixel_dist_seperation_min = 6;
-        int pixel_dist_seperation_max = 10;
+        int pixel_dist_landing_spot = 0;
+        int pixel_dist_seperation_min = 2;
+        int pixel_dist_seperation_max = 5;
 
         float version = 1.6f;
 
