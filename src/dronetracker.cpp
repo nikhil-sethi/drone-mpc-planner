@@ -205,9 +205,9 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
                     takeoff_spot_detected = true;
                     ignores_for_insect_tracker.push_back(k.image_coordinates());
 #ifdef MANUAL_DRONE_LOCATE
-                    float disparity = stereo_match(k.k.pt,_visdat->diffL,_visdat->diffR,find_result.disparity);
+                    float disparity = stereo_match(k.image_coordinates(),_visdat->diffL,_visdat->diffR,find_result.disparity);
                     std::vector<cv::Point3d> camera_coordinates, world_coordinates;
-                    camera_coordinates.push_back(cv::Point3d(k.k.pt.x*IMSCALEF,k.k.pt.y*IMSCALEF,-disparity));
+                    camera_coordinates.push_back(cv::Point3d(k.image_coordinates().x*IMSCALEF,k.image_coordinates().y*IMSCALEF,-disparity));
                     cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
                     cv::Point3f output = world_coordinates[0];
                     float theta = _visdat->camera_angle * deg2rad;
