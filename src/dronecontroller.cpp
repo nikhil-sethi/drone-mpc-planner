@@ -110,21 +110,21 @@ void DroneController::control(track_data data,cv::Point3f setpoint, cv::Point3f 
     // Roll Control - X
     posErrX = data.sposX - setpoint.x;              // position error
     velx_sp = posErrX*params.roll_Pos/1000.f;       // desired velocity
-    velErrX = data.svelX + velx_sp + setpoint_v.x;  // velocity error
+    velErrX = data.svelX + velx_sp - setpoint_v.x;  // velocity error
     accx_sp = velErrX*params.roll_Vel/100;          // desired acceleration
     accErrX = data.saccX + accx_sp;                 // acceleration error
 
     // Altitude Control - Y
     posErrY = data.sposY - setpoint.y;              // position error
     vely_sp = posErrY*params.throttle_Pos/1000.f;   // (inversed) desired velocity
-    velErrY = data.svelY + vely_sp + setpoint_v.y;  // velocity error
+    velErrY = data.svelY + vely_sp - setpoint_v.y;  // velocity error
     accy_sp = velErrY*params.throttle_Vel/100;      // (inversed) desired acceleration
     accErrY = data.saccY + accy_sp;                 // acceleration error
 
     // Pitch Control - Z
     posErrZ = data.sposZ - setpoint.z;              // position error
     velz_sp = posErrZ*params.pitch_Pos/1000.f;      // desired velocity
-    velErrZ = data.svelZ + velz_sp + setpoint_v.z;  // velocity error
+    velErrZ = data.svelZ + velz_sp - setpoint_v.z;  // velocity error
     accz_sp = velErrZ*params.pitch_Vel/100;         // desired acceleration
     accErrZ = data.saccZ + accz_sp;                 // acceleration error
 
@@ -170,7 +170,7 @@ void DroneController::control(track_data data,cv::Point3f setpoint, cv::Point3f 
         break;
     } case fm_flying : {
         //update integrators
-        if (abs(posErrX)<integratorThresholdDistance && abs(posErrZ)<integratorThresholdDistance)
+        if (abs(posErrZ)<integratorThresholdDistance)
             throttleErrI += velErrY; //posErrY;
         if (abs(posErrX)<integratorThresholdDistance)
             rollErrI += posErrX;
