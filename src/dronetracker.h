@@ -74,8 +74,6 @@ private:
     cv::Point2f _landing_pad_image_location;
 
     bool _drone_control_prediction_valid = false;
-    cv::Point2f _drone_control_predicted_image_location = {0};
-    cv::Point3f _drone_control_predicted_world_location = {0};
 
     class DroneTrackerCalibrationData: public xmls::Serializable
     {
@@ -185,6 +183,9 @@ public:
     }
 
     const float bind_blink_time = 0.45f;
+
+    cv::Point2f _drone_control_predicted_image_location = {0};
+    cv::Point3f _drone_control_predicted_world_location = {0};
 
 };
 

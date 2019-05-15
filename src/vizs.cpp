@@ -318,7 +318,7 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
 
     if (exclude_path.size() > 0) {
         ItemTracker::track_item exclude = exclude_path.at(exclude_path.size()-1);
-        float threshold_dis = exclude_min_distance / sqrtf(exclude.tracking_certainty)+exclude.k.size;
+        float threshold_dis = exclude_min_distance / sqrtf(exclude.tracking_certainty);
         if (threshold_dis > exclude_max_distance)
             threshold_dis = exclude_max_distance;
         cv::circle(frameL_small_drone,exclude.k.pt,threshold_dis,cv::Scalar(255,0,0),4/IMSCALEF);
@@ -369,6 +369,9 @@ void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3d setpoint, float
         tracker_viz_base_data.ins_roi_offset = itrk->find_result.roi_offset;
         tracker_viz_base_data.exclude_min_distance = dtrk->settings.exclude_min_distance;
         tracker_viz_base_data.exclude_max_distance = dtrk->settings.exclude_max_distance;
+        tracker_viz_base_data.drone_predicted_control_location = dtrk->predicted_locationL_last;
+        tracker_viz_base_data.drone_predicted_control_location_prev = dtrk->predicted_locationL_prev;
+
 
         cir8 = _dtrkr->_cir*255;
         dif8 = _dtrkr->_dif*10;
@@ -405,6 +408,33 @@ void Visualizer::draw_tracker_viz() {
     cv::Rect rect(0,frameL.rows*_res_mult/4,frameL.cols*_res_mult,frameL.rows*_res_mult);
     cv::Mat roi = resFrame(rect);
     cv::Size size (frameL.cols*_res_mult,frameL.rows*_res_mult);
+
+
+    if ( drn_predicted_path.size()>0 ) {
+        std::vector<cv::KeyPoint> drn_pred_kps;
+        drn_pred_kps.push_back(drn_predicted_path.back().k);
+        drn_pred_kps.at(0).size = 24/IMSCALEF;
+        //drn_pred_kps.at(0).pt.x = drn_pred_kps.at(0).pt.x*2;
+        //drn_pred_kps.at(0).pt.y = drn_pred_kps.at(0).pt.y*2;
+        drn_pred_kps.at(0).pt.x = tracker_viz_base_data.drone_predicted_control_location.x*2;
+        drn_pred_kps.at(0).pt.y = tracker_viz_base_data.drone_predicted_control_location.y*2;
+        cv::drawKeypoints( frameL_color, drn_pred_kps, frameL_color, Scalar(0,255,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+        drn_pred_kps.at(0).pt.x = tracker_viz_base_data.drone_predicted_control_location_prev.x*2;
+        drn_pred_kps.at(0).pt.y = tracker_viz_base_data.drone_predicted_control_location_prev.y*2;
+        cv::drawKeypoints( frameL_color, drn_pred_kps, frameL_color, Scalar(255,0,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+
+    }
+
+    if ( drn_path.size()>0 ) {
+        std::vector<cv::KeyPoint> drn_kps;
+        drn_kps.push_back(drn_path.back().k);
+        drn_kps.at(0).size = 24/IMSCALEF;
+        drn_kps.at(0).pt.x = drn_kps.at(0).pt.x*2;
+        drn_kps.at(0).pt.y = drn_kps.at(0).pt.y*2;
+
+        //cv::drawKeypoints( frameL_color, drn_kps, frameL_color, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+
+    }
 
     if (ins_path.size()>0){
         std::stringstream ss;

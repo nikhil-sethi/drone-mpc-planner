@@ -242,7 +242,7 @@ void process_frame(Stereo_Frame_Data data) {
         if (dnav.disable_insect_detection())
             itrkr.append_log(); // write dummy data
         else {
-            itrkr.track(data.time,dtrkr.predicted_pathL,dtrkr.ignores_for_insect_tracker);
+            itrkr.track(data.time,dtrkr.pathL,dtrkr.ignores_for_insect_tracker);
         }
     //        std::cout << "Found drone location:      [" << dtrkr.find_result.best_image_locationL.pt.x << "," << dtrkr.find_result.best_image_locationL.pt.y << "]" << std::endl;
     if (fromfile==log_mode_full) {
@@ -442,7 +442,7 @@ int init(int argc, char **argv) {
 
     logger << std::endl;
 #ifdef HASSCREEN
-    visualizer.init(&visdat,&dctrl,&dtrkr,&itrkr,&dnav,&rc,fromfile==log_mode_full);
+    visualizer.init(&visdat,&dctrl,&dtrkr,&itrkr,&dnav,&rc,fromfile==log_mode_full,&dprdct);
 #endif
 
     /*****init the video writer*****/

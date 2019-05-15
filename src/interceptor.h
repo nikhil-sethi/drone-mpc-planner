@@ -4,6 +4,7 @@
 #include "defines.h"
 #include "insecttracker.h"
 #include "dronetracker.h"
+#include "visiondata.h"
 
 
 
@@ -16,6 +17,7 @@ class Interceptor{
 private:
     DroneTracker * _dtrkr;
     InsectTracker * _itrkr;
+    VisionData *_visdat;
     bool _insect_in_range;
     cv::Point3f _estimated_interception_location;
     cv::Point3f _prev_estimated_interception_location;
@@ -27,9 +29,11 @@ private:
 
     bool final_approach = false;
 
+    cv::Mat Qfi;
+
 public:
 
-    void init(DroneTracker * dtrkr, InsectTracker * itrkr);
+    void init(DroneTracker * dtrkr, InsectTracker * itrkr, VisionData * visdat);
     void update(bool drone_at_base);
     bool get_insect_in_range();
     bool get_insect_cleared();

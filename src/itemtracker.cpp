@@ -161,7 +161,7 @@ void ItemTracker::select_best_candidate(){
 //            cout << std::endl;
         for (int i=0; i<n;i++)   {
             world_track_item w;
-            uint match_id = match_closest_to_prediciton(previous_location,keypoint_candidates);
+            uint match_id = match_closest_to_prediciton(predicted_locationL_last,keypoint_candidates);
             w.ti = keypoint_candidates.at(match_id);
 
             w.disparity = stereo_match(w.image_coordinates(),_visdat->diffL,_visdat->diffR,find_result.disparity);
@@ -278,7 +278,8 @@ void ItemTracker::track(float time, std::vector<track_item> exclude,std::vector<
     cv::Point3f predicted_locationL;
     if (foundL) {
         predicted_locationL = predict(dt_predict,_visdat->frame_id);
-        predicted_locationL_last = predicted_locationL;
+        predicted_pathL.back().k.pt.x = predicted_locationL_last.x;
+        predicted_pathL.back().k.pt.y = predicted_locationL_last.y;
     } else {
         predicted_locationL = predicted_locationL_last;
     }

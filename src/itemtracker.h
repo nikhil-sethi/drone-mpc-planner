@@ -65,6 +65,7 @@ public:
     };
 
     cv::Point3f predicted_locationL_last = {0};
+    cv::Point3f predicted_locationL_prev = {0};
 
 private:
     struct TrackerSettings{

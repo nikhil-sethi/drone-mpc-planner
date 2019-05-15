@@ -1,15 +1,56 @@
 #include "interceptor.h"
 #include "opencv2/imgproc.hpp"
 
-void Interceptor::init(DroneTracker * dtrkr, InsectTracker * itrkr) {
+void Interceptor::init(DroneTracker * dtrkr, InsectTracker * itrkr, VisionData * visdat) {
     _dtrkr = dtrkr;
     _itrkr = itrkr;
+    _visdat = visdat;
+
+    cv::invert(visdat->Qf,Qfi);
 
     _prev_estimated_interception_location = {0.f,0.f,0.f};
 }
 void Interceptor::update(bool drone_at_base) {
 
-    cv::Point3f insectVel = {_itrkr->Last_track_data().svelX,_itrkr->Last_track_data().svelY,_itrkr->Last_track_data().svelZ};
+    insectVel = {_itrkr->Last_track_data().svelX,_itrkr->Last_track_data().svelY,_itrkr->Last_track_data().svelZ};
+    cv::Point3f insectPos = {_itrkr->Last_track_data().posX,_itrkr->Last_track_data().posY,_itrkr->Last_track_data().posZ};
+
+    // predict insect position for next frame
+    float dt_pred = 1.f/VIDEOFPS;
+    cv::Point3f predicted_pos = insectPos + insectVel*dt_pred;
+
+    //transform back to image coordinates
+    std::vector<cv::Point3d> world_coordinates,camera_coordinates;
+    cv::Point3f tmp(predicted_pos.x,predicted_pos.y,predicted_pos.z);
+
+    //derotate camera and convert to double:
+    cv::Point3d tmpd;
+    float theta = -_visdat->camera_angle * deg2rad;
+    float temp_y = tmp.y * cosf(theta) + tmp.z * sinf(theta);
+    tmpd.z = -tmp.y * sinf(theta) + tmp.z * cosf(theta);
+    tmpd.y = temp_y;
+    tmpd.x = tmp.x;
+
+    world_coordinates.push_back(tmpd);
+    cv::perspectiveTransform(world_coordinates,camera_coordinates,Qfi);
+
+    //update tracker with prediciton
+    cv::Point2f image_location;
+    image_location.x= camera_coordinates.at(0).x/IMSCALEF;
+    image_location.y= camera_coordinates.at(0).y/IMSCALEF;
+
+    if (image_location.x < 0)
+        image_location.x = 0;
+    else if (image_location.x >= IMG_W/IMSCALEF)
+        image_location.x = IMG_W/IMSCALEF-1;
+    if (image_location.y < 0)
+        image_location.y = 0;
+    else if (image_location.y >= IMG_H/IMSCALEF)
+        image_location.y = IMG_H/IMSCALEF-1;
+
+    _itrkr->predicted_locationL_last.x = image_location.x;
+    _itrkr->predicted_locationL_last.y = image_location.y;
+
 
 
     //1. asume moth will spiral down.
@@ -57,7 +98,6 @@ void Interceptor::update(bool drone_at_base) {
 
     if ( insectVelNorm > 0 || _itrkr->foundL ) {
 
-        cv::Point3f insectPos = {_itrkr->Last_track_data().sposX,_itrkr->Last_track_data().sposY,_itrkr->Last_track_data().sposZ};
         cv::Point3f dronePos = {_dtrkr->Last_track_data().sposX,_dtrkr->Last_track_data().sposY,_dtrkr->Last_track_data().sposZ};
 
         if (drone_at_base)

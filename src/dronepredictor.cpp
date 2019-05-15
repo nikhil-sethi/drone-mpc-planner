@@ -72,7 +72,7 @@ void DronePredictor::update(bool drone_is_active, float time) {
     if (dt_pred > 1) // don't try to predict based on control more then 1 second
         return;
 
-    cv::Point3f pos (td.sposX,td.sposY,td.sposZ);
+    cv::Point3f pos (td.posX,td.posY,td.posZ);
 
 
     if (drone_is_active && initialized && dt_prev < 1.f / VIDEOFPS && !_dtrk->taking_off() && td.acc_valid){
@@ -129,7 +129,7 @@ void DronePredictor::update(bool drone_is_active, float time) {
     if (_dtrk->taking_off())
         acc_pred = cv::Point3f(0,20,0); // The target is not tracked properly yet, so override acc when taking off. Assume 2g take off.
 
-    predicted_pos = pos+ vel*dt_pred + 0.5*acc_pred * powf(dt_pred,2);
+    predicted_pos = pos + vel*dt_pred;// + 0.5*acc_pred * powf(dt_pred,2); TODO: improve prediciton by including Accelleration term
     if (_dtrk->taking_off())
         predicted_pos.y+=0.05f; //look for the drone a bit higher then the current position (to favor the drone instead of the landing pad)
 
@@ -167,6 +167,10 @@ void DronePredictor::update(bool drone_is_active, float time) {
         image_location.y = IMG_H/IMSCALEF-1;
 
     _dtrk->set_control_predicted_drone_location(image_location,world_location);
+    _dtrk->predicted_locationL_prev = _dtrk->predicted_locationL_last;
+    _dtrk->predicted_locationL_last.x = image_location.x;
+    _dtrk->predicted_locationL_last.y = image_location.y;
+
 
     //save data for determining error next iteration:
     pos_prev = pos;

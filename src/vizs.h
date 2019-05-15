@@ -15,6 +15,7 @@
 #include "insecttracker.h"
 #include "itemtracker.h"
 #include "dronenavigation.h"
+#include "dronepredictor.h"
 
 class Visualizer{
 
@@ -38,6 +39,7 @@ private:
     InsectTracker *_itrkr;
     DroneNavigation *_dnav;
     MultiModule *_rc;
+    DronePredictor *_dprdct;
 
     const int bufsize = 600;
 
@@ -78,7 +80,8 @@ private:
         cv::Rect ins_roi_offset;
         int exclude_min_distance;
         int exclude_max_distance;
-
+        cv::Point3f drone_predicted_control_location;
+        cv::Point3f drone_predicted_control_location_prev;
     };
     Tracker_viz_base_data tracker_viz_base_data;
 
@@ -164,13 +167,14 @@ public:
     void paint();
     void addPlotSample(void);
     void update_tracker_data(cv::Mat frameL, cv::Point3d setpoint, float time, DroneTracker *dtrk, InsectTracker *itrk);
-    void init(VisionData * visdat, DroneController *dctrl, DroneTracker *dtrkr, InsectTracker *itrkr, DroneNavigation *dnav, MultiModule *rc, bool fromfile){
+    void init(VisionData * visdat, DroneController *dctrl, DroneTracker *dtrkr, InsectTracker *itrkr, DroneNavigation *dnav, MultiModule *rc, bool fromfile, DronePredictor *dprdct){
         _visdat = visdat;
         _dctrl = dctrl;
         _dtrkr = dtrkr;
         _itrkr = itrkr;
         _dnav = dnav;
         _rc = rc;
+        _dprdct = dprdct;
 
         _fromfile = fromfile;
         if (fromfile) {
