@@ -190,10 +190,6 @@ void DroneNavigation::update(float time) {
         _iceptor.reset_insect_cleared();
         _navigation_status = ns_chasing_insect;
 
-        if (_iceptor.get_insect_in_range())
-            _navigation_status = ns_chasing_insect;
-        else
-            _navigation_status = ns_goto_landing_waypoint;
 
         if (_nav_flight_mode == nfm_manual)
             _navigation_status = ns_manual;
@@ -202,15 +198,16 @@ void DroneNavigation::update(float time) {
         //update target chasing waypoint and speed
         if (_iceptor.get_insect_in_range()) {
             setpoint_world = _iceptor.get_intercept_position();
-            //            if (setpoint_world.y < -1.2f)
-            //                setpoint_world.y = -1.20f;
+            setspeed_world = _iceptor.get_target_speed();
         }
 
         if (setpoint_world.z == 0) { // fly to landing waypoint (but do not land)
             //FIXME, use set_new_waypoint
-            setpoint_world.x = -1.0f;
-            setpoint_world.y = -1.20f;
-            setpoint_world.z = -2.2f;
+            setpoint_world = _iceptor.get_prev_intercept_position();
+
+            setspeed_world.x = 0;
+            setspeed_world.y = 0;
+            setspeed_world.z = 0;
         }
 
         if (_nav_flight_mode == nfm_manual)

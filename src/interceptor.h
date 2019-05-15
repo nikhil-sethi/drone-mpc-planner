@@ -18,7 +18,9 @@ private:
     InsectTracker * _itrkr;
     bool _insect_in_range;
     cv::Point3f _estimated_interception_location;
+    cv::Point3f _prev_estimated_interception_location;
     cv::Point3f _estimated_interception_speed;
+    cv::Point3f insectVel;
 
     const float estimated_take_off_time = 1.f;
     uint _count_insect_not_in_range = 0;
@@ -33,6 +35,8 @@ public:
     bool get_insect_cleared();
     void reset_insect_cleared();
     cv::Point3f get_intercept_position();
+    cv::Point3f get_prev_intercept_position();
+    cv::Point3f get_target_speed();
 
 };
 

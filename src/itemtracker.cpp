@@ -190,6 +190,9 @@ void ItemTracker::select_best_candidate(){
                 float temp_y = w.world_coordinates.y * cosf(theta) + w.world_coordinates.z * sinf(theta);
                 w.world_coordinates.z = -w.world_coordinates.y * sinf(theta) + w.world_coordinates.z * cosf(theta);
                 w.world_coordinates.y = temp_y;
+
+                if ( (w.world_coordinates.y < -1.3f || w.world_coordinates.z < -4.f ) && _name == "insect")
+                    w.background_check_ok = false;
             }
             if (w.background_check_ok && w.disparity_in_range)
                 wti.push_back(w);

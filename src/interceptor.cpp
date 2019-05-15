@@ -4,6 +4,8 @@
 void Interceptor::init(DroneTracker * dtrkr, InsectTracker * itrkr) {
     _dtrkr = dtrkr;
     _itrkr = itrkr;
+
+    _prev_estimated_interception_location = {0.f,0.f,0.f};
 }
 void Interceptor::update(bool drone_at_base) {
 
@@ -107,6 +109,7 @@ void Interceptor::update(bool drone_at_base) {
                 if (_estimated_interception_location.z > -5.3f && _estimated_interception_location.z < -0.8f) {
                     _insect_in_range = true;
                     _count_insect_not_in_range = 0;
+                    _prev_estimated_interception_location = _estimated_interception_location;
                 }
             }
         }
@@ -120,7 +123,7 @@ bool Interceptor::get_insect_in_range() {
 }
 
 bool Interceptor::get_insect_cleared() {
-    return _count_insect_not_in_range > 60;
+    return _count_insect_not_in_range > 60*3;
 }
 
 void Interceptor::reset_insect_cleared() {
@@ -129,5 +132,14 @@ void Interceptor::reset_insect_cleared() {
 
 cv::Point3f Interceptor::get_intercept_position() {
     return _estimated_interception_location;
+}
+
+cv::Point3f Interceptor::get_prev_intercept_position() {
+    return _prev_estimated_interception_location;
+}
+
+
+cv::Point3f Interceptor::get_target_speed() {
+    return insectVel;
 }
 
