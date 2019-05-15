@@ -108,7 +108,7 @@ void Interceptor::update(bool drone_at_base) {
         //flight time is simply assumed to be linear with distance
         float tti = norm(insectPos-dronePos)*0.7;
 
-        //float tti = 0.0;
+        tti = 0.0;
 
         if (drone_at_base)
             tti += estimated_take_off_time; // take off t
@@ -119,11 +119,16 @@ void Interceptor::update(bool drone_at_base) {
         dronePos2D.x = dronePos.x;
         dronePos2D.y = dronePos.z;
 
-        if (norm(dronePos2D-insectPos2D)<0.3 && _estimated_interception_location.y-dronePos.y<0.05f){
-            final_approach = true;
+        _estimated_interception_location = insectPos + (insectVel*tti);
+        _estimated_interception_location.y += 0.01f;
+
+        float horizontal_separation = norm(dronePos2D-insectPos2D);
+        float vertical_separation = insectPos.y-dronePos.y;
+        if (horizontal_separation<0.2f && vertical_separation>0.01f && vertical_separation<0.1f){
+            final_approach = false;
         } else {
-            _estimated_interception_location = insectPos + (insectVel*tti);
-            _estimated_interception_location.y -= 0.3f;
+//            _estimated_interception_location = insectPos + (insectVel*tti);
+//            _estimated_interception_location.y -= 0.01f;
         }
 
         if (insectPos.y<dronePos.y )
@@ -131,7 +136,8 @@ void Interceptor::update(bool drone_at_base) {
 
         if (final_approach){
             cv::Point3f vector = insectPos-dronePos;
-            _estimated_interception_location = dronePos + 2*vector;
+            float norm_vector = norm(vector);
+            _estimated_interception_location = dronePos + vector/norm_vector*0.3f;
         }
         //_estimated_interception_location.y += 0.1f;
 
