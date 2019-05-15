@@ -245,7 +245,14 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<tr
             float threshold_dis = settings.exclude_min_distance / sqrtf(exclude.tracking_certainty);
             if (threshold_dis > settings.exclude_max_distance)
                 threshold_dis = settings.exclude_max_distance;
-            if ((dis1 < threshold_dis|| dis2 < threshold_dis)) {// TODO: && certainty_this_kp <= exclude.tracking_certainty) {
+            bool size_check = true;
+            if (this->pathL.size()>0) {
+                float size_diff_tmp = abs(this->pathL.back().k.size-tmp.at(i).k.size);
+                float size_diff_exc = abs(exclude.k.size-tmp.at(i).k.size);
+                if (size_diff_tmp < size_diff_exc)
+                    size_check = false;
+            }
+            if ((dis1 < threshold_dis|| dis2 < threshold_dis) && size_check) {// TODO: && certainty_this_kp <= exclude.tracking_certainty) {
                 keypoints.erase(keypoints.begin() + i - erase_cnt);
                 erase_cnt++;
             } else  if (exclude_path.size() > 1) {
@@ -253,7 +260,7 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<tr
                 threshold_dis = settings.exclude_min_distance / sqrtf(exclude_prev.tracking_certainty);
                 if (threshold_dis > settings.exclude_max_distance)
                     threshold_dis = settings.exclude_max_distance;
-                if (dis < threshold_dis && certainty_this_kp < exclude_prev.tracking_certainty) {
+                if (dis < threshold_dis && certainty_this_kp < exclude_prev.tracking_certainty && size_check) {
                     keypoints.erase(keypoints.begin() + i - erase_cnt);
                     erase_cnt++;
                 }
@@ -496,7 +503,7 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
                             // relative COG back to the _approx frame, and save it:
                             COG2.x += r2.x;
                             COG2.y += r2.y;
-                            scored_points->push_back(cv::KeyPoint(COG2, max));
+                            scored_points->push_back(cv::KeyPoint(COG2, mo2.m00));
 
                             //remove this COG from the ROI:
                             cv::circle(frame, COG2, 1, cv::Scalar(0), radius);
@@ -509,7 +516,7 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
             }
             if (single_blob) { // we could not split this blob, so we can use the original COG
                 if (COG.x == COG.x) { // if not nan
-                    scored_points->push_back(cv::KeyPoint(COG, max));
+                    scored_points->push_back(cv::KeyPoint(COG, mo.m00));
 #ifdef VIZ
                     cv::Point2f tmpCOG;
                     tmpCOG.x = COG.x - r2.x;
