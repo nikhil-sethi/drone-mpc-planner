@@ -200,7 +200,7 @@ void Cam::update_real(void) {
     _frame_number = rs_frameL.get_frame_number();
     if (_frame_time_start <0)
         _frame_time_start = rs_frameL.get_timestamp();
-    _frame_time = (static_cast<float>(rs_frameL.get_timestamp()) -_frame_time_start)/1000.f;
+    _frame_time = (rs_frameL.get_timestamp() -_frame_time_start)/1000.;
     //    std::cout << "-------------frame id: " << _frame_number << " time: " << _frame_time << std::endl;
     lock_frame_data.unlock();
 
