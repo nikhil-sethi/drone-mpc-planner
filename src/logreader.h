@@ -63,8 +63,9 @@ public:
         float camera_angle_y;
 
     };
-    void init(std::string file);
+    void init(std::string file, bool partial_insect_log);
     void set_current_frame_number(int frame_number);
+    void set_next_frame_number();
 
     LogReader::Log_Entry current_item;
 private:
@@ -73,6 +74,8 @@ private:
     void setHeadMap(std::string heads);
     std::map<int, Log_Entry> log;
     std::map<std::string, int> headmap;
+    bool _partial_insect_log;
+    unsigned int partial_insect_log_id_counter = 0;
 
 };
 

@@ -28,12 +28,18 @@ static inline void trim(std::string &s) {
     rtrim(s);
 }
 
-void LogReader::init(std::string file) {
-
+void LogReader::init(std::string file, bool partial_insect_log) {
     if (!checkFileExist(file)) {
         std::cout << "Error: log file not found!" <<std::endl;
         throw my_exit(1);
     }
+    std::cout << "Opening log file: " << file << std::endl;
+    if (_partial_insect_log) {
+        log.clear();
+        headmap.clear();
+    }
+    _partial_insect_log = partial_insect_log;
+    partial_insect_log_id_counter = 0;
     //read the whole log here, and process it into a table that can easily be searched
     std::ifstream infile(file);
 
@@ -41,11 +47,18 @@ void LogReader::init(std::string file) {
     std::getline(infile, heads);
     setHeadMap(heads);
     std::string line;
+    int cnt = 0; // only for partial insect log.
     while (std::getline(infile, line)) {
 //        std::cout << line << std::endl;
         std::istringstream iss(line);
         Log_Entry entry = createLogEntry(line);
-        std::map<const int, Log_Entry>::value_type item(entry.RS_ID,entry);
+        int id;
+        if (partial_insect_log)
+            id = cnt;
+        else
+            id = entry.RS_ID;
+        cnt++;
+        std::map<const int, Log_Entry>::value_type item(id,entry);
         log.insert(item);
     }
 
@@ -121,6 +134,15 @@ LogReader::Log_Entry LogReader::createLogEntry(std::string line) {
     entry.camera_angle_y = std::stoi(linedata.at(headmap["camera_angle_y"]));
 
     return entry;
+}
+
+
+
+void LogReader::set_next_frame_number() {
+    current_item = log[partial_insect_log_id_counter];
+    if (partial_insect_log_id_counter < log.size())
+        partial_insect_log_id_counter++;
+
 }
 
 void LogReader::set_current_frame_number(int _RS_frame_number) {

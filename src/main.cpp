@@ -224,8 +224,10 @@ void process_video() {
 
 void process_frame(Stereo_Frame_Data data) {
 
-    if (fromfile!=log_mode_none)
+    if (fromfile==log_mode_full)
         logreader.set_current_frame_number(data.number);
+    else if (fromfile==log_mode_insect_only)
+        logreader.set_next_frame_number();
 
     visdat.update(data.frameL,data.frameR,data.time,data.number);
 
@@ -263,6 +265,11 @@ void process_frame(Stereo_Frame_Data data) {
 #endif
 }
 
+void init_insect_log(int n){
+    logreader.init("../insect_logs/" + std::to_string(n) + ".log",true);
+    fromfile = log_mode_insect_only;
+}
+
 void handleKey() {
     if (key == 27) { // set by an external ctrl-c
         return;
@@ -283,8 +290,40 @@ void handleKey() {
     case 'o':
         dnav.set_nav_flight_mode(DroneNavigation::nfm_manual);
         break;
-    case ' ':
+
+    case '1':
+        init_insect_log(6);
+        break;
+    case '2':
+        init_insect_log(28);
+        break;
+    case '3':
+        init_insect_log(46);
+        break;
+    case '4':
+        init_insect_log(1);
+        break;
+    case '5':
+        init_insect_log(36);
+        break;
+    case '6':
+        init_insect_log(26);
+        break;
+    case '7':
+        init_insect_log(20);
+        break;
+    case '8':
+        init_insect_log(38);
+        break;
+    case '9':
+        init_insect_log(15);
+        break;
+    case '0':
+        init_insect_log(18);
+        break;
+
 #if CAMMODE == CAMMODE_REALSENSE
+    case ' ':
     case 'f':
         cam.frame_by_frame = true;
         break;
@@ -375,16 +414,9 @@ int init(int argc, char **argv) {
     std::string data_in_dir = "";
     if (argc ==2 ) {
         string fn = string(argv[1]);
-        string ending = ".log";
-        bool ends_with_log = fn.compare (fn.length() - ending.length(), ending.length(), ending) == 0;
-        if (ends_with_log){
-            logreader.init(fn);
-            fromfile = log_mode_insect_only;
-        } else {
-            logreader.init(fn + "/test.log");
-            fromfile = log_mode_full;
-            data_in_dir = fn;
-        }
+        logreader.init(fn + "/test.log",false);
+        fromfile = log_mode_full;
+        data_in_dir = fn;
     }
     data_output_dir = "./logging/";
     mkdir("./logging/", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
