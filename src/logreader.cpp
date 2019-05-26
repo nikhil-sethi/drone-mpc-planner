@@ -114,13 +114,13 @@ LogReader::Log_Entry LogReader::createLogEntry(std::string line) {
     entry.ins_spos_y = std::stof(linedata.at(headmap["sposY_insect"]));
     entry.ins_spos_z = std::stof(linedata.at(headmap["sposZ_insect"]));
 
-    entry.ins_svel_x = std::stof(linedata.at(headmap["velX_insect"]));
-    entry.ins_svel_y = std::stof(linedata.at(headmap["velY_insect"]));
-    entry.ins_svel_z = std::stof(linedata.at(headmap["velZ_insect"]));
+    entry.ins_svel_x = std::stof(linedata.at(headmap["svelX_insect"]));
+    entry.ins_svel_y = std::stof(linedata.at(headmap["svelY_insect"]));
+    entry.ins_svel_z = std::stof(linedata.at(headmap["svelZ_insect"]));
 
-    entry.ins_sacc_x = std::stof(linedata.at(headmap["accX_insect"]));
-    entry.ins_sacc_y = std::stof(linedata.at(headmap["accY_insect"]));
-    entry.ins_sacc_z = std::stof(linedata.at(headmap["accZ_insect"]));
+    entry.ins_sacc_x = std::stof(linedata.at(headmap["saccX_insect"]));
+    entry.ins_sacc_y = std::stof(linedata.at(headmap["saccY_insect"]));
+    entry.ins_sacc_z = std::stof(linedata.at(headmap["saccZ_insect"]));
 
     entry.ins_im_x = std::stof(linedata.at(headmap["imLx_insect"]));
     entry.ins_im_y = std::stof(linedata.at(headmap["imLy_insect"]));
@@ -131,7 +131,6 @@ LogReader::Log_Entry LogReader::createLogEntry(std::string line) {
     entry.ins_n_frames_lost = std::stoi(linedata.at(headmap["n_frames_lost_insect"]));
     entry.ins_n_frames_tracking = std::stoi(linedata.at(headmap["n_frames_tracking_insect"]));
     entry.ins_foundL = std::stoi(linedata.at(headmap["foundL_insect"]));
-    entry.camera_angle_y = std::stoi(linedata.at(headmap["camera_angle_y"]));
 
     return entry;
 }
@@ -139,10 +138,12 @@ LogReader::Log_Entry LogReader::createLogEntry(std::string line) {
 
 
 void LogReader::set_next_frame_number() {
-    current_item = log[partial_insect_log_id_counter];
-    if (partial_insect_log_id_counter < log.size())
-        partial_insect_log_id_counter++;
 
+    if (partial_insect_log_id_counter < log.size()) {
+        current_item = log[partial_insect_log_id_counter];
+        partial_insect_log_id_counter++;
+    } else
+        current_item = log[0];
 }
 
 void LogReader::set_current_frame_number(int _RS_frame_number) {
