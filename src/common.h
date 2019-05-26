@@ -77,8 +77,8 @@ struct control_data {
 
 
 struct my_exit : public std::exception {
-    int value;
-    my_exit(int return_value) : value(return_value) {}
+    std::string msg;
+    my_exit(std::string return_value) : msg(return_value) {}
 };
 
 

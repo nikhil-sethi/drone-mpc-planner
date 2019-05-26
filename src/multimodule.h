@@ -113,7 +113,7 @@ private:
 
     stopwatch_c binding_sw;
 
-    bool initialised = false;
+    bool initialized = false;
     int notconnected;
     enum bound_enum{
         cx10_unknown,

@@ -30,15 +30,15 @@ void VisionData::init(bool fromfile, std::string log_in_dir,cv::Mat new_Qf, cv::
         try {
             archive(settings);
         }catch (cereal::Exception e) {
-            std::cout << "Visiondata settings file error: " << e.what() << std::endl;
-            std::cout << "Maybe delete the file: " << settingsFile << std::endl;
-            exit (1);
+            std::stringstream serr;
+            serr << "cannot read visiondata settings file: " << e.what() << ". Maybe delete the file: " << settingsFile;
+            throw my_exit(serr.str());
         }
         BaseVisionSettings tmp;
         if (tmp.version-settings.version > 0.001f){
-            std::cout << "Visiondata settings version too low!" << std::endl;
-            std::cout << "Maybe delete the file: " << settingsFile << std::endl;
-            throw my_exit(1);
+            std::stringstream serr;
+            serr << "visiondata settings version too low! Maybe delete the file: " << settingsFile;
+            throw my_exit(serr.str());
         }
     }
 
@@ -54,6 +54,8 @@ void VisionData::init(bool fromfile, std::string log_in_dir,cv::Mat new_Qf, cv::
     namedWindow("Background", WINDOW_NORMAL);
     createTrackbar("motion_update_iterator_max", "Background", &settings.motion_update_iterator_max, 255);
 #endif
+
+    initialized = true;
 
 }
 

@@ -293,11 +293,9 @@ void Cam::init() {
     rs2::context ctx; // The context represents the current platform with respect to connected devices
     rs2::device_list devices = ctx.query_devices();
     if (devices.size() == 0) {
-        std::cerr << "No device connected, please connect a RealSense device" << std::endl;
-        throw my_exit(1);
+        throw my_exit("no RealSense connected");
     } else if (devices.size() > 1) {
-        std::cerr << "More than one device connected...." << std::endl;
-        throw my_exit(1);
+        throw my_exit("more than one RealSense connected....");
     } else {
         dev = devices[0];
 
@@ -307,7 +305,7 @@ void Cam::init() {
         dev = rs2::recorder(bag_fn,dev);
 #endif
 
-        std::cout << "Found the following device:\n" << std::endl;
+        std::cout << "Found the following device:";
 
         // Each device provides some information on itself, such as name:
         std::string name = "Unknown Device";
@@ -355,9 +353,9 @@ void Cam::init() {
     current_firmware_version  = current_firmware_version.substr (0,required_firmwar_version.length()); //fix for what seems to be appended garbage...? 255.255.255.255 on a newline
 
     if (current_firmware_version != required_firmwar_version) { // wtf, string equality check is reversed!??
-        std::cout << "Detected wrong realsense firmware version!" << std::endl;
-        std::cout << "Detected: " << current_firmware_version << ". Required: "  << required_firmwar_version << "." << std::endl;
-        throw my_exit(1);
+        std::stringstream serr;
+        serr << "detected wrong RealSense firmware version! Detected: " << current_firmware_version << ". Required: "  << required_firmwar_version << ".";
+        throw my_exit(serr.str());
     }
 
     depth_sensor.set_option(RS2_OPTION_FRAMES_QUEUE_SIZE, 0);
@@ -410,6 +408,7 @@ void Cam::init() {
     serialize_calib();
     convert_depth_background_to_world();
     swc.Start();
+    initialized = true;
 }
 
 //Converting the raw depths of depth_background distances to
@@ -450,8 +449,7 @@ void Cam::deserialize_calib(std::string file) {
         _measured_exposure = dser->Exposure.value();
         _measured_gain = dser->Gain.value();
     } else { // Deserialization not successful
-        std::cout << "Error reading camera calibration file." << std::endl;
-        throw my_exit(1);
+        throw my_exit("cannot read camera calibration file.");
     }
 }
 
@@ -628,7 +626,7 @@ float Cam::measure_auto_exposure(){
     cfg.disable_all_streams();
     cam.stop();
     if (!actual_exposure_was_measured)
-        std::cout << "Error: no exposure data could be found!!!" << std::endl;
+        std::cout << "Warning: no exposure data could be found!!!" << std::endl;
     else if (actual_exposure_was_measured!=i+1)
         std::cout << "Not all frames contained exosure info: " << actual_exposure_was_measured << " / " << i << std::endl;
 
@@ -749,8 +747,7 @@ void Cam::calib_pose(){
         _camera_angle_y = pitch;
 
         if (fabs(roll) > 5.f) {
-            cout << "Camera is tilted in roll axis!" << std::endl;
-            throw my_exit(1);
+            throw my_exit("camera tilted in roll axis!");
         }
         std::cout << "Measured pose: " << _camera_angle_y << std::endl;
     } else { // determine camera angle from the depth map:
@@ -817,9 +814,8 @@ void Cam::calib_pose(){
         std::cout << "Set angle_y: " << _camera_angle_y << std::endl;
 
         if ((fabs(_camera_angle_y_measured_from_depth - old) > 15 && checkFileExist(calib_rfn)) || _camera_angle_y_measured_from_depth != _camera_angle_y_measured_from_depth) {
-            std::cout << "Warning: angle change to big!" << std::endl;
             _camera_angle_y_measured_from_depth = 0;
-            throw my_exit(1);
+            throw my_exit("camera angle change to big!");
         }
     }
     cfg.disable_all_streams();
@@ -857,8 +853,9 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
     }
 
     if (!checkFileExist(bag_fn)) {
-        std::cout << "Could not find " << bag_fn << std::endl;
-        throw my_exit(1);
+        std::stringstream serr;
+        serr << "cannot not find " << bag_fn;
+        throw my_exit(serr.str());
     }
     rs2::stream_profile infared1,infared2;
     rs2::context ctx; // The context represents the current platform with respect to connected devices
@@ -893,6 +890,7 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
         deserialize_calib(calib_template_rfn);
     convert_depth_background_to_world();
     swc.Start();
+    initialized = true;
 }
 
 void Cam::pause(){
@@ -915,11 +913,14 @@ void Cam::seek(float time) {
 }
 
 void Cam::close() {
-    std::cout << "Closing camera" << std::endl;
-    depth_sensor.stop();
-    depth_sensor.close();
-    usleep(1000);
-    std::cout << "Camera closed" << std::endl;
+    if (initialized) {
+        std::cout << "Closing camera" << std::endl;
+        depth_sensor.stop();
+        depth_sensor.close();
+        usleep(1000);
+        std::cout << "Camera closed" << std::endl;
+        initialized = false;
+    }
 }
 
 void Cam::reset() {
@@ -929,11 +930,9 @@ void Cam::reset() {
     rs2::context ctx; // The context represents the current platform with respect to connected devices
     rs2::device_list devices = ctx.query_devices();
     if (devices.size() == 0) {
-        std::cerr << "No device connected, please connect a RealSense device" << std::endl;
-        throw my_exit(1);
+        throw my_exit("no RealSense connected");
     } else if (devices.size() > 1) {
-        std::cerr << "More than one device connected...." << std::endl;
-        throw my_exit(1);
+        throw my_exit("more than one RealSense connected....");
     } else {
         dev = devices[0];
 

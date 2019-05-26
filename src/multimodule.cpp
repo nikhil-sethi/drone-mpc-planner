@@ -5,11 +5,10 @@ void MultiModule::init(bool fromfile) {
     notconnected = RS232_OpenComport(115200,"/dev/ttyACM0");
     if (TX_TYPE!=TX_NONE) {
         if (notconnected && !fromfile) {
-            std::cout << "MultiModule failed." << std::endl;
-            throw my_exit(1);
+            throw my_exit("cannot connect the MultiModule");
         } else {
             thread_mm = std::thread(&MultiModule::worker_thread,this);
-            initialised = true;
+            initialized = true;
         }
     }
 }
@@ -135,9 +134,10 @@ void MultiModule::receive_data() {
 }
 
 void MultiModule::close() {
-    if (initialised) {
-#ifndef INSECT_LOGGING_MODE
+    if (initialized) {
 
+#ifndef INSECT_LOGGING_MODE
+        std::cout << "Closing multimodule" << std::endl;
         // kill throttle when closing the module
         throttle = JOY_MIN_THRESH;
         roll = JOY_MIDDLE;
@@ -152,5 +152,6 @@ void MultiModule::close() {
         g_lockData.unlock();
         thread_mm.join();
 #endif
+        initialized = false;
     }
 }

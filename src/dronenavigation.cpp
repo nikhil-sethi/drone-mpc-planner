@@ -10,7 +10,7 @@ using namespace std;
 
 const string paramsFile = "../navigationParameters.dat";
 
-bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneController * dctrl, InsectTracker * itrkr, VisionData *visdat) {
+void DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneController * dctrl, InsectTracker * itrkr, VisionData *visdat) {
     _logger = logger;
     _dtrk = dtrk;
     _dctrl = dctrl;
@@ -24,15 +24,15 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
         try {
             archive(params);
         }catch (cereal::Exception e) {
-            std::cout << "Drone navigation settings file error: " << e.what() << std::endl;
-            std::cout << "Maybe delete the file: " << paramsFile << std::endl;
-            exit (1);
+            std::stringstream serr;
+            serr << "cannot read drone navigation settings file: " << e.what() << ". Maybe delete the file: " << paramsFile;
+            throw my_exit(serr.str());
         }
         navigationParameters tmp;
         if (tmp.version-params.version > 0.001f){
-            std::cout << "Drone navigation settings version too low!" << std::endl;
-            std::cout << "Maybe delete the file: " << paramsFile << std::endl;
-            throw my_exit(1);
+            std::stringstream serr;
+            serr << "dronenavigation settings version too low! Maybe delete the file: " << paramsFile;
+            throw my_exit(serr.str());
         }
     }
 
@@ -62,7 +62,7 @@ bool DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     _navigation_status = ns_wait_for_insect;
 #endif
 
-    return false;
+    initialized = true;
 }
 
 void DroneNavigation::update(float time) {
@@ -339,7 +339,11 @@ void DroneNavigation::set_next_waypoint(waypoint wp) {
 }
 
 void DroneNavigation::close() {
-    std::ofstream os(paramsFile, std::ios::binary);
-    cereal::BinaryOutputArchive archive( os );
-    archive( params );
+    if (initialized) {
+        std::cout << "Closing drone navigation" << std::endl;
+        std::ofstream os(paramsFile, std::ios::binary);
+        cereal::BinaryOutputArchive archive( os );
+        archive( params );
+        initialized = false;
+    }
 }

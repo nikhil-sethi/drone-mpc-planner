@@ -132,6 +132,8 @@ private:
     int exposure = 11000; //84*(31250/256); // >11000 -> 60fps, >15500 -> 30fps, < 20 = crash
     int gain = 0;
     bool fromfile;
+    bool initialized = false;
+
 
     uint playback_buffer_size_max = 100;
 

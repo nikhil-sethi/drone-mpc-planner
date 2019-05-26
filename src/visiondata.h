@@ -65,6 +65,9 @@ private:
     cv::Point delete_motion_spot = {0};
     int delete_motion_r = 0;
 
+
+    bool initialized = false;
+
     void collect_no_drone_frames(cv::Mat dL);
     void track_avg_brightness(cv::Mat frame,float time);
 
@@ -91,9 +94,13 @@ public:
 
     void init(bool fromfile, std::string bag_dir, cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, float new_camera_gain, cv::Mat new_depth_background_mm);
     void close() {
-        std::ofstream os(settingsFile, std::ios::binary);
-        cereal::BinaryOutputArchive archive( os );
-        archive( settings );
+        if (initialized){
+            std::cout << "Closing visdat" << std::endl;
+            std::ofstream os(settingsFile, std::ios::binary);
+            cereal::BinaryOutputArchive archive( os );
+            archive( settings );
+            initialized = false;
+        }
     }
     void update(cv::Mat new_frameL, cv::Mat new_frameR, float time, int new_frame_id);
     void reset_motion_integration() {

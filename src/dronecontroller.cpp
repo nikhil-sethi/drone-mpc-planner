@@ -31,15 +31,15 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
         try {
             archive(params);
         }catch (cereal::Exception e) {
-            std::cout << "Dronecontroller settings file error: " << e.what() << std::endl;
-            std::cout << "Maybe delete the file: " << paramsFile << std::endl;
-            exit (1);
+            std::stringstream serr;
+            serr << "cannot read dronecontroller settings file: " << e.what() << ". Maybe delete the file: " << paramsFile;
+            throw my_exit(serr.str());
         }
         controlParameters tmp;
         if (tmp.version-params.version > 0.001f){
-            std::cout << "Dronecontroller settings version too low!" << std::endl;
-            std::cout << "Maybe delete the file: " << paramsFile << std::endl;
-            throw my_exit(1);
+            std::stringstream serr;
+            serr << "dronecontroller settings version too low! Maybe delete the file: " << paramsFile;
+            throw my_exit(serr.str());
         }
     }
 
@@ -77,7 +77,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
 
 
 #endif
-
+    initialized = true;
 }
 
 int bound_joystick_value(int v) {
@@ -535,8 +535,11 @@ void DroneController::recalibrateHover() {
 }
 
 void DroneController::close () {
-    std::cout << "closing controller" << std::endl;
-    std::ofstream os(paramsFile, std::ios::binary);
-    cereal::BinaryOutputArchive archive( os );
-    archive( params );
+    if (initialized) {
+        std::cout << "closing controller" << std::endl;
+        std::ofstream os(paramsFile, std::ios::binary);
+        cereal::BinaryOutputArchive archive( os );
+        archive( params );
+        initialized = false;
+    }
 }

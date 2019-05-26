@@ -513,10 +513,12 @@ void Visualizer::workerThread(void) {
     }
 }
 void Visualizer::close() {
-    if (initialised){
+    if (initialized){
+        std::cout << "Closing visualizer" << std::endl;
         exitVizThread = true;
         newdata.notify_all();
         lock_plot_data.unlock();
         thread_viz.join();
+        initialized = false;
     }
 }

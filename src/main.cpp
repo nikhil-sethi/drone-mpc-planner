@@ -389,6 +389,7 @@ void close_thread_pool(){
             tp[i].thread->join();
         }
         std::cout <<"Threads in pool closed"<< std::endl;
+        threads_initialised = false;
     }
 }
 
@@ -405,7 +406,7 @@ void init_sig(){
     sigaction(SIGINT, &sigIntHandler, NULL);
 }
 
-int init(int argc, char **argv) {
+void init(int argc, char **argv) {
 
 #ifdef HASGUI
     gui.init(argc,argv);
@@ -444,6 +445,7 @@ int init(int argc, char **argv) {
     }
     else
         cam.init();
+
     cam.update(); // wait for first frames
 
     visdat.init(fromfile==log_mode_full,data_in_dir,cam.Qf, cam.frameL,cam.frameR,cam.camera_angle(),cam.measured_gain(),cam.depth_background_mm); // do after cam update to populate frames
@@ -467,9 +469,7 @@ int init(int argc, char **argv) {
 
     // Ensure that joystick was found and that we can use it
     if (!dctrl.joystick_ready() && fromfile!=log_mode_full && JOYSTICK_TYPE != RC_NONE) {
-        std::cout << "joystick failed." << std::endl;
-        close();
-        throw my_exit(1);
+        throw my_exit("no joystick connected.");
     }
 
     logger << std::endl;
@@ -479,10 +479,10 @@ int init(int argc, char **argv) {
 
     /*****init the video writer*****/
 #if VIDEORESULTS
-    if (output_video_results.init(argc,argv,VIDEORESULTS, data_output_dir + "videoResult.avi",IMG_W,IMG_H,VIDEOFPS,"192.168.1.255",5000,true)) {return 1;}
+    if (output_video_results.init(argc,argv,VIDEORESULTS, data_output_dir + "videoResult.avi",IMG_W,IMG_H,VIDEOFPS,"192.168.1.255",5000,true)) {throw my_exit("could not open results video");}
 #endif
 #if VIDEORAWLR && VIDEORAWLR != VIDEOMODE_BAG
-    if (output_video_LR.init(argc,argv,VIDEORAWLR,data_output_dir + "videoRawLR.avi",IMG_W*2,IMG_H,VIDEOFPS, "192.168.1.255",5000,false)) {return 1;}
+    if (output_video_LR.init(argc,argv,VIDEORAWLR,data_output_dir + "videoRawLR.avi",IMG_W*2,IMG_H,VIDEOFPS, "192.168.1.255",5000,false)) {throw my_exit("could not open LR video");}
 #endif
 
 #if VIDEODISPARITY
@@ -493,16 +493,13 @@ int init(int argc, char **argv) {
 
     if (!output_video_disp.isOpened())
     {
-        std::cerr << "Disparity result video could not be opened!" << std::endl;
-        return 1;
+        throw my_exit("could not open disparity video");
     }
 #endif
 
     init_thread_pool();
 
     std::cout << "Main init successfull" << std::endl;
-
-    return 0;
 }
 
 void close() {
@@ -541,35 +538,43 @@ void close() {
 
 int main( int argc, char **argv )
 {
-    try {
-        //manually reset the rs camera from the command line with the rs_reset command
-        if (argc == 2)
-            if (string(argv[1]).compare("rs_reset") == 0){
+    //manually reset the rs camera from the command line with the rs_reset command
+    if (argc == 2)
+        if (string(argv[1]).compare("rs_reset") == 0){
+            try{
                 cam.reset();
-                throw my_exit(0);
+            } catch(my_exit const &e) {
+                std::cout << "Error: " << e.msg << std::endl;
+                return 1;
             }
+            return 0;
+        }
 
 #ifdef INSECT_LOGGING_MODE
-        //don't start  until lights are off
-        std::cout << "Insect logging mode, check if dark." << std::endl;
-        while(true) {
-            float expo = cam.measure_auto_exposure();
-            auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
-            std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << " Measured exposure: " << expo << std::endl;
-            if (expo >10000) {
-                break;
-            }
-            usleep(60000000); // measure every 1 minute
+    //don't start  until lights are off
+    std::cout << "Insect logging mode, check if dark." << std::endl;
+    while(true) {
+        float expo = cam.measure_auto_exposure();
+        auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
+        std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << " Measured exposure: " << expo << std::endl;
+        if (expo >10000) {
+            break;
         }
+        usleep(60000000); // measure every 1 minute
+    }
 #endif
 
-        if (!init(argc,argv)) {
-            process_video();
-        }
-        close();
+    try {
+        init(argc,argv);
     } catch(my_exit const &e) {
-        return e.value;
+        close();
+        std::cout << "Error: " << e.msg << std::endl;
+        return 1;
     }
+
+    process_video();
+    close();
+
     return 0;
 }
 

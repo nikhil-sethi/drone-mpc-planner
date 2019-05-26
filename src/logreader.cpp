@@ -30,8 +30,7 @@ static inline void trim(std::string &s) {
 
 void LogReader::init(std::string file, bool partial_insect_log) {
     if (!checkFileExist(file)) {
-        std::cout << "Error: log file not found!" <<std::endl;
-        throw my_exit(1);
+        throw my_exit("log file not found!");
     }
     std::cout << "Opening log file: " << file << std::endl;
     if (_partial_insect_log) {

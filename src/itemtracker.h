@@ -177,7 +177,7 @@ protected:
     std::ofstream *_logger;
     VisionData * _visdat;
     int roi_size_cnt = 0;
-
+    bool initialized = false;
 
     float blob_size_last = DRONE_IM_START_SIZE;
 

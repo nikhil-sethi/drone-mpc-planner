@@ -105,6 +105,8 @@ private:
     const int forward_pitch_take_off_boost = 0; // CX10 - 60
     const int min_throttle = 600; //Whoop - 600    CX10 - 800
     const float integratorThresholdDistance = 0.2f;
+
+    bool initialized = false;
 public : const float throttle_bank_factor = 0.33; // Whoop 0.33
 
 
@@ -209,7 +211,7 @@ public:
     float Throttle(){
         float throttle = _rc->throttle;
         if (_fromfile)
-            throttle  = _log_auto_throttle;       
+            throttle  = _log_auto_throttle;
         throttle -= hoverthrottle;
         throttle /= static_cast<float>(JOY_BOUND_MAX - JOY_BOUND_MIN);
         return throttle;

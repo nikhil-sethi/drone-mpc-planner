@@ -55,7 +55,7 @@ private:
     std::condition_variable newdata;
     bool new_tracker_viz_data_requested = true;
     bool exitVizThread = false;
-    bool initialised = false;
+    bool initialized = false;
     void workerThread(void);
     void plot(void);
 
@@ -184,7 +184,7 @@ public:
         }
 
         thread_viz = std::thread(&Visualizer::workerThread,this);
-        initialised = true;
+        initialized = true;
     }
     void close();
 

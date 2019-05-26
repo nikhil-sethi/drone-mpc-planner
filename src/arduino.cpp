@@ -6,8 +6,7 @@ void Arduino::init(bool fromfile) {
     notconnected = RS232_OpenComport_USBX(baudrate);
 
     if (notconnected && !fromfile) {
-        std::cout << "Arduino failed." << std::endl;
-        //        throw my_exit(1);
+        throw my_exit("no Arduino connected.");
     }
 
     thread_nrf = std::thread(&Arduino::workerThread,this);
@@ -94,8 +93,7 @@ void Arduino::check_bind_command(){
         lock_rs232.unlock();
         if (notconnected) {
             bound = cx10_not_bound;
-            std::cout << "Bind failure, could not reconnect to arduino" << std::endl;
-            throw my_exit(1);
+            throw my_exit("bind failure, cannot reconnect to arduino");
         }
     }
     if (binding_sw.Read() > 2000 && bound == cx10_binding) {

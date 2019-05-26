@@ -27,15 +27,15 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
         try {
             archive(settings);
         }catch (cereal::Exception e) {
-            std::cout << "Itemtracker settings file error: " << e.what() << std::endl;
-            std::cout << "Maybe delete the file: " << _settingsFile << std::endl;
-            exit (1);
+            std::stringstream serr;
+            serr << "cannot read itemtracker settings file: " << e.what() << ". Maybe delete the file: " << _settingsFile;
+            throw my_exit(serr.str());
         }
         TrackerSettings tmp;
         if (tmp.version-settings.version > 0.001f){
-            std::cout << "Itemtracker settings version too low!" << std::endl;
-            std::cout << "Maybe delete the file: " << _settingsFile << std::endl;
-            throw my_exit(1);
+            std::stringstream serr;
+            serr << "itemtracker settings version too low! Maybe delete the file: " << _settingsFile;
+            throw my_exit(serr.str());
         }
     } else {
         init_settings();
@@ -115,6 +115,8 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     (*_logger) << "saccX_" << _name << "; ";
     (*_logger) << "saccY_" << _name << "; ";
     (*_logger) << "saccZ_" << _name << "; ";
+
+    initialized = true;
 }
 
 void ItemTracker::init_kalman() {
@@ -900,7 +902,11 @@ void ItemTracker::reset_tracker_ouput(float time) {
 }
 
 void ItemTracker::close () {
-    std::ofstream os(_settingsFile, std::ios::binary);
-    cereal::BinaryOutputArchive archive( os );
-    archive( settings );
+    if (initialized){
+        std::cout << "Closing tracker: " << _name << std::endl;
+        std::ofstream os(_settingsFile, std::ios::binary);
+        cereal::BinaryOutputArchive archive( os );
+        archive( settings );
+        initialized = false;
+    }
 }
