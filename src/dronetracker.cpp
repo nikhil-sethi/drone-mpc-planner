@@ -1,7 +1,7 @@
 #include "dronetracker.h"
 
 #ifdef HASSCREEN
-#define VIZ
+//#define VIZ
 #endif
 
 bool DroneTracker::init(std::ofstream *logger, VisionData *visdat, bool fromfile, std::string bag_dir) {

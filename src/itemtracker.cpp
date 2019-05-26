@@ -11,7 +11,7 @@ using namespace std;
 
 #ifdef HASSCREEN
 //#define TUNING
-#define VIZ
+//#define VIZ
 #endif
 
 void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string name) {
