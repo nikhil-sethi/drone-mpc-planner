@@ -22,7 +22,7 @@ void Cam::update(void) {
 
 int last_1_id =-1;
 int last_2_id =-1;
-float incremented_playback_frametime = (1.f/VIDEOFPS)/2.f;
+double incremented_playback_frametime = (1.f/VIDEOFPS)/2.f;
 void Cam::update_playback(void) {
     frame_data fL,fR;
     bool foundL=false,foundR = false;
@@ -47,7 +47,7 @@ void Cam::update_playback(void) {
 
         uint lowest_complete_id=0;
         uint highest_id = 0;
-        float frame_time_higest_id = 0;
+        double frame_time_higest_id = 0;
         for (uint i = 0 ; i <playback_bufferL_cleaned.size();i++) {
             if (playback_bufferL_cleaned.at(i).id > highest_id){
                 highest_id = playback_bufferL_cleaned.at(i).id ;
@@ -91,19 +91,19 @@ void Cam::update_playback(void) {
                 }
             }
 
-        auto duration = static_cast<float>(static_cast<rs2::playback>(dev).get_duration().count()) / 1e9f;
-        if (frame_time() > duration-0.5f){
+        double duration = static_cast<double>(static_cast<rs2::playback>(dev).get_duration().count()) / 1e9;
+        if (frame_time() > duration-0.5){
             std::cout << "Video end, exiting" << std::endl;
             throw my_exit(0);
         }
 
         if (_paused && playback_bufferR_cleaned.size() < 3 ){ // 3 to start buffering 3 frames before the buffer runs empty
-            incremented_playback_frametime = (requested_id_in+funky_RS_frame_time_fixer_frame_count-2)*(1.f/VIDEOFPS) - (1.f/VIDEOFPS)*0.1f;  //requested_id_in-2 -> -2 seems to be necessary because the RS api skips a frame of either the left or right camera after resuming
+            incremented_playback_frametime = (requested_id_in+funky_RS_frame_time_fixer_frame_count-2)*(1./VIDEOFPS) - (1./VIDEOFPS)*0.1;  //requested_id_in-2 -> -2 seems to be necessary because the RS api skips a frame of either the left or right camera after resuming
             if (incremented_playback_frametime < 0)
                 incremented_playback_frametime = 0;
             //            std::cout << "Resuming RS: " << incremented_playback_frametime << std::endl;
 
-            if (duration-0.4f >= incremented_playback_frametime){
+            if (duration-0.4 >= incremented_playback_frametime){
                 seek(incremented_playback_frametime);
                 resume();
             } else {
@@ -167,7 +167,7 @@ void Cam::rs_callback_playback(rs2::frame f) {
         fL.id= f.get_frame_number();
         if (_frame_time_start <0)
             _frame_time_start = f.get_timestamp();
-        fL.time = (static_cast<float>(f.get_timestamp()) -_frame_time_start)/1000.f;
+        fL.time = (f.get_timestamp() -_frame_time_start)/1000.;
 
         playback_bufferL.push_back(fL);
         new_frame1 = true;
@@ -178,7 +178,7 @@ void Cam::rs_callback_playback(rs2::frame f) {
         fR.id= f.get_frame_number();
         if (_frame_time_start <0)
             _frame_time_start = f.get_timestamp();
-        fR.time = (static_cast<float>(f.get_timestamp()) -_frame_time_start)/1000.f;
+        fR.time = (f.get_timestamp() -_frame_time_start)/1000.;
         playback_bufferR.push_back(fR);
         new_frame2 = true;
         last_2_id = fR.id;

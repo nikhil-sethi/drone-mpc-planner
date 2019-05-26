@@ -83,7 +83,7 @@ public:
     float measure_auto_exposure();
 
     int frame_number() {return _frame_number;}
-    float frame_time() {return _frame_time;}
+    double frame_time() {return _frame_time;}
     cv::Mat Qf;
     rs2_intrinsics * intr;
 
@@ -114,7 +114,7 @@ public:
     struct stereo_frame{
         cv::Mat frameL,frameR;
         uint id;
-        float time;
+        double time;
     };
 
 private:
@@ -188,7 +188,7 @@ private:
     struct frame_data{
         cv::Mat frame;
         uint id;
-        float time;
+        double time;
     };
     std::deque<frame_data> playback_bufferL;
     std::deque<frame_data> playback_bufferR;

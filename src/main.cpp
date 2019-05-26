@@ -204,8 +204,8 @@ void process_video() {
             }
         }
 
-        static float time =0;
-        float dt __attribute__((unused)) = cam.frame_time() - time;
+        static double time =0;
+        float dt __attribute__((unused)) = static_cast<float>(cam.frame_time() - time);
         time = cam.frame_time();
         std::cout << "Frame: " <<imgcount << ", " << cam.frame_number() << ". FPS: " << to_string_with_precision(imgcount / time,1) << ". Time: " << to_string_with_precision(time,2)  << ", dt " << to_string_with_precision(dt,3) << " FPS stopwatch smooth: " << to_string_with_precision(fps,1) << " current: " << to_string_with_precision(current_fps,1) << std::endl;
         imgcount++;
