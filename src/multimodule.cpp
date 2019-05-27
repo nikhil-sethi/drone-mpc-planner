@@ -7,6 +7,18 @@ void MultiModule::init(bool fromfile) {
         if (notconnected && !fromfile) {
             throw my_exit("cannot connect the MultiModule");
         } else {
+
+            //send bind id to the multimodule. It must have this form: [66,67 id3,id2,id1,id0,68], otherwise the MM won't proceed.
+            unsigned char packet[7];
+            packet[0] = 66; //header 1
+            packet[1] = 67; //header 2
+            packet[2] = 0; //id...
+            packet[3] = 0;
+            packet[4] = 0;
+            packet[5] = 1;
+            packet[6] = 68; //header 3
+            RS232_SendBuf( static_cast<unsigned char*>( packet), 7);
+
             thread_mm = std::thread(&MultiModule::worker_thread,this);
             initialized = true;
         }
