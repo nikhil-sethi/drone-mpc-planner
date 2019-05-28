@@ -99,7 +99,8 @@ void Interceptor::update(bool drone_at_base) {
 
     if ( insectVelNorm > 0 || _itrkr->foundL ) {
 
-        cv::Point3f dronePos = {_dtrkr->Last_track_data().sposX,_dtrkr->Last_track_data().sposY,_dtrkr->Last_track_data().sposZ};
+        cv::Point3f dronePos = {_dtrkr->Last_track_data().posX,_dtrkr->Last_track_data().posY,_dtrkr->Last_track_data().posZ};
+        cv::Point3f droneVel = {_dtrkr->Last_track_data().svelX,_dtrkr->Last_track_data().svelY,_dtrkr->Last_track_data().svelZ};
 
         if (drone_at_base)
             dronePos = {_dtrkr->Drone_Startup_Location().x,_dtrkr->Drone_Startup_Location().y,_dtrkr->Drone_Startup_Location().z};
@@ -120,25 +121,33 @@ void Interceptor::update(bool drone_at_base) {
         dronePos2D.x = dronePos.x;
         dronePos2D.y = dronePos.z;
 
-        _estimated_interception_location = insectPos + (insectVel*tti);
+        _estimated_interception_location = insectPos + (insectVel*tti) + (0.5f*insectAcc*tti*tti);
         _estimated_interception_location.y += 0.01f;
+        //_estimated_interception_location.x -= 1.f; // for analysis only
 
         float horizontal_separation = norm(dronePos2D-insectPos2D);
         float vertical_separation = insectPos.y-dronePos.y;
-        if (horizontal_separation<0.2f && vertical_separation>0.01f && vertical_separation<0.1f){
-            final_approach = false;
+        if (horizontal_separation<0.5f && vertical_separation>0.1f && vertical_separation<0.6f){
+            final_approach = true;
         } else {
 //            _estimated_interception_location = insectPos + (insectVel*tti);
 //            _estimated_interception_location.y -= 0.01f;
         }
 
-        if (insectPos.y<dronePos.y )
-            final_approach = false;
+//        if (insectPos.y<dronePos.y )
+//            final_approach = false;
 
         if (final_approach){
+            insectPos.y -= 0.1f;
             cv::Point3f vector = insectPos-dronePos;
             float norm_vector = norm(vector);
-            _estimated_interception_location = dronePos + vector/norm_vector*0.3f;
+            //_estimated_interception_location = dronePos + vector/norm_vector*0.3f;
+            insectVel += vector/norm_vector*0.6f;
+
+//            float interception_vel = 0.6f;
+//            float norm_vector = norm(droneVel);
+//            insectVel += droneVel/norm_vector*interception_vel;
+
         }
         //_estimated_interception_location.y += 0.1f;
 
@@ -146,14 +155,17 @@ void Interceptor::update(bool drone_at_base) {
         if (_estimated_interception_location.y < -1.3f)
             _estimated_interception_location.y = -1.3f;
 
+        if (_estimated_interception_location.y > -0.1f)
+            _estimated_interception_location.y = -0.1f;
+
         //TODO: _estimated_interception_speed = ...
 
         //calculate worst case deviation:
 
         //calculate if the drone will stay within the camera borders where it still can be controlled:
-        if (_estimated_interception_location.x > _estimated_interception_location.z && _estimated_interception_location.x < -_estimated_interception_location.z) {
+        if (_estimated_interception_location.x > _estimated_interception_location.z+0.3f && _estimated_interception_location.x < -_estimated_interception_location.z-0.3f && abs(_estimated_interception_location.x) < 2.0f) {
             if (_estimated_interception_location.y > _estimated_interception_location.z*1.5f && _estimated_interception_location.y < -0.3f) {
-                if (_estimated_interception_location.z > -5.3f && _estimated_interception_location.z < -0.8f) {
+                if (_estimated_interception_location.z > -3.0f && _estimated_interception_location.z < -1.0f) {
                     _insect_in_range = true;
                     _count_insect_not_in_range = 0;
                     _prev_estimated_interception_location = _estimated_interception_location;
@@ -184,7 +196,6 @@ cv::Point3f Interceptor::get_intercept_position() {
 cv::Point3f Interceptor::get_prev_intercept_position() {
     return _prev_estimated_interception_location;
 }
-
 
 cv::Point3f Interceptor::get_target_speed() {
     return insectVel;

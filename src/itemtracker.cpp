@@ -193,7 +193,7 @@ void ItemTracker::select_best_candidate(){
                 w.world_coordinates.z = -w.world_coordinates.y * sinf(theta) + w.world_coordinates.z * cosf(theta);
                 w.world_coordinates.y = temp_y;
 
-                if ( (w.world_coordinates.y < -1.3f || w.world_coordinates.z < -4.f ) && _name == "insect")
+                if ( (w.world_coordinates.y < -1.3f || w.world_coordinates.z < -3.3f  ||  w.world_coordinates.x < -2.0f ||  w.world_coordinates.x > 2.3f) && _name == "insect")
                     w.background_check_ok = false;
             }
             if (w.background_check_ok && w.disparity_in_range)
