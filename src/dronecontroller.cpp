@@ -98,7 +98,7 @@ void DroneController::queue_commands(int throttle,int roll, int pitch, int yaw) 
     }
 }
 
-void DroneController::control(track_data data,cv::Point3f setpoint, cv::Point3f setpoint_v) {
+void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, cv::Point3f setpoint_acc) {
 
     if (!_fromfile)
         readJoystick();
@@ -108,25 +108,25 @@ void DroneController::control(track_data data,cv::Point3f setpoint, cv::Point3f 
 
 
     // Roll Control - X
-    posErrX = data.sposX - setpoint.x;              // position error
-    velx_sp = posErrX*params.roll_Pos/1000.f;       // desired velocity
-    velErrX = data.svelX + velx_sp - setpoint_v.x;  // velocity error
-    accx_sp = velErrX*params.roll_Vel/100;          // desired acceleration
-    accErrX = data.saccX + accx_sp;                 // acceleration error
+    posErrX = data.sposX - setpoint_pos.x;              // position error
+    velx_sp = posErrX*params.roll_Pos/1000.f;           // desired velocity
+    velErrX = data.svelX + velx_sp - setpoint_vel.x;    // velocity error
+    accx_sp = velErrX*params.roll_Vel/100;              // desired acceleration
+    accErrX = data.saccX + accx_sp - setpoint_acc.x;    // acceleration error
 
     // Altitude Control - Y
-    posErrY = data.sposY - setpoint.y;              // position error
-    vely_sp = posErrY*params.throttle_Pos/1000.f;   // (inversed) desired velocity
-    velErrY = data.svelY + vely_sp - setpoint_v.y;  // velocity error
-    accy_sp = velErrY*params.throttle_Vel/100;      // (inversed) desired acceleration
-    accErrY = data.saccY + accy_sp;                 // acceleration error
+    posErrY = data.sposY - setpoint_pos.y;              // position error
+    vely_sp = posErrY*params.throttle_Pos/1000.f;       // (inversed) desired velocity
+    velErrY = data.svelY + vely_sp - setpoint_vel.y;    // velocity error
+    accy_sp = velErrY*params.throttle_Vel/100;          // (inversed) desired acceleration
+    accErrY = data.saccY + accy_sp - setpoint_acc.y;    // acceleration error
 
     // Pitch Control - Z
-    posErrZ = data.sposZ - setpoint.z;              // position error
-    velz_sp = posErrZ*params.pitch_Pos/1000.f;      // desired velocity
-    velErrZ = data.svelZ + velz_sp - setpoint_v.z;  // velocity error
-    accz_sp = velErrZ*params.pitch_Vel/100;         // desired acceleration
-    accErrZ = data.saccZ + accz_sp;                 // acceleration error
+    posErrZ = data.sposZ - setpoint_pos.z;              // position error
+    velz_sp = posErrZ*params.pitch_Pos/1000.f;          // desired velocity
+    velErrZ = data.svelZ + velz_sp - setpoint_vel.z;    // velocity error
+    accz_sp = velErrZ*params.pitch_Vel/100;             // desired acceleration
+    accErrZ = data.saccZ + accz_sp - setpoint_acc.z;    // acceleration error
 
     //when tuning, reset integrators when I gain set to 0:
     if (params.throttleI < 1)
@@ -287,9 +287,9 @@ void DroneController::control(track_data data,cv::Point3f setpoint, cv::Point3f 
                   posErrX << "; " <<
                   posErrY  << "; " <<
                   posErrZ << "; " <<
-                  setpoint.x << "; " <<
-                  setpoint.y  << "; " <<
-                  setpoint.z << "; " <<
+                  setpoint_pos.x << "; " <<
+                  setpoint_pos.y  << "; " <<
+                  setpoint_pos.z << "; " <<
                   accx_sp << "; " <<
                   accy_sp  << "; " <<
                   accx_sp << "; " <<

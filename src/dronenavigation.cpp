@@ -197,17 +197,16 @@ void DroneNavigation::update(float time) {
 
         //update target chasing waypoint and speed
         if (_iceptor.get_insect_in_range()) {
-            setpoint_world = _iceptor.get_intercept_position();
-            setspeed_world = _iceptor.get_target_speed();
+            setpoint_pos_world = _iceptor.get_intercept_position();
+            setpoint_vel_world = _iceptor.get_target_speed();
+            setpoint_acc_world = _iceptor.get_target_accelleration();
         }
 
-        if (setpoint_world.z == 0) { // fly to landing waypoint (but do not land)
-            //FIXME, use set_new_waypoint
-            setpoint_world = _iceptor.get_prev_intercept_position();
+        if (setpoint_pos_world.z == 0 || !_iceptor.get_insect_in_range()) {
+            setpoint_pos_world = _iceptor.get_prev_intercept_position();
+            setpoint_vel_world = {0,0,0};
+            setpoint_acc_world = {0,0,0};
 
-            setspeed_world.x = 0;
-            setspeed_world.y = 0;
-            setspeed_world.z = 0;
         }
 
         if (_nav_flight_mode == nfm_manual)
@@ -288,9 +287,9 @@ void DroneNavigation::update(float time) {
         autoLandThrottleDecrease += params.autoLandThrottleDecreaseFactor;
         _dctrl->setAutoLandThrottleDecrease(autoLandThrottleDecrease);
 
-        if ( setpoint_world.y - land_incr> -(_dtrk->Drone_Startup_Location().y+100000.0f))
+        if ( setpoint_pos_world.y - land_incr> -(_dtrk->Drone_Startup_Location().y+100000.0f))
             land_incr = static_cast<float>(params.land_incr_f_mm)/1000.f;
-        setpoint_world.y -= land_incr;
+        setpoint_pos_world.y -= land_incr;
         if (_nav_flight_mode == nfm_manual)
             _navigation_status=ns_manual;
         break;
@@ -327,14 +326,14 @@ void DroneNavigation::set_next_waypoint(waypoint wp) {
     current_setpoint = new waypoint(wp);
     if (wp.mode == fm_landing || wp.mode == fm_hover_calib || wp.mode == fm_takeoff) {
         cv::Point3f p = _dtrk->Drone_Startup_Location();
-        setpoint_world =  p + wp.xyz;
+        setpoint_pos_world =  p + wp.xyz;
     } else {
-        setpoint_world =  wp.xyz;
+        setpoint_pos_world =  wp.xyz;
     }
 
-    setspeed_world.x = 0;
-    setspeed_world.y = 0;
-    setspeed_world.z = 0;
+    setpoint_vel_world = {0,0,0};
+    setpoint_acc_world = {0,0,0};
+
 
 }
 

@@ -13,6 +13,7 @@ void Interceptor::init(DroneTracker * dtrkr, InsectTracker * itrkr, VisionData *
 void Interceptor::update(bool drone_at_base) {
 
     insectVel = {_itrkr->Last_track_data().svelX,_itrkr->Last_track_data().svelY,_itrkr->Last_track_data().svelZ};
+    insectAcc = {_itrkr->Last_track_data().saccX,_itrkr->Last_track_data().saccY,_itrkr->Last_track_data().saccZ};
     cv::Point3f insectPos = {_itrkr->Last_track_data().posX,_itrkr->Last_track_data().posY,_itrkr->Last_track_data().posZ};
 
     // predict insect position for next frame
@@ -187,5 +188,9 @@ cv::Point3f Interceptor::get_prev_intercept_position() {
 
 cv::Point3f Interceptor::get_target_speed() {
     return insectVel;
+}
+
+cv::Point3f Interceptor::get_target_accelleration() {
+    return insectAcc;
 }
 

@@ -258,7 +258,7 @@ public:
 
     void close (void);
     void init(std::ofstream *logger, bool fromfile, MultiModule *rc, DroneTracker *dtrk);
-    void control(track_data data, cv::Point3f setpoint_world,cv::Point3f setspeed_world);
+    void control(track_data data, cv::Point3f setpoint_pos_world, cv::Point3f setpoint_vel_world, cv::Point3f setpoint_acc_world);
     bool drone_is_active() {
         if ( _flight_mode == fm_inactive || _flight_mode == fm_disarmed)
             return false;

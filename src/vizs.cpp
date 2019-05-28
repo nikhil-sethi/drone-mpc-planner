@@ -46,9 +46,9 @@ void Visualizer::addPlotSample(void) {
     sposY.push_back(data.sposY);
     sposZ.push_back(-data.sposZ);
 
-    setposX.push_back(-_dnav->setpoint_world.x);
-    setposY.push_back(_dnav->setpoint_world.y);
-    setposZ.push_back(-_dnav->setpoint_world.z);
+    setposX.push_back(-_dnav->setpoint_pos_world.x);
+    setposY.push_back(_dnav->setpoint_pos_world.y);
+    setposZ.push_back(-_dnav->setpoint_pos_world.z);
 
     svelX.push_back(-data.svelX);
     svelY.push_back(data.svelY);
@@ -80,7 +80,7 @@ cv::Mat Visualizer::plot_xyd(void) {
     ims_xyd.push_back(plot({disparity,sdisparity},"Disparity"));
 
 
-    cv::Point sp1(-_dnav->setpoint_world.x*1000.f,-_dnav->setpoint_world.z*1000.f);
+    cv::Point sp1(-_dnav->setpoint_pos_world.x*1000.f,-_dnav->setpoint_pos_world.z*1000.f);
     cv::Point min_xz_range,max_xz_range;
     min_xz_range.x =-3000;
     max_xz_range.x = 3000;
@@ -88,7 +88,7 @@ cv::Mat Visualizer::plot_xyd(void) {
     max_xz_range.y = 5000; // z
     ims_xyd.push_back(plotxy(posX,posZ, sp1,"PosXZ",min_xz_range,max_xz_range));
 
-    cv::Point sp2(-_dnav->setpoint_world.x*1000.f,_dnav->setpoint_world.y*1000.f);
+    cv::Point sp2(-_dnav->setpoint_pos_world.x*1000.f,_dnav->setpoint_pos_world.y*1000.f);
     cv::Point min_xy_range,max_xy_range;
     min_xy_range.x =-3000;
     max_xy_range.x = 3000;

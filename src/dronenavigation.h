@@ -180,8 +180,9 @@ public:
     navigationParameters params;
 
     cv::Point3d setpoint;
-    cv::Point3f setpoint_world;
-    cv::Point3f setspeed_world;
+    cv::Point3f setpoint_pos_world;
+    cv::Point3f setpoint_vel_world;
+    cv::Point3f setpoint_acc_world;
     int distance_threshold_mm() {
         return current_setpoint->threshold_mm;
     }

@@ -252,7 +252,7 @@ void process_frame(Stereo_Frame_Data data) {
     }
     dnav.update(data.time);
 
-    dctrl.control(dtrkr.Last_track_data(),dnav.setpoint_world,dnav.setspeed_world);
+    dctrl.control(dtrkr.Last_track_data(),dnav.setpoint_pos_world,dnav.setpoint_vel_world,dnav.setpoint_acc_world);
     dprdct.update(dctrl.drone_is_active(),data.time);
 
     logger << std::endl;
