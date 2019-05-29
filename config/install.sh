@@ -51,7 +51,8 @@ cd ~/dependencies
 	}
 	pushd cmake-3.11.4
 	./bootstrap --parallel=$(nproc) --system-curl
-	make -j $(nproc)	
+	make -j $(nproc)
+	sudo make install
 	popd
 	touch cmake-3.11.4.done
 }
