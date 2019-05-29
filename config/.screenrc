@@ -1,0 +1,16 @@
+# Monitor eth0 bandwidth and update every 5 s
+# Assign the output of this cmd to '%1`' and use it in the below hardstatus line:
+#backtick 1 0 0 /usr/local/bin/wormulon -d 5 -i eth0 
+
+#hardstatus alwayslastline "%{bw}[%H] [%?%-Lw%?%{wb}%n*%f %t%{bw}%?%+Lw%?]%=%{bw} [%1`] [%c:%s] [%l]" # modified from http://lists.gnu.org/archive/html/screen-users/2007-08/msg00008.html
+hardstatus alwayslastline "%{b kw}%H %{r}%1` %{w}| %{g}%c %{w}| %{y}%d.%m.%Y %{w}| %{g}%l %{w}| %{-b kw}%u %-Lw%{= rW}%50> %n%f %t %{-}%+Lw%<"
+
+
+# Set the scrollback length:
+defscrollback 20000
+
+# Select whether you want to see the copyright notice during startup:
+startup_message off 
+
+termcapinfo xterm|xterms|xs|rxvt ti@:te@
+caption always “%H %c | %-w%{=}%n-%t%{-}%+w”
