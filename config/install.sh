@@ -52,9 +52,10 @@ cd ~/dependencies
 	pushd cmake-3.11.4
 	./bootstrap --parallel=$(nproc) --system-curl
 	make -j $(nproc)
-	sudo make install
+	sudo make install	
 	popd
 	touch cmake-3.11.4.done
+	exec bash
 }
 
 # Install openCV
@@ -80,16 +81,19 @@ cd ~/dependencies
 	touch opencv-3.4.2.done
 }
 
-# Install the Outback vision code
-cd ~/
-[ -d code/pats ] || {
-	git clone git@github.com:kevindehecker/pats.git
+# Install the Pats code
+[ -f pats_code.done ] || {
+	cd ~/
+	[ -d code/pats ] || {
+		git clone git@github.com:kevindehecker/pats.git
+	}
+	pushd code/pats
+	mkdir -p pc/build
+	cd ~/code/pats/pc/build
+	cmake ..
+	make -j4
+	touch pats_code.done
 }
-pushd code/pats
-mkdir -p pc/build
-cd ~/code/pats/pc/build
-cmake ..
-make -j4
 
 # Autostart everything the folowing line:
 # /home/up/obc_vision/config/daemon.sh
