@@ -341,15 +341,14 @@ void Cam::init() {
         calib_pose();
     }
 
-    std::vector<rs2::sensor> sensors = dev.query_sensors();
-    depth_sensor = sensors[0]; // 0 = depth module
+    auto rs_depth_sensor = dev.first<rs2::depth_sensor>();
 
-    std::cout << depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_NAME) << std::endl;
-    std::cout << depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION) << std::endl;
-    std::cout << depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_PRODUCT_ID) << std::endl;
+    std::cout << rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_NAME) << std::endl;
+    std::cout << rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION) << std::endl;
+    std::cout << rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_PRODUCT_ID) << std::endl;
 
     std::string required_firmwar_version = "05.11.01.10";
-    std::string current_firmware_version = depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION);
+    std::string current_firmware_version = rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION);
     current_firmware_version  = current_firmware_version.substr (0,required_firmwar_version.length()); //fix for what seems to be appended garbage...? 255.255.255.255 on a newline
 
     if (current_firmware_version != required_firmwar_version) { // wtf, string equality check is reversed!??
@@ -358,15 +357,15 @@ void Cam::init() {
         throw my_exit(serr.str());
     }
 
-    depth_sensor.set_option(RS2_OPTION_FRAMES_QUEUE_SIZE, 0);
+    rs_depth_sensor.set_option(RS2_OPTION_FRAMES_QUEUE_SIZE, 0);
 
-    if (depth_sensor.supports(RS2_OPTION_EMITTER_ENABLED))
+    if (rs_depth_sensor.supports(RS2_OPTION_EMITTER_ENABLED))
     {
-        depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f);
+        rs_depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f);
     }
-    //        if (depth_sensor.supports(RS2_OPTION_LASER_POWER)) {
-    //            auto range = depth_sensor.get_option_range(RS2_OPTION_LASER_POWER);
-    //            depth_sensor.set_option(RS2_OPTION_LASER_POWER, (range.max - range.min)/2 + range.min);
+    //        if (rs_depth_sensor.supports(RS2_OPTION_LASER_POWER)) {
+    //            auto range = rs_depth_sensor.get_option_range(RS2_OPTION_LASER_POWER);
+    //            rs_depth_sensor.set_option(RS2_OPTION_LASER_POWER, (range.max - range.min)/2 + range.min);
     //        }
     if (enable_auto_exposure == only_at_startup ) {
         exposure = _measured_exposure;
@@ -375,29 +374,29 @@ void Cam::init() {
         gain = _measured_gain;
     }
     if ( enable_auto_exposure == enabled) {
-        if (depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
-            depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,1.0);
+        if (rs_depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
+            rs_depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,1.0);
         }
     } else {
-        if (depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
-            depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,0.0);
+        if (rs_depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
+            rs_depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,0.0);
         }
-        if (depth_sensor.supports(RS2_OPTION_EXPOSURE)) {
-            // auto range = depth_sensor.get_option_range(RS2_OPTION_EXPOSURE);
-            depth_sensor.set_option(RS2_OPTION_EXPOSURE, exposure);
+        if (rs_depth_sensor.supports(RS2_OPTION_EXPOSURE)) {
+            // auto range = rs_depth_sensor.get_option_range(RS2_OPTION_EXPOSURE);
+            rs_depth_sensor.set_option(RS2_OPTION_EXPOSURE, exposure);
         }
-        if (depth_sensor.supports(RS2_OPTION_GAIN)) {
-            // auto range = depth_sensor.get_option_range(RS2_OPTION_GAIN);
-            depth_sensor.set_option(RS2_OPTION_GAIN, gain); // increasing this causes noise
+        if (rs_depth_sensor.supports(RS2_OPTION_GAIN)) {
+            // auto range = rs_depth_sensor.get_option_range(RS2_OPTION_GAIN);
+            rs_depth_sensor.set_option(RS2_OPTION_GAIN, gain); // increasing this causes noise
         }
     }
 
-    std::vector<rs2::stream_profile> stream_profiles = depth_sensor.get_stream_profiles();
+    std::vector<rs2::stream_profile> stream_profiles = rs_depth_sensor.get_stream_profiles();
     infared1 = stream_profiles[17]; // infared 1 864x480 60fps
     infared2 = stream_profiles[16]; // infared 2 864x480 60fps
 
-    depth_sensor.open({infared1,infared2});
-    depth_sensor.start([&](rs2::frame f) { rs_callback(f); });
+    rs_depth_sensor.open({infared1,infared2});
+    rs_depth_sensor.start([&](rs2::frame f) { rs_callback(f); });
 #ifdef TUNING
     namedWindow("Cam tuning", WINDOW_NORMAL);
     createTrackbar("Exposure", "Cam tuning", &exposure, 32768);
@@ -471,12 +470,12 @@ void Cam::check_light_level(){
 
     std::cout << "Checking if scene brightness has changed" << std::endl;
     //boot the camera and set it to the same settings as the previous session
+    rs2::config cfg;
     cfg.disable_all_streams();
     cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
     rs2::pipeline cam;
-    rs2::pipeline_profile selection = cam.start(cfg);
-    rs2::device selected_device = selection.get_device();
-    rs2::depth_sensor rs_dev = selected_device.first<rs2::depth_sensor>();
+    cam.start(cfg);
+    rs2::depth_sensor rs_dev = dev.first<rs2::depth_sensor>();
 
     float tmp_set_gain = rs_dev.get_option(RS2_OPTION_GAIN);
     rs_dev.set_option(RS2_OPTION_GAIN,_measured_gain);
@@ -588,12 +587,12 @@ void Cam::check_light_level(){
 }
 
 float Cam::measure_auto_exposure(){
+    rs2::config cfg;
     cfg.disable_all_streams();
     cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
     rs2::pipeline cam;
-    rs2::pipeline_profile selection = cam.start(cfg);
-    rs2::device selected_device = selection.get_device();
-    rs2::depth_sensor rs_dev = selected_device.first<rs2::depth_sensor>();
+    cam.start(cfg);
+    rs2::depth_sensor rs_dev = dev.first<rs2::depth_sensor>();
 
     rs_dev.set_option(RS2_OPTION_GAIN,0);
     rs_dev.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);
@@ -636,6 +635,7 @@ float Cam::measure_auto_exposure(){
 void Cam::calib_pose(){
 
     std::cout << "Measuring pose..." << std::endl;
+    rs2::config cfg;
     cfg.disable_all_streams();
     cfg.enable_stream(RS2_STREAM_DEPTH, IMG_W, IMG_H, RS2_FORMAT_Z16, VIDEOFPS);
     if (hasIMU) {
@@ -643,24 +643,23 @@ void Cam::calib_pose(){
         cfg.enable_stream(RS2_STREAM_GYRO);
     }
     rs2::pipeline cam;
-    rs2::pipeline_profile selection = cam.start(cfg);
-
-    rs2::device selected_device = selection.get_device();
-    auto rs_dev = selected_device.first<rs2::depth_sensor>();
-    if (rs_dev.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
-        rs_dev.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);
-    if (rs_dev.supports(RS2_OPTION_EMITTER_ENABLED))
-        rs_dev.set_option(RS2_OPTION_EMITTER_ENABLED, 1.f);
+    cam.start(cfg);
+    auto rs_depth_sensor = dev.first<rs2::depth_sensor>();
+    if (rs_depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+        rs_depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);
+    if (rs_depth_sensor.supports(RS2_OPTION_EMITTER_ENABLED))
+        rs_depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 1.f);
 
     // Find the High-Density preset by name
     // We do this to reduce the number of black pixels
     // The hardware can perform hole-filling much better and much more power efficient then our software
-    auto range = rs_dev.get_option_range(RS2_OPTION_VISUAL_PRESET);
-    for (auto i = range.min; i < range.max; i += range.step)
-        if (std::string(rs_dev.get_option_value_description(RS2_OPTION_VISUAL_PRESET, i)) == "High Density")
-            rs_dev.set_option(RS2_OPTION_VISUAL_PRESET, i);
+    auto range = rs_depth_sensor.get_option_range(RS2_OPTION_VISUAL_PRESET);
+    for (auto i = range.min; i < range.max; i += range.step) {
+        if (std::string(rs_depth_sensor.get_option_value_description(RS2_OPTION_VISUAL_PRESET, i)) == "High Density")
+            rs_depth_sensor.set_option(RS2_OPTION_VISUAL_PRESET, i);
+    }
 
-    depth_scale = rs_dev.get_option(RS2_OPTION_DEPTH_UNITS);
+    depth_scale = rs_depth_sensor.get_option(RS2_OPTION_DEPTH_UNITS);
 
     cv::Size im_size(IMG_W, IMG_H);
 
@@ -863,13 +862,12 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
 
     static_cast<rs2::playback>(dev).set_real_time(false);
 
-    std::vector<rs2::sensor> sensors = dev.query_sensors();
-    depth_sensor = sensors[0]; // 0 = depth module
-    depth_scale = depth_sensor.get_option(RS2_OPTION_DEPTH_UNITS);
+    auto rs_depth_sensor = dev.first<rs2::depth_sensor>();
+    depth_scale = rs_depth_sensor.get_option(RS2_OPTION_DEPTH_UNITS);
 
-    std::cout << depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_NAME) << std::endl;
+    std::cout << rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_NAME) << std::endl;
 
-    std::vector<rs2::stream_profile> stream_profiles = depth_sensor.get_stream_profiles();
+    std::vector<rs2::stream_profile> stream_profiles = rs_depth_sensor.get_stream_profiles();
 
     for (uint i = 0; i < stream_profiles.size();i++) {
         rs2::stream_profile sp = stream_profiles.at(i);
@@ -879,8 +877,8 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
         else if ( sp.stream_name().compare("Infrared 2") == 0)
             infared2 = sp;
     }
-    depth_sensor.open({infared1,infared2});
-    depth_sensor.start([&](rs2::frame f) { rs_callback_playback(f); });
+    rs_depth_sensor.open({infared1,infared2});
+    rs_depth_sensor.start([&](rs2::frame f) { rs_callback_playback(f); });
     pause();
 
     set_calibration(infared1,infared2);
@@ -915,8 +913,9 @@ void Cam::seek(float time) {
 void Cam::close() {
     if (initialized) {
         std::cout << "Closing camera" << std::endl;
-        depth_sensor.stop();
-        depth_sensor.close();
+        auto rs_depth_sensor = dev.first<rs2::depth_sensor>();
+        rs_depth_sensor.stop();
+        rs_depth_sensor.close();
         usleep(1000);
         std::cout << "Camera closed" << std::endl;
         initialized = false;

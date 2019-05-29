@@ -119,7 +119,6 @@ public:
 
 private:
 
-    rs2::config cfg; // for some reason if this is put on the stack we end up in a deadlock when its destructor is called.
     bool hasIMU = false;
     uint requested_id_in =0;
     int _frame_number;
@@ -178,8 +177,6 @@ private:
     void serialize_calib();
     void deserialize_calib(string file);
     void convert_depth_background_to_world();
-
-    rs2::sensor depth_sensor;
 
     bool new_frame1 = false;
     bool new_frame2 = false;
