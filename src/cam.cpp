@@ -291,38 +291,38 @@ void Cam::init() {
 
     rs2::stream_profile infared1,infared2;
     rs2::context ctx; // The context represents the current platform with respect to connected devices
-    rs2::device_list devices = ctx.query_devices();
-    if (devices.size() == 0) {
-        throw my_exit("no RealSense connected");
-    } else if (devices.size() > 1) {
-        throw my_exit("more than one RealSense connected....");
-    } else {
-        dev = devices[0];
+    if (!dev_initialized){
+        rs2::device_list devices = ctx.query_devices();
+        if (devices.size() == 0) {
+            throw my_exit("no RealSense connected");
+        } else if (devices.size() > 1) {
+            throw my_exit("more than one RealSense connected....");
+        } else
+            dev = devices[0];
+    }
 
-        //record
-        mkdir("./logging", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    //record
+    mkdir("./logging", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 #if VIDEORAWLR == VIDEOMODE_BAG
-        dev = rs2::recorder(bag_fn,dev);
+    dev = rs2::recorder(bag_fn,dev);
 #endif
 
-        std::cout << "Found the following device:";
+    std::cout << "Found the following device:";
 
-        // Each device provides some information on itself, such as name:
-        std::string name = "Unknown Device";
-        if (dev.supports(RS2_CAMERA_INFO_NAME))
-            name = dev.get_info(RS2_CAMERA_INFO_NAME);
+    // Each device provides some information on itself, such as name:
+    std::string name = "Unknown Device";
+    if (dev.supports(RS2_CAMERA_INFO_NAME))
+        name = dev.get_info(RS2_CAMERA_INFO_NAME);
 
-        // and the serial number of the device:
-        std::string sn = "########";
-        if (dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER))
-            sn = std::string("#") + dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+    // and the serial number of the device:
+    std::string sn = "########";
+    if (dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER))
+        sn = std::string("#") + dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
 
-        std::size_t found = name.find("D435I");
-        hasIMU = found!=std::string::npos;
+    std::size_t found = name.find("D435I");
+    hasIMU = found!=std::string::npos;
 
-        std::cout << name << " ser: " << sn << std::endl;
-
-    }
+    std::cout << name << " ser: " << sn << std::endl;
 
     // load xml, the values loaded may be (partially) overwritten by measurements below
     if (checkFileExist(calib_rfn))
@@ -587,6 +587,20 @@ void Cam::check_light_level(){
 }
 
 float Cam::measure_auto_exposure(){
+
+    if (!dev_initialized) {
+        rs2::context ctx;
+        rs2::device_list devices = ctx.query_devices();
+        if (devices.size() == 0) {
+            throw my_exit("no RealSense connected");
+        } else if (devices.size() > 1) {
+            throw my_exit("more than one RealSense connected....");
+        } else {
+            dev = devices[0];
+            dev_initialized = true;
+        }
+    }
+
     rs2::config cfg;
     cfg.disable_all_streams();
     cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
