@@ -471,7 +471,6 @@ void Cam::check_light_level(){
     std::cout << "Checking if scene brightness has changed" << std::endl;
     //boot the camera and set it to the same settings as the previous session
     rs2::config cfg;
-    cfg.disable_all_streams();
     cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
     rs2::pipeline cam;
     cam.start(cfg);
@@ -582,7 +581,6 @@ void Cam::check_light_level(){
 
     depth_scale = rs_dev.get_option(RS2_OPTION_DEPTH_UNITS);
 
-    cfg.disable_all_streams();
     cam.stop();
 }
 
@@ -602,7 +600,6 @@ float Cam::measure_auto_exposure(){
     }
 
     rs2::config cfg;
-    cfg.disable_all_streams();
     cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
     rs2::pipeline cam;
     cam.start(cfg);
@@ -636,7 +633,6 @@ float Cam::measure_auto_exposure(){
             tmp_exposure = new_expos;
         }
     }
-    cfg.disable_all_streams();
     cam.stop();
     if (!actual_exposure_was_measured)
         std::cout << "Warning: no exposure data could be found!!!" << std::endl;
@@ -650,7 +646,6 @@ void Cam::calib_pose(){
 
     std::cout << "Measuring pose..." << std::endl;
     rs2::config cfg;
-    cfg.disable_all_streams();
     cfg.enable_stream(RS2_STREAM_DEPTH, IMG_W, IMG_H, RS2_FORMAT_Z16, VIDEOFPS);
     if (hasIMU) {
         cfg.enable_stream(RS2_STREAM_ACCEL);
@@ -831,7 +826,6 @@ void Cam::calib_pose(){
             throw my_exit("camera angle change to big!");
         }
     }
-    cfg.disable_all_streams();
     cam.stop();
 }
 
