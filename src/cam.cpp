@@ -659,16 +659,18 @@ void Cam::calib_pose(){
     if (rs_depth_sensor.supports(RS2_OPTION_EMITTER_ENABLED))
         rs_depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 1.f);
 
+    depth_scale = rs_depth_sensor.get_option(RS2_OPTION_DEPTH_UNITS);
+
     // Find the High-Density preset by name
     // We do this to reduce the number of black pixels
     // The hardware can perform hole-filling much better and much more power efficient then our software
-    auto range = rs_depth_sensor.get_option_range(RS2_OPTION_VISUAL_PRESET);
-    for (auto i = range.min; i < range.max; i += range.step) {
-        if (std::string(rs_depth_sensor.get_option_value_description(RS2_OPTION_VISUAL_PRESET, i)) == "High Density")
-            rs_depth_sensor.set_option(RS2_OPTION_VISUAL_PRESET, i);
+    // Set the device to High Accuracy preset of the D400 stereoscopic cameras
+    if (rs_depth_sensor && rs_depth_sensor.is<rs2::depth_stereo_sensor>())
+    {
+        rs_depth_sensor.set_option(RS2_OPTION_VISUAL_PRESET, RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY);
+    } else {
+        throw my_exit("This is not a depth sensor");
     }
-
-    depth_scale = rs_depth_sensor.get_option(RS2_OPTION_DEPTH_UNITS);
 
     cv::Size im_size(IMG_W, IMG_H);
 
