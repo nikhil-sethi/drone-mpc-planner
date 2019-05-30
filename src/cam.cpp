@@ -472,7 +472,6 @@ void Cam::check_light_level(){
     //boot the camera and set it to the same settings as the previous session
     rs2::config cfg;
     cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
-    rs2::pipeline cam;
     cam.start(cfg);
     rs2::depth_sensor rs_dev = dev.first<rs2::depth_sensor>();
 
@@ -601,7 +600,6 @@ float Cam::measure_auto_exposure(){
 
     rs2::config cfg;
     cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
-    rs2::pipeline cam;
     cam.start(cfg);
     rs2::depth_sensor rs_dev = dev.first<rs2::depth_sensor>();
 
@@ -651,7 +649,6 @@ void Cam::calib_pose(){
         cfg.enable_stream(RS2_STREAM_ACCEL);
         cfg.enable_stream(RS2_STREAM_GYRO);
     }
-    rs2::pipeline cam;
     cam.start(cfg);
     auto rs_depth_sensor = dev.first<rs2::depth_sensor>();
     if (rs_depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))

@@ -141,6 +141,7 @@ private:
     std::condition_variable wait_for_image;
     std::mutex m;
     rs2::device dev;
+    rs2::pipeline cam;
     bool dev_initialized = false;
 
     bool _paused;
