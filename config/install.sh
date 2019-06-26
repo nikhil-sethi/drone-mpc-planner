@@ -20,6 +20,12 @@ mkdir -p /home/pats/code
 [ -f /home/pats/.screenrc ] || {
 	ln -s /home/pats/code/pats/config/.screenrc /home/pats/
 }
+
+[ -f /home/pats/.bashrc ] || {
+	ln -s /home/pats/code/pats/config/.bashrc /home/pats/
+}
+
+
 # Add to groups
 sudo usermod -a -G dialout pats
 
