@@ -91,7 +91,7 @@ cd ~/dependencies
 [ -f pats_code.done ] || {
 	cd ~/
 	[ -d code/pats ] || {
-		git clone git@github.com:kevindehecker/pats.git
+		git clone git@github.com:pats-drones/pats.git
 	}
 	pushd code/pats
 	mkdir -p pc/build
