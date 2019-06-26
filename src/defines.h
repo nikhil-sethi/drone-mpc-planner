@@ -39,7 +39,7 @@
 //    #define BEEP // leave of, causes realsense resets! Prolly needs moving to main UI thread...
     #define VIDEORAWLR VIDEOMODE_BAG
     #define JOYSTICK_TYPE RC_XLITE
-    #define TX_TYPE TX_FRSKYD
+    #define TX_TYPE TX_FRSKYX_TC
 #endif
 
 #define VIDEODISPARITY VIDEOMODE_DISABLED
@@ -54,7 +54,7 @@
 #define DRONE_IM_X_START 193
 #define DRONE_IM_Y_START 267/IMSCALEF
 #define DRONE_DISPARITY_START 19/IMSCALEF
-#define DRONE_IM_START_SIZE 20.f
+#define DRONE_IM_START_SIZE 12.f
 //#define MANUAL_DRONE_LOCATE
 
 #endif //DEFINES_H

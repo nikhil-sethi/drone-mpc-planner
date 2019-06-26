@@ -96,7 +96,7 @@ private:
 
     };
 
-    float depth_precision_gain = 0.2;
+    float depth_precision_gain = 0.4;
     float throttleErrI = 0;
     float rollErrI = 0;
     float pitchErrI = 0;
@@ -107,7 +107,7 @@ private:
     const float integratorThresholdDistance = 0.2f;
 
     bool initialized = false;
-public : const float throttle_bank_factor = 0.33; // Whoop 0.33
+public : const float throttle_bank_factor = 0.11f; // Whoop 0.33 Thrashcan 0.11
 
 
 #if TX_TYPE == TX_CX10
@@ -126,7 +126,7 @@ public : const float throttle_bank_factor = 0.33; // Whoop 0.33
 #endif
 #if TX_TYPE == TX_FRSKYX_TC
 #define INITIALTHROTTLE 200
-#define INITIAL_HOVER_THROTTLE 950
+#define INITIAL_HOVER_THROTTLE 670
 #define PITCH_MIDDLE JOY_MIDDLE
 #endif
 #ifndef INITIALTHROTTLE

@@ -50,7 +50,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
 
     // throttle control
     createTrackbar("Throttle Pos", "Control", &params.throttle_Pos, 3000);
-    createTrackbar("Throttle Vel", "Control", &params.throttle_Vel, 1000);
+    createTrackbar("Throttle Vel", "Control", &params.throttle_Vel, 3000);
     createTrackbar("Throttle Acc", "Control", &params.throttle_Acc, 100);
     createTrackbar("Throttle I", "Control", &params.throttleI, 100);
 
@@ -109,6 +109,10 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
 
     // Roll Control - X
     posErrX = data.sposX - setpoint_pos.x;              // position error
+    if (posErrX>3.0)
+        posErrX = 3.0;
+    if (posErrX<-3.0)
+        posErrX = -3.0;
     velx_sp = posErrX*params.roll_Pos/1000.f;           // desired velocity
     velErrX = data.svelX + velx_sp - setpoint_vel.x;    // velocity error
     accx_sp = velErrX*params.roll_Vel/100;              // desired acceleration
@@ -123,6 +127,10 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
 
     // Pitch Control - Z
     posErrZ = data.sposZ - setpoint_pos.z;              // position error
+    if (posErrZ>1.5)
+        posErrZ = 1.5;
+    if (posErrZ<-1.5)
+        posErrZ = -1.5;
     velz_sp = posErrZ*params.pitch_Pos/1000.f;          // desired velocity
     velErrZ = data.svelZ + velz_sp - setpoint_vel.z;    // velocity error
     accz_sp = velErrZ*params.pitch_Vel/100;             // desired acceleration
