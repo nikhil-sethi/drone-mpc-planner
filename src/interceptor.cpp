@@ -110,10 +110,10 @@ void Interceptor::update(bool drone_at_base) {
         //flight time is simply assumed to be linear with distance
         float tti = norm(insectPos-dronePos)*0.7;
 
-        tti = 0.0;
-
         if (drone_at_base)
             tti += estimated_take_off_time; // take off t
+
+        tti = 0.0;
 
         cv::Point2f insectPos2D,dronePos2D;
         insectPos2D.x = insectPos.x;

@@ -117,9 +117,9 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
     // Altitude Control - Y
     posErrY = data.sposY - setpoint_pos.y;              // position error
     vely_sp = posErrY*params.throttle_Pos/1000.f;       // (inversed) desired velocity
-    velErrY = data.svelY + vely_sp - setpoint_vel.y;    // velocity error
+    velErrY = data.svelY + vely_sp;// - setpoint_vel.y;    // velocity error
     accy_sp = velErrY*params.throttle_Vel/100;          // (inversed) desired acceleration
-    accErrY = data.saccY + accy_sp - setpoint_acc.y;    // acceleration error
+    accErrY = data.saccY + accy_sp;// - setpoint_acc.y;    // acceleration error
 
     // Pitch Control - Z
     posErrZ = data.sposZ - setpoint_pos.z;              // position error
