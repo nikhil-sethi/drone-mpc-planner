@@ -193,8 +193,10 @@ void ItemTracker::select_best_candidate(){
                 w.world_coordinates.z = -w.world_coordinates.y * sinf(theta) + w.world_coordinates.z * cosf(theta);
                 w.world_coordinates.y = temp_y;
 
-                if ( (w.world_coordinates.y < -1.3f || w.world_coordinates.z < -3.3f  ||  w.world_coordinates.x < -2.0f ||  w.world_coordinates.x > 2.3f) && _name == "insect")
-                    w.background_check_ok = false;
+//                if ( ((w.world_coordinates.y < -1.2f || w.world_coordinates.z < -3.5f  ||  w.world_coordinates.x < -0.5f ||  w.world_coordinates.x > 2.3f) && _name == "insect") ||
+//                     ((w.world_coordinates.y < -1.35f || w.world_coordinates.z < -3.5f  ||  w.world_coordinates.x < -0.5f ||  w.world_coordinates.x > 2.3f) && _name == "drone"))
+
+                //w.background_check_ok = true; // manual override (optional)
             }
             if (w.background_check_ok && w.disparity_in_range)
                 wti.push_back(w);

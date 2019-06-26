@@ -292,7 +292,7 @@ void handleKey() {
         break;
 
     case '1':
-        init_insect_log(6);
+        init_insect_log(49);
         break;
     case '2':
         init_insect_log(28);
