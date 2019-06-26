@@ -61,6 +61,8 @@ void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) 
         predicted_pathL.clear();
         foundL = false;
     }
+
+    append_log();
 }
 
 void InsectTracker::track(float time, std::vector<track_item> exclude,std::vector<cv::Point2f> additional_ignores) {
