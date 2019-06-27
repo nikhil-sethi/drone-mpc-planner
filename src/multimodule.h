@@ -54,7 +54,7 @@
 
 #if TX_TYPE == TX_FRSKYX || TX_TYPE == TX_FRSKYX_TC
 #define TX_PROTOCOL 15
-#define TX_SUB_PROTOCOL 0
+#define TX_SUB_PROTOCOL 1
 #endif
 
 
