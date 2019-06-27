@@ -75,7 +75,7 @@ void MultiModule::send_data(void) {
     if (_bind) {
         packet[1] |= MULTI_BINDBIT;
     }
-    packet[2]   = 6 | 0 | TX_SUB_PROTOCOL << 4; //RxNum | Power | Type
+    packet[2]   = 0 | 0 | TX_SUB_PROTOCOL << 4; //RxNum | Power | Type
     if (TX_TYPE==TX_DSMX)
         packet[3] = TX_OPTION; //option_protocol, number of channels for DSM
     else
