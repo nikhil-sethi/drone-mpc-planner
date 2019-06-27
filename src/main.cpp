@@ -288,6 +288,7 @@ void handleKey() {
         dnav.redetect_drone_location();
         break;
     case 'o':
+        dctrl.blink_drone(false);
         dnav.set_nav_flight_mode(DroneNavigation::nfm_manual);
         break;
 
