@@ -100,7 +100,7 @@ void Interceptor::update(bool drone_at_base) {
     if ( insectVelNorm > 0 || _itrkr->foundL ) {
 
         cv::Point3f dronePos = {_dtrkr->Last_track_data().posX,_dtrkr->Last_track_data().posY,_dtrkr->Last_track_data().posZ};
-        cv::Point3f droneVel = {_dtrkr->Last_track_data().svelX,_dtrkr->Last_track_data().svelY,_dtrkr->Last_track_data().svelZ};
+        //cv::Point3f droneVel = {_dtrkr->Last_track_data().svelX,_dtrkr->Last_track_data().svelY,_dtrkr->Last_track_data().svelZ};
 
         if (drone_at_base)
             dronePos = {_dtrkr->Drone_Startup_Location().x,_dtrkr->Drone_Startup_Location().y,_dtrkr->Drone_Startup_Location().z};
