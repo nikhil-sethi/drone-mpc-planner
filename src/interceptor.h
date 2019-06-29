@@ -22,8 +22,9 @@ private:
     cv::Point3f _estimated_interception_location;
     cv::Point3f _prev_estimated_interception_location;
     cv::Point3f _estimated_interception_speed;
-    cv::Point3f insectVel;
-    cv::Point3f insectAcc;
+    cv::Point3f _insect_pos;
+    cv::Point3f _insect_vel;
+    cv::Point3f _insect_acc;
 
     const float estimated_take_off_time = 1.f;
     uint _count_insect_not_in_range = 0;

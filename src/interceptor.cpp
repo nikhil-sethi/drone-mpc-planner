@@ -12,21 +12,30 @@ void Interceptor::init(DroneTracker * dtrkr, InsectTracker * itrkr, VisionData *
 }
 void Interceptor::update(bool drone_at_base) {
 
+    track_data itd = _itrkr->Last_track_data();
+
+    _insect_vel = {itd.svelX,itd.svelY,itd.svelZ};
+    _insect_acc = {itd.saccX,itd.saccY,itd.saccZ};
+    _insect_pos = {itd.posX,itd.posY,itd.posZ};
 
     update_insect_prediction(); // todo: move to itrkr
 
-
-    double insectVelNorm = norm(insectVel);
+    double insectVelNorm = norm(_insect_vel);
     _insect_in_range = false;
     _count_insect_not_in_range++;
 
     if ( insectVelNorm > 0 || _itrkr->foundL ) {
 
-        cv::Point3f dronePos = {_dtrkr->Last_track_data().posX,_dtrkr->Last_track_data().posY,_dtrkr->Last_track_data().posZ};
-        //cv::Point3f droneVel = {_dtrkr->Last_track_data().svelX,_dtrkr->Last_track_data().svelY,_dtrkr->Last_track_data().svelZ};
-
+        track_data dtd = _dtrkr->Last_track_data();
+        cv::Point3f drone_pos;
+        //cv::Point3f droneVel = {dtd.svelX,dtd.svelY,dtd.svelZ};
         if (drone_at_base)
-            dronePos = {_dtrkr->Drone_Startup_Location().x,_dtrkr->Drone_Startup_Location().y,_dtrkr->Drone_Startup_Location().z};
+            drone_pos = _dtrkr->Drone_Startup_Location();
+        else {
+            drone_pos = {dtd.posX,dtd.posY,dtd.posZ};
+        }
+
+
 
         //estimated time to interception
 
@@ -39,17 +48,16 @@ void Interceptor::update(bool drone_at_base) {
         tti = 0.0;
 
         cv::Point2f insectPos2D,dronePos2D;
-        insectPos2D.x = insectPos.x;
-        insectPos2D.y = insectPos.z;
-        dronePos2D.x = dronePos.x;
-        dronePos2D.y = dronePos.z;
+        insectPos2D.x = _insect_pos.x;
+        insectPos2D.y = _insect_pos.z;
+        dronePos2D.x = drone_pos.x;
+        dronePos2D.y = drone_pos.z;
 
-        _estimated_interception_location = insectPos + (insectVel*tti) + (0.5f*insectAcc*tti*tti);
+        _estimated_interception_location = _insect_pos + (_insect_vel*tti) + (0.5f*_insect_acc*tti*tti);
         _estimated_interception_location.y += 0.01f;
-        //_estimated_interception_location.x -= 1.f; // for analysis only
 
         float horizontal_separation = norm(dronePos2D-insectPos2D);
-        float vertical_separation = insectPos.y-dronePos.y;
+        float vertical_separation = _insect_pos.y-drone_pos.y;
         if (horizontal_separation<0.5f && vertical_separation>0.1f && vertical_separation<0.6f){
             final_approach = true;
         } else {
@@ -61,11 +69,11 @@ void Interceptor::update(bool drone_at_base) {
 //            final_approach = false;
 
         if (final_approach){
-            insectPos.y -= 0.1f;
-            cv::Point3f vector = insectPos-dronePos;
+            _insect_pos.y -= 0.1f;
+            cv::Point3f vector = _insect_pos-drone_pos;
             float norm_vector = norm(vector);
             //_estimated_interception_location = dronePos + vector/norm_vector*0.3f;
-            insectVel += vector/norm_vector*0.6f;
+            _insect_vel += vector/norm_vector*0.6f;
 
 //            float interception_vel = 0.6f;
 //            float norm_vector = norm(droneVel);
@@ -101,13 +109,10 @@ void Interceptor::update(bool drone_at_base) {
 }
 
 void Interceptor::update_insect_prediction() {
-    insectVel = {_itrkr->Last_track_data().svelX,_itrkr->Last_track_data().svelY,_itrkr->Last_track_data().svelZ};
-    insectAcc = {_itrkr->Last_track_data().saccX,_itrkr->Last_track_data().saccY,_itrkr->Last_track_data().saccZ};
-    cv::Point3f insectPos = {_itrkr->Last_track_data().posX,_itrkr->Last_track_data().posY,_itrkr->Last_track_data().posZ};
 
     // predict insect position for next frame
     float dt_pred = 1.f/VIDEOFPS;
-    cv::Point3f predicted_pos = insectPos + insectVel*dt_pred;
+    cv::Point3f predicted_pos = _insect_pos + _insect_vel*dt_pred;
 
     //transform back to image coordinates
     std::vector<cv::Point3d> world_coordinates,camera_coordinates;
@@ -203,10 +208,10 @@ cv::Point3f Interceptor::prev_intercept_position() {
 }
 
 cv::Point3f Interceptor::target_speed() {
-    return insectVel;
+    return _insect_vel;
 }
 
 cv::Point3f Interceptor::target_accelleration() {
-    return insectAcc;
+    return _insect_acc;
 }
 
