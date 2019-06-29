@@ -11,21 +11,18 @@ void Interceptor::init(DroneTracker * dtrkr, InsectTracker * itrkr, VisionData *
 void Interceptor::update(bool drone_at_base) {
 
     track_data itd = _itrkr->Last_track_data();
-
     cv::Point3f insect_pos = {itd.posX,itd.posY,itd.posZ};
     _insect_vel = {itd.svelX,itd.svelY,itd.svelZ};
     _insect_acc = {itd.saccX,itd.saccY,itd.saccZ};
 
-
-    double insectVelNorm = norm(_insect_vel);
     _insect_in_range = false;
     _count_insect_not_in_range++;
 
-    if ( insectVelNorm > 0 || _itrkr->foundL ) {
+    if ( norm(_insect_vel) > 0 || _itrkr->foundL ) {
 
         track_data dtd = _dtrkr->Last_track_data();
-        cv::Point3f drone_pos;
         cv::Point3f drone_vel = {dtd.svelX,dtd.svelY,dtd.svelZ};
+        cv::Point3f drone_pos;
         if (drone_at_base)
             drone_pos = _dtrkr->Drone_Startup_Location();
         else {
@@ -33,40 +30,31 @@ void Interceptor::update(bool drone_at_base) {
         }
 
         float tti = calc_tti(insect_pos,_insect_vel,drone_pos,drone_vel,drone_at_base);
-
         float half_tti = tti/2.f; // only predict the location of the insect for a partion of the actual time we need to get there
-
-        cv::Point2f insectPos2D,dronePos2D;
-        insectPos2D.x = insect_pos.x;
-        insectPos2D.y = insect_pos.z;
-        dronePos2D.x = drone_pos.x;
-        dronePos2D.y = drone_pos.z;
-
         _estimated_interception_location = insect_pos + (_insect_vel*half_tti);
-        _estimated_interception_location.y += 0.01f;
 
-        float horizontal_separation = norm(dronePos2D-insectPos2D);
+        float horizontal_separation = norm(cv::Point2f(drone_pos.x,drone_pos.z) - cv::Point2f(insect_pos.x,insect_pos.z));
         float vertical_separation = insect_pos.y-drone_pos.y;
         if (horizontal_separation<0.5f && vertical_separation>0.1f && vertical_separation<0.6f){
-            insect_pos.y -= 0.1f;
             cv::Point3f vector = insect_pos-drone_pos;
             float norm_vector = norm(vector);
             _insect_vel += vector/norm_vector*0.6f;
+        } else {
+            _estimated_interception_location.y -= 0.1f; // initially target to go 10cm below the insect. When close enough the drone can change direction aggressively and attack from below.
         }
-
-
 
         //calculate if the drone will stay within the camera borders where it still can be controlled:
-        if (_estimated_interception_location.x > _estimated_interception_location.z+0.3f && _estimated_interception_location.x < -_estimated_interception_location.z-0.3f && abs(_estimated_interception_location.x) < 2.0f) {
-            if (_estimated_interception_location.y > _estimated_interception_location.z*1.5f && _estimated_interception_location.y < -0.3f) {
-                if (_estimated_interception_location.z > -3.0f && _estimated_interception_location.z < -1.0f) {
-                    _insect_in_range = true;
-                    _count_insect_not_in_range = 0;
-                    _prev_estimated_interception_location = _estimated_interception_location;
-                }
-            }
+        if (_estimated_interception_location.x > _estimated_interception_location.z+0.3f &&
+                _estimated_interception_location.x < -_estimated_interception_location.z-0.3f &&
+                abs(_estimated_interception_location.x) < 2.0f &&
+                _estimated_interception_location.y > _estimated_interception_location.z*1.5f &&
+                _estimated_interception_location.y < -0.3f &&
+                _estimated_interception_location.z > -3.0f &&
+                _estimated_interception_location.z < -1.0f) {
+            _insect_in_range = true;
+            _count_insect_not_in_range = 0;
+            _prev_estimated_interception_location = _estimated_interception_location;
         }
-
     }
 
 }
@@ -105,7 +93,7 @@ float Interceptor::calc_tti(cv::Point3f insect_pos,cv::Point3f insect_vel,cv::Po
     //time to intercept is time of part 1 and 2 summed
     float tti =t_match_v + t_ic;
 
-    //plus the time needed to takeoff
+    //plus the time needed to takeoff, if not already flying
     if (drone_taking_off){
         float t_remaining_takeoff = t_estimated_take_off - _dtrkr->time_since_take_off();
                 if (t_remaining_takeoff<0)
