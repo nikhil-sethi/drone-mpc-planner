@@ -27,7 +27,7 @@ void DroneTracker::init_settings() {
 
 void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_is_active) {
     std::vector<cv::Point2f> additional_ignores;
-
+    current_time = time;
 #ifdef VIZ
     cv::cvtColor(_visdat->diffL*10,diff_viz,CV_GRAY2BGR);
 #endif
@@ -38,6 +38,7 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
         break;
     } case dts_blinking:
         roi_size_cnt = 0; // don't grow roi in this stage
+        start_take_off_time = time;
         switch (_blinking_drone_status) {
         case bds_start: {
             _enable_roi = false;
@@ -165,6 +166,7 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
         break;
     case dts_inactive: {
         roi_size_cnt = 0; // don't grow roi in this stage
+        start_take_off_time = time;
         predicted_pathL.clear();
         foundL = false;
         find_result.best_image_locationL.pt = _drone_blink_image_location;

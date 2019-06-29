@@ -50,7 +50,9 @@ private:
     };
     blinking_drone_states _blinking_drone_status = bds_start;
     float blink_time_start = 0;
+    float start_take_off_time = 0;
     float manual_calib_time_start = 0;
+    float current_time = 0;
 
     enum drone_tracking_states {
         dts_init = 0,
@@ -180,6 +182,10 @@ public:
     }
     cv::Point3f Drone_Startup_Location() {
         return _drone_blink_world_location_start;
+    }
+
+    float time_since_take_off(){
+       return start_take_off_time - current_time;
     }
 
     const float bind_blink_time = 0.45f;
