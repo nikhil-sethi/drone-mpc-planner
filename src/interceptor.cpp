@@ -6,19 +6,16 @@ void Interceptor::init(DroneTracker * dtrkr, InsectTracker * itrkr, VisionData *
     _itrkr = itrkr;
     _visdat = visdat;
 
-    cv::invert(visdat->Qf,Qfi);
-
     _prev_estimated_interception_location = {0.f,0.f,0.f};
 }
 void Interceptor::update(bool drone_at_base) {
 
     track_data itd = _itrkr->Last_track_data();
 
+    cv::Point3f insect_pos = {itd.posX,itd.posY,itd.posZ};
     _insect_vel = {itd.svelX,itd.svelY,itd.svelZ};
     _insect_acc = {itd.saccX,itd.saccY,itd.saccZ};
-    _insect_pos = {itd.posX,itd.posY,itd.posZ};
 
-    update_insect_prediction(); // todo: move to itrkr
 
     double insectVelNorm = norm(_insect_vel);
     _insect_in_range = false;
@@ -28,70 +25,36 @@ void Interceptor::update(bool drone_at_base) {
 
         track_data dtd = _dtrkr->Last_track_data();
         cv::Point3f drone_pos;
-        //cv::Point3f droneVel = {dtd.svelX,dtd.svelY,dtd.svelZ};
+        cv::Point3f drone_vel = {dtd.svelX,dtd.svelY,dtd.svelZ};
         if (drone_at_base)
             drone_pos = _dtrkr->Drone_Startup_Location();
         else {
             drone_pos = {dtd.posX,dtd.posY,dtd.posZ};
         }
 
+        float tti = calc_tti(insect_pos,_insect_vel,drone_pos,drone_vel,drone_at_base);
 
-
-        //estimated time to interception
-
-        //flight time is simply assumed to be linear with distance
-        float tti = norm(insectPos-dronePos)*0.7;
-
-        if (drone_at_base)
-            tti += estimated_take_off_time; // take off t
-
-        tti = 0.0;
+        float half_tti = tti/2.f; // only predict the location of the insect for a partion of the actual time we need to get there
 
         cv::Point2f insectPos2D,dronePos2D;
-        insectPos2D.x = _insect_pos.x;
-        insectPos2D.y = _insect_pos.z;
+        insectPos2D.x = insect_pos.x;
+        insectPos2D.y = insect_pos.z;
         dronePos2D.x = drone_pos.x;
         dronePos2D.y = drone_pos.z;
 
-        _estimated_interception_location = _insect_pos + (_insect_vel*tti) + (0.5f*_insect_acc*tti*tti);
+        _estimated_interception_location = insect_pos + (_insect_vel*half_tti);
         _estimated_interception_location.y += 0.01f;
 
         float horizontal_separation = norm(dronePos2D-insectPos2D);
-        float vertical_separation = _insect_pos.y-drone_pos.y;
+        float vertical_separation = insect_pos.y-drone_pos.y;
         if (horizontal_separation<0.5f && vertical_separation>0.1f && vertical_separation<0.6f){
-            final_approach = true;
-        } else {
-//            _estimated_interception_location = insectPos + (insectVel*tti);
-//            _estimated_interception_location.y -= 0.01f;
-        }
-
-//        if (insectPos.y<dronePos.y )
-//            final_approach = false;
-
-        if (final_approach){
-            _insect_pos.y -= 0.1f;
-            cv::Point3f vector = _insect_pos-drone_pos;
+            insect_pos.y -= 0.1f;
+            cv::Point3f vector = insect_pos-drone_pos;
             float norm_vector = norm(vector);
-            //_estimated_interception_location = dronePos + vector/norm_vector*0.3f;
             _insect_vel += vector/norm_vector*0.6f;
-
-//            float interception_vel = 0.6f;
-//            float norm_vector = norm(droneVel);
-//            insectVel += droneVel/norm_vector*interception_vel;
-
         }
-        //_estimated_interception_location.y += 0.1f;
 
-        // safe zone above flowers
-        if (_estimated_interception_location.y < -1.3f)
-            _estimated_interception_location.y = -1.3f;
 
-        if (_estimated_interception_location.y > -0.1f)
-            _estimated_interception_location.y = -0.1f;
-
-        //TODO: _estimated_interception_speed = ...
-
-        //calculate worst case deviation:
 
         //calculate if the drone will stay within the camera borders where it still can be controlled:
         if (_estimated_interception_location.x > _estimated_interception_location.z+0.3f && _estimated_interception_location.x < -_estimated_interception_location.z-0.3f && abs(_estimated_interception_location.x) < 2.0f) {
@@ -108,44 +71,50 @@ void Interceptor::update(bool drone_at_base) {
 
 }
 
-void Interceptor::update_insect_prediction() {
+float Interceptor::calc_tti(cv::Point3f insect_pos,cv::Point3f insect_vel,cv::Point3f drone_pos, cv::Point3f drone_vel, bool drone_taking_off){
+    //basic physics:
+    //x = 0.5at² t = sqrt((2x)/a)
+    //x = vt t = x/v
+    //v = at t = v/a
 
-    // predict insect position for next frame
-    float dt_pred = 1.f/VIDEOFPS;
-    cv::Point3f predicted_pos = _insect_pos + _insect_vel*dt_pred;
+    //TODO: put in some actually measured values:
+    const float drone_vel_max = 10; // [m/s]
+    const float drone_acc_max = 20; // [m/s^2]
+    const float t_estimated_take_off = 0.2f; //[s]
 
-    //transform back to image coordinates
-    std::vector<cv::Point3d> world_coordinates,camera_coordinates;
-    cv::Point3f tmp(predicted_pos.x,predicted_pos.y,predicted_pos.z);
+    float ic_dx = norm(insect_pos-drone_pos);
+    float ic_dv = norm(insect_vel-drone_vel);
+    float vi = norm(insect_vel);
+    float vd = norm(drone_vel);
 
-    //derotate camera and convert to double:
-    cv::Point3d tmpd;
-    float theta = -_visdat->camera_angle * deg2rad;
-    float temp_y = tmp.y * cosf(theta) + tmp.z * sinf(theta);
-    tmpd.z = -tmp.y * sinf(theta) + tmp.z * cosf(theta);
-    tmpd.y = temp_y;
-    tmpd.x = tmp.x;
+    /*Part 1, match_v*/
+    //First the drone needs some time to match speeds. During this time its average speed v_d_avg = 0.5*(vd-vi) + vd
+    //Time needed to match speed:
+    float t_match_v = ic_dv / drone_acc_max;
+    //Average speed and distance traveled during this time
+    float v_d_avg = 0.5f * ic_dv + vd;
+    float x_match_v = t_match_v * v_d_avg;
 
-    world_coordinates.push_back(tmpd);
-    cv::perspectiveTransform(world_coordinates,camera_coordinates,Qfi);
+    /*Part 2, intercept the remaining distance with max v*/
+    float ic_dx_2 = ic_dx - x_match_v;
+    float t_ic = 0;
+    if (ic_dx_2>0) {
+        t_ic = ic_dx_2 / (drone_vel_max-vi);
+    }
 
-    //update tracker with prediciton
-    cv::Point2f image_location;
-    image_location.x= camera_coordinates.at(0).x/IMSCALEF;
-    image_location.y= camera_coordinates.at(0).y/IMSCALEF;
+    //time to intercept is time of part 1 and 2 summed
+    float tti =t_match_v + t_ic;
 
-    if (image_location.x < 0)
-        image_location.x = 0;
-    else if (image_location.x >= IMG_W/IMSCALEF)
-        image_location.x = IMG_W/IMSCALEF-1;
-    if (image_location.y < 0)
-        image_location.y = 0;
-    else if (image_location.y >= IMG_H/IMSCALEF)
-        image_location.y = IMG_H/IMSCALEF-1;
+    //plus the time needed to takeoff
+    if (drone_taking_off){
+        float t_remaining_takeoff = t_estimated_take_off - _dtrkr->time_since_take_off();
+                if (t_remaining_takeoff<0)
+                t_remaining_takeoff = 0;
 
-    _itrkr->predicted_locationL_last.x = image_location.x;
-    _itrkr->predicted_locationL_last.y = image_location.y;
+        tti += t_remaining_takeoff;
+    }
 
+    return tti;
 }
 
 void Interceptor::intercept_spiral() {

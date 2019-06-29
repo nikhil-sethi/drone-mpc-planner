@@ -12,9 +12,11 @@ class InsectTracker : public ItemTracker {
 
 private:
     uint drone_still_active;
+    cv::Mat Qfi;
 protected:
     void init_settings();
     cv::Mat get_approx_cutout_filtered(cv::Point p, cv::Mat diffL_small, cv::Point size);
+    void update_insect_prediction();
 
 public:
     void init(std::ofstream *logger, VisionData *_visdat);

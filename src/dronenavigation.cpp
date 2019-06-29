@@ -77,7 +77,7 @@ void DroneNavigation::update(float time) {
         }
 
     }
-    _iceptor.update(_navigation_status == ns_wait_for_insect);
+    _iceptor.update(_navigation_status != ns_chasing_insect);
 
     switch (_navigation_status) {
     case ns_init: {

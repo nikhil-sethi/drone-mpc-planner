@@ -22,19 +22,14 @@ private:
     cv::Point3f _estimated_interception_location;
     cv::Point3f _prev_estimated_interception_location;
     cv::Point3f _estimated_interception_speed;
-    cv::Point3f _insect_pos;
+
     cv::Point3f _insect_vel;
     cv::Point3f _insect_acc;
 
-    const float estimated_take_off_time = 1.f;
     uint _count_insect_not_in_range = 0;
 
-    bool final_approach = false;
-
-    cv::Mat Qfi;
-
-    void update_insect_prediction();
     void intercept_spiral();
+    float calc_tti(cv::Point3f insect_pos, cv::Point3f insect_vel, cv::Point3f drone_pos, cv::Point3f drone_vel, bool drone_taking_off);
 
 public:
 
