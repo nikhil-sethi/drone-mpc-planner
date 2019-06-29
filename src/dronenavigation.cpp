@@ -141,7 +141,7 @@ void DroneNavigation::update(float time) {
         else if (_nav_flight_mode == nfm_hunt) {
             if (!_dctrl->hoverthrottleInitialized) {
                 _navigation_status = ns_init_calibrate_hover;
-            } else if (_iceptor.get_insect_in_range()) {
+            } else if (_iceptor.insect_in_range()) {
                 _navigation_status = ns_takeoff;
             }
         } else //waypoint modes
@@ -196,14 +196,14 @@ void DroneNavigation::update(float time) {
     } FALLTHROUGH_INTENDED; case ns_chasing_insect: {
 
         //update target chasing waypoint and speed
-        if (_iceptor.get_insect_in_range()) {
-            setpoint_pos_world = _iceptor.get_intercept_position();
-            setpoint_vel_world = _iceptor.get_target_speed();
-            setpoint_acc_world = _iceptor.get_target_accelleration();
+        if (_iceptor.insect_in_range()) {
+            setpoint_pos_world = _iceptor.intercept_position();
+            setpoint_vel_world = _iceptor.target_speed();
+            setpoint_acc_world = _iceptor.target_accelleration();
         }
 
-        if (setpoint_pos_world.z == 0 || !_iceptor.get_insect_in_range()) {
-            setpoint_pos_world = _iceptor.get_prev_intercept_position();
+        if (setpoint_pos_world.z == 0 || !_iceptor.insect_in_range()) {
+            setpoint_pos_world = _iceptor.prev_intercept_position();
             setpoint_vel_world = {0,0,0};
             setpoint_acc_world = {0,0,0};
 
@@ -211,7 +211,7 @@ void DroneNavigation::update(float time) {
 
         if (_nav_flight_mode == nfm_manual)
             _navigation_status=ns_manual;
-        else if (_iceptor.get_insect_cleared())
+        else if (_iceptor.insect_cleared())
             _navigation_status = ns_goto_landing_waypoint;
 
         // TODO: return to landing waypoint after the insect was lost for several frames

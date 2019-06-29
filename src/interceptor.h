@@ -32,17 +32,20 @@ private:
 
     cv::Mat Qfi;
 
+    void update_insect_prediction();
+    void intercept_spiral();
+
 public:
 
     void init(DroneTracker * dtrkr, InsectTracker * itrkr, VisionData * visdat);
     void update(bool drone_at_base);
-    bool get_insect_in_range();
-    bool get_insect_cleared();
+    bool insect_in_range();
+    bool insect_cleared();
     void reset_insect_cleared();
-    cv::Point3f get_intercept_position();
-    cv::Point3f get_prev_intercept_position();
-    cv::Point3f get_target_speed();
-    cv::Point3f get_target_accelleration();
+    cv::Point3f intercept_position();
+    cv::Point3f prev_intercept_position();
+    cv::Point3f target_speed();
+    cv::Point3f target_accelleration();
 
 
 };

@@ -12,85 +12,8 @@ void Interceptor::init(DroneTracker * dtrkr, InsectTracker * itrkr, VisionData *
 }
 void Interceptor::update(bool drone_at_base) {
 
-    insectVel = {_itrkr->Last_track_data().svelX,_itrkr->Last_track_data().svelY,_itrkr->Last_track_data().svelZ};
-    insectAcc = {_itrkr->Last_track_data().saccX,_itrkr->Last_track_data().saccY,_itrkr->Last_track_data().saccZ};
-    cv::Point3f insectPos = {_itrkr->Last_track_data().posX,_itrkr->Last_track_data().posY,_itrkr->Last_track_data().posZ};
 
-    // predict insect position for next frame
-    float dt_pred = 1.f/VIDEOFPS;
-    cv::Point3f predicted_pos = insectPos + insectVel*dt_pred;
-
-    //transform back to image coordinates
-    std::vector<cv::Point3d> world_coordinates,camera_coordinates;
-    cv::Point3f tmp(predicted_pos.x,predicted_pos.y,predicted_pos.z);
-
-    //derotate camera and convert to double:
-    cv::Point3d tmpd;
-    float theta = -_visdat->camera_angle * deg2rad;
-    float temp_y = tmp.y * cosf(theta) + tmp.z * sinf(theta);
-    tmpd.z = -tmp.y * sinf(theta) + tmp.z * cosf(theta);
-    tmpd.y = temp_y;
-    tmpd.x = tmp.x;
-
-    world_coordinates.push_back(tmpd);
-    cv::perspectiveTransform(world_coordinates,camera_coordinates,Qfi);
-
-    //update tracker with prediciton
-    cv::Point2f image_location;
-    image_location.x= camera_coordinates.at(0).x/IMSCALEF;
-    image_location.y= camera_coordinates.at(0).y/IMSCALEF;
-
-    if (image_location.x < 0)
-        image_location.x = 0;
-    else if (image_location.x >= IMG_W/IMSCALEF)
-        image_location.x = IMG_W/IMSCALEF-1;
-    if (image_location.y < 0)
-        image_location.y = 0;
-    else if (image_location.y >= IMG_H/IMSCALEF)
-        image_location.y = IMG_H/IMSCALEF-1;
-
-    _itrkr->predicted_locationL_last.x = image_location.x;
-    _itrkr->predicted_locationL_last.y = image_location.y;
-
-
-
-    //1. asume moth will spiral down.
-    //2. assume the radius of the spiral is inversely proportional to vertical speed
-    //3. assume that the insect will go straight down when achieving some vertical speed v_t
-
-    //below v_t, the current center of the spiral can be calculated as follows:
-    //[x_center,y_center] = normalize([vx_insect,vy_insect]) * r - [ x_insect,y_insect]
-
-//    cv::Point2f ccircle;
-//    float r = 1.f / _itrkr->get_last_track_data().svelZ;
-//    cv::Point2f v2d_insect(_itrkr->get_last_track_data().svelX,_itrkr->get_last_track_data().svelY);
-//    cv::Point2f direction_insect = v2d_insect/ cv::norm(v2d_insect);
-//    ccircle.x = direction_insect.x*r - _itrkr->get_last_track_data().posX;
-//    ccircle.y = direction_insect.y*r - _itrkr->get_last_track_data().posY;
-
-
-//    if (_itrkr->n_frames_tracking>2) {
-//        std::vector<cv::Point2f> pts;
-//        cv::Point2f p0(_itrkr->track_history.at(0).posX,_itrkr->track_history.at(0).posZ);
-//        cv::Point2f p1(_itrkr->track_history.at(1).posX,_itrkr->track_history.at(1).posZ);
-//        cv::Point2f p2(_itrkr->track_history.at(2).posX,_itrkr->track_history.at(2).posZ);
-
-//        cv::Point2f a = p0-p2;
-//        float d = fabs(a.x*p1.x + a.y+p1.y) / (powf(a.x,2) + powf(a.y,2));
-
-
-//        for (uint i = _itrkr->track_history.size()-5; i<_itrkr->track_history.size(); i++){
-//            if (_itrkr->track_history.at(i).valid) {
-//                float x = _itrkr->track_history.at(i).posX;
-//                float z = _itrkr->track_history.at(i).posZ;
-
-//                pts.push_back(cv::Point2f(x,z));
-//            }
-//        }
-
-//        cv::RotatedRect rr = cv::fitEllipse(pts);
-//    }
-
+    update_insect_prediction(); // todo: move to itrkr
 
 
     double insectVelNorm = norm(insectVel);
@@ -177,11 +100,93 @@ void Interceptor::update(bool drone_at_base) {
 
 }
 
-bool Interceptor::get_insect_in_range() {
+void Interceptor::update_insect_prediction() {
+    insectVel = {_itrkr->Last_track_data().svelX,_itrkr->Last_track_data().svelY,_itrkr->Last_track_data().svelZ};
+    insectAcc = {_itrkr->Last_track_data().saccX,_itrkr->Last_track_data().saccY,_itrkr->Last_track_data().saccZ};
+    cv::Point3f insectPos = {_itrkr->Last_track_data().posX,_itrkr->Last_track_data().posY,_itrkr->Last_track_data().posZ};
+
+    // predict insect position for next frame
+    float dt_pred = 1.f/VIDEOFPS;
+    cv::Point3f predicted_pos = insectPos + insectVel*dt_pred;
+
+    //transform back to image coordinates
+    std::vector<cv::Point3d> world_coordinates,camera_coordinates;
+    cv::Point3f tmp(predicted_pos.x,predicted_pos.y,predicted_pos.z);
+
+    //derotate camera and convert to double:
+    cv::Point3d tmpd;
+    float theta = -_visdat->camera_angle * deg2rad;
+    float temp_y = tmp.y * cosf(theta) + tmp.z * sinf(theta);
+    tmpd.z = -tmp.y * sinf(theta) + tmp.z * cosf(theta);
+    tmpd.y = temp_y;
+    tmpd.x = tmp.x;
+
+    world_coordinates.push_back(tmpd);
+    cv::perspectiveTransform(world_coordinates,camera_coordinates,Qfi);
+
+    //update tracker with prediciton
+    cv::Point2f image_location;
+    image_location.x= camera_coordinates.at(0).x/IMSCALEF;
+    image_location.y= camera_coordinates.at(0).y/IMSCALEF;
+
+    if (image_location.x < 0)
+        image_location.x = 0;
+    else if (image_location.x >= IMG_W/IMSCALEF)
+        image_location.x = IMG_W/IMSCALEF-1;
+    if (image_location.y < 0)
+        image_location.y = 0;
+    else if (image_location.y >= IMG_H/IMSCALEF)
+        image_location.y = IMG_H/IMSCALEF-1;
+
+    _itrkr->predicted_locationL_last.x = image_location.x;
+    _itrkr->predicted_locationL_last.y = image_location.y;
+
+}
+
+void Interceptor::intercept_spiral() {
+    //1. asume moth will spiral down.
+    //2. assume the radius of the spiral is inversely proportional to vertical speed
+    //3. assume that the insect will go straight down when achieving some vertical speed v_t
+
+    //below v_t, the current center of the spiral can be calculated as follows:
+    //[x_center,y_center] = normalize([vx_insect,vy_insect]) * r - [ x_insect,y_insect]
+
+//    cv::Point2f ccircle;
+//    float r = 1.f / _itrkr->get_last_track_data().svelZ;
+//    cv::Point2f v2d_insect(_itrkr->get_last_track_data().svelX,_itrkr->get_last_track_data().svelY);
+//    cv::Point2f direction_insect = v2d_insect/ cv::norm(v2d_insect);
+//    ccircle.x = direction_insect.x*r - _itrkr->get_last_track_data().posX;
+//    ccircle.y = direction_insect.y*r - _itrkr->get_last_track_data().posY;
+
+
+//    if (_itrkr->n_frames_tracking>2) {
+//        std::vector<cv::Point2f> pts;
+//        cv::Point2f p0(_itrkr->track_history.at(0).posX,_itrkr->track_history.at(0).posZ);
+//        cv::Point2f p1(_itrkr->track_history.at(1).posX,_itrkr->track_history.at(1).posZ);
+//        cv::Point2f p2(_itrkr->track_history.at(2).posX,_itrkr->track_history.at(2).posZ);
+
+//        cv::Point2f a = p0-p2;
+//        float d = fabs(a.x*p1.x + a.y+p1.y) / (powf(a.x,2) + powf(a.y,2));
+
+
+//        for (uint i = _itrkr->track_history.size()-5; i<_itrkr->track_history.size(); i++){
+//            if (_itrkr->track_history.at(i).valid) {
+//                float x = _itrkr->track_history.at(i).posX;
+//                float z = _itrkr->track_history.at(i).posZ;
+
+//                pts.push_back(cv::Point2f(x,z));
+//            }
+//        }
+
+//        cv::RotatedRect rr = cv::fitEllipse(pts);
+//    }
+}
+
+bool Interceptor::insect_in_range() {
     return _insect_in_range;
 }
 
-bool Interceptor::get_insect_cleared() {
+bool Interceptor::insect_cleared() {
     return _count_insect_not_in_range > 60*3;
 }
 
@@ -189,19 +194,19 @@ void Interceptor::reset_insect_cleared() {
     _count_insect_not_in_range = 0;
 }
 
-cv::Point3f Interceptor::get_intercept_position() {
+cv::Point3f Interceptor::intercept_position() {
     return _estimated_interception_location;
 }
 
-cv::Point3f Interceptor::get_prev_intercept_position() {
+cv::Point3f Interceptor::prev_intercept_position() {
     return _prev_estimated_interception_location;
 }
 
-cv::Point3f Interceptor::get_target_speed() {
+cv::Point3f Interceptor::target_speed() {
     return insectVel;
 }
 
-cv::Point3f Interceptor::get_target_accelleration() {
+cv::Point3f Interceptor::target_accelleration() {
     return insectAcc;
 }
 
