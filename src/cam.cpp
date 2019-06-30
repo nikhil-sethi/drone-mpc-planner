@@ -938,7 +938,19 @@ void Cam::reset() {
     if (devices.size() == 0) {
         throw my_exit("no RealSense connected");
     } else if (devices.size() > 1) {
-        throw my_exit("more than one RealSense connected....");
+        std::cout << "Warning detected more then one device. Resetting everything" << std::endl;
+        rs2::device devt;
+        for (uint i = 0; i < devices.size();i++) {
+            devt= devices[i];
+            std::cout << i << std::endl;
+            devt.hardware_reset();
+            usleep(100000);
+        }
+
+        usleep(1000000);
+
+        exit (0);
+
     } else {
         dev = devices[0];
 
