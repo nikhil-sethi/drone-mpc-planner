@@ -16,7 +16,8 @@ while [ 1 ]; do
         echo "$dt"
 		COUNTER=1
 		while [  $COUNTER -lt 1000 ]; do
-			OUTDIR=/home/pats/data/$COUNTER
+			printf -v PADDEDCOUNTER "%05d" $COUNTER
+			OUTDIR=/home/pats/data/$PADDEDCOUNTER
 			if [ ! -d "$OUTDIR" ]; then
 				echo "Making new data dir: $OUTDIR" 
 				COUNTER=10001             
