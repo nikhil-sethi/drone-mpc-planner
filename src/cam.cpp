@@ -643,20 +643,13 @@ float Cam::measure_auto_exposure(){
 void Cam::calib_pose(){
 
     std::cout << "Measuring pose..." << std::endl;
-    rs2::config cfg;
-    cfg.enable_stream(RS2_STREAM_DEPTH, IMG_W, IMG_H, RS2_FORMAT_Z16, VIDEOFPS);
-    if (hasIMU) {
-        cfg.enable_stream(RS2_STREAM_ACCEL);
-        cfg.enable_stream(RS2_STREAM_GYRO);
-    }
-    cam.start(cfg);
     auto rs_depth_sensor = dev.first<rs2::depth_sensor>();
+    depth_scale = rs_depth_sensor.get_option(RS2_OPTION_DEPTH_UNITS);
+
     if (rs_depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
         rs_depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);
     if (rs_depth_sensor.supports(RS2_OPTION_EMITTER_ENABLED))
         rs_depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 1.f);
-
-    depth_scale = rs_depth_sensor.get_option(RS2_OPTION_DEPTH_UNITS);
 
     // Find the High-Density preset by name
     // We do this to reduce the number of black pixels
@@ -669,6 +662,13 @@ void Cam::calib_pose(){
         throw my_exit("This is not a depth sensor");
     }
 
+    rs2::config cfg;
+    cfg.enable_stream(RS2_STREAM_DEPTH, IMG_W, IMG_H, RS2_FORMAT_Z16, VIDEOFPS);
+    if (hasIMU) {
+        cfg.enable_stream(RS2_STREAM_ACCEL);
+        cfg.enable_stream(RS2_STREAM_GYRO);
+    }
+    cam.start(cfg);
     cv::Size im_size(IMG_W, IMG_H);
 
     uint nframes = 1;
