@@ -7,6 +7,8 @@
 #include <gst/app/gstappsrc.h>
 #include <glib.h>
 
+#include <condition_variable>
+
 /*
  * This class wraps video writer / streamer through gstreamer
  *
@@ -18,9 +20,10 @@ private:
     GstElement *_pipeline,*_appsrc;
 
 
+
     int _cols,_rows;
     int prepare_buffer(GstAppSrc* appsrc, cv::Mat * image);
-   	//void cb_need_data (GstElement *appsrc, guint unused_size, gpointer user_data);
+    //void cb_need_data (GstElement *appsrc, guint unused_size, gpointer user_data);
     int stream_resize_f = 1;
     int gstream_fps;
     int max_gstream_fps = 30;

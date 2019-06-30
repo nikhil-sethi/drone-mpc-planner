@@ -13,6 +13,7 @@
 stopwatch_c stopwatch;
 int want = 1;
 int want_cnt = 0;
+std::mutex lock_var;
 
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc.hpp>
@@ -21,7 +22,9 @@ int videomode;
 int colormode;
 
 static void cb_need_data (GstElement *appsrc __attribute__((unused)), guint unused_size __attribute__((unused)), gpointer user_data __attribute__((unused))) {
+    lock_var.lock();
     want = 1;
+    lock_var.unlock();
     want_cnt++;
 }
 
@@ -190,7 +193,11 @@ int GStream::prepare_buffer(GstAppSrc* appsrc, cv::Mat *image) {
     GstBuffer *buffer;
     GstFlowReturn ret;
 
-    if (!want) return 1;
+    lock_var.lock();
+    if (!want) {
+        lock_var.unlock();
+        return 1;
+    }
 
     int cmult = 1;
     if (colormode) {
@@ -211,6 +218,7 @@ int GStream::prepare_buffer(GstAppSrc* appsrc, cv::Mat *image) {
 
     ret = gst_app_src_push_buffer(GST_APP_SRC(appsrc), buffer);
     want = 0;
+    lock_var.unlock();
     if (ret != GST_FLOW_OK) {
         std::cout << "GST ERROR DE PERROR" << std::endl;
         return 2;
