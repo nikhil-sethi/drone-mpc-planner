@@ -169,16 +169,27 @@ void process_video() {
         tp[0].new_data.notify_one();
 
         int frameWritten = 0;
-#if VIDEORAWLR && VIDEORAWLR != VIDEOMODE_BAG
-        static float dtr =0;
-        if (itrkr.foundL && dtr > 5.f && dtr > 0 && data.time > 5.f) {
+        static bool new_recording = false;
+        float dtr = data.time - itrkr.last_sighting_time;
+        if (dtr > 3.f && new_recording) {
+            new_recording = false;
             auto time_insect_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
-            logger_insect << "New detection at: " << std::put_time(std::localtime(&time_insect_now), "%Y/%m/%d %T") << std::endl;
+            logger_insect << "New detection ended at: " << std::put_time(std::localtime(&time_insect_now), "%Y/%m/%d %T") << " Duration: " << dtr << " End cam frame number: " <<  cam.frame_number() << std::endl;
         }
-        dtr = data.time - itrkr.last_sighting_time;
-        if (dtr < 3.f && dtr >0 && data.time > 5.f) {
-            frameWritten = output_video_LR.write(cam.frameL,cam.frameR);
-            std::cout << "Recording! Frame written: " << frameWritten << std::endl;
+#if VIDEORAWLR && VIDEORAWLR != VIDEOMODE_BAG
+
+        if ((itrkr.foundL || dtr < 3.f) && data.time > 5.f) {
+            cv::Mat frameL  =cam.frameL.clone();
+            cv::putText(frameL,std::to_string(cam.frame_number()),cv::Point(0, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,255);
+            frameWritten = output_video_LR.write(frameL,cam.frameR);
+            static int video_frame_counter = 0;
+            if (!frameWritten)
+                video_frame_counter++;
+            else {
+                std::cout << "PROBLEM: " << frameWritten << std::endl;
+            }
+            new_recording = true;
+            std::cout << "Recording! Frames written: " << video_frame_counter << std::endl;
         }
 #endif
         if (frameWritten == 0) {

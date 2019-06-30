@@ -496,7 +496,7 @@ void Cam::check_light_level(){
         frameLt = Mat(im_size, CV_8UC1, const_cast<void *>(frame.get_infrared_frame(1).get_data()), Mat::AUTO_STEP);
         if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
             new_expos = frame.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
-            if (new_expos - tmp_exposure > 0.5f )
+            if (fabs(new_expos - tmp_exposure) > 0.5f )
                 tmp_last_exposure_frame_id = i;
             if (i - tmp_last_exposure_frame_id >= 10)
                 break;
@@ -623,7 +623,7 @@ float Cam::measure_auto_exposure(){
         if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
             new_expos = frame.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
             actual_exposure_was_measured++;
-            if (new_expos - tmp_exposure > 0.5f )
+            if (fabs(new_expos - tmp_exposure) > 0.5f )
                 tmp_last_exposure_frame_id = i;
             if (i - tmp_last_exposure_frame_id >= 15)
                 break;
