@@ -16,18 +16,18 @@ working_dir=`pwd`
 }
 
 # Create nice symlinks
-mkdir -p /home/pats/code
-[ -f /home/pats/.screenrc ] || {
-	ln -s /home/pats/code/pats/config/.screenrc /home/pats/
+mkdir -p /home/$USER/code
+[ -f /home/$USER/.screenrc ] || {
+	ln -s /home/$USER/code/pats/config/.screenrc /home/pats/
 }
 
-[ -f /home/pats/.bashrc ] || {
-	ln -s /home/pats/code/pats/config/.bashrc /home/pats/
+[ -f /home/$USER/.bashrc ] || {
+	ln -s /home/$USER/code/pats/config/.bashrc /home/pats/
 }
 
 
 # Add to groups
-sudo usermod -a -G dialout pats
+sudo usermod -a -G dialout $USER
 
 # Configure git
 git config --global push.default simple
