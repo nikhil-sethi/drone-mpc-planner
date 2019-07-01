@@ -479,7 +479,10 @@ void Visualizer::paint() {
             cv::imshow("diff", _dtrkr->diff_viz);
         if (_dtrkr->viz_max_points.cols> 0)
             cv::imshow("maxs", _dtrkr->viz_max_points);
-        //        draw_segment_viz();
+        //draw_segment_viz();
+        if (_visdat->viz_frame.cols>0)
+            cv::imshow("diff",_visdat->viz_frame);
+
         new_tracker_viz_data_requested = true;
     }
     if (request_plotframe_paint && plotframe.rows > 0) {

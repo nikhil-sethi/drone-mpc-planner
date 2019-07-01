@@ -153,7 +153,7 @@ void DroneNavigation::update(float time) {
         break;
     } case ns_takeoff: {
         _dctrl->reset_manual_override_take_off_now();
-        _dctrl->set_flight_mode(DroneController::fm_taking_off);
+        _dctrl->set_flight_mode(DroneController::fm_taking_off); // todo: second time?
         _navigation_status=ns_taking_off;
         break;
     } case ns_taking_off: {

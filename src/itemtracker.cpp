@@ -278,9 +278,6 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<tr
 }
 
 void ItemTracker::track(float time, std::vector<track_item> exclude,std::vector<cv::Point2f> additional_ignores) {
-#ifdef TUNING
-    updateParams();
-#endif
 
     float dt_tracking= (time-t_prev_tracking);
     float dt_predict= (time-t_prev_predict);
