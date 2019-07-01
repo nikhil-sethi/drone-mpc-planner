@@ -104,3 +104,5 @@ cd ~/dependencies
 # Autostart everything the folowing line:
 # /home/up/obc_vision/config/daemon.sh
 # to /etc/rc.local
+
+# Change hostname: sudo hostname pats-proto1 #update: sudo nano /etc/hosts #change 127.0.1.1 pats-proto1 #make it persistant, update: sudo nano /etc/hostname
