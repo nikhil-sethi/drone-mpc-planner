@@ -25,7 +25,7 @@
 #define TX_FRSKYX 4
 #define TX_FRSKYX_TC 5
 
-#define INSECT_LOGGING_MODE
+//#define INSECT_LOGGING_MODE
 
 #ifdef INSECT_LOGGING_MODE
     #define VIDEORAWLR VIDEOMODE_AVI
@@ -39,7 +39,7 @@
 //    #define BEEP // leave of, causes realsense resets! Prolly needs moving to main UI thread...
     #define VIDEORAWLR VIDEOMODE_BAG
     #define JOYSTICK_TYPE RC_XLITE
-    #define TX_TYPE TX_FRSKYX_TC
+    #define TX_TYPE TX_FRSKYX
 #endif
 
 #define VIDEODISPARITY VIDEOMODE_DISABLED
