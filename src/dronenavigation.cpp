@@ -213,9 +213,6 @@ void DroneNavigation::update(float time) {
             _navigation_status=ns_manual;
         else if (_iceptor.insect_cleared())
             _navigation_status = ns_goto_landing_waypoint;
-
-        // TODO: return to landing waypoint after the insect was lost for several frames
-
         break;
     } case ns_goto_landing_waypoint: {
         set_next_waypoint(landing_waypoint());
