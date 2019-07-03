@@ -17,6 +17,7 @@ void DroneTracker::init_settings() {
 
     settings.min_disparity=1;
     settings.max_disparity=43;
+    settings.motion_thresh = 30;
 
     settings.roi_min_size = 200;
     settings.roi_max_grow = 50;
