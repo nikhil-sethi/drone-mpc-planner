@@ -143,6 +143,7 @@ private:
     bool initialized = false;
 
     float _dist_to_wp = 0;
+    cv::Mat Qfi;
 
 public:
 
@@ -207,6 +208,42 @@ public:
     void redetect_drone_location(){
         _navigation_status = ns_locate_drone;
     }
+
+    cv::Point2i drone_setpoint_im(){
+        //transform to image coordinates:
+
+        cv::Point3f tmp = setpoint_pos_world;
+        if (_navigation_status == ns_takeoff || _navigation_status == ns_taking_off){
+            tmp.x = _dtrk->Drone_Startup_Location().x;
+            tmp.y = _dtrk->Drone_Startup_Location().y+0.5f;
+            tmp.z = _dtrk->Drone_Startup_Location().z;
+        }
+
+        std::vector<cv::Point3d> world_coordinates,camera_coordinates;
+        cv::Point3d tmpd;
+        float theta = -_visdat->camera_angle * deg2rad;
+        float temp_y = tmp.y * cosf(theta) + tmp.z * sinf(theta);
+        tmpd.z = -tmp.y * sinf(theta) + tmp.z * cosf(theta);
+        tmpd.y = temp_y;
+        tmpd.x = tmp.x;
+
+        world_coordinates.push_back(tmpd);
+        cv::perspectiveTransform(world_coordinates,camera_coordinates,Qfi);
+        return cv::Point2i(camera_coordinates[0].x,camera_coordinates[0].y);
+
+    }
+    bool drone_is_hunting(){
+        if (_nav_flight_mode == nfm_hunt){
+            return _navigation_status == ns_chasing_insect || _navigation_status ==  ns_start_the_chase;
+        } else {
+            return false;
+        }
+    }
+    bool drone_is_flying(){
+         return _navigation_status < ns_landing && _navigation_status >  ns_takeoff;
+
+    }
+
 
 };
 

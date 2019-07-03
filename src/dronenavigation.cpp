@@ -16,6 +16,7 @@ void DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     _dctrl = dctrl;
     _visdat = visdat;
     _iceptor.init(dtrk,itrkr,visdat);
+    cv::invert(visdat->Qf,Qfi);
 
     // Load saved control paremeters
     if (checkFileExist(paramsFile)) {

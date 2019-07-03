@@ -455,6 +455,21 @@ void Visualizer::draw_tracker_viz() {
             c = cv::Scalar(180,180,255);
         putText(frameL_color,ss.str(),cv::Point(ti.x()*IMSCALEF+10,ti.y()*IMSCALEF),cv::FONT_HERSHEY_SIMPLEX,0.5,c);
         cv::line(frameL_color,cv::Point(ti.x()*IMSCALEF,ti.y()*IMSCALEF),cv::Point(ti.x()*IMSCALEF,ti.y()*IMSCALEF),c,2);
+
+        cv::Point2i t = _dnav->drone_setpoint_im();
+
+        if (_dnav->drone_is_flying()){
+            cv::Scalar c2;
+            if (_dnav->drone_is_hunting())
+                c2 = cv::Scalar(0,0,255);
+                else
+                c2 = cv::Scalar(255,255,255);
+            cv::line(frameL_color,cv::Point(ti.x()*IMSCALEF,ti.y()*IMSCALEF),t,c2,1);
+        }
+
+
+
+
     }
     cv::resize(frameL_color,roi,size);
 
