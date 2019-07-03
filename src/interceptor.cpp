@@ -30,6 +30,7 @@ void Interceptor::update(bool drone_at_base) {
         }
 
         float tti = calc_tti(insect_pos,_insect_vel,drone_pos,drone_vel,drone_at_base);
+        std::cout << " tti:"  << tti << std::endl;
         float half_tti = tti/2.f; // only predict the location of the insect for a partion of the actual time we need to get there
         _estimated_interception_location = insect_pos + (_insect_vel*half_tti);
 
@@ -68,7 +69,7 @@ float Interceptor::calc_tti(cv::Point3f insect_pos,cv::Point3f insect_vel,cv::Po
     //TODO: put in some actually measured values:
     const float drone_vel_max = 10; // [m/s]
     const float drone_acc_max = 20; // [m/s^2]
-    const float t_estimated_take_off = 0.2f; //[s]
+    const float t_estimated_take_off = 0.32f; //[s]
 
     float ic_dx = norm(insect_pos-drone_pos);
     float ic_dv = norm(insect_vel-drone_vel);
