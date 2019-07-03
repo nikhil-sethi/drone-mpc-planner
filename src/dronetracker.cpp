@@ -39,6 +39,7 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
     } case dts_blinking:
         roi_size_cnt = 0; // don't grow roi in this stage
         start_take_off_time = time;
+        ignore.clear(); // insect tracker may pick up something...
         switch (_blinking_drone_status) {
         case bds_start: {
             _enable_roi = false;

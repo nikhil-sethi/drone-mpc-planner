@@ -95,7 +95,7 @@ void DroneNavigation::update(float time) {
 #if TX_TYPE == TX_FRSKYD || TX_TYPE == TX_FRSKYX
         if (time - prev_time > 7 && time - prev_time < 8) {
             _dctrl->blink_drone(false); // refresh the blinking
-        } else if (time - prev_time > 8) {
+        } else if (fabs(time - prev_time) > 8.5) {
             prev_time = time;
             _dctrl->blink_drone(true);
         }

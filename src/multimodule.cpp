@@ -36,6 +36,27 @@ void MultiModule::worker_thread(void) {
     std::cout << "Send multimodule thread started!" << std::endl;
     while (!exitSendThread) {
         receive_data();
+
+        if (cycles_until_bind > 0){
+            cycles_until_bind--;
+            if (cycles_until_bind ==0)
+                _bind = true;
+            arm_switch = false;
+            throttle = 0;
+        }
+        if (cycles_until_bind < 0){
+            cycles_until_bind++;
+            if (cycles_until_bind == 0)
+                _bind = false;
+            arm_switch = false;
+            throttle = 0;
+        }
+        if (_bind){
+            arm_switch = false;
+            throttle = 0;
+        }
+
+
         g_lockData.lock();
         send_data();
         g_lockData.unlock();

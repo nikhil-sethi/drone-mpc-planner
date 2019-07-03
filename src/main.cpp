@@ -249,11 +249,11 @@ void process_frame(Stereo_Frame_Data data) {
 
     //WARNING: changing the order of the functions with logging must be matched with the init functions!
     dtrkr.track(data.time,itrkr.predicted_pathL,dctrl.drone_is_active());
-    if (fromfile==log_mode_insect_only){
-        itrkr.update_from_log(logreader.current_item,data.number);
+    if (dnav.disable_insect_detection()){
+        itrkr.append_log(); // write dummy data
     } else
-        if (dnav.disable_insect_detection())
-            itrkr.append_log(); // write dummy data
+        if (fromfile==log_mode_insect_only)
+            itrkr.update_from_log(logreader.current_item,data.number);
         else {
             itrkr.track(data.time,dtrkr.pathL,dtrkr.ignores_for_insect_tracker);
         }
