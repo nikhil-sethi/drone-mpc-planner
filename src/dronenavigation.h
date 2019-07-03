@@ -172,9 +172,9 @@ public:
         int land_incr_f_mm = 5;
         int autoLandThrottleDecreaseFactor = 3;
         int auto_takeoff_speed = 3;
-        float time_out_after_landing = 2.5f;
+        float time_out_after_landing = 0.5f;
 
-        float version = 2.2f;
+        float version = 2.3f;
 
         template <class Archive>
         void serialize( Archive & ar )
