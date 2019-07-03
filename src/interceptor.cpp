@@ -36,12 +36,19 @@ void Interceptor::update(bool drone_at_base) {
 
         float horizontal_separation = norm(cv::Point2f(drone_pos.x,drone_pos.z) - cv::Point2f(insect_pos.x,insect_pos.z));
         float vertical_separation = insect_pos.y-drone_pos.y;
-        if (horizontal_separation<0.5f && vertical_separation>0.1f && vertical_separation<0.6f){
-            cv::Point3f vector = insect_pos-drone_pos;
-            float norm_vector = norm(vector);
-            _insect_vel += vector/norm_vector*0.6f;
+        static int going_for_it = 0;
+        if (going_for_it)
+            going_for_it--;
+        if ((horizontal_separation<0.5f && vertical_separation>0.2f) || going_for_it){
+            if (!going_for_it)
+                going_for_it = 120;
+//            cv::Point3f vector = insect_pos-drone_pos;
+//            float norm_vector = norm(vector);
+//            _insect_vel += vector/norm_vector*0.6f;
         } else {
-            _estimated_interception_location.y -= 0.1f; // initially target to go 10cm below the insect. When close enough the drone can change direction aggressively and attack from below.
+            _estimated_interception_location.y -= 0.5f; // initially target to go 10cm below the insect. When close enough the drone can change direction aggressively and attack from below.
+            if (_estimated_interception_location.y< _dtrkr->Drone_Startup_Location().y + 0.15f)
+                _estimated_interception_location.y  = _dtrkr->Drone_Startup_Location().y + 0.15f;
         }
 
         //calculate if the drone will stay within the camera borders where it still can be controlled:
