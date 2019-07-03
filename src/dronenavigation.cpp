@@ -95,7 +95,7 @@ void DroneNavigation::update(float time) {
 #if TX_TYPE == TX_FRSKYD || TX_TYPE == TX_FRSKYX
         if (time - prev_time > 7 && time - prev_time < 8) {
             _dctrl->blink_drone(false); // refresh the blinking
-        } else if (time - prev_time > 8) {
+        } else if (fabs(time - prev_time) > 8.5f) {
             prev_time = time;
             _dctrl->blink_drone(true);
         }
@@ -213,9 +213,6 @@ void DroneNavigation::update(float time) {
             _navigation_status=ns_manual;
         else if (_iceptor.insect_cleared())
             _navigation_status = ns_goto_landing_waypoint;
-
-        // TODO: return to landing waypoint after the insect was lost for several frames
-
         break;
     } case ns_goto_landing_waypoint: {
         set_next_waypoint(landing_waypoint());
@@ -239,6 +236,7 @@ void DroneNavigation::update(float time) {
 #endif
 
         float dis = sqrtf(_dctrl->posErrX*_dctrl->posErrX + _dctrl->posErrY*_dctrl->posErrY + _dctrl->posErrZ*_dctrl->posErrZ);
+        _dist_to_wp = dis;
         if (dis *1000 < current_setpoint->threshold_mm * params.distance_threshold_f && _dtrk->n_frames_tracking>5) {
             if (current_setpoint->mode == fm_landing) {
                 _navigation_status = ns_landing;
@@ -258,6 +256,9 @@ void DroneNavigation::update(float time) {
                 _navigation_status = ns_set_waypoint;
             }
         }
+
+        if (_nav_flight_mode == nfm_hunt && _iceptor.insect_in_range())
+            _navigation_status = ns_start_the_chase;
         if (_nav_flight_mode == nfm_manual)
             _navigation_status=ns_manual;
         break;
@@ -290,6 +291,8 @@ void DroneNavigation::update(float time) {
         if ( setpoint_pos_world.y - land_incr> -(_dtrk->Drone_Startup_Location().y+100000.0f))
             land_incr = static_cast<float>(params.land_incr_f_mm)/1000.f;
         setpoint_pos_world.y -= land_incr;
+        if (_nav_flight_mode == nfm_hunt && _iceptor.insect_in_range())
+            _navigation_status = ns_start_the_chase;
         if (_nav_flight_mode == nfm_manual)
             _navigation_status=ns_manual;
         break;

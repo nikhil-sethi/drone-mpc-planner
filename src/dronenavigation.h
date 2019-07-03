@@ -142,6 +142,8 @@ private:
     bool _calibrating_hover = false;
     bool initialized = false;
 
+    float _dist_to_wp = 0;
+
 public:
 
     nav_flight_modes Nav_Flight_Mode(){
@@ -153,7 +155,11 @@ public:
         _nav_flight_mode = m;
     }
     std::string Navigation_Status() {
-        return navigation_status_names[_navigation_status];
+        if (_navigation_status == ns_approach_waypoint) {
+            return static_cast<string>(navigation_status_names[_navigation_status]) + " " + to_string_with_precision(_dist_to_wp,2);
+        } else
+
+            return navigation_status_names[_navigation_status];
     }
 
     struct navigationParameters{
@@ -166,9 +172,9 @@ public:
         int land_incr_f_mm = 5;
         int autoLandThrottleDecreaseFactor = 3;
         int auto_takeoff_speed = 3;
-        float time_out_after_landing = 2.5f;
+        float time_out_after_landing = 0.5f;
 
-        float version = 2.2f;
+        float version = 2.3f;
 
         template <class Archive>
         void serialize( Archive & ar )
@@ -187,12 +193,15 @@ public:
         return current_setpoint->threshold_mm;
     }
 
+    float dist_to_wp() {
+        return _dist_to_wp;
+    }
 
     void close (void);
     void init(std::ofstream *logger, DroneTracker *dtrk, DroneController *dctrl, InsectTracker *itrkr, VisionData *visdat);
     void update(float time);
     bool disable_insect_detection() {
-        return _navigation_status < ns_wait_for_insect;
+        return _navigation_status < ns_wait_for_takeoff_command;
     }
 
     void redetect_drone_location(){

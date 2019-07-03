@@ -171,14 +171,14 @@ void process_video() {
         int frameWritten = 0;
         static bool new_recording = false;
         float dtr = data.time - itrkr.last_sighting_time;
-        if (dtr > 3.f && new_recording) {
+        if (dtr > 1.f && new_recording) {
             new_recording = false;
             auto time_insect_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
             logger_insect << "New detection ended at: " << std::put_time(std::localtime(&time_insect_now), "%Y/%m/%d %T") << " Duration: " << dtr << " End cam frame number: " <<  cam.frame_number() << std::endl;
         }
 #if VIDEORAWLR && VIDEORAWLR != VIDEOMODE_BAG
 
-        if ((itrkr.foundL || dtr < 3.f) && data.time > 5.f) {
+        if ((itrkr.foundL || dtr < 1.f) && data.time > 5.f) {
             cv::Mat frameL  =cam.frameL.clone();
             cv::putText(frameL,std::to_string(cam.frame_number()),cv::Point(0, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,255);
             frameWritten = output_video_LR.write(frameL,cam.frameR);
@@ -249,11 +249,11 @@ void process_frame(Stereo_Frame_Data data) {
 
     //WARNING: changing the order of the functions with logging must be matched with the init functions!
     dtrkr.track(data.time,itrkr.predicted_pathL,dctrl.drone_is_active());
-    if (fromfile==log_mode_insect_only){
-        itrkr.update_from_log(logreader.current_item,data.number);
+    if (dnav.disable_insect_detection()){
+        itrkr.append_log(); // write dummy data
     } else
-        if (dnav.disable_insect_detection())
-            itrkr.append_log(); // write dummy data
+        if (fromfile==log_mode_insect_only)
+            itrkr.update_from_log(logreader.current_item,data.number);
         else {
             itrkr.track(data.time,dtrkr.pathL,dtrkr.ignores_for_insect_tracker);
         }

@@ -430,6 +430,7 @@ void DroneController::readJoystick(void) {
                     }
                     break;
                 case 6: //switch (3 way)
+                    _joy_takeoff_switch = event.value>0; //TODO: tmp fix for weird x-lite channel problem https://github.com/pats-drones/pats/issues/93
                     break;
                 case 7: //switch (2 way)
                     _joy_takeoff_switch = event.value>0;

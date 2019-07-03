@@ -2,7 +2,7 @@
 
 #ifdef HASSCREEN
 //#define TUNING
-#define VIZ
+//#define VIZ
 #endif
 
 using namespace cv;

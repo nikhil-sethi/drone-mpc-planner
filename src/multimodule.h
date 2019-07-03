@@ -94,13 +94,21 @@ public:
 
     void check_bind_command(void);
     bool _bind = false;
-    stopwatch_c sw_bind;
+
+    // counter used to make sure throttle and arming is safe for binding.
+    //(it has happened that the drone takes off uncontrolled when the bind channel was activated)
+    //So, 5 cycles before and after binding, the arm is set to false and throttle to 0.
+    int cycles_until_bind = 0;
+    stopwatch_c sw_bind; // stop binding in max 20s
     void bind(bool b) {
         if (b){
-        sw_bind.Restart();
-        _bind = true;
-        } else {
-            _bind = false;
+            sw_bind.Restart();
+            if (cycles_until_bind == 0)
+                cycles_until_bind = 5;
+        }
+        if (!b){
+            if (cycles_until_bind == 0)
+                cycles_until_bind = -5;
         }
     }
     void arm(bool v) {

@@ -70,7 +70,7 @@ public:
 private:
     struct TrackerSettings{
 
-        int min_disparity=0;
+        int min_disparity=1;
         int max_disparity=20;
 
         int roi_min_size = 200;
@@ -95,7 +95,7 @@ private:
         int pixel_dist_seperation_min = 2;
         int pixel_dist_seperation_max = 5;
 
-        float version = 1.6f;
+        float version = 1.7f;
 
         template <class Archive>
         void serialize( Archive & ar )
