@@ -201,7 +201,7 @@ public:
     void init(std::ofstream *logger, DroneTracker *dtrk, DroneController *dctrl, InsectTracker *itrkr, VisionData *visdat);
     void update(float time);
     bool disable_insect_detection() {
-        return _navigation_status < ns_wait_for_insect;
+        return _navigation_status < ns_wait_for_takeoff_command;
     }
 
     void redetect_drone_location(){

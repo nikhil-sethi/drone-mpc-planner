@@ -256,6 +256,9 @@ void DroneNavigation::update(float time) {
                 _navigation_status = ns_set_waypoint;
             }
         }
+
+        if (_nav_flight_mode == nfm_hunt && _iceptor.insect_in_range())
+            _navigation_status = ns_start_the_chase;
         if (_nav_flight_mode == nfm_manual)
             _navigation_status=ns_manual;
         break;
@@ -288,6 +291,8 @@ void DroneNavigation::update(float time) {
         if ( setpoint_pos_world.y - land_incr> -(_dtrk->Drone_Startup_Location().y+100000.0f))
             land_incr = static_cast<float>(params.land_incr_f_mm)/1000.f;
         setpoint_pos_world.y -= land_incr;
+        if (_nav_flight_mode == nfm_hunt && _iceptor.insect_in_range())
+            _navigation_status = ns_start_the_chase;
         if (_nav_flight_mode == nfm_manual)
             _navigation_status=ns_manual;
         break;
