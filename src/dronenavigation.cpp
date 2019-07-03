@@ -198,16 +198,9 @@ void DroneNavigation::update(float time) {
 
         //update target chasing waypoint and speed
         if (_iceptor.insect_in_range()) {
-            setpoint_pos_world = _iceptor.intercept_position();
+            setpoint_pos_world = _iceptor.target_position();
             setpoint_vel_world = _iceptor.target_speed();
             setpoint_acc_world = _iceptor.target_accelleration();
-        }
-
-        if (setpoint_pos_world.z == 0 || !_iceptor.insect_in_range()) {
-            setpoint_pos_world = _iceptor.prev_intercept_position();
-            setpoint_vel_world = {0,0,0};
-            setpoint_acc_world = {0,0,0};
-
         }
 
         if (_nav_flight_mode == nfm_manual)
