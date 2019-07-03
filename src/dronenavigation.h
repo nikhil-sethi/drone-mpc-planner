@@ -142,6 +142,8 @@ private:
     bool _calibrating_hover = false;
     bool initialized = false;
 
+    float _dist_to_wp = 0;
+
 public:
 
     nav_flight_modes Nav_Flight_Mode(){
@@ -153,7 +155,11 @@ public:
         _nav_flight_mode = m;
     }
     std::string Navigation_Status() {
-        return navigation_status_names[_navigation_status];
+        if (_navigation_status == ns_approach_waypoint) {
+            return static_cast<string>(navigation_status_names[_navigation_status]) + " " + to_string_with_precision(_dist_to_wp,2);
+        } else
+
+            return navigation_status_names[_navigation_status];
     }
 
     struct navigationParameters{
@@ -187,6 +193,9 @@ public:
         return current_setpoint->threshold_mm;
     }
 
+    float dist_to_wp() {
+        return _dist_to_wp;
+    }
 
     void close (void);
     void init(std::ofstream *logger, DroneTracker *dtrk, DroneController *dctrl, InsectTracker *itrkr, VisionData *visdat);

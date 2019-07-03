@@ -236,6 +236,7 @@ void DroneNavigation::update(float time) {
 #endif
 
         float dis = sqrtf(_dctrl->posErrX*_dctrl->posErrX + _dctrl->posErrY*_dctrl->posErrY + _dctrl->posErrZ*_dctrl->posErrZ);
+        _dist_to_wp = dis;
         if (dis *1000 < current_setpoint->threshold_mm * params.distance_threshold_f && _dtrk->n_frames_tracking>5) {
             if (current_setpoint->mode == fm_landing) {
                 _navigation_status = ns_landing;
