@@ -164,6 +164,11 @@ public:
 
     cv::Mat autotakeoff_velY_thresh;
 
+
+    cv::Size viz_frame_size() {
+        return cv::Size(IMG_W*_res_mult,IMG_H*_res_mult+IMG_H*_res_mult/4);
+    }
+
     void paint();
     void addPlotSample(void);
     void update_tracker_data(cv::Mat frameL, cv::Point3d setpoint, float time, DroneTracker *dtrk, InsectTracker *itrk);

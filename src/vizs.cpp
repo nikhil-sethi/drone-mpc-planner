@@ -402,7 +402,7 @@ void Visualizer::draw_tracker_viz() {
     int exclude_min_distance = tracker_viz_base_data.exclude_min_distance;
     int exclude_max_distance = tracker_viz_base_data.exclude_max_distance;
 
-    cv::Mat resFrame = cv::Mat::zeros(frameL.rows*_res_mult+frameL.rows*_res_mult/4,frameL.cols*_res_mult,CV_8UC3);
+    cv::Mat resFrame = cv::Mat::zeros(viz_frame_size(),CV_8UC3);
     cv::Mat frameL_color;
     cvtColor(frameL,frameL_color,CV_GRAY2BGR);
     cv::Rect rect(0,frameL.rows*_res_mult/4,frameL.cols*_res_mult,frameL.rows*_res_mult);
