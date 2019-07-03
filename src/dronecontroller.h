@@ -121,7 +121,7 @@ public : const float throttle_bank_factor = 0.33f; // Whoop 0.33 Thrashcan 0.11
 #endif
 #if TX_TYPE == TX_FRSKYX
 #define INITIALTHROTTLE 200
-#define INITIAL_HOVER_THROTTLE 1200
+#define INITIAL_HOVER_THROTTLE 1000
 #define PITCH_MIDDLE JOY_MIDDLE
 #endif
 #if TX_TYPE == TX_FRSKYX_TC
