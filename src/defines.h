@@ -25,12 +25,13 @@
 #define TX_FRSKYX 4
 #define TX_FRSKYX_TC 5
 
-//#define INSECT_LOGGING_MODE
+#define INSECT_LOGGING_MODE
 
 #ifdef INSECT_LOGGING_MODE
     #define VIDEORAWLR VIDEOMODE_AVI
     #define JOYSTICK_TYPE RC_NONE
     #define TX_TYPE TX_NONE
+    #define WATCHDOG_ENABLED
 //    #define HASSCREEN
 #else
     #ifndef HASGUI

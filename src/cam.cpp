@@ -206,6 +206,7 @@ void Cam::update_real(void) {
 
     new_frame1 = false;
     new_frame2 = false;
+    watchdog = true;
 
 }
 
@@ -409,6 +410,11 @@ void Cam::init() {
     serialize_calib();
     convert_depth_background_to_world();
     swc.Start();
+
+#ifdef WATCHDOG_ENABLED
+    thread_watchdog = std::thread(&Cam::watchdog_thread,this);
+#endif
+
     initialized = true;
 }
 
@@ -960,5 +966,24 @@ void Cam::reset() {
         usleep(1000000);
 
         exit (0);
+    }
+}
+
+
+void Cam::watchdog_thread(void) {
+    std::cout << "Watchdog thread started" << std::endl;
+    usleep(10000000); //wait until camera is running for sure
+    while (!exit_watchdog_thread) {
+        usleep(300000);
+        if (!watchdog) {
+            std::cout << "Watchdog alert! Attempting to continue" << std::endl;
+            wait_for_image.notify_all();
+            usleep(300000);
+            if (!watchdog) {
+                std::cout << "Watchdog alert! Killing the process." << std::endl;
+                std::system("killall -9 pats");
+            }
+        }
+        watchdog = false;
     }
 }

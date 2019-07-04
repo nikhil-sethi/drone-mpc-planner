@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <unistd.h>
 #include "common.h"
+#include <thread>
 
 #include <condition_variable>
 #include <deque>
@@ -133,6 +134,10 @@ private:
     bool fromfile;
     bool initialized = false;
 
+    bool watchdog = true;
+    std::thread thread_watchdog;
+    bool exit_watchdog_thread = false;
+    void watchdog_thread(void);
 
     uint playback_buffer_size_max = 100;
 
