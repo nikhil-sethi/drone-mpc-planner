@@ -101,7 +101,7 @@ if(WITH_GUI)
 endif()
 #**************/QML***********
 
-set(REALSENSE realsense2) #supports D4** series
+find_package(realsense2 REQUIRED)
 
 # sources
 FILE(GLOB SRCS "../src/*.cpp" "../src/*.h" "../src/*.c" "../src/cereal/*.hpp" "../src/tinyxml/*.h" "../src/tinyxml/*.cpp")
@@ -131,7 +131,7 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
-target_link_libraries(${PROJECT_NAME} ${REALSENSE})
+target_link_libraries(${PROJECT_NAME} ${realsense2_LIBRARY})
 target_link_libraries(${PROJECT_NAME} ${GST_LIBRARIES} ${GSTSDP_LIBRARIES} ${GSTAPP_LIBRARIES})
 
 if(WITH_GUI)
