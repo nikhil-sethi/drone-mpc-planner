@@ -9,9 +9,9 @@ void Interceptor::init(DroneTracker * dtrkr, InsectTracker * itrkr, VisionData *
 void Interceptor::update(bool drone_at_base) {
 
 
-    switch (_interceptor_status) {
+    switch (_interceptor_state) {
      case  is_init: {
-        _interceptor_status = is_waiting_for_target;
+        _interceptor_state = is_waiting_for_target;
         _intercept_pos = {0,0,0};
     } FALLTHROUGH_INTENDED; case is_waiting_for_target: {
         _intercept_vel = {0,0,0};
@@ -19,7 +19,7 @@ void Interceptor::update(bool drone_at_base) {
         _count_insect_not_in_range++;
 
         if ( (norm(_intercept_vel) > 0 || _itrkr->foundL)){ //TODO: whatsup with the intercept_vel....?
-            _interceptor_status = is_waiting_in_reach_zone;
+            _interceptor_state = is_waiting_in_reach_zone;
         } else
             break;
     } FALLTHROUGH_INTENDED; case is_waiting_in_reach_zone: {
@@ -28,29 +28,29 @@ void Interceptor::update(bool drone_at_base) {
 
 
         if ( !_itrkr->foundL){
-             _interceptor_status = is_waiting_for_target;
+             _interceptor_state = is_waiting_for_target;
             break;
         }
 
         update_far_target(drone_at_base);
         update_insect_in_range();
         if (!_count_insect_not_in_range)
-            _interceptor_status = is_move_to_intercept;
+            _interceptor_state = is_move_to_intercept;
         break;
     } case is_move_to_intercept: { // move max speed to somewhere close of the insect, preferably 20cm below behind.
         if  (!_itrkr->foundL) {
-          _interceptor_status = is_waiting_for_target;
+          _interceptor_state = is_waiting_for_target;
           break;
         }
          update_far_target(drone_at_base);
          update_insect_in_range();
-        if (!_count_insect_not_in_range){
-           _interceptor_status = is_waiting_in_reach_zone;
+        if (_count_insect_not_in_range>5){
+           _interceptor_state = is_waiting_in_reach_zone;
            break;
          }
 
          if (_horizontal_separation<0.5f && _vertical_separation>0.1f && _vertical_separation<0.6f){
-             _interceptor_status = is_close_chasing;
+             _interceptor_state = is_close_chasing;
          } else {
              _intercept_pos.y -= 0.2f; // initially target to go 10cm below the insect. When close enough the drone can change direction aggressively and attack from below.
              break;
@@ -58,17 +58,17 @@ void Interceptor::update(bool drone_at_base) {
 
     } FALLTHROUGH_INTENDED; case is_close_chasing: {
         if  (!_itrkr->foundL) {
-          _interceptor_status = is_waiting_for_target;
+          _interceptor_state = is_waiting_for_target;
           break;
         }
          update_close_target();
          update_insect_in_range();
-        if (!_count_insect_not_in_range){
-           _interceptor_status = is_waiting_in_reach_zone;
+        if (_count_insect_not_in_range>5){
+           _interceptor_state = is_waiting_in_reach_zone;
            break;
          }
         if (_horizontal_separation>0.7f && _vertical_separation>0.4f ){
-            _interceptor_status = is_move_to_intercept;
+            _interceptor_state = is_move_to_intercept;
         }
         break;
     }
@@ -130,9 +130,10 @@ void Interceptor::update_insect_in_range() {
             _intercept_pos.y < -0.3f &&
             _intercept_pos.z > -3.0f &&
             _intercept_pos.z < -1.0f) {
-        _count_insect_not_in_range++;
-    } else {
         _count_insect_not_in_range= 0;
+    } else {
+        _count_insect_not_in_range++;
+
     }
 }
 

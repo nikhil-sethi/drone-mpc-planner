@@ -8,6 +8,12 @@
 
 
 
+static const char* interceptor_state_names[] = { "is_init",
+                                                    "is_waiting_for_target",
+                                                    "is_waiting_in_reach_zone",
+                                                    "is_move_to_intercept",
+                                                    "is_close_chasing"};
+
 /*
  * This class calculates the best intersection location, and whether that is even possible, etc
  *
@@ -29,7 +35,7 @@ private:
         is_move_to_intercept,
         is_close_chasing
     };
-    interceptor_states _interceptor_status = is_init;
+    interceptor_states _interceptor_state = is_init;
 
     uint _count_insect_not_in_range = 0;
     float _tti =-1;
@@ -55,6 +61,9 @@ public:
     float time_to_intercept(){return _tti;}
 
 
+    std::string Interceptor_State() {
+        return interceptor_state_names[_interceptor_state];
+    }
 };
 
 #endif

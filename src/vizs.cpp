@@ -287,6 +287,7 @@ void Visualizer::draw_target_text(cv::Mat resFrame, float time, float dis,float 
     putText(resFrame, _dctrl->Joy_State_str() ,cv::Point(525*_res_mult,82*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     putText(resFrame,_dtrkr->Blinking_Drone_State() ,cv::Point(220*_res_mult,96*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     putText(resFrame,_dtrkr->Drone_Tracking_State() ,cv::Point(450*_res_mult,96*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame,_dnav->get_Interceptor().Interceptor_State(),cv::Point(450*_res_mult,70*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
 
     if (_fromfile) {
         static int popcorn_cnt = 0;
@@ -439,7 +440,7 @@ void Visualizer::draw_tracker_viz() {
     if (ins_path.size()>0){
         std::stringstream ss;
         ItemTracker::track_item ti = ins_path.back();
-        ss << "i " << to_string_with_precision(ti.distance_background,1) << " vs "  << to_string_with_precision(ins_path.back().distance,1) << " ";
+        ss << "i " << to_string_with_precision(ti.distance_background,1);
         cv::Scalar c(0,0,255);
         if (ti.distance_background >ti.distance )
             c = cv::Scalar(180,180,255);
@@ -449,7 +450,7 @@ void Visualizer::draw_tracker_viz() {
     if (drn_path.size()>0){
         std::stringstream ss;
         ItemTracker::track_item ti = drn_path.back();
-        ss << "d " << to_string_with_precision(ti.distance_background,1) << " vs "  << to_string_with_precision(ti.distance,1) << " ";
+        ss << "d " << to_string_with_precision(ti.distance_background,1);
         cv::Scalar c(0,0,255);
         if (ti.distance_background >ti.distance )
             c = cv::Scalar(180,180,255);
@@ -462,14 +463,10 @@ void Visualizer::draw_tracker_viz() {
             cv::Scalar c2;
             if (_dnav->drone_is_hunting())
                 c2 = cv::Scalar(0,0,255);
-                else
+            else
                 c2 = cv::Scalar(255,255,255);
             cv::line(frameL_color,cv::Point(ti.x()*IMSCALEF,ti.y()*IMSCALEF),t,c2,1);
         }
-
-
-
-
     }
     cv::resize(frameL_color,roi,size);
 

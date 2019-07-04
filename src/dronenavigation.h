@@ -213,7 +213,7 @@ public:
         //transform to image coordinates:
 
         cv::Point3f tmp = setpoint_pos_world;
-        if (_navigation_status == ns_takeoff || _navigation_status == ns_taking_off){
+        if (_navigation_status == ns_takeoff || _navigation_status == ns_taking_off || _navigation_status == ns_take_off_completed){
             tmp.x = _dtrk->Drone_Startup_Location().x;
             tmp.y = _dtrk->Drone_Startup_Location().y+0.5f;
             tmp.z = _dtrk->Drone_Startup_Location().z;
@@ -243,6 +243,8 @@ public:
          return _navigation_status < ns_landing && _navigation_status >  ns_takeoff;
 
     }
+
+    Interceptor get_Interceptor(){return _iceptor;}
 
 
 };
