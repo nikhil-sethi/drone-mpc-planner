@@ -332,7 +332,9 @@ void Cam::init() {
         deserialize_calib(calib_template_rfn);
 
     rs2::depth_sensor rs_depth_sensor = dev.first<rs2::depth_sensor>();
-    check_light_level();
+
+    if (enable_auto_exposure == only_at_startup)
+        check_light_level();
     if (getSecondsSinceFileCreation(calib_rfn) < 60*60 &&
             checkFileExist(depth_map_rfn) &&
             checkFileExist(calib_rfn)) {
