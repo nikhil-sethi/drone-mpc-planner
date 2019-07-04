@@ -179,7 +179,7 @@ float Interceptor::calc_tti(cv::Point3f insect_pos,cv::Point3f insect_vel,cv::Po
 
         tti += t_remaining_takeoff;
     }
-
+    _tti = tti;
     return tti;
 }
 

@@ -170,6 +170,7 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
         roi_size_cnt = 0; // don't grow roi in this stage
         start_take_off_time = time;
         predicted_pathL.clear();
+        pathL.clear();
         foundL = false;
         find_result.best_image_locationL.pt = _drone_blink_image_location;
         predicted_locationL_last = _drone_blink_world_location;

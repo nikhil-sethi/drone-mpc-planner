@@ -73,6 +73,7 @@ void InsectTracker::track(float time, std::vector<track_item> exclude,std::vecto
 
     if (n_frames_lost > n_frames_lost_threshold || !foundL) {
         predicted_pathL.clear();
+        pathL.clear();
         foundL = false;
     } else {
         update_insect_prediction();

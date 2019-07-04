@@ -444,9 +444,11 @@ void Visualizer::draw_tracker_viz() {
         cv::Scalar c(0,0,255);
         if (ti.distance_background >ti.distance )
             c = cv::Scalar(180,180,255);
-        putText(frameL_color,ss.str(),cv::Point(ti.x()*IMSCALEF+10,ti.y()*IMSCALEF),cv::FONT_HERSHEY_SIMPLEX,0.5,c);
-        cv::line(frameL_color,cv::Point(ti.x()*IMSCALEF,ti.y()*IMSCALEF),cv::Point(ti.x()*IMSCALEF,ti.y()*IMSCALEF),c,2);
+        cv::Point2i p (ti.x()*IMSCALEF,ti.y()*IMSCALEF);
+        putText(frameL_color,ss.str(),p,cv::FONT_HERSHEY_SIMPLEX,0.5,c);
+        cv::line(frameL_color,p,p,c,2);
     }
+      std::cout << drn_path.size() << std::endl;
     if (drn_path.size()>0){
         std::stringstream ss;
         ItemTracker::track_item ti = drn_path.back();
@@ -454,18 +456,26 @@ void Visualizer::draw_tracker_viz() {
         cv::Scalar c(0,0,255);
         if (ti.distance_background >ti.distance )
             c = cv::Scalar(180,180,255);
-        putText(frameL_color,ss.str(),cv::Point(ti.x()*IMSCALEF+10,ti.y()*IMSCALEF),cv::FONT_HERSHEY_SIMPLEX,0.5,c);
-        cv::line(frameL_color,cv::Point(ti.x()*IMSCALEF,ti.y()*IMSCALEF),cv::Point(ti.x()*IMSCALEF,ti.y()*IMSCALEF),c,2);
+        cv::Point2i p (ti.x()*IMSCALEF,ti.y()*IMSCALEF);
+        putText(frameL_color,ss.str(),p,cv::FONT_HERSHEY_SIMPLEX,0.5,c);
+        cv::line(frameL_color,p,p,c,2);
 
         cv::Point2i t = _dnav->drone_setpoint_im();
 
+
+        //draw line to drone target setpoint
         if (_dnav->drone_is_flying()){
+
             cv::Scalar c2;
-            if (_dnav->drone_is_hunting())
+            if (_dnav->drone_is_hunting()) {
                 c2 = cv::Scalar(0,0,255);
-            else
+                cv::Point2i t2 = p - (p - t)/2;
+                putText(frameL_color,to_string_with_precision(_dnav->get_Interceptor().time_to_intercept(),2),t2,cv::FONT_HERSHEY_SIMPLEX,0.5,c2);
+            } else
                 c2 = cv::Scalar(255,255,255);
-            cv::line(frameL_color,cv::Point(ti.x()*IMSCALEF,ti.y()*IMSCALEF),t,c2,1);
+            cv::line(frameL_color,p,t,c2,1);
+
+
         }
     }
     cv::resize(frameL_color,roi,size);
