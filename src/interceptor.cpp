@@ -32,18 +32,17 @@ void Interceptor::update(bool drone_at_base) {
             break;
         }
 
-        update_target(drone_at_base);
+        update_far_target(drone_at_base);
         update_insect_in_range();
-        if (!_count_insect_not_in_range){
+        if (!_count_insect_not_in_range)
             _interceptor_status = is_move_to_intercept;
-        } else
-            break;
-    } FALLTHROUGH_INTENDED; case is_move_to_intercept: { // move max speed to somewhere close of the insect, preferably 20cm below behind.
+        break;
+    } case is_move_to_intercept: { // move max speed to somewhere close of the insect, preferably 20cm below behind.
         if  (!_itrkr->foundL) {
           _interceptor_status = is_waiting_for_target;
           break;
         }
-         update_target(drone_at_base);
+         update_far_target(drone_at_base);
          update_insect_in_range();
         if (!_count_insect_not_in_range){
            _interceptor_status = is_waiting_in_reach_zone;
@@ -54,7 +53,6 @@ void Interceptor::update(bool drone_at_base) {
              _interceptor_status = is_close_chasing;
          } else {
              _intercept_pos.y -= 0.2f; // initially target to go 10cm below the insect. When close enough the drone can change direction aggressively and attack from below.
-             //todo:: also move 20cm behind the insect if possible
              break;
          }
 
@@ -63,23 +61,22 @@ void Interceptor::update(bool drone_at_base) {
           _interceptor_status = is_waiting_for_target;
           break;
         }
-         update_target(drone_at_base);
+         update_close_target();
          update_insect_in_range();
         if (!_count_insect_not_in_range){
            _interceptor_status = is_waiting_in_reach_zone;
            break;
          }
-
-//        cv::Point3f vector = insect_pos-drone_pos;
-//        float norm_vector = norm(vector);
-//        _intercept_vel += vector/norm_vector*0.6f;
+        if (_horizontal_separation>0.7f && _vertical_separation>0.4f ){
+            _interceptor_status = is_move_to_intercept;
+        }
         break;
     }
     }
 
 }
 
-void Interceptor::update_target(bool drone_at_base){
+void Interceptor::update_far_target(bool drone_at_base){
     track_data itd = _itrkr->Last_track_data();
     cv::Point3f insect_pos = {itd.posX,itd.posY,itd.posZ};
     cv::Point3f insect_vel = {itd.svelX,itd.svelY,itd.svelZ};
@@ -99,6 +96,26 @@ void Interceptor::update_target(bool drone_at_base){
     _intercept_pos = insect_pos + (_intercept_vel*half_tti);
     _intercept_vel = insect_vel;
     _intercept_acc = insect_acc;
+
+    _horizontal_separation = norm(cv::Point2f(drone_pos.x,drone_pos.z) - cv::Point2f(insect_pos.x,insect_pos.z));
+    _vertical_separation = insect_pos.y-drone_pos.y;
+}
+void Interceptor::update_close_target(){
+    track_data itd = _itrkr->Last_track_data();
+    cv::Point3f insect_pos = {itd.posX,itd.posY,itd.posZ};
+    cv::Point3f insect_vel = {itd.svelX,itd.svelY,itd.svelZ};
+    cv::Point3f insect_acc = {itd.saccX,itd.saccY,itd.saccZ};
+
+    track_data dtd = _dtrkr->Last_track_data();
+    cv::Point3f drone_pos = {dtd.posX,dtd.posY,dtd.posZ};
+
+    _intercept_pos = insect_pos;
+    _intercept_vel = insect_vel;
+    _intercept_acc = insect_acc;
+
+    cv::Point3f vector = insect_pos-drone_pos;
+    float norm_vector = norm(vector);
+    _intercept_vel += vector/norm_vector*0.6f;
 
     _horizontal_separation = norm(cv::Point2f(drone_pos.x,drone_pos.z) - cv::Point2f(insect_pos.x,insect_pos.z));
     _vertical_separation = insect_pos.y-drone_pos.y;

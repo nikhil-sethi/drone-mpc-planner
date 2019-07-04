@@ -36,7 +36,8 @@ private:
 
     void intercept_spiral();
     float calc_tti(cv::Point3f insect_pos, cv::Point3f insect_vel, cv::Point3f drone_pos, cv::Point3f drone_vel, bool drone_taking_off);
-    void update_target(bool drone_at_base);
+    void update_far_target(bool drone_at_base);
+    void update_close_target();
     void update_insect_in_range();
 
 public:
