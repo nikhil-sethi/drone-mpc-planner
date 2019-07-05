@@ -979,6 +979,8 @@ void Cam::watchdog_thread(void) {
         usleep(300000);
         if (!watchdog) {
             std::cout << "Watchdog alert! Attempting to continue" << std::endl;
+            new_frame1 =true;
+            new_frame2 = true;
             wait_for_image.notify_all();
             usleep(300000);
             if (!watchdog) {
