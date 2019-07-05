@@ -45,15 +45,13 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     namedWindow(window_name, WINDOW_NORMAL);
 
     createTrackbar("#points / frame", window_name, &settings.max_points_per_frame, 255);
-    createTrackbar("ignore circle size", window_name, &settings.ignore_circle_r_around_motion_max, 255);
+    createTrackbar("Radius", window_name, &settings.radius, 255);
     createTrackbar("Motion threshold", window_name, &settings.motion_thresh, 255);
     createTrackbar("Min disparity", window_name, &settings.min_disparity, 255);
     createTrackbar("Max disparity", window_name, &settings.max_disparity, 255);
     createTrackbar("roi_min_size", window_name, &settings.roi_min_size, 2000);
     createTrackbar("roi_max_grow", window_name, &settings.roi_max_grow, 500);
     createTrackbar("roi_grow_speed", window_name, &settings.roi_grow_speed, 256);
-    createTrackbar("appear_void_max_distance", window_name, &settings.appear_void_max_distance, 250);
-    createTrackbar("void_void_max_distance", window_name, &settings.void_void_max_distance, 20);
     createTrackbar("exclude_min_distance", window_name, &settings.exclude_min_distance, 250);
     createTrackbar("background_subtract_zone_factor", window_name, &settings.background_subtract_zone_factor, 100);
 
@@ -152,8 +150,6 @@ void ItemTracker::select_best_candidate(){
     wti.clear();
     if (nCandidates) {
 
-        cv::Point3f previous_location(find_result.best_image_locationL.pt.x,find_result.best_image_locationL.pt.y,0);
-
         //first sort candidates based on image location odds, and check disparity range and background checks
         int n = keypoint_candidates.size();
 
@@ -206,7 +202,7 @@ void ItemTracker::select_best_candidate(){
 }
 
 std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path,std::vector<cv::Point2f> additional_ignores) {
-    float dis1,dis2,dis = 0;
+    float dis1 = 0;
 
     //    if (_name.compare("insect")==0 && keypoints.size()>0){
     //        std::cout << "insect" << std::endl;
@@ -215,7 +211,6 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<tr
     //    if (_name.compare("drone")==0 && keypoints.size()>0){
     //        std::cout << "drone" << std::endl;
     //    }
-
 
     for (uint j=0; j<additional_ignores.size();j++){
         float min_dis = 9999;
@@ -235,45 +230,27 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<tr
 
     if (exclude_path.size() > 0 && keypoints.size ()>0) {
         track_item exclude = exclude_path.at(exclude_path.size()-1);
-        track_item exclude_prev = exclude;
-        if (exclude_path.size() > 1) {
-            exclude_prev = exclude_path.at(exclude_path.size()-2);
-        }
+
+//        if (exclude_path.size() > 1) {
+//            exclude_prev = exclude_path.at(exclude_path.size()-2);
+//        }
         std::vector<track_item> tmp = keypoints;
         int erase_cnt =0;
         for (uint i = 0 ; i< tmp.size();i++){
             dis1 = sqrtf(powf(tmp.at(i).k.pt.x - exclude.x(),2) +powf(tmp.at(i).k.pt.y - exclude.y(),2));
-            dis2 = sqrtf(powf(tmp.at(i).k_void.pt.x - exclude.x(),2) +powf(tmp.at(i).k_void.pt.y - exclude.y(),2));
-            float certainty_this_kp = calc_certainty(tmp.at(i).k);
+//            dis2 = sqrtf(powf(tmp.at(i).k_void.pt.x - exclude.x(),2) +powf(tmp.at(i).k_void.pt.y - exclude.y(),2));
+//            float certainty_this_kp = calc_certainty(tmp.at(i).k);
 
             float threshold_dis = settings.exclude_min_distance / sqrtf(exclude.tracking_certainty);
             if (threshold_dis > settings.exclude_max_distance)
                 threshold_dis = settings.exclude_max_distance;
-            bool size_check = true;
-            if (this->pathL.size()>0) {
-                float size_diff_tmp = abs(this->pathL.back().k.size-tmp.at(i).k.size);
-                float size_diff_exc = abs(exclude.k.size-tmp.at(i).k.size);
-                if (size_diff_tmp < size_diff_exc)
-                    size_check = false;
-            }
-            if ((dis1 < threshold_dis|| dis2 < threshold_dis) && size_check) {// TODO: && certainty_this_kp <= exclude.tracking_certainty) {
+
+            if ((dis1 < threshold_dis)) {// TODO: && certainty_this_kp <= exclude.tracking_certainty) {
                 keypoints.erase(keypoints.begin() + i - erase_cnt);
                 erase_cnt++;
-            } else  if (exclude_path.size() > 1) {
-                dis = sqrtf(powf(tmp.at(i).x() - exclude_prev.x(),2) +powf(tmp.at(i).y() - exclude_prev.y(),2));
-                threshold_dis = settings.exclude_min_distance / sqrtf(exclude_prev.tracking_certainty);
-                if (threshold_dis > settings.exclude_max_distance)
-                    threshold_dis = settings.exclude_max_distance;
-                if (dis < threshold_dis && certainty_this_kp < exclude_prev.tracking_certainty && size_check) {
-                    keypoints.erase(keypoints.begin() + i - erase_cnt);
-                    erase_cnt++;
-                }
             }
         }
     }
-    //if (exclude_path.size() > 10 && keypoints.size()>0 && _name == "insect") {
-    //    std::cout << "hmmm" << std::endl;
-    //}
     return keypoints;
 }
 
@@ -424,7 +401,7 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
     _approx = get_approx_cutout_filtered(prev,diff,roi_size);
     cv::Mat frame = _approx;
 
-    int radius = settings.ignore_circle_r_around_motion_max;
+    int radius = settings.radius;
 
 #ifdef VIZ
     std::vector<cv::Mat> vizs;

@@ -448,7 +448,6 @@ void Visualizer::draw_tracker_viz() {
         putText(frameL_color,ss.str(),p,cv::FONT_HERSHEY_SIMPLEX,0.5,c);
         cv::line(frameL_color,p,p,c,2);
     }
-      std::cout << drn_path.size() << std::endl;
     if (drn_path.size()>0){
         std::stringstream ss;
         ItemTracker::track_item ti = drn_path.back();
@@ -498,9 +497,13 @@ void Visualizer::paint() {
         request_trackframe_paint = false;
         cv::imshow("tracking results", trackframe);
         if (_dtrkr->diff_viz.cols > 0)
-            cv::imshow("diff", _dtrkr->diff_viz);
+            cv::imshow("drn_diff", _dtrkr->diff_viz);
+        if (_itrkr->diff_viz.cols > 0)
+            cv::imshow("ins_diff", _itrkr->diff_viz);
         if (_dtrkr->viz_max_points.cols> 0)
-            cv::imshow("maxs", _dtrkr->viz_max_points);
+            cv::imshow("drone_maxs", _dtrkr->viz_max_points);
+        if (_itrkr->viz_max_points.cols> 0)
+            cv::imshow("ins_maxs", _itrkr->viz_max_points);
         //draw_segment_viz();
         if (_visdat->viz_frame.cols>0)
             cv::imshow("diff",_visdat->viz_frame);

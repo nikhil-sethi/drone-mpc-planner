@@ -23,6 +23,7 @@ public:
     void track(float time, std::vector<track_item>  ignore, std::vector<cv::Point2f> additional_ignores);
     void update_from_log(LogReader::Log_Entry entry, int frame_number);
 
+    cv::Mat diff_viz;
 };
 
 

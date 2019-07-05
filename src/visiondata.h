@@ -31,11 +31,11 @@ private:
 
     struct BaseVisionSettings{
 
-        int motion_update_iterator_max = 30;
+        int motion_update_iterator_max = 4;
         float brightness_event_tresh = 5;
         float brightness_check_period = 1;
 
-        float version = 1.33f;
+        float version = 1.34f;
 
         template <class Archive>
         void serialize( Archive & ar )

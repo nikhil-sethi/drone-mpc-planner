@@ -27,7 +27,6 @@ class ItemTracker {
 public:
     struct track_item {
         cv::KeyPoint k;
-        cv::KeyPoint k_void;
         int frame_id;
         float tracking_certainty;
         float distance;
@@ -43,7 +42,6 @@ public:
         }
         track_item(track_item const &t){
             k = t.k;
-            k_void = t.k_void;
             frame_id = t.frame_id;
             tracking_certainty = t.tracking_certainty;
             distance = t.distance;
@@ -77,15 +75,13 @@ private:
         int roi_max_grow = 160;
         int roi_grow_speed = 64;
 
-        int appear_void_max_distance = 3;
-        int void_void_max_distance = 10;
         int exclude_min_distance = 5; // in res/IMSCALEF resolution
         int exclude_max_distance = 50; // in res/IMSCALEF resolution
 
         int exclude_additional_max_distance = 15; // in res/IMSCALEF resolution
 
         int max_points_per_frame = 10;
-        int ignore_circle_r_around_motion_max = 15;
+        int radius = 15;
         int motion_thresh = 10;
 
         int background_subtract_zone_factor = 90;
@@ -95,16 +91,15 @@ private:
         int pixel_dist_seperation_min = 2;
         int pixel_dist_seperation_max = 5;
 
-        float version = 1.7f;
+        float version = 1.9f;
 
         template <class Archive>
         void serialize( Archive & ar )
         {
             ar(version,min_disparity,max_disparity,roi_min_size,
-               roi_max_grow,roi_grow_speed,appear_void_max_distance,
-               void_void_max_distance,appear_void_max_distance,
+               roi_max_grow,roi_grow_speed,exclude_min_distance,
                exclude_max_distance,background_subtract_zone_factor,
-               max_points_per_frame,ignore_circle_r_around_motion_max,
+               max_points_per_frame,radius,
                motion_thresh,exclude_additional_max_distance,
                pixel_dist_landing_spot,pixel_dist_seperation_min,
                pixel_dist_seperation_max);

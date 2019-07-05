@@ -1,7 +1,12 @@
 #include "insecttracker.h"
+#include "common.h"
 
 using namespace cv;
 using namespace std;
+
+#ifdef HASSCREEN
+//#define VIZ
+#endif
 
 void InsectTracker::init(std::ofstream *logger, VisionData *visdat) {
     ItemTracker::init(logger,visdat,"insect");
@@ -10,11 +15,13 @@ void InsectTracker::init(std::ofstream *logger, VisionData *visdat) {
 }
 void InsectTracker::init_settings() {
     settings.min_disparity=1;
-    settings.motion_thresh = 15;
+    settings.motion_thresh = 7;
+    settings.exclude_min_distance = 10;
 
-    settings.roi_min_size = 200;
+    settings.roi_min_size = 100;
     settings.roi_max_grow = 160;
-    settings.roi_grow_speed = 64;
+    settings.roi_grow_speed = 100;
+    settings.radius = 5;
 
 }
 
@@ -69,7 +76,26 @@ void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) 
 
 void InsectTracker::track(float time, std::vector<track_item> exclude,std::vector<cv::Point2f> additional_ignores) {
 
+#ifdef VIZ
+    cv::cvtColor(_visdat->diffL*10,diff_viz,CV_GRAY2BGR);
+#endif
+
     ItemTracker::track(time,exclude,additional_ignores);
+
+#ifdef VIZ
+        for (uint i = 0; i< wti.size(); i++){
+            world_track_item k = wti.at(i);
+//            cv::circle(diff_viz,k.image_coordinates()*IMSCALEF,3,cv::Scalar(0,255,0),2);
+            cv::putText(diff_viz,std::to_string(i),k.image_coordinates()*IMSCALEF,cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,255,0));
+        }
+        if (exclude.size()>0)
+            cv::putText(diff_viz,to_string_with_precision(exclude.back().k.pt.x,0) + ", " + to_string_with_precision(exclude.back().k.pt.y,0),exclude.back().k.pt*IMSCALEF,cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
+
+        for (uint i=0; i< additional_ignores.size();i++) {
+            cv::putText(diff_viz,to_string_with_precision(additional_ignores.at(i).x,0) + ", " + to_string_with_precision(additional_ignores.at(i).y,0),additional_ignores.at(i)*IMSCALEF,cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(50,50,230));
+        }
+
+#endif
 
     if (n_frames_lost > n_frames_lost_threshold || !foundL) {
         predicted_pathL.clear();
