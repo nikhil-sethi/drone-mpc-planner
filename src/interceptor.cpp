@@ -49,12 +49,13 @@ void Interceptor::update(bool drone_at_base) {
            break;
          }
 
-         if (_horizontal_separation<0.5f && _vertical_separation>0.1f && _vertical_separation<0.6f){
+         if (fabs(_horizontal_separation)<0.5f && fabs(_vertical_separation)<0.4f){
              _interceptor_state = is_close_chasing;
-         } else {
-             _intercept_pos.y -= 0.2f; // initially target to go 10cm below the insect. When close enough the drone can change direction aggressively and attack from below.
+         } else
              break;
-         }
+
+         if (_intercept_pos.y< _dtrkr->Drone_Startup_Location().y + 0.15f)
+             _intercept_pos.y  = _dtrkr->Drone_Startup_Location().y + 0.15f;
 
     } FALLTHROUGH_INTENDED; case is_close_chasing: {
         if  (!_itrkr->foundL) {
@@ -63,11 +64,13 @@ void Interceptor::update(bool drone_at_base) {
         }
          update_close_target();
          update_insect_in_range();
+         if (_intercept_pos.y< _dtrkr->Drone_Startup_Location().y + 0.15f)
+             _intercept_pos.y  = _dtrkr->Drone_Startup_Location().y + 0.15f;
         if (_count_insect_not_in_range>5){
            _interceptor_state = is_waiting_in_reach_zone;
            break;
          }
-        if (_horizontal_separation>0.7f && _vertical_separation>0.4f ){
+        if (fabs(_horizontal_separation)>0.7f){
             _interceptor_state = is_move_to_intercept;
         }
         break;
@@ -94,6 +97,7 @@ void Interceptor::update_far_target(bool drone_at_base){
     float tti = calc_tti(insect_pos,_intercept_vel,drone_pos,drone_vel,drone_at_base);
     float half_tti = tti/2.f; // only predict the location of the insect for a partion of the actual time we need to get there
     _intercept_pos = insect_pos + (_intercept_vel*half_tti);
+    _intercept_pos.y -= 0.2f; // put the drone a bit below the insect
     _intercept_vel = insect_vel;
     _intercept_acc = insect_acc;
 
@@ -115,7 +119,7 @@ void Interceptor::update_close_target(){
 
     cv::Point3f vector = insect_pos-drone_pos;
     float norm_vector = norm(vector);
-    _intercept_vel += vector/norm_vector*0.6f;
+    _intercept_vel += vector/norm_vector*0.6f; //TODO: check if this work??
 
     _horizontal_separation = norm(cv::Point2f(drone_pos.x,drone_pos.z) - cv::Point2f(insect_pos.x,insect_pos.z));
     _vertical_separation = insect_pos.y-drone_pos.y;

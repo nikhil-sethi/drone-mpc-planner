@@ -54,7 +54,7 @@ public:
     void reset_insect_cleared() {_count_insect_not_in_range = 0;}
 
     bool insect_in_range() {return !_count_insect_not_in_range;}
-    bool insect_cleared() {return _count_insect_not_in_range > VIDEOFPS*3; }
+    bool insect_cleared() {return _count_insect_not_in_range > VIDEOFPS*0.5f; } // TODO: make a nice variable
     cv::Point3f target_position() {return _intercept_pos;}
     cv::Point3f target_speed() {return _intercept_vel;}
     cv::Point3f target_accelleration() {return _intercept_acc;}
