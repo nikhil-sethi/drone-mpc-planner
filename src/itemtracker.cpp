@@ -401,7 +401,17 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
     _approx = get_approx_cutout_filtered(prev,diff,roi_size);
     cv::Mat frame = _approx;
 
-    int radius = settings.radius;
+    float scale_radius = 1; // scale size of the blob with distance, which may be available from previous cycles
+    if (pathL.size()>0)
+        scale_radius = 1/pathL.back().distance;
+    //bound, as I don't fully trust the distance
+    if (scale_radius>1)
+        scale_radius = 1;
+    else if (scale_radius<0.05f)
+        scale_radius = 0.05f;
+
+    int radius = settings.radius*scale_radius;
+
 
 #ifdef VIZ
     std::vector<cv::Mat> vizs;

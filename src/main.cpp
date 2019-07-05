@@ -578,15 +578,18 @@ int main( int argc, char **argv )
 
     try {
         init(argc,argv);
+        process_video();
+    } catch(my_video_ended) {
+        std::cout << "Video ended" << std::endl;
+        key = 27;
     } catch(my_exit const &e) {
+        key = 27;
         close();
         std::cout << "Error: " << e.msg << std::endl;
         return 1;
     }
 
-    process_video();
     close();
-
     return 0;
 }
 

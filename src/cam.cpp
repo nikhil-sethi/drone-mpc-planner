@@ -94,7 +94,7 @@ void Cam::update_playback(void) {
         double duration = static_cast<double>(static_cast<rs2::playback>(dev).get_duration().count()) / 1e9;
         if (frame_time() > duration-0.5){
             std::cout << "Video end, exiting" << std::endl;
-            throw my_exit(0);
+            throw my_video_ended();
         }
 
         if (_paused && playback_bufferR_cleaned.size() < 3 ){ // 3 to start buffering 3 frames before the buffer runs empty
@@ -108,7 +108,7 @@ void Cam::update_playback(void) {
                 resume();
             } else {
                 std::cout << "Video end, exiting" << std::endl;
-                throw my_exit(0);
+                throw my_video_ended();
             }
         }
 
@@ -933,8 +933,10 @@ void Cam::close() {
         rs_depth_sensor.stop();
         rs_depth_sensor.close();
         usleep(1000);
+#ifdef WATCHDOG_ENABLED
         std::cout << "Waiting for camera watchdog." << std::endl;
         thread_watchdog.join();
+#endif
         std::cout << "Camera closed" << std::endl;
         initialized = false;
     }

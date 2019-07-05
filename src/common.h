@@ -80,6 +80,9 @@ struct my_exit : public std::exception {
     std::string msg;
     my_exit(std::string return_value) : msg(return_value) {}
 };
+struct my_video_ended : public std::exception {
+    my_video_ended() {}
+};
 
 
 #ifndef FALLTHROUGH_INTENDED
