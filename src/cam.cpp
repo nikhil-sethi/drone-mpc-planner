@@ -927,11 +927,14 @@ void Cam::seek(float time) {
 
 void Cam::close() {
     if (initialized) {
+        exit_watchdog_thread = true;
         std::cout << "Closing camera" << std::endl;
         auto rs_depth_sensor = dev.first<rs2::depth_sensor>();
         rs_depth_sensor.stop();
         rs_depth_sensor.close();
         usleep(1000);
+        std::cout << "Waiting for camera watchdog." << std::endl;
+        thread_watchdog.join();
         std::cout << "Camera closed" << std::endl;
         initialized = false;
     }
@@ -976,13 +979,13 @@ void Cam::watchdog_thread(void) {
     std::cout << "Watchdog thread started" << std::endl;
     usleep(10000000); //wait until camera is running for sure
     while (!exit_watchdog_thread) {
-        usleep(300000);
-        if (!watchdog) {
+        usleep(30000);
+        if (!watchdog && !exit_watchdog_thread) {
             std::cout << "Watchdog alert! Attempting to continue" << std::endl;
             new_frame1 =true;
             new_frame2 = true;
             wait_for_image.notify_all();
-            usleep(300000);
+            usleep(30000);
             if (!watchdog) {
                 std::cout << "Watchdog alert! Killing the process." << std::endl;
                 std::system("killall -9 pats");
