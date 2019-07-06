@@ -2,7 +2,6 @@
 
 #ifdef HASSCREEN
 //#define TUNING
-//#define VIZ
 #endif
 
 using namespace cv;
@@ -15,6 +14,8 @@ void VisionData::init(bool fromfile, std::string log_in_dir,cv::Mat new_Qf, cv::
     frameL_prev = frameL;
     frameR_prev = frameR;
     depth_background_mm = new_depth_background_mm;
+
+    enable_viz_diff = false; // Note: the enable_diff_vizs in the insect/drone trackers may be more interesting instead of this one.
 
     camera_angle = new_camera_angle;
     camera_gain = new_camera_gain;
@@ -114,10 +115,8 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
     diffR.convertTo(diffR, CV_8UC1);
     cv::resize(diffR,diffR_small,smallsize);
 
-#ifdef VIZ
-    viz_frame = diffL*10;
-//    viz_frame = createRowImage({diffL*10,diffR*10},CV_8UC1,1.f);
-#endif
+    if (enable_viz_diff)
+        viz_frame = diffL*10;
 
     if (_calibrating_background )
         collect_no_drone_frames(dL); // calibration of background uncertainty map

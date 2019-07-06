@@ -11,7 +11,6 @@ using namespace std;
 
 #ifdef HASSCREEN
 //#define TUNING
-//#define VIZ
 #endif
 
 void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string name) {
@@ -411,11 +410,7 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
         scale_radius = 0.05f;
 
     int radius = settings.radius*scale_radius;
-
-
-#ifdef VIZ
-    std::vector<cv::Mat> vizs;
-#endif
+    std::vector<cv::Mat> vizs_maxs;
 
     for (int i = 0; i < settings.max_points_per_frame; i++) {
         cv::Point mint;
@@ -456,13 +451,13 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
             cv::Moments mo = cv::moments(cropped,true);
             cv::Point2f COG = cv::Point2f(static_cast<float>(mo.m10) / static_cast<float>(mo.m00), static_cast<float>(mo.m01) / static_cast<float>(mo.m00));
 
-
-#ifdef VIZ
-            cv::Mat viz = createRowImage({roi,mask},CV_8UC1,4);
-            cv::cvtColor(viz,viz,CV_GRAY2BGR);
-            cv::putText(viz,std::to_string(i),cv::Point(0, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,255,0));
-            vizs.push_back(viz);
-#endif
+            cv::Mat viz;
+            if (enable_viz_max_points){
+                viz = createRowImage({roi,mask},CV_8UC1,4);
+                cv::cvtColor(viz,viz,CV_GRAY2BGR);
+                cv::putText(viz,std::to_string(i),cv::Point(0, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,255,0));
+                vizs_maxs.push_back(viz);
+            }
 
             // relative it back to the _approx frame
             COG.x += r2.x;
@@ -484,10 +479,10 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
                         cv::Point2f COG2 = cv::Point2f(static_cast<float>(mo2.m10) / static_cast<float>(mo2.m00), static_cast<float>(mo2.m01) / static_cast<float>(mo2.m00));
 
                         if (COG2.x == COG2.x) {// if not nan
-#ifdef VIZ
-                            cv::circle(viz,COG2*4,1,cv::Scalar(0,0,255),1);
-                            cv::putText(viz,to_string_with_precision(COG2.y*4+find_result.roi_offset.y,0),COG2*4,cv::FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(100,0,255));
-#endif
+                            if (enable_viz_max_points){
+                                cv::circle(viz,COG2*4,1,cv::Scalar(0,0,255),1);
+                                cv::putText(viz,to_string_with_precision(COG2.y*4+find_result.roi_offset.y,0),COG2*4,cv::FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(100,0,255));
+                            }
                             // relative COG back to the _approx frame, and save it:
                             COG2.x += r2.x;
                             COG2.y += r2.y;
@@ -505,12 +500,12 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
             if (single_blob) { // we could not split this blob, so we can use the original COG
                 if (COG.x == COG.x) { // if not nan
                     scored_points->push_back(cv::KeyPoint(COG, mo.m00));
-#ifdef VIZ
-                    cv::Point2f tmpCOG;
-                    tmpCOG.x = COG.x - r2.x;
-                    tmpCOG.y = COG.y - r2.y;
-                    cv::circle(viz,tmpCOG*4,1,cv::Scalar(0,0,255),1);
-#endif
+                    if (enable_viz_max_points) {
+                        cv::Point2f tmpCOG;
+                        tmpCOG.x = COG.x - r2.x;
+                        tmpCOG.y = COG.y - r2.y;
+                        cv::circle(viz,tmpCOG*4,1,cv::Scalar(0,0,255),1);
+                    }
                     //remove this COG from the ROI:
                     cv::circle(frame, COG, 1, cv::Scalar(0), radius);
                 } else {
@@ -525,10 +520,21 @@ void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff
         }
     }
 
-#ifdef VIZ
-    if (vizs.size()>0)
-        viz_max_points = createColumnImage(vizs,CV_8UC3,1);
-#endif
+
+    if (enable_viz_max_points && vizs_maxs.size()>0)
+        viz_max_points = createColumnImage(vizs_maxs,CV_8UC3,1);
+    if (enable_viz_roi && _cir.cols > 0 && _dif.cols > 0 && _approx.cols > 0 ){
+        cv::Mat cir8 = _cir*255;
+        cv::Mat dif8 = _dif*10;
+        cir8.convertTo(cir8, CV_8UC1);
+        dif8.convertTo(dif8, CV_8UC1);
+        std::vector<cv::Mat> ims;
+
+        ims.push_back(cir8);
+        ims.push_back(dif8);
+        ims.push_back(_approx);
+        viz_roi = createColumnImage(ims,CV_8UC1);
+    }
 
 }
 

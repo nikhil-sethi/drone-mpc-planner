@@ -184,6 +184,9 @@ protected:
     bool _enable_depth_background_check = true;
     bool _enable_motion_background_check = true;
 
+    bool enable_viz_roi = false; // flag for enabling the roi visiualization
+    bool enable_viz_max_points = false; // flag for enabling the maxs visiualization
+
     float stereo_match(cv::Point closestL, cv::Mat diffL, cv::Mat diffR, float prev_disparity);
     void reset_tracker_ouput(float time);
     virtual cv::Mat get_probability_cloud(cv::Point size);
@@ -197,7 +200,7 @@ public:
     std::vector<track_item> predicted_pathL;
     std::vector<track_item> ignores; // keeps the item locations that should be ignored by other itemtrackers
 
-    cv::Mat viz_max_points;
+    cv::Mat viz_max_points,viz_roi;
 
     int n_frames_tracking =0;
     float last_sighting_time = 0;

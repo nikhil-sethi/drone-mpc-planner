@@ -1,10 +1,13 @@
 #include "dronetracker.h"
 
-#ifdef HASSCREEN
-//#define VIZ
-#endif
+
 
 bool DroneTracker::init(std::ofstream *logger, VisionData *visdat, bool fromfile, std::string bag_dir) {
+#ifdef HASSCREEN
+    enable_viz_diff = false;
+    enable_viz_roi = false;
+    enable_viz_max_points = false;
+#endif
     ItemTracker::init(logger,visdat,"drone");
 
     if (fromfile)
@@ -31,9 +34,9 @@ void DroneTracker::init_settings() {
 void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_is_active) {
     std::vector<cv::Point2f> additional_ignores;
     current_time = time;
-#ifdef VIZ
-    cv::cvtColor(_visdat->diffL*10,diff_viz,CV_GRAY2BGR);
-#endif
+
+    if (enable_viz_diff)
+        cv::cvtColor(_visdat->diffL*10,diff_viz,CV_GRAY2BGR);
 
     switch (_drone_tracking_status) {
     case dts_init: {
@@ -191,15 +194,15 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
         ignores_for_insect_tracker.clear();
         ignores_for_insect_tracker.push_back(Drone_Startup_Im_Location());
 
-#ifdef VIZ
-        cv::Point2f tmpp = Drone_Startup_Im_Location();
-        cv::circle(diff_viz,tmpp*IMSCALEF,1,cv::Scalar(255,0,0),1);
-        cv::circle(diff_viz,Drone_Startup_Im_Location()*IMSCALEF,1,cv::Scalar(0,0,255),1);
-        for (uint i = 0; i< wti.size(); i++){
-            world_track_item k = wti.at(i);
-            cv::circle(diff_viz,k.image_coordinates()*IMSCALEF,3,cv::Scalar(0,255,0),2);
+        if (enable_viz_diff){
+            cv::Point2f tmpp = Drone_Startup_Im_Location();
+            cv::circle(diff_viz,tmpp*IMSCALEF,1,cv::Scalar(255,0,0),1);
+            cv::circle(diff_viz,Drone_Startup_Im_Location()*IMSCALEF,1,cv::Scalar(0,0,255),1);
+            for (uint i = 0; i< wti.size(); i++){
+                world_track_item k = wti.at(i);
+                cv::circle(diff_viz,k.image_coordinates()*IMSCALEF,3,cv::Scalar(0,255,0),2);
+            }
         }
-#endif
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
         else if (n_frames_lost==0 && wti.size() > 1 ){

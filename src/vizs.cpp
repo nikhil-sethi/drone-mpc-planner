@@ -258,16 +258,6 @@ cv::Mat Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Point setpoint, std:
     return frame;
 }
 
-void Visualizer::draw_segment_viz(void){
-    std::vector<cv::Mat> ims;
-    if (cir8.cols > 0 && dif8.cols > 0 && approx.cols > 0 ){
-        ims.push_back(cir8);
-        ims.push_back(dif8);
-        ims.push_back(approx);
-        showColumnImage(ims,"drone_roi",CV_8UC1);
-    }
-}
-
 void Visualizer::draw_target_text(cv::Mat resFrame, float time, float dis,float min_dis) {
     std::stringstream ss_time,ss_dis,ss_min;
 
@@ -372,13 +362,6 @@ void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3d setpoint, float
         tracker_viz_base_data.exclude_max_distance = dtrk->settings.exclude_max_distance;
         tracker_viz_base_data.drone_predicted_control_location = dtrk->predicted_locationL_last;
         tracker_viz_base_data.drone_predicted_control_location_prev = dtrk->predicted_locationL_prev;
-
-
-        cir8 = _dtrkr->_cir*255;
-        dif8 = _dtrkr->_dif*10;
-        cir8.convertTo(cir8, CV_8UC1);
-        dif8.convertTo(dif8, CV_8UC1);
-        approx = _dtrkr->_approx.clone();
 
         new_tracker_viz_data_requested = false;
         lock_frame_data.unlock();
@@ -496,6 +479,8 @@ void Visualizer::paint() {
     if (request_trackframe_paint) {
         request_trackframe_paint = false;
         cv::imshow("tracking results", trackframe);
+        if (_visdat->viz_frame.cols>0)
+            cv::imshow("diff",_visdat->viz_frame);
         if (_dtrkr->diff_viz.cols > 0)
             cv::imshow("drn_diff", _dtrkr->diff_viz);
         if (_itrkr->diff_viz.cols > 0)
@@ -504,9 +489,10 @@ void Visualizer::paint() {
             cv::imshow("drone_maxs", _dtrkr->viz_max_points);
         if (_itrkr->viz_max_points.cols> 0)
             cv::imshow("ins_maxs", _itrkr->viz_max_points);
-        //draw_segment_viz();
-        if (_visdat->viz_frame.cols>0)
-            cv::imshow("diff",_visdat->viz_frame);
+        if (_dtrkr->viz_roi.cols> 0)
+            cv::imshow("drone_roi", _dtrkr->viz_roi);
+        if (_itrkr->viz_roi.cols> 0)
+            cv::imshow("ins_roi", _itrkr->viz_roi);
 
         new_tracker_viz_data_requested = true;
     }

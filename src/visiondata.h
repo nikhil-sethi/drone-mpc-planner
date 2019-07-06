@@ -65,6 +65,7 @@ private:
     cv::Point delete_motion_spot = {0};
     int delete_motion_r = 0;
 
+    bool enable_viz_diff = false;
 
     bool initialized = false;
 

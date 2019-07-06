@@ -4,11 +4,13 @@
 using namespace cv;
 using namespace std;
 
+void InsectTracker::init(std::ofstream *logger, VisionData *visdat) {
 #ifdef HASSCREEN
-//#define VIZ
+    enable_viz_diff = true;
+    enable_viz_roi = true;
+    enable_viz_max_points = true;
 #endif
 
-void InsectTracker::init(std::ofstream *logger, VisionData *visdat) {
     ItemTracker::init(logger,visdat,"insect");
 
     cv::invert(visdat->Qf,Qfi);
@@ -76,26 +78,22 @@ void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) 
 
 void InsectTracker::track(float time, std::vector<track_item> exclude,std::vector<cv::Point2f> additional_ignores) {
 
-#ifdef VIZ
-    cv::cvtColor(_visdat->diffL*10,diff_viz,CV_GRAY2BGR);
-#endif
-
     ItemTracker::track(time,exclude,additional_ignores);
 
-#ifdef VIZ
+    if (enable_viz_diff) {
+        cv::cvtColor(_visdat->diffL*10,diff_viz,CV_GRAY2BGR);
         for (uint i = 0; i< wti.size(); i++){
             world_track_item k = wti.at(i);
-//            cv::circle(diff_viz,k.image_coordinates()*IMSCALEF,3,cv::Scalar(0,255,0),2);
+            //            cv::circle(diff_viz,k.image_coordinates()*IMSCALEF,3,cv::Scalar(0,255,0),2);
             cv::putText(diff_viz,std::to_string(i),k.image_coordinates()*IMSCALEF,cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,255,0));
         }
         if (exclude.size()>0)
             cv::putText(diff_viz,to_string_with_precision(exclude.back().k.pt.x,0) + ", " + to_string_with_precision(exclude.back().k.pt.y,0),exclude.back().k.pt*IMSCALEF,cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
 
         for (uint i=0; i< additional_ignores.size();i++) {
-            cv::putText(diff_viz,to_string_with_precision(additional_ignores.at(i).x,0) + ", " + to_string_with_precision(additional_ignores.at(i).y,0),additional_ignores.at(i)*IMSCALEF,cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(50,50,230));
+            cv::putText(diff_viz,to_string_with_precision(additional_ignores.at(i).x,0) + ", " + to_string_with_precision(additional_ignores.at(i).y,0),additional_ignores.at(i)*IMSCALEF,cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(150,150,150));
         }
-
-#endif
+    }
 
     if (n_frames_lost > n_frames_lost_threshold || !foundL) {
         predicted_pathL.clear();

@@ -77,6 +77,8 @@ private:
 
     bool _drone_control_prediction_valid = false;
 
+    bool enable_viz_diff = false;
+
     class DroneTrackerCalibrationData: public xmls::Serializable
     {
     public:
