@@ -120,9 +120,9 @@ private:
     };
     std::string _settingsFile;
     struct Find_result {
-        std::vector<track_item> keypointsL;
-        std::vector<track_item> keypointsL_wihout_excludes;
-        std::vector<track_item> excludes;
+        std::vector<image_track_item> image_track_items;
+        std::vector<image_track_item> image_track_item_filtered;
+        std::vector<image_track_item> excludes;
         cv::KeyPoint best_image_locationL;
         cv::Rect roi_offset;
         float disparity;
