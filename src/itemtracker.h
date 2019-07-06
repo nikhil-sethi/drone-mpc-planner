@@ -61,7 +61,16 @@ public:
         bool disparity_in_range = false;
 
     };
-
+    struct additional_ignore_point {
+        additional_ignore_point() {
+        }
+        additional_ignore_point(cv::Point2f location, float timeout){
+            p = location;
+            invalid_after = timeout;
+        }
+        cv::Point2f p;
+        float invalid_after;
+    };
     cv::Point3f predicted_locationL_last = {0};
     cv::Point3f predicted_locationL_prev = {0};
 
@@ -125,9 +134,9 @@ private:
     void update_disparity(float disparity, float dt);
     void update_prediction_state(cv::Point3f p, float blob_size);
     void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, float time, track_item *best_match, float disparity);
-    void find(std::vector<track_item> exclude, std::vector<cv::Point2f> additional_ignores);
+    void find(std::vector<track_item> exclude, std::vector<additional_ignore_point> additional_ignores);
     void select_best_candidate();
-    std::vector<ItemTracker::track_item> remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path, std::vector<cv::Point2f> additional_ignores);
+    std::vector<ItemTracker::track_item> remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path, std::vector<additional_ignore_point> additional_ignores);
     void find_max_change(cv::Point prev, cv::Point roi_size, cv::Mat diff, std::vector<cv::KeyPoint> *scored_points);
     float calc_certainty(cv::KeyPoint item);
     void init_kalman();
@@ -209,7 +218,7 @@ public:
 
     void close (void);
     void init(std::ofstream *logger, VisionData *_visdat, std::string name);
-    virtual void track(float time, std::vector<track_item> ignore, std::vector<cv::Point2f> additional_ignores);
+    virtual void track(float time, std::vector<track_item> ignore, std::vector<additional_ignore_point> additional_ignores);
     void append_log();
 
     uint track_history_max_size = VIDEOFPS;

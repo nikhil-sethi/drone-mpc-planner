@@ -54,10 +54,14 @@ private:
     float manual_calib_time_start = 0;
     float current_time = 0;
 
+    float startup_location_ignore_timeout = 1; // TODO: make this dependent on the motion_update_iterator_max
+    float taking_off_ignore_timeout = 0.1f; // TODO: make this dependent on the motion_update_iterator_max
+
     enum drone_tracking_states {
         dts_init = 0,
         dts_blinking,
         dts_inactive,
+        dts_detecting_takeoff_init,
         dts_detecting_takeoff,
         dts_detecting,
         dts_detected
@@ -78,6 +82,8 @@ private:
     bool _drone_control_prediction_valid = false;
 
     bool enable_viz_diff = false;
+
+    void clean_additional_ignores(float time);
 
     class DroneTrackerCalibrationData: public xmls::Serializable
     {
@@ -140,7 +146,7 @@ public:
     cv::Mat _cir;
     cv::Mat diff_viz;
 
-    std::vector<cv::Point2f> ignores_for_insect_tracker;
+    std::vector<ItemTracker::additional_ignore_point> ignores_for_insect_tracker;
 
     bool init(std::ofstream *logger, VisionData *_visdat, bool fromfile,std::string bag_dir);
     void track(float time, std::vector<track_item> ignore, bool drone_is_active);

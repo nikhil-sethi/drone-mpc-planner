@@ -32,7 +32,7 @@ void DroneTracker::init_settings() {
 }
 
 void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_is_active) {
-    std::vector<cv::Point2f> additional_ignores;
+    std::vector<additional_ignore_point> additional_ignores;
     current_time = time;
 
     if (enable_viz_diff)
@@ -131,6 +131,7 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
             _enable_motion_background_check = true;
             append_log(); // no tracking needed in this stage
             _drone_tracking_status = dts_inactive; //progress to the next stage in the main tracker state machine
+            ignores_for_insect_tracker.push_back(additional_ignore_point(Drone_Startup_Im_Location(),-1));
 
 #ifdef MANUAL_DRONE_LOCATE
             _enable_roi = true;
@@ -182,17 +183,19 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
         reset_tracker_ouput(time);
         _drone_control_prediction_valid = false;
         if (drone_is_active)
-            _drone_tracking_status = dts_detecting_takeoff;
+            _drone_tracking_status = dts_detecting_takeoff_init;
         else {
             ItemTracker::append_log(); //really no point in trying to detect the drone when it is inactive...
             break;
         }
-
+    } FALLTHROUGH_INTENDED; case dts_detecting_takeoff_init: {
+        // remove the indefinite startup location and replace with a time out
+        ignores_for_insect_tracker.clear();
+        ignores_for_insect_tracker.push_back(additional_ignore_point(Drone_Startup_Im_Location(),time+startup_location_ignore_timeout));
+        _drone_tracking_status = dts_detecting_takeoff;
     } FALLTHROUGH_INTENDED; case dts_detecting_takeoff: {
         insert_control_predicted_drone_location();
         ItemTracker::track(time,ignore,additional_ignores);
-        ignores_for_insect_tracker.clear();
-        ignores_for_insect_tracker.push_back(Drone_Startup_Im_Location());
 
         if (enable_viz_diff){
             cv::Point2f tmpp = Drone_Startup_Im_Location();
@@ -213,7 +216,7 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
                 float dist2take_off = sqrt(pow(k.image_coordinates().x - Drone_Startup_Im_Location().x,2)+pow(k.image_coordinates().y - Drone_Startup_Im_Location().y,2));
                 if (dist2take_off < settings.pixel_dist_landing_spot + DRONE_IM_START_SIZE){
                     takeoff_spot_detected = true;
-                    ignores_for_insect_tracker.push_back(k.image_coordinates());
+                    ignores_for_insect_tracker.push_back(additional_ignore_point(k.image_coordinates(),time+taking_off_ignore_timeout));
 #ifdef MANUAL_DRONE_LOCATE
                     float disparity = stereo_match(k.image_coordinates(),_visdat->diffL,_visdat->diffR,find_result.disparity);
                     std::vector<cv::Point3d> camera_coordinates, world_coordinates;
@@ -233,9 +236,9 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
 #endif
                 } else if (dist2take_off > settings.pixel_dist_seperation_min + DRONE_IM_START_SIZE && dist2take_off < settings.pixel_dist_seperation_max + DRONE_IM_START_SIZE){
                     drone_detected_near_takeoff_spot = true;
-                    ignores_for_insect_tracker.push_back(k.image_coordinates());
+                    ignores_for_insect_tracker.push_back(additional_ignore_point(k.image_coordinates(),time+taking_off_ignore_timeout));
                 } else if (dist2take_off < settings.pixel_dist_seperation_max + DRONE_IM_START_SIZE){
-                    ignores_for_insect_tracker.push_back(k.image_coordinates());
+                    ignores_for_insect_tracker.push_back(additional_ignore_point(k.image_coordinates(),time+taking_off_ignore_timeout));
                 }
             }
             if (takeoff_spot_detected &&drone_detected_near_takeoff_spot ) {
@@ -255,7 +258,6 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
         break;
     } case dts_detected: {
         insert_control_predicted_drone_location();
-        ignores_for_insect_tracker.clear();
         ItemTracker::track(time,ignore,additional_ignores);
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
@@ -264,8 +266,19 @@ void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_
         break;
     }
     }
+    clean_additional_ignores(time);
 
 
+}
+
+//Removes all ignore points which timed out
+void DroneTracker::clean_additional_ignores(float time){
+    std::vector<additional_ignore_point> new_ignores_for_insect_tracker;
+    for (uint i = 0; i < ignores_for_insect_tracker.size(); i++) {
+        if (ignores_for_insect_tracker.at(i).invalid_after > time || ignores_for_insect_tracker.at(i).invalid_after<0)
+             new_ignores_for_insect_tracker.push_back(ignores_for_insect_tracker.at(i));
+    }
+    ignores_for_insect_tracker= new_ignores_for_insect_tracker;
 }
 
 DroneTracker::blinking_drone_states DroneTracker::detect_blink(float time, bool found) {

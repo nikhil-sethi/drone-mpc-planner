@@ -76,7 +76,7 @@ void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) 
     append_log();
 }
 
-void InsectTracker::track(float time, std::vector<track_item> exclude,std::vector<cv::Point2f> additional_ignores) {
+void InsectTracker::track(float time, std::vector<track_item> exclude,std::vector<additional_ignore_point> additional_ignores) {
 
     ItemTracker::track(time,exclude,additional_ignores);
 
@@ -91,7 +91,7 @@ void InsectTracker::track(float time, std::vector<track_item> exclude,std::vecto
             cv::putText(diff_viz,to_string_with_precision(exclude.back().k.pt.x,0) + ", " + to_string_with_precision(exclude.back().k.pt.y,0),exclude.back().k.pt*IMSCALEF,cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
 
         for (uint i=0; i< additional_ignores.size();i++) {
-            cv::putText(diff_viz,to_string_with_precision(additional_ignores.at(i).x,0) + ", " + to_string_with_precision(additional_ignores.at(i).y,0),additional_ignores.at(i)*IMSCALEF,cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(150,150,150));
+            cv::putText(diff_viz,to_string_with_precision(additional_ignores.at(i).p.x,0) + ", " + to_string_with_precision(additional_ignores.at(i).p.y,0),additional_ignores.at(i).p*IMSCALEF,cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(150,150,150));
         }
     }
 

@@ -200,7 +200,7 @@ void ItemTracker::select_best_candidate(){
     }
 }
 
-std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path,std::vector<cv::Point2f> additional_ignores) {
+std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path,std::vector<additional_ignore_point> additional_ignores) {
     float dis1 = 0;
 
     //    if (_name.compare("insect")==0 && keypoints.size()>0){
@@ -216,7 +216,7 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<tr
         uint min_dis_i;
         for (uint i=0; i<keypoints.size();i++){
             //find the keypoint closest to the ignore
-            float d = sqrtf(powf(keypoints.at(i).x()-additional_ignores.at(j).x,2) + powf(keypoints.at(i).y()-additional_ignores.at(j).y,2));
+            float d = sqrtf(powf(keypoints.at(i).x()-additional_ignores.at(j).p.x,2) + powf(keypoints.at(i).y()-additional_ignores.at(j).p.y,2));
             if (min_dis > d) {
                 min_dis = d;
                 min_dis_i = i;
@@ -253,7 +253,7 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<tr
     return keypoints;
 }
 
-void ItemTracker::track(float time, std::vector<track_item> exclude,std::vector<cv::Point2f> additional_ignores) {
+void ItemTracker::track(float time, std::vector<track_item> exclude,std::vector<additional_ignore_point> additional_ignores) {
 
     float dt_tracking= (time-t_prev_tracking);
     float dt_predict= (time-t_prev_predict);
@@ -341,7 +341,7 @@ void ItemTracker::append_log() {
     (*_logger) << last.saccX << "; " << last.saccY << "; " << last.saccZ << ";";
 }
 
-void ItemTracker::find(std::vector<track_item> exclude,std::vector<cv::Point2f> additional_ignores) {
+void ItemTracker::find(std::vector<track_item> exclude,std::vector<additional_ignore_point> additional_ignores) {
     cv::Point previous_location;
 
     previous_location = find_result.best_image_locationL.pt;
