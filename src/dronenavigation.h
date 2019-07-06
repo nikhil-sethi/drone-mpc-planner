@@ -95,7 +95,7 @@ private:
             mode = fm_slider;
         }
     };
-    void set_next_waypoint(waypoint wp);
+    void next_waypoint(waypoint wp);
 
     enum navigation_states {
         ns_init=0,
@@ -147,15 +147,15 @@ private:
 
 public:
 
-    nav_flight_modes Nav_Flight_Mode(){
+    nav_flight_modes nav_flight_mode(){
         return _nav_flight_mode;
     }
-    void set_nav_flight_mode(nav_flight_modes m){
+    void nav_flight_mode(nav_flight_modes m){
         if (m == nfm_manual)
             _navigation_status = ns_manual;
         _nav_flight_mode = m;
     }
-    std::string Navigation_Status() {
+    std::string navigation_status() {
         if (_navigation_status == ns_approach_waypoint) {
             return static_cast<string>(navigation_status_names[_navigation_status]) + " " + to_string_with_precision(_dist_to_wp,2);
         } else

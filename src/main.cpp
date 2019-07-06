@@ -236,7 +236,7 @@ void process_video() {
 void process_frame(Stereo_Frame_Data data) {
 
     if (fromfile==log_mode_full)
-        logreader.set_current_frame_number(data.number);
+        logreader.current_frame_number(data.number);
     else if (fromfile==log_mode_insect_only)
         logreader.set_next_frame_number();
 
@@ -300,7 +300,7 @@ void handleKey() {
         break;
     case 'o':
         dctrl.blink_drone(false);
-        dnav.set_nav_flight_mode(DroneNavigation::nfm_manual);
+        dnav.nav_flight_mode(DroneNavigation::nfm_manual);
         break;
 
     case '1':
@@ -351,15 +351,15 @@ void handleKey() {
 #endif
     case 'a':
         rc.arm(true);
-        dnav.set_nav_flight_mode(DroneNavigation::nfm_waypoint);
+        dnav.nav_flight_mode(DroneNavigation::nfm_waypoint);
         break;
     case 'h':
         rc.arm(true);
-        dnav.set_nav_flight_mode(DroneNavigation::nfm_hunt);
+        dnav.nav_flight_mode(DroneNavigation::nfm_hunt);
         break;
     case 'd':
         rc.arm(false);
-        dnav.set_nav_flight_mode(DroneNavigation::nfm_manual);
+        dnav.nav_flight_mode(DroneNavigation::nfm_manual);
         break;
     } // end switch key
     key=0;

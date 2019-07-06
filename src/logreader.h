@@ -62,7 +62,7 @@ public:
 
     };
     void init(std::string file, bool partial_insect_log);
-    void set_current_frame_number(int frame_number);
+    void current_frame_number(int frame_number);
     void set_next_frame_number();
 
     LogReader::Log_Entry current_item;

@@ -129,7 +129,7 @@ void DroneNavigation::update(float time) {
             }
             break;
         } case ns_wait_for_takeoff_command: {
-            _dctrl->set_flight_mode(DroneController::fm_inactive);
+            _dctrl->flight_mode(DroneController::fm_inactive);
             if (_nav_flight_mode == nfm_hunt)
                 _navigation_status = ns_wait_for_insect;
             else if (_nav_flight_mode == nfm_manual)
@@ -138,7 +138,7 @@ void DroneNavigation::update(float time) {
                 _navigation_status = ns_takeoff;
             break;
         } case ns_wait_for_insect: {
-            _dctrl->set_flight_mode(DroneController::fm_inactive);
+            _dctrl->flight_mode(DroneController::fm_inactive);
             if (_nav_flight_mode == nfm_manual)
                 _navigation_status = ns_manual;
             else if (_nav_flight_mode == nfm_hunt) {
@@ -156,7 +156,7 @@ void DroneNavigation::update(float time) {
             break;
         } case ns_takeoff: {
             _dctrl->reset_manual_override_take_off_now();
-            _dctrl->set_flight_mode(DroneController::fm_taking_off); // todo: second time?
+            _dctrl->flight_mode(DroneController::fm_taking_off); // todo: second time?
             _navigation_status=ns_taking_off;
             break;
         } case ns_taking_off: {
@@ -170,7 +170,7 @@ void DroneNavigation::update(float time) {
         } case ns_take_off_completed: {
             _dctrl->init_ground_effect_compensation();
             alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
-            _dctrl->set_flight_mode(DroneController::fm_flying);
+            _dctrl->flight_mode(DroneController::fm_flying);
 #ifdef MANUAL_DRONE_LOCATE
             _dtrk->do_post_takeoff_detection();
 #endif
@@ -186,7 +186,7 @@ void DroneNavigation::update(float time) {
             }
             break;
         } case ns_calibrate_hover: {
-            set_next_waypoint(hovercalib_waypoint());
+            next_waypoint(hovercalib_waypoint());
             _navigation_status = ns_approach_waypoint;
             if (_nav_flight_mode == nfm_manual)
                 _navigation_status = ns_manual;
@@ -215,22 +215,22 @@ void DroneNavigation::update(float time) {
                 _navigation_status = ns_goto_landing_waypoint;
             break;
         } case ns_goto_landing_waypoint: {
-            set_next_waypoint(landing_waypoint());
+            next_waypoint(landing_waypoint());
             _navigation_status = ns_approach_waypoint;
             break;
         } FALLTHROUGH_INTENDED; case ns_set_waypoint: {
-            set_next_waypoint(setpoints[wpid]);
+            next_waypoint(setpoints[wpid]);
             _navigation_status = ns_approach_waypoint;
             break;
         } case ns_approach_waypoint: {
 #ifdef MANUAL_DRONE_LOCATE
 
             if (current_setpoint->mode == fm_landing){
-                set_next_waypoint(landing_waypoint()); // re-update the location, important when manually setting take off location
+                next_waypoint(landing_waypoint()); // re-update the location, important when manually setting take off location
             } else if (current_setpoint->mode == fm_hover_calib){
-                set_next_waypoint(hovercalib_waypoint()); // re-update the location, important when manually setting take off location
+                next_waypoint(hovercalib_waypoint()); // re-update the location, important when manually setting take off location
             } else if (current_setpoint->mode == fm_takeoff){
-                set_next_waypoint(takeoff_waypoint()); // re-update the location, important when manually setting take off location
+                next_waypoint(takeoff_waypoint()); // re-update the location, important when manually setting take off location
             }
 
 #endif
@@ -276,7 +276,7 @@ void DroneNavigation::update(float time) {
             //            navigation_status=navigation_status_manual;
             //        break;
         } case ns_land: {
-            _dctrl->set_flight_mode(DroneController::fm_landing);
+            _dctrl->flight_mode(DroneController::fm_landing);
             _dctrl->recalibrateHover();
             alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
             _navigation_status = ns_landing;
@@ -301,7 +301,7 @@ void DroneNavigation::update(float time) {
             wpid = 0;
             autoLandThrottleDecrease = 0;
             _dctrl->setAutoLandThrottleDecrease(0);
-            _dctrl->set_flight_mode(DroneController::fm_inactive);
+            _dctrl->flight_mode(DroneController::fm_inactive);
             land_incr = 0;
             _navigation_status = ns_wait_after_landing;
             landed_time = time;
@@ -326,7 +326,7 @@ void DroneNavigation::update(float time) {
     }
 }
 
-void DroneNavigation::set_next_waypoint(waypoint wp) {
+void DroneNavigation::next_waypoint(waypoint wp) {
     current_setpoint = new waypoint(wp);
     if (wp.mode == fm_landing || wp.mode == fm_hover_calib || wp.mode == fm_takeoff) {
         cv::Point3f p = _dtrk->Drone_Startup_Location();

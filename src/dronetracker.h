@@ -162,7 +162,7 @@ public:
 //        predicted_pathL.push_back(ti);
 //        foundL = false;
     }
-    void set_drone_location(cv::Point p){
+    void drone_location(cv::Point p){
        _drone_blink_image_location = p/IMSCALEF;
     }
 
@@ -173,7 +173,7 @@ public:
         }
     }
 
-    void set_control_predicted_drone_location(cv::Point2f drone_control_predicted_image_location, cv::Point3f drone_control_predicted_world_location){
+    void control_predicted_drone_location(cv::Point2f drone_control_predicted_image_location, cv::Point3f drone_control_predicted_world_location){
         _drone_control_predicted_image_location = drone_control_predicted_image_location;
         _drone_control_predicted_world_location = drone_control_predicted_world_location;
         _drone_control_prediction_valid = true;

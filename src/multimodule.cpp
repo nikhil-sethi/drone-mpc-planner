@@ -25,7 +25,7 @@ void MultiModule::init(bool fromfile) {
     }
 }
 
-void MultiModule::set_LED(bool value){
+void MultiModule::LED(bool value){
     if (value)
         led_on = true;
     else

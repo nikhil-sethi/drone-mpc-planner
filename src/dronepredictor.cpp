@@ -166,7 +166,7 @@ void DronePredictor::update(bool drone_is_active, float time) {
     else if (image_location.y >= IMG_H/IMSCALEF)
         image_location.y = IMG_H/IMSCALEF-1;
 
-    _dtrk->set_control_predicted_drone_location(image_location,world_location);
+    _dtrk->control_predicted_drone_location(image_location,world_location);
     _dtrk->predicted_locationL_prev = _dtrk->predicted_locationL_last;
     _dtrk->predicted_locationL_last.x = image_location.x;
     _dtrk->predicted_locationL_last.y = image_location.y;

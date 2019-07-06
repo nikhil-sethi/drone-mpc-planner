@@ -162,7 +162,7 @@ public:
     //    flight_modes Flight_mode() {
     //        return _flight_mode;
     //    }
-    void set_flight_mode(flight_modes f){
+    void flight_mode(flight_modes f){
         _flight_mode = f;
     }
     joy_states Joy_State() {
@@ -171,14 +171,14 @@ public:
     std::string Joy_State_str() {
         return joy_states_names[_joy_state];
     }
-    std::string Flight_Mode() {
+    std::string flight_mode() {
         return flight_mode_names[_flight_mode];
     }
 
-    bool joy_arm_swtich(){
+    bool joy_arm_switch(){
         return _joy_arm_switch;
     }
-    bool joy_mode_swtich(){
+    bool joy_mode_switch(){
         return _joy_mode_switch;
     }
     void insert_log(int joy_roll, int joy_pitch, int joy_yaw, int joy_throttle, int joyArmSwitch, int joyModeSwitch, int joyTakeOffSwitch,int auto_roll, int auto_pitch, int auto_throttle){
@@ -292,7 +292,7 @@ public:
         } else
             blink_state = true;
 
-        _rc->set_LED(blink_state);
+        _rc->LED(blink_state);
     }
 
 };

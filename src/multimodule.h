@@ -76,7 +76,7 @@ public:
 
     void close();
 
-    void set_LED(bool value);
+    void LED(bool value);
 
     bool led_on = true;
 

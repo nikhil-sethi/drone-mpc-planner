@@ -251,7 +251,7 @@ void Cam::rs_callback(rs2::frame f) {
     }
 }
 
-void Cam::set_calibration(rs2::stream_profile infared1,rs2::stream_profile infared2) {
+void Cam::calibration(rs2::stream_profile infared1,rs2::stream_profile infared2) {
     // Obtain focal length and principal point (from intrinsics)
     auto depth_stream = infared1.as<rs2::video_stream_profile>();
     auto i = depth_stream.get_intrinsics();
@@ -408,7 +408,7 @@ void Cam::init() {
     createTrackbar("Gain", "Cam tuning", &gain, 32768);
 #endif
 
-    set_calibration(infared1,infared2);
+    calibration(infared1,infared2);
     serialize_calib();
     convert_depth_background_to_world();
     swc.Start();
@@ -896,7 +896,7 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
     rs_depth_sensor.start([&](rs2::frame f) { rs_callback_playback(f); });
     pause();
 
-    set_calibration(infared1,infared2);
+    calibration(infared1,infared2);
     if (checkFileExist(calib_rfn))
         deserialize_calib(calib_rfn);
     else

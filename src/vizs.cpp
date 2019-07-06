@@ -271,8 +271,8 @@ void Visualizer::draw_target_text(cv::Mat resFrame, float time, float dis,float 
         putText(resFrame,ss_min.str() ,cv::Point(360*_res_mult,12*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     }
 
-    putText(resFrame,_dctrl->Flight_Mode() ,cv::Point(220*_res_mult,70*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-    putText(resFrame,_dnav->Navigation_Status() ,cv::Point(220*_res_mult,82*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame,_dctrl->flight_mode() ,cv::Point(220*_res_mult,70*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame,_dnav->navigation_status() ,cv::Point(220*_res_mult,82*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     putText(resFrame, _rc->Armed() ,cv::Point(450*_res_mult,82*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     putText(resFrame, _dctrl->Joy_State_str() ,cv::Point(525*_res_mult,82*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     putText(resFrame,_dtrkr->Blinking_Drone_State() ,cv::Point(220*_res_mult,96*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
