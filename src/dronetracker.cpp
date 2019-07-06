@@ -31,7 +31,7 @@ void DroneTracker::init_settings() {
     settings.background_subtract_zone_factor = 97;
 }
 
-void DroneTracker::track(float time, std::vector<track_item> ignore, bool drone_is_active) {
+void DroneTracker::track(float time, std::vector<image_track_item> ignore, bool drone_is_active) {
     std::vector<additional_ignore_point> additional_ignores;
     current_time = time;
 

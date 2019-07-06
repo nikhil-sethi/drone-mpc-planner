@@ -49,8 +49,8 @@ void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) 
 
     track_history.push_back(data);
 
-    track_item ti(cv::KeyPoint(cv::Point2f(log.ins_im_x/IMSCALEF,log.ins_im_y/IMSCALEF),1),frame_number,1);
-    track_item tip(cv::KeyPoint(cv::Point2f(log.ins_pred_im_x/IMSCALEF,log.ins_pred_im_y/IMSCALEF),1),frame_number,1);
+    image_track_item ti(cv::KeyPoint(cv::Point2f(log.ins_im_x/IMSCALEF,log.ins_im_y/IMSCALEF),1),frame_number,1);
+    image_track_item tip(cv::KeyPoint(cv::Point2f(log.ins_pred_im_x/IMSCALEF,log.ins_pred_im_y/IMSCALEF),1),frame_number,1);
 
     pathL.push_back(ti);
     predicted_pathL.push_back(tip);
@@ -76,7 +76,7 @@ void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) 
     append_log();
 }
 
-void InsectTracker::track(float time, std::vector<track_item> exclude,std::vector<additional_ignore_point> additional_ignores) {
+void InsectTracker::track(float time, std::vector<image_track_item> exclude,std::vector<additional_ignore_point> additional_ignores) {
 
     ItemTracker::track(time,exclude,additional_ignores);
 

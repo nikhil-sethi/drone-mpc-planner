@@ -290,10 +290,10 @@ void Visualizer::draw_target_text(cv::Mat resFrame, float time, float dis,float 
 
 }
 
-cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, std::vector<ItemTracker::track_item> path,std::vector<ItemTracker::track_item> predicted_path,std::vector<ItemTracker::track_item> exclude_path,cv::Rect roi_offset,int exclude_max_distance, int exclude_min_distance) {
+cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, std::vector<ItemTracker::image_track_item> path,std::vector<ItemTracker::image_track_item> predicted_path,std::vector<ItemTracker::image_track_item> exclude_path,cv::Rect roi_offset,int exclude_max_distance, int exclude_min_distance) {
 
     cv::Mat frameL_small_drone;
-    std::vector<ItemTracker::track_item> tmp = predicted_path;
+    std::vector<ItemTracker::image_track_item> tmp = predicted_path;
     if (tmp.size()>0) {
         std::vector<cv::KeyPoint> keypoints;
         for (uint i = 0; i< tmp.size();i++) {
@@ -308,7 +308,7 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
     cv::rectangle(frameL_small_drone,roi_offset,cv::Scalar(180,100,240),4/IMSCALEF);
 
     if (exclude_path.size() > 0) {
-        ItemTracker::track_item exclude = exclude_path.at(exclude_path.size()-1);
+        ItemTracker::image_track_item exclude = exclude_path.at(exclude_path.size()-1);
         float threshold_dis = exclude_min_distance / sqrtf(exclude.tracking_certainty);
         if (threshold_dis > exclude_max_distance)
             threshold_dis = exclude_max_distance;
@@ -377,10 +377,10 @@ void Visualizer::draw_tracker_viz() {
     cv::Point3f setpoint = tracker_viz_base_data.setpoint;
     float time = tracker_viz_base_data.time;
 
-    std::vector<ItemTracker::track_item> drn_path = tracker_viz_base_data.drn_path;
-    std::vector<ItemTracker::track_item> drn_predicted_path = tracker_viz_base_data.drn_predicted_path;
-    std::vector<ItemTracker::track_item> ins_path = tracker_viz_base_data.ins_path;
-    std::vector<ItemTracker::track_item> ins_predicted_path = tracker_viz_base_data.ins_predicted_path;
+    std::vector<ItemTracker::image_track_item> drn_path = tracker_viz_base_data.drn_path;
+    std::vector<ItemTracker::image_track_item> drn_predicted_path = tracker_viz_base_data.drn_predicted_path;
+    std::vector<ItemTracker::image_track_item> ins_path = tracker_viz_base_data.ins_path;
+    std::vector<ItemTracker::image_track_item> ins_predicted_path = tracker_viz_base_data.ins_predicted_path;
     cv::Rect drn_roi_offset = tracker_viz_base_data.drn_roi_offset;
     cv::Rect ins_roi_offset = tracker_viz_base_data.ins_roi_offset;
     int exclude_min_distance = tracker_viz_base_data.exclude_min_distance;
@@ -422,7 +422,7 @@ void Visualizer::draw_tracker_viz() {
 
     if (ins_path.size()>0){
         std::stringstream ss;
-        ItemTracker::track_item ti = ins_path.back();
+        ItemTracker::image_track_item ti = ins_path.back();
         ss << "i " << to_string_with_precision(ti.distance_background,1);
         cv::Scalar c(0,0,255);
         if (ti.distance_background >ti.distance )
@@ -433,7 +433,7 @@ void Visualizer::draw_tracker_viz() {
     }
     if (drn_path.size()>0){
         std::stringstream ss;
-        ItemTracker::track_item ti = drn_path.back();
+        ItemTracker::image_track_item ti = drn_path.back();
         ss << "d " << to_string_with_precision(ti.distance_background,1);
         cv::Scalar c(0,0,255);
         if (ti.distance_background >ti.distance )

@@ -29,7 +29,7 @@ private:
     cv::Mat plot_all_velocity(void);
     cv::Mat plot_all_position(void);
     void draw_target_text(cv::Mat resFrame, float time, float dis, float min_dis);
-    cv::Mat draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, std::vector<ItemTracker::track_item> path,std::vector<ItemTracker::track_item> predicted_path,std::vector<ItemTracker::track_item> exclude_path,cv::Rect roi_offset,int exclude_max_distance, int exclude_min_distance);
+    cv::Mat draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, std::vector<ItemTracker::image_track_item> path,std::vector<ItemTracker::image_track_item> predicted_path,std::vector<ItemTracker::image_track_item> exclude_path,cv::Rect roi_offset,int exclude_max_distance, int exclude_min_distance);
     void draw_tracker_viz();
 
     VisionData * _visdat;
@@ -71,10 +71,10 @@ private:
         float dis;
         float min_dis;
 
-        std::vector<ItemTracker::track_item> drn_path;
-        std::vector<ItemTracker::track_item> drn_predicted_path;
-        std::vector<ItemTracker::track_item> ins_path;
-        std::vector<ItemTracker::track_item> ins_predicted_path;
+        std::vector<ItemTracker::image_track_item> drn_path;
+        std::vector<ItemTracker::image_track_item> drn_predicted_path;
+        std::vector<ItemTracker::image_track_item> ins_path;
+        std::vector<ItemTracker::image_track_item> ins_predicted_path;
         cv::Rect drn_roi_offset;
         cv::Rect ins_roi_offset;
         int exclude_min_distance;

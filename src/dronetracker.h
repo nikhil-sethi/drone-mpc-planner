@@ -149,7 +149,7 @@ public:
     std::vector<ItemTracker::additional_ignore_point> ignores_for_insect_tracker;
 
     bool init(std::ofstream *logger, VisionData *_visdat, bool fromfile,std::string bag_dir);
-    void track(float time, std::vector<track_item> ignore, bool drone_is_active);
+    void track(float time, std::vector<image_track_item> ignore, bool drone_is_active);
 
     void Locate_Startup_Location() {
         _drone_tracking_status = dts_blinking;
@@ -158,7 +158,7 @@ public:
     void do_post_takeoff_detection() {
         cv::Point p = Drone_Startup_Im_Location();
         p.y-=5;
-        DroneTracker::track_item ti(cv::KeyPoint(p,10),_visdat->frame_id,0.75);
+        DroneTracker::image_track_item ti(cv::KeyPoint(p,10),_visdat->frame_id,0.75);
         cv::Point3f p3 = Drone_Startup_Location();
         p3.y+=0.15f;
         predicted_locationL_last = p3;

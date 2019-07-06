@@ -140,11 +140,9 @@ void ItemTracker::init_kalman() {
     cv::setIdentity(kfL.measurementNoiseCov, cv::Scalar(1e-1));
 }
 
-void ItemTracker::select_best_candidate(){
+void ItemTracker::select_best_world_candidate(){
 
-
-
-    std::vector<track_item> keypoint_candidates = find_result.keypointsL_wihout_excludes;
+    std::vector<image_track_item> keypoint_candidates = find_result.image_track_item_filtered;
     uint nCandidates = static_cast<uint>(keypoint_candidates.size());
     wti.clear();
     if (nCandidates) {
@@ -152,10 +150,10 @@ void ItemTracker::select_best_candidate(){
         //first sort candidates based on image location odds, and check disparity range and background checks
         int n = keypoint_candidates.size();
 
-//        if (_name.compare("drone")==0 && n > 0 )
-//            cout << std::endl;
-//        if (_name.compare("drone")==0 && n > 1 )
-//            cout << std::endl;
+        //        if (_name.compare("drone")==0 && n > 0 )
+        //            cout << std::endl;
+        //        if (_name.compare("drone")==0 && n > 1 )
+        //            cout << std::endl;
         for (int i=0; i<n;i++)   {
             world_track_item w;
             uint match_id = match_closest_to_prediciton(predicted_locationL_last,keypoint_candidates);
@@ -187,11 +185,6 @@ void ItemTracker::select_best_candidate(){
                 float temp_y = w.world_coordinates.y * cosf(theta) + w.world_coordinates.z * sinf(theta);
                 w.world_coordinates.z = -w.world_coordinates.y * sinf(theta) + w.world_coordinates.z * cosf(theta);
                 w.world_coordinates.y = temp_y;
-
-//                if ( ((w.world_coordinates.y < -1.2f || w.world_coordinates.z < -3.5f  ||  w.world_coordinates.x < -0.5f ||  w.world_coordinates.x > 2.3f) && _name == "insect") ||
-//                     ((w.world_coordinates.y < -1.35f || w.world_coordinates.z < -3.5f  ||  w.world_coordinates.x < -0.5f ||  w.world_coordinates.x > 2.3f) && _name == "drone"))
-
-                //w.background_check_ok = true; // manual override (optional)
             }
             if (w.background_check_ok && w.disparity_in_range)
                 wti.push_back(w);
@@ -200,9 +193,7 @@ void ItemTracker::select_best_candidate(){
     }
 }
 
-std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path,std::vector<additional_ignore_point> additional_ignores) {
-    float dis1 = 0;
-
+std::vector<ItemTracker::image_track_item> ItemTracker::select_best_image_candidates(std::vector<image_track_item> keypoints, std::vector<image_track_item> exclude_path,std::vector<additional_ignore_point> additional_ignores) {
     //    if (_name.compare("insect")==0 && keypoints.size()>0){
     //        std::cout << "insect" << std::endl;
     //    }
@@ -253,7 +244,7 @@ std::vector<ItemTracker::track_item> ItemTracker::remove_excludes(std::vector<tr
     return keypoints;
 }
 
-void ItemTracker::track(float time, std::vector<track_item> exclude,std::vector<additional_ignore_point> additional_ignores) {
+void ItemTracker::track(float time, std::vector<image_track_item> exclude,std::vector<additional_ignore_point> additional_ignores) {
 
     float dt_tracking= (time-t_prev_tracking);
     float dt_predict= (time-t_prev_predict);
@@ -269,7 +260,7 @@ void ItemTracker::track(float time, std::vector<track_item> exclude,std::vector<
     }
 
     find(exclude,additional_ignores);
-    select_best_candidate();
+    select_best_world_candidate();
 
     if ( wti.size()>0) {
         world_track_item w = wti.at(0);
@@ -341,11 +332,8 @@ void ItemTracker::append_log() {
     (*_logger) << last.saccX << "; " << last.saccY << "; " << last.saccZ << ";";
 }
 
-void ItemTracker::find(std::vector<track_item> exclude,std::vector<additional_ignore_point> additional_ignores) {
-    cv::Point previous_location;
-
-    previous_location = find_result.best_image_locationL.pt;
-
+void ItemTracker::find(std::vector<image_track_item> exclude,std::vector<additional_ignore_point> additional_ignores) {
+    cv::Point previous_location =find_result.best_image_locationL.pt;
     cv::Point roi_size;
     if (settings.roi_min_size < 1)
         settings.roi_min_size = 1;
@@ -369,33 +357,35 @@ void ItemTracker::find(std::vector<track_item> exclude,std::vector<additional_ig
 
 
     std::vector<KeyPoint> keypointsL;
-    find_max_change(previous_location,roi_size,_visdat->diffL_small,&keypointsL);
+    find_max_change_points(previous_location,roi_size,_visdat->diffL_small,&keypointsL);
 
-    vector<track_item> kps;
+    vector<image_track_item> iti;
     for (uint i = 0 ; i < keypointsL.size();i++) {
         keypointsL.at(i).pt.x += find_result.roi_offset.x;
         keypointsL.at(i).pt.y += find_result.roi_offset.y;
-        track_item t( keypointsL.at(i),_visdat->frame_id,0);
-        kps.push_back(t);
+        image_track_item t( keypointsL.at(i),_visdat->frame_id,0);
+        iti.push_back(t);
     }
 
-    find_result.keypointsL_wihout_excludes = remove_excludes(kps,exclude,additional_ignores);
+    find_result.excludes = exclude; //TODO: unused?
+    find_result.image_track_items = iti; //TODO: unused?
+    find_result.image_track_item_filtered = select_best_image_candidates(iti,exclude,additional_ignores);
 
-    if (find_result.keypointsL_wihout_excludes.size() ==0) {
+    if (find_result.image_track_item_filtered.size() ==0) {
         roi_size_cnt +=1;
         if (roi_size_cnt > settings.roi_max_grow)
             roi_size_cnt = settings.roi_max_grow;
 
     }
-    find_result.excludes = exclude;
-    find_result.keypointsL = kps;
+
+
 }
 
 //Blob finder in the tracking ROI of the motion image. Looks for a limited number of
 //maxima that are higher than a threshold, the area around the maximum
 //is segmented from the background noise, and seen as a blob. It then
 //tries if this blob can be further splitted if necessary.
-void ItemTracker::find_max_change(cv::Point prev,cv::Point roi_size,cv::Mat diff,std::vector<KeyPoint> * scored_points) {
+void ItemTracker::find_max_change_points(cv::Point prev,cv::Point roi_size,cv::Mat diff,std::vector<KeyPoint> * scored_points) {
 
     _approx = get_approx_cutout_filtered(prev,diff,roi_size);
     cv::Mat frame = _approx;
@@ -576,12 +566,12 @@ cv::Point3f ItemTracker::predict(float dt, int frame_id) {
     if (certainty > 1)
         certainty = 1;
 
-    predicted_pathL.push_back(track_item(t,frame_id,certainty) );
+    predicted_pathL.push_back(image_track_item(t,frame_id,certainty) );
 
     return predicted_locationL;
 }
 
-uint ItemTracker::match_closest_to_prediciton(cv::Point3f predicted_locationL, std::vector<track_item> keypointsL) {
+uint ItemTracker::match_closest_to_prediciton(cv::Point3f predicted_locationL, std::vector<image_track_item> keypointsL) {
     uint closestL;
     if (keypointsL.size() == 1 && pathL.size() == 0) {
         closestL = 0;
@@ -590,7 +580,7 @@ uint ItemTracker::match_closest_to_prediciton(cv::Point3f predicted_locationL, s
         float mind = 999999999;
         closestL=0;
         for (uint i = 0 ; i < keypointsL.size();i++) {
-            track_item k =keypointsL.at(i);
+            image_track_item k =keypointsL.at(i);
             float d = (predicted_locationL.x-k.x()) * (predicted_locationL.x-k.x()) + (predicted_locationL.y-k.y())*(predicted_locationL.y-k.y());
             if (d < mind ) {
                 mind = d;
@@ -787,14 +777,14 @@ void ItemTracker::update_prediction_state(cv::Point3f p, float blob_size) {
     blob_size_last = blob_size;
 }
 
-void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  float time, track_item * best_match, float disparity) {
+void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  float time, image_track_item * best_match, float disparity) {
 
     find_result.best_image_locationL = best_match->k;
     find_result.disparity = disparity;
 
     float new_tracking_certainty = calc_certainty(best_match->k);
 
-    track_item t(*best_match);
+    image_track_item t(*best_match);
     t.tracking_certainty = new_tracking_certainty;
 
     pathL.push_back(t);

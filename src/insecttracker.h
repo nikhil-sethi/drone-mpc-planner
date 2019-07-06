@@ -22,7 +22,7 @@ protected:
 
 public:
     void init(std::ofstream *logger, VisionData *_visdat);
-    void track(float time, std::vector<track_item>  ignore, std::vector<additional_ignore_point> additional_ignores);
+    void track(float time, std::vector<image_track_item>  ignore, std::vector<additional_ignore_point> additional_ignores);
     void update_from_log(LogReader::Log_Entry entry, int frame_number);
 
     cv::Mat diff_viz;

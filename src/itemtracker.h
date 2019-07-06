@@ -25,22 +25,25 @@
 class ItemTracker {
 
 public:
-    struct track_item {
+    struct image_track_item {
         cv::KeyPoint k;
         int frame_id;
         float tracking_certainty;
         float distance;
         float distance_background;
+        float min_distance_static_ignore;
+        float min_distance_moving_ignore;
+        float distance_to_prediction;
 
-        track_item() {
+        image_track_item() {
 
         }
-        track_item(cv::KeyPoint kp, int frameid,float trackingCertainty){
+        image_track_item(cv::KeyPoint kp, int frameid,float trackingCertainty){
             k = kp;
             frame_id = frameid;
             tracking_certainty = trackingCertainty;
         }
-        track_item(track_item const &t){
+        image_track_item(image_track_item const &t){
             k = t.k;
             frame_id = t.frame_id;
             tracking_certainty = t.tracking_certainty;
@@ -52,7 +55,7 @@ public:
     };
     struct world_track_item {
         cv::Point3f world_coordinates;
-        track_item  ti;
+        image_track_item  ti;
         cv::Point2f image_coordinates(){
             return ti.k.pt;
         }
@@ -127,17 +130,17 @@ private:
 
     cv::Point3f predict(float dt, int frame_id);
     virtual cv::Mat get_approx_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size) = 0;
-    uint match_closest_to_prediciton(cv::Point3f predicted_locationL, std::vector<track_item> keypointsL);
+    uint match_closest_to_prediciton(cv::Point3f predicted_locationL, std::vector<image_track_item> keypointsL);
 
     float estimate_sub_disparity(int disparity);
     void check_consistency(cv::Point3f previous_location,cv::Point3f measured_world_coordinates);
     void update_disparity(float disparity, float dt);
     void update_prediction_state(cv::Point3f p, float blob_size);
-    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, float time, track_item *best_match, float disparity);
-    void find(std::vector<track_item> exclude, std::vector<additional_ignore_point> additional_ignores);
-    void select_best_candidate();
-    std::vector<ItemTracker::track_item> remove_excludes(std::vector<track_item> keypoints, std::vector<track_item> exclude_path, std::vector<additional_ignore_point> additional_ignores);
-    void find_max_change(cv::Point prev, cv::Point roi_size, cv::Mat diff, std::vector<cv::KeyPoint> *scored_points);
+    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, float time, image_track_item *best_match, float disparity);
+    void find(std::vector<image_track_item> exclude, std::vector<additional_ignore_point> additional_ignores);
+    void select_best_world_candidate();
+    std::vector<ItemTracker::image_track_item> select_best_image_candidates(std::vector<image_track_item> keypoints, std::vector<image_track_item> exclude_path, std::vector<additional_ignore_point> additional_ignores);
+    void find_max_change_points(cv::Point prev, cv::Point roi_size, cv::Mat diff, std::vector<cv::KeyPoint> *scored_points);
     float calc_certainty(cv::KeyPoint item);
     void init_kalman();
 
@@ -205,9 +208,9 @@ public:
     TrackerSettings settings;
     cv::Mat _cir,_dif,_approx;
     Find_result find_result;
-    std::vector<track_item> pathL;
-    std::vector<track_item> predicted_pathL;
-    std::vector<track_item> ignores; // keeps the item locations that should be ignored by other itemtrackers
+    std::vector<image_track_item> pathL;
+    std::vector<image_track_item> predicted_pathL;
+    std::vector<image_track_item> ignores; // keeps the item locations that should be ignored by other itemtrackers
 
     cv::Mat viz_max_points,viz_roi;
 
@@ -218,7 +221,7 @@ public:
 
     void close (void);
     void init(std::ofstream *logger, VisionData *_visdat, std::string name);
-    virtual void track(float time, std::vector<track_item> ignore, std::vector<additional_ignore_point> additional_ignores);
+    virtual void track(float time, std::vector<image_track_item> ignore, std::vector<additional_ignore_point> additional_ignores);
     void append_log();
 
     uint track_history_max_size = VIDEOFPS;
