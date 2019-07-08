@@ -45,7 +45,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
     } FALLTHROUGH_INTENDED; case dts_detecting_takeoff_init: {
         // remove the indefinite startup location and replace with a time out
         static_ignores_points_for_other_trkrs.clear();
-        static_ignores_points_for_other_trkrs.push_back(StaticIgnorePoint(drone_startup_im_location(),time+startup_location_ignore_timeout));
+        static_ignores_points_for_other_trkrs.push_back(StaticIgnorePoint(drone_startup_im_location(),time+startup_location_ignore_timeout, StaticIgnorePoint::landing_spot));
         _drone_tracking_status = dts_detecting_takeoff;
     } FALLTHROUGH_INTENDED; case dts_detecting_takeoff: {
         insert_control_predicted_drone_location();
@@ -63,33 +63,17 @@ void DroneTracker::track(double time, bool drone_is_active) {
             bool takeoff_spot_detected = false;
             bool drone_detected_near_takeoff_spot = false;
 
-//TODO: this does not work anymore
+            for (uint i = 0; i< static_ignores_points_for_other_trkrs.size(); i++) {
+                if (static_ignores_points_for_other_trkrs.at(i).ignore_type == StaticIgnorePoint::landing_spot && static_ignores_points_for_other_trkrs.at(i).was_used)
+                    takeoff_spot_detected = true;
+            }
+
             float dist2take_off = sqrt(pow(_image_track_item.x - drone_startup_im_location().x,2)+pow(_image_track_item.y - drone_startup_im_location().y,2));
-            if (dist2take_off < settings.pixel_dist_landing_spot + DRONE_IM_START_SIZE){
-                takeoff_spot_detected = true;
-                static_ignores_points_for_other_trkrs.push_back(StaticIgnorePoint(_image_track_item.pt(),time+taking_off_ignore_timeout)); // TODO: this should be done beforehand
-#ifdef MANUAL_DRONE_LOCATE
-                float disparity = stereo_match(k.image_coordinates(),_visdat->diffL,_visdat->diffR,find_result.disparity);
-                std::vector<cv::Point3d> camera_coordinates, world_coordinates;
-                camera_coordinates.push_back(cv::Point3d(k.image_coordinates().x*IMSCALEF,k.image_coordinates().y*IMSCALEF,-disparity));
-                cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
-                cv::Point3f output = world_coordinates[0];
-                float theta = _visdat->camera_angle * deg2rad;
-                float temp_y = output.y * cosf(theta) + output.z * sinf(theta);
-                output.z = -output.y * sinf(theta) + output.z * cosf(theta);
-                output.y = temp_y;
-                _drone_blink_world_location = output;
-                if (_landing_pad_location_set){
-                    _landing_pad_location_set = true;
-                    _landing_pad_image_location = _drone_blink_image_location;
-                    _landing_pad_world_location = _drone_blink_world_location;
-                }
-#endif
-            } else if (dist2take_off > settings.pixel_dist_seperation_min + DRONE_IM_START_SIZE && dist2take_off < settings.pixel_dist_seperation_max + DRONE_IM_START_SIZE){
+            if (dist2take_off > settings.pixel_dist_seperation_min + DRONE_IM_START_SIZE && dist2take_off < settings.pixel_dist_seperation_max + DRONE_IM_START_SIZE){
                 drone_detected_near_takeoff_spot = true;
-                static_ignores_points_for_other_trkrs.push_back(StaticIgnorePoint(_image_track_item.pt(),time+taking_off_ignore_timeout));
+                static_ignores_points_for_other_trkrs.push_back(StaticIgnorePoint(_image_track_item.pt(),time+taking_off_ignore_timeout, StaticIgnorePoint::drone_taking_off));
             } else if (dist2take_off < settings.pixel_dist_seperation_max + DRONE_IM_START_SIZE){
-                static_ignores_points_for_other_trkrs.push_back(StaticIgnorePoint(_image_track_item.pt(),time+taking_off_ignore_timeout));
+                static_ignores_points_for_other_trkrs.push_back(StaticIgnorePoint(_image_track_item.pt(),time+taking_off_ignore_timeout, StaticIgnorePoint::drone_taking_off));
             }
 
             if (takeoff_spot_detected &&drone_detected_near_takeoff_spot ) {

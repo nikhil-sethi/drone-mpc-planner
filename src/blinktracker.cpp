@@ -100,7 +100,7 @@ void BlinkTracker::track(double time) {
     } case bds_found: {
         _enable_depth_background_check = true;
         append_log(); // no tracking needed in this stage
-        static_ignores_points_for_other_trkrs.push_back(StaticIgnorePoint(drone_startup_im_location(),-1));
+        static_ignores_points_for_other_trkrs.push_back(StaticIgnorePoint(drone_startup_im_location(),-1, StaticIgnorePoint::landing_spot));
 
 #ifdef MANUAL_DRONE_LOCATE
         _enable_roi = true;

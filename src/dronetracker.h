@@ -10,6 +10,7 @@
  */
 static const char* drone_tracking_state_names[] = { "dts_init",
                                                     "dts_inactive",
+                                                    "dts_detecting_takeoff_init",
                                                     "dts_detecting_takeoff",
                                                     "dts_detecting",
                                                     "dts_detected" };

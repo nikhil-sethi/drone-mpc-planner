@@ -172,10 +172,12 @@ void DroneNavigation::update(double time) {
             _navigation_status=ns_taking_off;
             break;
         } case ns_taking_off: {
-            track_data data = _trackers->dronetracker()->Last_track_data();
-            if (data.svelY > static_cast<float>(params.auto_takeoff_speed) / 100.f ) {
+            if (!_trackers->dronetracker()->taking_off() )
                 _navigation_status = ns_take_off_completed;
-            }
+//            track_data data = _trackers->dronetracker()->Last_track_data();
+//            if (data.svelY > static_cast<float>(params.auto_takeoff_speed) / 100.f ) {
+//                _navigation_status = ns_take_off_completed;
+//            }
             if (_nav_flight_mode == nfm_manual)
                 _navigation_status = ns_manual;
             break;

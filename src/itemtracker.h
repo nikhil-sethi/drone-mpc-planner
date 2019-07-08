@@ -106,15 +106,23 @@ public:
 
     };
     struct StaticIgnorePoint {
+        enum IgnoreType{
+            landing_spot,
+            drone_taking_off
+        };
         StaticIgnorePoint() {}
-        StaticIgnorePoint(cv::Point2f location, double timeout){
+        StaticIgnorePoint(cv::Point2f location, double timeout, IgnoreType type){
             p = location;
+            ignore_type = type ;
             invalid_after = timeout;
         }
         cv::Point2f p;
         double invalid_after;
         bool was_used = true;
+        IgnoreType ignore_type;
+
     };
+
 
 private:
     struct TrackerSettings{
