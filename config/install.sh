@@ -44,6 +44,7 @@ cd ~/dependencies
 [ -f dependencies-packages.done ] || {
 	sudo apt install cmake g++ libva-dev libswresample-dev libavutil-dev pkg-config libjpeg9-dev libcurl4-openssl-dev -y
 	sudo apt-get install gstreamer1.0-tools gstreamer1.0-alsa   gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav -y libgstreamer-plugins-base1.0-* libgstreamer-plugins-bad1.0-* libgstreamer-plugins-good1.0-*
+	sudo apt-get remove modemmanager
 	sudo apt-get autoremove
 	sudo apt-get clean
 	touch dependencies-packages.done
