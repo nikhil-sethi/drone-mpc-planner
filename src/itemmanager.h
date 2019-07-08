@@ -109,6 +109,7 @@ private:
     void match_image_points_to_trackers(bool drone_is_active);
     bool tracker_active(ItemTracker * trkr, bool drone_is_active);
     cv::Scalar tracker_color(ItemTracker * trkr);
+    bool check_ignore_points(processed_max_point pmp, ItemTracker * trkr);
     detection_mode _mode;
 
     InsectTracker * _itrkr;   //tmp

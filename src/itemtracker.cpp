@@ -141,10 +141,8 @@ void ItemTracker::init_kalman() {
 
 void ItemTracker::update_world_candidate(){
 
-    //        if (_name.compare("drone")==0 && n > 0 )
-    //            cout << std::endl;
-    //        if (_name.compare("drone")==0 && n > 1 )
-    //            cout << std::endl;
+//    if (_name.compare("insect")==0)
+//        cout << std::endl;
 
     WorldTrackItem w;
     w.iti = _image_track_item;
@@ -216,18 +214,15 @@ void ItemTracker::track(double time) {
 
         roi_size_cnt ++; //TODO: same as n_frames_lost?
         n_frames_lost++;
+        n_frames_tracking = 0;
+
         if (roi_size_cnt > settings.roi_max_grow)
             roi_size_cnt = settings.roi_max_grow;
 
         if( n_frames_lost >= n_frames_lost_threshold || !_tracking ) {
             _tracking = false;
             reset_tracker_ouput(time);
-        } else
-            update_prediction_state(_image_track_item.pt(),_image_track_item.disparity,_image_track_item.size);
-
-        if (n_frames_lost != 0)
-            n_frames_tracking = 0;
-
+        }
     }
 
     if (path.size() > 0) {
@@ -308,6 +303,13 @@ void ItemTracker::predict(float dt, int frame_id) {
     if (certainty > 1)
         certainty = 1;
 
+    //keep track of the error:
+    if (predicted_image_path.size()>0 && _world_track_item.valid){
+        predicted_image_path.back().x_measured = _image_track_item.x;
+        predicted_image_path.back().y_measured = _image_track_item.y;
+        predicted_image_path.back().prediction_error  = sqrtf( powf(predicted_image_path.back().x_measured - predicted_image_path.back().x,2) + powf(predicted_image_path.back().y_measured - predicted_image_path.back().y,2));
+
+    }
     predicted_image_path.push_back(ImagePredictItem(predicted_image_locationL,certainty,size,frame_id) );
 }
 

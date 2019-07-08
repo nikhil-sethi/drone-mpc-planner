@@ -63,6 +63,7 @@ public:
     struct ImagePredictItem {
         uint frame_id;
         float x,y,size,certainty;
+        float x_measured=-1,y_measured=-1, prediction_error = -1;
         cv::KeyPoint k(){
             return cv::KeyPoint(x,y,size);
         }
@@ -112,6 +113,7 @@ public:
         }
         cv::Point2f p;
         double invalid_after;
+        bool was_used = true;
     };
 
 private:
@@ -206,7 +208,7 @@ private:
     int detected_after_take_off = 0;
 protected:
 
-    int n_frames_lost = 100; // TODO: check these two variables with the new itemmanager. Usefull for delete_me
+    int n_frames_lost = 100;
     int n_frames_lost_threshold = 10;
     std::ofstream *_logger;
     VisionData * _visdat;

@@ -74,17 +74,20 @@ void ItemManager::update(double time,LogReader::Log_Entry log_entry, bool drone_
 
 void ItemManager::update_trackers(double time,LogReader::Log_Entry log_entry, bool drone_is_active) {
     //perform all tracker functions, also delete old trackers
-    for (uint i=_trackers.size();i != 0; i--){ // reverse because deleting from this list.
-        uint ii = i-1;
-        if (_trackers.at(ii)->delete_me()){
-            ItemTracker * trkr = _trackers.at(ii);
-            _trackers.erase(_trackers.begin() + ii);
+    for (uint ii=_trackers.size();ii != 0; ii--){ // reverse because deleting from this list.
+        uint i = ii-1;
+        if (_trackers.at(i)->delete_me()){
+            ItemTracker * trkr = _trackers.at(i);
+            _trackers.erase(_trackers.begin() + i);
             delete trkr;
-        } else if(typeid(*_trackers.at(ii)) == typeid(DroneTracker)) {
-            DroneTracker * dtrkr = static_cast<DroneTracker * >(_trackers.at(ii));
+        } else if(typeid(*_trackers.at(i)) == typeid(DroneTracker)) {
+            DroneTracker * dtrkr = static_cast<DroneTracker * >(_trackers.at(i));
             dtrkr->track(time,tracker_active(dtrkr,drone_is_active));
-        } else if (typeid(*_trackers.at(ii)) == typeid(InsectTracker)) {
-            InsectTracker * itrkr = static_cast<InsectTracker * >(_trackers.at(ii));
+            if (!_trackers.at(i)->world_track_item().valid) {
+                putText(diff_viz,"E",_trackers.at(i)->image_track_item().pt()*IMSCALEF,FONT_HERSHEY_SIMPLEX,0.9,tracker_color(_trackers.at(i)));
+            }
+        } else if (typeid(*_trackers.at(i)) == typeid(InsectTracker)) {
+            InsectTracker * itrkr = static_cast<InsectTracker * >(_trackers.at(i));
             switch (_mode){
             case mode_idle:{
                 itrkr->append_log(); // write dummy data
@@ -106,19 +109,22 @@ void ItemManager::update_trackers(double time,LogReader::Log_Entry log_entry, bo
                 break;
             }
             }
-        } else if (typeid(*_trackers.at(ii)) == typeid(BlinkTracker)) {
+            if (!_trackers.at(i)->world_track_item().valid) {
+                putText(diff_viz,"E",_trackers.at(i)->image_track_item().pt()*IMSCALEF,FONT_HERSHEY_SIMPLEX,0.9,tracker_color(_trackers.at(i)));
+            }
+        } else if (typeid(*_trackers.at(i)) == typeid(BlinkTracker)) {
             if (_mode == mode_locate_drone) {
-                BlinkTracker * btrkr = static_cast<BlinkTracker * >(_trackers.at(ii));
+                BlinkTracker * btrkr = static_cast<BlinkTracker * >(_trackers.at(i));
                 btrkr->track(time);
                 if (btrkr->state() == BlinkTracker::bds_found){
                     _mode = mode_wait_for_insect;
                     _dtrkr->set_drone_landing_location(btrkr->image_track_item().pt(),btrkr->world_track_item().pt);
-                    _trackers.erase(_trackers.begin() + ii);
+                    _trackers.erase(_trackers.begin() + i);
                     delete btrkr;
                 }
             } else {
-                BlinkTracker * btrkr = static_cast<BlinkTracker * >(_trackers.at(ii));
-                _trackers.erase(_trackers.begin() + ii);
+                BlinkTracker * btrkr = static_cast<BlinkTracker * >(_trackers.at(i));
+                _trackers.erase(_trackers.begin() + i);
                 delete btrkr;
             }
         }
@@ -138,6 +144,23 @@ void ItemManager::update_static_ignores() {
         }
         _trackers.at(i)->static_ignores_points_for_me = ignores;
     }
+}
+
+bool ItemManager::check_ignore_points(processed_max_point pmp, ItemTracker * trkr) {
+    bool in_ignore_zone = false;
+    cv::Point2f p_kp = pmp.pt;
+    for (uint k=0; k<trkr->static_ignores_points_for_me.size();k++){
+        cv::Point2f p_ignore = trkr->static_ignores_points_for_me.at(k).p;
+        float dist_ignore = sqrtf(powf(p_ignore.x-p_kp.x,2)+powf(p_ignore.y-p_kp.y,2));
+        if (dist_ignore < settings.static_ignores_dist_thresh){
+            pmp.color = cv::Scalar(0,128,0);
+            trkr->static_ignores_points_for_me.at(k).was_used = true;
+            in_ignore_zone = true;
+            //break; // TODO: break? also above
+        }
+    }
+
+    return in_ignore_zone;
 }
 
 void ItemManager::match_image_points_to_trackers(bool drone_is_active) {
@@ -169,15 +192,9 @@ void ItemManager::match_image_points_to_trackers(bool drone_is_active) {
                     float score =0;
                     float dist = 99;
                     //check against static ignore points
-                    for (uint k=0; k<trkr->static_ignores_points_for_me.size();k++){
-                        cv::Point2f p_ignore = trkr->static_ignores_points_for_me.at(k).p;
-                        float dist_ignore = sqrtf(powf(p_ignore.x-p_kp.x,2)+powf(p_ignore.y-p_kp.y,2));
-                        if (dist_ignore < settings.static_ignores_dist_thresh){
-                            score = -1;
-                            break;
-                        }
-                    }
-                    if (score>=0) { // far enough from static ignore points:
+                    bool in_ignore_zone = check_ignore_points(pmps.at(j),trkr);
+
+                    if (!in_ignore_zone) {
                         dist = sqrtf(powf(p_predict.x-p_kp.x,2)+powf(p_predict.y-p_kp.y,2));
                         float im_size_diff =0;
                         if (trkr->path.size() > 0)
@@ -195,29 +212,32 @@ void ItemManager::match_image_points_to_trackers(bool drone_is_active) {
                     trkr->image_track_item(iti);
                     pmps.at(best_score_j).tracked = true;
                     pmps.at(best_score_j).color = tracker_color(trkr);
-
-                    if (typeid(*trkr) == typeid(InsectTracker))
-                        std::cout << "Insect predict: " << p_predict << " choose: " << _kps.at(best_score_j).pt << " score " << best_score << std::endl;
                 }
             }
 
         }
 
         //see if there are trackers that are not tracking yet and if there are untracked points left, which can be bound together.
-        //FIXME: static ignores...?
         for (uint i=0; i<_trackers.size();i++){
             ItemTracker * trkr = _trackers.at(i);
             if (!trkr->tracking()) {
                 if (tracker_active(trkr, drone_is_active)) {
                     for (uint j=0; j < pmps.size(); j++) {
                         if (!pmps.at(j).tracked){
-                            // the tracker has lost the item, or is still initializing.
-                            //there is no valid prediction, the score is therefor as low as possible
-                            ItemTracker::ImageTrackItem iti(_kps.at(j),_visdat->frame_id,0,0,j);
-                            trkr->image_track_item(iti);
-                            pmps.at(j).tracked = true;
-                            pmps.at(j).color = tracker_color(trkr);
-                            break;
+
+                            //check against static ignore points TODO: function
+                            bool in_ignore_zone = check_ignore_points(pmps.at(j),trkr);
+
+                            //TODO: in theory this would be a very nice time to check the world situation as well..
+                            if (!in_ignore_zone) {
+                                // the tracker has lost the item, or is still initializing.
+                                //there is no valid prediction, the score is therefor as low as possible
+                                ItemTracker::ImageTrackItem iti(_kps.at(j),_visdat->frame_id,0,0,j);
+                                trkr->image_track_item(iti);
+                                pmps.at(j).tracked = true;
+                                pmps.at(j).color = tracker_color(trkr);
+                                break;
+                            }
                         }
                     }
                 }
@@ -234,7 +254,7 @@ void ItemManager::match_image_points_to_trackers(bool drone_is_active) {
                     bt->image_track_item(ItemTracker::ImageTrackItem (_kps.at(i),_visdat->frame_id,0,0,i));
                     _trackers.push_back( bt);
                     pmps.at(i).tracked = true;
-                    pmps.at(i).color = cv::Scalar(0,0,255);
+                    pmps.at(i).color = tracker_color(bt);
                     break; // only add one tracker per frame
                 }
                 break;
@@ -243,11 +263,14 @@ void ItemManager::match_image_points_to_trackers(bool drone_is_active) {
 
         if (enable_viz_diff){
             for (uint i = 0; i < pmps.size(); i++){
-                cv::circle(diff_viz,pmps.at(i).pt*IMSCALEF,4,pmps.at(i).color,3);
+                putText(diff_viz,std::to_string(i),pmps.at(i).pt*IMSCALEF,FONT_HERSHEY_SIMPLEX,0.5,pmps.at(i).color);
+                cv::circle(diff_viz,pmps.at(i).pt*IMSCALEF,3,pmps.at(i).color,1);
             }
         }
     }
 }
+
+
 
 bool ItemManager::tracker_active(ItemTracker * trkr, bool drone_is_active) {
     if (_mode == mode_idle)
@@ -264,11 +287,11 @@ bool ItemManager::tracker_active(ItemTracker * trkr, bool drone_is_active) {
 
 cv::Scalar ItemManager::tracker_color(ItemTracker * trkr) {
     if (typeid(*trkr) == typeid(DroneTracker))
-        return cv::Scalar(255,128,100);
-    else if (typeid(*trkr) == typeid(InsectTracker))
         return cv::Scalar(0,255,0);
-    else if (typeid(*trkr) == typeid(BlinkTracker))
+    else if (typeid(*trkr) == typeid(InsectTracker))
         return cv::Scalar(0,0,255);
+    else if (typeid(*trkr) == typeid(BlinkTracker))
+        return cv::Scalar(30,30,200);
     return cv::Scalar(0,0,0);
 }
 
