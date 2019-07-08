@@ -2,7 +2,7 @@
 
 void MultiModule::init(bool fromfile) {
     // setup connection with MultiModule
-    notconnected = RS232_OpenComport(115200,"/dev/ttyACM0");
+    notconnected = RS232_OpenComport(115200,"/dev/pats_mm0");
     if (TX_TYPE!=TX_NONE) {
         if (notconnected && !fromfile) {
             throw my_exit("cannot connect the MultiModule");
