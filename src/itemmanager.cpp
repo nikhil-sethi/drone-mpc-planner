@@ -200,11 +200,12 @@ void ItemManager::match_image_points_to_trackers(bool drone_is_active) {
                         if (trkr->path.size() > 0)
                             im_size_diff = fabs(trkr->path.back().size_in_image() - pmps.at(j).size) / pmps.at(j).size; // TODO: use prediction for size as well
                         score = 1.f / (dist + 5.f*im_size_diff); // TODO: ipi.certainty  not working properly
-                    }
-                    if (score > best_score){
-                        best_score = score;
-                        best_score_j = j;
-                        best_dist = dist;
+
+                        if (score > best_score){
+                            best_score = score;
+                            best_score_j = j;
+                            best_dist = dist;
+                        }
                     }
                 }
                 if (best_score>=0){
