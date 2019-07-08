@@ -278,11 +278,11 @@ public:
         _rc->bind(b); // tmp trick until we create a dedicated feature for this
     }
 
-    void blink_drone(bool b, float time) {
-        static float last_blink_time = time;
+    void blink_drone(bool b, double time) {
+        static double last_blink_time = time;
         static bool blink_state;
         if (b) {
-            if (time-last_blink_time>_dtrk->bind_blink_time) {
+            if (time-last_blink_time>bind_blink_time) {
                 if (blink_state)
                     blink_state = false;
                 else

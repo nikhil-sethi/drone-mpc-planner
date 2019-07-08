@@ -119,7 +119,6 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
 void ItemTracker::init_kalman() {
     kfL = cv::KalmanFilter(stateSize, measSize, contrSize, type);
     stateL =cv::Mat(stateSize, 1, type);  // [x,y,v_x,v_y,w,h]
-    _measL = cv::Mat (measSize, 1, type);    // [z_x,z_y,z_w,z_h]
 
     //TODO: tune kalman init values
     cv::setIdentity(kfL.transitionMatrix);
@@ -140,136 +139,75 @@ void ItemTracker::init_kalman() {
     cv::setIdentity(kfL.measurementNoiseCov, cv::Scalar(1e-1));
 }
 
-void ItemTracker::select_best_world_candidate(){
+void ItemTracker::update_world_candidate(){
 
-    std::vector<image_track_item> keypoint_candidates = find_result.image_track_item_filtered;
-    uint nCandidates = static_cast<uint>(keypoint_candidates.size());
-    wti.clear();
-    if (nCandidates) {
+    //        if (_name.compare("drone")==0 && n > 0 )
+    //            cout << std::endl;
+    //        if (_name.compare("drone")==0 && n > 1 )
+    //            cout << std::endl;
 
-        //first sort candidates based on image location odds, and check disparity range and background checks
-        int n = keypoint_candidates.size();
+    WorldTrackItem w;
+    w.iti = _image_track_item;
+    if (_image_track_item.valid && (
+            (_image_track_item.score >= settings.score_threshold/1e6f) ||
+            (n_frames_tracking == 0))) {
+        _image_track_item.disparity = stereo_match(_image_track_item.pt(),_visdat->diffL,_visdat->diffR,find_result.disparity);
+        w.iti.disparity = _image_track_item.disparity; // hmm
 
-        //        if (_name.compare("drone")==0 && n > 0 )
-        //            cout << std::endl;
-        //        if (_name.compare("drone")==0 && n > 1 )
-        //            cout << std::endl;
-        for (int i=0; i<n;i++)   {
-            world_track_item w;
-            uint match_id = match_closest_to_prediciton(predicted_locationL_last,keypoint_candidates);
-            w.ti = keypoint_candidates.at(match_id);
+        if (_image_track_item.disparity < settings.min_disparity || _image_track_item.disparity > settings.max_disparity){
+            w.disparity_in_range = false;
+        } else {
+            w.disparity_in_range = true;
+            //calculate everything for the itemcontroller:
+            std::vector<Point3d> camera_coordinates, world_coordinates;
+            camera_coordinates.push_back(Point3d(w.image_coordinates().x*IMSCALEF,w.image_coordinates().y*IMSCALEF,-_image_track_item.disparity));
+            cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
+            w.pt = world_coordinates[0];
 
-            w.disparity = stereo_match(w.image_coordinates(),_visdat->diffL,_visdat->diffR,find_result.disparity);
+            float theta = _visdat->camera_angle * deg2rad;
+            float temp_y = w.pt.y * cosf(theta) + w.pt.z * sinf(theta);
+            w.pt.z = -w.pt.y * sinf(theta) + w.pt.z * cosf(theta);
+            w.pt.y = temp_y;
 
-            if (w.disparity < settings.min_disparity || w.disparity > settings.max_disparity){
-                w.disparity_in_range = false;
-            } else {
-                w.disparity_in_range = true;
-                //calculate everything for the itemcontroller:
-                std::vector<Point3d> camera_coordinates, world_coordinates;
-                camera_coordinates.push_back(Point3d(w.image_coordinates().x*IMSCALEF,w.image_coordinates().y*IMSCALEF,-w.disparity));
-                cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
-                w.world_coordinates = world_coordinates[0];
+            float dist_back = _visdat->depth_background_mm.at<float>(w.image_coordinates().y*IMSCALEF,w.image_coordinates().x*IMSCALEF);
+            float dist_meas = sqrtf(powf(w.pt.x,2) + powf(w.pt.y,2) +powf(w.pt.z,2));
+            if ((dist_meas > dist_back*(static_cast<float>(settings.background_subtract_zone_factor)/100.f)) && _enable_depth_background_check)
+                w.background_check_ok = false;
+            else
+                w.background_check_ok = true;
 
-                float dist_back = _visdat->depth_background_mm.at<float>(w.image_coordinates().y*IMSCALEF,w.image_coordinates().x*IMSCALEF);
-                float dist_meas = sqrtf(powf(w.world_coordinates.x,2) + powf(w.world_coordinates.y,2) +powf(w.world_coordinates.z,2));
-                if ((dist_meas > dist_back*(static_cast<float>(settings.background_subtract_zone_factor)/100.f)) && _enable_depth_background_check)
-                    w.background_check_ok = false;
-                else
-                    w.background_check_ok = true;
+            w.distance = dist_meas;
+            w.distance_background = dist_back;
 
-                w.ti.distance = dist_meas;
-                w.ti.distance_background = dist_back;
 
-                float theta = _visdat->camera_angle * deg2rad;
-                float temp_y = w.world_coordinates.y * cosf(theta) + w.world_coordinates.z * sinf(theta);
-                w.world_coordinates.z = -w.world_coordinates.y * sinf(theta) + w.world_coordinates.z * cosf(theta);
-                w.world_coordinates.y = temp_y;
-            }
-            if (w.background_check_ok && w.disparity_in_range)
-                wti.push_back(w);
-            keypoint_candidates.erase(keypoint_candidates.begin() + match_id);
         }
+        if (w.background_check_ok && w.disparity_in_range)
+            w.valid = true;
+        else
+            w.valid = false;
+        _world_track_item = w;
+    } else {
+        _world_track_item.valid = false;
     }
 }
 
-std::vector<ItemTracker::image_track_item> ItemTracker::select_best_image_candidates(std::vector<image_track_item> keypoints, std::vector<image_track_item> exclude_path,std::vector<additional_ignore_point> additional_ignores) {
-    //    if (_name.compare("insect")==0 && keypoints.size()>0){
-    //        std::cout << "insect" << std::endl;
-    //    }
+void ItemTracker::track(double time) {
 
-    //    if (_name.compare("drone")==0 && keypoints.size()>0){
-    //        std::cout << "drone" << std::endl;
-    //    }
-
-    for (uint j=0; j<additional_ignores.size();j++){
-        float min_dis = 9999;
-        uint min_dis_i;
-        for (uint i=0; i<keypoints.size();i++){
-            //find the keypoint closest to the ignore
-            float d = sqrtf(powf(keypoints.at(i).x()-additional_ignores.at(j).p.x,2) + powf(keypoints.at(i).y()-additional_ignores.at(j).p.y,2));
-            if (min_dis > d) {
-                min_dis = d;
-                min_dis_i = i;
-            }
-        }
-        //and delete it, if it is close enough
-        if (min_dis < settings.exclude_additional_max_distance)
-            keypoints.erase(keypoints.begin() + min_dis_i);
-    }
-
-    if (exclude_path.size() > 0 && keypoints.size ()>0) {
-        track_item exclude = exclude_path.at(exclude_path.size()-1);
-
-//        if (exclude_path.size() > 1) {
-//            exclude_prev = exclude_path.at(exclude_path.size()-2);
-//        }
-        std::vector<track_item> tmp = keypoints;
-        int erase_cnt =0;
-        for (uint i = 0 ; i< tmp.size();i++){
-            dis1 = sqrtf(powf(tmp.at(i).k.pt.x - exclude.x(),2) +powf(tmp.at(i).k.pt.y - exclude.y(),2));
-//            dis2 = sqrtf(powf(tmp.at(i).k_void.pt.x - exclude.x(),2) +powf(tmp.at(i).k_void.pt.y - exclude.y(),2));
-//            float certainty_this_kp = calc_certainty(tmp.at(i).k);
-
-            float threshold_dis = settings.exclude_min_distance / sqrtf(exclude.tracking_certainty);
-            if (threshold_dis > settings.exclude_max_distance)
-                threshold_dis = settings.exclude_max_distance;
-
-            if ((dis1 < threshold_dis)) {// TODO: && certainty_this_kp <= exclude.tracking_certainty) {
-                keypoints.erase(keypoints.begin() + i - erase_cnt);
-                erase_cnt++;
-            }
-        }
-    }
-    return keypoints;
-}
-
-void ItemTracker::track(float time, std::vector<image_track_item> exclude,std::vector<additional_ignore_point> additional_ignores) {
-
-    float dt_tracking= (time-t_prev_tracking);
-    float dt_predict= (time-t_prev_predict);
+    double dt_tracking= (time-t_prev_tracking);
+    double dt_predict= (time-t_prev_predict);
     t_prev_predict = time;
 
-    cv::Point3f predicted_locationL;
-    if (foundL) {
-        predicted_locationL = predict(dt_predict,_visdat->frame_id);
-        predicted_pathL.back().k.pt.x = predicted_locationL_last.x;
-        predicted_pathL.back().k.pt.y = predicted_locationL_last.y;
-    } else {
-        predicted_locationL = predicted_locationL_last;
-    }
 
-    find(exclude,additional_ignores);
-    select_best_world_candidate();
+    update_world_candidate();
 
-    if ( wti.size()>0) {
-        world_track_item w = wti.at(0);
-        update_disparity(wti.at(0).disparity, dt_tracking);
+    if ( _world_track_item.valid) {
+
+        update_disparity(_world_track_item.iti.disparity, dt_tracking);
 
         //Point3f predicted_output = world_coordinates[1];
-        check_consistency(cv::Point3f(this->prevX,this->prevY,this->prevZ),w.world_coordinates);
-        update_tracker_ouput(w.world_coordinates,dt_tracking,time,&w.ti,w.disparity);
-        update_prediction_state(cv::Point3f(w.image_coordinates().x,w.image_coordinates().y,w.disparity),w.ti.k.size);
+        check_consistency(cv::Point3f(prevX,prevY,prevZ),_world_track_item.pt);
+        update_tracker_ouput(_world_track_item.pt,dt_tracking,time,&_world_track_item.iti,_world_track_item.iti.disparity);
+        update_prediction_state(_image_track_item.pt(), _world_track_item.iti.disparity,_image_track_item.size);
         n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
         t_prev_tracking = time; // update dt only if item was detected
         n_frames_tracking++;
@@ -281,28 +219,33 @@ void ItemTracker::track(float time, std::vector<image_track_item> exclude,std::v
         if (roi_size_cnt > settings.roi_max_grow)
             roi_size_cnt = settings.roi_max_grow;
 
-        if( n_frames_lost >= n_frames_lost_threshold || !foundL ) {
-            foundL = false;
+        if( n_frames_lost >= n_frames_lost_threshold || !_tracking ) {
+            _tracking = false;
             reset_tracker_ouput(time);
         } else
-            update_prediction_state(cv::Point3f(predicted_locationL.x,predicted_locationL.y,predicted_locationL.z),blob_size_last);
+            update_prediction_state(_image_track_item.pt(),_image_track_item.disparity,_image_track_item.size);
 
         if (n_frames_lost != 0)
             n_frames_tracking = 0;
 
     }
 
-    if (pathL.size() > 0) {
-        if (pathL.begin()->frame_id < _visdat->frame_id - path_buf_size)
-            pathL.erase(pathL.begin());
-        if (pathL.begin()->frame_id > _visdat->frame_id ) //at the end of a realsense video loop, frame_id resets
-            pathL.clear();
+    if (path.size() > 0) {
+        if (path.begin()->frame_id() < _visdat->frame_id - path_buf_size)
+            path.erase(path.begin());
+        if (path.begin()->frame_id() > _visdat->frame_id ) //at the end of a realsense video loop, frame_id resets
+            path.clear();
     }
-    if (predicted_pathL.size() > 0) {
-        if (predicted_pathL.begin()->frame_id < _visdat->frame_id - path_buf_size)
-            predicted_pathL.erase(predicted_pathL.begin());
-        if (predicted_pathL.begin()->frame_id > _visdat->frame_id ) //at the end of a realsense video loop, frame_id resets
-            predicted_pathL.clear();
+
+    if (_tracking) {
+        predict(dt_predict,_visdat->frame_id);
+    }
+
+    if (predicted_image_path.size() > 0) {
+        if (predicted_image_path.begin()->frame_id < _visdat->frame_id - path_buf_size)
+            predicted_image_path.erase(predicted_image_path.begin());
+        if (predicted_image_path.begin()->frame_id > _visdat->frame_id ) //at the end of a realsense video loop, frame_id resets
+            predicted_image_path.clear();
     }
 
     append_log();
@@ -314,16 +257,16 @@ void ItemTracker::track(float time, std::vector<image_track_item> exclude,std::v
 
 void ItemTracker::append_log() {
     //log all image stuff
-    if (pathL.size()>0)
-        (*_logger) << pathL.at(pathL.size()-1).x() * IMSCALEF << "; " << pathL.at(pathL.size()-1).y() * IMSCALEF << "; " << find_result.disparity << "; ";
+    if (path.size()>0)
+        (*_logger) << path.back().image_coordinates().x * IMSCALEF << "; " << path.back().image_coordinates().y * IMSCALEF << "; " << find_result.disparity << "; ";
     else
         (*_logger) << -1 << "; " << -1 << "; " << -1 << "; ";
-    if (predicted_pathL.size()>0)
-        (*_logger) << predicted_pathL.at(predicted_pathL.size()-1).x() * IMSCALEF << "; " << predicted_pathL.at(predicted_pathL.size()-1).y() * IMSCALEF << "; ";
+    if (predicted_image_path.size()>0)
+        (*_logger) << predicted_image_path.back().x * IMSCALEF << "; " << predicted_image_path.back().y * IMSCALEF << "; ";
     else
         (*_logger) << -1 << "; " << -1   << "; ";
 
-    (*_logger) << n_frames_lost << "; " << n_frames_tracking << "; " << foundL << "; ";
+    (*_logger) << n_frames_lost << "; " << n_frames_tracking << "; " << _tracking << "; ";
     //log all world stuff
     track_data last = Last_track_data();
     (*_logger) << last.posX << "; " << last.posY << "; " << last.posZ << ";" ;
@@ -332,208 +275,8 @@ void ItemTracker::append_log() {
     (*_logger) << last.saccX << "; " << last.saccY << "; " << last.saccZ << ";";
 }
 
-void ItemTracker::find(std::vector<image_track_item> exclude,std::vector<additional_ignore_point> additional_ignores) {
-    cv::Point previous_location =find_result.best_image_locationL.pt;
-    cv::Point roi_size;
-    if (settings.roi_min_size < 1)
-        settings.roi_min_size = 1;
-
-    if (_enable_roi) {
-        roi_size.x=settings.roi_min_size/IMSCALEF+roi_size_cnt*(settings.roi_grow_speed / 16 / IMSCALEF);
-        roi_size.y=settings.roi_min_size/IMSCALEF+roi_size_cnt*(settings.roi_grow_speed / 16 / IMSCALEF);
-
-        if (roi_size.x  >= _visdat->smallsize.width) {
-            roi_size.x = _visdat->smallsize.width;
-        }
-
-        if (roi_size.y >= _visdat->smallsize.height)
-            roi_size.y = _visdat->smallsize.height;
-    } else {
-        roi_size.x = _visdat->smallsize.width;
-        roi_size.y = _visdat->smallsize.height;
-        previous_location.x = roi_size.x / 2;
-        previous_location.y = roi_size.y / 2;
-    }
-
-
-    std::vector<KeyPoint> keypointsL;
-    find_max_change_points(previous_location,roi_size,_visdat->diffL_small,&keypointsL);
-
-    vector<image_track_item> iti;
-    for (uint i = 0 ; i < keypointsL.size();i++) {
-        keypointsL.at(i).pt.x += find_result.roi_offset.x;
-        keypointsL.at(i).pt.y += find_result.roi_offset.y;
-        image_track_item t( keypointsL.at(i),_visdat->frame_id,0);
-        iti.push_back(t);
-    }
-
-    find_result.excludes = exclude; //TODO: unused?
-    find_result.image_track_items = iti; //TODO: unused?
-    find_result.image_track_item_filtered = select_best_image_candidates(iti,exclude,additional_ignores);
-
-    if (find_result.image_track_item_filtered.size() ==0) {
-        roi_size_cnt +=1;
-        if (roi_size_cnt > settings.roi_max_grow)
-            roi_size_cnt = settings.roi_max_grow;
-
-    }
-
-
-}
-
-//Blob finder in the tracking ROI of the motion image. Looks for a limited number of
-//maxima that are higher than a threshold, the area around the maximum
-//is segmented from the background noise, and seen as a blob. It then
-//tries if this blob can be further splitted if necessary.
-void ItemTracker::find_max_change_points(cv::Point prev,cv::Point roi_size,cv::Mat diff,std::vector<KeyPoint> * scored_points) {
-
-    _approx = get_approx_cutout_filtered(prev,diff,roi_size);
-    cv::Mat frame = _approx;
-
-    float scale_radius = 1; // scale size of the blob with distance, which may be available from previous cycles
-    if (pathL.size()>0)
-        scale_radius = 1/pathL.back().distance;
-    //bound, as I don't fully trust the distance
-    if (scale_radius>1)
-        scale_radius = 1;
-    else if (scale_radius<0.05f)
-        scale_radius = 0.05f;
-
-    int radius = settings.radius*scale_radius;
-    std::vector<cv::Mat> vizs_maxs;
-
-    for (int i = 0; i < settings.max_points_per_frame; i++) {
-        cv::Point mint;
-        cv::Point maxt;
-        double min, max;
-        cv::minMaxLoc(frame, &min, &max, &mint, &maxt);
-
-        cv::Mat bkg_frame_cutout = _visdat->max_uncertainty_map(find_result.roi_offset);
-        uint8_t bkg = bkg_frame_cutout.at<uint8_t>(maxt.y,maxt.x);
-        if (!_enable_motion_background_check)
-            bkg = 0;
-
-        if (max > bkg+settings.motion_thresh) {
-            //find the COG:
-            //get the Rect containing the max movement:
-            cv::Rect r2(maxt.x-radius, maxt.y-radius, radius*2,radius*2);
-            if (r2.x < 0)
-                r2.x = 0;
-            else if (r2.x+r2.width >= frame.cols)
-                r2.x -= (r2.x+r2.width+1) - frame.cols;
-            if (r2.y < 0)
-                r2.y = 0;
-            else if (r2.y+r2.height >= frame.rows)
-                r2.y -= (r2.y+r2.height+1) - frame.rows ;
-            cv::Mat roi(frame,r2); // so, this is the cut out around the max point, in the cut out of _approx roi
-
-            // make a black mask, same size:
-            cv::Mat mask = cv::Mat::zeros(roi.size(), roi.type());
-            // with a white, filled circle in it:
-            circle(mask, Point(radius,radius), radius, 32765, -1);
-            // combine roi & mask:
-            cv::Mat cropped = roi & mask;
-            cv::Scalar avg = cv::mean(cropped);
-            cv::GaussianBlur(cropped,cropped,cv::Size(5,5),0);
-            mask = cropped > (max-avg(0)) * 0.3; // TODO: factor 0,3 seems to work better than 0,5, but what makes sense here?
-            cropped = mask;
-
-            cv::Moments mo = cv::moments(cropped,true);
-            cv::Point2f COG = cv::Point2f(static_cast<float>(mo.m10) / static_cast<float>(mo.m00), static_cast<float>(mo.m01) / static_cast<float>(mo.m00));
-
-            cv::Mat viz;
-            if (enable_viz_max_points){
-                viz = createRowImage({roi,mask},CV_8UC1,4);
-                cv::cvtColor(viz,viz,CV_GRAY2BGR);
-                cv::putText(viz,std::to_string(i),cv::Point(0, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,255,0));
-                vizs_maxs.push_back(viz);
-            }
-
-            // relative it back to the _approx frame
-            COG.x += r2.x;
-            COG.y += r2.y;
-
-            //check if the blob may be multiple blobs, first check distance between COG and max:
-            float dist = pow(COG.x-maxt.x,2) + pow(COG.y-maxt.y,2);
-            bool single_blob = true;
-            bool COG_is_nan = false;
-            if (dist > 4) {//todo: instead of just check the distance, we could also check the pixel value of the COG, if it is black it is probably multiple blobs
-                //the distance between the COG and the max is quite large, now check if there are multiple contours:
-                vector<vector<Point>> contours;
-                cv::findContours(cropped,contours,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_NONE);
-                if (contours.size()>1) {
-                    //ok, definetely multiple blobs. Split them, and find the COG for each.
-                    single_blob = false;
-                    for (uint j = 0; j< contours.size();j++) {
-                        cv::Moments mo2 = cv::moments(contours.at(j),true);
-                        cv::Point2f COG2 = cv::Point2f(static_cast<float>(mo2.m10) / static_cast<float>(mo2.m00), static_cast<float>(mo2.m01) / static_cast<float>(mo2.m00));
-
-                        if (COG2.x == COG2.x) {// if not nan
-                            if (enable_viz_max_points){
-                                cv::circle(viz,COG2*4,1,cv::Scalar(0,0,255),1);
-                                cv::putText(viz,to_string_with_precision(COG2.y*4+find_result.roi_offset.y,0),COG2*4,cv::FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(100,0,255));
-                            }
-                            // relative COG back to the _approx frame, and save it:
-                            COG2.x += r2.x;
-                            COG2.y += r2.y;
-                            scored_points->push_back(cv::KeyPoint(COG2, mo2.m00));
-
-                            //remove this COG from the ROI:
-                            cv::circle(frame, COG2, 1, cv::Scalar(0), radius);
-
-                        } else {
-                            COG_is_nan = true;
-                        }
-                    }
-                }
-            }
-            if (single_blob) { // we could not split this blob, so we can use the original COG
-                if (COG.x == COG.x) { // if not nan
-                    scored_points->push_back(cv::KeyPoint(COG, mo.m00));
-                    if (enable_viz_max_points) {
-                        cv::Point2f tmpCOG;
-                        tmpCOG.x = COG.x - r2.x;
-                        tmpCOG.y = COG.y - r2.y;
-                        cv::circle(viz,tmpCOG*4,1,cv::Scalar(0,0,255),1);
-                    }
-                    //remove this COG from the ROI:
-                    cv::circle(frame, COG, 1, cv::Scalar(0), radius);
-                } else {
-                    COG_is_nan = true;
-                }
-            }
-            if (COG_is_nan)  //remove the actual maximum from the ROI if the COG algorithm failed:
-                cv::circle(frame, maxt, 1, cv::Scalar(0), radius);
-
-        } else {
-            break; // done searching for maxima, they are too small now
-        }
-    }
-
-
-    if (enable_viz_max_points && vizs_maxs.size()>0)
-        viz_max_points = createColumnImage(vizs_maxs,CV_8UC3,1);
-    if (enable_viz_roi && _cir.cols > 0 && _dif.cols > 0 && _approx.cols > 0 ){
-        cv::Mat cir8 = _cir*255;
-        cv::Mat dif8 = _dif*10;
-        cir8.convertTo(cir8, CV_8UC1);
-        dif8.convertTo(dif8, CV_8UC1);
-        std::vector<cv::Mat> ims;
-
-        ims.push_back(cir8);
-        ims.push_back(dif8);
-        ims.push_back(_approx);
-        viz_roi = createColumnImage(ims,CV_8UC1);
-    }
-
-}
-
-cv::Mat ItemTracker::get_probability_cloud(cv::Point size) {
-    return cv::Mat::ones(size.y,size.x,CV_32F); // dummy implementation. TODO: create proper probablity estimate
-}
-
-cv::Point3f ItemTracker::predict(float dt, int frame_id) {
-    cv::Point3f predicted_locationL;
+void ItemTracker::predict(float dt, int frame_id) {
+    cv::Point2f predicted_image_locationL;
     kfL.transitionMatrix.at<float>(2) = dt;
     kfL.transitionMatrix.at<float>(9) = dt;
     stateL = kfL.predict();
@@ -543,19 +286,18 @@ cv::Point3f ItemTracker::predict(float dt, int frame_id) {
     predRect.x = static_cast<int>(stateL.at<float>(0)) - predRect.width / 2;
     predRect.y = static_cast<int>(stateL.at<float>(1)) - predRect.height / 2;
 
-    predicted_locationL.x = stateL.at<float>(0);
-    predicted_locationL.y = stateL.at<float>(1);
-    predicted_locationL.z = stateL.at<float>(2);
-    cv::KeyPoint t(predicted_locationL.x,predicted_locationL.y,blob_size_last);
+    predicted_image_locationL.x = stateL.at<float>(0);
+    predicted_image_locationL.y = stateL.at<float>(1);
+    float size = stateL.at<float>(2);
 
     float certainty;
-    if (predicted_pathL.size() > 0.f) {
+    if (predicted_image_path.size() > 0.f) {
         if (roi_size_cnt == 1 )
-            certainty   = predicted_pathL.back().tracking_certainty - certainty_init;
+            certainty   = predicted_image_path.back().certainty - certainty_init;
         else if (roi_size_cnt > 1 )
-            certainty  = 1-((1 - predicted_pathL.back().tracking_certainty) * certainty_factor); // certainty_factor times less certain that the previous prediction. The previous prediction certainty is updated with an meas vs predict error score
+            certainty  = 1-((1 - predicted_image_path.back().certainty) * certainty_factor); // certainty_factor times less certain that the previous prediction. The previous prediction certainty is updated with an meas vs predict error score
         else {
-            certainty = 1-((1 - predicted_pathL.back().tracking_certainty) / certainty_factor);
+            certainty = 1-((1 - predicted_image_path.back().certainty) / certainty_factor);
         }
     }   else {
         certainty = certainty_init;
@@ -566,34 +308,7 @@ cv::Point3f ItemTracker::predict(float dt, int frame_id) {
     if (certainty > 1)
         certainty = 1;
 
-    predicted_pathL.push_back(image_track_item(t,frame_id,certainty) );
-
-    return predicted_locationL;
-}
-
-uint ItemTracker::match_closest_to_prediciton(cv::Point3f predicted_locationL, std::vector<image_track_item> keypointsL) {
-    uint closestL;
-    if (keypointsL.size() == 1 && pathL.size() == 0) {
-        closestL = 0;
-    } else if (pathL.size() > 0) {
-        //find closest keypoint to new predicted location
-        float mind = 999999999;
-        closestL=0;
-        for (uint i = 0 ; i < keypointsL.size();i++) {
-            image_track_item k =keypointsL.at(i);
-            float d = (predicted_locationL.x-k.x()) * (predicted_locationL.x-k.x()) + (predicted_locationL.y-k.y())*(predicted_locationL.y-k.y());
-            if (d < mind ) {
-                mind = d;
-                closestL = i;
-            }
-        }
-    } else {
-        //the case that we have multiple item candidates, no good way to figure out which one is the item
-        //guess we'll just take the first one...
-        closestL = 0;
-    }
-
-    return closestL;
+    predicted_image_path.push_back(ImagePredictItem(predicted_image_locationL,certainty,size,frame_id) );
 }
 
 float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR, float prev_disparity){
@@ -745,15 +460,15 @@ void ItemTracker::check_consistency(cv::Point3f prevLoc,cv::Point3f measLoc) {
         reset_filters = true;
 }
 
-void ItemTracker::update_prediction_state(cv::Point3f p, float blob_size) {
+void ItemTracker::update_prediction_state(cv::Point2f image_location, float disparity, float size) {
     cv::Mat measL(measSize, 1, type);
-    measL.at<float>(0) = p.x;
-    measL.at<float>(1) = p.y;
-    measL.at<float>(2) = p.z;
-    measL.at<float>(3) = 0; //TODO; remove...?
+    measL.at<float>(0) = image_location.x;
+    measL.at<float>(1) = image_location.y;
+    measL.at<float>(2) = disparity;
+    measL.at<float>(3) = size;
 
 
-    if (!foundL) { // First detection!
+    if (!_tracking) { // First detection!
         kfL.errorCovPre.at<float>(0) = 1; // px
         kfL.errorCovPre.at<float>(7) = 1; // px
         kfL.errorCovPre.at<float>(14) = 1;
@@ -763,31 +478,28 @@ void ItemTracker::update_prediction_state(cv::Point3f p, float blob_size) {
 
         stateL.at<float>(0) = measL.at<float>(0);
         stateL.at<float>(1) = measL.at<float>(1);
+        stateL.at<float>(3) = measL.at<float>(2);
+        stateL.at<float>(4) = measL.at<float>(3);
         stateL.at<float>(2) = 0;
         //            stateL.at<float>(3) = 0;
         //            stateL.at<float>(4) = measL.at<float>(2);
         //            stateL.at<float>(5) = measL.at<float>(3);
 
         kfL.statePost = stateL;
-        foundL = true;
+        _tracking = true;
     }
     else
         kfL.correct(measL);
-
-    blob_size_last = blob_size;
 }
 
-void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  float time, image_track_item * best_match, float disparity) {
+void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  double time, ImageTrackItem * best_match, float disparity) {
 
-    find_result.best_image_locationL = best_match->k;
+    find_result.best_image_locationL = best_match->k();
     find_result.disparity = disparity;
 
-    float new_tracking_certainty = calc_certainty(best_match->k);
+    _world_track_item.iti.certainty = calc_certainty(_world_track_item.iti.k());;
 
-    image_track_item t(*best_match);
-    t.tracking_certainty = new_tracking_certainty;
-
-    pathL.push_back(t);
+    path.push_back(_world_track_item);
 
     track_data data ={0};
     data.pos_valid = true;
@@ -864,9 +576,9 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
 
 float ItemTracker::calc_certainty(KeyPoint item) {
     float new_tracking_certainty;
-    if (predicted_pathL.size() > 0) {
-        new_tracking_certainty = 1.f / powf(powf(predicted_pathL.back().k.pt.x - item.pt.x,2) + powf(predicted_pathL.back().k.pt.y - item.pt.y,2),0.3f);
-        new_tracking_certainty*= predicted_pathL.back().tracking_certainty;
+    if (predicted_image_path.size() > 0) {
+        new_tracking_certainty = 1.f / powf(powf(predicted_image_path.back().x - item.pt.x,2) + powf(predicted_image_path.back().y - item.pt.y,2),0.3f);
+        new_tracking_certainty*= predicted_image_path.back().certainty;
         if (new_tracking_certainty>1 || new_tracking_certainty<0 || isnanf(new_tracking_certainty)) { // weird -nan sometimes???
             new_tracking_certainty = 1;
         }
@@ -875,7 +587,7 @@ float ItemTracker::calc_certainty(KeyPoint item) {
     return new_tracking_certainty;
 }
 
-void ItemTracker::reset_tracker_ouput(float time) {
+void ItemTracker::reset_tracker_ouput(double time) {
     track_data data = {0};
     reset_filters = true;
     data.time = time;

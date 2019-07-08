@@ -52,6 +52,7 @@ const float depthscale = 256.0f;
 const float rad2deg = 180.f/static_cast<float>(M_PI);
 const float deg2rad = static_cast<float>(M_PI)/180.f;
 
+const double bind_blink_time = 0.45;
 
 struct track_data {
     float posX,posY,posZ;
@@ -61,18 +62,18 @@ struct track_data {
     bool pos_valid;
     bool vel_valid;
     bool acc_valid;
-    float time;
+    double time;
 };
 
 struct control_data {
-    control_data(float r, float tr, float p, float t){
+    control_data(float r, float tr, float p, double t){
         throttle = tr;
         roll = r;
         pitch = p;
         time = t;
     }
     float throttle,roll,pitch;
-    float time;
+    double time;
 };
 
 

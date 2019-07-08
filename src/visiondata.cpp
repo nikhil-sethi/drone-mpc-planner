@@ -60,7 +60,7 @@ void VisionData::init(bool fromfile, std::string log_in_dir,cv::Mat new_Qf, cv::
 
 }
 
-void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int new_frame_id) {
+void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsigned long long new_frame_id) {
     lock_data.lock();
     frameL_prev = frameL;
     frameR_prev = frameR;
@@ -95,7 +95,7 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,float time, int ne
     cv::Mat dR = frameR16 - frameR_prev16;
     diffR16 += dR;
 
-    if (!(motion_update_iterator++ % (settings.motion_update_iterator_max+1))) { // +1 -> prevent 0
+    if (!(motion_update_iterator++ % (settings.motion_update_iterator_max+1)) && !disable_fading) { // +1 -> prevent 0
         //split negative and positive motion
         fade(diffL16);
         fade(diffR16);
@@ -161,7 +161,7 @@ void VisionData::collect_no_drone_frames(cv::Mat dL) {
 
 }
 
-void VisionData::enable_background_motion_map_calibration(float duration){
+void VisionData::enable_background_motion_map_calibration(double duration){
     max_uncertainty_map = cv::Mat::zeros(smallsize,CV_8UC1);
     diffL16_back = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
     calibrating_background_end_time = _current_frame_time+duration;
@@ -170,7 +170,7 @@ void VisionData::enable_background_motion_map_calibration(float duration){
 }
 
 //Keep track of the average brightness, and reset the motion integration frame when it changes to much. (e.g. when someone turns on the lights or something)
-void VisionData::track_avg_brightness(cv::Mat frame,float time) {
+void VisionData::track_avg_brightness(cv::Mat frame,double time) {
     if (time - prev_time_brightness_check > settings.brightness_check_period){ // only check once in a while
         prev_time_brightness_check = time;
         cv::Mat frame_small;

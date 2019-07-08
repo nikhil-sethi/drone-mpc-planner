@@ -28,14 +28,15 @@ private:
     cv::Mat plot_all_acceleration(void);
     cv::Mat plot_all_velocity(void);
     cv::Mat plot_all_position(void);
-    void draw_target_text(cv::Mat resFrame, float time, float dis, float min_dis);
-    cv::Mat draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, std::vector<ItemTracker::image_track_item> path,std::vector<ItemTracker::image_track_item> predicted_path,std::vector<ItemTracker::image_track_item> exclude_path,cv::Rect roi_offset,int exclude_max_distance, int exclude_min_distance);
+    void draw_target_text(cv::Mat resFrame, double time, float dis, float min_dis);
+    cv::Mat draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, std::vector<ItemTracker::WorldTrackItem> path, std::vector<ItemTracker::ImagePredictItem> predicted_path, cv::Rect roi_offset);
     void draw_tracker_viz();
 
     VisionData * _visdat;
     DroneController *_dctrl;
     DroneTracker *_dtrkr;
     InsectTracker *_itrkr;
+    ItemManager * _trackers;
     DroneNavigation *_dnav;
     MultiModule *_rc;
     DronePredictor *_dprdct;
@@ -67,20 +68,16 @@ private:
     struct Tracker_viz_base_data{
         cv::Mat frameL;
         cv::Point3d setpoint;
-        float time;
+        double time;
         float dis;
         float min_dis;
 
-        std::vector<ItemTracker::image_track_item> drn_path;
-        std::vector<ItemTracker::image_track_item> drn_predicted_path;
-        std::vector<ItemTracker::image_track_item> ins_path;
-        std::vector<ItemTracker::image_track_item> ins_predicted_path;
+        std::vector<ItemTracker::WorldTrackItem> drn_path;
+        std::vector<ItemTracker::ImagePredictItem> drn_predicted_path;
+        std::vector<ItemTracker::WorldTrackItem> ins_path;
+        std::vector<ItemTracker::ImagePredictItem> ins_predicted_path;
         cv::Rect drn_roi_offset;
         cv::Rect ins_roi_offset;
-        int exclude_min_distance;
-        int exclude_max_distance;
-        cv::Point3f drone_predicted_control_location;
-        cv::Point3f drone_predicted_control_location_prev;
     };
     Tracker_viz_base_data tracker_viz_base_data;
 
@@ -170,26 +167,8 @@ public:
 
     void paint();
     void addPlotSample(void);
-    void update_tracker_data(cv::Mat frameL, cv::Point3d setpoint, float time, DroneTracker *dtrk, InsectTracker *itrk);
-    void init(VisionData * visdat, DroneController *dctrl, DroneTracker *dtrkr, InsectTracker *itrkr, DroneNavigation *dnav, MultiModule *rc, bool fromfile, DronePredictor *dprdct){
-        _visdat = visdat;
-        _dctrl = dctrl;
-        _dtrkr = dtrkr;
-        _itrkr = itrkr;
-        _dnav = dnav;
-        _rc = rc;
-        _dprdct = dprdct;
-
-        _fromfile = fromfile;
-        if (fromfile) {
-            _res_mult = 1.5f;
-        } else {
-            _res_mult = 1;
-        }
-
-        thread_viz = std::thread(&Visualizer::workerThread,this);
-        initialized = true;
-    }
+    void update_tracker_data(cv::Mat frameL, cv::Point3d setpoint, double time);
+    void init(VisionData * visdat, ItemManager *imngr, DroneController *dctrl, DroneNavigation *dnav, MultiModule *rc, bool fromfile, DronePredictor *dprdct);
     void close();
 
 };

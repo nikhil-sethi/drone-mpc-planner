@@ -25,57 +25,94 @@
 class ItemTracker {
 
 public:
-    struct image_track_item {
-        cv::KeyPoint k;
-        int frame_id;
-        float tracking_certainty;
-        float distance;
-        float distance_background;
-        float min_distance_static_ignore;
-        float min_distance_moving_ignore;
-        float distance_to_prediction;
+    struct ImageTrackItem {
+        uint frame_id;
+        uint keypoint_id;
+        float distance_to_old_prediction,certainty,x,y,size,score,disparity = 0;
+        bool valid = false;
 
-        image_track_item() {
-
+        cv::KeyPoint k(){
+            return cv::KeyPoint(x,y,size);
         }
-        image_track_item(cv::KeyPoint kp, int frameid,float trackingCertainty){
-            k = kp;
+        cv::Point2f pt(){
+            return cv::Point2f(x,y);
+        }
+        ImageTrackItem() {}
+        ImageTrackItem(float x_, float y_, int frameid){
+            //read from log
+            x = x_;
+            y = y_;
+            size  = -1;
+            distance_to_old_prediction = -1;
+            score = -1;
+            keypoint_id = -1;
             frame_id = frameid;
-            tracking_certainty = trackingCertainty;
+            valid = true; //todo: implement when the log is not valid
         }
-        image_track_item(image_track_item const &t){
-            k = t.k;
-            frame_id = t.frame_id;
-            tracking_certainty = t.tracking_certainty;
-            distance = t.distance;
-            distance_background = t.distance_background;
+        ImageTrackItem(cv::KeyPoint kp, int frameid,float d2p, float matching_score, uint keypointid){
+            x = kp.pt.x;
+            y = kp.pt.y;
+            size = kp.size;
+            distance_to_old_prediction = d2p;
+            score = matching_score;
+            frame_id = frameid;
+            keypoint_id = keypointid;
+            valid = true;
         }
-        float x() {return k.pt.x;}
-        float y() {return k.pt.y;}
     };
-    struct world_track_item {
-        cv::Point3f world_coordinates;
-        image_track_item  ti;
-        cv::Point2f image_coordinates(){
-            return ti.k.pt;
+    struct ImagePredictItem {
+        uint frame_id;
+        float x,y,size,certainty;
+        cv::KeyPoint k(){
+            return cv::KeyPoint(x,y,size);
         }
-        float disparity = 0;
+        cv::Point2f pt(){
+            return cv::Point2f(x,y);
+        }
+        ImagePredictItem() {}
+        ImagePredictItem(cv::Point2f p, float certainty_, float size_, int frameid){
+            x = p.x;
+            y = p.y;
+            size = size_;
+            certainty = certainty_;
+            frame_id = frameid;
+        }
+        ImagePredictItem(float x_, float y_, float certainty_, float size_, int frameid){
+            x = x_;
+            y = y_;
+            size = size_;
+            certainty = certainty_;
+            frame_id = frameid;
+        }
+    };
+    struct WorldTrackItem {
+        cv::Point3f pt;
+        ImageTrackItem  iti;
+        cv::Point2f image_coordinates(){
+            return cv::Point2f(iti.x,iti.y);
+        }
+        float distance, distance_background;
         bool background_check_ok = false;
         bool disparity_in_range = false;
+        bool valid = false;
+
+        uint frame_id(){
+            return iti.frame_id;
+        }
+        float size_in_image() {
+            return iti.size;
+        }
 
     };
-    struct additional_ignore_point {
-        additional_ignore_point() {
-        }
-        additional_ignore_point(cv::Point2f location, float timeout){
+    struct StaticIgnorePoint {
+        StaticIgnorePoint() {}
+        StaticIgnorePoint(cv::Point2f location, double timeout){
             p = location;
             invalid_after = timeout;
         }
         cv::Point2f p;
-        float invalid_after;
+        double invalid_after;
     };
-    cv::Point3f predicted_locationL_last = {0};
-    cv::Point3f predicted_locationL_prev = {0};
 
 private:
     struct TrackerSettings{
@@ -87,15 +124,7 @@ private:
         int roi_max_grow = 160;
         int roi_grow_speed = 64;
 
-        int exclude_min_distance = 5; // in res/IMSCALEF resolution
-        int exclude_max_distance = 50; // in res/IMSCALEF resolution
-
-        int exclude_additional_max_distance = 15; // in res/IMSCALEF resolution
-
-        int max_points_per_frame = 10;
-        int radius = 15;
-        int motion_thresh = 10;
-
+        int score_threshold = 66;
         int background_subtract_zone_factor = 90;
 
         //only for dronetracker:
@@ -103,44 +132,47 @@ private:
         int pixel_dist_seperation_min = 2;
         int pixel_dist_seperation_max = 5;
 
-        float version = 1.9f;
+
+
+        float version = 2.0f;
 
         template <class Archive>
         void serialize( Archive & ar )
         {
-            ar(version,min_disparity,max_disparity,roi_min_size,
-               roi_max_grow,roi_grow_speed,exclude_min_distance,
-               exclude_max_distance,background_subtract_zone_factor,
-               max_points_per_frame,radius,
-               motion_thresh,exclude_additional_max_distance,
-               pixel_dist_landing_spot,pixel_dist_seperation_min,
+            ar(version,
+               min_disparity,
+               max_disparity,
+               roi_min_size,
+               roi_max_grow,
+               roi_grow_speed,
+               score_threshold,
+               background_subtract_zone_factor,
+               pixel_dist_landing_spot,
+               pixel_dist_seperation_min,
                pixel_dist_seperation_max);
         }
 
     };
     std::string _settingsFile;
     struct Find_result {
-        std::vector<image_track_item> image_track_items;
-        std::vector<image_track_item> image_track_item_filtered;
-        std::vector<image_track_item> excludes;
+        std::vector<ImageTrackItem> image_track_items;
+        std::vector<ImageTrackItem> image_track_item_filtered;
+        std::vector<ImageTrackItem> excludes;
         cv::KeyPoint best_image_locationL;
         cv::Rect roi_offset;
         float disparity;
     };
 
-    cv::Point3f predict(float dt, int frame_id);
-    virtual cv::Mat get_approx_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size) = 0;
-    uint match_closest_to_prediciton(cv::Point3f predicted_locationL, std::vector<image_track_item> keypointsL);
+    void predict(float dt, int frame_id);
 
     float estimate_sub_disparity(int disparity);
     void check_consistency(cv::Point3f previous_location,cv::Point3f measured_world_coordinates);
     void update_disparity(float disparity, float dt);
-    void update_prediction_state(cv::Point3f p, float blob_size);
-    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, float time, image_track_item *best_match, float disparity);
-    void find(std::vector<image_track_item> exclude, std::vector<additional_ignore_point> additional_ignores);
-    void select_best_world_candidate();
-    std::vector<ItemTracker::image_track_item> select_best_image_candidates(std::vector<image_track_item> keypoints, std::vector<image_track_item> exclude_path, std::vector<additional_ignore_point> additional_ignores);
-    void find_max_change_points(cv::Point prev, cv::Point roi_size, cv::Mat diff, std::vector<cv::KeyPoint> *scored_points);
+    void update_prediction_state(cv::Point2f image_location, float disparity, float size);
+    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, double time, ImageTrackItem *best_match, float disparity);
+
+    void update_world_candidate();
+
     float calc_certainty(cv::KeyPoint item);
     void init_kalman();
 
@@ -152,12 +184,9 @@ private:
     int type = CV_32F;
     cv::KalmanFilter kfL;
     cv::Mat stateL;
-    cv::Mat _measL;
 
-    cv::Mat _blurred_circle;
-
-    float t_prev_tracking = 0;
-    float t_prev_predict = 0;
+    double t_prev_tracking = 0;
+    double t_prev_predict = 0;
     std::string _name;
 
     float prevX,prevY,prevZ =0;
@@ -177,16 +206,12 @@ private:
     int detected_after_take_off = 0;
 protected:
 
-    std::vector<world_track_item> wti;
-
-    int n_frames_lost = 100;
-    const int n_frames_lost_threshold = 10;
+    int n_frames_lost = 100; // TODO: check these two variables with the new itemmanager. Usefull for delete_me
+    int n_frames_lost_threshold = 10;
     std::ofstream *_logger;
     VisionData * _visdat;
     int roi_size_cnt = 0;
     bool initialized = false;
-
-    float blob_size_last = DRONE_IM_START_SIZE;
 
     const float certainty_factor = 1.1f; // TODO: tune
     const float certainty_init = 0.1f; // TODO: tune
@@ -194,34 +219,37 @@ protected:
 
     bool _enable_roi = true;
     bool _enable_depth_background_check = true;
-    bool _enable_motion_background_check = true;
 
-    bool enable_viz_roi = false; // flag for enabling the roi visiualization
-    bool enable_viz_max_points = false; // flag for enabling the maxs visiualization
+    bool _tracking = false;
+    bool _active = false;
+
+    ImageTrackItem  _image_track_item;
+    WorldTrackItem  _world_track_item;
+
+
 
     float stereo_match(cv::Point closestL, cv::Mat diffL, cv::Mat diffR, float prev_disparity);
-    void reset_tracker_ouput(float time);
-    virtual cv::Mat get_probability_cloud(cv::Point size);
+    void reset_tracker_ouput(double time);
     virtual void init_settings() = 0;
 public:
 
-    TrackerSettings settings;
-    cv::Mat _cir,_dif,_approx;
-    Find_result find_result;
-    std::vector<image_track_item> pathL;
-    std::vector<image_track_item> predicted_pathL;
-    std::vector<image_track_item> ignores; // keeps the item locations that should be ignored by other itemtrackers
+    virtual ~ItemTracker() {}
 
-    cv::Mat viz_max_points,viz_roi;
+    TrackerSettings settings;
+    Find_result find_result; // TODO: remove
+    std::vector<WorldTrackItem> path;
+    std::vector<ImagePredictItem> predicted_image_path;
+    std::vector<StaticIgnorePoint> static_ignores_points_for_other_trkrs;
+    std::vector<StaticIgnorePoint> static_ignores_points_for_me;
 
     int n_frames_tracking =0;
-    float last_sighting_time = 0;
+    double last_sighting_time = 0;
 
-    bool foundL = false;
+    bool tracking(){return _tracking;}
 
     void close (void);
     void init(std::ofstream *logger, VisionData *_visdat, std::string name);
-    virtual void track(float time, std::vector<image_track_item> ignore, std::vector<additional_ignore_point> additional_ignores);
+    virtual void track(double time);
     void append_log();
 
     uint track_history_max_size = VIDEOFPS;
@@ -231,7 +259,13 @@ public:
             return track_data();
         return track_history.back();
     }
+    virtual bool delete_me() = 0;
 
+    ImageTrackItem image_track_item(){return _image_track_item;}
+    WorldTrackItem world_track_item(){return _world_track_item;}
+    void image_track_item(ImageTrackItem t){_image_track_item = t;}
+
+    //TODO: make this private:
     int err [100];
     int cor_16 [100];
 

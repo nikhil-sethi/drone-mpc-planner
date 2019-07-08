@@ -83,7 +83,7 @@ public:
 
     float measure_auto_exposure();
 
-    int frame_number() {return _frame_number;}
+    unsigned long long frame_number() {return _frame_number;}
     double frame_time() {return _frame_time;}
     cv::Mat Qf;
     rs2_intrinsics * intr;
@@ -122,7 +122,7 @@ private:
 
     bool hasIMU = false;
     uint requested_id_in =0;
-    int _frame_number;
+    unsigned long long _frame_number;
     double _frame_time = 0;
     double _frame_time_start = -1;
     double funky_RS_frame_time_fixer_frame_count = 0;
@@ -171,7 +171,7 @@ private:
 
     void pause();
     void resume();
-    void seek(float time);
+    void seek(double time);
     void calibration(rs2::stream_profile infared1,rs2::stream_profile infared2);
     void update_real();
     void update_playback();

@@ -10,7 +10,7 @@
 class DronePredictor {
 public :
     void init(VisionData *visdat, DroneTracker *dtrk, InsectTracker *itrk, DroneController *dctrl);
-    void update(bool drone_is_active, float time);
+    void update(bool drone_is_active, double time);
 
 private:
     void swap_check(cv::Point3f rtp);

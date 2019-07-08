@@ -37,7 +37,7 @@ cv::Point3f div3f(cv::Point3f p1, cv::Point3f p2){
     return p;
 }
 
-void DronePredictor::update(bool drone_is_active, float time) {
+void DronePredictor::update(bool drone_is_active, double time) {
 
     if (_dtrk->track_history.size()==0)
         return;
@@ -68,7 +68,7 @@ void DronePredictor::update(bool drone_is_active, float time) {
     if (!td.pos_valid)
         return;
 
-    float dt_pred = (1.f/VIDEOFPS)+ time -td.time;
+    double dt_pred = (1./VIDEOFPS)+ time -td.time;
     if (dt_pred > 1) // don't try to predict based on control more then 1 second
         return;
 
@@ -166,10 +166,10 @@ void DronePredictor::update(bool drone_is_active, float time) {
     else if (image_location.y >= IMG_H/IMSCALEF)
         image_location.y = IMG_H/IMSCALEF-1;
 
-    _dtrk->control_predicted_drone_location(image_location,world_location);
-    _dtrk->predicted_locationL_prev = _dtrk->predicted_locationL_last;
-    _dtrk->predicted_locationL_last.x = image_location.x;
-    _dtrk->predicted_locationL_last.y = image_location.y;
+    _dtrk->control_predicted_drone_location(image_location,world_location); //TODO: activate this again
+//    _dtrk->predicted_locationL_prev = _dtrk->predicted_locationL_last;
+//    _dtrk->predicted_locationL_last.x = image_location.x;
+//    _dtrk->predicted_locationL_last.y = image_location.y;
 
 
     //save data for determining error next iteration:

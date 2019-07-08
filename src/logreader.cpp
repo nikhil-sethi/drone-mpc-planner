@@ -145,7 +145,7 @@ void LogReader::set_next_frame_number() {
         current_item = log[0];
 }
 
-void LogReader::current_frame_number(int _RS_frame_number) {
+void LogReader::current_frame_number(unsigned long long _RS_frame_number) {
     current_item = log[_RS_frame_number];
     if (current_item.RS_ID != _RS_frame_number) {
         std::cout << "Warning, frame not found in log" << std::endl;

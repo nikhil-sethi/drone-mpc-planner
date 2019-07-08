@@ -10,12 +10,13 @@ using namespace std;
 
 const string paramsFile = "../navigationParameters.dat";
 
-void DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneController * dctrl, InsectTracker * itrkr, VisionData *visdat) {
+void DroneNavigation::init(std::ofstream *logger, ItemManager * trackers, DroneController * dctrl, VisionData *visdat) {
     _logger = logger;
-    _dtrk = dtrk;
+    _trackers = trackers;
     _dctrl = dctrl;
     _visdat = visdat;
-    _iceptor.init(dtrk,itrkr,visdat);
+
+    _iceptor.init(_trackers,visdat);
     cv::invert(visdat->Qf,Qfi);
 
     // Load saved control paremeters
@@ -66,7 +67,7 @@ void DroneNavigation::init(std::ofstream *logger, DroneTracker * dtrk, DroneCont
     initialized = true;
 }
 
-void DroneNavigation::update(float time) {
+void DroneNavigation::update(double time) {
 
     if (_dctrl->Joy_State() != DroneController::js_none) {
         //copy the (processed) joy mode switch, but only if the switch is available
@@ -85,25 +86,28 @@ void DroneNavigation::update(float time) {
         switch (_navigation_status) {
         case ns_init: {
             _navigation_status = ns_locate_drone;
+            _trackers->mode(ItemManager::mode_idle);
             break;
         } case ns_locate_drone: {
 #if TX_TYPE == TX_FRSKYD || TX_TYPE == TX_FRSKYX
             _dctrl->blink_drone(true);
 #endif
-            _dtrk->Locate_Startup_Location();
+            _trackers->mode(ItemManager::mode_locate_drone);
+            _visdat->reset_motion_integration();
+            _visdat->disable_fading = true;
             _navigation_status = ns_wait_locate_drone;
             break;
         } case ns_wait_locate_drone: {
-            static float __attribute__((unused)) prev_time = time;
+            static double __attribute__((unused)) prev_time = time;
 #if TX_TYPE == TX_FRSKYD || TX_TYPE == TX_FRSKYX
             if (time - prev_time > 7 && time - prev_time < 8) {
                 _dctrl->blink_drone(false); // refresh the blinking
-            } else if (fabs(time - prev_time) > 8.5f) {
+            } else if (abs(time - prev_time) > 8.5) {
                 prev_time = time;
                 _dctrl->blink_drone(true);
             }
 #endif
-            if (_dtrk->blinking_drone_located()) {
+            if (_trackers->mode() != ItemManager::mode_locate_drone) {
                 _navigation_status = ns_located_drone;
                 time_located_drone = time;
             }
@@ -119,7 +123,9 @@ void DroneNavigation::update(float time) {
 #if TX_TYPE == TX_FRSKYX_TC
             _dctrl->blink_drone(false,time);
 #endif
-            if (time-time_located_drone>1.0f) { // delay until blinking stopped
+            _trackers->mode(ItemManager::mode_idle);
+            _visdat->disable_fading = false;
+            if (time-time_located_drone>1.0) { // delay until blinking stopped
                 if (_nav_flight_mode == nfm_hunt)
                     _navigation_status = ns_wait_for_insect;
                 else if (_nav_flight_mode == nfm_manual)
@@ -129,6 +135,7 @@ void DroneNavigation::update(float time) {
             }
             break;
         } case ns_wait_for_takeoff_command: {
+            _trackers->mode(ItemManager::mode_idle);
             _dctrl->flight_mode(DroneController::fm_inactive);
             if (_nav_flight_mode == nfm_hunt)
                 _navigation_status = ns_wait_for_insect;
@@ -138,6 +145,7 @@ void DroneNavigation::update(float time) {
                 _navigation_status = ns_takeoff;
             break;
         } case ns_wait_for_insect: {
+            _trackers->mode(ItemManager::mode_wait_for_insect);
             _dctrl->flight_mode(DroneController::fm_inactive);
             if (_nav_flight_mode == nfm_manual)
                 _navigation_status = ns_manual;
@@ -156,11 +164,15 @@ void DroneNavigation::update(float time) {
             break;
         } case ns_takeoff: {
             _dctrl->reset_manual_override_take_off_now();
-            _dctrl->flight_mode(DroneController::fm_taking_off); // todo: second time?
+            _dctrl->flight_mode(DroneController::fm_taking_off);
+            if (_nav_flight_mode == nfm_hunt)
+                _trackers->mode(ItemManager::mode_hunt);
+            else
+                _trackers->mode(ItemManager::mode_drone_only);
             _navigation_status=ns_taking_off;
             break;
         } case ns_taking_off: {
-            track_data data = _dtrk->Last_track_data();
+            track_data data = _trackers->dronetracker()->Last_track_data();
             if (data.svelY > static_cast<float>(params.auto_takeoff_speed) / 100.f ) {
                 _navigation_status = ns_take_off_completed;
             }
@@ -237,7 +249,7 @@ void DroneNavigation::update(float time) {
 
             float dis = sqrtf(_dctrl->posErrX*_dctrl->posErrX + _dctrl->posErrY*_dctrl->posErrY + _dctrl->posErrZ*_dctrl->posErrZ);
             _dist_to_wp = dis;
-            if (dis *1000 < current_setpoint->threshold_mm * params.distance_threshold_f && _dtrk->n_frames_tracking>5) {
+            if (dis *1000 < current_setpoint->threshold_mm * params.distance_threshold_f && _trackers->dronetracker()->n_frames_tracking>5) {
                 if (current_setpoint->mode == fm_landing) {
                     _navigation_status = ns_landing;
                 } else if (current_setpoint->mode == fm_hover_calib) {
@@ -281,14 +293,14 @@ void DroneNavigation::update(float time) {
             alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
             _navigation_status = ns_landing;
         } FALLTHROUGH_INTENDED; case ns_landing: {
-            track_data data = _dtrk->Last_track_data();
-            if (data.sposY < _dtrk->Drone_Startup_Location().y+0.1f || autoLandThrottleDecrease >1000)
+            track_data data = _trackers->dronetracker()->Last_track_data();
+            if (data.sposY < _trackers->dronetracker()->drone_landing_location().y+0.1f || autoLandThrottleDecrease >1000)
                 _navigation_status = ns_landed;
 
             autoLandThrottleDecrease += params.autoLandThrottleDecreaseFactor;
             _dctrl->setAutoLandThrottleDecrease(autoLandThrottleDecrease);
 
-            if ( setpoint_pos_world.y - land_incr> -(_dtrk->Drone_Startup_Location().y+100000.0f))
+            if ( setpoint_pos_world.y - land_incr> -(_trackers->dronetracker()->drone_landing_location().y+100000.0f))
                 land_incr = static_cast<float>(params.land_incr_f_mm)/1000.f;
             setpoint_pos_world.y -= land_incr;
             if (_nav_flight_mode == nfm_hunt && _iceptor.insect_in_range())
@@ -306,12 +318,13 @@ void DroneNavigation::update(float time) {
             _navigation_status = ns_wait_after_landing;
             landed_time = time;
         } FALLTHROUGH_INTENDED; case ns_wait_after_landing: {
-            _visdat->delete_from_motion_map(_dtrk->Drone_Startup_Im_Location()*IMSCALEF,DRONE_IM_START_SIZE);
+            _visdat->delete_from_motion_map(_trackers->dronetracker()->drone_startup_im_location()*IMSCALEF,DRONE_IM_START_SIZE);
             if (time - landed_time > params.time_out_after_landing )
                 _navigation_status = ns_locate_drone;
             break;
         } case ns_manual: { // also used for disarmed
             wpid = 0;
+            _trackers->mode(ItemManager::mode_drone_only);
             if (_nav_flight_mode == nfm_hunt) {
                 _navigation_status=ns_wait_for_insect;
                 alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Rhodes.ogg &");
@@ -328,8 +341,11 @@ void DroneNavigation::update(float time) {
 
 void DroneNavigation::next_waypoint(waypoint wp) {
     current_setpoint = new waypoint(wp);
-    if (wp.mode == fm_landing || wp.mode == fm_hover_calib || wp.mode == fm_takeoff) {
-        cv::Point3f p = _dtrk->Drone_Startup_Location();
+    if ( wp.mode == fm_hover_calib || wp.mode == fm_takeoff) {
+        cv::Point3f p = _trackers->dronetracker()->drone_startup_location();
+        setpoint_pos_world =  p + wp.xyz;
+    }else if (wp.mode == fm_landing ) {
+        cv::Point3f p = _trackers->dronetracker()->drone_landing_location();
         setpoint_pos_world =  p + wp.xyz;
     } else {
         setpoint_pos_world =  wp.xyz;

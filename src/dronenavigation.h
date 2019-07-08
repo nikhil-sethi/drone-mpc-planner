@@ -6,6 +6,7 @@
 #include "dronetracker.h"
 #include "dronecontroller.h"
 #include "insecttracker.h"
+#include "itemmanager.h"
 #include "interceptor.h"
 
 /*
@@ -46,7 +47,7 @@ public:
     };
 private:
 
-    float landed_time = 0;
+    double landed_time = 0;
     nav_flight_modes _nav_flight_mode;
 
     enum waypoint_flight_modes {
@@ -131,11 +132,11 @@ private:
 
     int autoLandThrottleDecrease = 0;
 
-    float time_located_drone = 0;
+    double time_located_drone = 0;
 
     std::ofstream *_logger;
-    DroneTracker * _dtrk;
     DroneController * _dctrl;
+    ItemManager * _trackers;
     Interceptor _iceptor;
     VisionData *_visdat;
 
@@ -173,7 +174,7 @@ public:
         int land_incr_f_mm = 5;
         int autoLandThrottleDecreaseFactor = 3;
         int auto_takeoff_speed = 3;
-        float time_out_after_landing = 0.5f;
+        double time_out_after_landing = 0.5;
 
         float version = 2.3f;
 
@@ -199,8 +200,8 @@ public:
     }
 
     void close (void);
-    void init(std::ofstream *logger, DroneTracker *dtrk, DroneController *dctrl, InsectTracker *itrkr, VisionData *visdat);
-    void update(float time);
+    void init(std::ofstream *logger, ItemManager * imngr, DroneController *dctrl, VisionData *visdat);
+    void update(double time);
     bool disable_insect_detection() {
         return _navigation_status < ns_wait_for_takeoff_command;
     }
@@ -214,9 +215,9 @@ public:
 
         cv::Point3f tmp = setpoint_pos_world;
         if (_navigation_status == ns_takeoff || _navigation_status == ns_taking_off || _navigation_status == ns_take_off_completed){
-            tmp.x = _dtrk->Drone_Startup_Location().x;
-            tmp.y = _dtrk->Drone_Startup_Location().y+0.5f;
-            tmp.z = _dtrk->Drone_Startup_Location().z;
+            tmp.x = _trackers->dronetracker()->drone_startup_location().x;
+            tmp.y = _trackers->dronetracker()->drone_startup_location().y+0.5f;
+            tmp.z = _trackers->dronetracker()->drone_startup_location().z;
         }
 
         std::vector<cv::Point3d> world_coordinates,camera_coordinates;

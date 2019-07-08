@@ -4,6 +4,7 @@
 #include "defines.h"
 #include "insecttracker.h"
 #include "dronetracker.h"
+#include "itemmanager.h"
 #include "visiondata.h"
 
 
@@ -21,8 +22,7 @@ static const char* interceptor_state_names[] = { "is_init",
 class Interceptor{
 
 private:
-    DroneTracker * _dtrkr;
-    InsectTracker * _itrkr;
+    ItemManager * _trackers;
     VisionData *_visdat;
     cv::Point3f _intercept_pos,_intercept_vel,_intercept_acc;
     float _horizontal_separation, _vertical_separation;
@@ -38,7 +38,7 @@ private:
     interceptor_states _interceptor_state = is_init;
 
     uint _count_insect_not_in_range = 0;
-    float _tti =-1;
+    double _tti =-1;
 
     void intercept_spiral();
     float calc_tti(cv::Point3f insect_pos, cv::Point3f insect_vel, cv::Point3f drone_pos, cv::Point3f drone_vel, bool drone_taking_off);
@@ -48,7 +48,7 @@ private:
 
 public:
 
-    void init(DroneTracker * dtrkr, InsectTracker * itrkr, VisionData * visdat);
+    void init(ItemManager * trackers, VisionData * visdat);
     void update(bool drone_at_base);
 
     void reset_insect_cleared() {_count_insect_not_in_range = 0;}
@@ -58,7 +58,7 @@ public:
     cv::Point3f target_position() {return _intercept_pos;}
     cv::Point3f target_speed() {return _intercept_vel;}
     cv::Point3f target_accelleration() {return _intercept_acc;}
-    float time_to_intercept(){return _tti;}
+    double time_to_intercept(){return _tti;}
 
 
     std::string Interceptor_State() {

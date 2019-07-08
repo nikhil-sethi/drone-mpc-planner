@@ -28,6 +28,7 @@
 #include "gstream.h"
 #include "vizs.h"
 #include "insecttracker.h"
+#include "itemmanager.h"
 #include "logreader.h"
 #if CAMMODE == CAMMODE_FROMVIDEOFILE
 #include "filecam.h"
@@ -74,11 +75,10 @@ std::ofstream logger;
 std::ofstream logger_insect;
 //Arduino rc;
 MultiModule rc;
-DroneTracker dtrkr;
 DroneController dctrl;
 DronePredictor dprdct;
 DroneNavigation dnav;
-InsectTracker itrkr;
+ItemManager trackers;
 Visualizer visualizer;
 LogReader logreader;
 #if CAMMODE == CAMMODE_FROMVIDEOFILE
@@ -105,8 +105,8 @@ log_mode fromfile = log_mode_none;
 struct Stereo_Frame_Data{
     cv::Mat frameL,frameR;
     uint imgcount;
-    uint number;
-    float time;
+    unsigned long long number;
+    double time;
 };
 struct Processer {
     int id;
@@ -170,8 +170,8 @@ void process_video() {
 
         int frameWritten = 0;
         static bool new_recording = false;
-        float dtr = data.time - itrkr.last_sighting_time;
-        if (dtr > 1.f && new_recording) {
+        double dtr = data.time - trackers.insecttracker()->last_sighting_time;
+        if (dtr > 1 && new_recording) {
             new_recording = false;
             auto time_insect_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
             logger_insect << "New detection ended at: " << std::put_time(std::localtime(&time_insect_now), "%Y/%m/%d %T") << " Duration: " << dtr << " End cam frame number: " <<  cam.frame_number() << std::endl;
@@ -246,24 +246,12 @@ void process_frame(Stereo_Frame_Data data) {
     logger << data.imgcount << ";" << data.number << ";" << std::put_time(std::localtime(&timenow), "%Y/%m/%d %T") << ";";
 
 
-
-    //WARNING: changing the order of the functions with logging must be matched with the init functions!
-    dtrkr.track(data.time,itrkr.predicted_pathL,dctrl.drone_is_active());
-    if (dnav.disable_insect_detection()){
-        itrkr.append_log(); // write dummy data
-    } else
-        if (fromfile==log_mode_insect_only)
-            itrkr.update_from_log(logreader.current_item,data.number);
-        else {
-            itrkr.track(data.time,dtrkr.pathL,dtrkr.ignores_for_insect_tracker);
-        }
-    //        std::cout << "Found drone location:      [" << dtrkr.find_result.best_image_locationL.pt.x << "," << dtrkr.find_result.best_image_locationL.pt.y << "]" << std::endl;
+    trackers.update(data.time,logreader.current_item,dctrl.drone_is_active());
     if (fromfile==log_mode_full) {
         dctrl.insert_log(logreader.current_item.joyRoll, logreader.current_item.joyPitch, logreader.current_item.joyYaw, logreader.current_item.joyThrottle,logreader.current_item.joyArmSwitch,logreader.current_item.joyModeSwitch,logreader.current_item.joyTakeoffSwitch,logreader.current_item.auto_roll,logreader.current_item.auto_pitch,logreader.current_item.auto_throttle);
     }
     dnav.update(data.time);
-
-    dctrl.control(dtrkr.Last_track_data(),dnav.setpoint_pos_world,dnav.setpoint_vel_world,dnav.setpoint_acc_world);
+    dctrl.control(trackers.dronetracker()->Last_track_data(),dnav.setpoint_pos_world,dnav.setpoint_vel_world,dnav.setpoint_acc_world);
     dprdct.update(dctrl.drone_is_active(),data.time);
 
     logger << std::endl;
@@ -272,7 +260,7 @@ void process_frame(Stereo_Frame_Data data) {
 
 
     visualizer.addPlotSample();
-    visualizer.update_tracker_data(visdat.frameL,dnav.setpoint,data.time,&dtrkr,&itrkr);
+    visualizer.update_tracker_data(visdat.frameL,dnav.setpoint,data.time);
 #endif
 }
 
@@ -464,12 +452,10 @@ void init(int argc, char **argv) {
 
     visdat.update(cam.frameL,cam.frameR,cam.frame_time(),cam.frame_number()); //TODO: necessary? If so, streamline
 
-    //WARNING: changing the order of the inits with logging must be match with the process_video functions!
-    dtrkr.init(&logger,&visdat,fromfile==log_mode_full,data_in_dir);
-    itrkr.init(&logger,&visdat);
-    dnav.init(&logger,&dtrkr,&dctrl,&itrkr,&visdat);
-    dctrl.init(&logger,fromfile==log_mode_full,&rc,&dtrkr);
-    dprdct.init(&visdat,&dtrkr,&itrkr,&dctrl);
+    trackers.init(&logger, &visdat);
+    dnav.init(&logger,&trackers,&dctrl,&visdat);
+    dctrl.init(&logger,fromfile==log_mode_full,&rc,trackers.dronetracker());
+    dprdct.init(&visdat,trackers.dronetracker(),trackers.insecttracker(),&dctrl);
 
 #ifdef MANUAL_DRONE_LOCATE
     if (!fromfile){
@@ -486,7 +472,7 @@ void init(int argc, char **argv) {
 
     logger << std::endl;
 #ifdef HASSCREEN
-    visualizer.init(&visdat,&dctrl,&dtrkr,&itrkr,&dnav,&rc,fromfile==log_mode_full,&dprdct);
+    visualizer.init(&visdat,&trackers,&dctrl,&dnav,&rc,fromfile==log_mode_full,&dprdct);
 #endif
 
     /*****init the video writer*****/
@@ -525,10 +511,9 @@ void close() {
 #endif
 
     /*****Close everything down*****/
-    dtrkr.close();
     dctrl.close();
     dnav.close();
-    itrkr.close();
+    trackers.close();
     if (fromfile!=log_mode_full)
         rc.close();
 #ifdef HASSCREEN

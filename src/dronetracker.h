@@ -2,29 +2,13 @@
 #define DRONETRACKER_H
 
 #include "itemtracker.h"
-
 #include "tinyxml/XMLSerialization.h"
 
 /*
  * This class will track a micro drone with leds
  *
  */
-static const char* blinking_drone_state_names[] = { "",
-                                                    "bds_start",
-                                                    "bds_reset_bkg",
-                                                    "bds_searching",
-                                                    "bds_1_blink_off",
-                                                    "bds_1_blink_on",
-                                                    "bds_2_blink_off",
-                                                    "bds_2_blink_on",
-                                                    "bds_3_blink_off_calib",
-                                                    "bds_3_blink_off",
-                                                    "bds_3_blink_on",
-                                                    "bds_dedicated_calib",
-                                                    "bds_calib_wait",
-                                                    "bds_found" };
 static const char* drone_tracking_state_names[] = { "dts_init",
-                                                    "dts_blinking",
                                                     "dts_inactive",
                                                     "dts_detecting_takeoff",
                                                     "dts_detecting",
@@ -33,33 +17,14 @@ class DroneTracker : public ItemTracker {
 
 
 private:
-    enum blinking_drone_states {
-        bds_start=1,
-        bds_reset_bkg,
-        bds_searching,
-        bds_1_blink_off,
-        bds_1_blink_on,
-        bds_2_blink_off,
-        bds_2_blink_on,
-        bds_3_blink_off_calib,
-        bds_3_blink_off,
-        bds_3_blink_on,
-        bds_dedicated_calib,
-        bds_calib_wait,
-        bds_found
-    };
-    blinking_drone_states _blinking_drone_status = bds_start;
-    float blink_time_start = 0;
-    float start_take_off_time = 0;
-    float manual_calib_time_start = 0;
-    float current_time = 0;
+    double start_take_off_time = 0;
+    double current_time = 0;
 
-    float startup_location_ignore_timeout = 1; // TODO: make this dependent on the motion_update_iterator_max
-    float taking_off_ignore_timeout = 0.1f; // TODO: make this dependent on the motion_update_iterator_max
+    double startup_location_ignore_timeout = 1; // TODO: make this dependent on the motion_update_iterator_max
+    double taking_off_ignore_timeout = 0.1; // TODO: make this dependent on the motion_update_iterator_max
 
     enum drone_tracking_states {
         dts_init = 0,
-        dts_blinking,
         dts_inactive,
         dts_detecting_takeoff_init,
         dts_detecting_takeoff,
@@ -68,22 +33,18 @@ private:
     };
     drone_tracking_states _drone_tracking_status = dts_init;
 
-    blinking_drone_states detect_blink(float time, bool found);
-    cv::KeyPoint blink_location;
-
     cv::Point2f _drone_blink_image_location;
     cv::Point3f _drone_blink_world_location;
-    cv::Point3f _drone_blink_world_location_start;
-
     bool _landing_pad_location_set = false;
-    cv::Point3f _landing_pad_world_location;
-    cv::Point2f _landing_pad_image_location;
+    cv::Point3f _landing_pad_world;
 
     bool _drone_control_prediction_valid = false;
+    cv::Point2f _drone_control_predicted_image_location = {0};
+    cv::Point3f _drone_control_predicted_world_location = {0};
 
     bool enable_viz_diff = false;
 
-    void clean_additional_ignores(float time);
+    void clean_additional_ignores(double time);
 
     class DroneTrackerCalibrationData: public xmls::Serializable
     {
@@ -121,56 +82,29 @@ private:
     };
     void serialize_calib();
     void deserialize_calib(string file);
-    std::string calib_fn = "drone_calib.xml";
 
 protected:
-    cv::Mat get_probability_cloud(cv::Point size);
     void init_settings();
-    cv::Mat get_approx_cutout_filtered(cv::Point p, cv::Mat diffL, cv::Point size);
 public:
-    std::string Blinking_Drone_State() {
-        return blinking_drone_state_names[_blinking_drone_status];
-    }
-    std::string Drone_Tracking_State() {
-        return drone_tracking_state_names[_drone_tracking_status];
-    }
+    std::string drone_tracking_state() {return drone_tracking_state_names[_drone_tracking_status];}
+    cv::Point2f drone_startup_im_location(){ return _drone_blink_image_location; }
+    cv::Point3f drone_startup_location() {return _drone_blink_world_location;}
+    cv::Point3f drone_landing_location() {return _landing_pad_world;}
 
-    cv::Point2f Drone_Startup_Im_Location(){
-        return _drone_blink_image_location;
+    void set_drone_landing_location(cv::Point2f im, cv::Point3f world) {
+       _drone_blink_image_location = im;
+       _drone_blink_world_location = world;
+       if (!_landing_pad_location_set){ // for now, assume the first time set is the actual landing location.
+           _landing_pad_world = world;
+           _landing_pad_location_set = true;
+       }
     }
+    bool taking_off(){ return _drone_tracking_status == dts_detecting_takeoff;}
 
-    bool taking_off(){
-        return _drone_tracking_status == dts_detecting_takeoff;
-    }
-
-    cv::Mat _cir;
     cv::Mat diff_viz;
 
-    std::vector<ItemTracker::additional_ignore_point> ignores_for_insect_tracker;
-
-    bool init(std::ofstream *logger, VisionData *_visdat, bool fromfile,std::string bag_dir);
-    void track(float time, std::vector<image_track_item> ignore, bool drone_is_active);
-
-    void Locate_Startup_Location() {
-        _drone_tracking_status = dts_blinking;
-        _blinking_drone_status = bds_start;
-    }
-    void do_post_takeoff_detection() {
-        cv::Point p = Drone_Startup_Im_Location();
-        p.y-=5;
-        DroneTracker::image_track_item ti(cv::KeyPoint(p,10),_visdat->frame_id,0.75);
-        cv::Point3f p3 = Drone_Startup_Location();
-        p3.y+=0.15f;
-        predicted_locationL_last = p3;
-//        _drone_tracking_status = dts_inactive;
-//        pathL.clear();
-//        predicted_pathL.clear();
-//        predicted_pathL.push_back(ti);
-//        foundL = false;
-    }
-    void drone_location(cv::Point p){
-       _drone_blink_image_location = p/IMSCALEF;
-    }
+    bool init(std::ofstream *logger, VisionData *_visdat);
+    void track(double time, bool drone_is_active);
 
     void insert_control_predicted_drone_location(){
         if (_drone_control_prediction_valid){
@@ -185,22 +119,9 @@ public:
         _drone_control_prediction_valid = true;
     }
 
-    bool blinking_drone_located() {
-        return _blinking_drone_status >= bds_found;
-    }
-    cv::Point3f Drone_Startup_Location() {
-        return _drone_blink_world_location_start;
-    }
+    double time_since_take_off(){return start_take_off_time - current_time;}
 
-    float time_since_take_off(){
-       return start_take_off_time - current_time;
-    }
-
-    const float bind_blink_time = 0.45f;
-
-    cv::Point2f _drone_control_predicted_image_location = {0};
-    cv::Point3f _drone_control_predicted_world_location = {0};
-
+    bool delete_me(){return false;}
 };
 
 

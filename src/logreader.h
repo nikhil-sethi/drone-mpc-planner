@@ -21,7 +21,7 @@ class LogReader{
 public:
     struct Log_Entry {
         int ID;
-        int RS_ID;
+        unsigned long long RS_ID;
         bool valid;
         int joyThrottle;
         int joyRoll;
@@ -62,7 +62,7 @@ public:
 
     };
     void init(std::string file, bool partial_insect_log);
-    void current_frame_number(int frame_number);
+    void current_frame_number(unsigned long long frame_number);
     void set_next_frame_number();
 
     LogReader::Log_Entry current_item;

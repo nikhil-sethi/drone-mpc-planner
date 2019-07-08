@@ -1,9 +1,8 @@
 #include "interceptor.h"
 #include "opencv2/imgproc.hpp"
 
-void Interceptor::init(DroneTracker * dtrkr, InsectTracker * itrkr, VisionData * visdat) {
-    _dtrkr = dtrkr;
-    _itrkr = itrkr;
+void Interceptor::init(ItemManager * trackers, VisionData * visdat) {
+    _trackers = trackers;
     _visdat = visdat;
 }
 void Interceptor::update(bool drone_at_base) {
@@ -18,7 +17,7 @@ void Interceptor::update(bool drone_at_base) {
         _intercept_acc = {0,0,0};
         _count_insect_not_in_range++;
 
-        if ( (norm(_intercept_vel) > 0 || _itrkr->foundL)){ //TODO: whatsup with the intercept_vel....?
+        if ( (norm(_intercept_vel) > 0 || _trackers->insecttracker()->tracking() )){ //TODO: whatsup with the intercept_vel....?
             _interceptor_state = is_waiting_in_reach_zone;
         } else
             break;
@@ -27,7 +26,7 @@ void Interceptor::update(bool drone_at_base) {
         _intercept_acc = {0,0,0};
 
 
-        if ( !_itrkr->foundL){
+        if ( !_trackers->insecttracker()->tracking() ){
              _interceptor_state = is_waiting_for_target;
             break;
         }
@@ -38,7 +37,7 @@ void Interceptor::update(bool drone_at_base) {
             _interceptor_state = is_move_to_intercept;
         break;
     } case is_move_to_intercept: { // move max speed to somewhere close of the insect, preferably 20cm below behind.
-        if  (!_itrkr->foundL) {
+        if  (!_trackers->insecttracker()->tracking()) {
           _interceptor_state = is_waiting_for_target;
           break;
         }
@@ -54,18 +53,18 @@ void Interceptor::update(bool drone_at_base) {
          } else
              break;
 
-         if (_intercept_pos.y< _dtrkr->Drone_Startup_Location().y + 0.15f)
-             _intercept_pos.y  = _dtrkr->Drone_Startup_Location().y + 0.15f;
+         if (_intercept_pos.y< _trackers->dronetracker()->drone_startup_location().y + 0.15f)
+             _intercept_pos.y  = _trackers->dronetracker()->drone_startup_location().y + 0.15f;
 
     } FALLTHROUGH_INTENDED; case is_close_chasing: {
-        if  (!_itrkr->foundL) {
+        if  (!_trackers->insecttracker()->tracking()) {
           _interceptor_state = is_waiting_for_target;
           break;
         }
          update_close_target();
          update_insect_in_range();
-         if (_intercept_pos.y< _dtrkr->Drone_Startup_Location().y + 0.15f)
-             _intercept_pos.y  = _dtrkr->Drone_Startup_Location().y + 0.15f;
+         if (_intercept_pos.y< _trackers->dronetracker()->drone_startup_location().y + 0.15f)
+             _intercept_pos.y  = _trackers->dronetracker()->drone_startup_location().y + 0.15f;
         if (_count_insect_not_in_range>5){
            _interceptor_state = is_waiting_in_reach_zone;
            break;
@@ -80,16 +79,16 @@ void Interceptor::update(bool drone_at_base) {
 }
 
 void Interceptor::update_far_target(bool drone_at_base){
-    track_data itd = _itrkr->Last_track_data();
+    track_data itd = _trackers->insecttracker()->Last_track_data();
     cv::Point3f insect_pos = {itd.posX,itd.posY,itd.posZ};
     cv::Point3f insect_vel = {itd.svelX,itd.svelY,itd.svelZ};
     cv::Point3f insect_acc = {itd.saccX,itd.saccY,itd.saccZ};
 
-    track_data dtd = _dtrkr->Last_track_data();
+    track_data dtd = _trackers->dronetracker()->Last_track_data();
     cv::Point3f drone_vel = {dtd.svelX,dtd.svelY,dtd.svelZ};
     cv::Point3f drone_pos;
     if (drone_at_base)
-        drone_pos = _dtrkr->Drone_Startup_Location();
+        drone_pos = _trackers->dronetracker()->drone_startup_location();
     else {
         drone_pos = {dtd.posX,dtd.posY,dtd.posZ};
     }
@@ -105,12 +104,12 @@ void Interceptor::update_far_target(bool drone_at_base){
     _vertical_separation = insect_pos.y-drone_pos.y;
 }
 void Interceptor::update_close_target(){
-    track_data itd = _itrkr->Last_track_data();
+    track_data itd = _trackers->insecttracker()->Last_track_data();
     cv::Point3f insect_pos = {itd.posX,itd.posY,itd.posZ};
     cv::Point3f insect_vel = {itd.svelX,itd.svelY,itd.svelZ};
     cv::Point3f insect_acc = {itd.saccX,itd.saccY,itd.saccZ};
 
-    track_data dtd = _dtrkr->Last_track_data();
+    track_data dtd = _trackers->dronetracker()->Last_track_data();
     cv::Point3f drone_pos = {dtd.posX,dtd.posY,dtd.posZ};
 
     _intercept_pos = insect_pos;
@@ -150,7 +149,7 @@ float Interceptor::calc_tti(cv::Point3f insect_pos,cv::Point3f insect_vel,cv::Po
     //TODO: put in some actually measured values:
     const float drone_vel_max = 10; // [m/s]
     const float drone_acc_max = 20; // [m/s^2]
-    const float t_estimated_take_off = 0.32f; //[s]
+    const double t_estimated_take_off = 0.32; //[s]
 
     float ic_dx = norm(insect_pos-drone_pos);
     float ic_dv = norm(insect_vel-drone_vel);
@@ -173,11 +172,11 @@ float Interceptor::calc_tti(cv::Point3f insect_pos,cv::Point3f insect_vel,cv::Po
     }
 
     //time to intercept is time of part 1 and 2 summed
-    float tti =t_match_v + t_ic;
+    double tti =t_match_v + t_ic;
 
     //plus the time needed to takeoff, if not already flying
     if (drone_taking_off){
-        float t_remaining_takeoff = t_estimated_take_off - _dtrkr->time_since_take_off();
+        double t_remaining_takeoff = t_estimated_take_off - _trackers->dronetracker()->time_since_take_off();
         if (t_remaining_takeoff<0)
             t_remaining_takeoff = 0;
 
