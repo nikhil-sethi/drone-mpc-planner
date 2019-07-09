@@ -156,7 +156,6 @@ bool ItemManager::check_ignore_points(processed_max_point pmp, ItemTracker * trk
             pmp.color = cv::Scalar(0,128,0);
             trkr->static_ignores_points_for_me.at(k).was_used = true;
             in_ignore_zone = true;
-            //break; // TODO: break? also above
         }
     }
 
@@ -240,6 +239,21 @@ void ItemManager::match_image_points_to_trackers(bool drone_is_active) {
                                 break;
                             }
                         }
+                    }
+                }
+            }
+        }
+
+        //see if there are static ignore points that are detected. If so set was_used flag
+        for (uint i=0; i<_trackers.size();i++){
+            ItemTracker * trkr = _trackers.at(i);
+            for (uint j=0; j < pmps.size(); j++) {
+                cv::Point2f p_kp = pmps.at(j).pt;
+                for (uint k=0; k<trkr->static_ignores_points_for_other_trkrs.size();k++){
+                    cv::Point2f p_ignore = trkr->static_ignores_points_for_other_trkrs.at(k).p;
+                    float dist_ignore = sqrtf(powf(p_ignore.x-p_kp.x,2)+powf(p_ignore.y-p_kp.y,2));
+                    if (dist_ignore < settings.static_ignores_dist_thresh){
+                        trkr->static_ignores_points_for_other_trkrs.at(k).was_used = true;
                     }
                 }
             }

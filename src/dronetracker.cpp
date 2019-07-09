@@ -110,11 +110,11 @@ void DroneTracker::track(double time, bool drone_is_active) {
 void DroneTracker::clean_additional_ignores(double time){
     std::vector<StaticIgnorePoint> new_ignores_for_insect_tracker;
     for (uint i = 0; i < static_ignores_points_for_other_trkrs.size(); i++) {
-        if (static_ignores_points_for_other_trkrs.at(i).was_used && static_ignores_points_for_other_trkrs.at(i).invalid_after>=0) {
+        if (static_ignores_points_for_other_trkrs.at(i).was_used && static_ignores_points_for_other_trkrs.at(i).invalid_after>=0)
             static_ignores_points_for_other_trkrs.at(i).invalid_after += 1./VIDEOFPS;
-            if (static_ignores_points_for_other_trkrs.at(i).invalid_after > time || static_ignores_points_for_other_trkrs.at(i).invalid_after<0)
-                new_ignores_for_insect_tracker.push_back(static_ignores_points_for_other_trkrs.at(i));
-        }
+        static_ignores_points_for_other_trkrs.at(i).was_used = false;
+        if (static_ignores_points_for_other_trkrs.at(i).invalid_after > time || static_ignores_points_for_other_trkrs.at(i).invalid_after<0)
+            new_ignores_for_insect_tracker.push_back(static_ignores_points_for_other_trkrs.at(i));
     }
     static_ignores_points_for_other_trkrs= new_ignores_for_insect_tracker;
 }
