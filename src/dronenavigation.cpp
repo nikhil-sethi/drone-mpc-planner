@@ -172,16 +172,19 @@ void DroneNavigation::update(double time) {
             _navigation_status=ns_taking_off;
             break;
         } case ns_taking_off: {
-            if (!_trackers->dronetracker()->taking_off() )
-                _navigation_status = ns_take_off_completed;
 //            track_data data = _trackers->dronetracker()->Last_track_data();
 //            if (data.svelY > static_cast<float>(params.auto_takeoff_speed) / 100.f ) {
 //                _navigation_status = ns_take_off_completed;
 //            }
-            if (_nav_flight_mode == nfm_manual)
+            if (_nav_flight_mode == nfm_manual){
                 _navigation_status = ns_manual;
-            break;
-        } case ns_take_off_completed: {
+                break;
+            }
+            if (!_trackers->dronetracker()->taking_off())
+                _navigation_status = ns_take_off_completed;
+            else
+                break;
+        } FALLTHROUGH_INTENDED; case ns_take_off_completed: {
             _dctrl->init_ground_effect_compensation();
             alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
             _dctrl->flight_mode(DroneController::fm_flying);
