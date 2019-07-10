@@ -44,8 +44,8 @@ void DroneTracker::track(double time, bool drone_is_active) {
         }
     } FALLTHROUGH_INTENDED; case dts_detecting_takeoff_init: {
         // remove the indefinite startup location and replace with a time out
-        static_ignores_points_for_other_trkrs.clear();
-        static_ignores_points_for_other_trkrs.push_back(StaticIgnorePoint(drone_startup_im_location(),time+startup_location_ignore_timeout, StaticIgnorePoint::landing_spot));
+        ignores_for_other_trkrs.clear();
+        ignores_for_other_trkrs.push_back(IgnoreBlob(drone_startup_im_location(),time+startup_location_ignore_timeout, IgnoreBlob::landing_spot));
         _drone_tracking_status = dts_detecting_takeoff;
     } FALLTHROUGH_INTENDED; case dts_detecting_takeoff: {
         insert_control_predicted_drone_location();
@@ -55,25 +55,25 @@ void DroneTracker::track(double time, bool drone_is_active) {
             cv::Point2f tmpp = drone_startup_im_location();
             cv::circle(diff_viz,tmpp*IMSCALEF,1,cv::Scalar(255,0,0),1);
             cv::circle(diff_viz,drone_startup_im_location()*IMSCALEF,1,cv::Scalar(0,0,255),1);
-            cv::circle(diff_viz, _world_track_item.image_coordinates()*IMSCALEF,3,cv::Scalar(0,255,0),2);
+            cv::circle(diff_viz, _world_item.image_coordinates()*IMSCALEF,3,cv::Scalar(0,255,0),2);
         }
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
-        else if (n_frames_lost==0 && _world_track_item.valid ){
+        else if (n_frames_lost==0 && _world_item.valid ){
             bool takeoff_spot_detected = false;
             bool drone_detected_near_takeoff_spot = false;
 
-            for (uint i = 0; i< static_ignores_points_for_other_trkrs.size(); i++) {
-                if (static_ignores_points_for_other_trkrs.at(i).ignore_type == StaticIgnorePoint::landing_spot && static_ignores_points_for_other_trkrs.at(i).was_used)
+            for (uint i = 0; i< ignores_for_other_trkrs.size(); i++) {
+                if (ignores_for_other_trkrs.at(i).ignore_type == IgnoreBlob::landing_spot && ignores_for_other_trkrs.at(i).was_used)
                     takeoff_spot_detected = true;
             }
 
-            float dist2take_off = sqrt(pow(_image_track_item.x - drone_startup_im_location().x,2)+pow(_image_track_item.y - drone_startup_im_location().y,2));
+            float dist2take_off = sqrt(pow(_image_item.x - drone_startup_im_location().x,2)+pow(_image_item.y - drone_startup_im_location().y,2));
             if (dist2take_off > settings.pixel_dist_seperation_min + DRONE_IM_START_SIZE && dist2take_off < settings.pixel_dist_seperation_max + DRONE_IM_START_SIZE){
                 drone_detected_near_takeoff_spot = true;
-                static_ignores_points_for_other_trkrs.push_back(StaticIgnorePoint(_image_track_item.pt(),time+taking_off_ignore_timeout, StaticIgnorePoint::drone_taking_off));
+                ignores_for_other_trkrs.push_back(IgnoreBlob(_image_item.pt(),time+taking_off_ignore_timeout, IgnoreBlob::drone_taking_off));
             } else if (dist2take_off < settings.pixel_dist_seperation_max + DRONE_IM_START_SIZE){
-                static_ignores_points_for_other_trkrs.push_back(StaticIgnorePoint(_image_track_item.pt(),time+taking_off_ignore_timeout, StaticIgnorePoint::drone_taking_off));
+                ignores_for_other_trkrs.push_back(IgnoreBlob(_image_item.pt(),time+taking_off_ignore_timeout, IgnoreBlob::drone_taking_off));
             }
 
             if (takeoff_spot_detected &&drone_detected_near_takeoff_spot ) {
@@ -101,20 +101,20 @@ void DroneTracker::track(double time, bool drone_is_active) {
         break;
     }
     }
-    clean_additional_ignores(time);
+    clean_ignore_blobs(time);
 
 
 }
 
 //Removes all ignore points which timed out
-void DroneTracker::clean_additional_ignores(double time){
-    std::vector<StaticIgnorePoint> new_ignores_for_insect_tracker;
-    for (uint i = 0; i < static_ignores_points_for_other_trkrs.size(); i++) {
-        if (static_ignores_points_for_other_trkrs.at(i).was_used && static_ignores_points_for_other_trkrs.at(i).invalid_after>=0)
-            static_ignores_points_for_other_trkrs.at(i).invalid_after += 1./VIDEOFPS;
-        static_ignores_points_for_other_trkrs.at(i).was_used = false;
-        if (static_ignores_points_for_other_trkrs.at(i).invalid_after > time || static_ignores_points_for_other_trkrs.at(i).invalid_after<0)
-            new_ignores_for_insect_tracker.push_back(static_ignores_points_for_other_trkrs.at(i));
+void DroneTracker::clean_ignore_blobs(double time){
+    std::vector<IgnoreBlob> new_ignores_for_insect_tracker;
+    for (uint i = 0; i < ignores_for_other_trkrs.size(); i++) {
+        if (ignores_for_other_trkrs.at(i).was_used && ignores_for_other_trkrs.at(i).invalid_after>=0)
+            ignores_for_other_trkrs.at(i).invalid_after += 1./VIDEOFPS;
+        ignores_for_other_trkrs.at(i).was_used = false;
+        if (ignores_for_other_trkrs.at(i).invalid_after > time || ignores_for_other_trkrs.at(i).invalid_after<0)
+            new_ignores_for_insect_tracker.push_back(ignores_for_other_trkrs.at(i));
     }
-    static_ignores_points_for_other_trkrs= new_ignores_for_insect_tracker;
+    ignores_for_other_trkrs= new_ignores_for_insect_tracker;
 }

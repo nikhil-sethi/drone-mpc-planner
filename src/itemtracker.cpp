@@ -144,21 +144,19 @@ void ItemTracker::update_world_candidate(){
 //    if (_name.compare("insect")==0)
 //        cout << std::endl;
 
-    WorldTrackItem w;
-    w.iti = _image_track_item;
-    if (_image_track_item.valid && (
-            (_image_track_item.score >= settings.score_threshold/1e6f) ||
-            (n_frames_tracking == 0))) {
-        _image_track_item.disparity = stereo_match(_image_track_item.pt(),_visdat->diffL,_visdat->diffR,find_result.disparity);
-        w.iti.disparity = _image_track_item.disparity; // hmm
+    WorldItem w;
+    w.iti = _image_item;
+    if (_image_item.valid) {
+        _image_item.disparity = stereo_match(_image_item.pt(),_visdat->diffL,_visdat->diffR,find_result.disparity);
+        w.iti.disparity = _image_item.disparity; // hmm
 
-        if (_image_track_item.disparity < settings.min_disparity || _image_track_item.disparity > settings.max_disparity){
+        if (_image_item.disparity < settings.min_disparity || _image_item.disparity > settings.max_disparity){
             w.disparity_in_range = false;
         } else {
             w.disparity_in_range = true;
             //calculate everything for the itemcontroller:
             std::vector<Point3d> camera_coordinates, world_coordinates;
-            camera_coordinates.push_back(Point3d(w.image_coordinates().x*IMSCALEF,w.image_coordinates().y*IMSCALEF,-_image_track_item.disparity));
+            camera_coordinates.push_back(Point3d(w.image_coordinates().x*IMSCALEF,w.image_coordinates().y*IMSCALEF,-_image_item.disparity));
             cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
             w.pt = world_coordinates[0];
 
@@ -183,9 +181,9 @@ void ItemTracker::update_world_candidate(){
             w.valid = true;
         else
             w.valid = false;
-        _world_track_item = w;
+        _world_item = w;
     } else {
-        _world_track_item.valid = false;
+        _world_item.valid = false;
     }
 }
 
@@ -198,14 +196,14 @@ void ItemTracker::track(double time) {
 
     update_world_candidate();
 
-    if ( _world_track_item.valid) {
+    if ( _world_item.valid) {
 
-        update_disparity(_world_track_item.iti.disparity, dt_tracking);
+        update_disparity(_world_item.iti.disparity, dt_tracking);
 
         //Point3f predicted_output = world_coordinates[1];
-        check_consistency(cv::Point3f(prevX,prevY,prevZ),_world_track_item.pt);
-        update_tracker_ouput(_world_track_item.pt,dt_tracking,time,&_world_track_item.iti,_world_track_item.iti.disparity);
-        update_prediction_state(_image_track_item.pt(), _world_track_item.iti.disparity,_image_track_item.size);
+        check_consistency(cv::Point3f(prevX,prevY,prevZ),_world_item.pt);
+        update_tracker_ouput(_world_item.pt,dt_tracking,time,&_world_item.iti,_world_item.iti.disparity);
+        update_prediction_state(_image_item.pt(), _world_item.iti.disparity,_image_item.size);
         n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
         t_prev_tracking = time; // update dt only if item was detected
         n_frames_tracking++;
@@ -304,9 +302,9 @@ void ItemTracker::predict(float dt, int frame_id) {
         certainty = 1;
 
     //keep track of the error:
-    if (predicted_image_path.size()>0 && _world_track_item.valid){
-        predicted_image_path.back().x_measured = _image_track_item.x;
-        predicted_image_path.back().y_measured = _image_track_item.y;
+    if (predicted_image_path.size()>0 && _world_item.valid){
+        predicted_image_path.back().x_measured = _image_item.x;
+        predicted_image_path.back().y_measured = _image_item.y;
         predicted_image_path.back().prediction_error  = sqrtf( powf(predicted_image_path.back().x_measured - predicted_image_path.back().x,2) + powf(predicted_image_path.back().y_measured - predicted_image_path.back().y,2));
 
     }
@@ -494,14 +492,14 @@ void ItemTracker::update_prediction_state(cv::Point2f image_location, float disp
         kfL.correct(measL);
 }
 
-void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  double time, ImageTrackItem * best_match, float disparity) {
+void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  double time, ImageItem * best_match, float disparity) {
 
     find_result.best_image_locationL = best_match->k();
     find_result.disparity = disparity;
 
-    _world_track_item.iti.certainty = calc_certainty(_world_track_item.iti.k());;
+    //_world_item.certainty = calc_certainty(_world_item.iti.k());; // TODO does not work properly
 
-    path.push_back(_world_track_item);
+    path.push_back(_world_item);
 
     track_data data ={0};
     data.pos_valid = true;

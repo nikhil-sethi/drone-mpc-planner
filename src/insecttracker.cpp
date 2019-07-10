@@ -39,7 +39,7 @@ void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) 
     track_history.push_back(data);
 
 
-    _image_track_item = ImageTrackItem (log.ins_im_x/IMSCALEF,log.ins_im_y/IMSCALEF,frame_number);
+    _image_item = ImageItem (log.ins_im_x/IMSCALEF,log.ins_im_y/IMSCALEF,frame_number);
 
     //TODO: run the insect tracker for the worldtrackitem
 

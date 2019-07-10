@@ -25,10 +25,21 @@
 class ItemTracker {
 
 public:
-    struct ImageTrackItem {
+
+    struct BlobProps {
+        float x,y,size,pixel_max;
+        BlobProps(cv::Point2f pt, float blob_size,float blob_pixel_max){
+            x = pt.x;
+            y = pt.y;
+            size = blob_size;
+            pixel_max = blob_pixel_max;
+        }
+    };
+
+    struct ImageItem {
         uint frame_id;
         uint keypoint_id;
-        float distance_to_old_prediction,certainty,x,y,size,score,disparity = 0;
+        float x,y,size,pixel_max,score,disparity = 0;
         bool valid = false;
 
         cv::KeyPoint k(){
@@ -37,23 +48,23 @@ public:
         cv::Point2f pt(){
             return cv::Point2f(x,y);
         }
-        ImageTrackItem() {}
-        ImageTrackItem(float x_, float y_, int frameid){
+        ImageItem() {}
+        ImageItem(float x_, float y_, int frameid){
             //read from log
             x = x_;
             y = y_;
             size  = -1;
-            distance_to_old_prediction = -1;
             score = -1;
+            pixel_max = -1;
             keypoint_id = -1;
             frame_id = frameid;
             valid = true; //todo: implement when the log is not valid
         }
-        ImageTrackItem(cv::KeyPoint kp, int frameid,float d2p, float matching_score, uint keypointid){
-            x = kp.pt.x;
-            y = kp.pt.y;
-            size = kp.size;
-            distance_to_old_prediction = d2p;
+        ImageItem(BlobProps blob, int frameid, float matching_score, uint keypointid){
+            x = blob.x;
+            y = blob.y;
+            size = blob.size;
+            pixel_max = blob.pixel_max;
             score = matching_score;
             frame_id = frameid;
             keypoint_id = keypointid;
@@ -86,9 +97,9 @@ public:
             frame_id = frameid;
         }
     };
-    struct WorldTrackItem {
+    struct WorldItem {
         cv::Point3f pt;
-        ImageTrackItem  iti;
+        ImageItem  iti;
         cv::Point2f image_coordinates(){
             return cv::Point2f(iti.x,iti.y);
         }
@@ -105,13 +116,13 @@ public:
         }
 
     };
-    struct StaticIgnorePoint {
+    struct IgnoreBlob {
         enum IgnoreType{
             landing_spot,
             drone_taking_off
         };
-        StaticIgnorePoint() {}
-        StaticIgnorePoint(cv::Point2f location, double timeout, IgnoreType type){
+        IgnoreBlob() {}
+        IgnoreBlob(cv::Point2f location, double timeout, IgnoreType type){
             p = location;
             ignore_type = type ;
             invalid_after = timeout;
@@ -165,9 +176,8 @@ private:
     };
     std::string _settingsFile;
     struct Find_result {
-        std::vector<ImageTrackItem> image_track_items;
-        std::vector<ImageTrackItem> image_track_item_filtered;
-        std::vector<ImageTrackItem> excludes;
+        std::vector<ImageItem> image_items;
+        std::vector<ImageItem> excludes;
         cv::KeyPoint best_image_locationL;
         cv::Rect roi_offset;
         float disparity;
@@ -179,7 +189,7 @@ private:
     void check_consistency(cv::Point3f previous_location,cv::Point3f measured_world_coordinates);
     void update_disparity(float disparity, float dt);
     void update_prediction_state(cv::Point2f image_location, float disparity, float size);
-    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, double time, ImageTrackItem *best_match, float disparity);
+    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, double time, ImageItem *best_match, float disparity);
 
     void update_world_candidate();
 
@@ -233,10 +243,8 @@ protected:
     bool _tracking = false;
     bool _active = false;
 
-    ImageTrackItem  _image_track_item;
-    WorldTrackItem  _world_track_item;
-
-
+    ImageItem  _image_item;
+    WorldItem  _world_item;
 
     float stereo_match(cv::Point closestL, cv::Mat diffL, cv::Mat diffR, float prev_disparity);
     void reset_tracker_ouput(double time);
@@ -247,10 +255,10 @@ public:
 
     TrackerSettings settings;
     Find_result find_result; // TODO: remove
-    std::vector<WorldTrackItem> path;
+    std::vector<WorldItem> path;
     std::vector<ImagePredictItem> predicted_image_path;
-    std::vector<StaticIgnorePoint> static_ignores_points_for_other_trkrs;
-    std::vector<StaticIgnorePoint> static_ignores_points_for_me;
+    std::vector<IgnoreBlob> ignores_for_other_trkrs;
+    std::vector<IgnoreBlob> ignores_for_me;
 
     int n_frames_tracking =0;
     double last_sighting_time = 0;
@@ -271,9 +279,19 @@ public:
     }
     virtual bool delete_me() = 0;
 
-    ImageTrackItem image_track_item(){return _image_track_item;}
-    WorldTrackItem world_track_item(){return _world_track_item;}
-    void image_track_item(ImageTrackItem t){_image_track_item = t;}
+    ImageItem image_item(){return _image_item;}
+    WorldItem world_item(){return _world_item;}
+    void image_item(ImageItem t){_image_item = t;}
+
+    float score_threshold() {return static_cast<float>(settings.score_threshold) / 1e3f;}
+
+    float score(BlobProps blob) {
+        ImagePredictItem ipi = predicted_image_path.back();
+        float dist = sqrtf(powf(ipi.x-blob.x,2)+powf(ipi.y-blob.y,2));
+        float im_size_diff = fabs(_world_item.size_in_image() - blob.size) / blob.size; // TODO: use prediction for size as well
+        float score = 1.f / (dist + 5.f*im_size_diff); // TODO: certainty
+        return score;
+    }
 
     //TODO: make this private:
     int err [100];

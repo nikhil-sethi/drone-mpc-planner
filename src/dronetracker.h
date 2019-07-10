@@ -45,7 +45,7 @@ private:
 
     bool enable_viz_diff = false;
 
-    void clean_additional_ignores(double time);
+    void clean_ignore_blobs(double time);
 
     class DroneTrackerCalibrationData: public xmls::Serializable
     {

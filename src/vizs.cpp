@@ -312,7 +312,7 @@ void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis,float
 
 }
 
-cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, std::vector<ItemTracker::WorldTrackItem> path,std::vector<ItemTracker::ImagePredictItem> predicted_path,cv::Rect roi_offset) {
+cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, std::vector<ItemTracker::WorldItem> path,std::vector<ItemTracker::ImagePredictItem> predicted_path,cv::Rect roi_offset) {
 
     cv::Mat frameL_small_drone;
     std::vector<ItemTracker::ImagePredictItem> tmp = predicted_path;
@@ -386,9 +386,9 @@ void Visualizer::draw_tracker_viz() {
     cv::Point3f setpoint = tracker_viz_base_data.setpoint;
     double time = tracker_viz_base_data.time;
 
-    std::vector<ItemTracker::WorldTrackItem> drn_path = tracker_viz_base_data.drn_path;
+    std::vector<ItemTracker::WorldItem> drn_path = tracker_viz_base_data.drn_path;
     std::vector<ItemTracker::ImagePredictItem> drn_predicted_path = tracker_viz_base_data.drn_predicted_path;
-    std::vector<ItemTracker::WorldTrackItem> ins_path = tracker_viz_base_data.ins_path;
+    std::vector<ItemTracker::WorldItem> ins_path = tracker_viz_base_data.ins_path;
     std::vector<ItemTracker::ImagePredictItem> ins_predicted_path = tracker_viz_base_data.ins_predicted_path;
     cv::Rect drn_roi_offset = tracker_viz_base_data.drn_roi_offset;
     cv::Rect ins_roi_offset = tracker_viz_base_data.ins_roi_offset;
@@ -422,7 +422,7 @@ void Visualizer::draw_tracker_viz() {
 
     if (ins_path.size()>0){
         std::stringstream ss;
-        ItemTracker::WorldTrackItem wti = ins_path.back();
+        ItemTracker::WorldItem wti = ins_path.back();
         ss << "i " << to_string_with_precision(wti.distance_background,1);
         cv::Scalar c(0,0,255);
         if (wti.distance_background >wti.distance )
@@ -433,7 +433,7 @@ void Visualizer::draw_tracker_viz() {
     }
     if (drn_path.size()>0){
         std::stringstream ss;
-        ItemTracker::WorldTrackItem wti = drn_path.back();
+        ItemTracker::WorldItem wti = drn_path.back();
         ss << "d " << to_string_with_precision(wti.distance_background,1);
         cv::Scalar c(0,0,255);
         if (wti.distance_background >wti.distance )
@@ -484,18 +484,7 @@ void Visualizer::paint() {
         if (_trackers->viz_max_points.cols > 0)
             cv::imshow("motion points", _trackers->viz_max_points);
         if (_trackers->diff_viz.cols > 0)
-            cv::imshow("motion points", _trackers->diff_viz);
-//        if (_itrkr->diff_viz.cols > 0)
-//            cv::imshow("ins_diff", _itrkr->diff_viz);
-//        if (_dtrkr->viz_max_points.cols> 0)
-//            cv::imshow("drone_maxs", _dtrkr->viz_max_points);
-//        if (_itrkr->viz_max_points.cols> 0)
-//            cv::imshow("ins_maxs", _itrkr->viz_max_points);
-//        if (_dtrkr->viz_roi.cols> 0)
-//            cv::imshow("drone_roi", _dtrkr->viz_roi);
-//        if (_itrkr->viz_roi.cols> 0)
-//            cv::imshow("ins_roi", _itrkr->viz_roi);
-
+            cv::imshow("diff", _trackers->diff_viz);
         new_tracker_viz_data_requested = true;
     }
     if (request_plotframe_paint && plotframe.rows > 0) {

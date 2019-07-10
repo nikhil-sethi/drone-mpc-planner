@@ -25,16 +25,47 @@ static const char* itemmanager_mode_names[] = { "im_idle",
  */
 class ItemManager {
 
-    struct processed_max_point {
-        processed_max_point(cv::KeyPoint k){
-            pt.x = k.pt.x;
-            pt.y = k.pt.y;
-            size = k.size;
+
+public: cv::Scalar tracker_color( ItemTracker * trkr) {
+        if (typeid(*trkr) == typeid(DroneTracker))
+            return cv::Scalar(0,255,0);
+        else if (typeid(*trkr) == typeid(InsectTracker))
+            return cv::Scalar(0,0,255);
+        else if (typeid(*trkr) == typeid(BlinkTracker))
+            return cv::Scalar(30,30,200);
+        return cv::Scalar(0,0,0);
+    }
+
+    struct processed_blobs {
+        processed_blobs(ItemTracker::BlobProps blob){
+            pt.x = blob.x;
+            pt.y = blob.y;
+            size = blob.size;
+            pixel_max = blob.pixel_max;
         }
         cv::Point2f pt;
-        float size;
-        bool tracked = false;
-        cv::Scalar color = {255,0,255};
+        float size, pixel_max;
+
+        std::vector<ItemTracker *> trackers;
+        bool tracked() { return trackers.size()>0;}
+        bool ignored = false;
+        cv::Scalar color() {
+            if (ignored)
+                cv::Scalar(0,128,0);
+            if (trackers.size() == 0 )
+               return cv::Scalar(0,0,0);
+            else if (trackers.size()>1)
+               return cv::Scalar(200,255,250);
+            ItemTracker * trkr = trackers.at(0);
+            if (typeid(*trkr) == typeid(DroneTracker))
+                return cv::Scalar(0,255,0);
+            else if (typeid(*trkr) == typeid(InsectTracker))
+                return cv::Scalar(0,0,255);
+            else if (typeid(*trkr) == typeid(BlinkTracker))
+                return cv::Scalar(30,30,200);
+            return cv::Scalar(0,0,0);
+        }
+
     };
 
     struct item_manager_settings{
@@ -58,23 +89,17 @@ class ItemManager {
 
         int background_subtract_zone_factor = 90;
 
-        //only for dronetracker:
-        int pixel_dist_landing_spot = 0;
-        int pixel_dist_seperation_min = 2;
-        int pixel_dist_seperation_max = 5;
 
-        float version = 2.0f;
+        float version = 1.0f;
 
         template <class Archive>
-        void serialize( Archive & ar )
-        {
+        void serialize( Archive & ar ) {
             ar(version,min_disparity,max_disparity,roi_min_size,
                roi_max_grow,roi_grow_speed,exclude_min_distance,
                exclude_max_distance,background_subtract_zone_factor,
                max_points_per_frame,radius,motion_thresh_blink_detect,
-               motion_thresh,static_ignores_dist_thresh,
-               pixel_dist_landing_spot,pixel_dist_seperation_min,
-               pixel_dist_seperation_max);
+               motion_thresh,static_ignores_dist_thresh
+               );
         }
 
     };
@@ -99,17 +124,17 @@ private:
     bool _enable_motion_background_check = true;
 
     bool enable_viz_max_points = false; // flag for enabling the maxs visiualization
-    bool enable_viz_diff = false;
+    std::vector<cv::Mat> vizs_maxs;
+    bool enable_viz_diff = false; // flag for enabling the diff visiualization
 
-    std::vector<cv::KeyPoint> _kps;
+    std::vector<ItemTracker::BlobProps> _blobs;
 
     void update_trackers(double time, LogReader::Log_Entry log_entry, bool drone_is_active);
     void update_max_change_points();
     void update_static_ignores();
-    void match_image_points_to_trackers(bool drone_is_active);
+    void match_blobs_to_trackers(bool drone_is_active);
     bool tracker_active(ItemTracker * trkr, bool drone_is_active);
-    cv::Scalar tracker_color(ItemTracker * trkr);
-    bool check_ignore_points(processed_max_point pmp, ItemTracker * trkr);
+    bool check_ignore_points(processed_blobs pmp, ItemTracker * trkr);
     detection_mode _mode;
 
     InsectTracker * _itrkr;   //tmp
