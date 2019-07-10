@@ -264,6 +264,8 @@ public:
             return false;
         else if (_joy_mode_switch == jmsm_manual && joyThrottle > JOY_BOUND_MIN)
             return true;
+        else if (_joy_mode_switch == jmsm_manual && joyThrottle <= JOY_BOUND_MIN)
+            return false;
         else
             return (autoThrottle > JOY_BOUND_MIN); //FIXME: check if this goes well if due to extreme control throttle is set to 0
     }

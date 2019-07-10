@@ -155,6 +155,7 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
         if (!hoverthrottleInitialized)
             hoverthrottle = INITIAL_HOVER_THROTTLE;
         throttle = joyThrottle;
+        autoThrottle = JOY_BOUND_MIN;
         roll = joyRoll;
         pitch = joyPitch;
         yaw = joyYaw;
