@@ -32,7 +32,7 @@ public: cv::Scalar tracker_color( ItemTracker * trkr) {
         else if (typeid(*trkr) == typeid(InsectTracker))
             return cv::Scalar(0,0,255);
         else if (typeid(*trkr) == typeid(BlinkTracker))
-            return cv::Scalar(30,30,200);
+            return cv::Scalar(255,0,255);
         return cv::Scalar(0,0,0);
     }
 
@@ -53,7 +53,7 @@ public: cv::Scalar tracker_color( ItemTracker * trkr) {
             if (ignored)
                 cv::Scalar(0,128,0);
             if (trackers.size() == 0 )
-               return cv::Scalar(0,0,0);
+               return cv::Scalar(255,255,55);
             else if (trackers.size()>1)
                return cv::Scalar(200,255,250);
             ItemTracker * trkr = trackers.at(0);
@@ -62,7 +62,7 @@ public: cv::Scalar tracker_color( ItemTracker * trkr) {
             else if (typeid(*trkr) == typeid(InsectTracker))
                 return cv::Scalar(0,0,255);
             else if (typeid(*trkr) == typeid(BlinkTracker))
-                return cv::Scalar(30,30,200);
+                return cv::Scalar(255,0,255);
             return cv::Scalar(0,0,0);
         }
 
@@ -73,13 +73,6 @@ public: cv::Scalar tracker_color( ItemTracker * trkr) {
         int min_disparity=1;
         int max_disparity=20;
 
-        int roi_min_size = 200;
-        int roi_max_grow = 160;
-        int roi_grow_speed = 64;
-
-        int exclude_min_distance = 5; // in res/IMSCALEF resolution
-        int exclude_max_distance = 50; // in res/IMSCALEF resolution
-
         int static_ignores_dist_thresh = 15; // in res/IMSCALEF resolution
 
         int max_points_per_frame = 10;
@@ -88,15 +81,12 @@ public: cv::Scalar tracker_color( ItemTracker * trkr) {
         int motion_thresh_blink_detect = 30;
 
         int background_subtract_zone_factor = 90;
-
-
         float version = 1.0f;
 
         template <class Archive>
         void serialize( Archive & ar ) {
-            ar(version,min_disparity,max_disparity,roi_min_size,
-               roi_max_grow,roi_grow_speed,exclude_min_distance,
-               exclude_max_distance,background_subtract_zone_factor,
+            ar(version,min_disparity,max_disparity,
+               background_subtract_zone_factor,
                max_points_per_frame,radius,motion_thresh_blink_detect,
                motion_thresh,static_ignores_dist_thresh
                );
@@ -134,7 +124,7 @@ private:
     void update_static_ignores();
     void match_blobs_to_trackers(bool drone_is_active);
     bool tracker_active(ItemTracker * trkr, bool drone_is_active);
-    bool check_ignore_points(processed_blobs pmp, ItemTracker * trkr);
+    bool check_ignore_blobs(processed_blobs pbs, ItemTracker * trkr);
     detection_mode _mode;
 
     InsectTracker * _itrkr;   //tmp

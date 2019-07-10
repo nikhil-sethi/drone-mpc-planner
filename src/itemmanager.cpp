@@ -38,8 +38,16 @@ void ItemManager::init(std::ofstream *logger,VisionData *visdat){
 }
 
 void ItemManager::update(double time,LogReader::Log_Entry log_entry, bool drone_is_active){
-    if (enable_viz_diff)
+    if (enable_viz_diff) {
         cv::cvtColor(_visdat->diffL*10,diff_viz,CV_GRAY2BGR);
+        putText(diff_viz,"Drone",cv::Point(3,diff_viz.rows-12),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,255,0));
+        putText(diff_viz,"Insect",cv::Point(3,diff_viz.rows-24),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,0,255));
+        putText(diff_viz,"Blink",cv::Point(3,diff_viz.rows-36),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(255,0,255));
+        putText(diff_viz,"Ignored",cv::Point(3,diff_viz.rows-48),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,128,0));
+        putText(diff_viz,"Untracked",cv::Point(3,diff_viz.rows-60),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(255,255,55));
+        putText(diff_viz,"Multitracked",cv::Point(3,diff_viz.rows-72),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(200,255,250));
+        //putText(diff_viz,"W: world err",cv::Point(3,diff_viz.rows-84),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(255,255,255));
+    }
     //find max points in the whole image
     //for each tracker,
     //  check if it is not overlapping with a static ignore zone (maybe make this a negative scoring factor), if OK:
@@ -62,6 +70,9 @@ void ItemManager::update(double time,LogReader::Log_Entry log_entry, bool drone_
 
         if (enable_viz_max_points && vizs_maxs.size()>0)
             viz_max_points = createColumnImage(vizs_maxs,CV_8UC3,1);
+        else
+            viz_max_points = cv::Mat::zeros(5,100,CV_8UC3);
+
     }
 }
 
@@ -126,27 +137,35 @@ void ItemManager::update_trackers(double time,LogReader::Log_Entry log_entry, bo
 
 //for each tracker collect the static ignores from each other tracker
 void ItemManager::update_static_ignores() {
+    bool landingspot_ignore_found = false;
+    ItemTracker::IgnoreBlob landingspot;
     for (uint i=0; i<_trackers.size();i++){
         std::vector<ItemTracker::IgnoreBlob> ignores;
         for (uint j=0; j<_trackers.size();j++){
             if (j!=i){
                 for (uint k = 0; k < _trackers.at(j)->ignores_for_other_trkrs.size();k++){
                     ignores.push_back(_trackers.at(j)->ignores_for_other_trkrs.at(k));
+                    if (_trackers.at(j)->ignores_for_other_trkrs.at(k).ignore_type == ItemTracker::IgnoreBlob::landing_spot){
+                        landingspot_ignore_found = true;
+                        landingspot = _trackers.at(j)->ignores_for_other_trkrs.at(k);
+                    }
                 }
             }
         }
         _trackers.at(i)->ignores_for_me = ignores;
     }
+    if (landingspot_ignore_found) // tmp solution until landingspot itemtracker is made
+        _dtrkr->ignores_for_me.push_back(landingspot);
 }
 
-bool ItemManager::check_ignore_points(processed_blobs pmp, ItemTracker * trkr) {
+bool ItemManager::check_ignore_blobs(processed_blobs pbs, ItemTracker * trkr) {
     bool in_ignore_zone = false;
-    cv::Point2f p_kp = pmp.pt;
+    cv::Point2f p_kp = pbs.pt;
     for (uint k=0; k<trkr->ignores_for_me.size();k++){
         cv::Point2f p_ignore = trkr->ignores_for_me.at(k).p;
         float dist_ignore = sqrtf(powf(p_ignore.x-p_kp.x,2)+powf(p_ignore.y-p_kp.y,2));
         if (dist_ignore < settings.static_ignores_dist_thresh){
-            pmp.ignored = true;
+            pbs.ignored = true;
             trkr->ignores_for_me.at(k).was_used = true;
             in_ignore_zone = true;
         }
@@ -175,13 +194,11 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
             int best_score_j;
 
             if (tracker_active(trkr,drone_is_active) && trkr->tracking()) {
-                ItemTracker::ImagePredictItem ipi = trkr->predicted_image_path.back();
-                cv::Point2f p_predict(ipi.x,ipi.y);
 
                 for (uint j=0; j < pbs.size(); j++) {
                     float score =0;
                     //check against static ignore points
-                    bool in_ignore_zone = check_ignore_points(pbs.at(j),trkr);
+                    bool in_ignore_zone = check_ignore_blobs(pbs.at(j),trkr);
 
                     if (!in_ignore_zone) {
                         score  = trkr->score(_blobs.at(j));
@@ -202,7 +219,6 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
                     pbs.at(best_score_j).trackers.push_back(trkr);
                 }
             }
-
         }
 
         //see if there are trackers that are not tracking yet and if there are untracked points left, which can be bound together.
@@ -214,7 +230,7 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
                         if (!pbs.at(j).tracked()){
 
                             //check against static ignore points TODO: function
-                            bool in_ignore_zone = check_ignore_points(pbs.at(j),trkr);
+                            bool in_ignore_zone = check_ignore_blobs(pbs.at(j),trkr);
 
                             //TODO: in theory this would be a very nice time to check the world situation as well..
                             if (!in_ignore_zone) {
@@ -223,6 +239,13 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
                                 ItemTracker::ImageItem iti(_blobs.at(j),_visdat->frame_id,0,j);
                                 trkr->image_item(iti);
                                 pbs.at(j).trackers.push_back(trkr);
+
+                                if (enable_viz_max_points) {
+                                    cv::Mat viz = vizs_maxs.at(j);
+                                    cv::Point2i pt(viz.cols-50,viz.rows - 14*(i+1));
+                                    putText(viz,"New",pt,FONT_HERSHEY_SIMPLEX,0.5,tracker_color(trkr));
+                                }
+
                                 break;
                             }
                         }

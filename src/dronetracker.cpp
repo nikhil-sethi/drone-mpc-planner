@@ -46,6 +46,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
         // remove the indefinite startup location and replace with a time out
         ignores_for_other_trkrs.clear();
         ignores_for_other_trkrs.push_back(IgnoreBlob(drone_startup_im_location(),time+startup_location_ignore_timeout, IgnoreBlob::landing_spot));
+        ignores_for_me.push_back(IgnoreBlob(drone_startup_im_location(),time+startup_location_ignore_timeout, IgnoreBlob::landing_spot));
         _drone_tracking_status = dts_detecting_takeoff;
     } FALLTHROUGH_INTENDED; case dts_detecting_takeoff: {
         insert_control_predicted_drone_location();
