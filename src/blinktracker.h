@@ -60,7 +60,7 @@ public:
     blinking_drone_states state() {return _blinking_drone_status;}
     cv::Point2f drone_startup_im_location(){ return _drone_blink_image_location; }
 
-    bool init(std::ofstream *logger, VisionData *_visdat);
+    bool init(VisionData *_visdat);
     void track(double time);
     void drone_location(cv::Point p){_drone_blink_image_location = p/IMSCALEF;}
 

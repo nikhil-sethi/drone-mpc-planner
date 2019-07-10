@@ -91,28 +91,28 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
 
     sub_disparity = 0;
     disparity_smoothed = 0;
-
-    (*_logger) << "imLx_" << _name << "; ";
-    (*_logger) << "imLy_" << _name << "; ";
-    (*_logger) << "disparity_" << _name << "; ";
-    (*_logger) << "imLx_pred_" << _name << "; ";
-    (*_logger) << "imLy_pred_" << _name << "; ";
-    (*_logger) << "n_frames_lost_" << _name << "; ";
-    (*_logger) << "n_frames_tracking_" << _name << "; ";
-    (*_logger) << "foundL_" << _name << "; ";
-    (*_logger) << "posX_" << _name << "; ";
-    (*_logger) << "posY_" << _name << "; ";
-    (*_logger) << "posZ_" << _name << "; ";
-    (*_logger) << "sposX_" << _name << "; ";
-    (*_logger) << "sposY_" << _name << "; ";
-    (*_logger) << "sposZ_" << _name << "; ";
-    (*_logger) << "svelX_" << _name << "; ";
-    (*_logger) << "svelY_" << _name << "; ";
-    (*_logger) << "svelZ_" << _name << "; ";
-    (*_logger) << "saccX_" << _name << "; ";
-    (*_logger) << "saccY_" << _name << "; ";
-    (*_logger) << "saccZ_" << _name << "; ";
-
+    if (_logger->is_open()) {
+        (*_logger) << "imLx_" << _name << "; ";
+        (*_logger) << "imLy_" << _name << "; ";
+        (*_logger) << "disparity_" << _name << "; ";
+        (*_logger) << "imLx_pred_" << _name << "; ";
+        (*_logger) << "imLy_pred_" << _name << "; ";
+        (*_logger) << "n_frames_lost_" << _name << "; ";
+        (*_logger) << "n_frames_tracking_" << _name << "; ";
+        (*_logger) << "foundL_" << _name << "; ";
+        (*_logger) << "posX_" << _name << "; ";
+        (*_logger) << "posY_" << _name << "; ";
+        (*_logger) << "posZ_" << _name << "; ";
+        (*_logger) << "sposX_" << _name << "; ";
+        (*_logger) << "sposY_" << _name << "; ";
+        (*_logger) << "sposZ_" << _name << "; ";
+        (*_logger) << "svelX_" << _name << "; ";
+        (*_logger) << "svelY_" << _name << "; ";
+        (*_logger) << "svelZ_" << _name << "; ";
+        (*_logger) << "saccX_" << _name << "; ";
+        (*_logger) << "saccY_" << _name << "; ";
+        (*_logger) << "saccZ_" << _name << "; ";
+    }
     initialized = true;
 }
 
@@ -141,8 +141,8 @@ void ItemTracker::init_kalman() {
 
 void ItemTracker::update_world_candidate(){
 
-//    if (_name.compare("insect")==0)
-//        cout << std::endl;
+    //    if (_name.compare("insect")==0)
+    //        cout << std::endl;
 
     WorldItem w;
     w.iti = _image_item;
@@ -249,23 +249,25 @@ void ItemTracker::track(double time) {
 }
 
 void ItemTracker::append_log() {
-    //log all image stuff
-    if (path.size()>0)
-        (*_logger) << path.back().image_coordinates().x * IMSCALEF << "; " << path.back().image_coordinates().y * IMSCALEF << "; " << find_result.disparity << "; ";
-    else
-        (*_logger) << -1 << "; " << -1 << "; " << -1 << "; ";
-    if (predicted_image_path.size()>0)
-        (*_logger) << predicted_image_path.back().x * IMSCALEF << "; " << predicted_image_path.back().y * IMSCALEF << "; ";
-    else
-        (*_logger) << -1 << "; " << -1   << "; ";
+    if (_logger->is_open()) {
+        //log all image stuff
+        if (path.size()>0)
+            (*_logger) << path.back().image_coordinates().x * IMSCALEF << "; " << path.back().image_coordinates().y * IMSCALEF << "; " << find_result.disparity << "; ";
+        else
+            (*_logger) << -1 << "; " << -1 << "; " << -1 << "; ";
+        if (predicted_image_path.size()>0)
+            (*_logger) << predicted_image_path.back().x * IMSCALEF << "; " << predicted_image_path.back().y * IMSCALEF << "; ";
+        else
+            (*_logger) << -1 << "; " << -1   << "; ";
 
-    (*_logger) << n_frames_lost << "; " << n_frames_tracking << "; " << _tracking << "; ";
-    //log all world stuff
-    track_data last = Last_track_data();
-    (*_logger) << last.posX << "; " << last.posY << "; " << last.posZ << ";" ;
-    (*_logger) << last.sposX << "; " << last.sposY << "; " << last.sposZ << ";";
-    (*_logger) << last.svelX << "; " << last.svelY << "; " << last.svelZ << ";";
-    (*_logger) << last.saccX << "; " << last.saccY << "; " << last.saccZ << ";";
+        (*_logger) << n_frames_lost << "; " << n_frames_tracking << "; " << _tracking << "; ";
+        //log all world stuff
+        track_data last = Last_track_data();
+        (*_logger) << last.posX << "; " << last.posY << "; " << last.posZ << ";" ;
+        (*_logger) << last.sposX << "; " << last.sposY << "; " << last.sposZ << ";";
+        (*_logger) << last.svelX << "; " << last.svelY << "; " << last.svelZ << ";";
+        (*_logger) << last.saccX << "; " << last.saccY << "; " << last.saccZ << ";";
+    }
 }
 
 void ItemTracker::predict(float dt, int frame_id) {

@@ -1,10 +1,13 @@
 #include "blinktracker.h"
 
+std::ofstream dummy;
 
+bool BlinkTracker::init(VisionData *visdat) {
 
-bool BlinkTracker::init(std::ofstream *logger, VisionData *visdat) {
-
-    ItemTracker::init(logger,visdat,"blink");
+    // disable logging for the blink tracker. #67
+    dummy.open("/dev/null",std::ofstream::out);
+    dummy.close();
+    ItemTracker::init(&dummy,visdat,"blink");
 
     n_frames_lost = 1;
     n_frames_lost_threshold = 120;

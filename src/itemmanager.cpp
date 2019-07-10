@@ -252,7 +252,7 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
                 if (_mode == mode_locate_drone){
                     BlinkTracker  * bt;
                     bt = new BlinkTracker();
-                    bt->init(_logger,_visdat);
+                    bt->init(_visdat);
                     bt->image_item(ItemTracker::ImageItem (_blobs.at(i),_visdat->frame_id,100,i));
                     _trackers.push_back( bt);
                     pbs.at(i).trackers.push_back(bt);
