@@ -17,12 +17,34 @@ working_dir=`pwd`
 
 # Create nice symlinks
 mkdir -p /home/$USER/code
-[ -f /home/$USER/.screenrc ] || {
+[ -f symlinks.done ] || {
+	[ -f /home/pats/.screenrc ] || {
+		cp -n /home/pats/.screenrc{,.bak}
+		rm /home/pats/.screenrc
+	}
 	ln -s /home/$USER/code/pats/config/.screenrc /home/pats/
-}
-
-[ -f /home/$USER/.bashrc ] || {
+	
+	[ -f /home/pats/.bashrc ] || {
+		cp -n /home/pats/.bashrc{,.bak}
+		rm /home/pats/.bashrc
+	}
 	ln -s /home/$USER/code/pats/config/.bashrc /home/pats/
+
+	[ -f /etc/ssh/sshd_config ] || {
+		sudo cp  -n /etc/ssh/sshd_config{,.bak}
+		sudo rm /etc/ssh/sshd_config
+	}
+	sudo ln -s /home/$USER/code/pats/config/sshd_config /etc/ssh/
+
+	[ -f /etc/rc.local ] || {
+		sudo cp  -n /etc/rc.local{,.bak}
+		sudo rm /etc/rc.local
+	}
+	sudo ln -s /home/$USER/code/pats/config/rc.local /etc/rc.local
+
+	sudo ln -s /home/$USER/code/pats/config/45-pats_mm.rules /lib/udev/rules.d/
+
+	touch symlinks.done
 }
 
 
@@ -102,8 +124,12 @@ cd ~/dependencies
 	touch pats_code.done
 }
 
-# Autostart everything the folowing line:
-# /home/up/obc_vision/config/daemon.sh
-# to /etc/rc.local
 
-# Change hostname: sudo hostname pats-proto1 #update: sudo nano /etc/hosts #change 127.0.1.1 pats-proto1 #make it persistant, update: sudo nano /etc/hostname
+#reboot, or:
+#sudo systemctl restart ssh.service
+#sudo udevadm control --reload-rules && udevadm trigger
+
+#Change hostname: sudo hostname pats-proto1 
+#Update: sudo nano /etc/hosts 
+#Change 127.0.1.1 pats-proto1 
+#Make it persistant, update: sudo nano /etc/hostname
