@@ -193,7 +193,6 @@ void ItemTracker::track(double time) {
     double dt_predict= (time-t_prev_predict);
     t_prev_predict = time;
 
-
     update_world_candidate();
 
     if ( _world_item.valid) {

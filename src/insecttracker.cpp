@@ -18,6 +18,20 @@ void InsectTracker::init_settings() {
 
 void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) {
 
+    _image_item = ImageItem (log.ins_im_x/IMSCALEF,log.ins_im_y/IMSCALEF,frame_number);
+    _image_item.disparity = log.ins_disparity;
+    ImagePredictItem ipi(cv::Point2f(log.ins_pred_im_x/IMSCALEF,log.ins_pred_im_y/IMSCALEF),1,1,frame_number);
+
+    //TODO: recalculate this instead of reading from the log
+    WorldItem w;
+    w.iti = _image_item;
+    w.disparity_in_range = true;
+    w.background_check_ok = true;
+    w.valid = true;
+    w.pt.x = log.ins_pos_x;
+    w.pt.y = log.ins_pos_y;
+    w.pt.z = log.ins_pos_z;
+
     track_data data ={0};
     data.pos_valid = true;
     data.posX = log.ins_pos_x;
@@ -38,31 +52,26 @@ void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) 
 
     track_history.push_back(data);
 
+    path.push_back(w);
+    predicted_image_path.push_back(ipi);
 
-    _image_item = ImageItem (log.ins_im_x/IMSCALEF,log.ins_im_y/IMSCALEF,frame_number);
+    n_frames_lost = log.ins_n_frames_lost;
+    n_frames_tracking = log.ins_n_frames_tracking;
+    _tracking = log.ins_foundL;
 
-    //TODO: run the insect tracker for the worldtrackitem
+    if (path.size() > 0) {
+        if (path.begin()->frame_id() < _visdat->frame_id - path_buf_size)
+            path.erase(path.begin());
+    }
+    if (predicted_image_path.size() > 0) {
+        if (predicted_image_path.begin()->frame_id < _visdat->frame_id - path_buf_size)
+            predicted_image_path.erase(predicted_image_path.begin());
+    }
 
-//    path.push_back(ti);
-//    predicted_image_path.push_back(tip);
-
-//    n_frames_lost = log.ins_n_frames_lost;
-//    n_frames_tracking = log.ins_n_frames_tracking;
-//    _tracking = log.ins_foundL;
-
-//    if (path.size() > 0) {
-//        if (path.begin()->frame_id < _visdat->frame_id - path_buf_size)
-//            path.erase(path.begin());
-//    }
-//    if (predicted_image_path.size() > 0) {
-//        if (predicted_image_path.begin()->frame_id < _visdat->frame_id - path_buf_size)
-//            predicted_image_path.erase(predicted_image_path.begin());
-//    }
-
-//    if (n_frames_lost > n_frames_lost_threshold || !_tracking) {
-//        predicted_image_path.clear();
-//        _tracking = false;
-//    }
+    if (n_frames_lost > n_frames_lost_threshold || !_tracking) {
+        predicted_image_path.clear();
+        _tracking = false;
+    }
 
     append_log();
 }

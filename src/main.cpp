@@ -235,15 +235,27 @@ void process_video() {
 
 void process_frame(Stereo_Frame_Data data) {
 
-    if (fromfile==log_mode_full)
+    if (fromfile==log_mode_full){
         logreader.current_frame_number(data.number);
-    else if (fromfile==log_mode_insect_only)
-        logreader.set_next_frame_number();
+        if (logreader.current_item.insect_log) {
+            trackers.mode(ItemManager::mode_hunt_replay_moth);
+        }
+    } else if (fromfile==log_mode_insect_only) {
+        if (logreader.set_next_frame_number()){
+            trackers.mode(ItemManager::mode_hunt);
+            fromfile = log_mode_none;
+        } else {
+            trackers.mode(ItemManager::mode_hunt_replay_moth);
+        }
+    }
 
     visdat.update(data.frameL,data.frameR,data.time,data.number);
 
     auto timenow = chrono::system_clock::to_time_t(chrono::system_clock::now());
-    logger << data.imgcount << ";" << data.number << ";" << std::put_time(std::localtime(&timenow), "%Y/%m/%d %T") << ";";
+    logger << data.imgcount << ";"
+           << data.number << ";"
+           << std::put_time(std::localtime(&timenow), "%Y/%m/%d %T") << ";"
+           << (fromfile==log_mode_insect_only) << ";";
 
 
     trackers.update(data.time,logreader.current_item,dctrl.drone_is_active());
@@ -428,7 +440,7 @@ void init(int argc, char **argv) {
         logger.open(data_output_dir  + "test.log",std::ofstream::out);
     }
 
-    logger << "ID;RS_ID;time;";
+    logger << "ID;RS_ID;time;insect_log;";
 
     logger_insect.open(data_output_dir  + "insect.log",std::ofstream::out);
 

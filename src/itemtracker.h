@@ -56,7 +56,7 @@ public:
             size  = -1;
             score = -1;
             pixel_max = -1;
-            keypoint_id = -1;
+            keypoint_id = 666;
             frame_id = frameid;
             valid = true; //todo: implement when the log is not valid
         }

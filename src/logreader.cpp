@@ -92,6 +92,7 @@ LogReader::Log_Entry LogReader::createLogEntry(std::string line) {
     Log_Entry entry;
     entry.ID = std::stoi(linedata.at(headmap["ID"]));
     entry.RS_ID = std::stoi(linedata.at(headmap["RS_ID"]));
+    entry.insect_log = std::stoi(linedata.at(headmap["insect_log"]));
     entry.valid = std::stoi(linedata.at(headmap["valid"]));
     entry.joyThrottle = std::stoi(linedata.at(headmap["joyThrottle"]));
     entry.joyRoll = std::stoi(linedata.at(headmap["joyRoll"]));
@@ -136,13 +137,15 @@ LogReader::Log_Entry LogReader::createLogEntry(std::string line) {
 
 
 
-void LogReader::set_next_frame_number() {
-
+bool LogReader::set_next_frame_number() {
     if (partial_insect_log_id_counter < log.size()) {
         current_item = log[partial_insect_log_id_counter];
         partial_insect_log_id_counter++;
-    } else
+        return false;
+    } else {
         current_item = log[0];
+        return true;
+    }
 }
 
 void LogReader::current_frame_number(unsigned long long _RS_frame_number) {
