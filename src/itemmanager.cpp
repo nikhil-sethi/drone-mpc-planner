@@ -66,14 +66,15 @@ void ItemManager::update(double time,LogReader::Log_Entry log_entry, bool drone_
 
         match_blobs_to_trackers(drone_is_active);
 
-        update_trackers(time,log_entry, drone_is_active);
-
-        if (enable_viz_max_points && vizs_maxs.size()>0)
-            viz_max_points = createColumnImage(vizs_maxs,CV_8UC3,1);
-        else
-            viz_max_points = cv::Mat::zeros(5,100,CV_8UC3);
-
     }
+
+    update_trackers(time,log_entry, drone_is_active);
+
+    if (enable_viz_max_points && vizs_maxs.size()>0)
+        viz_max_points = createColumnImage(vizs_maxs,CV_8UC3,1);
+    else
+        viz_max_points = cv::Mat::zeros(5,100,CV_8UC3);
+
 }
 
 void ItemManager::update_trackers(double time,LogReader::Log_Entry log_entry, bool drone_is_active) {
