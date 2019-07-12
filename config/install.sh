@@ -2,6 +2,31 @@
 set -ex
 working_dir=`pwd`
 
+# Create dependencies directory
+mkdir -p ~/dependencies
+mkdir -p ~/code
+pushd ~/dependencies
+
+#Change hostname: sudo hostname pats-proto1 
+#Update: sudo nano /etc/hosts 
+#Change 127.0.1.1 pats-proto1 
+#Make it persistant, update: sudo nano /etc/hostname
+if [[ $HOSTNAME == pats-proto* ]];
+then
+  echo "Hostname changed detected, good."
+else
+  echo "Change hostname before running this script!"
+  exit 1
+fi
+
+# Install packages
+[ -f dependencies-packages.done ] || {
+	sudo apt install -y cmake g++ libva-dev libswresample-dev libavutil-dev pkg-config libjpeg9-dev libcurl4-openssl-dev -y
+	sudo apt-get install  -y openssh-server gstreamer1.0-tools gstreamer1.0-alsa   gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav libgstreamer-plugins-base1.0-* libgstreamer-plugins-bad1.0-* libgstreamer-plugins-good1.0-*
+	sudo apt-get remove -y modemmanager
+	touch dependencies-packages.done
+}
+
 # Add librealsense repository
 [ -f librealsense-packages.done ] || {
 	sudo apt-key adv --keyserver hkp://keys.gnupg.net:80 --recv-key C8B3A55A6F3EFCDE
@@ -9,67 +34,8 @@ working_dir=`pwd`
 	sudo apt update
 
 	# Install packages
-	sudo apt install librealsense2-dkms librealsense2-dev librealsense2-dbg librealsense2-utils libva-dev libswresample-dev libavutil-dev pkg-config libjpeg9-dev htop git vim nano screen g++ cmake autossh usb-modeswitch -y
+	sudo apt install -y librealsense2-dkms librealsense2-dev librealsense2-dbg librealsense2-utils libva-dev libswresample-dev libavutil-dev pkg-config libjpeg9-dev htop git vim nano screen g++ cmake autossh usb-modeswitch -y
 	touch librealsense-packages.done
-	sudo apt-get autoremove
-	sudo apt-get clean
-}
-
-# Create nice symlinks
-mkdir -p /home/$USER/code
-[ -f symlinks.done ] || {
-	[ -f /home/pats/.screenrc ] || {
-		cp -n /home/pats/.screenrc{,.bak}
-		rm /home/pats/.screenrc
-	}
-	ln -s /home/$USER/code/pats/config/.screenrc /home/pats/
-	
-	[ -f /home/pats/.bashrc ] || {
-		cp -n /home/pats/.bashrc{,.bak}
-		rm /home/pats/.bashrc
-	}
-	ln -s /home/$USER/code/pats/config/.bashrc /home/pats/
-
-	[ -f /etc/ssh/sshd_config ] || {
-		sudo cp  -n /etc/ssh/sshd_config{,.bak}
-		sudo rm /etc/ssh/sshd_config
-	}
-	sudo ln -s /home/$USER/code/pats/config/sshd_config /etc/ssh/
-
-	[ -f /etc/rc.local ] || {
-		sudo cp  -n /etc/rc.local{,.bak}
-		sudo rm /etc/rc.local
-	}
-	sudo ln -s /home/$USER/code/pats/config/rc.local /etc/rc.local
-
-	sudo ln -s /home/$USER/code/pats/config/45-pats_mm.rules /lib/udev/rules.d/
-
-	touch symlinks.done
-}
-
-
-# Add to groups
-sudo usermod -a -G dialout $USER
-
-# Configure git
-git config --global push.default simple
-git config --global user.email "patsproto@pats.com"
-git config --global user.name $HOSTNAME
-sh ./git_alias.sh
-# Copy id_rsa and id_rsa.pub to ~/.ssh
-
-# Create dependencies directory
-mkdir -p ~/dependencies
-cd ~/dependencies
-
-# Install packages
-[ -f dependencies-packages.done ] || {
-	sudo apt install cmake g++ libva-dev libswresample-dev libavutil-dev pkg-config libjpeg9-dev libcurl4-openssl-dev -y
-	sudo apt-get install gstreamer1.0-tools gstreamer1.0-alsa   gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav -y libgstreamer-plugins-base1.0-* libgstreamer-plugins-bad1.0-* libgstreamer-plugins-good1.0-*
-	sudo apt-get remove modemmanager
-	sudo apt-get autoremove
-	sudo apt-get clean
-	touch dependencies-packages.done
 }
 
 # Install cmake with https support (required for opencv contrib)
@@ -112,24 +78,68 @@ cd ~/dependencies
 
 # Install the Pats code
 [ -f pats_code.done ] || {
-	cd ~/
-	[ -d code/pats ] || {
+	[ -d ../code/pats ] || {
 		git clone git@github.com:pats-drones/pats.git
 	}
-	pushd code/pats
+	pushd ../code/pats
 	mkdir -p pc/build
-	cd ~/code/pats/pc/build
+	pushd pc/build
 	cmake ..
 	make -j4
+	popd
+	popd
 	touch pats_code.done
 }
 
+# Add to groups
+sudo usermod -a -G dialout $USER
 
-#reboot, or:
-#sudo systemctl restart ssh.service
-#sudo udevadm control --reload-rules && udevadm trigger
+# Configure git
+git config --global push.default simple
+git config --global user.email "patsproto@pats.com"
+git config --global user.name $HOSTNAME
+sh ~/code/pats/config/git_alias.sh
+# Copy id_rsa and id_rsa.pub to ~/.ssh
 
-#Change hostname: sudo hostname pats-proto1 
-#Update: sudo nano /etc/hosts 
-#Change 127.0.1.1 pats-proto1 
-#Make it persistant, update: sudo nano /etc/hostname
+# Create nice symlinks
+[ -f symlinks.done ] || {
+	[ -f ~/.screenrc ] && {
+		cp -n ~/.screenrc{,.bak}
+		rm ~/.screenrc
+	}
+	ln -s ~/code/pats/config/.screenrc ~/
+	
+	[ -f ~/.bashrc ] && {
+		cp -n ~/.bashrc{,.bak}
+		rm ~/.bashrc
+	}
+	ln -s ~/code/pats/config/.bashrc ~/
+
+	[ -f /etc/ssh/sshd_config ] && {
+		sudo cp  -n /etc/ssh/sshd_config{,.bak}
+		sudo rm /etc/ssh/sshd_config
+	}
+	sudo ln -s ~/code/pats/config/sshd_config /etc/ssh/
+
+	[ -f /etc/rc.local ] && {
+		sudo cp  -n /etc/rc.local{,.bak}
+		sudo rm /etc/rc.local
+	}
+	sudo ln -s ~/code/pats/config/rc.local /etc/rc.local
+
+	sudo ln -s ~/code/pats/config/45-pats_mm.rules /lib/udev/rules.d/
+
+	touch symlinks.done
+}
+
+popd
+
+sudo apt-get autoremove -y
+sudo apt-get clean -y
+
+set +x
+echo "***********************************************************"
+echo All done!. Reboot, or run:
+echo sudo systemctl restart ssh.service
+echo sudo udevadm control --reload-rules && udevadm trigger
+echo "***********************************************************"
