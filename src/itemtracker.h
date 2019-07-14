@@ -27,11 +27,11 @@ class ItemTracker {
 public:
 
     struct BlobProps {
-        float x,y,size,pixel_max;
-        BlobProps(cv::Point2f pt, float blob_size,float blob_pixel_max){
+        float x,y,radius,pixel_max;
+        BlobProps(cv::Point2f pt, float area,float blob_pixel_max){
             x = pt.x;
             y = pt.y;
-            size = blob_size;
+            radius = sqrtf(area);
             pixel_max = blob_pixel_max;
         }
     };
@@ -63,7 +63,7 @@ public:
         ImageItem(BlobProps blob, int frameid, float matching_score, uint keypointid){
             x = blob.x;
             y = blob.y;
-            size = blob.size;
+            size = blob.radius;
             pixel_max = blob.pixel_max;
             score = matching_score;
             frame_id = frameid;
@@ -142,19 +142,15 @@ private:
         int min_disparity=1;
         int max_disparity=20;
 
-        int roi_min_size = 200;
-        int roi_max_grow = 160;
-        int roi_grow_speed = 64;
+        int static_ignores_dist_thresh = 5;
 
         int score_threshold = 66;
         int background_subtract_zone_factor = 90;
 
         //only for dronetracker:
         int pixel_dist_landing_spot = 0;
-        int pixel_dist_seperation_min = 2;
-        int pixel_dist_seperation_max = 5;
-
-
+        int takeoff_seperation_min = 2;
+        int takeoff_seperation_max = 7;
 
         float version = 2.0f;
 
@@ -164,14 +160,11 @@ private:
             ar(version,
                min_disparity,
                max_disparity,
-               roi_min_size,
-               roi_max_grow,
-               roi_grow_speed,
                score_threshold,
                background_subtract_zone_factor,
                pixel_dist_landing_spot,
-               pixel_dist_seperation_min,
-               pixel_dist_seperation_max);
+               takeoff_seperation_min,
+               takeoff_seperation_max);
         }
 
     };
@@ -219,30 +212,35 @@ private:
     const int smooth_width_vel = 10;
     const int smooth_width_pos = 10;
     const int smooth_width_acc = 45;
+    const int smooth_blob_props_width = 10;
     Smoother disp_smoothed;
     Smoother2 disp_rate_smoothed2;
     bool reset_filters;
     bool reset_disp = false;
 
+
+    Smoother smoother_score;
+    Smoother smoother_brightness;
+
     int detected_after_take_off = 0;
 protected:
+
+    Smoother smoother_im_size;
 
     int n_frames_lost = 100;
     int n_frames_lost_threshold = 10;
     std::ofstream *_logger;
     VisionData * _visdat;
-    int roi_size_cnt = 0;
     bool initialized = false;
 
     const float certainty_factor = 1.1f; // TODO: tune
     const float certainty_init = 0.1f; // TODO: tune
     const int path_buf_size = 30;
 
-    bool _enable_roi = true;
     bool _enable_depth_background_check = true;
 
     bool _tracking = false;
-    bool _active = false;
+
 
     ImageItem  _image_item;
     WorldItem  _world_item;
@@ -269,6 +267,7 @@ public:
     void close (void);
     void init(std::ofstream *logger, VisionData *_visdat, std::string name);
     virtual void track(double time);
+    bool check_ignore_blobs(BlobProps * pbs);
     void append_log();
 
     uint track_history_max_size = VIDEOFPS;
@@ -283,14 +282,25 @@ public:
     ImageItem image_item(){return _image_item;}
     WorldItem world_item(){return _world_item;}
     void image_item(ImageItem t){_image_item = t;}
+    void image_item_invalidize(){_image_item.valid = false;}
 
     float score_threshold() {return static_cast<float>(settings.score_threshold) / 1e3f;}
 
     float score(BlobProps blob) {
-        ImagePredictItem ipi = predicted_image_path.back();
-        float dist = sqrtf(powf(ipi.x-blob.x,2)+powf(ipi.y-blob.y,2));
-        float im_size_diff = fabs(_world_item.size_in_image() - blob.size) / blob.size; // TODO: use prediction for size as well
+        float dist = sqrtf(powf(_image_item.x-blob.x,2)+powf(_image_item.y-blob.y,2));
+        float im_size_diff = fabs(_image_item.size - blob.radius) / (blob.radius + _image_item.size);
         float score = 1.f / (dist + 5.f*im_size_diff); // TODO: certainty
+
+        if (predicted_image_path.size()>0){
+            ImagePredictItem ipi = predicted_image_path.back();
+            float dist_pred = sqrtf(powf(ipi.x-blob.x,2)+powf(ipi.y-blob.y,2));
+            float ps = smoother_im_size.latest();
+            float im_size_diff_pred = fabs(ps - blob.radius) / (blob.radius+ps);
+            float score_pred = 1.f / (dist_pred + 5.f*im_size_diff_pred); // TODO: certainty
+            if (score_pred > score)
+                score = score_pred;
+        }
+
         return score;
     }
 

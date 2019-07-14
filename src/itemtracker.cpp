@@ -85,6 +85,10 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     smoother_accY.init(smooth_width_acc);
     smoother_accZ.init(smooth_width_acc);
 
+    smoother_im_size.init(smooth_blob_props_width);
+    smoother_score.init(smooth_blob_props_width);
+    smoother_brightness.init(smooth_blob_props_width);
+
     find_result.best_image_locationL.pt.x = IMG_W/2/IMSCALEF;
     find_result.best_image_locationL.pt.y = IMG_H/2/IMSCALEF;
     find_result.disparity = 0;
@@ -149,6 +153,10 @@ void ItemTracker::update_world_candidate(){
     if (_image_item.valid) {
         _image_item.disparity = stereo_match(_image_item.pt(),_visdat->diffL,_visdat->diffR,find_result.disparity);
         w.iti.disparity = _image_item.disparity; // hmm
+        if (_image_item.size>=0)
+            smoother_im_size.addSample(_image_item.size);
+        smoother_score.addSample(_image_item.score);
+        smoother_brightness.addSample(_image_item.pixel_max);
 
         if (_image_item.disparity < settings.min_disparity || _image_item.disparity > settings.max_disparity){
             w.disparity_in_range = false;
@@ -206,15 +214,9 @@ void ItemTracker::track(double time) {
         n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
         t_prev_tracking = time; // update dt only if item was detected
         n_frames_tracking++;
-        roi_size_cnt = 0;
     } else {
-
-        roi_size_cnt ++; //TODO: same as n_frames_lost?
         n_frames_lost++;
         n_frames_tracking = 0;
-
-        if (roi_size_cnt > settings.roi_max_grow)
-            roi_size_cnt = settings.roi_max_grow;
 
         if( n_frames_lost >= n_frames_lost_threshold || !_tracking ) {
             _tracking = false;
@@ -286,13 +288,7 @@ void ItemTracker::predict(float dt, int frame_id) {
 
     float certainty;
     if (predicted_image_path.size() > 0.f) {
-        if (roi_size_cnt == 1 )
-            certainty   = predicted_image_path.back().certainty - certainty_init;
-        else if (roi_size_cnt > 1 )
-            certainty  = 1-((1 - predicted_image_path.back().certainty) * certainty_factor); // certainty_factor times less certain that the previous prediction. The previous prediction certainty is updated with an meas vs predict error score
-        else {
-            certainty = 1-((1 - predicted_image_path.back().certainty) / certainty_factor);
-        }
+        certainty  = 1-((1 - predicted_image_path.back().certainty) * certainty_factor); // certainty_factor times less certain that the previous prediction. The previous prediction certainty is updated with an meas vs predict error score
     }   else {
         certainty = certainty_init;
     }
@@ -595,6 +591,22 @@ void ItemTracker::reset_tracker_ouput(double time) {
     track_history.push_back(data);
     init_kalman();
 }
+
+bool ItemTracker::check_ignore_blobs(BlobProps * pbs) {
+    bool in_ignore_zone = false;
+    for (uint k=0; k<ignores_for_me.size();k++){
+        cv::Point2f p_ignore = ignores_for_me.at(k).p;
+        float dist_ignore = sqrtf(powf(p_ignore.x-pbs->x,2)+powf(p_ignore.y-pbs->y,2));
+        if (dist_ignore < settings.static_ignores_dist_thresh){ // TODO: make this distance thresh dependent on startup size of drone in the image
+            // FIXME: move to manager pbs->ignored = true;
+            ignores_for_me.at(k).was_used = true;
+            in_ignore_zone = true;
+        }
+    }
+
+    return in_ignore_zone;
+}
+
 
 void ItemTracker::close () {
     if (initialized){

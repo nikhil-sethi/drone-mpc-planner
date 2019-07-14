@@ -11,9 +11,6 @@ void InsectTracker::init(std::ofstream *logger, VisionData *visdat) {
 }
 void InsectTracker::init_settings() {
     settings.min_disparity=1;
-    settings.roi_min_size = 100;
-    settings.roi_max_grow = 160;
-    settings.roi_grow_speed = 100;
 }
 
 void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) {

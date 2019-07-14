@@ -64,6 +64,8 @@ public:
         return n_frames_lost > n_frames_lost_threshold;;
     }
 
+    float smoothed_size_image(){return smoother_im_size.latest();}
+
 };
 
 

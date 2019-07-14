@@ -9,9 +9,6 @@ bool DroneTracker::init(std::ofstream *logger, VisionData *visdat) {
     return false;
 }
 void DroneTracker::init_settings() {
-    settings.roi_min_size = 150;
-    settings.roi_max_grow = 50;
-    settings.roi_grow_speed = 64;
     settings.background_subtract_zone_factor = 97;
 }
 
@@ -27,7 +24,6 @@ void DroneTracker::track(double time, bool drone_is_active) {
         _drone_tracking_status = dts_inactive;
         break;
     }  case dts_inactive: {
-        roi_size_cnt = 0; // don't grow roi in this stage
         start_take_off_time = time;
         predicted_image_path.clear();
         path.clear();
@@ -70,21 +66,20 @@ void DroneTracker::track(double time, bool drone_is_active) {
             }
 
             float dist2take_off = sqrt(pow(_image_item.x - drone_startup_im_location().x,2)+pow(_image_item.y - drone_startup_im_location().y,2));
-            if (dist2take_off > settings.pixel_dist_seperation_min + _drone_blink_image_size/2 &&
-                    dist2take_off < 2* _drone_blink_image_size &&
-                    _image_item.size > _drone_blink_image_size*0.75f ){
+            if (dist2take_off > settings.takeoff_seperation_min * _drone_blink_image_size &&
+                    dist2take_off < settings.takeoff_seperation_max* _drone_blink_image_size &&
+                    _image_item.size > _drone_blink_image_size*0.5f ){
                 drone_detected_near_takeoff_spot = true;
                 ignores_for_other_trkrs.push_back(IgnoreBlob(_image_item.pt(),time+taking_off_ignore_timeout, IgnoreBlob::drone_taking_off));
-            } else if (dist2take_off < settings.pixel_dist_seperation_max + DRONE_IM_START_SIZE){
+            } else if (dist2take_off < settings.takeoff_seperation_max + _drone_blink_image_size){
                 ignores_for_other_trkrs.push_back(IgnoreBlob(_image_item.pt(),time+taking_off_ignore_timeout, IgnoreBlob::drone_taking_off));
             }
 
             if (takeoff_spot_detected &&drone_detected_near_takeoff_spot ) {
                 _drone_tracking_status = dts_detected;
-                _visdat->delete_from_motion_map(drone_startup_im_location()*IMSCALEF, DRONE_IM_START_SIZE);
+                _visdat->delete_from_motion_map(drone_startup_im_location()*IMSCALEF, ceilf(_drone_blink_image_size*1.1f)*IMSCALEF);
             }
         }
-        roi_size_cnt = 0; // don't grow roi in this stage
         break;
     } case dts_detecting: {
         insert_control_predicted_drone_location();
@@ -97,6 +92,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
     } case dts_detected: {
         insert_control_predicted_drone_location();
         ItemTracker::track(time);
+        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*IMSCALEF,_image_item.size*1.2f*IMSCALEF); // TODO: use this trick also in the blinktracker
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
         else if (!_tracking)

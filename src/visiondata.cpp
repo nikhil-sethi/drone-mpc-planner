@@ -97,8 +97,10 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
 
     if (!(motion_update_iterator++ % (settings.motion_update_iterator_max+1)) && !disable_fading) { // +1 -> prevent 0
         //split negative and positive motion
-        fade(diffL16);
-        fade(diffR16);
+        fade(diffL16, _exclude_drone_from_motion_fading);
+        _exclude_drone_from_motion_fading = false;
+        fade(diffR16,false);
+
     }
 
     if (delete_motion){
@@ -124,7 +126,25 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
     lock_data.unlock();
 }
 
-void VisionData::fade(cv::Mat diff16) {
+void VisionData::fade(cv::Mat diff16, bool exclude_drone) {
+    cv::Mat drone_roi;
+    cv::Rect rec ;
+    if (exclude_drone) {
+        cv::Point r(exclude_drone_from_motion_fading_r,exclude_drone_from_motion_fading_r);
+        cv::Point p = exclude_drone_from_motion_fading_spot;
+
+        rec = cv::Rect(p-r,p+r);
+        if (rec.x < 0)
+            rec.x = 0;
+        if (rec.y < 0)
+            rec.y = 0;
+        if (rec.width + rec.x >= diff16.cols)
+            rec.width = diff16.cols - rec.x;
+        if (rec.height + rec.y >= diff16.rows)
+            rec.height = diff16.rows - rec.y;
+        drone_roi = diff16(rec).clone() ;
+    }
+
     cv::Mat diffL16_neg,diffL16_pos;
     diffL16_pos = min(diff16 >= 1,1);
     diffL16_neg = min(diff16 <= -1,1);
@@ -132,6 +152,10 @@ void VisionData::fade(cv::Mat diff16) {
     diffL16_neg.convertTo(diffL16_neg,CV_16SC1);
     diff16 -= diffL16_pos;
     diff16 += diffL16_neg;
+
+    if (exclude_drone) {
+        drone_roi.copyTo(diff16(rec));
+    }
 }
 
 void VisionData::collect_no_drone_frames(cv::Mat dL) {
@@ -188,4 +212,10 @@ void VisionData::delete_from_motion_map(cv::Point p, int radius) {
     delete_motion = true;
     delete_motion_spot = p;
     delete_motion_r = radius;
+}
+
+void VisionData::exclude_drone_from_motion_fading(cv::Point p, int radius) {
+    _exclude_drone_from_motion_fading = true;
+    exclude_drone_from_motion_fading_spot = p;
+    exclude_drone_from_motion_fading_r = radius;
 }

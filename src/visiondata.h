@@ -65,6 +65,10 @@ private:
     cv::Point delete_motion_spot = {0};
     int delete_motion_r = 0;
 
+    bool _exclude_drone_from_motion_fading = false;
+    cv::Point exclude_drone_from_motion_fading_spot = {0};
+    int exclude_drone_from_motion_fading_r = 0;
+
     bool enable_viz_diff = false;
 
     bool initialized = false;
@@ -72,7 +76,7 @@ private:
     void collect_no_drone_frames(cv::Mat dL);
     void track_avg_brightness(cv::Mat frame, double time);
 
-    void fade(cv::Mat diff16);
+    void fade(cv::Mat diff16, bool exclude_drone);
 
 public:
     cv::Mat frameL,frameR;
@@ -112,6 +116,7 @@ public:
     bool calibrating_background() {return _calibrating_background;}
 
     void delete_from_motion_map(cv::Point p, int radius);
+    void exclude_drone_from_motion_fading(cv::Point p, int radius);
 };
 
 #endif // VIZDAT_H

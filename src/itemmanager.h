@@ -40,21 +40,23 @@ public: cv::Scalar tracker_color( ItemTracker * trkr) {
         processed_blobs(ItemTracker::BlobProps blob){
             pt.x = blob.x;
             pt.y = blob.y;
-            size = blob.size;
+            size = blob.radius;
             pixel_max = blob.pixel_max;
         }
         cv::Point2f pt;
         float size, pixel_max;
 
+        ItemTracker::BlobProps props() {return ItemTracker::BlobProps (pt,size,pixel_max);}
         std::vector<ItemTracker *> trackers;
         bool tracked() { return trackers.size()>0;}
         bool ignored = false;
         cv::Scalar color() {
-            if (ignored)
-                return cv::Scalar(0,128,0);
-            else if (trackers.size() == 0 )
+            if (trackers.size() == 0 ){
+                if (ignored)
+                    return cv::Scalar(0,128,0);
+                else
                     return cv::Scalar(255,255,55);
-            else if (trackers.size()>1)
+            } else if (trackers.size()>1)
                return cv::Scalar(200,255,250);
             ItemTracker * trkr = trackers.at(0);
             if (typeid(*trkr) == typeid(DroneTracker))
@@ -124,7 +126,6 @@ private:
     void update_static_ignores();
     void match_blobs_to_trackers(bool drone_is_active);
     bool tracker_active(ItemTracker * trkr, bool drone_is_active);
-    bool check_ignore_blobs(processed_blobs *pbs, ItemTracker * trkr);
     detection_mode _mode;
 
     InsectTracker * _itrkr;   //tmp

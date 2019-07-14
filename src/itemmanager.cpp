@@ -46,23 +46,7 @@ void ItemManager::update(double time,LogReader::Log_Entry log_entry, bool drone_
         putText(diff_viz,"Ignored",cv::Point(3,diff_viz.rows-48),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,128,0));
         putText(diff_viz,"Untracked",cv::Point(3,diff_viz.rows-60),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(255,255,55));
         putText(diff_viz,"Multitracked",cv::Point(3,diff_viz.rows-72),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(200,255,250));
-        //putText(diff_viz,"W: world err",cv::Point(3,diff_viz.rows-84),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(255,255,255));
     }
-    //find max points in the whole image
-    //for each tracker,
-    //  check if it is not overlapping with a static ignore zone (maybe make this a negative scoring factor), if OK:
-    //      calculate a match based on the distance to its prediction and the last known size (todo: smooth size)
-    //select the max point that has the best score
-
-    //
-    //check if there are conflicts, resolve them somehow
-
-    //for each tracker, update the predicted location
-
-    if (time > 19.63 && time < 19.65) // weird one sample loss of tracking insect
-        std::cout << "bla" << std::endl;
-    if (time > 19.29 && time < 19.31) // weird one small pixel that is detected as drone during take off, the actual drone is ignored
-        std::cout << "bla" << std::endl;
 
     if (_mode != mode_idle){
         update_max_change_points();
@@ -127,7 +111,7 @@ void ItemManager::update_trackers(double time,LogReader::Log_Entry log_entry, bo
             btrkr->track(time);
             if (_mode == mode_locate_drone) {
                 if (btrkr->state() == BlinkTracker::bds_found){
-                    _dtrkr->set_drone_landing_location(btrkr->image_item().pt(),btrkr->image_item().size,btrkr->world_item().pt);
+                    _dtrkr->set_drone_landing_location(btrkr->image_item().pt(),btrkr->smoothed_size_image(),btrkr->world_item().pt);
                     _mode = mode_wait_for_insect;
                 }
             } else if (btrkr->ignores_for_other_trkrs.size() == 0){
@@ -161,29 +145,11 @@ void ItemManager::update_static_ignores() {
         _dtrkr->ignores_for_me.push_back(landingspot);
 }
 
-//TODO: move this to itemtracker:
-bool ItemManager::check_ignore_blobs(processed_blobs * pbs, ItemTracker * trkr) {
-    bool in_ignore_zone = false;
-    cv::Point2f p_kp = pbs->pt;
-    for (uint k=0; k<trkr->ignores_for_me.size();k++){
-        cv::Point2f p_ignore = trkr->ignores_for_me.at(k).p;
-        float dist_ignore = sqrtf(powf(p_ignore.x-p_kp.x,2)+powf(p_ignore.y-p_kp.y,2));
-        if (dist_ignore < settings.static_ignores_dist_thresh){ // TODO: make this distance thresh dependent on startup size of drone in the image
-            pbs->ignored = true;
-            trkr->ignores_for_me.at(k).was_used = true;
-            in_ignore_zone = true;
-        }
-    }
-
-    return in_ignore_zone;
-}
-
 void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
 
     //set all trackers to invalid so we can use this as a flag to notice when tracking is lost.
-    ItemTracker::ImageItem invalid;
     for (uint i=0; i<_trackers.size();i++)
-        _trackers.at(i)->image_item(invalid);
+        _trackers.at(i)->image_item_invalidize();
 
     if (_blobs.size()>0) {
         //init keypoints list
@@ -198,12 +164,13 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
             int best_score_j;
 
             if (tracker_active(trkr,drone_is_active) && trkr->tracking()) {
-
                 for (uint j=0; j < pbs.size(); j++) {
                     float score =0;
                     //check against static ignore points
-                    bool in_ignore_zone = check_ignore_blobs(&pbs.at(j),trkr);
-
+                    ItemTracker::BlobProps tmp = pbs.at(j).props();
+                    bool in_ignore_zone = trkr->check_ignore_blobs(&tmp);
+                    if (in_ignore_zone)
+                        pbs.at(j).ignored = true;
                     if (!in_ignore_zone) {
                         score  = trkr->score(_blobs.at(j));
                         if (score > best_score){
@@ -225,6 +192,7 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
                     ItemTracker::ImageItem iti(_blobs.at(best_score_j),_visdat->frame_id,best_score,best_score_j);
                     trkr->image_item(iti);
                     pbs.at(best_score_j).trackers.push_back(trkr);
+
                 }
             }
         }
@@ -238,11 +206,14 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
                         if (!pbs.at(j).tracked()){
 
                             //check against static ignore points
-                            bool in_ignore_zone = check_ignore_blobs(&pbs.at(j),trkr);
+                            ItemTracker::BlobProps tmp = pbs.at(j).props();
+                            bool in_ignore_zone = trkr->check_ignore_blobs(&tmp);
+                            if (in_ignore_zone)
+                                pbs.at(j).ignored = true;
 
                             //TODO: in theory this would be a very nice time to check the world situation as well..
                             if (!in_ignore_zone) {
-                                // the tracker has lost the item, or is still initializing.
+                                //The tracker has lost the item, or is still initializing.
                                 //there is no valid prediction, the score is therefor as low as possible
                                 ItemTracker::ImageItem iti(_blobs.at(j),_visdat->frame_id,0,j);
                                 trkr->image_item(iti);
@@ -255,7 +226,7 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
                                 }
 
                                 // There may be other interesting blobs to consider but since there is no
-                                // history available at this point, its hard to calculate which would
+                                // history available at this point, its hard to calculate which one would
                                 // be better. So just pick the first one...:
                                 break;
                             } else {
@@ -344,7 +315,7 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
                     for (uint j = 0; j < pbs.size();j++){
                         if (i!=j && !pbs.at(j).tracked()){
                             float dist = cv::norm(pbs.at(i).pt-pbs.at(j).pt);
-                            if (dist < pbs.at(i).size + pbs.at(j).size) {
+                            if (dist < 2.f* (pbs.at(i).size + pbs.at(j).size)) {
                                 if(pbs.at(i).size > pbs.at(j).size) {
                                     dtrkr->image_item(ItemTracker::ImageItem (_blobs.at(i),_visdat->frame_id,dtrkr->score(_blobs.at(i)),i));
                                     itrkr->image_item(ItemTracker::ImageItem (_blobs.at(j),_visdat->frame_id,itrkr->score(_blobs.at(j)),j));
@@ -367,6 +338,7 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
                     }
 
                     if (!conflict_resolved) {
+                        _itrkr->make_image_item_size_invald();
                         // hmm, apparantely there is no blob close by, so now there are two possibilities:
                         //1. The insect is lost (e.g. too far, too small, into the flowers, or possibly)
                         //2. The drone is lost (e.g. crashed)
@@ -381,7 +353,7 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
 
         if (enable_viz_diff){
             for (uint i = 0; i < pbs.size(); i++){
-                putText(diff_viz,std::to_string(i),pbs.at(i).pt*IMSCALEF,FONT_HERSHEY_SIMPLEX,0.5,pbs.at(i).color());
+                putText(diff_viz,std::to_string(i),pbs.at(i).pt*IMSCALEF,FONT_HERSHEY_SIMPLEX,0.5,pbs.at(i).color(),2);
                 cv::circle(diff_viz,pbs.at(i).pt*IMSCALEF,3,pbs.at(i).color(),1);
             }
         }
@@ -485,12 +457,12 @@ void ItemManager::update_max_change_points() {
 
                         if (COG2.x == COG2.x) {// if not nan
                             if (enable_viz_max_points){
-                                viz = viz.clone();
-                                circle(viz,COG2*4,1,Scalar(0,0,255),1);
-                                putText(viz,to_string_with_precision(COG2.y*4,0),COG2*4,FONT_HERSHEY_SIMPLEX,0.4,Scalar(100,0,255));
-                                putText(viz,std::to_string(blob_viz_cnt),Point(0, 13),FONT_HERSHEY_SIMPLEX,0.5,Scalar(255,255,255));
+                                cv::Mat viz2 = viz.clone();
+                                circle(viz2,COG2*4,1,Scalar(0,0,255),1);
+                                putText(viz2,to_string_with_precision(COG2.y*4,0),COG2*4,FONT_HERSHEY_SIMPLEX,0.4,Scalar(100,0,255));
+                                putText(viz2,std::to_string(blob_viz_cnt),Point(0, 13),FONT_HERSHEY_SIMPLEX,0.5,Scalar(255,255,255));
                                 blob_viz_cnt++;
-                                vizs_maxs.push_back(viz);
+                                vizs_maxs.push_back(viz2);
                                 viz_pushed = true;
                             }
                             // relative COG back to the _approx frame, and save it:

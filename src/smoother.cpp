@@ -16,6 +16,7 @@ void Smoother::init(int width, float value)
 void Smoother::init(int width)
 {
     init(width,0);
+    _ready = false;
 }
 
 void Smoother::reset()
@@ -69,5 +70,8 @@ float Smoother::addSample(float sample)
 
 float Smoother::latest()
 {
-    return _runner / _kernelsize;
+    if (!_ready)
+        return _runner / _rotater;
+    else
+        return _runner / _kernelsize;
 }

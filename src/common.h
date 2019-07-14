@@ -76,7 +76,6 @@ struct control_data {
     double time;
 };
 
-
 struct my_exit : public std::exception {
     std::string msg;
     my_exit(std::string return_value) : msg(return_value) {}

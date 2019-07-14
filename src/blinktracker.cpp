@@ -14,10 +14,6 @@ bool BlinkTracker::init(VisionData *visdat) {
     return false;
 }
 void BlinkTracker::init_settings() {
-    settings.roi_min_size = 150;
-    settings.roi_max_grow = 50;
-    settings.roi_grow_speed = 64;
-
     settings.score_threshold = 0.1;
 
     settings.min_disparity = 1;
@@ -27,7 +23,6 @@ void BlinkTracker::init_settings() {
 void BlinkTracker::track(double time) {
     switch (_blinking_drone_status) {
     case bds_start: {
-        _enable_roi = false;
         _enable_depth_background_check = false;
         path.clear();
         predicted_image_path.clear();
@@ -44,8 +39,6 @@ void BlinkTracker::track(double time) {
         _blinking_drone_status = bds_found;
         break;
 #endif
-        _enable_roi = false;
-        settings.score_threshold = 0;
         ItemTracker::track(time);
         if (n_frames_lost == 0) {
             _blinking_drone_status = bds_1_blink_off;
@@ -53,23 +46,18 @@ void BlinkTracker::track(double time) {
         }
         break;
     } case bds_1_blink_off: {
-        _enable_roi = true;
-        roi_size_cnt = 0;
         ItemTracker::track(time);
         _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
         break;
     } case bds_1_blink_on: {
-        roi_size_cnt = 0;
         ItemTracker::track(time);
         _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
         break;
     } case bds_2_blink_off: {
-        roi_size_cnt = 0;
         ItemTracker::track(time);
         _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
         break;
     } case bds_2_blink_on: {
-        roi_size_cnt = 0;
         ItemTracker::track(time);
         _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
         break;
@@ -77,12 +65,10 @@ void BlinkTracker::track(double time) {
         _visdat->enable_background_motion_map_calibration(bind_blink_time*0.8);  //0.8 to prevent picking up the upcoming blink in the background calib
         _blinking_drone_status = bds_3_blink_off;
     } FALLTHROUGH_INTENDED; case bds_3_blink_off: {
-        roi_size_cnt = 0;
         ItemTracker::track(time);
         _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
         break;
     } case bds_3_blink_on: {
-        roi_size_cnt = 0;
         ItemTracker::track(time);
         _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
         break;
