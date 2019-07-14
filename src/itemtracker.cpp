@@ -598,7 +598,6 @@ bool ItemTracker::check_ignore_blobs(BlobProps * pbs) {
         cv::Point2f p_ignore = ignores_for_me.at(k).p;
         float dist_ignore = sqrtf(powf(p_ignore.x-pbs->x,2)+powf(p_ignore.y-pbs->y,2));
         if (dist_ignore < settings.static_ignores_dist_thresh){ // TODO: make this distance thresh dependent on startup size of drone in the image
-            // FIXME: move to manager pbs->ignored = true;
             ignores_for_me.at(k).was_used = true;
             in_ignore_zone = true;
         }

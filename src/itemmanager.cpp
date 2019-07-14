@@ -275,7 +275,6 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
                     pbs.at(i).trackers.push_back(bt);
                     break; // only add one tracker per frame
                 }
-                break; //FIXME: is this one supposed to be here?
             } // todo: add support for multiple insect trackers
         }
 
@@ -339,8 +338,9 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
 
                     if (!conflict_resolved) {
                         _itrkr->make_image_item_size_invald();
+                        //TODO: do something sensible in cases 1,2,4:
                         // hmm, apparantely there is no blob close by, so now there are two possibilities:
-                        //1. The insect is lost (e.g. too far, too small, into the flowers, or possibly)
+                        //1. The insect is lost (e.g. too far, too small, into the flowers)
                         //2. The drone is lost (e.g. crashed)
                         //3. The insect and drone are too close to eachother to distinguish
                         //4. We have a kill :)
@@ -348,8 +348,6 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
                 }
             }
         }
-
-        //todo: _image_item.score >= settings.score_threshold/1e6f)
 
         if (enable_viz_diff){
             for (uint i = 0; i < pbs.size(); i++){
@@ -394,13 +392,12 @@ void ItemManager::update_max_change_points() {
 
         Mat bkg_frame_cutout = _visdat->max_uncertainty_map;
         uint8_t bkg = bkg_frame_cutout.at<uint8_t>(maxt.y,maxt.x);
-        if (!_enable_motion_background_check) // TODO: can be replaced by _mode
-            bkg = 0;
 
         int motion_thresh = settings.motion_thresh;
-        if (_mode == mode_locate_drone)
+        if (_mode == mode_locate_drone) {
             motion_thresh = settings.motion_thresh_blink_detect;
-
+            bkg = 0;
+        }
         if (max > bkg+motion_thresh) {
             //find the COG:
             //get the Rect containing the max movement:

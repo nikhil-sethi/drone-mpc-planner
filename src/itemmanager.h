@@ -113,7 +113,6 @@ private:
     VisionData * _visdat;
     bool initialized = false;
     item_manager_settings settings;
-    bool _enable_motion_background_check = true;
 
     bool enable_viz_max_points = false; // flag for enabling the maxs visiualization
     std::vector<cv::Mat> vizs_maxs;
