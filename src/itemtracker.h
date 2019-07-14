@@ -119,6 +119,7 @@ public:
     struct IgnoreBlob {
         enum IgnoreType{
             landing_spot,
+            blink_spot,
             drone_taking_off
         };
         IgnoreBlob() {}

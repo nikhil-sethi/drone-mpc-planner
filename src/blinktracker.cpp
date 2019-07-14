@@ -55,7 +55,6 @@ void BlinkTracker::track(double time) {
     } case bds_1_blink_off: {
         _enable_roi = true;
         roi_size_cnt = 0;
-        blink_location = find_result.best_image_locationL;
         ItemTracker::track(time);
         _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
         break;
@@ -89,6 +88,7 @@ void BlinkTracker::track(double time) {
         break;
     } case bds_dedicated_calib: {
         append_log();
+        ignores_for_other_trkrs.push_back(IgnoreBlob(_image_item.pt(),time+2, IgnoreBlob::blink_spot)); //prevent any residual blinkiness being picked up
 #ifndef MANUAL_DRONE_LOCATE
         _blinking_drone_status = bds_found;
         break;
@@ -103,10 +103,7 @@ void BlinkTracker::track(double time) {
             _blinking_drone_status = bds_found;
         break;
     } case bds_found: {
-        _enable_depth_background_check = true;
         append_log(); // no tracking needed in this stage
-        ignores_for_other_trkrs.push_back(IgnoreBlob(drone_startup_im_location(),-1, IgnoreBlob::landing_spot));
-
 #ifdef MANUAL_DRONE_LOCATE
         _enable_roi = true;
         //TMP solution:
@@ -117,16 +114,10 @@ void BlinkTracker::track(double time) {
         serialize_calib();
         break;
 #endif
-        //save found drone location
-        _drone_blink_image_location = find_result.best_image_locationL.pt;
-        track_data d = Last_track_data();
-        _drone_blink_world_location.x = d.sposX;
-        _drone_blink_world_location.y = d.sposY;
-        _drone_blink_world_location.z = d.sposZ;
-
         break;
     }
     }
+    clean_ignore_blobs(time);
 }
 
 BlinkTracker::blinking_drone_states BlinkTracker::detect_blink(double time, bool found) {
@@ -143,4 +134,18 @@ BlinkTracker::blinking_drone_states BlinkTracker::detect_blink(double time, bool
         return bds_searching;
     }
     return _blinking_drone_status;
+}
+
+
+//Removes all ignore points which timed out
+void BlinkTracker::clean_ignore_blobs(double time){
+    std::vector<IgnoreBlob> new_ignores_for_insect_tracker;
+    for (uint i = 0; i < ignores_for_other_trkrs.size(); i++) {
+        if (ignores_for_other_trkrs.at(i).was_used && ignores_for_other_trkrs.at(i).invalid_after>=0)
+            ignores_for_other_trkrs.at(i).invalid_after += 1./VIDEOFPS;
+        ignores_for_other_trkrs.at(i).was_used = false;
+        if (ignores_for_other_trkrs.at(i).invalid_after > time || ignores_for_other_trkrs.at(i).invalid_after<0)
+            new_ignores_for_insect_tracker.push_back(ignores_for_other_trkrs.at(i));
+    }
+    ignores_for_other_trkrs= new_ignores_for_insect_tracker;
 }

@@ -92,7 +92,11 @@ LogReader::Log_Entry LogReader::createLogEntry(std::string line) {
     Log_Entry entry;
     entry.ID = std::stoi(linedata.at(headmap["ID"]));
     entry.RS_ID = std::stoi(linedata.at(headmap["RS_ID"]));
-    entry.insect_log = std::stoi(linedata.at(headmap["insect_log"]));
+    auto iid = headmap["insect_log"];
+    if (iid)
+        entry.insect_log = std::stoi(linedata.at(iid));
+    else
+        entry.insect_log = false;
     entry.valid = std::stoi(linedata.at(headmap["valid"]));
     entry.joyThrottle = std::stoi(linedata.at(headmap["joyThrottle"]));
     entry.joyRoll = std::stoi(linedata.at(headmap["joyRoll"]));

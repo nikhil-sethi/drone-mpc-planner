@@ -35,6 +35,7 @@ private:
     drone_tracking_states _drone_tracking_status = dts_init;
 
     cv::Point2f _drone_blink_image_location;
+    float _drone_blink_image_size;
     cv::Point3f _drone_blink_world_location;
     bool _landing_pad_location_set = false;
     cv::Point3f _landing_pad_world;
@@ -92,14 +93,6 @@ public:
     cv::Point3f drone_startup_location() {return _drone_blink_world_location;}
     cv::Point3f drone_landing_location() {return _landing_pad_world;}
 
-    void set_drone_landing_location(cv::Point2f im, cv::Point3f world) {
-       _drone_blink_image_location = im;
-       _drone_blink_world_location = world;
-       if (!_landing_pad_location_set){ // for now, assume the first time set is the actual landing location.
-           _landing_pad_world = world;
-           _landing_pad_location_set = true;
-       }
-    }
     bool taking_off(){ return _drone_tracking_status == dts_detecting_takeoff;}
 
     cv::Mat diff_viz;
@@ -118,6 +111,16 @@ public:
         _drone_control_predicted_image_location = drone_control_predicted_image_location;
         _drone_control_predicted_world_location = drone_control_predicted_world_location;
         _drone_control_prediction_valid = true;
+    }
+
+    void set_drone_landing_location(cv::Point2f im, float drone_im_size, cv::Point3f world) {
+        _drone_blink_image_location = im;
+        _drone_blink_image_size = drone_im_size;
+        _drone_blink_world_location = world;
+        if (!_landing_pad_location_set){ // for now, assume the first time set is the actual landing location.
+            _landing_pad_world = world;
+            _landing_pad_location_set = true;
+        }
     }
 
     double time_since_take_off(){return start_take_off_time - current_time;}

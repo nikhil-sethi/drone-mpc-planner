@@ -51,9 +51,9 @@ public: cv::Scalar tracker_color( ItemTracker * trkr) {
         bool ignored = false;
         cv::Scalar color() {
             if (ignored)
-                cv::Scalar(0,128,0);
-            if (trackers.size() == 0 )
-               return cv::Scalar(255,255,55);
+                return cv::Scalar(0,128,0);
+            else if (trackers.size() == 0 )
+                    return cv::Scalar(255,255,55);
             else if (trackers.size()>1)
                return cv::Scalar(200,255,250);
             ItemTracker * trkr = trackers.at(0);
@@ -73,7 +73,7 @@ public: cv::Scalar tracker_color( ItemTracker * trkr) {
         int min_disparity=1;
         int max_disparity=20;
 
-        int static_ignores_dist_thresh = 15; // in res/IMSCALEF resolution
+        int static_ignores_dist_thresh = 5; // in res/IMSCALEF resolution
 
         int max_points_per_frame = 10;
         int radius = 15;
@@ -124,7 +124,7 @@ private:
     void update_static_ignores();
     void match_blobs_to_trackers(bool drone_is_active);
     bool tracker_active(ItemTracker * trkr, bool drone_is_active);
-    bool check_ignore_blobs(processed_blobs pbs, ItemTracker * trkr);
+    bool check_ignore_blobs(processed_blobs *pbs, ItemTracker * trkr);
     detection_mode _mode;
 
     InsectTracker * _itrkr;   //tmp

@@ -70,7 +70,9 @@ void DroneTracker::track(double time, bool drone_is_active) {
             }
 
             float dist2take_off = sqrt(pow(_image_item.x - drone_startup_im_location().x,2)+pow(_image_item.y - drone_startup_im_location().y,2));
-            if (dist2take_off > settings.pixel_dist_seperation_min + DRONE_IM_START_SIZE && dist2take_off < settings.pixel_dist_seperation_max + DRONE_IM_START_SIZE){
+            if (dist2take_off > settings.pixel_dist_seperation_min + _drone_blink_image_size/2 &&
+                    dist2take_off < 2* _drone_blink_image_size &&
+                    _image_item.size > _drone_blink_image_size*0.75f ){
                 drone_detected_near_takeoff_spot = true;
                 ignores_for_other_trkrs.push_back(IgnoreBlob(_image_item.pt(),time+taking_off_ignore_timeout, IgnoreBlob::drone_taking_off));
             } else if (dist2take_off < settings.pixel_dist_seperation_max + DRONE_IM_START_SIZE){
