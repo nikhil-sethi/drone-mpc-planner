@@ -253,7 +253,7 @@ void ItemTracker::append_log() {
     if (_logger->is_open()) {
         //log all image stuff
         if (path.size()>0)
-            (*_logger) << path.back().image_coordinates().x * IMSCALEF << "; " << path.back().image_coordinates().y * IMSCALEF << "; " << find_result.disparity << "; ";
+            (*_logger) << _image_item.x * IMSCALEF << "; " << _image_item.y * IMSCALEF << "; " << _image_item.disparity << "; ";
         else
             (*_logger) << -1 << "; " << -1 << "; " << -1 << "; ";
         if (predicted_image_path.size()>0)

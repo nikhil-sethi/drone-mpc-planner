@@ -49,10 +49,11 @@ public:
             return cv::Point2f(x,y);
         }
         ImageItem() {}
-        ImageItem(float x_, float y_, int frameid){
+        ImageItem(float x_, float y_, float disparity_, int frameid){
             //read from log
             x = x_;
             y = y_;
+            disparity = disparity_;
             size  = -1;
             score = -1;
             pixel_max = -1;

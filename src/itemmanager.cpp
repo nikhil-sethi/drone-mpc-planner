@@ -27,12 +27,20 @@ void ItemManager::init(std::ofstream *logger,VisionData *visdat){
             throw my_exit(serr.str());
         }
     }
+
+    //we have a bit of a situation with the order of initializing the trackers, as this MUST be in the same order as how they are called
+    //in the future this is prolly not sustainable, as we have multiple insect trackers etc
+    //ATM the blinktracker is therefor not logged, as there can be multiple and they disappear after they are done
+    //Anyway, the track() functions are called in a reverse for loop (must be reversed because items are erased from the list),
+    //therefor the init functions must be called in the reverser order as adding them to the _trackers list...
+    //...but since we are 'pushing' the items in, this in the end must be in the normal order. Or not. I guess it's a 50% chance thing.
+    //TODO: make issue to remove this complexity.
     _dtrkr = new DroneTracker();
     _itrkr = new InsectTracker();
     _dtrkr->init(_logger,_visdat);
     _itrkr->init(_logger,_visdat);
-    _trackers.push_back(_dtrkr);
     _trackers.push_back(_itrkr);
+    _trackers.push_back(_dtrkr);
 
     initialized = true;
 }
@@ -61,7 +69,7 @@ void ItemManager::update(double time,LogReader::Log_Entry log_entry, bool drone_
 
     if (enable_viz_max_points && vizs_maxs.size()>0)
         viz_max_points = createColumnImage(vizs_maxs,CV_8UC3,1);
-    else
+    else if(enable_viz_max_points)
         viz_max_points = cv::Mat::zeros(5,100,CV_8UC3);
 
 }

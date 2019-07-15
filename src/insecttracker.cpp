@@ -15,9 +15,9 @@ void InsectTracker::init_settings() {
 
 void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) {
 
-    _image_item = ImageItem (log.ins_im_x/IMSCALEF,log.ins_im_y/IMSCALEF,frame_number);
-    _image_item.disparity = log.ins_disparity;
+    _image_item = ImageItem (log.ins_im_x/IMSCALEF,log.ins_im_y/IMSCALEF,log.ins_disparity,frame_number);
     ImagePredictItem ipi(cv::Point2f(log.ins_pred_im_x/IMSCALEF,log.ins_pred_im_y/IMSCALEF),1,1,frame_number);
+    predicted_image_path.push_back(ipi);
 
     //TODO: recalculate this instead of reading from the log
     WorldItem w;
@@ -28,29 +28,23 @@ void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) 
     w.pt.x = log.ins_pos_x;
     w.pt.y = log.ins_pos_y;
     w.pt.z = log.ins_pos_z;
+    path.push_back(w);
 
     track_data data ={0};
     data.pos_valid = true;
     data.posX = log.ins_pos_x;
     data.posY = log.ins_pos_y;
     data.posZ = log.ins_pos_z;
-
     data.sposX = log.ins_spos_x;
     data.sposY = log.ins_spos_y;
     data.sposZ = log.ins_spos_z;
-
     data.svelX = log.ins_svel_x;
     data.svelY = log.ins_svel_y;
     data.svelZ = log.ins_svel_z;
-
     data.saccX = log.ins_sacc_x;
     data.saccY = log.ins_sacc_y;
     data.saccZ = log.ins_sacc_z;
-
     track_history.push_back(data);
-
-    path.push_back(w);
-    predicted_image_path.push_back(ipi);
 
     n_frames_lost = log.ins_n_frames_lost;
     n_frames_tracking = log.ins_n_frames_tracking;
@@ -65,10 +59,8 @@ void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) 
             predicted_image_path.erase(predicted_image_path.begin());
     }
 
-    if (n_frames_lost > n_frames_lost_threshold || !_tracking) {
+    if (n_frames_lost > n_frames_lost_threshold || !_tracking)
         predicted_image_path.clear();
-        _tracking = false;
-    }
 
     append_log();
 }
