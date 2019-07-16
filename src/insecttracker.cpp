@@ -29,6 +29,7 @@ void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) 
     w.pt.y = log.ins_pos_y;
     w.pt.z = log.ins_pos_z;
     path.push_back(w);
+    _world_item = w;
 
     track_data data ={0};
     data.pos_valid = true;
