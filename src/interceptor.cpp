@@ -113,12 +113,13 @@ void Interceptor::update_close_target(){
     cv::Point3f drone_pos = {dtd.posX,dtd.posY,dtd.posZ};
 
     _intercept_pos = insect_pos;
-    _intercept_vel = insect_vel;
     _intercept_acc = insect_acc;
 
     cv::Point3f vector = insect_pos-drone_pos;
     float norm_vector = norm(vector);
-    _intercept_vel += vector/norm_vector*0.6f; //TODO: check if this work??
+    insect_vel = 0.5f* insect_vel + vector/norm_vector*1.0f;
+    if (norm_vector > 0.05f) // when insect and drone come close to each other, the blobs get fused..., so keep the previous speed vector in that case
+        _intercept_vel = insect_vel;
 
     _horizontal_separation = norm(cv::Point2f(drone_pos.x,drone_pos.z) - cv::Point2f(insect_pos.x,insect_pos.z));
     _vertical_separation = insect_pos.y-drone_pos.y;
@@ -132,7 +133,7 @@ void Interceptor::update_insect_in_range() {
             _intercept_pos.y > _intercept_pos.z*1.5f &&
             _intercept_pos.y < -0.3f &&
             _intercept_pos.z > -3.0f &&
-            _intercept_pos.z < -1.0f) {
+            _intercept_pos.z < -0.5f) {
         _count_insect_not_in_range= 0;
     } else {
         _count_insect_not_in_range++;

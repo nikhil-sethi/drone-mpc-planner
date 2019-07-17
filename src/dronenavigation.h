@@ -210,6 +210,43 @@ public:
         _navigation_status = ns_locate_drone;
     }
 
+    cv::Point2i drone_v_setpoint_im(){
+
+        cv::Point3f tmp = 0.1*setpoint_vel_world + setpoint_pos_world;
+        if (_navigation_status == ns_takeoff || _navigation_status == ns_taking_off || _navigation_status == ns_take_off_completed)
+            tmp = {0};
+
+
+        std::vector<cv::Point3d> world_length,camera_length;
+        cv::Point3d tmpd;
+        float theta = -_visdat->camera_angle * deg2rad;
+        float temp_y = tmp.y * cosf(theta) + tmp.z * sinf(theta);
+        tmpd.z = -tmp.y * sinf(theta) + tmp.z * cosf(theta);
+        tmpd.y = temp_y;
+        tmpd.x = tmp.x;
+
+        world_length.push_back(tmpd);
+        cv::perspectiveTransform(world_length,camera_length,Qfi);
+
+
+        if (camera_length[0].x > IMG_W)
+            camera_length[0].x = IMG_W;
+        if (camera_length[0].y > IMG_H)
+            camera_length[0].y = IMG_H;
+
+        if (camera_length[0].x < 0)
+            camera_length[0].x = 0;
+        if (camera_length[0].y < 0)
+            camera_length[0].y = 0;
+
+
+
+        std::cout << " Im coor: " << camera_length[0] << " ins pos: " << setpoint_pos_world  << " ins vel: " << setpoint_vel_world << std::endl;
+
+        return cv::Point2i(camera_length[0].x,camera_length[0].y);
+
+
+    }
     cv::Point2i drone_setpoint_im(){
         //transform to image coordinates:
 

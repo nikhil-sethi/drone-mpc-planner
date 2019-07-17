@@ -456,6 +456,10 @@ void Visualizer::draw_tracker_viz() {
             } else
                 c2 = cv::Scalar(255,255,255);
             cv::line(frameL_color,p,t,c2,1);
+
+            //draw speed vector:
+            cv::Point2i tv = _dnav->drone_v_setpoint_im();
+            cv::line(frameL_color,p,tv,cv::Scalar(0,255,0),1);
         }
     }
     cv::resize(frameL_color,roi,size);

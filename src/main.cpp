@@ -307,7 +307,7 @@ void handleKey() {
         init_insect_log(49);
         break;
     case '2':
-        init_insect_log(28);
+        init_insect_log(53);
         break;
     case '3':
         init_insect_log(46);
