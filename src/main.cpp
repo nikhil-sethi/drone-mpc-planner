@@ -178,7 +178,7 @@ void process_video() {
         }
 #if VIDEORAWLR && VIDEORAWLR != VIDEOMODE_BAG
 
-        if ((itrkr.foundL || dtr < 1.f) && data.time > 5.f) {
+        if ((trackers.insecttracker()->tracking() || dtr < 1) && data.time > 5) {
             cv::Mat frameL  =cam.frameL.clone();
             cv::putText(frameL,std::to_string(cam.frame_number()),cv::Point(0, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,255);
             frameWritten = output_video_LR.write(frameL,cam.frameR);
