@@ -118,10 +118,7 @@ void Cam::update_playback(void) {
             break;
         }
 
-        std::unique_lock<std::mutex> lk(m);
-        wait_for_image.wait(lk,[this](){return new_frame1 && new_frame2;});
-        new_frame1 = false;
-        new_frame2 = false;
+        lock_newframe.lock(); // wait for a new frame passed by the rs callback
     }
     requested_id_in++;
 
@@ -187,14 +184,17 @@ void Cam::rs_callback_playback(rs2::frame f) {
     }
     lock_frame_data.unlock();
     if (new_frame1 && new_frame2) {
-        wait_for_image.notify_all();
+        lock_newframe.unlock();
+        new_frame1 = false;
+        new_frame2 = false;
     }
+
 
 }
 
 void Cam::update_real(void) {
-    std::unique_lock<std::mutex> lk(m);
-    wait_for_image.wait(lk,[this](){return new_frame1 && new_frame2;});
+
+    lock_newframe.lock(); // wait for a new frame passed by the rs callback
 
     lock_frame_data.lock();
     frameL = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(rs_frameL.get_data()), Mat::AUTO_STEP);
@@ -206,8 +206,6 @@ void Cam::update_real(void) {
     //    std::cout << "-------------frame id: " << _frame_number << " time: " << _frame_time << std::endl;
     lock_frame_data.unlock();
 
-    new_frame1 = false;
-    new_frame2 = false;
     watchdog = true;
 
 }
@@ -240,7 +238,10 @@ void Cam::rs_callback(rs2::frame f) {
             rs_frameL = rs_frameL_cbtmp;
             rs_frameR = rs_frameR_cbtmp;
             lock_frame_data.unlock();
-            wait_for_image.notify_all();
+
+            lock_newframe.unlock(); // signal to processor that a new frame is ready to be processed
+            new_frame1 = false;
+            new_frame2 = false;
             last_sync_id = rs_frameL.get_frame_number();
         }
         else { // somehow frames are not in sync, resync
@@ -275,7 +276,7 @@ void Cam::calibration(rs2::stream_profile infared1,rs2::stream_profile infared2)
 }
 
 void Cam::init() {
-
+lock_newframe.lock();
     std::cout << "Initializing cam" << std::endl;
 
     bag_fn = "./logging/" + bag_fn;
@@ -988,7 +989,7 @@ void Cam::watchdog_thread(void) {
             std::cout << "Watchdog alert! Attempting to continue" << std::endl;
             new_frame1 =true;
             new_frame2 = true;
-            wait_for_image.notify_all();
+            lock_newframe.unlock(); // wait for a new frame passed by the rs callback
             usleep(30000);
             if (!watchdog) {
                 std::cout << "Watchdog alert! Killing the process." << std::endl;

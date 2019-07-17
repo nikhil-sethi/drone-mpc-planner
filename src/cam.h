@@ -141,10 +141,8 @@ private:
 
     uint playback_buffer_size_max = 100;
 
-    std::mutex lock_flags;
+    std::mutex lock_newframe;
     std::mutex lock_frame_data;
-    std::condition_variable wait_for_image;
-    std::mutex m;
     rs2::device dev;
     rs2::pipeline cam;
     bool dev_initialized = false;
