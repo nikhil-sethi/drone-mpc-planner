@@ -105,6 +105,29 @@ void DroneTracker::track(double time, bool drone_is_active) {
 
 }
 
+bool DroneTracker::check_ignore_blobs(BlobProps * pbs, uint id) {
+
+    if ( this->check_ignore_blobs_generic(pbs))
+        return true;
+
+    if (  (_drone_tracking_status == dts_detecting_takeoff_init) || (_drone_tracking_status == dts_detecting_takeoff)  ) {
+
+        cv::Point2f expected_drone_location = _drone_blink_image_location;
+
+
+        float dt = current_time - start_take_off_time;
+        const float full_throttle_im_effect = 13; // how many pixels per second will the drone go up given full throttle
+        expected_drone_location.y+= dt * full_throttle_im_effect;
+
+        float d = sqrtf(powf(expected_drone_location.x-pbs->x,2)+powf(expected_drone_location.y-pbs->y,2));
+        std::cout << id << ": " <<  pbs->x << ",  "  << pbs->y <<  " d: "  << d << std::endl;
+        if (d > 20)
+            return true;
+    }
+    return false;
+
+}
+
 //Removes all ignore points which timed out
 void DroneTracker::clean_ignore_blobs(double time){
     std::vector<IgnoreBlob> new_ignores_for_insect_tracker;

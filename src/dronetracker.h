@@ -123,6 +123,9 @@ public:
         }
     }
 
+
+    bool check_ignore_blobs(BlobProps * pbs, uint id);
+
     double time_since_take_off(){return start_take_off_time - current_time;}
 
     bool delete_me(){return false;}

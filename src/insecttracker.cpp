@@ -126,3 +126,7 @@ void InsectTracker::update_insect_prediction() {
 
 
 }
+
+bool InsectTracker::check_ignore_blobs(BlobProps * pbs, uint id __attribute__((unused))) {
+    return this->check_ignore_blobs_generic(pbs);
+}

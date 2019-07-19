@@ -248,6 +248,7 @@ protected:
 
     float stereo_match(cv::Point closestL, cv::Mat diffL, cv::Mat diffR, float prev_disparity);
     void reset_tracker_ouput(double time);
+    bool check_ignore_blobs_generic(BlobProps * pbs);
     virtual void init_settings() = 0;
 public:
 
@@ -268,7 +269,7 @@ public:
     void close (void);
     void init(std::ofstream *logger, VisionData *_visdat, std::string name);
     virtual void track(double time);
-    bool check_ignore_blobs(BlobProps * pbs);
+    virtual bool check_ignore_blobs(BlobProps * pbs, uint id) = 0;
     void append_log();
 
     uint track_history_max_size = VIDEOFPS;

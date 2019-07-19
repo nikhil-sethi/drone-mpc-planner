@@ -58,6 +58,7 @@ public:
     bool init(VisionData *_visdat);
     void track(double time);
 
+    bool check_ignore_blobs(BlobProps * pbs, uint id);
     bool blinking_drone_located() {return _blinking_drone_status >= bds_found;}
 
     bool delete_me(){

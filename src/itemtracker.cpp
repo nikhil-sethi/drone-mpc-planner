@@ -592,7 +592,7 @@ void ItemTracker::reset_tracker_ouput(double time) {
     init_kalman();
 }
 
-bool ItemTracker::check_ignore_blobs(BlobProps * pbs) {
+bool ItemTracker::check_ignore_blobs_generic(BlobProps * pbs) {
     bool in_ignore_zone = false;
     for (uint k=0; k<ignores_for_me.size();k++){
         cv::Point2f p_ignore = ignores_for_me.at(k).p;

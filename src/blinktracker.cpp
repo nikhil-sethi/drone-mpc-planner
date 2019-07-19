@@ -122,6 +122,9 @@ BlinkTracker::blinking_drone_states BlinkTracker::detect_blink(double time, bool
     return _blinking_drone_status;
 }
 
+bool BlinkTracker::check_ignore_blobs(BlobProps * pbs, uint id __attribute__((unused))) {
+    return this->check_ignore_blobs_generic(pbs);
+}
 
 //Removes all ignore points which timed out
 void BlinkTracker::clean_ignore_blobs(double time){
