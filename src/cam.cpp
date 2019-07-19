@@ -113,8 +113,6 @@ void Cam::update_playback(void) {
         }
 
         if (foundL && foundR){
-            new_frame1 = false;
-            new_frame2 = false;
             break;
         }
 
