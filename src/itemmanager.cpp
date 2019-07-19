@@ -392,19 +392,19 @@ void ItemManager::update_max_change_points() {
     vizs_maxs.clear();
     uint blob_viz_cnt = 0;
 
+    Mat bkg_frame = _visdat->motion_noise_map;
     for (int i = 0; i < settings.max_points_per_frame; i++) {
         Point mint;
         Point maxt;
         double min, max;
         minMaxLoc(diff, &min, &max, &mint, &maxt);
 
-        Mat bkg_frame_cutout = _visdat->max_uncertainty_map;
-        uint8_t bkg = bkg_frame_cutout.at<uint8_t>(maxt.y,maxt.x);
+        uint8_t bkg = bkg_frame.at<uint8_t>(maxt.y,maxt.x);
 
         int motion_thresh = settings.motion_thresh;
         if (_mode == mode_locate_drone) {
             motion_thresh = settings.motion_thresh_blink_detect;
-            bkg = 0;
+            bkg = 0; // motion noise calib is done during blink detection. To prevent interference do not use the bkg motion noise
         }
         if (max > bkg+motion_thresh) {
             //find the COG:

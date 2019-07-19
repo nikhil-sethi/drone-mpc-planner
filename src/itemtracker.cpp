@@ -224,15 +224,22 @@ void ItemTracker::track(double time) {
         }
     }
 
+    if (_tracking) {
+        predict(dt_predict,_visdat->frame_id);
+    }
+
+    cleanup_paths();
+
+    append_log();
+}
+
+//make sure the vectors that contain the path data don't endlesly grow
+void ItemTracker::cleanup_paths() {
     if (path.size() > 0) {
         if (path.begin()->frame_id() < _visdat->frame_id - path_buf_size)
             path.erase(path.begin());
         if (path.begin()->frame_id() > _visdat->frame_id ) //at the end of a realsense video loop, frame_id resets
             path.clear();
-    }
-
-    if (_tracking) {
-        predict(dt_predict,_visdat->frame_id);
     }
 
     if (predicted_image_path.size() > 0) {
@@ -242,11 +249,8 @@ void ItemTracker::track(double time) {
             predicted_image_path.clear();
     }
 
-    append_log();
-
     while (track_history.size() > track_history_max_size)
         track_history.erase(track_history.begin());
-
 }
 
 void ItemTracker::append_log() {

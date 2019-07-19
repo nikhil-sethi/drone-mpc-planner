@@ -187,6 +187,7 @@ private:
     void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, double time, ImageItem *best_match, float disparity);
 
     void update_world_candidate();
+    void cleanup_paths();
 
     float calc_certainty(cv::KeyPoint item);
     void init_kalman();

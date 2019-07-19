@@ -45,7 +45,7 @@ private:
         }
     };
 
-    std::string motion_noise_map_fn = "max_motion_noise.png";
+    std::string motion_noise_map_wfn = "max_motion_noise.png";
     const std::string settingsFile = "../basevisionsettings.dat";
     BaseVisionSettings settings;
 
@@ -81,7 +81,7 @@ private:
 public:
     cv::Mat frameL,frameR;
     cv::Mat frameL_prev,frameR_prev;
-    cv::Mat max_uncertainty_map; // IMSCALEF smaller than original, CV8UC1 max motion background map
+    cv::Mat motion_noise_map;
     cv::Mat diffL,diffR,diffL_small,diffR_small;
 
     cv::Mat viz_frame;
@@ -98,7 +98,7 @@ public:
     bool disable_fading = false;
     float current_time() {return _current_frame_time;}
 
-    void init(bool fromfile, std::string bag_dir, cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, float new_camera_gain, cv::Mat new_depth_background_mm);
+    void init(bool fromfile, cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, float new_camera_gain, cv::Mat new_depth_background_mm);
     void close() {
         if (initialized){
             std::cout << "Closing visdat" << std::endl;

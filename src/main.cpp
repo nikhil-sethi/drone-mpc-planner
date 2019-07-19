@@ -53,9 +53,6 @@
 using namespace cv;
 using namespace std;
 
-/***********Enums****************/
-
-
 /***********Variables****************/
 unsigned char key = 0;
 int imgcount,detectcount; // to measure fps
@@ -132,8 +129,6 @@ void close();
 
 void manual_drone_locater(cv::Mat frame);
 void CallBackFunc(int event, int x, int y, int flags, void* userdata);
-
-
 
 /************ code ***********/
 void process_video() {
@@ -271,8 +266,6 @@ void process_frame(Stereo_Frame_Data data) {
     logger << std::endl;
 
 #ifdef HASSCREEN
-
-
     visualizer.addPlotSample();
     visualizer.update_tracker_data(visdat.frameL,dnav.setpoint,data.time);
 #endif
@@ -422,12 +415,7 @@ void init_sig(){
     sigaction(SIGINT, &sigIntHandler, NULL);
 }
 
-void init(int argc, char **argv) {
-
-#ifdef HASGUI
-    gui.init(argc,argv);
-#endif
-
+void init_loggers(int argc, char **argv) {
     std::string data_in_dir = "";
     if (argc ==2 ) {
         string fn = string(argv[1]);
@@ -447,50 +435,9 @@ void init(int argc, char **argv) {
     logger << "ID;RS_ID;time;insect_log;";
 
     logger_insect.open(data_output_dir  + "insect.log",std::ofstream::out);
+}
 
-#ifndef INSECT_LOGGING_MODE
-#if CAMMODE == CAMMODE_REALSENSE
-    if (fromfile!=log_mode_full)
-        rc.init(fromfile);
-#endif
-#endif
-
-    /*****Start capturing images*****/
-    if (fromfile == log_mode_full) {
-        cam.init(argc,argv);
-    }
-    else
-        cam.init();
-
-    cam.update(); // wait for first frames
-
-    visdat.init(fromfile==log_mode_full,data_in_dir,cam.Qf, cam.frameL,cam.frameR,cam.camera_angle(),cam.measured_gain(),cam.depth_background_mm); // do after cam update to populate frames
-
-    visdat.update(cam.frameL,cam.frameR,cam.frame_time(),cam.frame_number()); //TODO: necessary? If so, streamline
-
-    trackers.init(&logger, &visdat);
-    dnav.init(&logger,&trackers,&dctrl,&visdat);
-    dctrl.init(&logger,fromfile==log_mode_full,&rc,trackers.dronetracker());
-    dprdct.init(&visdat,trackers.dronetracker(),trackers.insecttracker(),&dctrl);
-
-#ifdef MANUAL_DRONE_LOCATE
-    if (!fromfile){
-        manual_drone_locater(cam.frameL);
-        dtrkr.set_drone_location(cv::Point(mouseX,mouseY));
-    }
-#endif
-
-
-    // Ensure that joystick was found and that we can use it
-    if (!dctrl.joystick_ready() && fromfile!=log_mode_full && JOYSTICK_TYPE != RC_NONE) {
-        throw my_exit("no joystick connected.");
-    }
-
-    logger << std::endl;
-#ifdef HASSCREEN
-    visualizer.init(&visdat,&trackers,&dctrl,&dnav,&rc,fromfile==log_mode_full,&dprdct);
-#endif
-
+void init_video_recorders(int argc __attribute__((unused)), char **argv __attribute__((unused))) {
     /*****init the video writer*****/
 #if VIDEORESULTS
     if (output_video_results.init(argc,argv,VIDEORESULTS, data_output_dir + "videoResult.avi",visualizer.viz_frame_size().width,visualizer.viz_frame_size().height,VIDEOFPS,"192.168.1.255",5000,true)) {throw my_exit("could not open results video");}
@@ -510,6 +457,54 @@ void init(int argc, char **argv) {
         throw my_exit("could not open disparity video");
     }
 #endif
+}
+
+void init(int argc, char **argv) {
+
+    init_loggers(argc,argv);
+
+#ifdef HASGUI
+    gui.init(argc,argv);
+#endif
+
+#ifndef INSECT_LOGGING_MODE
+#if CAMMODE == CAMMODE_REALSENSE
+    if (fromfile!=log_mode_full)
+        rc.init(fromfile);
+#endif
+#endif
+
+    /*****Start capturing images*****/
+    if (fromfile == log_mode_full)
+        cam.init(argc,argv);
+    else
+        cam.init();
+    cam.update(); // wait for first frames
+
+    visdat.init(fromfile==log_mode_full,cam.Qf, cam.frameL,cam.frameR,cam.camera_angle(),cam.measured_gain(),cam.depth_background_mm); // do after cam update to populate frames
+    trackers.init(&logger, &visdat);
+    dnav.init(&logger,&trackers,&dctrl,&visdat);
+    dctrl.init(&logger,fromfile==log_mode_full,&rc,trackers.dronetracker());
+    dprdct.init(&visdat,trackers.dronetracker(),trackers.insecttracker(),&dctrl);
+
+#ifdef MANUAL_DRONE_LOCATE
+    if (!fromfile){
+        manual_drone_locater(cam.frameL);
+        dtrkr.set_drone_location(cv::Point(mouseX,mouseY));
+    }
+#endif
+
+    // Ensure that joystick was found and that we can use it
+    if (!dctrl.joystick_ready() && fromfile!=log_mode_full && JOYSTICK_TYPE != RC_NONE) {
+        throw my_exit("no joystick connected.");
+    }
+
+    logger << std::endl; // this concludes the header log line
+#ifdef HASSCREEN
+    visualizer.init(&visdat,&trackers,&dctrl,&dnav,&rc,fromfile==log_mode_full,&dprdct);
+#endif
+
+    init_video_recorders(argc,argv);
 
     init_thread_pool();
 
@@ -608,9 +603,7 @@ void manual_drone_locater(cv::Mat frame){
             break;
 
     }
-
     cv::destroyWindow("Manual_drone_locator");
-
 }
 
 void CallBackFunc(int event, int x, int y , int flags __attribute__((unused)), void* userdata __attribute__((unused)))

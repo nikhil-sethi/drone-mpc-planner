@@ -7,7 +7,7 @@
 using namespace cv;
 using namespace std;
 
-void VisionData::init(bool fromfile, std::string log_in_dir,cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, float new_camera_gain, cv::Mat new_depth_background_mm){
+void VisionData::init(bool fromfile, cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, float new_camera_gain, cv::Mat new_depth_background_mm){
     Qf = new_Qf;
     frameL = new_frameL.clone();
     frameR = new_frameR.clone();
@@ -21,9 +21,9 @@ void VisionData::init(bool fromfile, std::string log_in_dir,cv::Mat new_Qf, cv::
     camera_gain = new_camera_gain;
 
     if (fromfile)
-        motion_noise_map_fn = log_in_dir + "/" +  motion_noise_map_fn;
+        motion_noise_map_wfn = "./logging/replay_" + motion_noise_map_wfn;
     else
-        motion_noise_map_fn = "./logging/" + motion_noise_map_fn;
+        motion_noise_map_wfn = "./logging/" + motion_noise_map_wfn;
 
     if (checkFileExist(settingsFile)) {
         std::ifstream is(settingsFile, std::ios::binary);
@@ -48,7 +48,7 @@ void VisionData::init(bool fromfile, std::string log_in_dir,cv::Mat new_Qf, cv::
     frameR.convertTo(frameR16, CV_16SC1);
     diffL16 = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
     diffR16 = cv::Mat::zeros(cv::Size(frameR.cols,frameR.rows),CV_16SC1);
-    max_uncertainty_map = cv::Mat::zeros(smallsize,CV_8UC1);
+    motion_noise_map = cv::Mat::zeros(smallsize,CV_8UC1);
     diffL16_back = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
 
 #ifdef TUNING
@@ -170,23 +170,23 @@ void VisionData::collect_no_drone_frames(cv::Mat dL) {
     diffL_back.convertTo(diffL_back, CV_8UC1);
     cv::resize(diffL_back,diffL_back,smallsize);
 
-    cv::Mat mask = diffL_back > max_uncertainty_map;
-    diffL_back.copyTo(max_uncertainty_map,mask);
+    cv::Mat mask = diffL_back > motion_noise_map;
+    diffL_back.copyTo(motion_noise_map,mask);
 
     double minv,maxv;
-    cv::minMaxLoc(max_uncertainty_map,&minv,&maxv);
+    cv::minMaxLoc(motion_noise_map,&minv,&maxv);
     if (maxv > 100)
         std::cout << "Warning: max background motion during calibration too high: " << maxv << std::endl;
 
     if (_current_frame_time > calibrating_background_end_time) {
         _calibrating_background = false;
-        imwrite(motion_noise_map_fn,max_uncertainty_map);
+        imwrite(motion_noise_map_fn,motion_noise_map);
     }
 
 }
 
 void VisionData::enable_background_motion_map_calibration(double duration){
-    max_uncertainty_map = cv::Mat::zeros(smallsize,CV_8UC1);
+    motion_noise_map = cv::Mat::zeros(smallsize,CV_8UC1);
     diffL16_back = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
     calibrating_background_end_time = _current_frame_time+duration;
     _calibrating_background = true;
