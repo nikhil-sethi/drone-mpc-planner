@@ -164,9 +164,11 @@ void process_video() {
             handleKey();
         }
 #endif
+        tp[0].m1.lock();
         tp[0].data = data;
         tp[0].data_is_new = true;
         tp[0].new_data.notify_one();
+        tp[0].m1.unlock();
 
         int frameWritten = 0;
         static bool new_recording = false;
@@ -374,8 +376,10 @@ void pool_worker(int id ){
         if (key == 27)
             break;
         process_frame(tp->data);
+        tp[id].m2.lock();
         tp[id].data_is_processed = true;
         tp[id].data_processed.notify_one();
+        tp[id].m2.unlock();
     }
 }
 bool threads_initialised = false;
