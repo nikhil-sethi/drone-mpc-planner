@@ -121,9 +121,14 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
     // Altitude Control - Y
     posErrY = data.sposY - setpoint_pos.y;              // position error
     vely_sp = posErrY*params.throttle_Pos/1000.f;       // (inversed) desired velocity
-    velErrY = data.svelY + vely_sp;// - setpoint_vel.y;    // velocity error
+    velErrY = data.svelY + vely_sp - setpoint_vel.y;    // velocity error
     accy_sp = velErrY*params.throttle_Vel/100;          // (inversed) desired acceleration
     accErrY = data.saccY + accy_sp;// - setpoint_acc.y;    // acceleration error
+
+    float tmptbf = throttle_bank_factor; // if we are higher then the target, use the fact more attitude makes us go down
+    if (posErrY< 0) {
+        tmptbf = 0;
+    }
 
     // Pitch Control - Z
     posErrZ = data.sposZ - setpoint_pos.z;              // position error
@@ -199,9 +204,9 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
 
         //FIXME: test this!
         if (fabs(autoRoll) > fabs(autoPitch))
-            autoThrottle += throttle_bank_factor*abs(autoRoll);
+            autoThrottle += tmptbf*abs(autoRoll);
         else
-            autoThrottle += throttle_bank_factor*abs(autoPitch);
+            autoThrottle += tmptbf*abs(autoPitch);
 
         autoRoll    += JOY_MIDDLE + (params.rollI*rollErrI);
         autoPitch   += PITCH_MIDDLE + (params.pitchI*pitchErrI);
