@@ -393,6 +393,8 @@ void close_thread_pool(){
             tp[i].data_is_processed = true;
             usleep(100);
             tp[i].data_processed.notify_all();
+            tp[i].m1.unlock();
+            tp[i].m2.unlock();
         }
         for (uint i = 0; i < NUM_OF_THREADS; i++) {
             tp[i].thread->join();
