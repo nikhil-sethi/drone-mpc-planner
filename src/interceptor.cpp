@@ -33,6 +33,10 @@ void Interceptor::update(bool drone_at_base) {
 
         update_far_target(drone_at_base);
         update_insect_in_range();
+
+        if (_intercept_pos.y< _trackers->dronetracker()->drone_startup_location().y + minimal_height)
+            _intercept_pos.y  = _trackers->dronetracker()->drone_startup_location().y + minimal_height;
+
         if (!_count_insect_not_in_range)
             _interceptor_state = is_move_to_intercept;
         break;
@@ -48,13 +52,13 @@ void Interceptor::update(bool drone_at_base) {
            break;
          }
 
-         if (fabs(_horizontal_separation)<0.5f && fabs(_vertical_separation)<0.4f){
+         if (fabs(_horizontal_separation)<0.3f && fabs(_vertical_separation)<0.8f){
              _interceptor_state = is_close_chasing;
          } else
              break;
 
-         if (_intercept_pos.y< _trackers->dronetracker()->drone_startup_location().y + 0.15f)
-             _intercept_pos.y  = _trackers->dronetracker()->drone_startup_location().y + 0.15f;
+         if (_intercept_pos.y< _trackers->dronetracker()->drone_startup_location().y + minimal_height)
+             _intercept_pos.y  = _trackers->dronetracker()->drone_startup_location().y + minimal_height;
 
     } FALLTHROUGH_INTENDED; case is_close_chasing: {
         if  (!_trackers->insecttracker()->tracking()) {
@@ -63,8 +67,8 @@ void Interceptor::update(bool drone_at_base) {
         }
          update_close_target();
          update_insect_in_range();
-         if (_intercept_pos.y< _trackers->dronetracker()->drone_startup_location().y + 0.15f)
-             _intercept_pos.y  = _trackers->dronetracker()->drone_startup_location().y + 0.15f;
+         if (_intercept_pos.y< _trackers->dronetracker()->drone_startup_location().y + minimal_height)
+             _intercept_pos.y  = _trackers->dronetracker()->drone_startup_location().y + minimal_height;
         if (_count_insect_not_in_range>5){
            _interceptor_state = is_waiting_in_reach_zone;
            break;
@@ -117,7 +121,8 @@ void Interceptor::update_close_target(){
 
     cv::Point3f vector = insect_pos-drone_pos;
     float norm_vector = norm(vector);
-    insect_vel = 0.5f* insect_vel + vector/norm_vector*1.0f;
+    insect_vel.y = 0;
+    insect_vel = 0.5f* insect_vel + vector/norm_vector*1.5f;
     if (norm_vector > 0.05f) // when insect and drone come close to each other, the blobs get fused..., so keep the previous speed vector in that case
         _intercept_vel = insect_vel;
 

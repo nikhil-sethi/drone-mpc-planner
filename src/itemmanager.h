@@ -79,7 +79,7 @@ public: cv::Scalar tracker_color( ItemTracker * trkr) {
 
         int max_points_per_frame = 10;
         int radius = 15;
-        int motion_thresh = 25;
+        int motion_thresh = 16;
         int motion_thresh_blink_detect = 30;
 
         int background_subtract_zone_factor = 90;

@@ -44,6 +44,12 @@ void DroneNavigation::init(std::ofstream *logger, ItemManager * trackers, DroneC
     //Farther away from the camera is negative Z, positive Z should be impossible because the camera can't see that.
 
     //The flight plan will be repeated indefinetely, unless there is a landing waypoint somewhere in the list.
+
+    setpoints.push_back(waypoint(cv::Point3f(-2,-1.0f,-3.5f),30));
+    setpoints.push_back(waypoint(cv::Point3f(2,-1.0f,-3.5f),30));
+    setpoints.push_back(waypoint(cv::Point3f(-2,-1.0f,-3.5f),30));
+    setpoints.push_back(waypoint(cv::Point3f(2,-1.0f,-3.5f),30));
+
     setpoints.push_back(waypoint(cv::Point3f(0,-1.0f,-1.5f),30));
     setpoints.push_back(landing_waypoint());
 

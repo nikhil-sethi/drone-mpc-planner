@@ -146,7 +146,7 @@ private:
         int static_ignores_dist_thresh = 5;
 
         int score_threshold = 66;
-        int background_subtract_zone_factor = 90;
+        int background_subtract_zone_factor = 97;
 
         //only for dronetracker:
         int pixel_dist_landing_spot = 0;

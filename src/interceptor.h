@@ -39,6 +39,7 @@ private:
 
     uint _count_insect_not_in_range = 0;
     double _tti =-1;
+    const float minimal_height = 0.2f;
 
     void intercept_spiral();
     float calc_tti(cv::Point3f insect_pos, cv::Point3f insect_vel, cv::Point3f drone_pos, cv::Point3f drone_vel, bool drone_taking_off);
