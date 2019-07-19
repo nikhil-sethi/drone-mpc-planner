@@ -176,7 +176,7 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
                     float score =0;
                     //check against static ignore points
                     ItemTracker::BlobProps tmp = pbs.at(j).props();
-                    bool in_ignore_zone = trkr->check_ignore_blobs(&tmp);
+                    bool in_ignore_zone = trkr->check_ignore_blobs(&tmp,j);
                     if (in_ignore_zone)
                         pbs.at(j).ignored = true;
                     if (!in_ignore_zone) {
@@ -215,7 +215,7 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
 
                             //check against static ignore points
                             ItemTracker::BlobProps tmp = pbs.at(j).props();
-                            bool in_ignore_zone = trkr->check_ignore_blobs(&tmp);
+                            bool in_ignore_zone = trkr->check_ignore_blobs(&tmp,j);
                             if (in_ignore_zone)
                                 pbs.at(j).ignored = true;
 

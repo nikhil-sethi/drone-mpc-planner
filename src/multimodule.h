@@ -104,11 +104,11 @@ public:
         if (b){
             sw_bind.Restart();
             if (cycles_until_bind == 0)
-                cycles_until_bind = 5;
+                cycles_until_bind = 80;
         }
         if (!b){
             if (cycles_until_bind == 0)
-                cycles_until_bind = -5;
+                cycles_until_bind = -80;
         }
     }
     void arm(bool v) {
