@@ -78,7 +78,7 @@ public: cv::Scalar tracker_color( ItemTracker * trkr) {
         int static_ignores_dist_thresh = 5; // in res/IMSCALEF resolution
 
         int max_points_per_frame = 10;
-        int radius = 10;
+        int radius = 15;
         int motion_thresh = 20;
         int motion_thresh_blink_detect = 30;
 

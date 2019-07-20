@@ -124,7 +124,7 @@ MainWindow gui;
 void process_frame(Stereo_Frame_Data data);
 void process_video();
 int main( int argc, char **argv);
-void handleKey();
+void handle_key();
 void close();
 
 void manual_drone_locater(cv::Mat frame);
@@ -156,7 +156,7 @@ void process_video() {
         static int speed_div;
         if (!(speed_div++ % 4) || fromfile!=log_mode_none){
             visualizer.paint();
-            handleKey();
+            handle_key();
         }
 #endif
         tp[0].m1.lock();
@@ -276,7 +276,7 @@ void init_insect_log(int n){
     fromfile = log_mode_insect_only;
 }
 
-void handleKey() {
+void handle_key() {
     if (key == 27) { // set by an external ctrl-c
         return;
     }
@@ -546,6 +546,19 @@ void close() {
     std::cout <<"Closed"<< std::endl;
 }
 
+void wait_for_dark() {
+    std::cout << "Insect logging mode, check if dark." << std::endl;
+    while(true) {
+        float expo = cam.measure_auto_exposure();
+        auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
+        std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << " Measured exposure: " << expo << std::endl;
+        if (expo >10000) {
+            break;
+        }
+        usleep(60000000); // measure every 1 minute
+    }
+}
+
 int main( int argc, char **argv )
 {
     //manually reset the rs camera from the command line with the rs_reset command
@@ -561,17 +574,7 @@ int main( int argc, char **argv )
         }
 
 #ifdef INSECT_LOGGING_MODE
-    //don't start  until lights are off
-    std::cout << "Insect logging mode, check if dark." << std::endl;
-    while(true) {
-        float expo = cam.measure_auto_exposure();
-        auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
-        std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << " Measured exposure: " << expo << std::endl;
-        if (expo >10000) {
-            break;
-        }
-        usleep(60000000); // measure every 1 minute
-    }
+    wait_for_dark();
 #endif
 
     try {
@@ -579,7 +582,7 @@ int main( int argc, char **argv )
         process_video();
     } catch(my_video_ended) {
         std::cout << "Video ended" << std::endl;
-        key = 27;
+        key = 27; //secret signal to close everything (it's the esc key)
     } catch(my_exit const &e) {
         key = 27;
         close();
