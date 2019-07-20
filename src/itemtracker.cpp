@@ -191,10 +191,11 @@ void ItemTracker::update_world_candidate(){
     }
 
     if (_world_item.valid){
-        if (_image_item.size>=0)
+        if (!_image_item.blob_is_fused) {
             smoother_im_size.addSample(_image_item.size);
+            smoother_brightness.addSample(_image_item.pixel_max);
+        }
         smoother_score.addSample(_image_item.score);
-        smoother_brightness.addSample(_image_item.pixel_max);
     }
 
 }

@@ -41,13 +41,20 @@ void DroneTracker::track(double time, bool drone_is_active) {
         }
     } FALLTHROUGH_INTENDED; case dts_detecting_takeoff_init: {
         // remove the indefinite startup location and replace with a time out
+        start_take_off_time = time;
         ignores_for_other_trkrs.clear();
         ignores_for_other_trkrs.push_back(IgnoreBlob(drone_startup_im_location(),time+startup_location_ignore_timeout, IgnoreBlob::landing_spot));
         ignores_for_me.push_back(IgnoreBlob(drone_startup_im_location(),time+startup_location_ignore_timeout, IgnoreBlob::landing_spot));
         _drone_tracking_status = dts_detecting_takeoff;
     } FALLTHROUGH_INTENDED; case dts_detecting_takeoff: {
-        insert_control_predicted_drone_location();
         ItemTracker::track(time);
+        if (!_world_item.valid){
+            cv::Point2f expected_drone_location = _drone_blink_image_location;
+            float dt = current_time - start_take_off_time;
+            const float full_throttle_im_effect = 13; // how many pixels per second will the drone go up given full throttle
+            expected_drone_location.y+= dt * full_throttle_im_effect;
+            _image_predict_item = ImagePredictItem(expected_drone_location,1,DRONE_IM_START_SIZE,255,_visdat->frame_id);
+        }
 
         if (enable_viz_diff){
             cv::Point2f tmpp = drone_startup_im_location();
@@ -111,11 +118,9 @@ bool DroneTracker::check_ignore_blobs(BlobProps * pbs, uint id) {
     if ( this->check_ignore_blobs_generic(pbs))
         return true;
 
-    if (  (_drone_tracking_status == dts_detecting_takeoff_init) || (_drone_tracking_status == dts_detecting_takeoff)  ) {
+    if (taking_off()) {
 
         cv::Point2f expected_drone_location = _drone_blink_image_location;
-
-
         float dt = current_time - start_take_off_time;
         const float full_throttle_im_effect = 13; // how many pixels per second will the drone go up given full throttle
         expected_drone_location.y+= dt * full_throttle_im_effect;

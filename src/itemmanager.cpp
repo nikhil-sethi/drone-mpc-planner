@@ -6,7 +6,7 @@ void ItemManager::init(std::ofstream *logger,VisionData *visdat){
     _visdat = visdat;
     _logger = logger;
 #ifdef HASSCREEN
-    enable_viz_max_points = false;
+    enable_viz_max_points = true;
     enable_viz_diff = true;
 #endif
     _settingsFile = "../itemmanager_settings.dat";
@@ -345,7 +345,14 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
                     }
 
                     if (!conflict_resolved) {
-                        _itrkr->make_image_item_size_invald();
+
+                        ItemTracker::ImageItem iid = dtrkr->image_item();
+                        iid.blob_is_fused = true;
+                        dtrkr->image_item(iid);
+                        ItemTracker::ImageItem iii = itrkr->image_item();
+                        iii.blob_is_fused = true;
+                        itrkr->image_item(iii);
+
                         //TODO: do something sensible in cases 1,2,4:
                         // hmm, apparantely there is no blob close by, so now there are two possibilities:
                         //1. The insect is lost (e.g. too far, too small, into the flowers)
@@ -392,6 +399,20 @@ void ItemManager::update_max_change_points() {
     vizs_maxs.clear();
     uint blob_viz_cnt = 0;
 
+    bool enable_take_off_split = false;
+    bool enable_insect_drone_split = false;
+    float drn_ins_split_thresh;
+
+    if (_dtrkr->image_predict_item().valid) {
+        if (_dtrkr->taking_off())
+            enable_take_off_split = true;
+        else  if ( _itrkr->image_predict_item().valid)
+            if (norm(_dtrkr->image_predict_item().pt() - _itrkr->image_predict_item().pt()) < settings.radius){
+                enable_insect_drone_split = true;
+                drn_ins_split_thresh = _itrkr->image_predict_item().pixel_max*0.2f;
+            }
+    }
+
     Mat bkg_frame = _visdat->motion_noise_map;
     for (int i = 0; i < settings.max_points_per_frame; i++) {
         Point mint;
@@ -420,7 +441,7 @@ void ItemManager::update_max_change_points() {
                     float chance = 1;
                     if (ipi.valid &&ipi.pixel_max < 1.5f * motion_thresh)
                         chance +=chance_multiplier_pixel_max;
-                    if (dist < 10){
+                    if (dist < settings.radius){
                         chance += chance_multiplier_dist;
                     }
                     thresh_res = static_cast<uint8_t>(max) > bkg+(motion_thresh/chance);
@@ -449,17 +470,26 @@ void ItemManager::update_max_change_points() {
             // combine roi & mask:
             Mat cropped = roi & mask;
             Scalar avg = mean(cropped);
+            Scalar avg_bkg =mean(bkg_frame(r2));
+            //blur, to filter out noise
             GaussianBlur(cropped,cropped,Size(5,5),0);
-            mask = cropped > (max-avg(0)) * 0.3; // TODO: factor 0,3 seems to work better than 0,5, but what makes sense here?
-            cropped = mask;
 
-            Moments mo = moments(cropped,true);
+            //threshold to get only pixels that are heigher then the motion noise
+            //mask = cropped > bkg_frame(r2)+1;
+            if (enable_insect_drone_split)
+                mask = cropped > drn_ins_split_thresh +  static_cast<float>(avg_bkg(0));
+            else
+                mask = cropped > (max-avg(0)) * 0.3;
+
+            Moments mo = moments(mask,true);
             Point2f COG = Point2f(static_cast<float>(mo.m10) / static_cast<float>(mo.m00), static_cast<float>(mo.m01) / static_cast<float>(mo.m00));
 
             Mat viz;
             if (enable_viz_max_points){
                 viz = createRowImage({roi,mask},CV_8UC1,4);
                 cvtColor(viz,viz,CV_GRAY2BGR);
+                if (enable_insect_drone_split)
+                    putText(viz,"i-d",Point(0, viz.rows-13),FONT_HERSHEY_SIMPLEX,0.5,Scalar(255,255,255));
             }
             bool viz_pushed = false;
 
@@ -467,41 +497,60 @@ void ItemManager::update_max_change_points() {
             COG.x += r2.x;
             COG.y += r2.y;
 
-            //check if the blob may be multiple blobs, first check distance between COG and max:
-            float dist = pow(COG.x-maxt.x,2) + pow(COG.y-maxt.y,2);
             bool single_blob = true;
             bool COG_is_nan = false;
-            if (dist > 4) {//todo: instead of just check the distance, we could also check the pixel value of the COG, if it is black it is probably multiple blobs
-                //the distance between the COG and the max is quite large, now check if there are multiple contours:
-                vector<vector<Point>> contours;
-                findContours(cropped,contours,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_NONE);
-                if (contours.size()>1) {
-                    //ok, definetely multiple blobs. Split them, and find the COG for each.
-                    single_blob = false;
-                    for (uint j = 0; j< contours.size();j++) {
-                        Moments mo2 = moments(contours.at(j),true);
-                        Point2f COG2 = Point2f(static_cast<float>(mo2.m10) / static_cast<float>(mo2.m00), static_cast<float>(mo2.m01) / static_cast<float>(mo2.m00));
 
-                        if (COG2.x == COG2.x) {// if not nan
-                            if (enable_viz_max_points){
-                                cv::Mat viz2 = viz.clone();
-                                circle(viz2,COG2*4,1,Scalar(0,0,255),1);
-                                putText(viz2,to_string_with_precision(COG2.y*4,0),COG2*4,FONT_HERSHEY_SIMPLEX,0.4,Scalar(100,0,255));
-                                putText(viz2,std::to_string(blob_viz_cnt),Point(0, 13),FONT_HERSHEY_SIMPLEX,0.5,Scalar(255,255,255));
-                                blob_viz_cnt++;
-                                vizs_maxs.push_back(viz2);
-                                viz_pushed = true;
+            if (enable_insect_drone_split || enable_take_off_split) {
+
+                float dist_to_predict = norm(_dtrkr->image_predict_item().pt() - COG);
+                if (dist_to_predict < 10) {
+
+                    //check if the blob may be multiple blobs,
+                    vector<vector<Point>> contours;
+                    findContours(mask,contours,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_NONE); // TODO: do this on the full resolution image
+                    if (contours.size()==1 && enable_insect_drone_split) { // try another threshold value, sometimes we get lucky
+                        drn_ins_split_thresh = _itrkr->image_predict_item().pixel_max*0.3f;
+                        mask = cropped > drn_ins_split_thresh + static_cast<float>(avg_bkg(0));
+                        findContours(mask,contours,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_NONE);
+                    }
+
+                    if (contours.size()>1) {
+                        //ok, definetely multiple blobs. Split them, and find the COG for each.
+                        single_blob = false;
+                        for (uint j = 0; j< contours.size();j++) {
+                            Point2f COG2;
+                            float radius;
+                            if (contours.at(j).size() < 3) { // to prevnt COG nan
+                                COG2 = contours.at(j).at(0);
+                                radius = 1;
+                            } else {
+                                Moments mo2 = moments(contours.at(j),true);
+                                COG2 = Point2f(static_cast<float>(mo2.m10) / static_cast<float>(mo2.m00), static_cast<float>(mo2.m01) / static_cast<float>(mo2.m00));
+                                radius = mo2.m00;
                             }
-                            // relative COG back to the _approx frame, and save it:
-                            COG2.x += r2.x;
-                            COG2.y += r2.y;
-                            _blobs.push_back(ItemTracker::BlobProps(COG2, mo2.m00, max));
 
-                            //remove this COG from the ROI:
-                            circle(diff, COG2, 1, Scalar(0), settings.radius);
+                            if (COG2.x == COG2.x) {// if not nan
+                                if (enable_viz_max_points){
+                                    cv::Mat viz2 = viz.clone();
+                                    circle(viz2,COG2*4,1,Scalar(0,0,255),1); //COG
+                                    circle(viz2,COG2*4,settings.radius*4,Scalar(0,0,255),1);  // remove radius
+                                    putText(viz2,to_string_with_precision(COG2.y*4,0),COG2*4,FONT_HERSHEY_SIMPLEX,0.4,Scalar(100,0,255));
+                                    putText(viz2,std::to_string(blob_viz_cnt) + ", " + std::to_string(j) ,Point(0, 13),FONT_HERSHEY_SIMPLEX,0.5,Scalar(255,255,0));
+                                    blob_viz_cnt++;
+                                    vizs_maxs.push_back(viz2);
+                                    viz_pushed = true;
+                                }
+                                // relative COG back to the _approx frame, and save it:
+                                COG2.x += r2.x;
+                                COG2.y += r2.y;
+                                uchar px_max = diff.at<uchar>(COG2);
+                                _blobs.push_back(ItemTracker::BlobProps(COG2, radius, px_max));
 
-                        } else {
-                            COG_is_nan = true;
+                                //remove this COG from the ROI:
+                                circle(diff, COG2, 1, Scalar(0), settings.radius);
+                            } else {
+                                COG_is_nan = true;
+                            }
                         }
                     }
                 }
@@ -519,12 +568,38 @@ void ItemManager::update_max_change_points() {
                         tmpCOG.x = COG.x - r2.x;
                         tmpCOG.y = COG.y - r2.y;
                         circle(viz,tmpCOG*4,1,Scalar(0,0,255),1);
-                        putText(viz,to_string_with_precision(tmpCOG.y*4,0),tmpCOG*4,FONT_HERSHEY_SIMPLEX,0.4,Scalar(100,0,255));
+                        circle(viz,tmpCOG*4,settings.radius*4,Scalar(0,0,255),1);  // remove radius
+                        putText(viz,to_string_with_precision(tmpCOG.y*4,0),tmpCOG*4,FONT_HERSHEY_SIMPLEX,0.4,Scalar(255,0,0));
                     }
                     //remove this COG from the ROI:
                     circle(diff, COG, 1, Scalar(0), settings.radius);
                 } else {
                     COG_is_nan = true;
+                    if (enable_insect_drone_split){
+			//TODO: below is double code, streamline
+                        for (uint j = 0; j < _trackers.size(); j++) {
+                            ItemTracker::ImagePredictItem ipi = _trackers.at(j)->image_predict_item();
+                            cv::Point2f d;
+                            d.x = ipi.pt().x - maxt.x;
+                            d.y = ipi.pt().y - maxt.y;
+                            float dist = norm(d);
+                            if (dist < settings.radius) {
+                                _blobs.push_back(ItemTracker::BlobProps(maxt, 1,max));
+                                if (enable_viz_max_points) {
+                                    Point2f tmpCOG;
+                                    tmpCOG.x = maxt.x - r2.x;
+                                    tmpCOG.y = maxt.y - r2.y;
+                                    circle(viz,tmpCOG*4,1,Scalar(0,0,255),1);
+                                    circle(viz,tmpCOG*4,settings.radius*4,Scalar(0,0,255),1);  // remove radius
+                                    putText(viz,"maxt " + to_string_with_precision(tmpCOG.y*4,0),tmpCOG*4,FONT_HERSHEY_SIMPLEX,0.4,Scalar(255,0,0));
+                                }
+                                //remove this COG from the ROI:
+                                circle(diff, maxt, 1, Scalar(0), settings.radius);
+                                COG_is_nan = false;
+                                break;
+                            }
+                        }
+                    }
                 }
             }
             if (COG_is_nan)  //remove the actual maximum from the ROI if the COG algorithm failed:

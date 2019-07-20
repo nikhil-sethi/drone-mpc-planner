@@ -41,6 +41,7 @@ public:
         uint keypoint_id;
         float x,y,size,pixel_max,score,disparity = 0;
         bool valid = false;
+        bool blob_is_fused = false;
 
         cv::KeyPoint k(){
             return cv::KeyPoint(x,y,size);
