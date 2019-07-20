@@ -101,10 +101,10 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
         fade(diffR16,false);
     }
 
-    if (delete_motion){
+    if (delete_motion_frame_cnt_duration>0){
         cv::circle(diffL16,delete_motion_spot,delete_motion_r,0,CV_FILLED);
         cv::circle(diffR16,delete_motion_spot,delete_motion_r,0,CV_FILLED); //todo: add disparity
-        delete_motion = false;
+        delete_motion_frame_cnt_duration--;
     }
 
     diffL = abs(diffL16);
@@ -207,10 +207,10 @@ void VisionData::track_avg_brightness(cv::Mat frame,double time) {
     }
 }
 
-void VisionData::delete_from_motion_map(cv::Point p, int radius) {
-    delete_motion = true;
+void VisionData::delete_from_motion_map(cv::Point p, int radius, int duration) {
     delete_motion_spot = p;
     delete_motion_r = radius;
+    delete_motion_frame_cnt_duration = duration;
 }
 
 void VisionData::exclude_drone_from_motion_fading(cv::Point p, int radius) {

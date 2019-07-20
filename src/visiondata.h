@@ -61,9 +61,9 @@ private:
     double prev_time_brightness_check = 0;
     float prev_brightness;
     bool _reset_motion_integration = false;
-    bool delete_motion = false;
     cv::Point delete_motion_spot = {0};
     int delete_motion_r = 0;
+    int delete_motion_frame_cnt_duration = 0;
 
     bool _exclude_drone_from_motion_fading = false;
     cv::Point exclude_drone_from_motion_fading_spot = {0};
@@ -115,7 +115,7 @@ public:
     void enable_background_motion_map_calibration(double duration);
     bool calibrating_background() {return _calibrating_background;}
 
-    void delete_from_motion_map(cv::Point p, int radius);
+    void delete_from_motion_map(cv::Point p, int radius, int duration);
     void exclude_drone_from_motion_fading(cv::Point p, int radius);
 };
 
