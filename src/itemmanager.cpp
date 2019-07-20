@@ -406,7 +406,29 @@ void ItemManager::update_max_change_points() {
             motion_thresh = settings.motion_thresh_blink_detect;
             bkg = 0; // motion noise calib is done during blink detection. To prevent interference do not use the bkg motion noise
         }
-        if (max > bkg+motion_thresh) {
+
+        bool thresh_res = max > bkg+motion_thresh;
+        if (!thresh_res){ // specifcally for the insect tracker, check if there is an increased chance in this area
+            for (uint j = 0; j < _trackers.size(); j++) {
+                ItemTracker::ImagePredictItem ipi = _trackers.at(j)->image_predict_item();
+
+                if (_trackers.at(j)->tracking() && typeid(*_trackers.at(j)) == typeid(InsectTracker)){
+                    cv::Point2f d;
+                    d.x = ipi.pt().x - maxt.x;
+                    d.y = ipi.pt().y - maxt.y;
+                    float dist = norm(d);
+                    float chance = 1;
+                    if (ipi.valid &&ipi.pixel_max < 1.5f * motion_thresh)
+                        chance +=chance_multiplier_pixel_max;
+                    if (dist < 10){
+                        chance += chance_multiplier_dist;
+                    }
+                    thresh_res = static_cast<uint8_t>(max) > bkg+(motion_thresh/chance);
+                }
+            }
+        }
+
+        if (thresh_res) {
             //find the COG:
             //get the Rect containing the max movement:
             Rect r2(maxt.x-settings.radius, maxt.y-settings.radius, settings.radius*2,settings.radius*2);
@@ -418,7 +440,7 @@ void ItemManager::update_max_change_points() {
                 r2.y = 0;
             else if (r2.y+r2.height >= diff.rows)
                 r2.y -= (r2.y+r2.height+1) - diff.rows ;
-            Mat roi(diff,r2); // so, this is the cut out around the max point, in the cut out of _approx roi
+            Mat roi(diff,r2); // so, this is the cut out around the max point
 
             // make a black mask, same size:
             Mat mask = Mat::zeros(roi.size(), roi.type());
@@ -509,7 +531,10 @@ void ItemManager::update_max_change_points() {
                 circle(diff, maxt, 1, Scalar(0), settings.radius);
 
         } else {
-            break; // done searching for maxima, they are too small now
+            if  (static_cast<uint8_t>(max) <= bkg+(motion_thresh/chance_multiplier_total))
+                break; // done searching for maxima, they are too small now
+            else
+                circle(diff, maxt, 1, Scalar(0), settings.radius);
         }
     }
 }

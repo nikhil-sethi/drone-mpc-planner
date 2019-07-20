@@ -16,8 +16,10 @@ void InsectTracker::init_settings() {
 void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) {
 
     _image_item = ImageItem (log.ins_im_x/IMSCALEF,log.ins_im_y/IMSCALEF,log.ins_disparity,frame_number);
-    ImagePredictItem ipi(cv::Point2f(log.ins_pred_im_x/IMSCALEF,log.ins_pred_im_y/IMSCALEF),1,1,frame_number);
+    ImagePredictItem ipi(cv::Point2f(log.ins_pred_im_x/IMSCALEF,log.ins_pred_im_y/IMSCALEF),1,1,255,frame_number);
     predicted_image_path.push_back(ipi);
+    ipi.valid = ipi.x > 0 ;
+    _image_predict_item = ipi;
 
     //TODO: recalculate this instead of reading from the log
     WorldItem w;
@@ -51,18 +53,12 @@ void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) 
     n_frames_tracking = log.ins_n_frames_tracking;
     _tracking = log.ins_foundL;
 
-    if (path.size() > 0) {
-        if (path.begin()->frame_id() < _visdat->frame_id - path_buf_size)
-            path.erase(path.begin());
-    }
-    if (predicted_image_path.size() > 0) {
-        if (predicted_image_path.begin()->frame_id < _visdat->frame_id - path_buf_size)
-            predicted_image_path.erase(predicted_image_path.begin());
-    }
-
-    if (n_frames_lost > n_frames_lost_threshold || !_tracking)
+    if (n_frames_lost > n_frames_lost_threshold || !_tracking) {
         predicted_image_path.clear();
+        _image_predict_item.valid = false;
+    }
 
+    cleanup_paths();
     append_log();
 }
 
@@ -71,9 +67,9 @@ void InsectTracker::track(double time) {
     ItemTracker::track(time);
 
     if (n_frames_lost > n_frames_lost_threshold || !_tracking) {
-        predicted_image_path.clear();
+        predicted_image_path.clear(); // TODO: double?
+        _image_predict_item.valid = false;
         path.clear();
-        _tracking = false;
     } else {
         update_insect_prediction();
     }
@@ -120,10 +116,11 @@ void InsectTracker::update_insect_prediction() {
     else if (image_location.y >= IMG_H/IMSCALEF)
         image_location.y = IMG_H/IMSCALEF-1;
 
-    //TODO: this seems very ugly:
+    //issue #108:
     predicted_image_path.back().x = image_location.x;
     predicted_image_path.back().y = image_location.y;
-
+    _image_predict_item.x = image_location.x;
+    _image_predict_item.y = image_location.y;
 
 }
 

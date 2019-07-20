@@ -57,7 +57,6 @@ void VisionData::init(bool fromfile, cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat
 #endif
 
     initialized = true;
-
 }
 
 void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsigned long long new_frame_id) {
@@ -100,7 +99,6 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
         fade(diffL16, _exclude_drone_from_motion_fading);
         _exclude_drone_from_motion_fading = false;
         fade(diffR16,false);
-
     }
 
     if (delete_motion){
@@ -180,7 +178,8 @@ void VisionData::collect_no_drone_frames(cv::Mat dL) {
 
     if (_current_frame_time > calibrating_background_end_time) {
         _calibrating_background = false;
-        imwrite(motion_noise_map_fn,motion_noise_map);
+        GaussianBlur(motion_noise_map,motion_noise_map,Size(9,9),0);
+        imwrite(motion_noise_map_wfn,motion_noise_map);
     }
 
 }

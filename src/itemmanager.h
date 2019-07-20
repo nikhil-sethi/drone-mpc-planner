@@ -79,7 +79,7 @@ public: cv::Scalar tracker_color( ItemTracker * trkr) {
 
         int max_points_per_frame = 10;
         int radius = 15;
-        int motion_thresh = 16;
+        int motion_thresh = 20;
         int motion_thresh_blink_detect = 30;
 
         int background_subtract_zone_factor = 90;
@@ -117,6 +117,11 @@ private:
     bool enable_viz_max_points = false; // flag for enabling the maxs visiualization
     std::vector<cv::Mat> vizs_maxs;
     bool enable_viz_diff = false; // flag for enabling the diff visiualization
+
+    const float chance_multiplier_pixel_max = 0.5f;
+    const float chance_multiplier_dist = 3;
+    const float chance_multiplier_total = chance_multiplier_dist + chance_multiplier_pixel_max;
+
 
     std::vector<ItemTracker::BlobProps> _blobs;
 

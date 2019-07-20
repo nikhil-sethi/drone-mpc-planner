@@ -29,7 +29,8 @@ void DroneTracker::track(double time, bool drone_is_active) {
         path.clear();
         _tracking = false;
         find_result.best_image_locationL.pt = _drone_blink_image_location;
-        predicted_image_path.push_back(ImagePredictItem(_drone_blink_image_location,1,DRONE_IM_START_SIZE,_visdat->frame_id));
+        _image_predict_item = ImagePredictItem(_drone_blink_image_location,1,DRONE_IM_START_SIZE,255,_visdat->frame_id);
+        predicted_image_path.push_back(_image_predict_item);
         reset_tracker_ouput(time);
         _drone_control_prediction_valid = false;
         if (drone_is_active)

@@ -153,10 +153,6 @@ void ItemTracker::update_world_candidate(){
     if (_image_item.valid) {
         _image_item.disparity = stereo_match(_image_item.pt(),_visdat->diffL,_visdat->diffR,find_result.disparity);
         w.iti.disparity = _image_item.disparity; // hmm
-        if (_image_item.size>=0)
-            smoother_im_size.addSample(_image_item.size);
-        smoother_score.addSample(_image_item.score);
-        smoother_brightness.addSample(_image_item.pixel_max);
 
         if (_image_item.disparity < settings.min_disparity || _image_item.disparity > settings.max_disparity){
             w.disparity_in_range = false;
@@ -193,6 +189,14 @@ void ItemTracker::update_world_candidate(){
     } else {
         _world_item.valid = false;
     }
+
+    if (_world_item.valid){
+        if (_image_item.size>=0)
+            smoother_im_size.addSample(_image_item.size);
+        smoother_score.addSample(_image_item.score);
+        smoother_brightness.addSample(_image_item.pixel_max);
+    }
+
 }
 
 void ItemTracker::track(double time) {
@@ -224,9 +228,10 @@ void ItemTracker::track(double time) {
         }
     }
 
-    if (_tracking) {
+    if (_tracking)
         predict(dt_predict,_visdat->frame_id);
-    }
+    else
+        _image_predict_item.valid = false;
 
     cleanup_paths();
 
@@ -235,18 +240,20 @@ void ItemTracker::track(double time) {
 
 //make sure the vectors that contain the path data don't endlesly grow
 void ItemTracker::cleanup_paths() {
-    if (path.size() > 0) {
-        if (path.begin()->frame_id() < _visdat->frame_id - path_buf_size)
-            path.erase(path.begin());
-        if (path.begin()->frame_id() > _visdat->frame_id ) //at the end of a realsense video loop, frame_id resets
-            path.clear();
-    }
+    if (_visdat->frame_id > path_buf_size) {
+        if (path.size() > 0) {
+            if (path.begin()->frame_id() < _visdat->frame_id - path_buf_size)
+                path.erase(path.begin());
+            if (path.begin()->frame_id() > _visdat->frame_id ) //at the end of a realsense video loop, frame_id resets
+                path.clear();
+        }
 
-    if (predicted_image_path.size() > 0) {
-        if (predicted_image_path.begin()->frame_id < _visdat->frame_id - path_buf_size)
-            predicted_image_path.erase(predicted_image_path.begin());
-        if (predicted_image_path.begin()->frame_id > _visdat->frame_id ) //at the end of a realsense video loop, frame_id resets
-            predicted_image_path.clear();
+        if (predicted_image_path.size() > 0) {
+            if (predicted_image_path.begin()->frame_id < _visdat->frame_id - path_buf_size )
+                predicted_image_path.erase(predicted_image_path.begin());
+            if (predicted_image_path.begin()->frame_id > _visdat->frame_id ) //at the end of a realsense video loop, frame_id resets
+                predicted_image_path.clear();
+        }
     }
 
     while (track_history.size() > track_history_max_size)
@@ -260,8 +267,8 @@ void ItemTracker::append_log() {
             (*_logger) << _image_item.x * IMSCALEF << "; " << _image_item.y * IMSCALEF << "; " << _image_item.disparity << "; ";
         else
             (*_logger) << -1 << "; " << -1 << "; " << -1 << "; ";
-        if (predicted_image_path.size()>0)
-            (*_logger) << predicted_image_path.back().x * IMSCALEF << "; " << predicted_image_path.back().y * IMSCALEF << "; ";
+        if (_image_predict_item.valid)
+            (*_logger) << _image_predict_item.x * IMSCALEF << "; " << _image_predict_item.y * IMSCALEF << "; ";
         else
             (*_logger) << -1 << "; " << -1   << "; ";
 
@@ -291,8 +298,8 @@ void ItemTracker::predict(float dt, int frame_id) {
     float size = stateL.at<float>(2);
 
     float certainty;
-    if (predicted_image_path.size() > 0.f) {
-        certainty  = 1-((1 - predicted_image_path.back().certainty) * certainty_factor); // certainty_factor times less certain that the previous prediction. The previous prediction certainty is updated with an meas vs predict error score
+    if (_image_predict_item.valid) {
+        certainty  = 1-((1 - _image_predict_item.certainty) * certainty_factor); // certainty_factor times less certain that the previous prediction. The previous prediction certainty is updated with an meas vs predict error score
     }   else {
         certainty = certainty_init;
     }
@@ -303,13 +310,14 @@ void ItemTracker::predict(float dt, int frame_id) {
         certainty = 1;
 
     //keep track of the error:
-    if (predicted_image_path.size()>0 && _world_item.valid){
+    if (_image_predict_item.valid && _world_item.valid){
         predicted_image_path.back().x_measured = _image_item.x;
         predicted_image_path.back().y_measured = _image_item.y;
         predicted_image_path.back().prediction_error  = sqrtf( powf(predicted_image_path.back().x_measured - predicted_image_path.back().x,2) + powf(predicted_image_path.back().y_measured - predicted_image_path.back().y,2));
 
     }
-    predicted_image_path.push_back(ImagePredictItem(predicted_image_locationL,certainty,size,frame_id) );
+    _image_predict_item = ImagePredictItem(predicted_image_locationL,certainty,size,smoother_brightness.latest(),frame_id);
+    predicted_image_path.push_back(_image_predict_item );
 }
 
 float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR, float prev_disparity){
@@ -577,9 +585,9 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
 
 float ItemTracker::calc_certainty(KeyPoint item) {
     float new_tracking_certainty;
-    if (predicted_image_path.size() > 0) {
-        new_tracking_certainty = 1.f / powf(powf(predicted_image_path.back().x - item.pt.x,2) + powf(predicted_image_path.back().y - item.pt.y,2),0.3f);
-        new_tracking_certainty*= predicted_image_path.back().certainty;
+    if (_image_predict_item.valid) {
+        new_tracking_certainty = 1.f / powf(powf(_image_predict_item.x - item.pt.x,2) + powf(_image_predict_item.y - item.pt.y,2),0.3f);
+        new_tracking_certainty*= _image_predict_item.certainty;
         if (new_tracking_certainty>1 || new_tracking_certainty<0 || isnanf(new_tracking_certainty)) { // weird -nan sometimes???
             new_tracking_certainty = 1;
         }
@@ -591,6 +599,7 @@ float ItemTracker::calc_certainty(KeyPoint item) {
 void ItemTracker::reset_tracker_ouput(double time) {
     track_data data = {0};
     reset_filters = true;
+    _image_predict_item.valid = false;
     data.time = time;
     track_history.push_back(data);
     init_kalman();

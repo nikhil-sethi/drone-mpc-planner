@@ -76,6 +76,8 @@ public:
         uint frame_id;
         float x,y,size,certainty;
         float x_measured=-1,y_measured=-1, prediction_error = -1;
+        float pixel_max;
+        bool valid;
         cv::KeyPoint k(){
             return cv::KeyPoint(x,y,size);
         }
@@ -83,19 +85,23 @@ public:
             return cv::Point2f(x,y);
         }
         ImagePredictItem() {}
-        ImagePredictItem(cv::Point2f p, float certainty_, float size_, int frameid){
+        ImagePredictItem(cv::Point2f p, float certainty_, float size_, float pixel_max_, int frameid){
             x = p.x;
             y = p.y;
             size = size_;
+            pixel_max = pixel_max_;
             certainty = certainty_;
             frame_id = frameid;
+            valid = true;
         }
-        ImagePredictItem(float x_, float y_, float certainty_, float size_, int frameid){
+        ImagePredictItem(float x_, float y_, float certainty_, float size_,float pixel_max_, int frameid){
             x = x_;
             y = y_;
             size = size_;
+            pixel_max = pixel_max_;
             certainty = certainty_;
             frame_id = frameid;
+            valid = true;
         }
     };
     struct WorldItem {
@@ -187,7 +193,6 @@ private:
     void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, double time, ImageItem *best_match, float disparity);
 
     void update_world_candidate();
-    void cleanup_paths();
 
     float calc_certainty(cv::KeyPoint item);
     void init_kalman();
@@ -237,19 +242,20 @@ protected:
 
     const float certainty_factor = 1.1f; // TODO: tune
     const float certainty_init = 0.1f; // TODO: tune
-    const int path_buf_size = 30;
+    const uint path_buf_size = 30;
 
     bool _enable_depth_background_check = true;
 
     bool _tracking = false;
 
-
     ImageItem  _image_item;
+    ImagePredictItem _image_predict_item;
     WorldItem  _world_item;
 
     float stereo_match(cv::Point closestL, cv::Mat diffL, cv::Mat diffR, float prev_disparity);
     void reset_tracker_ouput(double time);
     bool check_ignore_blobs_generic(BlobProps * pbs);
+    void cleanup_paths();
     virtual void init_settings() = 0;
 public:
 
@@ -283,6 +289,7 @@ public:
     virtual bool delete_me() = 0;
 
     ImageItem image_item(){return _image_item;}
+    ImagePredictItem image_predict_item(){return _image_predict_item;}
     WorldItem world_item(){return _world_item;}
     void image_item(ImageItem t){_image_item = t;}
     void image_item_invalidize(){_image_item.valid = false;}
@@ -294,9 +301,8 @@ public:
         float im_size_diff = fabs(_image_item.size - blob.radius) / (blob.radius + _image_item.size);
         float score = 1.f / (dist + 5.f*im_size_diff); // TODO: certainty
 
-        if (predicted_image_path.size()>0){
-            ImagePredictItem ipi = predicted_image_path.back();
-            float dist_pred = sqrtf(powf(ipi.x-blob.x,2)+powf(ipi.y-blob.y,2));
+        if (_image_predict_item.valid){
+            float dist_pred = sqrtf(powf(_image_predict_item.x-blob.x,2)+powf(_image_predict_item.y-blob.y,2));
             float ps = smoother_im_size.latest();
             float im_size_diff_pred = fabs(ps - blob.radius) / (blob.radius+ps);
             float score_pred = 1.f / (dist_pred + 5.f*im_size_diff_pred); // TODO: certainty
