@@ -105,7 +105,6 @@ public:
 
     void insert_control_predicted_drone_location(){
         if (_drone_control_prediction_valid){
-            find_result.best_image_locationL.pt = _drone_control_predicted_image_location;
             _drone_control_prediction_valid = false;
         }
     }

@@ -89,10 +89,7 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     smoother_score.init(smooth_blob_props_width);
     smoother_brightness.init(smooth_blob_props_width);
 
-    find_result.best_image_locationL.pt.x = IMG_W/2/IMSCALEF;
-    find_result.best_image_locationL.pt.y = IMG_H/2/IMSCALEF;
-    find_result.disparity = 0;
-
+    disparity_prev = 0;
     sub_disparity = 0;
     disparity_smoothed = 0;
     if (_logger->is_open()) {
@@ -145,13 +142,10 @@ void ItemTracker::init_kalman() {
 
 void ItemTracker::update_world_candidate(){
 
-    //    if (_name.compare("insect")==0)
-    //        cout << std::endl;
-
     WorldItem w;
     w.iti = _image_item;
     if (_image_item.valid) {
-        _image_item.disparity = stereo_match(_image_item.pt(),_visdat->diffL,_visdat->diffR,find_result.disparity);
+        _image_item.disparity = stereo_match(_image_item.pt(),_visdat->diffL,_visdat->diffR,disparity_prev);
         w.iti.disparity = _image_item.disparity; // hmm
 
         if (_image_item.disparity < settings.min_disparity || _image_item.disparity > settings.max_disparity){
@@ -214,7 +208,7 @@ void ItemTracker::track(double time) {
 
         //Point3f predicted_output = world_coordinates[1];
         check_consistency(cv::Point3f(prevX,prevY,prevZ),_world_item.pt);
-        update_tracker_ouput(_world_item.pt,dt_tracking,time,&_world_item.iti,_world_item.iti.disparity);
+        update_tracker_ouput(_world_item.pt,dt_tracking,time,_world_item.iti.disparity);
         update_prediction_state(_image_item.pt(), _world_item.iti.disparity);
         n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
         t_prev_tracking = time; // update dt only if item was detected
@@ -491,10 +485,9 @@ void ItemTracker::update_prediction_state(cv::Point2f image_location, float disp
         kfL.correct(measL);
 }
 
-void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  double time, ImageItem * best_match, float disparity) {
+void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  double time, float disparity) {
 
-    find_result.best_image_locationL = best_match->k();
-    find_result.disparity = disparity;
+    disparity_prev = disparity;
 
     //_world_item.certainty = calc_certainty(_world_item.iti.k());; // TODO does not work properly
 

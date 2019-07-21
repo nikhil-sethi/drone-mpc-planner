@@ -168,13 +168,7 @@ private:
 
     };
     std::string _settingsFile;
-    struct Find_result {
-        std::vector<ImageItem> image_items;
-        std::vector<ImageItem> excludes;
-        cv::KeyPoint best_image_locationL;
-        cv::Rect roi_offset;
-        float disparity;
-    };
+    float disparity_prev = 0;
 
     void predict(float dt, int frame_id);
 
@@ -182,7 +176,7 @@ private:
     void check_consistency(cv::Point3f previous_location,cv::Point3f measured_world_coordinates);
     void update_disparity(float disparity, float dt);
     void update_prediction_state(cv::Point2f image_location, float disparity);
-    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, double time, ImageItem *best_match, float disparity);
+    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, double time, float disparity);
 
     void update_world_candidate();
 
@@ -254,7 +248,6 @@ public:
     virtual ~ItemTracker() {}
 
     TrackerSettings settings;
-    Find_result find_result; // TODO: remove
     std::vector<WorldItem> path;
     std::vector<ImagePredictItem> predicted_image_path;
     std::vector<IgnoreBlob> ignores_for_other_trkrs;

@@ -312,7 +312,7 @@ void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis,float
 
 }
 
-cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, std::vector<ItemTracker::WorldItem> path,std::vector<ItemTracker::ImagePredictItem> predicted_path,cv::Rect roi_offset) {
+cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, std::vector<ItemTracker::WorldItem> path,std::vector<ItemTracker::ImagePredictItem> predicted_path) {
 
     cv::Mat frameL_small_drone;
     std::vector<ItemTracker::ImagePredictItem> tmp = predicted_path;
@@ -326,8 +326,6 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
     } else {
         cvtColor(frameL_small,frameL_small_drone,CV_GRAY2BGR);
     }
-
-    cv::rectangle(frameL_small_drone,roi_offset,cv::Scalar(180,100,240),4/IMSCALEF);
 
     if (path.size() > 0) {
         std::vector<cv::KeyPoint> keypoints;
@@ -369,8 +367,6 @@ void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3d setpoint, doubl
         tracker_viz_base_data.drn_predicted_path = _dtrkr->predicted_image_path;
         tracker_viz_base_data.ins_path = _itrkr->path;
         tracker_viz_base_data.ins_predicted_path = _itrkr->predicted_image_path;
-        tracker_viz_base_data.drn_roi_offset = _dtrkr->find_result.roi_offset;
-        tracker_viz_base_data.ins_roi_offset = _itrkr->find_result.roi_offset;
 
         new_tracker_viz_data_requested = false;
         lock_frame_data.unlock();
@@ -390,8 +386,6 @@ void Visualizer::draw_tracker_viz() {
     std::vector<ItemTracker::ImagePredictItem> drn_predicted_path = tracker_viz_base_data.drn_predicted_path;
     std::vector<ItemTracker::WorldItem> ins_path = tracker_viz_base_data.ins_path;
     std::vector<ItemTracker::ImagePredictItem> ins_predicted_path = tracker_viz_base_data.ins_predicted_path;
-    cv::Rect drn_roi_offset = tracker_viz_base_data.drn_roi_offset;
-    cv::Rect ins_roi_offset = tracker_viz_base_data.ins_roi_offset;
 
     cv::Mat resFrame = cv::Mat::zeros(viz_frame_size(),CV_8UC3);
     cv::Mat frameL_color;
@@ -449,8 +443,8 @@ void Visualizer::draw_tracker_viz() {
     cv::Size vizsizeL(size.width/4,size.height/4);
     cv::Mat frameL_small;
     cv::resize(frameL,frameL_small,cv::Size(frameL.cols/IMSCALEF,frameL.rows/IMSCALEF));
-    cv::Mat frameL_small_drone = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,drn_path,drn_predicted_path,drn_roi_offset);
-    cv::Mat frameL_small_insect = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,ins_path,ins_predicted_path,ins_roi_offset);
+    cv::Mat frameL_small_drone = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,drn_path,drn_predicted_path);
+    cv::Mat frameL_small_insect = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,ins_path,ins_predicted_path);
     frameL_small_drone.copyTo(resFrame(cv::Rect(0,0,frameL_small_drone.cols, frameL_small_drone.rows)));
     frameL_small_insect.copyTo(resFrame(cv::Rect(resFrame.cols-frameL_small_drone.cols,0,frameL_small_drone.cols, frameL_small_drone.rows)));
     draw_target_text(resFrame,time,dis,min_dis);
