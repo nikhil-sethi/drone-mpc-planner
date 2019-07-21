@@ -56,7 +56,6 @@ void MultiModule::worker_thread(void) {
             throttle = 0;
         }
 
-
         g_lockData.lock();
         send_data();
         g_lockData.unlock();
@@ -64,7 +63,7 @@ void MultiModule::worker_thread(void) {
             if (sw_bind.Read() > 20000)
                 _bind =false;
         }
-        usleep(20000); //TODO: replace for conditional wait
+        g_sendData.lock();
     }
 }
 
@@ -180,9 +179,11 @@ void MultiModule::close() {
         g_lockData.lock();
         send_data();
         g_lockData.unlock();
+        g_sendData.unlock();
 
         exitSendThread = true;
         g_lockData.unlock();
+        g_sendData.unlock();
         thread_mm.join();
 #endif
         initialized = false;

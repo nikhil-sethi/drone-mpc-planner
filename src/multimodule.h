@@ -90,7 +90,15 @@ public:
         return armed_names[arm_switch>JOY_MIDDLE];
     }
 
-    std::mutex g_lockData;
+    void queue_commands(int new_throttle,int new_roll, int new_pitch, int new_yaw) {
+        g_lockData.lock();
+        throttle = new_throttle;
+        roll = new_roll;
+        pitch = new_pitch;
+        yaw = new_yaw;
+        g_lockData.unlock();
+        g_sendData.unlock();
+    }
 
     void check_bind_command(void);
     bool _bind = false;
@@ -120,6 +128,9 @@ public:
 private:
 
     stopwatch_c binding_sw;
+
+    std::mutex g_lockData;
+    std::mutex g_sendData;
 
     bool initialized = false;
     int notconnected;

@@ -154,7 +154,6 @@ public : const float throttle_bank_factor = 0.23f; // Whoop 0.33 Thrashcan 0.11
 
     std::ofstream *_logger;
     void sendData(void);
-    void queue_commands(int throttle,int roll, int pitch, int yaw);
     void readJoystick(void);
     void process_joystick();
 

@@ -87,16 +87,6 @@ int bound_joystick_value(int v) {
         v = JOY_BOUND_MAX;
     return v;
 }
-void DroneController::queue_commands(int throttle,int roll, int pitch, int yaw) {
-    if (!_fromfile) {
-        _rc->g_lockData.lock();
-        _rc->throttle = throttle;
-        _rc->roll = roll;
-        _rc->pitch = pitch;
-        _rc->yaw = yaw;
-        _rc->g_lockData.unlock();
-    }
-}
 
 void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, cv::Point3f setpoint_acc) {
 
@@ -290,7 +280,9 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
     pitch = bound_joystick_value(pitch);
     yaw = bound_joystick_value(yaw);
 
-    queue_commands(throttle,roll,pitch,yaw);
+    if (!_fromfile) {
+        _rc->queue_commands(throttle,roll,pitch,yaw);
+    }
 
     control_data c(Throttle(),Roll(),Pitch(),data.time);
     control_history.push_back(c);
