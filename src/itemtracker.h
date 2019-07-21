@@ -168,12 +168,11 @@ private:
 
     };
     std::string _settingsFile;
-    float disparity_prev = 0;
 
     void predict(float dt, int frame_id);
 
     float estimate_sub_disparity(int disparity);
-    void check_consistency(cv::Point3f previous_location,cv::Point3f measured_world_coordinates);
+    void check_consistency();
     void update_disparity(float disparity, float dt);
     void update_prediction_state(cv::Point2f image_location, float disparity);
     void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, double time, float disparity);
@@ -196,7 +195,16 @@ private:
     double t_prev_predict = 0;
     std::string _name;
 
-    float prevX,prevY,prevZ =0;
+    //disparity stuff:
+    int err [100];
+    int cor_16 [100];
+
+    float sub_disparity;
+    float disparity_smoothed;
+    float disp_rate;
+    float disp_prev;
+    float disparity_prev = 0;
+
     Smoother smoother_posX, smoother_posY, smoother_posZ;
     Smoother2 smoother_velX2,smoother_velY2,smoother_velZ2;
     Smoother smoother_velX, smoother_velY, smoother_velZ;
@@ -297,19 +305,6 @@ public:
 
         return score;
     }
-
-    //TODO: make this private:
-    int err [100];
-    int cor_16 [100];
-
-    float sub_disparity;
-    float disparity_smoothed;
-    float disp_rate;
-    float disp_prev;
-
-    float posX_smoothed = 0;
-    float posY_smoothed = 0;
-    float posZ_smoothed = 0;
 };
 
 #endif //ITEMTRACKER_H

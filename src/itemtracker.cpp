@@ -203,11 +203,8 @@ void ItemTracker::track(double time) {
     update_world_candidate();
 
     if ( _world_item.valid) {
-
         update_disparity(_world_item.iti.disparity, dt_tracking);
-
-        //Point3f predicted_output = world_coordinates[1];
-        check_consistency(cv::Point3f(prevX,prevY,prevZ),_world_item.pt);
+        check_consistency();
         update_tracker_ouput(_world_item.pt,dt_tracking,time,_world_item.iti.disparity);
         update_prediction_state(_image_item.pt(), _world_item.iti.disparity);
         n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
@@ -450,12 +447,17 @@ void ItemTracker::update_disparity(float disparity, float dt) {
     }
 }
 
-void ItemTracker::check_consistency(cv::Point3f prevLoc,cv::Point3f measLoc) {
+void ItemTracker::check_consistency() {
 
-    float abs_dist = (prevLoc.x-measLoc.x)*(prevLoc.x-measLoc.x) + (prevLoc.y-measLoc.y)*(prevLoc.y-measLoc.y) + (prevLoc.z-measLoc.z)*(prevLoc.z-measLoc.z);
+    if (track_history.size()>1) {
+        auto data = track_history.back();
+        float abs_dist = (data.sposX - _world_item.pt.x) * (data.sposX - _world_item.pt.x) +
+                (data.sposY - _world_item.pt.y) * (data.sposY - _world_item.pt.y) +
+                (data.sposZ - _world_item.pt.z) * (data.sposZ - _world_item.pt.z);
 
-    if (abs_dist > 0.15f)
-        reset_filters = true;
+        if (abs_dist > 0.15f)
+            reset_filters = true;
+    }
 }
 
 void ItemTracker::update_prediction_state(cv::Point2f image_location, float disparity) {
@@ -525,24 +527,19 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
 
     // smooth position data with simple filter
     if (reset_filters) {
-        posX_smoothed = data.posX;
-        posY_smoothed = data.posY;
-        posZ_smoothed = data.posZ;
-
+        data.sposX = data.posX;
+        data.sposY = data.posY;
+        data.sposZ = data.posZ;
     } else {
         float pos_filt_rate = 0.3f;
-        posX_smoothed = data.posX*pos_filt_rate + posX_smoothed*(1.0f-pos_filt_rate);
-        posY_smoothed = data.posY*pos_filt_rate + posY_smoothed*(1.0f-pos_filt_rate);
-        posZ_smoothed = data.posZ*pos_filt_rate + posZ_smoothed*(1.0f-pos_filt_rate);
+        data.sposX = data.posX*pos_filt_rate + data.sposX*(1.0f-pos_filt_rate);
+        data.sposY = data.posY*pos_filt_rate + data.sposY*(1.0f-pos_filt_rate);
+        data.sposZ = data.posZ*pos_filt_rate + data.sposZ*(1.0f-pos_filt_rate);
     }
 
-    data.sposX = posX_smoothed;
-    data.sposY = posY_smoothed;
-    data.sposZ = posZ_smoothed;
-
-    data.svelX = smoother_velX2.addSample(posX_smoothed,dt);
-    data.svelY = smoother_velY2.addSample(posY_smoothed,dt);
-    data.svelZ = smoother_velZ2.addSample(posZ_smoothed,dt);
+    data.svelX = smoother_velX2.addSample(data.sposX,dt);
+    data.svelY = smoother_velY2.addSample(data.sposY,dt);
+    data.svelZ = smoother_velZ2.addSample(data.sposZ,dt);
 
     data.saccX = smoother_accX2.addSample(data.svelX,dt);
     data.saccY = smoother_accY2.addSample(data.svelY,dt);
@@ -550,10 +547,6 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
 
     data.vel_valid = smoother_velX2.ready();
     data.acc_valid = smoother_accX2.ready();
-
-    prevX = data.sposX;
-    prevY = data.sposY;
-    prevZ = data.sposZ;
 
     data.time = time;
     last_sighting_time = time;
