@@ -329,7 +329,7 @@ void DroneNavigation::update(double time) {
             _navigation_status = ns_wait_after_landing;
             landed_time = time;
         } FALLTHROUGH_INTENDED; case ns_wait_after_landing: {
-            _visdat->delete_from_motion_map(_trackers->dronetracker()->drone_startup_im_location()*IMSCALEF,_trackers->dronetracker()->drone_startup_im_size()*IMSCALEF,1);
+            _visdat->delete_from_motion_map(_trackers->dronetracker()->drone_startup_im_location()*IMSCALEF,_trackers->dronetracker()->drone_startup_im_disparity(),_trackers->dronetracker()->drone_startup_im_size()*IMSCALEF,1);
             if (time - landed_time > params.time_out_after_landing )
                 _navigation_status = ns_locate_drone;
             break;

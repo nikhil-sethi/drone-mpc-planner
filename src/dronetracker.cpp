@@ -85,7 +85,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
 
             if (takeoff_spot_detected &&drone_detected_near_takeoff_spot ) {
                 _drone_tracking_status = dts_detected;
-                _visdat->delete_from_motion_map(drone_startup_im_location()*IMSCALEF, ceilf(_drone_blink_im_size*2.f)*IMSCALEF,VIDEOFPS/2);
+                _visdat->delete_from_motion_map(drone_startup_im_location()*IMSCALEF, _drone_blink_im_disparity,ceilf(_drone_blink_im_size*2.f)*IMSCALEF,VIDEOFPS/2);
             }
         }
         break;

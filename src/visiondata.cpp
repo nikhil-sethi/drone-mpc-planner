@@ -77,7 +77,7 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
     frameR.convertTo(tmpR, CV_16SC1);
     frameR16 = tmpR;
 
-    track_avg_brightness(frameL16,time); //todo: check if this still works!
+    track_avg_brightness(frameL16,time);
     if (_reset_motion_integration) {
         std::cout << "Resetting motion" << std::endl;
         frameL_prev16 = frameL16.clone();
@@ -103,7 +103,7 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
 
     if (delete_motion_frame_cnt_duration>0){
         cv::circle(diffL16,delete_motion_spot,delete_motion_r,0,CV_FILLED);
-        cv::circle(diffR16,delete_motion_spot,delete_motion_r,0,CV_FILLED); //todo: add disparity
+        cv::circle(diffR16,delete_motion_spot+ cv::Point(delete_motion_disparity,0),delete_motion_r,0,CV_FILLED);
         delete_motion_frame_cnt_duration--;
     }
 
@@ -207,8 +207,9 @@ void VisionData::track_avg_brightness(cv::Mat frame,double time) {
     }
 }
 
-void VisionData::delete_from_motion_map(cv::Point p, int radius, int duration) {
+void VisionData::delete_from_motion_map(cv::Point p, int disparity,int radius, int duration) {
     delete_motion_spot = p;
+    delete_motion_disparity = disparity;
     delete_motion_r = radius;
     delete_motion_frame_cnt_duration = duration;
 }
