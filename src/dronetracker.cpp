@@ -28,8 +28,8 @@ void DroneTracker::track(double time, bool drone_is_active) {
         predicted_image_path.clear();
         path.clear();
         _tracking = false;
-        find_result.best_image_locationL.pt = _drone_blink_image_location;
-        _image_predict_item = ImagePredictItem(_drone_blink_image_location,1,DRONE_IM_START_SIZE,255,_visdat->frame_id);
+        find_result.best_image_locationL.pt = _drone_blink_im_location;
+        _image_predict_item = ImagePredictItem(_drone_blink_im_location,1,_drone_blink_im_size,255,_visdat->frame_id);
         predicted_image_path.push_back(_image_predict_item);
         reset_tracker_ouput(time);
         _drone_control_prediction_valid = false;
@@ -49,11 +49,11 @@ void DroneTracker::track(double time, bool drone_is_active) {
     } FALLTHROUGH_INTENDED; case dts_detecting_takeoff: {
         ItemTracker::track(time);
         if (!_world_item.valid){
-            cv::Point2f expected_drone_location = _drone_blink_image_location;
+            cv::Point2f expected_drone_location = _drone_blink_im_location;
             float dt = current_time - start_take_off_time;
             const float full_throttle_im_effect = 13; // how many pixels per second will the drone go up given full throttle
             expected_drone_location.y+= dt * full_throttle_im_effect;
-            _image_predict_item = ImagePredictItem(expected_drone_location,1,DRONE_IM_START_SIZE,255,_visdat->frame_id);
+            _image_predict_item = ImagePredictItem(expected_drone_location,1,_drone_blink_im_size,255,_visdat->frame_id);
         }
 
         if (enable_viz_diff){
@@ -74,18 +74,18 @@ void DroneTracker::track(double time, bool drone_is_active) {
             }
 
             float dist2take_off = sqrt(pow(_image_item.x - drone_startup_im_location().x,2)+pow(_image_item.y - drone_startup_im_location().y,2));
-            if (dist2take_off > settings.takeoff_seperation_min * _drone_blink_image_size &&
-                    dist2take_off < settings.takeoff_seperation_max* _drone_blink_image_size &&
-                    _image_item.size > _drone_blink_image_size*0.5f ){
+            if (dist2take_off > settings.takeoff_seperation_min * _drone_blink_im_size &&
+                    dist2take_off < settings.takeoff_seperation_max* _drone_blink_im_size &&
+                    _image_item.size > _drone_blink_im_size*0.5f ){
                 drone_detected_near_takeoff_spot = true;
                 ignores_for_other_trkrs.push_back(IgnoreBlob(_image_item.pt(),time+taking_off_ignore_timeout, IgnoreBlob::drone_taking_off));
-            } else if (dist2take_off < settings.takeoff_seperation_max + _drone_blink_image_size){
+            } else if (dist2take_off < settings.takeoff_seperation_max + _drone_blink_im_size){
                 ignores_for_other_trkrs.push_back(IgnoreBlob(_image_item.pt(),time+taking_off_ignore_timeout, IgnoreBlob::drone_taking_off));
             }
 
             if (takeoff_spot_detected &&drone_detected_near_takeoff_spot ) {
                 _drone_tracking_status = dts_detected;
-                _visdat->delete_from_motion_map(drone_startup_im_location()*IMSCALEF, ceilf(_drone_blink_image_size*2.f)*IMSCALEF,VIDEOFPS/2);
+                _visdat->delete_from_motion_map(drone_startup_im_location()*IMSCALEF, ceilf(_drone_blink_im_size*2.f)*IMSCALEF,VIDEOFPS/2);
             }
         }
         break;
@@ -120,7 +120,7 @@ bool DroneTracker::check_ignore_blobs(BlobProps * pbs, uint id) {
 
     if (taking_off()) {
 
-        cv::Point2f expected_drone_location = _drone_blink_image_location;
+        cv::Point2f expected_drone_location = _drone_blink_im_location;
         float dt = current_time - start_take_off_time;
         const float full_throttle_im_effect = 13; // how many pixels per second will the drone go up given full throttle
         expected_drone_location.y+= dt * full_throttle_im_effect;

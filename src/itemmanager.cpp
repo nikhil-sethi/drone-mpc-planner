@@ -576,7 +576,7 @@ void ItemManager::update_max_change_points() {
                 } else {
                     COG_is_nan = true;
                     if (enable_insect_drone_split){
-			//TODO: below is double code, streamline
+                        //TODO: below is double code, streamline
                         for (uint j = 0; j < _trackers.size(); j++) {
                             ItemTracker::ImagePredictItem ipi = _trackers.at(j)->image_predict_item();
                             cv::Point2f d;

@@ -31,7 +31,7 @@ public:
         BlobProps(cv::Point2f pt, float area,float blob_pixel_max){
             x = pt.x;
             y = pt.y;
-            radius = sqrtf(area);
+            radius = sqrtf(area/static_cast<float>(M_PI));
             pixel_max = blob_pixel_max;
         }
     };
@@ -89,15 +89,6 @@ public:
         ImagePredictItem(cv::Point2f p, float certainty_, float size_, float pixel_max_, int frameid){
             x = p.x;
             y = p.y;
-            size = size_;
-            pixel_max = pixel_max_;
-            certainty = certainty_;
-            frame_id = frameid;
-            valid = true;
-        }
-        ImagePredictItem(float x_, float y_, float certainty_, float size_,float pixel_max_, int frameid){
-            x = x_;
-            y = y_;
             size = size_;
             pixel_max = pixel_max_;
             certainty = certainty_;
@@ -190,7 +181,7 @@ private:
     float estimate_sub_disparity(int disparity);
     void check_consistency(cv::Point3f previous_location,cv::Point3f measured_world_coordinates);
     void update_disparity(float disparity, float dt);
-    void update_prediction_state(cv::Point2f image_location, float disparity, float size);
+    void update_prediction_state(cv::Point2f image_location, float disparity);
     void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, double time, ImageItem *best_match, float disparity);
 
     void update_world_candidate();

@@ -34,8 +34,8 @@ private:
     };
     drone_tracking_states _drone_tracking_status = dts_init;
 
-    cv::Point2f _drone_blink_image_location;
-    float _drone_blink_image_size;
+    cv::Point2f _drone_blink_im_location;
+    float _drone_blink_im_size = 5;
     cv::Point3f _drone_blink_world_location;
     bool _landing_pad_location_set = false;
     cv::Point3f _landing_pad_world;
@@ -89,7 +89,8 @@ protected:
     void init_settings();
 public:
     std::string drone_tracking_state() {return drone_tracking_state_names[_drone_tracking_status];}
-    cv::Point2f drone_startup_im_location(){ return _drone_blink_image_location; }
+    cv::Point2f drone_startup_im_location(){ return _drone_blink_im_location; }
+    float drone_startup_im_size(){ return _drone_blink_im_size; }
     cv::Point3f drone_startup_location() {return _drone_blink_world_location;}
     cv::Point3f drone_landing_location() {return _landing_pad_world;}
 
@@ -114,8 +115,8 @@ public:
     }
 
     void set_drone_landing_location(cv::Point2f im, float drone_im_size, cv::Point3f world) {
-        _drone_blink_image_location = im;
-        _drone_blink_image_size = drone_im_size;
+        _drone_blink_im_location = im;
+        _drone_blink_im_size = drone_im_size;
         _drone_blink_world_location = world;
         if (!_landing_pad_location_set){ // for now, assume the first time set is the actual landing location.
             _landing_pad_world = world;

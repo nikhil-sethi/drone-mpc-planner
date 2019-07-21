@@ -38,6 +38,9 @@ public:
     cv::Mat depth_background_mm;
 
 private:
+#define DRONE_IM_X_START  100
+#define DRONE_IM_Y_START 100
+
     int nFrames_stereo,_frame_number,frame_id_rgb,frame_id_stereo;
     bool camRunning;
 

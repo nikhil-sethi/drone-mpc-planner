@@ -215,7 +215,7 @@ void ItemTracker::track(double time) {
         //Point3f predicted_output = world_coordinates[1];
         check_consistency(cv::Point3f(prevX,prevY,prevZ),_world_item.pt);
         update_tracker_ouput(_world_item.pt,dt_tracking,time,&_world_item.iti,_world_item.iti.disparity);
-        update_prediction_state(_image_item.pt(), _world_item.iti.disparity,_image_item.size);
+        update_prediction_state(_image_item.pt(), _world_item.iti.disparity);
         n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
         t_prev_tracking = time; // update dt only if item was detected
         n_frames_tracking++;
@@ -288,15 +288,9 @@ void ItemTracker::predict(float dt, int frame_id) {
     kfL.transitionMatrix.at<float>(2) = dt;
     kfL.transitionMatrix.at<float>(9) = dt;
     stateL = kfL.predict();
-    cv::Rect predRect;
-    predRect.width = static_cast<int>(stateL.at<float>(4));
-    predRect.height = static_cast<int>(stateL.at<float>(5));
-    predRect.x = static_cast<int>(stateL.at<float>(0)) - predRect.width / 2;
-    predRect.y = static_cast<int>(stateL.at<float>(1)) - predRect.height / 2;
 
     predicted_image_locationL.x = stateL.at<float>(0);
     predicted_image_locationL.y = stateL.at<float>(1);
-    float size = stateL.at<float>(2);
 
     float certainty;
     if (_image_predict_item.valid) {
@@ -317,7 +311,7 @@ void ItemTracker::predict(float dt, int frame_id) {
         predicted_image_path.back().prediction_error  = sqrtf( powf(predicted_image_path.back().x_measured - predicted_image_path.back().x,2) + powf(predicted_image_path.back().y_measured - predicted_image_path.back().y,2));
 
     }
-    _image_predict_item = ImagePredictItem(predicted_image_locationL,certainty,size,smoother_brightness.latest(),frame_id);
+    _image_predict_item = ImagePredictItem(predicted_image_locationL,certainty,smoother_im_size.latest(),smoother_brightness.latest(),frame_id);
     predicted_image_path.push_back(_image_predict_item );
 }
 
@@ -470,12 +464,12 @@ void ItemTracker::check_consistency(cv::Point3f prevLoc,cv::Point3f measLoc) {
         reset_filters = true;
 }
 
-void ItemTracker::update_prediction_state(cv::Point2f image_location, float disparity, float size) {
+void ItemTracker::update_prediction_state(cv::Point2f image_location, float disparity) {
     cv::Mat measL(measSize, 1, type);
     measL.at<float>(0) = image_location.x;
     measL.at<float>(1) = image_location.y;
     measL.at<float>(2) = disparity;
-    measL.at<float>(3) = size;
+
 
 
     if (!_tracking) { // First detection!
@@ -488,12 +482,7 @@ void ItemTracker::update_prediction_state(cv::Point2f image_location, float disp
 
         stateL.at<float>(0) = measL.at<float>(0);
         stateL.at<float>(1) = measL.at<float>(1);
-        stateL.at<float>(3) = measL.at<float>(2);
-        stateL.at<float>(4) = measL.at<float>(3);
         stateL.at<float>(2) = 0;
-        //            stateL.at<float>(3) = 0;
-        //            stateL.at<float>(4) = measL.at<float>(2);
-        //            stateL.at<float>(5) = measL.at<float>(3);
 
         kfL.statePost = stateL;
         _tracking = true;
@@ -552,7 +541,6 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
         posX_smoothed = data.posX*pos_filt_rate + posX_smoothed*(1.0f-pos_filt_rate);
         posY_smoothed = data.posY*pos_filt_rate + posY_smoothed*(1.0f-pos_filt_rate);
         posZ_smoothed = data.posZ*pos_filt_rate + posZ_smoothed*(1.0f-pos_filt_rate);
-
     }
 
     data.sposX = posX_smoothed;

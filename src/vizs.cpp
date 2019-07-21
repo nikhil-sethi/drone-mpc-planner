@@ -400,24 +400,9 @@ void Visualizer::draw_tracker_viz() {
     cv::Mat roi = resFrame(rect);
     cv::Size size (frameL.cols*_res_mult,frameL.rows*_res_mult);
 
-
     if ( drn_predicted_path.size()>0 ) {
-        std::vector<cv::KeyPoint> drn_pred_kps;
-        drn_pred_kps.push_back(drn_predicted_path.back().k());
-        drn_pred_kps.at(0).size = 24/IMSCALEF; // TODO: can we use actual size?
-        drn_pred_kps.at(0).pt.x = drn_pred_kps.at(0).pt.x*2; // TODO: 2?
-        drn_pred_kps.at(0).pt.y = drn_pred_kps.at(0).pt.y*2;
-        cv::drawKeypoints( frameL_color, drn_pred_kps, frameL_color, Scalar(0,255,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
-    }
-
-    if ( drn_path.size()>0 ) {
-        std::vector<cv::KeyPoint> drn_kps;
-        drn_kps.push_back(drn_path.back().iti.k());
-        drn_kps.at(0).size = 24/IMSCALEF;
-        drn_kps.at(0).pt.x = drn_kps.at(0).pt.x*2;
-        drn_kps.at(0).pt.y = drn_kps.at(0).pt.y*2;
-
-        //cv::drawKeypoints( frameL_color, drn_kps, frameL_color, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+        auto pred = drn_predicted_path.back();
+        cv::circle(frameL_color,pred.pt()*IMSCALEF,pred.size*IMSCALEF,cv::Scalar(0,255,0));
     }
 
     if (ins_path.size()>0){
@@ -442,14 +427,11 @@ void Visualizer::draw_tracker_viz() {
         putText(frameL_color,ss.str(),p,cv::FONT_HERSHEY_SIMPLEX,0.5,c);
         cv::line(frameL_color,p,p,c,2);
 
-        cv::Point2i t = _dnav->drone_setpoint_im();
-
-
         //draw line to drone target setpoint
         if (_dnav->drone_is_flying()){
-
+            cv::Point2i t = _dnav->drone_setpoint_im();
             cv::Scalar c2;
-            if (_dnav->drone_is_hunting()) {
+            if (_dnav->drone_is_hunting() && t.x+t.y>0 ) {
                 c2 = cv::Scalar(0,0,255);
                 cv::Point2i t2 = p - (p - t)/2;
                 putText(frameL_color,to_string_with_precision(_dnav->get_Interceptor().time_to_intercept(),2),t2,cv::FONT_HERSHEY_SIMPLEX,0.5,c2);
@@ -474,7 +456,6 @@ void Visualizer::draw_tracker_viz() {
     draw_target_text(resFrame,time,dis,min_dis);
 
     trackframe = resFrame;
-
 }
 
 void Visualizer::paint() {
