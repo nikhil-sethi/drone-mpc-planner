@@ -53,7 +53,7 @@ void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) 
     n_frames_tracking = log.ins_n_frames_tracking;
     _tracking = log.ins_foundL;
 
-    if (n_frames_lost > n_frames_lost_threshold || !_tracking) {
+    if (!_tracking) {
         predicted_image_path.clear();
         _image_predict_item.valid = false;
     }
@@ -66,9 +66,8 @@ void InsectTracker::track(double time) {
 
     ItemTracker::track(time);
 
-    if (n_frames_lost > n_frames_lost_threshold || !_tracking) {
-        predicted_image_path.clear(); // TODO: double?
-        _image_predict_item.valid = false;
+    if (!_tracking) {
+        predicted_image_path.clear();
         path.clear();
     } else {
         update_insect_prediction();

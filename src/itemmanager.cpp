@@ -34,7 +34,7 @@ void ItemManager::init(std::ofstream *logger,VisionData *visdat){
     //Anyway, the track() functions are called in a reverse for loop (must be reversed because items are erased from the list),
     //therefor the init functions must be called in the reverser order as adding them to the _trackers list...
     //...but since we are 'pushing' the items in, this in the end must be in the normal order. Or not. I guess it's a 50% chance thing.
-    //TODO: make issue to remove this complexity.
+    //#106
     _dtrkr = new DroneTracker();
     _itrkr = new InsectTracker();
     _dtrkr->init(_logger,_visdat);
@@ -296,7 +296,7 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
                 DroneTracker * dtrkr;
                 InsectTracker * itrkr;
                 ItemTracker * t1 = pbs.at(i).trackers.at(0);
-                ItemTracker * t2 = pbs.at(i).trackers.at(1); //todo: make this general for more then 2
+                ItemTracker * t2 = pbs.at(i).trackers.at(1); //fixme: make this general for more then 2
                 bool drn_trkr_fnd = false;
                 bool irn_trkr_fnd = false;
 
@@ -507,7 +507,7 @@ void ItemManager::update_max_change_points() {
 
                     //check if the blob may be multiple blobs,
                     vector<vector<Point>> contours;
-                    findContours(mask,contours,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_NONE); // TODO: do this on the full resolution image
+                    findContours(mask,contours,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_NONE); // If necessary, we could do this on the full resolution image...?
                     if (contours.size()==1 && enable_insect_drone_split) { // try another threshold value, sometimes we get lucky
                         drn_ins_split_thresh = _itrkr->image_predict_item().pixel_max*0.3f;
                         mask = cropped > drn_ins_split_thresh + static_cast<float>(avg_bkg(0));

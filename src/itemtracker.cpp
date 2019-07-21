@@ -585,7 +585,7 @@ bool ItemTracker::check_ignore_blobs_generic(BlobProps * pbs) {
     for (uint k=0; k<ignores_for_me.size();k++){
         cv::Point2f p_ignore = ignores_for_me.at(k).p;
         float dist_ignore = sqrtf(powf(p_ignore.x-pbs->x,2)+powf(p_ignore.y-pbs->y,2));
-        if (dist_ignore < settings.static_ignores_dist_thresh){ // TODO: make this distance thresh dependent on startup size of drone in the image
+        if (dist_ignore < settings.static_ignores_dist_thresh){ // TODO: make this distance thresh dependent on startup size of drone in the image. (or better, add a size to the ignore props)
             ignores_for_me.at(k).was_used = true;
             in_ignore_zone = true;
         }

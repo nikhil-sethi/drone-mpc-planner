@@ -41,6 +41,8 @@ private:
     double _tti =-1;
     const float minimal_height = 0.2f;
 
+    const float insect_cleared_timeout = VIDEOFPS*0.5f;
+
     void intercept_spiral();
     float calc_tti(cv::Point3f insect_pos, cv::Point3f insect_vel, cv::Point3f drone_pos, cv::Point3f drone_vel, bool drone_taking_off);
     void update_far_target(bool drone_at_base);
@@ -55,7 +57,7 @@ public:
     void reset_insect_cleared() {_count_insect_not_in_range = 0;}
 
     bool insect_in_range() {return !_count_insect_not_in_range;}
-    bool insect_cleared() {return _count_insect_not_in_range > VIDEOFPS*0.5f; } // TODO: make a nice variable
+    bool insect_cleared() {return _count_insect_not_in_range > insect_cleared_timeout; }
     cv::Point3f target_position() {return _intercept_pos;}
     cv::Point3f target_speed() {return _intercept_vel;}
     cv::Point3f target_accelleration() {return _intercept_acc;}

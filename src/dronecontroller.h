@@ -3,7 +3,6 @@
 
 #include "dronetracker.h"
 #include "joystick.hpp"
-#include "arduino.h"
 #include "multimodule.h"
 
 static const char* joy_states_names[] = { "js_manual",

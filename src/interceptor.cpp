@@ -17,7 +17,7 @@ void Interceptor::update(bool drone_at_base) {
         _intercept_acc = {0,0,0};
         _count_insect_not_in_range++;
 
-        if ( (norm(_intercept_vel) > 0 || _trackers->insecttracker()->tracking() )){ //TODO: whatsup with the intercept_vel....?
+        if ( (_trackers->insecttracker()->tracking() )){
             _interceptor_state = is_waiting_in_reach_zone;
         } else
             break;

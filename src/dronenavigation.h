@@ -51,7 +51,6 @@ private:
     nav_flight_modes _nav_flight_mode;
 
     enum waypoint_flight_modes {
-        //todo: replace this enum with a type check https://stackoverflow.com/questions/351845/finding-the-type-of-an-object-in-c
         fm_takeoff,
         fm_hover_calib,
         fm_flying,
