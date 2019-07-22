@@ -84,6 +84,7 @@ public:
     bool request_trackframe_paint;
     cv::Mat plotframe;
     bool request_plotframe_paint;
+    double first_take_off_time = 0;
 
     Visualizer(void){
         roll_joystick = cv::Mat(1,1,CV_32FC1);

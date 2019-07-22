@@ -29,7 +29,7 @@ void Visualizer::init(VisionData *visdat, ItemManager *imngr, DroneController *d
     _dprdct = dprdct;
 
     _fromfile = fromfile;
-    if (fromfile) {
+    if (_fromfile) {
         _res_mult = 1.5f;
     } else {
         _res_mult = 1;
@@ -304,8 +304,11 @@ void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis,float
     if (_fromfile) {
         static int popcorn_cnt = 0;
         popcorn_cnt++;
+        std::string popstr = "POPCORN TIME";
+        if (first_take_off_time - time > 0 )
+            popstr += " IN " + to_string_with_precision( first_take_off_time - time,1);
         if (popcorn_cnt < 20)
-            putText(resFrame,"POPCORN TIME!" ,cv::Point(400*_res_mult,24*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
+            putText(resFrame,popstr ,cv::Point(400*_res_mult,24*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
         if (popcorn_cnt > 35)
             popcorn_cnt  = 0;
     }

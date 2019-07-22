@@ -504,6 +504,8 @@ void init(int argc, char **argv) {
     logger << std::endl; // this concludes the header log line
 #ifdef HASSCREEN
     visualizer.init(&visdat,&trackers,&dctrl,&dnav,&rc,fromfile==log_mode_full,&dprdct);
+    if (fromfile==log_mode_full)
+        visualizer.first_take_off_time = logreader.first_takeoff_time();
 #endif
 
     init_video_recorders(argc,argv);

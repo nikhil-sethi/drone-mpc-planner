@@ -106,6 +106,9 @@ LogReader::Log_Entry LogReader::createLogEntry(std::string line) {
     entry.joyModeSwitch = std::stoi(linedata.at(headmap["joyModeSwitch"]));
     entry.joyTakeoffSwitch = std::stoi(linedata.at(headmap["joyTakeoffSwitch"]));
 
+    if (_takeoff_time > static_cast<double>(entry.RS_ID)/VIDEOFPS && entry.valid && entry.joyModeSwitch > 0 && entry.ins_foundL)
+        _takeoff_time = static_cast<double>(entry.RS_ID)/VIDEOFPS;
+
     entry.auto_throttle = std::stoi(linedata.at(headmap["autoThrottle"]));
     entry.auto_roll = std::stoi(linedata.at(headmap["autoRoll"]));
     entry.auto_pitch = std::stoi(linedata.at(headmap["autoPitch"]));

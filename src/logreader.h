@@ -65,6 +65,7 @@ public:
     void init(std::string file, bool partial_insect_log);
     void current_frame_number(unsigned long long frame_number);
     bool set_next_frame_number();
+    double first_takeoff_time() {return _takeoff_time;}
 
     LogReader::Log_Entry current_item;
 private:
@@ -75,6 +76,7 @@ private:
     std::map<std::string, int> headmap;
     bool _partial_insect_log;
     unsigned int partial_insect_log_id_counter = 0;
+    double _takeoff_time = INFINITY;
 
 };
 
