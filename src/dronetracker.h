@@ -24,6 +24,8 @@ private:
     double startup_location_ignore_timeout = 1; // TODO: make this dependent on the motion_update_iterator_max
     double taking_off_ignore_timeout = 0.1; // TODO: make this dependent on the motion_update_iterator_max
 
+    const float full_throttle_im_effect = 13; // how many pixels per second will the drone go up given full throttle
+
     enum drone_tracking_states {
         dts_init = 0,
         dts_inactive,

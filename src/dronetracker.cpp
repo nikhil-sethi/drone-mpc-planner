@@ -50,7 +50,6 @@ void DroneTracker::track(double time, bool drone_is_active) {
         if (!_world_item.valid){
             cv::Point2f expected_drone_location = _drone_blink_im_location;
             float dt = current_time - start_take_off_time;
-            const float full_throttle_im_effect = 13; // how many pixels per second will the drone go up given full throttle
             expected_drone_location.y+= dt * full_throttle_im_effect;
             _image_predict_item = ImagePredictItem(expected_drone_location,1,_drone_blink_im_size,255,_visdat->frame_id);
         }
@@ -121,7 +120,6 @@ bool DroneTracker::check_ignore_blobs(BlobProps * pbs, uint id) {
 
         cv::Point2f expected_drone_location = _drone_blink_im_location;
         float dt = current_time - start_take_off_time;
-        const float full_throttle_im_effect = 13; // how many pixels per second will the drone go up given full throttle
         expected_drone_location.y+= dt * full_throttle_im_effect;
 
         float d = sqrtf(powf(expected_drone_location.x-pbs->x,2)+powf(expected_drone_location.y-pbs->y,2));
