@@ -24,8 +24,6 @@ void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) 
     //TODO: recalculate this instead of reading from the log
     WorldItem w;
     w.iti = _image_item;
-    w.disparity_in_range = true;
-    w.background_check_ok = true;
     w.valid = true;
     w.pt.x = log.ins_pos_x;
     w.pt.y = log.ins_pos_y;
@@ -121,6 +119,12 @@ void InsectTracker::update_insect_prediction() {
     _image_predict_item.x = image_location.x;
     _image_predict_item.y = image_location.y;
 
+}
+
+ItemTracker::BlobWorldProps InsectTracker::calc_tmp_world_item(BlobProps * pbs){
+    auto wbp = calc_world_props_blob_generic(pbs);
+    wbp.valid = wbp.bkg_check_ok && wbp.disparity_in_range;
+    return wbp;
 }
 
 bool InsectTracker::check_ignore_blobs(BlobProps * pbs, uint id __attribute__((unused))) {

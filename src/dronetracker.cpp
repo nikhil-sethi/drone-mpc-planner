@@ -111,6 +111,12 @@ void DroneTracker::track(double time, bool drone_is_active) {
 
 }
 
+ItemTracker::BlobWorldProps DroneTracker::calc_tmp_world_item(BlobProps * pbs) {
+    auto wbp = calc_world_props_blob_generic(pbs);
+    wbp.valid = wbp.bkg_check_ok && wbp.disparity_in_range;
+    return wbp;
+}
+
 bool DroneTracker::check_ignore_blobs(BlobProps * pbs, uint id) {
 
     if ( this->check_ignore_blobs_generic(pbs))

@@ -23,7 +23,6 @@ void BlinkTracker::init_settings() {
 void BlinkTracker::track(double time) {
     switch (_blinking_drone_status) {
     case bds_start: {
-        _enable_depth_background_check = false;
         path.clear();
         predicted_image_path.clear();
         _blinking_drone_status = bds_reset_bkg;
@@ -122,6 +121,11 @@ BlinkTracker::blinking_drone_states BlinkTracker::detect_blink(double time, bool
     return _blinking_drone_status;
 }
 
+ItemTracker::BlobWorldProps BlinkTracker::calc_tmp_world_item(BlobProps * pbs){
+    ItemTracker::BlobWorldProps wbp = calc_world_props_blob_generic(pbs);
+    wbp.valid = wbp.disparity_in_range;
+    return wbp;
+}
 bool BlinkTracker::check_ignore_blobs(BlobProps * pbs, uint id __attribute__((unused))) {
     return this->check_ignore_blobs_generic(pbs);
 }

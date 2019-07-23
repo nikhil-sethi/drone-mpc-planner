@@ -35,6 +35,11 @@ public:
             pixel_max = blob_pixel_max;
         }
     };
+    struct BlobWorldProps {
+        float x,y,z,distance,distance_bkg;
+        float disparity; // not really a world prop, but OK.
+        bool disparity_in_range = false,bkg_check_ok = false,valid = false;
+    };
 
     struct ImageItem {
         uint frame_id;
@@ -62,7 +67,7 @@ public:
             frame_id = frameid;
             valid = true; //todo: implement when the log is not valid
         }
-        ImageItem(BlobProps blob, int frameid, float matching_score, uint keypointid){
+        ImageItem(BlobProps blob, float disparity_, int frameid, float matching_score, uint keypointid){
             x = blob.x;
             y = blob.y;
             size = blob.radius;
@@ -70,6 +75,7 @@ public:
             score = matching_score;
             frame_id = frameid;
             keypoint_id = keypointid;
+            disparity = disparity_;
             valid = true;
         }
     };
@@ -97,14 +103,22 @@ public:
         }
     };
     struct WorldItem {
+        WorldItem(){}
+        WorldItem(ImageItem new_iti, BlobWorldProps wbp){
+            iti = new_iti;
+            distance = wbp.distance;
+            distance_bkg = wbp.distance_bkg;
+            pt.x = wbp.x;
+            pt.y = wbp.y;
+            pt.z = wbp.z;
+            valid = wbp.valid;
+        }
         cv::Point3f pt;
         ImageItem  iti;
         cv::Point2f image_coordinates(){
             return cv::Point2f(iti.x,iti.y);
         }
-        float distance, distance_background;
-        bool background_check_ok = false;
-        bool disparity_in_range = false;
+        float distance, distance_bkg;
         bool valid = false;
 
         uint frame_id(){
@@ -199,10 +213,9 @@ private:
     int err [100];
     int cor_16 [100];
 
-    float sub_disparity;
     float disparity_smoothed;
     float disp_rate;
-    float disp_prev;
+    float disp_prev; // TODO: there's two disp(arity)_prevs...?
     float disparity_prev = 0;
 
     Smoother smoother_posX, smoother_posY, smoother_posZ;
@@ -238,16 +251,15 @@ protected:
     const float certainty_init = 0.1f; // TODO: tune
     const uint path_buf_size = 30;
 
-    bool _enable_depth_background_check = true;
-
     bool _tracking = false;
 
     ImageItem  _image_item;
     ImagePredictItem _image_predict_item;
     WorldItem  _world_item;
 
-    float stereo_match(cv::Point closestL, cv::Mat diffL, cv::Mat diffR, float prev_disparity);
+    float stereo_match(cv::Point closestL, cv::Mat diffL, cv::Mat diffR);
     void reset_tracker_ouput(double time);
+    BlobWorldProps calc_world_props_blob_generic(BlobProps * pbs);
     bool check_ignore_blobs_generic(BlobProps * pbs);
     void cleanup_paths();
     virtual void init_settings() = 0;
@@ -261,6 +273,11 @@ public:
     std::vector<IgnoreBlob> ignores_for_other_trkrs;
     std::vector<IgnoreBlob> ignores_for_me;
 
+    void blobs_are_fused(){
+        _world_item.iti.blob_is_fused = true;
+        _image_item.blob_is_fused = true;
+    }
+
     int n_frames_tracking =0;
     double last_sighting_time = 0;
 
@@ -270,6 +287,7 @@ public:
     void init(std::ofstream *logger, VisionData *_visdat, std::string name);
     virtual void track(double time);
     virtual bool check_ignore_blobs(BlobProps * pbs, uint id) = 0;
+    virtual ItemTracker::BlobWorldProps calc_tmp_world_item(BlobProps * pbs) = 0;
     void append_log();
 
     uint track_history_max_size = VIDEOFPS;
@@ -284,8 +302,14 @@ public:
     ImageItem image_item(){return _image_item;}
     ImagePredictItem image_predict_item(){return _image_predict_item;}
     WorldItem world_item(){return _world_item;}
-    void image_item(ImageItem t){_image_item = t;}
-    void image_item_invalidize(){_image_item.valid = false;}
+    void world_item(WorldItem world_item){
+        _world_item = world_item;
+        _image_item = _world_item.iti;
+    }
+    void item_invalidize(){
+        _image_item.valid = false;
+        _world_item.valid = false;
+    }
 
     float score_threshold() {return static_cast<float>(settings.score_threshold) / 1e3f;}
 

@@ -90,8 +90,8 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     smoother_brightness.init(smooth_blob_props_width);
 
     disparity_prev = 0;
-    sub_disparity = 0;
     disparity_smoothed = 0;
+
     if (_logger->is_open()) {
         (*_logger) << "imLx_" << _name << "; ";
         (*_logger) << "imLy_" << _name << "; ";
@@ -140,50 +140,46 @@ void ItemTracker::init_kalman() {
     cv::setIdentity(kfL.measurementNoiseCov, cv::Scalar(1e-1));
 }
 
-void ItemTracker::update_world_candidate(){
-
-    WorldItem w;
-    w.iti = _image_item;
-    if (_image_item.valid) {
-        _image_item.disparity = stereo_match(_image_item.pt(),_visdat->diffL,_visdat->diffR,disparity_prev);
-        w.iti.disparity = _image_item.disparity; // hmm
-
-        if (_image_item.disparity < settings.min_disparity || _image_item.disparity > settings.max_disparity){
-            w.disparity_in_range = false;
-        } else {
-            w.disparity_in_range = true;
-            //calculate everything for the itemcontroller:
-            std::vector<Point3d> camera_coordinates, world_coordinates;
-            camera_coordinates.push_back(Point3d(w.image_coordinates().x*IMSCALEF,w.image_coordinates().y*IMSCALEF,-_image_item.disparity));
-            cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
-            w.pt = world_coordinates[0];
-
-            float theta = _visdat->camera_angle * deg2rad;
-            float temp_y = w.pt.y * cosf(theta) + w.pt.z * sinf(theta);
-            w.pt.z = -w.pt.y * sinf(theta) + w.pt.z * cosf(theta);
-            w.pt.y = temp_y;
-
-            float dist_back = _visdat->depth_background_mm.at<float>(w.image_coordinates().y*IMSCALEF,w.image_coordinates().x*IMSCALEF);
-            float dist_meas = sqrtf(powf(w.pt.x,2) + powf(w.pt.y,2) +powf(w.pt.z,2));
-            if ((dist_meas > dist_back*(static_cast<float>(settings.background_subtract_zone_factor)/100.f)) && _enable_depth_background_check)
-                w.background_check_ok = false;
-            else
-                w.background_check_ok = true;
-
-            w.distance = dist_meas;
-            w.distance_background = dist_back;
+ItemTracker::BlobWorldProps ItemTracker::calc_world_props_blob_generic(BlobProps * pbs){
+    BlobWorldProps w;
+    cv::Point2f p(pbs->x, pbs->y);
 
 
-        }
-        if (w.background_check_ok && w.disparity_in_range)
-            w.valid = true;
-        else
-            w.valid = false;
-        _world_item = w;
+    w.disparity = stereo_match(p,_visdat->diffL,_visdat->diffR); //TODO: wtf, inputs scaled with IMSCALEF, but disparity is unscaled?
+    p*=IMSCALEF;
+
+    if (w.disparity < settings.min_disparity || w.disparity > settings.max_disparity){
+        w.disparity_in_range = false;
     } else {
-        _world_item.valid = false;
-    }
+        w.disparity_in_range = true;
 
+        std::vector<Point3d> camera_coordinates, world_coordinates;
+        camera_coordinates.push_back(Point3d(p.x,p.y,-w.disparity));
+        cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
+        w.x = world_coordinates[0].x;
+        w.y = world_coordinates[0].y;
+        w.z = world_coordinates[0].z;
+
+        float theta = _visdat->camera_angle * deg2rad;
+        float temp_y = w.y * cosf(theta) + w.z * sinf(theta);
+        w.z = -w.y * sinf(theta) + w.z * cosf(theta);
+        w.y = temp_y;
+
+        float dist_bkg = _visdat->depth_background_mm.at<float>(p.y,p.x);
+        float dist_meas = sqrtf(powf(w.x,2) + powf(w.y,2) +powf(w.z,2));
+
+        if ((dist_meas > dist_bkg*(static_cast<float>(settings.background_subtract_zone_factor)/100.f)) )
+            w.bkg_check_ok = false;
+        else
+            w.bkg_check_ok = true;
+
+        w.distance = dist_meas;
+        w.distance_bkg = dist_bkg;
+    }
+    return w;
+}
+
+void ItemTracker::update_world_candidate(){ //TODO: rename
     if (_world_item.valid){
         if (!_image_item.blob_is_fused) {
             smoother_im_size.addSample(_image_item.size);
@@ -191,7 +187,6 @@ void ItemTracker::update_world_candidate(){
         }
         smoother_score.addSample(_image_item.score);
     }
-
 }
 
 void ItemTracker::track(double time) {
@@ -306,7 +301,7 @@ void ItemTracker::predict(float dt, int frame_id) {
     predicted_image_path.push_back(_image_predict_item );
 }
 
-float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR, float prev_disparity){
+float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR){
     //get retangle around blob / changed pixels
     float rectsize = settings.max_disparity;
 
@@ -344,8 +339,8 @@ float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR,
     int disp_start = settings.min_disparity;
     int disp_end = tmp_max_disp;
     if (n_frames_tracking>5) {
-        disp_start = std::max(static_cast<int>(floor(prev_disparity))-2,disp_start);
-        disp_end = std::min(static_cast<int>(ceil(prev_disparity))+2,disp_end);
+        disp_start = std::max(static_cast<int>(floor(disparity_prev))-2,disp_start);
+        disp_end = std::min(static_cast<int>(ceil(disparity_prev))+2,disp_end);
     }
 
     for (int i=disp_start; i<disp_end;i++) {
@@ -373,6 +368,7 @@ float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR,
 
     // measured disparity value
 
+    float sub_disparity;
     if (disparity>0)
         sub_disparity = estimate_sub_disparity(disparity);
     else

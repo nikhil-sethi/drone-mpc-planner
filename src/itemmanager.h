@@ -57,7 +57,7 @@ public: cv::Scalar tracker_color( ItemTracker * trkr) {
                 else
                     return cv::Scalar(255,255,55);
             } else if (trackers.size()>1)
-               return cv::Scalar(200,255,250);
+                return cv::Scalar(200,255,250);
             ItemTracker * trkr = trackers.at(0);
             if (typeid(*trkr) == typeid(DroneTracker))
                 return cv::Scalar(0,255,0);
@@ -149,7 +149,10 @@ public:
                         best_state = btrkr->state();
                 }
             }
-            return blinking_drone_state_names[best_state];
+            if (best_state>0)
+                return blinking_drone_state_names[best_state];
+            else
+                return itemmanager_mode_names[_mode];
         } else
             return itemmanager_mode_names[_mode];
     }
