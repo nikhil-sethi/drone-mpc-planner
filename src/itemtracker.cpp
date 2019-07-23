@@ -522,15 +522,16 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
     // Position estimation
 
     // smooth position data with simple filter
-    if (reset_filters) {
+    if (reset_filters || track_history.size()<1) {
         data.sposX = data.posX;
         data.sposY = data.posY;
         data.sposZ = data.posZ;
     } else {
         float pos_filt_rate = 0.3f;
-        data.sposX = data.posX*pos_filt_rate + data.sposX*(1.0f-pos_filt_rate);
-        data.sposY = data.posY*pos_filt_rate + data.sposY*(1.0f-pos_filt_rate);
-        data.sposZ = data.posZ*pos_filt_rate + data.sposZ*(1.0f-pos_filt_rate);
+        auto data_prev = track_history.back();
+        data.sposX = data.posX*pos_filt_rate + data_prev.sposX*(1.0f-pos_filt_rate);
+        data.sposY = data.posY*pos_filt_rate + data_prev.sposY*(1.0f-pos_filt_rate);
+        data.sposZ = data.posZ*pos_filt_rate + data_prev.sposZ*(1.0f-pos_filt_rate);
     }
 
     data.svelX = smoother_velX2.addSample(data.sposX,dt);
