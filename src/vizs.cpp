@@ -60,8 +60,8 @@ void Visualizer::addPlotSample(void) {
     posX.push_back(-data.posX);
     posY.push_back(data.posY);
     posZ.push_back(-data.posZ);
-    disparity.push_back(_dtrkr->find_result.disparity);
-    sdisparity.push_back(_dtrkr->find_result.disparity);
+    disparity.push_back(_dtrkr->image_item().disparity);
+    sdisparity.push_back(_dtrkr->image_item().disparity);
 
     sposX.push_back(-data.sposX);
     sposY.push_back(data.sposY);
