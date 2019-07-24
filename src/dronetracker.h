@@ -99,6 +99,7 @@ public:
     cv::Point3f drone_landing_location() {return _landing_pad_world;}
 
     bool taking_off(){ return _drone_tracking_status == dts_detecting_takeoff_init || _drone_tracking_status == dts_detecting_takeoff;}
+    bool inactive(){ return _drone_tracking_status == dts_inactive;}
 
     bool _manual_flight_mode = false;
     cv::Mat diff_viz;

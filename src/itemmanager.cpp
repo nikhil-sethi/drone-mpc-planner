@@ -46,6 +46,7 @@ void ItemManager::init(std::ofstream *logger,VisionData *visdat){
 }
 
 void ItemManager::update(double time,LogReader::Log_Entry log_entry, bool drone_is_active){
+
     if (enable_viz_diff) {
         cv::cvtColor(_visdat->diffL*10,diff_viz,CV_GRAY2BGR);
         putText(diff_viz,"Drone",cv::Point(3,diff_viz.rows-12),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,255,0));
@@ -61,7 +62,7 @@ void ItemManager::update(double time,LogReader::Log_Entry log_entry, bool drone_
 
         update_static_ignores();
 
-        match_blobs_to_trackers(drone_is_active);
+        match_blobs_to_trackers(drone_is_active && !_dtrkr->inactive());
 
     }
 
