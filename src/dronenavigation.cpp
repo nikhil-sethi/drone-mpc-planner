@@ -118,7 +118,7 @@ void DroneNavigation::update(double time) {
                 time_located_drone = time;
             }
 #if TX_TYPE == TX_FRSKYX_TC
-            if (time - prev_time > _dtrk->bind_blink_time)
+            if (time - prev_time > bind_blink_time)
                 _dctrl->blink_drone(true,time);
 #endif
             break;
