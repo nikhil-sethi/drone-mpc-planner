@@ -47,19 +47,19 @@ void Interceptor::update(bool drone_at_base) {
         }
          update_far_target(drone_at_base);
          update_insect_in_range();
+
+         if (_intercept_pos.y< _trackers->dronetracker()->drone_startup_location().y + minimal_height)
+             _intercept_pos.y  = _trackers->dronetracker()->drone_startup_location().y + minimal_height;
+
         if (_count_insect_not_in_range>5){
            _interceptor_state = is_waiting_in_reach_zone;
            break;
          }
 
-         if (fabs(_horizontal_separation)<0.3f && fabs(_vertical_separation)<0.8f){
+         if (fabs(_horizontal_separation)<0.3f && fabs(_vertical_separation)<0.8f)
              _interceptor_state = is_close_chasing;
-         } else
-             break;
 
-         if (_intercept_pos.y< _trackers->dronetracker()->drone_startup_location().y + minimal_height)
-             _intercept_pos.y  = _trackers->dronetracker()->drone_startup_location().y + minimal_height;
-
+         break;
     } FALLTHROUGH_INTENDED; case is_close_chasing: {
         if  (!_trackers->insecttracker()->tracking()) {
           _interceptor_state = is_waiting_for_target;
