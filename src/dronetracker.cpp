@@ -46,13 +46,14 @@ void DroneTracker::track(double time, bool drone_is_active) {
         ignores_for_me.push_back(IgnoreBlob(drone_startup_im_location(),time+startup_location_ignore_timeout, IgnoreBlob::landing_spot));
         _drone_tracking_status = dts_detecting_takeoff;
     } FALLTHROUGH_INTENDED; case dts_detecting_takeoff: {
-        ItemTracker::track(time);
         if (!_world_item.valid){
             cv::Point2f expected_drone_location = _drone_blink_im_location;
             float dt = current_time - start_take_off_time;
             expected_drone_location.y+= dt * full_throttle_im_effect;
             _image_predict_item = ImagePredictItem(expected_drone_location,1,_drone_blink_im_size,255,_visdat->frame_id);
         }
+
+        ItemTracker::track(time);
 
         if (enable_viz_diff){
             cv::Point2f tmpp = drone_startup_im_location();
