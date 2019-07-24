@@ -122,7 +122,7 @@ bool DroneTracker::check_ignore_blobs(BlobProps * pbs, uint id) {
     if ( this->check_ignore_blobs_generic(pbs))
         return true;
 
-    if (taking_off()) {
+    if (taking_off() && !_manual_flight_mode) {
 
         cv::Point2f expected_drone_location = _drone_blink_im_location;
         float dt = current_time - start_take_off_time;

@@ -263,6 +263,8 @@ void process_frame(Stereo_Frame_Data data) {
     dctrl.control(trackers.dronetracker()->Last_track_data(),dnav.setpoint_pos_world,dnav.setpoint_vel_world,dnav.setpoint_acc_world);
     dprdct.update(dctrl.drone_is_active(),data.time);
 
+    trackers.dronetracker()-> _manual_flight_mode =dnav.drone_is_manual(); // TODO: hacky
+
     logger << std::endl;
 
 #ifdef HASSCREEN

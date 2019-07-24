@@ -100,6 +100,7 @@ public:
 
     bool taking_off(){ return _drone_tracking_status == dts_detecting_takeoff_init || _drone_tracking_status == dts_detecting_takeoff;}
 
+    bool _manual_flight_mode = false;
     cv::Mat diff_viz;
 
     bool init(std::ofstream *logger, VisionData *_visdat);

@@ -270,7 +270,9 @@ public:
     }
     bool drone_is_flying(){
          return _navigation_status < ns_landing && _navigation_status >  ns_takeoff;
-
+    }
+    bool drone_is_manual(){
+         return _navigation_status == ns_manual;
     }
 
     Interceptor get_Interceptor(){return _iceptor;}
