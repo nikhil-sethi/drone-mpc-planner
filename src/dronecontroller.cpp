@@ -161,7 +161,7 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
         pitchErrI = 0;
         throttleErrI = 0;
 
-        autoThrottle = JOY_BOUND_MAX;
+        autoThrottle = JOY_BOUND_MAX-800;
         if (!hoverthrottleInitialized)
             hoverthrottle  +=params.autoTakeoffFactor;
         if (hoverthrottle < min_throttle)
