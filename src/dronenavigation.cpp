@@ -45,12 +45,22 @@ void DroneNavigation::init(std::ofstream *logger, ItemManager * trackers, DroneC
 
     //The flight plan will be repeated indefinetely, unless there is a landing waypoint somewhere in the list.
 
-    setpoints.push_back(waypoint(cv::Point3f(-2,-1.0f,-3.5f),100));
-    setpoints.push_back(waypoint(cv::Point3f(2,-1.0f,-3.5f),100));
-    setpoints.push_back(waypoint(cv::Point3f(-2,-1.0f,-3.5f),100));
-    setpoints.push_back(waypoint(cv::Point3f(2,-1.0f,-3.5f),100));
+//    setpoints.push_back(waypoint(cv::Point3f(-2,-1.0f,-3.5f),100));
+//    setpoints.push_back(waypoint(cv::Point3f(2,-1.0f,-3.5f),100));
+//    setpoints.push_back(waypoint(cv::Point3f(-2,-1.0f,-3.5f),100));
+//    setpoints.push_back(waypoint(cv::Point3f(2,-1.0f,-3.5f),100));
+
 
     setpoints.push_back(waypoint(cv::Point3f(0,-1.0f,-1.5f),30));
+
+
+        setpoints.push_back(waypoint(cv::Point3f(0,-0.3f,-1.5f),30));
+        setpoints.push_back(waypoint(cv::Point3f(0,-1.5f,-1.5f),30));
+
+        setpoints.push_back(waypoint(cv::Point3f(0,-0.3f,-1.5f),30));
+        setpoints.push_back(waypoint(cv::Point3f(0,-1.5f,-1.5f),30));
+
+
     setpoints.push_back(landing_waypoint());
 
 #ifdef TUNING
