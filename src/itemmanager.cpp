@@ -85,9 +85,6 @@ void ItemManager::update_trackers(double time,LogReader::Log_Entry log_entry, bo
         } else if(typeid(*_trackers.at(i)) == typeid(DroneTracker)) {
             DroneTracker * dtrkr = static_cast<DroneTracker * >(_trackers.at(i));
             dtrkr->track(time,tracker_active(dtrkr,drone_is_active));
-            if (!_trackers.at(i)->world_item().valid && _trackers.at(i)->image_item().valid) {
-                putText(diff_viz,"W",_trackers.at(i)->image_item().pt()*IMSCALEF,FONT_HERSHEY_SIMPLEX,0.9,cv::Scalar(0,255,0));
-            }
         } else if (typeid(*_trackers.at(i)) == typeid(InsectTracker)) {
             InsectTracker * itrkr = static_cast<InsectTracker * >(_trackers.at(i));
             switch (_mode){
@@ -196,7 +193,7 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
                 if (best_score >= trkr->score_threshold() ) {
                     auto wbp = trkr->calc_tmp_world_item(&_blobs.at(best_score_j));
                     ItemTracker::WorldItem w(ItemTracker::ImageItem(_blobs.at(best_score_j),wbp.disparity,_visdat->frame_id,best_score,best_score_j),wbp);
-                    if (!w.valid) {
+                    if (!w.valid && enable_viz_diff) {
                       putText(diff_viz,"W",trkr->image_item().pt()*IMSCALEF,FONT_HERSHEY_SIMPLEX,0.9,tracker_color(trkr));
                     }
                     trkr->world_item(w);
