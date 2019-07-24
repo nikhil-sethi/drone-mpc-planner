@@ -6,7 +6,7 @@ void ItemManager::init(std::ofstream *logger,VisionData *visdat){
     _visdat = visdat;
     _logger = logger;
 #ifdef HASSCREEN
-    enable_viz_max_points = true;
+    enable_viz_max_points = false;
     enable_viz_diff = true;
 #endif
     _settingsFile = "../itemmanager_settings.dat";
