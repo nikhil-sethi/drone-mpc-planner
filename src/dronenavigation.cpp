@@ -51,14 +51,12 @@ void DroneNavigation::init(std::ofstream *logger, ItemManager * trackers, DroneC
 //    setpoints.push_back(waypoint(cv::Point3f(2,-1.0f,-3.5f),100));
 
 
-    setpoints.push_back(waypoint(cv::Point3f(0,-1.0f,-1.5f),30));
+        setpoints.push_back(waypoint(cv::Point3f(1.5,-0.3f,-2.5f),30));
+        setpoints.push_back(waypoint(cv::Point3f(0,-1.91f,-2.5f),30));
 
+        setpoints.push_back(waypoint(cv::Point3f(0,-0.3f,-2.5f),200));
+        setpoints.push_back(waypoint(cv::Point3f(0,-1.91f,-2.5f),200));
 
-        setpoints.push_back(waypoint(cv::Point3f(0,-0.3f,-1.5f),30));
-        setpoints.push_back(waypoint(cv::Point3f(0,-1.5f,-1.5f),30));
-
-        setpoints.push_back(waypoint(cv::Point3f(0,-0.3f,-1.5f),30));
-        setpoints.push_back(waypoint(cv::Point3f(0,-1.5f,-1.5f),30));
 
 
     setpoints.push_back(landing_waypoint());
