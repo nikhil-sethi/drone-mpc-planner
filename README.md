@@ -6,4 +6,7 @@ Re-encode videoLR.avi:
 
 Re-encode color result video's:
 
-`find -iname videoResult.avi -exec ffmpeg -i {} -c:v libx264 -preset slow -pix_fmt yuv420p -profile:v high -level 4.0 -b:v 15M -bf 2 -crf 18 videoResult.mp4 \;`
+`find -iname videoResult.avi -exec ffmpeg -i {} -c:v libx264 -preset slow -pix_fmt yuv420p -profile:v high -level 4.0 -b:v 15M -bf 2 -crf 18 {}.mp4 \;`
+
+`find -iname videoResult.avi -exec -exec ffmpeg -i {} -f matroska -c:v libvpx -crf 21 -b:v 15M {}.mkv \;`
+
