@@ -84,6 +84,26 @@ void DroneTracker::track(double time, bool drone_is_active) {
 
             if (takeoff_spot_detected &&drone_detected_near_takeoff_spot ) {
                 _drone_tracking_status = dts_detected;
+                //calculate take off speed
+                float dy_to = _world_item.pt.y - _drone_blink_world_location.y;
+                float dt_to = time - start_take_off_time;
+
+                //assuming linear acceleration
+                //x = 0.5a*t^2
+                //a = (2x)/t^2
+                float a_to = 2.f*dy_to / powf(dt_to,2);
+                float v_final_to = a_to*dt_to;
+
+                auto data = track_history.back(); //hacky
+                track_history.clear(); // hack
+                data.svelY = v_final_to;
+                data.saccY = a_to;
+                track_history.push_back(data);
+                for (uint hack = 0; hack<70;hack++) {
+                    smoother_velY2.addSample(_world_item.pt.y + (-69 * v_final_to * dt_to) + (v_final_to*dt_to*hack),dt_to); // extremely dirty hack
+                    smoother_accY2.addSample(v_final_to + (-69 * a_to * dt_to) + (a_to*dt_to*hack),dt_to); // extremely dirty hack
+                }
+
                 _visdat->delete_from_motion_map(drone_startup_im_location()*IMSCALEF, _drone_blink_im_disparity,ceilf(_drone_blink_im_size*2.f)*IMSCALEF,VIDEOFPS/2);
             }
         }
@@ -116,6 +136,10 @@ void DroneTracker::track(double time, bool drone_is_active) {
 ItemTracker::BlobWorldProps DroneTracker::calc_tmp_world_item(BlobProps * pbs) {
     auto wbp = calc_world_props_blob_generic(pbs);
     wbp.valid = wbp.bkg_check_ok && wbp.disparity_in_range;
+
+    if (inactive())
+        wbp.valid = false;
+
     return wbp;
 }
 
@@ -131,7 +155,6 @@ bool DroneTracker::check_ignore_blobs(BlobProps * pbs, uint id) {
         expected_drone_location.y+= dt * full_throttle_im_effect;
 
         float d = sqrtf(powf(expected_drone_location.x-pbs->x,2)+powf(expected_drone_location.y-pbs->y,2));
-        std::cout << id << ": " <<  pbs->x << ",  "  << pbs->y <<  " d: "  << d << std::endl;
         if (d > 20)
             return true;
     }

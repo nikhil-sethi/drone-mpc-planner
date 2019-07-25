@@ -1,4 +1,4 @@
-#ifndef DRONECONTROLLER_H
+﻿#ifndef DRONECONTROLLER_H
 #define DRONECONTROLLER_H
 
 #include "dronetracker.h"
@@ -114,19 +114,22 @@ private:
 #define PITCH_MIDDLE JOY_MIDDLE
 #endif
 #if TX_TYPE == TX_FRSKYD
-    public : const float throttle_bank_factor = 0.23f; // Whoop
+public : const float throttle_bank_factor = 0.23f; // Whoop
+public : const uint cowardly_poo_factor = 0;
 #define INITIALTHROTTLE 200
 #define INITIAL_HOVER_THROTTLE 950
 #define PITCH_MIDDLE JOY_MIDDLE
 #endif
 #if TX_TYPE == TX_FRSKYX
-    public : const float throttle_bank_factor = 0.23f; //Whoop
+public : const float throttle_bank_factor = 0.23f; //Whoop
+public : const uint cowardly_poo_factor = 0;
 #define INITIALTHROTTLE 200
 #define INITIAL_HOVER_THROTTLE 900
 #define PITCH_MIDDLE JOY_MIDDLE
 #endif
 #if TX_TYPE == TX_FRSKYX_TC
-    public : const float throttle_bank_factor = 0.11f; // Whoop 0.33 Thrashcan 0.11
+public : const float throttle_bank_factor = 0.11f; // Whoop 0.33 Thrashcan 0.11
+public : const uint cowardly_poo_factor = 750;
 #define INITIALTHROTTLE 200
 #define INITIAL_HOVER_THROTTLE 635
 #define PITCH_MIDDLE JOY_MIDDLE

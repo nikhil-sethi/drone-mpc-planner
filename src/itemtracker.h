@@ -162,8 +162,8 @@ private:
 
         //only for dronetracker:
         int pixel_dist_landing_spot = 0;
-        int takeoff_seperation_min = 2;
-        int takeoff_seperation_max = 7;
+        int takeoff_seperation_min = 4;
+        int takeoff_seperation_max = 15;
 
         float version = 2.0f;
 
