@@ -390,7 +390,9 @@ void Visualizer::draw_tracker_viz() {
     std::vector<ItemTracker::WorldItem> ins_path = tracker_viz_base_data.ins_path;
     std::vector<ItemTracker::ImagePredictItem> ins_predicted_path = tracker_viz_base_data.ins_predicted_path;
 
-    cv::Mat resFrame = cv::Mat::zeros(viz_frame_size(),CV_8UC3);
+    cv::Size resFrame_size = viz_frame_size();
+    resFrame_size.width -=IMG_W;
+    cv::Mat resFrame = cv::Mat::zeros(resFrame_size,CV_8UC3);
     cv::Mat frameL_color;
     cvtColor(frameL,frameL_color,CV_GRAY2BGR);
     cv::Rect rect(0,frameL.rows*_res_mult/4,frameL.cols*_res_mult,frameL.rows*_res_mult);
@@ -461,12 +463,22 @@ void Visualizer::draw_tracker_viz() {
     frameL_small_insect.copyTo(resFrame(cv::Rect(resFrame.cols-frameL_small_drone.cols,0,frameL_small_drone.cols, frameL_small_drone.rows)));
     draw_target_text(resFrame,time,dis,min_dis);
 
-    trackframe = resFrame;
+    if (_trackers->diff_viz.cols > 0) {
+        cv::Mat diff = _trackers->diff_viz;
+        cv::Mat ext_res_frame = cv::Mat::zeros(resFrame.rows,resFrame.cols+diff.cols,CV_8UC3);
+        resFrame.copyTo(ext_res_frame(cv::Rect(0,0,resFrame.cols,resFrame.rows)));
+        diff.copyTo(ext_res_frame(cv::Rect(resFrame.cols,frameL_small_drone.rows,diff.cols,diff.rows)));
+        trackframe = ext_res_frame;
+    } else
+        trackframe = resFrame;
+
 }
 
 void Visualizer::paint() {
     if (request_trackframe_paint) {
         request_trackframe_paint = false;
+        if (_trackers->diff_viz.cols > 0)
+            cv::imshow("diff", _trackers->diff_viz);
         cv::imshow("tracking results", trackframe);
         if (_visdat->viz_frame.cols>0)
             cv::imshow("diff",_visdat->viz_frame);
@@ -474,8 +486,9 @@ void Visualizer::paint() {
             cv::imshow("drn_diff", _dtrkr->diff_viz);
         if (_trackers->viz_max_points.cols > 0)
             cv::imshow("motion points", _trackers->viz_max_points);
-        if (_trackers->diff_viz.cols > 0)
-            cv::imshow("diff", _trackers->diff_viz);
+//        if (_trackers->diff_viz.cols > 0)
+//            cv::imshow("diff", _trackers->diff_viz);
+
         new_tracker_viz_data_requested = true;
     }
     if (request_plotframe_paint && plotframe.rows > 0) {

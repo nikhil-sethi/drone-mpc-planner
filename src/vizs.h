@@ -161,7 +161,7 @@ public:
 
 
     cv::Size viz_frame_size() {
-        return cv::Size(IMG_W*_res_mult,IMG_H*_res_mult+IMG_H*_res_mult/4);
+        return cv::Size(IMG_W*_res_mult + IMG_W,IMG_H*_res_mult+IMG_H*_res_mult/4);
     }
 
     void paint();
