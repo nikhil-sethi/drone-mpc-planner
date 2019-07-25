@@ -143,7 +143,7 @@ ItemTracker::BlobWorldProps DroneTracker::calc_tmp_world_item(BlobProps * pbs) {
     return wbp;
 }
 
-bool DroneTracker::check_ignore_blobs(BlobProps * pbs, uint id) {
+bool DroneTracker::check_ignore_blobs(BlobProps * pbs, uint id  __attribute__((unused))) {
 
     if ( this->check_ignore_blobs_generic(pbs))
         return true;
@@ -159,7 +159,6 @@ bool DroneTracker::check_ignore_blobs(BlobProps * pbs, uint id) {
             return true;
     }
     return false;
-
 }
 
 //Removes all ignore points which timed out
