@@ -5,7 +5,7 @@ bool DroneTracker::init(std::ofstream *logger, VisionData *visdat) {
     enable_viz_diff = false;
 #endif
     ItemTracker::init(logger,visdat,"drone");
-
+    cv::invert(visdat->Qf,Qfi);
     return false;
 }
 void DroneTracker::init_settings() {
@@ -99,6 +99,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
     } case dts_detected: {
         insert_control_predicted_drone_location();
         ItemTracker::track(time);
+        update_drone_prediction();
         _visdat->exclude_drone_from_motion_fading(_image_item.pt()*IMSCALEF,_image_item.size*1.2f*IMSCALEF); // TODO: use this trick also in the blinktracker
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
@@ -150,3 +151,52 @@ void DroneTracker::clean_ignore_blobs(double time){
     }
     ignores_for_other_trkrs= new_ignores_for_insect_tracker;
 }
+
+void DroneTracker::update_drone_prediction() {
+    track_data td = Last_track_data();
+    cv::Point3f pos = {td.posX,td.posY,td.posZ};
+    cv::Point3f vel = {td.svelX,td.svelY,td.svelZ};
+    //TODO: also consider acc?
+
+
+    // predict insect position for next frame
+    float dt_pred = 1.f/VIDEOFPS;
+    cv::Point3f predicted_pos = pos + vel*dt_pred;
+
+    //transform back to image coordinates
+    std::vector<cv::Point3d> world_coordinates,camera_coordinates;
+    cv::Point3f tmp(predicted_pos.x,predicted_pos.y,predicted_pos.z);
+
+    //derotate camera and convert to double:
+    cv::Point3d tmpd;
+    float theta = -_visdat->camera_angle * deg2rad;
+    float temp_y = tmp.y * cosf(theta) + tmp.z * sinf(theta);
+    tmpd.z = -tmp.y * sinf(theta) + tmp.z * cosf(theta);
+    tmpd.y = temp_y;
+    tmpd.x = tmp.x;
+
+    world_coordinates.push_back(tmpd);
+    cv::perspectiveTransform(world_coordinates,camera_coordinates,Qfi);
+
+    //update tracker with prediciton
+    cv::Point2f image_location;
+    image_location.x= camera_coordinates.at(0).x/IMSCALEF;
+    image_location.y= camera_coordinates.at(0).y/IMSCALEF;
+
+    if (image_location.x < 0)
+        image_location.x = 0;
+    else if (image_location.x >= IMG_W/IMSCALEF)
+        image_location.x = IMG_W/IMSCALEF-1;
+    if (image_location.y < 0)
+        image_location.y = 0;
+    else if (image_location.y >= IMG_H/IMSCALEF)
+        image_location.y = IMG_H/IMSCALEF-1;
+
+    //issue #108:
+    predicted_image_path.back().x = image_location.x;
+    predicted_image_path.back().y = image_location.y;
+    _image_predict_item.x = image_location.x;
+    _image_predict_item.y = image_location.y;
+
+}
+
