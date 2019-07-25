@@ -102,6 +102,7 @@ void Interceptor::update_far_target(bool drone_at_base){
     _intercept_pos = insect_pos + (_intercept_vel*half_tti);
     _intercept_pos.y -= 0.2f; // put the drone a bit below the insect
     _intercept_vel = insect_vel;
+    _intercept_vel.y = 0; // we don't want to follow the vertical speed of the insect, ever. TODO: improve this
     _intercept_acc = insect_acc;
 
     _horizontal_separation = norm(cv::Point2f(drone_pos.x,drone_pos.z) - cv::Point2f(insect_pos.x,insect_pos.z));
@@ -121,10 +122,12 @@ void Interceptor::update_close_target(){
 
     cv::Point3f vector = insect_pos-drone_pos;
     float norm_vector = norm(vector);
-    insect_vel.y = 0;
-    insect_vel = 0.5f* insect_vel + vector/norm_vector*1.5f;
+
+    insect_vel.y = 0; // we don't want to follow the vertical speed of the insect, ever
+    insect_vel = 0.5f* insect_vel + vector/norm_vector*0.6f;
     if (norm_vector > 0.05f) // when insect and drone come close to each other, the blobs get fused..., so keep the previous speed vector in that case
         _intercept_vel = insect_vel;
+
 
     _horizontal_separation = norm(cv::Point2f(drone_pos.x,drone_pos.z) - cv::Point2f(insect_pos.x,insect_pos.z));
     _vertical_separation = insect_pos.y-drone_pos.y;
