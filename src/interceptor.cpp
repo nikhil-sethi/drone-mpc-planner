@@ -140,7 +140,7 @@ void Interceptor::update_insect_in_range() {
             abs(_intercept_pos.x) < 2.0f &&
             _intercept_pos.y > _intercept_pos.z*1.5f &&
             _intercept_pos.y < -0.3f &&
-            _intercept_pos.z > -3.0f &&
+            _intercept_pos.z > -4.9f &&
             _intercept_pos.z < -0.5f) {
         _count_insect_not_in_range= 0;
     } else {
