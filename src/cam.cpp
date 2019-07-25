@@ -71,6 +71,25 @@ void Cam::update_playback(void) {
         if (frame_time_higest_id < _frame_time && playback_bufferR_cleaned.size()>0){
             //for some reason the frame time and id counter sometimes resets in the bag files...
             std::cout << "Warning, frame reset detected. " << _frame_time << " -> " << frame_time_higest_id  << std::endl;
+
+            if (_frame_time > 3 && frame_time_higest_id < 1){
+                std::cout << "breakpoint" << std::endl;
+                for (uint i = 0; i < 25; i++) {
+                    auto tmp = static_cast<rs2::playback>(dev).current_status();
+                    std::cout << tmp << std::endl;
+                    new_frame1 =true;
+                    new_frame2 = true;
+                    lock_newframe.unlock(); // wait for a new frame passed by the rs callback
+                    lock_frame_data.unlock();
+                    pause();
+                    seek(incremented_playback_frametime-0.1);
+                    resume();
+                    usleep(1000);
+                    if (playback_bufferL.size() > 10)
+                        break;
+                }
+            }
+
             funky_RS_frame_time_fixer_frame_count += requested_id_in;
             requested_id_in = lowest_complete_id;
         }
@@ -97,13 +116,13 @@ void Cam::update_playback(void) {
             throw my_video_ended();
         }
 
-        if (_paused && playback_bufferR_cleaned.size() < 3 ){ // 3 to start buffering 3 frames before the buffer runs empty
+        if (_paused && (playback_bufferR_cleaned.size() < 5 || playback_bufferL_cleaned.size() < 5) ){ // 3 to start buffering 3 frames before the buffer runs empty
             incremented_playback_frametime = (requested_id_in+funky_RS_frame_time_fixer_frame_count-2)*(1./VIDEOFPS) - (1./VIDEOFPS)*0.1;  //requested_id_in-2 -> -2 seems to be necessary because the RS api skips a frame of either the left or right camera after resuming
             if (incremented_playback_frametime < 0)
                 incremented_playback_frametime = 0;
-            //            std::cout << "Resuming RS: " << incremented_playback_frametime << std::endl;
 
             if (duration-0.4 >= incremented_playback_frametime){
+                std::cout << "Resuming RS: " << incremented_playback_frametime << std::endl; // deadlock sometimes occurs 5 frames after this
                 seek(incremented_playback_frametime);
                 resume();
             } else {
@@ -931,9 +950,15 @@ void Cam::close() {
         exit_watchdog_thread = true;
         std::cout << "Closing camera" << std::endl;
         auto rs_depth_sensor = dev.first<rs2::depth_sensor>();
+        lock_newframe.unlock();
+        lock_frame_data.unlock();
         rs_depth_sensor.stop();
         rs_depth_sensor.close();
-        usleep(1000);
+        for (uint i = 0; i < 10; i++ ){
+            lock_newframe.unlock();
+            lock_frame_data.unlock();
+            usleep(1000);
+        }
 #ifdef WATCHDOG_ENABLED
         std::cout << "Waiting for camera watchdog." << std::endl;
         thread_watchdog.join();
