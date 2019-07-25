@@ -218,6 +218,12 @@ private:
     float disp_prev; // TODO: there's two disp(arity)_prevs...?
     float disparity_prev = 0;
 
+    Smoother smoother_score;
+    Smoother smoother_brightness;
+
+    int detected_after_take_off = 0;
+protected:
+
     Smoother smoother_posX, smoother_posY, smoother_posZ;
     Smoother2 smoother_velX2,smoother_velY2,smoother_velZ2;
     Smoother smoother_velX, smoother_velY, smoother_velZ;
@@ -231,13 +237,6 @@ private:
     Smoother2 disp_rate_smoothed2;
     bool reset_filters;
     bool reset_disp = false;
-
-
-    Smoother smoother_score;
-    Smoother smoother_brightness;
-
-    int detected_after_take_off = 0;
-protected:
 
     Smoother smoother_im_size;
 
