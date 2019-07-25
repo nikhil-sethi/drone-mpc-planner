@@ -401,6 +401,15 @@ void Visualizer::draw_tracker_viz() {
         auto pred = drn_predicted_path.back();
         cv::circle(frameL_color,pred.pt()*IMSCALEF,pred.size*IMSCALEF,cv::Scalar(0,255,0));
     }
+    if ( drn_path.size()>0 ) {
+        auto p = drn_path.back().iti;
+        cv::circle(frameL_color,p.pt()*IMSCALEF,p.size*IMSCALEF,cv::Scalar(0,0,255));
+    }
+
+    if ( ins_predicted_path.size()>0 ) {
+        auto pred = ins_predicted_path.back();
+        cv::circle(frameL_color,pred.pt()*IMSCALEF,pred.size*IMSCALEF,cv::Scalar(0,255,0));
+    }
 
     if (ins_path.size()>0){
         std::stringstream ss;
