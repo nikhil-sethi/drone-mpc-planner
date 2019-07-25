@@ -24,7 +24,9 @@ private:
     double startup_location_ignore_timeout = 1; // TODO: make this dependent on the motion_update_iterator_max
     double taking_off_ignore_timeout = 0.1; // TODO: make this dependent on the motion_update_iterator_max
 
-    const float full_throttle_im_effect = 3; // how many pixels per second will the drone go up given full throttle
+    const float full_bat_and_throttle_im_effect = 3; // how many pixels per second will the drone go up given full throttle
+    const float full_bat_and_throttle_take_off_acc = 9; // Trashcan
+    const float full_bat_and_throttle_spinup_time = 0.19f; // Trashcan
 
     enum drone_tracking_states {
         dts_init = 0,

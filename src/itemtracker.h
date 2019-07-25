@@ -160,12 +160,8 @@ private:
         int score_threshold = 66;
         int background_subtract_zone_factor = 97;
 
-        //only for dronetracker:
-        int pixel_dist_landing_spot = 0;
-        int takeoff_seperation_min = 4;
-        int takeoff_seperation_max = 15;
 
-        float version = 2.0f;
+        float version = 2.1f;
 
         template <class Archive>
         void serialize( Archive & ar )
@@ -174,10 +170,7 @@ private:
                min_disparity,
                max_disparity,
                score_threshold,
-               background_subtract_zone_factor,
-               pixel_dist_landing_spot,
-               takeoff_seperation_min,
-               takeoff_seperation_max);
+               background_subtract_zone_factor);
         }
 
     };

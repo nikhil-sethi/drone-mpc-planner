@@ -47,9 +47,10 @@ void DroneTracker::track(double time, bool drone_is_active) {
         _drone_tracking_status = dts_detecting_takeoff;
     } FALLTHROUGH_INTENDED; case dts_detecting_takeoff: {
         if (!_world_item.valid){
+            //TODO: remove full_bat_and_throttle_im_effect and use acc to calc back to image coordinates
             cv::Point2f expected_drone_location = _drone_blink_im_location;
             float dt = current_time - start_take_off_time;
-            expected_drone_location.y+= dt * full_throttle_im_effect;
+            expected_drone_location.y+= dt * full_bat_and_throttle_im_effect;
             _image_predict_item = ImagePredictItem(expected_drone_location,1,_drone_blink_im_size,255,_visdat->frame_id);
         }
 
@@ -63,30 +64,19 @@ void DroneTracker::track(double time, bool drone_is_active) {
         }
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
-        else if (n_frames_lost==0 && _world_item.valid ){
+        else if (n_frames_lost==0 && _world_item.valid){
             bool takeoff_spot_detected = false;
-            bool drone_detected_near_takeoff_spot = false;
 
             for (uint i = 0; i< ignores_for_other_trkrs.size(); i++) {
                 if (ignores_for_other_trkrs.at(i).ignore_type == IgnoreBlob::landing_spot && ignores_for_other_trkrs.at(i).was_used)
                     takeoff_spot_detected = true;
             }
 
-            float dist2take_off = sqrt(pow(_image_item.x - drone_startup_im_location().x,2)+pow(_image_item.y - drone_startup_im_location().y,2));
-            if (dist2take_off > settings.takeoff_seperation_min * _drone_blink_im_size &&
-                    dist2take_off < settings.takeoff_seperation_max* _drone_blink_im_size &&
-                    _image_item.size > _drone_blink_im_size*0.5f ){
-                drone_detected_near_takeoff_spot = true;
-                ignores_for_other_trkrs.push_back(IgnoreBlob(_image_item.pt(),time+taking_off_ignore_timeout, IgnoreBlob::drone_taking_off));
-            } else if (dist2take_off < settings.takeoff_seperation_max + _drone_blink_im_size){
-                ignores_for_other_trkrs.push_back(IgnoreBlob(_image_item.pt(),time+taking_off_ignore_timeout, IgnoreBlob::drone_taking_off));
-            }
-
-            if (takeoff_spot_detected &&drone_detected_near_takeoff_spot ) {
+            if (takeoff_spot_detected  ) {
                 _drone_tracking_status = dts_detected;
                 //calculate take off speed
                 float dy_to = _world_item.pt.y - _drone_blink_world_location.y;
-                float dt_to = time - start_take_off_time;
+                float dt_to = static_cast<float>(time - start_take_off_time) - full_bat_and_throttle_spinup_time;
 
                 //assuming linear acceleration
                 //x = 0.5a*t^2
@@ -129,16 +119,48 @@ void DroneTracker::track(double time, bool drone_is_active) {
     }
     }
     clean_ignore_blobs(time);
-
-
 }
 
 ItemTracker::BlobWorldProps DroneTracker::calc_tmp_world_item(BlobProps * pbs) {
     auto wbp = calc_world_props_blob_generic(pbs);
     wbp.valid = wbp.bkg_check_ok && wbp.disparity_in_range;
 
-    if (inactive())
+//    if (wbp.valid){
+//        float dt = current_time - start_take_off_time - full_throttle_spinup_time;
+//        float dy = wbp.y - _drone_blink_world_location.y;
+//        float acc_y = 2.f*dy / powf(dt,2);
+//        float v_y = acc_y*dt;
+//        std::cout << "Acc: " << acc_y << " v: " << v_y << std::endl;
+//    }
+
+    if (inactive()) {
         wbp.valid = false;
+        return wbp;
+    } else if (taking_off() && wbp.valid && !_manual_flight_mode) {
+
+        float dt = current_time - start_take_off_time;
+        if (dt < full_bat_and_throttle_spinup_time) { // spin up time
+            wbp.valid = false;
+            return wbp;
+        }
+        dt -= full_bat_and_throttle_spinup_time;
+
+        cv::Point3f expected_drone_location = _drone_blink_world_location;
+        expected_drone_location.y+= 0.5f*full_bat_and_throttle_take_off_acc * powf(dt,2);
+
+        float err_y = wbp.y - expected_drone_location.y;
+        float err_pos = static_cast<float>(norm(expected_drone_location - cv::Point3f(wbp.x,wbp.y,wbp.z)));
+        float dy = wbp.y - _drone_blink_world_location.y;
+        float acc_y = 2.f*dy / powf(dt,2);
+
+        // only accept the drone blob when
+        // 1) it is 10cm up in the air, because we then have a reasonable good seperation and can calculate the state
+        // 2) it is reasonably close to the prediciton
+        if (fabs(err_y > 0.25f) || err_pos > 0.20f || dy < 0.1f || acc_y < full_bat_and_throttle_take_off_acc/2) {
+            wbp.valid = false;
+            return wbp;
+        }
+    }
 
     return wbp;
 }
@@ -148,16 +170,6 @@ bool DroneTracker::check_ignore_blobs(BlobProps * pbs, uint id  __attribute__((u
     if ( this->check_ignore_blobs_generic(pbs))
         return true;
 
-    if (taking_off() && !_manual_flight_mode) {
-
-        cv::Point2f expected_drone_location = _drone_blink_im_location;
-        float dt = current_time - start_take_off_time;
-        expected_drone_location.y+= dt * full_throttle_im_effect;
-
-        float d = sqrtf(powf(expected_drone_location.x-pbs->x,2)+powf(expected_drone_location.y-pbs->y,2));
-        if (d > 20)
-            return true;
-    }
     return false;
 }
 
