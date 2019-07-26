@@ -83,7 +83,6 @@ fi
 	git config --global push.default simple
 	git config --global user.email "${HOSTNAME}@pats.com"
 	git config --global user.name $HOSTNAME
-	sh ~/code/pats/config/git_alias.sh
 
 	#add deploy key
 	ssh-keygen -t rsa -b 4096 -C "${HOSTNAME}@pats-drones.com"
@@ -101,6 +100,7 @@ fi
 		git clone git@github.com:pats-drones/pats.git
 	}
 	pushd pats
+	sh config/git_alias.sh
 	mkdir -p pc/build
 	pushd pc/build
 	cmake ..
@@ -108,6 +108,7 @@ fi
 	popd
 	popd
 	popd
+	
 	touch pats_code.done
 }
 
