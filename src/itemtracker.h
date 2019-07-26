@@ -279,7 +279,7 @@ public:
     void init(std::ofstream *logger, VisionData *_visdat, std::string name);
     virtual void track(double time);
     virtual bool check_ignore_blobs(BlobProps * pbs, uint id) = 0;
-    virtual ItemTracker::BlobWorldProps calc_tmp_world_item(BlobProps * pbs) = 0;
+    virtual ItemTracker::BlobWorldProps calc_world_item(BlobProps * pbs, double time) = 0;
     void append_log();
 
     uint track_history_max_size = VIDEOFPS;

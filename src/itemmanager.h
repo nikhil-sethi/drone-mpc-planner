@@ -128,7 +128,7 @@ private:
     void update_trackers(double time, LogReader::Log_Entry log_entry, bool drone_is_active);
     void update_max_change_points();
     void update_static_ignores();
-    void match_blobs_to_trackers(bool drone_is_active);
+    void match_blobs_to_trackers(bool drone_is_active, double time);
     bool tracker_active(ItemTracker * trkr, bool drone_is_active);
     detection_mode _mode;
 

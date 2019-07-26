@@ -22,7 +22,7 @@ public:
     void track(double time);
     void update_from_log(LogReader::Log_Entry entry, int frame_number);
 
-    BlobWorldProps calc_tmp_world_item(BlobProps * pbs);
+    BlobWorldProps calc_world_item(BlobProps * pbs, double time);
     bool check_ignore_blobs(BlobProps * pbs, uint id);
     bool delete_me(){
         return false;

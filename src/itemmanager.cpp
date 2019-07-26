@@ -62,7 +62,7 @@ void ItemManager::update(double time,LogReader::Log_Entry log_entry, bool drone_
 
         update_static_ignores();
 
-        match_blobs_to_trackers(drone_is_active && !_dtrkr->inactive());
+        match_blobs_to_trackers(drone_is_active && !_dtrkr->inactive(),time);
 
     }
 
@@ -148,7 +148,7 @@ void ItemManager::update_static_ignores() {
         _dtrkr->ignores_for_me.push_back(landingspot);
 }
 
-void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
+void ItemManager::match_blobs_to_trackers(bool drone_is_active, double time) {
 
     //set all trackers to invalid so we can use this as a flag to notice when tracking is lost.
     for (uint i=0; i<_trackers.size();i++)
@@ -192,7 +192,7 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
                     }
                 }
                 if (best_score >= trkr->score_threshold() ) {
-                    auto wbp = trkr->calc_tmp_world_item(&_blobs.at(best_score_j));
+                    auto wbp = trkr->calc_world_item(&_blobs.at(best_score_j),time);
                     ItemTracker::WorldItem w(ItemTracker::ImageItem(_blobs.at(best_score_j),wbp.disparity,_visdat->frame_id,best_score,best_score_j),wbp);
                     if (!w.valid && enable_viz_diff) {
                       putText(diff_viz,"W",trkr->image_item().pt()*IMSCALEF,FONT_HERSHEY_SIMPLEX,0.9,tracker_color(trkr));
@@ -221,7 +221,7 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
                             if (!in_ignore_zone) {
                                 //The tracker has lost the item, or is still initializing.
                                 //there is no valid prediction, the score is therefor as low as possible
-                                auto wbp = trkr->calc_tmp_world_item(&_blobs.at(j));
+                                auto wbp = trkr->calc_world_item(&_blobs.at(j),time);
                                 ItemTracker::WorldItem w(ItemTracker::ImageItem(_blobs.at(j),wbp.disparity,_visdat->frame_id,0,j),wbp);
                                 trkr->world_item(w);
                                 pbs.at(j).trackers.push_back(trkr);
@@ -277,7 +277,7 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
                     BlinkTracker  * bt;
                     bt = new BlinkTracker();
                     bt->init(_visdat);
-                    auto wbp = bt->calc_tmp_world_item(&_blobs.at(i));
+                    auto wbp = bt->calc_world_item(&_blobs.at(i),time);
                     ItemTracker::WorldItem w(ItemTracker::ImageItem(_blobs.at(i),wbp.disparity,_visdat->frame_id,100,i),wbp);
                     bt->world_item(w);
                     _trackers.push_back( bt);
@@ -325,10 +325,10 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
                             float dist = cv::norm(pbs.at(i).pt-pbs.at(j).pt);
                             if (dist < 2.f* (pbs.at(i).size + pbs.at(j).size)) {
                                 if(pbs.at(i).size > pbs.at(j).size) {
-                                    auto wbpi = dtrkr->calc_tmp_world_item(&_blobs.at(i));
+                                    auto wbpi = dtrkr->calc_world_item(&_blobs.at(i),time);
                                     ItemTracker::WorldItem wi(ItemTracker::ImageItem(_blobs.at(i),wbpi.disparity,_visdat->frame_id,0,i),wbpi);
                                     dtrkr->world_item(wi);
-                                    auto wbpj = itrkr->calc_tmp_world_item(&_blobs.at(j));
+                                    auto wbpj = itrkr->calc_world_item(&_blobs.at(j),time);
                                     ItemTracker::WorldItem wj(ItemTracker::ImageItem(_blobs.at(j),wbpj.disparity,_visdat->frame_id,0,j),wbpj);
                                     itrkr->world_item(wj);
 
@@ -337,10 +337,10 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active) {
                                     pbs.at(i).trackers.push_back(dtrkr);
                                     pbs.at(j).trackers.push_back(itrkr);
                                 }else {
-                                    auto wbpi = itrkr->calc_tmp_world_item(&_blobs.at(i));
+                                    auto wbpi = itrkr->calc_world_item(&_blobs.at(i),time);
                                     ItemTracker::WorldItem wi(ItemTracker::ImageItem(_blobs.at(i),wbpi.disparity,_visdat->frame_id,0,i),wbpi);
                                     itrkr->world_item(wi);
-                                    auto wbpj = dtrkr->calc_tmp_world_item(&_blobs.at(j));
+                                    auto wbpj = dtrkr->calc_world_item(&_blobs.at(j),time);
                                     ItemTracker::WorldItem wj(ItemTracker::ImageItem(_blobs.at(j),wbpj.disparity,_visdat->frame_id,0,j),wbpj);
                                     dtrkr->world_item(wj);
 

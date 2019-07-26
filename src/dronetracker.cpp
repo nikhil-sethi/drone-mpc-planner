@@ -121,7 +121,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
     clean_ignore_blobs(time);
 }
 
-ItemTracker::BlobWorldProps DroneTracker::calc_tmp_world_item(BlobProps * pbs) {
+ItemTracker::BlobWorldProps DroneTracker::calc_world_item(BlobProps * pbs, double time) {
     auto wbp = calc_world_props_blob_generic(pbs);
     wbp.valid = wbp.bkg_check_ok && wbp.disparity_in_range;
 
@@ -138,7 +138,7 @@ ItemTracker::BlobWorldProps DroneTracker::calc_tmp_world_item(BlobProps * pbs) {
         return wbp;
     } else if (taking_off() && wbp.valid && !_manual_flight_mode) {
 
-        float dt = current_time - start_take_off_time;
+        float dt = time - start_take_off_time;
         if (dt < full_bat_and_throttle_spinup_time) { // spin up time
             wbp.valid = false;
             return wbp;

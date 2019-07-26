@@ -121,7 +121,7 @@ void InsectTracker::update_insect_prediction() {
 
 }
 
-ItemTracker::BlobWorldProps InsectTracker::calc_tmp_world_item(BlobProps * pbs){
+ItemTracker::BlobWorldProps InsectTracker::calc_world_item(BlobProps * pbs, double time __attribute__((unused))){
     auto wbp = calc_world_props_blob_generic(pbs);
     wbp.valid = wbp.bkg_check_ok && wbp.disparity_in_range;
     return wbp;

@@ -121,7 +121,7 @@ BlinkTracker::blinking_drone_states BlinkTracker::detect_blink(double time, bool
     return _blinking_drone_status;
 }
 
-ItemTracker::BlobWorldProps BlinkTracker::calc_tmp_world_item(BlobProps * pbs){
+ItemTracker::BlobWorldProps BlinkTracker::calc_world_item(BlobProps * pbs, double time __attribute__((unused))){
     ItemTracker::BlobWorldProps wbp = calc_world_props_blob_generic(pbs);
     wbp.valid = wbp.disparity_in_range;
     return wbp;
