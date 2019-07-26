@@ -139,6 +139,9 @@ sudo usermod -a -G dialout $USER
 		sudo cp  -n /etc/rc.local{,.bak}
 		sudo rm /etc/rc.local
 	}
+	
+	sudo ln -s ~/code/pats/config/sshconfig ~/.ssh/config
+	
 	sudo ln -s ~/code/pats/config/rc.local /etc/rc.local
 
 	sudo ln -s ~/code/pats/config/45-pats_mm.rules /lib/udev/rules.d/
