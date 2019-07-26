@@ -77,8 +77,27 @@ fi
 	touch opencv-3.4.2.done
 }
 
+
+[ -f git.done ] || {
+	# Configure git
+	git config --global push.default simple
+	git config --global user.email "${HOSTNAME}@pats.com"
+	git config --global user.name $HOSTNAME
+	sh ~/code/pats/config/git_alias.sh
+
+	#add deploy key
+	ssh-keygen -t rsa -b 4096 -C "${HOSTNAME}@pats-drones.com"
+	ssh-add ~/.ssh/id_rsa
+	cat ~/.ssh/id_rsa.pub
+	echo "Put the above into https://github.com/pats-drones/pats/ -> Settings -> Deploy keys and name it ${HOSTNAME}"
+	touch git.done
+	read -p "Press enter to continue"
+}
+
 # Install the Pats code
 [ -f pats_code.done ] || {
+
+	
 	[ -d ../code/pats ] || {
 		git clone git@github.com:pats-drones/pats.git
 	}
@@ -94,13 +113,6 @@ fi
 
 # Add to groups
 sudo usermod -a -G dialout $USER
-
-# Configure git
-git config --global push.default simple
-git config --global user.email "patsproto@pats.com"
-git config --global user.name $HOSTNAME
-sh ~/code/pats/config/git_alias.sh
-# Copy id_rsa and id_rsa.pub to ~/.ssh
 
 # Create nice symlinks
 [ -f symlinks.done ] || {
