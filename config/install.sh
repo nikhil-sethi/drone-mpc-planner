@@ -22,13 +22,9 @@ fi
 # Install packages
 [ -f dependencies-packages.done ] || {
 	sudo snap install sublime-text
-	sudo apt install -y cmake g++ libva-dev libswresample-dev libavutil-dev pkg-config libjpeg9-dev libcurl4-openssl-dev sublime-text ncdu -y 
+	sudo apt install -y cmake g++ libva-dev libswresample-dev libavutil-dev pkg-config libcurl4-openssl-dev sublime-text ncdu -y 
 	sudo apt install  -y openssh-server gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav libgstreamer-plugins-base1.0-* libgstreamer-plugins-bad1.0-* libgstreamer-plugins-good1.0-* terminator
 	sudo apt-get remove -y modemmanager
-	
-	
-
-	
 	touch dependencies-packages.done
 }
 
