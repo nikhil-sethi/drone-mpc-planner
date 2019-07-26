@@ -96,16 +96,16 @@ fi
 
 # Install the Pats code
 [ -f pats_code.done ] || {
-
-	
 	[ -d ../code/pats ] || {
+		pushd ../code/
 		git clone git@github.com:pats-drones/pats.git
 	}
-	pushd ../code/pats
+	pushd pats
 	mkdir -p pc/build
 	pushd pc/build
 	cmake ..
-	make -j4
+	make -j8
+	popd
 	popd
 	popd
 	touch pats_code.done
