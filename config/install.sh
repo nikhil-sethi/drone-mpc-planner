@@ -140,7 +140,7 @@ sudo usermod -a -G dialout $USER
 		sudo rm /etc/rc.local
 	}
 	
-	sudo ln -s ~/code/pats/config/sshconfig ~/.ssh/config
+	ln -s ~/code/pats/config/sshconfig ~/.ssh/config
 	
 	sudo ln -s ~/code/pats/config/rc.local /etc/rc.local
 
@@ -153,6 +153,8 @@ popd
 
 sudo apt-get autoremove -y
 sudo apt-get clean -y
+
+ssh-copy-id mavlab-gpu
 
 set +x
 echo "***********************************************************"
