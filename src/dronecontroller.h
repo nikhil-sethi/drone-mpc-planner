@@ -134,6 +134,10 @@ public : const uint cowardly_poo_factor = 750;
 #define INITIAL_HOVER_THROTTLE 635
 #define PITCH_MIDDLE JOY_MIDDLE
 #endif
+#if TX_TYPE == TX_NONE
+public : const float throttle_bank_factor = 0.11f; //dummy values
+public : const uint cowardly_poo_factor = 750; //dummy values
+#endif
 #ifndef INITIALTHROTTLE
 #define INITIALTHROTTLE 200
 #define PITCH_MIDDLE JOY_MIDDLE
