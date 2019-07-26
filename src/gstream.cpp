@@ -60,7 +60,7 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
 
     } else {
 
-        GstElement *conv, *encoder, *mux, *rtp, *videosink;
+        GstElement *conv, *capsfilter,*encoder, *mux, *rtp, *videosink;
 
         /* init GStreamer */
         gst_init (&argc, &argv);
@@ -68,7 +68,7 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
         /* setup pipeline */
         if (mode == VIDEOMODE_AVI) {
             //write to file:
-            //gst-launch-1.0 videotestsrc ! videoconvert ! x264enc ! 'video/x-h264, stream-format=(string)byte-stream'  ! avimux ! filesink location=test.avi
+            //gst-launch-1.0 videotestsrc ! videoconvert ! video/x-raw,format=I420 ! x264enc ! 'video/x-h264, stream-format=(string)byte-stream'  ! avimux ! filesink location=test.avi
             //gst-launch-1.0 videotestsrc ! video/x-raw,format=RGB,framerate=\(fraction\)15/1,width=1920,height=1080 ! videoconvert ! x264enc speed-preset=ultrafast bitrate=16000 ! 'video/x-h264, stream-format=(string)byte-stream'  ! avimux ! filesink location=test.avi
             //gst-launch-1.0 videotestsrc ! video/x-raw,format=GRAY8,framerate=\(fraction\)90/1,width=1280,height=720 ! videoconvert ! x264enc ! 'video/x-h264, stream-format=(string)byte-stream'  ! avimux ! filesink location=test.avi
             _pipeline = gst_pipeline_new ("pipeline");
@@ -98,24 +98,33 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
             }
 
             conv = gst_element_factory_make ("videoconvert", "conv");
-            g_object_set (G_OBJECT (conv),  "chroma-mode", 0, "chroma-resampler", 3, NULL);
-#ifdef _PC
-            //encoder = gst_element_factory_make ("vaapih264enc", "encoder"); // hardware encoding
+
+            //for compatibility with play back on e.g. phones, we need to have yuv420p
+            //this will make the color rather ugly though :(
+            capsfilter = gst_element_factory_make ("capsfilter", NULL);
+            if (color) {
+                g_object_set (G_OBJECT (capsfilter), "caps",
+                              gst_caps_new_simple ("video/x-raw",
+                                                   "format", G_TYPE_STRING, "I420",
+                                                   NULL), NULL);
+            }
+
+            //the vaapi encoder uses way less CPU, but with the result is larger and there are more artifcats then the x264enc
+            //            encoder = gst_element_factory_make ("vaapih264enc", "encoder"); // hardware encoding
             encoder = gst_element_factory_make ("x264enc", "encoder");
-            g_object_set (G_OBJECT (encoder),  "speed-preset", 8,"bitrate", 32000, NULL); // higher quality soft encoder
-#else
-            //encoder = gst_element_factory_make ("v4l2video11h264enc", "encoder");
-            encoder = gst_element_factory_make ("x264enc", "encoder");
-            g_object_set (G_OBJECT (encoder),  "speed-preset", 1,"bitrate", 16000, NULL);
-#endif
+            g_object_set (G_OBJECT (encoder),  "speed-preset", 4,"bitrate", 32000, NULL); // higher quality soft encoder
+
+            //preferably we would end up with an mp4 file, because phones understand that, but for some reason the stream is not valid when playing it back
+            // parse = gst_element_factory_make ("h264parse", "parse");
+            //mux = gst_element_factory_make ("mp4mux", "mux");
+            //file += ".mp4";
+
             mux = gst_element_factory_make ("avimux", "mux");
             videosink = gst_element_factory_make ("filesink", "videosink");
             g_object_set (G_OBJECT (videosink), "location", file.c_str(), NULL);
 
-            gst_bin_add_many (GST_BIN (_pipeline), _appsrc, conv, encoder,  mux, videosink, NULL);
-            gst_element_link_many (_appsrc, conv, encoder, mux, videosink, NULL);
-
-
+            gst_bin_add_many (GST_BIN (_pipeline), _appsrc, conv, capsfilter,encoder,  mux, videosink, NULL);
+            gst_element_link_many (_appsrc, conv, capsfilter, encoder, mux, videosink, NULL);
 
         } else if (mode == VIDEOMODE_STREAM) {
             //streaming:
