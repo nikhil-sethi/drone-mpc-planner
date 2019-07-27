@@ -42,7 +42,6 @@ void Cam::update_playback(void) {
     frameL = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(fs.get_infrared_frame(1).get_data()), Mat::AUTO_STEP);
     frameR = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(fs.get_infrared_frame(2).get_data()), Mat::AUTO_STEP);
 
-
     if (!turbo) {
         while(swc.Read() < (1.f/VIDEOFPS)*1e3f){
             usleep(10);
@@ -218,7 +217,6 @@ void Cam::init() {
         calib_pose();
     }
 
-
     std::cout << rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_NAME) << std::endl;
     std::cout << rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION) << std::endl;
     std::cout << rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_PRODUCT_ID) << std::endl;
@@ -286,6 +284,8 @@ void Cam::init() {
 #ifdef WATCHDOG_ENABLED
     thread_watchdog = std::thread(&Cam::watchdog_thread,this);
 #endif
+
+    update();
 
     initialized = true;
 }
@@ -773,8 +773,7 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
     convert_depth_background_to_world();
     swc.Start();
 
-    update_playback(); // wait for first frame have all things initialised
-
+    update();
     initialized = true;
 }
 
@@ -810,10 +809,14 @@ void Cam::close() {
                 lock_frame_data.unlock();
                 usleep(1000);
             }
+        } else {
+            cam.stop(); // grr this deadlocks https://github.com/IntelRealSense/librealsense/issues/3126
         }
 #ifdef WATCHDOG_ENABLED
-        std::cout << "Waiting for camera watchdog." << std::endl;
-        thread_watchdog.join();
+        if (!fromfile) {
+            std::cout << "Waiting for camera watchdog." << std::endl;
+            thread_watchdog.join();
+        }
 #endif
         std::cout << "Camera closed" << std::endl;
         initialized = false;

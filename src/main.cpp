@@ -483,7 +483,6 @@ void init(int argc, char **argv) {
         cam.init(argc,argv);
     else
         cam.init();
-    cam.update(); // wait for first frames
 
     visdat.init(fromfile==log_mode_full,cam.Qf, cam.frameL,cam.frameR,cam.camera_angle(),cam.measured_gain(),cam.depth_background_mm); // do after cam update to populate frames
     trackers.init(&logger, &visdat);
