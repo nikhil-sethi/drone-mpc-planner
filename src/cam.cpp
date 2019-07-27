@@ -24,120 +24,24 @@ int last_1_id =-1;
 int last_2_id =-1;
 double incremented_playback_frametime = (1.f/VIDEOFPS)/2.f;
 void Cam::update_playback(void) {
-    frame_data fL,fR;
-    bool foundL=false,foundR = false;
-    while (true) {
-        lock_frame_data.lock();
-        std::deque<frame_data> playback_bufferL_cleaned;
-        std::deque<frame_data> playback_bufferR_cleaned;
-        for (uint i = 0 ; i <playback_bufferR.size();i++) {
-            if (    playback_bufferR.at(i).id >= requested_id_in &&
-                    playback_bufferR.at(i).id < requested_id_in+playback_buffer_size_max)
-                playback_bufferR_cleaned.push_back(playback_bufferR.at(i));
-        }
-        for (uint i = 0 ; i <playback_bufferL.size();i++) {
-            if (    playback_bufferL.at(i).id >= requested_id_in &&
-                    playback_bufferL.at(i).id < requested_id_in+playback_buffer_size_max)
-                playback_bufferL_cleaned.push_back(playback_bufferL.at(i));
-        }
 
-        playback_bufferR = playback_bufferR_cleaned;
-        playback_bufferL = playback_bufferL_cleaned;
-        lock_frame_data.unlock();
+    rs2::frameset fs;
+    for (uint i = 0; i < replay_skip_n_frames+1;i++)
+        fs = cam.wait_for_frames();
+    replay_skip_n_frames = 0;
+    if (_frame_time_start <0)
+        _frame_time_start = fs.get_timestamp();
+    _frame_number = fs.get_frame_number();
+    _frame_time = (fs.get_timestamp() -_frame_time_start)/1000.;
 
-        uint lowest_complete_id=0;
-        uint highest_id = 0;
-        double frame_time_higest_id = 0;
-        for (uint i = 0 ; i <playback_bufferL_cleaned.size();i++) {
-            if (playback_bufferL_cleaned.at(i).id > highest_id){
-                highest_id = playback_bufferL_cleaned.at(i).id ;
-                frame_time_higest_id = playback_bufferL_cleaned.at(i).time;
-            }
-            for (uint j = 0 ; j <playback_bufferR_cleaned.size();j++) {
-                if (playback_bufferL_cleaned.at(i).id == playback_bufferR_cleaned.at(j).id ) {
-                    lowest_complete_id = playback_bufferL_cleaned.at(i).id;
-                    break;
-                }
-                if (lowest_complete_id>0)
-                    break;
-            }
-        }
+    double duration = static_cast<double>(static_cast<rs2::playback>(dev).get_duration().count()) / 1e9;
+     if (frame_time() > duration-0.1){
+         std::cout << "Video end, exiting" << std::endl;
+         throw bag_video_ended();
+     }
+    frameL = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(fs.get_infrared_frame(1).get_data()), Mat::AUTO_STEP);
+    frameR = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(fs.get_infrared_frame(2).get_data()), Mat::AUTO_STEP);
 
-        if (lowest_complete_id > requested_id_in){
-            //sometimes not all frames are saved, causing a frame jump
-            std::cout << "Warning, frame jump detected. " << requested_id_in << " -> " << lowest_complete_id  << std::endl;
-            requested_id_in = lowest_complete_id;
-        }
-        if (frame_time_higest_id < _frame_time && playback_bufferR_cleaned.size()>0){
-            //for some reason the frame time and id counter sometimes resets in the bag files...
-            std::cout << "Warning, frame reset detected. " << _frame_time << " -> " << frame_time_higest_id  << std::endl;
-
-            if (_frame_time > 3 && frame_time_higest_id < 1){
-                std::cout << "breakpoint" << std::endl;
-                for (uint i = 0; i < 25; i++) {
-                    auto tmp = static_cast<rs2::playback>(dev).current_status();
-                    std::cout << tmp << std::endl;
-                    new_frame1 =true;
-                    new_frame2 = true;
-                    lock_newframe.unlock(); // wait for a new frame passed by the rs callback
-                    lock_frame_data.unlock();
-                    pause();
-                    seek(incremented_playback_frametime-0.1);
-                    resume();
-                    usleep(1000);
-                    if (playback_bufferL.size() > 10)
-                        break;
-                }
-            }
-
-            funky_RS_frame_time_fixer_frame_count += requested_id_in;
-            requested_id_in = lowest_complete_id;
-        }
-
-        for (uint i = 0 ; i <playback_bufferL_cleaned.size();i++) {
-            if (playback_bufferL_cleaned.at(i).id == requested_id_in){
-                fL = playback_bufferL_cleaned.at(i);
-                foundL = true;
-                break;
-            }
-        }
-        if (foundL)
-            for (uint i = 0 ; i <playback_bufferR_cleaned.size();i++) {
-                if (playback_bufferR_cleaned.at(i).id == requested_id_in){
-                    fR = playback_bufferR_cleaned.at(i);
-                    foundR = true;
-                    break;
-                }
-            }
-
-        double duration = static_cast<double>(static_cast<rs2::playback>(dev).get_duration().count()) / 1e9;
-        if (frame_time() > duration-0.5){
-            std::cout << "Video end, exiting" << std::endl;
-            throw my_video_ended();
-        }
-
-        if (_paused && (playback_bufferR_cleaned.size() < 5 || playback_bufferL_cleaned.size() < 5) ){ // 3 to start buffering 3 frames before the buffer runs empty
-            incremented_playback_frametime = (requested_id_in+funky_RS_frame_time_fixer_frame_count-2)*(1./VIDEOFPS) - (1./VIDEOFPS)*0.1;  //requested_id_in-2 -> -2 seems to be necessary because the RS api skips a frame of either the left or right camera after resuming
-            if (incremented_playback_frametime < 0)
-                incremented_playback_frametime = 0;
-
-            if (duration-0.4 >= incremented_playback_frametime){
-                std::cout << "Resuming RS: " << incremented_playback_frametime << std::endl; // deadlock sometimes occurs 5 frames after this
-                seek(incremented_playback_frametime);
-                resume();
-            } else {
-                std::cout << "Video end, exiting" << std::endl;
-                throw my_video_ended();
-            }
-        }
-
-        if (foundL && foundR){
-            break;
-        }
-
-        lock_newframe.lock(); // wait for a new frame passed by the rs callback
-    }
-    requested_id_in++;
 
     if (!turbo) {
         while(swc.Read() < (1.f/VIDEOFPS)*1e3f){
@@ -146,67 +50,15 @@ void Cam::update_playback(void) {
         swc.Restart();
     }
 
-    if (playback_bufferR.size() >= playback_buffer_size_max*(2.f/3.f) && !_paused) {
-        pause();
-        //        std::cout << "Pausing playback_bufferL/R size:" << playback_bufferL.size() << " / " << playback_bufferR.size() << std::endl;
-    }
-
     while(frame_by_frame){
         unsigned char k = cv::waitKey(1);
-        if (k== 'f' || k == 27)
+        if (k == 'f')
             break;
         else if (k== ' '){
             frame_by_frame = false;
             break;
         }
     }
-
-    frameL = fL.frame.clone();
-    frameR = fR.frame.clone();
-    _frame_number = fL.id;
-    _frame_time = fL.time;
-    //    std::cout << "-------------frame id: " << _frame_number << " seek time: " << incremented_playback_frametime << std::endl;
-
-}
-
-void Cam::rs_callback_playback(rs2::frame f) {
-
-    lock_frame_data.lock();
-    //    if (f.get_profile().stream_index() == 1 )
-    //        std::cout << "Received id "         << f.get_frame_number() << ":" << to_string_with_precision((static_cast<float>(f.get_timestamp())-_frame_time_start)/1e3f,2) << "@" << f.get_profile().stream_index() << "         Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << to_string_with_precision(incremented_playback_frametime,2) << " bufsize: " << playback_bufferL.size() << std::endl;
-    //    if (f.get_profile().stream_index() == 2 )
-    //        std::cout << "Received id         " << f.get_frame_number() << ":" << to_string_with_precision((static_cast<float>(f.get_timestamp())-_frame_time_start)/1e3f,2) << "@" << f.get_profile().stream_index() << " Last: " << last_1_id << "@1 and " << last_2_id << "@2 and requested id & time:" << requested_id_in << " & " << to_string_with_precision(incremented_playback_frametime,2) << " bufsize: " << playback_bufferL.size() << std::endl;
-
-    if (f.get_profile().stream_index() == 1 && f.get_frame_number() >= requested_id_in && playback_bufferL.size() < playback_buffer_size_max) {
-        frame_data fL;
-        fL.frame = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(f.get_data()), Mat::AUTO_STEP).clone();
-        fL.id= f.get_frame_number();
-        if (_frame_time_start <0)
-            _frame_time_start = f.get_timestamp();
-        fL.time = (f.get_timestamp() -_frame_time_start)/1000.;
-
-        playback_bufferL.push_back(fL);
-        new_frame1 = true;
-        last_1_id = fL.id;
-    } else if (f.get_profile().stream_index() == 2 && f.get_frame_number() >= requested_id_in && playback_bufferR.size() < 100) {
-        frame_data fR;
-        fR.frame = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(f.get_data()), Mat::AUTO_STEP).clone();
-        fR.id= f.get_frame_number();
-        if (_frame_time_start <0)
-            _frame_time_start = f.get_timestamp();
-        fR.time = (f.get_timestamp() -_frame_time_start)/1000.;
-        playback_bufferR.push_back(fR);
-        new_frame2 = true;
-        last_2_id = fR.id;
-    }
-    lock_frame_data.unlock();
-    if (new_frame1 && new_frame2) {
-        lock_newframe.unlock();
-        new_frame1 = false;
-        new_frame2 = false;
-    }
-
-
 }
 
 void Cam::update_real(void) {
@@ -293,7 +145,7 @@ void Cam::calibration(rs2::stream_profile infared1,rs2::stream_profile infared2)
 }
 
 void Cam::init() {
-lock_newframe.lock();
+    lock_newframe.lock();
     std::cout << "Initializing cam" << std::endl;
 
     bag_fn = "./logging/" + bag_fn;
@@ -367,7 +219,6 @@ lock_newframe.lock();
     }
 
 
-
     std::cout << rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_NAME) << std::endl;
     std::cout << rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION) << std::endl;
     std::cout << rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_PRODUCT_ID) << std::endl;
@@ -431,7 +282,6 @@ lock_newframe.lock();
     calibration(infared1,infared2);
     serialize_calib();
     convert_depth_background_to_world();
-    swc.Start();
 
 #ifdef WATCHDOG_ENABLED
     thread_watchdog = std::thread(&Cam::watchdog_thread,this);
@@ -857,7 +707,6 @@ void Cam::calib_pose(){
 }
 
 void Cam::init(int argc __attribute__((unused)), char **argv) {
-
     std::string datadir = argv[1];
 
     fromfile=true;
@@ -891,12 +740,15 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
         serr << "cannot not find " << bag_fn;
         throw my_exit(serr.str());
     }
-    rs2::stream_profile infared1,infared2;
-    rs2::context ctx; // The context represents the current platform with respect to connected devices
-    dev = ctx.load_device(bag_fn);
 
+    rs2::config cfg;
+    cfg.enable_device_from_file(bag_fn);
+    cam.start(cfg);
+    dev = cam.get_active_profile().get_device();
     static_cast<rs2::playback>(dev).set_real_time(false);
 
+
+    rs2::stream_profile infared1,infared2;
     auto rs_depth_sensor = dev.first<rs2::depth_sensor>();
     depth_scale = rs_depth_sensor.get_option(RS2_OPTION_DEPTH_UNITS);
 
@@ -912,9 +764,6 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
         else if ( sp.stream_name().compare("Infrared 2") == 0)
             infared2 = sp;
     }
-    rs_depth_sensor.open({infared1,infared2});
-    rs_depth_sensor.start([&](rs2::frame f) { rs_callback_playback(f); });
-    pause();
 
     calibration(infared1,infared2);
     if (checkFileExist(calib_rfn))
@@ -923,6 +772,9 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
         deserialize_calib(calib_template_rfn);
     convert_depth_background_to_world();
     swc.Start();
+
+    update_playback(); // wait for first frame have all things initialised
+
     initialized = true;
 }
 
@@ -930,14 +782,12 @@ void Cam::pause(){
     if (!_paused) {
         _paused = true;
         static_cast<rs2::playback>(dev).pause();
-        //        std::cout << "Paused" << std::endl;
     }
 }
 void Cam::resume() {
     if (_paused){
         _paused = false;
         static_cast<rs2::playback>(dev).resume();
-        //        std::cout << "Resumed" << std::endl;
     }
 }
 void Cam::seek(double time) {
@@ -949,15 +799,17 @@ void Cam::close() {
     if (initialized) {
         exit_watchdog_thread = true;
         std::cout << "Closing camera" << std::endl;
-        auto rs_depth_sensor = dev.first<rs2::depth_sensor>();
-        lock_newframe.unlock();
-        lock_frame_data.unlock();
-        rs_depth_sensor.stop();
-        rs_depth_sensor.close();
-        for (uint i = 0; i < 10; i++ ){
+        if (!dev.as<rs2::playback>()) {
+            auto rs_depth_sensor = dev.first<rs2::depth_sensor>();
             lock_newframe.unlock();
             lock_frame_data.unlock();
-            usleep(1000);
+            rs_depth_sensor.stop();
+            rs_depth_sensor.close();
+            for (uint i = 0; i < 10; i++ ){
+                lock_newframe.unlock();
+                lock_frame_data.unlock();
+                usleep(1000);
+            }
         }
 #ifdef WATCHDOG_ENABLED
         std::cout << "Waiting for camera watchdog." << std::endl;
@@ -1001,7 +853,6 @@ void Cam::reset() {
         exit (0);
     }
 }
-
 
 void Cam::watchdog_thread(void) {
     std::cout << "Watchdog thread started" << std::endl;

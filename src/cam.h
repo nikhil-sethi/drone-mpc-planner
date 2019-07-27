@@ -65,16 +65,10 @@ public:
     void reset();
 
     void skip_one_sec() {
-        requested_id_in += VIDEOFPS*2;
+        replay_skip_n_frames+=VIDEOFPS;
     }
     void back_one_sec() {
-        pause();
-        usleep(1000);
-        lock_frame_data.lock();
-        playback_bufferR.clear();
-        playback_bufferL.clear();
-        requested_id_in -= VIDEOFPS*2;
-        lock_frame_data.unlock();
+        seek(_frame_time -3);
     }
     bool frame_by_frame;
     bool turbo;
@@ -121,11 +115,10 @@ public:
 private:
 
     bool hasIMU = false;
-    uint requested_id_in =0;
     unsigned long long _frame_number;
     double _frame_time = 0;
     double _frame_time_start = -1;
-    double funky_RS_frame_time_fixer_frame_count = 0;
+    uint replay_skip_n_frames = 0;
 
     float _measured_exposure = 15400; // measured from sense_light_level
     int _measured_gain = 0;
@@ -189,13 +182,8 @@ private:
     rs2::frame rs_frameL_cbtmp,rs_frameR_cbtmp;
     rs2::frame rs_frameL,rs_frameR;
 
-    struct frame_data{
-        cv::Mat frame;
-        uint id;
-        double time;
-    };
-    std::deque<frame_data> playback_bufferL;
-    std::deque<frame_data> playback_bufferR;
+
+
 
 };
 

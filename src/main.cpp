@@ -584,7 +584,7 @@ int main( int argc, char **argv )
     try {
         init(argc,argv);
         process_video();
-    } catch(my_video_ended) {
+    } catch(bag_video_ended) {
         std::cout << "Video ended" << std::endl;
         key = 27; //secret signal to close everything (it's the esc key)
     } catch(my_exit const &e) {
