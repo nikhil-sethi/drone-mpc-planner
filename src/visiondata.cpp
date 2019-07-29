@@ -78,7 +78,7 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
     frameR16 = tmpR;
 
     track_avg_brightness(frameL16,time);
-    if (_reset_motion_integration) {
+    if (_reset_motion_integration || new_frame_id < 15) { // delete first 10 frames as well
         std::cout << "Resetting motion" << std::endl;
         frameL_prev16 = frameL16.clone();
         frameR_prev16 = frameR16.clone();
