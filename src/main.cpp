@@ -57,7 +57,6 @@ using namespace std;
 unsigned char key = 0;
 int imgcount,detectcount; // to measure fps
 GStream output_video_results,output_video_LR;
-cv::VideoWriter output_video_disp;
 
 stopwatch_c stopWatch_break;
 stopwatch_c stopWatch;
@@ -190,9 +189,6 @@ void process_video() {
         }
 #endif
         if (frameWritten == 0) {
-#if VIDEODISPARITY
-            output_video_disp.write(cam.get_disp_frame());
-#endif
 #if VIDEORESULTS
             output_video_results.write(visualizer.trackframe);
 #endif
@@ -448,18 +444,6 @@ void init_video_recorders(int argc __attribute__((unused)), char **argv __attrib
 #endif
 #if VIDEORAWLR && VIDEORAWLR != VIDEOMODE_BAG
     if (output_video_LR.init(argc,argv,VIDEORAWLR,data_output_dir + "videoRawLR.avi",IMG_W*2,IMG_H,VIDEOFPS, "192.168.1.255",5000,false)) {throw my_exit("could not open LR video");}
-#endif
-
-#if VIDEODISPARITY
-    cv::Mat fd = cam.get_disp_frame();
-    std::cout << "Opening video file for disparity at " << fd.cols << "x" << fd.rows	 << " pixels with " << cam.getFPS() << "fps " << std::endl;
-    cv::Size sizeDisp(fd.cols,fd.rows);
-    output_video_disp.open(data_output_dir + "videoDisp.avi",CV_FOURCC('F','M','P','4'),cam.getFPS(),sizeDisp,false);
-
-    if (!output_video_disp.isOpened())
-    {
-        throw my_exit("could not open disparity video");
-    }
 #endif
 }
 
