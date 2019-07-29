@@ -477,8 +477,6 @@ void Visualizer::draw_tracker_viz() {
 void Visualizer::paint() {
     if (request_trackframe_paint) {
         request_trackframe_paint = false;
-        if (_trackers->diff_viz.cols > 0)
-            cv::imshow("diff", _trackers->diff_viz);
         cv::imshow("tracking results", trackframe);
         if (_visdat->viz_frame.cols>0)
             cv::imshow("diff",_visdat->viz_frame);
