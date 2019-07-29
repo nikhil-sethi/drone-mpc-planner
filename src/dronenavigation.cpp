@@ -92,6 +92,8 @@ void DroneNavigation::update(double time) {
             _nav_flight_mode = nfm_manual;
         }
 
+    } else {
+            _nav_flight_mode = nfm_none;
     }
     _iceptor.update(_navigation_status != ns_chasing_insect);
     bool repeat = true;
@@ -169,6 +171,7 @@ void DroneNavigation::update(double time) {
                 } else if (_iceptor.insect_in_range()) {
                     _navigation_status = ns_takeoff;
                 }
+            } else if (_nav_flight_mode == nfm_none) { // e.g. insect logging mode
             } else //waypoint modes
                 _navigation_status = ns_wait_for_takeoff_command;
             break;

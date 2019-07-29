@@ -40,6 +40,7 @@ static const char* navigation_status_names[] = {"ns_init",
 class DroneNavigation {
 public:
     enum nav_flight_modes {
+        nfm_none,
         nfm_manual,
         nfm_waypoint,
         nfm_slider,
