@@ -45,17 +45,17 @@ void DroneNavigation::init(std::ofstream *logger, ItemManager * trackers, DroneC
 
     //The flight plan will be repeated indefinetely, unless there is a landing waypoint somewhere in the list.
 
-//    setpoints.push_back(waypoint(cv::Point3f(-2,-1.0f,-3.5f),100));
-//    setpoints.push_back(waypoint(cv::Point3f(2,-1.0f,-3.5f),100));
-//    setpoints.push_back(waypoint(cv::Point3f(-2,-1.0f,-3.5f),100));
-//    setpoints.push_back(waypoint(cv::Point3f(2,-1.0f,-3.5f),100));
+    //    setpoints.push_back(waypoint(cv::Point3f(-2,-1.0f,-3.5f),100));
+    //    setpoints.push_back(waypoint(cv::Point3f(2,-1.0f,-3.5f),100));
+    //    setpoints.push_back(waypoint(cv::Point3f(-2,-1.0f,-3.5f),100));
+    //    setpoints.push_back(waypoint(cv::Point3f(2,-1.0f,-3.5f),100));
 
 
-        setpoints.push_back(waypoint(cv::Point3f(1.5,-0.3f,-2.5f),30));
-        setpoints.push_back(waypoint(cv::Point3f(0,-1.91f,-2.5f),30));
+    setpoints.push_back(waypoint(cv::Point3f(1.5,-0.3f,-2.5f),30));
+    setpoints.push_back(waypoint(cv::Point3f(0,-1.91f,-2.5f),30));
 
-        setpoints.push_back(waypoint(cv::Point3f(0,-0.3f,-2.5f),200));
-        setpoints.push_back(waypoint(cv::Point3f(0,-1.91f,-2.5f),200));
+    setpoints.push_back(waypoint(cv::Point3f(0,-0.3f,-2.5f),200));
+    setpoints.push_back(waypoint(cv::Point3f(0,-1.91f,-2.5f),200));
 
 
 
@@ -84,16 +84,20 @@ void DroneNavigation::init(std::ofstream *logger, ItemManager * trackers, DroneC
 void DroneNavigation::update(double time) {
 
     if (_dctrl->Joy_State() != DroneController::js_none) {
-        //copy the (processed) joy mode switch, but only if the switch is available
-        //(otherwise assume _nav_flight_mode is set in another way externally)
-        if (_dctrl->Joy_State() != DroneController::js_disarmed)
-            _nav_flight_mode = static_cast<nav_flight_modes>(_dctrl->Joy_State());
-        else { // if disarmed use the manual state:
-            _nav_flight_mode = nfm_manual;
-        }
-
-    } else {
+        if (_dctrl->Joy_State() == DroneController::js_checking ||
+                _dctrl->Joy_State() == DroneController::js_none ||
+                _dctrl->Joy_State() == DroneController::js_disarmed )
             _nav_flight_mode = nfm_none;
+        else if(_dctrl->Joy_State() == DroneController::js_hunt)
+            _nav_flight_mode = nfm_hunt;
+        else if(_dctrl->Joy_State() == DroneController::js_waypoint)
+            _nav_flight_mode = nfm_waypoint;
+        else if(_dctrl->Joy_State() == DroneController::js_manual)
+            _nav_flight_mode = nfm_manual;
+        else if(_dctrl->Joy_State() == DroneController::js_slider)
+            _nav_flight_mode = nfm_slider;
+    } else {
+        _nav_flight_mode = nfm_none;
     }
     _iceptor.update(_navigation_status != ns_chasing_insect);
     bool repeat = true;
@@ -189,10 +193,10 @@ void DroneNavigation::update(double time) {
             _navigation_status=ns_taking_off;
             break;
         } case ns_taking_off: {
-//            track_data data = _trackers->dronetracker()->Last_track_data();
-//            if (data.svelY > static_cast<float>(params.auto_takeoff_speed) / 100.f ) {
-//                _navigation_status = ns_take_off_completed;
-//            }
+            //            track_data data = _trackers->dronetracker()->Last_track_data();
+            //            if (data.svelY > static_cast<float>(params.auto_takeoff_speed) / 100.f ) {
+            //                _navigation_status = ns_take_off_completed;
+            //            }
             if (_nav_flight_mode == nfm_manual){
                 _navigation_status = ns_manual;
                 break;
