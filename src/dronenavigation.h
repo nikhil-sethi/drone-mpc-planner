@@ -133,6 +133,7 @@ private:
     int autoLandThrottleDecrease = 0;
 
     double time_located_drone = 0;
+    double time_taken_off = 0;
 
     std::ofstream *_logger;
     DroneController * _dctrl;

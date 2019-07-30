@@ -18,6 +18,7 @@ static const char* flight_mode_names[] = { "fm_joystick_check",
                                           "fm_inactive",
                                           "fm_manual",
                                           "fm_taking_off",
+                                          "fm_abort_takeoff",
                                           "fm_flying",
                                           "fm_landing"
                                         };
@@ -34,6 +35,7 @@ public:
         fm_inactive,
         fm_manual,
         fm_taking_off,
+        fm_abort_takeoff,
         fm_flying,
         fm_landing
     };

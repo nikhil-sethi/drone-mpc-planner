@@ -186,6 +186,7 @@ void DroneNavigation::update(double time) {
         } case ns_takeoff: {
             _dctrl->reset_manual_override_take_off_now();
             _dctrl->flight_mode(DroneController::fm_taking_off);
+            time_taken_off = time;
             if (_nav_flight_mode == nfm_hunt)
                 _trackers->mode(ItemManager::mode_hunt);
             else
@@ -193,14 +194,18 @@ void DroneNavigation::update(double time) {
             _navigation_status=ns_taking_off;
             break;
         } case ns_taking_off: {
-            //            track_data data = _trackers->dronetracker()->Last_track_data();
-            //            if (data.svelY > static_cast<float>(params.auto_takeoff_speed) / 100.f ) {
-            //                _navigation_status = ns_take_off_completed;
-            //            }
+
             if (_nav_flight_mode == nfm_manual){
                 _navigation_status = ns_manual;
                 break;
             }
+            if (time - time_taken_off > 0.6){
+                std::cout << "Drone was not detected during max burn take off manoeuvre, aborting." << std::endl;
+                _dctrl->flight_mode(DroneController::fm_abort_takeoff);
+                _navigation_status = ns_drone_problem;
+                break;
+            }
+
             if (!_trackers->dronetracker()->taking_off())
                 _navigation_status = ns_take_off_completed;
             else

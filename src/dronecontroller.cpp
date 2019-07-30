@@ -168,7 +168,13 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
             hoverthrottle = min_throttle;
 
         //only control throttle:
-        throttle = autoThrottle ;
+        throttle = autoThrottle;
+        roll = JOY_MIDDLE;
+        pitch = PITCH_MIDDLE;
+        break;
+    } case fm_abort_takeoff : {
+        autoThrottle = JOY_BOUND_MIN;
+        throttle = autoThrottle;
         roll = JOY_MIDDLE;
         pitch = PITCH_MIDDLE;
         break;
