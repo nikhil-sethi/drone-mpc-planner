@@ -39,8 +39,8 @@ void Cam::update_playback(void) {
          std::cout << "Video end, exiting" << std::endl;
          throw bag_video_ended();
      }
-    frameL = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(fs.get_infrared_frame(1).get_data()), Mat::AUTO_STEP);
-    frameR = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(fs.get_infrared_frame(2).get_data()), Mat::AUTO_STEP);
+    frameL = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(fs.get_infrared_frame(1).get_data()), Mat::AUTO_STEP).clone();
+    frameR = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(fs.get_infrared_frame(2).get_data()), Mat::AUTO_STEP).clone();
 
     if (!turbo) {
         while(swc.Read() < (1.f/VIDEOFPS)*1e3f){
@@ -65,8 +65,8 @@ void Cam::update_real(void) {
     lock_newframe.lock(); // wait for a new frame passed by the rs callback
 
     lock_frame_data.lock();
-    frameL = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(rs_frameL.get_data()), Mat::AUTO_STEP);
-    frameR = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(rs_frameR.get_data()), Mat::AUTO_STEP);
+    frameL = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(rs_frameL.get_data()), Mat::AUTO_STEP).clone();
+    frameR = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(rs_frameR.get_data()), Mat::AUTO_STEP).clone();
     _frame_number = rs_frameL.get_frame_number();
     if (_frame_time_start <0)
         _frame_time_start = rs_frameL.get_timestamp();
