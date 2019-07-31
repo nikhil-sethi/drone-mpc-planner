@@ -184,6 +184,7 @@ void ItemTracker::update_world_candidate(){ //TODO: rename
         if (!_image_item.blob_is_fused) {
             smoother_im_size.addSample(_image_item.size);
             smoother_brightness.addSample(_image_item.pixel_max);
+            _blobs_are_fused_cnt = 0;
         }
         smoother_score.addSample(_image_item.score);
     }

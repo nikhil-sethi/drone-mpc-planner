@@ -251,6 +251,7 @@ protected:
     ImageItem  _image_item;
     ImagePredictItem _image_predict_item;
     WorldItem  _world_item;
+    int _blobs_are_fused_cnt = 0;
 
     float stereo_match(cv::Point closestL, cv::Mat diffL, cv::Mat diffR);
     void reset_tracker_ouput(double time);
@@ -271,6 +272,7 @@ public:
     void blobs_are_fused(){
         _world_item.iti.blob_is_fused = true;
         _image_item.blob_is_fused = true;
+        _blobs_are_fused_cnt++;
     }
 
     int n_frames_tracking =0;
