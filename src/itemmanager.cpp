@@ -364,7 +364,7 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active, double time) {
                         //1. The insect is lost (e.g. too far, too small, into the flowers)
                         //2. The drone is lost (e.g. crashed)
                         //3. The insect and drone are too close to eachother to distinguish
-                        //4. We have a kill :)
+                        //4. We have a kill :) In the last few cases this resulted in a confetti storm. Maybe this can be detected.
                     }
                 }
             }

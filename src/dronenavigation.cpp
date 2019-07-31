@@ -51,13 +51,7 @@ void DroneNavigation::init(std::ofstream *logger, ItemManager * trackers, DroneC
     //    setpoints.push_back(waypoint(cv::Point3f(2,-1.0f,-3.5f),100));
 
 
-    setpoints.push_back(waypoint(cv::Point3f(1.5,-0.3f,-2.5f),30));
-    setpoints.push_back(waypoint(cv::Point3f(0,-1.91f,-2.5f),30));
-
-    setpoints.push_back(waypoint(cv::Point3f(0,-0.3f,-2.5f),200));
-    setpoints.push_back(waypoint(cv::Point3f(0,-1.91f,-2.5f),200));
-
-
+    setpoints.push_back(waypoint(cv::Point3f(0,-1.3f,-1.5f),30));
 
     setpoints.push_back(landing_waypoint());
 
@@ -199,7 +193,7 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_manual;
                 break;
             }
-            if (time - time_taken_off > 0.6){
+            if (time - time_taken_off > 0.5){
                 std::cout << "Drone was not detected during max burn take off manoeuvre, aborting." << std::endl;
                 _dctrl->flight_mode(DroneController::fm_abort_takeoff);
                 _navigation_status = ns_drone_problem;
