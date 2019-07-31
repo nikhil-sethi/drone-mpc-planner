@@ -13,7 +13,9 @@ static const char* drone_tracking_state_names[] = { "dts_init",
                                                     "dts_detecting_takeoff_init",
                                                     "dts_detecting_takeoff",
                                                     "dts_detecting",
-                                                    "dts_detected" };
+                                                    "dts_detected",
+                                                    "dts_landing_init",
+                                                    "dts_landing"};
 class DroneTracker : public ItemTracker {
 
 
@@ -22,6 +24,7 @@ private:
     double current_time = 0;
 
     double startup_location_ignore_timeout = 1; // TODO: make this dependent on the motion_update_iterator_max
+    double landing_ignore_timeout = 5; // TODO: make this dependent on the motion_update_iterator_max
     double taking_off_ignore_timeout = 0.1; // TODO: make this dependent on the motion_update_iterator_max
 
 #if TX_TYPE == TX_FRSKYX_TC
@@ -44,7 +47,9 @@ private:
         dts_detecting_takeoff_init,
         dts_detecting_takeoff,
         dts_detecting,
-        dts_detected
+        dts_detected,
+        dts_landing_init,
+        dts_landing
     };
     drone_tracking_states _drone_tracking_status = dts_init;
 
@@ -55,7 +60,6 @@ private:
     bool _landing_pad_location_set = false;
     cv::Point3f _landing_pad_world;
 
-    bool _drone_control_prediction_valid = false;
     cv::Point2f _drone_control_predicted_image_location = {0};
     cv::Point3f _drone_control_predicted_world_location = {0};
 
@@ -121,16 +125,11 @@ public:
     bool init(std::ofstream *logger, VisionData *_visdat);
     void track(double time, bool drone_is_active);
 
-    void insert_control_predicted_drone_location(){
-        if (_drone_control_prediction_valid){
-            _drone_control_prediction_valid = false;
-        }
-    }
+    void land() {_drone_tracking_status = dts_landing_init;}
 
     void control_predicted_drone_location(cv::Point2f drone_control_predicted_image_location, cv::Point3f drone_control_predicted_world_location){
         _drone_control_predicted_image_location = drone_control_predicted_image_location;
         _drone_control_predicted_world_location = drone_control_predicted_world_location;
-        _drone_control_prediction_valid = true;
     }
 
     void set_drone_landing_location(cv::Point2f im, float drone_im_disparity,float drone_im_size, cv::Point3f world) {

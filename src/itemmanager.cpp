@@ -135,7 +135,7 @@ void ItemManager::update_static_ignores() {
             if (j!=i){
                 for (uint k = 0; k < _trackers.at(j)->ignores_for_other_trkrs.size();k++){
                     ignores.push_back(_trackers.at(j)->ignores_for_other_trkrs.at(k));
-                    if (_trackers.at(j)->ignores_for_other_trkrs.at(k).ignore_type == ItemTracker::IgnoreBlob::landing_spot){
+                    if (_trackers.at(j)->ignores_for_other_trkrs.at(k).ignore_type == ItemTracker::IgnoreBlob::takeoff_spot){
                         landingspot_ignore_found = true;
                         landingspot = _trackers.at(j)->ignores_for_other_trkrs.at(k);
                     }
@@ -263,7 +263,7 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active, double time) {
                 for (uint k=0; k<trkr->ignores_for_other_trkrs.size();k++){
                     cv::Point2f p_ignore = trkr->ignores_for_other_trkrs.at(k).p;
                     float dist_ignore = sqrtf(powf(p_ignore.x-p_kp.x,2)+powf(p_ignore.y-p_kp.y,2));
-                    if (dist_ignore < settings.static_ignores_dist_thresh){
+                    if (dist_ignore < pbs.at(j).size + trkr->ignores_for_other_trkrs.at(k).radius ){
                         trkr->ignores_for_other_trkrs.at(k).was_used = true;
                     }
                 }

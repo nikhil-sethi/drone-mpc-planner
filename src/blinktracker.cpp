@@ -73,7 +73,7 @@ void BlinkTracker::track(double time) {
         break;
     } case bds_dedicated_calib: {
         append_log();
-        ignores_for_other_trkrs.push_back(IgnoreBlob(_image_item.pt(),time+2, IgnoreBlob::blink_spot)); //prevent any residual blinkiness being picked up
+        ignores_for_other_trkrs.push_back(IgnoreBlob(_image_item.pt(),time+2,_image_item.size*2, IgnoreBlob::blink_spot)); //prevent any residual blinkiness being picked up
 #ifndef MANUAL_DRONE_LOCATE
         _blinking_drone_status = bds_found;
         break;
@@ -102,6 +102,11 @@ void BlinkTracker::track(double time) {
         break;
     }
     }
+
+    if (_image_item.valid && _blinking_drone_status > bds_searching ){
+        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*IMSCALEF,_image_item.size*1.2f*IMSCALEF);
+    }
+
     clean_ignore_blobs(time);
 }
 

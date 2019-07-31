@@ -131,17 +131,20 @@ public:
     };
     struct IgnoreBlob {
         enum IgnoreType{
-            landing_spot,
+            takeoff_spot,
             blink_spot,
-            drone_taking_off
+            drone_taking_off,
+            landing_spot
         };
         IgnoreBlob() {}
-        IgnoreBlob(cv::Point2f location, double timeout, IgnoreType type){
+        IgnoreBlob(cv::Point2f location, float ignore_radius,double timeout, IgnoreType type){
             p = location;
             ignore_type = type ;
             invalid_after = timeout;
+            radius = ignore_radius;
         }
         cv::Point2f p;
+        float radius;
         double invalid_after;
         bool was_used = true;
         IgnoreType ignore_type;

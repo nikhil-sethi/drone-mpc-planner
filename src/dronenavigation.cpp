@@ -281,7 +281,7 @@ void DroneNavigation::update(double time) {
             _dist_to_wp = dis;
             if (dis *1000 < current_setpoint->threshold_mm * params.distance_threshold_f && _trackers->dronetracker()->n_frames_tracking>5) {
                 if (current_setpoint->mode == fm_landing) {
-                    _navigation_status = ns_landing;
+                    _navigation_status = ns_land;
                 } else if (current_setpoint->mode == fm_hover_calib) {
                     _dctrl->recalibrateHover();
                     _calibrating_hover = false;
@@ -318,6 +318,7 @@ void DroneNavigation::update(double time) {
         } case ns_land: {
             _dctrl->flight_mode(DroneController::fm_landing);
             _dctrl->recalibrateHover();
+            _trackers->dronetracker()->land();
             _navigation_status = ns_landing;
         } FALLTHROUGH_INTENDED; case ns_landing: {
             track_data data = _trackers->dronetracker()->Last_track_data();
