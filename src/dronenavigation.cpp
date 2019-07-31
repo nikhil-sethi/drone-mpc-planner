@@ -99,12 +99,16 @@ void DroneNavigation::update(double time) {
         repeat  = false;
         switch (_navigation_status) {
         case ns_init: {
-            _navigation_status = ns_locate_drone;
+#if DRONE_TYPE == DRONE_TRASHCAN
+            _dctrl->blink(false,time); // disabling blink will turn on the led
+#endif
+            if (time > 1) // skip the first second or so, e.g. auto exposure may give heavily changing images
+                _navigation_status = ns_locate_drone;
             _trackers->mode(ItemManager::mode_idle);
             break;
         } case ns_locate_drone: {
-#if TX_TYPE == TX_FRSKYD || TX_TYPE == TX_FRSKYX
-            _dctrl->blink_drone(true);
+#if DRONE_TYPE != DRONE_TRASHCAN
+            _dctrl->blink_by_binding(true);
 #endif
             _trackers->mode(ItemManager::mode_locate_drone);
             _visdat->reset_motion_integration();
@@ -113,29 +117,28 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_wait_locate_drone: {
             static double __attribute__((unused)) prev_time = time;
-#if TX_TYPE == TX_FRSKYD || TX_TYPE == TX_FRSKYX
+#if DRONE_TYPE != DRONE_TRASHCAN
             if (time - prev_time > 7 && time - prev_time < 8) {
-                _dctrl->blink_drone(false); // refresh the blinking
+                _dctrl->blink_by_binding(false); // refresh the blinking
             } else if (abs(time - prev_time) > 8.5) {
                 prev_time = time;
-                _dctrl->blink_drone(true);
+                _dctrl->blink_by_binding(true);
             }
+#else
+            if (time - prev_time > bind_blink_time)
+                _dctrl->blink(true,time);
 #endif
             if (_trackers->mode() != ItemManager::mode_locate_drone) {
                 _navigation_status = ns_located_drone;
                 time_located_drone = time;
             }
-#if TX_TYPE == TX_FRSKYX_TC
-            if (time - prev_time > bind_blink_time)
-                _dctrl->blink_drone(true,time);
-#endif
+
             break;
         } case ns_located_drone: {
-#if TX_TYPE == TX_FRSKYD || TX_TYPE == TX_FRSKYX
-            _dctrl->blink_drone(false);
-#endif
-#if TX_TYPE == TX_FRSKYX_TC
-            _dctrl->blink_drone(false,time);
+#if DRONE_TYPE != DRONE_TRASHCAN
+            _dctrl->blink_by_binding(false);
+#else
+            _dctrl->blink(false,time);
 #endif
             _trackers->mode(ItemManager::mode_idle);
             _visdat->disable_fading = false;

@@ -111,41 +111,24 @@ private:
 
 
 
-#if TX_TYPE == TX_CX10
-#define INITIALTHROTTLE 200
-#define PITCH_MIDDLE JOY_MIDDLE
-#endif
-#if TX_TYPE == TX_FRSKYD
-public : const float throttle_bank_factor = 0.23f; // Whoop
-public : const uint cowardly_poo_factor = 0;
-#define INITIALTHROTTLE 200
-#define INITIAL_HOVER_THROTTLE 950
-#define PITCH_MIDDLE JOY_MIDDLE
-#endif
-#if TX_TYPE == TX_FRSKYX
-public : const float throttle_bank_factor = 0.23f; //Whoop
-public : const uint cowardly_poo_factor = 0;
-#define INITIALTHROTTLE 200
-#define INITIAL_HOVER_THROTTLE 900
-#define PITCH_MIDDLE JOY_MIDDLE
-#endif
-#if TX_TYPE == TX_FRSKYX_TC
-public : const float throttle_bank_factor = 0.11f; // Whoop 0.33 Thrashcan 0.11
-public : const uint cowardly_poo_factor = 750;
-#define INITIALTHROTTLE 200
-#define INITIAL_HOVER_THROTTLE 635
-#define PITCH_MIDDLE JOY_MIDDLE
-#endif
-#if TX_TYPE == TX_NONE
-public : const float throttle_bank_factor = 0.11f; //dummy values
-public : const uint cowardly_poo_factor = 750; //dummy values
-#endif
-#ifndef INITIALTHROTTLE
-#define INITIALTHROTTLE 200
-#define PITCH_MIDDLE JOY_MIDDLE
-#endif
-#ifndef INITIAL_HOVER_THROTTLE
-#define INITIAL_HOVER_THROTTLE INITIALTHROTTLE
+#if DRONE_TYPE == DRONE_TINYWHOOP_GREEN || DRONE_TYPE == DRONE_NONE
+    public : const float throttle_bank_factor = 0.23f;
+    public : const uint cowardly_poo_factor = 0;
+    #define INITIALTHROTTLE 200
+    #define INITIAL_HOVER_THROTTLE 950
+    #define PITCH_MIDDLE JOY_MIDDLE
+#elif DRONE_TYPE == DRONE_TINYWHOOP_BLACK
+    public : const float throttle_bank_factor = 0.23f;
+    public : const uint cowardly_poo_factor = 0;
+    #define INITIALTHROTTLE 200
+    #define INITIAL_HOVER_THROTTLE 900
+    #define PITCH_MIDDLE JOY_MIDDLE
+#elif DRONE_TYPE == DRONE_TRASHCAN
+    public : const float throttle_bank_factor = 0.11f;
+    public : const uint cowardly_poo_factor = 1000;
+    #define INITIALTHROTTLE 200
+    #define INITIAL_HOVER_THROTTLE 675
+    #define PITCH_MIDDLE JOY_MIDDLE
 #endif
 
     const int take_off_throttle_boost = 0;
@@ -169,9 +152,6 @@ public : const uint cowardly_poo_factor = 750; //dummy values
     void process_joystick();
 
 public:
-    //    flight_modes Flight_mode() {
-    //        return _flight_mode;
-    //    }
     void flight_mode(flight_modes f){
         _flight_mode = f;
     }
@@ -203,7 +183,6 @@ public:
         _log_auto_pitch= auto_pitch;
         _log_auto_throttle = auto_throttle;
     }
-
 
     int joyThrottle = JOY_BOUND_MIN;
     int joyRoll = JOY_MIDDLE;
@@ -286,14 +265,14 @@ public:
         hoverthrottle -= params.hoverOffset*params.autoTakeoffFactor; // to compensate for ground effect and delay
     }
 
-    void blink_drone(bool b) {
+    void blink_by_binding(bool b) {
         _rc->bind(b); // tmp trick until we create a dedicated feature for this
     }
 
-    void blink_drone(bool b, double time) {
+    void blink(bool enable_blink, double time) {
         static double last_blink_time = time;
         static bool blink_state;
-        if (b) {
+        if (enable_blink) {
             if (time-last_blink_time>bind_blink_time) {
                 if (blink_state)
                     blink_state = false;

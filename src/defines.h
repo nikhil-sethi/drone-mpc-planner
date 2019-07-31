@@ -25,12 +25,18 @@
 #define TX_FRSKYX 4
 #define TX_FRSKYX_TC 5
 
+#define DRONE_NONE 0
+#define DRONE_TRASHCAN 1
+#define DRONE_TINYWHOOP_BLACK 2
+#define DRONE_TINYWHOOP_GREEN 3//green or black pcb, determines whether it supports Frsky D8 or D16 (FrskyX)
+#define DRONE_CX10 4
+
 //#define INSECT_LOGGING_MODE
 
 #ifdef INSECT_LOGGING_MODE
     #define VIDEORAWLR VIDEOMODE_AVI
     #define JOYSTICK_TYPE RC_NONE
-    #define TX_TYPE TX_NONE
+    #define DRONE_TYPE DRONE_NONE
     #define WATCHDOG_ENABLED
 //    #define HASSCREEN
 #else
@@ -39,7 +45,19 @@
     #endif
     #define VIDEORAWLR VIDEOMODE_BAG
     #define JOYSTICK_TYPE RC_XLITE
+    #define DRONE_TYPE DRONE_TRASHCAN
+#endif
+
+#if DRONE_TYPE == DRONE_NONE
+    #define TX_TYPE TX_NONE
+#elif DRONE_TYPE == DRONE_TRASHCAN
     #define TX_TYPE TX_FRSKYX_TC
+#elif DRONE_TYPE == DRONE_TINYWHOOP_BLACK
+    #define TX_TYPE TX_FRSKYX
+#elif DRONE_TYPE == DRONE_TINYWHOOP_GREEN
+    #define TX_TYPE TX_FRSKYD
+#elif DRONE_TYPE == DRONE_CX10
+    #define TX_TYPE TX_CX10
 #endif
 
 #define VIDEODISPARITY VIDEOMODE_DISABLED

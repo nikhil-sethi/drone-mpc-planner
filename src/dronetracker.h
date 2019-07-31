@@ -27,15 +27,11 @@ private:
     double landing_ignore_timeout = 5; // TODO: make this dependent on the motion_update_iterator_max
     double taking_off_ignore_timeout = 0.1; // TODO: make this dependent on the motion_update_iterator_max
 
-#if TX_TYPE == TX_FRSKYX_TC
+#if DRONE_TYPE == DRONE_TRASHCAN
     const float full_bat_and_throttle_im_effect = 3; // how many pixels per second will the drone go up given full throttle
-    const float full_bat_and_throttle_take_off_acc = 9; // Trashcan
-    const float full_bat_and_throttle_spinup_time = 0.19f; // Trashcan
-#elif TX_TYPE == TX_FRSKYX
-    const float full_bat_and_throttle_im_effect = 3;
-    const float full_bat_and_throttle_take_off_acc = 3;
+    const float full_bat_and_throttle_take_off_acc = 2;
     const float full_bat_and_throttle_spinup_time = 0.19f;
-#elif TX_TYPE == TX_FRSKYD
+#elif DRONE_TYPE == DRONE_TINYWHOOP_BLACK ||  DRONE_TYPE == DRONE_TINYWHOOP_GREEN || DRONE_TYPE == DRONE_NONE
     const float full_bat_and_throttle_im_effect = 3;
     const float full_bat_and_throttle_take_off_acc = 3;
     const float full_bat_and_throttle_spinup_time = 0.19f;
