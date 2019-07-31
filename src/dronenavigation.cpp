@@ -212,7 +212,6 @@ void DroneNavigation::update(double time) {
                 break;
         } FALLTHROUGH_INTENDED; case ns_take_off_completed: {
             _dctrl->init_ground_effect_compensation();
-            alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
             _dctrl->flight_mode(DroneController::fm_flying);
 #ifdef MANUAL_DRONE_LOCATE
             _dtrk->do_post_takeoff_detection();
@@ -289,13 +288,11 @@ void DroneNavigation::update(double time) {
                     _navigation_status = ns_goto_landing_waypoint;
                 } else if (wpid < setpoints.size()) { // next waypoint in flight plan
                     wpid++;
-                    alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/window-slide.ogg &");
                     if (wpid == 1)
                         _dctrl->recalibrateHover();
                     _navigation_status = ns_set_waypoint;
                 } else if (wpid == setpoints.size()){
                     wpid = 0; // another round
-                    alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/stereo/window-slide.ogg &");
                     _navigation_status = ns_set_waypoint;
                 }
             }
@@ -321,7 +318,6 @@ void DroneNavigation::update(double time) {
         } case ns_land: {
             _dctrl->flight_mode(DroneController::fm_landing);
             _dctrl->recalibrateHover();
-            alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
             _navigation_status = ns_landing;
         } FALLTHROUGH_INTENDED; case ns_landing: {
             track_data data = _trackers->dronetracker()->Last_track_data();
@@ -340,7 +336,6 @@ void DroneNavigation::update(double time) {
                 _navigation_status=ns_manual;
             break;
         } case ns_landed: {
-            alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Slick.ogg &");
             wpid = 0;
             autoLandThrottleDecrease = 0;
             _dctrl->setAutoLandThrottleDecrease(0);
@@ -358,7 +353,6 @@ void DroneNavigation::update(double time) {
             _trackers->mode(ItemManager::mode_drone_only);
             if (_nav_flight_mode == nfm_hunt) {
                 _navigation_status=ns_wait_for_insect;
-                alert("canberra-gtk-play -f /usr/share/sounds/ubuntu/notifications/Rhodes.ogg &");
             } else if (_nav_flight_mode != nfm_manual) { // waypoint mode
                 _navigation_status=ns_wait_for_takeoff_command;
             }

@@ -21,7 +21,6 @@ cv::Mat createColumnImage(std::vector<cv::Mat> ims, int type, float resizef = 1)
 cv::Mat createRowImage(std::vector<cv::Mat> ims, int type, float resizef = 1);
 void showColumnImage(std::vector<cv::Mat> ims, std::string window_name, int type, float resizef = 1);
 void showRowImage(std::vector<cv::Mat> ims, std::string window_name, int type, float resizef = 1);
-void alert(std::string cmd);
 cv::Mat createBlurryCircle(cv::Point size);
 std::string to_string_with_precision(float f, const int n);
 int getSecondsSinceFileCreation(std::string filePath);

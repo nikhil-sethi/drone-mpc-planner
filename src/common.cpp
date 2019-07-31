@@ -205,12 +205,6 @@ void showRowImage(std::vector<cv::Mat> ims, std::string window_name, int type,fl
     cv::imshow(window_name, res);
 }
 
-void alert(std::string cmd __attribute__((unused))) {
-#ifdef BEEP
-    system(cmd.c_str());
-#endif
-}
-
 cv::Mat createBlurryCircle(cv::Point size) {
     cv::Point2f tmp;
     tmp.x = roundf((static_cast<float>(size.x))/4.f);
