@@ -169,7 +169,7 @@ ItemTracker::BlobWorldProps DroneTracker::calc_world_item(BlobProps * pbs, doubl
         // only accept the drone blob when
         // 1) it is 10cm up in the air, because we then have a reasonable good seperation and can calculate the state
         // 2) it is reasonably close to the prediciton
-        if (fabs(err_y) > 0.25f || err_pos > 0.20f || dy < 0.1f || acc_y < full_bat_and_throttle_take_off_acc/2) {
+        if (fabs(err_y) > 0.5f || err_pos > 0.50f || dy < 0.1f || acc_y < full_bat_and_throttle_take_off_acc/3) {
             wbp.valid = false;
             return wbp;
         }
