@@ -128,7 +128,7 @@ private:
     #define PITCH_MIDDLE JOY_MIDDLE
 #elif DRONE_TYPE == DRONE_TRASHCAN
     public : const float throttle_bank_factor = 0.11f;
-    const uint cowardly_poo_factor = 750;
+    const uint cowardly_poo_factor = 1000;
 
     //TODO: make this
     const float ff_full_throttle_takeoff_time= 0.15;
