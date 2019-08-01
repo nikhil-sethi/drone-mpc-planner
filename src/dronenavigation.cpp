@@ -100,7 +100,7 @@ void DroneNavigation::update(double time) {
         switch (_navigation_status) {
         case ns_init: {
 #if DRONE_TYPE == DRONE_TRASHCAN
-            _dctrl->blink(false,time); // disabling blink will turn on the led
+            _dctrl->LED(true);
 #endif
             if (time > 1) // skip the first second or so, e.g. auto exposure may give heavily changing images
                 _navigation_status = ns_locate_drone;
@@ -126,7 +126,7 @@ void DroneNavigation::update(double time) {
             }
 #else
             if (time - prev_time > bind_blink_time)
-                _dctrl->blink(true,time);
+                _dctrl->blink(time);
 #endif
             if (_trackers->mode() != ItemManager::mode_locate_drone) {
                 _navigation_status = ns_located_drone;
@@ -138,7 +138,7 @@ void DroneNavigation::update(double time) {
 #if DRONE_TYPE != DRONE_TRASHCAN
             _dctrl->blink_by_binding(false);
 #else
-            _dctrl->blink(false,time);
+            _dctrl->LED(true);
 #endif
             _trackers->mode(ItemManager::mode_idle);
             _visdat->disable_fading = false;
@@ -158,22 +158,21 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_wait_for_insect;
             else if (_nav_flight_mode == nfm_manual)
                 _navigation_status = ns_manual;
-            else if (_dctrl->manual_override_take_off_now() )
+            else if (_dctrl->manual_override_take_off_now() ){
                 _navigation_status = ns_takeoff;
+                repeat = true;
+            }
             break;
         } case ns_wait_for_insect: {
             _trackers->mode(ItemManager::mode_wait_for_insect);
             _dctrl->flight_mode(DroneController::fm_inactive);
             if (_nav_flight_mode == nfm_manual)
                 _navigation_status = ns_manual;
-            else if (_nav_flight_mode == nfm_hunt) {
-                if (!_dctrl->hoverthrottleInitialized) {
-                    _navigation_status = ns_init_calibrate_hover;
-                } else if (_iceptor.insect_in_range()) {
-                    _navigation_status = ns_takeoff;
-                }
+            else if (_nav_flight_mode == nfm_hunt && _iceptor.insect_in_range()) {
+                _navigation_status = ns_takeoff;
+                repeat = true;
             } else if (_nav_flight_mode == nfm_none) { // e.g. insect logging mode
-            } else //waypoint modes
+            } else if (_nav_flight_mode == nfm_waypoint || _nav_flight_mode == nfm_slider)
                 _navigation_status = ns_wait_for_takeoff_command;
             break;
         } case ns_init_calibrate_hover: {
@@ -191,7 +190,6 @@ void DroneNavigation::update(double time) {
             _navigation_status=ns_taking_off;
             break;
         } case ns_taking_off: {
-
             if (_nav_flight_mode == nfm_manual){
                 _navigation_status = ns_manual;
                 break;

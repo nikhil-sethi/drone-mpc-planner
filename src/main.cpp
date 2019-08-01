@@ -292,10 +292,9 @@ void handle_key() {
         break;
     case 'o':
         dctrl.blink_by_binding(false);
-        dctrl.blink(false,0);
+        dctrl.LED(true);
         dnav.nav_flight_mode(DroneNavigation::nfm_manual);
         break;
-
     case '1':
         init_insect_log(49);
         break;

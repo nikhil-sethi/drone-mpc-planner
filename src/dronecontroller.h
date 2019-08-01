@@ -278,10 +278,10 @@ public:
         _rc->bind(b); // tmp trick until we create a dedicated feature for this
     }
 
-    void blink(bool enable_blink, double time) {
+    void blink(double time) {
         static double last_blink_time = time;
         static bool blink_state;
-        if (enable_blink) {
+
             if (time-last_blink_time>bind_blink_time) {
                 if (blink_state)
                     blink_state = false;
@@ -289,10 +289,11 @@ public:
                     blink_state = true;
              last_blink_time = time;
             }
-        } else
-            blink_state = true;
-
         _rc->LED(blink_state);
+    }
+
+    void LED(bool b){
+        _rc->LED(b);
     }
 
 };
