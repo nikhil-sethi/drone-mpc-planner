@@ -88,10 +88,14 @@ void DroneTracker::track(double time, bool drone_is_active) {
                 data.svelY = v_final_to;
                 data.saccY = a_to;
                 track_history.push_back(data);
+                float tmp_v,tmp_acc;
                 for (uint hack = 0; hack<70;hack++) {
-                    smoother_velY2.addSample(_world_item.pt.y + (-69 * v_final_to * dt_to) + (v_final_to*dt_to*hack),dt_to); // extremely dirty hack
-                    smoother_accY2.addSample(v_final_to + (-69 * a_to * dt_to) + (a_to*dt_to*hack),dt_to); // extremely dirty hack
+                    tmp_v = smoother_velY2.addSample(_world_item.pt.y + (-69 * v_final_to * dt_to) + (v_final_to*dt_to*hack),dt_to); // extremely dirty hack
+                    tmp_acc = smoother_accY2.addSample(v_final_to + (-69 * a_to * dt_to) + (a_to*dt_to*hack),dt_to); // extremely dirty hack
                 }
+                std::cout << "Start dy: " << dy_to << ", dt: " << (time - start_take_off_time) << std::endl;
+                std::cout << "Start v: " << tmp_v << ", a: " << tmp_acc << std::endl;
+                std::cout << "Start v: " << data.svelY << ", a: " << data.saccY << std::endl;
 
                 _visdat->delete_from_motion_map(drone_startup_im_location()*IMSCALEF, _drone_blink_im_disparity,ceilf(_drone_blink_im_size*2.f)*IMSCALEF,VIDEOFPS/2);
             }

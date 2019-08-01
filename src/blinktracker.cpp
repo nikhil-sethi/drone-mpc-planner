@@ -104,7 +104,7 @@ void BlinkTracker::track(double time) {
     }
 
     if (_image_item.valid && _blinking_drone_status > bds_searching ){
-        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*IMSCALEF,_image_item.size*1.2f*IMSCALEF);
+        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*IMSCALEF,_image_item.size*1.2f*IMSCALEF); // TODO: does not work properly
     }
 
     clean_ignore_blobs(time);

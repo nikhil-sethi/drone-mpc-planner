@@ -196,7 +196,7 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_manual;
                 break;
             }
-            if (time - time_taken_off > 0.5){
+            if (time - time_taken_off > 0.7){
                 std::cout << "Drone was not detected during max burn take off manoeuvre, aborting." << std::endl;
                 _dctrl->flight_mode(DroneController::fm_abort_takeoff);
                 _navigation_status = ns_drone_problem;

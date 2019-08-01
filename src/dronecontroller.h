@@ -104,7 +104,8 @@ private:
     int autoLandThrottleDecrease = 0;
 
     const int forward_pitch_take_off_boost = 0; // CX10 - 60
-    const int min_throttle = 600; //Whoop - 600    CX10 - 800
+
+
     const float integratorThresholdDistance = 0.2f;
 
     bool initialized = false;
@@ -114,18 +115,26 @@ private:
 #if DRONE_TYPE == DRONE_TINYWHOOP_GREEN || DRONE_TYPE == DRONE_NONE
     public : const float throttle_bank_factor = 0.23f;
     public : const uint cowardly_poo_factor = 0;
+    const int min_throttle = 600; //Whoop - 600    CX10 - 800
     #define INITIALTHROTTLE 200
     #define INITIAL_HOVER_THROTTLE 950
     #define PITCH_MIDDLE JOY_MIDDLE
 #elif DRONE_TYPE == DRONE_TINYWHOOP_BLACK
     public : const float throttle_bank_factor = 0.23f;
     public : const uint cowardly_poo_factor = 0;
+    const int min_throttle = 600; //Whoop - 600    CX10 - 800
     #define INITIALTHROTTLE 200
     #define INITIAL_HOVER_THROTTLE 900
     #define PITCH_MIDDLE JOY_MIDDLE
 #elif DRONE_TYPE == DRONE_TRASHCAN
     public : const float throttle_bank_factor = 0.11f;
-    public : const uint cowardly_poo_factor = 1000;
+    const uint cowardly_poo_factor = 750;
+
+    //TODO: make this
+    const float ff_full_throttle_takeoff_time= 0.15;
+    const float ff_zero_throttle_takeoff_time= 0.15;
+
+    const int min_throttle = 350;
     #define INITIALTHROTTLE 200
     #define INITIAL_HOVER_THROTTLE 675
     #define PITCH_MIDDLE JOY_MIDDLE

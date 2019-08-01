@@ -96,6 +96,8 @@ public:
         throttle_joystick = cv::Mat(1,1,CV_32FC1);
         throttle_calculated = cv::Mat (1,1,CV_32FC1);
         throttle_hover = cv::Mat (1,1,CV_32FC1);
+        throttle_min_bound = cv::Mat (1,1,CV_32FC1);
+        throttle_max_bound = cv::Mat (1,1,CV_32FC1);
         posX = cv::Mat (1,1,CV_32FC1);
         posY = cv::Mat (1,1,CV_32FC1);
         posZ = cv::Mat (1,1,CV_32FC1);
@@ -113,6 +115,8 @@ public:
         throttle_joystick.pop_back();
         throttle_calculated.pop_back();
         throttle_hover.pop_back();
+        throttle_min_bound.pop_back();
+        throttle_max_bound.pop_back();
         posX.pop_back();
         posY.pop_back();
         posZ.pop_back();
@@ -126,6 +130,8 @@ public:
     cv::Mat throttle_joystick;
     cv::Mat throttle_calculated;
     cv::Mat throttle_hover;
+    cv::Mat throttle_min_bound;
+    cv::Mat throttle_max_bound;
     cv::Mat roll_joystick;
     cv::Mat roll_calculated;
     cv::Mat pitch_joystick;

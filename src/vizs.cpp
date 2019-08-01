@@ -12,7 +12,7 @@ cv::Scalar black(0,0,0);
 cv::Scalar green(0,255,0);
 cv::Scalar blue(255,0,0);
 cv::Scalar red(0,0,255);
-cv::Scalar linecolors[] = {green,blue,red,cv::Scalar(0,255,255),cv::Scalar(255,255,0),cv::Scalar(255,0,255)};
+cv::Scalar linecolors[] = {green,blue,red,cv::Scalar(0,255,255),cv::Scalar(255,255,0),cv::Scalar(255,0,255),cv::Scalar(128,128,255),cv::Scalar(255,128,128)};
 
 //cv::Scalar background_color(255,255,255);
 cv::Scalar fore_color(0,0,0);
@@ -52,6 +52,8 @@ void Visualizer::addPlotSample(void) {
     //    yaw_calculated.push_back(static_cast<float>(_dctrl->commandedYaw));
     throttle_calculated.push_back(static_cast<float>(_dctrl->autoThrottle));
     throttle_hover.push_back(_dctrl->hoverthrottle);
+    throttle_min_bound.push_back(static_cast<float>(JOY_BOUND_MIN));
+    throttle_max_bound.push_back(static_cast<float>(JOY_BOUND_MAX));
 
     track_data data = _dtrkr->Last_track_data();
     dt.push_back(data.dt);
@@ -124,7 +126,7 @@ cv::Mat Visualizer::plot_all_control(void) {
     std::vector<cv::Mat> ims_joy;
     ims_joy.push_back(plot({roll_joystick,roll_calculated},"Roll"));
     ims_joy.push_back(plot({pitch_joystick,pitch_calculated},"Pitch"));
-    ims_joy.push_back(plot({throttle_joystick,throttle_calculated,throttle_hover},"Throttle"));
+    ims_joy.push_back(plot({throttle_joystick,throttle_calculated,throttle_hover,throttle_min_bound,throttle_max_bound},"Throttle"));
     return createColumnImage(ims_joy, CV_8UC3);
 }
 

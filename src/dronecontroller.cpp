@@ -180,11 +180,11 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
         break;
     } case fm_flying : {
         //update integrators
-        if (abs(posErrZ)<integratorThresholdDistance)
+        if (fabs(posErrZ)<integratorThresholdDistance)
             throttleErrI += velErrY; //posErrY;
-        if (abs(posErrX)<integratorThresholdDistance)
+        if (fabs(posErrX)<integratorThresholdDistance)
             rollErrI += posErrX;
-        if (abs(posErrZ)<integratorThresholdDistance)
+        if (fabs(posErrZ)<integratorThresholdDistance)
             pitchErrI += posErrZ;
 
         autoThrottle =  hoverthrottle + take_off_throttle_boost - (accErrY * params.throttle_Acc + throttleErrI * params.throttleI*0.1f);
