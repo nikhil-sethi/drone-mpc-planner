@@ -34,6 +34,7 @@ public:
     int write(cv::Mat frame);
     int write(cv::Mat frameL,cv::Mat frameR);
     void close (void);
+    void block();
 };
 
 

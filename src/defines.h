@@ -60,7 +60,6 @@
     #define TX_TYPE TX_CX10
 #endif
 
-#define VIDEODISPARITY VIDEOMODE_DISABLED
 #define VIDEORESULTS VIDEOMODE_DISABLED
 #define VIDEOFPS 60 // auto exposure may change this. This is handled properly for 60 by limiting the exposure. But not for the the other possible framerates
 #define IMG_W 848

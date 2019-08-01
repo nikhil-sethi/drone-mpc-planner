@@ -14,6 +14,7 @@ stopwatch_c stopwatch;
 int want = 1;
 int want_cnt = 0;
 std::mutex lock_var;
+std::mutex wait_for_want;
 
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc.hpp>
@@ -26,11 +27,17 @@ static void cb_need_data (GstElement *appsrc __attribute__((unused)), guint unus
     want = 1;
     lock_var.unlock();
     want_cnt++;
+    wait_for_want.unlock();
+}
+
+void GStream::block(){
+    wait_for_want.lock();
 }
 
 int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, int sizeY,int fps, std::string ip, int port, bool color) {
     videomode = mode;
     gstream_fps  =fps;
+    wait_for_want.unlock();
     if (videomode == VIDEOMODE_STREAM ) {
         if (stream_resize_f > 1) {
             sizeX = sizeX/stream_resize_f;
@@ -254,8 +261,10 @@ int GStream::write(cv::Mat frameL,cv::Mat frameR) {
 }
 
 int GStream::write(cv::Mat frame) {
-    if (frame.empty())
+    if (frame.empty()){
+        wait_for_want.unlock();
         return 1;
+    }
     cv::Mat tmpframe = frame.clone();
     if (videomode == VIDEOMODE_STREAM && stream_resize_f > 1) {
         cv::resize(tmpframe,tmpframe,cv::Size(frame.cols/stream_resize_f,frame.rows/stream_resize_f));

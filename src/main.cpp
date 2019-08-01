@@ -164,7 +164,6 @@ void process_video() {
         tp[0].new_data.notify_one();
         tp[0].m1.unlock();
 
-        int frameWritten = 0;
         static bool new_recording = false;
         double dtr = data.time - trackers.insecttracker()->last_sighting_time;
         if (dtr > 1 && new_recording) {
@@ -172,8 +171,9 @@ void process_video() {
             auto time_insect_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
             logger_insect << "New detection ended at: " << std::put_time(std::localtime(&time_insect_now), "%Y/%m/%d %T") << " Duration: " << dtr << " End cam frame number: " <<  cam.frame_number() << std::endl;
         }
-#if VIDEORAWLR && VIDEORAWLR != VIDEOMODE_BAG
 
+#if VIDEORAWLR && VIDEORAWLR != VIDEOMODE_BAG
+        int frameWritten = 0;
         if ((trackers.insecttracker()->tracking() || dtr < 1) && data.time > 5) {
             cv::Mat frameL  =cam.frameL.clone();
             cv::putText(frameL,std::to_string(cam.frame_number()),cv::Point(0, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,255);
@@ -188,11 +188,6 @@ void process_video() {
             std::cout << "Recording! Frames written: " << video_frame_counter << std::endl;
         }
 #endif
-        if (frameWritten == 0) {
-#if VIDEORESULTS
-            output_video_results.write(visualizer.trackframe);
-#endif
-        }
 
         //keep track of time and fps
         float t = stopWatch.Read() / 1000.f;
@@ -265,7 +260,12 @@ void process_frame(Stereo_Frame_Data data) {
 #ifdef HASSCREEN
     visualizer.addPlotSample();
     visualizer.update_tracker_data(visdat.frameL,dnav.setpoint,data.time);
+#if VIDEORESULTS
+    output_video_results.block(); // only use this for rendering
+    output_video_results.write(visualizer.trackframe);
 #endif
+#endif
+
 }
 
 void init_insect_log(int n){
