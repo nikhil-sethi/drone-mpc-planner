@@ -164,15 +164,17 @@ ItemTracker::BlobWorldProps DroneTracker::calc_world_item(BlobProps * pbs, doubl
         float err_y = wbp.y - expected_drone_location.y;
         float err_pos = static_cast<float>(norm(expected_drone_location - cv::Point3f(wbp.x,wbp.y,wbp.z)));
         float dy = wbp.y - _drone_blink_world_location.y;
-        float acc_y = 2.f*dy / powf(dt,2);
 
         // only accept the drone blob when
         // 1) it is 10cm up in the air, because we then have a reasonable good seperation and can calculate the state
         // 2) it is reasonably close to the prediciton
-        if (fabs(err_y) > 0.5f || err_pos > 0.50f || dy < 0.1f || acc_y < full_bat_and_throttle_take_off_acc/3) {
+		if (fabs(err_y) > 0.5f || err_pos > 0.50f || dy < 0.2f) {
             wbp.valid = false;
             return wbp;
-        }
+		} else {
+			float vel_y = dy/dt;
+			hover_throttle_estimation = M_HOVER_THROTTLE*vel_y + B_HOVER_THROTTLE;
+		}
     }
 
     return wbp;

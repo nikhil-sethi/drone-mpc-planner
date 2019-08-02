@@ -1,6 +1,11 @@
 #ifndef DRONETRACKER_H
 #define DRONETRACKER_H
 
+#ifndef M_HOVER_THROTTLE
+	#define M_HOVER_THROTTLE -0.462056580827155 // TinyWhoop
+	#define B_HOVER_THROTTLE 0.476947903392263	//TinyWhoop
+#endif
+
 #include "itemtracker.h"
 #include "tinyxml/XMLSerialization.h"
 
@@ -144,6 +149,8 @@ public:
     double time_since_take_off(){return start_take_off_time - current_time;}
 
     bool delete_me(){return false;}
+
+	float hover_throttle_estimation;
 };
 
 
