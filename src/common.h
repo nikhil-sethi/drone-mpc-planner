@@ -84,6 +84,47 @@ struct bag_video_ended : public std::exception {
 };
 
 
+#if DRONE_TYPE == DRONE_TINYWHOOP_GREEN || DRONE_TYPE == DRONE_NONE
+public : const float throttle_bank_factor = 0.23f;
+const int min_throttle = 600; //Whoop - 600    CX10 - 800
+#define INITIALTHROTTLE 200
+#define INITIAL_HOVER_THROTTLE 950
+#define PITCH_MIDDLE JOY_MIDDLE
+#elif DRONE_TYPE == DRONE_TINYWHOOP_BLACK
+public : const float throttle_bank_factor = 0.23f;
+const int min_throttle = 600;
+const double max_burn_time= 0.25;
+#define INITIALTHROTTLE 200
+#define INITIAL_HOVER_THROTTLE 900
+#define PITCH_MIDDLE JOY_MIDDLE
+#elif DRONE_TYPE == DRONE_TRASHCAN
+const float throttle_bank_factor = 0.11f;
+const double max_burn_time= 0.29;
+const int min_throttle = 350;
+#define INITIALTHROTTLE 200
+#define INITIAL_HOVER_THROTTLE 675
+#define PITCH_MIDDLE JOY_MIDDLE
+
+const float full_bat_and_throttle_im_effect = 3; // how many pixels per second will the drone go up given full throttle
+const float full_bat_and_throttle_take_off_acc = 10;
+const float full_bat_and_throttle_spinup_time = 0.29f;
+
+const float hover_throttle_a = -0.07f;
+const float hover_throttle_b = -0.266f;
+
+
+const int drone_blink_strength = 110;
+#endif
+
+#if DRONE_TYPE == DRONE_TINYWHOOP_BLACK ||  DRONE_TYPE == DRONE_TINYWHOOP_GREEN || DRONE_TYPE == DRONE_NONE
+const float full_bat_and_throttle_im_effect = 3;
+const float full_bat_and_throttle_take_off_acc = 3;
+const float full_bat_and_throttle_spinup_time = 0.05f;
+const float hover_throttle_a = -0.462056580827155f;
+const float hover_throttle_b = 0.40f;
+const int drone_blink_strength = 0;
+#endif
+
 #ifndef FALLTHROUGH_INTENDED
 #if defined(__clang__)
 #define FALLTHROUGH_INTENDED [[clang::fallthrough]]

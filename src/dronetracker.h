@@ -1,11 +1,6 @@
 #ifndef DRONETRACKER_H
 #define DRONETRACKER_H
 
-#ifndef M_HOVER_THROTTLE
-    #define M_HOVER_THROTTLE -0.462056580827155f // TinyWhoop
-    #define B_HOVER_THROTTLE 0.40f	//TinyWhoop
-#endif
-
 #include "itemtracker.h"
 #include "tinyxml/XMLSerialization.h"
 
@@ -32,15 +27,6 @@ private:
     double landing_ignore_timeout = 5; // TODO: make this dependent on the motion_update_iterator_max
     double taking_off_ignore_timeout = 0.1; // TODO: make this dependent on the motion_update_iterator_max
 
-#if DRONE_TYPE == DRONE_TRASHCAN
-    const float full_bat_and_throttle_im_effect = 3; // how many pixels per second will the drone go up given full throttle
-    const float full_bat_and_throttle_take_off_acc = 10;
-    const float full_bat_and_throttle_spinup_time = 0.30f;
-#elif DRONE_TYPE == DRONE_TINYWHOOP_BLACK ||  DRONE_TYPE == DRONE_TINYWHOOP_GREEN || DRONE_TYPE == DRONE_NONE
-    const float full_bat_and_throttle_im_effect = 3;
-    const float full_bat_and_throttle_take_off_acc = 3;
-    const float full_bat_and_throttle_spinup_time = 0.05f;
-#endif
 
     enum drone_tracking_states {
         dts_init = 0,

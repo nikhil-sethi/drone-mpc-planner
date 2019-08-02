@@ -430,7 +430,7 @@ void ItemManager::update_max_change_points() {
 
         int motion_thresh = settings.motion_thresh;
         if (_mode == mode_locate_drone) {
-            motion_thresh = settings.motion_thresh_blink_detect;
+            motion_thresh = settings.motion_thresh + drone_blink_strength;
             bkg = 0; // motion noise calib is done during blink detection. To prevent interference do not use the bkg motion noise
         }
 

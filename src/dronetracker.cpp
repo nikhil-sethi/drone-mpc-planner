@@ -140,14 +140,6 @@ ItemTracker::BlobWorldProps DroneTracker::calc_world_item(BlobProps * pbs, doubl
     auto wbp = calc_world_props_blob_generic(pbs);
     wbp.valid = wbp.bkg_check_ok && wbp.disparity_in_range;
 
-//    if (wbp.valid){
-//        float dt = current_time - start_take_off_time - full_throttle_spinup_time;
-//        float dy = wbp.y - _drone_blink_world_location.y;
-//        float acc_y = 2.f*dy / powf(dt,2);
-//        float v_y = acc_y*dt;
-//        std::cout << "Acc: " << acc_y << " v: " << v_y << std::endl;
-//    }
-
     if (inactive()) {
         wbp.valid = false;
         return wbp;

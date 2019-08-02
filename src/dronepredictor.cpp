@@ -1,4 +1,5 @@
 #include "dronepredictor.h"
+#include "common.h"
 
 void DronePredictor::init(VisionData *visdat, DroneTracker *dtrk, InsectTracker *itrk, DroneController *dctrl) {
     _dctrl = dctrl;
@@ -48,9 +49,9 @@ void DronePredictor::update(bool drone_is_active, double time) {
     float roll = roll_smth.addSample(_dctrl->Roll());
 
     if (fabs(roll) > fabs(pitch))
-        throttle -= _dctrl->throttle_bank_factor*fabs(roll);
+        throttle -= throttle_bank_factor*fabs(roll);
     else
-        throttle -= _dctrl->throttle_bank_factor*fabs(pitch);
+        throttle -= throttle_bank_factor*fabs(pitch);
     if (throttle< -1)
         throttle = -1;
 
