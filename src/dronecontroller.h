@@ -17,7 +17,9 @@ static const char* flight_mode_names[] = { "fm_joystick_check",
                                            "fm_disarmed",
                                           "fm_inactive",
                                           "fm_manual",
-                                          "fm_taking_off",
+                                          "fm_start_takeoff",
+                                          "fm_take_off_max",
+                                          "fm_take_off_min",
                                           "fm_abort_takeoff",
                                           "fm_flying",
                                           "fm_landing"
@@ -34,7 +36,9 @@ public:
         fm_disarmed,
         fm_inactive,
         fm_manual,
-        fm_taking_off,
+        fm_start_takeoff,
+        fm_take_off_max_burn,
+        fm_take_off_idle,
         fm_abort_takeoff,
         fm_flying,
         fm_landing
@@ -105,6 +109,8 @@ private:
 
     const int forward_pitch_take_off_boost = 0; // CX10 - 60
 
+    double take_off_start_time = 0;
+
 
     const float integratorThresholdDistance = 0.2f;
 
@@ -130,9 +136,9 @@ private:
     public : const float throttle_bank_factor = 0.11f;
     const uint cowardly_poo_factor = 1000;
 
-    //TODO: make this
-    const float ff_full_throttle_takeoff_time= 0.15;
-    const float ff_zero_throttle_takeoff_time= 0.15;
+
+    const double max_burn_time= 0.29;
+
 
     const int min_throttle = 350;
     #define INITIALTHROTTLE 200

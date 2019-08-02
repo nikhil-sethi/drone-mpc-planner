@@ -155,18 +155,29 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
         pitch = joyPitch;
         yaw = joyYaw;
         break;
-    } case fm_taking_off : {
+    } case fm_start_takeoff : {
+        take_off_start_time = data.time;
         //reset integrators
         rollErrI = 0;
         pitchErrI = 0;
         throttleErrI = 0;
-
-        autoThrottle = JOY_BOUND_MAX-cowardly_poo_factor;
+        _flight_mode = fm_take_off_max_burn;
+    } FALLTHROUGH_INTENDED; case fm_take_off_max_burn : {
+        autoThrottle = JOY_BOUND_MAX;
         if (!hoverthrottleInitialized)
             hoverthrottle  +=params.autoTakeoffFactor;
         if (hoverthrottle < min_throttle)
             hoverthrottle = min_throttle;
 
+        //only control throttle:
+        throttle = autoThrottle;
+        roll = JOY_MIDDLE;
+        pitch = PITCH_MIDDLE;
+        if (data.time - take_off_start_time > max_burn_time)
+            _flight_mode = fm_take_off_idle;
+        break;
+    } case fm_take_off_idle : {
+        autoThrottle = min_throttle;
         //only control throttle:
         throttle = autoThrottle;
         roll = JOY_MIDDLE;

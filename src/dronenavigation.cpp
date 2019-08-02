@@ -181,7 +181,7 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_takeoff: {
             _dctrl->reset_manual_override_take_off_now();
-            _dctrl->flight_mode(DroneController::fm_taking_off);
+            _dctrl->flight_mode(DroneController::fm_start_takeoff);
             time_taken_off = time;
             if (_nav_flight_mode == nfm_hunt)
                 _trackers->mode(ItemManager::mode_hunt);
