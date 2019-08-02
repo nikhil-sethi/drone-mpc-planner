@@ -162,13 +162,14 @@ ItemTracker::BlobWorldProps DroneTracker::calc_world_item(BlobProps * pbs, doubl
         // only accept the drone blob when
         // 1) it is 10cm up in the air, because we then have a reasonable good seperation and can calculate the state
         // 2) it is reasonably close to the prediciton
-        if (fabs(err_y) > 0.5f || err_pos > 0.50f || dy < 0.2f) {
+        if (fabs(err_y) > 0.5f || err_pos > 0.50f || dy < 0.3f) {
             wbp.valid = false;
             return wbp;
         } else {
             float vel_y = dy/dt;
-            hover_throttle_estimation = M_HOVER_THROTTLE*vel_y + B_HOVER_THROTTLE ;
-            std::cout << "Initialising ht [-1, 1]: " << hover_throttle_estimation << std::endl;
+            //std::cout << "detection dy: " << dy << " dt: " << dt << " vy: " << vel_y<< std::endl;
+            hover_throttle_estimation = hover_throttle_a*vel_y + hover_throttle_b ;
+            //std::cout << "Initialising ht [-1, 1]: " << hover_throttle_estimation << std::endl;
             hover_throttle_estimation +=1;
             hover_throttle_estimation /= 2.f;
             hover_throttle_estimation *=JOY_BOUND_MAX - JOY_BOUND_MIN;
