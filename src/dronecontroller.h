@@ -120,26 +120,20 @@ private:
 
 #if DRONE_TYPE == DRONE_TINYWHOOP_GREEN || DRONE_TYPE == DRONE_NONE
     public : const float throttle_bank_factor = 0.23f;
-    public : const uint cowardly_poo_factor = 0;
     const int min_throttle = 600; //Whoop - 600    CX10 - 800
     #define INITIALTHROTTLE 200
     #define INITIAL_HOVER_THROTTLE 950
     #define PITCH_MIDDLE JOY_MIDDLE
 #elif DRONE_TYPE == DRONE_TINYWHOOP_BLACK
     public : const float throttle_bank_factor = 0.23f;
-    public : const uint cowardly_poo_factor = 0;
-    const int min_throttle = 600; //Whoop - 600    CX10 - 800
+    const int min_throttle = 600;
+    const double max_burn_time= 0.25;
     #define INITIALTHROTTLE 200
     #define INITIAL_HOVER_THROTTLE 900
     #define PITCH_MIDDLE JOY_MIDDLE
 #elif DRONE_TYPE == DRONE_TRASHCAN
     public : const float throttle_bank_factor = 0.11f;
-    const uint cowardly_poo_factor = 1000;
-
-
     const double max_burn_time= 0.29;
-
-
     const int min_throttle = 350;
     #define INITIALTHROTTLE 200
     #define INITIAL_HOVER_THROTTLE 675

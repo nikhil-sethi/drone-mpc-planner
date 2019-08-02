@@ -552,8 +552,8 @@ void DroneController::process_joystick() {
 }
 
 void DroneController::recalibrateHover() {
-    hoverthrottle = hoverthrottle - (throttleErrI*params.throttleI*0.1f);
-    throttleErrI = 0;
+//    hoverthrottle = hoverthrottle - (throttleErrI*params.throttleI*0.1f);
+//    throttleErrI = 0;
     hoverthrottleInitialized = true;
 }
 

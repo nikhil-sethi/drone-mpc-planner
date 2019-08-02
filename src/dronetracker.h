@@ -2,8 +2,8 @@
 #define DRONETRACKER_H
 
 #ifndef M_HOVER_THROTTLE
-	#define M_HOVER_THROTTLE -0.462056580827155 // TinyWhoop
-	#define B_HOVER_THROTTLE 0.476947903392263	//TinyWhoop
+    #define M_HOVER_THROTTLE -0.462056580827155f // TinyWhoop
+    #define B_HOVER_THROTTLE 0.40f	//TinyWhoop
 #endif
 
 #include "itemtracker.h"
@@ -39,7 +39,7 @@ private:
 #elif DRONE_TYPE == DRONE_TINYWHOOP_BLACK ||  DRONE_TYPE == DRONE_TINYWHOOP_GREEN || DRONE_TYPE == DRONE_NONE
     const float full_bat_and_throttle_im_effect = 3;
     const float full_bat_and_throttle_take_off_acc = 3;
-    const float full_bat_and_throttle_spinup_time = 0.19f;
+    const float full_bat_and_throttle_spinup_time = 0.05f;
 #endif
 
     enum drone_tracking_states {
