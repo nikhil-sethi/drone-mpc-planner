@@ -520,7 +520,6 @@ void close() {
 #endif
     visdat.close();
 
-
 #if VIDEORESULTS
     output_video_results.close();
 #endif
@@ -528,8 +527,10 @@ void close() {
     output_video_LR.close();
 #endif
 
-    close_thread_pool();
+    std::terminate(); // TMP because of deadlock bug RS
     cam.close();
+    close_thread_pool();
+
     std::cout <<"Closed"<< std::endl;
 }
 
