@@ -19,8 +19,6 @@ class GStream {
 private:
     GstElement *_pipeline,*_appsrc;
 
-
-
     int _cols,_rows;
     int prepare_buffer(GstAppSrc* appsrc, cv::Mat * image);
     //void cb_need_data (GstElement *appsrc, guint unused_size, gpointer user_data);

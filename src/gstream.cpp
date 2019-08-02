@@ -22,6 +22,37 @@ cv::VideoWriter cvvideo;
 int videomode;
 int colormode;
 
+//static gboolean bus_call (GstBus *bus __attribute__((unused)), GstMessage *msg, gpointer data)
+//{
+//  GMainLoop *loop = static_cast<GMainLoop *> ( data);
+
+//  switch (GST_MESSAGE_TYPE (msg)) {
+
+//    case GST_MESSAGE_EOS: // for some reason this does not seem to work...
+//      g_print ("End of stream\n");
+//      g_main_loop_quit (loop);
+//      break;
+
+//    case GST_MESSAGE_ERROR: {
+//      gchar  *debug;
+//      GError *error;
+
+//      gst_message_parse_error (msg, &error, &debug);
+//      g_free (debug);
+
+//      g_printerr ("Error: %s\n", error->message);
+//      g_error_free (error);
+
+//      g_main_loop_quit (loop);
+//      break;
+//    }
+//    default:
+//      break;
+//  }
+
+//  return TRUE;
+//}
+
 static void cb_need_data (GstElement *appsrc __attribute__((unused)), guint unused_size __attribute__((unused)), gpointer user_data __attribute__((unused))) {
     lock_var.lock();
     want = 1;
@@ -30,9 +61,8 @@ static void cb_need_data (GstElement *appsrc __attribute__((unused)), guint unus
     wait_for_want.unlock();
 }
 
-void GStream::block(){
-    wait_for_want.lock();
-}
+void GStream::block(){    wait_for_want.lock();
+                     }
 
 int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, int sizeY,int fps, std::string ip, int port, bool color) {
     videomode = mode;
@@ -72,6 +102,13 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
         /* init GStreamer */
         gst_init (&argc, &argv);
 
+//        GMainLoop *loop;
+//        loop = g_main_loop_new (NULL, FALSE);
+//        /* we add a message handler */
+//        auto bus = gst_pipeline_get_bus (GST_PIPELINE (_pipeline));
+//        gst_bus_add_watch (bus, bus_call, loop);
+//        gst_object_unref (bus);
+
         /* setup pipeline */
         if (mode == VIDEOMODE_AVI) {
             //write to file:
@@ -88,6 +125,7 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
                           NULL);
 
             g_signal_connect (_appsrc, "need-data", G_CALLBACK(cb_need_data), NULL);
+
             if (color) {
                 g_object_set (G_OBJECT (_appsrc), "caps",
                               gst_caps_new_simple ("video/x-raw",
@@ -116,17 +154,15 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
                                                    NULL), NULL);
             }
 
-            //the vaapi encoder uses way less CPU, but with the result is larger and there are more artifcats then the x264enc
-            //            encoder = gst_element_factory_make ("vaapih264enc", "encoder"); // hardware encoding
-            encoder = gst_element_factory_make ("x264enc", "encoder");
-            g_object_set (G_OBJECT (encoder),  "speed-preset", 4,"bitrate", 32000, NULL); // higher quality soft encoder
+            //the vaapi encoder uses way less CPU
+            encoder = gst_element_factory_make ("vaapih264enc", "encoder"); // hardware encoding
+            // encoder = gst_element_factory_make ("x264enc", "encoder"); // soft encoder
+            // g_object_set (G_OBJECT (encoder),  "speed-preset", 7,"bitrate", 32000, NULL);
 
-            //preferably we would end up with an mp4 file, because phones understand that, but for some reason the stream is not valid when playing it back
-            // parse = gst_element_factory_make ("h264parse", "parse");
-            //mux = gst_element_factory_make ("mp4mux", "mux");
-            //file += ".mp4";
+            //preferably we would end up with an mp4 file, because phones understand that
+            mux = gst_element_factory_make ("mp4mux", "mux");
 
-            mux = gst_element_factory_make ("avimux", "mux");
+            //            mux = gst_element_factory_make ("avimux", "mux");
             videosink = gst_element_factory_make ("filesink", "videosink");
             g_object_set (G_OBJECT (videosink), "location", file.c_str(), NULL);
 
@@ -150,7 +186,7 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
             if (color) {
                 g_object_set (G_OBJECT (_appsrc), "caps",
                               gst_caps_new_simple ("video/x-raw",
-                                                   "format", G_TYPE_STRING, "BGR",
+                                                   "format", G_TYPE_STRING, "RGB",
                                                    "width", G_TYPE_INT, sizeX,
                                                    "height", G_TYPE_INT, sizeY,
                                                    "framerate", GST_TYPE_FRACTION, gstream_fps, 1,NULL), NULL);
@@ -186,7 +222,6 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
             gst_bin_add_many (GST_BIN (_pipeline), _appsrc, rate,caps_rate ,conv, encoder, rtp, videosink, NULL);
             gst_element_link_many (_appsrc, rate,caps_rate ,conv, encoder,rtp, videosink, NULL);
         }
-
 
         /* play */
         gst_element_set_state (_pipeline, GST_STATE_PLAYING);
@@ -266,6 +301,7 @@ int GStream::write(cv::Mat frame) {
         return 1;
     }
     cv::Mat tmpframe = frame.clone();
+
     if (videomode == VIDEOMODE_STREAM && stream_resize_f > 1) {
         cv::resize(tmpframe,tmpframe,cv::Size(frame.cols/stream_resize_f,frame.rows/stream_resize_f));
     }
@@ -283,7 +319,25 @@ int GStream::write(cv::Mat frame) {
 }
 
 void GStream::close () {
+    std::cout << "Closing video recorder" << std::endl;
     if (videomode != VIDEOMODE_AVI_OPENCV) {
+        gst_element_send_event(_pipeline,gst_event_new_eos());
+        GstClockTime timeout = 10 * GST_SECOND;
+        GstMessage *msg;
+
+        std::cout << "Waiting for EOS..." << std::endl;
+        msg = gst_bus_timed_pop_filtered (GST_ELEMENT_BUS (_pipeline),
+            timeout,static_cast<GstMessageType>(GST_MESSAGE_EOS | GST_MESSAGE_ERROR));
+
+        if (msg == NULL) {
+          std::cout << "Error: gstreamer videorecorder did not get an EOS after 10 seconds!" << std::endl;
+        } else if (GST_MESSAGE_TYPE (msg) == GST_MESSAGE_ERROR) {
+          std::cout << "Error: gstreamer" << msg->type <<  std::endl;
+        }
+
+        if (msg)
+          gst_message_unref (msg);
+
         gst_element_set_state (_pipeline, GST_STATE_NULL);
         gst_object_unref (GST_OBJECT (_pipeline));
     }

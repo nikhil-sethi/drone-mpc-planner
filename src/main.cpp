@@ -7,7 +7,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <unistd.h>
+#include <unistd.h> //usleep
 #include <ctime>
 #include <sys/stat.h>
 
@@ -439,7 +439,7 @@ void init_loggers(int argc, char **argv) {
 void init_video_recorders(int argc __attribute__((unused)), char **argv __attribute__((unused))) {
     /*****init the video writer*****/
 #if VIDEORESULTS
-    if (output_video_results.init(argc,argv,VIDEORESULTS, data_output_dir + "videoResult.avi",visualizer.viz_frame_size().width,visualizer.viz_frame_size().height,VIDEOFPS,"192.168.1.255",5000,true)) {throw my_exit("could not open results video");}
+    if (output_video_results.init(argc,argv,VIDEORESULTS, data_output_dir + "videoResult.mp4",visualizer.viz_frame_size().width,visualizer.viz_frame_size().height,VIDEOFPS,"192.168.1.255",5000,true)) {throw my_exit("could not open results video");}
 #endif
 #if VIDEORAWLR && VIDEORAWLR != VIDEOMODE_BAG
     if (output_video_LR.init(argc,argv,VIDEORAWLR,data_output_dir + "videoRawLR.avi",IMG_W*2,IMG_H,VIDEOFPS, "192.168.1.255",5000,false)) {throw my_exit("could not open LR video");}
@@ -519,7 +519,7 @@ void close() {
     visualizer.close();
 #endif
     visdat.close();
-    cam.close();
+
 
 #if VIDEORESULTS
     output_video_results.close();
@@ -529,6 +529,7 @@ void close() {
 #endif
 
     close_thread_pool();
+    cam.close();
     std::cout <<"Closed"<< std::endl;
 }
 
