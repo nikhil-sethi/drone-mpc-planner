@@ -527,7 +527,8 @@ void close() {
     output_video_LR.close();
 #endif
 
-    std::terminate(); // TMP because of deadlock bug RS
+    if (fromfile)
+        std::terminate(); // TMP because of deadlock bug RS
     cam.close();
     close_thread_pool();
 
