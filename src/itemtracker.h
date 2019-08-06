@@ -308,7 +308,7 @@ public:
         _world_item.valid = false;
     }
 
-    float score_threshold() {return static_cast<float>(settings.score_threshold) / 1e3f;}
+    float score_threshold() {return static_cast<float>(settings.score_threshold);}
 
     float score(BlobProps blob) {
         float dist = sqrtf(powf(_image_item.x-blob.x,2)+powf(_image_item.y-blob.y,2));
@@ -324,7 +324,7 @@ public:
                 score = score_pred;
         }
 
-        return score;
+        return score*1000.f;
     }
 };
 

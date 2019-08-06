@@ -183,7 +183,7 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active, double time) {
                         if (enable_viz_max_points) {
                             cv::Mat viz = vizs_maxs.at(j);
                             cv::Point2i pt(viz.cols-50,viz.rows - 14*(i+1));
-                            putText(viz,to_string_with_precision(score*1000,1),pt,FONT_HERSHEY_SIMPLEX,0.5,tracker_color(trkr));
+                            putText(viz,to_string_with_precision(score,1),pt,FONT_HERSHEY_SIMPLEX,0.5,tracker_color(trkr));
                         }
                     } else if (enable_viz_max_points){
                         cv::Mat viz = vizs_maxs.at(j);
@@ -195,7 +195,7 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active, double time) {
                     auto wbp = trkr->calc_world_item(&_blobs.at(best_score_j),time);
                     ItemTracker::WorldItem w(ItemTracker::ImageItem(_blobs.at(best_score_j),wbp.disparity,_visdat->frame_id,best_score,best_score_j),wbp);
                     if (!w.valid && enable_viz_diff) {
-                      putText(diff_viz,"W",trkr->image_item().pt()*IMSCALEF,FONT_HERSHEY_SIMPLEX,0.9,tracker_color(trkr));
+                        putText(diff_viz,"W",trkr->image_item().pt()*IMSCALEF,FONT_HERSHEY_SIMPLEX,0.9,tracker_color(trkr));
                     }
                     trkr->world_item(w);
                     pbs.at(best_score_j).trackers.push_back(trkr);
@@ -216,6 +216,16 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active, double time) {
                             bool in_ignore_zone = trkr->check_ignore_blobs(&tmp,j);
                             if (in_ignore_zone)
                                 pbs.at(j).ignored = true;
+
+
+                            if (!in_ignore_zone) {
+                                //check if this blob may be some residual drone motion
+                                if (typeid(*trkr) == typeid(InsectTracker) && _dtrkr->tracking()) {
+                                    float drone_score = _dtrkr->score(_blobs.at(j));
+                                    if (drone_score > _dtrkr->score_threshold())
+                                        in_ignore_zone = true;
+                                }
+                            }
 
                             //TODO: in theory this would be a very nice time to check the world situation as well..
                             if (!in_ignore_zone) {
@@ -355,7 +365,7 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active, double time) {
                         }
                     }
 
-                    if (!conflict_resolved) {                      
+                    if (!conflict_resolved) {
                         dtrkr->blobs_are_fused();
                         itrkr->blobs_are_fused();
 
