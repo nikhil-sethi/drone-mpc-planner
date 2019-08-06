@@ -144,7 +144,6 @@ ItemTracker::BlobWorldProps ItemTracker::calc_world_props_blob_generic(BlobProps
     BlobWorldProps w;
     cv::Point2f p(pbs->x, pbs->y);
 
-
     w.disparity = stereo_match(p,_visdat->diffL,_visdat->diffR); //TODO: wtf, inputs scaled with IMSCALEF, but disparity is unscaled?
     p*=IMSCALEF;
 
@@ -155,26 +154,27 @@ ItemTracker::BlobWorldProps ItemTracker::calc_world_props_blob_generic(BlobProps
 
         std::vector<Point3d> camera_coordinates, world_coordinates;
         camera_coordinates.push_back(Point3d(p.x,p.y,-w.disparity));
+        camera_coordinates.push_back(Point3d(p.x+pbs->radius*IMSCALEF,p.y,-w.disparity)); // to calc world radius
         cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
+
+        w.radius = cv::norm(world_coordinates[0]-world_coordinates[1]);
+        w.radius_in_range = w.radius < settings.max_size;
+
         w.x = world_coordinates[0].x;
         w.y = world_coordinates[0].y;
         w.z = world_coordinates[0].z;
-
+        //compensate camera rotation:
         float theta = _visdat->camera_angle * deg2rad;
         float temp_y = w.y * cosf(theta) + w.z * sinf(theta);
         w.z = -w.y * sinf(theta) + w.z * cosf(theta);
         w.y = temp_y;
 
-        float dist_bkg = _visdat->depth_background_mm.at<float>(p.y,p.x);
-        float dist_meas = sqrtf(powf(w.x,2) + powf(w.y,2) +powf(w.z,2));
-
-        if ((dist_meas > dist_bkg*(static_cast<float>(settings.background_subtract_zone_factor)/100.f)) )
+        w.distance_bkg = _visdat->depth_background_mm.at<float>(p.y,p.x);
+        w.distance = sqrtf(powf(w.x,2) + powf(w.y,2) +powf(w.z,2));
+        if ((w.distance > w.distance_bkg*(static_cast<float>(settings.background_subtract_zone_factor)/100.f)) )
             w.bkg_check_ok = false;
         else
             w.bkg_check_ok = true;
-
-        w.distance = dist_meas;
-        w.distance_bkg = dist_bkg;
     }
     return w;
 }

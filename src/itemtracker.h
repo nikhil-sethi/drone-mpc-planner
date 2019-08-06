@@ -36,9 +36,9 @@ public:
         }
     };
     struct BlobWorldProps {
-        float x,y,z,distance,distance_bkg;
+        float x,y,z,distance,distance_bkg,radius;
         float disparity; // not really a world prop, but OK.
-        bool disparity_in_range = false,bkg_check_ok = false,valid = false;
+        bool radius_in_range = false,disparity_in_range = false,bkg_check_ok = false,valid = false;
     };
 
     struct ImageItem {
@@ -161,8 +161,8 @@ private:
         int static_ignores_dist_thresh = 5;
 
         int score_threshold = 66;
-        int background_subtract_zone_factor = 97;
-
+        int background_subtract_zone_factor = 95;
+        float max_size = 0.01; // world, in meters
 
         float version = 2.1f;
 
@@ -173,6 +173,7 @@ private:
                min_disparity,
                max_disparity,
                score_threshold,
+               max_size,
                background_subtract_zone_factor);
         }
 

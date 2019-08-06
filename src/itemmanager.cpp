@@ -219,7 +219,9 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active, double time) {
 
 
                             if (!in_ignore_zone) {
-                                //check if this blob may be some residual drone motion
+                                //Check if this blob may be some residual drone motion
+                                //If the insect was lost, it is unlikely that it or another insect pops up
+                                //very close to the drone. So ignore it.
                                 if (typeid(*trkr) == typeid(InsectTracker) && _dtrkr->tracking()) {
                                     float drone_score = _dtrkr->score(_blobs.at(j));
                                     if (drone_score > _dtrkr->score_threshold())
@@ -227,25 +229,26 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active, double time) {
                                 }
                             }
 
-                            //TODO: in theory this would be a very nice time to check the world situation as well..
                             if (!in_ignore_zone) {
                                 //The tracker has lost the item, or is still initializing.
                                 //there is no valid prediction, the score is therefor as low as possible
                                 auto wbp = trkr->calc_world_item(&_blobs.at(j),time);
                                 ItemTracker::WorldItem w(ItemTracker::ImageItem(_blobs.at(j),wbp.disparity,_visdat->frame_id,0,j),wbp);
-                                trkr->world_item(w);
-                                pbs.at(j).trackers.push_back(trkr);
+                                if (w.valid) {
+                                    trkr->world_item(w);
+                                    pbs.at(j).trackers.push_back(trkr);
 
-                                if (enable_viz_max_points) {
-                                    cv::Mat viz = vizs_maxs.at(j);
-                                    cv::Point2i pt(viz.cols-50,viz.rows - 14*(i+1));
-                                    putText(viz,"New",pt,FONT_HERSHEY_SIMPLEX,0.5,tracker_color(trkr));
+                                    if (enable_viz_max_points) {
+                                        cv::Mat viz = vizs_maxs.at(j);
+                                        cv::Point2i pt(viz.cols-50,viz.rows - 14*(i+1));
+                                        putText(viz,"New",pt,FONT_HERSHEY_SIMPLEX,0.5,tracker_color(trkr));
+                                    }
+
+                                    // There may be other interesting blobs to consider but since there is no
+                                    // history available at this point, its hard to calculate which one would
+                                    // be better. So just pick the first one...:
+                                    break;
                                 }
-
-                                // There may be other interesting blobs to consider but since there is no
-                                // history available at this point, its hard to calculate which one would
-                                // be better. So just pick the first one...:
-                                break;
                             } else {
                                 if (enable_viz_max_points) {
                                     cv::Mat viz = vizs_maxs.at(j);

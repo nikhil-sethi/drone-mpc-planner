@@ -11,6 +11,7 @@ void InsectTracker::init(std::ofstream *logger, VisionData *visdat) {
 }
 void InsectTracker::init_settings() {
     settings.min_disparity=1;
+    settings.max_size = 0.03f;
 }
 
 void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) {
@@ -123,7 +124,7 @@ void InsectTracker::update_insect_prediction() {
 
 ItemTracker::BlobWorldProps InsectTracker::calc_world_item(BlobProps * pbs, double time __attribute__((unused))){
     auto wbp = calc_world_props_blob_generic(pbs);
-    wbp.valid = wbp.bkg_check_ok && wbp.disparity_in_range;
+    wbp.valid = wbp.bkg_check_ok && wbp.disparity_in_range & wbp.radius_in_range;
 
     if (_blobs_are_fused_cnt > 1 * VIDEOFPS) // if the insect and drone are fused, the drone is accelerating through it and should become seperate again within a limited time
         wbp.valid = false;

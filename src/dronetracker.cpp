@@ -12,6 +12,7 @@ bool DroneTracker::init(std::ofstream *logger, VisionData *visdat) {
 }
 void DroneTracker::init_settings() {
     settings.background_subtract_zone_factor = 97;
+    settings.max_size = 0.1f;
 }
 
 void DroneTracker::track(double time, bool drone_is_active) {
@@ -138,7 +139,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
 
 ItemTracker::BlobWorldProps DroneTracker::calc_world_item(BlobProps * pbs, double time) {
     auto wbp = calc_world_props_blob_generic(pbs);
-    wbp.valid = wbp.bkg_check_ok && wbp.disparity_in_range;
+    wbp.valid = wbp.bkg_check_ok && wbp.disparity_in_range && wbp.radius_in_range;
 
     if (inactive()) {
         wbp.valid = false;

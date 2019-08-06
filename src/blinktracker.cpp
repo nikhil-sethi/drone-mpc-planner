@@ -15,6 +15,7 @@ bool BlinkTracker::init(VisionData *visdat) {
 }
 void BlinkTracker::init_settings() {
     settings.score_threshold = 0.1;
+    settings.max_size = 0.1f;
 
     settings.min_disparity = 1;
     settings.background_subtract_zone_factor = 97;
@@ -128,7 +129,7 @@ BlinkTracker::blinking_drone_states BlinkTracker::detect_blink(double time, bool
 
 ItemTracker::BlobWorldProps BlinkTracker::calc_world_item(BlobProps * pbs, double time __attribute__((unused))){
     ItemTracker::BlobWorldProps wbp = calc_world_props_blob_generic(pbs);
-    wbp.valid = wbp.disparity_in_range;
+    wbp.valid = wbp.disparity_in_range && wbp.radius_in_range;
     return wbp;
 }
 bool BlinkTracker::check_ignore_blobs(BlobProps * pbs, uint id __attribute__((unused))) {

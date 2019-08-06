@@ -208,7 +208,7 @@ void DroneNavigation::update(double time) {
         } FALLTHROUGH_INTENDED; case ns_take_off_completed: {
             _dctrl->init_ground_effect_compensation();
             _dctrl->flight_mode(DroneController::fm_flying);
-			_dctrl->hoverthrottle = _trackers->dronetracker()->hover_throttle_estimation;
+            _dctrl->hoverthrottle = _trackers->dronetracker()->hover_throttle_estimation;
 #ifdef MANUAL_DRONE_LOCATE
             _dtrk->do_post_takeoff_detection();
 #endif
