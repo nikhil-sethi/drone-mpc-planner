@@ -5,6 +5,9 @@ working_dir=`pwd`
 # Create dependencies directory
 mkdir -p ~/dependencies
 mkdir -p ~/code
+[ -f ~/dependencies/pats_ssh_files.tar.xz ] || {
+	mv pats_ssh_files.tar.xz ~/dependencies
+}
 pushd ~/dependencies
 
 #Change hostname: sudo hostname pats-proto1 
@@ -91,12 +94,13 @@ fi
 	git config --global user.name $HOSTNAME
 
 	#add deploy key
-	ssh-keygen -t rsa -b 4096 -C "${HOSTNAME}@pats-drones.com"
+	tar -xf pats_ssh_files.tar.xz
+	mkdir -p ~/.ssh
+	mv authorized_keys ~/.ssh/
+	mv id_rsa ~/.ssh/
+	mv id_rsa.pub ~/.ssh/
+	mv known_hosts ~/.ssh/
 	ssh-add ~/.ssh/id_rsa
-	cat ~/.ssh/id_rsa.pub
-	echo "Put the above into https://github.com/pats-drones/pats/ -> Settings -> Deploy keys and name it ${HOSTNAME}"
-	touch git.done
-	read -p "Press enter to continue"
 }
 
 # Install the Pats code
@@ -161,7 +165,7 @@ popd
 sudo apt-get autoremove -y
 sudo apt-get clean -y
 
-ssh-copy-id mavlab-gpu
+#ssh-copy-id mavlab-gpu
 sudo systemctl restart ssh.service
 sudo udevadm control --reload-rules && udevadm trigger
 
@@ -170,5 +174,4 @@ echo "***********************************************************"
 echo todo: 
 echo 1. Install qt creator and perform steps listed in https://github.com/pats-drones/pats/blob/master/config/qtcreator.md
 echo 2. Set bios to startup always at power on
-echo 3. Install the ssh key files. (password access is disabled by default)
 echo "***********************************************************"
