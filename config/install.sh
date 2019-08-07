@@ -39,7 +39,7 @@ fi
 	sudo apt update
 
 	# Install packages
-	sudo apt install -y librealsense2-dkms librealsense2-dev librealsense2-dbg librealsense2-utils libva-dev libswresample-dev libavutil-dev pkg-config libjpeg9-dev htop git vim nano screen g++ cmake autossh usb-modeswitch -y
+	sudo apt install -y librealsense2-dkms librealsense2-dev librealsense2-dbg librealsense2-utils libva-dev libswresample-dev libavutil-dev pkg-config htop git vim nano screen g++ cmake autossh usb-modeswitch -y
 	touch librealsense-packages.done
 }
 
