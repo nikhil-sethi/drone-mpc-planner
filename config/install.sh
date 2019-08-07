@@ -156,10 +156,14 @@ sudo apt-get autoremove -y
 sudo apt-get clean -y
 
 ssh-copy-id mavlab-gpu
+sudo systemctl restart ssh.service
+sudo udevadm control --reload-rules && udevadm trigger
 
 set +x
 echo "***********************************************************"
-echo All done!. Reboot, or run:
-echo sudo systemctl restart ssh.service
-echo sudo udevadm control --reload-rules && udevadm trigger
+echo todo: 
+echo 1. Install qt creator and perform steps listed in https://github.com/pats-drones/pats/blob/master/config/qtcreator.md
+echo 2. Install sublime text
+echo 3. Set bios to startup always at power on
+echo 4. Install the ssh key files. (password access is disabled by default)
 echo "***********************************************************"
