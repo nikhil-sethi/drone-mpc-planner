@@ -55,6 +55,8 @@ fi
 	sudo make install	
 	popd
 	touch cmake-3.11.4.done
+	popd
+	echo "Restarting Bash. I'm NOT finished. Start me again!"
 	exec bash
 }
 
