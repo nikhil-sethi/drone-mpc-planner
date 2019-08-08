@@ -502,6 +502,8 @@ void init(int argc, char **argv) {
 void close() {
     std::cout <<"Closing"<< std::endl;
 
+    cam.stop_watchdog();
+
 #ifdef HASSCREEN
     cv::destroyAllWindows();
 #endif
