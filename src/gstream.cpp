@@ -155,9 +155,12 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
             }
 
             //the vaapi encoder uses way less CPU
-            encoder = gst_element_factory_make ("vaapih264enc", "encoder"); // hardware encoding
-            // encoder = gst_element_factory_make ("x264enc", "encoder"); // soft encoder
-            // g_object_set (G_OBJECT (encoder),  "speed-preset", 7,"bitrate", 32000, NULL);
+            //encoder = gst_element_factory_make ("vaapih264enc", "encoder"); // hardware encoding
+             encoder = gst_element_factory_make ("x264enc", "encoder"); // soft encoder
+             if (color)
+                 g_object_set (G_OBJECT (encoder),  "speed-preset", 7,"bitrate", 32000, NULL);
+             else
+                 g_object_set (G_OBJECT (encoder),  "speed-preset", 1,"bitrate", 16384, NULL);
 
             //preferably we would end up with an mp4 file, because phones understand that
             mux = gst_element_factory_make ("mp4mux", "mux");
