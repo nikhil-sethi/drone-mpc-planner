@@ -56,7 +56,7 @@ void Interceptor::update(bool drone_at_base) {
            break;
          }
 
-         if (fabs(_horizontal_separation)<0.3f && fabs(_vertical_separation)<0.8f)
+         if (fabs(_horizontal_separation) < 0.6f * _vertical_separation && _vertical_separation<0.8f && _vertical_separation>0)
              _interceptor_state = is_close_chasing;
 
          break;
@@ -100,7 +100,7 @@ void Interceptor::update_far_target(bool drone_at_base){
     float tti = calc_tti(insect_pos,_intercept_vel,drone_pos,drone_vel,drone_at_base);
     float half_tti = tti/2.f; // only predict the location of the insect for a partion of the actual time we need to get there
     _intercept_pos = insect_pos + (_intercept_vel*half_tti);
-    _intercept_pos.y -= 0.14f; // put the drone a bit below the insect
+    _intercept_pos.y -= 0.25f; // put the drone a bit below the insect
     _intercept_vel = insect_vel;
     _intercept_vel.y = 0; // we don't want to follow the vertical speed of the insect, ever. TODO: improve this
     _intercept_acc = insect_acc;
@@ -124,7 +124,7 @@ void Interceptor::update_close_target(){
     float norm_vector = norm(vector);
 
     insect_vel.y = 0; // we don't want to follow the vertical speed of the insect, ever
-    insect_vel = 0.5f* insect_vel + vector/norm_vector*0.6f;
+    insect_vel = 0.5f* insect_vel + vector/norm_vector*0.8f;
     if (norm_vector > 0.05f) // when insect and drone come close to each other, the blobs get fused..., so keep the previous speed vector in that case
         _intercept_vel = insect_vel;
 
