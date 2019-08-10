@@ -17,47 +17,16 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     _logger = logger;
     _visdat = visdat;
     _name = name;
-    _settingsFile = "../" + name + "settings.dat";
+    settings_file = "../" + name + ".xml";
     std::string window_name = name + "_trkr";
 
-    if (checkFileExist(_settingsFile)) {
-        std::ifstream is(_settingsFile, std::ios::binary);
-        cereal::BinaryInputArchive archive( is );
-        try {
-            archive(settings);
-        }catch (cereal::Exception e) {
-            std::stringstream serr;
-            serr << "cannot read itemtracker settings file: " << e.what() << ". Maybe delete the file: " << _settingsFile;
-            throw my_exit(serr.str());
-        }
-        TrackerSettings tmp;
-        if (tmp.version-settings.version > 0.001f){
-            std::stringstream serr;
-            serr << "itemtracker settings version too low! Maybe delete the file: " << _settingsFile;
-            throw my_exit(serr.str());
-        }
-    } else {
-        init_settings();
-    }
+    deserialize_settings();
 
 #ifdef TUNING
     namedWindow(window_name, WINDOW_NORMAL);
-
-    createTrackbar("#points / frame", window_name, &settings.max_points_per_frame, 255);
-    createTrackbar("Radius", window_name, &settings.radius, 255);
-    createTrackbar("Motion threshold", window_name, &settings.motion_thresh, 255);
-    createTrackbar("Min disparity", window_name, &settings.min_disparity, 255);
-    createTrackbar("Max disparity", window_name, &settings.max_disparity, 255);
-    createTrackbar("roi_min_size", window_name, &settings.roi_min_size, 2000);
-    createTrackbar("roi_max_grow", window_name, &settings.roi_max_grow, 500);
-    createTrackbar("roi_grow_speed", window_name, &settings.roi_grow_speed, 256);
-    createTrackbar("exclude_min_distance", window_name, &settings.exclude_min_distance, 250);
-    createTrackbar("background_subtract_zone_factor", window_name, &settings.background_subtract_zone_factor, 100);
-
-    createTrackbar("pixel_dist_landing_spot", window_name, &settings.pixel_dist_landing_spot, 100);
-    createTrackbar("pixel_dist_seperation_min", window_name, &settings.pixel_dist_seperation_min, 100);
-    createTrackbar("pixel_dist_seperation_max", window_name, &settings.pixel_dist_seperation_max, 100);
-
+    createTrackbar("Min disparity", window_name, &min_disparity, 255);
+    createTrackbar("Max disparity", window_name, &max_disparity, 255);
+    createTrackbar("background_subtract_zone_factor", window_name, &background_subtract_zone_factor, 100);
 #endif
 
     init_kalman();
@@ -147,7 +116,7 @@ ItemTracker::BlobWorldProps ItemTracker::calc_world_props_blob_generic(BlobProps
     w.disparity = stereo_match(p,_visdat->diffL,_visdat->diffR); //TODO: wtf, inputs scaled with IMSCALEF, but disparity is unscaled?
     p*=IMSCALEF;
 
-    if (w.disparity < settings.min_disparity || w.disparity > settings.max_disparity){
+    if (w.disparity < min_disparity || w.disparity > max_disparity){
         w.disparity_in_range = false;
     } else {
         w.disparity_in_range = true;
@@ -158,7 +127,7 @@ ItemTracker::BlobWorldProps ItemTracker::calc_world_props_blob_generic(BlobProps
         cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
 
         w.radius = cv::norm(world_coordinates[0]-world_coordinates[1]);
-        w.radius_in_range = w.radius < settings.max_size;
+        w.radius_in_range = w.radius < max_size;
 
         w.x = world_coordinates[0].x;
         w.y = world_coordinates[0].y;
@@ -171,7 +140,7 @@ ItemTracker::BlobWorldProps ItemTracker::calc_world_props_blob_generic(BlobProps
 
         w.distance_bkg = _visdat->depth_background_mm.at<float>(p.y,p.x);
         w.distance = sqrtf(powf(w.x,2) + powf(w.y,2) +powf(w.z,2));
-        if ((w.distance > w.distance_bkg*(static_cast<float>(settings.background_subtract_zone_factor)/100.f)) )
+        if ((w.distance > w.distance_bkg*(static_cast<float>(background_subtract_zone_factor)/100.f)) )
             w.bkg_check_ok = false;
         else
             w.bkg_check_ok = true;
@@ -304,8 +273,7 @@ void ItemTracker::predict(float dt, int frame_id) {
 
 float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR){
     //get retangle around blob / changed pixels
-    float rectsize = settings.max_disparity;
-
+    float rectsize = max_disparity;
 
     float rectsizeX = ceil(rectsize*0.5f); // *4.0 results in drone-insect disparity interaction
     float rectsizeY = ceil(rectsize*0.5f);  // *3.0
@@ -333,11 +301,11 @@ float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR)
     __attribute__((unused)) int disparity_cor = 0;
     float maxcor = -std::numeric_limits<float>::max();
     float minerr = std::numeric_limits<float>::max();
-    int tmp_max_disp = settings.max_disparity;
+    int tmp_max_disp = max_disparity;
     if (x1 - tmp_max_disp < 0)
         tmp_max_disp = x1;
 
-    int disp_start = settings.min_disparity;
+    int disp_start = min_disparity;
     int disp_end = tmp_max_disp;
     if (n_frames_tracking>5) {
         disp_start = std::max(static_cast<int>(floor(disparity_prev))-2,disp_start);
@@ -592,13 +560,56 @@ bool ItemTracker::check_ignore_blobs_generic(BlobProps * pbs) {
     return in_ignore_zone;
 }
 
+void ItemTracker::deserialize_settings() {
+    std::cout << "Reading settings from: " << settings_file << std::endl;
+    TrackerParams params;
+    if (checkFileExist(settings_file)) {
+        std::ifstream infile(settings_file);
+        std::string xmlData((std::istreambuf_iterator<char>(infile)),
+                            std::istreambuf_iterator<char>());
+
+        if (!xmls::Serializable::fromXML(xmlData, &params))
+        { // Deserialization not successful
+            throw my_exit("Cannot read: " + settings_file);
+        }
+        TrackerParams tmp;
+        auto v1 = params.getVersion();
+        auto v2 = tmp.getVersion();
+        if (v1 != v2) {
+            throw my_exit("XML version difference detected from " + settings_file);
+        }
+    } else {
+        throw my_exit("File not found: " + settings_file);
+    }
+
+    min_disparity = params.min_disparity.value();
+    max_disparity = params.max_disparity.value();
+    static_ignores_dist_thresh = params.static_ignores_dist_thresh.value();
+    _score_threshold = params.score_threshold.value();
+    background_subtract_zone_factor = params.background_subtract_zone_factor.value();
+    max_size = params.max_size.value();
+}
+
+void ItemTracker::serialize_settings() {
+    TrackerParams params;
+
+    params.min_disparity = min_disparity;
+    params.max_disparity = max_disparity;
+    params.static_ignores_dist_thresh = static_ignores_dist_thresh;
+    params.score_threshold = _score_threshold;
+    params.background_subtract_zone_factor = background_subtract_zone_factor;
+    params.max_size = max_size;
+
+    std::string xmlData = params.toXML();
+    std::ofstream outfile = std::ofstream (settings_file);
+    outfile << xmlData ;
+    outfile.close();
+}
 
 void ItemTracker::close () {
     if (initialized){
         std::cout << "Closing tracker: " << _name << std::endl;
-        std::ofstream os(_settingsFile, std::ios::binary);
-        cereal::BinaryOutputArchive archive( os );
-        archive( settings );
+        serialize_settings();
         initialized = false;
     }
 }

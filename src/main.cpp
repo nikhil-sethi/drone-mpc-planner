@@ -28,7 +28,7 @@
 #include "gstream.h"
 #include "vizs.h"
 #include "insecttracker.h"
-#include "itemmanager.h"
+#include "trackermanager.h"
 #include "logreader.h"
 #if CAMMODE == CAMMODE_FROMVIDEOFILE
 #include "filecam.h"
@@ -74,7 +74,7 @@ MultiModule rc;
 DroneController dctrl;
 DronePredictor dprdct;
 DroneNavigation dnav;
-ItemManager trackers;
+TrackerManager trackers;
 Visualizer visualizer;
 LogReader logreader;
 #if CAMMODE == CAMMODE_FROMVIDEOFILE
@@ -225,14 +225,14 @@ void process_frame(Stereo_Frame_Data data) {
     if (fromfile==log_mode_full){
         logreader.current_frame_number(data.number);
         if (logreader.current_item.insect_log) {
-            trackers.mode(ItemManager::mode_hunt_replay_moth);
+            trackers.mode(TrackerManager::mode_hunt_replay_moth);
         }
     } else if (fromfile==log_mode_insect_only) {
         if (logreader.set_next_frame_number()){
-            trackers.mode(ItemManager::mode_hunt);
+            trackers.mode(TrackerManager::mode_hunt);
             fromfile = log_mode_none;
         } else {
-            trackers.mode(ItemManager::mode_hunt_replay_moth);
+            trackers.mode(TrackerManager::mode_hunt_replay_moth);
         }
     }
 

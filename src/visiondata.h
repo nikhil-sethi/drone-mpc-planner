@@ -29,25 +29,36 @@ private:
     int skip_background_frames = 0;
     std::mutex lock_data;
 
-    struct BaseVisionSettings{
+    class VisionParameters: public xmls::Serializable
+    {
+    public:
+        xmls::xInt motion_update_iterator_max;
+        xmls::xFloat brightness_event_tresh,brightness_check_period;
 
-        int motion_update_iterator_max = 4;
-        float brightness_event_tresh = 5;
-        double brightness_check_period = 1;
+        VisionParameters() {
+            // Set the XML class name.
+            // This name can differ from the C++ class name
+            setClassName("VisionParameters");
 
-        float version = 1.35f;
+            // Set class version
+            setVersion("1.0");
 
-        template <class Archive>
-        void serialize( Archive & ar )
-        {
-            ar(version, motion_update_iterator_max,
-               brightness_event_tresh,brightness_check_period);
+            // Register members. Like the class name, member names can differ from their xml depandants
+            Register("motion_update_iterator_max",&motion_update_iterator_max);
+            Register("brightness_event_tresh",&brightness_event_tresh);
+            Register("brightness_check_period",&brightness_check_period);
         }
     };
 
+    int motion_update_iterator_max;
+    float brightness_event_tresh;
+    double brightness_check_period;
+
+    string settings_file = "../vision.xml";
+    void deserialize_settings();
+    void serialize_settings();
+
     std::string motion_noise_map_wfn = "max_motion_noise.png";
-    const std::string settingsFile = "../basevisionsettings.dat";
-    BaseVisionSettings settings;
 
     cv::Mat diffL16;
     cv::Mat frameL16;
@@ -89,7 +100,7 @@ public:
 
     uint frame_id;
     cv::Size smallsize;
-    cv::Mat Qf;
+    cv::Mat Qf,Qfi;
     float camera_angle;
     float camera_gain;
     cv::Mat depth_background;
@@ -100,15 +111,7 @@ public:
     float current_time() {return _current_frame_time;}
 
     void init(bool fromfile, cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, float new_camera_gain, cv::Mat new_depth_background_mm);
-    void close() {
-        if (initialized){
-            std::cout << "Closing visdat" << std::endl;
-            std::ofstream os(settingsFile, std::ios::binary);
-            cereal::BinaryOutputArchive archive( os );
-            archive( settings );
-            initialized = false;
-        }
-    }
+    void close();
     void update(cv::Mat new_frameL, cv::Mat new_frameR, double time, unsigned long long new_frame_id);
     void reset_motion_integration() {
         _reset_motion_integration = true;

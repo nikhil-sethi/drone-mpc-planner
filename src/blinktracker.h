@@ -49,8 +49,7 @@ private:
     blinking_drone_states detect_blink(double time, bool found);
 
     void clean_ignore_blobs(double time);
-protected:
-    void init_settings();
+
 public:
     std::string state_str() {return blinking_drone_state_names[_blinking_drone_status];}
     blinking_drone_states state() {return _blinking_drone_status;}

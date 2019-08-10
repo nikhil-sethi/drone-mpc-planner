@@ -15,15 +15,15 @@ static const char* joy_states_names[] = { "js_manual",
                                         };
 static const char* flight_mode_names[] = { "fm_joystick_check",
                                            "fm_disarmed",
-                                          "fm_inactive",
-                                          "fm_manual",
-                                          "fm_start_takeoff",
-                                          "fm_take_off_max",
-                                          "fm_take_off_min",
-                                          "fm_abort_takeoff",
-                                          "fm_flying",
-                                          "fm_landing"
-                                        };
+                                           "fm_inactive",
+                                           "fm_manual",
+                                           "fm_start_takeoff",
+                                           "fm_take_off_max",
+                                           "fm_take_off_min",
+                                           "fm_abort_takeoff",
+                                           "fm_flying",
+                                           "fm_landing"
+                                         };
 /*
  * This class will control a micro drone via a Serial link
  *
@@ -61,44 +61,39 @@ public:
     };
 private:
 
-    struct controlParameters{
+    int gain_throttle_pos,gain_throttle_vel,gain_throttle_acc,gain_throttle_i;
+    int gain_roll_pos,gain_roll_vel,gain_roll_acc,gain_roll_i;
+    int gain_pitch_pos,gain_pitch_vel,gain_pitch_acc,gain_pitch_i;
 
-        //height control
-        int throttle_Pos = 1300;
-        int throttle_Vel = 800;
-        int throttle_Acc = 22;
-        int throttleI = 15;
+    class ControlParameters: public xmls::Serializable
+    {
+    public:
+        xmls::xInt gain_throttle_pos,gain_throttle_vel,gain_throttle_acc,gain_throttle_i;
+        xmls::xInt gain_roll_pos,gain_roll_vel,gain_roll_acc,gain_roll_i;
+        xmls::xInt gain_pitch_pos,gain_pitch_vel,gain_pitch_acc,gain_pitch_i;
 
-        int autoTakeoffFactor = 2;
+        ControlParameters() {
+            // Set the XML class name.
+            // This name can differ from the C++ class name
+            setClassName("ControlParameters");
 
-        int hoverOffset = 30;
+            // Set class version
+            setVersion("1.0");
 
-        //roll control
-        int roll_Pos = 1750;
-        int roll_Vel = 1100;
-        int roll_Acc = 75;
-        int rollI = 1;
-
-
-        //pitch control
-        int pitch_Pos = 1750;
-        int pitch_Vel = 1100;
-        int pitch_Acc = 22;
-        int pitchI = 1;
-
-        //yaw control
-        int yawP = 0;
-        int yawI = 0;
-        int yawD = 666;
-
-        float version = 2.0f;
-
-        template <class Archive>
-        void serialize( Archive & ar )
-        {
-            ar(version,throttle_Pos,throttle_Vel,throttle_Acc,throttleI,roll_Pos,roll_Vel,roll_Acc,rollI,pitch_Pos,pitch_Vel,pitch_Acc,pitchI,yawP,yawI,yawD,autoTakeoffFactor,hoverOffset);
+            // Register members. Like the class name, member names can differ from their xml depandants
+            Register("gain_throttle_pos", &gain_throttle_pos);
+            Register("gain_throttle_vel", &gain_throttle_vel);
+            Register("gain_throttle_acc", &gain_throttle_acc);
+            Register("gain_throttle_i", &gain_throttle_i);
+            Register("gain_roll_pos", &gain_roll_pos);
+            Register("gain_roll_vel", &gain_roll_vel);
+            Register("gain_roll_acc", &gain_roll_acc);
+            Register("gain_roll_i", &gain_roll_i);
+            Register("gain_pitch_pos", &gain_pitch_pos);
+            Register("gain_pitch_vel", &gain_pitch_vel);
+            Register("gain_pitch_acc", &gain_pitch_acc);
+            Register("gain_pitch_i", &gain_pitch_i);
         }
-
     };
 
     float depth_precision_gain = 0.4;
@@ -108,9 +103,9 @@ private:
     int autoLandThrottleDecrease = 0;
 
     const int forward_pitch_take_off_boost = 0; // CX10 - 60
+    std::string settings_file;
 
     double take_off_start_time = 0;
-
 
     const float integratorThresholdDistance = 0.2f;
 
@@ -119,7 +114,6 @@ private:
     const int take_off_throttle_boost = 0;
 
     bool _fromfile;
-    controlParameters params;
     flight_modes _flight_mode = fm_joystick_check; // only set externally (except for disarming), used internally
     joy_mode_switch_modes _joy_mode_switch = jmsm_none;
     bool _joy_arm_switch = true;
@@ -135,6 +129,8 @@ private:
     void sendData(void);
     void readJoystick(void);
     void process_joystick();
+    void deserialize_settings();
+    void serialize_settings();
 
 public:
     void flight_mode(flight_modes f){
@@ -212,7 +208,6 @@ public:
     }
 
     float hoverthrottle = INITIAL_HOVER_THROTTLE;
-    bool hoverthrottleInitialized = true;
 
     bool _manual_override_take_off_now;
     bool manual_override_take_off_now() { return _manual_override_take_off_now;}
@@ -246,9 +241,6 @@ public:
     void setAutoLandThrottleDecrease(int value) {autoLandThrottleDecrease = value;}
     void recalibrateHover();
     bool joystick_ready();
-    void init_ground_effect_compensation(){
-        hoverthrottle -= params.hoverOffset*params.autoTakeoffFactor; // to compensate for ground effect and delay
-    }
 
     void blink_by_binding(bool b) {
         _rc->bind(b); // tmp trick until we create a dedicated feature for this
@@ -258,20 +250,19 @@ public:
         static double last_blink_time = time;
         static bool blink_state;
 
-            if (time-last_blink_time>bind_blink_time) {
-                if (blink_state)
-                    blink_state = false;
-                else
-                    blink_state = true;
-             last_blink_time = time;
-            }
+        if (time-last_blink_time>bind_blink_time) {
+            if (blink_state)
+                blink_state = false;
+            else
+                blink_state = true;
+            last_blink_time = time;
+        }
         _rc->LED(blink_state);
     }
 
     void LED(bool b){
         _rc->LED(b);
     }
-
 };
 
 #endif //DRONECONTROLLER_H

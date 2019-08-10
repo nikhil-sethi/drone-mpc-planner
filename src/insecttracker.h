@@ -9,14 +9,8 @@
  */
 class InsectTracker : public ItemTracker {
 
-
-private:
-    cv::Mat Qfi;
-
 protected:
-    void init_settings();
     void update_insect_prediction();
-
 public:
     void init(std::ofstream *logger, VisionData *_visdat);
     void track(double time);
@@ -28,8 +22,5 @@ public:
         return false;
     }
 };
-
-
-
 
 #endif //INSECTTRACKER_H

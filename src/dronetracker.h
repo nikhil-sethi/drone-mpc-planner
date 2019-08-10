@@ -18,7 +18,6 @@ static const char* drone_tracking_state_names[] = { "dts_init",
                                                     "dts_landing"};
 class DroneTracker : public ItemTracker {
 
-
 private:
     double start_take_off_time = 0;
     double current_time = 0;
@@ -91,10 +90,7 @@ private:
     void serialize_calib();
     void deserialize_calib(string file);
 
-    cv::Mat Qfi; // tmp
     void update_drone_prediction(); //tmp
-protected:
-    void init_settings();
 public:
     std::string drone_tracking_state() {return drone_tracking_state_names[_drone_tracking_status];}
     cv::Point2f drone_startup_im_location(){ return _drone_blink_im_location; }
@@ -136,7 +132,7 @@ public:
 
     bool delete_me(){return false;}
 
-	float hover_throttle_estimation;
+    float hover_throttle_estimation;
 };
 
 

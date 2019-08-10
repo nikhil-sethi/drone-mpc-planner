@@ -13,13 +13,6 @@ bool BlinkTracker::init(VisionData *visdat) {
     n_frames_lost_threshold = 120;
     return false;
 }
-void BlinkTracker::init_settings() {
-    settings.score_threshold = 0.1;
-    settings.max_size = 0.1f;
-
-    settings.min_disparity = 1;
-    settings.background_subtract_zone_factor = 97;
-}
 
 void BlinkTracker::track(double time) {
     switch (_blinking_drone_status) {

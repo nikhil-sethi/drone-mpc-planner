@@ -1,7 +1,7 @@
 #include "interceptor.h"
 #include "opencv2/imgproc.hpp"
 
-void Interceptor::init(ItemManager * trackers, VisionData * visdat) {
+void Interceptor::init(TrackerManager * trackers, VisionData * visdat) {
     _trackers = trackers;
     _visdat = visdat;
 }

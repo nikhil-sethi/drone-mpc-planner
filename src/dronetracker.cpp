@@ -7,12 +7,7 @@ bool DroneTracker::init(std::ofstream *logger, VisionData *visdat) {
     enable_viz_diff = false;
 #endif
     ItemTracker::init(logger,visdat,"drone");
-    cv::invert(visdat->Qf,Qfi);
     return false;
-}
-void DroneTracker::init_settings() {
-    settings.background_subtract_zone_factor = 97;
-    settings.max_size = 0.1f;
 }
 
 void DroneTracker::track(double time, bool drone_is_active) {
@@ -226,7 +221,7 @@ void DroneTracker::update_drone_prediction() {
     tmpd.x = tmp.x;
 
     world_coordinates.push_back(tmpd);
-    cv::perspectiveTransform(world_coordinates,camera_coordinates,Qfi);
+    cv::perspectiveTransform(world_coordinates,camera_coordinates,_visdat->Qfi);
 
     //update tracker with prediciton
     cv::Point2f image_location;

@@ -318,7 +318,6 @@ void Cam::deserialize_calib(std::string file) {
     std::string xmlData((std::istreambuf_iterator<char>(infile)),
                         std::istreambuf_iterator<char>());
 
-
     CamCalibrationData* dser=new CamCalibrationData; // Create new object
     if (xmls::Serializable::fromXML(xmlData, dser)) // perform deserialization
     { // Deserialization successful

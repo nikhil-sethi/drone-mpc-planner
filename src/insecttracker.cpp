@@ -6,12 +6,6 @@ using namespace std;
 
 void InsectTracker::init(std::ofstream *logger, VisionData *visdat) {
     ItemTracker::init(logger,visdat,"insect");
-
-    cv::invert(visdat->Qf,Qfi);
-}
-void InsectTracker::init_settings() {
-    settings.min_disparity=1;
-    settings.max_size = 0.03f;
 }
 
 void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) {
@@ -98,7 +92,7 @@ void InsectTracker::update_insect_prediction() {
     tmpd.x = tmp.x;
 
     world_coordinates.push_back(tmpd);
-    cv::perspectiveTransform(world_coordinates,camera_coordinates,Qfi);
+    cv::perspectiveTransform(world_coordinates,camera_coordinates,_visdat->Qfi);
 
     //update tracker with prediciton
     cv::Point2f image_location;

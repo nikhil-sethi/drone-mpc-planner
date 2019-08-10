@@ -9,6 +9,7 @@ using namespace std;
 
 void VisionData::init(bool fromfile, cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, float new_camera_gain, cv::Mat new_depth_background_mm){
     Qf = new_Qf;
+    cv::invert(Qf,Qfi);
     frameL = new_frameL.clone();
     frameR = new_frameR.clone();
     frameL_prev = frameL;
@@ -25,23 +26,7 @@ void VisionData::init(bool fromfile, cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat
     else
         motion_noise_map_wfn = "./logging/" + motion_noise_map_wfn;
 
-    if (checkFileExist(settingsFile)) {
-        std::ifstream is(settingsFile, std::ios::binary);
-        cereal::BinaryInputArchive archive( is );
-        try {
-            archive(settings);
-        }catch (cereal::Exception e) {
-            std::stringstream serr;
-            serr << "cannot read visiondata settings file: " << e.what() << ". Maybe delete the file: " << settingsFile;
-            throw my_exit(serr.str());
-        }
-        BaseVisionSettings tmp;
-        if (tmp.version-settings.version > 0.001f){
-            std::stringstream serr;
-            serr << "visiondata settings version too low! Maybe delete the file: " << settingsFile;
-            throw my_exit(serr.str());
-        }
-    }
+    deserialize_settings();
 
     smallsize =cv::Size(frameL.cols/IMSCALEF,frameL.rows/IMSCALEF);
     frameL.convertTo(frameL16, CV_16SC1);
@@ -53,7 +38,7 @@ void VisionData::init(bool fromfile, cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat
 
 #ifdef TUNING
     namedWindow("Background", WINDOW_NORMAL);
-    createTrackbar("motion_update_iterator_max", "Background", &settings.motion_update_iterator_max, 255);
+    createTrackbar("motion_update_iterator_max", "Background", &motion_update_iterator_max, 255);
 #endif
 
     initialized = true;
@@ -94,7 +79,7 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
     cv::Mat dR = frameR16 - frameR_prev16;
     diffR16 += dR;
 
-    if (!(motion_update_iterator++ % (settings.motion_update_iterator_max+1)) && !disable_fading) { // +1 -> prevent 0
+    if (!(motion_update_iterator++ % (motion_update_iterator_max+1)) && !disable_fading) { // +1 -> prevent 0
         //split negative and positive motion
         fade(diffL16, _exclude_drone_from_motion_fading);
         _exclude_drone_from_motion_fading = false;
@@ -194,12 +179,12 @@ void VisionData::enable_background_motion_map_calibration(double duration){
 
 //Keep track of the average brightness, and reset the motion integration frame when it changes to much. (e.g. when someone turns on the lights or something)
 void VisionData::track_avg_brightness(cv::Mat frame,double time) {
-    if (time - prev_time_brightness_check > settings.brightness_check_period){ // only check once in a while
+    if (time - prev_time_brightness_check > brightness_check_period){ // only check once in a while
         prev_time_brightness_check = time;
         cv::Mat frame_small;
         cv::resize(frame,frame_small,cv::Size(frame.cols/8,frame.rows/8));
         float brightness = mean( frame_small )[0];
-        if (fabs(brightness - prev_brightness) > settings.brightness_event_tresh ) {
+        if (fabs(brightness - prev_brightness) > brightness_event_tresh ) {
             std::cout << "Warning, large brightness change: " << prev_brightness << " -> " << brightness  << std::endl;
             _reset_motion_integration = true;
         }
@@ -218,4 +203,51 @@ void VisionData::exclude_drone_from_motion_fading(cv::Point p, int radius) {
     _exclude_drone_from_motion_fading = true;
     exclude_drone_from_motion_fading_spot = p;
     exclude_drone_from_motion_fading_r = radius;
+}
+
+void VisionData::deserialize_settings() {
+    std::cout << "Reading settings from: " << settings_file << std::endl;
+    VisionParameters params;
+    if (checkFileExist(settings_file)) {
+        std::ifstream infile(settings_file);
+        std::string xmlData((std::istreambuf_iterator<char>(infile)),
+                            std::istreambuf_iterator<char>());
+
+        if (!xmls::Serializable::fromXML(xmlData, &params))
+        { // Deserialization not successful
+            throw my_exit("Cannot read: " + settings_file);
+        }
+        VisionParameters tmp;
+        auto v1 = params.getVersion();
+        auto v2 = tmp.getVersion();
+        if (v1 != v2) {
+            throw my_exit("XML version difference detected from " + settings_file);
+        }
+    } else {
+        throw my_exit("File not found: " + settings_file);
+    }
+
+    motion_update_iterator_max = params.motion_update_iterator_max.value();
+    brightness_event_tresh = params.brightness_event_tresh.value();
+    brightness_check_period = params.brightness_check_period.value();
+}
+
+void VisionData::serialize_settings() {
+    VisionParameters params;
+    params.motion_update_iterator_max = motion_update_iterator_max;
+    params.brightness_event_tresh = brightness_event_tresh;
+    params.brightness_check_period = brightness_check_period;
+
+    std::string xmlData = params.toXML();
+    std::ofstream outfile = std::ofstream (settings_file);
+    outfile << xmlData ;
+    outfile.close();
+}
+
+void VisionData::close() {
+    if (initialized){
+        std::cout << "Closing visdat" << std::endl;
+        serialize_settings();
+        initialized = false;
+    }
 }

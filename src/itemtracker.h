@@ -151,35 +151,44 @@ public:
 
     };
 
+protected:
+    class TrackerParams: public xmls::Serializable
+    {
+    public:
+        xmls::xInt min_disparity,max_disparity,static_ignores_dist_thresh;
+        xmls::xInt score_threshold, background_subtract_zone_factor;
+        xmls::xFloat max_size;
+
+        TrackerParams() {
+            // Set the XML class name.
+            // This name can differ from the C++ class name
+            setClassName("TrackerParameters");
+
+            // Set class version
+            setVersion("1.0");
+
+            // Register members. Like the class name, member names can differ from their xml depandants
+            Register("min_disparity",&min_disparity );
+            Register("max_disparity",&max_disparity );
+            Register("static_ignores_dist_thresh",&static_ignores_dist_thresh );
+            Register("score_threshold",&score_threshold );
+            Register("background_subtract_zone_factor",&background_subtract_zone_factor );
+            Register("max_size",&max_size );
+        }
+    };
+
+    int min_disparity;
+    int max_disparity;
+    int static_ignores_dist_thresh;
+    int _score_threshold;
+    int background_subtract_zone_factor;
+    float max_size; // world, in meters
+
+    std::string settings_file;
+    void deserialize_settings();
+    void serialize_settings();
 
 private:
-    struct TrackerSettings{
-
-        int min_disparity=1;
-        int max_disparity=20;
-
-        int static_ignores_dist_thresh = 5;
-
-        int score_threshold = 66;
-        int background_subtract_zone_factor = 95;
-        float max_size = 0.01; // world, in meters
-
-        float version = 2.1f;
-
-        template <class Archive>
-        void serialize( Archive & ar )
-        {
-            ar(version,
-               min_disparity,
-               max_disparity,
-               score_threshold,
-               max_size,
-               background_subtract_zone_factor);
-        }
-
-    };
-    std::string _settingsFile;
-
     void predict(float dt, int frame_id);
 
     float estimate_sub_disparity(int disparity);
@@ -259,12 +268,10 @@ protected:
     BlobWorldProps calc_world_props_blob_generic(BlobProps * pbs);
     bool check_ignore_blobs_generic(BlobProps * pbs);
     void cleanup_paths();
-    virtual void init_settings() = 0;
 public:
 
     virtual ~ItemTracker() {}
 
-    TrackerSettings settings;
     std::vector<WorldItem> path;
     std::vector<ImagePredictItem> predicted_image_path;
     std::vector<IgnoreBlob> ignores_for_other_trkrs;
@@ -309,7 +316,7 @@ public:
         _world_item.valid = false;
     }
 
-    float score_threshold() {return static_cast<float>(settings.score_threshold);}
+    float score_threshold() {return static_cast<float>(_score_threshold);}
 
     float score(BlobProps blob) {
         float dist = sqrtf(powf(_image_item.x-blob.x,2)+powf(_image_item.y-blob.y,2));

@@ -1,5 +1,5 @@
-#ifndef ITEMMANAGER_H
-#define ITEMMANAGER_H
+#ifndef TRACKERMANAGER_H
+#define TRACKERMANAGER_H
 #include "defines.h"
 #include "common.h"
 #include "itemtracker.h"
@@ -12,19 +12,18 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
-static const char* itemmanager_mode_names[] = { "im_idle",
-                                                "im_locate_drone",
-                                                "im_wait_for_insect",
-                                                "im_drone_only",
-                                                "im_hunt",
-                                                "im_hunt_replay_moth"};
+static const char* trackermanager_mode_names[] = {"tm_idle",
+                                                "tm_locate_drone",
+                                                "tm_wait_for_insect",
+                                                "tm_drone_only",
+                                                "tm_hunt",
+                                                "tm_hunt_replay_moth"};
 
 /*
  * This class appoints the found image points to the drone and insect item tracker(s)
  *
  */
-class ItemManager {
-
+class TrackerManager {
 
 public: cv::Scalar tracker_color( ItemTracker * trkr) {
         if (typeid(*trkr) == typeid(DroneTracker))
@@ -67,33 +66,38 @@ public: cv::Scalar tracker_color( ItemTracker * trkr) {
                 return cv::Scalar(255,0,255);
             return cv::Scalar(0,0,0);
         }
-
     };
 
-    struct item_manager_settings{
+    private:
+    class TrackerManagerParameters: public xmls::Serializable
+    {
+    public:
+        xmls::xInt max_points_per_frame,roi_radius,motion_thresh;
+        xmls::xInt motion_thresh_blink_detect;
 
-        int min_disparity=1;
-        int max_disparity=20;
+        TrackerManagerParameters() {
+            // Set the XML class name.
+            // This name can differ from the C++ class name
+            setClassName("TrackerManagerParameters");
 
-        int max_points_per_frame = 10;
-        int radius = 15;
-        int motion_thresh = 20;
-        int motion_thresh_blink_detect = 140; // TODO: make this drone dependent
+            // Set class version
+            setVersion("1.0");
 
-        int background_subtract_zone_factor = 90;
-        float version = 1.0f;
-
-        template <class Archive>
-        void serialize( Archive & ar ) {
-            ar(version,min_disparity,max_disparity,
-               background_subtract_zone_factor,
-               max_points_per_frame,radius,motion_thresh_blink_detect,
-               motion_thresh
-               );
+            // Register members. Like the class name, member names can differ from their xml depandants
+            Register("max_points_per_frame",&max_points_per_frame);
+            Register("roi_radius",&roi_radius);
+            Register("motion_thresh",&motion_thresh);
+            Register("motion_thresh_blink_detect",&motion_thresh_blink_detect);
         }
-
     };
-    std::string _settingsFile;
+
+    int max_points_per_frame;
+    int roi_radius;
+    int motion_thresh;
+
+    string settings_file = "../trackermanager.xml";
+    void deserialize_settings();
+    void serialize_settings();
 
 public:
     enum detection_mode{
@@ -110,7 +114,6 @@ private:
     std::ofstream *_logger;
     VisionData * _visdat;
     bool initialized = false;
-    item_manager_settings settings;
 
     bool enable_viz_max_points = false; // flag for enabling the maxs visiualization
     std::vector<cv::Mat> vizs_maxs;
@@ -119,7 +122,6 @@ private:
     const float chance_multiplier_pixel_max = 0.5f;
     const float chance_multiplier_dist = 3;
     const float chance_multiplier_total = chance_multiplier_dist + chance_multiplier_pixel_max;
-
 
     std::vector<ItemTracker::BlobProps> _blobs;
 
@@ -133,7 +135,6 @@ private:
     InsectTracker * _itrkr;   //tmp
     DroneTracker * _dtrkr;   //tmp
 public:
-
     cv::Mat viz_max_points,diff_viz;
     void mode(detection_mode m){ _mode = m;}
     detection_mode mode ()  {return _mode;}
@@ -150,9 +151,9 @@ public:
             if (best_state>0)
                 return blinking_drone_state_names[best_state];
             else
-                return itemmanager_mode_names[_mode];
+                return trackermanager_mode_names[_mode];
         } else
-            return itemmanager_mode_names[_mode];
+            return trackermanager_mode_names[_mode];
     }
 
     //tmp:
@@ -165,7 +166,6 @@ public:
     void init(ofstream *logger, VisionData *visdat);
     void update(double time, LogReader::Log_Entry log_entry, bool drone_is_active);
     void close();
-
 };
 
-#endif //ITEMMANAGER_H
+#endif //TRACKERMANAGER_H

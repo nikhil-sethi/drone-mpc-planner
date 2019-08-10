@@ -8,35 +8,16 @@ using namespace std;
 //#define TUNING
 #endif
 
-const string paramsFile = "../navigationParameters.dat";
-
-void DroneNavigation::init(std::ofstream *logger, ItemManager * trackers, DroneController * dctrl, VisionData *visdat) {
+void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, DroneController * dctrl, VisionData *visdat) {
     _logger = logger;
     _trackers = trackers;
     _dctrl = dctrl;
     _visdat = visdat;
 
     _iceptor.init(_trackers,visdat);
-    cv::invert(visdat->Qf,Qfi);
 
-    // Load saved control paremeters
-    if (checkFileExist(paramsFile)) {
-        std::ifstream is(paramsFile, std::ios::binary);
-        cereal::BinaryInputArchive archive( is );
-        try {
-            archive(params);
-        }catch (cereal::Exception e) {
-            std::stringstream serr;
-            serr << "cannot read drone navigation settings file: " << e.what() << ". Maybe delete the file: " << paramsFile;
-            throw my_exit(serr.str());
-        }
-        navigationParameters tmp;
-        if (tmp.version-params.version > 0.001f){
-            std::stringstream serr;
-            serr << "dronenavigation settings version too low! Maybe delete the file: " << paramsFile;
-            throw my_exit(serr.str());
-        }
-    }
+    // Load saved navigation paremeters
+    deserialize_settings();
 
     //Waypoints are relative to the camera position. The camera is 0,0,0.
     //X goes from negative left, to positive right.
@@ -57,15 +38,13 @@ void DroneNavigation::init(std::ofstream *logger, ItemManager * trackers, DroneC
 
 #ifdef TUNING
     namedWindow("Nav", WINDOW_NORMAL);
-    //    createTrackbar("X [mm]", "Nav", &params.setpoint_slider_X, SETPOINTXMAX);
-    //    createTrackbar("Y [mm]", "Nav", &params.setpoint_slider_Y, SETPOINTYMAX);
-    //    createTrackbar("Z [mm]", "Nav", &params.setpoint_slider_Z, SETPOINTZMAX);
+    //    createTrackbar("X [mm]", "Nav", &setpoint_slider_X, SETPOINTXMAX);
+    //    createTrackbar("Y [mm]", "Nav", &setpoint_slider_Y, SETPOINTYMAX);
+    //    createTrackbar("Z [mm]", "Nav", &setpoint_slider_Z, SETPOINTZMAX);
     createTrackbar("WP id", "Nav", reinterpret_cast<int*>(wpid), setpoints.size()-1);
-    createTrackbar("d threshold factor", "Nav", &params.distance_threshold_f, 10);
-    createTrackbar("land_incr_f_mm", "Nav", &params.land_incr_f_mm, 50);
-    createTrackbar("Land Decrease  ", "Nav", &params.autoLandThrottleDecreaseFactor, 50);
-    createTrackbar("Take off speed threshold  ", "Nav", &params.auto_takeoff_speed, 50);
-
+    createTrackbar("d threshold factor", "Nav", &distance_threshold_f, 10);
+    createTrackbar("land_incr_f_mm", "Nav", &land_incr_f_mm, 50);
+    createTrackbar("Land Decrease  ", "Nav", &autoLandThrottleDecreaseFactor, 50);
 #endif
 
 #ifdef INSECT_LOGGING_MODE
@@ -104,13 +83,13 @@ void DroneNavigation::update(double time) {
 #endif
             if (time > 1) // skip the first second or so, e.g. auto exposure may give heavily changing images
                 _navigation_status = ns_locate_drone;
-            _trackers->mode(ItemManager::mode_idle);
+            _trackers->mode(TrackerManager::mode_idle);
             break;
         } case ns_locate_drone: {
 #if DRONE_TYPE != DRONE_TRASHCAN
             _dctrl->blink_by_binding(true);
 #endif
-            _trackers->mode(ItemManager::mode_locate_drone);
+            _trackers->mode(TrackerManager::mode_locate_drone);
             _visdat->reset_motion_integration();
             _visdat->disable_fading = true;
             _navigation_status = ns_wait_locate_drone;
@@ -128,7 +107,7 @@ void DroneNavigation::update(double time) {
             if (time - prev_time > bind_blink_time)
                 _dctrl->blink(time);
 #endif
-            if (_trackers->mode() != ItemManager::mode_locate_drone) {
+            if (_trackers->mode() != TrackerManager::mode_locate_drone) {
                 _navigation_status = ns_located_drone;
                 time_located_drone = time;
             }
@@ -140,7 +119,7 @@ void DroneNavigation::update(double time) {
 #else
             _dctrl->LED(true);
 #endif
-            _trackers->mode(ItemManager::mode_idle);
+            _trackers->mode(TrackerManager::mode_idle);
             _visdat->disable_fading = false;
             if (time-time_located_drone>1.0) { // delay until blinking stopped
                 if (_nav_flight_mode == nfm_hunt)
@@ -152,7 +131,7 @@ void DroneNavigation::update(double time) {
             }
             break;
         } case ns_wait_for_takeoff_command: {
-            _trackers->mode(ItemManager::mode_idle);
+            _trackers->mode(TrackerManager::mode_idle);
             _dctrl->flight_mode(DroneController::fm_inactive);
             if (_nav_flight_mode == nfm_hunt)
                 _navigation_status = ns_wait_for_insect;
@@ -164,7 +143,7 @@ void DroneNavigation::update(double time) {
             }
             break;
         } case ns_wait_for_insect: {
-            _trackers->mode(ItemManager::mode_wait_for_insect);
+            _trackers->mode(TrackerManager::mode_wait_for_insect);
             _dctrl->flight_mode(DroneController::fm_inactive);
             if (_nav_flight_mode == nfm_manual)
                 _navigation_status = ns_manual;
@@ -175,18 +154,14 @@ void DroneNavigation::update(double time) {
             } else if (_nav_flight_mode == nfm_waypoint || _nav_flight_mode == nfm_slider)
                 _navigation_status = ns_wait_for_takeoff_command;
             break;
-        } case ns_init_calibrate_hover: {
-            _navigation_status = ns_takeoff;
-            _calibrating_hover = true;
-            break;
         } case ns_takeoff: {
             _dctrl->reset_manual_override_take_off_now();
             _dctrl->flight_mode(DroneController::fm_start_takeoff);
             time_taken_off = time;
             if (_nav_flight_mode == nfm_hunt)
-                _trackers->mode(ItemManager::mode_hunt);
+                _trackers->mode(TrackerManager::mode_hunt);
             else
-                _trackers->mode(ItemManager::mode_drone_only);
+                _trackers->mode(TrackerManager::mode_drone_only);
             _navigation_status=ns_taking_off;
             break;
         } case ns_taking_off: {
@@ -206,15 +181,12 @@ void DroneNavigation::update(double time) {
             else
                 break;
         } FALLTHROUGH_INTENDED; case ns_take_off_completed: {
-            _dctrl->init_ground_effect_compensation();
             _dctrl->flight_mode(DroneController::fm_flying);
             _dctrl->hoverthrottle = _trackers->dronetracker()->hover_throttle_estimation;
 #ifdef MANUAL_DRONE_LOCATE
             _dtrk->do_post_takeoff_detection();
 #endif
-            if (_calibrating_hover) {
-                _navigation_status = ns_calibrate_hover;
-            } else if (_nav_flight_mode == nfm_hunt) {
+            if (_nav_flight_mode == nfm_hunt) {
                 _navigation_status = ns_start_the_chase;
                 repeat = true;
             } else if (_nav_flight_mode == nfm_manual) {
@@ -222,12 +194,6 @@ void DroneNavigation::update(double time) {
             } else {
                 _navigation_status = ns_set_waypoint;
             }
-            break;
-        } case ns_calibrate_hover: {
-            next_waypoint(hovercalib_waypoint());
-            _navigation_status = ns_approach_waypoint;
-            if (_nav_flight_mode == nfm_manual)
-                _navigation_status = ns_manual;
             break;
         } case ns_start_the_chase: {
             _iceptor.reset_insect_cleared();
@@ -275,13 +241,9 @@ void DroneNavigation::update(double time) {
 
             float dis = sqrtf(_dctrl->posErrX*_dctrl->posErrX + _dctrl->posErrY*_dctrl->posErrY + _dctrl->posErrZ*_dctrl->posErrZ);
             _dist_to_wp = dis;
-            if (dis *1000 < current_setpoint->threshold_mm * params.distance_threshold_f && _trackers->dronetracker()->n_frames_tracking>5) {
+            if (dis *1000 < current_setpoint->threshold_mm * distance_threshold_f && _trackers->dronetracker()->n_frames_tracking>5) {
                 if (current_setpoint->mode == fm_landing) {
                     _navigation_status = ns_land;
-                } else if (current_setpoint->mode == fm_hover_calib) {
-                    _dctrl->recalibrateHover();
-                    _calibrating_hover = false;
-                    _navigation_status = ns_goto_landing_waypoint;
                 } else if (wpid < setpoints.size()) { // next waypoint in flight plan
                     wpid++;
                     if (wpid == 1)
@@ -305,15 +267,14 @@ void DroneNavigation::update(double time) {
             break;
             //    } case navigation_status_stay_slider_waypoint: {
             //        wp = &setpoints[wpid];
-            //        wp->_xyz.x = params.setpoint_slider_X;
-            //        wp->_xyz.y = params.setpoint_slider_Y;
-            //        wp->_xyz.z = params.setpoint_slider_Z;
+            //        wp->_xyz.x = setpoint_slider_X;
+            //        wp->_xyz.y = setpoint_slider_Y;
+            //        wp->_xyz.z = setpoint_slider_Z;
             //        if (_dctrl->get_flight_mode() == DroneController::fm_manual)
             //            navigation_status=navigation_status_manual;
             //        break;
         } case ns_land: {
             _dctrl->flight_mode(DroneController::fm_landing);
-            _dctrl->recalibrateHover();
             _trackers->dronetracker()->land();
             _navigation_status = ns_landing;
         } FALLTHROUGH_INTENDED; case ns_landing: {
@@ -321,11 +282,11 @@ void DroneNavigation::update(double time) {
             if (data.sposY < _trackers->dronetracker()->drone_landing_location().y+0.1f || autoLandThrottleDecrease >1000)
                 _navigation_status = ns_landed;
 
-            autoLandThrottleDecrease += params.autoLandThrottleDecreaseFactor;
+            autoLandThrottleDecrease += autoLandThrottleDecreaseFactor;
             _dctrl->setAutoLandThrottleDecrease(autoLandThrottleDecrease);
 
             if ( setpoint_pos_world.y - land_incr> -(_trackers->dronetracker()->drone_landing_location().y+100000.0f))
-                land_incr = static_cast<float>(params.land_incr_f_mm)/1000.f;
+                land_incr = static_cast<float>(land_incr_f_mm)/1000.f;
             setpoint_pos_world.y -= land_incr;
             if (_nav_flight_mode == nfm_hunt && _iceptor.insect_in_range())
                 _navigation_status = ns_start_the_chase;
@@ -342,12 +303,12 @@ void DroneNavigation::update(double time) {
             landed_time = time;
         } FALLTHROUGH_INTENDED; case ns_wait_after_landing: {
             _visdat->delete_from_motion_map(_trackers->dronetracker()->drone_startup_im_location()*IMSCALEF,_trackers->dronetracker()->drone_startup_im_disparity(),_trackers->dronetracker()->drone_startup_im_size()*IMSCALEF,1);
-            if (time - landed_time > params.time_out_after_landing )
+            if (time - landed_time > time_out_after_landing )
                 _navigation_status = ns_locate_drone;
             break;
         } case ns_manual: { // also used for disarmed
             wpid = 0;
-            _trackers->mode(ItemManager::mode_drone_only);
+            _trackers->mode(TrackerManager::mode_drone_only);
             if (_nav_flight_mode == nfm_hunt) {
                 _navigation_status=ns_wait_for_insect;
             } else if (_nav_flight_mode != nfm_manual) { // waypoint mode
@@ -363,7 +324,7 @@ void DroneNavigation::update(double time) {
 
 void DroneNavigation::next_waypoint(waypoint wp) {
     current_setpoint = new waypoint(wp);
-    if ( wp.mode == fm_hover_calib || wp.mode == fm_takeoff) {
+    if (wp.mode == fm_takeoff) {
         cv::Point3f p = _trackers->dronetracker()->drone_startup_location();
         setpoint_pos_world =  p + wp.xyz;
     }else if (wp.mode == fm_landing ) {
@@ -379,12 +340,57 @@ void DroneNavigation::next_waypoint(waypoint wp) {
 
 }
 
+void DroneNavigation::deserialize_settings() {
+    std::cout << "Reading settings from: " << settings_file << std::endl;
+    navigationParameters params;
+    if (checkFileExist(settings_file)) {
+        std::ifstream infile(settings_file);
+        std::string xmlData((std::istreambuf_iterator<char>(infile)),
+                            std::istreambuf_iterator<char>());
+
+        if (!xmls::Serializable::fromXML(xmlData, &params))
+        { // Deserialization not successful
+            throw my_exit("Cannot read: " + settings_file);
+        }
+        navigationParameters tmp;
+        auto v1 = params.getVersion();
+        auto v2 = tmp.getVersion();
+        if (v1 != v2) {
+            throw my_exit("XML version difference detected from " + settings_file);
+        }
+    } else {
+        throw my_exit("File not found: " + settings_file);
+    }
+
+    distance_threshold_f = params.distance_threshold_f.value();
+    setpoint_slider_X = params.setpoint_slider_X.value();
+    setpoint_slider_Y = params.setpoint_slider_Y.value();
+    setpoint_slider_Z = params.setpoint_slider_Z.value();
+    land_incr_f_mm = params.land_incr_f_mm.value();
+    autoLandThrottleDecreaseFactor = params.autoLandThrottleDecreaseFactor.value();
+    time_out_after_landing = params.time_out_after_landing.value();
+}
+
+void DroneNavigation::serialize_settings() {
+    navigationParameters params;
+    params.distance_threshold_f = distance_threshold_f;
+    params.setpoint_slider_X = setpoint_slider_X;
+    params.setpoint_slider_Y = setpoint_slider_Y;
+    params.setpoint_slider_Z = setpoint_slider_Z;
+    params.land_incr_f_mm = land_incr_f_mm;
+    params.autoLandThrottleDecreaseFactor = autoLandThrottleDecreaseFactor;
+    params.time_out_after_landing = time_out_after_landing;
+
+    std::string xmlData = params.toXML();
+    std::ofstream outfile = std::ofstream (settings_file);
+    outfile << xmlData ;
+    outfile.close();
+}
+
 void DroneNavigation::close() {
     if (initialized) {
         std::cout << "Closing drone navigation" << std::endl;
-        std::ofstream os(paramsFile, std::ios::binary);
-        cereal::BinaryOutputArchive archive( os );
-        archive( params );
+        serialize_settings();
         initialized = false;
     }
 }

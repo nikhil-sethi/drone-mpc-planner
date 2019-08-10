@@ -1,32 +1,15 @@
-#include "itemmanager.h"
+#include "trackermanager.h"
 using namespace cv;
 using namespace std;
 
-void ItemManager::init(std::ofstream *logger,VisionData *visdat){
+void TrackerManager::init(std::ofstream *logger,VisionData *visdat){
     _visdat = visdat;
     _logger = logger;
 #ifdef HASSCREEN
     enable_viz_max_points = false;
     enable_viz_diff = true;
 #endif
-    _settingsFile = "../itemmanager_settings.dat";
-    if (checkFileExist(_settingsFile)) {
-        std::ifstream is(_settingsFile, std::ios::binary);
-        cereal::BinaryInputArchive archive( is );
-        try {
-            archive(settings);
-        }catch (cereal::Exception e) {
-            std::stringstream serr;
-            serr << "cannot read itemmanager settings file: " << e.what() << ". Maybe delete the file: " << _settingsFile;
-            throw my_exit(serr.str());
-        }
-        item_manager_settings tmp;
-        if (tmp.version-settings.version > 0.001f){
-            std::stringstream serr;
-            serr << "itemmanager settings version too low! Maybe delete the file: " << _settingsFile;
-            throw my_exit(serr.str());
-        }
-    }
+    deserialize_settings();
 
     //we have a bit of a situation with the order of initializing the trackers, as this MUST be in the same order as how they are called
     //in the future this is prolly not sustainable, as we have multiple insect trackers etc
@@ -45,7 +28,7 @@ void ItemManager::init(std::ofstream *logger,VisionData *visdat){
     initialized = true;
 }
 
-void ItemManager::update(double time,LogReader::Log_Entry log_entry, bool drone_is_active){
+void TrackerManager::update(double time,LogReader::Log_Entry log_entry, bool drone_is_active){
 
     if (enable_viz_diff) {
         cv::cvtColor(_visdat->diffL*10,diff_viz,CV_GRAY2BGR);
@@ -59,11 +42,8 @@ void ItemManager::update(double time,LogReader::Log_Entry log_entry, bool drone_
 
     if (_mode != mode_idle){
         update_max_change_points();
-
         update_static_ignores();
-
         match_blobs_to_trackers(drone_is_active && !_dtrkr->inactive(),time);
-
     }
 
     update_trackers(time,log_entry, drone_is_active);
@@ -72,10 +52,9 @@ void ItemManager::update(double time,LogReader::Log_Entry log_entry, bool drone_
         viz_max_points = createColumnImage(vizs_maxs,CV_8UC3,1);
     else if(enable_viz_max_points)
         viz_max_points = cv::Mat::zeros(5,100,CV_8UC3);
-
 }
 
-void ItemManager::update_trackers(double time,LogReader::Log_Entry log_entry, bool drone_is_active) {
+void TrackerManager::update_trackers(double time,LogReader::Log_Entry log_entry, bool drone_is_active) {
     //perform all tracker functions, also delete old trackers
     for (uint ii=_trackers.size();ii != 0; ii--){ // reverse because deleting from this list.
         uint i = ii-1;
@@ -126,7 +105,7 @@ void ItemManager::update_trackers(double time,LogReader::Log_Entry log_entry, bo
 }
 
 //for each tracker collect the static ignores from each other tracker
-void ItemManager::update_static_ignores() {
+void TrackerManager::update_static_ignores() {
     bool landingspot_ignore_found = false;
     ItemTracker::IgnoreBlob landingspot;
     for (uint i=0; i<_trackers.size();i++){
@@ -148,7 +127,7 @@ void ItemManager::update_static_ignores() {
         _dtrkr->ignores_for_me.push_back(landingspot);
 }
 
-void ItemManager::match_blobs_to_trackers(bool drone_is_active, double time) {
+void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) {
 
     //set all trackers to invalid so we can use this as a flag to notice when tracking is lost.
     for (uint i=0; i<_trackers.size();i++)
@@ -392,9 +371,7 @@ void ItemManager::match_blobs_to_trackers(bool drone_is_active, double time) {
     }
 }
 
-
-
-bool ItemManager::tracker_active(ItemTracker * trkr, bool drone_is_active) {
+bool TrackerManager::tracker_active(ItemTracker * trkr, bool drone_is_active) {
     if (_mode == mode_idle)
         return false;
     else if (typeid(*trkr) == typeid(DroneTracker) && (_mode == mode_locate_drone || !drone_is_active)) {
@@ -411,7 +388,7 @@ bool ItemManager::tracker_active(ItemTracker * trkr, bool drone_is_active) {
 //maxima that are higher than a threshold, the area around the maximum
 //is segmented from the background noise, and seen as a blob. It then
 //tries if this blob can be further splitted if necessary.
-void ItemManager::update_max_change_points() {
+void TrackerManager::update_max_change_points() {
     cv::Mat diff = _visdat->diffL_small;
     _blobs.clear();
 
@@ -426,14 +403,14 @@ void ItemManager::update_max_change_points() {
         if (_dtrkr->taking_off())
             enable_take_off_split = true;
         else  if ( _itrkr->image_predict_item().valid)
-            if (norm(_dtrkr->image_predict_item().pt() - _itrkr->image_predict_item().pt()) < settings.radius){
+            if (norm(_dtrkr->image_predict_item().pt() - _itrkr->image_predict_item().pt()) < roi_radius){
                 enable_insect_drone_split = true;
                 drn_ins_split_thresh = _itrkr->image_predict_item().pixel_max*0.2f;
             }
     }
 
     Mat bkg_frame = _visdat->motion_noise_map;
-    for (int i = 0; i < settings.max_points_per_frame; i++) {
+    for (int i = 0; i < max_points_per_frame; i++) {
         Point mint;
         Point maxt;
         double min, max;
@@ -441,13 +418,13 @@ void ItemManager::update_max_change_points() {
 
         uint8_t bkg = bkg_frame.at<uint8_t>(maxt.y,maxt.x);
 
-        int motion_thresh = settings.motion_thresh;
+        int motion_thresh_tmp = motion_thresh;
         if (_mode == mode_locate_drone) {
-            motion_thresh = settings.motion_thresh + drone_blink_strength;
+            motion_thresh_tmp = motion_thresh + drone_blink_strength;
             bkg = 0; // motion noise calib is done during blink detection. To prevent interference do not use the bkg motion noise
         }
 
-        bool thresh_res = max > bkg+motion_thresh;
+        bool thresh_res = max > bkg+motion_thresh_tmp;
         if (!thresh_res){ // specifcally for the insect tracker, check if there is an increased chance in this area
             for (uint j = 0; j < _trackers.size(); j++) {
                 ItemTracker::ImagePredictItem ipi = _trackers.at(j)->image_predict_item();
@@ -458,12 +435,12 @@ void ItemManager::update_max_change_points() {
                     d.y = ipi.pt().y - maxt.y;
                     float dist = norm(d);
                     float chance = 1;
-                    if (ipi.valid &&ipi.pixel_max < 1.5f * motion_thresh)
+                    if (ipi.valid &&ipi.pixel_max < 1.5f * motion_thresh_tmp)
                         chance +=chance_multiplier_pixel_max;
-                    if (dist < settings.radius){
+                    if (dist < roi_radius){
                         chance += chance_multiplier_dist;
                     }
-                    thresh_res = static_cast<uint8_t>(max) > bkg+(motion_thresh/chance);
+                    thresh_res = static_cast<uint8_t>(max) > bkg+(motion_thresh_tmp/chance);
                 }
             }
         }
@@ -471,7 +448,7 @@ void ItemManager::update_max_change_points() {
         if (thresh_res) {
             //find the COG:
             //get the Rect containing the max movement:
-            Rect r2(maxt.x-settings.radius, maxt.y-settings.radius, settings.radius*2,settings.radius*2);
+            Rect r2(maxt.x-roi_radius, maxt.y-roi_radius, roi_radius*2,roi_radius*2);
             if (r2.x < 0)
                 r2.x = 0;
             else if (r2.x+r2.width >= diff.cols)
@@ -485,7 +462,7 @@ void ItemManager::update_max_change_points() {
             // make a black mask, same size:
             Mat mask = Mat::zeros(roi.size(), roi.type());
             // with a white, filled circle in it:
-            circle(mask, Point(settings.radius,settings.radius), settings.radius, 32765, -1);
+            circle(mask, Point(roi_radius,roi_radius), roi_radius, 32765, -1);
             // combine roi & mask:
             Mat cropped = roi & mask;
             Scalar avg = mean(cropped);
@@ -552,7 +529,7 @@ void ItemManager::update_max_change_points() {
                                 if (enable_viz_max_points){
                                     cv::Mat viz2 = viz.clone();
                                     circle(viz2,COG2*4,1,Scalar(0,0,255),1); //COG
-                                    circle(viz2,COG2*4,settings.radius*4,Scalar(0,0,255),1);  // remove radius
+                                    circle(viz2,COG2*4,roi_radius*4,Scalar(0,0,255),1);  // remove radius
                                     putText(viz2,to_string_with_precision(COG2.y*4,0),COG2*4,FONT_HERSHEY_SIMPLEX,0.4,Scalar(100,0,255));
                                     putText(viz2,std::to_string(blob_viz_cnt) + ", " + std::to_string(j) ,Point(0, 13),FONT_HERSHEY_SIMPLEX,0.5,Scalar(255,255,0));
                                     blob_viz_cnt++;
@@ -566,7 +543,7 @@ void ItemManager::update_max_change_points() {
                                 _blobs.push_back(ItemTracker::BlobProps(COG2, radius, px_max));
 
                                 //remove this COG from the ROI:
-                                circle(diff, COG2, 1, Scalar(0), settings.radius);
+                                circle(diff, COG2, 1, Scalar(0), roi_radius);
                             } else {
                                 COG_is_nan = true;
                             }
@@ -587,11 +564,11 @@ void ItemManager::update_max_change_points() {
                         tmpCOG.x = COG.x - r2.x;
                         tmpCOG.y = COG.y - r2.y;
                         circle(viz,tmpCOG*4,1,Scalar(0,0,255),1);
-                        circle(viz,tmpCOG*4,settings.radius*4,Scalar(0,0,255),1);  // remove radius
+                        circle(viz,tmpCOG*4,roi_radius*4,Scalar(0,0,255),1);  // remove radius
                         putText(viz,to_string_with_precision(tmpCOG.y*4,0),tmpCOG*4,FONT_HERSHEY_SIMPLEX,0.4,Scalar(255,0,0));
                     }
                     //remove this COG from the ROI:
-                    circle(diff, COG, 1, Scalar(0), settings.radius);
+                    circle(diff, COG, 1, Scalar(0), roi_radius);
                 } else {
                     COG_is_nan = true;
                     if (enable_insect_drone_split){
@@ -602,18 +579,18 @@ void ItemManager::update_max_change_points() {
                             d.x = ipi.pt().x - maxt.x;
                             d.y = ipi.pt().y - maxt.y;
                             float dist = norm(d);
-                            if (dist < settings.radius) {
+                            if (dist < roi_radius) {
                                 _blobs.push_back(ItemTracker::BlobProps(maxt, 1,max));
                                 if (enable_viz_max_points) {
                                     Point2f tmpCOG;
                                     tmpCOG.x = maxt.x - r2.x;
                                     tmpCOG.y = maxt.y - r2.y;
                                     circle(viz,tmpCOG*4,1,Scalar(0,0,255),1);
-                                    circle(viz,tmpCOG*4,settings.radius*4,Scalar(0,0,255),1);  // remove radius
+                                    circle(viz,tmpCOG*4,roi_radius*4,Scalar(0,0,255),1);  // remove radius
                                     putText(viz,"maxt " + to_string_with_precision(tmpCOG.y*4,0),tmpCOG*4,FONT_HERSHEY_SIMPLEX,0.4,Scalar(255,0,0));
                                 }
                                 //remove this COG from the ROI:
-                                circle(diff, maxt, 1, Scalar(0), settings.radius);
+                                circle(diff, maxt, 1, Scalar(0), roi_radius);
                                 COG_is_nan = false;
                                 break;
                             }
@@ -622,25 +599,61 @@ void ItemManager::update_max_change_points() {
                 }
             }
             if (COG_is_nan)  //remove the actual maximum from the ROI if the COG algorithm failed:
-                circle(diff, maxt, 1, Scalar(0), settings.radius);
+                circle(diff, maxt, 1, Scalar(0), roi_radius);
 
         } else {
-            if  (static_cast<uint8_t>(max) <= bkg+(motion_thresh/chance_multiplier_total))
+            if  (static_cast<uint8_t>(max) <= bkg+(motion_thresh_tmp/chance_multiplier_total))
                 break; // done searching for maxima, they are too small now
             else
-                circle(diff, maxt, 1, Scalar(0), settings.radius);
+                circle(diff, maxt, 1, Scalar(0), roi_radius);
         }
     }
 }
 
-void ItemManager::close () {
+void TrackerManager::deserialize_settings() {
+    std::cout << "Reading settings from: " << settings_file << std::endl;
+    TrackerManagerParameters params;
+    if (checkFileExist(settings_file)) {
+        std::ifstream infile(settings_file);
+        std::string xmlData((std::istreambuf_iterator<char>(infile)),
+                            std::istreambuf_iterator<char>());
+
+        if (!xmls::Serializable::fromXML(xmlData, &params))
+        { // Deserialization not successful
+            throw my_exit("Cannot read: " + settings_file);
+        }
+        TrackerManagerParameters tmp;
+        auto v1 = params.getVersion();
+        auto v2 = tmp.getVersion();
+        if (v1 != v2) {
+            throw my_exit("XML version difference detected from " + settings_file);
+        }
+    } else {
+        throw my_exit("File not found: " + settings_file);
+    }
+
+    max_points_per_frame = params.max_points_per_frame.value();
+    roi_radius = params.roi_radius.value();
+    motion_thresh = params.motion_thresh.value();
+}
+
+void TrackerManager::serialize_settings() {
+    TrackerManagerParameters params;
+    params.max_points_per_frame = max_points_per_frame;
+    params.roi_radius = roi_radius;
+    params.motion_thresh = motion_thresh;
+
+    std::string xmlData = params.toXML();
+    std::ofstream outfile = std::ofstream (settings_file);
+    outfile << xmlData ;
+    outfile.close();
+}
+
+void TrackerManager::close () {
     if (initialized){
         for (uint i=0; i < _trackers.size(); i++)
             _trackers.at(i)->close();
-        std::cout << "Closing item manager" << std::endl;
-        std::ofstream os(_settingsFile, std::ios::binary);
-        cereal::BinaryOutputArchive archive( os );
-        archive( settings );
+        serialize_settings();
         initialized = false;
     }
 }

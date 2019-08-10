@@ -6,7 +6,7 @@
 #include "dronetracker.h"
 #include "dronecontroller.h"
 #include "insecttracker.h"
-#include "itemmanager.h"
+#include "trackermanager.h"
 #include "interceptor.h"
 
 /*
@@ -19,11 +19,9 @@ static const char* navigation_status_names[] = {"ns_init",
                                                 "ns_located_drone",
                                                 "ns_wait_for_takeoff",
                                                 "ns_wait_for_insect",
-                                                "ns_init_calibrate_hover",
                                                 "ns_takeoff",
                                                 "ns_taking_off",
                                                 "ns_take_off_completed",
-                                                "ns_calibrate_hover",
                                                 "ns_start_the_chase",
                                                 "ns_chasing_insect",
                                                 "ns_set_waypoint",
@@ -48,12 +46,49 @@ public:
     };
 private:
 
+    class navigationParameters: public xmls::Serializable
+    {
+    public:
+        xmls::xInt distance_threshold_f,setpoint_slider_X,setpoint_slider_Y,setpoint_slider_Z;
+        xmls::xInt land_incr_f_mm, autoLandThrottleDecreaseFactor;
+        xmls::xFloat time_out_after_landing;
+
+        navigationParameters() {
+            // Set the XML class name.
+            // This name can differ from the C++ class name
+            setClassName("navigationParameters");
+
+            // Set class version
+            setVersion("1.0");
+
+            // Register members. Like the class name, member names can differ from their xml depandants
+            Register("distance_threshold_f",&distance_threshold_f);
+            Register("setpoint_slider_X",&setpoint_slider_X);
+            Register("setpoint_slider_Y",&setpoint_slider_Y);
+            Register("setpoint_slider_Z",&setpoint_slider_Z);
+            Register("land_incr_f_mm",&land_incr_f_mm);
+            Register("autoLandThrottleDecreaseFactor",&autoLandThrottleDecreaseFactor);
+            Register("time_out_after_landing",&time_out_after_landing);
+        }
+    };
+
+    int distance_threshold_f;
+    int setpoint_slider_X ;
+    int setpoint_slider_Y;
+    int setpoint_slider_Z;
+    int land_incr_f_mm;
+    int autoLandThrottleDecreaseFactor;
+    double time_out_after_landing;
+
+    string settings_file = "../navigation.xml";
+    void deserialize_settings();
+    void serialize_settings();
+
     double landed_time = 0;
     nav_flight_modes _nav_flight_mode;
 
     enum waypoint_flight_modes {
         fm_takeoff,
-        fm_hover_calib,
         fm_flying,
         fm_slider,
         fm_landing
@@ -83,13 +118,6 @@ private:
             mode = fm_takeoff;
         }
     };
-    struct hovercalib_waypoint : waypoint{
-        hovercalib_waypoint(){
-            xyz = cv::Point3f(0,.5f,0); // 1 meter over, relative to the startup location
-            threshold_mm = 20;
-            mode = fm_hover_calib;
-        }
-    };
     struct slider_waypoint : waypoint{
         slider_waypoint(){
             //todo: implement
@@ -98,6 +126,7 @@ private:
     };
     void next_waypoint(waypoint wp);
 
+
     enum navigation_states {
         ns_init=0,
         ns_locate_drone,
@@ -105,11 +134,9 @@ private:
         ns_located_drone,
         ns_wait_for_takeoff_command,
         ns_wait_for_insect,
-        ns_init_calibrate_hover,
         ns_takeoff,
         ns_taking_off,
         ns_take_off_completed,
-        ns_calibrate_hover,
         ns_start_the_chase,
         ns_chasing_insect,
         ns_set_waypoint,
@@ -137,15 +164,13 @@ private:
 
     std::ofstream *_logger;
     DroneController * _dctrl;
-    ItemManager * _trackers;
+    TrackerManager * _trackers;
     Interceptor _iceptor;
     VisionData *_visdat;
 
-    bool _calibrating_hover = false;
     bool initialized = false;
 
     float _dist_to_wp = 0;
-    cv::Mat Qfi;
 
 public:
 
@@ -165,29 +190,6 @@ public:
             return navigation_status_names[_navigation_status];
     }
 
-    struct navigationParameters{
-        int distance_threshold_f = 1;
-
-        int setpoint_slider_X = 0 ; //SETPOINTXMAX / 2;
-        int setpoint_slider_Y = 600;
-        int setpoint_slider_Z = 1000;
-
-        int land_incr_f_mm = 5;
-        int autoLandThrottleDecreaseFactor = 3;
-        int auto_takeoff_speed = 3;
-        double time_out_after_landing = 0.5;
-
-        float version = 2.3f;
-
-        template <class Archive>
-        void serialize( Archive & ar )
-        {
-            ar( version, distance_threshold_f,setpoint_slider_X,setpoint_slider_Y,setpoint_slider_Z,land_incr_f_mm,autoLandThrottleDecreaseFactor,auto_takeoff_speed,time_out_after_landing);
-        }
-    };
-
-    navigationParameters params;
-
     cv::Point3d setpoint;
     cv::Point3f setpoint_pos_world;
     cv::Point3f setpoint_vel_world;
@@ -201,7 +203,7 @@ public:
     }
 
     void close (void);
-    void init(std::ofstream *logger, ItemManager * imngr, DroneController *dctrl, VisionData *visdat);
+    void init(std::ofstream *logger, TrackerManager * imngr, DroneController *dctrl, VisionData *visdat);
     void update(double time);
     bool disable_insect_detection() {
         return _navigation_status < ns_wait_for_takeoff_command;
@@ -226,7 +228,7 @@ public:
         tmpd.x = tmp.x;
 
         world_length.push_back(tmpd);
-        cv::perspectiveTransform(world_length,camera_length,Qfi);
+        cv::perspectiveTransform(world_length,camera_length,_visdat->Qfi);
 
         if (camera_length[0].x > IMG_W)
             camera_length[0].x = IMG_W;
@@ -259,7 +261,7 @@ public:
         tmpd.x = tmp.x;
 
         world_coordinates.push_back(tmpd);
-        cv::perspectiveTransform(world_coordinates,camera_coordinates,Qfi);
+        cv::perspectiveTransform(world_coordinates,camera_coordinates,_visdat->Qfi);
         return cv::Point2i(camera_coordinates[0].x,camera_coordinates[0].y);
 
     }
@@ -271,15 +273,13 @@ public:
         }
     }
     bool drone_is_flying(){
-         return _navigation_status < ns_landing && _navigation_status >  ns_takeoff;
+        return _navigation_status < ns_landing && _navigation_status >  ns_takeoff;
     }
     bool drone_is_manual(){
-         return _navigation_status == ns_manual;
+        return _navigation_status == ns_manual;
     }
 
     Interceptor get_Interceptor(){return _iceptor;}
-
-
 };
 
 #endif //DRONENAVIGATION

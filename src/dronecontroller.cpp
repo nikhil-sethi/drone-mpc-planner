@@ -7,8 +7,6 @@
 
 using namespace cv;
 
-const std::string paramsFile = "../controlParameters.dat";
-
 // Create an instance of Joystick
 Joystick joystick("/dev/input/js0");
 JoystickEvent event;
@@ -21,61 +19,35 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     _dtrk = dtrk;
     _logger = logger;
     _fromfile = fromfile;
-    (*_logger) << "valid; posErrX; posErrY; posErrZ; velX; velY; velZ; accX; accY; accZ; hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; joyThrottle; joyRoll; joyPitch; joyYaw; joyArmSwitch; joyModeSwitch; joyTakeoffSwitch; throttleP; throttleI; throttleD; dt; dx; dy; dz; velx_sp; vely_sp; velz_sp;";
+    (*_logger) << "valid; posErrX; posErrY; posErrZ; velX; velY; velZ; accX; accY; accZ; hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; joyThrottle; joyRoll; joyPitch; joyYaw; joyArmSwitch; joyModeSwitch; joyTakeoffSwitch; dt; dx; dy; dz; velx_sp; vely_sp; velz_sp;";
     std::cout << "Initialising control." << std::endl;
 
+    if (DRONE_TYPE == DRONE_TRASHCAN)
+        settings_file = "../control_tc.xml";
+    else if (DRONE_TYPE == DRONE_TINYWHOOP_BLACK || DRONE_TYPE == DRONE_TINYWHOOP_GREEN)
+        settings_file = "../control_tw.xml";
+    else
+        throw my_exit("No settings file found for DRONE_TYPE");
+
     // Load saved control paremeters
-    if (checkFileExist(paramsFile)) {
-        std::ifstream is(paramsFile, std::ios::binary);
-        cereal::BinaryInputArchive archive( is );
-        try {
-            archive(params);
-        }catch (cereal::Exception e) {
-            std::stringstream serr;
-            serr << "cannot read dronecontroller settings file: " << e.what() << ". Maybe delete the file: " << paramsFile;
-            throw my_exit(serr.str());
-        }
-        controlParameters tmp;
-        if (tmp.version-params.version > 0.001f){
-            std::stringstream serr;
-            serr << "dronecontroller settings version too low! Maybe delete the file: " << paramsFile;
-            throw my_exit(serr.str());
-        }
-    }
+    deserialize_settings();
 
 #ifdef TUNING
     std::cout << "Creating control tuning window." << std::endl;
     // create GUI to set control parameters
     namedWindow("Control", WINDOW_NORMAL);
-
-    // throttle control
-    createTrackbar("Throttle Pos", "Control", &params.throttle_Pos, 3000);
-    createTrackbar("Throttle Vel", "Control", &params.throttle_Vel, 3000);
-    createTrackbar("Throttle Acc", "Control", &params.throttle_Acc, 100);
-    createTrackbar("Throttle I", "Control", &params.throttleI, 100);
-
-    createTrackbar("Take off factor", "Control", &params.autoTakeoffFactor, 255);
-    createTrackbar("Hover offset", "Control", &params.hoverOffset, 100);
-
-    // roll control
-    createTrackbar("Roll Pos", "Control", &params.roll_Pos, 3000);
-    createTrackbar("Roll Vel", "Control", &params.roll_Vel, 2000);
-    createTrackbar("Roll Acc", "Control", &params.roll_Acc, 100);
-    createTrackbar("Roll I", "Control", &params.rollI, 100);
-
-    // pitch control
-    createTrackbar("Pitch Pos", "Control", &params.pitch_Pos, 3000);
-    createTrackbar("Pitch Vel", "Control", &params.pitch_Vel, 2000);
-    createTrackbar("Pitch Acc", "Control", &params.pitch_Acc, 100);
-    createTrackbar("Pitch I", "Control", &params.pitchI, 100);
-
-
-    //    // yaw control
-    //    createTrackbar("Yaw P", "Control", &params.yawP, 255);
-    //    createTrackbar("Yaw I", "Control", &params.yawI, 255);
-    //    createTrackbar("Yaw D", "Control", &params.yawD, 255);
-
-
+    createTrackbar("Throttle Pos", "Control", &gain_throttle_pos, 3000);
+    createTrackbar("Throttle Vel", "Control", &gain_throttle_vel, 3000);
+    createTrackbar("Throttle Acc", "Control", &gain_throttle_acc, 100);
+    createTrackbar("Throttle I", "Control", &gain_throttle_i, 100);
+    createTrackbar("Roll Pos", "Control", &gain_roll_pos, 3000);
+    createTrackbar("Roll Vel", "Control", &gain_roll_vel, 2000);
+    createTrackbar("Roll Acc", "Control", &gain_roll_acc, 100);
+    createTrackbar("Roll I", "Control", &gain_roll_i, 100);
+    createTrackbar("Pitch Pos", "Control", &gain_pitch_pos, 3000);
+    createTrackbar("Pitch Vel", "Control", &gain_pitch_vel, 2000);
+    createTrackbar("Pitch Acc", "Control", &gain_pitch_acc, 100);
+    createTrackbar("Pitch I", "Control", &gain_pitch_i, 100);
 #endif
     initialized = true;
 }
@@ -96,23 +68,22 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
     process_joystick();
 #endif
 
-
     // Roll Control - X
     posErrX = data.sposX - setpoint_pos.x;              // position error
     if (posErrX>3.0f)
         posErrX = 3.0f;
     if (posErrX<-3.0f)
         posErrX = -3.0f;
-    velx_sp = posErrX*params.roll_Pos/1000.f;           // desired velocity
+    velx_sp = posErrX*gain_roll_pos/1000.f;           // desired velocity
     velErrX = data.svelX + velx_sp - setpoint_vel.x;    // velocity error
-    accx_sp = velErrX*params.roll_Vel/100;              // desired acceleration
+    accx_sp = velErrX*gain_roll_vel/100;              // desired acceleration
     accErrX = data.saccX + accx_sp - setpoint_acc.x;    // acceleration error
 
     // Altitude Control - Y
     posErrY = data.sposY - setpoint_pos.y;              // position error
-    vely_sp = posErrY*params.throttle_Pos/1000.f;       // (inversed) desired velocity
+    vely_sp = posErrY*gain_throttle_pos/1000.f;       // (inversed) desired velocity
     velErrY = data.svelY + vely_sp - setpoint_vel.y;    // velocity error
-    accy_sp = velErrY*params.throttle_Vel/100;          // (inversed) desired acceleration
+    accy_sp = velErrY*gain_throttle_vel/100;          // (inversed) desired acceleration
     accErrY = data.saccY + accy_sp;// - setpoint_acc.y;    // acceleration error
 
     float tmptbf = throttle_bank_factor; // if we are higher then the target, use the fact more attitude makes us go down
@@ -126,17 +97,17 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
         posErrZ = 1.5f;
     if (posErrZ<-1.5f)
         posErrZ = -1.5f;
-    velz_sp = posErrZ*params.pitch_Pos/1000.f;          // desired velocity
+    velz_sp = posErrZ*gain_pitch_pos/1000.f;          // desired velocity
     velErrZ = data.svelZ + velz_sp - setpoint_vel.z;    // velocity error
-    accz_sp = velErrZ*params.pitch_Vel/100;             // desired acceleration
+    accz_sp = velErrZ*gain_pitch_vel/100;             // desired acceleration
     accErrZ = data.saccZ + accz_sp - setpoint_acc.z;    // acceleration error
 
     //when tuning, reset integrators when I gain set to 0:
-    if (params.throttleI < 1)
+    if (gain_throttle_i < 1)
         throttleErrI = 0;
-    if (params.rollI < 1)
+    if (gain_roll_i < 1)
         rollErrI = 0;
-    if (params.pitchI < 1)
+    if (gain_pitch_i < 1)
         pitchErrI = 0;
 
     int throttle,roll,pitch,yaw;
@@ -146,9 +117,6 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
         rollErrI = 0;
         pitchErrI = 0;
         throttleErrI = 0;
-
-        if (!hoverthrottleInitialized)
-            hoverthrottle = INITIAL_HOVER_THROTTLE;
         throttle = joyThrottle;
         autoThrottle = JOY_BOUND_MIN;
         roll = joyRoll;
@@ -163,13 +131,8 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
         throttleErrI = 0;
         _flight_mode = fm_take_off_max_burn;
     } FALLTHROUGH_INTENDED; case fm_take_off_max_burn : {
-        autoThrottle = JOY_BOUND_MAX;
-        if (!hoverthrottleInitialized)
-            hoverthrottle  +=params.autoTakeoffFactor;
-        if (hoverthrottle < min_throttle)
-            hoverthrottle = min_throttle;
-
         //only control throttle:
+        autoThrottle = JOY_BOUND_MAX;
         throttle = autoThrottle;
         roll = JOY_MIDDLE;
         pitch = PITCH_MIDDLE;
@@ -198,8 +161,8 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
         if (fabs(posErrZ)<integratorThresholdDistance)
             pitchErrI += posErrZ;
 
-        autoThrottle =  hoverthrottle + take_off_throttle_boost - (accErrY * params.throttle_Acc + throttleErrI * params.throttleI*0.1f);
-        autoRoll =  accErrX * params.roll_Acc;
+        autoThrottle =  hoverthrottle + take_off_throttle_boost - (accErrY * gain_throttle_acc + throttleErrI * gain_throttle_i*0.1f);
+        autoRoll =  accErrX * gain_roll_acc;
 
         float depth_gain = 1;
         if (-data.sposZ - 2 > 0) // if further then 2 meters
@@ -207,15 +170,15 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
         else // closer then 2 meters, do nothing:
             depth_gain = 1;
 
-        autoPitch = accErrZ * static_cast<float>(params.pitch_Acc) / depth_gain;
+        autoPitch = accErrZ * static_cast<float>(gain_pitch_acc) / depth_gain;
 
         if (fabs(autoRoll) > fabs(autoPitch))
             autoThrottle += tmptbf*abs(autoRoll);
         else
             autoThrottle += tmptbf*abs(autoPitch);
 
-        autoRoll    += JOY_MIDDLE + (params.rollI*rollErrI);
-        autoPitch   += PITCH_MIDDLE + (params.pitchI*pitchErrI);
+        autoRoll    += JOY_MIDDLE + (gain_roll_i*rollErrI);
+        autoPitch   += PITCH_MIDDLE + (gain_pitch_i*pitchErrI);
 
         //int minThrottle = 1300 + min(abs(autoRoll-1500)/10,50) + min(abs(autoPitch-1500)/10,50);
         if (autoThrottle<min_throttle)
@@ -228,18 +191,11 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
         pitch = autoPitch;
         break;
     } case fm_landing : {
-
-        //fix integrators
-
         //slowly decrease throttle
-        autoThrottle = hoverthrottle + take_off_throttle_boost - (accErrY * params.throttle_Acc + throttleErrI * params.throttleI*0.1f);
-
+        autoThrottle = hoverthrottle + take_off_throttle_boost - (accErrY * gain_throttle_acc + throttleErrI * gain_throttle_i*0.1f);
         //same as fm_flying:
-        autoRoll =  JOY_MIDDLE + (accErrX * params.roll_Acc +  params.rollI*rollErrI);
-        autoPitch = PITCH_MIDDLE + (accErrZ * params.pitch_Acc +  params.pitchI*pitchErrI);
-
-        if (!hoverthrottleInitialized)
-            hoverthrottle = INITIAL_HOVER_THROTTLE;
+        autoRoll =  JOY_MIDDLE + (accErrX * gain_roll_acc +  gain_roll_i*rollErrI);
+        autoPitch = PITCH_MIDDLE + (accErrZ * gain_pitch_acc +  gain_pitch_i*pitchErrI);
         throttle = autoThrottle ;
         roll = autoRoll;
         pitch = autoPitch;
@@ -249,10 +205,6 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
         rollErrI = 0;
         pitchErrI = 0;
         throttleErrI = 0;
-
-        if (!hoverthrottleInitialized)
-            hoverthrottle = INITIAL_HOVER_THROTTLE;
-
         throttle = INITIALTHROTTLE;
         roll = JOY_MIDDLE;
         pitch = JOY_MIDDLE;
@@ -263,10 +215,6 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
         rollErrI = 0;
         pitchErrI = 0;
         throttleErrI = 0;
-
-        if (!hoverthrottleInitialized)
-            hoverthrottle = INITIAL_HOVER_THROTTLE;
-
         throttle = INITIALTHROTTLE;
         roll = JOY_MIDDLE;
         pitch = JOY_MIDDLE;
@@ -277,10 +225,6 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
         rollErrI = 0;
         pitchErrI = 0;
         throttleErrI = 0;
-
-        if (!hoverthrottleInitialized)
-            hoverthrottle = INITIAL_HOVER_THROTTLE;
-
         throttle = INITIALTHROTTLE;
         roll = JOY_MIDDLE;
         pitch = JOY_MIDDLE;
@@ -289,7 +233,7 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
     }
     }
 
-    yaw = joyYaw; // tmp until auto yaw control is fixed
+    yaw = joyYaw; // tmp until auto yaw control is fixed #10
 
     throttle = bound_joystick_value(throttle);
     roll = bound_joystick_value(roll);
@@ -327,9 +271,6 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
                   static_cast<int>(_joy_arm_switch) << "; " <<
                   static_cast<int>(_joy_mode_switch) << "; " <<
                   static_cast<int>(_joy_takeoff_switch) << "; " <<
-                  params.throttle_Pos << "; " <<
-                  params.throttleI << "; " <<
-                  params.throttle_Acc << "; " <<
                   data.dt << "; " <<
                   data.dx << "; " <<
                   data.dy << "; " <<
@@ -552,17 +493,71 @@ void DroneController::process_joystick() {
 }
 
 void DroneController::recalibrateHover() {
-//    hoverthrottle = hoverthrottle - (throttleErrI*params.throttleI*0.1f);
-//    throttleErrI = 0;
-    hoverthrottleInitialized = true;
+    hoverthrottle = hoverthrottle - (throttleErrI*gain_throttle_i*0.1f);
+    throttleErrI = 0;
+}
+
+void DroneController::deserialize_settings() {
+    std::cout << "Reading settings from: " << settings_file << std::endl;
+    ControlParameters params;
+    if (checkFileExist(settings_file)) {
+        std::ifstream infile(settings_file);
+        std::string xmlData((std::istreambuf_iterator<char>(infile)),
+                            std::istreambuf_iterator<char>());
+
+        if (!xmls::Serializable::fromXML(xmlData, &params))
+        { // Deserialization not successful
+            throw my_exit("Cannot read: " + settings_file);
+        }
+        ControlParameters tmp;
+        auto v1 = params.getVersion();
+        auto v2 = tmp.getVersion();
+        if (v1 != v2) {
+            throw my_exit("XML version difference detected from " + settings_file);
+        }
+    } else {
+        throw my_exit("File not found: " + settings_file);
+    }
+
+    gain_throttle_pos = params.gain_throttle_pos.value();
+    gain_throttle_vel = params.gain_throttle_vel.value();
+    gain_throttle_acc = params.gain_throttle_acc.value();
+    gain_throttle_i = params.gain_throttle_i.value();
+    gain_roll_pos = params.gain_roll_pos.value();
+    gain_roll_vel = params.gain_roll_vel.value();
+    gain_roll_acc = params.gain_roll_acc.value();
+    gain_roll_i = params.gain_roll_i.value();
+    gain_pitch_pos = params.gain_pitch_pos.value();
+    gain_pitch_vel = params.gain_pitch_vel.value();
+    gain_pitch_acc = params.gain_pitch_acc.value();
+    gain_pitch_i = params.gain_pitch_i.value();
+}
+
+void DroneController::serialize_settings() {
+    ControlParameters params;
+    params.gain_throttle_pos = gain_throttle_pos;
+    params.gain_throttle_vel = gain_throttle_vel;
+    params.gain_throttle_acc = gain_throttle_acc;
+    params.gain_throttle_i = gain_throttle_i;
+    params.gain_roll_pos = gain_roll_pos;
+    params.gain_roll_vel = gain_roll_vel;
+    params.gain_roll_acc = gain_roll_acc;
+    params.gain_roll_i = gain_roll_i;
+    params.gain_pitch_pos = gain_pitch_pos;
+    params.gain_pitch_vel = gain_pitch_vel;
+    params.gain_pitch_acc = gain_pitch_acc;
+    params.gain_pitch_i = gain_pitch_i;
+
+    std::string xmlData = params.toXML();
+    std::ofstream outfile = std::ofstream (settings_file);
+    outfile << xmlData ;
+    outfile.close();
 }
 
 void DroneController::close () {
     if (initialized) {
         std::cout << "closing controller" << std::endl;
-        std::ofstream os(paramsFile, std::ios::binary);
-        cereal::BinaryOutputArchive archive( os );
-        archive( params );
+        serialize_settings();
         initialized = false;
     }
 }
