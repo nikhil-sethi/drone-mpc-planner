@@ -1,6 +1,6 @@
 # PATS
 
-
+## Converting videos
 Convert first 10s videoLR.avi:  
 `find -iname videoRawLR.avi -exec ffmpeg -i {} -ss 00:00:00 -to 00:00:10 -c:v copy {}_first10s.mp4 \;` 
 
@@ -16,7 +16,7 @@ Re-encode color result video's (not necessary anymore):
 `find -iname videoResult.avi -exec ffmpeg -i {} -f matroska -c:v libvpx -crf 21 -b:v 15M {}.mkv \;` 
 
 
-Installing new keys:  
+## Installing new keys:  
 `ssh-keygen -t rsa -b 4096 -C "pats@pats.com"`  
 `ssh-copy-id -i ~/.ssh/pats_id_rsa.pub patsX`  
 To use the key on a new computer:  
