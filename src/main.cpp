@@ -261,7 +261,8 @@ void process_frame(Stereo_Frame_Data data) {
     visualizer.addPlotSample();
     visualizer.update_tracker_data(visdat.frameL,dnav.setpoint,data.time);
 #if VIDEORESULTS
-    output_video_results.block(); // only use this for rendering
+    if (fromfile)
+        output_video_results.block(); // only use this for rendering
     output_video_results.write(visualizer.trackframe);
 #endif
 #endif

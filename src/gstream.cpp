@@ -189,7 +189,7 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
             if (color) {
                 g_object_set (G_OBJECT (_appsrc), "caps",
                               gst_caps_new_simple ("video/x-raw",
-                                                   "format", G_TYPE_STRING, "RGB",
+                                                   "format", G_TYPE_STRING, "BGR",
                                                    "width", G_TYPE_INT, sizeX,
                                                    "height", G_TYPE_INT, sizeY,
                                                    "framerate", GST_TYPE_FRACTION, gstream_fps, 1,NULL), NULL);
@@ -209,21 +209,27 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
 
             conv = gst_element_factory_make ("videoconvert", "conv");
 
-#ifdef _PC
-            //                        encoder = gst_element_factory_make ("x264enc", "encoder");
-            //                        g_object_set (G_OBJECT (encoder),  "speed-preset", 1 ,"bitrate", 2048, "tune", 0x00000004,NULL);
-            encoder = gst_element_factory_make ("vaapih264enc", "encoder");
-#else
+            //for compatibility with play back on e.g. phones, we need to have yuv420p
+            //this does not seem to be necessary for streaming between computers
+            capsfilter = gst_element_factory_make ("capsfilter", NULL);
+            //if (color) {
+            //    g_object_set (G_OBJECT (capsfilter), "caps",
+            //                  gst_caps_new_simple ("video/x-raw",
+            //                                       "format", G_TYPE_STRING, "I420",
+            //                                       NULL), NULL);
+            ///}
+
             encoder = gst_element_factory_make ("x264enc", "encoder");
-#endif
+            g_object_set (G_OBJECT (encoder),  "speed-preset", 1 ,"bitrate", 1000, NULL);
+            // encoder = gst_element_factory_make ("vaapih264enc", "encoder");
 
             rtp = gst_element_factory_make ("rtph264pay", "rtp");
 
             videosink = gst_element_factory_make ("udpsink", "videosink");
             g_object_set (G_OBJECT (videosink), "host", ip.c_str(), "port", port, NULL);
 
-            gst_bin_add_many (GST_BIN (_pipeline), _appsrc, rate,caps_rate ,conv, encoder, rtp, videosink, NULL);
-            gst_element_link_many (_appsrc, rate,caps_rate ,conv, encoder,rtp, videosink, NULL);
+            gst_bin_add_many (GST_BIN (_pipeline), _appsrc, rate,caps_rate ,conv, capsfilter, encoder, rtp, videosink, NULL);
+            gst_element_link_many (_appsrc, rate,caps_rate ,conv, capsfilter, encoder,rtp, videosink, NULL);
         }
 
         /* play */
