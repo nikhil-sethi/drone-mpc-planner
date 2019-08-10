@@ -18,4 +18,16 @@ Re-encode color result video's (not necessary anymore):
 
 Installing new keys:  
 `ssh-keygen -t rsa -b 4096 -C "pats@pats.com"`  
-`ssh-copy-id -i ~/.ssh/pats_id_rsa.pub patsX`
+`ssh-copy-id -i ~/.ssh/pats_id_rsa.pub patsX`  
+To use the key on a new computer:  
+`ssh-add ~/.ssh/pats_id_rsa`  
+And add it to the ssh config, eg:  
+```
+Host pats1
+	Hostname localhost
+	IdentityFile ~/.ssh/pats_id_rsa
+	User pats
+	ProxyJump mavlab-gpu
+	Port 6100
+```  
+
