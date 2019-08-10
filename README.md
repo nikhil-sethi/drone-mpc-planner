@@ -16,3 +16,7 @@ Re-encode color result video's (not necessary anymore):
 
 `find -iname videoResult.avi -exec ffmpeg -i {} -f matroska -c:v libvpx -crf 21 -b:v 15M {}.mkv \;`
 
+
+Installing new keys:
+`ssh-keygen -t rsa -b 4096 -C "pats@pats.com"`
+`ssh-copy-id -i ~/.ssh/pats_id_rsa.pub patsX`
