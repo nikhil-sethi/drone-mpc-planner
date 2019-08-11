@@ -455,7 +455,7 @@ void init_loggers() {
     std::string data_in_dir = "";
     if (main_argc ==2 ) {
         string fn = string(main_argv[1]);
-        logreader.init(fn + "/test.log",false);
+        logreader.init(fn + "/log.csv",false);
         fromfile = log_mode_full;
         data_in_dir = fn;
     }
@@ -463,9 +463,9 @@ void init_loggers() {
     mkdir("./logging/", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     cout << "data_output_dir: " << data_output_dir << endl;
     if (fromfile==log_mode_full)
-        logger.open(data_output_dir  + "test_fromfile.log",std::ofstream::out);
+        logger.open(data_output_dir  + "log_regenerated.csv",std::ofstream::out);
     else {
-        logger.open(data_output_dir  + "test.log",std::ofstream::out);
+        logger.open(data_output_dir  + "log.csv",std::ofstream::out);
     }
 
     logger << "ID;RS_ID;time;insect_log;";
