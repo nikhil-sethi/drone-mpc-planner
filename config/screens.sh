@@ -16,6 +16,8 @@ i=$(($i + 1))
 i=$(($i + 1))
 /usr/bin/screen -t config $i /bin/bash -c 'cd ~/code/pats/config; exec /bin/bash'
 i=$(($i + 1))
+/usr/bin/screen -t src $i /bin/bash -c 'cd ~/code/pats/src; exec /bin/bash'
+i=$(($i + 1))
 /usr/bin/screen -t build $i /bin/bash -c 'cd ~/code/pats/pc/build; exec /bin/bash'
 i=$(($i + 1))
 /usr/bin/screen -t data $i /bin/bash -c 'cd ~/data; exec /bin/bash'
