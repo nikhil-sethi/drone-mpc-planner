@@ -25,10 +25,11 @@ private:
     int stream_resize_f = 1;
     int gstream_fps;
     int max_gstream_fps = 30;
+    bool initialised = false;
 
 
 public:
-    int init(int argc, char **argv, int mode, std::string file, int sizeX, int sizeY, int fps, std::string ip, int port, bool color);
+    int init(int argc, char **argv, int mode, std::string file, int sizeX, int sizeY, int fps, std::string ip, int port, bool color, bool render_hq);
     int write(cv::Mat frame);
     int write(cv::Mat frameL,cv::Mat frameR);
     void close (void);

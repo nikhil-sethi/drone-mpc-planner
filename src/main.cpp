@@ -56,7 +56,10 @@ using namespace std;
 /***********Variables****************/
 unsigned char key = 0;
 int imgcount,detectcount; // to measure fps
-GStream output_video_results,output_video_LR;
+GStream output_video_results,output_video_LR,output_video_cuts;
+
+int main_argc;
+char **main_argv;
 
 stopwatch_c stopWatch_break;
 stopwatch_c stopWatch;
@@ -164,17 +167,50 @@ void process_video() {
         tp[0].new_data.notify_one();
         tp[0].m1.unlock();
 
-        static bool new_recording = false;
+        static bool recording = false;
+        static bool was_recording = false;
+        static int insect_cnt = 0;
         double dtr = data.time - trackers.insecttracker()->last_sighting_time;
-        if (dtr > 1 && new_recording) {
-            new_recording = false;
+        if (dtr > 1 && recording) {
+            recording = false;
             auto time_insect_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
             logger_insect << "New detection ended at: " << std::put_time(std::localtime(&time_insect_now), "%Y/%m/%d %T") << " Duration: " << dtr << " End cam frame number: " <<  cam.frame_number() << std::endl;
         }
+        if ((trackers.insecttracker()->tracking() || dtr < 1) && data.time > 5) {
+            recording = true;
+        }
 
+#if VIDEOCUTS
+        if (cam.frame_number() / 2 && cam.frame_number() % 2) {
+            if (recording != was_recording) {
+                if (recording) { // new video
+                    insect_cnt++;
+                    std::string cvfn = "insect" + to_string(insect_cnt) + ".mp4";
+                    std::cout << "Opening new video: " << cvfn << std::endl;
+                    if (output_video_cuts.init(main_argc,main_argv,VIDEOCUTS,data_output_dir + cvfn,IMG_W*2,IMG_H,VIDEOFPS/2, "192.168.1.255",5000,true,false)) {std::cout << "WARNING: could not open cut video " << cvfn << std::endl;}
+                } else if (insect_cnt>0){
+                    output_video_cuts.close();
+                }
+                was_recording = recording;
+            }
+
+            if (recording){
+                static int cut_video_frame_counter = 0;
+
+                cv::Mat frame(cam.frameL.rows,cam.frameL.cols+trackers.diff_viz.cols,CV_8UC3);
+                cvtColor(cam.frameL,frame(cv::Rect(0,0,cam.frameL.cols, cam.frameL.rows)),CV_GRAY2BGR);
+                trackers.diff_viz.copyTo(frame(cv::Rect(cam.frameL.cols,0,trackers.diff_viz.cols, trackers.diff_viz.rows)));
+                cv::putText(frame,std::to_string(cam.frame_number()) + ": " + to_string_with_precision( cam.frame_time(),2),cv::Point(trackers.diff_viz.cols, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,0,255));
+                int frameWritten = output_video_cuts.write(frame);
+                if (!frameWritten)
+                    cut_video_frame_counter++;
+                std::cout << "Recording! Frames written: " << cut_video_frame_counter << std::endl;
+            }
+        }
+#endif
 #if VIDEORAWLR && VIDEORAWLR != VIDEOMODE_BAG
         int frameWritten = 0;
-        if ((trackers.insecttracker()->tracking() || dtr < 1) && data.time > 5) {
+        if (recording) {
             cv::Mat frameL  =cam.frameL.clone();
             cv::putText(frameL,std::to_string(cam.frame_number()),cv::Point(0, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,255);
             frameWritten = output_video_LR.write(frameL,cam.frameR);
@@ -184,7 +220,7 @@ void process_video() {
             else {
                 std::cout << "PROBLEM: " << frameWritten << std::endl;
             }
-            new_recording = true;
+
             std::cout << "Recording! Frames written: " << video_frame_counter << std::endl;
         }
 #endif
@@ -415,10 +451,10 @@ void init_sig(){
     sigaction(SIGINT, &sigIntHandler, NULL);
 }
 
-void init_loggers(int argc, char **argv) {
+void init_loggers() {
     std::string data_in_dir = "";
-    if (argc ==2 ) {
-        string fn = string(argv[1]);
+    if (main_argc ==2 ) {
+        string fn = string(main_argv[1]);
         logreader.init(fn + "/test.log",false);
         fromfile = log_mode_full;
         data_in_dir = fn;
@@ -437,19 +473,22 @@ void init_loggers(int argc, char **argv) {
     logger_insect.open(data_output_dir  + "insect.log",std::ofstream::out);
 }
 
-void init_video_recorders(int argc __attribute__((unused)), char **argv __attribute__((unused))) {
+void init_video_recorders() {
     /*****init the video writer*****/
 #if VIDEORESULTS
-    if (output_video_results.init(argc,argv,VIDEORESULTS, data_output_dir + "videoResult.mp4",visualizer.viz_frame_size().width,visualizer.viz_frame_size().height,VIDEOFPS,"192.168.1.255",5000,true)) {throw my_exit("could not open results video");}
+    if (output_video_results.init(main_argc,main_argv,VIDEORESULTS, data_output_dir + "videoResult.mp4",visualizer.viz_frame_size().width,visualizer.viz_frame_size().height,VIDEOFPS,"192.168.1.255",5000,true,true)) {throw my_exit("could not open results video");}
 #endif
 #if VIDEORAWLR && VIDEORAWLR != VIDEOMODE_BAG
-    if (output_video_LR.init(argc,argv,VIDEORAWLR,data_output_dir + "videoRawLR.mp4",IMG_W*2,IMG_H,VIDEOFPS, "192.168.1.255",5000,false)) {throw my_exit("could not open LR video");}
+    if (output_video_LR.init(main_argc,main_argv,VIDEORAWLR,data_output_dir + "videoRawLR.mp4",IMG_W*2,IMG_H,VIDEOFPS, "192.168.1.255",5000,false,false)) {throw my_exit("could not open LR video");}
 #endif
 }
 
 void init(int argc, char **argv) {
 
-    init_loggers(argc,argv);
+    main_argc = argc;
+    main_argv = argv;
+
+    init_loggers();
 
 #ifdef HASGUI
     gui.init(argc,argv);
@@ -493,7 +532,7 @@ void init(int argc, char **argv) {
         visualizer.first_take_off_time = logreader.first_takeoff_time();
 #endif
 
-    init_video_recorders(argc,argv);
+    init_video_recorders();
 
     init_thread_pool();
 
@@ -528,6 +567,9 @@ void close() {
 #endif
 #if VIDEORAWLR && VIDEORAWLR != VIDEOMODE_BAG
     output_video_LR.close();
+#endif
+#if VIDEOCUTS
+    output_video_cuts.close();
 #endif
 
     if (fromfile)

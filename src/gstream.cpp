@@ -64,7 +64,7 @@ static void cb_need_data (GstElement *appsrc __attribute__((unused)), guint unus
 void GStream::block(){    wait_for_want.lock();
                      }
 
-int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, int sizeY,int fps, std::string ip, int port, bool color) {
+int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, int sizeY,int fps, std::string ip, int port, bool color, bool render_hq) {
     videomode = mode;
     gstream_fps  =fps;
     wait_for_want.unlock();
@@ -93,6 +93,7 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
             std::cerr << "Output result video could not be opened!" << std::endl;
             return 1;
         }
+        initialised = true;
         return 0;
 
     } else {
@@ -153,14 +154,22 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
                                                    "format", G_TYPE_STRING, "I420",
                                                    NULL), NULL);
             }
+            int render_quality = 1;
+            int bitrate = 8192;
+            if (render_hq) {
+                render_quality = 7;
+                bitrate = 32768;
+            }
+            if (!color)
+                bitrate/=2;
 
             //the vaapi encoder uses way less CPU
             //encoder = gst_element_factory_make ("vaapih264enc", "encoder"); // hardware encoding
              encoder = gst_element_factory_make ("x264enc", "encoder"); // soft encoder
              if (color)
-                 g_object_set (G_OBJECT (encoder),  "speed-preset", 7,"bitrate", 32000, NULL);
+                 g_object_set (G_OBJECT (encoder),  "speed-preset", render_quality,"bitrate", bitrate, NULL);
              else
-                 g_object_set (G_OBJECT (encoder),  "speed-preset", 1,"bitrate", 16384, NULL);
+                 g_object_set (G_OBJECT (encoder),  "speed-preset", render_quality,"bitrate", bitrate, NULL);
 
             //preferably we would end up with an mp4 file, because phones understand that
             mux = gst_element_factory_make ("mp4mux", "mux");
@@ -243,6 +252,7 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
         }
 
         stopwatch.Start();
+        initialised = true;
         return 0;
     }
 }
@@ -328,28 +338,31 @@ int GStream::write(cv::Mat frame) {
 }
 
 void GStream::close () {
-    std::cout << "Closing video recorder" << std::endl;
-    if (videomode != VIDEOMODE_AVI_OPENCV) {
-        gst_element_send_event(_pipeline,gst_event_new_eos());
-        GstClockTime timeout = 10 * GST_SECOND;
-        GstMessage *msg;
+    if (initialised){
+        std::cout << "Closing video recorder" << std::endl;
+        if (videomode != VIDEOMODE_AVI_OPENCV) {
+            gst_element_send_event(_pipeline,gst_event_new_eos());
+            GstClockTime timeout = 10 * GST_SECOND;
+            GstMessage *msg;
 
-        std::cout << "Waiting for EOS..." << std::endl;
-        msg = gst_bus_timed_pop_filtered (GST_ELEMENT_BUS (_pipeline),
-            timeout,static_cast<GstMessageType>(GST_MESSAGE_EOS | GST_MESSAGE_ERROR));
+            std::cout << "Waiting for EOS..." << std::endl;
+            msg = gst_bus_timed_pop_filtered (GST_ELEMENT_BUS (_pipeline),
+                                              timeout,static_cast<GstMessageType>(GST_MESSAGE_EOS | GST_MESSAGE_ERROR));
 
-        if (msg == NULL) {
-          std::cout << "Error: gstreamer videorecorder did not get an EOS after 10 seconds!" << std::endl;
-        } else if (GST_MESSAGE_TYPE (msg) == GST_MESSAGE_ERROR) {
-          std::cout << "Error: gstreamer" << msg->type <<  std::endl;
+            if (msg == NULL) {
+                std::cout << "Error: gstreamer videorecorder did not get an EOS after 10 seconds!" << std::endl;
+            } else if (GST_MESSAGE_TYPE (msg) == GST_MESSAGE_ERROR) {
+                std::cout << "Error: gstreamer" << msg->type <<  std::endl;
+            }
+
+            if (msg)
+                gst_message_unref (msg);
+
+            gst_element_set_state (_pipeline, GST_STATE_NULL);
+            gst_object_unref (GST_OBJECT (_pipeline));
         }
-
-        if (msg)
-          gst_message_unref (msg);
-
-        gst_element_set_state (_pipeline, GST_STATE_NULL);
-        gst_object_unref (GST_OBJECT (_pipeline));
+        std::cout << "Average gstream video (processing) fps: " << want_cnt / (stopwatch.Read()*0.001f) << std::endl;
+        //max_stream_fps can be lower!
+        initialised = false;
     }
-    std::cout << "Average gstream video (processing) fps: " << want_cnt / (stopwatch.Read()*0.001f) << std::endl;
-    //max_stream_fps can be lower!
 }

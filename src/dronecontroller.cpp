@@ -22,7 +22,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     (*_logger) << "valid; posErrX; posErrY; posErrZ; velX; velY; velZ; accX; accY; accZ; hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; joyThrottle; joyRoll; joyPitch; joyYaw; joyArmSwitch; joyModeSwitch; joyTakeoffSwitch; dt; dx; dy; dz; velx_sp; vely_sp; velz_sp;";
     std::cout << "Initialising control." << std::endl;
 
-    if (DRONE_TYPE == DRONE_TRASHCAN)
+    if (DRONE_TYPE == DRONE_TRASHCAN || DRONE_TYPE == DRONE_NONE)
         settings_file = "../control_tc.xml";
     else if (DRONE_TYPE == DRONE_TINYWHOOP_BLACK || DRONE_TYPE == DRONE_TINYWHOOP_GREEN)
         settings_file = "../control_tw.xml";

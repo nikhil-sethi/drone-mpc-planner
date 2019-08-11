@@ -9,6 +9,9 @@ void TrackerManager::init(std::ofstream *logger,VisionData *visdat){
     enable_viz_max_points = false;
     enable_viz_diff = true;
 #endif
+#if VIDEOCUTS
+    enable_viz_diff = true;
+#endif
     deserialize_settings();
 
     //we have a bit of a situation with the order of initializing the trackers, as this MUST be in the same order as how they are called
