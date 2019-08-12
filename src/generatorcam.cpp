@@ -19,8 +19,8 @@ bool GeneratorCam::init () {
     Qf = (cv::Mat_<double>(4, 4) << 1.0, 0.0, 0.0, -cx, 0.0, 1.0, 0.0, -cy, 0.0, 0.0, 0.0, focal_length, 0.0, 0.0, 1/baseline, 0.0);
     _mode = cam_mode_stereo;
 
-    drone.x = DRONE_IM_X_START*IMSCALEF;
-    drone.y = DRONE_IM_Y_START*IMSCALEF;
+    drone.x = DRONE_IM_X_START*pparams.imscalef;
+    drone.y = DRONE_IM_Y_START*pparams.imscalef;
     insect.x = 245;
     insect.y = 0;
 
@@ -69,11 +69,11 @@ void GeneratorCam::update() {
     _frame_number++;
 
 
-    while(gen_stopw.Read() < (1.f/VIDEOFPS)*1e3f){
+    while(gen_stopw.Read() < (1.f/pparams.fps)*1e3f){
         usleep(10);
     }
 
-//    float delay = VIDEOFPS;
+//    float delay = pparams.fps;
 //    delay = 1/delay;
 //    delay *=1e6f;
 //    usleep(delay);
@@ -92,10 +92,10 @@ void GeneratorCam::generateStereo() {
 //    static bool bounce = -1;
 //    drone.x = (drone.x + bounce ) % (IMG_W-3);
 //    drone.y = (drone.y + bounce ) % (IMG_H-3);
-    drone.x = DRONE_IM_X_START*IMSCALEF ;//+ sinf(static_cast<float>(frame_id_stereo-2)/100.f)*100 ;
-    drone.y = DRONE_IM_Y_START*IMSCALEF ;//+ cosf(static_cast<float>(frame_id_stereo-2)/100.f)*100 - 100;
+    drone.x = DRONE_IM_X_START*pparams.imscalef ;//+ sinf(static_cast<float>(frame_id_stereo-2)/100.f)*100 ;
+    drone.y = DRONE_IM_Y_START*pparams.imscalef ;//+ cosf(static_cast<float>(frame_id_stereo-2)/100.f)*100 - 100;
 
-    std::cout << "Generated drone location: [" << drone.x/IMSCALEF << "," << drone.y/IMSCALEF << "]" << std::endl;
+    std::cout << "Generated drone location: [" << drone.x/pparams.imscalef << "," << drone.y/pparams.imscalef << "]" << std::endl;
 
     insect.x = (insect.x + 1 ) % (IMG_W-1);
     insect.y = (insect.y + 1 ) % (IMG_H-1);

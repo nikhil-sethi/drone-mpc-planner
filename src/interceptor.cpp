@@ -4,6 +4,7 @@
 void Interceptor::init(TrackerManager * trackers, VisionData * visdat) {
     _trackers = trackers;
     _visdat = visdat;
+    insect_cleared_timeout = pparams.fps*0.5f;
 }
 void Interceptor::update(bool drone_at_base) {
 

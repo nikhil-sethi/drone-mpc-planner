@@ -2,7 +2,7 @@
 #define GENERATORCAM_H
 #include "defines.h"
 #include <opencv2/highgui/highgui.hpp>
-
+#include "common.h"
 
 class GeneratorCam {
 
@@ -17,7 +17,7 @@ public:
     void go_color();
     void go_disabled();
     int frame_number() {return _frame_number;}
-    float frame_time() {return _frame_number * (1.f/VIDEOFPS);}
+    float frame_time() {return _frame_number * (1.f/pparams.fps);}
     float camera_angle(){return 35.f;}
 
     void close (void);

@@ -4,10 +4,6 @@
 using namespace cv;
 using namespace std;
 
-#ifdef HASSCREEN
-//#define TUNING
-#endif
-
 void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, DroneController * dctrl, VisionData *visdat) {
     _logger = logger;
     _trackers = trackers;
@@ -36,20 +32,19 @@ void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, Dro
 
     setpoints.push_back(landing_waypoint());
 
-#ifdef TUNING
-    namedWindow("Nav", WINDOW_NORMAL);
-    //    createTrackbar("X [mm]", "Nav", &setpoint_slider_X, SETPOINTXMAX);
-    //    createTrackbar("Y [mm]", "Nav", &setpoint_slider_Y, SETPOINTYMAX);
-    //    createTrackbar("Z [mm]", "Nav", &setpoint_slider_Z, SETPOINTZMAX);
-    createTrackbar("WP id", "Nav", reinterpret_cast<int*>(wpid), setpoints.size()-1);
-    createTrackbar("d threshold factor", "Nav", &distance_threshold_f, 10);
-    createTrackbar("land_incr_f_mm", "Nav", &land_incr_f_mm, 50);
-    createTrackbar("Land Decrease  ", "Nav", &autoLandThrottleDecreaseFactor, 50);
-#endif
+    if (pparams.navigation_tuning) {
+        namedWindow("Nav", WINDOW_NORMAL);
+        //    createTrackbar("X [mm]", "Nav", &setpoint_slider_X, SETPOINTXMAX);
+        //    createTrackbar("Y [mm]", "Nav", &setpoint_slider_Y, SETPOINTYMAX);
+        //    createTrackbar("Z [mm]", "Nav", &setpoint_slider_Z, SETPOINTZMAX);
+        createTrackbar("WP id", "Nav", reinterpret_cast<int*>(wpid), setpoints.size()-1);
+        createTrackbar("d threshold factor", "Nav", &distance_threshold_f, 10);
+        createTrackbar("land_incr_f_mm", "Nav", &land_incr_f_mm, 50);
+        createTrackbar("Land Decrease  ", "Nav", &autoLandThrottleDecreaseFactor, 50);
+    }
 
-#ifdef INSECT_LOGGING_MODE
-    _navigation_status = ns_wait_for_insect;
-#endif
+    if (pparams.insect_logging_mode)
+        _navigation_status = ns_wait_for_insect;
 
     initialized = true;
 }
@@ -78,17 +73,15 @@ void DroneNavigation::update(double time) {
         repeat  = false;
         switch (_navigation_status) {
         case ns_init: {
-#if DRONE_TYPE == DRONE_TRASHCAN
-            _dctrl->LED(true);
-#endif
+            if (pparams.drone == drone_trashcan)
+                _dctrl->LED(true);
             if (time > 1) // skip the first second or so, e.g. auto exposure may give heavily changing images
                 _navigation_status = ns_locate_drone;
             _trackers->mode(TrackerManager::mode_idle);
             break;
         } case ns_locate_drone: {
-#if DRONE_TYPE != DRONE_TRASHCAN
-            _dctrl->blink_by_binding(true);
-#endif
+            if(pparams.drone != drone_trashcan)
+                _dctrl->blink_by_binding(true);
             _trackers->mode(TrackerManager::mode_locate_drone);
             _visdat->reset_motion_integration();
             _visdat->disable_fading = true;
@@ -96,17 +89,17 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_wait_locate_drone: {
             static double __attribute__((unused)) prev_time = time;
-#if DRONE_TYPE != DRONE_TRASHCAN
-            if (time - prev_time > 7 && time - prev_time < 8) {
-                _dctrl->blink_by_binding(false); // refresh the blinking
-            } else if (abs(time - prev_time) > 8.5) {
-                prev_time = time;
-                _dctrl->blink_by_binding(true);
+            if (pparams.drone != drone_trashcan) {
+                if (time - prev_time > 7 && time - prev_time < 8) {
+                    _dctrl->blink_by_binding(false); // refresh the blinking
+                } else if (abs(time - prev_time) > 8.5) {
+                    prev_time = time;
+                    _dctrl->blink_by_binding(true);
+                }
+            } else {
+                if (time - prev_time > bind_blink_time)
+                    _dctrl->blink(time);
             }
-#else
-            if (time - prev_time > bind_blink_time)
-                _dctrl->blink(time);
-#endif
             if (_trackers->mode() != TrackerManager::mode_locate_drone) {
                 _navigation_status = ns_located_drone;
                 time_located_drone = time;
@@ -114,11 +107,10 @@ void DroneNavigation::update(double time) {
 
             break;
         } case ns_located_drone: {
-#if DRONE_TYPE != DRONE_TRASHCAN
-            _dctrl->blink_by_binding(false);
-#else
-            _dctrl->LED(true);
-#endif
+            if (pparams.drone != drone_trashcan)
+                _dctrl->blink_by_binding(false);
+            else
+                _dctrl->LED(true);
             _trackers->mode(TrackerManager::mode_idle);
             _visdat->disable_fading = false;
             if (time-time_located_drone>1.0) { // delay until blinking stopped
@@ -302,7 +294,7 @@ void DroneNavigation::update(double time) {
             _navigation_status = ns_wait_after_landing;
             landed_time = time;
         } FALLTHROUGH_INTENDED; case ns_wait_after_landing: {
-            _visdat->delete_from_motion_map(_trackers->dronetracker()->drone_startup_im_location()*IMSCALEF,_trackers->dronetracker()->drone_startup_im_disparity(),_trackers->dronetracker()->drone_startup_im_size()*IMSCALEF,1);
+            _visdat->delete_from_motion_map(_trackers->dronetracker()->drone_startup_im_location()*pparams.imscalef,_trackers->dronetracker()->drone_startup_im_disparity(),_trackers->dronetracker()->drone_startup_im_size()*pparams.imscalef,1);
             if (time - landed_time > time_out_after_landing )
                 _navigation_status = ns_locate_drone;
             break;

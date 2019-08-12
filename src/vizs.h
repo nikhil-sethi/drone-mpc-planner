@@ -163,9 +163,6 @@ public:
     cv::Mat saccY;
     cv::Mat saccZ;
 
-    cv::Mat autotakeoff_velY_thresh;
-
-
     cv::Size viz_frame_size() {
         return cv::Size(IMG_W*_res_mult + IMG_W,IMG_H*_res_mult+IMG_H*_res_mult/4);
     }

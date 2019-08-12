@@ -7,10 +7,6 @@
 using namespace cv;
 using namespace std;
 
-#ifdef HASSCREEN
-//#define TUNING
-#endif
-
 stopwatch_c swc;
 
 void Cam::update(void) {
@@ -22,7 +18,7 @@ void Cam::update(void) {
 
 int last_1_id =-1;
 int last_2_id =-1;
-double incremented_playback_frametime = (1.f/VIDEOFPS)/2.f;
+double incremented_playback_frametime = (1.f/pparams.fps)/2.f;
 void Cam::update_playback(void) {
 
     rs2::frameset fs;
@@ -35,15 +31,15 @@ void Cam::update_playback(void) {
     _frame_time = (fs.get_timestamp() -_frame_time_start)/1000.;
 
     double duration = static_cast<double>(static_cast<rs2::playback>(dev).get_duration().count()) / 1e9;
-     if (frame_time() > duration-0.1){
-         std::cout << "Video end, exiting" << std::endl;
-         throw bag_video_ended();
-     }
+    if (frame_time() > duration-0.1){
+        std::cout << "Video end, exiting" << std::endl;
+        throw bag_video_ended();
+    }
     frameL = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(fs.get_infrared_frame(1).get_data()), Mat::AUTO_STEP).clone();
     frameR = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(fs.get_infrared_frame(2).get_data()), Mat::AUTO_STEP).clone();
 
     if (!turbo) {
-        while(swc.Read() < (1.f/VIDEOFPS)*1e3f){
+        while(swc.Read() < (1.f/pparams.fps)*1e3f){
             usleep(10);
         }
         swc.Restart();
@@ -175,9 +171,9 @@ void Cam::init() {
 
     //record
     mkdir("./logging", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-#if VIDEORAWLR == VIDEOMODE_BAG
-    dev = rs2::recorder(bag_fn,dev);
-#endif
+    if (pparams.video_raw == video_bag)
+        dev = rs2::recorder(bag_fn,dev);
+
 
     std::cout << "Found the following device:";
 
@@ -243,7 +239,7 @@ void Cam::init() {
     //        }
     if (enable_auto_exposure == only_at_startup ) {
         exposure = _measured_exposure;
-        if (VIDEOFPS==60 && _measured_exposure>15500) //guarantee 60 FPS when requested
+        if (pparams.fps==60 && _measured_exposure>15500) //guarantee 60 FPS when requested
             exposure = 15500;
         gain = _measured_gain;
     }
@@ -271,22 +267,20 @@ void Cam::init() {
 
     rs_depth_sensor.open({infared1,infared2});
     rs_depth_sensor.start([&](rs2::frame f) { rs_callback(f); });
-#ifdef TUNING
-    namedWindow("Cam tuning", WINDOW_NORMAL);
-    createTrackbar("Exposure", "Cam tuning", &exposure, 32768);
-    createTrackbar("Gain", "Cam tuning", &gain, 32768);
-#endif
+    if (pparams.cam_tuning) {
+        namedWindow("Cam tuning", WINDOW_NORMAL);
+        createTrackbar("Exposure", "Cam tuning", &exposure, 32768);
+        createTrackbar("Gain", "Cam tuning", &gain, 32768);
+    }
 
     calibration(infared1,infared2);
     serialize_calib();
     convert_depth_background_to_world();
 
-#ifdef WATCHDOG_ENABLED
-    thread_watchdog = std::thread(&Cam::watchdog_thread,this);
-#endif
+    if (pparams.watchdog)
+        thread_watchdog = std::thread(&Cam::watchdog_thread,this);
 
     update();
-
     initialized = true;
 }
 
@@ -350,7 +344,7 @@ void Cam::check_light_level(){
     std::cout << "Checking if scene brightness has changed" << std::endl;
     //boot the camera and set it to the same settings as the previous session
     rs2::config cfg;
-    cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
+    cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, pparams.fps);
     cam.start(cfg);
     rs2::depth_sensor rs_dev = dev.first<rs2::depth_sensor>();
 
@@ -476,7 +470,7 @@ float Cam::measure_auto_exposure(){
     }
 
     rs2::config cfg;
-    cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, VIDEOFPS);
+    cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, pparams.fps);
     cam.start(cfg);
     rs2::depth_sensor rs_dev = dev.first<rs2::depth_sensor>();
 
@@ -540,7 +534,7 @@ void Cam::calib_pose(){
     }
 
     rs2::config cfg;
-    cfg.enable_stream(RS2_STREAM_DEPTH, IMG_W, IMG_H, RS2_FORMAT_Z16, VIDEOFPS);
+    cfg.enable_stream(RS2_STREAM_DEPTH, IMG_W, IMG_H, RS2_FORMAT_Z16, pparams.fps);
     if (hasIMU) {
         cfg.enable_stream(RS2_STREAM_ACCEL);
         cfg.enable_stream(RS2_STREAM_GYRO);
@@ -772,6 +766,7 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
     convert_depth_background_to_world();
     swc.Start();
 
+    std::cout << "Awaiting first image..." << std::endl;
     update();
     initialized = true;
 }
@@ -811,12 +806,10 @@ void Cam::close() {
         } else {
             cam.stop(); // grr this deadlocks https://github.com/IntelRealSense/librealsense/issues/3126
         }
-#ifdef WATCHDOG_ENABLED
-        if (!fromfile) {
+        if (pparams.watchdog && !fromfile){
             std::cout << "Waiting for camera watchdog." << std::endl;
             thread_watchdog.join();
         }
-#endif
         std::cout << "Camera closed" << std::endl;
         initialized = false;
     }
@@ -860,13 +853,13 @@ void Cam::watchdog_thread(void) {
     std::cout << "Watchdog thread started" << std::endl;
     usleep(10000000); //wait until camera is running for sure
     while (!exit_watchdog_thread) {
-        usleep(500000);
+        usleep(pparams.wdt_timeout_us);
         if (!watchdog && !exit_watchdog_thread) {
             std::cout << "Watchdog alert! Attempting to continue" << std::endl;
             new_frame1 =true;
             new_frame2 = true;
             lock_newframe.unlock(); // wait for a new frame passed by the rs callback
-            usleep(500000);
+            usleep(pparams.wdt_timeout_us);
             if (!watchdog) {
                 std::cout << "Watchdog alert! Killing the process." << std::endl;
                 std::system("killall -9 pats");

@@ -1,9 +1,5 @@
 #include "visiondata.h"
 
-#ifdef HASSCREEN
-//#define TUNING
-#endif
-
 using namespace cv;
 using namespace std;
 
@@ -28,7 +24,7 @@ void VisionData::init(bool fromfile, cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat
 
     deserialize_settings();
 
-    smallsize =cv::Size(frameL.cols/IMSCALEF,frameL.rows/IMSCALEF);
+    smallsize =cv::Size(frameL.cols/pparams.imscalef,frameL.rows/pparams.imscalef);
     frameL.convertTo(frameL16, CV_16SC1);
     frameR.convertTo(frameR16, CV_16SC1);
     diffL16 = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
@@ -36,10 +32,10 @@ void VisionData::init(bool fromfile, cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat
     motion_noise_map = cv::Mat::zeros(smallsize,CV_8UC1);
     diffL16_back = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
 
-#ifdef TUNING
-    namedWindow("Background", WINDOW_NORMAL);
-    createTrackbar("motion_update_iterator_max", "Background", &motion_update_iterator_max, 255);
-#endif
+    if (pparams.vision_tuning) {
+        namedWindow("Background", WINDOW_NORMAL);
+        createTrackbar("motion_update_iterator_max", "Background", &motion_update_iterator_max, 255);
+    }
 
     initialized = true;
 }
@@ -63,7 +59,7 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
     frameR16 = tmpR;
 
     track_avg_brightness(frameL16,time);
-    if (_reset_motion_integration || new_frame_id < VIDEOFPS) { // delete first few frames as well
+    if (_reset_motion_integration || new_frame_id < pparams.fps) { // delete first few frames as well
         std::cout << "Resetting motion" << std::endl;
         frameL_prev16 = frameL16.clone();
         frameR_prev16 = frameR16.clone();

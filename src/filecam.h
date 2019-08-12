@@ -2,7 +2,7 @@
 #define FILECAM_H
 #include "defines.h"
 #include <opencv2/highgui/highgui.hpp>
-
+#include "common.h"
 
 class FileCam {
 
@@ -17,7 +17,7 @@ public:
     void go_color();
     void go_disabled();
     int get_frame_id() {return frame_id;}
-    float get_frame_time() {return frame_id * (1.f/VIDEOFPS);}
+    float get_frame_time() {return frame_id * (1.f/pparams.fps);}
 
     void close (void);
     bool init (int argc, char **argv);

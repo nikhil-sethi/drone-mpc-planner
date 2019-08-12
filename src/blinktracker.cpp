@@ -98,7 +98,7 @@ void BlinkTracker::track(double time) {
     }
 
     if (_image_item.valid && _blinking_drone_status > bds_searching ){
-        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*IMSCALEF,_image_item.size*1.2f*IMSCALEF); // TODO: does not work properly
+        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_item.size*1.2f*pparams.imscalef); // TODO: does not work properly
     }
 
     clean_ignore_blobs(time);
@@ -134,7 +134,7 @@ void BlinkTracker::clean_ignore_blobs(double time){
     std::vector<IgnoreBlob> new_ignores_for_insect_tracker;
     for (uint i = 0; i < ignores_for_other_trkrs.size(); i++) {
         if (ignores_for_other_trkrs.at(i).was_used && ignores_for_other_trkrs.at(i).invalid_after>=0)
-            ignores_for_other_trkrs.at(i).invalid_after += 1./VIDEOFPS;
+            ignores_for_other_trkrs.at(i).invalid_after += 1./pparams.fps;
         ignores_for_other_trkrs.at(i).was_used = false;
         if (ignores_for_other_trkrs.at(i).invalid_after > time || ignores_for_other_trkrs.at(i).invalid_after<0)
             new_ignores_for_insect_tracker.push_back(ignores_for_other_trkrs.at(i));

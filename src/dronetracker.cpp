@@ -3,9 +3,7 @@
 #include "multimodule.h"
 
 bool DroneTracker::init(std::ofstream *logger, VisionData *visdat) {
-#ifdef HASSCREEN
     enable_viz_diff = false;
-#endif
     ItemTracker::init(logger,visdat,"drone");
     return false;
 }
@@ -47,7 +45,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
             //TODO: remove full_bat_and_throttle_im_effect and use acc to calc back to image coordinates
             cv::Point2f expected_drone_location = _drone_blink_im_location;
             float dt = current_time - start_take_off_time;
-            expected_drone_location.y+= dt * full_bat_and_throttle_im_effect;
+            expected_drone_location.y+= dt * dparams.full_bat_and_throttle_im_effect;
             _image_predict_item = ImagePredictItem(expected_drone_location,1,_drone_blink_im_size,255,_visdat->frame_id);
         }
 
@@ -55,9 +53,9 @@ void DroneTracker::track(double time, bool drone_is_active) {
 
         if (enable_viz_diff){
             cv::Point2f tmpp = drone_startup_im_location();
-            cv::circle(diff_viz,tmpp*IMSCALEF,1,cv::Scalar(255,0,0),1);
-            cv::circle(diff_viz,drone_startup_im_location()*IMSCALEF,1,cv::Scalar(0,0,255),1);
-            cv::circle(diff_viz, _world_item.image_coordinates()*IMSCALEF,3,cv::Scalar(0,255,0),2);
+            cv::circle(diff_viz,tmpp*pparams.imscalef,1,cv::Scalar(255,0,0),1);
+            cv::circle(diff_viz,drone_startup_im_location()*pparams.imscalef,1,cv::Scalar(0,0,255),1);
+            cv::circle(diff_viz, _world_item.image_coordinates()*pparams.imscalef,3,cv::Scalar(0,255,0),2);
         }
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
@@ -73,7 +71,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
                 _drone_tracking_status = dts_detected;
                 //calculate take off speed
                 float dy_to = _world_item.pt.y - _drone_blink_world_location.y;
-                float dt_to = static_cast<float>(time - start_take_off_time) - full_bat_and_throttle_spinup_time;
+                float dt_to = static_cast<float>(time - start_take_off_time) - dparams.full_bat_and_throttle_spinup_time;
 
                 //assuming linear acceleration
                 //x = 0.5a*t^2
@@ -95,7 +93,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
                 std::cout << "Start v: " << tmp_v << ", a: " << tmp_acc << std::endl;
                 std::cout << "Start v: " << data.svelY << ", a: " << data.saccY << std::endl;
 
-                _visdat->delete_from_motion_map(drone_startup_im_location()*IMSCALEF, _drone_blink_im_disparity,ceilf(_drone_blink_im_size*2.f)*IMSCALEF,VIDEOFPS/2);
+                _visdat->delete_from_motion_map(drone_startup_im_location()*pparams.imscalef, _drone_blink_im_disparity,ceilf(_drone_blink_im_size*2.f)*pparams.imscalef,pparams.fps/2);
             }
         }
         break;
@@ -109,7 +107,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
     } case dts_detected: {
         ItemTracker::track(time);
         update_drone_prediction();
-        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*IMSCALEF,_image_item.size*1.2f*IMSCALEF);
+        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_item.size*1.2f*pparams.imscalef);
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
         else if (!_tracking)
@@ -121,7 +119,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
     } FALLTHROUGH_INTENDED; case dts_landing: {
         ItemTracker::track(time);
         update_drone_prediction();
-        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*IMSCALEF,_image_item.size*1.2f*IMSCALEF);
+        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_item.size*1.2f*pparams.imscalef);
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
         else if (!_tracking)
@@ -142,14 +140,14 @@ ItemTracker::BlobWorldProps DroneTracker::calc_world_item(BlobProps * pbs, doubl
     } else if (taking_off() && wbp.valid && !_manual_flight_mode) {
 
         float dt = time - start_take_off_time;
-        if (dt < full_bat_and_throttle_spinup_time) { // spin up time
+        if (dt < dparams.full_bat_and_throttle_spinup_time) { // spin up time
             wbp.valid = false;
             return wbp;
         }
-        dt -= full_bat_and_throttle_spinup_time;
+        dt -= dparams.full_bat_and_throttle_spinup_time;
 
         cv::Point3f expected_drone_location = _drone_blink_world_location;
-        expected_drone_location.y+= 0.5f*full_bat_and_throttle_take_off_acc * powf(dt,2);
+        expected_drone_location.y+= 0.5f*dparams.full_bat_and_throttle_take_off_acc * powf(dt,2);
 
         float err_y = wbp.y - expected_drone_location.y;
         float err_pos = static_cast<float>(norm(expected_drone_location - cv::Point3f(wbp.x,wbp.y,wbp.z)));
@@ -164,7 +162,7 @@ ItemTracker::BlobWorldProps DroneTracker::calc_world_item(BlobProps * pbs, doubl
         } else {
             float vel_y = dy/dt;
             //std::cout << "detection dy: " << dy << " dt: " << dt << " vy: " << vel_y<< std::endl;
-            hover_throttle_estimation = hover_throttle_a*vel_y + hover_throttle_b ;
+            hover_throttle_estimation = dparams.hover_throttle_a*vel_y + dparams.hover_throttle_b ;
             //std::cout << "Initialising ht [-1, 1]: " << hover_throttle_estimation << std::endl;
             hover_throttle_estimation +=1;
             hover_throttle_estimation /= 2.f;
@@ -189,7 +187,7 @@ void DroneTracker::clean_ignore_blobs(double time){
     std::vector<IgnoreBlob> new_ignores_for_insect_tracker;
     for (uint i = 0; i < ignores_for_other_trkrs.size(); i++) {
         if (ignores_for_other_trkrs.at(i).was_used && ignores_for_other_trkrs.at(i).invalid_after>=0)
-            ignores_for_other_trkrs.at(i).invalid_after += 1./VIDEOFPS;
+            ignores_for_other_trkrs.at(i).invalid_after += 1./pparams.fps;
         ignores_for_other_trkrs.at(i).was_used = false;
         if (ignores_for_other_trkrs.at(i).invalid_after > time || ignores_for_other_trkrs.at(i).invalid_after<0)
             new_ignores_for_insect_tracker.push_back(ignores_for_other_trkrs.at(i));
@@ -205,7 +203,7 @@ void DroneTracker::update_drone_prediction() {
 
 
     // predict insect position for next frame
-    float dt_pred = 1.f/VIDEOFPS;
+    float dt_pred = 1.f/pparams.fps;
     cv::Point3f predicted_pos = pos + vel*dt_pred;
 
     //transform back to image coordinates
@@ -225,17 +223,17 @@ void DroneTracker::update_drone_prediction() {
 
     //update tracker with prediciton
     cv::Point2f image_location;
-    image_location.x= camera_coordinates.at(0).x/IMSCALEF;
-    image_location.y= camera_coordinates.at(0).y/IMSCALEF;
+    image_location.x= camera_coordinates.at(0).x/pparams.imscalef;
+    image_location.y= camera_coordinates.at(0).y/pparams.imscalef;
 
     if (image_location.x < 0)
         image_location.x = 0;
-    else if (image_location.x >= IMG_W/IMSCALEF)
-        image_location.x = IMG_W/IMSCALEF-1;
+    else if (image_location.x >= IMG_W/pparams.imscalef)
+        image_location.x = IMG_W/pparams.imscalef-1;
     if (image_location.y < 0)
         image_location.y = 0;
-    else if (image_location.y >= IMG_H/IMSCALEF)
-        image_location.y = IMG_H/IMSCALEF-1;
+    else if (image_location.y >= IMG_H/pparams.imscalef)
+        image_location.y = IMG_H/pparams.imscalef-1;
 
     //issue #108:
     predicted_image_path.back().x = image_location.x;

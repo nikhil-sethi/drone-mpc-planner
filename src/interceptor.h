@@ -41,7 +41,7 @@ private:
     double _tti =-1;
     const float minimal_height = 0.2f;
 
-    const float insect_cleared_timeout = VIDEOFPS*0.5f;
+    float insect_cleared_timeout;
 
     void intercept_spiral();
     float calc_tti(cv::Point3f insect_pos, cv::Point3f insect_vel, cv::Point3f drone_pos, cv::Point3f drone_vel, bool drone_taking_off);

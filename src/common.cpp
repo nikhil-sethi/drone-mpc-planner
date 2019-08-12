@@ -62,7 +62,6 @@ float scaleStereoHeight(float height) {
     return h;
 }
 
-
 float getDistance(cv::Point2f p1, cv::Point2f p2) {
     cv::Point2f p;
     p.x = p1.x - p2.x;
@@ -71,7 +70,6 @@ float getDistance(cv::Point2f p1, cv::Point2f p2) {
     return sqrt(p.x*p.x + p.y*p.y);
 
 }
-
 
 bool checkFileExist (const std::string& name) {
     if (FILE *file = fopen(name.c_str(), "r")) {
@@ -96,7 +94,6 @@ void combineImage(cv::Mat iml,cv::Mat imr,cv::Mat *res) {
     cv::Mat roir = cv::Mat(*res, cv::Rect(pr1, pr2));
     imr.copyTo(roir);
 }
-
 
 //combines a sperate left and right image into one combined concenated image
 void combineGrayImage(cv::Mat iml,cv::Mat imr,cv::Mat *res) {
@@ -209,9 +206,9 @@ cv::Mat createBlurryCircle(cv::Point size) {
     cv::Point2f tmp;
     tmp.x = roundf((static_cast<float>(size.x))/4.f);
     tmp.y = roundf((static_cast<float>(size.y))/4.f);
-    if (fabs((tmp.x / 2.f) - roundf(tmp.x / 2.f)) < 0.01)
+    if (fabs((tmp.x / 2.f) - roundf(tmp.x / 2.f)) < 0.01f)
         tmp.x +=1;
-    if (fabs((tmp.y / 2.f) - roundf(tmp.y / 2.f)) < 0.01)
+    if (fabs((tmp.y / 2.f) - roundf(tmp.y / 2.f)) < 0.01f)
         tmp.y +=1;
 
     cv::Mat res = cv::Mat::zeros(size.y,size.x,CV_32F);
@@ -244,3 +241,7 @@ int getSecondsSinceFileCreation(std::string filePath)
     double diff = difftime(in_time_t,attrib.st_ctime);
     return static_cast<int>(diff);
 }
+
+
+
+

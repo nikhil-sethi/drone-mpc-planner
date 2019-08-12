@@ -10,9 +10,9 @@ void DronePredictor::init(VisionData *visdat, DroneTracker *dtrk, InsectTracker 
     roll_smth.init(1,0);
     pitch_smth.init(1,0);
 
-    swap_x.init(VIDEOFPS,0);
-    swap_y.init(VIDEOFPS,0);
-    swap_z.init(VIDEOFPS,0);
+    swap_x.init(pparams.fps,0);
+    swap_y.init(pparams.fps,0);
+    swap_z.init(pparams.fps,0);
 
     drag_gain = cv::Point3f(0.01f*0.2f,0.01f,0.01f*0.2f);
 
@@ -49,9 +49,9 @@ void DronePredictor::update(bool drone_is_active, double time) {
     float roll = roll_smth.addSample(_dctrl->Roll());
 
     if (fabs(roll) > fabs(pitch))
-        throttle -= throttle_bank_factor*fabs(roll);
+        throttle -= dparams.throttle_bank_factor*fabs(roll);
     else
-        throttle -= throttle_bank_factor*fabs(pitch);
+        throttle -= dparams.throttle_bank_factor*fabs(pitch);
     if (throttle< -1)
         throttle = -1;
 
@@ -63,20 +63,20 @@ void DronePredictor::update(bool drone_is_active, double time) {
 
     for (uint i = 0; i<_dtrk->track_history.size();i++) {
         td = _dtrk->track_history.at(_dtrk->track_history.size()-i-1);
-        if (td.pos_valid ) // || i > VIDEOFPS
+        if (td.pos_valid ) // || i > pparams.fps
             break;
     }
     if (!td.pos_valid)
         return;
 
-    double dt_pred = (1./VIDEOFPS)+ time -td.time;
+    double dt_pred = (1./pparams.fps)+ time -td.time;
     if (dt_pred > 1) // don't try to predict based on control more then 1 second
         return;
 
     cv::Point3f pos (td.posX,td.posY,td.posZ);
 
 
-    if (drone_is_active && initialized && dt_prev < 1.f / VIDEOFPS && !_dtrk->taking_off() && td.acc_valid){
+    if (drone_is_active && initialized && dt_prev < 1.f / pparams.fps && !_dtrk->taking_off() && td.acc_valid){
         //update gain_factors based on error in old prediciton
 
         float hdt2 = (0.5f*powf(dt_prev,2));
@@ -155,17 +155,17 @@ void DronePredictor::update(bool drone_is_active, double time) {
     world_location.y = tmpd.y;
     world_location.z = tmpd.z;
     cv::Point2f image_location;
-    image_location.x= camera_coordinates.at(0).x/IMSCALEF;
-    image_location.y= camera_coordinates.at(0).y/IMSCALEF;
+    image_location.x= camera_coordinates.at(0).x/pparams.imscalef;
+    image_location.y= camera_coordinates.at(0).y/pparams.imscalef;
 
     if (image_location.x < 0)
         image_location.x = 0;
-    else if (image_location.x >= IMG_W/IMSCALEF)
-        image_location.x = IMG_W/IMSCALEF-1;
+    else if (image_location.x >= IMG_W/pparams.imscalef)
+        image_location.x = IMG_W/pparams.imscalef-1;
     if (image_location.y < 0)
         image_location.y = 0;
-    else if (image_location.y >= IMG_H/IMSCALEF)
-        image_location.y = IMG_H/IMSCALEF-1;
+    else if (image_location.y >= IMG_H/pparams.imscalef)
+        image_location.y = IMG_H/pparams.imscalef-1;
 
     _dtrk->control_predicted_drone_location(image_location,world_location); //TODO: activate this again
 //    _dtrk->predicted_locationL_prev = _dtrk->predicted_locationL_last;
@@ -181,7 +181,7 @@ void DronePredictor::update(bool drone_is_active, double time) {
     rtp_gain_prev = rtp_gain;
     dt_prev = dt_pred;
 
-    if (drone_is_active && dt_prev < 5.f / VIDEOFPS)
+    if (drone_is_active && dt_prev < 5.f / pparams.fps)
         initialized = true;
 }
 

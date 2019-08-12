@@ -261,7 +261,7 @@ protected:
     ImageItem  _image_item;
     ImagePredictItem _image_predict_item;
     WorldItem  _world_item;
-    int _blobs_are_fused_cnt = 0;
+    uint _blobs_are_fused_cnt = 0;
 
     float stereo_match(cv::Point closestL, cv::Mat diffL, cv::Mat diffR);
     void reset_tracker_ouput(double time);
@@ -295,7 +295,7 @@ public:
     virtual ItemTracker::BlobWorldProps calc_world_item(BlobProps * pbs, double time) = 0;
     void append_log();
 
-    uint track_history_max_size = VIDEOFPS;
+    uint track_history_max_size;
     std::vector<track_data> track_history;
     track_data Last_track_data() {
         if (track_history.empty())

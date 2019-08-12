@@ -67,7 +67,7 @@ public:
     void stop_watchdog() {exit_watchdog_thread = true;}
 
     void skip_one_sec() {
-        replay_skip_n_frames+=VIDEOFPS;
+        replay_skip_n_frames+=pparams.fps;
     }
     void back_one_sec() {
         seek(_frame_time -3);

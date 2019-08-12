@@ -29,47 +29,13 @@
 #define JOY_MAX                             2048 // 2000
 #define JOY_MIDDLE                          1024 // 1500
 
-#if TX_TYPE == TX_NONE
-#define TX_PROTOCOL 0
-#define TX_SUB_PROTOCOL 0
-#define TX_OPTION 0
-#endif
-
-#if TX_TYPE == TX_DSMX
-#define TX_PROTOCOL 6
-#define TX_SUB_PROTOCOL 3
-#define TX_OPTION 7
-#endif
-
-#if TX_TYPE == TX_CX10
-#define TX_PROTOCOL 12
-#define TX_SUB_PROTOCOL 1
-#define TX_RATE 2000
-#endif
-
-#if TX_TYPE == TX_FRSKYD
-#define TX_PROTOCOL 3
-#define TX_SUB_PROTOCOL 0
-#endif
-
-#if TX_TYPE == TX_FRSKYX || TX_TYPE == TX_FRSKYX_TC
-#define TX_PROTOCOL 15
-#define TX_SUB_PROTOCOL 1
-#endif
-
-
-#ifndef TX_RATE
-#define TX_RATE 0
-#endif
-
-#ifndef TX_OPTION
-#define TX_OPTION 0
-#endif
-
 static const char* armed_names[] = {"disarmed","armed"};
 
 class MultiModule{
-
+    int protocol;
+    int sub_protocol;
+    int tx_option;
+    int tx_rate;
 public:
 
     void init(bool fromfile);

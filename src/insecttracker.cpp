@@ -10,8 +10,8 @@ void InsectTracker::init(std::ofstream *logger, VisionData *visdat) {
 
 void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) {
 
-    _image_item = ImageItem (log.ins_im_x/IMSCALEF,log.ins_im_y/IMSCALEF,log.ins_disparity,frame_number);
-    ImagePredictItem ipi(cv::Point2f(log.ins_pred_im_x/IMSCALEF,log.ins_pred_im_y/IMSCALEF),1,1,255,frame_number);
+    _image_item = ImageItem (log.ins_im_x/pparams.imscalef,log.ins_im_y/pparams.imscalef,log.ins_disparity,frame_number);
+    ImagePredictItem ipi(cv::Point2f(log.ins_pred_im_x/pparams.imscalef,log.ins_pred_im_y/pparams.imscalef),1,1,255,frame_number);
     predicted_image_path.push_back(ipi);
     ipi.valid = ipi.x > 0 ;
     _image_predict_item = ipi;
@@ -76,7 +76,7 @@ void InsectTracker::update_insect_prediction() {
 
 
     // predict insect position for next frame
-    float dt_pred = 1.f/VIDEOFPS;
+    float dt_pred = 1.f/pparams.fps;
     cv::Point3f predicted_pos = insect_pos + insect_vel*dt_pred;
 
     //transform back to image coordinates
@@ -96,17 +96,17 @@ void InsectTracker::update_insect_prediction() {
 
     //update tracker with prediciton
     cv::Point2f image_location;
-    image_location.x= camera_coordinates.at(0).x/IMSCALEF;
-    image_location.y= camera_coordinates.at(0).y/IMSCALEF;
+    image_location.x= camera_coordinates.at(0).x/pparams.imscalef;
+    image_location.y= camera_coordinates.at(0).y/pparams.imscalef;
 
     if (image_location.x < 0)
         image_location.x = 0;
-    else if (image_location.x >= IMG_W/IMSCALEF)
-        image_location.x = IMG_W/IMSCALEF-1;
+    else if (image_location.x >= IMG_W/pparams.imscalef)
+        image_location.x = IMG_W/pparams.imscalef-1;
     if (image_location.y < 0)
         image_location.y = 0;
-    else if (image_location.y >= IMG_H/IMSCALEF)
-        image_location.y = IMG_H/IMSCALEF-1;
+    else if (image_location.y >= IMG_H/pparams.imscalef)
+        image_location.y = IMG_H/pparams.imscalef-1;
 
     //issue #108:
     predicted_image_path.back().x = image_location.x;
@@ -120,7 +120,7 @@ ItemTracker::BlobWorldProps InsectTracker::calc_world_item(BlobProps * pbs, doub
     auto wbp = calc_world_props_blob_generic(pbs);
     wbp.valid = wbp.bkg_check_ok && wbp.disparity_in_range & wbp.radius_in_range;
 
-    if (_blobs_are_fused_cnt > 1 * VIDEOFPS) // if the insect and drone are fused, the drone is accelerating through it and should become seperate again within a limited time
+    if (_blobs_are_fused_cnt > 1 * pparams.fps) // if the insect and drone are fused, the drone is accelerating through it and should become seperate again within a limited time
         wbp.valid = false;
     return wbp;
 }

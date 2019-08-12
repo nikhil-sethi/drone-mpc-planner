@@ -1,9 +1,37 @@
 #include "multimodule.h"
 
 void MultiModule::init(bool fromfile) {
+
+    if (dparams.tx == tx_none) {
+        protocol = 0;
+        sub_protocol = 0;
+        tx_option = 0;
+        tx_rate = 0;
+    } else if (dparams.tx == tx_dsmx) {
+        protocol = 6;
+        sub_protocol = 3;
+        tx_option = 7;
+        tx_rate = 0;
+    } else if (dparams.tx == tx_cx10) {
+        protocol = 12;
+        sub_protocol = 1;
+        tx_rate = 2000;
+        tx_option = 0;
+    } else if (dparams.tx == tx_frskyd) {
+        protocol = 3;
+        sub_protocol = 0;
+        tx_rate = 0;
+        tx_option = 0;
+    } else if (dparams.tx == tx_frskyx || dparams.tx == tx_frskyx_tc) {
+        protocol = 15;
+        sub_protocol = 1;
+        tx_rate = 0;
+        tx_option = 0;
+    }
+
     // setup connection with MultiModule
     notconnected = RS232_OpenComport(115200,"/dev/pats_mm0");
-    if (TX_TYPE!=TX_NONE) {
+    if (dparams.tx!=tx_none) {
         if (notconnected && !fromfile) {
             throw my_exit("cannot connect the MultiModule");
         } else {
@@ -85,57 +113,57 @@ void MultiModule::convert_channels(uint16_t * channels, unsigned char * packet) 
 }
 
 void MultiModule::send_data(void) {
-#ifndef INSECT_LOGGING_MODE
-    lock_rs232.lock();
+    if (!pparams.insect_logging_mode) {
+        lock_rs232.lock();
 
-    unsigned char packet[26] = {0}; // a packet is 26 bytes, see multimodule.h
-    packet[0] = 0x55; // headerbyte
-    packet[1] = TX_PROTOCOL; //sub_protocol|BindBit|RangeCheckBit|AutoBindBit;
+        unsigned char packet[26] = {0}; // a packet is 26 bytes, see multimodule.h
+        packet[0] = 0x55; // headerbyte
+        packet[1] = protocol; //sub_protocol|BindBit|RangeCheckBit|AutoBindBit;
 
-    if (_bind) {
-        packet[1] |= MULTI_BINDBIT;
-    }
-    packet[2]   = 0 | 0 | TX_SUB_PROTOCOL << 4; //RxNum | Power | Type
-    if (TX_TYPE==TX_DSMX)
-        packet[3] = TX_OPTION; //option_protocol, number of channels for DSM
-    else
-        packet[3] = 0;
-
-    //packet[4] to [25] = Channels, 16 channels of 11 bits (-> which makes 22 bytes)
-
-    uint16_t channels[16];
-    for (int i = 0; i< 16;i++){
-        channels[i] = 0;
-    }
-    //AETR
-    channels[0] = roll;
-    if (TX_TYPE==TX_CX10)
-        channels[0] = JOY_MAX-roll;
-    channels[1] = pitch;
-    channels[2] = throttle;
-    channels[3] = yaw;
-    if (TX_TYPE==TX_DSMX || TX_TYPE==TX_FRSKYD || TX_TYPE==TX_FRSKYX || TX_TYPE==TX_FRSKYX_TC){
-        channels[4] = arm_switch;
-        channels[5] = JOY_BOUND_MIN; // set to angle mode in BF
-    }
-    if (TX_TYPE==TX_CX10)
-        channels[5] = TX_RATE;
-
-    if (TX_TYPE==TX_FRSKYX_TC){
-        if(led_on)
-            channels[7] = JOY_BOUND_MAX;
+        if (_bind) {
+            packet[1] |= MULTI_BINDBIT;
+        }
+        packet[2]   = 0 | 0 | sub_protocol << 4; //RxNum | Power | Type
+        if (dparams.tx==tx_dsmx)
+            packet[3] = tx_option; //option_protocol, number of channels for DSM
         else
-            channels[7] = JOY_BOUND_MIN;
+            packet[3] = 0;
+
+        //packet[4] to [25] = Channels, 16 channels of 11 bits (-> which makes 22 bytes)
+
+        uint16_t channels[16];
+        for (int i = 0; i< 16;i++){
+            channels[i] = 0;
+        }
+        //AETR
+        channels[0] = roll;
+        if (dparams.tx==tx_cx10)
+            channels[0] = JOY_MAX-roll;
+        channels[1] = pitch;
+        channels[2] = throttle;
+        channels[3] = yaw;
+        if (dparams.tx==tx_dsmx || dparams.tx==tx_frskyd || dparams.tx==tx_frskyx || dparams.tx==tx_frskyx_tc){
+            channels[4] = arm_switch;
+            channels[5] = JOY_BOUND_MIN; // set to angle mode in BF
+        }
+        if (dparams.tx==tx_cx10)
+            channels[5] = tx_rate;
+
+        if (dparams.tx==tx_frskyx_tc){
+            if(led_on)
+                channels[7] = JOY_BOUND_MAX;
+            else
+                channels[7] = JOY_BOUND_MIN;
+        }
+
+        convert_channels(channels , &packet[4]);
+
+        if (!notconnected) {
+            RS232_SendBuf( static_cast<unsigned char*>( packet), 26);
+        }
+
+        lock_rs232.unlock();
     }
-
-    convert_channels(channels , &packet[4]);
-
-    if (!notconnected) {
-        RS232_SendBuf( static_cast<unsigned char*>( packet), 26);
-    }
-
-    lock_rs232.unlock();
-#endif
 }
 
 void MultiModule::receive_data() {
@@ -166,9 +194,7 @@ void MultiModule::receive_data() {
 }
 
 void MultiModule::close() {
-    if (initialized) {
-
-#ifndef INSECT_LOGGING_MODE
+    if (initialized && !pparams.insect_logging_mode) {
         std::cout << "Closing multimodule" << std::endl;
         // kill throttle when closing the module
         throttle = JOY_MIN_THRESH;
@@ -185,7 +211,6 @@ void MultiModule::close() {
         g_lockData.unlock();
         g_sendData.unlock();
         thread_mm.join();
-#endif
-        initialized = false;
     }
+    initialized = false;
 }

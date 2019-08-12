@@ -5,13 +5,13 @@ using namespace std;
 void TrackerManager::init(std::ofstream *logger,VisionData *visdat){
     _visdat = visdat;
     _logger = logger;
-#ifdef HASSCREEN
+
     enable_viz_max_points = false;
     enable_viz_diff = true;
-#endif
-#if VIDEOCUTS
-    enable_viz_diff = true;
-#endif
+
+    if (pparams.video_cuts)
+        enable_viz_diff = true;
+
     deserialize_settings();
 
     //we have a bit of a situation with the order of initializing the trackers, as this MUST be in the same order as how they are called
@@ -177,7 +177,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                     auto wbp = trkr->calc_world_item(&_blobs.at(best_score_j),time);
                     ItemTracker::WorldItem w(ItemTracker::ImageItem(_blobs.at(best_score_j),wbp.disparity,_visdat->frame_id,best_score,best_score_j),wbp);
                     if (!w.valid && enable_viz_diff) {
-                        putText(diff_viz,"W",trkr->image_item().pt()*IMSCALEF,FONT_HERSHEY_SIMPLEX,0.9,tracker_color(trkr));
+                        putText(diff_viz,"W",trkr->image_item().pt()*pparams.imscalef,FONT_HERSHEY_SIMPLEX,0.9,tracker_color(trkr));
                     }
                     trkr->world_item(w);
                     pbs.at(best_score_j).trackers.push_back(trkr);
@@ -367,8 +367,8 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
 
         if (enable_viz_diff){
             for (uint i = 0; i < pbs.size(); i++){
-                putText(diff_viz,std::to_string(i),pbs.at(i).pt*IMSCALEF,FONT_HERSHEY_SIMPLEX,0.5,pbs.at(i).color(),2);
-                cv::circle(diff_viz,pbs.at(i).pt*IMSCALEF,3,pbs.at(i).color(),1);
+                putText(diff_viz,std::to_string(i),pbs.at(i).pt*pparams.imscalef,FONT_HERSHEY_SIMPLEX,0.5,pbs.at(i).color(),2);
+                cv::circle(diff_viz,pbs.at(i).pt*pparams.imscalef,3,pbs.at(i).color(),1);
             }
         }
     }
@@ -423,7 +423,7 @@ void TrackerManager::update_max_change_points() {
 
         int motion_thresh_tmp = motion_thresh;
         if (_mode == mode_locate_drone) {
-            motion_thresh_tmp = motion_thresh + drone_blink_strength;
+            motion_thresh_tmp = motion_thresh + dparams.drone_blink_strength;
             bkg = 0; // motion noise calib is done during blink detection. To prevent interference do not use the bkg motion noise
         }
 

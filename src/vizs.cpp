@@ -2,11 +2,6 @@
 using namespace cv;
 using namespace std;
 
-#ifdef HASSCREEN
-//#define DRAWPLOTS
-#define DRAWTRACKING
-#endif
-
 cv::Scalar white(255,255,255);
 cv::Scalar black(0,0,0);
 cv::Scalar green(0,255,0);
@@ -40,52 +35,50 @@ void Visualizer::init(VisionData *visdat, TrackerManager *imngr, DroneController
 }
 
 void Visualizer::addPlotSample(void) {
-#ifdef DRAWPLOTS
-    lock_plot_data.lock();
-    roll_joystick.push_back(static_cast<float>(_dctrl->joyRoll));
-    pitch_joystick.push_back(static_cast<float>(_dctrl->joyPitch));
-    yaw_joystick.push_back(static_cast<float>(_dctrl->joyPitch));
-    throttle_joystick.push_back(static_cast<float>(_dctrl->joyThrottle));
+    if (pparams.viz_plots) {
+        lock_plot_data.lock();
+        roll_joystick.push_back(static_cast<float>(_dctrl->joyRoll));
+        pitch_joystick.push_back(static_cast<float>(_dctrl->joyPitch));
+        yaw_joystick.push_back(static_cast<float>(_dctrl->joyPitch));
+        throttle_joystick.push_back(static_cast<float>(_dctrl->joyThrottle));
 
-    roll_calculated.push_back(static_cast<float>(_dctrl->autoRoll));
-    pitch_calculated.push_back(static_cast<float>(_dctrl->autoPitch));
-    //    yaw_calculated.push_back(static_cast<float>(_dctrl->commandedYaw));
-    throttle_calculated.push_back(static_cast<float>(_dctrl->autoThrottle));
-    throttle_hover.push_back(_dctrl->hoverthrottle);
-    throttle_min_bound.push_back(static_cast<float>(JOY_BOUND_MIN));
-    throttle_max_bound.push_back(static_cast<float>(JOY_BOUND_MAX));
+        roll_calculated.push_back(static_cast<float>(_dctrl->autoRoll));
+        pitch_calculated.push_back(static_cast<float>(_dctrl->autoPitch));
+        //    yaw_calculated.push_back(static_cast<float>(_dctrl->commandedYaw));
+        throttle_calculated.push_back(static_cast<float>(_dctrl->autoThrottle));
+        throttle_hover.push_back(_dctrl->hoverthrottle);
+        throttle_min_bound.push_back(static_cast<float>(JOY_BOUND_MIN));
+        throttle_max_bound.push_back(static_cast<float>(JOY_BOUND_MAX));
 
-    track_data data = _dtrkr->Last_track_data();
-    dt.push_back(data.dt);
-    dt_target.push_back(1.f/VIDEOFPS);
+        track_data data = _dtrkr->Last_track_data();
+        dt.push_back(data.dt);
+        dt_target.push_back(1.f/pparams.fps);
 
-    posX.push_back(-data.posX);
-    posY.push_back(data.posY);
-    posZ.push_back(-data.posZ);
-    disparity.push_back(_dtrkr->image_item().disparity);
-    sdisparity.push_back(_dtrkr->image_item().disparity);
+        posX.push_back(-data.posX);
+        posY.push_back(data.posY);
+        posZ.push_back(-data.posZ);
+        disparity.push_back(_dtrkr->image_item().disparity);
+        sdisparity.push_back(_dtrkr->image_item().disparity);
 
-    sposX.push_back(-data.sposX);
-    sposY.push_back(data.sposY);
-    sposZ.push_back(-data.sposZ);
+        sposX.push_back(-data.sposX);
+        sposY.push_back(data.sposY);
+        sposZ.push_back(-data.sposZ);
 
-    setposX.push_back(-_dnav->setpoint_pos_world.x);
-    setposY.push_back(_dnav->setpoint_pos_world.y);
-    setposZ.push_back(-_dnav->setpoint_pos_world.z);
+        setposX.push_back(-_dnav->setpoint_pos_world.x);
+        setposY.push_back(_dnav->setpoint_pos_world.y);
+        setposZ.push_back(-_dnav->setpoint_pos_world.z);
 
-    svelX.push_back(-data.svelX);
-    svelY.push_back(data.svelY);
-    svelZ.push_back(-data.svelZ);
+        svelX.push_back(-data.svelX);
+        svelY.push_back(data.svelY);
+        svelZ.push_back(-data.svelZ);
 
-    saccX.push_back(-data.saccX);
-    saccY.push_back(data.saccY);
-    saccZ.push_back(-data.saccZ);
+        saccX.push_back(-data.saccX);
+        saccY.push_back(data.saccY);
+        saccZ.push_back(-data.saccZ);
 
-    autotakeoff_velY_thresh.push_back(static_cast<float>(_dnav->params.auto_takeoff_speed) / 100.f);
-
-    lock_plot_data.unlock();
-    newdata.notify_all();
-#endif
+        lock_plot_data.unlock();
+        newdata.notify_all();
+    }
 }
 
 void Visualizer::plot(void) {
@@ -133,7 +126,7 @@ cv::Mat Visualizer::plot_all_control(void) {
 cv::Mat Visualizer::plot_all_velocity(void) {
     std::vector<cv::Mat> ims_vel;
     ims_vel.push_back(plot({svelX}, "VelX"));
-    ims_vel.push_back(plot({svelY,autotakeoff_velY_thresh},"VelY"));
+    ims_vel.push_back(plot({svelY},"VelY"));
     ims_vel.push_back(plot({svelZ},"VelZ"));
     return createColumnImage(ims_vel,CV_8UC3);
 }
@@ -141,7 +134,7 @@ cv::Mat Visualizer::plot_all_velocity(void) {
 cv::Mat Visualizer::plot_all_acceleration(void) {
     std::vector<cv::Mat> ims_acc;
     ims_acc.push_back(plot({saccX}, "AccX"));
-    ims_acc.push_back(plot({saccY,autotakeoff_velY_thresh},"AccY"));
+    ims_acc.push_back(plot({saccY},"AccY"));
     ims_acc.push_back(plot({saccZ},"AccZ"));
     return createColumnImage(ims_acc,CV_8UC3);
 }
@@ -324,7 +317,7 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
     if (tmp.size()>0) {
         std::vector<cv::KeyPoint> keypoints;
         for (uint i = 0; i< tmp.size();i++) {
-            cv::KeyPoint k(tmp.at(i).x,tmp.at(i).y,24/IMSCALEF);
+            cv::KeyPoint k(tmp.at(i).x,tmp.at(i).y,24/pparams.imscalef);
             keypoints.push_back(k);
         }
         drawKeypoints( frameL_small, keypoints, frameL_small_drone, Scalar(0,255,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
@@ -335,7 +328,7 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
     if (path.size() > 0) {
         std::vector<cv::KeyPoint> keypoints;
         for (uint i = 0; i< path.size();i++) {
-            cv::KeyPoint k(path.at(i).iti.x,path.at(i).iti.y,12/IMSCALEF);
+            cv::KeyPoint k(path.at(i).iti.x,path.at(i).iti.y,12/pparams.imscalef);
             keypoints.push_back(k);
         }
         drawKeypoints( frameL_small_drone, keypoints, frameL_small_drone, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
@@ -403,16 +396,16 @@ void Visualizer::draw_tracker_viz() {
 
     if ( drn_predicted_path.size()>0 ) {
         auto pred = drn_predicted_path.back();
-        cv::circle(frameL_color,pred.pt()*IMSCALEF,pred.size*IMSCALEF,cv::Scalar(0,255,0));
+        cv::circle(frameL_color,pred.pt()*pparams.imscalef,pred.size*pparams.imscalef,cv::Scalar(0,255,0));
     }
     if ( drn_path.size()>0 ) {
         auto p = drn_path.back().iti;
-        cv::circle(frameL_color,p.pt()*IMSCALEF,p.size*IMSCALEF,cv::Scalar(0,0,255));
+        cv::circle(frameL_color,p.pt()*pparams.imscalef,p.size*pparams.imscalef,cv::Scalar(0,0,255));
     }
 
     if ( ins_predicted_path.size()>0 ) {
         auto pred = ins_predicted_path.back();
-        cv::circle(frameL_color,pred.pt()*IMSCALEF,pred.size*IMSCALEF,cv::Scalar(0,255,0));
+        cv::circle(frameL_color,pred.pt()*pparams.imscalef,pred.size*pparams.imscalef,cv::Scalar(0,255,0));
     }
 
     if (ins_path.size()>0){
@@ -422,7 +415,7 @@ void Visualizer::draw_tracker_viz() {
         cv::Scalar c(0,0,255);
         if (wti.distance_bkg >wti.distance )
             c = cv::Scalar(180,180,255);
-        cv::Point2i p (wti.iti.x*IMSCALEF,wti.iti.y*IMSCALEF);
+        cv::Point2i p (wti.iti.x*pparams.imscalef,wti.iti.y*pparams.imscalef);
         putText(frameL_color,ss.str(),p,cv::FONT_HERSHEY_SIMPLEX,0.5,c);
         cv::line(frameL_color,p,p,c,2);
     }
@@ -433,7 +426,7 @@ void Visualizer::draw_tracker_viz() {
         cv::Scalar c(0,0,255);
         if (wti.distance_bkg >wti.distance )
             c = cv::Scalar(180,180,255);
-        cv::Point2i p (wti.iti.x*IMSCALEF,wti.iti.y*IMSCALEF);
+        cv::Point2i p (wti.iti.x*pparams.imscalef,wti.iti.y*pparams.imscalef);
         putText(frameL_color,ss.str(),p,cv::FONT_HERSHEY_SIMPLEX,0.5,c);
         cv::line(frameL_color,p,p,c,2);
 
@@ -458,7 +451,7 @@ void Visualizer::draw_tracker_viz() {
 
     cv::Size vizsizeL(size.width/4,size.height/4);
     cv::Mat frameL_small;
-    cv::resize(frameL,frameL_small,cv::Size(frameL.cols/IMSCALEF,frameL.rows/IMSCALEF));
+    cv::resize(frameL,frameL_small,cv::Size(frameL.cols/pparams.imscalef,frameL.rows/pparams.imscalef));
     cv::Mat frameL_small_drone = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,drn_path,drn_predicted_path);
     cv::Mat frameL_small_insect = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,ins_path,ins_predicted_path);
     frameL_small_drone.copyTo(resFrame(cv::Rect(0,0,frameL_small_drone.cols, frameL_small_drone.rows)));
@@ -486,8 +479,8 @@ void Visualizer::paint() {
             cv::imshow("drn_diff", _dtrkr->diff_viz);
         if (_trackers->viz_max_points.cols > 0)
             cv::imshow("motion points", _trackers->viz_max_points);
-//        if (_trackers->diff_viz.cols > 0)
-//            cv::imshow("diff", _trackers->diff_viz);
+        //        if (_trackers->diff_viz.cols > 0)
+        //            cv::imshow("diff", _trackers->diff_viz);
 
         new_tracker_viz_data_requested = true;
     }
@@ -503,21 +496,21 @@ void Visualizer::workerThread(void) {
     while (!exitVizThread) {
         newdata.wait(lk);
         if (roll_joystick.rows > 0) {
-#ifdef DRAWPLOTS
+if (pparams.viz_plots) {
             lock_plot_data.lock();
             plot();
             request_plotframe_paint = true;
             lock_plot_data.unlock();
-#endif
+}
         }
-#ifdef DRAWTRACKING
+if (pparams.viz_tracking) {
         lock_frame_data.lock();
         if (tracker_viz_base_data.frameL.rows>0) {
             draw_tracker_viz();
             request_trackframe_paint=true;
         }
         lock_frame_data.unlock();
-#endif
+}
 
     }
 }

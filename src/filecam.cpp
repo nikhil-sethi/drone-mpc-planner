@@ -93,7 +93,7 @@ void FileCam::update() {
     }
     frame_id++;
 
-    float delay = VIDEOFPS;
+    float delay = pparams.fps;
     delay = 1/delay;
     delay *=1e6f;
     usleep(delay);

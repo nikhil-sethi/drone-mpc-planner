@@ -4,6 +4,7 @@
 #include "dronetracker.h"
 #include "joystick.hpp"
 #include "multimodule.h"
+#include "common.h"
 
 static const char* joy_states_names[] = { "js_manual",
                                           "js_waypoint",
@@ -207,7 +208,8 @@ public:
         return pitch;
     }
 
-    float hoverthrottle = INITIAL_HOVER_THROTTLE;
+    const int initial_throttle = 200;
+    float hoverthrottle;
 
     bool _manual_override_take_off_now;
     bool manual_override_take_off_now() { return _manual_override_take_off_now;}
@@ -222,7 +224,7 @@ public:
     float velx_sp,vely_sp,velz_sp;
     float accx_sp,accy_sp,accz_sp;
 
-    uint control_history_max_size = VIDEOFPS;
+    uint control_history_max_size;
     std::vector<control_data> control_history;
 
     void close (void);

@@ -9,25 +9,22 @@
 using namespace cv;
 using namespace std;
 
-#ifdef HASSCREEN
-//#define TUNING
-#endif
-
 void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string name) {
     _logger = logger;
     _visdat = visdat;
     _name = name;
+    track_history_max_size = pparams.fps;
     settings_file = "../" + name + ".xml";
     std::string window_name = name + "_trkr";
 
     deserialize_settings();
 
-#ifdef TUNING
-    namedWindow(window_name, WINDOW_NORMAL);
-    createTrackbar("Min disparity", window_name, &min_disparity, 255);
-    createTrackbar("Max disparity", window_name, &max_disparity, 255);
-    createTrackbar("background_subtract_zone_factor", window_name, &background_subtract_zone_factor, 100);
-#endif
+    if (pparams.insect_tracking_tuning ||pparams.drone_tracking_tuning) {
+        namedWindow(window_name, WINDOW_NORMAL);
+        createTrackbar("Min disparity", window_name, &min_disparity, 255);
+        createTrackbar("Max disparity", window_name, &max_disparity, 255);
+        createTrackbar("background_subtract_zone_factor", window_name, &background_subtract_zone_factor, 100);
+    }
 
     init_kalman();
 
@@ -113,8 +110,8 @@ ItemTracker::BlobWorldProps ItemTracker::calc_world_props_blob_generic(BlobProps
     BlobWorldProps w;
     cv::Point2f p(pbs->x, pbs->y);
 
-    w.disparity = stereo_match(p,_visdat->diffL,_visdat->diffR); //TODO: wtf, inputs scaled with IMSCALEF, but disparity is unscaled?
-    p*=IMSCALEF;
+    w.disparity = stereo_match(p,_visdat->diffL,_visdat->diffR); //TODO: wtf, inputs scaled with pparams.imscalef, but disparity is unscaled?
+    p*=pparams.imscalef;
 
     if (w.disparity < min_disparity || w.disparity > max_disparity){
         w.disparity_in_range = false;
@@ -123,7 +120,7 @@ ItemTracker::BlobWorldProps ItemTracker::calc_world_props_blob_generic(BlobProps
 
         std::vector<Point3d> camera_coordinates, world_coordinates;
         camera_coordinates.push_back(Point3d(p.x,p.y,-w.disparity));
-        camera_coordinates.push_back(Point3d(p.x+pbs->radius*IMSCALEF,p.y,-w.disparity)); // to calc world radius
+        camera_coordinates.push_back(Point3d(p.x+pbs->radius*pparams.imscalef,p.y,-w.disparity)); // to calc world radius
         cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
 
         w.radius = cv::norm(world_coordinates[0]-world_coordinates[1]);
@@ -221,11 +218,11 @@ void ItemTracker::append_log() {
     if (_logger->is_open()) {
         //log all image stuff
         if (path.size()>0)
-            (*_logger) << _image_item.x * IMSCALEF << "; " << _image_item.y * IMSCALEF << "; " << _image_item.disparity << "; ";
+            (*_logger) << _image_item.x * pparams.imscalef << "; " << _image_item.y * pparams.imscalef << "; " << _image_item.disparity << "; ";
         else
             (*_logger) << -1 << "; " << -1 << "; " << -1 << "; ";
         if (_image_predict_item.valid)
-            (*_logger) << _image_predict_item.x * IMSCALEF << "; " << _image_predict_item.y * IMSCALEF << "; ";
+            (*_logger) << _image_predict_item.x * pparams.imscalef << "; " << _image_predict_item.y * pparams.imscalef << "; ";
         else
             (*_logger) << -1 << "; " << -1   << "; ";
 
@@ -278,10 +275,10 @@ float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR)
     float rectsizeX = ceil(rectsize*0.5f); // *4.0 results in drone-insect disparity interaction
     float rectsizeY = ceil(rectsize*0.5f);  // *3.0
     int x1,y1,x2,y2;
-    x1 = static_cast<int>((closestL.x-rectsizeX)*IMSCALEF);
-    x2 = static_cast<int>(2*rectsizeX*IMSCALEF);
-    y1 = static_cast<int>((closestL.y-rectsizeY)*IMSCALEF);
-    y2 = static_cast<int>(2*rectsizeY*IMSCALEF);
+    x1 = static_cast<int>((closestL.x-rectsizeX)*pparams.imscalef);
+    x2 = static_cast<int>(2*rectsizeX*pparams.imscalef);
+    y1 = static_cast<int>((closestL.y-rectsizeY)*pparams.imscalef);
+    y2 = static_cast<int>(2*rectsizeY*pparams.imscalef);
     if (x1 < 0)
         x1=0;
     else if (x1 >= diffL.cols)
