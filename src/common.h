@@ -260,6 +260,7 @@ public: float hover_throttle_a;
 public: float hover_throttle_b;
 public: int drone_blink_strength;
 public: tx_protocol tx;
+public: bool mode3d;
 
 private: xmls::xInt _initial_hover_throttle;
 private: xmls::xFloat _throttle_bank_factor;
@@ -272,6 +273,7 @@ private: xmls::xFloat _hover_throttle_a;
 private: xmls::xFloat _hover_throttle_b;
 private: xmls::xInt _drone_blink_strength;
 private: xmls::xInt _tx;
+private: xmls::xBool _mode3d;
 
 public: DroneParameters(std::string filepath) {
         _file = filepath;
@@ -294,8 +296,7 @@ public: DroneParameters(std::string filepath) {
         Register("hover_throttle_b",&_hover_throttle_b);
         Register("drone_blink_strength",&_drone_blink_strength);
         Register("tx",&_tx);
-
-
+        Register("mode3d",&_mode3d);
     }
 public: void deserialize() {
         std::cout << "Reading settings from: " << _file << std::endl;
@@ -329,6 +330,7 @@ public: void deserialize() {
         hover_throttle_b = _hover_throttle_b.value();
         drone_blink_strength = _drone_blink_strength.value();
         tx = static_cast<tx_protocol>(_tx.value());
+        mode3d = _mode3d.value();
     }
 
 public: void serialize() {
@@ -344,6 +346,7 @@ public: void serialize() {
         _hover_throttle_b = hover_throttle_b;
         _drone_blink_strength = drone_blink_strength;
         _tx = tx;
+        _mode3d = mode3d;
 
         std::string xmlData = toXML();
         std::ofstream outfile = std::ofstream (_file);

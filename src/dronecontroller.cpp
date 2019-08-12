@@ -51,6 +51,22 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     initialized = true;
 }
 
+int bound_throttle(int v) {
+    if ( v < JOY_BOUND_MIN )
+        v = JOY_BOUND_MIN;
+    if ( v > JOY_BOUND_MAX )
+        v = JOY_BOUND_MAX;
+
+    if (dparams.mode3d){
+        float f = v-JOY_BOUND_MIN;
+        float range = JOY_BOUND_MAX - JOY_BOUND_MIN;
+        f/=range;
+        v= 0.5f*f*range;
+        v += JOY_MIDDLE-10;
+    }
+    return v;
+}
+
 int bound_joystick_value(int v) {
     if ( v < JOY_BOUND_MIN )
         v = JOY_BOUND_MIN;
@@ -118,6 +134,7 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
         throttleErrI = 0;
         throttle = joyThrottle;
         autoThrottle = JOY_BOUND_MIN;
+        _rc->arm(_joy_arm_switch);
         roll = joyRoll;
         pitch = joyPitch;
         yaw = joyYaw;
@@ -128,7 +145,10 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
         rollErrI = 0;
         pitchErrI = 0;
         throttleErrI = 0;
+        _rc->arm(true);
+        throttle = JOY_BOUND_MIN;
         _flight_mode = fm_take_off_max_burn;
+        break;
     } FALLTHROUGH_INTENDED; case fm_take_off_max_burn : {
         //only control throttle:
         autoThrottle = JOY_BOUND_MAX;
@@ -208,6 +228,7 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
         roll = JOY_MIDDLE;
         pitch = JOY_MIDDLE;
         yaw = JOY_MIDDLE;
+        _rc->arm(false);
         break;
     } case fm_inactive: {
         //reset integrators (prevent ever increasing error)
@@ -218,6 +239,7 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
         roll = JOY_MIDDLE;
         pitch = JOY_MIDDLE;
         yaw = JOY_MIDDLE;
+        _rc->arm(false);
         break;
     } case fm_joystick_check: {
         //reset integrators (prevent ever increasing error)
@@ -228,13 +250,14 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
         roll = JOY_MIDDLE;
         pitch = JOY_MIDDLE;
         yaw = JOY_MIDDLE;
+        _rc->arm(false);
         break;
     }
     }
 
     yaw = joyYaw; // tmp until auto yaw control is fixed #10
 
-    throttle = bound_joystick_value(throttle);
+    throttle = bound_throttle(throttle);
     roll = bound_joystick_value(roll);
     pitch = bound_joystick_value(pitch);
     yaw = bound_joystick_value(yaw);
@@ -439,7 +462,7 @@ void DroneController::process_joystick() {
             _joy_state = js_disarmed;
         } else {
             _flight_mode = fm_joystick_check;
-            _rc->arm(false);
+            //_rc->arm(false);
         }
     } else {
 
@@ -467,13 +490,13 @@ void DroneController::process_joystick() {
             joySwitch_prev = _joy_arm_switch;
         } else if  (pparams.joystick == rc_xlite) {
             if (!_joy_arm_switch){
-                _rc->arm(false);
+                //_rc->arm(false);
                 _joy_takeoff_switch = false;
                 _manual_override_take_off_now = false;
                 _joy_state = js_disarmed;
                 _flight_mode = fm_disarmed;
             }else {
-                _rc->arm(true);
+                //_rc->arm(true);
                 if (_joy_mode_switch == jmsm_manual){
                     _joy_state = js_manual;
                     _flight_mode = fm_manual;

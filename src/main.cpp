@@ -170,8 +170,6 @@ void process_video() {
         tp[0].m1.unlock();
 
         static bool recording = false;
-        static bool was_recording = false;
-        static int insect_cnt = 0;
         double dtr = data.time - trackers.insecttracker()->last_sighting_time;
         if (dtr > 1 && recording) {
             recording = false;
@@ -183,6 +181,8 @@ void process_video() {
         }
 
         if (pparams.video_cuts) {
+            static bool was_recording = false;
+            static int insect_cnt = 0;
             if (cam.frame_number() / 2 && cam.frame_number() % 2) {
                 if (recording != was_recording) {
                     if (recording) { // new video

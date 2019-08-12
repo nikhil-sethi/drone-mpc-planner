@@ -149,11 +149,12 @@ feature -SOFTSPI
 feature -ESC_SENSOR
 feature -ANTI_GRAVITY
 feature -DYNAMIC_FILTER
-feature MOTOR_STOP
 feature TELEMETRY
+feature 3D
 feature LED_STRIP
 feature OSD
 feature RX_SPI
+feature ANTI_GRAVITY
 
 # beeper
 beeper GYRO_CALIBRATED
@@ -173,7 +174,7 @@ beeper MULTI_BEEPS
 beeper DISARM_REPEAT
 beeper ARMED
 beeper SYSTEM_INIT
-beeper ON_USB
+beeper -ON_USB
 beeper BLACKBOX_ERASE
 beeper CRASH_FLIP
 beeper CAM_CONNECTION_OPEN
@@ -433,7 +434,7 @@ set align_acc = DEFAULT
 set acc_hardware = AUTO
 set acc_lpf_hz = 10
 set acc_trim_pitch = 0
-set acc_trim_roll = 0
+set acc_trim_roll = 42
 set acc_calibration = 0,0,0
 set mid_rc = 1500
 set min_check = 1050
@@ -444,7 +445,7 @@ set rssi_scale = 100
 set rssi_offset = 0
 set rssi_invert = OFF
 set rc_interp = AUTO
-set rc_interp_ch = RPYT
+set rc_interp_ch = RPY
 set rc_interp_int = 19
 set rc_smoothing_type = FILTER
 set rc_smoothing_input_hz = 0
@@ -519,10 +520,10 @@ set beeper_frequency = 0
 set beeper_dshot_beacon_tone = 1
 set yaw_motors_reversed = ON
 set crashflip_motor_percent = 0
-set 3d_deadband_low = 1406
-set 3d_deadband_high = 1514
-set 3d_neutral = 1460
-set 3d_deadband_throttle = 50
+set 3d_deadband_low = 1450
+set 3d_deadband_high = 1500
+set 3d_neutral = 1425
+set 3d_deadband_throttle = 3
 set 3d_limit_low = 1000
 set 3d_limit_high = 2000
 set 3d_switched_mode = OFF
@@ -671,8 +672,8 @@ set cpu_overclock = OFF
 set pwr_on_arm_grace = 5
 set vtx_band = 5
 set vtx_channel = 8
-set vtx_power = 3
-set vtx_low_power_disarm = OFF
+set vtx_power = 0
+set vtx_low_power_disarm = ON
 set vtx_freq = 5917
 set vtx_pit_mode_freq = 0
 set vtx_halfduplex = ON
@@ -692,9 +693,9 @@ set esc_sensor_halfduplex = OFF
 set esc_sensor_current_offset = 0
 set frsky_spi_autobind = OFF
 set frsky_spi_tx_id = 1,0
-set frsky_spi_offset = -36
+set frsky_spi_offset = -41
 set frsky_spi_bind_hop_data = 0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,66,68,70,72,74,76,78,80,82,84,86,88,91,92,0,0,0
-set frsky_x_rx_num = 0
+set frsky_x_rx_num = 1
 set frsky_spi_use_external_adc = OFF
 set led_inversion = 0
 set camera_control_mode = HARDWARE_PWM
@@ -753,7 +754,7 @@ set iterm_limit = 300
 set pidsum_limit = 500
 set pidsum_limit_yaw = 400
 set yaw_lowpass_hz = 0
-set throttle_boost = 5
+set throttle_boost = 0
 set throttle_boost_cutoff = 15
 set acro_trainer_angle_limit = 20
 set acro_trainer_lookahead_ms = 50

@@ -10,4 +10,5 @@
     <Member Name="hover_throttle_b">0.40</Member>
     <Member Name="drone_blink_strength">0</Member>
     <Member Name="tx">4</Member>
+    <Member Name="mode3d">false</Member>
 </SerializableClass>

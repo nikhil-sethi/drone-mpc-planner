@@ -29,6 +29,8 @@ void MultiModule::init(bool fromfile) {
         tx_option = 0;
     }
 
+    zerothrottle();
+
     // setup connection with MultiModule
     notconnected = RS232_OpenComport(115200,"/dev/pats_mm0");
     if (dparams.tx!=tx_none) {
@@ -53,6 +55,13 @@ void MultiModule::init(bool fromfile) {
     }
 }
 
+void MultiModule::zerothrottle(){
+    if (dparams.mode3d)
+        throttle = JOY_MIDDLE;
+    else
+        throttle = JOY_BOUND_MIN;
+}
+
 void MultiModule::LED(bool value){
     if (value)
         led_on = true;
@@ -70,18 +79,18 @@ void MultiModule::worker_thread(void) {
             if (cycles_until_bind ==0)
                 _bind = true;
             arm_switch = false;
-            throttle = 0;
+            zerothrottle();
         }
         if (cycles_until_bind < 0){
             cycles_until_bind++;
             if (cycles_until_bind == 0)
                 _bind = false;
             arm_switch = false;
-            throttle = 0;
+            zerothrottle();
         }
         if (_bind){
             arm_switch = false;
-            throttle = 0;
+            zerothrottle();
         }
 
         g_lockData.lock();

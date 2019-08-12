@@ -119,6 +119,7 @@ private:
     void send_data(void);
     void receive_data(void);
     void convert_channels(uint16_t *channels, unsigned char * packet);
+    void zerothrottle();
 
 };
 
