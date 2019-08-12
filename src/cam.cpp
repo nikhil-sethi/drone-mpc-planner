@@ -860,13 +860,13 @@ void Cam::watchdog_thread(void) {
     std::cout << "Watchdog thread started" << std::endl;
     usleep(10000000); //wait until camera is running for sure
     while (!exit_watchdog_thread) {
-        usleep(30000);
+        usleep(500000);
         if (!watchdog && !exit_watchdog_thread) {
             std::cout << "Watchdog alert! Attempting to continue" << std::endl;
             new_frame1 =true;
             new_frame2 = true;
             lock_newframe.unlock(); // wait for a new frame passed by the rs callback
-            usleep(30000);
+            usleep(500000);
             if (!watchdog) {
                 std::cout << "Watchdog alert! Killing the process." << std::endl;
                 std::system("killall -9 pats");
