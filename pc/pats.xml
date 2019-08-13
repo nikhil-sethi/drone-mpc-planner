@@ -7,7 +7,7 @@
     <Member Name="watchdog">false</Member>
     <Member Name="fps">60</Member>
     <Member Name="video_cuts">0</Member>
-    <Member Name="video_raw">0</Member>
+    <Member Name="video_raw">4</Member>
     <Member Name="video_result">0</Member>
     <Member Name="joystick">4</Member>
     <Member Name="drone">2</Member>
