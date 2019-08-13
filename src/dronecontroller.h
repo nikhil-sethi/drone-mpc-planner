@@ -238,7 +238,7 @@ public:
         else if (_joy_mode_switch == jmsm_manual && joyThrottle <= JOY_BOUND_MIN)
             return false;
         else
-            return (autoThrottle > JOY_BOUND_MIN); //FIXME: check if this goes well if due to extreme control throttle is set to 0
+            return (autoThrottle > JOY_BOUND_MIN || _flight_mode == fm_start_takeoff || _flight_mode == fm_take_off_max_burn); //FIXME: check if this goes well if due to extreme control throttle is set to 0
     }
     void setAutoLandThrottleDecrease(int value) {autoLandThrottleDecrease = value;}
     void recalibrateHover();
