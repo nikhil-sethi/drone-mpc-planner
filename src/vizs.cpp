@@ -411,7 +411,7 @@ void Visualizer::draw_tracker_viz() {
     if (ins_path.size()>0){
         std::stringstream ss;
         ItemTracker::WorldItem wti = ins_path.back();
-        ss << "i " << to_string_with_precision(wti.distance_bkg,1);
+        ss << "i " << to_string_with_precision(wti.distance,1);
         cv::Scalar c(0,0,255);
         if (wti.distance_bkg >wti.distance )
             c = cv::Scalar(180,180,255);
@@ -422,7 +422,7 @@ void Visualizer::draw_tracker_viz() {
     if (drn_path.size()>0){
         std::stringstream ss;
         ItemTracker::WorldItem wti = drn_path.back();
-        ss << "d " << to_string_with_precision(wti.distance_bkg,1);
+        ss << "d " << to_string_with_precision(wti.distance,1);
         cv::Scalar c(0,0,255);
         if (wti.distance_bkg >wti.distance )
             c = cv::Scalar(180,180,255);
