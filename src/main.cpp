@@ -61,7 +61,7 @@ GStream output_video_results,output_video_LR,output_video_cuts;
 int main_argc;
 char **main_argv;
 PatsParameters pparams;
-DroneParameters dparams("../drone_tc.xml");
+DroneParameters dparams("../drone_tw.xml");
 
 stopwatch_c stopWatch_break;
 stopwatch_c stopWatch;
@@ -288,7 +288,7 @@ void process_frame(Stereo_Frame_Data data) {
     dctrl.control(trackers.dronetracker()->Last_track_data(),dnav.setpoint_pos_world,dnav.setpoint_vel_world,dnav.setpoint_acc_world);
     dprdct.update(dctrl.drone_is_active(),data.time);
 
-    trackers.dronetracker()-> _manual_flight_mode =dnav.drone_is_manual(); // TODO: hacky
+    trackers.dronetracker()->_manual_flight_mode =dnav.drone_is_manual(); // TODO: hacky
 
     logger << std::endl;
 
