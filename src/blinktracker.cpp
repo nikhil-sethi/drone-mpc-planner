@@ -27,11 +27,6 @@ void BlinkTracker::track(double time) {
         ItemTracker::append_log(); // write a dummy entry
         break;
     } case bds_searching: {
-#ifdef MANUAL_DRONE_LOCATE
-        append_log();
-        _blinking_drone_status = bds_found;
-        break;
-#endif
         ItemTracker::track(time);
         if (n_frames_lost == 0) {
             _blinking_drone_status = bds_1_blink_off;
@@ -68,10 +63,6 @@ void BlinkTracker::track(double time) {
     } case bds_dedicated_calib: {
         append_log();
         ignores_for_other_trkrs.push_back(IgnoreBlob(_image_item.pt(),time+2,_image_item.size*2, IgnoreBlob::blink_spot)); //prevent any residual blinkiness being picked up
-#ifndef MANUAL_DRONE_LOCATE
-        _blinking_drone_status = bds_found;
-        break;
-#endif
         _visdat->enable_background_motion_map_calibration(5.f);
         manual_calib_time_start = time;
         _blinking_drone_status = bds_calib_wait;
@@ -83,16 +74,6 @@ void BlinkTracker::track(double time) {
         break;
     } case bds_found: {
         append_log(); // no tracking needed in this stage
-#ifdef MANUAL_DRONE_LOCATE
-        _enable_roi = true;
-        //TMP solution:
-        _drone_blink_world_location.x = 0.190292642;
-        _drone_blink_world_location.y = -1.64084888;
-        _drone_blink_world_location.z = -1.32899487;
-        //write to xml
-        serialize_calib();
-        break;
-#endif
         break;
     }
     }

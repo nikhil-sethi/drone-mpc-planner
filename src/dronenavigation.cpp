@@ -175,9 +175,7 @@ void DroneNavigation::update(double time) {
         } FALLTHROUGH_INTENDED; case ns_take_off_completed: {
             _dctrl->flight_mode(DroneController::fm_flying);
             _dctrl->hoverthrottle = _trackers->dronetracker()->hover_throttle_estimation;
-#ifdef MANUAL_DRONE_LOCATE
-            _dtrk->do_post_takeoff_detection();
-#endif
+
             if (_nav_flight_mode == nfm_hunt) {
                 _navigation_status = ns_start_the_chase;
                 repeat = true;
@@ -219,18 +217,6 @@ void DroneNavigation::update(double time) {
             _navigation_status = ns_approach_waypoint;
             break;
         } case ns_approach_waypoint: {
-#ifdef MANUAL_DRONE_LOCATE
-
-            if (current_setpoint->mode == fm_landing){
-                next_waypoint(landing_waypoint()); // re-update the location, important when manually setting take off location
-            } else if (current_setpoint->mode == fm_hover_calib){
-                next_waypoint(hovercalib_waypoint()); // re-update the location, important when manually setting take off location
-            } else if (current_setpoint->mode == fm_takeoff){
-                next_waypoint(takeoff_waypoint()); // re-update the location, important when manually setting take off location
-            }
-
-#endif
-
             float dis = sqrtf(_dctrl->posErrX*_dctrl->posErrX + _dctrl->posErrY*_dctrl->posErrY + _dctrl->posErrZ*_dctrl->posErrZ);
             _dist_to_wp = dis;
             if (dis *1000 < current_setpoint->threshold_mm * distance_threshold_f && _trackers->dronetracker()->n_frames_tracking>5) {

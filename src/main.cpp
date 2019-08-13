@@ -508,13 +508,6 @@ void init(int argc, char **argv) {
     dctrl.init(&logger,fromfile==log_mode_full,&rc,trackers.dronetracker());
     dprdct.init(&visdat,trackers.dronetracker(),trackers.insecttracker(),&dctrl);
 
-#ifdef MANUAL_DRONE_LOCATE
-    if (!fromfile){
-        manual_drone_locater(cam.frameL);
-        dtrkr.set_drone_location(cv::Point(mouseX,mouseY));
-    }
-#endif
-
     // Ensure that joystick was found and that we can use it
     if (!dctrl.joystick_ready() && fromfile!=log_mode_full && pparams.joystick != rc_none) {
         throw my_exit("no joystick connected.");

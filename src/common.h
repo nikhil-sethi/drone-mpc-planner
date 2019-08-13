@@ -120,7 +120,7 @@ class PatsParameters: public xmls::Serializable
 {
 
 private: std::string settings_file = "../pats.xml";
-private: xmls::xBool _insect_logging_mode,_watchdog,_has_screen,_manual_drone_locate;
+private: xmls::xBool _insect_logging_mode,_watchdog,_has_screen;
 private: xmls::xInt _video_cuts,_video_raw, _video_result, _joystick, _drone;
 private: xmls::xInt _wdt_timeout_us,_darkness_threshold,_fps;
 private: xmls::xBool _cam_tuning, _control_tuning, _navigation_tuning,_vision_tuning,_drone_tracking_tuning,_insect_tracking_tuning;
@@ -129,7 +129,7 @@ private: xmls::xInt _imscalef;
 
 public: int wdt_timeout_us,darkness_threshold;
 public: uint fps;
-public: bool insect_logging_mode,watchdog,has_screen,manual_drone_locate;
+public: bool insect_logging_mode,watchdog,has_screen;
 public: video_record_mode video_cuts,video_raw, video_result;
 public: rc_type joystick;
 public: drone_type drone;
@@ -149,7 +149,6 @@ public: PatsParameters() {
         Register("wdt_timeout_us",&_wdt_timeout_us);
         Register("darkness_threshold",&_darkness_threshold);
         Register("has_screen",&_has_screen);
-        Register("manual_drone_locate",&_manual_drone_locate);
         Register("insect_logging_mode",&_insect_logging_mode);
         Register("watchdog",&_watchdog);
         Register("fps",&_fps);
@@ -193,7 +192,6 @@ public: void deserialize() {
         wdt_timeout_us = _wdt_timeout_us.value();
         darkness_threshold = _darkness_threshold.value();
         has_screen = _has_screen.value();
-        manual_drone_locate = _manual_drone_locate.value();
         insect_logging_mode = _insect_logging_mode.value();
         watchdog = _watchdog.value();
         fps = _fps.value();
@@ -217,7 +215,6 @@ public: void serialize() {
         _wdt_timeout_us = wdt_timeout_us;
         _darkness_threshold = darkness_threshold;
         _has_screen = has_screen;
-        _manual_drone_locate = manual_drone_locate;
         _insect_logging_mode = insect_logging_mode;
         _watchdog = watchdog;
         _fps = fps;
