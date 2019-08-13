@@ -579,7 +579,8 @@ void DroneController::serialize_settings() {
 void DroneController::close () {
     if (initialized) {
         std::cout << "closing controller" << std::endl;
-        serialize_settings();
+        if (pparams.control_tuning)
+            serialize_settings();
         initialized = false;
     }
 }

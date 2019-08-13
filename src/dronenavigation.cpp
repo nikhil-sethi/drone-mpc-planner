@@ -382,7 +382,8 @@ void DroneNavigation::serialize_settings() {
 void DroneNavigation::close() {
     if (initialized) {
         std::cout << "Closing drone navigation" << std::endl;
-        serialize_settings();
+        if (pparams.navigation_tuning)
+            serialize_settings();
         initialized = false;
     }
 }

@@ -243,7 +243,8 @@ void VisionData::serialize_settings() {
 void VisionData::close() {
     if (initialized){
         std::cout << "Closing visdat" << std::endl;
-        serialize_settings();
+        if (pparams.vision_tuning)
+            serialize_settings();
         initialized = false;
     }
 }

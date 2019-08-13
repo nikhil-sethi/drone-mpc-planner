@@ -656,7 +656,7 @@ void TrackerManager::close () {
     if (initialized){
         for (uint i=0; i < _trackers.size(); i++)
             _trackers.at(i)->close();
-        serialize_settings();
+//        serialize_settings();
         initialized = false;
     }
 }

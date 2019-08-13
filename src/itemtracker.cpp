@@ -606,7 +606,8 @@ void ItemTracker::serialize_settings() {
 void ItemTracker::close () {
     if (initialized){
         std::cout << "Closing tracker: " << _name << std::endl;
-        serialize_settings();
+        if (pparams.insect_tracking_tuning || pparams.drone_tracking_tuning)
+            serialize_settings();
         initialized = false;
     }
 }
