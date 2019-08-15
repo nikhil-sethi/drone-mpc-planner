@@ -16,46 +16,87 @@ Host mavlab-godzilla
 	Hostname mavlab-godzilla-compute.lr.tudelft.nl
 	User pats
 
-Host pats1
+Host pats1 pats_LR1
 	Hostname localhost
+	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
-	ProxyCommand ssh -i ~/.ssh/mavlab_gpu_id_rsa -W %h:%p mavlab-gpu	
+	ProxyJump mavlab-gpu
 	Port 6100
 
-Host pats1b
+Host pats1b pats_LR1b
 	Hostname localhost
+	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
-	ProxyCommand ssh -i ~/.ssh/dinstech_id_rsa -W %h:%p dinstech
+	ProxyJump dinstech
 	Port 6100
 
-Host pats1c
+Host pats2 pats_holstein2
 	Hostname localhost
+	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
-	ProxyCommand ssh -i ~/.ssh/mavlab-godzilla_id_rsa -W %h:%p mavlab-godzilla
-	Port 6100
-
-Host pats2
-	Hostname localhost
-	User pats
-	ProxyCommand ssh -i ~/.ssh/dinstech_id_rsa -W %h:%p dinstech
+	ProxyJump mavlab-gpu
 	Port 6200
 
-Host pats2b
+Host pats2b pats_holstein2b
 	Hostname localhost
+	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
-	ProxyCommand ssh -i ~/.ssh/dinstech_id_rsa -W %h:%p dinstech
+	ProxyJump dinstech
 	Port 6200
 
-Host pats2c
+Host pats3 pats_demo3
 	Hostname localhost
+	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
-	ProxyCommand ssh -i ~/.ssh/mavlab-godzilla_id_rsa -W %h:%p mavlab-godzilla
-	Port 6200
+	ProxyJump mavlab-gpu
+	Port 6300
 
-# Pats
-Host pats_old
+Host pats3b pats_demo3b
 	Hostname localhost
+	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
-	#ProxyJump mavlab-gpu
-	ProxyCommand ssh -i ~/.ssh/mavlab_gpu_id_rsa -W %h:%p mavlab-gpu	
-	Port 16668
+	ProxyJump dinstech
+	Port 6300
+
+Host pats4  pats_koppert4
+	Hostname localhost
+	IdentityFile ~/.ssh/pats_id_rsa
+	User pats
+	ProxyJump mavlab-gpu
+	Port 6400
+
+Host pats4b  pats_koppert4b
+	Hostname localhost
+	IdentityFile ~/.ssh/pats_id_rsa	
+	User pats
+	ProxyJump dinstech
+	Port 6400
+
+Host pats5 
+	Hostname localhost
+	IdentityFile ~/.ssh/pats_id_rsa
+	User pats
+	ProxyJump mavlab-gpu
+	Port 6500
+
+Host pats5b
+	Hostname localhost
+	IdentityFile ~/.ssh/pats_id_rsa
+	User pats
+	ProxyJump dinstech
+	Port 6500
+
+Host pats6 pats_koppert6
+	Hostname localhost
+	IdentityFile ~/.ssh/pats_id_rsa
+	User pats
+	ProxyJump mavlab-gpu
+	Port 6600
+
+Host pats6b  pats_koppert6b
+	Hostname localhost
+	IdentityFile ~/.ssh/pats_id_rsa
+	User pats
+	ProxyJump dinstech
+	Port 6600
+
