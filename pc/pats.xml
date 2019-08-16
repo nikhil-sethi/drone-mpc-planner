@@ -9,7 +9,7 @@
     <Member Name="video_raw">4</Member>
     <Member Name="video_result">0</Member>
     <Member Name="joystick">4</Member>
-    <Member Name="drone">2</Member>
+    <Member Name="drone">1</Member>
     <Member Name="cam_tuning">false</Member>
     <Member Name="control_tuning">false</Member>
     <Member Name="navigation_tuning">false</Member>

@@ -31,7 +31,7 @@ public:
         BlobProps(cv::Point2f pt, float area,float blob_pixel_max){
             x = pt.x;
             y = pt.y;
-            radius = sqrtf(area/static_cast<float>(M_PI));
+            radius = sqrtf(area/M_PIf32);
             pixel_max = blob_pixel_max;
         }
     };

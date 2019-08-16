@@ -362,7 +362,7 @@ float ItemTracker::estimate_sub_disparity(int disparity) {
     float h31 = (y3 - y1);
     float h21 = (y2 - y1) * 4;
     sub_disp = ((h21 - h31)) / (h21 - h31 * 2);
-    sub_disp += sinf(sub_disp*2.0f*static_cast<float>(M_PI))*0.13f;
+    sub_disp += sinf(sub_disp*2.0f*M_PIf32)*0.13f;
     sub_disp += (disparity-1);
 
     if (sub_disp<disparity-1 || sub_disp>disparity+1 || sub_disp != sub_disp)

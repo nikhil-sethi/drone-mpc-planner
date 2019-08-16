@@ -37,7 +37,6 @@ const float FOVy_ff = FOV * (static_cast<float>(height_ff)/FOV_size);
 const float pix2degx_ff = (FOVx_ff / static_cast<float>(width_ff));
 const float pix2degy_ff = (FOVy_ff / static_cast<float>(height_ff));
 
-
 const int width_dm = 96;
 const int height_dm = 96;
 const int width_dmB = 576;
@@ -51,8 +50,8 @@ const float pix2degy_dmB = (FOVy_dm / static_cast<float>(height_dmB));
 
 const float depthscale = 256.0f;
 
-const float rad2deg = 180.f/static_cast<float>(M_PI);
-const float deg2rad = static_cast<float>(M_PI)/180.f;
+const float rad2deg = 180.f/M_PIf32;
+const float deg2rad = M_PIf32/180.f;
 
 const double bind_blink_time = 0.45;
 

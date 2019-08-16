@@ -28,7 +28,7 @@ void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, Dro
     //    setpoints.push_back(waypoint(cv::Point3f(2,-1.0f,-3.5f),100));
 
 
-    setpoints.push_back(waypoint(cv::Point3f(0,-1.3f,-1.5f),30));
+    setpoints.push_back(waypoint(cv::Point3f(0,-1.3f,-1.5f),40));
 
     setpoints.push_back(landing_waypoint());
 
@@ -161,19 +161,25 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_manual;
                 break;
             }
-            if (time - time_taken_off > 0.7){
+            if (time - time_taken_off > dparams.max_burn_time*2 && _trackers->dronetracker()->taking_off()){
                 std::cout << "Drone was not detected during max burn take off manoeuvre, aborting." << std::endl;
                 _dctrl->flight_mode(DroneController::fm_abort_takeoff);
                 _navigation_status = ns_drone_problem;
                 break;
             }
 
-            if (!_trackers->dronetracker()->taking_off())
+            if (_iceptor.insect_in_range()) {
+                setpoint_pos_world = _iceptor.target_position();
+                setpoint_vel_world = _iceptor.target_speed();
+                setpoint_acc_world = _iceptor.target_accelleration();
+            }
+
+            if (!_trackers->dronetracker()->taking_off() && time - time_taken_off > dparams.max_burn_time)
                 _navigation_status = ns_take_off_completed;
             else
                 break;
         } FALLTHROUGH_INTENDED; case ns_take_off_completed: {
-            _dctrl->flight_mode(DroneController::fm_flying);
+            //_dctrl->flight_mode(DroneController::fm_flying);
             _dctrl->hoverthrottle = _trackers->dronetracker()->hover_throttle_estimation;
 
             if (_nav_flight_mode == nfm_hunt) {
@@ -187,13 +193,15 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_start_the_chase: {
             _iceptor.reset_insect_cleared();
-            _navigation_status = ns_chasing_insect;
+            _navigation_status = ns_chasing_insect_ff;
+        } FALLTHROUGH_INTENDED; case ns_chasing_insect_ff: {
 
-
-            if (_nav_flight_mode == nfm_manual) {
+            if (_dctrl->ff_completed())
+                _navigation_status = ns_chasing_insect;
+            if (_nav_flight_mode == nfm_manual)
                 _navigation_status = ns_manual;
-                break;
-            }
+            break;
+
         } FALLTHROUGH_INTENDED; case ns_chasing_insect: {
 
             //update target chasing waypoint and speed

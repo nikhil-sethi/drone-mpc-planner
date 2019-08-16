@@ -36,7 +36,7 @@ float transformPixelToAngle(cv::Point2f p, cv::Point2f pix2rad,cv::Point center)
 int getCenterPixel(float angle, float imFOV, int imWidth) {
     //calculate the center pixel based on the angle measured by an IMU
     //the 0.5 is because the IMU goes from [-PI .. PI], while the image goes from [0 .. imsize]
-    return roundf(((angle/(imFOV/FOV)) / static_cast<float>(M_PI) + 0.5f) * imWidth);
+    return roundf(((angle/(imFOV/FOV)) / M_PIf32 + 0.5f) * imWidth);
 }
 
 void acc_orientation(float accx, float accy, float accz, float *out) {
@@ -44,11 +44,11 @@ void acc_orientation(float accx, float accy, float accz, float *out) {
     float tx,ty,tz,pitch,roll;
     R = sqrtf(accx * accx + accy * accy +accz * accz);
 
-    tx = acosf(accx/R)-(float)M_PI_2;
-    ty = acosf(accy/R)-(float)M_PI_2;
-    tz = acosf(accz/R)-(float)M_PI_2;
-    pitch = atan2f(-ty, -tz) + (float)M_PI;
-    roll =  atan2f(-tz, -tx) + (float)M_PI;
+    tx = acosf(accx/R)-M_PI_2f32;
+    ty = acosf(accy/R)-M_PI_2f32;
+    tz = acosf(accz/R)-M_PI_2f32;
+    pitch = atan2f(-ty, -tz) + M_PI_2f32;
+    roll =  atan2f(-tz, -tx) + M_PI_2f32;
     out[0] = roll;
     out[1] = pitch;
     out[2] = 0;
