@@ -144,7 +144,7 @@ private:
 
     bool _paused;
 
-    std::string bag_fn = "test.bag";
+    std::string bag_fn = "record.bag";
 
     //read file names
     std::string calib_rfn = "cam_calib.xml";
