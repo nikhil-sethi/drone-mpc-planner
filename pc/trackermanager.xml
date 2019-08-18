@@ -2,5 +2,4 @@
     <Member Name="max_points_per_frame">10</Member>
     <Member Name="roi_radius">15</Member>
     <Member Name="motion_thresh">20</Member>
-    <Member Name="motion_thresh_blink_detect"></Member>
 </SerializableClass>

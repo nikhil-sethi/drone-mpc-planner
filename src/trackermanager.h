@@ -73,7 +73,6 @@ public: cv::Scalar tracker_color( ItemTracker * trkr) {
     {
     public:
         xmls::xInt max_points_per_frame,roi_radius,motion_thresh;
-        xmls::xInt motion_thresh_blink_detect;
 
         TrackerManagerParameters() {
             // Set the XML class name.
@@ -87,7 +86,6 @@ public: cv::Scalar tracker_color( ItemTracker * trkr) {
             Register("max_points_per_frame",&max_points_per_frame);
             Register("roi_radius",&roi_radius);
             Register("motion_thresh",&motion_thresh);
-            Register("motion_thresh_blink_detect",&motion_thresh_blink_detect);
         }
     };
 
