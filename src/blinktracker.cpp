@@ -60,18 +60,6 @@ void BlinkTracker::track(double time) {
         ItemTracker::track(time);
         _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
         break;
-    } case bds_dedicated_calib: {
-        append_log();
-        ignores_for_other_trkrs.push_back(IgnoreBlob(_image_item.pt(),time+2,_image_item.size*2, IgnoreBlob::blink_spot)); //prevent any residual blinkiness being picked up
-        _visdat->enable_background_motion_map_calibration(5.f);
-        manual_calib_time_start = time;
-        _blinking_drone_status = bds_calib_wait;
-        break;
-    } case bds_calib_wait: {
-        append_log();
-        if (time  - manual_calib_time_start > 5.1)
-            _blinking_drone_status = bds_found;
-        break;
     } case bds_found: {
         append_log(); // no tracking needed in this stage
         break;

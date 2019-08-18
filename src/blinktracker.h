@@ -18,8 +18,6 @@ static const char* blinking_drone_state_names[] = { "",
                                                     "bds_3_blink_off_calib",
                                                     "bds_3_blink_off",
                                                     "bds_3_blink_on",
-                                                    "bds_dedicated_calib",
-                                                    "bds_calib_wait",
                                                     "bds_found" };
 
 class BlinkTracker : public ItemTracker {
@@ -37,8 +35,6 @@ public:
         bds_3_blink_off_calib,
         bds_3_blink_off,
         bds_3_blink_on,
-        bds_dedicated_calib,
-        bds_calib_wait,
         bds_found
     };
 private:
