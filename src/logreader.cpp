@@ -49,7 +49,6 @@ void LogReader::init(std::string file, bool partial_insect_log) {
     int cnt = 0; // only for partial insect log.
     while (std::getline(infile, line)) {
 //        std::cout << line << std::endl;
-        std::istringstream iss(line);
         Log_Entry entry = createLogEntry(line);
         int id;
         if (partial_insect_log)
@@ -113,27 +112,27 @@ LogReader::Log_Entry LogReader::createLogEntry(std::string line) {
     entry.auto_roll = std::stoi(linedata.at(headmap["autoRoll"]));
     entry.auto_pitch = std::stoi(linedata.at(headmap["autoPitch"]));
 
-    entry.ins_pos_x = std::stof(linedata.at(headmap["posX_insect"]));
-    entry.ins_pos_y = std::stof(linedata.at(headmap["posY_insect"]));
-    entry.ins_pos_z = std::stof(linedata.at(headmap["posZ_insect"]));
+    entry.ins_pos_x = std::stod(linedata.at(headmap["posX_insect"]));
+    entry.ins_pos_y = std::stod(linedata.at(headmap["posY_insect"]));
+    entry.ins_pos_z = std::stod(linedata.at(headmap["posZ_insect"]));
 
-    entry.ins_spos_x = std::stof(linedata.at(headmap["sposX_insect"]));
-    entry.ins_spos_y = std::stof(linedata.at(headmap["sposY_insect"]));
-    entry.ins_spos_z = std::stof(linedata.at(headmap["sposZ_insect"]));
+    entry.ins_spos_x = std::stod(linedata.at(headmap["sposX_insect"]));
+    entry.ins_spos_y = std::stod(linedata.at(headmap["sposY_insect"]));
+    entry.ins_spos_z = std::stod(linedata.at(headmap["sposZ_insect"]));
 
-    entry.ins_svel_x = std::stof(linedata.at(headmap["svelX_insect"]));
-    entry.ins_svel_y = std::stof(linedata.at(headmap["svelY_insect"]));
-    entry.ins_svel_z = std::stof(linedata.at(headmap["svelZ_insect"]));
+    entry.ins_svel_x = std::stod(linedata.at(headmap["svelX_insect"]));
+    entry.ins_svel_y = std::stod(linedata.at(headmap["svelY_insect"]));
+    entry.ins_svel_z = std::stod(linedata.at(headmap["svelZ_insect"]));
 
-    entry.ins_sacc_x = std::stof(linedata.at(headmap["saccX_insect"]));
-    entry.ins_sacc_y = std::stof(linedata.at(headmap["saccY_insect"]));
-    entry.ins_sacc_z = std::stof(linedata.at(headmap["saccZ_insect"]));
+    entry.ins_sacc_x = std::stod(linedata.at(headmap["saccX_insect"]));
+    entry.ins_sacc_y = std::stod(linedata.at(headmap["saccY_insect"]));
+    entry.ins_sacc_z = std::stod(linedata.at(headmap["saccZ_insect"]));
 
-    entry.ins_im_x = std::stof(linedata.at(headmap["imLx_insect"]));
-    entry.ins_im_y = std::stof(linedata.at(headmap["imLy_insect"]));
-    entry.ins_disparity = std::stof(linedata.at(headmap["disparity_insect"]));
-    entry.ins_pred_im_x = std::stof(linedata.at(headmap["imLx_pred_insect"]));
-    entry.ins_pred_im_y = std::stof(linedata.at(headmap["imLy_pred_insect"]));
+    entry.ins_im_x = std::stod(linedata.at(headmap["imLx_insect"]));
+    entry.ins_im_y = std::stod(linedata.at(headmap["imLy_insect"]));
+    entry.ins_disparity = std::stod(linedata.at(headmap["disparity_insect"]));
+    entry.ins_pred_im_x = std::stod(linedata.at(headmap["imLx_pred_insect"]));
+    entry.ins_pred_im_y = std::stod(linedata.at(headmap["imLy_pred_insect"]));
 
     entry.ins_n_frames_lost = std::stoi(linedata.at(headmap["n_frames_lost_insect"]));
     entry.ins_n_frames_tracking = std::stoi(linedata.at(headmap["n_frames_tracking_insect"]));
