@@ -85,13 +85,20 @@ struct bag_video_ended : public std::exception {
     bag_video_ended() {}
 };
 
-enum video_record_mode {
+enum video_mode {
     video_disabled = 0,
-    video_avi,
+    video_mp4,
     video_stream,
-    video_avi_opencv,
+    video_mp4_opencv,
     video_bag
 };
+static const char* video_mode_str[] = {"video_disabled",
+                                       "video_mp4",
+                                       "video_stream",
+                                       "video_mp4_opencv",
+                                       "video_bag"
+                                       "" // must be the last entry! (check in serializer)
+                                      };
 enum rc_type {
     rc_none = 0,
     rc_devo,
@@ -99,14 +106,27 @@ enum rc_type {
     rc_playstation,
     rc_xlite
 };
+static const char* rc_type_str[] = {"rc_none",
+                                    "rc_devo",
+                                    "rc_usb_hobbyking",
+                                    "rc_playstation",
+                                    "rc_xlite"
+                                    "" // must be the last entry! (check in serializer)
+                                   };
 enum tx_protocol {
     tx_none = 0,
     tx_dsmx,
     tx_cx10,
     tx_frskyd,
-    tx_frskyx,
-    tx_frskyx_tc
+    tx_frskyx
 };
+static const char* tx_protocol_str[] = {"tx_none",
+                                        "tx_dsmx",
+                                        "tx_cx10",
+                                        "tx_frskyd",
+                                        "tx_frskyx"
+                                        "" // must be the last entry! (check in serializer)
+                                       };
 enum drone_type {
     drone_none,
     drone_trashcan,
@@ -114,22 +134,131 @@ enum drone_type {
     drone_tinywhoop_green,
     drone_cx10
 };
+static const char* drone_type_str[] = {"drone_none",
+                                       "drone_trashcan",
+                                       "drone_tinywhoop_black",
+                                       "drone_tinywhoop_green",
+                                       "drone_cx10",
+                                       "" // must be the last entry! (check in serializer)
+                                      };
 
-class PatsParameters: public xmls::Serializable
+namespace xmls {
+
+class xVideo_mode: public MemberBase
+{
+private:
+    void AssignValue(const video_mode value){
+        m_sValue = video_mode_str[value];
+    };
+public:
+    xVideo_mode() {AssignValue(static_cast<video_mode>(0));};
+    xVideo_mode(video_mode value) {AssignValue(value);};
+    video_mode value() {
+        string sHelp =  m_sValue;
+        transform(sHelp.begin(), sHelp.end(), sHelp.begin(), ::tolower);
+
+        for (uint i = 0; video_mode_str[i] != string(""); i++) {
+            if (video_mode_str[i] == sHelp)
+                return static_cast<video_mode>(i);
+        }
+
+        return static_cast<video_mode>(0);
+    };
+
+    xVideo_mode operator=(const video_mode value) {AssignValue(value);return *this;};
+};
+
+class xRc_type: public MemberBase
+{
+private:
+    void AssignValue(const rc_type value){
+        m_sValue = rc_type_str[value];
+    };
+public:
+    xRc_type() {AssignValue(static_cast<rc_type>(0));};
+    xRc_type(rc_type value) {AssignValue(value);};
+    rc_type value() {
+        string sHelp =  m_sValue;
+        transform(sHelp.begin(), sHelp.end(), sHelp.begin(), ::tolower);
+
+        for (uint i = 0; rc_type_str[i] != string(""); i++) {
+            if (rc_type_str[i] == sHelp)
+                return static_cast<rc_type>(i);
+        }
+
+        return static_cast<rc_type>(0);
+    };
+
+    xRc_type operator=(const rc_type value) {AssignValue(value);return *this;};
+};
+
+class xTx_protocol: public MemberBase
+{
+private:
+    void AssignValue(const tx_protocol value){
+        m_sValue = tx_protocol_str[value];
+    };
+public:
+    xTx_protocol() {AssignValue(static_cast<tx_protocol>(0));};
+    xTx_protocol(tx_protocol value) {AssignValue(value);};
+    tx_protocol value() {
+        string sHelp =  m_sValue;
+        transform(sHelp.begin(), sHelp.end(), sHelp.begin(), ::tolower);
+
+        for (uint i = 0; tx_protocol_str[i] != string(""); i++) {
+            if (tx_protocol_str[i] == sHelp)
+                return static_cast<tx_protocol>(i);
+        }
+
+        return static_cast<tx_protocol>(0);
+    };
+
+    xTx_protocol operator=(const tx_protocol value) {AssignValue(value);return *this;};
+};
+
+class xDrone_type: public MemberBase
+{
+private:
+    void AssignValue(const drone_type value){
+        m_sValue = drone_type_str[value];
+    };
+public:
+    xDrone_type() {AssignValue(static_cast<drone_type>(0));};
+    xDrone_type(drone_type value) {AssignValue(value);};
+    drone_type value() {
+        string sHelp =  m_sValue;
+        transform(sHelp.begin(), sHelp.end(), sHelp.begin(), ::tolower);
+
+        for (uint i = 0; drone_type_str[i] != string(""); i++) {
+            if (drone_type_str[i] == sHelp)
+                return static_cast<drone_type>(i);
+        }
+
+        return static_cast<drone_type>(0);
+    };
+
+    xDrone_type operator=(const drone_type value) {AssignValue(value);return *this;};
+};
+
+
+
+class PatsParameters: public Serializable
 {
 
 private: std::string settings_file = "../pats.xml";
-private: xmls::xBool _insect_logging_mode,_watchdog,_has_screen;
-private: xmls::xInt _video_cuts,_video_raw, _video_result, _joystick, _drone;
-private: xmls::xInt _wdt_timeout_us,_darkness_threshold,_fps;
-private: xmls::xBool _cam_tuning, _control_tuning, _navigation_tuning,_vision_tuning,_drone_tracking_tuning,_insect_tracking_tuning;
-private: xmls::xBool _viz_plots, _viz_tracking;
-private: xmls::xInt _imscalef;
+private: xBool _insect_logging_mode,_watchdog,_has_screen;
+private: xVideo_mode _video_cuts,_video_raw, _video_result;
+private: xRc_type _joystick;
+private: xDrone_type _drone;
+private: xInt _wdt_timeout_us,_darkness_threshold,_fps;
+private: xBool _cam_tuning, _control_tuning, _navigation_tuning,_vision_tuning,_drone_tracking_tuning,_insect_tracking_tuning;
+private: xBool _viz_plots, _viz_tracking;
+private: xInt _imscalef;
 
 public: int wdt_timeout_us,darkness_threshold;
 public: uint fps;
 public: bool insect_logging_mode,watchdog,has_screen;
-public: video_record_mode video_cuts,video_raw, video_result;
+public: video_mode video_cuts,video_raw, video_result;
 public: rc_type joystick;
 public: drone_type drone;
 public: bool cam_tuning, control_tuning, navigation_tuning,vision_tuning,drone_tracking_tuning, insect_tracking_tuning;
@@ -142,7 +271,7 @@ public: PatsParameters() {
         setClassName("PatsParameters");
 
         // Set class version
-        setVersion("1.0");
+        setVersion("1.1");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("wdt_timeout_us",&_wdt_timeout_us);
@@ -174,7 +303,7 @@ public: void deserialize() {
             std::string xmlData((std::istreambuf_iterator<char>(infile)),
                                 std::istreambuf_iterator<char>());
 
-            if (!xmls::Serializable::fromXML(xmlData, this))
+            if (!Serializable::fromXML(xmlData, this))
             { // Deserialization not successful
                 throw my_exit("Cannot read: " + settings_file);
             }
@@ -194,11 +323,11 @@ public: void deserialize() {
         insect_logging_mode = _insect_logging_mode.value();
         watchdog = _watchdog.value();
         fps = _fps.value();
-        video_cuts = static_cast<video_record_mode>(_video_cuts.value());
-        video_raw = static_cast<video_record_mode>(_video_raw.value());
-        video_result = static_cast<video_record_mode>(_video_result.value());
-        joystick = static_cast<rc_type>(_joystick.value());
-        drone = static_cast<drone_type>(_drone.value());
+        video_cuts = _video_cuts.value();
+        video_raw = _video_raw.value();
+        video_result = _video_result.value();
+        joystick = _joystick.value();
+        drone = _drone.value();
         cam_tuning  = _cam_tuning.value();
         control_tuning = _control_tuning.value();
         navigation_tuning = _navigation_tuning.value();
@@ -238,9 +367,8 @@ public: void serialize() {
         outfile.close();
     }
 };
-extern PatsParameters pparams;
 
-class DroneParameters: public xmls::Serializable
+class DroneParameters: public Serializable
 {
 
 private: std::string _file;
@@ -258,18 +386,18 @@ public: int drone_blink_strength;
 public: tx_protocol tx;
 public: bool mode3d;
 
-private: xmls::xInt _initial_hover_throttle;
-private: xmls::xFloat _throttle_bank_factor;
-private: xmls::xFloat _max_burn_time;
-private: xmls::xInt _min_throttle;
-private: xmls::xFloat _full_bat_and_throttle_im_effect;
-private: xmls::xFloat _full_bat_and_throttle_take_off_acc;
-private: xmls::xFloat _full_bat_and_throttle_spinup_time;
-private: xmls::xFloat _hover_throttle_a;
-private: xmls::xFloat _hover_throttle_b;
-private: xmls::xInt _drone_blink_strength;
-private: xmls::xInt _tx;
-private: xmls::xBool _mode3d;
+private: xInt _initial_hover_throttle;
+private: xFloat _throttle_bank_factor;
+private: xFloat _max_burn_time;
+private: xInt _min_throttle;
+private: xFloat _full_bat_and_throttle_im_effect;
+private: xFloat _full_bat_and_throttle_take_off_acc;
+private: xFloat _full_bat_and_throttle_spinup_time;
+private: xFloat _hover_throttle_a;
+private: xFloat _hover_throttle_b;
+private: xInt _drone_blink_strength;
+private: xTx_protocol _tx;
+private: xBool _mode3d;
 
 public: DroneParameters(std::string filepath) {
         _file = filepath;
@@ -278,7 +406,7 @@ public: DroneParameters(std::string filepath) {
         setClassName("DroneParameters");
 
         // Set class version
-        setVersion("1.0");
+        setVersion("1.1");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("initial_hover_throttle",&_initial_hover_throttle);
@@ -301,7 +429,7 @@ public: void deserialize() {
             std::string xmlData((std::istreambuf_iterator<char>(infile)),
                                 std::istreambuf_iterator<char>());
 
-            if (!xmls::Serializable::fromXML(xmlData, this))
+            if (!Serializable::fromXML(xmlData, this))
             { // Deserialization not successful
                 throw my_exit("Cannot read: " + _file);
             }
@@ -325,7 +453,7 @@ public: void deserialize() {
         hover_throttle_a = _hover_throttle_a.value();
         hover_throttle_b = _hover_throttle_b.value();
         drone_blink_strength = _drone_blink_strength.value();
-        tx = static_cast<tx_protocol>(_tx.value());
+        tx = _tx.value();
         mode3d = _mode3d.value();
     }
 
@@ -350,7 +478,9 @@ public: void serialize() {
         outfile.close();
     }
 };
-extern DroneParameters dparams;
+}
+extern xmls::DroneParameters dparams;
+extern xmls::PatsParameters pparams;
 
 #ifndef FALLTHROUGH_INTENDED
 #if defined(__clang__)

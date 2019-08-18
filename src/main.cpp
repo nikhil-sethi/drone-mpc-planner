@@ -60,8 +60,8 @@ GStream output_video_results,output_video_LR,output_video_cuts;
 
 int main_argc;
 char **main_argv;
-PatsParameters pparams;
-DroneParameters dparams("../drone_tc.xml");
+xmls::PatsParameters pparams;
+xmls::DroneParameters dparams("../drone_tc.xml");
 
 stopwatch_c stopWatch_break;
 stopwatch_c stopWatch;
@@ -590,8 +590,13 @@ int main( int argc, char **argv )
             return 0;
         }
 
-    pparams.deserialize();
-    dparams.deserialize();
+    try {
+        pparams.deserialize();
+        dparams.deserialize();
+    } catch(my_exit const &e) {
+        std::cout << "Error: " << e.msg << std::endl;
+        return 1;
+    }
 
     if (pparams.insect_logging_mode)
         wait_for_dark();

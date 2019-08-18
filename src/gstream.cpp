@@ -83,7 +83,7 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
 
     colormode = color;
 
-    if (mode == video_avi_opencv) {
+    if (mode == video_mp4_opencv) {
 
         std::cout << "Opening video file for processed results at " << sizeX << "x" << sizeY << " pixels with " << fps << "fps " << std::endl;
         cv::Size sizeRes(sizeX,sizeY);
@@ -111,7 +111,7 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
 //        gst_object_unref (bus);
 
         /* setup pipeline */
-        if (mode == video_avi) {
+        if (mode == video_mp4) {
             //write to file:
             //gst-launch-1.0 videotestsrc ! videoconvert ! video/x-raw,format=I420 ! x264enc ! 'video/x-h264, stream-format=(string)byte-stream'  ! avimux ! filesink location=test.avi
             //gst-launch-1.0 videotestsrc ! video/x-raw,format=RGB,framerate=\(fraction\)15/1,width=1920,height=1080 ! videoconvert ! x264enc speed-preset=ultrafast bitrate=16000 ! 'video/x-h264, stream-format=(string)byte-stream'  ! avimux ! filesink location=test.avi
@@ -303,7 +303,7 @@ int GStream::write(cv::Mat frameL,cv::Mat frameR) {
     frameL.copyTo(frame(cv::Rect(0,0,frameL.cols, frameL.rows)));
     frameR.copyTo(frame(cv::Rect(frameL.cols,0,frameR.cols, frameR.rows)));
 
-    if (videomode == video_avi_opencv) {
+    if (videomode == video_mp4_opencv) {
         cvvideo.write(frame);
         return 0;
     }
@@ -327,7 +327,7 @@ int GStream::write(cv::Mat frame) {
     if (tmpframe.cols != _cols || tmpframe.rows != _rows) {
         std::cout << "Warning: video sizes don't match in recorder!?" << std::endl;
     }
-    if (videomode == video_avi_opencv) {
+    if (videomode == video_mp4_opencv) {
         cvvideo.write(tmpframe);
         return 0;
     } else {
@@ -340,7 +340,7 @@ int GStream::write(cv::Mat frame) {
 void GStream::close () {
     if (initialised){
         std::cout << "Closing video recorder" << std::endl;
-        if (videomode != video_avi_opencv) {
+        if (videomode != video_mp4_opencv) {
             gst_element_send_event(_pipeline,gst_event_new_eos());
             GstClockTime timeout = 10 * GST_SECOND;
             GstMessage *msg;
