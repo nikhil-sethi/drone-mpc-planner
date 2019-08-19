@@ -81,7 +81,7 @@ private:
     int autoLandThrottleDecreaseFactor;
     double time_out_after_landing;
 
-    string settings_file = "../navigation.xml";
+    string settings_file = "../../xml/navigation.xml";
     void deserialize_settings();
     void serialize_settings();
 

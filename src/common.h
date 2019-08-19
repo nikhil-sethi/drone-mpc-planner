@@ -245,7 +245,7 @@ public:
 class PatsParameters: public Serializable
 {
 
-private: std::string settings_file = "../pats.xml";
+private: std::string settings_file = "../../xml/pats.xml";
 private: xBool _insect_logging_mode,_watchdog,_has_screen;
 private: xVideo_mode _video_cuts,_video_raw, _video_result;
 private: xRc_type _joystick;

@@ -93,7 +93,7 @@ public: cv::Scalar tracker_color( ItemTracker * trkr) {
     int roi_radius;
     int motion_thresh;
 
-    string settings_file = "../trackermanager.xml";
+    string settings_file = "../../xml/trackermanager.xml";
     void deserialize_settings();
     void serialize_settings();
 

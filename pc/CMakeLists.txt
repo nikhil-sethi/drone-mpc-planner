@@ -104,7 +104,7 @@ endif()
 find_package(realsense2 REQUIRED)
 
 # sources
-FILE(GLOB SRCS "../src/*.cpp" "../src/*.h" "../src/*.c" "../src/cereal/*.hpp" "../src/tinyxml/*.h" "../src/tinyxml/*.cpp" "*.xml")
+FILE(GLOB SRCS "../src/*.cpp" "../src/*.h" "../src/*.c" "../src/cereal/*.hpp" "../src/tinyxml/*.h" "../src/tinyxml/*.cpp" "../xml/*.xml")
 
 include(CheckCXXCompilerFlag)
 #-Wimplicit-fallthrough -> only supported by gcc >7 (ubuntu 18)

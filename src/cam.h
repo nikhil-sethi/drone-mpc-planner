@@ -148,7 +148,7 @@ private:
 
     //read file names
     std::string calib_rfn = "cam_calib.xml";
-    const std::string calib_template_rfn = "../" + calib_rfn;
+    const std::string calib_template_rfn = "../../xml/" + calib_rfn;
     std::string depth_map_rfn = "depth_filtered.png";
     std::string depth_unfiltered_map_rfn = "depth.png";
     std::string disparity_map_rfn = "disparity.png";

@@ -54,7 +54,7 @@ private:
     float brightness_event_tresh;
     double brightness_check_period;
 
-    string settings_file = "../vision.xml";
+    string settings_file = "../../xml/vision.xml";
     void deserialize_settings();
     void serialize_settings();
 

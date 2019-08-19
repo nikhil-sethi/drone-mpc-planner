@@ -22,7 +22,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
 
     logger_tmp.open("../drone.csv",std::ofstream::app);
 
-    settings_file = "../" + dparams.control + ".xml";
+    settings_file = "../../xml/" + dparams.control + ".xml";
 
     // Load saved control paremeters
     deserialize_settings();

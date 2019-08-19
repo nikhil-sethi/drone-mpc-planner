@@ -592,7 +592,7 @@ int main( int argc, char **argv )
 
     try {
         pparams.deserialize();
-        dparams.deserialize("../" + string(drone_type_str[pparams.drone]) + ".xml");
+        dparams.deserialize("../../xml/" + string(drone_type_str[pparams.drone]) + ".xml");
     } catch(my_exit const &e) {
         std::cout << "Error: " << e.msg << std::endl;
         return 1;

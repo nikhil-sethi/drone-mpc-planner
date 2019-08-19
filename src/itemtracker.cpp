@@ -14,7 +14,7 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     _visdat = visdat;
     _name = name;
     track_history_max_size = pparams.fps;
-    settings_file = "../" + name + "tracker.xml";
+    settings_file = "../../xml/" + name + "tracker.xml";
     std::string window_name = name + "_trkr";
 
     deserialize_settings();
