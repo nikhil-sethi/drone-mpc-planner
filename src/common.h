@@ -117,27 +117,27 @@ enum tx_protocol {
     tx_none = 0,
     tx_dsmx,
     tx_cx10,
-    tx_frskyd,
-    tx_frskyx
+    tx_frskyd8,
+    tx_frskyd16
 };
 static const char* tx_protocol_str[] = {"tx_none",
                                         "tx_dsmx",
                                         "tx_cx10",
-                                        "tx_frskyd",
-                                        "tx_frskyx"
+                                        "tx_frskyd8",
+                                        "tx_frskyd16"
                                         "" // must be the last entry! (check in serializer)
                                        };
 enum drone_type {
     drone_none,
     drone_trashcan,
-    drone_tinywhoop_black,
-    drone_tinywhoop_green,
+    drone_tinywhoop_d16,
+    drone_tinywhoop_d8,
     drone_cx10
 };
 static const char* drone_type_str[] = {"drone_none",
                                        "drone_trashcan",
-                                       "drone_tinywhoop_black",
-                                       "drone_tinywhoop_green",
+                                       "drone_tinywhoop_d16",
+                                       "drone_tinywhoop_d8",
                                        "drone_cx10",
                                        "" // must be the last entry! (check in serializer)
                                       };
@@ -271,7 +271,7 @@ public: PatsParameters() {
         setClassName("PatsParameters");
 
         // Set class version
-        setVersion("1.1");
+        setVersion("1.2");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("wdt_timeout_us",&_wdt_timeout_us);
@@ -371,8 +371,6 @@ public: void serialize() {
 class DroneParameters: public Serializable
 {
 
-private: std::string _file;
-
 public: int initial_hover_throttle;
 public: float throttle_bank_factor;
 public: double max_burn_time;
@@ -385,6 +383,7 @@ public: float hover_throttle_b;
 public: int drone_blink_strength;
 public: tx_protocol tx;
 public: bool mode3d;
+public: string control;
 
 private: xInt _initial_hover_throttle;
 private: xFloat _throttle_bank_factor;
@@ -398,15 +397,15 @@ private: xFloat _hover_throttle_b;
 private: xInt _drone_blink_strength;
 private: xTx_protocol _tx;
 private: xBool _mode3d;
+private: xString _control;
 
-public: DroneParameters(std::string filepath) {
-        _file = filepath;
+public: DroneParameters() {
         // Set the XML class name.
         // This name can differ from the C++ class name
         setClassName("DroneParameters");
 
         // Set class version
-        setVersion("1.1");
+        setVersion("1.2");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("initial_hover_throttle",&_initial_hover_throttle);
@@ -421,26 +420,27 @@ public: DroneParameters(std::string filepath) {
         Register("drone_blink_strength",&_drone_blink_strength);
         Register("tx",&_tx);
         Register("mode3d",&_mode3d);
+        Register("control",&_control);
     }
-public: void deserialize() {
-        std::cout << "Reading settings from: " << _file << std::endl;
-        if (checkFileExist(_file)) {
-            std::ifstream infile(_file);
+public: void deserialize(std::string filepath) {
+        std::cout << "Reading settings from: " << filepath << std::endl;
+        if (checkFileExist(filepath)) {
+            std::ifstream infile(filepath);
             std::string xmlData((std::istreambuf_iterator<char>(infile)),
                                 std::istreambuf_iterator<char>());
 
             if (!Serializable::fromXML(xmlData, this))
             { // Deserialization not successful
-                throw my_exit("Cannot read: " + _file);
+                throw my_exit("Cannot read: " + filepath);
             }
             PatsParameters tmp;
             auto v1 = getVersion();
             auto v2 = tmp.getVersion();
             if (v1 != v2) {
-                throw my_exit("XML version difference detected from " + _file);
+                throw my_exit("XML version difference detected from " + filepath);
             }
         } else {
-            throw my_exit("File not found: " + _file);
+            throw my_exit("File not found: " + filepath);
         }
 
         initial_hover_throttle = _initial_hover_throttle.value();
@@ -455,9 +455,10 @@ public: void deserialize() {
         drone_blink_strength = _drone_blink_strength.value();
         tx = _tx.value();
         mode3d = _mode3d.value();
+        control = _control.value();
     }
 
-public: void serialize() {
+public: void serialize(std::string filepath) {
 
         _initial_hover_throttle = initial_hover_throttle;
         _throttle_bank_factor = throttle_bank_factor;
@@ -471,9 +472,10 @@ public: void serialize() {
         _drone_blink_strength = drone_blink_strength;
         _tx = tx;
         _mode3d = mode3d;
+        _control = control;
 
         std::string xmlData = toXML();
-        std::ofstream outfile = std::ofstream (_file);
+        std::ofstream outfile = std::ofstream (filepath);
         outfile << xmlData ;
         outfile.close();
     }

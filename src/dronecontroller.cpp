@@ -20,15 +20,9 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     (*_logger) << "valid; posErrX; posErrY; posErrZ; velX; velY; velZ; accX; accY; accZ; hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; joyThrottle; joyRoll; joyPitch; joyYaw; joyArmSwitch; joyModeSwitch; joyTakeoffSwitch; dt; dx; dy; dz; velx_sp; vely_sp; velz_sp;";
     std::cout << "Initialising control." << std::endl;
 
-
     logger_tmp.open("../drone.csv",std::ofstream::app);
 
-    if (pparams.drone == drone_trashcan || pparams.drone == drone_none)
-        settings_file = "../control_tc.xml";
-    else if (pparams.drone == drone_tinywhoop_black || pparams.drone == drone_tinywhoop_green)
-        settings_file = "../control_tw.xml";
-    else
-        throw my_exit("No settings file found for drone type");
+    settings_file = "../" + dparams.control + ".xml";
 
     // Load saved control paremeters
     deserialize_settings();

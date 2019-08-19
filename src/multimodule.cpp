@@ -17,12 +17,12 @@ void MultiModule::init(bool fromfile) {
         sub_protocol = 1;
         tx_rate = 2000;
         tx_option = 0;
-    } else if (dparams.tx == tx_frskyd) {
+    } else if (dparams.tx == tx_frskyd8) {
         protocol = 3;
         sub_protocol = 0;
         tx_rate = 0;
         tx_option = 0;
-    } else if (dparams.tx == tx_frskyx) {
+    } else if (dparams.tx == tx_frskyd16) {
         protocol = 15;
         sub_protocol = 1;
         tx_rate = 0;
@@ -151,7 +151,7 @@ void MultiModule::send_data(void) {
         channels[1] = pitch;
         channels[2] = throttle;
         channels[3] = yaw;
-        if (dparams.tx==tx_dsmx || dparams.tx==tx_frskyd || dparams.tx==tx_frskyx){
+        if (dparams.tx==tx_dsmx || dparams.tx==tx_frskyd8 || dparams.tx==tx_frskyd16){
             channels[4] = arm_switch;
             channels[5] = JOY_BOUND_MIN; // set to angle mode in BF
         }
