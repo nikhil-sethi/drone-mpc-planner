@@ -240,13 +240,8 @@ void process_video() {
         static float prev_time = -1.f/pparams.fps;
         float current_fps = 1.f / (t - prev_time);
         float fps = fps_smoothed.addSample(current_fps);
-        if (fps < 50 && fromfile!=log_mode_none) {
-            //            std::cout << "FPS WARNING!" << std::endl;
-            static float limit_fps_warning_sound = t;
-            if (t - limit_fps_warning_sound > 3.f ) {
-                limit_fps_warning_sound = t;
-            }
-        }
+        if (fps < pparams.fps / 6 * 5 && fromfile!=log_mode_none)
+            std::cout << "FPS WARNING!" << std::endl;
 
         static double time =0;
         float dt __attribute__((unused)) = static_cast<float>(cam.frame_time() - time);
