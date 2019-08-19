@@ -7,7 +7,7 @@ Delesect the imported  build, select the Desktop build. Change the paths of all 
 Press Configure build button  
     
 Additional settings:  
-Left menu bar -> Projects -> Build -> CMake -> CMAKE_BUILD_TYPE set to Debug --> Apply Configuration Changes  
+Left menu bar -> Projects -> Build -> Edit build configuration dropdown: Make sure the debug configuration is selected.
 Left menu bar -> Projects -> Build -> Build steps -> details -> Tool arguments --> -j4  
 Left menu bar -> Projects -> Build -> Clean steps ---> uncheck all and check clean  
 Top Menubar -> Tools -> C++ -> Code Model -> Diagnostic Configurations: -> Clang-Tidy static analyzer checks  
