@@ -100,7 +100,7 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
     accErrY = data.saccY + accy_sp;// - setpoint_acc.y;    // acceleration error
 
     float tmptbf = dparams.throttle_bank_factor; // if we are higher then the target, use the fact more attitude makes us go down
-    if (posErrY< 0) {
+    if (posErrY> 0) {
         tmptbf = 0;
     }
 
