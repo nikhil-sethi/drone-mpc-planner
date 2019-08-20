@@ -19,8 +19,9 @@ static const char* flight_mode_names[] = { "fm_joystick_check",
                                            "fm_inactive",
                                            "fm_manual",
                                            "fm_start_takeoff",
-                                           "fm_take_off_max_burn",
-                                           "fm_flip_and_burn",
+                                           "fm_take_off_aim",
+                                           "fm_max_burn",
+                                           "fm_zero_g",
                                            "fm_abort_takeoff",
                                            "fm_flying",
                                            "fm_landing"
@@ -38,8 +39,9 @@ public:
         fm_inactive,
         fm_manual,
         fm_start_takeoff,
-        fm_take_off_max_burn,
-        fm_flip_and_burn,
+        fm_take_off_aim,
+        fm_max_burn,
+        fm_zero_g,
         fm_abort_takeoff,
         fm_flying,
         fm_landing
@@ -148,7 +150,7 @@ public:
     }
 
     bool ff_completed() {
-        return _flight_mode != fm_take_off_max_burn && _flight_mode != fm_flip_and_burn;
+        return _flight_mode != fm_take_off_aim &&  _flight_mode != fm_max_burn && _flight_mode != fm_zero_g;
     }
 
     bool joy_arm_switch(){
@@ -244,7 +246,7 @@ public:
         else if (_joy_mode_switch == jmsm_manual && joyThrottle <= JOY_BOUND_MIN)
             return false;
         else
-            return (autoThrottle > JOY_BOUND_MIN || _flight_mode == fm_start_takeoff || _flight_mode == fm_take_off_max_burn || _flight_mode == fm_flip_and_burn ); //FIXME: check if this goes well if due to extreme control throttle is set to 0
+            return (autoThrottle > JOY_BOUND_MIN || _flight_mode == fm_start_takeoff || _flight_mode == fm_take_off_aim || _flight_mode == fm_max_burn || _flight_mode == fm_zero_g ); //FIXME: check if this goes well if due to extreme control throttle is set to 0
     }
     void setAutoLandThrottleDecrease(int value) {autoLandThrottleDecrease = value;}
     void recalibrateHover();

@@ -146,16 +146,15 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
         if (dparams.mode3d)
             _rc->arm(true);
         throttle = JOY_BOUND_MIN;
-        _flight_mode = fm_take_off_max_burn;
+        _flight_mode = fm_take_off_aim;
         break;
-    } FALLTHROUGH_INTENDED; case fm_take_off_max_burn : {
+} FALLTHROUGH_INTENDED; case fm_take_off_aim : {
 
-
-        float insect_angle_roll =  atan((setpoint_pos.x - _dtrk->drone_startup_location().x)/(_dtrk->drone_startup_location().y -setpoint_pos.y));
-        float insect_angle_pitch=  atan((setpoint_pos.z - _dtrk->drone_startup_location().z)/(_dtrk->drone_startup_location().y -setpoint_pos.y));
+        float insect_angle_roll =  atan((setpoint_pos.x - _dtrk->drone_startup_location().x)/(_dtrk->drone_startup_location().y -(setpoint_pos.y-0.2f)));
+        float insect_angle_pitch=  atan((setpoint_pos.z - _dtrk->drone_startup_location().z)/(_dtrk->drone_startup_location().y -(setpoint_pos.y-0.2f)));
 
         float g = 9.81f;
-        float drone_acc = 4.8f*g;
+        float drone_acc = 6.f*g;
 
         float commanded_roll ,commanded_pitch;
         commanded_pitch =((M_PIf32/2.f - fabs(insect_angle_pitch))*(drone_acc+g)+0.5f*M_PIf32 * g)/(drone_acc + 2 * g);
@@ -169,32 +168,104 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
         if (insect_angle_pitch < 0)
             commanded_pitch = -commanded_pitch;
 
+
+        //tmp
+//        commanded_roll = insect_angle_roll;
+//        commanded_pitch = insect_angle_pitch;
+
         //assuming 3G acceleration, 1G gravity, compensate angle:
         max_burn.x = commanded_roll / M_PIf32*180.f;
         max_burn.y = commanded_pitch / M_PIf32*180.f;
 
-        autoThrottle = JOY_BOUND_MAX;
+
+        autoThrottle = 600; //TODO variable
         throttle = autoThrottle;
+        float bank_angle = 180;
+        if (max_burn.x>bank_angle)
+            max_burn.x=bank_angle;
+        else if (max_burn.x<-bank_angle)
+            max_burn.x=-bank_angle;
+        if (max_burn.y>bank_angle)
+            max_burn.y=bank_angle;
+        else if (max_burn.y<-bank_angle)
+            max_burn.y=-bank_angle;
 
-        if (max_burn.x>70)
-            max_burn.x=70;
-        else if (max_burn.x<-70)
-            max_burn.x=-70;
-        if (max_burn.y>70)
-            max_burn.y=70;
-        else if (max_burn.y<-70)
-            max_burn.y=-70;
+        roll = ((max_burn.x/bank_angle+1) / 2.f) * JOY_MAX;
+        pitch = ((max_burn.y/bank_angle+1) / 2.f) * JOY_MAX;
 
-        roll = ((max_burn.x/70.f+1) / 2.f) * JOY_MAX;
-        pitch = ((max_burn.y/70.f+1) / 2.f) * JOY_MAX;
+//        roll = JOY_MIDDLE; //TMP WAYPOINT MODE
+//        pitch = JOY_MIDDLE;
+
         autoPitch = pitch;
         autoRoll = roll;
 
-        if (data.time - take_off_start_time > 0.36)
-            _flight_mode = fm_flip_and_burn;
+        if (data.time - take_off_start_time > 0.3)
+            _flight_mode = fm_max_burn;
         break;
-    } case fm_flip_and_burn : {
-        autoThrottle = 650; // dparams.min_throttle;
+
+    } FALLTHROUGH_INTENDED; case fm_max_burn : {
+
+        float insect_angle_roll =  atan((setpoint_pos.x - _dtrk->drone_startup_location().x)/(_dtrk->drone_startup_location().y -(setpoint_pos.y-0.2f)));
+        float insect_angle_pitch=  atan((setpoint_pos.z - _dtrk->drone_startup_location().z)/(_dtrk->drone_startup_location().y -(setpoint_pos.y-0.2f)));
+
+        float g = 9.81f;
+        float drone_acc = 6.f*g;
+
+        float commanded_roll ,commanded_pitch;
+        commanded_pitch =((M_PIf32/2.f - fabs(insect_angle_pitch))*(drone_acc+g)+0.5f*M_PIf32 * g)/(drone_acc + 2 * g);
+        commanded_roll = ((M_PIf32/2.f - fabs(insect_angle_roll))* (drone_acc+g)+0.5f*M_PIf32 * g)/(drone_acc + 2 * g);
+
+        commanded_roll = M_PIf32/2.f - commanded_roll;
+        commanded_pitch= M_PIf32/2.f - commanded_pitch;
+
+        if (insect_angle_roll < 0)
+            commanded_roll = -commanded_roll;
+        if (insect_angle_pitch < 0)
+            commanded_pitch = -commanded_pitch;
+
+
+        //tmp
+//        commanded_roll = insect_angle_roll;
+//        commanded_pitch = insect_angle_pitch;
+
+        //assuming 3G acceleration, 1G gravity, compensate angle:
+        max_burn.x = commanded_roll / M_PIf32*180.f;
+        max_burn.y = commanded_pitch / M_PIf32*180.f;
+
+
+        autoThrottle = JOY_BOUND_MAX;
+        throttle = autoThrottle;
+        float bank_angle = 180;
+        if (max_burn.x>bank_angle)
+            max_burn.x=bank_angle;
+        else if (max_burn.x<-bank_angle)
+            max_burn.x=-bank_angle;
+        if (max_burn.y>bank_angle)
+            max_burn.y=bank_angle;
+        else if (max_burn.y<-bank_angle)
+            max_burn.y=-bank_angle;
+
+        roll = ((max_burn.x/bank_angle+1) / 2.f) * JOY_MAX;
+        pitch = ((max_burn.y/bank_angle+1) / 2.f) * JOY_MAX;
+
+
+//        roll = JOY_MIDDLE; //TMP WAYPOINT MODE
+//        pitch = JOY_MIDDLE;
+
+        autoPitch = pitch;
+        autoRoll = roll;
+
+        float angle = commanded_roll;
+        if (commanded_pitch > commanded_roll)
+            angle = commanded_pitch;
+
+        float burn_time  =0.05f+sqrtf(fabs(2+setpoint_pos.y-0.2f))/8 + (fabs(angle))/360;
+        cout << "burn_time: " << burn_time << endl;
+        if (data.time - take_off_start_time > 0.3f + burn_time)
+            _flight_mode = fm_flying;
+        break;
+    } case fm_zero_g : {
+        autoThrottle = 600; // dparams.min_throttle;
         //only control throttle:
         throttle = autoThrottle;
         roll = JOY_MIDDLE;
