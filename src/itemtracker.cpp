@@ -110,7 +110,7 @@ ItemTracker::BlobWorldProps ItemTracker::calc_world_props_blob_generic(BlobProps
     BlobWorldProps w;
     cv::Point2f p(pbs->x, pbs->y);
 
-    w.disparity = stereo_match(p,_visdat->diffL,_visdat->diffR); //TODO: wtf, inputs scaled with pparams.imscalef, but disparity is unscaled?
+    w.disparity = stereo_match(p,_visdat->diffL,_visdat->diffR,pbs->radius); //TODO: wtf, inputs scaled with pparams.imscalef, but disparity is unscaled?
     p*=pparams.imscalef;
 
     if (w.disparity < min_disparity || w.disparity > max_disparity){
@@ -268,9 +268,9 @@ void ItemTracker::predict(float dt, int frame_id) {
     predicted_image_path.push_back(_image_predict_item );
 }
 
-float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR){
+float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR, float radius){
     //get retangle around blob / changed pixels
-    float rectsize = max_disparity;
+    float rectsize = radius*2.f + 2.f;
 
     float rectsizeX = ceil(rectsize*0.5f); // *4.0 results in drone-insect disparity interaction
     float rectsizeY = ceil(rectsize*0.5f);  // *3.0

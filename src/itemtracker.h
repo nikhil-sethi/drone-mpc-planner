@@ -263,7 +263,7 @@ protected:
     WorldItem  _world_item;
     uint _blobs_are_fused_cnt = 0;
 
-    float stereo_match(cv::Point closestL, cv::Mat diffL, cv::Mat diffR);
+    float stereo_match(cv::Point closestL, cv::Mat diffL, cv::Mat diffR, float radius);
     void reset_tracker_ouput(double time);
     BlobWorldProps calc_world_props_blob_generic(BlobProps * pbs);
     bool check_ignore_blobs_generic(BlobProps * pbs);
