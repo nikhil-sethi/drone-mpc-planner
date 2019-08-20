@@ -159,28 +159,29 @@ public:
     bool joy_mode_switch(){
         return _joy_mode_switch;
     }
-    void insert_log(int joy_roll, int joy_pitch, int joy_yaw, int joy_throttle, int joyArmSwitch, int joyModeSwitch, int joyTakeOffSwitch,int auto_roll, int auto_pitch, int auto_throttle){
-        joyRoll = joy_roll;
-        joyPitch= joy_pitch;
-        joyYaw = joy_yaw;
-        joyThrottle = joy_throttle;
-        _joy_arm_switch = joyArmSwitch;
-        _joy_mode_switch = static_cast<joy_mode_switch_modes>(joyModeSwitch);
-        _joy_takeoff_switch = joyTakeOffSwitch;
-        _log_auto_roll = auto_roll;
-        _log_auto_pitch= auto_pitch;
-        _log_auto_throttle = auto_throttle;
+    void insert_log(int log_joy_roll, int log_joy_pitch, int log_joy_yaw, int log_joy_throttle, int log_joy_arm_switch, int log_joy_mode_switch, int log_joy_take_off_switch,int log_auto_roll, int log_auto_pitch, int log_auto_throttle){
+        joy_roll = log_joy_roll;
+        joy_pitch= log_joy_pitch;
+        joy_yaw = log_joy_yaw;
+        joy_throttle = log_joy_throttle;
+        _joy_arm_switch = log_joy_arm_switch;
+        _joy_mode_switch = static_cast<joy_mode_switch_modes>(log_joy_mode_switch);
+        _joy_takeoff_switch = log_joy_take_off_switch;
+        _log_auto_roll = log_auto_roll;
+        _log_auto_pitch= log_auto_pitch;
+        _log_auto_throttle = log_auto_throttle;
     }
 
-    int joyThrottle = JOY_BOUND_MIN;
-    int joyRoll = JOY_MIDDLE;
-    int joyPitch = JOY_MIDDLE;
-    int joyYaw = JOY_MIDDLE;
+    int joy_throttle = JOY_BOUND_MIN;
+    int joy_roll = JOY_MIDDLE;
+    int joy_pitch = JOY_MIDDLE;
+    int joy_yaw = JOY_MIDDLE;
 
-    int autoThrottle = JOY_BOUND_MIN;
-    int autoRoll = JOY_MIDDLE;
-    int autoPitch = JOY_MIDDLE;
-    int autoYaw = JOY_MIDDLE;
+    int auto_throttle = JOY_BOUND_MIN;
+    int auto_roll = JOY_MIDDLE;
+    int auto_pitch = JOY_MIDDLE;
+    int auto_yaw = JOY_MIDDLE;
+    float auto_burn_time = 0;
 
     //Normalized throttle, between [-1 .. 1].
     //0 equals hoverthrottle
@@ -238,15 +239,16 @@ public:
     void close (void);
     void init(std::ofstream *logger, bool fromfile, MultiModule *rc, DroneTracker *dtrk);
     void control(track_data data, cv::Point3f setpoint_pos_world, cv::Point3f setpoint_vel_world, cv::Point3f setpoint_acc_world);
+    void calc_burn_direction(cv::Point3f setpoint_pos);
     bool drone_is_active() {
         if ( _flight_mode == fm_inactive || _flight_mode == fm_disarmed)
             return false;
-        else if (_joy_mode_switch == jmsm_manual && joyThrottle > JOY_BOUND_MIN)
+        else if (_joy_mode_switch == jmsm_manual && joy_throttle > JOY_BOUND_MIN)
             return true;
-        else if (_joy_mode_switch == jmsm_manual && joyThrottle <= JOY_BOUND_MIN)
+        else if (_joy_mode_switch == jmsm_manual && joy_throttle <= JOY_BOUND_MIN)
             return false;
         else
-            return (autoThrottle > JOY_BOUND_MIN || _flight_mode == fm_start_takeoff || _flight_mode == fm_take_off_aim || _flight_mode == fm_max_burn || _flight_mode == fm_zero_g ); //FIXME: check if this goes well if due to extreme control throttle is set to 0
+            return (auto_throttle > JOY_BOUND_MIN || _flight_mode == fm_start_takeoff || _flight_mode == fm_take_off_aim || _flight_mode == fm_max_burn || _flight_mode == fm_zero_g ); //FIXME: check if this goes well if due to extreme control throttle is set to 0
     }
     void setAutoLandThrottleDecrease(int value) {autoLandThrottleDecrease = value;}
     void recalibrateHover();

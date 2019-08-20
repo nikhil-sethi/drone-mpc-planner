@@ -37,15 +37,15 @@ void Visualizer::init(VisionData *visdat, TrackerManager *imngr, DroneController
 void Visualizer::addPlotSample(void) {
     if (pparams.viz_plots) {
         lock_plot_data.lock();
-        roll_joystick.push_back(static_cast<float>(_dctrl->joyRoll));
-        pitch_joystick.push_back(static_cast<float>(_dctrl->joyPitch));
-        yaw_joystick.push_back(static_cast<float>(_dctrl->joyPitch));
-        throttle_joystick.push_back(static_cast<float>(_dctrl->joyThrottle));
+        roll_joystick.push_back(static_cast<float>(_dctrl->joy_roll));
+        pitch_joystick.push_back(static_cast<float>(_dctrl->joy_pitch));
+        yaw_joystick.push_back(static_cast<float>(_dctrl->joy_pitch));
+        throttle_joystick.push_back(static_cast<float>(_dctrl->joy_throttle));
 
-        roll_calculated.push_back(static_cast<float>(_dctrl->autoRoll));
-        pitch_calculated.push_back(static_cast<float>(_dctrl->autoPitch));
+        roll_calculated.push_back(static_cast<float>(_dctrl->auto_roll));
+        pitch_calculated.push_back(static_cast<float>(_dctrl->auto_pitch));
         //    yaw_calculated.push_back(static_cast<float>(_dctrl->commandedYaw));
-        throttle_calculated.push_back(static_cast<float>(_dctrl->autoThrottle));
+        throttle_calculated.push_back(static_cast<float>(_dctrl->auto_throttle));
         throttle_hover.push_back(_dctrl->hoverthrottle);
         throttle_min_bound.push_back(static_cast<float>(JOY_BOUND_MIN));
         throttle_max_bound.push_back(static_cast<float>(JOY_BOUND_MAX));
