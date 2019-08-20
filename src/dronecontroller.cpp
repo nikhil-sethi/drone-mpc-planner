@@ -255,6 +255,17 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
         if (autoThrottle>JOY_BOUND_MAX)
             autoThrottle = JOY_BOUND_MAX;
 
+        //TMP fix for lacking control law handling of > 90 degree bank angle
+        if (autoRoll<(JOY_MIDDLE+JOY_MIN)/2)
+            autoRoll = (JOY_MIDDLE+JOY_MIN)/2;
+        if (autoRoll>(JOY_MIDDLE+JOY_MAX)/2)
+            autoRoll = (JOY_MIDDLE+JOY_MAX)/2;
+
+        if (autoPitch<(JOY_MIDDLE+JOY_MIN)/2)
+            autoPitch = (JOY_MIDDLE+JOY_MIN)/2;
+        if (autoPitch>(JOY_MIDDLE+JOY_MAX)/2)
+            autoPitch = (JOY_MIDDLE+JOY_MAX)/2;
+
         throttle = autoThrottle ;
         roll = autoRoll;
         pitch = autoPitch;

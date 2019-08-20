@@ -5,10 +5,10 @@
     <Member Name="gain_throttle_i">15</Member>
     <Member Name="gain_roll_pos">2000</Member>
     <Member Name="gain_roll_vel">950</Member>
-    <Member Name="gain_roll_acc">30</Member>
-    <Member Name="gain_roll_i">7</Member>
+    <Member Name="gain_roll_acc">12</Member>
+    <Member Name="gain_roll_i">3</Member>
     <Member Name="gain_pitch_pos">1700</Member>
     <Member Name="gain_pitch_vel">900</Member>
-    <Member Name="gain_pitch_acc">30</Member>
-    <Member Name="gain_pitch_i">7</Member>
+    <Member Name="gain_pitch_acc">12</Member>
+    <Member Name="gain_pitch_i">3</Member>
 </SerializableClass>

@@ -8,7 +8,7 @@
     <Member Name="full_bat_and_throttle_spinup_time">0.29</Member>
     <Member Name="hover_throttle_a">-0.07</Member>
     <Member Name="hover_throttle_b">-0.266</Member>
-    <Member Name="drone_blink_strength">110</Member>
+    <Member Name="drone_blink_strength">30</Member>
     <Member Name="tx">tx_frskyd16</Member>
     <Member Name="mode3d">false</Member>
     <Member Name="control">control_trashcan</Member>
