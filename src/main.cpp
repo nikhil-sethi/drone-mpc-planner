@@ -215,7 +215,7 @@ void process_video() {
                 }
             }
         }
-        if (!recording){
+        if (!recording && pparams.video_cuts){
             logger.close();
             logger.open(logger_fn,std::ofstream::out);
         }
