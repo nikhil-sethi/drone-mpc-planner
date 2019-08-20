@@ -66,10 +66,10 @@ int bound_throttle(int v) {
 }
 
 int bound_joystick_value(int v) {
-    if ( v < JOY_BOUND_MIN )
-        v = JOY_BOUND_MIN;
-    if ( v > JOY_BOUND_MAX )
-        v = JOY_BOUND_MAX;
+    if ( v < JOY_MIN )
+        v = JOY_MIN;
+    if ( v > JOY_MAX )
+        v = JOY_MAX;
     return v;
 }
 
