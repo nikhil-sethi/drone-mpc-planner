@@ -1,6 +1,6 @@
 <SerializableClass Type="DroneParameters" Version="1.2">
     <Member Name="initial_hover_throttle">675</Member>
-    <Member Name="throttle_bank_factor">0.11</Member>
+    <Member Name="throttle_bank_factor">0.35</Member>
     <Member Name="max_burn_time">0.35</Member>
     <Member Name="min_throttle">305</Member>
     <Member Name="full_bat_and_throttle_im_effect">3</Member>

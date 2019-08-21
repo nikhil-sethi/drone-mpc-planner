@@ -100,7 +100,7 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
     accErrY = data.saccY + accy_sp;// - setpoint_acc.y;    // acceleration error
 
     float tmptbf = dparams.throttle_bank_factor; // if we are higher then the target, use the fact more attitude makes us go down
-    if (posErrY> 0) {
+    if (posErrY> 0 && abs(posErrX)<0.3f && abs(posErrZ)<0.3f) {
         tmptbf = 0;
     }
 
@@ -222,10 +222,43 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
 
         auto_pitch = accErrZ * static_cast<float>(gain_pitch_acc) / depth_gain;
 
-        if (fabs(auto_roll) > fabs(auto_pitch))
-            auto_throttle += tmptbf*abs(auto_roll);
-        else
-            auto_throttle += tmptbf*abs(auto_pitch);
+        //TMP fix for lacking control law handling of > 90 degree bank angle assuming BF angle limit 160
+        if (auto_roll < -JOY_MIDDLE/2)
+            auto_roll = -JOY_MIDDLE/2;
+        if (auto_roll > JOY_MIDDLE/2)
+            auto_roll = JOY_MIDDLE/2;
+
+        if (auto_pitch < -JOY_MIDDLE/2)
+            auto_pitch = -JOY_MIDDLE/2;
+        if (auto_pitch > JOY_MIDDLE/2)
+            auto_pitch = JOY_MIDDLE/2;
+
+        //TMP fix for lacking control law handling of > 60 degree bank angle and target far away assuming BF angle limit 160
+        if (abs(posErrX)>0.3f || abs(posErrZ)>0.3f) {
+
+            if (auto_roll < -JOY_MIDDLE/3)
+                auto_roll = -JOY_MIDDLE/3;
+            if (auto_roll > JOY_MIDDLE/3)
+                auto_roll = JOY_MIDDLE/3;
+
+            if (auto_pitch < -JOY_MIDDLE/3)
+                auto_pitch = -JOY_MIDDLE/3;
+            if (auto_pitch > JOY_MIDDLE/3)
+                auto_pitch = JOY_MIDDLE/3;
+        }
+
+        if (fabs(auto_roll) > fabs(auto_pitch)){
+            //auto_throttle += tmptbf*abs(auto_roll);
+            float roll_angle = static_cast<float>(auto_roll)/JOY_MIDDLE*M_PIf32;
+            float roll_comp = auto_throttle*abs(1.f/cosf(roll_angle))-auto_throttle;
+            auto_throttle += roll_comp*tmptbf;
+        }
+        else {
+            //auto_throttle += tmptbf*abs(auto_pitch);
+            float pitch_angle = static_cast<float>(auto_pitch)/JOY_MIDDLE*M_PIf32;
+            float pitch_comp = auto_throttle*abs(1.f/cosf(pitch_angle))-auto_throttle;
+            auto_throttle += pitch_comp*tmptbf;
+        }
 
         auto_roll    += JOY_MIDDLE + (gain_roll_i*rollErrI);
         auto_pitch   += JOY_MIDDLE + (gain_pitch_i*pitchErrI);
@@ -235,17 +268,6 @@ void DroneController::control(track_data data,cv::Point3f setpoint_pos, cv::Poin
             auto_throttle = dparams.min_throttle;
         if (auto_throttle>JOY_BOUND_MAX)
             auto_throttle = JOY_BOUND_MAX;
-
-        //TMP fix for lacking control law handling of > 90 degree bank angle
-        if (auto_roll<(JOY_MIDDLE+JOY_MIN)/2)
-            auto_roll = (JOY_MIDDLE+JOY_MIN)/2;
-        if (auto_roll>(JOY_MIDDLE+JOY_MAX)/2)
-            auto_roll = (JOY_MIDDLE+JOY_MAX)/2;
-
-        if (auto_pitch<(JOY_MIDDLE+JOY_MIN)/2)
-            auto_pitch = (JOY_MIDDLE+JOY_MIN)/2;
-        if (auto_pitch>(JOY_MIDDLE+JOY_MAX)/2)
-            auto_pitch = (JOY_MIDDLE+JOY_MAX)/2;
 
         throttle = auto_throttle ;
         roll = auto_roll;
@@ -388,9 +410,13 @@ void DroneController::calc_burn_direction(cv::Point3f setpoint_pos) {
         max_angle = commanded_pitch;
 
     auto_burn_time = 0.05f+sqrtf(fabs(2+setpoint_pos.y-0.2f))/8 + (fabs(max_angle))/360;
+    auto_burn_time /=2;
+//    std::cout << " bt: "  << auto_burn_time << std::endl;
 
-//        autoRoll = JOY_MIDDLE; //TMP WAYPOINT MODE
-//        autoPitch = JOY_MIDDLE;
+//        auto_roll = JOY_MIDDLE; //TMP WAYPOINT MODE
+//        auto_pitch = JOY_MIDDLE;
+//        auto_burn_time = 0.05;
+
 }
 
 void DroneController::readJoystick(void) {
@@ -473,10 +499,10 @@ void DroneController::readJoystick(void) {
             } else if (pparams.joystick == rc_xlite) {
                 switch ( event.number ) {
                 case 0: // roll
-                    joy_roll = (event.value >> 5)*0.8 + JOY_MIDDLE;
+                    joy_roll = (event.value >> 5)*0.4 + JOY_MIDDLE;
                     break;
                 case 1: // pitch
-                    joy_pitch = (event.value >> 5)*0.8 + JOY_MIDDLE;
+                    joy_pitch = (event.value >> 5)*0.4 + JOY_MIDDLE;
                     break;
                 case 2: //throttle
                     joy_throttle =  (event.value >> 5)*0.8 + JOY_MIDDLE;
