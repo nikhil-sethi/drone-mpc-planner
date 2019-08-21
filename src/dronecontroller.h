@@ -41,7 +41,7 @@ public:
         fm_start_takeoff,
         fm_take_off_aim,
         fm_max_burn,
-        fm_zero_g,
+        fm_one_g,
         fm_abort_takeoff,
         fm_flying,
         fm_landing
@@ -150,7 +150,7 @@ public:
     }
 
     bool ff_completed() {
-        return _flight_mode != fm_take_off_aim &&  _flight_mode != fm_max_burn && _flight_mode != fm_zero_g;
+        return _flight_mode != fm_take_off_aim &&  _flight_mode != fm_max_burn && _flight_mode != fm_one_g;
     }
 
     bool joy_arm_switch(){
@@ -248,7 +248,7 @@ public:
         else if (_joy_mode_switch == jmsm_manual && joy_throttle <= JOY_BOUND_MIN)
             return false;
         else
-            return (auto_throttle > JOY_BOUND_MIN || _flight_mode == fm_start_takeoff || _flight_mode == fm_take_off_aim || _flight_mode == fm_max_burn || _flight_mode == fm_zero_g ); //FIXME: check if this goes well if due to extreme control throttle is set to 0
+            return (auto_throttle > JOY_BOUND_MIN || _flight_mode == fm_start_takeoff || _flight_mode == fm_take_off_aim || _flight_mode == fm_max_burn || _flight_mode == fm_one_g ); //FIXME: check if this goes well if due to extreme control throttle is set to 0
     }
     void setAutoLandThrottleDecrease(int value) {autoLandThrottleDecrease = value;}
     void recalibrateHover();
