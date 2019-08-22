@@ -309,7 +309,7 @@ void process_frame(Stereo_Frame_Data data) {
 }
 
 void init_insect_log(int n){
-    logreader.init("../insect_logs/" + std::to_string(n) + ".log",true);
+    logreader.init("../insect_logs/" + std::to_string(n) + ".csv",true);
     fromfile = log_mode_insect_only;
 }
 
