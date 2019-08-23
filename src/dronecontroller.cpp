@@ -495,11 +495,13 @@ float DroneController::calc_1g_tti(track_data state_drone_start_1g, track_data s
     drone_pos.z = state_drone.posZ + tti_early_bird*drone_vel.z;
 
 	// UPDATE DRONE_ACC aka THRST-FORCE-EQUIVILENT with current velocity measurements:
-	float resulting_acc = sqrt(	pow(sin(max_burn.x*M_PIf32/180)*drone_acc,2)
-								+ pow(cos(max_burn.x*M_PIf32/180)*cos(max_burn.y*M_PIf32/180)*drone_acc-GRAVITY, 2)
-								+ pow(-cos(max_burn.x*M_PIf32/180)*sin(max_burn.y*M_PIf32/180)*drone_acc, 2) );
-	float vel_est = resulting_acc * auto_takeoff_burn_time;
-	drone_acc = (norm(drone_vel)/vel_est) * drone_acc;
+	for(int i=0; i<2; i++){ // find drone_acc over multiple iterations
+		float resulting_acc = sqrt(	pow(sin(max_burn.x*M_PIf32/180)*drone_acc,2)
+									+ pow(cos(max_burn.x*M_PIf32/180)*cos(max_burn.y*M_PIf32/180)*drone_acc-GRAVITY, 2)
+									+ pow(-cos(max_burn.x*M_PIf32/180)*sin(max_burn.y*M_PIf32/180)*drone_acc, 2) );
+		float vel_est = resulting_acc * auto_takeoff_burn_time;
+		drone_acc = (norm(drone_vel)/vel_est) * drone_acc;
+	}
 
 
     //basic physics:
