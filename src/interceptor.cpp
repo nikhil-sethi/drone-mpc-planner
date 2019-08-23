@@ -157,9 +157,9 @@ float Interceptor::calc_tti(cv::Point3f insect_pos,cv::Point3f insect_vel,cv::Po
     //v = at t = v/a
 
     //TODO: put in some actually measured values:
-    const float drone_vel_max = 10; // [m/s]
-    const float drone_acc_max = 20; // [m/s^2]
-    const double t_estimated_take_off = 0.32; //[s]
+    const float drone_vel_max = 5; // [m/s]
+    const float drone_acc_max = 40; // [m/s^2]
+    const double t_estimated_take_off = 0.29; //[s]
 
     float ic_dx = norm(insect_pos-drone_pos);
     float ic_dv = norm(insect_vel-drone_vel);

@@ -70,6 +70,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
             if (takeoff_spot_detected  ) {
                 _drone_tracking_status = dts_detected;
                 //calculate take off speed
+                /* LUDWIG HELP!
                 float dy_to = _world_item.pt.y - _drone_blink_world_location.y;
                 float dt_to = static_cast<float>(time - start_take_off_time) - dparams.full_bat_and_throttle_spinup_time;
 
@@ -92,7 +93,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
                 std::cout << "Start dy: " << dy_to << ", dt: " << (time - start_take_off_time) << std::endl;
                 std::cout << "Start v: " << tmp_v << ", a: " << tmp_acc << std::endl;
                 std::cout << "Start v: " << data.svelY << ", a: " << data.saccY << std::endl;
-
+*/
                 _visdat->delete_from_motion_map(drone_startup_im_location()*pparams.imscalef, _drone_blink_im_disparity,ceilf(_drone_blink_im_size*2.f)*pparams.imscalef,pparams.fps/2);
             }
         }

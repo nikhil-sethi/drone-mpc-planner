@@ -289,7 +289,7 @@ void process_frame(Stereo_Frame_Data data) {
         dctrl.insert_log(logreader.current_item.joyRoll, logreader.current_item.joyPitch, logreader.current_item.joyYaw, logreader.current_item.joyThrottle,logreader.current_item.joyArmSwitch,logreader.current_item.joyModeSwitch,logreader.current_item.joyTakeoffSwitch,logreader.current_item.auto_roll,logreader.current_item.auto_pitch,logreader.current_item.auto_throttle);
     }
     dnav.update(data.time);
-    dctrl.control(trackers.dronetracker()->Last_track_data(),dnav.setpoint_pos_world,dnav.setpoint_vel_world,dnav.setpoint_acc_world);
+    dctrl.control(trackers.dronetracker()->Last_track_data(),trackers.insecttracker()->Last_track_data(), dnav.setpoint_pos_world,dnav.setpoint_vel_world,dnav.setpoint_acc_world);
     dprdct.update(dctrl.drone_is_active(),data.time);
 
     trackers.dronetracker()->_manual_flight_mode =dnav.drone_is_manual(); // TODO: hacky
