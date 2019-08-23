@@ -5,6 +5,7 @@
 #include "joystick.hpp"
 #include "multimodule.h"
 #include "common.h"
+#define GRAVITY 9.81f
 
 static const char* joy_states_names[] = { "js_manual",
                                           "js_waypoint",
@@ -240,6 +241,7 @@ public:
 
     const int initial_throttle = 200;
     float hoverthrottle;
+	float drone_acc = 4.f*GRAVITY;
 
     bool _manual_override_take_off_now;
     bool manual_override_take_off_now() { return _manual_override_take_off_now;}

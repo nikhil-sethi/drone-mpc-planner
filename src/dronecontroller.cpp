@@ -494,6 +494,13 @@ float DroneController::calc_1g_tti(track_data state_drone_start_1g, track_data s
     drone_pos.y = state_drone.posY + tti_early_bird*drone_vel.y;
     drone_pos.z = state_drone.posZ + tti_early_bird*drone_vel.z;
 
+	// UPDATE DRONE_ACC aka THRST-FORCE-EQUIVILENT with current velocity measurements:
+	float resulting_acc = sqrt(	pow(sin(max_burn.x*M_PIf32/180)*drone_acc,2)
+								+ pow(cos(max_burn.x*M_PIf32/180)*cos(max_burn.y*M_PIf32/180)*drone_acc-GRAVITY, 2)
+								+ pow(-cos(max_burn.x*M_PIf32/180)*sin(max_burn.y*M_PIf32/180)*drone_acc, 2) );
+	float vel_est = resulting_acc * auto_takeoff_burn_time;
+	drone_acc = (norm(drone_vel)/vel_est) * drone_acc;
+
 
     //basic physics:
     //x = 0.5at² t = sqrt((2x)/a)
@@ -533,12 +540,9 @@ void DroneController::calc_burn_direction(cv::Point3f target,cv::Point3f drone) 
     float insect_angle_roll =  -atan2f((target.x - drone.x),(target.y - drone.y));
     float insect_angle_pitch=  -atan2f((target.z - drone.z),(target.y - drone.y));
 
-    float g = 9.81f;
-    float drone_acc = 4.f*g;
-
     float commanded_roll ,commanded_pitch;
-    commanded_roll = ((M_PIf32/2.f - fabs(insect_angle_roll))* (drone_acc+g)+0.5f*M_PIf32 * g)/(drone_acc + 2 * g);
-    commanded_pitch =((M_PIf32/2.f - fabs(insect_angle_pitch))*(drone_acc+g)+0.5f*M_PIf32 * g)/(drone_acc + 2 * g);
+	commanded_roll = ((M_PIf32/2.f - fabs(insect_angle_roll))* (drone_acc+GRAVITY)+0.5f*M_PIf32 * GRAVITY)/(drone_acc + 2 * GRAVITY);
+	commanded_pitch =((M_PIf32/2.f - fabs(insect_angle_pitch))*(drone_acc+GRAVITY)+0.5f*M_PIf32 * GRAVITY)/(drone_acc + 2 * GRAVITY);
 
     commanded_roll = M_PIf32/2.f - commanded_roll;
     commanded_pitch= M_PIf32/2.f - commanded_pitch;
