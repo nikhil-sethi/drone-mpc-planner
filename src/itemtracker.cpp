@@ -166,7 +166,7 @@ void ItemTracker::track(double time) {
 
     if ( _world_item.valid) {
         update_disparity(_world_item.iti.disparity, dt_tracking);
-        check_consistency();
+        check_consistency(dt_tracking);
         update_tracker_ouput(_world_item.pt,dt_tracking,time,_world_item.iti.disparity);
         update_prediction_state(_image_item.pt(), _world_item.iti.disparity);
         n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
@@ -409,15 +409,16 @@ void ItemTracker::update_disparity(float disparity, float dt) {
     }
 }
 
-void ItemTracker::check_consistency() {
+void ItemTracker::check_consistency(float dt) {
 
     if (track_history.size()>1) {
         auto data = track_history.back();
-        float abs_dist = (data.sposX - _world_item.pt.x) * (data.sposX - _world_item.pt.x) +
-                (data.sposY - _world_item.pt.y) * (data.sposY - _world_item.pt.y) +
-                (data.sposZ - _world_item.pt.z) * (data.sposZ - _world_item.pt.z);
 
-        if (abs_dist > 0.15f)
+        cv::Point3f prev_pos =cv::Point3f(data.sposX,data.sposY,data.sposZ);
+        cv::Point3f predicted_pos = dt * cv::Point3f(data.svelX,data.svelY,data.svelZ) + prev_pos;
+        float dist = cv::norm(predicted_pos - _world_item.pt);
+
+        if (dist > 0.4f )
             reset_filters = true;
     }
 }

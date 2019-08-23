@@ -192,7 +192,7 @@ private:
     void predict(float dt, int frame_id);
 
     float estimate_sub_disparity(int disparity);
-    void check_consistency();
+    void check_consistency(float dt);
     void update_disparity(float disparity, float dt);
     void update_prediction_state(cv::Point2f image_location, float disparity);
     void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, double time, float disparity);
