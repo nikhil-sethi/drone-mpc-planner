@@ -83,7 +83,7 @@ aux 2 15 3 900 1425 0 0
 set gyro_lowpass_type = PT1
 set gyro_lowpass_hz = 100
 set gyro_lowpass2_hz = 300
-set acc_trim_roll = 42
+set acc_calibration = -18,32,19
 set rc_interp_ch = RPY
 set airmode_start_throttle_percent = 32
 set dshot_idle_value = 300

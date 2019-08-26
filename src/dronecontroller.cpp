@@ -80,7 +80,6 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
     if (!pparams.insect_logging_mode)
         process_joystick();
 
-
     // Roll Control - X
     posErrX = state_drone.sposX - setpoint_pos.x;              // position error
     if (posErrX>3.0f)
@@ -153,7 +152,8 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         auto_throttle = 600; // TODO: hover throttle...
 
         calc_burn_direction(setpoint_pos, _dtrk->drone_startup_location());
-
+        auto_pitch = auto_pitch_burn;
+        auto_roll = auto_roll_burn;
         pitch =  auto_pitch;
         roll = auto_roll;
         throttle = auto_throttle;
@@ -166,26 +166,20 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
 
         auto_throttle = JOY_BOUND_MAX;
 
-        calc_burn_direction(setpoint_pos, _dtrk->drone_startup_location());
-
         pitch =  auto_pitch;
         roll = auto_roll;
         throttle = auto_throttle;
 
-        if (static_cast<float>(state_drone.time - take_off_burn_start_time) > dparams.full_bat_and_throttle_spinup_time+ auto_takeoff_burn_time)
+        if (static_cast<float>(state_drone.time - take_off_burn_start_time) > dparams.full_bat_and_throttle_spinup_time+ auto_takeoff_time_burn)
             _flight_mode = fm_1g;
         break;
     }  case fm_1g: { //FIXME: something not initialised right, during one frame weird commands at entering this state
-
-
 
         auto_throttle = 600; // dparams.min_throttle;
         //only control throttle:
         throttle = auto_throttle;
         roll = JOY_MIDDLE;
         pitch = JOY_MIDDLE;
-        auto_pitch = pitch;
-        auto_roll = roll;
 
         if (!drone_1g_start_pos.pos_valid)
             drone_1g_start_pos = state_drone;
@@ -217,25 +211,24 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         float tti = calc_tti(state_drone,state_insect);
         calc_burn_direction(state_insect,state_drone,tti,interception_aim_time+tranmission_delay_time);
 
-
-
-
-
     }  FALLTHROUGH_INTENDED; case fm_interception_aim: {
         float tti = calc_tti(state_drone,state_insect);
         calc_burn_direction(state_insect,state_drone,tti,interception_aim_time+tranmission_delay_time);
+        auto_pitch = auto_pitch_burn;
+        auto_roll = auto_roll_burn;
         pitch = auto_pitch;
         roll = auto_roll;
         auto_throttle = 600; // TODO: hover throttle...
         throttle = auto_throttle;
 
-
         if (state_drone.time - interception_burn_start_time > interception_aim_time) // TODO make 0.05 dynamic based on d_att using betaflight angle strength
             _flight_mode = fm_interception_burn_start;
         break;
     } case fm_interception_burn_start : {
-        interception_burn_duration = auto_interception_burn_time;
+        interception_burn_duration = auto_interception_time_burn;
         _flight_mode = fm_interception_burn; 
+        pitch = auto_pitch;
+        roll = auto_roll;
         auto_throttle = JOY_BOUND_MAX;
         throttle = auto_throttle;
     } FALLTHROUGH_INTENDED; case fm_interception_burn : {
@@ -247,6 +240,8 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         break;
     } case fm_interception_1g: {
         //only control throttle:
+        pitch = auto_pitch;
+        roll = auto_roll;
         auto_throttle = 600; // dparams.min_throttle;
         throttle = auto_throttle;
 
@@ -468,8 +463,6 @@ float DroneController::calc_tti(track_data state_drone,track_data state_insect){
 }
 float DroneController::calc_1g_tti(track_data state_drone_start_1g, track_data state_drone,track_data state_insect){
 
-    float tti_early_bird = 0.25f;
-
     cv::Point3f insect_pos,insect_vel,drone_pos,drone_vel;
     insect_vel.x = state_insect.svelX;
     insect_vel.y = state_insect.svelY;
@@ -487,7 +480,7 @@ float DroneController::calc_1g_tti(track_data state_drone_start_1g, track_data s
     drone_vel.y = (state_drone.posY - state_drone_start_1g.posY) / dt;
     drone_vel.z = (state_drone.posZ - state_drone_start_1g.posZ) / dt;
 
-    std::cout << "v 1g: " << drone_vel.x << ", "  << drone_vel.y << ", " << drone_vel.z <<std::endl;
+    //std::cout << "v 1g: " << drone_vel.x << ", "  << drone_vel.y << ", " << drone_vel.z <<std::endl;
 
 
     drone_pos.x = state_drone.posX + tti_early_bird*drone_vel.x;
@@ -499,8 +492,8 @@ float DroneController::calc_1g_tti(track_data state_drone_start_1g, track_data s
 		float resulting_acc = sqrt(	pow(sin(max_burn.x*M_PIf32/180)*drone_acc,2)
 									+ pow(cos(max_burn.x*M_PIf32/180)*cos(max_burn.y*M_PIf32/180)*drone_acc-GRAVITY, 2)
 									+ pow(-cos(max_burn.x*M_PIf32/180)*sin(max_burn.y*M_PIf32/180)*drone_acc, 2) );
-		float vel_est = resulting_acc * auto_takeoff_burn_time;
-		drone_acc = (norm(drone_vel)/vel_est) * drone_acc;
+        float vel_est = resulting_acc * auto_takeoff_time_burn;
+        drone_acc = (static_cast<float>(norm(drone_vel))/vel_est) * drone_acc;
 	}
 
 
@@ -532,7 +525,7 @@ void DroneController::calc_burn_direction(track_data target,track_data drone, fl
     est_drone_pos.z = drone.posZ + drone.svelZ*tti;
 
 
-    std::cout << "v: " << drone.svelX << ", "  << drone.svelY << ", " << drone.svelZ <<std::endl;
+//    std::cout << "v: " << drone.svelX << ", "  << drone.svelY << ", " << drone.svelZ <<std::endl;
 
     calc_burn_direction(est_target_pos,est_drone_pos);
 }
@@ -569,26 +562,18 @@ void DroneController::calc_burn_direction(cv::Point3f target,cv::Point3f drone) 
         max_burn.y=-bank_angle;
 
 
+    //std::cout << "commanded angle: " << max_burn.x << ", "  << max_burn.y  <<std::endl;
 
-    auto_roll =  ((max_burn.x/bank_angle+1) / 2.f) * JOY_MAX;
-    auto_pitch = ((max_burn.y/bank_angle+1) / 2.f) * JOY_MAX;
 
     float max_angle = commanded_roll;
     if (commanded_pitch > commanded_roll)
         max_angle = commanded_pitch;
-
-
     float dist = norm(target-drone);
 
-    auto_interception_burn_time = sqrtf((2*dist)/drone_acc);
-    auto_takeoff_burn_time = (0.05f+sqrtf(dist)/8 + (fabs(max_angle))/360) * 0.65f;
-//    float aim_time;
-//    if (max_burn.x > max_burn.y)
-//        aim_time = fabs(max_burn.x / bf_strenth);
-//    else
-//        aim_time = fabs(max_burn.y / bf_strenth);
-
-    //auto_burn_time /=1.5f; //TMP tuning?!?
+    auto_interception_time_burn = sqrtf((2*dist)/drone_acc);
+    auto_takeoff_time_burn = (0.05f+sqrtf(dist)/8 + (fabs(max_angle))/360) * 0.65f;
+    auto_roll_burn =  ((max_burn.x/bank_angle+1) / 2.f) * JOY_MAX;
+    auto_pitch_burn = ((max_burn.y/bank_angle+1) / 2.f) * JOY_MAX;
 
     //        auto_roll = JOY_MIDDLE; //TMP WAYPOINT MODE
     //        auto_pitch = JOY_MIDDLE;

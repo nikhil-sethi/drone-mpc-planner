@@ -202,16 +202,16 @@ void Cam::init() {
 
     if (enable_auto_exposure == only_at_startup)
         check_light_level();
-    if (getSecondsSinceFileCreation(calib_rfn) < 60*60 &&
-            checkFileExist(depth_map_rfn) &&
-            checkFileExist(calib_rfn)) {
+//    if (getSecondsSinceFileCreation(calib_rfn) < 60*60 &&
+//            checkFileExist(depth_map_rfn) &&
+//            checkFileExist(calib_rfn)) {
         std::cout << "Calibration files recent, reusing..."   << std::endl;
         depth_background = imread(depth_map_rfn,CV_LOAD_IMAGE_ANYDEPTH);
         depth_scale = rs_depth_sensor.get_option(RS2_OPTION_DEPTH_UNITS);
 
-    } else{
-        calib_pose();
-    }
+//    } else{
+//        calib_pose();
+//    }
 
     std::cout << rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_NAME) << std::endl;
     std::cout << rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION) << std::endl;

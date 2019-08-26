@@ -119,6 +119,12 @@ private:
     const int forward_pitch_take_off_boost = 0; // CX10 - 60
     std::string settings_file;
 
+
+    double interception_aim_time = 0.33; // TODO move to dparams, slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
+    float tti_early_bird = interception_aim_time + 0.1;
+    double tranmission_delay_time = 0.04;
+    float drone_acc = 3.f*GRAVITY;
+
     double take_off_burn_start_time = 0;
     double interception_burn_start_time = 0;
     double interception_burn_duration = 0;
@@ -138,9 +144,7 @@ private:
     int joyDial = 0;
     float scaledjoydial = 0;
 
-    double interception_aim_time = 0.1; // TODO move to dparams, slightly related to full_bat_and_throttle_spinup_time
-    double tranmission_delay_time = 0.04;
-    float tti_tresh = 0.1f; // TODO move to dparams
+
     float tti_prev;
 
     track_data drone_1g_start_pos;
@@ -204,8 +208,11 @@ public:
     int auto_roll = JOY_MIDDLE;
     int auto_pitch = JOY_MIDDLE;
     int auto_yaw = JOY_MIDDLE;
-    float auto_interception_burn_time = 0;
-    float auto_takeoff_burn_time = 0;
+
+    int auto_roll_burn = JOY_MIDDLE;
+    int auto_pitch_burn = JOY_MIDDLE;
+    float auto_interception_time_burn = 0;
+    float auto_takeoff_time_burn = 0;
 
     //Normalized throttle, between [-1 .. 1].
     //0 equals hoverthrottle
@@ -241,7 +248,6 @@ public:
 
     const int initial_throttle = 200;
     float hoverthrottle;
-	float drone_acc = 4.f*GRAVITY;
 
     bool _manual_override_take_off_now;
     bool manual_override_take_off_now() { return _manual_override_take_off_now;}

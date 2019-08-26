@@ -138,10 +138,10 @@ void Interceptor::update_insect_in_range() {
     //calculate if the drone will stay within the camera borders where it still can be controlled:
     if (_intercept_pos.x > _intercept_pos.z+0.3f &&
             _intercept_pos.x < -_intercept_pos.z-0.3f &&
-            abs(_intercept_pos.x) < 2.0f &&
+            abs(_intercept_pos.x) < 10.0f &&
             _intercept_pos.y > _intercept_pos.z*1.5f &&
             _intercept_pos.y < -0.3f &&
-            _intercept_pos.z > -4.9f &&
+            _intercept_pos.z > -10.f &&
             _intercept_pos.z < -0.5f) {
         _count_insect_not_in_range= 0;
     } else {
