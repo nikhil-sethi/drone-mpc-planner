@@ -120,8 +120,8 @@ private:
     std::string settings_file;
 
 
-    double interception_aim_time = 0.33; // TODO move to dparams, slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
-    float tti_early_bird = interception_aim_time + 0.1;
+    double interception_aim_time = 0.2; // TODO move to dparams, slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
+    float tti_early_bird = 0.15;
     double tranmission_delay_time = 0.04;
     float drone_acc = 3.f*GRAVITY;
 
@@ -151,6 +151,10 @@ private:
 
     float calc_tti(track_data state_drone, track_data state_insect);
     float calc_1g_tti(track_data state_drone_start_1g, track_data state_drone, track_data state_insect);
+    void calc_burn_during_1g(track_data drone_start_1g, track_data drone, track_data target, float t_offset);
+
+    void kevin_burn(track_data state_drone_start_1g, track_data state_drone, track_data state_insect, float t_offset);
+    void ludwig_burn (track_data state_drone_start_1g, track_data target, track_data drone, float t_offset);
 
     MultiModule * _rc;
     DroneTracker * _dtrk;
