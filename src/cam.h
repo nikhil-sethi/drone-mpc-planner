@@ -173,7 +173,7 @@ private:
 
     void check_light_level();
 
-    void calib_pose();
+    void calib_pose(bool also_do_depth);
     void serialize_calib();
     void deserialize_calib(string file);
     void convert_depth_background_to_world();

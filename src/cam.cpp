@@ -202,16 +202,16 @@ void Cam::init() {
 
     if (enable_auto_exposure == only_at_startup)
         check_light_level();
-//    if (getSecondsSinceFileCreation(calib_rfn) < 60*60 &&
-//            checkFileExist(depth_map_rfn) &&
-//            checkFileExist(calib_rfn)) {
-        std::cout << "Calibration files recent, reusing..."   << std::endl;
-        depth_background = imread(depth_map_rfn,CV_LOAD_IMAGE_ANYDEPTH);
-        depth_scale = rs_depth_sensor.get_option(RS2_OPTION_DEPTH_UNITS);
+    //    if (getSecondsSinceFileCreation(calib_rfn) < 60*60 &&
+    //            checkFileExist(depth_map_rfn) &&
+    //            checkFileExist(calib_rfn)) {
+    //std::cout << "Calibration files recent, reusing..."   << std::endl;
+    depth_background = imread(depth_map_rfn,CV_LOAD_IMAGE_ANYDEPTH);
+    depth_scale = rs_depth_sensor.get_option(RS2_OPTION_DEPTH_UNITS);
 
-//    } else{
-//        calib_pose();
-//    }
+    //    } else{
+    calib_pose(false);
+    //    }
 
     std::cout << rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_NAME) << std::endl;
     std::cout << rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION) << std::endl;
@@ -511,7 +511,7 @@ float Cam::measure_auto_exposure(){
     return new_expos;
 }
 
-void Cam::calib_pose(){
+void Cam::calib_pose(bool also_do_depth){
 
     std::cout << "Measuring pose..." << std::endl;
     auto rs_depth_sensor = dev.first<rs2::depth_sensor>();
@@ -572,59 +572,61 @@ void Cam::calib_pose(){
         }
     }
 
-    // Decimation filter reduces the amount of data (while preserving best samples)
-    rs2::decimation_filter dec;
-    // If the demo is too slow, make sure you run in Release (-DCMAKE_BUILD_TYPE=Release)
-    // but you can also increase the following parameter to decimate depth more (reducing quality)
-    dec.set_option(RS2_OPTION_FILTER_MAGNITUDE, 2);
-    // Define transformations from and to Disparity domain
-    rs2::disparity_transform depth2disparity;
-    rs2::disparity_transform disparity2depth(false);
-    // Define spatial filter (edge-preserving)
-    rs2::spatial_filter spat;
-    // Enable hole-filling
-    // Hole filling is an aggressive heuristic and it gets the depth wrong many times
-    // However, this demo is not built to handle holes
-    // (the shortest-path will always prefer to "cut" through the holes since they have zero 3D distance)
-    spat.set_option(RS2_OPTION_HOLES_FILL, 5); // 5 = fill all the zero pixels
-    // Define temporal filter
-    rs2::temporal_filter temp;
-    // Spatially align all streams to depth viewport
-    // We do this because:
-    //   a. Usually depth has wider FOV, and we only really need depth for this demo
-    //   b. We don't want to introduce new holes
-    rs2::align align_to(RS2_STREAM_DEPTH);
-    auto depth = dec.process(frame.get_depth_frame());
-    // To make sure far-away objects are filtered proportionally
-    // we try to switch to disparity domain
-    depth = depth2disparity.process(depth);
-    // Apply spatial filtering
-    depth = spat.process(depth);
-    // Apply temporal filtering
-    depth = temp.process(depth);
-    // If we are in disparity domain, switch back to depth
-    cv::Size im_size_dec(IMG_W/2, IMG_H/2);
-    disparity_background = Mat(im_size_dec, CV_32F, const_cast<void *>(depth.get_data()), Mat::AUTO_STEP).clone();
-    cv::resize(disparity_background,disparity_background,im_size,0,0,INTER_CUBIC);
-    depth = disparity2depth.process(depth);
+    if (also_do_depth || !hasIMU){
 
-    //to get a x,y distance
-    //frame.get_depth_frame().get_distance()
+        // Decimation filter reduces the amount of data (while preserving best samples)
+        rs2::decimation_filter dec;
+        // If the demo is too slow, make sure you run in Release (-DCMAKE_BUILD_TYPE=Release)
+        // but you can also increase the following parameter to decimate depth more (reducing quality)
+        dec.set_option(RS2_OPTION_FILTER_MAGNITUDE, 2);
+        // Define transformations from and to Disparity domain
+        rs2::disparity_transform depth2disparity;
+        rs2::disparity_transform disparity2depth(false);
+        // Define spatial filter (edge-preserving)
+        rs2::spatial_filter spat;
+        // Enable hole-filling
+        // Hole filling is an aggressive heuristic and it gets the depth wrong many times
+        // However, this demo is not built to handle holes
+        // (the shortest-path will always prefer to "cut" through the holes since they have zero 3D distance)
+        spat.set_option(RS2_OPTION_HOLES_FILL, 5); // 5 = fill all the zero pixels
+        // Define temporal filter
+        rs2::temporal_filter temp;
+        // Spatially align all streams to depth viewport
+        // We do this because:
+        //   a. Usually depth has wider FOV, and we only really need depth for this demo
+        //   b. We don't want to introduce new holes
+        rs2::align align_to(RS2_STREAM_DEPTH);
+        auto depth = dec.process(frame.get_depth_frame());
+        // To make sure far-away objects are filtered proportionally
+        // we try to switch to disparity domain
+        depth = depth2disparity.process(depth);
+        // Apply spatial filtering
+        depth = spat.process(depth);
+        // Apply temporal filtering
+        depth = temp.process(depth);
+        // If we are in disparity domain, switch back to depth
+        cv::Size im_size_dec(IMG_W/2, IMG_H/2);
+        disparity_background = Mat(im_size_dec, CV_32F, const_cast<void *>(depth.get_data()), Mat::AUTO_STEP).clone();
+        cv::resize(disparity_background,disparity_background,im_size,0,0,INTER_CUBIC);
+        depth = disparity2depth.process(depth);
 
-    //original depth map:
-    depth_background = Mat(im_size, CV_16UC1, const_cast<void *>(frame.get_depth_frame().get_data()), Mat::AUTO_STEP).clone();
-    imwrite(depth_unfiltered_map_wfn,depth_background);
-    //filtered depth map:
-    depth_background = Mat(im_size_dec, CV_16UC1, const_cast<void *>(depth.get_data()), Mat::AUTO_STEP).clone();
-    cv::resize(depth_background,depth_background,im_size,0,0,INTER_CUBIC);
-    imwrite(depth_map_wfn,depth_background);
+        //to get a x,y distance
+        //frame.get_depth_frame().get_distance()
 
-    imwrite(disparity_map_wfn,disparity_background);
+        //original depth map:
+        depth_background = Mat(im_size, CV_16UC1, const_cast<void *>(frame.get_depth_frame().get_data()), Mat::AUTO_STEP).clone();
+        imwrite(depth_unfiltered_map_wfn,depth_background);
+        //filtered depth map:
+        depth_background = Mat(im_size_dec, CV_16UC1, const_cast<void *>(depth.get_data()), Mat::AUTO_STEP).clone();
+        cv::resize(depth_background,depth_background,im_size,0,0,INTER_CUBIC);
+        imwrite(depth_map_wfn,depth_background);
 
+        imwrite(disparity_map_wfn,disparity_background);
+    }
     if (hasIMU){
         _camera_angle_y = pitch;
 
-        if (fabs(roll) > 50.f) {
+        if (fabs(roll) > 0.5f) {
             throw my_exit("camera tilted in roll axis!");
         }
         std::cout << "Measured pose: " << _camera_angle_y << std::endl;
