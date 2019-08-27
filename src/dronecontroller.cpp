@@ -175,6 +175,8 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         break;
     }  case fm_1g: {
         auto_throttle = 600; // dparams.min_throttle;
+		auto_roll = JOY_MIDDLE;
+		auto_pitch = JOY_MIDDLE;
         //only control throttle:
         throttle = auto_throttle;
         pitch =  auto_pitch;
@@ -220,8 +222,8 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         kevin_burn(drone_1g_start_pos, state_drone,state_insect,tti_early_bird);
         std::cout << "kevin: " << auto_roll_burn << ", "  << auto_pitch_burn << ", "  << auto_interception_time_burn << std::endl;
 
-        ludwig_burn( drone_1g_start_pos, state_insect,state_drone,tti_early_bird);
-        std::cout << "Ludwig: " << auto_roll_burn << ", "  << auto_pitch_burn << ", "  << auto_interception_time_burn << std::endl;
+//        ludwig_burn( drone_1g_start_pos, state_insect,state_drone,tti_early_bird);
+//        std::cout << "Ludwig: " << auto_roll_burn << ", "  << auto_pitch_burn << ", "  << auto_interception_time_burn << std::endl;
 
         auto_pitch = auto_pitch_burn;
         auto_roll = auto_roll_burn;
@@ -530,9 +532,9 @@ void DroneController::kevin_burn(track_data state_drone_start_1g, track_data sta
     //optimization 1, calculate a more precise magnitude of the correction.
     //calc the distance we actually need to fix, which is the point on our current path closest to the insect to the insect
     //TODO: insect is a moving target as well
-    cv::Point3f x0 = delta_pos;
-    cv::Point3f x2 = drone_vel*100,f; //just elongate the drone speed direction with a large number to get the line far enough out
-    float dist = norm(x0.cross(-x2))/norm(x2);
+	cv::Point3f x0 = delta_pos;
+	cv::Point3f x2 = drone_vel*100.f; //just elongate the drone speed direction with a large number to get the line far enough out
+	float dist = norm(x0.cross(-x2))/norm(x2); //http://mathworld.wolfram.com/Point-LineDistance3-Dimensional.html
 
     //this distance needs to be covered in the time to impact, which means the correction speed magnitude must be roughly:
     float mag_v_cor = dist/virtual_tti;
@@ -549,10 +551,10 @@ void DroneController::kevin_burn(track_data state_drone_start_1g, track_data sta
     //TODO: not sure if the boost calculation makes sense
     float boostf = 0;
     if (drone_vel_correction.x * drone_vel_opti.x < 0.0f){
-        boostf = drone_vel_opti.x / (drone_vel_opti.x-drone_vel_correction.x);
+		boostf = drone_vel_correction.x / drone_vel_opti.x;
     }
     if (drone_vel_correction.y * drone_vel_opti.y < 0.0f){
-        float tmp_boostf = drone_vel_opti.y / (drone_vel_opti.y-drone_vel_correction.y);
+		float tmp_boostf = drone_vel_correction.y / drone_vel_opti.y;
         if (fabs(tmp_boostf) > fabs(boostf))
             boostf = tmp_boostf;
     }
@@ -581,6 +583,7 @@ void DroneController::kevin_burn(track_data state_drone_start_1g, track_data sta
 
     //TODO: calcuate how long the burn should be. Or even better, what throttle we can apply such that we gradually
     //approach the insect (and we may even regulate a bit underway)
+	interception_burn_duration = static_cast<float>(norm(drone_vel_correction_boosted))/ drone_acc;
 
     //TODO: below is largely similar to calc_burn_direction and can be streamlined.
     float insect_angle_roll =  -atan2f(drone_vel_correction_boosted.x,drone_vel_correction_boosted.y);
@@ -614,9 +617,6 @@ void DroneController::kevin_burn(track_data state_drone_start_1g, track_data sta
 
     auto_roll_burn =  ((max_burn.x/bank_angle+1) / 2.f) * JOY_MAX;
     auto_pitch_burn = ((max_burn.y/bank_angle+1) / 2.f) * JOY_MAX;
-
-    //we know that the burn time during take off resulted in the current state, so we want to have another burn with exactly the same magnitude, which means again taking that same burn time:
-    auto_interception_time_burn = auto_takeoff_time_burn;
 
 }
 

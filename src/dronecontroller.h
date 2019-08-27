@@ -120,7 +120,7 @@ private:
     std::string settings_file;
 
 
-    double interception_aim_time = 0.2; // TODO move to dparams, slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
+	double interception_aim_time = 0.1; // TODO move to dparams, slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
     float tti_early_bird = 0.15;
     double tranmission_delay_time = 0.04;
     float drone_acc = 3.f*GRAVITY;
