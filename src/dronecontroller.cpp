@@ -517,12 +517,12 @@ void DroneController::kevin_burn(track_data state_drone_start_1g, track_data sta
     cv::Point3f delta_pos = cv::Point3f(insect_pos_after_delay.x - drone_pos_after_delay.x,
                                    insect_pos_after_delay.y - drone_pos_after_delay.y,
                                    insect_pos_after_delay.z - drone_pos_after_delay.z);
-    delta_pos = delta_pos / norm(delta_pos); // normalize to unit
+    cv::Point3f delta_pos_norm = delta_pos / norm(delta_pos); // normalize to unit
     //...and use the known magnitude of drone_vel for the new drone_vel_opti magnitude as well (we assume the magnitude was fine already)
-    drone_vel_opti = delta_pos * norm(drone_vel);
+    drone_vel_opti = delta_pos_norm * norm(drone_vel);
     //calculate the tti if the current speed vector was directly towards the insect:
     float virtual_tti = norm(delta_pos) / norm(drone_vel_opti) ; // -> t = x / v
-    virtual_tti += t_offset ; // because delta_pos is predicted with t_offset into the future
+    //virtual_tti += t_offset ; // because delta_pos is predicted with t_offset into the future
 
     //drone_vel_correction:
     cv::Point3f drone_vel_correction = drone_vel_opti-drone_vel;
@@ -542,7 +542,7 @@ void DroneController::kevin_burn(track_data state_drone_start_1g, track_data sta
     cv::Point3f drone_vel_result = drone_vel_correction + drone_vel;
     //which means the actual tti becomes:
     float new_dist = norm(x0.cross(-drone_vel_result*100))/norm(drone_vel_result*100); // hmm, I guess this is not exactly zero, because virtual_tti is not exactly to the target
-    float new_tti =  static_cast<float>(norm(delta_pos) / norm(drone_vel_result)) + t_offset;
+    float new_tti =  static_cast<float>(norm(delta_pos) / norm(drone_vel_result)); // + t_offset;
 
     //optimization 2, assuming we are still before the target, we want to do a correctional boost without braking,
     //so for each v axis check if the sign is the same and calculate a boost factor towards the optimal speed to get that to zero
@@ -557,18 +557,18 @@ void DroneController::kevin_burn(track_data state_drone_start_1g, track_data sta
             boostf = tmp_boostf;
     }
     if (drone_vel_correction.z * drone_vel_opti.z < 0.0f){
-        float tmp_boostf = drone_vel_opti.z / (drone_vel_opti.z - drone_vel_correction.z);
+        float tmp_boostf = drone_vel_correction.z / drone_vel_opti.z;
         if (fabs(tmp_boostf) > fabs(boostf))
             boostf = tmp_boostf;
     }
 
     cv::Point3f drone_vel_correction_boosted;
-    drone_vel_correction_boosted = drone_vel_correction + boostf*drone_vel_opti;
+    drone_vel_correction_boosted =  drone_vel_correction -  drone_vel_opti * boostf;
 
     cv::Point3f drone_vel_result_boosted = drone_vel_correction_boosted + drone_vel;
 
     float new_dist_boosted = norm(x0.cross(-drone_vel_result_boosted*100))/norm(drone_vel_result_boosted*100);
-    float new_tti_boosted =  static_cast<float>(norm(delta_pos) / norm(drone_vel_result_boosted)) + t_offset;
+    float new_tti_boosted =  static_cast<float>(norm(delta_pos) / norm(drone_vel_result_boosted)); // + t_offset;
 
     //put a constraint on the boost, such that new_dist_boosted does not get bigger than the drone:
     if (new_dist_boosted > 0.1f && new_dist < 0.1f) {
