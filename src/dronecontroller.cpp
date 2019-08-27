@@ -470,16 +470,17 @@ void DroneController::ludwig_burn (track_data state_drone_start_1g,track_data ta
     est_target_pos.y += target.svelY*tti;
     est_target_pos.z += target.svelZ*tti;
     // Direction the drone shall continue to fly to
-    cv::Point3f vel_targetDirectionStageII = cv::Point3f(est_target_pos.x - est_drone_pos.x,
-                                                    est_target_pos.y - est_drone_pos.y,
-                                                    est_target_pos.z - est_drone_pos.z);
+    cv::Point3f targetDirectionStageII = cv::Point3f(est_target_pos.x - est_drone_pos.x,
+                                                     est_target_pos.y - est_drone_pos.y,
+                                                     est_target_pos.z - est_drone_pos.z);
+    targetDirectionStageII /=norm(targetDirectionStageII);
     // Assuming to go in the new direction with the same speed as before:
     // -> Velocity correction
-    cv::Point3f vel_commandedCorrectionStageII = vel_targetDirectionStageII*norm(drone_vel_stageI)/norm(vel_targetDirectionStageII) - drone_vel_stageI;
+    cv::Point3f vel_commandedCorrectionStageII = targetDirectionStageII*norm(drone_vel_stageI) - drone_vel_stageI;
     // Generate artificial point that generates the corrected control values:
     cv::Point3f artifical_target_pos = Point3f(est_drone_pos.x + tti*vel_commandedCorrectionStageII.x,
-                                                   est_drone_pos.y + tti*vel_commandedCorrectionStageII.y,
-                                                   est_drone_pos.z + tti*vel_commandedCorrectionStageII.z);
+                                               est_drone_pos.y + tti*vel_commandedCorrectionStageII.y,
+                                               est_drone_pos.z + tti*vel_commandedCorrectionStageII.z);
     // Determine control inputs..
     calc_burn_direction(artifical_target_pos, est_drone_pos);
 }
