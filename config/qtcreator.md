@@ -14,3 +14,6 @@ Top Menubar -> Tools -> Option -> C++ -> Code Model -> Diagnostic Configurations
 Top Menubar -> Tools -> Option -> Text Editor -> Behavior -> Clean whitespace -> In entire document  
 Top Menubar -> Tools -> Option -> Text Editor -> Behavior -> Tab size: -> 4  
 Top Menubar -> Tools -> Option -> Text Editor -> Build & Run -> Save all files before build
+Top Menubar -> Tools -> Option -> C++ -> Code Model -> Edit -> Tab policy: Spaces only
+Top Menubar -> Tools -> Option -> C++ -> Code Model -> Edit -> Tab size:: 4
+Top Menubar -> Tools -> Option -> C++ -> Code Model -> Edit -> Indent size:: 4
