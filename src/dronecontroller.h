@@ -28,6 +28,7 @@ static const char* flight_mode_names[] = { "fm_joystick_check",
                                            "fm_interception_burn_start",
                                            "fm_interception_burn",
                                            "fm_interception_1g",
+                                           "fm_retry_aim_start",
                                            "fm_abort_takeoff",
                                            "fm_flying",
                                            "fm_landing"
@@ -53,6 +54,7 @@ public:
         fm_interception_burn_start,
         fm_interception_burn,
         fm_interception_1g,
+        fm_retry_aim_start,
         fm_abort_takeoff,
         fm_flying,
         fm_landing
@@ -128,6 +130,7 @@ private:
     double take_off_burn_start_time = 0;
     double interception_burn_start_time = 0;
     double auto_interception_burn_duration = 0;
+    double auto_interception_tti = 0;
 
     const float integratorThresholdDistance = 0.2f;
 
@@ -148,8 +151,10 @@ private:
 
     void calc_aim_burn(track_data target, track_data drone, float tti,float t_offset);
     void calc_aim_burn(cv::Point3f target, cv::Point3f drone);
-    void calc_aim_burn_iteratively(cv::Point3f target, cv::Point3f drone);
+    void calc_directional_burn(track_data state_drone,track_data state_insect, float t_offset);
     void calc_directional_burn(track_data state_drone_start_1g, track_data state_drone, track_data state_insect, float t_offset);
+    void calc_directional_burn(cv::Point3f drone_vel, track_data state_drone,track_data state_insect, float t_offset);
+    void calc_aim_burn_iteratively(cv::Point3f target, cv::Point3f drone);
 
     MultiModule * _rc;
     DroneTracker * _dtrk;
