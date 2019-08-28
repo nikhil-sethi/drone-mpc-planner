@@ -120,14 +120,14 @@ private:
     std::string settings_file;
 
 
-	double interception_aim_time = 0.1; // TODO move to dparams, slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
-    float tti_early_bird = 0.15;
+    double interception_aim_time = 0.2; // TODO move to dparams, slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
+    float tti_early_bird = 0.3;
     double tranmission_delay_time = 0.04;
     float drone_acc = 3.f*GRAVITY;
 
     double take_off_burn_start_time = 0;
     double interception_burn_start_time = 0;
-    double interception_burn_duration = 0;
+    double auto_interception_burn_duration = 0;
 
     const float integratorThresholdDistance = 0.2f;
 
@@ -143,9 +143,6 @@ private:
     joy_states _joy_state = js_none;
     int joyDial = 0;
     float scaledjoydial = 0;
-
-
-    float tti_prev;
 
     track_data drone_1g_start_pos;
 

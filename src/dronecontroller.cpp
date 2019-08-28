@@ -146,7 +146,6 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
             _rc->arm(true);
         throttle = JOY_BOUND_MIN;
         _flight_mode = fm_take_off_aim;
-        tti_prev = 999999;
         break;
     } FALLTHROUGH_INTENDED; case fm_take_off_aim : {
         auto_throttle = 600; // TODO: hover throttle...
@@ -197,7 +196,6 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
 
             float tti = calc_1g_tti(drone_1g_start_pos, state_drone,state_insect);
             std::cout << tti << std::endl;
-//            if (tti_prev < tti){
             if (static_cast<float>(state_drone.time - take_off_burn_start_time) > dparams.full_bat_and_throttle_spinup_time+ auto_takeoff_time_burn + 6.f / pparams.fps) {
                 _flight_mode = fm_interception_aim_start;
 
@@ -208,7 +206,6 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
                 angle_pitch *= 180.f / M_PIf32;
                 logger_tmp << state_drone.time << ";" << max_burn.x << ";" << max_burn.y << ";" <<  _dtrk->drone_startup_location().x << ";"  << _dtrk->drone_startup_location().y << ";"  <<  _dtrk->drone_startup_location().z << ";"  << state_drone.posX << ";" << state_drone.posY << ";" << state_drone.posZ << ";" << angle_roll << ";" << angle_pitch << std::endl;
             }
-//            tti_prev = tti;
         }
 
         if (static_cast<float>(state_drone.time - take_off_burn_start_time) > 20) //TODO improve this by also using tti and time_to_exit_safe_FOV
@@ -217,20 +214,16 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         break;
     }  case fm_interception_aim_start: {
         interception_burn_start_time = state_drone.time;
-        tti_prev = 999999;
         _flight_mode =   fm_interception_aim;
-        kevin_burn(drone_1g_start_pos, state_drone,state_insect,tti_early_bird);
-        std::cout << "kevin: " << auto_roll_burn << ", "  << auto_pitch_burn << ", "  << auto_interception_time_burn << std::endl;
+        kevin_burn(drone_1g_start_pos, state_drone,state_insect,interception_aim_time+tranmission_delay_time);
+        std::cout << "kevin: " << auto_roll_burn << ", "  << auto_pitch_burn << ", "  << auto_interception_burn_duration << std::endl;
 
-//        ludwig_burn( drone_1g_start_pos, state_insect,state_drone,tti_early_bird);
-//        std::cout << "Ludwig: " << auto_roll_burn << ", "  << auto_pitch_burn << ", "  << auto_interception_time_burn << std::endl;
+        kevin_burn(drone_1g_start_pos, state_drone,state_insect,interception_aim_time+tranmission_delay_time+auto_interception_burn_duration);
+        std::cout << "kevin: " << auto_roll_burn << ", "  << auto_pitch_burn << ", "  << auto_interception_burn_duration << std::endl;
 
         auto_pitch = auto_pitch_burn;
         auto_roll = auto_roll_burn;
     }  FALLTHROUGH_INTENDED; case fm_interception_aim: {
-        //float tti = calc_tti(state_drone,state_insect);
-        //calc_burn_direction(state_insect,state_drone,tti,interception_aim_time+tranmission_delay_time);
-
         pitch = auto_pitch;
         roll = auto_roll;
         auto_throttle = 600; // TODO: hover throttle...
@@ -240,7 +233,6 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
             _flight_mode = fm_interception_burn_start;
         break;
     } case fm_interception_burn_start : {
-        interception_burn_duration = auto_interception_time_burn;
         _flight_mode = fm_interception_burn; 
         pitch = auto_pitch;
         roll = auto_roll;
@@ -250,28 +242,23 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         pitch = auto_pitch;
         roll = auto_roll;
         throttle = auto_throttle;
-        if (state_drone.time - interception_burn_start_time > interception_burn_duration)
+        if (state_drone.time - interception_burn_start_time > interception_aim_time + auto_interception_burn_duration)
             _flight_mode = fm_interception_1g;
         break;
     } case fm_interception_1g: {
         //only control throttle:
-        pitch = auto_pitch;
-        roll = auto_roll;
+        pitch = JOY_MIDDLE;
+        roll = JOY_MIDDLE;
         auto_throttle = 600; // dparams.min_throttle;
         throttle = auto_throttle;
 
         float tti = calc_tti(state_drone,state_insect);
         calc_burn_direction(state_insect,state_drone,tti,0);
 
-        if (tti_prev < tti){
-//            _flight_mode = fm_interception_aim_start;
-        }
-        tti_prev = tti;
-
-         if (state_drone.time - interception_burn_start_time > 1+ interception_burn_duration) // TODO: detect if we got it. //TMP 1+
+         if (state_drone.time - interception_burn_start_time > 2) // TODO: detect if we got it. //TMP 1+
             _flight_mode = fm_flying;
 
-        break;
+        break;//TODO add another state where we optimally aim the drone for max hit chance / surface
     } case fm_flying : {
         //update integrators
         if (fabs(posErrZ)<integratorThresholdDistance)
@@ -523,71 +510,114 @@ void DroneController::kevin_burn(track_data state_drone_start_1g, track_data sta
     //...and use the known magnitude of drone_vel for the new drone_vel_opti magnitude as well (we assume the magnitude was fine already)
     drone_vel_opti = delta_pos_norm * norm(drone_vel);
     //calculate the tti if the current speed vector was directly towards the insect:
-    float virtual_tti = norm(delta_pos) / norm(drone_vel_opti) ; // -> t = x / v
+    //float virtual_tti = norm(delta_pos) / norm(drone_vel_opti) ; // -> t = x / v
     //virtual_tti += t_offset ; // because delta_pos is predicted with t_offset into the future
 
-    //drone_vel_correction:
-    cv::Point3f drone_vel_correction = drone_vel_opti-drone_vel;
+    cv::Point3f tti3(delta_pos.x/drone_vel.x,delta_pos.y/drone_vel.y,delta_pos.z/drone_vel.z);
+    //in order to hit the insect, we need each axis of tti3 to become of equal length,
+    //and prereably we want to speed up the longer ones to become equal to the shorter ones
+    //get fastest tti component:
+    float min_tti = 999;
+    if (tti3.x < min_tti && tti3.x > 0)
+        min_tti = tti3.x;
+    if (tti3.y < min_tti && tti3.y > 0)
+        min_tti = tti3.y;
+    if (tti3.z < min_tti && tti3.z > 0)
+        min_tti = tti3.z;
 
-    //optimization 1, calculate a more precise magnitude of the correction.
-    //calc the distance we actually need to fix, which is the point on our current path closest to the insect to the insect
-    //TODO: insect is a moving target as well
-	cv::Point3f x0 = delta_pos;
-	cv::Point3f x2 = drone_vel*100.f; //just elongate the drone speed direction with a large number to get the line far enough out
-	float dist = norm(x0.cross(-x2))/norm(x2); //http://mathworld.wolfram.com/Point-LineDistance3-Dimensional.html
+    //compensate for gravity decay, which is 1g during min_tti + t_offset ...
+    float delta_pos_y_gravity = 0.5f * GRAVITY * powf(( t_offset),2);
+    float delta_vel_y_gravity = GRAVITY*t_offset;
+    delta_pos.y += delta_pos_y_gravity;
+    drone_vel.y -= delta_vel_y_gravity;
 
-    //this distance needs to be covered in the time to impact, which means the correction speed magnitude must be roughly:
-    float mag_v_cor = dist/virtual_tti;
-    drone_vel_correction = (drone_vel_correction / norm(drone_vel_correction)) * mag_v_cor;
+    //... and recalculate:
+   delta_pos_norm = delta_pos / norm(delta_pos); // normalize to unit
+    //...and use the known magnitude of drone_vel for the new drone_vel_opti magnitude as well (we assume the magnitude was fine already)
+    drone_vel_opti = delta_pos_norm * norm(drone_vel);
+    tti3 = cv::Point3f(delta_pos.x/drone_vel.x,delta_pos.y/drone_vel.y,delta_pos.z/drone_vel.z);
+    min_tti = 999;
+    if (tti3.x < min_tti && tti3.x > 0)
+        min_tti = tti3.x;
+    if (tti3.y < min_tti && tti3.y > 0)
+        min_tti = tti3.y;
+    if (tti3.z < min_tti && tti3.z > 0)
+        min_tti = tti3.z;
 
-    //this means the resulting speed will become:
-    cv::Point3f drone_vel_result = drone_vel_correction + drone_vel;
-    //which means the actual tti becomes:
-    float new_dist = norm(x0.cross(-drone_vel_result*100))/norm(drone_vel_result*100); // hmm, I guess this is not exactly zero, because virtual_tti is not exactly to the target
-    float new_tti =  static_cast<float>(norm(delta_pos) / norm(drone_vel_result)); // + t_offset;
 
-    //optimization 2, assuming we are still before the target, we want to do a correctional boost without braking,
-    //so for each v axis check if the sign is the same and calculate a boost factor towards the optimal speed to get that to zero
-    //TODO: not sure if the boost calculation makes sense
-    float boostf = 0;
-    if (drone_vel_correction.x * drone_vel_opti.x < 0.0f){
-		boostf = drone_vel_correction.x / drone_vel_opti.x;
-    }
-    if (drone_vel_correction.y * drone_vel_opti.y < 0.0f){
-		float tmp_boostf = drone_vel_correction.y / drone_vel_opti.y;
-        if (fabs(tmp_boostf) > fabs(boostf))
-            boostf = tmp_boostf;
-    }
-    if (drone_vel_correction.z * drone_vel_opti.z < 0.0f){
-        float tmp_boostf = drone_vel_correction.z / drone_vel_opti.z;
-        if (fabs(tmp_boostf) > fabs(boostf))
-            boostf = tmp_boostf;
-    }
+    cv::Point3f required_v = delta_pos/min_tti;
+    cv::Point3f required_delta_v = required_v- drone_vel;
 
-    cv::Point3f drone_vel_correction_boosted;
-    drone_vel_correction_boosted =  drone_vel_correction -  drone_vel_opti * boostf;
+    auto_interception_burn_duration = static_cast<float>(norm(required_delta_v)) / drone_acc;
 
-    cv::Point3f drone_vel_result_boosted = drone_vel_correction_boosted + drone_vel;
 
-    float new_dist_boosted = norm(x0.cross(-drone_vel_result_boosted*100))/norm(drone_vel_result_boosted*100);
-    float new_tti_boosted =  static_cast<float>(norm(delta_pos) / norm(drone_vel_result_boosted)); // + t_offset;
+    float insect_angle_roll =  -atan2f(required_delta_v.x,required_delta_v.y);
+    float insect_angle_pitch=  -atan2f(required_delta_v.z,required_delta_v.y);
 
-    //put a constraint on the boost, such that new_dist_boosted does not get bigger than the drone:
-    if (new_dist_boosted > 0.1f && new_dist < 0.1f) {
-        drone_vel_correction_boosted = drone_vel_correction; // use the original value and hope for the best...
-    }
-    //in theory the boost should always be faster then the non-boost:
-    if (new_tti_boosted > new_tti) {
-        drone_vel_correction_boosted = drone_vel_correction; // use the original value and hope for the best...
-    }
 
-    //TODO: calcuate how long the burn should be. Or even better, what throttle we can apply such that we gradually
-    //approach the insect (and we may even regulate a bit underway)
-	interception_burn_duration = static_cast<float>(norm(drone_vel_correction_boosted))/ drone_acc;
+
+//    //drone_vel_correction:
+//    cv::Point3f drone_vel_correction = drone_vel_opti-drone_vel;
+
+//    //optimization 1, calculate a more precise magnitude of the correction.
+//    //calc the distance we actually need to fix, which is the point on our current path closest to the insect to the insect
+//    //TODO: insect is a moving target as well
+//	cv::Point3f x0 = delta_pos;
+//	cv::Point3f x2 = drone_vel*100.f; //just elongate the drone speed direction with a large number to get the line far enough out
+//	float dist = norm(x0.cross(-x2))/norm(x2); //http://mathworld.wolfram.com/Point-LineDistance3-Dimensional.html
+
+//    //this distance needs to be covered in the time to impact, which means the correction speed magnitude must be roughly:
+//    float mag_v_cor = dist/virtual_tti;
+//    drone_vel_correction = (drone_vel_correction / norm(drone_vel_correction)) * mag_v_cor;
+
+//    //this means the resulting speed will become:
+//    cv::Point3f drone_vel_result = drone_vel_correction + drone_vel;
+//    //which means the actual tti becomes:
+//    float new_dist = norm(x0.cross(-drone_vel_result*100))/norm(drone_vel_result*100); // hmm, I guess this is not exactly zero, because virtual_tti is not exactly to the target
+//    float new_tti =  static_cast<float>(norm(delta_pos) / norm(drone_vel_result)); // + t_offset;
+
+//    //optimization 2, assuming we are still before the target, we want to do a correctional boost without braking,
+//    //so for each v axis check if the sign is the same and calculate a boost factor towards the optimal speed to get that to zero
+//    //TODO: not sure if the boost calculation makes sense
+//    float boostf = 0;
+//    if (drone_vel_correction.x * drone_vel_opti.x < 0.0f){
+//		boostf = drone_vel_correction.x / drone_vel_opti.x;
+//    }
+//    if (drone_vel_correction.y * drone_vel_opti.y < 0.0f){
+//		float tmp_boostf = drone_vel_correction.y / drone_vel_opti.y;
+//        if (fabs(tmp_boostf) > fabs(boostf))
+//            boostf = tmp_boostf;
+//    }
+//    if (drone_vel_correction.z * drone_vel_opti.z < 0.0f){
+//        float tmp_boostf = drone_vel_correction.z / drone_vel_opti.z;
+//        if (fabs(tmp_boostf) > fabs(boostf))
+//            boostf = tmp_boostf;
+//    }
+
+//    cv::Point3f drone_vel_correction_boosted;
+//    drone_vel_correction_boosted =  drone_vel_correction -  drone_vel_opti * boostf;
+
+//    cv::Point3f drone_vel_result_boosted = drone_vel_correction_boosted + drone_vel;
+
+//    float new_dist_boosted = norm(x0.cross(-drone_vel_result_boosted*100))/norm(drone_vel_result_boosted*100);
+//    float new_tti_boosted =  static_cast<float>(norm(delta_pos) / norm(drone_vel_result_boosted)); // + t_offset;
+
+//    //put a constraint on the boost, such that new_dist_boosted does not get bigger than the drone:
+//    if (new_dist_boosted > 0.1f && new_dist < 0.1f) {
+//        drone_vel_correction_boosted = drone_vel_correction; // use the original value and hope for the best...
+//    }
+//    //in theory the boost should always be faster then the non-boost:
+//    if (new_tti_boosted > new_tti) {
+//        drone_vel_correction_boosted = drone_vel_correction; // use the original value and hope for the best...
+//    }
+
+//    //TODO: calcuate how long the burn should be. Or even better, what throttle we can apply such that we gradually
+//    //approach the insect (and we may even regulate a bit underway)
+//	interception_burn_duration = static_cast<float>(norm(drone_vel_correction_boosted))/ drone_acc;
 
     //TODO: below is largely similar to calc_burn_direction and can be streamlined.
-    float insect_angle_roll =  -atan2f(drone_vel_correction_boosted.x,drone_vel_correction_boosted.y);
-    float insect_angle_pitch=  -atan2f(drone_vel_correction_boosted.z,drone_vel_correction_boosted.y);
+//    float insect_angle_roll =  -atan2f(drone_vel_correction_boosted.x,drone_vel_correction_boosted.y);
+//    float insect_angle_pitch=  -atan2f(drone_vel_correction_boosted.z,drone_vel_correction_boosted.y);
 
     float commanded_roll ,commanded_pitch;
     commanded_roll = ((M_PIf32/2.f - fabs(insect_angle_roll))* (drone_acc+GRAVITY)+0.5f*M_PIf32 * GRAVITY)/(drone_acc + 2 * GRAVITY);
