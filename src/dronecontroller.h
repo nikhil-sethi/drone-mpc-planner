@@ -30,7 +30,7 @@ static const char* flight_mode_names[] = { "fm_joystick_check",
                                            "fm_interception_1g",
                                            "fm_retry_aim_start",
                                            "fm_abort_takeoff",
-                                           "fm_flying",
+                                           "fm_flying_pid",
                                            "fm_landing"
                                          };
 /*
@@ -56,7 +56,7 @@ public:
         fm_interception_1g,
         fm_retry_aim_start,
         fm_abort_takeoff,
-        fm_flying,
+        fm_flying_pid,
         fm_landing
     };
     enum joy_mode_switch_modes{ // raw switch modes
@@ -118,12 +118,10 @@ private:
     float pitchErrI = 0;
     int autoLandThrottleDecrease = 0;
 
-    const int forward_pitch_take_off_boost = 0; // CX10 - 60
     std::string settings_file;
 
-
-    double interception_aim_time = 0.2; // TODO move to dparams, slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
-    float tti_early_bird = 0.3;
+    float max_bank_angle = 180; // TODO: move to dparams (betaflight setting)
+    double interception_aim_time = 0.2; // TODO: move to dparams, slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
     double tranmission_delay_time = 0.04;
     float drone_acc = 3.f*GRAVITY;
 
@@ -131,13 +129,11 @@ private:
     double interception_burn_start_time = 0;
     double auto_interception_burn_duration = 0;
     double auto_interception_tti = 0;
+    track_data drone_1g_start_pos;
 
     const float integratorThresholdDistance = 0.2f;
 
     bool initialized = false;
-
-    const int take_off_throttle_boost = 0;
-
     bool _fromfile;
     flight_modes _flight_mode = fm_joystick_check; // only set externally (except for disarming), used internally
     joy_mode_switch_modes _joy_mode_switch = jmsm_none;
@@ -147,14 +143,12 @@ private:
     int joyDial = 0;
     float scaledjoydial = 0;
 
-    track_data drone_1g_start_pos;
-
-    void calc_aim_burn(track_data target, track_data drone, float tti,float t_offset);
-    void calc_aim_burn(cv::Point3f target, cv::Point3f drone);
+    void calc_takeoff_aim_burn(track_data target, track_data drone, float tti,float t_offset);
+    void calc_takeoff_aim_burn(cv::Point3f target, cv::Point3f drone);
+    cv::Point2f approx_rp_command(float insect_angle_roll,float insect_angle_pitch);
     void calc_directional_burn(track_data state_drone,track_data state_insect, float t_offset);
     void calc_directional_burn(track_data state_drone_start_1g, track_data state_drone, track_data state_insect, float t_offset);
     void calc_directional_burn(cv::Point3f drone_vel, track_data state_drone,track_data state_insect, float t_offset);
-    void calc_aim_burn_iteratively(cv::Point3f target, cv::Point3f drone);
 
     MultiModule * _rc;
     DroneTracker * _dtrk;
@@ -285,7 +279,6 @@ public:
             return (auto_throttle > JOY_BOUND_MIN || _flight_mode == fm_start_takeoff || _flight_mode == fm_take_off_aim || _flight_mode == fm_max_burn || _flight_mode == fm_1g ); //FIXME: check if this goes well if due to extreme control throttle is set to 0
     }
     void setAutoLandThrottleDecrease(int value) {autoLandThrottleDecrease = value;}
-    void recalibrateHover();
     bool joystick_ready();
 
     void blink_by_binding(bool b) {

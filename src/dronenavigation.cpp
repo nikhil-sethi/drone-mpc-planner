@@ -232,8 +232,6 @@ void DroneNavigation::update(double time) {
                     _navigation_status = ns_land;
                 } else if (wpid < setpoints.size()) { // next waypoint in flight plan
                     wpid++;
-                    if (wpid == 1)
-                        _dctrl->recalibrateHover();
                     _navigation_status = ns_set_waypoint;
                 } else if (wpid == setpoints.size()){
                     wpid = 0; // another round
