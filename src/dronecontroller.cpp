@@ -418,6 +418,7 @@ void DroneController::calc_directional_burn(track_data state_drone_start_1g, tra
     drone_vel.x = (state_drone.posX - state_drone_start_1g.posX) / dt;
     drone_vel.y = (state_drone.posY - state_drone_start_1g.posY) / dt;
     drone_vel.z = (state_drone.posZ - state_drone_start_1g.posZ) / dt;
+    approx_thrust(drone_vel);
     calc_directional_burn(drone_vel,state_drone,state_insect,t_offset);
 }
 
@@ -583,8 +584,19 @@ void DroneController::calc_takeoff_aim_burn(cv::Point3f target, cv::Point3f dron
 
 }
 
+void DroneController::approx_thrust(cv::Point3f drone_vel) {
+    // UPDATE DRONE_ACC aka THRST-FORCE-EQUIVILENT with current velocity measurements:
+    for(int i=0; i<2; i++){ // find drone_acc over multiple iterations
+        float resulting_acc = sqrt(	pow(sin(max_burn.x*M_PIf32/180)*drone_acc,2)
+                                    + pow(cos(max_burn.x*M_PIf32/180)*cos(max_burn.y*M_PIf32/180)*drone_acc-GRAVITY, 2)
+                                    + pow(-cos(max_burn.x*M_PIf32/180)*sin(max_burn.y*M_PIf32/180)*drone_acc, 2) );
+        float vel_est = resulting_acc * auto_takeoff_time_burn;
+        drone_acc = (static_cast<float>(norm(drone_vel))/vel_est) * drone_acc;
+    }
+}
+
 cv::Point2f DroneController::approx_rp_command(float insect_angle_roll,float insect_angle_pitch) {
-     cv::Point2f command(insect_angle_roll,insect_angle_pitch);
+    cv::Point2f command(insect_angle_roll,insect_angle_pitch);
     float insect_angle_roll_tmp, insect_angle_pitch_tmp;
     for(int i=0;i<3;i++){
         insect_angle_roll_tmp = atan2(sin(command.x)*drone_acc,cos(command.x)*drone_acc-GRAVITY);
