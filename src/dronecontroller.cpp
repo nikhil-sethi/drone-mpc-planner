@@ -467,26 +467,23 @@ void DroneController::calc_directional_burn(cv::Point3f drone_vel, track_data st
     //so we do a minimal burn time that is much larger then the frame time, and redirect the additional power we don't need
     //for the correction into more speed towards the insect.
     float min_burn_time = 5.f/pparams.fps;
+    float x = norm(delta_pos);
+    float v0 = norm(drone_vel);
     if (burn_time < min_burn_time ) {
-        float x = norm(delta_pos);
-        float v = norm(drone_vel);
         float delta_xa = 0.5f*drone_acc * min_burn_time*min_burn_time;
-        float delta_xv = v * min_burn_time;
-        x = x - delta_xa - delta_xv;
-        v = v + drone_acc*min_burn_time;
-
-        min_tti = x/v + min_burn_time;
+        float delta_xv = v0 * min_burn_time;
+        min_tti = (x - delta_xa - delta_xv)/(v0 + drone_acc*min_burn_time) + min_burn_time;
     }
 
-    if (min_tti < 0.4f) //HACK
-        min_tti = 0.4f;
-
-    //TODO: check if min_tti allows enough time to accelerate for all axis
-    //so, given vy = -0.3, dy =0.9, and assuming we use the full a = 30, is a min_tti = 0.27 enough make it
-    //even better: use the norm of everything
+    //check if the min_tti allows enough time considering the drone_acc, v0, and delta_pos
+    float delta_xa_max = 0.5f*drone_acc * min_tti*min_tti;
+    float delta_xv_max = v0 * min_tti;
+    float time_left = (x - delta_xa_max - delta_xv_max)/(v0 + drone_acc*min_tti);
+    if (time_left < 0) // TODO: check this (e.g. sign), did not have a video anymore to test
+        min_tti -=time_left;
 
     //iteratively compensate for burn
-    for (int i = 0; i < 50; i++) {
+    for (int i = 0; i < 5; i++) {
         cv::Point3f burn_dist = 0.5f * drone_acc * (required_delta_v /norm(required_delta_v)) *powf(burn_time,2); // distance covered during burning
         cv::Point3f delta_pos_burn = delta_pos - drone_vel* burn_time - burn_dist;
 
