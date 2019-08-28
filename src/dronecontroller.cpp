@@ -150,7 +150,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
     } FALLTHROUGH_INTENDED; case fm_take_off_aim : {
         auto_throttle = 600; // TODO: LUDWIG HELP initial hover throttle...
 
-        calc_aim_burn(setpoint_pos, _dtrk->drone_startup_location());
+        calc_aim_burn_iteratively(setpoint_pos, _dtrk->drone_startup_location());
         auto_pitch = auto_pitch_burn;
         auto_roll = auto_roll_burn;
         pitch =  auto_pitch;
@@ -174,8 +174,8 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         break;
     }  case fm_1g: {
         auto_throttle = 600; // TODO: LUDWIG HELP better hover throttle...
-		auto_roll = JOY_MIDDLE;
-		auto_pitch = JOY_MIDDLE;
+        auto_roll = JOY_MIDDLE;
+        auto_pitch = JOY_MIDDLE;
         //only control throttle:
         throttle = auto_throttle;
         pitch =  auto_pitch;
@@ -218,7 +218,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
             _flight_mode = fm_interception_burn_start;
         break;
     } case fm_interception_burn_start : {
-        _flight_mode = fm_interception_burn; 
+        _flight_mode = fm_interception_burn;
         pitch = auto_pitch;
         roll = auto_roll;
         auto_throttle = JOY_BOUND_MAX;
@@ -553,17 +553,62 @@ void DroneController::calc_aim_burn(track_data target,track_data drone, float tt
     est_drone_pos.y = drone.posY + drone.svelY*tti;
     est_drone_pos.z = drone.posZ + drone.svelZ*tti;
 
-    calc_aim_burn(est_target_pos,est_drone_pos);
+    calc_aim_burn_iteratively(est_target_pos,est_drone_pos);
+}
+
+void::DroneController::calc_aim_burn_iteratively(cv::Point3f target, cv::Point3f drone) {
+    // Convert our coordination system to a right turnning coordination system:
+    target.z *= (-1);
+    drone.z *= (-1);
+
+    float insect_angle_roll_target = atan2f((target.x - drone.x),(target.y - drone.y));
+    float insect_angle_pitch_target = atan2f((target.z - drone.z),(target.y - drone.y));
+
+    float commanded_roll = insect_angle_roll_target;
+    float commanded_pitch = insect_angle_pitch_target;
+
+    float insect_angle_roll, insect_angle_pitch;
+
+    for(int i=0;i<3;i++){
+        insect_angle_roll = atan2(sin(commanded_roll)*drone_acc,cos(commanded_roll)*drone_acc-GRAVITY);
+        insect_angle_pitch = atan2(sin(commanded_pitch)*drone_acc,cos(commanded_pitch)*drone_acc-GRAVITY);
+        commanded_roll *= insect_angle_roll_target/insect_angle_roll;
+        commanded_pitch *= insect_angle_pitch_target/insect_angle_pitch;
+    }
+    // Adapt signs to our coordination system:
+    commanded_roll *= (-1);
+
+    max_burn.x = commanded_roll / M_PIf32*180.f;
+    max_burn.y = commanded_pitch / M_PIf32*180.f;
+
+    float bank_angle_limit = 180; // todo: move to xml (betaflight setting)
+    if (max_burn.x>bank_angle_limit)
+        max_burn.x=bank_angle_limit;
+    else if (max_burn.x<-bank_angle_limit)
+        max_burn.x=-bank_angle_limit;
+    if (max_burn.y>bank_angle_limit)
+        max_burn.y=bank_angle_limit;
+    else if (max_burn.y<-bank_angle_limit)
+        max_burn.y=-bank_angle_limit;
+
+    float max_angle = commanded_roll;
+    if (commanded_pitch > commanded_roll)
+        max_angle = commanded_pitch;
+    float dist = norm(target-drone);
+
+    auto_interception_time_burn = sqrtf((2*dist)/drone_acc);
+    auto_takeoff_time_burn = (0.05f+sqrtf(dist)/11 + (fabs(max_angle))/360) * 0.6f; //LUDWIG HELP! MODEL!
+    auto_roll_burn =  ((max_burn.x/bank_angle_limit+1) / 2.f) * JOY_MAX;
+    auto_pitch_burn = ((max_burn.y/bank_angle_limit+1) / 2.f) * JOY_MAX;
 }
 
 void DroneController::calc_aim_burn(cv::Point3f target,cv::Point3f drone) {
-
     float insect_angle_roll =  -atan2f((target.x - drone.x),(target.y - drone.y));
     float insect_angle_pitch=  -atan2f((target.z - drone.z),(target.y - drone.y));
 
     float commanded_roll ,commanded_pitch;
-	commanded_roll = ((M_PIf32/2.f - fabs(insect_angle_roll))* (drone_acc+GRAVITY)+0.5f*M_PIf32 * GRAVITY)/(drone_acc + 2 * GRAVITY);
-	commanded_pitch =((M_PIf32/2.f - fabs(insect_angle_pitch))*(drone_acc+GRAVITY)+0.5f*M_PIf32 * GRAVITY)/(drone_acc + 2 * GRAVITY);
+    commanded_roll = ((M_PIf32/2.f - fabs(insect_angle_roll))* (drone_acc+GRAVITY)+0.5f*M_PIf32 * GRAVITY)/(drone_acc + 2 * GRAVITY);
+    commanded_pitch =((M_PIf32/2.f - fabs(insect_angle_pitch))*(drone_acc+GRAVITY)+0.5f*M_PIf32 * GRAVITY)/(drone_acc + 2 * GRAVITY);
 
     commanded_roll = M_PIf32/2.f - commanded_roll;
     commanded_pitch= M_PIf32/2.f - commanded_pitch;

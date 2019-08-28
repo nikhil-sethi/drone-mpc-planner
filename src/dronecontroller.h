@@ -148,6 +148,7 @@ private:
 
     void calc_aim_burn(track_data target, track_data drone, float tti,float t_offset);
     void calc_aim_burn(cv::Point3f target, cv::Point3f drone);
+    void calc_aim_burn_iteratively(cv::Point3f target, cv::Point3f drone);
     void calc_directional_burn(track_data state_drone_start_1g, track_data state_drone, track_data state_insect, float t_offset);
 
     MultiModule * _rc;
