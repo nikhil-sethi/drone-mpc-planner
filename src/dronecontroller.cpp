@@ -581,9 +581,6 @@ void DroneController::calc_takeoff_aim_burn(cv::Point3f target, cv::Point3f dron
     auto_roll_burn =  ((max_burn.x/max_bank_angle+1) / 2.f) * JOY_MAX;
     auto_pitch_burn = ((max_burn.y/max_bank_angle+1) / 2.f) * JOY_MAX;
 
-    //        auto_roll = JOY_MIDDLE; //TMP WAYPOINT MODE
-    //        auto_pitch = JOY_MIDDLE;
-    //        auto_burn_time = 0.05;
 }
 
 cv::Point2f DroneController::approx_rp_command(float insect_angle_roll,float insect_angle_pitch) {

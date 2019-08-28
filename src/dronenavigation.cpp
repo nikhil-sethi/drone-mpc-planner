@@ -130,6 +130,7 @@ void DroneNavigation::update(double time) {
             else if (_nav_flight_mode == nfm_manual)
                 _navigation_status = ns_manual;
             else if (_dctrl->manual_override_take_off_now() ){
+                next_waypoint(setpoints[wpid]);
                 _navigation_status = ns_takeoff;
                 repeat = true;
             }
