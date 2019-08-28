@@ -146,12 +146,9 @@ private:
 
     track_data drone_1g_start_pos;
 
-    float calc_tti(track_data state_drone, track_data state_insect);
-    float calc_1g_tti(track_data state_drone_start_1g, track_data state_drone, track_data state_insect);
-    void calc_burn_during_1g(track_data drone_start_1g, track_data drone, track_data target, float t_offset);
-
-    void kevin_burn(track_data state_drone_start_1g, track_data state_drone, track_data state_insect, float t_offset);
-    void ludwig_burn (track_data state_drone_start_1g, track_data target, track_data drone, float t_offset);
+    void calc_aim_burn(track_data target, track_data drone, float tti,float t_offset);
+    void calc_aim_burn(cv::Point3f target, cv::Point3f drone);
+    void calc_directional_burn(track_data state_drone_start_1g, track_data state_drone, track_data state_insect, float t_offset);
 
     MultiModule * _rc;
     DroneTracker * _dtrk;
@@ -271,8 +268,6 @@ public:
     void close (void);
     void init(std::ofstream *logger, bool fromfile, MultiModule *rc, DroneTracker *dtrk);
     void control(track_data data, track_data state_insect, cv::Point3f setpoint_pos_world, cv::Point3f setpoint_vel_world, cv::Point3f setpoint_acc_world);
-    void calc_burn_direction(track_data target, track_data drone, float tti,float t_offset);
-    void calc_burn_direction(cv::Point3f target, cv::Point3f drone);
     bool drone_is_active() {
         if ( _flight_mode == fm_inactive || _flight_mode == fm_disarmed)
             return false;

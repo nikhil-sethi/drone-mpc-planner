@@ -16,7 +16,7 @@
     <Member Name="vision_tuning">false</Member>
     <Member Name="drone_tracking_tuning">false</Member>
     <Member Name="insect_tracking_tuning">false</Member>
-    <Member Name="viz_plots">true</Member>
+    <Member Name="viz_plots">false</Member>
     <Member Name="viz_tracking">true</Member>
     <Member Name="imscalef">2</Member>
 </SerializableClass>
