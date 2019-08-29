@@ -376,34 +376,34 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         control_history.erase(control_history.begin());
 
     (*_logger) << static_cast<int>(state_drone.pos_valid)  << "; " <<
-                  posErrX << "; " <<
-                  posErrY  << "; " <<
-                  posErrZ << "; " <<
-                  setpoint_pos.x << "; " <<
-                  setpoint_pos.y  << "; " <<
-                  setpoint_pos.z << "; " <<
-                  accx_sp << "; " <<
-                  accy_sp  << "; " <<
-                  accx_sp << "; " <<
-                  hoverthrottle << "; " <<
-                  auto_throttle << "; " <<
-                  auto_roll << "; " <<
-                  auto_pitch << "; " <<
-                  auto_yaw <<  "; " <<
-                  joy_throttle <<  "; " <<
-                  joy_roll <<  "; " <<
-                  joy_pitch <<  "; " <<
-                  joy_yaw << "; " <<
-                  static_cast<int>(_joy_arm_switch) << "; " <<
-                  static_cast<int>(_joy_mode_switch) << "; " <<
-                  static_cast<int>(_joy_takeoff_switch) << "; " <<
-                  state_drone.dt << "; " <<
-                  state_drone.dx << "; " <<
-                  state_drone.dy << "; " <<
-                  state_drone.dz << "; " <<
-                  velx_sp << "; " <<
-                  vely_sp << "; " <<
-                  velz_sp << "; ";
+        posErrX << "; " <<
+        posErrY  << "; " <<
+        posErrZ << "; " <<
+        setpoint_pos.x << "; " <<
+        setpoint_pos.y  << "; " <<
+        setpoint_pos.z << "; " <<
+        accx_sp << "; " <<
+        accy_sp  << "; " <<
+        accx_sp << "; " <<
+        hoverthrottle << "; " <<
+        auto_throttle << "; " <<
+        auto_roll << "; " <<
+        auto_pitch << "; " <<
+        auto_yaw <<  "; " <<
+        joy_throttle <<  "; " <<
+        joy_roll <<  "; " <<
+        joy_pitch <<  "; " <<
+        joy_yaw << "; " <<
+        static_cast<int>(_joy_arm_switch) << "; " <<
+        static_cast<int>(_joy_mode_switch) << "; " <<
+        static_cast<int>(_joy_takeoff_switch) << "; " <<
+        state_drone.dt << "; " <<
+        state_drone.dx << "; " <<
+        state_drone.dy << "; " <<
+        state_drone.dz << "; " <<
+        velx_sp << "; " <<
+        vely_sp << "; " <<
+        velz_sp << "; ";
 }
 
 void DroneController::calc_directional_burn(track_data state_drone,track_data state_insect, float t_offset) {
@@ -430,7 +430,7 @@ void DroneController::calc_directional_burn(cv::Point3f drone_vel, track_data st
     cv::Point3f drone_pos_after_delay = cv::Point3f(state_drone.posX,state_drone.posY,state_drone.posZ) + t_offset * drone_vel;
     //same for insect:
     cv::Point3f insect_pos_after_delay = cv::Point3f(state_insect.posX,state_insect.posY,state_insect.posZ) +
-            t_offset * cv::Point3f(state_insect.svelX,state_insect.svelY,state_insect.svelZ);
+                                         t_offset * cv::Point3f(state_insect.svelX,state_insect.svelY,state_insect.svelZ);
     cv::Point3f delta_pos = insect_pos_after_delay - drone_pos_after_delay;
     cv::Point3f tti(delta_pos.x/drone_vel.x,delta_pos.y/drone_vel.y,delta_pos.z/drone_vel.z);
 
@@ -553,9 +553,7 @@ void DroneController::calc_takeoff_aim_burn(cv::Point3f target, cv::Point3f dron
     float insect_angle_roll = atan2f((target.x - drone.x),(target.y - drone.y));
     float insect_angle_pitch = atan2f((-target.z - -drone.z),(target.y - drone.y));
 
-    cv::Point2f command = approx_rp_command(insect_angle_roll,insect_angle_pitch);
-    float commanded_roll = command.x;
-    float commanded_pitch = command.y;
+    auto [commanded_roll,commanded_pitch] = approx_rp_command(insect_angle_roll,insect_angle_pitch);
 
     max_burn.x = commanded_roll / M_PIf32*180.f;
     max_burn.y = commanded_pitch / M_PIf32*180.f;
@@ -585,24 +583,25 @@ void DroneController::approx_thrust(cv::Point3f drone_vel) {
     // UPDATE DRONE_ACC aka THRST-FORCE-EQUIVILENT with current velocity measurements:
     for(int i=0; i<2; i++){ // find drone_acc over multiple iterations
         float resulting_acc = sqrt(	pow(sin(max_burn.x*M_PIf32/180)*drone_acc,2)
-                                    + pow(cos(max_burn.x*M_PIf32/180)*cos(max_burn.y*M_PIf32/180)*drone_acc-GRAVITY, 2)
-                                    + pow(-cos(max_burn.x*M_PIf32/180)*sin(max_burn.y*M_PIf32/180)*drone_acc, 2) );
+                                   + pow(cos(max_burn.x*M_PIf32/180)*cos(max_burn.y*M_PIf32/180)*drone_acc-GRAVITY, 2)
+                                   + pow(-cos(max_burn.x*M_PIf32/180)*sin(max_burn.y*M_PIf32/180)*drone_acc, 2) );
         float vel_est = resulting_acc * auto_takeoff_time_burn;
         drone_acc = (static_cast<float>(norm(drone_vel))/vel_est) * drone_acc;
     }
 }
 
-cv::Point2f DroneController::approx_rp_command(float insect_angle_roll,float insect_angle_pitch) {
-    cv::Point2f command(insect_angle_roll,insect_angle_pitch);
+std::tuple<float,float> DroneController::approx_rp_command(float insect_angle_roll,float insect_angle_pitch) {
+    float commanded_roll = insect_angle_roll, commanded_pitch = insect_angle_pitch;
+
     float insect_angle_roll_tmp, insect_angle_pitch_tmp;
     for(int i=0;i<3;i++){
-        insect_angle_roll_tmp = atan2(sin(command.x)*drone_acc,cos(command.x)*drone_acc-GRAVITY);
-        insect_angle_pitch_tmp = atan2(sin(command.y)*drone_acc,cos(command.y)*drone_acc-GRAVITY);
-        command.x *= insect_angle_roll/insect_angle_roll_tmp;
-        command.y *= insect_angle_pitch/insect_angle_pitch_tmp;
+        insect_angle_roll_tmp = atan2(sin(commanded_roll)*drone_acc,cos(commanded_roll)*drone_acc-GRAVITY);
+        insect_angle_pitch_tmp = atan2(sin(commanded_pitch)*drone_acc,cos(commanded_pitch)*drone_acc-GRAVITY);
+        commanded_roll *= insect_angle_roll/insect_angle_roll_tmp;
+        commanded_pitch *= insect_angle_pitch/insect_angle_pitch_tmp;
     }
-    command.x *= (-1); // Adapt signs to our coordination system:
-    return command;
+    commanded_roll *= (-1); // Adapt signs to our coordination system:
+    return std::make_tuple(commanded_roll,commanded_pitch);
 }
 
 void DroneController::readJoystick(void) {
@@ -759,8 +758,8 @@ void DroneController::process_joystick() {
 
     if (_joy_state == js_checking){
         if (!_joy_arm_switch &&
-                joy_throttle <= JOY_MIN_THRESH &&
-                !_joy_takeoff_switch) {
+            joy_throttle <= JOY_MIN_THRESH &&
+            !_joy_takeoff_switch) {
             _flight_mode = fm_disarmed;
             _joy_state = js_disarmed;
         } else {
