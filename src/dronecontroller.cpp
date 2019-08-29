@@ -169,6 +169,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
 
         if (static_cast<float>(state_drone.time - take_off_burn_start_time) > dparams.full_bat_and_throttle_spinup_time+ auto_takeoff_time_burn)
             _flight_mode = fm_1g;
+
         break;
     }  case fm_1g: {
         auto_throttle = 600; // TODO: LUDWIG HELP better hover throttle...
@@ -181,8 +182,13 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
 
         if (!drone_1g_start_pos.pos_valid)
             drone_1g_start_pos = state_drone;
-        else  if (static_cast<float>(state_drone.time - take_off_burn_start_time) > dparams.full_bat_and_throttle_spinup_time+ auto_takeoff_time_burn + 6.f / pparams.fps)
-            _flight_mode = fm_interception_aim_start;
+        else  if (static_cast<float>(state_drone.time - take_off_burn_start_time) > dparams.full_bat_and_throttle_spinup_time+ auto_takeoff_time_burn + 6.f / pparams.fps){
+            if(_joy_state == js_waypoint){
+                _flight_mode = fm_flying_pid;
+            } else{
+                _flight_mode = fm_interception_aim_start;
+            }
+        }
 
         break;
     }  case fm_interception_aim_start: {
