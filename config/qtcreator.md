@@ -13,7 +13,7 @@ Left menu bar -> Projects -> Build -> Clean steps ---> uncheck all and check cle
 Top Menubar -> Tools -> Option -> C++ -> Code Model -> Diagnostic Configurations: -> Clang-Tidy static analyzer checks  
 Top Menubar -> Tools -> Option -> Text Editor -> Behavior -> Clean whitespace -> In entire document  
 Top Menubar -> Tools -> Option -> Text Editor -> Behavior -> Tab size: -> 4  
-Top Menubar -> Tools -> Option -> Text Editor -> Build & Run -> Save all files before build
-Top Menubar -> Tools -> Option -> C++ -> Code Model -> Edit -> Tab policy: Spaces only
-Top Menubar -> Tools -> Option -> C++ -> Code Model -> Edit -> Tab size:: 4
-Top Menubar -> Tools -> Option -> C++ -> Code Model -> Edit -> Indent size:: 4
+Top Menubar -> Tools -> Option -> Text Editor -> Build & Run -> Save all files before build  
+Top Menubar -> Tools -> Option -> C++ -> Code Model -> Edit -> Tab policy: Spaces only  
+Top Menubar -> Tools -> Option -> C++ -> Code Model -> Edit -> Tab size:: 4  
+Top Menubar -> Tools -> Option -> C++ -> Code Model -> Edit -> Indent size:: 4  
