@@ -13,7 +13,8 @@ void Interceptor::update(bool drone_at_base) {
      case  is_init: {
         _interceptor_state = is_waiting_for_target;
         _intercept_pos = {0,0,0};
-    } FALLTHROUGH_INTENDED; case is_waiting_for_target: {
+        [[fallthrough]];
+    } case is_waiting_for_target: {
         _intercept_vel = {0,0,0};
         _intercept_acc = {0,0,0};
         _count_insect_not_in_range++;
@@ -22,7 +23,8 @@ void Interceptor::update(bool drone_at_base) {
             _interceptor_state = is_waiting_in_reach_zone;
         } else
             break;
-    } FALLTHROUGH_INTENDED; case is_waiting_in_reach_zone: {
+        [[fallthrough]];
+    } case is_waiting_in_reach_zone: {
         _intercept_vel = {0,0,0};
         _intercept_acc = {0,0,0};
 
@@ -61,7 +63,7 @@ void Interceptor::update(bool drone_at_base) {
              _interceptor_state = is_close_chasing;
 
          break;
-    } FALLTHROUGH_INTENDED; case is_close_chasing: {
+    } case is_close_chasing: {
         if  (!_trackers->insecttracker()->tracking()) {
           _interceptor_state = is_waiting_for_target;
           break;

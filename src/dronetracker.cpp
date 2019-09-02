@@ -33,14 +33,16 @@ void DroneTracker::track(double time, bool drone_is_active) {
             ItemTracker::append_log(); //really no point in trying to detect the drone when it is inactive...
             break;
         }
-    } FALLTHROUGH_INTENDED; case dts_detecting_takeoff_init: {
+        [[fallthrough]];
+    } case dts_detecting_takeoff_init: {
         // remove the indefinite startup location and replace with a time out
         start_take_off_time = time;
         ignores_for_other_trkrs.clear();
         ignores_for_other_trkrs.push_back(IgnoreBlob(drone_startup_im_location(),_drone_blink_im_size*5,time+startup_location_ignore_timeout, IgnoreBlob::takeoff_spot));
         ignores_for_me.push_back(IgnoreBlob(drone_startup_im_location(),_drone_blink_im_size*2,time+startup_location_ignore_timeout, IgnoreBlob::takeoff_spot));
         _drone_tracking_status = dts_detecting_takeoff;
-    } FALLTHROUGH_INTENDED; case dts_detecting_takeoff: {
+        [[fallthrough]];
+    } case dts_detecting_takeoff: {
         if (!_world_item.valid){
             //TODO: remove full_bat_and_throttle_im_effect and use acc to calc back to image coordinates
             cv::Point2f expected_drone_location = _drone_blink_im_location;
@@ -117,7 +119,8 @@ void DroneTracker::track(double time, bool drone_is_active) {
     } case dts_landing_init: {
         ignores_for_other_trkrs.push_back(IgnoreBlob(drone_startup_im_location(),_drone_blink_im_size*5,time+landing_ignore_timeout, IgnoreBlob::landing_spot));
         _drone_tracking_status = dts_landing;
-    } FALLTHROUGH_INTENDED; case dts_landing: {
+        [[fallthrough]];
+    } case dts_landing: {
         ItemTracker::track(time);
         update_drone_prediction();
         _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_item.size*1.2f*pparams.imscalef);

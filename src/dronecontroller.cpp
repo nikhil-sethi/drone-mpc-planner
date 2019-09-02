@@ -145,7 +145,8 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         throttle = JOY_BOUND_MIN;
         _flight_mode = fm_take_off_aim;
         break;
-    } FALLTHROUGH_INTENDED; case fm_take_off_aim : {
+        [[fallthrough]];
+    } case fm_take_off_aim : {
         auto_throttle = 600; // TODO: LUDWIG HELP initial hover throttle...
 
         calc_takeoff_aim_burn(setpoint_pos, _dtrk->drone_startup_location());
@@ -198,7 +199,8 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         std::cout << "kevin: " << auto_roll_burn << ", "  << auto_pitch_burn << ", "  << auto_interception_burn_duration << std::endl;
         auto_pitch = auto_pitch_burn;
         auto_roll = auto_roll_burn;
-    }  FALLTHROUGH_INTENDED; case fm_interception_aim: {
+        [[fallthrough]];
+    }   case fm_interception_aim: {
         pitch = auto_pitch;
         roll = auto_roll;
         auto_throttle = 600; // TODO: LUDWIG HELP initial hover throttle...
@@ -213,7 +215,8 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         roll = auto_roll;
         auto_throttle = JOY_BOUND_MAX;
         throttle = auto_throttle;
-    } FALLTHROUGH_INTENDED; case fm_interception_burn : {
+        [[fallthrough]];
+    } case fm_interception_burn : {
         pitch = auto_pitch;
         roll = auto_roll;
         throttle = auto_throttle;

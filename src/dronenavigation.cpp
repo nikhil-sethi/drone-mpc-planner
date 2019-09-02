@@ -179,7 +179,8 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_take_off_completed;
             else
                 break;
-        } FALLTHROUGH_INTENDED; case ns_take_off_completed: {
+            [[fallthrough]];
+        } case ns_take_off_completed: {
             //_dctrl->flight_mode(DroneController::fm_flying);
             _dctrl->hoverthrottle = _trackers->dronetracker()->hover_throttle_estimation;
 
@@ -195,15 +196,16 @@ void DroneNavigation::update(double time) {
         } case ns_start_the_chase: {
             _iceptor.reset_insect_cleared();
             _navigation_status = ns_chasing_insect_ff;
-        } FALLTHROUGH_INTENDED; case ns_chasing_insect_ff: {
+            [[fallthrough]];
+        } case ns_chasing_insect_ff: {
 
             if (_dctrl->ff_completed())
                 _navigation_status = ns_chasing_insect;
             if (_nav_flight_mode == nfm_manual)
                 _navigation_status = ns_manual;
             break;
-
-        } FALLTHROUGH_INTENDED; case ns_chasing_insect: {
+            [[fallthrough]];
+        } case ns_chasing_insect: {
 
             //update target chasing waypoint and speed
             if (_iceptor.insect_in_range()) {
@@ -221,7 +223,7 @@ void DroneNavigation::update(double time) {
             next_waypoint(landing_waypoint());
             _navigation_status = ns_approach_waypoint;
             break;
-        } FALLTHROUGH_INTENDED; case ns_set_waypoint: {
+        } case ns_set_waypoint: {
             next_waypoint(setpoints[wpid]);
             _navigation_status = ns_approach_waypoint;
             break;
@@ -262,7 +264,8 @@ void DroneNavigation::update(double time) {
             _dctrl->flight_mode(DroneController::fm_landing);
             _trackers->dronetracker()->land();
             _navigation_status = ns_landing;
-        } FALLTHROUGH_INTENDED; case ns_landing: {
+            [[fallthrough]];
+        } case ns_landing: {
             track_data data = _trackers->dronetracker()->Last_track_data();
             if (data.sposY < _trackers->dronetracker()->drone_landing_location().y+0.1f || autoLandThrottleDecrease >1000)
                 _navigation_status = ns_landed;
@@ -286,7 +289,8 @@ void DroneNavigation::update(double time) {
             land_incr = 0;
             _navigation_status = ns_wait_after_landing;
             landed_time = time;
-        } FALLTHROUGH_INTENDED; case ns_wait_after_landing: {
+            [[fallthrough]];
+        } case ns_wait_after_landing: {
             _visdat->delete_from_motion_map(_trackers->dronetracker()->drone_startup_im_location()*pparams.imscalef,_trackers->dronetracker()->drone_startup_im_disparity(),_trackers->dronetracker()->drone_startup_im_size()*pparams.imscalef,1);
             if (time - landed_time > time_out_after_landing )
                 _navigation_status = ns_locate_drone;
