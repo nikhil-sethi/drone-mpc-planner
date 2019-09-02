@@ -239,11 +239,24 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         break;
     }  case fm_retry_aim_start: {
         interception_burn_start_time = time;
-        _flight_mode =   fm_interception_aim;
+
+        if (!state_drone.pos_valid || !state_drone.vel_valid) {
+            throttle = auto_throttle;
+            pitch = JOY_MIDDLE;
+            roll = JOY_MIDDLE;
+            _flight_mode =   fm_landing; // todo: create a feedforward return to volume
+            break;
+        } else
+            _flight_mode =   fm_interception_aim;
         calc_directional_burn(state_drone,state_insect,interception_aim_time+tranmission_delay_time);
         std::cout << "fm_retry_aim_start: " << auto_roll_burn << ", "  << auto_pitch_burn << ", "  << auto_interception_burn_duration << std::endl;
         auto_pitch = auto_pitch_burn;
         auto_roll = auto_roll_burn;
+        auto_throttle = 600; // TODO: LUDWIG HELP better hover throttle...
+        //because can't fall through here:
+        throttle = auto_throttle;
+        pitch = auto_pitch;
+        roll = auto_roll;
         break;
     } case fm_flying_pid : {
         //update integrators
@@ -491,7 +504,7 @@ void DroneController::calc_directional_burn(cv::Point3f drone_vel, track_data st
     float delta_xa_max = 0.5f*drone_acc * min_tti*min_tti;
     float delta_xv_max = v0 * min_tti;
     float time_left = (x - delta_xa_max - delta_xv_max)/(v0 + drone_acc*min_tti);
-    if (time_left < 0) // TODO: check this (e.g. sign), did not have a video anymore to test
+    if (time_left < 0)
         min_tti -=time_left;
 
     //iteratively compensate for burn
