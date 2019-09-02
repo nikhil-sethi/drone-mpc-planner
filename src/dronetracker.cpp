@@ -27,6 +27,17 @@ void DroneTracker::track(double time, bool drone_is_active) {
         _image_predict_item = ImagePredictItem(_drone_blink_im_location,1,_drone_blink_im_size,255,_visdat->frame_id);
         predicted_image_path.push_back(_image_predict_item);
         reset_tracker_ouput(time);
+
+        if (_landing_pad_location_set && ignores_for_other_trkrs.size() == 0) {
+            //some times there is some motion noise around the drone when it is just sitting on the ground
+            //not sure what that is (might be a flickering led?), but the following makes the insect tracker
+            //ignore it. Can be better fixed by having a specialized landingspot detector.
+            ignores_for_other_trkrs.push_back(IgnoreBlob(drone_startup_im_location(),
+                                                         _drone_blink_im_size*5,
+                                                         time+startup_location_ignore_timeout,
+                                                         IgnoreBlob::takeoff_spot));
+        }
+
         if (drone_is_active)
             _drone_tracking_status = dts_detecting_takeoff_init;
         else {

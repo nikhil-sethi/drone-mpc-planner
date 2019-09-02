@@ -128,6 +128,7 @@ void TrackerManager::update_static_ignores() {
     }
     if (landingspot_ignore_found) // tmp solution until landingspot itemtracker is made
         _dtrkr->ignores_for_me.push_back(landingspot);
+
 }
 
 void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) {
@@ -142,7 +143,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
         for (uint i=0; i < _blobs.size(); i++)
             pbs.push_back(processed_blobs(_blobs.at(i)));
 
-        //first check if there are trackers, that were already tracking something, which prediction matches a new keypoint
+        //first check if there are trackers that were already tracking something, which prediction matches a new keypoint
         for (uint i=0; i<_trackers.size();i++){
             ItemTracker * trkr = _trackers.at(i);
             float best_score = -1;
