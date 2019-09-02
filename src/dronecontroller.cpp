@@ -511,22 +511,10 @@ void DroneController::calc_directional_burn(cv::Point3f drone_vel, track_data st
     auto_interception_burn_duration = burn_time;
     auto_interception_tti = min_tti;
 
-    //TODO LUDWID: below needs to be updated to use approx_rp_command
-    //(since you changed signs it was not trivial)
-    float insect_angle_roll =  -atan2f(required_delta_v.x,required_delta_v.y);
-    float insect_angle_pitch=  -atan2f(required_delta_v.z,required_delta_v.y);
+    float insect_angle_roll =  atan2f(required_delta_v.x,required_delta_v.y);
+    float insect_angle_pitch=  atan2f(-required_delta_v.z,required_delta_v.y);
 
-    float commanded_roll ,commanded_pitch;
-    commanded_roll = ((M_PIf32/2.f - fabs(insect_angle_roll))* (drone_acc+GRAVITY)+0.5f*M_PIf32 * GRAVITY)/(drone_acc + 2 * GRAVITY);
-    commanded_pitch =((M_PIf32/2.f - fabs(insect_angle_pitch))*(drone_acc+GRAVITY)+0.5f*M_PIf32 * GRAVITY)/(drone_acc + 2 * GRAVITY);
-
-    commanded_roll = M_PIf32/2.f - commanded_roll;
-    commanded_pitch= M_PIf32/2.f - commanded_pitch;
-
-    if (insect_angle_roll < 0)
-        commanded_roll = -commanded_roll;
-    if (insect_angle_pitch < 0)
-        commanded_pitch = -commanded_pitch;
+    auto [commanded_roll,commanded_pitch] = approx_rp_command(insect_angle_roll,insect_angle_pitch);
 
     max_burn.x = commanded_roll / M_PIf32*180.f;
     max_burn.y = commanded_pitch / M_PIf32*180.f;
