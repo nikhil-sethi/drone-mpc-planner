@@ -71,7 +71,7 @@ int bound_joystick_value(int v) {
     return v;
 }
 
-void DroneController::control(track_data state_drone,track_data state_insect, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, cv::Point3f setpoint_acc) {
+void DroneController::control(track_data state_drone,track_data state_insect, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, cv::Point3f setpoint_acc, double time) {
 
     if (!_fromfile)
         readJoystick();
@@ -135,7 +135,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         yaw = joy_yaw;
         break;
     } case fm_start_takeoff : {
-        take_off_burn_start_time = state_drone.time;
+        take_off_burn_start_time = time;
         //reset integrators
         rollErrI = 0;
         pitchErrI = 0;
@@ -150,13 +150,15 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         auto_throttle = 600; // TODO: LUDWIG HELP initial hover throttle...
 
         calc_takeoff_aim_burn(setpoint_pos, _dtrk->drone_startup_location());
+        std::cout << "fm_take_off_aim: " << auto_roll_burn << ", "  << auto_pitch_burn << ", "  << auto_takeoff_time_burn << std::endl;
+
         auto_pitch = auto_pitch_burn;
         auto_roll = auto_roll_burn;
         pitch =  auto_pitch;
         roll = auto_roll;
         throttle = auto_throttle;
 
-        if (static_cast<float>(state_drone.time - take_off_burn_start_time) > dparams.full_bat_and_throttle_spinup_time)
+        if (static_cast<float>(time - take_off_burn_start_time) > dparams.full_bat_and_throttle_spinup_time)
             _flight_mode = fm_max_burn;
         break;
 
@@ -168,7 +170,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         roll = auto_roll;
         throttle = auto_throttle;
 
-        if (static_cast<float>(state_drone.time - take_off_burn_start_time) > dparams.full_bat_and_throttle_spinup_time+ auto_takeoff_time_burn)
+        if (static_cast<float>(time - take_off_burn_start_time) > dparams.full_bat_and_throttle_spinup_time+ auto_takeoff_time_burn)
             _flight_mode = fm_1g;
 
         break;
@@ -183,7 +185,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
 
         if (!drone_1g_start_pos.pos_valid)
             drone_1g_start_pos = state_drone;
-        else  if (static_cast<float>(state_drone.time - take_off_burn_start_time) > dparams.full_bat_and_throttle_spinup_time+ auto_takeoff_time_burn + 6.f / pparams.fps){
+        else  if (static_cast<float>(time - take_off_burn_start_time) > dparams.full_bat_and_throttle_spinup_time+ auto_takeoff_time_burn + 6.f / pparams.fps){
             if(_joy_state == js_waypoint){
                 _flight_mode = fm_flying_pid;
             } else{
@@ -193,10 +195,10 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
 
         break;
     }  case fm_interception_aim_start: {
-        interception_burn_start_time = state_drone.time;
+        interception_burn_start_time = time;
         _flight_mode =   fm_interception_aim;
         calc_directional_burn(drone_1g_start_pos, state_drone,state_insect,interception_aim_time+tranmission_delay_time);
-        std::cout << "kevin: " << auto_roll_burn << ", "  << auto_pitch_burn << ", "  << auto_interception_burn_duration << std::endl;
+        std::cout << "fm_interception_aim_start: " << auto_roll_burn << ", "  << auto_pitch_burn << ", "  << auto_interception_burn_duration << std::endl;
         auto_pitch = auto_pitch_burn;
         auto_roll = auto_roll_burn;
         [[fallthrough]];
@@ -206,7 +208,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         auto_throttle = 600; // TODO: LUDWIG HELP initial hover throttle...
         throttle = auto_throttle;
 
-        if (state_drone.time - interception_burn_start_time > interception_aim_time)
+        if (time - interception_burn_start_time > interception_aim_time)
             _flight_mode = fm_interception_burn_start;
         break;
     } case fm_interception_burn_start : {
@@ -220,7 +222,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         pitch = auto_pitch;
         roll = auto_roll;
         throttle = auto_throttle;
-        if (state_drone.time - interception_burn_start_time > interception_aim_time + auto_interception_burn_duration)
+        if (time - interception_burn_start_time > interception_aim_time + auto_interception_burn_duration)
             _flight_mode = fm_interception_1g;
         break;
     } case fm_interception_1g: {
@@ -230,15 +232,16 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         auto_throttle = 600; // TODO: LUDWIG HELP initial hover throttle...
         throttle = auto_throttle;
 
-        if (state_drone.time - interception_burn_start_time > interception_aim_time + auto_interception_tti)
+        if (time - interception_burn_start_time > interception_aim_time + auto_interception_tti)
             _flight_mode = fm_retry_aim_start;
-        if (state_drone.time - interception_burn_start_time > 2) // TODO: detect if we got it or stop at some sensible moment.
+        if (time - interception_burn_start_time > 2) // TODO: detect if we got it or stop at some sensible moment.
             _flight_mode = fm_flying_pid;
         break;
     }  case fm_retry_aim_start: {
-        interception_burn_start_time = state_drone.time;
+        interception_burn_start_time = time;
         _flight_mode =   fm_interception_aim;
         calc_directional_burn(state_drone,state_insect,interception_aim_time+tranmission_delay_time);
+        std::cout << "fm_retry_aim_start: " << auto_roll_burn << ", "  << auto_pitch_burn << ", "  << auto_interception_burn_duration << std::endl;
         auto_pitch = auto_pitch_burn;
         auto_roll = auto_roll_burn;
         break;
@@ -379,7 +382,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         _rc->queue_commands(throttle,roll,pitch,yaw);
     }
 
-    control_data c(Throttle(),Roll(),Pitch(),state_drone.time);
+    control_data c(Throttle(),Roll(),Pitch(),time);
     control_history.push_back(c);
     while (control_history.size() > control_history_max_size)
         control_history.erase(control_history.begin());
