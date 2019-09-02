@@ -44,14 +44,14 @@ Host pats2b pats_holstein2b
 	ProxyJump dinstech
 	Port 6200
 
-Host pats3 pats_demo3
+Host pats3 pats_HoM3
 	Hostname localhost
 	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
 	ProxyJump mavlab-gpu
 	Port 6300
 
-Host pats3b pats_demo3b
+Host pats3b pats_HoM3b
 	Hostname localhost
 	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
