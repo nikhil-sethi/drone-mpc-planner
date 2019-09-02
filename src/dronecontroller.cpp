@@ -492,7 +492,8 @@ void DroneController::calc_directional_burn(cv::Point3f drone_vel, track_data st
         min_tti -=time_left;
 
     //iteratively compensate for burn
-    for (int i = 0; i < 5; i++) {
+    float burn_time_prev = -1;
+    for (int i = 0; i < 30; i++) {
         cv::Point3f burn_dist = 0.5f * drone_acc * (required_delta_v /norm(required_delta_v)) *powf(burn_time,2); // distance covered during burning
         cv::Point3f delta_pos_burn = delta_pos - drone_vel* burn_time - burn_dist;
 
@@ -503,6 +504,9 @@ void DroneController::calc_directional_burn(cv::Point3f drone_vel, track_data st
         required_delta_v = required_v- drone_vel;
 
         burn_time = static_cast<float>(norm(required_delta_v)) / drone_acc;
+        if (fabs(burn_time - burn_time_prev) < 0.01f) // if converged
+            break;
+        burn_time_prev = burn_time;
     }
     auto_interception_burn_duration = burn_time;
     auto_interception_tti = min_tti;
