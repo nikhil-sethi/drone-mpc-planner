@@ -5,6 +5,25 @@
 #include <sys/stat.h>
 #include <chrono>
 
+
+cv::Point2f world2im(cv::Point3f p, cv::Mat Qfi, float camera_angle){
+    //transform back to image coordinates
+    std::vector<cv::Point3d> world_coordinates,camera_coordinates;
+    //derotate camera and convert to double:
+    cv::Point3d tmpd (p.x,p.y,p.z);
+    float theta = -camera_angle * deg2rad;
+    float temp_y = p.y * cosf(theta) + p.z * sinf(theta);
+    tmpd.z = -p.y * sinf(theta) + p.z * cosf(theta);
+    tmpd.y = temp_y;
+    tmpd.x = p.x;
+
+    world_coordinates.push_back(tmpd);
+    cv::perspectiveTransform(world_coordinates,camera_coordinates,Qfi);
+
+    cv::Point2f res(camera_coordinates.at(0).x,camera_coordinates.at(0).y);
+    return res;
+}
+
 cv::Point2f transformPixelToEarth(int x, int y, int centerX, int centerY, float depth, float pix2degx,float pix2degy) {
     //calculate pixel to angle:
     float radX = float(x - centerX)  * pix2degx*deg2rad;

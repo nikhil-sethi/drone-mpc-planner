@@ -550,6 +550,12 @@ void DroneController::calc_directional_burn(cv::Point3f drone_vel, track_data st
     auto_roll_burn =  ((max_burn.x/max_bank_angle+1) / 2.f) * JOY_MAX;
     auto_pitch_burn = ((max_burn.y/max_bank_angle+1) / 2.f) * JOY_MAX;
 
+
+    viz_pos_after_aim =  drone_pos_after_delay;
+    viz_time_after_aim = interception_burn_start_time + static_cast<double>(t_offset);
+    viz_pos_after_burn = viz_pos_after_aim + 0.5f * drone_acc * (required_delta_v /norm(required_delta_v)) *powf(burn_time,2);
+    viz_time_after_burn = viz_time_after_aim + static_cast<double>(burn_time);
+
 }
 
 void DroneController::calc_takeoff_aim_burn(track_data target,track_data drone, float tti,float t_offset) {

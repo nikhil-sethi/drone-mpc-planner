@@ -9,6 +9,7 @@
 #include <iostream>
 #include <fstream>
 
+cv::Point2f world2im(cv::Point3f p, cv::Mat Qfi, float camera_angle);
 cv::Point2f transformPixelToEarth(int x, int y, int centerX, int centerY, float depth, float pix2degx, float pix2degy);
 float transformPixelToAngle(float x, float pix2radx);
 int getCenterPixel(float angle, float imFOV, int imWidth);

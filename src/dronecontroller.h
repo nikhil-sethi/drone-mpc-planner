@@ -174,6 +174,9 @@ public:
     std::string flight_mode() {
         return flight_mode_names[_flight_mode];
     }
+    bool ff_interception() {
+       return _flight_mode == fm_interception_1g ||  _flight_mode == fm_interception_aim  || _flight_mode == fm_interception_burn || _flight_mode == fm_interception_burn_start;
+    }
 
     bool ff_completed() {
         return _flight_mode != fm_take_off_aim &&  _flight_mode != fm_max_burn && _flight_mode != fm_1g;
@@ -262,6 +265,11 @@ public:
     float accErrX,accErrY,accErrZ;
     float velx_sp,vely_sp,velz_sp;
     float accx_sp,accy_sp,accz_sp;
+
+    cv::Point3f viz_pos_after_aim = {0};
+    double viz_time_after_aim = {0};
+    cv::Point3f viz_pos_after_burn = {0};
+    double viz_time_after_burn = {0};
 
     uint control_history_max_size;
     std::vector<control_data> control_history;
