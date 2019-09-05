@@ -389,6 +389,10 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
 
     yaw = joy_yaw; // tmp until auto yaw control is fixed #10
 
+    cout << " roll: " << roll << " pitch: " << pitch<< " throttle: " << throttle << endl;
+
+
+
     throttle = bound_throttle(throttle);
     roll = bound_joystick_value(roll);
     pitch = bound_joystick_value(pitch);
