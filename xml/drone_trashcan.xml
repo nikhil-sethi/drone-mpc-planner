@@ -6,8 +6,8 @@
     <Member Name="full_bat_and_throttle_im_effect">3</Member>
     <Member Name="full_bat_and_throttle_take_off_acc">20</Member>
     <Member Name="full_bat_and_throttle_spinup_time">0.29</Member>
-    <Member Name="hover_throttle_a">-0.07</Member>
-    <Member Name="hover_throttle_b">-0.266</Member>
+    <Member Name="hover_throttle_a">865</Member>
+    <Member Name="hover_throttle_b">495</Member>
     <Member Name="drone_blink_strength">30</Member>
     <Member Name="tx">tx_frskyd8</Member>
     <Member Name="mode3d">false</Member>

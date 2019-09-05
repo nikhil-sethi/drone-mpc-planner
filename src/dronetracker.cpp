@@ -171,18 +171,19 @@ ItemTracker::BlobWorldProps DroneTracker::calc_world_item(BlobProps * pbs, doubl
         // only accept the drone blob when
         // 1) it is 10cm up in the air, because we then have a reasonable good seperation and can calculate the state
         // 2) it is reasonably close to the prediciton
-        if (fabs(err_y) > 1.f || err_pos > 1.f || dy < 0.12f) {
+        float dy_takeoff_detected = 0.12f;
+        if (fabs(err_y) > 1.f || err_pos > 1.f || dy < dy_takeoff_detected) {
             wbp.valid = false;
+            takeoff_detection_dy_prev = dy;
+            takeoff_detection_dt_prev = dt;
             return wbp;
         } else {
-            float vel_y = dy/dt;
-            //std::cout << "detection dy: " << dy << " dt: " << dt << " vy: " << vel_y<< std::endl;
-            hover_throttle_estimation = dparams.hover_throttle_a*vel_y + dparams.hover_throttle_b ;
-            //std::cout << "Initialising ht [-1, 1]: " << hover_throttle_estimation << std::endl;
-            hover_throttle_estimation +=1;
-            hover_throttle_estimation /= 2.f;
-            hover_throttle_estimation *=JOY_BOUND_MAX - JOY_BOUND_MIN;
-            hover_throttle_estimation+=JOY_BOUND_MIN;
+            // Interpolate time to the time of dy=dy_takeoff_detected:
+            float t = takeoff_detection_dt_prev + (dt - takeoff_detection_dt_prev) / (dy - takeoff_detection_dy_prev)
+                                                  * (dy_takeoff_detected - takeoff_detection_dy_prev);
+//            std::cout << "dt: " << dt << " dy: " << dy << " dt(k-1): " << takeoff_detection_dt_prev << " dy(k-1): " << takeoff_detection_dy_prev << std::endl;
+            hover_throttle_estimation = dparams.hover_throttle_a*t + dparams.hover_throttle_b ;
+            std::cout << "Initialising hover-throttle: " << hover_throttle_estimation << std::endl;
         }
     }
 

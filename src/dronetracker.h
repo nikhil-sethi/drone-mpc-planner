@@ -91,6 +91,10 @@ private:
     void deserialize_calib(string file);
 
     void update_drone_prediction(); //tmp
+
+    float takeoff_detection_dy_prev;
+    float takeoff_detection_dt_prev;
+
 public:
     std::string drone_tracking_state() {return drone_tracking_state_names[_drone_tracking_status];}
     cv::Point2f drone_startup_im_location(){ return _drone_blink_im_location; }
