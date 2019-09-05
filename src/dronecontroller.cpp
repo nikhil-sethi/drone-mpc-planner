@@ -465,8 +465,8 @@ void DroneController::calc_directional_burn(cv::Point3f drone_vel, track_data st
     //compensate for gravity decay, which is approx 1g during half t_offset ... (LUDWIG HELP! MODEL!)
     float delta_pos_y_gravity = 0.5f * GRAVITY * powf(( t_offset*0.35f),2);
     float delta_vel_y_gravity = GRAVITY*t_offset*0.35f;
-    delta_pos.y += delta_pos_y_gravity;
-    drone_vel.y -= delta_vel_y_gravity;
+    //delta_pos.y += delta_pos_y_gravity; // TODO: this is a very bad assumption
+    //drone_vel.y -= delta_vel_y_gravity; // TODO: this is a very bad assumption
 
     //in order to hit the insect, we need each axis of tti to become of equal length,
     //and prereably we want to speed up the longer ones to become equal to the shorter ones
@@ -514,6 +514,15 @@ void DroneController::calc_directional_burn(cv::Point3f drone_vel, track_data st
     float burn_time_prev = -1;
     cv::Point3f required_delta_v_prev = {0};
     for (int i = 0; i < 30; i++) {
+
+        // update drone position at end of aiming phase
+        drone_pos_after_delay = cv::Point3f(state_drone.posX,state_drone.posY,state_drone.posZ) + t_offset * drone_vel;
+        cv::Point3f drone_acc_during_aim = required_delta_v /norm(required_delta_v)*GRAVITY;
+        drone_acc_during_aim.y -= GRAVITY;
+        cv::Point3f drone_vel_during_aim = drone_acc_during_aim*t_offset*0.5f;
+        drone_pos_after_delay += 0.5f * drone_acc_during_aim *powf(t_offset*0.8f,2);
+        delta_pos = insect_pos_after_delay - drone_pos_after_delay;
+
         cv::Point3f burn_dist = 0.5f * drone_acc * (required_delta_v /norm(required_delta_v)) *powf(burn_time,2); // distance covered during burning
         cv::Point3f delta_pos_burn = delta_pos - drone_vel* burn_time - burn_dist;
 
@@ -521,6 +530,10 @@ void DroneController::calc_directional_burn(cv::Point3f drone_vel, track_data st
         //        tti = cv::Point3f(delta_pos_burn.x/drone_vel_burn.x + burn_time,delta_pos_burn.y/drone_vel_burn.y + burn_time,delta_pos_burn.z/drone_vel_burn.z + burn_time);
 
         required_v = delta_pos_burn/(min_tti-burn_time);
+        if (min_tti < burn_time) {
+            min_tti = burn_time;
+            required_v = -required_v;
+        }
         required_delta_v = required_v- drone_vel;
 
         burn_time = static_cast<float>(norm(required_delta_v)) / drone_acc;
