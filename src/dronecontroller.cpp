@@ -142,12 +142,14 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         throttleErrI = 0;
         if (dparams.mode3d)
             _rc->arm(true);
+        roll = JOY_MIDDLE;
+        pitch = JOY_MIDDLE;
         throttle = JOY_BOUND_MIN;
         _flight_mode = fm_take_off_aim;
         break;
         [[fallthrough]];
     } case fm_take_off_aim : {
-        auto_throttle = 600; // TODO: LUDWIG HELP initial hover throttle...
+        auto_throttle = 650; // TODO: LUDWIG HELP initial hover throttle...
 
         calc_takeoff_aim_burn(setpoint_pos, _dtrk->drone_startup_location());
         std::cout << "fm_take_off_aim: " << auto_roll_burn << ", "  << auto_pitch_burn << ", "  << auto_takeoff_time_burn << std::endl;
@@ -175,7 +177,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
 
         break;
     }  case fm_1g: {
-        auto_throttle = 600; // TODO: LUDWIG HELP better hover throttle...
+        auto_throttle = 650; // TODO: LUDWIG HELP better hover throttle...
         auto_roll = JOY_MIDDLE;
         auto_pitch = JOY_MIDDLE;
         //only control throttle:
@@ -183,9 +185,10 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         pitch =  auto_pitch;
         roll = auto_roll;
 
-        if (!drone_1g_start_pos.pos_valid)
+        // Wait until velocity of drone after take-off is constant, then estimate this velocity using sufficient samples
+        if (!drone_1g_start_pos.pos_valid && static_cast<float>(time - take_off_burn_start_time) > dparams.full_bat_and_throttle_spinup_time *1.f + auto_takeoff_time_burn + tranmission_delay_time + 6.f / pparams.fps)
             drone_1g_start_pos = state_drone;
-        else  if (static_cast<float>(time - take_off_burn_start_time) > dparams.full_bat_and_throttle_spinup_time+ auto_takeoff_time_burn + 6.f / pparams.fps){
+        else  if (static_cast<float>(time - take_off_burn_start_time) > dparams.full_bat_and_throttle_spinup_time *1.f + auto_takeoff_time_burn + tranmission_delay_time + 16.f / pparams.fps){
             if(_joy_state == js_waypoint){
                 _flight_mode = fm_flying_pid;
             } else{
@@ -197,7 +200,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
     }  case fm_interception_aim_start: {
         interception_burn_start_time = time;
         _flight_mode =   fm_interception_aim;
-        calc_directional_burn(drone_1g_start_pos, state_drone,state_insect,interception_aim_time+tranmission_delay_time);
+        calc_directional_burn(drone_1g_start_pos, state_drone,state_insect,interception_aim_time+tranmission_delay_time + 1.f/pparams.fps);
         std::cout << "fm_interception_aim_start: " << auto_roll_burn << ", "  << auto_pitch_burn << ", "  << auto_interception_burn_duration << std::endl;
         auto_pitch = auto_pitch_burn;
         auto_roll = auto_roll_burn;
@@ -205,7 +208,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
     }   case fm_interception_aim: {
         pitch = auto_pitch;
         roll = auto_roll;
-        auto_throttle = 600; // TODO: LUDWIG HELP initial hover throttle...
+        auto_throttle = 650; // TODO: LUDWIG HELP initial hover throttle...
         throttle = auto_throttle;
 
         if (time - interception_burn_start_time > interception_aim_time)
@@ -229,11 +232,11 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         //only control throttle:
         pitch = JOY_MIDDLE;
         roll = JOY_MIDDLE;
-        auto_throttle = 600; // TODO: LUDWIG HELP initial hover throttle...
+        auto_throttle = 650; // TODO: LUDWIG HELP initial hover throttle...
         throttle = auto_throttle;
 
         if (time - interception_burn_start_time > interception_aim_time + auto_interception_tti)
-            _flight_mode = fm_retry_aim_start;
+            _flight_mode = fm_flying_pid;
         if (time - interception_burn_start_time > 2) // TODO: detect if we got it or stop at some sensible moment.
             _flight_mode = fm_flying_pid;
         break;
@@ -252,7 +255,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         std::cout << "fm_retry_aim_start: " << auto_roll_burn << ", "  << auto_pitch_burn << ", "  << auto_interception_burn_duration << std::endl;
         auto_pitch = auto_pitch_burn;
         auto_roll = auto_roll_burn;
-        auto_throttle = 600; // TODO: LUDWIG HELP better hover throttle...
+        auto_throttle = 650; // TODO: LUDWIG HELP better hover throttle...
         //because can't fall through here:
         throttle = auto_throttle;
         pitch = auto_pitch;
@@ -599,7 +602,7 @@ void DroneController::calc_takeoff_aim_burn(cv::Point3f target, cv::Point3f dron
     float dist = norm(target-drone);
 
     auto_interception_time_burn = sqrtf((2*dist)/drone_acc);
-    auto_takeoff_time_burn = (0.05f+sqrtf(dist)/11 + (fabs(max_angle))/360) * 0.6f; //LUDWIG HELP! MODEL!
+    auto_takeoff_time_burn = (0.05f+sqrtf(dist)/11 + (fabs(max_angle))/360) * 0.2f; //LUDWIG HELP! MODEL!
     auto_roll_burn =  ((max_burn.x/max_bank_angle+1) / 2.f) * JOY_MAX;
     auto_pitch_burn = ((max_burn.y/max_bank_angle+1) / 2.f) * JOY_MAX;
 
