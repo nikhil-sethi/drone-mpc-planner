@@ -450,7 +450,7 @@ void DroneController::calc_directional_burn(track_data state_drone_start_1g, tra
     drone_vel.x = (state_drone.posX - state_drone_start_1g.posX) / dt;
     drone_vel.y = (state_drone.posY - state_drone_start_1g.posY) / dt;
     drone_vel.z = (state_drone.posZ - state_drone_start_1g.posZ) / dt;
-    approx_thrust(drone_vel);
+    approx_thrust_efficiency(drone_vel);
     calc_directional_burn(drone_vel,state_drone,state_insect,t_offset);
 }
 
@@ -475,30 +475,42 @@ void DroneController::calc_directional_burn(cv::Point3f drone_vel, track_data st
     //in order to hit the insect, we need each axis of tti to become of equal length,
     //and prereably we want to speed up the longer ones to become equal to the shorter ones
     //get fastest tti component:
-    float min_tti;
+    float min_burn_time = 5.f/pparams.fps;
+    float min_tti = 999,burn_time = 0.5f;
+    float * tmp_min_tti = &min_tti;
+    cv::Point3f required_v,required_delta_v;
     tti = cv::Point3f(delta_pos.x/drone_vel.x,delta_pos.y/drone_vel.y,delta_pos.z/drone_vel.z);
+    while (true) {
 
-    if (tti.x >= 0 ||tti.y >= 0  || tti.z  >= 0) {
-        min_tti = 999;
-        if (tti.x < min_tti && tti.x >= 0)
-            min_tti = tti.x;
-        if (tti.y < min_tti && tti.y >= 0)
-            min_tti = tti.y;
-        if (tti.z < min_tti && tti.z >= 0)
-            min_tti = tti.z;
-    } else { // if we have moved passed the target and going the wrong direction
-        min_tti = 0.5;
+        if ((tti.x >= 0 ||tti.y >= 0 || tti.z  >= 0) &&
+            (tti.x < 999 || tti.y < 999 || tti.z < 999)) {
+            if (tti.x < *tmp_min_tti && tti.x >= 0 && tti.x > min_burn_time)
+                tmp_min_tti = &(tti.x);
+            if (tti.y < *tmp_min_tti && tti.y >= 0  && tti.y > min_burn_time)
+                tmp_min_tti = &(tti.y);
+            if (tti.z < *tmp_min_tti && tti.z >= 0  && tti.z > min_burn_time)
+                tmp_min_tti = &(tti.z);
+        } else { // if we have moved passed the target and going the wrong direction, or we did not find a usable min_tti
+            *tmp_min_tti = burn_time;
+            break;
+        }
+
+        required_v = delta_pos/ *tmp_min_tti;
+        required_delta_v = required_v - drone_vel;
+
+        burn_time = static_cast<float>(norm(required_delta_v)) / drone_acc;
+        if (burn_time < *tmp_min_tti)
+            break;
+        else
+            *tmp_min_tti = 999;
+
     }
+    min_tti = *tmp_min_tti;
 
-    cv::Point3f required_v = delta_pos/min_tti;
-    cv::Point3f required_delta_v = required_v- drone_vel;
-
-    float burn_time = static_cast<float>(norm(required_delta_v)) / drone_acc;
 
     //if the burn time is too small, we have a resolution problem because the control loop is running on the realsense framerate
     //so we do a minimal burn time that is much larger then the frame time, and redirect the additional power we don't need
     //for the correction into more speed towards the insect.
-    float min_burn_time = 5.f/pparams.fps;
     float x = norm(delta_pos);
     float v0 = norm(drone_vel);
     if (burn_time < min_burn_time ) {
@@ -625,7 +637,7 @@ void DroneController::calc_takeoff_aim_burn(cv::Point3f target, cv::Point3f dron
 
 }
 
-void DroneController::approx_thrust(cv::Point3f drone_vel) {
+void DroneController::approx_thrust_efficiency(cv::Point3f drone_vel) {
     // UPDATE DRONE_ACC aka THRST-FORCE-EQUIVILENT with current velocity measurements:
     for(int i=0; i<2; i++){ // find drone_acc over multiple iterations
         float resulting_acc = sqrt(	pow(sin(max_burn.x*M_PIf32/180)*drone_acc,2)
