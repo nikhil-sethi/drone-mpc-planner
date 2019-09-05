@@ -31,3 +31,7 @@ Host pats1
 	Port 6100
 ```  
 
+## Flashing Betaflight:
+dfu-util -s 0x08000000 -a 0 -D trashcan_ori.bin  
+dfu-util -s 0x08000000:413040 -a 0 -U hoer3.bin  
+
