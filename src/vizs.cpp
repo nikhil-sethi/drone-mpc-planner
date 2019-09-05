@@ -348,8 +348,8 @@ void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3d setpoint, doubl
         float dis = 0;
         if (_dtrkr->n_frames_tracking>0 && _itrkr->n_frames_tracking>0) {
             dis = powf(_dtrkr->Last_track_data().posX-_itrkr->Last_track_data().posX,2) +
-                    powf(_dtrkr->Last_track_data().posY-_itrkr->Last_track_data().posY,2) +
-                    powf(_dtrkr->Last_track_data().posZ-_itrkr->Last_track_data().posZ,2);
+                  powf(_dtrkr->Last_track_data().posY-_itrkr->Last_track_data().posY,2) +
+                  powf(_dtrkr->Last_track_data().posZ-_itrkr->Last_track_data().posZ,2);
             dis = sqrtf(dis);
 
             if (dis < min_dis)
@@ -509,21 +509,21 @@ void Visualizer::workerThread(void) {
     while (!exitVizThread) {
         newdata.wait(lk);
         if (roll_joystick.rows > 0) {
-if (pparams.viz_plots) {
-            lock_plot_data.lock();
-            plot();
-            request_plotframe_paint = true;
-            lock_plot_data.unlock();
-}
+            if (pparams.viz_plots) {
+                lock_plot_data.lock();
+                plot();
+                request_plotframe_paint = true;
+                lock_plot_data.unlock();
+            }
         }
-if (pparams.viz_tracking) {
-        lock_frame_data.lock();
-        if (tracker_viz_base_data.frameL.rows>0) {
-            draw_tracker_viz();
-            request_trackframe_paint=true;
+        if (pparams.viz_tracking) {
+            lock_frame_data.lock();
+            if (tracker_viz_base_data.frameL.rows>0) {
+                draw_tracker_viz();
+                request_trackframe_paint=true;
+            }
+            lock_frame_data.unlock();
         }
-        lock_frame_data.unlock();
-}
 
     }
 }
