@@ -518,7 +518,7 @@ void DroneController::calc_directional_burn(cv::Point3f drone_vel, track_data st
 
     float v = norm(drone_vel);
     float dx = norm(delta_pos_after_burn);
-    auto_interception_tti =(sqrtf(2*drone_acc * dx + powf(v,2)) + v) / drone_acc + static_cast<float>(auto_interception_burn_duration);
+    auto_interception_tti = burn_time;
 
     float insect_angle_roll =  atan2f(burn_accelleration.x,burn_accelleration.y);
     float insect_angle_pitch=  atan2f(-burn_accelleration.z,burn_accelleration.y);
