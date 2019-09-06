@@ -5,6 +5,50 @@
 #include <sys/stat.h>
 #include <chrono>
 
+void CameraVolume::init(cv::Point3f xblu, cv::Point3f xbru, cv::Point3f xbld, cv::Point3f xbrd, cv::Point3f xfld, cv::Point3f xfrd){
+    std::vector<cv::Point3f> back_plane = calc_planeNormVec (xblu, xbru, xbld);
+    back_plane.at(1) *= (-1);
+    planes.push_back(back_plane);
+
+    std::vector<cv::Point3f> front_plane = calc_planeNormVec (cv::Point3f(0,0,0), xfld, xfrd);
+    front_plane.at(1) *= (-1);
+    planes.push_back(front_plane);
+
+    std::vector<cv::Point3f> left_plane = calc_planeNormVec (xblu, xbld, xfld);
+    left_plane.at(1) *= (-1);
+    planes.push_back(left_plane);
+
+    std::vector<cv::Point3f> right_plane = calc_planeNormVec (xbru, xbrd, xfrd);
+    planes.push_back(right_plane);
+
+    std::vector<cv::Point3f> top_plane = calc_planeNormVec (xblu, xbru, cv::Point3f(0,0,0));
+    planes.push_back(top_plane);
+
+    std::vector<cv::Point3f> bottom_plane = calc_planeNormVec (xbld, xbrd, xfld);
+    bottom_plane.at(0) *= (-1);
+    planes.push_back(bottom_plane);
+
+}
+
+std::vector<cv::Point3f> CameraVolume::calc_planeNormVec(cv::Point3f x1, cv::Point3f x2, cv::Point3f x3){
+    cv::Point3f vec_a = x2- x1;
+    cv::Point3f vec_b = x3- x1;
+
+    cv::Point3f n = vec_a.cross(vec_b);
+    cv::Point3f p0 = x1;
+
+    return {p0, n};
+}
+
+bool CameraVolume::is_inView(cv::Point3f p){
+    for(uint i=0; i<planes.size(); i++){
+        float dot_prd = (p-planes.at(i).at(0)).dot(planes.at(i).at(1));
+        if(dot_prd<0){
+            return false;
+        }
+    }
+    return true;
+}
 
 cv::Point2f world2im(cv::Point3f p, cv::Mat Qfi, float camera_angle){
     //transform back to image coordinates
