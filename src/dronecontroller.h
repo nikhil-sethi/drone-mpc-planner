@@ -125,7 +125,7 @@ private:
     double tranmission_delay_time = 0.04;
     float drone_acc = 3.f*GRAVITY;
 
-    double take_off_burn_start_time = 0;
+    double take_off_start_time = 0;
     double interception_burn_start_time = 0;
     double auto_interception_burn_duration = 0;
     double auto_interception_tti = 0;

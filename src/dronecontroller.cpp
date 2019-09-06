@@ -135,7 +135,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         yaw = joy_yaw;
         break;
     } case fm_start_takeoff : {
-        take_off_burn_start_time = time;
+        take_off_start_time = time;
         //reset integrators
         rollErrI = 0;
         pitchErrI = 0;
@@ -160,7 +160,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         roll = auto_roll;
         throttle = auto_throttle;
 
-        if (static_cast<float>(time - take_off_burn_start_time) > dparams.full_bat_and_throttle_spinup_time)
+        if (static_cast<float>(time - take_off_start_time) > dparams.full_bat_and_throttle_spinup_time)
             _flight_mode = fm_max_burn;
         break;
 
@@ -172,7 +172,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         roll = auto_roll;
         throttle = auto_throttle;
 
-        if (static_cast<float>(time - take_off_burn_start_time) > dparams.full_bat_and_throttle_spinup_time+ auto_takeoff_time_burn)
+        if (static_cast<float>(time - take_off_start_time) > dparams.full_bat_and_throttle_spinup_time+ auto_takeoff_time_burn) 
             _flight_mode = fm_1g;
 
         break;
@@ -186,9 +186,9 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         roll = auto_roll;
 
         // Wait until velocity of drone after take-off is constant, then estimate this velocity using sufficient samples
-        if (!drone_1g_start_pos.pos_valid && static_cast<float>(time - take_off_burn_start_time) > dparams.full_bat_and_throttle_spinup_time *1.f + auto_takeoff_time_burn + tranmission_delay_time + 6.f / pparams.fps)
+        if (!drone_1g_start_pos.pos_valid )
             drone_1g_start_pos = state_drone;
-        else  if (static_cast<float>(time - take_off_burn_start_time) > dparams.full_bat_and_throttle_spinup_time *1.f + auto_takeoff_time_burn + tranmission_delay_time + 16.f / pparams.fps){
+        else if (time - drone_1g_start_pos.time > 6. / pparams.fps){
             if(_joy_state == js_waypoint){
                 _flight_mode = fm_flying_pid;
             } else{
@@ -200,7 +200,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
     }  case fm_interception_aim_start: {
         interception_burn_start_time = time;
         _flight_mode =   fm_interception_aim;
-        calc_directional_burn(drone_1g_start_pos, state_drone,state_insect,interception_aim_time+tranmission_delay_time + 1.f/pparams.fps);
+        calc_directional_burn(drone_1g_start_pos, state_drone,state_insect,interception_aim_time+tranmission_delay_time + 1./pparams.fps);
         std::cout << "fm_interception_aim_start: " << auto_roll_burn << ", "  << auto_pitch_burn << ", "  << auto_interception_burn_duration << std::endl;
         auto_pitch = auto_pitch_burn;
         auto_roll = auto_roll_burn;
@@ -389,15 +389,12 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
 
     yaw = joy_yaw; // tmp until auto yaw control is fixed #10
 
-    cout << " roll: " << roll << " pitch: " << pitch<< " throttle: " << throttle << endl;
-
-
-
     throttle = bound_throttle(throttle);
     roll = bound_joystick_value(roll);
     pitch = bound_joystick_value(pitch);
     yaw = bound_joystick_value(yaw);
 
+    //    std::cout << time <<  " rpt: " << roll << ", " << pitch << ", " << throttle << std::endl;
     if (!_fromfile) {
         _rc->queue_commands(throttle,roll,pitch,yaw);
     }
@@ -467,8 +464,8 @@ void DroneController::calc_directional_burn(cv::Point3f drone_vel, track_data st
     cv::Point3f tti(delta_pos.x/drone_vel.x,delta_pos.y/drone_vel.y,delta_pos.z/drone_vel.z);
 
     //compensate for gravity decay, which is approx 1g during half t_offset ... (LUDWIG HELP! MODEL!)
-    float delta_pos_y_gravity = 0.5f * GRAVITY * powf(( t_offset*0.35f),2);
-    float delta_vel_y_gravity = GRAVITY*t_offset*0.35f;
+    //float delta_pos_y_gravity = 0.5f * GRAVITY * powf(( t_offset*0.35f),2);
+    //float delta_vel_y_gravity = GRAVITY*t_offset*0.35f;
     //delta_pos.y += delta_pos_y_gravity; // TODO: this is a very bad assumption
     //drone_vel.y -= delta_vel_y_gravity; // TODO: this is a very bad assumption
 
@@ -535,7 +532,7 @@ void DroneController::calc_directional_burn(cv::Point3f drone_vel, track_data st
         drone_pos_after_delay = cv::Point3f(state_drone.posX,state_drone.posY,state_drone.posZ) + t_offset * drone_vel;
         cv::Point3f drone_acc_during_aim = required_delta_v /norm(required_delta_v)*GRAVITY;
         drone_acc_during_aim.y -= GRAVITY;
-        cv::Point3f drone_vel_during_aim = drone_acc_during_aim*t_offset*0.5f;
+        //cv::Point3f drone_vel_during_aim = drone_acc_during_aim*t_offset*0.5f;
         drone_pos_after_delay += 0.5f * drone_acc_during_aim *powf(t_offset*0.8f,2);
         delta_pos = insect_pos_after_delay - drone_pos_after_delay;
 
@@ -631,7 +628,7 @@ void DroneController::calc_takeoff_aim_burn(cv::Point3f target, cv::Point3f dron
     float dist = norm(target-drone);
 
     auto_interception_time_burn = sqrtf((2*dist)/drone_acc);
-    auto_takeoff_time_burn = (0.05f+sqrtf(dist)/11 + (fabs(max_angle))/360) * 0.2f; //LUDWIG HELP! MODEL!
+    auto_takeoff_time_burn = (0.05f+sqrtf(dist)/11 + (fabs(max_angle))/360) * 0.5f; //LUDWIG HELP! MODEL!
     auto_roll_burn =  ((max_burn.x/max_bank_angle+1) / 2.f) * JOY_MAX;
     auto_pitch_burn = ((max_burn.y/max_bank_angle+1) / 2.f) * JOY_MAX;
 
@@ -742,10 +739,10 @@ void DroneController::readJoystick(void) {
             } else if (pparams.joystick == rc_xlite) {
                 switch ( event.number ) {
                 case 0: // roll
-                    joy_roll = (event.value >> 5)*0.4 + JOY_MIDDLE;
+                    joy_roll = (event.value >> 5)*0.8 + JOY_MIDDLE;
                     break;
                 case 1: // pitch
-                    joy_pitch = (event.value >> 5)*0.4 + JOY_MIDDLE;
+                    joy_pitch = (event.value >> 5)*0.8 + JOY_MIDDLE;
                     break;
                 case 2: //throttle
                     joy_throttle =  (event.value >> 5)*0.8 + JOY_MIDDLE;
