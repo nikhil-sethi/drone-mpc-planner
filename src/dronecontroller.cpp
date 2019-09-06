@@ -186,9 +186,9 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         roll = auto_roll;
 
         // Wait until velocity of drone after take-off is constant, then estimate this velocity using sufficient samples
-        if (!drone_1g_start_pos.pos_valid )
+        if (!drone_1g_start_pos.pos_valid && static_cast<float>(time - take_off_burn_start_time) > dparams.full_bat_and_throttle_spinup_time *1.f + auto_takeoff_time_burn + tranmission_delay_time + 6.f / pparams.fps)
             drone_1g_start_pos = state_drone;
-        else if (time - drone_1g_start_pos.time > 6. / pparams.fps){
+        else  if (static_cast<float>(time - take_off_burn_start_time) > dparams.full_bat_and_throttle_spinup_time *1.f + auto_takeoff_time_burn + tranmission_delay_time + 12.f / pparams.fps){
             if(_joy_state == js_waypoint){
                 _flight_mode = fm_flying_pid;
             } else{
@@ -447,7 +447,7 @@ void DroneController::calc_directional_burn(track_data state_drone_start_1g, tra
     drone_vel.x = (state_drone.posX - state_drone_start_1g.posX) / dt;
     drone_vel.y = (state_drone.posY - state_drone_start_1g.posY) / dt;
     drone_vel.z = (state_drone.posZ - state_drone_start_1g.posZ) / dt;
-    approx_thrust_efficiency(drone_vel);
+    //approx_thrust_efficiency(drone_vel); //TODO: seems to give unreasonable numbers
     calc_directional_burn(drone_vel,state_drone,state_insect,t_offset);
 }
 
@@ -460,107 +460,69 @@ void DroneController::calc_directional_burn(cv::Point3f drone_vel, track_data st
     //same for insect:
     cv::Point3f insect_pos_after_delay = cv::Point3f(state_insect.posX,state_insect.posY,state_insect.posZ) +
                                          t_offset * cv::Point3f(state_insect.svelX,state_insect.svelY,state_insect.svelZ);
+
+    //cv::Point3f drone_acc_during_aim = required_delta_v /norm(required_delta_v)*GRAVITY;
+    //drone_acc_during_aim.y -= GRAVITY;
+    //cv::Point3f drone_vel_during_aim = drone_acc_during_aim*t_offset*0.5f;
+    //drone_pos_after_delay += 0.5f * drone_acc_during_aim *powf(t_offset*0.8f,2);
+
     cv::Point3f delta_pos = insect_pos_after_delay - drone_pos_after_delay;
-    cv::Point3f tti(delta_pos.x/drone_vel.x,delta_pos.y/drone_vel.y,delta_pos.z/drone_vel.z);
+    cv::Point3f burn_dist = delta_pos;
 
-    //compensate for gravity decay, which is approx 1g during half t_offset ... (LUDWIG HELP! MODEL!)
-    //float delta_pos_y_gravity = 0.5f * GRAVITY * powf(( t_offset*0.35f),2);
-    //float delta_vel_y_gravity = GRAVITY*t_offset*0.35f;
-    //delta_pos.y += delta_pos_y_gravity; // TODO: this is a very bad assumption
-    //drone_vel.y -= delta_vel_y_gravity; // TODO: this is a very bad assumption
+    float burn_time = sqrtf(2*norm(delta_pos)/drone_acc);
+    cv::Point3f burn_accelleration = delta_pos/norm(delta_pos)*drone_acc;
+    cv::Point3f drone_pos_after_burn = drone_pos_after_delay + drone_vel* burn_time + burn_dist;
 
-    //in order to hit the insect, we need each axis of tti to become of equal length,
-    //and prereably we want to speed up the longer ones to become equal to the shorter ones
-    //get fastest tti component:
-    float min_burn_time = 5.f/pparams.fps;
-    float min_tti = 999,burn_time = 0.5f;
-    float * tmp_min_tti = &min_tti;
-    cv::Point3f required_v,required_delta_v;
-    tti = cv::Point3f(delta_pos.x/drone_vel.x,delta_pos.y/drone_vel.y,delta_pos.z/drone_vel.z);
-    while (true) {
+    cv::Point3f delta_pos_after_burn = insect_pos_after_delay - drone_pos_after_burn;
+    float delta_burn_time = sqrtf(2*norm(delta_pos_after_burn)/drone_acc);
+    cv::Point3f delta_pos_drone_after_burn = drone_pos_after_burn-drone_pos_after_delay;
 
-        if ((tti.x >= 0 ||tti.y >= 0 || tti.z  >= 0) &&
-            (tti.x < 999 || tti.y < 999 || tti.z < 999)) {
-            if (tti.x < *tmp_min_tti && tti.x >= 0 && tti.x > min_burn_time)
-                tmp_min_tti = &(tti.x);
-            if (tti.y < *tmp_min_tti && tti.y >= 0  && tti.y > min_burn_time)
-                tmp_min_tti = &(tti.y);
-            if (tti.z < *tmp_min_tti && tti.z >= 0  && tti.z > min_burn_time)
-                tmp_min_tti = &(tti.z);
-        } else { // if we have moved passed the target and going the wrong direction, or we did not find a usable min_tti
-            *tmp_min_tti = burn_time;
-            break;
-        }
-
-        required_v = delta_pos/ *tmp_min_tti;
-        required_delta_v = required_v - drone_vel;
-
-        burn_time = static_cast<float>(norm(required_delta_v)) / drone_acc;
-        if (burn_time < *tmp_min_tti)
-            break;
-        else
-            *tmp_min_tti = 999;
-
+    if ( norm(delta_pos_drone_after_burn) > norm(delta_pos))
+        burn_time -= delta_burn_time;
+    else {
+        burn_time += delta_burn_time;
     }
     min_tti = *tmp_min_tti;
 
+    cv::Point3f drone_acc_during_aim = {0};
 
-    //if the burn time is too small, we have a resolution problem because the control loop is running on the realsense framerate
-    //so we do a minimal burn time that is much larger then the frame time, and redirect the additional power we don't need
-    //for the correction into more speed towards the insect.
-    float x = norm(delta_pos);
-    float v0 = norm(drone_vel);
-    if (burn_time < min_burn_time ) {
-        float delta_xa = 0.5f*drone_acc * min_burn_time*min_burn_time;
-        float delta_xv = v0 * min_burn_time;
-        min_tti = (x - delta_xa - delta_xv)/(v0 + drone_acc*min_burn_time) + min_burn_time;
-    }
+    for (int i = 0; i < 100; i++) {
 
-    //check if the min_tti allows enough time considering the drone_acc, v0, and delta_pos
-    float delta_xa_max = 0.5f*drone_acc * min_tti*min_tti;
-    float delta_xv_max = v0 * min_tti;
-    float time_left = (x - delta_xa_max - delta_xv_max)/(v0 + drone_acc*min_tti);
-    if (time_left < 0)
-        min_tti -=time_left;
+        burn_dist += delta_pos_after_burn*0.1f;
 
-    //iteratively compensate for burn
-    float burn_time_prev = -1;
-    cv::Point3f required_delta_v_prev = {0};
-    for (int i = 0; i < 30; i++) {
+        //burn_time = sqrtf(2*norm(burn_dist)/drone_acc);
+        burn_accelleration = burn_dist/norm(burn_dist)*drone_acc;
+        burn_dist = 0.5f*burn_accelleration*burn_time*burn_time;
 
-        // update drone position at end of aiming phase
-        drone_pos_after_delay = cv::Point3f(state_drone.posX,state_drone.posY,state_drone.posZ) + t_offset * drone_vel;
-        cv::Point3f drone_acc_during_aim = required_delta_v /norm(required_delta_v)*GRAVITY;
+        drone_acc_during_aim = burn_accelleration /norm(burn_accelleration)*GRAVITY;
         drone_acc_during_aim.y -= GRAVITY;
-        //cv::Point3f drone_vel_during_aim = drone_acc_during_aim*t_offset*0.5f;
-        drone_pos_after_delay += 0.5f * drone_acc_during_aim *powf(t_offset*0.8f,2);
-        delta_pos = insect_pos_after_delay - drone_pos_after_delay;
 
-        cv::Point3f burn_dist = 0.5f * drone_acc * (required_delta_v /norm(required_delta_v)) *powf(burn_time,2); // distance covered during burning
-        cv::Point3f delta_pos_burn = delta_pos - drone_vel* burn_time - burn_dist;
+        drone_pos_after_burn = drone_pos_after_delay + (0.5f * drone_acc_during_aim *powf(t_offset*0.3f,2)) + drone_vel* burn_time + burn_dist;
+        delta_pos_after_burn = insect_pos_after_delay - drone_pos_after_burn;
 
-        //        cv::Point3f drone_vel_burn = drone_vel + drone_acc * (required_delta_v /norm(required_delta_v)) * burn_time;
-        //        tti = cv::Point3f(delta_pos_burn.x/drone_vel_burn.x + burn_time,delta_pos_burn.y/drone_vel_burn.y + burn_time,delta_pos_burn.z/drone_vel_burn.z + burn_time);
+        delta_burn_time = sqrtf(2*norm(delta_pos_after_burn)/drone_acc);
+        delta_pos_drone_after_burn = drone_pos_after_burn-drone_pos_after_delay;
 
-        required_v = delta_pos_burn/(min_tti-burn_time);
-        if (min_tti < burn_time) {
-            min_tti = burn_time;
-            required_v = -required_v;
+        if ( norm(delta_pos_drone_after_burn) > norm(delta_pos))
+            burn_time -= delta_burn_time*0.1f;
+        else {
+            burn_time += delta_burn_time*0.1f;
         }
-        required_delta_v = required_v- drone_vel;
 
-        burn_time = static_cast<float>(norm(required_delta_v)) / drone_acc;
-        float dv = norm(required_delta_v_prev - required_delta_v);
-        if (fabs(burn_time - burn_time_prev) < 0.01f && dv < 0.01f) // if converged
-            break;
-        burn_time_prev = burn_time;
-        required_delta_v_prev = required_delta_v;
+        //cout << " burn_dist: " << burn_dist << endl;
+        //cout << " burn_dist: " << norm(burn_dist) << endl;
+        //cout << " burn_time: " << burn_time << endl;
+        //cout << " delta_pos_after_burn: " << norm(delta_pos_after_burn) << endl;
+        //cout << " " << endl;
     }
-    auto_interception_burn_duration = burn_time;
-    auto_interception_tti = min_tti;
 
-    float insect_angle_roll =  atan2f(required_delta_v.x,required_delta_v.y);
-    float insect_angle_pitch=  atan2f(-required_delta_v.z,required_delta_v.y);
+    //delta_pos = (0.5f * drone_acc_during_aim *powf(t_offset*0.5f,2));
+
+    auto_interception_burn_duration = burn_time;
+    //auto_interception_tti = min_tti;
+
+    float insect_angle_roll =  atan2f(burn_accelleration.x,burn_accelleration.y);
+    float insect_angle_pitch=  atan2f(-burn_accelleration.z,burn_accelleration.y);
 
     auto [commanded_roll,commanded_pitch] = approx_rp_command(insect_angle_roll,insect_angle_pitch);
 
@@ -579,11 +541,11 @@ void DroneController::calc_directional_burn(cv::Point3f drone_vel, track_data st
     auto_roll_burn =  ((max_burn.x/max_bank_angle+1) / 2.f) * JOY_MAX;
     auto_pitch_burn = ((max_burn.y/max_bank_angle+1) / 2.f) * JOY_MAX;
 
-
     viz_pos_after_aim =  drone_pos_after_delay;
     viz_time_after_aim = interception_burn_start_time + static_cast<double>(t_offset);
-    viz_pos_after_burn = viz_pos_after_aim + 0.5f * drone_acc * (required_delta_v /norm(required_delta_v)) *powf(burn_time,2);
+    viz_pos_after_burn = drone_pos_after_burn;
     viz_time_after_burn = viz_time_after_aim + static_cast<double>(burn_time);
+
 
 }
 
@@ -628,7 +590,7 @@ void DroneController::calc_takeoff_aim_burn(cv::Point3f target, cv::Point3f dron
     float dist = norm(target-drone);
 
     auto_interception_time_burn = sqrtf((2*dist)/drone_acc);
-    auto_takeoff_time_burn = (0.05f+sqrtf(dist)/11 + (fabs(max_angle))/360) * 0.5f; //LUDWIG HELP! MODEL!
+    auto_takeoff_time_burn = (0.05f+sqrtf(dist)/11 + (fabs(max_angle))/360) * 0.3f; //LUDWIG HELP! MODEL!
     auto_roll_burn =  ((max_burn.x/max_bank_angle+1) / 2.f) * JOY_MAX;
     auto_pitch_burn = ((max_burn.y/max_bank_angle+1) / 2.f) * JOY_MAX;
 
