@@ -145,7 +145,7 @@ private:
 
     void approx_thrust_efficiency(cv::Point3f drone_vel);
     void calc_takeoff_aim_burn(track_data target, track_data drone, float tti,float t_offset);
-    void calc_takeoff_aim_burn(cv::Point3f target, cv::Point3f drone);
+    void calc_takeoff_aim_burn(track_data state_insect, cv::Point3f drone);
     std::tuple<float,float> approx_rp_command(float insect_angle_roll,float insect_angle_pitch);
     void calc_directional_burn(track_data state_drone,track_data state_insect, float t_offset);
     void calc_directional_burn(track_data state_drone_start_1g, track_data state_drone, track_data state_insect, float t_offset);

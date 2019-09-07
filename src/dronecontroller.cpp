@@ -146,12 +146,13 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         pitch = JOY_MIDDLE;
         throttle = JOY_BOUND_MIN;
         _flight_mode = fm_take_off_aim;
-        break;
+        if (dparams.mode3d)
+            break;
         [[fallthrough]];
     } case fm_take_off_aim : {
         auto_throttle = 650; // TODO: LUDWIG HELP initial hover throttle...
 
-        calc_takeoff_aim_burn(setpoint_pos, _dtrk->drone_startup_location());
+        calc_takeoff_aim_burn(state_insect, _dtrk->drone_startup_location());
         std::cout << "fm_take_off_aim: " << auto_roll_burn << ", "  << auto_pitch_burn << ", "  << auto_takeoff_time_burn << std::endl;
 
         auto_pitch = auto_pitch_burn;
@@ -515,9 +516,6 @@ void DroneController::calc_directional_burn(cv::Point3f drone_vel, track_data st
     //delta_pos = (0.5f * drone_acc_during_aim *powf(t_offset*0.5f,2));
 
     auto_interception_burn_duration = burn_time;
-
-    float v = norm(drone_vel);
-    float dx = norm(delta_pos_after_burn);
     auto_interception_tti = burn_time;
 
     float insect_angle_roll =  atan2f(burn_accelleration.x,burn_accelleration.y);
@@ -548,24 +546,16 @@ void DroneController::calc_directional_burn(cv::Point3f drone_vel, track_data st
 
 }
 
-void DroneController::calc_takeoff_aim_burn(track_data target,track_data drone, float tti,float t_offset) {
+void DroneController::calc_takeoff_aim_burn(track_data state_insect, cv::Point3f drone) {
 
-    tti = tti + t_offset;
-    cv::Point3f est_target_pos,est_drone_pos;
-    //estimated location of the insect after tti_tresh seconds, assuming constant v
-    est_target_pos.x = target.posX + target.svelX*tti;
-    est_target_pos.y = target.posY + target.svelY*tti;
-    est_target_pos.z = target.posZ + target.svelZ*tti;
+    cv::Point3f target = cv::Point3f(state_insect.posX,state_insect.posY,state_insect.posZ);
+    if (state_insect.vel_valid) {
+        float dx = norm(drone - target);
+        //assuming an average speed of 3m/s:
+        float dt = dx / 3; //todo: tune!
+        target+=dt*cv::Point3f(state_insect.svelX,state_insect.svelY,state_insect.svelZ);
+    }
 
-    //estimated location of the drone after tti_tresh seconds, with constant v
-    est_drone_pos.x = drone.posX + drone.svelX*tti;
-    est_drone_pos.y = drone.posY + drone.svelY*tti;
-    est_drone_pos.z = drone.posZ + drone.svelZ*tti;
-
-    calc_takeoff_aim_burn(est_target_pos,est_drone_pos);
-}
-
-void DroneController::calc_takeoff_aim_burn(cv::Point3f target, cv::Point3f drone) {
     float insect_angle_roll = atan2f((target.x - drone.x),(target.y - drone.y));
     float insect_angle_pitch = atan2f((-target.z - -drone.z),(target.y - drone.y));
 
