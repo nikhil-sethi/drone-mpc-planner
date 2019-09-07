@@ -30,6 +30,7 @@ static const char* flight_mode_names[] = { "fm_joystick_check",
                                            "fm_interception_1g",
                                            "fm_retry_aim_start",
                                            "fm_abort_takeoff",
+                                           "fm_flying_pid_init",
                                            "fm_flying_pid",
                                            "fm_landing"
                                          };
@@ -56,6 +57,7 @@ public:
         fm_interception_1g,
         fm_retry_aim_start,
         fm_abort_takeoff,
+        fm_flying_pid_init,
         fm_flying_pid,
         fm_landing
     };
@@ -121,14 +123,12 @@ private:
     std::string settings_file;
 
     float max_bank_angle = 180; // TODO: move to dparams (betaflight setting)
-    double interception_aim_time = 0.2; // TODO: move to dparams, slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
-    double tranmission_delay_time = 0.04;
+    float interception_aim_time = 0.2f; // TODO: move to dparams, slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
+    float transmission_delay_duration = 0.04f;
     float drone_acc = 3.f*GRAVITY;
 
     double take_off_start_time = 0;
-    double interception_burn_start_time = 0;
-    double auto_interception_burn_duration = 0;
-    double auto_interception_tti = 0;
+    double interception_start_time = 0;
     track_data drone_1g_start_pos;
 
     const float integratorThresholdDistance = 0.2f;
@@ -143,13 +143,13 @@ private:
     int joyDial = 0;
     float scaledjoydial = 0;
 
-    void approx_thrust_efficiency(cv::Point3f drone_vel);
+    void approx_thrust_efficiency(cv::Point3f drone_vel, float auto_takeoff_time_burn);
     void calc_takeoff_aim_burn(track_data target, track_data drone, float tti,float t_offset);
-    void calc_takeoff_aim_burn(track_data state_insect, cv::Point3f drone);
+    std::tuple<int, int, float> calc_takeoff_aim_burn(track_data state_insect, cv::Point3f drone);
     std::tuple<float,float> approx_rp_command(float insect_angle_roll,float insect_angle_pitch);
-    void calc_directional_burn(track_data state_drone,track_data state_insect, float t_offset);
-    void calc_directional_burn(track_data state_drone_start_1g, track_data state_drone, track_data state_insect, float t_offset);
-    void calc_directional_burn(cv::Point3f drone_vel, track_data state_drone,track_data state_insect, float t_offset);
+    std::tuple<int, int, float> calc_directional_burn(track_data state_drone,track_data state_insect, float t_offset);
+    std::tuple<int, int, float> calc_directional_burn(track_data state_drone_start_1g, track_data state_drone, track_data state_insect, float t_offset);
+    std::tuple<int, int, float> calc_directional_burn(cv::Point3f drone_vel, track_data state_drone,track_data state_insect, float t_offset);
 
     MultiModule * _rc;
     DroneTracker * _dtrk;
@@ -210,11 +210,7 @@ public:
     int auto_roll = JOY_MIDDLE;
     int auto_pitch = JOY_MIDDLE;
     int auto_yaw = JOY_MIDDLE;
-
-    int auto_roll_burn = JOY_MIDDLE;
-    int auto_pitch_burn = JOY_MIDDLE;
-    float auto_interception_time_burn = 0;
-    float auto_takeoff_time_burn = 0;
+    float auto_burn_duration = 0;
 
     //Normalized throttle, between [-1 .. 1].
     //0 equals hoverthrottle
@@ -250,6 +246,7 @@ public:
 
     const int initial_throttle = 200;
     float hoverthrottle;
+    const float tmp_hover_throttle = 650; // TODO: LUDWIG HELP initial hover throttle...
 
     bool _manual_override_take_off_now;
     bool manual_override_take_off_now() { return _manual_override_take_off_now;}

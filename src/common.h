@@ -65,6 +65,16 @@ struct track_data {
     bool vel_valid;
     bool acc_valid;
     double time;
+
+    cv::Point3f Pos(){
+        return cv::Point3f(posX,posY,posZ);
+    }
+    cv::Point3f sVel(){
+        return cv::Point3f(svelX,svelY,svelZ);
+    }
+    cv::Point3f sAcc(){
+        return cv::Point3f(saccX,saccY,saccZ);
+    }
 };
 
 struct control_data {
@@ -378,7 +388,7 @@ public: double max_burn_time;
 public: int min_throttle;
 public: float full_bat_and_throttle_im_effect; // how many pixels per second will the drone go up given full throttle
 public: float full_bat_and_throttle_take_off_acc;
-public: float full_bat_and_throttle_spinup_time;
+public: float full_bat_and_throttle_spinup_duration;
 public: float hover_throttle_a;
 public: float hover_throttle_b;
 public: int drone_blink_strength;
@@ -392,7 +402,7 @@ private: xFloat _max_burn_time;
 private: xInt _min_throttle;
 private: xFloat _full_bat_and_throttle_im_effect;
 private: xFloat _full_bat_and_throttle_take_off_acc;
-private: xFloat _full_bat_and_throttle_spinup_time;
+private: xFloat _full_bat_and_throttle_spinup_duration;
 private: xFloat _hover_throttle_a;
 private: xFloat _hover_throttle_b;
 private: xInt _drone_blink_strength;
@@ -415,7 +425,7 @@ public: DroneParameters() {
         Register("min_throttle",&_min_throttle);
         Register("full_bat_and_throttle_im_effect",&_full_bat_and_throttle_im_effect);
         Register("full_bat_and_throttle_take_off_acc",&_full_bat_and_throttle_take_off_acc);
-        Register("full_bat_and_throttle_spinup_time",&_full_bat_and_throttle_spinup_time);
+        Register("full_bat_and_throttle_spinup_time",&_full_bat_and_throttle_spinup_duration);
         Register("hover_throttle_a",&_hover_throttle_a);
         Register("hover_throttle_b",&_hover_throttle_b);
         Register("drone_blink_strength",&_drone_blink_strength);
@@ -450,7 +460,7 @@ public: void deserialize(std::string filepath) {
         min_throttle = _min_throttle.value();
         full_bat_and_throttle_im_effect = _full_bat_and_throttle_im_effect.value();
         full_bat_and_throttle_take_off_acc = _full_bat_and_throttle_take_off_acc.value();
-        full_bat_and_throttle_spinup_time = _full_bat_and_throttle_spinup_time.value();
+        full_bat_and_throttle_spinup_duration = _full_bat_and_throttle_spinup_duration.value();
         hover_throttle_a = _hover_throttle_a.value();
         hover_throttle_b = _hover_throttle_b.value();
         drone_blink_strength = _drone_blink_strength.value();
@@ -467,7 +477,7 @@ public: void serialize(std::string filepath) {
         _min_throttle = min_throttle;
         _full_bat_and_throttle_im_effect = full_bat_and_throttle_im_effect;
         _full_bat_and_throttle_take_off_acc = full_bat_and_throttle_take_off_acc;
-        _full_bat_and_throttle_spinup_time = full_bat_and_throttle_spinup_time;
+        _full_bat_and_throttle_spinup_duration = full_bat_and_throttle_spinup_duration;
         _hover_throttle_a = hover_throttle_a;
         _hover_throttle_b = hover_throttle_b;
         _drone_blink_strength = drone_blink_strength;
