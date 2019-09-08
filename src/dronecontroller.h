@@ -22,11 +22,13 @@ static const char* flight_mode_names[] = { "fm_joystick_check",
                                            "fm_start_takeoff",
                                            "fm_take_off_aim",
                                            "fm_max_burn",
+                                           "fm_max_burn_spin_down",
                                            "fm_1g",
                                            "fm_interception_aim_start",
                                            "fm_interception_aim",
                                            "fm_interception_burn_start",
                                            "fm_interception_burn",
+                                           "fm_interception_burn_spin_down",
                                            "fm_interception_1g",
                                            "fm_retry_aim_start",
                                            "fm_abort_takeoff",
@@ -49,11 +51,13 @@ public:
         fm_start_takeoff,
         fm_take_off_aim,
         fm_max_burn,
+        fm_max_burn_spin_down,
         fm_1g,
         fm_interception_aim_start,
         fm_interception_aim,
         fm_interception_burn_start,
         fm_interception_burn,
+        fm_interception_burn_spin_down,
         fm_interception_1g,
         fm_retry_aim_start,
         fm_abort_takeoff,
@@ -125,7 +129,10 @@ private:
     float max_bank_angle = 180; // TODO: move to dparams (betaflight setting)
     float interception_aim_time = 0.2f; // TODO: move to dparams, slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
     float transmission_delay_duration = 0.04f;
+    float effective_spindown_duration = 0.10f;
     float drone_acc = 3.f*GRAVITY;
+    float avg_attack_speed = 3.f; //todo: improve initial guess by calculating with acc
+    float lift_off_dist_take_off_aim = 0.03f;
 
     double take_off_start_time = 0;
     double interception_start_time = 0;
@@ -145,11 +152,11 @@ private:
 
     void approx_thrust_efficiency(cv::Point3f drone_vel, float auto_takeoff_time_burn);
     void calc_takeoff_aim_burn(track_data target, track_data drone, float tti,float t_offset);
-    std::tuple<int, int, float> calc_takeoff_aim_burn(track_data state_insect, cv::Point3f drone);
-    std::tuple<float,float> approx_rp_command(float insect_angle_roll,float insect_angle_pitch);
-    std::tuple<int, int, float> calc_directional_burn(track_data state_drone,track_data state_insect, float t_offset);
-    std::tuple<int, int, float> calc_directional_burn(track_data state_drone_start_1g, track_data state_drone, track_data state_insect, float t_offset);
-    std::tuple<int, int, float> calc_directional_burn(cv::Point3f drone_vel, track_data state_drone,track_data state_insect, float t_offset);
+    std::tuple<int, int, float> calc_takeoff_aim_burn(track_data state_insect, cv::Point3f drone, double time);
+    std::tuple<float,float> approx_rp_command(float insect_angle_roll, float insect_angle_pitch, float avg_drone_acc);
+    std::tuple<int, int, float> calc_directional_burn(track_data state_drone, track_data state_insect, double aim_start_time, double time);
+    std::tuple<int, int, float> calc_directional_burn(track_data state_drone_start_1g, track_data state_drone, track_data state_insect, double aim_start_time, double time);
+    std::tuple<int, int, float> calc_directional_burn(cv::Point3f drone_vel, track_data state_drone,track_data state_insect, double aim_start_time, double time);
 
     MultiModule * _rc;
     DroneTracker * _dtrk;

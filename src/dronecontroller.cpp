@@ -123,7 +123,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
     int throttle,roll,pitch,yaw;
     bool joy_control = false;
     switch(_flight_mode) {
-    case fm_manual : {
+    case fm_manual: {
         throttle = joy_throttle;
         _rc->arm(_joy_arm_switch);
         roll = joy_roll;
@@ -131,9 +131,10 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         yaw = joy_yaw;
         joy_control = true;
         break;
-    } case fm_start_takeoff : {
+    } case fm_start_takeoff: {
         take_off_start_time = time;
         _flight_mode = fm_take_off_aim;
+        std::cout << "Take off aiming" << std::endl;
         if (dparams.mode3d) {
             _rc->arm(true);
             auto_roll = JOY_MIDDLE;
@@ -142,30 +143,50 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
             break;
         }
         [[fallthrough]];
-    } case fm_take_off_aim : {
+    } case fm_take_off_aim: {
         auto_throttle = tmp_hover_throttle;
-        std::tie (auto_roll, auto_pitch, auto_burn_duration) = calc_takeoff_aim_burn(state_insect, _dtrk->drone_startup_location());
-        if (static_cast<float>(time - take_off_start_time) > dparams.full_bat_and_throttle_spinup_duration)
+        std::tie (auto_roll, auto_pitch, auto_burn_duration) = calc_takeoff_aim_burn(state_insect, _dtrk->drone_startup_location(),take_off_start_time);
+        if (static_cast<float>(time - take_off_start_time) > dparams.full_bat_and_throttle_spinup_duration) {
             _flight_mode = fm_max_burn;
-        break;
-    } case fm_max_burn : {
-
-        auto_throttle = JOY_BOUND_MAX;
-
-        if (static_cast<float>(time - take_off_start_time) > dparams.full_bat_and_throttle_spinup_duration+ auto_burn_duration) {
-            auto_throttle = tmp_hover_throttle;
-            auto_roll = JOY_MIDDLE;
-            auto_pitch = JOY_MIDDLE;
-            _flight_mode = fm_1g;
+            std::cout << "Take off burn" << std::endl;
         }
-
+        break;
+    } case fm_max_burn: {
+        auto_throttle = JOY_BOUND_MAX;
+        if (static_cast<float>(time - take_off_start_time) > dparams.full_bat_and_throttle_spinup_duration+ auto_burn_duration)
+            _flight_mode = fm_max_burn_spin_down;
+        break;
+    } case fm_max_burn_spin_down: {
+        auto_throttle = tmp_hover_throttle;
+        if (static_cast<float>(time - take_off_start_time) > dparams.full_bat_and_throttle_spinup_duration+ auto_burn_duration + effective_spindown_duration)
+            _flight_mode = fm_1g;
         break;
     }  case fm_1g: {
+        auto_roll = JOY_MIDDLE;
+        auto_pitch = JOY_MIDDLE;
         // Wait until velocity of drone after take-off is constant, then estimate this velocity using sufficient samples
         if (!drone_1g_start_pos.pos_valid &&
-            static_cast<float>(time - take_off_start_time) > dparams.full_bat_and_throttle_spinup_duration + auto_burn_duration + transmission_delay_duration + 6.f / pparams.fps)
+            static_cast<float>(time - take_off_start_time) > dparams.full_bat_and_throttle_spinup_duration + auto_burn_duration + transmission_delay_duration + 6.f / pparams.fps) {
             drone_1g_start_pos = state_drone;
-        else  if (static_cast<float>(time - take_off_start_time) > dparams.full_bat_and_throttle_spinup_duration + auto_burn_duration + transmission_delay_duration + 12.f / pparams.fps){
+
+            if (state_drone.pos_valid) {
+                float dt = auto_burn_duration + 6.f / pparams.fps; // TODO: better determine this time with spin up/down effects
+                float dt2 = powf(dt,2);
+                float dx_grav = 0.5f*GRAVITY*dt2 - lift_off_dist_take_off_aim;
+                cv::Point3f grav_pos = drone_1g_start_pos.Pos() + cv::Point3f(0,dx_grav,0);
+                float dx = norm(grav_pos - _dtrk->drone_startup_location());
+                float avg_drone_acc = 2*dx / dt2; // this was the average acceleration on this specific burn_time. Due to spin up/down effects the acceleration will differ for different burn times.
+                if (dt > 2 * effective_spindown_duration)
+                    drone_acc = avg_drone_acc / (1.f-effective_spindown_duration/dt);
+                else if (dt > effective_spindown_duration)
+                    drone_acc = avg_drone_acc / (1.f - 0.5f * effective_spindown_duration/dt );
+                else {
+                    drone_acc = avg_drone_acc *2;
+                    std::cout << "Warning, burn too short to do proper acc estimation!" << std::endl;
+                }
+                std::cout << "Estimated acc: " << drone_acc << std::endl;
+            }
+        } else  if (static_cast<float>(time - take_off_start_time) > dparams.full_bat_and_throttle_spinup_duration + auto_burn_duration + transmission_delay_duration + 12.f / pparams.fps){
             if(_joy_state == js_waypoint){
                 _flight_mode = fm_flying_pid_init;
             } else{
@@ -175,25 +196,40 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
 
         break;
     }  case fm_interception_aim_start: {
+        std::cout << "Aiming" << std::endl;
         interception_start_time = time;
         _flight_mode =   fm_interception_aim;
         [[fallthrough]];
     }   case fm_interception_aim: {
-        float remaining_aiming_time = interception_aim_time - static_cast<float>(time - interception_start_time);
-        std::tie (auto_roll, auto_pitch,auto_burn_duration ) = calc_directional_burn(drone_1g_start_pos, state_drone,state_insect,remaining_aiming_time+transmission_delay_duration + 1.f/pparams.fps);
-        auto_throttle = tmp_hover_throttle;
+        if (state_drone.acc_valid){
+            //use normal state
+            std::tie (auto_roll, auto_pitch,auto_burn_duration ) = calc_directional_burn(state_drone,state_insect,interception_start_time,time);
+            auto_throttle = tmp_hover_throttle;
+        } else {
+            std::tie (auto_roll, auto_pitch,auto_burn_duration ) = calc_directional_burn(drone_1g_start_pos, state_drone,state_insect,interception_start_time,time);
+            auto_throttle = tmp_hover_throttle;
+        }
 
+        float remaining_aiming_time = interception_aim_time - static_cast<float>(time - interception_start_time);
         if (remaining_aiming_time < 0)
             _flight_mode = fm_interception_burn_start;
         break;
-    } case fm_interception_burn_start : {
+    } case fm_interception_burn_start: {
         _flight_mode = fm_interception_burn;
         auto_throttle = JOY_BOUND_MAX;
+        std::cout << "Burning" << std::endl;
         [[fallthrough]];
-    } case fm_interception_burn : {
+    } case fm_interception_burn: {
         if (norm(state_drone.Pos() - state_insect.Pos()) > 0.3)
-            std::tie (auto_roll, auto_pitch,std::ignore)  = calc_directional_burn(drone_1g_start_pos, state_drone,state_insect,transmission_delay_duration + 1.f/pparams.fps);
-        if (static_cast<float>(time - interception_start_time) > interception_aim_time + auto_burn_duration)
+            std::tie (auto_roll, auto_pitch,std::ignore)  = calc_directional_burn( state_drone,state_insect,interception_start_time,time);
+        if (static_cast<float>(time - interception_start_time) > interception_aim_time + auto_burn_duration){
+            _flight_mode = fm_interception_burn_spin_down;
+            std::cout << "Spindown" << std::endl;
+        }
+        break;
+    } case fm_interception_burn_spin_down: {
+        auto_throttle = tmp_hover_throttle;
+        if (static_cast<float>(time - interception_start_time) > interception_aim_time + auto_burn_duration + effective_spindown_duration)
             _flight_mode = fm_interception_1g;
         break;
     } case fm_interception_1g: {
@@ -203,7 +239,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         auto_throttle = tmp_hover_throttle;
         throttle = auto_throttle;
 
-        if (static_cast<float>(time - interception_start_time) > interception_aim_time + auto_burn_duration)
+        if (static_cast<float>(time - interception_start_time) > interception_aim_time + auto_burn_duration) //weird burn time is way too short?!
             _flight_mode = fm_retry_aim_start;
         if (time - interception_start_time > 2) // TODO: detect if we got it or stop at some sensible moment.
             _flight_mode = fm_flying_pid_init;
@@ -215,20 +251,21 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
             throttle = auto_throttle;
             pitch = JOY_MIDDLE;
             roll = JOY_MIDDLE;
-            _flight_mode =   fm_landing; // todo: create a feedforward return to volume
+            _flight_mode =   fm_disarmed; // todo: create a feedforward return to volume
             break;
         } else
             _flight_mode =   fm_interception_aim;
-        std::tie (auto_roll, auto_pitch, auto_burn_duration) = calc_directional_burn(state_drone,state_insect,interception_aim_time+transmission_delay_duration);
+        std::cout << "Re-aiming" << std::endl;
+        std::tie (auto_roll, auto_pitch, auto_burn_duration) = calc_directional_burn(state_drone,state_insect,interception_aim_time,time);
         auto_throttle = tmp_hover_throttle;
         break;
-    } case fm_flying_pid_init : {
+    } case fm_flying_pid_init: {
         rollErrI = 0;
         pitchErrI = 0;
         throttleErrI = 0;
         _flight_mode = fm_flying_pid;
         [[fallthrough]];
-    } case fm_flying_pid : {
+    } case fm_flying_pid: {
         //update integrators
         if (fabs(posErrZ)<integratorThresholdDistance)
             throttleErrI += velErrY; //posErrY;
@@ -295,7 +332,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         if (auto_throttle>JOY_BOUND_MAX)
             auto_throttle = JOY_BOUND_MAX;
         break;
-    } case fm_landing : {
+    } case fm_landing: {
         //slowly decrease throttle
         auto_throttle = hoverthrottle - (accErrY * gain_throttle_acc + throttleErrI * gain_throttle_i*0.1f);
         //same as fm_flying:
@@ -317,7 +354,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         else
             _rc->arm(true);
         break;
-    } case fm_abort_takeoff : {
+    } case fm_abort_takeoff: {
         auto_throttle = JOY_BOUND_MIN;
         auto_roll = JOY_MIDDLE;
         auto_pitch = JOY_MIDDLE;
@@ -385,12 +422,12 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         velz_sp << "; ";
 }
 
-std::tuple<int,int,float> DroneController::calc_directional_burn(track_data state_drone,track_data state_insect, float t_offset) {
+std::tuple<int,int,float> DroneController::calc_directional_burn(track_data state_drone,track_data state_insect, double aim_start_time, double time) {
     cv::Point3f drone_vel(state_drone.svelX,state_drone.svelY,state_drone.svelZ);
-    return calc_directional_burn(drone_vel,state_drone,state_insect,t_offset);
+    return calc_directional_burn(drone_vel,state_drone,state_insect,aim_start_time,time);
 }
 
-std::tuple<int,int,float> DroneController::calc_directional_burn(track_data state_drone_start_1g, track_data state_drone,track_data state_insect, float t_offset) {
+std::tuple<int,int,float> DroneController::calc_directional_burn(track_data state_drone_start_1g, track_data state_drone,track_data state_insect, double aim_start_time, double time) {
     //calculate the exact speed of the drone assuming it started from the start position with zero speed, some dt ago.
     cv::Point3f drone_vel;
     float dt =  state_drone.time - state_drone_start_1g.time;
@@ -398,11 +435,14 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(track_data stat
     drone_vel.y = (state_drone.posY - state_drone_start_1g.posY) / dt;
     drone_vel.z = (state_drone.posZ - state_drone_start_1g.posZ) / dt;
     //approx_thrust_efficiency(drone_vel); //TODO: seems to give unreasonable numbers
-    return calc_directional_burn(drone_vel,state_drone,state_insect,t_offset);
+    return calc_directional_burn(drone_vel,state_drone,state_insect,aim_start_time,time);
 }
 
-std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f drone_vel, track_data state_drone, track_data state_insect, float t_offset) {
+std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f drone_vel, track_data state_drone, track_data state_insect, double aim_start_time, double time) {
 
+    float t_offset = (interception_aim_time -  static_cast<float>(time - aim_start_time)) + transmission_delay_duration + 1.f/ pparams.fps;
+    if (t_offset < 0)
+        t_offset = 0;
     //predict drone location at the moment of the upcoming burn since the drone will have a delayed
     //reaction, so we need to calcuate this from that point on, which means we need to do a small
     //prediction step and acquire the new positions at that time
@@ -414,44 +454,53 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
     cv::Point3f delta_pos = insect_pos_after_delay - drone_pos_after_delay;
 
 
-    float burn_time = sqrtf(2.f*static_cast<float>(norm(delta_pos))/drone_acc);
+    float burn_duration = sqrtf(2.f*static_cast<float>(norm(delta_pos))/drone_acc);
     cv::Point3f burn_accelleration = delta_pos/norm(delta_pos)*drone_acc;
-    cv::Point3f drone_pos_after_burn = drone_pos_after_delay + drone_vel* burn_time + delta_pos;
+    cv::Point3f drone_pos_after_burn = drone_pos_after_delay + drone_vel* burn_duration + delta_pos;
 
     cv::Point3f delta_pos_after_burn = insect_pos_after_delay - drone_pos_after_burn;
-    float delta_burn_time = sqrtf(2.f*static_cast<float>(norm(delta_pos_after_burn))/drone_acc);
+    float delta_burn_duration = sqrtf(2.f*static_cast<float>(norm(delta_pos_after_burn))/drone_acc);
     cv::Point3f delta_pos_drone_after_burn = drone_pos_after_burn-drone_pos_after_delay;
 
     if ( norm(delta_pos_drone_after_burn) > norm(delta_pos))
-        burn_time -= delta_burn_time;
+        burn_duration -= delta_burn_duration;
     else {
-        burn_time += delta_burn_time;
+        burn_duration += delta_burn_duration;
     }
 
     cv::Point3f drone_acc_during_aim = {0};
 
     cv::Point3f burn_dist = delta_pos;
+    float avg_acc;
+    //TODO: add movement of the insect in the iterative approach:
     for (int i = 0; i < 100; i++) {
 
         burn_dist += delta_pos_after_burn*0.1f;
 
-        //burn_time = sqrtf(2*norm(burn_dist)/drone_acc);
-        burn_accelleration = burn_dist/norm(burn_dist)*drone_acc;
-        burn_dist = 0.5f*burn_accelleration*burn_time*burn_time;
+        //burn_duration = sqrtf(2*norm(burn_dist)/drone_acc);
+
+        // compensate max drone acc for spin up time
+        if (burn_duration  > effective_spindown_duration)
+            avg_acc =   ((burn_duration  - effective_spindown_duration) * drone_acc + 0.5f * effective_spindown_duration * drone_acc) / burn_duration;
+        else
+            avg_acc = 0.5f*drone_acc;
+
+        burn_accelleration = burn_dist/norm(burn_dist)*avg_acc;
+        burn_dist = 0.5f*burn_accelleration*burn_duration*burn_duration;
 
         drone_acc_during_aim = burn_accelleration /norm(burn_accelleration)*GRAVITY;
         drone_acc_during_aim.y -= GRAVITY;
 
-        drone_pos_after_burn = drone_pos_after_delay + (0.5f * drone_acc_during_aim *powf(t_offset*0.3f,2)) + drone_vel* burn_time + burn_dist;
+        drone_pos_after_burn = drone_pos_after_delay + (0.5f * drone_acc_during_aim *powf(t_offset*0.3f,2)) + drone_vel* burn_duration + burn_dist;
         delta_pos_after_burn = insect_pos_after_delay - drone_pos_after_burn;
 
-        delta_burn_time = sqrtf(2.f*static_cast<float>(norm(delta_pos_after_burn))/drone_acc);
+        delta_burn_duration = sqrtf(2.f*static_cast<float>(norm(delta_pos_after_burn))/avg_acc);
         delta_pos_drone_after_burn = drone_pos_after_burn-drone_pos_after_delay;
 
         if ( norm(delta_pos_drone_after_burn) > norm(delta_pos))
-            burn_time -= delta_burn_time*0.1f;
+            burn_duration -= delta_burn_duration*0.1f;
         else {
-            burn_time += delta_burn_time*0.1f;
+            burn_duration += delta_burn_duration*0.1f;
         }
 
         //cout << " burn_dist: " << burn_dist << endl;
@@ -466,7 +515,7 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
     float insect_angle_roll =  atan2f(burn_accelleration.x,burn_accelleration.y);
     float insect_angle_pitch=  atan2f(-burn_accelleration.z,burn_accelleration.y);
 
-    auto [commanded_roll,commanded_pitch] = approx_rp_command(insect_angle_roll,insect_angle_pitch);
+    auto [commanded_roll,commanded_pitch] = approx_rp_command(insect_angle_roll,insect_angle_pitch,avg_acc);
 
     max_burn.x = commanded_roll / M_PIf32*180.f;
     max_burn.y = commanded_pitch / M_PIf32*180.f;
@@ -490,30 +539,28 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
     int auto_roll_burn =  ((max_burn.x/max_bank_angle+1) / 2.f) * JOY_MAX;
     int auto_pitch_burn = ((max_burn.y/max_bank_angle+1) / 2.f) * JOY_MAX;
 
-    if (_flight_mode == fm_interception_aim){
-        viz_pos_after_aim =  drone_pos_after_delay;
-        viz_time_after_aim = interception_start_time + static_cast<double>(t_offset);
-    }
+    viz_pos_after_aim =  drone_pos_after_delay;
+    viz_time_after_aim = interception_start_time + static_cast<double>(transmission_delay_duration + interception_aim_time + 1.f/pparams.fps);
     viz_pos_after_burn = drone_pos_after_burn;
-    viz_time_after_burn = viz_time_after_aim + static_cast<double>(burn_time);
+    viz_time_after_burn = viz_time_after_aim + static_cast<double>(burn_duration);
 
-    return std::make_tuple(auto_roll_burn,auto_pitch_burn,burn_time);
+    return std::make_tuple(auto_roll_burn,auto_pitch_burn,burn_duration);
 }
 
-std::tuple<int,int,float> DroneController::calc_takeoff_aim_burn(track_data state_insect, cv::Point3f drone) {
+std::tuple<int,int,float> DroneController::calc_takeoff_aim_burn(track_data state_insect, cv::Point3f drone, double time) {
 
     cv::Point3f target = cv::Point3f(state_insect.posX,state_insect.posY,state_insect.posZ);
     if (state_insect.vel_valid) {
         float dx = norm(drone - target);
-        //assuming an average speed of 3m/s:
-        float dt = dx / 3; //todo: tune!
+        //assuming an average attack speed:
+        float dt = dx / avg_attack_speed;
         target+=dt*cv::Point3f(state_insect.svelX,state_insect.svelY,state_insect.svelZ);
     }
 
     float insect_angle_roll = atan2f((target.x - drone.x),(target.y - drone.y));
     float insect_angle_pitch = atan2f((-target.z - -drone.z),(target.y - drone.y));
 
-    auto [commanded_roll,commanded_pitch] = approx_rp_command(insect_angle_roll,insect_angle_pitch);
+    auto [commanded_roll,commanded_pitch] = approx_rp_command(insect_angle_roll,insect_angle_pitch,0.5f*drone_acc); // assuming the take off burn < effective spinup time
 
     max_burn.x = commanded_roll / M_PIf32*180.f;
     max_burn.y = commanded_pitch / M_PIf32*180.f;
@@ -533,19 +580,25 @@ std::tuple<int,int,float> DroneController::calc_takeoff_aim_burn(track_data stat
     float dist = norm(target-drone);
 
     //    float auto_interception_time_burn = sqrtf((2*dist)/drone_acc);
-    float auto_takeoff_burn_duration = (0.05f+sqrtf(dist)/11 + (fabs(max_angle))/360) * 0.3f; //LUDWIG HELP! MODEL!
-    int auto_roll_burn =  ((max_burn.x/max_bank_angle+1) / 2.f) * JOY_MAX;
-    int auto_pitch_burn = ((max_burn.y/max_bank_angle+1) / 2.f) * JOY_MAX;
+    float burn_duration = (0.05f+sqrtf(dist)/11 + (fabs(max_angle))/360) * 0.5f; //LUDWIG HELP! MODEL!
+    int roll_burn =  ((max_burn.x/max_bank_angle+1) / 2.f) * JOY_MAX;
+    int pitch_burn = ((max_burn.y/max_bank_angle+1) / 2.f) * JOY_MAX;
 
     cv::Point3f drone_acc_vector = (target-drone);
-    drone_acc_vector = (drone_acc_vector / norm(drone_acc_vector)) * drone_acc ;
+    float avg_acc; // compensate max drone acc for spin up time
+    if (burn_duration  > effective_spindown_duration)
+        avg_acc =   ((burn_duration  - effective_spindown_duration) * drone_acc + 0.5f * effective_spindown_duration * drone_acc) / burn_duration;
+    else
+        avg_acc = 0.5f*drone_acc;
 
-    viz_pos_after_aim =  drone;
-    viz_time_after_aim = state_insect.time + static_cast<double>(dparams.full_bat_and_throttle_spinup_duration);
-    viz_pos_after_burn = 0.5f*drone_acc_vector*powf(static_cast<double>(auto_takeoff_burn_duration),2) + drone;
-    viz_time_after_burn = viz_time_after_aim + static_cast<double>(auto_takeoff_burn_duration);
+    drone_acc_vector = (drone_acc_vector / norm(drone_acc_vector)) * avg_acc ;
 
-    return std::make_tuple(auto_roll_burn,auto_pitch_burn,auto_takeoff_burn_duration);
+    viz_pos_after_aim =  drone + cv::Point3f(0,0.01,0);
+    viz_time_after_aim = time + static_cast<double>(dparams.full_bat_and_throttle_spinup_duration + transmission_delay_duration);
+    viz_pos_after_burn = 0.5f*drone_acc_vector*powf(static_cast<double>(burn_duration),2) + viz_pos_after_aim;
+    viz_time_after_burn = viz_time_after_aim + static_cast<double>(burn_duration);
+
+    return std::make_tuple(roll_burn,pitch_burn,burn_duration);
 
 }
 
@@ -560,13 +613,13 @@ void DroneController::approx_thrust_efficiency(cv::Point3f drone_vel, float auto
     }
 }
 
-std::tuple<float,float> DroneController::approx_rp_command(float insect_angle_roll,float insect_angle_pitch) {
+std::tuple<float,float> DroneController::approx_rp_command(float insect_angle_roll,float insect_angle_pitch, float avg_drone_acc) {
     float commanded_roll = insect_angle_roll, commanded_pitch = insect_angle_pitch;
 
     float insect_angle_roll_tmp, insect_angle_pitch_tmp;
     for(int i=0;i<3;i++){
-        insect_angle_roll_tmp = atan2(sin(commanded_roll)*drone_acc,cos(commanded_roll)*drone_acc-GRAVITY);
-        insect_angle_pitch_tmp = atan2(sin(commanded_pitch)*drone_acc,cos(commanded_pitch)*drone_acc-GRAVITY);
+        insect_angle_roll_tmp = atan2(sin(commanded_roll)*avg_drone_acc,cos(commanded_roll)*avg_drone_acc-GRAVITY);
+        insect_angle_pitch_tmp = atan2(sin(commanded_pitch)*avg_drone_acc,cos(commanded_pitch)*avg_drone_acc-GRAVITY);
         commanded_roll *= insect_angle_roll/insect_angle_roll_tmp;
         commanded_pitch *= insect_angle_pitch/insect_angle_pitch_tmp;
     }
