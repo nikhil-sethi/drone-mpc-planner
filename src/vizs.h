@@ -63,7 +63,7 @@ private:
     float _res_mult;
 
     cv::Mat cir8,dif8,approx;
-
+    float closest_dist;
 
     struct Tracker_viz_base_data{
         cv::Mat frameL;

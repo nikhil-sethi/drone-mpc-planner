@@ -276,7 +276,7 @@ cv::Mat Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Point setpoint, std:
 
 void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis,float min_dis) {
     std::stringstream ss_time,ss_dis,ss_min;
-
+    closest_dist = (roundf(min_dis*100)/100);
     ss_time << "T: " << (round(time*100)/100);
     ss_min << "Closest: " << (roundf(min_dis*100)/100) << " [m]";
     ss_dis << "|" << (roundf(dis*100)/100) << "|";
@@ -534,5 +534,6 @@ void Visualizer::close() {
         lock_plot_data.unlock();
         thread_viz.join();
         initialized = false;
+        std::cout << "Closest: " << closest_dist << std::endl;
     }
 }
