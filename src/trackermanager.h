@@ -134,7 +134,11 @@ private:
     DroneTracker * _dtrkr;   //tmp
 public:
     cv::Mat viz_max_points,diff_viz;
-    void mode(detection_mode m){ _mode = m;}
+    void mode(detection_mode m){
+        if (_mode == mode_hunt_replay_moth && m != mode_hunt_replay_moth)
+            _itrkr->reset_after_log();
+        _mode = m;
+    }
     detection_mode mode ()  {return _mode;}
     std::string mode_str() {
         if (_mode == mode_locate_drone) {
