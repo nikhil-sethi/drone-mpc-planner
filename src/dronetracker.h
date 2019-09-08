@@ -100,7 +100,7 @@ public:
     cv::Point2f drone_startup_im_location(){ return _drone_blink_im_location; }
     float drone_startup_im_size(){ return _drone_blink_im_size; }
     float drone_startup_im_disparity(){ return _drone_blink_im_disparity; }
-    cv::Point3f drone_startup_location() {return _drone_blink_world_location;}
+    cv::Point3f drone_startup_location() {return _drone_blink_world_location + cv::Point3f(0,0,-0.04);} // TODO: drone dependent offset!
     cv::Point3f drone_landing_location() {return _landing_pad_world;}
 
     bool taking_off(){ return _drone_tracking_status == dts_detecting_takeoff_init || _drone_tracking_status == dts_detecting_takeoff;}
