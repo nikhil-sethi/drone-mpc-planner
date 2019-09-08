@@ -169,11 +169,7 @@ void Cam::init() {
             dev = devices[0];
     }
 
-    //record
     mkdir("./logging", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-    if (pparams.video_raw == video_bag)
-        dev = rs2::recorder(bag_fn,dev);
-
 
     std::cout << "Found the following device:";
 
@@ -213,6 +209,7 @@ void Cam::init() {
     calib_pose(false);
     //    }
 
+    rs_depth_sensor = dev.first<rs2::depth_sensor>();
     std::cout << rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_NAME) << std::endl;
     std::cout << rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION) << std::endl;
     std::cout << rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_PRODUCT_ID) << std::endl;
@@ -280,6 +277,9 @@ void Cam::init() {
     if (pparams.watchdog)
         thread_watchdog = std::thread(&Cam::watchdog_thread,this);
 
+    if (pparams.video_raw == video_bag)
+        dev = rs2::recorder(bag_fn,dev);
+
     update();
     initialized = true;
 }
@@ -346,6 +346,7 @@ void Cam::check_light_level(){
     rs2::config cfg;
     cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, pparams.fps);
     cam.start(cfg);
+    dev = cam.get_active_profile().get_device(); // after a cam start, dev is changed
     rs2::depth_sensor rs_dev = dev.first<rs2::depth_sensor>();
 
     float tmp_set_gain = rs_dev.get_option(RS2_OPTION_GAIN);
@@ -472,6 +473,7 @@ float Cam::measure_auto_exposure(){
     rs2::config cfg;
     cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, pparams.fps);
     cam.start(cfg);
+    dev = cam.get_active_profile().get_device(); // after a cam start, dev is changed
     rs2::depth_sensor rs_dev = dev.first<rs2::depth_sensor>();
 
     rs_dev.set_option(RS2_OPTION_GAIN,0);
@@ -540,6 +542,7 @@ void Cam::calib_pose(bool also_do_depth){
         cfg.enable_stream(RS2_STREAM_GYRO);
     }
     cam.start(cfg);
+    dev = cam.get_active_profile().get_device(); // after a cam start, dev is changed
     cv::Size im_size(IMG_W, IMG_H);
 
     uint nframes = 1;
@@ -626,7 +629,7 @@ void Cam::calib_pose(bool also_do_depth){
     if (hasIMU){
         _camera_angle_y = pitch;
 
-        if (fabs(roll) > 0.5f) {
+        if (fabs(roll) > 0.6f) {
             throw my_exit("camera tilted in roll axis!");
         }
         std::cout << "Measured pose: " << _camera_angle_y << std::endl;
