@@ -84,7 +84,7 @@ void TrackerManager::update_trackers(double time,LogReader::Log_Entry log_entry,
                 itrkr->track(time);
                 break;
             } case mode_hunt_replay_moth:{
-                itrkr->update_from_log(log_entry,_visdat->frame_id);
+                itrkr->update_from_log(log_entry,_visdat->frame_id,time);
                 break;
             } case mode_drone_only:{
                 itrkr->append_log(); // write dummy data

@@ -419,6 +419,19 @@ void Visualizer::draw_tracker_viz() {
         putText(frameL_color,ss.str(),p,cv::FONT_HERSHEY_SIMPLEX,0.5,c);
         cv::line(frameL_color,p,p,c,2);
     }
+
+    if (_dctrl->ff_interception()) {
+        //burn:
+        cv::Point2f viz_pos_after_aim_im = world2im(_dctrl->viz_pos_after_aim,_visdat->Qfi, _visdat->camera_angle);
+        cv::Point2f viz_pos_after_burn_im = world2im(_dctrl->viz_pos_after_burn,_visdat->Qfi, _visdat->camera_angle);
+        cv::circle(frameL_color,viz_pos_after_aim_im,2,blue);
+        cv::circle(frameL_color,viz_pos_after_burn_im,2,red);
+        viz_pos_after_aim_im.x+=15;
+        viz_pos_after_burn_im.x+=15;
+        putText(frameL_color,to_string_with_precision(_dctrl->viz_time_after_aim,2),viz_pos_after_aim_im,cv::FONT_HERSHEY_SIMPLEX,0.5,blue);
+        putText(frameL_color,to_string_with_precision(_dctrl->viz_time_after_burn,2),viz_pos_after_burn_im,cv::FONT_HERSHEY_SIMPLEX,0.5,red);
+    }
+
     if (drn_path.size()>0){
         std::stringstream ss;
         ItemTracker::WorldItem wti = drn_path.back();
@@ -430,35 +443,21 @@ void Visualizer::draw_tracker_viz() {
         putText(frameL_color,ss.str(),p,cv::FONT_HERSHEY_SIMPLEX,0.5,c);
         cv::line(frameL_color,p,p,c,2);
 
-        //draw line to drone target setpoint
-        if (_dnav->drone_is_flying()){
-            if (!_dctrl->ff_interception()) {
-                cv::Point2i t = _dnav->drone_setpoint_im();
-                cv::Scalar c2;
-                if (_dnav->drone_is_hunting() && t.x+t.y>0 ) {
-                    c2 = cv::Scalar(0,0,255);
-                    cv::Point2i t2 = p - (p - t)/2;
-                    putText(frameL_color,to_string_with_precision(_dnav->get_Interceptor().time_to_intercept(),2),t2,cv::FONT_HERSHEY_SIMPLEX,0.5,c2);
-                } else
-                    c2 = cv::Scalar(255,255,255);
-                cv::line(frameL_color,p,t,c2,1);
+        if (_dnav->drone_is_flying() && !_dctrl->ff_interception()) { //draw line to drone target setpoint
+            cv::Point2i t = _dnav->drone_setpoint_im();
+            cv::Scalar c2;
+            if (_dnav->drone_is_hunting() && t.x+t.y>0 ) {
+                c2 = cv::Scalar(0,0,255);
+                cv::Point2i t2 = p - (p - t)/2;
+                putText(frameL_color,to_string_with_precision(_dnav->get_Interceptor().time_to_intercept(),2),t2,cv::FONT_HERSHEY_SIMPLEX,0.5,c2);
+            } else
+                c2 = cv::Scalar(255,255,255);
+            cv::line(frameL_color,p,t,c2,1);
 
-                //draw speed vector:
-                cv::Point2i tv = _dnav->drone_v_setpoint_im();
-                cv::line(frameL_color,p,tv,cv::Scalar(0,255,0),1);
-            } else {
-                //burn:
-                cv::Point2f viz_pos_after_aim_im = world2im(_dctrl->viz_pos_after_aim,_visdat->Qfi, _visdat->camera_angle);
-                cv::Point2f viz_pos_after_burn_im = world2im(_dctrl->viz_pos_after_burn,_visdat->Qfi, _visdat->camera_angle);
-                cv::circle(frameL_color,viz_pos_after_aim_im,2,blue);
-                cv::circle(frameL_color,viz_pos_after_burn_im,2,red);
-                viz_pos_after_aim_im.x+=15;
-                viz_pos_after_burn_im.x+=15;
-                putText(frameL_color,to_string_with_precision(_dctrl->viz_time_after_aim,2),viz_pos_after_aim_im,cv::FONT_HERSHEY_SIMPLEX,0.5,blue);
-                putText(frameL_color,to_string_with_precision(_dctrl->viz_time_after_burn,2),viz_pos_after_burn_im,cv::FONT_HERSHEY_SIMPLEX,0.5,red);
-            }
+            //draw speed vector:
+            cv::Point2i tv = _dnav->drone_v_setpoint_im();
+            cv::line(frameL_color,p,tv,cv::Scalar(0,255,0),1);
         }
-
     }
     cv::resize(frameL_color,roi,size);
 

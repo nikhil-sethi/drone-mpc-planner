@@ -490,8 +490,10 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
     int auto_roll_burn =  ((max_burn.x/max_bank_angle+1) / 2.f) * JOY_MAX;
     int auto_pitch_burn = ((max_burn.y/max_bank_angle+1) / 2.f) * JOY_MAX;
 
-    viz_pos_after_aim =  drone_pos_after_delay;
-    viz_time_after_aim = interception_start_time + static_cast<double>(t_offset);
+    if (_flight_mode == fm_interception_aim){
+        viz_pos_after_aim =  drone_pos_after_delay;
+        viz_time_after_aim = interception_start_time + static_cast<double>(t_offset);
+    }
     viz_pos_after_burn = drone_pos_after_burn;
     viz_time_after_burn = viz_time_after_aim + static_cast<double>(burn_time);
 
@@ -534,6 +536,15 @@ std::tuple<int,int,float> DroneController::calc_takeoff_aim_burn(track_data stat
     float auto_takeoff_burn_duration = (0.05f+sqrtf(dist)/11 + (fabs(max_angle))/360) * 0.3f; //LUDWIG HELP! MODEL!
     int auto_roll_burn =  ((max_burn.x/max_bank_angle+1) / 2.f) * JOY_MAX;
     int auto_pitch_burn = ((max_burn.y/max_bank_angle+1) / 2.f) * JOY_MAX;
+
+    cv::Point3f drone_acc_vector = (target-drone);
+    drone_acc_vector = (drone_acc_vector / norm(drone_acc_vector)) * drone_acc ;
+
+    viz_pos_after_aim =  drone;
+    viz_time_after_aim = state_insect.time + static_cast<double>(dparams.full_bat_and_throttle_spinup_duration);
+    viz_pos_after_burn = 0.5f*drone_acc_vector*powf(static_cast<double>(auto_takeoff_burn_duration),2) + drone;
+    viz_time_after_burn = viz_time_after_aim + static_cast<double>(auto_takeoff_burn_duration);
+
     return std::make_tuple(auto_roll_burn,auto_pitch_burn,auto_takeoff_burn_duration);
 
 }

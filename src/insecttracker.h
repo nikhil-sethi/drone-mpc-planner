@@ -14,7 +14,7 @@ protected:
 public:
     void init(std::ofstream *logger, VisionData *_visdat);
     void track(double time);
-    void update_from_log(LogReader::Log_Entry entry, int frame_number);
+    void update_from_log(LogReader::Log_Entry entry, int frame_number, double time);
     void reset_after_log(){
         _tracking = false;
     }

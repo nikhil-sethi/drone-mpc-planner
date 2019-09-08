@@ -8,7 +8,7 @@ void InsectTracker::init(std::ofstream *logger, VisionData *visdat) {
     ItemTracker::init(logger,visdat,"insect");
 }
 
-void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) {
+void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number, double time) {
 
     _image_item = ImageItem (log.ins_im_x/pparams.imscalef,log.ins_im_y/pparams.imscalef,log.ins_disparity,frame_number);
     ImagePredictItem ipi(cv::Point2f(log.ins_pred_im_x/pparams.imscalef,log.ins_pred_im_y/pparams.imscalef),1,1,255,frame_number);
@@ -40,6 +40,7 @@ void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number) 
     data.saccX = log.ins_sacc_x;
     data.saccY = log.ins_sacc_y;
     data.saccZ = log.ins_sacc_z;
+    data.time = time;
     track_history.push_back(data);
 
     n_frames_lost = log.ins_n_frames_lost;
