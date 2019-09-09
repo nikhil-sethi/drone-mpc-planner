@@ -69,6 +69,7 @@ float Smoother2::addSample(float data, float time) {
         if (_rotater_data==0) { // the buffer is filled, set filter to current value
             _ready = true;
             _derivative_filtered = _derivative;
+            return _derivative_filtered;
         }
 
         return 0;

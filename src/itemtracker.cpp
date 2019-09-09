@@ -505,9 +505,16 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
     data.svelY = smoother_velY2.addSample(data.sposY,dt);
     data.svelZ = smoother_velZ2.addSample(data.sposZ,dt);
 
-    data.saccX = smoother_accX2.addSample(data.svelX,dt);
-    data.saccY = smoother_accY2.addSample(data.svelY,dt);
-    data.saccZ = smoother_accZ2.addSample(data.svelZ,dt);
+    if (smoother_velX2.ready()) {
+        data.saccX = smoother_accX2.addSample(data.svelX,dt);
+        data.saccY = smoother_accY2.addSample(data.svelY,dt);
+        data.saccZ = smoother_accZ2.addSample(data.svelZ,dt);
+    } else if (track_history.size()>0){
+        auto data_prev = track_history.back();
+        data.saccX = smoother_accX2.addSample((data.sposX-data_prev.sposX)/dt,dt);
+        data.saccY = smoother_accY2.addSample((data.sposY-data_prev.sposY)/dt,dt);
+        data.saccZ = smoother_accZ2.addSample((data.sposZ-data_prev.sposZ)/dt,dt);
+    }
 
     data.vel_valid = smoother_velX2.ready();
     data.acc_valid = smoother_accX2.ready();
