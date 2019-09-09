@@ -126,13 +126,15 @@ private:
 
     std::string settings_file;
 
-    float max_bank_angle = 180; // TODO: move to dparams (betaflight setting)
-    float interception_aim_time = 0.2f; // TODO: move to dparams, slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
-    float transmission_delay_duration = 0.04f;
-    float effective_spindown_duration = 0.10f;
-    float drone_acc = 3.f*GRAVITY;
-    float avg_attack_speed = 3.f; //todo: improve initial guess by calculating with acc
-    float lift_off_dist_take_off_aim = 0.03f;
+    const float max_bank_angle = 180; // TODO: move to dparams (betaflight setting)
+    const float interception_aim_duration = 0.2f; // TODO: move to dparams, slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
+    const float transmission_delay_duration = 0.03f;
+    const float effective_burn_spin_up_duration = 0.1f; // the time to spin up from hover to max
+    const float effective_burn_spin_down_duration = 0.1f; // the time to spin down from max to hover
+    float drone_acc = 3.0f*GRAVITY;
+    float ground_effect = 1.1f;
+    const float avg_attack_speed = 3.f; //todo: improve initial guess by calculating with acc
+    const float lift_off_dist_take_off_aim = 0.01f;
 
     double take_off_start_time = 0;
     double interception_start_time = 0;
@@ -150,7 +152,7 @@ private:
     int joyDial = 0;
     float scaledjoydial = 0;
 
-    void approx_thrust_efficiency(cv::Point3f drone_vel, float auto_takeoff_time_burn);
+    void approx_acc(track_data state_drone, float burn_duration, float dt);
     void calc_takeoff_aim_burn(track_data target, track_data drone, float tti,float t_offset);
     std::tuple<int, int, float> calc_takeoff_aim_burn(track_data state_insect, cv::Point3f drone, double time);
     std::tuple<float,float> approx_rp_command(float insect_angle_roll, float insect_angle_pitch, float avg_drone_acc);
@@ -183,7 +185,7 @@ public:
     }
     bool ff_interception() {
        return _flight_mode == fm_take_off_aim || _flight_mode == fm_max_burn || _flight_mode == fm_max_burn_spin_down || _flight_mode == fm_1g ||
-               _flight_mode == fm_interception_aim_start  || _flight_mode == fm_interception_aim  ||
+               _flight_mode == fm_interception_aim_start  || _flight_mode == fm_interception_aim  || _flight_mode == fm_interception_burn_spin_down  ||
                _flight_mode == fm_interception_burn || _flight_mode == fm_interception_burn_start || _flight_mode == fm_retry_aim_start;
     }
 
