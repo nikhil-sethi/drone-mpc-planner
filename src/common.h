@@ -90,6 +90,9 @@ struct track_data {
     cv::Point3f Pos(){
         return cv::Point3f(posX,posY,posZ);
     }
+    cv::Point3f sPos(){
+        return cv::Point3f(sposX,sposY,sposZ);
+    }
     cv::Point3f sVel(){
         return cv::Point3f(svelX,svelY,svelZ);
     }
