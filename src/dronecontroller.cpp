@@ -437,12 +437,12 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
     cv::Point3f delta_pos = insect_pos_after_delay - drone_pos_after_delay;
 
 
-    float burn_duration = sqrtf(2.f*static_cast<float>(norm(delta_pos))/drone_acc);
-    cv::Point3f burn_accelleration = delta_pos/norm(delta_pos)*drone_acc;
+    float burn_duration = sqrtf(2.f*static_cast<float>(norm(delta_pos))/thrust);
+    cv::Point3f burn_accelleration = delta_pos/norm(delta_pos)*thrust;
     cv::Point3f drone_pos_after_burn = drone_pos_after_delay + drone_vel* burn_duration + delta_pos;
 
     cv::Point3f delta_pos_after_burn = insect_pos_after_delay - drone_pos_after_burn;
-    float delta_burn_duration = sqrtf(2.f*static_cast<float>(norm(delta_pos_after_burn))/drone_acc);
+    float delta_burn_duration = sqrtf(2.f*static_cast<float>(norm(delta_pos_after_burn))/thrust);
     cv::Point3f delta_pos_drone_after_burn = drone_pos_after_burn-drone_pos_after_delay;
 
     if ( norm(delta_pos_drone_after_burn) > norm(delta_pos))
@@ -452,53 +452,61 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
     }
 
     cv::Point3f drone_acc_during_aim = {0};
-
     cv::Point3f burn_dist = delta_pos;
-    float avg_acc;
+
     //TODO: add movement of the insect in the iterative approach:
     for (int i = 0; i < 100; i++) {
 
-        burn_dist += delta_pos_after_burn*0.1f;
+        cv::Point3f integrated_pos = state_drone.Pos();
+        cv::Point3f integrated_vel = drone_vel;
 
-        //burn_duration = sqrtf(2*norm(burn_dist)/drone_acc);
-
-        // compensate max drone acc for spin up time
-        if (burn_duration  > effective_burn_spin_up_duration)
-            avg_acc =   ((burn_duration  - effective_burn_spin_up_duration) * drone_acc + 0.5f * effective_burn_spin_up_duration * drone_acc) / burn_duration;
-        else
-            avg_acc = 0.5f*drone_acc;
-
-        burn_accelleration = burn_dist/norm(burn_dist)*avg_acc;
-        burn_dist = 0.5f*burn_accelleration*burn_duration*burn_duration;
+        burn_accelleration = burn_dist/norm(burn_dist)*thrust;
 
         drone_acc_during_aim = burn_accelleration /norm(burn_accelleration)*GRAVITY;
         drone_acc_during_aim.y -= GRAVITY;
+        drone_acc_during_aim = 0.5f*(drone_acc_during_aim + cv::Point3f(0,GRAVITY,0)); // average
 
-        drone_pos_after_burn = drone_pos_after_delay + (0.5f * drone_acc_during_aim *powf(t_offset*0.3f,2)) + drone_vel* burn_duration + burn_dist;
-        delta_pos_after_burn = insect_pos_after_delay - drone_pos_after_burn;
+        //state after aiming:
+        float dt_aim = interception_aim_duration - static_cast<float>(time - aim_start_time);
+        integrated_pos += 0.5f*drone_acc_during_aim*powf(dt_aim,2) + integrated_vel * dt_aim;
+        integrated_vel += drone_acc_during_aim * dt_aim;
 
-        delta_burn_duration = sqrtf(2.f*static_cast<float>(norm(delta_pos_after_burn))/avg_acc);
-        delta_pos_drone_after_burn = drone_pos_after_burn-drone_pos_after_delay;
+        cv::Point3f acc = burn_accelleration;
 
-        if ( norm(delta_pos_drone_after_burn) > norm(delta_pos))
-            burn_duration -= delta_burn_duration*0.1f;
-        else {
-            burn_duration += delta_burn_duration*0.1f;
+        if (burn_duration  > effective_burn_spin_up_duration) {
+            acc -=cv::Point3f(0,GRAVITY,0);
+            // Phase: spin up
+            integrated_pos += 0.25f * acc *powf(effective_burn_spin_up_duration,2);
+            integrated_vel = 0.5f * acc  * effective_burn_spin_up_duration;
+            // Phase: max burn
+            float t_mt = burn_duration - effective_burn_spin_up_duration;
+            integrated_pos += 0.5f * acc *powf(t_mt,2) + integrated_vel * t_mt;
+            integrated_vel += acc * t_mt;
+        } else {
+            float partial_effective_burn_spin_down_duration = burn_duration;
+            acc = burn_accelleration * (burn_duration / effective_burn_spin_up_duration); // only part of the max acc is reached because the burn was too short
+            acc -=cv::Point3f(0,GRAVITY,0);
+
+            // Phase: spin up
+            integrated_pos += 0.25f * acc *powf(partial_effective_burn_spin_down_duration,2);
+            integrated_vel += 0.5f * acc  * partial_effective_burn_spin_down_duration;
         }
 
-        //cout << " burn_dist: " << burn_dist << endl;
-        //cout << " burn_dist: " << norm(burn_dist) << endl;
-        //cout << " burn_time: " << burn_time << endl;
-        //cout << " delta_pos_after_burn: " << norm(delta_pos_after_burn) << endl;
-        //cout << " " << endl;
-    }
+        drone_pos_after_burn = integrated_pos;
+        cv::Point3f err = insect_pos_after_delay - integrated_pos;
 
-    //delta_pos = (0.5f * drone_acc_during_aim *powf(t_offset*0.5f,2));
+        burn_dist +=err;
+        burn_duration = sqrtf(2.f*static_cast<float>(norm(burn_dist)) / thrust);
+
+        if (norm(err) < 0.01)
+            break;
+
+    }
 
     float insect_angle_roll =  atan2f(burn_accelleration.x,burn_accelleration.y);
     float insect_angle_pitch=  atan2f(-burn_accelleration.z,burn_accelleration.y);
 
-    auto [commanded_roll,commanded_pitch] = approx_rp_command(insect_angle_roll,insect_angle_pitch,avg_acc);
+    auto [commanded_roll,commanded_pitch] = approx_rp_command(insect_angle_roll,insect_angle_pitch,thrust);
 
     max_burn.x = commanded_roll / M_PIf32*180.f;
     max_burn.y = commanded_pitch / M_PIf32*180.f;
