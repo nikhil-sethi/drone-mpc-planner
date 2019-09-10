@@ -629,7 +629,7 @@ void Cam::calib_pose(bool also_do_depth){
     if (hasIMU){
         _camera_angle_y = pitch;
 
-        if (fabs(roll) > 0.6f) {
+        if (fabs(roll) > 0.6f) { // TODO: move to xml
             throw my_exit("camera tilted in roll axis!");
         }
         std::cout << "Measured pose: " << _camera_angle_y << std::endl;

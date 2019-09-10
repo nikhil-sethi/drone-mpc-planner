@@ -451,7 +451,6 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
         burn_duration += delta_burn_duration;
     }
 
-    cv::Point3f drone_acc_during_aim = {0};
     cv::Point3f burn_dist = delta_pos;
 
     //TODO: add movement of the insect in the iterative approach:
@@ -462,9 +461,9 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
 
         burn_accelleration = burn_dist/norm(burn_dist)*thrust;
 
-        drone_acc_during_aim = burn_accelleration /norm(burn_accelleration)*GRAVITY;
+        cv::Point3f drone_acc_during_aim = burn_accelleration /norm(burn_accelleration)*GRAVITY;
         drone_acc_during_aim.y -= GRAVITY;
-        drone_acc_during_aim = 0.5f*(drone_acc_during_aim + cv::Point3f(0,GRAVITY,0)); // average
+        drone_acc_during_aim = 0.5f*(drone_acc_during_aim + cv::Point3f(0,GRAVITY,0)); // average acc during aim time
 
         //state after aiming:
         float dt_aim = interception_aim_duration - static_cast<float>(time - aim_start_time);
@@ -493,12 +492,15 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
         }
 
         drone_pos_after_burn = integrated_pos;
-        cv::Point3f err = insect_pos_after_delay - integrated_pos;
+        cv::Point3f pos_err = insect_pos_after_delay - integrated_pos;
+        burn_dist +=pos_err;
 
-        burn_dist +=err;
-        burn_duration = sqrtf(2.f*static_cast<float>(norm(burn_dist)) / thrust);
+        if (norm(integrated_pos) > norm(insect_pos_after_delay))
+            burn_duration += static_cast<float>(norm(pos_err)/norm(integrated_vel));
+        else
+            burn_duration -= static_cast<float>(norm(pos_err)/norm(integrated_vel));
 
-        if (norm(err) < 0.01)
+        if (norm(pos_err) < 0.01)
             break;
 
     }
