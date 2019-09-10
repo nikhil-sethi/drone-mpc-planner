@@ -475,7 +475,7 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
         if (burn_duration  > effective_burn_spin_up_duration) {
             acc -=cv::Point3f(0,GRAVITY,0);
             // Phase: spin up
-            integrated_pos += 0.25f * acc *powf(effective_burn_spin_up_duration,2);
+            integrated_pos += 0.25f * acc *powf(effective_burn_spin_up_duration,2) + integrated_vel * effective_burn_spin_up_duration;
             integrated_vel = 0.5f * acc  * effective_burn_spin_up_duration;
             // Phase: max burn
             float t_mt = burn_duration - effective_burn_spin_up_duration;
@@ -487,7 +487,7 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
             acc -=cv::Point3f(0,GRAVITY,0);
 
             // Phase: spin up
-            integrated_pos += 0.25f * acc *powf(partial_effective_burn_spin_down_duration,2);
+            integrated_pos += 0.25f * acc *powf(partial_effective_burn_spin_down_duration,2) + integrated_vel * partial_effective_burn_spin_down_duration;
             integrated_vel += 0.5f * acc  * partial_effective_burn_spin_down_duration;
         }
 
