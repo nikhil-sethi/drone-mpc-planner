@@ -506,13 +506,11 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
 
     }
 
-    float insect_angle_roll =  atan2f(burn_accelleration.x,burn_accelleration.y);
+    float insect_angle_roll =  atan2f(-burn_accelleration.x,burn_accelleration.y);
     float insect_angle_pitch=  atan2f(-burn_accelleration.z,burn_accelleration.y);
 
-    auto [commanded_roll,commanded_pitch] = approx_rp_command(insect_angle_roll,insect_angle_pitch,thrust);
-
-    max_burn.x = commanded_roll / M_PIf32*180.f;
-    max_burn.y = commanded_pitch / M_PIf32*180.f;
+    max_burn.x = insect_angle_roll / M_PIf32*180.f;
+    max_burn.y = insect_angle_pitch / M_PIf32*180.f;
 
     if (max_burn.x>max_bank_angle)
         max_burn.x=max_bank_angle;
