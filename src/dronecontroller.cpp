@@ -204,8 +204,9 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         std::cout << "Burning" << std::endl;
         [[fallthrough]];
     } case fm_interception_burn: {
-        if (norm(state_drone.Pos() - state_insect.Pos()) > 0.3)
-            std::tie (auto_roll, auto_pitch,std::ignore)  = calc_directional_burn( state_drone,state_insect,interception_start_time,time);
+//todo: implement calc_directional_burn that works in burn stae
+//        if (norm(state_drone.Pos() - state_insect.Pos()) > 0.3)
+//            std::tie (auto_roll, auto_pitch,std::ignore)  = calc_directional_burn( state_drone,state_insect,interception_start_time,time);
         if (static_cast<float>(time - interception_start_time) > interception_aim_duration + auto_burn_duration){
             _flight_mode = fm_interception_burn_spin_down;
             std::cout << "Spindown" << std::endl;
