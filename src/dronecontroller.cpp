@@ -424,16 +424,16 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(track_data stat
 
 std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f drone_vel, track_data state_drone, track_data state_insect, double aim_start_time, double time) {
 
-    float t_offset = (interception_aim_duration -  static_cast<float>(time - aim_start_time)) + transmission_delay_duration + 1.f/ pparams.fps;
-    if (t_offset < 0)
-        t_offset = 0;
+    float remaining_aim_duration = (interception_aim_duration -  static_cast<float>(time - aim_start_time)) + transmission_delay_duration + 1.f/ pparams.fps;
+    if (remaining_aim_duration < 0)
+        remaining_aim_duration = 0;
     //predict drone location at the moment of the upcoming burn since the drone will have a delayed
     //reaction, so we need to calcuate this from that point on, which means we need to do a small
     //prediction step and acquire the new positions at that time
-    cv::Point3f drone_pos_after_delay = cv::Point3f(state_drone.posX,state_drone.posY,state_drone.posZ) + t_offset * drone_vel;
+    cv::Point3f drone_pos_after_delay = cv::Point3f(state_drone.posX,state_drone.posY,state_drone.posZ) + remaining_aim_duration * drone_vel;
     //same for insect:
     cv::Point3f insect_pos_after_delay = cv::Point3f(state_insect.posX,state_insect.posY,state_insect.posZ) +
-                                         t_offset * cv::Point3f(state_insect.svelX,state_insect.svelY,state_insect.svelZ);
+                                         remaining_aim_duration * cv::Point3f(state_insect.svelX,state_insect.svelY,state_insect.svelZ);
 
     cv::Point3f delta_pos = insect_pos_after_delay - drone_pos_after_delay;
 
@@ -442,17 +442,9 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
     cv::Point3f burn_accelleration = delta_pos/norm(delta_pos)*thrust;
     cv::Point3f drone_pos_after_burn = drone_pos_after_delay + drone_vel* burn_duration + delta_pos;
 
-    cv::Point3f delta_pos_after_burn = insect_pos_after_delay - drone_pos_after_burn;
-    float delta_burn_duration = sqrtf(2.f*static_cast<float>(norm(delta_pos_after_burn))/thrust);
-    cv::Point3f delta_pos_drone_after_burn = drone_pos_after_burn-drone_pos_after_delay;
-
-    if ( norm(delta_pos_drone_after_burn) > norm(delta_pos))
-        burn_duration -= delta_burn_duration;
-    else {
-        burn_duration += delta_burn_duration;
-    }
-
     cv::Point3f burn_dist = delta_pos;
+
+    float conversion_speed = 1;
 
     //TODO: add movement of the insect in the iterative approach:
     for (int i = 0; i < 100; i++) {
@@ -467,9 +459,9 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
         drone_acc_during_aim = 0.5f*(drone_acc_during_aim + cv::Point3f(0,GRAVITY,0)); // average acc during aim time
 
         //state after aiming:
-        float dt_aim = interception_aim_duration - static_cast<float>(time - aim_start_time);
-        integrated_pos += 0.5f*drone_acc_during_aim*powf(dt_aim,2) + integrated_vel * dt_aim;
-        integrated_vel += drone_acc_during_aim * dt_aim;
+
+        integrated_pos += 0.5f*drone_acc_during_aim*powf(remaining_aim_duration,2) + integrated_vel * remaining_aim_duration;
+        integrated_vel += drone_acc_during_aim * remaining_aim_duration;
 
         cv::Point3f acc = burn_accelleration;
 
@@ -496,10 +488,18 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
         cv::Point3f pos_err = insect_pos_after_delay - integrated_pos;
         burn_dist +=pos_err;
 
-        if (norm(integrated_pos) > norm(insect_pos_after_delay))
-            burn_duration += static_cast<float>(norm(pos_err)/norm(integrated_vel));
+        if (integrated_vel.dot(insect_pos_after_delay-integrated_pos ) > 0)
+            burn_duration += conversion_speed * static_cast<float>(norm(pos_err)/norm(integrated_vel));
         else
-            burn_duration -= static_cast<float>(norm(pos_err)/norm(integrated_vel));
+            burn_duration -= conversion_speed * static_cast<float>(norm(pos_err)/norm(integrated_vel));
+
+        if (burn_duration< 0){
+            burn_duration = 0.1;
+            conversion_speed *=0.5f;
+        } else if (burn_duration > 1) {
+            burn_duration = 0.2;
+            conversion_speed *=0.5f;
+        }
 
         if (norm(pos_err) < 0.01)
             break;
