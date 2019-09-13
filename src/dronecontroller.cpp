@@ -146,6 +146,12 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
     } case fm_take_off_aim: {
         auto_throttle = tmp_hover_throttle;
         std::tie (auto_roll, auto_pitch, auto_burn_duration) = calc_takeoff_aim_burn(state_insect, _dtrk->drone_startup_location(),take_off_start_time);
+
+        if(_joy_state == js_waypoint){
+            auto_roll = JOY_MIDDLE;
+            auto_pitch = JOY_MIDDLE;
+        }
+
         if (static_cast<float>(time - take_off_start_time) > dparams.full_bat_and_throttle_spinup_duration) {
             _flight_mode = fm_max_burn;
             std::cout << "Take off burn" << std::endl;
