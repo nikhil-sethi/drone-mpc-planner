@@ -319,7 +319,8 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         break;
     } case fm_landing: {
         //slowly decrease throttle
-        auto_throttle = hoverthrottle - (accErrY * gain_throttle_acc + throttleErrI * gain_throttle_i*0.1f);
+        auto_throttle = hoverthrottle - (accErrY * gain_throttle_acc + throttleErrI * gain_throttle_i*0.1f)
+                                      - autoLandThrottleDecrease;
         //same as fm_flying:
         auto_roll =  JOY_MIDDLE + (accErrX * gain_roll_acc +  gain_roll_i*rollErrI);
         auto_pitch = JOY_MIDDLE + (accErrZ * gain_pitch_acc +  gain_pitch_i*pitchErrI);

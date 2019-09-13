@@ -228,9 +228,13 @@ void DroneNavigation::update(double time) {
             _navigation_status = ns_approach_waypoint;
             break;
         } case ns_approach_waypoint: {
-            float dis = sqrtf(_dctrl->posErrX*_dctrl->posErrX + _dctrl->posErrY*_dctrl->posErrY + _dctrl->posErrZ*_dctrl->posErrZ);
-            _dist_to_wp = dis;
-            if (dis *1000 < current_setpoint->threshold_mm * distance_threshold_f && _trackers->dronetracker()->n_frames_tracking>5) {
+            float pos_err = sqrtf(_dctrl->posErrX*_dctrl->posErrX + _dctrl->posErrY*_dctrl->posErrY + _dctrl->posErrZ*_dctrl->posErrZ);
+            float vel_err = sqrtf(_dctrl->velErrX*_dctrl->velErrX + _dctrl->velErrX*_dctrl->velErrX + _dctrl->velErrX*_dctrl->velErrX);
+
+            if (pos_err *1000 < current_setpoint->threshold_mm * distance_threshold_f
+                && vel_err < 1.6
+                && _trackers->dronetracker()->n_frames_tracking>5)
+            {
                 if (current_setpoint->mode == fm_landing) {
                     _navigation_status = ns_land;
                 } else if (wpid < setpoints.size()) { // next waypoint in flight plan

@@ -1,4 +1,4 @@
-﻿#ifndef DRONECONTROLLER_H
+#ifndef DRONECONTROLLER_H
 #define DRONECONTROLLER_H
 
 #include "dronetracker.h"
