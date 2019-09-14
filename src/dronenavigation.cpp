@@ -232,7 +232,7 @@ void DroneNavigation::update(double time) {
             float vel_err = sqrtf(_dctrl->velErrX*_dctrl->velErrX + _dctrl->velErrX*_dctrl->velErrX + _dctrl->velErrX*_dctrl->velErrX);
 
             if (pos_err *1000 < current_setpoint->threshold_mm * distance_threshold_f
-                && vel_err < 1.6
+                && vel_err < 1.6f
                 && _trackers->dronetracker()->n_frames_tracking>5)
             {
                 if (current_setpoint->mode == fm_landing) {
