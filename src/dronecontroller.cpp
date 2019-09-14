@@ -479,9 +479,13 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
 
     }
 
-    //TODO: WTF
-    float insect_angle_roll =  atan2f(-burn_accelleration.x,burn_accelleration.y);
-    float insect_angle_pitch=  atan2f(-burn_accelleration.z,burn_accelleration.y);
+    //calculate roll/pitch commands for BF by applying eq. 37 & 38 from https://www.nxp.com/docs/en/application-note/AN3461.pdf
+    float u = 0.1f;
+    float sign = 1;
+    if (std::signbit(burn_accelleration.y))
+        sign = -1;
+    float insect_angle_roll =  atan2f(-burn_accelleration.x, sign * sqrtf(powf(burn_accelleration.y,2)+powf(u*burn_accelleration.z,2)));
+    float insect_angle_pitch=  atan2f(-burn_accelleration.z,sqrtf(powf(burn_accelleration.x,2) + powf(burn_accelleration.y,2)));
 
     cv::Point2f max_burn;
     max_burn.x = insect_angle_roll / M_PIf32*180.f;
