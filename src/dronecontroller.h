@@ -154,7 +154,7 @@ private:
     float scaledjoydial = 0;
 
     void approx_effective_thrust(track_data state_drone, float burn_duration, float dt);
-    std::tuple<cv::Point3f, cv::Point3f> calc_drone_state_after(track_data state_drone, cv::Point3f drone_vel, cv::Point3f burn_dist, cv::Point3f burn_accelleration, float remaining_aim_duration, float burn_duration);
+    std::tuple<cv::Point3f, cv::Point3f> calc_drone_state_after(cv::Point3f current_drone_pos, cv::Point3f drone_vel, cv::Point3f burn_dist, cv::Point3f burn_accelleration, float remaining_aim_duration, float burn_duration);
     std::tuple<int, int, float> calc_takeoff_aim_burn(track_data state_insect, cv::Point3f drone, double time);
     std::tuple<int, int, float> calc_directional_burn(track_data state_drone, track_data state_insect, double aim_start_time, double time);
     std::tuple<int, int, float> calc_directional_burn(track_data state_drone_start_1g, track_data state_drone, track_data state_insect, double aim_start_time, double time);
