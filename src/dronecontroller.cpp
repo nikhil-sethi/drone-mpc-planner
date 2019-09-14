@@ -483,6 +483,7 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
     float insect_angle_roll =  atan2f(-burn_accelleration.x,burn_accelleration.y);
     float insect_angle_pitch=  atan2f(-burn_accelleration.z,burn_accelleration.y);
 
+    cv::Point2f max_burn;
     max_burn.x = insect_angle_roll / M_PIf32*180.f;
     max_burn.y = insect_angle_pitch / M_PIf32*180.f;
 
@@ -557,67 +558,6 @@ std::tuple<cv::Point3f, cv::Point3f> DroneController::calc_drone_state_after(tra
 
 }
 
-std::tuple<int,int,float> DroneController::calc_takeoff_aim_burn(track_data state_insect, cv::Point3f drone, double time) {
-
-    cv::Point3f target = cv::Point3f(state_insect.posX,state_insect.posY,state_insect.posZ);
-    if (state_insect.vel_valid) {
-        float dx = norm(drone - target);
-        //assuming an average attack speed:
-        float dt = dx / avg_attack_speed;
-        target+=dt*cv::Point3f(state_insect.svelX,state_insect.svelY,state_insect.svelZ);
-    }
-
-    float insect_angle_roll = atan2f((target.x - drone.x),(target.y - drone.y));
-    float insect_angle_pitch = atan2f((-target.z - -drone.z),(target.y - drone.y));
-
-    auto [commanded_roll,commanded_pitch] = approx_rp_command(insect_angle_roll,insect_angle_pitch,0.5f*thrust); // assuming the take off burn < effective spinup time. TODO: improve this estimation
-
-    max_burn.x = commanded_roll / M_PIf32*180.f;
-    max_burn.y = commanded_pitch / M_PIf32*180.f;
-
-    if (max_burn.x>max_bank_angle)
-        max_burn.x=max_bank_angle;
-    else if (max_burn.x<-max_bank_angle)
-        max_burn.x=-max_bank_angle;
-    if (max_burn.y>max_bank_angle)
-        max_burn.y=max_bank_angle;
-    else if (max_burn.y<-max_bank_angle)
-        max_burn.y=-max_bank_angle;
-
-    float max_angle = commanded_roll;
-    if (commanded_pitch > commanded_roll)
-        max_angle = commanded_pitch;
-    float dist = norm(target-drone);
-
-    //    float auto_interception_time_burn = sqrtf((2*dist)/drone_acc);
-    float burn_duration = (0.05f+sqrtf(dist)/11 + (fabs(max_angle))/360) * 0.5f; //LUDWIG HELP! MODEL!
-    int roll_burn =  ((max_burn.x/max_bank_angle+1) / 2.f) * JOY_MAX;
-    int pitch_burn = ((max_burn.y/max_bank_angle+1) / 2.f) * JOY_MAX;
-
-    cv::Point3f drone_acc_vector = (target-drone);
-    burn_direction = drone_acc_vector / norm(drone_acc_vector);
-    float avg_acc; // compensate max drone acc for spin up/down time
-
-    if (burn_duration  > effective_burn_spin_up_duration) {
-        avg_acc = effective_burn_spin_up_duration * 0.5f *thrust; // spin up
-        avg_acc += (burn_duration - effective_burn_spin_up_duration) * thrust; // max thrust
-    } else
-        avg_acc = burn_duration * 0.5f *thrust; // spin up
-    avg_acc += (effective_burn_spin_down_duration-transmission_delay_duration) * 0.5f *thrust; // spin down
-    avg_acc /= (burn_duration+effective_burn_spin_down_duration-transmission_delay_duration);
-    avg_acc *= ground_effect;
-
-    drone_acc_vector = (drone_acc_vector / norm(drone_acc_vector)) * (avg_acc-GRAVITY) ;
-
-    viz_pos_after_aim =  drone + cv::Point3f(0,lift_off_dist_take_off_aim,0);
-    viz_time_after_aim = time + static_cast<double>(dparams.full_bat_and_throttle_spinup_duration);
-    viz_pos_after_burn = 0.5f*drone_acc_vector*powf(static_cast<double>(burn_duration+effective_burn_spin_down_duration-transmission_delay_duration),2) + viz_pos_after_aim;
-    viz_time_after_burn = viz_time_after_aim + static_cast<double>(burn_duration + effective_burn_spin_down_duration);
-
-    return std::make_tuple(roll_burn,pitch_burn,burn_duration);
-
-}
-
 //considering a take off order from just after the aiming phase of: spinning up, burning, spin down, 1g, find the max drone acceleration that best desccribes the current position given dt
 void DroneController::approx_effective_thrust(track_data state_drone, float burn_duration, float dt) {
 
@@ -667,20 +607,6 @@ void DroneController::approx_effective_thrust(track_data state_drone, float burn
 
     }
     thrust = static_cast<float>(norm(acc)) / ground_effect;
-}
-
-std::tuple<float,float> DroneController::approx_rp_command(float insect_angle_roll,float insect_angle_pitch, float avg_drone_acc) {
-    float commanded_roll = insect_angle_roll, commanded_pitch = insect_angle_pitch;
-
-    float insect_angle_roll_tmp, insect_angle_pitch_tmp;
-    for(int i=0;i<3;i++){
-        insect_angle_roll_tmp = atan2(sin(commanded_roll)*avg_drone_acc,cos(commanded_roll)*avg_drone_acc-GRAVITY);
-        insect_angle_pitch_tmp = atan2(sin(commanded_pitch)*avg_drone_acc,cos(commanded_pitch)*avg_drone_acc-GRAVITY);
-        commanded_roll *= insect_angle_roll/insect_angle_roll_tmp;
-        commanded_pitch *= insect_angle_pitch/insect_angle_pitch_tmp;
-    }
-    commanded_roll *= (-1); // Adapt signs to our coordination system:
-    return std::make_tuple(commanded_roll,commanded_pitch);
 }
 
 void DroneController::readJoystick(void) {
