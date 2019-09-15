@@ -68,40 +68,6 @@ cv::Point2f world2im(cv::Point3f p, cv::Mat Qfi, float camera_angle){
     return res;
 }
 
-cv::Point2f transformPixelToEarth(int x, int y, int centerX, int centerY, float depth, float pix2degx,float pix2degy) {
-    //calculate pixel to angle:
-    float radX = float(x - centerX)  * pix2degx*deg2rad;
-    float radY = float(y - centerY)  * pix2degy*deg2rad;
-
-    //calculate distance on ground
-    float disX = -tanf(radX) * depth;
-    float disY = tanf(radY) * depth;
-
-    cv::Point2f p(disX,disY);
-    return p;
-}
-
-float transformPixelToAngle(float x, float pix2radx) {
-    //calculate pixel to angle:
-    float angle = x * pix2radx;
-    return angle;
-}
-
-float transformPixelToAngle(cv::Point2f p, cv::Point2f pix2rad,cv::Point center) {
-    cv::Point2f pt (p.x-center.x,p.y-center.y);
-
-    if (pt.x > pt.y)
-        return pt.x * pix2rad.x;
-    else
-        return pt.y * pix2rad.y;
-}
-
-int getCenterPixel(float angle, float imFOV, int imWidth) {
-    //calculate the center pixel based on the angle measured by an IMU
-    //the 0.5 is because the IMU goes from [-PI .. PI], while the image goes from [0 .. imsize]
-    return roundf(((angle/(imFOV/FOV)) / M_PIf32 + 0.5f) * imWidth);
-}
-
 void acc_orientation(float accx, float accy, float accz, float *out) {
     float R;
     float tx,ty,tz,pitch,roll;
@@ -115,23 +81,6 @@ void acc_orientation(float accx, float accy, float accz, float *out) {
     out[0] = roll;
     out[1] = pitch;
     out[2] = 0;
-}
-
-float scaleStereoHeight(float height) {
-    float h = height/depthscale;
-    if (h > 20 ) {
-        h = sqrtf((h - 15.0f)) +15.0f;
-    }
-    return h;
-}
-
-float getDistance(cv::Point2f p1, cv::Point2f p2) {
-    cv::Point2f p;
-    p.x = p1.x - p2.x;
-    p.y = p1.y - p2.y;
-
-    return sqrt(p.x*p.x + p.y*p.y);
-
 }
 
 bool checkFileExist (const std::string& name) {

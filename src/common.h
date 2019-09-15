@@ -10,14 +10,7 @@
 #include <fstream>
 
 cv::Point2f world2im(cv::Point3f p, cv::Mat Qfi, float camera_angle);
-cv::Point2f transformPixelToEarth(int x, int y, int centerX, int centerY, float depth, float pix2degx, float pix2degy);
-float transformPixelToAngle(float x, float pix2radx);
-int getCenterPixel(float angle, float imFOV, int imWidth);
 void acc_orientation(float accx, float accy, float accz, float *out);
-float scaleStereoHeight(float h);
-float getDistance(cv::Point2f p1, cv::Point2f p2);
-float transformPixelToAngle(cv::Point2f p, cv::Point2f pix2rad,cv::Point center);
-cv::Mat getStabilizedCrop(float phi, float theta, cv::Mat frameL, int sdx, int sdy);
 bool checkFileExist (const std::string& name);
 void combineImage(cv::Mat iml, cv::Mat imr, cv::Mat *res);
 void combineGrayImage(cv::Mat iml,cv::Mat imr,cv::Mat *res);
