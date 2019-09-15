@@ -8,34 +8,34 @@
 #define GRAVITY 9.81f
 
 static const char* joy_states_names[] = { "js_manual",
-                                          "js_waypoint",
-                                          "js_slider",
-                                          "js_hunt",
-                                          "js_disarmed",
-                                          "js_checking",
-                                          "js_none"
-                                        };
+                                         "js_waypoint",
+                                         "js_slider",
+                                         "js_hunt",
+                                         "js_disarmed",
+                                         "js_checking",
+                                         "js_none"
+};
 static const char* flight_mode_names[] = { "fm_joystick_check",
-                                           "fm_disarmed",
-                                           "fm_inactive",
-                                           "fm_manual",
-                                           "fm_start_takeoff",
-                                           "fm_take_off_aim",
-                                           "fm_max_burn",
-                                           "fm_max_burn_spin_down",
-                                           "fm_1g",
-                                           "fm_interception_aim_start",
-                                           "fm_interception_aim",
-                                           "fm_interception_burn_start",
-                                           "fm_interception_burn",
-                                           "fm_interception_burn_spin_down",
-                                           "fm_interception_1g",
-                                           "fm_retry_aim_start",
-                                           "fm_abort_takeoff",
-                                           "fm_flying_pid_init",
-                                           "fm_flying_pid",
-                                           "fm_landing"
-                                         };
+                                          "fm_disarmed",
+                                          "fm_inactive",
+                                          "fm_manual",
+                                          "fm_start_takeoff",
+                                          "fm_take_off_aim",
+                                          "fm_max_burn",
+                                          "fm_max_burn_spin_down",
+                                          "fm_1g",
+                                          "fm_interception_aim_start",
+                                          "fm_interception_aim",
+                                          "fm_interception_burn_start",
+                                          "fm_interception_burn",
+                                          "fm_interception_burn_spin_down",
+                                          "fm_interception_1g",
+                                          "fm_retry_aim_start",
+                                          "fm_abort_takeoff",
+                                          "fm_flying_pid_init",
+                                          "fm_flying_pid",
+                                          "fm_landing"
+};
 /*
  * This class will control a micro drone via a Serial link
  *
@@ -127,7 +127,7 @@ private:
     std::string settings_file;
 
     const float max_bank_angle = 180; // TODO: move to dparams (betaflight setting)
-    const float interception_aim_duration = 0.2f; // TODO: move to dparams, slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
+    const float aim_duration = 0.2f; // TODO: move to dparams, slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
     const float transmission_delay_duration = 0.03f;
     const float effective_burn_spin_up_duration = 0.1f; // the time to spin up from hover to max
     const float effective_burn_spin_down_duration = 0.1f; // the time to spin down from max to hover
@@ -139,9 +139,9 @@ private:
     double take_off_start_time = 0;
     double interception_start_time = 0;
     track_data drone_1g_start_pos;
-    cv::Point3f burn_direction;
 
     const float integratorThresholdDistance = 0.2f;
+    cv::Point3f _burn_direction_for_thrust_approx;
 
     bool initialized = false;
     bool _fromfile;
@@ -153,9 +153,9 @@ private:
     int joyDial = 0;
     float scaledjoydial = 0;
 
-    void approx_effective_thrust(track_data state_drone, float burn_duration, float dt);
-    std::tuple<cv::Point3f, cv::Point3f> calc_drone_state_after(cv::Point3f current_drone_pos, cv::Point3f drone_vel, cv::Point3f burn_dist, cv::Point3f burn_accelleration, float remaining_aim_duration, float burn_duration);
-    std::tuple<int, int, float> calc_takeoff_aim_burn(track_data state_insect, cv::Point3f drone, double time);
+    void approx_effective_thrust(track_data state_drone, cv::Point3f burn_direction, float burn_duration, float dt);
+    std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> predict_drone_state_after_burn(cv::Point3f current_drone_pos, cv::Point3f drone_vel, cv::Point3f burn_direction, cv::Point3f burn_accelleration_max, float remaining_aim_duration, float burn_duration);
+    std::tuple<cv::Point3f, cv::Point3f> predict_drone_state_after_spindown(cv::Point3f integrated_pos, cv::Point3f integrated_vel, cv::Point3f burn_accelleration);
     std::tuple<int, int, float> calc_directional_burn(track_data state_drone, track_data state_insect, double aim_start_time, double time);
     std::tuple<int, int, float> calc_directional_burn(track_data state_drone_start_1g, track_data state_drone, track_data state_insect, double aim_start_time, double time);
     std::tuple<int, int, float> calc_directional_burn(cv::Point3f drone_vel, track_data state_drone,track_data state_insect, double aim_start_time, double time);
@@ -184,7 +184,7 @@ public:
         return flight_mode_names[_flight_mode];
     }
     bool ff_interception() {
-       return _flight_mode == fm_take_off_aim || _flight_mode == fm_max_burn || _flight_mode == fm_max_burn_spin_down || _flight_mode == fm_1g ||
+        return _flight_mode == fm_take_off_aim || _flight_mode == fm_max_burn || _flight_mode == fm_max_burn_spin_down || _flight_mode == fm_1g ||
                _flight_mode == fm_interception_aim_start  || _flight_mode == fm_interception_aim  || _flight_mode == fm_interception_burn_spin_down  ||
                _flight_mode == fm_interception_burn || _flight_mode == fm_interception_burn_start || _flight_mode == fm_retry_aim_start;
     }
