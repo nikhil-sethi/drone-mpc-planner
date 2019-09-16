@@ -495,14 +495,34 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
         if (i>=99)
             std::cout << "Warning: calc_directional_burn not converged!" << std::endl;
     }
+    //update a final time (can prolly be streamlined)
+    burn_direction = burn_dist/norm(burn_dist);
+    burn_accelleration_max = burn_direction*thrust;
 
     //calculate roll/pitch commands for BF by applying eq. 37 & 38 from https://www.nxp.com/docs/en/application-note/AN3461.pdf
-    float u = 0.1f; // TODO: can this be decreased?
-    float sign = 1;
-    if (std::signbit(burn_direction.y))
-        sign = -1;
-    float insect_angle_roll =  atan2f(-burn_direction.x, sign * sqrtf(powf(burn_direction.y,2)+powf(u*burn_direction.z,2)));
-    float insect_angle_pitch=  atan2f(-burn_direction.z,sqrtf(powf(burn_direction.x,2) + powf(burn_direction.y,2)));
+    //and then adapted (with a hamer) until it finally listened... TODO: math-fu opportunity:
+    float insect_angle_roll,insect_angle_pitch;
+    if (burn_dist.y>0) {
+        insect_angle_roll  =  atan2f(-burn_dist.x,sqrtf(powf(burn_dist.y,2) + powf(burn_dist.z,2)));
+        insect_angle_pitch =  atan2f(burn_dist.z,sqrtf(powf(burn_dist.y,2) + powf(burn_dist.x,2)));
+    } else {
+        insect_angle_roll  =  atan2f(burn_dist.x,sqrtf(powf(burn_dist.y,2) + powf(burn_dist.z,2))) + M_PIf32;
+        insect_angle_pitch =  atan2f(burn_dist.z,sqrtf(powf(burn_dist.y,2) + powf(burn_dist.x,2)));
+
+        if (insect_angle_roll > M_PIf32)
+            insect_angle_roll = -(M_PIf32*2.f - insect_angle_roll);
+        if (insect_angle_pitch > M_PIf32)
+            insect_angle_pitch = -(M_PIf32*2.f - insect_angle_pitch);
+
+        if (insect_angle_roll < -M_PIf32)
+            insect_angle_roll = M_PIf32*2.f + insect_angle_roll;
+        if (insect_angle_pitch < -M_PIf32)
+            insect_angle_pitch = M_PIf32*2.f + insect_angle_pitch;
+    }
+
+    //    float x = -sinf(insect_angle_roll) * cosf(insect_angle_pitch);
+    //    float y = cosf(insect_angle_roll) * cosf(insect_angle_pitch);
+    //    float z = sinf(insect_angle_pitch);
 
     cv::Point2f max_burn = cv::Point2f(insect_angle_roll,insect_angle_pitch) * rad2deg; // convert to degrees;
     max_burn.x = std::clamp(max_burn.x,-max_bank_angle,max_bank_angle);
