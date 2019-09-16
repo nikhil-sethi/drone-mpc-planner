@@ -206,7 +206,7 @@ void Cam::init() {
     depth_scale = rs_depth_sensor.get_option(RS2_OPTION_DEPTH_UNITS);
 
     //    } else{
-    calib_pose(false);
+    calib_pose(true);
     //    }
 
     rs_depth_sensor = dev.first<rs2::depth_sensor>();
