@@ -134,7 +134,7 @@ private:
     float thrust = 3.0f*GRAVITY;
     float ground_effect = 1.1f;
     const float avg_attack_speed = 3.f; //todo: improve initial guess by calculating with acc
-    const float lift_off_dist_take_off_aim = 0.01f;
+    const float lift_off_dist_take_off_aim = 0.02f;
 
     double take_off_start_time = 0;
     double interception_start_time = 0;

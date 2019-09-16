@@ -428,17 +428,18 @@ std::tuple<int, int, float> DroneController::calc_directional_burn(track_data st
 
 std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f drone_vel, track_data state_drone, track_data state_insect, double aim_start_time, double time) {
 
-    float remaining_aim_duration = (aim_duration -  static_cast<float>(time - aim_start_time)) + transmission_delay_duration + 1.f/ pparams.fps;
-    if (remaining_aim_duration < 0)
-        remaining_aim_duration = 0;
-
     cv::Point3f current_drone_pos = state_drone.Pos();
     cv::Point3f current_insect_pos = state_insect.Pos();
     cv::Point3f current_insect_vel = state_insect.sVel();
 
+    float remaining_aim_duration;
     if (_flight_mode == fm_take_off_aim) { //during take off aim, drones lifts from the ground a few cm
-        current_drone_pos.y+=0.02f;
+        current_drone_pos.y+=lift_off_dist_take_off_aim;
         remaining_aim_duration = 0;
+    } else {
+        remaining_aim_duration = (aim_duration -  static_cast<float>(time - aim_start_time)) + transmission_delay_duration + 1.f/ pparams.fps;
+        if (remaining_aim_duration < 0)
+            remaining_aim_duration = 0;
     }
 
     //predict drone location at the moment of the upcoming burn since the drone will have a delayed
@@ -450,13 +451,15 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
 
     cv::Point3f burn_dist = insect_pos_after_aim - drone_pos_after_aim;
     float burn_duration = sqrtf(2.f*static_cast<float>(norm(burn_dist))/thrust);
-    cv::Point3f burn_direction = burn_dist/norm(burn_dist);
-    cv::Point3f burn_accelleration_max = burn_direction*thrust;
-    cv::Point3f drone_pos_after_burn,insect_pos_after_burn;
+    cv::Point3f drone_pos_after_burn,insect_pos_after_burn,burn_direction,burn_accelleration_max;
 
     float conversion_speed = 1;
     //iterative approximate the acceleration needed to hit the insect
     for (int i = 0; i < 100; i++) {
+
+        burn_direction = burn_dist/norm(burn_dist);
+        burn_accelleration_max = burn_direction*thrust;
+
         cv::Point3f integrated_pos, integrated_vel;
         std::tie(integrated_pos, integrated_vel, std::ignore) = predict_drone_state_after_burn(
             current_drone_pos,drone_vel, burn_direction,burn_accelleration_max,remaining_aim_duration,burn_duration);
@@ -485,8 +488,12 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
         if (i == 20 && conversion_speed > 0.9f && conversion_speed  < 1.1f )
             conversion_speed *=0.25f;
 
-        if (norm(pos_err) < 0.01) // if converged
+        double derr = norm(pos_err);
+        if (derr < 0.01) // if converged
             break;
+
+        if (i>=99)
+            std::cout << "Warning: calc_directional_burn not converged!" << std::endl;
     }
 
     //calculate roll/pitch commands for BF by applying eq. 37 & 38 from https://www.nxp.com/docs/en/application-note/AN3461.pdf
