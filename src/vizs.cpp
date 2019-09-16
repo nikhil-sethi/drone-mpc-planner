@@ -430,6 +430,16 @@ void Visualizer::draw_tracker_viz() {
         viz_pos_after_burn_im.x+=15;
         putText(frameL_color,to_string_with_precision(_dctrl->viz_time_after_aim,2),viz_pos_after_aim_im,cv::FONT_HERSHEY_SIMPLEX,0.5,blue);
         putText(frameL_color,to_string_with_precision(_dctrl->viz_time_after_burn,2),viz_pos_after_burn_im,cv::FONT_HERSHEY_SIMPLEX,0.5,red);
+
+        for (uint i=0; i< _dctrl->viz_drone_trajectory.size();i++) {
+            cv::Point2f p = world2im(_dctrl->viz_drone_trajectory.at(i),_visdat->Qfi, _visdat->camera_angle);
+            cv::circle(frameL_color,p,1,green);
+        }
+
+        for (uint i=0; i < drn_path.size();i++){
+            cv::Point2f p = world2im(drn_path.at(i).pt,_visdat->Qfi, _visdat->camera_angle);
+            cv::circle(frameL_color,p,1,blue);
+        }
     }
 
     if (drn_path.size()>0){

@@ -516,6 +516,17 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
         viz_time_after_aim = interception_start_time + static_cast<double>(transmission_delay_duration + aim_duration + 1.f/pparams.fps);
         viz_pos_after_burn = drone_pos_after_burn;
         viz_time_after_burn = viz_time_after_aim + static_cast<double>(burn_duration);
+
+        if (_fromfile){ // visualize the interception path
+            viz_drone_trajectory.clear();
+            burn_accelleration_max = burn_direction * thrust;
+            cv::Point3f integrated_pos;
+            for (float f=0;f < burn_duration;f+=0.01f) {
+                std::tie (integrated_pos, std::ignore,std::ignore) = predict_drone_state_after_burn(
+                    current_drone_pos,drone_vel, burn_direction,burn_accelleration_max,remaining_aim_duration,f);
+                viz_drone_trajectory.push_back(integrated_pos);
+            }
+        }
     } else if (_flight_mode == fm_take_off_aim) {
         remaining_aim_duration = dparams.full_bat_and_throttle_spinup_duration - static_cast<float>(time - take_off_start_time);
         if (remaining_aim_duration < 0)
@@ -529,6 +540,16 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
             current_drone_pos,drone_vel, burn_direction,burn_accelleration_max,remaining_aim_duration,burn_duration);
         std::tie(viz_pos_after_burn, std::ignore) = predict_drone_state_after_spindown(integrated_pos, integrated_vel,burn_accelleration);
         viz_time_after_burn = viz_time_after_aim + static_cast<double>(burn_duration + effective_burn_spin_down_duration);
+
+        if (_fromfile){ // visualize the take off path
+            viz_drone_trajectory.clear();
+            for (float f=0;f < burn_duration;f+=0.01f) {
+                std::tie (integrated_pos, std::ignore,std::ignore) = predict_drone_state_after_burn(
+                    current_drone_pos,drone_vel, burn_direction,burn_accelleration_max,remaining_aim_duration,f);
+                viz_drone_trajectory.push_back(integrated_pos);
+            }
+        }
+
     }
 
     _burn_direction_for_thrust_approx = burn_direction; // to be used later to approx effective thrust

@@ -275,6 +275,8 @@ public:
     cv::Point3f viz_pos_after_aim = {0};
     double viz_time_after_aim = {0};
     cv::Point3f viz_pos_after_burn = {0};
+    std::vector<cv::Point3f> viz_drone_trajectory;
+
     double viz_time_after_burn = {0};
 
     uint control_history_max_size;
