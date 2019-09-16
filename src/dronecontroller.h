@@ -132,8 +132,7 @@ private:
     const float effective_burn_spin_up_duration = 0.1f; // the time to spin up from hover to max
     const float effective_burn_spin_down_duration = 0.1f; // the time to spin down from max to hover
     float thrust = 3.0f*GRAVITY;
-    float ground_effect = 1.1f;
-    const float avg_attack_speed = 3.f; //todo: improve initial guess by calculating with acc
+    float ground_effect = 0.55f;
     const float lift_off_dist_take_off_aim = 0.02f;
 
     double take_off_start_time = 0;
