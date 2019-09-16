@@ -52,6 +52,8 @@ void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number, 
         _image_predict_item.valid = false;
     }
 
+    _score_threshold = 9999; // reject any real blobs
+
     cleanup_paths();
     append_log();
 }
