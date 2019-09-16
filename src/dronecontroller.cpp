@@ -499,37 +499,10 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
     burn_direction = burn_dist/norm(burn_dist);
     burn_accelleration_max = burn_direction*thrust;
 
-    //calculate roll/pitch commands for BF by applying eq. 37 & 38 from https://www.nxp.com/docs/en/application-note/AN3461.pdf
-    //and then adapted (with a hamer) until it finally listened... TODO: math-fu opportunity:
-    float insect_angle_roll,insect_angle_pitch;
-    if (burn_dist.y>0) {
-        insect_angle_roll  =  atan2f(-burn_dist.x,sqrtf(powf(burn_dist.y,2) + powf(burn_dist.z,2)));
-        insect_angle_pitch =  atan2f(burn_dist.z,sqrtf(powf(burn_dist.y,2) + powf(burn_dist.x,2)));
-    } else {
-        insect_angle_roll  =  atan2f(burn_dist.x,sqrtf(powf(burn_dist.y,2) + powf(burn_dist.z,2))) + M_PIf32;
-        insect_angle_pitch =  atan2f(burn_dist.z,sqrtf(powf(burn_dist.y,2) + powf(burn_dist.x,2)));
+    auto [roll_deg, pitch_deg] = convert_acc_to_deg(burn_direction);
 
-        if (insect_angle_roll > M_PIf32)
-            insect_angle_roll = -(M_PIf32*2.f - insect_angle_roll);
-        if (insect_angle_pitch > M_PIf32)
-            insect_angle_pitch = -(M_PIf32*2.f - insect_angle_pitch);
-
-        if (insect_angle_roll < -M_PIf32)
-            insect_angle_roll = M_PIf32*2.f + insect_angle_roll;
-        if (insect_angle_pitch < -M_PIf32)
-            insect_angle_pitch = M_PIf32*2.f + insect_angle_pitch;
-    }
-
-    //    float x = -sinf(insect_angle_roll) * cosf(insect_angle_pitch);
-    //    float y = cosf(insect_angle_roll) * cosf(insect_angle_pitch);
-    //    float z = sinf(insect_angle_pitch);
-
-    cv::Point2f max_burn = cv::Point2f(insect_angle_roll,insect_angle_pitch) * rad2deg; // convert to degrees;
-    max_burn.x = std::clamp(max_burn.x,-max_bank_angle,max_bank_angle);
-    max_burn.y = std::clamp(max_burn.y,-max_bank_angle,max_bank_angle);
-
-    int auto_roll_burn =  ((max_burn.x/max_bank_angle+1) / 2.f) * JOY_MAX; // convert to RC commands range
-    int auto_pitch_burn = ((max_burn.y/max_bank_angle+1) / 2.f) * JOY_MAX;
+    int auto_roll_burn =  ((roll_deg/max_bank_angle+1) / 2.f) * JOY_MAX; // convert to RC commands range
+    int auto_pitch_burn = ((pitch_deg/max_bank_angle+1) / 2.f) * JOY_MAX;
 
     if (_flight_mode == fm_interception_aim || _flight_mode == fm_interception_aim_start){
         viz_pos_after_aim =  drone_pos_after_aim;
@@ -623,6 +596,39 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::predict_drone
     return std::make_tuple(integrated_pos, integrated_vel, burn_accelleration);
 }
 
+std::tuple<float,float> DroneController::convert_acc_to_deg(cv::Point3f burn_dist) {
+    //calculate roll/pitch commands for BF by applying eq. 37 & 38 from https://www.nxp.com/docs/en/application-note/AN3461.pdf
+    //and then adapted (with a hamer) until it finally listened... TODO: math-fu opportunity:
+    float insect_angle_roll,insect_angle_pitch;
+    if (burn_dist.y>0) {
+        insect_angle_roll  =  atan2f(-burn_dist.x,sqrtf(powf(burn_dist.y,2) + powf(burn_dist.z,2)));
+        insect_angle_pitch =  atan2f(burn_dist.z,sqrtf(powf(burn_dist.y,2) + powf(burn_dist.x,2)));
+    } else {
+        insect_angle_roll  =  atan2f(burn_dist.x,sqrtf(powf(burn_dist.y,2) + powf(burn_dist.z,2))) + M_PIf32;
+        insect_angle_pitch =  atan2f(burn_dist.z,sqrtf(powf(burn_dist.y,2) + powf(burn_dist.x,2)));
+
+        if (insect_angle_roll > M_PIf32)
+            insect_angle_roll = -(M_PIf32*2.f - insect_angle_roll);
+        if (insect_angle_pitch > M_PIf32)
+            insect_angle_pitch = -(M_PIf32*2.f - insect_angle_pitch);
+
+        if (insect_angle_roll < -M_PIf32)
+            insect_angle_roll = M_PIf32*2.f + insect_angle_roll;
+        if (insect_angle_pitch < -M_PIf32)
+            insect_angle_pitch = M_PIf32*2.f + insect_angle_pitch;
+    }
+
+    //this should reverse above again (for sanity check)
+    //    float x = -sinf(insect_angle_roll) * cosf(insect_angle_pitch);
+    //    float y = cosf(insect_angle_roll) * cosf(insect_angle_pitch);
+    //    float z = sinf(insect_angle_pitch);
+
+    insect_angle_roll *=rad2deg;
+    insect_angle_pitch *=rad2deg;
+    insect_angle_roll = std::clamp(insect_angle_roll,-max_bank_angle,max_bank_angle);
+    insect_angle_pitch = std::clamp(insect_angle_pitch,-max_bank_angle,max_bank_angle);
+    return std::make_tuple(insect_angle_roll,insect_angle_pitch);
+}
 
 std::tuple<cv::Point3f, cv::Point3f> DroneController::predict_drone_state_after_spindown(cv::Point3f integrated_pos, cv::Point3f integrated_vel, cv::Point3f burn_accelleration) {
 

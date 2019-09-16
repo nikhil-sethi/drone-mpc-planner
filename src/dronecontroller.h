@@ -158,6 +158,7 @@ private:
     std::tuple<int, int, float> calc_directional_burn(track_data state_drone, track_data state_insect, double aim_start_time, double time);
     std::tuple<int, int, float> calc_directional_burn(track_data state_drone_start_1g, track_data state_drone, track_data state_insect, double aim_start_time, double time);
     std::tuple<int, int, float> calc_directional_burn(cv::Point3f drone_vel, track_data state_drone,track_data state_insect, double aim_start_time, double time);
+    std::tuple<float,float> calc_stick_commands(cv::Point3f burn_dist);
 
     MultiModule * _rc;
     DroneTracker * _dtrk;
