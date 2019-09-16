@@ -23,6 +23,8 @@ void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number, 
     w.pt.x = log.ins_pos_x;
     w.pt.y = log.ins_pos_y;
     w.pt.z = log.ins_pos_z;
+    w.distance = norm(w.pt);
+    w.distance_bkg = _visdat->depth_background_mm.at<float>(w.iti.y,w.iti.x);
     path.push_back(w);
     _world_item = w;
 
