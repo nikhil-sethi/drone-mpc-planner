@@ -135,6 +135,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         take_off_start_time = time;
         _flight_mode = fm_take_off_aim;
         std::cout << "Take off aiming" << std::endl;
+        _burn_direction_for_thrust_approx = {0};
         if (dparams.mode3d) {
             _rc->arm(true);
             auto_roll = JOY_MIDDLE;
@@ -186,6 +187,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         std::cout << "Aiming" << std::endl;
         interception_start_time = time;
         approx_effective_thrust(state_drone,_burn_direction_for_thrust_approx,auto_burn_duration,static_cast<float>(time-take_off_start_time)-dparams.full_bat_and_throttle_spinup_duration);
+        _burn_direction_for_thrust_approx = {0};
         std::cout << "Estimated acc: " << thrust << std::endl;
         _flight_mode =   fm_interception_aim;
         [[fallthrough]];
@@ -244,6 +246,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         } else
             _flight_mode =   fm_interception_aim;
         std::cout << "Re-aiming" << std::endl;
+        _burn_direction_for_thrust_approx = {0};
         std::tie (auto_roll, auto_pitch, auto_burn_duration) = calc_directional_burn(state_drone,state_insect,aim_duration,time);
         auto_throttle = tmp_hover_throttle;
         break;
@@ -440,7 +443,20 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
         remaining_aim_duration = (aim_duration -  static_cast<float>(time - aim_start_time)) + transmission_delay_duration + 1.f/ pparams.fps;
         if (remaining_aim_duration < 0)
             remaining_aim_duration = 0;
+
+        //estimate velocity caused by aiming:
+        //state after aiming:
+        float time_spend_aiming = aim_duration-remaining_aim_duration;
+        if (time_spend_aiming>0) {
+            cv::Point3f drone_acc_after_aim = _burn_direction_for_thrust_approx*GRAVITY; // thrust at then end of aim
+            drone_acc_after_aim.y -= GRAVITY; // acc = thrust - gravity
+            cv::Point3f drone_acc_now = time_spend_aiming / aim_duration * drone_acc_after_aim; // thrust after spending some time aiming
+            cv::Point3f drone_acc_during_aim = 0.5f*(drone_acc_now); // average acc during spend aim time, assuming linear acc
+            cv::Point3f vel_because_aim = drone_acc_during_aim * time_spend_aiming;
+            drone_vel += vel_because_aim; // the velocity state info lags behind because of the filtering. So, add some predictive info
+        }
     }
+
 
     //predict drone location at the moment of the upcoming burn since the drone will have a delayed
     //reaction, so we need to calcuate this from that point on, which means we need to do a small
