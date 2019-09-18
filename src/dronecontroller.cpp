@@ -614,25 +614,23 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::predict_drone
 
 std::tuple<float,float> DroneController::convert_acc_to_deg(cv::Point3f acc) {
     //calculate roll/pitch commands for BF by applying eq. 37 & 38 from https://www.nxp.com/docs/en/application-note/AN3461.pdf
-    //and then adapted (with a hamer) until it finally listened...
+    //and then adapted to our orientation system
     float roll,pitch;
     float eps = 0.0001;
 
     // Convert acc in pats coordinats to betaflight coordinates:
     cv::Point3f acc_bf;
-    acc_bf.x = -acc.z;
+    acc_bf.x = acc.z;
     acc_bf.y = -acc.x;
     acc_bf.z = acc.y;
     acc = acc_bf;
 
     // .. and calculate roll and pitch like everybody else does..
     float sign = 1;
-    if (acc.z<0) {
+    if (acc.z < 0)
         sign = -1;
-    }
-    pitch = atan2f(-acc.x,sqrtf(powf(acc.y,2) + powf(acc.z,2)));
     roll = atan2f(acc.y,sign*sqrtf(powf(acc.z,2) + eps*powf(acc.x,2)));
-
+    pitch = atan2f(-acc.x,sqrtf(powf(acc.y,2) + powf(acc.z,2)));
     //this should reverse above again (for sanity check)
     //    acc_bf.x = -sinf(pitch)*norm(acc);
     //    acc_bf.y = sinf(roll) * cosf(pitch)*norm(acc);
@@ -640,7 +638,7 @@ std::tuple<float,float> DroneController::convert_acc_to_deg(cv::Point3f acc) {
 
     //    acc.x = -acc_bf.y;
     //    acc.y = acc_bf.z;
-    //    acc.z = -acc_bf.x;
+    //    acc.z = acc_bf.x;
 
     roll *=rad2deg;
     pitch *=rad2deg;
