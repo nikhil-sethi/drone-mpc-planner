@@ -127,3 +127,17 @@ Host pats7b pats_vde7b
 	User pats
 	ProxyJump dinstech
 	Port 6700
+
+Host pats8  pats_vde8
+	Hostname localhost
+	IdentityFile ~/.ssh/pats_id_rsa
+	User pats
+	ProxyJump mavlab-gpu
+	Port 6800
+
+Host pats8b pats_vde8b
+	Hostname localhost
+	IdentityFile ~/.ssh/pats_id_rsa
+	User pats
+	ProxyJump dinstech
+	Port 6800
