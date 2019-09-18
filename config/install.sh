@@ -98,6 +98,7 @@ fi
 	mkdir -p ~/.ssh
 	mv authorized_keys ~/.ssh/
 	mv id_rsa ~/.ssh/
+	chmod 600 ~/.ssh/id_rsa
 	mv id_rsa.pub ~/.ssh/
 	mv known_hosts ~/.ssh/
 	ssh-add ~/.ssh/id_rsa
