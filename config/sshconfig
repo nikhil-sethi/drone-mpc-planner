@@ -100,3 +100,30 @@ Host pats6b  pats_koppert6b
 	ProxyJump dinstech
 	Port 6600
 
+Host pats6 pats_koppert6
+	Hostname localhost
+	IdentityFile ~/.ssh/pats_id_rsa
+	User pats
+	ProxyJump mavlab-gpu
+	Port 6600
+
+Host pats6b  pats_koppert6b
+	Hostname localhost
+	IdentityFile ~/.ssh/pats_id_rsa
+	User pats
+	ProxyJump dinstech
+	Port 6600
+
+Host pats7  pats_vde7
+	Hostname localhost
+	IdentityFile ~/.ssh/pats_id_rsa
+	User pats
+	ProxyJump mavlab-gpu
+	Port 6700
+
+Host pats7b pats_vde7b
+	Hostname localhost
+	IdentityFile ~/.ssh/pats_id_rsa
+	User pats
+	ProxyJump dinstech
+	Port 6700
