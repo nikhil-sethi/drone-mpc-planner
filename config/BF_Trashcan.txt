@@ -1,27 +1,42 @@
 # diff
 
 # version
-# Betaflight / CRAZYBEEF4FR (C4FR) 4.1.0 Sep  2 2019 / 22:33:50 (227f6f76a) MSP API: 1.42
+# Betaflight / CRAZYBEEF4FR (C4FR) 4.0.6 Sep  1 2019 / 00:26:58 (2a64051a2) MSP API: 1.41
 
 # start the command batch
 batch start
 
 board_name CRAZYBEEF4FR
+manufacturer_id 
 
 # name: PatsCan
 
 # resources
 resource RX_BIND 1 B02
 
+# timer
+
+# dma
+
+# mixer
+
+# servo
+
+# servo mix
+
+
 # feature
 feature -AIRMODE
 feature -ANTI_GRAVITY
-feature -DYNAMIC_FILTER
 feature MOTOR_STOP
 feature LED_STRIP
 
 # beeper
 beeper -ON_USB
+
+# beacon
+
+# map
 
 # serial
 serial 0 2048 115200 57600 0 115200
@@ -54,9 +69,18 @@ aux 2 15 3 900 1425 0 0
 aux 3 28 1 1300 2100 0 0
 aux 4 35 2 1650 2100 0 0
 
+# adjrange
+
+# rxrange
+
+# vtx
+
+# rxfail
+
+# display_name
+
 # master
-set acc_calibration = -85,-70,188
-set rc_interp_ch = RPY
+set acc_calibration = 33,-15,394
 set rx_spi_protocol = FRSKY_D
 set dshot_idle_value = 300
 set motor_pwm_protocol = DSHOT600
@@ -68,35 +92,50 @@ set ibata_scale = 1175
 set yaw_motors_reversed = ON
 set runaway_takeoff_prevention = OFF
 set runaway_takeoff_deactivate_throttle_percent = 25
-set osd_vbat_pos = 2435
-set osd_rssi_pos = 2456
+set osd_vbat_pos = 387
+set osd_rssi_pos = 2488
 set osd_tim_2_pos = 2444
+set osd_flymode_pos = 2476
+set osd_g_force_pos = 2370
+set osd_throttle_pos = 2306
 set osd_crosshairs_pos = 2253
+set osd_avg_cell_voltage_pos = 2434
+set osd_pit_ang_pos = 2274
+set osd_rol_ang_pos = 2242
+set osd_stick_overlay_left_pos = 2294
+set osd_stick_overlay_right_pos = 2102
 set vtx_low_power_disarm = ON
 set frsky_spi_tx_id = 1,0
 set frsky_spi_offset = -41
 set frsky_spi_bind_hop_data = 0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,66,68,70,72,74,76,78,80,82,84,86,88,91,92,0,0,0
 set gyro_2_spibus = 1
-set name = PatsCan
 
+# profile
 profile 0
 
-# profile 0
-set throttle_boost = 0
-set p_pitch = 64
-set d_pitch = 64
-set p_roll = 60
+set iterm_relax_type = GYRO
+set i_pitch = 40
+set d_pitch = 68
+set f_pitch = 65
+set p_roll = 40
+set i_roll = 40
 set d_roll = 60
-set p_yaw = 70
+set f_roll = 60
+set angle_level_strength = 200
 set level_limit = 180
 ###ERROR: CORRUPTED CONFIG: level_limit = 180###
+set d_min_roll = 59
+set d_min_pitch = 67
+set d_min_boost_gain = 100
+set d_min_advance = 80
 
+# rateprofile
 rateprofile 0
 
-# rateprofile 0
 set roll_rc_rate = 140
 set pitch_rc_rate = 140
 
 # end the command batch
 batch end
 
+# 
