@@ -91,6 +91,7 @@ public:
     cv::Mat depth_background_3mm;
     cv::Mat depth_background_mm;
     cv::Mat disparity_background;
+    CameraVolume camera_volume;
 
     float _camera_angle_x = 0;
     float _camera_angle_y = 30;
@@ -161,7 +162,8 @@ private:
     std::string disparity_map_wfn;
     std::string brightness_map_wfn;
 
-
+    CameraVolume def_volume();
+    cv::Point3f get_SlopesOfPixel(uint x, uint y);
     void pause();
     void resume();
     void seek(double time);

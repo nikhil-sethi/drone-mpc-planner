@@ -135,8 +135,6 @@ void Cam::calibration(rs2::stream_profile infared1,rs2::stream_profile infared2)
     //init Qf: https://stackoverflow.com/questions/27374970/q-matrix-for-the-reprojectimageto3d-function-in-opencv
     Qf = (Mat_<double>(4, 4) << 1.0, 0.0, 0.0, -cx, 0.0, 1.0, 0.0, -cy, 0.0, 0.0, 0.0, focal_length, 0.0, 0.0, 1/baseline, 0.0);
     intr = new rs2_intrinsics(i);
-
-
 }
 
 void Cam::init() {
@@ -281,7 +279,53 @@ void Cam::init() {
         dev = rs2::recorder(bag_fn,dev);
 
     update();
+    camera_volume = def_volume();
     initialized = true;
+}
+
+CameraVolume Cam::def_volume (){
+
+    float a_top, a_front, a_left, a_right, b_depth, b_ground;
+
+    cv::Point3f slope;
+
+    slope = get_SlopesOfPixel (424, 0);
+    a_top = slope.y/slope.z;
+
+    slope = get_SlopesOfPixel (424, 480);
+    a_front = slope.y/slope.z;
+
+    slope = get_SlopesOfPixel (0, 240);
+    a_left = slope.x/slope.z;
+
+    slope = get_SlopesOfPixel (848, 240);
+    a_right = slope.x/slope.z;
+
+    b_ground = -1.7;
+    b_depth = -4.5;
+
+    CameraVolume camVol;
+    camVol.init(a_top, a_front, a_left, a_right, b_depth, b_ground);
+
+    return camVol;
+}
+
+cv::Point3f Cam::get_SlopesOfPixel(uint x, uint y){
+    std::vector<Point3d> camera_coordinates, world_coordinates;
+    camera_coordinates.push_back(Point3d(x,y,-1));
+    cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
+
+    cv::Point3f w;
+    w.x = world_coordinates[0].x;
+    w.y = world_coordinates[0].y;
+    w.z = world_coordinates[0].z;
+    //compensate camera rotation:
+    float theta = _camera_angle_y * deg2rad;
+    float temp_y = w.y * cosf(theta) + w.z * sinf(theta);
+    w.z = -w.y * sinf(theta) + w.z * cosf(theta);
+    w.y = temp_y;
+
+    return w;
 }
 
 //Converting the raw depths of depth_background distances to
@@ -773,6 +817,7 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
 
     std::cout << "Awaiting first image..." << std::endl;
     update();
+    camera_volume = def_volume();
     initialized = true;
 }
 
