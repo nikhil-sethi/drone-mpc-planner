@@ -512,7 +512,7 @@ void init(int argc, char **argv) {
     visdat.init(fromfile==log_mode_full,cam.Qf, cam.frameL,cam.frameR,cam.camera_angle(),cam.measured_gain(),cam.depth_background_mm); // do after cam update to populate frames
     trackers.init(&logger, &visdat);
     dnav.init(&logger,&trackers,&dctrl,&visdat);
-    dctrl.init(&logger,fromfile==log_mode_full,&rc,trackers.dronetracker());
+    dctrl.init(&logger,fromfile==log_mode_full,&rc,trackers.dronetracker(), &(cam.camera_volume));
     dprdct.init(&visdat,trackers.dronetracker(),trackers.insecttracker(),&dctrl);
 
     // Ensure that joystick was found and that we can use it

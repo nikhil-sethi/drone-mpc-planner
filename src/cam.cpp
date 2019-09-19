@@ -301,7 +301,7 @@ CameraVolume Cam::def_volume (){
     slope = get_SlopesOfPixel (848, 240);
     a_right = slope.x/slope.z;
 
-    b_ground = -1.7;
+    b_ground = -1.9;
     b_depth = -4.5;
 
     CameraVolume camVol;

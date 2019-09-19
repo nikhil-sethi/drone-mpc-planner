@@ -157,13 +157,14 @@ private:
     void approx_effective_thrust(track_data state_drone, cv::Point3f burn_direction, float burn_duration, float dt);
     std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> predict_drone_state_after_burn(cv::Point3f current_drone_pos, cv::Point3f drone_vel, cv::Point3f burn_direction, cv::Point3f burn_accelleration_max, float remaining_aim_duration, float burn_duration);
     std::tuple<cv::Point3f, cv::Point3f> predict_drone_state_after_spindown(cv::Point3f integrated_pos, cv::Point3f integrated_vel, cv::Point3f burn_accelleration);
-    std::tuple<int, int, float> calc_directional_burn(track_data state_drone, track_data state_insect, double aim_start_time, double time);
-    std::tuple<int, int, float> calc_directional_burn(track_data state_drone_start_1g, track_data state_drone, track_data state_insect, double aim_start_time, double time);
-    std::tuple<int, int, float> calc_directional_burn(cv::Point3f drone_vel, track_data state_drone,track_data state_insect, double aim_start_time, double time);
+    std::tuple<bool, int, int, float> calc_directional_burn(track_data state_drone, track_data state_insect, double aim_start_time, double time);
+    std::tuple<bool, int, int, float> calc_directional_burn(track_data state_drone_start_1g, track_data state_drone, track_data state_insect, double aim_start_time, double time);
+    std::tuple<bool, int, int, float> calc_directional_burn(cv::Point3f drone_vel, track_data state_drone,track_data state_insect, double aim_start_time, double time);
     std::tuple<float,float> convert_acc_to_deg(cv::Point3f acc);
 
     MultiModule * _rc;
     DroneTracker * _dtrk;
+    CameraVolume * _camvol;
 
     std::ofstream *_logger;
     void sendData(void);
@@ -285,7 +286,7 @@ public:
     std::vector<control_data> control_history;
 
     void close (void);
-    void init(std::ofstream *logger, bool fromfile, MultiModule *rc, DroneTracker *dtrk);
+    void init(std::ofstream *logger, bool fromfile, MultiModule *rc, DroneTracker *dtrk, CameraVolume* camvol);
     void control(track_data data, track_data state_insect, cv::Point3f setpoint_pos_world, cv::Point3f setpoint_vel_world, cv::Point3f setpoint_acc_world, double time);
     bool drone_is_active() {
         if ( _flight_mode == fm_inactive || _flight_mode == fm_disarmed)
