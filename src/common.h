@@ -24,22 +24,21 @@ int getSecondsSinceFileCreation(std::string filePath);
 
 class CameraVolume{
     public:
-        /** @brief Calculates planes that defines visible volume of the camera.
-         * The planes are defined as plane normal vectors in space
-         *
-         * @param[in] x[b/f][r/l][u/d] Points at the back|front, left|right and up|down
-        */
-        void init(cv::Point3f xblu, cv::Point3f xbru, cv::Point3f xbld, cv::Point3f xbrd, cv::Point3f xfld, cv::Point3f xfrd);
+
+        void init(float slope_top, float slope_front, float slope_left, float slope_right,
+                  float depth, float height);
 
         /** @brief Checks whether the point p is for all planes defined in init on the right side.*/
         bool is_inView(cv::Point3f p);
 
     private:
-        /** @brief Every plane normal vector is defined as planes[0]+planes[1]*(x,y,z)' */
-        std::vector< std::vector<cv::Point3f> > planes;
-
-        /** @brief Determines normal vectors for the planes. */
-        std::vector<cv::Point3f> calc_planeNormVec(cv::Point3f x1, cv::Point3f x2, cv::Point3f x3);
+        // These parameters define the volume
+        float slope_top;
+        float slope_front;
+        float slope_left;
+        float slope_right;
+        float z_limit;
+        float y_limit;
 };
 
 
