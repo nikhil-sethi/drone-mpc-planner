@@ -528,6 +528,13 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
 
         if (_fromfile){ // visualize the interception path
             viz_drone_trajectory.clear();
+
+            //            float TMP_thrust = thrust;
+            //            float TMP_effective_burn_spin_up_duration = effective_burn_spin_up_duration;
+            //            for (float j = 0; j < 0.55f; j+=0.05f) {
+            //                effective_burn_spin_up_duration = j;
+            //                for (int i = 10; i < 100; i+=30) {
+            //                    thrust = i;
             burn_accelleration_max = burn_direction * thrust;
             cv::Point3f integrated_pos;
             for (float f=0;f < burn_duration;f+=0.01f) {
@@ -535,6 +542,10 @@ std::tuple<int,int,float> DroneController::calc_directional_burn(cv::Point3f dro
                     current_drone_pos,drone_vel, burn_direction,burn_accelleration_max,remaining_aim_duration,f);
                 viz_drone_trajectory.push_back(integrated_pos);
             }
+            //                }
+            //            }
+            //            thrust = TMP_thrust;
+            //            effective_burn_spin_up_duration = TMP_effective_burn_spin_up_duration;
         }
     } else if (_flight_mode == fm_take_off_aim) {
         remaining_aim_duration = dparams.full_bat_and_throttle_spinup_duration - static_cast<float>(time - take_off_start_time);

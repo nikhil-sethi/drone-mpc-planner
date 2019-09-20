@@ -129,7 +129,7 @@ private:
     const float max_bank_angle = 180; // TODO: move to dparams (betaflight setting)
     const float aim_duration = 0.2f; // TODO: move to dparams, slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
     const float transmission_delay_duration = 0.03f;
-    const float effective_burn_spin_up_duration = 0.1f; // the time to spin up from hover to max
+    float effective_burn_spin_up_duration = 0.1f; // the time to spin up from hover to max
     const float effective_burn_spin_down_duration = 0.1f; // the time to spin down from max to hover
     float thrust = 3.0f*GRAVITY;
     float ground_effect = 1.0f;
