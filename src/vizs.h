@@ -43,9 +43,9 @@ private:
 
     const int bufsize = 600;
 
-    const int fsizex = 925/4;
-    const int fsizey = 535/3;
-    const int line_width = 1;
+    const int fsizex = 1200/2;
+    const int fsizey = 1300/3;
+    const int line_width = 2;
     const float text_size = 0.3;
 
     std::mutex lock_plot_data;

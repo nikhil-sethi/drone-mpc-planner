@@ -4,14 +4,14 @@ using namespace std;
 
 cv::Scalar white(255,255,255);
 cv::Scalar black(0,0,0);
-cv::Scalar green(0,255,0);
-cv::Scalar blue(255,0,0);
-cv::Scalar red(0,0,255);
+cv::Scalar green(60,255,60);
+cv::Scalar blue(255,60,60);
+cv::Scalar red(60,60,255);
 cv::Scalar linecolors[] = {green,blue,red,cv::Scalar(0,255,255),cv::Scalar(255,255,0),cv::Scalar(255,0,255),cv::Scalar(128,128,255),cv::Scalar(255,128,128)};
 
 //cv::Scalar background_color(255,255,255);
-cv::Scalar fore_color(0,0,0);
-cv::Scalar background_color(255,255,255);
+cv::Scalar fore_color(255,255,255);
+cv::Scalar background_color(0,0,0);
 
 void Visualizer::init(VisionData *visdat, TrackerManager *imngr, DroneController *dctrl, DroneNavigation *dnav, MultiModule *rc, bool fromfile, DronePredictor *dprdct){
     _visdat = visdat;
@@ -54,27 +54,34 @@ void Visualizer::addPlotSample(void) {
         dt.push_back(data.dt);
         dt_target.push_back(1.f/pparams.fps);
 
-        posX.push_back(-data.posX);
-        posY.push_back(data.posY);
-        posZ.push_back(-data.posZ);
-        disparity.push_back(_dtrkr->image_item().disparity);
-        sdisparity.push_back(_dtrkr->image_item().disparity);
+        if (data.pos_valid) {
+            posX.push_back(-data.posX);
+            posY.push_back(data.posY);
+            posZ.push_back(-data.posZ);
+            disparity.push_back(_dtrkr->image_item().disparity);
+            sdisparity.push_back(_dtrkr->image_item().disparity);
 
-        sposX.push_back(-data.sposX);
-        sposY.push_back(data.sposY);
-        sposZ.push_back(-data.sposZ);
+            sposX.push_back(-data.sposX);
+            sposY.push_back(data.sposY);
+            sposZ.push_back(-data.sposZ);
 
-        setposX.push_back(-_dnav->setpoint_pos_world.x);
-        setposY.push_back(_dnav->setpoint_pos_world.y);
-        setposZ.push_back(-_dnav->setpoint_pos_world.z);
 
-        svelX.push_back(-data.svelX);
-        svelY.push_back(data.svelY);
-        svelZ.push_back(-data.svelZ);
+            setposX.push_back(-_dnav->setpoint_pos_world.x);
+            setposY.push_back(_dnav->setpoint_pos_world.y);
+            setposZ.push_back(-_dnav->setpoint_pos_world.z);
+        }
 
-        saccX.push_back(-data.saccX);
-        saccY.push_back(data.saccY);
-        saccZ.push_back(-data.saccZ);
+        if (data.vel_valid) {
+            svelX.push_back(-data.svelX);
+            svelY.push_back(data.svelY);
+            svelZ.push_back(-data.svelZ);
+        }
+
+        if (data.acc_valid) {
+            saccX.push_back(-data.saccX);
+            saccY.push_back(data.saccY);
+            saccZ.push_back(-data.saccZ);
+        }
 
         lock_plot_data.unlock();
         newdata.notify_all();
@@ -84,8 +91,8 @@ void Visualizer::addPlotSample(void) {
 void Visualizer::plot(void) {
     std::vector<cv::Mat> ims_trk;
     ims_trk.push_back(plot_xyd());
-    ims_trk.push_back(plot_all_position());
-    ims_trk.push_back(plot_all_velocity());
+    //    ims_trk.push_back(plot_all_position());
+    //    ims_trk.push_back(plot_all_velocity());
     //ims_trk.push_back(plot_all_acceleration());
     ims_trk.push_back(plot_all_control());
     plotframe = createRowImage(ims_trk,CV_8UC3);
@@ -96,20 +103,20 @@ cv::Mat Visualizer::plot_xyd(void) {
     ims_xyd.push_back(plot({disparity,sdisparity},"Disparity"));
 
 
-    cv::Point sp1(-_dnav->setpoint_pos_world.x*1000.f,-_dnav->setpoint_pos_world.z*1000.f);
+    cv::Point sp1(-_dctrl->viz_pos_after_burn.x*1000.f,-_dctrl->viz_pos_after_burn.z*1000.f);
     cv::Point min_xz_range,max_xz_range;
-    min_xz_range.x =-3000;
-    max_xz_range.x = 3000;
+    min_xz_range.x =-2000;
+    max_xz_range.x = 2000;
     min_xz_range.y = 0; // z
-    max_xz_range.y = 5000; // z
+    max_xz_range.y = 4000; // z
     ims_xyd.push_back(plotxy(posX,posZ, sp1,"PosXZ",min_xz_range,max_xz_range));
 
-    cv::Point sp2(-_dnav->setpoint_pos_world.x*1000.f,_dnav->setpoint_pos_world.y*1000.f);
+    cv::Point sp2(-_dctrl->viz_pos_after_burn.x*1000.f,_dctrl->viz_pos_after_burn.y*1000.f);
     cv::Point min_xy_range,max_xy_range;
-    min_xy_range.x =-3000;
-    max_xy_range.x = 3000;
-    min_xy_range.y =-3000;
-    max_xy_range.y = 3000;
+    min_xy_range.x =-2000;
+    max_xy_range.x = 2000;
+    min_xy_range.y =-2000;
+    max_xy_range.y = 2000;
     ims_xyd.push_back(plotxy(posX,posY, sp2, "PosXY",min_xy_range,max_xy_range));
 
     return createColumnImage(ims_xyd, CV_8UC3);
@@ -263,13 +270,13 @@ cv::Mat Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Point setpoint, std:
     x = x* scaleX + 2*line_width;
     y = setpoint.y - miny;
     y= fsizey - y*scaleY + 2*line_width;
-    cv::line(frame,cv::Point(0,y),cv::Point(frame.cols,y),cv::Scalar(80,80,150));
-    cv::line(frame,cv::Point(x,0),cv::Point(x,frame.rows),cv::Scalar(80,80,150));
+    cv::line(frame,cv::Point(0,y),cv::Point(frame.cols,y),blue);
+    cv::line(frame,cv::Point(x,0),cv::Point(x,frame.rows),blue);
 
 
     float dist_th_x = (_dnav->distance_threshold_mm())* scaleX + 2*line_width;
     float dist_th_y = (_dnav->distance_threshold_mm())* scaleY + 2*line_width;
-    cv::rectangle(frame,Point(x-dist_th_x,y-dist_th_y),Point(x+dist_th_x,y+dist_th_y),cv::Scalar(255,0,0));
+    cv::rectangle(frame,Point(x-dist_th_x,y-dist_th_y),Point(x+dist_th_x,y+dist_th_y),red);
 
     return frame;
 }
