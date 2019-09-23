@@ -576,7 +576,7 @@ std::tuple<bool, int,int,float> DroneController::calc_directional_burn(cv::Point
         viz_pos_after_burn = drone_pos_after_burn;
         viz_time_after_burn = viz_time_after_aim + static_cast<double>(burn_duration);
 
-        if (_fromfile){ // visualize the interception path
+//        if (_fromfile){ // visualize the interception path
             viz_drone_trajectory.clear();
 
             //            float TMP_thrust = thrust;
@@ -613,7 +613,7 @@ std::tuple<bool, int,int,float> DroneController::calc_directional_burn(cv::Point
         std::tie(viz_pos_after_burn, std::ignore) = predict_drone_state_after_spindown(integrated_pos, integrated_vel,burn_accelleration);
         viz_time_after_burn = viz_time_after_aim + static_cast<double>(burn_duration + effective_burn_spin_down_duration);
 
-        if (_fromfile){ // visualize the take off path
+//        if (_fromfile){ // visualize the take off path
             viz_drone_trajectory.clear();
             for (float f=0;f < burn_duration;f+=0.01f) {
                 std::tie (integrated_pos, std::ignore,std::ignore) = predict_drone_state_after_burn(
@@ -622,8 +622,7 @@ std::tuple<bool, int,int,float> DroneController::calc_directional_burn(cv::Point
                 if(!_camvol->is_inView (integrated_pos))
                     valid_burn = false;
             }
-        }
-
+//        }
     }
 
     _burn_direction_for_thrust_approx = burn_direction; // to be used later to approx effective thrust
