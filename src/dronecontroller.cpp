@@ -202,9 +202,13 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
             auto_throttle = tmp_hover_throttle;
         }
 
-        float remaining_aiming_time = aim_duration - static_cast<float>(time - interception_start_time);
-        if (remaining_aiming_time < 0)
-            _flight_mode = fm_interception_burn_start;
+        if (!PLACEHOLDER_VOLUME_CHECK) {
+            float remaining_aiming_time = aim_duration - static_cast<float>(time - interception_start_time);
+            if (remaining_aiming_time < 0)
+                _flight_mode = fm_interception_burn_start;
+        } else {
+             _flight_mode = fm_flying_pid_init;
+        }
         break;
     } case fm_interception_burn_start: {
         _flight_mode = fm_interception_burn;
@@ -322,6 +326,14 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
             auto_throttle = dparams.min_throttle;
         if (auto_throttle>JOY_BOUND_MAX)
             auto_throttle = JOY_BOUND_MAX;
+
+        if (state_drone.pos_valid && state_drone.vel_valid){
+            std::tie (std::ignore, std::ignore,std::ignore ) = calc_directional_burn(state_drone,state_insect,aim_duration,time);
+            if (!PLACEHOLDER_VOLUME_CHECK) {
+                _flight_mode = fm_retry_aim_start;
+            }
+        }
+
         break;
     } case fm_landing: {
         //slowly decrease throttle

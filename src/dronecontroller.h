@@ -135,6 +135,8 @@ private:
     float ground_effect = 1.0f;
     const float lift_off_dist_take_off_aim = 0.02f;
 
+    int PLACEHOLDER_VOLUME_CHECK = 0;
+
     double take_off_start_time = 0;
     double interception_start_time = 0;
     track_data drone_1g_start_pos;
