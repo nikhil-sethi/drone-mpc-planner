@@ -163,7 +163,8 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
             state_insect.svelZ = 0;
         }
         bool valid_burn;
-        std::tie (valid_burn, auto_roll, auto_pitch,auto_burn_duration ) = calc_directional_burn(drone_vel,state_drone_takeoff,state_insect,time-10,time);
+        cv::Point3f dump_drone_pos, dump_drone_vel;
+        std::tie (valid_burn, auto_roll, auto_pitch,auto_burn_duration, dump_drone_pos, dump_drone_vel) = calc_directional_burn(drone_vel,state_drone_takeoff,state_insect,time-10,time);
         if (static_cast<float>(time - take_off_start_time) > dparams.full_bat_and_throttle_spinup_duration) {
             if(valid_burn){
                 _flight_mode = fm_max_burn;
@@ -216,13 +217,13 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
             state_insect.svelZ = 0;
         }
 
-        bool valid_burn;
+        uint valid_burn;
         if (state_drone.vel_valid){
             //use normal state
-            std::tie (valid_burn, auto_roll, auto_pitch,auto_burn_duration ) = calc_directional_burn(state_drone,state_insect,interception_start_time,time);
+            std::tie (valid_burn, auto_roll, auto_pitch,auto_burn_duration ) = calc_directional_burn_with_reburn_validation(state_drone,state_insect,interception_start_time,time);
             auto_throttle = tmp_hover_throttle;
         } else {
-            std::tie (valid_burn, auto_roll, auto_pitch,auto_burn_duration ) = calc_directional_burn(drone_1g_start_pos, state_drone,state_insect,interception_start_time,time);
+            std::tie (valid_burn, auto_roll, auto_pitch,auto_burn_duration ) = calc_directional_burn_with_reburn_validation (drone_1g_start_pos, state_drone,state_insect,interception_start_time,time);
             auto_throttle = tmp_hover_throttle;
         }
 
@@ -284,10 +285,10 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
             state_insect.svelY = 0;
             state_insect.svelZ = 0;
         }
-        bool valid_burn;
-        std::tie (valid_burn, auto_roll, auto_pitch, auto_burn_duration) = calc_directional_burn(state_drone,state_insect,aim_duration,time);
+        uint valid_burn;
+        std::tie (valid_burn, auto_roll, auto_pitch, auto_burn_duration) = calc_directional_burn_with_reburn_validation(state_drone,state_insect,aim_duration,time);
         auto_throttle = tmp_hover_throttle;
-        if(!valid_burn)
+        if(valid_burn>0)
             _flight_mode =   fm_disarmed;
         break;
     } case fm_flying_pid_init: {
@@ -462,12 +463,13 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         velz_sp << "; ";
 }
 
-std::tuple<bool, int, int, float> DroneController::calc_directional_burn(track_data state_drone,track_data state_insect, double aim_start_time, double time) {
+std::tuple<bool, int, int, float, cv::Point3f, cv::Point3f> DroneController::calc_directional_burn(track_data state_drone,track_data state_insect, double aim_start_time, double time) {
     cv::Point3f drone_vel(state_drone.svelX,state_drone.svelY,state_drone.svelZ);
     return calc_directional_burn(drone_vel,state_drone,state_insect,aim_start_time,time);
 }
 
-std::tuple<bool, int, int, float> DroneController::calc_directional_burn(track_data state_drone_start_1g, track_data state_drone,track_data state_insect, double aim_start_time, double time) {
+
+std::tuple<bool, int, int, float, cv::Point3f, cv::Point3f> DroneController::calc_directional_burn(track_data state_drone_start_1g, track_data state_drone,track_data state_insect, double aim_start_time, double time) {
     //calculate the exact speed of the drone assuming it started from the start position with zero speed, some dt ago.
     cv::Point3f drone_vel;
     float dt =  state_drone.time - state_drone_start_1g.time;
@@ -477,7 +479,70 @@ std::tuple<bool, int, int, float> DroneController::calc_directional_burn(track_d
     return calc_directional_burn(drone_vel,state_drone,state_insect,aim_start_time,time);
 }
 
-std::tuple<bool, int,int,float> DroneController::calc_directional_burn(cv::Point3f drone_vel, track_data state_drone, track_data state_insect, double aim_start_time, double time) {
+
+std::tuple<uint, int, int, float> DroneController::calc_directional_burn_with_reburn_validation(track_data state_drone,track_data state_insect,double aim_start_time, double time){
+
+    // CALC THE BURN TO THE INSECT AS USUAL...
+    auto [valid_burn, auto_roll_burn,auto_pitch_burn,burn_duration, drone_pos_end, drone_vel_end] = calc_directional_burn(state_drone,state_insect, aim_start_time, time);
+
+    // CALC A BURN BACK TO THE CURRENT POSITION:
+    state_insect = state_drone;
+    state_insect.svelX = 0;
+    state_insect.svelY = 0;
+    state_insect.svelZ = 0;
+
+    state_drone.posX = drone_pos_end.x;
+    state_drone.posY = drone_pos_end.y;
+    state_drone.posZ = drone_pos_end.z;
+    state_drone.svelX = drone_vel_end.x;
+    state_drone.svelY = drone_vel_end.y;
+    state_drone.svelZ = drone_vel_end.z;
+
+    auto [valid_reburn, auto_roll_reburn, auto_pitch_reburn, reburn_duration, drone_pos_back, drone_vel_back] = calc_directional_burn(state_drone,state_insect, aim_start_time, time);
+
+    // CHECK IF BOTH BURNS ARE VALID:
+    if(valid_burn && valid_reburn){
+        return std::make_tuple(0, auto_roll_burn, auto_pitch_burn, burn_duration);
+    } else if(valid_burn && !valid_reburn){
+        return std::make_tuple(1, auto_roll_burn, auto_pitch_burn, burn_duration);
+    } else{
+        return std::make_tuple(2, auto_roll_burn, auto_pitch_burn, burn_duration);
+    }
+}
+
+
+std::tuple<uint, int, int, float> DroneController::calc_directional_burn_with_reburn_validation(track_data state_drone_start_1g, track_data state_drone,track_data state_insect,double aim_start_time, double time){
+
+    // CALC THE BURN TO THE INSECT AS USUAL...
+    auto [valid_burn, auto_roll_burn,auto_pitch_burn,burn_duration, drone_pos_end, drone_vel_end] = calc_directional_burn(state_drone_start_1g, state_drone,state_insect, aim_start_time, time);
+
+    // CALC A BURN BACK TO THE CURRENT POSITION:
+    state_insect = state_drone;
+    state_insect.svelX = 0;
+    state_insect.svelY = 0;
+    state_insect.svelZ = 0;
+
+    state_drone.posX = drone_pos_end.x;
+    state_drone.posY = drone_pos_end.y;
+    state_drone.posZ = drone_pos_end.z;
+    state_drone.svelX = drone_vel_end.x;
+    state_drone.svelY = drone_vel_end.y;
+    state_drone.svelZ = drone_vel_end.z;
+
+    auto [valid_reburn, auto_roll_reburn, auto_pitch_reburn, reburn_duration, drone_pos_back, drone_vel_back] = calc_directional_burn(state_drone,state_insect, aim_start_time, time);
+
+    // CHECK IF BOTH BURNS ARE VALID:
+    if(valid_burn && valid_reburn){
+        return std::make_tuple(0, auto_roll_burn, auto_pitch_burn, burn_duration);
+    } else if(valid_burn && !valid_reburn){
+        return std::make_tuple(1, auto_roll_burn, auto_pitch_burn, burn_duration);
+    } else{
+        return std::make_tuple(2, auto_roll_burn, auto_pitch_burn, burn_duration);
+    }
+}
+
+
+std::tuple<bool, int,int,float, cv::Point3f, cv::Point3f> DroneController::calc_directional_burn(cv::Point3f drone_vel, track_data state_drone, track_data state_insect, double aim_start_time, double time) {
 
     cv::Point3f current_drone_pos = state_drone.Pos();
     cv::Point3f current_insect_pos = state_insect.Pos();
@@ -576,29 +641,29 @@ std::tuple<bool, int,int,float> DroneController::calc_directional_burn(cv::Point
         viz_pos_after_burn = drone_pos_after_burn;
         viz_time_after_burn = viz_time_after_aim + static_cast<double>(burn_duration);
 
-//        if (_fromfile){ // visualize the interception path
+        if (_fromfile) // visualize the interception path
             viz_drone_trajectory.clear();
 
-            //            float TMP_thrust = thrust;
-            //            float TMP_effective_burn_spin_up_duration = effective_burn_spin_up_duration;
-            //            for (float j = 0; j < 0.55f; j+=0.05f) {
-            //                effective_burn_spin_up_duration = j;
-            //                for (int i = 10; i < 100; i+=30) {
-            //                    thrust = i;
-            burn_accelleration_max = burn_direction * thrust;
-            cv::Point3f integrated_pos;
-            for (float f=0;f < burn_duration;f+=0.01f) {
-                std::tie (integrated_pos, std::ignore,std::ignore) = predict_drone_state_after_burn(
-                    current_drone_pos,drone_vel, burn_direction,burn_accelleration_max,remaining_aim_duration,f);
+        //            float TMP_thrust = thrust;
+        //            float TMP_effective_burn_spin_up_duration = effective_burn_spin_up_duration;
+        //            for (float j = 0; j < 0.55f; j+=0.05f) {
+        //                effective_burn_spin_up_duration = j;
+        //                for (int i = 10; i < 100; i+=30) {
+        //                    thrust = i;
+        burn_accelleration_max = burn_direction * thrust;
+        cv::Point3f integrated_pos;
+        for (float f=0;f < burn_duration;f+=0.01f) {
+            std::tie (integrated_pos, std::ignore,std::ignore) = predict_drone_state_after_burn(
+                current_drone_pos,drone_vel, burn_direction,burn_accelleration_max,remaining_aim_duration,f);
+            if (_fromfile)
                 viz_drone_trajectory.push_back(integrated_pos);
-                if(!_camvol->is_inView (integrated_pos))
-                    valid_burn = false;
-            }
-            //                }
-            //            }
-            //            thrust = TMP_thrust;
-            //            effective_burn_spin_up_duration = TMP_effective_burn_spin_up_duration;
+            if(!_camvol->is_inView (integrated_pos))
+                valid_burn = false;
         }
+        //                }
+        //            }
+        //            thrust = TMP_thrust;
+        //            effective_burn_spin_up_duration = TMP_effective_burn_spin_up_duration;
     } else if (_flight_mode == fm_take_off_aim) {
         remaining_aim_duration = dparams.full_bat_and_throttle_spinup_duration - static_cast<float>(time - take_off_start_time);
         if (remaining_aim_duration < 0)
@@ -613,20 +678,21 @@ std::tuple<bool, int,int,float> DroneController::calc_directional_burn(cv::Point
         std::tie(viz_pos_after_burn, std::ignore) = predict_drone_state_after_spindown(integrated_pos, integrated_vel,burn_accelleration);
         viz_time_after_burn = viz_time_after_aim + static_cast<double>(burn_duration + effective_burn_spin_down_duration);
 
-//        if (_fromfile){ // visualize the take off path
+        if (_fromfile) // visualize the take off path
             viz_drone_trajectory.clear();
-            for (float f=0;f < burn_duration;f+=0.01f) {
-                std::tie (integrated_pos, std::ignore,std::ignore) = predict_drone_state_after_burn(
-                    current_drone_pos,drone_vel, burn_direction,burn_accelleration_max,remaining_aim_duration,f);
+
+        for (float f=0;f < burn_duration;f+=0.01f) {
+            std::tie (integrated_pos, std::ignore,std::ignore) = predict_drone_state_after_burn(
+                current_drone_pos, drone_vel, burn_direction,burn_accelleration_max,remaining_aim_duration,f);
+            if (_fromfile)
                 viz_drone_trajectory.push_back(integrated_pos);
-                if(!_camvol->is_inView (integrated_pos))
-                    valid_burn = false;
-            }
-//        }
+            if(!_camvol->is_inView (integrated_pos))
+                valid_burn = false;
+        }
     }
 
     _burn_direction_for_thrust_approx = burn_direction; // to be used later to approx effective thrust
-    return std::make_tuple(valid_burn, auto_roll_burn,auto_pitch_burn,burn_duration);
+    return std::make_tuple(valid_burn, auto_roll_burn, auto_pitch_burn, burn_duration, current_drone_pos, drone_vel);
 }
 
 //calculate the predicted drone location after a burn
