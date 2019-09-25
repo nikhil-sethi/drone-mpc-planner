@@ -135,8 +135,6 @@ private:
     float ground_effect = 1.0f;
     const float lift_off_dist_take_off_aim = 0.02f;
 
-    int PLACEHOLDER_VOLUME_CHECK = 0;
-
     double take_off_start_time = 0;
     double interception_start_time = 0;
     track_data drone_1g_start_pos;
@@ -157,16 +155,16 @@ private:
     void approx_effective_thrust(track_data state_drone, cv::Point3f burn_direction, float burn_duration, float dt);
     std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> predict_drone_state_after_burn(cv::Point3f current_drone_pos, cv::Point3f drone_vel, cv::Point3f burn_direction, cv::Point3f burn_accelleration_max, float remaining_aim_duration, float burn_duration);
     std::tuple<cv::Point3f, cv::Point3f> predict_drone_state_after_spindown(cv::Point3f integrated_pos, cv::Point3f integrated_vel, cv::Point3f burn_accelleration);
-    std::tuple<bool, int, int, float, cv::Point3f, cv::Point3f> calc_directional_burn(track_data state_drone,             track_data state_insect,                            double aim_start_time, double time);
-    std::tuple<bool, int, int, float, cv::Point3f, cv::Point3f> calc_directional_burn(track_data state_drone_start_1g,    track_data state_drone, track_data state_insect,    double aim_start_time, double time);
-    std::tuple<bool, int, int, float, cv::Point3f, cv::Point3f> calc_directional_burn(cv::Point3f drone_vel,              track_data state_drone, track_data state_insect,    double aim_start_time, double time);
+    std::tuple<bool, int, int, float, cv::Point3f, cv::Point3f> calc_directional_burn(                                  track_data state_drone, track_data state_insect, double aim_start_time, double time);
+    std::tuple<bool, int, int, float, cv::Point3f, cv::Point3f> calc_directional_burn(track_data state_drone_start_1g,  track_data state_drone, track_data state_insect, double aim_start_time, double time);
+    std::tuple<bool, int, int, float, cv::Point3f, cv::Point3f> calc_directional_burn(cv::Point3f drone_vel,            track_data state_drone, track_data state_insect, double aim_start_time, double time);
 
     /** Asumes that after the first burn a second burn is excecuted which shall bring the drone back to the current position.
      * @param out[0] burn_valid is 0 if the drone can burn to the insect an back to current position,
      *                              1 if the drone can burn to the insect but not back,
      *                              2 if the drone can not even burn to the insect (without leaving the camera view).*/
-    std::tuple<uint, int, int, float> calc_directional_burn_with_reburn_validation(track_data state_drone,track_data state_insect,                           double aim_start_time, double time);
-    std::tuple<uint, int, int, float> calc_directional_burn_with_reburn_validation(track_data state_drone_start_1g,        track_data state_drone,track_data state_insect,                           double aim_start_time, double time);
+    std::tuple<uint, int, int, float> calc_directional_burn_with_reburn_validation(                                 track_data state_drone, track_data state_insect, double aim_start_time, double time);
+    std::tuple<uint, int, int, float> calc_directional_burn_with_reburn_validation(track_data state_drone_start_1g, track_data state_drone, track_data state_insect, double aim_start_time, double time);
 
 
     std::tuple<bool, int, int, float, cv::Point3f> calc_directional_burn_and_end_of_burn_state(cv::Point3f drone_vel,              track_data state_drone, track_data state_insect,    double aim_start_time, double time);

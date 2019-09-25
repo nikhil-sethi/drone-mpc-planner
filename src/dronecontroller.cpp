@@ -289,7 +289,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         std::tie (valid_burn, auto_roll, auto_pitch, auto_burn_duration) = calc_directional_burn_with_reburn_validation(state_drone,state_insect,aim_duration,time);
         auto_throttle = tmp_hover_throttle;
         if(valid_burn>0)
-            _flight_mode =   fm_disarmed;
+            _flight_mode = fm_flying_pid_init;
         break;
     } case fm_flying_pid_init: {
         rollErrI = 0;
@@ -365,8 +365,9 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
             auto_throttle = JOY_BOUND_MAX;
 
         if (state_drone.pos_valid && state_drone.vel_valid){
-            std::tie (std::ignore, std::ignore,std::ignore ) = calc_directional_burn(state_drone,state_insect,aim_duration,time);
-            if (!PLACEHOLDER_VOLUME_CHECK) {
+            uint valid_burn;
+            std::tie (valid_burn, std::ignore, std::ignore, std::ignore) = calc_directional_burn_with_reburn_validation(state_drone, state_insect, aim_duration, time);
+            if (valid_burn==0) {
                 _flight_mode = fm_retry_aim_start;
             }
         }
@@ -483,7 +484,7 @@ std::tuple<bool, int, int, float, cv::Point3f, cv::Point3f> DroneController::cal
 std::tuple<uint, int, int, float> DroneController::calc_directional_burn_with_reburn_validation(track_data state_drone,track_data state_insect,double aim_start_time, double time){
 
     // CALC THE BURN TO THE INSECT AS USUAL...
-    auto [valid_burn, auto_roll_burn,auto_pitch_burn,burn_duration, drone_pos_end, drone_vel_end] = calc_directional_burn(state_drone,state_insect, aim_start_time, time);
+    auto [valid_burn, auto_roll_burn, auto_pitch_burn, burn_duration, drone_pos_end, drone_vel_end] = calc_directional_burn(state_drone,state_insect, aim_start_time, time);
 
     // CALC A BURN BACK TO THE CURRENT POSITION:
     state_insect = state_drone;
@@ -498,7 +499,8 @@ std::tuple<uint, int, int, float> DroneController::calc_directional_burn_with_re
     state_drone.svelY = drone_vel_end.y;
     state_drone.svelZ = drone_vel_end.z;
 
-    auto [valid_reburn, auto_roll_reburn, auto_pitch_reburn, reburn_duration, drone_pos_back, drone_vel_back] = calc_directional_burn(state_drone,state_insect, aim_start_time, time);
+    uint valid_reburn;
+    std::tie(valid_reburn, std::ignore, std::ignore, std::ignore, std::ignore, std::ignore) = calc_directional_burn(state_drone,state_insect, aim_start_time, time);
 
     // CHECK IF BOTH BURNS ARE VALID:
     if(valid_burn && valid_reburn){
@@ -511,10 +513,10 @@ std::tuple<uint, int, int, float> DroneController::calc_directional_burn_with_re
 }
 
 
-std::tuple<uint, int, int, float> DroneController::calc_directional_burn_with_reburn_validation(track_data state_drone_start_1g, track_data state_drone,track_data state_insect,double aim_start_time, double time){
+std::tuple<uint, int, int, float> DroneController::calc_directional_burn_with_reburn_validation(track_data state_drone_start_1g, track_data state_drone, track_data state_insect, double aim_start_time, double time){
 
     // CALC THE BURN TO THE INSECT AS USUAL...
-    auto [valid_burn, auto_roll_burn,auto_pitch_burn,burn_duration, drone_pos_end, drone_vel_end] = calc_directional_burn(state_drone_start_1g, state_drone,state_insect, aim_start_time, time);
+    auto [valid_burn, auto_roll_burn,auto_pitch_burn,burn_duration, drone_pos_end, drone_vel_end] = calc_directional_burn(state_drone_start_1g, state_drone, state_insect, aim_start_time, time);
 
     // CALC A BURN BACK TO THE CURRENT POSITION:
     state_insect = state_drone;
@@ -529,7 +531,8 @@ std::tuple<uint, int, int, float> DroneController::calc_directional_burn_with_re
     state_drone.svelY = drone_vel_end.y;
     state_drone.svelZ = drone_vel_end.z;
 
-    auto [valid_reburn, auto_roll_reburn, auto_pitch_reburn, reburn_duration, drone_pos_back, drone_vel_back] = calc_directional_burn(state_drone,state_insect, aim_start_time, time);
+    uint valid_reburn;
+    std::tie(valid_reburn, std::ignore, std::ignore, std::ignore, std::ignore, std::ignore) = calc_directional_burn(state_drone,state_insect, aim_start_time, time);
 
     // CHECK IF BOTH BURNS ARE VALID:
     if(valid_burn && valid_reburn){
