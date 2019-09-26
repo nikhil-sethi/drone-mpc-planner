@@ -306,12 +306,12 @@ void DroneController::control(track_data state_drone,track_data state_target, cv
         if (auto_throttle>JOY_BOUND_MAX)
             auto_throttle = JOY_BOUND_MAX;
 
-        bool feasible_insect = state_insect.posX!=0 && state_insect.posY!=0 && state_insect.posZ!=0;
+        bool feasible_insect = state_target.posX!=0 && state_target.posY!=0 && state_target.posZ!=0;
         if (state_drone.pos_valid && state_drone.vel_valid && feasible_insect){
             uint valid_burn;
-            std::tie (valid_burn, std::ignore, std::ignore, std::ignore) = calc_directional_burn_with_reburn_validation(state_drone, state_insect, time, time);
+            std::tie (valid_burn, std::ignore, std::ignore, std::ignore) = calc_directional_burn_with_reburn_validation(state_drone, state_target, time, time);
             if (valid_burn==0) {
-                std::cout << "state_insect before switching to retry_aim_start> " << state_insect.posX <<", "<< state_insect.posY <<", "<< state_insect.posZ << std::endl;
+//                std::cout << "state_insect before switching to retry_aim_start> " << state_insect.posX <<", "<< state_insect.posY <<", "<< state_insect.posZ << std::endl;
                 _flight_mode = fm_retry_aim_start;
             }
         }
