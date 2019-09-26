@@ -127,9 +127,7 @@ void DroneController::control(track_data state_drone,track_data state_target, cv
         state_drone_takeoff.posZ = _dtrk->drone_startup_location().z;
         cv::Point3f drone_vel = {0};
 
-
-        cv::Point3f dump_drone_pos, dump_drone_vel;
-        std::tie (std::ignore, auto_roll, auto_pitch,auto_burn_duration, dump_drone_pos, dump_drone_vel) = calc_directional_burn(drone_vel,state_drone_takeoff,state_target,time-10,time);
+        std::tie (std::ignore, auto_roll, auto_pitch,auto_burn_duration, std::ignore,std::ignore) = calc_directional_burn(drone_vel,state_drone_takeoff,state_target,time-10,time);
         if (static_cast<float>(time - take_off_start_time) > dparams.full_bat_and_throttle_spinup_duration) {
             _flight_mode = fm_max_burn;
             std::cout << "Take off burn" << std::endl;
