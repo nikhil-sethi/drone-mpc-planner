@@ -72,54 +72,27 @@ int bound_joystick_value(int v) {
     return v;
 }
 
-void DroneController::control(track_data state_drone,track_data state_insect, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, cv::Point3f setpoint_acc, double time) {
+void DroneController::control(track_data state_drone,track_data state_target, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, cv::Point3f setpoint_acc, double time) {
 
     if (!_fromfile)
         readJoystick();
     if (!pparams.insect_logging_mode)
         process_joystick();
 
-    // Roll Control - X
-    posErrX = state_drone.sposX - setpoint_pos.x;              // position error
-    if (posErrX>3.0f)
-        posErrX = 3.0f;
-    if (posErrX<-3.0f)
-        posErrX = -3.0f;
-    velx_sp = posErrX*gain_roll_pos/1000.f;           // desired velocity
-    velErrX = state_drone.svelX + velx_sp - setpoint_vel.x;    // velocity error
-    accx_sp = velErrX*gain_roll_vel/100;              // desired acceleration
-    accErrX = state_drone.saccX + accx_sp - setpoint_acc.x;    // acceleration error
 
-    // Altitude Control - Y
-    posErrY = state_drone.sposY - setpoint_pos.y;              // position error
-    vely_sp = posErrY*gain_throttle_pos/1000.f;       // (inversed) desired velocity
-    velErrY = state_drone.svelY + vely_sp - setpoint_vel.y;    // velocity error
-    accy_sp = velErrY*gain_throttle_vel/100;          // (inversed) desired acceleration
-    accErrY = state_drone.saccY + accy_sp;// - setpoint_acc.y;    // acceleration error
+    if (recovery_mode && _joy_state!=js_waypoint)
+        setpoint_pos = recovery_pos;
 
-    float tmptbf = dparams.throttle_bank_factor; // if we are higher then the target, use the fact more attitude makes us go down
-    if (posErrY> 0 && abs(posErrX)<0.3f && abs(posErrZ)<0.3f) {
-        tmptbf = 0;
+    if(_joy_state==js_waypoint || recovery_mode){
+        state_target.posX = setpoint_pos.x;
+        state_target.posY = setpoint_pos.y;
+        state_target.posZ = setpoint_pos.z;
+        state_target.svelX = 0;
+        state_target.svelY = 0;
+        state_target.svelZ = 0;
     }
 
-    // Pitch Control - Z
-    posErrZ = state_drone.sposZ - setpoint_pos.z;              // position error
-    if (posErrZ>1.5f)
-        posErrZ = 1.5f;
-    if (posErrZ<-1.5f)
-        posErrZ = -1.5f;
-    velz_sp = posErrZ*gain_pitch_pos/1000.f;          // desired velocity
-    velErrZ = state_drone.svelZ + velz_sp - setpoint_vel.z;    // velocity error
-    accz_sp = velErrZ*gain_pitch_vel/100;             // desired acceleration
-    accErrZ = state_drone.saccZ + accz_sp - setpoint_acc.z;    // acceleration error
-
-    //when tuning, reset integrators when I gain set to 0:
-    if (gain_throttle_i < 1)
-        throttleErrI = 0;
-    if (gain_roll_i < 1)
-        rollErrI = 0;
-    if (gain_pitch_i < 1)
-        pitchErrI = 0;
+    calc_pid_error(state_drone,setpoint_pos,setpoint_vel,setpoint_acc);
 
     int throttle,roll,pitch,yaw;
     bool joy_control = false;
@@ -154,23 +127,12 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         state_drone_takeoff.posZ = _dtrk->drone_startup_location().z;
         cv::Point3f drone_vel = {0};
 
-        if(_joy_state==js_waypoint){
-            state_insect.posX = setpoint_pos.x;
-            state_insect.posY = setpoint_pos.y;
-            state_insect.posZ = setpoint_pos.z;
-            state_insect.svelX = 0;
-            state_insect.svelY = 0;
-            state_insect.svelZ = 0;
-        }
-        bool valid_burn;
+
         cv::Point3f dump_drone_pos, dump_drone_vel;
-        std::tie (valid_burn, auto_roll, auto_pitch,auto_burn_duration, dump_drone_pos, dump_drone_vel) = calc_directional_burn(drone_vel,state_drone_takeoff,state_insect,time-10,time);
+        std::tie (std::ignore, auto_roll, auto_pitch,auto_burn_duration, dump_drone_pos, dump_drone_vel) = calc_directional_burn(drone_vel,state_drone_takeoff,state_target,time-10,time);
         if (static_cast<float>(time - take_off_start_time) > dparams.full_bat_and_throttle_spinup_duration) {
-            if(valid_burn){
-                _flight_mode = fm_max_burn;
-                std::cout << "Take off burn" << std::endl;
-            }else
-                _flight_mode = fm_disarmed;
+            _flight_mode = fm_max_burn;
+            std::cout << "Take off burn" << std::endl;
         }
         break;
     } case fm_max_burn: {
@@ -208,36 +170,30 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         [[fallthrough]];
     }   case fm_interception_aim: {
 
-        if(_joy_state==js_waypoint){
-            state_insect.posX = setpoint_pos.x;
-            state_insect.posY = setpoint_pos.y;
-            state_insect.posZ = setpoint_pos.z;
-            state_insect.svelX = 0;
-            state_insect.svelY = 0;
-            state_insect.svelZ = 0;
-        }
-
         uint valid_burn;
         if (state_drone.vel_valid){
             //use normal state
-            std::tie (valid_burn, auto_roll, auto_pitch,auto_burn_duration ) = calc_directional_burn_with_reburn_validation(state_drone,state_insect,interception_start_time,time);
+            std::tie (valid_burn, auto_roll, auto_pitch,auto_burn_duration ) = calc_directional_burn_with_reburn_validation(state_drone,state_target,interception_start_time,time);
             auto_throttle = tmp_hover_throttle;
         } else {
-            std::tie (valid_burn, auto_roll, auto_pitch,auto_burn_duration ) = calc_directional_burn_with_reburn_validation (drone_1g_start_pos, state_drone,state_insect,interception_start_time,time);
+            std::tie (valid_burn, auto_roll, auto_pitch,auto_burn_duration ) = calc_directional_burn_with_reburn_validation (drone_1g_start_pos, state_drone,state_target,interception_start_time,time);
             auto_throttle = tmp_hover_throttle;
         }
 
-        if (valid_burn) {
+        if (valid_burn && !recovery_mode) {
             float remaining_aiming_time = aim_duration - static_cast<float>(time - interception_start_time);
             if (remaining_aiming_time < 0)
                 _flight_mode = fm_interception_burn_start;
         } else {
-             _flight_mode = fm_flying_pid_init;
+            _flight_mode = fm_flying_pid_init;
         }
         break;
     } case fm_interception_burn_start: {
         _flight_mode = fm_interception_burn;
         auto_throttle = JOY_BOUND_MAX;
+
+        if (!recovery_mode)
+            recovery_pos = state_drone.Pos();
         std::cout << "Burning" << std::endl;
         [[fallthrough]];
     } case fm_interception_burn: {
@@ -249,23 +205,11 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
     } case fm_interception_burn_spin_down: {
         auto_throttle = tmp_hover_throttle;
         if (static_cast<float>(time - interception_start_time) > aim_duration + auto_burn_duration + effective_burn_spin_down_duration)
-            _flight_mode = fm_interception_1g;
-        break;
-    } case fm_interception_1g: {
-        //only control throttle:
-        auto_pitch = JOY_MIDDLE;
-        auto_roll = JOY_MIDDLE;
-        auto_throttle = tmp_hover_throttle;
-        throttle = auto_throttle;
-
-        if (static_cast<float>(time - interception_start_time) > aim_duration + auto_burn_duration) //weird burn time is way too short?!
             _flight_mode = fm_retry_aim_start;
-        if (time - interception_start_time > 2) // TODO: detect if we got it or stop at some sensible moment.
-            _flight_mode = fm_flying_pid_init;
         break;
     }  case fm_retry_aim_start: {
         interception_start_time = time;
-
+        recovery_mode = !recovery_mode;
         if (!state_drone.pos_valid || !state_drone.vel_valid) {
             throttle = auto_throttle;
             pitch = JOY_MIDDLE;
@@ -277,18 +221,10 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         std::cout << "Re-aiming" << std::endl;
         _burn_direction_for_thrust_approx = {0};
 
-        if(_joy_state==js_waypoint){
-            state_insect.posX = setpoint_pos.x;
-            state_insect.posY = setpoint_pos.y;
-            state_insect.posZ = setpoint_pos.z;
-            state_insect.svelX = 0;
-            state_insect.svelY = 0;
-            state_insect.svelZ = 0;
-        }
         uint valid_burn;
-        std::tie (valid_burn, auto_roll, auto_pitch, auto_burn_duration) = calc_directional_burn_with_reburn_validation(state_drone,state_insect,aim_duration,time);
+        std::tie (valid_burn, auto_roll, auto_pitch, auto_burn_duration) = calc_directional_burn_with_reburn_validation(state_drone,state_target,aim_duration,time);
         auto_throttle = tmp_hover_throttle;
-        if(valid_burn>0)
+        if(valid_burn>0 && !recovery_mode)
             _flight_mode = fm_flying_pid_init;
         break;
     } case fm_flying_pid_init: {
@@ -342,6 +278,11 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
                 auto_pitch = JOY_MIDDLE/3;
         }
 
+        float tmptbf = dparams.throttle_bank_factor; // if we are higher then the target, use the fact more attitude makes us go down
+        if (posErrY> 0 && abs(posErrX)<0.3f && abs(posErrZ)<0.3f) {
+            tmptbf = 0;
+        }
+
         if (fabs(auto_roll) > fabs(auto_pitch)){
             //auto_throttle += tmptbf*abs(auto_roll);
             float roll_angle = static_cast<float>(auto_roll)/JOY_MIDDLE*M_PIf32;
@@ -367,7 +308,7 @@ void DroneController::control(track_data state_drone,track_data state_insect, cv
         bool feasible_insect = state_insect.posX!=0 && state_insect.posY!=0 && state_insect.posZ!=0;
         if (state_drone.pos_valid && state_drone.vel_valid && feasible_insect){
             uint valid_burn;
-            std::tie (valid_burn, std::ignore, std::ignore, std::ignore) = calc_directional_burn_with_reburn_validation(state_drone, state_insect, aim_duration, time);
+            std::tie (valid_burn, std::ignore, std::ignore, std::ignore) = calc_directional_burn_with_reburn_validation(state_drone, state_target, aim_duration, time);
             if (valid_burn==0) {
                 _flight_mode = fm_retry_aim_start;
             }
@@ -585,7 +526,7 @@ std::tuple<bool, int,int,float, cv::Point3f, cv::Point3f> DroneController::calc_
             drone_vel += vel_because_aim; // the velocity state info lags behind because of the filtering. So, add some predictive info
         }
     }
-
+    
 
     //predict drone location at the moment of the upcoming burn since the drone will have a delayed
     //reaction, so we need to calcuate this from that point on, which means we need to do a small
@@ -607,9 +548,9 @@ std::tuple<bool, int,int,float, cv::Point3f, cv::Point3f> DroneController::calc_
 
         cv::Point3f integrated_pos, integrated_vel;
         std::tie(integrated_pos, integrated_vel, std::ignore)
-                = predict_drone_state_after_burn(current_drone_pos, drone_vel, burn_direction,
-                                                 burn_accelleration_max,remaining_aim_duration,
-                                                 burn_duration);
+            = predict_drone_state_after_burn(current_drone_pos, drone_vel, burn_direction,
+                                             burn_accelleration_max,remaining_aim_duration,
+                                             burn_duration);
 
         drone_pos_after_burn = integrated_pos;
         insect_pos_after_burn = current_insect_pos + (remaining_aim_duration+burn_duration) * current_insect_vel;
@@ -778,7 +719,7 @@ std::tuple<cv::Point3f, cv::Point3f> DroneController::predict_drone_state_after_
     // Phase: spin down
     integrated_pos += 0.25f*burn_accelleration*powf(effective_burn_spin_down_duration,2) + integrated_vel * effective_burn_spin_down_duration;
     integrated_vel += burn_accelleration * effective_burn_spin_down_duration;
-
+    
 
     //    // Phase: 1G
     //    if (remaining_1g_duration > 0)
@@ -836,6 +777,45 @@ void DroneController::approx_effective_thrust(track_data state_drone, cv::Point3
 
     }
     thrust = static_cast<float>(norm(acc)) / ground_effect;
+}
+
+void DroneController::calc_pid_error(track_data state_drone, cv::Point3f setpoint_pos,cv::Point3f setpoint_vel,cv::Point3f setpoint_acc) {
+    // Roll Control - X
+    posErrX = state_drone.sposX - setpoint_pos.x;              // position error
+    if (posErrX>3.0f)
+        posErrX = 3.0f;
+    if (posErrX<-3.0f)
+        posErrX = -3.0f;
+    velx_sp = posErrX*gain_roll_pos/1000.f;           // desired velocity
+    velErrX = state_drone.svelX + velx_sp - setpoint_vel.x;    // velocity error
+    accx_sp = velErrX*gain_roll_vel/100;              // desired acceleration
+    accErrX = state_drone.saccX + accx_sp - setpoint_acc.x;    // acceleration error
+
+    // Altitude Control - Y
+    posErrY = state_drone.sposY - setpoint_pos.y;              // position error
+    vely_sp = posErrY*gain_throttle_pos/1000.f;       // (inversed) desired velocity
+    velErrY = state_drone.svelY + vely_sp - setpoint_vel.y;    // velocity error
+    accy_sp = velErrY*gain_throttle_vel/100;          // (inversed) desired acceleration
+    accErrY = state_drone.saccY + accy_sp;// - setpoint_acc.y;    // acceleration error
+
+    // Pitch Control - Z
+    posErrZ = state_drone.sposZ - setpoint_pos.z;              // position error
+    if (posErrZ>1.5f)
+        posErrZ = 1.5f;
+    if (posErrZ<-1.5f)
+        posErrZ = -1.5f;
+    velz_sp = posErrZ*gain_pitch_pos/1000.f;          // desired velocity
+    velErrZ = state_drone.svelZ + velz_sp - setpoint_vel.z;    // velocity error
+    accz_sp = velErrZ*gain_pitch_vel/100;             // desired acceleration
+    accErrZ = state_drone.saccZ + accz_sp - setpoint_acc.z;    // acceleration error
+
+    //when tuning, reset integrators when I gain set to 0:
+    if (gain_throttle_i < 1)
+        throttleErrI = 0;
+    if (gain_roll_i < 1)
+        rollErrI = 0;
+    if (gain_pitch_i < 1)
+        pitchErrI = 0;
 }
 
 void DroneController::readJoystick(void) {
@@ -988,7 +968,7 @@ void DroneController::process_joystick() {
         return;
     else if (_joy_state == js_none)
         _joy_state = js_checking;
-
+    
 
     if (_joy_state == js_checking){
         if (!_joy_arm_switch &&

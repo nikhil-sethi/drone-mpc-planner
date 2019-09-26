@@ -29,7 +29,6 @@ static const char* flight_mode_names[] = { "fm_joystick_check",
                                           "fm_interception_burn_start",
                                           "fm_interception_burn",
                                           "fm_interception_burn_spin_down",
-                                          "fm_interception_1g",
                                           "fm_retry_aim_start",
                                           "fm_abort_takeoff",
                                           "fm_flying_pid_init",
@@ -58,7 +57,6 @@ public:
         fm_interception_burn_start,
         fm_interception_burn,
         fm_interception_burn_spin_down,
-        fm_interception_1g,
         fm_retry_aim_start,
         fm_abort_takeoff,
         fm_flying_pid_init,
@@ -152,6 +150,9 @@ private:
     int joyDial = 0;
     float scaledjoydial = 0;
 
+    bool recovery_mode = false;
+    cv::Point3f recovery_pos = {0};
+
     void approx_effective_thrust(track_data state_drone, cv::Point3f burn_direction, float burn_duration, float dt);
     std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> predict_drone_state_after_burn(cv::Point3f current_drone_pos, cv::Point3f drone_vel, cv::Point3f burn_direction, cv::Point3f burn_accelleration_max, float remaining_aim_duration, float burn_duration);
     std::tuple<cv::Point3f, cv::Point3f> predict_drone_state_after_spindown(cv::Point3f integrated_pos, cv::Point3f integrated_vel, cv::Point3f burn_accelleration);
@@ -171,6 +172,8 @@ private:
 
 
     std::tuple<float,float> convert_acc_to_deg(cv::Point3f acc);
+
+    void calc_pid_error(track_data state_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, cv::Point3f setpoint_acc);
 
     MultiModule * _rc;
     DroneTracker * _dtrk;
@@ -199,7 +202,7 @@ public:
     bool ff_interception() {
         return _flight_mode == fm_take_off_aim || _flight_mode == fm_max_burn || _flight_mode == fm_max_burn_spin_down || _flight_mode == fm_1g ||
                _flight_mode == fm_interception_aim_start  || _flight_mode == fm_interception_aim  || _flight_mode == fm_interception_burn_spin_down  ||
-               _flight_mode == fm_interception_1g || _flight_mode == fm_interception_burn || _flight_mode == fm_interception_burn_start || _flight_mode == fm_retry_aim_start;
+               _flight_mode == fm_interception_burn || _flight_mode == fm_interception_burn_start || _flight_mode == fm_retry_aim_start;
     }
 
     bool ff_completed() {
