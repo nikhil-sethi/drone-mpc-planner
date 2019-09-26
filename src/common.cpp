@@ -16,13 +16,19 @@ void CameraVolume::init(float a_top, float a_front, float a_left, float a_right,
     y_limit = b_height;
 }
 
-bool CameraVolume::is_inView(cv::Point3f p){
-    if(p.y>slope_top*p.z
-        || p.y<slope_front*p.z
-        || p.x>slope_left*p.z
-        || p.x<slope_right*p.z
-        || p.z<z_limit
-        || p.y<y_limit)
+bool CameraVolume::is_inView(cv::Point3f p, bool inner_hysteresis){
+
+    float hysteresis_margin = 0;
+    if (inner_hysteresis)
+        hysteresis_margin = 0.3; //[m]
+
+    // Attention check the negative case!
+    if(p.y>slope_top*p.z - hysteresis_margin
+        || p.y<slope_front*p.z + hysteresis_margin
+        || p.x>slope_left*p.z - hysteresis_margin
+        || p.x<slope_right*p.z + hysteresis_margin
+        || p.z<z_limit + hysteresis_margin
+        || p.y<y_limit + hysteresis_margin)
         return false;
     else
         return true;

@@ -28,8 +28,9 @@ class CameraVolume{
         void init(float slope_top, float slope_front, float slope_left, float slope_right,
                   float depth, float height);
 
-        /** @brief Checks whether the point p is for all planes defined in init on the right side.*/
-        bool is_inView(cv::Point3f p);
+        /** @brief Checks whether the point p is for all planes defined in init on the right side.
+         * @param out inner_hysteresis Use stricter border condition if true.*/
+        bool is_inView(cv::Point3f p, bool inner_hysteresis);
 
     private:
         // These parameters define the volume
