@@ -159,6 +159,7 @@ private:
     std::tuple<bool, int, int, float, cv::Point3f, cv::Point3f> calc_directional_burn(                                  track_data state_drone, track_data state_insect, double aim_start_time, double time);
     std::tuple<bool, int, int, float, cv::Point3f, cv::Point3f> calc_directional_burn(track_data state_drone_start_1g,  track_data state_drone, track_data state_insect, double aim_start_time, double time);
     std::tuple<bool, int, int, float, cv::Point3f, cv::Point3f> calc_directional_burn(cv::Point3f drone_vel,            track_data state_drone, track_data state_insect, double aim_start_time, double time);
+    uint check_burn_invalidity(bool invalid_burn, bool invalid_reburn);
 
     /** Asumes that after the first burn a second burn is excecuted which shall bring the drone back to the current position.
      * @param out[0] burn_valid is 0 if the drone can burn to the insect an back to current position,
