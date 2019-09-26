@@ -311,6 +311,7 @@ void DroneController::control(track_data state_drone,track_data state_target, cv
             if (invalid_burn==0) {
 //                std::cout << "state_insect before switching to retry_aim_start> " << state_insect.posX <<", "<< state_insect.posY <<", "<< state_insect.posZ << std::endl;
                 _flight_mode = fm_retry_aim_start;
+                recovery_mode = true; // will be set to false in retry_aim
             }
         }
 
