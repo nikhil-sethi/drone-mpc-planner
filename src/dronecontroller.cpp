@@ -617,6 +617,7 @@ std::tuple<bool, int,int,float, cv::Point3f, cv::Point3f> DroneController::calc_
         std::tie(viz_pos_after_burn, std::ignore) = predict_drone_state_after_spindown(integrated_pos, integrated_vel,burn_accelleration);
         viz_time_after_burn = viz_time_after_aim + static_cast<double>(burn_duration + effective_burn_spin_down_duration);
 
+        viz_drone_trajectory.clear();
         for (float f=0;f < burn_duration;f+=0.01f) {
             std::tie (integrated_pos, integrated_vel,std::ignore) = predict_drone_state_after_burn(
                 current_drone_pos, drone_vel, burn_direction,burn_accelleration_max,remaining_aim_duration,f);
