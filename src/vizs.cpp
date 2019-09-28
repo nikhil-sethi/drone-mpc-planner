@@ -462,10 +462,6 @@ void Visualizer::draw_tracker_viz() {
 
         if (_dnav->drone_is_flying() && !_dctrl->ff_interception()) { //draw line to drone target setpoint
             cv::Point2i target = _dnav->drone_setpoint_im();
-            std::cout << "ipos: "  << _itrkr->Last_track_data().Pos() << std::endl;
-            std::cout << "ipos raw: "  << world2im_2d(_itrkr->Last_track_data().Pos(),_visdat->Qfi,_visdat->camera_angle) << std::endl;
-
-            std::cout << "im: "  <<target << " vs " << _itrkr->image_item().pt() << std::endl;
             cv::Scalar c2;
             if (_dnav->drone_is_hunting() && target.x+target.y>0 ) {
                 c2 = red;
