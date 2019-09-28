@@ -254,18 +254,8 @@ public:
             tmp.z = _trackers->dronetracker()->drone_startup_location().z;
         }
 
-        std::vector<cv::Point3d> world_coordinates,camera_coordinates;
-        cv::Point3d tmpd;
-        float theta = -_visdat->camera_angle * deg2rad;
-        float temp_y = tmp.y * cosf(theta) + tmp.z * sinf(theta);
-        tmpd.z = -tmp.y * sinf(theta) + tmp.z * cosf(theta);
-        tmpd.y = temp_y;
-        tmpd.x = tmp.x;
-
-        world_coordinates.push_back(tmpd);
-        cv::perspectiveTransform(world_coordinates,camera_coordinates,_visdat->Qfi);
-        return cv::Point2i(camera_coordinates[0].x,camera_coordinates[0].y);
-
+        cv::Point3f resf  =world2im_3d(tmp,_visdat->Qfi,_visdat->camera_angle);
+        return cv::Point2i(roundf(resf.x),round(resf.y));
     }
     bool drone_is_hunting(){
         if (_nav_flight_mode == nfm_hunt){

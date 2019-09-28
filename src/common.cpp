@@ -34,22 +34,48 @@ bool CameraVolume::is_inView(cv::Point3f p, bool inner_hysteresis){
         return true;
 }
 
-cv::Point2f world2im(cv::Point3f p, cv::Mat Qfi, float camera_angle){
+//strips disparity from world2im_3d
+cv::Point2f world2im_2d(cv::Point3f p_world, cv::Mat Qfi, float camera_angle){
+    cv::Point3f p_im = world2im_3d(p_world,Qfi,camera_angle);
+    return cv::Point2f(p_im.x,p_im.y);
+}
+
+//returns image coordinates from a world coordinate: x,y,disparity
+cv::Point3f world2im_3d(cv::Point3f p_world, cv::Mat Qfi, float camera_angle){
     //transform back to image coordinates
     std::vector<cv::Point3d> world_coordinates,camera_coordinates;
     //derotate camera and convert to double:
-    cv::Point3d tmpd (p.x,p.y,p.z);
+    cv::Point3d tmpd (p_world.x,p_world.y,p_world.z);
     float theta = -camera_angle * deg2rad;
-    float temp_y = p.y * cosf(theta) + p.z * sinf(theta);
-    tmpd.z = -p.y * sinf(theta) + p.z * cosf(theta);
+    float temp_y = p_world.y * cosf(theta) + p_world.z * sinf(theta);
+    tmpd.z = -p_world.y * sinf(theta) + p_world.z * cosf(theta);
     tmpd.y = temp_y;
-    tmpd.x = p.x;
+    tmpd.x = p_world.x;
 
     world_coordinates.push_back(tmpd);
     cv::perspectiveTransform(world_coordinates,camera_coordinates,Qfi);
 
-    cv::Point2f res(camera_coordinates.at(0).x,camera_coordinates.at(0).y);
-    return res;
+    camera_coordinates.at(0).z = -camera_coordinates.at(0).z; // negate disparity
+    return camera_coordinates.at(0);
+}
+
+//returns image coordinates from a world coordinate: x,y,disparity
+cv::Point3f im2world(cv::Point2f p_im,float disparity, cv::Mat Qf, float camera_angle){
+    std::vector<cv::Point3d> camera_coordinates, world_coordinates;
+    camera_coordinates.push_back(cv::Point3d(p_im.x,p_im.y,-disparity));
+    cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
+
+    cv::Point3f w;
+    w.x = world_coordinates[0].x;
+    w.y = world_coordinates[0].y;
+    w.z = world_coordinates[0].z;
+    //compensate camera rotation:
+    float theta = camera_angle * deg2rad;
+    float temp_y = w.y * cosf(theta) + w.z * sinf(theta);
+    w.z = -w.y * sinf(theta) + w.z * cosf(theta);
+    w.y = temp_y;
+
+    return w;
 }
 
 void acc_orientation(float accx, float accy, float accz, float *out) {

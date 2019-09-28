@@ -19,8 +19,6 @@ void DronePredictor::init(VisionData *visdat, DroneTracker *dtrk, InsectTracker 
     throttle_gain_smth.init(300,10); // full stick -> 10 m/s² acceleration
     roll_gain_smth.init(300,-10);
     pitch_gain_smth.init(300,-10);
-
-    cv::invert(visdat->Qf,Qfi);
 }
 
 cv::Point3f mult3f(cv::Point3f p1, cv::Point3f p2){
@@ -134,29 +132,8 @@ void DronePredictor::update(bool drone_is_active, double time) {
     if (_dtrk->taking_off())
         predicted_pos.y+=0.05f; //look for the drone a bit higher then the current position (to favor the drone instead of the landing pad)
 
-    //transform back to image coordinates
-    std::vector<cv::Point3d> world_coordinates,camera_coordinates;
-    cv::Point3f tmp(predicted_pos.x,predicted_pos.y,predicted_pos.z);
-
-    //derotate camera and convert to double:
-    cv::Point3d tmpd;
-    float theta = -_visdat->camera_angle * deg2rad;
-    float temp_y = tmp.y * cosf(theta) + tmp.z * sinf(theta);
-    tmpd.z = -tmp.y * sinf(theta) + tmp.z * cosf(theta);
-    tmpd.y = temp_y;
-    tmpd.x = tmp.x;
-
-    world_coordinates.push_back(tmpd);
-    cv::perspectiveTransform(world_coordinates,camera_coordinates,Qfi);
-
-    //update tracker with prediciton
-    cv::Point3f world_location;
-    world_location.x = tmpd.x;
-    world_location.y = tmpd.y;
-    world_location.z = tmpd.z;
-    cv::Point2f image_location;
-    image_location.x= camera_coordinates.at(0).x/pparams.imscalef;
-    image_location.y= camera_coordinates.at(0).y/pparams.imscalef;
+    cv::Point2f image_location = world2im_2d(predicted_pos,_visdat->Qfi,_visdat->camera_angle);
+    image_location /= pparams.imscalef;
 
     if (image_location.x < 0)
         image_location.x = 0;
@@ -167,7 +144,7 @@ void DronePredictor::update(bool drone_is_active, double time) {
     else if (image_location.y >= IMG_H/pparams.imscalef)
         image_location.y = IMG_H/pparams.imscalef-1;
 
-    _dtrk->control_predicted_drone_location(image_location,world_location); //TODO: activate this again
+    _dtrk->control_predicted_drone_location(image_location,predicted_pos); //TODO: activate this again
 //    _dtrk->predicted_locationL_prev = _dtrk->predicted_locationL_last;
 //    _dtrk->predicted_locationL_last.x = image_location.x;
 //    _dtrk->predicted_locationL_last.y = image_location.y;

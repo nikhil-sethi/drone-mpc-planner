@@ -33,9 +33,6 @@ private:
     cv::Point3f predicted_pos ={0};
     cv::Point3f drag_gain;
 
-    cv::Mat Qfi;
-
-
     Smoother swap_x;
     Smoother swap_y;
     Smoother swap_z;

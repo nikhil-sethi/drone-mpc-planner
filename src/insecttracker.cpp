@@ -11,22 +11,7 @@ void InsectTracker::init(std::ofstream *logger, VisionData *visdat) {
 void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number, double time) {
 
     _image_item = ImageItem (log.ins_im_x/pparams.imscalef,log.ins_im_y/pparams.imscalef,log.ins_disparity,frame_number);
-    ImagePredictItem ipi(cv::Point2f(log.ins_pred_im_x/pparams.imscalef,log.ins_pred_im_y/pparams.imscalef),1,1,255,frame_number);
-    predicted_image_path.push_back(ipi);
-    ipi.valid = ipi.x > 0 ;
-    _image_predict_item = ipi;
-
-    //TODO: recalculate this instead of reading from the log
-    WorldItem w;
-    w.iti = _image_item;
-    w.valid = true;
-    w.pt.x = log.ins_pos_x;
-    w.pt.y = log.ins_pos_y;
-    w.pt.z = log.ins_pos_z;
-    w.distance = norm(w.pt);
-    w.distance_bkg = _visdat->depth_background_mm.at<float>(w.iti.y,w.iti.x);
-    path.push_back(w);
-    _world_item = w;
+    _image_predict_item = ImagePredictItem(cv::Point2f(log.ins_pred_im_x/pparams.imscalef,log.ins_pred_im_y/pparams.imscalef),1,1,255,frame_number);
 
     track_data data ={0};
     data.pos_valid = true;
@@ -44,6 +29,35 @@ void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number, 
     data.saccZ = log.ins_sacc_z;
     data.time = time;
     track_history.push_back(data);
+
+    cv::Point3f recalc_world = im2world(cv::Point2f(log.ins_im_x,log.ins_im_y), _image_item.disparity,_visdat->Qf,_visdat->camera_angle);
+    if (norm(recalc_world -data.Pos()) > 0.1) {
+        //it seems the camera angle was changed since this log, or someone has hacked something into this log. Use the world coordinates to match the image coordinates
+        //(UN)HACK:
+        cv::Point3f diff = recalc_world -data.Pos();
+        cv::Point3f recalc_world_pred =  im2world(cv::Point2f(log.ins_pred_im_x,log.ins_pred_im_y), _image_item.disparity,_visdat->Qf,_visdat->camera_angle);
+        recalc_world_pred -= diff;
+        recalc_world -=diff;
+        cv::Point3f recalc_im_coor = world2im_3d(recalc_world,_visdat->Qfi,_visdat->camera_angle);
+        cv::Point3f recalc_im_pred_coor = world2im_3d(recalc_world_pred,_visdat->Qfi,_visdat->camera_angle);
+
+        _image_item = ImageItem (recalc_im_coor.x/pparams.imscalef,recalc_im_coor.y/pparams.imscalef,recalc_im_coor.z,frame_number);
+        _image_predict_item = ImagePredictItem(cv::Point2f(recalc_im_pred_coor.x/pparams.imscalef,recalc_im_pred_coor.y/pparams.imscalef),1,1,255,frame_number);
+    }
+
+    _image_predict_item.valid = _image_predict_item.x > 0 ;
+    predicted_image_path.push_back(_image_predict_item);
+
+    WorldItem w;
+    w.iti = _image_item;
+    w.valid = true;
+    w.pt.x = log.ins_pos_x;
+    w.pt.y = log.ins_pos_y;
+    w.pt.z = log.ins_pos_z;
+    w.distance = norm(w.pt);
+    w.distance_bkg = _visdat->depth_background_mm.at<float>(w.iti.y,w.iti.x);
+    path.push_back(w);
+    _world_item = w;
 
     n_frames_lost = log.ins_n_frames_lost;
     n_frames_tracking = log.ins_n_frames_tracking;
