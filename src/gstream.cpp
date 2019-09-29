@@ -245,7 +245,7 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
         gst_element_set_state (_pipeline, GST_STATE_PLAYING);
 
         if (mode != video_stream) {
-            if (!checkFileExist(file)) {
+            if (!file_exist(file)) {
                 std::cout << "Error creating video file: " << file << std::endl << "Does the folder exist?" << std::endl;
                 return 1;
             }

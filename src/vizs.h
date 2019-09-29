@@ -20,8 +20,8 @@
 class Visualizer{
 
 private:
-    cv::Mat plot(std::vector<cv::Mat> data, std::string name);
-    void plot(std::vector<cv::Mat> data, cv::Mat *frame, std::string name);
+    cv::Mat plot(std::vector<cv::Mat> data_drone, std::string name);
+    void plot(std::vector<cv::Mat> data_drone, cv::Mat *frame, std::string name);
     cv::Mat plotxy(cv::Mat datax, cv::Mat datay, cv::Point setpoint, std::string name, cv::Point minaxis, cv::Point maxaxis);
     cv::Mat plot_xyd(void);
     cv::Mat plot_all_control(void);

@@ -13,28 +13,28 @@ void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number, 
     _image_item = ImageItem (log.ins_im_x/pparams.imscalef,log.ins_im_y/pparams.imscalef,log.ins_disparity,frame_number);
     _image_predict_item = ImagePredictItem(cv::Point2f(log.ins_pred_im_x/pparams.imscalef,log.ins_pred_im_y/pparams.imscalef),1,1,255,frame_number);
 
-    track_data data ={0};
+    track_data data;
     data.pos_valid = true;
-    data.posX = log.ins_pos_x;
-    data.posY = log.ins_pos_y;
-    data.posZ = log.ins_pos_z;
+    data.state.pos.x = log.ins_pos_x;
+    data.state.pos.y = log.ins_pos_y;
+    data.state.pos.z = log.ins_pos_z;
     data.sposX = log.ins_spos_x;
     data.sposY = log.ins_spos_y;
     data.sposZ = log.ins_spos_z;
-    data.svelX = log.ins_svel_x;
-    data.svelY = log.ins_svel_y;
-    data.svelZ = log.ins_svel_z;
-    data.saccX = log.ins_sacc_x;
-    data.saccY = log.ins_sacc_y;
-    data.saccZ = log.ins_sacc_z;
+    data.state.vel.x = log.ins_svel_x;
+    data.state.vel.y = log.ins_svel_y;
+    data.state.vel.z = log.ins_svel_z;
+    data.state.acc.x = log.ins_sacc_x;
+    data.state.acc.y = log.ins_sacc_y;
+    data.state.acc.z = log.ins_sacc_z;
     data.time = time;
     track_history.push_back(data);
 
     cv::Point3f recalc_world = im2world(cv::Point2f(log.ins_im_x,log.ins_im_y), _image_item.disparity,_visdat->Qf,_visdat->camera_angle);
-    if (norm(recalc_world -data.Pos()) > 0.1) {
+    if (norm(recalc_world -data.pos()) > 0.1) {
         //it seems the camera angle was changed since this log, or someone has hacked something into this log. Use the world coordinates to match the image coordinates
         //(UN)HACK:
-        cv::Point3f diff = recalc_world -data.Pos();
+        cv::Point3f diff = recalc_world -data.pos();
         cv::Point3f recalc_world_pred =  im2world(cv::Point2f(log.ins_pred_im_x,log.ins_pred_im_y), _image_item.disparity,_visdat->Qf,_visdat->camera_angle);
         recalc_world_pred -= diff;
         recalc_world -=diff;
@@ -89,8 +89,8 @@ void InsectTracker::track(double time) {
 
 void InsectTracker::update_insect_prediction() {
     track_data itd = Last_track_data();
-    cv::Point3f insect_pos = {itd.posX,itd.posY,itd.posZ};
-    cv::Point3f insect_vel = {itd.svelX,itd.svelY,itd.svelZ};
+    cv::Point3f insect_pos = itd.pos();
+    cv::Point3f insect_vel = itd.vel();
     //TODO: also consider acc?
 
 

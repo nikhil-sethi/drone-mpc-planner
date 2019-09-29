@@ -12,36 +12,39 @@
 cv::Point2f world2im_2d(cv::Point3f p, cv::Mat Qfi, float camera_angle);
 cv::Point3f world2im_3d(cv::Point3f p, cv::Mat Qfi, float camera_angle);
 cv::Point3f im2world(cv::Point2f p_im, float disparity, cv::Mat Qf, float camera_angle);
-void acc_orientation(float accx, float accy, float accz, float *out);
-bool checkFileExist (const std::string& name);
-void combineImage(cv::Mat iml, cv::Mat imr, cv::Mat *res);
-void combineGrayImage(cv::Mat iml,cv::Mat imr,cv::Mat *res);
-cv::Mat createColumnImage(std::vector<cv::Mat> ims, int type, float resizef = 1);
-cv::Mat createRowImage(std::vector<cv::Mat> ims, int type, float resizef = 1);
-void showColumnImage(std::vector<cv::Mat> ims, std::string window_name, int type, float resizef = 1);
-void showRowImage(std::vector<cv::Mat> ims, std::string window_name, int type, float resizef = 1);
-cv::Mat createBlurryCircle(cv::Point size);
+bool file_exist (const std::string& name);
+void combine_image(cv::Mat iml, cv::Mat imr, cv::Mat *res);
+void combine_gray_image(cv::Mat iml,cv::Mat imr,cv::Mat *res);
+cv::Mat create_column_image(std::vector<cv::Mat> ims, int type, float resizef = 1);
+cv::Mat create_row_image(std::vector<cv::Mat> ims, int type, float resizef = 1);
+void show_column_image(std::vector<cv::Mat> ims, std::string window_name, int type, float resizef = 1);
+void show_row_image(std::vector<cv::Mat> ims, std::string window_name, int type, float resizef = 1);
 std::string to_string_with_precision(float f, const int n);
-int getSecondsSinceFileCreation(std::string filePath);
+int seconds_since_file_creation(std::string file_path);
 
 class CameraVolume{
-    public:
+public:
+    void init(float slope_top, float slope_front, float slope_left, float slope_right,
+              float depth, float height);
 
-        void init(float slope_top, float slope_front, float slope_left, float slope_right,
-                  float depth, float height);
+    enum volume_check_mode{
+        strict,
+        relaxed
+    };
+    /** @brief Checks if the point is in the volume.*/
+    bool in_view(cv::Point3f p,volume_check_mode c);
 
-        /** @brief Checks whether the point p is for all planes defined in init on the right side.
-         * @param out inner_hysteresis Use stricter border condition if true.*/
-        bool is_inView(cv::Point3f p, bool inner_hysteresis);
+private:
+    // These parameters define the volume
+    float slope_top;
+    float slope_front;
+    float slope_left;
+    float slope_right;
+    float z_limit;
+    float y_limit;
 
-    private:
-        // These parameters define the volume
-        float slope_top;
-        float slope_front;
-        float slope_left;
-        float slope_right;
-        float z_limit;
-        float y_limit;
+    /** @brief Checks whether the point p is for all planes defined in init on the right side.*/
+    bool in_view(cv::Point3f p, float hysteresis_margin);
 };
 
 
@@ -72,28 +75,21 @@ const float deg2rad = M_PIf32/180.f;
 
 const double bind_blink_time = 0.45;
 
+struct state_data {
+    cv::Point3f pos = {0},vel ={0},acc = {0};
+};
+
 struct track_data {
-    float posX,posY,posZ;
-    float dx,dy,dz,dt;
-    float sposX,sposY,sposZ,svelX,svelY,svelZ,saccX,saccY,saccZ;
-
-    bool pos_valid;
-    bool vel_valid;
-    bool acc_valid;
-    double time;
-
-    cv::Point3f Pos(){
-        return cv::Point3f(posX,posY,posZ);
-    }
-    cv::Point3f sPos(){
-        return cv::Point3f(sposX,sposY,sposZ);
-    }
-    cv::Point3f sVel(){
-        return cv::Point3f(svelX,svelY,svelZ);
-    }
-    cv::Point3f sAcc(){
-        return cv::Point3f(saccX,saccY,saccZ);
-    }
+    state_data state;
+    cv::Point3f pos() {return state.pos;}
+    cv::Point3f vel() {return state.vel;}
+    cv::Point3f acc() {return state.acc;}
+    float sposX = 0,sposY = 0,sposZ = 0;
+    float dt = 0;
+    bool pos_valid = false;
+    bool vel_valid = false;
+    bool acc_valid = false;
+    double time = 0;
 };
 
 struct control_data {
@@ -123,12 +119,12 @@ enum video_mode {
     video_bag
 };
 static const char* video_mode_str[] = {"video_disabled",
-                                       "video_mp4",
-                                       "video_stream",
-                                       "video_mp4_opencv",
-                                       "video_bag"
-                                       "" // must be the last entry! (check in serializer)
-                                      };
+    "video_mp4",
+    "video_stream",
+    "video_mp4_opencv",
+    "video_bag"
+    "" // must be the last entry! (check in serializer)
+};
 enum rc_type {
     rc_none = 0,
     rc_devo,
@@ -137,12 +133,12 @@ enum rc_type {
     rc_xlite
 };
 static const char* rc_type_str[] = {"rc_none",
-                                    "rc_devo",
-                                    "rc_usb_hobbyking",
-                                    "rc_playstation",
-                                    "rc_xlite"
-                                    "" // must be the last entry! (check in serializer)
-                                   };
+    "rc_devo",
+    "rc_usb_hobbyking",
+    "rc_playstation",
+    "rc_xlite"
+    "" // must be the last entry! (check in serializer)
+};
 enum tx_protocol {
     tx_none = 0,
     tx_dsmx,
@@ -151,12 +147,12 @@ enum tx_protocol {
     tx_frskyd16
 };
 static const char* tx_protocol_str[] = {"tx_none",
-                                        "tx_dsmx",
-                                        "tx_cx10",
-                                        "tx_frskyd8",
-                                        "tx_frskyd16"
-                                        "" // must be the last entry! (check in serializer)
-                                       };
+    "tx_dsmx",
+    "tx_cx10",
+    "tx_frskyd8",
+    "tx_frskyd16"
+    "" // must be the last entry! (check in serializer)
+};
 enum drone_type {
     drone_none,
     drone_trashcan,
@@ -165,12 +161,12 @@ enum drone_type {
     drone_cx10
 };
 static const char* drone_type_str[] = {"drone_none",
-                                       "drone_trashcan",
-                                       "drone_tinywhoop_d16",
-                                       "drone_tinywhoop_d8",
-                                       "drone_cx10",
-                                       "" // must be the last entry! (check in serializer)
-                                      };
+    "drone_trashcan",
+    "drone_tinywhoop_d16",
+    "drone_tinywhoop_d8",
+    "drone_cx10",
+    "" // must be the last entry! (check in serializer)
+};
 
 namespace xmls {
 
@@ -328,7 +324,7 @@ public: PatsParameters() {
     }
 public: void deserialize() {
         std::cout << "Reading settings from: " << settings_file << std::endl;
-        if (checkFileExist(settings_file)) {
+        if (file_exist(settings_file)) {
             std::ifstream infile(settings_file);
             std::string xmlData((std::istreambuf_iterator<char>(infile)),
                                 std::istreambuf_iterator<char>());
@@ -454,7 +450,7 @@ public: DroneParameters() {
     }
 public: void deserialize(std::string filepath) {
         std::cout << "Reading settings from: " << filepath << std::endl;
-        if (checkFileExist(filepath)) {
+        if (file_exist(filepath)) {
             std::ifstream infile(filepath);
             std::string xmlData((std::istreambuf_iterator<char>(infile)),
                                 std::istreambuf_iterator<char>());
@@ -513,16 +509,6 @@ public: void serialize(std::string filepath) {
 }
 extern xmls::DroneParameters dparams;
 extern xmls::PatsParameters pparams;
-
-//#ifndef FALLTHROUGH_INTENDED
-//#if defined(__clang__)
-//#define FALLTHROUGH_INTENDED [[clang::fallthrough]]
-//#elif defined(__GNUC__) && __GNUC__ >= 7
-//#define FALLTHROUGH_INTENDED [[gnu::fallthrough]]
-//#else
-//#define FALLTHROUGH_INTENDED do {} while (0)
-//#endif
-//#endif
 
 #endif //COMMON_H
 

@@ -204,7 +204,7 @@ void VisionData::exclude_drone_from_motion_fading(cv::Point p, int radius) {
 void VisionData::deserialize_settings() {
     std::cout << "Reading settings from: " << settings_file << std::endl;
     VisionParameters params;
-    if (checkFileExist(settings_file)) {
+    if (file_exist(settings_file)) {
         std::ifstream infile(settings_file);
         std::string xmlData((std::istreambuf_iterator<char>(infile)),
                             std::istreambuf_iterator<char>());

@@ -71,7 +71,7 @@ void DronePredictor::update(bool drone_is_active, double time) {
     if (dt_pred > 1) // don't try to predict based on control more then 1 second
         return;
 
-    cv::Point3f pos (td.posX,td.posY,td.posZ);
+    cv::Point3f pos = td.state.pos;
 
 
     if (drone_is_active && initialized && dt_prev < 1.f / pparams.fps && !_dtrk->taking_off() && td.acc_valid){
@@ -120,7 +120,7 @@ void DronePredictor::update(bool drone_is_active, double time) {
 
     //estimate position based on current position and speed, and control inputs
     cv::Point3f rtp_gain = cv::Point3f(roll_gain_smth.latest(),throttle_gain_smth.latest(),pitch_gain_smth.latest());
-    cv::Point3f vel(td.svelX,td.svelY,td.svelZ);
+    cv::Point3f vel = td.vel();
 
     //predict position based on control inputs and current position and velocity
     cv::Point3f acc_pred = mult3f(rtp ,rtp_gain) - mult3f(vel ,drag_gain);
@@ -179,8 +179,8 @@ void DronePredictor::swap_check(cv::Point3f rtp) {
     if (!td.acc_valid || !ti.acc_valid)
         return;
 
-    tot_d+=cv::Point3f(td.saccX,td.saccY,td.saccZ);
-    tot_i+=cv::Point3f(ti.saccX,ti.saccY,ti.saccZ);
+    tot_d+=td.acc();
+    tot_i+=ti.acc();
     tot_t+=mult3f(rtp,rtp_gain_prev);
 
     float res_x = swap_x.addSample(fabs(tot_t.x - tot_d.x ) / fabs(tot_t.x -tot_i.x));

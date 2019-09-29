@@ -187,7 +187,7 @@ void Cam::init() {
     std::cout << name << " ser: " << sn << std::endl;
 
     // load xml, the values loaded may be (partially) overwritten by measurements below
-    if (checkFileExist(calib_rfn))
+    if (file_exist(calib_rfn))
         deserialize_calib(calib_rfn);
     else
         deserialize_calib(calib_template_rfn);
@@ -740,7 +740,7 @@ void Cam::calib_pose(bool also_do_depth){
         std::cout << "Estimated angle change: " << _camera_angle_y_measured_from_depth - old << std::endl;
         std::cout << "Set angle_y: " << _camera_angle_y << std::endl;
 
-        if ((fabs(_camera_angle_y_measured_from_depth - old) > 15 && checkFileExist(calib_rfn)) || _camera_angle_y_measured_from_depth != _camera_angle_y_measured_from_depth) {
+        if ((fabs(_camera_angle_y_measured_from_depth - old) > 15 && file_exist(calib_rfn)) || _camera_angle_y_measured_from_depth != _camera_angle_y_measured_from_depth) {
             _camera_angle_y_measured_from_depth = 0;
             throw my_exit("camera angle change to big!");
         }
@@ -768,7 +768,7 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
 
     std::cout << "Initializing cam from " << bag_fn << std::endl;
 
-    if (!checkFileExist(depth_map_rfn)) {
+    if (!file_exist(depth_map_rfn)) {
         //todo: make gui warning of this:
         std::cout << "Warning: could not find " << depth_map_rfn << std::endl;
         depth_background = cv::Mat::ones(IMG_H,IMG_W,CV_16UC1);
@@ -777,7 +777,7 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
         depth_background = imread(depth_map_rfn,CV_LOAD_IMAGE_ANYDEPTH);
     }
 
-    if (!checkFileExist(bag_fn)) {
+    if (!file_exist(bag_fn)) {
         std::stringstream serr;
         serr << "cannot not find " << bag_fn;
         throw my_exit(serr.str());
@@ -808,7 +808,7 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
     }
 
     calibration(infared1,infared2);
-    if (checkFileExist(calib_rfn))
+    if (file_exist(calib_rfn))
         deserialize_calib(calib_rfn);
     else
         deserialize_calib(calib_template_rfn);

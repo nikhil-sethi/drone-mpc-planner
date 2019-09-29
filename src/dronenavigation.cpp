@@ -336,7 +336,7 @@ void DroneNavigation::next_waypoint(waypoint wp) {
 void DroneNavigation::deserialize_settings() {
     std::cout << "Reading settings from: " << settings_file << std::endl;
     navigationParameters params;
-    if (checkFileExist(settings_file)) {
+    if (file_exist(settings_file)) {
         std::ifstream infile(settings_file);
         std::string xmlData((std::istreambuf_iterator<char>(infile)),
                             std::istreambuf_iterator<char>());

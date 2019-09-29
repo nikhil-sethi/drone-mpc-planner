@@ -52,7 +52,7 @@ void TrackerManager::update(double time,LogReader::Log_Entry log_entry, bool dro
     update_trackers(time,log_entry, drone_is_active);
 
     if (enable_viz_max_points && vizs_maxs.size()>0)
-        viz_max_points = createColumnImage(vizs_maxs,CV_8UC3,1);
+        viz_max_points = create_column_image(vizs_maxs,CV_8UC3,1);
     else if(enable_viz_max_points)
         viz_max_points = cv::Mat::zeros(5,100,CV_8UC3);
 }
@@ -486,7 +486,7 @@ void TrackerManager::update_max_change_points() {
 
             Mat viz;
             if (enable_viz_max_points){
-                viz = createRowImage({roi,mask},CV_8UC1,4);
+                viz = create_row_image({roi,mask},CV_8UC1,4);
                 cvtColor(viz,viz,CV_GRAY2BGR);
                 if (enable_insect_drone_split)
                     putText(viz,"i-d",Point(0, viz.rows-13),FONT_HERSHEY_SIMPLEX,0.5,Scalar(255,255,255));
@@ -617,7 +617,7 @@ void TrackerManager::update_max_change_points() {
 void TrackerManager::deserialize_settings() {
     std::cout << "Reading settings from: " << settings_file << std::endl;
     TrackerManagerParameters params;
-    if (checkFileExist(settings_file)) {
+    if (file_exist(settings_file)) {
         std::ifstream infile(settings_file);
         std::string xmlData((std::istreambuf_iterator<char>(infile)),
                             std::istreambuf_iterator<char>());

@@ -213,9 +213,9 @@ void DroneTracker::clean_ignore_blobs(double time){
 
 void DroneTracker::update_drone_prediction() {
     track_data td = Last_track_data();
-    cv::Point3f pos = td.Pos();
-    cv::Point3f vel = td.sVel();
-    cv::Point3f acc= td.sAcc();
+    cv::Point3f pos = td.pos();
+    cv::Point3f vel = td.vel();
+    cv::Point3f acc= td.acc();
     //todo: use control inputs to make prediction
 
     // predict insect position for next frame

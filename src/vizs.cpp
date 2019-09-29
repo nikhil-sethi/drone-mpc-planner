@@ -7,6 +7,7 @@ cv::Scalar black(0,0,0);
 cv::Scalar green(60,255,60);
 cv::Scalar blue(255,60,60);
 cv::Scalar red(60,60,255);
+cv::Scalar pink(147,20,255);
 cv::Scalar linecolors[] = {green,blue,red,cv::Scalar(0,255,255),cv::Scalar(255,255,0),cv::Scalar(255,0,255),cv::Scalar(128,128,255),cv::Scalar(255,128,128)};
 
 //cv::Scalar background_color(255,255,255);
@@ -55,9 +56,9 @@ void Visualizer::addPlotSample(void) {
         dt_target.push_back(1.f/pparams.fps);
 
         if (data.pos_valid) {
-            posX.push_back(-data.posX);
-            posY.push_back(data.posY);
-            posZ.push_back(-data.posZ);
+            posX.push_back(-data.state.pos.x);
+            posY.push_back(data.state.pos.y);
+            posZ.push_back(-data.state.pos.z);
             disparity.push_back(_dtrkr->image_item().disparity);
             sdisparity.push_back(_dtrkr->image_item().disparity);
 
@@ -72,15 +73,15 @@ void Visualizer::addPlotSample(void) {
         }
 
         if (data.vel_valid) {
-            svelX.push_back(-data.svelX);
-            svelY.push_back(data.svelY);
-            svelZ.push_back(-data.svelZ);
+            svelX.push_back(-data.state.vel.x);
+            svelY.push_back(data.state.vel.y);
+            svelZ.push_back(-data.state.vel.z);
         }
 
         if (data.acc_valid) {
-            saccX.push_back(-data.saccX);
-            saccY.push_back(data.saccY);
-            saccZ.push_back(-data.saccZ);
+            saccX.push_back(-data.state.acc.x);
+            saccY.push_back(data.state.acc.y);
+            saccZ.push_back(-data.state.acc.z);
         }
 
         lock_plot_data.unlock();
@@ -95,7 +96,7 @@ void Visualizer::plot(void) {
     //    ims_trk.push_back(plot_all_velocity());
     //ims_trk.push_back(plot_all_acceleration());
     ims_trk.push_back(plot_all_control());
-    plotframe = createRowImage(ims_trk,CV_8UC3);
+    plotframe = create_row_image(ims_trk,CV_8UC3);
 }
 
 cv::Mat Visualizer::plot_xyd(void) {
@@ -103,7 +104,7 @@ cv::Mat Visualizer::plot_xyd(void) {
     ims_xyd.push_back(plot({disparity,sdisparity},"Disparity"));
 
 
-    cv::Point sp1(-_dctrl->viz_pos_after_burn.x*1000.f,-_dctrl->viz_pos_after_burn.z*1000.f);
+    cv::Point sp1(-_dctrl->viz_drone_pos_after_burn.x*1000.f,-_dctrl->viz_drone_pos_after_burn.z*1000.f);
     cv::Point min_xz_range,max_xz_range;
     min_xz_range.x =-2000;
     max_xz_range.x = 2000;
@@ -111,7 +112,7 @@ cv::Mat Visualizer::plot_xyd(void) {
     max_xz_range.y = 4000; // z
     ims_xyd.push_back(plotxy(posX,posZ, sp1,"PosXZ",min_xz_range,max_xz_range));
 
-    cv::Point sp2(-_dctrl->viz_pos_after_burn.x*1000.f,_dctrl->viz_pos_after_burn.y*1000.f);
+    cv::Point sp2(-_dctrl->viz_drone_pos_after_burn.x*1000.f,_dctrl->viz_drone_pos_after_burn.y*1000.f);
     cv::Point min_xy_range,max_xy_range;
     min_xy_range.x =-2000;
     max_xy_range.x = 2000;
@@ -119,7 +120,7 @@ cv::Mat Visualizer::plot_xyd(void) {
     max_xy_range.y = 2000;
     ims_xyd.push_back(plotxy(posX,posY, sp2, "PosXY",min_xy_range,max_xy_range));
 
-    return createColumnImage(ims_xyd, CV_8UC3);
+    return create_column_image(ims_xyd, CV_8UC3);
 }
 
 cv::Mat Visualizer::plot_all_control(void) {
@@ -127,7 +128,7 @@ cv::Mat Visualizer::plot_all_control(void) {
     ims_joy.push_back(plot({roll_joystick,roll_calculated},"Roll"));
     ims_joy.push_back(plot({pitch_joystick,pitch_calculated},"Pitch"));
     ims_joy.push_back(plot({throttle_joystick,throttle_calculated,throttle_hover,throttle_min_bound,throttle_max_bound},"Throttle"));
-    return createColumnImage(ims_joy, CV_8UC3);
+    return create_column_image(ims_joy, CV_8UC3);
 }
 
 cv::Mat Visualizer::plot_all_velocity(void) {
@@ -135,7 +136,7 @@ cv::Mat Visualizer::plot_all_velocity(void) {
     ims_vel.push_back(plot({svelX}, "VelX"));
     ims_vel.push_back(plot({svelY},"VelY"));
     ims_vel.push_back(plot({svelZ},"VelZ"));
-    return createColumnImage(ims_vel,CV_8UC3);
+    return create_column_image(ims_vel,CV_8UC3);
 }
 
 cv::Mat Visualizer::plot_all_acceleration(void) {
@@ -143,7 +144,7 @@ cv::Mat Visualizer::plot_all_acceleration(void) {
     ims_acc.push_back(plot({saccX}, "AccX"));
     ims_acc.push_back(plot({saccY},"AccY"));
     ims_acc.push_back(plot({saccZ},"AccZ"));
-    return createColumnImage(ims_acc,CV_8UC3);
+    return create_column_image(ims_acc,CV_8UC3);
 }
 
 cv::Mat Visualizer::plot_all_position(void) {
@@ -151,7 +152,7 @@ cv::Mat Visualizer::plot_all_position(void) {
     ims_pos.push_back(plot({posX,sposX,setposX},"PosX"));
     ims_pos.push_back(plot({posY,sposY,setposY},"PosY"));
     ims_pos.push_back(plot({posZ,sposZ,setposZ},"PosZ"));
-    return createColumnImage(ims_pos, CV_8UC3);
+    return create_column_image(ims_pos, CV_8UC3);
 }
 
 cv::Mat Visualizer::plot(std::vector<cv::Mat> data, const std::string name) {
@@ -354,9 +355,9 @@ void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3d setpoint, doubl
         static float min_dis = 9999;
         float dis = 0;
         if (_dtrkr->n_frames_tracking>0 && _itrkr->n_frames_tracking>0) {
-            dis = powf(_dtrkr->Last_track_data().posX-_itrkr->Last_track_data().posX,2) +
-                  powf(_dtrkr->Last_track_data().posY-_itrkr->Last_track_data().posY,2) +
-                  powf(_dtrkr->Last_track_data().posZ-_itrkr->Last_track_data().posZ,2);
+            dis = powf(_dtrkr->Last_track_data().state.pos.x-_itrkr->Last_track_data().state.pos.x,2) +
+                  powf(_dtrkr->Last_track_data().state.pos.y-_itrkr->Last_track_data().state.pos.y,2) +
+                  powf(_dtrkr->Last_track_data().state.pos.z-_itrkr->Last_track_data().state.pos.z,2);
             dis = sqrtf(dis);
 
             if (dis < min_dis)
@@ -429,18 +430,15 @@ void Visualizer::draw_tracker_viz() {
 
     if (_dctrl->ff_interception()) {
         //burn:
-        cv::Point2f viz_pos_after_aim_im = world2im_2d(_dctrl->viz_pos_after_aim,_visdat->Qfi, _visdat->camera_angle);
-        cv::Point2f viz_pos_after_burn_im = world2im_2d(_dctrl->viz_pos_after_burn,_visdat->Qfi, _visdat->camera_angle);
-        cv::circle(frameL_color,viz_pos_after_aim_im,2,blue);
-        cv::circle(frameL_color,viz_pos_after_burn_im,2,red);
-        viz_pos_after_aim_im.x+=15;
-        viz_pos_after_burn_im.x+=15;
-        putText(frameL_color,to_string_with_precision(_dctrl->viz_time_after_aim,2),viz_pos_after_aim_im,cv::FONT_HERSHEY_SIMPLEX,0.5,blue);
-        putText(frameL_color,to_string_with_precision(_dctrl->viz_time_after_burn,2),viz_pos_after_burn_im,cv::FONT_HERSHEY_SIMPLEX,0.5,red);
+        cv::Point2f viz_drone_pos_after_burn_im = world2im_2d(_dctrl->viz_drone_pos_after_burn,_visdat->Qfi, _visdat->camera_angle);
+        cv::Point2f viz_target_pos_after_burn_im = world2im_2d(_dctrl->viz_target_pos_after_burn,_visdat->Qfi, _visdat->camera_angle);
+        cv::circle(frameL_color,viz_target_pos_after_burn_im,2,white);
+        viz_drone_pos_after_burn_im.x+=15;
+        putText(frameL_color,to_string_with_precision(_dctrl->viz_time_after_burn,2),viz_drone_pos_after_burn_im,cv::FONT_HERSHEY_SIMPLEX,0.5,pink);
 
         for (uint i=0; i< _dctrl->viz_drone_trajectory.size();i++) {
-            cv::Point2f p = world2im_2d(_dctrl->viz_drone_trajectory.at(i),_visdat->Qfi, _visdat->camera_angle);
-            cv::circle(frameL_color,p,1,green);
+            cv::Point2f p = world2im_2d(_dctrl->viz_drone_trajectory.at(i).pos,_visdat->Qfi, _visdat->camera_angle);
+            cv::circle(frameL_color,p,1,pink);
         }
 
         for (uint i=0; i < drn_path.size();i++){

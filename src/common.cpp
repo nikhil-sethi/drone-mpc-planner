@@ -16,12 +16,14 @@ void CameraVolume::init(float a_top, float a_front, float a_left, float a_right,
     y_limit = b_height;
 }
 
-bool CameraVolume::is_inView(cv::Point3f p, bool inner_hysteresis){
 
-    float hysteresis_margin = 0;
-    if (inner_hysteresis)
-        hysteresis_margin = 0.3; //[m]
-
+bool CameraVolume::in_view(cv::Point3f p, volume_check_mode c){
+    if (c == relaxed)
+        return in_view(p,0.3);
+    else
+        return in_view(p,0);
+}
+bool CameraVolume::in_view(cv::Point3f p,float hysteresis_margin){
     // Attention check the negative case!
     if(p.y>slope_top*p.z - hysteresis_margin
         || p.y<slope_front*p.z + hysteresis_margin
@@ -78,22 +80,7 @@ cv::Point3f im2world(cv::Point2f p_im,float disparity, cv::Mat Qf, float camera_
     return w;
 }
 
-void acc_orientation(float accx, float accy, float accz, float *out) {
-    float R;
-    float tx,ty,tz,pitch,roll;
-    R = sqrtf(accx * accx + accy * accy +accz * accz);
-
-    tx = acosf(accx/R)-M_PI_2f32;
-    ty = acosf(accy/R)-M_PI_2f32;
-    tz = acosf(accz/R)-M_PI_2f32;
-    pitch = atan2f(-ty, -tz) + M_PI_2f32;
-    roll =  atan2f(-tz, -tx) + M_PI_2f32;
-    out[0] = roll;
-    out[1] = pitch;
-    out[2] = 0;
-}
-
-bool checkFileExist (const std::string& name) {
+bool file_exist (const std::string& name) {
     if (FILE *file = fopen(name.c_str(), "r")) {
         fclose(file);
         return true;
@@ -103,7 +90,7 @@ bool checkFileExist (const std::string& name) {
 }
 
 //combines a sperate left and right image into one combined concenated image
-void combineImage(cv::Mat iml,cv::Mat imr,cv::Mat *res) {
+void combine_image(cv::Mat iml,cv::Mat imr,cv::Mat *res) {
 
     *res = cv::Mat(iml.rows,iml.cols + imr.cols,CV_8UC3);
     cv::Point pl1(0, 0);
@@ -118,7 +105,7 @@ void combineImage(cv::Mat iml,cv::Mat imr,cv::Mat *res) {
 }
 
 //combines a sperate left and right image into one combined concenated image
-void combineGrayImage(cv::Mat iml,cv::Mat imr,cv::Mat *res) {
+void combine_gray_image(cv::Mat iml,cv::Mat imr,cv::Mat *res) {
 
     *res = cv::Mat(iml.rows,iml.cols + imr.cols,CV_8UC1);
     cv::Point pl1(0, 0);
@@ -132,7 +119,7 @@ void combineGrayImage(cv::Mat iml,cv::Mat imr,cv::Mat *res) {
     imr.copyTo(roir);
 }
 
-cv::Mat createRowImage(std::vector<cv::Mat> ims, int type,float resizef)
+cv::Mat create_row_image(std::vector<cv::Mat> ims, int type,float resizef)
 {
     //find max height and total width:
     int width = 0;
@@ -172,7 +159,7 @@ cv::Mat createRowImage(std::vector<cv::Mat> ims, int type,float resizef)
     return res;
 }
 
-cv::Mat createColumnImage(std::vector<cv::Mat> ims, int type,float resizef)
+cv::Mat create_column_image(std::vector<cv::Mat> ims, int type,float resizef)
 {
     //find max width and total height:
     int width = -1;
@@ -213,31 +200,15 @@ cv::Mat createColumnImage(std::vector<cv::Mat> ims, int type,float resizef)
 }
 
 /* combines a bunch of images into one column, and shows it */
-void showColumnImage(std::vector<cv::Mat> ims, std::string window_name, int type, float resizef) {
-    cv::Mat res = createColumnImage(ims,type,resizef);
+void show_column_image(std::vector<cv::Mat> ims, std::string window_name, int type, float resizef) {
+    cv::Mat res = create_column_image(ims,type,resizef);
     cv::imshow(window_name, res);
 }
 
 /* combines a bunch of images into one row, and shows it */
-void showRowImage(std::vector<cv::Mat> ims, std::string window_name, int type,float resizef) {
-    cv::Mat res = createRowImage(ims,type,resizef);
+void show_row_image(std::vector<cv::Mat> ims, std::string window_name, int type,float resizef) {
+    cv::Mat res = create_row_image(ims,type,resizef);
     cv::imshow(window_name, res);
-}
-
-cv::Mat createBlurryCircle(cv::Point size) {
-    cv::Point2f tmp;
-    tmp.x = roundf((static_cast<float>(size.x))/4.f);
-    tmp.y = roundf((static_cast<float>(size.y))/4.f);
-    if (fabs((tmp.x / 2.f) - roundf(tmp.x / 2.f)) < 0.01f)
-        tmp.x +=1;
-    if (fabs((tmp.y / 2.f) - roundf(tmp.y / 2.f)) < 0.01f)
-        tmp.y +=1;
-
-    cv::Mat res = cv::Mat::zeros(size.y,size.x,CV_32F);
-
-    cv::ellipse(res,cv::Point(size.x/2,size.y/2),cv::Size(tmp.x,tmp.y),0,0,360,1.0f,CV_FILLED);
-    cv::GaussianBlur( res, res, cv::Size( tmp.x, tmp.y ), 0, 0 );
-    return res;
 }
 
 std::string to_string_with_precision(float f, const int n)
@@ -248,18 +219,18 @@ std::string to_string_with_precision(float f, const int n)
     return out.str();
 }
 
-int getSecondsSinceFileCreation(std::string filePath)
+int seconds_since_file_creation(std::string file_path)
 {
-    if (!checkFileExist(filePath))
+    if (!file_exist(file_path))
         return std::numeric_limits<int>::max();
     struct stat attrib;
-    stat(filePath.c_str(), &attrib);
-//    auto t1 = localtime(&(attrib.st_ctime));
-//    std::cout << std::asctime( localtime(&(attrib.st_ctime)));
+    stat(file_path.c_str(), &attrib);
+    //    auto t1 = localtime(&(attrib.st_ctime));
+    //    std::cout << std::asctime( localtime(&(attrib.st_ctime)));
     auto curtime=  std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(curtime);
-//    std::cout << std::asctime(std::localtime(&in_time_t)) << std::endl;
-//    auto now = std::localtime(&in_time_t);
+    //    std::cout << std::asctime(std::localtime(&in_time_t)) << std::endl;
+    //    auto now = std::localtime(&in_time_t);
     double diff = difftime(in_time_t,attrib.st_ctime);
     return static_cast<int>(diff);
 }

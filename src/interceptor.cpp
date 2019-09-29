@@ -87,17 +87,17 @@ void Interceptor::update(bool drone_at_base) {
 
 void Interceptor::update_far_target(bool drone_at_base){
     track_data itd = _trackers->insecttracker()->Last_track_data();
-    cv::Point3f insect_pos = {itd.posX,itd.posY,itd.posZ};
-    cv::Point3f insect_vel = {itd.svelX,itd.svelY,itd.svelZ};
-    cv::Point3f insect_acc = {itd.saccX,itd.saccY,itd.saccZ};
+    cv::Point3f insect_pos = itd.pos();
+    cv::Point3f insect_vel = itd.vel();
+    cv::Point3f insect_acc = itd.acc();
 
     track_data dtd = _trackers->dronetracker()->Last_track_data();
-    cv::Point3f drone_vel = {dtd.svelX,dtd.svelY,dtd.svelZ};
+    cv::Point3f drone_vel = dtd.vel();
     cv::Point3f drone_pos;
     if (drone_at_base)
         drone_pos = _trackers->dronetracker()->drone_startup_location();
     else {
-        drone_pos = {dtd.posX,dtd.posY,dtd.posZ};
+        drone_pos = dtd.pos();
     }
 
     float tti = calc_tti(insect_pos,_intercept_vel,drone_pos,drone_vel,drone_at_base);
@@ -113,12 +113,12 @@ void Interceptor::update_far_target(bool drone_at_base){
 }
 void Interceptor::update_close_target(){
     track_data itd = _trackers->insecttracker()->Last_track_data();
-    cv::Point3f insect_pos = {itd.posX,itd.posY,itd.posZ};
-    cv::Point3f insect_vel = {itd.svelX,itd.svelY,itd.svelZ};
-    cv::Point3f insect_acc = {itd.saccX,itd.saccY,itd.saccZ};
+    cv::Point3f insect_pos = itd.pos();
+    cv::Point3f insect_vel = itd.vel();
+    cv::Point3f insect_acc = itd.acc();
 
     track_data dtd = _trackers->dronetracker()->Last_track_data();
-    cv::Point3f drone_pos = {dtd.posX,dtd.posY,dtd.posZ};
+    cv::Point3f drone_pos = dtd.pos();
 
     _intercept_pos = insect_pos;
     _intercept_acc = insect_acc;

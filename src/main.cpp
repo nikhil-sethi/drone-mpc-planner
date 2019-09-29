@@ -127,7 +127,7 @@ MainWindow gui;
 #endif
 
 /*******Private prototypes*********/
-void process_frame(Stereo_Frame_Data data);
+void process_frame(Stereo_Frame_Data data_drone);
 void process_video();
 int main( int argc, char **argv);
 void handle_key();
