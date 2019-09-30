@@ -155,8 +155,10 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         } else  if (static_cast<float>(time - take_off_start_time) > dparams.full_bat_and_throttle_spinup_duration + auto_burn_duration + transmission_delay_duration + 12.f / pparams.fps){
             if(_joy_state == js_waypoint)
                 _flight_mode = fm_flying_pid_init;
-            else
+            else{
                 _flight_mode = fm_interception_aim_start;
+                recovery_pos = data_drone.pos();
+            }
         }
         break;
     }  case fm_interception_aim_start: {
@@ -179,13 +181,17 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         if (remaining_aim_duration<0)
             remaining_aim_duration = 0;
         std::vector<state_data> traj;
-        std::tie (auto_roll, auto_pitch, auto_burn_duration,burn_direction,traj) = calc_burn(state_drone_better,data_target.state,remaining_aim_duration);
+        if (!recovery_mode)
+            std::tie (auto_roll, auto_pitch, auto_burn_duration,burn_direction,traj) = calc_burn(state_drone_better,data_target.state,remaining_aim_duration);
+        else
+            std::tie (auto_roll, auto_pitch, auto_burn_duration,burn_direction,traj) = calc_burn(state_drone_better, set_recoveryState(recovery_pos),remaining_aim_duration);
+
         if (_fromfile) // todo: tmp solution, call from visualizer instead if this viz remains to be needed
             draw_viz(state_drone_better,data_target.state,time,burn_direction,auto_burn_duration,remaining_aim_duration,traj);
 
         auto_throttle = tmp_hover_throttle;
 
-        if (recovery_mode && remaining_aim_duration < 0) {
+        if (recovery_mode && remaining_aim_duration <= 0) {
             _flight_mode = fm_interception_burn_start;
         } else if (recovery_mode) { // do nothing
         } else if (!trajectory_in_view(traj,CameraVolume::relaxed)){
@@ -203,8 +209,6 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         _flight_mode = fm_interception_burn;
         auto_throttle = JOY_BOUND_MAX;
 
-        if (!recovery_mode)
-            recovery_pos = data_drone.pos();
         std::cout << "Burning" << std::endl;
         [[fallthrough]];
     } case fm_interception_burn: {
@@ -221,14 +225,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
     }  case fm_retry_aim_start: {
         interception_start_time = time;
         recovery_mode = !recovery_mode;
-        if (!data_drone.pos_valid || !data_drone.vel_valid) {
-            throttle = auto_throttle;
-            pitch = JOY_MIDDLE;
-            roll = JOY_MIDDLE;
-            _flight_mode =   fm_disarmed; // todo: create a feedforward return to volume
-            break;
-        } else
-            _flight_mode =   fm_interception_aim;
+        _flight_mode = fm_interception_aim;
         std::cout << "Re-aiming" << std::endl;
         _burn_direction_for_thrust_approx = {0};
         break;
@@ -254,6 +251,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
                 if (trajectory_in_view(traj_back,CameraVolume::strict)){
                     _flight_mode = fm_retry_aim_start;
                     recovery_mode = true; // will be set to false in retry_aim
+                    recovery_pos = data_drone.pos();
                 }
             }
         }

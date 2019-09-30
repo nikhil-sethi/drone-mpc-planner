@@ -179,6 +179,15 @@ private:
     void deserialize_settings();
     void serialize_settings();
 
+    inline state_data set_recoveryState(cv::Point3f position){
+        state_data rt;
+        rt.pos = position;
+        rt.vel = {0};
+        rt.acc = {0};
+
+        return rt;
+    }
+
 public:
     void flight_mode(flight_modes f){
         _flight_mode = f;
