@@ -230,6 +230,7 @@ void DroneNavigation::update(double time) {
         } case ns_approach_waypoint: {
             float pos_err = sqrtf(_dctrl->posErrX*_dctrl->posErrX + _dctrl->posErrY*_dctrl->posErrY + _dctrl->posErrZ*_dctrl->posErrZ);
             float vel_err = sqrtf(_dctrl->velErrX*_dctrl->velErrX + _dctrl->velErrX*_dctrl->velErrX + _dctrl->velErrX*_dctrl->velErrX);
+            _dist_to_wp = pos_err;
 
             if (pos_err *1000 < current_setpoint->threshold_mm * distance_threshold_f
                 && vel_err < 1.6f

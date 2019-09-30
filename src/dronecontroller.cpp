@@ -248,10 +248,10 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
             cv::Point3f burn_direction;
             std::tie (auto_roll, auto_pitch,auto_burn_duration,burn_direction,traj) = calc_burn(data_drone.state,data_target.state,aim_duration);
 
-            if (!trajectory_in_view(traj,CameraVolume::strict)) {
+            if (trajectory_in_view(traj,CameraVolume::strict)) {
                 std::vector<state_data> traj_back;
                 std::tie (std::ignore, std::ignore,std::ignore,std::ignore,traj_back) = calc_burn(traj.back(),traj.front(),aim_duration);
-                if (!trajectory_in_view(traj_back,CameraVolume::strict)){
+                if (trajectory_in_view(traj_back,CameraVolume::strict)){
                     _flight_mode = fm_retry_aim_start;
                     recovery_mode = true; // will be set to false in retry_aim
                 }
