@@ -408,8 +408,8 @@ std::tuple<int,int,float,cv::Point3f> DroneController::calc_directional_burn(sta
 
     auto [roll_deg, pitch_deg] = acc_to_deg(burn_direction);
 
-    int auto_roll_burn =  ((roll_deg/max_bank_angle+1) / 2.f) * JOY_MAX; // convert to RC commands range
-    int auto_pitch_burn = ((pitch_deg/max_bank_angle+1) / 2.f) * JOY_MAX;
+    int auto_roll_burn =  ((roll_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN; // convert to RC commands range
+    int auto_pitch_burn = ((pitch_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN;
 
     return std::make_tuple(auto_roll_burn,auto_pitch_burn,burn_duration,burn_direction);
 }
