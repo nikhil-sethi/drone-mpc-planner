@@ -546,8 +546,7 @@ void close() {
 #endif
 
     /*****Close everything down*****/
-    if (!fromfile)
-        cam.close(); // attempt to save the video 
+    cam.close(); // attempt to save the video first
 
     dctrl.close();
     dnav.close();
@@ -566,11 +565,6 @@ void close() {
         output_video_cuts.close();
 
     logger.close();
-
-    if (fromfile) {
-        std::terminate(); // TMP because of deadlock bug RS
-        cam.close();
-    }
     close_thread_pool();
 
     std::cout <<"Closed"<< std::endl;

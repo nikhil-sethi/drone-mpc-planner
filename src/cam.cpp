@@ -854,7 +854,7 @@ void Cam::close() {
                 usleep(1000);
             }
         } else {
-            cam.stop(); // grr this deadlocks https://github.com/IntelRealSense/librealsense/issues/3126
+            cam.stop();
         }
         if (pparams.watchdog && !fromfile){
             std::cout << "Waiting for camera watchdog." << std::endl;
