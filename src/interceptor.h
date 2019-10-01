@@ -24,6 +24,7 @@ class Interceptor{
 private:
     TrackerManager * _trackers;
     VisionData *_visdat;
+    CameraVolume* _camvol;
     cv::Point3f _intercept_pos,_intercept_vel,_intercept_acc;
     float _horizontal_separation, _vertical_separation;
 
@@ -51,7 +52,7 @@ private:
 
 public:
 
-    void init(TrackerManager * trackers, VisionData * visdat);
+    void init(TrackerManager *trackers, VisionData *visdat, CameraVolume *camvol);
     void update(bool drone_at_base);
 
     void reset_insect_cleared() {_count_insect_not_in_range = 0;}

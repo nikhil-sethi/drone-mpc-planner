@@ -4,13 +4,13 @@
 using namespace cv;
 using namespace std;
 
-void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, DroneController * dctrl, VisionData *visdat) {
+void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, DroneController * dctrl, VisionData *visdat, CameraVolume *camvol) {
     _logger = logger;
     _trackers = trackers;
     _dctrl = dctrl;
     _visdat = visdat;
 
-    _iceptor.init(_trackers,visdat);
+    _iceptor.init(_trackers, visdat, camvol);
 
     // Load saved navigation paremeters
     deserialize_settings();

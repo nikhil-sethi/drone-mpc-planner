@@ -205,7 +205,7 @@ public:
     }
 
     void close (void);
-    void init(std::ofstream *logger, TrackerManager * imngr, DroneController *dctrl, VisionData *visdat);
+    void init(std::ofstream *logger, TrackerManager * imngr, DroneController *dctrl, VisionData *visdat, CameraVolume *camvol);
     void update(double time);
     bool disable_insect_detection() {
         return _navigation_status < ns_wait_for_takeoff_command;

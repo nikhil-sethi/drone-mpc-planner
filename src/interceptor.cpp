@@ -1,19 +1,22 @@
 #include "interceptor.h"
 #include "opencv2/imgproc.hpp"
 
-void Interceptor::init(TrackerManager * trackers, VisionData * visdat) {
+void Interceptor::init(TrackerManager *trackers, VisionData *visdat, CameraVolume *camvol) {
     _trackers = trackers;
     _visdat = visdat;
+    _camvol = camvol;
     insect_cleared_timeout = pparams.fps*0.5f;
 }
-void Interceptor::update(bool drone_at_base) {
 
+
+void Interceptor::update(bool drone_at_base) {
 
     switch (_interceptor_state) {
      case  is_init: {
         _interceptor_state = is_waiting_for_target;
         _intercept_pos = {0,0,0};
         [[fallthrough]];
+
     } case is_waiting_for_target: {
         _intercept_vel = {0,0,0};
         _intercept_acc = {0,0,0};
@@ -138,17 +141,10 @@ void Interceptor::update_close_target(){
 
 void Interceptor::update_insect_in_range() {
     //calculate if the drone will stay within the camera borders where it still can be controlled:
-    if (_intercept_pos.x > _intercept_pos.z+0.3f &&
-            _intercept_pos.x < -_intercept_pos.z-0.3f &&
-            abs(_intercept_pos.x) < 10.0f &&
-            _intercept_pos.y > _intercept_pos.z*1.5f &&
-            _intercept_pos.y < -0.3f &&
-            _intercept_pos.z > -10.f &&
-            _intercept_pos.z < -0.5f) {
+    if (_camvol->in_view (_intercept_pos, CameraVolume::strict)){ //ATTENTION!: In view check must be strict otherwise the burn validation will always fail in fm_pid_flying.
         _count_insect_not_in_range= 0;
     } else {
         _count_insect_not_in_range++;
-
     }
 }
 
