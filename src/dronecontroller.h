@@ -125,7 +125,7 @@ private:
     std::string settings_file;
 
     const float max_bank_angle = 180; // TODO: move to dparams (betaflight setting)
-    const float aim_duration = 0.2f; // TODO: move to dparams, slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
+    const float aim_duration = 0.0833333333333f; // TODO: move to dparams, slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
     const float transmission_delay_duration = 0.03f;
     float effective_burn_spin_up_duration = 0.1f; // the time to spin up from hover to max
     const float effective_burn_spin_down_duration = 0.1f; // the time to spin down from max to hover
