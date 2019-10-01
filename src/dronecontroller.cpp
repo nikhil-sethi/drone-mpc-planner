@@ -198,7 +198,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
             _flight_mode = fm_flying_pid_init;
         } else {
             std::vector<state_data> traj_back;
-            std::tie (std::ignore, std::ignore,std::ignore,std::ignore,traj_back) = calc_burn(traj.back(),traj.front(),remaining_aim_duration);
+            std::tie (std::ignore, std::ignore,std::ignore,std::ignore,traj_back) = calc_burn(traj.back(),traj.front(),aim_duration);
             if (!trajectory_in_view(traj_back,CameraVolume::relaxed)){
                 _flight_mode = fm_flying_pid_init;
             } else if (remaining_aim_duration < 0.01f)
