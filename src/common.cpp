@@ -36,6 +36,57 @@ bool CameraVolume::in_view(cv::Point3f p,float hysteresis_margin){
         return true;
 }
 
+float CameraVolume::calc_distance_to_borders(std::vector<cv::Point3f> p){
+    cv::Mat pMat = (cv::Mat_<float_t>(3,2) << p[0].x, p[1].x, p[0].y, p[1].y, p[0].z, p[1].z);
+
+    float min_dist = std::numeric_limits<float>::max();
+    float dist;
+
+    // Check the back:
+    cv::Mat plane = (cv::Mat_<float>(3,2) << 0.f, 0.f, 0.f, 0.f, z_limit, -1.f);
+    dist = calc_distance_to_plane (pMat, plane);
+
+    if(dist>0 && dist<min_dist)
+        min_dist = dist;
+
+    // Check the ground:
+    plane = (cv::Mat_<float>(3,2) << 0.f, 0.f, y_limit, 1, 0.f, 0.f);
+    dist = calc_distance_to_plane (pMat, plane);
+
+    if(dist>0 && dist<min_dist)
+        min_dist = dist;
+
+    // Check the front:
+    plane = (cv::Mat_<float>(3,2) << 0.f, 0.f, 0.f, slope_front, 0.f, 1.f);
+    dist = calc_distance_to_plane (pMat, plane);
+
+    if(dist>0 && dist<min_dist)
+        min_dist = dist;
+
+    // Check the top:
+    plane = (cv::Mat_<float>(3,2) << 0.f, 0.f, 0.f, slope_top, 0.f, 1.f);
+    dist = calc_distance_to_plane (pMat, plane);
+
+    if(dist>0 && dist<min_dist)
+        min_dist = dist;
+
+    // Check the left:
+    plane = (cv::Mat_<float>(3,2) << 0.f, slope_left, 0.f, 0.f, 0.f, 1.f);
+    dist = calc_distance_to_plane (pMat, plane);
+
+    if(dist>0 && dist<min_dist)
+        min_dist = dist;
+
+    // Check the right:
+    plane = (cv::Mat_<float>(3,2) << 0.f, slope_right, 0.f, 0.f, 0.f, 1.f);
+    dist = calc_distance_to_plane (pMat, plane);
+
+    if(dist>0 && dist<min_dist)
+        min_dist = dist;
+
+    return min_dist;
+}
+
 float CameraVolume::calc_distance_to_plane(cv::Mat vec, cv::Mat plane){
     cv::Mat b(3, 1, CV_32F);
     b = vec.col(0) - plane.col(0);
