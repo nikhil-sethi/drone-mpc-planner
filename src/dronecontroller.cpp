@@ -248,7 +248,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         if (data_drone.pos_valid && data_drone.vel_valid){
             std::vector<state_data> traj;
             cv::Point3f burn_direction;
-            std::tie (auto_roll, auto_pitch,auto_burn_duration,burn_direction,traj) = calc_burn(data_drone.state,data_target.state,aim_duration);
+            std::tie (std::ignore, std::ignore,std::ignore,burn_direction,traj) = calc_burn(data_drone.state,data_target.state,aim_duration);
 
             if (trajectory_in_view(traj,CameraVolume::strict)) {
                 std::vector<state_data> traj_back;
