@@ -130,6 +130,7 @@ private:
     float effective_burn_spin_up_duration = 0.1f; // the time to spin up from hover to max
     const float effective_burn_spin_down_duration = 0.1f; // the time to spin down from max to hover
     float thrust = 3.0f*GRAVITY;
+    cv::Point3f drone_vel_after_takeoff = {0};
     float ground_effect = 1.0f;
     const float lift_off_dist_take_off_aim = 0.02f;
     const float take_off_burn_duration = 0.1f;

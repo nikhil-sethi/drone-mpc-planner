@@ -573,11 +573,15 @@ void DroneController::approx_effective_thrust(track_data data_drone, cv::Point3f
     float partial_effective_burn_spin_down_duration = effective_burn_spin_down_duration; // if the burn duration is long enough this is equal otherwise it may be shortened
     cv::Point3f acc = burn_direction * thrust ; // initial guess, variable to be optimized
     cv::Point3f meas_pos =  data_drone.pos(); // current measured drone position
+    cv::Point3f integrated_vel = {0};
+    cv::Point3f integrated_vel2 = {0};
     for (int i = 0; i<100; i++) {
 
         cv::Point3f max_acc = acc;
         cv::Point3f integrated_pos = pos_after_aim;
-        cv::Point3f integrated_vel = {0};
+        cv::Point3f integrated_pos2 = pos_after_aim;
+        cv::Point3f max_jerk = acc/effective_burn_spin_up_duration;
+
 
         if (burn_duration  > effective_burn_spin_up_duration) {
             max_acc -=cv::Point3f(0,GRAVITY,0);
@@ -592,29 +596,39 @@ void DroneController::approx_effective_thrust(track_data data_drone, cv::Point3f
             partial_effective_burn_spin_down_duration = burn_duration;
             max_acc = acc * (burn_duration / effective_burn_spin_up_duration); // only part of the max acc is reached because the burn was too short
             max_acc -=cv::Point3f(0,GRAVITY,0);
+            max_jerk = max_acc/effective_burn_spin_up_duration;
 
             // Phase: spin up
             integrated_pos += 0.25f * max_acc *powf(partial_effective_burn_spin_down_duration,2);
             integrated_vel = 0.5f * max_acc  * partial_effective_burn_spin_down_duration;
+
+            // using jerk  x=x0+v0t+1/2a0*t^2+1/6j*t^3 v=v0+a0t+1/2j*t^2
+            integrated_pos2 += 0.167f * max_jerk * powf(partial_effective_burn_spin_down_duration,3);
+            integrated_vel2 = 0.5f * max_jerk  * powf(partial_effective_burn_spin_down_duration,2);
         }
 
         if (dt>burn_duration + partial_effective_burn_spin_down_duration){
             // Phase: spin down
             integrated_pos += 0.25f * max_acc *powf(partial_effective_burn_spin_down_duration,2) + integrated_vel * partial_effective_burn_spin_down_duration;
             integrated_vel += 0.5*max_acc * partial_effective_burn_spin_down_duration;
+
+            integrated_pos2 += 0.167f * max_jerk * powf(partial_effective_burn_spin_down_duration,3) + integrated_vel2*partial_effective_burn_spin_down_duration;
+            integrated_vel2 += 0.5f * max_jerk  * powf(partial_effective_burn_spin_down_duration,2) ;
         } else
             std::cout << "Error: not implemented" << std::endl;  //todo: or never needed... ?
 
         // Phase: 1G: (the remaining time)
         integrated_pos += integrated_vel * (dt-burn_duration-partial_effective_burn_spin_down_duration);
+        integrated_pos2 += integrated_vel2 * (dt-burn_duration-partial_effective_burn_spin_down_duration);
 
-        cv::Point3f err = meas_pos - integrated_pos;
+        cv::Point3f err = meas_pos - integrated_pos2;
         acc += err / powf(dt,2);
         if (norm(err)< 0.01)
             break;
 
     }
     thrust = static_cast<float>(norm(acc)) / ground_effect;
+    drone_vel_after_takeoff = integrated_vel2;
 }
 
 void DroneController::calc_pid_error(track_data data_drone, cv::Point3f setpoint_pos,cv::Point3f setpoint_vel,cv::Point3f setpoint_acc) {
