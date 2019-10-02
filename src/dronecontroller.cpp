@@ -129,15 +129,15 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
             _flight_mode = fm_max_burn;
             std::cout << "Take off burn" << std::endl;
         }
-
-        cv::Point3f burn_direction;
-        std::tie (auto_roll, auto_pitch,std::ignore,burn_direction) = calc_directional_burn(state_drone_takeoff,data_target.state,0);
-        auto_burn_duration = take_off_burn_duration; //TODO: make this number dynamic such that we have just enough time to do a second directional burn?
-        _burn_direction_for_thrust_approx = burn_direction; // to be used later to approx effective thrust
-        std::vector<state_data> trajectory = predict_trajectory(auto_burn_duration, 0, burn_direction, state_drone_takeoff);
-        if (_fromfile) // todo: tmp solution, call from visualizer instead if this viz remains to be needed
-            draw_viz(state_drone_takeoff,data_target.state,time,burn_direction,auto_burn_duration,remaining_aim_duration,trajectory);
-
+        if (remaining_aim_duration <= aim_duration) {
+            cv::Point3f burn_direction;
+            std::tie (auto_roll, auto_pitch,std::ignore,burn_direction) = calc_directional_burn(state_drone_takeoff,data_target.state,0);
+            auto_burn_duration = take_off_burn_duration; //TODO: make this number dynamic such that we have just enough time to do a second directional burn?
+            _burn_direction_for_thrust_approx = burn_direction; // to be used later to approx effective thrust
+            std::vector<state_data> trajectory = predict_trajectory(auto_burn_duration, 0, burn_direction, state_drone_takeoff);
+            if (_fromfile) // todo: tmp solution, call from visualizer instead if this viz remains to be needed
+                draw_viz(state_drone_takeoff,data_target.state,time,burn_direction,auto_burn_duration,remaining_aim_duration,trajectory);
+        }
         break;
     } case fm_max_burn: {
         auto_throttle = JOY_BOUND_MAX;
