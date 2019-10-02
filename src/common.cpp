@@ -36,6 +36,49 @@ bool CameraVolume::in_view(cv::Point3f p,float hysteresis_margin){
         return true;
 }
 
+float CameraVolume::calc_distance_to_plane(cv::Mat vec, cv::Mat plane){
+    cv::Mat b(3, 1, CV_32F);
+    b = vec.col(0) - plane.col(0);
+
+    cv::Mat n(3, 1, CV_32F);
+    n = plane.col(1)/norm(plane.col(1));
+    cv::Mat e1(3, 1, CV_32F);
+    e1 = get_orthogonal_vector(n);
+    cv::Mat e2(3, 1, CV_32F);
+    e2 = n.cross(e1);
+
+    cv::Mat A(3, 3, CV_32F);
+    e1.copyTo (A.col(0));
+    e2.copyTo (A.col(1));
+    cv::Mat tmp = (cv::Mat_<float>(3,1) << -vec.at<float>(0,1), -vec.at<float>(1,1), -vec.at<float>(2,1));
+    tmp.copyTo (A.col(2));
+
+    if(abs(cv::determinant(A))<0.05){
+        // the plane and the vector are (almost) parallel to each other.
+        // distance is infinity
+        return std::numeric_limits<float>::max();
+    }
+
+    cv::Mat params(3, 1, CV_32F);
+    params = A.inv()*b;
+    float sgn_param3 = 1 - 2*(params.at<float>(2,0)<0);
+
+    return sgn_param3 * norm( params.at<float>(2,0)*vec.col(1) );
+}
+
+cv::Mat CameraVolume::get_orthogonal_vector(cv::Mat vec){
+    cv::Mat rt;
+    if(vec.at<float>(2,0)!=0){
+        rt = (cv::Mat_<float>(3,1) << 1,1,(-vec.at<float>(0,0) -vec.at<float>(1,0)/vec.at<float>(2,0)) );
+    }else if(vec.at<float>(1,0)!=0){
+        rt = (cv::Mat_<float>(3,1) << 1,(-vec.at<float>(0,0) -vec.at<float>(2,0)/vec.at<float>(1,0),1) );
+    }else if(vec.at<float>(0,0)!=0){
+        rt = (cv::Mat_<float>(3,1) << 1,(-vec.at<float>(1,0) -vec.at<float>(2,0)/vec.at<float>(0,0),1) );
+    }
+
+    return rt;
+}
+
 //strips disparity from world2im_3d
 cv::Point2f world2im_2d(cv::Point3f p_world, cv::Mat Qfi, float camera_angle){
     cv::Point3f p_im = world2im_3d(p_world,Qfi,camera_angle);

@@ -34,6 +34,9 @@ public:
     /** @brief Checks if the point is in the volume.*/
     bool in_view(cv::Point3f p,volume_check_mode c);
 
+    /** @brief Calculates the distance to the borders */
+    float calc_distance_to_borders(std::vector<cv::Point3f> p);
+
 private:
     // These parameters define the volume
     float slope_top;
@@ -45,6 +48,12 @@ private:
 
     /** @brief Checks whether the point p is for all planes defined in init on the right side.*/
     bool in_view(cv::Point3f p, float hysteresis_margin);
+
+    /** @brief Calculates the distance along p till the plane is intercepted.*/
+    float calc_distance_to_plane(cv::Mat vec, cv::Mat plane);
+
+    /** @brief Calculates an orthoogonal vector to a given vector. */
+    cv::Mat get_orthogonal_vector(cv::Mat vec);
 };
 
 
