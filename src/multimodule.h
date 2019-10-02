@@ -23,7 +23,7 @@
 
 #define JOY_BOUND_MIN                       224   // 1050
 #define JOY_BOUND_MAX                       1824 // 1950
-#define JOY_BOUND_RANGE    JOY_BOUND_MAX -  JOY_BOUND_MIN
+#define JOY_BOUND_RANGE    (JOY_BOUND_MAX -  JOY_BOUND_MIN)
 #define JOY_MIN_THRESH                      300   // 1080
 #define JOY_MAX_THRESH                      1750 // 1800
 #define JOY_MIN                             0   //  1000
