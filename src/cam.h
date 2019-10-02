@@ -92,6 +92,7 @@ public:
     float depth_scale;
     cv::Mat depth_background;
     cv::Mat depth_background_3mm;
+    cv::Mat depth_background_3mm_world;
     cv::Mat depth_background_mm;
     cv::Mat disparity_background;
     CameraVolume camera_volume;

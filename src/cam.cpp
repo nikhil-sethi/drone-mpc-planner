@@ -301,8 +301,31 @@ CameraVolume Cam::def_volume (){
     slope = get_SlopesOfPixel (848, 240);
     a_right = slope.x/slope.z;
 
-    b_ground = -1.9;
-    b_depth = -4.5;
+    float y_sum = 0;
+    uint n=0;
+    for(uint row=300; row<480; row+=5){
+        for(uint col=212; col<636; col+=5){
+
+            if(depth_background_3mm_world.at<cv::Vec3f>(row,col)[1]!=0){
+                y_sum += depth_background_3mm_world.at<cv::Vec3f>(row,col)[1];
+                n+=1;
+            }
+        }
+    }
+    b_ground = -y_sum/n;
+
+    float z_sum = 0;
+    n=0;
+    for(uint row=0; row<10; row+=1){
+        for(uint col=0; col<848; col+=5){
+
+            if(depth_background_3mm_world.at<cv::Vec3f>(row, col)[2]!=0){
+                z_sum += depth_background_3mm_world.at<cv::Vec3f>(row, col)[2];
+                n+=1;
+            }
+        }
+    }
+    b_depth = -z_sum/n;
 
     CameraVolume camVol;
     camVol.init(a_top, a_front, a_left, a_right, b_depth, b_ground);
@@ -333,6 +356,7 @@ cv::Point3f Cam::get_SlopesOfPixel(uint x, uint y){
 //There's probably a way to do this more efficient...
 void Cam::convert_depth_background_to_world() {
     depth_background_3mm = cv::Mat::zeros(depth_background.rows,depth_background.cols,CV_32FC3);
+    depth_background_3mm_world = cv::Mat::zeros(depth_background.rows,depth_background.cols,CV_32FC3);
     depth_background_mm = cv::Mat::zeros(depth_background.rows,depth_background.cols,CV_32FC1);
     for (int i = 0; i < depth_background.cols;i++)
         for (int j = 0; j < depth_background.rows;j++) {
@@ -344,7 +368,12 @@ void Cam::convert_depth_background_to_world() {
             float p[3];
             rs2_deproject_pixel_to_point(p, intr, pixel, backf);
             cv::Vec3f pixelColor(p[0],p[1],p[2]);
+//            std::cout << "depth_background_3mm( " << i << " , " << j << " ): p[0]: " << p[0] << " ,p[1]: " << p[1] << " ,p[2]: " << p[2] <<std::endl;
             depth_background_3mm.at<cv::Vec3f>(j,i) = pixelColor;
+            cv::Vec3f pixelWorldPos(p[0],
+                                    p[1]*cosf(_camera_angle_y*deg2rad) + p[2]*-sinf(-_camera_angle_y*deg2rad),
+                                    p[1]*sinf(-_camera_angle_y*deg2rad) + p[2]*cosf(_camera_angle_y*deg2rad));
+            depth_background_3mm_world.at<cv::Vec3f>(j,i) = pixelWorldPos;
             depth_background_mm.at<float>(j,i) = sqrtf(powf(p[0],2)+powf(p[1],2)+powf(p[2],2));
         }
 }
@@ -671,6 +700,7 @@ void Cam::calib_pose(bool also_do_depth){
         imwrite(disparity_map_wfn,disparity_background);
     }
     if (hasIMU){
+        _camera_angle_x = roll;
         _camera_angle_y = pitch;
 
         if (fabs(roll) > 0.6f) { // TODO: move to xml
