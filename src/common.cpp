@@ -120,11 +120,11 @@ float CameraVolume::calc_distance_to_plane(cv::Mat vec, cv::Mat plane){
 cv::Mat CameraVolume::get_orthogonal_vector(cv::Mat vec){
     cv::Mat rt;
     if(vec.at<float>(2,0)!=0){
-        rt = (cv::Mat_<float>(3,1) << 1,1,(-vec.at<float>(0,0) -vec.at<float>(1,0)/vec.at<float>(2,0)) );
+        rt = (cv::Mat_<float>(3,1) << 1,1,(-vec.at<float>(0,0) -vec.at<float>(1,0))/vec.at<float>(2,0) );
     }else if(vec.at<float>(1,0)!=0){
-        rt = (cv::Mat_<float>(3,1) << 1,(-vec.at<float>(0,0) -vec.at<float>(2,0)/vec.at<float>(1,0),1) );
+        rt = (cv::Mat_<float>(3,1) << 1,(-vec.at<float>(0,0) -vec.at<float>(2,0))/vec.at<float>(1,0),1 );
     }else if(vec.at<float>(0,0)!=0){
-        rt = (cv::Mat_<float>(3,1) << 1,(-vec.at<float>(1,0) -vec.at<float>(2,0)/vec.at<float>(0,0),1) );
+        rt = (cv::Mat_<float>(3,1) << (-vec.at<float>(1,0) -vec.at<float>(2,0))/vec.at<float>(0,0),1,1 );
     }
 
     return rt;
