@@ -30,7 +30,7 @@ static const char* flight_mode_names[] = { "fm_joystick_check",
                                           "fm_interception_burn",
                                           "fm_interception_burn_spin_down",
                                           "fm_retry_aim_start",
-                                          "fm_abort_takeoff",
+                                          "fm_abort_flight",
                                           "fm_flying_pid_init",
                                           "fm_flying_pid",
                                           "fm_landing"
@@ -58,7 +58,7 @@ public:
         fm_interception_burn,
         fm_interception_burn_spin_down,
         fm_retry_aim_start,
-        fm_abort_takeoff,
+        fm_abort_flight,
         fm_flying_pid_init,
         fm_flying_pid,
         fm_landing
@@ -190,6 +190,8 @@ private:
     }
 
 public:
+    std::string flight_submode_name = "";
+
     void flight_mode(flight_modes f){
         _flight_mode = f;
     }
@@ -200,8 +202,13 @@ public:
         return joy_states_names[_joy_state];
     }
     std::string flight_mode() {
-        return flight_mode_names[_flight_mode];
+        if(flight_submode_name.empty ()){
+            return flight_mode_names[_flight_mode];
+        } else {
+            return flight_submode_name;
+        }
     }
+
     bool ff_interception() {
         return _flight_mode == fm_take_off_aim || _flight_mode == fm_max_burn || _flight_mode == fm_max_burn_spin_down || _flight_mode == fm_1g ||
                _flight_mode == fm_interception_aim_start  || _flight_mode == fm_interception_aim  || _flight_mode == fm_interception_burn_spin_down  ||

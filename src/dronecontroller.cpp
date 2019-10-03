@@ -89,7 +89,8 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
 
     // This is usefull as long blind reburn is not working
     if( !data_drone.pos_valid && time > take_off_start_time+1 && take_off_start_time){
-        _flight_mode = fm_abort_takeoff;
+        _flight_mode = fm_abort_flight;
+        flight_submode_name = "fm_abort_flight_tracking_lost";
     }
 
     int throttle,roll,pitch,yaw;
@@ -306,7 +307,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         else
             _rc->arm(true);
         break;
-    } case fm_abort_takeoff: {
+    } case fm_abort_flight: {
         auto_throttle = JOY_BOUND_MIN;
         auto_roll = JOY_MIDDLE;
         auto_pitch = JOY_MIDDLE;
