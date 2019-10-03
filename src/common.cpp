@@ -36,6 +36,11 @@ bool CameraVolume::in_view(cv::Point3f p,float hysteresis_margin){
         return true;
 }
 
+float CameraVolume::calc_distance_to_borders(track_data data_drone){
+    std::vector<cv::Point3f> p{data_drone.pos (), data_drone.vel ()};
+    return calc_distance_to_borders (p);
+}
+
 float CameraVolume::calc_distance_to_borders(std::vector<cv::Point3f> p){
     cv::Mat pMat = (cv::Mat_<float_t>(3,2) << p[0].x, p[1].x, p[0].y, p[1].y, p[0].z, p[1].z);
 

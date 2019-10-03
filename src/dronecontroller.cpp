@@ -247,6 +247,18 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         _flight_mode = fm_flying_pid;
         [[fallthrough]];
     } case fm_flying_pid: {
+        //check whether the braking distance is large enough to stay in the frame
+        // if not change the setpoint for the controller
+        float remaining_breaking_distance = _camvol->calc_distance_to_borders (data_drone);
+        remaining_breaking_distance += norm(data_drone.vel())*(1.f/60.f); // Also consider the time till the next check
+        float required_breaking_time = norm(data_drone.vel())/thrust;
+        float required_breaking_distance = .5f*thrust*pow(required_breaking_time, 2);
+        if(remaining_breaking_distance<=required_breaking_distance){
+            setpoint_pos = data_drone.pos ();
+            setpoint_vel = data_drone.vel ();
+            setpoint_acc = {0};
+        }
+
         calc_pid_error(data_drone,setpoint_pos,setpoint_vel,setpoint_acc);
         control_pid(data_drone);
 

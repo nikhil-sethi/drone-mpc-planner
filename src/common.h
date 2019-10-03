@@ -22,41 +22,6 @@ void show_row_image(std::vector<cv::Mat> ims, std::string window_name, int type,
 std::string to_string_with_precision(float f, const int n);
 int seconds_since_file_creation(std::string file_path);
 
-class CameraVolume{
-public:
-    void init(float slope_top, float slope_front, float slope_left, float slope_right,
-              float depth, float height);
-
-    enum volume_check_mode{
-        strict,
-        relaxed
-    };
-    /** @brief Checks if the point is in the volume.*/
-    bool in_view(cv::Point3f p,volume_check_mode c);
-
-    /** @brief Calculates the distance to the borders */
-    float calc_distance_to_borders(std::vector<cv::Point3f> p);
-
-private:
-    // These parameters define the volume
-    float slope_top;
-    float slope_front;
-    float slope_left;
-    float slope_right;
-    float z_limit;
-    float y_limit;
-
-    /** @brief Checks whether the point p is for all planes defined in init on the right side.*/
-    bool in_view(cv::Point3f p, float hysteresis_margin);
-
-    /** @brief Calculates the distance along p till the plane is intercepted.*/
-    float calc_distance_to_plane(cv::Mat vec, cv::Mat plane);
-
-    /** @brief Calculates an orthoogonal vector to a given vector. */
-    cv::Mat get_orthogonal_vector(cv::Mat vec);
-};
-
-
 const float FOV = 180.0f ;
 const float FOV_size = 1280.0;
 const int width_ff = 1280;
@@ -176,6 +141,44 @@ static const char* drone_type_str[] = {"drone_none",
     "drone_cx10",
     "" // must be the last entry! (check in serializer)
 };
+
+class CameraVolume{
+public:
+    void init(float slope_top, float slope_front, float slope_left, float slope_right,
+              float depth, float height);
+
+    enum volume_check_mode{
+        strict,
+        relaxed
+    };
+    /** @brief Checks if the point is in the volume.*/
+    bool in_view(cv::Point3f p,volume_check_mode c);
+
+    /** @brief Calculates the distance to the borders */
+    float calc_distance_to_borders(track_data data_drone);
+
+private:
+    // These parameters define the volume
+    float slope_top;
+    float slope_front;
+    float slope_left;
+    float slope_right;
+    float z_limit;
+    float y_limit;
+
+    /** @brief Checks whether the point p is for all planes defined in init on the right side.*/
+    bool in_view(cv::Point3f p, float hysteresis_margin);
+
+    /** @brief Calculates the distance to the borders. */
+    float calc_distance_to_borders(std::vector<cv::Point3f> p);
+
+    /** @brief Calculates the distance along p till the plane is intercepted.*/
+    float calc_distance_to_plane(cv::Mat vec, cv::Mat plane);
+
+    /** @brief Calculates an orthoogonal vector to a given vector. */
+    cv::Mat get_orthogonal_vector(cv::Mat vec);
+};
+
 
 namespace xmls {
 
