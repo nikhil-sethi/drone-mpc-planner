@@ -88,7 +88,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
     }
 
     // This is usefull as long blind reburn is not working
-    if( ( !data_drone.pos_valid || !_camvol->in_view(data_drone.pos (), CameraVolume::relaxed) ) && time > take_off_start_time+1 && take_off_start_time){
+    if( !data_drone.pos_valid && time > take_off_start_time+1 && take_off_start_time){
         _flight_mode = fm_abort_takeoff;
     }
 
