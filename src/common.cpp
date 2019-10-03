@@ -62,28 +62,28 @@ float CameraVolume::calc_distance_to_borders(std::vector<cv::Point3f> p){
         min_dist = dist;
 
     // Check the front:
-    plane = (cv::Mat_<float>(3,2) << 0.f, 0.f, 0.f, slope_front, 0.f, 1.f);
+    plane = (cv::Mat_<float>(3,2) << 0.f, 0.f, 0.f, -1, 0.f, slope_front);
     dist = calc_distance_to_plane (pMat, plane);
 
     if(dist>0 && dist<min_dist)
         min_dist = dist;
 
     // Check the top:
-    plane = (cv::Mat_<float>(3,2) << 0.f, 0.f, 0.f, slope_top, 0.f, 1.f);
+    plane = (cv::Mat_<float>(3,2) << 0.f, 0.f, 0.f, -1, 0.f, slope_top);
     dist = calc_distance_to_plane (pMat, plane);
 
     if(dist>0 && dist<min_dist)
         min_dist = dist;
 
     // Check the left:
-    plane = (cv::Mat_<float>(3,2) << 0.f, slope_left, 0.f, 0.f, 0.f, 1.f);
+    plane = (cv::Mat_<float>(3,2) << 0.f, -1.f, 0.f, 0.f, 0.f, slope_left);
     dist = calc_distance_to_plane (pMat, plane);
 
     if(dist>0 && dist<min_dist)
         min_dist = dist;
 
     // Check the right:
-    plane = (cv::Mat_<float>(3,2) << 0.f, slope_right, 0.f, 0.f, 0.f, 1.f);
+    plane = (cv::Mat_<float>(3,2) << 0.f, -1.f, 0.f, 0.f, 0.f, slope_right);
     dist = calc_distance_to_plane (pMat, plane);
 
     if(dist>0 && dist<min_dist)
