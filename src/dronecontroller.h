@@ -154,8 +154,8 @@ private:
 
     bool recovery_mode = false;
     cv::Point3f recovery_pos = {0};
-
-    void approx_effective_thrust(track_data data_drone, cv::Point3f burn_direction, float burn_duration, float dt);
+    bool first_directional_burn = false;
+    void approx_effective_thrust(track_data data_drone, cv::Point3f burn_direction, float burn_duration, float dt_burn);
     std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> predict_drone_after_burn(state_data state_drone, cv::Point3f burn_direction, float remaining_aim_duration, float burn_duration);
     std::tuple<cv::Point3f, cv::Point3f> predict_drone_state_after_spindown(cv::Point3f integrated_pos, cv::Point3f integrated_vel, cv::Point3f burn_accelleration);
     std::tuple<int, int, float, cv::Point3f, std::vector<state_data> > calc_burn(state_data state_drone, state_data state_target, float remaining_aim_duration);
