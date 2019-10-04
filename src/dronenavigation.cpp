@@ -272,7 +272,7 @@ void DroneNavigation::update(double time) {
             [[fallthrough]];
         } case ns_landing: {
             track_data data = _trackers->dronetracker ()->Last_track_data ();
-            if (data.pos ().y <= _trackers->dronetracker()->drone_landing_location ().y + 0.05)
+            if (data.pos ().y <= _trackers->dronetracker()->drone_landing_location ().y + 0.05f)
                 _navigation_status = ns_landed;            
 
             if (_nav_flight_mode == nfm_hunt && _iceptor.insect_in_range())
