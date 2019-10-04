@@ -41,6 +41,8 @@ private:
     MultiModule *_rc;
     DronePredictor *_dprdct;
 
+    bool draw_plots_once = false;
+
     const int bufsize = 600;
 
     const int fsizex = 1200/2;
@@ -169,7 +171,7 @@ public:
 
     void paint();
     void addPlotSample(void);
-    void update_tracker_data(cv::Mat frameL, cv::Point3d setpoint, double time);
+    void update_tracker_data(cv::Mat frameL, cv::Point3d setpoint, double time, bool draw_plots);
     void init(VisionData * visdat, TrackerManager *imngr, DroneController *dctrl, DroneNavigation *dnav, MultiModule *rc, bool fromfile, DronePredictor *dprdct);
     void close();
 

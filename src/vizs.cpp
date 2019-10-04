@@ -36,7 +36,7 @@ void Visualizer::init(VisionData *visdat, TrackerManager *imngr, DroneController
 }
 
 void Visualizer::addPlotSample(void) {
-    if (pparams.viz_plots) {
+    if (pparams.viz_plots || draw_plots_once) {
         lock_plot_data.lock();
         roll_joystick.push_back(static_cast<float>(_dctrl->joy_roll));
         pitch_joystick.push_back(static_cast<float>(_dctrl->joy_pitch));
@@ -348,7 +348,8 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
 }
 
 
-void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3d setpoint, double time) {
+void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3d setpoint, double time, bool draw_plots) {
+    draw_plots_once = draw_plots;
     if (new_tracker_viz_data_requested) {
         lock_frame_data.lock();
 
@@ -523,7 +524,7 @@ void Visualizer::workerThread(void) {
     while (!exitVizThread) {
         newdata.wait(lk);
         if (roll_joystick.rows > 0) {
-            if (pparams.viz_plots) {
+            if (pparams.viz_plots || draw_plots_once) {
                 lock_plot_data.lock();
                 plot();
                 request_plotframe_paint = true;

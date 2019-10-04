@@ -69,6 +69,8 @@ std::string file;
 std::string data_output_dir;
 std::string calib_folder;
 
+bool draw_plots = false;
+
 std::string logger_fn; //contains filename of current log # for insect logging (same as video #)
 
 int mouseX, mouseY;
@@ -298,7 +300,7 @@ void process_frame(Stereo_Frame_Data data) {
 
     if (pparams.has_screen) {
         visualizer.addPlotSample();
-        visualizer.update_tracker_data(visdat.frameL,dnav.setpoint,data.time);
+        visualizer.update_tracker_data(visdat.frameL,dnav.setpoint,data.time, draw_plots);
         if (pparams.video_result) {
             if (fromfile)
                 output_video_results.block(); // only use this for rendering
@@ -329,6 +331,11 @@ void handle_key() {
         break;
     case 'l':
         dnav.redetect_drone_location();
+        break;
+    case 'p':
+        if(fromfile) {
+            draw_plots = true;
+        }
         break;
     case 'o':
         dctrl.blink_by_binding(false);
@@ -369,7 +376,8 @@ void handle_key() {
 #if CAMMODE == CAMMODE_REALSENSE
     case ' ':
     case 'f':
-        cam.frame_by_frame = true;
+        if(fromfile)
+            cam.frame_by_frame = true;
         break;
     case 't':
         cam.turbo = !cam.turbo;
