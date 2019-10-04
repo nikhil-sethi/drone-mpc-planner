@@ -25,8 +25,8 @@ bool CameraVolume::in_view(cv::Point3f p, volume_check_mode c){
 }
 bool CameraVolume::in_view(cv::Point3f p,float hysteresis_margin){
     // Attention check the negative case!
-    if(p.y>slope_top*p.z - hysteresis_margin
-        || p.y<slope_front*p.z + hysteresis_margin
+    if( //p.y>slope_top*p.z - hysteresis_margin ||
+         p.y<slope_front*p.z + hysteresis_margin
         || p.x>slope_left*p.z - hysteresis_margin
         || p.x<slope_right*p.z + hysteresis_margin
         || p.z<z_limit + hysteresis_margin
