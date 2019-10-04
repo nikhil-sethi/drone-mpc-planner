@@ -30,20 +30,21 @@ void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number, 
     data.time = time;
     track_history.push_back(data);
 
-    cv::Point3f recalc_world = im2world(cv::Point2f(log.ins_im_x,log.ins_im_y), _image_item.disparity,_visdat->Qf,_visdat->camera_angle);
-    if (norm(recalc_world -data.pos()) > 0.1) {
-        //it seems the camera angle was changed since this log, or someone has hacked something into this log. Use the world coordinates to match the image coordinates
-        //(UN)HACK:
-        cv::Point3f diff = recalc_world -data.pos();
-        cv::Point3f recalc_world_pred =  im2world(cv::Point2f(log.ins_pred_im_x,log.ins_pred_im_y), _image_item.disparity,_visdat->Qf,_visdat->camera_angle);
-        recalc_world_pred -= diff;
-        recalc_world -=diff;
-        cv::Point3f recalc_im_coor = world2im_3d(recalc_world,_visdat->Qfi,_visdat->camera_angle);
-        cv::Point3f recalc_im_pred_coor = world2im_3d(recalc_world_pred,_visdat->Qfi,_visdat->camera_angle);
+    //issue #130
+    //    cv::Point3f recalc_world = im2world(cv::Point2f(log.ins_im_x,log.ins_im_y), _image_item.disparity,_visdat->Qf,_visdat->camera_angle);
+    //    if (norm(recalc_world -data.pos()) > 0.1) {
+    //        //it seems the camera angle was changed since this log, or someone has hacked something into this log. Use the world coordinates to match the image coordinates
+    //        //(UN)HACK:
+    //        cv::Point3f diff = recalc_world -data.pos();
+    //        cv::Point3f recalc_world_pred =  im2world(cv::Point2f(log.ins_pred_im_x,log.ins_pred_im_y), _image_item.disparity,_visdat->Qf,_visdat->camera_angle);
+    //        recalc_world_pred -= diff;
+    //        recalc_world -=diff;
+    //        cv::Point3f recalc_im_coor = world2im_3d(recalc_world,_visdat->Qfi,_visdat->camera_angle);
+    //        cv::Point3f recalc_im_pred_coor = world2im_3d(recalc_world_pred,_visdat->Qfi,_visdat->camera_angle);
 
-        _image_item = ImageItem (recalc_im_coor.x/pparams.imscalef,recalc_im_coor.y/pparams.imscalef,recalc_im_coor.z,frame_number);
-        _image_predict_item = ImagePredictItem(cv::Point2f(recalc_im_pred_coor.x/pparams.imscalef,recalc_im_pred_coor.y/pparams.imscalef),1,1,255,frame_number);
-    }
+    //        _image_item = ImageItem (recalc_im_coor.x/pparams.imscalef,recalc_im_coor.y/pparams.imscalef,recalc_im_coor.z,frame_number);
+    //        _image_predict_item = ImagePredictItem(cv::Point2f(recalc_im_pred_coor.x/pparams.imscalef,recalc_im_pred_coor.y/pparams.imscalef),1,1,255,frame_number);
+    //    }
 
     _image_predict_item.valid = _image_predict_item.x > 0 ;
     predicted_image_path.push_back(_image_predict_item);
