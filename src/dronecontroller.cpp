@@ -222,7 +222,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         first_directional_burn = false;
         if (!recovery_mode)
             recovery_pos = data_drone.pos();
-        std::cout << "Burning" << std::endl;
+        std::cout << "Burning: " << auto_burn_duration << std::endl;
         [[fallthrough]];
     } case fm_interception_burn: {
         if (static_cast<float>(time - interception_start_time) > aim_duration + auto_burn_duration){
@@ -276,7 +276,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
 
             cout << "burn_duration: " << burn_duration << endl;
 
-            if (trajectory_in_view(traj,CameraVolume::strict) && burn_duration < 0.1f) {
+            if (trajectory_in_view(traj,CameraVolume::strict) && burn_duration < 0.1f && burn_duration > 0.01f) {
                 std::vector<state_data> traj_back;
                 std::tie (std::ignore, std::ignore,std::ignore,std::ignore,traj_back) = calc_burn(traj.back(),traj.front(),aim_duration);
                 if (trajectory_in_view(traj_back,CameraVolume::strict) && norm(data_target.state.vel)>0.1){ // norm vel is hack to check if not waypoint
@@ -438,7 +438,7 @@ std::tuple<int,int,float,cv::Point3f> DroneController::calc_directional_burn(sta
 
         if (i>=99) {
             std::cout << "Warning: calc_directional_burn not converged!" << std::endl;
-            burn_duration = 0.001;
+            burn_duration = 0.0;
             burn_direction = {0,1,0};
         }
     }
