@@ -232,7 +232,12 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         break;
     } case fm_interception_burn_spin_down: {
         auto_throttle = tmp_hover_throttle;
-        if (static_cast<float>(time - interception_start_time) > aim_duration + auto_burn_duration + effective_burn_spin_down_duration)
+
+        float spindown_duration = effective_burn_spin_down_duration;
+        if (effective_burn_spin_down_duration > auto_burn_duration*0.8f)
+            spindown_duration = auto_burn_duration*0.8f;
+
+        if (static_cast<float>(time - interception_start_time) > aim_duration + auto_burn_duration + spindown_duration)
             _flight_mode = fm_retry_aim_start;
         break;
     }  case fm_retry_aim_start: {
