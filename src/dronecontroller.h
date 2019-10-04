@@ -126,20 +126,20 @@ private:
 
     const float max_bank_angle = 180; // TODO: move to dparams (betaflight setting)
     const float aim_duration = 0.0833333333333f; // TODO: move to dparams, slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
-    const float transmission_delay_duration = 0.03f;
-    float effective_burn_spin_up_duration = 0.1f; // the time to spin up from hover to max
+    const float transmission_delay_duration = 0.04f;
+    float effective_burn_spin_up_duration = 0.15f; // the time to spin up from hover to max
     const float effective_burn_spin_down_duration = 0.1f; // the time to spin down from max to hover
-    float thrust = 3.0f*GRAVITY;
+    float thrust = 4.0f*GRAVITY;
     cv::Point3f drone_vel_after_takeoff = {0};
     float ground_effect = 1.0f;
     const float lift_off_dist_take_off_aim = 0.02f;
-    const float take_off_burn_duration = 0.1f;
+    const float take_off_burn_duration = 0.12f;
 
     double take_off_start_time = 0;
     double interception_start_time = 0;
     track_data data_drone_1g_start;
 
-    const float integratorThresholdDistance = 0.2f;
+    const float integratorThresholdDistance = 0.5f;
     cv::Point3f _burn_direction_for_thrust_approx = {0};
 
     bool initialized = false;

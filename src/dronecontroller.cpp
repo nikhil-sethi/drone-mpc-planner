@@ -519,7 +519,7 @@ void DroneController::draw_viz(
 std::vector<state_data> DroneController::predict_trajectory(float burn_duration, float remaining_aim_duration, cv::Point3f burn_direction, state_data state_drone) {
     std::vector<state_data> traj;
     cv::Point3f integrated_pos, integrated_vel;
-    for (float f=0;f <= burn_duration+1.f/pparams.fps;f+=1.f/pparams.fps) {
+    for (float f=0;f <= burn_duration;f+=1.f/pparams.fps) {
         std::tie (integrated_pos, integrated_vel,std::ignore) = predict_drone_after_burn(
             state_drone, burn_direction,remaining_aim_duration,f);
         state_data state;
@@ -679,7 +679,7 @@ void DroneController::control_pid(track_data data_drone) {
     if (fabs(posErrZ)<integratorThresholdDistance)
         pitchErrI += posErrZ;
 
-    auto_throttle =  hoverthrottle - (accErrY * gain_throttle_acc + throttleErrI * gain_throttle_i*0.1f);
+    auto_throttle =  tmp_hover_throttle - (accErrY * gain_throttle_acc + throttleErrI * gain_throttle_i*0.1f);
     auto_roll =  accErrX * gain_roll_acc;
 
     float depth_gain = 1;
@@ -691,28 +691,28 @@ void DroneController::control_pid(track_data data_drone) {
     auto_pitch = accErrZ * static_cast<float>(gain_pitch_acc) / depth_gain;
 
     //TMP fix for lacking control law handling of > 90 degree bank angle assuming BF angle limit 160
-    if (auto_roll < -JOY_MIDDLE/2)
-        auto_roll = -JOY_MIDDLE/2;
-    if (auto_roll > JOY_MIDDLE/2)
-        auto_roll = JOY_MIDDLE/2;
+    if (auto_roll < -JOY_BOUND_RANGE/6)
+        auto_roll = -JOY_BOUND_RANGE/6;
+    if (auto_roll > JOY_BOUND_RANGE/6)
+        auto_roll = JOY_BOUND_RANGE/6;
 
-    if (auto_pitch < -JOY_MIDDLE/2)
-        auto_pitch = -JOY_MIDDLE/2;
-    if (auto_pitch > JOY_MIDDLE/2)
-        auto_pitch = JOY_MIDDLE/2;
+    if (auto_pitch < -JOY_BOUND_RANGE/6)
+        auto_pitch = -JOY_BOUND_RANGE/6;
+    if (auto_pitch > JOY_BOUND_RANGE/6)
+        auto_pitch = JOY_BOUND_RANGE/6;
 
     //TMP fix for lacking control law handling of > 60 degree bank angle and target far away assuming BF angle limit 160
     if (abs(posErrX)>0.3f || abs(posErrZ)>0.3f) {
 
-        if (auto_roll < -JOY_MIDDLE/3)
-            auto_roll = -JOY_MIDDLE/3;
-        if (auto_roll > JOY_MIDDLE/3)
-            auto_roll = JOY_MIDDLE/3;
+        if (auto_roll < -JOY_BOUND_RANGE/8)
+            auto_roll = -JOY_BOUND_RANGE/8;
+        if (auto_roll > JOY_BOUND_RANGE/8)
+            auto_roll = JOY_BOUND_RANGE/8;
 
-        if (auto_pitch < -JOY_MIDDLE/3)
-            auto_pitch = -JOY_MIDDLE/3;
-        if (auto_pitch > JOY_MIDDLE/3)
-            auto_pitch = JOY_MIDDLE/3;
+        if (auto_pitch < -JOY_BOUND_RANGE/8)
+            auto_pitch = -JOY_BOUND_RANGE/8;
+        if (auto_pitch > JOY_BOUND_RANGE/8)
+            auto_pitch = JOY_BOUND_RANGE/8;
     }
 
     float tmptbf = dparams.throttle_bank_factor; // if we are higher then the target, use the fact more attitude makes us go down
@@ -722,13 +722,13 @@ void DroneController::control_pid(track_data data_drone) {
 
     if (fabs(auto_roll) > fabs(auto_pitch)){
         //auto_throttle += tmptbf*abs(auto_roll);
-        float roll_angle = static_cast<float>(auto_roll)/JOY_MIDDLE*M_PIf32;
-        float roll_comp = auto_throttle*abs(1.f/cosf(roll_angle))-auto_throttle;
+        float roll_angle = static_cast<float>(auto_roll)/JOY_BOUND_RANGE*M_PIf32;
+        float roll_comp = (auto_throttle-dparams.min_throttle)*abs(1.f/cosf(roll_angle))-(auto_throttle-dparams.min_throttle);
         auto_throttle += roll_comp*tmptbf;
     }
     else {
         //auto_throttle += tmptbf*abs(auto_pitch);
-        float pitch_angle = static_cast<float>(auto_pitch)/JOY_MIDDLE*M_PIf32;
+        float pitch_angle = static_cast<float>(auto_pitch)/JOY_BOUND_RANGE*M_PIf32;
         float pitch_comp = auto_throttle*abs(1.f/cosf(pitch_angle))-auto_throttle;
         auto_throttle += pitch_comp*tmptbf;
     }
