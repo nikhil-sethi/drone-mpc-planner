@@ -119,7 +119,7 @@ float CameraVolume::calc_distance_to_plane(cv::Mat vec, cv::Mat plane){
     params = A.inv()*b;
     float sgn_param3 = 1 - 2*(params.at<float>(2,0)<0);
 
-    return sgn_param3 * norm( params.at<float>(2,0)*vec.col(1) );
+    return sgn_param3 * static_cast<float>(norm( params.at<float>(2,0)*vec.col(1) ));
 }
 
 cv::Mat CameraVolume::get_orthogonal_vector(cv::Mat vec){
