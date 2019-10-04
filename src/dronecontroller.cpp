@@ -187,9 +187,6 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         else
             std::tie (auto_roll, auto_pitch, auto_burn_duration,burn_direction,traj) = calc_burn(data_drone.state, data_target.state,remaining_aim_duration);
 
-        if (first_directional_burn)
-            auto_burn_duration = 0.05f;
-
         if (_fromfile) // todo: tmp solution, call from visualizer instead if this viz remains to be needed
             draw_viz(state_drone_better,data_target.state,time,burn_direction,auto_burn_duration,remaining_aim_duration,traj);
 
@@ -365,6 +362,10 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
 std::tuple<int, int, float, Point3f, std::vector<state_data> > DroneController::calc_burn(state_data state_drone,state_data state_target,float remaining_aim_duration) {
     remaining_aim_duration +=  transmission_delay_duration + 1.f / pparams.fps;
     auto [auto_roll_burn, auto_pitch_burn, burn_duration,burn_direction] = calc_directional_burn(state_drone,state_target,remaining_aim_duration);
+
+    if (first_directional_burn)
+        burn_duration = 0.05f;
+
     auto traj = predict_trajectory(burn_duration, remaining_aim_duration, burn_direction, state_drone);
     return std::make_tuple(auto_roll_burn, auto_pitch_burn, burn_duration,burn_direction,traj);
 }
