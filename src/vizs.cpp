@@ -433,6 +433,13 @@ void Visualizer::draw_tracker_viz() {
         //burn:
         cv::Point2f viz_drone_pos_after_burn_im = world2im_2d(_dctrl->viz_drone_pos_after_burn,_visdat->Qfi, _visdat->camera_angle);
         cv::Point2f viz_target_pos_after_burn_im = world2im_2d(_dctrl->viz_target_pos_after_burn,_visdat->Qfi, _visdat->camera_angle);
+
+
+        if (!_dctrl->viz_drone_trajectory.empty() && ! drn_path.empty()){
+            double raak = norm(_dctrl->viz_drone_trajectory.back() .pos- drn_path.back().pt);
+            putText(resFrame,"trgt: |"  + to_string_with_precision(raak,2) + "|" ,cv::Point(460*_res_mult,12*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+        }
+
         cv::circle(frameL_color,viz_target_pos_after_burn_im,2,white);
         viz_drone_pos_after_burn_im.x+=15;
         putText(frameL_color,to_string_with_precision(_dctrl->viz_time_after_burn,2),viz_drone_pos_after_burn_im,cv::FONT_HERSHEY_SIMPLEX,0.5,pink);
