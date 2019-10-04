@@ -162,7 +162,7 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_manual;
                 break;
             }
-            if (time - time_taken_off > dparams.full_bat_and_throttle_spinup_duration+dparams.max_burn_time && _trackers->dronetracker()->taking_off()){
+            if (time - time_taken_off > static_cast<double>(dparams.full_bat_and_throttle_spinup_duration)+dparams.max_burn_time && _trackers->dronetracker()->taking_off()){
                 std::cout << "Drone was not detected during max burn take off manoeuvre, aborting." << std::endl;
                 _dctrl->flight_mode(DroneController::fm_abort_takeoff);
                 _navigation_status = ns_drone_problem;
