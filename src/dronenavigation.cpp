@@ -40,7 +40,6 @@ void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, Dro
         createTrackbar("WP id", "Nav", reinterpret_cast<int*>(wpid), setpoints.size()-1);
         createTrackbar("d threshold factor", "Nav", &distance_threshold_f, 10);
         createTrackbar("land_incr_f_mm", "Nav", &land_incr_f_mm, 50);
-        createTrackbar("Land Decrease  ", "Nav", &autoLandThrottleDecreaseFactor, 50);
     }
 
     if (pparams.insect_logging_mode)
@@ -267,21 +266,15 @@ void DroneNavigation::update(double time) {
             //            navigation_status=navigation_status_manual;
             //        break;
         } case ns_land: {
-            _dctrl->flight_mode(DroneController::fm_landing);
+            _dctrl->flight_mode(DroneController::fm_landing_start);
             _trackers->dronetracker()->land();
             _navigation_status = ns_landing;
             [[fallthrough]];
         } case ns_landing: {
-            track_data data = _trackers->dronetracker()->Last_track_data();
-            if (data.sposY < _trackers->dronetracker()->drone_landing_location().y+0.1f || autoLandThrottleDecrease >1000)
-                _navigation_status = ns_landed;
+            track_data data = _trackers->dronetracker ()->Last_track_data ();
+            if (data.pos ().y <= _trackers->dronetracker()->drone_landing_location ().y + 0.05)
+                _navigation_status = ns_landed;            
 
-            autoLandThrottleDecrease += autoLandThrottleDecreaseFactor;
-            _dctrl->setAutoLandThrottleDecrease(autoLandThrottleDecrease);
-
-            if ( setpoint_pos_world.y - land_incr> -(_trackers->dronetracker()->drone_landing_location().y+100000.0f))
-                land_incr = static_cast<float>(land_incr_f_mm)/1000.f;
-            setpoint_pos_world.y -= land_incr;
             if (_nav_flight_mode == nfm_hunt && _iceptor.insect_in_range())
                 _navigation_status = ns_start_the_chase;
             if (_nav_flight_mode == nfm_manual)
@@ -289,8 +282,6 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_landed: {
             wpid = 0;
-            autoLandThrottleDecrease = 0;
-            _dctrl->setAutoLandThrottleDecrease(0);
             _dctrl->flight_mode(DroneController::fm_inactive);
             land_incr = 0;
             _navigation_status = ns_wait_after_landing;
@@ -362,7 +353,6 @@ void DroneNavigation::deserialize_settings() {
     setpoint_slider_Y = params.setpoint_slider_Y.value();
     setpoint_slider_Z = params.setpoint_slider_Z.value();
     land_incr_f_mm = params.land_incr_f_mm.value();
-    autoLandThrottleDecreaseFactor = params.autoLandThrottleDecreaseFactor.value();
     time_out_after_landing = params.time_out_after_landing.value();
 }
 
@@ -373,7 +363,6 @@ void DroneNavigation::serialize_settings() {
     params.setpoint_slider_Y = setpoint_slider_Y;
     params.setpoint_slider_Z = setpoint_slider_Z;
     params.land_incr_f_mm = land_incr_f_mm;
-    params.autoLandThrottleDecreaseFactor = autoLandThrottleDecreaseFactor;
     params.time_out_after_landing = time_out_after_landing;
 
     std::string xmlData = params.toXML();

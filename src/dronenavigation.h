@@ -78,7 +78,6 @@ private:
     int setpoint_slider_Y;
     int setpoint_slider_Z;
     int land_incr_f_mm;
-    int autoLandThrottleDecreaseFactor;
     double time_out_after_landing;
 
     string settings_file = "../../xml/navigation.xml";
@@ -159,7 +158,6 @@ private:
     std::vector<waypoint> setpoints;
     waypoint * current_setpoint = new landing_waypoint();
 
-    int autoLandThrottleDecrease = 0;
 
     double time_located_drone = 0;
     double time_taken_off = 0;

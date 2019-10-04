@@ -293,14 +293,20 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
             }
         }
         break;
+    } case fm_landing_start: {
+        landing_decent_yoffset = 0;
+        landing_setpoint_height = setpoint_pos.y;
+        _flight_mode = fm_landing;
+        [[fallthrough]];
     } case fm_landing: {
+        landing_decent_yoffset += landing_decent_rate;
+        setpoint_pos.y += landing_decent_yoffset;
+
+        landing_setpoint_height = setpoint_pos.y; //only for status feedback for dronenavigation
+
         calc_pid_error(data_drone,setpoint_pos,setpoint_vel,setpoint_acc);
-        //slowly decrease throttle
-        auto_throttle = hoverthrottle - (accErrY * gain_throttle_acc + throttleErrI * gain_throttle_i*0.1f)
-                        - autoLandThrottleDecrease;
-        //same as fm_flying:
-        auto_roll =  JOY_MIDDLE + (accErrX * gain_roll_acc +  gain_roll_i*rollErrI);
-        auto_pitch = JOY_MIDDLE + (accErrZ * gain_pitch_acc +  gain_pitch_i*pitchErrI);
+        control_pid(data_drone);
+
         break;
     } case fm_disarmed: {
         auto_roll = JOY_MIDDLE;

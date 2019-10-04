@@ -33,6 +33,7 @@ static const char* flight_mode_names[] = { "fm_joystick_check",
                                           "fm_abort_flight",
                                           "fm_flying_pid_init",
                                           "fm_flying_pid",
+                                          "fm_landing_start",
                                           "fm_landing"
 };
 /*
@@ -61,6 +62,7 @@ public:
         fm_abort_flight,
         fm_flying_pid_init,
         fm_flying_pid,
+        fm_landing_start,
         fm_landing
     };
     enum joy_mode_switch_modes{ // raw switch modes
@@ -179,6 +181,9 @@ private:
     void process_joystick();
     void deserialize_settings();
     void serialize_settings();
+
+    float landing_decent_yoffset = 0;
+    float landing_decent_rate = -0.01;
 
     inline state_data set_recoveryState(cv::Point3f position){
         state_data rt;
@@ -307,6 +312,8 @@ public:
     uint control_history_max_size;
     std::vector<control_data> control_history;
 
+    float landing_setpoint_height = 0;
+
     void close (void);
     void init(std::ofstream *logger, bool fromfile, MultiModule *rc, DroneTracker *dtrk, CameraVolume* camvol);
     void control(track_data data_drone, track_data data_insect, cv::Point3f setpoint_pos_world, cv::Point3f setpoint_vel_world, cv::Point3f setpoint_acc_world, double time);
@@ -320,7 +327,6 @@ public:
         else
             return (auto_throttle > JOY_BOUND_MIN || _flight_mode == fm_start_takeoff || _flight_mode == fm_take_off_aim || _flight_mode == fm_max_burn || _flight_mode == fm_1g ); //FIXME: check if this goes well if due to extreme control throttle is set to 0
     }
-    void setAutoLandThrottleDecrease(int value) {autoLandThrottleDecrease = value;}
     bool joystick_ready();
 
     void blink_by_binding(bool b) {
