@@ -135,6 +135,7 @@ int main( int argc, char **argv);
 void handle_key();
 void close();
 
+void write_occasional_image();
 void manual_drone_locater(cv::Mat frame);
 void CallBackFunc(int event, int x, int y, int flags, void* userdata);
 
@@ -179,6 +180,7 @@ void process_video() {
             recording = false;
             auto time_insect_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
             logger_insect << "New detection ended at: " << std::put_time(std::localtime(&time_insect_now), "%Y/%m/%d %T") << " Duration: " << dtr << " End cam frame number: " <<  cam.frame_number() << std::endl;
+            detectcount++;
         }
         if ((trackers.insecttracker()->tracking() || dtr < 1) && data.time > 5) {
             recording = true;
@@ -261,6 +263,24 @@ void process_video() {
     } // main while loop
 }
 
+
+void write_occasional_image(Stereo_Frame_Data data) {
+    static double prev_imwrite_time = -20;
+
+    if (data.time - prev_imwrite_time > 20) {
+        cv::Mat out = data.frameL.clone();
+        cvtColor(out,out,CV_GRAY2BGR);
+        putText(out,"State: " + dnav.navigation_status() + " " + trackers.mode_str() + " " + dctrl.flight_mode() +
+                         " "  + trackers.dronetracker()->drone_tracking_state(),cv::Point(5,14),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
+        putText(out,"Time:       " + to_string_with_precision(data.time,2),cv::Point(5,28),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
+        putText(out,"Detections: " + std::to_string(detectcount),cv::Point(5,42),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
+
+        cv::imwrite("monitor.png", out);
+        prev_imwrite_time = data.time;
+    }
+
+}
+
 void process_frame(Stereo_Frame_Data data) {
 
     if (fromfile==log_mode_full){
@@ -306,6 +326,9 @@ void process_frame(Stereo_Frame_Data data) {
                 output_video_results.block(); // only use this for rendering
             output_video_results.write(visualizer.trackframe);
         }
+    }
+    if (!dctrl.drone_is_active()) {
+        write_occasional_image(data);
     }
 
 }

@@ -110,7 +110,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         _flight_mode = fm_take_off_aim;
         std::cout << "Take off aiming" << std::endl;
         _burn_direction_for_thrust_approx = {0};
-        if (dparams.mode3d) {
+        if (dparams.mode3d || pparams.joystick == rc_none) {
             _rc->arm(true);
             auto_roll = JOY_MIDDLE;
             auto_pitch = JOY_MIDDLE;
@@ -350,7 +350,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
     pitch = bound_joystick_value(pitch);
     yaw = bound_joystick_value(yaw);
 
-    std::cout << time <<  " rpt: " << roll << ", " << pitch << ", " << throttle << std::endl;
+    //std::cout << time <<  " rpt: " << roll << ", " << pitch << ", " << throttle << std::endl;
     if (!_fromfile) {
         _rc->queue_commands(throttle,roll,pitch,yaw);
     }
@@ -919,11 +919,11 @@ void DroneController::readJoystick(void) {
 
 void DroneController::process_joystick() {
     // prevent accidental take offs at start up
-    if (pparams.joystick == rc_none)
+    if (pparams.joystick == rc_none) {
+        _flight_mode = fm_inactive;
+        _joy_state = js_none;
         return;
-    else if (_joy_state == js_none)
-        _joy_state = js_checking;
-
+    }
 
     if (_joy_state == js_checking){
         if (!_joy_arm_switch &&

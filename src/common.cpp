@@ -318,6 +318,14 @@ std::string to_string_with_precision(float f, const int n)
     return out.str();
 }
 
+std::string to_string_with_precision(double f, const int n)
+{
+    std::ostringstream out;
+
+    out << std::fixed << std::setprecision(n) << f;
+    return out.str();
+}
+
 int seconds_since_file_creation(std::string file_path)
 {
     if (!file_exist(file_path))

@@ -1,14 +1,14 @@
 <SerializableClass Type="PatsParameters" Version="1.2">
     <Member Name="wdt_timeout_us">500000</Member>
     <Member Name="darkness_threshold">10000</Member>
-    <Member Name="has_screen">true</Member>
+    <Member Name="has_screen">false</Member>
     <Member Name="insect_logging_mode">false</Member>
     <Member Name="watchdog">false</Member>
     <Member Name="fps">60</Member>
     <Member Name="video_cuts">video_disabled</Member>
-    <Member Name="video_raw">video_bag</Member>
+    <Member Name="video_raw">video_disabled</Member>
     <Member Name="video_result">video_disabled</Member>
-    <Member Name="joystick">rc_xlite</Member>
+    <Member Name="joystick">rc_none</Member>
     <Member Name="drone">drone_trashcan</Member>
     <Member Name="cam_tuning">false</Member>
     <Member Name="control_tuning">false</Member>

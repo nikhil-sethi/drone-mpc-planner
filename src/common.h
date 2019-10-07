@@ -20,6 +20,7 @@ cv::Mat create_row_image(std::vector<cv::Mat> ims, int type, float resizef = 1);
 void show_column_image(std::vector<cv::Mat> ims, std::string window_name, int type, float resizef = 1);
 void show_row_image(std::vector<cv::Mat> ims, std::string window_name, int type, float resizef = 1);
 std::string to_string_with_precision(float f, const int n);
+std::string to_string_with_precision(double f, const int n); // TODO: template?
 int seconds_since_file_creation(std::string file_path);
 
 const float FOV = 180.0f ;
