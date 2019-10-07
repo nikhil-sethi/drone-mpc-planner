@@ -282,7 +282,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
 
             cout << "burn_duration: " << burn_duration << endl;
 
-            if (trajectory_in_view(traj,CameraVolume::strict) && burn_duration < 0.1f && burn_duration > 0.01f) {
+            if (trajectory_in_view(traj,CameraVolume::strict) && burn_duration < 0.2f && burn_duration > 0.01f) {
                 std::vector<state_data> traj_back;
                 std::tie (std::ignore, std::ignore,std::ignore,std::ignore,traj_back) = calc_burn(traj.back(),traj.front(),aim_duration);
                 if (trajectory_in_view(traj_back,CameraVolume::strict) && norm(data_target.state.vel)>0.1){ // norm vel is hack to check if not waypoint
@@ -393,7 +393,7 @@ std::tuple<int, int, float, Point3f, std::vector<state_data> > DroneController::
     auto [auto_roll_burn, auto_pitch_burn, burn_duration,burn_direction] = calc_directional_burn(state_drone,state_target,remaining_aim_duration);
 
     if (first_directional_burn)
-        burn_duration = 0.05f;
+        burn_duration = 0.075f;
 
     auto traj = predict_trajectory(burn_duration, remaining_aim_duration, burn_direction, state_drone);
     return std::make_tuple(auto_roll_burn, auto_pitch_burn, burn_duration,burn_direction,traj);

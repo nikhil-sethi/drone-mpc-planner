@@ -106,7 +106,7 @@ void Interceptor::update_far_target(bool drone_at_base){
     float tti = calc_tti(insect_pos,_intercept_vel,drone_pos,drone_vel,drone_at_base);
     float half_tti = tti/2.f; // only predict the location of the insect for a partion of the actual time we need to get there
     _intercept_pos = insect_pos + (_intercept_vel*half_tti);
-    _intercept_pos.y -= 0.25f; // put the drone a bit below the insect
+    _intercept_pos.y -= 0.1f; // put the drone a bit below the insect
     _intercept_vel = insect_vel;
     _intercept_vel.y = 0; // we don't want to follow the vertical speed of the insect, ever. TODO: improve this
     _intercept_acc = insect_acc;
