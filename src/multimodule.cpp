@@ -78,18 +78,18 @@ void MultiModule::worker_thread(void) {
             cycles_until_bind--;
             if (cycles_until_bind ==0)
                 _bind = true;
-            arm_switch = false;
+            arm_switch = JOY_MIN_THRESH;
             zerothrottle();
         }
         if (cycles_until_bind < 0){
             cycles_until_bind++;
             if (cycles_until_bind == 0)
                 _bind = false;
-            arm_switch = false;
+            arm_switch = JOY_MIN_THRESH;
             zerothrottle();
         }
         if (_bind){
-            arm_switch = false;
+            arm_switch = JOY_MIN_THRESH;
             zerothrottle();
         }
 

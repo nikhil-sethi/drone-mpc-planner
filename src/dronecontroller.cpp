@@ -320,7 +320,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         auto_throttle = JOY_BOUND_MIN;
         if (dparams.mode3d)
             _rc->arm(false);
-        else
+        else if (pparams.joystick != rc_none)
             _rc->arm(true);
         break;
     } case fm_abort_flight: {
@@ -919,11 +919,12 @@ void DroneController::readJoystick(void) {
 
 void DroneController::process_joystick() {
     // prevent accidental take offs at start up
-    if (pparams.joystick == rc_none) {
+    if (pparams.joystick == rc_none && _flight_mode == fm_joystick_check) {
         _flight_mode = fm_inactive;
         _joy_state = js_none;
         return;
-    }
+    } else if (pparams.joystick == rc_none)
+        return;
 
     if (_joy_state == js_checking){
         if (!_joy_arm_switch &&
