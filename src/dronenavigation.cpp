@@ -64,7 +64,7 @@ void DroneNavigation::update(double time) {
         else if(_dctrl->Joy_State() == DroneController::js_slider)
             _nav_flight_mode = nfm_slider;
     } else {
-        _nav_flight_mode = nfm_none;
+        _nav_flight_mode = nfm_hunt;
     }
     _iceptor.update(_navigation_status != ns_chasing_insect);
     bool repeat = true;
@@ -273,7 +273,7 @@ void DroneNavigation::update(double time) {
         } case ns_landing: {
             track_data data = _trackers->dronetracker ()->Last_track_data ();
             if (data.pos ().y <= _trackers->dronetracker()->drone_landing_location ().y + 0.05f)
-                _navigation_status = ns_landed;            
+                _navigation_status = ns_landed;
 
             if (_nav_flight_mode == nfm_hunt && _iceptor.insect_in_range())
                 _navigation_status = ns_start_the_chase;
