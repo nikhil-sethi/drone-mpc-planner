@@ -139,7 +139,7 @@ void DroneNavigation::update(double time) {
             _dctrl->flight_mode(DroneController::fm_inactive);
             if (_nav_flight_mode == nfm_manual)
                 _navigation_status = ns_manual;
-            else if (_nav_flight_mode == nfm_hunt && _iceptor.insect_in_range()) {
+            else if (_nav_flight_mode == nfm_hunt && _iceptor.insect_in_range_takeoff()) {
                 _navigation_status = ns_takeoff;
                 repeat = true;
             } else if (_nav_flight_mode == nfm_none) { // e.g. insect logging mode

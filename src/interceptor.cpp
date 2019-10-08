@@ -146,6 +146,13 @@ void Interceptor::update_insect_in_range() {
     } else {
         _count_insect_not_in_range++;
     }
+
+    if (-_trackers->insecttracker()->world_item().pt.z < 4.5f && -_trackers->insecttracker()->world_item().pt.z > 1.5f &&  _trackers->insecttracker()->world_item().pt.y  > -1.8f)
+        realy_nicely_in_the_middle = true;
+    else
+        realy_nicely_in_the_middle = false;
+
+
 }
 
 float Interceptor::calc_tti(cv::Point3f insect_pos,cv::Point3f insect_vel,cv::Point3f drone_pos, cv::Point3f drone_vel, bool drone_taking_off){
