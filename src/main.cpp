@@ -133,7 +133,7 @@ void process_frame(Stereo_Frame_Data data_drone);
 void process_video();
 int main( int argc, char **argv);
 void handle_key();
-void close();
+void close(bool sigkill);
 
 void write_occasional_image();
 void manual_drone_locater(cv::Mat frame);
@@ -475,6 +475,8 @@ void close_thread_pool(){
 void kill_sig_handler(int s){
     std::cout << "Caught ctrl-c:" << s << std::endl;
     key=27;
+    close(true);
+    exit(0);
 }
 void init_sig(){
     //init ctrl - c catch
@@ -483,6 +485,12 @@ void init_sig(){
     sigemptyset(&sigIntHandler.sa_mask);
     sigIntHandler.sa_flags = 0;
     sigaction(SIGINT, &sigIntHandler, NULL);
+
+    struct sigaction sigTermHandler;
+    sigTermHandler.sa_handler = kill_sig_handler;
+    sigemptyset(&sigTermHandler.sa_mask);
+    sigTermHandler.sa_flags = 0;
+    sigaction(SIGTERM, &sigTermHandler, NULL);
 }
 
 void init_loggers() {
@@ -523,6 +531,7 @@ void init(int argc, char **argv) {
     main_argc = argc;
     main_argv = argv;
 
+    init_sig();
     init_loggers();
 
 #ifdef HASGUI
@@ -565,7 +574,7 @@ void init(int argc, char **argv) {
     std::cout << "Main init successfull" << std::endl;
 }
 
-void close() {
+void close(bool sigkill) {
     std::cout <<"Closing"<< std::endl;
 
     cam.stop_watchdog();
@@ -596,7 +605,8 @@ void close() {
         output_video_cuts.close();
 
     logger.close();
-    close_thread_pool();
+    if (!sigkill) // seems to get stuck. TODO: streamline
+        close_thread_pool();
 
     std::cout <<"Closed"<< std::endl;
 }
@@ -647,12 +657,12 @@ int main( int argc, char **argv )
         key = 27; //secret signal to close everything (it's the esc key)
     } catch(my_exit const &e) {
         key = 27;
-        close();
+        close(false);
         std::cout << "Error: " << e.msg << std::endl;
         return 1;
     }
 
-    close();
+    close(false);
     return 0;
 }
 
