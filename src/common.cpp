@@ -19,10 +19,12 @@ void CameraVolume::init(float a_top, float a_front, float a_left, float a_right,
 
 bool CameraVolume::in_view(cv::Point3f p, volume_check_mode c){
     if (c == relaxed)
-        return in_view(p,0.3);
-    else
         return in_view(p,0);
+    else
+        return in_view(p,0.3);
 }
+
+
 bool CameraVolume::in_view(cv::Point3f p,float hysteresis_margin){
     // Attention check the negative case!
     if( //p.y>slope_top*p.z - hysteresis_margin ||

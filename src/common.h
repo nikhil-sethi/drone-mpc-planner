@@ -149,8 +149,8 @@ public:
               float depth, float height);
 
     enum volume_check_mode{
-        strict,
-        relaxed
+        strict, /**< viewable volume including a safety distance to borders */
+        relaxed /**< the actual viewable volume without any safety distance to the borders */
     };
     /** @brief Checks if the point is in the volume.*/
     bool in_view(cv::Point3f p,volume_check_mode c);
