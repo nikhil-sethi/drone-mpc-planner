@@ -147,7 +147,9 @@ void Interceptor::update_insect_in_range() {
         _count_insect_not_in_range++;
     }
 
-    if (-_trackers->insecttracker()->world_item().pt.z < 4.5f && -_trackers->insecttracker()->world_item().pt.z > 1.5f &&  _trackers->insecttracker()->world_item().pt.y  > -1.8f)
+    double dist  = norm(_trackers->insecttracker()->world_item().pt - _trackers->dronetracker()->drone_startup_location());
+
+    if (-_trackers->insecttracker()->world_item().pt.z < 4.5f && -_trackers->insecttracker()->world_item().pt.z > 0.8f &&  _trackers->insecttracker()->world_item().pt.y  > -1.8f && dist < 1.5)
         realy_nicely_in_the_middle = true;
     else
         realy_nicely_in_the_middle = false;
