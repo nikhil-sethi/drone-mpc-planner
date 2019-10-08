@@ -234,6 +234,9 @@ void ItemTracker::append_log() {
         (*_logger) << last.state.vel.x << "; " << last.state.vel.y << "; " << last.state.vel.z << ";" ;
         (*_logger) << last.state.acc.x << "; " << last.state.acc.y << "; " << last.state.acc.z << ";" ;
     }
+
+    while (track_history.size() > track_history_max_size)
+        track_history.erase(track_history.begin());
 }
 
 void ItemTracker::predict(float dt, int frame_id) {
