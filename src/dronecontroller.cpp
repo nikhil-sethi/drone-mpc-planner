@@ -318,10 +318,13 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         auto_roll = JOY_MIDDLE;
         auto_pitch = JOY_MIDDLE;
         auto_throttle = JOY_BOUND_MIN;
-        if (dparams.mode3d)
-            _rc->arm(false);
-        else if (pparams.joystick != rc_none)
+        if (time < 10) {
+           _rc->arm(false);
+        }else {
             _rc->arm(true);
+        }
+
+
         break;
     } case fm_abort_flight: {
         auto_throttle = JOY_BOUND_MIN;
