@@ -181,6 +181,8 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         state_drone_better.vel = drone_vel_after_takeoff;
 
         float remaining_aim_duration = aim_duration - static_cast<float>(time - interception_start_time);
+        data_target.state.vel = {0}; // aim to the current target position
+
         if (remaining_aim_duration<0)
             remaining_aim_duration = 0;
         std::vector<state_data> traj;
