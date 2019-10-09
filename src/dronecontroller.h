@@ -141,7 +141,7 @@ private:
     double interception_start_time = 0;
     track_data data_drone_1g_start;
 
-    const float integratorThresholdDistance = 0.5f;
+    const float integratorThresholdDistance = 0.3f;
     cv::Point3f _burn_direction_for_thrust_approx = {0};
 
     bool initialized = false;

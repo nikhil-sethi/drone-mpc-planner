@@ -1,14 +1,14 @@
 <SerializableClass Type="ControlParameters" Version="1.0">
-    <Member Name="gain_throttle_pos">1300</Member>
-    <Member Name="gain_throttle_vel">1592</Member>
-    <Member Name="gain_throttle_acc">11</Member>
-    <Member Name="gain_throttle_i">15</Member>
-    <Member Name="gain_roll_pos">2000</Member>
-    <Member Name="gain_roll_vel">950</Member>
-    <Member Name="gain_roll_acc">12</Member>
+    <Member Name="gain_throttle_pos">1400</Member>
+    <Member Name="gain_throttle_vel">1300</Member>
+    <Member Name="gain_throttle_acc">12</Member>
+    <Member Name="gain_throttle_i">50</Member>
+    <Member Name="gain_roll_pos">3000</Member>
+    <Member Name="gain_roll_vel">700</Member>
+    <Member Name="gain_roll_acc">16</Member>
     <Member Name="gain_roll_i">3</Member>
-    <Member Name="gain_pitch_pos">1700</Member>
-    <Member Name="gain_pitch_vel">900</Member>
-    <Member Name="gain_pitch_acc">12</Member>
+    <Member Name="gain_pitch_pos">2500</Member>
+    <Member Name="gain_pitch_vel">650</Member>
+    <Member Name="gain_pitch_acc">16</Member>
     <Member Name="gain_pitch_i">3</Member>
 </SerializableClass>
