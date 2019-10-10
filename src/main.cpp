@@ -338,7 +338,7 @@ void init_insect_log(int n){
     fromfile = log_mode_insect_only;
 }
 
-void handle_key(double time) {
+void handle_key(double time [[maybe_unused]]) {
     if (key == 27) { // set by an external ctrl-c
         return;
     }

@@ -17,8 +17,9 @@ public:
     void go_color();
     void go_disabled();
     int frame_number() {return _frame_number;}
-    float frame_time() {return _frame_number * (1.f/pparams.fps);}
+    double frame_time() {return _frame_number * (1./pparams.fps);}
     float camera_angle(){return 35.f;}
+
 
     void close (void);
     bool init ();
@@ -27,6 +28,12 @@ public:
     bool get_cam_is_running() {return camRunning;}
     float measured_gain() {
         return 16;
+    }
+    int measure_auto_exposure() {
+        return 0;
+    }
+    void stop_watchdog(){
+
     }
 
     void nextFrame();

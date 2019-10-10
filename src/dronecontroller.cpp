@@ -986,7 +986,7 @@ void DroneController::process_joystick() {
             }
         }
 #if CAMMODE == CAMMODE_GENERATOR
-        joyPitch = JOY_MIDDLE;
+        joy_pitch = JOY_MIDDLE;
 #endif
     }
 }
