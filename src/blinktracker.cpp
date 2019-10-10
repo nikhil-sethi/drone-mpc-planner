@@ -17,6 +17,7 @@ bool BlinkTracker::init(VisionData *visdat) {
 void BlinkTracker::track(double time) {
     switch (_blinking_drone_status) {
     case bds_start: {
+        _tracking = true;
         path.clear();
         predicted_image_path.clear();
         _blinking_drone_status = bds_reset_bkg;
@@ -27,6 +28,9 @@ void BlinkTracker::track(double time) {
         ItemTracker::append_log(); // write a dummy entry
         break;
     } case bds_searching: {
+        attempts++;
+        if (attempts > 3)
+            _blinking_drone_status = bds_failed;
         ItemTracker::track(time);
         if (n_frames_lost == 0) {
             _blinking_drone_status = bds_1_blink_off;
@@ -34,6 +38,7 @@ void BlinkTracker::track(double time) {
         }
         break;
     } case bds_1_blink_off: {
+        _score_threshold = 60; // increase score threshold after first sightings
         ItemTracker::track(time);
         _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
         break;
@@ -64,6 +69,10 @@ void BlinkTracker::track(double time) {
     } case bds_found: {
         append_log(); // no tracking needed in this stage
         break;
+    } case bds_failed: {
+        //just keep tracking it until it the item is lost;
+        ItemTracker::track(time);
+        append_log(); // no tracking needed in this stage
     }
     }
 
@@ -75,6 +84,10 @@ void BlinkTracker::track(double time) {
 }
 
 BlinkTracker::blinking_drone_states BlinkTracker::detect_blink(double time, bool found) {
+    if (Last_track_data().vel_valid && norm(Last_track_data().vel()) > 0.3f) {
+        return bds_failed;
+    }
+
     double blink_period = time - blink_time_start;
     if (found) {
         if ( blink_period > bind_blink_time - 0.1 && blink_period < bind_blink_time+0.1) {

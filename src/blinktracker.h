@@ -10,6 +10,7 @@
 static const char* blinking_drone_state_names[] = { "",
                                                     "bds_start",
                                                     "bds_reset_bkg",
+                                                    "bds_failed",
                                                     "bds_searching",
                                                     "bds_1_blink_off",
                                                     "bds_1_blink_on",
@@ -27,6 +28,7 @@ public:
     enum blinking_drone_states {
         bds_start=1,
         bds_reset_bkg,
+        bds_failed,
         bds_searching,
         bds_1_blink_off,
         bds_1_blink_on,
@@ -41,6 +43,8 @@ private:
     blinking_drone_states _blinking_drone_status = bds_start;
     double blink_time_start = 0;
     double manual_calib_time_start = 0;
+
+    int attempts = 0;
 
     blinking_drone_states detect_blink(double time, bool found);
 

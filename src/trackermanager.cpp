@@ -94,12 +94,26 @@ void TrackerManager::update_trackers(double time,LogReader::Log_Entry log_entry,
         } else if (typeid(*_trackers.at(i)) == typeid(BlinkTracker)) {
             BlinkTracker * btrkr = static_cast<BlinkTracker * >(_trackers.at(i));
             btrkr->track(time);
+            if (btrkr->state() != BlinkTracker::bds_failed) {
+                std::cout << std::to_string(i) + ": " + btrkr->state_str() + " ";
+                if (btrkr->world_item().valid)
+                    std::cout << btrkr->world_item().pt;
+                std::cout  <<  std::endl;
+            }
             if (_mode == mode_locate_drone) {
                 if (btrkr->state() == BlinkTracker::bds_found){
                     _dtrkr->set_drone_landing_location(btrkr->image_item().pt(),btrkr->world_item().iti.disparity,btrkr->smoothed_size_image(),btrkr->world_item().pt);
                     _mode = mode_wait_for_insect;
                 }
             } else if (btrkr->ignores_for_other_trkrs.size() == 0){
+                if (btrkr->state() != BlinkTracker::bds_found) {
+                    double v = 0;
+                    if (btrkr->Last_track_data().vel_valid)
+                        v = norm(btrkr->Last_track_data().vel());
+                    if (v < 0.2)
+                        _visdat->delete_from_motion_map(btrkr->image_item().pt()*pparams.imscalef,btrkr->image_item().disparity,btrkr->image_item().size*pparams.imscalef+5,1);
+                }
+
                 _trackers.erase(_trackers.begin() + i);
                 delete btrkr;
             }
@@ -268,19 +282,20 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
 
         //see if there are still keypoints left untracked, create new trackers for them
         for (uint i=0; i < _blobs.size(); i++){
-            if (!pbs.at(i).tracked() && _trackers.size() < 3) { // if so, start tracking it!
+            if (!pbs.at(i).tracked() && _trackers.size() < 30) { // if so, start tracking it!
                 if (_mode == mode_locate_drone){
                     BlinkTracker  * bt;
                     bt = new BlinkTracker();
                     bt->init(_visdat);
                     auto wbp = bt->calc_world_item(&_blobs.at(i),time);
-                    ItemTracker::WorldItem w(ItemTracker::ImageItem(_blobs.at(i),wbp.disparity,_visdat->frame_id,100,i),wbp);
-                    bt->world_item(w);
-                    _trackers.push_back( bt);
-                    pbs.at(i).trackers.push_back(bt);
-                    break; // only add one tracker per frame
+                    if (wbp.valid) {
+                        ItemTracker::WorldItem w(ItemTracker::ImageItem(_blobs.at(i),wbp.disparity,_visdat->frame_id,100,i),wbp);
+                        bt->world_item(w);
+                        _trackers.push_back( bt);
+                        pbs.at(i).trackers.push_back(bt);
+                    }
                 }
-            } // todo: add support for multiple insect trackers
+            }
         }
 
         //check if there are conflicts (blobs having multiple trackers attached):
@@ -657,7 +672,7 @@ void TrackerManager::close () {
     if (initialized){
         for (uint i=0; i < _trackers.size(); i++)
             _trackers.at(i)->close();
-//        serialize_settings();
+        //        serialize_settings();
         initialized = false;
     }
 }
