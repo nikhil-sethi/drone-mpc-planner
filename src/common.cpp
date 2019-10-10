@@ -361,6 +361,22 @@ int seconds_since_file_creation(std::string file_path)
     return static_cast<int>(diff);
 }
 
+int get_drone_id(std::string s){
+    uint len = s.length ();
+    bool only_numbers = true;
 
+    for(uint i=0; i<len; i++){
+        if(!isdigit (s[i]))
+            only_numbers = false;
+    }
+
+    if(only_numbers){
+        int id = std::stoi(s);
+        if(id>=0 && id<256)
+            return id;
+    }
+
+    return -1;
+}
 
 

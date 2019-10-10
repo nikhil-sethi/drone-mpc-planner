@@ -499,13 +499,17 @@ void init_sig(){
     sigaction(SIGTERM, &sigTermHandler, NULL);
 }
 
-void init_loggers() {
+int init_loggers() {
     std::string data_in_dir = "";
+    int drone_id = 1;
     if (main_argc ==2 ) {
         string fn = string(main_argv[1]);
-        logreader.init(fn + "/log.csv",false);
-        fromfile = log_mode_full;
-        data_in_dir = fn;
+        drone_id = get_drone_id (fn);
+        if(drone_id<0){
+            logreader.init(fn + "/log.csv",false);
+            fromfile = log_mode_full;
+            data_in_dir = fn;
+        }
     }
     data_output_dir = "./logging/";
     mkdir("./logging/", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
@@ -520,6 +524,8 @@ void init_loggers() {
     logger_fn = data_output_dir  + "log" + to_string(0) + ".csv"; // only used with pparams.video_cuts
 
     logger_insect.open(data_output_dir  + "insect.log",std::ofstream::out);
+
+    return drone_id;
 }
 
 void init_video_recorders() {
@@ -538,7 +544,7 @@ void init(int argc, char **argv) {
     main_argv = argv;
 
     init_sig();
-    init_loggers();
+    int drone_id = init_loggers();
 
 #ifdef HASGUI
     gui.init(argc,argv);
@@ -546,7 +552,7 @@ void init(int argc, char **argv) {
 
 #if CAMMODE == CAMMODE_REALSENSE
     if (!pparams.insect_logging_mode && fromfile!=log_mode_full)
-        rc.init(fromfile);
+        rc.init(drone_id, fromfile);
 #endif
 
     /*****Start capturing images*****/

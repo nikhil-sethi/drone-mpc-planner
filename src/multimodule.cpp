@@ -1,6 +1,6 @@
 #include "multimodule.h"
 
-void MultiModule::init(bool fromfile) {
+void MultiModule::init(int drone_id, bool fromfile) {
 
     if (dparams.tx == tx_none) {
         protocol = 0;
@@ -45,7 +45,7 @@ void MultiModule::init(bool fromfile) {
             packet[2] = 0; //id...
             packet[3] = 0;
             packet[4] = 0;
-            packet[5] = 1;
+            packet[5] = drone_id;
             packet[6] = 68; //header 3
             RS232_SendBuf( static_cast<unsigned char*>( packet), 7);
 

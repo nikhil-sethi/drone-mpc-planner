@@ -39,7 +39,7 @@ class MultiModule{
     int tx_rate;
 public:
 
-    void init(bool fromfile);
+    void init(int drone_id, bool fromfile);
 
     void close();
 

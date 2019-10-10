@@ -22,6 +22,9 @@ void show_row_image(std::vector<cv::Mat> ims, std::string window_name, int type,
 std::string to_string_with_precision(float f, const int n);
 std::string to_string_with_precision(double f, const int n); // TODO: template?
 int seconds_since_file_creation(std::string file_path);
+/** @brief If the string holds an drone id (number between 0 and 9) that number is returned.
+ * If not, return -1. */
+int get_drone_id(std::string s);
 
 const float FOV = 180.0f ;
 const float FOV_size = 1280.0;
