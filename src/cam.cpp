@@ -285,21 +285,19 @@ void Cam::init() {
 
 CameraVolume Cam::def_volume (){
 
-    float a_top, a_front, a_left, a_right, b_depth, b_ground;
+    float b_depth, b_ground;
 
-    cv::Point3f slope;
+    cv::Point3f point_left_top, point_right_top, point_left_bottom, point_right_bottom;
 
-    slope = get_SlopesOfPixel (424, 0);
-    a_top = slope.y/slope.z;
+    point_left_top = get_SlopesOfPixel(0,0);
+    point_right_top = get_SlopesOfPixel(847, 0);
+    point_left_bottom = get_SlopesOfPixel(0, 479);
+    point_right_bottom = get_SlopesOfPixel(847, 479);
 
-    slope = get_SlopesOfPixel (424, 480);
-    a_front = slope.y/slope.z;
-
-    slope = get_SlopesOfPixel (0, 240);
-    a_left = slope.x/slope.z;
-
-    slope = get_SlopesOfPixel (848, 240);
-    a_right = slope.x/slope.z;
+//    point_left_top = -depth_background_3mm_world.at<cv::Vec3f>(0, 1);
+//    point_right_top = -depth_background_3mm_world.at<cv::Vec3f>(0, 847);
+//    point_left_bottom = -depth_background_3mm_world.at<cv::Vec3f>(479, 1);
+//    point_right_bottom = -depth_background_3mm_world.at<cv::Vec3f>(479, 847);
 
     float y_sum = 0;
     uint n=0;
@@ -328,7 +326,7 @@ CameraVolume Cam::def_volume (){
     b_depth = -z_sum/n;
 
     CameraVolume camVol;
-    camVol.init(a_top, a_front, a_left, a_right, b_depth, b_ground);
+    camVol.init(point_left_top, point_right_top, point_left_bottom, point_right_bottom, b_depth, b_ground);
 
     return camVol;
 }

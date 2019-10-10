@@ -146,13 +146,14 @@ static const char* drone_type_str[] = {"drone_none",
 
 class CameraVolume{
 public:
-    void init(float slope_top, float slope_front, float slope_left, float slope_right,
+    void init(cv::Point3f point_left_top, cv::Point3f point_right_top, cv::Point3f point_left_bottom, cv::Point3f point_right_bottom,
               float depth, float height);
 
     enum volume_check_mode{
         strict, /**< viewable volume including a safety distance to borders */
         relaxed /**< the actual viewable volume without any safety distance to the borders */
     };
+
     /** @brief Checks if the point is in the viewable area.*/
     bool in_view(cv::Point3f p,volume_check_mode c);
 
@@ -164,14 +165,22 @@ public:
     float calc_distance_to_borders(track_data data_drone);
 
 private:
-    // These parameters define the volume
-    float slope_top;
-    float slope_front;
-    float slope_left;
-    float slope_right;
-    float z_limit;
-    float y_limit;
-    float minimum_height = 0.3f;
+    // Define limitation planes in plane normal form:
+    cv::Mat n_front;
+    cv::Mat p0_front;
+    cv::Mat n_top;
+    cv::Mat p0_top;
+    cv::Mat n_left;
+    cv::Mat p0_left;
+    cv::Mat n_right;
+    cv::Mat p0_right;
+    cv::Mat n_bottom;
+    cv::Mat p0_bottom;
+    cv::Mat n_back;
+    cv::Mat p0_back;
+
+
+    float minimum_height = 0.3f; /**< Correction distance for the ground plane. */
 
     /** @brief Checks whether the point p is for all planes defined in init on the right side.*/
     bool in_view(cv::Point3f p, float hysteresis_margin);
@@ -184,6 +193,13 @@ private:
 
     /** @brief Calculates an orthoogonal vector to a given vector. */
     cv::Mat get_orthogonal_vector(cv::Mat vec);
+
+    /** @brief  Generates the plane normal vector based on 3 points. The third point is always asumed to be (0,0,0)^T. */
+    cv::Mat get_plane_normal_vector(cv::Point3f x1, cv::Point3f x2);
+
+    /** @brief Determines on which side of the plane a point is.
+    * Returns true if the point is on the point the side the normal vector is looking to, else false is returned. */
+    bool on_normal_side(cv::Mat p0, cv::Mat n, cv::Mat p);
 };
 
 
