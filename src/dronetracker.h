@@ -130,7 +130,7 @@ public:
         }
     }
     BlobWorldProps calc_world_item(BlobProps * pbs, double time);
-    bool check_ignore_blobs(BlobProps * pbs, uint id);
+    bool check_ignore_blobs(BlobProps * pbs, double time);
 
     double time_since_take_off(){return start_take_off_time - current_time;}
 

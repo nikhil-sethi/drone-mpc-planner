@@ -145,6 +145,6 @@ ItemTracker::BlobWorldProps InsectTracker::calc_world_item(BlobProps * pbs, doub
     return wbp;
 }
 
-bool InsectTracker::check_ignore_blobs(BlobProps * pbs, uint id __attribute__((unused))) {
+bool InsectTracker::check_ignore_blobs(BlobProps * pbs, double time __attribute__((unused))) {
     return this->check_ignore_blobs_generic(pbs);
 }

@@ -95,7 +95,7 @@ ItemTracker::BlobWorldProps BlinkTracker::calc_world_item(BlobProps * pbs, doubl
     wbp.valid = wbp.disparity_in_range && wbp.radius_in_range;
     return wbp;
 }
-bool BlinkTracker::check_ignore_blobs(BlobProps * pbs, uint id __attribute__((unused))) {
+bool BlinkTracker::check_ignore_blobs(BlobProps * pbs, double time __attribute__((unused))) {
     return this->check_ignore_blobs_generic(pbs);
 }
 

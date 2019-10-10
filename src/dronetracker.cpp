@@ -106,8 +106,8 @@ void DroneTracker::track(double time, bool drone_is_active) {
                 std::cout << "Start dy: " << dy_to << ", dt: " << (time - start_take_off_time) << std::endl;
                 std::cout << "Start v: " << tmp_v << ", a: " << tmp_acc << std::endl;
                 std::cout << "Start v: " << data.svelY << ", a: " << data.saccY << std::endl;
-*/
-                _visdat->delete_from_motion_map(drone_startup_im_location()*pparams.imscalef, _drone_blink_im_disparity,ceilf(_drone_blink_im_size*2.f)*pparams.imscalef,pparams.fps/2);
+                */
+                    _visdat->delete_from_motion_map(drone_startup_im_location()*pparams.imscalef, _drone_blink_im_disparity,ceilf(_drone_blink_im_size*2.f)*pparams.imscalef,pparams.fps/2);
             }
         }
         break;
@@ -180,8 +180,8 @@ ItemTracker::BlobWorldProps DroneTracker::calc_world_item(BlobProps * pbs, doubl
         } else {
             // Interpolate time to the time of dy=dy_takeoff_detected:
             float t = takeoff_detection_dt_prev + (dt - takeoff_detection_dt_prev) / (dy - takeoff_detection_dy_prev)
-                                                  * (dy_takeoff_detected - takeoff_detection_dy_prev);
-//            std::cout << "dt: " << dt << " dy: " << dy << " dt(k-1): " << takeoff_detection_dt_prev << " dy(k-1): " << takeoff_detection_dy_prev << std::endl;
+                                                      * (dy_takeoff_detected - takeoff_detection_dy_prev);
+            //            std::cout << "dt: " << dt << " dy: " << dy << " dt(k-1): " << takeoff_detection_dt_prev << " dy(k-1): " << takeoff_detection_dy_prev << std::endl;
             hover_throttle_estimation = dparams.hover_throttle_a*t + dparams.hover_throttle_b ;
             std::cout << "Initialising hover-throttle: " << hover_throttle_estimation << std::endl;
         }
@@ -190,10 +190,18 @@ ItemTracker::BlobWorldProps DroneTracker::calc_world_item(BlobProps * pbs, doubl
     return wbp;
 }
 
-bool DroneTracker::check_ignore_blobs(BlobProps * pbs, uint id  __attribute__((unused))) {
+bool DroneTracker::check_ignore_blobs(BlobProps * pbs, double time) {
 
-    if ( this->check_ignore_blobs_generic(pbs))
-        return true;
+    if ( this->check_ignore_blobs_generic(pbs)) {
+        for (auto ignore : pbs->ignores){ // TODO: use c+17 filter
+            if (ignore.ignore_type == ItemTracker::IgnoreBlob::IgnoreType::takeoff_spot) {
+                auto w = calc_world_item(pbs,time); // TODO: this is called a few times over the same data later in the tracker manager. May that should be streamlined.
+                if (norm(w.pt() - drone_startup_location()) < 0.1)
+                    return true;
+            } else
+                return true;
+        }
+    }
 
     return false;
 }

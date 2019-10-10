@@ -20,7 +20,7 @@ public:
     }
 
     BlobWorldProps calc_world_item(BlobProps * pbs, double time);
-    bool check_ignore_blobs(BlobProps * pbs, uint id);
+    bool check_ignore_blobs(BlobProps * pbs, double time);
     bool delete_me(){
         return false;
     }

@@ -26,8 +26,31 @@ class ItemTracker {
 
 public:
 
+    struct IgnoreBlob {
+        enum IgnoreType{
+            takeoff_spot,
+            blink_spot,
+            drone_taking_off,
+            landing_spot
+        };
+        IgnoreBlob() {}
+        IgnoreBlob(cv::Point2f location, float ignore_radius,double timeout, IgnoreType type){
+            p = location;
+            ignore_type = type ;
+            invalid_after = timeout;
+            radius = ignore_radius;
+        }
+        cv::Point2f p;
+        float radius;
+        double invalid_after;
+        bool was_used = true;
+        IgnoreType ignore_type;
+
+    };
+
     struct BlobProps {
         float x,y,radius,pixel_max;
+        std::vector<IgnoreBlob> ignores;
         BlobProps(cv::Point2f pt, float area,float blob_pixel_max){
             x = pt.x;
             y = pt.y;
@@ -39,6 +62,7 @@ public:
         float x,y,z,distance,distance_bkg,radius;
         float disparity; // not really a world prop, but OK.
         bool radius_in_range = false,disparity_in_range = false,bkg_check_ok = false,valid = false;
+        cv::Point3f pt() {return cv::Point3f(x,y,z);}
     };
 
     struct ImageItem {
@@ -127,27 +151,6 @@ public:
         float size_in_image() {
             return iti.size;
         }
-
-    };
-    struct IgnoreBlob {
-        enum IgnoreType{
-            takeoff_spot,
-            blink_spot,
-            drone_taking_off,
-            landing_spot
-        };
-        IgnoreBlob() {}
-        IgnoreBlob(cv::Point2f location, float ignore_radius,double timeout, IgnoreType type){
-            p = location;
-            ignore_type = type ;
-            invalid_after = timeout;
-            radius = ignore_radius;
-        }
-        cv::Point2f p;
-        float radius;
-        double invalid_after;
-        bool was_used = true;
-        IgnoreType ignore_type;
 
     };
 
@@ -291,7 +294,7 @@ public:
     void close (void);
     void init(std::ofstream *logger, VisionData *_visdat, std::string name);
     virtual void track(double time);
-    virtual bool check_ignore_blobs(BlobProps * pbs, uint id) = 0;
+    virtual bool check_ignore_blobs(BlobProps * pbs, double time) = 0;
     virtual ItemTracker::BlobWorldProps calc_world_item(BlobProps * pbs, double time) = 0;
     void append_log();
 
