@@ -27,8 +27,11 @@ void BlinkTracker::track(double time) {
         _blinking_drone_status = bds_searching; // -> wait 1 frame
         ItemTracker::append_log(); // write a dummy entry
         break;
-    } case bds_searching: {
+    } case bds_restart_search: {
         attempts++;
+        _blinking_drone_status = bds_searching;
+        [[fallthrough]];
+    } case bds_searching: {
         if (attempts > 3)
             _blinking_drone_status = bds_failed;
         ItemTracker::track(time);
@@ -47,6 +50,7 @@ void BlinkTracker::track(double time) {
         _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
         break;
     } case bds_2_blink_off: {
+        attempts = 0;
         ItemTracker::track(time);
         _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
         break;
@@ -84,9 +88,11 @@ void BlinkTracker::track(double time) {
 }
 
 BlinkTracker::blinking_drone_states BlinkTracker::detect_blink(double time, bool found) {
-    if (Last_track_data().vel_valid && norm(Last_track_data().vel()) > 0.3f) {
-        return bds_failed;
-    }
+    auto td = Last_track_data();
+    if (td.vel_valid)
+        std::cout << norm (td.vel()) << std::endl;
+    if (Last_track_data().vel_valid && norm(Last_track_data().vel()) > 0.3)
+        return bds_restart_search;
 
     double blink_period = time - blink_time_start;
     if (found) {
@@ -95,10 +101,10 @@ BlinkTracker::blinking_drone_states BlinkTracker::detect_blink(double time, bool
             int tmp  =static_cast<int>(_blinking_drone_status)+1;
             return static_cast<blinking_drone_states>(tmp);
         } else {
-            return bds_searching;
+            return bds_restart_search;
         }
     } else if (!found && blink_period > bind_blink_time +0.1) {
-        return bds_searching;
+        return bds_restart_search;
     }
     return _blinking_drone_status;
 }
