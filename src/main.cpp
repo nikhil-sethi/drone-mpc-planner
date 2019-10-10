@@ -366,7 +366,7 @@ void handle_key(double time [[maybe_unused]]) {
         dnav.nav_flight_mode(DroneNavigation::nfm_manual);
         break;
     case '1':
-        init_insect_log(55);
+        init_insect_log(56);
         break;
     case '2':
         init_insect_log(53);

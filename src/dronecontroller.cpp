@@ -199,7 +199,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         if (recovery_mode && remaining_aim_duration <= 0) {
             _flight_mode = fm_interception_burn_start;
         } else if (recovery_mode) { // do nothing
-        } else if (!trajectory_in_view(traj,CameraVolume::relaxed) || auto_burn_duration > 0.1f){
+        } else if (!trajectory_in_view(traj,CameraVolume::relaxed) || auto_burn_duration > 1.1f || auto_burn_duration == 0.0f){
             _flight_mode = fm_flying_pid_init;
         } else {
             std::vector<state_data> traj_back;
@@ -397,8 +397,8 @@ std::tuple<int, int, float, Point3f, std::vector<state_data> > DroneController::
     remaining_aim_duration +=  transmission_delay_duration + 1.f / pparams.fps;
     auto [auto_roll_burn, auto_pitch_burn, burn_duration,burn_direction] = calc_directional_burn(state_drone,state_target,remaining_aim_duration);
 
-    if (first_directional_burn)
-        burn_duration = 0.075f;
+    //if (first_directional_burn && burn_duration > 0.0f)
+    //    burn_duration = 0.075f;
 
     auto traj = predict_trajectory(burn_duration, remaining_aim_duration, burn_direction, state_drone);
     return std::make_tuple(auto_roll_burn, auto_pitch_burn, burn_duration,burn_direction,traj);
