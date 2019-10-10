@@ -502,9 +502,11 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
         data.sposZ = data.state.pos.z*pos_filt_rate + data_prev.sposZ*(1.0f-pos_filt_rate);
     }
 
-    data.state.vel.x = smoother_velX2.addSample(data.sposX,dt);
-    data.state.vel.y = smoother_velY2.addSample(data.sposY,dt);
-    data.state.vel.z = smoother_velZ2.addSample(data.sposZ,dt);
+    if(reset_filters) { // dt is making a big jump with reset_filters
+        data.state.vel.x = smoother_velX2.addSample(data.sposX,dt);
+        data.state.vel.y = smoother_velY2.addSample(data.sposY,dt);
+        data.state.vel.z = smoother_velZ2.addSample(data.sposZ,dt);
+    }
 
     if (smoother_velX2.ready()) {
         data.state.acc.x = smoother_accX2.addSample(data.state.vel.x,dt);
