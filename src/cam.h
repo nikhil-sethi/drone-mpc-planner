@@ -66,6 +66,9 @@ public:
 
     void stop_watchdog() {exit_watchdog_thread = true;}
 
+    void skip(float duration) {
+        replay_skip_n_frames+=pparams.fps*duration;
+    }
     void skip_one_sec() {
         replay_skip_n_frames+=pparams.fps;
     }

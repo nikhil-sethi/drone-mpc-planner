@@ -132,7 +132,7 @@ MainWindow gui;
 void process_frame(Stereo_Frame_Data data_drone);
 void process_video();
 int main( int argc, char **argv);
-void handle_key();
+void handle_key(double time);
 void close(bool sigkill);
 
 void write_occasional_image();
@@ -165,7 +165,7 @@ void process_video() {
             static int speed_div;
             if (!(speed_div++ % 4) || fromfile!=log_mode_none){
                 visualizer.paint();
-                handle_key();
+                handle_key(data.time);
             }
         }
         tp[0].m1.lock();
@@ -338,7 +338,7 @@ void init_insect_log(int n){
     fromfile = log_mode_insect_only;
 }
 
-void handle_key() {
+void handle_key(double time) {
     if (key == 27) { // set by an external ctrl-c
         return;
     }
@@ -405,6 +405,12 @@ void handle_key() {
     case 't':
         cam.turbo = !cam.turbo;
         break;
+    case '>': {
+        double dt = logreader.first_takeoff_time() - time - 1;
+        if (dt>0)
+            cam.skip(dt);
+        break;
+    }
     case '.':
         cam.skip_one_sec();
         break;
