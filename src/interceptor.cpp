@@ -140,26 +140,18 @@ void Interceptor::update_close_target(){
 }
 
 void Interceptor::update_insect_in_range() {
-    //calculate if the drone will stay within the camera borders where it still can be controlled:
-    if (_camvol->in_view (_intercept_pos, CameraVolume::strict)){ //ATTENTION!: In view check must be strict otherwise the burn validation will always fail in fm_pid_flying.
+    //Checks whether the interception point is in view:
+    if (_camvol->in_view(_intercept_pos, CameraVolume::relaxed)){
         _count_insect_not_in_range= 0;
     } else {
         _count_insect_not_in_range++;
     }
 
-    cv::Point3f error = _trackers->insecttracker()->world_item().pt - _trackers->dronetracker()->drone_startup_location();
-    double vertical_dist = error.y;
-    error.y = 0;
-    double horizontal_dist = norm(error);
-
-    double slope_ratio = tan(45*deg2rad);
-
-    if (-_trackers->insecttracker()->world_item().pt.z < 4.5f && -_trackers->insecttracker()->world_item().pt.z > 0.8f && horizontal_dist*slope_ratio<vertical_dist)
+    //Checks whether the insect position is in a good area to hunt:
+    if(_camvol->in_hunt_area (_trackers->dronetracker()->drone_startup_location(), _trackers->insecttracker()->world_item().pt))
         realy_nicely_in_the_middle = true;
     else
         realy_nicely_in_the_middle = false;
-
-
 }
 
 float Interceptor::calc_tti(cv::Point3f insect_pos,cv::Point3f insect_vel,cv::Point3f drone_pos, cv::Point3f drone_vel, bool drone_taking_off){

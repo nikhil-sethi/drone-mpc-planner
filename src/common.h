@@ -152,8 +152,12 @@ public:
         strict, /**< viewable volume including a safety distance to borders */
         relaxed /**< the actual viewable volume without any safety distance to the borders */
     };
-    /** @brief Checks if the point is in the volume.*/
+    /** @brief Checks if the point is in the viewable area.*/
     bool in_view(cv::Point3f p,volume_check_mode c);
+
+    /** @brief Checks whether the point m (aka moth location) is in a good area for a hunt (worth to take off).
+    * This area is described as cone above the drone location d. */
+    bool in_hunt_area(cv::Point3f d, cv::Point3f m);
 
     /** @brief Calculates the distance to the borders */
     float calc_distance_to_borders(track_data data_drone);

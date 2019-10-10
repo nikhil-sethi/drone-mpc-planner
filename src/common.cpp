@@ -38,6 +38,23 @@ bool CameraVolume::in_view(cv::Point3f p,float hysteresis_margin){
         return true;
 }
 
+bool CameraVolume::in_hunt_area(cv::Point3f d, cv::Point3f m){
+    float cone_angle_limit = 30*deg2rad; // angle to the horizontal axis
+    cv::Point3f error = m - d;
+    double vertical_dist = error.y;
+    error.y = 0;
+    float horizontal_dist = norm(error);
+
+    float cone_angle = atan2(horizontal_dist, vertical_dist);
+
+    if (m.z < -0.8f && m.z > z_limit
+            && m.y<0 && m.y>= y_limit
+            && cone_angle<=cone_angle_limit )
+        return true;
+    else
+        return false;
+}
+
 float CameraVolume::calc_distance_to_borders(track_data data_drone){
     std::vector<cv::Point3f> p{data_drone.pos (), data_drone.vel ()};
     return calc_distance_to_borders (p);
