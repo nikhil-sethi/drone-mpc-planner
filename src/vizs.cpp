@@ -55,29 +55,31 @@ void Visualizer::addPlotSample(void) {
         dt.push_back(data.dt);
         dt_target.push_back(1.f/pparams.fps);
 
+        track_data data_target = _itrkr->Last_track_data();
+
         if (data.pos_valid) {
-            posX.push_back(-data.state.pos.x);
-            posY.push_back(data.state.pos.y);
-            posZ.push_back(-data.state.pos.z);
+            posX_drone.push_back(-data.state.pos.x);
+            posY_drone.push_back(data.state.pos.y);
+            posZ_drone.push_back(-data.state.pos.z);
             disparity.push_back(_dtrkr->image_item().disparity);
             sdisparity.push_back(_dtrkr->image_item().disparity);
-
             sposX.push_back(-data.sposX);
             sposY.push_back(data.sposY);
             sposZ.push_back(-data.sposZ);
 
+            posX_target.push_back(-data_target.state.pos.x);
+            posY_target.push_back(data_target.state.pos.y);
+            posZ_target.push_back(-data_target.state.pos.z);
 
             setposX.push_back(-_dnav->setpoint_pos_world.x);
             setposY.push_back(_dnav->setpoint_pos_world.y);
             setposZ.push_back(-_dnav->setpoint_pos_world.z);
         }
-
         if (data.vel_valid) {
             svelX.push_back(-data.state.vel.x);
             svelY.push_back(data.state.vel.y);
             svelZ.push_back(-data.state.vel.z);
         }
-
         if (data.acc_valid) {
             saccX.push_back(-data.state.acc.x);
             saccY.push_back(data.state.acc.y);
@@ -110,7 +112,7 @@ cv::Mat Visualizer::plot_xyd(void) {
     max_xz_range.x = 2000;
     min_xz_range.y = 0; // z
     max_xz_range.y = 4000; // z
-    ims_xyd.push_back(plotxy(posX,posZ, sp1,"PosXZ",min_xz_range,max_xz_range));
+    ims_xyd.push_back(plotxy(posX_drone,posZ_drone,posX_target,posZ_target, sp1,"PosXZ",min_xz_range,max_xz_range));
 
     cv::Point sp2(-_dctrl->viz_drone_pos_after_burn.x*1000.f,_dctrl->viz_drone_pos_after_burn.y*1000.f);
     cv::Point min_xy_range,max_xy_range;
@@ -118,7 +120,7 @@ cv::Mat Visualizer::plot_xyd(void) {
     max_xy_range.x = 2000;
     min_xy_range.y =-2000;
     max_xy_range.y = 2000;
-    ims_xyd.push_back(plotxy(posX,posY, sp2, "PosXY",min_xy_range,max_xy_range));
+    ims_xyd.push_back(plotxy(posX_drone,posY_drone, posX_target,posY_target,sp2, "PosXY",min_xy_range,max_xy_range));
 
     return create_column_image(ims_xyd, CV_8UC3);
 }
@@ -149,9 +151,9 @@ cv::Mat Visualizer::plot_all_acceleration(void) {
 
 cv::Mat Visualizer::plot_all_position(void) {
     std::vector<cv::Mat> ims_pos;
-    ims_pos.push_back(plot({posX,sposX,setposX},"PosX"));
-    ims_pos.push_back(plot({posY,sposY,setposY},"PosY"));
-    ims_pos.push_back(plot({posZ,sposZ,setposZ},"PosZ"));
+    ims_pos.push_back(plot({posX_drone,sposX,setposX},"PosX"));
+    ims_pos.push_back(plot({posY_drone,sposY,setposY},"PosY"));
+    ims_pos.push_back(plot({posZ_drone,sposZ,setposZ},"PosZ"));
     return create_column_image(ims_pos, CV_8UC3);
 }
 
@@ -212,12 +214,12 @@ void Visualizer::plot(std::vector<cv::Mat> data, cv::Mat *frame, std::string nam
     }
 }
 
-cv::Mat Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Point setpoint, std::string name,cv::Point minaxis,cv::Point maxaxis) {
+cv::Mat Visualizer::plotxy(cv::Mat data1x,cv::Mat data1y, cv::Mat data2x,cv::Mat data2y, cv::Point setpoint, std::string name,cv::Point minaxis,cv::Point maxaxis) {
     cv::Mat frame = cv::Mat::zeros((fsizey+4*line_width), fsizex+4*line_width, CV_8UC3);
     frame.setTo(background_color);
     std::stringstream ss;
     ss.precision(2);
-    ss << name << " " << datax.at<float>(datax.rows-1) << "; " << datay.at<float>(datay.rows-1);
+    ss << name << " " << data1x.at<float>(data1x.rows-1) << "; " << data1y.at<float>(data1y.rows-1);
 
     putText(frame,ss.str() ,cv::Point(0, 30),cv::FONT_HERSHEY_SIMPLEX,text_size,fore_color);
     cv::line(frame,cv::Point(0,frame.rows-1),cv::Point(frame.cols,frame.rows-1),fore_color);
@@ -226,16 +228,11 @@ cv::Mat Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Point setpoint, std:
     double minx,maxx;
     double miny,maxy;
 
-    cv::Mat xS = datax*1000;
-    cv::Mat yS = datay*1000;
+    cv::Mat x1S = data1x*1000;
+    cv::Mat y1S = data1y*1000;
 
-    cv::Mat tmpx;
-    tmpx.push_back(xS);
-    cv::minMaxIdx(tmpx,&minx,&maxx,NULL,NULL);
-
-    cv::Mat tmpy;
-    tmpy.push_back(yS);
-    cv::minMaxIdx(tmpy,&miny,&maxy,NULL,NULL);
+    cv::Mat x2S = data2x*1000;
+    cv::Mat y2S = data2y*1000;
 
     minx=minaxis.x;
     maxx=maxaxis.x;
@@ -247,15 +244,15 @@ cv::Mat Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Point setpoint, std:
 
     int prev_x =0;
     int prev_y =0;
-    int start = xS.rows -bufsize;
+    int start = x1S.rows -bufsize;
     if (start < 0)
         start = 0;
 
     float x,y;
-    for (int j = start; j < xS.rows-1; j++)  {
-        x = xS.at<float>(j,1) - static_cast<float>(minx);
+    for (int j = start; j < x1S.rows-1; j++)  {
+        x = x1S.at<float>(j,1) - static_cast<float>(minx);
         x =x*scaleX + 2*line_width;
-        y = yS.at<float>(j,1) - static_cast<float>(miny);
+        y = y1S.at<float>(j,1) - static_cast<float>(miny);
         y= fsizey - y*scaleY + 2*line_width;
         if (j > start)
             cv::line(frame, cv::Point(prev_x, prev_y) , cv::Point(x, y), green, line_width, CV_AA, 0);
@@ -264,7 +261,20 @@ cv::Mat Visualizer::plotxy(cv::Mat datax,cv::Mat datay, cv::Point setpoint, std:
     }
 
     //draw current position more clearly
-    cv::circle(frame,cv::Point(x,y),2,red);
+    cv::circle(frame,cv::Point(x,y),2,white);
+
+    for (int j = start; j < x2S.rows-1; j++)  {
+        x = x2S.at<float>(j,1) - static_cast<float>(minx);
+        x =x*scaleX + 2*line_width;
+        y = y2S.at<float>(j,1) - static_cast<float>(miny);
+        y= fsizey - y*scaleY + 2*line_width;
+        if (j > start)
+            cv::line(frame, cv::Point(prev_x, prev_y) , cv::Point(x, y), red, line_width, CV_AA, 0);
+        prev_x = x;
+        prev_y = y;
+    }
+
+    cv::circle(frame,cv::Point(x,y),2,white);
 
     //draw the setpoint
     x = setpoint.x - minx;

@@ -22,7 +22,7 @@ class Visualizer{
 private:
     cv::Mat plot(std::vector<cv::Mat> data_drone, std::string name);
     void plot(std::vector<cv::Mat> data_drone, cv::Mat *frame, std::string name);
-    cv::Mat plotxy(cv::Mat datax, cv::Mat datay, cv::Point setpoint, std::string name, cv::Point minaxis, cv::Point maxaxis);
+    cv::Mat plotxy(cv::Mat data1x, cv::Mat data1y, cv::Mat data2x, cv::Mat data2y, cv::Point setpoint, std::string name, cv::Point minaxis, cv::Point maxaxis);
     cv::Mat plot_xyd(void);
     cv::Mat plot_all_control(void);
     cv::Mat plot_all_acceleration(void);
@@ -45,8 +45,8 @@ private:
 
     const int bufsize = 600;
 
-    const int fsizex = 1200/2;
-    const int fsizey = 1300/3;
+    const int fsizex = 800/2;
+    const int fsizey = 800/3;
     const int line_width = 2;
     const float text_size = 0.3;
 
@@ -100,9 +100,9 @@ public:
         throttle_hover = cv::Mat (1,1,CV_32FC1);
         throttle_min_bound = cv::Mat (1,1,CV_32FC1);
         throttle_max_bound = cv::Mat (1,1,CV_32FC1);
-        posX = cv::Mat (1,1,CV_32FC1);
-        posY = cv::Mat (1,1,CV_32FC1);
-        posZ = cv::Mat (1,1,CV_32FC1);
+        posX_drone = cv::Mat (1,1,CV_32FC1);
+        posY_drone = cv::Mat (1,1,CV_32FC1);
+        posZ_drone = cv::Mat (1,1,CV_32FC1);
         disparity = cv::Mat (1,1,CV_32FC1);
         sdisparity = cv::Mat (1,1,CV_32FC1);
         dt = cv::Mat(1,1,CV_32FC1);
@@ -119,9 +119,9 @@ public:
         throttle_hover.pop_back();
         throttle_min_bound.pop_back();
         throttle_max_bound.pop_back();
-        posX.pop_back();
-        posY.pop_back();
-        posZ.pop_back();
+        posX_drone.pop_back();
+        posY_drone.pop_back();
+        posZ_drone.pop_back();
         disparity.pop_back();
         sdisparity.pop_back();
         dt.pop_back();
@@ -143,9 +143,14 @@ public:
 
     cv::Mat dt;
     cv::Mat dt_target;
-    cv::Mat posX;
-    cv::Mat posY;
-    cv::Mat posZ;
+    cv::Mat posX_drone;
+    cv::Mat posY_drone;
+    cv::Mat posZ_drone;
+
+    cv::Mat posX_target;
+    cv::Mat posY_target;
+    cv::Mat posZ_target;
+
     cv::Mat disparity;
     cv::Mat sdisparity;
 
