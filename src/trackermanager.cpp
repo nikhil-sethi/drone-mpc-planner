@@ -94,12 +94,6 @@ void TrackerManager::update_trackers(double time,LogReader::Log_Entry log_entry,
         } else if (typeid(*_trackers.at(i)) == typeid(BlinkTracker)) {
             BlinkTracker * btrkr = static_cast<BlinkTracker * >(_trackers.at(i));
             btrkr->track(time);
-            if (btrkr->state() != BlinkTracker::bds_failed) {
-                std::cout << std::to_string(i) + ": " + btrkr->state_str() + " ";
-                if (btrkr->world_item().valid)
-                    std::cout << btrkr->world_item().pt;
-                std::cout  <<  std::endl;
-            }
             if (_mode == mode_locate_drone) {
                 if (btrkr->state() == BlinkTracker::bds_found){
                     _dtrkr->set_drone_landing_location(btrkr->image_item().pt(),btrkr->world_item().iti.disparity,btrkr->smoothed_size_image(),btrkr->world_item().pt);
