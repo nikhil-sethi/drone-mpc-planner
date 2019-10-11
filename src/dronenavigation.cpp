@@ -96,7 +96,7 @@ void DroneNavigation::update(double time) {
                     _dctrl->blink_by_binding(true);
                 }
             } else {
-                if (time - prev_time > bind_blink_time)
+                if (static_cast<float>(time - prev_time) > dparams.blink_period)
                     _dctrl->blink(time);
             }
             if (_trackers->mode() != TrackerManager::mode_locate_drone) {

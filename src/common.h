@@ -51,8 +51,6 @@ const float depthscale = 256.0f;
 const float rad2deg = 180.f/M_PIf32;
 const float deg2rad = M_PIf32/180.f;
 
-const double bind_blink_time = 0.45;
-
 struct state_data {
     cv::Point3f pos = {0},vel ={0},acc = {0};
 };
@@ -427,6 +425,7 @@ public: float full_bat_and_throttle_spinup_duration;
 public: float hover_throttle_a;
 public: float hover_throttle_b;
 public: int drone_blink_strength;
+public: float blink_period;
 public: tx_protocol tx;
 public: bool mode3d;
 public: string control;
@@ -440,6 +439,7 @@ private: xFloat _full_bat_and_throttle_take_off_acc;
 private: xFloat _full_bat_and_throttle_spinup_duration;
 private: xFloat _hover_throttle_a;
 private: xFloat _hover_throttle_b;
+private: xFloat _blink_period;
 private: xInt _drone_blink_strength;
 private: xTx_protocol _tx;
 private: xBool _mode3d;
@@ -451,7 +451,7 @@ public: DroneParameters() {
         setClassName("DroneParameters");
 
         // Set class version
-        setVersion("1.2");
+        setVersion("1.3");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("initial_hover_throttle",&_initial_hover_throttle);
@@ -463,6 +463,7 @@ public: DroneParameters() {
         Register("full_bat_and_throttle_spinup_time",&_full_bat_and_throttle_spinup_duration);
         Register("hover_throttle_a",&_hover_throttle_a);
         Register("hover_throttle_b",&_hover_throttle_b);
+        Register("blink_period",&_blink_period);
         Register("drone_blink_strength",&_drone_blink_strength);
         Register("tx",&_tx);
         Register("mode3d",&_mode3d);
@@ -479,7 +480,7 @@ public: void deserialize(std::string filepath) {
             { // Deserialization not successful
                 throw my_exit("Cannot read: " + filepath);
             }
-            PatsParameters tmp;
+            DroneParameters tmp;
             auto v1 = getVersion();
             auto v2 = tmp.getVersion();
             if (v1 != v2) {
@@ -498,6 +499,7 @@ public: void deserialize(std::string filepath) {
         full_bat_and_throttle_spinup_duration = _full_bat_and_throttle_spinup_duration.value();
         hover_throttle_a = _hover_throttle_a.value();
         hover_throttle_b = _hover_throttle_b.value();
+        blink_period = _blink_period.value();
         drone_blink_strength = _drone_blink_strength.value();
         tx = _tx.value();
         mode3d = _mode3d.value();
@@ -515,6 +517,7 @@ public: void serialize(std::string filepath) {
         _full_bat_and_throttle_spinup_duration = full_bat_and_throttle_spinup_duration;
         _hover_throttle_a = hover_throttle_a;
         _hover_throttle_b = hover_throttle_b;
+        _blink_period = blink_period;
         _drone_blink_strength = drone_blink_strength;
         _tx = tx;
         _mode3d = mode3d;

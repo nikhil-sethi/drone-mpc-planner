@@ -116,7 +116,7 @@ public:
     void reset_motion_integration() {
         _reset_motion_integration = true;
     }
-    void enable_background_motion_map_calibration(double duration);
+    void enable_background_motion_map_calibration(float duration);
     bool calibrating_background() {return _calibrating_background;}
 
     void delete_from_motion_map(cv::Point p, int disparity, int radius, int duration);

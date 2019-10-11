@@ -337,7 +337,7 @@ public:
         static double last_blink_time = time;
         static bool blink_state;
 
-        if (time-last_blink_time>bind_blink_time) {
+        if (static_cast<float>(time-last_blink_time)>dparams.blink_period) {
             if (blink_state)
                 blink_state = false;
             else

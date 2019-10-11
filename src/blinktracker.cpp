@@ -59,7 +59,7 @@ void BlinkTracker::track(double time) {
         _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
         break;
     } case bds_3_blink_off_calib: {
-        _visdat->enable_background_motion_map_calibration(bind_blink_time*0.8);  //0.8 to prevent picking up the upcoming blink in the background calib
+        _visdat->enable_background_motion_map_calibration(dparams.blink_period*0.8f);  //0.8 to prevent picking up the upcoming blink in the background calib
         _blinking_drone_status = bds_3_blink_off;
         [[fallthrough]];
     } case bds_3_blink_off: {
@@ -96,14 +96,14 @@ BlinkTracker::blinking_drone_states BlinkTracker::detect_blink(double time, bool
 
     double blink_period = time - blink_time_start;
     if (found) {
-        if ( blink_period > bind_blink_time - 0.1 && blink_period < bind_blink_time+0.1) {
+        if ( blink_period > blink_period - 0.1 && blink_period < blink_period+0.1) {
             blink_time_start = time;
             int tmp  =static_cast<int>(_blinking_drone_status)+1;
             return static_cast<blinking_drone_states>(tmp);
         } else {
             return bds_restart_search;
         }
-    } else if (!found && blink_period > bind_blink_time +0.1) {
+    } else if (!found && blink_period > blink_period +0.1) {
         return bds_restart_search;
     }
     return _blinking_drone_status;

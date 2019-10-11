@@ -165,10 +165,10 @@ void VisionData::collect_no_drone_frames(cv::Mat dL) {
 
 }
 
-void VisionData::enable_background_motion_map_calibration(double duration){
+void VisionData::enable_background_motion_map_calibration(float duration){
     motion_noise_map = cv::Mat::zeros(smallsize,CV_8UC1);
     diffL16_back = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
-    calibrating_background_end_time = _current_frame_time+duration;
+    calibrating_background_end_time = _current_frame_time+static_cast<double>(duration);
     _calibrating_background = true;
     skip_background_frames = 2;
 }
