@@ -94,16 +94,16 @@ BlinkTracker::blinking_drone_states BlinkTracker::detect_blink(double time, bool
     if (Last_track_data().vel_valid && norm(Last_track_data().vel()) > 0.3)
         return bds_restart_search;
 
-    double blink_period = time - blink_time_start;
+    float blink_period = static_cast<float>(time - blink_time_start);
     if (found) {
-        if ( blink_period > blink_period - 0.1 && blink_period < blink_period+0.1) {
+        if ( blink_period > dparams.blink_period - 0.1f && blink_period < dparams.blink_period+0.1f) {
             blink_time_start = time;
             int tmp  =static_cast<int>(_blinking_drone_status)+1;
             return static_cast<blinking_drone_states>(tmp);
         } else {
             return bds_restart_search;
         }
-    } else if (!found && blink_period > blink_period +0.1) {
+    } else if (!found && blink_period > dparams.blink_period +0.1f) {
         return bds_restart_search;
     }
     return _blinking_drone_status;
