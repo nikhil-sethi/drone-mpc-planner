@@ -315,16 +315,15 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         auto_pitch = JOY_MIDDLE;
         auto_throttle = JOY_BOUND_MIN;
         _rc->arm(false);
+        if (time > 5 && pparams.joystick == rc_none)
+            _flight_mode = fm_inactive;
         break;
     } case fm_inactive: {
         auto_roll = JOY_MIDDLE;
         auto_pitch = JOY_MIDDLE;
         auto_throttle = JOY_BOUND_MIN;
-        if (time < 4) {
-           _rc->arm(false);
-        }else {
+        if (pparams.joystick == rc_none)
             _rc->arm(true);
-        }
 
 
         break;
@@ -925,7 +924,7 @@ void DroneController::readJoystick(void) {
 void DroneController::process_joystick() {
     // prevent accidental take offs at start up
     if (pparams.joystick == rc_none && _flight_mode == fm_joystick_check) {
-        _flight_mode = fm_inactive;
+        _flight_mode = fm_disarmed;
         _joy_state = js_none;
         return;
     } else if (pparams.joystick == rc_none)

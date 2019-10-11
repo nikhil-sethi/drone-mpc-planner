@@ -331,6 +331,10 @@ public:
         else
             return (auto_throttle > JOY_BOUND_MIN || _flight_mode == fm_start_takeoff || _flight_mode == fm_take_off_aim || _flight_mode == fm_max_burn || _flight_mode == fm_1g ); //FIXME: check if this goes well if due to extreme control throttle is set to 0
     }
+    bool drone_state_inactive() {
+        return _flight_mode == fm_inactive;
+    }
+
     bool joystick_ready();
 
     void blink_by_binding(bool b) {

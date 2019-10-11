@@ -30,5 +30,5 @@ do
 	/bin/mv logging $OUTDIR || true
 
 	echo "Restarting pats with drone id $i +1!"
-	sleep 3
+	sleep 3 #this delay is needed to timeout the multimodule, so that it will re-ask for the drone id
 done

@@ -112,7 +112,7 @@ void DroneNavigation::update(double time) {
                 _dctrl->LED(true);
             _trackers->mode(TrackerManager::mode_idle);
             _visdat->disable_fading = false;
-            if (time-time_located_drone>1.0) { // delay until blinking stopped
+            if (time-time_located_drone>1.0 && (_dctrl->drone_state_inactive() || pparams.joystick != rc_none)) { // delay until blinking stopped
                 if (_nav_flight_mode == nfm_hunt)
                     _navigation_status = ns_wait_for_insect;
                 else if (_nav_flight_mode == nfm_manual)
