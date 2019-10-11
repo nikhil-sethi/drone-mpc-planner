@@ -320,7 +320,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         auto_roll = JOY_MIDDLE;
         auto_pitch = JOY_MIDDLE;
         auto_throttle = JOY_BOUND_MIN;
-        if (time < 10) {
+        if (time < 4) {
            _rc->arm(false);
         }else {
             _rc->arm(true);

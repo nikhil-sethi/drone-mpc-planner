@@ -30,4 +30,5 @@ do
 	/bin/mv logging $OUTDIR || true
 
 	echo "Restarting pats with drone id $i +1!"
+	sleep 3
 done
