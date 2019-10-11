@@ -243,6 +243,10 @@ public:
         _log_auto_throttle = log_auto_throttle;
     }
 
+    bool flight_aborted() {
+        return _flight_mode == fm_abort_flight;
+    }
+
     int joy_throttle = JOY_BOUND_MIN;
     int joy_roll = JOY_MIDDLE;
     int joy_pitch = JOY_MIDDLE;

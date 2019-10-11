@@ -268,6 +268,9 @@ public:
     bool drone_is_manual(){
         return _navigation_status == ns_manual;
     }
+    bool time_for_restart() { // tmp function to signal restart so that another drone may fly
+        return _navigation_status == ns_drone_problem ||  _navigation_status == ns_wait_after_landing;
+    }
 
     Interceptor get_Interceptor(){return _iceptor;}
 };

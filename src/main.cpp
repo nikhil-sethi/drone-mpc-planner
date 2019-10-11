@@ -257,8 +257,15 @@ void process_video() {
         if (fps != fps || isinf(fps))
             fps_smoothed.reset();
 
-        if (imgcount > 360000 && pparams.insect_logging_mode)
+        static uint restart_delay = 0;
+        if (dnav.time_for_restart() || dctrl.flight_aborted())
+            restart_delay++;
+        else
+            restart_delay = 0;
+
+        if ((imgcount > 360000 && pparams.insect_logging_mode) || restart_delay > 1*pparams.fps)
             key =27;
+
 
     } // main while loop
 }
