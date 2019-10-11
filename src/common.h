@@ -171,6 +171,7 @@ private:
     float slope_right;
     float z_limit;
     float y_limit;
+    float minimum_height = 0.3f;
 
     /** @brief Checks whether the point p is for all planes defined in init on the right side.*/
     bool in_view(cv::Point3f p, float hysteresis_margin);
