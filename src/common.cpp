@@ -73,10 +73,10 @@ bool CameraVolume::in_hunt_area(cv::Point3f d, cv::Point3f m){
 
     float cone_angle = atan2(horizontal_dist, vertical_dist);
 
-    if (m.z < -0.8f && m.z > p0_back.at<float>(2)
+    if (m.z < -1.5f && m.z > p0_back.at<float>(2)
             && m.y<0 && m.y>= p0_bottom.at<float>(1)
             && cone_angle<=cone_angle_limit
-            && dist < 2.0f && dist > 1.0f)
+            && dist < 3.0f) // && dist > 1.0f)
         return true;
     else
         return false;
