@@ -105,6 +105,12 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         yaw = joy_yaw;
         joy_control = true;
         break;
+    } case fm_spinup: {
+        _rc->arm(true);
+        auto_roll = JOY_MIDDLE;
+        auto_pitch = JOY_MIDDLE;
+        auto_throttle = spinup_throttle;
+        break;
     } case fm_start_takeoff: {
         take_off_start_time = time;
         _flight_mode = fm_take_off_aim;

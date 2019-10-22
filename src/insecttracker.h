@@ -18,6 +18,7 @@ public:
     void reset_after_log(){
         _tracking = false;
     }
+    bool tracking(){return _tracking;}
 
     BlobWorldProps calc_world_item(BlobProps * pbs, double time);
     bool check_ignore_blobs(BlobProps * pbs, double time);

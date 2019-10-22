@@ -18,6 +18,7 @@ static const char* joy_states_names[] = { "js_manual",
 static const char* flight_mode_names[] = { "fm_joystick_check",
                                           "fm_disarmed",
                                           "fm_inactive",
+                                          "fm_spinup",
                                           "fm_manual",
                                           "fm_start_takeoff",
                                           "fm_take_off_aim",
@@ -47,6 +48,7 @@ public:
         fm_joystick_check,
         fm_disarmed,
         fm_inactive,
+        fm_spinup,
         fm_manual,
         fm_start_takeoff,
         fm_take_off_aim,
@@ -292,6 +294,7 @@ public:
 
     const int initial_throttle = 200;
     float hoverthrottle;
+    const float spinup_throttle = 304; //TODO: Move this to xml setttings // For trashcan 304 is the lowest value at which the props start to spin
     const float tmp_hover_throttle = 650; // TODO: LUDWIG HELP initial hover throttle...
 
     bool _manual_override_take_off_now;
