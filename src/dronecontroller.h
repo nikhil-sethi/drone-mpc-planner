@@ -89,6 +89,8 @@ private:
     int gain_roll_pos,gain_roll_vel,gain_roll_acc,gain_roll_i;
     int gain_pitch_pos,gain_pitch_vel,gain_pitch_acc,gain_pitch_i;
 
+    double spin_up_start_time = 0;
+
     class ControlParameters: public xmls::Serializable
     {
     public:
@@ -125,6 +127,13 @@ private:
     float rollErrI = 0;
     float pitchErrI = 0;
     int autoLandThrottleDecrease = 0;
+
+    float time_spent_spinning_up(double time) {
+        if (spin_up_start_time> 0)
+            return static_cast<float>(time - spin_up_start_time );
+        else
+            return 0;
+    }
 
     std::string settings_file;
 
