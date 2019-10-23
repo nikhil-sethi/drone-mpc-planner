@@ -143,7 +143,7 @@ private:
     const float transmission_delay_duration = 0.04f;
     float effective_burn_spin_up_duration = 0.15f; // the time to spin up from hover to max
     const float effective_burn_spin_down_duration = 0.1f; // the time to spin down from max to hover
-    float thrust = 4.0f*GRAVITY;
+    float thrust = 45; //60, 55, 50, 48, 45
     cv::Point3f drone_vel_after_takeoff = {0};
     float ground_effect = 1.0f;
     const float lift_off_dist_take_off_aim = 0.02f;
@@ -311,7 +311,7 @@ public:
     const int initial_throttle = 200;
     float hoverthrottle;
     const float spinup_throttle = 304; //TODO: Move this to xml setttings // For trashcan 304 is the lowest value at which the props start to spin
-    const float tmp_hover_throttle = 650; // TODO: LUDWIG HELP initial hover throttle...
+    const float tmp_hover_throttle = 580; // TODO: LUDWIG HELP initial hover throttle...
 
     bool _manual_override_take_off_now;
     bool manual_override_take_off_now() { return _manual_override_take_off_now;}

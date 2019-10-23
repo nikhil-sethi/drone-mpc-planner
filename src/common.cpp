@@ -23,7 +23,7 @@ void CameraVolume::init(cv::Point3f point_left_top, cv::Point3f point_right_top,
     p0_right = (cv::Mat_<float>(3,1) << 0, 0, 0);
 
     n_bottom = (cv::Mat_<float>(3,1) << 0, 1, 0);
-    p0_bottom = (cv::Mat_<float>(3,1) << 0, b_height+minimum_height, 0);
+    p0_bottom = (cv::Mat_<float>(3,1) << 0, b_height, 0);
 
     n_back = (cv::Mat_<float>(3,1) << 0, 0, 1);
     p0_back = (cv::Mat_<float>(3,1) << 0, 0, b_depth);
@@ -74,7 +74,7 @@ bool CameraVolume::in_hunt_area(cv::Point3f d, cv::Point3f m){
     float cone_angle = atan2(horizontal_dist, vertical_dist);
 
     if (m.z < -0.5f && m.z > p0_back.at<float>(2)
-            && m.y<0 && m.y>= p0_bottom.at<float>(1)
+            && m.y<0 && m.y>= p0_bottom.at<float>(1)+minimum_height
             && cone_angle<=cone_angle_limit
             && dist < 3.0f) // && dist > 1.0f)
         return true;

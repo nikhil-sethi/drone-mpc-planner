@@ -146,8 +146,8 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         }
         if (remaining_aim_duration <= aim_duration) {
             cv::Point3f burn_direction;
-            std::tie (auto_roll, auto_pitch,std::ignore,burn_direction) = calc_directional_burn(state_drone_takeoff,data_target.state,0);
-            auto_burn_duration = take_off_burn_duration; //TODO: make this number dynamic such that we have just enough time to do a second directional burn?
+            std::tie (auto_roll, auto_pitch,auto_burn_duration,burn_direction) = calc_directional_burn(state_drone_takeoff,data_target.state,0);
+            //auto_burn_duration = take_off_burn_duration; //TODO: make this number dynamic such that we have just enough time to do a second directional burn?
             _burn_direction_for_thrust_approx = burn_direction; // to be used later to approx effective thrust
             std::vector<state_data> trajectory = predict_trajectory(auto_burn_duration, 0, burn_direction, state_drone_takeoff);
             if (_fromfile) // todo: tmp solution, call from visualizer instead if this viz remains to be needed
@@ -535,8 +535,11 @@ void DroneController::draw_viz(
         std::tie(integrated_pos, integrated_vel,burn_accelleration) = predict_drone_after_burn(
             state_drone, burn_direction,0,burn_duration);
 
-        std::tie(viz_drone_pos_after_burn, std::ignore) = predict_drone_state_after_spindown(integrated_pos, integrated_vel,burn_accelleration);
-        viz_time_after_burn = viz_time_after_aim + static_cast<double>(burn_duration + effective_burn_spin_down_duration);
+//        std::tie(viz_drone_pos_after_burn, std::ignore) = predict_drone_state_after_spindown(integrated_pos, integrated_vel,burn_accelleration);
+//        viz_time_after_burn = viz_time_after_aim + static_cast<double>(burn_duration + effective_burn_spin_down_duration);
+
+         viz_drone_pos_after_burn =  traj.back().pos;
+         viz_time_after_burn = viz_time_after_aim + static_cast<double>(burn_duration );
 
         viz_drone_trajectory = predict_trajectory(burn_duration, 0, burn_direction, state_drone);
 
