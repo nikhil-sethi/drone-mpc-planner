@@ -5,7 +5,7 @@ set -ex
 cd /home/pats/code/pats/pc/build/
 
 
-for i in {1..3}
+for i in {0..3}
 do
    
     dt=$(date '+%d/%m/%Y %H:%M:%S');
