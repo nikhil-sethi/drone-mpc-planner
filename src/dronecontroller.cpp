@@ -119,12 +119,11 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         _flight_mode = fm_take_off_aim;
         std::cout << "Take off aiming" << std::endl;
         _burn_direction_for_thrust_approx = {0};
-        if (dparams.mode3d || pparams.joystick == rc_none) {
+        if (pparams.joystick == rc_none) {
             _rc->arm(true);
             auto_roll = JOY_MIDDLE;
             auto_pitch = JOY_MIDDLE;
             auto_throttle = JOY_BOUND_MIN;
-            break;
         }
         [[fallthrough]];
     } case fm_take_off_aim: {
@@ -133,11 +132,11 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         state_drone_takeoff.pos = _dtrk->drone_startup_location() + cv::Point3f(0,lift_off_dist_take_off_aim,0);
         state_drone_takeoff.vel = {0};
 
-        float remaing_spinup_time = dparams.full_bat_and_throttle_spinup_duration - time_spent_spinning_up(time);
+        float remaing_spinup_time = dparams.full_bat_and_throttle_spinup_duration - aim_duration - time_spent_spinning_up(take_off_start_time);
         if (remaing_spinup_time< 0)
             remaing_spinup_time = 0;
 
-        float remaining_aim_duration = (remaing_spinup_time + aim_duration) - static_cast<float>(time - take_off_start_time);
+        float remaining_aim_duration = remaing_spinup_time+aim_duration  - static_cast<float>(time - take_off_start_time);
         if (remaining_aim_duration <= 0) {
             remaining_aim_duration = 0;
             spin_up_start_time = 0;
