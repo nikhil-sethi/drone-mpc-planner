@@ -182,7 +182,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
     }  case fm_interception_aim_start: {
         std::cout << "Aiming" << std::endl;
         interception_start_time = time;
-        approx_effective_thrust(data_drone,_burn_direction_for_thrust_approx,auto_burn_duration,static_cast<float>(time-take_off_start_time)-dparams.full_bat_and_throttle_spinup_duration);
+        approx_effective_thrust(data_drone,_burn_direction_for_thrust_approx,auto_burn_duration,static_cast<float>(time-start_takeoff_burn_time));
         _burn_direction_for_thrust_approx = {0};
         std::cout << "Estimated acc: " << thrust << std::endl;
         first_directional_burn = true;
