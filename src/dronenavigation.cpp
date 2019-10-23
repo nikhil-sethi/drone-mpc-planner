@@ -173,6 +173,10 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_drone_problem;
                 break;
             }
+            if (_dctrl->spinup()) {
+                _navigation_status = ns_wait_for_insect;
+                break;
+            }
 
             if (_iceptor.insect_in_range()) {
                 setpoint_pos_world = _iceptor.target_position();

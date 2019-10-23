@@ -137,21 +137,43 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
             remaing_spinup_time = 0;
 
         float remaining_aim_duration = remaing_spinup_time+aim_duration  - static_cast<float>(time - take_off_start_time);
-        if (remaining_aim_duration <= 0) {
-            remaining_aim_duration = 0;
-            spin_up_start_time = 0;
-            _flight_mode = fm_max_burn;
-            start_takeoff_burn_time = time;
-            std::cout << "Take off burn" << std::endl;
-        }
         if (remaining_aim_duration <= aim_duration) {
             cv::Point3f burn_direction;
             std::tie (auto_roll, auto_pitch,auto_burn_duration,burn_direction) = calc_directional_burn(state_drone_takeoff,data_target.state,0);
             //auto_burn_duration = take_off_burn_duration; //TODO: make this number dynamic such that we have just enough time to do a second directional burn?
+            aim_direction_history.push_back(burn_direction);
+
             _burn_direction_for_thrust_approx = burn_direction; // to be used later to approx effective thrust
             std::vector<state_data> trajectory = predict_trajectory(auto_burn_duration, 0, burn_direction, state_drone_takeoff);
             if (_fromfile) // todo: tmp solution, call from visualizer instead if this viz remains to be needed
                 draw_viz(state_drone_takeoff,data_target.state,time,burn_direction,auto_burn_duration,remaining_aim_duration,trajectory);
+        }
+        if (remaining_aim_duration <= 0) {
+            remaining_aim_duration = 0;
+
+            //check if insect path was constant:
+            cv::Point3f avg_dir = {0};
+            for (auto dir : aim_direction_history)
+                avg_dir+=dir;
+
+            avg_dir /= static_cast<float>(aim_direction_history.size());
+            cv::Point3f predicted_drone_pos;
+            std::tie(predicted_drone_pos, std::ignore,std::ignore) = predict_drone_after_burn(state_drone_takeoff,avg_dir,0,auto_burn_duration);
+            cv::Point3f predicted_target_pos = data_target.pos() + auto_burn_duration*data_target.vel();
+
+            double predicted_error = cv::norm(predicted_drone_pos - predicted_target_pos);
+            if (predicted_error > 0.1) {
+                _flight_mode = fm_spinup;
+                spin_up_start_time = time - static_cast<double>(dparams.full_bat_and_throttle_spinup_duration); // normal spinup may not have happened always, so just set it hard so that we don't spinup wait next attempt
+            } else {
+                spin_up_start_time = 0;
+                _flight_mode = fm_max_burn;
+                start_takeoff_burn_time = time;
+                std::cout << "Take off burn" << std::endl;
+            }
+
+            aim_direction_history.clear();
+
         }
         break;
     } case fm_max_burn: {

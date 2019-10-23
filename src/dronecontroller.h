@@ -156,6 +156,9 @@ private:
     const float integratorThresholdDistance = 0.3f;
     cv::Point3f _burn_direction_for_thrust_approx = {0};
 
+
+    std::vector<cv::Point3f> aim_direction_history;
+
     bool initialized = false;
     bool _fromfile;
     flight_modes _flight_mode = fm_joystick_check; // only set externally (except for disarming), used internally
@@ -257,6 +260,9 @@ public:
 
     bool flight_aborted() {
         return _flight_mode == fm_abort_flight;
+    }
+    bool spinup() {
+        return _flight_mode == fm_spinup;
     }
 
     float duration_spent_taking_off(double time) {
