@@ -430,17 +430,19 @@ void Visualizer::draw_tracker_viz() {
     if (ins_path.size()>0){
         std::stringstream ss;
         ItemTracker::WorldItem wti = ins_path.back();
-        ss << "i " << to_string_with_precision(wti.distance,1);
-        cv::Scalar c(0,0,255);
-        if (wti.distance_bkg >wti.distance )
-            c = cv::Scalar(180,180,255);
-        cv::Point2i p_ins_im  = wti.iti.pt() *pparams.imscalef;
-        putText(frameL_color,ss.str(),p_ins_im,cv::FONT_HERSHEY_SIMPLEX,0.5,c);
-        cv::line(frameL_color,p_ins_im,p_ins_im,c,2);
-        cv::Point3f p_ins_ground_wrld = wti.pt;
-        p_ins_ground_wrld.y = -1.92f; // guestimated ground level
-        cv::Point2f p_ins_ground_im = world2im_2d(p_ins_ground_wrld,_visdat->Qfi,_visdat->camera_angle);
-        cv::line(frameL_color,p_ins_im,p_ins_ground_im,white,1);
+        if (wti.valid) {
+            ss << "i " << to_string_with_precision(wti.distance,1);
+            cv::Scalar c(0,0,255);
+            if (wti.distance_bkg >wti.distance )
+                c = cv::Scalar(180,180,255);
+            cv::Point2i p_ins_im  = wti.iti.pt() *pparams.imscalef;
+            putText(frameL_color,ss.str(),p_ins_im,cv::FONT_HERSHEY_SIMPLEX,0.5,c);
+            cv::line(frameL_color,p_ins_im,p_ins_im,c,2);
+            cv::Point3f p_ins_ground_wrld = wti.pt;
+            p_ins_ground_wrld.y = -1.92f; // guestimated ground level
+            cv::Point2f p_ins_ground_im = world2im_2d(p_ins_ground_wrld,_visdat->Qfi,_visdat->camera_angle);
+            cv::line(frameL_color,p_ins_im,p_ins_ground_im,white,1);
+        }
     }
 
     if (_dctrl->ff_interception()) {

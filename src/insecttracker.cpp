@@ -10,11 +10,13 @@ void InsectTracker::init(std::ofstream *logger, VisionData *visdat) {
 
 void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number, double time) {
 
+    bool valid = (log.ins_im_x >= 0 && log.ins_im_y >= 0);
     _image_item = ImageItem (log.ins_im_x/pparams.imscalef,log.ins_im_y/pparams.imscalef,log.ins_disparity,frame_number);
     _image_predict_item = ImagePredictItem(cv::Point2f(log.ins_pred_im_x/pparams.imscalef,log.ins_pred_im_y/pparams.imscalef),1,1,255,frame_number);
+    _image_item.valid = valid;
 
     track_data data;
-    data.pos_valid = true;
+    data.pos_valid = valid;
     data.state.pos.x = log.ins_pos_x;
     data.state.pos.y = log.ins_pos_y;
     data.state.pos.z = log.ins_pos_z;
@@ -51,7 +53,7 @@ void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number, 
 
     WorldItem w;
     w.iti = _image_item;
-    w.valid = true;
+    w.valid = valid;
     w.pt.x = log.ins_pos_x;
     w.pt.y = log.ins_pos_y;
     w.pt.z = log.ins_pos_z;
