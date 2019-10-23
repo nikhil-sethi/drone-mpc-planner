@@ -141,6 +141,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
             remaining_aim_duration = 0;
             spin_up_start_time = 0;
             _flight_mode = fm_max_burn;
+            start_burn_time = time;
             std::cout << "Take off burn" << std::endl;
         }
         if (remaining_aim_duration <= aim_duration) {
@@ -155,12 +156,12 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         break;
     } case fm_max_burn: {
         auto_throttle = JOY_BOUND_MAX;
-        if (static_cast<float>(time - take_off_start_time) > dparams.full_bat_and_throttle_spinup_duration + auto_burn_duration)
+        if (static_cast<float>(time - start_burn_time) >  auto_burn_duration)
             _flight_mode = fm_max_burn_spin_down;
         break;
     } case fm_max_burn_spin_down: {
         auto_throttle = tmp_hover_throttle;
-        if (static_cast<float>(time - take_off_start_time) > dparams.full_bat_and_throttle_spinup_duration+ auto_burn_duration + effective_burn_spin_down_duration)
+        if (static_cast<float>(time - start_burn_time) > auto_burn_duration + effective_burn_spin_down_duration)
             _flight_mode = fm_1g;
         break;
     }  case fm_1g: {
@@ -168,8 +169,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         auto_pitch = JOY_MIDDLE;
 
         // Wait until velocity of drone after take-off is constant, then estimate this velocity using sufficient samples
-        if (static_cast<float>(time - take_off_start_time) > dparams.full_bat_and_throttle_spinup_duration +
-                                                                 auto_burn_duration + effective_burn_spin_down_duration + transmission_delay_duration - 1.f / pparams.fps){
+        if (static_cast<float>(time - start_burn_time) > auto_burn_duration + effective_burn_spin_down_duration + transmission_delay_duration - 1.f / pparams.fps){
             if(_joy_state == js_waypoint)
                 _flight_mode = fm_flying_pid_init;
             else{

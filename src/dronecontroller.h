@@ -90,6 +90,7 @@ private:
     int gain_pitch_pos,gain_pitch_vel,gain_pitch_acc,gain_pitch_i;
 
     double spin_up_start_time = 0;
+    double start_burn_time = 0;
 
     class ControlParameters: public xmls::Serializable
     {
