@@ -90,7 +90,7 @@ private:
     int gain_pitch_pos,gain_pitch_vel,gain_pitch_acc,gain_pitch_i;
 
     double spin_up_start_time = 0;
-    double start_burn_time = 0;
+    double start_takeoff_burn_time = 0;
 
     class ControlParameters: public xmls::Serializable
     {
@@ -259,6 +259,12 @@ public:
         return _flight_mode == fm_abort_flight;
     }
 
+    float duration_spent_taking_off(double time) {
+        if (start_takeoff_burn_time == 0)
+            return 0;
+        return  static_cast<float>(time - start_takeoff_burn_time) ;
+    }
+
     int joy_throttle = JOY_BOUND_MIN;
     int joy_roll = JOY_MIDDLE;
     int joy_pitch = JOY_MIDDLE;
@@ -344,6 +350,7 @@ public:
         else
             return ((auto_throttle > JOY_BOUND_MIN && _flight_mode != fm_spinup) || _flight_mode == fm_start_takeoff || _flight_mode == fm_take_off_aim || _flight_mode == fm_max_burn || _flight_mode == fm_1g ); //FIXME: check if this goes well if due to extreme control throttle is set to 0
     }
+
     bool drone_state_inactive() {
         return _flight_mode == fm_inactive;
     }
