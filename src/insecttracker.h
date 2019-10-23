@@ -17,6 +17,8 @@ public:
     void update_from_log(LogReader::Log_Entry entry, int frame_number, double time);
     void reset_after_log(){
         _tracking = false;
+        _world_item.valid = false;
+        _image_item.valid = false;
     }
     bool tracking(){return _tracking;}
 
