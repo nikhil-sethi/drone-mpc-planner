@@ -3,6 +3,7 @@
 #include <opencv2/features2d.hpp>
 #include "opencv2/imgproc.hpp"
 #include "opencv2/calib3d.hpp"
+#include <opencv2/core/core.hpp>
 #include "common.h"
 #include "vector"
 #include "algorithm"
@@ -464,6 +465,7 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
     track_data data;
     data.pos_valid = true;
     data.state.pos = measured_world_coordinates;
+    data.heading = _world_item.heading;
 
     if (n_frames_lost >= smooth_width_vel || reset_filters) { // tracking was regained, after n_frames_lost frames
         disp_rate_smoothed2.reset();

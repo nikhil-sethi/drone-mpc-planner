@@ -18,12 +18,14 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     _fromfile = fromfile;
     _camvol = camvol;
     control_history_max_size = pparams.fps;
-    (*_logger) << "valid; posErrX; posErrY; posErrZ; velX; velY; velZ; accX; accY; accZ; hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; joyThrottle; joyRoll; joyPitch; joyYaw; joyArmSwitch; joyModeSwitch; joyTakeoffSwitch; dt; velx_sp; vely_sp; velz_sp;";
+    (*_logger) << "valid; posErrX; posErrY; posErrZ; velX; velY; velZ; accX; accY; accZ; hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; joyThrottle; joyRoll; joyPitch; joyYaw; joyArmSwitch; joyModeSwitch; joyTakeoffSwitch; dt; velx_sp; vely_sp; velz_sp; heading; Sheading;";
+
     std::cout << "Initialising control." << std::endl;
 
     pid_roll_smoother.init(6);
     pid_pitch_smoother.init(12);
     pid_throttle_smoother.init(2);
+    yaw_smoother.init(6);
 
     settings_file = "../../xml/" + dparams.control + ".xml";
 
@@ -353,10 +355,15 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
             }
         }
         break;
+    } case fm_reset_heading: {
+        control_modelBased(data_drone, setpoint_pos);
+        auto_yaw = control_yaw(data_drone, 5); // second argument is the yaw gain, move this to the xml files?
+        break;
     } case fm_landing_start: {
-        landing_decent_yoffset = 0;
-        landing_setpoint_height = setpoint_pos.y;
-        _flight_mode = fm_landing;
+            landing_decent_yoffset = 0;
+            landing_setpoint_height = setpoint_pos.y;
+            _flight_mode = fm_landing;
+            auto_yaw = JOY_MIDDLE;
         [[fallthrough]];
     } case fm_landing: {
         landing_decent_yoffset += landing_decent_rate;
@@ -424,9 +431,8 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         pitch =  auto_pitch;
         roll = auto_roll;
         throttle = auto_throttle;
+        yaw = auto_yaw;
     }
-
-    yaw = joy_yaw; // tmp until auto yaw control is fixed #10
 
     throttle = bound_throttle(throttle);
     roll = bound_joystick_value(roll);
@@ -468,7 +474,9 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         data_drone.dt << "; " <<
         velx_sp << "; " <<
         vely_sp << "; " <<
-        velz_sp << "; ";
+        velz_sp << "; " <<
+        data_drone.heading <<  "; " <<
+        smooth_heading <<  "; ";
 }
 
 std::tuple<int, int, float, Point3f, std::vector<state_data> > DroneController::calc_burn(state_data state_drone,state_data state_target,float remaining_aim_duration) {
@@ -683,6 +691,17 @@ std::tuple<cv::Point3f, cv::Point3f> DroneController::predict_drone_state_after_
     //        integrated_pos += integrated_vel * remaining_1g_duration;
 
     return std::make_tuple(integrated_pos, integrated_vel);
+}
+
+int DroneController::control_yaw(track_data data_drone, float gain_yaw){
+    if(!isnan(data_drone.heading) == 1){
+        smooth_heading = yaw_smoother.addSample(data_drone.heading);
+        auto_yaw = JOY_MIDDLE + gain_yaw*smooth_heading*sqrtf(powf(data_drone.state.pos.x,2)+powf(data_drone.state.pos.y,2)+powf(data_drone.state.pos.z,2)); // clockwise is positive
+    }
+    else{
+        auto_yaw = JOY_MIDDLE;
+    }
+return auto_yaw;
 }
 
 //considering a take off order from just after the aiming phase of: spinning up, burning, spin down, 1g, find the max drone acceleration that best desccribes the current position given dt

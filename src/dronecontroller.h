@@ -33,6 +33,7 @@ static const char* flight_mode_names[] = { "fm_joystick_check",
                                           "fm_abort_flight",
                                           "fm_flying_pid_init",
                                           "fm_flying_pid",
+                                          "fm_reset_heading",
                                           "fm_landing_start",
                                           "fm_landing"
 };
@@ -63,6 +64,7 @@ public:
         fm_abort_flight,
         fm_flying_pid_init,
         fm_flying_pid,
+        fm_reset_heading,
         fm_landing_start,
         fm_landing
     };
@@ -210,6 +212,10 @@ private:
     int joyDial = 0;
     float scaledjoydial = 0;
 
+    float smooth_heading;
+
+    int control_yaw(track_data data_drone, float gain_yaw);
+
     bool recovery_mode = false;
     cv::Point3f recovery_pos = {0};
     bool first_directional_burn = false;
@@ -221,7 +227,6 @@ private:
     std::vector<state_data> predict_trajectory(float burn_duration, float remaining_aim_duration, cv::Point3f burn_direction, state_data state_drone);
     void draw_viz(state_data state_drone, state_data state_target, double time, cv::Point3f burn_direction, float burn_duration, float remaining_aim_duration, std::vector<state_data> traj);
     bool trajectory_in_view(std::vector<state_data> traj, CameraVolume::volume_check_mode c);
-
 
     std::tuple<float,float> acc_to_deg(cv::Point3f acc);
 
@@ -354,6 +359,7 @@ public:
     float auto_burn_duration = 0;
 
     Smoother pid_roll_smoother,pid_pitch_smoother,pid_throttle_smoother;
+    Smoother yaw_smoother;
 
     //Normalized throttle, between [-1 .. 1].
     //0 equals hoverthrottle
@@ -408,6 +414,7 @@ public:
     float accErrX_prev,accErrY_prev,accErrZ_prev;
     float velx_sp,vely_sp,velz_sp;
     float accx_sp,accy_sp,accz_sp;
+    float heading;
 
     cv::Point3f viz_drone_pos_after_burn = {0};
     cv::Point3f viz_target_pos_after_burn = {0};

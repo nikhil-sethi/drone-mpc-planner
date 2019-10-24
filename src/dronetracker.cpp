@@ -127,7 +127,14 @@ void DroneTracker::track(double time, bool drone_is_active) {
         else if (!_tracking)
             _drone_tracking_status = dts_detecting;
         break;
+    } case dts_reset_heading: {
+        ItemTracker::track(time);
+        update_drone_prediction();
+        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_item.size*1.2f*pparams.imscalef);
+        find_heading = true;
+        break;
     } case dts_landing_init: {
+        find_heading = false;
         ignores_for_other_trkrs.push_back(IgnoreBlob(drone_startup_im_location(),_drone_blink_im_size*5,time+landing_ignore_timeout, IgnoreBlob::landing_spot));
         _drone_tracking_status = dts_landing;
         [[fallthrough]];
@@ -186,7 +193,10 @@ ItemTracker::BlobWorldProps DroneTracker::calc_world_item(BlobProps * pbs, doubl
             std::cout << "Initialising hover-throttle: " << hover_throttle_estimation << std::endl;
         }
     }
-
+    if(find_heading==true){
+        heading = calc_heading(pbs, false); // Set second argument to true to show the masks, otherwise set to false.
+        wbp.heading = heading;
+    }
     return wbp;
 }
 
@@ -267,3 +277,103 @@ void DroneTracker::update_drone_prediction() {
 
 }
 
+cv::Mat DroneTracker::get_big_blob(cv::Mat Mask, int connectivity){
+    cv::Mat labels, stats, centroids;
+    int nLabels = cv::connectedComponentsWithStats(Mask, labels, stats, centroids, connectivity, CV_32S);
+
+    cv::Mat mask_big;
+    int big_blob;
+    int area = 0;
+
+    for(int i = 1; i<=nLabels; i++){
+        if(stats.at<int>(i,cv::CC_STAT_AREA) > area){
+            big_blob = i;
+            area = stats.at<int>(i,cv::CC_STAT_AREA);
+        }
+    }
+    compare(labels, big_blob, mask_big, cv::CMP_EQ);
+    return mask_big;
+}
+
+cv::Mat DroneTracker::extract_mask_column(cv::Mat mask_big, float range_left, float range_right, float side_percentage, enum side side_){
+    cv::Mat half_ = mask_big(cv::Range::all(), cv::Range(range_left,range_right)).clone();
+    for(int j=0; j<half_.rows; j++){
+        half_.at<uchar>(j,(half_.cols-1)*(1-side_)) = round(side_percentage*half_.at<uchar>(j,(half_.cols-1)*(1-side_)));
+    }
+    return half_;
+}
+
+cv::Mat DroneTracker::split_mask_half(cv::Mat mask_big, enum side side_){
+    cv::Moments mo = moments(mask_big,true);
+    cv::Point2f COG = cv::Point2f(static_cast<float>(mo.m10) / static_cast<float>(mo.m00), static_cast<float>(mo.m01) / static_cast<float>(mo.m00));
+    float delta = COG.x - mask_big.rows/2;
+    float delta_frac, n;
+    delta_frac = modf(delta, &n);
+    cv::Mat half;
+
+    if(side_==leftside && delta>=0 && delta<mask_big.rows/2){
+        half = extract_mask_column(mask_big, 2*floor(delta), mask_big.rows/2+ceil(delta), delta_frac, side_);
+    }
+    else if(side_==leftside && delta<0 && delta>-mask_big.rows/2){
+        half = extract_mask_column(mask_big, 0, mask_big.rows/2+ceil(delta), 1-abs(delta_frac), side_);
+    }
+    else if(side_==rightside && delta>=0 && delta<mask_big.rows/2){
+        half = extract_mask_column(mask_big, mask_big.rows/2+floor(delta), mask_big.rows, 1-delta_frac, side_);
+    }
+    else if(side_==rightside && delta<0 && delta>-mask_big.rows/2){
+        half = extract_mask_column(mask_big, mask_big.rows/2+floor(delta), mask_big.rows+2*floor(delta), abs(delta_frac), side_);
+    }
+    return half;
+}
+
+float DroneTracker::yaw_heading(cv::Mat left, cv::Mat right){ // Heading positive = Clockwise, Heading negative is Counter-Clockwise
+    cv::Moments mo_l = moments(left,true);
+    cv::Point2f COG_l = cv::Point2f(static_cast<float>(mo_l.m10) / static_cast<float>(mo_l.m00), static_cast<float>(mo_l.m01) / static_cast<float>(mo_l.m00));
+    cv::Moments mo_r = moments(right,true);
+    cv::Point2f COG_r = cv::Point2f(static_cast<float>(mo_r.m10) / static_cast<float>(mo_r.m00), static_cast<float>(mo_r.m01) / static_cast<float>(mo_r.m00));
+
+    heading = COG_l.y-COG_r.y;
+    return heading;
+}
+
+float DroneTracker::calc_heading(BlobProps * pbs, bool inspect_blob){ // Set inspect_blob = true to see mask. Otherwise set to false.
+    if(inspect_blob==true){
+        cout<<"Original Drone Mask: "<<endl;
+        cout<<pbs->mask_<<endl;
+    }
+        if(!pbs->mask_.empty()){
+        int kernel_int = 2;
+        cv::Mat mask_erode;
+        erode(pbs->mask_, mask_erode,getStructuringElement(cv::MORPH_RECT, cv::Size(kernel_int,kernel_int)));
+        if(inspect_blob==true){
+            cout<<"eroded mask: "<<endl;
+            cout<<mask_erode<<endl;
+        }
+
+        cv::Mat mask_big = get_big_blob(mask_erode, 4);
+        if(inspect_blob==true){
+            cout<<"New Drone Mask: "<<endl;
+            cout<<mask_big<<endl;
+        }
+
+        int nrnonzero = countNonZero(mask_big);
+        cv::Mat splitted_mask_left, splitted_mask_right;
+        if(nrnonzero > 1){
+            splitted_mask_left = split_mask_half(mask_big, leftside);
+            splitted_mask_right = split_mask_half(mask_big, rightside);
+        }
+        else if(nrnonzero < 1){
+            splitted_mask_left = split_mask_half(mask_erode, leftside);
+            splitted_mask_right = split_mask_half(mask_erode, rightside);
+        }
+        if(inspect_blob==true){
+            cout<<"Left: "<<splitted_mask_left<<endl;
+            cout<<"Right: "<<splitted_mask_right<<endl;
+            cout<<"Left pixel: "<<countNonZero(splitted_mask_left)<<endl;
+            cout<<"Right pixel: "<<countNonZero(splitted_mask_right)<<endl;
+        }
+
+        heading = yaw_heading(splitted_mask_left, splitted_mask_right);
+        }
+        return heading;
+}

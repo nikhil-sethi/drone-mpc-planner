@@ -553,7 +553,7 @@ void TrackerManager::update_max_change_points() {
                                 COG2.x += r2.x;
                                 COG2.y += r2.y;
                                 uchar px_max = diff.at<uchar>(COG2);
-                                _blobs.push_back(ItemTracker::BlobProps(COG2, radius, px_max));
+                                _blobs.push_back(ItemTracker::BlobProps(COG2, radius, px_max, mask));
 
                                 //remove this COG from the ROI:
                                 circle(diff, COG2, 1, Scalar(0), roi_radius);
@@ -571,7 +571,7 @@ void TrackerManager::update_max_change_points() {
             }
             if (single_blob) { // we could not split this blob, so we can use the original COG
                 if (COG.x == COG.x) { // if not nan
-                    _blobs.push_back(ItemTracker::BlobProps(COG, mo.m00,max));
+                    _blobs.push_back(ItemTracker::BlobProps(COG, mo.m00,max, mask));
                     if (enable_viz_max_points) {
                         Point2f tmpCOG;
                         tmpCOG.x = COG.x - r2.x;
@@ -593,7 +593,7 @@ void TrackerManager::update_max_change_points() {
                             d.y = ipi.pt().y - maxt.y;
                             float dist = norm(d);
                             if (dist < roi_radius) {
-                                _blobs.push_back(ItemTracker::BlobProps(maxt, 1,max));
+                                _blobs.push_back(ItemTracker::BlobProps(maxt, 1,max, mask));
                                 if (enable_viz_max_points) {
                                     Point2f tmpCOG;
                                     tmpCOG.x = maxt.x - r2.x;

@@ -21,16 +21,7 @@ void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, Dro
     //Farther away from the camera is negative Z, positive Z should be impossible because the camera can't see that.
 
     //The flight plan will be repeated indefinetely, unless there is a landing waypoint somewhere in the list.
-
-    //    setpoints.push_back(waypoint(cv::Point3f(-2,-1.0f,-3.5f),100));
-    //    setpoints.push_back(waypoint(cv::Point3f(2,-1.0f,-3.5f),100));
-    //    setpoints.push_back(waypoint(cv::Point3f(-2,-1.0f,-3.5f),100));
-    //    setpoints.push_back(waypoint(cv::Point3f(2,-1.0f,-3.5f),100));
-
-
-    setpoints.push_back(waypoint(cv::Point3f(0,-1.5f,-1.8f),40));
-    setpoints.push_back(stay_waypoint(cv::Point3f(0,-1.5f,-2.0f)));
-    setpoints.push_back(flower_waypoint(cv::Point3f(0,-1.5f,-2.0f)));
+    setpoints.push_back(waypoint(cv::Point3f(0,-1.0f,-1.3f),40));
 
     setpoints.push_back(landing_waypoint());
 
@@ -263,7 +254,7 @@ void DroneNavigation::update(double time) {
                 && _trackers->dronetracker()->n_frames_tracking>5)
             {
                 if (current_setpoint->mode == fm_landing) {
-                    _navigation_status = ns_land;
+                    _navigation_status = ns_reset_heading;
                 } else if (wpid < setpoints.size()) { // next waypoint in flight plan
                     wpid++;
                     _navigation_status = ns_set_waypoint;
@@ -294,6 +285,13 @@ void DroneNavigation::update(double time) {
 
             if (_nav_flight_mode == nfm_manual)
                 _navigation_status=ns_manual;
+            break;
+        } case ns_reset_heading: {
+            _dctrl->flight_mode(DroneController::fm_reset_heading);
+            _trackers->dronetracker()->reset_heading();
+            if(_trackers->dronetracker()->check_heading() == true){
+                _navigation_status = ns_land;
+            }
             break;
         } case ns_land: {
             _dctrl->flight_mode(DroneController::fm_landing_start);

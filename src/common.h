@@ -70,6 +70,7 @@ struct track_data {
     bool vel_valid = false;
     bool acc_valid = false;
     double time = 0;
+    float heading;
 };
 
 struct control_data {

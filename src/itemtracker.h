@@ -6,6 +6,8 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/video/video.hpp>
+#include<opencv2/opencv.hpp>
+#include "opencv2/imgcodecs.hpp"
 #include "smoother2.h"
 #include "smoother.h"
 
@@ -51,11 +53,13 @@ public:
     struct BlobProps {
         float x,y,radius,pixel_max;
         std::vector<IgnoreBlob> ignores;
-        BlobProps(cv::Point2f pt, float area,float blob_pixel_max){
+        cv::Mat mask_;
+        BlobProps(cv::Point2f pt, float area,float blob_pixel_max, cv::Mat mask){
             x = pt.x;
             y = pt.y;
             radius = sqrtf(area/M_PIf32);
             pixel_max = blob_pixel_max;
+            mask_ = mask;
         }
     };
     struct BlobWorldProps {
@@ -63,6 +67,7 @@ public:
         float disparity; // not really a world prop, but OK.
         bool radius_in_range = false,disparity_in_range = false,bkg_check_ok = false,valid = false;
         cv::Point3f pt() {return cv::Point3f(x,y,z);}
+    float heading;
     };
 
     struct ImageItem {
@@ -136,12 +141,14 @@ public:
             pt.y = wbp.y;
             pt.z = wbp.z;
             valid = wbp.valid;
+            heading = wbp.heading;
         }
         cv::Point3f pt;
         ImageItem  iti;
         cv::Point2f image_coordinates(){
             return cv::Point2f(iti.x,iti.y);
         }
+        float heading;
         float distance, distance_bkg;
         bool valid = false;
 

@@ -29,6 +29,7 @@ static const char* navigation_status_names[] = {"ns_init",
                                                 "ns_approach_waypoint",
                                                 "ns_flower_of_fire",
                                                 "ns_goto_landing",
+                                                "ns_reset_heading",
                                                 "ns_land",
                                                 "ns_landing",
                                                 "ns_landed",
@@ -45,8 +46,6 @@ public:
         nfm_hunt
     };
 private:
-
-
     int v_crcl1 = 250;
     int v_crcl2 = 500;
     int r_crcl1 = 10;
@@ -150,6 +149,7 @@ private:
         ns_approach_waypoint,
         ns_flower_waypoint,
         ns_goto_landing_waypoint,
+        ns_reset_heading,
         ns_land,
         ns_landing,
         ns_landed,

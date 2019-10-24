@@ -44,8 +44,9 @@ public: cv::Scalar tracker_color( ItemTracker * trkr) {
         }
         cv::Point2f pt;
         float size, pixel_max;
-
-        ItemTracker::BlobProps props() {return ItemTracker::BlobProps (pt,size,pixel_max);}
+        cv::Mat mask;
+        cv::Point2f COG_mask;
+        ItemTracker::BlobProps props() {return ItemTracker::BlobProps (pt,size,pixel_max,mask);}
         std::vector<ItemTracker *> trackers;
         bool tracked() { return trackers.size()>0;}
         bool ignored = false;
