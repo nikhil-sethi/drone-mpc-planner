@@ -143,7 +143,7 @@ private:
     const float transmission_delay_duration = 0.04f;
     float effective_burn_spin_up_duration = 0.15f; // the time to spin up from hover to max
     const float effective_burn_spin_down_duration = 0.1f; // the time to spin down from max to hover
-    float thrust = 45; //60, 55, 50, 48, 45
+    float thrust = 40; //60, 55, 50, 48, 45
     cv::Point3f drone_vel_after_takeoff = {0};
     float ground_effect = 1.0f;
     const float lift_off_dist_take_off_aim = 0.02f;

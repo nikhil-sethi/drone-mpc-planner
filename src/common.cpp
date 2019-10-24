@@ -32,9 +32,9 @@ void CameraVolume::init(cv::Point3f point_left_top, cv::Point3f point_right_top,
 
 bool CameraVolume::in_view(cv::Point3f p, volume_check_mode c){
     if (c == relaxed)
-        return in_view(p,0);
-    else
         return in_view(p,0.3);
+    else
+        return in_view(p,0.6);
 }
 
 
@@ -64,7 +64,7 @@ bool CameraVolume::in_view(cv::Point3f p,float hysteresis_margin){
 }
 
 bool CameraVolume::in_hunt_area(cv::Point3f d, cv::Point3f m){
-    float cone_angle_limit = 60*deg2rad; // angle to the horizontal axis
+    float cone_angle_limit = 40*deg2rad; // angle to the horizontal axis
     cv::Point3f error = m - d;
     double vertical_dist = error.y;
     float dist = norm(error);
@@ -73,10 +73,10 @@ bool CameraVolume::in_hunt_area(cv::Point3f d, cv::Point3f m){
 
     float cone_angle = atan2(horizontal_dist, vertical_dist);
 
-    if (m.z < -0.5f && m.z > p0_back.at<float>(2)
+    if (m.z < -1.0f && m.z > p0_back.at<float>(2)
             && m.y<0 && m.y>= p0_bottom.at<float>(1)+minimum_height
-            && cone_angle<=cone_angle_limit
-            && dist < 3.0f) // && dist > 1.0f)
+            && abs(cone_angle)<=cone_angle_limit
+            && dist < 2.5f) // && dist > 1.0f)
         return true;
     else
         return false;
