@@ -11,15 +11,15 @@
 // trim from start (in place)
 static inline void ltrim(std::string &s) {
     s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
-        return !std::isspace(ch);
-    }));
+                return !std::isspace(ch);
+            }));
 }
 
 // trim from end (in place)
 static inline void rtrim(std::string &s) {
     s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
-        return !std::isspace(ch);
-    }).base(), s.end());
+                return !std::isspace(ch);
+            }).base(), s.end());
 }
 
 // trim from both ends (in place)
@@ -48,18 +48,20 @@ void LogReader::init(std::string file, bool partial_insect_log) {
     std::string line;
     int cnt = 0; // only for partial insect log.
     while (std::getline(infile, line)) {
-//        std::cout << line << std::endl;
-        Log_Entry entry = createLogEntry(line);
-        int id;
-        if (partial_insect_log)
-            id = cnt;
-        else
-            id = entry.RS_ID;
-        cnt++;
-        std::map<const int, Log_Entry>::value_type item(id,entry);
-        log.insert(item);
+        try {
+            Log_Entry entry = createLogEntry(line);
+            int id;
+            if (partial_insect_log)
+                id = cnt;
+            else
+                id = entry.RS_ID;
+            cnt++;
+            std::map<const int, Log_Entry>::value_type item(id,entry);
+            log.insert(item);
+        } catch (std::exception& exp ) {
+            throw my_exit("Could not read log! \n" + std::string(exp.what()) + " at: " + line);
+        }
     }
-
 }
 
 
