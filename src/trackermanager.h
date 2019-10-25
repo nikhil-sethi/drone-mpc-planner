@@ -133,10 +133,11 @@ private:
     InsectTracker * _itrkr;   //tmp
     DroneTracker * _dtrkr;   //tmp
 public:
+    void reset_after_log(){
+         _itrkr->reset_after_log();
+    }
     cv::Mat viz_max_points,diff_viz;
     void mode(detection_mode m){
-        if (_mode == mode_hunt_replay_moth && m != mode_hunt_replay_moth)
-            _itrkr->reset_after_log();
         _mode = m;
     }
     detection_mode mode ()  {return _mode;}

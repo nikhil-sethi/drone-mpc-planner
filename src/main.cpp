@@ -297,6 +297,7 @@ void process_frame(Stereo_Frame_Data data) {
         }
     } else if (fromfile==log_mode_insect_only) {
         if (logreader.set_next_frame_number()){
+            trackers.reset_after_log();
             trackers.mode(TrackerManager::mode_hunt);
             fromfile = log_mode_none;
         } else {
