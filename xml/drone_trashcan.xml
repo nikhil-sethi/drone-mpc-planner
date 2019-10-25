@@ -11,6 +11,6 @@
     <Member Name="drone_blink_strength">30</Member>
     <Member Name="blink_period">0.1</Member>
     <Member Name="tx">tx_frskyd8</Member>
-    <Member Name="mode3d">false</Member>
+    <Member Name="mode3d">true</Member>
     <Member Name="control">control_trashcan</Member>
 </SerializableClass>

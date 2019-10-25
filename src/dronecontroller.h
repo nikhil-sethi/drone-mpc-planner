@@ -138,6 +138,23 @@ private:
 
     std::string settings_file;
 
+    const uint16_t spinup_throttle_non3d = 304; //TODO: Move this to xml setttings // For trashcan 304 is the lowest value at which the props start to spin
+    const uint16_t initial_hover_throttle_guess_non3d = 580;
+    uint16_t initial_hover_throttle_guess(){
+        if (dparams.mode3d)
+            return initial_hover_throttle_guess_non3d / 2 + JOY_MIDDLE;
+        else {
+            return initial_hover_throttle_guess_non3d;
+        }
+    }
+    uint16_t spinup_throttle(){
+        if (dparams.mode3d)
+            return JOY_MIDDLE +1;
+        else {
+            return spinup_throttle_non3d;
+        }
+    }
+
     const float max_bank_angle = 180; // TODO: move to dparams (betaflight setting)
     const float aim_duration = 0.0833333333333f; // TODO: move to dparams, slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
     const float transmission_delay_duration = 0.04f;
@@ -333,10 +350,7 @@ public:
         return pitch;
     }
 
-    const int initial_throttle = 200;
     float hoverthrottle;
-    const float spinup_throttle = 304; //TODO: Move this to xml setttings // For trashcan 304 is the lowest value at which the props start to spin
-    const float tmp_hover_throttle = 580; // TODO: LUDWIG HELP initial hover throttle...
 
     bool _manual_override_take_off_now;
     bool manual_override_take_off_now() { return _manual_override_take_off_now;}

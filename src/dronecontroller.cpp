@@ -1,4 +1,4 @@
-#include "dronecontroller.h"
+﻿#include "dronecontroller.h"
 #include "defines.h"
 
 using namespace cv;
@@ -49,32 +49,16 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
 }
 
 int bound_throttle(int v) {
-    if ( v < JOY_BOUND_MIN )
-        v = JOY_BOUND_MIN;
-    if ( v > JOY_BOUND_MAX )
-        v = JOY_BOUND_MAX;
-
-    if (dparams.mode3d){
-        float f = v-JOY_BOUND_MIN;
-        float range = JOY_BOUND_MAX - JOY_BOUND_MIN;
-        f/=range;
-        v= 0.5f*f*range;
-        v += JOY_MIDDLE-10;
-    }
-    return v;
+    return std::clamp(v,JOY_BOUND_MIN,JOY_BOUND_MAX);
 }
 
 int bound_joystick_value(int v) {
-    if ( v < JOY_BOUND_MIN )
-        v = JOY_BOUND_MIN;
-    if ( v > JOY_BOUND_MAX )
-        v = JOY_BOUND_MAX;
-    return v;
+    return std::clamp(v,JOY_BOUND_MIN,JOY_BOUND_MAX);
 }
 
 void DroneController::control(track_data data_drone, track_data data_target, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, cv::Point3f setpoint_acc, double time) {
 
-    if (!_fromfile)
+    if (!_fromfile && pparams.joystick != rc_none)
         readJoystick();
     if (!pparams.insect_logging_mode)
         process_joystick();
@@ -112,22 +96,22 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
             spin_up_start_time = time;
         auto_roll = JOY_MIDDLE;
         auto_pitch = JOY_MIDDLE;
-        auto_throttle = spinup_throttle;
+        auto_throttle = spinup_throttle();
         break;
     } case fm_start_takeoff: {
         take_off_start_time = time;
         _flight_mode = fm_take_off_aim;
         std::cout << "Take off aiming" << std::endl;
         _burn_direction_for_thrust_approx = {0};
-        if (pparams.joystick == rc_none) {
+        if (pparams.joystick == rc_none || dparams.mode3d) {
             _rc->arm(true);
+            auto_throttle = spinup_throttle();
             auto_roll = JOY_MIDDLE;
             auto_pitch = JOY_MIDDLE;
-            auto_throttle = JOY_BOUND_MIN;
+            break;
         }
         [[fallthrough]];
     } case fm_take_off_aim: {
-        auto_throttle = tmp_hover_throttle;
         state_data state_drone_takeoff = data_drone.state;
         state_drone_takeoff.pos = _dtrk->drone_startup_location() + cv::Point3f(0,lift_off_dist_take_off_aim,0);
         state_drone_takeoff.vel = {0};
@@ -143,11 +127,14 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
             //auto_burn_duration = take_off_burn_duration; //TODO: make this number dynamic such that we have just enough time to do a second directional burn?
             aim_direction_history.push_back(burn_direction);
 
+            auto_throttle = initial_hover_throttle_guess();
+
             _burn_direction_for_thrust_approx = burn_direction; // to be used later to approx effective thrust
             std::vector<state_data> trajectory = predict_trajectory(auto_burn_duration, 0, burn_direction, state_drone_takeoff);
             if (_fromfile) // todo: tmp solution, call from visualizer instead if this viz remains to be needed
                 draw_viz(state_drone_takeoff,data_target.state,time,burn_direction,auto_burn_duration,remaining_aim_duration,trajectory);
-        }
+        } else
+            auto_throttle = spinup_throttle();
         if (remaining_aim_duration <= 0) {
             remaining_aim_duration = 0;
 
@@ -182,7 +169,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
             _flight_mode = fm_max_burn_spin_down;
         break;
     } case fm_max_burn_spin_down: {
-        auto_throttle = tmp_hover_throttle;
+        auto_throttle = initial_hover_throttle_guess();
         if (static_cast<float>(time - start_takeoff_burn_time) > auto_burn_duration + effective_burn_spin_down_duration)
             _flight_mode = fm_1g;
         break;
@@ -228,7 +215,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         if (_fromfile) // todo: tmp solution, call from visualizer instead if this viz remains to be needed
             draw_viz(state_drone_better,data_target.state,time,burn_direction,auto_burn_duration,remaining_aim_duration,traj);
 
-        auto_throttle = tmp_hover_throttle;
+        auto_throttle = initial_hover_throttle_guess();
 
         if (recovery_mode && remaining_aim_duration <= 0) {
             _flight_mode = fm_interception_burn_start;
@@ -267,7 +254,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         }
         break;
     } case fm_interception_burn_spin_down: {
-        auto_throttle = tmp_hover_throttle;
+        auto_throttle = initial_hover_throttle_guess();
 
         float spindown_duration = effective_burn_spin_down_duration;
         if (effective_burn_spin_down_duration > auto_burn_duration*0.8f)
@@ -347,7 +334,10 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
     } case fm_disarmed: {
         auto_roll = JOY_MIDDLE;
         auto_pitch = JOY_MIDDLE;
-        auto_throttle = JOY_BOUND_MIN;
+        if (dparams.mode3d)
+            auto_throttle = JOY_MIDDLE;
+        else
+            auto_throttle = JOY_BOUND_MIN;
         _rc->arm(false);
         if (time > 5 && pparams.joystick == rc_none)
             _flight_mode = fm_inactive;
@@ -355,19 +345,34 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
     } case fm_inactive: {
         auto_roll = JOY_MIDDLE;
         auto_pitch = JOY_MIDDLE;
-        auto_throttle = JOY_BOUND_MIN;
-        if (pparams.joystick == rc_none)
+        if (dparams.mode3d)
+            auto_throttle = JOY_MIDDLE;
+        else
+            auto_throttle = JOY_BOUND_MIN;
+        if (pparams.joystick == rc_none && !dparams.mode3d)
             _rc->arm(true);
-
-
+        else
+            _rc->arm(false);
         break;
     } case fm_abort_flight: {
-        auto_throttle = JOY_BOUND_MIN;
+        if (dparams.mode3d)
+            auto_throttle = JOY_MIDDLE;
+        else
+            auto_throttle = JOY_BOUND_MIN;
         auto_roll = JOY_MIDDLE;
         auto_pitch = JOY_MIDDLE;
         break;
     } case fm_joystick_check: {
-        auto_throttle = JOY_BOUND_MIN;
+        if (pparams.joystick == rc_none) {
+            _flight_mode = fm_disarmed;
+            _joy_state = js_none;
+            break;
+        }
+        _joy_state = js_checking;
+        if (dparams.mode3d)
+            auto_throttle = JOY_MIDDLE;
+        else
+            auto_throttle = JOY_BOUND_MIN;
         auto_roll = JOY_MIDDLE;
         auto_pitch = JOY_MIDDLE;
         _rc->arm(false);
@@ -557,11 +562,11 @@ void DroneController::draw_viz(
         std::tie(integrated_pos, integrated_vel,burn_accelleration) = predict_drone_after_burn(
             state_drone, burn_direction,0,burn_duration);
 
-//        std::tie(viz_drone_pos_after_burn, std::ignore) = predict_drone_state_after_spindown(integrated_pos, integrated_vel,burn_accelleration);
-//        viz_time_after_burn = viz_time_after_aim + static_cast<double>(burn_duration + effective_burn_spin_down_duration);
+        //        std::tie(viz_drone_pos_after_burn, std::ignore) = predict_drone_state_after_spindown(integrated_pos, integrated_vel,burn_accelleration);
+        //        viz_time_after_burn = viz_time_after_aim + static_cast<double>(burn_duration + effective_burn_spin_down_duration);
 
-         viz_drone_pos_after_burn =  traj.back().pos;
-         viz_time_after_burn = viz_time_after_aim + static_cast<double>(burn_duration );
+        viz_drone_pos_after_burn =  traj.back().pos;
+        viz_time_after_burn = viz_time_after_aim + static_cast<double>(burn_duration );
 
         viz_drone_trajectory = predict_trajectory(burn_duration, 0, burn_direction, state_drone);
 
@@ -750,7 +755,10 @@ void DroneController::control_pid(track_data data_drone) {
     if (fabs(posErrZ)<integratorThresholdDistance)
         pitchErrI += posErrZ;
 
-    auto_throttle =  tmp_hover_throttle - (accErrY * gain_throttle_acc + throttleErrI * gain_throttle_i*0.1f);
+    auto_throttle =   -(accErrY * gain_throttle_acc + throttleErrI * gain_throttle_i*0.1f);
+    if (dparams.mode3d)
+        auto_throttle /=2; // with mode 3d the range is divided in two halfs. One up and one down.
+    auto_throttle += initial_hover_throttle_guess();
     auto_roll =  accErrX * gain_roll_acc;
 
     float depth_gain = 1;
@@ -790,6 +798,8 @@ void DroneController::control_pid(track_data data_drone) {
     if (posErrY> 0 && abs(posErrX)<0.3f && abs(posErrZ)<0.3f) {
         tmptbf = 0;
     }
+    if (dparams.mode3d)
+        tmptbf *=0.5f;
 
     if (fabs(auto_roll) > fabs(auto_pitch)){
         //auto_throttle += tmptbf*abs(auto_roll);
@@ -808,10 +818,15 @@ void DroneController::control_pid(track_data data_drone) {
     auto_pitch   += JOY_MIDDLE + (gain_pitch_i*pitchErrI);
 
     //int minThrottle = 1300 + min(abs(autoRoll-1500)/10,50) + min(abs(autoPitch-1500)/10,50);
-    if (auto_throttle<dparams.min_throttle)
-        auto_throttle = dparams.min_throttle;
-    if (auto_throttle>JOY_BOUND_MAX)
-        auto_throttle = JOY_BOUND_MAX;
+
+    if (dparams.mode3d) {
+        auto_throttle = bound_throttle(auto_throttle);
+    } else {
+        if (auto_throttle<dparams.min_throttle)
+            auto_throttle = dparams.min_throttle;
+        if (auto_throttle>JOY_BOUND_MAX)
+            auto_throttle = JOY_BOUND_MAX;
+    }
 }
 
 void DroneController::readJoystick(void) {
@@ -959,17 +974,14 @@ void DroneController::readJoystick(void) {
 }
 
 void DroneController::process_joystick() {
-    // prevent accidental take offs at start up
-    if (pparams.joystick == rc_none && _flight_mode == fm_joystick_check) {
-        _flight_mode = fm_disarmed;
-        _joy_state = js_none;
-        return;
-    } else if (pparams.joystick == rc_none)
+
+    if (pparams.joystick == rc_none || _joy_state == js_none )
         return;
 
+    // prevent accidental take offs at start up
     if (_joy_state == js_checking){
         if (!_joy_arm_switch &&
-            joy_throttle <= JOY_MIN_THRESH &&
+            ((joy_throttle <= JOY_MIN_THRESH && !dparams.mode3d) || (abs(joy_throttle- JOY_MIDDLE) < 50 && dparams.mode3d) )&&
             !_joy_takeoff_switch) {
             _flight_mode = fm_disarmed;
             _joy_state = js_disarmed;
