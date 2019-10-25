@@ -21,6 +21,9 @@ public:
         _image_item.valid = false;
     }
     bool tracking(){return _tracking;}
+    bool properly_tracking(){
+        return n_frames_tracking > n_frames_lost && tracking();
+    }
 
     BlobWorldProps calc_world_item(BlobProps * pbs, double time);
     bool check_ignore_blobs(BlobProps * pbs, double time);

@@ -178,10 +178,14 @@ void DroneNavigation::update(double time) {
                 break;
             }
 
-            if (_iceptor.insect_in_range()) {
+            if (_iceptor.insect_in_range_takeoff()) {
                 setpoint_pos_world = _iceptor.target_position();
                 setpoint_vel_world = _iceptor.target_speed();
                 setpoint_acc_world = _iceptor.target_accelleration();
+            } else {
+                if (_dctrl->abort_take_off())
+                    _navigation_status = ns_wait_for_insect;
+                break;
             }
 
             if (!_trackers->dronetracker()->taking_off() && time - time_taken_off > dparams.max_burn_time)

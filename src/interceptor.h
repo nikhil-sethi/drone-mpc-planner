@@ -10,10 +10,10 @@
 
 
 static const char* interceptor_state_names[] = { "is_init",
-                                                    "is_waiting_for_target",
-                                                    "is_waiting_in_reach_zone",
-                                                    "is_move_to_intercept",
-                                                    "is_close_chasing"};
+                                                "is_waiting_for_target",
+                                                "is_waiting_in_reach_zone",
+                                                "is_move_to_intercept",
+                                                "is_close_chasing"};
 
 /*
  * This class calculates the best intersection location, and whether that is even possible, etc
@@ -58,7 +58,9 @@ public:
     void reset_insect_cleared() {_count_insect_not_in_range = 0;}
 
     bool realy_nicely_in_the_middle = false;
-    bool insect_in_range_takeoff() {return !_count_insect_not_in_range && realy_nicely_in_the_middle;}
+    bool insect_in_range_takeoff() {return !_count_insect_not_in_range
+               && realy_nicely_in_the_middle
+               && _trackers->insecttracker()->properly_tracking();}
     bool insect_in_range() {return !_count_insect_not_in_range;}
     bool insect_cleared() {return _count_insect_not_in_range > insect_cleared_timeout; }
     cv::Point3f target_position() {return _intercept_pos;}

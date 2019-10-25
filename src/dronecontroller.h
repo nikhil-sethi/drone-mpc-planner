@@ -215,6 +215,25 @@ public:
     void flight_mode(flight_modes f){
         _flight_mode = f;
     }
+
+    bool abort_take_off(){
+
+        if (_flight_mode == fm_take_off_aim) {
+            float remaing_spinup_duration = dparams.full_bat_and_throttle_spinup_duration - aim_duration - time_spent_spinning_up(take_off_start_time);
+            if (remaing_spinup_duration  < 0.05f)
+                return false;
+            _flight_mode = fm_spinup ;
+            return true;
+
+        } else if (_flight_mode == fm_spinup || _flight_mode==fm_start_takeoff) {
+            _flight_mode = fm_spinup;
+            return true;
+        } else
+            return false;
+
+
+    }
+
     joy_states Joy_State() {
         return _joy_state;
     }
