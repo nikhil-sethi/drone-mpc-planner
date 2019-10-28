@@ -122,13 +122,14 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         if (remaing_spinup_time< 0)
             remaing_spinup_time = 0;
 
+        bool burn_limit_hack = true;
         float remaining_aim_duration = remaing_spinup_time+aim_duration  - static_cast<float>(time - take_off_start_time);
         if (remaining_aim_duration <= aim_duration) {
             cv::Point3f burn_direction;
             std::tie (auto_roll, auto_pitch,auto_burn_duration,burn_direction) = calc_directional_burn(state_drone_takeoff,data_target.state,0);
-            //auto_burn_duration = take_off_burn_duration; //TODO: make this number dynamic such that we have just enough time to do a second directional burn?
+            if (burn_limit_hack)
+            auto_burn_duration = take_off_burn_duration; //TODO: make this number dynamic such that we have just enough time to do a second directional burn?
             aim_direction_history.push_back(burn_direction);
-
             auto_throttle = initial_hover_throttle_guess();
 
             _burn_direction_for_thrust_approx = burn_direction; // to be used later to approx effective thrust
@@ -151,7 +152,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
             cv::Point3f predicted_target_pos = data_target.pos() + auto_burn_duration*data_target.vel();
 
             double predicted_error = cv::norm(predicted_drone_pos - predicted_target_pos);
-            if (predicted_error > 0.1) {
+            if (predicted_error > 0.1 && !burn_limit_hack) {
                 _flight_mode = fm_spinup;
                 spin_up_start_time = time - static_cast<double>(dparams.full_bat_and_throttle_spinup_duration); // normal spinup may not have happened always, so just set it hard so that we don't spinup wait next attempt
             } else {
