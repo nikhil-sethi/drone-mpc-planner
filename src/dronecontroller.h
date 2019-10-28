@@ -234,6 +234,7 @@ public:
     }
 
     bool abort_take_off(){
+        //check if the take off is not yet too far progressed to abort, if not go to spin up else return true
 
         if (_flight_mode == fm_take_off_aim) {
             float remaing_spinup_duration = dparams.full_bat_and_throttle_spinup_duration - aim_duration - time_spent_spinning_up(take_off_start_time);

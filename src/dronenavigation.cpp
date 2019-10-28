@@ -182,7 +182,7 @@ void DroneNavigation::update(double time) {
                 setpoint_pos_world = _iceptor.target_position();
                 setpoint_vel_world = _iceptor.target_speed();
                 setpoint_acc_world = _iceptor.target_accelleration();
-            } else {
+            } else if (_nav_flight_mode == nfm_hunt){
                 if (_dctrl->abort_take_off())
                     _navigation_status = ns_wait_for_insect;
                 break;
