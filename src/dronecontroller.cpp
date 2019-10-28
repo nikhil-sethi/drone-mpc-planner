@@ -103,11 +103,13 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         _flight_mode = fm_take_off_aim;
         std::cout << "Take off aiming" << std::endl;
         _burn_direction_for_thrust_approx = {0};
-        if (pparams.joystick == rc_none || dparams.mode3d) {
+
+        auto_throttle = spinup_throttle();
+        auto_roll = JOY_MIDDLE;
+        auto_pitch = JOY_MIDDLE;
+
+        if (dparams.mode3d) {
             _rc->arm(true);
-            auto_throttle = spinup_throttle();
-            auto_roll = JOY_MIDDLE;
-            auto_pitch = JOY_MIDDLE;
             break;
         }
         [[fallthrough]];
@@ -351,7 +353,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
             auto_throttle = JOY_BOUND_MIN;
         if (pparams.joystick == rc_none && !dparams.mode3d)
             _rc->arm(true);
-        else
+        else if (dparams.mode3d)
             _rc->arm(false);
         break;
     } case fm_abort_flight: {
@@ -1015,13 +1017,15 @@ void DroneController::process_joystick() {
             joySwitch_prev = _joy_arm_switch;
         } else if  (pparams.joystick == rc_xlite) {
             if (!_joy_arm_switch){
-                //_rc->arm(false);
+                if (!dparams.mode3d)
+                    _rc->arm(false);
                 _joy_takeoff_switch = false;
                 _manual_override_take_off_now = false;
                 _joy_state = js_disarmed;
                 _flight_mode = fm_disarmed;
             }else {
-                //_rc->arm(true);
+                if (!dparams.mode3d)
+                    _rc->arm(true);
                 if (_joy_mode_switch == jmsm_manual){
                     _joy_state = js_manual;
                     _flight_mode = fm_manual;
