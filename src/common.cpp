@@ -13,25 +13,25 @@ template <typename T> int sign(T val) {
 void CameraVolume::init(cv::Point3f point_left_top, cv::Point3f point_right_top, cv::Point3f point_left_bottom, cv::Point3f point_right_bottom,
                         float b_depth, float b_height){
 
-    n_front = get_plane_normal_vector (point_left_bottom, point_right_bottom);
-    p0_front = (cv::Mat_<float>(3,1) << 0, 0, 0);
+    _n_front = get_plane_normal_vector (point_left_bottom, point_right_bottom);
+    _p0_front = (cv::Mat_<float>(3,1) << 0, 0, 0);
 
-    n_top = get_plane_normal_vector (point_left_top, point_right_top);
-    n_top *= -1; // let normal vector look inside the volume
-    p0_top = (cv::Mat_<float>(3,1) << 0, 0, 0);
+    _n_top = get_plane_normal_vector (point_left_top, point_right_top);
+    _n_top *= -1; // let normal vector look inside the volume
+    _p0_top = (cv::Mat_<float>(3,1) << 0, 0, 0);
 
-    n_left = get_plane_normal_vector (point_left_bottom, point_left_top);
-    n_left *= -1; // let normal vector look inside the volume
-    p0_left = (cv::Mat_<float>(3,1) << 0, 0, 0);
+    _n_left = get_plane_normal_vector (point_left_bottom, point_left_top);
+    _n_left *= -1; // let normal vector look inside the volume
+    _p0_left = (cv::Mat_<float>(3,1) << 0, 0, 0);
 
-    n_right = get_plane_normal_vector (point_right_bottom, point_right_top);
-    p0_right = (cv::Mat_<float>(3,1) << 0, 0, 0);
+    _n_right = get_plane_normal_vector (point_right_bottom, point_right_top);
+    _p0_right = (cv::Mat_<float>(3,1) << 0, 0, 0);
 
-    n_bottom = (cv::Mat_<float>(3,1) << 0, 1, 0);
-    p0_bottom = (cv::Mat_<float>(3,1) << 0, b_height, 0);
+    _n_bottom = (cv::Mat_<float>(3,1) << 0, 1, 0);
+    _p0_bottom = (cv::Mat_<float>(3,1) << 0, b_height, 0);
 
-    n_back = (cv::Mat_<float>(3,1) << 0, 0, 1);
-    p0_back = (cv::Mat_<float>(3,1) << 0, 0, b_depth);
+    _n_back = (cv::Mat_<float>(3,1) << 0, 0, 1);
+    _p0_back = (cv::Mat_<float>(3,1) << 0, 0, b_depth);
 
 #if false
     std::cout << "front> p0_front:" << p0_front.t() << " n_front: " << n_front.t() << std::endl;
@@ -41,6 +41,37 @@ void CameraVolume::init(cv::Point3f point_left_top, cv::Point3f point_right_top,
     std::cout << "bottom> p0_bottom:" << p0_bottom.t() << " n_bottom: " << n_bottom.t() << std::endl;
     std::cout << "back> p0_back:" << p0_back.t() << " n_back: " << n_back.t() << std::endl;
 #endif
+
+    double margin_top = 0.2;
+    double margin_bottom = 0.2;
+    double margin_front = 1.5;
+    double margin_back = 0.2;
+    double margin_left = 7.0;
+    double margin_right = 7.0;
+
+    _n_bottom_hunt = _n_bottom;
+    _n_top_hunt = _n_top;
+    _n_front_hunt = (cv::Mat_<float>(3,1) << 0, 0, -1);
+    _n_back_hunt = _n_back;
+
+    point_left_bottom.x -= static_cast<float>(margin_left);
+    point_left_top.x -= static_cast<float>(margin_left);
+    point_right_bottom.x += static_cast<float>(margin_right);
+    point_right_top.x += static_cast<float>(margin_right);
+
+    _n_left_hunt = get_plane_normal_vector (point_left_bottom, point_left_top);
+    _n_left_hunt *= -1;
+    _n_right_hunt = get_plane_normal_vector (point_right_bottom, point_right_top);
+
+    _p0_top_hunt = _p0_top + margin_top * _n_top_hunt;
+    _p0_bottom_hunt = _p0_bottom + margin_bottom * _n_bottom_hunt;
+    _p0_front_hunt =  margin_front * _n_front_hunt;
+    _p0_back_hunt = _p0_back + margin_back * _n_back_hunt;
+    _p0_left_hunt = _p0_left;
+    _p0_right_hunt = _p0_right;
+
+    calc_corner_points_hunt(_p0_front_hunt, _n_front_hunt, _p0_back_hunt, _n_back_hunt, _p0_top_hunt, _n_top_hunt, _p0_bottom_hunt, _n_bottom_hunt, _p0_left_hunt, _n_left_hunt, _p0_right_hunt, _n_right_hunt);
+    calc_corner_points(_p0_front, _n_front, _p0_back, _n_back, _p0_top, _n_top, _p0_bottom, _n_bottom, _p0_left, _n_left, _p0_right, _n_right);
 }
 
 
@@ -51,47 +82,103 @@ bool CameraVolume::in_view(cv::Point3f p, view_volume_check_mode c){
         return in_view(p,0.6f);
 }
 
+void CameraVolume::calc_corner_points(cv::Mat p0_front, cv::Mat n_front, cv::Mat p0_back, cv::Mat n_back,
+                                      cv::Mat p0_top, cv::Mat n_top, cv::Mat p0_bottom, cv::Mat n_bottom,
+                                      cv::Mat p0_left, cv::Mat n_left, cv::Mat p0_right, cv::Mat n_right)
+{
+    _bottom_left_back = intersection_of_3_planes(p0_bottom, n_bottom, p0_left, n_left, p0_back, n_back);
+    _bottom_right_back = intersection_of_3_planes(p0_bottom, n_bottom, p0_right, n_right, p0_back, n_back);
+    _top_left_back = intersection_of_3_planes(p0_top, n_top, p0_left, n_left, p0_back, n_back);
+    _top_right_back = intersection_of_3_planes(p0_top, n_top, p0_right, n_right, p0_back, n_back);
+
+    _bottom_left_front = intersection_of_3_planes(p0_bottom, n_bottom, p0_left, n_left, p0_front, n_front);
+    _bottom_right_front = intersection_of_3_planes(p0_bottom, n_bottom, p0_right, n_right, p0_front, n_front);
+    _top_left_front = intersection_of_3_planes(p0_top, n_top, p0_left, n_left, p0_front, n_front);
+    _top_right_front = intersection_of_3_planes(p0_top, n_top, p0_right, n_right, p0_front, n_front);
+}
+
+void CameraVolume::calc_corner_points_hunt(cv::Mat p0_front, cv::Mat n_front, cv::Mat p0_back, cv::Mat n_back,
+                                           cv::Mat p0_top, cv::Mat n_top, cv::Mat p0_bottom, cv::Mat n_bottom,
+                                           cv::Mat p0_left, cv::Mat n_left, cv::Mat p0_right, cv::Mat n_right)
+{
+    _bottom_left_back_hunt = intersection_of_3_planes(p0_bottom, n_bottom, p0_left, n_left, p0_back, n_back);
+    _bottom_right_back_hunt = intersection_of_3_planes(p0_bottom, n_bottom, p0_right, n_right, p0_back, n_back);
+    _top_left_back_hunt = intersection_of_3_planes(p0_top, n_top, p0_left, n_left, p0_back, n_back);
+    _top_right_back_hunt = intersection_of_3_planes(p0_top, n_top, p0_right, n_right, p0_back, n_back);
+
+    _bottom_left_front_hunt = intersection_of_3_planes(p0_bottom, n_bottom, p0_left, n_left, p0_front, n_front);
+    _bottom_right_front_hunt = intersection_of_3_planes(p0_bottom, n_bottom, p0_right, n_right, p0_front, n_front);
+    _top_left_front_hunt = intersection_of_3_planes(p0_top, n_top, p0_left, n_left, p0_front, n_front);
+    _top_right_front_hunt = intersection_of_3_planes(p0_top, n_top, p0_right, n_right, p0_front, n_front);
+}
+
+cv::Mat CameraVolume::intersection_of_3_planes(cv::Mat p0_1, cv::Mat n_1, cv::Mat p0_2, cv::Mat n_2, cv::Mat p0_3, cv::Mat n_3)
+{
+    cv::Mat n01, n02, n03;
+    float d1, d2, d3;
+
+    std::tie(d1, n01) = hesse_normal_form(p0_1, n_1);
+    std::tie(d2, n02) = hesse_normal_form(p0_2, n_2);
+    std::tie(d3, n03) = hesse_normal_form(p0_3, n_3);
+
+    cv::Mat b, A;
+
+    b = (cv::Mat_<float>(3,1) << d1, d2, d3);
+
+    cv::hconcat(n01, n02, A);
+    cv::hconcat(A, n03, A);
+
+    return  A.t().inv() * (b.reshape(1,3));
+}
+
+std::tuple<float, cv::Mat> CameraVolume::hesse_normal_form(cv::Mat p0, cv::Mat n)
+{
+    cv::Mat n0;
+
+    n0 = n.mul(cv::norm(n));
+    double d = p0.dot(n0);
+
+    return std::make_tuple(d, n0);
+}
 
 bool CameraVolume::in_view(cv::Point3f p,float hysteresis_margin){
-    //    bool top_check = on_normal_side (p0_top-hysteresis_margin*n_top, n_top, cv::Mat(p));
-    bool front_check = on_normal_side (p0_front+hysteresis_margin*n_front, n_front, cv::Mat(p));
-    bool left_check = on_normal_side (p0_left-hysteresis_margin*n_left, n_left, cv::Mat(p));
-    bool right_check = on_normal_side (p0_right+hysteresis_margin*n_right, n_right, cv::Mat(p));
-    bool bottom_check = on_normal_side (p0_bottom+hysteresis_margin*n_bottom, n_bottom, cv::Mat(p));
-    bool back_check = on_normal_side (p0_back+hysteresis_margin*n_back, n_back, cv::Mat(p));
+    bool front_check = on_normal_side (_p0_front+hysteresis_margin*_n_front, _n_front, cv::Mat(p));
+    bool left_check = on_normal_side (_p0_left-hysteresis_margin*_n_left, _n_left, cv::Mat(p));
+    bool right_check = on_normal_side (_p0_right+hysteresis_margin*_n_right, _n_right, cv::Mat(p));
+    bool bottom_check = on_normal_side (_p0_bottom+hysteresis_margin*_n_bottom, _n_bottom, cv::Mat(p));
+    bool back_check = on_normal_side (_p0_back+hysteresis_margin*_n_back, _n_back, cv::Mat(p));
 
     // Attention check the negative case!
     if( // !top_check ||
-        !front_check
-        || !left_check
-        || !right_check
-        || !bottom_check
-        || !back_check)
+            !front_check
+            || !left_check
+            || !right_check
+            || !bottom_check
+            || !back_check)
         return false;
     else
         return true;
 }
 
 CameraVolume::hunt_check_result CameraVolume::in_hunt_area(cv::Point3f d, cv::Point3f m){
-    const float cone_angle_limit = 55*deg2rad; // angle to the horizontal axis
-    cv::Point3f error = m - d;
-    double vertical_dist = error.y;
-    float dist = norm(error);
-    error.y = 0;
-    float horizontal_dist = norm(error);
+    bool front_check = on_normal_side (_p0_front_hunt, _n_front_hunt, cv::Mat(m));
+    bool left_check = on_normal_side (_p0_left_hunt, _n_left_hunt, cv::Mat(m));
+    bool right_check = on_normal_side (_p0_right_hunt, _n_right_hunt, cv::Mat(m));
+    bool bottom_check = on_normal_side (_p0_bottom_hunt, _n_bottom_hunt, cv::Mat(m));
+    bool back_check = on_normal_side (_p0_back_hunt, _n_back_hunt, cv::Mat(m));
+    bool top_check = on_normal_side (_p0_top_hunt, _n_top_hunt, cv::Mat(m));
 
-    float cone_angle = atan2(horizontal_dist, vertical_dist);
-
-    if (m.z > -1.0f)
-        return HuntVolume_To_Close;
-    if (m.y>=0)
+    if( !top_check)
         return HuntVolume_To_High;
-    if (m.y< p0_bottom.at<float>(1)+minimum_height)
+    if( !bottom_check)
         return HuntVolume_To_Low;
-    if (abs(cone_angle)>cone_angle_limit)
+    if( !front_check)
         return HuntVolume_Outside_Cone;
-    if (dist >3.5f) // && dist > 1.0f)
-        return HuntVolume_To_Close;
+    if( !back_check)
+        return HuntVolume_Outside_Cone;
+    if( !left_check)
+        return HuntVolume_Outside_Cone;
+
     return HuntVolume_OK;
 }
 
@@ -108,48 +195,48 @@ float CameraVolume::calc_distance_to_borders(std::vector<cv::Point3f> p){
 
     // Check the back:
     cv::Mat plane = cv::Mat::zeros(cv::Size(2,3), CV_32F);
-    p0_back.copyTo (plane.col(0));
-    n_back.copyTo (plane.col(1));
+    _p0_back.copyTo (plane.col(0));
+    _n_back.copyTo (plane.col(1));
     dist = calc_distance_to_plane (pMat, plane);
 
     if(dist>0 && dist<min_dist)
         min_dist = dist;
 
     // Check the bottom:
-    p0_bottom.copyTo (plane.col(0));
-    n_bottom.copyTo (plane.col(1));
+    _p0_bottom.copyTo (plane.col(0));
+    _n_bottom.copyTo (plane.col(1));
     dist = calc_distance_to_plane (pMat, plane);
 
     if(dist>0 && dist<min_dist)
         min_dist = dist;
 
     // Check the front:
-    p0_front.copyTo (plane.col(0));
-    n_front.copyTo (plane.col(1));
+    _p0_front.copyTo (plane.col(0));
+    _n_front.copyTo (plane.col(1));
     dist = calc_distance_to_plane (pMat, plane);
 
     if(dist>0 && dist<min_dist)
         min_dist = dist;
 
     // Check the top:
-    p0_top.copyTo (plane.col(0));
-    n_top.copyTo (plane.col(1));
+    _p0_top.copyTo (plane.col(0));
+    _n_top.copyTo (plane.col(1));
     dist = calc_distance_to_plane (pMat, plane);
 
     if(dist>0 && dist<min_dist)
         min_dist = dist;
 
     // Check the left:
-    p0_left.copyTo (plane.col(0));
-    n_left.copyTo (plane.col(1));
+    _p0_left.copyTo (plane.col(0));
+    _n_left.copyTo (plane.col(1));
     dist = calc_distance_to_plane (pMat, plane);
 
     if(dist>0 && dist<min_dist)
         min_dist = dist;
 
     // Check the right:
-    p0_right.copyTo (plane.col(0));
-    n_right.copyTo (plane.col(1));
+    _p0_right.copyTo (plane.col(0));
+    _n_right.copyTo (plane.col(1));
     dist = calc_distance_to_plane (pMat, plane);
 
     if(dist>0 && dist<min_dist)

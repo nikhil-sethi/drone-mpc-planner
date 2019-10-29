@@ -7,10 +7,20 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 # directories
 set (PROJECT_SRC_DIR ../src)
 
+set(VIZ_3D FALSE)
+
 # add packages
 find_package(Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
-find_package( OpenCV REQUIRED )
+find_package(OpenCV REQUIRED)
+
+if(VIZ_3D)
+    add_definitions(-DVIZ_3D)
+    list(APPEND CMAKE_PREFIX_PATH /opt/ros/dashing/share/fastcdr/cmake)
+    find_package(fastcdr REQUIRED)
+    find_package(fastrtps REQUIRED)
+endif()
+
 MESSAGE( STATUS "OpenCV_DIR: " ${OpenCV_DIR} )
 MESSAGE( STATUS "OpenCV_LIBS: " ${OpenCV_LIBS} )
 MESSAGE( STATUS "OpenCV_LIB_DIR: " ${OpenCV_LIB_DIR} )
@@ -36,9 +46,12 @@ pkg_check_modules(GST REQUIRED gstreamer-1.0>=1.8
 #pkg_search_module(GSTAPP REQUIRED gstreamer-app-1.0)
 MESSAGE( STATUS "GST_INCLUDE_DIRS: " ${GST_INCLUDE_DIRS} )
 include_directories(SYSTEM ${GST_INCLUDE_DIRS})
+
 link_directories(SYSTEM ${GST_LIBRARY_DIRS})
 
 set (SRC_DIR ../src/)
+include_directories (SYSTEM ../src/ros_msgs/)
+
 include_directories(SYSTEM "${SRC_DIR}")
 
 #************airsim******************
@@ -103,8 +116,16 @@ endif()
 
 find_package(realsense2 REQUIRED)
 
+#include_directories("../src/fastrtps/")
+
 # sources
-FILE(GLOB SRCS "../src/*.cpp" "../src/*.h" "../src/*.c" "../src/cereal/*.hpp" "../src/tinyxml/*.h" "../src/tinyxml/*.cpp" "../xml/*.xml")
+FILE(GLOB SRCS "../src/*.cpp" "../src/*.h" "../src/*.c" "../src/cereal/*.hpp" "../src/tinyxml/*.h" "../src/tinyxml/*.cpp" "../xml/*.xml" "../src/3dviz/*.cpp" "../src/3dviz/*.h")
+
+if(VIZ_3D)    
+    include_directories("../src/3dviz/ros_msgs/")
+    include_directories("../src/3dviz/publishers/")
+    FILE(GLOB ROS_SRCS "../src/3dviz/ros_msgs/*.cxx" "../src/3dviz/ros_msgs/*.h" "../src/3dviz/fastrtps/*.cxx" "../src/3dviz/fastrtps/*.h" "../src/3dviz/publishers/*.cpp" "../src/3dviz/publishers/*.h")
+endif()
 
 include(CheckCXXCompilerFlag)
 #-Wimplicit-fallthrough -> only supported by gcc >7 (ubuntu 18)
@@ -121,7 +142,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 #ENDIF(CMAKE_BUILD_TYPE_LOWER STREQUAL debug)
 
 # build program
-add_executable(${PROJECT_NAME} ${SRCS} ${GUI_SRCS} ${QT_RESOURCES})
+add_executable(${PROJECT_NAME} ${SRCS} ${GUI_SRCS} ${QT_RESOURCES} ${ROS_SRCS})
 
 if(WITH_GUI)
  qt5_use_modules(${PROJECT_NAME} Widgets)
@@ -133,6 +154,11 @@ target_link_libraries(${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
 target_link_libraries(${PROJECT_NAME} ${realsense2_LIBRARY})
 target_link_libraries(${PROJECT_NAME} ${GST_LIBRARIES} ${GSTSDP_LIBRARIES} ${GSTAPP_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${FASTRTPS_LIBRARIES})
+
+if(VIZ_3D)
+    target_link_libraries(${PROJECT_NAME} fastrtps)
+endif()
 
 if(WITH_GUI)
  target_link_libraries(Qt5::Quick)

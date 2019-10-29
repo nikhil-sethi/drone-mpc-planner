@@ -46,6 +46,8 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui/highgui.hpp"
 
+#include "3dviz/visualizer3d.h"
+
 #ifdef HASGUI
 #include "gui/mainwindow.h"
 #endif
@@ -85,6 +87,7 @@ DronePredictor dprdct;
 DroneNavigation dnav;
 TrackerManager trackers;
 Visualizer visualizer;
+Visualizer3D visualizer_3d;
 LogReader logreader;
 #if CAMMODE == CAMMODE_FROMVIDEOFILE
 FileCam cam;
@@ -149,6 +152,8 @@ void process_video() {
     //main while loop:
     while (key != 27) // ESC
     {
+        visualizer_3d.run();
+
         cam.update();
 
         Stereo_Frame_Data data;
@@ -592,6 +597,7 @@ void init(int argc, char **argv) {
     logger << std::endl; // this concludes the header log line
     if (pparams.has_screen) {
         visualizer.init(&visdat,&trackers,&dctrl,&dnav,&rc,fromfile==log_mode_full,&dprdct);
+        visualizer_3d.init(&trackers, &(cam.camera_volume), &dctrl, &dnav);
         if (fromfile==log_mode_full)
             visualizer.first_take_off_time = logreader.first_takeoff_time();
     }

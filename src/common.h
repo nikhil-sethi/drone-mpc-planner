@@ -103,22 +103,22 @@ enum video_mode {
     video_bag
 };
 static const char* video_mode_str[] = {"video_disabled",
-    "video_mp4",
-    "video_stream",
-    "video_mp4_opencv",
-    "video_bag"
-    "" // must be the last entry! (check in serializer)
-};
+                                       "video_mp4",
+                                       "video_stream",
+                                       "video_mp4_opencv",
+                                       "video_bag"
+                                       "" // must be the last entry! (check in serializer)
+                                      };
 enum rc_type {
     rc_none = 0,
     rc_devo,
     rc_xlite
 };
 static const char* rc_type_str[] = {"rc_none",
-    "rc_devo",
-    "rc_xlite"
-    "" // must be the last entry! (check in serializer)
-};
+                                    "rc_devo",
+                                    "rc_xlite"
+                                    "" // must be the last entry! (check in serializer)
+                                   };
 enum tx_protocol {
     tx_none = 0,
     tx_dsmx,
@@ -127,12 +127,12 @@ enum tx_protocol {
     tx_frskyd16
 };
 static const char* tx_protocol_str[] = {"tx_none",
-    "tx_dsmx",
-    "tx_cx10",
-    "tx_frskyd8",
-    "tx_frskyd16"
-    "" // must be the last entry! (check in serializer)
-};
+                                        "tx_dsmx",
+                                        "tx_cx10",
+                                        "tx_frskyd8",
+                                        "tx_frskyd16"
+                                        "" // must be the last entry! (check in serializer)
+                                       };
 enum drone_type {
     drone_none,
     drone_trashcan,
@@ -141,12 +141,12 @@ enum drone_type {
     drone_cx10
 };
 static const char* drone_type_str[] = {"drone_none",
-    "drone_trashcan",
-    "drone_tinywhoop_d16",
-    "drone_tinywhoop_d8",
-    "drone_cx10",
-    "" // must be the last entry! (check in serializer)
-};
+                                       "drone_trashcan",
+                                       "drone_tinywhoop_d16",
+                                       "drone_tinywhoop_d8",
+                                       "drone_cx10",
+                                       "" // must be the last entry! (check in serializer)
+                                      };
 
 class Tf_PT1_f{
 private:
@@ -302,20 +302,71 @@ public:
     /** @brief Calculates the distance to the borders */
     float calc_distance_to_borders(track_data data_drone);
 
+    cv::Mat top_right_front(){return _top_right_front;}
+    cv::Mat top_right_back(){return _top_right_back;}
+    cv::Mat top_left_front(){return _top_left_front;}
+    cv::Mat top_left_back(){return _top_left_back;}
+    cv::Mat bottom_right_front(){return _bottom_right_front;}
+    cv::Mat bottom_right_back(){return _bottom_right_back;}
+    cv::Mat bottom_left_front(){return _bottom_left_front;}
+    cv::Mat bottom_left_back(){return _bottom_left_back;}
+
+    cv::Mat top_right_front_hunt(){return _top_right_front_hunt;}
+    cv::Mat top_right_back_hunt(){return _top_right_back_hunt;}
+    cv::Mat top_left_front_hunt(){return _top_left_front_hunt;}
+    cv::Mat top_left_back_hunt(){return _top_left_back_hunt;}
+    cv::Mat bottom_right_front_hunt(){return _bottom_right_front_hunt;}
+    cv::Mat bottom_right_back_hunt(){return _bottom_right_back_hunt;}
+    cv::Mat bottom_left_front_hunt(){return _bottom_left_front_hunt;}
+    cv::Mat bottom_left_back_hunt(){return _bottom_left_back_hunt;}
 private:
     // Define limitation planes in plane normal form:
-    cv::Mat n_front;
-    cv::Mat p0_front;
-    cv::Mat n_top;
-    cv::Mat p0_top;
-    cv::Mat n_left;
-    cv::Mat p0_left;
-    cv::Mat n_right;
-    cv::Mat p0_right;
-    cv::Mat n_bottom;
-    cv::Mat p0_bottom;
-    cv::Mat n_back;
-    cv::Mat p0_back;
+    cv::Mat _n_front;
+    cv::Mat _p0_front;
+    cv::Mat _n_top;
+    cv::Mat _p0_top;
+    cv::Mat _n_left;
+    cv::Mat _p0_left;
+    cv::Mat _n_right;
+    cv::Mat _p0_right;
+    cv::Mat _n_bottom;
+    cv::Mat _p0_bottom;
+    cv::Mat _n_back;
+    cv::Mat _p0_back;
+
+    // Define corner points
+    cv::Mat _top_right_front;
+    cv::Mat _top_right_back;
+    cv::Mat _top_left_front;
+    cv::Mat _top_left_back;
+    cv::Mat _bottom_right_front;
+    cv::Mat _bottom_right_back;
+    cv::Mat _bottom_left_front;
+    cv::Mat _bottom_left_back;
+
+    // Define corner points
+    cv::Mat _top_right_front_hunt;
+    cv::Mat _top_right_back_hunt;
+    cv::Mat _top_left_front_hunt;
+    cv::Mat _top_left_back_hunt;
+    cv::Mat _bottom_right_front_hunt;
+    cv::Mat _bottom_right_back_hunt;
+    cv::Mat _bottom_left_front_hunt;
+    cv::Mat _bottom_left_back_hunt;
+
+    // Define limitation planes in plane normal form:
+    cv::Mat _n_front_hunt;
+    cv::Mat _p0_front_hunt;
+    cv::Mat _n_top_hunt;
+    cv::Mat _p0_top_hunt;
+    cv::Mat _n_left_hunt;
+    cv::Mat _p0_left_hunt;
+    cv::Mat _n_right_hunt;
+    cv::Mat _p0_right_hunt;
+    cv::Mat _n_bottom_hunt;
+    cv::Mat _p0_bottom_hunt;
+    cv::Mat _n_back_hunt;
+    cv::Mat _p0_back_hunt;
 
     float minimum_height = 0.3f; /**< Correction distance for the ground plane. */
 
@@ -337,6 +388,18 @@ private:
     /** @brief Determines on which side of the plane a point is.
     * Returns true if the point is on the point the side the normal vector is looking to, else false is returned. */
     bool on_normal_side(cv::Mat p0, cv::Mat n, cv::Mat p);
+
+    cv::Mat intersection_of_3_planes(cv::Mat p0_1, cv::Mat n_1, cv::Mat p0_2, cv::Mat n_2, cv::Mat p0_3, cv::Mat n_3);
+
+    std::tuple<float, cv::Mat> hesse_normal_form(cv::Mat p0, cv::Mat n);
+
+    void calc_corner_points(cv::Mat p0_front, cv::Mat n_front, cv::Mat p0_back, cv::Mat n_back,
+                            cv::Mat p0_top, cv::Mat n_top, cv::Mat p0_bottom, cv::Mat n_bottom,
+                            cv::Mat p0_left, cv::Mat n_left, cv::Mat p0_right, cv::Mat n_right);
+
+    void calc_corner_points_hunt(cv::Mat p0_front, cv::Mat n_front, cv::Mat p0_back, cv::Mat n_back,
+                                 cv::Mat p0_top, cv::Mat n_top, cv::Mat p0_bottom, cv::Mat n_bottom,
+                                 cv::Mat p0_left, cv::Mat n_left, cv::Mat p0_right, cv::Mat n_right);
 };
 
 
