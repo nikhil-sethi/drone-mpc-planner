@@ -288,20 +288,24 @@ CameraVolume Cam::def_volume (){
     float b_depth, b_ground;
 
     cv::Point3f point_left_top, point_right_top, point_left_bottom, point_right_bottom;
+    cv::Point3f point_back_left1,point_back_left2, point_back_left3;
+    cv::Point3f point_back_right1,point_back_right2, point_back_right3;
 
     point_left_top = get_SlopesOfPixel(0,0);
     point_right_top = get_SlopesOfPixel(847, 0);
     point_left_bottom = get_SlopesOfPixel(0, 479);
     point_right_bottom = get_SlopesOfPixel(847, 479);
 
-//    point_left_top = -depth_background_3mm_world.at<cv::Vec3f>(0, 1);
-//    point_right_top = -depth_background_3mm_world.at<cv::Vec3f>(0, 847);
-//    point_left_bottom = -depth_background_3mm_world.at<cv::Vec3f>(479, 1);
-//    point_right_bottom = -depth_background_3mm_world.at<cv::Vec3f>(479, 847);
+    point_back_left1 = -depth_background_3mm_world.at<cv::Vec3f>(50, 100);
+    point_back_left2 = -depth_background_3mm_world.at<cv::Vec3f>(200, 150);
+    point_back_left3 = -depth_background_3mm_world.at<cv::Vec3f>(100, 375);
+    point_back_right1 = -depth_background_3mm_world.at<cv::Vec3f>(120, 500);
+    point_back_right2 = -depth_background_3mm_world.at<cv::Vec3f>(100, 800);
+    point_back_right3 = -depth_background_3mm_world.at<cv::Vec3f>(270, 750);
 
     float y_sum = 0;
     uint n=0;
-    for(uint row=300; row<480; row+=5){
+    for(uint row=360; row<480; row+=5){
         for(uint col=212; col<636; col+=5){
 
             if(depth_background_3mm_world.at<cv::Vec3f>(row,col)[1]!=0){
@@ -326,7 +330,10 @@ CameraVolume Cam::def_volume (){
     b_depth = -z_sum/n;
 
     CameraVolume camVol;
-    camVol.init(point_left_top, point_right_top, point_left_bottom, point_right_bottom, b_depth, b_ground);
+    camVol.init(point_left_top, point_right_top, point_left_bottom, point_right_bottom,
+                point_back_left1,point_back_left2, point_back_left3,
+                point_back_right1,point_back_right2, point_back_right3,
+                b_ground);
 
     return camVol;
 }

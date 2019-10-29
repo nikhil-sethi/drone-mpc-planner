@@ -147,7 +147,8 @@ static const char* drone_type_str[] = {"drone_none",
 class CameraVolume{
 public:
     void init(cv::Point3f point_left_top, cv::Point3f point_right_top, cv::Point3f point_left_bottom, cv::Point3f point_right_bottom,
-              float depth, float height);
+              cv::Point3f point_back_left1, cv::Point3f point_back_left2, cv::Point3f point_back_left3,
+              cv::Point3f point_back_right1, cv::Point3f point_back_right2, cv::Point3f point_back_right3, float height);
 
     enum volume_check_mode{
         strict, /**< viewable volume including a safety distance to borders */
@@ -176,8 +177,10 @@ private:
     cv::Mat p0_right;
     cv::Mat n_bottom;
     cv::Mat p0_bottom;
-    cv::Mat n_back;
-    cv::Mat p0_back;
+    cv::Mat n_back1;
+    cv::Mat p0_back1;
+    cv::Mat n_back2;
+    cv::Mat p0_back2;
 
 
     float minimum_height = 0.3f; /**< Correction distance for the ground plane. */
@@ -194,8 +197,8 @@ private:
     /** @brief Calculates an orthoogonal vector to a given vector. */
     cv::Mat get_orthogonal_vector(cv::Mat vec);
 
-    /** @brief  Generates the plane normal vector based on 3 points. The third point is always asumed to be (0,0,0)^T. */
-    cv::Mat get_plane_normal_vector(cv::Point3f x1, cv::Point3f x2);
+    /** @brief  Generates the plane normal vector based on 3 points.*/
+    cv::Mat get_plane_normal_vector(cv::Point3f x1, cv::Point3f x2, cv::Point3f x3);
 
     /** @brief Determines on which side of the plane a point is.
     * Returns true if the point is on the point the side the normal vector is looking to, else false is returned. */
