@@ -415,7 +415,7 @@ void handle_key(double time [[maybe_unused]]) {
         break;
     case '>': {
         double dt = logreader.first_takeoff_time() - time - 1;
-        if (dt>0)
+        if (dt>0 && trackers.mode() != TrackerManager::mode_locate_drone)
             cam.skip(dt);
         break;
     }
