@@ -44,7 +44,7 @@ void Interceptor::update(bool drone_at_base, double time) {
             _intercept_pos.y  = _trackers->dronetracker()->drone_startup_location().y + minimal_height;
 
         if (!_count_insect_not_in_range)
-            _interceptor_state = is_flower_of_fire_intercept;
+            _interceptor_state = is_move_to_intercept;
         break;
         } case is_flower_of_fire_intercept: {
             if  (!_trackers->insecttracker()->tracking()) {
