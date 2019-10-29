@@ -9,7 +9,7 @@ void Interceptor::init(TrackerManager *trackers, VisionData *visdat, CameraVolum
 }
 
 
-void Interceptor::update(bool drone_at_base) {
+void Interceptor::update(bool drone_at_base, double time) {
 
     switch (_interceptor_state) {
      case  is_init: {
@@ -44,8 +44,22 @@ void Interceptor::update(bool drone_at_base) {
             _intercept_pos.y  = _trackers->dronetracker()->drone_startup_location().y + minimal_height;
 
         if (!_count_insect_not_in_range)
-            _interceptor_state = is_move_to_intercept;
+            _interceptor_state = is_flower_of_fire_intercept;
         break;
+        } case is_flower_of_fire_intercept: {
+            if  (!_trackers->insecttracker()->tracking()) {
+                _interceptor_state = is_waiting_for_target;
+                break;
+            }
+            update_flower_of_fire(time);
+            update_insect_in_range();
+            if (_intercept_pos.y< _trackers->dronetracker()->drone_startup_location().y + minimal_height)
+                _intercept_pos.y  = _trackers->dronetracker()->drone_startup_location().y + minimal_height;
+            if (_count_insect_not_in_range>5){
+                _interceptor_state = is_waiting_in_reach_zone;
+                break;
+            }
+            break;
     } case is_move_to_intercept: { // move max speed to somewhere close of the insect, preferably 20cm below behind.
         if  (!_trackers->insecttracker()->tracking()) {
           _interceptor_state = is_waiting_for_target;
@@ -86,6 +100,37 @@ void Interceptor::update(bool drone_at_base) {
     }
     }
 
+}
+
+void Interceptor::update_flower_of_fire(double time){
+
+    track_data itd = _trackers->insecttracker()->Last_track_data();
+    cv::Point3f insect_pos = itd.pos();
+
+    track_data dtd = _trackers->dronetracker()->Last_track_data();
+    cv::Point3f drone_pos = dtd.pos();
+
+    _horizontal_separation = norm(cv::Point2f(drone_pos.x,drone_pos.z) - cv::Point2f(insect_pos.x,insect_pos.z));
+    _vertical_separation = insect_pos.y-drone_pos.y;
+
+    float timef = static_cast<float>(time);
+
+    cv::Point3f p_now = get_circle_pos(timef);
+    cv::Point3f p_prev= get_circle_pos(timef-1.f/pparams.fps);
+
+    cv::Point3f tmp_v = (p_now - p_prev)*static_cast<float>(pparams.fps);
+    _intercept_acc = (tmp_v-_intercept_vel)*powf(static_cast<float>(pparams.fps),0.5);
+    _intercept_pos = p_now + insect_pos;
+    _intercept_vel = tmp_v;
+}
+
+
+cv::Point3f Interceptor::get_circle_pos(float timef){
+    cv::Point3f p;
+    p.x = (r_crcl1/100.f) * sinf((v_crcl1/100.f)*timef) + (r_crcl2/100.f) * cosf((v_crcl2/100.f)*timef);
+    p.y = 0;
+    p.z = (r_crcl1/100.f) * cosf((v_crcl1/100.f)*timef) + (r_crcl2/100.f) * sinf((v_crcl2/100.f)*timef);
+    return p;
 }
 
 void Interceptor::update_far_target(bool drone_at_base){

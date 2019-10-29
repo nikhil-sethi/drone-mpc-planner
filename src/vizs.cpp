@@ -67,9 +67,16 @@ void Visualizer::addPlotSample(void) {
             sposY.push_back(data.sposY);
             sposZ.push_back(-data.sposZ);
 
-            posX_target.push_back(-data_target.state.pos.x);
-            posY_target.push_back(data_target.state.pos.y);
-            posZ_target.push_back(-data_target.state.pos.z);
+
+            if (_dctrl->Joy_State() != DroneController::js_hunt) {
+                posX_target.push_back(-_dnav->setpoint_pos_world.x);
+                posY_target.push_back(-_dnav->setpoint_pos_world.y);
+                posZ_target.push_back(-_dnav->setpoint_pos_world.z);
+            }else {
+                posX_target.push_back(-data_target.state.pos.x);
+                posY_target.push_back(data_target.state.pos.y);
+                posZ_target.push_back(-data_target.state.pos.z);
+            }
 
             setposX.push_back(-_dnav->setpoint_pos_world.x);
             setposY.push_back(_dnav->setpoint_pos_world.y);
@@ -256,6 +263,17 @@ cv::Mat Visualizer::plotxy(cv::Mat data1x,cv::Mat data1y, cv::Mat data2x,cv::Mat
         y= fsizey - y*scaleY + 2*line_width;
         if (j > start)
             cv::line(frame, cv::Point(prev_x, prev_y) , cv::Point(x, y), green, line_width, CV_AA, 0);
+        prev_x = x;
+        prev_y = y;
+    }
+
+    for (int j = start; j < x2S.rows-1; j++)  {
+        x = x2S.at<float>(j,1) - static_cast<float>(minx);
+        x =x*scaleX + 2*line_width;
+        y = y2S.at<float>(j,1) - static_cast<float>(miny);
+        y= fsizey - y*scaleY + 2*line_width;
+        if (j > start)
+            cv::line(frame, cv::Point(prev_x, prev_y) , cv::Point(x, y), pink, line_width, CV_AA, 0);
         prev_x = x;
         prev_y = y;
     }

@@ -28,7 +28,8 @@ void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, Dro
     //    setpoints.push_back(waypoint(cv::Point3f(2,-1.0f,-3.5f),100));
 
 
-    setpoints.push_back(waypoint(cv::Point3f(0,-1.3f,-2.0f),40));
+    setpoints.push_back(waypoint(cv::Point3f(0,-0.9f,-2.0f),40));
+    setpoints.push_back(flower_waypoint(cv::Point3f(0,-0.9f,-2.5f)));
 
     setpoints.push_back(landing_waypoint());
 
@@ -37,9 +38,14 @@ void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, Dro
         //    createTrackbar("X [mm]", "Nav", &setpoint_slider_X, SETPOINTXMAX);
         //    createTrackbar("Y [mm]", "Nav", &setpoint_slider_Y, SETPOINTYMAX);
         //    createTrackbar("Z [mm]", "Nav", &setpoint_slider_Z, SETPOINTZMAX);
-        createTrackbar("WP id", "Nav", reinterpret_cast<int*>(wpid), setpoints.size()-1);
-        createTrackbar("d threshold factor", "Nav", &distance_threshold_f, 10);
-        createTrackbar("land_incr_f_mm", "Nav", &land_incr_f_mm, 50);
+//        createTrackbar("WP id", "Nav", reinterpret_cast<int*>(wpid), setpoints.size()-1);
+//        createTrackbar("d threshold factor", "Nav", &distance_threshold_f, 10);
+
+        createTrackbar("v_crcl1", "Nav", &v_crcl1, 1000);
+        createTrackbar("v_crcl2", "Nav", &v_crcl2, 1000);
+        createTrackbar("r_crcl1", "Nav", &r_crcl1, 1000);
+        createTrackbar("r_crcl2", "Nav", &r_crcl2, 1000);
+
     }
 
     if (pparams.insect_logging_mode)
@@ -66,7 +72,7 @@ void DroneNavigation::update(double time) {
     } else {
         _nav_flight_mode = nfm_hunt;
     }
-    _iceptor.update(_navigation_status != ns_chasing_insect);
+    _iceptor.update(_navigation_status != ns_chasing_insect, time);
     bool repeat = true;
     while (repeat) {
         repeat  = false;
@@ -165,7 +171,6 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_manual;
                 break;
             }
-            cout << "_dctrl->duration_spent_taking_off(time) " << _dctrl->duration_spent_taking_off(time) << endl;
             if (_dctrl->duration_spent_taking_off(time)>0.5f && _trackers->dronetracker()->taking_off()){ //TODO: make parameter
                 std::cout << "Drone was not detected during max burn take off manoeuvre, aborting." << std::endl;
                 _dctrl->flight_mode(DroneController::fm_abort_flight);
@@ -238,7 +243,10 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_set_waypoint: {
             next_waypoint(setpoints[wpid]);
-            _navigation_status = ns_approach_waypoint;
+            if (current_setpoint->mode == fm_flower)
+                _navigation_status = ns_flower_waypoint;
+            else
+                _navigation_status = ns_approach_waypoint;
             break;
         } case ns_approach_waypoint: {
             float pos_err = sqrtf(_dctrl->posErrX*_dctrl->posErrX + _dctrl->posErrY*_dctrl->posErrY + _dctrl->posErrZ*_dctrl->posErrZ);
@@ -265,19 +273,23 @@ void DroneNavigation::update(double time) {
             if (_nav_flight_mode == nfm_manual)
                 _navigation_status=ns_manual;
             break;
-        } case ns_stay_waypoint: {
-            //TODO: implement
+        } case ns_flower_waypoint: {
+
+            float timef = static_cast<float>(time);
+
+            cv::Point3f new_pos_setpoint;
+            cv::Point3f new_vel_setpoint;
+            new_pos_setpoint.x = current_setpoint->xyz.x + (r_crcl1/100.f) * sinf((v_crcl1/100.f)*timef) + (r_crcl2/100.f) * cosf((v_crcl2/100.f)*timef);
+            new_pos_setpoint.y = current_setpoint->xyz.y;
+            new_pos_setpoint.z = current_setpoint->xyz.z + (r_crcl1/100.f) * cosf((v_crcl1/100.f)*timef) + (r_crcl2/100.f) * sinf((v_crcl2/100.f)*timef);
+            new_vel_setpoint = (new_pos_setpoint - setpoint_pos_world)*static_cast<float>(pparams.fps);
+            setpoint_acc_world = (new_vel_setpoint - setpoint_vel_world)*powf(static_cast<float>(pparams.fps),0.5);
+            setpoint_vel_world = new_vel_setpoint;
+            setpoint_pos_world = new_pos_setpoint;
+
             if (_nav_flight_mode == nfm_manual)
                 _navigation_status=ns_manual;
             break;
-            //    } case navigation_status_stay_slider_waypoint: {
-            //        wp = &setpoints[wpid];
-            //        wp->_xyz.x = setpoint_slider_X;
-            //        wp->_xyz.y = setpoint_slider_Y;
-            //        wp->_xyz.z = setpoint_slider_Z;
-            //        if (_dctrl->get_flight_mode() == DroneController::fm_manual)
-            //            navigation_status=navigation_status_manual;
-            //        break;
         } case ns_land: {
             _dctrl->flight_mode(DroneController::fm_landing_start);
             _trackers->dronetracker()->land();
@@ -365,7 +377,6 @@ void DroneNavigation::deserialize_settings() {
     setpoint_slider_X = params.setpoint_slider_X.value();
     setpoint_slider_Y = params.setpoint_slider_Y.value();
     setpoint_slider_Z = params.setpoint_slider_Z.value();
-    land_incr_f_mm = params.land_incr_f_mm.value();
     time_out_after_landing = params.time_out_after_landing.value();
 }
 
@@ -375,7 +386,6 @@ void DroneNavigation::serialize_settings() {
     params.setpoint_slider_X = setpoint_slider_X;
     params.setpoint_slider_Y = setpoint_slider_Y;
     params.setpoint_slider_Z = setpoint_slider_Z;
-    params.land_incr_f_mm = land_incr_f_mm;
     params.time_out_after_landing = time_out_after_landing;
 
     std::string xmlData = params.toXML();

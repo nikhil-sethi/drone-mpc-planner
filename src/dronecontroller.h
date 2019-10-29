@@ -164,7 +164,7 @@ private:
     cv::Point3f drone_vel_after_takeoff = {0};
     float ground_effect = 1.0f;
     const float lift_off_dist_take_off_aim = 0.02f;
-    const float take_off_burn_duration = 0.12f;
+    const float take_off_burn_duration = 0.1f;
 
     double take_off_start_time = 0;
     double interception_start_time = 0;
@@ -216,6 +216,8 @@ private:
 
     float landing_decent_yoffset = 0;
     float landing_decent_rate = -0.01;
+
+    int pid_max_angle_scaler = 8;
 
     inline state_data set_recoveryState(cv::Point3f position){
         state_data rt;
@@ -318,6 +320,8 @@ public:
     int auto_pitch = JOY_MIDDLE;
     int auto_yaw = JOY_MIDDLE;
     float auto_burn_duration = 0;
+
+    Smoother pid_roll_smoother,pid_pitch_smoother,pid_throttle_smoother;
 
     //Normalized throttle, between [-1 .. 1].
     //0 equals hoverthrottle

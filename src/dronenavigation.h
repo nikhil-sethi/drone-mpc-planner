@@ -27,7 +27,7 @@ static const char* navigation_status_names[] = {"ns_init",
                                                 "ns_chasing_insect",
                                                 "ns_set_waypoint",
                                                 "ns_approach_waypoint",
-                                                "ns_stay_waypoint",
+                                                "ns_flower_of_fire",
                                                 "ns_goto_landing",
                                                 "ns_land",
                                                 "ns_landing",
@@ -46,6 +46,12 @@ public:
         nfm_hunt
     };
 private:
+
+
+    int v_crcl1 = 250;
+    int v_crcl2 = 500;
+    int r_crcl1 = 10;
+    int r_crcl2 = 30;
 
     class navigationParameters: public xmls::Serializable
     {
@@ -77,7 +83,6 @@ private:
     int setpoint_slider_X ;
     int setpoint_slider_Y;
     int setpoint_slider_Z;
-    int land_incr_f_mm;
     double time_out_after_landing;
 
     string settings_file = "../../xml/navigation.xml";
@@ -90,7 +95,7 @@ private:
     enum waypoint_flight_modes {
         fm_takeoff,
         fm_flying,
-        fm_slider,
+        fm_flower,
         fm_landing
     };
 
@@ -118,10 +123,9 @@ private:
             mode = fm_takeoff;
         }
     };
-    struct slider_waypoint : waypoint{
-        slider_waypoint(){
-            //todo: implement
-            mode = fm_slider;
+    struct flower_waypoint : waypoint{
+        flower_waypoint(cv::Point3f p) : waypoint(p,0) {
+            mode = fm_flower;
         }
     };
     void next_waypoint(waypoint wp);
@@ -142,7 +146,7 @@ private:
         ns_chasing_insect,
         ns_set_waypoint,
         ns_approach_waypoint,
-        ns_stay_waypoint,
+        ns_flower_waypoint,
         ns_goto_landing_waypoint,
         ns_land,
         ns_landing,

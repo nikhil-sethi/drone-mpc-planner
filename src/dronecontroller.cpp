@@ -21,6 +21,10 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     (*_logger) << "valid; posErrX; posErrY; posErrZ; velX; velY; velZ; accX; accY; accZ; hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; joyThrottle; joyRoll; joyPitch; joyYaw; joyArmSwitch; joyModeSwitch; joyTakeoffSwitch; dt; velx_sp; vely_sp; velz_sp;";
     std::cout << "Initialising control." << std::endl;
 
+    pid_roll_smoother.init(6);
+    pid_pitch_smoother.init(6);
+    pid_throttle_smoother.init(6);
+
     settings_file = "../../xml/" + dparams.control + ".xml";
 
     // Load saved control paremeters
@@ -42,6 +46,9 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
         createTrackbar("Pitch Vel", "Control", &gain_pitch_vel, 2000);
         createTrackbar("Pitch Acc", "Control", &gain_pitch_acc, 100);
         createTrackbar("Pitch I", "Control", &gain_pitch_i, 100);
+        createTrackbar("pid_max_angle_scaler", "Control", &pid_max_angle_scaler, 16);
+
+
     }
 
     hoverthrottle = dparams.initial_hover_throttle;
@@ -128,7 +135,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
             cv::Point3f burn_direction;
             std::tie (auto_roll, auto_pitch,auto_burn_duration,burn_direction) = calc_directional_burn(state_drone_takeoff,data_target.state,0);
             if (burn_limit_hack)
-            auto_burn_duration = take_off_burn_duration; //TODO: make this number dynamic such that we have just enough time to do a second directional burn?
+                auto_burn_duration = take_off_burn_duration; //TODO: make this number dynamic such that we have just enough time to do a second directional burn?
             aim_direction_history.push_back(burn_direction);
             auto_throttle = initial_hover_throttle_guess();
 
@@ -287,7 +294,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         float required_breaking_time = static_cast<float>(norm(data_drone.vel() )) / thrust;
 
         float required_breaking_distance = static_cast<float>(.5L*thrust*pow(required_breaking_time, 2));
-        if(remaining_breaking_distance<=required_breaking_distance){
+        if(remaining_breaking_distance<=required_breaking_distance && _joy_state!=js_waypoint ){
             setpoint_pos = data_drone.pos ();
             setpoint_vel = data_drone.vel ();
             setpoint_acc = {0};
@@ -772,64 +779,46 @@ void DroneController::control_pid(track_data data_drone) {
 
     auto_pitch = accErrZ * static_cast<float>(gain_pitch_acc) / depth_gain;
 
-    //TMP fix for lacking control law handling of > 90 degree bank angle assuming BF angle limit 160
-    if (auto_roll < -JOY_BOUND_RANGE/6)
-        auto_roll = -JOY_BOUND_RANGE/6;
-    if (auto_roll > JOY_BOUND_RANGE/6)
-        auto_roll = JOY_BOUND_RANGE/6;
+    auto_roll    += (gain_roll_i*rollErrI);
+    auto_pitch   += (gain_pitch_i*pitchErrI);
 
-    if (auto_pitch < -JOY_BOUND_RANGE/6)
-        auto_pitch = -JOY_BOUND_RANGE/6;
-    if (auto_pitch > JOY_BOUND_RANGE/6)
-        auto_pitch = JOY_BOUND_RANGE/6;
+    //TMP fix for lacking control law handling of > 90 degree bank angle assuming BF angle limit 180
+    int pid_angle_range = JOY_BOUND_RANGE/pid_max_angle_scaler;
+    auto_roll = std::clamp(auto_roll,-pid_angle_range,pid_angle_range);
+    auto_pitch = std::clamp(auto_pitch,-pid_angle_range,pid_angle_range);
 
-    //TMP fix for lacking control law handling of > 60 degree bank angle and target far away assuming BF angle limit 160
-    if (abs(posErrX)>0.3f || abs(posErrZ)>0.3f) {
+    float tmptbf = dparams.throttle_bank_factor;
 
-        if (auto_roll < -JOY_BOUND_RANGE/8)
-            auto_roll = -JOY_BOUND_RANGE/8;
-        if (auto_roll > JOY_BOUND_RANGE/8)
-            auto_roll = JOY_BOUND_RANGE/8;
-
-        if (auto_pitch < -JOY_BOUND_RANGE/8)
-            auto_pitch = -JOY_BOUND_RANGE/8;
-        if (auto_pitch > JOY_BOUND_RANGE/8)
-            auto_pitch = JOY_BOUND_RANGE/8;
-    }
-
-    float tmptbf = dparams.throttle_bank_factor; // if we are higher then the target, use the fact more attitude makes us go down
-    if (posErrY> 0 && abs(posErrX)<0.3f && abs(posErrZ)<0.3f) {
-        tmptbf = 0;
-    }
+    // if we are higher then the target, use the fact more attitude makes us go down
+//    if (posErrY> 0 && abs(posErrX)<0.3f && abs(posErrZ)<0.3f) {
+//        tmptbf = 0;
+//    }
     if (dparams.mode3d)
         tmptbf *=0.5f;
 
-    if (fabs(auto_roll) > fabs(auto_pitch)){
-        //auto_throttle += tmptbf*abs(auto_roll);
-        float roll_angle = static_cast<float>(auto_roll)/JOY_BOUND_RANGE*M_PIf32;
-        float roll_comp = (auto_throttle-dparams.min_throttle)*abs(1.f/cosf(roll_angle))-(auto_throttle-dparams.min_throttle);
-        auto_throttle += roll_comp*tmptbf;
-    }
-    else {
-        //auto_throttle += tmptbf*abs(auto_pitch);
-        float pitch_angle = static_cast<float>(auto_pitch)/JOY_BOUND_RANGE*M_PIf32;
-        float pitch_comp = auto_throttle*abs(1.f/cosf(pitch_angle))-auto_throttle;
-        auto_throttle += pitch_comp*tmptbf;
-    }
+    //calc throttle compensation needed for this attitude
+    float att_angle;
+    if (fabs(auto_pitch) > fabs(auto_roll))
+        att_angle  = fabs(auto_pitch);
+    else
+        att_angle  = fabs(auto_roll);
 
-    auto_roll    += JOY_MIDDLE + (gain_roll_i*rollErrI);
-    auto_pitch   += JOY_MIDDLE + (gain_pitch_i*pitchErrI);
+    att_angle = (att_angle/(0.5f*JOY_BOUND_RANGE))*M_PIf32;
+    float angle_comp = (auto_throttle-dparams.min_throttle)*abs(1.f/cosf(att_angle))-(auto_throttle-dparams.min_throttle);
+    auto_throttle += angle_comp*tmptbf;
 
-    //int minThrottle = 1300 + min(abs(autoRoll-1500)/10,50) + min(abs(autoPitch-1500)/10,50);
-
-    if (dparams.mode3d) {
+    if (dparams.mode3d)
         auto_throttle = bound_throttle(auto_throttle);
-    } else {
-        if (auto_throttle<dparams.min_throttle)
-            auto_throttle = dparams.min_throttle;
-        if (auto_throttle>JOY_BOUND_MAX)
-            auto_throttle = JOY_BOUND_MAX;
-    }
+    else
+        auto_throttle = std::clamp(auto_throttle,dparams.min_throttle,JOY_BOUND_MAX);
+
+    auto_roll    += JOY_MIDDLE;
+    auto_pitch   += JOY_MIDDLE;
+
+    auto_roll = pid_roll_smoother.addSample(auto_roll);
+    auto_pitch = pid_pitch_smoother.addSample(auto_pitch);
+    auto_throttle = pid_throttle_smoother.addSample(auto_throttle);
+
 }
 
 void DroneController::readJoystick(void) {
