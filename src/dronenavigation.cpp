@@ -251,7 +251,7 @@ void DroneNavigation::update(double time) {
             float vel_err = sqrtf(_dctrl->velErrX*_dctrl->velErrX + _dctrl->velErrX*_dctrl->velErrX + _dctrl->velErrX*_dctrl->velErrX);
             _dist_to_wp = pos_err;
 
-            if (pparams.navigation_tuning){
+            if (pparams.navigation_tuning && current_setpoint->mode != fm_landing && current_setpoint->mode != fm_takeoff ){
                 setpoint_pos_world.x = setpoints[wpid].xyz.x + (250-setpoint_slider_X)/100.f;
                 setpoint_pos_world.y = setpoints[wpid].xyz.y + (250-setpoint_slider_Y)/100.f;
                 setpoint_pos_world.z = setpoints[wpid].xyz.z + (setpoint_slider_Z-250)/100.f;
