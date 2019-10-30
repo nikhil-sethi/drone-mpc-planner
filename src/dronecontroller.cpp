@@ -22,8 +22,8 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     std::cout << "Initialising control." << std::endl;
 
     pid_roll_smoother.init(6);
-    pid_pitch_smoother.init(6);
-    pid_throttle_smoother.init(6);
+    pid_pitch_smoother.init(12);
+    pid_throttle_smoother.init(2);
 
     settings_file = "../../xml/" + dparams.control + ".xml";
 
@@ -765,11 +765,15 @@ void DroneController::control_pid(track_data data_drone) {
     if (fabs(posErrZ)<integratorThresholdDistance)
         pitchErrI += posErrZ;
 
-    auto_throttle =   -(accErrY * gain_throttle_acc + throttleErrI * gain_throttle_i*0.1f);
+
+    static float att2throttle_gain_scale = 1;
+    float pid_roll,pid_pitch,pid_throttle;
+
+    pid_throttle =   -(accErrY * gain_throttle_acc + throttleErrI * gain_throttle_i*0.1f);
     if (dparams.mode3d)
-        auto_throttle /=2; // with mode 3d the range is divided in two halfs. One up and one down.
-    auto_throttle += initial_hover_throttle_guess();
-    auto_roll =  accErrX * gain_roll_acc;
+        pid_throttle /=2; // with mode 3d the range is divided in two halfs. One up and one down.
+    pid_throttle += initial_hover_throttle_guess();
+    pid_roll =  accErrX * gain_roll_acc/att2throttle_gain_scale;
 
     float depth_gain = 1;
     if (-data_drone.sposZ - 2 > 0) // if further then 2 meters
@@ -777,47 +781,48 @@ void DroneController::control_pid(track_data data_drone) {
     else // closer then 2 meters, do nothing:
         depth_gain = 1;
 
-    auto_pitch = accErrZ * static_cast<float>(gain_pitch_acc) / depth_gain;
+    pid_pitch = accErrZ * gain_pitch_acc/att2throttle_gain_scale/depth_gain;
 
-    auto_roll    += (gain_roll_i*rollErrI);
-    auto_pitch   += (gain_pitch_i*pitchErrI);
+    pid_roll    += (gain_roll_i*rollErrI);
+    pid_pitch   += (gain_pitch_i*pitchErrI);
 
     //TMP fix for lacking control law handling of > 90 degree bank angle assuming BF angle limit 180
-    int pid_angle_range = JOY_BOUND_RANGE/pid_max_angle_scaler;
-    auto_roll = std::clamp(auto_roll,-pid_angle_range,pid_angle_range);
-    auto_pitch = std::clamp(auto_pitch,-pid_angle_range,pid_angle_range);
+    float pid_angle_range = JOY_BOUND_RANGE/pid_max_angle_scaler;
+    pid_roll = std::clamp(pid_roll,-pid_angle_range,pid_angle_range);
+    pid_pitch = std::clamp(pid_pitch,-pid_angle_range,pid_angle_range);
 
     float tmptbf = dparams.throttle_bank_factor;
 
     // if we are higher then the target, use the fact more attitude makes us go down
-//    if (posErrY> 0 && abs(posErrX)<0.3f && abs(posErrZ)<0.3f) {
-//        tmptbf = 0;
-//    }
+    //    if (posErrY> 0 && abs(posErrX)<0.3f && abs(posErrZ)<0.3f) {
+    //        tmptbf = 0;
+    //    }
     if (dparams.mode3d)
         tmptbf *=0.5f;
 
     //calc throttle compensation needed for this attitude
     float att_angle;
-    if (fabs(auto_pitch) > fabs(auto_roll))
-        att_angle  = fabs(auto_pitch);
+    if (fabs(pid_pitch) > fabs(pid_roll))
+        att_angle  = fabs(pid_pitch);
     else
-        att_angle  = fabs(auto_roll);
+        att_angle  = fabs(pid_roll);
+
+    pid_throttle = std::clamp(pid_throttle,static_cast<float>(min_bound_throttle()),static_cast<float>(JOY_BOUND_MAX));
 
     att_angle = (att_angle/(0.5f*JOY_BOUND_RANGE))*M_PIf32;
-    float angle_comp = (auto_throttle-dparams.min_throttle)*abs(1.f/cosf(att_angle))-(auto_throttle-dparams.min_throttle);
-    auto_throttle += angle_comp*tmptbf;
+    att2throttle_gain_scale = abs(1.f/cosf(att_angle));
+    float angle_comp = (pid_throttle-min_bound_throttle())*att2throttle_gain_scale-(pid_throttle-min_bound_throttle());
+    pid_throttle += angle_comp*tmptbf;
 
-    if (dparams.mode3d)
-        auto_throttle = bound_throttle(auto_throttle);
-    else
-        auto_throttle = std::clamp(auto_throttle,dparams.min_throttle,JOY_BOUND_MAX);
+    //make sure props don't stop:
+    pid_throttle = std::clamp(pid_throttle,static_cast<float>(min_bound_throttle()),static_cast<float>(JOY_BOUND_MAX));
 
-    auto_roll    += JOY_MIDDLE;
-    auto_pitch   += JOY_MIDDLE;
+    pid_roll    += JOY_MIDDLE;
+    pid_pitch   += JOY_MIDDLE;
 
-    auto_roll = pid_roll_smoother.addSample(auto_roll);
-    auto_pitch = pid_pitch_smoother.addSample(auto_pitch);
-    auto_throttle = pid_throttle_smoother.addSample(auto_throttle);
+    auto_roll = roundf(pid_roll_smoother.addSample(pid_roll));
+    auto_pitch = roundf(pid_pitch_smoother.addSample(pid_pitch));
+    auto_throttle = roundf(pid_throttle_smoother.addSample(pid_throttle));
 
 }
 
@@ -863,7 +868,7 @@ void DroneController::readJoystick(void) {
                     joy_throttle =  (event.value >> 5)*0.8 + JOY_MIDDLE;
                     break;
                 case 3: //yaw
-                    joy_yaw = (event.value >> 5)*0.8 + JOY_MIDDLE;
+                    joy_yaw = (event.value >> 5)*0.4 + JOY_MIDDLE;
                     break;
                 case 4: //arm switch (two way)
                     _joy_arm_switch = event.value>0;
