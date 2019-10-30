@@ -403,6 +403,9 @@ void handle_key(double time [[maybe_unused]]) {
     case '0':
         init_insect_log(18);
         break;
+    case 'n':
+        dnav.manual_trigger_next_wp();
+        break;
 
 #if CAMMODE == CAMMODE_REALSENSE
     case ' ':

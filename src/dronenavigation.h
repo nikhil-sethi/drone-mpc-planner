@@ -42,7 +42,6 @@ public:
         nfm_none,
         nfm_manual,
         nfm_waypoint,
-        nfm_slider,
         nfm_hunt
     };
 private:
@@ -56,7 +55,7 @@ private:
     class navigationParameters: public xmls::Serializable
     {
     public:
-        xmls::xInt distance_threshold_f,setpoint_slider_X,setpoint_slider_Y,setpoint_slider_Z;
+        xmls::xInt distance_threshold_f;
         xmls::xInt land_incr_f_mm, autoLandThrottleDecreaseFactor;
         xmls::xFloat time_out_after_landing;
 
@@ -66,13 +65,10 @@ private:
             setClassName("navigationParameters");
 
             // Set class version
-            setVersion("1.0");
+            setVersion("1.1");
 
             // Register members. Like the class name, member names can differ from their xml depandants
             Register("distance_threshold_f",&distance_threshold_f);
-            Register("setpoint_slider_X",&setpoint_slider_X);
-            Register("setpoint_slider_Y",&setpoint_slider_Y);
-            Register("setpoint_slider_Z",&setpoint_slider_Z);
             Register("land_incr_f_mm",&land_incr_f_mm);
             Register("autoLandThrottleDecreaseFactor",&autoLandThrottleDecreaseFactor);
             Register("time_out_after_landing",&time_out_after_landing);
@@ -80,9 +76,9 @@ private:
     };
 
     int distance_threshold_f;
-    int setpoint_slider_X ;
-    int setpoint_slider_Y;
-    int setpoint_slider_Z;
+    int setpoint_slider_X = 250;
+    int setpoint_slider_Y = 250;
+    int setpoint_slider_Z = 250;
     double time_out_after_landing;
 
     string settings_file = "../../xml/navigation.xml";
@@ -96,6 +92,7 @@ private:
         fm_takeoff,
         fm_flying,
         fm_flower,
+        fm_wp_stay,
         fm_landing
     };
 
@@ -126,6 +123,11 @@ private:
     struct flower_waypoint : waypoint{
         flower_waypoint(cv::Point3f p) : waypoint(p,0) {
             mode = fm_flower;
+        }
+    };
+    struct stay_waypoint : waypoint{
+        stay_waypoint(cv::Point3f p) : waypoint(p,0) {
+            mode = fm_wp_stay;
         }
     };
     void next_waypoint(waypoint wp);
@@ -204,6 +206,13 @@ public:
 
     float dist_to_wp() {
         return _dist_to_wp;
+    }
+
+    void manual_trigger_next_wp(){
+        if (wpid < setpoints.size() && _nav_flight_mode == nfm_waypoint ) { // next waypoint in flight plan
+            wpid++;
+            _navigation_status = ns_set_waypoint;
+        }
     }
 
     void close (void);

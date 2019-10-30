@@ -9,7 +9,6 @@
 
 static const char* joy_states_names[] = { "js_manual",
                                          "js_waypoint",
-                                         "js_slider",
                                          "js_hunt",
                                          "js_disarmed",
                                          "js_checking",
@@ -70,14 +69,12 @@ public:
     enum joy_mode_switch_modes{ // raw switch modes
         jmsm_manual,
         jmsm_waypoint,
-        jmsm_slider,
         jmsm_hunt,
         jmsm_none, // in case the joystick does not have this switch
     };
     enum joy_states{ // end result after checking and processing
         js_manual,
         js_waypoint,
-        js_slider,
         js_hunt,
         js_disarmed,
         js_checking, // waiting for sticks to be reset

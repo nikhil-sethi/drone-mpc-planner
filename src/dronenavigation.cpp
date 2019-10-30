@@ -28,16 +28,16 @@ void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, Dro
     //    setpoints.push_back(waypoint(cv::Point3f(2,-1.0f,-3.5f),100));
 
 
-    setpoints.push_back(waypoint(cv::Point3f(0,-0.9f,-2.0f),40));
-    setpoints.push_back(flower_waypoint(cv::Point3f(0,-0.9f,-2.5f)));
+    setpoints.push_back(waypoint(cv::Point3f(0,-1.5f,-2.f),40));
+    setpoints.push_back(stay_waypoint(cv::Point3f(0,-1.5f,-2.0f)));
 
     setpoints.push_back(landing_waypoint());
 
     if (pparams.navigation_tuning) {
         namedWindow("Nav", WINDOW_NORMAL);
-        //    createTrackbar("X [mm]", "Nav", &setpoint_slider_X, SETPOINTXMAX);
-        //    createTrackbar("Y [mm]", "Nav", &setpoint_slider_Y, SETPOINTYMAX);
-        //    createTrackbar("Z [mm]", "Nav", &setpoint_slider_Z, SETPOINTZMAX);
+        createTrackbar("X [cm", "Nav", &setpoint_slider_X, 500);
+        createTrackbar("Y off", "Nav", &setpoint_slider_Y, 500);
+        createTrackbar("Z center]", "Nav", &setpoint_slider_Z, 500);
 //        createTrackbar("WP id", "Nav", reinterpret_cast<int*>(wpid), setpoints.size()-1);
 //        createTrackbar("d threshold factor", "Nav", &distance_threshold_f, 10);
 
@@ -67,8 +67,6 @@ void DroneNavigation::update(double time) {
             _nav_flight_mode = nfm_waypoint;
         else if(_dctrl->Joy_State() == DroneController::js_manual)
             _nav_flight_mode = nfm_manual;
-        else if(_dctrl->Joy_State() == DroneController::js_slider)
-            _nav_flight_mode = nfm_slider;
     } else {
         _nav_flight_mode = nfm_hunt;
     }
@@ -153,7 +151,7 @@ void DroneNavigation::update(double time) {
                      _dctrl->flight_mode (DroneController::fm_spinup);
                 }
             } else if (_nav_flight_mode == nfm_none) { // e.g. insect logging mode
-            } else if (_nav_flight_mode == nfm_waypoint || _nav_flight_mode == nfm_slider)
+            } else if (_nav_flight_mode == nfm_waypoint)
                 _navigation_status = ns_wait_for_takeoff_command;
             break;
         } case ns_takeoff: {
@@ -252,6 +250,12 @@ void DroneNavigation::update(double time) {
             float pos_err = sqrtf(_dctrl->posErrX*_dctrl->posErrX + _dctrl->posErrY*_dctrl->posErrY + _dctrl->posErrZ*_dctrl->posErrZ);
             float vel_err = sqrtf(_dctrl->velErrX*_dctrl->velErrX + _dctrl->velErrX*_dctrl->velErrX + _dctrl->velErrX*_dctrl->velErrX);
             _dist_to_wp = pos_err;
+
+            if (pparams.navigation_tuning){
+                setpoint_pos_world.x = setpoints[wpid].xyz.x + (250-setpoint_slider_X)/100.f;
+                setpoint_pos_world.y = setpoints[wpid].xyz.y + (250-setpoint_slider_Y)/100.f;
+                setpoint_pos_world.z = setpoints[wpid].xyz.z + (setpoint_slider_Z-250)/100.f;
+            }
 
             if (pos_err *1000 < current_setpoint->threshold_mm * distance_threshold_f
                 && vel_err < 1.6f
@@ -374,18 +378,12 @@ void DroneNavigation::deserialize_settings() {
     }
 
     distance_threshold_f = params.distance_threshold_f.value();
-    setpoint_slider_X = params.setpoint_slider_X.value();
-    setpoint_slider_Y = params.setpoint_slider_Y.value();
-    setpoint_slider_Z = params.setpoint_slider_Z.value();
     time_out_after_landing = params.time_out_after_landing.value();
 }
 
 void DroneNavigation::serialize_settings() {
     navigationParameters params;
     params.distance_threshold_f = distance_threshold_f;
-    params.setpoint_slider_X = setpoint_slider_X;
-    params.setpoint_slider_Y = setpoint_slider_Y;
-    params.setpoint_slider_Z = setpoint_slider_Z;
     params.time_out_after_landing = time_out_after_landing;
 
     std::string xmlData = params.toXML();
