@@ -36,19 +36,20 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
         namedWindow("Control", WINDOW_NORMAL);
         createTrackbar("Throttle Pos", "Control", &gain_throttle_pos, 3000);
         createTrackbar("Throttle Vel", "Control", &gain_throttle_vel, 3000);
-        createTrackbar("Throttle Acc", "Control", &gain_throttle_acc, 100);
+        createTrackbar("Throttle Acc", "Control", &gain_throttle_acc, 3000);
         createTrackbar("Throttle I", "Control", &gain_throttle_i, 100);
+        createTrackbar("Throttle D", "Control", &gain_throttle_d, 3000);
         createTrackbar("Roll Pos", "Control", &gain_roll_pos, 3000);
         createTrackbar("Roll Vel", "Control", &gain_roll_vel, 2000);
         createTrackbar("Roll Acc", "Control", &gain_roll_acc, 100);
         createTrackbar("Roll I", "Control", &gain_roll_i, 100);
+        createTrackbar("Roll D", "Control", &gain_roll_d, 3000);
         createTrackbar("Pitch Pos", "Control", &gain_pitch_pos, 3000);
         createTrackbar("Pitch Vel", "Control", &gain_pitch_vel, 2000);
         createTrackbar("Pitch Acc", "Control", &gain_pitch_acc, 100);
         createTrackbar("Pitch I", "Control", &gain_pitch_i, 100);
+        createTrackbar("Pitch D", "Control", &gain_pitch_d, 3000);
         createTrackbar("pid_max_angle_scaler", "Control", &pid_max_angle_scaler, 16);
-
-
     }
 
     hoverthrottle = dparams.initial_hover_throttle;
@@ -303,7 +304,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
             flight_submode_name = "";
         }
 
-        calc_pid_error(data_drone,setpoint_pos,setpoint_vel,setpoint_acc);
+        calc_pid_error(data_drone,setpoint_pos,setpoint_vel,setpoint_acc,time);
         control_pid(data_drone);
 
         //check if we can go back to burning:
@@ -337,7 +338,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
 
         landing_setpoint_height = setpoint_pos.y; //only for status feedback for dronenavigation
 
-        calc_pid_error(data_drone,setpoint_pos,setpoint_vel,setpoint_acc);
+        calc_pid_error(data_drone,setpoint_pos,setpoint_vel,setpoint_acc,time);
         control_pid(data_drone);
 
         break;
@@ -717,7 +718,18 @@ void DroneController::approx_effective_thrust(track_data data_drone, cv::Point3f
     drone_vel_after_takeoff = integrated_vel2 * 1.15f; // TODO determine magical battery healt factor :(
 }
 
-void DroneController::calc_pid_error(track_data data_drone, cv::Point3f setpoint_pos,cv::Point3f setpoint_vel,cv::Point3f setpoint_acc) {
+void DroneController::calc_pid_error(track_data data_drone, cv::Point3f setpoint_pos,cv::Point3f setpoint_vel,cv::Point3f setpoint_acc, double time) {
+
+    float time_since_takeoff = static_cast<float>(time - start_takeoff_burn_time) - transmission_delay_duration;
+    if (!data_drone.vel_valid && time_since_takeoff < 0.5f) {
+        //assume an initial velocity of burn_direction * burn_duration  * thrust
+        data_drone.state.vel = (_burn_direction_for_thrust_approx * thrust)* auto_burn_duration - time_since_takeoff * cv::Point3f(0,GRAVITY,0);
+    }
+
+    accErrX_prev = accErrX;
+    accErrY_prev = accErrY;
+    accErrZ_prev = accErrZ;
+
     // Roll Control - X
     posErrX = data_drone.sposX - setpoint_pos.x;              // position error
     if (posErrX>3.0f)
@@ -758,22 +770,27 @@ void DroneController::calc_pid_error(track_data data_drone, cv::Point3f setpoint
 
 void DroneController::control_pid(track_data data_drone) {
     //update integrators
-    if (fabs(posErrZ)<integratorThresholdDistance)
-        throttleErrI += velErrY; //posErrY;
+    if (fabs(posErrY)<integratorThresholdDistance)
+        throttleErrI += posErrY;
+    else
+        throttleErrI /= 1.05f;
     if (fabs(posErrX)<integratorThresholdDistance)
         rollErrI += posErrX;
+    else
+        rollErrI /= 1.05f;
     if (fabs(posErrZ)<integratorThresholdDistance)
         pitchErrI += posErrZ;
-
+    else
+        pitchErrI /= 1.05f;
 
     static float att2throttle_gain_scale = 1;
     float pid_roll,pid_pitch,pid_throttle;
 
-    pid_throttle =   -(accErrY * gain_throttle_acc + throttleErrI * gain_throttle_i*0.1f);
+    pid_throttle =   -(accErrY * gain_throttle_acc + throttleErrI * gain_throttle_i - (accErrY_prev - accErrY) * gain_throttle_d);
     if (dparams.mode3d)
         pid_throttle /=2; // with mode 3d the range is divided in two halfs. One up and one down.
     pid_throttle += initial_hover_throttle_guess();
-    pid_roll =  accErrX * gain_roll_acc/att2throttle_gain_scale;
+    pid_roll =  accErrX * gain_roll_acc/att2throttle_gain_scale - (accErrX_prev - accErrX) * gain_roll_d/att2throttle_gain_scale;
 
     float depth_gain = 1;
     if (-data_drone.sposZ - 2 > 0) // if further then 2 meters
@@ -781,10 +798,10 @@ void DroneController::control_pid(track_data data_drone) {
     else // closer then 2 meters, do nothing:
         depth_gain = 1;
 
-    pid_pitch = accErrZ * gain_pitch_acc/att2throttle_gain_scale/depth_gain;
+    pid_pitch = accErrZ * gain_pitch_acc/att2throttle_gain_scale/depth_gain - (accErrZ_prev - accErrZ) * gain_pitch_d/att2throttle_gain_scale;
 
-    pid_roll    += (gain_roll_i*rollErrI);
-    pid_pitch   += (gain_pitch_i*pitchErrI);
+    pid_roll    += (gain_roll_i*rollErrI)/att2throttle_gain_scale;
+    pid_pitch   += (gain_pitch_i*pitchErrI)/att2throttle_gain_scale;
 
     //TMP fix for lacking control law handling of > 90 degree bank angle assuming BF angle limit 180
     float pid_angle_range = JOY_BOUND_RANGE/pid_max_angle_scaler;
@@ -810,9 +827,9 @@ void DroneController::control_pid(track_data data_drone) {
     pid_throttle = std::clamp(pid_throttle,static_cast<float>(min_bound_throttle()),static_cast<float>(JOY_BOUND_MAX));
 
     att_angle = (att_angle/(0.5f*JOY_BOUND_RANGE))*M_PIf32;
-    att2throttle_gain_scale = abs(1.f/cosf(att_angle));
+    att2throttle_gain_scale = abs(1.f/cosf(att_angle))*tmptbf;
     float angle_comp = (pid_throttle-min_bound_throttle())*att2throttle_gain_scale-(pid_throttle-min_bound_throttle());
-    pid_throttle += angle_comp*tmptbf;
+    pid_throttle += angle_comp;
 
     //make sure props don't stop:
     pid_throttle = std::clamp(pid_throttle,static_cast<float>(min_bound_throttle()),static_cast<float>(JOY_BOUND_MAX));
@@ -971,14 +988,17 @@ void DroneController::deserialize_settings() {
     gain_throttle_vel = params.gain_throttle_vel.value();
     gain_throttle_acc = params.gain_throttle_acc.value();
     gain_throttle_i = params.gain_throttle_i.value();
+    gain_throttle_d = params.gain_throttle_d.value();
     gain_roll_pos = params.gain_roll_pos.value();
     gain_roll_vel = params.gain_roll_vel.value();
     gain_roll_acc = params.gain_roll_acc.value();
     gain_roll_i = params.gain_roll_i.value();
+    gain_roll_d = params.gain_roll_d.value();
     gain_pitch_pos = params.gain_pitch_pos.value();
     gain_pitch_vel = params.gain_pitch_vel.value();
     gain_pitch_acc = params.gain_pitch_acc.value();
     gain_pitch_i = params.gain_pitch_i.value();
+    gain_pitch_d = params.gain_pitch_d.value();
 }
 
 void DroneController::serialize_settings() {
@@ -987,14 +1007,17 @@ void DroneController::serialize_settings() {
     params.gain_throttle_vel = gain_throttle_vel;
     params.gain_throttle_acc = gain_throttle_acc;
     params.gain_throttle_i = gain_throttle_i;
+    params.gain_throttle_d = gain_throttle_d;
     params.gain_roll_pos = gain_roll_pos;
     params.gain_roll_vel = gain_roll_vel;
     params.gain_roll_acc = gain_roll_acc;
     params.gain_roll_i = gain_roll_i;
+    params.gain_roll_d = gain_roll_d;
     params.gain_pitch_pos = gain_pitch_pos;
     params.gain_pitch_vel = gain_pitch_vel;
     params.gain_pitch_acc = gain_pitch_acc;
     params.gain_pitch_i = gain_pitch_i;
+    params.gain_pitch_d = gain_pitch_d;
 
     std::string xmlData = params.toXML();
     std::ofstream outfile = std::ofstream (settings_file);

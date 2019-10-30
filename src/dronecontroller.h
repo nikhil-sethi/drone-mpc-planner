@@ -82,9 +82,9 @@ public:
     };
 private:
 
-    int gain_throttle_pos,gain_throttle_vel,gain_throttle_acc,gain_throttle_i;
-    int gain_roll_pos,gain_roll_vel,gain_roll_acc,gain_roll_i;
-    int gain_pitch_pos,gain_pitch_vel,gain_pitch_acc,gain_pitch_i;
+    int gain_throttle_pos,gain_throttle_vel,gain_throttle_acc,gain_throttle_i,gain_throttle_d;
+    int gain_roll_pos,gain_roll_vel,gain_roll_acc,gain_roll_i,gain_roll_d;
+    int gain_pitch_pos,gain_pitch_vel,gain_pitch_acc,gain_pitch_i,gain_pitch_d;
 
     double spin_up_start_time = 0;
     double start_takeoff_burn_time = 0;
@@ -92,9 +92,9 @@ private:
     class ControlParameters: public xmls::Serializable
     {
     public:
-        xmls::xInt gain_throttle_pos,gain_throttle_vel,gain_throttle_acc,gain_throttle_i;
-        xmls::xInt gain_roll_pos,gain_roll_vel,gain_roll_acc,gain_roll_i;
-        xmls::xInt gain_pitch_pos,gain_pitch_vel,gain_pitch_acc,gain_pitch_i;
+        xmls::xInt gain_throttle_pos,gain_throttle_vel,gain_throttle_acc,gain_throttle_i,gain_throttle_d;
+        xmls::xInt gain_roll_pos,gain_roll_vel,gain_roll_acc,gain_roll_i,gain_roll_d;
+        xmls::xInt gain_pitch_pos,gain_pitch_vel,gain_pitch_acc,gain_pitch_i,gain_pitch_d;
 
         ControlParameters() {
             // Set the XML class name.
@@ -102,21 +102,24 @@ private:
             setClassName("ControlParameters");
 
             // Set class version
-            setVersion("1.0");
+            setVersion("1.1");
 
             // Register members. Like the class name, member names can differ from their xml depandants
             Register("gain_throttle_pos", &gain_throttle_pos);
             Register("gain_throttle_vel", &gain_throttle_vel);
             Register("gain_throttle_acc", &gain_throttle_acc);
             Register("gain_throttle_i", &gain_throttle_i);
+            Register("gain_throttle_d", &gain_throttle_d);
             Register("gain_roll_pos", &gain_roll_pos);
             Register("gain_roll_vel", &gain_roll_vel);
             Register("gain_roll_acc", &gain_roll_acc);
             Register("gain_roll_i", &gain_roll_i);
+            Register("gain_roll_d", &gain_roll_d);
             Register("gain_pitch_pos", &gain_pitch_pos);
             Register("gain_pitch_vel", &gain_pitch_vel);
             Register("gain_pitch_acc", &gain_pitch_acc);
             Register("gain_pitch_i", &gain_pitch_i);
+            Register("gain_pitch_d", &gain_pitch_d);
         }
     };
 
@@ -168,7 +171,7 @@ private:
     cv::Point3f drone_vel_after_takeoff = {0};
     float ground_effect = 1.0f;
     const float lift_off_dist_take_off_aim = 0.02f;
-    const float take_off_burn_duration = 0.11f;
+    const float take_off_burn_duration = 0.10f;
 
     double take_off_start_time = 0;
     double interception_start_time = 0;
@@ -204,7 +207,7 @@ private:
 
     std::tuple<float,float> acc_to_deg(cv::Point3f acc);
 
-    void calc_pid_error(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, cv::Point3f setpoint_acc);
+    void calc_pid_error(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, cv::Point3f setpoint_acc, double time);
     void control_pid(track_data state_drone);
 
     MultiModule * _rc;
@@ -371,6 +374,7 @@ public:
     float posErrX,posErrY,posErrZ;
     float velErrX,velErrY,velErrZ;
     float accErrX,accErrY,accErrZ;
+    float accErrX_prev,accErrY_prev,accErrZ_prev;
     float velx_sp,vely_sp,velz_sp;
     float accx_sp,accy_sp,accz_sp;
 
