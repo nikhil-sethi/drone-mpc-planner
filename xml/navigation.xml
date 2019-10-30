@@ -1,8 +1,5 @@
-<SerializableClass Type="navigationParameters" Version="1.0">
+<SerializableClass Type="navigationParameters" Version="1.1">
     <Member Name="distance_threshold_f">1</Member>
-    <Member Name="setpoint_slider_X">0</Member>
-    <Member Name="setpoint_slider_Y">600</Member>
-    <Member Name="setpoint_slider_Z">1000</Member>
     <Member Name="land_incr_f_mm"></Member>
     <Member Name="autoLandThrottleDecreaseFactor"></Member>
     <Member Name="time_out_after_landing">0</Member>
