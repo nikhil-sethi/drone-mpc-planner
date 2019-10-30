@@ -285,7 +285,7 @@ void Cam::init() {
 
 CameraVolume Cam::def_volume (){
 
-    float b_depth, b_ground;
+    float b_ground;
 
     cv::Point3f point_left_top, point_right_top, point_left_bottom, point_right_bottom;
     cv::Point3f point_back_left1,point_back_left2, point_back_left3;
@@ -327,7 +327,6 @@ CameraVolume Cam::def_volume (){
             }
         }
     }
-    b_depth = -z_sum/n;
 
     CameraVolume camVol;
     camVol.init(point_left_top, point_right_top, point_left_bottom, point_right_bottom,
