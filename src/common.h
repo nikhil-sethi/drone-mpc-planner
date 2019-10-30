@@ -104,14 +104,10 @@ static const char* video_mode_str[] = {"video_disabled",
 enum rc_type {
     rc_none = 0,
     rc_devo,
-    rc_usb_hobbyking,
-    rc_playstation,
     rc_xlite
 };
 static const char* rc_type_str[] = {"rc_none",
     "rc_devo",
-    "rc_usb_hobbyking",
-    "rc_playstation",
     "rc_xlite"
     "" // must be the last entry! (check in serializer)
 };
