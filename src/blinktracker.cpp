@@ -88,12 +88,8 @@ void BlinkTracker::track(double time) {
 }
 
 BlinkTracker::blinking_drone_states BlinkTracker::detect_blink(double time, bool found) {
-    auto td = Last_track_data();
-    if (td.vel_valid)
-        std::cout << norm (td.vel()) << std::endl;
     if (Last_track_data().vel_valid && norm(Last_track_data().vel()) > 0.3)
         return bds_restart_search;
-
     float blink_period = static_cast<float>(time - blink_time_start);
     if (found) {
         if ( blink_period > dparams.blink_period - 0.1f && blink_period < dparams.blink_period+0.1f) {
