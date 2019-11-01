@@ -205,10 +205,18 @@ private:
     void draw_viz(state_data state_drone, state_data state_target, double time, cv::Point3f burn_direction, float burn_duration, float remaining_aim_duration, std::vector<state_data> traj);
     bool trajectory_in_view(std::vector<state_data> traj, CameraVolume::volume_check_mode c);
 
+
     std::tuple<float,float> acc_to_deg(cv::Point3f acc);
 
     void calc_pid_error(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, cv::Point3f setpoint_acc, double time);
     void control_pid(track_data state_drone);
+
+    cv::Point3f posErr_P, posErr_I, posErr_D;
+    int Pposx, Pposy, Pposz, Iposx, Iposy, Iposz, Dposx, Dposy, Dposz;
+    PT1f filerPosErrX, filerPosErrY, filerPosErrZ;
+    Df dErrX, dErrY, dErrZ;
+    void control_modelBased(track_data data_drone, cv::Point3f setpoint_pos);
+    std::tuple<int,int,int> calc_feedforward_control(cv::Point3f desired_acceleration);
 
     MultiModule * _rc;
     DroneTracker * _dtrk;
@@ -361,6 +369,12 @@ public:
         pitch /= static_cast<float>(JOY_BOUND_MAX - JOY_BOUND_MIN);
         return pitch;
     }
+    /** @brief Determines the corresponding roll/pitch angle for a given command */
+    float angle_of_command(int command){
+        command -= JOY_MIDDLE;
+        float commandf = static_cast<float>(command)/static_cast<float>(JOY_BOUND_MAX - JOY_BOUND_MIN);
+        return commandf*max_bank_angle;
+    };
 
     float hoverthrottle;
 

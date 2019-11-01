@@ -5,6 +5,11 @@
 #include <sys/stat.h>
 #include <chrono>
 
+
+template <typename T> int sign(T val) {
+    return (T(0) < val) - (val < T(0));
+}
+
 void CameraVolume::init(cv::Point3f point_left_top, cv::Point3f point_right_top, cv::Point3f point_left_bottom, cv::Point3f point_right_bottom,
                         cv::Point3f point_back_left1, cv::Point3f point_back_left2, cv::Point3f point_back_left3,
                         cv::Point3f point_back_right1, cv::Point3f point_back_right2, cv::Point3f point_back_right3, float b_height){
@@ -436,7 +441,7 @@ int seconds_since_file_creation(std::string file_path)
     return static_cast<int>(diff);
 }
 
-int get_drone_id(std::string s){
+int get_drone_id(std::string s){ //TODO: refactor. And not a common function to start with
     uint len = s.length ();
     bool only_numbers = true;
 
@@ -454,4 +459,5 @@ int get_drone_id(std::string s){
     return -1;
 }
 
+float normf(cv::Point3f m) { return static_cast<float>(cv::norm(m));}
 

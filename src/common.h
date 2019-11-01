@@ -9,6 +9,7 @@
 #include <iostream>
 #include <fstream>
 
+template <typename T> int sign(T val);
 cv::Point2f world2im_2d(cv::Point3f p, cv::Mat Qfi, float camera_angle);
 cv::Point3f world2im_3d(cv::Point3f p, cv::Mat Qfi, float camera_angle);
 cv::Point3f im2world(cv::Point2f p_im, float disparity, cv::Mat Qf, float camera_angle);
@@ -25,6 +26,9 @@ int seconds_since_file_creation(std::string file_path);
 /** @brief If the string holds an drone id (number between 0 and 9) that number is returned.
  * If not, return -1. */
 int get_drone_id(std::string s);
+
+
+float normf(cv::Point3f m);// { return static_cast<float>(cv::norm(m));}
 
 const float FOV = 180.0f ;
 const float FOV_size = 1280.0;
@@ -138,6 +142,53 @@ static const char* drone_type_str[] = {"drone_none",
     "drone_tinywhoop_d8",
     "drone_cx10",
     "" // must be the last entry! (check in serializer)
+};
+
+class PT1f{
+    private:
+        float y;
+        float sample_time;
+        float time_constant_factor;
+        float K;
+    public:
+        void init(float init_sample_time, float init_K, float init_time_constant){
+            sample_time = init_sample_time;
+            time_constant_factor = 1 / (init_time_constant/sample_time +1); //https://de.wikipedia.org/wiki/PT1-Glied
+            K = init_K;
+            y = 0;
+        }
+
+        void reset(float y0){
+            y = y0;
+        }
+
+        float new_sample(float input){
+            y = time_constant_factor*(K*input - y) + y; //https://de.wikipedia.org/wiki/PT1-Glied
+            return y;
+        }
+};
+
+class Df{
+    private:
+    float y;
+    float u_prev;
+    float sample_time;
+
+public:
+    void init(float init_sample_time){
+        sample_time = init_sample_time;
+        u_prev = 0;
+    }
+
+    void preset(float input0){
+        u_prev = input0;
+    }
+
+    float new_sample(float input){
+        y = (input-u_prev)/sample_time;
+        u_prev = input;
+        return y;
+    }
 };
 
 class CameraVolume{

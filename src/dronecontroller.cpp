@@ -30,6 +30,16 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     // Load saved control paremeters
     deserialize_settings();
 
+    Pposx = 15;
+    Pposy = 10;
+    Pposz = 10;
+    Iposx = 0;
+    Iposy = 0;
+    Iposz = 0;
+    Dposx = 0;
+    Dposy = 1;
+    Dposz = 1;
+
     if (pparams.control_tuning) {
         std::cout << "Creating control tuning window." << std::endl;
         // create GUI to set control parameters
@@ -50,9 +60,24 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
         createTrackbar("Pitch I", "Control", &gain_pitch_i, 100);
         createTrackbar("Pitch D", "Control", &gain_pitch_d, 3000);
         createTrackbar("pid_max_angle_scaler", "Control", &pid_max_angle_scaler, 16);
+        createTrackbar("Pposx", "Control", &Pposx, 30);
+        createTrackbar("Pposy", "Control", &Pposy, 30);
+        createTrackbar("Pposz", "Control", &Pposz, 30);
+        createTrackbar("Iposx", "Control", &Iposx, 1000);
+        createTrackbar("Iposy", "Control", &Iposy, 1000);
+        createTrackbar("Iposz", "Control", &Iposz, 1000);
+        createTrackbar("Dposx", "Control", &Dposx, 100);
+        createTrackbar("Dposy", "Control", &Dposy, 100);
+        createTrackbar("Dposz", "Control", &Dposz, 100);
     }
 
     hoverthrottle = dparams.initial_hover_throttle;
+    filerPosErrX.init(1.f/pparams.fps, 1, 1.f/pparams.fps);
+    filerPosErrY.init(1.f/pparams.fps, 1, 1.f/pparams.fps);
+    filerPosErrZ.init(1.f/pparams.fps, 1, 1.f/pparams.fps);
+    dErrX.init (1.f/pparams.fps);
+    dErrY.init (1.f/pparams.fps);
+    dErrZ.init (1.f/pparams.fps);
     initialized = true;
 }
 
@@ -286,6 +311,14 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         pitchErrI = 0;
         throttleErrI = 0;
         _flight_mode = fm_flying_pid;
+
+        dErrX.preset(setpoint_pos.x - data_drone.state.pos.x);
+        dErrY.preset(setpoint_pos.y - data_drone.state.pos.y);
+        dErrZ.preset(setpoint_pos.z - data_drone.state.pos.z);
+        filerPosErrX.reset (setpoint_pos.x - data_drone.state.pos.x);
+        filerPosErrY.reset (setpoint_pos.y - data_drone.state.pos.y);
+        filerPosErrZ.reset (setpoint_pos.z - data_drone.state.pos.z);
+
         [[fallthrough]];
     } case fm_flying_pid: {
         //check whether the braking distance is large enough to stay in the frame
@@ -306,6 +339,9 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
 
         calc_pid_error(data_drone,setpoint_pos,setpoint_vel,setpoint_acc,time);
         control_pid(data_drone);
+
+	//TODO: streamline. Below replaces old control_pid stuff
+        control_modelBased(data_drone, setpoint_pos);
 
         //check if we can go back to burning:
         if (data_drone.pos_valid && data_drone.vel_valid && _joy_state!=js_waypoint){
@@ -340,6 +376,9 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
 
         calc_pid_error(data_drone,setpoint_pos,setpoint_vel,setpoint_acc,time);
         control_pid(data_drone);
+
+	//TODO: streamline. Below replaces old control_pid stuff
+        control_modelBased(data_drone, setpoint_pos);
 
         break;
     } case fm_disarmed: {
@@ -842,6 +881,87 @@ void DroneController::control_pid(track_data data_drone) {
     auto_throttle = roundf(pid_throttle_smoother.addSample(pid_throttle));
 
 }
+
+std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f desired_acceleration) {
+
+    // Determine the required acceleration for the drone
+    cv::Point3f req_acc = desired_acceleration + cv::Point3f(0,GRAVITY,0);
+    cv::Point3f dir_req_acc = req_acc/norm(req_acc);
+    cv::Point3f direction = dir_req_acc;
+
+    // If the magnitude of the required acceleration is to high apply the maximal magnitude
+    // and find the direction which still applies the correct direction.
+    if(normf(req_acc)>thrust){
+        req_acc *= thrust/normf(req_acc);
+        direction = req_acc/normf(req_acc);
+
+        cv::Point3f res_acc, dir_res_acc;
+        float angle_err;
+
+        // Iterative approximate the acceleration needed to find the target acceleration vector:
+        for (int i = 0; i < 100; i++) {
+            res_acc = direction*norm(req_acc) - cv::Point3f(0,GRAVITY,0);
+            dir_res_acc = res_acc/norm(res_acc);
+
+            angle_err = dir_res_acc.dot(dir_req_acc); //=cos(angle-err)
+
+            if(angle_err>0.9998f){ //0.9998 error corresponds 1 deg
+                break;
+            } else {
+                direction -= dir_res_acc - dir_req_acc;
+                direction /= norm(direction);
+            }
+        }
+    }
+
+    // .. and then calc throttle control:
+    int throttle = normf(req_acc)/thrust * (JOY_BOUND_RANGE) + JOY_BOUND_MIN;
+
+    auto [roll_deg, pitch_deg] = acc_to_deg(direction);
+
+    int roll =  ((roll_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN; // convert to RC commands range
+    int pitch = ((pitch_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN;
+
+    return std::make_tuple(roll,pitch,throttle);
+}
+
+void DroneController::control_modelBased(track_data data_drone, cv::Point3f setpoint_pos){
+
+    // Set the control target:
+    float target_speed = 0;
+
+    // Speed gains;
+    float KP_speed = 1;
+
+    // Determine state errors:
+    float errXfiltered = filerPosErrX.new_sample(setpoint_pos.x - data_drone.state.pos.x);
+    float errYfiltered = filerPosErrY.new_sample(setpoint_pos.y - data_drone.state.pos.y);
+    float errZfiltered = filerPosErrZ.new_sample(setpoint_pos.z - data_drone.state.pos.z);
+    posErr_P = {errXfiltered, errYfiltered, errZfiltered};
+    posErr_I += posErr_P;
+
+    float errDx = dErrX.new_sample (errXfiltered);
+    float errDy = dErrY.new_sample (errYfiltered);
+    float errDz = dErrZ.new_sample (errZfiltered);
+    posErr_D = {errDx, errDy, errDz};
+
+     // Anti-Wind-Up-Handling:
+    // Integrator error is counter acting to the current error:
+    // ..
+
+    //Determine the acceleration direction as PID-filtered postion error:
+    cv::Point3f desired_acceleration;
+    desired_acceleration.x = (Pposx*posErr_P.x + static_cast<float>(Iposx)/1000.f*posErr_I.x + Dposx*posErr_D.x);
+    desired_acceleration.y = (Pposy*posErr_P.y + static_cast<float>(Iposy)/1000.f*posErr_I.y + Dposy*posErr_D.y);
+    desired_acceleration.z = (Pposz*posErr_P.z + static_cast<float>(Iposz)/1000.f*posErr_I.z + Dposz*posErr_D.z);
+
+    desired_acceleration += KP_speed*target_speed*desired_acceleration/norm(desired_acceleration);
+
+    // Determine the control outputs based on feed-forward calculations:
+    std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(desired_acceleration);
+
+}
+
 
 void DroneController::readJoystick(void) {
     while (joystick.sample(&event))
