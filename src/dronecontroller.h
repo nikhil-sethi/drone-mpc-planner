@@ -95,6 +95,9 @@ private:
         xmls::xInt gain_throttle_pos,gain_throttle_vel,gain_throttle_acc,gain_throttle_i,gain_throttle_d;
         xmls::xInt gain_roll_pos,gain_roll_vel,gain_roll_acc,gain_roll_i,gain_roll_d;
         xmls::xInt gain_pitch_pos,gain_pitch_vel,gain_pitch_acc,gain_pitch_i,gain_pitch_d;
+        xmls::xInt p_pos_roll,p_pos_pitch,p_pos_throttle;
+        xmls::xInt i_pos_roll,i_pos_pitch,i_pos_throttle;
+        xmls::xInt d_pos_roll,d_pos_pitch,d_pos_throttle;
 
         ControlParameters() {
             // Set the XML class name.
@@ -102,7 +105,7 @@ private:
             setClassName("ControlParameters");
 
             // Set class version
-            setVersion("1.1");
+            setVersion("1.2");
 
             // Register members. Like the class name, member names can differ from their xml depandants
             Register("gain_throttle_pos", &gain_throttle_pos);
@@ -120,6 +123,20 @@ private:
             Register("gain_pitch_acc", &gain_pitch_acc);
             Register("gain_pitch_i", &gain_pitch_i);
             Register("gain_pitch_d", &gain_pitch_d);
+
+            Register("p_pos_roll", &p_pos_roll);
+            Register("p_pos_pitch", &p_pos_pitch);
+            Register("p_pos_throttle", &p_pos_throttle);
+
+            Register("i_pos_roll", &i_pos_roll);
+            Register("i_pos_pitch", &i_pos_pitch);
+            Register("i_pos_throttle", &i_pos_throttle);
+
+            Register("d_pos_roll", &d_pos_roll);
+            Register("d_pos_pitch", &d_pos_pitch);
+            Register("d_pos_throttle", &d_pos_throttle);
+
+
         }
     };
 
@@ -212,7 +229,7 @@ private:
     void control_pid(track_data state_drone);
 
     cv::Point3f posErr_P, posErr_I, posErr_D;
-    int Pposx, Pposy, Pposz, Iposx, Iposy, Iposz, Dposx, Dposy, Dposz;
+    int p_pos_roll, p_pos_throttle, p_pos_pitch, i_pos_roll, i_pos_throttle, i_pos_pitch, d_pos_roll, d_pos_throttle, d_pos_pitch;
     PT1f filerPosErrX, filerPosErrY, filerPosErrZ;
     Df dErrX, dErrY, dErrZ;
     void control_modelBased(track_data data_drone, cv::Point3f setpoint_pos);

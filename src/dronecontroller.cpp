@@ -30,45 +30,35 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     // Load saved control paremeters
     deserialize_settings();
 
-    Pposx = 15;
-    Pposy = 10;
-    Pposz = 10;
-    Iposx = 0;
-    Iposy = 0;
-    Iposz = 0;
-    Dposx = 0;
-    Dposy = 1;
-    Dposz = 1;
-
     if (pparams.control_tuning) {
         std::cout << "Creating control tuning window." << std::endl;
         // create GUI to set control parameters
         namedWindow("Control", WINDOW_NORMAL);
-        createTrackbar("Throttle Pos", "Control", &gain_throttle_pos, 3000);
-        createTrackbar("Throttle Vel", "Control", &gain_throttle_vel, 3000);
-        createTrackbar("Throttle Acc", "Control", &gain_throttle_acc, 3000);
-        createTrackbar("Throttle I", "Control", &gain_throttle_i, 100);
-        createTrackbar("Throttle D", "Control", &gain_throttle_d, 3000);
-        createTrackbar("Roll Pos", "Control", &gain_roll_pos, 3000);
-        createTrackbar("Roll Vel", "Control", &gain_roll_vel, 2000);
-        createTrackbar("Roll Acc", "Control", &gain_roll_acc, 100);
-        createTrackbar("Roll I", "Control", &gain_roll_i, 100);
-        createTrackbar("Roll D", "Control", &gain_roll_d, 3000);
-        createTrackbar("Pitch Pos", "Control", &gain_pitch_pos, 3000);
-        createTrackbar("Pitch Vel", "Control", &gain_pitch_vel, 2000);
-        createTrackbar("Pitch Acc", "Control", &gain_pitch_acc, 100);
-        createTrackbar("Pitch I", "Control", &gain_pitch_i, 100);
-        createTrackbar("Pitch D", "Control", &gain_pitch_d, 3000);
+//        createTrackbar("Throttle Pos", "Control", &gain_throttle_pos, 3000);
+//        createTrackbar("Throttle Vel", "Control", &gain_throttle_vel, 3000);
+//        createTrackbar("Throttle Acc", "Control", &gain_throttle_acc, 3000);
+//        createTrackbar("Throttle I", "Control", &gain_throttle_i, 100);
+//        createTrackbar("Throttle D", "Control", &gain_throttle_d, 3000);
+//        createTrackbar("Roll Pos", "Control", &gain_roll_pos, 3000);
+//        createTrackbar("Roll Vel", "Control", &gain_roll_vel, 2000);
+//        createTrackbar("Roll Acc", "Control", &gain_roll_acc, 100);
+//        createTrackbar("Roll I", "Control", &gain_roll_i, 100);
+//        createTrackbar("Roll D", "Control", &gain_roll_d, 3000);
+//        createTrackbar("Pitch Pos", "Control", &gain_pitch_pos, 3000);
+//        createTrackbar("Pitch Vel", "Control", &gain_pitch_vel, 2000);
+//        createTrackbar("Pitch Acc", "Control", &gain_pitch_acc, 100);
+//        createTrackbar("Pitch I", "Control", &gain_pitch_i, 100);
+//        createTrackbar("Pitch D", "Control", &gain_pitch_d, 3000);
         createTrackbar("pid_max_angle_scaler", "Control", &pid_max_angle_scaler, 16);
-        createTrackbar("Pposx", "Control", &Pposx, 30);
-        createTrackbar("Pposy", "Control", &Pposy, 30);
-        createTrackbar("Pposz", "Control", &Pposz, 30);
-        createTrackbar("Iposx", "Control", &Iposx, 1000);
-        createTrackbar("Iposy", "Control", &Iposy, 1000);
-        createTrackbar("Iposz", "Control", &Iposz, 1000);
-        createTrackbar("Dposx", "Control", &Dposx, 100);
-        createTrackbar("Dposy", "Control", &Dposy, 100);
-        createTrackbar("Dposz", "Control", &Dposz, 100);
+        createTrackbar("Pposx", "Control", &p_pos_roll, 3000);
+        createTrackbar("Pposz", "Control", &p_pos_pitch, 3000);
+        createTrackbar("Pposy", "Control", &p_pos_throttle, 3000);
+        createTrackbar("Iposx", "Control", &i_pos_roll, 1000);
+        createTrackbar("Iposz", "Control", &i_pos_pitch, 1000);
+        createTrackbar("Iposy", "Control", &i_pos_throttle, 1000);
+        createTrackbar("Dposx", "Control", &d_pos_roll, 1000);
+        createTrackbar("Dposz", "Control", &d_pos_pitch, 1000);
+        createTrackbar("Dposy", "Control", &d_pos_throttle, 1000);
     }
 
     hoverthrottle = dparams.initial_hover_throttle;
@@ -323,24 +313,24 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
     } case fm_flying_pid: {
         //check whether the braking distance is large enough to stay in the frame
         // if not change the setpoint for the controller
-        float remaining_breaking_distance = _camvol->calc_distance_to_borders (data_drone);
-        remaining_breaking_distance -= static_cast<float>(norm(data_drone.vel()))*(1.f/60.f); // Also consider the time till the next check
-        float required_breaking_time = static_cast<float>(norm(data_drone.vel() )) / thrust;
+//        float remaining_breaking_distance = _camvol->calc_distance_to_borders (data_drone);
+//        remaining_breaking_distance -= static_cast<float>(norm(data_drone.vel()))*(1.f/60.f); // Also consider the time till the next check
+//        float required_breaking_time = static_cast<float>(norm(data_drone.vel() )) / thrust;
 
-        float required_breaking_distance = static_cast<float>(.5L*thrust*pow(required_breaking_time, 2));
-        if(remaining_breaking_distance<=required_breaking_distance && _joy_state!=js_waypoint ){
-            setpoint_pos = data_drone.pos ();
-            setpoint_vel = data_drone.vel ();
-            setpoint_acc = {0};
-            flight_submode_name = "fm_pid_keep_in_volume";
-        } else {
-            flight_submode_name = "";
-        }
+//        float required_breaking_distance = static_cast<float>(.5L*thrust*pow(required_breaking_time, 2));
+//        if(remaining_breaking_distance<=required_breaking_distance && _joy_state!=js_waypoint ){
+//            setpoint_pos = data_drone.pos ();
+//            setpoint_vel = data_drone.vel ();
+//            setpoint_acc = {0};
+//            flight_submode_name = "fm_pid_keep_in_volume";
+//        } else {
+//            flight_submode_name = "";
+//        }
 
         calc_pid_error(data_drone,setpoint_pos,setpoint_vel,setpoint_acc,time);
         control_pid(data_drone);
 
-	//TODO: streamline. Below replaces old control_pid stuff
+        //TODO: streamline. Below replaces old control_pid stuff
         control_modelBased(data_drone, setpoint_pos);
 
         //check if we can go back to burning:
@@ -377,7 +367,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         calc_pid_error(data_drone,setpoint_pos,setpoint_vel,setpoint_acc,time);
         control_pid(data_drone);
 
-	//TODO: streamline. Below replaces old control_pid stuff
+        //TODO: streamline. Below replaces old control_pid stuff
         control_modelBased(data_drone, setpoint_pos);
 
         break;
@@ -945,15 +935,15 @@ void DroneController::control_modelBased(track_data data_drone, cv::Point3f setp
     float errDz = dErrZ.new_sample (errZfiltered);
     posErr_D = {errDx, errDy, errDz};
 
-     // Anti-Wind-Up-Handling:
+    // Anti-Wind-Up-Handling:
     // Integrator error is counter acting to the current error:
     // ..
 
     //Determine the acceleration direction as PID-filtered postion error:
     cv::Point3f desired_acceleration;
-    desired_acceleration.x = (Pposx*posErr_P.x + static_cast<float>(Iposx)/1000.f*posErr_I.x + Dposx*posErr_D.x);
-    desired_acceleration.y = (Pposy*posErr_P.y + static_cast<float>(Iposy)/1000.f*posErr_I.y + Dposy*posErr_D.y);
-    desired_acceleration.z = (Pposz*posErr_P.z + static_cast<float>(Iposz)/1000.f*posErr_I.z + Dposz*posErr_D.z);
+    desired_acceleration.x = ((p_pos_roll/100.f)*posErr_P.x + static_cast<float>(i_pos_roll)/1000.f*posErr_I.x + (d_pos_roll/100.f)*posErr_D.x);
+    desired_acceleration.y = ((p_pos_throttle/100.f)*posErr_P.y + static_cast<float>(i_pos_throttle)/1000.f*posErr_I.y + (d_pos_throttle/100.f)*posErr_D.y);
+    desired_acceleration.z = ((p_pos_pitch/100.f)*posErr_P.z + static_cast<float>(i_pos_pitch)/1000.f*posErr_I.z + (d_pos_pitch/100.f)*posErr_D.z);
 
     desired_acceleration += KP_speed*target_speed*desired_acceleration/norm(desired_acceleration);
 
@@ -1119,6 +1109,18 @@ void DroneController::deserialize_settings() {
     gain_pitch_acc = params.gain_pitch_acc.value();
     gain_pitch_i = params.gain_pitch_i.value();
     gain_pitch_d = params.gain_pitch_d.value();
+
+
+    p_pos_roll= params.p_pos_roll.value();
+    p_pos_pitch= params.p_pos_pitch.value();
+    p_pos_throttle= params.p_pos_throttle.value();
+    i_pos_roll= params.i_pos_roll.value();
+    i_pos_pitch= params.i_pos_pitch.value();
+    i_pos_throttle= params.i_pos_throttle.value();
+    d_pos_roll= params.d_pos_roll.value();
+    d_pos_pitch= params.d_pos_pitch.value();
+    d_pos_throttle= params.d_pos_throttle.value();
+
 }
 
 void DroneController::serialize_settings() {
@@ -1138,6 +1140,15 @@ void DroneController::serialize_settings() {
     params.gain_pitch_acc = gain_pitch_acc;
     params.gain_pitch_i = gain_pitch_i;
     params.gain_pitch_d = gain_pitch_d;
+    params.p_pos_roll = p_pos_roll;
+    params.p_pos_pitch = p_pos_pitch;
+    params.p_pos_throttle = p_pos_throttle;
+    params.i_pos_roll = i_pos_roll;
+    params.i_pos_pitch = i_pos_pitch;
+    params.i_pos_throttle = i_pos_throttle;
+    params.d_pos_roll = d_pos_roll;
+    params.d_pos_pitch = d_pos_pitch;
+    params.d_pos_throttle = d_pos_throttle;
 
     std::string xmlData = params.toXML();
     std::ofstream outfile = std::ofstream (settings_file);
