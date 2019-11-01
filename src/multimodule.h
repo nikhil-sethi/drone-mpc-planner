@@ -99,6 +99,10 @@ private:
     std::mutex g_lockData;
     std::mutex g_sendData;
 
+    bool send_init_package_now = false;
+    int _drone_id = 1;
+    uint init_package_nOK_cnt = 1;
+
     bool initialized = false;
     int notconnected;
     enum bound_enum{
@@ -121,6 +125,7 @@ private:
     void receive_data(void);
     void convert_channels(uint16_t *channels, unsigned char * packet);
     void zerothrottle();
+    void send_init_package();
 
 };
 

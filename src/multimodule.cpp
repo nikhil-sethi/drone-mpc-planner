@@ -1,6 +1,7 @@
 #include "multimodule.h"
 
 void MultiModule::init(int drone_id, bool fromfile) {
+    _drone_id = drone_id;
 
     if (dparams.tx == tx_none) {
         protocol = 0;
@@ -37,22 +38,24 @@ void MultiModule::init(int drone_id, bool fromfile) {
         if (notconnected && !fromfile) {
             throw my_exit("cannot connect the MultiModule");
         } else {
-
-            //send bind id to the multimodule. It must have this form: [66,67 mode3d,id2,id1,id0,68], otherwise the MM won't proceed.
-            unsigned char packet[7];
-            packet[0] = 66; //header 1
-            packet[1] = 67; //header 2
-            packet[2] = dparams.mode3d;
-            packet[3] = 0;  //id2...
-            packet[4] = 0; // id1
-            packet[5] = drone_id; //id0
-            packet[6] = 68; //header 3
-            RS232_SendBuf( static_cast<unsigned char*>( packet), 7);
-
+            send_init_package_now = true;
             thread_mm = std::thread(&MultiModule::worker_thread,this);
             initialized = true;
         }
     }
+}
+
+void MultiModule::send_init_package() {
+    //send bind id to the multimodule. It must have this form: [66,67 mode3d,id2,id1,id0,68], otherwise the MM won't proceed.
+    unsigned char packet[7];
+    packet[0] = 66; //header 1
+    packet[1] = 67; //header 2
+    packet[2] = dparams.mode3d;
+    packet[3] = 0;  //id2...
+    packet[4] = 0; // id1
+    packet[5] = _drone_id; //id0
+    packet[6] = 68; //header 3
+    RS232_SendBuf( static_cast<unsigned char*>( packet), 7);
 }
 
 void MultiModule::zerothrottle(){
@@ -72,35 +75,51 @@ void MultiModule::LED(bool value){
 void MultiModule::worker_thread(void) {
     std::cout << "Send multimodule thread started!" << std::endl;
     while (!exitSendThread) {
+
         receive_data();
 
-        if (cycles_until_bind > 0){
-            cycles_until_bind--;
-            if (cycles_until_bind ==0)
-                _bind = true;
-            arm_switch = JOY_MIN_THRESH;
-            zerothrottle();
-        }
-        if (cycles_until_bind < 0){
-            cycles_until_bind++;
-            if (cycles_until_bind == 0)
-                _bind = false;
-            arm_switch = JOY_MIN_THRESH;
-            zerothrottle();
-        }
-        if (_bind){
-            arm_switch = JOY_MIN_THRESH;
-            zerothrottle();
+        if (init_package_nOK_cnt) {
+            init_package_nOK_cnt++;
+            if (init_package_nOK_cnt > 5 * pparams.fps) {
+                std::cout << "MultiModule wouldn't receive init package within 10 seconds." << std::endl;
+                exit(1); // goal justifies the mean...
+            }
         }
 
-        g_lockData.lock();
-        send_data();
-        g_lockData.unlock();
-        if (_bind){
-            if (sw_bind.Read() > 20000)
-                _bind =false;
+        if (send_init_package_now){
+            usleep(100);
+            send_init_package();
+            send_init_package_now = false;
+            usleep(100);
+        } else {
+            if (cycles_until_bind > 0){
+                cycles_until_bind--;
+                if (cycles_until_bind ==0)
+                    _bind = true;
+                arm_switch = JOY_MIN_THRESH;
+                zerothrottle();
+            }
+            if (cycles_until_bind < 0){
+                cycles_until_bind++;
+                if (cycles_until_bind == 0)
+                    _bind = false;
+                arm_switch = JOY_MIN_THRESH;
+                zerothrottle();
+            }
+            if (_bind){
+                arm_switch = JOY_MIN_THRESH;
+                zerothrottle();
+            }
+
+            g_lockData.lock();
+            send_data();
+            g_lockData.unlock();
+            if (_bind){
+                if (sw_bind.Read() > 20000)
+                    _bind =false;
+            }
+            g_sendData.lock();
         }
-        g_sendData.lock();
     }
 }
 
@@ -183,20 +202,49 @@ void MultiModule::receive_data() {
         while (n)    {
             n = RS232_PollComport(inbuf,1);
             if (n > 0) {
-                tmp << inbuf[0];
+                if (inbuf[0]>0)
+                    tmp << inbuf[0];
                 totn += n;
             }
         }
         if (totn > 0 ) {
             received << tmp.str();
             std::string bufs = received.str();
-            if (bufs.find("cx10-initialized and bound!") != std::string::npos) {
-                bound = cx10_bound;
+            auto found = bufs.find("Multiprotocol version:") ;
+            if (found != std::string::npos) {
+                bufs.replace(found,1,"*");
                 received.clear();
+                received << bufs;
+                std::string current_firmware_version = bufs.substr(0, bufs.find(":"));
+                std::string required_firmwar_version = "1.4.0.1";
+                if (current_firmware_version != required_firmwar_version) {
+                    std::cout << "Detected wrong MultiModule firmware version! Detected: " << current_firmware_version << ". Required: "  << required_firmwar_version << "." << std::endl;
+                    exit(1); // goal justifies the mean...
+                }
             }
+            found = bufs.find("Specify bind ID...") ;
+            if (found != std::string::npos) {
+                bufs.replace(found,1,"*");
+                received.clear();
+                received << bufs;
+                send_init_package_now = true;
+            }
+            found = bufs.find("ID received:") ;
+            if (found != std::string::npos) {
+                bufs.replace(found,1,"*");
+                received.clear();
+                received << bufs;
+                std::cout << "Multimodule received init package!" << std::endl;
+                init_package_nOK_cnt = 0;
+            }
+
+            if (bufs.size() > 500) {
+                received.clear();
+                received << bufs.substr(250, bufs.size());
+            }
+
+
             std::cout << tmp.str()  << std::flush;
-        }else {
-            received.clear();
         }
     }
 }
