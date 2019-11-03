@@ -14,13 +14,16 @@
     <Member Name="gain_pitch_acc">16</Member>
     <Member Name="gain_pitch_i">3</Member>
     <Member Name="gain_pitch_d">122</Member>
-    <Member Name="p_pos_roll">1600</Member>
-    <Member Name="p_pos_pitch">1000</Member>
-    <Member Name="p_pos_throttle">225</Member>
-    <Member Name="i_pos_roll">5</Member>
-    <Member Name="i_pos_pitch">5</Member>
-    <Member Name="i_pos_throttle">15</Member>
-    <Member Name="d_pos_roll">400</Member>
-    <Member Name="d_pos_pitch">159</Member>
-    <Member Name="d_pos_throttle">300</Member>
+    <Member Name="kp_pos_roll">1000</Member>
+    <Member Name="kp_pos_pitch">660</Member>
+    <Member Name="kp_pos_throttle">704</Member>
+    <Member Name="ki_pos_roll">5</Member>
+    <Member Name="ki_pos_pitch">5</Member>
+    <Member Name="ki_pos_throttle">60</Member>
+    <Member Name="kd_pos_roll">431</Member>
+    <Member Name="kd_pos_pitch">150</Member>
+    <Member Name="kd_pos_throttle">300</Member>
+    <Member Name="kp_v_roll">0</Member>
+    <Member Name="kp_v_pitch">0</Member>
+    <Member Name="kp_v_throttle">0</Member>
 </SerializableClass>
