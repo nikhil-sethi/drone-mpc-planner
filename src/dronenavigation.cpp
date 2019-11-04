@@ -21,7 +21,28 @@ void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, Dro
     //Farther away from the camera is negative Z, positive Z should be impossible because the camera can't see that.
 
     //The flight plan will be repeated indefinetely, unless there is a landing waypoint somewhere in the list.
-    setpoints.push_back(waypoint(cv::Point3f(0,-1.0f,-1.3f),40));
+
+    //    setpoints.push_back(waypoint(cv::Point3f(-2,-1.0f,-3.5f),100));
+    //    setpoints.push_back(waypoint(cv::Point3f(2,-1.0f,-3.5f),100));
+    //    setpoints.push_back(waypoint(cv::Point3f(-2,-1.0f,-3.5f),100));
+    //    setpoints.push_back(waypoint(cv::Point3f(2,-1.0f,-3.5f),100));
+
+
+    setpoints.push_back(waypoint(cv::Point3f(0,-1.5f,-1.8f),40));
+
+    setpoints.push_back(stay_waypoint(cv::Point3f(0,-1.5f,-2.0f)));
+    setpoints.push_back(stay_waypoint(cv::Point3f(-1,-1.5f,-2.0f)));
+    setpoints.push_back(stay_waypoint(cv::Point3f(1,-1.5f,-2.0f)));
+
+    setpoints.push_back(stay_waypoint(cv::Point3f(0,-1.5f,-2.0f)));
+    setpoints.push_back(stay_waypoint(cv::Point3f(0,-1.5f,-0.7f)));
+    setpoints.push_back(stay_waypoint(cv::Point3f(0,-1.5f,-2.9f)));
+
+    setpoints.push_back(stay_waypoint(cv::Point3f(0,-1.2f,-2.0f)));
+    setpoints.push_back(stay_waypoint(cv::Point3f(0,-1.7f,-2.0f)));
+    setpoints.push_back(stay_waypoint(cv::Point3f(0,-0.8f,-2.0f)));
+
+    setpoints.push_back(flower_waypoint(cv::Point3f(0,-1.5f,-2.0f)));
 
     setpoints.push_back(landing_waypoint());
 
@@ -239,9 +260,6 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_approach_waypoint;
             break;
         } case ns_approach_waypoint: {
-            float pos_err = sqrtf(_dctrl->posErrX*_dctrl->posErrX + _dctrl->posErrY*_dctrl->posErrY + _dctrl->posErrZ*_dctrl->posErrZ);
-            float vel_err = sqrtf(_dctrl->velErrX*_dctrl->velErrX + _dctrl->velErrX*_dctrl->velErrX + _dctrl->velErrX*_dctrl->velErrX);
-            _dist_to_wp = pos_err;
 
             if (pparams.navigation_tuning && current_setpoint->mode != fm_landing && current_setpoint->mode != fm_takeoff ){
                 setpoint_pos_world.x = setpoints[wpid].xyz.x + (250-setpoint_slider_X)/100.f;
@@ -249,8 +267,8 @@ void DroneNavigation::update(double time) {
                 setpoint_pos_world.z = setpoints[wpid].xyz.z + (setpoint_slider_Z-250)/100.f;
             }
 
-            if (pos_err *1000 < current_setpoint->threshold_mm * distance_threshold_f
-                && vel_err < 1.6f
+            if (_dctrl->dist_to_setpoint() *1000 < current_setpoint->threshold_mm * distance_threshold_f
+                && normf(_trackers->dronetracker()->Last_track_data().state.vel) < 1.6f
                 && _trackers->dronetracker()->n_frames_tracking>5)
             {
                 if (current_setpoint->mode == fm_landing) {

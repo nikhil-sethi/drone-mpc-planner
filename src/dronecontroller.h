@@ -84,22 +84,16 @@ public:
     };
 private:
 
-    int gain_throttle_pos,gain_throttle_vel,gain_throttle_acc,gain_throttle_i,gain_throttle_d;
-    int gain_roll_pos,gain_roll_vel,gain_roll_acc,gain_roll_i,gain_roll_d;
-    int gain_pitch_pos,gain_pitch_vel,gain_pitch_acc,gain_pitch_i,gain_pitch_d;
-
     double spin_up_start_time = 0;
     double start_takeoff_burn_time = 0;
 
     class ControlParameters: public xmls::Serializable
     {
     public:
-        xmls::xInt gain_throttle_pos,gain_throttle_vel,gain_throttle_acc,gain_throttle_i,gain_throttle_d;
-        xmls::xInt gain_roll_pos,gain_roll_vel,gain_roll_acc,gain_roll_i,gain_roll_d;
-        xmls::xInt gain_pitch_pos,gain_pitch_vel,gain_pitch_acc,gain_pitch_i,gain_pitch_d;
-        xmls::xInt p_pos_roll,p_pos_pitch,p_pos_throttle;
-        xmls::xInt i_pos_roll,i_pos_pitch,i_pos_throttle;
-        xmls::xInt d_pos_roll,d_pos_pitch,d_pos_throttle;
+        xmls::xInt kp_pos_roll,kp_pos_pitch,kp_pos_throttle;
+        xmls::xInt ki_pos_roll,ki_pos_pitch,ki_pos_throttle;
+        xmls::xInt kd_pos_roll,kd_pos_pitch,kd_pos_throttle;
+        xmls::xInt kp_v_roll,kp_v_pitch,kp_v_throttle;
 
         ControlParameters() {
             // Set the XML class name.
@@ -110,33 +104,18 @@ private:
             setVersion("1.2");
 
             // Register members. Like the class name, member names can differ from their xml depandants
-            Register("gain_throttle_pos", &gain_throttle_pos);
-            Register("gain_throttle_vel", &gain_throttle_vel);
-            Register("gain_throttle_acc", &gain_throttle_acc);
-            Register("gain_throttle_i", &gain_throttle_i);
-            Register("gain_throttle_d", &gain_throttle_d);
-            Register("gain_roll_pos", &gain_roll_pos);
-            Register("gain_roll_vel", &gain_roll_vel);
-            Register("gain_roll_acc", &gain_roll_acc);
-            Register("gain_roll_i", &gain_roll_i);
-            Register("gain_roll_d", &gain_roll_d);
-            Register("gain_pitch_pos", &gain_pitch_pos);
-            Register("gain_pitch_vel", &gain_pitch_vel);
-            Register("gain_pitch_acc", &gain_pitch_acc);
-            Register("gain_pitch_i", &gain_pitch_i);
-            Register("gain_pitch_d", &gain_pitch_d);
-
-            Register("p_pos_roll", &p_pos_roll);
-            Register("p_pos_pitch", &p_pos_pitch);
-            Register("p_pos_throttle", &p_pos_throttle);
-
-            Register("i_pos_roll", &i_pos_roll);
-            Register("i_pos_pitch", &i_pos_pitch);
-            Register("i_pos_throttle", &i_pos_throttle);
-
-            Register("d_pos_roll", &d_pos_roll);
-            Register("d_pos_pitch", &d_pos_pitch);
-            Register("d_pos_throttle", &d_pos_throttle);
+            Register("kp_pos_roll", &kp_pos_roll);
+            Register("kp_pos_pitch", &kp_pos_pitch);
+            Register("kp_pos_throttle", &kp_pos_throttle);
+            Register("ki_pos_roll", &ki_pos_roll);
+            Register("ki_pos_pitch", &ki_pos_pitch);
+            Register("ki_pos_throttle", &ki_pos_throttle);
+            Register("kd_pos_roll", &kd_pos_roll);
+            Register("kd_pos_pitch", &kd_pos_pitch);
+            Register("kd_pos_throttle", &kd_pos_throttle);
+            Register("kp_v_roll", &kp_v_roll);
+            Register("kp_v_pitch", &kp_v_pitch);
+            Register("kp_v_throttle", &kp_v_throttle);
 
 
         }
@@ -158,7 +137,7 @@ private:
     std::string settings_file;
 
     const uint16_t spinup_throttle_non3d = 304; //TODO: Move this to xml setttings // For trashcan 304 is the lowest value at which the props start to spin
-    const uint16_t initial_hover_throttle_guess_non3d = 580;
+    uint16_t initial_hover_throttle_guess_non3d;
     uint16_t initial_hover_throttle_guess(){
         if (dparams.mode3d)
             return initial_hover_throttle_guess_non3d / 2 + JOY_MIDDLE;
@@ -186,7 +165,8 @@ private:
     const float transmission_delay_duration = 0.04f;
     float effective_burn_spin_up_duration = 0.15f; // the time to spin up from hover to max
     const float effective_burn_spin_down_duration = 0.1f; // the time to spin down from max to hover
-    float thrust = 35; //60, 55, 50, 48, 45
+    const float initial_thrust_guess = 50;
+    float thrust = initial_thrust_guess; //60, 55, 50, 48, 45
     cv::Point3f drone_vel_after_takeoff = {0};
     float ground_effect = 1.0f;
     const float lift_off_dist_take_off_aim = 0.02f;
@@ -199,6 +179,7 @@ private:
     const float integratorThresholdDistance = 0.3f;
     cv::Point3f _burn_direction_for_thrust_approx = {0};
 
+    float _dist_to_setpoint = 999;
 
     std::vector<cv::Point3f> aim_direction_history;
 
@@ -230,14 +211,12 @@ private:
 
     std::tuple<float,float> acc_to_deg(cv::Point3f acc);
 
-    void calc_pid_error(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, cv::Point3f setpoint_acc, double time);
-    void control_pid(track_data state_drone);
-
-    cv::Point3f posErr_P, posErr_I, posErr_D;
-    int p_pos_roll, p_pos_throttle, p_pos_pitch, i_pos_roll, i_pos_throttle, i_pos_pitch, d_pos_roll, d_pos_throttle, d_pos_pitch;
-    PT1f filerPosErrX, filerPosErrY, filerPosErrZ;
-    Df dErrX, dErrY, dErrZ;
-    void control_modelBased(track_data data_drone, cv::Point3f setpoint_pos);
+    cv::Point3f pos_err_i;
+    int kp_pos_roll, kp_pos_throttle, kp_pos_pitch, ki_pos_roll, ki_pos_throttle, ki_pos_pitch, kd_pos_roll, kd_pos_throttle, kd_pos_pitch;
+    int kp_v_roll, kp_v_throttle, kp_v_pitch;
+    PT1f filer_pos_err_x, filer_pos_err_y, filer_pos_err_z;
+    Df d_err_x, d_err_y, d_err_z;
+    void control_model_based(track_data data_drone, cv::Point3f setpoint_pos);
     std::tuple<int,int,int> calc_feedforward_control(cv::Point3f desired_acceleration);
 
     MultiModule * _rc;
@@ -245,16 +224,14 @@ private:
     CameraVolume * _camvol;
 
     std::ofstream *_logger;
-    void sendData(void);
-    void readJoystick(void);
+    void send_data_joystick(void);
+    void read_joystick(void);
     void process_joystick();
     void deserialize_settings();
     void serialize_settings();
 
     float landing_decent_yoffset = 0;
     float landing_decent_rate = -0.01;
-
-    int pid_max_angle_scaler = 8;
 
     inline state_data set_recoveryState(cv::Point3f position){
         state_data rt;
@@ -408,14 +385,7 @@ public:
         _joy_takeoff_switch = false;
     }
 
-    float posErrX,posErrY,posErrZ;
-    float velErrX,velErrY,velErrZ;
-    float accErrX,accErrY,accErrZ;
-    float accErrX_prev,accErrY_prev,accErrZ_prev;
-    float velx_sp,vely_sp,velz_sp;
-    float accx_sp,accy_sp,accz_sp;
     float heading;
-
     cv::Point3f viz_drone_pos_after_burn = {0};
     cv::Point3f viz_target_pos_after_burn = {0};
     std::vector<state_data> viz_drone_trajectory;
@@ -426,6 +396,10 @@ public:
     std::vector<control_data> control_history;
 
     float landing_setpoint_height = 0;
+
+    float dist_to_setpoint() {
+        return _dist_to_setpoint;
+    }
 
     void close (void);
     void init(std::ofstream *logger, bool fromfile, MultiModule *rc, DroneTracker *dtrk, CameraVolume* camvol);

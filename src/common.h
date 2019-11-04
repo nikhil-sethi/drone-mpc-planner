@@ -26,9 +26,10 @@ int seconds_since_file_creation(std::string file_path);
 /** @brief If the string holds an drone id (number between 0 and 9) that number is returned.
  * If not, return -1. */
 int get_drone_id(std::string s);
-
-
-float normf(cv::Point3f m);// { return static_cast<float>(cv::norm(m));}
+cv::Point3f mult(cv::Point3f  p1, cv::Point3f p2);
+float normf(cv::Point3f m);
+float deadzone( float v, float lo, float hi );
+cv::Point3f deadzone(cv::Point3f p,float lo, float hi);
 
 const float FOV = 180.0f ;
 const float FOV_size = 1280.0;

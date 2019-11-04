@@ -403,8 +403,11 @@ void handle_key(double time [[maybe_unused]]) {
     case '0':
         init_insect_log(18);
         break;
-    case 'n':
+    case 82: // arrow up
         dnav.manual_trigger_next_wp();
+        break;
+    case 84: // arrow down
+        dnav.manual_trigger_prev_wp();
         break;
 
 #if CAMMODE == CAMMODE_REALSENSE

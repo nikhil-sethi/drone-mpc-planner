@@ -176,8 +176,6 @@ private:
 
     bool initialized = false;
 
-    float _dist_to_wp = 0;
-
 public:
 
     nav_flight_modes nav_flight_mode(){
@@ -190,7 +188,7 @@ public:
     }
     std::string navigation_status() {
         if (_navigation_status == ns_approach_waypoint) {
-            return static_cast<string>(navigation_status_names[_navigation_status]) + " " + to_string_with_precision(_dist_to_wp,2);
+            return static_cast<string>(navigation_status_names[_navigation_status]) + " " + to_string_with_precision(_dctrl->dist_to_setpoint(),2);
         } else
 
             return navigation_status_names[_navigation_status];
@@ -204,13 +202,15 @@ public:
         return current_setpoint->threshold_mm;
     }
 
-    float dist_to_wp() {
-        return _dist_to_wp;
-    }
-
     void manual_trigger_next_wp(){
-        if (wpid < setpoints.size() && _nav_flight_mode == nfm_waypoint ) { // next waypoint in flight plan
+        if (wpid < setpoints.size()-1 && _nav_flight_mode == nfm_waypoint ) {
             wpid++;
+            _navigation_status = ns_set_waypoint;
+        }
+    }
+    void manual_trigger_prev_wp(){
+        if (wpid > 0 && _nav_flight_mode == nfm_waypoint ) {
+            wpid--;
             _navigation_status = ns_set_waypoint;
         }
     }

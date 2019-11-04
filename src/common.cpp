@@ -461,3 +461,21 @@ int get_drone_id(std::string s){ //TODO: refactor. And not a common function to 
 
 float normf(cv::Point3f m) { return static_cast<float>(cv::norm(m));}
 
+cv::Point3f mult(cv::Point3f  p1, cv::Point3f p2){
+    cv::Point3f p;
+    p.x = p1.x * p2.x;
+    p.y = p1.y * p2.y;
+    p.z = p1.z * p2.z;
+    return p;
+}
+
+cv::Point3f deadzone(cv::Point3f p,float lo, float hi){
+    return cv::Point3f(deadzone(p.x,lo,hi),deadzone(p.y,lo,hi),deadzone(p.z,lo,hi));
+}
+float deadzone( float v, float lo, float hi ) {
+    if (v < 0 && v > lo )
+        v = 0;
+    else if (v > 0 && v < hi )
+        v = 0;
+    return v;
+}
