@@ -291,18 +291,23 @@ CameraVolume Cam::def_volume (){
     cv::Point3f point_back_left1,point_back_left2, point_back_left3;
     cv::Point3f point_back_right1,point_back_right2, point_back_right3;
 
-    point_left_top = get_SlopesOfPixel(0,0);
+    // Some planes are defined with the slopes of the corner pixels:
+    // In the past this was more precice then the difintion with background pixels.
+    point_left_top = get_SlopesOfPixel(0,0); // ..get_SlopesOfPixel(width, height)
     point_right_top = get_SlopesOfPixel(847, 0);
     point_left_bottom = get_SlopesOfPixel(0, 479);
     point_right_bottom = get_SlopesOfPixel(847, 479);
 
-    point_back_left1 = -depth_background_3mm_world.at<cv::Vec3f>(50, 100);
-    point_back_left2 = -depth_background_3mm_world.at<cv::Vec3f>(200, 150);
-    point_back_left3 = -depth_background_3mm_world.at<cv::Vec3f>(100, 375);
-    point_back_right1 = -depth_background_3mm_world.at<cv::Vec3f>(120, 500);
-    point_back_right2 = -depth_background_3mm_world.at<cv::Vec3f>(100, 800);
-    point_back_right3 = -depth_background_3mm_world.at<cv::Vec3f>(270, 750);
+    // Back and ground plane must be defined with the coordinates of the background pixels.
+    // For every plane find 3 pixels which define the plane position and orientation:
+    point_back_left1 = -depth_background_3mm_world.at<cv::Vec3f>(10, 10); // ..at<cv::Vec3f>(height, width)
+    point_back_left2 = -depth_background_3mm_world.at<cv::Vec3f>(175, 10);
+    point_back_left3 = -depth_background_3mm_world.at<cv::Vec3f>(160, 66);
+    point_back_right1 = -depth_background_3mm_world.at<cv::Vec3f>(20, 116);
+    point_back_right2 = -depth_background_3mm_world.at<cv::Vec3f>(20, 820);
+    point_back_right3 = -depth_background_3mm_world.at<cv::Vec3f>(150, 480);
 
+    // For the groundplane the offset in y direction is directly calculated;
     float y_sum = 0;
     uint n=0;
     for(uint row=360; row<480; row+=5){
@@ -315,18 +320,6 @@ CameraVolume Cam::def_volume (){
         }
     }
     b_ground = -y_sum/n;
-
-    float z_sum = 0;
-    n=0;
-    for(uint row=0; row<10; row+=1){
-        for(uint col=0; col<848; col+=5){
-
-            if(depth_background_3mm_world.at<cv::Vec3f>(row, col)[2]!=0){
-                z_sum += depth_background_3mm_world.at<cv::Vec3f>(row, col)[2];
-                n+=1;
-            }
-        }
-    }
 
     CameraVolume camVol;
     camVol.init(point_left_top, point_right_top, point_left_bottom, point_right_bottom,
