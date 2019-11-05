@@ -157,6 +157,8 @@ sudo usermod -a -G dialout $USER
 	sudo ln -s ~/code/pats/config/rc.local /etc/rc.local
 
 	sudo ln -s ~/code/pats/config/45-pats_mm.rules /lib/udev/rules.d/
+	
+	echo "alias df='df -h -x squashfs -x tmpfs -x devtmpfs'" >> ~/.bash_aliases
 
 	touch symlinks.done
 }
