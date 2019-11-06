@@ -28,19 +28,15 @@ void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, Dro
     //    setpoints.push_back(waypoint(cv::Point3f(2,-1.0f,-3.5f),100));
 
 
-    setpoints.push_back(waypoint(cv::Point3f(0,-1.5f,-1.8f),40));
+    setpoints.push_back(waypoint(cv::Point3f(0,-0.7f,-1.8f),100));
 
-    setpoints.push_back(stay_waypoint(cv::Point3f(0,-1.5f,-2.0f)));
-    setpoints.push_back(stay_waypoint(cv::Point3f(-1,-1.5f,-2.0f)));
-    setpoints.push_back(stay_waypoint(cv::Point3f(1,-1.5f,-2.0f)));
+    setpoints.push_back(waypoint(cv::Point3f(0,-0.7f,-2.0f),100));
+    setpoints.push_back(waypoint(cv::Point3f(-1,-0.7f,-2.0f),100));
+    setpoints.push_back(waypoint(cv::Point3f(1,-0.7f,-2.0f),100));
 
-    setpoints.push_back(stay_waypoint(cv::Point3f(0,-1.5f,-2.0f)));
-    setpoints.push_back(stay_waypoint(cv::Point3f(0,-1.5f,-0.7f)));
-    setpoints.push_back(stay_waypoint(cv::Point3f(0,-1.5f,-2.9f)));
-
-    setpoints.push_back(stay_waypoint(cv::Point3f(0,-1.2f,-2.0f)));
-    setpoints.push_back(stay_waypoint(cv::Point3f(0,-1.7f,-2.0f)));
-    setpoints.push_back(stay_waypoint(cv::Point3f(0,-0.8f,-2.0f)));
+    setpoints.push_back(waypoint(cv::Point3f(0,-0.7f,-2.0f),20));
+    setpoints.push_back(waypoint(cv::Point3f(0,-0.7f,-0.7f),20));
+    setpoints.push_back(waypoint(cv::Point3f(0,-0.7f,-2.9f),20));
 
     setpoints.push_back(flower_waypoint(cv::Point3f(0,-1.5f,-2.0f)));
 

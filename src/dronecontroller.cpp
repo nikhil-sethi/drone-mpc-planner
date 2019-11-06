@@ -46,9 +46,12 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     }
 
     hoverthrottle = dparams.initial_hover_throttle;
-    filer_pos_err_x.init(1.f/pparams.fps, 1, 1.f/pparams.fps);
-    filer_pos_err_y.init(1.f/pparams.fps, 1, 1.f/pparams.fps);
-    filer_pos_err_z.init(1.f/pparams.fps, 1, 1.f/pparams.fps);
+    filter_pos_err_x.init(1.f/pparams.fps, 1, 1.f/pparams.fps);
+    filter_pos_err_y.init(1.f/pparams.fps, 1, 1.f/pparams.fps);
+    filter_pos_err_z.init(1.f/pparams.fps, 1, 1.f/pparams.fps);
+    filter_vel_err_x.init(1.f/pparams.fps, 1, 1.f/pparams.fps);
+    filter_vel_err_y.init(1.f/pparams.fps, 1, 1.f/pparams.fps);
+    filter_vel_err_z.init(1.f/pparams.fps, 1, 1.f/pparams.fps);
     d_err_x.init (1.f/pparams.fps);
     d_err_y.init (1.f/pparams.fps);
     d_err_z.init (1.f/pparams.fps);
@@ -296,9 +299,12 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         d_err_x.preset(setpoint_pos.x - data_drone.state.pos.x);
         d_err_y.preset(setpoint_pos.y - data_drone.state.pos.y);
         d_err_z.preset(setpoint_pos.z - data_drone.state.pos.z);
-        filer_pos_err_x.reset (setpoint_pos.x - data_drone.state.pos.x);
-        filer_pos_err_y.reset (setpoint_pos.y - data_drone.state.pos.y);
-        filer_pos_err_z.reset (setpoint_pos.z - data_drone.state.pos.z);
+        filter_pos_err_x.reset (setpoint_pos.x - data_drone.state.pos.x);
+        filter_pos_err_y.reset (setpoint_pos.y - data_drone.state.pos.y);
+        filter_pos_err_z.reset (setpoint_pos.z - data_drone.state.pos.z);
+        filter_vel_err_x.reset (setpoint_vel.x - data_drone.state.vel.x);
+        filter_vel_err_y.reset (setpoint_vel.y - data_drone.state.vel.y);
+        filter_vel_err_z.reset (setpoint_vel.z - data_drone.state.vel.z);
 
         [[fallthrough]];
     } case fm_flying_pid: {
@@ -318,7 +324,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
 //            flight_submode_name = "";
 //        }
 
-        control_model_based(data_drone, setpoint_pos);
+        control_model_based(data_drone, setpoint_pos, setpoint_vel);
 
         //check if we can go back to burning:
         if (data_drone.pos_valid && data_drone.vel_valid && _joy_state!=js_waypoint){
@@ -356,7 +362,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
 
         landing_setpoint_height = setpoint_pos.y; //only for status feedback for dronenavigation
 
-        control_model_based(data_drone, setpoint_pos);
+        control_model_based(data_drone, setpoint_pos, setpoint_vel);
 
         break;
     } case fm_disarmed: {
@@ -786,14 +792,14 @@ std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f de
     return std::make_tuple(roll_cmd,pitch_cmd,throttle_cmd);
 }
 
-void DroneController::control_model_based(track_data data_drone, cv::Point3f setpoint_pos){
+void DroneController::control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel){
 
     float depth_gain = 1;
     float dist = powf(data_drone.sposX,2)+powf(data_drone.sposY,2)+powf(data_drone.sposZ,2);
     if (dist > 4) //sqrt(4) = 2m
         depth_gain  = 1 + dist * depth_precision_gain;
 
-    //arrange gains (needed because may be updated from trackbars)
+    // Arrange gains (needed because may be updated from trackbars)
     cv::Point3f kp_pos(kp_pos_roll,kp_pos_throttle,kp_pos_pitch);
     kp_pos /=100.f;
     cv::Point3f kd_pos(kd_pos_roll,kd_pos_throttle,kd_pos_pitch);
@@ -805,20 +811,25 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     kp_vel /= 100.f;
 
     // Determine state errors:
-    float err_x_filtered = filer_pos_err_x.new_sample(setpoint_pos.x - data_drone.state.pos.x);
-    float err_y_filtered = filer_pos_err_y.new_sample(setpoint_pos.y - data_drone.state.pos.y);
-    float err_z_filtered = filer_pos_err_z.new_sample(setpoint_pos.z - data_drone.state.pos.z);
+    float err_x_filtered = filter_pos_err_x.new_sample(setpoint_pos.x - data_drone.state.pos.x);
+    float err_y_filtered = filter_pos_err_y.new_sample(setpoint_pos.y - data_drone.state.pos.y);
+    float err_z_filtered = filter_pos_err_z.new_sample(setpoint_pos.z - data_drone.state.pos.z);
     cv::Point3f pos_err_p = {err_x_filtered, err_y_filtered, err_z_filtered};
 
-    //velocity control so we go faster if we need to cover long distance
+    // If the distance is large, then increase the velocity setpoint:
     cv::Point3f vel_err = deadzone(pos_err_p,-1,1) * 1.f;
-     vel_err =  - data_drone.state.vel ;
+
+    float err_velx_filtered = filter_vel_err_x.new_sample(setpoint_vel.x + vel_err.x - data_drone.state.vel.x );
+    float err_vely_filtered = filter_vel_err_y.new_sample(setpoint_vel.y + vel_err.y - data_drone.state.vel.y);
+    float err_velz_filtered = filter_vel_err_z.new_sample(setpoint_vel.z + vel_err.z - data_drone.state.vel.z);
+    cv::Point3f vel_err_p = {err_velx_filtered, err_vely_filtered, err_velz_filtered};
 
     // Increase I error with anti wind up handling:
     if (fabs(err_x_filtered) < 0.15f )
         pos_err_i.x += err_x_filtered;
-    //if (fabs(errYfiltered) < 0.3f ) //TODO: maybe throttle I should be done directly on the thrust estimate??
-        pos_err_i.y += err_y_filtered;
+
+    pos_err_i.y += err_y_filtered; // this info can be used to update hover_throttle. However in the current controller hover_throttle is not used.
+
     if (fabs(err_z_filtered) < 0.15f )
         pos_err_i.z += err_z_filtered;
 
@@ -828,8 +839,8 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     cv::Point3f pos_err_d = {errDx, errDy, errDz};
 
     //Determine the acceleration direction as PID-filtered postion error:
-    cv::Point3f desired_acceleration =mult(kp_pos,pos_err_p) + mult(ki_pos,pos_err_i) + mult(kd_pos,pos_err_d); // position control
-    desired_acceleration += mult(kp_vel,vel_err); // vel control
+    cv::Point3f desired_acceleration =mult(kp_pos, pos_err_p) + mult(ki_pos, pos_err_i) + mult(kd_pos, pos_err_d); // position control
+    desired_acceleration += mult(kp_vel, vel_err_p); // velocity control
 
     // Determine the control outputs based on feed-forward calculations:
     std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(desired_acceleration);

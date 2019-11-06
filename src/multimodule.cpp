@@ -33,7 +33,7 @@ void MultiModule::init(int drone_id, bool fromfile) {
     zerothrottle();
 
     // setup connection with MultiModule
-    notconnected = RS232_OpenComport(115200,"/dev/pats_mm0");
+    notconnected = RS232_OpenComport(115200,"/dev/pats_mm1");
     if (dparams.tx!=tx_none) {
         if (notconnected && !fromfile) {
             throw my_exit("cannot connect the MultiModule");
