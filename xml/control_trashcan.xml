@@ -8,7 +8,7 @@
     <Member Name="kd_pos_roll">430</Member>
     <Member Name="kd_pos_pitch">350</Member>
     <Member Name="kd_pos_throttle">550</Member>
-    <Member Name="kp_v_roll">0</Member>
-    <Member Name="kp_v_pitch">0</Member>
-    <Member Name="kp_v_throttle">0</Member>
+    <Member Name="kp_v_roll">500</Member>
+    <Member Name="kp_v_pitch">400</Member>
+    <Member Name="kp_v_throttle">560</Member>
 </SerializableClass>

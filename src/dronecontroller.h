@@ -170,7 +170,7 @@ private:
     cv::Point3f drone_vel_after_takeoff = {0};
     float ground_effect = 1.0f;
     const float lift_off_dist_take_off_aim = 0.02f;
-    const float take_off_burn_duration = 0.10f;
+    const float take_off_burn_duration = 0.12f;
 
     double take_off_start_time = 0;
     double interception_start_time = 0;
@@ -217,6 +217,8 @@ private:
     PT1f filter_pos_err_x, filter_pos_err_y, filter_pos_err_z;
     PT1f filter_vel_err_x, filter_vel_err_y, filter_vel_err_z;
     Df d_err_x, d_err_y, d_err_z;
+    /** @brief
+     * @param[in] setpoint_vel Absolute velocity the drone shall have */
     void control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
     std::tuple<int,int,int> calc_feedforward_control(cv::Point3f desired_acceleration);
 

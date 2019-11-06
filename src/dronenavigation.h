@@ -51,6 +51,10 @@ private:
     int r_crcl1 = 10;
     int r_crcl2 = 30;
 
+    int enable_vel_control_x = 0;
+    int enable_vel_control_y = 0;
+    int enable_vel_control_z = 0;
+
     class navigationParameters: public xmls::Serializable
     {
     public:

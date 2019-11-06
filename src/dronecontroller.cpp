@@ -817,11 +817,11 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     cv::Point3f pos_err_p = {err_x_filtered, err_y_filtered, err_z_filtered};
 
     // If the distance is large, then increase the velocity setpoint:
-    cv::Point3f vel_err = deadzone(pos_err_p,-1,1) * 1.f;
+    cv::Point3f pos_err2vel_set = deadzone(pos_err_p,-1,1) * 1.f;
 
-    float err_velx_filtered = filter_vel_err_x.new_sample(setpoint_vel.x + vel_err.x - data_drone.state.vel.x );
-    float err_vely_filtered = filter_vel_err_y.new_sample(setpoint_vel.y + vel_err.y - data_drone.state.vel.y);
-    float err_velz_filtered = filter_vel_err_z.new_sample(setpoint_vel.z + vel_err.z - data_drone.state.vel.z);
+    float err_velx_filtered = filter_vel_err_x.new_sample(setpoint_vel.x + pos_err2vel_set.x - data_drone.state.vel.x );
+    float err_vely_filtered = filter_vel_err_y.new_sample(setpoint_vel.y + pos_err2vel_set.y - data_drone.state.vel.y);
+    float err_velz_filtered = filter_vel_err_z.new_sample(setpoint_vel.z + pos_err2vel_set.z - data_drone.state.vel.z);
     cv::Point3f vel_err_p = {err_velx_filtered, err_vely_filtered, err_velz_filtered};
 
     // Increase I error with anti wind up handling:
@@ -840,7 +840,11 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
 
     //Determine the acceleration direction as PID-filtered postion error:
     cv::Point3f desired_acceleration =mult(kp_pos, pos_err_p) + mult(ki_pos, pos_err_i) + mult(kd_pos, pos_err_d); // position control
-    desired_acceleration += mult(kp_vel, vel_err_p); // velocity control
+
+    cv::Point3f zero_vec = cv::Point3f(0.f,0.f,0.f);
+
+    if(setpoint_vel!=zero_vec || pos_err2vel_set!=zero_vec)
+        desired_acceleration += mult(kp_vel, vel_err_p); // velocity control
 
     // Determine the control outputs based on feed-forward calculations:
     std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(desired_acceleration);
