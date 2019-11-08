@@ -26,7 +26,7 @@ void Visualizer::init(VisionData *visdat, TrackerManager *imngr, DroneController
 
     _fromfile = fromfile;
     if (_fromfile) {
-        _res_mult = 1.5f;
+        _res_mult = 1.f;
     } else {
         _res_mult = 1;
     }
