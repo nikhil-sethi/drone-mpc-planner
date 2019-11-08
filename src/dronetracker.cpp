@@ -248,9 +248,9 @@ void DroneTracker::update_drone_prediction() {
     cv::Point3d tmpd;
     float theta = -_visdat->camera_angle * deg2rad;
     float temp_y = tmp.y * cosf(theta) + tmp.z * sinf(theta);
-    tmpd.z = -tmp.y * sinf(theta) + tmp.z * cosf(theta);
-    tmpd.y = temp_y;
-    tmpd.x = tmp.x;
+    tmpd.z = static_cast<double>(-tmp.y * sinf(theta) + tmp.z * cosf(theta));
+    tmpd.y = static_cast<double>(temp_y);
+    tmpd.x = static_cast<double>(tmp.x);
 
     world_coordinates.push_back(tmpd);
     cv::perspectiveTransform(world_coordinates,camera_coordinates,_visdat->Qfi);

@@ -227,13 +227,11 @@ void DroneNavigation::update(double time) {
             _navigation_status = ns_chasing_insect_ff;
             [[fallthrough]];
         } case ns_chasing_insect_ff: {
-
             if (_dctrl->ff_completed())
                 _navigation_status = ns_chasing_insect;
             if (_nav_flight_mode == nfm_manual)
                 _navigation_status = ns_manual;
             break;
-            [[fallthrough]];
         } case ns_chasing_insect: {
 
             //update target chasing waypoint and speed
@@ -351,7 +349,7 @@ void DroneNavigation::update(double time) {
             [[fallthrough]];
         } case ns_wait_after_landing: {
             _visdat->delete_from_motion_map(_trackers->dronetracker()->drone_startup_im_location()*pparams.imscalef,_trackers->dronetracker()->drone_startup_im_disparity(),_trackers->dronetracker()->drone_startup_im_size()*pparams.imscalef,1);
-            if (time - landed_time > time_out_after_landing )
+            if (static_cast<float>(time - landed_time) > time_out_after_landing )
                 _navigation_status = ns_locate_drone;
             break;
         } case ns_manual: { // also used for disarmed

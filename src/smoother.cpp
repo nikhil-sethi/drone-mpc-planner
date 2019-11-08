@@ -1,19 +1,19 @@
 #include "smoother.h"
 
-void Smoother::init(int width, float value)
+void Smoother::init(uint16_t width, float value)
 {
     _kernelsize = width;
     _rbuf.resize(_kernelsize + 1);
     _rotater = 0;
     _runner = value*_kernelsize;
-    for (int i = 0; i <= _kernelsize; i++)
+    for (uint16_t i = 0; i <= _kernelsize; i++)
     {
         _rbuf.at(i) = value;
     }
     _ready = true;
 }
 
-void Smoother::init(int width)
+void Smoother::init(uint16_t width)
 {
     init(width,0);
     _ready = false;
@@ -22,7 +22,7 @@ void Smoother::init(int width)
 void Smoother::reset()
 {
     _rotater = 0;
-    for (int i = 0; i <= _kernelsize; i++)
+    for (uint16_t i = 0; i <= _kernelsize; i++)
     {
         _rbuf.at(i) = 0;
     }
@@ -32,7 +32,7 @@ void Smoother::reset()
 void Smoother::reset_to(float v)
 {
     _rotater = 0;
-    for (int i = 0; i <= _kernelsize; i++)
+    for (uint16_t i = 0; i <= _kernelsize; i++)
     {
         _rbuf.at(i) = v;
     }

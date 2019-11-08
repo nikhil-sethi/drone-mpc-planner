@@ -52,7 +52,7 @@ private:
 
     int motion_update_iterator_max;
     float brightness_event_tresh;
-    double brightness_check_period;
+    float brightness_check_period;
 
     string settings_file = "../../xml/vision.xml";
     void deserialize_settings();
@@ -98,7 +98,7 @@ public:
 
     cv::Mat viz_frame;
 
-    uint frame_id;
+    unsigned long long  frame_id;
     cv::Size smallsize;
     cv::Mat Qf,Qfi;
     float camera_angle;
@@ -108,7 +108,7 @@ public:
     cv::Mat depth_background_mm;
 
     bool disable_fading = false;
-    float current_time() {return _current_frame_time;}
+    double current_time() {return _current_frame_time;}
 
     void init(bool fromfile, cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, float new_camera_gain, cv::Mat new_depth_background_mm);
     void close();

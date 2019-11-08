@@ -1,6 +1,6 @@
 #include "blinktracker.h"
 
-std::ofstream dummy;
+static std::ofstream dummy;
 
 bool BlinkTracker::init(VisionData *visdat) {
 
@@ -81,7 +81,7 @@ void BlinkTracker::track(double time) {
     }
 
     if (_image_item.valid && _blinking_drone_status > bds_searching ){
-        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_item.size*1.2f*pparams.imscalef); // TODO: does not work properly
+        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,static_cast<int>(roundf(_image_item.size*1.2f*pparams.imscalef))); // TODO: does not work properly
     }
 
     clean_ignore_blobs(time);

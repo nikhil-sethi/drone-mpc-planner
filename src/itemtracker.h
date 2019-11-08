@@ -241,16 +241,16 @@ private:
 protected:
 
     Smoother smoother_posX, smoother_posY, smoother_posZ;
-    Smoother2 smoother_velX2,smoother_velY2,smoother_velZ2;
+    SmootherDerivative smoother_velX2,smoother_velY2,smoother_velZ2;
     Smoother smoother_velX, smoother_velY, smoother_velZ;
-    Smoother2 smoother_accX2,smoother_accY2,smoother_accZ2;
+    SmootherDerivative smoother_accX2,smoother_accY2,smoother_accZ2;
     Smoother smoother_accX, smoother_accY, smoother_accZ;
     const int smooth_width_vel = 10;
     const int smooth_width_pos = 10;
     const int smooth_width_acc = 45;
     const int smooth_blob_props_width = 10;
     Smoother disp_smoothed;
-    Smoother2 disp_rate_smoothed2;
+    SmootherDerivative disp_rate_smoothed2;
     bool reset_filters;
     bool reset_disp = false;
 

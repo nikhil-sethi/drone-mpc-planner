@@ -43,10 +43,9 @@ public:
     };
 private:
     blinking_drone_states _blinking_drone_status = bds_start;
+    int attempts = 0;
     double blink_time_start = 0;
     double manual_calib_time_start = 0;
-
-    int attempts = 0;
 
     blinking_drone_states detect_blink(double time, bool found);
 
@@ -64,7 +63,7 @@ public:
     bool blinking_drone_located() {return _blinking_drone_status >= bds_found;}
 
     bool delete_me(){
-        return n_frames_lost > n_frames_lost_threshold;;
+        return n_frames_lost > n_frames_lost_threshold;
     }
 
     float smoothed_size_image(){return smoother_im_size.latest();}

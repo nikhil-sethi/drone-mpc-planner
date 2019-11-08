@@ -121,7 +121,7 @@ private:
         }
     };
 
-    float depth_precision_gain = 0.4;
+    float depth_precision_gain = 0.4f;
     float throttleErrI = 0;
     float rollErrI = 0;
     float pitchErrI = 0;
@@ -156,7 +156,7 @@ private:
         if (dparams.mode3d)
             return JOY_BOUND_MIN;
         else {
-            return dparams.min_throttle;
+            return static_cast<uint16_t>(dparams.min_throttle);
         }
     }
 
@@ -234,8 +234,8 @@ private:
     void deserialize_settings();
     void serialize_settings();
 
-    float landing_decent_yoffset = 0;
-    float landing_decent_rate = -0.01;
+    float landing_decent_yoffset = 0.f;
+    float landing_decent_rate = -0.01f;
 
     inline state_data set_recoveryState(cv::Point3f position){
         state_data rt;
@@ -323,7 +323,7 @@ public:
     }
 
     float duration_spent_taking_off(double time) {
-        if (start_takeoff_burn_time == 0)
+        if (start_takeoff_burn_time< 0.01)
             return 0;
         return  static_cast<float>(time - start_takeoff_burn_time) ;
     }
@@ -378,7 +378,7 @@ public:
         command -= JOY_MIDDLE;
         float commandf = static_cast<float>(command)/static_cast<float>(JOY_BOUND_MAX - JOY_BOUND_MIN);
         return commandf*max_bank_angle;
-    };
+    }
 
     float hoverthrottle;
 

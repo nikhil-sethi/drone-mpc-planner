@@ -1,24 +1,20 @@
-
 #ifndef SMOOTH2_H
 #define SMOOTH2_H
-
 
 #include <fstream>
 #include <vector>
 #include <cmath>
 
-/*
- * This class performs moving average filtering
- *
- */
-class Smoother2{
+//TODO [kevin]: smoother2 file
+
+class SmootherDerivative{
 
 private:
     std::vector<float> _rbuf_data; // rotary buffer
     std::vector<float> _rbuf_time; // rotary buffer
-    int _kernelsize; 	// filter kernel width
-    int _rotater_data;		//pointer to current sample in rotary buffer
-    int _rotater_time;		//pointer to current sample in rotary buffer
+    uint16_t _kernelsize; 	// filter kernel width
+    uint16_t _rotater_data;		//pointer to current sample in rotary buffer
+    uint16_t _rotater_time;		//pointer to current sample in rotary buffer
     float _runner; // current filter output value
     float _diff_data;
     float _derivative;
@@ -28,7 +24,7 @@ private:
 
 public:
 
-    void init(int width, float filt_rate);
+    void init(uint16_t width, float filt_rate);
     float addSample(float data, float time);
     void reset(void);
     bool ready(){ return _ready;}

@@ -52,9 +52,9 @@ void CameraVolume::init(cv::Point3f point_left_top, cv::Point3f point_right_top,
 
 bool CameraVolume::in_view(cv::Point3f p, volume_check_mode c){
     if (c == relaxed)
-        return in_view(p,0.3);
+        return in_view(p,0.3f);
     else
-        return in_view(p,0.6);
+        return in_view(p,0.6f);
 }
 
 
@@ -442,7 +442,7 @@ int seconds_since_file_creation(std::string file_path)
 }
 
 int get_drone_id(std::string s){ //TODO: refactor. And not a common function to start with
-    uint len = s.length ();
+    unsigned long len = s.length();
     bool only_numbers = true;
 
     for(uint i=0; i<len; i++){

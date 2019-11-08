@@ -175,11 +175,11 @@ void VisionData::enable_background_motion_map_calibration(float duration){
 
 //Keep track of the average brightness, and reset the motion integration frame when it changes to much. (e.g. when someone turns on the lights or something)
 void VisionData::track_avg_brightness(cv::Mat frame,double time) {
-    if (time - prev_time_brightness_check > brightness_check_period){ // only check once in a while
+    if (static_cast<float>(time - prev_time_brightness_check) > brightness_check_period){ // only check once in a while
         prev_time_brightness_check = time;
         cv::Mat frame_small;
         cv::resize(frame,frame_small,cv::Size(frame.cols/8,frame.rows/8));
-        float brightness = mean( frame_small )[0];
+        float brightness = static_cast<float>(mean( frame_small )[0]);
         if (fabs(brightness - prev_brightness) > brightness_event_tresh ) {
             std::cout << "Warning, large brightness change: " << prev_brightness << " -> " << brightness  << std::endl;
             _reset_motion_integration = true;

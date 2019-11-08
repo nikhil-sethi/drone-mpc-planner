@@ -54,7 +54,7 @@ private:
             Register("Angle_Y_Measured_From_Depthmap", &Angle_Y_Measured_From_Depthmap);
             Register("Exposure", &Exposure);
             Register("Gain", &Gain);
-        };
+        }
     };
 
 public:
@@ -67,7 +67,7 @@ public:
     void stop_watchdog() {exit_watchdog_thread = true;}
 
     void skip(float duration) {
-        replay_skip_n_frames+=pparams.fps*duration;
+        replay_skip_n_frames+=roundf(pparams.fps*duration);
     }
     void skip_one_sec() {
         replay_skip_n_frames+=pparams.fps;

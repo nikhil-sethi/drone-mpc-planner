@@ -82,7 +82,7 @@ private:
     int setpoint_slider_X = 250;
     int setpoint_slider_Y = 250;
     int setpoint_slider_Z = 250;
-    double time_out_after_landing;
+    float time_out_after_landing;
 
     string settings_file = "../../xml/navigation.xml";
     void deserialize_settings();
@@ -240,9 +240,9 @@ public:
         cv::Point3d tmpd;
         float theta = -_visdat->camera_angle * deg2rad;
         float temp_y = tmp.y * cosf(theta) + tmp.z * sinf(theta);
-        tmpd.z = -tmp.y * sinf(theta) + tmp.z * cosf(theta);
-        tmpd.y = temp_y;
-        tmpd.x = tmp.x;
+        tmpd.z = static_cast<double>(-tmp.y * sinf(theta) + tmp.z * cosf(theta));
+        tmpd.y = static_cast<double>(temp_y);
+        tmpd.x = static_cast<double>(tmp.x);
 
         world_length.push_back(tmpd);
         cv::perspectiveTransform(world_length,camera_length,_visdat->Qfi);

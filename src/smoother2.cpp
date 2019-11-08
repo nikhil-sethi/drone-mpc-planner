@@ -1,6 +1,6 @@
 #include "smoother2.h"
 
-void Smoother2::init (int width, float filt_rate ) {
+void SmootherDerivative::init (uint16_t width, float filt_rate ) {
     _kernelsize = width;
     _filt_rate = filt_rate;
     _rbuf_data.resize(_kernelsize+1);
@@ -11,7 +11,7 @@ void Smoother2::init (int width, float filt_rate ) {
     _diff_data = 0;
     _derivative_filtered = 0;
 
-    for (int i =0; i<=_kernelsize; i++) {
+    for (uint16_t i =0; i<=_kernelsize; i++) {
         _rbuf_data.at(i) = 0;
         _rbuf_time.at(i) = 0;
     }
@@ -19,10 +19,10 @@ void Smoother2::init (int width, float filt_rate ) {
 
 }
 
-void Smoother2::reset() {
+void SmootherDerivative::reset() {
     _rotater_data = 0;
     _rotater_time = 0;
-    for (int i =0; i<= _kernelsize; i++) {
+    for (uint16_t i =0; i<= _kernelsize; i++) {
         _rbuf_data.at(i) = 0;
         _rbuf_time.at(i) = 0;
     }
@@ -32,7 +32,7 @@ void Smoother2::reset() {
     _ready = false;
 }
 
-float Smoother2::addSample(float data, float time) {
+float SmootherDerivative::addSample(float data, float time) {
     //performs online smoothing filter
 
     if (isnanf(data)) // fixes nan, which forever destroy the output

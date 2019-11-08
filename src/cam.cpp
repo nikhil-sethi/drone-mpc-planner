@@ -7,7 +7,7 @@
 using namespace cv;
 using namespace std;
 
-stopwatch_c swc;
+static stopwatch_c swc;
 
 void Cam::update(void) {
     if (fromfile)
@@ -16,8 +16,6 @@ void Cam::update(void) {
         update_real();
 }
 
-int last_1_id =-1;
-int last_2_id =-1;
 double incremented_playback_frametime = (1.f/pparams.fps)/2.f;
 void Cam::update_playback(void) {
 
