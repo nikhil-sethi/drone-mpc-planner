@@ -210,6 +210,7 @@ private:
     bool trajectory_in_view(std::vector<state_data> traj, CameraVolume::volume_check_mode c);
 
     std::tuple<float,float> acc_to_deg(cv::Point3f acc);
+    std::tuple<float,float> acc_to_quaternion(cv::Point3f acc);
 
     cv::Point3f pos_err_i;
     int kp_pos_roll, kp_pos_throttle, kp_pos_pitch, ki_pos_roll, ki_pos_throttle, ki_pos_pitch, kd_pos_roll, kd_pos_throttle, kd_pos_pitch;

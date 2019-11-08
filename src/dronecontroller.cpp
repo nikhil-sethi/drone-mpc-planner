@@ -529,12 +529,16 @@ std::tuple<int,int,float,cv::Point3f> DroneController::calc_directional_burn(sta
         }
     }
 
-    auto [roll_deg, pitch_deg] = acc_to_deg(burn_direction);
+//    auto [roll_deg, pitch_deg] = acc_to_deg(burn_direction);
 
-    int auto_roll_burn =  ((roll_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN; // convert to RC commands range
-    int auto_pitch_burn = ((pitch_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN;
+//    int auto_roll_burn =  ((roll_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN; // convert to RC commands range
+//    int auto_pitch_burn = ((pitch_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN;
 
-    return std::make_tuple(auto_roll_burn,auto_pitch_burn,burn_duration,burn_direction);
+    auto [roll_deg, pitch_deg] = acc_to_quaternion(burn_direction);
+    int roll_cmd =  roundf((roll_deg * JOY_BOUND_RANGE / 2.f) + JOY_MIDDLE); // convert to RC commands range
+    int pitch_cmd = roundf((-pitch_deg * JOY_BOUND_RANGE / 2.f) + JOY_MIDDLE);
+
+    return std::make_tuple(roll_cmd,pitch_cmd,burn_duration,burn_direction);
 }
 
 //calculate the predicted drone location after a burn
@@ -662,6 +666,21 @@ std::tuple<float,float> DroneController::acc_to_deg(cv::Point3f acc) {
     return std::make_tuple(roll,pitch);
 }
 
+std::tuple<float,float> DroneController::acc_to_quaternion(cv::Point3f acc) {
+
+    cv::Point3f acc_BF = {-acc.z,-acc.x,-acc.y};
+    cv::Point3f acc_BF_hover = {0,0,-1};
+
+    cv::Point3f quaternion_vector = acc_BF_hover.cross(acc_BF);
+    float quaternion_scalar = sqrt(powf(norm(acc_BF_hover),2) * powf(norm(acc_BF),2) + acc_BF_hover.dot(acc_BF));
+    float quaternion_normalize_factor = sqrt(quaternion_scalar*quaternion_scalar + powf(norm(quaternion_vector),2));
+
+    cv::Point3f quaternion_vector_normalized = quaternion_vector/quaternion_normalize_factor;
+    float quaternion_scalar_normalized = quaternion_scalar/quaternion_normalize_factor;
+
+    return std::make_tuple(quaternion_vector_normalized.x,quaternion_vector_normalized.y);
+}
+
 std::tuple<cv::Point3f, cv::Point3f> DroneController::predict_drone_state_after_spindown(cv::Point3f integrated_pos, cv::Point3f integrated_vel, cv::Point3f burn_accelleration) {
 
     // Phase: spin down
@@ -785,9 +804,13 @@ std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f de
     float throttlef = normf(req_acc)/thrust;
     int throttle_cmd =  roundf(throttlef * JOY_BOUND_RANGE + JOY_BOUND_MIN);
 
-    auto [roll_deg, pitch_deg] = acc_to_deg(direction);
-    int roll_cmd =  roundf(((roll_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN); // convert to RC commands range
-    int pitch_cmd = roundf(((pitch_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN);
+//    auto [roll_deg, pitch_deg] = acc_to_deg(direction);
+//    int roll_cmd =  roundf(((roll_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN); // convert to RC commands range
+//    int pitch_cmd = roundf(((pitch_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN);
+
+    auto [roll_deg, pitch_deg] = acc_to_quaternion(direction);
+    int roll_cmd =  roundf((roll_deg * JOY_BOUND_RANGE / 2.f) + JOY_MIDDLE); // convert to RC commands range
+    int pitch_cmd = roundf((-pitch_deg * JOY_BOUND_RANGE / 2.f) + JOY_MIDDLE);
 
     return std::make_tuple(roll_cmd,pitch_cmd,throttle_cmd);
 }
