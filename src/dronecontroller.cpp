@@ -311,22 +311,11 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
 
         [[fallthrough]];
     } case fm_flying_pid: {
-        //check whether the braking distance is large enough to stay in the frame
-        // if not change the setpoint for the controller
-//        float remaining_breaking_distance = _camvol->calc_distance_to_borders (data_drone);
-//        remaining_breaking_distance -= static_cast<float>(norm(data_drone.vel()))*(1.f/60.f); // Also consider the time till the next check
-//        float required_breaking_time = static_cast<float>(norm(data_drone.vel() )) / thrust;
 
-//        float required_breaking_distance = static_cast<float>(.5L*thrust*pow(required_breaking_time, 2));
-//        if(remaining_breaking_distance<=required_breaking_distance && _joy_state!=js_waypoint ){
-//            setpoint_pos = data_drone.pos ();
-//            setpoint_vel = data_drone.vel ();
-//            setpoint_acc = {0};
-//            flight_submode_name = "fm_pid_keep_in_volume";
-//        } else {
-//            flight_submode_name = "";
-//        }
         cv::Point3f filtered_setpoint_pos = pos_reference_filter.new_sample(setpoint_pos);
+
+        std::tie(filtered_setpoint_pos, setpoint_vel) = keep_in_volume_check(data_drone, setpoint_pos, setpoint_vel); // Setpoint changes due to keep in volume validation shall not be filtered. The drone must always react fast to these changes.
+
         control_model_based(data_drone, filtered_setpoint_pos, setpoint_vel);
 
         //check if we can go back to burning:
@@ -769,6 +758,26 @@ void DroneController::approx_effective_thrust(track_data data_drone, cv::Point3f
     }
     thrust = static_cast<float>(norm(acc)) / ground_effect;
     drone_vel_after_takeoff = integrated_vel2 * 1.15f; // TODO determine magical battery healt factor :(
+}
+
+std::tuple<cv::Point3f, cv::Point3f> DroneController::keep_in_volume_check(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel){
+    // check whether the braking distance is large enough to stay in the frame
+    // if not change the setpoint for the controller
+    float remaining_breaking_distance = _camvol->calc_distance_to_borders (data_drone);
+    remaining_breaking_distance -= static_cast<float>(norm(data_drone.vel()))*(1.f/pparams.fps); // Also consider the time till the next check
+    float required_breaking_time = static_cast<float>(norm(data_drone.vel() )) / thrust;
+    float required_breaking_distance = static_cast<float>(.5L*thrust*pow(required_breaking_time, 2));
+
+    if(remaining_breaking_distance<=required_breaking_distance && remaining_breaking_distance<0 ){
+        setpoint_pos = data_drone.pos ();
+        setpoint_vel = {0};
+        flight_submode_name = "fm_pid_keep_in_volume";
+        _camvol->calc_distance_to_borders (data_drone); // Only for debugging, TODO remove
+    } else {
+        flight_submode_name = "";
+    }
+
+    return std::make_tuple(setpoint_pos, setpoint_vel);
 }
 
 std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f desired_acceleration) {

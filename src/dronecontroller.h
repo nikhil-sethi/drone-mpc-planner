@@ -209,6 +209,8 @@ private:
     void draw_viz(state_data state_drone, state_data state_target, double time, cv::Point3f burn_direction, float burn_duration, float remaining_aim_duration, std::vector<state_data> traj);
     bool trajectory_in_view(std::vector<state_data> traj, CameraVolume::volume_check_mode c);
 
+    std::tuple<cv::Point3f, cv::Point3f> keep_in_volume_check(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
+
     std::tuple<float,float> acc_to_deg(cv::Point3f acc);
     std::tuple<float,float> acc_to_quaternion(cv::Point3f acc);
 
@@ -340,7 +342,6 @@ public:
     int auto_yaw = JOY_MIDDLE;
     float auto_burn_duration = 0;
 
-    Smoother pid_roll_smoother,pid_pitch_smoother,pid_throttle_smoother;
     Smoother yaw_smoother;
 
     //Normalized throttle, between [-1 .. 1].
