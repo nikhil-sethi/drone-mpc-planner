@@ -33,7 +33,7 @@ void MultiModule::init(int drone_id, bool fromfile) {
     zerothrottle();
 
     // setup connection with MultiModule
-    notconnected = RS232_OpenComport(115200,"/dev/pats_mm1");
+    notconnected = RS232_OpenComport(115200,"/dev/pats_mm0");
     if (dparams.tx!=tx_none) {
         if (notconnected && !fromfile) {
             throw my_exit("cannot connect the MultiModule");
@@ -216,7 +216,7 @@ void MultiModule::receive_data() {
                 received.clear();
                 received << bufs;
                 std::string current_firmware_version = bufs.substr(0, bufs.find(":"));
-                std::string required_firmwar_version = "1.4.0.1";
+                std::string required_firmwar_version = "1.4.0.0";
                 if (current_firmware_version != required_firmwar_version) {
                     std::cout << "Detected wrong MultiModule firmware version! Detected: " << current_firmware_version << ". Required: "  << required_firmwar_version << "." << std::endl;
                     exit(1); // goal justifies the mean...
