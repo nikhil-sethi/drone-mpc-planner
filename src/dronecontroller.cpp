@@ -1,4 +1,4 @@
-﻿#include "dronecontroller.h"
+#include "dronecontroller.h"
 #include "defines.h"
 
 using namespace cv;
@@ -55,6 +55,8 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     d_err_x.init (1.f/pparams.fps);
     d_err_y.init (1.f/pparams.fps);
     d_err_z.init (1.f/pparams.fps);
+
+    pos_reference_filter.init(1.f/pparams.fps, 1, 1.f/pparams.fps*0.1f, 1.f/pparams.fps*0.1f);
 
     thrust = initial_thrust_guess;
     initial_hover_throttle_guess_non3d = static_cast<uint16_t>(roundf(GRAVITY/initial_thrust_guess*static_cast<float>(JOY_BOUND_RANGE+dparams.min_throttle)));
@@ -305,6 +307,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         filter_vel_err_x.reset (setpoint_vel.x - data_drone.state.vel.x);
         filter_vel_err_y.reset (setpoint_vel.y - data_drone.state.vel.y);
         filter_vel_err_z.reset (setpoint_vel.z - data_drone.state.vel.z);
+        pos_reference_filter.internal_states(setpoint_pos, setpoint_pos);
 
         [[fallthrough]];
     } case fm_flying_pid: {
@@ -323,8 +326,8 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
 //        } else {
 //            flight_submode_name = "";
 //        }
-
-        control_model_based(data_drone, setpoint_pos, setpoint_vel);
+        cv::Point3f filtered_setpoint_pos = pos_reference_filter.new_sample(setpoint_pos);
+        control_model_based(data_drone, filtered_setpoint_pos, setpoint_vel);
 
         //check if we can go back to burning:
         if (data_drone.pos_valid && data_drone.vel_valid && _joy_state!=js_waypoint){
