@@ -48,8 +48,8 @@ public:
 private:
     int v_crcl1 = 250;
     int v_crcl2 = 500;
-    int r_crcl1 = 10;
-    int r_crcl2 = 30;
+    int r_crcl1 = 5;
+    int r_crcl2 = 15;
 
     int enable_vel_control_x = 0;
     int enable_vel_control_y = 0;
