@@ -244,7 +244,8 @@ void process_video() {
         else
             restart_delay = 0;
 
-        if (imgcount > 360000 && pparams.insect_logging_mode) {
+        if ((imgcount > 360000 && pparams.insect_logging_mode)  ||
+                (cam.measured_exposure() <= pparams.darkness_threshold && pparams.insect_logging_mode)) {
             std::cout << "Initiating periodic restart" << std::endl;
             key =27;
         } else if(restart_delay > 1*pparams.fps) {
@@ -291,7 +292,8 @@ void process_frame(Stereo_Frame_Data data) {
     logger << data.imgcount << ";"
            << data.RS_id << ";"
            << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << ";"
-           << data.time << ";";
+           << data.time << ";"
+           << cam.measured_exposure() << ";";
 
     trackers.update(data.time,dctrl.drone_is_active());
     if (log_replay_mode) {
@@ -498,7 +500,7 @@ void init_loggers() {
     logger.open(data_output_dir  + "log.csv",std::ofstream::out);
     cout << "data_output_dir: " << data_output_dir << endl;
 
-    logger << "ID;RS_ID;time;elapsed;";
+    logger << "ID;RS_ID;time;elapsed;Exposure;";
     logger_fn = data_output_dir  + "log" + to_string(0) + ".csv"; // only used with pparams.video_cuts
 
     logger_insect.open(data_output_dir  + "insect.log",std::ofstream::out);

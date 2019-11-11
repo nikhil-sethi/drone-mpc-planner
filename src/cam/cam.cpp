@@ -61,6 +61,11 @@ void Cam::update_real(void) {
     lock_frame_data.lock();
     frameL = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(rs_frameL.get_data()), Mat::AUTO_STEP).clone();
     frameR = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(rs_frameR.get_data()), Mat::AUTO_STEP).clone();
+
+    if (rs_frameL.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
+        _measured_exposure = rs_frameL.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
+    }
+
     _frame_number = rs_frameL.get_frame_number();
     if (_frame_time_start <0)
         _frame_time_start = rs_frameL.get_timestamp();
