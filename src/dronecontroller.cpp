@@ -59,7 +59,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     pos_reference_filter.init(1.f/pparams.fps, 1, 1.f/pparams.fps*0.1f, 1.f/pparams.fps*0.1f);
 
     thrust = initial_thrust_guess;
-    initial_hover_throttle_guess_non3d = static_cast<uint16_t>(roundf(GRAVITY/initial_thrust_guess*static_cast<float>(JOY_BOUND_RANGE+dparams.min_throttle)));
+    initial_hover_throttle_guess_non3d = GRAVITY/initial_thrust_guess*JOY_BOUND_RANGE+dparams.min_throttle;
     initialized = true;
 }
 
