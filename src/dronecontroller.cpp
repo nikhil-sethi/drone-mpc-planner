@@ -312,9 +312,10 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         [[fallthrough]];
     } case fm_flying_pid: {
 
+        //adapt_reffilter_dynamic(data_drone, data_target);
         cv::Point3f filtered_setpoint_pos = pos_reference_filter.new_sample(setpoint_pos);
 
-        std::tie(filtered_setpoint_pos, setpoint_vel) = keep_in_volume_check(data_drone, setpoint_pos, setpoint_vel); // Setpoint changes due to keep in volume validation shall not be filtered. The drone must always react fast to these changes.
+        std::tie(filtered_setpoint_pos, setpoint_vel) = keep_in_volume_check(data_drone, filtered_setpoint_pos, setpoint_vel); // Setpoint changes due to keep in volume validation shall not be filtered. The drone must always react fast to these changes.
 
         control_model_based(data_drone, filtered_setpoint_pos, setpoint_vel);
 
@@ -785,6 +786,24 @@ std::tuple<cv::Point3f, cv::Point3f> DroneController::keep_in_volume_check(track
     }
 
     return std::make_tuple(setpoint_pos, setpoint_vel);
+}
+
+void DroneController::adapt_reffilter_dynamic(track_data data_drone, track_data data_target){
+    float T;
+    float Tmax = 0.6;
+    float Tmin = 0.3; //1/pparams.fps/1000;
+    float dist = norm(data_drone.state.pos - data_target.state.pos);
+
+    float dist0 = 1.5;
+
+    if(dist>dist0)
+        T = Tmax;
+    else {
+        T = (Tmax-Tmin)/(dist0) * dist;
+    }
+
+    pos_reference_filter.dynamic(0.2f, 0.2f); // To avoid over shoot T1 should be equal to T2 (and positiv)
+    std::cout << "REF-FILTER> T: " << T << std::endl;
 }
 
 std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f desired_acceleration) {

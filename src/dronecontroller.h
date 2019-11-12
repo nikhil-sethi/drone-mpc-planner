@@ -210,6 +210,7 @@ private:
     bool trajectory_in_view(std::vector<state_data> traj, CameraVolume::volume_check_mode c);
 
     std::tuple<cv::Point3f, cv::Point3f> keep_in_volume_check(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
+    void adapt_reffilter_dynamic(track_data data_drone, track_data data_target);
 
     std::tuple<float,float> acc_to_deg(cv::Point3f acc);
     std::tuple<float,float> acc_to_quaternion(cv::Point3f acc);
