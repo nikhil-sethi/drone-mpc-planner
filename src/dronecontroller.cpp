@@ -816,6 +816,9 @@ std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f de
     float throttlef = normf(req_acc)/thrust;
     int throttle_cmd =  static_cast<uint16_t>(roundf(throttlef * JOY_BOUND_RANGE + JOY_BOUND_MIN));
 
+    if (throttle_cmd < dparams.min_throttle)
+        throttle_cmd = dparams.min_throttle;
+
    // auto [roll_deg, pitch_deg] = acc_to_deg(direction);
    // int roll_cmd =  static_cast<uint16_t>(roundf(((roll_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN)); // convert to RC commands range
    // int pitch_cmd = static_cast<uint16_t>(roundf(((pitch_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN));
