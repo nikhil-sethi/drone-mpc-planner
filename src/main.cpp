@@ -409,7 +409,9 @@ void handle_key(double time [[maybe_unused]]) {
     case 84: // arrow down
         dnav.manual_trigger_prev_wp();
         break;
-
+    case 'j': // arrow down
+        dctrl.manual_johson = 60;
+        break;
 #if CAMMODE == CAMMODE_REALSENSE
     case ' ':
     case 'f':

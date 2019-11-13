@@ -419,8 +419,10 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
     yaw = bound_joystick_value(yaw);
 
 
-    if (_joy_takeoff_switch) //TMP!
+    if (manual_johson) { //TMP!
         mode += bf_headless_disabled; // for johnson!
+        manual_johson -=1;
+    }
     //std::cout << time <<  " rpt: " << roll << ", " << pitch << ", " << throttle << std::endl;
     if (!_fromfile) {
         _rc->queue_commands(throttle,roll,pitch,yaw,mode);

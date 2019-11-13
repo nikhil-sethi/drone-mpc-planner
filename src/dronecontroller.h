@@ -275,6 +275,8 @@ public:
 
     }
 
+    int manual_johson = 0;
+
     joy_states Joy_State() {
         return _joy_state;
     }
