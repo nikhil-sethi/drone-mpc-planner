@@ -433,15 +433,15 @@ void handle_key(double time [[maybe_unused]]) {
         break;
 #endif
     case 'a':
-        rc.arm(true);
+        rc.arm(bf_armed);
         dnav.nav_flight_mode(DroneNavigation::nfm_waypoint);
         break;
     case 'h':
-        rc.arm(true);
+        rc.arm(bf_armed);
         dnav.nav_flight_mode(DroneNavigation::nfm_hunt);
         break;
     case 'd':
-        rc.arm(false);
+        rc.arm(bf_disarmed);
         dnav.nav_flight_mode(DroneNavigation::nfm_manual);
         break;
     } // end switch key

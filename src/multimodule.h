@@ -30,6 +30,23 @@
 #define JOY_MAX                             2048 // 2000
 #define JOY_MIDDLE                          1024 // 1500
 
+
+enum betaflight_mode {
+    bf_angle = JOY_BOUND_MIN,
+    bf_acro =  (JOY_MIDDLE + JOY_BOUND_MIN)
+};
+enum betaflight_headless_mode {
+    bf_headless_enabled = 0,
+    bf_headless_disabled = 50 // semi random number that gives a nice detectable change in the mode switch (1030 in BF), but is small enough to not interfere with the normal modes (can be made smaller prolly if necessary)
+};
+
+enum betaflight_arming {
+    bf_disarmed = JOY_BOUND_MIN,
+    bf_armed = JOY_BOUND_MAX
+};
+
+
+
 static const char* armed_names[] = {"disarmed","armed"};
 
 class MultiModule{
@@ -38,6 +55,7 @@ class MultiModule{
     int tx_option;
     int tx_rate;
 public:
+
 
     void init(int drone_id, bool fromfile);
 
@@ -48,21 +66,22 @@ public:
     bool led_on = true;
 
     int ledpower = 75;
-    uint16_t mode = JOY_MAX; // <min = mode 1, 1500 = mode 2, >max = mode 3
+    uint16_t mode = JOY_BOUND_MIN; // set to angle mode in BF
     int roll=JOY_MIDDLE,pitch=JOY_MIDDLE,yaw=JOY_MIDDLE;
     int throttle = JOY_BOUND_MIN;
-    int arm_switch = JOY_MIN_THRESH;
+    int arm_switch = JOY_BOUND_MIN;
 
     std::string Armed(){
         return armed_names[arm_switch>JOY_MIDDLE];
     }
 
-    void queue_commands(int new_throttle,int new_roll, int new_pitch, int new_yaw) {
+    void queue_commands(int new_throttle,int new_roll, int new_pitch, int new_yaw, int new_mode) {
         g_lockData.lock();
         throttle = new_throttle;
         roll = new_roll;
         pitch = new_pitch;
         yaw = new_yaw;
+        mode = new_mode;
         g_lockData.unlock();
         g_sendData.unlock();
     }
@@ -86,11 +105,8 @@ public:
                 cycles_until_bind = -80;
         }
     }
-    void arm(bool v) {
-        if (v)
-            arm_switch = JOY_BOUND_MAX;
-        else
-            arm_switch = JOY_BOUND_MIN;
+    void arm(betaflight_arming v) {
+        arm_switch = v;
     }
 private:
 
@@ -105,14 +121,6 @@ private:
 
     bool initialized = false;
     int notconnected;
-    enum bound_enum{
-        cx10_unknown,
-        cx10_bound,
-        cx10_not_bound,
-        cx10_binding
-    };
-
-    bound_enum bound = cx10_unknown;
 
     std::stringstream received;
 

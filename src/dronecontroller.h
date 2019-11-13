@@ -187,7 +187,7 @@ private:
     bool _fromfile;
     flight_modes _flight_mode = fm_joystick_check; // only set externally (except for disarming), used internally
     joy_mode_switch_modes _joy_mode_switch = jmsm_none;
-    bool _joy_arm_switch = true;
+    betaflight_arming _joy_arm_switch = bf_armed;
     bool _joy_takeoff_switch = false;
     joy_states _joy_state = js_none;
     int joyDial = 0;
@@ -310,7 +310,7 @@ public:
         joy_pitch= log_joy_pitch;
         joy_yaw = log_joy_yaw;
         joy_throttle = log_joy_throttle;
-        _joy_arm_switch = log_joy_arm_switch;
+        _joy_arm_switch = static_cast<betaflight_arming>(log_joy_arm_switch);
         _joy_mode_switch = static_cast<joy_mode_switch_modes>(log_joy_mode_switch);
         _joy_takeoff_switch = log_joy_take_off_switch;
         _log_auto_roll = log_auto_roll;

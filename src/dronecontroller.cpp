@@ -96,7 +96,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
 
     _dist_to_setpoint = normf(data_drone.state.pos - data_target.state.pos);
 
-    int throttle = 0,roll = 0,pitch = 0,yaw = 0;
+    int throttle = 0,roll = 0,pitch = 0,yaw = 0, mode = bf_angle;
     bool joy_control = false;
     switch(_flight_mode) {
     case fm_manual: {
@@ -108,7 +108,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         joy_control = true;
         break;
     } case fm_spinup: {
-        _rc->arm(true);
+        _rc->arm(bf_armed);
         start_takeoff_burn_time = 0;
         if (spin_up_start_time < 0.01)
             spin_up_start_time = time;
@@ -127,7 +127,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         auto_pitch = JOY_MIDDLE;
 
         if (dparams.mode3d) {
-            _rc->arm(true);
+            _rc->arm(bf_armed);
             break;
         }
         [[fallthrough]];
@@ -364,7 +364,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
             auto_throttle = JOY_MIDDLE;
         else
             auto_throttle = JOY_BOUND_MIN;
-        _rc->arm(false);
+        _rc->arm(bf_disarmed);
         if (time > 5 && pparams.joystick == rc_none)
             _flight_mode = fm_inactive;
         break;
@@ -376,9 +376,9 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         else
             auto_throttle = JOY_BOUND_MIN;
         if (pparams.joystick == rc_none && !dparams.mode3d)
-            _rc->arm(true);
+            _rc->arm(bf_armed);
         else if (dparams.mode3d)
-            _rc->arm(false);
+            _rc->arm(bf_disarmed);
         break;
     } case fm_abort_flight: {
         if (dparams.mode3d)
@@ -401,7 +401,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
             auto_throttle = JOY_BOUND_MIN;
         auto_roll = JOY_MIDDLE;
         auto_pitch = JOY_MIDDLE;
-        _rc->arm(false);
+        _rc->arm(bf_disarmed);
         break;
     }
     }
@@ -418,10 +418,14 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
     pitch = bound_joystick_value(pitch);
     yaw = bound_joystick_value(yaw);
 
+
+    if (_joy_takeoff_switch) //TMP!
+        mode += bf_headless_disabled; // for johnson!
     //std::cout << time <<  " rpt: " << roll << ", " << pitch << ", " << throttle << std::endl;
     if (!_fromfile) {
-        _rc->queue_commands(throttle,roll,pitch,yaw);
+        _rc->queue_commands(throttle,roll,pitch,yaw,mode);
     }
+
 
     control_data c(Throttle(),Roll(),Pitch(),time);
     control_history.push_back(c);
@@ -668,7 +672,7 @@ std::tuple<float,float> DroneController::acc_to_quaternion(cv::Point3f acc) {
     float quaternion_normalize_factor = sqrt(quaternion_scalar*quaternion_scalar + powf(norm(quaternion_vector),2));
 
     cv::Point3f quaternion_vector_normalized = quaternion_vector/quaternion_normalize_factor;
-    float quaternion_scalar_normalized = quaternion_scalar/quaternion_normalize_factor;
+//    float quaternion_scalar_normalized = quaternion_scalar/quaternion_normalize_factor;
 
     return std::make_tuple(quaternion_vector_normalized.x,quaternion_vector_normalized.y);
 }
@@ -904,8 +908,12 @@ void DroneController::read_joystick(void) {
                 case 2: //throttle
                     joy_throttle =  (event.value >> 5) + JOY_MIDDLE - 100;
                     break;
-                case 5: //switch
-                    _joy_arm_switch = event.value>0; // goes between +/-32768
+                case 5:  //switch
+                    if (event.value>0) {
+                        _joy_arm_switch = bf_armed;
+                    } else {
+                        _joy_arm_switch = bf_disarmed;
+                    }
                     break;
                 case 3: //dial
                     joyDial = event.value; // goes between +/-32768
@@ -934,8 +942,11 @@ void DroneController::read_joystick(void) {
                     joy_yaw = static_cast<uint16_t>((event.value >> 5)*0.4 + JOY_MIDDLE);
                     break;
                 case 4: //arm switch (two way)
-                    _joy_arm_switch = event.value>0;
-                    //                    _rc->arm(event.value>0);
+                    if (event.value>0) {
+                        _joy_arm_switch = bf_armed;
+                    } else {
+                        _joy_arm_switch = bf_disarmed;
+                    }
                     break;
                 case 5: //mode switch (3 way)
                     if (event.value<-16384 ){
@@ -969,7 +980,7 @@ void DroneController::process_joystick() {
 
     // prevent accidental take offs at start up
     if (_joy_state == js_checking){
-        if (!_joy_arm_switch &&
+        if (_joy_arm_switch == bf_disarmed &&
             ((joy_throttle <= JOY_MIN_THRESH && !dparams.mode3d) || (abs(joy_throttle- JOY_MIDDLE) < 50 && dparams.mode3d) )&&
             !_joy_takeoff_switch) {
             _flight_mode = fm_disarmed;
@@ -985,14 +996,14 @@ void DroneController::process_joystick() {
         }
         if (!_joy_arm_switch){
             if (!dparams.mode3d)
-                _rc->arm(false);
+                _rc->arm(bf_disarmed);
             _joy_takeoff_switch = false;
             _manual_override_take_off_now = false;
             _joy_state = js_disarmed;
             _flight_mode = fm_disarmed;
         }else {
             if (!dparams.mode3d)
-                _rc->arm(true);
+                _rc->arm(bf_armed);
             if (_joy_mode_switch == jmsm_manual){
                 _joy_state = js_manual;
                 _flight_mode = fm_manual;
