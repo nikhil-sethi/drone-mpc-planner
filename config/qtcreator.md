@@ -20,3 +20,4 @@ Additional settings:
 * Top Menubar -> Tools -> Option -> C++ -> Code Model -> Edit -> Tab policy: Spaces only  
 * Top Menubar -> Tools -> Option -> C++ -> Code Model -> Edit -> Tab size:: 4  
 * Top Menubar -> Tools -> Option -> C++ -> Code Model -> Edit -> Indent size:: 4  
+* Help -> About plugins -> ClangFormat -> check
