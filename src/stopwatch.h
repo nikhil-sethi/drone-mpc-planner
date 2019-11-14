@@ -86,31 +86,31 @@ unsigned long ReadTimer(const stopwatch_t *stopWatch);
 ***************************************************************************/
 class stopwatch_c
 {
-    public:
-        stopwatch_c(void)
-        {
-            watchData.isRunning = FALSE;
-            watchData.startTime.tv_sec = 0;
-            watchData.startTime.tv_nsec = 0;
-            watchData.runningTime.tv_sec = 0;
-            watchData.runningTime.tv_nsec = 0;
-        };
+public:
+    stopwatch_c(void)
+    {
+        watchData.isRunning = FALSE;
+        watchData.startTime.tv_sec = 0;
+        watchData.startTime.tv_nsec = 0;
+        watchData.runningTime.tv_sec = 0;
+        watchData.runningTime.tv_nsec = 0;
+    };
 
-        ~stopwatch_c(void) {};
+    ~stopwatch_c(void) {};
 
-        void Start(void) {StartTimer(&watchData);};
-        void Stop(void) {StopTimer(&watchData);};
-        void Resume(void) {ResumeTimer(&watchData);};
-        void Restart(void) {Stop();Start();};
+    void Start(void) {StartTimer(&watchData);};
+    void Stop(void) {StopTimer(&watchData);};
+    void Resume(void) {ResumeTimer(&watchData);};
+    void Restart(void) {Stop();Start();};
 
-        /* running time in ms last time if stopped */
-        unsigned long Read(void) const
-        {
-            return ReadTimer(&watchData);
-        };
+    /* running time in ms last time if stopped */
+    unsigned long Read(void) const
+    {
+        return ReadTimer(&watchData);
+    };
 
-    private:
-        stopwatch_t watchData;
+private:
+    stopwatch_t watchData;
 };
 #endif /* defined __cplusplus */
 

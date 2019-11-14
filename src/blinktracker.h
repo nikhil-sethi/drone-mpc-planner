@@ -8,19 +8,19 @@
  *
  */
 static const char* blinking_drone_state_names[] = { "",
-                                                    "bds_start",
-                                                    "bds_reset_bkg",
-                                                    "bds_failed",
-                                                    "bds_restart_searching",
-                                                    "bds_searching",
-                                                    "bds_1_blink_off",
-                                                    "bds_1_blink_on",
-                                                    "bds_2_blink_off",
-                                                    "bds_2_blink_on",
-                                                    "bds_3_blink_off_calib",
-                                                    "bds_3_blink_off",
-                                                    "bds_3_blink_on",
-                                                    "bds_found" };
+                                                   "bds_start",
+                                                   "bds_reset_bkg",
+                                                   "bds_failed",
+                                                   "bds_restart_searching",
+                                                   "bds_searching",
+                                                   "bds_1_blink_off",
+                                                   "bds_1_blink_on",
+                                                   "bds_2_blink_off",
+                                                   "bds_2_blink_on",
+                                                   "bds_3_blink_off_calib",
+                                                   "bds_3_blink_off",
+                                                   "bds_3_blink_on",
+                                                   "bds_found" };
 
 class BlinkTracker : public ItemTracker {
 

@@ -13,11 +13,11 @@
 #include <opencv2/highgui/highgui.hpp>
 
 static const char* trackermanager_mode_names[] = {"tm_idle",
-                                                "tm_locate_drone",
-                                                "tm_wait_for_insect",
-                                                "tm_drone_only",
-                                                "tm_hunt",
-                                                "tm_hunt_replay_moth"};
+                                                  "tm_locate_drone",
+                                                  "tm_wait_for_insect",
+                                                  "tm_drone_only",
+                                                  "tm_hunt",
+                                                  "tm_hunt_replay_moth"};
 
 /*
  * This class appoints the found image points to the drone and insect item tracker(s)
@@ -69,7 +69,7 @@ public: cv::Scalar tracker_color( ItemTracker * trkr) {
         }
     };
 
-    private:
+private:
     class TrackerManagerParameters: public xmls::Serializable
     {
     public:
@@ -135,7 +135,7 @@ private:
     DroneTracker * _dtrkr;   //tmp
 public:
     void reset_after_log(){
-         _itrkr->reset_after_log();
+        _itrkr->reset_after_log();
     }
     cv::Mat viz_max_points,diff_viz;
     void mode(detection_mode m){

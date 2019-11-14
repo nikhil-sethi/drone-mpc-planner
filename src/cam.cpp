@@ -362,7 +362,7 @@ void Cam::convert_depth_background_to_world() {
             float p[3];
             rs2_deproject_pixel_to_point(p, intr, pixel, backf);
             cv::Vec3f pixelColor(p[0],p[1],p[2]);
-//            std::cout << "depth_background_3mm( " << i << " , " << j << " ): p[0]: " << p[0] << " ,p[1]: " << p[1] << " ,p[2]: " << p[2] <<std::endl;
+            //            std::cout << "depth_background_3mm( " << i << " , " << j << " ): p[0]: " << p[0] << " ,p[1]: " << p[1] << " ,p[2]: " << p[2] <<std::endl;
             depth_background_3mm.at<cv::Vec3f>(j,i) = pixelColor;
             cv::Vec3f pixelWorldPos(p[0],
                                     p[1]*cosf(_camera_angle_y*deg2rad) + p[2]*-sinf(-_camera_angle_y*deg2rad),

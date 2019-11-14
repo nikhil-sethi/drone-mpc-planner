@@ -9,14 +9,14 @@
  *
  */
 static const char* drone_tracking_state_names[] = { "dts_init",
-                                                    "dts_inactive",
-                                                    "dts_detecting_takeoff_init",
-                                                    "dts_detecting_takeoff",
-                                                    "dts_detecting",
-                                                    "dts_detected",
-                                                    "dts_reset_heading",
-                                                    "dts_landing_init",
-                                                    "dts_landing"};
+                                                   "dts_inactive",
+                                                   "dts_detecting_takeoff_init",
+                                                   "dts_detecting_takeoff",
+                                                   "dts_detecting",
+                                                   "dts_detected",
+                                                   "dts_reset_heading",
+                                                   "dts_landing_init",
+                                                   "dts_landing"};
 class DroneTracker : public ItemTracker {
 
 private:

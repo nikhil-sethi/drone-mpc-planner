@@ -39,7 +39,7 @@ void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, Dro
 
     setpoints.push_back(waypoint(cv::Point3f(0,-0.7f,-2.3f),100));
 
-//    setpoints.push_back(flower_waypoint(cv::Point3f(0,-1.5f,-2.0f)));
+    //    setpoints.push_back(flower_waypoint(cv::Point3f(0,-1.5f,-2.0f)));
     setpoints.push_back(brick_waypoint(cv::Point3f(0,-1.f,-2.0f)));
 
     setpoints.push_back(landing_waypoint());
@@ -49,8 +49,8 @@ void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, Dro
         createTrackbar("X [cm", "Nav", &setpoint_slider_X, 500);
         createTrackbar("Y off", "Nav", &setpoint_slider_Y, 500);
         createTrackbar("Z center]", "Nav", &setpoint_slider_Z, 500);
-//        createTrackbar("WP id", "Nav", reinterpret_cast<int*>(wpid), setpoints.size()-1);
-//        createTrackbar("d threshold factor", "Nav", &distance_threshold_f, 10);
+        //        createTrackbar("WP id", "Nav", reinterpret_cast<int*>(wpid), setpoints.size()-1);
+        //        createTrackbar("d threshold factor", "Nav", &distance_threshold_f, 10);
 
         createTrackbar("v_crcl1", "Nav", &v_crcl1, 1000);
         createTrackbar("v_crcl2", "Nav", &v_crcl2, 1000);
@@ -76,8 +76,8 @@ void DroneNavigation::update(double time) {
 
     if (_dctrl->Joy_State() != DroneController::js_none) {
         if (_dctrl->Joy_State() == DroneController::js_checking ||
-                _dctrl->Joy_State() == DroneController::js_none ||
-                _dctrl->Joy_State() == DroneController::js_disarmed )
+            _dctrl->Joy_State() == DroneController::js_none ||
+            _dctrl->Joy_State() == DroneController::js_disarmed )
             _nav_flight_mode = nfm_none;
         else if(_dctrl->Joy_State() == DroneController::js_hunt)
             _nav_flight_mode = nfm_hunt;
@@ -166,7 +166,7 @@ void DroneNavigation::update(double time) {
                     _navigation_status = ns_takeoff;
                     repeat = true;
                 } else if(_trackers->insecttracker ()->tracking ()){
-                     _dctrl->flight_mode (DroneController::fm_spinup);
+                    _dctrl->flight_mode (DroneController::fm_spinup);
                 }
             } else if (_nav_flight_mode == nfm_none) { // e.g. insect logging mode
             } else if (_nav_flight_mode == nfm_waypoint)

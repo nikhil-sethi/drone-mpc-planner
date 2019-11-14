@@ -67,7 +67,7 @@ public:
         float disparity; // not really a world prop, but OK.
         bool radius_in_range = false,disparity_in_range = false,bkg_check_ok = false,valid = false;
         cv::Point3f pt() {return cv::Point3f(x,y,z);}
-    float heading;
+        float heading;
     };
 
     struct ImageItem {

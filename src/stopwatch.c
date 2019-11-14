@@ -95,7 +95,7 @@ void StopTimer(stopwatch_t *stopWatch)
 
     stopWatch->runningTime.tv_nsec +=
         (now.tv_nsec - stopWatch->startTime.tv_nsec);
-    
+
     stopWatch->startTime.tv_sec = 0;
     stopWatch->startTime.tv_nsec = 0;
 }
@@ -140,7 +140,7 @@ unsigned long ReadTimer(const stopwatch_t *stopWatch)
     if (FALSE == stopWatch->isRunning)
     {
         return (stopWatch->runningTime.tv_sec * 1000) +
-            (stopWatch->runningTime.tv_nsec / 1000000);
+               (stopWatch->runningTime.tv_nsec / 1000000);
     }
 
     clock_gettime(CLOCK_MONOTONIC, &now);
@@ -154,10 +154,10 @@ unsigned long ReadTimer(const stopwatch_t *stopWatch)
     }
 
     delta = ((now.tv_sec - stopWatch->startTime.tv_sec) +
-        stopWatch->runningTime.tv_sec) * 1000;
+             stopWatch->runningTime.tv_sec) * 1000;
 
     delta += ((now.tv_nsec - stopWatch->startTime.tv_nsec) +
-        stopWatch->runningTime.tv_nsec) / 1000000;
- 
+              stopWatch->runningTime.tv_nsec) / 1000000;
+
     return delta;
 }

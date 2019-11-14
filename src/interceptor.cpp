@@ -12,7 +12,7 @@ void Interceptor::init(TrackerManager *trackers, VisionData *visdat, CameraVolum
 void Interceptor::update(bool drone_at_base, double time) {
 
     switch (_interceptor_state) {
-     case  is_init: {
+    case  is_init: {
         _interceptor_state = is_waiting_for_target;
         _intercept_pos = {0,0,0};
         [[fallthrough]];
@@ -33,7 +33,7 @@ void Interceptor::update(bool drone_at_base, double time) {
 
 
         if ( !_trackers->insecttracker()->tracking() ){
-             _interceptor_state = is_waiting_for_target;
+            _interceptor_state = is_waiting_for_target;
             break;
         }
 
@@ -46,56 +46,56 @@ void Interceptor::update(bool drone_at_base, double time) {
         if (!_count_insect_not_in_range)
             _interceptor_state = is_move_to_intercept;
         break;
-        } case is_flower_of_fire_intercept: {
-            if  (!_trackers->insecttracker()->tracking()) {
-                _interceptor_state = is_waiting_for_target;
-                break;
-            }
-            update_flower_of_fire(time);
-            update_insect_in_range();
-            if (_intercept_pos.y< _trackers->dronetracker()->drone_startup_location().y + minimal_height)
-                _intercept_pos.y  = _trackers->dronetracker()->drone_startup_location().y + minimal_height;
-            if (_count_insect_not_in_range>5){
-                _interceptor_state = is_waiting_in_reach_zone;
-                break;
-            }
+    } case is_flower_of_fire_intercept: {
+        if  (!_trackers->insecttracker()->tracking()) {
+            _interceptor_state = is_waiting_for_target;
             break;
+        }
+        update_flower_of_fire(time);
+        update_insect_in_range();
+        if (_intercept_pos.y< _trackers->dronetracker()->drone_startup_location().y + minimal_height)
+            _intercept_pos.y  = _trackers->dronetracker()->drone_startup_location().y + minimal_height;
+        if (_count_insect_not_in_range>5){
+            _interceptor_state = is_waiting_in_reach_zone;
+            break;
+        }
+        break;
     } case is_move_to_intercept: { // move max speed to somewhere close of the insect, preferably 20cm below behind.
         if  (!_trackers->insecttracker()->tracking()) {
-          _interceptor_state = is_waiting_for_target;
-          break;
+            _interceptor_state = is_waiting_for_target;
+            break;
         }
-         update_far_target(drone_at_base);
-         update_insect_in_range();
+        update_far_target(drone_at_base);
+        update_insect_in_range();
 
-         if (_intercept_pos.y< _trackers->dronetracker()->drone_startup_location().y + minimal_height)
-             _intercept_pos.y  = _trackers->dronetracker()->drone_startup_location().y + minimal_height;
+        if (_intercept_pos.y< _trackers->dronetracker()->drone_startup_location().y + minimal_height)
+            _intercept_pos.y  = _trackers->dronetracker()->drone_startup_location().y + minimal_height;
 
         if (_count_insect_not_in_range>5){
-           _interceptor_state = is_waiting_in_reach_zone;
-           break;
-         }
+            _interceptor_state = is_waiting_in_reach_zone;
+            break;
+        }
 
-         if (fabs(_horizontal_separation) < 0.6f * _vertical_separation && _vertical_separation<0.8f && _vertical_separation>0)
-             _interceptor_state = is_close_chasing;
+        if (fabs(_horizontal_separation) < 0.6f * _vertical_separation && _vertical_separation<0.8f && _vertical_separation>0)
+            _interceptor_state = is_close_chasing;
 
-         break;
+        break;
     } case is_close_chasing: {
         if  (!_trackers->insecttracker()->tracking()) {
-          _interceptor_state = is_waiting_for_target;
-          break;
+            _interceptor_state = is_waiting_for_target;
+            break;
         }
-         update_close_target();
-         update_insect_in_range();
-         if (_intercept_pos.y< _trackers->dronetracker()->drone_startup_location().y + minimal_height)
-             _intercept_pos.y  = _trackers->dronetracker()->drone_startup_location().y + minimal_height;
+        update_close_target();
+        update_insect_in_range();
+        if (_intercept_pos.y< _trackers->dronetracker()->drone_startup_location().y + minimal_height)
+            _intercept_pos.y  = _trackers->dronetracker()->drone_startup_location().y + minimal_height;
         if (_count_insect_not_in_range>5){
-           _interceptor_state = is_waiting_in_reach_zone;
-           break;
-         }
-//        if (fabs(_horizontal_separation)>0.3f){
-//            _interceptor_state = is_move_to_intercept;
-//        }
+            _interceptor_state = is_waiting_in_reach_zone;
+            break;
+        }
+        //        if (fabs(_horizontal_separation)>0.3f){
+        //            _interceptor_state = is_move_to_intercept;
+        //        }
         break;
     }
     }

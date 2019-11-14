@@ -3,10 +3,10 @@
 
 
 int Cport,
-error;
+    error;
 
 struct termios new_port_settings,
-        old_port_settings[30];
+    old_port_settings[30];
 
 
 int calc_baud(int baudrate) {
@@ -193,9 +193,9 @@ TIOCM_RI  Synonym for TIOCM_RNG
 TIOCM_DSR DSR (data set ready)
 
 http://linux.die.net/man/4/tty_ioctl
-*/
+       */
 
-int RS232_IsDCDEnabled( )
+       int RS232_IsDCDEnabled( )
 {
     int status;
 

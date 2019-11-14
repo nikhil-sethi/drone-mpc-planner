@@ -341,7 +341,7 @@ float DroneTracker::calc_heading(BlobProps * pbs, bool inspect_blob){ // Set ins
         cout<<"Original Drone Mask: "<<endl;
         cout<<pbs->mask_<<endl;
     }
-        if(!pbs->mask_.empty()){
+    if(!pbs->mask_.empty()){
         int kernel_int = 2;
         cv::Mat mask_erode;
         erode(pbs->mask_, mask_erode,getStructuringElement(cv::MORPH_RECT, cv::Size(kernel_int,kernel_int)));
@@ -374,6 +374,6 @@ float DroneTracker::calc_heading(BlobProps * pbs, bool inspect_blob){ // Set ins
         }
 
         heading = yaw_heading(splitted_mask_left, splitted_mask_right);
-        }
-        return heading;
+    }
+    return heading;
 }

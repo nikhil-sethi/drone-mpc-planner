@@ -53,7 +53,7 @@ bool CameraVolume::in_view(cv::Point3f p, volume_check_mode c){
 
 
 bool CameraVolume::in_view(cv::Point3f p,float hysteresis_margin){
-//    bool top_check = on_normal_side (p0_top-hysteresis_margin*n_top, n_top, cv::Mat(p));
+    //    bool top_check = on_normal_side (p0_top-hysteresis_margin*n_top, n_top, cv::Mat(p));
     bool front_check = on_normal_side (p0_front+hysteresis_margin*n_front, n_front, cv::Mat(p));
     bool left_check = on_normal_side (p0_left-hysteresis_margin*n_left, n_left, cv::Mat(p));
     bool right_check = on_normal_side (p0_right+hysteresis_margin*n_right, n_right, cv::Mat(p));
@@ -62,7 +62,7 @@ bool CameraVolume::in_view(cv::Point3f p,float hysteresis_margin){
 
     // Attention check the negative case!
     if( // !top_check ||
-         !front_check
+        !front_check
         || !left_check
         || !right_check
         || !bottom_check
@@ -83,9 +83,9 @@ bool CameraVolume::in_hunt_area(cv::Point3f d, cv::Point3f m){
     float cone_angle = atan2(horizontal_dist, vertical_dist);
 
     if (m.z < -1.0f
-            && m.y<0 && m.y>= p0_bottom.at<float>(1)+minimum_height
-            && abs(cone_angle)<=cone_angle_limit
-            && dist < 2.5f) // && dist > 1.0f)
+        && m.y<0 && m.y>= p0_bottom.at<float>(1)+minimum_height
+        && abs(cone_angle)<=cone_angle_limit
+        && dist < 2.5f) // && dist > 1.0f)
         return true;
     else
         return false;

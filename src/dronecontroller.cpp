@@ -19,11 +19,11 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     _camvol = camvol;
     control_history_max_size = pparams.fps;
     (*_logger) << "valid; " <<
-                  "setpoint_pos_x; setpoint_pos_y; setpoint_pos_z; " <<
-                  "hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; " <<
-                  "joyThrottle; joyRoll; joyPitch; joyYaw; " <<
-                  "joyArmSwitch; joyModeSwitch; joyTakeoffSwitch;" <<
-                  "dt; heading; Sheading;";
+        "setpoint_pos_x; setpoint_pos_y; setpoint_pos_z; " <<
+        "hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; " <<
+        "joyThrottle; joyRoll; joyPitch; joyYaw; " <<
+        "joyArmSwitch; joyModeSwitch; joyTakeoffSwitch;" <<
+        "dt; heading; Sheading;";
     std::cout << "Initialising control." << std::endl;
 
     settings_file = "../../xml/" + dparams.control + ".xml";
@@ -523,7 +523,7 @@ std::tuple<int,int,float,cv::Point3f> DroneController::calc_directional_burn(sta
         }
     }
 
-//    auto [roll_deg, pitch_deg] = acc_to_deg(burn_direction);
+    //    auto [roll_deg, pitch_deg] = acc_to_deg(burn_direction);
 
     //int auto_roll_burn = static_cast<uint16_t>(roundf((roll_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN); // convert to RC commands range
     //int auto_pitch_burn = static_cast<uint16_t>(roundf((pitch_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN);
@@ -670,7 +670,7 @@ std::tuple<float,float> DroneController::acc_to_quaternion(cv::Point3f acc) {
     float quaternion_normalize_factor = sqrt(quaternion_scalar*quaternion_scalar + powf(norm(quaternion_vector),2));
 
     cv::Point3f quaternion_vector_normalized = quaternion_vector/quaternion_normalize_factor;
-//    float quaternion_scalar_normalized = quaternion_scalar/quaternion_normalize_factor;
+    //    float quaternion_scalar_normalized = quaternion_scalar/quaternion_normalize_factor;
 
     return std::make_tuple(quaternion_vector_normalized.x,quaternion_vector_normalized.y);
 }
@@ -697,7 +697,7 @@ int DroneController::control_yaw(track_data data_drone, float gain_yaw){
     else{
         auto_yaw = JOY_MIDDLE;
     }
-return auto_yaw;
+    return auto_yaw;
 }
 
 //considering a take off order from just after the aiming phase of: spinning up, burning, spin down, 1g, find the max drone acceleration that best desccribes the current position given dt
@@ -852,9 +852,9 @@ std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f de
     if (throttle_cmd < dparams.min_throttle)
         throttle_cmd = dparams.min_throttle;
 
-   // auto [roll_deg, pitch_deg] = acc_to_deg(direction);
-   // int roll_cmd =  static_cast<uint16_t>(roundf(((roll_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN)); // convert to RC commands range
-   // int pitch_cmd = static_cast<uint16_t>(roundf(((pitch_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN));
+    // auto [roll_deg, pitch_deg] = acc_to_deg(direction);
+    // int roll_cmd =  static_cast<uint16_t>(roundf(((roll_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN)); // convert to RC commands range
+    // int pitch_cmd = static_cast<uint16_t>(roundf(((pitch_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN));
 
     auto [roll_deg, pitch_deg] = acc_to_quaternion(direction);
     int roll_cmd =  roundf((roll_deg * JOY_BOUND_RANGE / 2.f) + JOY_MIDDLE); // convert to RC commands range

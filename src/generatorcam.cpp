@@ -73,10 +73,10 @@ void GeneratorCam::update() {
         usleep(10);
     }
 
-//    float delay = pparams.fps;
-//    delay = 1/delay;
-//    delay *=1e6f;
-//    usleep(delay);
+    //    float delay = pparams.fps;
+    //    delay = 1/delay;
+    //    delay *=1e6f;
+    //    usleep(delay);
 
     gen_stopw.Restart();
 }
@@ -89,9 +89,9 @@ void GeneratorCam::generateStereo() {
     frameL = resL;
     frameR = resR;
 
-//    static bool bounce = -1;
-//    drone.x = (drone.x + bounce ) % (IMG_W-3);
-//    drone.y = (drone.y + bounce ) % (IMG_H-3);
+    //    static bool bounce = -1;
+    //    drone.x = (drone.x + bounce ) % (IMG_W-3);
+    //    drone.y = (drone.y + bounce ) % (IMG_H-3);
     drone.x = DRONE_IM_X_START*pparams.imscalef ;//+ sinf(static_cast<float>(frame_id_stereo-2)/100.f)*100 ;
     drone.y = DRONE_IM_Y_START*pparams.imscalef ;//+ cosf(static_cast<float>(frame_id_stereo-2)/100.f)*100 - 100;
 
@@ -114,33 +114,33 @@ void GeneratorCam::generateStereo() {
     bound(&insectR,1);
 
     //if (frame_id_stereo > 2) { // circumvent background calib
-        static int drone_blink = 0;
-        if (drone_blink < 30 ) {
-            cv::circle(resL,drone,2,255,2);
-            cv::circle(resR,droneR,2,255,2);
-        } else {
-            drone.x += 50;
-        }
-//else if (drone_blink > 300 && drone_blink < 450) {
-//            cv::circle(resL,drone,2,255,20);
-//            cv::circle(resR,droneR,2,255,20);
-//            drone.x += 50;
-//            droneR.x += 50;
-//            cv::circle(resL,drone,2,255,2);
-//            cv::circle(resR,droneR,2,255,2);
-//            drone.x -= 100;
-//            droneR.x -= 100;
-//            cv::circle(resL,drone,2,255,2);
-//            cv::circle(resR,droneR,2,255,2);
-//        }
+    static int drone_blink = 0;
+    if (drone_blink < 30 ) {
+        cv::circle(resL,drone,2,255,2);
+        cv::circle(resR,droneR,2,255,2);
+    } else {
+        drone.x += 50;
+    }
+    //else if (drone_blink > 300 && drone_blink < 450) {
+    //            cv::circle(resL,drone,2,255,20);
+    //            cv::circle(resR,droneR,2,255,20);
+    //            drone.x += 50;
+    //            droneR.x += 50;
+    //            cv::circle(resL,drone,2,255,2);
+    //            cv::circle(resR,droneR,2,255,2);
+    //            drone.x -= 100;
+    //            droneR.x -= 100;
+    //            cv::circle(resL,drone,2,255,2);
+    //            cv::circle(resR,droneR,2,255,2);
+    //        }
 
-        drone_blink++;
-        if (drone_blink >= 60)
-            drone_blink =0;
+    drone_blink++;
+    if (drone_blink >= 60)
+        drone_blink =0;
 
 
-//        cv::circle(resL,insect,1,200,1);
-//        cv::circle(resR,insectR,1,200,1);
+    //        cv::circle(resL,insect,1,200,1);
+    //        cv::circle(resR,insectR,1,200,1);
     //}
 }
 

@@ -109,9 +109,9 @@ void DronePredictor::update(bool drone_is_active, double time) {
         std::cout << "rtp_gain_err: " << new_gain.y << " throttle: " << throttle << std::endl;
         */
 
-        //prevent infs if control input is close to 0
-        if (fabs(rtp_prev.x) > 0.1f)
-            roll_gain_smth.addSample(new_gain.x);
+            //prevent infs if control input is close to 0
+            if (fabs(rtp_prev.x) > 0.1f)
+                roll_gain_smth.addSample(new_gain.x);
         if (fabs(rtp_prev.y) > 0.3f)
             throttle_gain_smth.addSample(new_gain.y);
         if (fabs(rtp_prev.z) > 0.3f)
@@ -145,9 +145,9 @@ void DronePredictor::update(bool drone_is_active, double time) {
         image_location.y = IMG_H/pparams.imscalef-1;
 
     _dtrk->control_predicted_drone_location(image_location,predicted_pos); //TODO: activate this again
-//    _dtrk->predicted_locationL_prev = _dtrk->predicted_locationL_last;
-//    _dtrk->predicted_locationL_last.x = image_location.x;
-//    _dtrk->predicted_locationL_last.y = image_location.y;
+    //    _dtrk->predicted_locationL_prev = _dtrk->predicted_locationL_last;
+    //    _dtrk->predicted_locationL_last.x = image_location.x;
+    //    _dtrk->predicted_locationL_last.y = image_location.y;
 
 
     //save data for determining error next iteration:
@@ -185,13 +185,13 @@ void DronePredictor::swap_check(cv::Point3f rtp) {
 
     float res_x = swap_x.addSample(fabs(tot_t.x - tot_d.x ) / fabs(tot_t.x -tot_i.x));
     float res_y = swap_y.addSample(fabs(tot_t.y - tot_d.y ) / fabs(tot_t.y -tot_i.y));
-//    float res_z = swap_z.addSample(fabs(tot_t.z - tot_d.z ) / fabs(tot_t.z -tot_i.z));
+    //    float res_z = swap_z.addSample(fabs(tot_t.z - tot_d.z ) / fabs(tot_t.z -tot_i.z));
     if ((res_y > 10.f && tot_t.y > 250) || (res_x > 10.f && tot_t.x > 250))
         std::cout << "swapped?" << std::endl;
 
-//    std::cout << time << ", " << res_x << ", "  << res_y << ", "  << res_z
-//              << ", "  << td.saccX << ", " << ti.saccX << ", " << rtp.x*rtp_gain_prev.x
-//              << ", "  << td.saccY << ", " << ti.saccY << ", " << rtp.y*rtp_gain_prev.y
-//              << ", "  << td.saccZ << ", " << ti.saccZ << ", " << rtp.z*rtp_gain_prev.z << std::endl;
+    //    std::cout << time << ", " << res_x << ", "  << res_y << ", "  << res_z
+    //              << ", "  << td.saccX << ", " << ti.saccX << ", " << rtp.x*rtp_gain_prev.x
+    //              << ", "  << td.saccY << ", " << ti.saccY << ", " << rtp.y*rtp_gain_prev.y
+    //              << ", "  << td.saccZ << ", " << ti.saccZ << ", " << rtp.z*rtp_gain_prev.z << std::endl;
 
 }

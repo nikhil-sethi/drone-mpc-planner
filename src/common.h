@@ -229,25 +229,25 @@ public:
 
 class Tf_Tt_3f{
 private:
-   std::vector<cv::Point3f> buffer;
-   uint buffer_ptr = 0;
-   uint buffer_size;
+    std::vector<cv::Point3f> buffer;
+    uint buffer_ptr = 0;
+    uint buffer_size;
 
 public:
-   void init(float init_sample_time, float delay_time){
+    void init(float init_sample_time, float delay_time){
         uint discrete_delay = static_cast<uint>(delay_time/init_sample_time);
         buffer_size = discrete_delay +1;
         buffer.resize (buffer_size);
         this->preset ({0});
-   }
+    }
 
-   void preset(cv::Point3f init_state){
-       for (uint i=0; i<buffer_size; i++){
+    void preset(cv::Point3f init_state){
+        for (uint i=0; i<buffer_size; i++){
             buffer.at(i) = init_state;
         }
-   }
+    }
 
-   cv::Point3f new_sample(cv::Point3f input){
+    cv::Point3f new_sample(cv::Point3f input){
         cv::Point3f output = buffer.at(buffer_ptr);
         buffer.at(buffer_ptr) = input;
         buffer_ptr++;
