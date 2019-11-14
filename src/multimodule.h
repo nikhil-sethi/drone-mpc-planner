@@ -120,6 +120,7 @@ private:
     uint init_package_nOK_cnt = 1;
 
     bool initialized = false;
+    bool version_check_OK = false;
     int notconnected;
 
     std::stringstream received;

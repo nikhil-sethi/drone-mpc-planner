@@ -82,7 +82,7 @@ void MultiModule::worker_thread(void) {
             init_package_nOK_cnt++;
             if (init_package_nOK_cnt > 5 * pparams.fps) {
                 std::cout << "MultiModule wouldn't receive init package within 10 seconds." << std::endl;
-                exit(1); // goal justifies the mean...
+                exit(1);
             }
         }
 
@@ -210,18 +210,28 @@ void MultiModule::receive_data() {
         if (totn > 0 ) {
             received << tmp.str();
             std::string bufs = received.str();
-            auto found = bufs.find("Multiprotocol version:") ;
+            std::string version_str = "Multiprotocol version: ";
+            auto found = bufs.find(version_str) ;
             if (found != std::string::npos) {
-                bufs.replace(found,1,"*");
-                received.clear();
-                received << bufs;
-                std::string current_firmware_version = bufs.substr(0, bufs.find(":"));
-                std::string required_firmwar_version = "1.4.0.0";
+
+                std::string required_firmwar_version = "1.5.0.0";
+                std::string current_firmware_version = bufs.substr(found+version_str.length(),required_firmwar_version.length());
+
+
                 if (current_firmware_version != required_firmwar_version) {
-                    std::cout << "Detected wrong MultiModule firmware version! Detected: " << current_firmware_version << ". Required: "  << required_firmwar_version << "." << std::endl;
-                    exit(1); // goal justifies the mean...
+                    if (current_firmware_version.length() >= required_firmwar_version.length()){
+                        std::cout << "Detected wrong MultiModule firmware version! Detected: " << current_firmware_version << ". Required: "  << required_firmwar_version << "." << std::endl;
+                        exit(1);
+                    }
+                } else {
+                    std::cout << "Detecting MultiProtocol version " << required_firmwar_version << ": OK" << std::endl;
+                    version_check_OK = true;
+                    bufs.replace(found,1,"*");
+                    received.clear();
+                    received << bufs;
                 }
             }
+
             found = bufs.find("Specify bind ID...") ;
             if (found != std::string::npos) {
                 bufs.replace(found,1,"*");
@@ -236,6 +246,18 @@ void MultiModule::receive_data() {
                 received << bufs;
                 std::cout << "Multimodule received init package!" << std::endl;
                 init_package_nOK_cnt = 0;
+                if (!version_check_OK) {
+                    std::cout << "MultiProtocol version was not received." << std::endl;
+                    exit(1);
+                }
+            }
+
+            //below checks for the error message the MM gives if it is (already) waiting for the init package, but receives from bytes.
+            found = bufs.find("I want 66");
+            if (found != std::string::npos) {
+                bufs = bufs.substr(found+9,bufs.length() - (found+9));
+                received.clear();
+                send_init_package_now = true;
             }
 
             if (bufs.size() > 500) {
@@ -245,6 +267,8 @@ void MultiModule::receive_data() {
 
 
             std::cout << tmp.str()  << std::flush;
+        } else {
+            received.clear(); // this will clear the buffer only after one cycle, because strings may be cut up
         }
     }
 }
