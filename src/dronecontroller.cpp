@@ -762,6 +762,18 @@ void DroneController::approx_effective_thrust(track_data data_drone, cv::Point3f
     drone_vel_after_takeoff = integrated_vel2 * 1.15f; // TODO determine magical battery healt factor :(
 }
 
+
+float DroneController::thrust_to_throttle(float thrust_ratio){
+    float p1 = 3433.2;
+    float p2 = -4833.5;
+    float p3 = 1838.6;
+    float p4 = 1011.6;
+    float p5 = 355.45;
+
+    return p1*pow(thrust_ratio,4) + p2*pow(thrust_ratio,3) + p3*pow(thrust_ratio,2) + p4*thrust_ratio + p5;
+}
+
+
 std::tuple<cv::Point3f, cv::Point3f> DroneController::keep_in_volume_check(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel){
     // check whether the braking distance is large enough to stay in the frame
     // if not change the setpoint for the controller
@@ -835,7 +847,7 @@ std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f de
 
     // .. and then calc throttle control:
     float throttlef = normf(req_acc)/thrust;
-    int throttle_cmd =  static_cast<uint16_t>(roundf(throttlef * JOY_BOUND_RANGE + JOY_BOUND_MIN));
+    int throttle_cmd =  static_cast<uint16_t>(roundf(thrust_to_throttle(throttlef)));
 
     if (throttle_cmd < dparams.min_throttle)
         throttle_cmd = dparams.min_throttle;
