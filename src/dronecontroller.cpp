@@ -904,9 +904,8 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     //Determine the acceleration direction as PID-filtered postion error:
     cv::Point3f desired_acceleration =mult(kp_pos, pos_err_p) + mult(ki_pos, pos_err_i) + mult(kd_pos, pos_err_d); // position control
 
-    cv::Point3f zero_vec = cv::Point3f(0.f,0.f,0.f);
 
-    if(setpoint_vel!=zero_vec || pos_err2vel_set!=zero_vec)
+    if(norm(setpoint_vel) > 0.1 || norm(pos_err2vel_set) > 0.1)
         desired_acceleration += mult(kp_vel, vel_err_p); // velocity control
 
     // Determine the control outputs based on feed-forward calculations:
