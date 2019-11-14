@@ -40,6 +40,7 @@ void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, Dro
     setpoints.push_back(waypoint(cv::Point3f(0,-0.7f,-2.3f),100));
 
 //    setpoints.push_back(flower_waypoint(cv::Point3f(0,-1.5f,-2.0f)));
+    setpoints.push_back(brick_waypoint(cv::Point3f(0,-1.f,-2.0f)));
 
     setpoints.push_back(landing_waypoint());
 
@@ -59,6 +60,9 @@ void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, Dro
         createTrackbar("velContrl x", "Nav", &enable_vel_control_x, 1);
         createTrackbar("velContrl y", "Nav", &enable_vel_control_y, 1);
         createTrackbar("velContrl z", "Nav", &enable_vel_control_z, 1);
+
+        createTrackbar ("w_sqr", "Nav", &w_sqr, 2500);
+        createTrackbar ("v_sqr", "Nav", &v_sqr, 1000);
 
     }
 
@@ -255,6 +259,8 @@ void DroneNavigation::update(double time) {
             next_waypoint(setpoints[wpid]);
             if (current_setpoint->mode == fm_flower)
                 _navigation_status = ns_flower_waypoint;
+            else if(current_setpoint->mode == fm_brick)
+                _navigation_status = ns_brick_waypoint;
             else
                 _navigation_status = ns_approach_waypoint;
             break;
@@ -312,7 +318,22 @@ void DroneNavigation::update(double time) {
             new_pos_setpoint.y = current_setpoint->xyz.y;
             new_pos_setpoint.z = current_setpoint->xyz.z + (r_crcl1/100.f) * cosf((v_crcl1/100.f)*timef) + (r_crcl2/100.f) * sinf((v_crcl2/100.f)*timef);
             new_vel_setpoint = (new_pos_setpoint - setpoint_pos_world)*static_cast<float>(pparams.fps);
-            setpoint_acc_world = (new_vel_setpoint - setpoint_vel_world)*powf(static_cast<float>(pparams.fps),0.5);
+            setpoint_acc_world = (new_vel_setpoint - setpoint_vel_world)*static_cast<float>(pparams.fps);
+            setpoint_vel_world = new_vel_setpoint;
+            setpoint_pos_world = new_pos_setpoint;
+
+            if (_nav_flight_mode == nfm_manual)
+                _navigation_status=ns_manual;
+            break;
+        } case ns_brick_waypoint: {
+            float timef = static_cast<float>(time);
+
+            cv::Point3f new_pos_setpoint;
+            cv::Point3f new_vel_setpoint;
+            new_pos_setpoint = square_point (current_setpoint->xyz, static_cast<float>(w_sqr)/1000.f, static_cast<float>(v_sqr)/100.f*timef);
+            std::cout << "brick_setpoint: " << new_pos_setpoint << std::endl;
+            new_vel_setpoint = (new_pos_setpoint - setpoint_pos_world)*static_cast<float>(pparams.fps);
+            setpoint_acc_world = (new_vel_setpoint - setpoint_vel_world)*static_cast<float>(pparams.fps);
             setpoint_vel_world = new_vel_setpoint;
             setpoint_pos_world = new_pos_setpoint;
 
@@ -431,4 +452,27 @@ void DroneNavigation::close() {
             serialize_settings();
         initialized = false;
     }
+}
+
+cv::Point3f DroneNavigation::square_point(cv::Point3f center, float width, float s){
+    s = fmodf(s, 4*width);
+    float si = fmodf(s, width);
+
+    float x_offset, z_offset;
+
+    if(s>3*width){
+        x_offset = -width/2;
+        z_offset = width/2 - si;
+    } else if(s>2*width){
+        x_offset = width/2 - si;
+        z_offset = width/2;
+    } else if(s>width){
+        x_offset = width/2;
+        z_offset = -width/2 + si;
+    } else{
+        x_offset = -width/2 + si;
+        z_offset = -width/2;
+    }
+
+    return {center.x+x_offset, center.y, center.z+z_offset};
 }

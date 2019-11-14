@@ -28,6 +28,7 @@ static const char* navigation_status_names[] = {"ns_init",
                                                 "ns_set_waypoint",
                                                 "ns_approach_waypoint",
                                                 "ns_flower_of_fire",
+                                                "ns_brick_of_fire",
                                                 "ns_goto_landing",
                                                 "ns_reset_heading",
                                                 "ns_land",
@@ -50,6 +51,8 @@ private:
     int v_crcl2 = 500;
     int r_crcl1 = 5;
     int r_crcl2 = 15;
+    int w_sqr = 500;
+    int v_sqr = 50;
 
     int enable_vel_control_x = 0;
     int enable_vel_control_y = 0;
@@ -95,6 +98,7 @@ private:
         fm_takeoff,
         fm_flying,
         fm_flower,
+        fm_brick,
         fm_wp_stay,
         fm_landing
     };
@@ -128,6 +132,11 @@ private:
             mode = fm_flower;
         }
     };
+    struct brick_waypoint : waypoint{
+        brick_waypoint(cv::Point3f p) : waypoint(p,0) {
+            mode = fm_brick;
+        }
+    };
     struct stay_waypoint : waypoint{
         stay_waypoint(cv::Point3f p) : waypoint(p,0) {
             mode = fm_wp_stay;
@@ -152,6 +161,7 @@ private:
         ns_set_waypoint,
         ns_approach_waypoint,
         ns_flower_waypoint,
+        ns_brick_waypoint,
         ns_goto_landing_waypoint,
         ns_reset_heading,
         ns_land,
@@ -179,6 +189,7 @@ private:
     VisionData *_visdat;
 
     bool initialized = false;
+    cv::Point3f square_point(cv::Point3f center, float width, float s);
 
 public:
 
