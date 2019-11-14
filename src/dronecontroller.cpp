@@ -18,8 +18,12 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     _fromfile = fromfile;
     _camvol = camvol;
     control_history_max_size = pparams.fps;
-    (*_logger) << "valid; posErrX; posErrY; posErrZ; velX; velY; velZ; accX; accY; accZ; hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; joyThrottle; joyRoll; joyPitch; joyYaw; joyArmSwitch; joyModeSwitch; joyTakeoffSwitch; dt; velx_sp; vely_sp; velz_sp; heading; Sheading;";
-
+    (*_logger) << "valid; " <<
+                  "setpoint_pos_x; setpoint_pos_y; setpoint_pos_z; " <<
+                  "hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; " <<
+                  "joyThrottle; joyRoll; joyPitch; joyYaw; " <<
+                  "joyArmSwitch; joyModeSwitch; joyTakeoffSwitch;" <<
+                  "dt; heading; Sheading;";
     std::cout << "Initialising control." << std::endl;
 
     settings_file = "../../xml/" + dparams.control + ".xml";
@@ -340,14 +344,14 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         }
         break;
     } case fm_reset_heading: {
-        control_modelBased(data_drone, setpoint_pos);
+        control_model_based(data_drone, setpoint_pos, setpoint_vel);
         auto_yaw = control_yaw(data_drone, 5); // second argument is the yaw gain, move this to the xml files?
         break;
     } case fm_landing_start: {
         landing_decent_yoffset = 0;
         landing_setpoint_height = setpoint_pos.y;
         _flight_mode = fm_landing;
-	auto_yaw = JOY_MIDDLE;
+        auto_yaw = JOY_MIDDLE;
         [[fallthrough]];
     } case fm_landing: {
         landing_decent_yoffset += landing_decent_rate;
@@ -436,15 +440,9 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         control_history.erase(control_history.begin());
 
     (*_logger) << static_cast<int>(data_drone.pos_valid)  << "; " <<
-        posErrX << "; " <<
-        posErrY  << "; " <<
-        posErrZ << "; " <<
         setpoint_pos.x << "; " <<
         setpoint_pos.y  << "; " <<
         setpoint_pos.z << "; " <<
-        accx_sp << "; " <<
-        accy_sp  << "; " <<
-        accx_sp << "; " <<
         hoverthrottle << "; " <<
         auto_throttle << "; " <<
         auto_roll << "; " <<
@@ -458,9 +456,6 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         static_cast<int>(_joy_mode_switch) << "; " <<
         static_cast<int>(_joy_takeoff_switch) << "; " <<
         data_drone.dt << "; " <<
-        velx_sp << "; " <<
-        vely_sp << "; " <<
-        velz_sp << "; " <<
         data_drone.heading <<  "; " <<
         smooth_heading <<  "; ";
 }
@@ -912,7 +907,6 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(desired_acceleration);
 
 }
-
 
 void DroneController::read_joystick(void) {
     while (joystick.sample(&event))
