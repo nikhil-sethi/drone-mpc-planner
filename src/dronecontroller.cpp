@@ -913,12 +913,20 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     cv::Point3f desired_acceleration =mult(kp_pos, pos_err_p) + mult(ki_pos, pos_err_i) + mult(kd_pos, pos_err_d); // position control
 
 
-    if(norm(setpoint_vel) > 0.1 || norm(pos_err2vel_set) > 0.1)
+    if(norm(setpoint_vel) > 0.1 || norm(pos_err2vel_set) > 0.1){
         desired_acceleration += mult(kp_vel, vel_err_p); // velocity control
+        desired_acceleration = desired_acceleration/2.f; // Since we have two individually tuned controllers we need to unify the resulting control error to the value of one controller.
+    }
 
     // Determine the control outputs based on feed-forward calculations:
     std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(desired_acceleration);
 
+    std::cout << "MODELCONTROL-errorsP> x-P: " << pos_err_p.x << " ,y-P: " << pos_err_p.y << " ,z-P: " << pos_err_p.z << std::endl;
+    std::cout << "MODELCONTROL-errorsI> x-I: " << pos_err_i.x << " ,y-I: " << pos_err_i.y << " ,z-I: " << pos_err_i.z << std::endl;
+    std::cout << "MODELCONTROL-errorsD> x-D: " << pos_err_d.x << " ,y-D: " << pos_err_d.y << " ,z-D: " << pos_err_d.z << std::endl;
+    std::cout << "MODELCONTROL-errorsPvel> x-D: " << vel_err_p.x << " ,y-P: " << vel_err_p.y << " ,z-P: " << vel_err_p.z << std::endl;
+    std::cout << "MODELCONTROL-pos_err2vel_set> x: " << pos_err2vel_set.x << " ,y: " << pos_err2vel_set.y << " ,z: " << pos_err2vel_set.z << std::endl;
+    std::cout << "MODELCONTROL-output> roll: " << auto_roll << " ,pitch: " << auto_pitch << " ,throttle: " << auto_throttle << std::endl;
 }
 
 void DroneController::read_joystick(void) {
