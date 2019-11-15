@@ -111,7 +111,6 @@ public:
     struct ImagePredictItem {
         uint frame_id;
         float x,y,size,certainty;
-        float x_measured=-1,y_measured=-1, prediction_error = -1;
         float pixel_max;
         bool valid;
         cv::KeyPoint k(){

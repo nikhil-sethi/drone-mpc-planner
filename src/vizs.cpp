@@ -500,7 +500,7 @@ void Visualizer::draw_tracker_viz() {
         putText(frameL_color,ss.str(),drone_pos,cv::FONT_HERSHEY_SIMPLEX,0.5,c);
         cv::line(frameL_color,drone_pos,drone_pos,c,2);
 
-        if (_dnav->drone_is_flying() && !_dctrl->ff_interception()) { //draw line to drone target setpoint
+        if (_dnav->drone_is_flying() && !_dctrl->ff_interception()) { //draw line from drone to target setpoint
             cv::Point2i target = _dnav->drone_setpoint_im();
             cv::Scalar c2;
             if (_dnav->drone_is_hunting() && target.x+target.y>0 ) {

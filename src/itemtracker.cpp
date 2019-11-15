@@ -261,13 +261,6 @@ void ItemTracker::predict(float dt, int frame_id) {
     if (certainty > 1)
         certainty = 1;
 
-    //keep track of the error:
-    if (_image_predict_item.valid && _world_item.valid){
-        predicted_image_path.back().x_measured = _image_item.x;
-        predicted_image_path.back().y_measured = _image_item.y;
-        predicted_image_path.back().prediction_error  = sqrtf( powf(predicted_image_path.back().x_measured - predicted_image_path.back().x,2) + powf(predicted_image_path.back().y_measured - predicted_image_path.back().y,2));
-
-    }
     _image_predict_item = ImagePredictItem(predicted_image_locationL,certainty,smoother_im_size.latest(),smoother_brightness.latest(),frame_id);
     predicted_image_path.push_back(_image_predict_item );
 }
