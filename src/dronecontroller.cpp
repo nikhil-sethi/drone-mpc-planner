@@ -703,7 +703,7 @@ std::tuple<cv::Point3f, cv::Point3f> DroneController::predict_drone_state_after_
 int DroneController::control_yaw(track_data data_drone, float gain_yaw){
     if(!isnan(data_drone.heading) == 1){
         smooth_heading = yaw_smoother.addSample(data_drone.heading);
-        auto_yaw = JOY_MIDDLE + gain_yaw*smooth_heading*sqrtf(powf(data_drone.state.pos.x,2)+powf(data_drone.state.pos.y,2)+powf(data_drone.state.pos.z,2)); // clockwise is positive
+        auto_yaw = JOY_MIDDLE - gain_yaw*smooth_heading*sqrtf(powf(data_drone.state.pos.x,2)+powf(data_drone.state.pos.y,2)+powf(data_drone.state.pos.z,2)); // clockwise is positive
     }
     else{
         auto_yaw = JOY_MIDDLE;

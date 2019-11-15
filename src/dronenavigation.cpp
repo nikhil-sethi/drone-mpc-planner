@@ -348,7 +348,8 @@ void DroneNavigation::update(double time) {
         } case ns_reset_heading: {
             _dctrl->flight_mode(DroneController::fm_reset_heading);
             _trackers->dronetracker()->reset_heading();
-            if(_trackers->dronetracker()->check_heading() == true){
+            cout<<"velocity: "<<norm(_trackers->dronetracker()->Last_track_data().vel())<<endl;
+            if(_trackers->dronetracker()->check_heading() == true && norm(_trackers->dronetracker()->Last_track_data().vel()) < 0.05){
                 _navigation_status = ns_land;
             }
             break;

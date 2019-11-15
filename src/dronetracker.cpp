@@ -194,7 +194,7 @@ ItemTracker::BlobWorldProps DroneTracker::calc_world_item(BlobProps * pbs, doubl
         }
     }
     if(find_heading==true){
-        heading = calc_heading(pbs, true); // Set second argument to true to show the masks, otherwise set to false.
+        heading = calc_heading(pbs, false); // Set second argument to true to show the masks, otherwise set to false.
         wbp.heading = heading;
     }
     return wbp;
