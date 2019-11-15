@@ -247,7 +247,7 @@ public:
     cv::Point2i drone_v_setpoint_im(){
 
         cv::Point3f tmp = 0.1*setpoint_vel_world + setpoint_pos_world;
-        if (_navigation_status == ns_takeoff || _navigation_status == ns_taking_off || _navigation_status == ns_take_off_completed)
+        if (!drone_is_flying())
             tmp = {0};
 
         std::vector<cv::Point3d> world_length,camera_length;
@@ -277,7 +277,7 @@ public:
         //transform to image coordinates:
 
         cv::Point3f tmp = setpoint_pos_world;
-        if (_navigation_status == ns_takeoff || _navigation_status == ns_taking_off || _navigation_status == ns_take_off_completed){
+        if (!drone_is_flying()){
             tmp.x = _trackers->dronetracker()->drone_startup_location().x;
             tmp.y = _trackers->dronetracker()->drone_startup_location().y+0.5f;
             tmp.z = _trackers->dronetracker()->drone_startup_location().z;
@@ -294,7 +294,7 @@ public:
         }
     }
     bool drone_is_flying(){
-        return _navigation_status < ns_landing && _navigation_status >  ns_takeoff;
+        return _navigation_status < ns_landing && _navigation_status >  ns_take_off_completed;
     }
     bool drone_is_manual(){
         return _navigation_status == ns_manual;
