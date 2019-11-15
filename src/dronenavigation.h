@@ -177,7 +177,6 @@ private:
     };
     navigation_states _navigation_status = ns_init;
 
-    float land_incr = 0;
     uint wpid = 0;
     std::vector<waypoint> setpoints;
     waypoint * current_setpoint = new landing_waypoint();

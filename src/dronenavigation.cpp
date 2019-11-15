@@ -372,7 +372,6 @@ void DroneNavigation::update(double time) {
         } case ns_landed: {
             wpid = 0;
             _dctrl->flight_mode(DroneController::fm_inactive);
-            land_incr = 0;
             _navigation_status = ns_wait_after_landing;
             landed_time = time;
             [[fallthrough]];
