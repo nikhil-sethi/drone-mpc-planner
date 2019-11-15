@@ -506,13 +506,14 @@ void Visualizer::draw_tracker_viz() {
             if (_dnav->drone_is_hunting() && target.x+target.y>0 ) {
                 c2 = red;
                 cv::Point2i text_pos = drone_pos - (drone_pos - target)/2;
-                putText(frameL_color,to_string_with_precision(_dnav->get_Interceptor().time_to_intercept(),2),text_pos,cv::FONT_HERSHEY_SIMPLEX,0.5,c2);
+                putText(frameL_color,to_string_with_precision(_dnav->get_Interceptor().time_to_intercept(),2) + "s",text_pos,cv::FONT_HERSHEY_SIMPLEX,0.5,c2);
             } else
                 c2 = white;
             cv::line(frameL_color,drone_pos,target,c2,1);
 
             //draw speed vector:
             cv::Point2i tv = _dnav->drone_v_setpoint_im();
+            putText(frameL_color,"v",tv,cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,255,0));
             cv::line(frameL_color,drone_pos,tv,cv::Scalar(0,255,0),1);
         }
     }

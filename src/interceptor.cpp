@@ -148,8 +148,8 @@ void Interceptor::update_far_target(bool drone_at_base){
         drone_pos = dtd.pos();
     }
 
-    //    cv::Point3f drone_vel = dtd.vel();
-    //    float tti = calc_tti(insect_pos,_intercept_vel,drone_pos,drone_vel,drone_at_base);
+    cv::Point3f drone_vel = dtd.vel();
+    float tti = calc_tti(insect_pos,_intercept_vel,drone_pos,drone_vel,drone_at_base); // only used for viz _tti
     //    float half_tti = tti/2.f; // only predict the location of the insect for a partion of the actual time we need to get there
     _intercept_pos = insect_pos;
     _intercept_pos.y -= 0.1f; // put the drone a bit below the insect
