@@ -47,6 +47,10 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
         createTrackbar("p_v_roll", "Control", &kp_v_roll, 3000);
         createTrackbar("p_v_pitch", "Control", &kp_v_pitch, 3000);
         createTrackbar("p_v_throttle", "Control", &kp_v_throttle, 3000);
+        createTrackbar("d_v_roll", "Control", &kd_v_roll, 3000);
+        createTrackbar("d_v_pitch", "Control", &kd_v_pitch, 3000);
+        createTrackbar("d_v_throttle", "Control", &kd_v_throttle, 3000);
+
     }
 
     hoverthrottle = dparams.initial_hover_throttle;
@@ -56,11 +60,14 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     filter_vel_err_x.init(1.f/pparams.fps, 1, 1.f/pparams.fps);
     filter_vel_err_y.init(1.f/pparams.fps, 1, 1.f/pparams.fps);
     filter_vel_err_z.init(1.f/pparams.fps, 1, 1.f/pparams.fps);
-    d_err_x.init (1.f/pparams.fps);
-    d_err_y.init (1.f/pparams.fps);
-    d_err_z.init (1.f/pparams.fps);
+    d_pos_err_x.init (1.f/pparams.fps);
+    d_pos_err_y.init (1.f/pparams.fps);
+    d_pos_err_z.init (1.f/pparams.fps);
+    d_vel_err_x.init (1.f/pparams.fps);
+    d_vel_err_y.init (1.f/pparams.fps);
+    d_vel_err_z.init (1.f/pparams.fps);
 
-    pos_reference_filter.init(1.f/pparams.fps, 1, 1.f/pparams.fps*0.1f, 1.f/pparams.fps*0.1f);
+    pos_reference_filter.init(1.f/pparams.fps, 1, 1.f/pparams.fps*0.001f, 1.f/pparams.fps*0.001f);
 
     thrust = initial_thrust_guess;
     initial_hover_throttle_guess_non3d = GRAVITY/initial_thrust_guess*JOY_BOUND_RANGE+dparams.min_throttle;
@@ -302,9 +309,12 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         throttleErrI = 0;
         _flight_mode = fm_flying_pid;
 
-        d_err_x.preset(setpoint_pos.x - data_drone.state.pos.x);
-        d_err_y.preset(setpoint_pos.y - data_drone.state.pos.y);
-        d_err_z.preset(setpoint_pos.z - data_drone.state.pos.z);
+        d_pos_err_x.preset(setpoint_pos.x - data_drone.state.pos.x);
+        d_pos_err_y.preset(setpoint_pos.y - data_drone.state.pos.y);
+        d_pos_err_z.preset(setpoint_pos.z - data_drone.state.pos.z);
+        d_vel_err_x.preset(setpoint_vel.x - data_drone.state.vel.x);
+        d_vel_err_y.preset(setpoint_vel.y - data_drone.state.vel.y);
+        d_vel_err_z.preset(setpoint_vel.z - data_drone.state.vel.z);
         filter_pos_err_x.reset (setpoint_pos.x - data_drone.state.pos.x);
         filter_pos_err_y.reset (setpoint_pos.y - data_drone.state.pos.y);
         filter_pos_err_z.reset (setpoint_pos.z - data_drone.state.pos.z);
@@ -771,7 +781,7 @@ float DroneController::thrust_to_throttle(float thrust_ratio){
     float p4 = 1011.6;
     float p5 = 355.45;
 
-    return p1*pow(thrust_ratio,4) + p2*pow(thrust_ratio,3) + p3*pow(thrust_ratio,2) + p4*thrust_ratio + p5;
+    return p1*powf(thrust_ratio,4) + p2*powf(thrust_ratio,3) + p3*powf(thrust_ratio,2) + p4*thrust_ratio + p5;
 }
 
 
@@ -880,6 +890,8 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     ki_pos /=1000.f;
     cv::Point3f kp_vel(kp_v_roll,kp_v_throttle,kp_v_pitch);
     kp_vel /= 100.f;
+    cv::Point3f kd_vel(kd_v_roll,kd_v_throttle,kd_v_pitch);
+    kd_vel /= 100.f;
 
     // Determine state errors:
     float err_x_filtered = filter_pos_err_x.new_sample(setpoint_pos.x - data_drone.state.pos.x);
@@ -904,17 +916,23 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     if (fabs(err_z_filtered) < 0.15f )
         pos_err_i.z += err_z_filtered;
 
-    float errDx = d_err_x.new_sample (err_x_filtered);
-    float errDy = d_err_y.new_sample (err_y_filtered);
-    float errDz = d_err_z.new_sample (err_z_filtered);
+    float errDx = d_pos_err_x.new_sample (err_x_filtered);
+    float errDy = d_pos_err_y.new_sample (err_y_filtered);
+    float errDz = d_pos_err_z.new_sample (err_z_filtered);
     cv::Point3f pos_err_d = {errDx, errDy, errDz};
+
+    float errvDx = d_pos_err_x.new_sample (err_x_filtered);
+    float errvDy = d_pos_err_y.new_sample (err_y_filtered);
+    float errvDz = d_pos_err_z.new_sample (err_z_filtered);
+    cv::Point3f vel_err_d = {errvDx, errvDy, errvDz};
+
 
     //Determine the acceleration direction as PID-filtered postion error:
     cv::Point3f desired_acceleration =mult(kp_pos, pos_err_p) + mult(ki_pos, pos_err_i) + mult(kd_pos, pos_err_d); // position control
 
 
     if(norm(setpoint_vel) > 0.1 || norm(pos_err2vel_set) > 0.1){
-        desired_acceleration += mult(kp_vel, vel_err_p); // velocity control
+        desired_acceleration += mult(kp_vel, vel_err_p) + mult(kd_vel, vel_err_d); // velocity control
         desired_acceleration = desired_acceleration/2.f; // Since we have two individually tuned controllers we need to unify the resulting control error to the value of one controller.
     }
 
@@ -1089,7 +1107,9 @@ void DroneController::deserialize_settings() {
     kp_v_roll= params.kp_v_roll.value();
     kp_v_pitch= params.kp_v_pitch.value();
     kp_v_throttle= params.kp_v_throttle.value();
-
+    kd_v_roll= params.kd_v_roll.value();
+    kd_v_pitch= params.kd_v_pitch.value();
+    kd_v_throttle= params.kd_v_throttle.value();
 }
 
 void DroneController::serialize_settings() {
@@ -1106,6 +1126,9 @@ void DroneController::serialize_settings() {
     params.kp_v_roll = kp_v_roll;
     params.kp_v_pitch = kp_v_pitch;
     params.kp_v_throttle = kp_v_throttle;
+    params.kd_v_roll = kd_v_roll;
+    params.kd_v_pitch = kd_v_pitch;
+    params.kd_v_throttle = kd_v_throttle;
 
     std::string xmlData = params.toXML();
     std::ofstream outfile = std::ofstream (settings_file);

@@ -52,8 +52,8 @@ private:
     int v_crcl2 = 500;
     int r_crcl1 = 5;
     int r_crcl2 = 15;
-    int w_sqr = 500;
-    int v_sqr = 50;
+    int w_sqr = 1000;
+    int v_sqr = 100;
 
     int enable_vel_control_x = 0;
     int enable_vel_control_y = 0;

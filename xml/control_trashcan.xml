@@ -3,12 +3,15 @@
     <Member Name="kp_pos_pitch">300</Member>
     <Member Name="kp_pos_throttle">1600</Member>
     <Member Name="ki_pos_roll">10</Member>
-    <Member Name="ki_pos_pitch">10</Member>
+    <Member Name="ki_pos_pitch">50</Member>
     <Member Name="ki_pos_throttle">60</Member>
     <Member Name="kd_pos_roll">430</Member>
     <Member Name="kd_pos_pitch">350</Member>
     <Member Name="kd_pos_throttle">550</Member>
-    <Member Name="kp_v_roll">500</Member>
-    <Member Name="kp_v_pitch">338</Member>
-    <Member Name="kp_v_throttle">560</Member>
+    <Member Name="kp_v_roll">697</Member>
+    <Member Name="kp_v_pitch">697</Member>
+    <Member Name="kp_v_throttle">603</Member>
+    <Member Name="kd_v_roll">1152</Member>
+    <Member Name="kd_v_pitch">1152</Member>
+    <Member Name="kd_v_throttle">0</Member>
 </SerializableClass>
