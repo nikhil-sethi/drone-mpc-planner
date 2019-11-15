@@ -529,9 +529,9 @@ std::tuple<int,int,float,cv::Point3f> DroneController::calc_directional_burn(sta
     //int auto_roll_burn = static_cast<uint16_t>(roundf((roll_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN); // convert to RC commands range
     //int auto_pitch_burn = static_cast<uint16_t>(roundf((pitch_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN);
 
-    auto [roll_deg, pitch_deg] = acc_to_quaternion(burn_direction);
-    int roll_cmd =  roundf((roll_deg * JOY_BOUND_RANGE / 2.f) + JOY_MIDDLE); // convert to RC commands range
-    int pitch_cmd = roundf((-pitch_deg * JOY_BOUND_RANGE / 2.f) + JOY_MIDDLE);
+    auto [roll_quat, pitch_quat] = acc_to_quaternion(burn_direction);
+    int roll_cmd =  roundf((roll_quat * JOY_BOUND_RANGE / 2.f) + JOY_MIDDLE); // convert to RC commands range
+    int pitch_cmd = roundf((-pitch_quat * JOY_BOUND_RANGE / 2.f) + JOY_MIDDLE);
 
     return std::make_tuple(roll_cmd,pitch_cmd,burn_duration,burn_direction);
 }
@@ -857,9 +857,9 @@ std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f de
     // int roll_cmd =  static_cast<uint16_t>(roundf(((roll_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN)); // convert to RC commands range
     // int pitch_cmd = static_cast<uint16_t>(roundf(((pitch_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN));
 
-    auto [roll_deg, pitch_deg] = acc_to_quaternion(direction);
-    int roll_cmd =  roundf((roll_deg * JOY_BOUND_RANGE / 2.f) + JOY_MIDDLE); // convert to RC commands range
-    int pitch_cmd = roundf((-pitch_deg * JOY_BOUND_RANGE / 2.f) + JOY_MIDDLE);
+    auto [roll_quat, pitch_quat] = acc_to_quaternion(direction);
+    int roll_cmd =  roundf((roll_quat * JOY_BOUND_RANGE / 2.f) + JOY_MIDDLE); // convert to RC commands range
+    int pitch_cmd = roundf((-pitch_quat * JOY_BOUND_RANGE / 2.f) + JOY_MIDDLE);
     return std::make_tuple(roll_cmd,pitch_cmd,throttle_cmd);
 }
 
