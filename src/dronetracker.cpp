@@ -82,32 +82,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
 
             if (takeoff_spot_detected  ) {
                 _drone_tracking_status = dts_detected;
-                //calculate take off speed
-                /* LUDWIG HELP!
-                float dy_to = _world_item.pt.y - _drone_blink_world_location.y;
-                float dt_to = static_cast<float>(time - start_take_off_time) - dparams.full_bat_and_throttle_spinup_time;
-
-                //assuming linear acceleration
-                //x = 0.5a*t^2
-                //a = (2x)/t^2
-                float a_to = 2.f*dy_to / powf(dt_to,2);
-                float v_final_to = a_to*dt_to;
-
-                auto data = track_history.back(); //hacky
-                track_history.clear(); // hack
-                data.svelY = v_final_to;
-                data.saccY = a_to;
-                track_history.push_back(data);
-                float tmp_v,tmp_acc;
-                for (uint hack = 0; hack<70;hack++) {
-                    tmp_v = smoother_velY2.addSample(_world_item.pt.y + (-69 * v_final_to * dt_to) + (v_final_to*dt_to*hack),dt_to); // extremely dirty hack
-                    tmp_acc = smoother_accY2.addSample(v_final_to + (-69 * a_to * dt_to) + (a_to*dt_to*hack),dt_to); // extremely dirty hack
-                }
-                std::cout << "Start dy: " << dy_to << ", dt: " << (time - start_take_off_time) << std::endl;
-                std::cout << "Start v: " << tmp_v << ", a: " << tmp_acc << std::endl;
-                std::cout << "Start v: " << data.svelY << ", a: " << data.saccY << std::endl;
-                */
-                    _visdat->delete_from_motion_map(drone_startup_im_location()*pparams.imscalef, _drone_blink_im_disparity,ceilf(_drone_blink_im_size*2.f)*pparams.imscalef,pparams.fps/2);
+                _visdat->delete_from_motion_map(drone_startup_im_location()*pparams.imscalef, _drone_blink_im_disparity,ceilf(_drone_blink_im_size*2.f)*pparams.imscalef,pparams.fps/2);
             }
         }
         break;
@@ -370,7 +345,7 @@ float DroneTracker::calc_heading(BlobProps * pbs, bool inspect_blob){ // Set ins
         }
         heading = yaw_heading(splitted_mask_left, splitted_mask_right);
         if(inspect_blob==true){
-        cout<<"Heading: "<<heading<<endl;
+            cout<<"Heading: "<<heading<<endl;
         }
     }
     return heading;
