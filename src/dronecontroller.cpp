@@ -931,7 +931,7 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     cv::Point3f desired_acceleration =mult(kp_pos, pos_err_p) + mult(ki_pos, pos_err_i) + mult(kd_pos, pos_err_d); // position control
 
 
-    if(norm(setpoint_vel) > 0.1 || norm(pos_err2vel_set) > 0.1){
+    if(norm(vel_err_d) > 0.1){
         desired_acceleration += mult(kp_vel, vel_err_p) + mult(kd_vel, vel_err_d); // velocity control
         desired_acceleration = desired_acceleration/2.f; // Since we have two individually tuned controllers we need to unify the resulting control error to the value of one controller.
     }
