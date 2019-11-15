@@ -452,7 +452,7 @@ void Visualizer::draw_tracker_viz() {
             ss << "i " << to_string_with_precision(wti.distance,1);
             cv::Scalar c(0,0,255);
             if (wti.distance_bkg >wti.distance )
-                c = cv::Scalar(180,180,255);
+                c = cv::Scalar(0,180,255); //first number cannot be 0 because of super weird qtcreator / gdb bug
             cv::Point2i p_ins_im  = wti.iti.pt() *pparams.imscalef;
             putText(frameL_color,ss.str(),p_ins_im,cv::FONT_HERSHEY_SIMPLEX,0.5,c);
             cv::line(frameL_color,p_ins_im,p_ins_im,c,2);
@@ -495,7 +495,7 @@ void Visualizer::draw_tracker_viz() {
         ss << "d " << to_string_with_precision(wti.distance,1);
         cv::Scalar c(0,0,255);
         if (wti.distance_bkg >wti.distance )
-            c = cv::Scalar(180,180,255);
+            c = cv::Scalar(0,180,255); //first number cannot be 0 because of super weird qtcreator / gdb bug
         cv::Point2i drone_pos (wti.iti.x*pparams.imscalef,wti.iti.y*pparams.imscalef);
         putText(frameL_color,ss.str(),drone_pos,cv::FONT_HERSHEY_SIMPLEX,0.5,c);
         cv::line(frameL_color,drone_pos,drone_pos,c,2);
