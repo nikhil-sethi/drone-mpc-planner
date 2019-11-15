@@ -332,7 +332,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
 
             cout << "burn_duration: " << burn_duration << endl;
 
-            if (trajectory_in_view(traj,CameraVolume::strict) && burn_duration < 0.2f && burn_duration > 0.01f) {
+            if (trajectory_in_view(traj,CameraVolume::strict) && burn_duration < 0.2f && burn_duration > 0.01f && false) {
                 std::vector<state_data> traj_back;
                 std::tie (std::ignore, std::ignore,std::ignore,std::ignore,traj_back) = calc_burn(traj.back(),traj.front(),aim_duration);
                 if (trajectory_in_view(traj_back,CameraVolume::strict) && norm(data_target.state.vel)>0.1){ // norm vel is hack to check if not waypoint
