@@ -162,11 +162,9 @@ ItemTracker::BlobWorldProps DroneTracker::calc_world_item(BlobProps * pbs, doubl
     } else if (taking_off() && wbp.valid && !_manual_flight_mode) {
 
         float dt = time - start_take_off_time;
-        if (dt < dparams.full_bat_and_throttle_spinup_duration) { // spin up time
-            wbp.valid = false;
-            return wbp;
-        }
         dt -= dparams.full_bat_and_throttle_spinup_duration;
+        if (dt<0)
+            dt=0;
 
         cv::Point3f expected_drone_location = _drone_blink_world_location;
         expected_drone_location.y+= 0.5f*dparams.full_bat_and_throttle_take_off_acc * powf(dt,2);
