@@ -194,7 +194,7 @@ ItemTracker::BlobWorldProps DroneTracker::calc_world_item(BlobProps * pbs, doubl
         }
     }
     if(find_heading==true){
-        heading = calc_heading(pbs, false); // Set second argument to true to show the masks, otherwise set to false.
+        heading = calc_heading(pbs, true); // Set second argument to true to show the masks, otherwise set to false.
         wbp.heading = heading;
     }
     return wbp;
@@ -369,11 +369,11 @@ float DroneTracker::calc_heading(BlobProps * pbs, bool inspect_blob){ // Set ins
         if(inspect_blob==true){
             cout<<"Left: "<<splitted_mask_left<<endl;
             cout<<"Right: "<<splitted_mask_right<<endl;
-            cout<<"Left pixel: "<<countNonZero(splitted_mask_left)<<endl;
-            cout<<"Right pixel: "<<countNonZero(splitted_mask_right)<<endl;
         }
-
         heading = yaw_heading(splitted_mask_left, splitted_mask_right);
+        if(inspect_blob==true){
+        cout<<"Heading: "<<heading<<endl;
+        }
     }
     return heading;
 }

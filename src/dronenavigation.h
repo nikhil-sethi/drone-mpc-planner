@@ -30,6 +30,7 @@ static const char* navigation_status_names[] = {"ns_init",
                                                 "ns_flower_of_fire",
                                                 "ns_brick_of_fire",
                                                 "ns_goto_landing",
+                                                "ns_initial_reset_heading",
                                                 "ns_reset_heading",
                                                 "ns_land",
                                                 "ns_landing",
@@ -91,6 +92,8 @@ private:
     void deserialize_settings();
     void serialize_settings();
 
+    double time_initial_reset_heading = 0;
+    double time_reset_heading = 0;
     double landed_time = 0;
     nav_flight_modes _nav_flight_mode;
 
@@ -118,7 +121,7 @@ private:
     struct landing_waypoint : waypoint{
         landing_waypoint(){
             xyz = cv::Point3f(0,.5f,0); // 1 meter over, relative to the startup location
-            threshold_mm = 20;
+            threshold_mm = 50;
             mode = fm_landing;
         }
     };
@@ -163,6 +166,7 @@ private:
         ns_flower_waypoint,
         ns_brick_waypoint,
         ns_goto_landing_waypoint,
+        ns_initial_reset_heading,
         ns_reset_heading,
         ns_land,
         ns_landing,

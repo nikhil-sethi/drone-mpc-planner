@@ -25,7 +25,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
         "joyArmSwitch; joyModeSwitch; joyTakeoffSwitch;" <<
         "dt; heading; Sheading;";
     std::cout << "Initialising control." << std::endl;
-
+    yaw_smoother.init(6);
     settings_file = "../../xml/" + dparams.control + ".xml";
 
     // Load saved control paremeters
@@ -343,7 +343,12 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
             }
         }
         break;
+    } case fm_initial_reset_heading: {
+        control_model_based(data_drone, setpoint_pos, setpoint_vel);
+        mode += bf_headless_disabled;
+        break;
     } case fm_reset_heading: {
+        mode += bf_headless_disabled;
         control_model_based(data_drone, setpoint_pos, setpoint_vel);
         auto_yaw = control_yaw(data_drone, 5); // second argument is the yaw gain, move this to the xml files?
         break;
@@ -354,6 +359,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         auto_yaw = JOY_MIDDLE;
         [[fallthrough]];
     } case fm_landing: {
+        mode += bf_headless_disabled;
         landing_decent_yoffset += landing_decent_rate;
         setpoint_pos.y += landing_decent_yoffset;
 
@@ -423,11 +429,6 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
     pitch = bound_joystick_value(pitch);
     yaw = bound_joystick_value(yaw);
 
-
-    if (manual_johson) { //TMP!
-        mode += bf_headless_disabled; // for johnson!
-        manual_johson -=1;
-    }
     //std::cout << time <<  " rpt: " << roll << ", " << pitch << ", " << throttle << std::endl;
     if (!_fromfile) {
         _rc->queue_commands(throttle,roll,pitch,yaw,mode);

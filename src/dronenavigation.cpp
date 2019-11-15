@@ -29,18 +29,18 @@ void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, Dro
 
 
 
-    setpoints.push_back(stay_waypoint(cv::Point3f(0,-0.7f,-2.0f)));
-    setpoints.push_back(stay_waypoint(cv::Point3f(-1,-0.7f,-2.0f)));
-    setpoints.push_back(stay_waypoint(cv::Point3f(1,-0.7f,-2.0f)));
+//    setpoints.push_back(stay_waypoint(cv::Point3f(0,-0.7f,-2.0f)));
+//    setpoints.push_back(stay_waypoint(cv::Point3f(-1,-0.7f,-2.0f)));
+//    setpoints.push_back(stay_waypoint(cv::Point3f(1,-0.7f,-2.0f)));
 
-    setpoints.push_back(stay_waypoint(cv::Point3f(0,-0.7f,-2.0f)));
-    setpoints.push_back(stay_waypoint(cv::Point3f(0,-0.7f,-1.3f)));
-    setpoints.push_back(stay_waypoint(cv::Point3f(0,-0.7f,-2.3f)));
+//    setpoints.push_back(stay_waypoint(cv::Point3f(0,-0.7f,-2.0f)));
+//    setpoints.push_back(stay_waypoint(cv::Point3f(0,-0.7f,-1.3f)));
+//    setpoints.push_back(stay_waypoint(cv::Point3f(0,-0.7f,-2.3f)));
 
-    setpoints.push_back(waypoint(cv::Point3f(0,-0.7f,-2.3f),100));
+    setpoints.push_back(waypoint(cv::Point3f(0,-1.0f,-1.3f),100));
 
     //    setpoints.push_back(flower_waypoint(cv::Point3f(0,-1.5f,-2.0f)));
-    setpoints.push_back(brick_waypoint(cv::Point3f(0,-1.f,-2.0f)));
+//    setpoints.push_back(brick_waypoint(cv::Point3f(0,-1.f,-2.0f)));
 
     setpoints.push_back(landing_waypoint());
 
@@ -293,7 +293,8 @@ void DroneNavigation::update(double time) {
                 && _trackers->dronetracker()->n_frames_tracking>5)
             {
                 if (current_setpoint->mode == fm_landing) {
-                    _navigation_status = ns_reset_heading;
+                    _navigation_status = ns_initial_reset_heading;
+                    time_initial_reset_heading = time;
                 } else if (wpid < setpoints.size()) { // next waypoint in flight plan
                     wpid++;
                     _navigation_status = ns_set_waypoint;
@@ -339,6 +340,12 @@ void DroneNavigation::update(double time) {
 
             if (_nav_flight_mode == nfm_manual)
                 _navigation_status=ns_manual;
+            break;
+        } case ns_initial_reset_heading: {
+            _dctrl->flight_mode(DroneController::fm_initial_reset_heading);
+            if(time-time_initial_reset_heading>0.5){
+                _navigation_status = ns_reset_heading;
+            }
             break;
         } case ns_reset_heading: {
             _dctrl->flight_mode(DroneController::fm_reset_heading);

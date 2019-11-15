@@ -33,6 +33,7 @@ static const char* flight_mode_names[] = { "fm_joystick_check",
                                           "fm_abort_flight",
                                           "fm_flying_pid_init",
                                           "fm_flying_pid",
+                                          "fm_initial_reset_heading",
                                           "fm_reset_heading",
                                           "fm_landing_start",
                                           "fm_landing"
@@ -64,6 +65,7 @@ public:
         fm_abort_flight,
         fm_flying_pid_init,
         fm_flying_pid,
+        fm_initial_reset_heading,
         fm_reset_heading,
         fm_landing_start,
         fm_landing
@@ -170,7 +172,7 @@ private:
     cv::Point3f drone_vel_after_takeoff = {0};
     float ground_effect = 1.0f;
     const float lift_off_dist_take_off_aim = 0.02f;
-    const float take_off_burn_duration = 0.12f;
+    const float take_off_burn_duration = 0.10f;
 
     double take_off_start_time = 0;
     double interception_start_time = 0;
