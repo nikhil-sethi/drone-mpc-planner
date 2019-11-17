@@ -192,11 +192,7 @@ void Interceptor::update_insect_in_range() {
         _count_insect_not_in_range++;
     }
 
-    //Checks whether the insect position is in a good area to hunt:
-    if(_camvol->in_hunt_area (_trackers->dronetracker()->drone_startup_location(), _trackers->insecttracker()->world_item().pt))
-        realy_nicely_in_the_middle = true;
-    else
-        realy_nicely_in_the_middle = false;
+    hunt_volume_check = _camvol->in_hunt_area (_trackers->dronetracker()->drone_startup_location(), _trackers->insecttracker()->world_item().pt);
 }
 
 float Interceptor::calc_tti(cv::Point3f insect_pos,cv::Point3f insect_vel,cv::Point3f drone_pos, cv::Point3f drone_vel, bool drone_taking_off){

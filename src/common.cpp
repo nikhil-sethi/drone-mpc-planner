@@ -44,7 +44,7 @@ void CameraVolume::init(cv::Point3f point_left_top, cv::Point3f point_right_top,
 }
 
 
-bool CameraVolume::in_view(cv::Point3f p, volume_check_mode c){
+bool CameraVolume::in_view(cv::Point3f p, view_volume_check_mode c){
     if (c == relaxed)
         return in_view(p,0.3f);
     else
@@ -72,8 +72,8 @@ bool CameraVolume::in_view(cv::Point3f p,float hysteresis_margin){
         return true;
 }
 
-bool CameraVolume::in_hunt_area(cv::Point3f d, cv::Point3f m){
-    float cone_angle_limit = 40*deg2rad; // angle to the horizontal axis
+CameraVolume::hunt_check_result CameraVolume::in_hunt_area(cv::Point3f d, cv::Point3f m){
+    const float cone_angle_limit = 40*deg2rad; // angle to the horizontal axis
     cv::Point3f error = m - d;
     double vertical_dist = error.y;
     float dist = norm(error);
@@ -82,13 +82,17 @@ bool CameraVolume::in_hunt_area(cv::Point3f d, cv::Point3f m){
 
     float cone_angle = atan2(horizontal_dist, vertical_dist);
 
-    if (m.z < -1.0f
-        && m.y<0 && m.y>= p0_bottom.at<float>(1)+minimum_height
-        && abs(cone_angle)<=cone_angle_limit
-        && dist < 2.5f) // && dist > 1.0f)
-        return true;
-    else
-        return false;
+    if (m.z > -1.0f)
+        return HuntVolume_To_Close;
+    if (m.y>=0)
+        return HuntVolume_To_High;
+    if (m.y< p0_bottom.at<float>(1)+minimum_height)
+        return HuntVolume_To_Low;
+    if (abs(cone_angle)>cone_angle_limit)
+        return HuntVolume_Outside_Cone;
+    if (dist > 2.5f) // && dist > 1.0f)
+        return HuntVolume_To_Close;
+    return HuntVolume_OK;
 }
 
 float CameraVolume::calc_distance_to_borders(track_data data_drone){

@@ -331,6 +331,7 @@ void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis,float
 
     putText(resFrame,_dtrkr->drone_tracking_state() ,cv::Point(450*_res_mult,96*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     putText(resFrame,_dnav->get_Interceptor().Interceptor_State(),cv::Point(450*_res_mult,70*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame,_dnav->get_Interceptor().Hunt_Volume_Check(),cv::Point(450*_res_mult,112*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
 
     if (_fromfile) {
         static int popcorn_cnt = 0;

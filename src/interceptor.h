@@ -28,6 +28,7 @@ private:
     CameraVolume* _camvol;
     cv::Point3f _intercept_pos,_intercept_vel,_intercept_acc;
     float _horizontal_separation, _vertical_separation;
+    CameraVolume::hunt_check_result hunt_volume_check = CameraVolume::HuntVolume_Unknown;
 
     enum interceptor_states {
         is_init=0,
@@ -65,9 +66,9 @@ public:
 
     void reset_insect_cleared() {_count_insect_not_in_range = 0;}
 
-    bool realy_nicely_in_the_middle = false;
+
     bool insect_in_range_takeoff() {return !_count_insect_not_in_range
-               && realy_nicely_in_the_middle
+               && hunt_volume_check == CameraVolume::HuntVolume_OK
                && _trackers->insecttracker()->properly_tracking();}
     bool insect_in_range() {return !_count_insect_not_in_range;}
     bool insect_cleared() {return _count_insect_not_in_range > insect_cleared_timeout; }
@@ -79,6 +80,9 @@ public:
 
     std::string Interceptor_State() {
         return interceptor_state_names[_interceptor_state];
+    }
+    std::string Hunt_Volume_Check() {
+        return hunt_volume_check_names[hunt_volume_check];
     }
 };
 

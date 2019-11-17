@@ -257,22 +257,41 @@ public:
     }
 };
 
+static const char* hunt_volume_check_names[] = {"HV_Unknown",
+                                                "HV_OK",
+                                                "HV_To_High",
+                                                "HV_To_Low",
+                                                "HV_To_Close",
+                                                "HV_Outside_Cone"};
 class CameraVolume{
 public:
     void init(cv::Point3f point_left_top, cv::Point3f point_right_top, cv::Point3f point_left_bottom, cv::Point3f point_right_bottom,
               float depth, float height);
 
-    enum volume_check_mode{
+    enum hunt_check_result {
+        HuntVolume_Unknown,
+        HuntVolume_OK,
+        HuntVolume_To_High,
+        HuntVolume_To_Low,
+        HuntVolume_To_Close,
+        HuntVolume_Outside_Cone
+    };
+
+    std::string convert_to_str(hunt_check_result v) {
+        return hunt_volume_check_names[v];
+    }
+
+    enum view_volume_check_mode{
         strict, /**< viewable volume including a safety distance to borders */
         relaxed /**< the actual viewable volume without any safety distance to the borders */
     };
 
     /** @brief Checks if the point is in the viewable area.*/
-    bool in_view(cv::Point3f p,volume_check_mode c);
+    bool in_view(cv::Point3f p,view_volume_check_mode c);
 
     /** @brief Checks whether the point m (aka moth location) is in a good area for a hunt (worth to take off).
     * This area is described as cone above the drone location d. */
-    bool in_hunt_area(cv::Point3f d, cv::Point3f m);
+    hunt_check_result in_hunt_area(cv::Point3f d, cv::Point3f m);
 
     /** @brief Calculates the distance to the borders */
     float calc_distance_to_borders(track_data data_drone);
