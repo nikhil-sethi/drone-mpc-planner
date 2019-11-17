@@ -1,11 +1,13 @@
 #include "interceptor.h"
 #include "opencv2/imgproc.hpp"
 
-void Interceptor::init(TrackerManager *trackers, VisionData *visdat, CameraVolume *camvol) {
+void Interceptor::init(TrackerManager *trackers, VisionData *visdat, CameraVolume *camvol,std::ofstream *logger) {
+    _logger = logger;
     _trackers = trackers;
     _visdat = visdat;
     _camvol = camvol;
     insect_cleared_timeout = pparams.fps*0.5f;
+    (*_logger) << "interceptor_state;hunt_vol_check;";
 }
 
 
@@ -100,6 +102,7 @@ void Interceptor::update(bool drone_at_base, double time) {
     }
     }
 
+    (*_logger) << static_cast<int16_t>(_interceptor_state) << ";" << static_cast<int16_t>(hunt_volume_check) << ";";
 }
 
 void Interceptor::update_flower_of_fire(double time){

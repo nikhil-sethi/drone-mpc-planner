@@ -5,6 +5,7 @@
 bool DroneTracker::init(std::ofstream *logger, VisionData *visdat) {
     enable_viz_diff = false;
     ItemTracker::init(logger,visdat,"drone");
+    (*_logger) << "dtrkr_state;";
     return false;
 }
 
@@ -125,6 +126,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
     }
     }
     clean_ignore_blobs(time);
+    (*_logger) << static_cast<int16_t>(_drone_tracking_status) << ";";
 }
 
 ItemTracker::BlobWorldProps DroneTracker::calc_world_item(BlobProps * pbs, double time) {

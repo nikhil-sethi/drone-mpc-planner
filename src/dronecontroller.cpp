@@ -18,7 +18,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     _fromfile = fromfile;
     _camvol = camvol;
     control_history_max_size = pparams.fps;
-    (*_logger) << "valid; " <<
+    (*_logger) << "valid; flight_mode;" <<
         "setpoint_pos_x; setpoint_pos_y; setpoint_pos_z; " <<
         "hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; " <<
         "joyThrottle; joyRoll; joyPitch; joyYaw; " <<
@@ -451,6 +451,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         control_history.erase(control_history.begin());
 
     (*_logger) << static_cast<int>(data_drone.pos_valid)  << "; " <<
+        static_cast<int16_t>(_flight_mode) << "; " <<
         setpoint_pos.x << "; " <<
         setpoint_pos.y  << "; " <<
         setpoint_pos.z << "; " <<
@@ -649,7 +650,7 @@ std::vector<state_data> DroneController::predict_trajectory(float burn_duration,
     return traj;
 }
 
-bool DroneController::trajectory_in_view(std::vector<state_data> traj, CameraVolume::volume_check_mode c) {
+bool DroneController::trajectory_in_view(std::vector<state_data> traj, CameraVolume::view_volume_check_mode c) {
     for (auto state : traj) {
         if (!_camvol->in_view(state.pos,c))
             return false;

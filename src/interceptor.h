@@ -23,6 +23,7 @@ static const char* interceptor_state_names[] = { "is_init",
 class Interceptor{
 
 private:
+    std::ofstream *_logger;
     TrackerManager * _trackers;
     VisionData *_visdat;
     CameraVolume* _camvol;
@@ -61,9 +62,8 @@ private:
 
 public:
 
-    void init(TrackerManager *trackers, VisionData *visdat, CameraVolume *camvol);
+    void init(TrackerManager *trackers, VisionData *visdat, CameraVolume *camvol, ofstream *logger);
     void update(bool drone_at_base, double time);
-
     void reset_insect_cleared() {_count_insect_not_in_range = 0;}
 
 

@@ -10,7 +10,7 @@ void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, Dro
     _dctrl = dctrl;
     _visdat = visdat;
 
-    _iceptor.init(_trackers, visdat, camvol);
+    _iceptor.init(_trackers, visdat, camvol, logger);
 
     // Load saved navigation paremeters
     deserialize_settings();
@@ -69,6 +69,7 @@ void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, Dro
     if (pparams.insect_logging_mode)
         _navigation_status = ns_wait_for_insect;
 
+    (*_logger) << "nav_state;";
     initialized = true;
 }
 
@@ -393,6 +394,7 @@ void DroneNavigation::update(double time) {
         }
         }
     }
+    (*_logger) << static_cast<int16_t>(_navigation_status) << ";";
 }
 
 void DroneNavigation::next_waypoint(waypoint wp) {

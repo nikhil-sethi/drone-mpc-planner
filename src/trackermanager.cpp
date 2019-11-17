@@ -28,6 +28,7 @@ void TrackerManager::init(std::ofstream *logger,VisionData *visdat){
     _trackers.push_back(_itrkr);
     _trackers.push_back(_dtrkr);
 
+    (*_logger) << "trkrs_state;";
     initialized = true;
 }
 
@@ -50,6 +51,8 @@ void TrackerManager::update(double time,LogReader::Log_Entry log_entry, bool dro
     }
 
     update_trackers(time,log_entry, drone_is_active);
+
+    (*_logger) << static_cast<int16_t>(_mode) << ";";
 
     if (enable_viz_max_points && vizs_maxs.size()>0)
         viz_max_points = create_column_image(vizs_maxs,CV_8UC3,1);
