@@ -383,6 +383,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
     } case fm_inactive: {
         auto_roll = JOY_MIDDLE;
         auto_pitch = JOY_MIDDLE;
+        spin_up_start_time = 0;
         if (dparams.mode3d)
             auto_throttle = JOY_MIDDLE;
         else
