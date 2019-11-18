@@ -294,11 +294,14 @@ void process_frame(Stereo_Frame_Data data) {
         logreader.current_frame_number(data.number);
         if (logreader.current_item.insect_log) {
             trackers.mode(TrackerManager::mode_hunt_replay_moth);
+        } else {
+            trackers.insecttracker()->reset_after_log();
+            trackers.override_replay_moth_mode(TrackerManager::mode_wait_for_insect);
         }
     } else if (fromfile==log_mode_insect_only) {
         if (logreader.set_next_frame_number()){
             trackers.reset_after_log();
-            trackers.mode(TrackerManager::mode_hunt);
+            trackers.override_replay_moth_mode(TrackerManager::mode_hunt);
             fromfile = log_mode_none;
         } else {
             trackers.mode(TrackerManager::mode_hunt_replay_moth);
@@ -313,13 +316,12 @@ void process_frame(Stereo_Frame_Data data) {
            << std::put_time(std::localtime(&timenow), "%Y/%m/%d %T") << ";"
            << (fromfile==log_mode_insect_only) << ";";
 
-
     trackers.update(data.time,logreader.current_item,dctrl.drone_is_active());
     if (fromfile==log_mode_full) {
         dctrl.insert_log(logreader.current_item.joyRoll, logreader.current_item.joyPitch, logreader.current_item.joyYaw, logreader.current_item.joyThrottle,logreader.current_item.joyArmSwitch,logreader.current_item.joyModeSwitch,logreader.current_item.joyTakeoffSwitch,logreader.current_item.auto_roll,logreader.current_item.auto_pitch,logreader.current_item.auto_throttle);
     }
     dnav.update(data.time);
-    dctrl.control(trackers.dronetracker()->Last_track_data(),trackers.insecttracker()->Last_track_data(), dnav.setpoint_pos_world,dnav.setpoint_vel_world,dnav.setpoint_acc_world,data.time);
+    dctrl.control(trackers.dronetracker()->Last_track_data(),dnav.setpoint(),trackers.insecttracker()->Last_track_data(),data.time);
     dprdct.update(dctrl.drone_is_active(),data.time);
 
     trackers.dronetracker()->_manual_flight_mode =dnav.drone_is_manual(); // TODO: hacky
@@ -328,7 +330,7 @@ void process_frame(Stereo_Frame_Data data) {
 
     if (pparams.has_screen) {
         visualizer.addPlotSample();
-        visualizer.update_tracker_data(visdat.frameL,dnav.setpoint,data.time, draw_plots);
+        visualizer.update_tracker_data(visdat.frameL,dnav.setpoint().pos(),data.time, draw_plots);
         if (pparams.video_result) {
             if (fromfile)
                 output_video_results.block(); // only use this for rendering

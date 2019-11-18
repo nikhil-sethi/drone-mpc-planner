@@ -312,7 +312,7 @@ public:
     bool joy_arm_switch(){
         return _joy_arm_switch;
     }
-    bool joy_mode_switch(){
+    joy_mode_switch_modes joy_mode_switch(){
         return _joy_mode_switch;
     }
     void insert_log(int log_joy_roll, int log_joy_pitch, int log_joy_yaw, int log_joy_throttle, int log_joy_arm_switch, int log_joy_mode_switch, int log_joy_take_off_switch,int log_auto_roll, int log_auto_pitch, int log_auto_throttle){
@@ -411,15 +411,13 @@ public:
     uint control_history_max_size;
     std::vector<control_data> control_history;
 
-    float landing_setpoint_height = 0;
-
     float dist_to_setpoint() {
         return _dist_to_setpoint;
     }
 
     void close (void);
     void init(std::ofstream *logger, bool fromfile, MultiModule *rc, DroneTracker *dtrk, CameraVolume* camvol);
-    void control(track_data data_drone, track_data data_insect, cv::Point3f setpoint_pos_world, cv::Point3f setpoint_vel_world, cv::Point3f setpoint_acc_world, double time);
+    void control(track_data, track_data, track_data, double);
     bool drone_is_active() {
         if ( _flight_mode == fm_inactive || _flight_mode == fm_disarmed)
             return false;

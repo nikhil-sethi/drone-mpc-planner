@@ -36,7 +36,7 @@ void Visualizer::init(VisionData *visdat, TrackerManager *imngr, DroneController
 }
 
 void Visualizer::addPlotSample(void) {
-    if (pparams.viz_plots || draw_plots_once) {
+    if (pparams.viz_plots || enable_plots) {
         lock_plot_data.lock();
         roll_joystick.push_back(static_cast<float>(_dctrl->joy_roll));
         pitch_joystick.push_back(static_cast<float>(_dctrl->joy_pitch));
@@ -69,18 +69,18 @@ void Visualizer::addPlotSample(void) {
 
 
             if (_dctrl->Joy_State() != DroneController::js_hunt) {
-                posX_target.push_back(-_dnav->setpoint_pos_world.x);
-                posY_target.push_back(-_dnav->setpoint_pos_world.y);
-                posZ_target.push_back(-_dnav->setpoint_pos_world.z);
+                posX_target.push_back(-_dnav->setpoint().pos().x);
+                posY_target.push_back(-_dnav->setpoint().pos().y);
+                posZ_target.push_back(-_dnav->setpoint().pos().z);
             }else {
                 posX_target.push_back(-data_target.state.pos.x);
                 posY_target.push_back(data_target.state.pos.y);
                 posZ_target.push_back(-data_target.state.pos.z);
             }
 
-            setposX.push_back(-_dnav->setpoint_pos_world.x);
-            setposY.push_back(_dnav->setpoint_pos_world.y);
-            setposZ.push_back(-_dnav->setpoint_pos_world.z);
+            setposX.push_back(-_dnav->setpoint().pos().x);
+            setposY.push_back(_dnav->setpoint().pos().y);
+            setposZ.push_back(-_dnav->setpoint().pos().z);
         }
         if (data.vel_valid) {
             svelX.push_back(-data.state.vel.x);
@@ -331,7 +331,6 @@ void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis,float
 
     putText(resFrame,_dtrkr->drone_tracking_state() ,cv::Point(450*_res_mult,96*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     putText(resFrame,_dnav->get_Interceptor().Interceptor_State(),cv::Point(450*_res_mult,70*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-    putText(resFrame,_dnav->get_Interceptor().Hunt_Volume_Check(),cv::Point(450*_res_mult,112*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
 
     if (_fromfile) {
         static int popcorn_cnt = 0;
@@ -377,8 +376,8 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
 }
 
 
-void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3d setpoint, double time, bool draw_plots) {
-    draw_plots_once = draw_plots;
+void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, double time, bool draw_plots) {
+    enable_plots = draw_plots;
     if (new_tracker_viz_data_requested) {
         lock_frame_data.lock();
 
@@ -567,7 +566,7 @@ void Visualizer::workerThread(void) {
     while (!exitVizThread) {
         newdata.wait(lk);
         if (roll_joystick.rows > 0) {
-            if (pparams.viz_plots || draw_plots_once) {
+            if (pparams.viz_plots || enable_plots) {
                 lock_plot_data.lock();
                 plot();
                 request_plotframe_paint = true;

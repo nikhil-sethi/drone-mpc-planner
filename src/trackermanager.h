@@ -139,7 +139,12 @@ public:
     }
     cv::Mat viz_max_points,diff_viz;
     void mode(detection_mode m){
-        _mode = m;
+        if (_mode != mode_hunt_replay_moth)
+            _mode = m;
+    }
+    void override_replay_moth_mode(detection_mode m) {
+        if (_mode == mode_hunt_replay_moth)
+            _mode = m;
     }
     detection_mode mode ()  {return _mode;}
     std::string mode_str() {

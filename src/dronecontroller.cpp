@@ -19,7 +19,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     _camvol = camvol;
     control_history_max_size = pparams.fps;
     (*_logger) << "valid; flight_mode;" <<
-        "setpoint_pos_x; setpoint_pos_y; setpoint_pos_z; " <<
+        "target_pos_x; target_pos_y; target_pos_z; " <<
         "hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; " <<
         "joyThrottle; joyRoll; joyPitch; joyYaw; " <<
         "joyArmSwitch; joyModeSwitch; joyTakeoffSwitch;" <<
@@ -82,7 +82,7 @@ int bound_joystick_value(int v) {
     return std::clamp(v,JOY_BOUND_MIN,JOY_BOUND_MAX);
 }
 
-void DroneController::control(track_data data_drone, track_data data_target, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel [[maybe_unused]], cv::Point3f setpoint_acc [[maybe_unused]], double time) {
+void DroneController::control(track_data data_drone, track_data data_target_new, track_data data_raw_insect, double time) {
 
 
     if (!_fromfile && pparams.joystick != rc_none)
@@ -90,12 +90,9 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
     if (!pparams.insect_logging_mode)
         process_joystick();
 
-    if (recovery_mode && _joy_state!=js_waypoint)
-        setpoint_pos = recovery_pos;
-
-    if(_joy_state==js_waypoint || recovery_mode){
-        data_target.state.pos = setpoint_pos;
-        data_target.state.vel = {0};
+    if( recovery_mode){
+        data_raw_insect.state.pos = recovery_pos;
+        data_raw_insect.state.vel = {0};
     }
 
     // This is usefull as long blind reburn is not working
@@ -105,7 +102,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         flight_submode_name = "fm_abort_flight_tracking_lost";
     }
 
-    _dist_to_setpoint = normf(data_drone.state.pos - data_target.state.pos);
+    _dist_to_setpoint = normf(data_drone.state.pos - data_target_new.state.pos); // TODO: [k] update this with raw data in burn mode???
 
     int throttle = 0,roll = 0,pitch = 0,yaw = 0, mode = bf_angle;
     bool joy_control = false;
@@ -155,7 +152,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         float remaining_aim_duration = remaing_spinup_time+aim_duration  - static_cast<float>(time - take_off_start_time);
         if (remaining_aim_duration <= aim_duration) {
             cv::Point3f burn_direction;
-            std::tie (auto_roll, auto_pitch,auto_burn_duration,burn_direction) = calc_directional_burn(state_drone_takeoff,data_target.state,0);
+            std::tie (auto_roll, auto_pitch,auto_burn_duration,burn_direction) = calc_directional_burn(state_drone_takeoff,data_raw_insect.state,0);
             if (burn_limit_hack)
                 auto_burn_duration = take_off_burn_duration; //TODO: make this number dynamic such that we have just enough time to do a second directional burn?
             aim_direction_history.push_back(burn_direction);
@@ -164,7 +161,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
             _burn_direction_for_thrust_approx = burn_direction; // to be used later to approx effective thrust
             std::vector<state_data> trajectory = predict_trajectory(auto_burn_duration, 0, burn_direction, state_drone_takeoff);
             if (_fromfile) // todo: tmp solution, call from visualizer instead if this viz remains to be needed
-                draw_viz(state_drone_takeoff,data_target.state,time,burn_direction,auto_burn_duration,remaining_aim_duration,trajectory);
+                draw_viz(state_drone_takeoff,data_raw_insect.state,time,burn_direction,auto_burn_duration,remaining_aim_duration,trajectory);
         } else
             auto_throttle = spinup_throttle();
         if (remaining_aim_duration <= 0) {
@@ -178,7 +175,7 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
             avg_dir /= static_cast<float>(aim_direction_history.size());
             cv::Point3f predicted_drone_pos;
             std::tie(predicted_drone_pos, std::ignore,std::ignore) = predict_drone_after_burn(state_drone_takeoff,avg_dir,0,auto_burn_duration);
-            cv::Point3f predicted_target_pos = data_target.pos() + auto_burn_duration*data_target.vel();
+            cv::Point3f predicted_target_pos = data_raw_insect.pos() + auto_burn_duration*data_raw_insect.vel();
 
             double predicted_error = cv::norm(predicted_drone_pos - predicted_target_pos);
             if (predicted_error > 0.1 && !burn_limit_hack) {
@@ -235,18 +232,18 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         state_drone_better.vel = drone_vel_after_takeoff;
 
         float remaining_aim_duration = aim_duration - static_cast<float>(time - interception_start_time);
-        data_target.state.vel = {0}; // aim to the current target position
+        data_raw_insect.state.vel = {0}; // aim to the current target position
 
         if (remaining_aim_duration<0)
             remaining_aim_duration = 0;
         std::vector<state_data> traj;
         if (!recovery_mode)
-            std::tie (auto_roll, auto_pitch, auto_burn_duration,burn_direction,traj) = calc_burn(state_drone_better,data_target.state,remaining_aim_duration);
+            std::tie (auto_roll, auto_pitch, auto_burn_duration,burn_direction,traj) = calc_burn(state_drone_better,data_raw_insect.state,remaining_aim_duration);
         else
-            std::tie (auto_roll, auto_pitch, auto_burn_duration,burn_direction,traj) = calc_burn(data_drone.state, data_target.state,remaining_aim_duration);
+            std::tie (auto_roll, auto_pitch, auto_burn_duration,burn_direction,traj) = calc_burn(data_drone.state, data_raw_insect.state,remaining_aim_duration);
 
         if (_fromfile) // todo: tmp solution, call from visualizer instead if this viz remains to be needed
-            draw_viz(state_drone_better,data_target.state,time,burn_direction,auto_burn_duration,remaining_aim_duration,traj);
+            draw_viz(state_drone_better,data_raw_insect.state,time,burn_direction,auto_burn_duration,remaining_aim_duration,traj);
 
         auto_throttle = initial_hover_throttle_guess();
 
@@ -309,43 +306,42 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         throttleErrI = 0;
         _flight_mode = fm_flying_pid;
 
-        d_pos_err_x.preset(setpoint_pos.x - data_drone.state.pos.x);
-        d_pos_err_y.preset(setpoint_pos.y - data_drone.state.pos.y);
-        d_pos_err_z.preset(setpoint_pos.z - data_drone.state.pos.z);
-        d_vel_err_x.preset(setpoint_vel.x - data_drone.state.vel.x);
-        d_vel_err_y.preset(setpoint_vel.y - data_drone.state.vel.y);
-        d_vel_err_z.preset(setpoint_vel.z - data_drone.state.vel.z);
-        filter_pos_err_x.reset (setpoint_pos.x - data_drone.state.pos.x);
-        filter_pos_err_y.reset (setpoint_pos.y - data_drone.state.pos.y);
-        filter_pos_err_z.reset (setpoint_pos.z - data_drone.state.pos.z);
-        filter_vel_err_x.reset (setpoint_vel.x - data_drone.state.vel.x);
-        filter_vel_err_y.reset (setpoint_vel.y - data_drone.state.vel.y);
-        filter_vel_err_z.reset (setpoint_vel.z - data_drone.state.vel.z);
-        pos_reference_filter.internal_states(setpoint_pos, setpoint_pos);
+        d_pos_err_x.preset(data_target_new.pos().x - data_drone.state.pos.x);
+        d_pos_err_y.preset(data_target_new.pos().y - data_drone.state.pos.y);
+        d_pos_err_z.preset(data_target_new.pos().z - data_drone.state.pos.z);
+        d_vel_err_x.preset(data_target_new.vel().x - data_drone.state.vel.x);
+        d_vel_err_y.preset(data_target_new.vel().y - data_drone.state.vel.y);
+        d_vel_err_z.preset(data_target_new.vel().z - data_drone.state.vel.z);
+        filter_pos_err_x.reset (data_target_new.pos().x - data_drone.state.pos.x);
+        filter_pos_err_y.reset (data_target_new.pos().y - data_drone.state.pos.y);
+        filter_pos_err_z.reset (data_target_new.pos().z - data_drone.state.pos.z);
+        filter_vel_err_x.reset (data_target_new.vel().x - data_drone.state.vel.x);
+        filter_vel_err_y.reset (data_target_new.vel().y - data_drone.state.vel.y);
+        filter_vel_err_z.reset (data_target_new.vel().z - data_drone.state.vel.z);
+        pos_reference_filter.internal_states(data_target_new.pos(), data_target_new.pos());
 
         [[fallthrough]];
     } case fm_flying_pid: {
 
         //adapt_reffilter_dynamic(data_drone, data_target);
-        cv::Point3f filtered_setpoint_pos = pos_reference_filter.new_sample(setpoint_pos);
-
-        std::tie(filtered_setpoint_pos, setpoint_vel) = keep_in_volume_check(data_drone, filtered_setpoint_pos, setpoint_vel); // Setpoint changes due to keep in volume validation shall not be filtered. The drone must always react fast to these changes.
-
-        control_model_based(data_drone, filtered_setpoint_pos, setpoint_vel);
+        cv::Point3f filtered_setpoint_pos = pos_reference_filter.new_sample(data_target_new.pos());
+        cv::Point3f filtered_setpoint_vel;
+        std::tie(filtered_setpoint_pos, filtered_setpoint_vel) = keep_in_volume_check(data_drone, filtered_setpoint_pos, data_target_new.vel()); // Setpoint changes due to keep in volume validation shall not be filtered. The drone must always react fast to these changes.
+        control_model_based(data_drone, filtered_setpoint_pos,filtered_setpoint_vel);
 
         //check if we can go back to burning:
         if (data_drone.pos_valid && data_drone.vel_valid && _joy_state!=js_waypoint){
             std::vector<state_data> traj;
             cv::Point3f burn_direction;
             float burn_duration;
-            std::tie (std::ignore, std::ignore,burn_duration,burn_direction,traj) = calc_burn(data_drone.state,data_target.state,aim_duration);
+            std::tie (std::ignore, std::ignore,burn_duration,burn_direction,traj) = calc_burn(data_drone.state,data_target_new.state,aim_duration);
 
-            cout << "burn_duration: " << burn_duration << endl;
+//            cout << "burn_duration: " << burn_duration << endl;
 
             if (trajectory_in_view(traj,CameraVolume::strict) && burn_duration < 0.2f && burn_duration > 0.01f && false) {
                 std::vector<state_data> traj_back;
                 std::tie (std::ignore, std::ignore,std::ignore,std::ignore,traj_back) = calc_burn(traj.back(),traj.front(),aim_duration);
-                if (trajectory_in_view(traj_back,CameraVolume::strict) && norm(data_target.state.vel)>0.1){ // norm vel is hack to check if not waypoint
+                if (trajectory_in_view(traj_back,CameraVolume::strict) && norm(data_target_new.state.vel)>0.1){ // norm vel is hack to check if not waypoint
                     _flight_mode = fm_retry_aim_start;
                     //                    recovery_mode = true; // will be set to false in retry_aim TMP disabled because #131
                     recovery_pos = data_drone.pos();
@@ -354,29 +350,24 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
         }
         break;
     } case fm_initial_reset_heading: {
-        control_model_based(data_drone, setpoint_pos, setpoint_vel);
+        control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
         mode += bf_headless_disabled;
         break;
     } case fm_reset_heading: {
         mode += bf_headless_disabled;
-        control_model_based(data_drone, setpoint_pos, setpoint_vel);
+        control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
         auto_yaw = control_yaw(data_drone, 5); // second argument is the yaw gain, move this to the xml files?
         break;
     } case fm_landing_start: {
         landing_decent_yoffset = 0;
-        landing_setpoint_height = setpoint_pos.y;
         _flight_mode = fm_landing;
         auto_yaw = JOY_MIDDLE;
         [[fallthrough]];
     } case fm_landing: {
         mode += bf_headless_disabled;
         landing_decent_yoffset += landing_decent_rate;
-        setpoint_pos.y += landing_decent_yoffset;
-
-        landing_setpoint_height = setpoint_pos.y; //only for status feedback for dronenavigation
-
-        control_model_based(data_drone, setpoint_pos, setpoint_vel);
-
+        data_target_new.state.pos.y +=landing_decent_yoffset;
+        control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
         break;
     } case fm_disarmed: {
         auto_roll = JOY_MIDDLE;
@@ -452,9 +443,9 @@ void DroneController::control(track_data data_drone, track_data data_target, cv:
 
     (*_logger) << static_cast<int>(data_drone.pos_valid)  << "; " <<
         static_cast<int16_t>(_flight_mode) << "; " <<
-        setpoint_pos.x << "; " <<
-        setpoint_pos.y  << "; " <<
-        setpoint_pos.z << "; " <<
+        data_target_new.pos().x << "; " <<
+        data_target_new.pos().y  << "; " <<
+        data_target_new.pos().z << "; " <<
         hoverthrottle << "; " <<
         auto_throttle << "; " <<
         auto_roll << "; " <<
@@ -940,12 +931,12 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     // Determine the control outputs based on feed-forward calculations:
     std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(desired_acceleration);
 
-    std::cout << "MODELCONTROL-errorsP> x-P: " << pos_err_p.x << " ,y-P: " << pos_err_p.y << " ,z-P: " << pos_err_p.z << std::endl;
-    std::cout << "MODELCONTROL-errorsI> x-I: " << pos_err_i.x << " ,y-I: " << pos_err_i.y << " ,z-I: " << pos_err_i.z << std::endl;
-    std::cout << "MODELCONTROL-errorsD> x-D: " << pos_err_d.x << " ,y-D: " << pos_err_d.y << " ,z-D: " << pos_err_d.z << std::endl;
-    std::cout << "MODELCONTROL-errorsPvel> x-D: " << vel_err_p.x << " ,y-P: " << vel_err_p.y << " ,z-P: " << vel_err_p.z << std::endl;
-    std::cout << "MODELCONTROL-pos_err2vel_set> x: " << pos_err2vel_set.x << " ,y: " << pos_err2vel_set.y << " ,z: " << pos_err2vel_set.z << std::endl;
-    std::cout << "MODELCONTROL-output> roll: " << auto_roll << " ,pitch: " << auto_pitch << " ,throttle: " << auto_throttle << std::endl;
+//    std::cout << "MODELCONTROL-errorsP> x-P: " << pos_err_p.x << " ,y-P: " << pos_err_p.y << " ,z-P: " << pos_err_p.z << std::endl;
+//    std::cout << "MODELCONTROL-errorsI> x-I: " << pos_err_i.x << " ,y-I: " << pos_err_i.y << " ,z-I: " << pos_err_i.z << std::endl;
+//    std::cout << "MODELCONTROL-errorsD> x-D: " << pos_err_d.x << " ,y-D: " << pos_err_d.y << " ,z-D: " << pos_err_d.z << std::endl;
+//    std::cout << "MODELCONTROL-errorsPvel> x-D: " << vel_err_p.x << " ,y-P: " << vel_err_p.y << " ,z-P: " << vel_err_p.z << std::endl;
+//    std::cout << "MODELCONTROL-pos_err2vel_set> x: " << pos_err2vel_set.x << " ,y: " << pos_err2vel_set.y << " ,z: " << pos_err2vel_set.z << std::endl;
+//    std::cout << "MODELCONTROL-output> roll: " << auto_roll << " ,pitch: " << auto_pitch << " ,throttle: " << auto_throttle << std::endl;
 }
 
 void DroneController::read_joystick(void) {

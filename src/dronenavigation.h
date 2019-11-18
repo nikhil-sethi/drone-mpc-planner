@@ -191,6 +191,10 @@ private:
     Interceptor _iceptor;
     VisionData *_visdat;
 
+    cv::Point3f setpoint_pos_world;
+    cv::Point3f setpoint_vel_world;
+    cv::Point3f setpoint_acc_world;
+
     bool initialized = false;
     cv::Point3f square_point(cv::Point3f center, float width, float s);
 
@@ -212,10 +216,17 @@ public:
             return navigation_status_names[_navigation_status];
     }
 
-    cv::Point3d setpoint;
-    cv::Point3f setpoint_pos_world;
-    cv::Point3f setpoint_vel_world;
-    cv::Point3f setpoint_acc_world;
+    track_data setpoint() {
+        track_data data_target;
+        data_target.state.pos = setpoint_pos_world;
+        data_target.state.vel = setpoint_vel_world;
+        data_target.state.acc = setpoint_acc_world;
+        data_target.pos_valid = true;
+        data_target.vel_valid = true;
+        data_target.acc_valid = true;
+        return data_target;
+    }
+
     int distance_threshold_mm() {
         return current_setpoint->threshold_mm;
     }

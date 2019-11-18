@@ -41,7 +41,7 @@ private:
     MultiModule *_rc;
     DronePredictor *_dprdct;
 
-    bool draw_plots_once = false;
+    bool enable_plots = false;
 
     const int bufsize = 600;
 
@@ -69,7 +69,7 @@ private:
 
     struct Tracker_viz_base_data{
         cv::Mat frameL;
-        cv::Point3d setpoint;
+        cv::Point3f setpoint;
         double time;
         float dis;
         float min_dis;
@@ -176,7 +176,7 @@ public:
 
     void paint();
     void addPlotSample(void);
-    void update_tracker_data(cv::Mat frameL, cv::Point3d setpoint, double time, bool draw_plots);
+    void update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, double time, bool draw_plots);
     void init(VisionData * visdat, TrackerManager *imngr, DroneController *dctrl, DroneNavigation *dnav, MultiModule *rc, bool fromfile, DronePredictor *dprdct);
     void close();
 

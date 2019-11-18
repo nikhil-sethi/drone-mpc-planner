@@ -158,18 +158,20 @@ void DroneNavigation::update(double time) {
             }
             break;
         } case ns_wait_for_insect: {
-            _trackers->mode(TrackerManager::mode_wait_for_insect);
-            _dctrl->flight_mode(DroneController::fm_inactive);
-            if (_nav_flight_mode == nfm_manual)
+            if (_nav_flight_mode == nfm_manual) {
                 _navigation_status = ns_manual;
-            else if (_nav_flight_mode == nfm_hunt){
+            } else if (_nav_flight_mode == nfm_hunt){
+                _trackers->mode(TrackerManager::mode_wait_for_insect);
                 if(_iceptor.insect_in_range_takeoff()) {
                     _navigation_status = ns_takeoff;
                     repeat = true;
                 } else if(_trackers->insecttracker ()->tracking ()){
                     _dctrl->flight_mode (DroneController::fm_spinup);
+                } else {
+                    _dctrl->flight_mode(DroneController::fm_inactive);
                 }
-            } else if (_nav_flight_mode == nfm_none) { // e.g. insect logging mode
+            } else if (_nav_flight_mode == nfm_none) {
+                _dctrl->flight_mode(DroneController::fm_inactive);
             } else if (_nav_flight_mode == nfm_waypoint)
                 _navigation_status = ns_wait_for_takeoff_command;
             break;
@@ -349,7 +351,6 @@ void DroneNavigation::update(double time) {
         } case ns_reset_heading: {
             _dctrl->flight_mode(DroneController::fm_reset_heading);
             _trackers->dronetracker()->reset_heading();
-            cout<<"velocity: "<<norm(_trackers->dronetracker()->Last_track_data().vel())<<endl;
             if(_trackers->dronetracker()->check_heading() == true && norm(_trackers->dronetracker()->Last_track_data().vel()) < 0.05){
                 _navigation_status = ns_land;
             }

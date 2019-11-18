@@ -30,6 +30,7 @@ private:
     cv::Point3f _intercept_pos,_intercept_vel,_intercept_acc;
     float _horizontal_separation, _vertical_separation;
     CameraVolume::hunt_check_result hunt_volume_check = CameraVolume::HuntVolume_Unknown;
+    bool view_check = false;
 
     enum interceptor_states {
         is_init=0,
@@ -79,11 +80,11 @@ public:
 
 
     std::string Interceptor_State() {
+        if (_interceptor_state == is_move_to_intercept  )
+            return hunt_volume_check_names[hunt_volume_check];
         return interceptor_state_names[_interceptor_state];
     }
-    std::string Hunt_Volume_Check() {
-        return hunt_volume_check_names[hunt_volume_check];
-    }
+
 };
 
 #endif
