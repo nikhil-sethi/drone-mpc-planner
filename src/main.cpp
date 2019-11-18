@@ -380,22 +380,22 @@ void handle_key(double time [[maybe_unused]]) {
         init_insect_log(53);
         break;
     case '3':
-        init_insect_log(46);
+        init_insect_log(58);
         break;
     case '4':
         init_insect_log(54);
         break;
     case '5':
-        init_insect_log(57);
+        init_insect_log(59);
         break;
     case '6':
-        init_insect_log(26);
+        init_insect_log(60);
         break;
     case '7':
         init_insect_log(20);
         break;
     case '8':
-        init_insect_log(38);
+        init_insect_log(61);
         break;
     case '9':
         init_insect_log(15);
