@@ -44,13 +44,12 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
         createTrackbar("d_pos_roll", "Control", &kd_pos_roll, 1000);
         createTrackbar("d_pos_pitch", "Control", &kd_pos_pitch, 1000);
         createTrackbar("d_pos_throttle", "Control", &kd_pos_throttle, 1000);
-        createTrackbar("p_v_roll", "Control", &kp_v_roll, 3000);
-        createTrackbar("p_v_pitch", "Control", &kp_v_pitch, 3000);
-        createTrackbar("p_v_throttle", "Control", &kp_v_throttle, 3000);
-        createTrackbar("d_v_roll", "Control", &kd_v_roll, 3000);
-        createTrackbar("d_v_pitch", "Control", &kd_v_pitch, 3000);
-        createTrackbar("d_v_throttle", "Control", &kd_v_throttle, 3000);
-
+        createTrackbar("p_v_roll", "Control", &kp_v_roll, 1000);
+        createTrackbar("p_v_pitch", "Control", &kp_v_pitch, 1000);
+        createTrackbar("p_v_throttle", "Control", &kp_v_throttle, 1000);
+        createTrackbar("d_v_roll", "Control", &kd_v_roll, 100);
+        createTrackbar("d_v_pitch", "Control", &kd_v_pitch, 100);
+        createTrackbar("d_v_throttle", "Control", &kd_v_throttle, 200);
     }
 
     hoverthrottle = dparams.initial_hover_throttle;
@@ -888,13 +887,12 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     cv::Point3f kd_vel(kd_v_roll,kd_v_throttle,kd_v_pitch);
     kd_vel /= 100.f;
 
-    // Determine state errors:
     float err_x_filtered = filter_pos_err_x.new_sample(setpoint_pos.x - data_drone.state.pos.x);
     float err_y_filtered = filter_pos_err_y.new_sample(setpoint_pos.y - data_drone.state.pos.y);
     float err_z_filtered = filter_pos_err_z.new_sample(setpoint_pos.z - data_drone.state.pos.z);
     cv::Point3f pos_err_p = {err_x_filtered, err_y_filtered, err_z_filtered};
 
-    // If the distance is large, then increase the velocity setpoint:
+    // If the distance is large, then increase the velocity setpoint such that the velocity controller is not counteracting to the position controller:
     cv::Point3f pos_err2vel_set = deadzone(pos_err_p,-1,1) * 1.f;
 
     float err_velx_filtered = filter_vel_err_x.new_sample(setpoint_vel.x + pos_err2vel_set.x - data_drone.state.vel.x );
@@ -905,9 +903,7 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     // Increase I error with anti wind up handling:
     if (fabs(err_x_filtered) < 0.15f )
         pos_err_i.x += err_x_filtered;
-
     pos_err_i.y += err_y_filtered; // this info can be used to update hover_throttle. However in the current controller hover_throttle is not used.
-
     if (fabs(err_z_filtered) < 0.15f )
         pos_err_i.z += err_z_filtered;
 
@@ -916,30 +912,17 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     float errDz = d_pos_err_z.new_sample (err_z_filtered);
     cv::Point3f pos_err_d = {errDx, errDy, errDz};
 
-    float errvDx = d_pos_err_x.new_sample (err_x_filtered);
-    float errvDy = d_pos_err_y.new_sample (err_y_filtered);
-    float errvDz = d_pos_err_z.new_sample (err_z_filtered);
+    float errvDx = d_vel_err_x.new_sample (err_velx_filtered);
+    float errvDy = d_vel_err_y.new_sample (err_vely_filtered);
+    float errvDz = d_vel_err_z.new_sample (err_velz_filtered);
     cv::Point3f vel_err_d = {errvDx, errvDy, errvDz};
 
-
-    //Determine the acceleration direction as PID-filtered postion error:
-    cv::Point3f desired_acceleration =mult(kp_pos, pos_err_p) + mult(ki_pos, pos_err_i) + mult(kd_pos, pos_err_d); // position control
-
-
-    if(norm(vel_err_d) > 0.1){
+    cv::Point3f desired_acceleration = {0};
+    desired_acceleration += mult(kp_pos, pos_err_p) + mult(ki_pos, pos_err_i) + mult(kd_pos, pos_err_d); // position controld
+    if( !(norm(setpoint_vel)<0.1 && norm(setpoint_pos-data_drone.pos ())<0.2) ) // Needed to improve hovering at waypoint
         desired_acceleration += mult(kp_vel, vel_err_p) + mult(kd_vel, vel_err_d); // velocity control
-        desired_acceleration = desired_acceleration/2.f; // Since we have two individually tuned controllers we need to unify the resulting control error to the value of one controller.
-    }
 
-    // Determine the control outputs based on feed-forward calculations:
     std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(desired_acceleration);
-
-//    std::cout << "MODELCONTROL-errorsP> x-P: " << pos_err_p.x << " ,y-P: " << pos_err_p.y << " ,z-P: " << pos_err_p.z << std::endl;
-//    std::cout << "MODELCONTROL-errorsI> x-I: " << pos_err_i.x << " ,y-I: " << pos_err_i.y << " ,z-I: " << pos_err_i.z << std::endl;
-//    std::cout << "MODELCONTROL-errorsD> x-D: " << pos_err_d.x << " ,y-D: " << pos_err_d.y << " ,z-D: " << pos_err_d.z << std::endl;
-//    std::cout << "MODELCONTROL-errorsPvel> x-D: " << vel_err_p.x << " ,y-P: " << vel_err_p.y << " ,z-P: " << vel_err_p.z << std::endl;
-//    std::cout << "MODELCONTROL-pos_err2vel_set> x: " << pos_err2vel_set.x << " ,y: " << pos_err2vel_set.y << " ,z: " << pos_err2vel_set.z << std::endl;
-//    std::cout << "MODELCONTROL-output> roll: " << auto_roll << " ,pitch: " << auto_pitch << " ,throttle: " << auto_throttle << std::endl;
 }
 
 void DroneController::check_emergency_kill(track_data data_drone, double time) {

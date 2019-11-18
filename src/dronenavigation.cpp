@@ -57,13 +57,8 @@ void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, Dro
         createTrackbar("r_crcl1", "Nav", &r_crcl1, 1000);
         createTrackbar("r_crcl2", "Nav", &r_crcl2, 1000);
 
-        createTrackbar("velContrl x", "Nav", &enable_vel_control_x, 1);
-        createTrackbar("velContrl y", "Nav", &enable_vel_control_y, 1);
-        createTrackbar("velContrl z", "Nav", &enable_vel_control_z, 1);
-
         createTrackbar ("w_sqr", "Nav", &w_sqr, 2500);
-        createTrackbar ("v_sqr", "Nav", &v_sqr, 1000);
-
+        createTrackbar ("v_sqr", "Nav", &v_sqr, 500);
     }
 
     if (pparams.insect_logging_mode)
@@ -271,22 +266,6 @@ void DroneNavigation::update(double time) {
                 setpoint_pos_world.x = setpoints[wpid].xyz.x + (250-setpoint_slider_X)/100.f;
                 setpoint_pos_world.y = setpoints[wpid].xyz.y + (250-setpoint_slider_Y)/100.f;
                 setpoint_pos_world.z = setpoints[wpid].xyz.z + (setpoint_slider_Z-250)/100.f;
-
-                float setpoint_speed = 0.5;
-                setpoint_vel_world = cv::Point3f(0,0,0);
-
-                if(enable_vel_control_x>0){
-                    setpoint_vel_world.x = setpoint_speed;
-                    setpoint_pos_world = _trackers->dronetracker ()->Last_track_data ().pos ();
-                }
-                if(enable_vel_control_y>0){
-                    setpoint_vel_world.y = -setpoint_speed;
-                    setpoint_pos_world = _trackers->dronetracker ()->Last_track_data ().pos ();
-                }
-                if(enable_vel_control_z>0){
-                    setpoint_vel_world.z = setpoint_speed;
-                    setpoint_pos_world = _trackers->dronetracker ()->Last_track_data ().pos ();
-                }
             }
 
             if (_dctrl->dist_to_setpoint() *1000 < current_setpoint->threshold_mm * distance_threshold_f
@@ -466,7 +445,7 @@ cv::Point3f DroneNavigation::square_point(cv::Point3f center, float width, float
     s = fmodf(s, 4*width);
     float si = fmodf(s, width);
 
-    float x_offset, z_offset;
+    float x_offset, y_offset, z_offset;
 
     if(s>3*width){
         x_offset = -width/2;
@@ -481,6 +460,11 @@ cv::Point3f DroneNavigation::square_point(cv::Point3f center, float width, float
         x_offset = -width/2 + si;
         z_offset = -width/2;
     }
+    y_offset = z_offset;
+    z_offset = 0;
+    // Miss use this function to tune the pid controller:
+    //x_offset = 0; z_offset = 0;
+    //float y_offset = width/2 * sin(si/width*2*M_PIf32);
 
-    return {center.x+x_offset, center.y, center.z+z_offset};
+    return {center.x+x_offset, center.y+y_offset, center.z+z_offset};
 }

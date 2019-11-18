@@ -8,10 +8,10 @@
     <Member Name="kd_pos_roll">430</Member>
     <Member Name="kd_pos_pitch">350</Member>
     <Member Name="kd_pos_throttle">550</Member>
-    <Member Name="kp_v_roll">697</Member>
-    <Member Name="kp_v_pitch">697</Member>
-    <Member Name="kp_v_throttle">603</Member>
-    <Member Name="kd_v_roll">1152</Member>
-    <Member Name="kd_v_pitch">1152</Member>
-    <Member Name="kd_v_throttle">0</Member>
+    <Member Name="kp_v_roll">112</Member>
+    <Member Name="kp_v_pitch">230</Member>
+    <Member Name="kp_v_throttle">180</Member>
+    <Member Name="kd_v_roll">35</Member>
+    <Member Name="kd_v_pitch">30</Member>
+    <Member Name="kd_v_throttle">100</Member>
 </SerializableClass>

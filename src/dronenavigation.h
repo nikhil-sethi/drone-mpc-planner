@@ -52,12 +52,8 @@ private:
     int v_crcl2 = 500;
     int r_crcl1 = 5;
     int r_crcl2 = 15;
-    int w_sqr = 1000;
+    int w_sqr = 600;
     int v_sqr = 100;
-
-    int enable_vel_control_x = 0;
-    int enable_vel_control_y = 0;
-    int enable_vel_control_z = 0;
 
     class navigationParameters: public xmls::Serializable
     {
@@ -121,7 +117,7 @@ private:
     struct landing_waypoint : waypoint{
         landing_waypoint(){
             xyz = cv::Point3f(0,.5f,0); // 1 meter over, relative to the startup location
-            threshold_mm = 10;
+            threshold_mm = 80;
             mode = fm_landing;
         }
     };
