@@ -401,7 +401,7 @@ void handle_key(double time [[maybe_unused]]) {
         init_insect_log(15);
         break;
     case '0':
-        init_insect_log(18);
+        init_insect_log(62);
         break;
     case 82: // arrow up
         dnav.manual_trigger_next_wp();
