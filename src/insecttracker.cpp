@@ -34,7 +34,7 @@ void InsectTracker::update_from_log(LogReader::Log_Entry log, int frame_number, 
 
     //issue #130
     cv::Point3f recalc_world = im2world(cv::Point2f(log.ins_im_x,log.ins_im_y), _image_item.disparity,_visdat->Qf,_visdat->camera_angle);
-    if (norm(recalc_world -data.pos()) > 0.1) {
+    if (norm(recalc_world -data.pos()) > 0.01) {
         //it seems the camera angle was changed since this log, or someone has hacked something into this log. Use the world coordinates to match the image coordinates
         //(UN)HACK:
         cv::Point3f diff = recalc_world -data.pos();
