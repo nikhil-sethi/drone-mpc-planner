@@ -84,6 +84,8 @@ int bound_joystick_value(int v) {
 
 void DroneController::control(track_data data_drone, track_data data_target_new, track_data data_raw_insect, double time) {
 
+    if (_joy_state== js_waypoint)
+        data_raw_insect = data_target_new; // the takeoff burn uses raw insect, so but wp flight mode also takeoff burn
 
     if (!_fromfile && pparams.joystick != rc_none)
         read_joystick();
