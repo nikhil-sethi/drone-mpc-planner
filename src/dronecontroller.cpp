@@ -97,12 +97,8 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         data_raw_insect.state.vel = {0};
     }
 
-    // This is usefull as long blind reburn is not working
-    if( (!data_drone.pos_valid && time > start_takeoff_burn_time+1 && start_takeoff_burn_time > 0)
-        && (_flight_mode!=fm_inactive && _flight_mode!=fm_disarmed)){
-        _flight_mode = fm_abort_flight;
-        flight_submode_name = "fm_abort_flight_tracking_lost";
-    }
+
+    check_emergency_kill(data_drone,time);
 
     _dist_to_setpoint = normf(data_drone.state.pos - data_target_new.state.pos); // TODO: [k] update this with raw data in burn mode???
 
@@ -790,10 +786,9 @@ std::tuple<cv::Point3f, cv::Point3f> DroneController::keep_in_volume_check(track
     float required_breaking_distance = static_cast<float>(.5L*thrust*safety*pow(required_breaking_time, 2));
 
     if(remaining_breaking_distance<=required_breaking_distance && remaining_breaking_distance>0 ){
-        setpoint_pos = data_drone.pos ();
+        setpoint_pos =_camvol->center_of_volume();
         setpoint_vel = {0};
         flight_submode_name = "fm_pid_keep_in_volume";
-        _camvol->calc_distance_to_borders (data_drone); // Only for debugging, TODO remove
     } else {
         flight_submode_name = "";
     }
@@ -940,6 +935,20 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
 //    std::cout << "MODELCONTROL-errorsPvel> x-D: " << vel_err_p.x << " ,y-P: " << vel_err_p.y << " ,z-P: " << vel_err_p.z << std::endl;
 //    std::cout << "MODELCONTROL-pos_err2vel_set> x: " << pos_err2vel_set.x << " ,y: " << pos_err2vel_set.y << " ,z: " << pos_err2vel_set.z << std::endl;
 //    std::cout << "MODELCONTROL-output> roll: " << auto_roll << " ,pitch: " << auto_pitch << " ,throttle: " << auto_throttle << std::endl;
+}
+
+void DroneController::check_emergency_kill(track_data data_drone, double time) {
+    // This is usefull as long blind reburn is not working
+    if( (!data_drone.pos_valid && time > start_takeoff_burn_time+1 && start_takeoff_burn_time > 0)
+        && (_flight_mode!=fm_inactive && _flight_mode!=fm_disarmed)){
+        kill_cnt_down++;
+        if (kill_cnt_down > pparams.fps / 2) {
+            _flight_mode = fm_abort_flight;
+            flight_submode_name = "fm_abort_flight_tracking_lost";
+        }
+    } else {
+        kill_cnt_down = 0;
+    }
 }
 
 void DroneController::read_joystick(void) {

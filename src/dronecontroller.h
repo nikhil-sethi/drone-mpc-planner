@@ -86,6 +86,7 @@ public:
     };
 private:
 
+    uint16_t kill_cnt_down = 0;
     double spin_up_start_time = 0;
     double start_takeoff_burn_time = 0;
 
@@ -220,6 +221,8 @@ private:
 
     std::tuple<float,float> acc_to_deg(cv::Point3f acc);
     std::tuple<float,float> acc_to_quaternion(cv::Point3f acc);
+
+    void check_emergency_kill(track_data, double time);
 
     cv::Point3f pos_err_i;
     int kp_pos_roll, kp_pos_throttle, kp_pos_pitch, ki_pos_roll, ki_pos_throttle, ki_pos_pitch, kd_pos_roll, kd_pos_throttle, kd_pos_pitch;

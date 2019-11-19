@@ -277,6 +277,10 @@ public:
         HuntVolume_Outside_Cone
     };
 
+    cv::Point3f center_of_volume() {
+        return cv::Point3f(0,-1,-2);
+    }
+
     std::string convert_to_str(hunt_check_result v) {
         return hunt_volume_check_names[v];
     }
