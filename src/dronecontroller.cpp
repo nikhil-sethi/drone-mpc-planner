@@ -121,6 +121,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         auto_roll = JOY_MIDDLE;
         auto_pitch = JOY_MIDDLE;
         auto_throttle = spinup_throttle();
+        mode += bf_PID_loop_disabled;
         break;
     } case fm_start_takeoff: {
         take_off_start_time = time;
@@ -413,6 +414,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         auto_roll = JOY_MIDDLE;
         auto_pitch = JOY_MIDDLE;
         _rc->arm(bf_disarmed);
+        mode += bf_heading_reset;
         break;
     }
     }
