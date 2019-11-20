@@ -388,7 +388,7 @@ void handle_key(double time [[maybe_unused]]) {
         init_insect_log(54);
         break;
     case '5':
-        init_insect_log(59);
+        init_insect_log(63);
         break;
     case '6':
         init_insect_log(60);
