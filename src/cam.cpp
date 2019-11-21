@@ -165,8 +165,6 @@ void Cam::init() {
             dev = devices[0];
     }
 
-    mkdir("./logging", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-
     std::cout << "Found the following device:";
 
     // Each device provides some information on itself, such as name:
@@ -784,11 +782,11 @@ void Cam::init(int argc __attribute__((unused)), char **argv) {
     bag_fn = datadir + '/' + bag_fn;
 
     //make sure the origirnam files are not overwritten when playing bags:
-    calib_wfn = "./logging/fromfile_" + calib_rfn;
-    depth_map_wfn = "./logging/fromfile_" + depth_map_rfn;
-    depth_unfiltered_map_wfn = "./logging/fromfile_" + depth_unfiltered_map_rfn;
-    disparity_map_wfn = "./logging/fromfile_" + disparity_map_rfn;
-    brightness_map_wfn = "./logging/fromfile_" + brightness_map_rfn;
+    calib_wfn = data_output_dir + calib_rfn;
+    depth_map_wfn = data_output_dir + depth_map_rfn;
+    depth_unfiltered_map_wfn = data_output_dir + depth_unfiltered_map_rfn;
+    disparity_map_wfn = data_output_dir + disparity_map_rfn;
+    brightness_map_wfn = data_output_dir + brightness_map_rfn;
 
     std::cout << "Initializing cam from " << bag_fn << std::endl;
 

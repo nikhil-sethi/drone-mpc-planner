@@ -530,13 +530,12 @@ int init_loggers() {
         }
     }
     data_output_dir = "./logging/";
-    mkdir("./logging/", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-    cout << "data_output_dir: " << data_output_dir << endl;
+    mkdir(data_output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     if (fromfile==log_mode_full)
-        logger.open(data_output_dir  + "log_regenerated.csv",std::ofstream::out);
-    else {
-        logger.open(data_output_dir  + "log.csv",std::ofstream::out);
-    }
+        data_output_dir = data_output_dir + "replay/";
+    mkdir(data_output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    logger.open(data_output_dir  + "log.csv",std::ofstream::out);
+    cout << "data_output_dir: " << data_output_dir << endl;
 
     logger << "ID;RS_ID;time;insect_log;";
     logger_fn = data_output_dir  + "log" + to_string(0) + ".csv"; // only used with pparams.video_cuts
@@ -579,7 +578,7 @@ void init(int argc, char **argv) {
     else
         cam.init();
 
-    visdat.init(fromfile==log_mode_full,cam.Qf, cam.frameL,cam.frameR,cam.camera_angle(),cam.measured_gain(),cam.depth_background_mm); // do after cam update to populate frames
+    visdat.init(cam.Qf, cam.frameL,cam.frameR,cam.camera_angle(),cam.measured_gain(),cam.depth_background_mm); // do after cam update to populate frames
     trackers.init(&logger, &visdat);
     dnav.init(&logger,&trackers,&dctrl,&visdat, &(cam.camera_volume));
     dctrl.init(&logger,fromfile==log_mode_full,&rc,trackers.dronetracker(), &(cam.camera_volume));

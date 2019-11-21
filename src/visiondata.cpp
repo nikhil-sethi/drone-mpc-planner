@@ -3,7 +3,7 @@
 using namespace cv;
 using namespace std;
 
-void VisionData::init(bool fromfile, cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, float new_camera_gain, cv::Mat new_depth_background_mm){
+void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, float new_camera_gain, cv::Mat new_depth_background_mm){
     Qf = new_Qf;
     cv::invert(Qf,Qfi);
     frameL = new_frameL.clone();
@@ -17,10 +17,7 @@ void VisionData::init(bool fromfile, cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat
     camera_angle = new_camera_angle;
     camera_gain = new_camera_gain;
 
-    if (fromfile)
-        motion_noise_map_wfn = "./logging/replay_" + motion_noise_map_wfn;
-    else
-        motion_noise_map_wfn = "./logging/" + motion_noise_map_wfn;
+    motion_noise_map_wfn = data_output_dir + motion_noise_map_wfn;
 
     deserialize_settings();
 

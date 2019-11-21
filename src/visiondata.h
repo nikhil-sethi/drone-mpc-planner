@@ -110,7 +110,7 @@ public:
     bool disable_fading = false;
     double current_time() {return _current_frame_time;}
 
-    void init(bool fromfile, cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, float new_camera_gain, cv::Mat new_depth_background_mm);
+    void init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, float new_camera_gain, cv::Mat new_depth_background_mm);
     void close();
     void update(cv::Mat new_frameL, cv::Mat new_frameR, double time, unsigned long long new_frame_id);
     void reset_motion_integration() {

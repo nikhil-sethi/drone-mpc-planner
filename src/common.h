@@ -56,6 +56,8 @@ const float depthscale = 256.0f;
 const float rad2deg = 180.f/M_PIf32;
 const float deg2rad = M_PIf32/180.f;
 
+extern std::string data_output_dir;
+
 struct state_data {
     cv::Point3f pos = {0},vel ={0},acc = {0};
 };
