@@ -251,8 +251,6 @@ private:
     float landing_decent_yoffset = 0.f;
     float landing_decent_rate = -0.005f;
 
-    bool heading_reseted = false;
-
     inline state_data set_recoveryState(cv::Point3f position){
         state_data rt;
         rt.pos = position;

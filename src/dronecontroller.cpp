@@ -105,10 +105,6 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
     _dist_to_setpoint = normf(data_drone.state.pos - data_target_new.state.pos); // TODO: [k] update this with raw data in burn mode???
 
     int throttle = 0,roll = 0,pitch = 0,yaw = 0, mode = bf_angle;
-    if(!heading_reseted){
-        mode += bf_heading_reset;
-        heading_reseted = true;
-    }
     bool joy_control = false;
     switch(_flight_mode) {
     case fm_manual: {
@@ -389,6 +385,8 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         auto_roll = JOY_MIDDLE;
         auto_pitch = JOY_MIDDLE;
         spin_up_start_time = 0;
+        mode += bf_heading_reset;
+
         if (dparams.mode3d)
             auto_throttle = JOY_MIDDLE;
         else
