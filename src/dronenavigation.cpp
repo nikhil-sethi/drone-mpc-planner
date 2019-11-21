@@ -160,7 +160,7 @@ void DroneNavigation::update(double time) {
                 if(_iceptor.insect_in_range_takeoff()) {
                     _navigation_status = ns_takeoff;
                     repeat = true;
-                } else if(_trackers->insecttracker ()->tracking ()){
+                } else if(_trackers->insecttracker_best ()->tracking ()){
                     _dctrl->flight_mode (DroneController::fm_spinup);
                 } else {
                     _dctrl->flight_mode(DroneController::fm_inactive);

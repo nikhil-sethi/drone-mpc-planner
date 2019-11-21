@@ -4,23 +4,14 @@ project(pats)
 # Save the command line compile commands in the build output
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
-# directories
 set (PROJECT_SRC_DIR ../src)
-
+set (SRC_DIR ../src/)
 set(VIZ_3D FALSE)
 
 # add packages
 find_package(Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
-find_package(OpenCV REQUIRED)
-
-if(VIZ_3D)
-    add_definitions(-DVIZ_3D)
-    list(APPEND CMAKE_PREFIX_PATH /opt/ros/dashing/share/fastcdr/cmake)
-    find_package(fastcdr REQUIRED)
-    find_package(fastrtps REQUIRED)
-endif()
-
+find_package( OpenCV REQUIRED )
 MESSAGE( STATUS "OpenCV_DIR: " ${OpenCV_DIR} )
 MESSAGE( STATUS "OpenCV_LIBS: " ${OpenCV_LIBS} )
 MESSAGE( STATUS "OpenCV_LIB_DIR: " ${OpenCV_LIB_DIR} )
@@ -30,6 +21,13 @@ MESSAGE( STATUS "OpenCV_SHARED: " ${OpenCV_SHARED} )
 MESSAGE( STATUS "OpenCV_CONFIG_PATH: " ${OpenCV_CONFIG_PATH} )
 MESSAGE( STATUS "OpenCV_INSTALL_PATH: " ${OpenCV_INSTALL_PATH} )
 MESSAGE( STATUS "OPENCV_VERSION: " ${OpenCV_VERSION} )
+
+if(VIZ_3D)
+    add_definitions(-DVIZ_3D)
+    list(APPEND CMAKE_PREFIX_PATH /opt/ros/dashing/share/fastcdr/cmake)
+    find_package(fastcdr REQUIRED)
+    find_package(fastrtps REQUIRED)
+endif()
 
 #get rid unused variable warning:
 set(ignoreMe "${QT_QMAKE_EXECUTABLE}")
@@ -46,12 +44,9 @@ pkg_check_modules(GST REQUIRED gstreamer-1.0>=1.8
 #pkg_search_module(GSTAPP REQUIRED gstreamer-app-1.0)
 MESSAGE( STATUS "GST_INCLUDE_DIRS: " ${GST_INCLUDE_DIRS} )
 include_directories(SYSTEM ${GST_INCLUDE_DIRS})
-
 link_directories(SYSTEM ${GST_LIBRARY_DIRS})
 
-set (SRC_DIR ../src/)
 include_directories (SYSTEM ../src/ros_msgs/)
-
 include_directories(SYSTEM "${SRC_DIR}")
 
 #************airsim******************
@@ -116,8 +111,6 @@ endif()
 
 find_package(realsense2 REQUIRED)
 
-#include_directories("../src/fastrtps/")
-
 # sources
 FILE(GLOB SRCS "../src/*.cpp" "../src/*.h" "../src/*.c" "../src/cereal/*.hpp" "../src/tinyxml/*.h" "../src/tinyxml/*.cpp" "../xml/*.xml" "../src/3dviz/*.cpp" "../src/3dviz/*.h")
 
@@ -129,7 +122,7 @@ endif()
 
 include(CheckCXXCompilerFlag)
 #-Wimplicit-fallthrough -> only supported by gcc >7 (ubuntu 18)
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3 -Wall -Wextra -Wlogical-op -Wuseless-cast -Wold-style-cast -Wdouble-promotion -Wshadow -Wformat=2  -Wno-missing-field-initializers")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lstdc++fs -msse3 -Wall -Wextra -Wlogical-op -Wuseless-cast -Wold-style-cast -Wdouble-promotion -Wshadow -Wformat=2  -Wno-missing-field-initializers")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -154,6 +147,7 @@ target_link_libraries(${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
 target_link_libraries(${PROJECT_NAME} ${realsense2_LIBRARY})
 target_link_libraries(${PROJECT_NAME} ${GST_LIBRARIES} ${GSTSDP_LIBRARIES} ${GSTAPP_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} stdc++fs)
 target_link_libraries(${PROJECT_NAME} ${FASTRTPS_LIBRARIES})
 
 if(VIZ_3D)

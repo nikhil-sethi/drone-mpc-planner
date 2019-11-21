@@ -22,26 +22,20 @@ void TrackerManager::init(std::ofstream *logger,VisionData *visdat){
     //...but since we are 'pushing' the items in, this in the end must be in the normal order. Or not. I guess it's a 50% chance thing.
     //#106
     _dtrkr = new DroneTracker();
-    _itrkr = new InsectTracker();
+    default_itrkr = new InsectTracker();
     _dtrkr->init(_logger,_visdat);
-    _itrkr->init(_logger,_visdat);
-    _trackers.push_back(_itrkr);
+    default_itrkr->init(0,_visdat);
+    _trackers.push_back(default_itrkr);
     _trackers.push_back(_dtrkr);
 
     (*_logger) << "trkrs_state;";
     initialized = true;
 }
 
-void TrackerManager::update(double time,LogReader::Log_Entry log_entry, bool drone_is_active){
+void TrackerManager::update(double time,LogReader::Log_Entry_Insect * log_entry, bool drone_is_active){
 
     if (enable_viz_diff) {
         cv::cvtColor(_visdat->diffL*10,diff_viz,CV_GRAY2BGR);
-        putText(diff_viz,"Drone",cv::Point(3,diff_viz.rows-12),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,255,0));
-        putText(diff_viz,"Insect",cv::Point(3,diff_viz.rows-24),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,0,255));
-        putText(diff_viz,"Blink",cv::Point(3,diff_viz.rows-36),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(255,0,255));
-        putText(diff_viz,"Ignored",cv::Point(3,diff_viz.rows-48),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,128,0));
-        putText(diff_viz,"Untracked",cv::Point(3,diff_viz.rows-60),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(255,255,55));
-        putText(diff_viz,"Multitracked",cv::Point(3,diff_viz.rows-72),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(200,255,250));
     }
 
     if (_mode != mode_idle){
@@ -50,7 +44,7 @@ void TrackerManager::update(double time,LogReader::Log_Entry log_entry, bool dro
         match_blobs_to_trackers(drone_is_active && !_dtrkr->inactive(),time);
     }
 
-    update_trackers(time,log_entry, drone_is_active);
+    update_trackers(time,_visdat->frame_id,log_entry, drone_is_active);
 
     (*_logger) << static_cast<int16_t>(_mode) << ";";
 
@@ -60,7 +54,7 @@ void TrackerManager::update(double time,LogReader::Log_Entry log_entry, bool dro
         viz_max_points = cv::Mat::zeros(5,100,CV_8UC3);
 }
 
-void TrackerManager::update_trackers(double time,LogReader::Log_Entry log_entry, bool drone_is_active) {
+void TrackerManager::update_trackers(double time,long long frame_number,LogReader::Log_Entry_Insect * log_entry, bool drone_is_active) {
     //perform all tracker functions, also delete old trackers
     for (uint ii=_trackers.size();ii != 0; ii--){ // reverse because deleting from this list.
         uint i = ii-1;
@@ -75,10 +69,10 @@ void TrackerManager::update_trackers(double time,LogReader::Log_Entry log_entry,
             InsectTracker * itrkr = static_cast<InsectTracker * >(_trackers.at(i));
             switch (_mode){
             case mode_idle:{
-                itrkr->append_log(); // write dummy data
+                itrkr->append_log(time,frame_number,false); // write dummy data
                 break;
             } case mode_locate_drone:{
-                itrkr->append_log(); // write dummy data
+                itrkr->append_log(time,frame_number,false); // write dummy data
                 break;
             } case mode_wait_for_insect:{
                 itrkr->track(time);
@@ -86,11 +80,8 @@ void TrackerManager::update_trackers(double time,LogReader::Log_Entry log_entry,
             } case mode_hunt:{
                 itrkr->track(time);
                 break;
-            } case mode_hunt_replay_moth:{
-                itrkr->update_from_log(log_entry,_visdat->frame_id,time);
-                break;
             } case mode_drone_only:{
-                itrkr->append_log(); // write dummy data
+                itrkr->append_log(time,frame_number,false); // write dummy data
                 break;
             }
             }
@@ -279,7 +270,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
 
         //see if there are still keypoints left untracked, create new trackers for them
         for (uint i=0; i < _blobs.size(); i++){
-            if (!pbs.at(i).tracked() && _trackers.size() < 30) { // if so, start tracking it!
+            if (!pbs.at(i).tracked() && !pbs.at(i).ignored && _trackers.size() < 30) { // if so, start tracking it!
                 if (_mode == mode_locate_drone){
                     BlinkTracker  * bt;
                     bt = new BlinkTracker();
@@ -290,6 +281,19 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                         bt->world_item(w);
                         _trackers.push_back( bt);
                         pbs.at(i).trackers.push_back(bt);
+                    }
+                } else if (_mode != mode_idle && _mode != mode_drone_only){
+                    auto wbp_tmp = default_itrkr->calc_world_item(&_blobs.at(i),time);
+                    if (wbp_tmp.valid) {
+                        InsectTracker *it;
+                        it = new InsectTracker();
+                        it->init(next_insecttrkr_id,_visdat);
+                        next_insecttrkr_id++;
+                        auto wbp = default_itrkr->calc_world_item(&_blobs.at(i),time);
+                        ItemTracker::WorldItem w(ItemTracker::ImageItem(_blobs.at(i),wbp.disparity,_visdat->frame_id,100,i),wbp);
+                        it->world_item(w);
+                        _trackers.push_back( it);
+                        pbs.at(i).trackers.push_back(it);
                     }
                 }
             }
@@ -304,75 +308,70 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                 //see if we have a drone / insect tracker pair
                 DroneTracker * dtrkr;
                 InsectTracker * itrkr;
-                ItemTracker * t1 = pbs.at(i).trackers.at(0);
-                ItemTracker * t2 = pbs.at(i).trackers.at(1); //fixme: make this general for more then 2
                 bool drn_trkr_fnd = false;
-                bool irn_trkr_fnd = false;
-
-                if (typeid(*t1) == typeid(DroneTracker)) {
-                    dtrkr = static_cast<DroneTracker*>(t1);
-                    drn_trkr_fnd = true;
-                } else if (typeid(*t1) == typeid(InsectTracker)) {
-                    itrkr = static_cast<InsectTracker*>(t1);
-                    irn_trkr_fnd = true;
-                }
-                if (typeid(*t2) == typeid(DroneTracker)) {
-                    dtrkr = static_cast<DroneTracker*>(t2);
-                    drn_trkr_fnd = true;
-                } else if (typeid(*t2) == typeid(InsectTracker)) {
-                    itrkr = static_cast<InsectTracker*>(t2);
-                    irn_trkr_fnd = true;
+                for (auto trkr : pbs.at(i).trackers) {
+                    if (typeid(*trkr) == typeid(DroneTracker)) {
+                        dtrkr = static_cast<DroneTracker *>(trkr);
+                        drn_trkr_fnd = true;
+                        break;
+                    }
                 }
 
-                if (drn_trkr_fnd && irn_trkr_fnd){
-                    //so, there should be another blob close to the currently one used.
-                    //if there is, the small one is prolly the moth...
-                    bool conflict_resolved = false;
-                    for (uint j = 0; j < pbs.size();j++){
-                        if (i!=j && !pbs.at(j).tracked()){
-                            float dist = cv::norm(pbs.at(i).pt-pbs.at(j).pt);
-                            if (dist < 2.f* (pbs.at(i).size + pbs.at(j).size)) {
-                                if(pbs.at(i).size > pbs.at(j).size) {
-                                    auto wbpi = dtrkr->calc_world_item(&_blobs.at(i),time);
-                                    ItemTracker::WorldItem wi(ItemTracker::ImageItem(_blobs.at(i),wbpi.disparity,_visdat->frame_id,0,i),wbpi);
-                                    dtrkr->world_item(wi);
-                                    auto wbpj = itrkr->calc_world_item(&_blobs.at(j),time);
-                                    ItemTracker::WorldItem wj(ItemTracker::ImageItem(_blobs.at(j),wbpj.disparity,_visdat->frame_id,0,j),wbpj);
-                                    itrkr->world_item(wj);
+                if (drn_trkr_fnd) {
+                    for (auto trkr : pbs.at(i).trackers) {
+                        if (typeid(*trkr) == typeid(InsectTracker)) {
+                            itrkr = static_cast<InsectTracker*>(trkr);
 
-                                    pbs.at(i).trackers.clear();
-                                    pbs.at(j).trackers.clear();
-                                    pbs.at(i).trackers.push_back(dtrkr);
-                                    pbs.at(j).trackers.push_back(itrkr);
-                                }else {
-                                    auto wbpi = itrkr->calc_world_item(&_blobs.at(i),time);
-                                    ItemTracker::WorldItem wi(ItemTracker::ImageItem(_blobs.at(i),wbpi.disparity,_visdat->frame_id,0,i),wbpi);
-                                    itrkr->world_item(wi);
-                                    auto wbpj = dtrkr->calc_world_item(&_blobs.at(j),time);
-                                    ItemTracker::WorldItem wj(ItemTracker::ImageItem(_blobs.at(j),wbpj.disparity,_visdat->frame_id,0,j),wbpj);
-                                    dtrkr->world_item(wj);
+                            //so, there should be another blob close to the currently one used.
+                            //if there is, the small one is prolly the moth...
+                            bool conflict_resolved = false;
+                            for (uint j = 0; j < pbs.size();j++){
+                                if (i!=j && !pbs.at(j).tracked()){
+                                    float dist = cv::norm(pbs.at(i).pt-pbs.at(j).pt);
+                                    if (dist < 2.f* (pbs.at(i).size + pbs.at(j).size)) {
+                                        if(pbs.at(i).size > pbs.at(j).size) {
+                                            auto wbpi = dtrkr->calc_world_item(&_blobs.at(i),time);
+                                            ItemTracker::WorldItem wi(ItemTracker::ImageItem(_blobs.at(i),wbpi.disparity,_visdat->frame_id,0,i),wbpi);
+                                            dtrkr->world_item(wi);
+                                            auto wbpj = itrkr->calc_world_item(&_blobs.at(j),time);
+                                            ItemTracker::WorldItem wj(ItemTracker::ImageItem(_blobs.at(j),wbpj.disparity,_visdat->frame_id,0,j),wbpj);
+                                            itrkr->world_item(wj);
 
-                                    pbs.at(i).trackers.clear();
-                                    pbs.at(j).trackers.clear();
-                                    pbs.at(j).trackers.push_back(dtrkr);
-                                    pbs.at(i).trackers.push_back(itrkr);
+                                            pbs.at(i).trackers.clear();
+                                            pbs.at(j).trackers.clear();
+                                            pbs.at(i).trackers.push_back(dtrkr);
+                                            pbs.at(j).trackers.push_back(itrkr);
+                                        }else {
+                                            auto wbpi = itrkr->calc_world_item(&_blobs.at(i),time);
+                                            ItemTracker::WorldItem wi(ItemTracker::ImageItem(_blobs.at(i),wbpi.disparity,_visdat->frame_id,0,i),wbpi);
+                                            itrkr->world_item(wi);
+                                            auto wbpj = dtrkr->calc_world_item(&_blobs.at(j),time);
+                                            ItemTracker::WorldItem wj(ItemTracker::ImageItem(_blobs.at(j),wbpj.disparity,_visdat->frame_id,0,j),wbpj);
+                                            dtrkr->world_item(wj);
+
+                                            pbs.at(i).trackers.clear();
+                                            pbs.at(j).trackers.clear();
+                                            pbs.at(j).trackers.push_back(dtrkr);
+                                            pbs.at(i).trackers.push_back(itrkr);
+                                        }
+                                        conflict_resolved = true;
+                                        break;
+                                    }
                                 }
-                                conflict_resolved = true;
-                                break;
+                            }
+
+                            if (!conflict_resolved) {
+                                dtrkr->blobs_are_fused();
+                                itrkr->blobs_are_fused();
+
+                                //TODO: do something sensible in cases 1,2,4:
+                                // hmm, apparantely there is no blob close by, so now there are two possibilities:
+                                //1. The insect is lost (e.g. too far, too small, into the flowers)
+                                //2. The drone is lost (e.g. crashed)
+                                //3. The insect and drone are too close to eachother to distinguish
+                                //4. We have a kill :) In the last few cases this resulted in a confetti storm. Maybe this can be detected.
                             }
                         }
-                    }
-
-                    if (!conflict_resolved) {
-                        dtrkr->blobs_are_fused();
-                        itrkr->blobs_are_fused();
-
-                        //TODO: do something sensible in cases 1,2,4:
-                        // hmm, apparantely there is no blob close by, so now there are two possibilities:
-                        //1. The insect is lost (e.g. too far, too small, into the flowers)
-                        //2. The drone is lost (e.g. crashed)
-                        //3. The insect and drone are too close to eachother to distinguish
-                        //4. We have a kill :) In the last few cases this resulted in a confetti storm. Maybe this can be detected.
                     }
                 }
             }
@@ -380,7 +379,14 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
 
         if (enable_viz_diff){
             for (uint i = 0; i < pbs.size(); i++){
-                putText(diff_viz,std::to_string(i),pbs.at(i).pt*pparams.imscalef,FONT_HERSHEY_SIMPLEX,0.5,pbs.at(i).color(),2);
+                std::string s = std::to_string(i);
+                for (auto trkr : pbs.at(i).trackers) {
+                    if (typeid(*trkr) == typeid(InsectTracker)){
+                        InsectTracker * itrkr = static_cast<InsectTracker*>(trkr);
+                        s = s + "->" + std::to_string(itrkr->id());
+                    }
+                }
+                putText(diff_viz,s,pbs.at(i).pt*pparams.imscalef,FONT_HERSHEY_SIMPLEX,0.5,pbs.at(i).color(),2);
                 cv::circle(diff_viz,pbs.at(i).pt*pparams.imscalef,3,pbs.at(i).color(),1);
             }
         }
@@ -418,10 +424,10 @@ void TrackerManager::update_max_change_points() {
     if (_dtrkr->image_predict_item().valid) {
         if (_dtrkr->taking_off())
             enable_take_off_split = true;
-        else  if ( _itrkr->image_predict_item().valid)
-            if (norm(_dtrkr->image_predict_item().pt() - _itrkr->image_predict_item().pt()) < roi_radius){
+        else  if ( insecttracker_best()->image_predict_item().valid)
+            if (norm(_dtrkr->image_predict_item().pt() - insecttracker_best()->image_predict_item().pt()) < roi_radius){
                 enable_insect_drone_split = true;
-                drn_ins_split_thresh = _itrkr->image_predict_item().pixel_max*0.2f;
+                drn_ins_split_thresh = insecttracker_best()->image_predict_item().pixel_max*0.2f;
             }
     }
 
@@ -521,7 +527,7 @@ void TrackerManager::update_max_change_points() {
                     vector<vector<Point>> contours;
                     findContours(mask,contours,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_NONE); // If necessary, we could do this on the full resolution image...?
                     if (contours.size()==1 && enable_insect_drone_split) { // try another threshold value, sometimes we get lucky
-                        drn_ins_split_thresh = _itrkr->image_predict_item().pixel_max*0.3f;
+                        drn_ins_split_thresh = insecttracker_best()->image_predict_item().pixel_max*0.3f;
                         mask = cropped > drn_ins_split_thresh + static_cast<float>(avg_bkg(0));
                         findContours(mask,contours,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_NONE);
                     }
@@ -626,6 +632,38 @@ void TrackerManager::update_max_change_points() {
     }
 }
 
+std::vector<InsectTracker *> TrackerManager::insecttrackers() {
+    std::vector<InsectTracker *> res;
+    for (auto trkr : _trackers) {
+        if (typeid(*trkr) == typeid(InsectTracker)) {
+            res.push_back(static_cast<InsectTracker *>(trkr));
+        }
+    }
+    //should do the same:
+    //std::copy_if (_trackers.begin(), _trackers.end(), std::back_inserter(res), [](ItemTracker * trkr){return (typeid(*trkr) == typeid(InsectTracker));} );
+    return res;
+}
+InsectTracker * TrackerManager::insecttracker_best(){
+    float best_dist = 99999;
+    InsectTracker * best_itrkr = default_itrkr;
+
+    cv::Point3f current_drone_pos = _dtrkr->Last_track_data().pos();
+    if (_dtrkr->Last_track_data().pos_valid){
+        current_drone_pos = _dtrkr->drone_startup_location();
+    }
+
+    for (auto trkr : insecttrackers()) {
+        if (trkr->tracking() ){
+            float dist = normf(current_drone_pos- trkr->Last_track_data().pos());
+            if (best_dist > dist){
+                dist = best_dist;
+                best_itrkr = trkr;
+            }
+        }
+    }
+
+    return best_itrkr;
+}
 void TrackerManager::deserialize_settings() {
     std::cout << "Reading settings from: " << settings_file << std::endl;
     TrackerManagerParameters params;

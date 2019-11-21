@@ -70,7 +70,7 @@ public:
 
     bool insect_in_range_takeoff() {return !_count_insect_not_in_range
                && hunt_volume_check == CameraVolume::HuntVolume_OK
-               && _trackers->insecttracker()->properly_tracking();}
+               && _trackers->insecttracker_best()->properly_tracking();}
     bool insect_in_range() {return !_count_insect_not_in_range;}
     bool insect_cleared() {return _count_insect_not_in_range > insect_cleared_timeout; }
     cv::Point3f target_position() {return _intercept_pos;}

@@ -5,6 +5,7 @@
 #include "itemtracker.h"
 #include "dronetracker.h"
 #include "insecttracker.h"
+#include "replaytracker.h"
 #include "blinktracker.h"
 #include "visiondata.h"
 
@@ -104,8 +105,7 @@ public:
         mode_locate_drone,
         mode_wait_for_insect,
         mode_drone_only,
-        mode_hunt,
-        mode_hunt_replay_moth
+        mode_hunt
     };
 
 private:
@@ -124,28 +124,21 @@ private:
 
     std::vector<ItemTracker::BlobProps> _blobs;
 
-    void update_trackers(double time, LogReader::Log_Entry log_entry, bool drone_is_active);
+    void update_trackers(double time, long long frame_number, LogReader::Log_Entry_Insect *log_entry, bool drone_is_active);
     void update_max_change_points();
     void update_static_ignores();
     void match_blobs_to_trackers(bool drone_is_active, double time);
     bool tracker_active(ItemTracker * trkr, bool drone_is_active);
+    std::vector<InsectTracker *> insecttrackers();
+
+    uint16_t next_insecttrkr_id = 1;
     detection_mode _mode;
 
-    InsectTracker * _itrkr;   //tmp
-    DroneTracker * _dtrkr;   //tmp
+    DroneTracker * _dtrkr;
+    InsectTracker * default_itrkr;
 public:
-    void reset_after_log(){
-        _itrkr->reset_after_log();
-    }
     cv::Mat viz_max_points,diff_viz;
-    void mode(detection_mode m){
-        if (_mode != mode_hunt_replay_moth)
-            _mode = m;
-    }
-    void override_replay_moth_mode(detection_mode m) {
-        if (_mode == mode_hunt_replay_moth)
-            _mode = m;
-    }
+    void mode(detection_mode m){_mode = m;}
     detection_mode mode ()  {return _mode;}
     std::string mode_str() {
         if (_mode == mode_locate_drone) {
@@ -165,16 +158,25 @@ public:
             return trackermanager_mode_names[_mode];
     }
 
-    //tmp:
-    InsectTracker * insecttracker(){
-        return _itrkr;
-    }
-    DroneTracker * dronetracker(){
-        return _dtrkr;
-    }
+    InsectTracker * insecttracker_best();
+    DroneTracker * dronetracker(){ return _dtrkr; }
     void init(ofstream *logger, VisionData *visdat);
-    void update(double time, LogReader::Log_Entry log_entry, bool drone_is_active);
+    void update(double time, LogReader::Log_Entry_Insect *log_entry, bool drone_is_active);
     void close();
+
+
+    void init_replay_moth(int id) {
+
+//  logreader.read_insect_replay_log("../insect_logs/" + std::to_string(n) + ".csv");
+        //make a new instect tracker, and let it replay the moth
+
+
+  ReplayTracker *it;
+  it = new ReplayTracker();
+  it->init(next_insecttrkr_id,_visdat);
+  next_insecttrkr_id++;
+
+    }
 };
 
 #endif //TRACKERMANAGER_H

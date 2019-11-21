@@ -19,7 +19,7 @@ void Visualizer::init(VisionData *visdat, TrackerManager *imngr, DroneController
     _dctrl = dctrl;
     _trackers = imngr;
     _dtrkr = _trackers->dronetracker();
-    _itrkr = _trackers->insecttracker();
+    _itrkr = _trackers->insecttracker_best();
     _dnav = dnav;
     _rc = rc;
     _dprdct = dprdct;
@@ -530,6 +530,12 @@ void Visualizer::draw_tracker_viz() {
 
     if (_trackers->diff_viz.cols > 0) {
         cv::Mat diff = _trackers->diff_viz;
+        putText(diff,"Drone",cv::Point(3,diff.rows-12),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,255,0));
+        putText(diff,"Insect",cv::Point(3,diff.rows-24),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,0,255));
+        putText(diff,"Blink",cv::Point(3,diff.rows-36),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(255,0,255));
+        putText(diff,"Ignored",cv::Point(3,diff.rows-48),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,128,0));
+        putText(diff,"Untracked",cv::Point(3,diff.rows-60),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(255,255,55));
+        putText(diff,"Multitracked",cv::Point(3,diff.rows-72),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(200,255,250));
         cv::Mat ext_res_frame = cv::Mat::zeros(resFrame.rows,resFrame.cols+diff.cols,CV_8UC3);
         resFrame.copyTo(ext_res_frame(cv::Rect(0,0,resFrame.cols,resFrame.rows)));
         diff.copyTo(ext_res_frame(cv::Rect(resFrame.cols,frameL_small_drone.rows,diff.cols,diff.rows)));

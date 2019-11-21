@@ -19,22 +19,10 @@
 class LogReader{
 
 public:
-    struct Log_Entry {
-        int ID;
+    struct Log_Entry_Insect {
+        float time;
+        bool replay;
         unsigned long long RS_ID;
-        bool insect_log;
-        bool valid;
-        int joyThrottle;
-        int joyRoll;
-        int joyPitch;
-        int joyYaw;
-        int joyArmSwitch;
-        int joyModeSwitch;
-        int joyTakeoffSwitch;
-
-        int auto_throttle;
-        int auto_roll;
-        int auto_pitch;
 
         float ins_im_x;
         float ins_im_y;
@@ -60,22 +48,49 @@ public:
         float ins_sacc_x;
         float ins_sacc_y;
         float ins_sacc_z;
+    };
+    struct Log_Entry_Main {
+        int ID;
+        unsigned long long RS_ID;
+        bool insect_replay_log;
+        bool valid;
+        int joyThrottle;
+        int joyRoll;
+        int joyPitch;
+        int joyYaw;
+        int joyArmSwitch;
+        int joyModeSwitch;
+        int joyTakeoffSwitch;
+
+        int auto_throttle;
+        int auto_roll;
+        int auto_pitch;
+
+        std::vector<Log_Entry_Insect> insects;
 
     };
-    void init(std::string file, bool partial_insect_log);
-    void current_frame_number(unsigned long long frame_number);
+
+    void init(std::string path);
+    void read_insect_replay_log(std::string path);
+    void current_frame_number(unsigned long long RS_id);
     bool set_next_frame_number();
     double first_takeoff_time() {return _takeoff_time;}
 
-    LogReader::Log_Entry current_item;
+    LogReader::Log_Entry_Main current_entry;
+    LogReader::Log_Entry_Insect current_replay_insect_entry;
 private:
 
-    Log_Entry createLogEntry(std::string line);
-    void setHeadMap(std::string heads);
-    std::map<int, Log_Entry> log;
-    std::map<std::string, int> headmap;
-    bool _partial_insect_log;
-    unsigned int partial_insect_log_id_counter = 0;
+    void read_multi_insect_logs(std::string path);
+    Log_Entry_Main create_main_log_entry(std::string line,std::map<std::string, int> headmap);
+    Log_Entry_Insect create_insect_log_entry(std::string line,std::map<std::string, int> headmap);
+    std::map<std::string, int> read_head_map(std::string heads);
+    std::tuple<std::map<int, Log_Entry_Main>,std::map<std::string, int>> read_main_log(std::string file);
+    std::tuple<std::map<int, Log_Entry_Insect>,std::map<std::string, int>> read_insect_log(std::string file);
+
+    std::map<int, Log_Entry_Main> log_main;
+    std::map<std::string, int> headmap_main;
+    std::vector<std::tuple<std::map<int, LogReader::Log_Entry_Insect>,std::map<std::string, int>>> log_insects;
+
     double _takeoff_time = INFINITY;
 
 };

@@ -180,14 +180,14 @@ void process_video() {
         tp[0].m1.unlock();
 
         static bool recording = false;
-        double dtr = data.time - trackers.insecttracker()->last_sighting_time;
+        double dtr = data.time - trackers.insecttracker_best()->last_sighting_time;
         if (dtr > 1 && recording) {
             recording = false;
             auto time_insect_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
             logger_insect << "New detection ended at: " << std::put_time(std::localtime(&time_insect_now), "%Y/%m/%d %T") << " Duration: " << dtr << " End cam frame number: " <<  cam.frame_number() << std::endl;
             detectcount++;
         }
-        if ((trackers.insecttracker()->tracking() || dtr < 1) && data.time > 5) {
+        if ((trackers.insecttracker_best()->tracking() || dtr < 1) && data.time > 5) {
             recording = true;
         }
 
@@ -309,7 +309,7 @@ void process_frame(Stereo_Frame_Data data) {
         if (logreader.current_item.insect_log) {
             trackers.mode(TrackerManager::mode_hunt_replay_moth);
         } else if (trackers.mode() == TrackerManager::mode_hunt_replay_moth) {
-            trackers.insecttracker()->reset_after_log();
+            trackers.insecttracker_best()->reset_after_log();
             trackers.override_replay_moth_mode(TrackerManager::mode_wait_for_insect);
         }
     } else if (fromfile==log_mode_insect_only) {
@@ -328,14 +328,15 @@ void process_frame(Stereo_Frame_Data data) {
     logger << data.imgcount << ";"
            << data.number << ";"
            << std::put_time(std::localtime(&timenow), "%Y/%m/%d %T") << ";"
+           << data.time << ";"
            << (fromfile==log_mode_insect_only) << ";";
 
-    trackers.update(data.time,logreader.current_item,dctrl.drone_is_active());
+    trackers.update(data.time,&(logreader.current_replay_insect_entry),dctrl.drone_is_active());
     if (fromfile==log_mode_full) {
-        dctrl.insert_log(logreader.current_item.joyRoll, logreader.current_item.joyPitch, logreader.current_item.joyYaw, logreader.current_item.joyThrottle,logreader.current_item.joyArmSwitch,logreader.current_item.joyModeSwitch,logreader.current_item.joyTakeoffSwitch,logreader.current_item.auto_roll,logreader.current_item.auto_pitch,logreader.current_item.auto_throttle);
+        dctrl.insert_log(logreader.current_entry.joyRoll, logreader.current_entry.joyPitch, logreader.current_entry.joyYaw, logreader.current_entry.joyThrottle,logreader.current_entry.joyArmSwitch,logreader.current_entry.joyModeSwitch,logreader.current_entry.joyTakeoffSwitch,logreader.current_entry.auto_roll,logreader.current_entry.auto_pitch,logreader.current_entry.auto_throttle);
     }
     dnav.update(data.time);
-    dctrl.control(trackers.dronetracker()->Last_track_data(),dnav.setpoint(),trackers.insecttracker()->Last_track_data(),data.time);
+    dctrl.control(trackers.dronetracker()->Last_track_data(),dnav.setpoint(),trackers.insecttracker_best()->Last_track_data(),data.time);
     dprdct.update(dctrl.drone_is_active(),data.time);
 
     trackers.dronetracker()->_manual_flight_mode =dnav.drone_is_manual(); // TODO: hacky
@@ -358,7 +359,7 @@ void process_frame(Stereo_Frame_Data data) {
 }
 
 void init_insect_log(int n){
-    logreader.init("../insect_logs/" + std::to_string(n) + ".csv",true);
+    logreader.read_insect_replay_log("../insect_logs/" + std::to_string(n) + ".csv");
     fromfile = log_mode_insect_only;
 }
 
@@ -535,12 +536,12 @@ int init_loggers() {
     std::string data_in_dir = "";
     int drone_id = 1;
     if (main_argc ==2 ) {
-        string fn = string(main_argv[1]);
-        drone_id = get_drone_id (fn);
+        string log_folderpath = string(main_argv[1]);
+        drone_id = get_drone_id (log_folderpath);
         if(drone_id<0){
-            logreader.init(fn + "/log.csv",false);
+            logreader.init(log_folderpath);
             fromfile = log_mode_full;
-            data_in_dir = fn;
+            data_in_dir = log_folderpath;
         }
     }
     data_output_dir = "./logging/";
@@ -551,7 +552,7 @@ int init_loggers() {
     logger.open(data_output_dir  + "log.csv",std::ofstream::out);
     cout << "data_output_dir: " << data_output_dir << endl;
 
-    logger << "ID;RS_ID;time;insect_log;";
+    logger << "ID;RS_ID;time;elapsed;insect_log;";
     logger_fn = data_output_dir  + "log" + to_string(0) + ".csv"; // only used with pparams.video_cuts
 
     logger_insect.open(data_output_dir  + "insect.log",std::ofstream::out);
@@ -596,7 +597,7 @@ void init(int argc, char **argv) {
     trackers.init(&logger, &visdat);
     dnav.init(&logger,&trackers,&dctrl,&visdat, &(cam.camera_volume));
     dctrl.init(&logger,fromfile==log_mode_full,&rc,trackers.dronetracker(), &(cam.camera_volume));
-    dprdct.init(&visdat,trackers.dronetracker(),trackers.insecttracker(),&dctrl);
+    dprdct.init(&visdat,trackers.dronetracker(),trackers.insecttracker_best(),&dctrl);
 
     // Ensure that joystick was found and that we can use it
     if (!dctrl.joystick_ready() && fromfile!=log_mode_full && pparams.joystick != rc_none) {
