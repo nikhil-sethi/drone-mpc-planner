@@ -294,8 +294,8 @@ void process_frame(Stereo_Frame_Data data) {
         logreader.current_frame_number(data.number);
         if (logreader.current_item.insect_log) {
             trackers.mode(TrackerManager::mode_hunt_replay_moth);
-        } else {
-            trackers.insecttracker()->reset_after_log();
+        } else if (trackers.mode() == TrackerManager::mode_hunt_replay_moth) {
+            trackers.insecttracker_best()->reset_after_log();
             trackers.override_replay_moth_mode(TrackerManager::mode_wait_for_insect);
         }
     } else if (fromfile==log_mode_insect_only) {
