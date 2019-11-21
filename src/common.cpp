@@ -73,7 +73,7 @@ bool CameraVolume::in_view(cv::Point3f p,float hysteresis_margin){
 }
 
 CameraVolume::hunt_check_result CameraVolume::in_hunt_area(cv::Point3f d, cv::Point3f m){
-    const float cone_angle_limit = 40*deg2rad; // angle to the horizontal axis
+    const float cone_angle_limit = 55*deg2rad; // angle to the horizontal axis
     cv::Point3f error = m - d;
     double vertical_dist = error.y;
     float dist = norm(error);
@@ -90,7 +90,7 @@ CameraVolume::hunt_check_result CameraVolume::in_hunt_area(cv::Point3f d, cv::Po
         return HuntVolume_To_Low;
     if (abs(cone_angle)>cone_angle_limit)
         return HuntVolume_Outside_Cone;
-    if (dist > 2.5f) // && dist > 1.0f)
+    if (dist >3.5f) // && dist > 1.0f)
         return HuntVolume_To_Close;
     return HuntVolume_OK;
 }
