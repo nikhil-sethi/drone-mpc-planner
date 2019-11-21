@@ -41,7 +41,7 @@ void BlinkTracker::track(double time) {
         }
         break;
     } case bds_1_blink_off: {
-        _score_threshold = 60; // increase score threshold after first sightings
+        _score_threshold = 1000; // increase score threshold after first sightings
         ItemTracker::track(time);
         _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
         break;
