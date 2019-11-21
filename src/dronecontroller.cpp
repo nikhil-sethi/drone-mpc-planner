@@ -84,19 +84,21 @@ int bound_joystick_value(int v) {
 
 void DroneController::control(track_data data_drone, track_data data_target_new, track_data data_raw_insect, double time) {
 
-    if (_joy_state== js_waypoint)
-        data_raw_insect = data_target_new; // the takeoff burn uses raw insect, so but wp flight mode also takeoff burn
-
     if (!_fromfile && pparams.joystick != rc_none)
         read_joystick();
     if (!pparams.insect_logging_mode)
         process_joystick();
 
+    if (_joy_state== js_waypoint)
+        data_raw_insect = data_target_new; // the takeoff burn uses raw insect, but wp flight mode also uses takeoff burn
+
+    if (!data_raw_insect.pos_valid) // if tracking is lost, set the raw setpoint to just above takeoff location, because otherwise the (takeoff) may go towards 0,0,0 (the camera)
+        data_raw_insect.state.pos = _dtrk->drone_startup_location() + cv::Point3f(0,0.5,0);
+
     if( recovery_mode){
         data_raw_insect.state.pos = recovery_pos;
         data_raw_insect.state.vel = {0};
     }
-
 
     check_emergency_kill(data_drone,time);
 
