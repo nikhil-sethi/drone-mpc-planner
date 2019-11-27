@@ -268,8 +268,17 @@ void process_video() {
         else
             restart_delay = 0;
 
-        if ((imgcount > 360000 && pparams.insect_logging_mode) || restart_delay > 1*pparams.fps)
+        if (imgcount > 360000 && pparams.insect_logging_mode) {
+            std::cout << "Initiating periodic restart" << std::endl;
             key =27;
+        } else if(restart_delay > 1*pparams.fps) {
+            std::cout << "Flight termintated" << std::endl;
+            if (dctrl.flight_aborted())
+                std::cout << "Control problem: " << dctrl.flight_mode() << std::endl;
+            else
+                std::cout << "Nav status: " << dnav.navigation_status() << std::endl;
+            key =27;
+        }
 
 
     } // main while loop
