@@ -200,7 +200,7 @@ void process_video() {
                 }
             }
         }
-        if (!recording && pparams.video_cuts){
+        if (!recording && pparams.video_cuts && (cam.frame_number() / 2 && cam.frame_number() % 2)){
             logger.close();
             logger.open(logger_fn,std::ofstream::out);
         }
