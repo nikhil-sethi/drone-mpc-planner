@@ -160,7 +160,7 @@ bool CameraVolume::in_view(cv::Point3f p,float hysteresis_margin){
         return true;
 }
 
-CameraVolume::hunt_check_result CameraVolume::in_hunt_area(cv::Point3f d, cv::Point3f m){
+CameraVolume::hunt_check_result CameraVolume::in_hunt_area(cv::Point3f d[[maybe_unused]], cv::Point3f m){
     bool front_check = on_normal_side (_p0_front_hunt, _n_front_hunt, cv::Mat(m));
     bool left_check = on_normal_side (_p0_left_hunt, _n_left_hunt, cv::Mat(m));
     bool right_check = on_normal_side (_p0_right_hunt, _n_right_hunt, cv::Mat(m));
@@ -177,6 +177,8 @@ CameraVolume::hunt_check_result CameraVolume::in_hunt_area(cv::Point3f d, cv::Po
     if( !back_check)
         return HuntVolume_Outside_Cone;
     if( !left_check)
+        return HuntVolume_Outside_Cone;
+    if( !right_check)
         return HuntVolume_Outside_Cone;
 
     return HuntVolume_OK;
