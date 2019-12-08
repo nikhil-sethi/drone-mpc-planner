@@ -35,7 +35,7 @@ void Visualizer::init(VisionData *visdat, TrackerManager *imngr, DroneController
     initialized = true;
 }
 
-void Visualizer::addPlotSample(void) {
+void Visualizer::add_plot_sample(void) {
     if (pparams.viz_plots || enable_plots) {
         lock_plot_data.lock();
         roll_joystick.push_back(static_cast<float>(_dctrl->joy_roll));

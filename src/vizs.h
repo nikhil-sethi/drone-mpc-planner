@@ -175,7 +175,7 @@ public:
     }
 
     void paint();
-    void addPlotSample(void);
+    void add_plot_sample(void);
     void update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, double time, bool draw_plots);
     void init(VisionData * visdat, TrackerManager *imngr, DroneController *dctrl, DroneNavigation *dnav, MultiModule *rc, bool fromfile, DronePredictor *dprdct);
     void close();

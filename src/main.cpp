@@ -75,12 +75,8 @@ bool draw_plots = false;
 
 std::string logger_fn; //contains filename of current log # for insect logging (same as video #)
 
-int mouseX, mouseY;
-int mouseLDown;
-
 std::ofstream logger;
 std::ofstream logger_insect;
-//Arduino rc;
 MultiModule rc;
 DroneController dctrl;
 DronePredictor dprdct;
@@ -113,7 +109,7 @@ log_mode fromfile = log_mode_none;
 struct Stereo_Frame_Data{
     cv::Mat frameL,frameR;
     uint imgcount;
-    unsigned long long number;
+    unsigned long long RS_id;
     double time;
 };
 struct Processer {
@@ -136,11 +132,9 @@ void process_frame(Stereo_Frame_Data data_drone);
 void process_video();
 int main( int argc, char **argv);
 void handle_key(double time);
-void close(bool sigkill);
+void close(bool sig_kill);
 
 void write_occasional_image();
-void manual_drone_locater(cv::Mat frame);
-void CallBackFunc(int event, int x, int y, int flags, void* userdata);
 
 /************ code ***********/
 void process_video() {
@@ -159,7 +153,7 @@ void process_video() {
         Stereo_Frame_Data data;
         data.frameL = cam.frameL;
         data.frameR = cam.frameR;
-        data.number = cam.frame_number();
+        data.RS_id = cam.frame_number();
         data.time = cam.frame_time();
         data.imgcount = imgcount;
 
@@ -217,8 +211,8 @@ void process_video() {
                     cvtColor(cam.frameL,frame(cv::Rect(0,0,cam.frameL.cols, cam.frameL.rows)),CV_GRAY2BGR);
                     trackers.diff_viz.copyTo(frame(cv::Rect(cam.frameL.cols,0,trackers.diff_viz.cols, trackers.diff_viz.rows)));
                     cv::putText(frame,std::to_string(cam.frame_number()) + ": " + to_string_with_precision( cam.frame_time(),2),cv::Point(trackers.diff_viz.cols, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,0,255));
-                    int frameWritten = output_video_cuts.write(frame);
-                    if (!frameWritten)
+                    int frame_written = output_video_cuts.write(frame);
+                    if (!frame_written)
                         cut_video_frame_counter++;
                     std::cout << "Recording! Frames written: " << cut_video_frame_counter << std::endl;
                 }
@@ -229,16 +223,16 @@ void process_video() {
             logger.open(logger_fn,std::ofstream::out);
         }
         if (pparams.video_raw && pparams.video_raw != video_bag) {
-            int frameWritten = 0;
+            int frame_written = 0;
             if (recording) {
                 cv::Mat frameL  =cam.frameL.clone();
                 cv::putText(frameL,std::to_string(cam.frame_number()),cv::Point(0, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,255);
-                frameWritten = output_video_LR.write(frameL,cam.frameR);
+                frame_written = output_video_LR.write(frameL,cam.frameR);
                 static int video_frame_counter = 0;
-                if (!frameWritten)
+                if (!frame_written)
                     video_frame_counter++;
                 else {
-                    std::cout << "PROBLEM: " << frameWritten << std::endl;
+                    std::cout << "PROBLEM: " << frame_written << std::endl;
                 }
                 std::cout << "Recording! Frames written: " << video_frame_counter << std::endl;
             }
@@ -322,14 +316,14 @@ void process_frame(Stereo_Frame_Data data) {
         }
     }
 
-    visdat.update(data.frameL,data.frameR,data.time,data.number);
+    visdat.update(data.frameL,data.frameR,data.time,data.RS_id);
 
-    auto timenow = chrono::system_clock::to_time_t(chrono::system_clock::now());
+    auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
     logger << data.imgcount << ";"
-           << data.number << ";"
-           << std::put_time(std::localtime(&timenow), "%Y/%m/%d %T") << ";"
-           << data.time << ";"
            << (fromfile==log_mode_insect_only) << ";";
+           << data.RS_id << ";"
+           << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << ";"
+           << data.time << ";";
 
     trackers.update(data.time,&(logreader.current_replay_insect_entry),dctrl.drone_is_active());
     if (fromfile==log_mode_full) {
@@ -344,7 +338,7 @@ void process_frame(Stereo_Frame_Data data) {
     logger << std::endl;
 
     if (pparams.has_screen) {
-        visualizer.addPlotSample();
+        visualizer.add_plot_sample();
         visualizer.update_tracker_data(visdat.frameL,dnav.setpoint().pos(),data.time, draw_plots);
         if (pparams.video_result) {
             if (fromfile)
@@ -517,7 +511,7 @@ void kill_sig_handler(int s){
     close(true);
     exit(0);
 }
-void init_sig(){
+void init_terminal_signals(){
     //init ctrl - c catch
     struct sigaction sigIntHandler;
     sigIntHandler.sa_handler = kill_sig_handler;
@@ -575,8 +569,8 @@ void init(int argc, char **argv) {
     main_argc = argc;
     main_argv = argv;
 
-    init_sig();
-    int drone_id = init_loggers();
+    init_terminal_signals();
+    int drone_id = init_loggers(); // TODO: refactor. Why is drone_id coming from init_loggers?!
 
 #ifdef HASGUI
     gui.init(argc,argv);
@@ -619,7 +613,7 @@ void init(int argc, char **argv) {
     std::cout << "Main init successfull" << std::endl;
 }
 
-void close(bool sigkill) {
+void close(bool sig_kill) {
     std::cout <<"Closing"<< std::endl;
 
     cam.stop_watchdog();
@@ -650,7 +644,7 @@ void close(bool sigkill) {
         output_video_cuts.close();
 
     logger.close();
-    if (!sigkill) // seems to get stuck. TODO: streamline
+    if (!sig_kill) // seems to get stuck. TODO: streamline
         close_thread_pool();
 
     std::cout <<"Closed"<< std::endl;
@@ -709,30 +703,4 @@ int main( int argc, char **argv )
 
     close(false);
     return 0;
-}
-
-void manual_drone_locater(cv::Mat frame){
-    cv::namedWindow("Manual_drone_locator", CV_WINDOW_NORMAL);
-    cv::setMouseCallback("Manual_drone_locator", CallBackFunc, NULL);
-
-    while(1) {
-        cv::Mat f2;
-        cvtColor(frame,f2,CV_GRAY2BGR);
-        cv::circle(f2,cv::Point(mouseX,mouseY),3,cv::Scalar(0,255,0),2);
-        cv::imshow("Manual_drone_locator", f2);
-        unsigned char k = cv::waitKey(20);
-        if (k==' ')
-            break;
-
-    }
-    cv::destroyWindow("Manual_drone_locator");
-}
-
-void CallBackFunc(int event, int x, int y , int flags __attribute__((unused)), void* userdata __attribute__((unused)))
-{
-    if  ( event == cv::EVENT_LBUTTONDOWN ) {
-        mouseLDown=10;
-        mouseX = x;
-        mouseY = y;
-    }
 }
