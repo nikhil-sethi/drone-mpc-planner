@@ -32,7 +32,7 @@ void TrackerManager::init(std::ofstream *logger,VisionData *visdat){
     initialized = true;
 }
 
-void TrackerManager::update(double time,LogReader::Log_Entry_Insect * log_entry, bool drone_is_active){
+void TrackerManager::update(double time, bool drone_is_active){
 
     if (enable_viz_diff) {
         cv::cvtColor(_visdat->diffL*10,diff_viz,CV_GRAY2BGR);
@@ -44,7 +44,7 @@ void TrackerManager::update(double time,LogReader::Log_Entry_Insect * log_entry,
         match_blobs_to_trackers(drone_is_active && !_dtrkr->inactive(),time);
     }
 
-    update_trackers(time,_visdat->frame_id,log_entry, drone_is_active);
+    update_trackers(time,_visdat->frame_id, drone_is_active);
 
     (*_logger) << static_cast<int16_t>(_mode) << ";";
 
@@ -54,7 +54,7 @@ void TrackerManager::update(double time,LogReader::Log_Entry_Insect * log_entry,
         viz_max_points = cv::Mat::zeros(5,100,CV_8UC3);
 }
 
-void TrackerManager::update_trackers(double time,long long frame_number,LogReader::Log_Entry_Insect * log_entry, bool drone_is_active) {
+void TrackerManager::update_trackers(double time,long long frame_number, bool drone_is_active) {
     //perform all tracker functions, also delete old trackers
     for (uint ii=_trackers.size();ii != 0; ii--){ // reverse because deleting from this list.
         uint i = ii-1;
@@ -69,10 +69,10 @@ void TrackerManager::update_trackers(double time,long long frame_number,LogReade
             InsectTracker * itrkr = static_cast<InsectTracker * >(_trackers.at(i));
             switch (_mode){
             case mode_idle:{
-                itrkr->append_log(time,frame_number,false); // write dummy data
+                itrkr->append_log(time,frame_number); // write dummy data
                 break;
             } case mode_locate_drone:{
-                itrkr->append_log(time,frame_number,false); // write dummy data
+                itrkr->append_log(time,frame_number); // write dummy data
                 break;
             } case mode_wait_for_insect:{
                 itrkr->track(time);
@@ -81,10 +81,13 @@ void TrackerManager::update_trackers(double time,long long frame_number,LogReade
                 itrkr->track(time);
                 break;
             } case mode_drone_only:{
-                itrkr->append_log(time,frame_number,false); // write dummy data
+                itrkr->append_log(time,frame_number); // write dummy data
                 break;
             }
             }
+        } else if(typeid(*_trackers.at(i)) == typeid(ReplayTracker)) {
+            ReplayTracker * rtrkr = static_cast<ReplayTracker * >(_trackers.at(i));
+            rtrkr->track(time);
         } else if (typeid(*_trackers.at(i)) == typeid(BlinkTracker)) {
             BlinkTracker * btrkr = static_cast<BlinkTracker * >(_trackers.at(i));
             btrkr->track(time);
@@ -389,6 +392,10 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                 putText(diff_viz,s,pbs.at(i).pt*pparams.imscalef,FONT_HERSHEY_SIMPLEX,0.5,pbs.at(i).color(),2);
                 cv::circle(diff_viz,pbs.at(i).pt*pparams.imscalef,3,pbs.at(i).color(),1);
             }
+            for (auto trkr : replaytrackers()) {
+                putText(diff_viz," r",trkr->image_item().pt()*pparams.imscalef,FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,180),2);
+                cv::circle(diff_viz,trkr->image_item().pt()*pparams.imscalef,3,cv::Scalar(0,0,180),1);
+            }
         }
     }
 }
@@ -401,6 +408,8 @@ bool TrackerManager::tracker_active(ItemTracker * trkr, bool drone_is_active) {
     } else if (typeid(*trkr) == typeid(InsectTracker) && (_mode == mode_locate_drone || _mode == mode_drone_only )) {
         return false;
     } else if (typeid(*trkr) == typeid(BlinkTracker) && (_mode != mode_locate_drone)) {
+        return false;
+    } else if (typeid(*trkr) == typeid(ReplayTracker)) {
         return false;
     }
     return true;
@@ -632,6 +641,15 @@ void TrackerManager::update_max_change_points() {
     }
 }
 
+std::vector<ReplayTracker *> TrackerManager::replaytrackers() {
+    std::vector<ReplayTracker *> res;
+    for (auto trkr : _trackers) {
+        if (typeid(*trkr) == typeid(ReplayTracker)) {
+            res.push_back(static_cast<ReplayTracker *>(trkr));
+        }
+    }
+    return res;
+}
 std::vector<InsectTracker *> TrackerManager::insecttrackers() {
     std::vector<InsectTracker *> res;
     for (auto trkr : _trackers) {
@@ -653,6 +671,15 @@ InsectTracker * TrackerManager::insecttracker_best(){
     }
 
     for (auto trkr : insecttrackers()) {
+        if (trkr->tracking() ){
+            float dist = normf(current_drone_pos- trkr->Last_track_data().pos());
+            if (best_dist > dist){
+                dist = best_dist;
+                best_itrkr = trkr;
+            }
+        }
+    }
+    for (auto trkr : replaytrackers()) {
         if (trkr->tracking() ){
             float dist = normf(current_drone_pos- trkr->Last_track_data().pos());
             if (best_dist > dist){

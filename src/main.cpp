@@ -29,7 +29,7 @@
 #include "vizs.h"
 #include "insecttracker.h"
 #include "trackermanager.h"
-#include "logreader.h"
+#include "logging/logreader.h"
 #if CAMMODE == CAMMODE_FROMVIDEOFILE
 #include "filecam.h"
 #elif CAMMODE == CAMMODE_AIRSIM
@@ -84,7 +84,7 @@ DroneNavigation dnav;
 TrackerManager trackers;
 Visualizer visualizer;
 Visualizer3D visualizer_3d;
-LogReader logreader;
+logging::LogReader logreader;
 #if CAMMODE == CAMMODE_FROMVIDEOFILE
 FileCam cam;
 #define Cam FileCam //wow that is pretty hacky :)
@@ -97,12 +97,7 @@ Cam cam;
 GeneratorCam cam;
 #endif
 VisionData visdat;
-enum log_mode{
-    log_mode_none,
-    log_mode_full,
-    log_mode_insect_only
-};
-log_mode fromfile = log_mode_none;
+bool log_replay_mode = false;
 
 /****Threadpool*******/
 #define NUM_OF_THREADS 1
@@ -162,7 +157,7 @@ void process_video() {
         tp[0].data_is_processed= false;
         if (pparams.has_screen) {
             static int speed_div;
-            if (!(speed_div++ % 4) || fromfile!=log_mode_none){
+            if (!(speed_div++ % 4) || log_replay_mode){
                 visualizer.paint();
                 handle_key(data.time);
             }
@@ -243,7 +238,7 @@ void process_video() {
         static float prev_time = -1.f/pparams.fps;
         float current_fps = 1.f / (t - prev_time);
         float fps = fps_smoothed.addSample(current_fps);
-        if (fps < pparams.fps / 6 * 5 && fromfile==log_mode_none)
+        if (fps < pparams.fps / 6 * 5 && !log_replay_mode)
             std::cout << "FPS WARNING!" << std::endl;
 
         static double time =0;
@@ -298,35 +293,21 @@ void write_occasional_image(Stereo_Frame_Data data) {
 
 void process_frame(Stereo_Frame_Data data) {
 
-    if (fromfile==log_mode_full){
-        logreader.current_frame_number(data.number);
-        if (logreader.current_item.insect_log) {
-            trackers.mode(TrackerManager::mode_hunt_replay_moth);
-        } else if (trackers.mode() == TrackerManager::mode_hunt_replay_moth) {
-            trackers.insecttracker_best()->reset_after_log();
-            trackers.override_replay_moth_mode(TrackerManager::mode_wait_for_insect);
-        }
-    } else if (fromfile==log_mode_insect_only) {
-        if (logreader.set_next_frame_number()){
-            trackers.reset_after_log();
-            trackers.override_replay_moth_mode(TrackerManager::mode_hunt);
-            fromfile = log_mode_none;
-        } else {
-            trackers.mode(TrackerManager::mode_hunt_replay_moth);
-        }
+    if (log_replay_mode){
+        logreader.current_frame_number(data.RS_id);
+        trackers.process_replay_moth(data.RS_id);
     }
 
     visdat.update(data.frameL,data.frameR,data.time,data.RS_id);
 
     auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
     logger << data.imgcount << ";"
-           << (fromfile==log_mode_insect_only) << ";";
            << data.RS_id << ";"
            << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << ";"
            << data.time << ";";
 
-    trackers.update(data.time,&(logreader.current_replay_insect_entry),dctrl.drone_is_active());
-    if (fromfile==log_mode_full) {
+    trackers.update(data.time,dctrl.drone_is_active());
+    if (log_replay_mode) {
         dctrl.insert_log(logreader.current_entry.joyRoll, logreader.current_entry.joyPitch, logreader.current_entry.joyYaw, logreader.current_entry.joyThrottle,logreader.current_entry.joyArmSwitch,logreader.current_entry.joyModeSwitch,logreader.current_entry.joyTakeoffSwitch,logreader.current_entry.auto_roll,logreader.current_entry.auto_pitch,logreader.current_entry.auto_throttle);
     }
     dnav.update(data.time);
@@ -341,7 +322,7 @@ void process_frame(Stereo_Frame_Data data) {
         visualizer.add_plot_sample();
         visualizer.update_tracker_data(visdat.frameL,dnav.setpoint().pos(),data.time, draw_plots);
         if (pparams.video_result) {
-            if (fromfile)
+            if (log_replay_mode)
                 output_video_results.block(); // only use this for rendering
             output_video_results.write(visualizer.trackframe);
         }
@@ -353,8 +334,7 @@ void process_frame(Stereo_Frame_Data data) {
 }
 
 void init_insect_log(int n){
-    logreader.read_insect_replay_log("../insect_logs/" + std::to_string(n) + ".csv");
-    fromfile = log_mode_insect_only;
+    trackers.init_replay_moth(n);
 }
 
 void handle_key(double time [[maybe_unused]]) {
@@ -375,9 +355,8 @@ void handle_key(double time [[maybe_unused]]) {
         dnav.redetect_drone_location();
         break;
     case 'p':
-        if(fromfile) {
+        if(log_replay_mode)
             draw_plots = true;
-        }
         break;
     case 'o':
         dctrl.blink_by_binding(false);
@@ -426,7 +405,7 @@ void handle_key(double time [[maybe_unused]]) {
 #if CAMMODE == CAMMODE_REALSENSE
     case ' ':
     case 'f':
-        if(fromfile)
+        if(log_replay_mode)
             cam.frame_by_frame = true;
         break;
     case 't':
@@ -526,32 +505,19 @@ void init_terminal_signals(){
     sigaction(SIGTERM, &sigTermHandler, NULL);
 }
 
-int init_loggers() {
-    std::string data_in_dir = "";
-    int drone_id = 1;
-    if (main_argc ==2 ) {
-        string log_folderpath = string(main_argv[1]);
-        drone_id = get_drone_id (log_folderpath);
-        if(drone_id<0){
-            logreader.init(log_folderpath);
-            fromfile = log_mode_full;
-            data_in_dir = log_folderpath;
-        }
-    }
+void init_loggers() {
     data_output_dir = "./logging/";
     mkdir(data_output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-    if (fromfile==log_mode_full)
+    if (log_replay_mode)
         data_output_dir = data_output_dir + "replay/";
     mkdir(data_output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     logger.open(data_output_dir  + "log.csv",std::ofstream::out);
     cout << "data_output_dir: " << data_output_dir << endl;
 
-    logger << "ID;RS_ID;time;elapsed;insect_log;";
+    logger << "ID;RS_ID;time;elapsed;";
     logger_fn = data_output_dir  + "log" + to_string(0) + ".csv"; // only used with pparams.video_cuts
 
     logger_insect.open(data_output_dir  + "insect.log",std::ofstream::out);
-
-    return drone_id;
 }
 
 void init_video_recorders() {
@@ -564,25 +530,43 @@ void init_video_recorders() {
         if (output_video_cuts.init(main_argc,main_argv,pparams.video_cuts,data_output_dir + "insect" + to_string(0) + ".mp4",IMG_W*2,IMG_H,pparams.fps/2, "192.168.1.255",5000,true,false)) {std::cout << "WARNING: could not open cut video " << data_output_dir + "insect" + to_string(0) + ".mp4" << std::endl;}
 }
 
-void init(int argc, char **argv) {
-
+std::tuple<bool,uint8_t> process_arg(int argc, char **argv){
     main_argc = argc;
     main_argv = argv;
+    if (argc == 2) {
+        string s = argv[1];
+        for(uint i=0; i<s.length(); i++){
+            if(!isdigit(s[i])) // check if argument is a number
+                return make_tuple(true,1); // it is not, return replay=true & default drone id
+        }
+        return make_tuple(false,std::stoi(s));
+    } else {
+        return make_tuple(false,1); // no replay, default drone id
+    }
+}
 
+void init(int argc, char **argv) {
     init_terminal_signals();
-    int drone_id = init_loggers(); // TODO: refactor. Why is drone_id coming from init_loggers?!
+    uint8_t drone_id;
+    std::tie(log_replay_mode ,drone_id) = process_arg(argc,argv);
+
+    if (log_replay_mode) {
+        logreader.init(string(main_argv[1]));
+        trackers.init_replay_moth(logreader.replay_moths());
+    }
+    init_loggers();
 
 #ifdef HASGUI
     gui.init(argc,argv);
 #endif
 
 #if CAMMODE == CAMMODE_REALSENSE
-    if (!pparams.insect_logging_mode && fromfile!=log_mode_full)
-        rc.init(drone_id, fromfile);
+    if (!pparams.insect_logging_mode && !log_replay_mode)
+        rc.init(drone_id, log_replay_mode);
 #endif
 
     /*****Start capturing images*****/
-    if (fromfile == log_mode_full)
+    if (log_replay_mode)
         cam.init(argc,argv);
     else
         cam.init();
@@ -590,19 +574,19 @@ void init(int argc, char **argv) {
     visdat.init(cam.Qf, cam.frameL,cam.frameR,cam.camera_angle(),cam.measured_gain(),cam.depth_background_mm); // do after cam update to populate frames
     trackers.init(&logger, &visdat);
     dnav.init(&logger,&trackers,&dctrl,&visdat, &(cam.camera_volume));
-    dctrl.init(&logger,fromfile==log_mode_full,&rc,trackers.dronetracker(), &(cam.camera_volume));
+    dctrl.init(&logger,log_replay_mode,&rc,trackers.dronetracker(), &(cam.camera_volume));
     dprdct.init(&visdat,trackers.dronetracker(),trackers.insecttracker_best(),&dctrl);
 
     // Ensure that joystick was found and that we can use it
-    if (!dctrl.joystick_ready() && fromfile!=log_mode_full && pparams.joystick != rc_none) {
+    if (!dctrl.joystick_ready() && !log_replay_mode && pparams.joystick != rc_none) {
         throw my_exit("no joystick connected.");
     }
 
     logger << std::endl; // this concludes the header log line
     if (pparams.has_screen) {
-        visualizer.init(&visdat,&trackers,&dctrl,&dnav,&rc,fromfile==log_mode_full,&dprdct);
+        visualizer.init(&visdat,&trackers,&dctrl,&dnav,&rc,log_replay_mode,&dprdct);
         visualizer_3d.init(&trackers, &(cam.camera_volume), &dctrl, &dnav);
-        if (fromfile==log_mode_full)
+        if (log_replay_mode)
             visualizer.first_take_off_time = logreader.first_takeoff_time();
     }
 
@@ -630,7 +614,7 @@ void close(bool sig_kill) {
     dctrl.close();
     dnav.close();
     trackers.close();
-    if (fromfile!=log_mode_full)
+    if (!log_replay_mode)
         rc.close();
     if (pparams.has_screen)
         visualizer.close();

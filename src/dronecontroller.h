@@ -142,7 +142,6 @@ private:
 
     std::string settings_file;
 
-    const uint16_t spinup_throttle_non3d = 304; //TODO: Move this to xml setttings // For trashcan 304 is the lowest value at which the props start to spin
     uint16_t initial_hover_throttle_guess_non3d;
     uint16_t initial_hover_throttle_guess(){
         if (dparams.mode3d)
@@ -155,7 +154,7 @@ private:
         if (dparams.mode3d)
             return JOY_MIDDLE +1;
         else {
-            return spinup_throttle_non3d;
+            return dparams.spinup_throttle_non3d;
         }
     }
     uint16_t min_bound_throttle(){

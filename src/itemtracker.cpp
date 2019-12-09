@@ -59,6 +59,11 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     disparity_prev = 0;
     disparity_smoothed = 0;
 
+    init_logger();
+    initialized = true;
+}
+
+void ItemTracker::init_logger() {
     if (_logger->is_open()) {
         (*_logger) << "imLx_" << _name << "; ";
         (*_logger) << "imLy_" << _name << "; ";
@@ -81,7 +86,6 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
         (*_logger) << "saccY_" << _name << "; ";
         (*_logger) << "saccZ_" << _name << "; ";
     }
-    initialized = true;
 }
 
 void ItemTracker::init_kalman() {

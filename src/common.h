@@ -22,10 +22,6 @@ void show_column_image(std::vector<cv::Mat> ims, std::string window_name, int ty
 void show_row_image(std::vector<cv::Mat> ims, std::string window_name, int type, float resizef = 1);
 std::string to_string_with_precision(float f, const int n);
 std::string to_string_with_precision(double f, const int n); // TODO: template?
-int seconds_since_file_creation(std::string file_path);
-/** @brief If the string holds an drone id (number between 0 and 9) that number is returned.
- * If not, return -1. */
-int get_drone_id(std::string s);
 cv::Point3f mult(cv::Point3f  p1, cv::Point3f p2);
 float normf(cv::Point3f m);
 float deadzone( float v, float lo, float hi );
@@ -646,6 +642,7 @@ public: float blink_period;
 public: tx_protocol tx;
 public: bool mode3d;
 public: string control;
+public: float spinup_throttle_non3d;
 
 private: xInt _initial_hover_throttle;
 private: xFloat _throttle_bank_factor;
@@ -661,6 +658,7 @@ private: xInt _drone_blink_strength;
 private: xTx_protocol _tx;
 private: xBool _mode3d;
 private: xString _control;
+private: xFloat _spinup_throttle_non3d;
 
 public: DroneParameters() {
         // Set the XML class name.
@@ -685,6 +683,7 @@ public: DroneParameters() {
         Register("tx",&_tx);
         Register("mode3d",&_mode3d);
         Register("control",&_control);
+        Register("spinup_throttle_non3d",&_spinup_throttle_non3d);
     }
 public: void deserialize(std::string filepath) {
         std::cout << "Reading settings from: " << filepath << std::endl;
@@ -721,6 +720,7 @@ public: void deserialize(std::string filepath) {
         tx = _tx.value();
         mode3d = _mode3d.value();
         control = _control.value();
+        spinup_throttle_non3d = _spinup_throttle_non3d.value();
     }
 
 public: void serialize(std::string filepath) {
@@ -739,6 +739,7 @@ public: void serialize(std::string filepath) {
         _tx = tx;
         _mode3d = mode3d;
         _control = control;
+        _spinup_throttle_non3d = spinup_throttle_non3d;
 
         std::string xmlData = toXML();
         std::ofstream outfile = std::ofstream (filepath);

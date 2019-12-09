@@ -10,29 +10,25 @@ void InsectTracker::init(int id, VisionData *visdat) {
     std::string logger_fn;
     logger_fn = data_output_dir  + "log_itrk" + to_string(id) + ".csv";
     (*logger).open(logger_fn,std::ofstream::out);
-    (*logger) << "RS_ID;time;replay;";
+    (*logger) << "RS_ID;time;";
     ItemTracker::init(logger,visdat,"insect");
     (*logger) << std::endl;
     n_frames_lost = 0;
 }
-void InsectTracker::start_new_log_line(double time, unsigned long long frame_number,bool replay_insect) {
+void InsectTracker::start_new_log_line(double time, unsigned long long frame_number) {
     (*_logger) << std::to_string(frame_number) << ";";
     (*_logger) << std::to_string(time) << ";";
-    if (replay_insect)
-        (*_logger) << std::to_string(1) << ";";
-    else
-        (*_logger) << std::to_string(0) << ";";
 }
 
-void InsectTracker::append_log(double time, unsigned long long frame_number,bool replay_insect) {
-    start_new_log_line(time,frame_number,replay_insect);
+void InsectTracker::append_log(double time, unsigned long long frame_number) {
+    start_new_log_line(time,frame_number);
     ItemTracker::append_log();
     (*_logger) << std::endl;
 }
 
 void InsectTracker::track(double time) {
 
-    start_new_log_line(time,_visdat->frame_id,false);
+    start_new_log_line(time,_visdat->frame_id);
     ItemTracker::track(time);
 
     if (!_tracking) {

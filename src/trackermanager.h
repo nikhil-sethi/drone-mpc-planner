@@ -64,6 +64,8 @@ public: cv::Scalar tracker_color( ItemTracker * trkr) {
                 return cv::Scalar(0,255,0);
             else if (typeid(*trkr) == typeid(InsectTracker))
                 return cv::Scalar(0,0,255);
+            else if (typeid(*trkr) == typeid(ReplayTracker))
+                return cv::Scalar(0,0,180);
             else if (typeid(*trkr) == typeid(BlinkTracker))
                 return cv::Scalar(255,0,255);
             return cv::Scalar(0,0,0);
@@ -124,18 +126,21 @@ private:
 
     std::vector<ItemTracker::BlobProps> _blobs;
 
-    void update_trackers(double time, long long frame_number, LogReader::Log_Entry_Insect *log_entry, bool drone_is_active);
+    void update_trackers(double time, long long frame_number, bool drone_is_active);
     void update_max_change_points();
     void update_static_ignores();
     void match_blobs_to_trackers(bool drone_is_active, double time);
     bool tracker_active(ItemTracker * trkr, bool drone_is_active);
     std::vector<InsectTracker *> insecttrackers();
+    std::vector<ReplayTracker *> replaytrackers();
 
     uint16_t next_insecttrkr_id = 1;
     detection_mode _mode;
 
     DroneTracker * _dtrkr;
     InsectTracker * default_itrkr;
+
+    std::vector<logging::InsectReader> replay_logs;
 public:
     cv::Mat viz_max_points,diff_viz;
     void mode(detection_mode m){_mode = m;}
@@ -158,24 +163,36 @@ public:
             return trackermanager_mode_names[_mode];
     }
 
-    InsectTracker * insecttracker_best();
+    InsectTracker *insecttracker_best();
     DroneTracker * dronetracker(){ return _dtrkr; }
     void init(ofstream *logger, VisionData *visdat);
-    void update(double time, LogReader::Log_Entry_Insect *log_entry, bool drone_is_active);
+    void update(double time, bool drone_is_active);
     void close();
 
-
     void init_replay_moth(int id) {
-
-//  logreader.read_insect_replay_log("../insect_logs/" + std::to_string(n) + ".csv");
-        //make a new instect tracker, and let it replay the moth
-
-
-  ReplayTracker *it;
-  it = new ReplayTracker();
-  it->init(next_insecttrkr_id,_visdat);
-  next_insecttrkr_id++;
-
+        ReplayTracker *rt;
+        rt = new ReplayTracker();
+        rt->init(next_insecttrkr_id,"../insect_logs/" + std::to_string(id) + ".csv",_visdat);
+        _trackers.push_back(rt);
+        next_insecttrkr_id++;
+    }
+    void init_replay_moth(std::vector<logging::InsectReader> logs) {
+        replay_logs = logs;
+    }
+    void process_replay_moth(unsigned long long RS_id) {
+        std::vector<logging::InsectReader> replay_logs_updated;
+        for (auto log : replay_logs) {
+            if(log.current_entry.RS_id == RS_id) {
+                ReplayTracker *rt;
+                rt = new ReplayTracker();
+                rt->init(next_insecttrkr_id,log,_visdat);
+                _trackers.push_back(rt);
+                next_insecttrkr_id++;
+            } else {
+                replay_logs_updated.push_back(log);
+            }
+        }
+        replay_logs = replay_logs_updated;
     }
 };
 

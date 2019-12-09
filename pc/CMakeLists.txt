@@ -112,7 +112,7 @@ endif()
 find_package(realsense2 REQUIRED)
 
 # sources
-FILE(GLOB SRCS "../src/*.cpp" "../src/*.h" "../src/*.c" "../src/cereal/*.hpp" "../src/tinyxml/*.h" "../src/tinyxml/*.cpp" "../xml/*.xml" "../src/3dviz/*.cpp" "../src/3dviz/*.h")
+FILE(GLOB SRCS "../src/*.cpp" "../src/*.h" "../src/*.c" "../src/logging/*.h" "../src/logging/*.cpp" "../src/cereal/*.hpp" "../src/tinyxml/*.h" "../src/tinyxml/*.cpp" "../xml/*.xml" "../src/3dviz/*.cpp" "../src/3dviz/*.h")
 
 if(VIZ_3D)    
     include_directories("../src/3dviz/ros_msgs/")

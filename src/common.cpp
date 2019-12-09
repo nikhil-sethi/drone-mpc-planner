@@ -495,40 +495,6 @@ std::string to_string_with_precision(double f, const int n)
     return out.str();
 }
 
-int seconds_since_file_creation(std::string file_path)
-{
-    if (!file_exist(file_path))
-        return std::numeric_limits<int>::max();
-    struct stat attrib;
-    stat(file_path.c_str(), &attrib);
-    //    auto t1 = localtime(&(attrib.st_ctime));
-    //    std::cout << std::asctime( localtime(&(attrib.st_ctime)));
-    auto curtime=  std::chrono::system_clock::now();
-    auto in_time_t = std::chrono::system_clock::to_time_t(curtime);
-    //    std::cout << std::asctime(std::localtime(&in_time_t)) << std::endl;
-    //    auto now = std::localtime(&in_time_t);
-    double diff = difftime(in_time_t,attrib.st_ctime);
-    return static_cast<int>(diff);
-}
-
-int get_drone_id(std::string s){ //TODO: refactor. And not a common function to start with
-    unsigned long len = s.length();
-    bool only_numbers = true;
-
-    for(uint i=0; i<len; i++){
-        if(!isdigit (s[i]))
-            only_numbers = false;
-    }
-
-    if(only_numbers){
-        int id = std::stoi(s);
-        if(id>=0 && id<256)
-            return id;
-    }
-
-    return -1;
-}
-
 float normf(cv::Point3f m) { return static_cast<float>(cv::norm(m));}
 
 cv::Point3f mult(cv::Point3f  p1, cv::Point3f p2){

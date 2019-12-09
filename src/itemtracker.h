@@ -222,7 +222,6 @@ private:
 
     double t_prev_tracking = 0;
     double t_prev_predict = 0;
-    std::string _name;
 
     //disparity stuff:
     int err [100];
@@ -239,6 +238,7 @@ private:
     int detected_after_take_off = 0;
 protected:
 
+    std::string _name;
     Smoother smoother_posX, smoother_posY, smoother_posZ;
     SmootherDerivative smoother_velX2,smoother_velY2,smoother_velZ2;
     Smoother smoother_velX, smoother_velY, smoother_velZ;
@@ -272,6 +272,7 @@ protected:
     WorldItem  _world_item;
     uint _blobs_are_fused_cnt = 0;
 
+    void init_logger();
     float stereo_match(cv::Point closestL, cv::Mat diffL, cv::Mat diffR, float radius);
     void reset_tracker_ouput(double time);
     BlobWorldProps calc_world_props_blob_generic(BlobProps * pbs);
@@ -343,6 +344,7 @@ public:
 
         return score*1000.f;
     }
+
 };
 
 #endif //ITEMTRACKER_H
