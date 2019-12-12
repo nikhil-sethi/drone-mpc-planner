@@ -30,7 +30,9 @@ while [ 1 ]; do
 		/bin/mv logging $OUTDIR || true
 
 	echo "$dt" > terminal.log
-	./pats 2>&1 | /usr/bin/tee terminal.log || true
+	echo "sha:" >> terminal.log
+	git rev-parse HEAD >> terminal.log || true
+	./pats 2>&1 | /usr/bin/tee --append terminal.log || true
 
 	sleep 10s
 done
