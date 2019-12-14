@@ -77,7 +77,7 @@ LogEntryMain LogReader::create_log_entry(string line, map<string, int> headmap) 
 
 
     if (_takeoff_time > static_cast<double>(entry.RS_id)/pparams.fps && entry.valid && entry.joyModeSwitch > 0 && entry.auto_throttle > dparams.spinup_throttle_non3d)
-        _takeoff_time = static_cast<double>(entry.RS_id)/pparams.fps;
+        _takeoff_time = static_cast<double>(entry.RS_id)/pparams.fps - 1;
 
     entry.auto_throttle = stoi(line_data.at(headmap["autoThrottle"]));
     entry.auto_roll = stoi(line_data.at(headmap["autoRoll"]));
