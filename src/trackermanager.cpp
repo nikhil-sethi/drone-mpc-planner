@@ -286,17 +286,30 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                         pbs.at(i).trackers.push_back(bt);
                     }
                 } else if (_mode != mode_idle && _mode != mode_drone_only){
+
                     auto wbp_tmp = default_itrkr->calc_world_item(&_blobs.at(i),time);
+
                     if (wbp_tmp.valid) {
-                        InsectTracker *it;
-                        it = new InsectTracker();
-                        it->init(next_insecttrkr_id,_visdat);
-                        next_insecttrkr_id++;
-                        auto wbp = default_itrkr->calc_world_item(&_blobs.at(i),time);
-                        ItemTracker::WorldItem w(ItemTracker::ImageItem(_blobs.at(i),wbp.disparity,_visdat->frame_id,100,i),wbp);
-                        it->world_item(w);
-                        _trackers.push_back( it);
-                        pbs.at(i).trackers.push_back(it);
+                        //ignore a region around the drone (or take of location)
+                        float dist_to_drone;
+                        if (dronetracker()->tracking()){
+                            dist_to_drone = normf(dronetracker()->world_item().pt- wbp_tmp.pt());
+                        } else {
+                            dist_to_drone = normf(dronetracker()->drone_startup_location() - wbp_tmp.pt());
+                        }
+                        if (dist_to_drone < InsectTracker::new_tracker_drone_ignore_zone_size) {
+                            InsectTracker *it;
+                            it = new InsectTracker();
+                            it->init(next_insecttrkr_id,_visdat);
+                            next_insecttrkr_id++;
+                            auto wbp = default_itrkr->calc_world_item(&_blobs.at(i),time);
+                            ItemTracker::WorldItem w(ItemTracker::ImageItem(_blobs.at(i),wbp.disparity,_visdat->frame_id,100,i),wbp);
+                            it->world_item(w);
+                            _trackers.push_back( it);
+                            pbs.at(i).trackers.push_back(it);
+                        } else {
+                            pbs.at(i).ignored = true;
+                        }
                     }
                 }
             }

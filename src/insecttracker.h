@@ -15,6 +15,7 @@ private:
 protected:
     void update_insect_prediction();
 public:
+    static constexpr float new_tracker_drone_ignore_zone_size = 0.3f;
     void init(int id, VisionData *_visdat);
     void track(double time);
     bool tracking(){return _tracking;}
