@@ -127,8 +127,6 @@ void process_video() {
     //main while loop:
     while (key != 27) // ESC
     {
-        visualizer_3d.run();
-
         cam.update();
 
         Stereo_Frame_Data data;
