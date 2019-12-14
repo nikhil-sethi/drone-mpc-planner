@@ -2,9 +2,7 @@
  * This file contains the usb serial interface to retrieve data from the Delfly camera
  */
 
-#ifndef rs232_INCLUDED
-#define rs232_INCLUDED
-
+#pragma once
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -40,7 +38,3 @@ void RS232_disableRTS();
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
-#endif
-
-

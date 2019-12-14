@@ -1,6 +1,4 @@
-#ifndef DEFINES_H
-#define DEFINES_H
-
+#pragma once
 #define CAMMODE_REALSENSE 0
 #define CAMMODE_FROMVIDEOFILE 1
 #define CAMMODE_AIRSIM 2
@@ -10,5 +8,3 @@
 
 #define IMG_W 848
 #define IMG_H 480
-
-#endif //DEFINES_H

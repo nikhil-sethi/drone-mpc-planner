@@ -10,17 +10,17 @@
 #include <unistd.h> //usleep
 #include <ctime>
 #include <sys/stat.h>
+#include <condition_variable>
+
+#include "opencv2/features2d/features2d.hpp"
+#include "opencv2/calib3d/calib3d.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/highgui/highgui.hpp"
 
 #include "common.h"
 #include "defines.h"
 #include "smoother.h"
-
 #include "multimodule.h"
-
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-
 #include "stopwatch.h"
 #include "dronetracker.h"
 #include "dronecontroller.h"
@@ -29,7 +29,9 @@
 #include "vizs.h"
 #include "insecttracker.h"
 #include "trackermanager.h"
-#include "logging/logreader.h"
+#include "logreader.h"
+#include "visiondata.h"
+#include "3dviz/visualizer3d.h"
 #if CAMMODE == CAMMODE_FROMVIDEOFILE
 #include "filecam.h"
 #elif CAMMODE == CAMMODE_AIRSIM
@@ -39,15 +41,6 @@
 #elif CAMMODE == CAMMODE_GENERATOR
 #include "generatorcam.h"
 #endif
-#include "visiondata.h"
-
-#include "opencv2/features2d/features2d.hpp"
-#include "opencv2/calib3d/calib3d.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-#include "opencv2/highgui/highgui.hpp"
-
-#include "3dviz/visualizer3d.h"
-
 #ifdef HASGUI
 #include "gui/mainwindow.h"
 #endif
@@ -64,15 +57,10 @@ int main_argc;
 char **main_argv;
 xmls::PatsParameters pparams;
 xmls::DroneParameters dparams;
-
-stopwatch_c stopWatch_break;
 stopwatch_c stopWatch;
-std::string file;
 std::string data_output_dir;
-std::string calib_folder;
-
 bool draw_plots = false;
-
+bool log_replay_mode = false;
 std::string logger_fn; //contains filename of current log # for insect logging (same as video #)
 
 std::ofstream logger;
@@ -97,7 +85,6 @@ Cam cam;
 GeneratorCam cam;
 #endif
 VisionData visdat;
-bool log_replay_mode = false;
 
 /****Threadpool*******/
 #define NUM_OF_THREADS 1
@@ -128,13 +115,12 @@ void process_video();
 int main( int argc, char **argv);
 void handle_key(double time);
 void close(bool sig_kill);
-
 void write_occasional_image();
 
 /************ code ***********/
 void process_video() {
 
-    Smoother fps_smoothed;
+    filtering::Smoother fps_smoothed;
     fps_smoothed.init(100);
     stopWatch.Start();
 
@@ -157,7 +143,8 @@ void process_video() {
         tp[0].data_is_processed= false;
         if (pparams.has_screen) {
             static int speed_div;
-            if (!(speed_div++ % 4) || log_replay_mode){
+            if (!(speed_div++ % 4) || (log_replay_mode && !cam.turbo)){
+                visualizer_3d.run();
                 visualizer.paint();
                 handle_key(data.time);
             }

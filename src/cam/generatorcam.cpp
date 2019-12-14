@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string.h>
 #include <unistd.h>       //usleep
-#include "stopwatch.h"
+#include "third_party/stopwatch.h"
 stopwatch_c gen_stopw;
 
 #include "opencv2/imgproc.hpp"

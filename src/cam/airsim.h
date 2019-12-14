@@ -1,6 +1,4 @@
-#ifndef AIRSIM_H
-#define AIRSIM_H
-
+#pragma once
 #include "defines.h"
 #if CAMMODE == CAMMODE_AIRSIM
 #include <iostream>
@@ -81,4 +79,3 @@ private:
 
 };
 #endif //CAMMODE_AIRSIM
-#endif // AIRSIM_H

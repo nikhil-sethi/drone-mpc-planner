@@ -1,6 +1,4 @@
-#ifndef DRONETRACKER_H
-#define DRONETRACKER_H
-
+#pragma once
 #include "itemtracker.h"
 #include "tinyxml/XMLSerialization.h"
 
@@ -155,8 +153,3 @@ public:
     float yaw_heading(cv::Mat left, cv::Mat right);
     float calc_heading(BlobProps * pbs, bool inspect_blob);
 };
-
-
-
-
-#endif //DRONETRACKER_H

@@ -1,9 +1,6 @@
-#ifndef REPLAYTRACKER_H
-#define REPLAYTRACKER_H
-
-#include "itemtracker.h"
+#pragma once
 #include "insecttracker.h"
-#include "logging/insectreader.h"
+#include "insectreader.h"
 /*
  * This class will replay a insect log
  *
@@ -41,5 +38,3 @@ public:
         return false;
     }
 };
-
-#endif //REPLAYTRACKER_H

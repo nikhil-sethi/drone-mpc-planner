@@ -139,14 +139,17 @@ void TrackerManager::update_static_ignores() {
 void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) {
 
     //set all trackers to invalid so we can use this as a flag to notice when tracking is lost.
-    for (uint i=0; i<_trackers.size();i++)
-        _trackers.at(i)->item_invalidize();
+    for (auto trkr : _trackers)
+        trkr->item_invalidize();
+
+    if (_blobs.size()>1 && time > 80)
+        std::cout << "hoer" << std::endl;
 
     if (_blobs.size()>0) {
         //init keypoints list
         std::vector<processed_blobs> pbs;
-        for (uint i=0; i < _blobs.size(); i++)
-            pbs.push_back(processed_blobs(_blobs.at(i)));
+        for (auto blob : _blobs)
+            pbs.push_back(processed_blobs(blob));
 
         //first check if there are trackers that were already tracking something, which prediction matches a new keypoint
         for (uint i=0; i<_trackers.size();i++){
@@ -257,15 +260,13 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
         }
 
         //see if there are static ignore points that are detected. If so set was_used flag
-        for (uint i=0; i<_trackers.size();i++){
-            ItemTracker * trkr = _trackers.at(i);
-            for (uint j=0; j < pbs.size(); j++) {
-                cv::Point2f p_kp = pbs.at(j).pt;
-                for (uint k=0; k<trkr->ignores_for_other_trkrs.size();k++){
-                    cv::Point2f p_ignore = trkr->ignores_for_other_trkrs.at(k).p;
-                    float dist_ignore = sqrtf(powf(p_ignore.x-p_kp.x,2)+powf(p_ignore.y-p_kp.y,2));
-                    if (dist_ignore < pbs.at(j).size + trkr->ignores_for_other_trkrs.at(k).radius ){
-                        trkr->ignores_for_other_trkrs.at(k).was_used = true;
+        for (auto trkr : _trackers) {
+            for (auto blob : pbs) {
+                for (auto& ignore : trkr->ignores_for_other_trkrs){
+                    cv::Point2f p_ignore = ignore.p;
+                    float dist_ignore = sqrtf(powf(p_ignore.x-blob.pt.x,2)+powf(p_ignore.y-blob.pt.y,2));
+                    if (dist_ignore < blob.size + ignore.radius ){
+                        ignore.was_used = true;
                     }
                 }
             }

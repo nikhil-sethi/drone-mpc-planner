@@ -555,12 +555,11 @@ void ItemTracker::reset_tracker_ouput(double time) {
 
 bool ItemTracker::check_ignore_blobs_generic(BlobProps * pbs) {
     bool in_ignore_zone = false;
-    for (uint k=0; k<ignores_for_me.size();k++){
-        cv::Point2f p_ignore = ignores_for_me.at(k).p;
-        float dist_ignore = sqrtf(powf(p_ignore.x-pbs->x,2)+powf(p_ignore.y-pbs->y,2));
-        if (dist_ignore < pbs->radius + ignores_for_me.at(k).radius ){
-            ignores_for_me.at(k).was_used = true;
-            pbs->ignores.push_back(ignores_for_me.at(k));
+    for (auto ignore : ignores_for_me) {
+        float dist_ignore = sqrtf(powf(ignore.p.x-pbs->x,2)+powf(ignore.p.y-pbs->y,2));
+        if (dist_ignore < pbs->radius + ignore.radius ){
+            ignore.was_used = true;
+            pbs->ignores.push_back(ignore);
             in_ignore_zone = true;
         }
     }

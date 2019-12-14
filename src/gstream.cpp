@@ -7,7 +7,7 @@
 
 #include <iostream>
 
-#include "stopwatch.h"
+#include "third_party/stopwatch.h"
 #include "common.h"
 
 stopwatch_c stopwatch;

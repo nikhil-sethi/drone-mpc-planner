@@ -1,12 +1,9 @@
-#ifndef SMOOTH2_H
-#define SMOOTH2_H
-
+#pragma once
 #include <fstream>
 #include <vector>
 #include <cmath>
 
-//TODO [kevin]: smoother2 file
-
+namespace filtering {
 class SmootherDerivative{
 
 private:
@@ -30,5 +27,4 @@ public:
     bool ready(){ return _ready;}
 
 };
-
-#endif
+}

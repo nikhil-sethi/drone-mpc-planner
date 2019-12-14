@@ -1,6 +1,4 @@
-#ifndef VIZDAT_H
-#define VIZDAT_H
-
+#pragma once
 #include <fstream>
 #include <vector>
 #include <cmath>
@@ -8,9 +6,9 @@
 #include "opencv2/features2d/features2d.hpp"
 #include <opencv2/imgproc.hpp>
 
-#include <cereal/types/unordered_map.hpp>
-#include <cereal/types/memory.hpp>
-#include <cereal/archives/binary.hpp>
+#include "cereal/types/unordered_map.hpp"
+#include "cereal/types/memory.hpp"
+#include "cereal/archives/binary.hpp"
 #include <fstream>
 
 #include <condition_variable>
@@ -122,5 +120,3 @@ public:
     void delete_from_motion_map(cv::Point p, int disparity, int radius, int duration);
     void exclude_drone_from_motion_fading(cv::Point p, int radius);
 };
-
-#endif // VIZDAT_H

@@ -1,6 +1,4 @@
-#ifndef BLINKTRACKER_H
-#define BLINKTRACKER_H
-
+#pragma once
 #include "itemtracker.h"
 
 /*
@@ -69,8 +67,3 @@ public:
     float smoothed_size_image(){return smoother_im_size.latest();}
 
 };
-
-
-
-
-#endif //BLINKTRACKER_H

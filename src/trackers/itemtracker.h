@@ -1,22 +1,20 @@
-#ifndef ITEMTRACKER_H
-#define ITEMTRACKER_H
+#pragma once
 #include "defines.h"
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/video/video.hpp>
-#include<opencv2/opencv.hpp>
+#include <opencv2/opencv.hpp>
 #include "opencv2/imgcodecs.hpp"
-#include "smoother2.h"
-#include "smoother.h"
+#include "filtering.h"
 
 #include "common.h"
 #include "visiondata.h"
 
-#include <cereal/types/unordered_map.hpp>
-#include <cereal/types/memory.hpp>
-#include <cereal/archives/binary.hpp>
+#include "cereal/types/unordered_map.hpp"
+#include "cereal/types/memory.hpp"
+#include "cereal/archives/binary.hpp"
 #include <fstream>
 
 
@@ -232,28 +230,28 @@ private:
     float disp_prev; // TODO: there's two disp(arity)_prevs...?
     float disparity_prev = 0;
 
-    Smoother smoother_score;
-    Smoother smoother_brightness;
+    filtering::Smoother smoother_score;
+    filtering::Smoother smoother_brightness;
 
     int detected_after_take_off = 0;
 protected:
 
     std::string _name;
-    Smoother smoother_posX, smoother_posY, smoother_posZ;
-    SmootherDerivative smoother_velX2,smoother_velY2,smoother_velZ2;
-    Smoother smoother_velX, smoother_velY, smoother_velZ;
-    SmootherDerivative smoother_accX2,smoother_accY2,smoother_accZ2;
-    Smoother smoother_accX, smoother_accY, smoother_accZ;
+    filtering::Smoother smoother_posX, smoother_posY, smoother_posZ;
+    filtering::SmootherDerivative smoother_velX2,smoother_velY2,smoother_velZ2;
+    filtering::Smoother smoother_velX, smoother_velY, smoother_velZ;
+    filtering::SmootherDerivative smoother_accX2,smoother_accY2,smoother_accZ2;
+    filtering::Smoother smoother_accX, smoother_accY, smoother_accZ;
     const int smooth_width_vel = 10;
     const int smooth_width_pos = 10;
     const int smooth_width_acc = 45;
     const int smooth_blob_props_width = 10;
-    Smoother disp_smoothed;
-    SmootherDerivative disp_rate_smoothed2;
+    filtering::Smoother disp_smoothed;
+    filtering::SmootherDerivative disp_rate_smoothed2;
     bool reset_filters;
     bool reset_disp = false;
 
-    Smoother smoother_im_size;
+    filtering::Smoother smoother_im_size;
 
     int n_frames_lost = 100;
     int n_frames_lost_threshold = 10;
@@ -346,5 +344,3 @@ public:
     }
 
 };
-
-#endif //ITEMTRACKER_H

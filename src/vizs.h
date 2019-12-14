@@ -1,7 +1,4 @@
-#ifndef VIZS_H
-#define VIZS_H
-
-
+#pragma once
 #include <fstream>
 #include <vector>
 #include <cmath>
@@ -181,5 +178,3 @@ public:
     void close();
 
 };
-
-#endif // VIZS_H

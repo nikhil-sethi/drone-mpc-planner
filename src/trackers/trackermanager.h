@@ -1,5 +1,4 @@
-#ifndef TRACKERMANAGER_H
-#define TRACKERMANAGER_H
+#pragma once
 #include "defines.h"
 #include "common.h"
 #include "itemtracker.h"
@@ -195,5 +194,3 @@ public:
         replay_logs = replay_logs_updated;
     }
 };
-
-#endif //TRACKERMANAGER_H

@@ -1,6 +1,4 @@
-#ifndef DRONECONTROLLER_H
-#define DRONECONTROLLER_H
-
+#pragma once
 #include "dronetracker.h"
 #include "joystick.hpp"
 #include "multimodule.h"
@@ -226,11 +224,11 @@ private:
     cv::Point3f pos_err_i;
     int kp_pos_roll, kp_pos_throttle, kp_pos_pitch, ki_pos_roll, ki_pos_throttle, ki_pos_pitch, kd_pos_roll, kd_pos_throttle, kd_pos_pitch;
     int kp_v_roll, kp_v_throttle, kp_v_pitch, kd_v_roll, kd_v_throttle, kd_v_pitch;
-    Tf_PT1_f filter_pos_err_x, filter_pos_err_y, filter_pos_err_z;
-    Tf_PT1_f filter_vel_err_x, filter_vel_err_y, filter_vel_err_z;
-    Tf_D_f d_pos_err_x, d_pos_err_y, d_pos_err_z;
-    Tf_D_f d_vel_err_x, d_vel_err_y, d_vel_err_z;
-    Tf_PT2_3f pos_reference_filter;
+    filtering::Tf_PT1_f filter_pos_err_x, filter_pos_err_y, filter_pos_err_z;
+    filtering::Tf_PT1_f filter_vel_err_x, filter_vel_err_y, filter_vel_err_z;
+    filtering::Tf_D_f d_pos_err_x, d_pos_err_y, d_pos_err_z;
+    filtering::Tf_D_f d_vel_err_x, d_vel_err_y, d_vel_err_z;
+    filtering::Tf_PT2_3f pos_reference_filter;
     /** @brief
      * @param[in] setpoint_vel Absolute velocity the drone shall have */
     void control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
@@ -354,7 +352,7 @@ public:
     int auto_yaw = JOY_MIDDLE;
     float auto_burn_duration = 0;
 
-    Smoother yaw_smoother;
+    filtering::Smoother yaw_smoother;
 
     //Normalized throttle, between [-1 .. 1].
     //0 equals hoverthrottle
@@ -459,5 +457,3 @@ public:
         _rc->LED(b);
     }
 };
-
-#endif //DRONECONTROLLER_H

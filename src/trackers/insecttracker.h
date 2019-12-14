@@ -1,12 +1,7 @@
-#ifndef INSECTTRACKER_H
-#define INSECTTRACKER_H
-
+#pragma once
 #include "itemtracker.h"
-#include "logging/insectreader.h"
-/*
- * This class will track insects
- *
- */
+#include "insectreader.h"
+
 class InsectTracker : public ItemTracker {
 
 private:
@@ -36,5 +31,3 @@ public:
             return false;
     }
 };
-
-#endif //INSECTTRACKER_H

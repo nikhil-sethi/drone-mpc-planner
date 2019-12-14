@@ -1,6 +1,4 @@
-#ifndef INTERCEPT_H
-#define INTERCEPT_H
-
+#pragma once
 #include "defines.h"
 #include "insecttracker.h"
 #include "dronetracker.h"
@@ -86,5 +84,3 @@ public:
     }
 
 };
-
-#endif

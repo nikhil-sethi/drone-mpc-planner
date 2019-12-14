@@ -1,5 +1,4 @@
-#ifndef FILECAM_H
-#define FILECAM_H
+#pragma once
 #include "defines.h"
 #include <opencv2/highgui/highgui.hpp>
 #include "common.h"
@@ -47,4 +46,3 @@ private:
 
 
 };
-#endif //FILECAM_H

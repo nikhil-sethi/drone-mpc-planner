@@ -1,5 +1,5 @@
 #include "smoother.h"
-
+namespace filtering {
 void Smoother::init(uint16_t width, float value)
 {
     _kernelsize = width;
@@ -74,4 +74,5 @@ float Smoother::latest()
         return _runner / _rotater;
     else
         return _runner / _kernelsize;
+}
 }

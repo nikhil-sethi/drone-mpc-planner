@@ -1,8 +1,6 @@
-#ifndef CAM_H
-#define CAM_H
-
+#pragma once
 #include "defines.h"
-#include "stopwatch.h"
+#include "third_party/stopwatch.h"
 
 #include <iostream>
 #include <fstream>
@@ -19,7 +17,7 @@
 #include "opencv2/highgui/highgui.hpp"
 
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
-#include "tinyxml/XMLSerialization.h"
+#include "third_party/tinyxml/XMLSerialization.h"
 
 class Cam{
 
@@ -194,5 +192,3 @@ private:
 
 
 };
-
-#endif // CAM_H

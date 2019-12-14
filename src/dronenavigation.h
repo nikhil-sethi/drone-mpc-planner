@@ -1,5 +1,4 @@
-#ifndef DRONENAVIGATION_H
-#define DRONENAVIGATION_H
+#pragma once
 #include "defines.h"
 
 #include "common.h"
@@ -312,5 +311,3 @@ public:
 
     Interceptor get_Interceptor(){return _iceptor;}
 };
-
-#endif //DRONENAVIGATION

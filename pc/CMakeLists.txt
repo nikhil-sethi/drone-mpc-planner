@@ -1,16 +1,15 @@
 cmake_minimum_required(VERSION 3.11.0)
 project(pats)
 
-# Save the command line compile commands in the build output
-set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
-
-set (PROJECT_SRC_DIR ../src)
-set (SRC_DIR ../src/)
+set(CMAKE_EXPORT_COMPILE_COMMANDS 1) # Save the command line compile commands in the build output
+set(SRC_DIR ../src/)
+set(ignoreMe "${QT_QMAKE_EXECUTABLE}") #get rid unused variable warning:
 set(VIZ_3D FALSE)
 
 # add packages
 find_package(Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
+find_package(realsense2 REQUIRED)
 find_package( OpenCV REQUIRED )
 MESSAGE( STATUS "OpenCV_DIR: " ${OpenCV_DIR} )
 MESSAGE( STATUS "OpenCV_LIBS: " ${OpenCV_LIBS} )
@@ -29,9 +28,6 @@ if(VIZ_3D)
     find_package(fastrtps REQUIRED)
 endif()
 
-#get rid unused variable warning:
-set(ignoreMe "${QT_QMAKE_EXECUTABLE}")
-
 #gstreamer:
 #SET(CMAKE_PREFIX_PATH, "/apps/gstreamer/")
 pkg_check_modules(GST REQUIRED gstreamer-1.0>=1.8
@@ -46,8 +42,13 @@ MESSAGE( STATUS "GST_INCLUDE_DIRS: " ${GST_INCLUDE_DIRS} )
 include_directories(SYSTEM ${GST_INCLUDE_DIRS})
 link_directories(SYSTEM ${GST_LIBRARY_DIRS})
 
-include_directories (SYSTEM ../src/ros_msgs/)
 include_directories(SYSTEM "${SRC_DIR}")
+include_directories(SYSTEM "${SRC_DIR}/third_party")
+include_directories(SYSTEM "${SRC_DIR}/trackers")
+include_directories(SYSTEM "${SRC_DIR}/filtering")
+include_directories(SYSTEM "${SRC_DIR}/logging")
+include_directories(SYSTEM "${SRC_DIR}/cam")
+include_directories(SYSTEM "${SRC_DIR}/third_party/ros_msgs/")
 
 #************airsim******************
 if(WITH_AIRSIM)
@@ -109,15 +110,14 @@ if(WITH_GUI)
 endif()
 #**************/QML***********
 
-find_package(realsense2 REQUIRED)
-
 # sources
-FILE(GLOB SRCS "../src/*.cpp" "../src/*.h" "../src/*.c" "../src/logging/*.h" "../src/logging/*.cpp" "../src/cereal/*.hpp" "../src/tinyxml/*.h" "../src/tinyxml/*.cpp" "../xml/*.xml" "../src/3dviz/*.cpp" "../src/3dviz/*.h")
+FILE(GLOB SRCS "../src/*.cpp" "../src/*.h" "../src/cam/*.cpp" "../src/cam/*.h" "../src/trackers/*.cpp" "../src/trackers/*.h" "../src/filtering/*.cpp" "../src/filtering/*.h" "../src/logging/*.h" "../src/logging/*.cpp" )
+FILE(GLOB THIRD_PARTY_SRCS "../src/third_party/*.h" "../src/third_party/*.hpp" "../src/third_party/*.cpp" "../src/third_party/*.c" "../src/third_party/cereal/*.hpp" "../src/third_party/tinyxml/*.h" "../src/third_party/tinyxml/*.cpp" "../xml/*.xml" "../src/third_party/3dviz/*.cpp" "../src/third_party/3dviz/*.h")
 
-if(VIZ_3D)    
-    include_directories("../src/3dviz/ros_msgs/")
-    include_directories("../src/3dviz/publishers/")
-    FILE(GLOB ROS_SRCS "../src/3dviz/ros_msgs/*.cxx" "../src/3dviz/ros_msgs/*.h" "../src/3dviz/fastrtps/*.cxx" "../src/3dviz/fastrtps/*.h" "../src/3dviz/publishers/*.cpp" "../src/3dviz/publishers/*.h")
+if(VIZ_3D)
+    include_directories("../src/third_party/3dviz/ros_msgs/")
+    include_directories("../src/third_party/3dviz/publishers/")
+    FILE(GLOB ROS_SRCS "../src/third_party/3dviz/ros_msgs/*.cxx" "../src/third_party/3dviz/ros_msgs/*.h" "../src/third_party/3dviz/fastrtps/*.cxx" "../src/third_party/3dviz/fastrtps/*.h" "../src/third_party/3dviz/publishers/*.cpp" "../src/third_party/3dviz/publishers/*.h")
 endif()
 
 include(CheckCXXCompilerFlag)
@@ -127,15 +127,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-#STRING(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_LOWER)
-#IF(CMAKE_BUILD_TYPE_LOWER STREQUAL debug)
-#        set(DEBUG_FLAG 1)
-#        ADD_DEFINITIONS(-DDEBUG_FLAG=${DEBUG_FLAG})
-#        MESSAGE( STATUS "DEBUG MODE" )
-#ENDIF(CMAKE_BUILD_TYPE_LOWER STREQUAL debug)
-
 # build program
-add_executable(${PROJECT_NAME} ${SRCS} ${GUI_SRCS} ${QT_RESOURCES} ${ROS_SRCS})
+add_executable(${PROJECT_NAME} ${SRCS} ${THIRD_PARTY_SRCS} ${GUI_SRCS} ${QT_RESOURCES} ${ROS_SRCS})
 
 if(WITH_GUI)
  qt5_use_modules(${PROJECT_NAME} Widgets)
@@ -147,7 +140,7 @@ target_link_libraries(${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
 target_link_libraries(${PROJECT_NAME} ${realsense2_LIBRARY})
 target_link_libraries(${PROJECT_NAME} ${GST_LIBRARIES} ${GSTSDP_LIBRARIES} ${GSTAPP_LIBRARIES})
-target_link_libraries(${PROJECT_NAME} stdc++fs)
+target_link_libraries(${PROJECT_NAME} stdc++fs) #until we upgrade to gcc 8
 target_link_libraries(${PROJECT_NAME} ${FASTRTPS_LIBRARIES})
 
 if(VIZ_3D)

@@ -1,5 +1,4 @@
-#ifndef GENERATORCAM_H
-#define GENERATORCAM_H
+#pragma once
 #include "defines.h"
 #include <opencv2/highgui/highgui.hpp>
 #include "common.h"
@@ -62,4 +61,3 @@ private:
     void bound(cv::Point *p, int radius);
 
 };
-#endif //GENERATORCAM_H

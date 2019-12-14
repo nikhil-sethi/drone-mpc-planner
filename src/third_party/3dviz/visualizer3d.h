@@ -1,6 +1,4 @@
-#ifndef VISUALIZER_3D_H
-#define VISUALIZER_3D_H
-
+#pragma once
 #include "trackermanager.h"
 #include "dronecontroller.h"
 #include "dronenavigation.h"
@@ -38,5 +36,3 @@ private:
     DroneNavigation *_dnav;
 #endif
 };
-
-#endif // VISUALIZER_3D_H

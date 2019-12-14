@@ -1,6 +1,4 @@
-#ifndef GSTREAM_H
-#define GSTREAM_H
-
+#pragma once
 #include "opencv2/features2d/features2d.hpp"
 
 #include <gst/gst.h>
@@ -35,8 +33,3 @@ public:
     void close (void);
     void block();
 };
-
-
-
-
-#endif //GSTREAM_H

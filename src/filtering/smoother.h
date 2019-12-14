@@ -1,11 +1,9 @@
-
-#ifndef SMOOTH_H
-#define SMOOTH_H
-
+#pragma once
 #include <fstream>
 #include <vector>
 #include <cmath>
 
+namespace filtering {
 /*
  * This class performs moving average filtering
  *
@@ -33,5 +31,4 @@ public:
     }
     int kernselsize() { return _kernelsize;}
 };
-
-#endif
+}

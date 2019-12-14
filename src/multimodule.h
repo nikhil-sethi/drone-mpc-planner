@@ -1,6 +1,4 @@
-#ifndef MULTIMODULE_H
-#define MULTIMODULE_H
-
+#pragma once
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -139,5 +137,3 @@ private:
     void send_init_package();
 
 };
-
-#endif // MULTIMODULE_H

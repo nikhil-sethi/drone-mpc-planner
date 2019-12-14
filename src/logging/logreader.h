@@ -1,5 +1,4 @@
 #pragma once
-
 #include <cmath>
 #include "logging.h"
 #include "insectreader.h"

@@ -1,5 +1,4 @@
 #pragma once
-
 #include "logging.h"
 
 namespace logging

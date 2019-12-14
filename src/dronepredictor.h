@@ -1,5 +1,4 @@
 #pragma once
-
 #include "defines.h"
 #include "dronecontroller.h"
 #include "dronetracker.h"
@@ -21,8 +20,8 @@ private:
     VisionData *_visdat;
 
     bool initialized = false;
-    Smoother roll_smth,throttle_smth,pitch_smth;
-    Smoother roll_gain_smth,throttle_gain_smth,pitch_gain_smth;
+    filtering::Smoother roll_smth,throttle_smth,pitch_smth;
+    filtering::Smoother roll_gain_smth,throttle_gain_smth,pitch_gain_smth;
 
     float dt_prev = 0;
     cv::Point3f pos_prev ={0};
@@ -33,15 +32,12 @@ private:
     cv::Point3f predicted_pos ={0};
     cv::Point3f drag_gain;
 
-    Smoother swap_x;
-    Smoother swap_y;
-    Smoother swap_z;
+    filtering::Smoother swap_x;
+    filtering::Smoother swap_y;
+    filtering::Smoother swap_z;
 
     cv::Point3f tot_d = {0};
     cv::Point3f tot_i = {0};
     cv::Point3f tot_t = {0};
-
-
-
 
 };

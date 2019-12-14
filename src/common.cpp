@@ -5,11 +5,6 @@
 #include <sys/stat.h>
 #include <chrono>
 
-
-template <typename T> int sign(T val) {
-    return (T(0) < val) - (val < T(0));
-}
-
 void CameraVolume::init(cv::Point3f point_left_top, cv::Point3f point_right_top, cv::Point3f point_left_bottom, cv::Point3f point_right_bottom,
                         float b_depth, float b_height){
 

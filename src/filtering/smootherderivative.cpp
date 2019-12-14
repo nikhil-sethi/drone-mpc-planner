@@ -1,5 +1,5 @@
-#include "smoother2.h"
-
+#include "smootherderivative.h"
+namespace filtering {
 void SmootherDerivative::init (uint16_t width, float filt_rate ) {
     _kernelsize = width;
     _filt_rate = filt_rate;
@@ -75,4 +75,5 @@ float SmootherDerivative::addSample(float data, float time) {
         return 0;
 
     }
+}
 }

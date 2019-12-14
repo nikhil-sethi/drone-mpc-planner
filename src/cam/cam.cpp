@@ -613,7 +613,7 @@ void Cam::calib_pose(bool also_do_depth){
     uint nframes = 1;
     if (hasIMU)
         nframes = 10;
-    Smoother smx,smy,smz;
+    filtering::Smoother smx,smy,smz;
     smx.init(static_cast<int>(nframes));
     smy.init(static_cast<int>(nframes));
     smz.init(static_cast<int>(nframes));
