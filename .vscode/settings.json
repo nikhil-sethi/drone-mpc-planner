@@ -4,6 +4,7 @@
         "vector": "cpp",
         "condition_variable": "cpp"
     },
-    "editor.autoIndent": true,
-    "editor.autoClosingBrackets": false,        
+    "cmake.sourceDirectory": "${workspaceFolder}/pc/",
+    "cmake.buildDirectory": "${workspaceFolder}/pc/build-vscode",
+    "cmake.configureOnOpen": true
 }

@@ -8,18 +8,18 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/pc/build-debug/obc_vision",
-            "args": [""],
+            "program": "${workspaceFolder}/pc/build-vscode/pats",
+            "args": [],
             "stopAtEntry": false,
             "preLaunchTask": "make",
-            "cwd": "${workspaceFolder}/pc/build-debug",
+            "cwd": "${workspaceFolder}/pc/build-vscode",
             "environment": [],
-            "externalConsole": true,            
+            "externalConsole": false,
             "MIMode": "gdb",
             "setupCommands": [
                 {
                     "description": "Test",
-                    "text": "python import sys;sys.path.insert(0, '/usr/share/gcc-5/python');from libstdcxx.v6.printers import register_libstdcxx_printers;register_libstdcxx_printers(None)",
+                    "text": "python import sys;sys.path.insert(0, '/usr/share/gcc-8/python');from libstdcxx.v6.printers import register_libstdcxx_printers;register_libstdcxx_printers(None)",
                     "ignoreFailures": false
                 },
                 {

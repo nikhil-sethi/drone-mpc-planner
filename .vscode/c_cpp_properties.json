@@ -2,15 +2,17 @@
     "configurations": [
         {
             "name": "Linux",
-            "includePath": [
-                "${workspaceFolder}/**","/apps/gstreamer/include"
-            ],
             "defines": [],
-            "compilerPath": "/usr/bin/clang",
+            "compilerPath": "/usr/bin/g++",
             "cStandard": "c11",
             "cppStandard": "c++17",
-            "intelliSenseMode": "clang-x64",
-            "compileCommands": "${workspaceFolder}/pc/build-debug/compile_commands.json"
+            "intelliSenseMode": "gcc-x64",
+            "configurationProvider": "microsoft.cmake-tools",
+            "compilerArgs": [],
+            "includePath": [
+                "${workspaceFolder}/src/**"
+            ],
+            "compileCommands": "${workspaceFolder}/pc/build-vscode/compile_commands.json"
         }
     ],
     "version": 4

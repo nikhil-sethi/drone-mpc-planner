@@ -5,7 +5,7 @@
             "label": "cmake",
             "type": "shell",
             "options": {
-                "cwd": "${workspaceRoot}/pc/build-debug"
+                "cwd": "${workspaceRoot}/pc/build-vscode"
             },
             "command": "cmake \"Unix Makefiles\"  ${workspaceRoot}/pc",
         },
@@ -14,7 +14,7 @@
             "type": "shell",
             "command": "make -j8",
             "options": {
-                "cwd": "${workspaceRoot}/pc/build-debug"
+                "cwd": "${workspaceRoot}/pc/build-vscode"
             },
             "args": [],
             "group": {
