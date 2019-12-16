@@ -11,8 +11,7 @@
             "compilerArgs": [],
             "includePath": [
                 "${workspaceFolder}/src/**"
-            ],
-            "compileCommands": "${workspaceFolder}/pc/build-vscode/compile_commands.json"
+            ]
         }
     ],
     "version": 4

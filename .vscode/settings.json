@@ -6,5 +6,9 @@
     },
     "cmake.sourceDirectory": "${workspaceFolder}/pc/",
     "cmake.buildDirectory": "${workspaceFolder}/pc/build-vscode",
-    "cmake.configureOnOpen": true
+    "cmake.configureOnOpen": true,
+    "cmake.preferredGenerators":[
+        "Unix Makefiles",
+        "Ninja"
+    ]
 }
