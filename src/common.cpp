@@ -28,13 +28,13 @@ void CameraVolume::init(cv::Point3f point_left_top, cv::Point3f point_right_top,
     _n_back = (cv::Mat_<float>(3,1) << 0, 0, 1);
     _p0_back = (cv::Mat_<float>(3,1) << 0, 0, b_depth);
 
-#if false
-    std::cout << "front> p0_front:" << p0_front.t() << " n_front: " << n_front.t() << std::endl;
-    std::cout << "top> p0_top:" << p0_top.t() << " n_top: " << n_top.t() << std::endl;
-    std::cout << "left> p0_left:" << p0_left.t() << " n_left: " << n_left.t() << std::endl;
-    std::cout << "right> p0_right:" << p0_right.t() << " n_right: " << n_right.t() << std::endl;
-    std::cout << "bottom> p0_bottom:" << p0_bottom.t() << " n_bottom: " << n_bottom.t() << std::endl;
-    std::cout << "back> p0_back:" << p0_back.t() << " n_back: " << n_back.t() << std::endl;
+#if true
+    std::cout << "front> p0_front:" << _p0_front.t() << " n_front: " << _n_front.t() << std::endl;
+    std::cout << "top> p0_top:" << _p0_top.t() << " n_top: " << _n_top.t() << std::endl;
+    std::cout << "left> p0_left:" << _p0_left.t() << " n_left: " << _n_left.t() << std::endl;
+    std::cout << "right> p0_right:" << _p0_right.t() << " n_right: " << _n_right.t() << std::endl;
+    std::cout << "bottom> p0_bottom:" << _p0_bottom.t() << " n_bottom: " << _n_bottom.t() << std::endl;
+    std::cout << "back> p0_back:" << _p0_back.t() << " n_back: " << _n_back.t() << std::endl;
 #endif
 
     double margin_top = 0.2;
