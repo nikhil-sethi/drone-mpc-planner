@@ -22,25 +22,26 @@ void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, Dro
 
     //The flight plan will be repeated indefinetely, unless there is a landing waypoint somewhere in the list.
 
-    //    setpoints.push_back(waypoint(cv::Point3f(-2,-1.0f,-3.5f),100));
-    //    setpoints.push_back(waypoint(cv::Point3f(2,-1.0f,-3.5f),100));
-    //    setpoints.push_back(waypoint(cv::Point3f(-2,-1.0f,-3.5f),100));
-    //    setpoints.push_back(waypoint(cv::Point3f(2,-1.0f,-3.5f),100));
+    // Uncomment for demo:
+    //    setpoints.push_back(stay_waypoint(cv::Point3f(0,-0.7f,-2.0f)));
+    //    setpoints.push_back(stay_waypoint(cv::Point3f(-1,-0.7f,-2.0f)));
+    //    setpoints.push_back(stay_waypoint(cv::Point3f(1,-0.7f,-2.0f)));
+
+    //    setpoints.push_back(stay_waypoint(cv::Point3f(0,-1.2f,-2.0f)));
+    //    setpoints.push_back(stay_waypoint(cv::Point3f(0,-0.4f,-2.0f)));
+
+    //    setpoints.push_back(waypoint(cv::Point3f(0,-1.2f,-1.0f),100));
+
+    //    setpoints.push_back(waypoint(cv::Point3f(0,-0.4f,-1.4f),100)); // last waypoint before landing waypoint
+    setpoints.push_back(waypoint(cv::Point3f(-0.5f,-0.4f,-1.4f),100)); // last waypoint before landing waypoint
 
 
+    //    setpoints.push_back(waypoint(cv::Point3f(-0.5,-0.7f,-1.6f),100));
 
-//    setpoints.push_back(stay_waypoint(cv::Point3f(0,-0.7f,-2.0f)));
-//    setpoints.push_back(stay_waypoint(cv::Point3f(-1,-0.7f,-2.0f)));
-//    setpoints.push_back(stay_waypoint(cv::Point3f(1,-0.7f,-2.0f)));
 
-//    setpoints.push_back(stay_waypoint(cv::Point3f(0,-0.7f,-2.0f)));
-//    setpoints.push_back(stay_waypoint(cv::Point3f(0,-0.7f,-1.3f)));
-//    setpoints.push_back(stay_waypoint(cv::Point3f(0,-0.7f,-2.3f)));
-
-    setpoints.push_back(waypoint(cv::Point3f(0,-1.0f,-1.3f),100));
 
     //    setpoints.push_back(flower_waypoint(cv::Point3f(0,-1.5f,-2.0f)));
-//    setpoints.push_back(brick_waypoint(cv::Point3f(0,-1.f,-2.0f)));
+    //    setpoints.push_back(brick_waypoint(cv::Point3f(0,-1.f,-2.0f)));
 
     setpoints.push_back(landing_waypoint());
 
@@ -329,8 +330,13 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_reset_heading: {
             _dctrl->flight_mode(DroneController::fm_reset_heading);
-            _trackers->dronetracker()->reset_heading();
-            if(_trackers->dronetracker()->check_heading() == true && norm(_trackers->dronetracker()->Last_track_data().vel()) < 0.05){
+            _trackers->dronetracker()->detect_heading();
+            cv::Point3f err = _trackers->dronetracker()->Last_track_data().pos() - _trackers->dronetracker()->drone_landing_location();
+            err.y = 0;
+            float horizontal_err = normf(err);
+            if(_dctrl->check_smooth_heading()
+                && _trackers->dronetracker()->check_heading()
+                && horizontal_err < 0.03f){
                 _navigation_status = ns_land;
             }
             break;
@@ -340,10 +346,8 @@ void DroneNavigation::update(double time) {
             _navigation_status = ns_landing;
             [[fallthrough]];
         } case ns_landing: {
-            track_data data = _trackers->dronetracker ()->Last_track_data ();
-            if (data.pos ().y <= _trackers->dronetracker()->drone_landing_location ().y + 0.05f || !data.pos_valid)
+            if (_dctrl->flight_mode() == "fm_inactive")
                 _navigation_status = ns_landed;
-
             if (_nav_flight_mode == nfm_hunt && _iceptor.insect_in_range())
                 _navigation_status = ns_start_the_chase;
             if (_nav_flight_mode == nfm_manual)
@@ -351,7 +355,6 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_landed: {
             wpid = 0;
-            _dctrl->flight_mode(DroneController::fm_inactive);
             _navigation_status = ns_wait_after_landing;
             landed_time = time;
             [[fallthrough]];

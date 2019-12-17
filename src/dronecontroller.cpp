@@ -50,6 +50,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
         createTrackbar("d_v_roll", "Control", &kd_v_roll, 100);
         createTrackbar("d_v_pitch", "Control", &kd_v_pitch, 100);
         createTrackbar("d_v_throttle", "Control", &kd_v_throttle, 200);
+
     }
 
     hoverthrottle = dparams.initial_hover_throttle;
@@ -336,7 +337,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
             float burn_duration;
             std::tie (std::ignore, std::ignore,burn_duration,burn_direction,traj) = calc_burn(data_drone.state,data_target_new.state,aim_duration);
 
-//            cout << "burn_duration: " << burn_duration << endl;
+            //            cout << "burn_duration: " << burn_duration << endl;
 
             if (trajectory_in_view(traj,CameraVolume::strict) && burn_duration < 0.2f && burn_duration > 0.01f && false) {
                 std::vector<state_data> traj_back;
@@ -359,15 +360,13 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         auto_yaw = control_yaw(data_drone, 5); // second argument is the yaw gain, move this to the xml files?
         break;
     } case fm_landing_start: {
-        landing_decent_yoffset = 0;
+        linear_landing_yoffset = 0;
         _flight_mode = fm_landing;
         auto_yaw = JOY_MIDDLE;
         [[fallthrough]];
     } case fm_landing: {
         mode += bf_headless_disabled;
-        landing_decent_yoffset += landing_decent_rate;
-        data_target_new.state.pos.y +=landing_decent_yoffset;
-        control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
+        land(data_drone, data_target_new);
         break;
     } case fm_disarmed: {
         auto_roll = JOY_MIDDLE;
@@ -437,7 +436,6 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
     if (!_fromfile) {
         _rc->queue_commands(throttle,roll,pitch,yaw,mode);
     }
-
 
     control_data c(Throttle(),Roll(),Pitch(),time);
     control_history.push_back(c);
@@ -529,10 +527,7 @@ std::tuple<int,int,float,cv::Point3f> DroneController::calc_directional_burn(sta
         }
     }
 
-    //    auto [roll_deg, pitch_deg] = acc_to_deg(burn_direction);
 
-    //int auto_roll_burn = static_cast<uint16_t>(roundf((roll_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN); // convert to RC commands range
-    //int auto_pitch_burn = static_cast<uint16_t>(roundf((pitch_deg/max_bank_angle+1) / 2.f) * JOY_BOUND_RANGE + JOY_BOUND_MIN);
 
     auto [roll_quat, pitch_quat] = acc_to_quaternion(burn_direction);
     int roll_cmd =  roundf((roll_quat * JOY_BOUND_RANGE / 2.f) + JOY_MIDDLE); // convert to RC commands range
@@ -698,7 +693,7 @@ std::tuple<cv::Point3f, cv::Point3f> DroneController::predict_drone_state_after_
 int DroneController::control_yaw(track_data data_drone, float gain_yaw){
     if(!isnan(data_drone.heading) == 1){
         smooth_heading = yaw_smoother.addSample(data_drone.heading);
-        auto_yaw = JOY_MIDDLE - gain_yaw*smooth_heading*sqrtf(powf(data_drone.state.pos.x,2)+powf(data_drone.state.pos.y,2)+powf(data_drone.state.pos.z,2)); // clockwise is positive
+        auto_yaw = JOY_MIDDLE + gain_yaw*smooth_heading*sqrtf(powf(data_drone.state.pos.x,2)+powf(data_drone.state.pos.y,2)+powf(data_drone.state.pos.z,2)); // clockwise is positive
     }
     else{
         auto_yaw = JOY_MIDDLE;
@@ -868,6 +863,26 @@ std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f de
 }
 
 void DroneController::control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel){
+    int kp_pos_roll_scaled, kp_pos_throttle_scaled, kp_pos_pitch_scaled, ki_pos_roll_scaled, ki_pos_throttle_scaled, ki_pos_pitch_scaled, kd_pos_roll_scaled, kd_pos_throttle_scaled, kd_pos_pitch_scaled;
+    cv::Point3f scale_p = {1.f, 1.f, 1.f};
+    cv::Point3f scale_i = {1.f, 1.f, 1.f};
+    cv::Point3f scale_d = {1.f, 1.f, 1.f};
+    if( norm(setpoint_vel)<0.1 && normf(setpoint_pos-data_drone.pos())<0.2f){
+        scale_d *= 1.1f;
+    }
+    float height_over_ground = data_drone.pos().y-_dtrk->drone_landing_location().y;
+    if(height_over_ground<0.5f){
+        scale_d.z *= 1.06f;
+    }
+    kp_pos_roll_scaled = scale_p.x*kp_pos_roll;
+    kp_pos_throttle_scaled = scale_p.y*kp_pos_throttle;
+    kp_pos_pitch_scaled = scale_p.z*kp_pos_pitch;
+    ki_pos_roll_scaled = scale_i.x*ki_pos_roll;
+    ki_pos_throttle_scaled = scale_i.y*ki_pos_throttle;
+    ki_pos_pitch_scaled = scale_i.z*ki_pos_pitch;
+    kd_pos_roll_scaled = scale_d.x*kd_pos_roll;
+    kd_pos_throttle_scaled = scale_d.y*kd_pos_throttle;
+    kd_pos_pitch_scaled = scale_d.z*kd_pos_pitch;
 
     float depth_gain = 1;
     float dist = powf(data_drone.sposX,2)+powf(data_drone.sposY,2)+powf(data_drone.sposZ,2);
@@ -875,18 +890,30 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
         depth_gain  = 1 + dist * depth_precision_gain;
 
     // Arrange gains (needed because may be updated from trackbars)
-    cv::Point3f kp_pos(kp_pos_roll,kp_pos_throttle,kp_pos_pitch);
+    cv::Point3f kp_pos(kp_pos_roll_scaled,kp_pos_throttle_scaled,kp_pos_pitch_scaled);
     kp_pos /=100.f;
-    cv::Point3f kd_pos(kd_pos_roll,kd_pos_throttle,kd_pos_pitch);
+    cv::Point3f kd_pos(kd_pos_roll_scaled,kd_pos_throttle_scaled,kd_pos_pitch_scaled);
     kd_pos /=100.f;
     kd_pos.z /= depth_gain;
-    cv::Point3f ki_pos(ki_pos_roll,ki_pos_throttle,ki_pos_pitch);
+    cv::Point3f ki_pos(ki_pos_roll_scaled,ki_pos_throttle_scaled,ki_pos_pitch_scaled);
     ki_pos /=1000.f;
     cv::Point3f kp_vel(kp_v_roll,kp_v_throttle,kp_v_pitch);
     kp_vel /= 100.f;
     cv::Point3f kd_vel(kd_v_roll,kd_v_throttle,kd_v_pitch);
     kd_vel /= 100.f;
 
+    // Determine state errors:
+    bool hovering = normf(setpoint_pos-data_drone.pos())<0.2f
+                    && normf(data_drone.vel())<0.5f;
+    if(hovering) {
+        filter_pos_err_x.change_dynamic(1.9f/pparams.fps);
+        filter_pos_err_y.change_dynamic(1.9f/pparams.fps);
+        filter_pos_err_z.change_dynamic(1.9f/pparams.fps);
+    } else {
+        filter_pos_err_x.change_dynamic(1.f/pparams.fps);
+        filter_pos_err_y.change_dynamic(1.f/pparams.fps);
+        filter_pos_err_z.change_dynamic(1.f/pparams.fps);
+    }
     float err_x_filtered = filter_pos_err_x.new_sample(setpoint_pos.x - data_drone.state.pos.x);
     float err_y_filtered = filter_pos_err_y.new_sample(setpoint_pos.y - data_drone.state.pos.y);
     float err_z_filtered = filter_pos_err_z.new_sample(setpoint_pos.z - data_drone.state.pos.z);
@@ -901,10 +928,10 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     cv::Point3f vel_err_p = {err_velx_filtered, err_vely_filtered, err_velz_filtered};
 
     // Increase I error with anti wind up handling:
-    if (fabs(err_x_filtered) < 0.15f )
+    if (fabs(err_x_filtered) < 0.3f )
         pos_err_i.x += err_x_filtered;
     pos_err_i.y += err_y_filtered; // this info can be used to update hover_throttle. However in the current controller hover_throttle is not used.
-    if (fabs(err_z_filtered) < 0.15f )
+    if (fabs(err_z_filtered) < 0.3f )
         pos_err_i.z += err_z_filtered;
 
     float errDx = d_pos_err_x.new_sample (err_x_filtered);
@@ -937,6 +964,59 @@ void DroneController::check_emergency_kill(track_data data_drone, double time) {
     } else {
         kill_cnt_down = 0;
     }
+}
+
+void DroneController::land(track_data data_drone, track_data data_target_new) {
+    cv::Point3f err = data_drone.pos()-data_target_new.state.pos;
+    err.y = 0;
+    float horizontal_err = normf(err);
+    float horizontal_vel = normf( cv::Point3f(data_drone.vel().x, 0.f, data_drone.vel().z));
+    if(horizontal_err<0.020f && horizontal_vel<0.04f && feedforward_landing==false){
+        linear_landing_yoffset -= landing_velocity/static_cast<float>(pparams.fps);
+    }
+    else if((horizontal_err>0.07f) && linear_landing_yoffset > 0 && feedforward_landing==false ){
+        linear_landing_yoffset += 0.2f*landing_velocity/static_cast<float>(pparams.fps);
+    }
+    data_target_new.state.pos.y -= linear_landing_yoffset;
+
+    if(data_drone.pos_valid && !feedforward_landing){
+        control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
+        auto_yaw = control_yaw(data_drone, 5);
+
+        previous_drone_data = data_drone;
+
+        if(data_drone.pos().y < _dtrk->drone_landing_location().y+0.05f) {
+            feedforward_landing = true;
+            calc_ff_landing();
+            landing_time = 1.f/pparams.fps;
+        }
+    } else {
+        if(feedforward_landing==false){
+            feedforward_landing = true; // Stay in feed forward landing once tracking is lost
+            calc_ff_landing();
+        }
+
+        landing_time += 1.f/pparams.fps;
+        if(landing_time > feedforward_land_time) {
+            _flight_mode = fm_inactive;
+        }
+    }
+}
+
+void DroneController::calc_ff_landing(){
+    landing_time = 0;
+    float est_height_over_ground = previous_drone_data.pos().y+(previous_drone_data.vel().y*1.f/pparams.fps)-_dtrk->drone_landing_location().y;
+    float velocity_before_ground = landing_velocity;
+    if(previous_drone_data.state.vel.y < landing_velocity)
+        velocity_before_ground = previous_drone_data.state.vel.y;
+
+    float acc_ff_landing = powf(velocity_before_ground,2)/(2*est_height_over_ground);
+    feedforward_land_time = -previous_drone_data.state.vel.y/acc_ff_landing;
+
+    //    auto_roll = JOY_MIDDLE;
+    //    auto_pitch = JOY_MIDDLE;
+    auto_yaw = JOY_MIDDLE;
+    auto_throttle = thrust_to_throttle((acc_ff_landing+GRAVITY)/thrust)*0.95f;
 }
 
 void DroneController::read_joystick(void) {

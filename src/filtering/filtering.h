@@ -28,9 +28,47 @@ public:
         y = y0;
     }
 
+    void change_dynamic(float new_time_constant){
+        time_constant_factor = 1 / (new_time_constant/sample_time +1); //https://de.wikipedia.org/wiki/PT1-Glied
+    }
+
     float new_sample(float input){
         y = time_constant_factor*(K*input - y) + y; //https://de.wikipedia.org/wiki/PT1-Glied
         return y;
+    }
+};
+
+class Tf_PT2_f{
+private:
+    float yk, yk1, yk2;
+    float sample_time;
+    float K, T1, T2;
+
+public:
+    void init(float init_sample_time, float init_K, float init_T1, float init_T2) {
+        sample_time = init_sample_time;
+        K = init_K;
+        T1 = init_T1;
+        T2 = init_T2;
+    }
+
+    float new_sample(float uk){
+        yk2 = yk1;
+        yk1 = yk;
+        yk = uk*K*powf(sample_time, 2) + yk1*(2*T1*T2+(T1+T2)*sample_time) - yk2*T1*T2;
+        yk /= T1*T2 + (T1+T2)*sample_time + powf(sample_time, 2);
+
+        return yk;
+    }
+
+    void dynamic(float new_T1, float new_T2){
+        T1 = new_T1;
+        T2 = new_T2;
+    }
+
+    void internal_states(float init_yk1, float init_yk2){
+        yk = init_yk1;
+        yk1 = init_yk2;
     }
 };
 

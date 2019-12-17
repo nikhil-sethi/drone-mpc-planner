@@ -88,7 +88,6 @@ private:
     void serialize_settings();
 
     double time_initial_reset_heading = 0;
-    double time_reset_heading = 0;
     double landed_time = 0;
     nav_flight_modes _nav_flight_mode;
 
@@ -116,7 +115,7 @@ private:
     struct landing_waypoint : waypoint{
         landing_waypoint(){
             xyz = cv::Point3f(0,.5f,0); // 1 meter over, relative to the startup location
-            threshold_mm = 80;
+            threshold_mm = 50;
             mode = fm_landing;
         }
     };

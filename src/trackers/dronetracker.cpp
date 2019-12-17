@@ -103,14 +103,13 @@ void DroneTracker::track(double time, bool drone_is_active) {
         else if (!_tracking)
             _drone_tracking_status = dts_detecting;
         break;
-    } case dts_reset_heading: {
+    } case dts_detect_heading: {
         ItemTracker::track(time);
         update_drone_prediction();
         _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_item.size*1.2f*pparams.imscalef);
         find_heading = true;
         break;
     } case dts_landing_init: {
-        find_heading = false;
         ignores_for_other_trkrs.push_back(IgnoreBlob(drone_startup_im_location(),_drone_blink_im_size*5,time+landing_ignore_timeout, IgnoreBlob::landing_spot));
         _drone_tracking_status = dts_landing;
         [[fallthrough]];
@@ -306,7 +305,6 @@ float DroneTracker::yaw_heading(cv::Mat left, cv::Mat right){ // Heading positiv
     cv::Point2f COG_l = cv::Point2f(static_cast<float>(mo_l.m10) / static_cast<float>(mo_l.m00), static_cast<float>(mo_l.m01) / static_cast<float>(mo_l.m00));
     cv::Moments mo_r = moments(right,true);
     cv::Point2f COG_r = cv::Point2f(static_cast<float>(mo_r.m10) / static_cast<float>(mo_r.m00), static_cast<float>(mo_r.m01) / static_cast<float>(mo_r.m00));
-
     heading = COG_l.y-COG_r.y;
     return heading;
 }
@@ -326,12 +324,14 @@ float DroneTracker::calc_heading(BlobProps * pbs, bool inspect_blob){ // Set ins
         }
 
         cv::Mat mask_big = get_big_blob(mask_erode, 4);
-        if(inspect_blob==true){
-            cout<<"New Drone Mask: "<<endl;
-            cout<<mask_big<<endl;
+        int nrnonzero = countNonZero(mask_big);
+        if(nrnonzero > 1){
+            if(inspect_blob==true){
+                cout<<"New Drone Mask: "<<endl;
+                cout<<mask_big<<endl;
+            }
         }
 
-        int nrnonzero = countNonZero(mask_big);
         cv::Mat splitted_mask_left, splitted_mask_right;
         if(nrnonzero > 1){
             splitted_mask_left = split_mask_half(mask_big, leftside);

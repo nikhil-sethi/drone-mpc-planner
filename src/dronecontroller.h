@@ -220,6 +220,9 @@ private:
     std::tuple<float,float> acc_to_quaternion(cv::Point3f acc);
 
     void check_emergency_kill(track_data, double time);
+    void land(track_data data_drone, track_data data_target_new);
+    void calc_ff_landing();
+    void update_thrust_during_hovering(track_data data_drone, double time);
 
     cv::Point3f pos_err_i;
     int kp_pos_roll, kp_pos_throttle, kp_pos_pitch, ki_pos_roll, ki_pos_throttle, ki_pos_pitch, kd_pos_roll, kd_pos_throttle, kd_pos_pitch;
@@ -245,8 +248,12 @@ private:
     void deserialize_settings();
     void serialize_settings();
 
-    float landing_decent_yoffset = 0.f;
-    float landing_decent_rate = -0.005f;
+    float linear_landing_yoffset = 0.f;
+    float landing_velocity = -.15f;
+    bool feedforward_landing = false;
+    track_data previous_drone_data;
+    double feedforward_land_time;
+    double landing_time;
 
     inline state_data set_recoveryState(cv::Point3f position){
         state_data rt;
@@ -259,7 +266,6 @@ private:
 
 public:
     std::string flight_submode_name = "";
-
     void flight_mode(flight_modes f){
         _flight_mode = f;
     }
@@ -279,11 +285,9 @@ public:
             return true;
         } else
             return false;
-
-
     }
 
-    int manual_johson = 0;
+    bool check_smooth_heading() { return (fabs(smooth_heading)<0.035f);}
 
     joy_states Joy_State() {
         return _joy_state;

@@ -145,11 +145,11 @@ bool CameraVolume::in_view(cv::Point3f p,float hysteresis_margin){
 
     // Attention check the negative case!
     if( // !top_check ||
-            !front_check
-            || !left_check
-            || !right_check
-            || !bottom_check
-            || !back_check)
+        !front_check
+        || !left_check
+        || !right_check
+        || !bottom_check
+        || !back_check)
         return false;
     else
         return true;

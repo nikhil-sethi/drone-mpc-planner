@@ -74,22 +74,22 @@ enum video_mode {
     video_bag
 };
 static const char* video_mode_str[] = {"video_disabled",
-                                       "video_mp4",
-                                       "video_stream",
-                                       "video_mp4_opencv",
-                                       "video_bag"
-                                       "" // must be the last entry! (check in serializer)
-                                      };
+    "video_mp4",
+    "video_stream",
+    "video_mp4_opencv",
+    "video_bag"
+    "" // must be the last entry! (check in serializer)
+};
 enum rc_type {
     rc_none = 0,
     rc_devo,
     rc_xlite
 };
 static const char* rc_type_str[] = {"rc_none",
-                                    "rc_devo",
-                                    "rc_xlite"
-                                    "" // must be the last entry! (check in serializer)
-                                   };
+    "rc_devo",
+    "rc_xlite"
+    "" // must be the last entry! (check in serializer)
+};
 enum tx_protocol {
     tx_none = 0,
     tx_dsmx,
@@ -98,12 +98,12 @@ enum tx_protocol {
     tx_frskyd16
 };
 static const char* tx_protocol_str[] = {"tx_none",
-                                        "tx_dsmx",
-                                        "tx_cx10",
-                                        "tx_frskyd8",
-                                        "tx_frskyd16"
-                                        "" // must be the last entry! (check in serializer)
-                                       };
+    "tx_dsmx",
+    "tx_cx10",
+    "tx_frskyd8",
+    "tx_frskyd16"
+    "" // must be the last entry! (check in serializer)
+};
 enum drone_type {
     drone_none,
     drone_trashcan,
@@ -112,12 +112,12 @@ enum drone_type {
     drone_cx10
 };
 static const char* drone_type_str[] = {"drone_none",
-                                       "drone_trashcan",
-                                       "drone_tinywhoop_d16",
-                                       "drone_tinywhoop_d8",
-                                       "drone_cx10",
-                                       "" // must be the last entry! (check in serializer)
-                                      };
+    "drone_trashcan",
+    "drone_tinywhoop_d16",
+    "drone_tinywhoop_d8",
+    "drone_cx10",
+    "" // must be the last entry! (check in serializer)
+};
 
 static const char* hunt_volume_check_names[] = {"HV_Unknown",
                                                 "HV_OK",

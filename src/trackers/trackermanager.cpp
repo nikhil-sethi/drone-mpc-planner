@@ -133,7 +133,6 @@ void TrackerManager::update_static_ignores() {
     }
     if (landingspot_ignore_found) // tmp solution until landingspot itemtracker is made
         _dtrkr->ignores_for_me.push_back(landingspot);
-
 }
 
 void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) {

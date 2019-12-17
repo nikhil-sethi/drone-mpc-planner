@@ -12,7 +12,7 @@ static const char* drone_tracking_state_names[] = { "dts_init",
                                                    "dts_detecting_takeoff",
                                                    "dts_detecting",
                                                    "dts_detected",
-                                                   "dts_reset_heading",
+                                                   "dts_detect_heading",
                                                    "dts_landing_init",
                                                    "dts_landing"};
 class DroneTracker : public ItemTracker {
@@ -27,7 +27,7 @@ private:
 
     bool find_heading = false;
     float heading;
-    const float landing_heading_criteria = 0.005;
+    const float landing_heading_criteria = 0.05;
 
     enum drone_tracking_states {
         dts_init = 0,
@@ -36,7 +36,7 @@ private:
         dts_detecting_takeoff,
         dts_detecting,
         dts_detected,
-        dts_reset_heading,
+        dts_detect_heading,
         dts_landing_init,
         dts_landing
     };
@@ -121,7 +121,7 @@ public:
     void track(double time, bool drone_is_active);
 
     void land() {_drone_tracking_status = dts_landing_init;}
-    void reset_heading() {_drone_tracking_status = dts_reset_heading;}
+    void detect_heading() {_drone_tracking_status = dts_detect_heading;}
     bool check_heading() { return ((fabs(heading)<landing_heading_criteria) && (fabs(heading)!=0));}
 
     void control_predicted_drone_location(cv::Point2f drone_control_predicted_image_location, cv::Point3f drone_control_predicted_world_location){
