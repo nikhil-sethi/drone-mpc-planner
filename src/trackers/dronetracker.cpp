@@ -142,18 +142,14 @@ ItemTracker::BlobWorldProps DroneTracker::calc_world_item(BlobProps * pbs, doubl
         if (dt<0)
             dt=0;
 
-        cv::Point3f expected_drone_location = _drone_blink_world_location;
-        expected_drone_location.y+= 0.5f*dparams.full_bat_and_throttle_take_off_acc * powf(dt,2);
-
-        float err_y = wbp.y - expected_drone_location.y;
-        float err_pos = static_cast<float>(norm(expected_drone_location - cv::Point3f(wbp.x,wbp.y,wbp.z)));
+        float err_pos = static_cast<float>(norm(_drone_blink_world_location - cv::Point3f(wbp.x,wbp.y,wbp.z)));
         float dy = wbp.y - _drone_blink_world_location.y;
 
         // only accept the drone blob when
         // 1) it is 10cm up in the air, because we then have a reasonable good seperation and can calculate the state
         // 2) it is reasonably close to the prediciton
         float dy_takeoff_detected = 0.12f;
-        if (fabs(err_y) > 1.f || err_pos > 1.f || dy < dy_takeoff_detected) {
+        if (err_pos >= InsectTracker::new_tracker_drone_ignore_zone_size || dy < dy_takeoff_detected) {
             wbp.valid = false;
             takeoff_detection_dy_prev = dy;
             takeoff_detection_dt_prev = dt;

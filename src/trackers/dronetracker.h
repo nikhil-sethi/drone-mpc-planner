@@ -1,5 +1,6 @@
 #pragma once
 #include "itemtracker.h"
+#include "insecttracker.h"
 #include "tinyxml/XMLSerialization.h"
 
 /*
