@@ -204,8 +204,8 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
             _flight_mode = fm_1g;
         break;
     }  case fm_1g: {
-        auto_roll = JOY_MIDDLE;
-        auto_pitch = JOY_MIDDLE;
+//        auto_roll = JOY_MIDDLE;
+//        auto_pitch = JOY_MIDDLE;
 
         // Wait until velocity of drone after take-off is constant, then estimate this velocity using sufficient samples
         if (static_cast<float>(time - start_takeoff_burn_time) > auto_burn_duration + effective_burn_spin_down_duration + transmission_delay_duration - 1.f / pparams.fps){
@@ -323,12 +323,13 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
 
         [[fallthrough]];
     } case fm_flying_pid: {
-
-        //adapt_reffilter_dynamic(data_drone, data_target);
-        cv::Point3f filtered_setpoint_pos = pos_reference_filter.new_sample(data_target_new.pos());
-        cv::Point3f filtered_setpoint_vel;
-        std::tie(filtered_setpoint_pos, filtered_setpoint_vel) = keep_in_volume_check(data_drone, filtered_setpoint_pos, data_target_new.vel()); // Setpoint changes due to keep in volume validation shall not be filtered. The drone must always react fast to these changes.
-        control_model_based(data_drone, filtered_setpoint_pos,filtered_setpoint_vel);
+        if(data_drone.pos_valid){
+            //adapt_reffilter_dynamic(data_drone, data_target);
+            cv::Point3f filtered_setpoint_pos = pos_reference_filter.new_sample(data_target_new.pos());
+            cv::Point3f filtered_setpoint_vel;
+            std::tie(filtered_setpoint_pos, filtered_setpoint_vel) = keep_in_volume_check(data_drone, filtered_setpoint_pos, data_target_new.vel()); // Setpoint changes due to keep in volume validation shall not be filtered. The drone must always react fast to these changes.
+            control_model_based(data_drone, filtered_setpoint_pos,filtered_setpoint_vel);
+        }
 
         //check if we can go back to burning:
         if (data_drone.pos_valid && data_drone.vel_valid && _joy_state!=js_waypoint){
@@ -996,7 +997,7 @@ void DroneController::land(track_data data_drone, track_data data_target_new) {
             calc_ff_landing();
         }
 
-        landing_time += 1.f/pparams.fps;
+        landing_time += 1.L/pparams.fps;
         if(landing_time > feedforward_land_time) {
             _flight_mode = fm_inactive;
         }
