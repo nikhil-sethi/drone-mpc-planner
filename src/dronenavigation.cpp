@@ -325,7 +325,7 @@ void DroneNavigation::update(double time) {
         } case ns_initial_reset_heading: {
             _dctrl->flight_mode(DroneController::fm_initial_reset_heading);
             if(time-time_initial_reset_heading>0.5){
-                _navigation_status = ns_reset_heading;
+                _navigation_status = ns_land;
             }
             break;
         } case ns_reset_heading: {
@@ -343,6 +343,7 @@ void DroneNavigation::update(double time) {
         } case ns_land: {
             _dctrl->flight_mode(DroneController::fm_landing_start);
             _trackers->dronetracker()->land();
+            _trackers->dronetracker()->detect_heading();
             _navigation_status = ns_landing;
             [[fallthrough]];
         } case ns_landing: {
