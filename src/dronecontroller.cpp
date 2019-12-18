@@ -323,13 +323,14 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
 
         [[fallthrough]];
     } case fm_flying_pid: {
-        if(data_drone.pos_valid){
-            //adapt_reffilter_dynamic(data_drone, data_target);
-            cv::Point3f filtered_setpoint_pos = pos_reference_filter.new_sample(data_target_new.pos());
-            cv::Point3f filtered_setpoint_vel;
-            std::tie(filtered_setpoint_pos, filtered_setpoint_vel) = keep_in_volume_check(data_drone, filtered_setpoint_pos, data_target_new.vel()); // Setpoint changes due to keep in volume validation shall not be filtered. The drone must always react fast to these changes.
-            control_model_based(data_drone, filtered_setpoint_pos,filtered_setpoint_vel);
+        if(!data_drone.pos_valid){
+            data_drone.state.pos = _dtrk->drone_startup_location ();
         }
+        //adapt_reffilter_dynamic(data_drone, data_target);
+        cv::Point3f filtered_setpoint_pos = pos_reference_filter.new_sample(data_target_new.pos());
+        cv::Point3f filtered_setpoint_vel;
+        std::tie(filtered_setpoint_pos, filtered_setpoint_vel) = keep_in_volume_check(data_drone, filtered_setpoint_pos, data_target_new.vel()); // Setpoint changes due to keep in volume validation shall not be filtered. The drone must always react fast to these changes.
+        control_model_based(data_drone, filtered_setpoint_pos,filtered_setpoint_vel);
 
         //check if we can go back to burning:
         if (data_drone.pos_valid && data_drone.vel_valid && _joy_state!=js_waypoint){
