@@ -869,8 +869,9 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     cv::Point3f scale_p = {1.f, 1.f, 1.f};
     cv::Point3f scale_i = {1.f, 1.f, 1.f};
     cv::Point3f scale_d = {1.f, 1.f, 1.f};
-    if( norm(setpoint_vel)<0.1 && normf(setpoint_pos-data_drone.pos())<0.2f){
+    if( norm(data_drone.state.vel)<0.1 && norm(setpoint_vel)<0.1 && normf(setpoint_pos-data_drone.pos())<0.2f){
         scale_d *= 1.1f;
+        scale_i *= 1.1f;
     }
     float height_over_ground = data_drone.pos().y-_dtrk->drone_landing_location().y;
     if(height_over_ground<0.5f){
@@ -973,10 +974,10 @@ void DroneController::land(track_data data_drone, track_data data_target_new) {
     err.y = 0;
     float horizontal_err = normf(err);
     float horizontal_vel = normf( cv::Point3f(data_drone.vel().x, 0.f, data_drone.vel().z));
-    if(horizontal_err<0.020f && horizontal_vel<0.04f && feedforward_landing==false){
+    if(horizontal_err<0.060f && horizontal_vel<0.04f && feedforward_landing==false){
         linear_landing_yoffset -= landing_velocity/static_cast<float>(pparams.fps);
     }
-    else if((horizontal_err>0.07f) && linear_landing_yoffset > 0 && feedforward_landing==false ){
+    else if((horizontal_err>0.13f) && linear_landing_yoffset > 0 && feedforward_landing==false ){
         linear_landing_yoffset += 0.2f*landing_velocity/static_cast<float>(pparams.fps);
     }
     data_target_new.state.pos.y -= linear_landing_yoffset;
