@@ -325,6 +325,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
     } case fm_flying_pid: {
         if(!data_drone.pos_valid){
             data_drone.state.pos = _dtrk->drone_startup_location ();
+            pos_err_i = {0,0,0};
         }
         //adapt_reffilter_dynamic(data_drone, data_target);
         cv::Point3f filtered_setpoint_pos = pos_reference_filter.new_sample(data_target_new.pos());
@@ -869,6 +870,9 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     cv::Point3f scale_p = {1.f, 1.f, 1.f};
     cv::Point3f scale_i = {1.f, 1.f, 1.f};
     cv::Point3f scale_d = {1.f, 1.f, 1.f};
+    if(!data_drone.pos_valid){
+        scale_p *= 0.8;
+    }
     if( norm(data_drone.state.vel)<0.1 && norm(setpoint_vel)<0.1 && normf(setpoint_pos-data_drone.pos())<0.2f){
         scale_d *= 1.1f;
         scale_i *= 1.1f;
