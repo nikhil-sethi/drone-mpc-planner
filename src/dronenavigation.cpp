@@ -325,7 +325,7 @@ void DroneNavigation::update(double time) {
         } case ns_initial_reset_heading: {
             _dctrl->flight_mode(DroneController::fm_initial_reset_heading);
             if(time-time_initial_reset_heading>0.5){
-                _navigation_status = ns_land;
+                _navigation_status = ns_reset_heading;
             }
             break;
         } case ns_reset_heading: {
@@ -336,7 +336,7 @@ void DroneNavigation::update(double time) {
             float horizontal_err = normf(err);
             if(_dctrl->check_smooth_heading()
                 && _trackers->dronetracker()->check_heading()
-                && horizontal_err < 0.03f){
+                && horizontal_err < 0.3f){
                 _navigation_status = ns_land;
             }
             break;
