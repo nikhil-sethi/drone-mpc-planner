@@ -141,9 +141,6 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
     for (auto trkr : _trackers)
         trkr->item_invalidize();
 
-    if (_blobs.size()>1 && time > 80)
-        std::cout << "hoer" << std::endl;
-
     if (_blobs.size()>0) {
         //init keypoints list
         std::vector<processed_blobs> pbs;
