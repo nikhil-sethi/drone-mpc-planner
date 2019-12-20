@@ -1006,7 +1006,7 @@ void DroneController::land(track_data data_drone, track_data data_target_new) {
             calc_ff_landing();
         }
 
-        landing_time += 1.L/pparams.fps;
+        landing_time += 1./pparams.fps;
         if(landing_time > feedforward_land_time) {
             _flight_mode = fm_inactive;
         }
