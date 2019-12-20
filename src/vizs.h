@@ -34,7 +34,7 @@ private:
     DroneTracker *_dtrkr;
     InsectTracker *_itrkr;
     TrackerManager * _trackers;
-    DroneNavigation *_dnav;
+    navigation::DroneNavigation *_dnav;
     MultiModule *_rc;
     DronePredictor *_dprdct;
 
@@ -174,7 +174,7 @@ public:
     void paint();
     void add_plot_sample(void);
     void update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, double time, bool draw_plots);
-    void init(VisionData * visdat, TrackerManager *imngr, DroneController *dctrl, DroneNavigation *dnav, MultiModule *rc, bool fromfile, DronePredictor *dprdct);
+    void init(VisionData * visdat, TrackerManager *imngr, DroneController *dctrl, navigation::DroneNavigation *dnav, MultiModule *rc, bool fromfile, DronePredictor *dprdct);
     void close();
 
 };

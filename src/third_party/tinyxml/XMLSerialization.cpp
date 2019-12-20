@@ -273,12 +273,12 @@ void Serializable::Deserialize(Serializable *classItem, tinyxml2::XMLDocument *c
         {
             if ((*it_collection)->getCollectionName()==collectionName)
             {
-                __attribute__((unused)) tinyxml2::XMLElement *classNode2 = collectionNode->FirstChildElement("Class");
-                while (classNode!=NULL)
+                tinyxml2::XMLElement *classNode_in_collection = collectionNode->FirstChildElement("Class");
+                while (classNode_in_collection!=NULL)
                 {
                     Serializable *newItem = (*it_collection)->newElement();
-                    Serializable::Deserialize(newItem, classDoc, classNode);
-                    classNode = classNode->NextSiblingElement("Class");
+                    Serializable::Deserialize(newItem, classDoc, classNode_in_collection);
+                    classNode_in_collection = classNode_in_collection->NextSiblingElement("Class");
                 }
             }
         }

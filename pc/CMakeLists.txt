@@ -48,6 +48,7 @@ include_directories(SYSTEM "${SRC_DIR}/trackers")
 include_directories(SYSTEM "${SRC_DIR}/filtering")
 include_directories(SYSTEM "${SRC_DIR}/logging")
 include_directories(SYSTEM "${SRC_DIR}/cam")
+include_directories(SYSTEM "${SRC_DIR}/navigation")
 include_directories(SYSTEM "${SRC_DIR}/third_party/ros_msgs/")
 
 #************airsim******************
@@ -111,8 +112,8 @@ endif()
 #**************/QML***********
 
 # sources
-FILE(GLOB SRCS "../src/*.cpp" "../src/*.h" "../src/cam/*.cpp" "../src/cam/*.h" "../src/trackers/*.cpp" "../src/trackers/*.h" "../src/filtering/*.cpp" "../src/filtering/*.h" "../src/logging/*.h" "../src/logging/*.cpp" )
-FILE(GLOB THIRD_PARTY_SRCS "../src/third_party/*.h" "../src/third_party/*.hpp" "../src/third_party/*.cpp" "../src/third_party/*.c" "../src/third_party/cereal/*.hpp" "../src/third_party/tinyxml/*.h" "../src/third_party/tinyxml/*.cpp" "../xml/*.xml" "../src/third_party/3dviz/*.cpp" "../src/third_party/3dviz/*.h")
+FILE(GLOB SRCS "../src/*.cpp" "../src/*.h" "../src/navigation/*.cpp" "../src/navigation/*.h" "../src/cam/*.cpp" "../src/cam/*.h" "../src/trackers/*.cpp" "../src/trackers/*.h" "../src/filtering/*.cpp" "../src/filtering/*.h" "../src/logging/*.h" "../src/logging/*.cpp" )
+FILE(GLOB THIRD_PARTY_SRCS "../src/third_party/*.h" "../src/third_party/*.hpp" "../src/third_party/*.cpp" "../src/third_party/*.c" "../src/third_party/cereal/*.hpp" "../src/third_party/tinyxml/*.h" "../src/third_party/tinyxml/*.cpp" "../xml/*.xml" "../xml/flightplans/*.xml" "../src/third_party/3dviz/*.cpp" "../src/third_party/3dviz/*.h")
 
 if(VIZ_3D)
     include_directories("../src/third_party/3dviz/ros_msgs/")

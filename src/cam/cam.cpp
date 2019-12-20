@@ -772,16 +772,14 @@ void Cam::calib_pose(bool also_do_depth){
     cam.stop();
 }
 
-void Cam::init(int argc __attribute__((unused)), char **argv) {
-    std::string datadir = argv[1];
-
+void Cam::init(std::string replay_dir) {
     fromfile=true;
-    calib_rfn = datadir + '/' + calib_rfn;
-    depth_map_rfn = datadir + '/' + depth_map_rfn;
-    depth_unfiltered_map_rfn = datadir + '/' + depth_unfiltered_map_rfn;
-    disparity_map_rfn = datadir + '/' + disparity_map_rfn;
-    brightness_map_rfn = datadir + '/' + brightness_map_rfn;
-    bag_fn = datadir + '/' + bag_fn;
+    calib_rfn = replay_dir + '/' + calib_rfn;
+    depth_map_rfn = replay_dir + '/' + depth_map_rfn;
+    depth_unfiltered_map_rfn = replay_dir + '/' + depth_unfiltered_map_rfn;
+    disparity_map_rfn = replay_dir + '/' + disparity_map_rfn;
+    brightness_map_rfn = replay_dir + '/' + brightness_map_rfn;
+    bag_fn = replay_dir + '/' + bag_fn;
 
     //make sure the origirnam files are not overwritten when playing bags:
     calib_wfn = data_output_dir + calib_rfn;

@@ -68,7 +68,7 @@ std::ofstream logger_insect;
 MultiModule rc;
 DroneController dctrl;
 DronePredictor dprdct;
-DroneNavigation dnav;
+navigation::DroneNavigation dnav;
 TrackerManager trackers;
 Visualizer visualizer;
 Visualizer3D visualizer_3d;
@@ -346,7 +346,7 @@ void handle_key(double time [[maybe_unused]]) {
     case 'o':
         dctrl.blink_by_binding(false);
         dctrl.LED(true);
-        dnav.nav_flight_mode(DroneNavigation::nfm_manual);
+        dnav.nav_flight_mode(navigation::nfm_manual);
         break;
     case '1':
         init_insect_log(56);
@@ -408,15 +408,15 @@ void handle_key(double time [[maybe_unused]]) {
 #endif
     case 'a':
         rc.arm(bf_armed);
-        dnav.nav_flight_mode(DroneNavigation::nfm_waypoint);
+        dnav.nav_flight_mode(navigation::nfm_waypoint);
         break;
     case 'h':
         rc.arm(bf_armed);
-        dnav.nav_flight_mode(DroneNavigation::nfm_hunt);
+        dnav.nav_flight_mode(navigation::nfm_hunt);
         break;
     case 'd':
         rc.arm(bf_disarmed);
-        dnav.nav_flight_mode(DroneNavigation::nfm_manual);
+        dnav.nav_flight_mode(navigation::nfm_manual);
         break;
     } // end switch key
     key=0;
@@ -532,8 +532,10 @@ void init(int argc, char **argv) {
     uint8_t drone_id;
     std::tie(log_replay_mode ,drone_id) = process_arg(argc,argv);
 
+    std::string replay_dir = "";
     if (log_replay_mode) {
-        logreader.init(string(main_argv[1]));
+        replay_dir = argv[1];
+        logreader.init(replay_dir);
         trackers.init_replay_moth(logreader.replay_moths());
     }
     init_loggers();
@@ -549,13 +551,13 @@ void init(int argc, char **argv) {
 
     /*****Start capturing images*****/
     if (log_replay_mode)
-        cam.init(argc,argv);
+        cam.init(replay_dir);
     else
         cam.init();
 
     visdat.init(cam.Qf, cam.frameL,cam.frameR,cam.camera_angle(),cam.measured_gain(),cam.depth_background_mm); // do after cam update to populate frames
     trackers.init(&logger, &visdat);
-    dnav.init(&logger,&trackers,&dctrl,&visdat, &(cam.camera_volume));
+    dnav.init(&logger,&trackers,&dctrl,&visdat, &(cam.camera_volume),replay_dir);
     dctrl.init(&logger,log_replay_mode,&rc,trackers.dronetracker(), &(cam.camera_volume));
     dprdct.init(&visdat,trackers.dronetracker(),trackers.insecttracker_best(),&dctrl);
 
@@ -645,7 +647,7 @@ int main( int argc, char **argv )
 
     try {
         pparams.deserialize();
-        dparams.deserialize("../../xml/" + string(drone_type_str[pparams.drone]) + ".xml");
+        dparams.deserialize("../../xml/" + string(drone_types_str[pparams.drone]) + ".xml");
     } catch(my_exit const &e) {
         std::cout << "Error: " << e.msg << std::endl;
         return 1;

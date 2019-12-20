@@ -58,7 +58,7 @@ private:
 public:
 
     void init();
-    void init(int argc, char **argv);
+    void init(string replay_dir);
     void close();
     void reset();
 

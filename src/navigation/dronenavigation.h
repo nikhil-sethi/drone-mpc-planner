@@ -7,45 +7,14 @@
 #include "insecttracker.h"
 #include "trackermanager.h"
 #include "interceptor.h"
+#include "navigation.h"
+#include "flightplan.h"
 
-/*
- * This class will navigate a micro drone
- *
- */
-static const char* navigation_status_names[] = {"ns_init",
-                                                "ns_locate_drone",
-                                                "ns_wait_locate_drone",
-                                                "ns_located_drone",
-                                                "ns_wait_for_takeoff",
-                                                "ns_wait_for_insect",
-                                                "ns_takeoff",
-                                                "ns_taking_off",
-                                                "ns_take_off_completed",
-                                                "ns_start_the_chase",
-                                                "ns_chasing_insect_ff",
-                                                "ns_chasing_insect",
-                                                "ns_set_waypoint",
-                                                "ns_approach_waypoint",
-                                                "ns_flower_of_fire",
-                                                "ns_brick_of_fire",
-                                                "ns_goto_landing",
-                                                "ns_initial_reset_heading",
-                                                "ns_reset_heading",
-                                                "ns_land",
-                                                "ns_landing",
-                                                "ns_landed",
-                                                "ns_wait_after_landing",
-                                                "ns_manual",
-                                                "ns_drone_problem"};
+namespace navigation {
 
 class DroneNavigation {
 public:
-    enum nav_flight_modes {
-        nfm_none,
-        nfm_manual,
-        nfm_waypoint,
-        nfm_hunt
-    };
+
 private:
     int v_crcl1 = 250;
     int v_crcl2 = 500;
@@ -54,35 +23,13 @@ private:
     int w_sqr = 600;
     int v_sqr = 100;
 
-    class navigationParameters: public xmls::Serializable
-    {
-    public:
-        xmls::xInt distance_threshold_f;
-        xmls::xInt land_incr_f_mm, autoLandThrottleDecreaseFactor;
-        xmls::xFloat time_out_after_landing;
-
-        navigationParameters() {
-            // Set the XML class name.
-            // This name can differ from the C++ class name
-            setClassName("navigationParameters");
-
-            // Set class version
-            setVersion("1.1");
-
-            // Register members. Like the class name, member names can differ from their xml depandants
-            Register("distance_threshold_f",&distance_threshold_f);
-            Register("land_incr_f_mm",&land_incr_f_mm);
-            Register("autoLandThrottleDecreaseFactor",&autoLandThrottleDecreaseFactor);
-            Register("time_out_after_landing",&time_out_after_landing);
-        }
-    };
-
     int distance_threshold_f;
     int setpoint_slider_X = 250;
     int setpoint_slider_Y = 250;
     int setpoint_slider_Z = 250;
     float time_out_after_landing;
 
+    void deserialize_flightplan(string replay_dir);
     string settings_file = "../../xml/navigation.xml";
     void deserialize_settings();
     void serialize_settings();
@@ -91,55 +38,7 @@ private:
     double landed_time = 0;
     nav_flight_modes _nav_flight_mode;
 
-    enum waypoint_flight_modes {
-        fm_takeoff,
-        fm_flying,
-        fm_flower,
-        fm_brick,
-        fm_wp_stay,
-        fm_landing
-    };
-
-    struct waypoint{
-        waypoint(cv::Point3f p, int distance_threshold_mm) {
-            xyz = p;
-            threshold_mm = distance_threshold_mm;
-            mode  = fm_flying;
-        }
-        cv::Point3f xyz;
-        int threshold_mm;
-        waypoint_flight_modes mode;
-    protected:
-        waypoint(){}
-    };
-    struct landing_waypoint : waypoint{
-        landing_waypoint(){
-            xyz = cv::Point3f(0,.5f,0); // 1 meter over, relative to the startup location
-            threshold_mm = 50;
-            mode = fm_landing;
-        }
-    };
-    struct takeoff_waypoint : waypoint{
-        takeoff_waypoint(){
-            mode = fm_takeoff;
-        }
-    };
-    struct flower_waypoint : waypoint{
-        flower_waypoint(cv::Point3f p) : waypoint(p,0) {
-            mode = fm_flower;
-        }
-    };
-    struct brick_waypoint : waypoint{
-        brick_waypoint(cv::Point3f p) : waypoint(p,0) {
-            mode = fm_brick;
-        }
-    };
-    struct stay_waypoint : waypoint{
-        stay_waypoint(cv::Point3f p) : waypoint(p,0) {
-            mode = fm_wp_stay;
-        }
-    };
-    void next_waypoint(waypoint wp);
+    void next_waypoint(Waypoint wp);
 
 
     enum navigation_states {
@@ -172,8 +71,8 @@ private:
     navigation_states _navigation_status = ns_init;
 
     uint wpid = 0;
-    std::vector<waypoint> setpoints;
-    waypoint * current_setpoint = new landing_waypoint();
+    std::vector<Waypoint> waypoints;
+    Waypoint * current_waypoint = new Waypoint_Landing();
 
 
     double time_located_drone = 0;
@@ -222,11 +121,11 @@ public:
     }
 
     int distance_threshold_mm() {
-        return current_setpoint->threshold_mm;
+        return current_waypoint->threshold_mm;
     }
 
     void manual_trigger_next_wp(){
-        if (wpid < setpoints.size()-1 && _nav_flight_mode == nfm_waypoint ) {
+        if (wpid < waypoints.size()-1 && _nav_flight_mode == nfm_waypoint ) {
             wpid++;
             _navigation_status = ns_set_waypoint;
         }
@@ -239,7 +138,7 @@ public:
     }
 
     void close (void);
-    void init(std::ofstream *logger, TrackerManager * imngr, DroneController *dctrl, VisionData *visdat, CameraVolume *camvol);
+    void init(std::ofstream *logger, TrackerManager * imngr, DroneController *dctrl, VisionData *visdat, CameraVolume *camvol, string replay_dir);
     void update(double time);
     bool disable_insect_detection() {
         return _navigation_status < ns_wait_for_takeoff_command;
@@ -310,3 +209,4 @@ public:
 
     Interceptor get_Interceptor(){return _iceptor;}
 };
+}

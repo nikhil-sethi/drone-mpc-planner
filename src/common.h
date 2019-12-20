@@ -66,52 +66,65 @@ struct bag_video_ended : public std::exception {
     bag_video_ended() {}
 };
 
-enum video_mode {
+static const char* hunt_volume_check_names[] = {
+    "HV_Unknown",
+    "HV_OK",
+    "HV_To_High",
+    "HV_To_Low",
+    "HV_To_Close",
+    "HV_Outside_Cone"
+};
+
+enum video_modes {
     video_disabled = 0,
     video_mp4,
     video_stream,
     video_mp4_opencv,
     video_bag
 };
-static const char* video_mode_str[] = {"video_disabled",
+static const char* video_modes_str[] = {
+    "video_disabled",
     "video_mp4",
     "video_stream",
     "video_mp4_opencv",
     "video_bag"
     "" // must be the last entry! (check in serializer)
 };
-enum rc_type {
+enum rc_types {
     rc_none = 0,
     rc_devo,
     rc_xlite
 };
-static const char* rc_type_str[] = {"rc_none",
+static const char* rc_types_str[] = {
+    "rc_none",
     "rc_devo",
     "rc_xlite"
     "" // must be the last entry! (check in serializer)
 };
-enum tx_protocol {
+enum tx_protocols {
     tx_none = 0,
     tx_dsmx,
     tx_cx10,
     tx_frskyd8,
     tx_frskyd16
 };
-static const char* tx_protocol_str[] = {"tx_none",
+static const char* tx_protocols_str[] = {
+    "tx_none",
     "tx_dsmx",
     "tx_cx10",
     "tx_frskyd8",
     "tx_frskyd16"
     "" // must be the last entry! (check in serializer)
 };
-enum drone_type {
+enum drone_types {
     drone_none,
     drone_trashcan,
     drone_tinywhoop_d16,
     drone_tinywhoop_d8,
     drone_cx10
 };
-static const char* drone_type_str[] = {"drone_none",
+static const char* drone_types_str[] = {
+    "drone_none",
     "drone_trashcan",
     "drone_tinywhoop_d16",
     "drone_tinywhoop_d8",
@@ -119,12 +132,6 @@ static const char* drone_type_str[] = {"drone_none",
     "" // must be the last entry! (check in serializer)
 };
 
-static const char* hunt_volume_check_names[] = {"HV_Unknown",
-                                                "HV_OK",
-                                                "HV_To_High",
-                                                "HV_To_Low",
-                                                "HV_To_Close",
-                                                "HV_Outside_Cone"};
 class CameraVolume{
 public:
     void init(cv::Point3f point_left_top, cv::Point3f point_right_top, cv::Point3f point_left_bottom, cv::Point3f point_right_bottom,
@@ -267,100 +274,98 @@ namespace xmls {
 class xVideo_mode: public MemberBase
 {
 private:
-    void AssignValue(const video_mode value){
-        m_sValue = video_mode_str[value];
+    void AssignValue(const video_modes value){
+        m_sValue = video_modes_str[value];
     };
 public:
-    xVideo_mode() {AssignValue(static_cast<video_mode>(0));};
-    xVideo_mode(video_mode value) {AssignValue(value);};
-    video_mode value() {
+    xVideo_mode() {AssignValue(static_cast<video_modes>(0));};
+    xVideo_mode(video_modes value) {AssignValue(value);};
+    video_modes value() {
         string sHelp =  m_sValue;
         transform(sHelp.begin(), sHelp.end(), sHelp.begin(), ::tolower);
 
-        for (uint i = 0; video_mode_str[i] != string(""); i++) {
-            if (video_mode_str[i] == sHelp)
-                return static_cast<video_mode>(i);
+        for (uint i = 0; video_modes_str[i] != string(""); i++) {
+            if (video_modes_str[i] == sHelp)
+                return static_cast<video_modes>(i);
         }
 
-        return static_cast<video_mode>(0);
+        return static_cast<video_modes>(0);
     };
 
-    xVideo_mode operator=(const video_mode value) {AssignValue(value);return *this;};
+    xVideo_mode operator=(const video_modes value) {AssignValue(value);return *this;};
 };
 
 class xRc_type: public MemberBase
 {
 private:
-    void AssignValue(const rc_type value){
-        m_sValue = rc_type_str[value];
+    void AssignValue(const rc_types value){
+        m_sValue = rc_types_str[value];
     };
 public:
-    xRc_type() {AssignValue(static_cast<rc_type>(0));};
-    xRc_type(rc_type value) {AssignValue(value);};
-    rc_type value() {
+    xRc_type() {AssignValue(static_cast<rc_types>(0));};
+    xRc_type(rc_types value) {AssignValue(value);};
+    rc_types value() {
         string sHelp =  m_sValue;
         transform(sHelp.begin(), sHelp.end(), sHelp.begin(), ::tolower);
 
-        for (uint i = 0; rc_type_str[i] != string(""); i++) {
-            if (rc_type_str[i] == sHelp)
-                return static_cast<rc_type>(i);
+        for (uint i = 0; rc_types_str[i] != string(""); i++) {
+            if (rc_types_str[i] == sHelp)
+                return static_cast<rc_types>(i);
         }
 
-        return static_cast<rc_type>(0);
+        return static_cast<rc_types>(0);
     };
 
-    xRc_type operator=(const rc_type value) {AssignValue(value);return *this;};
+    xRc_type operator=(const rc_types value) {AssignValue(value);return *this;};
 };
 
 class xTx_protocol: public MemberBase
 {
 private:
-    void AssignValue(const tx_protocol value){
-        m_sValue = tx_protocol_str[value];
+    void AssignValue(const tx_protocols value){
+        m_sValue = tx_protocols_str[value];
     };
 public:
-    xTx_protocol() {AssignValue(static_cast<tx_protocol>(0));};
-    xTx_protocol(tx_protocol value) {AssignValue(value);};
-    tx_protocol value() {
+    xTx_protocol() {AssignValue(static_cast<tx_protocols>(0));};
+    xTx_protocol(tx_protocols value) {AssignValue(value);};
+    tx_protocols value() {
         string sHelp =  m_sValue;
         transform(sHelp.begin(), sHelp.end(), sHelp.begin(), ::tolower);
 
-        for (uint i = 0; tx_protocol_str[i] != string(""); i++) {
-            if (tx_protocol_str[i] == sHelp)
-                return static_cast<tx_protocol>(i);
+        for (uint i = 0; tx_protocols_str[i] != string(""); i++) {
+            if (tx_protocols_str[i] == sHelp)
+                return static_cast<tx_protocols>(i);
         }
 
-        return static_cast<tx_protocol>(0);
+        return static_cast<tx_protocols>(0);
     };
 
-    xTx_protocol operator=(const tx_protocol value) {AssignValue(value);return *this;};
+    xTx_protocol operator=(const tx_protocols value) {AssignValue(value);return *this;};
 };
 
 class xDrone_type: public MemberBase
 {
 private:
-    void AssignValue(const drone_type value){
-        m_sValue = drone_type_str[value];
+    void AssignValue(const drone_types value){
+        m_sValue = drone_types_str[value];
     };
 public:
-    xDrone_type() {AssignValue(static_cast<drone_type>(0));};
-    xDrone_type(drone_type value) {AssignValue(value);};
-    drone_type value() {
+    xDrone_type() {AssignValue(static_cast<drone_types>(0));};
+    xDrone_type(drone_types value) {AssignValue(value);};
+    drone_types value() {
         string sHelp =  m_sValue;
         transform(sHelp.begin(), sHelp.end(), sHelp.begin(), ::tolower);
 
-        for (uint i = 0; drone_type_str[i] != string(""); i++) {
-            if (drone_type_str[i] == sHelp)
-                return static_cast<drone_type>(i);
+        for (uint i = 0; drone_types_str[i] != string(""); i++) {
+            if (drone_types_str[i] == sHelp)
+                return static_cast<drone_types>(i);
         }
 
-        return static_cast<drone_type>(0);
+        return static_cast<drone_types>(0);
     };
 
-    xDrone_type operator=(const drone_type value) {AssignValue(value);return *this;};
+    xDrone_type operator=(const drone_types value) {AssignValue(value);return *this;};
 };
-
-
 
 class PatsParameters: public Serializable
 {
@@ -374,16 +379,18 @@ private: xInt _wdt_timeout_us,_darkness_threshold,_fps;
 private: xBool _cam_tuning, _control_tuning, _navigation_tuning,_vision_tuning,_drone_tracking_tuning,_insect_tracking_tuning;
 private: xBool _viz_plots, _viz_tracking;
 private: xInt _imscalef;
+private: xString _flightplan;
 
 public: int wdt_timeout_us,darkness_threshold;
 public: uint fps;
 public: bool insect_logging_mode,watchdog,has_screen;
-public: video_mode video_cuts,video_raw, video_result;
-public: rc_type joystick;
-public: drone_type drone;
+public: video_modes video_cuts,video_raw, video_result;
+public: rc_types joystick;
+public: drone_types drone;
 public: bool cam_tuning, control_tuning, navigation_tuning,vision_tuning,drone_tracking_tuning, insect_tracking_tuning;
 public: bool viz_plots, viz_tracking;
 public: int imscalef;
+public: std::string flightplan;
 
 public: PatsParameters() {
         // Set the XML class name.
@@ -414,6 +421,7 @@ public: PatsParameters() {
         Register("viz_plots",&_viz_plots);
         Register("viz_tracking",&_viz_tracking);
         Register("imscalef",&_imscalef);
+        Register("flightplan",&_flightplan);
 
     }
 public: void deserialize() {
@@ -457,6 +465,7 @@ public: void deserialize() {
         viz_plots = _viz_plots.value();
         viz_tracking = _viz_tracking.value();
         imscalef = _imscalef.value();
+        flightplan = _flightplan.value();
     }
 
 public: void serialize() {
@@ -480,6 +489,7 @@ public: void serialize() {
         _viz_plots = viz_plots;
         _viz_tracking = viz_tracking;
         _imscalef = imscalef;
+        _flightplan= flightplan;
 
         std::string xmlData = toXML();
         std::ofstream outfile = std::ofstream (settings_file);
@@ -502,7 +512,7 @@ public: float hover_throttle_a;
 public: float hover_throttle_b;
 public: int drone_blink_strength;
 public: float blink_period;
-public: tx_protocol tx;
+public: tx_protocols tx;
 public: bool mode3d;
 public: string control;
 public: float spinup_throttle_non3d;
@@ -610,6 +620,7 @@ public: void serialize(std::string filepath) {
         outfile.close();
     }
 };
+
 }
 extern xmls::DroneParameters dparams;
 extern xmls::PatsParameters pparams;

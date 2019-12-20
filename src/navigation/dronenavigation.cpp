@@ -4,7 +4,10 @@
 using namespace cv;
 using namespace std;
 
-void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, DroneController * dctrl, VisionData *visdat, CameraVolume *camvol) {
+namespace navigation {
+
+
+void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, DroneController * dctrl, VisionData *visdat, CameraVolume *camvol,std::string replay_dir) {
     _logger = logger;
     _trackers = trackers;
     _dctrl = dctrl;
@@ -12,46 +15,14 @@ void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, Dro
 
     _iceptor.init(_trackers, visdat, camvol, logger);
 
-    // Load saved navigation paremeters
     deserialize_settings();
-
-    //Waypoints are relative to the camera position. The camera is 0,0,0.
-    //X goes from negative left, to positive right.
-    //Everything below the camera is negative Y, heigher than the camera is positive
-    //Farther away from the camera is negative Z, positive Z should be impossible because the camera can't see that.
-
-    //The flight plan will be repeated indefinetely, unless there is a landing waypoint somewhere in the list.
-
-    // Uncomment for demo:
-    //    setpoints.push_back(stay_waypoint(cv::Point3f(0,-0.7f,-2.0f)));
-    //    setpoints.push_back(stay_waypoint(cv::Point3f(-1,-0.7f,-2.0f)));
-    //    setpoints.push_back(stay_waypoint(cv::Point3f(1,-0.7f,-2.0f)));
-
-    //    setpoints.push_back(stay_waypoint(cv::Point3f(0,-1.2f,-2.0f)));
-    //    setpoints.push_back(stay_waypoint(cv::Point3f(0,-0.4f,-2.0f)));
-
-    //    setpoints.push_back(waypoint(cv::Point3f(0,-1.2f,-1.0f),100));
-
-    //    setpoints.push_back(waypoint(cv::Point3f(0,-0.4f,-1.4f),100)); // last waypoint before landing waypoint
-    setpoints.push_back(waypoint(cv::Point3f(-0.5f,-0.4f,-1.4f),100)); // last waypoint before landing waypoint
-
-
-    //    setpoints.push_back(waypoint(cv::Point3f(-0.5,-0.7f,-1.6f),100));
-
-
-
-    //    setpoints.push_back(flower_waypoint(cv::Point3f(0,-1.5f,-2.0f)));
-    //    setpoints.push_back(brick_waypoint(cv::Point3f(0,-1.f,-2.0f)));
-
-    setpoints.push_back(landing_waypoint());
+    deserialize_flightplan(replay_dir);
 
     if (pparams.navigation_tuning) {
         namedWindow("Nav", WINDOW_NORMAL);
         createTrackbar("X [cm", "Nav", &setpoint_slider_X, 500);
         createTrackbar("Y off", "Nav", &setpoint_slider_Y, 500);
         createTrackbar("Z center]", "Nav", &setpoint_slider_Z, 500);
-        //        createTrackbar("WP id", "Nav", reinterpret_cast<int*>(wpid), setpoints.size()-1);
-        //        createTrackbar("d threshold factor", "Nav", &distance_threshold_f, 10);
 
         createTrackbar("v_crcl1", "Nav", &v_crcl1, 1000);
         createTrackbar("v_crcl2", "Nav", &v_crcl2, 1000);
@@ -67,6 +38,22 @@ void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, Dro
 
     (*_logger) << "nav_state;";
     initialized = true;
+}
+
+void DroneNavigation::deserialize_flightplan(std::string replay_dir){
+    //Waypoints are relative to the camera position. The camera is 0,0,0.
+    //X goes from negative left, to positive right.
+    //Everything below the camera is negative Y, heigher than the camera is positive
+    //Farther away from the camera is negative Z, positive Z should be impossible because the camera can't see that.
+    //The flight plan will be repeated indefinetely, unless there is a landing waypoint somewhere in the list.
+    navigation::XML_FlightPlan fp;
+    if (replay_dir == "") {
+        fp.deserialize(pparams.flightplan);
+        fp.serialize("./logging/flightplan.xml"); // write a copy of the currently used flightplan to the logging dir
+    } else {
+        fp.deserialize(replay_dir + "/flightplan.xml");
+    }
+    waypoints = fp.waypoints();
 }
 
 void DroneNavigation::update(double time) {
@@ -148,7 +135,7 @@ void DroneNavigation::update(double time) {
             else if (_nav_flight_mode == nfm_manual)
                 _navigation_status = ns_manual;
             else if (_dctrl->manual_override_take_off_now() ){
-                next_waypoint(setpoints[wpid]);
+                next_waypoint(waypoints[wpid]);
                 _navigation_status = ns_takeoff;
                 repeat = true;
             }
@@ -249,37 +236,37 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_goto_landing_waypoint;
             break;
         } case ns_goto_landing_waypoint: {
-            next_waypoint(landing_waypoint());
+            next_waypoint(Waypoint_Landing());
             _navigation_status = ns_approach_waypoint;
             break;
         } case ns_set_waypoint: {
-            next_waypoint(setpoints[wpid]);
-            if (current_setpoint->mode == fm_flower)
+            next_waypoint(waypoints[wpid]);
+            if (current_waypoint->mode == wfm_flower)
                 _navigation_status = ns_flower_waypoint;
-            else if(current_setpoint->mode == fm_brick)
+            else if(current_waypoint->mode == wfm_brick)
                 _navigation_status = ns_brick_waypoint;
             else
                 _navigation_status = ns_approach_waypoint;
             break;
         } case ns_approach_waypoint: {
 
-            if (pparams.navigation_tuning && current_setpoint->mode != fm_landing && current_setpoint->mode != fm_takeoff ){
-                setpoint_pos_world.x = setpoints[wpid].xyz.x + (250-setpoint_slider_X)/100.f;
-                setpoint_pos_world.y = setpoints[wpid].xyz.y + (250-setpoint_slider_Y)/100.f;
-                setpoint_pos_world.z = setpoints[wpid].xyz.z + (setpoint_slider_Z-250)/100.f;
+            if (pparams.navigation_tuning && current_waypoint->mode != wfm_landing && current_waypoint->mode != wfm_takeoff ){
+                setpoint_pos_world.x = waypoints[wpid].xyz.x + (250-setpoint_slider_X)/100.f;
+                setpoint_pos_world.y = waypoints[wpid].xyz.y + (250-setpoint_slider_Y)/100.f;
+                setpoint_pos_world.z = waypoints[wpid].xyz.z + (setpoint_slider_Z-250)/100.f;
             }
 
-            if (_dctrl->dist_to_setpoint() *1000 < current_setpoint->threshold_mm * distance_threshold_f
+            if (_dctrl->dist_to_setpoint() *1000 < current_waypoint->threshold_mm * distance_threshold_f
                 && normf(_trackers->dronetracker()->Last_track_data().state.vel) < 1.6f
                 && _trackers->dronetracker()->n_frames_tracking>5)
             {
-                if (current_setpoint->mode == fm_landing) {
+                if (current_waypoint->mode == wfm_landing) {
                     _navigation_status = ns_initial_reset_heading;
                     time_initial_reset_heading = time;
-                } else if (wpid < setpoints.size()) { // next waypoint in flight plan
+                } else if (wpid < waypoints.size()) { // next waypoint in flight plan
                     wpid++;
                     _navigation_status = ns_set_waypoint;
-                } else if (wpid == setpoints.size()){
+                } else if (wpid == waypoints.size()){
                     wpid = 0; // another round
                     _navigation_status = ns_set_waypoint;
                 }
@@ -296,9 +283,9 @@ void DroneNavigation::update(double time) {
 
             cv::Point3f new_pos_setpoint;
             cv::Point3f new_vel_setpoint;
-            new_pos_setpoint.x = current_setpoint->xyz.x + (r_crcl1/100.f) * sinf((v_crcl1/100.f)*timef) + (r_crcl2/100.f) * cosf((v_crcl2/100.f)*timef);
-            new_pos_setpoint.y = current_setpoint->xyz.y;
-            new_pos_setpoint.z = current_setpoint->xyz.z + (r_crcl1/100.f) * cosf((v_crcl1/100.f)*timef) + (r_crcl2/100.f) * sinf((v_crcl2/100.f)*timef);
+            new_pos_setpoint.x = current_waypoint->xyz.x + (r_crcl1/100.f) * sinf((v_crcl1/100.f)*timef) + (r_crcl2/100.f) * cosf((v_crcl2/100.f)*timef);
+            new_pos_setpoint.y = current_waypoint->xyz.y;
+            new_pos_setpoint.z = current_waypoint->xyz.z + (r_crcl1/100.f) * cosf((v_crcl1/100.f)*timef) + (r_crcl2/100.f) * sinf((v_crcl2/100.f)*timef);
             new_vel_setpoint = (new_pos_setpoint - setpoint_pos_world)*static_cast<float>(pparams.fps);
             setpoint_acc_world = (new_vel_setpoint - setpoint_vel_world)*static_cast<float>(pparams.fps);
             setpoint_vel_world = new_vel_setpoint;
@@ -312,7 +299,7 @@ void DroneNavigation::update(double time) {
 
             cv::Point3f new_pos_setpoint;
             cv::Point3f new_vel_setpoint;
-            new_pos_setpoint = square_point (current_setpoint->xyz, static_cast<float>(w_sqr)/1000.f, static_cast<float>(v_sqr)/100.f*timef);
+            new_pos_setpoint = square_point (current_waypoint->xyz, static_cast<float>(w_sqr)/1000.f, static_cast<float>(v_sqr)/100.f*timef);
             std::cout << "brick_setpoint: " << new_pos_setpoint << std::endl;
             new_vel_setpoint = (new_pos_setpoint - setpoint_pos_world)*static_cast<float>(pparams.fps);
             setpoint_acc_world = (new_vel_setpoint - setpoint_vel_world)*static_cast<float>(pparams.fps);
@@ -380,12 +367,12 @@ void DroneNavigation::update(double time) {
     (*_logger) << static_cast<int16_t>(_navigation_status) << ";";
 }
 
-void DroneNavigation::next_waypoint(waypoint wp) {
-    current_setpoint = new waypoint(wp);
-    if (wp.mode == fm_takeoff) {
+void DroneNavigation::next_waypoint(Waypoint wp) {
+    current_waypoint = new Waypoint(wp);
+    if (wp.mode == wfm_takeoff) {
         cv::Point3f p = _trackers->dronetracker()->drone_startup_location();
         setpoint_pos_world =  p + wp.xyz;
-    }else if (wp.mode == fm_landing ) {
+    }else if (wp.mode == wfm_landing ) {
         cv::Point3f p = _trackers->dronetracker()->drone_landing_location();
         setpoint_pos_world =  p + wp.xyz;
     } else {
@@ -470,4 +457,5 @@ cv::Point3f DroneNavigation::square_point(cv::Point3f center, float width, float
     //float y_offset = width/2 * sin(si/width*2*M_PIf32);
 
     return {center.x+x_offset, center.y+y_offset, center.z+z_offset};
+}
 }
