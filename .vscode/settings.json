@@ -6,5 +6,17 @@
         "Unix Makefiles",
         "Ninja"
     ],
-    "C_Cpp.intelliSenseEngine": "Tag Parser"
+    "C_Cpp.intelliSenseEngine": "Tag Parser",
+    "astyle.astylerc": "${workspaceFolder}/config/astylerc",
+    "astyle.cpp.enable": true,
+    "breadcrumbs.enabled": true,
+    "editor.defaultFormatter": "chiehyu.vscode-astyle",
+    "editor.tabSize": 4,
+    "search.exclude": {
+        "${workspaceFolder}/pc/build*/**": true
+    },
+    "search.showLineNumbers": true,
+    "files.associations": {
+        "condition_variable": "cpp"
+    }
 }
