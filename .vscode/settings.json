@@ -1,14 +1,10 @@
 {
-    "files.associations": {
-        "deque": "cpp",
-        "vector": "cpp",
-        "condition_variable": "cpp"
-    },
     "cmake.sourceDirectory": "${workspaceFolder}/pc/",
     "cmake.buildDirectory": "${workspaceFolder}/pc/build-vscode",
     "cmake.configureOnOpen": true,
     "cmake.preferredGenerators":[
         "Unix Makefiles",
         "Ninja"
-    ]
+    ],
+    "C_Cpp.intelliSenseEngine": "Tag Parser"
 }

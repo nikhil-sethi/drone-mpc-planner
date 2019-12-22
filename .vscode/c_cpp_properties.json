@@ -10,7 +10,8 @@
             "configurationProvider": "microsoft.cmake-tools",
             "compilerArgs": [],
             "includePath": [
-                "${workspaceFolder}/src/**"
+                "${workspaceFolder}/src/**",
+                "/usr/include/linux"
             ]
         }
     ],

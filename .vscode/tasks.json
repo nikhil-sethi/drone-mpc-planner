@@ -8,6 +8,9 @@
                 "cwd": "${workspaceRoot}/pc/build-vscode"
             },
             "command": "cmake \"Unix Makefiles\"  ${workspaceRoot}/pc",
+            "problemMatcher": [
+                "$go"
+            ]
         },
         {
             "label": "make",
@@ -21,7 +24,9 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "dependsOn":["cmake"],
+            "dependsOn": [
+                "cmake"
+            ],
             "problemMatcher": [
                 "$go"
             ]
