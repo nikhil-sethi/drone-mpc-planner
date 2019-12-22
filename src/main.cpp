@@ -61,6 +61,8 @@ stopwatch_c stopWatch;
 std::string data_output_dir;
 bool draw_plots = false;
 bool log_replay_mode = false;
+uint8_t drone_id;
+std::string replay_dir;
 std::string logger_fn; //contains filename of current log # for insect logging (same as video #)
 
 std::ofstream logger;
@@ -512,29 +514,33 @@ void init_video_recorders() {
         if (output_video_cuts.init(main_argc,main_argv,pparams.video_cuts,data_output_dir + "insect" + to_string(0) + ".mp4",IMG_W*2,IMG_H,pparams.fps/2, "192.168.1.255",5000,true,false)) {std::cout << "WARNING: could not open cut video " << data_output_dir + "insect" + to_string(0) + ".mp4" << std::endl;}
 }
 
-std::tuple<bool,uint8_t> process_arg(int argc, char **argv){
+std::tuple<bool,bool, std::string,uint8_t> process_arg(int argc, char **argv) {
     main_argc = argc;
     main_argv = argv;
+
+    std::string empty_str = "";
+    int default_drone_id = 1;
+
     if (argc == 2) {
         string s = argv[1];
-        for(uint i=0; i<s.length(); i++){
-            if(!isdigit(s[i])) // check if argument is a number
-                return make_tuple(true,1); // it is not, return replay=true & default drone id
+        if (s.compare("rs_reset") == 0) {
+            return make_tuple(false,true,empty_str,default_drone_id);
+        } else {
+            for(uint i=0; i<s.length(); i++) {
+                if(!isdigit(s[i]))
+                    return make_tuple(true,false,s,default_drone_id);
+            }
+            return make_tuple(false,false,empty_str,std::stoi(s));
         }
-        return make_tuple(false,std::stoi(s));
     } else {
-        return make_tuple(false,1); // no replay, default drone id
+        return make_tuple(false,false,empty_str,default_drone_id);
     }
 }
 
-void init(int argc, char **argv) {
+void init() {
     init_terminal_signals();
-    uint8_t drone_id;
-    std::tie(log_replay_mode ,drone_id) = process_arg(argc,argv);
 
-    std::string replay_dir = "";
     if (log_replay_mode) {
-        replay_dir = argv[1];
         logreader.init(replay_dir);
         trackers.init_replay_moth(logreader.replay_moths());
     }
@@ -633,23 +639,29 @@ void wait_for_dark() {
 
 int main( int argc, char **argv )
 {
-    //manually reset the rs camera from the command line with the rs_reset command
-    if (argc == 2)
-        if (string(argv[1]).compare("rs_reset") == 0){
-            try{
-                cam.reset();
-            } catch(my_exit const &e) {
-                std::cout << "Error: " << e.msg << std::endl;
-                return 1;
-            }
-            return 0;
+    bool realsense_reset;
+    try {
+        std::tie(log_replay_mode, realsense_reset,replay_dir,drone_id) = process_arg(argc,argv);
+    } catch (Exception err) {
+        std::cout << "Error processing command line arguments:" << err.msg << std::endl;
+        return 1;
+    }
+
+    if (realsense_reset) {
+        try {
+            cam.reset();
+        } catch(my_exit const &e) {
+            std::cout << "Error: " << e.msg << std::endl;
+            return 1;
         }
+        return 0;
+    }
 
     try {
-        pparams.deserialize();
+        pparams.deserialize("../../xml/pats.xml");
         dparams.deserialize("../../xml/" + string(drone_types_str[pparams.drone]) + ".xml");
     } catch(my_exit const &e) {
-        std::cout << "Error: " << e.msg << std::endl;
+        std::cout << "Error reading xml settings: " << e.msg << std::endl;
         return 1;
     }
 
@@ -657,7 +669,7 @@ int main( int argc, char **argv )
         wait_for_dark();
 
     try {
-        init(argc,argv);
+        init();
         process_video();
     } catch(bag_video_ended) {
         std::cout << "Video ended" << std::endl;

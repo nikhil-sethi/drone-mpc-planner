@@ -370,7 +370,6 @@ public:
 class PatsParameters: public Serializable
 {
 
-private: std::string settings_file = "../../xml/pats.xml";
 private: xBool _insect_logging_mode,_watchdog,_has_screen;
 private: xVideo_mode _video_cuts,_video_raw, _video_result;
 private: xRc_type _joystick;
@@ -422,9 +421,8 @@ public: PatsParameters() {
         Register("viz_tracking",&_viz_tracking);
         Register("imscalef",&_imscalef);
         Register("flightplan",&_flightplan);
-
     }
-public: void deserialize() {
+public: void deserialize(std::string settings_file) {
         std::cout << "Reading settings from: " << settings_file << std::endl;
         if (file_exist(settings_file)) {
             std::ifstream infile(settings_file);
@@ -468,7 +466,7 @@ public: void deserialize() {
         flightplan = _flightplan.value();
     }
 
-public: void serialize() {
+public: void serialize(std::string settings_file) {
         _wdt_timeout_us = wdt_timeout_us;
         _darkness_threshold = darkness_threshold;
         _has_screen = has_screen;
