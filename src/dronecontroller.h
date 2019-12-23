@@ -313,7 +313,7 @@ public:
         return _flight_mode != fm_take_off_aim &&  _flight_mode != fm_max_burn && _flight_mode != fm_1g;
     }
 
-    bool joy_arm_switch(){
+    betaflight_arming joy_arm_switch(){
         return _joy_arm_switch;
     }
     joy_mode_switch_modes joy_mode_switch(){
@@ -425,9 +425,9 @@ public:
     bool drone_is_active() {
         if ( _flight_mode == fm_inactive || _flight_mode == fm_disarmed)
             return false;
-        else if (_joy_mode_switch == jmsm_manual && joy_throttle > JOY_BOUND_MIN)
+        else if (_joy_mode_switch == jmsm_manual && joy_throttle > JOY_BOUND_MIN && _joy_arm_switch == bf_armed)
             return true;
-        else if (_joy_mode_switch == jmsm_manual && joy_throttle <= JOY_BOUND_MIN)
+        else if ((_joy_mode_switch == jmsm_manual && joy_throttle <= JOY_BOUND_MIN) || _joy_arm_switch == bf_disarmed)
             return false;
         else
             return ((auto_throttle > JOY_BOUND_MIN && _flight_mode != fm_spinup) || _flight_mode == fm_start_takeoff || _flight_mode == fm_take_off_aim || _flight_mode == fm_max_burn || _flight_mode == fm_1g ); //FIXME: check if this goes well if due to extreme control throttle is set to 0

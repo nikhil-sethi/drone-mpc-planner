@@ -1130,7 +1130,7 @@ void DroneController::process_joystick() {
         if (_flight_mode == fm_inactive){
             _manual_override_take_off_now = _joy_takeoff_switch;
         }
-        if (!_joy_arm_switch){
+        if (_joy_arm_switch == bf_disarmed){
             if (!dparams.mode3d)
                 _rc->arm(bf_disarmed);
             _joy_takeoff_switch = false;
