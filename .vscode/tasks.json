@@ -24,11 +24,11 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "dependsOn": [
-                "cmake"
-            ],
             "problemMatcher": [
-                "$go"
+                {
+                    "base":"$gcc",
+                    "fileLocation": ["absolute"],
+                }
             ]
         }
     ]
