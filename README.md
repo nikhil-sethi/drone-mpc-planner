@@ -32,6 +32,16 @@ Host pats1
 ```  
 
 ## Flashing Betaflight:
-dfu-util -s 0x08000000 -a 0 -D trashcan_ori.bin  
-dfu-util -s 0x08000000:413040 -a 0 -U hoer3.bin  
+`dfu-util -s 0x08000000 -a 0 -D trashcan_ori.bin`  
+`dfu-util -s 0x08000000:413040 -a 0 -U newcode.bin`  
 
+## Flashing realsense camera:
+`sudo rs-fw-update -f ~/code/pats/config/Signed_Image_UVC_5_11_6_250.bin`
+
+##Installing correct kernel:
+`sudo apt install linux-headers-4.15.0-55 linux-headers-4.15.0-55-generic linux-image-4.15.0-55-generic linux-modules-4.15.0-55-generic linux-modules-extra-4.15.0-55-generic`  
+
+`sudo nano /etc/default/grub`  
+Change `GRUB_DEFAULT=0` to `GRUB_DEFAULT="Advanced options for Ubuntu>Ubuntu, with Linux 4.15.0-55-generic"`  
+`sudo update-grub`  
+Other known working kernel is 4.18.0.25
