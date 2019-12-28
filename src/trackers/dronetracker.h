@@ -26,7 +26,6 @@ private:
     double landing_ignore_timeout = 5; // TODO: make this dependent on the motion_update_iterator_max
     double taking_off_ignore_timeout = 0.1; // TODO: make this dependent on the motion_update_iterator_max
 
-    bool find_heading = false;
     float heading;
     const float landing_heading_criteria = 0.05;
 
@@ -114,6 +113,7 @@ public:
 
     bool taking_off(){ return _drone_tracking_status == dts_detecting_takeoff_init || _drone_tracking_status == dts_detecting_takeoff;}
     bool inactive(){ return _drone_tracking_status == dts_inactive;}
+    bool correct_heading(){ return _drone_tracking_status == dts_detect_heading;}
 
     bool _manual_flight_mode = false;
     cv::Mat diff_viz;

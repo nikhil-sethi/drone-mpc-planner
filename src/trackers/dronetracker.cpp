@@ -110,7 +110,6 @@ void DroneTracker::track(double time, bool drone_is_active) {
         ItemTracker::track(time);
         update_drone_prediction();
         _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_item.size*1.2f*pparams.imscalef);
-        find_heading = true;
         break;
     } case dts_landing_init: {
         ignores_for_other_trkrs.push_back(IgnoreBlob(drone_startup_im_location(),_drone_blink_im_size*5,time+landing_ignore_timeout, IgnoreBlob::landing_spot));
@@ -163,9 +162,8 @@ void DroneTracker::calc_world_item(BlobProps * pbs, double time) {
             hover_throttle_estimation = dparams.hover_throttle_a*t + dparams.hover_throttle_b ;
             std::cout << "Initialising hover-throttle: " << hover_throttle_estimation << std::endl;
         }
-    }
-    if(find_heading && pbs->world_props.valid){
-        heading = calc_heading(pbs, false); // Set second argument to true to show the masks, otherwise set to false.
+    }else if(correct_heading() && pbs->world_props.valid){
+        heading = calc_heading(pbs, false);
         pbs->world_props.heading = heading;
     }
 }
