@@ -56,7 +56,7 @@ public:
     bool init(VisionData *_visdat);
     void track(double time);
 
-    BlobWorldProps calc_world_item(BlobProps * pbs, double time);
+    void calc_world_item(BlobProps * pbs, double time);
     bool check_ignore_blobs(BlobProps * pbs, double time);
     bool blinking_drone_located() {return _blinking_drone_status >= bds_found;}
 

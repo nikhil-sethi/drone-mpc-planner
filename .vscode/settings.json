@@ -14,5 +14,18 @@
     "search.exclude": {
         "${workspaceFolder}/pc/**": true
     },
-    "search.showLineNumbers": true
+    "search.showLineNumbers": true,
+    "files.associations": {
+        "array": "cpp",
+        "bitset": "cpp",
+        "string_view": "cpp",
+        "initializer_list": "cpp",
+        "regex": "cpp",
+        "utility": "cpp",
+        "*.tcc": "cpp",
+        "fstream": "cpp",
+        "iosfwd": "cpp",
+        "thread": "cpp",
+        "type_traits": "cpp"
+    }
 }

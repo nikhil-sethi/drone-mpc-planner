@@ -88,13 +88,12 @@ void InsectTracker::update_insect_prediction() {
 
 }
 
-ItemTracker::BlobWorldProps InsectTracker::calc_world_item(BlobProps * pbs, double time __attribute__((unused))){
-    auto wbp = calc_world_props_blob_generic(pbs);
-    wbp.valid = wbp.bkg_check_ok && wbp.disparity_in_range & wbp.radius_in_range;
+void InsectTracker::calc_world_item(BlobProps * pbs, double time __attribute__((unused))){
+    calc_world_props_blob_generic(pbs);
+    pbs->world_props.valid = pbs->world_props.bkg_check_ok && pbs->world_props.disparity_in_range & pbs->world_props.radius_in_range;
 
     if (_blobs_are_fused_cnt > 1 * pparams.fps) // if the insect and drone are fused, the drone is accelerating through it and should become seperate again within a limited time
-        wbp.valid = false;
-    return wbp;
+        pbs->world_props.valid = false;
 }
 
 bool InsectTracker::check_ignore_blobs(BlobProps * pbs, double time __attribute__((unused))) {

@@ -36,36 +36,40 @@ public: cv::Scalar tracker_color( ItemTracker * trkr) {
     }
 
     struct processed_blobs {
-        processed_blobs(ItemTracker::BlobProps blob){
-            pt.x = blob.x;
-            pt.y = blob.y;
-            size = blob.radius;
-            pixel_max = blob.pixel_max;
+        processed_blobs(ItemTracker::BlobProps * blob){
+            props = blob;
         }
-        cv::Point2f pt;
-        float size, pixel_max;
+        cv::Point2f pt() {
+            return cv::Point2f(props->x,props->y);
+        }
+        float size() {
+            return props->radius;
+        }
+        float pixel_max() {
+            return props->pixel_max;
+        }
         cv::Mat mask;
-        ItemTracker::BlobProps props() {return ItemTracker::BlobProps (pt,size,pixel_max,mask);}
+        ItemTracker::BlobProps * props;
         std::vector<ItemTracker *> trackers;
         bool tracked() { return trackers.size()>0;}
         bool ignored = false;
         cv::Scalar color() {
             if (trackers.size() == 0 ){
                 if (ignored)
-                    return cv::Scalar(0,128,0);
+                    return cv::Scalar(0,128,0); // dark green
                 else
-                    return cv::Scalar(255,255,55);
+                    return cv::Scalar(255,255,55); // light blue
             } else if (trackers.size()>1)
                 return cv::Scalar(200,255,250);
             ItemTracker * trkr = trackers.at(0);
             if (typeid(*trkr) == typeid(DroneTracker))
-                return cv::Scalar(0,255,0);
+                return cv::Scalar(0,255,0); // green
             else if (typeid(*trkr) == typeid(InsectTracker))
-                return cv::Scalar(0,0,255);
+                return cv::Scalar(0,0,255); // red
             else if (typeid(*trkr) == typeid(ReplayTracker))
-                return cv::Scalar(0,0,180);
+                return cv::Scalar(0,0,180); // dark red
             else if (typeid(*trkr) == typeid(BlinkTracker))
-                return cv::Scalar(255,0,255);
+                return cv::Scalar(255,0,255); // pink
             return cv::Scalar(0,0,0);
         }
     };

@@ -111,12 +111,12 @@ void ItemTracker::init_kalman() {
     cv::setIdentity(kfL.measurementNoiseCov, cv::Scalar(1e-1));
 }
 
-ItemTracker::BlobWorldProps ItemTracker::calc_world_props_blob_generic(BlobProps * pbs){
+void ItemTracker::calc_world_props_blob_generic(BlobProps * pbs){
     BlobWorldProps w;
     cv::Point2f p(pbs->x, pbs->y);
 
-    w.disparity = stereo_match(p,_visdat->diffL,_visdat->diffR,pbs->radius); //TODO: wtf, inputs scaled with pparams.imscalef, but disparity is unscaled?
     p*=pparams.imscalef;
+    w.disparity = stereo_match(p,_visdat->diffL,_visdat->diffR,pbs->radius);
 
     if (w.disparity < min_disparity || w.disparity > max_disparity){
         w.disparity_in_range = false;
@@ -125,7 +125,7 @@ ItemTracker::BlobWorldProps ItemTracker::calc_world_props_blob_generic(BlobProps
 
         std::vector<Point3d> camera_coordinates, world_coordinates;
         camera_coordinates.push_back(Point3d(p.x,p.y,-w.disparity));
-        camera_coordinates.push_back(Point3d(p.x+pbs->radius*pparams.imscalef,p.y,-w.disparity)); // to calc world radius
+        camera_coordinates.push_back(Point3d(p.x+pbs->radius,p.y,-w.disparity)); // to calc world radius
         cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
 
         w.radius = cv::norm(world_coordinates[0]-world_coordinates[1]);
@@ -147,7 +147,7 @@ ItemTracker::BlobWorldProps ItemTracker::calc_world_props_blob_generic(BlobProps
         else
             w.bkg_check_ok = true;
     }
-    return w;
+    pbs->world_props = w;
 }
 
 void ItemTracker::update_world_candidate(){ //TODO: rename
@@ -276,10 +276,10 @@ float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR,
     float rectsizeX = ceil(rectsize*0.5f); // *4.0 results in drone-insect disparity interaction
     float rectsizeY = ceil(rectsize*0.5f);  // *3.0
     int x1,y1,x2,y2;
-    x1 = static_cast<int>((closestL.x-rectsizeX)*pparams.imscalef);
-    x2 = static_cast<int>(2*rectsizeX*pparams.imscalef);
-    y1 = static_cast<int>((closestL.y-rectsizeY)*pparams.imscalef);
-    y2 = static_cast<int>(2*rectsizeY*pparams.imscalef);
+    x1 = static_cast<int>((closestL.x-rectsizeX));
+    x2 = static_cast<int>(2*rectsizeX);
+    y1 = static_cast<int>((closestL.y-rectsizeY));
+    y2 = static_cast<int>(2*rectsizeY);
     if (x1 < 0)
         x1=0;
     else if (x1 >= diffL.cols)

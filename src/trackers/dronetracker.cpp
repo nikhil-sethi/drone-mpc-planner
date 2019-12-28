@@ -128,32 +128,30 @@ void DroneTracker::track(double time, bool drone_is_active) {
     (*_logger) << static_cast<int16_t>(_drone_tracking_status) << ";";
 }
 
-ItemTracker::BlobWorldProps DroneTracker::calc_world_item(BlobProps * pbs, double time) {
-    auto wbp = calc_world_props_blob_generic(pbs);
-    wbp.valid = wbp.bkg_check_ok && wbp.disparity_in_range && wbp.radius_in_range;
+void DroneTracker::calc_world_item(BlobProps * pbs, double time) {
+    calc_world_props_blob_generic(pbs);
+    pbs->world_props.valid = pbs->world_props.bkg_check_ok && pbs->world_props.disparity_in_range && pbs->world_props.radius_in_range;
 
     if (inactive()) {
-        wbp.valid = false;
-        return wbp;
-    } else if (taking_off() && wbp.valid && !_manual_flight_mode) {
+        pbs->world_props.valid = false;
+    } else if (taking_off() && pbs->world_props.valid && !_manual_flight_mode) {
 
         float dt = time - start_take_off_time;
         dt -= dparams.full_bat_and_throttle_spinup_duration;
         if (dt<0)
             dt=0;
 
-        float err_pos = static_cast<float>(norm(_drone_blink_world_location - cv::Point3f(wbp.x,wbp.y,wbp.z)));
-        float dy = wbp.y - _drone_blink_world_location.y;
+        float err_pos = static_cast<float>(norm(_drone_blink_world_location - cv::Point3f(pbs->world_props.x,pbs->world_props.y,pbs->world_props.z)));
+        float dy = pbs->world_props.y - _drone_blink_world_location.y;
 
         // only accept the drone blob when
         // 1) it is 10cm up in the air, because we then have a reasonable good seperation and can calculate the state
         // 2) it is reasonably close to the prediciton
         float dy_takeoff_detected = 0.12f;
         if (err_pos >= InsectTracker::new_tracker_drone_ignore_zone_size || dy < dy_takeoff_detected) {
-            wbp.valid = false;
+            pbs->world_props.valid = false;
             takeoff_detection_dy_prev = dy;
             takeoff_detection_dt_prev = dt;
-            return wbp;
         } else {
             // Interpolate time to the time of dy=dy_takeoff_detected:
             float t = takeoff_detection_dt_prev + (dt - takeoff_detection_dt_prev) / (dy - takeoff_detection_dy_prev)
@@ -163,26 +161,30 @@ ItemTracker::BlobWorldProps DroneTracker::calc_world_item(BlobProps * pbs, doubl
             std::cout << "Initialising hover-throttle: " << hover_throttle_estimation << std::endl;
         }
     }
-    if(find_heading==true){
+    if(find_heading && pbs->world_props.valid){
         heading = calc_heading(pbs, false); // Set second argument to true to show the masks, otherwise set to false.
-        wbp.heading = heading;
+        pbs->world_props.heading = heading;
     }
-    return wbp;
 }
 
-bool DroneTracker::check_ignore_blobs(BlobProps * pbs, double time) {
-
-    if ( this->check_ignore_blobs_generic(pbs)) {
-        for (auto ignore : pbs->ignores){ // TODO: use c+17 filter
+bool DroneTracker::check_ignore_blobs(BlobProps * pbs, double time) { 
+    bool in_im_ignore_zone = this->check_ignore_blobs_generic(pbs);
+    // if the drone takes off towards the camera, we won't get proper blob seperation from the takeoff spot in the image
+    // also, when taking of the drone does cause for some interering reflections around the pad, so these need to be ignored
+    if (in_im_ignore_zone) {
+        calc_world_item(pbs,time);
+        for (auto ignore : pbs->ignores){
             if (ignore.ignore_type == ItemTracker::IgnoreBlob::IgnoreType::takeoff_spot) {
-                auto w = calc_world_item(pbs,time); // TODO: this is called a few times over the same data later in the tracker manager. May that should be streamlined.
-                if (norm(w.pt() - drone_startup_location()) < 0.1)
+                if (pbs->world_props.z > drone_startup_location().z+0.025f) {
+                    return false;
+                } else if (norm(pbs->world_props.pt() - drone_startup_location()) < 0.1) {
                     return true;
-            } else
-                return true;
+                } else {
+                    return true;
+                }
+            }
         }
     }
-
     return false;
 }
 

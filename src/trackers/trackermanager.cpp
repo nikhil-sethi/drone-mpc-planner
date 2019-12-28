@@ -144,8 +144,8 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
     if (_blobs.size()>0) {
         //init keypoints list
         std::vector<processed_blobs> pbs;
-        for (auto blob : _blobs)
-            pbs.push_back(processed_blobs(blob));
+        for (auto & blob : _blobs)
+            pbs.push_back(processed_blobs(&blob));
 
         //first check if there are trackers that were already tracking something, which prediction matches a new keypoint
         for (uint i=0; i<_trackers.size();i++){
@@ -157,12 +157,12 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                 for (uint j=0; j < pbs.size(); j++) {
                     float score =0;
                     //check against static ignore points
-                    ItemTracker::BlobProps tmp = pbs.at(j).props();
-                    bool in_ignore_zone = trkr->check_ignore_blobs(&tmp,j);
+                    ItemTracker::BlobProps *tmp = pbs.at(j).props;
+                    bool in_ignore_zone = trkr->check_ignore_blobs(tmp,j);
                     if (in_ignore_zone)
                         pbs.at(j).ignored = true;
                     if (!in_ignore_zone) {
-                        score  = trkr->score(_blobs.at(j));
+                        score  = trkr->score(*tmp);
                         if (score > best_score){
                             best_score = score;
                             best_score_j = j;
@@ -179,11 +179,9 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                     }
                 }
                 if (best_score >= trkr->score_threshold() ) {
-                    auto wbp = trkr->calc_world_item(&_blobs.at(best_score_j),time);
-                    ItemTracker::WorldItem w(ItemTracker::ImageItem(_blobs.at(best_score_j),wbp.disparity,_visdat->frame_id,best_score,best_score_j),wbp);
-                    if (!w.valid && enable_viz_diff) {
-                        putText(diff_viz,"W",trkr->image_item().pt()*pparams.imscalef,FONT_HERSHEY_SIMPLEX,0.9,tracker_color(trkr));
-                    }
+                    auto blob = &_blobs.at(best_score_j);
+                    trkr->calc_world_item(blob,time);
+                    ItemTracker::WorldItem w(ItemTracker::ImageItem(_blobs.at(best_score_j),blob->world_props.disparity,_visdat->frame_id,best_score,best_score_j),blob->world_props);
                     trkr->world_item(w);
                     pbs.at(best_score_j).trackers.push_back(trkr);
                 }
@@ -199,28 +197,27 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                         if (!pbs.at(j).tracked()){
 
                             //check against static ignore points
-                            ItemTracker::BlobProps tmp = pbs.at(j).props();
-                            bool in_ignore_zone = trkr->check_ignore_blobs(&tmp,j);
-                            if (in_ignore_zone)
+                            auto blob = pbs.at(j).props;
+                            bool in_im_ignore_zone = trkr->check_ignore_blobs(blob,j);
+                            if (in_im_ignore_zone)
                                 pbs.at(j).ignored = true;
 
-
-                            if (!in_ignore_zone) {
+                            if (!in_im_ignore_zone) {
                                 //Check if this blob may be some residual drone motion
                                 //If the insect was lost, it is unlikely that it or another insect pops up
                                 //very close to the drone. So ignore it.
                                 if (typeid(*trkr) == typeid(InsectTracker) && _dtrkr->tracking()) {
-                                    float drone_score = _dtrkr->score(_blobs.at(j));
+                                    float drone_score = _dtrkr->score(*blob);
                                     if (drone_score > _dtrkr->score_threshold())
-                                        in_ignore_zone = true;
+                                        in_im_ignore_zone = true;
                                 }
                             }
 
-                            if (!in_ignore_zone) {
+                            if (!in_im_ignore_zone) {
                                 //The tracker has lost the item, or is still initializing.
                                 //there is no valid prediction, the score is therefor as low as possible
-                                auto wbp = trkr->calc_world_item(&_blobs.at(j),time);
-                                ItemTracker::WorldItem w(ItemTracker::ImageItem(_blobs.at(j),wbp.disparity,_visdat->frame_id,0,j),wbp);
+                                trkr->calc_world_item(blob,time);
+                                ItemTracker::WorldItem w(ItemTracker::ImageItem(*blob,blob->world_props.disparity,_visdat->frame_id,0,j),blob->world_props);
                                 if (w.valid) {
                                     trkr->world_item(w);
                                     pbs.at(j).trackers.push_back(trkr);
@@ -260,8 +257,8 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
             for (auto blob : pbs) {
                 for (auto& ignore : trkr->ignores_for_other_trkrs){
                     cv::Point2f p_ignore = ignore.p;
-                    float dist_ignore = sqrtf(powf(p_ignore.x-blob.pt.x,2)+powf(p_ignore.y-blob.pt.y,2));
-                    if (dist_ignore < blob.size + ignore.radius ){
+                    float dist_ignore = sqrtf(powf(p_ignore.x-blob.props->x,2)+powf(p_ignore.y-blob.props->y,2));
+                    if (dist_ignore < blob.size() + ignore.radius ){
                         ignore.was_used = true;
                     }
                 }
@@ -269,38 +266,38 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
         }
 
         //see if there are still keypoints left untracked, create new trackers for them
-        for (uint i=0; i < _blobs.size(); i++){
+        for (uint i=0; i < pbs.size(); i++){
+            auto blob = pbs.at(i).props;
             if (!pbs.at(i).tracked() && !pbs.at(i).ignored && _trackers.size() < 30) { // if so, start tracking it!
                 if (_mode == mode_locate_drone){
                     BlinkTracker  * bt;
                     bt = new BlinkTracker();
                     bt->init(_visdat);
-                    auto wbp = bt->calc_world_item(&_blobs.at(i),time);
-                    if (wbp.valid) {
-                        ItemTracker::WorldItem w(ItemTracker::ImageItem(_blobs.at(i),wbp.disparity,_visdat->frame_id,100,i),wbp);
+                    bt->calc_world_item(blob,time);
+                    if (blob->world_props.valid) {
+                        ItemTracker::WorldItem w(ItemTracker::ImageItem(*blob,blob->world_props.disparity,_visdat->frame_id,100,i),blob->world_props);
                         bt->world_item(w);
                         _trackers.push_back( bt);
                         pbs.at(i).trackers.push_back(bt);
                     }
                 } else if (_mode != mode_idle && _mode != mode_drone_only){
+                    default_itrkr->calc_world_item(blob,time);
 
-                    auto wbp_tmp = default_itrkr->calc_world_item(&_blobs.at(i),time);
-
-                    if (wbp_tmp.valid) {
+                    if (blob->world_props.valid) {
                         //ignore a region around the drone (or take of location)
                         float dist_to_drone;
                         if (dronetracker()->tracking()){
-                            dist_to_drone = normf(dronetracker()->world_item().pt- wbp_tmp.pt());
+                            dist_to_drone = normf(dronetracker()->world_item().pt- blob->world_props.pt());
                         } else {
-                            dist_to_drone = normf(dronetracker()->drone_startup_location() - wbp_tmp.pt());
+                            dist_to_drone = normf(dronetracker()->drone_startup_location() - blob->world_props.pt());
                         }
                         if (dist_to_drone < InsectTracker::new_tracker_drone_ignore_zone_size) {
                             InsectTracker *it;
                             it = new InsectTracker();
                             it->init(next_insecttrkr_id,_visdat);
                             next_insecttrkr_id++;
-                            auto wbp = default_itrkr->calc_world_item(&_blobs.at(i),time);
-                            ItemTracker::WorldItem w(ItemTracker::ImageItem(_blobs.at(i),wbp.disparity,_visdat->frame_id,100,i),wbp);
+                            default_itrkr->calc_world_item(blob,time);
+                            ItemTracker::WorldItem w(ItemTracker::ImageItem(*blob,blob->world_props.disparity,_visdat->frame_id,100,i),blob->world_props);
                             it->world_item(w);
                             _trackers.push_back( it);
                             pbs.at(i).trackers.push_back(it);
@@ -331,6 +328,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                 }
 
                 if (drn_trkr_fnd) {
+                    auto blobi = &_blobs.at(i);
                     for (auto trkr : pbs.at(i).trackers) {
                         if (typeid(*trkr) == typeid(InsectTracker)) {
                             itrkr = static_cast<InsectTracker*>(trkr);
@@ -340,14 +338,16 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                             bool conflict_resolved = false;
                             for (uint j = 0; j < pbs.size();j++){
                                 if (i!=j && !pbs.at(j).tracked()){
-                                    float dist = cv::norm(pbs.at(i).pt-pbs.at(j).pt);
-                                    if (dist < 2.f* (pbs.at(i).size + pbs.at(j).size)) {
-                                        if(pbs.at(i).size > pbs.at(j).size) {
-                                            auto wbpi = dtrkr->calc_world_item(&_blobs.at(i),time);
-                                            ItemTracker::WorldItem wi(ItemTracker::ImageItem(_blobs.at(i),wbpi.disparity,_visdat->frame_id,0,i),wbpi);
+                                    auto blobj = &_blobs.at(j);
+                                    float dist = cv::norm(pbs.at(i).pt()-pbs.at(j).pt());
+                                    if (dist < 2.f* (pbs.at(i).size() + pbs.at(j).size())) {
+                                        if(pbs.at(i).size() > pbs.at(j).size()) {
+                                            dtrkr->calc_world_item(blobi,time);
+                                            ItemTracker::WorldItem wi(ItemTracker::ImageItem(*blobi,blobi->world_props.disparity,_visdat->frame_id,0,i),blobi->world_props);
                                             dtrkr->world_item(wi);
-                                            auto wbpj = itrkr->calc_world_item(&_blobs.at(j),time);
-                                            ItemTracker::WorldItem wj(ItemTracker::ImageItem(_blobs.at(j),wbpj.disparity,_visdat->frame_id,0,j),wbpj);
+
+                                            itrkr->calc_world_item(blobj,time);
+                                            ItemTracker::WorldItem wj(ItemTracker::ImageItem(*blobj,blobj->world_props.disparity,_visdat->frame_id,0,j),blobj->world_props);
                                             itrkr->world_item(wj);
 
                                             pbs.at(i).trackers.clear();
@@ -355,11 +355,11 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                                             pbs.at(i).trackers.push_back(dtrkr);
                                             pbs.at(j).trackers.push_back(itrkr);
                                         }else {
-                                            auto wbpi = itrkr->calc_world_item(&_blobs.at(i),time);
-                                            ItemTracker::WorldItem wi(ItemTracker::ImageItem(_blobs.at(i),wbpi.disparity,_visdat->frame_id,0,i),wbpi);
+                                            itrkr->calc_world_item(blobi,time);
+                                            ItemTracker::WorldItem wi(ItemTracker::ImageItem(*blobi,blobi->world_props.disparity,_visdat->frame_id,0,i),blobi->world_props);
                                             itrkr->world_item(wi);
-                                            auto wbpj = dtrkr->calc_world_item(&_blobs.at(j),time);
-                                            ItemTracker::WorldItem wj(ItemTracker::ImageItem(_blobs.at(j),wbpj.disparity,_visdat->frame_id,0,j),wbpj);
+                                            dtrkr->calc_world_item(blobj,time);
+                                            ItemTracker::WorldItem wj(ItemTracker::ImageItem(*blobj,blobj->world_props.disparity,_visdat->frame_id,0,j),blobj->world_props);
                                             dtrkr->world_item(wj);
 
                                             pbs.at(i).trackers.clear();
@@ -399,8 +399,24 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                         s = s + "->" + std::to_string(itrkr->id());
                     }
                 }
-                putText(diff_viz,s,pbs.at(i).pt*pparams.imscalef,FONT_HERSHEY_SIMPLEX,0.5,pbs.at(i).color(),2);
-                cv::circle(diff_viz,pbs.at(i).pt*pparams.imscalef,3,pbs.at(i).color(),1);
+                
+                auto wblob = pbs.at(i).props->world_props;
+                int code = 0;
+                if (!wblob.valid && !pbs.at(i).ignored) {
+                    if (!wblob.disparity_in_range)
+                        code +=1;
+                    if (!wblob.bkg_check_ok)
+                        code +=2;
+                    if (!wblob.radius_in_range)
+                        code +=4;
+                    if (pbs.at(i).props->ignores.size()>0)
+                        code +=8;
+                    if (code>0)
+                        s = s + "E" + std::to_string(code);
+                }
+
+                putText(diff_viz,s,pbs.at(i).pt()*pparams.imscalef,FONT_HERSHEY_SIMPLEX,0.5,pbs.at(i).color(),2);
+                cv::circle(diff_viz,pbs.at(i).pt()*pparams.imscalef,3,pbs.at(i).color(),1);
             }
             for (auto trkr : replaytrackers()) {
                 putText(diff_viz," r",trkr->image_item().pt()*pparams.imscalef,FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,180),2);

@@ -20,7 +20,7 @@ public:
     void append_log(double time, unsigned long long frame_number);
     int16_t id(){return _id;}
 
-    BlobWorldProps calc_world_item(BlobProps * pbs, double time);
+    void calc_world_item(BlobProps * pbs, double time);
     bool check_ignore_blobs(BlobProps * pbs, double time);
     bool delete_me(){
         if ((n_frames_lost > n_frames_lost_threshold && _id > 0)) {

@@ -48,6 +48,14 @@ public:
 
     };
 
+
+    struct BlobWorldProps {
+        float x,y,z,distance,distance_bkg,radius;
+        float disparity; // not really a world prop, but OK.
+        bool radius_in_range = false,disparity_in_range = false,bkg_check_ok = false,valid = false;
+        cv::Point3f pt() {return cv::Point3f(x,y,z);}
+        float heading;
+    };
     struct BlobProps {
         float x,y,radius,pixel_max;
         std::vector<IgnoreBlob> ignores;
@@ -59,13 +67,7 @@ public:
             pixel_max = blob_pixel_max;
             mask_ = mask;
         }
-    };
-    struct BlobWorldProps {
-        float x,y,z,distance,distance_bkg,radius;
-        float disparity; // not really a world prop, but OK.
-        bool radius_in_range = false,disparity_in_range = false,bkg_check_ok = false,valid = false;
-        cv::Point3f pt() {return cv::Point3f(x,y,z);}
-        float heading;
+        BlobWorldProps world_props;
     };
 
     struct ImageItem {
@@ -273,7 +275,7 @@ protected:
     void init_logger();
     float stereo_match(cv::Point closestL, cv::Mat diffL, cv::Mat diffR, float radius);
     void reset_tracker_ouput(double time);
-    BlobWorldProps calc_world_props_blob_generic(BlobProps * pbs);
+    void calc_world_props_blob_generic(BlobProps * pbs);
     bool check_ignore_blobs_generic(BlobProps * pbs);
     void cleanup_paths();
 public:
@@ -300,7 +302,7 @@ public:
     void init(std::ofstream *logger, VisionData *_visdat, std::string name);
     virtual void track(double time);
     virtual bool check_ignore_blobs(BlobProps * pbs, double time) = 0;
-    virtual ItemTracker::BlobWorldProps calc_world_item(BlobProps * pbs, double time) = 0;
+    virtual void calc_world_item(BlobProps * pbs, double time) = 0;
     void append_log();
 
     uint track_history_max_size;
