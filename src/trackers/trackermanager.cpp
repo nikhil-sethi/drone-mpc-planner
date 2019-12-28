@@ -14,6 +14,7 @@ void TrackerManager::init(std::ofstream *logger,VisionData *visdat){
 
     deserialize_settings();
 
+    //TODO: update comment below, fixed?
     //we have a bit of a situation with the order of initializing the trackers, as this MUST be in the same order as how they are called
     //in the future this is prolly not sustainable, as we have multiple insect trackers etc
     //ATM the blinktracker is therefor not logged, as there can be multiple and they disappear after they are done
@@ -411,6 +412,8 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                         code +=4;
                     if (pbs.at(i).props->ignores.size()>0)
                         code +=8;
+                   if (wblob.takeoff_reject)
+                        code +=16;
                     if (code>0)
                         s = s + "E" + std::to_string(code);
                 }

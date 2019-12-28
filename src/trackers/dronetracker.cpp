@@ -152,6 +152,7 @@ void DroneTracker::calc_world_item(BlobProps * pbs, double time) {
         float dy_takeoff_detected = 0.12f;
         if (err_pos >= InsectTracker::new_tracker_drone_ignore_zone_size || dy < dy_takeoff_detected) {
             pbs->world_props.valid = false;
+            pbs->world_props.takeoff_reject = true;
             takeoff_detection_dy_prev = dy;
             takeoff_detection_dt_prev = dt;
         } else {
@@ -172,7 +173,7 @@ bool DroneTracker::check_ignore_blobs(BlobProps * pbs, double time) {
     bool in_im_ignore_zone = this->check_ignore_blobs_generic(pbs);
     // if the drone takes off towards the camera, we won't get proper blob seperation from the takeoff spot in the image
     // also, when taking of the drone does cause for some interering reflections around the pad, so these need to be ignored
-    if (in_im_ignore_zone) {
+    if (in_im_ignore_zone && taking_off()) {
         calc_world_item(pbs,time);
         for (auto ignore : pbs->ignores){
             if (ignore.ignore_type == ItemTracker::IgnoreBlob::IgnoreType::takeoff_spot) {
@@ -186,7 +187,7 @@ bool DroneTracker::check_ignore_blobs(BlobProps * pbs, double time) {
             }
         }
     }
-    return false;
+    return in_im_ignore_zone;
 }
 
 //Removes all ignore points which timed out
