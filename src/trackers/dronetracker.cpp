@@ -25,8 +25,11 @@ void DroneTracker::track(double time, bool drone_is_active) {
         predicted_image_path.clear();
         path.clear();
         _tracking = false;
-        _image_predict_item = ImagePredictItem(_drone_blink_im_location,1,_drone_blink_im_size,255,_visdat->frame_id);
-        predicted_image_path.push_back(_image_predict_item);
+        if (_landing_pad_location_set) {
+            _image_predict_item = ImagePredictItem(_drone_blink_im_location,1,_drone_blink_im_size,255,_visdat->frame_id);
+            predicted_image_path.push_back(_image_predict_item);
+        } else
+            _image_predict_item.valid = false;
         reset_tracker_ouput(time);
 
         if (_landing_pad_location_set && ignores_for_other_trkrs.size() == 0) {

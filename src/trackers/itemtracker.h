@@ -278,6 +278,7 @@ protected:
     void calc_world_props_blob_generic(BlobProps * pbs);
     bool check_ignore_blobs_generic(BlobProps * pbs);
     void cleanup_paths();
+    float score(BlobProps blob, ImageItem ref);
 public:
 
     virtual ~ItemTracker() {}
@@ -328,21 +329,8 @@ public:
 
     float score_threshold() {return static_cast<float>(_score_threshold);}
 
-    float score(BlobProps blob) {
-        float dist = sqrtf(powf(_image_item.x-blob.x,2)+powf(_image_item.y-blob.y,2));
-        float im_size_diff = fabs(_image_item.size - blob.radius) / (blob.radius + _image_item.size);
-        float score = 1.f / (dist + 15.f*im_size_diff); // TODO: certainty
-
-        if (_image_predict_item.valid){
-            float dist_pred = sqrtf(powf(_image_predict_item.x-blob.x,2)+powf(_image_predict_item.y-blob.y,2));
-            float ps = smoother_im_size.latest();
-            float im_size_diff_pred = fabs(ps - blob.radius) / (blob.radius+ps);
-            float score_pred = 1.f / (dist_pred + 15.f*im_size_diff_pred); // TODO: certainty
-            if (score_pred > score)
-                score = score_pred;
-        }
-
-        return score*1000.f;
+    virtual float score(BlobProps blob) {
+        return score(blob,_image_item);
     }
 
 };

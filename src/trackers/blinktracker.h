@@ -7,7 +7,6 @@
  */
 static const char* blinking_drone_state_names[] = { "",
                                                    "bds_start",
-                                                   "bds_reset_bkg",
                                                    "bds_failed",
                                                    "bds_restart_searching",
                                                    "bds_searching",
@@ -26,7 +25,6 @@ class BlinkTracker : public ItemTracker {
 public:
     enum blinking_drone_states {
         bds_start=1,
-        bds_reset_bkg,
         bds_failed,
         bds_restart_search,
         bds_searching,
@@ -65,5 +63,14 @@ public:
     }
 
     float smoothed_size_image(){return smoother_im_size.latest();}
+
+    virtual float score(BlobProps blob) {
+        if (path.size()>0) {
+            ImageItem first = path.at(0).iti;
+            return ItemTracker::score(blob,first);
+        } else {
+            return ItemTracker::score(blob,_image_item);
+        }
+    }
 
 };

@@ -20,19 +20,14 @@ void BlinkTracker::track(double time) {
         _tracking = true;
         path.clear();
         predicted_image_path.clear();
-        _blinking_drone_status = bds_reset_bkg;
-        ItemTracker::append_log(); // write a dummy entry
-        break;
-    } case bds_reset_bkg: {
-        _blinking_drone_status = bds_searching; // -> wait 1 frame
-        ItemTracker::append_log(); // write a dummy entry
-        break;
+        _blinking_drone_status = bds_searching;
+        [[fallthrough]];
     } case bds_restart_search: {
         attempts++;
         _blinking_drone_status = bds_searching;
         [[fallthrough]];
     } case bds_searching: {
-        if (attempts > 3)
+        if (attempts > 4)
             _blinking_drone_status = bds_failed;
         ItemTracker::track(time);
         if (n_frames_lost == 0) {
@@ -41,7 +36,7 @@ void BlinkTracker::track(double time) {
         }
         break;
     } case bds_1_blink_off: {
-        _score_threshold = 1000; // increase score threshold after first sightings
+        _score_threshold = 250; // increase score threshold after first sightings, so that the tracker rejects moving blobs
         ItemTracker::track(time);
         _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
         break;

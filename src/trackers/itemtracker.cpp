@@ -567,6 +567,23 @@ bool ItemTracker::check_ignore_blobs_generic(BlobProps * pbs) {
     return in_ignore_zone;
 }
 
+float ItemTracker::score(BlobProps blob, ImageItem ref) {
+    float dist = sqrtf(powf(ref.x-blob.x,2)+powf(ref.y-blob.y,2));
+    float im_size_diff = fabs(ref.size - blob.radius) / (blob.radius + ref.size);
+    float score = 1.f / (dist + 15.f*im_size_diff); // TODO: certainty
+
+    if (_image_predict_item.valid){
+        float dist_pred = sqrtf(powf(_image_predict_item.x-blob.x,2)+powf(_image_predict_item.y-blob.y,2));
+        float ps = smoother_im_size.latest();
+        float im_size_diff_pred = fabs(ps - blob.radius) / (blob.radius+ps);
+        float score_pred = 1.f / (dist_pred + 15.f*im_size_diff_pred); // TODO: certainty
+        if (score_pred > score)
+            score = score_pred;
+    }
+
+    return score*1000.f;
+}
+
 void ItemTracker::deserialize_settings() {
     std::cout << "Reading settings from: " << settings_file << std::endl;
     TrackerParams params;
