@@ -490,9 +490,10 @@ std::string to_string_with_precision(double f, const int n)
     return out.str();
 }
 
+float normf(cv::Point2f m) { return static_cast<float>(cv::norm(m));}
 float normf(cv::Point3f m) { return static_cast<float>(cv::norm(m));}
 
-cv::Point3f mult(cv::Point3f  p1, cv::Point3f p2){
+cv::Point3f multf(cv::Point3f  p1, cv::Point3f p2){
     cv::Point3f p;
     p.x = p1.x * p2.x;
     p.y = p1.y * p2.y;

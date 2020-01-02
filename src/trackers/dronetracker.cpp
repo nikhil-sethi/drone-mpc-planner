@@ -1,6 +1,7 @@
 #include "dronetracker.h"
-
 #include "multimodule.h"
+
+namespace tracking {
 
 bool DroneTracker::init(std::ofstream *logger, VisionData *visdat) {
     enable_viz_diff = false;
@@ -54,8 +55,8 @@ void DroneTracker::track(double time, bool drone_is_active) {
         start_take_off_time = time;
         ignores_for_other_trkrs.clear();
         ignores_for_other_trkrs.push_back(IgnoreBlob(drone_startup_im_location(),_drone_blink_im_size*5,time+startup_location_ignore_timeout, IgnoreBlob::takeoff_spot));
-        ignores_for_me.push_back(IgnoreBlob(drone_startup_im_location(),_drone_blink_im_size*2,time+startup_location_ignore_timeout, IgnoreBlob::takeoff_spot));
         _drone_tracking_status = dts_detecting_takeoff;
+        spinup_detected = false;
         [[fallthrough]];
     } case dts_detecting_takeoff: {
         if (!_world_item.valid){
@@ -67,8 +68,9 @@ void DroneTracker::track(double time, bool drone_is_active) {
         }
 
         ItemTracker::track(time);
+        _image_predict_item.valid = true; // this should not have been reset, can that be fixed directly?
 
-        if (enable_viz_diff){
+        if (enable_viz_diff) {
             cv::Point2f tmpp = drone_startup_im_location();
             cv::circle(diff_viz,tmpp*pparams.imscalef,1,cv::Scalar(255,0,0),1);
             cv::circle(diff_viz,drone_startup_im_location()*pparams.imscalef,1,cv::Scalar(0,0,255),1);
@@ -77,16 +79,17 @@ void DroneTracker::track(double time, bool drone_is_active) {
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
         else if (n_frames_lost==0 && _world_item.valid){
-            bool takeoff_spot_detected = false;
 
-            for (uint i = 0; i< ignores_for_other_trkrs.size(); i++) {
-                if (ignores_for_other_trkrs.at(i).ignore_type == IgnoreBlob::takeoff_spot && ignores_for_other_trkrs.at(i).was_used)
-                    takeoff_spot_detected = true;
-            }
+            float dist2takeoff =normf(_drone_blink_world_location - _world_item.pt);
+            float takeoff_z = _drone_blink_world_location.z - _world_item.pt.z;
 
-            if (takeoff_spot_detected  ) {
-                _drone_tracking_status = dts_detected;
-                _visdat->delete_from_motion_map(drone_startup_im_location()*pparams.imscalef, _drone_blink_im_disparity,ceilf(_drone_blink_im_size*2.f)*pparams.imscalef,pparams.fps/2);
+            if (dist2takeoff < 0.02f) 
+                spinup_detected = true;
+
+            if (spinup_detected && dist2takeoff < 0.1f && takeoff_z > 0.05f) {
+                    _drone_tracking_status = dts_tracking;
+                    //_visdat->delete_from_motion_map(drone_startup_im_location()*pparams.imscalef, _drone_blink_im_disparity,ceilf(_drone_blink_im_size*2.f)*pparams.imscalef,pparams.fps/2);
+                    //ignores_for_me.push_back(IgnoreBlob(drone_startup_im_location(),_drone_blink_im_size*2,time+startup_location_ignore_timeout, IgnoreBlob::takeoff_spot));
             }
         }
         break;
@@ -95,9 +98,9 @@ void DroneTracker::track(double time, bool drone_is_active) {
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
         else if (n_frames_lost==0)
-            _drone_tracking_status = dts_detected;
+            _drone_tracking_status = dts_tracking;
         break;
-    } case dts_detected: {
+    } case dts_tracking: {
         ItemTracker::track(time);
         update_drone_prediction();
         _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_item.size*1.2f*pparams.imscalef);
@@ -143,7 +146,7 @@ void DroneTracker::calc_world_item(BlobProps * pbs, double time) {
         if (dt<0)
             dt=0;
 
-        float err_pos = static_cast<float>(norm(_drone_blink_world_location - cv::Point3f(pbs->world_props.x,pbs->world_props.y,pbs->world_props.z)));
+        float err_pos = normf(_drone_blink_world_location - cv::Point3f(pbs->world_props.x,pbs->world_props.y,pbs->world_props.z));
         float dy = pbs->world_props.y - _drone_blink_world_location.y;
 
         // only accept the drone blob when
@@ -176,7 +179,7 @@ bool DroneTracker::check_ignore_blobs(BlobProps * pbs, double time) {
     if (in_im_ignore_zone && taking_off()) {
         calc_world_item(pbs,time);
         for (auto ignore : pbs->ignores){
-            if (ignore.ignore_type == ItemTracker::IgnoreBlob::IgnoreType::takeoff_spot) {
+            if (ignore.ignore_type == tracking::IgnoreBlob::IgnoreType::takeoff_spot) {
                 if (pbs->world_props.z > drone_startup_location().z+0.025f) {
                     return false;
                 } else if (norm(pbs->world_props.pt() - drone_startup_location()) < 0.1) {
@@ -312,12 +315,12 @@ float DroneTracker::yaw_heading(cv::Mat left, cv::Mat right){ // Heading positiv
 float DroneTracker::calc_heading(BlobProps * pbs, bool inspect_blob){ // Set inspect_blob = true to see mask. Otherwise set to false.
     if(inspect_blob==true){
         cout<<"Original Drone Mask: "<<endl;
-        cout<<pbs->mask_<<endl;
+        cout<<pbs->mask<<endl;
     }
-    if(!pbs->mask_.empty()){
+    if(!pbs->mask.empty()){
         int kernel_int = 2;
         cv::Mat mask_erode;
-        erode(pbs->mask_, mask_erode,getStructuringElement(cv::MORPH_RECT, cv::Size(kernel_int,kernel_int)));
+        erode(pbs->mask, mask_erode,getStructuringElement(cv::MORPH_RECT, cv::Size(kernel_int,kernel_int)));
         if(inspect_blob==true){
             cout<<"eroded mask: "<<endl;
             cout<<mask_erode<<endl;
@@ -351,4 +354,6 @@ float DroneTracker::calc_heading(BlobProps * pbs, bool inspect_blob){ // Set ins
         }
     }
     return heading;
+}
+
 }

@@ -1,5 +1,7 @@
 #include "blinktracker.h"
 
+namespace tracking {
+
 static std::ofstream dummy;
 
 bool BlinkTracker::init(VisionData *visdat) {
@@ -120,4 +122,6 @@ void BlinkTracker::clean_ignore_blobs(double time){
             new_ignores_for_insect_tracker.push_back(ignores_for_other_trkrs.at(i));
     }
     ignores_for_other_trkrs= new_ignores_for_insect_tracker;
+}
+
 }

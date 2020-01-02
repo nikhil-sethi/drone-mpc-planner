@@ -1,10 +1,8 @@
 #pragma once
 #include "itemtracker.h"
 
-/*
- * This class will track a micro drone with leds
- *
- */
+namespace tracking {
+
 static const char* blinking_drone_state_names[] = { "",
                                                    "bds_start",
                                                    "bds_failed",
@@ -20,7 +18,7 @@ static const char* blinking_drone_state_names[] = { "",
                                                    "bds_found" };
 
 class BlinkTracker : public ItemTracker {
-
+public: tracker_type type() { return tt_blink;}
 
 public:
     enum blinking_drone_states {
@@ -37,6 +35,7 @@ public:
         bds_3_blink_on,
         bds_found
     };
+    
 private:
     blinking_drone_states _blinking_drone_status = bds_start;
     int attempts = 0;
@@ -54,8 +53,8 @@ public:
     bool init(VisionData *_visdat);
     void track(double time);
 
-    void calc_world_item(BlobProps * pbs, double time);
-    bool check_ignore_blobs(BlobProps * pbs, double time);
+    void calc_world_item(tracking::BlobProps * pbs, double time);
+    bool check_ignore_blobs(tracking::BlobProps * pbs, double time);
     bool blinking_drone_located() {return _blinking_drone_status >= bds_found;}
 
     bool delete_me(){
@@ -64,9 +63,9 @@ public:
 
     float smoothed_size_image(){return smoother_im_size.latest();}
 
-    virtual float score(BlobProps blob) {
+    float score(tracking::BlobProps blob) {
         if (path.size()>0) {
-            ImageItem first = path.at(0).iti;
+            tracking::ImageItem first = path.at(0).iti;
             return ItemTracker::score(blob,first);
         } else {
             return ItemTracker::score(blob,_image_item);
@@ -74,3 +73,5 @@ public:
     }
 
 };
+
+}

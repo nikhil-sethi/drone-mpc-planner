@@ -80,6 +80,31 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
     }
 
     if (delete_motion_frame_cnt_duration>0){
+
+        // //get takeoff ROI around p
+        // cv::Point2i p1 = delete_motion_spot - cv::Point2i(10,10);
+        // cv::Point2i p2 = delete_motion_spot + cv::Point2i(10,10);
+        // if (p1.x <0)
+        //     p1.x = 0;
+        // if (p1.y <0)
+        //     p1.y = 0;
+        // if (p2.x > diffL16.cols)
+        //     p2.x = diffL16.cols;
+        // if (p2.y >diffL16.rows)
+        //     p2.y = diffL16.rows;
+
+        // cv::Mat roi = cv::Mat(diffL16,cv::Rect(p1,p2)).clone();
+        
+        // //dilate
+        // cv::dilate(roi,roi,cv::getStructuringElement( cv::MORPH_RECT,Size( 3, 3 ),cv::Point( 3, 3 ) ));
+
+        // //findContours
+        // vector<vector<Point>> contours;
+        // findContours(diffL16,contours,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_NONE);
+
+        // //delete contour
+
+
         cv::circle(diffL16,delete_motion_spot,delete_motion_r,0,CV_FILLED);
         cv::circle(diffR16,delete_motion_spot+ cv::Point(delete_motion_disparity,0),delete_motion_r,0,CV_FILLED);
         delete_motion_frame_cnt_duration--;

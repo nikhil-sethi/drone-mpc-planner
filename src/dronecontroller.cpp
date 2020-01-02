@@ -11,7 +11,7 @@ bool DroneController::joystick_ready(){
     return joystick.isFound();
 }
 
-void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc, DroneTracker *dtrk, CameraVolume *camvol) {
+void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc, tracking::DroneTracker *dtrk, CameraVolume *camvol) {
     _rc = rc;
     _dtrk = dtrk;
     _logger = logger;
@@ -952,9 +952,9 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     cv::Point3f vel_err_d = {errvDx, errvDy, errvDz};
 
     cv::Point3f desired_acceleration = {0};
-    desired_acceleration += mult(kp_pos, pos_err_p) + mult(ki_pos, pos_err_i) + mult(kd_pos, pos_err_d); // position controld
+    desired_acceleration += multf(kp_pos, pos_err_p) + multf(ki_pos, pos_err_i) + multf(kd_pos, pos_err_d); // position controld
     if( !(norm(setpoint_vel)<0.1 && norm(setpoint_pos-data_drone.pos ())<0.2) ) // Needed to improve hovering at waypoint
-        desired_acceleration += mult(kp_vel, vel_err_p) + mult(kd_vel, vel_err_d); // velocity control
+        desired_acceleration += multf(kp_vel, vel_err_p) + multf(kd_vel, vel_err_d); // velocity control
 
     std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(desired_acceleration);
 }

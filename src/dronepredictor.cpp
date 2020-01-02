@@ -1,7 +1,7 @@
 #include "dronepredictor.h"
 #include "common.h"
 
-void DronePredictor::init(VisionData *visdat, DroneTracker *dtrk, InsectTracker *itrk, DroneController *dctrl) {
+void DronePredictor::init(VisionData *visdat, tracking::DroneTracker *dtrk, tracking::InsectTracker *itrk, DroneController *dctrl) {
     _dctrl = dctrl;
     _dtrk = dtrk;
     _itrk = itrk;

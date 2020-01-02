@@ -3,6 +3,7 @@
 
 using namespace cv;
 using namespace std;
+namespace tracking {
 
 void ReplayTracker::init(int id,std::string file, VisionData *visdat) {
     _id = id;
@@ -115,4 +116,6 @@ void ReplayTracker::track(double time) {
     update_from_log(_visdat->frame_id,time);
     ItemTracker::append_log();
     (*_logger) << std::endl;
+}
+
 }

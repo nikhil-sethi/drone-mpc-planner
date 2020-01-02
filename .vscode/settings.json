@@ -12,7 +12,13 @@
     "editor.defaultFormatter": "chiehyu.vscode-astyle",
     "editor.tabSize": 4,
     "search.exclude": {
-        "${workspaceFolder}/pc/**": true
+        "${workspaceFolder}/pc/**": true,
+        "${workspaceFolder}/Arduino/**": true,
+        "${workspaceFolder}/analysis/**": true,
+        "${workspaceFolder}/config/**": true,
+        "${workspaceFolder}/doc/**": true,
+        "${workspaceFolder}/src/third_party/**": true,
+        "/usr/**": true,
     },
     "search.showLineNumbers": true,
     "files.associations": {
@@ -26,6 +32,12 @@
         "fstream": "cpp",
         "iosfwd": "cpp",
         "thread": "cpp",
-        "type_traits": "cpp"
+        "type_traits": "cpp",
+        "functional": "cpp",
+        "unordered_map": "cpp",
+        "istream": "cpp",
+        "ostream": "cpp",
+        "sstream": "cpp",
+        "mutex": "cpp"
     }
 }

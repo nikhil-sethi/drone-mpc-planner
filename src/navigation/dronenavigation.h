@@ -80,7 +80,7 @@ private:
 
     std::ofstream *_logger;
     DroneController * _dctrl;
-    TrackerManager * _trackers;
+    tracking::TrackerManager * _trackers;
     Interceptor _iceptor;
     VisionData *_visdat;
 
@@ -138,7 +138,7 @@ public:
     }
 
     void close (void);
-    void init(std::ofstream *logger, TrackerManager * imngr, DroneController *dctrl, VisionData *visdat, CameraVolume *camvol, string replay_dir);
+    void init(std::ofstream *logger, tracking::TrackerManager * imngr, DroneController *dctrl, VisionData *visdat, CameraVolume *camvol, string replay_dir);
     void update(double time);
     bool disable_insect_detection() {
         return _navigation_status < ns_wait_for_takeoff_command;

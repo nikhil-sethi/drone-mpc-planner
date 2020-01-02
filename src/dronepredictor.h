@@ -8,14 +8,14 @@
 
 class DronePredictor {
 public :
-    void init(VisionData *visdat, DroneTracker *dtrk, InsectTracker *itrk, DroneController *dctrl);
+    void init(VisionData *visdat, tracking::DroneTracker *dtrk, tracking::InsectTracker *itrk, DroneController *dctrl);
     void update(bool drone_is_active, double time);
 
 private:
     void swap_check(cv::Point3f rtp);
 
-    InsectTracker *_itrk;
-    DroneTracker *_dtrk;
+    tracking::InsectTracker *_itrk;
+    tracking::DroneTracker *_dtrk;
     DroneController *_dctrl;
     VisionData *_visdat;
 

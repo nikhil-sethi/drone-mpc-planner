@@ -36,10 +36,7 @@ static const char* flight_mode_names[] = { "fm_joystick_check",
                                           "fm_landing_start",
                                           "fm_landing"
 };
-/*
- * This class will control a micro drone via a Serial link
- *
- */
+
 class DroneController {
 
 public:
@@ -238,7 +235,7 @@ private:
     std::tuple<int,int,int> calc_feedforward_control(cv::Point3f desired_acceleration);
 
     MultiModule * _rc;
-    DroneTracker * _dtrk;
+    tracking::DroneTracker * _dtrk;
     CameraVolume * _camvol;
 
     std::ofstream *_logger;
@@ -420,7 +417,7 @@ public:
     }
 
     void close (void);
-    void init(std::ofstream *logger, bool fromfile, MultiModule *rc, DroneTracker *dtrk, CameraVolume* camvol);
+    void init(std::ofstream *logger, bool fromfile, MultiModule *rc, tracking::DroneTracker *dtrk, CameraVolume* camvol);
     void control(track_data, track_data, track_data, double);
     bool drone_is_active() {
         if ( _flight_mode == fm_inactive || _flight_mode == fm_disarmed)

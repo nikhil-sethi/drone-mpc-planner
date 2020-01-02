@@ -14,7 +14,7 @@ cv::Scalar linecolors[] = {green,blue,red,cv::Scalar(0,255,255),cv::Scalar(255,2
 cv::Scalar fore_color(255,255,255);
 cv::Scalar background_color(0,0,0);
 
-void Visualizer::init(VisionData *visdat, TrackerManager *imngr, DroneController *dctrl, navigation::DroneNavigation *dnav, MultiModule *rc, bool fromfile, DronePredictor *dprdct){
+void Visualizer::init(VisionData *visdat, tracking::TrackerManager *imngr, DroneController *dctrl, navigation::DroneNavigation *dnav, MultiModule *rc, bool fromfile, DronePredictor *dprdct){
     _visdat = visdat;
     _dctrl = dctrl;
     _trackers = imngr;
@@ -346,10 +346,10 @@ void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis,float
 
 }
 
-cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, std::vector<ItemTracker::WorldItem> path,std::vector<ItemTracker::ImagePredictItem> predicted_path) {
+cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, std::vector<tracking::WorldItem> path,std::vector<tracking::ImagePredictItem> predicted_path) {
 
     cv::Mat frameL_small_drone;
-    std::vector<ItemTracker::ImagePredictItem> tmp = predicted_path;
+    std::vector<tracking::ImagePredictItem> tmp = predicted_path;
     if (tmp.size()>0) {
         std::vector<cv::KeyPoint> keypoints;
         for (uint i = 0; i< tmp.size();i++) {
@@ -417,10 +417,10 @@ void Visualizer::draw_tracker_viz() {
     cv::Point3f setpoint = tracker_viz_base_data.setpoint;
     double time = tracker_viz_base_data.time;
 
-    std::vector<ItemTracker::WorldItem> drn_path = tracker_viz_base_data.drn_path;
-    std::vector<ItemTracker::ImagePredictItem> drn_predicted_path = tracker_viz_base_data.drn_predicted_path;
-    std::vector<ItemTracker::WorldItem> ins_path = tracker_viz_base_data.ins_path;
-    std::vector<ItemTracker::ImagePredictItem> ins_predicted_path = tracker_viz_base_data.ins_predicted_path;
+    std::vector<tracking::WorldItem> drn_path = tracker_viz_base_data.drn_path;
+    std::vector<tracking::ImagePredictItem> drn_predicted_path = tracker_viz_base_data.drn_predicted_path;
+    std::vector<tracking::WorldItem> ins_path = tracker_viz_base_data.ins_path;
+    std::vector<tracking::ImagePredictItem> ins_predicted_path = tracker_viz_base_data.ins_predicted_path;
 
     cv::Size resFrame_size = viz_frame_size();
     resFrame_size.width -=IMG_W;
@@ -447,7 +447,7 @@ void Visualizer::draw_tracker_viz() {
 
     if (ins_path.size()>0){
         std::stringstream ss;
-        ItemTracker::WorldItem wti = ins_path.back();
+        tracking::WorldItem wti = ins_path.back();
         if (wti.valid) {
             ss << "i " << to_string_with_precision(wti.distance,1);
             cv::Scalar c(0,0,255);
@@ -491,7 +491,7 @@ void Visualizer::draw_tracker_viz() {
 
     if (drn_path.size()>0){
         std::stringstream ss;
-        ItemTracker::WorldItem wti = drn_path.back();
+        tracking::WorldItem wti = drn_path.back();
         ss << "d " << to_string_with_precision(wti.distance,1);
         cv::Scalar c(0,0,255);
         if (wti.distance_bkg >wti.distance )

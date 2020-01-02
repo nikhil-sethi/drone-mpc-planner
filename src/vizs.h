@@ -26,14 +26,14 @@ private:
     cv::Mat plot_all_velocity(void);
     cv::Mat plot_all_position(void);
     void draw_target_text(cv::Mat resFrame, double time, float dis, float min_dis);
-    cv::Mat draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, std::vector<ItemTracker::WorldItem> path, std::vector<ItemTracker::ImagePredictItem> predicted_path);
+    cv::Mat draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, std::vector<tracking::WorldItem> path, std::vector<tracking::ImagePredictItem> predicted_path);
     void draw_tracker_viz();
 
     VisionData * _visdat;
     DroneController *_dctrl;
-    DroneTracker *_dtrkr;
-    InsectTracker *_itrkr;
-    TrackerManager * _trackers;
+    tracking::DroneTracker *_dtrkr;
+    tracking::InsectTracker *_itrkr;
+    tracking::TrackerManager * _trackers;
     navigation::DroneNavigation *_dnav;
     MultiModule *_rc;
     DronePredictor *_dprdct;
@@ -71,10 +71,10 @@ private:
         float dis;
         float min_dis;
 
-        std::vector<ItemTracker::WorldItem> drn_path;
-        std::vector<ItemTracker::ImagePredictItem> drn_predicted_path;
-        std::vector<ItemTracker::WorldItem> ins_path;
-        std::vector<ItemTracker::ImagePredictItem> ins_predicted_path;
+        std::vector<tracking::WorldItem> drn_path;
+        std::vector<tracking::ImagePredictItem> drn_predicted_path;
+        std::vector<tracking::WorldItem> ins_path;
+        std::vector<tracking::ImagePredictItem> ins_predicted_path;
     };
     Tracker_viz_base_data tracker_viz_base_data;
 
@@ -174,7 +174,7 @@ public:
     void paint();
     void add_plot_sample(void);
     void update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, double time, bool draw_plots);
-    void init(VisionData * visdat, TrackerManager *imngr, DroneController *dctrl, navigation::DroneNavigation *dnav, MultiModule *rc, bool fromfile, DronePredictor *dprdct);
+    void init(VisionData * visdat, tracking::TrackerManager *imngr, DroneController *dctrl, navigation::DroneNavigation *dnav, MultiModule *rc, bool fromfile, DronePredictor *dprdct);
     void close();
 
 };

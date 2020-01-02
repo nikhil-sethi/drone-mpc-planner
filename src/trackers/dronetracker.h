@@ -3,10 +3,7 @@
 #include "insecttracker.h"
 #include "tinyxml/XMLSerialization.h"
 
-/*
- * This class will track a micro drone with leds
- *
- */
+namespace tracking {
 static const char* drone_tracking_state_names[] = { "dts_init",
                                                    "dts_inactive",
                                                    "dts_detecting_takeoff_init",
@@ -17,6 +14,7 @@ static const char* drone_tracking_state_names[] = { "dts_init",
                                                    "dts_landing_init",
                                                    "dts_landing"};
 class DroneTracker : public ItemTracker {
+public: tracker_type type() { return tt_drone;}
 
 private:
     double start_take_off_time = 0;
@@ -29,13 +27,18 @@ private:
     float heading;
     const float landing_heading_criteria = 0.05;
 
+    float takeoff_detection_dy_prev;
+    float takeoff_detection_dt_prev;
+
+    bool spinup_detected = false;
+
     enum drone_tracking_states {
         dts_init = 0,
         dts_inactive,
         dts_detecting_takeoff_init,
         dts_detecting_takeoff,
         dts_detecting,
-        dts_detected,
+        dts_tracking,
         dts_detect_heading,
         dts_landing_init,
         dts_landing
@@ -100,8 +103,13 @@ private:
 
     void update_drone_prediction(); //tmp
 
-    float takeoff_detection_dy_prev;
-    float takeoff_detection_dt_prev;
+    cv::Mat get_big_blob(cv::Mat Mask, int connectivity);
+    cv::Mat extract_mask_column(cv::Mat mask_big, float range_left, float range_right, float side_percentage, enum side side_);
+    cv::Mat split_mask_half(cv::Mat mask_big, enum side);
+    float yaw_heading(cv::Mat left, cv::Mat right);
+    float calc_heading(BlobProps * pbs, bool inspect_blob);
+
+
 
 public:
     std::string drone_tracking_state() {return drone_tracking_state_names[_drone_tracking_status];}
@@ -148,9 +156,6 @@ public:
     bool delete_me(){return false;}
 
     float hover_throttle_estimation;
-    cv::Mat get_big_blob(cv::Mat Mask, int connectivity);
-    cv::Mat extract_mask_column(cv::Mat mask_big, float range_left, float range_right, float side_percentage, enum side side_);
-    cv::Mat split_mask_half(cv::Mat mask_big, enum side);
-    float yaw_heading(cv::Mat left, cv::Mat right);
-    float calc_heading(BlobProps * pbs, bool inspect_blob);
 };
+
+}

@@ -3,9 +3,10 @@
 
 using namespace cv;
 using namespace std;
-
+namespace tracking {
+    
 void InsectTracker::init(int id, VisionData *visdat) {
-    _id = id;
+    _insect_trkr_id = id;
     std::ofstream * logger = new std::ofstream(); // FIXME: use std::shared_ptr?
     std::string logger_fn;
     logger_fn = data_output_dir  + "log_itrk" + to_string(id) + ".csv";
@@ -98,4 +99,6 @@ void InsectTracker::calc_world_item(BlobProps * pbs, double time __attribute__((
 
 bool InsectTracker::check_ignore_blobs(BlobProps * pbs, double time __attribute__((unused))) {
     return this->check_ignore_blobs_generic(pbs);
+}
+
 }

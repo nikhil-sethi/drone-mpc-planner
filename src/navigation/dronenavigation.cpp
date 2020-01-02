@@ -7,7 +7,7 @@ using namespace std;
 namespace navigation {
 
 
-void DroneNavigation::init(std::ofstream *logger, TrackerManager * trackers, DroneController * dctrl, VisionData *visdat, CameraVolume *camvol,std::string replay_dir) {
+void DroneNavigation::init(std::ofstream *logger, tracking::TrackerManager * trackers, DroneController * dctrl, VisionData *visdat, CameraVolume *camvol,std::string replay_dir) {
     _logger = logger;
     _trackers = trackers;
     _dctrl = dctrl;
@@ -82,12 +82,12 @@ void DroneNavigation::update(double time) {
                 _dctrl->LED(true);
             if (time > 1) // skip the first second or so, e.g. auto exposure may give heavily changing images
                 _navigation_status = ns_locate_drone;
-            _trackers->mode(TrackerManager::mode_idle);
+            _trackers->mode(tracking::TrackerManager::mode_idle);
             break;
         } case ns_locate_drone: {
             if(pparams.drone != drone_trashcan)
                 _dctrl->blink_by_binding(true);
-            _trackers->mode(TrackerManager::mode_locate_drone);
+            _trackers->mode(tracking::TrackerManager::mode_locate_drone);
             _visdat->reset_motion_integration();
             _visdat->disable_fading = true;
             _navigation_status = ns_wait_locate_drone;
@@ -105,7 +105,7 @@ void DroneNavigation::update(double time) {
                 if (static_cast<float>(time - prev_time) > dparams.blink_period)
                     _dctrl->blink(time);
             }
-            if (_trackers->mode() != TrackerManager::mode_locate_drone) {
+            if (_trackers->mode() != tracking::TrackerManager::mode_locate_drone) {
                 _navigation_status = ns_located_drone;
                 time_located_drone = time;
             }
@@ -116,7 +116,7 @@ void DroneNavigation::update(double time) {
                 _dctrl->blink_by_binding(false);
             else
                 _dctrl->LED(true);
-            _trackers->mode(TrackerManager::mode_idle);
+            _trackers->mode(tracking::TrackerManager::mode_idle);
             _visdat->disable_fading = false;
             if (time-time_located_drone>1.0 && (_dctrl->drone_state_inactive() || pparams.joystick != rc_none)) { // delay until blinking stopped
                 if (_nav_flight_mode == nfm_hunt)
@@ -128,7 +128,7 @@ void DroneNavigation::update(double time) {
             }
             break;
         } case ns_wait_for_takeoff_command: {
-            _trackers->mode(TrackerManager::mode_idle);
+            _trackers->mode(tracking::TrackerManager::mode_idle);
             _dctrl->flight_mode(DroneController::fm_inactive);
             if (_nav_flight_mode == nfm_hunt)
                 _navigation_status = ns_wait_for_insect;
@@ -144,7 +144,7 @@ void DroneNavigation::update(double time) {
             if (_nav_flight_mode == nfm_manual) {
                 _navigation_status = ns_manual;
             } else if (_nav_flight_mode == nfm_hunt){
-                _trackers->mode(TrackerManager::mode_wait_for_insect);
+                _trackers->mode(tracking::TrackerManager::mode_wait_for_insect);
                 if(_iceptor.insect_in_range_takeoff()) {
                     _navigation_status = ns_takeoff;
                     repeat = true;
@@ -163,9 +163,9 @@ void DroneNavigation::update(double time) {
             _dctrl->flight_mode(DroneController::fm_start_takeoff);
             time_taken_off = time;
             if (_nav_flight_mode == nfm_hunt)
-                _trackers->mode(TrackerManager::mode_hunt);
+                _trackers->mode(tracking::TrackerManager::mode_hunt);
             else
-                _trackers->mode(TrackerManager::mode_drone_only);
+                _trackers->mode(tracking::TrackerManager::mode_drone_only);
             _navigation_status=ns_taking_off;
             break;
         } case ns_taking_off: {
@@ -352,7 +352,7 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_manual: { // also used for disarmed
             wpid = 0;
-            _trackers->mode(TrackerManager::mode_drone_only);
+            _trackers->mode(tracking::TrackerManager::mode_drone_only);
             if (_nav_flight_mode == nfm_hunt) {
                 _navigation_status=ns_wait_for_insect;
             } else if (_nav_flight_mode != nfm_manual) { // waypoint mode

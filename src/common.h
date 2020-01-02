@@ -19,7 +19,8 @@ void show_column_image(std::vector<cv::Mat> ims, std::string window_name, int ty
 void show_row_image(std::vector<cv::Mat> ims, std::string window_name, int type, float resizef = 1);
 std::string to_string_with_precision(float f, const int n);
 std::string to_string_with_precision(double f, const int n); // TODO: template?
-cv::Point3f mult(cv::Point3f  p1, cv::Point3f p2);
+cv::Point3f multf(cv::Point3f  p1, cv::Point3f p2);
+float normf(cv::Point2f m);
 float normf(cv::Point3f m);
 float deadzone( float v, float lo, float hi );
 cv::Point3f deadzone(cv::Point3f p,float lo, float hi);

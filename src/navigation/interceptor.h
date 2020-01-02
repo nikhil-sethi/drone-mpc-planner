@@ -22,7 +22,7 @@ class Interceptor{
 
 private:
     std::ofstream *_logger;
-    TrackerManager * _trackers;
+    tracking::TrackerManager * _trackers;
     VisionData *_visdat;
     CameraVolume* _camvol;
     cv::Point3f _intercept_pos,_intercept_vel,_intercept_acc;
@@ -61,7 +61,7 @@ private:
 
 public:
 
-    void init(TrackerManager *trackers, VisionData *visdat, CameraVolume *camvol, ofstream *logger);
+    void init(tracking::TrackerManager *trackers, VisionData *visdat, CameraVolume *camvol, ofstream *logger);
     void update(bool drone_at_base, double time);
     void reset_insect_cleared() {_count_insect_not_in_range = 0;}
 

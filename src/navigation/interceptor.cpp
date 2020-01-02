@@ -1,7 +1,7 @@
 #include "interceptor.h"
 #include "opencv2/imgproc.hpp"
 
-void Interceptor::init(TrackerManager *trackers, VisionData *visdat, CameraVolume *camvol,std::ofstream *logger) {
+void Interceptor::init(tracking::TrackerManager *trackers, VisionData *visdat, CameraVolume *camvol,std::ofstream *logger) {
     _logger = logger;
     _trackers = trackers;
     _visdat = visdat;

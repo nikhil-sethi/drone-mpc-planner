@@ -2,10 +2,13 @@
 #include "itemtracker.h"
 #include "insectreader.h"
 
+namespace tracking {
+
 class InsectTracker : public ItemTracker {
+public: tracker_type type() { return tt_insect;}
 
 private:
-    int16_t _id{-1};
+    int16_t _insect_trkr_id{-1};
     void start_new_log_line(double time, unsigned long long frame_number);
 protected:
     void update_insect_prediction();
@@ -18,12 +21,12 @@ public:
         return n_frames_tracking > n_frames_lost && tracking();
     }
     void append_log(double time, unsigned long long frame_number);
-    int16_t id(){return _id;}
+    int16_t insect_trkr_id(){return _insect_trkr_id;}
 
-    void calc_world_item(BlobProps * pbs, double time);
-    bool check_ignore_blobs(BlobProps * pbs, double time);
+    void calc_world_item(tracking::BlobProps * pbs, double time);
+    bool check_ignore_blobs(tracking::BlobProps * pbs, double time);
     bool delete_me(){
-        if ((n_frames_lost > n_frames_lost_threshold && _id > 0)) {
+        if ((n_frames_lost > n_frames_lost_threshold && _insect_trkr_id > 0)) {
             _logger->close();
             initialized = false;
             return true;
@@ -31,3 +34,5 @@ public:
             return false;
     }
 };
+
+}

@@ -1,6 +1,7 @@
 #pragma once
 #include "defines.h"
 #include "common.h"
+#include "tracking.h"
 #include "itemtracker.h"
 #include "dronetracker.h"
 #include "insecttracker.h"
@@ -12,12 +13,55 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+namespace tracking {
+
 static const char* trackermanager_mode_names[] = {"tm_idle",
                                                   "tm_locate_drone",
                                                   "tm_wait_for_insect",
                                                   "tm_drone_only",
                                                   "tm_hunt",
                                                   "tm_hunt_replay_moth"};
+
+struct processed_blobs {
+    processed_blobs(BlobProps * blob, uint16_t new_id) {
+        props = blob;
+        id = new_id;
+    }
+    cv::Point2f pt() {
+        return cv::Point2f(props->x,props->y);
+    }
+    float size() {
+        return props->radius;
+    }
+    float pixel_max() {
+        return props->pixel_max;
+    }
+    uint16_t id;
+    cv::Mat mask;
+    BlobProps * props;
+    std::vector<ItemTracker *> trackers;
+    bool tracked() { return trackers.size()>0;}
+    bool ignored = false;
+    cv::Scalar color() {
+        if (trackers.size() == 0 ) {
+            if (ignored)
+                return cv::Scalar(0,128,0); // dark green
+            else
+                return cv::Scalar(255,255,55); // light blue
+        } else if (trackers.size()>1)
+            return cv::Scalar(200,255,250);
+        ItemTracker * trkr = trackers.at(0);
+        if (trkr->type() == tt_drone)
+            return cv::Scalar(0,255,0); // green
+        else if (trkr->type() == tt_insect)
+            return cv::Scalar(0,0,255); // red
+        else if (trkr->type() == tt_replay)
+            return cv::Scalar(0,0,180); // dark red
+        else if (trkr->type() == tt_replay)
+            return cv::Scalar(255,0,255); // pink
+        return cv::Scalar(0,0,0);
+    }
+};
 
 /*
  * This class appoints the found image points to the drone and insect item tracker(s)
@@ -26,53 +70,15 @@ static const char* trackermanager_mode_names[] = {"tm_idle",
 class TrackerManager {
 
 public: cv::Scalar tracker_color( ItemTracker * trkr) {
-        if (typeid(*trkr) == typeid(DroneTracker))
+        if (trkr->type() == tt_drone)
             return cv::Scalar(0,255,0);
-        else if (typeid(*trkr) == typeid(InsectTracker))
+        else if (trkr->type() == tt_insect)
             return cv::Scalar(0,0,255);
-        else if (typeid(*trkr) == typeid(BlinkTracker))
+        else if (trkr->type() == tt_blink)
             return cv::Scalar(255,0,255);
         return cv::Scalar(0,0,0);
     }
 
-    struct processed_blobs {
-        processed_blobs(ItemTracker::BlobProps * blob){
-            props = blob;
-        }
-        cv::Point2f pt() {
-            return cv::Point2f(props->x,props->y);
-        }
-        float size() {
-            return props->radius;
-        }
-        float pixel_max() {
-            return props->pixel_max;
-        }
-        cv::Mat mask;
-        ItemTracker::BlobProps * props;
-        std::vector<ItemTracker *> trackers;
-        bool tracked() { return trackers.size()>0;}
-        bool ignored = false;
-        cv::Scalar color() {
-            if (trackers.size() == 0 ){
-                if (ignored)
-                    return cv::Scalar(0,128,0); // dark green
-                else
-                    return cv::Scalar(255,255,55); // light blue
-            } else if (trackers.size()>1)
-                return cv::Scalar(200,255,250);
-            ItemTracker * trkr = trackers.at(0);
-            if (typeid(*trkr) == typeid(DroneTracker))
-                return cv::Scalar(0,255,0); // green
-            else if (typeid(*trkr) == typeid(InsectTracker))
-                return cv::Scalar(0,0,255); // red
-            else if (typeid(*trkr) == typeid(ReplayTracker))
-                return cv::Scalar(0,0,180); // dark red
-            else if (typeid(*trkr) == typeid(BlinkTracker))
-                return cv::Scalar(255,0,255); // pink
-            return cv::Scalar(0,0,0);
-        }
-    };
 
 private:
     class TrackerManagerParameters: public xmls::Serializable
@@ -111,6 +117,7 @@ public:
         mode_drone_only,
         mode_hunt
     };
+    
 
 private:
     std::vector<ItemTracker *> _trackers;
@@ -121,18 +128,20 @@ private:
     bool enable_viz_max_points = false; // flag for enabling the maxs visiualization
     std::vector<cv::Mat> vizs_maxs;
     bool enable_viz_diff = false; // flag for enabling the diff visiualization
+    const float viz_max_points_resizef = 4.0;
 
     const float chance_multiplier_pixel_max = 0.5f;
     const float chance_multiplier_dist = 3;
     const float chance_multiplier_total = chance_multiplier_dist + chance_multiplier_pixel_max;
 
-    std::vector<ItemTracker::BlobProps> _blobs;
+    std::vector<tracking::BlobProps> _blobs;
 
     void update_trackers(double time, long long frame_number, bool drone_is_active);
     void update_max_change_points();
     void update_static_ignores();
     void match_blobs_to_trackers(bool drone_is_active, double time);
     bool tracker_active(ItemTracker * trkr, bool drone_is_active);
+    cv::Scalar color_of_blob(processed_blobs blob);
     std::vector<InsectTracker *> insecttrackers();
     std::vector<ReplayTracker *> replaytrackers();
 
@@ -150,9 +159,9 @@ public:
     std::string mode_str() {
         if (_mode == mode_locate_drone) {
             int best_state = 0;
-            for (uint i = 0; i < _trackers.size(); i++)   {
-                if (typeid(*_trackers.at(i)) == typeid(BlinkTracker))   {
-                    BlinkTracker * btrkr = static_cast<BlinkTracker * >(_trackers.at(i));
+            for (auto trkr : _trackers)   {
+                if (trkr->type() == tt_blink)   {
+                    BlinkTracker * btrkr = static_cast<BlinkTracker * >(trkr);
                     if (btrkr->state() > best_state)
                         best_state = btrkr->state();
                 }
@@ -197,3 +206,5 @@ public:
         replay_logs = replay_logs_updated;
     }
 };
+
+}

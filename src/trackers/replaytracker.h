@@ -1,11 +1,11 @@
 #pragma once
 #include "insecttracker.h"
 #include "insectreader.h"
-/*
- * This class will replay a insect log
- *
- */
+
+namespace tracking {
+
 class ReplayTracker : public InsectTracker {
+public: tracker_type type() { return tt_replay;}
 
 private:
     int16_t _id{-1};
@@ -36,3 +36,5 @@ public:
         return false;
     }
 };
+
+}

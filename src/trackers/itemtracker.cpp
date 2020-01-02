@@ -10,7 +10,11 @@
 using namespace cv;
 using namespace std;
 
+namespace tracking {
+
 void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string name) {
+    static int16_t trkr_cntr = 0;
+    _uid = trkr_cntr++;
     _logger = logger;
     _visdat = visdat;
     _name = name;
@@ -89,12 +93,12 @@ void ItemTracker::init_logger() {
 }
 
 void ItemTracker::init_kalman() {
-    kfL = cv::KalmanFilter(stateSize, measSize, contrSize, type);
-    stateL =cv::Mat(stateSize, 1, type);  // [x,y,v_x,v_y,w,h]
+    kfL = cv::KalmanFilter(stateSize, measSize, contrSize, kalman_type);
+    stateL =cv::Mat(stateSize, 1, kalman_type);  // [x,y,v_x,v_y,w,h]
 
     //TODO: tune kalman init values
     cv::setIdentity(kfL.transitionMatrix);
-    kfL.measurementMatrix = cv::Mat::zeros(measSize, stateSize, type);
+    kfL.measurementMatrix = cv::Mat::zeros(measSize, stateSize, kalman_type);
     kfL.measurementMatrix.at<float>(0) = 1.0f;
     kfL.measurementMatrix.at<float>(7) = 1.0f;
     kfL.measurementMatrix.at<float>(16) = 1.0f;
@@ -425,12 +429,10 @@ void ItemTracker::check_consistency(float dt) {
 }
 
 void ItemTracker::update_prediction_state(cv::Point2f image_location, float disparity) {
-    cv::Mat measL(measSize, 1, type);
+    cv::Mat measL(measSize, 1, kalman_type);
     measL.at<float>(0) = image_location.x;
     measL.at<float>(1) = image_location.y;
     measL.at<float>(2) = disparity;
-
-
 
     if (!_tracking) { // First detection!
         kfL.errorCovPre.at<float>(0) = 1; // px
@@ -637,4 +639,6 @@ void ItemTracker::close () {
             serialize_settings();
         initialized = false;
     }
+}
+
 }
