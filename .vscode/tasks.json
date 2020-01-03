@@ -8,9 +8,20 @@
                 "cwd": "${workspaceRoot}/pc/build-vscode"
             },
             "command": "cmake \"Unix Makefiles\"  ${workspaceRoot}/pc",
-            "problemMatcher": [
-                "$go"
-            ]
+            "presentation": {
+                "showReuseMessage": false
+              }
+        },
+        {
+            "label": "make clean",
+            "type": "shell",
+            "command": "make clean",
+            "options": {
+                "cwd": "${workspaceRoot}/pc/build-vscode"
+            },
+            "presentation": {
+                "showReuseMessage": false
+              }
         },
         {
             "label": "make",
@@ -24,10 +35,15 @@
                 "kind": "build",
                 "isDefault": true
             },
+            "presentation": {
+                "showReuseMessage": false
+            },
             "problemMatcher": [
                 {
-                    "base":"$gcc",
-                    "fileLocation": ["absolute"],
+                    "base": "$gcc",
+                    "fileLocation": [
+                        "absolute"
+                    ]
                 }
             ]
         }

@@ -59,7 +59,7 @@ protected:
     int _score_threshold;
     int background_subtract_zone_factor;
     float max_size; // world, in meters
-    
+
 
     std::string settings_file;
     void deserialize_settings();
@@ -85,6 +85,7 @@ private:
     int contrSize = 0;
 
     int16_t _uid = -1;
+    int16_t _viz_id = -1;
 
     int kalman_type = CV_32F;
     cv::KalmanFilter kfL;
@@ -151,9 +152,10 @@ protected:
     float score(BlobProps blob, ImageItem ref);
 public:
 
-    int16_t uid() {
-        return _uid;
-    }
+    int16_t uid() {return _uid;}
+    int16_t viz_id() { return _viz_id;}
+    void viz_id(int16_t id) {_viz_id = id;}
+
     virtual ~ItemTracker() {}
 
     std::vector<WorldItem> path;
@@ -161,7 +163,7 @@ public:
     std::vector<IgnoreBlob> ignores_for_other_trkrs;
     std::vector<IgnoreBlob> ignores_for_me;
 
-    void blobs_are_fused(){
+    void blobs_are_fused() {
         _world_item.iti.blob_is_fused = true;
         _image_item.blob_is_fused = true;
         _blobs_are_fused_cnt++;
@@ -170,10 +172,10 @@ public:
     int n_frames_tracking =0;
     double last_sighting_time = 0;
 
-    bool tracking(){return _tracking;}
+    bool tracking() {return _tracking;}
 
     void close (void);
-    void init(std::ofstream *logger, VisionData *_visdat, std::string name);
+    void init(std::ofstream *logger, VisionData *_visdat, std::string name, int16_t viz_id);
     virtual void track(double time);
     virtual bool check_ignore_blobs(BlobProps * pbs, double time) = 0;
     virtual void calc_world_item(BlobProps * pbs, double time) = 0;
@@ -188,14 +190,14 @@ public:
     }
     virtual bool delete_me() = 0;
 
-    ImageItem image_item(){return _image_item;}
-    ImagePredictItem image_predict_item(){return _image_predict_item;}
-    WorldItem world_item(){return _world_item;}
-    void world_item(WorldItem world_item){
+    ImageItem image_item() {return _image_item;}
+    ImagePredictItem image_predict_item() {return _image_predict_item;}
+    WorldItem world_item() {return _world_item;}
+    void world_item(WorldItem world_item) {
         _world_item = world_item;
         _image_item = _world_item.iti;
     }
-    void item_invalidize(){
+    void item_invalidize() {
         _image_item.valid = false;
         _world_item.valid = false;
     }

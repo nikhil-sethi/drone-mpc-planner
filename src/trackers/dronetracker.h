@@ -27,9 +27,6 @@ private:
     float heading;
     const float landing_heading_criteria = 0.05;
 
-    float takeoff_detection_dy_prev;
-    float takeoff_detection_dt_prev;
-
     bool spinup_detected = false;
 
     enum drone_tracking_states {
@@ -126,7 +123,7 @@ public:
     bool _manual_flight_mode = false;
     cv::Mat diff_viz;
 
-    bool init(std::ofstream *logger, VisionData *_visdat);
+    bool init(std::ofstream *logger, VisionData *_visdat, int16_t viz_id);
     void track(double time, bool drone_is_active);
 
     void land() {_drone_tracking_status = dts_landing_init;}

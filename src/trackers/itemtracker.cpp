@@ -12,9 +12,10 @@ using namespace std;
 
 namespace tracking {
 
-void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string name) {
+void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string name, int16_t viz_id) {
     static int16_t trkr_cntr = 0;
     _uid = trkr_cntr++;
+    _viz_id = viz_id;
     _logger = logger;
     _visdat = visdat;
     _name = name;
@@ -116,42 +117,45 @@ void ItemTracker::init_kalman() {
 }
 
 void ItemTracker::calc_world_props_blob_generic(BlobProps * pbs){
-    BlobWorldProps w;
-    cv::Point2f p(pbs->x, pbs->y);
+    if (pbs->world_props.trkr_id != _uid) {
+        BlobWorldProps w;
+        cv::Point2f p(pbs->x, pbs->y);
+        w.trkr_id = _uid;
 
-    p*=pparams.imscalef;
-    w.disparity = stereo_match(p,_visdat->diffL,_visdat->diffR,pbs->radius);
+        p*=pparams.imscalef;
+        w.disparity = stereo_match(p,_visdat->diffL,_visdat->diffR,pbs->radius);
 
-    if (w.disparity < min_disparity || w.disparity > max_disparity){
-        w.disparity_in_range = false;
-    } else {
-        w.disparity_in_range = true;
+        if (w.disparity < min_disparity || w.disparity > max_disparity){
+            w.disparity_in_range = false;
+        } else {
+            w.disparity_in_range = true;
 
-        std::vector<Point3d> camera_coordinates, world_coordinates;
-        camera_coordinates.push_back(Point3d(p.x,p.y,-w.disparity));
-        camera_coordinates.push_back(Point3d(p.x+pbs->radius,p.y,-w.disparity)); // to calc world radius
-        cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
+            std::vector<Point3d> camera_coordinates, world_coordinates;
+            camera_coordinates.push_back(Point3d(p.x,p.y,-w.disparity));
+            camera_coordinates.push_back(Point3d(p.x+pbs->radius,p.y,-w.disparity)); // to calc world radius
+            cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
 
-        w.radius = cv::norm(world_coordinates[0]-world_coordinates[1]);
-        w.radius_in_range = w.radius < max_size;
+            w.radius = cv::norm(world_coordinates[0]-world_coordinates[1]);
+            w.radius_in_range = w.radius < max_size;
 
-        w.x = world_coordinates[0].x;
-        w.y = world_coordinates[0].y;
-        w.z = world_coordinates[0].z;
-        //compensate camera rotation:
-        float theta = _visdat->camera_angle * deg2rad;
-        float temp_y = w.y * cosf(theta) + w.z * sinf(theta);
-        w.z = -w.y * sinf(theta) + w.z * cosf(theta);
-        w.y = temp_y;
+            w.x = world_coordinates[0].x;
+            w.y = world_coordinates[0].y;
+            w.z = world_coordinates[0].z;
+            //compensate camera rotation:
+            float theta = _visdat->camera_angle * deg2rad;
+            float temp_y = w.y * cosf(theta) + w.z * sinf(theta);
+            w.z = -w.y * sinf(theta) + w.z * cosf(theta);
+            w.y = temp_y;
 
-        w.distance_bkg = _visdat->depth_background_mm.at<float>(p.y,p.x);
-        w.distance = sqrtf(powf(w.x,2) + powf(w.y,2) +powf(w.z,2));
-        if ((w.distance > w.distance_bkg*(static_cast<float>(background_subtract_zone_factor)/100.f)) )
-            w.bkg_check_ok = false;
-        else
-            w.bkg_check_ok = true;
+            w.distance_bkg = _visdat->depth_background_mm.at<float>(p.y,p.x);
+            w.distance = sqrtf(powf(w.x,2) + powf(w.y,2) +powf(w.z,2));
+            if ((w.distance > w.distance_bkg*(static_cast<float>(background_subtract_zone_factor)/100.f)) )
+                w.bkg_check_ok = false;
+            else
+                w.bkg_check_ok = true;
+        }
+        pbs->world_props = w;
     }
-    pbs->world_props = w;
 }
 
 void ItemTracker::update_world_candidate(){ //TODO: rename

@@ -3,9 +3,9 @@
 
 namespace tracking {
 
-bool DroneTracker::init(std::ofstream *logger, VisionData *visdat) {
+bool DroneTracker::init(std::ofstream *logger, VisionData *visdat, int16_t viz_id) {
     enable_viz_diff = false;
-    ItemTracker::init(logger,visdat,"drone");
+    ItemTracker::init(logger,visdat,"drone",viz_id);
     (*_logger) << "dtrkr_state;";
     return false;
 }
@@ -38,9 +38,9 @@ void DroneTracker::track(double time, bool drone_is_active) {
             //not sure what that is (might be a flickering led?), but the following makes the insect tracker
             //ignore it. Can be better fixed by having a specialized landingspot detector.
             ignores_for_other_trkrs.push_back(IgnoreBlob(drone_startup_im_location(),
-                                                         _drone_blink_im_size*5,
-                                                         time+startup_location_ignore_timeout,
-                                                         IgnoreBlob::takeoff_spot));
+                                              _drone_blink_im_size*5,
+                                              time+startup_location_ignore_timeout,
+                                              IgnoreBlob::takeoff_spot));
         }
 
         if (drone_is_active)
@@ -59,7 +59,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
         spinup_detected = false;
         [[fallthrough]];
     } case dts_detecting_takeoff: {
-        if (!_world_item.valid){
+        if (!_world_item.valid) {
             //TODO: remove full_bat_and_throttle_im_effect and use acc to calc back to image coordinates
             cv::Point2f expected_drone_location = _drone_blink_im_location;
             float dt = current_time - start_take_off_time;
@@ -78,18 +78,15 @@ void DroneTracker::track(double time, bool drone_is_active) {
         }
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
-        else if (n_frames_lost==0 && _world_item.valid){
+        else if (n_frames_lost==0 && _world_item.valid) {
 
-            float dist2takeoff =normf(_drone_blink_world_location - _world_item.pt);
-            float takeoff_z = _drone_blink_world_location.z - _world_item.pt.z;
+            float dist2takeoff =normf(_world_item.pt - _drone_blink_world_location);
+            float takeoff_y =  _world_item.pt.y - _drone_blink_world_location.y;
 
-            if (dist2takeoff < 0.02f) 
-                spinup_detected = true;
-
-            if (spinup_detected && dist2takeoff < 0.1f && takeoff_z > 0.05f) {
-                    _drone_tracking_status = dts_tracking;
-                    //_visdat->delete_from_motion_map(drone_startup_im_location()*pparams.imscalef, _drone_blink_im_disparity,ceilf(_drone_blink_im_size*2.f)*pparams.imscalef,pparams.fps/2);
-                    //ignores_for_me.push_back(IgnoreBlob(drone_startup_im_location(),_drone_blink_im_size*2,time+startup_location_ignore_timeout, IgnoreBlob::takeoff_spot));
+            if (spinup_detected && dist2takeoff < 0.1f && takeoff_y > 0.05f) {
+                _drone_tracking_status = dts_tracking;
+                //_visdat->delete_from_motion_map(drone_startup_im_location()*pparams.imscalef, _drone_blink_im_disparity,ceilf(_drone_blink_im_size*2.f)*pparams.imscalef,pparams.fps/2);
+                //ignores_for_me.push_back(IgnoreBlob(drone_startup_im_location(),_drone_blink_im_size*2,time+startup_location_ignore_timeout, IgnoreBlob::takeoff_spot));
             }
         }
         break;
@@ -133,52 +130,44 @@ void DroneTracker::track(double time, bool drone_is_active) {
     (*_logger) << static_cast<int16_t>(_drone_tracking_status) << ";";
 }
 
-void DroneTracker::calc_world_item(BlobProps * pbs, double time) {
-    calc_world_props_blob_generic(pbs);
-    pbs->world_props.valid = pbs->world_props.bkg_check_ok && pbs->world_props.disparity_in_range && pbs->world_props.radius_in_range;
+void DroneTracker::calc_world_item(BlobProps * props, double time [[maybe_unused]]) {
+    calc_world_props_blob_generic(props);
+
+    float dist2takeoff =normf(props->world_props.pt() - _drone_blink_world_location);
+    float takeoff_y =  props->world_props.y - _drone_blink_world_location.y;
+
+    if (taking_off() && dist2takeoff < 0.15f && !props->world_props.bkg_check_ok) {
+        props->world_props.bkg_check_ok = true;
+    }
+
+    props->world_props.valid = props->world_props.bkg_check_ok && props->world_props.disparity_in_range && props->world_props.radius_in_range;
 
     if (inactive()) {
-        pbs->world_props.valid = false;
-    } else if (taking_off() && pbs->world_props.valid && !_manual_flight_mode) {
+        props->world_props.valid = false;
+    } else if (taking_off() && props->world_props.valid && !_manual_flight_mode) {
 
-        float dt = time - start_take_off_time;
-        dt -= dparams.full_bat_and_throttle_spinup_duration;
-        if (dt<0)
-            dt=0;
+        if (dist2takeoff < 0.1f)
+            spinup_detected = true;
 
-        float err_pos = normf(_drone_blink_world_location - cv::Point3f(pbs->world_props.x,pbs->world_props.y,pbs->world_props.z));
-        float dy = pbs->world_props.y - _drone_blink_world_location.y;
-
-        // only accept the drone blob when
-        // 1) it is 10cm up in the air, because we then have a reasonable good seperation and can calculate the state
-        // 2) it is reasonably close to the prediciton
-        float dy_takeoff_detected = 0.12f;
-        if (err_pos >= InsectTracker::new_tracker_drone_ignore_zone_size || dy < dy_takeoff_detected) {
-            pbs->world_props.valid = false;
-            pbs->world_props.takeoff_reject = true;
-            takeoff_detection_dy_prev = dy;
-            takeoff_detection_dt_prev = dt;
+        if (dist2takeoff > 0.1f || takeoff_y < 0.05f) {
+            props->world_props.valid = false;
+            props->world_props.takeoff_reject = true;
         } else {
-            // Interpolate time to the time of dy=dy_takeoff_detected:
-            float t = takeoff_detection_dt_prev + (dt - takeoff_detection_dt_prev) / (dy - takeoff_detection_dy_prev)
-                                                      * (dy_takeoff_detected - takeoff_detection_dy_prev);
-            //            std::cout << "dt: " << dt << " dy: " << dy << " dt(k-1): " << takeoff_detection_dt_prev << " dy(k-1): " << takeoff_detection_dy_prev << std::endl;
-            hover_throttle_estimation = dparams.hover_throttle_a*t + dparams.hover_throttle_b ;
-            std::cout << "Initialising hover-throttle: " << hover_throttle_estimation << std::endl;
+            std::cout << "ja" << std::endl;
         }
-    }else if(correct_heading() && pbs->world_props.valid){
-        heading = calc_heading(pbs, false);
-        pbs->world_props.heading = heading;
+    } else if(correct_heading() && props->world_props.valid) {
+        heading = calc_heading(props, false);
+        props->world_props.heading = heading;
     }
 }
 
-bool DroneTracker::check_ignore_blobs(BlobProps * pbs, double time) { 
+bool DroneTracker::check_ignore_blobs(BlobProps * pbs, double time) {
     bool in_im_ignore_zone = this->check_ignore_blobs_generic(pbs);
     // if the drone takes off towards the camera, we won't get proper blob seperation from the takeoff spot in the image
     // also, when taking of the drone does cause for some interering reflections around the pad, so these need to be ignored
     if (in_im_ignore_zone && taking_off()) {
         calc_world_item(pbs,time);
-        for (auto ignore : pbs->ignores){
+        for (auto ignore : pbs->ignores) {
             if (ignore.ignore_type == tracking::IgnoreBlob::IgnoreType::takeoff_spot) {
                 if (pbs->world_props.z > drone_startup_location().z+0.025f) {
                     return false;
@@ -194,7 +183,7 @@ bool DroneTracker::check_ignore_blobs(BlobProps * pbs, double time) {
 }
 
 //Removes all ignore points which timed out
-void DroneTracker::clean_ignore_blobs(double time){
+void DroneTracker::clean_ignore_blobs(double time) {
     std::vector<IgnoreBlob> new_ignores_for_insect_tracker;
     for (uint i = 0; i < ignores_for_other_trkrs.size(); i++) {
         if (ignores_for_other_trkrs.at(i).was_used && ignores_for_other_trkrs.at(i).invalid_after>=0)
@@ -254,7 +243,7 @@ void DroneTracker::update_drone_prediction() {
 
 }
 
-cv::Mat DroneTracker::get_big_blob(cv::Mat Mask, int connectivity){
+cv::Mat DroneTracker::get_big_blob(cv::Mat Mask, int connectivity) {
     cv::Mat labels, stats, centroids;
     int nLabels = cv::connectedComponentsWithStats(Mask, labels, stats, centroids, connectivity, CV_32S);
 
@@ -262,8 +251,8 @@ cv::Mat DroneTracker::get_big_blob(cv::Mat Mask, int connectivity){
     int big_blob;
     int area = 0;
 
-    for(int i = 1; i<=nLabels; i++){
-        if(stats.at<int>(i,cv::CC_STAT_AREA) > area){
+    for(int i = 1; i<=nLabels; i++) {
+        if(stats.at<int>(i,cv::CC_STAT_AREA) > area) {
             big_blob = i;
             area = stats.at<int>(i,cv::CC_STAT_AREA);
         }
@@ -272,15 +261,15 @@ cv::Mat DroneTracker::get_big_blob(cv::Mat Mask, int connectivity){
     return mask_big;
 }
 
-cv::Mat DroneTracker::extract_mask_column(cv::Mat mask_big, float range_left, float range_right, float side_percentage, enum side side_){
+cv::Mat DroneTracker::extract_mask_column(cv::Mat mask_big, float range_left, float range_right, float side_percentage, enum side side_) {
     cv::Mat half_ = mask_big(cv::Range::all(), cv::Range(range_left,range_right)).clone();
-    for(int j=0; j<half_.rows; j++){
+    for(int j=0; j<half_.rows; j++) {
         half_.at<uchar>(j,(half_.cols-1)*(1-side_)) = round(side_percentage*half_.at<uchar>(j,(half_.cols-1)*(1-side_)));
     }
     return half_;
 }
 
-cv::Mat DroneTracker::split_mask_half(cv::Mat mask_big, enum side side_){
+cv::Mat DroneTracker::split_mask_half(cv::Mat mask_big, enum side side_) {
     cv::Moments mo = moments(mask_big,true);
     cv::Point2f COG = cv::Point2f(static_cast<float>(mo.m10) / static_cast<float>(mo.m00), static_cast<float>(mo.m01) / static_cast<float>(mo.m00));
     float delta = COG.x - mask_big.rows/2;
@@ -288,22 +277,22 @@ cv::Mat DroneTracker::split_mask_half(cv::Mat mask_big, enum side side_){
     delta_frac = modf(delta, &n);
     cv::Mat half;
 
-    if(side_==leftside && delta>=0 && delta<mask_big.rows/2){
+    if(side_==leftside && delta>=0 && delta<mask_big.rows/2) {
         half = extract_mask_column(mask_big, 2*floor(delta), mask_big.rows/2+ceil(delta), delta_frac, side_);
     }
-    else if(side_==leftside && delta<0 && delta>-mask_big.rows/2){
+    else if(side_==leftside && delta<0 && delta>-mask_big.rows/2) {
         half = extract_mask_column(mask_big, 0, mask_big.rows/2+ceil(delta), 1-abs(delta_frac), side_);
     }
-    else if(side_==rightside && delta>=0 && delta<mask_big.rows/2){
+    else if(side_==rightside && delta>=0 && delta<mask_big.rows/2) {
         half = extract_mask_column(mask_big, mask_big.rows/2+floor(delta), mask_big.rows, 1-delta_frac, side_);
     }
-    else if(side_==rightside && delta<0 && delta>-mask_big.rows/2){
+    else if(side_==rightside && delta<0 && delta>-mask_big.rows/2) {
         half = extract_mask_column(mask_big, mask_big.rows/2+floor(delta), mask_big.rows+2*floor(delta), abs(delta_frac), side_);
     }
     return half;
 }
 
-float DroneTracker::yaw_heading(cv::Mat left, cv::Mat right){ // Heading positive = Clockwise, Heading negative is Counter-Clockwise
+float DroneTracker::yaw_heading(cv::Mat left, cv::Mat right) { // Heading positive = Clockwise, Heading negative is Counter-Clockwise
     cv::Moments mo_l = moments(left,true);
     cv::Point2f COG_l = cv::Point2f(static_cast<float>(mo_l.m10) / static_cast<float>(mo_l.m00), static_cast<float>(mo_l.m01) / static_cast<float>(mo_l.m00));
     cv::Moments mo_r = moments(right,true);
@@ -312,44 +301,44 @@ float DroneTracker::yaw_heading(cv::Mat left, cv::Mat right){ // Heading positiv
     return heading;
 }
 
-float DroneTracker::calc_heading(BlobProps * pbs, bool inspect_blob){ // Set inspect_blob = true to see mask. Otherwise set to false.
-    if(inspect_blob==true){
+float DroneTracker::calc_heading(BlobProps * pbs, bool inspect_blob) { // Set inspect_blob = true to see mask. Otherwise set to false.
+    if(inspect_blob==true) {
         cout<<"Original Drone Mask: "<<endl;
         cout<<pbs->mask<<endl;
     }
-    if(!pbs->mask.empty()){
+    if(!pbs->mask.empty()) {
         int kernel_int = 2;
         cv::Mat mask_erode;
         erode(pbs->mask, mask_erode,getStructuringElement(cv::MORPH_RECT, cv::Size(kernel_int,kernel_int)));
-        if(inspect_blob==true){
+        if(inspect_blob==true) {
             cout<<"eroded mask: "<<endl;
             cout<<mask_erode<<endl;
         }
 
         cv::Mat mask_big = get_big_blob(mask_erode, 4);
         int nrnonzero = countNonZero(mask_big);
-        if(nrnonzero > 1){
-            if(inspect_blob==true){
+        if(nrnonzero > 1) {
+            if(inspect_blob==true) {
                 cout<<"New Drone Mask: "<<endl;
                 cout<<mask_big<<endl;
             }
         }
 
         cv::Mat splitted_mask_left, splitted_mask_right;
-        if(nrnonzero > 1){
+        if(nrnonzero > 1) {
             splitted_mask_left = split_mask_half(mask_big, leftside);
             splitted_mask_right = split_mask_half(mask_big, rightside);
         }
-        else if(nrnonzero < 1){
+        else if(nrnonzero < 1) {
             splitted_mask_left = split_mask_half(mask_erode, leftside);
             splitted_mask_right = split_mask_half(mask_erode, rightside);
         }
-        if(inspect_blob==true){
+        if(inspect_blob==true) {
             cout<<"Left: "<<splitted_mask_left<<endl;
             cout<<"Right: "<<splitted_mask_right<<endl;
         }
         heading = yaw_heading(splitted_mask_left, splitted_mask_right);
-        if(inspect_blob==true){
+        if(inspect_blob==true) {
             cout<<"Heading: "<<heading<<endl;
         }
     }

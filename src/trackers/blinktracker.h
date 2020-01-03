@@ -50,7 +50,7 @@ public:
     std::string state_str() {return blinking_drone_state_names[_blinking_drone_status];}
     blinking_drone_states state() {return _blinking_drone_status;}
 
-    bool init(VisionData *_visdat);
+    bool init(VisionData *_visdat, int16_t viz_id);
     void track(double time);
 
     void calc_world_item(tracking::BlobProps * pbs, double time);

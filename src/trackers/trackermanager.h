@@ -44,7 +44,7 @@ struct processed_blobs {
     bool ignored = false;
     cv::Scalar color() {
         if (trackers.size() == 0 ) {
-            if (ignored)
+            if (ignored || props->world_props.takeoff_reject)
                 return cv::Scalar(0,128,0); // dark green
             else
                 return cv::Scalar(255,255,55); // light blue
@@ -144,6 +144,8 @@ private:
     cv::Scalar color_of_blob(processed_blobs blob);
     std::vector<InsectTracker *> insecttrackers();
     std::vector<ReplayTracker *> replaytrackers();
+
+    void reset_trkr_viz_ids();
 
     uint16_t next_insecttrkr_id = 1;
     detection_mode _mode;

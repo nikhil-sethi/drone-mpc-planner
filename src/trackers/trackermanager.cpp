@@ -26,9 +26,9 @@ void TrackerManager::init(std::ofstream *logger,VisionData *visdat) {
     //#106
     _dtrkr = new DroneTracker();
     default_itrkr = new InsectTracker();
-    _dtrkr->init(_logger,_visdat);
-    default_itrkr->init(0,_visdat);
+    default_itrkr->init(0,_visdat,0);
     _trackers.push_back(default_itrkr);
+    _dtrkr->init(_logger,_visdat,1);
     _trackers.push_back(_dtrkr);
 
     (*_logger) << "trkrs_state;";
@@ -40,6 +40,8 @@ void TrackerManager::update(double time, bool drone_is_active) {
     if (enable_viz_diff) {
         cv::cvtColor(_visdat->diffL*10,diff_viz,CV_GRAY2BGR);
     }
+
+    reset_trkr_viz_ids();
 
     if (_mode != mode_idle) {
         update_max_change_points();
@@ -117,7 +119,6 @@ void TrackerManager::update_trackers(double time,long long frame_number, bool dr
 
 //for each tracker collect the static ignores from each other tracker
 void TrackerManager::update_static_ignores() {
-    bool landingspot_ignore_found = false;
     tracking::IgnoreBlob landingspot;
     for (uint i=0; i<_trackers.size(); i++) {
         std::vector<tracking::IgnoreBlob> ignores;
@@ -126,7 +127,6 @@ void TrackerManager::update_static_ignores() {
                 for (uint k = 0; k < _trackers.at(j)->ignores_for_other_trkrs.size(); k++) {
                     ignores.push_back(_trackers.at(j)->ignores_for_other_trkrs.at(k));
                     if (_trackers.at(j)->ignores_for_other_trkrs.at(k).ignore_type == tracking::IgnoreBlob::takeoff_spot) {
-                        landingspot_ignore_found = true;
                         landingspot = _trackers.at(j)->ignores_for_other_trkrs.at(k);
                     }
                 }
@@ -134,8 +134,6 @@ void TrackerManager::update_static_ignores() {
         }
         _trackers.at(i)->ignores_for_me = ignores;
     }
-    if (landingspot_ignore_found) // tmp solution until landingspot itemtracker is made
-        _dtrkr->ignores_for_me.push_back(landingspot);
 }
 
 void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) {
@@ -154,8 +152,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
         }
 
         //first check if there are trackers that were already tracking something, which prediction matches a new keypoint
-        for (uint i=0; i<_trackers.size(); i++) {
-            ItemTracker * trkr = _trackers.at(i);
+        for (auto trkr : _trackers) {
             float best_trkr_score = -1;
             processed_blobs *best_blob = &pbs.at(0);
 
@@ -175,18 +172,18 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                         }
                         if (enable_viz_max_points) {
                             cv::Mat viz = vizs_maxs.at(blob.id);
-                            cv::Point2i pt(viz.cols-50,viz.rows - 14*(i+1));
+                            cv::Point2i pt(viz.cols-50,viz.rows - 14*(trkr->viz_id()+1));
                             putText(viz,to_string_with_precision(score,1),pt,FONT_HERSHEY_SIMPLEX,0.5,tracker_color(trkr));
                         }
                     } else if (enable_viz_max_points) {
                         cv::Mat viz = vizs_maxs.at(blob.id);
-                        cv::Point2i pt(viz.cols-50,viz.rows - 14*(i+1));
-                        putText(viz,"Ign.",pt,FONT_HERSHEY_SIMPLEX,0.5,tracker_color(trkr));
+                        cv::Point2i pt(viz.cols-50,viz.rows -6-14*(trkr->viz_id()+1));
+                        putText(viz,"Ign.",pt,FONT_HERSHEY_SIMPLEX,0.3,tracker_color(trkr));
                     }
                 }
                 if (best_trkr_score >= trkr->score_threshold() ) {
                     best_blob->trackers.push_back(trkr);
-                    
+
                     trkr->calc_world_item(best_blob->props,time);
                     tracking::ImageItem iti(*(best_blob->props),_visdat->frame_id,best_trkr_score,best_blob->id);
                     tracking::WorldItem w(iti,best_blob->props->world_props);
@@ -212,8 +209,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
         }
 
         //see if there are trackers that are not tracking yet and if there are untracked points left, which can be bound together.
-        for (uint i=0; i<_trackers.size(); i++) {
-            ItemTracker * trkr = _trackers.at(i);
+        for (auto trkr : _trackers) {
             if (!trkr->tracking()) {
                 if (tracker_active(trkr, drone_is_active)) {
                     for (auto &blob : pbs) {
@@ -221,7 +217,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
 
                             //check against static ignore points
                             auto props = blob.props;
-                            bool in_im_ignore_zone = trkr->check_ignore_blobs(props,blob.id);
+                            bool in_im_ignore_zone = trkr->check_ignore_blobs(props,time);
                             if (in_im_ignore_zone)
                                 blob.ignored = true;
 
@@ -247,8 +243,8 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
 
                                     if (enable_viz_max_points) {
                                         cv::Mat viz = vizs_maxs.at(blob.id);
-                                        cv::Point2i pt(viz.cols-50,viz.rows - 14*(i+1));
-                                        putText(viz,"New",pt,FONT_HERSHEY_SIMPLEX,0.5,tracker_color(trkr));
+                                        cv::Point2i pt(viz.cols-50,viz.rows -6-14*(trkr->viz_id()+1));
+                                        putText(viz,"New",pt,FONT_HERSHEY_SIMPLEX,0.3,tracker_color(trkr));
                                     }
 
                                     // There may be other interesting blobs to consider but since there is no
@@ -259,15 +255,15 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                             } else {
                                 if (enable_viz_max_points) {
                                     cv::Mat viz = vizs_maxs.at(blob.id);
-                                    cv::Point2i pt(viz.cols-50,viz.rows - 14*(i+1));
-                                    putText(viz,"Ign.",pt,FONT_HERSHEY_SIMPLEX,0.5,tracker_color(trkr));
+                                    cv::Point2i pt(viz.cols-50,viz.rows-6-14*(trkr->viz_id()+1));
+                                    putText(viz,"Ign.",pt,FONT_HERSHEY_SIMPLEX,0.3,tracker_color(trkr));
                                 }
                             }
                         } else {
                             if (enable_viz_max_points) {
                                 cv::Mat viz = vizs_maxs.at(blob.id);
-                                cv::Point2i pt(viz.cols-50,viz.rows - 14*(i+1));
-                                putText(viz,"Trkd.",pt,FONT_HERSHEY_SIMPLEX,0.5,tracker_color(trkr));
+                                cv::Point2i pt(viz.cols-50,viz.rows -6-14*(trkr->viz_id()+1));
+                                putText(viz,"Trkd.",pt,FONT_HERSHEY_SIMPLEX,0.3,tracker_color(trkr));
                             }
                         }
                     }
@@ -294,7 +290,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                 if (_mode == mode_locate_drone) {
                     BlinkTracker  * bt;
                     bt = new BlinkTracker();
-                    bt->init(_visdat);
+                    bt->init(_visdat,_trackers.size());
                     bt->calc_world_item(props,time);
                     if (props->world_props.valid) {
                         tracking::WorldItem w(tracking::ImageItem(*props,_visdat->frame_id,100,blob.id),props->world_props);
@@ -316,7 +312,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                         if (dist_to_drone < InsectTracker::new_tracker_drone_ignore_zone_size) {
                             InsectTracker *it;
                             it = new InsectTracker();
-                            it->init(next_insecttrkr_id,_visdat);
+                            it->init(next_insecttrkr_id,_visdat,_trackers.size());
                             next_insecttrkr_id++;
                             default_itrkr->calc_world_item(props,time);
                             tracking::WorldItem w(tracking::ImageItem(*props,_visdat->frame_id,100,blob.id),props->world_props);
@@ -421,32 +417,34 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                         s = s + "->" + std::to_string(itrkr->insect_trkr_id());
                     }
                 }
-
-                auto wblob = blob.props->world_props;
-                int code = 0;
-                if (!wblob.valid && !blob.ignored) {
-                    if (!wblob.disparity_in_range)
-                        code +=1;
-                    if (!wblob.bkg_check_ok)
-                        code +=2;
-                    if (!wblob.radius_in_range)
-                        code +=4;
-                    if (blob.props->ignores.size()>0)
-                        code +=8;
-                    if (wblob.takeoff_reject)
-                        code +=16;
-                    if (code>0)
-                        s = s + "E" + std::to_string(code);
-                    _dtrkr->calc_world_item(blob.props,time); // TMP
-
-                }
-
                 putText(diff_viz,s,blob.pt()*pparams.imscalef,FONT_HERSHEY_SIMPLEX,0.5,blob.color(),2);
                 cv::circle(diff_viz,blob.pt()*pparams.imscalef,3,blob.color(),1);
             }
             for (auto trkr : replaytrackers()) {
                 putText(diff_viz," r",trkr->image_item().pt()*pparams.imscalef,FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,180),2);
                 cv::circle(diff_viz,trkr->image_item().pt()*pparams.imscalef,3,cv::Scalar(0,0,180),1);
+            }
+        }
+        if (enable_viz_max_points) {
+            for (auto blob : pbs) {
+                auto wblob = blob.props->world_props;
+                std::string msg_str = std::to_string(blob.id);
+                cv::Mat viz = vizs_maxs.at(blob.id);
+                if (!wblob.valid && !blob.ignored) {
+                    if (!wblob.disparity_in_range)
+                        msg_str = msg_str + " dsp.";
+                    if (!wblob.bkg_check_ok)
+                        msg_str = msg_str + " bkg.";
+                    if (!wblob.radius_in_range)
+                        msg_str = msg_str + " r.";
+                    if (blob.props->ignores.size()>0)
+                        msg_str = msg_str + " ign.";
+                    if (wblob.takeoff_reject)
+                        msg_str = msg_str + " tko.";
+                    putText(viz,msg_str,cv::Point2i(viz.cols /2,viz.rows - 20),FONT_HERSHEY_SIMPLEX,0.3,blob.color());                    
+                }
+                std::string coor_str = to_string_with_precision(wblob.x,3) + ", " + to_string_with_precision(wblob.y,3) + ", " + to_string_with_precision(wblob.z,3);
+                putText(viz,coor_str,cv::Point2i(viz.cols /2,viz.rows - 10),FONT_HERSHEY_SIMPLEX,0.3,blob.color());
             }
         }
     }
@@ -817,6 +815,12 @@ cv::Scalar TrackerManager::color_of_blob(processed_blobs blob) {
     else if (trkr->type() == tt_replay)
         return cv::Scalar(255,0,255); // pink
     return cv::Scalar(0,0,0);
+}
+
+void TrackerManager::reset_trkr_viz_ids() {
+    int16_t cnt = 0;
+    for (auto trkr : _trackers)
+        trkr->viz_id(cnt++);
 }
 
 }
