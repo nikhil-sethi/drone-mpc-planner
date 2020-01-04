@@ -89,7 +89,7 @@ void InsectTracker::update_insect_prediction() {
 
 }
 
-void InsectTracker::calc_world_item(BlobProps * pbs, double time __attribute__((unused))){
+void InsectTracker::calc_world_item(BlobProps * pbs, double time [[maybe_unused]]){
     calc_world_props_blob_generic(pbs);
     pbs->world_props.valid = pbs->world_props.bkg_check_ok && pbs->world_props.disparity_in_range & pbs->world_props.radius_in_range;
 
@@ -97,7 +97,7 @@ void InsectTracker::calc_world_item(BlobProps * pbs, double time __attribute__((
         pbs->world_props.valid = false;
 }
 
-bool InsectTracker::check_ignore_blobs(BlobProps * pbs, double time __attribute__((unused))) {
+bool InsectTracker::check_ignore_blobs(BlobProps * pbs) {
     return this->check_ignore_blobs_generic(pbs);
 }
 

@@ -5,14 +5,15 @@
 
 namespace tracking {
 static const char* drone_tracking_state_names[] = { "dts_init",
-                                                   "dts_inactive",
-                                                   "dts_detecting_takeoff_init",
-                                                   "dts_detecting_takeoff",
-                                                   "dts_detecting",
-                                                   "dts_detected",
-                                                   "dts_detect_heading",
-                                                   "dts_landing_init",
-                                                   "dts_landing"};
+                                                    "dts_inactive",
+                                                    "dts_detecting_takeoff_init",
+                                                    "dts_detecting_takeoff",
+                                                    "dts_detecting",
+                                                    "dts_detected",
+                                                    "dts_detect_heading",
+                                                    "dts_landing_init",
+                                                    "dts_landing"
+                                                  };
 class DroneTracker : public ItemTracker {
 public: tracker_type type() { return tt_drone;}
 
@@ -28,6 +29,9 @@ private:
     const float landing_heading_criteria = 0.05;
 
     bool spinup_detected = false;
+    bool liftoff_detected = false;
+    bool _take_off_detection_failed = false;
+    uint16_t take_off_frame_cnt = 0;
 
     enum drone_tracking_states {
         dts_init = 0,
@@ -59,7 +63,7 @@ private:
 
     bool enable_viz_diff = false;
 
-    void clean_ignore_blobs(double time);
+
 
     class DroneTrackerCalibrationData: public xmls::Serializable
     {
@@ -98,6 +102,14 @@ private:
     void serialize_calib();
     void deserialize_calib(string file);
 
+    void clean_ignore_blobs(double time);
+
+
+    void calc_takeoff_prediction();
+    void delete_takeoff_fake_motion();
+    bool detect_lift_off();
+    bool detect_takeoff();
+
     void update_drone_prediction(); //tmp
 
     cv::Mat get_big_blob(cv::Mat Mask, int connectivity);
@@ -110,15 +122,17 @@ private:
 
 public:
     std::string drone_tracking_state() {return drone_tracking_state_names[_drone_tracking_status];}
-    cv::Point2f drone_startup_im_location(){ return _drone_blink_im_location; }
-    float drone_startup_im_size(){ return _drone_blink_im_size; }
-    float drone_startup_im_disparity(){ return _drone_blink_im_disparity; }
+    cv::Point2f drone_startup_im_location() { return _drone_blink_im_location; }
+    float drone_startup_im_size() { return _drone_blink_im_size; }
+    float drone_startup_im_disparity() { return _drone_blink_im_disparity; }
     cv::Point3f drone_startup_location() {return _drone_blink_world_location + cv::Point3f(0,0,-0.04);} // TODO: drone dependent offset!
     cv::Point3f drone_landing_location() {return _landing_pad_world;}
 
-    bool taking_off(){ return _drone_tracking_status == dts_detecting_takeoff_init || _drone_tracking_status == dts_detecting_takeoff;}
-    bool inactive(){ return _drone_tracking_status == dts_inactive;}
-    bool correct_heading(){ return _drone_tracking_status == dts_detect_heading;}
+    bool take_off_detection_failed() { return _take_off_detection_failed;}
+
+    bool taking_off() { return _drone_tracking_status == dts_detecting_takeoff_init || _drone_tracking_status == dts_detecting_takeoff;}
+    bool inactive() { return _drone_tracking_status == dts_inactive;}
+    bool correct_heading() { return _drone_tracking_status == dts_detect_heading;}
 
     bool _manual_flight_mode = false;
     cv::Mat diff_viz;
@@ -130,7 +144,7 @@ public:
     void detect_heading() {_drone_tracking_status = dts_detect_heading;}
     bool check_heading() { return ((fabs(heading)<landing_heading_criteria) && (fabs(heading)!=0));}
 
-    void control_predicted_drone_location(cv::Point2f drone_control_predicted_image_location, cv::Point3f drone_control_predicted_world_location){
+    void control_predicted_drone_location(cv::Point2f drone_control_predicted_image_location, cv::Point3f drone_control_predicted_world_location) {
         _drone_control_predicted_image_location = drone_control_predicted_image_location;
         _drone_control_predicted_world_location = drone_control_predicted_world_location;
     }
@@ -140,17 +154,17 @@ public:
         _drone_blink_im_size = drone_im_size;
         _drone_blink_im_disparity = drone_im_disparity;
         _drone_blink_world_location = world;
-        if (!_landing_pad_location_set){ // for now, assume the first time set is the actual landing location.
+        if (!_landing_pad_location_set) { // for now, assume the first time set is the actual landing location.
             _landing_pad_world = world;
             _landing_pad_location_set = true;
         }
     }
     void calc_world_item(BlobProps * pbs, double time);
-    bool check_ignore_blobs(BlobProps * pbs, double time);
+    bool check_ignore_blobs(BlobProps * pbs);
 
-    double time_since_take_off(){return start_take_off_time - current_time;}
+    double time_since_take_off() {return start_take_off_time - current_time;}
 
-    bool delete_me(){return false;}
+    bool delete_me() {return false;}
 
     float hover_throttle_estimation;
 };

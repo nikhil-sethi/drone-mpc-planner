@@ -173,7 +173,7 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_manual;
                 break;
             }
-            if (_dctrl->duration_spent_taking_off(time)>0.5f && _trackers->dronetracker()->taking_off()){ //TODO: make parameter
+            if (_trackers->dronetracker()->take_off_detection_failed()){
                 std::cout << "Drone was not detected during max burn take off manoeuvre, aborting." << std::endl;
                 _dctrl->flight_mode(DroneController::fm_abort_flight);
                 _dctrl->flight_submode_name = "fm_abort_takeoff";

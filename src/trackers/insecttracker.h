@@ -24,7 +24,7 @@ public:
     int16_t insect_trkr_id(){return _insect_trkr_id;}
 
     void calc_world_item(tracking::BlobProps * pbs, double time);
-    bool check_ignore_blobs(tracking::BlobProps * pbs, double time);
+    bool check_ignore_blobs(tracking::BlobProps * pbs);
     bool delete_me(){
         if ((n_frames_lost > n_frames_lost_threshold && _insect_trkr_id > 0)) {
             _logger->close();

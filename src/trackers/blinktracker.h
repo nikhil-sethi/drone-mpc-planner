@@ -54,7 +54,7 @@ public:
     void track(double time);
 
     void calc_world_item(tracking::BlobProps * pbs, double time);
-    bool check_ignore_blobs(tracking::BlobProps * pbs, double time);
+    bool check_ignore_blobs(tracking::BlobProps * pbs);
     bool blinking_drone_located() {return _blinking_drone_status >= bds_found;}
 
     bool delete_me(){

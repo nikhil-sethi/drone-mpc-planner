@@ -142,6 +142,7 @@ protected:
     ImagePredictItem _image_predict_item;
     WorldItem  _world_item;
     uint _blobs_are_fused_cnt = 0;
+    std::vector<tracking::BlobProps> _all_blobs;
 
     void init_logger();
     float stereo_match(cv::Point closestL, cv::Mat diffL, cv::Mat diffR, float radius);
@@ -177,7 +178,7 @@ public:
     void close (void);
     void init(std::ofstream *logger, VisionData *_visdat, std::string name, int16_t viz_id);
     virtual void track(double time);
-    virtual bool check_ignore_blobs(BlobProps * pbs, double time) = 0;
+    virtual bool check_ignore_blobs(BlobProps * pbs) = 0;
     virtual void calc_world_item(BlobProps * pbs, double time) = 0;
     void append_log();
 
@@ -200,6 +201,9 @@ public:
     void item_invalidize() {
         _image_item.valid = false;
         _world_item.valid = false;
+    }
+    void all_blobs(std::vector<tracking::BlobProps> blobs) {
+        _all_blobs = blobs;
     }
 
     float score_threshold() {return static_cast<float>(_score_threshold);}

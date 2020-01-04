@@ -139,8 +139,10 @@ void TrackerManager::update_static_ignores() {
 void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) {
 
     //set all trackers to invalid so we can use this as a flag to notice when tracking is lost.
-    for (auto trkr : _trackers)
+    for (auto trkr : _trackers) {
         trkr->item_invalidize();
+        trkr->all_blobs(_blobs);
+    }
 
     if (_blobs.size()>0) {
         //init keypoints list
@@ -161,7 +163,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                     float score =0;
                     //check against static ignore points
                     auto *props = blob.props;
-                    bool in_ignore_zone = trkr->check_ignore_blobs(props,time);
+                    bool in_ignore_zone = trkr->check_ignore_blobs(props);
                     if (in_ignore_zone)
                         blob.ignored = true;
                     if (!in_ignore_zone) {
@@ -172,25 +174,21 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                         }
                         if (enable_viz_max_points) {
                             cv::Mat viz = vizs_maxs.at(blob.id);
-                            cv::Point2i pt(viz.cols-50,viz.rows - 14*(trkr->viz_id()+1));
-                            putText(viz,to_string_with_precision(score,1),pt,FONT_HERSHEY_SIMPLEX,0.5,tracker_color(trkr));
+                            cv::Point2i pt(viz.cols/3,viz.rows - 14*(trkr->viz_id()+1));
+                            putText(viz,to_string_with_precision(score,1),pt,FONT_HERSHEY_SIMPLEX,0.3,tracker_color(trkr));
                         }
                     } else if (enable_viz_max_points) {
                         cv::Mat viz = vizs_maxs.at(blob.id);
-                        cv::Point2i pt(viz.cols-50,viz.rows -6-14*(trkr->viz_id()+1));
+                        cv::Point2i pt(viz.cols/3,viz.rows -6-14*(trkr->viz_id()+1));
                         putText(viz,"Ign.",pt,FONT_HERSHEY_SIMPLEX,0.3,tracker_color(trkr));
                     }
                 }
                 if (best_trkr_score >= trkr->score_threshold() ) {
                     best_blob->trackers.push_back(trkr);
-
                     trkr->calc_world_item(best_blob->props,time);
                     tracking::ImageItem iti(*(best_blob->props),_visdat->frame_id,best_trkr_score,best_blob->id);
                     tracking::WorldItem w(iti,best_blob->props->world_props);
                     trkr->world_item(w);
-                    best_blob->trackers.push_back(trkr);
-
-
                 }
             }
         }
@@ -217,7 +215,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
 
                             //check against static ignore points
                             auto props = blob.props;
-                            bool in_im_ignore_zone = trkr->check_ignore_blobs(props,time);
+                            bool in_im_ignore_zone = trkr->check_ignore_blobs(props);
                             if (in_im_ignore_zone)
                                 blob.ignored = true;
 
@@ -243,7 +241,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
 
                                     if (enable_viz_max_points) {
                                         cv::Mat viz = vizs_maxs.at(blob.id);
-                                        cv::Point2i pt(viz.cols-50,viz.rows -6-14*(trkr->viz_id()+1));
+                                        cv::Point2i pt(viz.cols/3,viz.rows -6-14*(trkr->viz_id()+1));
                                         putText(viz,"New",pt,FONT_HERSHEY_SIMPLEX,0.3,tracker_color(trkr));
                                     }
 
@@ -255,14 +253,14 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                             } else {
                                 if (enable_viz_max_points) {
                                     cv::Mat viz = vizs_maxs.at(blob.id);
-                                    cv::Point2i pt(viz.cols-50,viz.rows-6-14*(trkr->viz_id()+1));
+                                    cv::Point2i pt(viz.cols/3,viz.rows-6-14*(trkr->viz_id()+1));
                                     putText(viz,"Ign.",pt,FONT_HERSHEY_SIMPLEX,0.3,tracker_color(trkr));
                                 }
                             }
                         } else {
                             if (enable_viz_max_points) {
                                 cv::Mat viz = vizs_maxs.at(blob.id);
-                                cv::Point2i pt(viz.cols-50,viz.rows -6-14*(trkr->viz_id()+1));
+                                cv::Point2i pt(viz.cols/3,viz.rows -6-14*(trkr->viz_id()+1));
                                 putText(viz,"Trkd.",pt,FONT_HERSHEY_SIMPLEX,0.3,tracker_color(trkr));
                             }
                         }
@@ -417,11 +415,11 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                         s = s + "->" + std::to_string(itrkr->insect_trkr_id());
                     }
                 }
-                putText(diff_viz,s,blob.pt()*pparams.imscalef,FONT_HERSHEY_SIMPLEX,0.5,blob.color(),2);
+                putText(diff_viz,s,blob.pt()*pparams.imscalef,FONT_HERSHEY_SIMPLEX,0.3,blob.color(),2);
                 cv::circle(diff_viz,blob.pt()*pparams.imscalef,3,blob.color(),1);
             }
             for (auto trkr : replaytrackers()) {
-                putText(diff_viz," r",trkr->image_item().pt()*pparams.imscalef,FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,180),2);
+                putText(diff_viz," r",trkr->image_item().pt()*pparams.imscalef,FONT_HERSHEY_SIMPLEX,0.3,cv::Scalar(0,0,180),2);
                 cv::circle(diff_viz,trkr->image_item().pt()*pparams.imscalef,3,cv::Scalar(0,0,180),1);
             }
         }
@@ -441,10 +439,10 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                         msg_str = msg_str + " ign.";
                     if (wblob.takeoff_reject)
                         msg_str = msg_str + " tko.";
-                    putText(viz,msg_str,cv::Point2i(viz.cols /2,viz.rows - 20),FONT_HERSHEY_SIMPLEX,0.3,blob.color());                    
+                    putText(viz,msg_str,cv::Point2i(viz.cols/3,viz.rows - 20),FONT_HERSHEY_SIMPLEX,0.3,blob.color());
                 }
                 std::string coor_str = to_string_with_precision(wblob.x,3) + ", " + to_string_with_precision(wblob.y,3) + ", " + to_string_with_precision(wblob.z,3);
-                putText(viz,coor_str,cv::Point2i(viz.cols /2,viz.rows - 10),FONT_HERSHEY_SIMPLEX,0.3,blob.color());
+                putText(viz,coor_str,cv::Point2i(viz.cols/3,viz.rows - 10),FONT_HERSHEY_SIMPLEX,0.3,blob.color());
             }
         }
     }
@@ -476,18 +474,15 @@ void TrackerManager::update_max_change_points() {
     vizs_maxs.clear();
     uint blob_viz_cnt = 0;
 
-    bool enable_take_off_split = false;
     bool enable_insect_drone_split = false;
     float drn_ins_split_thresh;
 
-    if (_dtrkr->image_predict_item().valid) {
-        if (_dtrkr->taking_off())
-            enable_take_off_split = true;
-        else  if ( insecttracker_best()->image_predict_item().valid)
-            if (norm(_dtrkr->image_predict_item().pt() - insecttracker_best()->image_predict_item().pt()) < roi_radius) {
-                enable_insect_drone_split = true;
-                drn_ins_split_thresh = insecttracker_best()->image_predict_item().pixel_max*0.2f;
-            }
+    if (_dtrkr->image_predict_item().valid &&
+            insecttracker_best()->image_predict_item().valid &&
+            norm(_dtrkr->image_predict_item().pt() - insecttracker_best()->image_predict_item().pt()) < roi_radius) {
+        enable_insect_drone_split = true;
+        drn_ins_split_thresh = insecttracker_best()->image_predict_item().pixel_max*0.2f;
+
     }
 
     Mat bkg_frame = _visdat->motion_noise_map;
@@ -529,16 +524,16 @@ void TrackerManager::update_max_change_points() {
         if (thresh_res) {
             //find the COG:
             //get the Rect containing the max movement:
-            Rect r2(maxt.x-roi_radius, maxt.y-roi_radius, roi_radius*2,roi_radius*2);
-            if (r2.x < 0)
-                r2.x = 0;
-            else if (r2.x+r2.width >= diff.cols)
-                r2.x -= (r2.x+r2.width+1) - diff.cols;
-            if (r2.y < 0)
-                r2.y = 0;
-            else if (r2.y+r2.height >= diff.rows)
-                r2.y -= (r2.y+r2.height+1) - diff.rows ;
-            Mat roi(diff,r2); // so, this is the cut out around the max point
+            Rect rect(maxt.x-roi_radius, maxt.y-roi_radius, roi_radius*2,roi_radius*2);
+            if (rect.x < 0)
+                rect.x = 0;
+            else if (rect.x+rect.width >= diff.cols)
+                rect.x -= (rect.x+rect.width+1) - diff.cols;
+            if (rect.y < 0)
+                rect.y = 0;
+            else if (rect.y+rect.height >= diff.rows)
+                rect.y -= (rect.y+rect.height+1) - diff.rows ;
+            Mat roi(diff,rect); // so, this is the cut out around the max point
 
             // make a black mask, same size:
             Mat mask = Mat::zeros(roi.size(), roi.type());
@@ -547,7 +542,7 @@ void TrackerManager::update_max_change_points() {
             // combine roi & mask:
             Mat cropped = roi & mask;
             Scalar avg = mean(cropped);
-            Scalar avg_bkg =mean(bkg_frame(r2));
+            Scalar avg_bkg =mean(bkg_frame(rect));
             //blur, to filter out noise
             cv::GaussianBlur(cropped,cropped,Size(5,5),0);
 
@@ -563,21 +558,26 @@ void TrackerManager::update_max_change_points() {
 
             Mat viz;
             if (enable_viz_max_points) {
-                viz = create_row_image({roi,mask},CV_8UC1,viz_max_points_resizef);
+                Rect rect_unscaled(rect.x*pparams.imscalef,rect.y*pparams.imscalef,rect.width*pparams.imscalef,rect.height*pparams.imscalef);
+                cv::Mat frameL_roi = _visdat->frameL(rect_unscaled);
+                cv::Mat frameL_small_roi;
+                cv::resize(frameL_roi,frameL_small_roi,cv::Size(frameL_roi.cols/pparams.imscalef,frameL_roi.rows/pparams.imscalef));
+
+                viz = create_row_image({roi,mask,frameL_small_roi},CV_8UC1,viz_max_points_resizef);
                 cvtColor(viz,viz,CV_GRAY2BGR);
                 if (enable_insect_drone_split)
-                    putText(viz,"i-d",Point(0, viz.rows-13),FONT_HERSHEY_SIMPLEX,0.5,Scalar(255,255,255));
+                    putText(viz,"i-d",Point(0, viz.rows-13),FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,255,255));
             }
             bool viz_pushed = false;
 
             // relative it back to the _approx frame
-            COG.x += r2.x;
-            COG.y += r2.y;
+            COG.x += rect.x;
+            COG.y += rect.y;
 
             bool single_blob = true;
             bool COG_is_nan = false;
 
-            if (enable_insect_drone_split || enable_take_off_split) {
+            if (enable_insect_drone_split) {
 
                 float dist_to_predict = norm(_dtrkr->image_predict_item().pt() - COG);
                 if (dist_to_predict < 10) {
@@ -614,15 +614,15 @@ void TrackerManager::update_max_change_points() {
                                     cv::circle(viz2,COG2_viz,1,Scalar(0,0,255),1); //COG
                                     cv::circle(viz2,COG2_viz,roi_radius*viz_max_points_resizef,Scalar(0,0,255),1);  // remove radius
                                     cv::circle(viz2,COG2_viz,radius*viz_max_points_resizef,Scalar(0,255,0),1);  // blob radius
-                                    putText(viz2,to_string_with_precision(COG2_viz.y,0),COG2_viz,FONT_HERSHEY_SIMPLEX,0.4,Scalar(100,0,255));
-                                    putText(viz2,std::to_string(blob_viz_cnt) + ", " + std::to_string(j),Point(0, 13),FONT_HERSHEY_SIMPLEX,0.5,Scalar(255,255,0));
+                                    putText(viz2,to_string_with_precision(COG2_viz.y,0),COG2_viz,FONT_HERSHEY_SIMPLEX,0.3,Scalar(100,0,255));
+                                    putText(viz2,std::to_string(blob_viz_cnt) + ", " + std::to_string(j),Point(0, 13),FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,255,0));
                                     blob_viz_cnt++;
                                     vizs_maxs.push_back(viz2);
                                     viz_pushed = true;
                                 }
                                 // relative COG back to the _approx frame, and save it:
-                                COG2.x += r2.x;
-                                COG2.y += r2.y;
+                                COG2.x += rect.x;
+                                COG2.y += rect.y;
                                 uchar px_max = diff.at<uchar>(COG2);
                                 _blobs.push_back(tracking::BlobProps(COG2, radius, px_max, mask));
 
@@ -636,7 +636,7 @@ void TrackerManager::update_max_change_points() {
                 }
             }
             if (!viz_pushed &&  enable_viz_max_points) {
-                putText(viz,std::to_string(blob_viz_cnt),Point(0, 13),FONT_HERSHEY_SIMPLEX,0.5,Scalar(255,255,255));
+                putText(viz,std::to_string(blob_viz_cnt),Point(0, 13),FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,255,255));
                 blob_viz_cnt++;
                 vizs_maxs.push_back(viz);
             }
@@ -646,13 +646,13 @@ void TrackerManager::update_max_change_points() {
                     _blobs.push_back(tracking::BlobProps(COG, radius,max, mask));
                     if (enable_viz_max_points) {
                         Point2f tmpCOG;
-                        tmpCOG.x = COG.x - r2.x;
-                        tmpCOG.y = COG.y - r2.y;
+                        tmpCOG.x = COG.x - rect.x;
+                        tmpCOG.y = COG.y - rect.y;
                         tmpCOG *= viz_max_points_resizef;
                         cv::circle(viz,tmpCOG,1,Scalar(0,0,255),1);
                         cv::circle(viz,tmpCOG,roi_radius*viz_max_points_resizef,Scalar(0,0,255),1);  // remove radius
                         cv::circle(viz,tmpCOG,radius*viz_max_points_resizef,Scalar(0,255,0),1);  // blob radius
-                        putText(viz,to_string_with_precision(tmpCOG.y,0),tmpCOG,FONT_HERSHEY_SIMPLEX,0.4,Scalar(255,0,0));
+                        putText(viz,to_string_with_precision(tmpCOG.y,0),tmpCOG,FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,0,0));
                     }
                     //remove this COG from the ROI:
                     cv::circle(diff, COG, 1, Scalar(0), roi_radius);
@@ -670,13 +670,13 @@ void TrackerManager::update_max_change_points() {
                                 _blobs.push_back(tracking::BlobProps(maxt, 1,max, mask));
                                 if (enable_viz_max_points) {
                                     Point2f tmpCOG;
-                                    tmpCOG.x = maxt.x - r2.x;
-                                    tmpCOG.y = maxt.y - r2.y;
+                                    tmpCOG.x = maxt.x - rect.x;
+                                    tmpCOG.y = maxt.y - rect.y;
                                     tmpCOG *= viz_max_points_resizef;
                                     cv::circle(viz,tmpCOG,1,Scalar(0,0,255),1);
                                     cv::circle(viz,tmpCOG,roi_radius*viz_max_points_resizef,Scalar(0,0,255),1);  // remove radius
                                     cv::circle(viz,tmpCOG,radius*viz_max_points_resizef,Scalar(0,255,0),1);  // blob radius
-                                    putText(viz,"maxt " + to_string_with_precision(tmpCOG.y,0),tmpCOG,FONT_HERSHEY_SIMPLEX,0.4,Scalar(255,0,0));
+                                    putText(viz,"maxt " + to_string_with_precision(tmpCOG.y,0),tmpCOG,FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,0,0));
                                 }
                                 //remove this COG from the ROI:
                                 cv::circle(diff, maxt, 1, Scalar(0), roi_radius);
