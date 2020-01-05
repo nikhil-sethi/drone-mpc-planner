@@ -261,11 +261,10 @@ void process_video() {
     } // main while loop
 }
 
-
 void write_occasional_image(Stereo_Frame_Data data) {
-    static double prev_imwrite_time = -20;
+    static double prev_imwrite_time = -pparams.live_image_frq;
 
-    if (data.time - prev_imwrite_time > 20) {
+    if (data.time - prev_imwrite_time > pparams.live_image_frq && pparams.live_image_frq >= 0) {
         cv::Mat out = data.frameL.clone();
         cvtColor(out,out,CV_GRAY2BGR);
         putText(out,"State: " + dnav.navigation_status() + " " + trackers.mode_str() + " " + dctrl.flight_mode() +
@@ -273,10 +272,9 @@ void write_occasional_image(Stereo_Frame_Data data) {
         putText(out,"Time:       " + to_string_with_precision(data.time,2),cv::Point(5,28),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
         putText(out,"Detections: " + std::to_string(detectcount),cv::Point(5,42),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
 
-        cv::imwrite("monitor.png", out);
+        cv::imwrite("~/monitor.png", out);
         prev_imwrite_time = data.time;
     }
-
 }
 
 void process_frame(Stereo_Frame_Data data) {

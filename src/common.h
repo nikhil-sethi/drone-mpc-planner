@@ -380,6 +380,7 @@ private: xBool _cam_tuning, _control_tuning, _navigation_tuning,_vision_tuning,_
 private: xBool _viz_plots, _viz_tracking;
 private: xInt _imscalef;
 private: xString _flightplan;
+private: xInt _live_image_frq;
 
 public: int wdt_timeout_us,darkness_threshold;
 public: uint fps;
@@ -391,6 +392,7 @@ public: bool cam_tuning, control_tuning, navigation_tuning,vision_tuning,drone_t
 public: bool viz_plots, viz_tracking;
 public: int imscalef;
 public: std::string flightplan;
+public: int live_image_frq;
 
 public: PatsParameters() {
         // Set the XML class name.
@@ -398,7 +400,7 @@ public: PatsParameters() {
         setClassName("PatsParameters");
 
         // Set class version
-        setVersion("1.2");
+        setVersion("1.3");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("wdt_timeout_us",&_wdt_timeout_us);
@@ -422,6 +424,7 @@ public: PatsParameters() {
         Register("viz_tracking",&_viz_tracking);
         Register("imscalef",&_imscalef);
         Register("flightplan",&_flightplan);
+        Register("live_image_frq",&_live_image_frq);
     }
 public: void deserialize(std::string settings_file) {
         std::cout << "Reading settings from: " << settings_file << std::endl;
@@ -465,6 +468,7 @@ public: void deserialize(std::string settings_file) {
         viz_tracking = _viz_tracking.value();
         imscalef = _imscalef.value();
         flightplan = _flightplan.value();
+        live_image_frq = _live_image_frq.value();
     }
 
 public: void serialize(std::string settings_file) {
@@ -489,6 +493,7 @@ public: void serialize(std::string settings_file) {
         _viz_tracking = viz_tracking;
         _imscalef = imscalef;
         _flightplan= flightplan;
+        _live_image_frq = live_image_frq;
 
         std::string xmlData = toXML();
         std::ofstream outfile = std::ofstream (settings_file);

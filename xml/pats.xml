@@ -20,4 +20,5 @@
     <Member Name="viz_tracking">true</Member>
     <Member Name="imscalef">2</Member>
     <Member Name="flightplan">../../xml/flightplans/demo.xml</Member>
+    <Member Name="live_image_frq">5</Member>
 </SerializableClass>
