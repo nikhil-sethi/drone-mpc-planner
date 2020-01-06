@@ -646,9 +646,9 @@ void Cam::calib_pose(bool also_do_depth){
         }
         if (hasIMU){
             if (fabs(roll) > pparams.max_cam_roll) {
-                std::cout << "Camera tilted in roll axis!" << to_string_with_precision(roll,2) << std::endl;
+                std::cout << "Camera tilted in roll axis! Roll: " << to_string_with_precision(roll,2) << "°. Max: " << pparams.max_cam_roll << "°" << std::endl;
             } else {
-                std::cout << "Measured roll: " << roll <<", pitch: " << pitch << std::endl;
+                std::cout << "Measured roll: " << to_string_with_precision(roll,2) <<"°, pitch: " << to_string_with_precision(pitch,2) << "°" << std::endl;
                 break;
             }
         } else
