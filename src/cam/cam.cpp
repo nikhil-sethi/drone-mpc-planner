@@ -626,7 +626,8 @@ void Cam::calib_pose(bool also_do_depth){
     smz.init(static_cast<int>(nframes));
     float x = 0,y = 0,z = 0, roll = 0, pitch = 0;
     rs2::frameset frame;
-    while (true) {
+    uint wait_cycles = 1;
+    while (wait_cycles) {
         for (uint i = 0; i < nframes; i++) {
             frame = cam.wait_for_frames();
 
@@ -647,12 +648,13 @@ void Cam::calib_pose(bool also_do_depth){
         if (hasIMU){
             if (fabs(roll) > pparams.max_cam_roll) {
                 std::cout << "Camera tilted in roll axis! Roll: " << to_string_with_precision(roll,2) << "°. Max: " << pparams.max_cam_roll << "°" << std::endl;
+                wait_cycles = 360; // 1 minute with nframes = 10
             } else {
                 std::cout << "Measured roll: " << to_string_with_precision(roll,2) <<"°, pitch: " << to_string_with_precision(pitch,2) << "°" << std::endl;
-                break;
+                wait_cycles--;
             }
         } else
-            break;
+            wait_cycles--;
     }
 
     if (also_do_depth || !hasIMU){
