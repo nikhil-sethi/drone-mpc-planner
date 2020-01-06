@@ -20,6 +20,6 @@
     <Member Name="viz_tracking">true</Member>
     <Member Name="imscalef">2</Member>
     <Member Name="flightplan">../../xml/flightplans/demo.xml</Member>
-    <Member Name="live_image_frq">5</Member>
+    <Member Name="live_image_frq">-1</Member>
     <Member Name="max_cam_roll">0.5</Member>
 </SerializableClass>
