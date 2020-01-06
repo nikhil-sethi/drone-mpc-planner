@@ -381,6 +381,7 @@ private: xBool _viz_plots, _viz_tracking;
 private: xInt _imscalef;
 private: xString _flightplan;
 private: xInt _live_image_frq;
+private: xFloat _max_cam_roll;
 
 public: int wdt_timeout_us,darkness_threshold;
 public: uint fps;
@@ -393,6 +394,7 @@ public: bool viz_plots, viz_tracking;
 public: int imscalef;
 public: std::string flightplan;
 public: int live_image_frq;
+public: float max_cam_roll;
 
 public: PatsParameters() {
         // Set the XML class name.
@@ -425,6 +427,7 @@ public: PatsParameters() {
         Register("imscalef",&_imscalef);
         Register("flightplan",&_flightplan);
         Register("live_image_frq",&_live_image_frq);
+        Register("max_cam_roll",&_max_cam_roll);
     }
 public: void deserialize(std::string settings_file) {
         std::cout << "Reading settings from: " << settings_file << std::endl;
@@ -469,6 +472,7 @@ public: void deserialize(std::string settings_file) {
         imscalef = _imscalef.value();
         flightplan = _flightplan.value();
         live_image_frq = _live_image_frq.value();
+        max_cam_roll = _max_cam_roll.value();
     }
 
 public: void serialize(std::string settings_file) {
@@ -494,6 +498,7 @@ public: void serialize(std::string settings_file) {
         _imscalef = imscalef;
         _flightplan= flightplan;
         _live_image_frq = live_image_frq;
+        _max_cam_roll = max_cam_roll;
 
         std::string xmlData = toXML();
         std::ofstream outfile = std::ofstream (settings_file);

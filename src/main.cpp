@@ -272,7 +272,7 @@ void write_occasional_image(Stereo_Frame_Data data) {
         putText(out,"Time:       " + to_string_with_precision(data.time,2),cv::Point(5,28),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
         putText(out,"Detections: " + std::to_string(detectcount),cv::Point(5,42),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
 
-        cv::imwrite("~/monitor.png", out);
+        cv::imwrite("~/monitor.jpg", out);
         prev_imwrite_time = data.time;
     }
 }

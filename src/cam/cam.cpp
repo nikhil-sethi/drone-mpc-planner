@@ -626,25 +626,33 @@ void Cam::calib_pose(bool also_do_depth){
     smz.init(static_cast<int>(nframes));
     float x = 0,y = 0,z = 0, roll = 0, pitch = 0;
     rs2::frameset frame;
-    for (uint i = 0; i < nframes; i++) {
-        frame = cam.wait_for_frames();
+    while (true) {
+        for (uint i = 0; i < nframes; i++) {
+            frame = cam.wait_for_frames();
 
-        if (hasIMU){
-            auto frame_acc = frame.first(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F);
+            if (hasIMU){
+                auto frame_acc = frame.first(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F);
 
-            if (frame_acc.is<rs2::motion_frame>()) {
-                rs2::motion_frame mf = frame_acc.as<rs2::motion_frame>();
-                rs2_vector xyz = mf.get_motion_data();
-                cout << frame_acc.get_profile().stream_type() << ": "
-                     << xyz.x << ", " << xyz.y << ", " << xyz.z;
-                cout << " roll: " << roll << " pitch: " << pitch << endl;
-                x = smx.addSample(xyz.x);
-                y = smy.addSample(xyz.y);
-                z = smz.addSample(xyz.z);
-                roll = atanf(-x/sqrtf(y*x + z*z)) * rad2deg;
-                pitch = 90.f-atanf(y/z) * rad2deg;
+                if (frame_acc.is<rs2::motion_frame>()) {
+                    rs2::motion_frame mf = frame_acc.as<rs2::motion_frame>();
+                    rs2_vector xyz = mf.get_motion_data();
+                    x = smx.addSample(xyz.x);
+                    y = smy.addSample(xyz.y);
+                    z = smz.addSample(xyz.z);
+                    roll = atanf(-x/sqrtf(y*x + z*z)) * rad2deg;
+                    pitch = 90.f-atanf(y/z) * rad2deg;
+                }
             }
         }
+        if (hasIMU){
+            if (fabs(roll) > pparams.max_cam_roll) {
+                std::cout << "Camera tilted in roll axis!" << to_string_with_precision(roll,2) << std::endl;
+            } else {
+                std::cout << "Measured roll: " << roll <<", pitch: " << pitch << std::endl;
+                break;
+            }
+        } else
+            break;
     }
 
     if (also_do_depth || !hasIMU){
@@ -701,11 +709,6 @@ void Cam::calib_pose(bool also_do_depth){
     if (hasIMU){
         _camera_angle_x = roll;
         _camera_angle_y = pitch;
-
-        if (fabs(roll) > 0.6f) { // TODO: move to xml
-            throw my_exit("camera tilted in roll axis!");
-        }
-        std::cout << "Measured pose: " << _camera_angle_y << std::endl;
     } else { // determine camera angle from the depth map:
 
         // obtain Point Cloud
