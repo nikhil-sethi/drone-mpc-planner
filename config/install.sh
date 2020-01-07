@@ -171,13 +171,10 @@ if [[ $1 -eq 1 ]] ; then
             sudo cp  -n /etc/rc.local{,.bak}
             sudo rm /etc/rc.local
         }
-        
-        rm ~/.ssh/config -f
-        ln -s ~/code/pats/config/sshconfig ~/.ssh/config
-        
         sudo ln -s ~/code/pats/config/rc.local /etc/rc.local
 
-        
+        rm ~/.ssh/config -f
+        ln -s ~/code/pats/config/sshconfig ~/.ssh/config
         
         echo "alias df='df -h -x squashfs -x tmpfs -x devtmpfs'" >> ~/.bash_aliases
         
@@ -201,7 +198,7 @@ sudo apt-get clean -y
 set +x
 echo "***********************************************************"
 echo todo: 
-echo 1. Install qt creator and perform steps listed in https://github.com/pats-drones/pats/blob/master/config/qtcreator.md
+echo 1. Install vscode
 echo 2. Set bios to startup always at power on
 echo 3. Add phone wifi ssid
 echo "***********************************************************"
