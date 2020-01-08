@@ -46,6 +46,21 @@
                     ]
                 }
             ]
+        },
+        {
+            "label": "Run (no debug)",
+            "type": "shell",
+            "command": "${workspaceFolder}/pc/build-vscode/pats",
+            "options": {
+                "cwd": "${workspaceRoot}/pc/build-vscode"
+            },
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "presentation": {
+                "showReuseMessage": false
+              }
         }
     ]
 }
