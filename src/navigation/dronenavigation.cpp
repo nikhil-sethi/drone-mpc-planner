@@ -208,6 +208,7 @@ void DroneNavigation::update(double time) {
             } else if (_nav_flight_mode == nfm_manual) {
                 _navigation_status = ns_manual;
             } else {
+                wpid++;
                 _navigation_status = ns_set_waypoint;
             }
             break;
@@ -371,7 +372,7 @@ void DroneNavigation::next_waypoint(Waypoint wp) {
     current_waypoint = new Waypoint(wp);
     if (wp.mode == wfm_takeoff) {
         cv::Point3f p = _trackers->dronetracker()->drone_startup_location();
-        setpoint_pos_world =  p + wp.xyz + cv::Point3f(0,0.3,0);
+        setpoint_pos_world =  p + wp.xyz;
     }else if (wp.mode == wfm_landing ) {
         cv::Point3f p = _trackers->dronetracker()->drone_landing_location();
         setpoint_pos_world =  p + wp.xyz;
