@@ -108,6 +108,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
     bool joy_control = false;
     switch(_flight_mode) {
     case fm_manual: {
+        mode += bf_headless_disabled;        
         throttle = joy_throttle;
         _rc->arm(_joy_arm_switch);
         roll = joy_roll;
