@@ -163,6 +163,15 @@ void MultiModule::send_data(void) {
         for (int i = 0; i< 16;i++){
             channels[i] = 0;
         }
+
+        if (calibrate_acc_cnt) {
+            calibrate_acc_cnt--;
+            arm_switch = JOY_BOUND_MIN;
+            roll = JOY_MIDDLE;
+            pitch = JOY_BOUND_MIN;
+            yaw = JOY_BOUND_MIN;
+            throttle = JOY_BOUND_MAX;
+        }
         //AETR
         channels[0] = roll;
         if (dparams.tx==tx_cx10)

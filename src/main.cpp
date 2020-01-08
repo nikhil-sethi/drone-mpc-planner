@@ -338,6 +338,9 @@ void handle_key(double time [[maybe_unused]]) {
     case 'b':
         rc.bind(true);
         break;
+    case 'c':
+        rc.calibrate_acc();
+        break;
     case 'l':
         dnav.redetect_drone_location();
         break;

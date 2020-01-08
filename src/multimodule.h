@@ -108,6 +108,10 @@ public:
     void arm(betaflight_arming v) {
         arm_switch = v;
     }
+    int calibrate_acc_cnt = 0;
+    void calibrate_acc() {
+        calibrate_acc_cnt = 200;
+    }
 private:
 
     stopwatch_c binding_sw;
