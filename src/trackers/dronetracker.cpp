@@ -61,6 +61,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
         take_off_frame_cnt = 0;
         [[fallthrough]];
     } case dts_detecting_takeoff: {
+        delete_takeoff_fake_motion();
         if (!_world_item.valid) {
             calc_takeoff_prediction();
         }
@@ -80,10 +81,10 @@ void DroneTracker::track(double time, bool drone_is_active) {
             spinup_detected = true;
             if (detect_lift_off()) {
                 liftoff_detected = true;
-                if (detect_takeoff())
+                if (detect_takeoff()) {
                     _drone_tracking_status = dts_tracking;
-
-                delete_takeoff_fake_motion();
+                    _visdat->reset_spot_on_motion_map(_world_item.iti.pt()*pparams.imscalef,_world_item.iti.disparity*pparams.imscalef,_world_item.iti.size*pparams.imscalef,pparams.fps/2);
+                }
             }
         }
 
@@ -134,9 +135,11 @@ void DroneTracker::track(double time, bool drone_is_active) {
 }
 
 void DroneTracker::delete_takeoff_fake_motion() {
-    float delete_dst = ceilf(normf(_drone_blink_im_location - _world_item.iti.pt()) - _world_item.iti.size);
-    if (delete_dst > 0)
-        _visdat->delete_from_motion_map(drone_startup_im_location()*pparams.imscalef, _drone_blink_im_disparity,ceilf(delete_dst)*pparams.imscalef,pparams.fps/2);
+    int delete_dst = 10;
+    if (_world_item.valid)
+        delete_dst = ceilf(normf(_drone_blink_im_location - _world_item.iti.pt()) - _world_item.iti.size);
+    delete_dst = std::clamp(delete_dst,10,30);
+    _visdat->reset_spot_on_motion_map(drone_startup_im_location()*pparams.imscalef, _drone_blink_im_disparity,ceilf(delete_dst)*pparams.imscalef,1);
 }
 
 void DroneTracker::calc_takeoff_prediction() {

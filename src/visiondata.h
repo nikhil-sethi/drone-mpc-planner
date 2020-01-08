@@ -18,7 +18,13 @@
 #include "common.h"
 
 class VisionData{
-
+public:
+    struct delete_spot {
+        cv::Point pt = {0};
+        int disparity = 0;
+        int r = 0;
+        int cnt_active;
+    };
 private:
 
     int motion_update_iterator = 0;
@@ -70,11 +76,9 @@ private:
     double prev_time_brightness_check = 0;
     float prev_brightness;
     bool _reset_motion_integration = false;
-    cv::Point delete_motion_spot = {0};
-    int delete_motion_disparity = 0;
-    int delete_motion_r = 0;
-    int delete_motion_frame_cnt_duration = 0;
-
+    delete_spot motion_spot_to_be_deleted;
+    delete_spot motion_spot_to_be_reset;
+ 
     bool _exclude_drone_from_motion_fading = false;
     cv::Point exclude_drone_from_motion_fading_spot = {0};
     int exclude_drone_from_motion_fading_r = 0;
@@ -118,5 +122,6 @@ public:
     bool calibrating_background() {return _calibrating_background;}
 
     void delete_from_motion_map(cv::Point p, int disparity, int radius, int duration);
+    void reset_spot_on_motion_map(cv::Point p, int disparity, int radius, int duration);
     void exclude_drone_from_motion_fading(cv::Point p, int radius);
 };

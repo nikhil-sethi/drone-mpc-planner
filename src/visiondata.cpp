@@ -66,6 +66,12 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
         motion_update_iterator = 0;
     }
 
+    if (motion_spot_to_be_reset.cnt_active) {
+        cv::circle(diffL16,motion_spot_to_be_reset.pt,motion_spot_to_be_reset.r,0,CV_FILLED);
+        cv::circle(diffR16,motion_spot_to_be_reset.pt+ cv::Point(motion_spot_to_be_reset.disparity,0),motion_spot_to_be_reset.r,0,CV_FILLED);
+        motion_spot_to_be_reset.cnt_active--;
+    }
+
     //calcuate the motion difference, through the integral over time (over each pixel)
     cv::Mat dL = frameL16 - frameL_prev16;
     diffL16 += dL;
@@ -79,35 +85,10 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
         fade(diffR16,false);
     }
 
-    if (delete_motion_frame_cnt_duration>0){
-
-        // //get takeoff ROI around p
-        // cv::Point2i p1 = delete_motion_spot - cv::Point2i(10,10);
-        // cv::Point2i p2 = delete_motion_spot + cv::Point2i(10,10);
-        // if (p1.x <0)
-        //     p1.x = 0;
-        // if (p1.y <0)
-        //     p1.y = 0;
-        // if (p2.x > diffL16.cols)
-        //     p2.x = diffL16.cols;
-        // if (p2.y >diffL16.rows)
-        //     p2.y = diffL16.rows;
-
-        // cv::Mat roi = cv::Mat(diffL16,cv::Rect(p1,p2)).clone();
-        
-        // //dilate
-        // cv::dilate(roi,roi,cv::getStructuringElement( cv::MORPH_RECT,Size( 3, 3 ),cv::Point( 3, 3 ) ));
-
-        // //findContours
-        // vector<vector<Point>> contours;
-        // findContours(diffL16,contours,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_NONE);
-
-        // //delete contour
-
-
-        cv::circle(diffL16,delete_motion_spot,delete_motion_r,0,CV_FILLED);
-        cv::circle(diffR16,delete_motion_spot+ cv::Point(delete_motion_disparity,0),delete_motion_r,0,CV_FILLED);
-        delete_motion_frame_cnt_duration--;
+    if (motion_spot_to_be_deleted.cnt_active){
+        cv::circle(diffL16,motion_spot_to_be_deleted.pt,motion_spot_to_be_deleted.r,0,CV_FILLED);
+        cv::circle(diffR16,motion_spot_to_be_deleted.pt + cv::Point(motion_spot_to_be_deleted.disparity,0),motion_spot_to_be_deleted.r,0,CV_FILLED);
+        motion_spot_to_be_deleted.cnt_active--;
     }
 
     diffL = abs(diffL16);
@@ -146,13 +127,13 @@ void VisionData::fade(cv::Mat diff16, bool exclude_drone) {
         drone_roi = diff16(rec).clone() ;
     }
 
-    cv::Mat diffL16_neg,diffL16_pos;
-    diffL16_pos = min(diff16 >= 1,1);
-    diffL16_neg = min(diff16 <= -1,1);
-    diffL16_pos.convertTo(diffL16_pos,CV_16SC1);
-    diffL16_neg.convertTo(diffL16_neg,CV_16SC1);
-    diff16 -= diffL16_pos;
-    diff16 += diffL16_neg;
+    cv::Mat diff16_neg,diff16_pos;
+    diff16_pos = min(diff16 >= 1,1);
+    diff16_neg = min(diff16 <= -1,1);
+    diff16_pos.convertTo(diff16_pos,CV_16SC1);
+    diff16_neg.convertTo(diff16_neg,CV_16SC1);
+    diff16 -= diff16_pos;
+    diff16 += diff16_neg;
 
     if (exclude_drone) {
         drone_roi.copyTo(diff16(rec));
@@ -211,10 +192,17 @@ void VisionData::track_avg_brightness(cv::Mat frame,double time) {
 }
 
 void VisionData::delete_from_motion_map(cv::Point p, int disparity,int radius, int duration) {
-    delete_motion_spot = p;
-    delete_motion_disparity = disparity;
-    delete_motion_r = radius;
-    delete_motion_frame_cnt_duration = duration;
+    motion_spot_to_be_deleted.cnt_active = duration;
+    motion_spot_to_be_deleted.pt = p;
+    motion_spot_to_be_deleted.disparity = disparity;
+    motion_spot_to_be_deleted.r = radius; 
+}
+
+void VisionData::reset_spot_on_motion_map(cv::Point p, int disparity,int radius, int duration) {
+    motion_spot_to_be_reset.cnt_active = duration;
+    motion_spot_to_be_reset.pt = p;
+    motion_spot_to_be_reset.disparity = disparity;
+    motion_spot_to_be_reset.r = radius;   
 }
 
 void VisionData::exclude_drone_from_motion_fading(cv::Point p, int radius) {
