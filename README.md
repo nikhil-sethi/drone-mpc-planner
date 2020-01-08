@@ -38,7 +38,7 @@ Host pats1
 ## Flashing realsense camera:
 `sudo rs-fw-update -f ~/code/pats/config/Signed_Image_UVC_5_11_6_250.bin`
 
-##Installing correct kernel:
+## Installing correct kernel:
 `sudo apt install linux-headers-4.15.0-55 linux-headers-4.15.0-55-generic linux-image-4.15.0-55-generic linux-modules-4.15.0-55-generic linux-modules-extra-4.15.0-55-generic`  
 
 `sudo nano /etc/default/grub`  
