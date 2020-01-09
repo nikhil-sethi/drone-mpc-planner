@@ -667,8 +667,8 @@ int main( int argc, char **argv )
             pparams.serialize("./logging/pats.xml");
             dparams.serialize("./logging/drone.xml");
         } else {
-            pparams.deserialize("./logging/pats.xml");
-            dparams.deserialize("./logging/drone.xml");
+            pparams.deserialize(replay_dir + "/pats.xml");
+            dparams.deserialize(replay_dir + "/drone.xml");
         }
     } catch(my_exit const &e) {
         std::cout << "Error reading xml settings: " << e.msg << std::endl;
