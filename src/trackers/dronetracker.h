@@ -106,7 +106,7 @@ private:
 
 
     void calc_takeoff_prediction();
-    void delete_takeoff_fake_motion();
+    void delete_takeoff_fake_motion(int duration);
     bool detect_lift_off();
     bool detect_takeoff();
 
