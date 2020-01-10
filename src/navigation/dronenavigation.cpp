@@ -42,7 +42,7 @@ void DroneNavigation::init(std::ofstream *logger, tracking::TrackerManager * tra
 
 void DroneNavigation::deserialize_flightplan(std::string replay_dir){
     //Waypoints are relative to the camera position. The camera is 0,0,0.
-    //X goes from negative left, to positive right.
+    //X image vs world is reversed! Negative world x is right in the image.
     //Everything below the camera is negative Y, heigher than the camera is positive
     //Farther away from the camera is negative Z, positive Z should be impossible because the camera can't see that.
     //The flight plan will be repeated indefinetely, unless there is a landing waypoint somewhere in the list.
@@ -313,12 +313,12 @@ void DroneNavigation::update(double time) {
         } case ns_initial_reset_heading: {
             _dctrl->flight_mode(DroneController::fm_initial_reset_heading);
             if(time-time_initial_reset_heading>0.5){
-                _navigation_status = ns_reset_heading;
+                _trackers->dronetracker()->detect_heading();
+                _navigation_status = ns_wait_reset_heading;
             }
             break;
-        } case ns_reset_heading: {
+        } case ns_wait_reset_heading: {
             _dctrl->flight_mode(DroneController::fm_reset_heading);
-            _trackers->dronetracker()->detect_heading();
             cv::Point3f err = _trackers->dronetracker()->Last_track_data().pos() - _trackers->dronetracker()->drone_landing_location();
             err.y = 0;
             float horizontal_err = normf(err);

@@ -60,7 +60,7 @@ private:
         ns_brick_waypoint,
         ns_goto_landing_waypoint,
         ns_initial_reset_heading,
-        ns_reset_heading,
+        ns_wait_reset_heading,
         ns_land,
         ns_landing,
         ns_landed,

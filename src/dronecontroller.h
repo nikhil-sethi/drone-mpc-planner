@@ -217,7 +217,7 @@ private:
     std::tuple<float,float> acc_to_quaternion(cv::Point3f acc);
 
     void check_emergency_kill(track_data, double time);
-    void land(track_data data_drone, track_data data_target_new);
+    void land(track_data data_drone, track_data data_target_new, bool headless_mode_disabled);
     void calc_ff_landing();
     void update_thrust_during_hovering(track_data data_drone, double time);
 
@@ -229,9 +229,7 @@ private:
     filtering::Tf_D_f d_pos_err_x, d_pos_err_y, d_pos_err_z;
     filtering::Tf_D_f d_vel_err_x, d_vel_err_y, d_vel_err_z;
     filtering::Tf_PT2_3f pos_reference_filter;
-    /** @brief
-     * @param[in] setpoint_vel Absolute velocity the drone shall have */
-    void control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
+    void control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool headless_mode_disabled);
     std::tuple<int,int,int> calc_feedforward_control(cv::Point3f desired_acceleration);
 
     MultiModule * _rc;
