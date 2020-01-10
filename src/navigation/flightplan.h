@@ -8,7 +8,8 @@ enum waypoint_flight_modes {
     wfm_flower,
     wfm_brick,
     wfm_wp_stay,
-    wfm_landing
+    wfm_landing,
+    wfm_yaw_reset
 };
 static const char* waypoint_flight_modes_str[] = {
     "wfm_takeoff",
@@ -39,8 +40,15 @@ struct Waypoint_Landing : Waypoint {
         mode = wfm_landing;
     }
 };
-struct Waypoint_Takeoff : Waypoint {
-    Waypoint_Takeoff() {
+struct Waypoint_Yaw_Reset : Waypoint{
+    Waypoint_Yaw_Reset(){
+        xyz = cv::Point3f(0,.5f,0); // only for landing wp, relative to the startup location!
+        threshold_mm = 50;
+        mode = wfm_yaw_reset;
+    }
+};
+struct Waypoint_Takeoff : Waypoint{
+    Waypoint_Takeoff(){
         mode = wfm_takeoff;
     }
 };
