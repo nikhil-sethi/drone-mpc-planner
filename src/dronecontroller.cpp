@@ -68,6 +68,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     d_vel_err_z.init (1.f/pparams.fps);
 
     pos_reference_filter.init(1.f/pparams.fps, 1, 1.f/pparams.fps*0.001f, 1.f/pparams.fps*0.001f);
+    pos_err_i = {0,0,0};
 
     thrust = initial_thrust_guess;
     initial_hover_throttle_guess_non3d = GRAVITY/initial_thrust_guess*JOY_BOUND_RANGE+dparams.min_throttle;
@@ -332,7 +333,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         cv::Point3f filtered_setpoint_pos = pos_reference_filter.new_sample(data_target_new.pos());
         cv::Point3f filtered_setpoint_vel;
         std::tie(filtered_setpoint_pos, filtered_setpoint_vel) = keep_in_volume_check(data_drone, filtered_setpoint_pos, data_target_new.vel()); // Setpoint changes due to keep in volume validation shall not be filtered. The drone must always react fast to these changes.
-        control_model_based(data_drone, filtered_setpoint_pos,filtered_setpoint_vel);
+        control_model_based(data_drone, filtered_setpoint_pos,filtered_setpoint_vel,false);
 
         //check if we can go back to burning:
         if (data_drone.pos_valid && data_drone.vel_valid && _joy_state!=js_waypoint){
@@ -355,12 +356,12 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         }
         break;
     } case fm_initial_reset_heading: {
-        control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
+        control_model_based(data_drone, data_target_new.pos(), data_target_new.vel(),true);
         mode += bf_headless_disabled;
         break;
     } case fm_reset_heading: {
         mode += bf_headless_disabled;
-        control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
+        control_model_based(data_drone, data_target_new.pos(), data_target_new.vel(),true);
         auto_yaw = control_yaw(data_drone, 5); // second argument is the yaw gain, move this to the xml files?
         break;
     } case fm_landing_start: {
@@ -370,7 +371,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         [[fallthrough]];
     } case fm_landing: {
         mode += bf_headless_disabled;
-        land(data_drone, data_target_new);
+        land(data_drone, data_target_new,true);
         break;
     } case fm_disarmed: {
         auto_roll = JOY_MIDDLE;
@@ -866,7 +867,7 @@ std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f de
     return std::make_tuple(roll_cmd,pitch_cmd,throttle_cmd);
 }
 
-void DroneController::control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel){
+void DroneController::control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool headless_mode_disabled){
     int kp_pos_roll_scaled, kp_pos_throttle_scaled, kp_pos_pitch_scaled, ki_pos_roll_scaled, ki_pos_throttle_scaled, ki_pos_pitch_scaled, kd_pos_roll_scaled, kd_pos_throttle_scaled, kd_pos_pitch_scaled;
     cv::Point3f scale_p = {1.f, 1.f, 1.f};
     cv::Point3f scale_i = {1.f, 1.f, 1.f};
@@ -935,12 +936,14 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     float err_velz_filtered = filter_vel_err_z.new_sample(setpoint_vel.z + pos_err2vel_set.z - data_drone.state.vel.z);
     cv::Point3f vel_err_p = {err_velx_filtered, err_vely_filtered, err_velz_filtered};
 
-    // Increase I error with anti wind up handling:
-    if (fabs(err_x_filtered) < 0.3f )
-        pos_err_i.x += err_x_filtered;
+    if (headless_mode_disabled) {
+        // Increase I error with anti wind up handling:
+        if (fabs(err_x_filtered) < 0.3f )
+            pos_err_i.x += err_x_filtered;
+        if (fabs(err_z_filtered) < 0.3f )
+            pos_err_i.z += err_z_filtered;
+    }
     pos_err_i.y += err_y_filtered; // this info can be used to update hover_throttle. However in the current controller hover_throttle is not used.
-    if (fabs(err_z_filtered) < 0.3f )
-        pos_err_i.z += err_z_filtered;
 
     float errDx = d_pos_err_x.new_sample (err_x_filtered);
     float errDy = d_pos_err_y.new_sample (err_y_filtered);
@@ -974,7 +977,7 @@ void DroneController::check_emergency_kill(track_data data_drone, double time) {
     }
 }
 
-void DroneController::land(track_data data_drone, track_data data_target_new) {
+void DroneController::land(track_data data_drone, track_data data_target_new, bool headless_mode_disabled) {
     cv::Point3f err = data_drone.pos()-data_target_new.state.pos;
     err.y = 0;
     float horizontal_err = normf(err);
@@ -991,7 +994,7 @@ void DroneController::land(track_data data_drone, track_data data_target_new) {
     data_target_new.state.pos.y -= linear_landing_yoffset;
 
     if(data_drone.pos_valid && !feedforward_landing){
-        control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
+        control_model_based(data_drone, data_target_new.pos(), data_target_new.vel(),headless_mode_disabled);
         auto_yaw = control_yaw(data_drone, 5);
 
         previous_drone_data = data_drone;
