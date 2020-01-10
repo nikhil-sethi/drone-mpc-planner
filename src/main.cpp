@@ -143,7 +143,7 @@ void process_video() {
         tp[0].data_is_processed= false;
         if (pparams.has_screen) {
             static int speed_div;
-            if (!(speed_div++ % 4) || (log_replay_mode && !cam.turbo)){
+            if (!(speed_div++ % 4) || ((log_replay_mode && !cam.turbo) || cam.frame_by_frame)){
                 visualizer_3d.run();
                 visualizer.paint();
                 handle_key(data.time);
