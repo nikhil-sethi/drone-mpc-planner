@@ -200,5 +200,5 @@ echo "***********************************************************"
 echo todo: 
 echo 1. Install vscode
 echo 2. Set bios to startup always at power on
-echo 3. Add phone wifi ssid
+echo 3. Add phone wifi ssid with: sudo nmcli device wifi connect !SSID! password !PASS!
 echo "***********************************************************"
