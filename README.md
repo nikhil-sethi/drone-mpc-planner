@@ -36,9 +36,9 @@ Put drone in bootloader mode. E.g. type `bl` in cli in betaflight configurator. 
 `dfu-util -s 0x08000000 -a 0 -D ~/code/pats/config/trashcan_firmware.bin`  
 
 Apply the following settings to BLHeli:  
-1. Set beacon time to none
-2. Set beep strenght to 66
-3. Set startup power to max
+1. Set `Beacon Delay` to `infinite`
+2. Set `Beep Strenght` to 150
+3. Set startup power to max (1.5)
   
 To retrieve firmware from the drone. (not needed normally)  
 `dfu-util -s 0x08000000:413040 -a 0 -U firmware_dump.bin`  
