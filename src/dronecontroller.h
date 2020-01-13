@@ -216,7 +216,7 @@ private:
     std::tuple<float,float> acc_to_deg(cv::Point3f acc);
     std::tuple<float,float> acc_to_quaternion(cv::Point3f acc);
 
-    void check_emergency_kill(track_data, double time);
+    void check_emergency_kill(track_data);
     void land(track_data data_drone, track_data data_target_new, bool headless_mode_disabled);
     void calc_ff_landing();
     void update_thrust_during_hovering(track_data data_drone, double time);

@@ -323,8 +323,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
 
         [[fallthrough]];
     } case fm_flying_pid: {
-        
-        check_emergency_kill(data_drone,time);
+        check_emergency_kill(data_drone);
 
         if(!data_drone.pos_valid){
             data_drone.state.pos = _dtrk->drone_startup_location ();
@@ -362,7 +361,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         break;
     } case fm_reset_heading: {
         mode += bf_headless_disabled;
-        check_emergency_kill(data_drone,time);
+        check_emergency_kill(data_drone);
         control_model_based(data_drone, data_target_new.pos(), data_target_new.vel(),true);
         auto_yaw = control_yaw(data_drone, 5); // second argument is the yaw gain, move this to the xml files?
         break;
@@ -373,7 +372,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         [[fallthrough]];
     } case fm_landing: {
         mode += bf_headless_disabled;
-        check_emergency_kill(data_drone,time);
+        check_emergency_kill(data_drone);
         land(data_drone, data_target_new,true);
         break;
     } case fm_disarmed: {
@@ -966,7 +965,7 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(desired_acceleration);
 }
 
-void DroneController::check_emergency_kill(track_data data_drone, double time) {
+void DroneController::check_emergency_kill(track_data data_drone) {
     // This is usefull as long blind reburn is not working
     if(!data_drone.pos_valid) {
         kill_cnt_down++;
