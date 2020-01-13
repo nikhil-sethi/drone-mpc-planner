@@ -28,7 +28,7 @@ bool FileCam::init (int argc __attribute__((unused)), char **argv __attribute__(
         frame_id_rgb=0;
 
         //skip start
-        for (int i =0; i < skipstart;i++) {
+        for (int i =0; i < skipstart; i++) {
             video_rgb >> frame_rgb;
             frame_id_rgb++;
         }
@@ -44,7 +44,7 @@ bool FileCam::init (int argc __attribute__((unused)), char **argv __attribute__(
     return false;
 }
 
-void FileCam::switch_mode(cam_mode_enum mode){
+void FileCam::switch_mode(cam_mode_enum mode) {
     if (mode != _mode) {
         if (mode == cam_mode_disabled )
             go_disabled();

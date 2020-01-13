@@ -26,7 +26,8 @@ static const char* navigation_status_names[] = {"ns_init",
                                                 "ns_landed",
                                                 "ns_wait_after_landing",
                                                 "ns_manual",
-                                                "ns_drone_problem"};
+                                                "ns_drone_problem"
+                                               };
 
 class navigationParameters: public xmls::Serializable
 {

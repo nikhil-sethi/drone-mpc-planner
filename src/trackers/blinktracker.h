@@ -4,18 +4,19 @@
 namespace tracking {
 
 static const char* blinking_drone_state_names[] = { "",
-                                                   "bds_start",
-                                                   "bds_failed",
-                                                   "bds_restart_searching",
-                                                   "bds_searching",
-                                                   "bds_1_blink_off",
-                                                   "bds_1_blink_on",
-                                                   "bds_2_blink_off",
-                                                   "bds_2_blink_on",
-                                                   "bds_3_blink_off_calib",
-                                                   "bds_3_blink_off",
-                                                   "bds_3_blink_on",
-                                                   "bds_found" };
+                                                    "bds_start",
+                                                    "bds_failed",
+                                                    "bds_restart_searching",
+                                                    "bds_searching",
+                                                    "bds_1_blink_off",
+                                                    "bds_1_blink_on",
+                                                    "bds_2_blink_off",
+                                                    "bds_2_blink_on",
+                                                    "bds_3_blink_off_calib",
+                                                    "bds_3_blink_off",
+                                                    "bds_3_blink_on",
+                                                    "bds_found"
+                                                  };
 
 class BlinkTracker : public ItemTracker {
 public: tracker_type type() { return tt_blink;}
@@ -35,7 +36,7 @@ public:
         bds_3_blink_on,
         bds_found
     };
-    
+
 private:
     blinking_drone_states _blinking_drone_status = bds_start;
     int attempts = 0;
@@ -57,11 +58,11 @@ public:
     bool check_ignore_blobs(tracking::BlobProps * pbs);
     bool blinking_drone_located() {return _blinking_drone_status >= bds_found;}
 
-    bool delete_me(){
+    bool delete_me() {
         return n_frames_lost > n_frames_lost_threshold;
     }
 
-    float smoothed_size_image(){return smoother_im_size.latest();}
+    float smoothed_size_image() {return smoother_im_size.latest();}
 
     float score(tracking::BlobProps blob) {
         if (path.size()>0) {

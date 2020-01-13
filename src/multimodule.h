@@ -49,7 +49,7 @@ enum betaflight_arming {
 
 static const char* armed_names[] = {"disarmed","armed"};
 
-class MultiModule{
+class MultiModule {
     int protocol;
     int sub_protocol;
     int tx_option;
@@ -71,7 +71,7 @@ public:
     int throttle = JOY_BOUND_MIN;
     int arm_switch = JOY_BOUND_MIN;
 
-    std::string Armed(){
+    std::string Armed() {
         return armed_names[arm_switch>JOY_MIDDLE];
     }
 
@@ -95,12 +95,12 @@ public:
     int cycles_until_bind = 0;
     stopwatch_c sw_bind; // stop binding in max 20s
     void bind(bool b) {
-        if (b){
+        if (b) {
             sw_bind.Restart();
             if (cycles_until_bind == 0)
                 cycles_until_bind = 80;
         }
-        if (!b){
+        if (!b) {
             if (cycles_until_bind == 0)
                 cycles_until_bind = -80;
         }

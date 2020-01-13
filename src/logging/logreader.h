@@ -6,7 +6,7 @@
 namespace logging
 {
 
-class LogReader{
+class LogReader {
 
 public:
     void init(std::string path);
@@ -19,7 +19,7 @@ public:
     std::vector<InsectReader> replay_moths() {
         std::vector<InsectReader> replay_logs;
         for (auto log : log_insects) {
-            if (log.replay_moth()){
+            if (log.replay_moth()) {
                 replay_logs.push_back(log);
             }
         }

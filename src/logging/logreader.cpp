@@ -91,7 +91,7 @@ void LogReader::current_frame_number(unsigned long long RS_id) {
 
     if (current_entry.RS_id != RS_id) {
         cout << "Warning, frame not found in log" << endl;
-        while(current_entry.RS_id != RS_id){
+        while(current_entry.RS_id != RS_id) {
             RS_id++;
             current_entry = log_main[RS_id];
         }

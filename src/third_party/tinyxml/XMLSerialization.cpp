@@ -219,7 +219,7 @@ void Serializable::Serialize(tinyxml2::XMLDocument *classDoc, tinyxml2::XMLEleme
         tinyxml2::XMLElement *listNode = classDoc->NewElement("Collection");
         listNode->SetAttribute("Name", (*it_collection)->getCollectionName().c_str());
 
-        for (size_t c=0;c<(*it_collection)->size();c++)
+        for (size_t c=0; c<(*it_collection)->size(); c++)
         {
             Serializable *item = (*it_collection)->getItem(c);
             tinyxml2::XMLElement *elementNode = classDoc->NewElement("Class");
@@ -399,14 +399,15 @@ bool Serializable::Compare(Serializable *msg)
     if (identical)
     {
         if (m_SubclassCollections.size()!=msg->m_SubclassCollections.size())
-        {identical=false;} else
+        {identical=false;}
+        else
             for (CollectionIterator it = m_SubclassCollections.begin() ; it != m_SubclassCollections.end(); ++it)
                 for (CollectionIterator it_c = msg->m_SubclassCollections.begin() ; it_c != msg->m_SubclassCollections.end(); ++it_c) {
                     if ((*it)->getCollectionName()==(*it_c)->getCollectionName()) {
-                        if ((*it)->size()!=(*it_c)->size()){
+                        if ((*it)->size()!=(*it_c)->size()) {
                             identical=false;
                         } else {
-                            for (size_t c=0; c<(*it)->size();c++) {
+                            for (size_t c=0; c<(*it)->size(); c++) {
                                 if (!(*it)->getItem(c)->Compare((*it_c)->getItem(c)))
                                 { identical=false; break; }
                             }
@@ -445,8 +446,8 @@ bool Serializable::Clone(Serializable *source, Serializable *destination)
 
     for (CollectionIterator it_source = source->m_SubclassCollections.begin() ; it_source != source->m_SubclassCollections.end(); ++it_source)
         for (CollectionIterator it_dest = destination->m_SubclassCollections.begin() ; it_dest != destination->m_SubclassCollections.end(); ++it_dest)
-            if ((*it_source)->getCollectionName()==(*it_dest)->getCollectionName()){
-                for (size_t c=0; c<(*it_source)->size();c++)
+            if ((*it_source)->getCollectionName()==(*it_dest)->getCollectionName()) {
+                for (size_t c=0; c<(*it_source)->size(); c++)
                 {
                     Serializable *newItem = (*it_dest)->newElement();
                     if (!newItem->Copy((*it_source)->getItem(c)))
@@ -500,7 +501,7 @@ void Serializable::Replace(string searchFor, string replaceWith, bool recursive)
         for (ClassMappingIterator it = m_SubclassMappings.begin() ; it != m_SubclassMappings.end(); ++it)
             (*it)->getSubclass()->Replace(searchFor, replaceWith);
         for (CollectionIterator it = m_SubclassCollections.begin() ; it != m_SubclassCollections.end(); ++it)
-            for (size_t c=0; c<(*it)->size();c++) { (*it)->getItem(c)->Replace(searchFor, replaceWith); }
+            for (size_t c=0; c<(*it)->size(); c++) { (*it)->getItem(c)->Replace(searchFor, replaceWith); }
     }
 }
 }

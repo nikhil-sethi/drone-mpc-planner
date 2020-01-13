@@ -4,7 +4,7 @@
 using namespace cv;
 using namespace std;
 namespace tracking {
-    
+
 void InsectTracker::init(int id, VisionData *visdat, int16_t viz_id) {
     _insect_trkr_id = id;
     std::ofstream * logger = new std::ofstream(); // FIXME: use std::shared_ptr?
@@ -89,7 +89,7 @@ void InsectTracker::update_insect_prediction() {
 
 }
 
-void InsectTracker::calc_world_item(BlobProps * pbs, double time [[maybe_unused]]){
+void InsectTracker::calc_world_item(BlobProps * pbs, double time [[maybe_unused]]) {
     calc_world_props_blob_generic(pbs);
     pbs->world_props.valid = pbs->world_props.bkg_check_ok && pbs->world_props.disparity_in_range & pbs->world_props.radius_in_range;
 

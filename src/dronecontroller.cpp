@@ -7,7 +7,7 @@ using namespace cv;
 static Joystick joystick("/dev/input/js0");
 static JoystickEvent event;
 
-bool DroneController::joystick_ready(){
+bool DroneController::joystick_ready() {
     return joystick.isFound();
 }
 
@@ -19,11 +19,11 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     _camvol = camvol;
     control_history_max_size = pparams.fps;
     (*_logger) << "valid; flight_mode;" <<
-        "target_pos_x; target_pos_y; target_pos_z; " <<
-        "hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; " <<
-        "joyThrottle; joyRoll; joyPitch; joyYaw; " <<
-        "joyArmSwitch; joyModeSwitch; joyTakeoffSwitch;" <<
-        "dt; yaw; yaw_smooth;";
+               "target_pos_x; target_pos_y; target_pos_z; " <<
+               "hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; " <<
+               "joyThrottle; joyRoll; joyPitch; joyYaw; " <<
+               "joyArmSwitch; joyModeSwitch; joyTakeoffSwitch;" <<
+               "dt; yaw; yaw_smooth;";
     std::cout << "Initialising control." << std::endl;
     settings_file = "../../xml/" + dparams.control + ".xml";
 
@@ -95,7 +95,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
     if (!data_raw_insect.pos_valid) // if tracking is lost, set the raw setpoint to just above takeoff location, because otherwise the (takeoff) may go towards 0,0,0 (the camera)
         data_raw_insect.state.pos = _dtrk->drone_startup_location() + cv::Point3f(0,0.5,0);
 
-    if( recovery_mode){
+    if( recovery_mode) {
         data_raw_insect.state.pos = recovery_pos;
         data_raw_insect.state.vel = {0};
     }
@@ -106,7 +106,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
     bool joy_control = false;
     switch(_flight_mode) {
     case fm_manual: {
-        mode += bf_headless_disabled;        
+        mode += bf_headless_disabled;
         throttle = joy_throttle;
         _rc->arm(_joy_arm_switch);
         roll = joy_roll;
@@ -207,10 +207,10 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
 //        auto_pitch = JOY_MIDDLE;
 
         // Wait until velocity of drone after take-off is constant, then estimate this velocity using sufficient samples
-        if (static_cast<float>(time - start_takeoff_burn_time) > auto_burn_duration + effective_burn_spin_down_duration + transmission_delay_duration - 1.f / pparams.fps){
+        if (static_cast<float>(time - start_takeoff_burn_time) > auto_burn_duration + effective_burn_spin_down_duration + transmission_delay_duration - 1.f / pparams.fps) {
             if(_joy_state == js_waypoint)
                 _flight_mode = fm_flying_pid_init;
-            else{
+            else {
                 _flight_mode = fm_interception_aim_start;
 
             }
@@ -250,7 +250,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         if (recovery_mode && remaining_aim_duration <= 0) {
             _flight_mode = fm_interception_burn_start;
         } else if (recovery_mode) { // do nothing
-        } else if (!trajectory_in_view(traj,CameraVolume::relaxed) || auto_burn_duration > 1.1f || auto_burn_duration == 0.0f){
+        } else if (!trajectory_in_view(traj,CameraVolume::relaxed) || auto_burn_duration > 1.1f || auto_burn_duration == 0.0f) {
             _flight_mode = fm_flying_pid_init;
         } else {
             std::vector<state_data> traj_back;
@@ -263,7 +263,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
             //            draw_viz(traj_back.back(),target_back,time,burn_direction_back,auto_burn_duration_back,aim_duration,traj_back);
             //            for (auto t : traj_back)
             //                viz_drone_trajectory.push_back(t);
-            if (!trajectory_in_view(traj_back,CameraVolume::relaxed)){
+            if (!trajectory_in_view(traj_back,CameraVolume::relaxed)) {
                 _flight_mode = fm_flying_pid_init;
             } else if (remaining_aim_duration < 0.01f)
                 _flight_mode = fm_interception_burn_start;
@@ -278,7 +278,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         std::cout << "Burning: " << auto_burn_duration << std::endl;
         [[fallthrough]];
     } case fm_interception_burn: {
-        if (static_cast<float>(time - interception_start_time) > aim_duration + auto_burn_duration){
+        if (static_cast<float>(time - interception_start_time) > aim_duration + auto_burn_duration) {
             _flight_mode = fm_interception_burn_spin_down;
             std::cout << "Spindown" << std::endl;
         }
@@ -324,7 +324,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
     } case fm_flying_pid: {
         check_emergency_kill(data_drone);
 
-        if(!data_drone.pos_valid){
+        if(!data_drone.pos_valid) {
             data_drone.state.pos = _dtrk->drone_startup_location ();
             pos_err_i = {0,0,0};
         }
@@ -335,7 +335,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         control_model_based(data_drone, filtered_setpoint_pos,filtered_setpoint_vel,false);
 
         //check if we can go back to burning:
-        if (data_drone.pos_valid && data_drone.vel_valid && _joy_state!=js_waypoint){
+        if (data_drone.pos_valid && data_drone.vel_valid && _joy_state!=js_waypoint) {
             std::vector<state_data> traj;
             cv::Point3f burn_direction;
             float burn_duration;
@@ -346,7 +346,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
             if (trajectory_in_view(traj,CameraVolume::strict) && burn_duration < 0.2f && burn_duration > 0.01f && false) {
                 std::vector<state_data> traj_back;
                 std::tie (std::ignore, std::ignore,std::ignore,std::ignore,traj_back) = calc_burn(traj.back(),traj.front(),aim_duration);
-                if (trajectory_in_view(traj_back,CameraVolume::strict) && norm(data_target_new.state.vel)>0.1){ // norm vel is hack to check if not waypoint
+                if (trajectory_in_view(traj_back,CameraVolume::strict) && norm(data_target_new.state.vel)>0.1) { // norm vel is hack to check if not waypoint
                     _flight_mode = fm_retry_aim_start;
                     //                    recovery_mode = true; // will be set to false in retry_aim TMP disabled because #131
                     recovery_pos = data_drone.pos();
@@ -426,7 +426,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
     }
     }
 
-    if (!joy_control){
+    if (!joy_control) {
         pitch =  auto_pitch;
         roll = auto_roll;
         throttle = auto_throttle;
@@ -449,25 +449,25 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         control_history.erase(control_history.begin());
 
     (*_logger) << static_cast<int>(data_drone.pos_valid)  << "; " <<
-        static_cast<int16_t>(_flight_mode) << "; " <<
-        data_target_new.pos().x << "; " <<
-        data_target_new.pos().y  << "; " <<
-        data_target_new.pos().z << "; " <<
-        hoverthrottle << "; " <<
-        auto_throttle << "; " <<
-        auto_roll << "; " <<
-        auto_pitch << "; " <<
-        auto_yaw <<  "; " <<
-        joy_throttle <<  "; " <<
-        joy_roll <<  "; " <<
-        joy_pitch <<  "; " <<
-        joy_yaw << "; " <<
-        static_cast<int>(_joy_arm_switch) << "; " <<
-        static_cast<int>(_joy_mode_switch) << "; " <<
-        static_cast<int>(_joy_takeoff_switch) << "; " <<
-        data_drone.dt << "; " <<
-        data_drone.yaw <<  "; " <<
-        data_drone.yaw_smooth <<  "; ";
+               static_cast<int16_t>(_flight_mode) << "; " <<
+               data_target_new.pos().x << "; " <<
+               data_target_new.pos().y  << "; " <<
+               data_target_new.pos().z << "; " <<
+               hoverthrottle << "; " <<
+               auto_throttle << "; " <<
+               auto_roll << "; " <<
+               auto_pitch << "; " <<
+               auto_yaw <<  "; " <<
+               joy_throttle <<  "; " <<
+               joy_roll <<  "; " <<
+               joy_pitch <<  "; " <<
+               joy_yaw << "; " <<
+               static_cast<int>(_joy_arm_switch) << "; " <<
+               static_cast<int>(_joy_mode_switch) << "; " <<
+               static_cast<int>(_joy_takeoff_switch) << "; " <<
+               data_drone.dt << "; " <<
+               data_drone.yaw <<  "; " <<
+               data_drone.yaw_smooth <<  "; ";
 }
 
 std::tuple<int, int, float, Point3f, std::vector<state_data> > DroneController::calc_burn(state_data state_drone,state_data state_target,float remaining_aim_duration) {
@@ -492,7 +492,7 @@ std::tuple<int,int,float,cv::Point3f> DroneController::calc_directional_burn(sta
     for (int i = 0; i < 100; i++) {
         cv::Point3f integrated_pos, integrated_vel;
         std::tie(integrated_pos, integrated_vel, std::ignore) = predict_drone_after_burn(
-            state_drone,burn_direction,remaining_aim_duration,burn_duration);
+                    state_drone,burn_direction,remaining_aim_duration,burn_duration);
 
         drone_pos_after_burn = integrated_pos;
         target_pos_after_burn = target_pos_after_aim + burn_duration * state_target.vel;
@@ -515,7 +515,7 @@ std::tuple<int,int,float,cv::Point3f> DroneController::calc_directional_burn(sta
             burn_duration -= conversion_speed * static_cast<float>(norm(pos_err)/norm(integrated_vel));
 
         //in/decrease the conversion speed and retry if the loop converged to a wrong maximum:
-        if (burn_duration< 0){
+        if (burn_duration< 0) {
             burn_duration = 1.0;
             conversion_speed *=0.5f;
         } else if (burn_duration > 1) {
@@ -596,7 +596,7 @@ void DroneController::draw_viz(
         cv::Point3f integrated_pos, integrated_vel;
         cv::Point3f burn_accelleration;
         std::tie(integrated_pos, integrated_vel,burn_accelleration) = predict_drone_after_burn(
-            state_drone, burn_direction,0,burn_duration);
+                    state_drone, burn_direction,0,burn_duration);
 
         //        std::tie(viz_drone_pos_after_burn, std::ignore) = predict_drone_state_after_spindown(integrated_pos, integrated_vel,burn_accelleration);
         //        viz_time_after_burn = viz_time_after_aim + static_cast<double>(burn_duration + effective_burn_spin_down_duration);
@@ -634,9 +634,9 @@ void DroneController::draw_viz(
 std::vector<state_data> DroneController::predict_trajectory(float burn_duration, float remaining_aim_duration, cv::Point3f burn_direction, state_data state_drone) {
     std::vector<state_data> traj;
     cv::Point3f integrated_pos, integrated_vel;
-    for (float f=0;f <= burn_duration;f+=1.f/pparams.fps) {
+    for (float f=0; f <= burn_duration; f+=1.f/pparams.fps) {
         std::tie (integrated_pos, integrated_vel,std::ignore) = predict_drone_after_burn(
-            state_drone, burn_direction,remaining_aim_duration,f);
+                    state_drone, burn_direction,remaining_aim_duration,f);
         state_data state;
         state.pos = integrated_pos;
         state.vel = integrated_vel;
@@ -696,11 +696,11 @@ std::tuple<cv::Point3f, cv::Point3f> DroneController::predict_drone_state_after_
     return std::make_tuple(integrated_pos, integrated_vel);
 }
 
-int DroneController::control_yaw(track_data data_drone, float gain_yaw){
-    if(data_drone.yaw_valid){
+int DroneController::control_yaw(track_data data_drone, float gain_yaw) {
+    if(data_drone.yaw_valid) {
         auto_yaw = JOY_MIDDLE + gain_yaw*data_drone.yaw_smooth*sqrtf(powf(data_drone.state.pos.x,2)+powf(data_drone.state.pos.y,2)+powf(data_drone.state.pos.z,2)); // clockwise is positive
     }
-    else{
+    else {
         auto_yaw = JOY_MIDDLE;
     }
     return auto_yaw;
@@ -748,7 +748,7 @@ void DroneController::approx_effective_thrust(track_data data_drone, cv::Point3f
         }
 
         float partial_effective_burn_spin_down_duration = dt_burn - burn_duration;
-        if (partial_effective_burn_spin_down_duration > 0){
+        if (partial_effective_burn_spin_down_duration > 0) {
             // Phase: spin down
             integrated_pos2 += 0.167f * max_jerk * powf(effective_burn_spin_down_duration,3) + integrated_vel2*effective_burn_spin_down_duration;
             integrated_vel2 += 0.5f * max_jerk  * powf(effective_burn_spin_down_duration,2) ;
@@ -769,7 +769,7 @@ void DroneController::approx_effective_thrust(track_data data_drone, cv::Point3f
 }
 
 
-float DroneController::thrust_to_throttle(float thrust_ratio){
+float DroneController::thrust_to_throttle(float thrust_ratio) {
     float p1 = 3433.2;
     float p2 = -4833.5;
     float p3 = 1838.6;
@@ -780,7 +780,7 @@ float DroneController::thrust_to_throttle(float thrust_ratio){
 }
 
 
-std::tuple<cv::Point3f, cv::Point3f> DroneController::keep_in_volume_check(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel){
+std::tuple<cv::Point3f, cv::Point3f> DroneController::keep_in_volume_check(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel) {
     // check whether the braking distance is large enough to stay in the frame
     // if not change the setpoint for the controller
     float safety = 2;
@@ -789,7 +789,7 @@ std::tuple<cv::Point3f, cv::Point3f> DroneController::keep_in_volume_check(track
     float required_breaking_time = static_cast<float>(norm(data_drone.vel() )) / thrust;
     float required_breaking_distance = static_cast<float>(.5L*thrust*safety*pow(required_breaking_time, 2));
 
-    if(remaining_breaking_distance<=required_breaking_distance && remaining_breaking_distance>0 ){
+    if(remaining_breaking_distance<=required_breaking_distance && remaining_breaking_distance>0 ) {
         setpoint_pos =_camvol->center_of_volume();
         setpoint_vel = {0};
         flight_submode_name = "fm_pid_keep_in_volume";
@@ -800,7 +800,7 @@ std::tuple<cv::Point3f, cv::Point3f> DroneController::keep_in_volume_check(track
     return std::make_tuple(setpoint_pos, setpoint_vel);
 }
 
-void DroneController::adapt_reffilter_dynamic(track_data data_drone, track_data data_target){
+void DroneController::adapt_reffilter_dynamic(track_data data_drone, track_data data_target) {
     float T;
     float Tmax = 0.6;
     float Tmin = 0.3; //1/pparams.fps/1000;
@@ -827,7 +827,7 @@ std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f de
 
     // If the magnitude of the required acceleration is to high apply the maximal magnitude
     // and find the direction which still applies the correct direction.
-    if(normf(req_acc)>thrust){
+    if(normf(req_acc)>thrust) {
         req_acc *= thrust/normf(req_acc);
         direction = req_acc/normf(req_acc);
 
@@ -841,7 +841,7 @@ std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f de
 
             angle_err = dir_res_acc.dot(dir_req_acc); //=cos(angle-err)
 
-            if(angle_err>0.9998f){ //0.9998 error corresponds 1 deg
+            if(angle_err>0.9998f) { //0.9998 error corresponds 1 deg
                 break;
             } else {
                 direction -= dir_res_acc - dir_req_acc;
@@ -867,20 +867,20 @@ std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f de
     return std::make_tuple(roll_cmd,pitch_cmd,throttle_cmd);
 }
 
-void DroneController::control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool headless_mode_disabled){
+void DroneController::control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool headless_mode_disabled) {
     int kp_pos_roll_scaled, kp_pos_throttle_scaled, kp_pos_pitch_scaled, ki_pos_roll_scaled, ki_pos_throttle_scaled, ki_pos_pitch_scaled, kd_pos_roll_scaled, kd_pos_throttle_scaled, kd_pos_pitch_scaled;
     cv::Point3f scale_p = {1.f, 1.f, 1.f};
     cv::Point3f scale_i = {1.f, 1.f, 1.f};
     cv::Point3f scale_d = {1.f, 1.f, 1.f};
-    if(!data_drone.pos_valid){
+    if(!data_drone.pos_valid) {
         scale_p *= 0.8;
     }
-    if( norm(data_drone.state.vel)<0.1 && norm(setpoint_vel)<0.1 && normf(setpoint_pos-data_drone.pos())<0.2f){
+    if( norm(data_drone.state.vel)<0.1 && norm(setpoint_vel)<0.1 && normf(setpoint_pos-data_drone.pos())<0.2f) {
         scale_d *= 1.1f;
         scale_i *= 1.1f;
     }
     float height_over_ground = data_drone.pos().y-_dtrk->drone_landing_location().y;
-    if(height_over_ground<0.5f){
+    if(height_over_ground<0.5f) {
         scale_d.z *= 1.06f;
     }
     kp_pos_roll_scaled = scale_p.x*kp_pos_roll;
@@ -982,17 +982,17 @@ void DroneController::land(track_data data_drone, track_data data_target_new, bo
     float horizontal_err = normf(err);
     float horizontal_vel = normf( cv::Point3f(data_drone.vel().x, 0.f, data_drone.vel().z));
     if(horizontal_err<0.060f
-        && horizontal_vel<0.04f
-        && fabs(data_drone.yaw_smooth)<0.1f
-        && feedforward_landing==false){
+            && horizontal_vel<0.04f
+            && fabs(data_drone.yaw_smooth)<0.1f
+            && feedforward_landing==false) {
         linear_landing_yoffset -= landing_velocity/static_cast<float>(pparams.fps);
     }
-    else if((horizontal_err>0.13f) && linear_landing_yoffset > 0 && feedforward_landing==false ){
+    else if((horizontal_err>0.13f) && linear_landing_yoffset > 0 && feedforward_landing==false ) {
         linear_landing_yoffset += 0.2f*landing_velocity/static_cast<float>(pparams.fps);
     }
     data_target_new.state.pos.y -= linear_landing_yoffset;
 
-    if(data_drone.pos_valid && !feedforward_landing){
+    if(data_drone.pos_valid && !feedforward_landing) {
         control_model_based(data_drone, data_target_new.pos(), data_target_new.vel(),headless_mode_disabled);
         auto_yaw = control_yaw(data_drone, 5);
 
@@ -1004,7 +1004,7 @@ void DroneController::land(track_data data_drone, track_data data_target_new, bo
             landing_time = 1.f/pparams.fps;
         }
     } else {
-        if(feedforward_landing==false){
+        if(feedforward_landing==false) {
             feedforward_landing = true; // Stay in feed forward landing once tracking is lost
             calc_ff_landing();
         }
@@ -1016,7 +1016,7 @@ void DroneController::land(track_data data_drone, track_data data_target_new, bo
     }
 }
 
-void DroneController::calc_ff_landing(){
+void DroneController::calc_ff_landing() {
     landing_time = 0;
     float est_height_over_ground = previous_drone_data.pos().y+(previous_drone_data.vel().y*1.f/pparams.fps)-_dtrk->drone_landing_location().y;
     float velocity_before_ground = landing_velocity;
@@ -1088,7 +1088,7 @@ void DroneController::read_joystick(void) {
                     }
                     break;
                 case 5: //mode switch (3 way)
-                    if (event.value<-16384 ){
+                    if (event.value<-16384 ) {
                         _joy_mode_switch = jmsm_manual;
                     } else if (event.value>16384) {
                         _joy_mode_switch = jmsm_hunt;
@@ -1118,10 +1118,10 @@ void DroneController::process_joystick() {
         return;
 
     // prevent accidental take offs at start up
-    if (_joy_state == js_checking){
+    if (_joy_state == js_checking) {
         if (_joy_arm_switch == bf_disarmed &&
-            ((joy_throttle <= JOY_MIN_THRESH && !dparams.mode3d) || (abs(joy_throttle- JOY_MIDDLE) < 50 && dparams.mode3d) )&&
-            !_joy_takeoff_switch) {
+                ((joy_throttle <= JOY_MIN_THRESH && !dparams.mode3d) || (abs(joy_throttle- JOY_MIDDLE) < 50 && dparams.mode3d) )&&
+                !_joy_takeoff_switch) {
             _flight_mode = fm_disarmed;
             _joy_state = js_disarmed;
         } else {
@@ -1130,20 +1130,20 @@ void DroneController::process_joystick() {
         }
     } else {
 
-        if (_flight_mode == fm_inactive){
+        if (_flight_mode == fm_inactive) {
             _manual_override_take_off_now = _joy_takeoff_switch;
         }
-        if (_joy_arm_switch == bf_disarmed){
+        if (_joy_arm_switch == bf_disarmed) {
             if (!dparams.mode3d)
                 _rc->arm(bf_disarmed);
             _joy_takeoff_switch = false;
             _manual_override_take_off_now = false;
             _joy_state = js_disarmed;
             _flight_mode = fm_disarmed;
-        }else {
+        } else {
             if (!dparams.mode3d)
                 _rc->arm(bf_armed);
-            if (_joy_mode_switch == jmsm_manual){
+            if (_joy_mode_switch == jmsm_manual) {
                 _joy_state = js_manual;
                 _flight_mode = fm_manual;
             } else if (_joy_mode_switch == jmsm_waypoint)
@@ -1167,7 +1167,7 @@ void DroneController::deserialize_settings() {
                             std::istreambuf_iterator<char>());
 
         if (!xmls::Serializable::fromXML(xmlData, &params))
-        { // Deserialization not successful
+        {   // Deserialization not successful
             throw my_exit("Cannot read: " + settings_file);
         }
         ControlParameters tmp;

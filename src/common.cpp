@@ -6,7 +6,7 @@
 #include <chrono>
 
 void CameraVolume::init(cv::Point3f point_left_top, cv::Point3f point_right_top, cv::Point3f point_left_bottom, cv::Point3f point_right_bottom,
-                        float b_depth, float b_height){
+                        float b_depth, float b_height) {
 
     _n_front = get_plane_normal_vector (point_left_bottom, point_right_bottom);
     _p0_front = (cv::Mat_<float>(3,1) << 0, 0, 0);
@@ -70,7 +70,7 @@ void CameraVolume::init(cv::Point3f point_left_top, cv::Point3f point_right_top,
 }
 
 
-bool CameraVolume::in_view(cv::Point3f p, view_volume_check_mode c){
+bool CameraVolume::in_view(cv::Point3f p, view_volume_check_mode c) {
     if (c == relaxed)
         return in_view(p,0.3f);
     else
@@ -93,8 +93,8 @@ void CameraVolume::calc_corner_points(cv::Mat p0_front, cv::Mat n_front, cv::Mat
 }
 
 void CameraVolume::calc_corner_points_hunt(cv::Mat p0_front, cv::Mat n_front, cv::Mat p0_back, cv::Mat n_back,
-                                           cv::Mat p0_top, cv::Mat n_top, cv::Mat p0_bottom, cv::Mat n_bottom,
-                                           cv::Mat p0_left, cv::Mat n_left, cv::Mat p0_right, cv::Mat n_right)
+        cv::Mat p0_top, cv::Mat n_top, cv::Mat p0_bottom, cv::Mat n_bottom,
+        cv::Mat p0_left, cv::Mat n_left, cv::Mat p0_right, cv::Mat n_right)
 {
     _bottom_left_back_hunt = intersection_of_3_planes(p0_bottom, n_bottom, p0_left, n_left, p0_back, n_back);
     _bottom_right_back_hunt = intersection_of_3_planes(p0_bottom, n_bottom, p0_right, n_right, p0_back, n_back);
@@ -136,7 +136,7 @@ std::tuple<float, cv::Mat> CameraVolume::hesse_normal_form(cv::Mat p0, cv::Mat n
     return std::make_tuple(d, n0);
 }
 
-bool CameraVolume::in_view(cv::Point3f p,float hysteresis_margin){
+bool CameraVolume::in_view(cv::Point3f p,float hysteresis_margin) {
     bool front_check = on_normal_side (_p0_front+hysteresis_margin*_n_front, _n_front, cv::Mat(p));
     bool left_check = on_normal_side (_p0_left-hysteresis_margin*_n_left, _n_left, cv::Mat(p));
     bool right_check = on_normal_side (_p0_right+hysteresis_margin*_n_right, _n_right, cv::Mat(p));
@@ -155,7 +155,7 @@ bool CameraVolume::in_view(cv::Point3f p,float hysteresis_margin){
         return true;
 }
 
-CameraVolume::hunt_check_result CameraVolume::in_hunt_area(cv::Point3f d[[maybe_unused]], cv::Point3f m){
+CameraVolume::hunt_check_result CameraVolume::in_hunt_area(cv::Point3f d[[maybe_unused]], cv::Point3f m) {
     bool front_check = on_normal_side (_p0_front_hunt, _n_front_hunt, cv::Mat(m));
     bool left_check = on_normal_side (_p0_left_hunt, _n_left_hunt, cv::Mat(m));
     bool right_check = on_normal_side (_p0_right_hunt, _n_right_hunt, cv::Mat(m));
@@ -179,12 +179,12 @@ CameraVolume::hunt_check_result CameraVolume::in_hunt_area(cv::Point3f d[[maybe_
     return HuntVolume_OK;
 }
 
-float CameraVolume::calc_distance_to_borders(track_data data_drone){
+float CameraVolume::calc_distance_to_borders(track_data data_drone) {
     std::vector<cv::Point3f> p{data_drone.pos (), data_drone.vel ()};
     return calc_distance_to_borders (p);
 }
 
-float CameraVolume::calc_distance_to_borders(std::vector<cv::Point3f> p){
+float CameraVolume::calc_distance_to_borders(std::vector<cv::Point3f> p) {
     cv::Mat pMat = (cv::Mat_<float_t>(3,2) << p[0].x, p[1].x, p[0].y, p[1].y, p[0].z, p[1].z);
 
     float min_dist = std::numeric_limits<float>::max();
@@ -242,7 +242,7 @@ float CameraVolume::calc_distance_to_borders(std::vector<cv::Point3f> p){
     return min_dist;
 }
 
-float CameraVolume::calc_distance_to_plane(cv::Mat vec, cv::Mat plane){
+float CameraVolume::calc_distance_to_plane(cv::Mat vec, cv::Mat plane) {
     cv::Mat b(3, 1, CV_32F);
     b = vec.col(0) - plane.col(0);
 
@@ -259,7 +259,7 @@ float CameraVolume::calc_distance_to_plane(cv::Mat vec, cv::Mat plane){
     cv::Mat tmp = (cv::Mat_<float>(3,1) << -vec.at<float>(0,1), -vec.at<float>(1,1), -vec.at<float>(2,1));
     tmp.copyTo (A.col(2));
 
-    if(abs(cv::determinant(A))<0.05){
+    if(abs(cv::determinant(A))<0.05) {
         // the plane and the vector are (almost) parallel to each other.
         // distance is infinity
         return std::numeric_limits<float>::max();
@@ -272,25 +272,25 @@ float CameraVolume::calc_distance_to_plane(cv::Mat vec, cv::Mat plane){
     return sgn_param3 * static_cast<float>(norm( params.at<float>(2,0)*vec.col(1) ));
 }
 
-cv::Mat CameraVolume::get_orthogonal_vector(cv::Mat vec){
+cv::Mat CameraVolume::get_orthogonal_vector(cv::Mat vec) {
     cv::Mat rt;
-    if(vec.at<float>(2,0)!=0){
+    if(vec.at<float>(2,0)!=0) {
         rt = (cv::Mat_<float>(3,1) << 1,1,(-vec.at<float>(0,0) -vec.at<float>(1,0))/vec.at<float>(2,0) );
-    }else if(vec.at<float>(1,0)!=0){
+    } else if(vec.at<float>(1,0)!=0) {
         rt = (cv::Mat_<float>(3,1) << 1,(-vec.at<float>(0,0) -vec.at<float>(2,0))/vec.at<float>(1,0),1 );
-    }else if(vec.at<float>(0,0)!=0){
+    } else if(vec.at<float>(0,0)!=0) {
         rt = (cv::Mat_<float>(3,1) << (-vec.at<float>(1,0) -vec.at<float>(2,0))/vec.at<float>(0,0),1,1 );
     }
 
     return rt;
 }
 
-cv::Mat CameraVolume::get_plane_normal_vector(cv::Point3f x1, cv::Point3f x2){
+cv::Mat CameraVolume::get_plane_normal_vector(cv::Point3f x1, cv::Point3f x2) {
     cv::Point3f n = x1.cross (x2);
     return cv::Mat(n)/norm(n);
 }
 
-bool CameraVolume::on_normal_side(cv::Mat p0, cv::Mat n, cv::Mat p){
+bool CameraVolume::on_normal_side(cv::Mat p0, cv::Mat n, cv::Mat p) {
     cv::Mat v = cv::Mat::zeros(cv::Size(1,3), CV_32F);
     v = p-p0;
     if(v.dot (n)>=0)
@@ -300,13 +300,13 @@ bool CameraVolume::on_normal_side(cv::Mat p0, cv::Mat n, cv::Mat p){
 }
 
 //strips disparity from world2im_3d
-cv::Point2f world2im_2d(cv::Point3f p_world, cv::Mat Qfi, float camera_angle){
+cv::Point2f world2im_2d(cv::Point3f p_world, cv::Mat Qfi, float camera_angle) {
     cv::Point3f p_im = world2im_3d(p_world,Qfi,camera_angle);
     return cv::Point2f(p_im.x,p_im.y);
 }
 
 //returns image coordinates from a world coordinate: x,y,disparity
-cv::Point3f world2im_3d(cv::Point3f p_world, cv::Mat Qfi, float camera_angle){
+cv::Point3f world2im_3d(cv::Point3f p_world, cv::Mat Qfi, float camera_angle) {
     //transform back to image coordinates
     std::vector<cv::Point3d> world_coordinates,camera_coordinates;
     //derotate camera and convert to double:
@@ -325,7 +325,7 @@ cv::Point3f world2im_3d(cv::Point3f p_world, cv::Mat Qfi, float camera_angle){
 }
 
 //returns image coordinates from a world coordinate: x,y,disparity
-cv::Point3f im2world(cv::Point2f p_im,float disparity, cv::Mat Qf, float camera_angle){
+cv::Point3f im2world(cv::Point2f p_im,float disparity, cv::Mat Qf, float camera_angle) {
     std::vector<cv::Point3d> camera_coordinates, world_coordinates;
     camera_coordinates.push_back(cv::Point3d(p_im.x,p_im.y,-disparity));
     cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
@@ -493,7 +493,7 @@ std::string to_string_with_precision(double f, const int n)
 float normf(cv::Point2f m) { return static_cast<float>(cv::norm(m));}
 float normf(cv::Point3f m) { return static_cast<float>(cv::norm(m));}
 
-cv::Point3f multf(cv::Point3f  p1, cv::Point3f p2){
+cv::Point3f multf(cv::Point3f  p1, cv::Point3f p2) {
     cv::Point3f p;
     p.x = p1.x * p2.x;
     p.y = p1.y * p2.y;
@@ -501,7 +501,7 @@ cv::Point3f multf(cv::Point3f  p1, cv::Point3f p2){
     return p;
 }
 
-cv::Point3f deadzone(cv::Point3f p,float lo, float hi){
+cv::Point3f deadzone(cv::Point3f p,float lo, float hi) {
     return cv::Point3f(deadzone(p.x,lo,hi),deadzone(p.y,lo,hi),deadzone(p.z,lo,hi));
 }
 float deadzone( float v, float lo, float hi ) {

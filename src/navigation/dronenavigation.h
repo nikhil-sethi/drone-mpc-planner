@@ -93,10 +93,10 @@ private:
 
 public:
 
-    nav_flight_modes nav_flight_mode(){
+    nav_flight_modes nav_flight_mode() {
         return _nav_flight_mode;
     }
-    void nav_flight_mode(nav_flight_modes m){
+    void nav_flight_mode(nav_flight_modes m) {
         if (m == nfm_manual)
             _navigation_status = ns_manual;
         _nav_flight_mode = m;
@@ -124,13 +124,13 @@ public:
         return current_waypoint->threshold_mm;
     }
 
-    void manual_trigger_next_wp(){
+    void manual_trigger_next_wp() {
         if (wpid < waypoints.size()-1 && _nav_flight_mode == nfm_waypoint ) {
             wpid++;
             _navigation_status = ns_set_waypoint;
         }
     }
-    void manual_trigger_prev_wp(){
+    void manual_trigger_prev_wp() {
         if (wpid > 0 && _nav_flight_mode == nfm_waypoint ) {
             wpid--;
             _navigation_status = ns_set_waypoint;
@@ -144,11 +144,11 @@ public:
         return _navigation_status < ns_wait_for_takeoff_command;
     }
 
-    void redetect_drone_location(){
+    void redetect_drone_location() {
         _navigation_status = ns_locate_drone;
     }
 
-    cv::Point2i drone_v_setpoint_im(){
+    cv::Point2i drone_v_setpoint_im() {
 
         cv::Point3f tmp = 0.1*setpoint_vel_world + setpoint_pos_world;
         if (!drone_is_flying())
@@ -177,11 +177,11 @@ public:
 
         return cv::Point2i(camera_length[0].x,camera_length[0].y);
     }
-    cv::Point2i drone_setpoint_im(){
+    cv::Point2i drone_setpoint_im() {
         //transform to image coordinates:
 
         cv::Point3f tmp = setpoint_pos_world;
-        if (!drone_is_flying()){
+        if (!drone_is_flying()) {
             tmp.x = _trackers->dronetracker()->drone_startup_location().x;
             tmp.y = _trackers->dronetracker()->drone_startup_location().y+0.5f;
             tmp.z = _trackers->dronetracker()->drone_startup_location().z;
@@ -190,23 +190,23 @@ public:
         cv::Point3f resf  =world2im_3d(tmp,_visdat->Qfi,_visdat->camera_angle);
         return cv::Point2i(roundf(resf.x),round(resf.y));
     }
-    bool drone_is_hunting(){
-        if (_nav_flight_mode == nfm_hunt){
+    bool drone_is_hunting() {
+        if (_nav_flight_mode == nfm_hunt) {
             return _navigation_status == ns_chasing_insect || _navigation_status ==  ns_start_the_chase;
         } else {
             return false;
         }
     }
-    bool drone_is_flying(){
+    bool drone_is_flying() {
         return _navigation_status < ns_landing && _navigation_status >  ns_take_off_completed;
     }
-    bool drone_is_manual(){
+    bool drone_is_manual() {
         return _navigation_status == ns_manual;
     }
     bool time_for_restart() { // tmp function to signal restart so that another drone may fly
         return _navigation_status == ns_drone_problem ||  _navigation_status == ns_wait_after_landing;
     }
 
-    Interceptor get_Interceptor(){return _iceptor;}
+    Interceptor get_Interceptor() {return _iceptor;}
 };
 }

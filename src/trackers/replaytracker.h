@@ -18,17 +18,17 @@ public:
     void init(int id,logging::InsectReader, VisionData *visdat);
     void track(double time);
     void update_from_log(unsigned long long frame_number, double time);
-    bool tracking(){return _tracking;}
-    int16_t id(){return _id;}
+    bool tracking() {return _tracking;}
+    int16_t id() {return _id;}
 
     bool check_ignore_blobs(BlobProps * pbs [[maybe_unused]]) {
         return false;
     }
-    void calc_world_item(BlobProps * pbs, double time [[maybe_unused]]){
+    void calc_world_item(BlobProps * pbs, double time [[maybe_unused]]) {
         pbs->world_props.valid = false;
     }
 
-    bool delete_me(){
+    bool delete_me() {
         if (logreader.done()) {
             _logger->close();
             return true;

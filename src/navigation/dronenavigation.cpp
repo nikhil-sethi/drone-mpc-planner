@@ -40,7 +40,7 @@ void DroneNavigation::init(std::ofstream *logger, tracking::TrackerManager * tra
     initialized = true;
 }
 
-void DroneNavigation::deserialize_flightplan(std::string replay_dir){
+void DroneNavigation::deserialize_flightplan(std::string replay_dir) {
     //Waypoints are relative to the camera position. The camera is 0,0,0.
     //X image vs world is reversed! Negative world x is right in the image.
     //Everything below the camera is negative Y, heigher than the camera is positive
@@ -60,8 +60,8 @@ void DroneNavigation::update(double time) {
 
     if (_dctrl->Joy_State() != DroneController::js_none) {
         if (_dctrl->Joy_State() == DroneController::js_checking ||
-            _dctrl->Joy_State() == DroneController::js_none ||
-            _dctrl->Joy_State() == DroneController::js_disarmed )
+                _dctrl->Joy_State() == DroneController::js_none ||
+                _dctrl->Joy_State() == DroneController::js_disarmed )
             _nav_flight_mode = nfm_none;
         else if(_dctrl->Joy_State() == DroneController::js_hunt)
             _nav_flight_mode = nfm_hunt;
@@ -134,7 +134,7 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_wait_for_insect;
             else if (_nav_flight_mode == nfm_manual)
                 _navigation_status = ns_manual;
-            else if (_dctrl->manual_override_take_off_now() ){
+            else if (_dctrl->manual_override_take_off_now() ) {
                 next_waypoint(waypoints[wpid]);
                 _navigation_status = ns_takeoff;
                 repeat = true;
@@ -143,12 +143,12 @@ void DroneNavigation::update(double time) {
         } case ns_wait_for_insect: {
             if (_nav_flight_mode == nfm_manual) {
                 _navigation_status = ns_manual;
-            } else if (_nav_flight_mode == nfm_hunt){
+            } else if (_nav_flight_mode == nfm_hunt) {
                 _trackers->mode(tracking::TrackerManager::mode_wait_for_insect);
                 if(_iceptor.insect_in_range_takeoff()) {
                     _navigation_status = ns_takeoff;
                     repeat = true;
-                } else if(_trackers->insecttracker_best ()->tracking ()){
+                } else if(_trackers->insecttracker_best ()->tracking ()) {
                     _dctrl->flight_mode (DroneController::fm_spinup);
                 } else {
                     _dctrl->flight_mode(DroneController::fm_inactive);
@@ -169,11 +169,11 @@ void DroneNavigation::update(double time) {
             _navigation_status=ns_taking_off;
             break;
         } case ns_taking_off: {
-            if (_nav_flight_mode == nfm_manual){
+            if (_nav_flight_mode == nfm_manual) {
                 _navigation_status = ns_manual;
                 break;
             }
-            if (_trackers->dronetracker()->take_off_detection_failed()){
+            if (_trackers->dronetracker()->take_off_detection_failed()) {
                 std::cout << "Drone was not detected during max burn take off manoeuvre, aborting." << std::endl;
                 _dctrl->flight_mode(DroneController::fm_abort_flight);
                 _dctrl->flight_submode_name = "fm_abort_takeoff";
@@ -251,15 +251,15 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_approach_waypoint: {
 
-            if (pparams.navigation_tuning && current_waypoint->mode != wfm_landing && current_waypoint->mode != wfm_takeoff ){
+            if (pparams.navigation_tuning && current_waypoint->mode != wfm_landing && current_waypoint->mode != wfm_takeoff ) {
                 setpoint_pos_world.x = waypoints[wpid].xyz.x + (250-setpoint_slider_X)/100.f;
                 setpoint_pos_world.y = waypoints[wpid].xyz.y + (250-setpoint_slider_Y)/100.f;
                 setpoint_pos_world.z = waypoints[wpid].xyz.z + (setpoint_slider_Z-250)/100.f;
             }
 
             if (_dctrl->dist_to_setpoint() *1000 < current_waypoint->threshold_mm * distance_threshold_f
-                && normf(_trackers->dronetracker()->Last_track_data().state.vel) < 1.6f
-                && _trackers->dronetracker()->n_frames_tracking>5)
+                    && normf(_trackers->dronetracker()->Last_track_data().state.vel) < 1.6f
+                    && _trackers->dronetracker()->n_frames_tracking>5)
             {
                 if (current_waypoint->mode == wfm_landing) {
                     _navigation_status = ns_initial_reset_yaw;
@@ -267,7 +267,7 @@ void DroneNavigation::update(double time) {
                 } else if (wpid < waypoints.size()) { // next waypoint in flight plan
                     wpid++;
                     _navigation_status = ns_set_waypoint;
-                } else if (wpid == waypoints.size()){
+                } else if (wpid == waypoints.size()) {
                     wpid = 0; // another round
                     _navigation_status = ns_set_waypoint;
                 }
@@ -312,7 +312,7 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_initial_reset_yaw: {
             _dctrl->flight_mode(DroneController::fm_initial_reset_yaw);
-            if(time-time_initial_reset_yaw>0.5){
+            if(time-time_initial_reset_yaw>0.5) {
                 _trackers->dronetracker()->detect_yaw();
                 _navigation_status = ns_wait_reset_yaw;
             }
@@ -323,8 +323,8 @@ void DroneNavigation::update(double time) {
             err.y = 0;
             float horizontal_err = normf(err);
             if(_trackers->dronetracker()->check_smooth_yaw()
-                && _trackers->dronetracker()->check_yaw()
-                && horizontal_err < 0.3f){
+                    && _trackers->dronetracker()->check_yaw()
+                    && horizontal_err < 0.3f) {
                 _navigation_status = ns_land;
             }
             break;
@@ -373,7 +373,7 @@ void DroneNavigation::next_waypoint(Waypoint wp) {
     if (wp.mode == wfm_takeoff) {
         cv::Point3f p = _trackers->dronetracker()->drone_startup_location();
         setpoint_pos_world =  p + wp.xyz;
-    }else if (wp.mode == wfm_landing ) {
+    } else if (wp.mode == wfm_landing ) {
         cv::Point3f p = _trackers->dronetracker()->drone_landing_location();
         setpoint_pos_world =  p + wp.xyz;
     } else {
@@ -395,7 +395,7 @@ void DroneNavigation::deserialize_settings() {
                             std::istreambuf_iterator<char>());
 
         if (!xmls::Serializable::fromXML(xmlData, &params))
-        { // Deserialization not successful
+        {   // Deserialization not successful
             throw my_exit("Cannot read: " + settings_file);
         }
         navigationParameters tmp;
@@ -432,22 +432,22 @@ void DroneNavigation::close() {
     }
 }
 
-cv::Point3f DroneNavigation::square_point(cv::Point3f center, float width, float s){
+cv::Point3f DroneNavigation::square_point(cv::Point3f center, float width, float s) {
     s = fmodf(s, 4*width);
     float si = fmodf(s, width);
 
     float x_offset, y_offset, z_offset;
 
-    if(s>3*width){
+    if(s>3*width) {
         x_offset = -width/2;
         z_offset = width/2 - si;
-    } else if(s>2*width){
+    } else if(s>2*width) {
         x_offset = width/2 - si;
         z_offset = width/2;
-    } else if(s>width){
+    } else if(s>width) {
         x_offset = width/2;
         z_offset = -width/2 + si;
-    } else{
+    } else {
         x_offset = -width/2 + si;
         z_offset = -width/2;
     }

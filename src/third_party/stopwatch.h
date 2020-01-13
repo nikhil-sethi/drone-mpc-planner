@@ -63,15 +63,15 @@ extern "C"
 {
 #endif
 
-/***************************************************************************
-*                               PROTOTYPES
-***************************************************************************/
-void StartTimer(stopwatch_t *stopWatch);    /* start or restart stopwatch */
-void StopTimer(stopwatch_t *stopWatch);     /* stopwatch */
-void ResumeTimer(stopwatch_t *stopWatch);   /* resume stopped watch */
+    /***************************************************************************
+    *                               PROTOTYPES
+    ***************************************************************************/
+    void StartTimer(stopwatch_t *stopWatch);    /* start or restart stopwatch */
+    void StopTimer(stopwatch_t *stopWatch);     /* stopwatch */
+    void ResumeTimer(stopwatch_t *stopWatch);   /* resume stopped watch */
 
-/* returns stopwatch time in ms */
-unsigned long ReadTimer(const stopwatch_t *stopWatch);
+    /* returns stopwatch time in ms */
+    unsigned long ReadTimer(const stopwatch_t *stopWatch);
 
 #if defined __cplusplus
 }
@@ -101,7 +101,7 @@ public:
     void Start(void) {StartTimer(&watchData);};
     void Stop(void) {StopTimer(&watchData);};
     void Resume(void) {ResumeTimer(&watchData);};
-    void Restart(void) {Stop();Start();};
+    void Restart(void) {Stop(); Start();};
 
     /* running time in ms last time if stopped */
     unsigned long Read(void) const

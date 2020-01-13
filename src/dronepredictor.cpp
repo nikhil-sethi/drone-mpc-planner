@@ -21,14 +21,14 @@ void DronePredictor::init(VisionData *visdat, tracking::DroneTracker *dtrk, trac
     pitch_gain_smth.init(300,-10);
 }
 
-cv::Point3f mult3f(cv::Point3f p1, cv::Point3f p2){
+cv::Point3f mult3f(cv::Point3f p1, cv::Point3f p2) {
     cv::Point3f p;
     p.x = p1.x*p2.x;
     p.y = p1.y*p2.y;
     p.z = p1.z*p2.z;
     return p;
 }
-cv::Point3f div3f(cv::Point3f p1, cv::Point3f p2){
+cv::Point3f div3f(cv::Point3f p1, cv::Point3f p2) {
     cv::Point3f p;
     p.x = p1.x/p2.x;
     p.y = p1.y/p2.y;
@@ -59,7 +59,7 @@ void DronePredictor::update(bool drone_is_active, double time) {
     track_data td = _dtrk->track_history.back();
 
 
-    for (uint i = 0; i<_dtrk->track_history.size();i++) {
+    for (uint i = 0; i<_dtrk->track_history.size(); i++) {
         td = _dtrk->track_history.at(_dtrk->track_history.size()-i-1);
         if (td.pos_valid ) // || i > pparams.fps
             break;
@@ -74,7 +74,7 @@ void DronePredictor::update(bool drone_is_active, double time) {
     cv::Point3f pos = td.state.pos;
 
 
-    if (drone_is_active && initialized && dt_prev < 1.f / pparams.fps && !_dtrk->taking_off() && td.acc_valid){
+    if (drone_is_active && initialized && dt_prev < 1.f / pparams.fps && !_dtrk->taking_off() && td.acc_valid) {
         //update gain_factors based on error in old prediciton
 
         float hdt2 = (0.5f*powf(dt_prev,2));
@@ -88,7 +88,7 @@ void DronePredictor::update(bool drone_is_active, double time) {
         //calc ratio between predicted acc, and measured acc
         cv::Point3f ra1 = measured_dacc + mult3f(vel_prev,drag_gain);
         cv::Point3f ra2 = acc_pred_prev + mult3f(vel_prev,drag_gain);
-        cv::Point3f ratio = div3f(ra1 , ra2);
+        cv::Point3f ratio = div3f(ra1, ra2);
         //calc what the gain should have been to result in the actual pos
         cv::Point3f new_gain = mult3f(ratio,rtp_gain_prev);
 
@@ -109,9 +109,9 @@ void DronePredictor::update(bool drone_is_active, double time) {
         std::cout << "rtp_gain_err: " << new_gain.y << " throttle: " << throttle << std::endl;
         */
 
-            //prevent infs if control input is close to 0
-            if (fabs(rtp_prev.x) > 0.1f)
-                roll_gain_smth.addSample(new_gain.x);
+        //prevent infs if control input is close to 0
+        if (fabs(rtp_prev.x) > 0.1f)
+            roll_gain_smth.addSample(new_gain.x);
         if (fabs(rtp_prev.y) > 0.3f)
             throttle_gain_smth.addSample(new_gain.y);
         if (fabs(rtp_prev.z) > 0.3f)
@@ -123,7 +123,7 @@ void DronePredictor::update(bool drone_is_active, double time) {
     cv::Point3f vel = td.vel();
 
     //predict position based on control inputs and current position and velocity
-    cv::Point3f acc_pred = mult3f(rtp ,rtp_gain) - mult3f(vel ,drag_gain);
+    cv::Point3f acc_pred = mult3f(rtp,rtp_gain) - mult3f(vel,drag_gain);
 
     if (_dtrk->taking_off())
         acc_pred = cv::Point3f(0,20,0); // The target is not tracked properly yet, so override acc when taking off. Assume 2g take off.

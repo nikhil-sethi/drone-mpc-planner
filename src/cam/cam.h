@@ -19,7 +19,7 @@
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include "third_party/tinyxml/XMLSerialization.h"
 
-class Cam{
+class Cam {
 
 private:
     class CamCalibrationData: public xmls::Serializable
@@ -98,20 +98,20 @@ public:
     float _camera_angle_x = 0;
     float _camera_angle_y = 30;
     float _camera_angle_y_measured_from_depth = 30;
-    float camera_angle(){
+    float camera_angle() {
         return _camera_angle_y;
     }
-    float measured_exposure(){
+    float measured_exposure() {
         return _measured_exposure;
     }
-    float measured_gain(){
+    float measured_gain() {
         return _measured_gain;
     }
 
-    enum auto_exposure_enum{disabled = 0, enabled = 1, only_at_startup=2};
+    enum auto_exposure_enum {disabled = 0, enabled = 1, only_at_startup=2};
     const auto_exposure_enum enable_auto_exposure = enabled;
 
-    struct stereo_frame{
+    struct stereo_frame {
         cv::Mat frameL,frameR;
         uint id;
         double time;

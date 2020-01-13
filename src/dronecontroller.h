@@ -6,41 +6,41 @@
 #define GRAVITY 9.81f
 
 static const char* joy_states_names[] = { "js_manual",
-                                         "js_waypoint",
-                                         "js_hunt",
-                                         "js_disarmed",
-                                         "js_checking",
-                                         "js_none"
-};
+                                          "js_waypoint",
+                                          "js_hunt",
+                                          "js_disarmed",
+                                          "js_checking",
+                                          "js_none"
+                                        };
 static const char* flight_mode_names[] = { "fm_joystick_check",
-                                          "fm_disarmed",
-                                          "fm_inactive",
-                                          "fm_spinup",
-                                          "fm_manual",
-                                          "fm_start_takeoff",
-                                          "fm_take_off_aim",
-                                          "fm_max_burn",
-                                          "fm_max_burn_spin_down",
-                                          "fm_1g",
-                                          "fm_interception_aim_start",
-                                          "fm_interception_aim",
-                                          "fm_interception_burn_start",
-                                          "fm_interception_burn",
-                                          "fm_interception_burn_spin_down",
-                                          "fm_retry_aim_start",
-                                          "fm_abort_flight",
-                                          "fm_flying_pid_init",
-                                          "fm_flying_pid",
-                                          "fm_initial_reset_yaw",
-                                          "fm_reset_yaw",
-                                          "fm_landing_start",
-                                          "fm_landing"
-};
+                                           "fm_disarmed",
+                                           "fm_inactive",
+                                           "fm_spinup",
+                                           "fm_manual",
+                                           "fm_start_takeoff",
+                                           "fm_take_off_aim",
+                                           "fm_max_burn",
+                                           "fm_max_burn_spin_down",
+                                           "fm_1g",
+                                           "fm_interception_aim_start",
+                                           "fm_interception_aim",
+                                           "fm_interception_burn_start",
+                                           "fm_interception_burn",
+                                           "fm_interception_burn_spin_down",
+                                           "fm_retry_aim_start",
+                                           "fm_abort_flight",
+                                           "fm_flying_pid_init",
+                                           "fm_flying_pid",
+                                           "fm_initial_reset_yaw",
+                                           "fm_reset_yaw",
+                                           "fm_landing_start",
+                                           "fm_landing"
+                                         };
 
 class DroneController {
 
 public:
-    enum flight_modes{
+    enum flight_modes {
         fm_joystick_check,
         fm_disarmed,
         fm_inactive,
@@ -65,13 +65,13 @@ public:
         fm_landing_start,
         fm_landing
     };
-    enum joy_mode_switch_modes{ // raw switch modes
+    enum joy_mode_switch_modes { // raw switch modes
         jmsm_manual,
         jmsm_waypoint,
         jmsm_hunt,
         jmsm_none, // in case the joystick does not have this switch
     };
-    enum joy_states{ // end result after checking and processing
+    enum joy_states { // end result after checking and processing
         js_manual,
         js_waypoint,
         js_hunt,
@@ -138,21 +138,21 @@ private:
     std::string settings_file;
 
     uint16_t initial_hover_throttle_guess_non3d;
-    uint16_t initial_hover_throttle_guess(){
+    uint16_t initial_hover_throttle_guess() {
         if (dparams.mode3d)
             return initial_hover_throttle_guess_non3d / 2 + JOY_MIDDLE;
         else {
             return initial_hover_throttle_guess_non3d;
         }
     }
-    uint16_t spinup_throttle(){
+    uint16_t spinup_throttle() {
         if (dparams.mode3d)
             return JOY_MIDDLE +1;
         else {
             return dparams.spinup_throttle_non3d;
         }
     }
-    uint16_t min_bound_throttle(){
+    uint16_t min_bound_throttle() {
         if (dparams.mode3d)
             return JOY_BOUND_MIN;
         else {
@@ -248,7 +248,7 @@ private:
     double feedforward_land_time;
     double landing_time;
 
-    inline state_data set_recoveryState(cv::Point3f position){
+    inline state_data set_recoveryState(cv::Point3f position) {
         state_data rt;
         rt.pos = position;
         rt.vel = {0};
@@ -259,11 +259,11 @@ private:
 
 public:
     std::string flight_submode_name = "";
-    void flight_mode(flight_modes f){
+    void flight_mode(flight_modes f) {
         _flight_mode = f;
     }
 
-    bool abort_take_off(){
+    bool abort_take_off() {
         //check if the take off is not yet too far progressed to abort, if not go to spin up else return true
 
         if (_flight_mode == fm_take_off_aim) {
@@ -287,7 +287,7 @@ public:
         return joy_states_names[_joy_state];
     }
     std::string flight_mode() {
-        if(flight_submode_name.empty ()){
+        if(flight_submode_name.empty ()) {
             return flight_mode_names[_flight_mode];
         } else {
             return flight_submode_name;
@@ -304,13 +304,13 @@ public:
         return _flight_mode != fm_take_off_aim &&  _flight_mode != fm_max_burn && _flight_mode != fm_1g;
     }
 
-    betaflight_arming joy_arm_switch(){
+    betaflight_arming joy_arm_switch() {
         return _joy_arm_switch;
     }
-    joy_mode_switch_modes joy_mode_switch(){
+    joy_mode_switch_modes joy_mode_switch() {
         return _joy_mode_switch;
     }
-    void insert_log(int log_joy_roll, int log_joy_pitch, int log_joy_yaw, int log_joy_throttle, int log_joy_arm_switch, int log_joy_mode_switch, int log_joy_take_off_switch,int log_auto_roll, int log_auto_pitch, int log_auto_throttle){
+    void insert_log(int log_joy_roll, int log_joy_pitch, int log_joy_yaw, int log_joy_throttle, int log_joy_arm_switch, int log_joy_mode_switch, int log_joy_take_off_switch,int log_auto_roll, int log_auto_pitch, int log_auto_throttle) {
         joy_roll = log_joy_roll;
         joy_pitch= log_joy_pitch;
         joy_yaw = log_joy_yaw;
@@ -350,7 +350,7 @@ public:
     //Normalized throttle, between [-1 .. 1].
     //0 equals hoverthrottle
     float _log_auto_throttle;
-    float Throttle(){
+    float Throttle() {
         float throttle = _rc->throttle;
         if (_fromfile)
             throttle  = _log_auto_throttle;
@@ -379,7 +379,7 @@ public:
         return pitch;
     }
     /** @brief Determines the corresponding roll/pitch angle for a given command */
-    float angle_of_command(int command){
+    float angle_of_command(int command) {
         command -= JOY_MIDDLE;
         float commandf = static_cast<float>(command)/static_cast<float>(JOY_BOUND_MAX - JOY_BOUND_MIN);
         return commandf*max_bank_angle;
@@ -445,7 +445,7 @@ public:
         _rc->LED(blink_state);
     }
 
-    void LED(bool b){
+    void LED(bool b) {
         _rc->LED(b);
     }
 };

@@ -61,7 +61,8 @@ static void cb_need_data (GstElement *appsrc __attribute__((unused)), guint unus
     wait_for_want.unlock();
 }
 
-void GStream::block(){    wait_for_want.lock();
+void GStream::block() {
+    wait_for_want.lock();
 }
 
 int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, int sizeY,int fps, std::string ip, int port, bool color, bool render_hq) {
@@ -120,27 +121,27 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
 
             _appsrc = gst_element_factory_make ("appsrc", "source");
             g_object_set (G_OBJECT (_appsrc),
-                         "stream-type", 0, // GST_APP_STREAM_TYPE_STREAM
-                         "format", GST_FORMAT_TIME,
-                         "is-live", TRUE,
-                         NULL);
+                          "stream-type", 0, // GST_APP_STREAM_TYPE_STREAM
+                          "format", GST_FORMAT_TIME,
+                          "is-live", TRUE,
+                          NULL);
 
             g_signal_connect (_appsrc, "need-data", G_CALLBACK(cb_need_data), NULL);
 
             if (color) {
                 g_object_set (G_OBJECT (_appsrc), "caps",
-                             gst_caps_new_simple ("video/x-raw",
-                                                 "format", G_TYPE_STRING, "BGR",
-                                                 "width", G_TYPE_INT, sizeX,
-                                                 "height", G_TYPE_INT, sizeY,
-                                                 "framerate", GST_TYPE_FRACTION, gstream_fps, 1,NULL), NULL);
+                              gst_caps_new_simple ("video/x-raw",
+                                                   "format", G_TYPE_STRING, "BGR",
+                                                   "width", G_TYPE_INT, sizeX,
+                                                   "height", G_TYPE_INT, sizeY,
+                                                   "framerate", GST_TYPE_FRACTION, gstream_fps, 1,NULL), NULL);
             } else {
                 g_object_set (G_OBJECT (_appsrc), "caps",
-                             gst_caps_new_simple ("video/x-raw",
-                                                 "format", G_TYPE_STRING, "GRAY8",
-                                                 "width", G_TYPE_INT, sizeX,
-                                                 "height", G_TYPE_INT, sizeY,
-                                                 "framerate", GST_TYPE_FRACTION, gstream_fps, 1,NULL), NULL);
+                              gst_caps_new_simple ("video/x-raw",
+                                                   "format", G_TYPE_STRING, "GRAY8",
+                                                   "width", G_TYPE_INT, sizeX,
+                                                   "height", G_TYPE_INT, sizeY,
+                                                   "framerate", GST_TYPE_FRACTION, gstream_fps, 1,NULL), NULL);
             }
 
             conv = gst_element_factory_make ("videoconvert", "conv");
@@ -150,9 +151,9 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
             capsfilter = gst_element_factory_make ("capsfilter", NULL);
             if (color) {
                 g_object_set (G_OBJECT (capsfilter), "caps",
-                             gst_caps_new_simple ("video/x-raw",
-                                                 "format", G_TYPE_STRING, "I420",
-                                                 NULL), NULL);
+                              gst_caps_new_simple ("video/x-raw",
+                                                   "format", G_TYPE_STRING, "I420",
+                                                   NULL), NULL);
             }
             int render_quality = 1;
             int bitrate = 8192;
@@ -190,31 +191,31 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
 
             _appsrc = gst_element_factory_make ("appsrc", "source");
             g_object_set (G_OBJECT (_appsrc),
-                         "stream-type", 0, // GST_APP_STREAM_TYPE_STREAM
-                         "format", GST_FORMAT_TIME,
-                         "is-live", TRUE,
-                         NULL);
+                          "stream-type", 0, // GST_APP_STREAM_TYPE_STREAM
+                          "format", GST_FORMAT_TIME,
+                          "is-live", TRUE,
+                          NULL);
             g_signal_connect (_appsrc, "need-data", G_CALLBACK(cb_need_data), NULL);
             if (color) {
                 g_object_set (G_OBJECT (_appsrc), "caps",
-                             gst_caps_new_simple ("video/x-raw",
-                                                 "format", G_TYPE_STRING, "BGR",
-                                                 "width", G_TYPE_INT, sizeX,
-                                                 "height", G_TYPE_INT, sizeY,
-                                                 "framerate", GST_TYPE_FRACTION, gstream_fps, 1,NULL), NULL);
+                              gst_caps_new_simple ("video/x-raw",
+                                                   "format", G_TYPE_STRING, "BGR",
+                                                   "width", G_TYPE_INT, sizeX,
+                                                   "height", G_TYPE_INT, sizeY,
+                                                   "framerate", GST_TYPE_FRACTION, gstream_fps, 1,NULL), NULL);
             } else {
                 g_object_set (G_OBJECT (_appsrc), "caps",
-                             gst_caps_new_simple ("video/x-raw",
-                                                 "format", G_TYPE_STRING, "GRAY8",
-                                                 "width", G_TYPE_INT, sizeX,
-                                                 "height", G_TYPE_INT, sizeY,
-                                                 "framerate", GST_TYPE_FRACTION, gstream_fps, 1,NULL), NULL);
+                              gst_caps_new_simple ("video/x-raw",
+                                                   "format", G_TYPE_STRING, "GRAY8",
+                                                   "width", G_TYPE_INT, sizeX,
+                                                   "height", G_TYPE_INT, sizeY,
+                                                   "framerate", GST_TYPE_FRACTION, gstream_fps, 1,NULL), NULL);
             }
 
             GstElement *rate = gst_element_factory_make("videorate", "videorate-element");
             GstElement *caps_rate = gst_element_factory_make("capsfilter", "videorate-caps");
             g_object_set (G_OBJECT (caps_rate), "caps",
-                         gst_caps_new_simple ("video/x-raw", "framerate", GST_TYPE_FRACTION, gstream_fps, 1,NULL), NULL);
+                          gst_caps_new_simple ("video/x-raw", "framerate", GST_TYPE_FRACTION, gstream_fps, 1,NULL), NULL);
 
             conv = gst_element_factory_make ("videoconvert", "conv");
 
@@ -229,7 +230,7 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
             ///}
 
             encoder = gst_element_factory_make ("x264enc", "encoder");
-            g_object_set (G_OBJECT (encoder),  "speed-preset", 1 ,"bitrate", 1000, NULL);
+            g_object_set (G_OBJECT (encoder),  "speed-preset", 1,"bitrate", 1000, NULL);
             // encoder = gst_element_factory_make ("vaapih264enc", "encoder");
 
             rtp = gst_element_factory_make ("rtph264pay", "rtp");
@@ -237,8 +238,8 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
             videosink = gst_element_factory_make ("udpsink", "videosink");
             g_object_set (G_OBJECT (videosink), "host", ip.c_str(), "port", port, NULL);
 
-            gst_bin_add_many (GST_BIN (_pipeline), _appsrc, rate,caps_rate ,conv, capsfilter, encoder, rtp, videosink, NULL);
-            gst_element_link_many (_appsrc, rate,caps_rate ,conv, capsfilter, encoder,rtp, videosink, NULL);
+            gst_bin_add_many (GST_BIN (_pipeline), _appsrc, rate,caps_rate,conv, capsfilter, encoder, rtp, videosink, NULL);
+            gst_element_link_many (_appsrc, rate,caps_rate,conv, capsfilter, encoder,rtp, videosink, NULL);
         }
 
         /* play */
@@ -315,7 +316,7 @@ int GStream::write(cv::Mat frameL,cv::Mat frameR) {
 }
 
 int GStream::write(cv::Mat frame) {
-    if (frame.empty()){
+    if (frame.empty()) {
         wait_for_want.unlock();
         return 1;
     }
@@ -338,7 +339,7 @@ int GStream::write(cv::Mat frame) {
 }
 
 void GStream::close () {
-    if (initialised){
+    if (initialised) {
         std::cout << "Closing video recorder" << std::endl;
         if (videomode != video_mp4_opencv) {
             gst_element_send_event(_pipeline,gst_event_new_eos());
@@ -347,7 +348,7 @@ void GStream::close () {
 
             std::cout << "Waiting for EOS..." << std::endl;
             msg = gst_bus_timed_pop_filtered (GST_ELEMENT_BUS (_pipeline),
-                                             timeout,static_cast<GstMessageType>(GST_MESSAGE_EOS | GST_MESSAGE_ERROR));
+                                              timeout,static_cast<GstMessageType>(GST_MESSAGE_EOS | GST_MESSAGE_ERROR));
 
             if (msg == NULL) {
                 std::cout << "Error: gstreamer videorecorder did not get an EOS after 10 seconds!" << std::endl;

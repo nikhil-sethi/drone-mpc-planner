@@ -3,7 +3,7 @@
 using namespace cv;
 using namespace std;
 
-void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, float new_camera_gain, cv::Mat new_depth_background_mm){
+void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, float new_camera_gain, cv::Mat new_depth_background_mm) {
     Qf = new_Qf;
     cv::invert(Qf,Qfi);
     frameL = new_frameL.clone();
@@ -85,7 +85,7 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
         fade(diffR16,false);
     }
 
-    if (motion_spot_to_be_deleted.cnt_active){
+    if (motion_spot_to_be_deleted.cnt_active) {
         cv::circle(diffL16,motion_spot_to_be_deleted.pt,motion_spot_to_be_deleted.r,0,CV_FILLED);
         cv::circle(diffR16,motion_spot_to_be_deleted.pt + cv::Point(motion_spot_to_be_deleted.disparity,0),motion_spot_to_be_deleted.r,0,CV_FILLED);
         motion_spot_to_be_deleted.cnt_active--;
@@ -142,7 +142,7 @@ void VisionData::fade(cv::Mat diff16, bool exclude_drone) {
 
 void VisionData::collect_no_drone_frames(cv::Mat dL) {
 
-    if (skip_background_frames > 0){ // during the first frame or two, there is still residual blink
+    if (skip_background_frames > 0) { // during the first frame or two, there is still residual blink
         skip_background_frames--;
         return;
     }
@@ -168,7 +168,7 @@ void VisionData::collect_no_drone_frames(cv::Mat dL) {
 
 }
 
-void VisionData::enable_background_motion_map_calibration(float duration){
+void VisionData::enable_background_motion_map_calibration(float duration) {
     motion_noise_map = cv::Mat::zeros(smallsize,CV_8UC1);
     diffL16_back = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
     calibrating_background_end_time = _current_frame_time+static_cast<double>(duration);
@@ -178,7 +178,7 @@ void VisionData::enable_background_motion_map_calibration(float duration){
 
 //Keep track of the average brightness, and reset the motion integration frame when it changes to much. (e.g. when someone turns on the lights or something)
 void VisionData::track_avg_brightness(cv::Mat frame,double time) {
-    if (static_cast<float>(time - prev_time_brightness_check) > brightness_check_period){ // only check once in a while
+    if (static_cast<float>(time - prev_time_brightness_check) > brightness_check_period) { // only check once in a while
         prev_time_brightness_check = time;
         cv::Mat frame_small;
         cv::resize(frame,frame_small,cv::Size(frame.cols/8,frame.rows/8));
@@ -195,14 +195,14 @@ void VisionData::delete_from_motion_map(cv::Point p, int disparity,int radius, i
     motion_spot_to_be_deleted.cnt_active = duration;
     motion_spot_to_be_deleted.pt = p;
     motion_spot_to_be_deleted.disparity = disparity;
-    motion_spot_to_be_deleted.r = radius; 
+    motion_spot_to_be_deleted.r = radius;
 }
 
 void VisionData::reset_spot_on_motion_map(cv::Point p, int disparity,int radius, int duration) {
     motion_spot_to_be_reset.cnt_active = duration;
     motion_spot_to_be_reset.pt = p;
     motion_spot_to_be_reset.disparity = disparity;
-    motion_spot_to_be_reset.r = radius;   
+    motion_spot_to_be_reset.r = radius;
 }
 
 void VisionData::exclude_drone_from_motion_fading(cv::Point p, int radius) {
@@ -220,7 +220,7 @@ void VisionData::deserialize_settings() {
                             std::istreambuf_iterator<char>());
 
         if (!xmls::Serializable::fromXML(xmlData, &params))
-        { // Deserialization not successful
+        {   // Deserialization not successful
             throw my_exit("Cannot read: " + settings_file);
         }
         VisionParameters tmp;
@@ -251,7 +251,7 @@ void VisionData::serialize_settings() {
 }
 
 void VisionData::close() {
-    if (initialized){
+    if (initialized) {
         std::cout << "Closing visdat" << std::endl;
         if (pparams.vision_tuning)
             serialize_settings();

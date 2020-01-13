@@ -31,7 +31,7 @@ bool GeneratorCam::init () {
     return false;
 }
 
-void GeneratorCam::switch_mode(cam_mode_enum mode){
+void GeneratorCam::switch_mode(cam_mode_enum mode) {
     if (mode != _mode) {
         if (mode == cam_mode_disabled )
             go_disabled();
@@ -69,7 +69,7 @@ void GeneratorCam::update() {
     _frame_number++;
 
 
-    while(gen_stopw.Read() < (1.f/pparams.fps)*1e3f){
+    while(gen_stopw.Read() < (1.f/pparams.fps)*1e3f) {
         usleep(10);
     }
 
@@ -144,7 +144,7 @@ void GeneratorCam::generateStereo() {
     //}
 }
 
-void GeneratorCam::bound(cv::Point * p,int radius){
+void GeneratorCam::bound(cv::Point * p,int radius) {
     if (p->x > IMG_W-radius)
         p->x = IMG_W-radius;
     else if (p->x-radius < 0)

@@ -117,7 +117,7 @@ void ItemTracker::init_kalman() {
     cv::setIdentity(kfL.measurementNoiseCov, cv::Scalar(1e-1));
 }
 
-void ItemTracker::calc_world_props_blob_generic(BlobProps * pbs){
+void ItemTracker::calc_world_props_blob_generic(BlobProps * pbs) {
     if (pbs->world_props.trkr_id != _uid) {
         BlobWorldProps w;
         cv::Point2f p(pbs->x, pbs->y);
@@ -126,7 +126,7 @@ void ItemTracker::calc_world_props_blob_generic(BlobProps * pbs){
         p*=pparams.imscalef;
         w.disparity = stereo_match(p,_visdat->diffL,_visdat->diffR,pbs->radius);
 
-        if (w.disparity < min_disparity || w.disparity > max_disparity){
+        if (w.disparity < min_disparity || w.disparity > max_disparity) {
             w.disparity_in_range = false;
         } else {
             w.disparity_in_range = true;
@@ -159,8 +159,8 @@ void ItemTracker::calc_world_props_blob_generic(BlobProps * pbs){
     }
 }
 
-void ItemTracker::update_world_candidate(){ //TODO: rename
-    if (_world_item.valid){
+void ItemTracker::update_world_candidate() { //TODO: rename
+    if (_world_item.valid) {
         if (!_image_item.blob_is_fused) {
             smoother_im_size.addSample(_image_item.size);
             smoother_brightness.addSample(_image_item.pixel_max);
@@ -278,7 +278,7 @@ void ItemTracker::predict(float dt, int frame_id) {
     predicted_image_path.push_back(_image_predict_item );
 }
 
-float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR, float radius){
+float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR, float radius) {
     //get retangle around blob / changed pixels
     float rectsize = radius*2.f + 2.f;
 
@@ -319,7 +319,7 @@ float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR,
         disp_end = std::min(static_cast<int>(ceil(disparity_prev))+2,disp_end);
     }
 
-    for (int i=disp_start; i<disp_end;i++) {
+    for (int i=disp_start; i<disp_end; i++) {
         cv::Rect roiR(x1-i,y1,x2,y2);
 
         cv::Mat corV_16 = diffL(roiL).mul(diffR(roiR));
@@ -509,7 +509,7 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
         data.posZ_smooth = data.state.pos.z*pos_filt_rate + data_prev.posZ_smooth*(1.0f-pos_filt_rate);
     }
 
-    if (!reset_filters){ // dt is making a big jump with reset_filters
+    if (!reset_filters) { // dt is making a big jump with reset_filters
         data.state.vel.x = smoother_velX2.addSample(data.posX_smooth,dt);
         data.state.vel.y = smoother_velY2.addSample(data.posY_smooth,dt);
         data.state.vel.z = smoother_velZ2.addSample(data.posZ_smooth,dt);
@@ -519,7 +519,7 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
         data.state.acc.x = smoother_accX2.addSample(data.state.vel.x,dt);
         data.state.acc.y = smoother_accY2.addSample(data.state.vel.y,dt);
         data.state.acc.z = smoother_accZ2.addSample(data.state.vel.z,dt);
-    } else if (track_history.size()>0 && !reset_filters){
+    } else if (track_history.size()>0 && !reset_filters) {
         auto data_prev = track_history.back();
         data.state.acc.x = smoother_accX2.addSample((data.posX_smooth-data_prev.posX_smooth)/dt,dt);
         data.state.acc.y = smoother_accY2.addSample((data.posY_smooth-data_prev.posY_smooth)/dt,dt);
@@ -565,7 +565,7 @@ bool ItemTracker::check_ignore_blobs_generic(BlobProps * pbs) {
     bool in_ignore_zone = false;
     for (auto ignore : ignores_for_me) {
         float dist_ignore = sqrtf(powf(ignore.p.x-pbs->x,2)+powf(ignore.p.y-pbs->y,2));
-        if (dist_ignore < pbs->radius + ignore.radius ){
+        if (dist_ignore < pbs->radius + ignore.radius ) {
             ignore.was_used = true;
             pbs->ignores.push_back(ignore);
             in_ignore_zone = true;
@@ -580,7 +580,7 @@ float ItemTracker::score(BlobProps blob, ImageItem ref) {
     float im_size_diff = fabs(ref.size - blob.radius) / (blob.radius + ref.size);
     float score = 1.f / (dist + 15.f*im_size_diff); // TODO: certainty
 
-    if (_image_predict_item.valid){
+    if (_image_predict_item.valid) {
         float dist_pred = sqrtf(powf(_image_predict_item.x-blob.x,2)+powf(_image_predict_item.y-blob.y,2));
         float ps = smoother_im_size.latest();
         float im_size_diff_pred = fabs(ps - blob.radius) / (blob.radius+ps);
@@ -601,7 +601,7 @@ void ItemTracker::deserialize_settings() {
                             std::istreambuf_iterator<char>());
 
         if (!xmls::Serializable::fromXML(xmlData, &params))
-        { // Deserialization not successful
+        {   // Deserialization not successful
             throw my_exit("Cannot read: " + settings_file);
         }
         TrackerParams tmp;
@@ -639,7 +639,7 @@ void ItemTracker::serialize_settings() {
 }
 
 void ItemTracker::close () {
-    if (initialized){
+    if (initialized) {
         std::cout << "Closing tracker: " << _name << std::endl;
         if (pparams.insect_tracking_tuning || pparams.drone_tracking_tuning)
             serialize_settings();

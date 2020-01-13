@@ -4,7 +4,7 @@
 namespace logging
 {
 
-class InsectReader{
+class InsectReader {
 
 public:
     void init(std::string file);
@@ -31,7 +31,7 @@ public:
     bool done() {
         return _done;
     }
-    bool replay_moth(){
+    bool replay_moth() {
         return _replay_moth;
     }
 

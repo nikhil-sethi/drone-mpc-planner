@@ -72,7 +72,7 @@ void Visualizer3D::addTarget()
     if (_dctrl->Joy_State() != DroneController::js_hunt) {
 
         pub_path.set_target(_dnav->setpoint().pos().x, _dnav->setpoint().pos().y, _dnav->setpoint().pos().z, _time);
-    }else {
+    } else {
         if (data.pos_valid) {
             pub_path.set_target(static_cast<double>(data.sposX), static_cast<double>(data.sposY), static_cast<double>(data.sposZ), _time);
         }

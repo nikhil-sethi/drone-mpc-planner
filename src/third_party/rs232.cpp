@@ -6,7 +6,7 @@ int Cport,
     error;
 
 struct termios new_port_settings,
-    old_port_settings[30];
+           old_port_settings[30];
 
 
 int calc_baud(int baudrate) {
@@ -68,7 +68,7 @@ int calc_baud(int baudrate) {
     return baudr;
 }
 
-int RS232_OpenComport( int baudrate, const char * dev){
+int RS232_OpenComport( int baudrate, const char * dev) {
     Cport= open(dev, O_RDWR | O_NOCTTY | O_NDELAY);
     if(Cport==-1) {
         perror("unable to open comport ");
@@ -122,7 +122,7 @@ int RS232_OpenComport_USBX( int baudrate)
 {
 
     int retval = RS232_OpenComport(baudrate,"/dev/ttyUSB0");
-    if (!retval){
+    if (!retval) {
         retval = RS232_OpenComport(baudrate,"/dev/ttyUSB1");
     }
     return retval;
@@ -195,7 +195,7 @@ TIOCM_DSR DSR (data set ready)
 http://linux.die.net/man/4/tty_ioctl
        */
 
-       int RS232_IsDCDEnabled( )
+int RS232_IsDCDEnabled( )
 {
     int status;
 

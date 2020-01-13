@@ -316,23 +316,23 @@ void XMLUtil::ConvertUTF32ToUTF8( unsigned long input, char* output, int* length
 
     // Scary scary fall throughs.
     switch (*length) {
-       case 4:
-            --output;
-            *output = static_cast<char>((input | BYTE_MARK) & BYTE_MASK);
-            input >>= 6;
-        FALLTHROUGH_INTENDED; case 3:
-            --output;
-            *output = static_cast<char>((input | BYTE_MARK) & BYTE_MASK);
-            input >>= 6;
-        FALLTHROUGH_INTENDED; case 2:
-            --output;
-            *output = static_cast<char>((input | BYTE_MARK) & BYTE_MASK);
-            input >>= 6;
-        FALLTHROUGH_INTENDED; case 1:
-            --output;
-            *output = static_cast<char>(input | FIRST_BYTE_MARK[*length]);
-        default:
-            break;
+    case 4:
+        --output;
+        *output = static_cast<char>((input | BYTE_MARK) & BYTE_MASK);
+        input >>= 6;
+    FALLTHROUGH_INTENDED; case 3:
+        --output;
+        *output = static_cast<char>((input | BYTE_MARK) & BYTE_MASK);
+        input >>= 6;
+    FALLTHROUGH_INTENDED; case 2:
+        --output;
+        *output = static_cast<char>((input | BYTE_MARK) & BYTE_MASK);
+        input >>= 6;
+    FALLTHROUGH_INTENDED; case 1:
+        --output;
+        *output = static_cast<char>(input | FIRST_BYTE_MARK[*length]);
+    default:
+        break;
     }
 }
 

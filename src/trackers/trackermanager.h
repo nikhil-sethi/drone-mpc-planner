@@ -20,7 +20,8 @@ static const char* trackermanager_mode_names[] = {"tm_idle",
                                                   "tm_wait_for_insect",
                                                   "tm_drone_only",
                                                   "tm_hunt",
-                                                  "tm_hunt_replay_moth"};
+                                                  "tm_hunt_replay_moth"
+                                                 };
 
 struct processed_blobs {
     processed_blobs(BlobProps * blob, uint16_t new_id) {
@@ -110,14 +111,14 @@ private:
     void serialize_settings();
 
 public:
-    enum detection_mode{
+    enum detection_mode {
         mode_idle,
         mode_locate_drone,
         mode_wait_for_insect,
         mode_drone_only,
         mode_hunt
     };
-    
+
 
 private:
     std::vector<ItemTracker *> _trackers;
@@ -156,7 +157,7 @@ private:
     std::vector<logging::InsectReader> replay_logs;
 public:
     cv::Mat viz_max_points,diff_viz;
-    void mode(detection_mode m){_mode = m;}
+    void mode(detection_mode m) {_mode = m;}
     detection_mode mode ()  {return _mode;}
     std::string mode_str() {
         if (_mode == mode_locate_drone) {
@@ -177,7 +178,7 @@ public:
     }
 
     InsectTracker *insecttracker_best();
-    DroneTracker * dronetracker(){ return _dtrkr; }
+    DroneTracker * dronetracker() { return _dtrkr; }
     void init(ofstream *logger, VisionData *visdat);
     void update(double time, bool drone_is_active);
     void close();

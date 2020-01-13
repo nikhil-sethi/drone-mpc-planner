@@ -32,7 +32,7 @@ STRICT_MODE_ON
 #include "opencv2/imgproc/imgproc.hpp"
 
 
-class Airsim{
+class Airsim {
 
 public:
 
@@ -49,13 +49,13 @@ public:
     cv::Mat frameL,frameR,frameD,frameRGB;
     cv::Mat Qf;
 
-    enum cam_mode_enum{cam_mode_stopped = 0, cam_mode_disabled = 1, cam_mode_color = 2, cam_mode_stereo=3 };
+    enum cam_mode_enum {cam_mode_stopped = 0, cam_mode_disabled = 1, cam_mode_color = 2, cam_mode_stereo=3 };
 
     int get_frame_id() {return frame_id;}
     float get_frame_time() {return frame_time;}
     void switch_mode(cam_mode_enum mode);
 
-    void go_go_go(){
+    void go_go_go() {
         g_wait.notify_all();
     }
 

@@ -31,7 +31,7 @@ const float deg2rad = M_PIf32/180.f;
 extern std::string data_output_dir;
 
 struct state_data {
-    cv::Point3f pos = {0},vel ={0},acc = {0};
+    cv::Point3f pos = {0},vel = {0},acc = {0};
 };
 
 struct track_data {
@@ -50,7 +50,7 @@ struct track_data {
 };
 
 struct control_data {
-    control_data(float r, float tr, float p, double t){
+    control_data(float r, float tr, float p, double t) {
         throttle = tr;
         roll = r;
         pitch = p;
@@ -134,7 +134,7 @@ static const char* drone_types_str[] = {
     "" // must be the last entry! (check in serializer)
 };
 
-class CameraVolume{
+class CameraVolume {
 public:
     void init(cv::Point3f point_left_top, cv::Point3f point_right_top, cv::Point3f point_left_bottom, cv::Point3f point_right_bottom,
               float depth, float height);
@@ -156,7 +156,7 @@ public:
         return hunt_volume_check_names[v];
     }
 
-    enum view_volume_check_mode{
+    enum view_volume_check_mode {
         strict, /**< viewable volume including a safety distance to borders */
         relaxed /**< the actual viewable volume without any safety distance to the borders */
     };
@@ -171,23 +171,23 @@ public:
     /** @brief Calculates the distance to the borders */
     float calc_distance_to_borders(track_data data_drone);
 
-    cv::Mat top_right_front(){return _top_right_front;}
-    cv::Mat top_right_back(){return _top_right_back;}
-    cv::Mat top_left_front(){return _top_left_front;}
-    cv::Mat top_left_back(){return _top_left_back;}
-    cv::Mat bottom_right_front(){return _bottom_right_front;}
-    cv::Mat bottom_right_back(){return _bottom_right_back;}
-    cv::Mat bottom_left_front(){return _bottom_left_front;}
-    cv::Mat bottom_left_back(){return _bottom_left_back;}
+    cv::Mat top_right_front() {return _top_right_front;}
+    cv::Mat top_right_back() {return _top_right_back;}
+    cv::Mat top_left_front() {return _top_left_front;}
+    cv::Mat top_left_back() {return _top_left_back;}
+    cv::Mat bottom_right_front() {return _bottom_right_front;}
+    cv::Mat bottom_right_back() {return _bottom_right_back;}
+    cv::Mat bottom_left_front() {return _bottom_left_front;}
+    cv::Mat bottom_left_back() {return _bottom_left_back;}
 
-    cv::Mat top_right_front_hunt(){return _top_right_front_hunt;}
-    cv::Mat top_right_back_hunt(){return _top_right_back_hunt;}
-    cv::Mat top_left_front_hunt(){return _top_left_front_hunt;}
-    cv::Mat top_left_back_hunt(){return _top_left_back_hunt;}
-    cv::Mat bottom_right_front_hunt(){return _bottom_right_front_hunt;}
-    cv::Mat bottom_right_back_hunt(){return _bottom_right_back_hunt;}
-    cv::Mat bottom_left_front_hunt(){return _bottom_left_front_hunt;}
-    cv::Mat bottom_left_back_hunt(){return _bottom_left_back_hunt;}
+    cv::Mat top_right_front_hunt() {return _top_right_front_hunt;}
+    cv::Mat top_right_back_hunt() {return _top_right_back_hunt;}
+    cv::Mat top_left_front_hunt() {return _top_left_front_hunt;}
+    cv::Mat top_left_back_hunt() {return _top_left_back_hunt;}
+    cv::Mat bottom_right_front_hunt() {return _bottom_right_front_hunt;}
+    cv::Mat bottom_right_back_hunt() {return _bottom_right_back_hunt;}
+    cv::Mat bottom_left_front_hunt() {return _bottom_left_front_hunt;}
+    cv::Mat bottom_left_back_hunt() {return _bottom_left_back_hunt;}
 private:
     // Define limitation planes in plane normal form:
     cv::Mat _n_front;
@@ -276,7 +276,7 @@ namespace xmls {
 class xVideo_mode: public MemberBase
 {
 private:
-    void AssignValue(const video_modes value){
+    void AssignValue(const video_modes value) {
         m_sValue = video_modes_str[value];
     };
 public:
@@ -294,13 +294,13 @@ public:
         return static_cast<video_modes>(0);
     };
 
-    xVideo_mode operator=(const video_modes value) {AssignValue(value);return *this;};
+    xVideo_mode operator=(const video_modes value) {AssignValue(value); return *this;};
 };
 
 class xRc_type: public MemberBase
 {
 private:
-    void AssignValue(const rc_types value){
+    void AssignValue(const rc_types value) {
         m_sValue = rc_types_str[value];
     };
 public:
@@ -318,13 +318,13 @@ public:
         return static_cast<rc_types>(0);
     };
 
-    xRc_type operator=(const rc_types value) {AssignValue(value);return *this;};
+    xRc_type operator=(const rc_types value) {AssignValue(value); return *this;};
 };
 
 class xTx_protocol: public MemberBase
 {
 private:
-    void AssignValue(const tx_protocols value){
+    void AssignValue(const tx_protocols value) {
         m_sValue = tx_protocols_str[value];
     };
 public:
@@ -342,13 +342,13 @@ public:
         return static_cast<tx_protocols>(0);
     };
 
-    xTx_protocol operator=(const tx_protocols value) {AssignValue(value);return *this;};
+    xTx_protocol operator=(const tx_protocols value) {AssignValue(value); return *this;};
 };
 
 class xDrone_type: public MemberBase
 {
 private:
-    void AssignValue(const drone_types value){
+    void AssignValue(const drone_types value) {
         m_sValue = drone_types_str[value];
     };
 public:
@@ -366,7 +366,7 @@ public:
         return static_cast<drone_types>(0);
     };
 
-    xDrone_type operator=(const drone_types value) {AssignValue(value);return *this;};
+    xDrone_type operator=(const drone_types value) {AssignValue(value); return *this;};
 };
 
 class PatsParameters: public Serializable
@@ -441,7 +441,7 @@ public: void deserialize(std::string settings_file) {
                                 std::istreambuf_iterator<char>());
 
             if (!Serializable::fromXML(xmlData, this))
-            { // Deserialization not successful
+            {   // Deserialization not successful
                 throw my_exit("Cannot read: " + settings_file);
             }
             PatsParameters tmp;
@@ -581,7 +581,7 @@ public: void deserialize(std::string filepath) {
                                 std::istreambuf_iterator<char>());
 
             if (!Serializable::fromXML(xmlData, this))
-            { // Deserialization not successful
+            {   // Deserialization not successful
                 throw my_exit("Cannot read: " + filepath);
             }
             DroneParameters tmp;

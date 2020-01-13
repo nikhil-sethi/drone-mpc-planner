@@ -14,7 +14,7 @@ cv::Scalar linecolors[] = {green,blue,red,cv::Scalar(0,255,255),cv::Scalar(255,2
 cv::Scalar fore_color(255,255,255);
 cv::Scalar background_color(0,0,0);
 
-void Visualizer::init(VisionData *visdat, tracking::TrackerManager *imngr, DroneController *dctrl, navigation::DroneNavigation *dnav, MultiModule *rc, bool fromfile, DronePredictor *dprdct){
+void Visualizer::init(VisionData *visdat, tracking::TrackerManager *imngr, DroneController *dctrl, navigation::DroneNavigation *dnav, MultiModule *rc, bool fromfile, DronePredictor *dprdct) {
     _visdat = visdat;
     _dctrl = dctrl;
     _trackers = imngr;
@@ -72,7 +72,7 @@ void Visualizer::add_plot_sample(void) {
                 posX_target.push_back(-_dnav->setpoint().pos().x);
                 posY_target.push_back(-_dnav->setpoint().pos().y);
                 posZ_target.push_back(-_dnav->setpoint().pos().z);
-            }else {
+            } else {
                 posX_target.push_back(-data_target.state.pos.x);
                 posY_target.push_back(data_target.state.pos.y);
                 posZ_target.push_back(-data_target.state.pos.z);
@@ -183,7 +183,7 @@ void Visualizer::plot(std::vector<cv::Mat> data, cv::Mat *frame, std::string nam
 
     double mind,maxd;
     cv::Mat tmp;
-    for (uint i = 0 ; i< data.size();i++) {
+    for (uint i = 0 ; i< data.size(); i++) {
         cv::Mat vec = data.at(i);
         cv::Mat vect = cv::Mat(vec,cv::Rect(cv::Point(0,start),cv::Point(1,start+current_buf_size)));
         tmp.push_back(vect);
@@ -208,13 +208,13 @@ void Visualizer::plot(std::vector<cv::Mat> data, cv::Mat *frame, std::string nam
     const float scaleX = static_cast<float>(fsizex)/(bufsize);
     const float scaleY = static_cast<float>(fsizey)/(max-min);
 
-    for (uint i = 0 ; i< data.size();i++) {
+    for (uint i = 0 ; i< data.size(); i++) {
         int prev_y =0;
         int prev_x=0;
         for (int j = start; j < data.at(i).rows-1; j++)  {
             int y = data.at(i).at<float>(j,1)*amplify_y - min;
             int x = (j-start)*scaleX + 2*line_width;
-            cv::line(*frame, cv::Point(prev_x, fsizey- prev_y*scaleY +line_width*2) , cv::Point(x, fsizey - y*scaleY +2*line_width), linecolors[i], line_width, CV_NORMAL, 0);
+            cv::line(*frame, cv::Point(prev_x, fsizey- prev_y*scaleY +line_width*2), cv::Point(x, fsizey - y*scaleY +2*line_width), linecolors[i], line_width, CV_NORMAL, 0);
             prev_y = y;
             prev_x = x;
         }
@@ -228,7 +228,7 @@ cv::Mat Visualizer::plotxy(cv::Mat data1x,cv::Mat data1y, cv::Mat data2x,cv::Mat
     ss.precision(2);
     ss << name << " " << data1x.at<float>(data1x.rows-1) << "; " << data1y.at<float>(data1y.rows-1);
 
-    putText(frame,ss.str() ,cv::Point(0, 30),cv::FONT_HERSHEY_SIMPLEX,text_size,fore_color);
+    putText(frame,ss.str(),cv::Point(0, 30),cv::FONT_HERSHEY_SIMPLEX,text_size,fore_color);
     cv::line(frame,cv::Point(0,frame.rows-1),cv::Point(frame.cols,frame.rows-1),fore_color);
     cv::line(frame,cv::Point(frame.cols-1,0),cv::Point(frame.cols-1,frame.rows-1),fore_color);
 
@@ -262,7 +262,7 @@ cv::Mat Visualizer::plotxy(cv::Mat data1x,cv::Mat data1y, cv::Mat data2x,cv::Mat
         y = y1S.at<float>(j,1) - static_cast<float>(miny);
         y= fsizey - y*scaleY + 2*line_width;
         if (j > start)
-            cv::line(frame, cv::Point(prev_x, prev_y) , cv::Point(x, y), green, line_width, CV_AA, 0);
+            cv::line(frame, cv::Point(prev_x, prev_y), cv::Point(x, y), green, line_width, CV_AA, 0);
         prev_x = x;
         prev_y = y;
     }
@@ -273,7 +273,7 @@ cv::Mat Visualizer::plotxy(cv::Mat data1x,cv::Mat data1y, cv::Mat data2x,cv::Mat
         y = y2S.at<float>(j,1) - static_cast<float>(miny);
         y= fsizey - y*scaleY + 2*line_width;
         if (j > start)
-            cv::line(frame, cv::Point(prev_x, prev_y) , cv::Point(x, y), pink, line_width, CV_AA, 0);
+            cv::line(frame, cv::Point(prev_x, prev_y), cv::Point(x, y), pink, line_width, CV_AA, 0);
         prev_x = x;
         prev_y = y;
     }
@@ -287,7 +287,7 @@ cv::Mat Visualizer::plotxy(cv::Mat data1x,cv::Mat data1y, cv::Mat data2x,cv::Mat
         y = y2S.at<float>(j,1) - static_cast<float>(miny);
         y= fsizey - y*scaleY + 2*line_width;
         if (j > start)
-            cv::line(frame, cv::Point(prev_x, prev_y) , cv::Point(x, y), red, line_width, CV_AA, 0);
+            cv::line(frame, cv::Point(prev_x, prev_y), cv::Point(x, y), red, line_width, CV_AA, 0);
         prev_x = x;
         prev_y = y;
     }
@@ -317,19 +317,19 @@ void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis,float
     ss_min << "Closest: " << (roundf(min_dis*100)/100) << " [m]";
     ss_dis << "|" << (roundf(dis*100)/100) << "|";
 
-    putText(resFrame,ss_time.str() ,cv::Point(220*_res_mult,12*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-    if (min_dis<9999){
-        putText(resFrame,ss_dis.str() ,cv::Point(300*_res_mult,12*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-        putText(resFrame,ss_min.str() ,cv::Point(360*_res_mult,12*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame,ss_time.str(),cv::Point(220*_res_mult,12*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    if (min_dis<9999) {
+        putText(resFrame,ss_dis.str(),cv::Point(300*_res_mult,12*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+        putText(resFrame,ss_min.str(),cv::Point(360*_res_mult,12*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     }
 
-    putText(resFrame,_dctrl->flight_mode() ,cv::Point(220*_res_mult,70*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-    putText(resFrame,_dnav->navigation_status() ,cv::Point(220*_res_mult,82*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-    putText(resFrame, _rc->Armed() ,cv::Point(450*_res_mult,82*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-    putText(resFrame, _dctrl->Joy_State_str() ,cv::Point(525*_res_mult,82*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-    putText(resFrame,_trackers->mode_str() ,cv::Point(220*_res_mult,96*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame,_dctrl->flight_mode(),cv::Point(220*_res_mult,70*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame,_dnav->navigation_status(),cv::Point(220*_res_mult,82*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame, _rc->Armed(),cv::Point(450*_res_mult,82*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame, _dctrl->Joy_State_str(),cv::Point(525*_res_mult,82*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame,_trackers->mode_str(),cv::Point(220*_res_mult,96*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
 
-    putText(resFrame,_dtrkr->drone_tracking_state() ,cv::Point(450*_res_mult,96*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame,_dtrkr->drone_tracking_state(),cv::Point(450*_res_mult,96*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     putText(resFrame,_dnav->get_Interceptor().Interceptor_State(),cv::Point(450*_res_mult,70*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
 
     if (_fromfile) {
@@ -339,7 +339,7 @@ void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis,float
         if (first_take_off_time - time > 0 )
             popstr += " IN " + to_string_with_precision( first_take_off_time - time,1);
         if (popcorn_cnt < 20)
-            putText(resFrame,popstr ,cv::Point(400*_res_mult,24*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
+            putText(resFrame,popstr,cv::Point(400*_res_mult,24*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
         if (popcorn_cnt > 35)
             popcorn_cnt  = 0;
     }
@@ -352,7 +352,7 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
     std::vector<tracking::ImagePredictItem> tmp = predicted_path;
     if (tmp.size()>0) {
         std::vector<cv::KeyPoint> keypoints;
-        for (uint i = 0; i< tmp.size();i++) {
+        for (uint i = 0; i< tmp.size(); i++) {
             cv::KeyPoint k(tmp.at(i).x,tmp.at(i).y,24/pparams.imscalef);
             keypoints.push_back(k);
         }
@@ -363,7 +363,7 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
 
     if (path.size() > 0) {
         std::vector<cv::KeyPoint> keypoints;
-        for (uint i = 0; i< path.size();i++) {
+        for (uint i = 0; i< path.size(); i++) {
             cv::KeyPoint k(path.at(i).iti.x,path.at(i).iti.y,12/pparams.imscalef);
             keypoints.push_back(k);
         }
@@ -445,7 +445,7 @@ void Visualizer::draw_tracker_viz() {
         cv::circle(frameL_color,pred.pt()*pparams.imscalef,pred.size*pparams.imscalef,cv::Scalar(0,255,0));
     }
 
-    if (ins_path.size()>0){
+    if (ins_path.size()>0) {
         std::stringstream ss;
         tracking::WorldItem wti = ins_path.back();
         if (wti.valid) {
@@ -469,27 +469,27 @@ void Visualizer::draw_tracker_viz() {
         cv::Point2f viz_target_pos_after_burn_im = world2im_2d(_dctrl->viz_target_pos_after_burn,_visdat->Qfi, _visdat->camera_angle);
 
 
-        if (!_dctrl->viz_drone_trajectory.empty() && ! drn_path.empty()){
+        if (!_dctrl->viz_drone_trajectory.empty() && ! drn_path.empty()) {
             double raak = norm(_dctrl->viz_drone_trajectory.back() .pos- drn_path.back().pt);
-            putText(resFrame,"trgt: |"  + to_string_with_precision(raak,2) + "|" ,cv::Point(460*_res_mult,12*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+            putText(resFrame,"trgt: |"  + to_string_with_precision(raak,2) + "|",cv::Point(460*_res_mult,12*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
         }
 
         cv::circle(frameL_color,viz_target_pos_after_burn_im,2,white);
         viz_drone_pos_after_burn_im.x+=15;
         putText(frameL_color,to_string_with_precision(_dctrl->viz_time_after_burn,2),viz_drone_pos_after_burn_im,cv::FONT_HERSHEY_SIMPLEX,0.5,pink);
 
-        for (uint i=0; i< _dctrl->viz_drone_trajectory.size();i++) {
+        for (uint i=0; i< _dctrl->viz_drone_trajectory.size(); i++) {
             cv::Point2f p = world2im_2d(_dctrl->viz_drone_trajectory.at(i).pos,_visdat->Qfi, _visdat->camera_angle);
             cv::circle(frameL_color,p,1,pink);
         }
 
-        for (uint i=0; i < drn_path.size();i++){
+        for (uint i=0; i < drn_path.size(); i++) {
             cv::Point2f p = world2im_2d(drn_path.at(i).pt,_visdat->Qfi, _visdat->camera_angle);
             cv::circle(frameL_color,p,1,blue);
         }
     }
 
-    if (drn_path.size()>0){
+    if (drn_path.size()>0) {
         std::stringstream ss;
         tracking::WorldItem wti = drn_path.back();
         ss << "d " << to_string_with_precision(wti.distance,1);
@@ -592,7 +592,7 @@ void Visualizer::workerThread(void) {
     }
 }
 void Visualizer::close() {
-    if (initialized){
+    if (initialized) {
         std::cout << "Closing visualizer" << std::endl;
         exitVizThread = true;
         newdata.notify_all();

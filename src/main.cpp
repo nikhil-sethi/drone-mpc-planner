@@ -90,7 +90,7 @@ VisionData visdat;
 
 /****Threadpool*******/
 #define NUM_OF_THREADS 1
-struct Stereo_Frame_Data{
+struct Stereo_Frame_Data {
     cv::Mat frameL,frameR;
     uint imgcount;
     unsigned long long RS_id;
@@ -139,11 +139,11 @@ void process_video() {
         data.imgcount = imgcount;
 
         std::unique_lock<std::mutex> lk(tp[0].m2,std::defer_lock);
-        tp[0].data_processed.wait(lk, [](){return tp[0].data_is_processed; });
+        tp[0].data_processed.wait(lk, []() {return tp[0].data_is_processed; });
         tp[0].data_is_processed= false;
         if (pparams.has_screen) {
             static int speed_div;
-            if (!(speed_div++ % 4) || ((log_replay_mode && !cam.turbo) || cam.frame_by_frame)){
+            if (!(speed_div++ % 4) || ((log_replay_mode && !cam.turbo) || cam.frame_by_frame)) {
                 visualizer_3d.run();
                 visualizer.paint();
                 handle_key(data.time);
@@ -174,7 +174,7 @@ void process_video() {
                 if (recording != was_recording) {
                     if (recording)
                         insect_cnt++;
-                    else if (!recording && insect_cnt>0){
+                    else if (!recording && insect_cnt>0) {
                         output_video_cuts.close();
                         logger.close();
                         std::string cvfn = "insect" + to_string(insect_cnt) + ".mp4";
@@ -186,7 +186,7 @@ void process_video() {
                     was_recording = recording;
                 }
 
-                if (recording){
+                if (recording) {
                     static int cut_video_frame_counter = 0;
 
                     cv::Mat frame(cam.frameL.rows,cam.frameL.cols+trackers.diff_viz.cols,CV_8UC3);
@@ -200,7 +200,7 @@ void process_video() {
                 }
             }
         }
-        if (!recording && pparams.video_cuts && (cam.frame_number() / 2 && cam.frame_number() % 2)){
+        if (!recording && pparams.video_cuts && (cam.frame_number() / 2 && cam.frame_number() % 2)) {
             logger.close();
             logger.open(logger_fn,std::ofstream::out);
         }
@@ -268,7 +268,7 @@ void write_occasional_image(Stereo_Frame_Data data) {
         cv::Mat out = data.frameL.clone();
         cvtColor(out,out,CV_GRAY2BGR);
         putText(out,"State: " + dnav.navigation_status() + " " + trackers.mode_str() + " " + dctrl.flight_mode() +
-                         " "  + trackers.dronetracker()->drone_tracking_state(),cv::Point(5,14),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
+                " "  + trackers.dronetracker()->drone_tracking_state(),cv::Point(5,14),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
         putText(out,"Time:       " + to_string_with_precision(data.time,2),cv::Point(5,28),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
         putText(out,"Detections: " + std::to_string(detectcount),cv::Point(5,42),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
 
@@ -279,7 +279,7 @@ void write_occasional_image(Stereo_Frame_Data data) {
 
 void process_frame(Stereo_Frame_Data data) {
 
-    if (log_replay_mode){
+    if (log_replay_mode) {
         logreader.current_frame_number(data.RS_id);
         trackers.process_replay_moth(data.RS_id);
     }
@@ -320,7 +320,7 @@ void process_frame(Stereo_Frame_Data data) {
 
 }
 
-void init_insect_log(int n){
+void init_insect_log(int n) {
     trackers.init_replay_moth(n);
 }
 
@@ -431,10 +431,10 @@ void handle_key(double time [[maybe_unused]]) {
 }
 
 //This is where frames get processed after it was received from the cam in the main thread
-void pool_worker(int id ){
+void pool_worker(int id ) {
     std::unique_lock<std::mutex> lk(tp[id].m1,std::defer_lock);
     while(key!=27) {
-        tp[id].new_data.wait(lk,[](){return tp[0].data_is_new;});
+        tp[id].new_data.wait(lk,[]() {return tp[0].data_is_new;});
         tp[0].data_is_new = false;
         if (key == 27)
             break;
@@ -452,8 +452,8 @@ void init_thread_pool() {
     }
     threads_initialised=true;
 }
-void close_thread_pool(){
-    if (threads_initialised){
+void close_thread_pool() {
+    if (threads_initialised) {
         std::cout <<"Stopping threads in pool"<< std::endl;
         usleep(1000);
         for (uint i = 0; i < NUM_OF_THREADS; i++) {
@@ -474,13 +474,13 @@ void close_thread_pool(){
     }
 }
 
-void kill_sig_handler(int s){
+void kill_sig_handler(int s) {
     std::cout << "Caught ctrl-c:" << s << std::endl;
     key=27;
     close(true);
     exit(0);
 }
-void init_terminal_signals(){
+void init_terminal_signals() {
     //init ctrl - c catch
     struct sigaction sigIntHandler;
     sigIntHandler.sa_handler = kill_sig_handler;

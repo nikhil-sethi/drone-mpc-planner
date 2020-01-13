@@ -47,7 +47,7 @@ void Airsim::init(int argc __attribute__((unused)), char **argv __attribute__((u
 
 }
 
-void Airsim::switch_mode(cam_mode_enum mode){
+void Airsim::switch_mode(cam_mode_enum mode) {
     if (mode != _mode) {
         if (mode == cam_mode_disabled )
             go_disabled();
@@ -113,7 +113,7 @@ void Airsim::workerThread(void) {
     }
 }
 
-void Airsim::pause(){
+void Airsim::pause() {
 
 }
 void Airsim::resume() {

@@ -47,7 +47,7 @@ float Smoother::addSample(float sample)
     if (isnanf(sample)) // fixes nan, which forever destroy the output
         sample = 0;
     if (_kernelsize == 1)
-    { // disable smoothing... to be sure:
+    {   // disable smoothing... to be sure:
         _ready = true;
         _runner = sample;
         return sample;
@@ -58,7 +58,7 @@ float Smoother::addSample(float sample)
     _runner = _runner + sample - _rbuf.at(_rotater); //add new sample, subtract the new oldest sample
 
     if (!_ready)
-    { // check if completely filled
+    {   // check if completely filled
         if (_rotater == 0)
             _ready = true;
         else

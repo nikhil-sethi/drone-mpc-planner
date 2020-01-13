@@ -4,7 +4,7 @@
 #include <cmath>
 
 namespace filtering {
-class SmootherDerivative{
+class SmootherDerivative {
 
 private:
     std::vector<float> _rbuf_data; // rotary buffer
@@ -24,7 +24,7 @@ public:
     void init(uint16_t width, float filt_rate);
     float addSample(float data, float time);
     void reset(void);
-    bool ready(){ return _ready;}
+    bool ready() { return _ready;}
 
 };
 }

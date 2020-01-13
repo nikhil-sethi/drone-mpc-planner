@@ -20,7 +20,7 @@ double incremented_playback_frametime = (1.f/pparams.fps)/2.f;
 void Cam::update_playback(void) {
 
     rs2::frameset fs;
-    for (uint i = 0; i < replay_skip_n_frames+1;i++)
+    for (uint i = 0; i < replay_skip_n_frames+1; i++)
         fs = cam.wait_for_frames();
     replay_skip_n_frames = 0;
     if (_frame_time_start <0)
@@ -29,7 +29,7 @@ void Cam::update_playback(void) {
     _frame_time = (fs.get_timestamp() -_frame_time_start)/1000.;
 
     double duration = static_cast<double>(static_cast<rs2::playback>(dev).get_duration().count()) / 1e9;
-    if (frame_time() > duration-0.1){
+    if (frame_time() > duration-0.1) {
         std::cout << "Video end, exiting" << std::endl;
         throw bag_video_ended();
     }
@@ -37,17 +37,17 @@ void Cam::update_playback(void) {
     frameR = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(fs.get_infrared_frame(2).get_data()), Mat::AUTO_STEP).clone();
 
     if (!turbo) {
-        while(swc.Read() < (1.f/pparams.fps)*1e3f){
+        while(swc.Read() < (1.f/pparams.fps)*1e3f) {
             usleep(10);
         }
         swc.Restart();
     }
 
-    while(frame_by_frame){
+    while(frame_by_frame) {
         unsigned char k = cv::waitKey(1);
         if (k == 'f')
             break;
-        else if (k== ' '){
+        else if (k== ' ') {
             frame_by_frame = false;
             break;
         }
@@ -162,7 +162,7 @@ void Cam::init() {
 
     rs2::stream_profile infared1,infared2;
     rs2::context ctx; // The context represents the current platform with respect to connected devices
-    if (!dev_initialized){
+    if (!dev_initialized) {
         rs2::device_list devices = ctx.query_devices();
         if (devices.size() == 0) {
             throw my_exit("no RealSense connected");
@@ -286,7 +286,7 @@ void Cam::init() {
     initialized = true;
 }
 
-CameraVolume Cam::def_volume (){
+CameraVolume Cam::def_volume () {
 
     float b_depth, b_ground;
 
@@ -302,10 +302,10 @@ CameraVolume Cam::def_volume (){
     // For the groundplane the offset in y direction is directly calculated;
     float y_sum = 0;
     uint n=0;
-    for(uint row=300; row<480; row+=5){
-        for(uint col=212; col<636; col+=5){
+    for(uint row=300; row<480; row+=5) {
+        for(uint col=212; col<636; col+=5) {
 
-            if(depth_background_3mm_world.at<cv::Vec3f>(row,col)[1]!=0){
+            if(depth_background_3mm_world.at<cv::Vec3f>(row,col)[1]!=0) {
                 y_sum += depth_background_3mm_world.at<cv::Vec3f>(row,col)[1];
                 n+=1;
             }
@@ -315,10 +315,10 @@ CameraVolume Cam::def_volume (){
 
     float z_sum = 0;
     n=0;
-    for(uint row=0; row<10; row+=1){
-        for(uint col=0; col<848; col+=5){
+    for(uint row=0; row<10; row+=1) {
+        for(uint col=0; col<848; col+=5) {
 
-            if(depth_background_3mm_world.at<cv::Vec3f>(row, col)[2]!=0){
+            if(depth_background_3mm_world.at<cv::Vec3f>(row, col)[2]!=0) {
                 z_sum += depth_background_3mm_world.at<cv::Vec3f>(row, col)[2];
                 n+=1;
             }
@@ -332,7 +332,7 @@ CameraVolume Cam::def_volume (){
     return camVol;
 }
 
-cv::Point3f Cam::get_SlopesOfPixel(uint x, uint y){
+cv::Point3f Cam::get_SlopesOfPixel(uint x, uint y) {
     std::vector<Point3d> camera_coordinates, world_coordinates;
     camera_coordinates.push_back(Point3d(x,y,-1));
     cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
@@ -357,8 +357,8 @@ void Cam::convert_depth_background_to_world() {
     depth_background_3mm = cv::Mat::zeros(depth_background.rows,depth_background.cols,CV_32FC3);
     depth_background_3mm_world = cv::Mat::zeros(depth_background.rows,depth_background.cols,CV_32FC3);
     depth_background_mm = cv::Mat::zeros(depth_background.rows,depth_background.cols,CV_32FC1);
-    for (int i = 0; i < depth_background.cols;i++)
-        for (int j = 0; j < depth_background.rows;j++) {
+    for (int i = 0; i < depth_background.cols; i++)
+        for (int j = 0; j < depth_background.rows; j++) {
             uint16_t back = depth_background.at<uint16_t>(j,i);
             float backf = static_cast<float>(back) * depth_scale;
             float pixel[2];
@@ -386,7 +386,7 @@ void Cam::deserialize_calib(std::string file) {
 
     CamCalibrationData* dser=new CamCalibrationData; // Create new object
     if (xmls::Serializable::fromXML(xmlData, dser)) // perform deserialization
-    { // Deserialization successful
+    {   // Deserialization successful
         _camera_angle_x = dser->Angle_X.value();
         _camera_angle_y = dser->Angle_Y.value();
         _camera_angle_y_measured_from_depth= dser->Angle_Y_Measured_From_Depthmap.value();
@@ -411,7 +411,7 @@ void Cam::serialize_calib() {
     outfile.close();
 }
 
-void Cam::check_light_level(){
+void Cam::check_light_level() {
 
     std::cout << "Checking if scene brightness has changed" << std::endl;
     //boot the camera and set it to the same settings as the previous session
@@ -432,12 +432,12 @@ void Cam::check_light_level(){
     rs2::frameset frame;
     float new_expos;
     int nframes_delay = (fabs(_measured_gain-tmp_set_gain)/248.f)*30.f;
-    for (int i = 0; i< nframes_delay;i++) // allow some time to settle
+    for (int i = 0; i< nframes_delay; i++) // allow some time to settle
         frame = cam.wait_for_frames();
 
     float tmp_exposure =-1;
     int tmp_last_exposure_frame_id = 0;
-    for (int i = 0; i< 120;i++) { // check for large change in exposure
+    for (int i = 0; i< 120; i++) { // check for large change in exposure
         frame = cam.wait_for_frames();
         frameLt = Mat(im_size, CV_8UC1, const_cast<void *>(frame.get_infrared_frame(1).get_data()), Mat::AUTO_STEP);
         if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
@@ -450,16 +450,16 @@ void Cam::check_light_level(){
         }
     }
 
-    if (fabs(_measured_exposure - new_expos) > 1000){
+    if (fabs(_measured_exposure - new_expos) > 1000) {
         std::cout << "Large exposure difference found, recalibrating..." << std::endl;
         rs_dev.set_option(RS2_OPTION_GAIN,0);
 
         //assuming we need to wait one second to go from max to min gain, for the camera to settle
         nframes_delay = (_measured_gain/248.f)*60.f;
         float tmp_measured_exposure =-1;
-        for (int i = 0; i< nframes_delay;i++){
+        for (int i = 0; i< nframes_delay; i++) {
             frame = cam.wait_for_frames();
-            if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)){
+            if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
                 tmp_measured_exposure = frame.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
                 std::cout << "Exposure: " << tmp_measured_exposure << std::endl;
             }
@@ -477,12 +477,12 @@ void Cam::check_light_level(){
             //the resulting exposure (camera does not respond instantaniously)
 
             int last_exposure_frame_id = 0;
-            for (int i = 0; i< 60;i++) {
+            for (int i = 0; i< 60; i++) {
                 frame = cam.wait_for_frames();
                 if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
                     _measured_exposure = frame.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
                     std::cout << "Exposure: " << tmp_measured_exposure<< " vs " << _measured_exposure  << std::endl;
-                    if (fabs(_measured_exposure-tmp_measured_exposure)>0.5f){
+                    if (fabs(_measured_exposure-tmp_measured_exposure)>0.5f) {
                         tmp_measured_exposure = _measured_exposure;
                         last_exposure_frame_id = i;
                     } else if (i - last_exposure_frame_id >= 10) { // no change in exposure for too long
@@ -494,7 +494,7 @@ void Cam::check_light_level(){
                 }
             }
 
-            if (search_speed>0){
+            if (search_speed>0) {
                 if (_measured_exposure >= 15500 && _measured_gain <= 248 ) {
                     _measured_gain+=search_speed;
                     std::cout << " -> increasing gain: " << _measured_gain << std::endl;
@@ -503,7 +503,7 @@ void Cam::check_light_level(){
                     search_speed=-1;
                 }
             }
-            if (search_speed<0){
+            if (search_speed<0) {
                 if (_measured_exposure < 15500 && _measured_gain > 16 ) {
                     if (_measured_gain > 248)
                         _measured_gain = 248;
@@ -527,7 +527,7 @@ void Cam::check_light_level(){
     cam.stop();
 }
 
-float Cam::measure_auto_exposure(){
+float Cam::measure_auto_exposure() {
 
     if (!dev_initialized) {
         rs2::context ctx;
@@ -562,7 +562,7 @@ float Cam::measure_auto_exposure(){
     int tmp_last_exposure_frame_id = 0;
     int actual_exposure_was_measured = 0;
     int i =0;
-    for (i= 0; i< 120;i++) { // check for large change in exposure
+    for (i= 0; i< 120; i++) { // check for large change in exposure
         frame = cam.wait_for_frames();
         frameLt = Mat(im_size, CV_8UC1, const_cast<void *>(frame.get_infrared_frame(1).get_data()), Mat::AUTO_STEP);
         if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
@@ -585,7 +585,7 @@ float Cam::measure_auto_exposure(){
     return new_expos;
 }
 
-void Cam::calib_pose(bool also_do_depth){
+void Cam::calib_pose(bool also_do_depth) {
 
     std::cout << "Measuring pose..." << std::endl;
     auto rs_depth_sensor = dev.first<rs2::depth_sensor>();
@@ -631,7 +631,7 @@ void Cam::calib_pose(bool also_do_depth){
         for (uint i = 0; i < nframes; i++) {
             frame = cam.wait_for_frames();
 
-            if (hasIMU){
+            if (hasIMU) {
                 auto frame_acc = frame.first(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F);
 
                 if (frame_acc.is<rs2::motion_frame>()) {
@@ -645,7 +645,7 @@ void Cam::calib_pose(bool also_do_depth){
                 }
             }
         }
-        if (hasIMU){
+        if (hasIMU) {
             if (fabs(roll) > pparams.max_cam_roll) {
                 std::cout << "Camera tilted in roll axis! Roll: " << to_string_with_precision(roll,2) << "°. Max: " << pparams.max_cam_roll << "°" << std::endl;
                 wait_cycles = 360; // 1 minute with nframes = 10
@@ -657,7 +657,7 @@ void Cam::calib_pose(bool also_do_depth){
             wait_cycles--;
     }
 
-    if (also_do_depth || !hasIMU){
+    if (also_do_depth || !hasIMU) {
 
         // Decimation filter reduces the amount of data (while preserving best samples)
         rs2::decimation_filter dec;
@@ -708,7 +708,7 @@ void Cam::calib_pose(bool also_do_depth){
 
         imwrite(disparity_map_wfn,disparity_background);
     }
-    if (hasIMU){
+    if (hasIMU) {
         _camera_angle_x = roll;
         _camera_angle_y = pitch;
     } else { // determine camera angle from the depth map:
@@ -733,9 +733,9 @@ void Cam::calib_pose(bool also_do_depth){
         float alpha = 0;
 
         // obtain a set of points 'far away' (half way the image) that are averaged over image lines
-        for (ppp=0;ppp<nr_p_far;ppp++) {
+        for (ppp=0; ppp<nr_p_far; ppp++) {
             auto ptr_new = ptr+points.size()-IMG_W/2-p_smooth/2-IMG_W*(nr_p_close+1+ppp);
-            for (pp=0;pp<p_smooth;pp++) {
+            for (pp=0; pp<p_smooth; pp++) {
                 point_.x += ptr_new->x;
                 point_.y += ptr_new->y;
                 point_.z += ptr_new->z;
@@ -746,9 +746,9 @@ void Cam::calib_pose(bool also_do_depth){
         }
 
         // obtain a set of points 'close by' (bottom of the image) that are averaged over image lines
-        for (ppp=0;ppp<nr_p_close;ppp++) {
+        for (ppp=0; ppp<nr_p_close; ppp++) {
             auto ptr_new = ptr+points.size()-IMG_W/2-p_smooth/2-IMG_W*ppp;
-            for (pp=0;pp<p_smooth;pp++) {
+            for (pp=0; pp<p_smooth; pp++) {
                 point_.x += ptr_new->x;
                 point_.y += ptr_new->y;
                 point_.z += ptr_new->z;
@@ -759,8 +759,8 @@ void Cam::calib_pose(bool also_do_depth){
         }
 
         // calculate angle between 'far away' and 'close by' points, by avaraging over all combinations between both sets
-        for (ppp=0;ppp<nr_p_close;ppp++) {
-            for (pp=0;pp<nr_p_far;pp++) {
+        for (ppp=0; ppp<nr_p_close; ppp++) {
+            for (pp=0; pp<nr_p_far; pp++) {
                 point_diff = pointsFar.at(pp)-pointsClose.at(ppp);
                 alpha += atanf(point_diff.y/point_diff.z);
             }
@@ -830,7 +830,7 @@ void Cam::init(std::string replay_dir) {
 
     std::vector<rs2::stream_profile> stream_profiles = rs_depth_sensor.get_stream_profiles();
 
-    for (uint i = 0; i < stream_profiles.size();i++) {
+    for (uint i = 0; i < stream_profiles.size(); i++) {
         rs2::stream_profile sp = stream_profiles.at(i);
         std::cout << sp.stream_index() << " -  " << sp.stream_name() << " ; " << sp.stream_type() << std::endl;
         if ( sp.stream_name().compare("Infrared 1") == 0)
@@ -853,14 +853,14 @@ void Cam::init(std::string replay_dir) {
     initialized = true;
 }
 
-void Cam::pause(){
+void Cam::pause() {
     if (!_paused) {
         _paused = true;
         static_cast<rs2::playback>(dev).pause();
     }
 }
 void Cam::resume() {
-    if (_paused){
+    if (_paused) {
         _paused = false;
         static_cast<rs2::playback>(dev).resume();
     }
@@ -880,7 +880,7 @@ void Cam::close() {
             lock_frame_data.unlock();
             rs_depth_sensor.stop();
             rs_depth_sensor.close();
-            for (uint i = 0; i < 10; i++ ){
+            for (uint i = 0; i < 10; i++ ) {
                 lock_newframe.unlock();
                 lock_frame_data.unlock();
                 usleep(1000);
@@ -888,7 +888,7 @@ void Cam::close() {
         } else {
             cam.stop();
         }
-        if (pparams.watchdog && !fromfile){
+        if (pparams.watchdog && !fromfile) {
             std::cout << "Waiting for camera watchdog." << std::endl;
             thread_watchdog.join();
         }
@@ -908,7 +908,7 @@ void Cam::reset() {
     } else if (devices.size() > 1) {
         std::cout << "Warning detected more then one device. Resetting everything" << std::endl;
         rs2::device devt;
-        for (uint i = 0; i < devices.size();i++) {
+        for (uint i = 0; i < devices.size(); i++) {
             devt= devices[i];
             std::cout << i << std::endl;
             devt.hardware_reset();

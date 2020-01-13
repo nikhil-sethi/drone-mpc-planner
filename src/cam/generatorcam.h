@@ -7,7 +7,7 @@ class GeneratorCam {
 
 public:
 
-    enum cam_mode_enum{cam_mode_stopped = 0, cam_mode_disabled = 1, cam_mode_color = 2, cam_mode_stereo=3 };
+    enum cam_mode_enum {cam_mode_stopped = 0, cam_mode_disabled = 1, cam_mode_color = 2, cam_mode_stereo=3 };
     cv::Mat frameL,frameR,frameD,frame_rgb;
 
     cam_mode_enum get_mode() {return _mode;}
@@ -17,7 +17,7 @@ public:
     void go_disabled();
     int frame_number() {return _frame_number;}
     double frame_time() {return _frame_number * (1./pparams.fps);}
-    float camera_angle(){return 35.f;}
+    float camera_angle() {return 35.f;}
 
 
     void close (void);
@@ -31,7 +31,7 @@ public:
     int measure_auto_exposure() {
         return 0;
     }
-    void stop_watchdog(){
+    void stop_watchdog() {
 
     }
 

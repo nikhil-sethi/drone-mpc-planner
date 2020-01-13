@@ -58,14 +58,14 @@ void MultiModule::send_init_package() {
     RS232_SendBuf( static_cast<unsigned char*>( packet), 7);
 }
 
-void MultiModule::zerothrottle(){
+void MultiModule::zerothrottle() {
     if (dparams.mode3d)
         throttle = JOY_MIDDLE;
     else
         throttle = JOY_BOUND_MIN;
 }
 
-void MultiModule::LED(bool value){
+void MultiModule::LED(bool value) {
     if (value)
         led_on = true;
     else
@@ -86,27 +86,27 @@ void MultiModule::worker_thread(void) {
             }
         }
 
-        if (send_init_package_now){
+        if (send_init_package_now) {
             usleep(100);
             send_init_package();
             send_init_package_now = false;
             usleep(100);
         } else {
-            if (cycles_until_bind > 0){
+            if (cycles_until_bind > 0) {
                 cycles_until_bind--;
                 if (cycles_until_bind ==0)
                     _bind = true;
                 arm_switch = JOY_MIN_THRESH;
                 zerothrottle();
             }
-            if (cycles_until_bind < 0){
+            if (cycles_until_bind < 0) {
                 cycles_until_bind++;
                 if (cycles_until_bind == 0)
                     _bind = false;
                 arm_switch = JOY_MIN_THRESH;
                 zerothrottle();
             }
-            if (_bind){
+            if (_bind) {
                 arm_switch = JOY_MIN_THRESH;
                 zerothrottle();
             }
@@ -114,7 +114,7 @@ void MultiModule::worker_thread(void) {
             g_lockData.lock();
             send_data();
             g_lockData.unlock();
-            if (_bind){
+            if (_bind) {
                 if (sw_bind.Read() > 20000)
                     _bind =false;
             }
@@ -160,7 +160,7 @@ void MultiModule::send_data(void) {
         //packet[4] to [25] = Channels, 16 channels of 11 bits (-> which makes 22 bytes)
 
         uint16_t channels[16];
-        for (int i = 0; i< 16;i++){
+        for (int i = 0; i< 16; i++) {
             channels[i] = 0;
         }
 
@@ -179,7 +179,7 @@ void MultiModule::send_data(void) {
         channels[1] = pitch;
         channels[2] = throttle;
         channels[3] = yaw;
-        if (dparams.tx==tx_dsmx || dparams.tx==tx_frskyd8 || dparams.tx==tx_frskyd16){
+        if (dparams.tx==tx_dsmx || dparams.tx==tx_frskyd8 || dparams.tx==tx_frskyd16) {
             channels[4] = arm_switch;
             channels[5] = mode;
         }
@@ -197,7 +197,7 @@ void MultiModule::send_data(void) {
             channels[7] = JOY_BOUND_MIN;
 
 
-        convert_channels(channels , &packet[4]);
+        convert_channels(channels, &packet[4]);
 
         if (!notconnected) {
             RS232_SendBuf( static_cast<unsigned char*>( packet), 26);
@@ -233,7 +233,7 @@ void MultiModule::receive_data() {
 
 
                 if (current_firmware_version != required_firmwar_version) {
-                    if (current_firmware_version.length() >= required_firmwar_version.length()){
+                    if (current_firmware_version.length() >= required_firmwar_version.length()) {
                         std::cout << "Detected wrong MultiModule firmware version! Detected: " << current_firmware_version << ". Required: "  << required_firmwar_version << "." << std::endl;
                         exit(1);
                     }

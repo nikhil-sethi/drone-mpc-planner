@@ -17,7 +17,7 @@
 #include "defines.h"
 #include "common.h"
 
-class VisionData{
+class VisionData {
 public:
     struct delete_spot {
         cv::Point pt = {0};
@@ -78,7 +78,7 @@ private:
     bool _reset_motion_integration = false;
     delete_spot motion_spot_to_be_deleted;
     delete_spot motion_spot_to_be_reset;
- 
+
     bool _exclude_drone_from_motion_fading = false;
     cv::Point exclude_drone_from_motion_fading_spot = {0};
     int exclude_drone_from_motion_fading_r = 0;

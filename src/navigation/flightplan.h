@@ -20,7 +20,7 @@ static const char* waypoint_flight_modes_str[] = {
     "" // must be the last entry! (check in serializer)
 };
 
-struct Waypoint{
+struct Waypoint {
     Waypoint(cv::Point3f p, int distance_threshold_mm) {
         xyz = p;
         threshold_mm = distance_threshold_mm;
@@ -30,31 +30,31 @@ struct Waypoint{
     int threshold_mm = 0;
     waypoint_flight_modes mode;
 protected:
-    Waypoint(){}
+    Waypoint() {}
 };
-struct Waypoint_Landing : Waypoint{
-    Waypoint_Landing(){
+struct Waypoint_Landing : Waypoint {
+    Waypoint_Landing() {
         xyz = cv::Point3f(0,.5f,0); // only for landing wp, relative to the startup location!
         threshold_mm = 50;
         mode = wfm_landing;
     }
 };
-struct Waypoint_Takeoff : Waypoint{
-    Waypoint_Takeoff(){
+struct Waypoint_Takeoff : Waypoint {
+    Waypoint_Takeoff() {
         mode = wfm_takeoff;
     }
 };
-struct Waypoint_Flower : Waypoint{
+struct Waypoint_Flower : Waypoint {
     Waypoint_Flower(cv::Point3f p) : Waypoint(p,0) {
         mode = wfm_flower;
     }
 };
-struct Waypoint_Brick : Waypoint{
+struct Waypoint_Brick : Waypoint {
     Waypoint_Brick(cv::Point3f p) : Waypoint(p,0) {
         mode = wfm_brick;
     }
 };
-struct Waypoint_Stay : Waypoint{
+struct Waypoint_Stay : Waypoint {
     Waypoint_Stay(cv::Point3f p) : Waypoint(p,0) {
         mode = wfm_wp_stay;
     }
@@ -63,7 +63,7 @@ struct Waypoint_Stay : Waypoint{
 class XML_Waypoint_Mode: public xmls::MemberBase
 {
 private:
-    void AssignValue(const waypoint_flight_modes value){
+    void AssignValue(const waypoint_flight_modes value) {
         m_sValue = waypoint_flight_modes_str[value];
     };
 public:
@@ -81,7 +81,7 @@ public:
         return static_cast<waypoint_flight_modes>(0);
     };
 
-    XML_Waypoint_Mode operator=(const waypoint_flight_modes value) {AssignValue(value);return *this;};
+    XML_Waypoint_Mode operator=(const waypoint_flight_modes value) {AssignValue(value); return *this;};
 };
 
 class XML_Waypoint: public xmls::Serializable
@@ -102,9 +102,9 @@ public:
         Register("y",&y);
         Register("z",&z);
     }
-    XML_Waypoint(Waypoint wp) : XML_Waypoint(){
+    XML_Waypoint(Waypoint wp) : XML_Waypoint() {
         mode = wp.mode;
-        if (wp.mode != wfm_landing && wp.mode != wfm_takeoff){
+        if (wp.mode != wfm_landing && wp.mode != wfm_takeoff) {
             x = wp.xyz.x;
             y = wp.xyz.y;
             z = wp.xyz.z;
@@ -112,7 +112,7 @@ public:
         }
     }
 
-    Waypoint waypoint(){
+    Waypoint waypoint() {
         switch (mode.value()) {
         case waypoint_flight_modes::wfm_takeoff: {
             Waypoint_Takeoff wp;
@@ -157,7 +157,7 @@ public:
         Register("flightplan_name", &flightplan_name);
         Register("waypoints", &waypointsxml);
     }
-    XML_FlightPlan(std::string name, std::vector<Waypoint> wps) : XML_FlightPlan(){
+    XML_FlightPlan(std::string name, std::vector<Waypoint> wps) : XML_FlightPlan() {
         flightplan_name = name;
         for (auto wp : wps) {
             XML_Waypoint * wpxml = new XML_Waypoint(wp);
@@ -173,7 +173,7 @@ public:
                                 std::istreambuf_iterator<char>());
 
             if (!Serializable::fromXML(xmlData, this))
-            { // Deserialization not successful
+            {   // Deserialization not successful
                 throw my_exit("Cannot read: " + filepath);
             }
             XML_FlightPlan tmp;
@@ -194,9 +194,9 @@ public:
         outfile.close();
 
     }
-    std::vector<Waypoint> waypoints(){
+    std::vector<Waypoint> waypoints() {
         std::vector<Waypoint> res;
-        for (uint i = 0; i< waypointsxml.size(); i++){
+        for (uint i = 0; i< waypointsxml.size(); i++) {
             res.push_back(waypointsxml.getItem(i)->waypoint());
         }
         return res;

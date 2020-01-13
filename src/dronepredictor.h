@@ -24,12 +24,12 @@ private:
     filtering::Smoother roll_gain_smth,throttle_gain_smth,pitch_gain_smth;
 
     float dt_prev = 0;
-    cv::Point3f pos_prev ={0};
-    cv::Point3f vel_prev ={0};
-    cv::Point3f rtp_prev ={0}; // roll, throttle, pitch -> same order as when used with pos xyz
-    cv::Point3f rtp_gain_prev ={0};
-    cv::Point3f acc_pred_prev ={0};
-    cv::Point3f predicted_pos ={0};
+    cv::Point3f pos_prev = {0};
+    cv::Point3f vel_prev = {0};
+    cv::Point3f rtp_prev = {0}; // roll, throttle, pitch -> same order as when used with pos xyz
+    cv::Point3f rtp_gain_prev = {0};
+    cv::Point3f acc_pred_prev = {0};
+    cv::Point3f predicted_pos = {0};
     cv::Point3f drag_gain;
 
     filtering::Smoother swap_x;

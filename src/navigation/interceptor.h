@@ -8,17 +8,18 @@
 
 
 static const char* interceptor_state_names[] = { "is_init",
-                                                "is_waiting_for_target",
-                                                "is_waiting_in_reach_zone",
-                                                "is_flower_of_fire_intercept",
-                                                "is_move_to_intercept",
-                                                "is_close_chasing"};
+                                                 "is_waiting_for_target",
+                                                 "is_waiting_in_reach_zone",
+                                                 "is_flower_of_fire_intercept",
+                                                 "is_move_to_intercept",
+                                                 "is_close_chasing"
+                                               };
 
 /*
  * This class calculates the best intersection location, and whether that is even possible, etc
  *
  */
-class Interceptor{
+class Interceptor {
 
 private:
     std::ofstream *_logger;
@@ -66,15 +67,17 @@ public:
     void reset_insect_cleared() {_count_insect_not_in_range = 0;}
 
 
-    bool insect_in_range_takeoff() {return !_count_insect_not_in_range
+    bool insect_in_range_takeoff() {
+        return !_count_insect_not_in_range
                && hunt_volume_check == CameraVolume::HuntVolume_OK
-               && _trackers->insecttracker_best()->properly_tracking();}
+               && _trackers->insecttracker_best()->properly_tracking();
+    }
     bool insect_in_range() {return !_count_insect_not_in_range;}
     bool insect_cleared() {return _count_insect_not_in_range > insect_cleared_timeout; }
     cv::Point3f target_position() {return _intercept_pos;}
     cv::Point3f target_speed() {return _intercept_vel;}
     cv::Point3f target_accelleration() {return _intercept_acc;}
-    double time_to_intercept(){return _tti;}
+    double time_to_intercept() {return _tti;}
 
 
     std::string Interceptor_State() {
