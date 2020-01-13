@@ -338,6 +338,9 @@ void handle_key(double time [[maybe_unused]]) {
     case 'b':
         rc.bind(true);
         break;
+    case 'B':
+        rc.beep();
+        break;
     case 'c':
         rc.calibrate_acc();
         break;

@@ -183,6 +183,11 @@ void MultiModule::send_data(void) {
             channels[4] = arm_switch;
             channels[5] = mode;
         }
+        if (_beep) {
+            std::cout << "BEEP" << std::endl;
+            channels[5] = JOY_BOUND_MAX;
+        }
+
         if (dparams.tx==tx_cx10)
             channels[5] = tx_rate;
 

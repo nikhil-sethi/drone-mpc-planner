@@ -105,6 +105,9 @@ public:
                 cycles_until_bind = -80;
         }
     }
+    void beep() {
+        _beep = !_beep;
+    }
     void arm(betaflight_arming v) {
         arm_switch = v;
     }
@@ -122,6 +125,7 @@ private:
     bool send_init_package_now = false;
     int _drone_id = 1;
     uint init_package_nOK_cnt = 1;
+    bool _beep = false;
 
     bool initialized = false;
     bool version_check_OK = false;

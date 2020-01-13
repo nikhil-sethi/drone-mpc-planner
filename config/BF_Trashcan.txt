@@ -37,6 +37,7 @@ feature LED_STRIP
 beeper -ON_USB
 
 # beacon
+beacon RX_SET
 
 # map
 
@@ -70,9 +71,10 @@ mode_color 7 0 7
 # aux
 aux 0 0 0 1300 2100 0 0
 aux 1 1 1 900 1300 0 0
-aux 2 15 3 900 1025 0 0
-aux 3 28 1 1300 2100 0 0
-aux 4 35 2 1650 2100 0 0
+aux 2 13 1 1975 2100 0 0
+aux 3 15 3 900 1025 0 0
+aux 4 28 1 1300 2100 0 0
+aux 5 35 2 1650 2100 0 0
 
 # adjrange
 
