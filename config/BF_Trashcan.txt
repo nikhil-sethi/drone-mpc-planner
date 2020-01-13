@@ -1,7 +1,7 @@
 # diff
 
 # version
-# Betaflight / CRAZYBEEF4FR (C4FR) 4.0.6 Oct  3 2019 / 12:51:41 (5281ff2ee) MSP API: 1.41
+# Betaflight / CRAZYBEEF4FR (C4FR) 4.0.6 Nov 13 2019 / 16:58:39 (466b7dcb5) MSP API: 1.41
 
 # start the command batch
 batch start
@@ -44,13 +44,17 @@ beeper -ON_USB
 
 # led
 led 0 4,7::C:0
-led 1 5,7::C:0
-led 2 6,7::C:2
-led 3 7,7::C:0
+led 1 5,7::CT:6
+led 2 6,7::CT:2
+led 3 7,7::CT:6
 led 4 8,7::C:0
 
 # color
-color 2 0,0,100
+color 1 0,0,1
+color 3 0,0,255
+color 5 359,0,1
+color 6 359,0,1
+color 7 359,255,255
 
 # mode_color
 mode_color 5 0 9
@@ -66,7 +70,7 @@ mode_color 7 0 7
 # aux
 aux 0 0 0 1300 2100 0 0
 aux 1 1 1 900 1300 0 0
-aux 2 15 3 900 1425 0 0
+aux 2 15 3 900 1025 0 0
 aux 3 28 1 1300 2100 0 0
 aux 4 35 2 1650 2100 0 0
 

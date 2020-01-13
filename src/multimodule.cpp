@@ -187,7 +187,7 @@ void MultiModule::send_data(void) {
             channels[5] = tx_rate;
 
         if(led_on)
-            channels[7] = JOY_BOUND_MAX;
+            channels[7] = JOY_BOUND_MIN + JOY_BOUND_RANGE / 100 * pparams.drone_led_strength;
         else
             channels[7] = JOY_BOUND_MIN;
 

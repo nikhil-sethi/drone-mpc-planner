@@ -382,6 +382,7 @@ private: xInt _imscalef;
 private: xString _flightplan;
 private: xInt _live_image_frq;
 private: xFloat _max_cam_roll;
+private: xInt _drone_led_strength;
 
 public: int wdt_timeout_us,darkness_threshold;
 public: uint fps;
@@ -395,6 +396,7 @@ public: int imscalef;
 public: std::string flightplan;
 public: int live_image_frq;
 public: float max_cam_roll;
+public: int drone_led_strength;
 
 public: PatsParameters() {
         // Set the XML class name.
@@ -402,7 +404,7 @@ public: PatsParameters() {
         setClassName("PatsParameters");
 
         // Set class version
-        setVersion("1.3");
+        setVersion("1.4");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("wdt_timeout_us",&_wdt_timeout_us);
@@ -428,6 +430,7 @@ public: PatsParameters() {
         Register("flightplan",&_flightplan);
         Register("live_image_frq",&_live_image_frq);
         Register("max_cam_roll",&_max_cam_roll);
+        Register("drone_led_strength",&_drone_led_strength);
     }
 public: void deserialize(std::string settings_file) {
         std::cout << "Reading settings from: " << settings_file << std::endl;
@@ -473,6 +476,7 @@ public: void deserialize(std::string settings_file) {
         flightplan = _flightplan.value();
         live_image_frq = _live_image_frq.value();
         max_cam_roll = _max_cam_roll.value();
+        drone_led_strength = _drone_led_strength.value();
     }
 
 public: void serialize(std::string settings_file) {
@@ -499,6 +503,7 @@ public: void serialize(std::string settings_file) {
         _flightplan= flightplan;
         _live_image_frq = live_image_frq;
         _max_cam_roll = max_cam_roll;
+        _drone_led_strength = drone_led_strength;
 
         std::string xmlData = toXML();
         std::ofstream outfile = std::ofstream (settings_file);
