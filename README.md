@@ -32,8 +32,16 @@ Host pats1
 ```  
 
 ## Flashing Betaflight:
-`dfu-util -s 0x08000000 -a 0 -D trashcan_ori.bin`  
-`dfu-util -s 0x08000000:413040 -a 0 -U newcode.bin`  
+Put drone in bootloader mode. E.g. type `bl` in cli in betaflight configurator. Then flash:  
+`dfu-util -s 0x08000000 -a 0 -D ~/code/pats/config/trashcan_firmware.bin`  
+
+Apply the following settings to BLHeli:  
+1. Set beacon time to none
+2. Set beep strenght to 66
+3. Set startup power to max
+  
+To retrieve firmware from the drone. (not needed normally)  
+`dfu-util -s 0x08000000:413040 -a 0 -U firmware_dump.bin`  
 
 ## Flashing realsense camera:
 `sudo rs-fw-update -f ~/code/pats/config/Signed_Image_UVC_5_11_6_250.bin`
