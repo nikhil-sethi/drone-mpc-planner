@@ -262,8 +262,8 @@ void DroneNavigation::update(double time) {
                 && _trackers->dronetracker()->n_frames_tracking>5)
             {
                 if (current_waypoint->mode == wfm_landing) {
-                    _navigation_status = ns_initial_reset_heading;
-                    time_initial_reset_heading = time;
+                    _navigation_status = ns_initial_reset_yaw;
+                    time_initial_reset_yaw = time;
                 } else if (wpid < waypoints.size()) { // next waypoint in flight plan
                     wpid++;
                     _navigation_status = ns_set_waypoint;
@@ -310,20 +310,20 @@ void DroneNavigation::update(double time) {
             if (_nav_flight_mode == nfm_manual)
                 _navigation_status=ns_manual;
             break;
-        } case ns_initial_reset_heading: {
-            _dctrl->flight_mode(DroneController::fm_initial_reset_heading);
-            if(time-time_initial_reset_heading>0.5){
-                _trackers->dronetracker()->detect_heading();
-                _navigation_status = ns_wait_reset_heading;
+        } case ns_initial_reset_yaw: {
+            _dctrl->flight_mode(DroneController::fm_initial_reset_yaw);
+            if(time-time_initial_reset_yaw>0.5){
+                _trackers->dronetracker()->detect_yaw();
+                _navigation_status = ns_wait_reset_yaw;
             }
             break;
-        } case ns_wait_reset_heading: {
-            _dctrl->flight_mode(DroneController::fm_reset_heading);
+        } case ns_wait_reset_yaw: {
+            _dctrl->flight_mode(DroneController::fm_reset_yaw);
             cv::Point3f err = _trackers->dronetracker()->Last_track_data().pos() - _trackers->dronetracker()->drone_landing_location();
             err.y = 0;
             float horizontal_err = normf(err);
-            if(_dctrl->check_smooth_heading()
-                && _trackers->dronetracker()->check_heading()
+            if(_trackers->dronetracker()->check_smooth_yaw()
+                && _trackers->dronetracker()->check_yaw()
                 && horizontal_err < 0.3f){
                 _navigation_status = ns_land;
             }

@@ -34,7 +34,7 @@ private:
     void deserialize_settings();
     void serialize_settings();
 
-    double time_initial_reset_heading = 0;
+    double time_initial_reset_yaw = 0;
     double landed_time = 0;
     nav_flight_modes _nav_flight_mode;
 
@@ -59,8 +59,8 @@ private:
         ns_flower_waypoint,
         ns_brick_waypoint,
         ns_goto_landing_waypoint,
-        ns_initial_reset_heading,
-        ns_wait_reset_heading,
+        ns_initial_reset_yaw,
+        ns_wait_reset_yaw,
         ns_land,
         ns_landing,
         ns_landed,

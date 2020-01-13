@@ -10,7 +10,7 @@ static const char* drone_tracking_state_names[] = { "dts_init",
                                                     "dts_detecting_takeoff",
                                                     "dts_detecting",
                                                     "dts_detected",
-                                                    "dts_detect_heading",
+                                                    "dts_detect_yaw",
                                                     "dts_landing_init",
                                                     "dts_landing"
                                                   };
@@ -25,8 +25,8 @@ private:
     double landing_ignore_timeout = 5; // TODO: make this dependent on the motion_update_iterator_max
     double taking_off_ignore_timeout = 0.1; // TODO: make this dependent on the motion_update_iterator_max
 
-    float heading;
-    const float landing_heading_criteria = 0.05;
+    float yaw;
+    const float landing_yaw_criteria = 0.05;
 
     bool spinup_detected = false;
     bool liftoff_detected = false;
@@ -40,7 +40,7 @@ private:
         dts_detecting_takeoff,
         dts_detecting,
         dts_tracking,
-        dts_detect_heading,
+        dts_detect_yaw,
         dts_landing_init,
         dts_landing
     };
@@ -115,8 +115,8 @@ private:
     cv::Mat get_big_blob(cv::Mat Mask, int connectivity);
     cv::Mat extract_mask_column(cv::Mat mask_big, float range_left, float range_right, float side_percentage, enum side side_);
     cv::Mat split_mask_half(cv::Mat mask_big, enum side);
-    float yaw_heading(cv::Mat left, cv::Mat right);
-    float calc_heading(BlobProps * pbs, bool inspect_blob);
+    float yaw_from_splitted_mask(cv::Mat left, cv::Mat right);
+    float calc_yaw(BlobProps * pbs, bool inspect_blob);
 
 
 
@@ -132,7 +132,7 @@ public:
 
     bool taking_off() { return _drone_tracking_status == dts_detecting_takeoff_init || _drone_tracking_status == dts_detecting_takeoff;}
     bool inactive() { return _drone_tracking_status == dts_inactive;}
-    bool correct_heading() { return _drone_tracking_status == dts_detect_heading;}
+    bool correct_yaw() { return _drone_tracking_status == dts_detect_yaw;}
 
     bool _manual_flight_mode = false;
     cv::Mat diff_viz;
@@ -141,8 +141,10 @@ public:
     void track(double time, bool drone_is_active);
 
     void land() {_drone_tracking_status = dts_landing_init;}
-    void detect_heading() {_drone_tracking_status = dts_detect_heading;}
-    bool check_heading() { return ((fabs(heading)<landing_heading_criteria) && (fabs(heading)!=0));}
+    void detect_yaw() {_drone_tracking_status = dts_detect_yaw;}
+    bool check_yaw() { return ((fabs(yaw)<landing_yaw_criteria) && (fabs(yaw)!=0));}
+    bool check_smooth_yaw() { return (fabs(yaw_smoother.latest())<0.035f);}
+
 
     void control_predicted_drone_location(cv::Point2f drone_control_predicted_image_location, cv::Point3f drone_control_predicted_world_location) {
         _drone_control_predicted_image_location = drone_control_predicted_image_location;

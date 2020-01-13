@@ -63,9 +63,9 @@ void Visualizer::add_plot_sample(void) {
             posZ_drone.push_back(-data.state.pos.z);
             disparity.push_back(_dtrkr->image_item().disparity);
             sdisparity.push_back(_dtrkr->image_item().disparity);
-            sposX.push_back(-data.sposX);
-            sposY.push_back(data.sposY);
-            sposZ.push_back(-data.sposZ);
+            sposX.push_back(-data.posX_smooth);
+            sposY.push_back(data.posY_smooth);
+            sposZ.push_back(-data.posZ_smooth);
 
 
             if (_dctrl->Joy_State() != DroneController::js_hunt) {

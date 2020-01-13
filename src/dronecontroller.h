@@ -31,8 +31,8 @@ static const char* flight_mode_names[] = { "fm_joystick_check",
                                           "fm_abort_flight",
                                           "fm_flying_pid_init",
                                           "fm_flying_pid",
-                                          "fm_initial_reset_heading",
-                                          "fm_reset_heading",
+                                          "fm_initial_reset_yaw",
+                                          "fm_reset_yaw",
                                           "fm_landing_start",
                                           "fm_landing"
 };
@@ -60,8 +60,8 @@ public:
         fm_abort_flight,
         fm_flying_pid_init,
         fm_flying_pid,
-        fm_initial_reset_heading,
-        fm_reset_heading,
+        fm_initial_reset_yaw,
+        fm_reset_yaw,
         fm_landing_start,
         fm_landing
     };
@@ -193,8 +193,6 @@ private:
     int joyDial = 0;
     float scaledjoydial = 0;
 
-    float smooth_heading;
-
     int control_yaw(track_data data_drone, float gain_yaw);
 
     bool recovery_mode = false;
@@ -282,8 +280,6 @@ public:
             return false;
     }
 
-    bool check_smooth_heading() { return (fabs(smooth_heading)<0.035f);}
-
     joy_states Joy_State() {
         return _joy_state;
     }
@@ -351,8 +347,6 @@ public:
     int auto_yaw = JOY_MIDDLE;
     float auto_burn_duration = 0;
 
-    filtering::Smoother yaw_smoother;
-
     //Normalized throttle, between [-1 .. 1].
     //0 equals hoverthrottle
     float _log_auto_throttle;
@@ -400,7 +394,6 @@ public:
         _joy_takeoff_switch = false;
     }
 
-    float heading;
     cv::Point3f viz_drone_pos_after_burn = {0};
     cv::Point3f viz_target_pos_after_burn = {0};
     std::vector<state_data> viz_drone_trajectory;

@@ -110,7 +110,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
         else if (!_tracking)
             _drone_tracking_status = dts_detecting;
         break;
-    } case dts_detect_heading: {
+    } case dts_detect_yaw: {
         ItemTracker::track(time);
         update_drone_prediction();
         _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_item.size*1.2f*pparams.imscalef);
@@ -189,9 +189,9 @@ void DroneTracker::calc_world_item(BlobProps * props, double time [[maybe_unused
             props->world_props.valid = false;
             props->world_props.takeoff_reject = true;
         }
-    } else if(correct_heading() && props->world_props.valid) {
-        heading = calc_heading(props, false);
-        props->world_props.heading = heading;
+    } else if(correct_yaw() && props->world_props.valid) {
+        yaw = calc_yaw(props, false);
+        props->world_props.yaw = yaw;
     }
 }
 
@@ -326,16 +326,16 @@ cv::Mat DroneTracker::split_mask_half(cv::Mat mask_big, enum side side_) {
     return half;
 }
 
-float DroneTracker::yaw_heading(cv::Mat left, cv::Mat right) { // Heading positive = Clockwise, Heading negative is Counter-Clockwise
+float DroneTracker::yaw_from_splitted_mask(cv::Mat left, cv::Mat right) { // yaw positive = Clockwise, yaw negative is Counter-Clockwise
     cv::Moments mo_l = moments(left,true);
     cv::Point2f COG_l = cv::Point2f(static_cast<float>(mo_l.m10) / static_cast<float>(mo_l.m00), static_cast<float>(mo_l.m01) / static_cast<float>(mo_l.m00));
     cv::Moments mo_r = moments(right,true);
     cv::Point2f COG_r = cv::Point2f(static_cast<float>(mo_r.m10) / static_cast<float>(mo_r.m00), static_cast<float>(mo_r.m01) / static_cast<float>(mo_r.m00));
-    heading = COG_l.y-COG_r.y;
-    return heading;
+    yaw = COG_l.y-COG_r.y;
+    return yaw;
 }
 
-float DroneTracker::calc_heading(BlobProps * pbs, bool inspect_blob) { // Set inspect_blob = true to see mask. Otherwise set to false.
+float DroneTracker::calc_yaw(BlobProps * pbs, bool inspect_blob) { // Set inspect_blob = true to see mask. Otherwise set to false.
     if(inspect_blob==true) {
         cout<<"Original Drone Mask: "<<endl;
         cout<<pbs->mask<<endl;
@@ -371,12 +371,12 @@ float DroneTracker::calc_heading(BlobProps * pbs, bool inspect_blob) { // Set in
             cout<<"Left: "<<splitted_mask_left<<endl;
             cout<<"Right: "<<splitted_mask_right<<endl;
         }
-        heading = yaw_heading(splitted_mask_left, splitted_mask_right);
+        yaw = yaw_from_splitted_mask(splitted_mask_left, splitted_mask_right);
         if(inspect_blob==true) {
-            cout<<"Heading: "<<heading<<endl;
+            cout<<"Yaw: "<<yaw<<endl;
         }
     }
-    return heading;
+    return yaw;
 }
 
 }

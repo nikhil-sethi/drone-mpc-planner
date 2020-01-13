@@ -57,9 +57,9 @@ void ReplayTracker::update_from_log(unsigned long long frame_number,double time)
     data.state.pos.x = log.ins_pos_x;
     data.state.pos.y = log.ins_pos_y;
     data.state.pos.z = log.ins_pos_z;
-    data.sposX = log.ins_spos_x;
-    data.sposY = log.ins_spos_y;
-    data.sposZ = log.ins_spos_z;
+    data.posX_smooth = log.ins_spos_x;
+    data.posY_smooth = log.ins_spos_y;
+    data.posZ_smooth = log.ins_spos_z;
     data.state.vel.x = log.ins_svel_x;
     data.state.vel.y = log.ins_svel_y;
     data.state.vel.z = log.ins_svel_z;

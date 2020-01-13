@@ -109,6 +109,8 @@ private:
     int detected_after_take_off = 0;
 protected:
 
+    filtering::Smoother yaw_smoother;
+
     std::string _name;
     filtering::Smoother smoother_posX, smoother_posY, smoother_posZ;
     filtering::SmootherDerivative smoother_velX2,smoother_velY2,smoother_velZ2;

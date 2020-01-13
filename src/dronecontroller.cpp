@@ -23,9 +23,8 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
         "hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; " <<
         "joyThrottle; joyRoll; joyPitch; joyYaw; " <<
         "joyArmSwitch; joyModeSwitch; joyTakeoffSwitch;" <<
-        "dt; heading; Sheading;";
+        "dt; yaw; yaw_smooth;";
     std::cout << "Initialising control." << std::endl;
-    yaw_smoother.init(6);
     settings_file = "../../xml/" + dparams.control + ".xml";
 
     // Load saved control paremeters
@@ -355,11 +354,11 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
             }
         }
         break;
-    } case fm_initial_reset_heading: {
+    } case fm_initial_reset_yaw: {
         control_model_based(data_drone, data_target_new.pos(), data_target_new.vel(),true);
         mode += bf_headless_disabled;
         break;
-    } case fm_reset_heading: {
+    } case fm_reset_yaw: {
         mode += bf_headless_disabled;
         check_emergency_kill(data_drone);
         control_model_based(data_drone, data_target_new.pos(), data_target_new.vel(),true);
@@ -390,7 +389,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         auto_roll = JOY_MIDDLE;
         auto_pitch = JOY_MIDDLE;
         spin_up_start_time = 0;
-        mode += bf_heading_reset;
+        mode += bf_yaw_reset;
 
         if (dparams.mode3d)
             auto_throttle = JOY_MIDDLE;
@@ -467,8 +466,8 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         static_cast<int>(_joy_mode_switch) << "; " <<
         static_cast<int>(_joy_takeoff_switch) << "; " <<
         data_drone.dt << "; " <<
-        data_drone.heading <<  "; " <<
-        smooth_heading <<  "; ";
+        data_drone.yaw <<  "; " <<
+        data_drone.yaw_smooth <<  "; ";
 }
 
 std::tuple<int, int, float, Point3f, std::vector<state_data> > DroneController::calc_burn(state_data state_drone,state_data state_target,float remaining_aim_duration) {
@@ -698,9 +697,8 @@ std::tuple<cv::Point3f, cv::Point3f> DroneController::predict_drone_state_after_
 }
 
 int DroneController::control_yaw(track_data data_drone, float gain_yaw){
-    if(!isnan(data_drone.heading) == 1){
-        smooth_heading = yaw_smoother.addSample(data_drone.heading);
-        auto_yaw = JOY_MIDDLE + gain_yaw*smooth_heading*sqrtf(powf(data_drone.state.pos.x,2)+powf(data_drone.state.pos.y,2)+powf(data_drone.state.pos.z,2)); // clockwise is positive
+    if(data_drone.yaw_valid){
+        auto_yaw = JOY_MIDDLE + gain_yaw*data_drone.yaw_smooth*sqrtf(powf(data_drone.state.pos.x,2)+powf(data_drone.state.pos.y,2)+powf(data_drone.state.pos.z,2)); // clockwise is positive
     }
     else{
         auto_yaw = JOY_MIDDLE;
@@ -896,7 +894,7 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     kd_pos_pitch_scaled = scale_d.z*kd_pos_pitch;
 
     float depth_gain = 1;
-    float dist = powf(data_drone.sposX,2)+powf(data_drone.sposY,2)+powf(data_drone.sposZ,2);
+    float dist = powf(data_drone.posX_smooth,2)+powf(data_drone.posY_smooth,2)+powf(data_drone.posZ_smooth,2);
     if (dist > 4) //sqrt(4) = 2m
         depth_gain  = 1 + dist * depth_precision_gain;
 
@@ -985,7 +983,7 @@ void DroneController::land(track_data data_drone, track_data data_target_new, bo
     float horizontal_vel = normf( cv::Point3f(data_drone.vel().x, 0.f, data_drone.vel().z));
     if(horizontal_err<0.060f
         && horizontal_vel<0.04f
-        && fabs(heading)<0.1f
+        && fabs(data_drone.yaw_smooth)<0.1f
         && feedforward_landing==false){
         linear_landing_yoffset -= landing_velocity/static_cast<float>(pparams.fps);
     }

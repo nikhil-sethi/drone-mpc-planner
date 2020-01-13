@@ -39,13 +39,14 @@ struct track_data {
     cv::Point3f pos() {return state.pos;}
     cv::Point3f vel() {return state.vel;}
     cv::Point3f acc() {return state.acc;}
-    float sposX = 0,sposY = 0,sposZ = 0;
+    float posX_smooth = 0,posY_smooth = 0,posZ_smooth = 0;
     float dt = 0;
     bool pos_valid = false;
     bool vel_valid = false;
     bool acc_valid = false;
+    bool yaw_valid = false;
     double time = 0;
-    float heading;
+    float yaw = 0,yaw_smooth = 0;
 };
 
 struct control_data {

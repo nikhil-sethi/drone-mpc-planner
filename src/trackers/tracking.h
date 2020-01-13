@@ -38,7 +38,7 @@ struct BlobWorldProps {
     float disparity; // not really a world prop, but OK.
     bool radius_in_range = false,disparity_in_range = false,bkg_check_ok = false,takeoff_reject = false,valid = false;
     cv::Point3f pt() {return cv::Point3f(x,y,z);}
-    float heading;
+    float yaw;
     int trkr_id = -1;
 };
 struct BlobProps {
@@ -122,14 +122,14 @@ struct WorldItem {
         pt.y = wbp.y;
         pt.z = wbp.z;
         valid = wbp.valid;
-        heading = wbp.heading;
+        yaw = wbp.yaw;
     }
     cv::Point3f pt;
     ImageItem  iti;
     cv::Point2f image_coordinates() {
         return cv::Point2f(iti.x,iti.y);
     }
-    float heading;
+    float yaw;
     float distance, distance_bkg;
     bool valid = false;
 

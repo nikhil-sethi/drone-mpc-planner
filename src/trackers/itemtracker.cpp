@@ -57,6 +57,7 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     smoother_accY.init(smooth_width_acc);
     smoother_accZ.init(smooth_width_acc);
 
+    yaw_smoother.init(6);
     smoother_im_size.init(smooth_blob_props_width);
     smoother_score.init(smooth_blob_props_width);
     smoother_brightness.init(smooth_blob_props_width);
@@ -243,7 +244,7 @@ void ItemTracker::append_log() {
         //log all world stuff
         track_data last = Last_track_data();
         (*_logger) << last.state.pos.x << "; " << last.state.pos.y << "; " << last.state.pos.z << ";" ;
-        (*_logger) << last.sposX << "; " << last.sposY << "; " << last.sposZ << ";";
+        (*_logger) << last.posX_smooth << "; " << last.posY_smooth << "; " << last.posZ_smooth << ";";
         (*_logger) << last.state.vel.x << "; " << last.state.vel.y << "; " << last.state.vel.z << ";" ;
         (*_logger) << last.state.acc.x << "; " << last.state.acc.y << "; " << last.state.acc.z << ";" ;
     }
@@ -423,7 +424,7 @@ void ItemTracker::check_consistency(float dt) {
     if (track_history.size()>1) {
         auto data = track_history.back();
 
-        cv::Point3f prev_pos =cv::Point3f(data.sposX,data.sposY,data.sposZ);
+        cv::Point3f prev_pos =cv::Point3f(data.posX_smooth,data.posY_smooth,data.posZ_smooth);
         cv::Point3f predicted_pos = dt * data.vel() + prev_pos;
         float dist = cv::norm(predicted_pos - _world_item.pt);
 
@@ -468,7 +469,8 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
     track_data data;
     data.pos_valid = true;
     data.state.pos = measured_world_coordinates;
-    data.heading = _world_item.heading;
+    data.yaw = _world_item.yaw;
+    data.yaw_smooth = yaw_smoother.addSample(_world_item.yaw);
 
     if (n_frames_lost >= smooth_width_vel || reset_filters) { // tracking was regained, after n_frames_lost frames
         disp_rate_smoothed2.reset();
@@ -496,21 +498,21 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
 
     // smooth position data with simple filter
     if (reset_filters || track_history.size()<1) {
-        data.sposX = data.state.pos.x;
-        data.sposY = data.state.pos.y;
-        data.sposZ = data.state.pos.z;
+        data.posX_smooth = data.state.pos.x;
+        data.posY_smooth = data.state.pos.y;
+        data.posZ_smooth = data.state.pos.z;
     } else {
         float pos_filt_rate = 0.3f;
         auto data_prev = track_history.back();
-        data.sposX = data.state.pos.x*pos_filt_rate + data_prev.sposX*(1.0f-pos_filt_rate);
-        data.sposY = data.state.pos.y*pos_filt_rate + data_prev.sposY*(1.0f-pos_filt_rate);
-        data.sposZ = data.state.pos.z*pos_filt_rate + data_prev.sposZ*(1.0f-pos_filt_rate);
+        data.posX_smooth = data.state.pos.x*pos_filt_rate + data_prev.posX_smooth*(1.0f-pos_filt_rate);
+        data.posY_smooth = data.state.pos.y*pos_filt_rate + data_prev.posY_smooth*(1.0f-pos_filt_rate);
+        data.posZ_smooth = data.state.pos.z*pos_filt_rate + data_prev.posZ_smooth*(1.0f-pos_filt_rate);
     }
 
     if (!reset_filters){ // dt is making a big jump with reset_filters
-        data.state.vel.x = smoother_velX2.addSample(data.sposX,dt);
-        data.state.vel.y = smoother_velY2.addSample(data.sposY,dt);
-        data.state.vel.z = smoother_velZ2.addSample(data.sposZ,dt);
+        data.state.vel.x = smoother_velX2.addSample(data.posX_smooth,dt);
+        data.state.vel.y = smoother_velY2.addSample(data.posY_smooth,dt);
+        data.state.vel.z = smoother_velZ2.addSample(data.posZ_smooth,dt);
     }
 
     if (smoother_velX2.ready()) {
@@ -519,9 +521,9 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
         data.state.acc.z = smoother_accZ2.addSample(data.state.vel.z,dt);
     } else if (track_history.size()>0 && !reset_filters){
         auto data_prev = track_history.back();
-        data.state.acc.x = smoother_accX2.addSample((data.sposX-data_prev.sposX)/dt,dt);
-        data.state.acc.y = smoother_accY2.addSample((data.sposY-data_prev.sposY)/dt,dt);
-        data.state.acc.z = smoother_accZ2.addSample((data.sposZ-data_prev.sposZ)/dt,dt);
+        data.state.acc.x = smoother_accX2.addSample((data.posX_smooth-data_prev.posX_smooth)/dt,dt);
+        data.state.acc.y = smoother_accY2.addSample((data.posY_smooth-data_prev.posY_smooth)/dt,dt);
+        data.state.acc.z = smoother_accZ2.addSample((data.posZ_smooth-data_prev.posZ_smooth)/dt,dt);
     }
 
     data.vel_valid = smoother_velX2.ready();
