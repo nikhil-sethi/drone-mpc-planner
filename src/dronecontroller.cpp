@@ -101,8 +101,6 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         data_raw_insect.state.vel = {0};
     }
 
-    check_emergency_kill(data_drone,time);
-
     _dist_to_setpoint = normf(data_drone.state.pos - data_target_new.state.pos); // TODO: [k] update this with raw data in burn mode???
 
     int throttle = 0,roll = 0,pitch = 0,yaw = 0, mode = bf_angle;
@@ -325,6 +323,9 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
 
         [[fallthrough]];
     } case fm_flying_pid: {
+        
+        check_emergency_kill(data_drone,time);
+
         if(!data_drone.pos_valid){
             data_drone.state.pos = _dtrk->drone_startup_location ();
             pos_err_i = {0,0,0};
@@ -361,6 +362,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         break;
     } case fm_reset_heading: {
         mode += bf_headless_disabled;
+        check_emergency_kill(data_drone,time);
         control_model_based(data_drone, data_target_new.pos(), data_target_new.vel(),true);
         auto_yaw = control_yaw(data_drone, 5); // second argument is the yaw gain, move this to the xml files?
         break;
@@ -371,6 +373,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         [[fallthrough]];
     } case fm_landing: {
         mode += bf_headless_disabled;
+        check_emergency_kill(data_drone,time);
         land(data_drone, data_target_new,true);
         break;
     } case fm_disarmed: {
@@ -965,8 +968,7 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
 
 void DroneController::check_emergency_kill(track_data data_drone, double time) {
     // This is usefull as long blind reburn is not working
-    if( (!data_drone.pos_valid && time > start_takeoff_burn_time+1 && start_takeoff_burn_time > 0)
-        && (_flight_mode!=fm_inactive && _flight_mode!=fm_disarmed)){
+    if(!data_drone.pos_valid) {
         kill_cnt_down++;
         if (kill_cnt_down > pparams.fps / 2) {
             _flight_mode = fm_abort_flight;
