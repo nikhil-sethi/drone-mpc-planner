@@ -30,6 +30,13 @@
             <Member Name="z">-2.0</Member>
         </Class>
         <Class Type="Waypoint" Version="1.0">
+            <Member Name="type">wfm_yaw_reset</Member>
+            <Member Name="threshold_mm"></Member>
+            <Member Name="x"></Member>
+            <Member Name="y"></Member>
+            <Member Name="z"></Member>
+        </Class>
+        <Class Type="Waypoint" Version="1.0">
             <Member Name="type">wfm_landing</Member>
             <Member Name="threshold_mm"></Member>
             <Member Name="x"></Member>

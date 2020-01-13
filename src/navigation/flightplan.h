@@ -17,7 +17,8 @@ static const char* waypoint_flight_modes_str[] = {
     "wfm_flower",
     "wfm_brick",
     "wfm_wp_stay",
-    "wfm_landing"
+    "wfm_landing",
+    "wfm_yaw_reset",
     "" // must be the last entry! (check in serializer)
 };
 
@@ -42,7 +43,7 @@ struct Waypoint_Landing : Waypoint {
 };
 struct Waypoint_Yaw_Reset : Waypoint{
     Waypoint_Yaw_Reset(){
-        xyz = cv::Point3f(0,.5f,0); // only for landing wp, relative to the startup location!
+        xyz = cv::Point3f(0.0f,-0.5f,-0.9f);
         threshold_mm = 50;
         mode = wfm_yaw_reset;
     }
@@ -132,6 +133,10 @@ public:
             break;
         } case waypoint_flight_modes::wfm_wp_stay: {
             Waypoint_Stay wp(cv::Point3f(x.value(),y.value(),z.value()));
+            return wp;
+            break;
+        } case waypoint_flight_modes::wfm_yaw_reset: {
+            Waypoint_Yaw_Reset wp;
             return wp;
             break;
         } case waypoint_flight_modes::wfm_brick: {

@@ -246,6 +246,10 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_flower_waypoint;
             else if(current_waypoint->mode == wfm_brick)
                 _navigation_status = ns_brick_waypoint;
+            else if (current_waypoint->mode == wfm_yaw_reset)
+                _navigation_status = ns_initial_reset_yaw;
+            else if (current_waypoint->mode == wfm_landing)
+                _navigation_status = ns_land;
             else
                 _navigation_status = ns_approach_waypoint;
             break;
@@ -311,21 +315,21 @@ void DroneNavigation::update(double time) {
                 _navigation_status=ns_manual;
             break;
         } case ns_initial_reset_yaw: {
+            setpoint_pos_world = current_waypoint->xyz;
             _dctrl->flight_mode(DroneController::fm_initial_reset_yaw);
-            if(time-time_initial_reset_yaw>0.5) {
+            float pos_error = normf( setpoint_pos_world - _trackers->dronetracker()->Last_track_data().pos());
+            if(time-time_initial_reset_yaw>0.5
+                && pos_error<0.3f){
                 _trackers->dronetracker()->detect_yaw();
                 _navigation_status = ns_wait_reset_yaw;
             }
             break;
         } case ns_wait_reset_yaw: {
             _dctrl->flight_mode(DroneController::fm_reset_yaw);
-            cv::Point3f err = _trackers->dronetracker()->Last_track_data().pos() - _trackers->dronetracker()->drone_landing_location();
-            err.y = 0;
-            float horizontal_err = normf(err);
-            if(_trackers->dronetracker()->check_smooth_yaw()
-                    && _trackers->dronetracker()->check_yaw()
-                    && horizontal_err < 0.3f) {
-                _navigation_status = ns_land;
+            if(_trackers->dronetracker()->check_yaw()
+                && _trackers->dronetracker()-> check_smooth_yaw()){
+                _navigation_status = ns_set_waypoint;
+                wpid++;
             }
             break;
         } case ns_land: {
@@ -382,8 +386,6 @@ void DroneNavigation::next_waypoint(Waypoint wp) {
 
     setpoint_vel_world = {0,0,0};
     setpoint_acc_world = {0,0,0};
-
-
 }
 
 void DroneNavigation::deserialize_settings() {
