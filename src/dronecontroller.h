@@ -216,6 +216,7 @@ private:
 
     void check_emergency_kill(track_data);
     void land(track_data data_drone, track_data data_target_new, bool headless_mode_disabled);
+    void update_landing_yoffset(track_data data_drone, track_data data_target_new);
     void calc_ff_landing();
     void update_thrust_during_hovering(track_data data_drone, double time);
 
@@ -241,7 +242,7 @@ private:
     void deserialize_settings();
     void serialize_settings();
 
-    float linear_landing_yoffset = 0.f;
+    float landing_yoffset = 0.f;
     float landing_velocity = -.15f;
     bool feedforward_landing = false;
     track_data previous_drone_data;

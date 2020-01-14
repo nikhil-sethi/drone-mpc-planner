@@ -365,7 +365,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         auto_yaw = control_yaw(data_drone, 5); // second argument is the yaw gain, move this to the xml files?
         break;
     } case fm_landing_start: {
-        linear_landing_yoffset = 0;
+        landing_yoffset = 0;
         _flight_mode = fm_landing;
         auto_yaw = JOY_MIDDLE;
         [[fallthrough]];
@@ -977,20 +977,8 @@ void DroneController::check_emergency_kill(track_data data_drone) {
 }
 
 void DroneController::land(track_data data_drone, track_data data_target_new, bool headless_mode_disabled) {
-    cv::Point3f err = data_drone.pos()-data_target_new.state.pos;
-    err.y = 0;
-    float horizontal_err = normf(err);
-    float horizontal_vel = normf( cv::Point3f(data_drone.vel().x, 0.f, data_drone.vel().z));
-    if(horizontal_err<0.060f
-            && horizontal_vel<0.04f
-            && fabs(data_drone.yaw_smooth)<0.1f
-            && feedforward_landing==false) {
-        linear_landing_yoffset -= landing_velocity/static_cast<float>(pparams.fps);
-    }
-    else if((horizontal_err>0.13f) && linear_landing_yoffset > 0 && feedforward_landing==false ) {
-        linear_landing_yoffset += 0.2f*landing_velocity/static_cast<float>(pparams.fps);
-    }
-    data_target_new.state.pos.y -= linear_landing_yoffset;
+    update_landing_yoffset(data_drone, data_target_new);
+    data_target_new.state.pos.y -= landing_yoffset;
 
     if(data_drone.pos_valid && !feedforward_landing) {
         control_model_based(data_drone, data_target_new.pos(), data_target_new.vel(),headless_mode_disabled);
@@ -1016,6 +1004,23 @@ void DroneController::land(track_data data_drone, track_data data_target_new, bo
     }
 }
 
+void DroneController::update_landing_yoffset(track_data data_drone, track_data data_target_new) {
+    cv::Point3f err = data_drone.pos()-data_target_new.state.pos;
+    err.y = 0;
+    float horizontal_err = normf(err);
+    float horizontal_vel = normf( cv::Point3f(data_drone.vel().x, 0.f, data_drone.vel().z));
+    if(horizontal_err<0.060f
+            && horizontal_vel<0.04f
+            && feedforward_landing==false) {
+        landing_yoffset -= landing_velocity/static_cast<float>(pparams.fps);
+    }
+    else if((horizontal_err>0.13f) 
+            && landing_yoffset > 0 
+            && feedforward_landing==false ) {
+        landing_yoffset += 0.2f*landing_velocity/static_cast<float>(pparams.fps);
+    }
+}
+
 void DroneController::calc_ff_landing() {
     landing_time = 0;
     float est_height_over_ground = previous_drone_data.pos().y+(previous_drone_data.vel().y*1.f/pparams.fps)-_dtrk->drone_landing_location().y;
@@ -1029,7 +1034,8 @@ void DroneController::calc_ff_landing() {
     //    auto_roll = JOY_MIDDLE;
     //    auto_pitch = JOY_MIDDLE;
     auto_yaw = JOY_MIDDLE;
-    auto_throttle = thrust_to_throttle((acc_ff_landing+GRAVITY)/thrust)*0.95f;
+    float ground_effect_compensation = 0.935f;
+    auto_throttle = thrust_to_throttle((acc_ff_landing+GRAVITY)/thrust)*ground_effect_compensation;
 }
 
 void DroneController::read_joystick(void) {
