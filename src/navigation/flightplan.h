@@ -50,6 +50,7 @@ struct Waypoint_Yaw_Reset : Waypoint{
 };
 struct Waypoint_Takeoff : Waypoint{
     Waypoint_Takeoff(){
+        xyz = cv::Point3f(0,1.f,0); // takeoff direction
         mode = wfm_takeoff;
     }
 };
