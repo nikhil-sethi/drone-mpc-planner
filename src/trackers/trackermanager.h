@@ -8,6 +8,7 @@
 #include "replaytracker.h"
 #include "blinktracker.h"
 #include "visiondata.h"
+#include "common.h"
 
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/core/core.hpp>
@@ -123,7 +124,8 @@ public:
 private:
     std::vector<ItemTracker *> _trackers;
     std::ofstream *_logger;
-    VisionData * _visdat;
+    VisionData *_visdat;
+    CameraVolume *_camvol;
     bool initialized = false;
 
     bool enable_viz_max_points = false; // flag for enabling the maxs visiualization
@@ -179,7 +181,7 @@ public:
 
     InsectTracker *insecttracker_best();
     DroneTracker * dronetracker() { return _dtrkr; }
-    void init(ofstream *logger, VisionData *visdat);
+    void init(ofstream *logger, VisionData *visdat, CameraVolume *camvol);
     void update(double time, bool drone_is_active);
     void close();
 

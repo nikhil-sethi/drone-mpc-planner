@@ -23,7 +23,10 @@ void CameraVolume::init(cv::Point3f point_left_top, cv::Point3f point_right_top,
     _p0_right = (cv::Mat_<float>(3,1) << 0, 0, 0);
 
     _n_bottom = (cv::Mat_<float>(3,1) << 0, 1, 0);
-    _p0_bottom = (cv::Mat_<float>(3,1) << 0, b_height, 0);
+    p0_bottom_plane(b_height);
+
+    if(b_depth<-10.f)
+        b_depth = -10.f; //10 m is the max supported depth by the realsense
 
     _n_back = (cv::Mat_<float>(3,1) << 0, 0, 1);
     _p0_back = (cv::Mat_<float>(3,1) << 0, 0, b_depth);
@@ -36,13 +39,6 @@ void CameraVolume::init(cv::Point3f point_left_top, cv::Point3f point_right_top,
     std::cout << "bottom> p0_bottom:" << _p0_bottom.t() << " n_bottom: " << _n_bottom.t() << std::endl;
     std::cout << "back> p0_back:" << _p0_back.t() << " n_back: " << _n_back.t() << std::endl;
 #endif
-
-    double margin_top = 0.2;
-    double margin_bottom = 0.2;
-    double margin_front = 1.5;
-    double margin_back = 0.2;
-    double margin_left = 7.0;
-    double margin_right = 7.0;
 
     _n_bottom_hunt = _n_bottom;
     _n_top_hunt = _n_top;
@@ -59,7 +55,6 @@ void CameraVolume::init(cv::Point3f point_left_top, cv::Point3f point_right_top,
     _n_right_hunt = get_plane_normal_vector (point_right_bottom, point_right_top);
 
     _p0_top_hunt = _p0_top + margin_top * _n_top_hunt;
-    _p0_bottom_hunt = _p0_bottom + margin_bottom * _n_bottom_hunt;
     _p0_front_hunt =  margin_front * _n_front_hunt;
     _p0_back_hunt = _p0_back + margin_back * _n_back_hunt;
     _p0_left_hunt = _p0_left;
@@ -67,6 +62,12 @@ void CameraVolume::init(cv::Point3f point_left_top, cv::Point3f point_right_top,
 
     calc_corner_points_hunt(_p0_front_hunt, _n_front_hunt, _p0_back_hunt, _n_back_hunt, _p0_top_hunt, _n_top_hunt, _p0_bottom_hunt, _n_bottom_hunt, _p0_left_hunt, _n_left_hunt, _p0_right_hunt, _n_right_hunt);
     calc_corner_points(_p0_front, _n_front, _p0_back, _n_back, _p0_top, _n_top, _p0_bottom, _n_bottom, _p0_left, _n_left, _p0_right, _n_right);
+}
+
+
+void CameraVolume::p0_bottom_plane(float b_height){
+    _p0_bottom = (cv::Mat_<float>(3,1) << 0, b_height, 0);
+    _p0_bottom_hunt = _p0_bottom + margin_bottom * _n_bottom;
 }
 
 

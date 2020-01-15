@@ -26,7 +26,7 @@ private:
     double taking_off_ignore_timeout = 0.1; // TODO: make this dependent on the motion_update_iterator_max
 
     float yaw;
-    const float landing_yaw_criteria = 0.05;
+    const float landing_yaw_criteria = 0.035;
 
     bool spinup_detected = false;
     bool liftoff_detected = false;
@@ -143,7 +143,7 @@ public:
     void land() {_drone_tracking_status = dts_landing_init;}
     void detect_yaw() {_drone_tracking_status = dts_detect_yaw;}
     bool check_yaw() { return ((fabs(yaw)<landing_yaw_criteria) && (fabs(yaw)!=0));}
-    bool check_smooth_yaw() { return (fabs(yaw_smoother.latest())<0.035f);}
+    bool check_smooth_yaw() { return (fabs(yaw_smoother.latest())<landing_yaw_criteria);}
 
 
     void control_predicted_drone_location(cv::Point2f drone_control_predicted_image_location, cv::Point3f drone_control_predicted_world_location) {

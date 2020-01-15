@@ -4,9 +4,10 @@ using namespace std;
 
 namespace tracking {
 
-void TrackerManager::init(std::ofstream *logger,VisionData *visdat) {
+void TrackerManager::init(std::ofstream *logger,VisionData *visdat, CameraVolume *camvol) {
     _visdat = visdat;
     _logger = logger;
+    _camvol = camvol;
 
     enable_viz_max_points = false;
     enable_viz_diff = true;
@@ -99,6 +100,7 @@ void TrackerManager::update_trackers(double time,long long frame_number, bool dr
             if (_mode == mode_locate_drone) {
                 if (btrkr->state() == BlinkTracker::bds_found) {
                     _dtrkr->set_drone_landing_location(btrkr->image_item().pt(),btrkr->world_item().iti.disparity,btrkr->smoothed_size_image(),btrkr->world_item().pt);
+                    _camvol->p0_bottom_plane(_dtrkr->drone_startup_location().y);
                     _mode = mode_wait_for_insect;
                 }
             } else if (btrkr->ignores_for_other_trkrs.size() == 0) {

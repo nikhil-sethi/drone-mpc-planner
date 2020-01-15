@@ -367,7 +367,7 @@ void DroneNavigation::next_waypoint(Waypoint wp) {
     if (wp.mode == wfm_takeoff) {
         cv::Point3f p = _trackers->dronetracker()->drone_startup_location();
         setpoint_pos_world =  p + wp.xyz;
-    } else if (wp.mode == wfm_landing ) {
+    } else if (wp.mode == wfm_landing) {
         cv::Point3f p = _trackers->dronetracker()->drone_landing_location();
         setpoint_pos_world =  p + wp.xyz;
     } else {

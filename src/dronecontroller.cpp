@@ -1034,7 +1034,7 @@ void DroneController::calc_ff_landing() {
     //    auto_roll = JOY_MIDDLE;
     //    auto_pitch = JOY_MIDDLE;
     auto_yaw = JOY_MIDDLE;
-    float ground_effect_compensation = 0.935f;
+    float ground_effect_compensation = 0.94f;
     auto_throttle = thrust_to_throttle((acc_ff_landing+GRAVITY)/thrust)*ground_effect_compensation;
 }
 

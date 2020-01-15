@@ -173,6 +173,8 @@ public:
     /** @brief Calculates the distance to the borders */
     float calc_distance_to_borders(track_data data_drone);
 
+    void p0_bottom_plane(float b_depth);
+
     cv::Mat top_right_front() {return _top_right_front;}
     cv::Mat top_right_back() {return _top_right_back;}
     cv::Mat top_left_front() {return _top_left_front;}
@@ -238,6 +240,15 @@ private:
     cv::Mat _p0_bottom_hunt;
     cv::Mat _n_back_hunt;
     cv::Mat _p0_back_hunt;
+
+
+    // Margins betweens sight-volume and hunt-volume
+    double margin_top = 0.2;
+    double margin_bottom = 0.2;
+    double margin_front = 1.5;
+    double margin_back = 0.2;
+    double margin_left = 7.0;
+    double margin_right = 7.0;
 
     float minimum_height = 0.3f; /**< Correction distance for the ground plane. */
 

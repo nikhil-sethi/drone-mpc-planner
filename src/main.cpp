@@ -568,7 +568,7 @@ void init() {
         cam.init();
 
     visdat.init(cam.Qf, cam.frameL,cam.frameR,cam.camera_angle(),cam.measured_gain(),cam.depth_background_mm); // do after cam update to populate frames
-    trackers.init(&logger, &visdat);
+    trackers.init(&logger, &visdat, &(cam.camera_volume));
     dnav.init(&logger,&trackers,&dctrl,&visdat, &(cam.camera_volume),replay_dir);
     dctrl.init(&logger,log_replay_mode,&rc,trackers.dronetracker(), &(cam.camera_volume));
     dprdct.init(&visdat,trackers.dronetracker(),trackers.insecttracker_best(),&dctrl);
