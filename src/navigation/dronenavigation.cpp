@@ -78,15 +78,12 @@ void DroneNavigation::update(double time) {
         repeat  = false;
         switch (_navigation_status) {
         case ns_init: {
-            if (pparams.drone == drone_trashcan)
-                _dctrl->LED(true);
+            _dctrl->LED(true);
             if (time > 1) // skip the first second or so, e.g. auto exposure may give heavily changing images
                 _navigation_status = ns_locate_drone;
             _trackers->mode(tracking::TrackerManager::mode_idle);
             break;
         } case ns_locate_drone: {
-            if(pparams.drone != drone_trashcan)
-                _dctrl->blink_by_binding(true);
             _trackers->mode(tracking::TrackerManager::mode_locate_drone);
             _visdat->reset_motion_integration();
             _visdat->disable_fading = true;
@@ -94,17 +91,8 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_wait_locate_drone: {
             static double __attribute__((unused)) prev_time = time;
-            if (pparams.drone != drone_trashcan) {
-                if (time - prev_time > 7 && time - prev_time < 8) {
-                    _dctrl->blink_by_binding(false); // refresh the blinking
-                } else if (abs(time - prev_time) > 8.5) {
-                    prev_time = time;
-                    _dctrl->blink_by_binding(true);
-                }
-            } else {
-                if (static_cast<float>(time - prev_time) > dparams.blink_period)
-                    _dctrl->blink(time);
-            }
+            if (static_cast<float>(time - prev_time) > dparams.blink_period)
+                _dctrl->blink(time);
             if (_trackers->mode() != tracking::TrackerManager::mode_locate_drone) {
                 _navigation_status = ns_located_drone;
                 time_located_drone = time;
@@ -112,10 +100,7 @@ void DroneNavigation::update(double time) {
 
             break;
         } case ns_located_drone: {
-            if (pparams.drone != drone_trashcan)
-                _dctrl->blink_by_binding(false);
-            else
-                _dctrl->LED(true);
+            _dctrl->LED(true);
             _trackers->mode(tracking::TrackerManager::mode_idle);
             _visdat->disable_fading = false;
             if (time-time_located_drone>1.0 && (_dctrl->drone_state_inactive() || pparams.joystick != rc_none)) { // delay until blinking stopped
