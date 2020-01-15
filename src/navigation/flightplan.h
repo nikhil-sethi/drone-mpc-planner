@@ -43,7 +43,7 @@ struct Waypoint_Landing : Waypoint {
 };
 struct Waypoint_Yaw_Reset : Waypoint{
     Waypoint_Yaw_Reset(){
-        xyz = cv::Point3f(0.0f,-0.5f,-0.9f);
+        xyz = cv::Point3f(0.0f,-0.7f,-1.2f);
         threshold_mm = 50;
         mode = wfm_yaw_reset;
     }
