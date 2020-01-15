@@ -12,7 +12,8 @@
     "editor.defaultFormatter": "chiehyu.vscode-astyle",
     "editor.tabSize": 4,
     "search.exclude": {
-        "**/pc/**": true,
+        "**/pc/build*/**": true,
+        "**/pc/insect_logs/**": true,
         "**/Arduino/**": true,
         "**/analysis/**": true,
         "**/config/**": true,
