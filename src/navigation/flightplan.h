@@ -36,7 +36,7 @@ protected:
 };
 struct Waypoint_Landing : Waypoint {
     Waypoint_Landing() {
-        xyz = cv::Point3f(0,.5f,0); // only for landing wp, relative to the startup location!
+        xyz = cv::Point3f(0,.5f,-.07f); // only for landing wp, relative to the startup location!
         threshold_mm = 50;
         mode = wfm_landing;
     }

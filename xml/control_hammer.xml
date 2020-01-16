@@ -6,11 +6,11 @@
     <Member Name="ki_pos_pitch">10</Member>
     <Member Name="ki_pos_throttle">60</Member>
     <Member Name="kd_pos_roll">430</Member>
-    <Member Name="kd_pos_pitch">350</Member>
-    <Member Name="kd_pos_throttle">620</Member>
+    <Member Name="kd_pos_pitch">400</Member>
+    <Member Name="kd_pos_throttle">630</Member>
     <Member Name="kp_v_roll">112</Member>
     <Member Name="kp_v_pitch">230</Member>
-    <Member Name="kp_v_throttle">170</Member>
+    <Member Name="kp_v_throttle">180</Member>
     <Member Name="kd_v_roll">35</Member>
     <Member Name="kd_v_pitch">30</Member>
     <Member Name="kd_v_throttle">100</Member>
