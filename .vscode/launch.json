@@ -6,7 +6,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/pc/build-vscode/pats",
-            "args": ["logging"],
+            "args": ["20200114_koppert_blinkfail"],
             "stopAtEntry": false,
             "preLaunchTask": "make",
             "cwd": "${workspaceFolder}/pc/build-vscode",

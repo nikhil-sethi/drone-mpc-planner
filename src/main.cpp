@@ -669,6 +669,11 @@ int main( int argc, char **argv )
             dparams.deserialize("../../xml/" + string(drone_types_str[pparams.drone]) + ".xml");
             pparams.serialize("./logging/pats.xml");
             dparams.serialize("./logging/drone.xml");
+
+            if (!file_exist("./logging/pats.xml")) {
+                std::cout << "Super weird bug error of disappearing xml files #183 HAS HAPPPENED JUST HERE JUST NOW! Exiting for debugging purposes." << std::endl;
+                exit(1);
+            }
         } else {
             pparams.deserialize(replay_dir + "/pats.xml");
             dparams.deserialize(replay_dir + "/drone.xml");
