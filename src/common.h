@@ -121,6 +121,7 @@ static const char* tx_protocols_str[] = {
 enum drone_types {
     drone_none,
     drone_trashcan,
+    drone_hammer,
     drone_tinywhoop_d16,
     drone_tinywhoop_d8,
     drone_cx10
@@ -128,6 +129,7 @@ enum drone_types {
 static const char* drone_types_str[] = {
     "drone_none",
     "drone_trashcan",
+    "drone_hammer",
     "drone_tinywhoop_d16",
     "drone_tinywhoop_d8",
     "drone_cx10",
