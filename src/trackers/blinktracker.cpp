@@ -35,10 +35,10 @@ void BlinkTracker::track(double time) {
         if (n_frames_lost == 0) {
             _blinking_drone_status = bds_1_blink_off;
             blink_time_start = time;
+            _score_threshold = 100; // increase score threshold after first sightings, so that the tracker rejects moving blobs
         }
         break;
     } case bds_1_blink_off: {
-        _score_threshold = 250; // increase score threshold after first sightings, so that the tracker rejects moving blobs
         ItemTracker::track(time);
         _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
         break;
