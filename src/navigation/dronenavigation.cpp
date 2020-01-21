@@ -251,7 +251,7 @@ void DroneNavigation::update(double time) {
                     && _trackers->dronetracker()->n_frames_tracking>5)
             {
                 if (current_waypoint->mode == wfm_landing) {
-                    _navigation_status = ns_initial_reset_yaw;
+                    _navigation_status = ns_land;
                     time_initial_reset_yaw = time;
                 } else if (wpid < waypoints.size()) { // next waypoint in flight plan
                     wpid++;
@@ -301,6 +301,8 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_initial_reset_yaw: {
             _dctrl->flight_mode(DroneController::fm_initial_reset_yaw);
+            setpoint_pos_world = Waypoint_Yaw_Reset().xyz;
+
             float pos_error = normf( setpoint_pos_world - _trackers->dronetracker()->Last_track_data().pos());
             if(time-time_initial_reset_yaw>0.5
                 && pos_error<0.3f){
@@ -312,8 +314,12 @@ void DroneNavigation::update(double time) {
             _dctrl->flight_mode(DroneController::fm_reset_yaw);
             if(_trackers->dronetracker()->check_yaw()
                 && _trackers->dronetracker()-> check_smooth_yaw()){
-                _navigation_status = ns_set_waypoint;
-                wpid++;
+                    if(_nav_flight_mode == nfm_waypoint){
+                        _navigation_status = ns_set_waypoint;
+                        wpid++;
+                    } else {
+                        _navigation_status = ns_goto_landing_waypoint;
+                    }
             }
             break;
         } case ns_land: {
