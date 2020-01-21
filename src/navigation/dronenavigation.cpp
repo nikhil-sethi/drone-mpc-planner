@@ -78,16 +78,24 @@ void DroneNavigation::update(double time) {
         repeat  = false;
         switch (_navigation_status) {
         case ns_init: {
-            _dctrl->LED(true);
-            if (time > 1) // skip the first second or so, e.g. auto exposure may give heavily changing images
-                _navigation_status = ns_locate_drone;
+            _visdat->reset_motion_integration();
+            if (time > 0.9) { // skip first second due to auto exposure
+                _navigation_status = ns_locate_drone_init;
+            }
             _trackers->mode(tracking::TrackerManager::mode_idle);
             break;
-        } case ns_locate_drone: {
-            _trackers->mode(tracking::TrackerManager::mode_locate_drone);
-            _visdat->reset_motion_integration();
-            _visdat->disable_fading = true;
-            _navigation_status = ns_wait_locate_drone;
+        } case ns_locate_drone_init: {
+            _dctrl->LED(true);
+            locate_drone_start_time = time;
+            _navigation_status = ns_locate_drone_wait_led_on;
+            [[fallthrough]];
+        } case ns_locate_drone_wait_led_on: {
+            if (time - locate_drone_start_time > 0.1) {
+                _visdat->reset_motion_integration();
+                _visdat->disable_fading = true;
+                _trackers->mode(tracking::TrackerManager::mode_locate_drone);
+                _navigation_status = ns_wait_locate_drone;
+            }
             break;
         } case ns_wait_locate_drone: {
             static double __attribute__((unused)) prev_time = time;
@@ -304,8 +312,7 @@ void DroneNavigation::update(double time) {
             setpoint_pos_world = Waypoint_Yaw_Reset().xyz;
 
             float pos_error = normf( setpoint_pos_world - _trackers->dronetracker()->Last_track_data().pos());
-            if(time-time_initial_reset_yaw>0.5
-                && pos_error<0.3f){
+            if(time-time_initial_reset_yaw>0.5 && pos_error<0.3f) {
                 _trackers->dronetracker()->detect_yaw();
                 _navigation_status = ns_wait_reset_yaw;
             }
@@ -313,13 +320,13 @@ void DroneNavigation::update(double time) {
         } case ns_wait_reset_yaw: {
             _dctrl->flight_mode(DroneController::fm_reset_yaw);
             if(_trackers->dronetracker()->check_yaw()
-                && _trackers->dronetracker()-> check_smooth_yaw()){
-                    if(_nav_flight_mode == nfm_waypoint){
-                        _navigation_status = ns_set_waypoint;
-                        wpid++;
-                    } else {
-                        _navigation_status = ns_goto_landing_waypoint;
-                    }
+                    && _trackers->dronetracker()-> check_smooth_yaw()) {
+                if(_nav_flight_mode == nfm_waypoint) {
+                    _navigation_status = ns_set_waypoint;
+                    wpid++;
+                } else {
+                    _navigation_status = ns_goto_landing_waypoint;
+                }
             }
             break;
         } case ns_land: {
@@ -343,7 +350,7 @@ void DroneNavigation::update(double time) {
         } case ns_wait_after_landing: {
             _visdat->delete_from_motion_map(_trackers->dronetracker()->drone_startup_im_location()*pparams.imscalef,_trackers->dronetracker()->drone_startup_im_disparity(),_trackers->dronetracker()->drone_startup_im_size()*pparams.imscalef,1);
             if (static_cast<float>(time - landed_time) > time_out_after_landing )
-                _navigation_status = ns_locate_drone;
+                _navigation_status = ns_locate_drone_init;
             break;
         } case ns_manual: { // also used for disarmed
             wpid = 0;

@@ -40,35 +40,8 @@ private:
 
     void next_waypoint(Waypoint wp);
 
-
-    enum navigation_states {
-        ns_init=0,
-        ns_locate_drone,
-        ns_wait_locate_drone,
-        ns_located_drone,
-        ns_wait_for_takeoff_command,
-        ns_wait_for_insect,
-        ns_takeoff,
-        ns_taking_off,
-        ns_take_off_completed,
-        ns_start_the_chase,
-        ns_chasing_insect_ff,
-        ns_chasing_insect,
-        ns_set_waypoint,
-        ns_approach_waypoint,
-        ns_flower_waypoint,
-        ns_brick_waypoint,
-        ns_goto_landing_waypoint,
-        ns_initial_reset_yaw,
-        ns_wait_reset_yaw,
-        ns_land,
-        ns_landing,
-        ns_landed,
-        ns_wait_after_landing,
-        ns_manual, // also for disarmed
-        ns_drone_problem
-    };
     navigation_states _navigation_status = ns_init;
+    double locate_drone_start_time = 0;
 
     uint wpid = 0;
     std::vector<Waypoint> waypoints;
@@ -145,7 +118,7 @@ public:
     }
 
     void redetect_drone_location() {
-        _navigation_status = ns_locate_drone;
+        _navigation_status = ns_locate_drone_init;
     }
 
     cv::Point2i drone_v_setpoint_im() {
