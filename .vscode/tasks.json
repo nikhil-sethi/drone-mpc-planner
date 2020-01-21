@@ -51,6 +51,7 @@
             "label": "Run (no debug)",
             "type": "shell",
             "command": "${workspaceFolder}/pc/build-vscode/pats",
+            "args": ["1"],
             "options": {
                 "cwd": "${workspaceRoot}/pc/build-vscode"
             },
