@@ -51,7 +51,7 @@ struct processed_blobs {
             else
                 return cv::Scalar(255,255,55); // light blue
         } else if (trackers.size()>1)
-            return cv::Scalar(200,255,250);
+            return cv::Scalar(0,128,255); // orange
         ItemTracker * trkr = trackers.at(0);
         if (trkr->type() == tt_drone)
             return cv::Scalar(0,255,0); // green
@@ -59,7 +59,7 @@ struct processed_blobs {
             return cv::Scalar(0,0,255); // red
         else if (trkr->type() == tt_replay)
             return cv::Scalar(0,0,180); // dark red
-        else if (trkr->type() == tt_replay)
+        else if (trkr->type() == tt_blink)
             return cv::Scalar(255,0,255); // pink
         return cv::Scalar(0,0,0);
     }

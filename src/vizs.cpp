@@ -537,7 +537,7 @@ void Visualizer::draw_tracker_viz() {
         putText(diff,"Blink",cv::Point(3,diff.rows-48),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(255,0,255));
         putText(diff,"Ignored",cv::Point(3,diff.rows-60),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,128,0));
         putText(diff,"Untracked",cv::Point(3,diff.rows-72),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(255,255,55));
-        putText(diff,"Multitracked",cv::Point(3,diff.rows-84),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(200,255,250));
+        putText(diff,"Multitracked",cv::Point(3,diff.rows-84),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,128,255));
         cv::Mat ext_res_frame = cv::Mat::zeros(resFrame.rows,resFrame.cols+diff.cols,CV_8UC3);
         resFrame.copyTo(ext_res_frame(cv::Rect(0,0,resFrame.cols,resFrame.rows)));
         diff.copyTo(ext_res_frame(cv::Rect(resFrame.cols,frameL_small_drone.rows,diff.cols,diff.rows)));
