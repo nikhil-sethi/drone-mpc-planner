@@ -29,8 +29,10 @@ void BlinkTracker::track(double time) {
         _blinking_drone_status = bds_searching;
         [[fallthrough]];
     } case bds_searching: {
-        if (attempts > 4)
+        if (attempts > 4) {
             _blinking_drone_status = bds_failed;
+            fail_time_start = time;
+        }
         ItemTracker::track(time);
         if (n_frames_lost == 0) {
             _blinking_drone_status = bds_1_blink_off;
@@ -71,14 +73,15 @@ void BlinkTracker::track(double time) {
         append_log(); // no tracking needed in this stage
         break;
     } case bds_failed: {
-        //just keep tracking it until it the item is lost;
-        ItemTracker::track(time);
+        //just keep tracking it until it the item is lost, or time out after 2 seconds
+        if (fail_time_start - time > 2)
+            _blinking_drone_status = bds_failed_delete_me;
         append_log(); // no tracking needed in this stage
+        break;
+    } case bds_failed_delete_me: {
+        append_log(); // no tracking needed in this stage
+        break;
     }
-    }
-
-    if (_image_item.valid && _blinking_drone_status > bds_searching ) {
-        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,static_cast<int>(roundf(_image_item.size*1.2f*pparams.imscalef))); // TODO: does not work properly
     }
 
     clean_ignore_blobs(time);
