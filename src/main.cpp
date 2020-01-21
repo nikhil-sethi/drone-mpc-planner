@@ -633,12 +633,13 @@ void close(bool sig_kill) {
 void wait_for_dark() {
     std::cout << "Insect logging mode, check if dark." << std::endl;
     while(true) {
-        float expo = cam.measure_auto_exposure();
+        auto [expo,frameL] = cam.measure_auto_exposure();
         auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
         std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << " Measured exposure: " << expo << std::endl;
         if (expo >pparams.darkness_threshold) {
             break;
         }
+        cv::imwrite("../../../../pats_monitor_tmp.jpg", frameL);
         usleep(60000000); // measure every 1 minute
     }
 }

@@ -78,7 +78,7 @@ public:
 
     void update();
 
-    float measure_auto_exposure();
+    std::tuple<float,cv::Mat> measure_auto_exposure();
 
     unsigned long long frame_number() {return _frame_number;}
     double frame_time() {return _frame_time;}

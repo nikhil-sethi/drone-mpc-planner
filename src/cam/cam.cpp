@@ -527,7 +527,7 @@ void Cam::check_light_level() {
     cam.stop();
 }
 
-float Cam::measure_auto_exposure() {
+std::tuple<float,cv::Mat> Cam::measure_auto_exposure() {
 
     if (!dev_initialized) {
         rs2::context ctx;
@@ -582,7 +582,8 @@ float Cam::measure_auto_exposure() {
     else if (actual_exposure_was_measured!=i+1)
         std::cout << "Not all frames contained exosure info: " << actual_exposure_was_measured << " / " << i << std::endl;
 
-    return new_expos;
+    return std::make_tuple(new_expos,frameLt);
+
 }
 
 void Cam::calib_pose(bool also_do_depth) {
