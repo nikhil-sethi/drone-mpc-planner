@@ -85,7 +85,7 @@ void BlinkTracker::track(double time) {
 }
 
 BlinkTracker::blinking_drone_states BlinkTracker::detect_blink(double time, bool found) {
-    const float margin = dparams.blink_period/3.f;
+    const float margin = 0.75f*dparams.blink_period;
     if (Last_track_data().vel_valid && norm(Last_track_data().vel()) > 0.3)
         return bds_restart_search;
     float blink_period = static_cast<float>(time - blink_time_start);
