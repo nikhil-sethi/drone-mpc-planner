@@ -288,15 +288,28 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
             auto props = blob.props;
             if (!blob.tracked() && !blob.ignored && _trackers.size() < 30) { // if so, start tracking it!
                 if (_mode == mode_locate_drone) {
-                    BlinkTracker  * bt;
-                    bt = new BlinkTracker();
-                    bt->init(_visdat,_trackers.size());
-                    bt->calc_world_item(props,time);
-                    if (props->world_props.valid) {
-                        tracking::WorldItem w(tracking::ImageItem(*props,_visdat->frame_id,100,blob.id),props->world_props);
-                        bt->world_item(w);
-                        _trackers.push_back( bt);
-                        blob.trackers.push_back(bt);
+
+                    bool too_close = false;
+                    for (auto btrkr : _trackers) {
+                        if (btrkr->type() == tt_blink) {
+                            if (normf(btrkr->image_item().pt() - cv::Point2f(props->x,props->y))  < roi_radius) {
+                                too_close = true;
+                            }
+                        }
+                    }
+
+                    if (!too_close) {
+                        BlinkTracker  * bt;
+                        bt = new BlinkTracker();
+
+                        bt->init(_visdat,_trackers.size());
+                        bt->calc_world_item(props,time);
+                        if (props->world_props.valid) {
+                            tracking::WorldItem w(tracking::ImageItem(*props,_visdat->frame_id,100,blob.id),props->world_props);
+                            bt->world_item(w);
+                            _trackers.push_back( bt);
+                            blob.trackers.push_back(bt);
+                        }
                     }
                 } else if (_mode != mode_idle && _mode != mode_drone_only) {
                     default_itrkr->calc_world_item(props,time);
