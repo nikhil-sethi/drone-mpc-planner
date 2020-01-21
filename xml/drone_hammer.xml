@@ -13,5 +13,5 @@
     <Member Name="tx">tx_frskyd8</Member>
     <Member Name="mode3d">false</Member>
     <Member Name="control">control_hammer</Member>
-    <Member Name="spinup_throttle_non3d">spinup_throttle_non3d</Member>
+    <Member Name="spinup_throttle_non3d">304</Member>
 </SerializableClass>

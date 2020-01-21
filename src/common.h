@@ -543,7 +543,7 @@ public: float blink_period;
 public: tx_protocols tx;
 public: bool mode3d;
 public: string control;
-public: float spinup_throttle_non3d;
+public: int spinup_throttle_non3d;
 
 private: xInt _initial_hover_throttle;
 private: xFloat _throttle_bank_factor;
@@ -559,7 +559,7 @@ private: xInt _drone_blink_strength;
 private: xTx_protocol _tx;
 private: xBool _mode3d;
 private: xString _control;
-private: xFloat _spinup_throttle_non3d;
+private: xInt _spinup_throttle_non3d;
 
 public: DroneParameters() {
         // Set the XML class name.
@@ -621,7 +621,7 @@ public: void deserialize(std::string filepath) {
         tx = _tx.value();
         mode3d = _mode3d.value();
         control = _control.value();
-        spinup_throttle_non3d = _spinup_throttle_non3d.value();
+        spinup_throttle_non3d = 304; //TMP
     }
 
 public: void serialize(std::string filepath) {
