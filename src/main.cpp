@@ -307,7 +307,7 @@ void process_frame(Stereo_Frame_Data data) {
 
     if (pparams.has_screen) {
         visualizer.add_plot_sample();
-        visualizer.update_tracker_data(visdat.frameL,dnav.setpoint().pos(),data.time, draw_plots);
+        visualizer.update_tracker_data(visdat.frameL,dnav.setpoint().pos(),data.time, draw_plots, trackers.insecttracker_best());
         if (pparams.video_result) {
             if (log_replay_mode)
                 output_video_results.block(); // only use this for rendering

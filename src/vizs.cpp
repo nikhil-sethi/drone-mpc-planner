@@ -376,7 +376,7 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
 }
 
 
-void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, double time, bool draw_plots) {
+void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, double time, bool draw_plots, tracking::InsectTracker *itrkr) {
     enable_plots = draw_plots;
     if (new_tracker_viz_data_requested) {
         lock_frame_data.lock();
@@ -393,6 +393,7 @@ void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, doubl
                 min_dis = dis;
         }
 
+        _itrkr = itrkr;
         tracker_viz_base_data.frameL = frameL;
         tracker_viz_base_data.dis = dis;
         tracker_viz_base_data.min_dis = min_dis;
