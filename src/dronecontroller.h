@@ -450,4 +450,10 @@ public:
     void LED(bool b) {
         _rc->LED(b);
     }
+
+    float position_error() {
+        return norm(cv::Point3f(filter_pos_err_x.current_output(), filter_pos_err_y.current_output(), filter_pos_err_z.current_output()));
+    }
+
+    bool blocked();
 };

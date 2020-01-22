@@ -227,6 +227,9 @@ void DroneNavigation::update(double time) {
                 setpoint_acc_world = _iceptor.target_accelleration();
             }
 
+            if(drone_is_blocked())
+                _navigation_status = ns_drone_problem;
+
             if (_nav_flight_mode == nfm_manual)
                 _navigation_status=ns_manual;
             else if (_iceptor.insect_cleared())
@@ -365,6 +368,7 @@ void DroneNavigation::update(double time) {
             }
             break;
         } case ns_drone_problem: {
+            _dctrl->flight_mode(DroneController::fm_abort_flight);
             break;
         }
         }
@@ -460,5 +464,13 @@ cv::Point3f DroneNavigation::square_point(cv::Point3f center, float width, float
     //float y_offset = width/2 * sin(si/width*2*M_PIf32);
 
     return {center.x+x_offset, center.y+y_offset, center.z+z_offset};
+}
+
+bool DroneNavigation::drone_is_blocked() {
+   float speed = norm(_trackers->dronetracker()->Last_track_data().vel()); 
+   float error = _dctrl->position_error();
+   if(_dctrl->auto_throttle>1200 && speed<0.1f && error>0.3f)
+        return true;
+   return false;
 }
 }

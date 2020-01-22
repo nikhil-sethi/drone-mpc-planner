@@ -793,7 +793,7 @@ std::tuple<cv::Point3f, cv::Point3f> DroneController::keep_in_volume_check(track
         setpoint_pos =_camvol->center_of_volume();
         setpoint_vel = {0};
         flight_submode_name = "fm_pid_keep_in_volume";
-    } else {
+    } else if(flight_submode_name == "fm_pid_keep_in_volume"){
         flight_submode_name = "";
     }
 
@@ -1235,3 +1235,6 @@ void DroneController::close () {
         initialized = false;
     }
 }
+
+
+
