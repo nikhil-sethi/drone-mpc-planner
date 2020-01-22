@@ -46,6 +46,12 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
     frame_id = new_frame_id;
     _current_frame_time = time;
 
+    if (overexposed_map.cols > 0) {
+        cv::Mat tmp;
+        frameL.copyTo(tmp,overexposed_map);
+        frameL = tmp;
+    }
+
     cv::Mat frameL_prev16 = frameL16;
     cv::Mat frameR_prev16 = frameR16;
     cv::Mat tmpL;
@@ -166,6 +172,15 @@ void VisionData::collect_no_drone_frames(cv::Mat dL) {
         imwrite(motion_noise_map_wfn,motion_noise_map);
     }
 
+}
+
+void VisionData::create_overexposed_removal_mask(cv::Point2f drone_im_location, float blink_size) {
+    int dilation_size = 5;
+    cv::Mat element = getStructuringElement( cv::MORPH_RECT,cv::Size( 2*dilation_size + 1, 2*dilation_size+1 ),cv::Point( dilation_size, dilation_size ) );
+    cv::Mat mask = frameL < 254;
+    cv::circle(mask,drone_im_location,blink_size,0);
+    cv::erode(mask,overexposed_map,element);
+    _reset_motion_integration = true;
 }
 
 void VisionData::enable_background_motion_map_calibration(float duration) {

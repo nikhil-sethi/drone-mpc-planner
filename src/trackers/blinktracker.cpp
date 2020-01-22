@@ -82,7 +82,6 @@ void BlinkTracker::track(double time) {
         _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
         break;
     } case bds_6_blink_off_calib: {
-        _visdat->enable_background_motion_map_calibration(dparams.blink_period*0.8f);  //0.8 to prevent picking up the upcoming blink in the background calib
         _blinking_drone_status = bds_6_blink_off;
         [[fallthrough]];
     } case bds_6_blink_off: {

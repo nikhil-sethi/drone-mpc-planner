@@ -73,6 +73,8 @@ private:
     cv::Mat diffL16_back;
     double _current_frame_time = 0;
 
+    cv::Mat overexposed_map;
+
     double prev_time_brightness_check = 0;
     float prev_brightness;
     bool _reset_motion_integration = false;
@@ -120,6 +122,7 @@ public:
     }
     void enable_background_motion_map_calibration(float duration);
     bool calibrating_background() {return _calibrating_background;}
+    void create_overexposed_removal_mask(cv::Point2f drone_im_location,float blink_size);
 
     void delete_from_motion_map(cv::Point p, int disparity, int radius, int duration);
     void reset_spot_on_motion_map(cv::Point p, int disparity, int radius, int duration);

@@ -113,6 +113,8 @@ void DroneNavigation::update(double time) {
             _trackers->mode(tracking::TrackerManager::mode_idle);
             _visdat->disable_fading = false;
             if (time-time_located_drone>1.0 && (_dctrl->drone_state_inactive() || pparams.joystick != rc_none)) { // delay until blinking stopped
+                _visdat->enable_background_motion_map_calibration(2);
+                _visdat->create_overexposed_removal_mask(_trackers->dronetracker()->drone_startup_im_location(),_trackers->dronetracker()->drone_startup_im_size());
                 if (_nav_flight_mode == nfm_hunt)
                     _navigation_status = ns_wait_for_insect;
                 else if (_nav_flight_mode == nfm_manual)
