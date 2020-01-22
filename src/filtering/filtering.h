@@ -36,6 +36,10 @@ public:
         y = time_constant_factor*(K*input - y) + y; //https://de.wikipedia.org/wiki/PT1-Glied
         return y;
     }
+
+    float current_output() {
+        return y;
+    }
 };
 
 class Tf_PT2_f {
@@ -69,6 +73,10 @@ public:
     void internal_states(float init_yk1, float init_yk2) {
         yk = init_yk1;
         yk1 = init_yk2;
+    }
+    
+    float current_output() {
+        return yk;
     }
 };
 
@@ -104,6 +112,10 @@ public:
         yk = init_yk1;
         yk1 = init_yk2;
     }
+
+    cv::Point3f current_output() {
+        return yk;
+    }
 };
 
 class Tf_D_f {
@@ -125,6 +137,10 @@ public:
     float new_sample(float input) {
         y = (input-u_prev)/sample_time;
         u_prev = input;
+        return y;
+    }
+
+    float current_output() {
         return y;
     }
 };
