@@ -512,3 +512,20 @@ float deadzone( float v, float lo, float hi ) {
         v = 0;
     return v;
 }
+
+float angle_to_horizontal(cv::Point3f direction) {
+    //https://onlinemschool.com/math/library/analytic_geometry/plane_line/
+    float A = 0;
+    float B = 1;
+    float C = 0;
+
+    return asinf(abs(A*direction.x + B*direction.y + C*direction.z) /normf({A, B, C}) /normf(direction));
+}
+
+cv::Point3f lowest_direction_to_horizontal(cv::Point3f direction, float min_angle) {
+    if(angle_to_horizontal(direction)<min_angle){
+        direction.y = tan(min_angle) / normf({direction.x, direction.z});
+    }
+    direction /= norm(direction);
+    return direction;
+}

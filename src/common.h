@@ -25,6 +25,9 @@ float normf(cv::Point3f m);
 float deadzone( float v, float lo, float hi );
 cv::Point3f deadzone(cv::Point3f p,float lo, float hi);
 
+float angle_to_horizontal(cv::Point3f direction);
+cv::Point3f lowest_direction_to_horizontal(cv::Point3f direction, float min_angle);
+
 const float rad2deg = 180.f/M_PIf32;
 const float deg2rad = M_PIf32/180.f;
 
