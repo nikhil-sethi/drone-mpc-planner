@@ -533,7 +533,7 @@ std::tuple<int,int,float,cv::Point3f> DroneController::calc_directional_burn(sta
         }
     }
 
-
+    burn_direction = lowest_direction_to_horizontal(burn_direction, min_takeoff_angle);
 
     auto [roll_quat, pitch_quat] = acc_to_quaternion(burn_direction);
     int roll_cmd =  roundf((roll_quat * JOY_BOUND_RANGE / 2.f) + JOY_MIDDLE); // convert to RC commands range
