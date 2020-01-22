@@ -572,7 +572,6 @@ std::tuple<float,cv::Mat> Cam::measure_auto_exposure() {
                 tmp_last_exposure_frame_id = i;
             if (i - tmp_last_exposure_frame_id >= 15)
                 break;
-            std::cout << "i: " << i << " " << tmp_exposure << " vs " << new_expos << std::endl;
             tmp_exposure = new_expos;
         }
     }

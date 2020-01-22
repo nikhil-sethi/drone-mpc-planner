@@ -640,7 +640,7 @@ void wait_for_dark() {
             break;
         }
         cv::imwrite("../../../../pats_monitor_tmp.jpg", frameL);
-        usleep(60000000); // measure every 1 minute
+        usleep(10000000); // measure every 1 minute
     }
 }
 
