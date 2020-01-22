@@ -396,7 +396,7 @@ private: xInt _imscalef;
 private: xString _flightplan;
 private: xInt _live_image_frq;
 private: xFloat _max_cam_roll;
-private: xInt _drone_led_strength;
+
 
 public: int wdt_timeout_us,darkness_threshold;
 public: uint fps;
@@ -410,7 +410,8 @@ public: int imscalef;
 public: std::string flightplan;
 public: int live_image_frq;
 public: float max_cam_roll;
-public: int drone_led_strength;
+
+
 
 public: PatsParameters() {
         // Set the XML class name.
@@ -418,7 +419,7 @@ public: PatsParameters() {
         setClassName("PatsParameters");
 
         // Set class version
-        setVersion("1.4");
+        setVersion("1.5");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("wdt_timeout_us",&_wdt_timeout_us);
@@ -444,7 +445,6 @@ public: PatsParameters() {
         Register("flightplan",&_flightplan);
         Register("live_image_frq",&_live_image_frq);
         Register("max_cam_roll",&_max_cam_roll);
-        Register("drone_led_strength",&_drone_led_strength);
     }
 public: void deserialize(std::string settings_file) {
         std::cout << "Reading settings from: " << settings_file << std::endl;
@@ -490,7 +490,6 @@ public: void deserialize(std::string settings_file) {
         flightplan = _flightplan.value();
         live_image_frq = _live_image_frq.value();
         max_cam_roll = _max_cam_roll.value();
-        drone_led_strength = _drone_led_strength.value();
     }
 
 public: void serialize(std::string settings_file) {
@@ -517,7 +516,6 @@ public: void serialize(std::string settings_file) {
         _flightplan= flightplan;
         _live_image_frq = live_image_frq;
         _max_cam_roll = max_cam_roll;
-        _drone_led_strength = drone_led_strength;
 
         std::string xmlData = toXML();
         std::ofstream outfile = std::ofstream (settings_file);
@@ -538,12 +536,14 @@ public: float full_bat_and_throttle_take_off_acc;
 public: float full_bat_and_throttle_spinup_duration;
 public: float hover_throttle_a;
 public: float hover_throttle_b;
-public: int drone_blink_strength;
 public: float blink_period;
+public: int drone_blink_strength;
+public: int drone_led_strength;
 public: tx_protocols tx;
 public: bool mode3d;
 public: string control;
 public: int spinup_throttle_non3d;
+
 
 private: xInt _initial_hover_throttle;
 private: xFloat _throttle_bank_factor;
@@ -556,10 +556,13 @@ private: xFloat _hover_throttle_a;
 private: xFloat _hover_throttle_b;
 private: xFloat _blink_period;
 private: xInt _drone_blink_strength;
+private: xInt _drone_led_strength;
 private: xTx_protocol _tx;
 private: xBool _mode3d;
 private: xString _control;
 private: xInt _spinup_throttle_non3d;
+
+
 
 public: DroneParameters() {
         // Set the XML class name.
@@ -567,7 +570,7 @@ public: DroneParameters() {
         setClassName("DroneParameters");
 
         // Set class version
-        setVersion("1.3");
+        setVersion("1.4");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("initial_hover_throttle",&_initial_hover_throttle);
@@ -581,6 +584,7 @@ public: DroneParameters() {
         Register("hover_throttle_b",&_hover_throttle_b);
         Register("blink_period",&_blink_period);
         Register("drone_blink_strength",&_drone_blink_strength);
+        Register("drone_led_strength",&_drone_led_strength);
         Register("tx",&_tx);
         Register("mode3d",&_mode3d);
         Register("control",&_control);
@@ -618,6 +622,7 @@ public: void deserialize(std::string filepath) {
         hover_throttle_b = _hover_throttle_b.value();
         blink_period = _blink_period.value();
         drone_blink_strength = _drone_blink_strength.value();
+        drone_led_strength = _drone_led_strength.value();
         tx = _tx.value();
         mode3d = _mode3d.value();
         control = _control.value();
@@ -637,6 +642,7 @@ public: void serialize(std::string filepath) {
         _hover_throttle_b = hover_throttle_b;
         _blink_period = blink_period;
         _drone_blink_strength = drone_blink_strength;
+        _drone_led_strength = drone_led_strength;
         _tx = tx;
         _mode3d = mode3d;
         _control = control;

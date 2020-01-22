@@ -78,8 +78,9 @@ void DroneNavigation::update(double time) {
         repeat  = false;
         switch (_navigation_status) {
         case ns_init: {
+            _dctrl->LED(true);
             _visdat->reset_motion_integration();
-            if (time > 0.9) { // skip first second due to auto exposure
+            if (time > 1.5) { // skip first second or so due to auto exposure
                 _navigation_status = ns_locate_drone_init;
             }
             _trackers->mode(tracking::TrackerManager::mode_idle);

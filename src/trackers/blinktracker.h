@@ -13,9 +13,15 @@ static const char* blinking_drone_state_names[] = { "",
                                                     "bds_1_blink_on",
                                                     "bds_2_blink_off",
                                                     "bds_2_blink_on",
-                                                    "bds_3_blink_off_calib",
                                                     "bds_3_blink_off",
                                                     "bds_3_blink_on",
+                                                    "bds_4_blink_off",
+                                                    "bds_4_blink_on",
+                                                    "bds_5_blink_off",
+                                                    "bds_5_blink_on",
+                                                    "bds_6_blink_off_calib",
+                                                    "bds_6_blink_off",
+                                                    "bds_6_blink_on",
                                                     "bds_found"
                                                   };
 
@@ -33,9 +39,15 @@ public:
         bds_1_blink_on,
         bds_2_blink_off,
         bds_2_blink_on,
-        bds_3_blink_off_calib,
         bds_3_blink_off,
         bds_3_blink_on,
+        bds_4_blink_off,
+        bds_4_blink_on,
+        bds_5_blink_off,
+        bds_5_blink_on,
+        bds_6_blink_off_calib,
+        bds_6_blink_off,
+        bds_6_blink_on,
         bds_found
     };
 

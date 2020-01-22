@@ -1,4 +1,4 @@
-<SerializableClass Type="DroneParameters" Version="1.3">
+<SerializableClass Type="DroneParameters" Version="1.4">
     <Member Name="initial_hover_throttle">675</Member>
     <Member Name="throttle_bank_factor">0.75</Member>
     <Member Name="max_burn_time">0.35</Member>
@@ -8,7 +8,8 @@
     <Member Name="full_bat_and_throttle_spinup_time">0.4</Member>
     <Member Name="hover_throttle_a">865</Member>
     <Member Name="hover_throttle_b">495</Member>
-    <Member Name="drone_blink_strength">15</Member>
+    <Member Name="drone_blink_strength">50</Member>
+    <Member Name="drone_led_strength">5</Member>
     <Member Name="blink_period">0.1</Member>
     <Member Name="tx">tx_frskyd8</Member>
     <Member Name="mode3d">false</Member>

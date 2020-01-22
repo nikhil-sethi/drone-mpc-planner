@@ -49,7 +49,6 @@ void BlinkTracker::track(double time) {
         _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
         break;
     } case bds_2_blink_off: {
-        attempts = 0;
         ItemTracker::track(time);
         _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
         break;
@@ -57,10 +56,6 @@ void BlinkTracker::track(double time) {
         ItemTracker::track(time);
         _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
         break;
-    } case bds_3_blink_off_calib: {
-        _visdat->enable_background_motion_map_calibration(dparams.blink_period*0.8f);  //0.8 to prevent picking up the upcoming blink in the background calib
-        _blinking_drone_status = bds_3_blink_off;
-        [[fallthrough]];
     } case bds_3_blink_off: {
         ItemTracker::track(time);
         _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
@@ -69,12 +64,41 @@ void BlinkTracker::track(double time) {
         ItemTracker::track(time);
         _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
         break;
+    } case bds_4_blink_off: {
+        attempts = 0;
+        ItemTracker::track(time);
+        _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
+        break;
+    } case bds_4_blink_on: {
+        ItemTracker::track(time);
+        _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
+        break;
+    } case bds_5_blink_off: {
+        ItemTracker::track(time);
+        _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
+        break;
+    } case bds_5_blink_on: {
+        ItemTracker::track(time);
+        _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
+        break;
+    } case bds_6_blink_off_calib: {
+        _visdat->enable_background_motion_map_calibration(dparams.blink_period*0.8f);  //0.8 to prevent picking up the upcoming blink in the background calib
+        _blinking_drone_status = bds_6_blink_off;
+        [[fallthrough]];
+    } case bds_6_blink_off: {
+        ItemTracker::track(time);
+        _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
+        break;
+    } case bds_6_blink_on: {
+        ItemTracker::track(time);
+        _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
+        break;
     } case bds_found: {
         append_log(); // no tracking needed in this stage
         break;
     } case bds_failed: {
         //just keep tracking it until it the item is lost, or time out after 2 seconds
-        if (fail_time_start - time > 2)
+        if (time - fail_time_start > 2)
             _blinking_drone_status = bds_failed_delete_me;
         append_log(); // no tracking needed in this stage
         break;
@@ -88,7 +112,7 @@ void BlinkTracker::track(double time) {
 }
 
 BlinkTracker::blinking_drone_states BlinkTracker::detect_blink(double time, bool found) {
-    const float margin = 0.75f*dparams.blink_period;
+    const float margin = 0.75f * dparams.blink_period; // the blinking is not a hard on/off, but rather a dimming operation so we need a big margin a blink more often
     if (Last_track_data().vel_valid && norm(Last_track_data().vel()) > 0.3)
         return bds_restart_search;
     float blink_period = static_cast<float>(time - blink_time_start);

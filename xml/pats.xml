@@ -1,4 +1,4 @@
-<SerializableClass Type="PatsParameters" Version="1.4">
+<SerializableClass Type="PatsParameters" Version="1.5">
     <Member Name="wdt_timeout_us">500000</Member>
     <Member Name="darkness_threshold">10000</Member>
     <Member Name="has_screen">true</Member>
@@ -21,6 +21,5 @@
     <Member Name="imscalef">2</Member>
     <Member Name="flightplan">../../xml/flightplans/simple_demo.xml</Member>
     <Member Name="live_image_frq">-1</Member>
-    <Member Name="max_cam_roll">0.5</Member>
-    <Member Name="drone_led_strength">5</Member>
+    <Member Name="max_cam_roll">2</Member>
 </SerializableClass>
