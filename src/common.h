@@ -621,7 +621,7 @@ public: void deserialize(std::string filepath) {
         tx = _tx.value();
         mode3d = _mode3d.value();
         control = _control.value();
-        spinup_throttle_non3d = 304; //TMP
+        spinup_throttle_non3d = _spinup_throttle_non3d.value();
     }
 
 public: void serialize(std::string filepath) {
