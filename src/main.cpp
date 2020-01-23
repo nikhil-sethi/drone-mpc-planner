@@ -372,7 +372,7 @@ void handle_key(double time [[maybe_unused]]) {
         init_insect_log(63);
         break;
     case '6':
-        init_insect_log(60);
+        init_insect_log(64);
         break;
     case '7':
         init_insect_log(20);
