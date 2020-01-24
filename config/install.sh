@@ -17,7 +17,7 @@ mkdir -p ~/code
 
 if [[ $1 -eq 1 ]] ; then
     [ -f ~/dependencies/pats_ssh_files.tar.xz ] || {
-        mv pats_ssh_files.tar.xz ~/dependencies
+        cp pats_ssh_files.tar.xz ~/dependencies
     }
 
     #Change hostname: sudo hostname pats-proto1 
