@@ -227,7 +227,7 @@ void DroneNavigation::update(double time) {
                 setpoint_acc_world = _iceptor.target_accelleration();
             }
 
-            if(drone_is_blocked())
+            if(drone_is_blocked(0.1))
                 _navigation_status = ns_drone_problem;
 
             if (_nav_flight_mode == nfm_manual)
@@ -259,6 +259,9 @@ void DroneNavigation::update(double time) {
                 setpoint_pos_world.y = waypoints[wpid].xyz.y + (250-setpoint_slider_Y)/100.f;
                 setpoint_pos_world.z = waypoints[wpid].xyz.z + (setpoint_slider_Z-250)/100.f;
             }
+
+            if(drone_is_blocked(0.005))
+                _navigation_status = ns_drone_problem;
 
             if (_dctrl->dist_to_setpoint() *1000 < current_waypoint->threshold_mm * distance_threshold_f
                     && normf(_trackers->dronetracker()->Last_track_data().state.vel) < 1.6f
@@ -466,10 +469,11 @@ cv::Point3f DroneNavigation::square_point(cv::Point3f center, float width, float
     return {center.x+x_offset, center.y+y_offset, center.z+z_offset};
 }
 
-bool DroneNavigation::drone_is_blocked() {
+
+bool DroneNavigation::drone_is_blocked(float speed_threshold) {
    float speed = norm(_trackers->dronetracker()->Last_track_data().vel()); 
    float error = _dctrl->position_error();
-   if(_dctrl->auto_throttle>1200 && speed<0.1f && error>0.3f)
+   if(_dctrl->auto_throttle>1200 && speed<speed_threshold && error>0.3f)
         return true;
    return false;
 }
