@@ -1,4 +1,4 @@
-root = 'C:\Linux\VDE\okt_nov\data_logs\';
+root = '/home/houjebek/Bla/pats/monitoring/koppert/4/data_logs';
 
   
 folders = [1:766];
