@@ -135,7 +135,6 @@ public:
     bool correct_yaw() { return _drone_tracking_status == dts_detect_yaw;}
 
     bool _manual_flight_mode = false;
-    bool first_drone_location = true;
     cv::Mat diff_viz;
 
     bool init(std::ofstream *logger, VisionData *_visdat, int16_t viz_id);
