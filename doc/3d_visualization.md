@@ -1,35 +1,47 @@
-### How to use the 3d visualizer
+# How to use the 3d visualizer
 
-## install rviz2
+## Install rviz2
 
-#setup locale
-sudo locale-gen en_US en_US.UTF-8
-sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
-export LANG=en_US.UTF-8
+### Setup locale
 
-#add ros repository
-sudo apt update && sudo apt install curl gnupg2 lsb-release
-curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add -
+    sudo locale-gen en_US en_US.UTF-8
+    sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+    export LANG=en_US.UTF-8
 
-#add repository to sources list
-sudo sh -c 'echo "deb [arch=amd64,arm64] http://packages.ros.org/ros2/ubuntu `lsb_release -cs` main" > /etc/apt/sources.list.d/ros2-latest.list'
+### Add ros repository
 
-#install rviz2
-sudo apt update
-sudo apt install ros-dashing-rviz2
+    sudo apt update && sudo apt install curl gnupg2 lsb-release
+    curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add -
 
-#environment setup
-echo "source /opt/ros/dashing/setup.bash" >> ~/.bashrc
-source ~/.bashrc
+### Add repository to sources list
 
-echo "source /opt/ros/dashing/setup.zsh" >> ~/.zshrc
-source ~/.zshrc
+    sudo sh -c 'echo "deb [arch=amd64,arm64] http://packages.ros.org/ros2/ubuntu `lsb_release -cs` main" > /etc/apt/sources.list.d/ros2-latest.list'
 
-## enable 3dviz in pats build
-set 3D_VIZ to TRUE
+### Install rviz2
 
-##make local copy of rviz config file
-cp ~/code/pats/config/pats.rviz ~/
+    sudo apt update
+    sudo apt install ros-dashing-rviz2
 
-## run rivz2
-rviz2 -d ~/pats.rviz
+## Environment setup
+For the default ubuntu terminal (_bash_):
+
+    echo "source /opt/ros/dashing/setup.bash" >> ~/.bashrc
+    source ~/.bashrc
+
+For _zsh_:
+
+    echo "source /opt/ros/dashing/setup.zsh" >> ~/.zshrc
+    source ~/.zshrc
+
+## Enable 3dviz in pats build
+In the build folder (e.g. `pc/build-vscode`)
+
+    cmake -DVIZ_3D=TRUE ..
+
+### Make local copy of rviz config file:
+
+    cp ~/code/pats/config/pats.rviz ~/
+
+### Run rivz2
+
+    rviz2 -d ~/pats.rviz
