@@ -781,15 +781,17 @@ float DroneController::thrust_to_throttle(float thrust_ratio) {
 
 
 std::tuple<cv::Point3f, cv::Point3f> DroneController::keep_in_volume_check(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel) {
-    // check whether the braking distance is large enough to stay in the frame
-    // if not change the setpoint for the controller
+    
+    bool drone_in_boundaries = _camvol->in_view(data_drone.pos(), CameraVolume::relaxed);
+
     float safety = 2;
     float remaining_breaking_distance = _camvol->calc_distance_to_borders (data_drone);
     remaining_breaking_distance -= static_cast<float>(norm(data_drone.vel()))*(1.f/pparams.fps); // Also consider the time till the next check
     float required_breaking_time = static_cast<float>(norm(data_drone.vel() )) / thrust;
     float required_breaking_distance = static_cast<float>(.5L*thrust*safety*pow(required_breaking_time, 2));
+    bool breaking_distance_too_small = remaining_breaking_distance<=required_breaking_distance && remaining_breaking_distance>0; 
 
-    if(remaining_breaking_distance<=required_breaking_distance && remaining_breaking_distance>0 ) {
+    if(breaking_distance_too_small || !drone_in_boundaries) {
         setpoint_pos =_camvol->center_of_volume();
         setpoint_vel = {0};
         flight_submode_name = "fm_pid_keep_in_volume";
