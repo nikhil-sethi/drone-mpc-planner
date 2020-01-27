@@ -99,7 +99,10 @@ void TrackerManager::update_trackers(double time,long long frame_number, bool dr
             btrkr->track(time);
             if (_mode == mode_locate_drone) {
                 if (btrkr->state() == BlinkTracker::bds_found) {
-                    _dtrkr->set_drone_landing_location(btrkr->image_item().pt(),btrkr->world_item().iti.disparity,btrkr->smoothed_size_image(),btrkr->world_item().pt);
+                    if(_dtrkr->first_drone_location) {
+                        _dtrkr->set_drone_landing_location(btrkr->image_item().pt(),btrkr->world_item().iti.disparity,btrkr->smoothed_size_image(),btrkr->world_item().pt);
+                        _dtrkr->first_drone_location = false;
+                    }
                     _camvol->p0_bottom_plane(_dtrkr->drone_startup_location().y);
                     _mode = mode_wait_for_insect;
                 }
