@@ -471,10 +471,12 @@ cv::Point3f DroneNavigation::square_point(cv::Point3f center, float width, float
 
 
 bool DroneNavigation::drone_is_blocked(float speed_threshold) {
-   float speed = norm(_trackers->dronetracker()->Last_track_data().vel()); 
-   float error = _dctrl->position_error();
-   if(_dctrl->auto_throttle>1200 && speed<speed_threshold && error>0.3f)
+    float speed = norm(_trackers->dronetracker()->Last_track_data().vel()); 
+    bool speed_valid = _trackers->dronetracker()->Last_track_data().vel_valid;
+    float error = _dctrl->position_error();
+
+    if(_dctrl->auto_throttle>1700 && speed<speed_threshold && error>0.3f && speed_valid)
         return true;
-   return false;
+    return false;
 }
 }
