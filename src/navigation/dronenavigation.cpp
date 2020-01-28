@@ -88,6 +88,7 @@ void DroneNavigation::update(double time) {
         } case ns_locate_drone_init: {
             _dctrl->LED(true);
             locate_drone_start_time = time;
+            _visdat->use_overexposed_map = false;
             _navigation_status = ns_locate_drone_wait_led_on;
             [[fallthrough]];
         } case ns_locate_drone_wait_led_on: {
@@ -114,7 +115,7 @@ void DroneNavigation::update(double time) {
             _visdat->disable_fading = false;
             if (time-time_located_drone>1.0 && (_dctrl->drone_state_inactive() || pparams.joystick != rc_none)) { // delay until blinking stopped
                 _visdat->enable_background_motion_map_calibration(2);
-                _visdat->create_overexposed_removal_mask(_trackers->dronetracker()->drone_startup_im_location(),_trackers->dronetracker()->drone_startup_im_size());
+                _visdat->create_overexposed_removal_mask(_trackers->dronetracker()->drone_startup_im_location()*pparams.imscalef,_trackers->dronetracker()->drone_startup_im_size());
                 if (_nav_flight_mode == nfm_hunt)
                     _navigation_status = ns_wait_for_insect;
                 else if (_nav_flight_mode == nfm_manual)

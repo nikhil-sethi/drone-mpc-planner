@@ -134,6 +134,15 @@ void BlinkTracker::calc_world_item(BlobProps * pbs, double time [[maybe_unused]]
     pbs->world_props.valid = pbs->world_props.disparity_in_range && pbs->world_props.radius_in_range;
 }
 bool BlinkTracker::check_ignore_blobs(BlobProps * pbs) {
+
+    std::vector<IgnoreBlob> filtered_ignores_for_me;
+    for (auto ign : ignores_for_me) {
+        if (ign.ignore_type != tracking::IgnoreBlob::landing_spot && ign.ignore_type != tracking::IgnoreBlob::takeoff_spot) {
+            filtered_ignores_for_me.push_back(ign);
+        }
+    }
+    ignores_for_me = filtered_ignores_for_me;
+
     return this->check_ignore_blobs_generic(pbs);
 }
 

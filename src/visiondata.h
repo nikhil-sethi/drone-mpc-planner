@@ -112,6 +112,8 @@ public:
     cv::Mat depth_background_mm;
 
     bool disable_fading = false;
+    bool use_overexposed_map = false;
+
     double current_time() {return _current_frame_time;}
 
     void init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, float new_camera_gain, cv::Mat new_depth_background_mm);

@@ -122,19 +122,19 @@ void TrackerManager::update_trackers(double time,long long frame_number, bool dr
 //for each tracker collect the static ignores from each other tracker
 void TrackerManager::update_static_ignores() {
     tracking::IgnoreBlob landingspot;
-    for (uint i=0; i<_trackers.size(); i++) {
+    for ( auto & trkr1 : _trackers) {
         std::vector<tracking::IgnoreBlob> ignores;
-        for (uint j=0; j<_trackers.size(); j++) {
-            if (j!=i) {
-                for (uint k = 0; k < _trackers.at(j)->ignores_for_other_trkrs.size(); k++) {
-                    ignores.push_back(_trackers.at(j)->ignores_for_other_trkrs.at(k));
-                    if (_trackers.at(j)->ignores_for_other_trkrs.at(k).ignore_type == tracking::IgnoreBlob::takeoff_spot) {
-                        landingspot = _trackers.at(j)->ignores_for_other_trkrs.at(k);
+        for ( auto & trkr2 : _trackers) {
+            if (trkr1->uid()!=trkr2->uid()) {
+                for (auto & ign : trkr2->ignores_for_other_trkrs) {
+                    ignores.push_back(ign);
+                    if (ign.ignore_type == tracking::IgnoreBlob::takeoff_spot) {
+                        landingspot = ign;
                     }
                 }
             }
         }
-        _trackers.at(i)->ignores_for_me = ignores;
+        trkr1->ignores_for_me = ignores;
     }
 }
 

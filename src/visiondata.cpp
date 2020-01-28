@@ -46,7 +46,7 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
     frame_id = new_frame_id;
     _current_frame_time = time;
 
-    if (overexposed_map.cols > 0) {
+    if (use_overexposed_map && overexposed_map.cols > 0) {
         cv::Mat tmp;
         frameL.copyTo(tmp,overexposed_map);
         frameL = tmp;
@@ -178,9 +178,10 @@ void VisionData::create_overexposed_removal_mask(cv::Point2f drone_im_location, 
     int dilation_size = 5;
     cv::Mat element = getStructuringElement( cv::MORPH_RECT,cv::Size( 2*dilation_size + 1, 2*dilation_size+1 ),cv::Point( dilation_size, dilation_size ) );
     cv::Mat mask = frameL < 254;
-    cv::circle(mask,drone_im_location,blink_size,0);
+    cv::circle(mask,drone_im_location,blink_size*dilation_size,255, cv::FILLED);
     cv::erode(mask,overexposed_map,element);
     _reset_motion_integration = true;
+    use_overexposed_map = true;
 }
 
 void VisionData::enable_background_motion_map_calibration(float duration) {

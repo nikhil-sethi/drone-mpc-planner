@@ -63,7 +63,6 @@ class navigationParameters: public xmls::Serializable
 {
 public:
     xmls::xInt distance_threshold_f;
-    xmls::xInt land_incr_f_mm, autoLandThrottleDecreaseFactor;
     xmls::xFloat time_out_after_landing;
 
     navigationParameters() {
@@ -76,8 +75,6 @@ public:
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("distance_threshold_f",&distance_threshold_f);
-        Register("land_incr_f_mm",&land_incr_f_mm);
-        Register("autoLandThrottleDecreaseFactor",&autoLandThrottleDecreaseFactor);
         Register("time_out_after_landing",&time_out_after_landing);
     }
 };
