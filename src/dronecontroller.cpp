@@ -129,6 +129,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         _flight_mode = fm_take_off_aim;
         std::cout << "Take off aiming" << std::endl;
         _burn_direction_for_thrust_approx = {0};
+        feedforward_landing = false;
 
         auto_throttle = spinup_throttle();
         auto_roll = JOY_MIDDLE;

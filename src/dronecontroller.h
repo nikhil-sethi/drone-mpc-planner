@@ -248,6 +248,7 @@ private:
     track_data previous_drone_data;
     double feedforward_land_time;
     double landing_time;
+    bool feedforward_landing = false;
 
     inline state_data set_recoveryState(cv::Point3f position) {
         state_data rt;
@@ -259,8 +260,6 @@ private:
     }
 
 public:
-    bool feedforward_landing = false;
-
     std::string flight_submode_name = "";
     void flight_mode(flight_modes f) {
         _flight_mode = f;
