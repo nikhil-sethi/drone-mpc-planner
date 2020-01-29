@@ -131,11 +131,14 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_wait_for_insect;
             else if (_nav_flight_mode == nfm_manual)
                 _navigation_status = ns_manual;
-            else if (_dctrl->manual_override_take_off_now() ) {
+            else if ((first_takeoff && _dctrl->manual_override_take_off_now())
+                     || !first_takeoff ) {
+                wpid = 0;
+                first_takeoff = false;
                 next_waypoint(waypoints[wpid]);
                 _navigation_status = ns_takeoff;
                 repeat = true;
-            }
+            } 
             break;
         } case ns_wait_for_insect: {
             if (_nav_flight_mode == nfm_manual) {
