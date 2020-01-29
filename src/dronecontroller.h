@@ -245,7 +245,6 @@ private:
 
     float landing_yoffset = 0.f;
     float landing_velocity = -.15f;
-    bool feedforward_landing = false;
     track_data previous_drone_data;
     double feedforward_land_time;
     double landing_time;
@@ -260,6 +259,8 @@ private:
     }
 
 public:
+    bool feedforward_landing = false;
+
     std::string flight_submode_name = "";
     void flight_mode(flight_modes f) {
         _flight_mode = f;

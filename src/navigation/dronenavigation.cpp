@@ -138,6 +138,7 @@ void DroneNavigation::update(double time) {
                 next_waypoint(waypoints[wpid]);
                 _navigation_status = ns_takeoff;
                 _visdat->enable_collect_no_drone_frames = false;
+                _dctrl->feedforward_landing = false;
                 repeat = true;
             } 
             break;
