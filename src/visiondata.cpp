@@ -108,7 +108,7 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
     if (enable_viz_diff)
         viz_frame = diffL*10;
 
-    if (_calibrating_background )
+    if (enable_collect_no_drone_frames && _calibrating_background )
         collect_no_drone_frames(dL); // calibration of background uncertainty map
 
     lock_data.unlock();

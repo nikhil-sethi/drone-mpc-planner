@@ -113,6 +113,7 @@ public:
 
     bool disable_fading = false;
     bool use_overexposed_map = false;
+    bool enable_collect_no_drone_frames = true;
 
     double current_time() {return _current_frame_time;}
 
