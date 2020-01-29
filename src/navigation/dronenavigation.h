@@ -27,7 +27,6 @@ private:
     int setpoint_slider_X = 250;
     int setpoint_slider_Y = 250;
     int setpoint_slider_Z = 250;
-    float time_out_after_landing;
 
     void deserialize_flightplan(string replay_dir);
     string settings_file = "../../xml/navigation.xml";
@@ -67,6 +66,7 @@ private:
     bool drone_is_blocked(float speed_threshold);
 
 public:
+    float time_out_after_landing;
 
     nav_flight_modes nav_flight_mode() {
         return _nav_flight_mode;
