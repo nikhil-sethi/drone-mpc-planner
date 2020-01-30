@@ -330,10 +330,10 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
             pos_err_i = {0,0,0};
         }
         //adapt_reffilter_dynamic(data_drone, data_target);
-        cv::Point3f filtered_setpoint_pos = pos_reference_filter.new_sample(data_target_new.pos());
+        data_target_new.pos() = pos_reference_filter.new_sample(data_target_new.pos());
         cv::Point3f filtered_setpoint_vel;
-        std::tie(filtered_setpoint_pos, filtered_setpoint_vel) = keep_in_volume_check(data_drone, filtered_setpoint_pos, data_target_new.vel()); // Setpoint changes due to keep in volume validation shall not be filtered. The drone must always react fast to these changes.
-        control_model_based(data_drone, filtered_setpoint_pos,filtered_setpoint_vel,false);
+        std::tie(data_target_new.state.pos, data_target_new.state.vel) = keep_in_volume_check(data_drone, data_target_new.pos(), data_target_new.vel()); // Setpoint changes due to keep in volume validation shall not be filtered. The drone must always react fast to these changes.
+        control_model_based(data_drone, data_target_new.pos(),data_target_new.vel(),false);
 
         //check if we can go back to burning:
         if (data_drone.pos_valid && data_drone.vel_valid && _joy_state!=js_waypoint) {
