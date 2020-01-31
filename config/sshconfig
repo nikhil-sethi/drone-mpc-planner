@@ -141,3 +141,31 @@ Host pats9b pats_batist9b
         User pats
         ProxyJump dinstech
         Port 6900
+	
+Host pats10
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump mavlab-gpu
+        Port 7000
+
+Host pats10b
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dinstech
+        Port 7000
+
+Host pats11
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump mavlab-gpu
+        Port 7100
+
+Host pats11b
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dinstech
+        Port 7100
