@@ -15,7 +15,7 @@ while [ 1 ]; do
         dt=$(date '+%d/%m/%Y %H:%M:%S');
         echo "$dt"
 		COUNTER=1
-		while [  $COUNTER -lt 1000 ]; do
+		while [  $COUNTER -lt 10000 ]; do
 			printf -v PADDEDCOUNTER "%05d" $COUNTER
 			OUTDIR=/home/pats/data/$PADDEDCOUNTER
 			if [ ! -d "$OUTDIR" ]; then
