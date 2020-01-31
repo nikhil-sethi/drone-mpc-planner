@@ -141,6 +141,16 @@ static const char* drone_types_str[] = {
 
 class CameraVolume {
 public:
+    enum plane_index{
+        no_plane,
+        front_plane,
+        top_plane,
+        left_plane,
+        right_plane,
+        bottom_plane,
+        back_plane
+    };
+
     void init(cv::Point3f point_left_top, cv::Point3f point_right_top, cv::Point3f point_left_bottom, cv::Point3f point_right_bottom,
               float depth, float height);
 
@@ -167,14 +177,16 @@ public:
     };
 
     /** @brief Checks if the point is in the viewable area.*/
-    bool in_view(cv::Point3f p,view_volume_check_mode c);
+    std::tuple<bool, plane_index> in_view(cv::Point3f p,view_volume_check_mode c);
 
     /** @brief Checks whether the point m (aka moth location) is in a good area for a hunt (worth to take off).
     * This area is described as cone above the drone location d. */
     hunt_check_result in_hunt_area(cv::Point3f d, cv::Point3f m);
 
     /** @brief Calculates the distance to the borders */
-    float calc_distance_to_borders(track_data data_drone);
+    std::tuple<float, plane_index> calc_distance_to_borders(track_data data_drone);
+
+    cv::Point3f normal_vector(plane_index plane_idx);
 
     void p0_bottom_plane(float b_depth);
 
@@ -256,10 +268,10 @@ private:
     float minimum_height = 0.3f; /**< Correction distance for the ground plane. */
 
     /** @brief Checks whether the point p is for all planes defined in init on the right side.*/
-    bool in_view(cv::Point3f p, float hysteresis_margin);
+    std::tuple<bool, plane_index> in_view(cv::Point3f p, float hysteresis_margin);
 
     /** @brief Calculates the distance to the borders. */
-    float calc_distance_to_borders(std::vector<cv::Point3f> p);
+    std::tuple<float, plane_index> calc_distance_to_borders(std::vector<cv::Point3f> p);
 
     /** @brief Calculates the distance along p till the plane is intercepted.*/
     float calc_distance_to_plane(cv::Mat vec, cv::Mat plane);

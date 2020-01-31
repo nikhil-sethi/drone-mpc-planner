@@ -648,7 +648,9 @@ std::vector<state_data> DroneController::predict_trajectory(float burn_duration,
 
 bool DroneController::trajectory_in_view(std::vector<state_data> traj, CameraVolume::view_volume_check_mode c) {
     for (auto state : traj) {
-        if (!_camvol->in_view(state.pos,c))
+        bool inview;
+        std::tie(inview, ignore) = _camvol->in_view(state.pos,c);
+        if (!inview)
             return false;
     }
     return true;

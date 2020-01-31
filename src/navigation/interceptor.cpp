@@ -189,7 +189,7 @@ void Interceptor::update_close_target() {
 
 void Interceptor::update_insect_in_range() {
     //Checks whether the interception point is in view:
-    view_check = _camvol->in_view(_intercept_pos, CameraVolume::relaxed);
+    std::tie(view_check, ignore) = _camvol->in_view(_intercept_pos, CameraVolume::relaxed);
 
     if (view_check) {
         _count_insect_not_in_range= 0;

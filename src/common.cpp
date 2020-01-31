@@ -71,7 +71,7 @@ void CameraVolume::p0_bottom_plane(float b_height){
 }
 
 
-bool CameraVolume::in_view(cv::Point3f p, view_volume_check_mode c) {
+std::tuple<bool, CameraVolume::plane_index> CameraVolume::in_view(cv::Point3f p, view_volume_check_mode c) {
     if (c == relaxed)
         return in_view(p,0.3f);
     else
@@ -137,7 +137,7 @@ std::tuple<float, cv::Mat> CameraVolume::hesse_normal_form(cv::Mat p0, cv::Mat n
     return std::make_tuple(d, n0);
 }
 
-bool CameraVolume::in_view(cv::Point3f p,float hysteresis_margin) {
+std::tuple<bool, CameraVolume::plane_index> CameraVolume::in_view(cv::Point3f p,float hysteresis_margin) {
     bool front_check = on_normal_side (_p0_front+hysteresis_margin*_n_front, _n_front, cv::Mat(p));
     bool left_check = on_normal_side (_p0_left-hysteresis_margin*_n_left, _n_left, cv::Mat(p));
     bool right_check = on_normal_side (_p0_right+hysteresis_margin*_n_right, _n_right, cv::Mat(p));
@@ -145,15 +145,18 @@ bool CameraVolume::in_view(cv::Point3f p,float hysteresis_margin) {
     bool back_check = on_normal_side (_p0_back+hysteresis_margin*_n_back, _n_back, cv::Mat(p));
 
     // Attention check the negative case!
-    if( // !top_check ||
-        !front_check
-        || !left_check
-        || !right_check
-        || !bottom_check
-        || !back_check)
-        return false;
-    else
-        return true;
+    if(!front_check)
+        return std::tuple(false, plane_index::front_plane);
+    if(!left_check)
+        return std::tuple(false, plane_index::left_plane);
+    if(!right_check)
+        return std::tuple(false, plane_index::right_plane);
+    if(!bottom_check)
+        return std::tuple(false, plane_index::bottom_plane);
+    if(!back_check)
+        return std::tuple(false, plane_index::back_plane);   
+    
+    return std::tuple(true, plane_index::no_plane);
 }
 
 CameraVolume::hunt_check_result CameraVolume::in_hunt_area(cv::Point3f d[[maybe_unused]], cv::Point3f m) {
@@ -180,16 +183,17 @@ CameraVolume::hunt_check_result CameraVolume::in_hunt_area(cv::Point3f d[[maybe_
     return HuntVolume_OK;
 }
 
-float CameraVolume::calc_distance_to_borders(track_data data_drone) {
+std::tuple<float, CameraVolume::plane_index> CameraVolume::calc_distance_to_borders(track_data data_drone) {
     std::vector<cv::Point3f> p{data_drone.pos (), data_drone.vel ()};
     return calc_distance_to_borders (p);
 }
 
-float CameraVolume::calc_distance_to_borders(std::vector<cv::Point3f> p) {
+std::tuple<float, CameraVolume::plane_index> CameraVolume::calc_distance_to_borders(std::vector<cv::Point3f> p) {
     cv::Mat pMat = (cv::Mat_<float_t>(3,2) << p[0].x, p[1].x, p[0].y, p[1].y, p[0].z, p[1].z);
 
     float min_dist = std::numeric_limits<float>::max();
     float dist;
+    CameraVolume::plane_index plane_idx = plane_index::no_plane;
 
     // Check the back:
     cv::Mat plane = cv::Mat::zeros(cv::Size(2,3), CV_32F);
@@ -197,50 +201,62 @@ float CameraVolume::calc_distance_to_borders(std::vector<cv::Point3f> p) {
     _n_back.copyTo (plane.col(1));
     dist = calc_distance_to_plane (pMat, plane);
 
-    if(dist>0 && dist<min_dist)
+    if(dist>0 && dist<min_dist) {
         min_dist = dist;
+        plane_idx = CameraVolume::back_plane;
+    }
 
     // Check the bottom:
     _p0_bottom.copyTo (plane.col(0));
     _n_bottom.copyTo (plane.col(1));
     dist = calc_distance_to_plane (pMat, plane);
 
-    if(dist>0 && dist<min_dist)
+    if(dist>0 && dist<min_dist) {
         min_dist = dist;
+        plane_idx = CameraVolume::bottom_plane;
+    }
 
     // Check the front:
     _p0_front.copyTo (plane.col(0));
     _n_front.copyTo (plane.col(1));
     dist = calc_distance_to_plane (pMat, plane);
 
-    if(dist>0 && dist<min_dist)
+    if(dist>0 && dist<min_dist) {
         min_dist = dist;
+        plane_idx = CameraVolume::front_plane;  
+    }
 
     // Check the top:
     _p0_top.copyTo (plane.col(0));
     _n_top.copyTo (plane.col(1));
     dist = calc_distance_to_plane (pMat, plane);
 
-    if(dist>0 && dist<min_dist)
+    if(dist>0 && dist<min_dist) {
         min_dist = dist;
+        plane_idx = top_plane;
+    }
 
     // Check the left:
     _p0_left.copyTo (plane.col(0));
     _n_left.copyTo (plane.col(1));
     dist = calc_distance_to_plane (pMat, plane);
 
-    if(dist>0 && dist<min_dist)
+    if(dist>0 && dist<min_dist) {
         min_dist = dist;
+        plane_idx = left_plane;
+    }
 
     // Check the right:
     _p0_right.copyTo (plane.col(0));
     _n_right.copyTo (plane.col(1));
     dist = calc_distance_to_plane (pMat, plane);
 
-    if(dist>0 && dist<min_dist)
+    if(dist>0 && dist<min_dist) {
         min_dist = dist;
+        plane_idx = right_plane;
+    }
 
-    return min_dist;
+    return std::tie(min_dist, plane_idx);
 }
 
 float CameraVolume::calc_distance_to_plane(cv::Mat vec, cv::Mat plane) {
@@ -298,6 +314,25 @@ bool CameraVolume::on_normal_side(cv::Mat p0, cv::Mat n, cv::Mat p) {
         return true;
     else
         return false;
+}
+
+
+cv::Point3f CameraVolume::normal_vector(plane_index plane_idx) {
+    if(plane_idx==plane_index::back_plane)
+        return cv::Point3f(_n_back);
+    if(plane_idx==plane_index::bottom_plane)
+        return cv::Point3f(_n_bottom);
+    if(plane_idx==plane_index::front_plane)
+        return cv::Point3f(_n_front);
+    if(plane_idx==plane_index::top_plane)
+        return cv::Point3f(_n_top);
+    if(plane_idx==plane_index::left_plane)
+        return cv::Point3f(_n_left);
+    if(plane_idx==plane_index::right_plane)
+        return cv::Point3f(_n_right);
+
+    else
+        return cv::Point3f(0,0,0); 
 }
 
 //strips disparity from world2im_3d
