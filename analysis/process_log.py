@@ -11,20 +11,35 @@ from shutil import copyfile
 import argparse
 
 def cp_videos_for_checking(source_folder,files,n,dest_folder,fn_prefix,no_video,reprocess):
-
+    fn_prefix = fn_prefix.replace('__','_') # this may happen during reprocess, because then the folder id is already in the name and sf = ''
     pathlib.Path(dest_folder).mkdir(parents=True, exist_ok=True)
+
+    if reprocess:
+        n = len(files)
 
     if n > len(files):
         n = len(files)
     if n > 0:
         files = random.sample(files, n)
+
         for fn_csv in files:
 
             fn = fn_csv[0:len(fn_csv)-4]
-            fn = fn[3:len(fn)]
+            if reprocess:
+                fn = fn.replace('no_moth_','')
+                fn = fn.replace('moth_','')
+            else:
+                fn = fn.replace('log','')
             fn_new_csv = fn_prefix + fn + ".csv"
 
             copyfile(Path(source_folder,fn_csv), Path(dest_folder,fn_new_csv))
+            if not reprocess:
+                header = ""
+                fn_header = "log.csv"
+                with open (Path(source_folder,fn_header), "r") as myfile:
+                    header=myfile.readlines()
+                line_prepender(Path(dest_folder,fn_new_csv),header[0])
+
             if not no_video:
                 if reprocess:
                     fn_mp4 = fn_csv[0:len(fn_csv)-4] + ".mp4"
@@ -35,15 +50,16 @@ def cp_videos_for_checking(source_folder,files,n,dest_folder,fn_prefix,no_video,
                 if Path(source_folder,fn_mp4).is_file():
                     copyfile(Path(source_folder,fn_mp4), Path(dest_folder,fn_new_mp4))
 
-def process_folder(source_folder):
-    header_filename = Path(source_folder,"log.csv")
-    if not header_filename.is_file():
-        return list(), list(),list()
-    with open(header_filename) as header_file:
-        headers = csv.reader(header_file, delimiter=';')
-        headers = list(headers)
-        headers = headers[0]
-        headers = [x.strip(' ') for x in headers]
+def process_folder(source_folder, reprocess):
+    if not reprocess:
+        header_filename = Path(source_folder,"log.csv")
+        if not header_filename.is_file():
+            return list(), list(),list()
+        with open(header_filename) as header_file:
+            headers = csv.reader(header_file, delimiter=';')
+            headers = list(headers)
+            headers = headers[0]
+            headers = [x.strip(' ') for x in headers]
 
     files = list_csv_files(source_folder)
     files_moth = list()
@@ -60,7 +76,11 @@ def process_folder(source_folder):
         else:
             with open(source_csv_file) as log_file:
                 try:
-                    log=pd.read_csv(log_file, names=headers, sep=';',header=None)
+                    if reprocess:
+                        log=pd.read_csv(log_file, sep=';',header=0)
+                        log.rename(columns=lambda x: x.strip(), inplace=True)
+                    else:
+                        log=pd.read_csv(log_file, names=headers, sep=';',header=None)
                     if log.size < 5:
                         files_no_moth.append(f)
                     else:
@@ -78,6 +98,11 @@ def process_folder(source_folder):
 
     return files_moth,files_no_moth,files_corrupted
 
+def line_prepender(filename, line):
+    with open(filename, 'r+') as f:
+        content = f.read()
+        f.seek(0, 0)
+        f.write(line.rstrip('\r\n') + '\n' + content)
 
 from os import listdir
 def list_csv_files(directory):
@@ -117,9 +142,12 @@ parser.add_argument('-r', '--reprocess', dest='reprocess', action='store_true')
 args = parser.parse_args()
 # parser.print_help()
 
-source_folder = args.source_folder.strip(" ")
-dest_folder = args.dest_folder.strip(" ")
+source_folder = os.path.expanduser(args.source_folder.strip(" "))
+dest_folder = os.path.expanduser(args.dest_folder.strip(" "))
 subfolders = [ name for name in os.listdir(source_folder) if os.path.isdir(os.path.join(source_folder, name)) ]
+
+if args.reprocess:
+    subfolders.append("")
 
 i = 0
 all_files_corrupted = list()
@@ -129,8 +157,8 @@ for sf in subfolders:
     if not args.reprocess:
         source_subfolder = Path(source_subfolder,"logging")
     print(str(i) + "/" + str(len(subfolders)) + ": " + str(source_subfolder))
-    if not (Path(dest_folder,sf).is_dir()):
-        files_moth,files_no_moth,files_corrupted = process_folder(source_subfolder)
+    if not (Path(dest_folder,sf).is_dir()) or args.reprocess:
+        files_moth,files_no_moth,files_corrupted = process_folder(source_subfolder,args.reprocess)
         
         files_corrupted = [Path(sf,s) for s in files_corrupted]
         print(files_corrupted)
