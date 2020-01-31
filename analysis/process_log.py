@@ -4,12 +4,13 @@ import numpy as np
 import pandas as pd
 import os
 import pathlib
+from pathlib import Path
 import sys
 import random
 from shutil import copyfile
 import argparse
 
-def cp_videos_for_checking(source_folder,files,n,dest_folder,no_video):
+def cp_videos_for_checking(source_folder,files,n,dest_folder,fn_prefix,no_video,reprocess):
 
     pathlib.Path(dest_folder).mkdir(parents=True, exist_ok=True)
 
@@ -17,15 +18,26 @@ def cp_videos_for_checking(source_folder,files,n,dest_folder,no_video):
         n = len(files)
     if n > 0:
         files = random.sample(files, n)
-        for f_csv in files:
-            copyfile(source_folder+f_csv, dest_folder+f_csv)
+        for fn_csv in files:
+
+            fn = fn_csv[0:len(fn_csv)-4]
+            fn = fn[3:len(fn)]
+            fn_new_csv = fn_prefix + fn + ".csv"
+
+            copyfile(Path(source_folder,fn_csv), Path(dest_folder,fn_new_csv))
             if not no_video:
-                f_mp4 = f_csv[0:len(f_csv)-4] + ".mp4"
-                copyfile(source_folder+f_mp4, dest_folder+f_mp4)
+                if reprocess:
+                    fn_mp4 = fn_csv[0:len(fn_csv)-4] + ".mp4"
+                else:
+                    fn_mp4 = fn_csv[0:len(fn_csv)-4] + ".mp4"
+                    fn_mp4 = "insect" + fn_mp4[3:len(fn_mp4)]
+                fn_new_mp4 = fn_prefix + fn + ".mp4"
+                if Path(source_folder,fn_mp4).is_file():
+                    copyfile(Path(source_folder,fn_mp4), Path(dest_folder,fn_new_mp4))
 
 def process_folder(source_folder):
-    header_filename = source_folder + "log.csv"
-    if not os.path.exists(header_filename):
+    header_filename = Path(source_folder,"log.csv")
+    if not header_filename.is_file():
         return list(), list(),list()
     with open(header_filename) as header_file:
         headers = csv.reader(header_file, delimiter=';')
@@ -42,7 +54,7 @@ def process_folder(source_folder):
     for f in files:
         i = i + 1
         printProgressBar(i,n)
-        source_csv_file = source_folder + f
+        source_csv_file = Path(source_folder,f)
         if os.stat(source_csv_file).st_size < 1000:
             files_no_moth.append(f)
         else:
@@ -97,32 +109,36 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
 
 
 parser = argparse.ArgumentParser(description='Process and check the logs.')
-parser.add_argument('-s', '--source_folder',type=str,default="/home/houjebek/data/")
-parser.add_argument('-d', '--dest_folder',type=str,default="/home/houjebek/data_check/")
+parser.add_argument('-s', '--source_folder',type=str,default="/home/pats/data/")
+parser.add_argument('-d', '--dest_folder',type=str,default="/home/pats/data_check/")
 parser.add_argument('-n', '--novideos', dest='novideo', action='store_true')
+parser.add_argument('-r', '--reprocess', dest='reprocess', action='store_true')
 
 args = parser.parse_args()
-#parser.print_help()
+# parser.print_help()
 
-source_folder = args.source_folder
+source_folder = args.source_folder.strip(" ")
+dest_folder = args.dest_folder.strip(" ")
 subfolders = [ name for name in os.listdir(source_folder) if os.path.isdir(os.path.join(source_folder, name)) ]
 
 i = 0
 all_files_corrupted = list()
 for sf in subfolders:
     i = i + 1
-    source_subfolder = source_folder + sf + "/"
-    print(str(i) + "/" + str(len(subfolders)) + ": " + source_subfolder)
-    if not os.path.exists(args.dest_folder + sf):            
+    source_subfolder = Path(source_folder, sf)
+    if not args.reprocess:
+        source_subfolder = Path(source_subfolder,"logging")
+    print(str(i) + "/" + str(len(subfolders)) + ": " + str(source_subfolder))
+    if not (Path(dest_folder,sf).is_dir()):
         files_moth,files_no_moth,files_corrupted = process_folder(source_subfolder)
         
-        files_corrupted = [sf + '/' + s for s in files_corrupted]
+        files_corrupted = [Path(sf,s) for s in files_corrupted]
         print(files_corrupted)
         all_files_corrupted = all_files_corrupted + files_corrupted
 
-        cp_videos_for_checking(source_subfolder,files_moth,3,args.dest_folder + sf + '/moth/',args.novideo)
-        cp_videos_for_checking(source_subfolder,files_no_moth,3,args.dest_folder + sf + '/no_moth/',args.novideo)
+        cp_videos_for_checking(source_subfolder,files_moth,3,dest_folder,'moth_' + sf + '_',args.novideo,args.reprocess)
+        cp_videos_for_checking(source_subfolder,files_no_moth,3,dest_folder,'no_moth_' + sf + '_',args.novideo,args.reprocess)
 
 if (len(all_files_corrupted) > 0):
-    print("Warning: the followingcorrupted files where encountered.")
+    print("Warning: the following corrupted files where encountered.")
     print(all_files_corrupted)
