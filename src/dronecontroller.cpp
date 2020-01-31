@@ -331,9 +331,10 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         }
         //adapt_reffilter_dynamic(data_drone, data_target);
         data_target_new.pos() = pos_reference_filter.new_sample(data_target_new.pos());
-        cv::Point3f filtered_setpoint_vel;
-        std::tie(data_target_new.state.pos, data_target_new.state.vel) = keep_in_volume_check(data_drone, data_target_new.pos(), data_target_new.vel()); // Setpoint changes due to keep in volume validation shall not be filtered. The drone must always react fast to these changes.
-        control_model_based(data_drone, data_target_new.pos(),data_target_new.vel(),false);
+
+        bool keep_in_volume_control_enabled = keep_in_volume_control(data_drone); // Setpoint changes due to keep in volume validation shall not be filtered. The drone must always react fast to these changes.
+        if(!keep_in_volume_control_enabled)
+            control_model_based(data_drone, data_target_new.pos(),data_target_new.vel(),false);
 
         //check if we can go back to burning:
         if (data_drone.pos_valid && data_drone.vel_valid && _joy_state!=js_waypoint) {
@@ -782,27 +783,37 @@ float DroneController::thrust_to_throttle(float thrust_ratio) {
     return p1*powf(thrust_ratio,4) + p2*powf(thrust_ratio,3) + p3*powf(thrust_ratio,2) + p4*thrust_ratio + p5;
 }
 
+std::tuple<bool, cv::Point3f> DroneController::keep_in_volume_control_required(track_data data_drone) {
 
-std::tuple<cv::Point3f, cv::Point3f> DroneController::keep_in_volume_check(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel) {
-    
-    bool drone_in_boundaries = _camvol->in_view(data_drone.pos(), CameraVolume::relaxed);
+    bool drone_in_boundaries;
+    std::tie(drone_in_boundaries, ignore) = _camvol->in_view(data_drone.pos(), CameraVolume::relaxed);
 
     float safety = 2;
-    float remaining_breaking_distance = _camvol->calc_distance_to_borders (data_drone);
+    float remaining_breaking_distance;
+    CameraVolume::plane_index plane_idx;
+    std::tie(remaining_breaking_distance, plane_idx) = _camvol->calc_distance_to_borders (data_drone);
     remaining_breaking_distance -= static_cast<float>(norm(data_drone.vel()))*(1.f/pparams.fps); // Also consider the time till the next check
     float required_breaking_time = static_cast<float>(norm(data_drone.vel() )) / thrust;
     float required_breaking_distance = static_cast<float>(.5L*thrust*safety*pow(required_breaking_time, 2));
     bool breaking_distance_too_small = remaining_breaking_distance<=required_breaking_distance && remaining_breaking_distance>0; 
 
     if(breaking_distance_too_small || !drone_in_boundaries) {
-        setpoint_pos =_camvol->center_of_volume();
-        setpoint_vel = {0};
         flight_submode_name = "fm_pid_keep_in_volume";
-    } else if(flight_submode_name == "fm_pid_keep_in_volume"){
+        cv::Point3f correction_acceleration = _camvol->normal_vector(plane_idx);
+        return std::tuple(true, correction_acceleration);
+    } else if(flight_submode_name == "fm_pid_keep_in_volume")
         flight_submode_name = "";
-    }
+    
+    return std::tuple(false, cv::Point3f(0,0,0));
+}
 
-    return std::make_tuple(setpoint_pos, setpoint_vel);
+bool DroneController::keep_in_volume_control(track_data data_drone) {
+    cv::Point3f correction_acceleration;
+    bool kiv_required;
+    std::tie(kiv_required, correction_acceleration) = keep_in_volume_control_required(data_drone);
+
+    std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(correction_acceleration);
+    return kiv_required;
 }
 
 void DroneController::adapt_reffilter_dynamic(track_data data_drone, track_data data_target) {
