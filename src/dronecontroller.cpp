@@ -786,20 +786,26 @@ float DroneController::thrust_to_throttle(float thrust_ratio) {
 std::tuple<bool, cv::Point3f> DroneController::keep_in_volume_control_required(track_data data_drone) {
 
     bool drone_in_boundaries;
-    std::tie(drone_in_boundaries, ignore) = _camvol->in_view(data_drone.pos(), CameraVolume::relaxed);
+    CameraVolume::plane_index plane_violation_inview;
+    std::tie(drone_in_boundaries, plane_violation_inview) = _camvol->in_view(data_drone.pos(), CameraVolume::relaxed);
 
     float safety = 2;
     float remaining_breaking_distance;
-    CameraVolume::plane_index plane_idx;
-    std::tie(remaining_breaking_distance, plane_idx) = _camvol->calc_distance_to_borders (data_drone);
+    CameraVolume::plane_index plane_violation_dist2borders;
+    std::tie(remaining_breaking_distance, plane_violation_dist2borders) = _camvol->calc_distance_to_borders (data_drone);
     remaining_breaking_distance -= static_cast<float>(norm(data_drone.vel()))*(1.f/pparams.fps); // Also consider the time till the next check
     float required_breaking_time = static_cast<float>(norm(data_drone.vel() )) / thrust;
     float required_breaking_distance = static_cast<float>(.5L*thrust*safety*pow(required_breaking_time, 2));
     bool breaking_distance_too_small = remaining_breaking_distance<=required_breaking_distance && remaining_breaking_distance>0; 
 
-    if(breaking_distance_too_small || !drone_in_boundaries) {
+    if(!drone_in_boundaries){
         flight_submode_name = "fm_pid_keep_in_volume";
-        cv::Point3f correction_acceleration = _camvol->normal_vector(plane_idx);
+        cv::Point3f correction_acceleration = _camvol->normal_vector(plane_violation_inview);
+        return std::tuple(true, correction_acceleration);
+    }
+    if(breaking_distance_too_small) {
+        flight_submode_name = "fm_pid_keep_in_volume";
+        cv::Point3f correction_acceleration = _camvol->normal_vector(plane_violation_dist2borders);
         return std::tuple(true, correction_acceleration);
     } else if(flight_submode_name == "fm_pid_keep_in_volume")
         flight_submode_name = "";
