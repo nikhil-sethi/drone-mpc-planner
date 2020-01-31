@@ -4,6 +4,7 @@
       {
         "name": "Python: Current File",
         "type": "python",
+        "args": ["-s /home/houjebek/data/", "-d /home/houjebek/data_check/", "-r"],
         "request": "launch",
         "program": "${file}",
         "console": "integratedTerminal"

@@ -73,7 +73,7 @@ def process_folder(source_folder):
                                 files_no_moth.append(f)
                             else:
                                 files_moth.append(f)
-                except:
+                except Exception:
                     files_corrupted.append(f)
 
     return files_moth,files_no_moth,files_corrupted
@@ -83,7 +83,7 @@ from os import listdir
 def list_csv_files(directory):
     return (f for f in listdir(directory) if f.endswith('.csv') and not f.startswith("log."))
 
-def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 75, fill = '█', printEnd = "\r"):
     """
     Call in a loop to create terminal progress bar
     @params:
