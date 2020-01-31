@@ -171,7 +171,7 @@ private:
     float ground_effect = 1.0f;
     const float lift_off_dist_take_off_aim = 0.02f;
     const float take_off_burn_duration = 0.16f;
-    float min_takeoff_angle = 30.f/180.f*static_cast<float>(M_PI);
+    float min_takeoff_angle = 45.f/180.f*static_cast<float>(M_PI);
 
     double take_off_start_time = 0;
     double interception_start_time = 0;
