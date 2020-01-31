@@ -108,8 +108,7 @@ void CameraVolume::calc_corner_points_hunt(cv::Mat p0_front, cv::Mat n_front, cv
     _top_right_front_hunt = intersection_of_3_planes(p0_top, n_top, p0_right, n_right, p0_front, n_front);
 }
 
-cv::Mat CameraVolume::intersection_of_3_planes(cv::Mat p0_1, cv::Mat n_1, cv::Mat p0_2, cv::Mat n_2, cv::Mat p0_3, cv::Mat n_3)
-{
+cv::Mat intersection_of_3_planes(cv::Mat p0_1, cv::Mat n_1, cv::Mat p0_2, cv::Mat n_2, cv::Mat p0_3, cv::Mat n_3) {
     cv::Mat n01, n02, n03;
     float d1, d2, d3;
 
@@ -127,7 +126,7 @@ cv::Mat CameraVolume::intersection_of_3_planes(cv::Mat p0_1, cv::Mat n_1, cv::Ma
     return  A.t().inv() * (b.reshape(1,3));
 }
 
-std::tuple<float, cv::Mat> CameraVolume::hesse_normal_form(cv::Mat p0, cv::Mat n)
+std::tuple<float, cv::Mat> hesse_normal_form(cv::Mat p0, cv::Mat n)
 {
     cv::Mat n0;
 
@@ -227,7 +226,7 @@ std::tuple<float, CameraVolume::plane_index> CameraVolume::calc_distance_to_bord
     }
 
     // Check the top:
-    _p0_top.copyTo (plane.col(0));
+    _p0_top.copyTo (plane.col(0)); 
     _n_top.copyTo (plane.col(1));
     dist = calc_distance_to_plane (pMat, plane);
 
@@ -259,7 +258,7 @@ std::tuple<float, CameraVolume::plane_index> CameraVolume::calc_distance_to_bord
     return std::tie(min_dist, plane_idx);
 }
 
-float CameraVolume::calc_distance_to_plane(cv::Mat vec, cv::Mat plane) {
+float calc_distance_to_plane(cv::Mat vec, cv::Mat plane) {
     cv::Mat b(3, 1, CV_32F);
     b = vec.col(0) - plane.col(0);
 
@@ -289,7 +288,7 @@ float CameraVolume::calc_distance_to_plane(cv::Mat vec, cv::Mat plane) {
     return sgn_param3 * static_cast<float>(norm( params.at<float>(2,0)*vec.col(1) ));
 }
 
-cv::Mat CameraVolume::get_orthogonal_vector(cv::Mat vec) {
+cv::Mat get_orthogonal_vector(cv::Mat vec) {
     cv::Mat rt;
     if(vec.at<float>(2,0)!=0) {
         rt = (cv::Mat_<float>(3,1) << 1,1,(-vec.at<float>(0,0) -vec.at<float>(1,0))/vec.at<float>(2,0) );
@@ -302,12 +301,33 @@ cv::Mat CameraVolume::get_orthogonal_vector(cv::Mat vec) {
     return rt;
 }
 
-cv::Mat CameraVolume::get_plane_normal_vector(cv::Point3f x1, cv::Point3f x2) {
+std::tuple<cv::Mat, cv::Mat> get_orthogonal_vectors(cv::Mat vec) {
+    cv::Mat orth1 = get_orthogonal_vector(vec);
+    cv::Mat orth2 = vec.cross(orth1);
+
+    return std::tuple(orth1, orth2);
+}
+
+std::tuple<cv::Mat, cv::Mat, cv::Mat> split_vector_to_basis_vectors(cv::Mat vec, cv::Mat b1, cv::Mat b2, cv::Mat b3) {
+    cv::Mat A(3, 3, CV_32F);
+    b1.copyTo(A.col(0));
+    b2.copyTo(A.col(1));
+    b3.copyTo(A.col(2));
+
+    cv::Mat params(3, 1, CV_32F);
+    params = A.inv()*vec;
+
+    return std::tuple(params.at<float>(0,0)*b1,
+                      params.at<float>(1,0)*b2,
+                      params.at<float>(2,0)*b3);
+}
+
+cv::Mat get_plane_normal_vector(cv::Point3f x1, cv::Point3f x2) {
     cv::Point3f n = x1.cross (x2);
     return cv::Mat(n)/norm(n);
 }
 
-bool CameraVolume::on_normal_side(cv::Mat p0, cv::Mat n, cv::Mat p) {
+bool on_normal_side(cv::Mat p0, cv::Mat n, cv::Mat p) {
     cv::Mat v = cv::Mat::zeros(cv::Size(1,3), CV_32F);
     v = p-p0;
     if(v.dot (n)>=0)
