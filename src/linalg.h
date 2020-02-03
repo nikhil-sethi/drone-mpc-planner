@@ -25,6 +25,8 @@ cv::Mat get_plane_normal_vector(cv::Point3f x1, cv::Point3f x2);
 * Returns true if the point is on the point the side the normal vector is looking to, else false is returned. */
 bool on_normal_side(cv::Mat p0, cv::Mat n, cv::Mat p);
 
+float distance_to_plane(cv::Mat p0, cv::Mat n, cv::Mat p);
+
 cv::Mat intersection_of_3_planes(cv::Mat p0_1, cv::Mat n_1, cv::Mat p0_2, cv::Mat n_2, cv::Mat p0_3, cv::Mat n_3);
 
 std::tuple<float, cv::Mat> hesse_normal_form(cv::Mat p0, cv::Mat n);

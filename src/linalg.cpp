@@ -106,6 +106,13 @@ bool on_normal_side(cv::Mat p0, cv::Mat n, cv::Mat p) {
         return false;
 }
 
+float distance_to_plane(cv::Mat p0, cv::Mat n, cv::Mat p) {
+    cv::Mat v = cv::Mat::zeros(cv::Size(1,3), CV_32F);
+    v = p-p0;
+    //WARNING: Only works if norm(n)==1!
+    return v.dot (n);
+}
+
 
 float angle_to_horizontal(cv::Point3f direction) {
     //https://onlinemschool.com/math/library/analytic_geometry/plane_line/
