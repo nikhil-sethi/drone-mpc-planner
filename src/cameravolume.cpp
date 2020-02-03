@@ -174,6 +174,3 @@ std::array<float, N_PLANES> CameraVolume::calc_distance_to_borders(std::vector<c
 
     return distances_to_planes;
 }
-
-cv::Point3f CameraVolume::normal_vector(plane_index plane_idx) {
-    }
