@@ -1,4 +1,5 @@
 #pragma once
+#include "cameravolume.h"
 #include "defines.h"
 #include "insecttracker.h"
 #include "dronetracker.h"

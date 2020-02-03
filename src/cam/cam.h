@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <unistd.h>
 #include "common.h"
+#include "cameravolume.h"
 #include <thread>
 
 #include <condition_variable>

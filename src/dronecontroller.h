@@ -3,6 +3,7 @@
 #include "joystick.hpp"
 #include "multimodule.h"
 #include "common.h"
+#include "cameravolume.h"
 #define GRAVITY 9.81f
 
 static const char* joy_states_names[] = { "js_manual",
