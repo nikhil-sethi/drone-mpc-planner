@@ -805,9 +805,14 @@ std::tuple<bool, cv::Point3f> DroneController::keep_in_volume_control_required(t
             float pos_err=0, vel_err=0;
             if(data_drone.pos_valid)
                 pos_err = distance_to_plane(cv::Mat(_camvol->support_vector(i)), cv::Mat(_camvol->normal_vector(i)), cv::Mat(data_drone.pos())); //position error
-            if(data_drone.vel_valid)
+            if(data_drone.vel_valid) {
                 vel_err = distance_to_plane(cv::Mat(_camvol->support_vector(i)), cv::Mat(_camvol->normal_vector(i)), cv::Mat(data_drone.vel()));
-            
+                if(vel_err>0)
+                    vel_err = 0;
+                else
+                    vel_err *= -1;
+            }
+
             if(violated_planes_inview.at(i))
                 correction_acceleration += _camvol->normal_vector(i)*(5*pos_err + (-1)*vel_err);
 
