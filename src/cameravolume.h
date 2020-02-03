@@ -19,8 +19,8 @@ static const char* hunt_volume_check_names[] = {
 class CameraVolume {
 public:
     enum plane_index{
-        front_plane,
         top_plane,
+        front_plane,
         left_plane,
         right_plane,
         bottom_plane,
@@ -62,7 +62,8 @@ public:
     /** @brief Calculates the distance to the borders */
     std::tuple<bool, std::array<bool, N_PLANES>> check_distance_to_borders(track_data data_drone, float req_breaking_distance);
 
-    cv::Point3f normal_vector(plane_index plane_idx);
+    cv::Point3f normal_vector(plane_index plane_idx) {return cv::Point3f(plane_normals.at(plane_idx));};
+    cv::Point3f support_vector(plane_index plane_idx) {return cv::Point3f(plane_supports.at(plane_idx));};
 
     void p0_bottom_plane(float b_depth);
 
@@ -85,18 +86,8 @@ public:
     cv::Mat bottom_left_back_hunt() {return _bottom_left_back_hunt;}
 private:
     // Define limitation planes in plane normal form:
-    cv::Mat _n_front;
-    cv::Mat _p0_front;
-    cv::Mat _n_top;
-    cv::Mat _p0_top;
-    cv::Mat _n_left;
-    cv::Mat _p0_left;
-    cv::Mat _n_right;
-    cv::Mat _p0_right;
-    cv::Mat _n_bottom;
-    cv::Mat _p0_bottom;
-    cv::Mat _n_back;
-    cv::Mat _p0_back;
+    std::array<cv::Mat, N_PLANES> plane_normals;
+    std::array<cv::Mat, N_PLANES> plane_supports;
 
     // Define corner points
     cv::Mat _top_right_front;
