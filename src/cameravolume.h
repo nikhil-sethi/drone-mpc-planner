@@ -5,6 +5,8 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "common.h"
 
+#define N_PLANES 6 //adapt this to the number of planes in plane index!
+
 static const char* hunt_volume_check_names[] = {
     "HV_Unknown",
     "HV_OK",
@@ -17,7 +19,6 @@ static const char* hunt_volume_check_names[] = {
 class CameraVolume {
 public:
     enum plane_index{
-        no_plane,
         front_plane,
         top_plane,
         left_plane,
@@ -52,14 +53,14 @@ public:
     };
 
     /** @brief Checks if the point is in the viewable area.*/
-    std::tuple<bool, plane_index> in_view(cv::Point3f p,view_volume_check_mode c);
+    std::tuple<bool, std::array<bool, N_PLANES>> in_view(cv::Point3f p,view_volume_check_mode c);
 
     /** @brief Checks whether the point m (aka moth location) is in a good area for a hunt (worth to take off).
     * This area is described as cone above the drone location d. */
     hunt_check_result in_hunt_area(cv::Point3f d, cv::Point3f m);
 
     /** @brief Calculates the distance to the borders */
-    std::tuple<float, plane_index> calc_distance_to_borders(track_data data_drone);
+    std::tuple<bool, std::array<bool, N_PLANES>> check_distance_to_borders(track_data data_drone, float req_breaking_distance);
 
     cv::Point3f normal_vector(plane_index plane_idx);
 
@@ -142,11 +143,11 @@ private:
 
     float minimum_height = 0.3f; /**< Correction distance for the ground plane. */
 
-    /** @brief Checks whether the point p is for all planes defined in init on the right side.*/
-    std::tuple<bool, plane_index> in_view(cv::Point3f p, float hysteresis_margin);
+    /** @brief Checks whether the point p is for all planes on the right side.*/
+    std::tuple<bool, std::array<bool, N_PLANES>> in_view(cv::Point3f p, float hysteresis_margin);
 
     /** @brief Calculates the distance to the borders. */
-    std::tuple<float, plane_index> calc_distance_to_borders(std::vector<cv::Point3f> p);
+    std::array<float, N_PLANES> calc_distance_to_borders(std::vector<cv::Point3f> p);
 
     void calc_corner_points(cv::Mat p0_front, cv::Mat n_front, cv::Mat p0_back, cv::Mat n_back,
                             cv::Mat p0_top, cv::Mat n_top, cv::Mat p0_bottom, cv::Mat n_bottom,

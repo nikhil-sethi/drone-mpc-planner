@@ -787,26 +787,25 @@ float DroneController::thrust_to_throttle(float thrust_ratio) {
 std::tuple<bool, cv::Point3f> DroneController::keep_in_volume_control_required(track_data data_drone) {
 
     bool drone_in_boundaries;
-    CameraVolume::plane_index plane_violation_inview;
-    std::tie(drone_in_boundaries, plane_violation_inview) = _camvol->in_view(data_drone.pos(), CameraVolume::relaxed);
+    std::array<bool, N_PLANES> violated_planes_inview;
+    std::tie(drone_in_boundaries, violated_planes_inview) = _camvol->in_view(data_drone.pos(), CameraVolume::relaxed);
 
     float safety = 2;
-    float remaining_breaking_distance;
-    CameraVolume::plane_index plane_violation_dist2borders;
-    std::tie(remaining_breaking_distance, plane_violation_dist2borders) = _camvol->calc_distance_to_borders (data_drone);
-    remaining_breaking_distance -= static_cast<float>(norm(data_drone.vel()))*(1.f/pparams.fps); // Also consider the time till the next check
     float required_breaking_time = static_cast<float>(norm(data_drone.vel() )) / thrust;
     float required_breaking_distance = static_cast<float>(.5L*thrust*safety*pow(required_breaking_time, 2));
-    bool breaking_distance_too_small = remaining_breaking_distance<=required_breaking_distance && remaining_breaking_distance>0; 
+    required_breaking_distance += static_cast<float>(norm(data_drone.vel()))*(1.f/pparams.fps); // Also consider the time till the next check
 
-    if(!drone_in_boundaries){
+    bool enough_breaking_distance_left;
+    std::array<bool, N_PLANES> violated_planes_breakdistance;
+    std::tie(enough_breaking_distance_left , violated_planes_breakdistance) = _camvol->check_distance_to_borders (data_drone, required_breaking_distance);
+
+    if(!drone_in_boundaries || !enough_breaking_distance_left){
+        cv::Point3f correction_acceleration(0,0,0);
+        for(int i=0; i<N_PLANES; i++) {
+            if(violated_planes_inview.at(i) || violated_planes_breakdistance.at(i))
+                correction_acceleration += _camvol->normal_vector(static_cast<CameraVolume::plane_index>(i));
+        }
         flight_submode_name = "fm_pid_keep_in_volume";
-        cv::Point3f correction_acceleration = _camvol->normal_vector(plane_violation_inview);
-        return std::tuple(true, correction_acceleration);
-    }
-    if(breaking_distance_too_small) {
-        flight_submode_name = "fm_pid_keep_in_volume";
-        cv::Point3f correction_acceleration = _camvol->normal_vector(plane_violation_dist2borders);
         return std::tuple(true, correction_acceleration);
     } else if(flight_submode_name == "fm_pid_keep_in_volume")
         flight_submode_name = "";
