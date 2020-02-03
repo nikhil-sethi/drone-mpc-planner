@@ -1,5 +1,7 @@
 #include "cameravolume.h"
 
+#include "linalg.h"
+
 
 void CameraVolume::init(cv::Point3f point_left_top, cv::Point3f point_right_top, cv::Point3f point_left_bottom, cv::Point3f point_right_bottom,
                         float b_depth, float b_height) {

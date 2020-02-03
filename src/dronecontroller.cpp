@@ -1,5 +1,6 @@
 #include "dronecontroller.h"
 #include "defines.h"
+#include "linalg.h"
 
 using namespace cv;
 
