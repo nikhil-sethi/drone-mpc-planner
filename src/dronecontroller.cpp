@@ -440,6 +440,9 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
     roll = bound_joystick_value(roll);
     pitch = bound_joystick_value(pitch);
     yaw = bound_joystick_value(yaw);
+    auto_throttle = bound_throttle(auto_throttle);
+    auto_pitch = bound_joystick_value(auto_pitch);
+    auto_roll = bound_joystick_value(auto_roll);
 
     //std::cout << time <<  " rpt: " << roll << ", " << pitch << ", " << throttle << std::endl;
     if (!_fromfile) {
