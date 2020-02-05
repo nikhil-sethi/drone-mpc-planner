@@ -212,6 +212,8 @@ private:
 
     std::tuple<bool, cv::Point3f> keep_in_volume_control_required(track_data data_drone);
     bool keep_in_volume_control(track_data data_drone);
+    cv::Point3f kiv_acceleration(track_data data_drone, std::array<bool, N_PLANES> violated_planes_inview, std::array<bool, N_PLANES> violated_planes_brakedistance);
+
     void adapt_reffilter_dynamic(track_data data_drone, track_data data_target);
 
     std::tuple<float,float> acc_to_deg(cv::Point3f acc);

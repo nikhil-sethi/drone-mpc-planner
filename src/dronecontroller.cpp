@@ -796,40 +796,44 @@ std::tuple<bool, cv::Point3f> DroneController::keep_in_volume_control_required(t
     float drone_rotating_time = 13.f/pparams.fps; // Est. time to rotate the drone around 180 deg.
     float safety = 2;
     float required_breaking_time = normf(data_drone.vel() ) / thrust;
-    float required_breaking_distance = static_cast<float>(.5L*thrust*safety*pow(required_breaking_time, 2));
-    required_breaking_distance += normf(data_drone.vel())*(1.f/pparams.fps); // Also consider the time till the next check
-    required_breaking_distance += (drone_rotating_time+transmission_delay_duration)*normf(data_drone.vel());
+    float required_braking_distance = static_cast<float>(.5L*thrust*safety*pow(required_breaking_time, 2));
+    required_braking_distance += normf(data_drone.vel())*(1.f/pparams.fps); // Also consider the time till the next check
+    required_braking_distance += (drone_rotating_time+transmission_delay_duration)*normf(data_drone.vel());
 
-    bool enough_breaking_distance_left;
-    std::array<bool, N_PLANES> violated_planes_breakdistance;
-    std::tie(enough_breaking_distance_left , violated_planes_breakdistance) = _camvol->check_distance_to_borders (data_drone, required_breaking_distance);
+    bool enough_braking_distance_left;
+    std::array<bool, N_PLANES> violated_planes_brakedistance;
+    std::tie(enough_braking_distance_left , violated_planes_brakedistance) = _camvol->check_distance_to_borders (data_drone, required_braking_distance);
 
-    if(!drone_in_boundaries || !enough_breaking_distance_left){
-        cv::Point3f correction_acceleration(0,0,0);
-        for(uint i=0; i<N_PLANES; i++) {
-            float pos_err=0, vel_err=0;
-            if(data_drone.pos_valid)
-                pos_err = distance_to_plane(cv::Mat(_camvol->support_vector(i)), cv::Mat(_camvol->normal_vector(i)), cv::Mat(data_drone.pos())); //position error
-            if(data_drone.vel_valid) {
-                vel_err = distance_to_plane(cv::Mat(_camvol->support_vector(i)), cv::Mat(_camvol->normal_vector(i)), cv::Mat(data_drone.vel()));
-                if(vel_err>0)
-                    vel_err = 0;
-                else
-                    vel_err *= -1;
-            }
-
-            if(violated_planes_inview.at(i))
-                correction_acceleration += _camvol->normal_vector(i)*(1.f*pos_err + (-20.f)*vel_err);
-
-            if(violated_planes_breakdistance.at(i))
-                correction_acceleration += _camvol->normal_vector(i)*20.f*vel_err;
-        }
+    if(!drone_in_boundaries || !enough_braking_distance_left){
         flight_submode_name = "fm_pid_keep_in_volume";
+        cv::Point3f correction_acceleration = kiv_acceleration(data_drone, violated_planes_inview, violated_planes_brakedistance);
         return std::tuple(true, correction_acceleration);
     } else if(flight_submode_name == "fm_pid_keep_in_volume")
         flight_submode_name = "";
     
     return std::tuple(false, cv::Point3f(0,0,0));
+}
+
+cv::Point3f DroneController::kiv_acceleration(track_data data_drone, std::array<bool, N_PLANES> violated_planes_inview, std::array<bool, N_PLANES> violated_planes_brakedistance) {
+    cv::Point3f correction_acceleration(0,0,0);
+    for(uint i=0; i<N_PLANES; i++) {
+        float pos_err=0, vel_err=0;
+        if(data_drone.pos_valid)
+            pos_err = distance_to_plane(cv::Mat(_camvol->support_vector(i)), cv::Mat(_camvol->normal_vector(i)), cv::Mat(data_drone.pos())); //position error
+        if(data_drone.vel_valid) {
+            vel_err = distance_to_plane(cv::Mat(_camvol->support_vector(i)), cv::Mat(_camvol->normal_vector(i)), cv::Mat(data_drone.vel()));
+            if(vel_err>0)
+                vel_err = 0;
+            else
+                vel_err *= -1;
+        }
+
+        if(violated_planes_inview.at(i))
+            correction_acceleration += _camvol->normal_vector(i)*(1.f*pos_err + (-20.f)*vel_err);
+
+        if(violated_planes_brakedistance.at(i))
+            correction_acceleration += _camvol->normal_vector(i)*20.f*vel_err;
+    }
 }
 
 bool DroneController::keep_in_volume_control(track_data data_drone) {
