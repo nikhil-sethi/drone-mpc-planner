@@ -796,7 +796,7 @@ std::tuple<bool, cv::Point3f> DroneController::keep_in_volume_control_required(t
     float drone_rotating_time = 13.f/pparams.fps; // Est. time to rotate the drone around 180 deg.
     float safety = 2;
     float required_breaking_time = normf(data_drone.vel() ) / thrust;
-    float required_braking_distance = static_cast<float>(.5L*thrust*safety*pow(required_breaking_time, 2));
+    float required_braking_distance = static_cast<float>(.5L*thrust/safety*pow(required_breaking_time, 2));
     required_braking_distance += normf(data_drone.vel())*(1.f/pparams.fps); // Also consider the time till the next check
     required_braking_distance += (drone_rotating_time+transmission_delay_duration)*normf(data_drone.vel());
 
@@ -827,13 +827,16 @@ cv::Point3f DroneController::kiv_acceleration(track_data data_drone, std::array<
         }
 
         if(violated_planes_inview.at(i)) {
-            if(data_drone.pos_valid)
-                pos_err = shortest_distance_to_plane(data_drone.pos(), _camvol->support_vector(i), _camvol->normal_vector(i));
+            if(data_drone.pos_valid){
+                pos_err = _camvol->calc_shortest_distance_to_border(data_drone, i, CameraVolume::relaxed);
+            }
             correction_acceleration += _camvol->normal_vector(i)*(1.f*pos_err + (-20.f)*vel_err);
         }
         if(violated_planes_brakedistance.at(i))
             correction_acceleration += _camvol->normal_vector(i)*20.f*vel_err;
     }
+
+    correction_acceleration += {0, GRAVITY, 0};
     return correction_acceleration;
 }
 

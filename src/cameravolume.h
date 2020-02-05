@@ -62,6 +62,8 @@ public:
     /** @brief Calculates the distance to the borders */
     std::tuple<bool, std::array<bool, N_PLANES>> check_distance_to_borders(track_data data_drone, float req_breaking_distance);
 
+    float calc_shortest_distance_to_border(track_data drone_data, uint plane_idx, view_volume_check_mode cm);
+
     cv::Point3f normal_vector(uint plane_idx) {return cv::Point3f(plane_normals.at(plane_idx));};
     cv::Point3f support_vector(uint plane_idx) {return cv::Point3f(plane_supports.at(plane_idx));};
 
@@ -85,6 +87,9 @@ public:
     cv::Mat bottom_left_front_hunt() {return _bottom_left_front_hunt;}
     cv::Mat bottom_left_back_hunt() {return _bottom_left_back_hunt;}
 private:
+    float relaxed_safety_margin = 0.3f;
+    float strict_safetty_margin = 0.6f;
+
     // Define limitation planes in plane normal form:
     std::array<cv::Mat, N_PLANES> plane_normals;
     std::array<cv::Mat, N_PLANES> plane_supports;

@@ -102,9 +102,9 @@ void CameraVolume::calc_corner_points_hunt(cv::Mat p0_front, cv::Mat n_front, cv
 
 std::tuple<bool, std::array<bool, N_PLANES>> CameraVolume::in_view(cv::Point3f p, view_volume_check_mode c) {
     if (c == relaxed)
-        return in_view(p,0.3f);
+        return in_view(p,relaxed_safety_margin);
     else
-        return in_view(p,0.6f);
+        return in_view(p,strict_safetty_margin);
 }
 
 std::tuple<bool, std::array<bool, N_PLANES>> CameraVolume::in_view(cv::Point3f p,float hysteresis_margin) {
@@ -173,4 +173,13 @@ std::array<float, N_PLANES> CameraVolume::calc_distance_to_borders(std::vector<c
     }
 
     return distances_to_planes;
+}
+
+float CameraVolume::calc_shortest_distance_to_border(track_data drone_data, uint plane_idx, view_volume_check_mode cm) {
+    float safety_margin = relaxed_safety_margin;
+    if(cm == strict)
+        safety_margin = strict_safetty_margin;
+
+    cv::Point3f shifted_support_vector = support_vector(plane_idx) + safety_margin*normal_vector(plane_idx);
+    return shortest_distance_to_plane(drone_data.pos(), shifted_support_vector, normal_vector(plane_idx));
 }
