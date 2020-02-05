@@ -793,10 +793,12 @@ std::tuple<bool, cv::Point3f> DroneController::keep_in_volume_control_required(t
     std::array<bool, N_PLANES> violated_planes_inview;
     std::tie(drone_in_boundaries, violated_planes_inview) = _camvol->in_view(data_drone.pos(), CameraVolume::relaxed);
 
+    float drone_rotating_time = 13.f/pparams.fps; // Est. time to rotate the drone around 180 deg.
     float safety = 2;
-    float required_breaking_time = static_cast<float>(norm(data_drone.vel() )) / thrust;
+    float required_breaking_time = normf(data_drone.vel() ) / thrust;
     float required_breaking_distance = static_cast<float>(.5L*thrust*safety*pow(required_breaking_time, 2));
-    required_breaking_distance += static_cast<float>(norm(data_drone.vel()))*(1.f/pparams.fps); // Also consider the time till the next check
+    required_breaking_distance += normf(data_drone.vel())*(1.f/pparams.fps); // Also consider the time till the next check
+    required_breaking_distance += (drone_rotating_time+transmission_delay_duration)*normf(data_drone.vel());
 
     bool enough_breaking_distance_left;
     std::array<bool, N_PLANES> violated_planes_breakdistance;
@@ -817,11 +819,10 @@ std::tuple<bool, cv::Point3f> DroneController::keep_in_volume_control_required(t
             }
 
             if(violated_planes_inview.at(i))
-                correction_acceleration += _camvol->normal_vector(i)*(5*pos_err + (-1)*vel_err);
+                correction_acceleration += _camvol->normal_vector(i)*(1.f*pos_err + (-20.f)*vel_err);
 
             if(violated_planes_breakdistance.at(i))
-                correction_acceleration += _camvol->normal_vector(i)*vel_err;
-            
+                correction_acceleration += _camvol->normal_vector(i)*20.f*vel_err;
         }
         flight_submode_name = "fm_pid_keep_in_volume";
         return std::tuple(true, correction_acceleration);
