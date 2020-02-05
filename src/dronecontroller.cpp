@@ -840,7 +840,6 @@ bool DroneController::keep_in_volume_control(track_data data_drone) {
     cv::Point3f correction_acceleration;
     bool kiv_required;
     std::tie(kiv_required, correction_acceleration) = keep_in_volume_control_required(data_drone);
-    correction_acceleration *= thrust; // counteract boudary violation with maximal thrust
 
     std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(correction_acceleration);
     return kiv_required;
