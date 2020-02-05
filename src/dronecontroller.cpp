@@ -818,22 +818,23 @@ cv::Point3f DroneController::kiv_acceleration(track_data data_drone, std::array<
     cv::Point3f correction_acceleration(0,0,0);
     for(uint i=0; i<N_PLANES; i++) {
         float pos_err=0, vel_err=0;
-        if(data_drone.pos_valid)
-            pos_err = distance_to_plane(cv::Mat(_camvol->support_vector(i)), cv::Mat(_camvol->normal_vector(i)), cv::Mat(data_drone.pos())); //position error
         if(data_drone.vel_valid) {
-            vel_err = distance_to_plane(cv::Mat(_camvol->support_vector(i)), cv::Mat(_camvol->normal_vector(i)), cv::Mat(data_drone.vel()));
+            vel_err = projection_length_of_vec_along_dir( data_drone.vel(), _camvol->normal_vector(i));
             if(vel_err>0)
                 vel_err = 0;
             else
                 vel_err *= -1;
         }
 
-        if(violated_planes_inview.at(i))
+        if(violated_planes_inview.at(i)) {
+            if(data_drone.pos_valid)
+                pos_err = shortest_distance_to_plane(data_drone.pos(), _camvol->support_vector(i), _camvol->normal_vector(i));
             correction_acceleration += _camvol->normal_vector(i)*(1.f*pos_err + (-20.f)*vel_err);
-
+        }
         if(violated_planes_brakedistance.at(i))
             correction_acceleration += _camvol->normal_vector(i)*20.f*vel_err;
     }
+    return correction_acceleration;
 }
 
 bool DroneController::keep_in_volume_control(track_data data_drone) {

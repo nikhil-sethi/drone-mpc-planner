@@ -169,7 +169,7 @@ std::array<float, N_PLANES> CameraVolume::calc_distance_to_borders(std::vector<c
     for(uint i=0; i<N_PLANES; i++) {
         plane_supports.at(i).copyTo(plane.col(0));
         plane_normals.at(i).copyTo(plane.col(1));
-        distances_to_planes.at(i) = calc_distance_to_plane(pMat, plane);
+        distances_to_planes.at(i) = distance_to_plane_along_vec(pMat, plane);
     }
 
     return distances_to_planes;

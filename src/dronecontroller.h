@@ -171,7 +171,7 @@ private:
     cv::Point3f drone_vel_after_takeoff = {0};
     float ground_effect = 1.0f;
     const float lift_off_dist_take_off_aim = 0.02f;
-    const float take_off_burn_duration = 0.16f;
+    const float take_off_burn_duration = 0.08f;
     float min_takeoff_angle = 45.f/180.f*static_cast<float>(M_PI);
 
     double take_off_start_time = 0;

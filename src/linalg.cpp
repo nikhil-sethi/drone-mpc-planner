@@ -28,7 +28,7 @@ std::tuple<float, cv::Mat> hesse_normal_form(cv::Mat p0, cv::Mat n)
     return std::make_tuple(d, n0);
 }
 
-float calc_distance_to_plane(cv::Mat vec, cv::Mat plane) {
+float distance_to_plane_along_vec(cv::Mat vec, cv::Mat plane) {
     cv::Mat b(3, 1, CV_32F);
     b = vec.col(0) - plane.col(0);
 
@@ -106,11 +106,9 @@ bool on_normal_side(cv::Mat p0, cv::Mat n, cv::Mat p) {
         return false;
 }
 
-float distance_to_plane(cv::Mat p0, cv::Mat n, cv::Mat p) {
-    cv::Mat v = cv::Mat::zeros(cv::Size(1,3), CV_32F);
-    v = p-p0;
-    //WARNING: Only works if norm(n)==1!
-    return v.dot (n);
+float projection_length_of_vec_along_dir(cv::Point3f vec, cv::Point3f dir) {
+    dir = dir/norm(dir);
+    return vec.dot(dir);
 }
 
 
@@ -129,4 +127,11 @@ cv::Point3f lowest_direction_to_horizontal(cv::Point3f direction, float min_angl
     }
     direction /= norm(direction);
     return direction;
+}
+
+
+float shortest_distance_to_plane(cv::Point3f pnt, cv::Point3f pln_spprt, cv::Point3f pln_nrm) {
+    cv::Point3f plnspprt2pnt = pnt - pln_spprt;
+    pln_nrm = pln_nrm/norm(pln_nrm);
+    return plnspprt2pnt.dot(pln_nrm);
 }

@@ -25,11 +25,15 @@ cv::Mat get_plane_normal_vector(cv::Point3f x1, cv::Point3f x2);
 * Returns true if the point is on the point the side the normal vector is looking to, else false is returned. */
 bool on_normal_side(cv::Mat p0, cv::Mat n, cv::Mat p);
 
-float distance_to_plane(cv::Mat p0, cv::Mat n, cv::Mat p);
+/** @brief  Calculates the length of the projection of a vector vec on the direction of dir.*/
+float projection_length_of_vec_along_dir(cv::Point3f vec, cv::Point3f dir);
 
+/** @brief Determines the intersection point of 3 planes. */
 cv::Mat intersection_of_3_planes(cv::Mat p0_1, cv::Mat n_1, cv::Mat p0_2, cv::Mat n_2, cv::Mat p0_3, cv::Mat n_3);
 
 std::tuple<float, cv::Mat> hesse_normal_form(cv::Mat p0, cv::Mat n);
 
 /** @brief Calculates the distance along vec till the plane is intercepted.*/
-float calc_distance_to_plane(cv::Mat vec, cv::Mat plane);
+float distance_to_plane_along_vec(cv::Mat vec, cv::Mat plane);
+
+float shortest_distance_to_plane(cv::Point3f pnt, cv::Point3f pln_spprt, cv::Point3f pln_nrm);
