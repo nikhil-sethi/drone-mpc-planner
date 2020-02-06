@@ -5,7 +5,7 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "common.h"
 
-#define N_PLANES 6 //adapt this to the number of planes in plane index!
+#define N_PLANES 7 //adapt this to the number of planes in plane index!
 #define N_CORNER_POINTS 8 //adapt this to the number of corner points in point_index
 
 static const char* hunt_volume_check_names[] = {
@@ -14,7 +14,7 @@ static const char* hunt_volume_check_names[] = {
     "HV_To_High",
     "HV_To_Low",
     "HV_To_Close",
-    "HV_Outside_Cone"
+    "HV_Outside_Huntarea"
 };
 
 class CameraView {
@@ -25,7 +25,8 @@ public:
         left_plane,
         right_plane,
         bottom_plane,
-        back_plane
+        back_plane,
+        camera_plane
     };
 
     enum point_index{
@@ -40,7 +41,7 @@ public:
     };
 
     void init(cv::Point3f point_left_top, cv::Point3f point_right_top, cv::Point3f point_left_bottom, cv::Point3f point_right_bottom,
-              float depth, float height);
+              float depth, float height, float camera_pitch_deg);
 
     enum hunt_check_result {
         HuntVolume_Unknown,
@@ -48,7 +49,7 @@ public:
         HuntVolume_To_High,
         HuntVolume_To_Low,
         HuntVolume_To_Close,
-        HuntVolume_Outside_Cone
+        HuntVolume_Outside_Huntarea
     };
 
     cv::Point3f center_of_volume() {
@@ -108,6 +109,7 @@ private:
     double margin_back = 0.2;
     double margin_left = 7.0;
     double margin_right = 7.0;
+    double margin_camera = 0.3;
 
     float minimum_height = 0.3f; /**< Correction distance for the ground plane. */
 
