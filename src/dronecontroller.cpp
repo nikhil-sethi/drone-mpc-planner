@@ -333,9 +333,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         //adapt_reffilter_dynamic(data_drone, data_target);
         data_target_new.pos() = pos_reference_filter.new_sample(data_target_new.pos());
 
-        bool keep_in_volume_control_enabled = keep_in_volume_control(data_drone); // Setpoint changes due to keep in volume validation shall not be filtered. The drone must always react fast to these changes.
-        if(!keep_in_volume_control_enabled)
-            control_model_based(data_drone, data_target_new.pos(),data_target_new.vel(),false);
+        control_model_based(data_drone, data_target_new.pos(),data_target_new.vel(),false);
 
         //check if we can go back to burning:
         if (data_drone.pos_valid && data_drone.vel_valid && _joy_state!=js_waypoint) {
@@ -787,14 +785,14 @@ float DroneController::thrust_to_throttle(float thrust_ratio) {
     return p1*powf(thrust_ratio,4) + p2*powf(thrust_ratio,3) + p3*powf(thrust_ratio,2) + p4*thrust_ratio + p5;
 }
 
-std::tuple<bool, cv::Point3f> DroneController::keep_in_volume_control_required(track_data data_drone) {
+cv::Point3f DroneController::keep_in_volume_correction_acceleration(track_data data_drone) {
 
     bool drone_in_boundaries;
     std::array<bool, N_PLANES> violated_planes_inview;
     std::tie(drone_in_boundaries, violated_planes_inview) = _camview->in_view(data_drone.pos(), CameraView::relaxed);
 
-    float drone_rotating_time = 11.f/pparams.fps; // Est. time to rotate the drone around 180 deg.
-    float safety = 1.f;
+    float drone_rotating_time = 13.f/pparams.fps; // Est. time to rotate the drone around 180 deg.
+    float safety = 2.f;
     float required_breaking_time = normf(data_drone.vel() ) / thrust;
     float required_braking_distance = static_cast<float>(.5L*thrust/safety*pow(required_breaking_time, 2));
     required_braking_distance += normf(data_drone.vel())*(1.f/pparams.fps); // Also consider the time till the next check
@@ -807,11 +805,11 @@ std::tuple<bool, cv::Point3f> DroneController::keep_in_volume_control_required(t
     if(!drone_in_boundaries || !enough_braking_distance_left){
         flight_submode_name = "fm_pid_keep_in_volume";
         cv::Point3f correction_acceleration = kiv_acceleration(data_drone, violated_planes_inview, violated_planes_brakedistance);
-        return std::tuple(true, correction_acceleration);
+        return correction_acceleration;
     } else if(flight_submode_name == "fm_pid_keep_in_volume")
         flight_submode_name = "";
     
-    return std::tuple(false, cv::Point3f(0,0,0));
+    return cv::Point3f(0,0,0);
 }
 
 cv::Point3f DroneController::kiv_acceleration(track_data data_drone, std::array<bool, N_PLANES> violated_planes_inview, std::array<bool, N_PLANES> violated_planes_brakedistance) {
@@ -836,17 +834,7 @@ cv::Point3f DroneController::kiv_acceleration(track_data data_drone, std::array<
             correction_acceleration += _camview->normal_vector(i)*8.f*vel_err;
     }
 
-    correction_acceleration += {0, GRAVITY, 0};
     return correction_acceleration;
-}
-
-bool DroneController::keep_in_volume_control(track_data data_drone) {
-    cv::Point3f correction_acceleration;
-    bool kiv_required;
-    std::tie(kiv_required, correction_acceleration) = keep_in_volume_control_required(data_drone);
-
-    std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(correction_acceleration);
-    return kiv_required;
 }
 
 void DroneController::adapt_reffilter_dynamic(track_data data_drone, track_data data_target) {
@@ -1009,6 +997,7 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     if( !(norm(setpoint_vel)<0.1 && norm(setpoint_pos-data_drone.pos ())<0.2) ) // Needed to improve hovering at waypoint
         desired_acceleration += multf(kp_vel, vel_err_p) + multf(kd_vel, vel_err_d); // velocity control
 
+    desired_acceleration += keep_in_volume_correction_acceleration(data_drone);
     std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(desired_acceleration);
 }
 

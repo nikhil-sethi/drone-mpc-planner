@@ -210,8 +210,7 @@ private:
     void draw_viz(state_data state_drone, state_data state_target, double time, cv::Point3f burn_direction, float burn_duration, float remaining_aim_duration, std::vector<state_data> traj);
     bool trajectory_in_view(std::vector<state_data> traj, CameraView::view_volume_check_mode c);
 
-    std::tuple<bool, cv::Point3f> keep_in_volume_control_required(track_data data_drone);
-    bool keep_in_volume_control(track_data data_drone);
+    cv::Point3f keep_in_volume_correction_acceleration(track_data data_drone);
     cv::Point3f kiv_acceleration(track_data data_drone, std::array<bool, N_PLANES> violated_planes_inview, std::array<bool, N_PLANES> violated_planes_brakedistance);
 
     void adapt_reffilter_dynamic(track_data data_drone, track_data data_target);
