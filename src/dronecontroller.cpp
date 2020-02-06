@@ -786,6 +786,11 @@ float DroneController::thrust_to_throttle(float thrust_ratio) {
 }
 
 cv::Point3f DroneController::keep_in_volume_correction_acceleration(track_data data_drone) {
+    if(_flight_mode!=fm_flying_pid) {   
+        if(flight_submode_name == "fm_pid_keep_in_volume")
+        flight_submode_name = "";
+        return cv::Point3f(0,0,0);
+    }
 
     bool drone_in_boundaries;
     std::array<bool, N_PLANES> violated_planes_inview;
