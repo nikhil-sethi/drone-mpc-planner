@@ -6,6 +6,7 @@
 #include "common.h"
 
 #define N_PLANES 6 //adapt this to the number of planes in plane index!
+#define N_CORNER_POINTS 8 //adapt this to the number of corner points in point_index
 
 static const char* hunt_volume_check_names[] = {
     "HV_Unknown",
@@ -16,7 +17,7 @@ static const char* hunt_volume_check_names[] = {
     "HV_Outside_Cone"
 };
 
-class CameraVolume {
+class CameraView {
 public:
     enum plane_index{
         top_plane,
@@ -25,6 +26,17 @@ public:
         right_plane,
         bottom_plane,
         back_plane
+    };
+
+    enum point_index{
+        top_right_front,
+        top_right_back,
+        top_left_front,
+        top_left_back,
+        bottom_right_front,
+        bottom_right_back,
+        bottom_left_front,
+        bottom_left_back,
     };
 
     void init(cv::Point3f point_left_top, cv::Point3f point_right_top, cv::Point3f point_left_bottom, cv::Point3f point_right_bottom,
@@ -70,24 +82,11 @@ public:
     void p0_bottom_plane(float b_depth);
 
     cv::Point3f project_into_camera_volume(cv::Point3f pos_stepoint, std::array<bool, N_PLANES> violated_planes);
+    cv::Point3f setpoint_in_cameraview(cv::Point3f pos_setpoint);
 
-    cv::Mat top_right_front() {return _top_right_front;}
-    cv::Mat top_right_back() {return _top_right_back;}
-    cv::Mat top_left_front() {return _top_left_front;}
-    cv::Mat top_left_back() {return _top_left_back;}
-    cv::Mat bottom_right_front() {return _bottom_right_front;}
-    cv::Mat bottom_right_back() {return _bottom_right_back;}
-    cv::Mat bottom_left_front() {return _bottom_left_front;}
-    cv::Mat bottom_left_back() {return _bottom_left_back;}
+    cv::Mat corner_point(uint i) {return corner_points.at(i);};
+    cv::Mat corner_point_hunt(uint i) {return corner_points_hunt.at(i);};
 
-    cv::Mat top_right_front_hunt() {return _top_right_front_hunt;}
-    cv::Mat top_right_back_hunt() {return _top_right_back_hunt;}
-    cv::Mat top_left_front_hunt() {return _top_left_front_hunt;}
-    cv::Mat top_left_back_hunt() {return _top_left_back_hunt;}
-    cv::Mat bottom_right_front_hunt() {return _bottom_right_front_hunt;}
-    cv::Mat bottom_right_back_hunt() {return _bottom_right_back_hunt;}
-    cv::Mat bottom_left_front_hunt() {return _bottom_left_front_hunt;}
-    cv::Mat bottom_left_back_hunt() {return _bottom_left_back_hunt;}
 private:
     float relaxed_safety_margin = 0.3f;
     float strict_safetty_margin = 0.6f;
@@ -95,41 +94,12 @@ private:
     // Define limitation planes in plane normal form:
     std::array<cv::Mat, N_PLANES> plane_normals;
     std::array<cv::Mat, N_PLANES> plane_supports;
+    std::array<cv::Mat, N_PLANES> plane_normals_hunt;
+    std::array<cv::Mat, N_PLANES> plane_supports_hunt;
 
     // Define corner points
-    cv::Mat _top_right_front;
-    cv::Mat _top_right_back;
-    cv::Mat _top_left_front;
-    cv::Mat _top_left_back;
-    cv::Mat _bottom_right_front;
-    cv::Mat _bottom_right_back;
-    cv::Mat _bottom_left_front;
-    cv::Mat _bottom_left_back;
-
-    // Define corner points
-    cv::Mat _top_right_front_hunt;
-    cv::Mat _top_right_back_hunt;
-    cv::Mat _top_left_front_hunt;
-    cv::Mat _top_left_back_hunt;
-    cv::Mat _bottom_right_front_hunt;
-    cv::Mat _bottom_right_back_hunt;
-    cv::Mat _bottom_left_front_hunt;
-    cv::Mat _bottom_left_back_hunt;
-
-    // Define limitation planes in plane normal form:
-    cv::Mat _n_front_hunt;
-    cv::Mat _p0_front_hunt;
-    cv::Mat _n_top_hunt;
-    cv::Mat _p0_top_hunt;
-    cv::Mat _n_left_hunt;
-    cv::Mat _p0_left_hunt;
-    cv::Mat _n_right_hunt;
-    cv::Mat _p0_right_hunt;
-    cv::Mat _n_bottom_hunt;
-    cv::Mat _p0_bottom_hunt;
-    cv::Mat _n_back_hunt;
-    cv::Mat _p0_back_hunt;
-
+    std::array<cv::Mat, N_CORNER_POINTS> corner_points;
+    std::array<cv::Mat, N_CORNER_POINTS> corner_points_hunt;
 
     // Margins betweens sight-volume and hunt-volume
     double margin_top = 0.2;

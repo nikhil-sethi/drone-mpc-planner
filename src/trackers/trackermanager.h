@@ -125,7 +125,7 @@ private:
     std::vector<ItemTracker *> _trackers;
     std::ofstream *_logger;
     VisionData *_visdat;
-    CameraVolume *_camvol;
+    CameraView *_camview;
     bool initialized = false;
 
     bool enable_viz_max_points = false; // flag for enabling the maxs visiualization
@@ -181,7 +181,7 @@ public:
 
     InsectTracker *insecttracker_best();
     DroneTracker * dronetracker() { return _dtrkr; }
-    void init(ofstream *logger, VisionData *visdat, CameraVolume *camvol);
+    void init(ofstream *logger, VisionData *visdat, CameraView *camview);
     void update(double time, bool drone_is_active);
     void close();
 

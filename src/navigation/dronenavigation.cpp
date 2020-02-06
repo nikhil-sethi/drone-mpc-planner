@@ -7,13 +7,14 @@ using namespace std;
 namespace navigation {
 
 
-void DroneNavigation::init(std::ofstream *logger, tracking::TrackerManager * trackers, DroneController * dctrl, VisionData *visdat, CameraVolume *camvol,std::string replay_dir) {
+void DroneNavigation::init(std::ofstream *logger, tracking::TrackerManager * trackers, DroneController * dctrl, VisionData *visdat, CameraView *camview,std::string replay_dir) {
     _logger = logger;
     _trackers = trackers;
     _dctrl = dctrl;
     _visdat = visdat;
+    _camview = camview;
 
-    _iceptor.init(_trackers, visdat, camvol, logger);
+    _iceptor.init(_trackers, visdat, camview, logger);
 
     deserialize_settings();
     deserialize_flightplan(replay_dir);
@@ -228,7 +229,7 @@ void DroneNavigation::update(double time) {
             //update target chasing waypoint and speed
             if (_iceptor.insect_in_range()) {
                 setpoint_pos_world = _iceptor.target_position();
-                setpoint_pos_world = _camvol->setpoint_in_cameraview(setpoint_pos_world); 
+                setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world); 
                 setpoint_vel_world = _iceptor.target_speed();
                 setpoint_acc_world = _iceptor.target_accelleration();
             }
@@ -390,14 +391,14 @@ void DroneNavigation::next_waypoint(Waypoint wp) {
     if (wp.mode == wfm_takeoff) {
         cv::Point3f p = _trackers->dronetracker()->drone_startup_location();
         setpoint_pos_world =  p + wp.xyz;
-        setpoint_pos_world = _camvol->setpoint_in_cameraview(setpoint_pos_world);
+        setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world);
     } else if (wp.mode == wfm_landing) {
         cv::Point3f p = _trackers->dronetracker()->drone_landing_location();
         setpoint_pos_world =  p + wp.xyz;
-        setpoint_pos_world = _camvol->setpoint_in_cameraview(setpoint_pos_world);
+        setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world);
     } else {
         setpoint_pos_world =  wp.xyz;
-        setpoint_pos_world = _camvol->setpoint_in_cameraview(setpoint_pos_world);
+        setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world);
     }
 
     setpoint_vel_world = {0,0,0};

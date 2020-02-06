@@ -12,12 +12,12 @@ bool DroneController::joystick_ready() {
     return joystick.isFound();
 }
 
-void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc, tracking::DroneTracker *dtrk, CameraVolume *camvol) {
+void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc, tracking::DroneTracker *dtrk, CameraView *camview) {
     _rc = rc;
     _dtrk = dtrk;
     _logger = logger;
     _fromfile = fromfile;
-    _camvol = camvol;
+    _camview = camview;
     control_history_max_size = pparams.fps;
     (*_logger) << "valid; flight_mode;" <<
                "target_pos_x; target_pos_y; target_pos_z; " <<
@@ -252,7 +252,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         if (recovery_mode && remaining_aim_duration <= 0) {
             _flight_mode = fm_interception_burn_start;
         } else if (recovery_mode) { // do nothing
-        } else if (!trajectory_in_view(traj,CameraVolume::relaxed) || auto_burn_duration > 1.1f || auto_burn_duration == 0.0f) {
+        } else if (!trajectory_in_view(traj,CameraView::relaxed) || auto_burn_duration > 1.1f || auto_burn_duration == 0.0f) {
             _flight_mode = fm_flying_pid_init;
         } else {
             std::vector<state_data> traj_back;
@@ -265,7 +265,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
             //            draw_viz(traj_back.back(),target_back,time,burn_direction_back,auto_burn_duration_back,aim_duration,traj_back);
             //            for (auto t : traj_back)
             //                viz_drone_trajectory.push_back(t);
-            if (!trajectory_in_view(traj_back,CameraVolume::relaxed)) {
+            if (!trajectory_in_view(traj_back,CameraView::relaxed)) {
                 _flight_mode = fm_flying_pid_init;
             } else if (remaining_aim_duration < 0.01f)
                 _flight_mode = fm_interception_burn_start;
@@ -346,10 +346,10 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
 
             //            cout << "burn_duration: " << burn_duration << endl;
 
-            if (trajectory_in_view(traj,CameraVolume::strict) && burn_duration < 0.2f && burn_duration > 0.01f && false) {
+            if (trajectory_in_view(traj,CameraView::strict) && burn_duration < 0.2f && burn_duration > 0.01f && false) {
                 std::vector<state_data> traj_back;
                 std::tie (std::ignore, std::ignore,std::ignore,std::ignore,traj_back) = calc_burn(traj.back(),traj.front(),aim_duration);
-                if (trajectory_in_view(traj_back,CameraVolume::strict) && norm(data_target_new.state.vel)>0.1) { // norm vel is hack to check if not waypoint
+                if (trajectory_in_view(traj_back,CameraView::strict) && norm(data_target_new.state.vel)>0.1) { // norm vel is hack to check if not waypoint
                     _flight_mode = fm_retry_aim_start;
                     //                    recovery_mode = true; // will be set to false in retry_aim TMP disabled because #131
                     recovery_pos = data_drone.pos();
@@ -651,10 +651,10 @@ std::vector<state_data> DroneController::predict_trajectory(float burn_duration,
     return traj;
 }
 
-bool DroneController::trajectory_in_view(std::vector<state_data> traj, CameraVolume::view_volume_check_mode c) {
+bool DroneController::trajectory_in_view(std::vector<state_data> traj, CameraView::view_volume_check_mode c) {
     for (auto state : traj) {
         bool inview;
-        std::tie(inview, ignore) = _camvol->in_view(state.pos,c);
+        std::tie(inview, ignore) = _camview->in_view(state.pos,c);
         if (!inview)
             return false;
     }
@@ -791,7 +791,7 @@ std::tuple<bool, cv::Point3f> DroneController::keep_in_volume_control_required(t
 
     bool drone_in_boundaries;
     std::array<bool, N_PLANES> violated_planes_inview;
-    std::tie(drone_in_boundaries, violated_planes_inview) = _camvol->in_view(data_drone.pos(), CameraVolume::relaxed);
+    std::tie(drone_in_boundaries, violated_planes_inview) = _camview->in_view(data_drone.pos(), CameraView::relaxed);
 
     float drone_rotating_time = 11.f/pparams.fps; // Est. time to rotate the drone around 180 deg.
     float safety = 1.f;
@@ -802,7 +802,7 @@ std::tuple<bool, cv::Point3f> DroneController::keep_in_volume_control_required(t
 
     bool enough_braking_distance_left;
     std::array<bool, N_PLANES> violated_planes_brakedistance;
-    std::tie(enough_braking_distance_left , violated_planes_brakedistance) = _camvol->check_distance_to_borders (data_drone, required_braking_distance);
+    std::tie(enough_braking_distance_left , violated_planes_brakedistance) = _camview->check_distance_to_borders (data_drone, required_braking_distance);
 
     if(!drone_in_boundaries || !enough_braking_distance_left){
         flight_submode_name = "fm_pid_keep_in_volume";
@@ -819,7 +819,7 @@ cv::Point3f DroneController::kiv_acceleration(track_data data_drone, std::array<
     for(uint i=0; i<N_PLANES; i++) {
         float pos_err=0, vel_err=0;
         if(data_drone.vel_valid) {
-            vel_err = projection_length_of_vec_along_dir( data_drone.vel(), _camvol->normal_vector(i));
+            vel_err = projection_length_of_vec_along_dir( data_drone.vel(), _camview->normal_vector(i));
             if(vel_err>0)
                 vel_err = 0;
             else
@@ -828,12 +828,12 @@ cv::Point3f DroneController::kiv_acceleration(track_data data_drone, std::array<
 
         if(violated_planes_inview.at(i)) {
             if(data_drone.pos_valid){
-                pos_err = -_camvol->calc_shortest_distance_to_border(data_drone.pos(), i, CameraVolume::relaxed);
+                pos_err = -_camview->calc_shortest_distance_to_border(data_drone.pos(), i, CameraView::relaxed);
             }
-            correction_acceleration += _camvol->normal_vector(i)*(1.f*pos_err + 8.f*vel_err);
+            correction_acceleration += _camview->normal_vector(i)*(1.f*pos_err + 8.f*vel_err);
         }
         if(violated_planes_brakedistance.at(i))
-            correction_acceleration += _camvol->normal_vector(i)*8.f*vel_err;
+            correction_acceleration += _camview->normal_vector(i)*8.f*vel_err;
     }
 
     correction_acceleration += {0, GRAVITY, 0};

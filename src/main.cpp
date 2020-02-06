@@ -18,7 +18,7 @@
 #include "opencv2/highgui/highgui.hpp"
 
 #include "common.h"
-#include "cameravolume.h"
+#include "cameraview.h"
 #include "defines.h"
 #include "smoother.h"
 #include "multimodule.h"

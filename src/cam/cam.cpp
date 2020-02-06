@@ -286,7 +286,7 @@ void Cam::init() {
     initialized = true;
 }
 
-CameraVolume Cam::def_volume () {
+CameraView Cam::def_volume () {
 
     float b_depth, b_ground;
 
@@ -326,10 +326,10 @@ CameraVolume Cam::def_volume () {
     }
     b_depth = -z_sum/n;
 
-    CameraVolume camVol;
-    camVol.init(point_left_top, point_right_top, point_left_bottom, point_right_bottom, b_depth, b_ground);
+    CameraView camview;
+    camview.init(point_left_top, point_right_top, point_left_bottom, point_right_bottom, b_depth, b_ground);
 
-    return camVol;
+    return camview;
 }
 
 cv::Point3f Cam::get_SlopesOfPixel(uint x, uint y) {

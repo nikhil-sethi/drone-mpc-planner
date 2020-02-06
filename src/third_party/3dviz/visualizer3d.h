@@ -14,10 +14,10 @@ public:
     Visualizer3D();
 
 #ifdef VIZ_3D
-    bool init(TrackerManager *trackers, CameraVolume *cam_volume, DroneController *dctrl, DroneNavigation *dnav);
+    bool init(TrackerManager *trackers, CameraView *cam_volume, DroneController *dctrl, DroneNavigation *dnav);
     void run();
 #else
-    bool init(tracking::TrackerManager *trackers [[maybe_unused]], CameraVolume *cam_volume [[maybe_unused]], DroneController *dctrl [[maybe_unused]], navigation::DroneNavigation *dnav [[maybe_unused]]) {return true;}
+    bool init(tracking::TrackerManager *trackers [[maybe_unused]], CameraView *cam_volume [[maybe_unused]], DroneController *dctrl [[maybe_unused]], navigation::DroneNavigation *dnav [[maybe_unused]]) {return true;}
     void run() {}
 #endif
 

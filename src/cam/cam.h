@@ -9,7 +9,7 @@
 #include <iomanip>
 #include <unistd.h>
 #include "common.h"
-#include "cameravolume.h"
+#include "cameraview.h"
 #include <thread>
 
 #include <condition_variable>
@@ -94,7 +94,7 @@ public:
     cv::Mat depth_background_3mm_world;
     cv::Mat depth_background_mm;
     cv::Mat disparity_background;
-    CameraVolume camera_volume;
+    CameraView camera_volume;
 
     float _camera_angle_x = 0;
     float _camera_angle_y = 30;
@@ -165,7 +165,7 @@ private:
     std::string disparity_map_wfn;
     std::string brightness_map_wfn;
 
-    CameraVolume def_volume();
+    CameraView def_volume();
     cv::Point3f get_SlopesOfPixel(uint x, uint y);
     void pause();
     void resume();

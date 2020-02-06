@@ -3,7 +3,7 @@
 #include "joystick.hpp"
 #include "multimodule.h"
 #include "common.h"
-#include "cameravolume.h"
+#include "cameraview.h"
 #define GRAVITY 9.81f
 
 static const char* joy_states_names[] = { "js_manual",
@@ -208,7 +208,7 @@ private:
     std::tuple<int, int, float, cv::Point3f> calc_directional_burn(state_data state_drone, state_data state_target, float remaining_aim_duration);
     std::vector<state_data> predict_trajectory(float burn_duration, float remaining_aim_duration, cv::Point3f burn_direction, state_data state_drone);
     void draw_viz(state_data state_drone, state_data state_target, double time, cv::Point3f burn_direction, float burn_duration, float remaining_aim_duration, std::vector<state_data> traj);
-    bool trajectory_in_view(std::vector<state_data> traj, CameraVolume::view_volume_check_mode c);
+    bool trajectory_in_view(std::vector<state_data> traj, CameraView::view_volume_check_mode c);
 
     std::tuple<bool, cv::Point3f> keep_in_volume_control_required(track_data data_drone);
     bool keep_in_volume_control(track_data data_drone);
@@ -238,7 +238,7 @@ private:
 
     MultiModule * _rc;
     tracking::DroneTracker * _dtrk;
-    CameraVolume * _camvol;
+    CameraView * _camview;
 
     std::ofstream *_logger;
     void send_data_joystick(void);
@@ -414,7 +414,7 @@ public:
     }
 
     void close (void);
-    void init(std::ofstream *logger, bool fromfile, MultiModule *rc, tracking::DroneTracker *dtrk, CameraVolume* camvol);
+    void init(std::ofstream *logger, bool fromfile, MultiModule *rc, tracking::DroneTracker *dtrk, CameraView* camvol);
     void control(track_data, track_data, track_data, double);
     bool drone_is_active() {
         if ( _flight_mode == fm_inactive || _flight_mode == fm_disarmed)

@@ -55,7 +55,7 @@ private:
     tracking::TrackerManager * _trackers;
     Interceptor _iceptor;
     VisionData *_visdat;
-    CameraVolume *_camvol;
+    CameraView *_camview;
 
     cv::Point3f setpoint_pos_world;
     cv::Point3f setpoint_vel_world;
@@ -116,7 +116,7 @@ public:
     }
 
     void close (void);
-    void init(std::ofstream *logger, tracking::TrackerManager * imngr, DroneController *dctrl, VisionData *visdat, CameraVolume *camvol, string replay_dir);
+    void init(std::ofstream *logger, tracking::TrackerManager * imngr, DroneController *dctrl, VisionData *visdat, CameraView *camview, string replay_dir);
     void update(double time);
     bool disable_insect_detection() {
         return _navigation_status < ns_wait_for_takeoff_command;

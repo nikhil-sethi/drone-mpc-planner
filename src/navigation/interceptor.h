@@ -1,5 +1,5 @@
 #pragma once
-#include "cameravolume.h"
+#include "cameraview.h"
 #include "defines.h"
 #include "insecttracker.h"
 #include "dronetracker.h"
@@ -26,10 +26,10 @@ private:
     std::ofstream *_logger;
     tracking::TrackerManager * _trackers;
     VisionData *_visdat;
-    CameraVolume* _camvol;
+    CameraView* _camview;
     cv::Point3f _intercept_pos,_intercept_vel,_intercept_acc;
     float _horizontal_separation, _vertical_separation;
-    CameraVolume::hunt_check_result hunt_volume_check = CameraVolume::HuntVolume_Unknown;
+    CameraView::hunt_check_result hunt_volume_check = CameraView::HuntVolume_Unknown;
     bool view_check = false;
 
     enum interceptor_states {
@@ -63,14 +63,14 @@ private:
 
 public:
 
-    void init(tracking::TrackerManager *trackers, VisionData *visdat, CameraVolume *camvol, ofstream *logger);
+    void init(tracking::TrackerManager *trackers, VisionData *visdat, CameraView *camview, ofstream *logger);
     void update(bool drone_at_base, double time);
     void reset_insect_cleared() {_count_insect_not_in_range = 0;}
 
 
     bool insect_in_range_takeoff() {
         return !_count_insect_not_in_range
-               && hunt_volume_check == CameraVolume::HuntVolume_OK
+               && hunt_volume_check == CameraView::HuntVolume_OK
                && _trackers->insecttracker_best()->properly_tracking();
     }
     bool insect_in_range() {return !_count_insect_not_in_range;}
