@@ -175,11 +175,30 @@ std::array<float, N_PLANES> CameraVolume::calc_distance_to_borders(std::vector<c
     return distances_to_planes;
 }
 
-float CameraVolume::calc_shortest_distance_to_border(track_data drone_data, uint plane_idx, view_volume_check_mode cm) {
+float CameraVolume::calc_shortest_distance_to_border(cv::Point3f drone_pos, uint plane_idx, view_volume_check_mode cm) {
     float safety_margin = relaxed_safety_margin;
     if(cm == strict)
         safety_margin = strict_safetty_margin;
 
     cv::Point3f shifted_support_vector = support_vector(plane_idx) + safety_margin*normal_vector(plane_idx);
-    return shortest_distance_to_plane(drone_data.pos(), shifted_support_vector, normal_vector(plane_idx));
+    return shortest_distance_to_plane(drone_pos, shifted_support_vector, normal_vector(plane_idx));
+}
+
+cv::Point3f CameraVolume::project_into_camera_volume(cv::Point3f pos_setpoint, std::array<bool, N_PLANES> violated_planes) {
+    for (uint i=0; i<N_PLANES; i++) {
+        if(violated_planes.at(i)==true)
+            pos_setpoint = pos_setpoint - calc_shortest_distance_to_border(pos_setpoint, i, relaxed)*normal_vector(i);
+    }
+    return pos_setpoint;
+    
+}
+
+cv::Point3f CameraVolume::setpoint_in_cameraview(cv::Point3f pos_setpoint) {
+    bool inview;
+    std::array<bool, N_PLANES> violated_planes;
+    std::tie(inview, violated_planes) = in_view(pos_setpoint, relaxed);
+    if(!inview)
+        pos_setpoint = project_into_camera_volume(pos_setpoint, violated_planes);
+
+    return pos_setpoint;
 }

@@ -62,12 +62,14 @@ public:
     /** @brief Calculates the distance to the borders */
     std::tuple<bool, std::array<bool, N_PLANES>> check_distance_to_borders(track_data data_drone, float req_breaking_distance);
 
-    float calc_shortest_distance_to_border(track_data drone_data, uint plane_idx, view_volume_check_mode cm);
+    float calc_shortest_distance_to_border(cv::Point3f drone_pos, uint plane_idx, view_volume_check_mode cm);
 
     cv::Point3f normal_vector(uint plane_idx) {return cv::Point3f(plane_normals.at(plane_idx));};
     cv::Point3f support_vector(uint plane_idx) {return cv::Point3f(plane_supports.at(plane_idx));};
 
     void p0_bottom_plane(float b_depth);
+
+    cv::Point3f project_into_camera_volume(cv::Point3f pos_stepoint, std::array<bool, N_PLANES> violated_planes);
 
     cv::Mat top_right_front() {return _top_right_front;}
     cv::Mat top_right_back() {return _top_right_back;}

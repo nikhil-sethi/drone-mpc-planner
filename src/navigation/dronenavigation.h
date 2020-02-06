@@ -55,6 +55,7 @@ private:
     tracking::TrackerManager * _trackers;
     Interceptor _iceptor;
     VisionData *_visdat;
+    CameraVolume *_camvol;
 
     cv::Point3f setpoint_pos_world;
     cv::Point3f setpoint_vel_world;
