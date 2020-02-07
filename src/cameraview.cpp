@@ -30,7 +30,7 @@ void CameraView::init(cv::Point3f point_left_top, cv::Point3f point_right_top, c
     plane_supports.at(back_plane) = (cv::Mat_<float>(3,1) << 0, 0, b_depth);
 
     plane_normals.at(camera_plane) = (cv::Mat_<float>(3,1) << 0, -sin(camera_pitch_deg/180.L*M_PIf64), -cos(camera_pitch_deg/180.L*M_PIf64));
-    plane_supports.at(camera_plane) = plane_normals.at(camera_plane)*0.8f;
+    plane_supports.at(camera_plane) = plane_normals.at(camera_plane)*0.85f; //If the drones gets too close to the camera (~ 0.5 m) the drone position is not calculated anymore.
 
 #if true
     std::cout << "front> p0_front:" << plane_supports.at(front_plane).t() << " n_front: " << plane_normals.at(front_plane).t() << std::endl;

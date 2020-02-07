@@ -833,10 +833,10 @@ cv::Point3f DroneController::kiv_acceleration(track_data data_drone, std::array<
             if(data_drone.pos_valid){
                 pos_err = -_camview->calc_shortest_distance_to_border(data_drone.pos(), i, CameraView::relaxed);
             }
-            correction_acceleration += _camview->normal_vector(i)*(1.f*pos_err + 8.f*vel_err);
+            correction_acceleration += _camview->normal_vector(i)*(2.f*pos_err + 7.f*vel_err);
         }
         if(violated_planes_brakedistance.at(i))
-            correction_acceleration += _camview->normal_vector(i)*8.f*vel_err;
+            correction_acceleration += _camview->normal_vector(i)*12.f*vel_err;
     }
 
     return correction_acceleration;
