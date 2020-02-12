@@ -9,8 +9,9 @@
 
 Apply the following settings to BLHeli:  
 1. Set `Beacon Delay` to `infinite`
-2. Set `Beep Strenght` to 150
+2. Set `Beep Strenght` to 255
 3. Set startup power to max (1.5)
+4. Disable programming by tx check
   
 To retrieve firmware from the drone. (not needed normally)  
 `dfu-util -s 0x08000000:413040 -a 0 -U firmware_dump.bin`  
