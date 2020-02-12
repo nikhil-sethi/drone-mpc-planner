@@ -4,7 +4,7 @@
       {
         "name": "Python: Current File",
         "type": "python",
-        "args": [],
+        "args": ["-f /home/houjebek/data_check/moth_00001_284.csv"],
         "request": "launch",
         "program": "${file}",
         "console": "integratedTerminal"
