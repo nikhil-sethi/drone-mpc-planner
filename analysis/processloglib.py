@@ -7,6 +7,8 @@ import pathlib
 from pathlib import Path
 import random
 from shutil import copyfile
+import math
+from scipy.signal import savgol_filter
 
 def cp_videos_for_checking(source_folder,files,n,dest_folder,fn_prefix,no_video,reprocess):
     fn_prefix = fn_prefix.replace('__','_') # this may happen during reprocess, because then the folder id is already in the name and sf = ''
@@ -86,20 +88,54 @@ def get_dataset(source_folder,n0,n1):
     i = 0
     n = sum(1 for i in list_csv_files(source_folder)) #python=KUT
     
-    data = list()
+    dataset = list()
+    csv_data = list()
     for f in files:
         i = i + 1
         printProgressBar(i,n)
         source_csv_file = Path(source_folder,f)
+        pre_check_ok = False
         try:
             pre_check_ok, log = read_log(source_csv_file,[],False)
-            if pre_check_ok:
-                imLx,imLy,RS_ID,posX,posY,posZ = get_chunk(log,n0,n1)
-                data.append(np.transpose([RS_ID,imLx,imLy,posX,posY,posZ]))
         except Exception:
             pass
 
-    return data
+        if pre_check_ok:
+                imLx,imLy,RS_ID,posX,posY,posZ = get_chunk(log,n0,n1)
+                feat_vec = calc_features(imLx,imLy,RS_ID,posX,posY,posZ,not 'no_moth' in f)
+                if not math.isnan(feat_vec[0]) and  not math.isnan(feat_vec[1]): 
+                    dataset.append(feat_vec)
+                    csv_data.append(np.transpose([RS_ID,imLx,imLy,posX,posY,posZ]))
+                else:
+                    print('\nObtained NaN in ' + f)
+        
+    dataset = np.asarray(dataset, dtype=np.float32)
+
+    return dataset,csv_data
+
+def calc_features(imLx,imLy,RS_ID,posX,posY,posZ,moth):
+    c = 0
+    if moth:
+        c = 1
+    return np.array([c,autocorr(imLx),autocorr(imLy),avg_speed(posX,posY,posZ),im_travel_distance(imLx,imLy)])
+
+def autocorr(x, t=1):
+    return np.corrcoef(np.array([x[:-t], x[t:]]))[1][0]
+
+def avg_speed(x,y,z):
+    dx = np.diff(x)
+    dy = np.diff(y)
+    dz = np.diff(z)
+    tot = np.sum(np.sqrt(np.square(dx) + np.square(dy) + np.square(dz)))
+
+    return tot
+
+def im_travel_distance(x,y):
+    x = savgol_filter(x, 51, 3)
+    y = savgol_filter(y, 51, 3)
+    d = math.sqrt((x[0] - x[-1])**2 + (y[0] - y[-1])**2)
+    
+    return d
 
 def read_log(source_csv_file,headers,verbose):
     if os.stat(source_csv_file).st_size < 1000:
@@ -118,7 +154,7 @@ def read_log(source_csv_file,headers,verbose):
                 if verbose:
                     print("Not enough rows")
                 return False,log
-
+        log = log.dropna()
         return True,log
 
 def check_log(source_csv_file,headers,verbose):

@@ -2,7 +2,7 @@
 import os
 from pathlib import Path
 import argparse
-from processloglib import *
+import processloglib as lib
 
 parser = argparse.ArgumentParser(description='Process and check the logs.')
 parser.add_argument('-s', '--source_folder',type=str,default="/home/pats/data/")
@@ -14,7 +14,7 @@ parser.add_argument('-v', '--verbose', action='store_true')
 args = parser.parse_args()
 
 if args.file != "":
-    res, log = check_log(os.path.expanduser(args.file.strip(" ")),[],True)
+    res, log = lib.check_log(os.path.expanduser(args.file.strip(" ")),[],True)
 else:
     source_folder = os.path.expanduser(args.source_folder.strip(" "))
     dest_folder = os.path.expanduser(args.dest_folder.strip(" "))
@@ -32,14 +32,14 @@ else:
             source_subfolder = Path(source_subfolder,"logging")
         print(str(i) + "/" + str(len(subfolders)) + ": " + str(source_subfolder))
         if not (Path(dest_folder,sf).is_dir()) or args.reprocess:
-            files_moth,files_no_moth,files_corrupted = process_folder(source_subfolder,args.reprocess,args.verbose)
+            files_moth,files_no_moth,files_corrupted = lib.process_folder(source_subfolder,args.reprocess,args.verbose)
             
             files_corrupted = [Path(sf,s) for s in files_corrupted]
             print(files_corrupted)
             all_files_corrupted = all_files_corrupted + files_corrupted
 
-            cp_videos_for_checking(source_subfolder,files_moth,3,dest_folder,'moth_' + sf + '_',args.novideo,args.reprocess)
-            cp_videos_for_checking(source_subfolder,files_no_moth,3,dest_folder,'no_moth_' + sf + '_',args.novideo,args.reprocess)
+            lib.cp_videos_for_checking(source_subfolder,files_moth,3,dest_folder,'moth_' + sf + '_',args.novideo,args.reprocess)
+            lib.cp_videos_for_checking(source_subfolder,files_no_moth,3,dest_folder,'no_moth_' + sf + '_',args.novideo,args.reprocess)
 
     if (len(all_files_corrupted) > 0):
         print("Warning: the following corrupted files where encountered.")
