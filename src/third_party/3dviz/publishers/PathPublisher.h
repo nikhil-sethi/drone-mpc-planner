@@ -29,13 +29,14 @@
 #include "PathPubSubTypes.h"
 
 #include "common.h"
+#include "cameraview.h"
 
 class PathPublisher 
 {
 public:
 	PathPublisher();
 	virtual ~PathPublisher();
-    bool init(CameraVolume *cam_volume);
+    bool init(CameraView *cam_volume);
     void run(int64_t time);
     void add_drone_pos(double x, double y, double z, int64_t time);
     void add_insect_pos(double x, double y, double z, int64_t time);
@@ -49,7 +50,7 @@ private:
 
     builtin_interfaces::msg::Time _time;
 
-    CameraVolume *_cam_volume;
+    CameraView *_cam_volume;
 
     std::vector<geometry_msgs::msg::PoseStamped> _drone_poses;
     std::vector<geometry_msgs::msg::PoseStamped> _insect_poses;

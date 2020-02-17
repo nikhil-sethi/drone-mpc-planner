@@ -9,12 +9,12 @@
 using namespace eprosima;
 using namespace eprosima::fastrtps;
 
-bool Visualizer3D::init(TrackerManager *trackers, CameraVolume *cam_volume, DroneController *dctrl, DroneNavigation *dnav)
+bool Visualizer3D::init(tracking::TrackerManager *trackers, CameraView *cam_volume, DroneController *dctrl, navigation::DroneNavigation *dnav)
 {
     bool init_success = true;
 
     _dtrkr = trackers->dronetracker();
-    _itrkr = trackers->insecttracker();
+    _itrkr = trackers->insecttracker_best();
     _dctrl = dctrl;
     _dnav = dnav;
 
@@ -49,8 +49,8 @@ void Visualizer3D::addDrone()
     track_data data = _dtrkr->Last_track_data();
 
     if (data.pos_valid) {
-        pub_tf.add_transform(static_cast<double>(data.sposX), static_cast<double>(data.sposY), static_cast<double>(data.sposZ), 0, 0, 0, 1, _time, "pats_frame", "hunter");
-        pub_path.add_drone_pos(static_cast<double>(data.sposX), static_cast<double>(data.sposY), static_cast<double>(data.sposZ), _time);
+        pub_tf.add_transform(static_cast<double>(data.pos().x), static_cast<double>(data.pos().y), static_cast<double>(data.pos().z), 0, 0, 0, 1, _time, "pats_frame", "hunter");
+        pub_path.add_drone_pos(static_cast<double>(data.pos().x), static_cast<double>(data.pos().y), static_cast<double>(data.pos().z), _time);
     }
 }
 
@@ -58,10 +58,10 @@ void Visualizer3D::addInsect()
 {
     track_data data = _itrkr->Last_track_data();
 
-    if (data.pos_valid && data.sposX != 0.0f)
+    if (data.pos_valid && data.pos().x != 0.0f)
     {
-        pub_tf.add_transform(static_cast<double>(data.sposX), static_cast<double>(data.sposY), static_cast<double>(data.sposZ), 0, 0, 0, 1, _time, "pats_frame", "insect");
-        pub_path.add_insect_pos(static_cast<double>(data.sposX), static_cast<double>(data.sposY), static_cast<double>(data.sposZ), _time);
+        pub_tf.add_transform(static_cast<double>(data.pos().x), static_cast<double>(data.pos().y), static_cast<double>(data.pos().z), 0, 0, 0, 1, _time, "pats_frame", "insect");
+        pub_path.add_insect_pos(static_cast<double>(data.pos().x), static_cast<double>(data.pos().y), static_cast<double>(data.pos().z), _time);
     }
 }
 
@@ -74,7 +74,7 @@ void Visualizer3D::addTarget()
         pub_path.set_target(_dnav->setpoint().pos().x, _dnav->setpoint().pos().y, _dnav->setpoint().pos().z, _time);
     } else {
         if (data.pos_valid) {
-            pub_path.set_target(static_cast<double>(data.sposX), static_cast<double>(data.sposY), static_cast<double>(data.sposZ), _time);
+            pub_path.set_target(static_cast<double>(data.pos().x), static_cast<double>(data.pos().y), static_cast<double>(data.pos().z), _time);
         }
     }
 }

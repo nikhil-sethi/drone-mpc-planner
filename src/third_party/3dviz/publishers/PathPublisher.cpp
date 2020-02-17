@@ -42,7 +42,7 @@ PathPublisher::PathPublisher() : mp_participant(nullptr), mp_publisher_proximity
 
 PathPublisher::~PathPublisher() {	Domain::removeParticipant(mp_participant);}
 
-bool PathPublisher::init(CameraVolume *cam_volume)
+bool PathPublisher::init(CameraView *cam_volume)
 {
     _cam_volume = cam_volume;
 
@@ -164,6 +164,7 @@ void PathPublisher::add_camera_cone(std::vector<geometry_msgs::msg::PoseStamped>
 {
     cv::Mat point;
 
+    /*
     add_camera_cone(poses, _cam_volume->top_right_front(), time, "pats_frame");
     add_camera_cone(poses, _cam_volume->top_right_back(), time, "pats_frame");
     add_camera_cone(poses, _cam_volume->top_left_back(), time, "pats_frame");
@@ -179,12 +180,14 @@ void PathPublisher::add_camera_cone(std::vector<geometry_msgs::msg::PoseStamped>
     add_camera_cone(poses, _cam_volume->bottom_right_front(), time, "pats_frame");
     add_camera_cone(poses, _cam_volume->bottom_right_back(), time, "pats_frame");
     add_camera_cone(poses, _cam_volume->top_right_back(), time, "pats_frame");
+    */
 }
 
 void PathPublisher::add_hunt_cone(std::vector<geometry_msgs::msg::PoseStamped> &poses, int64 time)
 {
     cv::Mat point;
 
+    /*
     if (_cam_volume->top_right_front_hunt().rows > 0)
     {
         add_camera_cone(poses, _cam_volume->top_right_front_hunt(), time, "pats_frame");
@@ -204,6 +207,7 @@ void PathPublisher::add_hunt_cone(std::vector<geometry_msgs::msg::PoseStamped> &
         add_camera_cone(poses, _cam_volume->bottom_left_front_hunt(), time, "pats_frame");
         add_camera_cone(poses, _cam_volume->bottom_left_back_hunt(), time, "pats_frame");
     }
+    */
 }
 
 void PathPublisher::set_target(double x, double y, double z, int64 time)

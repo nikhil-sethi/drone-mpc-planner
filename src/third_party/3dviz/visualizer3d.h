@@ -1,11 +1,12 @@
 #pragma once
-#include "trackermanager.h"
+#include "trackers/trackermanager.h"
 #include "dronecontroller.h"
-#include "dronenavigation.h"
+#include "navigation/dronenavigation.h"
 
 #ifdef VIZ_3D
 #include "TFMessagePublisher.h"
 #include "PathPublisher.h"
+#include "cameraview.h"
 #endif
 
 class Visualizer3D
@@ -14,7 +15,7 @@ public:
     Visualizer3D();
 
 #ifdef VIZ_3D
-    bool init(TrackerManager *trackers, CameraView *cam_volume, DroneController *dctrl, DroneNavigation *dnav);
+    bool init(tracking::TrackerManager *trackers, CameraView *cam_volume, DroneController *dctrl, navigation::DroneNavigation *dnav);
     void run();
 #else
     bool init(tracking::TrackerManager *trackers [[maybe_unused]], CameraView *cam_volume [[maybe_unused]], DroneController *dctrl [[maybe_unused]], navigation::DroneNavigation *dnav [[maybe_unused]]) {return true;}
@@ -29,10 +30,10 @@ private:
 
     TFMessagePublisher pub_tf;
     PathPublisher pub_path;
-    DroneTracker *_dtrkr;
-    InsectTracker *_itrkr;
+    tracking::DroneTracker *_dtrkr;
+    tracking::InsectTracker *_itrkr;
     int64_t _time;
     DroneController *_dctrl;
-    DroneNavigation *_dnav;
+    navigation::DroneNavigation *_dnav;
 #endif
 };
