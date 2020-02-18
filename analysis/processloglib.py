@@ -102,18 +102,17 @@ def get_dataset(source_folder,n0,n1):
 
         if pre_check_ok:
                 imLx,imLy,RS_ID,posX,posY,posZ = get_chunk(log,n0,n1)
-                feat_vec = calc_features(imLx,imLy,RS_ID,posX,posY,posZ,not 'no_moth' in f)
+                feat_vec = calc_features(not 'no_moth' in f,imLx,imLy,RS_ID,posX,posY,posZ)
                 if not math.isnan(feat_vec[0]) and  not math.isnan(feat_vec[1]): 
                     dataset.append(feat_vec)
                     csv_data.append(np.transpose([RS_ID,imLx,imLy,posX,posY,posZ]))
                 else:
                     print('\nObtained NaN in ' + f)
-        
     dataset = np.asarray(dataset, dtype=np.float32)
+    csv_col_names = ['RS_ID','imLx','imLy','posX','posY','posZ']
+    return dataset,csv_data,csv_col_names
 
-    return dataset,csv_data
-
-def calc_features(imLx,imLy,RS_ID,posX,posY,posZ,moth):
+def calc_features(moth,imLx,imLy,RS_ID,posX,posY,posZ):
     c = 0
     if moth:
         c = 1
@@ -186,15 +185,30 @@ def get_chunk(log,n0,n1):
         n1 = len(log["imLx_insect"])
     if n0 > n1:
         n0 = n1
+    
+    RS_ID = np.array(log["RS_ID"].astype(int))[n0:n1]
     imLx_insect = np.array(log["imLx_insect"].astype(float))[n0:n1]
     imLy_insect = np.array(log["imLy_insect"].astype(float))[n0:n1]
-    RS_ID = np.array(log["RS_ID"].astype(int))[n0:n1]
-
+    
     posX_insect = np.array(log["posX_insect"].astype(float))[n0:n1]
     posY_insect = np.array(log["posY_insect"].astype(float))[n0:n1]
     posZ_insect = np.array(log["posZ_insect"].astype(float))[n0:n1]
      
     return imLx_insect,imLy_insect,RS_ID,posX_insect,posY_insect,posZ_insect
+
+
+def append_zeros_to_log(entry,n):
+    entry = np.asarray(entry, dtype=np.float32)
+    return np.apply_along_axis( append_zeros_column, axis=0, arr=entry,n=n )
+
+def append_zeros_column(col,n):
+    if len(col) < n:
+        result = np.pad(col, (n-len(col)-1, 1), 'constant', constant_values=(0))
+        return result
+    else: 
+        return col
+    
+
 
 def line_prepender(filename, line):
     with open(filename, 'r+') as f:

@@ -35,7 +35,8 @@ else:
             files_moth,files_no_moth,files_corrupted = lib.process_folder(source_subfolder,args.reprocess,args.verbose)
             
             files_corrupted = [Path(sf,s) for s in files_corrupted]
-            print(files_corrupted)
+            if files_corrupted:
+                print(files_corrupted)
             all_files_corrupted = all_files_corrupted + files_corrupted
 
             lib.cp_videos_for_checking(source_subfolder,files_moth,3,dest_folder,'moth_' + sf + '_',args.novideo,args.reprocess)

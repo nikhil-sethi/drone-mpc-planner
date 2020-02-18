@@ -2,19 +2,26 @@
     "version": "0.2.0",
     "configurations": [
       {
-        "name": "Python: Current File",
+        "name": "Current File",
         "type": "python",
-        "args": ["-f /home/houjebek/data_check/moth_00001_284.csv"],
+        "args": ["-s /home/houjebek/shares/Monitoring/koppert/4/data"],
         "request": "launch",
         "program": "${file}",
         "console": "integratedTerminal"
       },
       {
-        "name": "Python: cluster.py",
+        "name": "Process_logs.py",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/process_log.py",
+        "args": ["-s /home/houjebek/shares/Monitoring/koppert/4/data"],
+      },
+      {
+        "name": "Cluster.py",
         "type": "python",
         "request": "launch",
         "program": "${workspaceFolder}/cluster.py",
-        "args" : ["-s", "/home/houjebek/data_check/checked/"]
+        "args" : ["-s", "/home/houjebek/data_check/checked"]
       }
     ]
   }
