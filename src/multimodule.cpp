@@ -178,6 +178,7 @@ void MultiModule::send_data(void) {
         }
         if (_beep) {
             std::cout << "BEEP" << std::endl;
+            channels[4] = bf_disarmed;
             channels[5] = JOY_BOUND_MAX;
         }
 
