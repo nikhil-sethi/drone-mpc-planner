@@ -232,7 +232,7 @@ void process_video() {
         static double time =0;
         float dt __attribute__((unused)) = static_cast<float>(cam.frame_time() - time);
         time = cam.frame_time();
-        std::cout << "Frame: " <<imgcount << ", " << cam.frame_number() << ". FPS: " << to_string_with_precision(fps,1) << ". Time: " << to_string_with_precision(time,2)  << ", dt " << to_string_with_precision(dt,3) << std::endl;
+        std::cout << dnav.navigation_status() <<  "; frame: " <<imgcount << ", " << cam.frame_number() << ". FPS: " << to_string_with_precision(fps,1) << ". Time: " << to_string_with_precision(time,2)  << ", dt " << to_string_with_precision(dt,3) << std::endl;
         imgcount++;
         prev_time = t;
 
