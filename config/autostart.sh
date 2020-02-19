@@ -11,6 +11,8 @@ cd /home/pats/code/pats/pc/build/
 ./pats rs_reset | /usr/bin/tee terminal.log || true
 sleep 3s
 
+HOST_ID=$( hostname | tr -dc '0-9' )
+
 while [ 1 ]; do
         dt=$(date '+%d/%m/%Y %H:%M:%S');
         echo "$dt"
@@ -32,7 +34,7 @@ while [ 1 ]; do
 	echo "$dt" > terminal.log
 	echo "sha:" >> terminal.log
 	git rev-parse HEAD >> terminal.log || true
-	./pats 2>&1 | /usr/bin/tee --append terminal.log || true
+	./pats $DRONE_ID 2>&1 | /usr/bin/tee --append terminal.log || true
 
 	sleep 10s
 done
