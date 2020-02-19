@@ -12,6 +12,7 @@ cd /home/pats/code/pats/pc/build/
 sleep 3s
 
 HOST_ID=$( hostname | tr -dc '0-9' )
+DRONE_ID=$(( $HOST_ID -10 ))
 
 while [ 1 ]; do
         dt=$(date '+%d/%m/%Y %H:%M:%S');
