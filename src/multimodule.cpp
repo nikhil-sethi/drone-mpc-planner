@@ -65,13 +65,6 @@ void MultiModule::zerothrottle() {
         throttle = JOY_BOUND_MIN;
 }
 
-void MultiModule::LED(bool value) {
-    if (value)
-        led_on = true;
-    else
-        led_on = false;
-}
-
 void MultiModule::worker_thread(void) {
     std::cout << "Send multimodule thread started!" << std::endl;
     while (!exitSendThread) {
@@ -191,11 +184,7 @@ void MultiModule::send_data(void) {
         if (dparams.tx==tx_cx10)
             channels[5] = tx_rate;
 
-        if(led_on)
-            channels[7] = JOY_BOUND_MIN + JOY_BOUND_RANGE / 100 * dparams.drone_led_strength;
-        else
-            channels[7] = JOY_BOUND_MIN;
-
+        channels[7] = JOY_BOUND_MIN + JOY_BOUND_RANGE / 100 * _LED_drone;
 
         convert_channels(channels, &packet[4]);
 

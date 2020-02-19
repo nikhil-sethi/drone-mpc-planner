@@ -176,6 +176,7 @@ private:
 
     double take_off_start_time = 0;
     double interception_start_time = 0;
+    double in_flight_start_time = -1;
     track_data data_drone_1g_start;
 
     const float integratorThresholdDistance = 0.3f;
@@ -331,6 +332,19 @@ public:
     bool flight_aborted() {
         return _flight_mode == fm_abort_flight;
     }
+
+    float in_flight_duration(double time) {
+        if ((_flight_mode == fm_flying_pid || _flight_mode == fm_reset_yaw || _flight_mode == fm_landing || _flight_mode == fm_initial_reset_yaw)
+                && in_flight_start_time < 0)
+            in_flight_start_time = time;
+        else if (_flight_mode == fm_disarmed || _flight_mode == fm_inactive || _flight_mode == fm_spinup || _flight_mode == fm_manual)
+            in_flight_start_time = -1;
+
+        if (in_flight_start_time > 0)
+            return static_cast<float>(time - in_flight_start_time);
+        else
+            return 0;
+    }
     bool spinup() {
         return _flight_mode == fm_spinup;
     }
@@ -447,15 +461,19 @@ public:
                 blink_state = true;
             last_blink_time = time;
         }
-        _rc->LED(blink_state);
+        LED(blink_state);
     }
 
     void LED(bool b) {
-        _rc->LED(b);
+        _rc->LED_drone(b,dparams.drone_led_strength);
     }
 
     float position_error() {
         return norm(cv::Point3f(filter_pos_err_x.current_output(), filter_pos_err_y.current_output(), filter_pos_err_z.current_output()));
+    }
+
+    void beep(bool b) {
+        _rc->beep(b);
     }
 
     bool blocked();

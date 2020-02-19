@@ -61,11 +61,16 @@ public:
 
     void close();
 
-    void LED(bool value);
+    void LED_drone(bool on, int strength_value) {
+        if (on)
+            _LED_drone = strength_value;
+        else
+            _LED_drone = 0;
+    }
+    void LED_drone(int value) { // led strength value between 0-100, where 0 is off off
+        _LED_drone = value;
+    }
 
-    bool led_on = true;
-
-    int ledpower = 75;
     uint16_t mode = JOY_BOUND_MIN; // set to angle mode in BF
     int roll=JOY_MIDDLE,pitch=JOY_MIDDLE,yaw=JOY_MIDDLE;
     int throttle = JOY_BOUND_MIN;
@@ -105,6 +110,9 @@ public:
                 cycles_until_bind = -80;
         }
     }
+    void beep(bool b) {
+        _beep = b;
+    }
     void beep() {
         _beep = !_beep;
     }
@@ -126,6 +134,7 @@ private:
     int _drone_id = 1;
     uint init_package_nOK_cnt = 1;
     bool _beep = false;
+    int _LED_drone = 5;
 
     bool initialized = false;
     bool version_check_OK = false;

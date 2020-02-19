@@ -73,6 +73,10 @@ void DroneNavigation::update(double time) {
     } else {
         _nav_flight_mode = nfm_hunt;
     }
+
+    if (_dctrl->flight_aborted() || _dctrl->in_flight_duration(time) > 180)
+        _navigation_status = ns_drone_problem;
+
     _iceptor.update(_navigation_status != ns_chasing_insect, time);
     bool repeat = true;
     while (repeat) {
@@ -108,6 +112,9 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_located_drone;
                 time_located_drone = time;
             }
+            if (time - locate_drone_start_time > 30) {
+                _navigation_status = ns_drone_problem;
+            }
 
             break;
         } case ns_located_drone: {
@@ -140,7 +147,7 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_takeoff;
                 _visdat->enable_collect_no_drone_frames = false;
                 repeat = true;
-            } 
+            }
             break;
         } case ns_wait_for_insect: {
             if (_nav_flight_mode == nfm_manual) {
@@ -163,7 +170,7 @@ void DroneNavigation::update(double time) {
         } case ns_takeoff: {
             _dctrl->reset_manual_override_take_off_now();
             _dctrl->flight_mode(DroneController::fm_start_takeoff);
-            time_taken_off = time;
+            time_take_off = time;
             if (_nav_flight_mode == nfm_hunt)
                 _trackers->mode(tracking::TrackerManager::mode_hunt);
             else
@@ -195,7 +202,7 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_wait_for_insect;
             }
 
-            if (!_trackers->dronetracker()->taking_off() && time - time_taken_off > dparams.max_burn_time)
+            if (!_trackers->dronetracker()->taking_off() && time - time_take_off > dparams.max_burn_time)
                 _navigation_status = ns_take_off_completed;
             else
                 break;
@@ -229,7 +236,7 @@ void DroneNavigation::update(double time) {
             //update target chasing waypoint and speed
             if (_iceptor.insect_in_range()) {
                 setpoint_pos_world = _iceptor.target_position();
-                setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world); 
+                setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world);
                 setpoint_vel_world = _iceptor.target_speed();
                 setpoint_acc_world = _iceptor.target_accelleration();
             }
@@ -378,7 +385,11 @@ void DroneNavigation::update(double time) {
             }
             break;
         } case ns_drone_problem: {
+            if (time_drone_problem < 0)
+                time_drone_problem = time;
             _dctrl->flight_mode(DroneController::fm_abort_flight);
+            _dctrl->LED(static_cast<int>((time - time_drone_problem) * 10.0) % 10 > 5); // blink every half second
+            _dctrl->beep(true);
             break;
         }
         }
@@ -481,7 +492,7 @@ cv::Point3f DroneNavigation::square_point(cv::Point3f center, float width, float
 
 
 bool DroneNavigation::drone_is_blocked(float speed_threshold) {
-    float speed = norm(_trackers->dronetracker()->Last_track_data().vel()); 
+    float speed = norm(_trackers->dronetracker()->Last_track_data().vel());
     bool speed_valid = _trackers->dronetracker()->Last_track_data().vel_valid;
     float error = _dctrl->position_error();
 

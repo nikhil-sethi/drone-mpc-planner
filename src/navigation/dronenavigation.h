@@ -47,8 +47,9 @@ private:
     Waypoint * current_waypoint = new Waypoint_Landing();
 
 
+    double time_drone_problem = -1;
     double time_located_drone = 0;
-    double time_taken_off = 0;
+    double time_take_off = 0;
 
     std::ofstream *_logger;
     DroneController * _dctrl;
