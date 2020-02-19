@@ -217,3 +217,10 @@ float deadzone( float v, float lo, float hi ) {
         v = 0;
     return v;
 }
+
+cv::Point3f pats_to_betaflight_coord(cv::Point3f vec) {
+    return cv::Point3f(-vec.z, -vec.x, -vec.y);
+}
+cv::Point3f betaflight_to_pats_coord(cv::Point3f vec) {
+    return cv::Point3f(-vec.y, -vec.z, -vec.x);
+}
