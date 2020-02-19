@@ -646,11 +646,10 @@ void Cam::calib_pose(bool also_do_depth) {
             }
         }
         if (hasIMU) {
+            std::cout << "Camera roll: " << to_string_with_precision(roll,2) << "°- max: " << pparams.max_cam_roll << "°. Pitch: " << to_string_with_precision(pitch,2) << "°" << std::endl;
             if (fabs(roll) > pparams.max_cam_roll) {
-                std::cout << "Camera tilted in roll axis! Roll: " << to_string_with_precision(roll,2) << "°. Max: " << pparams.max_cam_roll << "°" << std::endl;
                 wait_cycles = 360; // 1 minute with nframes = 10
             } else {
-                std::cout << "Measured roll: " << to_string_with_precision(roll,2) <<"°, pitch: " << to_string_with_precision(pitch,2) << "°" << std::endl;
                 wait_cycles--;
             }
         } else
