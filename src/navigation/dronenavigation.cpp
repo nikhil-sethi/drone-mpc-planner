@@ -388,7 +388,7 @@ void DroneNavigation::update(double time) {
             if (time_drone_problem < 0)
                 time_drone_problem = time;
             _dctrl->flight_mode(DroneController::fm_abort_flight);
-            _dctrl->LED(static_cast<int>((time - time_drone_problem) * 10.0) % 10 > 5); // blink every half second
+            _dctrl->LED(static_cast<int>((time - time_drone_problem) * 10.0) % 10 > 5,100); // blink every half second
             _dctrl->beep(true);
             break;
         }

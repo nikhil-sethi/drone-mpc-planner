@@ -467,6 +467,9 @@ public:
     void LED(bool b) {
         _rc->LED_drone(b,dparams.drone_led_strength);
     }
+    void LED(bool b, int value) {
+        _rc->LED_drone(b,value);
+    }
 
     float position_error() {
         return norm(cv::Point3f(filter_pos_err_x.current_output(), filter_pos_err_y.current_output(), filter_pos_err_z.current_output()));

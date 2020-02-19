@@ -240,7 +240,7 @@ void process_video() {
             fps_smoothed.reset();
 
         static uint restart_delay = 0;
-        if (dnav.time_for_restart() || dctrl.flight_aborted())
+        if (dnav.time_for_restart())
             restart_delay++;
         else
             restart_delay = 0;
