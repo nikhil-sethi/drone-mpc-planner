@@ -430,7 +430,7 @@ public:
     void init(std::ofstream *logger, bool fromfile, MultiModule *rc, tracking::DroneTracker *dtrk, CameraView* camvol);
     void control(track_data, track_data, track_data, double);
     bool drone_is_active() {
-        if ( _flight_mode == fm_inactive || _flight_mode == fm_disarmed)
+        if ( _flight_mode == fm_inactive || _flight_mode == fm_disarmed || _flight_mode == fm_abort_flight || _flight_mode == fm_joystick_check)
             return false;
         else if (_joy_mode_switch == jmsm_manual && joy_throttle > JOY_BOUND_MIN && _joy_arm_switch == bf_armed)
             return true;
