@@ -267,7 +267,7 @@ void process_video() {
 void write_status_file() {
 
     static std::string nav_status = "";
-    bool status_update_needed = nav_status.compare(dnav.navigation_status()) == 0;
+    bool status_update_needed = nav_status.compare(dnav.navigation_status()) != 0;
     nav_status = dnav.navigation_status();
 
     static double prev_imwrite_time = -pparams.live_image_frq;
