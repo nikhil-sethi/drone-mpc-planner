@@ -86,7 +86,12 @@
         "streambuf": "cpp",
         "typeindex": "cpp",
         "typeinfo": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "csignal": "cpp",
+        "hash_map": "cpp",
+        "hash_set": "cpp",
+        "random": "cpp",
+        "future": "cpp"
     },
     "debug.internalConsoleOptions": "neverOpen"
 }
