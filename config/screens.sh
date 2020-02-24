@@ -23,3 +23,5 @@ i=$(($i + 1))
 /usr/bin/screen -t data $i /bin/bash -c 'cd ~/data; exec /bin/bash'
 i=$(($i + 1))
 /usr/bin/screen -t home $i /bin/bash -c 'cd ~/; exec /bin/bash'
+i=$(($i + 1))
+/usr/bin/screen -t sta_upd $i /bin/bash -c '~/code/pats/config/status_sender.py'

@@ -11,6 +11,7 @@
 #include <ctime>
 #include <sys/stat.h>
 #include <condition_variable>
+#include<iostream>
 
 #include "opencv2/features2d/features2d.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
@@ -118,7 +119,8 @@ void process_video();
 int main( int argc, char **argv);
 void handle_key(double time);
 void close(bool sig_kill);
-void write_occasional_image();
+void write_status_image();
+void write_status_file();
 
 /************ code ***********/
 void process_video() {
@@ -262,20 +264,44 @@ void process_video() {
     } // main while loop
 }
 
-void write_occasional_image(Stereo_Frame_Data data) {
+void write_status_file() {
+
+    static std::string nav_status = "";
+    bool status_update_needed = nav_status.compare(dnav.navigation_status()) == 0;
+    nav_status = dnav.navigation_status();
+
     static double prev_imwrite_time = -pparams.live_image_frq;
+    if (cam.frame_time() - prev_imwrite_time > pparams.live_image_frq && pparams.live_image_frq >= 0) {
+        prev_imwrite_time = cam.frame_time();
 
-    if (data.time - prev_imwrite_time > pparams.live_image_frq && pparams.live_image_frq >= 0) {
-        cv::Mat out = data.frameL.clone();
-        cvtColor(out,out,CV_GRAY2BGR);
-        putText(out,"State: " + dnav.navigation_status() + " " + trackers.mode_str() + " " + dctrl.flight_mode() +
-                " "  + trackers.dronetracker()->drone_tracking_state(),cv::Point(5,14),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
-        putText(out,"Time:       " + to_string_with_precision(data.time,2),cv::Point(5,28),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
-        putText(out,"Detections: " + std::to_string(detectcount),cv::Point(5,42),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
+        write_status_image();
 
-        cv::imwrite("../../../../pats_monitor_tmp.jpg", out);
-        prev_imwrite_time = data.time;
+        status_update_needed = true;
+
     }
+    if (status_update_needed) {
+        char hostname[20];
+        gethostname(hostname,20);
+        std::ofstream status_file;
+        status_file.open(data_output_dir  + "../../../../pats_status.txt",std::ofstream::out);
+        status_file << "Hostname: " << hostname << std::endl;
+        auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
+        status_file << "Time: " << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << std::endl;
+        status_file << "Runtime: " << cam.frame_time() << std::endl;
+        status_file << "Nav: " << nav_status << std::endl;
+    }
+
+}
+
+void write_status_image() {
+    cv::Mat out = cam.frameL.clone();
+    cvtColor(out,out,CV_GRAY2BGR);
+    putText(out,"State: " + dnav.navigation_status() + " " + trackers.mode_str() + " " + dctrl.flight_mode() +
+            " "  + trackers.dronetracker()->drone_tracking_state(),cv::Point(5,14),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
+    putText(out,"Time:       " + to_string_with_precision(cam.frame_time(),2),cv::Point(5,28),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
+    putText(out,"Detections: " + std::to_string(detectcount),cv::Point(5,42),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
+
+    cv::imwrite("../../../../pats_monitor_tmp.jpg", out);
 }
 
 void process_frame(Stereo_Frame_Data data) {
@@ -315,9 +341,9 @@ void process_frame(Stereo_Frame_Data data) {
             output_video_results.write(visualizer.trackframe);
         }
     }
-    if (!dctrl.drone_is_active()) {
-        write_occasional_image(data);
-    }
+
+    write_status_file();
+
 
 }
 
