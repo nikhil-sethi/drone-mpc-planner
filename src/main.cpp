@@ -248,7 +248,7 @@ void process_video() {
             restart_delay = 0;
 
         if ((imgcount > 360000 && pparams.insect_logging_mode)  ||
-                (cam.measured_exposure() <= pparams.darkness_threshold && pparams.insect_logging_mode)) {
+                (cam.measured_exposure() <= pparams.darkness_threshold && pparams.darkness_threshold>0)) {
             std::cout << "Initiating periodic restart" << std::endl;
             key =27;
         } else if(restart_delay > 1.5f*dnav.time_out_after_landing*pparams.fps) {
@@ -658,16 +658,18 @@ void close(bool sig_kill) {
 }
 
 void wait_for_dark() {
-    std::cout << "Insect logging mode, check if dark." << std::endl;
-    while(true) {
-        auto [expo,frameL] = cam.measure_auto_exposure();
-        auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
-        std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << " Measured exposure: " << expo << std::endl;
-        if (expo >pparams.darkness_threshold) {
-            break;
+    if (pparams.darkness_threshold > 0) {
+        std::cout << "Checking if dark." << std::endl;
+        while(true) {
+            auto [expo,frameL] = cam.measure_auto_exposure();
+            auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
+            std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << " Measured exposure: " << expo << std::endl;
+            if (expo >pparams.darkness_threshold) {
+                break;
+            }
+            cv::imwrite("../../../../pats_monitor_tmp.jpg", frameL);
+            usleep(10000000); // measure every 1 minute
         }
-        cv::imwrite("../../../../pats_monitor_tmp.jpg", frameL);
-        usleep(10000000); // measure every 1 minute
     }
 }
 
@@ -707,8 +709,7 @@ int main( int argc, char **argv )
         return 1;
     }
 
-    if (pparams.insect_logging_mode)
-        wait_for_dark();
+    wait_for_dark();
 
     try {
         init();
