@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -ex
 
-ssh -t $1 << EOF
+ssh -T $1 << EOF
  cd code/pats/pc/build
  git reset --hard
  git checkout deploy
