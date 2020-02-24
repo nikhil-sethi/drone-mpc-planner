@@ -1,5 +1,6 @@
 #include "dronecontroller.h"
 #include "defines.h"
+#include "quaternion.h"
 #include "linalg.h"
 
 using namespace cv;
@@ -674,18 +675,11 @@ std::tuple<float,float> DroneController::acc_to_deg(cv::Point3f acc) {
 }
 
 std::tuple<float,float> DroneController::acc_to_quaternion(cv::Point3f acc) {
-
     cv::Point3f acc_BF = {-acc.z,-acc.x,-acc.y};
     cv::Point3f acc_BF_hover = {0,0,-1};
-
-    cv::Point3f quaternion_vector = acc_BF_hover.cross(acc_BF);
-    float quaternion_scalar = sqrt(powf(norm(acc_BF_hover),2) * powf(norm(acc_BF),2) + acc_BF_hover.dot(acc_BF));
-    float quaternion_normalize_factor = sqrt(quaternion_scalar*quaternion_scalar + powf(norm(quaternion_vector),2));
-
-    cv::Point3f quaternion_vector_normalized = quaternion_vector/quaternion_normalize_factor;
-    //    float quaternion_scalar_normalized = quaternion_scalar/quaternion_normalize_factor;
-
-    return std::make_tuple(quaternion_vector_normalized.x,quaternion_vector_normalized.y);
+    quaternion q = rot_quat(acc_BF_hover, acc_BF);
+    // assert(norm(restore_direction(q.v.x, q.v.y)-acc_BF)<0.001);
+    return std::make_tuple(q.v.x,q.v.y);
 }
 
 std::tuple<cv::Point3f, cv::Point3f> DroneController::predict_drone_state_after_spindown(cv::Point3f integrated_pos, cv::Point3f integrated_vel, cv::Point3f burn_accelleration) {
