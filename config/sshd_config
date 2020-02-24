@@ -107,6 +107,12 @@ PrintMotd no
 
 # no default banner path
 #Banner none
+# or define per user:
+#Banner /etc/banner
+#Match User pats
+#    Banner "none"
+#Match all
+
 
 # Allow client to pass locale environment variables
 AcceptEnv LANG LC_*
