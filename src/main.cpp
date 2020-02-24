@@ -283,7 +283,7 @@ void write_status_file() {
         char hostname[20];
         gethostname(hostname,20);
         std::ofstream status_file;
-        status_file.open(data_output_dir  + "../../../../pats_status.txt",std::ofstream::out);
+        status_file.open("../../../../pats_status.txt",std::ofstream::out);
         status_file << "Hostname: " << hostname << std::endl;
         auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
         status_file << "Time: " << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << std::endl;
