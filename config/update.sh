@@ -3,6 +3,8 @@ set -ex
 
 ssh -t $1 << EOF
  cd code/pats/pc/build
+ git reset --hard
+ git checkout deploy
  git pr
  cmake ..
  make -j4
