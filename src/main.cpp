@@ -709,9 +709,8 @@ int main( int argc, char **argv )
         return 1;
     }
 
-    wait_for_dark();
-
     try {
+        wait_for_dark();
         init();
         process_video();
     } catch(bag_video_ended) {
