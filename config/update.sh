@@ -3,6 +3,7 @@ set -ex
 
 ssh -T $1 << EOF
  cd code/pats/pc/build
+ git fetch
  git reset --hard
  git checkout deploy
  git pr
