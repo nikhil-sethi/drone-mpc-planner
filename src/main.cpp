@@ -247,8 +247,8 @@ void process_video() {
         else
             restart_delay = 0;
 
-        if ((imgcount > 360000 && pparams.insect_logging_mode)  ||
-                (cam.measured_exposure() <= pparams.darkness_threshold && pparams.darkness_threshold>0)) {
+        if (!log_replay_mode && ((imgcount > 360000 && pparams.insect_logging_mode)  
+                                 || (cam.measured_exposure() <= pparams.darkness_threshold && pparams.darkness_threshold>0))) {
             std::cout << "Initiating periodic restart" << std::endl;
             key =27;
         } else if(restart_delay > 1.5f*dnav.time_out_after_landing*pparams.fps) {
@@ -658,7 +658,7 @@ void close(bool sig_kill) {
 }
 
 void wait_for_dark() {
-    if (pparams.darkness_threshold > 0) {
+    if (pparams.darkness_threshold > 0 && !log_replay_mode) {
         std::cout << "Checking if dark." << std::endl;
         while(true) {
             auto [expo,frameL] = cam.measure_auto_exposure();
