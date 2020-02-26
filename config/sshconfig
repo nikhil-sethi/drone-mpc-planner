@@ -169,3 +169,60 @@ Host pats11b
         User pats
         ProxyJump dinstech
         Port 7100
+
+Host pats12
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump mavlab-gpu
+        Port 7200
+
+Host pats13
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump mavlab-gpu
+        Port 7300
+
+Host pats14
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump mavlab-gpu
+        Port 7400
+
+Host pats15
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump mavlab-gpu
+        Port 7500
+
+Host pats16
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump mavlab-gpu
+        Port 7600
+
+Host pats17
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump mavlab-gpu
+        Port 7700
+
+Host pats18
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump mavlab-gpu
+        Port 7800
+
+Host pats19
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump mavlab-gpu
+        Port 7900
+
