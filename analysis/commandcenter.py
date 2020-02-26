@@ -7,7 +7,7 @@ from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtWidgets import (QApplication, QFileDialog, QHBoxLayout, QLabel,
         QPushButton, QSizePolicy, QSlider, QStyle, QVBoxLayout, QGridLayout, QWidget)
 from PyQt5.QtWidgets import QMainWindow,QWidget, QPushButton, QAction,QFrame
-from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtGui import QIcon, QPixmap, QPalette
 
 from pathlib import Path
 from matplotlib.backends.backend_qt5agg import (FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
@@ -27,6 +27,10 @@ class CommandCenterWindow(QMainWindow):
         wid = QWidget(self)
         self.setCentralWidget(wid)
         self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+        self.setAutoFillBackground(True)
+        p = self.palette()
+        p.setColor(self.backgroundRole(), Qt.black)
+        self.setPalette(p)
         layout = QGridLayout()
 
         #find all status files in ~/Downloads/pats_status
@@ -52,7 +56,14 @@ class CommandCenterWindow(QMainWindow):
                 data=status_txt_file.read()
             txtlabel = QLabel()
             txtlabel.setText(data)
+
+
+            pal = QPalette(txtlabel.palette())
+            pal.setColor(QPalette.WindowText, Qt.red)
+            txtlabel.setPalette(pal)
+            
             self.txtlabels.append(txtlabel)
+            #.setText("<font color='red'>" + data + "</font>")
         
             imlabel = QLabel()
             pixmap = QPixmap(str(source_im_file))
