@@ -469,7 +469,10 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
     track_data data;
     data.pos_valid = true;
     data.state.pos = measured_world_coordinates;
-    data.yaw = _world_item.yaw;
+    if(!isnan(_world_item.yaw)){
+        data.yaw = _world_item.yaw;
+        data.yaw_valid = true;
+    }
     data.yaw_smooth = yaw_smoother.addSample(_world_item.yaw);
 
     if (n_frames_lost >= smooth_width_vel || reset_filters) { // tracking was regained, after n_frames_lost frames
