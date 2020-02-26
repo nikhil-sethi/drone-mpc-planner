@@ -21,6 +21,6 @@
     <Member Name="imscalef">2</Member>
     <Member Name="flightplan">../../xml/flightplans/simple_demo.xml</Member>
     <Member Name="live_image_frq">10</Member>
-    <Member Name="max_cam_roll">0.5</Member>
+    <Member Name="max_cam_roll">2.5</Member>
 </SerializableClass>
 
