@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 
 import processloglib as lib
 
-import random,sys,os
+import random,sys,os,re
 
 
 class CommandCenterWindow(QMainWindow):
@@ -45,9 +45,13 @@ class CommandCenterWindow(QMainWindow):
         self.txtlabels = []
         self.files = []
         self.source_folder = source_folder
-        i=0
+        
         for f in files:
             self.files.append(f)
+        self.files.sort(key=natural_keys)
+
+        i=0
+        for f in self.files:
             source_txt_file = Path(source_folder,f)
             source_im_file = Path(source_folder,source_txt_file.stem + ".jpg")
 
@@ -104,8 +108,7 @@ class CommandCenterWindow(QMainWindow):
         timer.start(1000)
 
 
-        self.show()
-        
+        self.show() 
          
     def refresh(self):
         i = 0
@@ -125,6 +128,16 @@ class CommandCenterWindow(QMainWindow):
             i = i + 1
 
 
+def atoi(text):
+    return int(text) if text.isdigit() else text
+    
+def natural_keys(text):
+    '''
+    alist.sort(key=natural_keys) sorts in human order
+    http://nedbatchelder.com/blog/200712/human_sorting.html
+    (See Toothy's implementation in the comments)
+    '''
+    return [ atoi(c) for c in re.split(r'(\d+)', text) ]  
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
