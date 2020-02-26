@@ -220,6 +220,9 @@ from os import listdir
 def list_csv_files(directory):
     return (f for f in listdir(directory) if f.endswith('.csv') and not f.startswith("log."))
 
+def list_txt_files(directory):
+    return (f for f in listdir(directory) if f.endswith('.txt'))
+
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 75, fill = '█', printEnd = "\r"):
     """
     Call in a loop to create terminal progress bar
