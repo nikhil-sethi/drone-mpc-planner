@@ -1,7 +1,7 @@
 # PyQt5 Video player
 #!/usr/bin/env python
 
-from PyQt5.QtCore import QDir, Qt, QUrl
+from PyQt5.QtCore import QDir, Qt, QUrl,QRect,QTimer
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtWidgets import (QApplication, QFileDialog, QHBoxLayout, QLabel,
@@ -26,52 +26,98 @@ class CommandCenterWindow(QMainWindow):
         self.setWindowTitle("Pats Command Center") 
         wid = QWidget(self)
         self.setCentralWidget(wid)
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
         layout = QGridLayout()
 
         #find all status files in ~/Downloads/pats_status
         source_folder = '~/Downloads/pats_status'
         source_folder = os.path.expanduser(source_folder.strip(" "))
         files = lib.list_txt_files(source_folder)
-
+        n = sum(1 for i in lib.list_txt_files(source_folder)) #python=KUT
+        np = n/3
         #for each status file, create a new SingleSystem 
-        controls = []
+    
+        self.imlabels = []
+        self.txtlabels = []
+        self.files = []
+        self.source_folder = source_folder
         i=0
         for f in files:
+            self.files.append(f)
             source_txt_file = Path(source_folder,f)
-            source_im_file = source_txt_file.stem + ".jpg"
-            ctrl = controls.append(SingleSystemControl(source_txt_file,source_im_file))
-            layout.addLayout(ctrl,0,i)
-            i = i + 1
-            controls.append(ctrl)
+            source_im_file = Path(source_folder,source_txt_file.stem + ".jpg")
 
+            data = ''
+            with open (source_txt_file, "r") as status_txt_file:
+                data=status_txt_file.read()
+            txtlabel = QLabel()
+            txtlabel.setText(data)
+            self.txtlabels.append(txtlabel)
+        
+            imlabel = QLabel()
+            pixmap = QPixmap(str(source_im_file))
+            imlabel.setPixmap(pixmap)
+            imlabel.setPixmap(pixmap.scaled(imlabel.size(),Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            imlabel.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding)
+            imlabel.setAlignment(Qt.AlignCenter)
+            imlabel.setMinimumSize(100, 100)
+            self.imlabels.append(imlabel)
+
+
+            sub_layout = QVBoxLayout()
+            sub_layout.setContentsMargins(0, 0, 0, 0)
+            sub_layout.addWidget(imlabel)
+            sub_layout.addWidget(txtlabel)
+            
+            
+            layout.addLayout(sub_layout,i/np,i % np)
+            i = i + 1
+
+
+        self.refreshButton = QPushButton()
+        self.refreshButton.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
+        self.refreshButton.clicked.connect(self.refresh)
+        control_layout = QVBoxLayout()
+        control_layout.setContentsMargins(0, 0, 0, 0)
+        control_layout.addWidget(self.refreshButton)
+        layout.addLayout(control_layout,i/np,i % np)
+
+        layout.setGeometry(QRect(0, 0, 640 , 480))
+        
         wid.setLayout(layout)
 
+   
 
-class SingleSystemControl():
+        timer = QTimer(self)
+        timer.timeout.connect(self.refresh)
+        timer.start(1000)
 
-    def __init__(self,parent=None,source_txt_file='',source_im_file=''):
+
+        self.show()
         
-        self.im_file = source_im_file
-        self.txt_file = source_txt_file
+         
+    def refresh(self):
+        i = 0
+        for f in self.files:
+            source_txt_file = Path(self.source_folder,f)
+            source_im_file = Path(self.source_folder,source_txt_file.stem + ".jpg")
 
-        self.txtlabel = QLabel()
-        self.txtlabel.setText(source_txt_file)
-        
-        self.imlabel = QLabel()
-        pixmap = QPixmap(source_im_file)
-        self.imlabel.setPixmap(pixmap)
-        
+            data = ''
+            with open (source_txt_file, "r") as status_txt_file:
+                data=status_txt_file.read()
+            self.txtlabels[i].setText(data)
 
-        controlLayout = QVBoxLayout()
-        controlLayout.setContentsMargins(0, 0, 0, 0)
-        controlLayout.addWidget(self.imlabel)
-        controlLayout.addWidget(self.txtlabel)
+            pixmap = QPixmap(str(source_im_file))
+            self.imlabels[i].setPixmap(pixmap)
+            self.imlabels[i].setPixmap(pixmap.scaled(self.imlabels[i].size(),Qt.KeepAspectRatio, Qt.SmoothTransformation))
+
+            i = i + 1
 
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     cc = CommandCenterWindow()
-    cc.showMaximized()
+    cc.show()
 
     sys.exit(app.exec_())
