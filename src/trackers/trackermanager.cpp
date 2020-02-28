@@ -543,11 +543,11 @@ void TrackerManager::update_max_change_points() {
             if (rect.x < 0)
                 rect.x = 0;
             else if (rect.x+rect.width >= diff.cols)
-                rect.x -= (rect.x+rect.width+1) - diff.cols;
+                rect.x =  diff.cols -rect.width;
             if (rect.y < 0)
                 rect.y = 0;
             else if (rect.y+rect.height >= diff.rows)
-                rect.y -= (rect.y+rect.height+1) - diff.rows ;
+                rect.y =  diff.rows -rect.height;
             Mat roi(diff,rect); // so, this is the cut out around the max point
 
             // make a black mask, same size:
