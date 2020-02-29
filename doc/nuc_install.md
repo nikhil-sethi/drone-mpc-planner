@@ -40,6 +40,7 @@
     - `sudo nano /etc/hosts`     Change `127.0.1.1 pats-proto100` to reflect number on the label from step 3
     - Again for: `sudo nano /etc/hostname`
     - `sudo sh -c 'echo "pats ALL = (root) NOPASSWD: /usr/sbin/rtcwake" >> /etc/sudoers'`
+    - `echo "alias df='df -h -x squashfs -x tmpfs -x devtmpfs'" >> ~/.bash_aliases`
     - Reboot
 6. Optional: update some random stuff.
 
