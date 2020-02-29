@@ -280,25 +280,19 @@ void write_status_file() {
 
     }
     if (status_update_needed) {
-        char hostname[20];
-        gethostname(hostname,20);
         std::ofstream status_file;
         status_file.open("../../../../pats_status.txt",std::ofstream::out);
-        status_file << hostname << std::endl;
         auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
         status_file << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << std::endl;
-        status_file << "Runtime: " << cam.frame_time() << "s" << std::endl;
+        status_file << "Runtime: " << to_string_with_precision(cam.frame_time(),1) << "s" << std::endl;
         status_file << nav_status << std::endl;
     }
 
 }
 
 void reset_status_file(std::string status_msg) {
-    char hostname[20];
-    gethostname(hostname,20);
     std::ofstream status_file;
     status_file.open("../../../../pats_status.txt",std::ofstream::out);
-    status_file << hostname << std::endl;
     auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
     status_file << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << std::endl;
     status_file << "Runtime: " << 0 << "s" << std::endl;

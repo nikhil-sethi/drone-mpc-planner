@@ -5,6 +5,8 @@
 
 set -ex
 cd /home/pats/code/pats/pc/build/
+
+STAT_FN=~/pats_system_info.txt
 #export LRS_LOG_LEVEL="DEBUG"
 
 #perform a one time hardware reset (fixes some issues with cold boot and plugged realsense)
@@ -32,9 +34,15 @@ while [ 1 ]; do
 		/bin/mv terminal.log $OUTDIR || true
 		/bin/mv logging $OUTDIR || true
 
+	echo "Hostname: $HOSTNAME" > $STAT_FN
+	echo "Drone ID: $DRONE_ID" >> $STAT_FN
+	SHA="$(git rev-parse HEAD)"
+	echo "sha: $SHA"  >> $STAT_FN
+	DF="$(df -h)"
+	echo "df: $DF"  >> $STAT_FN
+
 	echo "$dt" > terminal.log
-	echo "sha:" >> terminal.log
-	git rev-parse HEAD >> terminal.log || true
+	echo "sha:$SHA" >> terminal.log
 	./pats $DRONE_ID 2>&1 | /usr/bin/tee --append terminal.log || true
 
 	sleep 10s
