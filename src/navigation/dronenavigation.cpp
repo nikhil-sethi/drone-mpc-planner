@@ -109,11 +109,11 @@ void DroneNavigation::update(double time) {
             if (static_cast<float>(time - prev_time) > dparams.blink_period)
                 _dctrl->blink(time);
             if (_trackers->mode() != tracking::TrackerManager::mode_locate_drone) {
-                _navigation_status = ns_located_drone;
+                //_navigation_status = ns_located_drone;
                 time_located_drone = time;
             }
             if (time - locate_drone_start_time > 30) {
-                _navigation_status = ns_drone_problem;
+                //_navigation_status = ns_drone_problem;
             }
 
             break;
