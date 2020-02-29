@@ -247,7 +247,7 @@ void process_video() {
         else
             restart_delay = 0;
 
-        if (!log_replay_mode && ((imgcount > 360000 && pparams.insect_logging_mode)  
+        if (!log_replay_mode && ((imgcount > 360000 && pparams.insect_logging_mode)
                                  || (cam.measured_exposure() <= pparams.darkness_threshold && pparams.darkness_threshold>0))) {
             std::cout << "Initiating periodic restart" << std::endl;
             key =27;
@@ -284,13 +284,25 @@ void write_status_file() {
         gethostname(hostname,20);
         std::ofstream status_file;
         status_file.open("../../../../pats_status.txt",std::ofstream::out);
-        status_file << "Hostname: " << hostname << std::endl;
+        status_file << hostname << std::endl;
         auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
-        status_file << "Time: " << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << std::endl;
-        status_file << "Runtime: " << cam.frame_time() << std::endl;
-        status_file << "Nav: " << nav_status << std::endl;
+        status_file << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << std::endl;
+        status_file << "Runtime: " << cam.frame_time() << "s" << std::endl;
+        status_file << nav_status << std::endl;
     }
 
+}
+
+void reset_status_file(std::string status_msg) {
+    char hostname[20];
+    gethostname(hostname,20);
+    std::ofstream status_file;
+    status_file.open("../../../../pats_status.txt",std::ofstream::out);
+    status_file << hostname << std::endl;
+    auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
+    status_file << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << std::endl;
+    status_file << "Runtime: " << 0 << "s" << std::endl;
+    status_file << status_msg << std::endl;
 }
 
 void write_status_image() {
@@ -343,8 +355,6 @@ void process_frame(Stereo_Frame_Data data) {
     }
 
     write_status_file();
-
-
 }
 
 void init_insect_log(int n) {
@@ -668,6 +678,7 @@ void wait_for_dark() {
                 break;
             }
             cv::imwrite("../../../../pats_monitor_tmp.jpg", frameL);
+            reset_status_file("Waiting. Exposure: " + std::to_string(static_cast<int>(expo)));
             usleep(10000000); // measure every 1 minute
         }
     }
@@ -675,6 +686,7 @@ void wait_for_dark() {
 
 int main( int argc, char **argv )
 {
+    reset_status_file("Starting");
     bool realsense_reset;
     try {
         std::tie(log_replay_mode, realsense_reset,replay_dir,drone_id) = process_arg(argc,argv);
@@ -684,10 +696,12 @@ int main( int argc, char **argv )
     }
 
     if (realsense_reset) {
+        reset_status_file("Reseting realsense");
         try {
             cam.reset();
         } catch(my_exit const &e) {
             std::cout << "Error: " << e.msg << std::endl;
+            reset_status_file(e.msg);
             return 1;
         }
         return 0;
@@ -706,6 +720,7 @@ int main( int argc, char **argv )
         }
     } catch(my_exit const &e) {
         std::cout << "Error reading xml settings: " << e.msg << std::endl;
+        reset_status_file(e.msg);
         return 1;
     }
 
@@ -720,6 +735,7 @@ int main( int argc, char **argv )
         key = 27;
         close(false);
         std::cout << "Error: " << e.msg << std::endl;
+        reset_status_file(e.msg);
         return 1;
     }
 
