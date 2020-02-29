@@ -38,7 +38,7 @@ while [ 1 ]; do
 	echo "Drone ID: $DRONE_ID" >> $STAT_FN
 	SHA="$(git rev-parse HEAD)"
 	echo "sha: $SHA"  >> $STAT_FN
-	DF="$(df -h)"
+	DF="$(df -h -x squashfs -x tmpfs -x devtmpfs)"
 	echo "df: $DF"  >> $STAT_FN
 
 	echo "$dt" > terminal.log
