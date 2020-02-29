@@ -585,6 +585,64 @@ std::tuple<float,cv::Mat> Cam::measure_auto_exposure() {
 
 }
 
+std::tuple<float,float,double,cv::Mat> Cam::measure_angle() {
+    if (!dev_initialized) {
+        rs2::context ctx;
+        rs2::device_list devices = ctx.query_devices();
+        if (devices.size() == 0) {
+            throw my_exit("no RealSense connected");
+        } else if (devices.size() > 1) {
+            throw my_exit("more than one RealSense connected....");
+        } else {
+            dev = devices[0];
+            dev_initialized = true;
+        }
+    }
+
+    rs2::config cfg;
+    cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, pparams.fps);
+    cfg.enable_stream(RS2_STREAM_ACCEL);
+    cfg.enable_stream(RS2_STREAM_GYRO);
+    cam.start(cfg);
+    dev = cam.get_active_profile().get_device(); // after a cam start, dev is changed
+
+    auto rs_depth_sensor = dev.first<rs2::depth_sensor>();
+    cv::Size im_size(IMG_W, IMG_H);
+    if (rs_depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+        rs_depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);
+    if (rs_depth_sensor.supports(RS2_OPTION_EMITTER_ENABLED))
+        rs_depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f);
+
+    uint nframes = 10;
+    filtering::Smoother smx,smy,smz;
+    smx.init(static_cast<int>(nframes));
+    smy.init(static_cast<int>(nframes));
+    smz.init(static_cast<int>(nframes));
+    float x = 0,y = 0,z = 0, roll = 0, pitch = 0;
+    rs2::frameset frame;
+    cv::Mat frameLt;
+
+    for (uint i = 0; i < nframes; i++) {
+        frame = cam.wait_for_frames();
+        frameLt = Mat(im_size, CV_8UC1, const_cast<void *>(frame.get_infrared_frame(1).get_data()), Mat::AUTO_STEP);
+        auto frame_acc = frame.first(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F);
+
+        if (frame_acc.is<rs2::motion_frame>()) {
+            rs2::motion_frame mf = frame_acc.as<rs2::motion_frame>();
+            rs2_vector xyz = mf.get_motion_data();
+            x = smx.addSample(xyz.x);
+            y = smy.addSample(xyz.y);
+            z = smz.addSample(xyz.z);
+            roll = atanf(-x/sqrtf(y*x + z*z)) * rad2deg;
+            pitch = 90.f-atanf(y/z) * rad2deg;
+        }
+    }
+
+    cam.stop();
+    return std::make_tuple(roll,pitch,frame.get_timestamp(),frameLt);
+
+}
+
 void Cam::calib_pose(bool also_do_depth) {
 
     std::cout << "Measuring pose..." << std::endl;

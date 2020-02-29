@@ -667,6 +667,39 @@ void close(bool sig_kill) {
     std::cout <<"Closed"<< std::endl;
 }
 
+
+void wait_for_cam_angle() {
+
+    int enable_delay = 0;
+
+    if (pparams.darkness_threshold > 0 && !log_replay_mode) {
+        std::cout << "Checking cam angle." << std::endl;
+        while(true) {
+            auto [roll,pitch,frame_time,frameL] = cam.measure_angle();
+            static double roll_start_time = frame_time;
+            double elapsed_time = (frame_time- roll_start_time) / 1000.;
+
+            auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
+            std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << ". Camera roll: " << to_string_with_precision(roll,2) << "°- max: " << pparams.max_cam_roll << "°. Pitch: " << to_string_with_precision(pitch,2) << "°" << std::endl;
+            if (fabs(roll)  < pparams.max_cam_roll && !enable_delay)
+                break;
+
+            if (fabs(roll)  > pparams.max_cam_roll)
+                enable_delay = 60;
+            else
+                enable_delay--;
+
+            static double prev_imwrite_time = -pparams.live_image_frq;
+            if (elapsed_time - prev_imwrite_time > pparams.live_image_frq && pparams.live_image_frq >= 0) {
+                prev_imwrite_time = elapsed_time;
+                cv::imwrite("../../../../pats_monitor_tmp.jpg", frameL);
+            }
+            reset_status_file("Roll: " + to_string_with_precision(roll,2));
+            usleep(30000); // measure every third second
+        }
+    }
+}
+
 void wait_for_dark() {
     if (pparams.darkness_threshold > 0 && !log_replay_mode) {
         std::cout << "Checking if dark." << std::endl;
@@ -725,6 +758,7 @@ int main( int argc, char **argv )
     }
 
     try {
+        wait_for_cam_angle();
         wait_for_dark();
         init();
         process_video();

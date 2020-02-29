@@ -80,6 +80,7 @@ public:
     void update();
 
     std::tuple<float,cv::Mat> measure_auto_exposure();
+    std::tuple<float,float,double,cv::Mat> measure_angle();
 
     unsigned long long frame_number() {return _frame_number;}
     double frame_time() {return _frame_time;}
