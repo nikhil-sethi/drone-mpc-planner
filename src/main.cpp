@@ -765,6 +765,16 @@ int main( int argc, char **argv )
         std::cout << "Error: " << e.msg << std::endl;
         reset_status_file(e.msg);
         return 1;
+    } catch(rs2::error const &e) {
+        reset_status_file("Resetting realsense");
+        try {
+            cam.reset();
+        } catch(my_exit const &e2) {
+            std::cout << "Error: " << e2.msg << std::endl;
+            reset_status_file(e2.msg);
+            return 1;
+        }
+        return 0;
     }
 
     close(false);
