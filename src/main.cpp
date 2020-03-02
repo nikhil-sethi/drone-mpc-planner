@@ -66,6 +66,7 @@ bool log_replay_mode = false;
 uint8_t drone_id;
 std::string replay_dir;
 std::string logger_fn; //contains filename of current log # for insect logging (same as video #)
+std::string pats_xml_fn,drone_xml_fn;
 
 std::ofstream logger;
 std::ofstream logger_insect;
@@ -551,27 +552,47 @@ void init_video_recorders() {
         if (output_video_cuts.init(main_argc,main_argv,pparams.video_cuts,data_output_dir + "insect" + to_string(0) + ".mp4",IMG_W*2,IMG_H,pparams.fps/2, "192.168.1.255",5000,true,false)) {std::cout << "WARNING: could not open cut video " << data_output_dir + "insect" + to_string(0) + ".mp4" << std::endl;}
 }
 
-std::tuple<bool,bool, std::string,uint8_t> process_arg(int argc, char **argv) {
+std::tuple<bool,bool,std::string,uint8_t,std::string,std::string> process_arg(int argc, char **argv) {
     main_argc = argc;
     main_argv = argv;
 
-    std::string empty_str = "";
     int default_drone_id = 1;
-
-    if (argc == 2) {
-        string s = argv[1];
-        if (s.compare("rs_reset") == 0) {
-            return make_tuple(false,true,empty_str,default_drone_id);
-        } else {
-            for(uint i=0; i<s.length(); i++) {
-                if(!isdigit(s[i]))
-                    return make_tuple(true,false,s,default_drone_id);
+    int arg_drone_id = default_drone_id;
+    bool replay_mode = false;
+    std::string arg_log_folder="",arg_pats_xml_fn="../../xml/pats.xml",arg_drone_xml_fn="";
+    if (argc > 1) {
+        for (int i = 1; i < argc; i++) {
+            string s = argv[i];
+            bool arg_recognized = false;
+            if (s.compare("--rs_reset") == 0) {
+                return make_tuple(true,false,"",0,"","");
+            } else if (s.compare("--pats-xml") == 0) {
+                arg_recognized = true;
+                i++;
+                arg_pats_xml_fn = argv[i];
+            } else if (s.compare("--drone-xml") == 0) {
+                arg_recognized = true;
+                i++;
+                arg_drone_xml_fn = argv[i];
+            } else if (s.compare("--drone-id") == 0) {
+                arg_recognized = true;
+                i++;
+                arg_drone_id = stoi(argv[i]);
+            } else if (s.compare("--log") == 0) {
+                arg_recognized = true;
+                i++;
+                replay_mode=true;
+                arg_log_folder=argv[i];
+                arg_pats_xml_fn = arg_log_folder + "/pats.xml";
+                arg_drone_xml_fn = arg_log_folder + "/drone.xml";
             }
-            return make_tuple(false,false,empty_str,std::stoi(s));
+            if (!arg_recognized) {
+                std::cout << "Error argument nog recognized: " << argv[i] <<std::endl;
+                exit(1);
+            }
         }
-    } else {
-        return make_tuple(false,false,empty_str,default_drone_id);
     }
+    return make_tuple(false,replay_mode,arg_log_folder,arg_drone_id,arg_pats_xml_fn,arg_drone_xml_fn);
 }
 
 void init() {
@@ -716,7 +737,7 @@ int main( int argc, char **argv )
     reset_status_file("Starting");
     bool realsense_reset;
     try {
-        std::tie(log_replay_mode, realsense_reset,replay_dir,drone_id) = process_arg(argc,argv);
+        std::tie(realsense_reset,log_replay_mode,replay_dir,drone_id,pats_xml_fn,drone_xml_fn) = process_arg(argc,argv);
     } catch (Exception err) {
         std::cout << "Error processing command line arguments:" << err.msg << std::endl;
         return 1;
@@ -735,15 +756,14 @@ int main( int argc, char **argv )
     }
 
     try {
+        pparams.deserialize(pats_xml_fn);
+        if (replay_dir == "" && drone_xml_fn == "")
+            drone_xml_fn = "../../xml/" + string(drone_types_str[pparams.drone]) + ".xml";
+        dparams.deserialize(drone_xml_fn);
         if (replay_dir == "") {
-            pparams.deserialize("../../xml/pats.xml");
-            dparams.deserialize("../../xml/" + string(drone_types_str[pparams.drone]) + ".xml");
             mkdir("./logging", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
             pparams.serialize("./logging/pats.xml");
             dparams.serialize("./logging/drone.xml");
-        } else {
-            pparams.deserialize(replay_dir + "/pats.xml");
-            dparams.deserialize(replay_dir + "/drone.xml");
         }
     } catch(my_exit const &e) {
         std::cout << "Error reading xml settings: " << e.msg << std::endl;
