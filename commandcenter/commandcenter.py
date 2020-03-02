@@ -141,14 +141,14 @@ class SystemWidget(QWidget):
 
     def refresh(self):
         if self.chk_enable.isChecked():
-            # try:
-            txt,system_color = self.get_lbl_txt()
-            self.txt_label.setText(txt)
-            pal = QPalette(self.txt_label.palette())
-            pal.setColor(QPalette.WindowText, system_color)
-            self.txt_label.setPalette(pal)   
-            # except:
-            #     print('error')
+            try:
+                txt,system_color = self.get_lbl_txt()
+                self.txt_label.setText(txt)
+                pal = QPalette(self.txt_label.palette())
+                pal.setColor(QPalette.WindowText, system_color)
+                self.txt_label.setPalette(pal)   
+            except:
+                print('error')
             source_im_file = Path(self.source_folder,self.status_fn[:-4] + ".jpg")
             pixmap = QPixmap(str(source_im_file))
             self.im_label.setPixmap(pixmap)
@@ -205,7 +205,8 @@ class SystemWidget(QWidget):
             res_txt += status_txt[1].strip() + '. upd: ' + str(int(time_since_update.total_seconds())) + 's\n'
         except:
             pass
-        res_txt += status_txt[2]
+        if len(status_txt) > 2:
+            res_txt += status_txt#2]
         
         return res_txt.strip(),system_has_problem        
 
