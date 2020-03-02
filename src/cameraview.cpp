@@ -112,7 +112,7 @@ std::tuple<bool, std::array<bool, N_PLANES>> CameraView::in_view(cv::Point3f p,f
     bool inview = true;
 
     // Attention check the negative case!
-    for(uint i=1; i<N_PLANES; i++){ // Start at 1 to not check the top-plane which is plane0
+    for(uint i=0; i<N_PLANES; i++){ 
         if(!on_normal_side(plane_supports.at(i) + hysteresis_margin*plane_normals.at(i), plane_normals.at(i), cv::Mat(p))) {
             inview = false;
             violated_planes.at(i) = true;
