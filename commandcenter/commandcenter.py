@@ -9,7 +9,7 @@ from PyQt5.QtGui import QIcon, QPixmap, QPalette,QColor,QKeyEvent
 
 from pathlib import Path
 from datetime import datetime
-import random,sys,os,re,subprocess
+import random,sys,os,re,subprocess,math
 class CommandCenterWindow(QMainWindow):
 
     def __init__(self, parent=None):
@@ -24,23 +24,19 @@ class CommandCenterWindow(QMainWindow):
         self.setPalette(p)
         layout = QGridLayout()
 
-        self.download()
-
-        #find all status files in ~/Downloads/pats_status
         source_folder = '~/Downloads/pats_status'
         source_folder = os.path.expanduser(source_folder.strip(" "))
-        files = list_txt_files(source_folder)
-        n = sum(1 for i in list_txt_files(source_folder)) #python=KUT
-        np = n/3
-        
-        self.sys_widgets = []
-        self.files = []
         self.source_folder = source_folder
-        
+        self.download()
+        files = list_txt_files(source_folder)
+        self.files = []
         for f in files:
             self.files.append(f)
         self.files.sort(key=natural_keys)
-
+        n = len(self.files)
+        np = int(math.ceil(n/3))
+        
+        self.sys_widgets = []        
         i=0
         for f in self.files:
             s = SystemWidget(source_folder,f)
@@ -60,10 +56,9 @@ class CommandCenterWindow(QMainWindow):
         self.refresh()
 
     def download(self):
-        rsync_dest='~/Downloads/pats_status'
         rsync_src='mavlab-gpu:/home/pats/status/'
-        subprocess.call(['mkdir -p ' + rsync_dest ], shell=True)
-        subprocess.call(['rsync -zva --timeout=3 ' + rsync_src + ' '+ rsync_dest], shell=True)
+        subprocess.call(['mkdir -p ' + self.source_folder ], shell=True)
+        subprocess.Popen(['rsync -zva --timeout=3 ' + rsync_src + ' '+ self.source_folder], shell=True)
 
     def refresh(self):
         self.download()
@@ -131,14 +126,14 @@ class SystemWidget(QWidget):
         sub_layout.addLayout(control_layout)
     
     def restart(self):
-        subprocess.call(['./restart_system.sh', 'pats'+self.hostid])
+        subprocess.Popen(['./restart_system.sh', 'pats'+self.hostid])
     def update(self):
-        subprocess.call(['./update_system.sh', 'pats'+self.hostid])
+        subprocess.Popen(['./update_system.sh', 'pats'+self.hostid])
     def reboot(self):
         buttonReply = QMessageBox.question(self, 'Maar, weet je dat eigenlijk wel zekerdepeter?!', "Reboot, really?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if buttonReply == QMessageBox.Yes:
             print('Yes clicked.')
-            subprocess.call(['./reboot_system.sh', 'pats'+self.hostid])        
+            subprocess.Popen(['./reboot_system.sh', 'pats'+self.hostid])        
     def takeoff(self):
         print('todo: implement command take off')
     def takeoshow_im_big(self,event):
@@ -192,13 +187,24 @@ class SystemWidget(QWidget):
         with open (source_status_txt_file, "r") as status_txt_file:
             status_txt=status_txt_file.readlines()
 
-        date_time = datetime.strptime(status_txt[0].strip(), '%Y/%m/%d %H:%M:%S') #e.g. 2020/02/29 23:45:46
-        time_since_update = datetime.now() - date_time
-        
-        if time_since_update.total_seconds() > 300:
-            system_has_problem = QColor(200,0,0)
-        
-        res_txt += status_txt[1].strip() + '. upd: ' + str(int(time_since_update.total_seconds())) + 's\n'
+        if len(status_txt) > 2:
+            navstatus = status_txt[2].strip()
+            if navstatus == 'ns_wait_for_insect':
+                system_has_problem = QColor(0,128,0)
+            elif navstatus == 'ns_approach_waypoint' or navstatus == 'ns_taking_off' or navstatus == 'ns_chasing_insect'or navstatus == 'ns_landing':
+                system_has_problem = QColor(0,255,0)
+            elif navstatus == 'ns_drone_problem':
+                system_has_problem = QColor(255,0,0)
+
+        try:
+            date_time = datetime.strptime(status_txt[0].strip(), '%Y/%m/%d %H:%M:%S') #e.g. 2020/02/29 23:45:46
+            time_since_update = datetime.now() - date_time       
+            if time_since_update.total_seconds() > 300:
+                system_has_problem = QColor(200,0,0)
+            
+            res_txt += status_txt[1].strip() + '. upd: ' + str(int(time_since_update.total_seconds())) + 's\n'
+        except:
+            pass
         res_txt += status_txt[2]
         
         return res_txt.strip(),system_has_problem        
