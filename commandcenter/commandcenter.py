@@ -187,7 +187,7 @@ class SystemWidget(QWidget):
                 sysinfo_txt=sysinf_txt_file.readlines()
             self.hostid = sysinfo_txt[0].split(':')[1].strip().replace('pats-proto','')
             self.droneid = sysinfo_txt[1].split(':')[1].strip()
-            sha = sysinfo_txt[2].split(':')[1].strip()[-6:]
+            sha = sysinfo_txt[2].split(':')[1].strip()[:6]
 
             hd = ''
             for line in sysinfo_txt:
