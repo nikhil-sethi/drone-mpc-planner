@@ -226,6 +226,8 @@ class SystemWidget(QWidget):
                     system_has_problem = QColor(0,255,0)
                 elif navstatus == 'ns_drone_problem':
                     system_has_problem = QColor(255,0,0)
+                elif navstatus.startswith('Roll') or navstatus.startswith('Starting') or navstatus.startswith('Resetting'):
+                    system_has_problem = QColor(180,180,0)
         else:
             res_txt = 'Error: status info file not found'
             system_has_problem = QColor(255,0,0)
