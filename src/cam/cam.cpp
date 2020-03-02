@@ -606,14 +606,13 @@ std::tuple<float,float,double,cv::Mat> Cam::measure_angle() {
     cam.start(cfg);
     dev = cam.get_active_profile().get_device(); // after a cam start, dev is changed
 
-    auto rs_depth_sensor = dev.first<rs2::depth_sensor>();
+    rs2::depth_sensor rs_dev = dev.first<rs2::depth_sensor>();
     cv::Size im_size(IMG_W, IMG_H);
-    if (rs_depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
-        rs_depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);
-    if (rs_depth_sensor.supports(RS2_OPTION_EMITTER_ENABLED))
-        rs_depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f);
+    rs_dev.set_option(RS2_OPTION_GAIN,0);
+    rs_dev.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);
+    rs_dev.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f);
 
-    uint nframes = 10;
+    uint nframes = 30;
     filtering::Smoother smx,smy,smz;
     smx.init(static_cast<int>(nframes));
     smy.init(static_cast<int>(nframes));
