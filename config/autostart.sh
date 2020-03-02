@@ -46,7 +46,7 @@ while [ 1 ]; do
 	echo "sha:$SHA" >> terminal.log
 	if [ ! -f $PATS_XML ]; then
 		echo Loading default pats.xml
-		cp /home/pats/code/pats/xml/pats.xml $PATS_XML
+		cp /home/pats/code/pats/xml/pats_deploy.xml $PATS_XML
 	fi
 	./pats --pats-xml $PATS_XML --drone-id $DRONE_ID 2>&1 | /usr/bin/tee --append terminal.log || true
 
