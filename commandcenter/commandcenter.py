@@ -2,15 +2,14 @@
 from PyQt5.QtCore import QDir, Qt, QUrl,QRect,QTimer
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtMultimediaWidgets import QVideoWidget
-from PyQt5.QtWidgets import (QMainWindow,QWidget, QPushButton, QCheckBox, QAction,QFrame,
+from PyQt5.QtWidgets import (QMainWindow,QDialog,QWidget, QPushButton, QCheckBox, QAction,QFrame,
     QApplication, QFileDialog, QHBoxLayout, QLabel,QPushButton, QSizePolicy, QSlider, QStyle,
-    QVBoxLayout, QGridLayout, QWidget)
-from PyQt5.QtGui import QIcon, QPixmap, QPalette,QColor
+    QVBoxLayout, QGridLayout, QWidget,QMessageBox)
+from PyQt5.QtGui import QIcon, QPixmap, QPalette,QColor,QKeyEvent
 
 from pathlib import Path
 from datetime import datetime
-import random,sys,os,re
-
+import random,sys,os,re,subprocess
 class CommandCenterWindow(QMainWindow):
 
     def __init__(self, parent=None):
@@ -24,6 +23,8 @@ class CommandCenterWindow(QMainWindow):
         p.setColor(self.backgroundRole(), Qt.black)
         self.setPalette(p)
         layout = QGridLayout()
+
+        self.download()
 
         #find all status files in ~/Downloads/pats_status
         source_folder = '~/Downloads/pats_status'
@@ -56,8 +57,16 @@ class CommandCenterWindow(QMainWindow):
 
         self.refresh()
         self.show() 
+        self.refresh()
+
+    def download(self):
+        rsync_dest='~/Downloads/pats_status'
+        rsync_src='mavlab-gpu:/home/pats/status/'
+        subprocess.call(['mkdir -p ' + rsync_dest ], shell=True)
+        subprocess.call(['rsync -zva --timeout=3 ' + rsync_src + ' '+ rsync_dest], shell=True)
 
     def refresh(self):
+        self.download()
         for sys in self.sys_widgets:
             sys.refresh()
 
@@ -72,12 +81,28 @@ class SystemWidget(QWidget):
         self.chk_enable.setStyleSheet("background-color:rgb(128,0,0)")
         self.chk_enable.setChecked(True)
         btn_restart = QPushButton()
+        btn_restart.setToolTip('Restart pats process')
         btn_restart.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
         btn_restart.setMaximumSize(30, 30)
         btn_restart.setStyleSheet("background-color:rgb(128,0,0)")
         btn_restart.clicked.connect(self.restart)
 
+        btn_update = QPushButton()
+        btn_update.setToolTip('Update from git')
+        btn_update.setIcon(self.style().standardIcon(QStyle.SP_ArrowUp))
+        btn_update.setMaximumSize(30, 30)
+        btn_update.setStyleSheet("background-color:rgb(128,0,0)")
+        btn_update.clicked.connect(self.update)
+
+        btn_reboot = QPushButton()
+        btn_reboot.setToolTip('Reboot with rtc timeout')
+        btn_reboot.setIcon(self.style().standardIcon(QStyle.SP_DialogResetButton))
+        btn_reboot.setMaximumSize(30, 30)
+        btn_reboot.setStyleSheet("background-color:rgb(128,0,0)")
+        btn_reboot.clicked.connect(self.reboot)
+
         btn_takeoff = QPushButton()
+        btn_takeoff.setToolTip('Fly waypoint mission')
         btn_takeoff.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
         btn_takeoff.setMaximumSize(30, 30)
         btn_takeoff.setStyleSheet("background-color:rgb(128,0,0)")
@@ -87,6 +112,8 @@ class SystemWidget(QWidget):
         control_layout.setContentsMargins(0, 0, 0, 0)
         control_layout.addWidget(self.chk_enable)
         control_layout.addWidget(btn_restart)
+        control_layout.addWidget(btn_update)
+        control_layout.addWidget(btn_reboot)
         control_layout.addWidget(btn_takeoff)
         
         self.txt_label = QLabel()
@@ -104,11 +131,18 @@ class SystemWidget(QWidget):
         sub_layout.addLayout(control_layout)
     
     def restart(self):
-        print('command restart')
+        subprocess.call(['./restart_system.sh', 'pats'+self.hostid])
+    def update(self):
+        subprocess.call(['./update_system.sh', 'pats'+self.hostid])
+    def reboot(self):
+        buttonReply = QMessageBox.question(self, 'Maar, weet je dat eigenlijk wel zekerdepeter?!', "Reboot, really?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if buttonReply == QMessageBox.Yes:
+            print('Yes clicked.')
+            subprocess.call(['./reboot_system.sh', 'pats'+self.hostid])        
     def takeoff(self):
-        print('command take off')
+        print('todo: implement command take off')
     def takeoshow_im_big(self,event):
-        print('command show im big')
+        ImDialog(self,Path(self.source_folder,self.status_fn[:-4] + ".jpg"),self.hostid)       
 
     def refresh(self):
         if self.chk_enable.isChecked():
@@ -139,8 +173,8 @@ class SystemWidget(QWidget):
         sysinfo_txt = ''
         with open (source_system_txt_file, "r") as sysinf_txt_file:
             sysinfo_txt=sysinf_txt_file.readlines()
-        hostid = sysinfo_txt[0].split(':')[1].strip().replace('pats-proto','')
-        droneid = sysinfo_txt[1].split(':')[1].strip()
+        self.hostid = sysinfo_txt[0].split(':')[1].strip().replace('pats-proto','')
+        self.droneid = sysinfo_txt[1].split(':')[1].strip()
         sha = sysinfo_txt[2].split(':')[1].strip()[-6:]
         
         hd = ''
@@ -148,7 +182,7 @@ class SystemWidget(QWidget):
             if line.find("nvme0n1p2") != -1:
                 hd = line.split()[4]
         
-        res_txt = "Pats-" + hostid + '->' + droneid + ' @' + sha + '\n'
+        res_txt = "Pats-" + self.hostid + '->' + self.droneid + ' @' + sha + '\n'
         res_txt = res_txt + 'hd: ' + hd + '\n'
         hd = float(hd.replace('%',''))
         if hd > 95:
@@ -168,6 +202,40 @@ class SystemWidget(QWidget):
         res_txt += status_txt[2]
         
         return res_txt.strip(),system_has_problem        
+
+class ImDialog(QDialog):
+    def __init__(self,parent,source_im_file,system_name):
+        super().__init__(parent)
+
+        self.im_label = QLabel()
+        self.source_im_file = source_im_file
+        
+        h_box = QHBoxLayout()
+        h_box.addWidget(self.im_label)
+
+        self.setLayout(h_box)
+
+        timer = QTimer(self)
+        timer.timeout.connect(self.refresh)
+        timer.start(1000)
+        
+        self.refresh()
+
+        self.setWindowTitle(system_name)
+        self.setWindowFlags(Qt.Window)
+        self.show()
+        self.refresh() #work around for small initial zooming issue
+  
+    def refresh(self):
+        pixmap = QPixmap(str(self.source_im_file))
+        self.setMinimumSize(pixmap.width(),pixmap.height())
+        self.im_label.setPixmap(pixmap)
+        self.im_label.setPixmap(pixmap.scaled(self.im_label.size(),Qt.KeepAspectRatio, Qt.SmoothTransformation))
+    
+    def keyPressEvent(self, event: QKeyEvent):
+        if event.key() in {Qt.Key_Space, Qt.Key_Escape}:
+            self.close()
+
 
 def atoi(text):
     return int(text) if text.isdigit() else text

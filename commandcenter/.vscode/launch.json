@@ -1,0 +1,27 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Current File",
+        "type": "python",
+        "args": ["-s /home/houjebek/shares/Monitoring/koppert/4/data"],
+        "request": "launch",
+        "program": "${file}",
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "Process_logs.py",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/process_log.py",
+        "args": ["-s /home/houjebek/shares/Monitoring/koppert/4/data"],
+      },
+      {
+        "name": "Cluster.py",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/cluster.py",
+        "args" : ["-s", "/home/houjebek/data_check/checked"]
+      }
+    ]
+  }
