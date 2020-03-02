@@ -6,7 +6,7 @@
     <Member Name="watchdog">false</Member>
     <Member Name="fps">60</Member>
     <Member Name="video_cuts">video_disabled</Member>
-    <Member Name="video_raw">video_disabled</Member>
+    <Member Name="video_raw">video_bag</Member>
     <Member Name="video_result">video_disabled</Member>
     <Member Name="joystick">rc_none</Member>
     <Member Name="drone">drone_trashcan</Member>
