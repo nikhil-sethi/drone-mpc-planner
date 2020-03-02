@@ -247,7 +247,7 @@ void process_video() {
         else
             restart_delay = 0;
 
-        if (!log_replay_mode && ((imgcount > 60*60*3)
+        if (!log_replay_mode && ((imgcount > 60*60*5)
                                  || (cam.measured_exposure() <= pparams.darkness_threshold && pparams.darkness_threshold>0))) {
             std::cout << "Initiating periodic restart" << std::endl;
             key =27;
