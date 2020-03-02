@@ -2,5 +2,5 @@
 set -ex
 
 ssh -T $1 << EOF
-	sudo rtcwake -m off -s 20
+	sudo rtcwake -m off -s 120
 EOF
