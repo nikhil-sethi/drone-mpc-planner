@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from PyQt5.QtCore import QDir, Qt, QUrl,QRect,QTimer
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtMultimediaWidgets import QVideoWidget
@@ -27,7 +27,7 @@ class CommandCenterWindow(QMainWindow):
         source_folder = '~/Downloads/pats_status'
         source_folder = os.path.expanduser(source_folder.strip(" "))
         self.source_folder = source_folder
-        self.download()
+        self.download(True)
         files = list_txt_files(source_folder)
         self.files = []
         for f in files:
@@ -36,7 +36,7 @@ class CommandCenterWindow(QMainWindow):
         n = len(self.files)
         np = int(math.ceil(n/3))
         
-        self.sys_widgets = []        
+        self.sys_widgets = []
         i=0
         for f in self.files:
             s = SystemWidget(source_folder,f)
@@ -55,10 +55,14 @@ class CommandCenterWindow(QMainWindow):
         self.show() 
         self.refresh()
 
-    def download(self):
+    def download(self,wait=False):
         rsync_src='mavlab-gpu:/home/pats/status/'
         subprocess.call(['mkdir -p ' + self.source_folder ], shell=True)
-        subprocess.Popen(['rsync -zva --timeout=3 ' + rsync_src + ' '+ self.source_folder], shell=True)
+        cmd = ['rsync -zva --timeout=3 ' + rsync_src + ' '+ self.source_folder]
+        if wait:
+            subprocess.call(cmd, shell=True)
+        else:
+            subprocess.Popen(cmd, shell=True)
 
     def refresh(self):
         self.download()
@@ -133,30 +137,31 @@ class SystemWidget(QWidget):
         buttonReply = QMessageBox.question(self, 'Maar, weet je dat eigenlijk wel zekerdepeter?!', "Reboot, really?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if buttonReply == QMessageBox.Yes:
             print('Yes clicked.')
-            subprocess.Popen(['./reboot_system.sh', 'pats'+self.hostid])        
+            subprocess.Popen(['./reboot_system.sh', 'pats'+self.hostid])
     def takeoff(self):
         print('todo: implement command take off')
     def takeoshow_im_big(self,event):
-        ImDialog(self,Path(self.source_folder,self.status_fn[:-4] + ".jpg"),self.hostid)       
+        ImDialog(self,Path(self.source_folder,self.status_fn[:-4] + ".jpg"),self.hostid)
 
     def refresh(self):
         if self.chk_enable.isChecked():
-            try:
-                txt,system_color = self.get_lbl_txt()
-                self.txt_label.setText(txt)
-                pal = QPalette(self.txt_label.palette())
-                pal.setColor(QPalette.WindowText, system_color)
-                self.txt_label.setPalette(pal)   
-            except:
-                print('error')
+            txt,system_color = self.get_lbl_txt()
+            self.txt_label.setText(txt)
+            pal = QPalette(self.txt_label.palette())
+            pal.setColor(QPalette.WindowText, system_color)
+            self.txt_label.setPalette(pal)
+
             source_im_file = Path(self.source_folder,self.status_fn[:-4] + ".jpg")
             pixmap = QPixmap(str(source_im_file))
             self.im_label.setPixmap(pixmap)
             self.im_label.setPixmap(pixmap.scaled(self.im_label.size(),Qt.KeepAspectRatio, Qt.SmoothTransformation))
         else:
+            pixmap = QPixmap('./darkdummy.jpg')
+            self.im_label.setPixmap(pixmap)
+            self.im_label.setPixmap(pixmap.scaled(self.im_label.size(),Qt.KeepAspectRatio, Qt.SmoothTransformation))
             pal = QPalette(self.txt_label.palette())
             pal.setColor(QPalette.WindowText, QColor(60,0,0))
-            self.txt_label.setPalette(pal)  
+            self.txt_label.setPalette(pal)
 
     def get_lbl_txt(self):
         source_status_txt_file = Path(self.source_folder,self.status_fn)
@@ -166,49 +171,56 @@ class SystemWidget(QWidget):
         system_has_problem = QColor(100,100,100)
 
         sysinfo_txt = ''
-        with open (source_system_txt_file, "r") as sysinf_txt_file:
-            sysinfo_txt=sysinf_txt_file.readlines()
-        self.hostid = sysinfo_txt[0].split(':')[1].strip().replace('pats-proto','')
-        self.droneid = sysinfo_txt[1].split(':')[1].strip()
-        sha = sysinfo_txt[2].split(':')[1].strip()[-6:]
-        
-        hd = ''
-        for line in sysinfo_txt:
-            if line.find("nvme0n1p2") != -1:
-                hd = line.split()[4]
-        
-        res_txt = "Pats-" + self.hostid + '->' + self.droneid + ' @' + sha + '\n'
-        res_txt = res_txt + 'hd: ' + hd + '\n'
-        hd = float(hd.replace('%',''))
-        if hd > 95:
-            system_has_problem = QColor(200,0,0)
-        
-        status_txt = []
-        with open (source_status_txt_file, "r") as status_txt_file:
-            status_txt=status_txt_file.readlines()
+        if os.path.exists(source_system_txt_file):
+            with open (source_system_txt_file, "r") as sysinf_txt_file:
+                sysinfo_txt=sysinf_txt_file.readlines()
+            self.hostid = sysinfo_txt[0].split(':')[1].strip().replace('pats-proto','')
+            self.droneid = sysinfo_txt[1].split(':')[1].strip()
+            sha = sysinfo_txt[2].split(':')[1].strip()[-6:]
 
-        if len(status_txt) > 2:
-            navstatus = status_txt[2].strip()
-            if navstatus == 'ns_wait_for_insect':
-                system_has_problem = QColor(0,128,0)
-            elif navstatus == 'ns_approach_waypoint' or navstatus == 'ns_taking_off' or navstatus == 'ns_chasing_insect'or navstatus == 'ns_landing':
-                system_has_problem = QColor(0,255,0)
-            elif navstatus == 'ns_drone_problem':
-                system_has_problem = QColor(255,0,0)
+            hd = ''
+            for line in sysinfo_txt:
+                if line.find("nvme0n1p2") != -1:
+                    hd = line.split()[4]
 
-        try:
-            date_time = datetime.strptime(status_txt[0].strip(), '%Y/%m/%d %H:%M:%S') #e.g. 2020/02/29 23:45:46
-            time_since_update = datetime.now() - date_time       
-            if time_since_update.total_seconds() > 300:
+            res_txt = "Pats-" + self.hostid + '->' + self.droneid + ' @' + sha + '\n'
+            res_txt = res_txt + 'hd: ' + hd + '\n'
+            hd = float(hd.replace('%',''))
+            if hd > 95:
                 system_has_problem = QColor(200,0,0)
-            
-            res_txt += status_txt[1].strip() + '. upd: ' + str(int(time_since_update.total_seconds())) + 's\n'
-        except:
-            pass
-        if len(status_txt) > 2:
-            res_txt += status_txt#2]
+        else:
+            res_txt = 'Error: system info file not found'
+            system_has_problem = QColor(255,0,0)
+
+        if os.path.exists(source_status_txt_file):
+            status_txt = []
+            with open (source_status_txt_file, "r") as status_txt_file:
+                status_txt=status_txt_file.readlines()
+
+            try:
+                date_time = datetime.strptime(status_txt[0].strip(), '%Y/%m/%d %H:%M:%S') #e.g. 2020/02/29 23:45:46
+                time_since_update = datetime.now() - date_time
+                if time_since_update.total_seconds() > 300:
+                    system_has_problem = QColor(200,0,0)
+
+                res_txt += status_txt[1].strip() + '. upd: ' + str(int(time_since_update.total_seconds())) + 's\n'
+            except:
+                pass
+
+            if len(status_txt) > 2:
+                res_txt += status_txt[2]
+                navstatus = status_txt[2].strip()
+                if navstatus == 'ns_wait_for_insect':
+                    system_has_problem = QColor(0,128,0)
+                elif navstatus == 'ns_approach_waypoint' or navstatus == 'ns_taking_off' or navstatus == 'ns_chasing_insect'or navstatus == 'ns_landing':
+                    system_has_problem = QColor(0,255,0)
+                elif navstatus == 'ns_drone_problem':
+                    system_has_problem = QColor(255,0,0)
+        else:
+            res_txt = 'Error: status info file not found'
+            system_has_problem = QColor(255,0,0)
         
-        return res_txt.strip(),system_has_problem        
+        return res_txt.strip(),system_has_problem
 
 class ImDialog(QDialog):
     def __init__(self,parent,source_im_file,system_name):
@@ -253,7 +265,7 @@ def natural_keys(text):
     http://nedbatchelder.com/blog/200712/human_sorting.html
     (See Toothy's implementation in the comments)
     '''
-    return [ atoi(c) for c in re.split(r'(\d+)', text) ]  
+    return [ atoi(c) for c in re.split(r'(\d+)', text) ]
 
 from os import listdir
 def list_txt_files(directory):

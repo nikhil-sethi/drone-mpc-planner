@@ -3,5 +3,5 @@ set -e
 
 for i in $(seq $1 $2); do 
 	echo "pats${i}" 
-	./update.sh "pats${i}" &  
+	./update_system.sh "pats${i}" &
 done
