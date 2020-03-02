@@ -14,7 +14,8 @@ class CommandCenterWindow(QMainWindow):
 
     def __init__(self, parent=None):
         super(CommandCenterWindow, self).__init__(parent)
-        self.setWindowTitle("Pats Command Center") 
+        self.setWindowTitle("Pats Command Center")
+        self.setWindowIcon(QIcon("./icon.png"))
         wid = QWidget(self)
         self.setCentralWidget(wid)
         self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
@@ -95,7 +96,7 @@ class SystemWidget(QWidget):
 
         btn_update = QPushButton()
         btn_update.setToolTip('Update from git')
-        btn_update.setIcon(self.style().standardIcon(QStyle.SP_ArrowUp))
+        btn_update.setIcon(self.style().standardIcon(QStyle.SP_FileDialogToParent))
         btn_update.setMaximumSize(30, 30)
         btn_update.setStyleSheet("background-color:rgb(128,0,0)")
         btn_update.clicked.connect(self.update)
