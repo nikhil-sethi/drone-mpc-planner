@@ -88,8 +88,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
 
     if (!_fromfile && pparams.joystick != rc_none)
         read_joystick();
-    if (!pparams.insect_logging_mode)
-        process_joystick();
+    process_joystick();
 
     if (_joy_state== js_waypoint)
         data_raw_insect = data_target_new; // the takeoff burn uses raw insect, but wp flight mode also uses takeoff burn
@@ -780,9 +779,9 @@ float DroneController::thrust_to_throttle(float thrust_ratio) {
 }
 
 cv::Point3f DroneController::keep_in_volume_correction_acceleration(track_data data_drone) {
-    if(_flight_mode!=fm_flying_pid) {   
+    if(_flight_mode!=fm_flying_pid) {
         if(flight_submode_name == "fm_pid_keep_in_volume")
-        flight_submode_name = "";
+            flight_submode_name = "";
         return cv::Point3f(0,0,0);
     }
 
@@ -799,15 +798,15 @@ cv::Point3f DroneController::keep_in_volume_correction_acceleration(track_data d
 
     bool enough_braking_distance_left;
     std::array<bool, N_PLANES> violated_planes_brakedistance;
-    std::tie(enough_braking_distance_left , violated_planes_brakedistance) = _camview->check_distance_to_borders (data_drone, required_braking_distance);
+    std::tie(enough_braking_distance_left, violated_planes_brakedistance) = _camview->check_distance_to_borders (data_drone, required_braking_distance);
 
-    if(!drone_in_boundaries || !enough_braking_distance_left){
+    if(!drone_in_boundaries || !enough_braking_distance_left) {
         flight_submode_name = "fm_pid_keep_in_volume";
         cv::Point3f correction_acceleration = kiv_acceleration(data_drone, violated_planes_inview, violated_planes_brakedistance);
         return correction_acceleration;
     } else if(flight_submode_name == "fm_pid_keep_in_volume")
         flight_submode_name = "";
-    
+
     return cv::Point3f(0,0,0);
 }
 
@@ -824,7 +823,7 @@ cv::Point3f DroneController::kiv_acceleration(track_data data_drone, std::array<
         }
 
         if(violated_planes_inview.at(i)) {
-            if(data_drone.pos_valid){
+            if(data_drone.pos_valid) {
                 pos_err = -_camview->calc_shortest_distance_to_border(data_drone.pos(), i, CameraView::relaxed);
             }
             correction_acceleration += _camview->normal_vector(i)*(2.f*pos_err + 7.f*vel_err);
@@ -1051,8 +1050,8 @@ void DroneController::update_landing_yoffset(track_data data_drone, track_data d
             && feedforward_landing==false) {
         landing_yoffset -= landing_velocity/static_cast<float>(pparams.fps);
     }
-    else if((horizontal_err>0.13f) 
-            && landing_yoffset > 0 
+    else if((horizontal_err>0.13f)
+            && landing_yoffset > 0
             && feedforward_landing==false ) {
         landing_yoffset += 0.2f*landing_velocity/static_cast<float>(pparams.fps);
     }

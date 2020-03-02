@@ -34,7 +34,7 @@ void DroneNavigation::init(std::ofstream *logger, tracking::TrackerManager * tra
         createTrackbar ("v_sqr", "Nav", &v_sqr, 500);
     }
 
-    if (pparams.insect_logging_mode)
+    if (pparams.op_mode == op_mode_monitoring_only)
         _navigation_status = ns_wait_for_insect;
 
     (*_logger) << "nav_state;";
@@ -108,12 +108,12 @@ void DroneNavigation::update(double time) {
             static double __attribute__((unused)) prev_time = time;
             if (static_cast<float>(time - prev_time) > dparams.blink_period)
                 _dctrl->blink(time);
-            if (_trackers->mode() != tracking::TrackerManager::mode_locate_drone) {
-                //_navigation_status = ns_located_drone;
+            if (_trackers->mode() != tracking::TrackerManager::mode_locate_drone && pparams.op_mode != op_mode_monitoring_only) {
+                _navigation_status = ns_located_drone;
                 time_located_drone = time;
             }
-            if (time - locate_drone_start_time > 30) {
-                //_navigation_status = ns_drone_problem;
+            if (time - locate_drone_start_time > 30 && pparams.op_mode != op_mode_monitoring_only) {
+                _navigation_status = ns_drone_problem;
             }
 
             break;

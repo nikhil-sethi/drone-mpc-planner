@@ -130,7 +130,17 @@ static const char* drone_types_str[] = {
     "drone_cx10",
     "" // must be the last entry! (check in serializer)
 };
-
+enum op_modes {
+    op_mode_monitoring_only,
+    op_mode_cripled,
+    op_mode_deployed
+};
+static const char* op_modes_str[] = {
+    "op_mode_monitoring_only",
+    "op_mode_cripled",
+    "op_mode_deployed",
+    "" // must be the last entry! (check in serializer)
+};
 
 
 namespace xmls {
@@ -207,6 +217,30 @@ public:
     xTx_protocol operator=(const tx_protocols value) {AssignValue(value); return *this;};
 };
 
+class xOp_mode: public MemberBase
+{
+private:
+    void AssignValue(const op_modes value) {
+        m_sValue = op_modes_str[value];
+    };
+public:
+    xOp_mode() {AssignValue(static_cast<op_modes>(0));};
+    xOp_mode(op_modes value) {AssignValue(value);};
+    op_modes value() {
+        string sHelp =  m_sValue;
+        transform(sHelp.begin(), sHelp.end(), sHelp.begin(), ::tolower);
+
+        for (uint i = 0; op_modes_str[i] != string(""); i++) {
+            if (op_modes_str[i] == sHelp)
+                return static_cast<op_modes>(i);
+        }
+
+        return static_cast<op_modes>(0);
+    };
+
+    xOp_mode operator=(const op_modes value) {AssignValue(value); return *this;};
+};
+
 class xDrone_type: public MemberBase
 {
 private:
@@ -234,11 +268,12 @@ public:
 class PatsParameters: public Serializable
 {
 
-private: xBool _insect_logging_mode,_watchdog,_has_screen;
+private: xBool _watchdog,_has_screen;
 private: xVideo_mode _video_cuts,_video_raw, _video_result;
 private: xRc_type _joystick;
 private: xDrone_type _drone;
-private: xInt _wdt_timeout_us,_darkness_threshold,_fps;
+private: xOp_mode _op_mode;
+private: xInt _wdt_timeout_us,_darkness_threshold,_fps,_close_after_n_images;
 private: xBool _cam_tuning, _control_tuning, _navigation_tuning,_vision_tuning,_drone_tracking_tuning,_insect_tracking_tuning;
 private: xBool _viz_plots, _viz_tracking;
 private: xInt _imscalef;
@@ -247,12 +282,13 @@ private: xInt _live_image_frq;
 private: xFloat _max_cam_roll;
 
 
-public: int wdt_timeout_us,darkness_threshold;
+public: int wdt_timeout_us,darkness_threshold,close_after_n_images;
 public: uint fps;
-public: bool insect_logging_mode,watchdog,has_screen;
+public: bool watchdog,has_screen;
 public: video_modes video_cuts,video_raw, video_result;
 public: rc_types joystick;
 public: drone_types drone;
+public: op_modes op_mode;
 public: bool cam_tuning, control_tuning, navigation_tuning,vision_tuning,drone_tracking_tuning, insect_tracking_tuning;
 public: bool viz_plots, viz_tracking;
 public: int imscalef;
@@ -268,13 +304,14 @@ public: PatsParameters() {
         setClassName("PatsParameters");
 
         // Set class version
-        setVersion("1.5");
+        setVersion("1.6");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("wdt_timeout_us",&_wdt_timeout_us);
         Register("darkness_threshold",&_darkness_threshold);
+        Register("close_after_n_images",&_close_after_n_images);
         Register("has_screen",&_has_screen);
-        Register("insect_logging_mode",&_insect_logging_mode);
+        Register("op_mode",&_op_mode);
         Register("watchdog",&_watchdog);
         Register("fps",&_fps);
         Register("video_cuts",&_video_cuts);
@@ -318,8 +355,9 @@ public: void deserialize(std::string settings_file) {
 
         wdt_timeout_us = _wdt_timeout_us.value();
         darkness_threshold = _darkness_threshold.value();
+        close_after_n_images = _close_after_n_images.value();
         has_screen = _has_screen.value();
-        insect_logging_mode = _insect_logging_mode.value();
+        op_mode = _op_mode.value();
         watchdog = _watchdog.value();
         fps = _fps.value();
         video_cuts = _video_cuts.value();
@@ -344,8 +382,9 @@ public: void deserialize(std::string settings_file) {
 public: void serialize(std::string settings_file) {
         _wdt_timeout_us = wdt_timeout_us;
         _darkness_threshold = darkness_threshold;
+        _close_after_n_images = close_after_n_images;
         _has_screen = has_screen;
-        _insect_logging_mode = insect_logging_mode;
+        _op_mode = op_mode;
         _watchdog = watchdog;
         _fps = fps;
         _video_cuts = video_cuts;

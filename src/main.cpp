@@ -248,7 +248,7 @@ void process_video() {
         else
             restart_delay = 0;
 
-        if (!log_replay_mode && ((imgcount > 60*60*5)
+        if (!log_replay_mode && ((imgcount > pparams.close_after_n_images && pparams.close_after_n_images>0)
                                  || (cam.measured_exposure() <= pparams.darkness_threshold && pparams.darkness_threshold>0))) {
             std::cout << "Initiating periodic restart" << std::endl;
             key =27;
@@ -609,7 +609,7 @@ void init() {
 #endif
 
 #if CAMMODE == CAMMODE_REALSENSE
-    if (!pparams.insect_logging_mode && !log_replay_mode)
+    if (!log_replay_mode)
         rc.init(drone_id, log_replay_mode);
 #endif
 

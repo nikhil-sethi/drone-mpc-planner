@@ -134,7 +134,7 @@ void MultiModule::convert_channels(uint16_t * channels, unsigned char * packet) 
 }
 
 void MultiModule::send_data(void) {
-    if (!pparams.insect_logging_mode) {
+    if (dparams.tx != tx_none) {
         lock_rs232.lock();
 
         unsigned char packet[26] = {0}; // a packet is 26 bytes, see multimodule.h
@@ -278,7 +278,7 @@ void MultiModule::receive_data() {
 }
 
 void MultiModule::close() {
-    if (initialized && !pparams.insect_logging_mode) {
+    if (initialized) {
         std::cout << "Closing multimodule" << std::endl;
         // kill throttle when closing the module
         throttle = JOY_MIN_THRESH;
