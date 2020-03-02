@@ -20,9 +20,6 @@ void CameraView::init(cv::Point3f point_left_top, cv::Point3f point_right_top, c
     plane_normals.at(right_plane) = get_plane_normal_vector (point_right_bottom, point_right_top);
     plane_supports.at(right_plane) = (cv::Mat_<float>(3,1) << 0, 0, 0);
 
-    plane_normals.at(bottom_plane) = (cv::Mat_<float>(3,1) << 0, 1, 0);
-    p0_bottom_plane(b_height);
-
     if(b_depth<-10.f)
         b_depth = -10.f; //10 m is the max supported depth by the realsense
 
@@ -32,15 +29,8 @@ void CameraView::init(cv::Point3f point_left_top, cv::Point3f point_right_top, c
     plane_normals.at(camera_plane) = (cv::Mat_<float>(3,1) << 0, -sin(camera_pitch_deg/180.L*M_PIf64), -cos(camera_pitch_deg/180.L*M_PIf64));
     plane_supports.at(camera_plane) = plane_normals.at(camera_plane)*0.85f; //If the drones gets too close to the camera (~ 0.5 m) the drone position is not calculated anymore.
 
-#if true
-    std::cout << "front> p0_front:" << plane_supports.at(front_plane).t() << " n_front: " << plane_normals.at(front_plane).t() << std::endl;
-    std::cout << "top> p0_top:" << plane_supports.at(front_plane).t() << " n_top: " << plane_normals.at(front_plane).t() << std::endl;
-    std::cout << "left> p0_left:" << plane_supports.at(left_plane).t() << " n_left: " << plane_normals.at(left_plane).t() << std::endl;
-    std::cout << "right> p0_right:" << plane_supports.at(right_plane).t() << " n_right: " << plane_normals.at(right_plane).t() << std::endl;
-    std::cout << "bottom> p0_bottom:" << plane_supports.at(bottom_plane).t() << " n_bottom: " << plane_normals.at(bottom_plane).t() << std::endl;
-    std::cout << "back> p0_back:" << plane_supports.at(back_plane).t() << " n_back: " << plane_normals.at(back_plane).t() << std::endl;
-    std::cout << "camera> p0_camera:" << plane_supports.at(camera_plane).t() << " n_camera: " << plane_normals.at(camera_plane).t() << std::endl;
-#endif
+    plane_normals.at(bottom_plane) = (cv::Mat_<float>(3,1) << 0, 1, 0);
+    p0_bottom_plane(b_height);
 
     plane_normals_hunt.at(bottom_plane) = plane_normals.at(bottom_plane);
     plane_normals_hunt.at(top_plane) = plane_normals.at(top_plane);
@@ -76,6 +66,9 @@ void CameraView::init(cv::Point3f point_left_top, cv::Point3f point_right_top, c
 void CameraView::p0_bottom_plane(float b_height){
     plane_supports.at(bottom_plane) = (cv::Mat_<float>(3,1) << 0, b_height, 0);
     plane_supports_hunt.at(bottom_plane) = plane_supports.at(bottom_plane) + margin_bottom * plane_normals.at(bottom_plane);
+#if CAMERA_VIEW_DEBUGGING
+    std::cout << *this <<std::endl;
+#endif
 }
 
 void CameraView::calc_corner_points(cv::Mat p0_front, cv::Mat n_front, cv::Mat p0_back, cv::Mat n_back,
@@ -203,4 +196,23 @@ cv::Point3f CameraView::setpoint_in_cameraview(cv::Point3f pos_setpoint) {
         pos_setpoint = project_into_camera_volume(pos_setpoint, violated_planes);
 
     return pos_setpoint;
+}
+
+
+std::ostream &operator<<(std::ostream &os, const CameraView &c) { 
+    os << "Cameraview>p0_front: " << c.plane_supports.at(CameraView::front_plane).t() << std::endl;
+    os << "Cameraview>n_front: " << c.plane_normals.at(CameraView::front_plane).t() << std::endl;
+    os << "Cameraview>p0_top:" << c.plane_supports.at(CameraView::top_plane).t() << std::endl;
+    os << "Cameraview>n_top: " << c.plane_normals.at(CameraView::top_plane).t() << std::endl;
+    os << "Cameraview>p0_left:" << c.plane_supports.at(CameraView::left_plane).t() << std::endl;
+    os << "Cameraview>n_left: " << c.plane_normals.at(CameraView::left_plane).t() << std::endl;
+    os << "Cameraview>p0_right:" << c.plane_supports.at(CameraView::right_plane).t() << std::endl;
+    os << "Cameraview>n_right: " << c.plane_normals.at(CameraView::right_plane).t() << std::endl;
+    os << "Cameraview>p0_bottom:" << c.plane_supports.at(CameraView::bottom_plane).t() << std::endl;
+    os << "Cameraview>n_bottom: " << c.plane_normals.at(CameraView::bottom_plane).t() << std::endl;
+    os << "Cameraview>p0_back:" << c.plane_supports.at(CameraView::back_plane).t() << std::endl;
+    os << "Cameraview>n_back: " << c.plane_normals.at(CameraView::back_plane).t() << std::endl;
+    os << "Cameraview>p0_camera:" << c.plane_supports.at(CameraView::camera_plane).t() << std::endl;
+    os << "Cameraview>n_camera: " << c.plane_normals.at(CameraView::camera_plane).t() << std::endl;
+    return os;
 }

@@ -8,6 +8,8 @@
 #define N_PLANES 7 //adapt this to the number of planes in plane index!
 #define N_CORNER_POINTS 8 //adapt this to the number of corner points in point_index
 
+#define CAMERA_VIEW_DEBUGGING false
+
 static const char* hunt_volume_check_names[] = {
     "HV_Unknown",
     "HV_OK",
@@ -88,13 +90,13 @@ public:
     cv::Mat corner_point(uint i) {return corner_points.at(i);};
     cv::Mat corner_point_hunt(uint i) {return corner_points_hunt.at(i);};
 
+    std::array<cv::Mat, N_PLANES> plane_normals;
+    std::array<cv::Mat, N_PLANES> plane_supports;
 private:
     float relaxed_safety_margin = 0.3f;
     float strict_safetty_margin = 0.6f;
 
     // Define limitation planes in plane normal form:
-    std::array<cv::Mat, N_PLANES> plane_normals;
-    std::array<cv::Mat, N_PLANES> plane_supports;
     std::array<cv::Mat, N_PLANES> plane_normals_hunt;
     std::array<cv::Mat, N_PLANES> plane_supports_hunt;
 
@@ -127,3 +129,5 @@ private:
                                  cv::Mat p0_top, cv::Mat n_top, cv::Mat p0_bottom, cv::Mat n_bottom,
                                  cv::Mat p0_left, cv::Mat n_left, cv::Mat p0_right, cv::Mat n_right);
 };
+
+std::ostream &operator<<(std::ostream &os, const CameraView &c);
