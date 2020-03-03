@@ -1,4 +1,4 @@
-<SerializableClass Type="PatsParameters" Version="1.5">
+<SerializableClass Type="PatsParameters" Version="1.6">
     <Member Name="wdt_timeout_us">500000</Member>
     <Member Name="darkness_threshold">10000</Member>
     <Member Name="close_after_n_images">10800</Member>
