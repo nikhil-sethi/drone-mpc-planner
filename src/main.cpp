@@ -122,6 +122,7 @@ void handle_key(double time);
 void close(bool sig_kill);
 void write_status_image();
 void write_status_file();
+void check_demo_flight_trigger();
 
 /************ code ***********/
 void process_video() {
