@@ -3,7 +3,7 @@
     <Member Name="darkness_threshold">10000</Member>
     <Member Name="close_after_n_images">10800</Member>
     <Member Name="has_screen">false</Member>
-    <Member Name="op_mode">op_mode_crippled</Member>
+    <Member Name="op_mode">op_mode_cripled</Member>
     <Member Name="watchdog">false</Member>
     <Member Name="fps">60</Member>
     <Member Name="video_cuts">video_disabled</Member>
@@ -21,7 +21,7 @@
     <Member Name="viz_tracking">true</Member>
     <Member Name="imscalef">2</Member>
     <Member Name="flightplan">../../xml/flightplans/simple_demo.xml</Member>
-    <Member Name="live_image_frq">30</Member>
+    <Member Name="live_image_frq">1</Member>
     <Member Name="max_cam_roll">0.5</Member>
 </SerializableClass>
 
