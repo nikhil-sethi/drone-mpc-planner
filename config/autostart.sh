@@ -15,7 +15,6 @@ sleep 3s
 
 HOST_ID=$( hostname | tr -dc '0-9' )
 DRONE_ID=$(( $HOST_ID -10 ))
-PATS_XML="/home/pats/pats_deploy.xml"
 
 while [ 1 ]; do
     dt=$(date '+%d/%m/%Y %H:%M:%S');
@@ -44,11 +43,8 @@ while [ 1 ]; do
 
 	echo "$dt" > terminal.log
 	echo "sha:$SHA" >> terminal.log
-	if [ ! -f $PATS_XML ]; then
-		echo Loading default pats.xml
-		cp /home/pats/code/pats/xml/pats_deploy.xml $PATS_XML
-	fi
-	./pats --pats-xml $PATS_XML --drone-id $DRONE_ID 2>&1 | /usr/bin/tee --append terminal.log || true
+
+	./pats --pats-xml /home/pats/code/pats/xml/pats_deploy.xml --drone-id $DRONE_ID 2>&1 | /usr/bin/tee --append terminal.log || true
 
 	sleep 10s
 done
