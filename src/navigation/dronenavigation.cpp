@@ -490,7 +490,6 @@ cv::Point3f DroneNavigation::square_point(cv::Point3f center, float width, float
     return {center.x+x_offset, center.y+y_offset, center.z+z_offset};
 }
 
-
 bool DroneNavigation::drone_is_blocked(float speed_threshold) {
     float speed = norm(_trackers->dronetracker()->Last_track_data().vel());
     bool speed_valid = _trackers->dronetracker()->Last_track_data().vel_valid;
@@ -500,4 +499,18 @@ bool DroneNavigation::drone_is_blocked(float speed_threshold) {
         return true;
     return false;
 }
+
+void DroneNavigation::demo_flight(std::string flightplan_fn) {
+    navigation::XML_FlightPlan fp;
+    fp.deserialize(flightplan_fn);
+    fp.serialize("./logging/flightplan.xml"); // write a copy of the currently used flightplan to the logging dir
+    waypoints = fp.waypoints();
+    wpid = 0;
+    first_takeoff = false;
+    _nav_flight_mode == nfm_waypoint;
+    next_waypoint(waypoints[wpid]);
+    _navigation_status = ns_takeoff;
+    _visdat->enable_collect_no_drone_frames = false;
 }
+}
+

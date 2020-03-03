@@ -150,7 +150,7 @@ class SystemWidget(QWidget):
             print('Yes clicked.')
             subprocess.Popen(['./reboot_system.sh', 'pats'+self.hostid])
     def takeoff(self):
-        print('todo: implement command take off')
+        subprocess.Popen(['./demo_system.sh', 'pats'+self.hostid])
     def takeoshow_im_big(self,event):
         ImDialog(self,Path(self.source_folder,self.status_fn[:-4] + ".jpg"),self.hostid)
 

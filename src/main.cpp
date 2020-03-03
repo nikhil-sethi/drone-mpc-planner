@@ -159,6 +159,8 @@ void process_video() {
         tp[0].new_data.notify_one();
         tp[0].m1.unlock();
 
+        check_demo_flight_trigger();
+
         static bool recording = false;
         double dtr = data.time - trackers.insecttracker_best()->last_sighting_time;
         if (dtr > 1 && recording) {
@@ -354,6 +356,19 @@ void process_frame(Stereo_Frame_Data data) {
 
 void init_insect_log(int n) {
     trackers.init_replay_moth(n);
+}
+
+std::string demo_fn = "/home/$USER/pats_demo.xml";
+//can put a demo flightplan.xml in demo_fn, this will trigger an automatic demo flight
+void check_demo_flight_trigger() {
+    static int demo_div_cnt = 0;
+    demo_div_cnt = (demo_div_cnt + 1) % pparams.fps; // only check once per second, to save cpu
+    if (pparams.op_mode == op_modes::op_mode_deployed && !demo_div_cnt) {
+        if (file_exist(demo_fn)) {
+            dnav.demo_flight(demo_fn);
+            remove( demo_fn.c_str() );
+        }
+    }
 }
 
 void handle_key(double time [[maybe_unused]]) {
@@ -603,6 +618,8 @@ void init() {
         trackers.init_replay_moth(logreader.replay_moths());
     }
     init_loggers();
+
+    remove(demo_fn.c_str());
 
 #ifdef HASGUI
     gui.init(argc,argv);

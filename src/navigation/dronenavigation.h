@@ -186,6 +186,8 @@ public:
         return false; //navigation_status == ns_drone_problem;
     }
 
+    void demo_flight(std::string flightplan_fn);
+
     Interceptor get_Interceptor() {return _iceptor;}
 };
 }
