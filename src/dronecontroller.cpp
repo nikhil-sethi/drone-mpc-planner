@@ -71,6 +71,11 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     pos_reference_filter.init(1.f/pparams.fps, 1, 1.f/pparams.fps*0.001f, 1.f/pparams.fps*0.001f);
     pos_err_i = {0,0,0};
 
+    for (uint i=0; i<N_PLANES; i++) {
+        d_breaking_distance.at(i).init(1.f/pparams.fps);
+        d_inview.at(i).init(1.f/pparams.fps);
+    }
+
     thrust = initial_thrust_guess;
     initial_hover_throttle_guess_non3d = GRAVITY/initial_thrust_guess*JOY_BOUND_RANGE+dparams.min_throttle;
     initialized = true;
@@ -780,6 +785,15 @@ float DroneController::thrust_to_throttle(float thrust_ratio) {
 }
 
 cv::Point3f DroneController::keep_in_volume_correction_acceleration(track_data data_drone) {
+    if(data_drone.vel_valid) {
+        for (uint i=0; i<N_PLANES; i++) {
+            vel_err_kiv.at(i) = projection_length_of_vec_along_dir( data_drone.vel(), _camview->normal_vector(i));
+            d_breaking_distance.at(i).new_sample(-vel_err_kiv.at(i));
+            pos_err_kiv.at(i) = _camview->calc_shortest_distance_to_border(data_drone.pos(), i, CameraView::relaxed);
+            d_inview.at(i).new_sample(-pos_err_kiv.at(i));
+        }
+    }
+
     if(_flight_mode!=fm_flying_pid || _time-start_takeoff_burn_time<0.45) {
         if(flight_submode_name == "fm_pid_keep_in_volume")
             flight_submode_name = "";
@@ -803,7 +817,7 @@ cv::Point3f DroneController::keep_in_volume_correction_acceleration(track_data d
 
     if(!drone_in_boundaries || !enough_braking_distance_left) {
         flight_submode_name = "fm_pid_keep_in_volume";
-        cv::Point3f correction_acceleration = kiv_acceleration(data_drone, violated_planes_inview, violated_planes_brakedistance);
+        cv::Point3f correction_acceleration = kiv_acceleration(violated_planes_inview, violated_planes_brakedistance);
         return correction_acceleration;
     } else if(flight_submode_name == "fm_pid_keep_in_volume")
         flight_submode_name = "";
@@ -811,28 +825,16 @@ cv::Point3f DroneController::keep_in_volume_correction_acceleration(track_data d
     return cv::Point3f(0,0,0);
 }
 
-cv::Point3f DroneController::kiv_acceleration(track_data data_drone, std::array<bool, N_PLANES> violated_planes_inview, std::array<bool, N_PLANES> violated_planes_brakedistance) {
+cv::Point3f DroneController::kiv_acceleration(std::array<bool, N_PLANES> violated_planes_inview, std::array<bool, N_PLANES> violated_planes_brakedistance) {
     cv::Point3f correction_acceleration(0,0,0);
     for(uint i=0; i<N_PLANES; i++) {
-        float pos_err=0, vel_err=0;
-        if(data_drone.vel_valid) {
-            vel_err = projection_length_of_vec_along_dir( data_drone.vel(), _camview->normal_vector(i));
-            if(vel_err>0)
-                vel_err = 0;
-            else
-                vel_err *= -1;
-        }
+        if(violated_planes_inview.at(i))
+            correction_acceleration += _camview->normal_vector(i)*( 2.f*pos_err_kiv.at(i) + 0.002f*d_inview.at(i).current_output() 
+                                                                   + 7.f*vel_err_kiv.at(i) + 0.007f*d_breaking_distance.at(i).current_output());
 
-        if(violated_planes_inview.at(i)) {
-            if(data_drone.pos_valid) {
-                pos_err = -_camview->calc_shortest_distance_to_border(data_drone.pos(), i, CameraView::relaxed);
-            }
-            correction_acceleration += _camview->normal_vector(i)*(2.f*pos_err + 7.f*vel_err);
-        }
         if(violated_planes_brakedistance.at(i))
-            correction_acceleration += _camview->normal_vector(i)*12.f*vel_err;
+            correction_acceleration += _camview->normal_vector(i)*(12.f*vel_err_kiv.at(i) + 0.012f*d_breaking_distance.at(i).current_output());
     }
-
     return correction_acceleration;
 }
 
