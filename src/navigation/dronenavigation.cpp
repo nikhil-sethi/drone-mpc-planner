@@ -108,11 +108,11 @@ void DroneNavigation::update(double time) {
             static double __attribute__((unused)) prev_time = time;
             if (static_cast<float>(time - prev_time) > dparams.blink_period)
                 _dctrl->blink(time);
-            if (_trackers->mode() != tracking::TrackerManager::mode_locate_drone && pparams.op_mode != op_mode_monitoring_only) {
+            if (_trackers->mode() != tracking::TrackerManager::mode_locate_drone && pparams.op_mode != op_mode_cripled) {
                 _navigation_status = ns_located_drone;
                 time_located_drone = time;
             }
-            if (time - locate_drone_start_time > 30 && pparams.op_mode != op_mode_monitoring_only) {
+            if (time - locate_drone_start_time > 30 && pparams.op_mode != op_mode_cripled) {
                 _navigation_status = ns_drone_problem;
             }
 
