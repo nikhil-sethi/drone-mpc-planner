@@ -507,7 +507,7 @@ void DroneNavigation::demo_flight(std::string flightplan_fn) {
     waypoints = fp.waypoints();
     wpid = 0;
     first_takeoff = false;
-    _nav_flight_mode == nfm_waypoint;
+    _nav_flight_mode = nfm_waypoint;
     next_waypoint(waypoints[wpid]);
     _navigation_status = ns_takeoff;
     _visdat->enable_collect_no_drone_frames = false;
