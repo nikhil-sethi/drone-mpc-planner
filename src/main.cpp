@@ -359,7 +359,7 @@ void init_insect_log(int n) {
     trackers.init_replay_moth(n);
 }
 
-std::string demo_fn = "/home/$USER/pats_demo.xml";
+std::string demo_fn = "/home/pats/pats_demo.xml";
 //can put a demo flightplan.xml in demo_fn, this will trigger an automatic demo flight
 void check_demo_flight_trigger() {
     static int demo_div_cnt = 0;
