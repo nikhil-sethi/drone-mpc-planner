@@ -217,7 +217,7 @@ void Cam::init() {
     std::cout << rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION) << std::endl;
     std::cout << rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_PRODUCT_ID) << std::endl;
 
-    std::string required_firmwar_version = "05.11.06.25";
+    std::string required_firmwar_version = "05.12.03.00";
     std::string current_firmware_version = rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION);
     current_firmware_version  = current_firmware_version.substr (0,required_firmwar_version.length()); //fix for what seems to be appended garbage...? 255.255.255.255 on a newline
 
@@ -423,8 +423,6 @@ void Cam::check_light_level() {
     dev = cam.get_active_profile().get_device(); // after a cam start, dev is changed
     rs2::depth_sensor rs_dev = dev.first<rs2::depth_sensor>();
 
-    float tmp_set_gain = rs_dev.get_option(RS2_OPTION_GAIN);
-    rs_dev.set_option(RS2_OPTION_GAIN,_measured_gain);
     rs_dev.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);
     rs_dev.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f);
 
@@ -432,98 +430,30 @@ void Cam::check_light_level() {
     cv::Mat frameLt;
 
     rs2::frameset frame;
-    float new_expos;
-    int nframes_delay = (fabs(_measured_gain-tmp_set_gain)/248.f)*30.f;
+    float new_expos = 0,new_gain = 0;
+    int nframes_delay = 30.f;
     for (int i = 0; i< nframes_delay; i++) // allow some time to settle
         frame = cam.wait_for_frames();
 
     float tmp_exposure =-1;
+    float tmp_gain =-1;
     int tmp_last_exposure_frame_id = 0;
     for (int i = 0; i< 120; i++) { // check for large change in exposure
         frame = cam.wait_for_frames();
         frameLt = Mat(im_size, CV_8UC1, const_cast<void *>(frame.get_infrared_frame(1).get_data()), Mat::AUTO_STEP);
+        new_gain = rs_dev.get_option(RS2_OPTION_GAIN);
         if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
             new_expos = frame.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
-            if (fabs(new_expos - tmp_exposure) > 0.5f )
+            if (fabs(new_expos - tmp_exposure) > 0.5f  || fabs(tmp_gain-new_gain) > 0.5f)
                 tmp_last_exposure_frame_id = i;
             if (i - tmp_last_exposure_frame_id >= 10)
                 break;
             tmp_exposure = new_expos;
         }
     }
+    _measured_exposure = new_expos;
+    _measured_gain = new_gain;
 
-    if (fabs(_measured_exposure - new_expos) > 1000) {
-        std::cout << "Large exposure difference found, recalibrating..." << std::endl;
-        rs_dev.set_option(RS2_OPTION_GAIN,0);
-
-        //assuming we need to wait one second to go from max to min gain, for the camera to settle
-        nframes_delay = (_measured_gain/248.f)*60.f;
-        float tmp_measured_exposure =-1;
-        for (int i = 0; i< nframes_delay; i++) {
-            frame = cam.wait_for_frames();
-            if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
-                tmp_measured_exposure = frame.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
-                std::cout << "Exposure: " << tmp_measured_exposure << std::endl;
-            }
-
-        }
-
-        _measured_gain = rs_dev.get_option(RS2_OPTION_GAIN);
-        int search_speed=15;
-        std::cout << "Measuring exposure..." << std::endl;
-        while(true) {
-            //search for the best gain, keeping exposure at max 15500 (higher and the fps will decrease).
-            //lower gain is better because less noise
-            //this loop will do a quick search with increasing gain, and then a slower search decreasing the gain again
-            //the slower search has smaller gain steps, and longer delays between reading
-            //the resulting exposure (camera does not respond instantaniously)
-
-            int last_exposure_frame_id = 0;
-            for (int i = 0; i< 60; i++) {
-                frame = cam.wait_for_frames();
-                if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
-                    _measured_exposure = frame.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
-                    std::cout << "Exposure: " << tmp_measured_exposure<< " vs " << _measured_exposure  << std::endl;
-                    if (fabs(_measured_exposure-tmp_measured_exposure)>0.5f) {
-                        tmp_measured_exposure = _measured_exposure;
-                        last_exposure_frame_id = i;
-                    } else if (i - last_exposure_frame_id >= 10) { // no change in exposure for too long
-                        break;
-                    }
-
-                } else {
-                    std::cout << "Warning; frame does not support exposure" << std::endl;
-                }
-            }
-
-            if (search_speed>0) {
-                if (_measured_exposure >= 15500 && _measured_gain <= 248 ) {
-                    _measured_gain+=search_speed;
-                    std::cout << " -> increasing gain: " << _measured_gain << std::endl;
-                    rs_dev.set_option(RS2_OPTION_GAIN, _measured_gain);
-                } else {
-                    search_speed=-1;
-                }
-            }
-            if (search_speed<0) {
-                if (_measured_exposure < 15500 && _measured_gain > 16 ) {
-                    if (_measured_gain > 248)
-                        _measured_gain = 248;
-                    else
-                        _measured_gain+=search_speed;
-                    std::cout << " -> decreasing gain: " << _measured_gain << std::endl;
-                    rs_dev.set_option(RS2_OPTION_GAIN, _measured_gain);
-                } else {
-                    std::cout << "Measured exposure: " << _measured_exposure << " gain: " << _measured_gain << std::endl;
-                    frameLt = Mat(im_size, CV_8UC1, const_cast<void *>(frame.get_infrared_frame(1).get_data()), Mat::AUTO_STEP);
-                    break;
-                }
-            }
-        }
-        _measured_gain = rs_dev.get_option(RS2_OPTION_GAIN);
-    } else {
-        std::cout << "No change detected in exposure, using saved calibration." << std::endl;
-    }
     imwrite(brightness_map_wfn,frameLt);
 
     cam.stop();
@@ -550,9 +480,10 @@ std::tuple<float,cv::Mat> Cam::measure_auto_exposure() {
     dev = cam.get_active_profile().get_device(); // after a cam start, dev is changed
     rs2::depth_sensor rs_dev = dev.first<rs2::depth_sensor>();
 
-    rs_dev.set_option(RS2_OPTION_GAIN,0);
     rs_dev.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);
     rs_dev.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f);
+
+    cam.wait_for_frames(); // first frame seems to be weird, ignore it
 
     cv::Size im_size(IMG_W, IMG_H);
     cv::Mat frameLt;
@@ -610,7 +541,6 @@ std::tuple<float,float,double,cv::Mat> Cam::measure_angle() {
 
     rs2::depth_sensor rs_dev = dev.first<rs2::depth_sensor>();
     cv::Size im_size(IMG_W, IMG_H);
-    rs_dev.set_option(RS2_OPTION_GAIN,0);
     rs_dev.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);
     rs_dev.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f);
 

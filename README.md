@@ -17,7 +17,7 @@ To retrieve firmware from the drone. (not needed normally)
 `dfu-util -s 0x08000000:413040 -a 0 -U firmware_dump.bin`  
 
 ## Flashing realsense camera:
-`sudo rs-fw-update -f ~/code/pats/config/Signed_Image_UVC_5_11_6_250.bin`
+`sudo rs-fw-update -f ~/code/pats/config/Signed_Image_UVC_5_12_3_0.bin`
 
 ## Installing correct kernel:
 `sudo apt install linux-headers-4.15.0-55 linux-headers-4.15.0-55-generic linux-image-4.15.0-55-generic linux-modules-4.15.0-55-generic linux-modules-extra-4.15.0-55-generic`  
