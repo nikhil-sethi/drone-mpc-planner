@@ -70,7 +70,7 @@ void DroneNavigation::update(double time) {
             _nav_flight_mode = nfm_waypoint;
         else if(_dctrl->Joy_State() == DroneController::js_manual)
             _nav_flight_mode = nfm_manual;
-    } else {
+    } else if (_navigation_status == ns_init) {
         _nav_flight_mode = nfm_hunt;
     }
 
@@ -510,7 +510,6 @@ void DroneNavigation::demo_flight(std::string flightplan_fn) {
     _nav_flight_mode = nfm_waypoint;
     next_waypoint(waypoints[wpid]);
     _navigation_status = ns_takeoff;
-    _visdat->enable_collect_no_drone_frames = false;
 }
 }
 
