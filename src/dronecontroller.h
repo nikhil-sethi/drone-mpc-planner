@@ -183,6 +183,7 @@ private:
     cv::Point3f _burn_direction_for_thrust_approx = {0};
 
     float _dist_to_setpoint = 999;
+    double _time;
 
     std::vector<cv::Point3f> aim_direction_history;
 

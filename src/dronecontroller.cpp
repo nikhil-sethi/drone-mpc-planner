@@ -85,6 +85,7 @@ int bound_joystick_value(int v) {
 }
 
 void DroneController::control(track_data data_drone, track_data data_target_new, track_data data_raw_insect, double time) {
+    _time = time;
 
     if (!_fromfile && pparams.joystick != rc_none)
         read_joystick();
@@ -779,7 +780,7 @@ float DroneController::thrust_to_throttle(float thrust_ratio) {
 }
 
 cv::Point3f DroneController::keep_in_volume_correction_acceleration(track_data data_drone) {
-    if(_flight_mode!=fm_flying_pid) {
+    if(_flight_mode!=fm_flying_pid || _time-start_takeoff_burn_time<0.45) {
         if(flight_submode_name == "fm_pid_keep_in_volume")
             flight_submode_name = "";
         return cv::Point3f(0,0,0);
