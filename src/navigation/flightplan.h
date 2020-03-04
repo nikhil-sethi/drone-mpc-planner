@@ -41,16 +41,16 @@ struct Waypoint_Landing : Waypoint {
         mode = wfm_landing;
     }
 };
-struct Waypoint_Yaw_Reset : Waypoint{
-    Waypoint_Yaw_Reset(){
+struct Waypoint_Yaw_Reset : Waypoint {
+    Waypoint_Yaw_Reset() {
         float yaw_reset_waypoint_angle = 40;
-        xyz = cv::Point3f(0.0f,-cos(yaw_reset_waypoint_angle*deg2rad),-sin(yaw_reset_waypoint_angle*deg2rad))*1.f;
+        xyz = cv::Point3f(0.0f,-cos(yaw_reset_waypoint_angle*deg2rad)*1.5f,-sin(yaw_reset_waypoint_angle*deg2rad))*1.5f;
         threshold_mm = 50;
         mode = wfm_yaw_reset;
     }
 };
-struct Waypoint_Takeoff : Waypoint{
-    Waypoint_Takeoff(){
+struct Waypoint_Takeoff : Waypoint {
+    Waypoint_Takeoff() {
         xyz = cv::Point3f(0,1.f,0); // takeoff direction
         mode = wfm_takeoff;
     }
