@@ -787,10 +787,10 @@ float DroneController::thrust_to_throttle(float thrust_ratio) {
 cv::Point3f DroneController::keep_in_volume_correction_acceleration(track_data data_drone) {
     if(data_drone.vel_valid) {
         for (uint i=0; i<N_PLANES; i++) {
-            vel_err_kiv.at(i) = projection_length_of_vec_along_dir( data_drone.vel(), _camview->normal_vector(i));
-            d_breaking_distance.at(i).new_sample(-vel_err_kiv.at(i));
-            pos_err_kiv.at(i) = _camview->calc_shortest_distance_to_border(data_drone.pos(), i, CameraView::relaxed);
-            d_inview.at(i).new_sample(-pos_err_kiv.at(i));
+            vel_err_kiv.at(i) = -projection_length_of_vec_along_dir( data_drone.vel(), _camview->normal_vector(i));
+            d_breaking_distance.at(i).new_sample(vel_err_kiv.at(i));
+            pos_err_kiv.at(i) = -_camview->calc_shortest_distance_to_border(data_drone.pos(), i, CameraView::relaxed);
+            d_inview.at(i).new_sample(pos_err_kiv.at(i));
         }
     }
 
@@ -805,7 +805,7 @@ cv::Point3f DroneController::keep_in_volume_correction_acceleration(track_data d
     std::tie(drone_in_boundaries, violated_planes_inview) = _camview->in_view(data_drone.pos(), CameraView::relaxed);
 
     float drone_rotating_time = 13.f/pparams.fps; // Est. time to rotate the drone around 180 deg.
-    float safety = 2.f;
+    float safety = 3.f;
     float required_breaking_time = normf(data_drone.vel() ) / thrust;
     float required_braking_distance = static_cast<float>(.5L*thrust/safety*pow(required_breaking_time, 2));
     required_braking_distance += normf(data_drone.vel())*(1.f/pparams.fps); // Also consider the time till the next check
@@ -829,11 +829,10 @@ cv::Point3f DroneController::kiv_acceleration(std::array<bool, N_PLANES> violate
     cv::Point3f correction_acceleration(0,0,0);
     for(uint i=0; i<N_PLANES; i++) {
         if(violated_planes_inview.at(i))
-            correction_acceleration += _camview->normal_vector(i)*( 2.f*pos_err_kiv.at(i) + 0.002f*d_inview.at(i).current_output() 
-                                                                   + 7.f*vel_err_kiv.at(i) + 0.007f*d_breaking_distance.at(i).current_output());
+            correction_acceleration += _camview->normal_vector(i)*( 2.f*pos_err_kiv.at(i) + 0.8f*d_inview.at(i).current_output());
 
-        if(violated_planes_brakedistance.at(i))
-            correction_acceleration += _camview->normal_vector(i)*(12.f*vel_err_kiv.at(i) + 0.012f*d_breaking_distance.at(i).current_output());
+        if(violated_planes_brakedistance.at(i)) 
+            correction_acceleration += _camview->normal_vector(i)*(12.f*vel_err_kiv.at(i) + 0.04f*d_breaking_distance.at(i).current_output());
     }
     return correction_acceleration;
 }
