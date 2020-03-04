@@ -236,7 +236,7 @@ void DroneNavigation::update(double time) {
             //update target chasing waypoint and speed
             if (_iceptor.insect_in_range()) {
                 setpoint_pos_world = _iceptor.target_position();
-                setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world);
+                setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, CameraView::relaxed);
                 setpoint_vel_world = _iceptor.target_speed();
                 setpoint_acc_world = _iceptor.target_accelleration();
             }
@@ -402,14 +402,14 @@ void DroneNavigation::next_waypoint(Waypoint wp) {
     if (wp.mode == wfm_takeoff) {
         cv::Point3f p = _trackers->dronetracker()->drone_startup_location();
         setpoint_pos_world =  p + wp.xyz;
-        setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world);
+        setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, CameraView::relaxed);
     } else if (wp.mode == wfm_landing) {
         cv::Point3f p = _trackers->dronetracker()->drone_landing_location();
         setpoint_pos_world =  p + wp.xyz;
-        setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world);
+        setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, CameraView::relaxed);
     } else {
         setpoint_pos_world =  wp.xyz;
-        setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world);
+        setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, CameraView::relaxed);
     }
 
     setpoint_vel_world = {0,0,0};
