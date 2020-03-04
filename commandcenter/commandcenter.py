@@ -4,7 +4,7 @@ from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtWidgets import (QMainWindow,QDialog,QWidget, QPushButton, QCheckBox, QAction,QFrame,
     QApplication, QFileDialog, QHBoxLayout, QLabel,QPushButton, QSizePolicy, QSlider, QStyle,
-    QVBoxLayout, QGridLayout, QWidget,QMessageBox,QPlainTextEdit)
+    QVBoxLayout, QGridLayout, QWidget,QMessageBox,QPlainTextEdit,QMenu)
 from PyQt5.QtGui import QIcon, QPixmap, QPalette,QColor,QKeyEvent
 
 from pathlib import Path
@@ -35,7 +35,7 @@ class CommandCenterWindow(QMainWindow):
             self.files.append(f)
         self.files.sort(key=natural_keys)
         n = len(self.files)
-        np = int(math.ceil(n/3))
+        np = int(math.ceil(n/4))
         
         self.sys_widgets = []
         i=0
@@ -80,6 +80,17 @@ class SystemWidget(QWidget):
         self.chk_enable = QCheckBox()
         self.chk_enable.setStyleSheet("background-color:rgb(128,0,0)")
         self.chk_enable.setChecked(True)
+
+        self.setContextMenuPolicy(Qt.ActionsContextMenu)
+        calibAction = QAction("Calibrate", self)
+        calibAction.setIcon(self.style().standardIcon(QStyle.SP_DesktopIcon))
+        calibAction.triggered.connect(self.calib)
+        self.addAction(calibAction)
+        beepAction = QAction("Beep", self)
+        beepAction.setIcon(self.style().standardIcon(QStyle.SP_MediaVolume))
+        beepAction.triggered.connect(self.beep)
+        self.addAction(beepAction)
+
         btn_restart = QPushButton()
         btn_restart.setToolTip('Restart pats process')
         btn_restart.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
@@ -138,6 +149,11 @@ class SystemWidget(QWidget):
         sub_layout.addWidget(self.txt_label)
         sub_layout.addLayout(control_layout)
     
+    def calib(self):
+        subprocess.Popen(['./calib_system.sh', 'pats'+self.hostid])
+    def beep(self):
+        subprocess.Popen(['./beep_system.sh', 'pats'+self.hostid])        
+
     def restart(self):
         subprocess.Popen(['./restart_system.sh', 'pats'+self.hostid])
     def save_bag(self):
@@ -236,7 +252,7 @@ class SystemWidget(QWidget):
             system_has_problem = QColor(255,0,0)
         
         return res_txt.strip(),system_has_problem
-
+        
 class ImDialog(QDialog):
     def __init__(self,parent,source_im_file,source_xml_file,system_name):
         super().__init__(parent)

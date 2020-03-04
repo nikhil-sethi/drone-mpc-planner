@@ -360,14 +360,28 @@ void init_insect_log(int n) {
 }
 
 std::string demo_fn = "/home/pats/pats_demo.xml";
+std::string calib_fn = "/home/pats/calib_now";
+std::string beep_fn = "/home/pats/beep_now";
 //can put a demo flightplan.xml in demo_fn, this will trigger an automatic demo flight
 void check_demo_flight_trigger() {
     static int demo_div_cnt = 0;
     demo_div_cnt = (demo_div_cnt + 1) % pparams.fps; // only check once per second, to save cpu
-    if (pparams.op_mode == op_modes::op_mode_deployed && !demo_div_cnt) {
-        if (file_exist(demo_fn)) {
-            dnav.demo_flight(demo_fn);
-            remove( demo_fn.c_str() );
+    if (!demo_div_cnt) {
+        if (pparams.op_mode == op_modes::op_mode_deployed) {
+            if (file_exist(demo_fn)) {
+                dnav.demo_flight(demo_fn);
+                remove(demo_fn.c_str());
+            }
+        }
+        if (file_exist(calib_fn)) {
+            std::cout << "Calibrating drone!" << std::endl;
+            rc.calibrate_acc();
+            remove(calib_fn.c_str());
+        }
+        if (file_exist(beep_fn)) {
+            std::cout << "Beeping drone!" << std::endl;
+            rc.beep();
+            remove(beep_fn.c_str());
         }
     }
 }
@@ -621,6 +635,8 @@ void init() {
     init_loggers();
 
     remove(demo_fn.c_str());
+    remove(calib_fn.c_str());
+    remove(beep_fn.c_str());
 
 #ifdef HASGUI
     gui.init(argc,argv);
