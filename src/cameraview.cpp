@@ -202,17 +202,17 @@ cv::Point3f CameraView::setpoint_in_cameraview(cv::Point3f pos_setpoint) {
 std::ostream &operator<<(std::ostream &os, const CameraView &c) { 
     os << "Cameraview>p0_front: " << c.plane_supports.at(CameraView::front_plane).t() << std::endl;
     os << "Cameraview>n_front: " << c.plane_normals.at(CameraView::front_plane).t() << std::endl;
-    os << "Cameraview>p0_top:" << c.plane_supports.at(CameraView::top_plane).t() << std::endl;
+    os << "Cameraview>p0_top: " << c.plane_supports.at(CameraView::top_plane).t() << std::endl;
     os << "Cameraview>n_top: " << c.plane_normals.at(CameraView::top_plane).t() << std::endl;
-    os << "Cameraview>p0_left:" << c.plane_supports.at(CameraView::left_plane).t() << std::endl;
+    os << "Cameraview>p0_left: " << c.plane_supports.at(CameraView::left_plane).t() << std::endl;
     os << "Cameraview>n_left: " << c.plane_normals.at(CameraView::left_plane).t() << std::endl;
-    os << "Cameraview>p0_right:" << c.plane_supports.at(CameraView::right_plane).t() << std::endl;
+    os << "Cameraview>p0_right: " << c.plane_supports.at(CameraView::right_plane).t() << std::endl;
     os << "Cameraview>n_right: " << c.plane_normals.at(CameraView::right_plane).t() << std::endl;
-    os << "Cameraview>p0_bottom:" << c.plane_supports.at(CameraView::bottom_plane).t() << std::endl;
+    os << "Cameraview>p0_bottom: " << c.plane_supports.at(CameraView::bottom_plane).t() << std::endl;
     os << "Cameraview>n_bottom: " << c.plane_normals.at(CameraView::bottom_plane).t() << std::endl;
-    os << "Cameraview>p0_back:" << c.plane_supports.at(CameraView::back_plane).t() << std::endl;
+    os << "Cameraview>p0_back: " << c.plane_supports.at(CameraView::back_plane).t() << std::endl;
     os << "Cameraview>n_back: " << c.plane_normals.at(CameraView::back_plane).t() << std::endl;
-    os << "Cameraview>p0_camera:" << c.plane_supports.at(CameraView::camera_plane).t() << std::endl;
+    os << "Cameraview>p0_camera: " << c.plane_supports.at(CameraView::camera_plane).t() << std::endl;
     os << "Cameraview>n_camera: " << c.plane_normals.at(CameraView::camera_plane).t() << std::endl;
     return os;
 }
