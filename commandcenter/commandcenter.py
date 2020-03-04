@@ -4,7 +4,7 @@ from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtWidgets import (QMainWindow,QDialog,QWidget, QPushButton, QCheckBox, QAction,QFrame,
     QApplication, QFileDialog, QHBoxLayout, QLabel,QPushButton, QSizePolicy, QSlider, QStyle,
-    QVBoxLayout, QGridLayout, QWidget,QMessageBox)
+    QVBoxLayout, QGridLayout, QWidget,QMessageBox,QPlainTextEdit)
 from PyQt5.QtGui import QIcon, QPixmap, QPalette,QColor,QKeyEvent
 
 from pathlib import Path
@@ -21,7 +21,7 @@ class CommandCenterWindow(QMainWindow):
         self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
         self.setAutoFillBackground(True)
         p = self.palette()
-        p.setColor(self.backgroundRole(), Qt.black)
+        p.setColor(self.backgroundRole(), QColor(15,15,15))
         self.setPalette(p)
         layout = QGridLayout()
 
@@ -152,7 +152,7 @@ class SystemWidget(QWidget):
     def takeoff(self):
         subprocess.Popen(['./demo_system.sh', 'pats'+self.hostid])
     def takeoshow_im_big(self,event):
-        ImDialog(self,Path(self.source_folder,self.status_fn[:-4] + ".jpg"),self.hostid)
+        ImDialog(self,Path(self.source_folder,self.status_fn[:-4] + ".jpg"),Path(self.source_folder,str(self.status_fn).replace('status.txt','pats_deploy.xml')),self.hostid)
 
     def refresh(self):
         if self.chk_enable.isChecked():
@@ -238,16 +238,28 @@ class SystemWidget(QWidget):
         return res_txt.strip(),system_has_problem
 
 class ImDialog(QDialog):
-    def __init__(self,parent,source_im_file,system_name):
+    def __init__(self,parent,source_im_file,source_xml_file,system_name):
         super().__init__(parent)
+
+        self.system_name = system_name
 
         self.im_label = QLabel()
         self.source_im_file = source_im_file
-        
-        h_box = QHBoxLayout()
-        h_box.addWidget(self.im_label)
+        self.source_xml_file = source_xml_file
+        self.xml_textBox = QPlainTextEdit()
+        self.xml_textBox.textChanged.connect(self.xml_txt_chng_event)
+        self.xml_textBox.setStyleSheet("color: rgb(200, 0, 0); background-color: rgb(30, 30, 30);")
 
-        self.setLayout(h_box)
+        if os.path.exists(self.source_xml_file):
+            self.xml_txt = ''
+            with open (self.source_xml_file, "r") as xml_file:
+                self.xml_txt=xml_file.read()
+        self.xml_textBox.setPlainText(self.xml_txt)
+
+        v_box = QVBoxLayout()
+        v_box.addWidget(self.im_label)
+        v_box.addWidget(self.xml_textBox)
+        self.setLayout(v_box)
 
         timer = QTimer(self)
         timer.timeout.connect(self.refresh)
@@ -255,11 +267,24 @@ class ImDialog(QDialog):
         
         self.refresh()
 
-        self.setWindowTitle(system_name)
+
+        self.setAutoFillBackground(True)
+        p = self.palette()
+        p.setColor(self.backgroundRole(), Qt.black)
+        self.setPalette(p)
+
+        self.setWindowTitle(self.system_name)
         self.setWindowFlags(Qt.Window)
         self.show()
         self.refresh() #work around for small initial zooming issue
   
+    def xml_txt_chng_event(self):
+        new_xml = self.xml_textBox.toPlainText()
+        if self.xml_txt != new_xml:
+            self.setWindowTitle(self.system_name + '*')
+        else:
+            self.setWindowTitle(self.system_name)
+
     def refresh(self):
         pixmap = QPixmap(str(self.source_im_file))
         self.setMinimumSize(pixmap.width(),pixmap.height())
@@ -269,6 +294,16 @@ class ImDialog(QDialog):
     def keyPressEvent(self, event: QKeyEvent):
         if event.key() in {Qt.Key_Space, Qt.Key_Escape}:
             self.close()
+        elif event.modifiers() & Qt.ControlModifier and event.key() == Qt.Key_S:
+            self.save_xml()
+
+    def save_xml(self):
+        new_xml = self.xml_textBox.toPlainText()
+        xml_tmp_file = open("tmp.xml", "w")
+        xml_tmp_file.write(new_xml)
+        xml_tmp_file.close()
+        self.setWindowTitle(self.system_name)
+        subprocess.Popen(['./change_settings_system.sh', 'pats'+self.system_name])   
 
 
 def atoi(text):
