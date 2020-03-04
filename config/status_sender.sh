@@ -4,7 +4,7 @@ set -x
 LOCAL_STATUS_TXT_FILE="/home/$USER/pats_status.txt"
 LOCAL_SYSTEM_TXT_FILE="/home/$USER/pats_system_info.txt"
 LOCAL_STATUS_IM_FILE="/home/$USER/pats_monitor_tmp.jpg"
-LOCAL_PATS_XML_FILE="/home/$USER/pats_deploy.xml"
+LOCAL_PATS_XML_FILE="/home/$USER/code/pats/xml/pats_deploy.xml"
 REMOTE_STATUS_TXT_FILE="status/${HOSTNAME}_status.txt"
 REMOTE_SYSTEM_TXT_FILE="status/${HOSTNAME}_system.txt"
 REMOTE_STATUS_IM_FILE="status/${HOSTNAME}_status.jpg"
