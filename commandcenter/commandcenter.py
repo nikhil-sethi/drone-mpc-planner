@@ -248,7 +248,7 @@ class ImDialog(QDialog):
         self.source_xml_file = source_xml_file
         self.xml_textBox = QPlainTextEdit()
         self.xml_textBox.textChanged.connect(self.xml_txt_chng_event)
-        self.xml_textBox.setStyleSheet("color: rgb(200, 0, 0); background-color: rgb(30, 30, 30);")
+        self.xml_textBox.setStyleSheet("color: rgb(200, 0, 0); background-color: rgb(25, 25, 25);")
 
         if os.path.exists(self.source_xml_file):
             self.xml_txt = ''
@@ -267,10 +267,9 @@ class ImDialog(QDialog):
         
         self.refresh()
 
-
         self.setAutoFillBackground(True)
         p = self.palette()
-        p.setColor(self.backgroundRole(), Qt.black)
+        p.setColor(self.backgroundRole(), QColor(15,15,15))
         self.setPalette(p)
 
         self.setWindowTitle(self.system_name)
@@ -303,7 +302,11 @@ class ImDialog(QDialog):
         xml_tmp_file.write(new_xml)
         xml_tmp_file.close()
         self.setWindowTitle(self.system_name)
-        subprocess.Popen(['./change_settings_system.sh', 'pats'+self.system_name])   
+        subprocess.call(['./change_settings_system.sh', 'pats'+self.system_name])
+        xml_file = open(self.source_xml_file, "w")
+        xml_file.write(new_xml)
+        xml_file.close()
+
 
 
 def atoi(text):
