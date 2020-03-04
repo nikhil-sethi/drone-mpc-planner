@@ -72,7 +72,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     pos_err_i = {0,0,0};
 
     for (uint i=0; i<N_PLANES; i++) {
-        d_breaking_distance.at(i).init(1.f/pparams.fps);
+        d_vel_err_kiv.at(i).init(1.f/pparams.fps);
         d_inview.at(i).init(1.f/pparams.fps);
     }
 
@@ -785,35 +785,51 @@ float DroneController::thrust_to_throttle(float thrust_ratio) {
 }
 
 cv::Point3f DroneController::keep_in_volume_correction_acceleration(track_data data_drone) {
-    if(data_drone.vel_valid) {
-        for (uint i=0; i<N_PLANES; i++) {
-            vel_err_kiv.at(i) = -projection_length_of_vec_along_dir( data_drone.vel(), _camview->normal_vector(i));
-            d_breaking_distance.at(i).new_sample(vel_err_kiv.at(i));
-            pos_err_kiv.at(i) = -_camview->calc_shortest_distance_to_border(data_drone.pos(), i, CameraView::relaxed);
-            d_inview.at(i).new_sample(pos_err_kiv.at(i));
-        }
-    }
-
-    if(_flight_mode!=fm_flying_pid || _time-start_takeoff_burn_time<0.45) {
-        if(flight_submode_name == "fm_pid_keep_in_volume")
-            flight_submode_name = "";
-        return cv::Point3f(0,0,0);
-    }
 
     bool drone_in_boundaries;
     std::array<bool, N_PLANES> violated_planes_inview;
     std::tie(drone_in_boundaries, violated_planes_inview) = _camview->in_view(data_drone.pos(), CameraView::relaxed);
 
-    float drone_rotating_time = 13.f/pparams.fps; // Est. time to rotate the drone around 180 deg.
-    float safety = 3.f;
-    float required_breaking_time = normf(data_drone.vel() ) / thrust;
-    float required_braking_distance = static_cast<float>(.5L*thrust/safety*pow(required_breaking_time, 2));
-    required_braking_distance += normf(data_drone.vel())*(1.f/pparams.fps); // Also consider the time till the next check
-    required_braking_distance += (drone_rotating_time+transmission_delay_duration)*normf(data_drone.vel());
+    float drone_rotating_time = 11.f/pparams.fps; // Est. time to rotate the drone around 180 deg.
+    float safety = 2.f;
+    std::array<float, N_PLANES> speed_error_normal_to_plane;
+    float effective_acceleration, remaining_breaking_distance_normal_to_plane, required_breaking_time, allowed_velocity_normal_to_plane;
+    bool enough_braking_distance_left=true;
+    std::array<bool, N_PLANES> violated_planes_brakedistance = {false};
+    float current_drone_speed_normal_to_plane;
+    for(uint i=0; i<N_PLANES; i++) {
+        current_drone_speed_normal_to_plane = data_drone.state.vel.dot(-cv::Point3f(_camview->plane_normals.at(i)));
+        remaining_breaking_distance_normal_to_plane = _camview->calc_shortest_distance_to_plane(data_drone.pos(), i, CameraView::relaxed) 
+                                                        - current_drone_speed_normal_to_plane*(drone_rotating_time+transmission_delay_duration);
+        if(remaining_breaking_distance_normal_to_plane<0)
+            remaining_breaking_distance_normal_to_plane = 0;
+        effective_acceleration = thrust/safety + cv::Point3f(0,-GRAVITY,0).dot(cv::Point3f(_camview->plane_normals.at(i)));
+        required_breaking_time = sqrt(2*remaining_breaking_distance_normal_to_plane/effective_acceleration);
+        allowed_velocity_normal_to_plane = required_breaking_time * effective_acceleration;
+        speed_error_normal_to_plane.at(i) = current_drone_speed_normal_to_plane - allowed_velocity_normal_to_plane;
+        if(speed_error_normal_to_plane.at(i)>0) {
+            enough_braking_distance_left = false;
+            violated_planes_brakedistance.at(i) = true;
+        }
+    }
 
-    bool enough_braking_distance_left;
-    std::array<bool, N_PLANES> violated_planes_brakedistance;
-    std::tie(enough_braking_distance_left, violated_planes_brakedistance) = _camview->check_distance_to_borders (data_drone, required_braking_distance);
+    for (uint i=0; i<N_PLANES; i++) {
+        pos_err_kiv.at(i) = -_camview->calc_shortest_distance_to_plane(data_drone.pos(), i, CameraView::relaxed);
+        d_inview.at(i).new_sample(pos_err_kiv.at(i));
+        if(data_drone.vel_valid) { // ask sjoerd
+            vel_err_kiv.at(i) = speed_error_normal_to_plane.at(i);
+            d_vel_err_kiv.at(i).new_sample(vel_err_kiv.at(i));
+        }
+    }
+
+    bool flight_mode_with_kiv = _flight_mode==fm_flying_pid || _flight_mode==fm_initial_reset_yaw 
+                                 || _flight_mode==fm_reset_yaw;
+    if(!flight_mode_with_kiv || _time-start_takeoff_burn_time<0.45) {
+        if(flight_submode_name == "fm_pid_keep_in_volume")
+            flight_submode_name = "";
+        return cv::Point3f(0,0,0);
+    }
+
 
     if(!drone_in_boundaries || !enough_braking_distance_left) {
         flight_submode_name = "fm_pid_keep_in_volume";
@@ -829,10 +845,10 @@ cv::Point3f DroneController::kiv_acceleration(std::array<bool, N_PLANES> violate
     cv::Point3f correction_acceleration(0,0,0);
     for(uint i=0; i<N_PLANES; i++) {
         if(violated_planes_inview.at(i))
-            correction_acceleration += _camview->normal_vector(i)*( 2.f*pos_err_kiv.at(i) + 0.8f*d_inview.at(i).current_output());
+            correction_acceleration += _camview->normal_vector(i)*(2.f*pos_err_kiv.at(i) + 0.0f*d_inview.at(i).current_output());
 
         if(violated_planes_brakedistance.at(i)) 
-            correction_acceleration += _camview->normal_vector(i)*(12.f*vel_err_kiv.at(i) + 0.04f*d_breaking_distance.at(i).current_output());
+            correction_acceleration += _camview->normal_vector(i)*(0.5f*vel_err_kiv.at(i) + 0.0f*d_vel_err_kiv.at(i).current_output());
     }
     return correction_acceleration;
 }

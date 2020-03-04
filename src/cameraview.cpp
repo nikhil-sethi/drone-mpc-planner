@@ -170,7 +170,7 @@ std::array<float, N_PLANES> CameraView::calc_distance_to_borders(std::vector<cv:
     return distances_to_planes;
 }
 
-float CameraView::calc_shortest_distance_to_border(cv::Point3f drone_pos, uint plane_idx, view_volume_check_mode cm) {
+float CameraView::calc_shortest_distance_to_plane(cv::Point3f drone_pos, uint plane_idx, view_volume_check_mode cm) {
     float safety_margin = relaxed_safety_margin;
     if(cm == strict)
         safety_margin = strict_safetty_margin;
@@ -182,7 +182,7 @@ float CameraView::calc_shortest_distance_to_border(cv::Point3f drone_pos, uint p
 cv::Point3f CameraView::project_into_camera_volume(cv::Point3f pos_setpoint, view_volume_check_mode cm, std::array<bool, N_PLANES> violated_planes) {
     for (uint i=0; i<N_PLANES; i++) {
         if(violated_planes.at(i)==true)
-            pos_setpoint = pos_setpoint - calc_shortest_distance_to_border(pos_setpoint, i, cm)*normal_vector(i);
+            pos_setpoint = pos_setpoint - calc_shortest_distance_to_plane(pos_setpoint, i, cm)*normal_vector(i);
     }
     return pos_setpoint;
     
