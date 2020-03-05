@@ -332,7 +332,6 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_initial_reset_yaw: {
             _dctrl->flight_mode(DroneController::fm_initial_reset_yaw);
-            setpoint_pos_world = Waypoint_Yaw_Reset().xyz;
 
             float pos_error = normf( setpoint_pos_world - _trackers->dronetracker()->Last_track_data().pos());
             if(time-time_initial_reset_yaw>0.5 && pos_error<0.3f) {
