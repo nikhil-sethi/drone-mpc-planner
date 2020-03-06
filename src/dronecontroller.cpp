@@ -17,7 +17,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     _rc = rc;
     _dtrk = dtrk;
     _logger = logger;
-    _fromfile = fromfile;
+    log_replay_mode = fromfile;
     _camview = camview;
     control_history_max_size = pparams.fps;
     (*_logger) << "valid; flight_mode;" <<
@@ -92,7 +92,7 @@ int bound_joystick_value(int v) {
 void DroneController::control(track_data data_drone, track_data data_target_new, track_data data_raw_insect, double time) {
     _time = time;
 
-    if (!_fromfile && pparams.joystick != rc_none)
+    if (!log_replay_mode && pparams.joystick != rc_none)
         read_joystick();
     process_joystick();
 
@@ -168,7 +168,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
 
             _burn_direction_for_thrust_approx = burn_direction; // to be used later to approx effective thrust
             std::vector<state_data> trajectory = predict_trajectory(auto_burn_duration, 0, burn_direction, state_drone_takeoff);
-            if (_fromfile) // todo: tmp solution, call from visualizer instead if this viz remains to be needed
+            if (log_replay_mode) // todo: tmp solution, call from visualizer instead if this viz remains to be needed
                 draw_viz(state_drone_takeoff,data_raw_insect.state,time,burn_direction,auto_burn_duration,remaining_aim_duration,trajectory);
         } else
             auto_throttle = spinup_throttle();
@@ -250,7 +250,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         else
             std::tie (auto_roll, auto_pitch, auto_burn_duration,burn_direction,traj) = calc_burn(data_drone.state, data_raw_insect.state,remaining_aim_duration);
 
-        if (_fromfile) // todo: tmp solution, call from visualizer instead if this viz remains to be needed
+        if (log_replay_mode) // todo: tmp solution, call from visualizer instead if this viz remains to be needed
             draw_viz(state_drone_better,data_raw_insect.state,time,burn_direction,auto_burn_duration,remaining_aim_duration,traj);
 
         auto_throttle = initial_hover_throttle_guess();
@@ -449,7 +449,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
     auto_roll = bound_joystick_value(auto_roll);
 
     //std::cout << time <<  " rpt: " << roll << ", " << pitch << ", " << throttle << std::endl;
-    if (!_fromfile) {
+    if (!log_replay_mode) {
         _rc->queue_commands(throttle,roll,pitch,yaw,mode);
     }
 
@@ -799,8 +799,8 @@ cv::Point3f DroneController::keep_in_volume_correction_acceleration(track_data d
     float current_drone_speed_normal_to_plane;
     for(uint i=0; i<N_PLANES; i++) {
         current_drone_speed_normal_to_plane = data_drone.state.vel.dot(-cv::Point3f(_camview->plane_normals.at(i)));
-        remaining_breaking_distance_normal_to_plane = _camview->calc_shortest_distance_to_plane(data_drone.pos(), i, CameraView::relaxed) 
-                                                        - current_drone_speed_normal_to_plane*(drone_rotating_time+transmission_delay_duration);
+        remaining_breaking_distance_normal_to_plane = _camview->calc_shortest_distance_to_plane(data_drone.pos(), i, CameraView::relaxed)
+                - current_drone_speed_normal_to_plane*(drone_rotating_time+transmission_delay_duration);
         if(remaining_breaking_distance_normal_to_plane<0)
             remaining_breaking_distance_normal_to_plane = 0;
         effective_acceleration = thrust/safety + cv::Point3f(0,-GRAVITY,0).dot(cv::Point3f(_camview->plane_normals.at(i)));
@@ -822,8 +822,8 @@ cv::Point3f DroneController::keep_in_volume_correction_acceleration(track_data d
         }
     }
 
-    bool flight_mode_with_kiv = _flight_mode==fm_flying_pid || _flight_mode==fm_initial_reset_yaw 
-                                 || _flight_mode==fm_reset_yaw;
+    bool flight_mode_with_kiv = _flight_mode==fm_flying_pid || _flight_mode==fm_initial_reset_yaw
+                                || _flight_mode==fm_reset_yaw;
     if(!flight_mode_with_kiv || _time-start_takeoff_burn_time<0.45) {
         if(flight_submode_name == "fm_pid_keep_in_volume")
             flight_submode_name = "";
@@ -847,7 +847,7 @@ cv::Point3f DroneController::kiv_acceleration(std::array<bool, N_PLANES> violate
         if(violated_planes_inview.at(i))
             correction_acceleration += _camview->normal_vector(i)*(2.f*pos_err_kiv.at(i) + 0.0f*d_inview.at(i).current_output());
 
-        if(violated_planes_brakedistance.at(i)) 
+        if(violated_planes_brakedistance.at(i))
             correction_acceleration += _camview->normal_vector(i)*(0.5f*vel_err_kiv.at(i) + 0.0f*d_vel_err_kiv.at(i).current_output());
     }
     return correction_acceleration;
@@ -1173,6 +1173,12 @@ void DroneController::read_joystick(void) {
 }
 
 void DroneController::process_joystick() {
+
+    //check the demo flightplan trigger, which overrides the joystick_takeoff_switch (even though there was no joystick connected)
+    if (log_replay_mode && pparams.joystick == rc_none && _joy_takeoff_switch == true)
+        _manual_override_take_off_now = true;
+    else
+        _manual_override_take_off_now = false;
 
     if (pparams.joystick == rc_none || _joy_state == js_none )
         return;

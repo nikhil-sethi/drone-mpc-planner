@@ -188,7 +188,7 @@ private:
     std::vector<cv::Point3f> aim_direction_history;
 
     bool initialized = false;
-    bool _fromfile;
+    bool log_replay_mode;
     flight_modes _flight_mode = fm_joystick_check; // only set externally (except for disarming), used internally
     joy_mode_switch_modes _joy_mode_switch = jmsm_none;
     betaflight_arming _joy_arm_switch = bf_armed;
@@ -235,7 +235,7 @@ private:
     filtering::Tf_D_f d_vel_err_x, d_vel_err_y, d_vel_err_z;
     filtering::Tf_PT2_3f pos_reference_filter;
 
-    std::array<float, N_PLANES> pos_err_kiv={0}, vel_err_kiv={0};
+    std::array<float, N_PLANES> pos_err_kiv= {0}, vel_err_kiv= {0};
     std::array<filtering::Tf_D_f, N_PLANES> d_inview, d_vel_err_kiv;
     void control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool headless_mode_disabled);
     std::tuple<int,int,int> calc_feedforward_control(cv::Point3f desired_acceleration);
@@ -320,6 +320,12 @@ public:
     joy_mode_switch_modes joy_mode_switch() {
         return _joy_mode_switch;
     }
+    bool joy_takeoff_switch() {
+        return _joy_takeoff_switch;
+    }
+    void joy_takeoff_switch_file_trigger(bool value) {
+        _joy_takeoff_switch = value;
+    }
     void insert_log(int log_joy_roll, int log_joy_pitch, int log_joy_yaw, int log_joy_throttle, int log_joy_arm_switch, int log_joy_mode_switch, int log_joy_take_off_switch,int log_auto_roll, int log_auto_pitch, int log_auto_throttle) {
         joy_roll = log_joy_roll;
         joy_pitch= log_joy_pitch;
@@ -375,7 +381,7 @@ public:
     float _log_auto_throttle;
     float Throttle() {
         float throttle = _rc->throttle;
-        if (_fromfile)
+        if (log_replay_mode)
             throttle  = _log_auto_throttle;
         throttle -= hoverthrottle;
         throttle /= static_cast<float>(JOY_BOUND_MAX - JOY_BOUND_MIN);
@@ -385,7 +391,7 @@ public:
     float _log_auto_roll;
     float Roll() {
         float roll = _rc->roll;
-        if (_fromfile)
+        if (log_replay_mode)
             roll  = _log_auto_roll;
         roll -= JOY_MIDDLE;
         roll /= static_cast<float>(JOY_BOUND_MAX - JOY_BOUND_MIN);
@@ -395,7 +401,7 @@ public:
     float _log_auto_pitch;
     float Pitch() {
         float pitch = _rc->pitch;
-        if (_fromfile)
+        if (log_replay_mode)
             pitch = _log_auto_pitch;
         pitch -= JOY_MIDDLE;
         pitch /= static_cast<float>(JOY_BOUND_MAX - JOY_BOUND_MIN);
