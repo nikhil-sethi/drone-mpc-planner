@@ -92,6 +92,8 @@ public:
 
     std::array<cv::Mat, N_PLANES> plane_normals;
     std::array<cv::Mat, N_PLANES> plane_supports;
+
+    void cout_plane_violation(std::array<bool, N_PLANES> inview_violations, std::array<bool, N_PLANES> breaking_violations);
 private:
     float relaxed_safety_margin = 0.3f;
     float strict_safetty_margin = 0.6f;

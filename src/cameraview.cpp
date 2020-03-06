@@ -2,6 +2,14 @@
 
 #include "linalg.h"
 
+static const char* plane_names[] = { "top",
+                                    "front",
+                                    "left",
+                                    "right",
+                                    "bottom",
+                                    "back",
+                                    "camera"
+};
 
 void CameraView::init(cv::Point3f point_left_top, cv::Point3f point_right_top, cv::Point3f point_left_bottom, cv::Point3f point_right_bottom,
                         float b_depth, float b_height, float camera_pitch_deg) {
@@ -198,6 +206,38 @@ cv::Point3f CameraView::setpoint_in_cameraview(cv::Point3f pos_setpoint, view_vo
     return pos_setpoint;
 }
 
+
+void CameraView::cout_plane_violation(std::array<bool, N_PLANES> inview_violations, std::array<bool, N_PLANES> breaking_violations) {
+    bool first = true;
+    for (uint i=0; i<N_PLANES; i++) {
+       if(inview_violations.at(i)==true) {  
+            if(!first) 
+                std::cout << ",";
+            else
+                std::cout << "Plane inview violation:";
+            first = false;
+            std::cout << " " << plane_names[i];
+        }
+    }
+    if (!first)
+        std::cout << std::endl;
+
+
+    first = true;
+    for (uint i=0; i<N_PLANES; i++) {
+       if(breaking_violations.at(i)==true) {  
+            if(!first) 
+                std::cout << ",";
+            else
+                std::cout << "Plane breaking distance violation:";
+            first = false;
+            std::cout << " " << plane_names[i];
+        }
+    }
+    if(!first)
+        std::cout << std::endl;
+
+}
 
 std::ostream &operator<<(std::ostream &os, const CameraView &c) { 
     os << "Cameraview>p0_front: " << c.plane_supports.at(CameraView::front_plane).t() << std::endl;

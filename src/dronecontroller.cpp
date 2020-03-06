@@ -842,6 +842,9 @@ cv::Point3f DroneController::keep_in_volume_correction_acceleration(track_data d
 }
 
 cv::Point3f DroneController::kiv_acceleration(std::array<bool, N_PLANES> violated_planes_inview, std::array<bool, N_PLANES> violated_planes_brakedistance) {
+#if CAMERA_VIEW_DEBUGGING
+    _camview->cout_plane_violation(violated_planes_inview, violated_planes_brakedistance);
+#endif
     cv::Point3f correction_acceleration(0,0,0);
     for(uint i=0; i<N_PLANES; i++) {
         if(!(_time-start_takeoff_burn_time<0.45 && i==CameraView::bottom_plane)) {
