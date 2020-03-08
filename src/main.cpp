@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 #include <condition_variable>
 #include<iostream>
+#include <chrono>
 
 #include "opencv2/features2d/features2d.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
@@ -109,6 +110,7 @@ struct Processer {
     Stereo_Frame_Data data;
 };
 Processer tp[NUM_OF_THREADS];
+std::thread background_thread;
 
 #ifdef HASGUI
 MainWindow gui;
@@ -122,7 +124,7 @@ void handle_key(double time);
 void close(bool sig_kill);
 void write_status_image();
 void write_status_file();
-void check_demo_flight_trigger();
+void check_commandcenter_triggers();
 
 /************ code ***********/
 void process_video() {
@@ -159,8 +161,6 @@ void process_video() {
         tp[0].data_is_new = true;
         tp[0].new_data.notify_one();
         tp[0].m1.unlock();
-
-        check_demo_flight_trigger();
 
         static bool recording = false;
         double dtr = data.time - trackers.insecttracker_best()->last_sighting_time;
@@ -206,11 +206,12 @@ void process_video() {
                     std::cout << "Recording! Frames written: " << cut_video_frame_counter << std::endl;
                 }
             }
+            if (!recording && (cam.frame_number() / 2 && cam.frame_number() % 2)) {
+                logger.close();
+                logger.open(logger_fn,std::ofstream::out);
+            }
         }
-        if (!recording && pparams.video_cuts && (cam.frame_number() / 2 && cam.frame_number() % 2)) {
-            logger.close();
-            logger.open(logger_fn,std::ofstream::out);
-        }
+
         if (pparams.video_raw && pparams.video_raw != video_bag) {
             int frame_written = 0;
             if (recording) {
@@ -321,7 +322,9 @@ void process_frame(Stereo_Frame_Data data) {
         trackers.process_replay_moth(data.RS_id);
     }
 
+    auto profile_t0 = std::chrono::high_resolution_clock::now();
     visdat.update(data.frameL,data.frameR,data.time,data.RS_id);
+    auto profile_t1_visdat = std::chrono::high_resolution_clock::now();
 
     auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
     logger << data.imgcount << ";"
@@ -331,16 +334,21 @@ void process_frame(Stereo_Frame_Data data) {
            << cam.measured_exposure() << ";";
 
     trackers.update(data.time,dctrl.drone_is_active());
+    auto profile_t2_trkrs = std::chrono::high_resolution_clock::now();
+
     if (log_replay_mode) {
         dctrl.insert_log(logreader.current_entry.joyRoll, logreader.current_entry.joyPitch, logreader.current_entry.joyYaw, logreader.current_entry.joyThrottle,logreader.current_entry.joyArmSwitch,logreader.current_entry.joyModeSwitch,logreader.current_entry.joyTakeoffSwitch,logreader.current_entry.auto_roll,logreader.current_entry.auto_pitch,logreader.current_entry.auto_throttle);
     }
     dnav.update(data.time);
+    auto profile_t3_nav = std::chrono::high_resolution_clock::now();
+
     dctrl.control(trackers.dronetracker()->Last_track_data(),dnav.setpoint(),trackers.insecttracker_best()->Last_track_data(),data.time);
+    auto profile_t4_ctrl = std::chrono::high_resolution_clock::now();
+
     dprdct.update(dctrl.drone_is_active(),data.time);
+    auto profile_t5_prdct = std::chrono::high_resolution_clock::now();
 
     trackers.dronetracker()->_manual_flight_mode =dnav.drone_is_manual(); // TODO: hacky
-
-    logger << std::endl;
 
     if (pparams.has_screen) {
         visualizer.add_plot_sample();
@@ -352,7 +360,22 @@ void process_frame(Stereo_Frame_Data data) {
         }
     }
 
-    write_status_file();
+    auto dur1_visdat = std::chrono::duration_cast<std::chrono::microseconds>(profile_t1_visdat - profile_t0).count();
+    auto dur2 = std::chrono::duration_cast<std::chrono::microseconds>(profile_t2_trkrs - profile_t1_visdat).count();
+    auto dur3 = std::chrono::duration_cast<std::chrono::microseconds>(profile_t3_nav - profile_t2_trkrs).count();
+    auto dur4 = std::chrono::duration_cast<std::chrono::microseconds>(profile_t4_ctrl - profile_t3_nav).count();
+    auto dur5 = std::chrono::duration_cast<std::chrono::microseconds>(profile_t5_prdct - profile_t4_ctrl).count();
+    auto profile_t6_frame = std::chrono::high_resolution_clock::now();
+    auto dur_tot = std::chrono::duration_cast<std::chrono::microseconds>(profile_t6_frame - profile_t0).count();
+
+    logger << dur1_visdat << ";"
+           << dur2 << ";"
+           << dur3 << ";"
+           << dur4 << ";"
+           << dur5 << ";"
+           << dur_tot << ";"
+           << std::endl;
+
 }
 
 void init_insect_log(int n) {
@@ -363,7 +386,7 @@ std::string demo_fn = "/home/pats/pats_demo.xml";
 std::string calib_fn = "/home/pats/calib_now";
 std::string beep_fn = "/home/pats/beep_now";
 //can put a demo flightplan.xml in demo_fn, this will trigger an automatic demo flight
-void check_demo_flight_trigger() {
+void check_commandcenter_triggers() {
 
     if (log_replay_mode) {
         if (pparams.joystick == rc_none && dctrl.joy_takeoff_switch()) {
@@ -502,6 +525,17 @@ void handle_key(double time [[maybe_unused]]) {
     key=0;
 }
 
+
+void background_worker() {
+    int mu = static_cast<int>(1.f/pparams.fps * 1e6f);
+    while (key==27)
+    {
+        check_commandcenter_triggers();
+        write_status_file();
+        usleep(mu);
+    }
+}
+
 //This is where frames get processed after it was received from the cam in the main thread
 void pool_worker(int id ) {
     std::unique_lock<std::mutex> lk(tp[id].m1,std::defer_lock);
@@ -522,6 +556,7 @@ void init_thread_pool() {
     for (uint i = 0; i < NUM_OF_THREADS; i++) {
         tp[i].thread = new thread(&pool_worker,i);
     }
+    background_thread = std::thread(&background_worker);
     threads_initialised=true;
 }
 void close_thread_pool() {
@@ -541,6 +576,7 @@ void close_thread_pool() {
         for (uint i = 0; i < NUM_OF_THREADS; i++) {
             tp[i].thread->join();
         }
+        background_thread.join();
         std::cout <<"Threads in pool closed"<< std::endl;
         threads_initialised = false;
     }
@@ -576,7 +612,7 @@ void init_loggers() {
     logger.open(data_output_dir  + "log.csv",std::ofstream::out);
     cout << "data_output_dir: " << data_output_dir << endl;
 
-    logger << "ID;RS_ID;time;elapsed;Exposure;";
+    logger << "ID;RS_ID;time;elapsed;Exposure;t_visdat;t_trkrs;t_nav;t_ctrl;t_prdct_t_frame;";
     logger_fn = data_output_dir  + "log" + to_string(0) + ".csv"; // only used with pparams.video_cuts
 
     logger_insect.open(data_output_dir  + "insect.log",std::ofstream::out);
