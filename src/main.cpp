@@ -35,6 +35,7 @@
 #include "logreader.h"
 #include "visiondata.h"
 #include "3dviz/visualizer3d.h"
+#include "commandcenterlink.h"
 #if CAMMODE == CAMMODE_FROMVIDEOFILE
 #include "filecam.h"
 #elif CAMMODE == CAMMODE_AIRSIM
@@ -53,7 +54,7 @@ using namespace std;
 
 /***********Variables****************/
 unsigned char key = 0;
-int imgcount,detectcount; // to measure fps
+int imgcount; // to measure fps
 GStream output_video_results,output_video_LR,output_video_cuts;
 
 int main_argc;
@@ -79,6 +80,7 @@ tracking::TrackerManager trackers;
 Visualizer visualizer;
 Visualizer3D visualizer_3d;
 logging::LogReader logreader;
+CommandCenterLink cmdcenter;
 #if CAMMODE == CAMMODE_FROMVIDEOFILE
 FileCam cam;
 #define Cam FileCam //wow that is pretty hacky :)
@@ -110,7 +112,6 @@ struct Processer {
     Stereo_Frame_Data data;
 };
 Processer tp[NUM_OF_THREADS];
-std::thread background_thread;
 
 #ifdef HASGUI
 MainWindow gui;
@@ -122,9 +123,6 @@ void process_video();
 int main( int argc, char **argv);
 void handle_key(double time);
 void close(bool sig_kill);
-void write_status_image();
-void write_status_file();
-void check_commandcenter_triggers();
 
 /************ code ***********/
 void process_video() {
@@ -168,7 +166,6 @@ void process_video() {
             recording = false;
             auto time_insect_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
             logger_insect << "New detection ended at: " << std::put_time(std::localtime(&time_insect_now), "%Y/%m/%d %T") << " Duration: " << dtr << " End cam frame number: " <<  cam.frame_number() << std::endl;
-            detectcount++;
         }
         if ((trackers.insecttracker_best()->tracking() || dtr < 1) && data.time > 5) {
             recording = true;
@@ -269,57 +266,12 @@ void process_video() {
     } // main while loop
 }
 
-void write_status_file() {
-
-    static std::string nav_status = "";
-    bool status_update_needed = nav_status.compare(dnav.navigation_status()) != 0;
-    nav_status = dnav.navigation_status();
-
-    static double prev_imwrite_time = -pparams.live_image_frq;
-    if (cam.frame_time() - prev_imwrite_time > pparams.live_image_frq && pparams.live_image_frq >= 0) {
-        prev_imwrite_time = cam.frame_time();
-
-        write_status_image();
-
-        status_update_needed = true;
-
-    }
-    if (status_update_needed) {
-        std::ofstream status_file;
-        status_file.open("../../../../pats_status.txt",std::ofstream::out);
-        auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
-        status_file << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << std::endl;
-        status_file << "Runtime: " << to_string_with_precision(cam.frame_time(),1) << "s" << std::endl;
-        status_file << nav_status << std::endl;
-    }
-
-}
-
-void reset_status_file(std::string status_msg) {
-    std::ofstream status_file;
-    status_file.open("../../../../pats_status.txt",std::ofstream::out);
-    auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
-    status_file << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << std::endl;
-    status_file << "Runtime: " << 0 << "s" << std::endl;
-    status_file << status_msg << std::endl;
-}
-
-void write_status_image() {
-    cv::Mat out = cam.frameL.clone();
-    cvtColor(out,out,CV_GRAY2BGR);
-    putText(out,"State: " + dnav.navigation_status() + " " + trackers.mode_str() + " " + dctrl.flight_mode() +
-            " "  + trackers.dronetracker()->drone_tracking_state(),cv::Point(5,14),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
-    putText(out,"Time:       " + to_string_with_precision(cam.frame_time(),2),cv::Point(5,28),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
-    putText(out,"Detections: " + std::to_string(detectcount),cv::Point(5,42),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
-
-    cv::imwrite("../../../../pats_monitor_tmp.jpg", out);
-}
-
 void process_frame(Stereo_Frame_Data data) {
 
     if (log_replay_mode) {
         logreader.current_frame_number(data.RS_id);
         trackers.process_replay_moth(data.RS_id);
+        cmdcenter.trigger_demo_flight_from_log(replay_dir);
     }
 
     auto profile_t0 = std::chrono::high_resolution_clock::now();
@@ -380,43 +332,6 @@ void process_frame(Stereo_Frame_Data data) {
 
 void init_insect_log(int n) {
     trackers.init_replay_moth(n);
-}
-
-std::string demo_fn = "/home/pats/pats_demo.xml";
-std::string calib_fn = "/home/pats/calib_now";
-std::string beep_fn = "/home/pats/beep_now";
-//can put a demo flightplan.xml in demo_fn, this will trigger an automatic demo flight
-void check_commandcenter_triggers() {
-
-    if (log_replay_mode) {
-        if (pparams.joystick == rc_none && dctrl.joy_takeoff_switch()) {
-            dnav.demo_flight(replay_dir + "/pats_demo.xml");
-        }
-    } else {
-        static int demo_div_cnt = 0;
-        demo_div_cnt = (demo_div_cnt + 1) % pparams.fps; // only check once per second, to save cpu
-        if (!demo_div_cnt) {
-            if (pparams.op_mode == op_modes::op_mode_deployed) {
-                if (file_exist(demo_fn)) {
-                    dnav.demo_flight(demo_fn);
-                    dctrl.joy_takeoff_switch_file_trigger(true);
-                    rename(demo_fn.c_str(),"./logging/pats_demo.xml");
-                }
-            }
-            if (file_exist(calib_fn)) {
-                std::cout << "Calibrating drone!" << std::endl;
-                rc.calibrate_acc();
-                remove(calib_fn.c_str());
-            }
-            if (file_exist(beep_fn)) {
-                std::cout << "Beeping drone!" << std::endl;
-                rc.beep();
-                remove(beep_fn.c_str());
-            }
-        } else {
-            dctrl.joy_takeoff_switch_file_trigger(false);
-        }
-    }
 }
 
 void handle_key(double time [[maybe_unused]]) {
@@ -525,17 +440,6 @@ void handle_key(double time [[maybe_unused]]) {
     key=0;
 }
 
-
-void background_worker() {
-    int mu = static_cast<int>(1.f/pparams.fps * 1e6f);
-    while (key==27)
-    {
-        check_commandcenter_triggers();
-        write_status_file();
-        usleep(mu);
-    }
-}
-
 //This is where frames get processed after it was received from the cam in the main thread
 void pool_worker(int id ) {
     std::unique_lock<std::mutex> lk(tp[id].m1,std::defer_lock);
@@ -556,7 +460,6 @@ void init_thread_pool() {
     for (uint i = 0; i < NUM_OF_THREADS; i++) {
         tp[i].thread = new thread(&pool_worker,i);
     }
-    background_thread = std::thread(&background_worker);
     threads_initialised=true;
 }
 void close_thread_pool() {
@@ -576,7 +479,7 @@ void close_thread_pool() {
         for (uint i = 0; i < NUM_OF_THREADS; i++) {
             tp[i].thread->join();
         }
-        background_thread.join();
+
         std::cout <<"Threads in pool closed"<< std::endl;
         threads_initialised = false;
     }
@@ -680,10 +583,6 @@ void init() {
     }
     init_loggers();
 
-    remove(demo_fn.c_str());
-    remove(calib_fn.c_str());
-    remove(beep_fn.c_str());
-
 #ifdef HASGUI
     gui.init(argc,argv);
 #endif
@@ -722,6 +621,8 @@ void init() {
 
     init_thread_pool();
 
+    cmdcenter.init(log_replay_mode,&dnav,&dctrl,&rc,&cam,&trackers);
+
     std::cout << "Main init successfull" << std::endl;
 }
 
@@ -759,14 +660,13 @@ void close(bool sig_kill) {
     if (!sig_kill) // seems to get stuck. TODO: streamline
         close_thread_pool();
 
+    cmdcenter.close();
+
     std::cout <<"Closed"<< std::endl;
 }
 
-
 void wait_for_cam_angle() {
-
     int enable_delay = 0;
-
     if (pparams.darkness_threshold > 0 && !log_replay_mode) {
         std::cout << "Checking cam angle." << std::endl;
         while(true) {
@@ -789,7 +689,7 @@ void wait_for_cam_angle() {
                 prev_imwrite_time = elapsed_time;
                 cv::imwrite("../../../../pats_monitor_tmp.jpg", frameL);
             }
-            reset_status_file("Roll: " + to_string_with_precision(roll,2));
+            cmdcenter.reset_commandcenter_status_file("Roll: " + to_string_with_precision(roll,2));
             usleep(30000); // measure every third second
         }
     }
@@ -806,7 +706,7 @@ void wait_for_dark() {
                 break;
             }
             cv::imwrite("../../../../pats_monitor_tmp.jpg", frameL);
-            reset_status_file("Waiting. Exposure: " + std::to_string(static_cast<int>(expo)));
+            cmdcenter.reset_commandcenter_status_file("Waiting. Exposure: " + std::to_string(static_cast<int>(expo)));
             usleep(10000000); // measure every 1 minute
         }
     }
@@ -814,7 +714,7 @@ void wait_for_dark() {
 
 int main( int argc, char **argv )
 {
-    reset_status_file("Starting");
+    cmdcenter.reset_commandcenter_status_file("Starting");
     bool realsense_reset;
     try {
         std::tie(realsense_reset,log_replay_mode,replay_dir,drone_id,pats_xml_fn,drone_xml_fn) = process_arg(argc,argv);
@@ -824,12 +724,12 @@ int main( int argc, char **argv )
     }
 
     if (realsense_reset) {
-        reset_status_file("Reseting realsense");
+        cmdcenter.reset_commandcenter_status_file("Reseting realsense");
         try {
             cam.reset();
         } catch(my_exit const &e) {
             std::cout << "Error: " << e.msg << std::endl;
-            reset_status_file(e.msg);
+            cmdcenter.reset_commandcenter_status_file(e.msg);
             return 1;
         }
         return 0;
@@ -847,7 +747,7 @@ int main( int argc, char **argv )
         }
     } catch(my_exit const &e) {
         std::cout << "Error reading xml settings: " << e.msg << std::endl;
-        reset_status_file(e.msg);
+        cmdcenter.reset_commandcenter_status_file(e.msg);
         return 1;
     }
 
@@ -863,15 +763,15 @@ int main( int argc, char **argv )
         key = 27;
         close(false);
         std::cout << "Error: " << e.msg << std::endl;
-        reset_status_file(e.msg);
+        cmdcenter.reset_commandcenter_status_file(e.msg);
         return 1;
     } catch(rs2::error const &e) {
-        reset_status_file("Resetting realsense");
+        cmdcenter.reset_commandcenter_status_file("Resetting realsense");
         try {
             cam.reset();
         } catch(my_exit const &e2) {
             std::cout << "Error: " << e2.msg << std::endl;
-            reset_status_file(e2.msg);
+            cmdcenter.reset_commandcenter_status_file(e2.msg);
             return 1;
         }
         return 0;
