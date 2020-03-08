@@ -166,6 +166,7 @@ void MultiModule::send_data(void) {
             pitch = JOY_BOUND_MIN;
             yaw = JOY_BOUND_MIN;
             throttle = JOY_BOUND_MAX;
+            _LED_drone = 100;
         }
         //AETR
         channels[0] = roll;
