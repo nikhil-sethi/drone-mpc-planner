@@ -66,6 +66,8 @@ def readnPlot(filepath, data_string=None):
 		ax3.plot(time, data['posX_drone']-data['target_pos_x'], label='posErrX')
 		ax3.plot(time, data['posY_drone']-data['target_pos_y'], label='posErrY')
 		ax3.plot(time, data['posZ_drone']-data['target_pos_z'], label='posErrZ')
+		ax3.plot(time, data['yaw'], label='yawErr [?]')
+		ax3.plot(time, data['yaw_smooth'], label='yawErrSmooth [?]')
 		ax3.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
 		ax3.set_xlabel('Time [s]')
 		ax3.set_ylabel('Position Errors [m]')
@@ -95,6 +97,10 @@ def cleanWhitespaces(filepath):
 	datastring = datastring.replace(' ', '')
 	datastring = StringIO(datastring)
 	return datastring
+
+def zerosToNans(data):
+#	for i in range(len(data.keys())):
+		data['posX_drone'][data['posX_drone']==0] = np.nan
 
 def getUserName():
 	return pwd.getpwuid(os.getuid())[0]
