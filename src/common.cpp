@@ -58,6 +58,11 @@ bool file_exist (const std::string& name) {
     }
 }
 
+bool path_exist(const std::string &s) {
+    struct stat buffer;
+    return (stat (s.c_str(), &buffer) == 0);
+}
+
 //combines a sperate left and right image into one combined concenated image
 void combine_image(cv::Mat iml,cv::Mat imr,cv::Mat *res) {
 

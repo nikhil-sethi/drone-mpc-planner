@@ -511,7 +511,18 @@ void init_loggers() {
     mkdir(data_output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     if (log_replay_mode)
         data_output_dir = data_output_dir + "replay/";
+    if (path_exist(data_output_dir)) {
+        std::string rmcmd = "rm -r " + data_output_dir;
+        std::system(rmcmd.c_str());
+    }
+
     mkdir(data_output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+
+    if (replay_dir == "") {
+        pparams.serialize("./logging/pats.xml");
+        dparams.serialize("./logging/drone.xml");
+    }
+
     logger.open(data_output_dir  + "log.csv",std::ofstream::out);
     cout << "data_output_dir: " << data_output_dir << endl;
 
@@ -741,11 +752,6 @@ int main( int argc, char **argv )
         if (replay_dir == "" && drone_xml_fn == "")
             drone_xml_fn = "../../xml/" + string(drone_types_str[pparams.drone]) + ".xml";
         dparams.deserialize(drone_xml_fn);
-        if (replay_dir == "") {
-            mkdir("./logging", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-            pparams.serialize("./logging/pats.xml");
-            dparams.serialize("./logging/drone.xml");
-        }
     } catch(my_exit const &e) {
         std::cout << "Error reading xml settings: " << e.msg << std::endl;
         cmdcenter.reset_commandcenter_status_file(e.msg);

@@ -11,6 +11,7 @@ cv::Point2f world2im_2d(cv::Point3f p, cv::Mat Qfi, float camera_angle);
 cv::Point3f world2im_3d(cv::Point3f p, cv::Mat Qfi, float camera_angle);
 cv::Point3f im2world(cv::Point2f p_im, float disparity, cv::Mat Qf, float camera_angle);
 bool file_exist (const std::string& name);
+bool path_exist(const std::string &s);
 void combine_image(cv::Mat iml, cv::Mat imr, cv::Mat *res);
 void combine_gray_image(cv::Mat iml,cv::Mat imr,cv::Mat *res);
 cv::Mat create_column_image(std::vector<cv::Mat> ims, int type, float resizef = 1);
