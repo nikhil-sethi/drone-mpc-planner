@@ -14,21 +14,21 @@
             <Member Name="threshold_mm">100</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.7</Member>
-            <Member Name="z">-2.0</Member>
+            <Member Name="z">-2.5</Member>
         </Class>
         <Class Type="Waypoint" Version="1.0">
             <Member Name="type">wfm_wp_stay</Member>
             <Member Name="threshold_mm">100</Member>
             <Member Name="x">-1.0</Member>
             <Member Name="y">-0.7</Member>
-            <Member Name="z">-2.0</Member>
+            <Member Name="z">-2.5</Member>
         </Class>
         <Class Type="Waypoint" Version="1.0">
             <Member Name="type">wfm_wp_stay</Member>
             <Member Name="threshold_mm">100</Member>
             <Member Name="x">1.0</Member>
             <Member Name="y">-0.7</Member>
-            <Member Name="z">-2.0</Member>
+            <Member Name="z">-2.5</Member>
         </Class>
 
         <Class Type="Waypoint" Version="1.0">
@@ -36,7 +36,7 @@
             <Member Name="threshold_mm">100</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.7</Member>
-            <Member Name="z">-2.0</Member>
+            <Member Name="z">-2.5</Member>
         </Class>
         <Class Type="Waypoint" Version="1.0">
             <Member Name="type">wfm_wp_stay</Member>
