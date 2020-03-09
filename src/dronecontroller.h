@@ -235,8 +235,8 @@ private:
     filtering::Tf_D_f d_vel_err_x, d_vel_err_y, d_vel_err_z;
     filtering::Tf_PT2_3f pos_reference_filter;
 
-    std::array<float, N_PLANES> pos_err_kiv= {0}, vel_err_kiv= {0};
-    std::array<filtering::Tf_D_f, N_PLANES> d_inview, d_vel_err_kiv;
+    std::array<float, N_PLANES> pos_err_kiv={0}, vel_err_kiv={0};
+    std::array<filtering::Tf_D_f, N_PLANES> d_pos_err_kiv, d_vel_err_kiv;
     void control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool headless_mode_disabled);
     std::tuple<int,int,int> calc_feedforward_control(cv::Point3f desired_acceleration);
 

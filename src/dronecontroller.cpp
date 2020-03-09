@@ -73,7 +73,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
 
     for (uint i=0; i<N_PLANES; i++) {
         d_vel_err_kiv.at(i).init(1.f/pparams.fps);
-        d_inview.at(i).init(1.f/pparams.fps);
+        d_pos_err_kiv.at(i).init(1.f/pparams.fps);
     }
 
     thrust = initial_thrust_guess;
@@ -815,7 +815,7 @@ cv::Point3f DroneController::keep_in_volume_correction_acceleration(track_data d
 
     for (uint i=0; i<N_PLANES; i++) {
         pos_err_kiv.at(i) = -_camview->calc_shortest_distance_to_plane(data_drone.pos(), i, CameraView::relaxed);
-        d_inview.at(i).new_sample(pos_err_kiv.at(i));
+        d_pos_err_kiv.at(i).new_sample(pos_err_kiv.at(i));
         if(data_drone.vel_valid) { // ask sjoerd
             vel_err_kiv.at(i) = speed_error_normal_to_plane.at(i);
             d_vel_err_kiv.at(i).new_sample(vel_err_kiv.at(i));
@@ -845,7 +845,7 @@ cv::Point3f DroneController::kiv_acceleration(std::array<bool, N_PLANES> violate
     cv::Point3f correction_acceleration(0,0,0);
     for(uint i=0; i<N_PLANES; i++) {
         if(violated_planes_inview.at(i))
-            correction_acceleration += _camview->normal_vector(i)*(2.f*pos_err_kiv.at(i) + 0.0f*d_inview.at(i).current_output());
+            correction_acceleration += _camview->normal_vector(i)*(2.f*pos_err_kiv.at(i) + 0.0f*d_pos_err_kiv.at(i).current_output());
 
         if(violated_planes_brakedistance.at(i))
             correction_acceleration += _camview->normal_vector(i)*(0.5f*vel_err_kiv.at(i) + 0.0f*d_vel_err_kiv.at(i).current_output());
