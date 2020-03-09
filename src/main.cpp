@@ -515,7 +515,7 @@ void init_loggers() {
     logger.open(data_output_dir  + "log.csv",std::ofstream::out);
     cout << "data_output_dir: " << data_output_dir << endl;
 
-    logger << "ID;RS_ID;time;elapsed;Exposure;t_visdat;t_trkrs;t_nav;t_ctrl;t_prdct_t_frame;";
+    logger << "ID;RS_ID;time;elapsed;Exposure;";
     logger_fn = data_output_dir  + "log" + to_string(0) + ".csv"; // only used with pparams.video_cuts
 
     logger_insect.open(data_output_dir  + "insect.log",std::ofstream::out);
@@ -609,7 +609,6 @@ void init() {
         throw my_exit("no joystick connected.");
     }
 
-    logger << std::endl; // this concludes the header log line
     if (pparams.has_screen) {
         visualizer.init(&visdat,&trackers,&dctrl,&dnav,&rc,log_replay_mode,&dprdct);
         visualizer_3d.init(&trackers, &(cam.camera_volume), &dctrl, &dnav);
@@ -623,6 +622,8 @@ void init() {
 
     cmdcenter.init(log_replay_mode,&dnav,&dctrl,&rc,&cam,&trackers);
 
+    logger << "t_visdat;t_trkrs;t_nav;t_ctrl;t_prdct;t_frame;"; // trail of the logging heads, needs to happen last
+    logger << std::endl; // this concludes the header log line
     std::cout << "Main init successfull" << std::endl;
 }
 
