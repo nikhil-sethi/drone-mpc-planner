@@ -786,11 +786,7 @@ float DroneController::thrust_to_throttle(float thrust_ratio) {
 
 cv::Point3f DroneController::keep_in_volume_correction_acceleration(track_data data_drone) {
 
-    bool drone_in_boundaries;
-    std::array<bool, N_PLANES> violated_planes_inview;
-    std::tie(drone_in_boundaries, violated_planes_inview) = _camview->in_view(data_drone.pos(), CameraView::relaxed);
-
-    float drone_rotating_time = 11.f/pparams.fps; // Est. time to rotate the drone around 180 deg.
+    float drone_rotating_time = 6.f/pparams.fps; // Est. time to rotate the drone around 180 deg. see betaflight
     float safety = 2.f;
     std::array<float, N_PLANES> speed_error_normal_to_plane;
     float effective_acceleration, remaining_breaking_distance_normal_to_plane, required_breaking_time, allowed_velocity_normal_to_plane;
@@ -813,6 +809,10 @@ cv::Point3f DroneController::keep_in_volume_correction_acceleration(track_data d
         }
     }
 
+    bool drone_in_boundaries;
+    std::array<bool, N_PLANES> violated_planes_inview;
+    std::tie(drone_in_boundaries, violated_planes_inview) = _camview->in_view(data_drone.pos(), CameraView::relaxed);
+
     for (uint i=0; i<N_PLANES; i++) {
         pos_err_kiv.at(i) = -_camview->calc_shortest_distance_to_plane(data_drone.pos(), i, CameraView::relaxed);
         d_pos_err_kiv.at(i).new_sample(pos_err_kiv.at(i));
@@ -822,9 +822,9 @@ cv::Point3f DroneController::keep_in_volume_correction_acceleration(track_data d
         }
     }
 
-    bool flight_mode_with_kiv = _flight_mode==fm_flying_pid || _flight_mode==fm_initial_reset_yaw
-                                || _flight_mode==fm_reset_yaw;
-    if(!flight_mode_with_kiv || _time-start_takeoff_burn_time<0.45) {
+    bool flight_mode_with_kiv = _flight_mode==fm_flying_pid || _flight_mode==fm_initial_reset_yaw 
+                                 || _flight_mode==fm_reset_yaw;
+    if(!flight_mode_with_kiv) {
         if(flight_submode_name == "fm_pid_keep_in_volume")
             flight_submode_name = "";
         return cv::Point3f(0,0,0);
@@ -844,10 +844,11 @@ cv::Point3f DroneController::keep_in_volume_correction_acceleration(track_data d
 cv::Point3f DroneController::kiv_acceleration(std::array<bool, N_PLANES> violated_planes_inview, std::array<bool, N_PLANES> violated_planes_brakedistance) {
     cv::Point3f correction_acceleration(0,0,0);
     for(uint i=0; i<N_PLANES; i++) {
-        if(violated_planes_inview.at(i))
-            correction_acceleration += _camview->normal_vector(i)*(2.f*pos_err_kiv.at(i) + 0.0f*d_pos_err_kiv.at(i).current_output());
+        if(!(_time-start_takeoff_burn_time<0.45 && i==CameraView::bottom_plane)) {
+            if(violated_planes_inview.at(i))
+                correction_acceleration += _camview->normal_vector(i)*(2.f*pos_err_kiv.at(i) + 0.0f*d_pos_err_kiv.at(i).current_output());
 
-        if(violated_planes_brakedistance.at(i))
+        if(violated_planes_brakedistance.at(i)) 
             correction_acceleration += _camview->normal_vector(i)*(0.5f*vel_err_kiv.at(i) + 0.0f*d_vel_err_kiv.at(i).current_output());
     }
     return correction_acceleration;
