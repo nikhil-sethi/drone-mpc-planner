@@ -133,12 +133,12 @@ static const char* drone_types_str[] = {
 };
 enum op_modes {
     op_mode_monitoring_only,
-    op_mode_cripled,
+    op_mode_crippled,
     op_mode_deployed
 };
 static const char* op_modes_str[] = {
     "op_mode_monitoring_only",
-    "op_mode_cripled",
+    "op_mode_crippled",
     "op_mode_deployed",
     "" // must be the last entry! (check in serializer)
 };
