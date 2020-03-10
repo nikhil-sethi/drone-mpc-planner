@@ -654,6 +654,7 @@ void init() {
 
 void close(bool sig_kill) {
     std::cout <<"Closing"<< std::endl;
+    cmdcenter.reset_commandcenter_status_file("Closing");
 
     cam.stop_watchdog();
 

@@ -245,7 +245,9 @@ class SystemWidget(QWidget):
                     system_has_problem = QColor(255,0,0)
                 elif navstatus == 'no RealSense connected':
                     system_has_problem = QColor(255,0,0)
-                elif navstatus.startswith('Roll') or navstatus.startswith('Starting') or navstatus.startswith('Resetting'):
+                elif navstatus == 'ns_wait_locate_drone':
+                    system_has_problem = QColor(255,165,0)
+                elif navstatus.startswith('Roll') or navstatus.startswith('Starting') or navstatus == 'ns_init' or navstatus.startswith('Resetting') or navstatus.startswith('Closed') or navstatus.startswith('Closing'):
                     system_has_problem = QColor(180,180,0)
         else:
             res_txt = 'Error: status info file not found'

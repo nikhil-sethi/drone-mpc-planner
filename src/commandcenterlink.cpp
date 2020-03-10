@@ -28,6 +28,7 @@ void CommandCenterLink::close() {
         std::cout << "Closing CommandCenterLink" << std::endl;
         thread.join();
     }
+    reset_commandcenter_status_file("Closed");
 }
 
 void CommandCenterLink::background_worker() {
