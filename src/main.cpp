@@ -165,7 +165,7 @@ void process_video() {
         if (dtr > 1 && recording) {
             recording = false;
             auto time_insect_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
-            logger_insect << "New detection ended at: " << std::put_time(std::localtime(&time_insect_now), "%Y/%m/%d %T") << " Duration: " << dtr << " End cam frame number: " <<  cam.frame_number() << std::endl;
+            logger_insect << "New detection ended at: " << std::put_time(std::localtime(&time_insect_now), "%Y/%m/%d %T") << " Duration: " << dtr << " End cam frame number: " <<  cam.frame_number() << '\n';
         }
         if ((trackers.insecttracker_best()->tracking() || dtr < 1) && data.time > 5) {
             recording = true;
@@ -326,7 +326,7 @@ void process_frame(Stereo_Frame_Data data) {
            << dur4 << ";"
            << dur5 << ";"
            << dur_tot << ";"
-           << std::endl;
+           << '\n';
 
 }
 
@@ -634,7 +634,7 @@ void init() {
     cmdcenter.init(log_replay_mode,&dnav,&dctrl,&rc,&cam,&trackers);
 
     logger << "t_visdat;t_trkrs;t_nav;t_ctrl;t_prdct;t_frame;"; // trail of the logging heads, needs to happen last
-    logger << std::endl; // this concludes the header log line
+    logger << '\n'; // this concludes the header log line
     std::cout << "Main init successfull" << std::endl;
 }
 
@@ -668,6 +668,8 @@ void close(bool sig_kill) {
     if (pparams.video_cuts)
         output_video_cuts.close();
 
+    logger_insect << std::flush;
+    logger << std::flush;
     logger.close();
     if (!sig_kill) // seems to get stuck. TODO: streamline
         close_thread_pool();

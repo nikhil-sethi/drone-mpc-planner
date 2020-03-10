@@ -93,8 +93,8 @@ void CommandCenterLink::write_commandcenter_status_file() {
         std::ofstream status_file;
         status_file.open("../../../../pats_status.txt",std::ofstream::out);
         auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
-        status_file << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << std::endl;
-        status_file << "Runtime: " << to_string_with_precision(_cam->frame_time(),1) << "s" << std::endl;
+        status_file << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << '\n';
+        status_file << "Runtime: " << to_string_with_precision(_cam->frame_time(),1) << "s" << '\n';
         status_file << nav_status << std::endl;
     }
 }
@@ -104,8 +104,8 @@ void CommandCenterLink::reset_commandcenter_status_file(std::string status_msg) 
     std::ofstream status_file;
     status_file.open("../../../../pats_status.txt",std::ofstream::out);
     auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
-    status_file << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << std::endl;
-    status_file << "Runtime: " << 0 << "s" << std::endl;
+    status_file << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << '\n';
+    status_file << "Runtime: " << 0 << "s" << '\n';
     status_file << status_msg << std::endl;
 }
 

@@ -115,7 +115,7 @@ void ReplayTracker::track(double time) {
     start_new_log_line(time,_visdat->frame_id);
     update_from_log(_visdat->frame_id,time);
     ItemTracker::append_log();
-    (*_logger) << std::endl;
+    (*_logger) << '\n';
 }
 
 }

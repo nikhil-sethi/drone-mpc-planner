@@ -24,7 +24,7 @@ void InsectTracker::start_new_log_line(double time, unsigned long long frame_num
 void InsectTracker::append_log(double time, unsigned long long frame_number) {
     start_new_log_line(time,frame_number);
     ItemTracker::append_log();
-    (*_logger) << std::endl;
+    (*_logger) << '\n';
 }
 
 void InsectTracker::track(double time) {
@@ -38,7 +38,7 @@ void InsectTracker::track(double time) {
     } else {
         update_insect_prediction();
     }
-    (*_logger) << std::endl;
+    (*_logger) << '\n';
 }
 
 void InsectTracker::update_insect_prediction() {
