@@ -32,7 +32,7 @@ tuple<map<int, LogEntryMain>,map<string, int>> LogReader::read_log(string file) 
             map<const int, LogEntryMain>::value_type item(entry.RS_id,entry);
             log.insert(item);
         } catch (exception& exp ) {
-            throw my_exit("Could not read log! \n" + string(exp.what()) + " at: " + line);
+            throw my_exit("Could not read log! File: " +file + '\n' + "Line: " + string(exp.what()) + " at: " + line);
         }
     }
 
