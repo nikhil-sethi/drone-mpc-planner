@@ -206,15 +206,25 @@ class SystemWidget(QWidget):
             sha = sysinfo_txt[2].split(':')[1].strip()[:6]
 
             hd = ''
+            ip = ''
             for line in sysinfo_txt:
                 if line.find("nvme0n1p2") != -1:
-                    hd = line.split()[4]
-
+                    try:
+                        hd = line.split()[4]
+                    except:
+                        pass
+                if line.find('wlp58s0') != -1:
+                    try:
+                        ip = line.split()[3].split('/')[0]
+                    except:
+                        pass
+            
             res_txt = "Pats-" + self.hostid + '->' + self.droneid + ' @' + sha + '\n'
-            res_txt = res_txt + 'hd: ' + hd + '\n'
+            res_txt = res_txt + 'hd: ' + hd + ' ip: ' + ip + '\n'
             hd = float(hd.replace('%',''))
             if hd > 95:
-                system_has_problem = QColor(200,0,0)
+                system_has_problem = QColor(255,0,0)
+
         else:
             res_txt = 'Error: system info file not found'
             system_has_problem = QColor(255,0,0)

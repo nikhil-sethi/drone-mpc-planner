@@ -40,6 +40,7 @@ while [ 1 ]; do
 	echo "sha: $SHA"  >> $STAT_FN
 	DF="$(df -h -x squashfs -x tmpfs -x devtmpfs)"
 	echo "df: $DF"  >> $STAT_FN
+	ip  -o -4 -f inet a show up primary scope global >> $STAT_FN
 
 	echo "$dt" > terminal.log
 	echo "sha:$SHA" >> terminal.log
