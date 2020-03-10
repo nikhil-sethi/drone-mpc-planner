@@ -42,7 +42,7 @@ class CommandCenterWindow(QMainWindow):
         for f in self.files:
             s = SystemWidget(source_folder,f)
             self.sys_widgets.append(s)
-            layout.addWidget(s,i/np,i % np)
+            layout.addWidget(s,int(i/np),i % np)
             i = i + 1
 
         layout.setGeometry(QRect(0, 0, 640 , 480))
@@ -59,7 +59,7 @@ class CommandCenterWindow(QMainWindow):
     def download(self,wait=False):
         rsync_src='mavlab-gpu:/home/pats/status/'
         subprocess.call(['mkdir -p ' + self.source_folder ], shell=True)
-        cmd = ['rsync -zva --timeout=3 ' + rsync_src + ' '+ self.source_folder]
+        cmd = ['rsync -zva --timeout=3 --exclude \'*.jpg.*\' --exclude \'*.xml.*\' --exclude \'*.txt.*\' ' + rsync_src + ' '+ self.source_folder]
         if wait:
             subprocess.call(cmd, shell=True,stdout=subprocess.PIPE)
         else:
