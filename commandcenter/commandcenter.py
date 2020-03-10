@@ -61,9 +61,9 @@ class CommandCenterWindow(QMainWindow):
         subprocess.call(['mkdir -p ' + self.source_folder ], shell=True)
         cmd = ['rsync -zva --timeout=3 ' + rsync_src + ' '+ self.source_folder]
         if wait:
-            subprocess.call(cmd, shell=True)
+            subprocess.call(cmd, shell=True,stdout=subprocess.PIPE)
         else:
-            subprocess.Popen(cmd, shell=True)
+            subprocess.Popen(cmd, shell=True,stdout=subprocess.PIPE)
 
     def refresh(self):
         self.download()
