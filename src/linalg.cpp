@@ -18,8 +18,7 @@ cv::Mat intersection_of_3_planes(cv::Mat p0_1, cv::Mat n_1, cv::Mat p0_2, cv::Ma
     return  A.t().inv() * (b.reshape(1,3));
 }
 
-std::tuple<float, cv::Mat> hesse_normal_form(cv::Mat p0, cv::Mat n)
-{
+std::tuple<float, cv::Mat> hesse_normal_form(cv::Mat p0, cv::Mat n) {
     cv::Mat n0;
 
     n0 = n.mul(cv::norm(n));
@@ -88,8 +87,8 @@ std::tuple<cv::Mat, cv::Mat, cv::Mat> split_vector_to_basis_vectors(cv::Mat vec,
     params = A.inv()*vec;
 
     return std::tuple<cv::Mat, cv::Mat, cv::Mat>(params.at<float>(0,0)*b1,
-                      params.at<float>(1,0)*b2,
-                      params.at<float>(2,0)*b3);
+            params.at<float>(1,0)*b2,
+            params.at<float>(2,0)*b3);
 }
 
 cv::Mat get_plane_normal_vector(cv::Point3f x1, cv::Point3f x2) {
@@ -100,7 +99,7 @@ cv::Mat get_plane_normal_vector(cv::Point3f x1, cv::Point3f x2) {
 bool on_normal_side(cv::Mat p0, cv::Mat n, cv::Mat p) {
     cv::Mat v = cv::Mat::zeros(cv::Size(1,3), CV_32F);
     v = p-p0;
-    if(v.dot (n)>=0)
+    if(v.dot(n)>0)
         return true;
     else
         return false;
@@ -122,7 +121,7 @@ float angle_to_horizontal(cv::Point3f direction) {
 }
 
 cv::Point3f lowest_direction_to_horizontal(cv::Point3f direction, float min_angle) {
-    if(angle_to_horizontal(direction)<min_angle){
+    if(angle_to_horizontal(direction)<min_angle) {
         direction.y = tan(min_angle) / normf({direction.x, direction.z});
     }
     direction /= norm(direction);
@@ -137,9 +136,32 @@ float shortest_distance_to_plane(cv::Point3f pnt, cv::Point3f pln_spprt, cv::Poi
 }
 
 
+float shortest_distance_to_line(cv::Point3f pnt, cv::Point3f ln_spprt, cv::Point3f ln_dir) {
+    return norm((pnt-ln_spprt).cross(ln_dir))/norm(ln_dir);
+}
+
+
 cv::Point3f intersection_of_plane_and_line(cv::Point3f pln_spprt, cv::Point3f pln_nrm, cv::Point3f ln_spprt, cv::Point3f ln_nrm) {
     float dot = pln_nrm.dot(ln_nrm);
     assert(abs(dot)>=0.0001f); // Line and plane are parallel and it exists no/inf intersection points.
     float d =(pln_spprt-ln_spprt).dot(pln_nrm)/dot;
     return ln_spprt+d*ln_nrm;
+}
+
+cv::Point3f project_between_two_points(cv::Point3f p, cv::Point3f p1, cv::Point3f p2) {
+    // https://stackoverflow.com/a/42254318/12960292
+    float lsqr = (p2-p1).dot(p2-p1);
+    float dot = (p-p1).dot(p2-p1)/lsqr;
+    float t = max(0.f,min(1.f,dot));
+
+    return p1 + t*(p2-p1);
+}
+
+
+float angle_between_points(cv::Point3f p1, cv::Point3f p2, cv::Point3f p3) {
+    //https://stackoverflow.com/a/19730129/12960292
+    cv::Point3f v1 = (p1-p2)/norm(p1-p2);
+    cv::Point3f v2 = (p3-p2)/norm(p3-p2);
+
+    return acos(v1.dot(v2));
 }

@@ -36,6 +36,16 @@ std::tuple<float, cv::Mat> hesse_normal_form(cv::Mat p0, cv::Mat n);
 /** @brief Calculates the distance along vec till the plane is intercepted.*/
 float distance_to_plane_along_vec(cv::Mat vec, cv::Mat plane);
 
+/**
+ * Return negavtive distanes if pnt is on the opposite side in which pln_nrm points. */
 float shortest_distance_to_plane(cv::Point3f pnt, cv::Point3f pln_spprt, cv::Point3f pln_nrm);
 
+float shortest_distance_to_line(cv::Point3f pnt, cv::Point3f ln_spprt, cv::Point3f ln_nrm);
+
 cv::Point3f intersection_of_plane_and_line(cv::Point3f pln_spprt, cv::Point3f pln_nrm, cv::Point3f ln_spprt, cv::Point3f ln_nrm);
+
+/** @brief Calculates the point p* which is at closest to p and on aline between p1 and p2. */
+cv::Point3f project_between_two_points(cv::Point3f p, cv::Point3f p1, cv::Point3f p2);
+
+/** @brief Calculates the angle between the 3 given points where point p2 is considered as middle point. */
+float angle_between_points(cv::Point3f p1, cv::Point3f p2, cv::Point3f p3);

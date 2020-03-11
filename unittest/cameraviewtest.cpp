@@ -47,8 +47,7 @@ TEST(Cameraview, project_in_view) {
     for (float x=-10.0f; x<10.f; x+=0.2f) {
         for (float y=-4.0f; y<=0.f; y+=0.2f) {
             for (float z=-13.0f; z<=0.f; z+=0.2f) {
-                std::tie(inview, plane_violations) = camview.in_view({x,y,z}, CameraView::relaxed);
-                corrected = camview.project_into_camera_volume({x,y,z}, CameraView::relaxed, plane_violations);
+                corrected = camview.setpoint_in_cameraview({x,y,z}, CameraView::relaxed);
                 std::tie(inview, plane_violations) = camview.in_view(corrected, CameraView::relaxed);
                 CHECK_TRUE(inview);
             }

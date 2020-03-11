@@ -6,7 +6,7 @@
 #include "common.h"
 
 #define N_PLANES 7 //adapt this to the number of planes in plane index!
-#define N_CORNER_POINTS 8 //adapt this to the number of corner points in point_index
+#define N_PLANE_VERTICES 10 //adapt this to the number of corner points in point_index
 
 #define CAMERA_VIEW_DEBUGGING false
 
@@ -17,6 +17,15 @@ static const char* hunt_volume_check_names[] = {
     "HV_To_Low",
     "HV_To_Close",
     "HV_Outside_Huntarea"
+};
+
+struct intersection_point {
+    intersection_point(cv::Mat p, int p1, int p2, int p3) {
+        pos = p;
+        planes = {p1, p2, p3};
+    }
+    cv::Mat pos = (cv::Mat_<float>(3,1) << 0, 0, 0);
+    std::array<int, 3> planes = {0};
 };
 
 class CameraView {
@@ -91,6 +100,8 @@ public:
     cv::Point3f center_of_volume = {0,-1,-2};
 
     void cout_plane_violation(std::array<bool, N_PLANES> inview_violations, std::array<bool, N_PLANES> breaking_violations);
+
+    cv::Mat get_adjacency_matrix() {return adjacency_matrix;}; // For debugging only
 private:
 
     float relaxed_safety_margin = 0.3f;
@@ -99,10 +110,13 @@ private:
     // Define limitation planes in plane normal form:
     std::array<cv::Mat, N_PLANES> plane_normals_hunt;
     std::array<cv::Mat, N_PLANES> plane_supports_hunt;
-
+    cv::Mat adjacency_matrix; // planes are vertices,
     // Define corner points
-    std::array<cv::Mat, N_CORNER_POINTS> corner_points;
-    std::array<cv::Mat, N_CORNER_POINTS> corner_points_hunt;
+    std::vector<intersection_point> vertices;
+    std::vector<intersection_point> vertices_relaxed;
+    std::array<cv::Mat, N_PLANE_VERTICES> corner_points;
+    std::array<cv::Mat, N_PLANE_VERTICES> corner_points_relaxed;
+    std::array<cv::Mat, N_PLANE_VERTICES> corner_points_hunt;
 
     // Margins betweens sight-volume and hunt-volume
     double margin_top = 0.2;
@@ -118,6 +132,10 @@ private:
     /** @brief Calculates the distance to the borders. */
     std::array<float, N_PLANES> calc_distance_to_borders(std::vector<cv::Point3f> p);
 
+    void update_plane_vertices();
+    std::vector<intersection_point> plane_vertices(uint plane_idx);
+    cv::Point3f project_into_plane_segment(cv::Point3f p, std::vector<intersection_point> _plane_vertices);
+
     void calc_corner_points(cv::Mat p0_front, cv::Mat n_front, cv::Mat p0_back, cv::Mat n_back,
                             cv::Mat p0_top, cv::Mat n_top, cv::Mat p0_bottom, cv::Mat n_bottom,
                             cv::Mat p0_left, cv::Mat n_left, cv::Mat p0_right, cv::Mat n_right);
@@ -125,6 +143,10 @@ private:
     void calc_corner_points_hunt(cv::Mat p0_front, cv::Mat n_front, cv::Mat p0_back, cv::Mat n_back,
                                  cv::Mat p0_top, cv::Mat n_top, cv::Mat p0_bottom, cv::Mat n_bottom,
                                  cv::Mat p0_left, cv::Mat n_left, cv::Mat p0_right, cv::Mat n_right);
+
+    bool in_plane_segment(cv::Point3f p, std::vector<intersection_point> _plane_vertices);
+    void adjacency_entry(uint val, uint p1, uint p2, uint p3);
+    bool vertices_on_one_edge(intersection_point p1, intersection_point p2);
 
     float safety_margin(view_volume_check_mode cm) {
         if(cm==relaxed)
