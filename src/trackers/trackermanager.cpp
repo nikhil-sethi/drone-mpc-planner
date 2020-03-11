@@ -33,26 +33,55 @@ void TrackerManager::init(std::ofstream *logger,VisionData *visdat, CameraView *
     _trackers.push_back(_dtrkr);
 
     (*_logger) << "trkrs_state;";
+#ifdef PROLILING
+    (*_logger) << "dur1;dur2;dur3;dur4;dur5;";
+#endif
     initialized = true;
 }
 
 void TrackerManager::update(double time, bool drone_is_active) {
 
+#ifdef PROLILING
+    auto profile_t0 = std::chrono::high_resolution_clock::now();
+    auto dur1=0,dur2=0,dur3=0,dur4=0;
+#endif
     if (enable_viz_diff) {
         cv::cvtColor(_visdat->diffL*10,diff_viz,CV_GRAY2BGR);
     }
 
     reset_trkr_viz_ids();
+#ifdef PROLILING
+    dur1 = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - profile_t0).count();
+#endif
 
     if (_mode != mode_idle) {
         update_max_change_points();
+#ifdef PROLILING
+        dur2 = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - profile_t0).count();
+#endif
         update_static_ignores();
+#ifdef PROLILING
+        dur3 = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - profile_t0).count();
+#endif
         match_blobs_to_trackers(drone_is_active && !_dtrkr->inactive(),time);
+#ifdef PROLILING
+        dur4 = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - profile_t0).count();
+#endif
     }
 
     update_trackers(time,_visdat->frame_id, drone_is_active);
+#ifdef PROLILING
+    auto dur5 = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - profile_t0).count();
+#endif
 
     (*_logger) << static_cast<int16_t>(_mode) << ";";
+#ifdef PROLILING
+    (*_logger) << dur1 << ";"
+               << dur2 << ";"
+               << dur3 << ";"
+               << dur4 << ";"
+               << dur5 << ";";
+#endif
 
     if (enable_viz_max_points && vizs_maxs.size()>0)
         viz_max_points = create_column_image(vizs_maxs,CV_8UC3,1);

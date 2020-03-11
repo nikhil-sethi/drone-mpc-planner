@@ -274,9 +274,13 @@ void process_frame(Stereo_Frame_Data data) {
         cmdcenter.trigger_demo_flight_from_log(replay_dir);
     }
 
+#ifdef PROFILING
     auto profile_t0 = std::chrono::high_resolution_clock::now();
+#endif
     visdat.update(data.frameL,data.frameR,data.time,data.RS_id);
+#ifdef PROFILING
     auto profile_t1_visdat = std::chrono::high_resolution_clock::now();
+#endif
 
     auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
     logger << data.imgcount << ";"
@@ -286,19 +290,27 @@ void process_frame(Stereo_Frame_Data data) {
            << cam.measured_exposure() << ";";
 
     trackers.update(data.time,dctrl.drone_is_active());
+#ifdef PROFILING
     auto profile_t2_trkrs = std::chrono::high_resolution_clock::now();
+#endif
 
     if (log_replay_mode) {
         dctrl.insert_log(logreader.current_entry.joyRoll, logreader.current_entry.joyPitch, logreader.current_entry.joyYaw, logreader.current_entry.joyThrottle,logreader.current_entry.joyArmSwitch,logreader.current_entry.joyModeSwitch,logreader.current_entry.joyTakeoffSwitch,logreader.current_entry.auto_roll,logreader.current_entry.auto_pitch,logreader.current_entry.auto_throttle);
     }
     dnav.update(data.time);
+#ifdef PROFILING
     auto profile_t3_nav = std::chrono::high_resolution_clock::now();
+#endif
 
     dctrl.control(trackers.dronetracker()->Last_track_data(),dnav.setpoint(),trackers.insecttracker_best()->Last_track_data(),data.time);
+#ifdef PROFILING
     auto profile_t4_ctrl = std::chrono::high_resolution_clock::now();
+#endif
 
     dprdct.update(dctrl.drone_is_active(),data.time);
+#ifdef PROFILING
     auto profile_t5_prdct = std::chrono::high_resolution_clock::now();
+#endif
 
     trackers.dronetracker()->_manual_flight_mode =dnav.drone_is_manual(); // TODO: hacky
 
@@ -311,7 +323,7 @@ void process_frame(Stereo_Frame_Data data) {
             output_video_results.write(visualizer.trackframe);
         }
     }
-
+#ifdef PROFILING
     auto dur1_visdat = std::chrono::duration_cast<std::chrono::microseconds>(profile_t1_visdat - profile_t0).count();
     auto dur2 = std::chrono::duration_cast<std::chrono::microseconds>(profile_t2_trkrs - profile_t1_visdat).count();
     auto dur3 = std::chrono::duration_cast<std::chrono::microseconds>(profile_t3_nav - profile_t2_trkrs).count();
@@ -326,8 +338,8 @@ void process_frame(Stereo_Frame_Data data) {
            << dur4 << ";"
            << dur5 << ";"
            << dur_tot << ";"
-           << '\n';
-
+#endif
+           logger  << '\n';
 }
 
 void init_insect_log(int n) {
@@ -633,7 +645,9 @@ void init() {
 
     cmdcenter.init(log_replay_mode,&dnav,&dctrl,&rc,&cam,&trackers);
 
+#ifdef PROFILING
     logger << "t_visdat;t_trkrs;t_nav;t_ctrl;t_prdct;t_frame;"; // trail of the logging heads, needs to happen last
+#endif
     logger << '\n'; // this concludes the header log line
     std::cout << "Main init successfull" << std::endl;
 }
