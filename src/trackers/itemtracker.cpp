@@ -469,7 +469,7 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
     track_data data;
     data.pos_valid = true;
     data.state.pos = measured_world_coordinates;
-    if(!isnan(_world_item.yaw)){
+    if(!isnan(_world_item.yaw)) {
         data.yaw = _world_item.yaw;
         data.yaw_valid = true;
     }
@@ -643,6 +643,7 @@ void ItemTracker::serialize_settings() {
 
 void ItemTracker::close () {
     if (initialized) {
+        (*_logger) << std::flush;
         std::cout << "Closing tracker: " << _name << std::endl;
         if (pparams.insect_tracking_tuning || pparams.drone_tracking_tuning)
             serialize_settings();

@@ -177,7 +177,7 @@ public:
 
     bool tracking() {return _tracking;}
 
-    void close (void);
+    void close(void);
     void init(std::ofstream *logger, VisionData *_visdat, std::string name, int16_t viz_id);
     virtual void track(double time);
     virtual bool check_ignore_blobs(BlobProps * pbs) = 0;
