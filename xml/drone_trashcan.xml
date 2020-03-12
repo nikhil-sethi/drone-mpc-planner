@@ -9,7 +9,7 @@
     <Member Name="hover_throttle_a">865</Member>
     <Member Name="hover_throttle_b">495</Member>
     <Member Name="drone_blink_strength">50</Member>
-    <Member Name="drone_led_strength">15</Member>
+    <Member Name="drone_led_strength">5</Member>
     <Member Name="blink_period">0.1</Member>
     <Member Name="tx">tx_frskyd8</Member>
     <Member Name="mode3d">false</Member>
