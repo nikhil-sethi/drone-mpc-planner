@@ -1,7 +1,7 @@
-<SerializableClass Type="FlightPlanXML" Version="1.0">
+<SerializableClass Type="FlightPlanXML" Version="1.1">
     <Member Name="flightplan_name">demo</Member>
     <Collection Name="waypoints">
-        <Class Type="Waypoint" Version="1.0">
+        <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_takeoff</Member>
             <Member Name="threshold_mm"></Member>
             <Member Name="x"></Member>
@@ -10,148 +10,166 @@
         </Class>
 
         <!-- Long range tests: -->
-        <Class Type="Waypoint" Version="1.0">
+        <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">100</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.7</Member>
             <Member Name="z">-2.0</Member>
+            <Member Name="name">WP1</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.0">
+        <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">100</Member>
             <Member Name="x">-1.0</Member>
             <Member Name="y">-0.7</Member>
             <Member Name="z">-2.</Member>
+            <Member Name="name">WP2</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.0">
+        <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">100</Member>
             <Member Name="x">1.0</Member>
             <Member Name="y">-0.7</Member>
             <Member Name="z">-2.</Member>
+            <Member Name="name">WP3</Member>
         </Class>
 
-        <Class Type="Waypoint" Version="1.0">
+        <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">100</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.7</Member>
             <Member Name="z">-2.</Member>
+            <Member Name="name">WP4</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.0">
+        <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">100</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.7</Member>
             <Member Name="z">-1.0</Member>
+            <Member Name="name">WP5</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.0">
+        <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">100</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.7</Member>
             <Member Name="z">-2.75</Member>
+            <Member Name="name">WP6</Member>
         </Class>
         
-        <Class Type="Waypoint" Version="1.0">
+        <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">100</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.7</Member>
             <Member Name="z">-2.0</Member>
+            <Member Name="name">WP7</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.0">
+        <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">100</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.4</Member>
             <Member Name="z">-2.0</Member>
+            <Member Name="name">WP8</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.0">
+        <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">100</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-1.1</Member>
             <Member Name="z">-2.0</Member>
+            <Member Name="name">WP9</Member>
         </Class>
 
         <!-- Short range tests: -->
-        <Class Type="Waypoint" Version="1.0">
+        <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">100</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.7</Member>
             <Member Name="z">-2.0</Member>
+            <Member Name="name">WP_short1</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.0">
+        <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">100</Member>
             <Member Name="x">-0.2</Member>
             <Member Name="y">-0.7</Member>
             <Member Name="z">-2.0</Member>
+            <Member Name="name">WP_short2</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.0">
+        <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">100</Member>
             <Member Name="x">0.2</Member>
             <Member Name="y">-0.7</Member>
             <Member Name="z">-2.0</Member>
+            <Member Name="name">WP_short3</Member>
         </Class>
 
-        <Class Type="Waypoint" Version="1.0">
+        <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">100</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.7</Member>
             <Member Name="z">-2.0</Member>
+            <Member Name="name">WP_short4</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.0">
+        <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">100</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.7</Member>
             <Member Name="z">-1.8</Member>
+            <Member Name="name">WP_short5</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.0">
+        <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">100</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.7</Member>
             <Member Name="z">-2.2</Member>
+            <Member Name="name">WP_short6</Member>
         </Class>
         
-        <Class Type="Waypoint" Version="1.0">
+        <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">100</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.7</Member>
             <Member Name="z">-2.0</Member>
+            <Member Name="name">WP_short7</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.0">
+        <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">100</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.5</Member>
             <Member Name="z">-2.0</Member>
+            <Member Name="name">WP_short8</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.0">
+        <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">100</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.9</Member>
             <Member Name="z">-2.0</Member>
+            <Member Name="name">WP_short9</Member>
         </Class>
 
         <!-- End flight -->
-        <Class Type="Waypoint" Version="1.0">
+        <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_yaw_reset</Member>
             <Member Name="threshold_mm"></Member>
             <Member Name="x"></Member>
             <Member Name="y"></Member>
             <Member Name="z"></Member>
         </Class>
-        <Class Type="Waypoint" Version="1.0">
+        <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_landing</Member>
             <Member Name="threshold_mm"></Member>
             <Member Name="x"></Member>

@@ -82,7 +82,7 @@ public:
     }
     std::string navigation_status() {
         if (_navigation_status == ns_approach_waypoint) {
-            return static_cast<string>(navigation_status_names[_navigation_status]) + " " + to_string_with_precision(_dctrl->dist_to_setpoint(),2);
+            return static_cast<string>(navigation_status_names[_navigation_status]) + " " + current_waypoint->name + " " + to_string_with_precision(_dctrl->dist_to_setpoint(),2);
         } else
 
             return navigation_status_names[_navigation_status];

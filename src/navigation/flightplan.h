@@ -23,14 +23,16 @@ static const char* waypoint_flight_modes_str[] = {
 };
 
 struct Waypoint {
-    Waypoint(cv::Point3f p, int distance_threshold_mm) {
+    Waypoint(cv::Point3f p, int distance_threshold_mm, std::string wp_name) {
         xyz = p;
+        name = wp_name;
         threshold_mm = distance_threshold_mm;
         mode  = wfm_flying;
     }
     cv::Point3f xyz = {0};
     int threshold_mm = 0;
     waypoint_flight_modes mode;
+    std::string name;
 protected:
     Waypoint() {}
 };
@@ -39,34 +41,36 @@ struct Waypoint_Landing : Waypoint {
         xyz = cv::Point3f(0,.5f,-.07f); // only for landing wp, relative to the startup location!
         threshold_mm = 50;
         mode = wfm_landing;
+        name = "wp_land";
     }
 };
 struct Waypoint_Yaw_Reset : Waypoint {
     Waypoint_Yaw_Reset() {
-        float yaw_reset_waypoint_angle = 40;
-        xyz = cv::Point3f(0.0f,-cos(yaw_reset_waypoint_angle*deg2rad)*1.5f,-sin(yaw_reset_waypoint_angle*deg2rad))*1.5f;
+        xyz = cv::Point3f(0.0f,-0.3,-1);
         threshold_mm = 50;
         mode = wfm_yaw_reset;
+        name = "wp_yaw";
     }
 };
 struct Waypoint_Takeoff : Waypoint {
     Waypoint_Takeoff() {
         xyz = cv::Point3f(0,1.f,0); // takeoff direction
         mode = wfm_takeoff;
+        name = "wp_takeoff";
     }
 };
 struct Waypoint_Flower : Waypoint {
-    Waypoint_Flower(cv::Point3f p) : Waypoint(p,0) {
+    Waypoint_Flower(cv::Point3f p,std::string wp_name) : Waypoint(p,0,wp_name) {
         mode = wfm_flower;
     }
 };
 struct Waypoint_Brick : Waypoint {
-    Waypoint_Brick(cv::Point3f p) : Waypoint(p,0) {
+    Waypoint_Brick(cv::Point3f p,std::string wp_name) : Waypoint(p,0,wp_name) {
         mode = wfm_brick;
     }
 };
 struct Waypoint_Stay : Waypoint {
-    Waypoint_Stay(cv::Point3f p) : Waypoint(p,0) {
+    Waypoint_Stay(cv::Point3f p,std::string wp_name) : Waypoint(p,0,wp_name) {
         mode = wfm_wp_stay;
     }
 };
@@ -103,15 +107,17 @@ public:
     xmls::xFloat x;
     xmls::xFloat y;
     xmls::xFloat z;
+    xmls::xString name;
 
     XML_Waypoint() {
         setClassName("Waypoint");
-        setVersion("1.0");
+        setVersion("1.1");
         Register("type",&mode);
         Register("threshold_mm",&threshold_mm);
         Register("x",&x);
         Register("y",&y);
         Register("z",&z);
+        Register("name",&name);
     }
     XML_Waypoint(Waypoint wp) : XML_Waypoint() {
         mode = wp.mode;
@@ -119,6 +125,7 @@ public:
             x = wp.xyz.x;
             y = wp.xyz.y;
             z = wp.xyz.z;
+            name = wp.name;
             threshold_mm = wp.threshold_mm;
         }
     }
@@ -134,7 +141,7 @@ public:
             return wp;
             break;
         } case waypoint_flight_modes::wfm_wp_stay: {
-            Waypoint_Stay wp(cv::Point3f(x.value(),y.value(),z.value()));
+            Waypoint_Stay wp(cv::Point3f(x.value(),y.value(),z.value()),name.value());
             return wp;
             break;
         } case waypoint_flight_modes::wfm_yaw_reset: {
@@ -142,16 +149,16 @@ public:
             return wp;
             break;
         } case waypoint_flight_modes::wfm_brick: {
-            Waypoint_Brick wp(cv::Point3f(x.value(),y.value(),z.value()));
+            Waypoint_Brick wp(cv::Point3f(x.value(),y.value(),z.value()),name.value());
             return wp;
             break;
         } case waypoint_flight_modes::wfm_flower: {
-            Waypoint_Flower wp(cv::Point3f(x.value(),y.value(),z.value()));
+            Waypoint_Flower wp(cv::Point3f(x.value(),y.value(),z.value()),name.value());
             return wp;
             break;
         } case waypoint_flight_modes::wfm_flying:
         default: {
-            Waypoint wp(cv::Point3f(x.value(),y.value(),z.value()),threshold_mm.value());
+            Waypoint wp(cv::Point3f(x.value(),y.value(),z.value()),threshold_mm.value(),name.value());
             return wp;
             break;
         }
@@ -168,7 +175,7 @@ public:
 
     XML_FlightPlan() {
         setClassName("FlightPlanXML");
-        setVersion("1.0");
+        setVersion("1.1");
         Register("flightplan_name", &flightplan_name);
         Register("waypoints", &waypointsxml);
     }
