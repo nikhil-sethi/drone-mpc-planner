@@ -124,7 +124,7 @@ void ItemTracker::calc_world_props_blob_generic(BlobProps * pbs) {
         w.trkr_id = _uid;
 
         p*=pparams.imscalef;
-        w.disparity = stereo_match(p,_visdat->diffL,_visdat->diffR,pbs->radius);
+        w.disparity = stereo_match(p,_visdat->diffL,_visdat->diffR,pbs->radius*pparams.imscalef);
 
         if (w.disparity < min_disparity || w.disparity > max_disparity) {
             w.disparity_in_range = false;
@@ -319,9 +319,13 @@ float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR,
         disp_end = std::min(static_cast<int>(ceil(disparity_prev))+2,disp_end);
     }
 
+    int err [tmp_max_disp]; // issue #261
+    int cor_16 [tmp_max_disp];
     for (int i=disp_start; i<disp_end; i++) {
         cv::Rect roiR(x1-i,y1,x2,y2);
 
+        if (diffR.cols == 0 )
+            std::cout << "WTF?!" << std::endl;
         cv::Mat corV_16 = diffL(roiL).mul(diffR(roiR));
         cv::Mat errV = abs(diffL(roiL) - diffR(roiR));
 
@@ -339,34 +343,43 @@ float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR,
 
     }
 
-    // TODO: check if disparity_err OR disparity_cor is a better choice, or a mix
-    int disparity = disparity_err;
-
-    // measured disparity value
-
-    float sub_disparity;
-    if (disparity>0)
-        sub_disparity = estimate_sub_disparity(disparity);
-    else
-        sub_disparity = 0;
-
-    return sub_disparity;
+#if FALSE // issue #262
+    // this seems to be much noisier
+    if (disparity_err > 0 && disparity_cor > 0) {
+        float sub_err_disp = estimate_sub_disparity(disparity_err,err,false);
+        float sub_corr_disp = estimate_sub_disparity(disparity_cor,cor_16,true);
+        return (sub_err_disp + sub_corr_disp) / 2.f;
+    } else if (disparity_err > 0) {
+        float sub_err_disp = estimate_sub_disparity(disparity_err,err,false);
+        return sub_err_disp;
+    } else if (disparity_err > 0) {
+        float sub_corr_disp = estimate_sub_disparity(maxcor,cor_16,true);
+        return sub_corr_disp;
+    } else {
+        return 0;
+    }
+#else
+    if (disparity_err > 0) {
+        float sub_err_disp = estimate_sub_disparity(disparity_err,err,true);
+        return sub_err_disp;
+    } else {
+        return 0;
+    }
+#endif
 }
 
-float ItemTracker::estimate_sub_disparity(int disparity) {
+float ItemTracker::estimate_sub_disparity(int disparity,int * err, bool negate) {
 
-    float sub_disp;
-
-    // matching costs of neighbors
-    /*
-    float y1 = -cor_16[disparity-1];
-    float y2 = -cor_16[disparity];
-    float y3 = -cor_16[disparity+1];
-    */
-
-    float y1 = err[disparity-1];
-    float y2 = err[disparity];
-    float y3 = err[disparity+1];
+    float sub_disp,y1,y2,y3;
+    if (negate) {
+        y1 = -err[disparity-1];
+        y2 = -err[disparity];
+        y3 = -err[disparity+1];
+    } else {
+        y1 = err[disparity-1];
+        y2 = err[disparity];
+        y3 = err[disparity+1];
+    }
 
     // by assuming a hyperbola shape, the x-location of the hyperbola minimum is determined and used as best guess
     float h31 = (y3 - y1);
@@ -378,10 +391,7 @@ float ItemTracker::estimate_sub_disparity(int disparity) {
     if (sub_disp<disparity-1 || sub_disp>disparity+1 || sub_disp != sub_disp)
         sub_disp = disparity;
 
-
-
     return sub_disp;
-
 }
 
 void ItemTracker::update_disparity(float disparity, float dt) {

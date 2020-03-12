@@ -104,7 +104,7 @@ public:
         im_posX_drone = cv::Mat (1,1,CV_32FC1);
         im_posY_drone = cv::Mat (1,1,CV_32FC1);
         im_disp_drone = cv::Mat (1,1,CV_32FC1);
-        im_sdisp_drone = cv::Mat (1,1,CV_32FC1);
+        im_size_drone = cv::Mat (1,1,CV_32FC1);
         dt = cv::Mat(1,1,CV_32FC1);
         dt_target = cv::Mat(1,1,CV_32FC1);
 
@@ -125,7 +125,7 @@ public:
         im_posX_drone.pop_back();
         im_posY_drone.pop_back();
         im_disp_drone.pop_back();
-        im_sdisp_drone.pop_back();
+        im_size_drone.pop_back();
         dt.pop_back();
         dt_target.pop_back();
 
@@ -156,7 +156,7 @@ public:
     cv::Mat im_posX_drone;
     cv::Mat im_posY_drone;
     cv::Mat im_disp_drone;
-    cv::Mat im_sdisp_drone;
+    cv::Mat im_size_drone;
 
     cv::Mat sposX;
     cv::Mat sposY;

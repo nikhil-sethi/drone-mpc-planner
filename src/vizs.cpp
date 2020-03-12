@@ -64,7 +64,7 @@ void Visualizer::add_plot_sample(void) {
             im_posX_drone.push_back(_dtrkr->image_item().x);
             im_posY_drone.push_back(_dtrkr->image_item().y);
             im_disp_drone.push_back(_dtrkr->image_item().disparity);
-            im_sdisp_drone.push_back(_dtrkr->image_item().disparity);
+            im_size_drone.push_back(_dtrkr->image_item().size);
             sposX.push_back(-data.posX_smooth);
             sposY.push_back(data.posY_smooth);
             sposZ.push_back(-data.posZ_smooth);
@@ -115,12 +115,13 @@ cv::Mat Visualizer::plot_all_im_drone_pos(void) {
     std::vector<cv::Mat> ims;
     ims.push_back(plot({im_posX_drone},"Im drone X"));
     ims.push_back(plot({im_posY_drone},"Im drone Y"));
-    ims.push_back(plot({im_disp_drone,im_sdisp_drone},"Disparity"));
+    ims.push_back(plot({im_disp_drone},"Disparity"));
+    ims.push_back(plot({im_size_drone},"Size"));
     return create_column_image(ims, CV_8UC3);
 }
 cv::Mat Visualizer::plot_xyd(void) {
     std::vector<cv::Mat> ims_xyd;
-    ims_xyd.push_back(plot({im_disp_drone,im_sdisp_drone},"Disparity"));
+    ims_xyd.push_back(plot({im_disp_drone},"Disparity"));
 
 
     cv::Point sp1(-_dctrl->viz_drone_pos_after_burn.x*1000.f,-_dctrl->viz_drone_pos_after_burn.z*1000.f);
