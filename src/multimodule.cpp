@@ -166,7 +166,6 @@ void MultiModule::send_data(void) {
             pitch = JOY_BOUND_MIN;
             yaw = JOY_BOUND_MIN;
             throttle = JOY_BOUND_MAX;
-            _LED_drone = 100;
         }
         //AETR
         channels[0] = roll;
@@ -188,7 +187,10 @@ void MultiModule::send_data(void) {
         if (dparams.tx==tx_cx10)
             channels[5] = tx_rate;
 
-        channels[7] = JOY_BOUND_MIN + JOY_BOUND_RANGE / 100 * _LED_drone;
+        if (calibrate_acc_cnt)
+            channels[7] = JOY_BOUND_MIN + JOY_BOUND_RANGE / 100 * 100;
+        else
+            channels[7] = JOY_BOUND_MIN + JOY_BOUND_RANGE / 100 * _LED_drone;
 
         convert_channels(channels, &packet[4]);
 
