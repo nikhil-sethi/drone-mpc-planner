@@ -249,7 +249,7 @@ class SystemWidget(QWidget):
                 navstatus = status_txt[2].strip()
                 if navstatus == 'ns_wait_for_insect':
                     system_has_problem = QColor(0,128,0)
-                elif navstatus == 'ns_approach_waypoint' or navstatus == 'ns_taking_off' or navstatus == 'ns_chasing_insect'or navstatus == 'ns_landing':
+                elif navstatus.startswith('ns_approach_wp') or navstatus == 'ns_taking_off' or navstatus == 'ns_chasing_insect'or navstatus == 'ns_landing':
                     system_has_problem = QColor(0,255,0)
                 elif navstatus == 'ns_drone_problem':
                     system_has_problem = QColor(255,0,0)
