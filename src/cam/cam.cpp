@@ -109,8 +109,9 @@ void Cam::rs_callback(rs2::frame f) {
             lock_newframe.unlock(); // signal to processor that a new frame is ready to be processed
             new_frame1 = false;
             new_frame2 = false;
-            if (rs_frameL.get_frame_number() - last_sync_id  > 3)
-                std::cout << "FRAME LOSS: " << rs_frameL.get_frame_number() - last_sync_id << std::endl;
+            int fl = rs_frameL.get_frame_number() - last_sync_id;
+            if (fl  > 3)
+                std::cout << "FRAME LOSS: " << fl << std::endl;
             last_sync_id = rs_frameL.get_frame_number();
         }
         else { // somehow frames are not in sync, resync
