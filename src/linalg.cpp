@@ -75,7 +75,7 @@ std::tuple<cv::Mat, cv::Mat> get_orthogonal_vectors(cv::Mat vec) {
     cv::Mat orth1 = get_orthogonal_vector(vec);
     cv::Mat orth2 = vec.cross(orth1);
 
-    return std::tuple(orth1, orth2);
+    return std::tuple<cv::Mat, cv::Mat>(orth1, orth2);
 }
 
 std::tuple<cv::Mat, cv::Mat, cv::Mat> split_vector_to_basis_vectors(cv::Mat vec, cv::Mat b1, cv::Mat b2, cv::Mat b3) {
@@ -87,7 +87,7 @@ std::tuple<cv::Mat, cv::Mat, cv::Mat> split_vector_to_basis_vectors(cv::Mat vec,
     cv::Mat params(3, 1, CV_32F);
     params = A.inv()*vec;
 
-    return std::tuple(params.at<float>(0,0)*b1,
+    return std::tuple<cv::Mat, cv::Mat, cv::Mat>(params.at<float>(0,0)*b1,
                       params.at<float>(1,0)*b2,
                       params.at<float>(2,0)*b3);
 }

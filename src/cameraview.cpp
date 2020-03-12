@@ -126,7 +126,7 @@ std::tuple<bool, std::array<bool, N_PLANES>> CameraView::in_view(cv::Point3f p,f
             violated_planes.at(i) = true;
         }
     }
-    return std::tuple(inview, violated_planes);
+    return std::tuple<bool, std::array<bool, N_PLANES>>(inview, violated_planes);
 }
 
 CameraView::hunt_check_result CameraView::in_hunt_area(cv::Point3f d[[maybe_unused]], cv::Point3f m) {
@@ -161,7 +161,7 @@ std::tuple<bool, std::array<bool, N_PLANES>> CameraView::check_distance_to_borde
         }
     }
 
-    return std::tuple(planes_not_violated, violated_planes);
+    return std::tuple<bool, std::array<bool, N_PLANES>>(planes_not_violated, violated_planes);
 }
 
 std::array<float, N_PLANES> CameraView::calc_distance_to_borders(std::vector<cv::Point3f> p) {

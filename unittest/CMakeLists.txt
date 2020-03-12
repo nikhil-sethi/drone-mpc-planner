@@ -8,9 +8,13 @@ include_directories(./)
 
 set(SOURCE_FILES  ../src/quaternion.cpp
                   ../src/common.cpp
+                  ../src/linalg.cpp
+                  ../src/cameraview.cpp
                   main.cpp
                   quaterniontest.cpp
-                  commontest.cpp)
+                  commontest.cpp
+                  linalgtest.cpp
+                  cameraviewtest.cpp)
 
 add_executable(test_pats ${SOURCE_FILES})
 target_link_libraries(test_pats ${OpenCV_LIBS} CppUTest CppUTestExt)
