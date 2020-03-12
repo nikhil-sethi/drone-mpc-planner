@@ -178,7 +178,7 @@ void MultiModule::send_data(void) {
             channels[4] = arm_switch;
             channels[5] = mode;
         }
-        if (_beep) {
+        if (_beep || calibrate_acc_cnt ) {
             std::cout << "BEEP" << std::endl;
             channels[4] = bf_disarmed;
             channels[5] = JOY_BOUND_MAX;
