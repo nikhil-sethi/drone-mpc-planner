@@ -10,7 +10,7 @@
         </Class>
         <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_flying</Member>
-            <Member Name="threshold_mm">30</Member>
+            <Member Name="threshold_mm">100</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.3</Member>
             <Member Name="z">-1.0</Member>
@@ -18,7 +18,7 @@
         </Class>
         <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_flying</Member>
-            <Member Name="threshold_mm">30</Member>
+            <Member Name="threshold_mm">100</Member>
             <Member Name="x">-1.0</Member>
             <Member Name="y">-0.3</Member>
             <Member Name="z">-1.0</Member>
@@ -26,7 +26,7 @@
         </Class>
         <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_flying</Member>
-            <Member Name="threshold_mm">30</Member>
+            <Member Name="threshold_mm">100</Member>
             <Member Name="x">1.0</Member>
             <Member Name="y">-0.3</Member>
             <Member Name="z">-1.0</Member>
