@@ -14,13 +14,14 @@
 #include "dronenavigation.h"
 #include "dronepredictor.h"
 
-class Visualizer{
+class Visualizer {
 
 private:
     cv::Mat plot(std::vector<cv::Mat> data_drone, std::string name);
     void plot(std::vector<cv::Mat> data_drone, cv::Mat *frame, std::string name);
     cv::Mat plotxy(cv::Mat data1x, cv::Mat data1y, cv::Mat data2x, cv::Mat data2y, cv::Point setpoint, std::string name, cv::Point minaxis, cv::Point maxaxis);
     cv::Mat plot_xyd(void);
+    cv::Mat plot_all_im_drone_pos(void);
     cv::Mat plot_all_control(void);
     cv::Mat plot_all_acceleration(void);
     cv::Mat plot_all_velocity(void);
@@ -64,7 +65,7 @@ private:
     cv::Mat cir8,dif8,approx;
     float closest_dist;
 
-    struct Tracker_viz_base_data{
+    struct Tracker_viz_base_data {
         cv::Mat frameL;
         cv::Point3f setpoint;
         double time;
@@ -85,7 +86,7 @@ public:
     bool request_plotframe_paint;
     double first_take_off_time = 0;
 
-    Visualizer(void){
+    Visualizer(void) {
         roll_joystick = cv::Mat(1,1,CV_32FC1);
         roll_calculated = cv::Mat (1,1,CV_32FC1);
         pitch_joystick = cv::Mat(1,1,CV_32FC1);
@@ -100,8 +101,10 @@ public:
         posX_drone = cv::Mat (1,1,CV_32FC1);
         posY_drone = cv::Mat (1,1,CV_32FC1);
         posZ_drone = cv::Mat (1,1,CV_32FC1);
-        disparity = cv::Mat (1,1,CV_32FC1);
-        sdisparity = cv::Mat (1,1,CV_32FC1);
+        im_posX_drone = cv::Mat (1,1,CV_32FC1);
+        im_posY_drone = cv::Mat (1,1,CV_32FC1);
+        im_disp_drone = cv::Mat (1,1,CV_32FC1);
+        im_sdisp_drone = cv::Mat (1,1,CV_32FC1);
         dt = cv::Mat(1,1,CV_32FC1);
         dt_target = cv::Mat(1,1,CV_32FC1);
 
@@ -119,8 +122,10 @@ public:
         posX_drone.pop_back();
         posY_drone.pop_back();
         posZ_drone.pop_back();
-        disparity.pop_back();
-        sdisparity.pop_back();
+        im_posX_drone.pop_back();
+        im_posY_drone.pop_back();
+        im_disp_drone.pop_back();
+        im_sdisp_drone.pop_back();
         dt.pop_back();
         dt_target.pop_back();
 
@@ -148,8 +153,10 @@ public:
     cv::Mat posY_target;
     cv::Mat posZ_target;
 
-    cv::Mat disparity;
-    cv::Mat sdisparity;
+    cv::Mat im_posX_drone;
+    cv::Mat im_posY_drone;
+    cv::Mat im_disp_drone;
+    cv::Mat im_sdisp_drone;
 
     cv::Mat sposX;
     cv::Mat sposY;
