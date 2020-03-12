@@ -101,10 +101,10 @@ void Visualizer::add_plot_sample(void) {
 void Visualizer::plot(void) {
     std::vector<cv::Mat> ims_trk;
     ims_trk.push_back(plot_xyd());
-    //    ims_trk.push_back(plot_all_position());
+    ims_trk.push_back(plot_all_position());
     //    ims_trk.push_back(plot_all_velocity());
     //ims_trk.push_back(plot_all_acceleration());
-    ims_trk.push_back(plot_all_control());
+    // ims_trk.push_back(plot_all_control());
     plotframe = create_row_image(ims_trk,CV_8UC3);
 }
 
@@ -167,7 +167,9 @@ cv::Mat Visualizer::plot_all_position(void) {
 cv::Mat Visualizer::plot(std::vector<cv::Mat> data, const std::string name) {
     cv::Mat frame(fsizey+4*line_width, fsizex+4*line_width, CV_8UC3);
     frame.setTo(background_color);
-    plot(data, &frame,name);
+    if (data.at(0).rows > 0) {
+        plot(data, &frame,name);
+    }
     return frame;
 }
 
