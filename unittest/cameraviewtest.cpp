@@ -26,7 +26,7 @@ TEST(Cameraview, inview) {
   bool inview;
   std::array<bool, N_PLANES> plane_violations;
   std::tie(inview, plane_violations) = camview.in_view({0,-1.,-2}, CameraView::relaxed);
-  CHECK(inview==true);
+  CHECK_TRUE(inview);
 }
 
 TEST(Cameraview, notinview) {
@@ -35,18 +35,24 @@ TEST(Cameraview, notinview) {
   bool inview;
   std::array<bool, N_PLANES> plane_violations;
   std::tie(inview, plane_violations) = camview.in_view({0,-1.73,-2}, CameraView::relaxed);
-  CHECK(inview==false);
+  CHECK_FALSE(inview);
 }
 
 TEST(Cameraview, project_in_view) {
   CameraView camview;
   camview.init(point_left_top, point_right_top, point_left_bottom, point_right_bottom, b_depth, b_height, camera_pitch_deg);
   cv::Point3f original = {-4,-1.73,-2};
+  cv::Point3f corrected;
   bool inview;
   std::array<bool, N_PLANES> plane_violations;
-  std::tie(inview, plane_violations) = camview.in_view(original, CameraView::relaxed);
-  cv::Point3f corrected = camview.project_into_camera_volume(original, CameraView::relaxed, plane_violations);
-  std::tie(inview, plane_violations) = camview.in_view(corrected, CameraView::relaxed);
-
-  CHECK(inview==true);
+  for (float x=-10.0f; x<10.f; x+=0.2f) {
+    for (float y=-4.0f; y<=0.f; y+=0.2f) {
+      for (float z=-13.0f; z<=0.f; z+=0.2f) {
+        std::tie(inview, plane_violations) = camview.in_view(original, CameraView::relaxed);
+        corrected = camview.project_into_camera_volume(original, CameraView::relaxed, plane_violations);
+        std::tie(inview, plane_violations) = camview.in_view(corrected, CameraView::relaxed);
+        CHECK_TRUE(inview);
+      }
+    }
+  }
 }

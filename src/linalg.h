@@ -37,3 +37,5 @@ std::tuple<float, cv::Mat> hesse_normal_form(cv::Mat p0, cv::Mat n);
 float distance_to_plane_along_vec(cv::Mat vec, cv::Mat plane);
 
 float shortest_distance_to_plane(cv::Point3f pnt, cv::Point3f pln_spprt, cv::Point3f pln_nrm);
+
+cv::Point3f intersection_of_plane_and_line(cv::Point3f pln_spprt, cv::Point3f pln_nrm, cv::Point3f ln_spprt, cv::Point3f ln_nrm);

@@ -188,12 +188,21 @@ float CameraView::calc_shortest_distance_to_plane(cv::Point3f drone_pos, uint pl
 }
 
 cv::Point3f CameraView::project_into_camera_volume(cv::Point3f pos_setpoint, view_volume_check_mode cm, std::array<bool, N_PLANES> violated_planes) {
+    float distance = norm(pos_setpoint - center_of_volume());
+    float distance_fixed;
+    cv::Point3f pos_setpoint_fixed;
     for (uint i=0; i<N_PLANES; i++) {
-        if(violated_planes.at(i)==true)
+        if(violated_planes.at(i)==true) {
+            pos_setpoint_fixed = intersection_of_plane_and_line(cv::Point3f(plane_supports.at(i))+relaxed_safety_margin*cv::Point3f(plane_normals.at(i)), cv::Point3f(plane_normals.at(i)), pos_setpoint, center_of_volume()-pos_setpoint);
+            distance_fixed = norm(pos_setpoint_fixed - center_of_volume());
+            if(distance_fixed<distance) { // If not a correction with a previous plane also solved the current plane.
+                distance = distance_fixed;
+                pos_setpoint = pos_setpoint_fixed;
+            }
             pos_setpoint = pos_setpoint - calc_shortest_distance_to_plane(pos_setpoint, i, cm)*normal_vector(i);
+        }
     }
     return pos_setpoint;
-    
 }
 
 cv::Point3f CameraView::setpoint_in_cameraview(cv::Point3f pos_setpoint, view_volume_check_mode cm) {
