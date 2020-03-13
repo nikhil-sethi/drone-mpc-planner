@@ -160,7 +160,7 @@ void PathPublisher::add_camera_cone(std::vector<geometry_msgs::msg::PoseStamped>
     add_point(poses, x, y, z, time, frame_id);
 }
 
-void PathPublisher::add_camera_cone(std::vector<geometry_msgs::msg::PoseStamped> &poses, int64 time)
+void PathPublisher::add_camera_cone(std::vector<geometry_msgs::msg::PoseStamped> &poses[[maybe_unused]], int64 time[[maybe_unused]])
 {
     cv::Mat point;
 
@@ -183,7 +183,7 @@ void PathPublisher::add_camera_cone(std::vector<geometry_msgs::msg::PoseStamped>
     */
 }
 
-void PathPublisher::add_hunt_cone(std::vector<geometry_msgs::msg::PoseStamped> &poses, int64 time)
+void PathPublisher::add_hunt_cone(std::vector<geometry_msgs::msg::PoseStamped> &poses [[maybe_unused]], int64 time [[maybe_unused]])
 {
     cv::Mat point;
 
