@@ -2,8 +2,8 @@
     <Member Name="kp_pos_roll">720</Member>
     <Member Name="kp_pos_pitch">720</Member>
     <Member Name="kp_pos_throttle">950</Member>
-    <Member Name="ki_pos_roll">10</Member>
-    <Member Name="ki_pos_pitch">25</Member>
+    <Member Name="ki_pos_roll"> 8</Member>
+    <Member Name="ki_pos_pitch"> 8</Member>
     <Member Name="ki_pos_throttle">60</Member>
     <Member Name="kd_pos_roll">210</Member>
     <Member Name="kd_pos_pitch">210</Member>
