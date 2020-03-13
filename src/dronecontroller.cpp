@@ -925,7 +925,7 @@ std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f de
     return std::make_tuple(roll_cmd,pitch_cmd,throttle_cmd);
 }
 
-void DroneController::control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool headless_mode_disabled) {
+void DroneController::control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool headless_mode_disabled [[maybe_unused]]) {
     int kp_pos_roll_scaled, kp_pos_throttle_scaled, kp_pos_pitch_scaled, ki_pos_roll_scaled, ki_pos_throttle_scaled, ki_pos_pitch_scaled, kd_pos_roll_scaled, kd_pos_throttle_scaled, kd_pos_pitch_scaled;
     cv::Point3f scale_p = {1.f, 1.f, 1.f};
     cv::Point3f scale_i = {1.f, 1.f, 1.f};
@@ -994,14 +994,18 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     float err_velz_filtered = filter_vel_err_z.new_sample(setpoint_vel.z + pos_err2vel_set.z - data_drone.state.vel.z);
     cv::Point3f vel_err_p = {err_velx_filtered, err_vely_filtered, err_velz_filtered};
 
-    if (headless_mode_disabled) {
-        // Increase I error with anti wind up handling:
-        if (fabs(err_x_filtered) < 0.3f )
-            pos_err_i.x += err_x_filtered;
-        if (fabs(err_z_filtered) < 0.3f )
-            pos_err_i.z += err_z_filtered;
-    }
-    pos_err_i.y += err_y_filtered; // this info can be used to update hover_throttle. However in the current controller hover_throttle is not used.
+    // Enable horizontal error only if drone is close to setpoint - required for precision while hovering
+    if (fabs(err_x_filtered) < 0.3f)
+        pos_err_i.x += err_x_filtered;
+    else if(fabs(err_x_filtered) > 0.35f)
+        pos_err_i.x = 0;
+
+    if (fabs(err_z_filtered) < 0.3f )
+        pos_err_i.z += err_z_filtered;
+    else if(fabs(err_z_filtered) > 0.35f)
+        pos_err_i.z = 0;
+
+    pos_err_i.y += err_y_filtered;
 
     float errDx = d_pos_err_x.new_sample (err_x_filtered);
     float errDy = d_pos_err_y.new_sample (err_y_filtered);

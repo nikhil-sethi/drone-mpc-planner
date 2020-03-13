@@ -139,7 +139,7 @@ float shortest_distance_to_plane(cv::Point3f pnt, cv::Point3f pln_spprt, cv::Poi
 
 cv::Point3f intersection_of_plane_and_line(cv::Point3f pln_spprt, cv::Point3f pln_nrm, cv::Point3f ln_spprt, cv::Point3f ln_nrm) {
     float dot = pln_nrm.dot(ln_nrm);
-    assert(abs(dot)>=0.0001); // Line and plane are parallel and it exists no/inf intersection points.
+    assert(abs(dot)>=0.0001f); // Line and plane are parallel and it exists no/inf intersection points.
     float d =(pln_spprt-ln_spprt).dot(pln_nrm)/dot;
     return ln_spprt+d*ln_nrm;
 }
