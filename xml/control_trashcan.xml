@@ -1,13 +1,13 @@
 <SerializableClass Type="ControlParameters" Version="1.2">
     <Member Name="kp_pos_roll">720</Member>
     <Member Name="kp_pos_pitch">720</Member>
-    <Member Name="kp_pos_throttle">950</Member>
-    <Member Name="ki_pos_roll"> 8</Member>
-    <Member Name="ki_pos_pitch"> 8</Member>
+    <Member Name="kp_pos_throttle">1050</Member>
+    <Member Name="ki_pos_roll"> 12</Member>
+    <Member Name="ki_pos_pitch"> 12</Member>
     <Member Name="ki_pos_throttle">60</Member>
     <Member Name="kd_pos_roll">210</Member>
     <Member Name="kd_pos_pitch">210</Member>
-    <Member Name="kd_pos_throttle">310</Member>
+    <Member Name="kd_pos_throttle">323</Member>
     <Member Name="kp_v_roll">112</Member>
     <Member Name="kp_v_pitch">230</Member>
     <Member Name="kp_v_throttle">180</Member>
