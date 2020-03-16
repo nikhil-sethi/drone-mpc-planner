@@ -173,7 +173,13 @@ class SystemWidget(QWidget):
             print('Yes clicked.')
             subprocess.Popen(['./reboot_system.sh', 'pats'+self.hostid])
     def takeoff(self):
-        subprocess.Popen(['./demo_system.sh', 'pats'+self.hostid])
+        self.pats_xml_path = Path(self.source_folder,self.system_folder,'pats_deploy.xml')
+        with open (self.pats_xml_path, "r") as path_xml:
+            xml_lines = path_xml.readlines()
+            for line in xml_lines:
+                if line.find('\"flightplan\"') != -1:
+                    self.flightplan_xml_path = Path(self.source_folder,self.system_folder,line.split('\">../../xml/')[1].split('<')[0])
+                    subprocess.Popen(['./demo_system.sh', 'pats'+self.hostid, self.flightplan_xml_path])
     def insect_replay_takeoff(self):
         subprocess.Popen(['./insect_replay_system.sh', 'pats'+self.hostid])
     def takeoshow_im_big(self,event):
