@@ -274,17 +274,51 @@ class ImDialog(QDialog):
         self.source_im_file = Path(self.source_folder,self.system_folder,'status.jpg')
         self.pats_xml_path = Path(self.source_folder,self.system_folder,'pats_deploy.xml')
 
-        self.im_label = QLabel()
-        self.xml_textBox = QPlainTextEdit()
-        self.xml_textBox.textChanged.connect(self.xml_txt_chng_event)
-        self.xml_textBox.setStyleSheet("color: rgb(200, 0, 0); background-color: rgb(25, 25, 25);")
 
+
+        self.pats_xml_txt = ''
+        self.drone_xml_txt = ''
+        self.flightplan_xml_txt = ''
         if os.path.exists(self.pats_xml_path):
-            self.xml_txt = ''
-            with open (self.pats_xml_path, "r") as xml_file:
-                self.xml_txt=xml_file.read()
-        self.xml_textBox.setPlainText(self.xml_txt)
-        self.xml_textBox.setMaximumHeight(300)
+            
+            with open (self.pats_xml_path, "r") as path_xml:
+                self.pats_xml_txt=path_xml.read()
+            with open (self.pats_xml_path, "r") as path_xml:
+                xml_lines = path_xml.readlines()
+                for line in xml_lines:
+                    if line.find('\"drone\"') != -1:
+                        self.drone_xml_path = Path(self.source_folder,self.system_folder,line.split('\">')[1].split('<')[0] + '.xml')
+                        if os.path.exists(self.drone_xml_path):
+                            with open (self.drone_xml_path, "r") as drone_xml:
+                                self.drone_xml_txt=drone_xml.read()
+                    if line.find('\"flightplan\"') != -1:
+                        self.flightplan_xml_path = Path(self.source_folder,self.system_folder,line.split('\">../../xml/')[1].split('<')[0])
+                        if os.path.exists(self.flightplan_xml_path):
+                            with open (self.flightplan_xml_path, "r") as flightplan_xml:
+                                self.flightplan_xml_txt=flightplan_xml.read()
+                    
+
+        self.im_label = QLabel()
+
+        self.pats_xml_textBox = QPlainTextEdit()
+        self.drone_xml_textBox = QPlainTextEdit()
+        self.flightplan_xml_textBox = QPlainTextEdit()
+
+        self.pats_xml_textBox.textChanged.connect(self.xml_txt_chng_event)
+        self.pats_xml_textBox.setStyleSheet("color: rgb(200, 0, 0); background-color: rgb(25, 25, 25);")
+        self.pats_xml_textBox.setPlainText(self.pats_xml_txt)
+        self.pats_xml_textBox.setMaximumHeight(300)
+
+        self.drone_xml_textBox.textChanged.connect(self.xml_txt_chng_event)
+        self.drone_xml_textBox.setStyleSheet("color: rgb(200, 0, 0); background-color: rgb(25, 25, 25);")
+        self.drone_xml_textBox.setPlainText(self.drone_xml_txt)
+        self.drone_xml_textBox.setMaximumHeight(300)
+
+        
+        self.flightplan_xml_textBox.textChanged.connect(self.xml_txt_chng_event)
+        self.flightplan_xml_textBox.setStyleSheet("color: rgb(200, 0, 0); background-color: rgb(25, 25, 25);")
+        self.flightplan_xml_textBox.setPlainText(self.flightplan_xml_txt)
+        self.flightplan_xml_textBox.setMaximumHeight(300)
 
         self.tabs = QTabWidget()
         self.tab_pats = QWidget()
@@ -293,11 +327,17 @@ class ImDialog(QDialog):
         self.tabs.resize(300,200)
 
         self.tab_pats.layout = QVBoxLayout(self.tab_pats)
-        self.tab_pats.layout.addWidget(self.xml_textBox)
-
+        self.tab_pats.layout.addWidget(self.pats_xml_textBox)
         self.tabs.addTab(self.tab_pats,"Pats")
+
+        self.tab_drone.layout = QVBoxLayout(self.tab_drone)
+        self.tab_drone.layout.addWidget(self.drone_xml_textBox)
         self.tabs.addTab(self.tab_drone,"Drone")
+
+        self.tab_flightplan.layout = QVBoxLayout(self.tab_flightplan)
+        self.tab_flightplan.layout.addWidget(self.flightplan_xml_textBox)
         self.tabs.addTab(self.tab_flightplan,"Flightplan")
+
         self.tabs.setMaximumHeight(300)
         self.tabs.setStyleSheet("color: rgb(200, 0, 0); background-color: rgb(25, 25, 25);")
 
@@ -324,11 +364,14 @@ class ImDialog(QDialog):
         self.refresh() #work around for small initial zooming issue
   
     def xml_txt_chng_event(self):
-        new_xml = self.xml_textBox.toPlainText()
-        if self.xml_txt != new_xml:
+        new_pats_xml = self.pats_xml_textBox.toPlainText()
+        new_drone_xml = self.drone_xml_textBox.toPlainText()
+        new_flightplan_xml = self.flightplan_xml_textBox.toPlainText()
+        if self.pats_xml_txt != new_pats_xml or self.drone_xml_txt != new_drone_xml or self.flightplan_xml_txt != new_flightplan_xml:
             self.setWindowTitle(self.host_id + '*')
         else:
             self.setWindowTitle(self.host_id)
+
 
     def refresh(self):
         pixmap = QPixmap(str(self.source_im_file))
@@ -343,14 +386,33 @@ class ImDialog(QDialog):
             self.save_xml()
 
     def save_xml(self):
-        new_xml = self.xml_textBox.toPlainText()
-        xml_tmp_file = open("tmp.xml", "w")
-        xml_tmp_file.write(new_xml)
-        xml_tmp_file.close()
+        new_pats_xml = self.pats_xml_textBox.toPlainText()
+        pats_xml_tmp_file = open("pats.tmp", "w")
+        pats_xml_tmp_file.write(new_pats_xml)
+        pats_xml_tmp_file.close()
+
+        new_drone_xml = self.drone_xml_textBox.toPlainText()
+        drone_xml_tmp_file = open("drone.tmp", "w")
+        drone_xml_tmp_file.write(new_drone_xml)
+        drone_xml_tmp_file.close()
+
+        new_flightplan_xml = self.flightplan_xml_textBox.toPlainText()
+        flightplan_xml_tmp_file = open("flightplan.tmp", "w")
+        flightplan_xml_tmp_file.write(new_flightplan_xml)
+        flightplan_xml_tmp_file.close()
+
         self.setWindowTitle(self.host_id)
-        subprocess.call(['./change_settings_system.sh', 'pats'+self.host_id])
+        subprocess.Popen(['./change_settings_system.sh', 'pats'+self.host_id,os.path.basename(self.drone_xml_path),os.path.basename(self.flightplan_xml_path) ])
         xml_file = open(self.pats_xml_path, "w")
-        xml_file.write(new_xml)
+        xml_file.write(new_pats_xml)
+        xml_file.close()
+
+        xml_file = open(self.drone_xml_path, "w")
+        xml_file.write(new_drone_xml)
+        xml_file.close()
+
+        xml_file = open(self.flightplan_xml_path, "w")
+        xml_file.write(new_flightplan_xml)
         xml_file.close()
 
 
