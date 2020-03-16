@@ -4,17 +4,20 @@ set -x
 LOCAL_STATUS_TXT_FILE="/home/$USER/pats_status.txt"
 LOCAL_SYSTEM_TXT_FILE="/home/$USER/pats_system_info.txt"
 LOCAL_STATUS_IM_FILE="/home/$USER/pats_monitor_tmp.jpg"
-LOCAL_PATS_XML_FILE="/home/$USER/code/pats/xml/pats_deploy.xml"
-REMOTE_STATUS_TXT_FILE="status/${HOSTNAME}_status.txt"
-REMOTE_SYSTEM_TXT_FILE="status/${HOSTNAME}_system.txt"
-REMOTE_STATUS_IM_FILE="status/${HOSTNAME}_status.jpg"
-REMOTE_PATS_XML_FILE="status/${HOSTNAME}_pats_deploy.xml"
+LOCAL_PATS_XML="/home/$USER/code/pats/xml/"
+REMOTE_STATUS_TXT_FILE="status/${HOSTNAME}/status.txt"
+REMOTE_SYSTEM_TXT_FILE="status/${HOSTNAME}/system.txt"
+REMOTE_STATUS_IM_FILE="status/${HOSTNAME}/status.jpg"
+REMOTE_PATS_XML="status/${HOSTNAME}/"
 
 while [ ! -f "$LOCAL_STATUS_TXT_FILE" ]; do
 	sleep 10
 	echo "Warning: $LOCAL_STATUS_TXT_FILE does not exist"
 done
 while inotifywait -e modify,create, $LOCAL_STATUS_TXT_FILE; do
+	if test -d "$LOCAL_PATS_XML"; then
+		rsync -az $LOCAL_PATS_XML mavlab-gpu:$REMOTE_PATS_XML
+	fi
 	if test -f "$LOCAL_STATUS_TXT_FILE"; then
 		rsync -z $LOCAL_STATUS_TXT_FILE mavlab-gpu:$REMOTE_STATUS_TXT_FILE
 	fi
@@ -23,8 +26,5 @@ while inotifywait -e modify,create, $LOCAL_STATUS_TXT_FILE; do
 	fi
 	if test -f "$LOCAL_STATUS_IM_FILE"; then
 		rsync -z $LOCAL_STATUS_IM_FILE mavlab-gpu:$REMOTE_STATUS_IM_FILE
-	fi
-	if test -f "$LOCAL_PATS_XML_FILE"; then
-		rsync -z $LOCAL_PATS_XML_FILE mavlab-gpu:$REMOTE_PATS_XML_FILE
 	fi
 done

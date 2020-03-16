@@ -4,7 +4,7 @@ from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtWidgets import (QMainWindow,QDialog,QWidget, QPushButton, QCheckBox, QAction,QFrame,
     QApplication, QFileDialog, QHBoxLayout, QLabel,QPushButton, QSizePolicy, QSlider, QStyle,
-    QVBoxLayout, QGridLayout, QWidget,QMessageBox,QPlainTextEdit,QMenu)
+    QVBoxLayout, QGridLayout, QWidget,QMessageBox,QPlainTextEdit,QMenu,QTabWidget)
 from PyQt5.QtGui import QIcon, QPixmap, QPalette,QColor,QKeyEvent
 
 from pathlib import Path
@@ -29,17 +29,16 @@ class CommandCenterWindow(QMainWindow):
         source_folder = os.path.expanduser(source_folder.strip(" "))
         self.source_folder = source_folder
         self.download(True)
-        files = list_txt_files(source_folder)
-        self.files = []
-        for f in files:
-            self.files.append(f)
-        self.files.sort(key=natural_keys)
-        n = len(self.files)
-        np = int(math.ceil(n/4))
         
+        systems = next(os.walk(source_folder))[1]
+        systems.sort(key=natural_keys)
+        self.system_folders = systems
+        n = len(systems)
+        np = int(math.ceil(n/4))
+
         self.sys_widgets = []
         i=0
-        for f in self.files:
+        for f in self.system_folders:
             s = SystemWidget(source_folder,f)
             self.sys_widgets.append(s)
             layout.addWidget(s,int(i/np),i % np)
@@ -71,10 +70,10 @@ class CommandCenterWindow(QMainWindow):
             sys.refresh()
 
 class SystemWidget(QWidget):
-    def __init__(self, source_folder,status_fn,parent=None):
+    def __init__(self, source_folder,system_folder,parent=None):
         QWidget.__init__(self, parent=parent)
 
-        self.status_fn = status_fn
+        self.system_folder = system_folder
         self.source_folder = source_folder
 
         self.chk_enable = QCheckBox()
@@ -168,7 +167,7 @@ class SystemWidget(QWidget):
     def takeoff(self):
         subprocess.Popen(['./demo_system.sh', 'pats'+self.hostid])
     def takeoshow_im_big(self,event):
-        ImDialog(self,Path(self.source_folder,self.status_fn[:-4] + ".jpg"),Path(self.source_folder,str(self.status_fn).replace('status.txt','pats_deploy.xml')),self.hostid)
+        ImDialog(self,self.source_folder,self.system_folder,self.hostid)
 
     def refresh(self):
         if self.chk_enable.isChecked():
@@ -178,7 +177,7 @@ class SystemWidget(QWidget):
             pal.setColor(QPalette.WindowText, system_color)
             self.txt_label.setPalette(pal)
 
-            source_im_file = Path(self.source_folder,self.status_fn[:-4] + ".jpg")
+            source_im_file = Path(self.source_folder,self.system_folder,'status.jpg')
             pixmap = QPixmap(str(source_im_file))
             self.im_label.setPixmap(pixmap)
             self.im_label.setPixmap(pixmap.scaled(self.im_label.size(),Qt.KeepAspectRatio, Qt.SmoothTransformation))
@@ -191,8 +190,8 @@ class SystemWidget(QWidget):
             self.txt_label.setPalette(pal)
 
     def get_lbl_txt(self):
-        source_status_txt_file = Path(self.source_folder,self.status_fn)
-        source_system_txt_file = Path(self.source_folder,str(self.status_fn).replace('status','system'))
+        source_status_txt_file = Path(self.source_folder,self.system_folder,'status.txt')
+        source_system_txt_file = Path(self.source_folder,self.system_folder,'system.txt')
 
         res_txt = ''
         system_has_problem = QColor(100,100,100)
@@ -266,27 +265,46 @@ class SystemWidget(QWidget):
         return res_txt.strip(),system_has_problem
         
 class ImDialog(QDialog):
-    def __init__(self,parent,source_im_file,source_xml_file,system_name):
+    def __init__(self,parent,source_folder,system_folder,host_id):
         super().__init__(parent)
 
-        self.system_name = system_name
+        self.source_folder = source_folder
+        self.system_folder = system_folder
+        self.host_id = host_id
+        self.source_im_file = Path(self.source_folder,self.system_folder,'status.jpg')
+        self.pats_xml_path = Path(self.source_folder,self.system_folder,'pats_deploy.xml')
 
         self.im_label = QLabel()
-        self.source_im_file = source_im_file
-        self.source_xml_file = source_xml_file
         self.xml_textBox = QPlainTextEdit()
         self.xml_textBox.textChanged.connect(self.xml_txt_chng_event)
         self.xml_textBox.setStyleSheet("color: rgb(200, 0, 0); background-color: rgb(25, 25, 25);")
 
-        if os.path.exists(self.source_xml_file):
+        if os.path.exists(self.pats_xml_path):
             self.xml_txt = ''
-            with open (self.source_xml_file, "r") as xml_file:
+            with open (self.pats_xml_path, "r") as xml_file:
                 self.xml_txt=xml_file.read()
         self.xml_textBox.setPlainText(self.xml_txt)
+        self.xml_textBox.setMaximumHeight(300)
+
+        self.tabs = QTabWidget()
+        self.tab_pats = QWidget()
+        self.tab_drone = QWidget()
+        self.tab_flightplan = QWidget()
+        self.tabs.resize(300,200)
+
+        self.tab_pats.layout = QVBoxLayout(self.tab_pats)
+        self.tab_pats.layout.addWidget(self.xml_textBox)
+
+        self.tabs.addTab(self.tab_pats,"Pats")
+        self.tabs.addTab(self.tab_drone,"Drone")
+        self.tabs.addTab(self.tab_flightplan,"Flightplan")
+        self.tabs.setMaximumHeight(300)
+        self.tabs.setStyleSheet("color: rgb(200, 0, 0); background-color: rgb(25, 25, 25);")
 
         v_box = QVBoxLayout()
         v_box.addWidget(self.im_label)
-        v_box.addWidget(self.xml_textBox)
+        v_box.addWidget(self.tabs)
+
         self.setLayout(v_box)
 
         timer = QTimer(self)
@@ -300,7 +318,7 @@ class ImDialog(QDialog):
         p.setColor(self.backgroundRole(), QColor(15,15,15))
         self.setPalette(p)
 
-        self.setWindowTitle(self.system_name)
+        self.setWindowTitle(self.host_id)
         self.setWindowFlags(Qt.Window)
         self.show()
         self.refresh() #work around for small initial zooming issue
@@ -308,16 +326,16 @@ class ImDialog(QDialog):
     def xml_txt_chng_event(self):
         new_xml = self.xml_textBox.toPlainText()
         if self.xml_txt != new_xml:
-            self.setWindowTitle(self.system_name + '*')
+            self.setWindowTitle(self.host_id + '*')
         else:
-            self.setWindowTitle(self.system_name)
+            self.setWindowTitle(self.host_id)
 
     def refresh(self):
         pixmap = QPixmap(str(self.source_im_file))
         self.setMinimumSize(pixmap.width(),pixmap.height())
         self.im_label.setPixmap(pixmap)
         self.im_label.setPixmap(pixmap.scaled(self.im_label.size(),Qt.KeepAspectRatio, Qt.SmoothTransformation))
-    
+
     def keyPressEvent(self, event: QKeyEvent):
         if event.key() in {Qt.Key_Space, Qt.Key_Escape}:
             self.close()
@@ -329,9 +347,9 @@ class ImDialog(QDialog):
         xml_tmp_file = open("tmp.xml", "w")
         xml_tmp_file.write(new_xml)
         xml_tmp_file.close()
-        self.setWindowTitle(self.system_name)
-        subprocess.call(['./change_settings_system.sh', 'pats'+self.system_name])
-        xml_file = open(self.source_xml_file, "w")
+        self.setWindowTitle(self.host_id)
+        subprocess.call(['./change_settings_system.sh', 'pats'+self.host_id])
+        xml_file = open(self.pats_xml_path, "w")
         xml_file.write(new_xml)
         xml_file.close()
 
@@ -339,7 +357,7 @@ class ImDialog(QDialog):
 
 def atoi(text):
     return int(text) if text.isdigit() else text
-    
+
 def natural_keys(text):
     '''
     alist.sort(key=natural_keys) sorts in human order
@@ -347,10 +365,6 @@ def natural_keys(text):
     (See Toothy's implementation in the comments)
     '''
     return [ atoi(c) for c in re.split(r'(\d+)', text) ]
-
-from os import listdir
-def list_txt_files(directory):
-    return (f for f in listdir(directory) if f.endswith('status.txt'))
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
