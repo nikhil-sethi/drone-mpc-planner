@@ -109,19 +109,12 @@ void CameraView::calc_corner_points_hunt(cv::Mat p0_front, cv::Mat n_front, cv::
 }
 
 std::tuple<bool, std::array<bool, N_PLANES>> CameraView::in_view(cv::Point3f p, view_volume_check_mode c) {
-    if (c == relaxed)
-        return in_view(p,relaxed_safety_margin);
-    else
-        return in_view(p,strict_safetty_margin);
-}
-
-std::tuple<bool, std::array<bool, N_PLANES>> CameraView::in_view(cv::Point3f p,float hysteresis_margin) {
     std::array<bool, N_PLANES> violated_planes = {{false}}; 
     bool inview = true;
 
     // Attention check the negative case!
     for(uint i=0; i<N_PLANES; i++){ 
-        if(!on_normal_side(plane_supports.at(i) + hysteresis_margin*plane_normals.at(i), plane_normals.at(i), cv::Mat(p))) {
+        if(!on_normal_side(plane_supports.at(i) + safety_margin(c)*plane_normals.at(i), plane_normals.at(i), cv::Mat(p))) {
             inview = false;
             violated_planes.at(i) = true;
         }
@@ -179,27 +172,22 @@ std::array<float, N_PLANES> CameraView::calc_distance_to_borders(std::vector<cv:
 }
 
 float CameraView::calc_shortest_distance_to_plane(cv::Point3f drone_pos, uint plane_idx, view_volume_check_mode cm) {
-    float safety_margin = relaxed_safety_margin;
-    if(cm == strict)
-        safety_margin = strict_safetty_margin;
-
-    cv::Point3f shifted_support_vector = support_vector(plane_idx) + safety_margin*normal_vector(plane_idx);
+    cv::Point3f shifted_support_vector = support_vector(plane_idx) + safety_margin(cm)*normal_vector(plane_idx);
     return shortest_distance_to_plane(drone_pos, shifted_support_vector, normal_vector(plane_idx));
 }
 
 cv::Point3f CameraView::project_into_camera_volume(cv::Point3f pos_setpoint, view_volume_check_mode cm, std::array<bool, N_PLANES> violated_planes) {
-    float distance = norm(pos_setpoint - center_of_volume());
+    float distance = norm(pos_setpoint - center_of_volume);
     float distance_fixed;
     cv::Point3f pos_setpoint_fixed;
     for (uint i=0; i<N_PLANES; i++) {
         if(violated_planes.at(i)==true) {
-            pos_setpoint_fixed = intersection_of_plane_and_line(cv::Point3f(plane_supports.at(i))+relaxed_safety_margin*cv::Point3f(plane_normals.at(i)), cv::Point3f(plane_normals.at(i)), pos_setpoint, center_of_volume()-pos_setpoint);
-            distance_fixed = norm(pos_setpoint_fixed - center_of_volume());
+            pos_setpoint_fixed = intersection_of_plane_and_line(cv::Point3f(plane_supports.at(i))+safety_margin(cm)*cv::Point3f(plane_normals.at(i)), cv::Point3f(plane_normals.at(i)), pos_setpoint, center_of_volume-pos_setpoint);
+            distance_fixed = norm(pos_setpoint_fixed - center_of_volume);
             if(distance_fixed<distance) { // If not a correction with a previous plane also solved the current plane.
                 distance = distance_fixed;
                 pos_setpoint = pos_setpoint_fixed;
             }
-            pos_setpoint = pos_setpoint - calc_shortest_distance_to_plane(pos_setpoint, i, cm)*normal_vector(i);
         }
     }
     return pos_setpoint;

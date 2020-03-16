@@ -21,17 +21,17 @@ static const char* hunt_volume_check_names[] = {
 
 class CameraView {
 public:
-    enum plane_index{
+    enum plane_index {
         top_plane,
+        bottom_plane,
+        back_plane,
         front_plane,
         left_plane,
         right_plane,
-        bottom_plane,
-        back_plane,
         camera_plane
     };
 
-    enum point_index{
+    enum point_index {
         top_right_front,
         top_right_back,
         top_left_front,
@@ -53,10 +53,6 @@ public:
         HuntVolume_To_Close,
         HuntVolume_Outside_Huntarea
     };
-
-    cv::Point3f center_of_volume() {
-        return cv::Point3f(0,-1,-2);
-    }
 
     std::string convert_to_str(hunt_check_result v) {
         return hunt_volume_check_names[v];
@@ -92,11 +88,13 @@ public:
 
     std::array<cv::Mat, N_PLANES> plane_normals;
     std::array<cv::Mat, N_PLANES> plane_supports;
+    cv::Point3f center_of_volume = {0,-1,-2};
 
     void cout_plane_violation(std::array<bool, N_PLANES> inview_violations, std::array<bool, N_PLANES> breaking_violations);
 private:
+
     float relaxed_safety_margin = 0.3f;
-    float strict_safetty_margin = 0.6f;
+    float strict_safety_margin = 0.6f;
 
     // Define limitation planes in plane normal form:
     std::array<cv::Mat, N_PLANES> plane_normals_hunt;
@@ -117,9 +115,6 @@ private:
 
     float minimum_height = 0.3f; /**< Correction distance for the ground plane. */
 
-    /** @brief Checks whether the point p is for all planes on the right side.*/
-    std::tuple<bool, std::array<bool, N_PLANES>> in_view(cv::Point3f p, float hysteresis_margin);
-
     /** @brief Calculates the distance to the borders. */
     std::array<float, N_PLANES> calc_distance_to_borders(std::vector<cv::Point3f> p);
 
@@ -130,6 +125,14 @@ private:
     void calc_corner_points_hunt(cv::Mat p0_front, cv::Mat n_front, cv::Mat p0_back, cv::Mat n_back,
                                  cv::Mat p0_top, cv::Mat n_top, cv::Mat p0_bottom, cv::Mat n_bottom,
                                  cv::Mat p0_left, cv::Mat n_left, cv::Mat p0_right, cv::Mat n_right);
+
+    float safety_margin(view_volume_check_mode cm) {
+        if(cm==relaxed)
+            return relaxed_safety_margin;
+        else
+            return strict_safety_margin;
+        
+    }
 };
 
 std::ostream &operator<<(std::ostream &os, const CameraView &c);
