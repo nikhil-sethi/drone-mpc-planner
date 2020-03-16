@@ -185,6 +185,14 @@ public:
     void update(double time, bool drone_is_active);
     void close();
 
+
+    void init_replay_moth(std::string file) {
+        ReplayTracker *rt;
+        rt = new ReplayTracker();
+        rt->init(next_insecttrkr_id,file,_visdat);
+        _trackers.push_back(rt);
+        next_insecttrkr_id++;
+    }
     void init_replay_moth(int id) {
         ReplayTracker *rt;
         rt = new ReplayTracker();

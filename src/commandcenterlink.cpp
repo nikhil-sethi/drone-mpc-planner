@@ -7,7 +7,8 @@
 #include<iostream>
 
 void CommandCenterLink::init(bool log_replay_mode,navigation::DroneNavigation * dnav,DroneController * dctrl,MultiModule * rc,Cam * cam,tracking::TrackerManager * trackers) {
-    remove(demo_fn.c_str());
+    remove(demo_insect_fn.c_str());
+    remove(demo_waypoint_fn.c_str());
     remove(calib_fn.c_str());
     remove(beep_fn.c_str());
 
@@ -57,11 +58,17 @@ void CommandCenterLink::check_commandcenter_triggers() {
     demo_div_cnt = (demo_div_cnt + 1) % pparams.fps; // only check once per second, to save cpu
     if (!demo_div_cnt) {
         if (pparams.op_mode == op_modes::op_mode_deployed) {
-            if (file_exist(demo_fn)) {
-                _dnav->demo_flight(demo_fn);
+            if (file_exist(demo_waypoint_fn)) {
+                std::cout << "Waypoint demo!" << std::endl;
+                _dnav->demo_flight(demo_waypoint_fn);
                 _dctrl->joy_takeoff_switch_file_trigger(true);
-                rename(demo_fn.c_str(),"./logging/pats_demo.xml");
+                rename(demo_waypoint_fn.c_str(),"./logging/pats_demo.xml");
             }
+        }
+        if (file_exist(demo_insect_fn)) {
+            std::cout << "Replay insect demo!" << std::endl;
+            _trackers->init_replay_moth(demo_insect_fn);
+            remove(demo_insect_fn.c_str());
         }
         if (file_exist(calib_fn)) {
             std::cout << "Calibrating drone!" << std::endl;

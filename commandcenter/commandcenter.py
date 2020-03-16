@@ -125,6 +125,13 @@ class SystemWidget(QWidget):
         btn_takeoff.setStyleSheet("background-color:rgb(128,0,0)")
         btn_takeoff.clicked.connect(self.takeoff)
 
+        btn_insect_replay_takeoff = QPushButton()
+        btn_insect_replay_takeoff.setToolTip('Hunt insect replay')
+        btn_insect_replay_takeoff.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+        btn_insect_replay_takeoff.setMaximumSize(30, 30)
+        btn_insect_replay_takeoff.setStyleSheet("background-color:rgb(128,0,0)")
+        btn_insect_replay_takeoff.clicked.connect(self.insect_replay_takeoff)
+
         control_layout = QHBoxLayout()
         control_layout.setContentsMargins(0, 0, 0, 0)
         control_layout.addWidget(self.chk_enable)
@@ -133,6 +140,7 @@ class SystemWidget(QWidget):
         control_layout.addWidget(btn_update)
         control_layout.addWidget(btn_reboot)
         control_layout.addWidget(btn_takeoff)
+        control_layout.addWidget(btn_insect_replay_takeoff)
         
         self.txt_label = QLabel()
 
@@ -166,6 +174,8 @@ class SystemWidget(QWidget):
             subprocess.Popen(['./reboot_system.sh', 'pats'+self.hostid])
     def takeoff(self):
         subprocess.Popen(['./demo_system.sh', 'pats'+self.hostid])
+    def insect_replay_takeoff(self):
+        subprocess.Popen(['./insect_replay_system.sh', 'pats'+self.hostid])
     def takeoshow_im_big(self,event):
         ImDialog(self,self.source_folder,self.system_folder,self.hostid)
 
