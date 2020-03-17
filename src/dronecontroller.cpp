@@ -995,12 +995,13 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     cv::Point3f vel_err_p = {err_velx_filtered, err_vely_filtered, err_velz_filtered};
 
     // Enable horizontal error only if drone is close to setpoint - required for precision while hovering
-    if (fabs(err_x_filtered) < 0.3f)
+    // Velocity constraint shall avoid I gain oscilations. (allow higher I gains)
+    if (fabs(err_x_filtered) < 0.3f && fabs(data_drone.state.vel.x)<0.3f) 
         pos_err_i.x += err_x_filtered;
     else if(fabs(err_x_filtered) > 0.35f)
         pos_err_i.x = 0;
 
-    if (fabs(err_z_filtered) < 0.3f )
+    if (fabs(err_z_filtered) < 0.3f && fabs(data_drone.state.vel.z)<0.3f)
         pos_err_i.z += err_z_filtered;
     else if(fabs(err_z_filtered) > 0.35f)
         pos_err_i.z = 0;
