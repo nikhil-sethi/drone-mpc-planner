@@ -5,6 +5,11 @@
 #include <sys/stat.h>
 #include <chrono>
 
+int sign(float x) {
+    if (x<0)
+        return -1;
+    return 1;
+}
 //strips disparity from world2im_3d
 cv::Point2f world2im_2d(cv::Point3f p_world, cv::Mat Qfi, float camera_angle) {
     cv::Point3f p_im = world2im_3d(p_world,Qfi,camera_angle);
