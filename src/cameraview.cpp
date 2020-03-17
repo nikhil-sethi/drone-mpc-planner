@@ -3,16 +3,16 @@
 #include "linalg.h"
 
 static const char* plane_names[] = { "top",
-                                    "front",
-                                    "left",
-                                    "right",
-                                    "bottom",
-                                    "back",
-                                    "camera"
-};
+                                     "front",
+                                     "left",
+                                     "right",
+                                     "bottom",
+                                     "back",
+                                     "camera"
+                                   };
 
 void CameraView::init(cv::Point3f point_left_top, cv::Point3f point_right_top, cv::Point3f point_left_bottom, cv::Point3f point_right_bottom,
-                        float b_depth, float b_height, float camera_pitch_deg) {
+                      float b_depth, float b_height, float camera_pitch_deg) {
 
     plane_normals.at(front_plane) = get_plane_normal_vector (point_left_bottom, point_right_bottom);
     plane_supports.at(front_plane) = (cv::Mat_<float>(3,1) << 0, 0, 0);
@@ -64,14 +64,14 @@ void CameraView::init(cv::Point3f point_left_top, cv::Point3f point_right_top, c
 
     calc_corner_points_hunt(plane_supports_hunt.at(front_plane), plane_normals_hunt.at(front_plane), plane_supports_hunt.at(back_plane), plane_normals_hunt.at(back_plane),
                             plane_supports_hunt.at(top_plane), plane_normals_hunt.at(top_plane), plane_supports_hunt.at(bottom_plane), plane_normals_hunt.at(bottom_plane),
-                             plane_supports_hunt.at(left_plane), plane_normals_hunt.at(left_plane), plane_supports_hunt.at(right_plane), plane_normals_hunt.at(right_plane));
+                            plane_supports_hunt.at(left_plane), plane_normals_hunt.at(left_plane), plane_supports_hunt.at(right_plane), plane_normals_hunt.at(right_plane));
     calc_corner_points(plane_supports.at(front_plane), plane_normals.at(front_plane), plane_supports.at(back_plane), plane_normals.at(back_plane),
                        plane_supports.at(top_plane), plane_normals.at(top_plane), plane_supports.at(bottom_plane), plane_normals.at(bottom_plane),
                        plane_supports.at(left_plane), plane_normals.at(left_plane), plane_supports.at(right_plane), plane_normals.at(right_plane));
 }
 
 
-void CameraView::p0_bottom_plane(float b_height){
+void CameraView::p0_bottom_plane(float b_height) {
     plane_supports.at(bottom_plane) = (cv::Mat_<float>(3,1) << 0, b_height, 0);
     plane_supports_hunt.at(bottom_plane) = plane_supports.at(bottom_plane) + margin_bottom * plane_normals.at(bottom_plane);
 #if CAMERA_VIEW_DEBUGGING
@@ -80,9 +80,9 @@ void CameraView::p0_bottom_plane(float b_height){
 }
 
 void CameraView::calc_corner_points(cv::Mat p0_front, cv::Mat n_front, cv::Mat p0_back, cv::Mat n_back,
-                                      cv::Mat p0_top, cv::Mat n_top, cv::Mat p0_bottom, cv::Mat n_bottom,
-                                      cv::Mat p0_left, cv::Mat n_left, cv::Mat p0_right, cv::Mat n_right) {
-                                          
+                                    cv::Mat p0_top, cv::Mat n_top, cv::Mat p0_bottom, cv::Mat n_bottom,
+                                    cv::Mat p0_left, cv::Mat n_left, cv::Mat p0_right, cv::Mat n_right) {
+
     corner_points.at(bottom_left_back) = intersection_of_3_planes(p0_bottom, n_bottom, p0_left, n_left, p0_back, n_back);
     corner_points.at(bottom_right_back) = intersection_of_3_planes(p0_bottom, n_bottom, p0_right, n_right, p0_back, n_back);
     corner_points.at(top_left_back) = intersection_of_3_planes(p0_top, n_top, p0_left, n_left, p0_back, n_back);
@@ -109,11 +109,11 @@ void CameraView::calc_corner_points_hunt(cv::Mat p0_front, cv::Mat n_front, cv::
 }
 
 std::tuple<bool, std::array<bool, N_PLANES>> CameraView::in_view(cv::Point3f p, view_volume_check_mode c) {
-    std::array<bool, N_PLANES> violated_planes = {{false}}; 
+    std::array<bool, N_PLANES> violated_planes = {{false}};
     bool inview = true;
 
     // Attention check the negative case!
-    for(uint i=0; i<N_PLANES; i++){ 
+    for(uint i=0; i<N_PLANES; i++) {
         if(!on_normal_side(plane_supports.at(i) + safety_margin(c)*plane_normals.at(i), plane_normals.at(i), cv::Mat(p))) {
             inview = false;
             violated_planes.at(i) = true;
@@ -122,14 +122,15 @@ std::tuple<bool, std::array<bool, N_PLANES>> CameraView::in_view(cv::Point3f p, 
     return std::tuple<bool, std::array<bool, N_PLANES>>(inview, violated_planes);
 }
 
+
 CameraView::hunt_check_result CameraView::in_hunt_area(cv::Point3f d[[maybe_unused]], cv::Point3f m) {
     bool inhuntarea = true;
     std::array <bool, N_PLANES> violated_planes = {{false}};
     for(uint i=0; i<N_PLANES; i++) {
-       if(!on_normal_side(plane_supports.at(i), plane_normals.at(i), cv::Mat(m))) {
-           inhuntarea = false;
-           violated_planes.at(i) = false;
-       }
+        if(!on_normal_side(plane_supports.at(i), plane_normals.at(i), cv::Mat(m))) {
+            inhuntarea = false;
+            violated_planes.at(i) = false;
+        }
     }
     if(inhuntarea)
         return HuntVolume_OK;
@@ -138,7 +139,7 @@ CameraView::hunt_check_result CameraView::in_hunt_area(cv::Point3f d[[maybe_unus
     else if(violated_planes.at(bottom_plane))
         return HuntVolume_To_Low;
     else
-        return HuntVolume_Outside_Huntarea;  
+        return HuntVolume_Outside_Huntarea;
 }
 
 std::tuple<bool, std::array<bool, N_PLANES>> CameraView::check_distance_to_borders(track_data data_drone, float req_breaking_distance) {
@@ -147,7 +148,7 @@ std::tuple<bool, std::array<bool, N_PLANES>> CameraView::check_distance_to_borde
     std::array<bool, N_PLANES> violated_planes = {{false}};
     bool planes_not_violated = true;
 
-    for(int i=0; i<N_PLANES; i++){
+    for(int i=0; i<N_PLANES; i++) {
         if(distances_to_planes.at(i)>= 0 && distances_to_planes.at(i)<req_breaking_distance) {
             violated_planes.at(i) = true;
             planes_not_violated = false;
@@ -207,8 +208,8 @@ cv::Point3f CameraView::setpoint_in_cameraview(cv::Point3f pos_setpoint, view_vo
 void CameraView::cout_plane_violation(std::array<bool, N_PLANES> inview_violations, std::array<bool, N_PLANES> breaking_violations) {
     bool first = true;
     for (uint i=0; i<N_PLANES; i++) {
-       if(inview_violations.at(i)==true) {  
-            if(!first) 
+        if(inview_violations.at(i)==true) {
+            if(!first)
                 std::cout << ",";
             else
                 std::cout << "Plane inview violation:";
@@ -222,8 +223,8 @@ void CameraView::cout_plane_violation(std::array<bool, N_PLANES> inview_violatio
 
     first = true;
     for (uint i=0; i<N_PLANES; i++) {
-       if(breaking_violations.at(i)==true) {  
-            if(!first) 
+        if(breaking_violations.at(i)==true) {
+            if(!first)
                 std::cout << ",";
             else
                 std::cout << "Plane breaking distance violation:";
@@ -236,7 +237,7 @@ void CameraView::cout_plane_violation(std::array<bool, N_PLANES> inview_violatio
 
 }
 
-std::ostream &operator<<(std::ostream &os, const CameraView &c) { 
+std::ostream &operator<<(std::ostream &os, const CameraView &c) {
     os << "Cameraview>p0_front: " << c.plane_supports.at(CameraView::front_plane).t() << std::endl;
     os << "Cameraview>n_front: " << c.plane_normals.at(CameraView::front_plane).t() << std::endl;
     os << "Cameraview>p0_top: " << c.plane_supports.at(CameraView::top_plane).t() << std::endl;

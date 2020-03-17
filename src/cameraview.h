@@ -131,7 +131,7 @@ private:
             return relaxed_safety_margin;
         else
             return strict_safety_margin;
-        
+
     }
 };
 
