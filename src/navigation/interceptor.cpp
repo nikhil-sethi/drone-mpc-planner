@@ -197,7 +197,7 @@ void Interceptor::update_insect_in_range() {
         _count_insect_not_in_range++;
     }
 
-    hunt_volume_check = _camview->in_hunt_area (_trackers->dronetracker()->drone_startup_location(), _trackers->insecttracker_best()->world_item().pt);
+    hunt_volume_check = _camview->in_hunt_area (_trackers->insecttracker_best()->world_item().pt);
 }
 
 float Interceptor::calc_tti(cv::Point3f insect_pos,cv::Point3f insect_vel,cv::Point3f drone_pos, cv::Point3f drone_vel, bool drone_taking_off) {

@@ -38,7 +38,7 @@ void CameraView::init(cv::Point3f point_left_top, cv::Point3f point_right_top, c
     plane_supports.at(camera_plane) = plane_normals.at(camera_plane)*0.85f; //If the drones gets too close to the camera (~ 0.5 m) the drone position is not calculated anymore.
 
     plane_normals.at(bottom_plane) = (cv::Mat_<float>(3,1) << 0, 1, 0);
-    p0_bottom_plane(b_height);
+    p0_bottom_plane(b_height, false);
 
     plane_normals_hunt.at(bottom_plane) = plane_normals.at(bottom_plane);
     plane_normals_hunt.at(top_plane) = plane_normals.at(top_plane);
@@ -75,23 +75,20 @@ void CameraView::init(cv::Point3f point_left_top, cv::Point3f point_right_top, c
     adjacency_entry(1, top_plane, back_plane, right_plane);
 
     update_plane_vertices();
-
-    calc_corner_points_hunt(plane_supports_hunt.at(front_plane), plane_normals_hunt.at(front_plane), plane_supports_hunt.at(back_plane), plane_normals_hunt.at(back_plane),
-                            plane_supports_hunt.at(top_plane), plane_normals_hunt.at(top_plane), plane_supports_hunt.at(bottom_plane), plane_normals_hunt.at(bottom_plane),
-                            plane_supports_hunt.at(left_plane), plane_normals_hunt.at(left_plane), plane_supports_hunt.at(right_plane), plane_normals_hunt.at(right_plane));
-    calc_corner_points(plane_supports.at(front_plane), plane_normals.at(front_plane), plane_supports.at(back_plane), plane_normals.at(back_plane),
-                       plane_supports.at(top_plane), plane_normals.at(top_plane), plane_supports.at(bottom_plane), plane_normals.at(bottom_plane),
-                       plane_supports.at(left_plane), plane_normals.at(left_plane), plane_supports.at(right_plane), plane_normals.at(right_plane));
 }
 
 
-void CameraView::p0_bottom_plane(float b_height) {
+void CameraView::p0_bottom_plane(float b_height, bool update_vertices) {
     plane_supports.at(bottom_plane) = (cv::Mat_<float>(3,1) << 0, b_height, 0);
     plane_supports_hunt.at(bottom_plane) = plane_supports.at(bottom_plane) + margin_bottom * plane_normals.at(bottom_plane);
+
+    if(update_vertices)
+        update_plane_vertices();
 #if CAMERA_VIEW_DEBUGGING
     std::cout << *this <<std::endl;
 #endif
 }
+
 
 void CameraView::update_plane_vertices() {
     vertices.clear();
@@ -107,10 +104,21 @@ void CameraView::update_plane_vertices() {
                                                            plane_supports.at(j), plane_normals.at(j),
                                                            plane_supports.at(k), plane_normals.at(k));
                     vertices.push_back(intersection_point(vertice_pos, i, j, k));
+
                     vertice_pos = intersection_of_3_planes(plane_supports.at(i)+safety_margin(relaxed)*plane_normals.at(i), plane_normals.at(i),
                                                            plane_supports.at(j)+safety_margin(relaxed)*plane_normals.at(j), plane_normals.at(j),
                                                            plane_supports.at(k)+safety_margin(relaxed)*plane_normals.at(k), plane_normals.at(k));
                     vertices_relaxed.push_back(intersection_point(vertice_pos, i, j, k));
+
+                    vertice_pos = intersection_of_3_planes(plane_supports.at(i)+safety_margin(strict)*plane_normals.at(i), plane_normals.at(i),
+                                                           plane_supports.at(j)+safety_margin(strict)*plane_normals.at(j), plane_normals.at(j),
+                                                           plane_supports.at(k)+safety_margin(strict)*plane_normals.at(k), plane_normals.at(k));
+                    vertices_strict.push_back(intersection_point(vertice_pos, i, j, k));
+
+                    vertice_pos = intersection_of_3_planes(plane_supports_hunt.at(i), plane_normals_hunt.at(i),
+                                                           plane_supports_hunt.at(j), plane_normals_hunt.at(j),
+                                                           plane_supports_hunt.at(k), plane_normals_hunt.at(k));
+                    vertices_hunt.push_back(intersection_point(vertice_pos, i, j, k));
                 }
             }
         }
@@ -118,36 +126,6 @@ void CameraView::update_plane_vertices() {
     assert(vertices.size()==N_PLANE_VERTICES);
 }
 
-
-void CameraView::calc_corner_points(cv::Mat p0_front, cv::Mat n_front, cv::Mat p0_back, cv::Mat n_back,
-                                    cv::Mat p0_top, cv::Mat n_top, cv::Mat p0_bottom, cv::Mat n_bottom,
-                                    cv::Mat p0_left, cv::Mat n_left, cv::Mat p0_right, cv::Mat n_right) {
-
-    corner_points.at(bottom_left_back) = intersection_of_3_planes(p0_bottom, n_bottom, p0_left, n_left, p0_back, n_back);
-    corner_points.at(bottom_right_back) = intersection_of_3_planes(p0_bottom, n_bottom, p0_right, n_right, p0_back, n_back);
-    corner_points.at(top_left_back) = intersection_of_3_planes(p0_top, n_top, p0_left, n_left, p0_back, n_back);
-    corner_points.at(top_right_back) = intersection_of_3_planes(p0_top, n_top, p0_right, n_right, p0_back, n_back);
-
-    corner_points.at(bottom_left_front) = intersection_of_3_planes(p0_bottom, n_bottom, p0_left, n_left, p0_front, n_front);
-    corner_points.at(bottom_right_front) = intersection_of_3_planes(p0_bottom, n_bottom, p0_right, n_right, p0_front, n_front);
-    corner_points.at(top_left_front) = intersection_of_3_planes(p0_top, n_top, p0_left, n_left, p0_front, n_front);
-    corner_points.at(top_right_front) = intersection_of_3_planes(p0_top, n_top, p0_right, n_right, p0_front, n_front);
-
-}
-
-void CameraView::calc_corner_points_hunt(cv::Mat p0_front, cv::Mat n_front, cv::Mat p0_back, cv::Mat n_back,
-        cv::Mat p0_top, cv::Mat n_top, cv::Mat p0_bottom, cv::Mat n_bottom,
-        cv::Mat p0_left, cv::Mat n_left, cv::Mat p0_right, cv::Mat n_right) {
-    corner_points_hunt.at(bottom_left_back) = intersection_of_3_planes(p0_bottom, n_bottom, p0_left, n_left, p0_back, n_back);
-    corner_points_hunt.at(bottom_right_back) = intersection_of_3_planes(p0_bottom, n_bottom, p0_right, n_right, p0_back, n_back);
-    corner_points_hunt.at(top_left_back) = intersection_of_3_planes(p0_top, n_top, p0_left, n_left, p0_back, n_back);
-    corner_points_hunt.at(top_right_back) = intersection_of_3_planes(p0_top, n_top, p0_right, n_right, p0_back, n_back);
-
-    corner_points_hunt.at(bottom_left_front) = intersection_of_3_planes(p0_bottom, n_bottom, p0_left, n_left, p0_front, n_front);
-    corner_points_hunt.at(bottom_right_front) = intersection_of_3_planes(p0_bottom, n_bottom, p0_right, n_right, p0_front, n_front);
-    corner_points_hunt.at(top_left_front) = intersection_of_3_planes(p0_top, n_top, p0_left, n_left, p0_front, n_front);
-    corner_points_hunt.at(top_right_front) = intersection_of_3_planes(p0_top, n_top, p0_right, n_right, p0_front, n_front);
-}
 
 std::tuple<bool, std::array<bool, N_PLANES>> CameraView::in_view(cv::Point3f p, view_volume_check_mode c) {
     std::array<bool, N_PLANES> violated_planes = {{false}};
@@ -164,11 +142,11 @@ std::tuple<bool, std::array<bool, N_PLANES>> CameraView::in_view(cv::Point3f p, 
 }
 
 
-CameraView::hunt_check_result CameraView::in_hunt_area(cv::Point3f d[[maybe_unused]], cv::Point3f m) {
+CameraView::hunt_check_result CameraView::in_hunt_area(cv::Point3f moth_pos) {
     bool inhuntarea = true;
     std::array <bool, N_PLANES> violated_planes = {{false}};
     for(uint i=0; i<N_PLANES; i++) {
-        if(!on_normal_side(plane_supports.at(i), plane_normals.at(i), cv::Mat(m))) {
+        if(!on_normal_side(plane_supports_hunt.at(i), plane_normals_hunt.at(i), cv::Mat(moth_pos))) {
             inhuntarea = false;
             violated_planes.at(i) = false;
         }
@@ -182,6 +160,7 @@ CameraView::hunt_check_result CameraView::in_hunt_area(cv::Point3f d[[maybe_unus
     else
         return HuntVolume_Outside_Huntarea;
 }
+
 
 std::tuple<bool, std::array<bool, N_PLANES>> CameraView::check_distance_to_borders(track_data data_drone, float req_breaking_distance) {
     std::vector<cv::Point3f> p{data_drone.pos (), data_drone.vel ()};
@@ -199,6 +178,7 @@ std::tuple<bool, std::array<bool, N_PLANES>> CameraView::check_distance_to_borde
     return std::tuple<bool, std::array<bool, N_PLANES>>(planes_not_violated, violated_planes);
 }
 
+
 std::array<float, N_PLANES> CameraView::calc_distance_to_borders(std::vector<cv::Point3f> p) {
     cv::Mat pMat = (cv::Mat_<float_t>(3,2) << p[0].x, p[1].x, p[0].y, p[1].y, p[0].z, p[1].z);
     std::array<float, N_PLANES> distances_to_planes;
@@ -213,10 +193,12 @@ std::array<float, N_PLANES> CameraView::calc_distance_to_borders(std::vector<cv:
     return distances_to_planes;
 }
 
+
 float CameraView::calc_shortest_distance_to_plane(cv::Point3f drone_pos, uint plane_idx, view_volume_check_mode cm) {
     cv::Point3f shifted_support_vector = support_vector(plane_idx) + safety_margin(cm)*normal_vector(plane_idx);
     return shortest_distance_to_plane(drone_pos, shifted_support_vector, normal_vector(plane_idx));
 }
+
 
 cv::Point3f CameraView::project_into_camera_volume(cv::Point3f pos_setpoint, view_volume_check_mode cm, std::array<bool, N_PLANES> violated_planes) {
     // The closest point in the volume to the setpoint lies on the violated planes
@@ -228,7 +210,7 @@ cv::Point3f CameraView::project_into_camera_volume(cv::Point3f pos_setpoint, vie
             projected_point = pos_setpoint + abs(calc_shortest_distance_to_plane(pos_setpoint, i, cm))*cv::Point3f(plane_normals.at(i));
 
             // check if point is correct plane segment (the one which actually limits the volume)
-            std::vector<intersection_point> _plane_vertices = plane_vertices(i);
+            std::vector<intersection_point> _plane_vertices = plane_vertices(i, cm);
             bool in_segment = in_plane_segment(projected_point, _plane_vertices);
             if(!in_segment)
                 projected_point = project_into_plane_segment(projected_point, _plane_vertices);
@@ -242,6 +224,7 @@ cv::Point3f CameraView::project_into_camera_volume(cv::Point3f pos_setpoint, vie
     }
     return closest_point;
 }
+
 
 bool CameraView::in_plane_segment(cv::Point3f p, std::vector<intersection_point> _plane_vertices) {
     // If the plane is in the segment (polygon) then the sum of all angles between the point and the pairwise vertices is 2pi or -2pi.
@@ -281,17 +264,24 @@ cv::Point3f CameraView::project_into_plane_segment(cv::Point3f p, std::vector<in
     return closest_point;
 }
 
-std::vector<intersection_point> CameraView::plane_vertices(uint plane_idx) {
+
+std::vector<intersection_point> CameraView::plane_vertices(uint plane_idx, view_volume_check_mode cm) {
     std::vector<intersection_point> plane_vertices;
     for(uint i=0; i<N_PLANE_VERTICES; i++) {
         for(uint j=0; j<3; j++) {
             if(vertices_relaxed.at(i).planes.at(j)==static_cast<int>(plane_idx)) {
-                plane_vertices.push_back(vertices_relaxed.at(i));
+                if(cm==relaxed)
+                    plane_vertices.push_back(vertices_relaxed.at(i));
+                else if(cm==strict)
+                    plane_vertices.push_back(vertices_strict.at(i));
+                else
+                    plane_vertices.push_back(vertices.at(i));
             }
         }
     }
     return plane_vertices;
 }
+
 
 cv::Point3f CameraView::setpoint_in_cameraview(cv::Point3f pos_setpoint, view_volume_check_mode cm) {
     bool inview;
@@ -336,6 +326,7 @@ void CameraView::cout_plane_violation(std::array<bool, N_PLANES> inview_violatio
 
 }
 
+
 void CameraView::adjacency_entry(uint val, uint p1, uint p2, uint p3) {
     adjacency_matrix.at<int>(p1, p2, p3) = val;
     adjacency_matrix.at<int>(p1, p3, p2) = val;
@@ -344,6 +335,7 @@ void CameraView::adjacency_entry(uint val, uint p1, uint p2, uint p3) {
     adjacency_matrix.at<int>(p3, p1, p2) = val;
     adjacency_matrix.at<int>(p3, p2, p1) = val;
 }
+
 
 bool CameraView::vertices_on_one_edge(intersection_point p1, intersection_point p2) {
     uint common_planes = 0;
@@ -357,6 +349,7 @@ bool CameraView::vertices_on_one_edge(intersection_point p1, intersection_point 
         return true;
     return false;
 }
+
 
 std::ostream &operator<<(std::ostream &os, const CameraView &c) {
     os << "Cameraview>p0_front: " << c.plane_supports.at(CameraView::front_plane).t() << std::endl;
