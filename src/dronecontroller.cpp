@@ -989,9 +989,17 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
         filter_pos_err_y.change_dynamic(1.f/pparams.fps);
         filter_pos_err_z.change_dynamic(1.f/pparams.fps);
     }
-    float err_x_filtered = filter_pos_err_x.new_sample(setpoint_pos.x - data_drone.state.pos.x);
-    float err_y_filtered = filter_pos_err_y.new_sample(setpoint_pos.y - data_drone.state.pos.y);
-    float err_z_filtered = filter_pos_err_z.new_sample(setpoint_pos.z - data_drone.state.pos.z);
+
+    float err_x_filtered, err_y_filtered, err_z_filtered;
+    if(data_drone.pos_valid) {
+        err_x_filtered = filter_pos_err_x.new_sample(setpoint_pos.x - data_drone.state.pos.x);
+        err_y_filtered = filter_pos_err_y.new_sample(setpoint_pos.y - data_drone.state.pos.y);
+        err_z_filtered = filter_pos_err_z.new_sample(setpoint_pos.z - data_drone.state.pos.z);
+    } else {
+        err_x_filtered = filter_pos_err_x.current_output();
+        err_y_filtered = filter_pos_err_y.current_output();
+        err_z_filtered = filter_pos_err_z.current_output();
+    }
     cv::Point3f pos_err_p = {err_x_filtered, err_y_filtered, err_z_filtered};
 
     // If the distance is large, then increase the velocity setpoint such that the velocity controller is not counteracting to the position controller:
