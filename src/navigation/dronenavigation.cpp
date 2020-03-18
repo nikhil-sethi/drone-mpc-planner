@@ -148,7 +148,7 @@ void DroneNavigation::update(double time) {
                      || !first_takeoff ) {
                 wpid = 0;
                 first_takeoff = false;
-                next_waypoint(waypoints[wpid]);
+                next_waypoint(waypoints[wpid],time);
                 _navigation_status = ns_takeoff;
                 _visdat->enable_collect_no_drone_frames = false;
                 repeat = true;
@@ -237,7 +237,6 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_manual;
             break;
         } case ns_chasing_insect: {
-
             //update target chasing waypoint and speed
             if (_iceptor.insect_in_range()) {
                 setpoint_pos_world = _iceptor.target_position();
@@ -255,11 +254,11 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_goto_landing_waypoint;
             break;
         } case ns_goto_landing_waypoint: {
-            next_waypoint(Waypoint_Landing());
+            next_waypoint(Waypoint_Landing(),time);
             _navigation_status = ns_approach_waypoint;
             break;
         } case ns_set_waypoint: {
-            next_waypoint(waypoints[wpid]);
+            next_waypoint(waypoints[wpid],time);
             if (current_waypoint->mode == wfm_flower)
                 _navigation_status = ns_flower_waypoint;
             else if(current_waypoint->mode == wfm_brick)
@@ -401,7 +400,7 @@ void DroneNavigation::update(double time) {
     (*_logger) << static_cast<int16_t>(_navigation_status) << ";";
 }
 
-void DroneNavigation::next_waypoint(Waypoint wp) {
+void DroneNavigation::next_waypoint(Waypoint wp, double time) {
     current_waypoint = new Waypoint(wp);
     if (wp.mode == wfm_takeoff) {
         cv::Point3f p = _trackers->dronetracker()->drone_startup_location();
@@ -415,6 +414,7 @@ void DroneNavigation::next_waypoint(Waypoint wp) {
         setpoint_pos_world =  wp.xyz;
         setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, CameraView::relaxed);
     }
+    _dctrl->nav_waypoint_changed(time);
 
     setpoint_vel_world = {0,0,0};
     setpoint_acc_world = {0,0,0};
@@ -512,7 +512,7 @@ void DroneNavigation::demo_flight(std::string flightplan_fn) {
     wpid = 0;
     first_takeoff = false;
     _nav_flight_mode = nfm_waypoint;
-    next_waypoint(waypoints[wpid]);
+    next_waypoint(waypoints[wpid],_trackers->dronetracker()->Last_track_data().time);
     _navigation_status = ns_takeoff;
 }
 }

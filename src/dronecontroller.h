@@ -184,6 +184,7 @@ private:
 
     float _dist_to_setpoint = 999;
     double _time;
+    double time_waypoint_changed = 0;
 
     std::vector<cv::Point3f> aim_direction_history;
 
@@ -221,7 +222,7 @@ private:
     std::tuple<float,float> acc_to_quaternion(cv::Point3f acc);
 
     void check_emergency_kill(track_data);
-    void land(track_data data_drone, track_data data_target_new, bool headless_mode_disabled);
+    void land(track_data data_drone, track_data data_target_new);
     void update_landing_yoffset(track_data data_drone, track_data data_target_new);
     void calc_ff_landing();
     void update_thrust_during_hovering(track_data data_drone, double time);
@@ -235,9 +236,9 @@ private:
     filtering::Tf_D_f d_vel_err_x, d_vel_err_y, d_vel_err_z;
     filtering::Tf_PT2_3f pos_reference_filter;
 
-    std::array<float, N_PLANES> pos_err_kiv={0}, vel_err_kiv={0};
+    std::array<float, N_PLANES> pos_err_kiv= {0}, vel_err_kiv= {0};
     std::array<filtering::Tf_D_f, N_PLANES> d_pos_err_kiv, d_vel_err_kiv;
-    void control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool headless_mode_disabled);
+    void control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool enable_xz_igain);
     std::tuple<int,int,int> calc_feedforward_control(cv::Point3f desired_acceleration);
 
     MultiModule * _rc;
@@ -363,6 +364,13 @@ public:
         if (start_takeoff_burn_time< 0.01)
             return 0;
         return  static_cast<float>(time - start_takeoff_burn_time) ;
+    }
+
+    void nav_waypoint_changed(double time) {
+        time_waypoint_changed = time;
+    }
+    float duration_since_waypoint_changed(double time) {
+        return  static_cast<float>(time - time_waypoint_changed) ;
     }
 
     int joy_throttle = JOY_BOUND_MIN;

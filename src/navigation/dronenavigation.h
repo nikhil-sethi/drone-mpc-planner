@@ -37,7 +37,7 @@ private:
     double landed_time = 0;
     nav_flight_modes _nav_flight_mode;
 
-    void next_waypoint(Waypoint wp);
+    void next_waypoint(Waypoint wp, double time);
 
     navigation_states _navigation_status = ns_init;
     double locate_drone_start_time = 0;
