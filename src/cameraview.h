@@ -102,6 +102,13 @@ public:
     void cout_plane_violation(std::array<bool, N_PLANES> inview_violations, std::array<bool, N_PLANES> breaking_violations);
 
     cv::Mat get_adjacency_matrix() {return adjacency_matrix;}; // For debugging only
+
+    float safety_margin(view_volume_check_mode cm) {
+        if(cm==relaxed)
+            return relaxed_safety_margin;
+        else
+            return strict_safety_margin;
+    }
 private:
 
     float relaxed_safety_margin = 0.3f;
@@ -148,13 +155,6 @@ private:
     void adjacency_entry(uint val, uint p1, uint p2, uint p3);
     bool vertices_on_one_edge(intersection_point p1, intersection_point p2);
 
-    float safety_margin(view_volume_check_mode cm) {
-        if(cm==relaxed)
-            return relaxed_safety_margin;
-        else
-            return strict_safety_margin;
-
-    }
 };
 
 std::ostream &operator<<(std::ostream &os, const CameraView &c);
