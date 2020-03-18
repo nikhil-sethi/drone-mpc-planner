@@ -210,7 +210,7 @@ class SystemWidget(QWidget):
         source_system_txt_file = Path(self.source_folder,self.system_folder,'system.txt')
 
         res_txt = ''
-        system_has_problem = QColor(100,100,100)
+        system_has_problem = QColor(0,0,0)
 
         sysinfo_txt = ''
         if os.path.exists(source_system_txt_file):
@@ -262,22 +262,26 @@ class SystemWidget(QWidget):
             if len(status_txt) > 2:
                 res_txt += status_txt[2]
                 navstatus = status_txt[2].strip()
-                if navstatus == 'ns_wait_for_insect':
-                    system_has_problem = QColor(0,128,0)
-                elif navstatus.startswith('ns_approach_wp') or navstatus == 'ns_taking_off' or navstatus == 'ns_chasing_insect'or navstatus == 'ns_landing':
-                    system_has_problem = QColor(0,255,0)
-                elif navstatus == 'ns_drone_problem':
+                if system_has_problem.getRgb()[0] == 0:
+                    if navstatus == 'ns_wait_for_insect':
+                        system_has_problem = QColor(0,128,0)
+                    elif navstatus.startswith('ns_approach_wp') or navstatus == 'ns_taking_off' or navstatus == 'ns_chasing_insect'or navstatus == 'ns_landing':
+                        system_has_problem = QColor(0,255,0)
+                    elif navstatus == 'ns_wait_locate_drone':
+                        system_has_problem = QColor(255,165,0)
+                    elif navstatus.startswith('Roll') or navstatus.startswith('Starting') or navstatus == 'ns_init' or navstatus.startswith('Resetting') or navstatus.startswith('Closed') or navstatus.startswith('Closing'):
+                        system_has_problem = QColor(180,180,0)
+                if navstatus == 'ns_drone_problem':
                     system_has_problem = QColor(255,0,0)
                 elif navstatus == 'no RealSense connected':
                     system_has_problem = QColor(255,0,0)
-                elif navstatus == 'ns_wait_locate_drone':
-                    system_has_problem = QColor(255,165,0)
-                elif navstatus.startswith('Roll') or navstatus.startswith('Starting') or navstatus == 'ns_init' or navstatus.startswith('Resetting') or navstatus.startswith('Closed') or navstatus.startswith('Closing'):
-                    system_has_problem = QColor(180,180,0)
         else:
             res_txt = 'Error: status info file not found'
             system_has_problem = QColor(255,0,0)
         
+        if system_has_problem.getRgb()[0] == 0 and system_has_problem.getRgb()[1] == 0 and system_has_problem.getRgb()[2] == 0:
+            system_has_problem = QColor(100,100,100)
+
         return res_txt.strip(),system_has_problem
         
 class ImDialog(QDialog):
