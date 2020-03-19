@@ -856,7 +856,7 @@ cv::Point3f DroneController::kiv_acceleration(std::array<bool, N_PLANES> violate
             if(violated_planes_inview.at(i)) {
                 bool d_against_p_error = (sign(d_pos_err_kiv.at(i).current_output())!=sign(pos_err_kiv.at(i)));
                 correction_acceleration += _camview->normal_vector(i)*(4.f*pos_err_kiv.at(i)
-                                           + d_against_p_error * 0.05f*d_pos_err_kiv.at(i).current_output());
+                                           + d_against_p_error * 0.1f*d_pos_err_kiv.at(i).current_output());
             }
 
             if(violated_planes_brakedistance.at(i))
