@@ -934,6 +934,24 @@ std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f de
 }
 
 void DroneController::control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool enable_xz_igain) {
+    cv::Point3f kp_pos, ki_pos, kd_pos, kp_vel, kd_vel;
+    std::tie(kp_pos, ki_pos, kd_pos, kp_vel, kd_vel) = adjust_control_gains(data_drone, setpoint_pos, setpoint_vel);
+
+    // Determine state errors:
+    cv::Point3f pos_err_p, pos_err_d, vel_err_p, vel_err_d;
+    std::tie(pos_err_p, pos_err_d, vel_err_p, vel_err_d) = control_error(data_drone, setpoint_pos, setpoint_vel, enable_xz_igain, ki_pos);
+
+    cv::Point3f desired_acceleration = {0};
+    desired_acceleration += multf(kp_pos, pos_err_p) + multf(ki_pos, pos_err_i) + multf(kd_pos, pos_err_d); // position controld
+    if( !(norm(setpoint_vel)<0.1 && norm(setpoint_pos-data_drone.pos())<0.2) ) // Needed to improve hovering at waypoint
+        desired_acceleration += multf(kp_vel, vel_err_p) + multf(kd_vel, vel_err_d); // velocity control
+
+    desired_acceleration += keep_in_volume_correction_acceleration(data_drone);
+    std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(desired_acceleration);
+}
+
+
+std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_control_gains(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel) {
     int kp_pos_roll_scaled, kp_pos_throttle_scaled, kp_pos_pitch_scaled, ki_pos_roll_scaled, ki_pos_throttle_scaled, ki_pos_pitch_scaled, kd_pos_roll_scaled, kd_pos_throttle_scaled, kd_pos_pitch_scaled;
     cv::Point3f scale_p = {1.f, 1.f, 1.f};
     cv::Point3f scale_i = {1.f, 1.f, 1.f};
@@ -977,7 +995,10 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     cv::Point3f kd_vel(kd_v_roll,kd_v_throttle,kd_v_pitch);
     kd_vel /= 100.f;
 
-    // Determine state errors:
+    return std::tuple(kp_pos, ki_pos, kd_pos, kp_vel, kd_vel);
+}
+
+std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::control_error(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool enable_xz_igain, cv::Point3f ki_pos) {
     bool hovering = normf(setpoint_pos-data_drone.pos())<0.2f
                     && normf(data_drone.vel())<0.5f;
     if(hovering) {
@@ -1010,6 +1031,16 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     float err_velz_filtered = filter_vel_err_z.new_sample(setpoint_vel.z + pos_err2vel_set.z - data_drone.state.vel.z);
     cv::Point3f vel_err_p = {err_velx_filtered, err_vely_filtered, err_velz_filtered};
 
+    float errDx = d_pos_err_x.new_sample (err_x_filtered);
+    float errDy = d_pos_err_y.new_sample (err_y_filtered);
+    float errDz = d_pos_err_z.new_sample (err_z_filtered);
+    cv::Point3f pos_err_d = {errDx, errDy, errDz};
+
+    float errvDx = d_vel_err_x.new_sample (err_velx_filtered);
+    float errvDy = d_vel_err_y.new_sample (err_vely_filtered);
+    float errvDz = d_vel_err_z.new_sample (err_velz_filtered);
+    cv::Point3f vel_err_d = {errvDx, errvDy, errvDz};
+
     // Enable horizontal error only if drone is close to setpoint - required for precision while hovering
     if (enable_xz_igain) {
         pos_err_i.x += err_x_filtered;
@@ -1022,23 +1053,7 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     thrust -= err_y_filtered * ki_pos.y;
     pos_err_i.y = 0;
 
-    float errDx = d_pos_err_x.new_sample (err_x_filtered);
-    float errDy = d_pos_err_y.new_sample (err_y_filtered);
-    float errDz = d_pos_err_z.new_sample (err_z_filtered);
-    cv::Point3f pos_err_d = {errDx, errDy, errDz};
-
-    float errvDx = d_vel_err_x.new_sample (err_velx_filtered);
-    float errvDy = d_vel_err_y.new_sample (err_vely_filtered);
-    float errvDz = d_vel_err_z.new_sample (err_velz_filtered);
-    cv::Point3f vel_err_d = {errvDx, errvDy, errvDz};
-
-    cv::Point3f desired_acceleration = {0};
-    desired_acceleration += multf(kp_pos, pos_err_p) + multf(ki_pos, pos_err_i) + multf(kd_pos, pos_err_d); // position controld
-    if( !(norm(setpoint_vel)<0.1 && norm(setpoint_pos-data_drone.pos ())<0.2) ) // Needed to improve hovering at waypoint
-        desired_acceleration += multf(kp_vel, vel_err_p) + multf(kd_vel, vel_err_d); // velocity control
-
-    desired_acceleration += keep_in_volume_correction_acceleration(data_drone);
-    std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(desired_acceleration);
+    return std::tuple(pos_err_p, pos_err_d, vel_err_p, vel_err_d);
 }
 
 void DroneController::check_emergency_kill(track_data data_drone) {
