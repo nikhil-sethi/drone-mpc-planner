@@ -118,6 +118,7 @@ struct WorldItem {
         iti = new_iti;
         distance = wbp.distance;
         distance_bkg = wbp.distance_bkg;
+        radius = wbp.radius;
         pt.x = wbp.x;
         pt.y = wbp.y;
         pt.z = wbp.z;
@@ -131,6 +132,7 @@ struct WorldItem {
     }
     float yaw;
     float distance, distance_bkg;
+    float radius;
     bool valid = false;
 
     uint frame_id() {

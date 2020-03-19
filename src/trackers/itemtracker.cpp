@@ -124,7 +124,8 @@ void ItemTracker::calc_world_props_blob_generic(BlobProps * pbs) {
         w.trkr_id = _uid;
 
         p*=pparams.imscalef;
-        w.disparity = stereo_match(p,_visdat->diffL,_visdat->diffR,pbs->radius*pparams.imscalef);
+        float radius = pbs->radius*pparams.imscalef;
+        w.disparity = stereo_match(p,_visdat->diffL,_visdat->diffR,radius);
 
         if (w.disparity < min_disparity || w.disparity > max_disparity) {
             w.disparity_in_range = false;
@@ -133,7 +134,7 @@ void ItemTracker::calc_world_props_blob_generic(BlobProps * pbs) {
 
             std::vector<Point3d> camera_coordinates, world_coordinates;
             camera_coordinates.push_back(Point3d(p.x,p.y,-w.disparity));
-            camera_coordinates.push_back(Point3d(p.x+pbs->radius,p.y,-w.disparity)); // to calc world radius
+            camera_coordinates.push_back(Point3d(p.x+radius,p.y,-w.disparity)); // to calc world radius
             cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
 
             w.radius = cv::norm(world_coordinates[0]-world_coordinates[1]);
@@ -324,8 +325,6 @@ float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR,
     for (int i=disp_start; i<disp_end; i++) {
         cv::Rect roiR(x1-i,y1,x2,y2);
 
-        if (diffR.cols == 0 )
-            std::cout << "WTF?!" << std::endl;
         cv::Mat corV_16 = diffL(roiL).mul(diffR(roiR));
         cv::Mat errV = abs(diffL(roiL) - diffR(roiR));
 

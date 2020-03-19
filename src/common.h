@@ -427,6 +427,8 @@ public: float full_bat_and_throttle_spinup_duration;
 public: float hover_throttle_a;
 public: float hover_throttle_b;
 public: float blink_period;
+public: float radius;
+public: float thrust;
 public: int drone_blink_strength;
 public: int drone_led_strength;
 public: tx_protocols tx;
@@ -445,6 +447,8 @@ private: xFloat _full_bat_and_throttle_spinup_duration;
 private: xFloat _hover_throttle_a;
 private: xFloat _hover_throttle_b;
 private: xFloat _blink_period;
+private: xFloat _radius;
+private: xFloat _thrust;
 private: xInt _drone_blink_strength;
 private: xInt _drone_led_strength;
 private: xTx_protocol _tx;
@@ -460,7 +464,7 @@ public: DroneParameters() {
         setClassName("DroneParameters");
 
         // Set class version
-        setVersion("1.4");
+        setVersion("1.5");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("initial_hover_throttle",&_initial_hover_throttle);
@@ -473,6 +477,8 @@ public: DroneParameters() {
         Register("hover_throttle_a",&_hover_throttle_a);
         Register("hover_throttle_b",&_hover_throttle_b);
         Register("blink_period",&_blink_period);
+        Register("radius",&_radius);
+        Register("thrust",&_thrust);
         Register("drone_blink_strength",&_drone_blink_strength);
         Register("drone_led_strength",&_drone_led_strength);
         Register("tx",&_tx);
@@ -511,6 +517,8 @@ public: void deserialize(std::string filepath) {
         hover_throttle_a = _hover_throttle_a.value();
         hover_throttle_b = _hover_throttle_b.value();
         blink_period = _blink_period.value();
+        thrust = _thrust.value();
+        radius = _radius.value();
         drone_blink_strength = _drone_blink_strength.value();
         drone_led_strength = _drone_led_strength.value();
         tx = _tx.value();
@@ -531,6 +539,8 @@ public: void serialize(std::string filepath) {
         _hover_throttle_a = hover_throttle_a;
         _hover_throttle_b = hover_throttle_b;
         _blink_period = blink_period;
+        _thrust = thrust;
+        _radius = radius;
         _drone_blink_strength = drone_blink_strength;
         _drone_led_strength = drone_led_strength;
         _tx = tx;

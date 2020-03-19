@@ -76,8 +76,8 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
         d_pos_err_kiv.at(i).init(1.f/pparams.fps);
     }
 
-    thrust = initial_thrust_guess;
-    initial_hover_throttle_guess_non3d = GRAVITY/initial_thrust_guess*JOY_BOUND_RANGE+dparams.min_throttle;
+    thrust = dparams.thrust;
+    initial_hover_throttle_guess_non3d = GRAVITY/dparams.thrust*JOY_BOUND_RANGE+dparams.min_throttle;
     initialized = true;
 }
 

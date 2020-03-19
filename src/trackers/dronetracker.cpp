@@ -154,7 +154,7 @@ bool DroneTracker::detect_lift_off() {
     float dist2takeoff =normf(_world_item.pt - _drone_blink_world_location);
     float takeoff_y =  _world_item.pt.y - _drone_blink_world_location.y;
 
-    if (dist2takeoff > 0.1f && takeoff_y > 0.05f && _world_item.size_in_image() > _drone_blink_im_size) {
+    if (dist2takeoff > 0.1f && takeoff_y > 0.05f && _world_item.radius > dparams.radius/2.f && _world_item.radius < dparams.radius*4.f) {
         take_off_frame_cnt++;
         if (take_off_frame_cnt >= 3) {
             return true;
@@ -181,9 +181,9 @@ void DroneTracker::calc_world_item(BlobProps * props, double time [[maybe_unused
         props->world_props.valid = false;
     } else if (taking_off() && props->world_props.valid && !_manual_flight_mode) {
 
-        std::cout << to_string_with_precision(time,2) + "; dist2takeoff: " <<  to_string_with_precision(dist2takeoff,2) << " "
-                  << ", takeoff_y: " << to_string_with_precision(takeoff_y,2)
-                  << ", size_in_image: " << to_string_with_precision(props->world_props.radius,2) << std::endl;
+        // std::cout << to_string_with_precision(time,2) + "; dist2takeoff: " <<  to_string_with_precision(dist2takeoff,2) << " "
+        //           << ", takeoff_y: " << to_string_with_precision(takeoff_y,2)
+        //           << ", world size: " << to_string_with_precision(props->world_props.radius,2) << std::endl;
 
         if (takeoff_y < 0.02f) {
             props->world_props.valid = false;
@@ -206,7 +206,7 @@ bool DroneTracker::detect_takeoff() {
         }
     }
 
-    return closest_to_takeoff_im_dst > _drone_blink_im_size * 3 &&
+    return _world_item.radius > dparams.radius/2.f && _world_item.radius < dparams.radius*4.f &&
            closest_to_takeoff_point.x == static_cast<int>(_world_item.iti.x) &&
            closest_to_takeoff_point.y == static_cast<int>(_world_item.iti.y); // maybe should create an id instead of checking the distance
 
