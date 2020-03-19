@@ -600,6 +600,14 @@ void TrackerManager::update_max_change_points() {
             Moments mo = moments(mask,true);
             Point2f COG = Point2f(static_cast<float>(mo.m10) / static_cast<float>(mo.m00), static_cast<float>(mo.m01) / static_cast<float>(mo.m00));
 
+            //due to the blurring, the max may be lowered for small blobs resulting in an empty tresholded mask. In this case, recalculate the max on the blurred crop
+            if (COG.x != COG.x) {
+                minMaxLoc(cropped, &min, &max, &mint, &maxt);
+                mask = cropped > (max-avg(0)) * 0.6; // use a much higher threshold because the noise was blurred away
+                mo = moments(mask,true);
+                COG = Point2f(static_cast<float>(mo.m10) / static_cast<float>(mo.m00), static_cast<float>(mo.m01) / static_cast<float>(mo.m00));
+            }
+
             Mat viz;
             if (enable_viz_max_points) {
                 Rect rect_unscaled(rect.x*pparams.imscalef,rect.y*pparams.imscalef,rect.width*pparams.imscalef,rect.height*pparams.imscalef);
