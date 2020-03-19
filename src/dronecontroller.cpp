@@ -1042,7 +1042,7 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::
     cv::Point3f vel_err_d = {errvDx, errvDy, errvDz};
 
     // Enable horizontal error only if drone is close to setpoint - required for precision while hovering
-    if (enable_xz_igain) {
+    if (enable_xz_igain && norm(data_drone.vel())<0.3) {
         pos_err_i.x += err_x_filtered;
         pos_err_i.z += err_z_filtered;
     } else {
