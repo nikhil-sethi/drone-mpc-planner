@@ -339,12 +339,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         //adapt_reffilter_dynamic(data_drone, data_target);
         data_target_new.pos() = pos_reference_filter.new_sample(data_target_new.pos());
 
-        bool enable_xz_i_gain = false;
-        if (normf(data_target_new.vel()) < 0.01f && duration_since_waypoint_changed(time) > 1) {
-            enable_xz_i_gain = true;
-        }
-
-        control_model_based(data_drone, data_target_new.pos(),data_target_new.vel(),enable_xz_i_gain);
+        control_model_based(data_drone, data_target_new.pos(),data_target_new.vel());
 
         //check if we can go back to burning:
         if (data_drone.pos_valid && data_drone.vel_valid && _joy_state!=js_waypoint) {
@@ -367,13 +362,13 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         }
         break;
     } case fm_initial_reset_yaw: {
-        control_model_based(data_drone, data_target_new.pos(), data_target_new.vel(),true);
+        control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
         mode += bf_headless_disabled;
         break;
     } case fm_reset_yaw: {
         mode += bf_headless_disabled;
         check_emergency_kill(data_drone);
-        control_model_based(data_drone, data_target_new.pos(), data_target_new.vel(),true);
+        control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
         auto_yaw = control_yaw(data_drone, 5); // second argument is the yaw gain, move this to the xml files?
         break;
     } case fm_landing_start: {
@@ -933,13 +928,13 @@ std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f de
     return std::make_tuple(roll_cmd,pitch_cmd,throttle_cmd);
 }
 
-void DroneController::control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool enable_xz_igain) {
+void DroneController::control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel) {
     cv::Point3f kp_pos, ki_pos, kd_pos, kp_vel, kd_vel;
     std::tie(kp_pos, ki_pos, kd_pos, kp_vel, kd_vel) = adjust_control_gains(data_drone, setpoint_pos, setpoint_vel);
 
     // Determine state errors:
     cv::Point3f pos_err_p, pos_err_d, vel_err_p, vel_err_d;
-    std::tie(pos_err_p, pos_err_d, vel_err_p, vel_err_d) = control_error(data_drone, setpoint_pos, setpoint_vel, enable_xz_igain, ki_pos);
+    std::tie(pos_err_p, pos_err_d, vel_err_p, vel_err_d) = control_error(data_drone, setpoint_pos, setpoint_vel,ki_pos);
 
     cv::Point3f desired_acceleration = {0};
     desired_acceleration += multf(kp_pos, pos_err_p) + multf(ki_pos, pos_err_i) + multf(kd_pos, pos_err_d); // position controld
@@ -959,7 +954,7 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> Dron
     if(!data_drone.pos_valid) {
         scale_p *= 0.8;
     }
-    if( norm(data_drone.state.vel)<0.1 && norm(setpoint_vel)<0.1 && normf(setpoint_pos-data_drone.pos())<0.2f) {
+    if( normf(data_drone.state.vel)<0.1f && normf(setpoint_vel)<0.1f && normf(setpoint_pos-data_drone.pos())<0.2f) {
         scale_d *= 1.1f;
         scale_i *= 1.1f;
     }
@@ -967,6 +962,15 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> Dron
     if(height_over_ground<0.5f) {
         scale_d.z *= 1.06f;
     }
+
+    if (normf(setpoint_vel) < 0.01f && duration_since_waypoint_changed(data_drone.time) > 1) {
+        scale_i.x = scale_i.x / (1.f + powf(data_drone.state.vel.x,2)) / (duration_since_waypoint_changed(data_drone.time) / 2);
+        scale_i.z = scale_i.z / (1.f + powf(data_drone.state.vel.z,2)) / (duration_since_waypoint_changed(data_drone.time) / 2);
+    } else {
+        scale_i.x = -1; // flag that i is not used currently
+        scale_i.z = -1;
+    }
+
     kp_pos_roll_scaled = scale_p.x*kp_pos_roll;
     kp_pos_throttle_scaled = scale_p.y*kp_pos_throttle;
     kp_pos_pitch_scaled = scale_p.z*kp_pos_pitch;
@@ -990,6 +994,7 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> Dron
     kd_pos.z /= depth_gain;
     cv::Point3f ki_pos(ki_pos_roll_scaled,ki_pos_throttle_scaled,ki_pos_pitch_scaled);
     ki_pos /=1000.f;
+    ki_pos.z /= depth_gain;
     cv::Point3f kp_vel(kp_v_roll,kp_v_throttle,kp_v_pitch);
     kp_vel /= 100.f;
     cv::Point3f kd_vel(kd_v_roll,kd_v_throttle,kd_v_pitch);
@@ -998,18 +1003,11 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> Dron
     return std::tuple(kp_pos, ki_pos, kd_pos, kp_vel, kd_vel);
 }
 
-std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::control_error(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool enable_xz_igain, cv::Point3f ki_pos) {
-    bool hovering = normf(setpoint_pos-data_drone.pos())<0.2f
-                    && normf(data_drone.vel())<0.5f;
-    if(hovering) {
-        filter_pos_err_x.change_dynamic(1.9f/pparams.fps);
-        filter_pos_err_y.change_dynamic(1.9f/pparams.fps);
-        filter_pos_err_z.change_dynamic(1.9f/pparams.fps);
-    } else {
-        filter_pos_err_x.change_dynamic(1.f/pparams.fps);
-        filter_pos_err_y.change_dynamic(1.f/pparams.fps);
-        filter_pos_err_z.change_dynamic(1.f/pparams.fps);
-    }
+std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::control_error(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, cv::Point3f ki_pos) {
+
+    filter_pos_err_x.change_dynamic(1.f/pparams.fps);
+    filter_pos_err_y.change_dynamic(1.f/pparams.fps);
+    filter_pos_err_z.change_dynamic(1.f/pparams.fps);
 
     float err_x_filtered, err_y_filtered, err_z_filtered;
     if(data_drone.pos_valid) {
@@ -1041,8 +1039,7 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::
     float errvDz = d_vel_err_z.new_sample (err_velz_filtered);
     cv::Point3f vel_err_d = {errvDx, errvDy, errvDz};
 
-    // Enable horizontal error only if drone is close to setpoint - required for precision while hovering
-    if (enable_xz_igain && norm(data_drone.vel())<0.3) {
+    if (ki_pos.x>0) {
         pos_err_i.x += err_x_filtered;
         pos_err_i.z += err_z_filtered;
     } else {
@@ -1074,7 +1071,7 @@ void DroneController::land(track_data data_drone, track_data data_target_new) {
     data_target_new.state.pos.y -= landing_yoffset;
 
     if(data_drone.pos_valid && !feedforward_landing) {
-        control_model_based(data_drone, data_target_new.pos(), data_target_new.vel(),true);
+        control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
         auto_yaw = control_yaw(data_drone, 5);
 
         previous_drone_data = data_drone;

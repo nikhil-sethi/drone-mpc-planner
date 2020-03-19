@@ -237,10 +237,10 @@ private:
 
     std::array<float, N_PLANES> pos_err_kiv= {0}, vel_err_kiv= {0};
     std::array<filtering::Tf_D_f, N_PLANES> d_pos_err_kiv, d_vel_err_kiv;
-    void control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool enable_xz_igain);
+    void control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
 
     std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> adjust_control_gains(track_data drone_data, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
-    std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> control_error(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool enable_xz_igain, cv::Point3f ki_pos);
+    std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> control_error(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, cv::Point3f ki_pos);
     std::tuple<int,int,int> calc_feedforward_control(cv::Point3f desired_acceleration);
 
     MultiModule * _rc;
