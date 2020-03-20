@@ -325,7 +325,8 @@ float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR,
     for (int i=disp_start; i<disp_end; i++) {
         cv::Rect roiR(x1-i,y1,x2,y2);
 
-        cv::Mat corV_16 = diffL(roiL).mul(diffR(roiR));
+        cv::Mat corV_16;
+        cv::multiply(diffL(roiL),diffR(roiR),corV_16,CV_32S);
         cv::Mat errV = abs(diffL(roiL) - diffR(roiR));
 
         cor_16[i] = static_cast<int>(cv::sum(corV_16 )[0]);
