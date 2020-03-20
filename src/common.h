@@ -236,7 +236,8 @@ public:
             if (op_modes_str[i] == sHelp)
                 return static_cast<op_modes>(i);
         }
-
+        std::cout << "ERROR: pats xml has wrong op mode?!?!" << std::endl;
+        exit(1);
         return static_cast<op_modes>(0);
     };
 
