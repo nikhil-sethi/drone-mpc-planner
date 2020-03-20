@@ -565,7 +565,7 @@ std::tuple<float,float,double,cv::Mat> Cam::measure_angle() {
             x = smx.addSample(xyz.x);
             y = smy.addSample(xyz.y);
             z = smz.addSample(xyz.z);
-            roll = atanf(-x/sqrtf(y*x + z*z)) * rad2deg;
+            roll = atanf(-x/sqrtf(y*y + z*z)) * rad2deg;
             pitch = 90.f-atanf(y/z) * rad2deg;
         }
     }
@@ -630,7 +630,7 @@ void Cam::calib_pose(bool also_do_depth) {
                     x = smx.addSample(xyz.x);
                     y = smy.addSample(xyz.y);
                     z = smz.addSample(xyz.z);
-                    roll = atanf(-x/sqrtf(y*x + z*z)) * rad2deg;
+                    roll = atanf(-x/sqrtf(y*y + z*z)) * rad2deg;
                     pitch = 90.f-atanf(y/z) * rad2deg;
                 }
             }
