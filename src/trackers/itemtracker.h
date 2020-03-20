@@ -68,7 +68,7 @@ protected:
 private:
     void predict(float dt, int frame_id);
 
-    float estimate_sub_disparity(int disparity,int * err, bool negate);
+    float estimate_sub_disparity(int disparity,int * err);
     void check_consistency(float dt);
     void update_disparity(float disparity, float dt);
     void update_prediction_state(cv::Point2f image_location, float disparity);

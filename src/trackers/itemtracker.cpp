@@ -283,8 +283,8 @@ float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR,
     //get retangle around blob / changed pixels
     float rectsize = radius*2.f + 2.f;
 
-    float rectsizeX = ceil(rectsize*0.5f); // *4.0 results in drone-insect disparity interaction
-    float rectsizeY = ceil(rectsize*0.5f);  // *3.0
+    float rectsizeX = ceilf(rectsize*0.5f); // *4.0 results in drone-insect disparity interaction
+    float rectsizeY = ceilf(rectsize*0.5f);  // *3.0
     int x1,y1,x2,y2;
     x1 = static_cast<int>((closestL.x-rectsizeX));
     x2 = static_cast<int>(2*rectsizeX);
@@ -305,9 +305,7 @@ float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR,
     cv::Rect roiL(x1,y1,x2,y2);
 
     //shift over the image to find the best match, shift = disparity
-    int disparity_err = 0;
-    __attribute__((unused)) int disparity_cor = 0;
-    float maxcor = -std::numeric_limits<float>::max();
+    int disparity = 0;
     float minerr = std::numeric_limits<float>::max();
     int tmp_max_disp = max_disparity;
     if (x1 - tmp_max_disp < 0)
@@ -316,75 +314,37 @@ float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR,
     int disp_start = min_disparity;
     int disp_end = tmp_max_disp;
     if (n_frames_tracking>5) {
-        disp_start = std::max(static_cast<int>(floor(disparity_prev))-2,disp_start);
-        disp_end = std::min(static_cast<int>(ceil(disparity_prev))+2,disp_end);
+        disp_start = std::max(static_cast<int>(floorf(disparity_prev))-2,disp_start);
+        disp_end = std::min(static_cast<int>(ceilf(disparity_prev))+2,disp_end);
     }
 
-    int err [tmp_max_disp]; // issue #261
-    int cor_16 [tmp_max_disp];
+    int err [tmp_max_disp] = {0};
     for (int i=disp_start; i<disp_end; i++) {
         cv::Rect roiR(x1-i,y1,x2,y2);
-
-        cv::Mat corV_16;
-        cv::multiply(diffL(roiL),diffR(roiR),corV_16,CV_32S);
         cv::Mat errV = abs(diffL(roiL) - diffR(roiR));
-
-        cor_16[i] = static_cast<int>(cv::sum(corV_16 )[0]);
-        err[i] = static_cast<int>(cv::sum(errV)[0]);
-
-        if (cor_16[i] > maxcor ) {
-            maxcor = cor_16[i];
-            disparity_cor = i;
-        }
-        if (err[i] < minerr ) { //update min MSE
-            disparity_err  = i;
+        err[i] = cv::sum(errV)[0];
+        if (err[i] < minerr ) {
+            disparity  = i;
             minerr = err[i];
-        } // for shift
-
+        }
     }
 
-#if FALSE // issue #262
-    // this seems to be much noisier
-    if (disparity_err > 0 && disparity_cor > 0) {
-        float sub_err_disp = estimate_sub_disparity(disparity_err,err,false);
-        float sub_corr_disp = estimate_sub_disparity(disparity_cor,cor_16,true);
-        return (sub_err_disp + sub_corr_disp) / 2.f;
-    } else if (disparity_err > 0) {
-        float sub_err_disp = estimate_sub_disparity(disparity_err,err,false);
-        return sub_err_disp;
-    } else if (disparity_err > 0) {
-        float sub_corr_disp = estimate_sub_disparity(maxcor,cor_16,true);
-        return sub_corr_disp;
-    } else {
-        return 0;
-    }
-#else
-    if (disparity_err > 0) {
-        float sub_err_disp = estimate_sub_disparity(disparity_err,err,true);
+    if (disparity > 0) {
+        float sub_err_disp = estimate_sub_disparity(disparity,err);
         return sub_err_disp;
     } else {
         return 0;
     }
-#endif
 }
 
-float ItemTracker::estimate_sub_disparity(int disparity,int * err, bool negate) {
-
-    float sub_disp,y1,y2,y3;
-    if (negate) {
-        y1 = -err[disparity-1];
-        y2 = -err[disparity];
-        y3 = -err[disparity+1];
-    } else {
-        y1 = err[disparity-1];
-        y2 = err[disparity];
-        y3 = err[disparity+1];
-    }
-
+float ItemTracker::estimate_sub_disparity(int disparity,int * err) {
+    int y1 = -err[disparity-1];
+    int y2 = -err[disparity];
+    int y3 = -err[disparity+1];
     // by assuming a hyperbola shape, the x-location of the hyperbola minimum is determined and used as best guess
-    float h31 = (y3 - y1);
-    float h21 = (y2 - y1) * 4;
-    sub_disp = ((h21 - h31)) / (h21 - h31 * 2);
+    int h31 = (y3 - y1);
+    int h21 = (y2 - y1) * 4;
+    float sub_disp = static_cast<float>((h21 - h31)) / static_cast<float>(h21 - h31 * 2);
     sub_disp += sinf(sub_disp*2.0f*M_PIf32)*0.13f;
     sub_disp += (disparity-1);
 
