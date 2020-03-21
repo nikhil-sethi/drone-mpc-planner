@@ -9,9 +9,9 @@
 
 
 static const char* interceptor_state_names[] = { "is_init",
-                                                 "is_waiting_for_target",
-                                                 "is_waiting_in_reach_zone",
-                                                 "is_flower_of_fire_intercept",
+                                                 "is_awaiti_target",
+                                                 "is_await_reach_zone",
+                                                 "is_flower_of_fire",
                                                  "is_move_to_intercept",
                                                  "is_close_chasing"
                                                };
