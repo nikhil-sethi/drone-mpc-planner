@@ -164,8 +164,7 @@ public:
             if (video_modes_str[i] == sHelp)
                 return static_cast<video_modes>(i);
         }
-
-        return static_cast<video_modes>(0);
+        throw my_exit("wrong video_mode: " + sHelp);
     };
 
     xVideo_mode operator=(const video_modes value) {AssignValue(value); return *this;};
@@ -188,8 +187,7 @@ public:
             if (rc_types_str[i] == sHelp)
                 return static_cast<rc_types>(i);
         }
-
-        return static_cast<rc_types>(0);
+        throw my_exit("wrong rc_type: " + sHelp);
     };
 
     xRc_type operator=(const rc_types value) {AssignValue(value); return *this;};
@@ -212,8 +210,7 @@ public:
             if (tx_protocols_str[i] == sHelp)
                 return static_cast<tx_protocols>(i);
         }
-
-        return static_cast<tx_protocols>(0);
+        throw my_exit("wrong tx_protocol: " + sHelp);
     };
 
     xTx_protocol operator=(const tx_protocols value) {AssignValue(value); return *this;};
@@ -231,14 +228,11 @@ public:
     op_modes value() {
         string sHelp =  m_sValue;
         transform(sHelp.begin(), sHelp.end(), sHelp.begin(), ::tolower);
-
         for (uint i = 0; op_modes_str[i] != string(""); i++) {
             if (op_modes_str[i] == sHelp)
                 return static_cast<op_modes>(i);
         }
-        std::cout << "ERROR: pats xml has wrong op mode?!?!" << std::endl;
-        exit(1);
-        return static_cast<op_modes>(0);
+        throw my_exit("wrong op_mode: " + sHelp);
     };
 
     xOp_mode operator=(const op_modes value) {AssignValue(value); return *this;};
@@ -261,8 +255,7 @@ public:
             if (drone_types_str[i] == sHelp)
                 return static_cast<drone_types>(i);
         }
-
-        return static_cast<drone_types>(0);
+        throw my_exit("wrong drone_type: " + sHelp);
     };
 
     xDrone_type operator=(const drone_types value) {AssignValue(value); return *this;};
@@ -284,7 +277,6 @@ private: xString _flightplan;
 private: xInt _live_image_frq;
 private: xFloat _max_cam_roll;
 
-
 public: int wdt_timeout_us,darkness_threshold,close_after_n_images;
 public: uint fps;
 public: bool watchdog,has_screen;
@@ -298,8 +290,6 @@ public: int imscalef;
 public: std::string flightplan;
 public: int live_image_frq;
 public: float max_cam_roll;
-
-
 
 public: PatsParameters() {
         // Set the XML class name.

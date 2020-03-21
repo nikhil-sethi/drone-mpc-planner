@@ -92,8 +92,7 @@ public:
             if (waypoint_flight_modes_str[i] == sHelp)
                 return static_cast<waypoint_flight_modes>(i);
         }
-
-        return static_cast<waypoint_flight_modes>(0);
+        throw my_exit("wrong waypoint_flight_mode: " + sHelp);
     };
 
     XML_Waypoint_Mode operator=(const waypoint_flight_modes value) {AssignValue(value); return *this;};
