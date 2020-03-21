@@ -3,7 +3,7 @@
 using namespace cv;
 using namespace std;
 
-void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, float new_camera_gain, cv::Mat new_depth_background_mm) {
+void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, float new_camera_gain, float new_camera_exposure, cv::Mat new_depth_background_mm) {
     Qf = new_Qf;
     cv::invert(Qf,Qfi);
     frameL = new_frameL.clone();
@@ -16,6 +16,7 @@ void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, fl
 
     camera_angle = new_camera_angle;
     camera_gain = new_camera_gain;
+    camera_exposure = new_camera_exposure;
 
     motion_noise_map_wfn = data_output_dir + motion_noise_map_wfn;
 
@@ -46,7 +47,7 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
     frame_id = new_frame_id;
     _current_frame_time = time;
 
-    if (use_overexposed_map && overexposed_map.cols > 0) {
+    if (use_overexposed_map) {
         cv::Mat tmp;
         frameL.copyTo(tmp,overexposed_map);
         frameL = tmp;
@@ -171,7 +172,6 @@ void VisionData::collect_no_drone_frames(cv::Mat dL) {
         GaussianBlur(motion_noise_map,motion_noise_map,Size(9,9),0);
         imwrite(motion_noise_map_wfn,motion_noise_map);
     }
-
 }
 
 void VisionData::create_overexposed_removal_mask(cv::Point2f drone_im_location, float blink_size) {
@@ -179,9 +179,12 @@ void VisionData::create_overexposed_removal_mask(cv::Point2f drone_im_location, 
     cv::Mat element = getStructuringElement( cv::MORPH_RECT,cv::Size( 2*dilation_size + 1, 2*dilation_size+1 ),cv::Point( dilation_size, dilation_size ) );
     cv::Mat mask = frameL < 254;
     cv::circle(mask,drone_im_location,blink_size*dilation_size,255, cv::FILLED);
+    if (camera_exposure < 5000)
+        cv::circle(mask,drone_im_location,30,255, cv::FILLED); // in case the charging pad is overexposed with daylight
     cv::erode(mask,overexposed_map,element);
     _reset_motion_integration = true;
-    use_overexposed_map = true;
+    if (overexposed_map.cols)
+        use_overexposed_map = true;
 }
 
 void VisionData::enable_background_motion_map_calibration(float duration) {

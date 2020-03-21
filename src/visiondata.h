@@ -106,7 +106,7 @@ public:
     cv::Size smallsize;
     cv::Mat Qf,Qfi;
     float camera_angle;
-    float camera_gain;
+    float camera_gain,camera_exposure;
     cv::Mat depth_background;
     cv::Mat disparity_background;
     cv::Mat depth_background_mm;
@@ -117,7 +117,7 @@ public:
 
     double current_time() {return _current_frame_time;}
 
-    void init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, float new_camera_gain, cv::Mat new_depth_background_mm);
+    void init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, float new_camera_gain, float new_camera_exposure, cv::Mat new_depth_background_mm);
     void close();
     void update(cv::Mat new_frameL, cv::Mat new_frameR, double time, unsigned long long new_frame_id);
     void reset_motion_integration() {
