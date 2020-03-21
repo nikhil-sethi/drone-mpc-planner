@@ -73,7 +73,8 @@ LogEntryMain LogReader::create_log_entry(string line, map<string, int> headmap) 
     entry.joyYaw = stoi(line_data.at(headmap["joyYaw"]));
     entry.joyArmSwitch = stoi(line_data.at(headmap["joyArmSwitch"]));
     entry.joyModeSwitch = stoi(line_data.at(headmap["joyModeSwitch"]));
-    entry.joyTakeoffSwitch = stoi(line_data.at(headmap["joyTakeoffSwitch"]));
+    entry.trkrs_state = stoi(line_data.at(headmap["trkrs_state"]));
+
 
 
     if (_takeoff_time > static_cast<double>(entry.RS_id)/pparams.fps && entry.valid && entry.joyModeSwitch > 0 && entry.auto_throttle > dparams.spinup_throttle_non3d)

@@ -1,5 +1,6 @@
 #include "common.h"
 #include "commandcenterlink.h"
+#include "trackermanager.h"
 
 #include <mutex>
 #include <thread>
@@ -46,13 +47,15 @@ void CommandCenterLink::background_worker() {
     }
 }
 
-void CommandCenterLink::trigger_demo_flight_from_log(std::string replay_dir) {
-    if (pparams.joystick == rc_none && _dctrl->joy_takeoff_switch()) {
+void CommandCenterLink::trigger_demo_flight_from_log(std::string replay_dir, int tracker_mode) {
+    static tracking::TrackerManager::detection_mode prev_tracker_mode = tracking::TrackerManager::detection_mode::mode_idle;
+
+    if (pparams.joystick == rc_none && static_cast<tracking::TrackerManager::detection_mode>(tracker_mode) == tracking::TrackerManager::detection_mode::mode_drone_only && prev_tracker_mode != tracking::TrackerManager::detection_mode::mode_drone_only) {
         _dnav->demo_flight(replay_dir + "/pats_demo.xml");
     }
+    prev_tracker_mode = static_cast<tracking::TrackerManager::detection_mode>(tracker_mode);
 }
 
-//if put a demo flightplan.xml in demo_fn, this will trigger an automatic demo flight
 void CommandCenterLink::check_commandcenter_triggers() {
     static int demo_div_cnt = 0;
     demo_div_cnt = (demo_div_cnt + 1) % pparams.fps; // only check once per second, to save cpu

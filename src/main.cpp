@@ -271,7 +271,7 @@ void process_frame(Stereo_Frame_Data data) {
     if (log_replay_mode) {
         logreader.current_frame_number(data.RS_id);
         trackers.process_replay_moth(data.RS_id);
-        cmdcenter.trigger_demo_flight_from_log(replay_dir);
+        cmdcenter.trigger_demo_flight_from_log(replay_dir,logreader.current_entry.trkrs_state);
     }
 
 #ifdef PROFILING

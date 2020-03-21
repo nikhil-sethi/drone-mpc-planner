@@ -7,7 +7,7 @@ public :
     void init(bool log_replay_mode, navigation::DroneNavigation * dnav,DroneController * dctrl,MultiModule * rc,Cam * cam,tracking::TrackerManager * trackers);
     void close();
     void reset_commandcenter_status_file(std::string status_msg);
-    void trigger_demo_flight_from_log(std::string replay_dir);
+    void trigger_demo_flight_from_log(std::string replay_dir, int tracker_mode);
 
 private:
     std::string demo_waypoint_fn = "/home/pats/pats_demo.xml";
