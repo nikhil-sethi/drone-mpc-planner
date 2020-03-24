@@ -333,11 +333,10 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         check_emergency_kill(data_drone);
 
         if(!data_drone.pos_valid) {
-            data_drone.state.pos = _dtrk->drone_startup_location ();
             pos_err_i = {0,0,0};
+            if(_time-take_off_start_time < 0.5)
+                data_drone.state.pos = _dtrk->drone_startup_location ();
         }
-        //adapt_reffilter_dynamic(data_drone, data_target);
-        data_target_new.pos() = pos_reference_filter.new_sample(data_target_new.pos());
 
         control_model_based(data_drone, data_target_new.pos(),data_target_new.vel());
 
