@@ -12,7 +12,7 @@
 #include "insecttracker.h"
 #include "itemtracker.h"
 #include "dronenavigation.h"
-#include "dronepredictor.h"
+
 
 class Visualizer {
 
@@ -37,7 +37,6 @@ private:
     tracking::TrackerManager * _trackers;
     navigation::DroneNavigation *_dnav;
     MultiModule *_rc;
-    DronePredictor *_dprdct;
 
     bool enable_plots = false;
 
@@ -181,7 +180,7 @@ public:
     void paint();
     void add_plot_sample(void);
     void update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, double time, bool draw_plots, tracking::InsectTracker *itrkr);
-    void init(VisionData * visdat, tracking::TrackerManager *imngr, DroneController *dctrl, navigation::DroneNavigation *dnav, MultiModule *rc, bool fromfile, DronePredictor *dprdct);
+    void init(VisionData * visdat, tracking::TrackerManager *imngr, DroneController *dctrl, navigation::DroneNavigation *dnav, MultiModule *rc, bool fromfile);
     void close();
 
 };

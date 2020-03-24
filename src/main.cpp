@@ -27,7 +27,6 @@
 #include "stopwatch.h"
 #include "dronetracker.h"
 #include "dronecontroller.h"
-#include "dronepredictor.h"
 #include "gstream.h"
 #include "vizs.h"
 #include "insecttracker.h"
@@ -74,7 +73,6 @@ std::ofstream logger;
 std::ofstream logger_insect;
 MultiModule rc;
 DroneController dctrl;
-DronePredictor dprdct;
 navigation::DroneNavigation dnav;
 tracking::TrackerManager trackers;
 Visualizer visualizer;
@@ -307,7 +305,6 @@ void process_frame(Stereo_Frame_Data data) {
     auto profile_t4_ctrl = std::chrono::high_resolution_clock::now();
 #endif
 
-    dprdct.update(dctrl.drone_is_active(),data.time);
 #ifdef PROFILING
     auto profile_t5_prdct = std::chrono::high_resolution_clock::now();
 #endif
@@ -625,7 +622,6 @@ void init() {
     trackers.init(&logger, &visdat, &(cam.camera_volume));
     dnav.init(&logger,&trackers,&dctrl,&visdat, &(cam.camera_volume),replay_dir);
     dctrl.init(&logger,log_replay_mode,&rc,trackers.dronetracker(), &(cam.camera_volume));
-    dprdct.init(&visdat,trackers.dronetracker(),trackers.insecttracker_best(),&dctrl);
 
     // Ensure that joystick was found and that we can use it
     if (!dctrl.joystick_ready() && !log_replay_mode && pparams.joystick != rc_none) {
@@ -633,7 +629,7 @@ void init() {
     }
 
     if (pparams.has_screen) {
-        visualizer.init(&visdat,&trackers,&dctrl,&dnav,&rc,log_replay_mode,&dprdct);
+        visualizer.init(&visdat,&trackers,&dctrl,&dnav,&rc,log_replay_mode);
         visualizer_3d.init(&trackers, &(cam.camera_volume), &dctrl, &dnav);
         if (log_replay_mode)
             visualizer.first_take_off_time = logreader.first_takeoff_time();

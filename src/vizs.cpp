@@ -14,7 +14,7 @@ cv::Scalar linecolors[] = {green,blue,red,cv::Scalar(0,255,255),cv::Scalar(255,2
 cv::Scalar fore_color(255,255,255);
 cv::Scalar background_color(0,0,0);
 
-void Visualizer::init(VisionData *visdat, tracking::TrackerManager *imngr, DroneController *dctrl, navigation::DroneNavigation *dnav, MultiModule *rc, bool fromfile, DronePredictor *dprdct) {
+void Visualizer::init(VisionData *visdat, tracking::TrackerManager *imngr, DroneController *dctrl, navigation::DroneNavigation *dnav, MultiModule *rc, bool fromfile) {
     _visdat = visdat;
     _dctrl = dctrl;
     _trackers = imngr;
@@ -22,7 +22,6 @@ void Visualizer::init(VisionData *visdat, tracking::TrackerManager *imngr, Drone
     _itrkr = _trackers->insecttracker_best();
     _dnav = dnav;
     _rc = rc;
-    _dprdct = dprdct;
 
     _fromfile = fromfile;
     if (_fromfile) {
