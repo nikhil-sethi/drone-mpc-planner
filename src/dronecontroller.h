@@ -220,7 +220,9 @@ private:
     std::tuple<float,float> acc_to_deg(cv::Point3f acc);
     std::tuple<float,float> acc_to_quaternion(cv::Point3f acc);
 
-    void check_emergency_kill(track_data);
+    void check_emergency_kill(track_data data_drone, cv::Point3f setpoint_pos);
+    void check_tracking_lost(track_data data_drone);
+    void check_control_and_tracking_problems(track_data data_drone, cv::Point3f setpoint_pos);
     void land(track_data data_drone, track_data data_target_new);
     void update_landing_yoffset(track_data data_drone, track_data data_target_new);
     void calc_ff_landing();
@@ -235,6 +237,8 @@ private:
     filtering::Tf_D_f d_vel_err_x, d_vel_err_y, d_vel_err_z;
     filtering::Tf_PT2_3f pos_reference_filter;
 
+    filtering::Tf_PT2_f pos_modelx, pos_modely, pos_modelz;
+    float model_error;
     std::array<float, N_PLANES> pos_err_kiv= {0}, vel_err_kiv= {0};
     std::array<filtering::Tf_D_f, N_PLANES> d_pos_err_kiv, d_vel_err_kiv;
     void control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);

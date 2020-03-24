@@ -71,6 +71,10 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     pos_reference_filter.init(1.f/pparams.fps, 1, 1.f/pparams.fps*0.001f, 1.f/pparams.fps*0.001f);
     pos_err_i = {0,0,0};
 
+    pos_modelx.init(1.f/pparams.fps, 1, 0.25, 0.38);
+    pos_modely.init(1.f/pparams.fps, 1, 0.25, 0.38);
+    pos_modelz.init(1.f/pparams.fps, 1, 0.25, 0.38);
+
     for (uint i=0; i<N_PLANES; i++) {
         d_vel_err_kiv.at(i).init(1.f/pparams.fps);
         d_pos_err_kiv.at(i).init(1.f/pparams.fps);
@@ -328,9 +332,19 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         filter_vel_err_z.reset (data_target_new.vel().z - data_drone.state.vel.z);
         pos_reference_filter.internal_states(data_target_new.pos(), data_target_new.pos());
 
+        model_error = {0};
+        if(!data_drone.pos_valid && _time-take_off_start_time < 0.5) {
+            pos_modelx.internal_states(_dtrk->drone_startup_location().x, _dtrk->drone_startup_location().x);
+            pos_modely.internal_states(_dtrk->drone_startup_location().y, _dtrk->drone_startup_location().y);
+            pos_modelz.internal_states(_dtrk->drone_startup_location().z, _dtrk->drone_startup_location().z);
+        } else {
+            pos_modelx.internal_states(data_drone.pos().x, data_drone.pos().x);
+            pos_modely.internal_states(data_drone.pos().y, data_drone.pos().y);
+            pos_modelz.internal_states(data_drone.pos().z, data_drone.pos().z);
+        }
         [[fallthrough]];
     } case fm_flying_pid: {
-        check_emergency_kill(data_drone);
+        check_emergency_kill(data_drone, data_target_new.pos());
 
         if(!data_drone.pos_valid) {
             pos_err_i = {0,0,0};
@@ -366,7 +380,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         break;
     } case fm_reset_yaw: {
         mode += bf_headless_disabled;
-        check_emergency_kill(data_drone);
+        check_emergency_kill(data_drone, data_target_new.pos());
         control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
         auto_yaw = control_yaw(data_drone, 5); // second argument is the yaw gain, move this to the xml files?
         break;
@@ -377,7 +391,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         [[fallthrough]];
     } case fm_landing: {
         mode += bf_headless_disabled;
-        check_emergency_kill(data_drone);
+        check_emergency_kill(data_drone, data_target_new.pos());
         land(data_drone, data_target_new);
         break;
     } case fm_disarmed: {
@@ -1052,8 +1066,14 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::
     return std::tuple(pos_err_p, pos_err_d, vel_err_p, vel_err_d);
 }
 
-void DroneController::check_emergency_kill(track_data data_drone) {
-    // This is usefull as long blind reburn is not working
+void DroneController::check_emergency_kill(track_data data_drone, cv::Point3f setpoint_pos) {
+    check_tracking_lost(data_drone);
+    check_control_and_tracking_problems(data_drone, setpoint_pos);
+}
+
+
+void DroneController::check_tracking_lost(track_data data_drone) {
+    // If keep-in-volume is not strong enough the drone has a chance to come back after some time.
     if(!data_drone.pos_valid) {
         kill_cnt_down++;
         if (kill_cnt_down > pparams.fps / 2) {
@@ -1063,6 +1083,30 @@ void DroneController::check_emergency_kill(track_data data_drone) {
     } else {
         kill_cnt_down = 0;
     }
+}
+void DroneController::check_control_and_tracking_problems(track_data data_drone, cv::Point3f setpoint_pos) {
+    pos_modelx.new_sample(setpoint_pos.x);
+    pos_modely.new_sample(setpoint_pos.y);
+    pos_modelz.new_sample(setpoint_pos.z);
+
+    model_error += normf({pos_modelx.current_output() - data_drone.pos().x,
+                          pos_modely.current_output() - data_drone.pos().y,
+                          pos_modelz.current_output() - data_drone.pos().z});
+    model_error -= 0.3f; // Accept error over time
+
+    if(model_error<0)
+        model_error = 0;
+    if(model_error>50) {
+        _flight_mode = fm_abort_flight;
+        flight_submode_name = "fm_abort_flight_model_error";
+        std::cout<<std::endl;
+    }
+
+#if DRONE_CONTROLLER_DEBUG
+    std::cout << "model_error: " << model_error << std::endl;
+    if(model_error>model_error_max)
+        model_error_max = model_error;
+#endif
 }
 
 void DroneController::land(track_data data_drone, track_data data_target_new) {
