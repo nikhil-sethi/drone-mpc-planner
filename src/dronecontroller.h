@@ -223,7 +223,7 @@ private:
     void check_emergency_kill(track_data data_drone, cv::Point3f setpoint_pos);
     void check_tracking_lost(track_data data_drone);
     void check_control_and_tracking_problems(track_data data_drone, cv::Point3f setpoint_pos);
-    void land(track_data data_drone, track_data data_target_new);
+    track_data land(track_data data_drone, track_data data_target_new);
     void update_landing_yoffset(track_data data_drone, track_data data_target_new);
     void calc_ff_landing();
     void update_thrust_during_hovering(track_data data_drone, double time);

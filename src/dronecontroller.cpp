@@ -392,7 +392,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
     } case fm_landing: {
         mode += bf_headless_disabled;
         check_emergency_kill(data_drone, data_target_new.pos());
-        land(data_drone, data_target_new);
+        data_target_new = land(data_drone, data_target_new);
         break;
     } case fm_disarmed: {
         auto_roll = JOY_MIDDLE;
@@ -1115,7 +1115,7 @@ void DroneController::check_control_and_tracking_problems(track_data data_drone,
 #endif
 }
 
-void DroneController::land(track_data data_drone, track_data data_target_new) {
+track_data DroneController::land(track_data data_drone, track_data data_target_new) {
     update_landing_yoffset(data_drone, data_target_new);
     data_target_new.state.pos.y -= landing_yoffset;
 
@@ -1141,6 +1141,7 @@ void DroneController::land(track_data data_drone, track_data data_target_new) {
             _flight_mode = fm_inactive;
         }
     }
+    return data_target_new;
 }
 
 void DroneController::update_landing_yoffset(track_data data_drone, track_data data_target_new) {
