@@ -976,9 +976,15 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> Dron
         scale_d.z *= 1.06f;
     }
 
-    if (normf(setpoint_vel) < 0.01f && duration_since_waypoint_changed(data_drone.time) > 1) {
-        scale_i.x = scale_i.x / (1.f + powf(data_drone.state.vel.x,2)) / (duration_since_waypoint_changed(data_drone.time) / 2);
-        scale_i.z = scale_i.z / (1.f + powf(data_drone.state.vel.z,2)) / (duration_since_waypoint_changed(data_drone.time) / 2);
+    float i_scale = duration_since_waypoint_changed(data_drone.time);
+    if (normf(setpoint_vel) < 0.01f && i_scale > 1) {
+        if (i_scale > 10)
+            i_scale = 10;
+
+        scale_i.x = scale_i.x / (1.f + powf(data_drone.state.vel.x,2)) / i_scale;
+        scale_i.z = scale_i.z / (1.f + powf(data_drone.state.vel.z,2)) / i_scale;
+
+        scale_i.y = scale_i.y / (1.f + normf(data_drone.state.vel)) / i_scale; // this one works directly on thrust, so scale it with ||vel||
     } else {
         scale_i.x = -1; // flag that i is not used currently
         scale_i.z = -1;
