@@ -466,7 +466,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         _rc->queue_commands(throttle,roll,pitch,yaw,mode);
     }
 
-    control_data c(Throttle(),Roll(),Pitch(),time);
+    control_data c(Roll(), Throttle(), Pitch(), time);
     control_history.push_back(c);
     while (control_history.size() > control_history_max_size)
         control_history.erase(control_history.begin());

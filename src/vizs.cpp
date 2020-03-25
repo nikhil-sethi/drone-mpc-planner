@@ -396,7 +396,7 @@ void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, doubl
         static float min_dis = 9999;
         float dis = 0;
         if (_dtrkr->n_frames_tracking>0 && _itrkr->n_frames_tracking>0) {
-            dis = norm(_dtrkr->Last_track_data().state.pos-_itrkr->Last_track_data().state.pos);
+            dis = normf(_dtrkr->Last_track_data().state.pos-_itrkr->Last_track_data().state.pos);
 
             if (dis < min_dis)
                 min_dis = dis;
