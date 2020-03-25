@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-set -ex
+set -e
 
-ssh -T $1 << EOF
+echo "Update $1"
+count=0
+until (( count++ >= 5 )) || ssh -T $1 << EOF
  killall pats || true
  cd code/pats/pc/build
  git fetch
@@ -13,3 +15,8 @@ ssh -T $1 << EOF
  killall -9 pats || true
  echo done
 EOF
+do
+  echo "Retry $count"
+  paplay /usr/share/sounds/ubuntu/stereo/bell.ogg
+  sleep 1
+done

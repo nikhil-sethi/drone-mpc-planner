@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
-set -ex
+set -e
 
-rsync -z $2 $1:pats_demo.xml
+echo "Demo $1"
+count=0
+until rsync -z $2 $1:pats_demo.xml
+do
+  echo "Retry $count"
+  paplay /usr/share/sounds/ubuntu/stereo/bell.ogg
+  sleep 1
+done
