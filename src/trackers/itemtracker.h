@@ -31,7 +31,7 @@ protected:
     class TrackerParams: public xmls::Serializable
     {
     public:
-        xmls::xInt min_disparity,max_disparity,static_ignores_dist_thresh;
+        xmls::xInt min_disparity,max_disparity;
         xmls::xInt score_threshold, background_subtract_zone_factor;
         xmls::xFloat max_size;
 
@@ -46,7 +46,7 @@ protected:
             // Register members. Like the class name, member names can differ from their xml depandants
             Register("min_disparity",&min_disparity );
             Register("max_disparity",&max_disparity );
-            Register("static_ignores_dist_thresh",&static_ignores_dist_thresh );
+
             Register("score_threshold",&score_threshold );
             Register("background_subtract_zone_factor",&background_subtract_zone_factor );
             Register("max_size",&max_size );
@@ -55,7 +55,7 @@ protected:
 
     int min_disparity;
     int max_disparity;
-    int static_ignores_dist_thresh;
+
     int _score_threshold;
     int background_subtract_zone_factor;
     float max_size; // world, in meters
@@ -94,9 +94,6 @@ private:
     double t_prev_tracking = 0;
     double t_prev_predict = 0;
 
-    float disparity_smoothed;
-    float disp_rate;
-    float disp_prev; // TODO: there's two disp(arity)_prevs...?
     float disparity_prev = 0;
 
     filtering::Smoother smoother_score;
@@ -117,10 +114,7 @@ protected:
     const int smooth_width_pos = 10;
     const int smooth_width_acc = 45;
     const int smooth_blob_props_width = 10;
-    filtering::Smoother disp_smoothed;
-    filtering::SmootherDerivative disp_rate_smoothed2;
     bool reset_filters;
-    bool reset_disp = false;
 
     filtering::Smoother smoother_im_size;
 

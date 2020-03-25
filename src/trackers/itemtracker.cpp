@@ -38,9 +38,6 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     smoother_posY.init(smooth_width_pos);
     smoother_posZ.init(smooth_width_pos);
 
-    disp_rate_smoothed2.init(6,0.4f);
-    disp_smoothed.init(smooth_width_pos);
-
     smoother_velX2.init(6,0.4f);
     smoother_velY2.init(6,0.4f);
     smoother_velZ2.init(6,0.4f);
@@ -63,7 +60,6 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     smoother_brightness.init(smooth_blob_props_width);
 
     disparity_prev = 0;
-    disparity_smoothed = 0;
 
     init_logger();
     initialized = true;
@@ -180,7 +176,6 @@ void ItemTracker::track(double time) {
     update_world_candidate();
 
     if ( _world_item.valid) {
-        update_disparity(_world_item.iti.disparity, dt_tracking);
         check_consistency(dt_tracking);
         update_tracker_ouput(_world_item.pt,dt_tracking,time,_world_item.iti.disparity);
         update_prediction_state(_image_item.pt(), _world_item.iti.disparity);
@@ -354,41 +349,6 @@ float ItemTracker::estimate_sub_disparity(int disparity,int * err) {
     return sub_disp;
 }
 
-void ItemTracker::update_disparity(float disparity, float dt) {
-
-
-    float disparity_prev_smoothed = disparity_smoothed;
-
-    // predicted disparity value
-    float disp_predict = disparity + disp_rate*dt;
-
-    if (abs(disparity-disp_predict)<0.5f) {
-        float disp_filt_rate = 0.4f;
-        disparity_smoothed = disparity*disp_filt_rate + disparity_prev_smoothed*(1.0f-disp_filt_rate);
-    } else if (abs(disparity-disp_predict)<1.0f) {
-        float disp_filt_rate = 0.4f;
-        float disp_filt_pred = 0.1f;
-        disparity_smoothed = disparity*disp_filt_pred + disp_predict*(disp_filt_rate-disp_filt_pred) + disparity_prev_smoothed*(1.0f-disp_filt_rate);
-    } else {
-        float disp_filt_rate = 0.4f;
-        float disp_filt_pred = 0.0f;
-        disparity_smoothed = disparity*disp_filt_pred + disp_predict*(disp_filt_rate-disp_filt_pred) + disparity_prev_smoothed*(1.0f-disp_filt_rate);
-
-        if (abs(disparity-disp_prev)<1.0f)
-            reset_disp = true;
-    }
-
-    if (n_frames_lost>0 || isnanf(disparity_smoothed) || reset_disp)
-    {
-        disp_rate_smoothed2.reset();
-        reset_disp = false;
-
-    } else {
-        disp_rate = disp_rate_smoothed2.addSample(disparity_smoothed,dt);
-        disp_prev = disparity;
-    }
-}
-
 void ItemTracker::check_consistency(float dt) {
 
     if (track_history.size()>1) {
@@ -446,8 +406,6 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
     data.yaw_smooth = yaw_smoother.addSample(_world_item.yaw);
 
     if (n_frames_lost >= smooth_width_vel || reset_filters) { // tracking was regained, after n_frames_lost frames
-        disp_rate_smoothed2.reset();
-        disp_smoothed.reset();
         smoother_posX.reset();
         smoother_posY.reset();
         smoother_posZ.reset();
@@ -589,7 +547,6 @@ void ItemTracker::deserialize_settings() {
 
     min_disparity = params.min_disparity.value();
     max_disparity = params.max_disparity.value();
-    static_ignores_dist_thresh = params.static_ignores_dist_thresh.value();
     _score_threshold = params.score_threshold.value();
     background_subtract_zone_factor = params.background_subtract_zone_factor.value();
     max_size = params.max_size.value();
@@ -600,7 +557,6 @@ void ItemTracker::serialize_settings() {
 
     params.min_disparity = min_disparity;
     params.max_disparity = max_disparity;
-    params.static_ignores_dist_thresh = static_ignores_dist_thresh;
     params.score_threshold = _score_threshold;
     params.background_subtract_zone_factor = background_subtract_zone_factor;
     params.max_size = max_size;
