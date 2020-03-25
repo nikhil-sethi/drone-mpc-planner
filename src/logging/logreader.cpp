@@ -73,6 +73,7 @@ LogEntryMain LogReader::create_log_entry(string line, map<string, int> headmap) 
     entry.joyYaw = stoi(line_data.at(headmap["joyYaw"]));
     entry.joyArmSwitch = stoi(line_data.at(headmap["joyArmSwitch"]));
     entry.joyModeSwitch = stoi(line_data.at(headmap["joyModeSwitch"]));
+    entry.joyTakeoffSwitch = stoi(line_data.at(headmap["joyTakeoffSwitch"]));
     entry.trkrs_state = stoi(line_data.at(headmap["trkrs_state"]));
 
 
