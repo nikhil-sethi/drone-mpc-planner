@@ -226,3 +226,46 @@ Host pats19
         ProxyJump mavlab-gpu
         Port 7900
 
+Host pats20
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump mavlab-gpu
+        Port 8000
+
+Host pats21
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump mavlab-gpu
+        Port 8100
+
+Host pats22
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump mavlab-gpu
+        Port 8200
+
+Host pats23
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump mavlab-gpu
+        Port 8300
+
+Host pats24
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump mavlab-gpu
+        Port 8400
+
+Host pats25
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump mavlab-gpu
+        Port 8500
+
+
