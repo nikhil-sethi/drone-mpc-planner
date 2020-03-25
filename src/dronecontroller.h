@@ -261,7 +261,7 @@ private:
     float landing_yoffset = 0.f;
     float landing_velocity = -.15f;
     track_data previous_drone_data;
-    double feedforward_land_time;
+    double feedforward_land_time = 0;
     double landing_time;
     bool feedforward_landing = false;
 

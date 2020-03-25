@@ -391,8 +391,8 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         [[fallthrough]];
     } case fm_landing: {
         mode += bf_headless_disabled;
-        check_emergency_kill(data_drone, data_target_new.pos());
         data_target_new = land(data_drone, data_target_new);
+        check_emergency_kill(data_drone, data_target_new.pos());
         break;
     } case fm_disarmed: {
         auto_roll = JOY_MIDDLE;
@@ -1116,16 +1116,15 @@ void DroneController::check_control_and_tracking_problems(track_data data_drone,
 }
 
 track_data DroneController::land(track_data data_drone, track_data data_target_new) {
-    update_landing_yoffset(data_drone, data_target_new);
-    data_target_new.state.pos.y -= landing_yoffset;
-
     if(data_drone.pos_valid && !feedforward_landing) {
+        update_landing_yoffset(data_drone, data_target_new);
+        data_target_new.state.pos.y -= landing_yoffset;
         control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
         auto_yaw = control_yaw(data_drone, 5);
 
         previous_drone_data = data_drone;
 
-        if(data_drone.pos().y < _dtrk->drone_landing_location().y+0.05f) {
+        if(data_drone.pos().y < _dtrk->drone_landing_location().y+0.08f) {
             feedforward_landing = true;
             calc_ff_landing();
             landing_time = 1.f/pparams.fps;
@@ -1162,20 +1161,20 @@ void DroneController::update_landing_yoffset(track_data data_drone, track_data d
 }
 
 void DroneController::calc_ff_landing() {
-    landing_time = 0;
-    float est_height_over_ground = previous_drone_data.pos().y+(previous_drone_data.vel().y*1.f/pparams.fps)-_dtrk->drone_landing_location().y;
-    float velocity_before_ground = landing_velocity;
-    if(previous_drone_data.state.vel.y < landing_velocity)
-        velocity_before_ground = previous_drone_data.state.vel.y;
+    // landing_time = 0;
+    // float est_height_over_ground = previous_drone_data.pos().y+(previous_drone_data.vel().y*1.f/pparams.fps)-_dtrk->drone_landing_location().y;
+    // float velocity_before_ground = landing_velocity;
+    // if(previous_drone_data.state.vel.y < landing_velocity)
+    //     velocity_before_ground = previous_drone_data.state.vel.y;
 
-    float acc_ff_landing = powf(velocity_before_ground,2)/(2*est_height_over_ground);
-    feedforward_land_time = -previous_drone_data.state.vel.y/acc_ff_landing;
+    // float acc_ff_landing = powf(velocity_before_ground,2)/(2*est_height_over_ground);
+    // feedforward_land_time = -previous_drone_data.state.vel.y/acc_ff_landing;
 
     //    auto_roll = JOY_MIDDLE;
     //    auto_pitch = JOY_MIDDLE;
     auto_yaw = JOY_MIDDLE;
-    float ground_effect_compensation = 0.94f;
-    auto_throttle = thrust_to_throttle((acc_ff_landing+GRAVITY)/thrust)*ground_effect_compensation;
+    // float ground_effect_compensation = 0.94f;
+    auto_throttle = JOY_BOUND_MIN; // hrust_to_throttle((acc_ff_landing+GRAVITY)/thrust)*ground_effect_compensation;
 }
 
 void DroneController::read_joystick(void) {
