@@ -180,7 +180,7 @@ void VisionData::create_overexposed_removal_mask(cv::Point2f drone_im_location, 
     cv::Mat mask = frameL < 254;
     cv::circle(mask,drone_im_location,blink_size*dilation_size,255, cv::FILLED);
     if (camera_exposure < 5000)
-        cv::circle(mask,drone_im_location,30,255, cv::FILLED); // in case the charging pad is overexposed with daylight
+        cv::circle(mask,drone_im_location,50,255, cv::FILLED); // in case the charging pad is overexposed with daylight
     cv::erode(mask,overexposed_map,element);
     _reset_motion_integration = true;
     if (overexposed_map.cols)
