@@ -978,8 +978,8 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> Dron
 
     float i_scale = duration_since_waypoint_changed(data_drone.time);
     if (normf(setpoint_vel) < 0.01f && i_scale > 1) {
-        if (i_scale > 10)
-            i_scale = 10;
+        if (i_scale > 5)
+            i_scale = 5;
 
         scale_i.x = scale_i.x / (1.f + powf(data_drone.state.vel.x,2)) / i_scale;
         scale_i.z = scale_i.z / (1.f + powf(data_drone.state.vel.z,2)) / i_scale;
