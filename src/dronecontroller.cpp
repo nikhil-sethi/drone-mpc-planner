@@ -102,6 +102,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
 
     if (_joy_state== js_waypoint)
         data_raw_insect = data_target_new; // the takeoff burn uses raw insect, but wp flight mode also uses takeoff burn
+    _dtrk->update_drone_target(data_raw_insect.pos());
 
     if (!data_raw_insect.pos_valid) // if tracking is lost, set the raw setpoint to just above takeoff location, because otherwise the (takeoff) may go towards 0,0,0 (the camera)
         data_raw_insect.state.pos = _dtrk->drone_startup_location() + cv::Point3f(0,0.5,0);

@@ -28,6 +28,8 @@ private:
     float yaw;
     const float landing_yaw_criteria = 0.035;
 
+    cv::Point3f _target = {0};
+
     bool spinup_detected = false;
     bool liftoff_detected = false;
     bool _take_off_detection_failed = false;
@@ -104,7 +106,6 @@ private:
 
     void clean_ignore_blobs(double time);
 
-
     void calc_takeoff_prediction();
     void delete_takeoff_fake_motion(int duration);
     bool detect_lift_off();
@@ -160,11 +161,14 @@ public:
             _landing_pad_world = world;
             _landing_pad_location_set = true;
         }
+        _target = drone_startup_location();
     }
     void calc_world_item(BlobProps * pbs, double time);
     bool check_ignore_blobs(BlobProps * pbs);
 
     double time_since_take_off() {return start_take_off_time - current_time;}
+
+    void update_drone_target(cv::Point3f target) { _target = target; }
 
     bool delete_me() {return false;}
 

@@ -145,11 +145,14 @@ void DroneTracker::delete_takeoff_fake_motion(int duration) {
 }
 
 void DroneTracker::calc_takeoff_prediction() {
-    //TODO: remove full_bat_and_throttle_im_effect and use acc to calc back to image coordinates
-    cv::Point2f expected_drone_location = _drone_blink_im_location;
+
+    cv::Point3f acc = _target-drone_startup_location();
+    acc = acc/(normf(acc));
+    acc = acc * dparams.thrust;
     float dt = current_time - start_take_off_time;
-    expected_drone_location.y+= dt * dparams.full_bat_and_throttle_im_effect;
-    _image_predict_item = ImagePredictItem(expected_drone_location,1,_drone_blink_im_size,255,_visdat->frame_id);
+    cv::Point3f expected_drone_location = drone_startup_location() + 0.5* acc *powf(dt,2);
+
+    _image_predict_item = ImagePredictItem(world2im_2d(expected_drone_location,_visdat->Qfi,_visdat->camera_angle),1,_drone_blink_im_size,255,_visdat->frame_id);
 }
 
 bool DroneTracker::detect_lift_off() {
