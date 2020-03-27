@@ -1,4 +1,5 @@
 #pragma once
+#include "common.h"
 #include "itemtracker.h"
 #include "insecttracker.h"
 #include "tinyxml/XMLSerialization.h"
@@ -119,7 +120,7 @@ private:
     float yaw_from_splitted_mask(cv::Mat left, cv::Mat right);
     float calc_yaw(BlobProps * pbs, bool inspect_blob);
 
-
+    xmls::LandingParameters landing_parameter;
 
 public:
     std::string drone_tracking_state() {return drone_tracking_state_names[_drone_tracking_status];}
@@ -127,7 +128,12 @@ public:
     float drone_startup_im_size() { return _drone_blink_im_size; }
     float drone_startup_im_disparity() { return _drone_blink_im_disparity; }
     cv::Point3f drone_startup_location() {return _drone_blink_world_location + cv::Point3f(0,0,-0.04);} // TODO: drone dependent offset!
-    cv::Point3f drone_landing_location() {return _landing_pad_world;}
+    cv::Point3f drone_landing_location() {
+        if(landing_parameter.initialized)
+            return cv::Point3f(landing_parameter.x, landing_parameter.y, landing_parameter.z);
+        else
+            return _landing_pad_world;
+    }
 
     bool take_off_detection_failed() { return _take_off_detection_failed;}
 

@@ -547,6 +547,69 @@ public: void serialize(std::string filepath) {
     }
 };
 
+class LandingParameters: public Serializable {
+
+public:
+    float x, y, z;
+    bool initialized = false;
+
+    LandingParameters() {
+        // Set the XML class name.
+        // This name can differ from the C++ class name
+        setClassName("LandingParameters");
+
+        // Set class version
+        setVersion("1.0");
+
+        // Register members. Like the class name, member names can differ from their xml depandants
+        Register("x",&_x);
+        Register("y",&_y);
+        Register("z",&_z);
+    }
+
+    void deserialize(std::string filepath) {
+        std::cout << "Reading settings from: " << filepath << std::endl;
+        if (file_exist(filepath)) {
+            std::ifstream infile(filepath);
+            std::string xmlData((std::istreambuf_iterator<char>(infile)),
+                                std::istreambuf_iterator<char>());
+
+            if (!Serializable::fromXML(xmlData, this))
+            {   // Deserialization not successful
+                throw my_exit("Cannot read: " + filepath);
+            }
+            LandingParameters tmp;
+            auto v1 = getVersion();
+            auto v2 = tmp.getVersion();
+            if (v1 != v2) {
+                throw my_exit("XML version difference detected from " + filepath);
+            }
+        } else {
+            return;
+        }
+
+        x = _x.value();
+        y = _y.value();
+        z = _z.value();
+        initialized = true;
+    }
+
+    void serialize(std::string filepath) {
+        _x = x;
+        _y = y;
+        _z = z;
+
+        std::string xmlData = toXML();
+        std::ofstream outfile = std::ofstream (filepath);
+        outfile << xmlData ;
+        outfile.close();
+    }
+
+private:
+    xFloat _x, _y, _z;
+
+};
+
 }
 extern xmls::DroneParameters dparams;
 extern xmls::PatsParameters pparams;

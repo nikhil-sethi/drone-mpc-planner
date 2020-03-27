@@ -6,6 +6,7 @@ namespace tracking {
 bool DroneTracker::init(std::ofstream *logger, VisionData *visdat, int16_t viz_id) {
     enable_viz_diff = false;
     ItemTracker::init(logger,visdat,"drone",viz_id);
+    landing_parameter.deserialize("../../xml/landing_location.xml");
     (*_logger) << "dtrkr_state;";
     return false;
 }
