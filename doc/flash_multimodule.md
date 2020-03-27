@@ -25,5 +25,6 @@ Which device appears/disappears if you plug/unplug the multimodule? (Default: /d
 7. In the Arduino IDE open `DIY-Multiprotocol-TX-Module/Multiprotocol/Multiprotocol.ino`
 
 8. Configure Arduino: https://github.com/pats-drones/DIY-Multiprotocol-TX-Module/blob/master/docs/Compiling_STM32.md#configure-the-arduino-ide
+Instead of selecting the Upload method, set Tools -> Port: /dev/ttyACM*.....
 
 9. Flash the multimodule!
