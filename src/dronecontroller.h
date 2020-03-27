@@ -5,6 +5,7 @@
 #include "common.h"
 #include "cameraview.h"
 #define GRAVITY 9.81f
+#define DRONECONTROLLER_DEBUG true
 
 static const char* joy_states_names[] = { "js_manual",
                                           "js_waypoint",
@@ -224,7 +225,7 @@ private:
     void check_tracking_lost(track_data data_drone);
     void check_control_and_tracking_problems(track_data data_drone, cv::Point3f setpoint_pos);
     track_data land(track_data data_drone, track_data data_target_new);
-    void update_landing_yoffset(track_data data_drone, track_data data_target_new);
+    std::tuple<float, float> update_landing_yoffset(track_data data_drone, track_data data_target_new);
     void calc_ff_landing();
     void update_thrust_during_hovering(track_data data_drone, double time);
 
@@ -259,7 +260,8 @@ private:
     void serialize_settings();
 
     float landing_yoffset = 0.f;
-    float landing_velocity = -.15f;
+    float landing_velocity = -.1f;
+    float height_precisions_hovering = 0.12f;
     track_data previous_drone_data;
     double feedforward_land_time = 0;
     double landing_time;
