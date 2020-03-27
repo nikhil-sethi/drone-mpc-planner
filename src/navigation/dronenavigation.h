@@ -65,8 +65,6 @@ private:
     bool initialized = false;
     cv::Point3f square_point(cv::Point3f center, float width, float s);
 
-    bool first_takeoff = true;
-
     bool drone_is_blocked(float speed_threshold);
 
 public:

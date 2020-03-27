@@ -145,10 +145,8 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_wait_for_insect;
             else if (_nav_flight_mode == nfm_manual)
                 _navigation_status = ns_manual;
-            else if ((first_takeoff && _dctrl->manual_override_take_off_now())
-                     || !first_takeoff ) {
+            else if ( _dctrl->manual_override_take_off_now()) {
                 wpid = 0;
-                first_takeoff = false;
                 next_waypoint(waypoints[wpid],time);
                 _navigation_status = ns_takeoff;
                 _visdat->enable_collect_no_drone_frames = false;
@@ -511,7 +509,6 @@ void DroneNavigation::demo_flight(std::string flightplan_fn) {
     fp.serialize("./logging/flightplan.xml"); // write a copy of the currently used flightplan to the logging dir
     waypoints = fp.waypoints();
     wpid = 0;
-    first_takeoff = false;
     _nav_flight_mode = nfm_waypoint;
     next_waypoint(waypoints[wpid],_trackers->dronetracker()->Last_track_data().time);
     _navigation_status = ns_takeoff;
