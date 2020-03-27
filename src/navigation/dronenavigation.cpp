@@ -92,6 +92,7 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_locate_drone_init: {
             _dctrl->LED(true);
+            _dctrl->flight_mode(DroneController::fm_disarmed);
             locate_drone_start_time = time;
             _visdat->use_overexposed_map = false;
             _navigation_status = ns_locate_drone_wait_led_on;
