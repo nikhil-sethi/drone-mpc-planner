@@ -1,18 +1,27 @@
 # PATS
 
 ## Flashing Betaflight:
-1. Put drone in bootloader mode. E.g. type `bl` in cli in betaflight configurator.  
-2. Flash: `dfu-util -s 0x08000000 -a 0 -D ~/code/pats/config/trashcan_firmware.bin` 
-3. In betaflight configurator, go to the CLI tab and paste https://github.com/pats-drones/pats/blob/master/config/BF_Trashcan.txt
-4. `save`
-5. Calibrate the drone. E.g. in the configurator, or by typing `c` in our program.
+
+Start the bf_flash script to flash the firmware and betaflight settings:
+```
+cd ~/code/pats/config/
+./bf_flash.sh
+```
 
 Apply the following settings to BLHeli:  
 1. Set `Beacon Delay` to `infinite`
 2. Set `Beep Strenght` to 255
 3. Set startup power to max (1.5)
 4. Disable programming by tx check
-  
+
+Old manual way:
+
+1. Put drone in bootloader mode. E.g. type `bl` in cli in betaflight configurator.  
+2. Flash: `dfu-util -s 0x08000000 -a 0 -D ~/code/pats/config/trashcan_firmware.bin` 
+3. In betaflight configurator, go to the CLI tab and paste https://github.com/pats-drones/pats/blob/master/config/BF_Trashcan.txt
+4. `save`
+5. Calibrate the drone. E.g. in the configurator, or by typing `c` in our program.
+
 To retrieve firmware from the drone. (not needed normally)  
 `dfu-util -s 0x08000000:413040 -a 0 -U firmware_dump.bin`  
 
