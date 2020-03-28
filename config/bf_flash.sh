@@ -1,26 +1,26 @@
 #!/usr/bin/env bash
-
 set -e
 i=1
 sp="/-\|"
-echo "Checking port..."
+port="/dev/ttyACM0"
+echo "Checking port $port ..."
 echo -n ' '
-while [ ! -c /dev/ttyACM0 ]
+while [ ! -c $port ]
 do
 	sleep 0.1
 	printf "\b${sp:i++%${#sp}:1}"
 done
-
-sleep 1
+printf "\b \bOK"
+sleep 0.5
 ./bf_to_dfu.py
 sleep 1
-dfu-util -s 0x08000000 -a 0 -R -D trashcan_firmware.bin
+dfu-util -s 0x08000000 -a 0 -R -D ~/code/betaflight/obj/betaflight_4.0.6_CRAZYBEEF4FR.bin
 
-echo Human, replug usb NOW.
-while [ ! -c /dev/ttyACM0 ]
+while [ ! -c $port ]
 do
 	sleep 0.1
-	printf "\b${sp:i++%${#sp}:1}"
+	printf "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b${sp:i%${#sp}:1}Human, replug usb NOW${sp:i++%${#sp}:1}"
 done
+printf "\n"
 sleep 1
 ./bf_upload_settings.py
