@@ -121,6 +121,7 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_drone_problem;
             break;
         } case ns_crippled: {
+            _dctrl->flight_mode(DroneController::fm_disarmed);
             int itime = time;
             _dctrl->LED(true,itime*5 % 50);
             break;
