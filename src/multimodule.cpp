@@ -285,21 +285,26 @@ void MultiModule::receive_data() {
 void MultiModule::close() {
     if (initialized) {
         std::cout << "Closing multimodule" << std::endl;
+        exitSendThread = true;
+        g_lockData.lock();
+        g_sendData.unlock();
+
+        thread_mm.join();
+
+
         // kill throttle when closing the module
-        throttle = JOY_MIN_THRESH;
+        mode = JOY_BOUND_MIN;
+        arm_switch = JOY_BOUND_MIN;
+        throttle = JOY_BOUND_MIN;
         roll = JOY_MIDDLE;
         pitch = JOY_MIDDLE;
         yaw = JOY_MIDDLE;
-
-        g_lockData.lock();
+        _LED_drone = 0;
         send_data();
+        notconnected = true;
+        RS232_CloseComport();
         g_lockData.unlock();
-        g_sendData.unlock();
 
-        exitSendThread = true;
-        g_lockData.unlock();
-        g_sendData.unlock();
-        thread_mm.join();
     }
     initialized = false;
 }

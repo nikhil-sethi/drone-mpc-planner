@@ -17,6 +17,7 @@ static const char* joy_states_names[] = { "js_manual",
 static const char* flight_mode_names[] = { "fm_joystick_check",
                                            "fm_disarmed",
                                            "fm_inactive",
+                                           "fm_blink",
                                            "fm_spinup",
                                            "fm_manual",
                                            "fm_start_takeoff",
@@ -46,6 +47,7 @@ public:
         fm_joystick_check,
         fm_disarmed,
         fm_inactive,
+        fm_blink,
         fm_spinup,
         fm_manual,
         fm_start_takeoff,
@@ -228,6 +230,9 @@ private:
     std::tuple<float, float> update_landing_yoffset(track_data data_drone, track_data data_target_new);
     void calc_ff_landing();
     void update_thrust_during_hovering(track_data data_drone, double time);
+
+    void blink(double time);
+    void blink_motors(double time);
 
     cv::Point3f pos_err_i;
     int kp_pos_roll, kp_pos_throttle, kp_pos_pitch, ki_pos_roll, ki_pos_throttle, ki_pos_pitch, kd_pos_roll, kd_pos_throttle, kd_pos_pitch;
@@ -471,24 +476,6 @@ public:
     }
 
     bool joystick_ready();
-
-    void blink_by_binding(bool b) {
-        _rc->bind(b); // tmp trick until we create a dedicated feature for this
-    }
-
-    void blink(double time) {
-        static double last_blink_time = time;
-        static bool blink_state;
-
-        if (static_cast<float>(time-last_blink_time)>dparams.blink_period) {
-            if (blink_state)
-                blink_state = false;
-            else
-                blink_state = true;
-            last_blink_time = time;
-        }
-        LED(blink_state);
-    }
 
     void LED(bool b) {
         _rc->LED_drone(b,dparams.drone_led_strength);

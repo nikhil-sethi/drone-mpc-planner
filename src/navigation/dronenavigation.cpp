@@ -92,7 +92,7 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_locate_drone_init: {
             _dctrl->LED(true);
-            _dctrl->flight_mode(DroneController::fm_disarmed);
+            _dctrl->flight_mode(DroneController::fm_blink);
             locate_drone_start_time = time;
             _visdat->use_overexposed_map = false;
             _navigation_status = ns_locate_drone_wait_led_on;
@@ -108,20 +108,21 @@ void DroneNavigation::update(double time) {
         } case ns_wait_locate_drone: {
             static double __attribute__((unused)) prev_time = time;
             if (static_cast<float>(time - prev_time) > dparams.blink_period)
-                _dctrl->blink(time);
+                _dctrl->flight_mode(DroneController::fm_blink);
             if (_trackers->mode() != tracking::TrackerManager::mode_locate_drone) {
+                _dctrl->flight_mode(DroneController::fm_disarmed);
                 time_located_drone = time;
-                if (pparams.op_mode == op_mode_crippled)
+                if (pparams.op_mode == op_mode_crippled) {
                     _navigation_status = ns_crippled;
-                else
+                } else
                     _navigation_status = ns_located_drone;
             }
             if (time - locate_drone_start_time > 30 && pparams.op_mode != op_mode_crippled)
                 _navigation_status = ns_drone_problem;
             break;
         } case ns_crippled: {
-            static double __attribute__((unused)) crippled_time = time;
-            _dctrl->blink(crippled_time + (time-crippled_time)/2);
+            int itime = time;
+            _dctrl->LED(true,itime*5 % 50);
             break;
         } case ns_located_drone: {
             _dctrl->LED(true);

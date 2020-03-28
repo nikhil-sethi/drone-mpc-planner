@@ -127,6 +127,13 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         yaw = joy_yaw;
         joy_control = true;
         break;
+    } case fm_blink: {
+        _rc->arm(bf_disarmed);
+        blink(time);
+        //#268:
+        // mode+=bf_spin_motor;
+        // blink_motors(time);
+        break;
     } case fm_spinup: {
         _rc->arm(bf_armed);
         start_takeoff_burn_time = 0;
@@ -463,7 +470,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
     auto_pitch = bound_joystick_value(auto_pitch);
     auto_roll = bound_joystick_value(auto_roll);
 
-    //std::cout << time <<  " rpt: " << roll << ", " << pitch << ", " << throttle << std::endl;
+//std::cout << time <<  " rpt: " << roll << ", " << pitch << ", " << throttle << std::endl;
     if (!log_replay_mode) {
         _rc->queue_commands(throttle,roll,pitch,yaw,mode);
     }
@@ -1194,6 +1201,39 @@ void DroneController::calc_ff_landing() {
     }
 }
 
+void DroneController::blink(double time) {
+    static double last_blink_time = time;
+    static bool blink_state;
+
+    if (static_cast<float>(time-last_blink_time)>dparams.blink_period) {
+        if (blink_state)
+            blink_state = false;
+        else
+            blink_state = true;
+        last_blink_time = time;
+    }
+    LED(blink_state);
+}
+
+void DroneController::blink_motors(double time) {
+    int itime = round(time)*3;
+    auto_roll = JOY_BOUND_MIN;
+    auto_pitch = JOY_BOUND_MIN;
+    auto_throttle = JOY_BOUND_MIN;
+    auto_yaw = JOY_BOUND_MIN;
+
+    int spin_value = JOY_BOUND_MIN+ 100;
+    if (itime % 4 == 0) {
+        auto_roll = spin_value;
+    } else if (itime % 4 == 1) {
+        auto_pitch = spin_value;
+    } else if (itime % 4 == 2) {
+        auto_yaw = spin_value;
+    } else if (itime % 4 == 3) {
+        auto_throttle = spin_value;
+    }
+}
+
 void DroneController::read_joystick(void) {
     while (joystick.sample(&event))
     {
@@ -1307,7 +1347,8 @@ void DroneController::process_joystick() {
             _joy_takeoff_switch = false;
             _manual_override_take_off_now = false;
             _joy_state = js_disarmed;
-            _flight_mode = fm_disarmed;
+            if (_flight_mode != fm_blink)
+                _flight_mode = fm_disarmed;
         } else {
             if (!dparams.mode3d)
                 _rc->arm(bf_armed);

@@ -37,7 +37,8 @@ enum betaflight_headless_mode {
     bf_headless_enabled = 0,
     bf_headless_disabled = 50, // semi random number that gives a nice detectable change in the mode switch (1030 in BF), but is small enough to not interfere with the normal modes (can be made smaller prolly if necessary)
     bf_yaw_reset = 100,
-    bf_PID_loop_disabled = 150
+    bf_PID_loop_disabled = 150,
+    bf_spin_motor = 200
 };
 
 enum betaflight_arming {

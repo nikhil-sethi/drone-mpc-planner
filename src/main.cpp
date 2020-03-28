@@ -371,7 +371,6 @@ void handle_key(double time [[maybe_unused]]) {
             draw_plots = true;
         break;
     case 'o':
-        dctrl.blink_by_binding(false);
         dctrl.LED(true);
         dnav.nav_flight_mode(navigation::nfm_manual);
         break;
