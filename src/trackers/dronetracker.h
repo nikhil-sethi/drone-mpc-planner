@@ -61,9 +61,6 @@ private:
     bool _landing_pad_location_set = false;
     cv::Point3f _landing_pad_world;
 
-    cv::Point2f _drone_control_predicted_image_location = {0};
-    cv::Point3f _drone_control_predicted_world_location = {0};
-
     bool enable_viz_diff = false;
 
 
@@ -127,7 +124,7 @@ public:
     cv::Point2f drone_startup_im_location() { return _drone_blink_im_location; }
     float drone_startup_im_size() { return _drone_blink_im_size; }
     float drone_startup_im_disparity() { return _drone_blink_im_disparity; }
-    cv::Point3f drone_startup_location() {return _drone_blink_world_location + cv::Point3f(0,0,-0.04);} // TODO: drone dependent offset!
+    cv::Point3f drone_startup_location() {return _drone_blink_world_location + cv::Point3f(0,0,-dparams.radius);}
     cv::Point3f drone_landing_location() {
         if(landing_parameter.initialized)
             return cv::Point3f(landing_parameter.x, landing_parameter.y, landing_parameter.z);
@@ -152,19 +149,13 @@ public:
     bool check_yaw() { return ((fabs(yaw)<landing_yaw_criteria) && (fabs(yaw)!=0));}
     bool check_smooth_yaw() { return (fabs(yaw_smoother.latest())<landing_yaw_criteria);}
 
-
-    void control_predicted_drone_location(cv::Point2f drone_control_predicted_image_location, cv::Point3f drone_control_predicted_world_location) {
-        _drone_control_predicted_image_location = drone_control_predicted_image_location;
-        _drone_control_predicted_world_location = drone_control_predicted_world_location;
-    }
-
     void set_drone_landing_location(cv::Point2f im, float drone_im_disparity,float drone_im_size, cv::Point3f world) {
         _drone_blink_im_location = im;
         _drone_blink_im_size = drone_im_size;
         _drone_blink_im_disparity = drone_im_disparity;
         _drone_blink_world_location = world;
         if (!_landing_pad_location_set) { // for now, assume the first time set is the actual landing location.
-            _landing_pad_world = world;
+            _landing_pad_world = drone_startup_location();
             _landing_pad_location_set = true;
         }
         _target = drone_startup_location();
