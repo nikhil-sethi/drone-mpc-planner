@@ -28,7 +28,9 @@ void DroneTracker::track(double time, bool drone_is_active) {
         path.clear();
         _tracking = false;
         if (_landing_pad_location_set) {
-            _image_predict_item = ImagePredictItem(_drone_blink_im_location,1,_drone_blink_im_size,255,_visdat->frame_id);
+            cv::Point2f p= world2im_2d(drone_startup_location(),_visdat->Qfi,_visdat->camera_angle) / pparams.imscalef;
+            float size = world2im_size(drone_startup_location()+cv::Point3f(dparams.radius,0,0),drone_startup_location()-cv::Point3f(dparams.radius,0,0),_visdat->Qfi) / pparams.imscalef / 2; // /2 to make it a radius instead of size again
+            _image_predict_item = ImagePredictItem(p,1,size,255,_visdat->frame_id);
             predicted_image_path.push_back(_image_predict_item);
         } else
             _image_predict_item.valid = false;
