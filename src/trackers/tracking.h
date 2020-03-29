@@ -45,7 +45,8 @@ struct BlobProps {
     float x,y,radius,pixel_max;
     std::vector<IgnoreBlob> ignores;
     cv::Mat mask;
-    BlobProps(cv::Point2f pt, float blob_radius,float blob_pixel_max, cv::Mat blob_mask) : radius(blob_radius), pixel_max(blob_pixel_max), mask(blob_mask) {
+    cv::Point2i pt_max; // location of the initially detected maximum pixel change (usefull for led detection)
+    BlobProps(cv::Point2f pt, cv::Point2i ptmax,float blob_radius,float blob_pixel_max, cv::Mat blob_mask) : radius(blob_radius), pixel_max(blob_pixel_max), mask(blob_mask), pt_max(ptmax) {
         x = pt.x;
         y = pt.y;
     }

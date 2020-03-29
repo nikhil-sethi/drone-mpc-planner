@@ -111,7 +111,7 @@ void BlinkTracker::track(double time) {
 }
 
 BlinkTracker::blinking_drone_states BlinkTracker::detect_blink(double time, bool found) {
-    const float margin = 0.75f * dparams.blink_period; // the blinking is not a hard on/off, but rather a dimming operation so we need a big margin a blink more often
+    const float margin = 0.75f * dparams.blink_period; // the blinking is not a hard on/off, but rather a dimming operation so we need a big margin and blink more often
     if (Last_track_data().vel_valid && norm(Last_track_data().vel()) > 0.3)
         return bds_restart_search;
     float blink_period = static_cast<float>(time - blink_time_start);
@@ -130,6 +130,8 @@ BlinkTracker::blinking_drone_states BlinkTracker::detect_blink(double time, bool
 }
 
 void BlinkTracker::calc_world_item(BlobProps * pbs, double time [[maybe_unused]]) {
+    pbs->x = pbs->pt_max.x; // override blob location with actual max location, to pinpoint the location of the led (instead of the average which includes reflections #283
+    pbs->y = pbs->pt_max.y;
     calc_world_props_blob_generic(pbs);
     pbs->world_props.valid = pbs->world_props.disparity_in_range && pbs->world_props.radius_in_range;
 }

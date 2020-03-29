@@ -604,7 +604,8 @@ void TrackerManager::update_max_change_points() {
 
             //due to the blurring, the max may be lowered for small blobs resulting in an empty tresholded mask. In this case, recalculate the max on the blurred crop
             if (COG.x != COG.x) {
-                minMaxLoc(cropped, &min, &max, &mint, &maxt);
+                Point dummy;
+                minMaxLoc(cropped, &min, &max, &dummy, &dummy);
                 mask = cropped > (max-avg(0)) * 0.6; // use a much higher threshold because the noise was blurred away
                 mo = moments(mask,true);
                 COG = Point2f(static_cast<float>(mo.m10) / static_cast<float>(mo.m00), static_cast<float>(mo.m01) / static_cast<float>(mo.m00));
@@ -678,7 +679,7 @@ void TrackerManager::update_max_change_points() {
                                 COG2.x += rect.x;
                                 COG2.y += rect.y;
                                 uchar px_max = diff.at<uchar>(COG2);
-                                _blobs.push_back(tracking::BlobProps(COG2, radius, px_max, mask));
+                                _blobs.push_back(tracking::BlobProps(COG2,maxt,radius,px_max,mask));
 
                                 //remove this COG from the ROI:
                                 cv::circle(diff, COG2, 1, Scalar(0), roi_radius);
@@ -697,7 +698,7 @@ void TrackerManager::update_max_change_points() {
             if (single_blob) { // we could not split this blob, so we can use the original COG
                 float radius = sqrtf(mo.m00); // this seems to work reasonably well, it is assuming a close to square-like area
                 if (COG.x == COG.x) { // if not nan
-                    _blobs.push_back(tracking::BlobProps(COG, radius,max, mask));
+                    _blobs.push_back(tracking::BlobProps(COG, maxt, radius,max, mask));
                     if (enable_viz_max_points) {
                         Point2f tmpCOG;
                         tmpCOG.x = COG.x - rect.x;
@@ -721,7 +722,7 @@ void TrackerManager::update_max_change_points() {
                             d.y = ipi.pt().y - maxt.y;
                             float dist = norm(d);
                             if (dist < roi_radius) {
-                                _blobs.push_back(tracking::BlobProps(maxt, 1,max, mask));
+                                _blobs.push_back(tracking::BlobProps(maxt, maxt, 1,max, mask));
                                 if (enable_viz_max_points) {
                                     Point2f tmpCOG;
                                     tmpCOG.x = maxt.x - rect.x;
