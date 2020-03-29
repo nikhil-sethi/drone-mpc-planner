@@ -107,7 +107,8 @@ void DroneTracker::track(double time, bool drone_is_active) {
     } case dts_tracking: {
         ItemTracker::track(time);
         update_drone_prediction();
-        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_item.size*1.2f*pparams.imscalef);
+        float radius = world2im_size(_world_item.pt+cv::Point3f(dparams.radius,0,0),_world_item.pt-cv::Point3f(dparams.radius,0,0),_visdat->Qfi) * 0.6f;
+        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,radius);
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
         else if (!_tracking)
@@ -116,7 +117,8 @@ void DroneTracker::track(double time, bool drone_is_active) {
     } case dts_detect_yaw: {
         ItemTracker::track(time);
         update_drone_prediction();
-        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_item.size*1.2f*pparams.imscalef);
+        float radius = world2im_size(_world_item.pt+cv::Point3f(dparams.radius,0,0),_world_item.pt-cv::Point3f(dparams.radius,0,0),_visdat->Qfi) * 0.6f;
+        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,radius);
         break;
     } case dts_landing_init: {
         ignores_for_other_trkrs.push_back(IgnoreBlob(drone_startup_im_location(),_drone_blink_im_size*5,time+landing_ignore_timeout, IgnoreBlob::landing_spot));
@@ -125,7 +127,8 @@ void DroneTracker::track(double time, bool drone_is_active) {
     } case dts_landing: {
         ItemTracker::track(time);
         update_drone_prediction();
-        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_item.size*1.2f*pparams.imscalef);
+        float radius = world2im_size(_world_item.pt+cv::Point3f(dparams.radius,0,0),_world_item.pt-cv::Point3f(dparams.radius,0,0),_visdat->Qfi) * 0.6f;
+        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,radius);
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
         else if (!_tracking)
