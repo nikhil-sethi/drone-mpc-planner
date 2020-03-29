@@ -523,6 +523,12 @@ void TrackerManager::update_max_change_points() {
     bool enable_insect_drone_split = false;
     float drn_ins_split_thresh;
 
+    if (_mode == mode_locate_drone || !_dtrkr->image_predict_item().valid)
+        roi_radius = 15;
+    else
+        roi_radius = ceilf(_dtrkr->image_predict_item().size * 0.6f);
+    roi_radius = std::clamp(roi_radius,15,100);
+
     if (_dtrkr->image_predict_item().valid &&
             insecttracker_best()->image_predict_item().valid &&
             norm(_dtrkr->image_predict_item().pt() - insecttracker_best()->image_predict_item().pt()) < roi_radius) {
