@@ -663,7 +663,6 @@ void TrackerManager::update_max_change_points() {
                                 float radius;
                                 cv::minEnclosingCircle(contours.at(j),center,radius);
                                 if (enable_viz_max_points) {
-
                                     cv::Mat viz2 = viz.clone();
                                     cv::Point2f COG2_viz = COG2*viz_max_points_resizef;
                                     cv::circle(viz2,COG2_viz,1,Scalar(0,0,255),1); //COG
@@ -682,7 +681,7 @@ void TrackerManager::update_max_change_points() {
                                 _blobs.push_back(tracking::BlobProps(COG2,maxt,radius,px_max,mask));
 
                                 //remove this COG from the ROI:
-                                cv::circle(diff, COG2, 1, Scalar(0), roi_radius);
+                                cv::circle(diff, COG2, roi_radius, Scalar(0), CV_FILLED);
                             } else {
                                 COG_is_nan = true;
                             }
@@ -710,7 +709,7 @@ void TrackerManager::update_max_change_points() {
                         putText(viz,to_string_with_precision(tmpCOG.y,0),tmpCOG,FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,0,0));
                     }
                     //remove this COG from the ROI:
-                    cv::circle(diff, COG, 1, Scalar(0), roi_radius);
+                    cv::circle(diff, COG, roi_radius, Scalar(0), CV_FILLED);
                 } else {
                     COG_is_nan = true;
                     if (enable_insect_drone_split) {
@@ -734,7 +733,7 @@ void TrackerManager::update_max_change_points() {
                                     putText(viz,"maxt " + to_string_with_precision(tmpCOG.y,0),tmpCOG,FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,0,0));
                                 }
                                 //remove this COG from the ROI:
-                                cv::circle(diff, maxt, 1, Scalar(0), roi_radius);
+                                cv::circle(diff, maxt, roi_radius, Scalar(0), CV_FILLED);
                                 COG_is_nan = false;
                                 break;
                             }
@@ -743,13 +742,13 @@ void TrackerManager::update_max_change_points() {
                 }
             }
             if (COG_is_nan)  //remove the actual maximum from the ROI if the COG algorithm failed:
-                cv::circle(diff, maxt, 1, Scalar(0), roi_radius);
+                cv::circle(diff, maxt, roi_radius, Scalar(0), CV_FILLED);
 
         } else {
             if  (static_cast<uint8_t>(max) <= bkg+(motion_thresh_tmp/chance_multiplier_total))
                 break; // done searching for maxima, they are too small now
             else
-                cv::circle(diff, maxt, 1, Scalar(0), roi_radius);
+                cv::circle(diff, maxt, roi_radius, Scalar(0), CV_FILLED);
         }
     }
 }
