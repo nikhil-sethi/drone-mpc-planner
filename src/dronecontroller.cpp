@@ -1133,11 +1133,13 @@ track_data DroneController::land(track_data data_drone, track_data data_target_n
         auto_yaw = control_yaw(data_drone, 5);
 
         previous_drone_data = data_drone;
+        float landing_height = data_drone.pos().y - _dtrk->drone_landing_location().y;
+        float err_height_adaption = sqrt((landing_height-min_ff_land_height)/(max_ff_land_height-min_ff_land_height)) *(final_acpt_ff_land_err-init_acpt_ff_land_err);
+        float vel_height_adaption = sqrt((landing_height-min_ff_land_height)/(max_ff_land_height-min_ff_land_height)) *(final_acpt_ff_land_vel-init_acpt_ff_land_vel);
 
-        if((data_drone.pos().y < _dtrk->drone_landing_location().y+0.12f && pos_err<0.02f && vel_err<0.02f)  // a controlled decrease was executed at least for some frames.
-                || (data_drone.pos().y < _dtrk->drone_landing_location().y+height_precisions_hovering && pos_err<0.02f && landing_yoffset> WAYPOINT_LANDING_Y/2)
-                || (data_drone.pos().y < _dtrk->drone_landing_location().y+0.05f && landing_yoffset> WAYPOINT_LANDING_Y/2) )
-        {
+        if(pos_err<final_acpt_ff_land_err-err_height_adaption
+                && vel_err<final_acpt_dec_land_vel-vel_height_adaption
+                && landing_height<max_ff_land_height) {
             feedforward_landing = true;
             calc_ff_landing();
             landing_time = 1.f/pparams.fps;
@@ -1161,19 +1163,26 @@ std::tuple<float, float> DroneController::update_landing_yoffset(track_data data
     err.y = 0;
     float horizontal_err = normf(err);
     float horizontal_vel = normf( cv::Point3f(data_drone.vel().x, 0.f, data_drone.vel().z));
-    if(horizontal_err<0.060f
-            && horizontal_vel<0.04f
+    float inv_landing_height = _dtrk->drone_landing_location().y+WAYPOINT_LANDING_Y-data_drone.pos().y;
+    if(inv_landing_height<0)
+        inv_landing_height = 0;
+    float err_height_adaption = sqrtf(inv_landing_height/WAYPOINT_LANDING_Y) * (init_acpt_dec_land_err-final_acpt_dec_land_err);
+    float vel_height_adaption = sqrtf(inv_landing_height/WAYPOINT_LANDING_Y) * (init_acpt_dec_land_vel-final_acpt_dec_land_vel);
+
+    if(horizontal_err<init_acpt_dec_land_err - err_height_adaption
+            && horizontal_vel<init_acpt_dec_land_vel - vel_height_adaption
             && feedforward_landing==false) {
         landing_yoffset -= landing_velocity/static_cast<float>(pparams.fps);
     }
-    else if((horizontal_err>0.13f)
+    else if(horizontal_err>init_inc_land_err - err_height_adaption
+            && horizontal_vel>init_inc_land_vel - vel_height_adaption
             && landing_yoffset > 0
             && feedforward_landing==false ) {
         landing_yoffset += 0.2f*landing_velocity/static_cast<float>(pparams.fps);
     }
 
-    if(landing_yoffset > WAYPOINT_LANDING_Y-height_precisions_hovering)
-        landing_yoffset = WAYPOINT_LANDING_Y-height_precisions_hovering;
+    if(landing_yoffset > WAYPOINT_LANDING_Y-min_ff_land_height)
+        landing_yoffset = WAYPOINT_LANDING_Y-min_ff_land_height;
 
     return std::tuple(horizontal_err, horizontal_vel);
 }

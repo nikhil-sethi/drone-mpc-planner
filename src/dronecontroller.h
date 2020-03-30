@@ -266,11 +266,24 @@ private:
 
     float landing_yoffset = 0.f;
     float landing_velocity = -.1f;
-    float height_precisions_hovering = 0.12f;
+    float max_ff_land_height = 0.25f;
+    float min_ff_land_height = 0.08f;
     track_data previous_drone_data;
     double feedforward_land_time = 0;
     double landing_time;
     bool feedforward_landing = false;
+
+    float init_acpt_dec_land_err = 0.1f;
+    float init_acpt_dec_land_vel = 0.08f;
+    float final_acpt_dec_land_err = 0.05f;
+    float final_acpt_dec_land_vel = 0.04f;
+    float init_inc_land_err = 0.13f;
+    float init_inc_land_vel = 0.13f;
+
+    float init_acpt_ff_land_err = 0.02f;
+    float init_acpt_ff_land_vel = 0.01f;
+    float final_acpt_ff_land_err = final_acpt_dec_land_err;
+    float final_acpt_ff_land_vel = final_acpt_dec_land_vel;
 
     inline state_data set_recoveryState(cv::Point3f position) {
         state_data rt;
