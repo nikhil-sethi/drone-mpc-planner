@@ -178,6 +178,11 @@ bool DroneTracker::detect_lift_off() {
 }
 
 void DroneTracker::calc_world_item(BlobProps * props, double time [[maybe_unused]]) {
+    if (landing()) {
+        props->x = props->pt_max.x; // for a super precise landing, we track the led instead of the drone shape
+        props->y = props->pt_max.y;
+    }
+
     calc_world_props_blob_generic(props);
 
     float dist2takeoff =normf(props->world_props.pt() - _drone_blink_world_location);
@@ -185,6 +190,8 @@ void DroneTracker::calc_world_item(BlobProps * props, double time [[maybe_unused
 
     if (taking_off() && dist2takeoff < 0.2f && !props->world_props.bkg_check_ok) {
         props->world_props.bkg_check_ok = true;
+    } else if (landing()) {
+        props->world_props.z+=dparams.radius;
     }
 
     props->world_props.valid = props->world_props.bkg_check_ok && props->world_props.disparity_in_range && props->world_props.radius_in_range;

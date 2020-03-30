@@ -135,6 +135,7 @@ public:
     bool take_off_detection_failed() { return _take_off_detection_failed;}
 
     bool taking_off() { return _drone_tracking_status == dts_detecting_takeoff_init || _drone_tracking_status == dts_detecting_takeoff;}
+    bool landing() { return _drone_tracking_status == dts_landing_init || _drone_tracking_status == dts_landing;}
     bool inactive() { return _drone_tracking_status == dts_inactive;}
     bool correct_yaw() { return _drone_tracking_status == dts_detect_yaw;}
 
