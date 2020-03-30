@@ -36,57 +36,9 @@ void InsectTracker::track(double time) {
         predicted_image_path.clear();
         path.clear();
     } else {
-        update_insect_prediction();
+        update_prediction();
     }
     (*_logger) << '\n';
-}
-
-void InsectTracker::update_insect_prediction() {
-    track_data itd = Last_track_data();
-    cv::Point3f insect_pos = itd.pos();
-    cv::Point3f insect_vel = itd.vel();
-    //TODO: also consider acc?
-
-
-    // predict insect position for next frame
-    float dt_pred = 1.f/pparams.fps;
-    cv::Point3f predicted_pos = insect_pos + insect_vel*dt_pred;
-
-    //transform back to image coordinates
-    std::vector<cv::Point3d> world_coordinates,camera_coordinates;
-    cv::Point3f tmp(predicted_pos.x,predicted_pos.y,predicted_pos.z);
-
-    //derotate camera and convert to double:
-    cv::Point3d tmpd;
-    float theta = -_visdat->camera_angle * deg2rad;
-    float temp_y = tmp.y * cosf(theta) + tmp.z * sinf(theta);
-    tmpd.z = -tmp.y * sinf(theta) + tmp.z * cosf(theta);
-    tmpd.y = temp_y;
-    tmpd.x = tmp.x;
-
-    world_coordinates.push_back(tmpd);
-    cv::perspectiveTransform(world_coordinates,camera_coordinates,_visdat->Qfi);
-
-    //update tracker with prediciton
-    cv::Point2f image_location;
-    image_location.x= camera_coordinates.at(0).x/pparams.imscalef;
-    image_location.y= camera_coordinates.at(0).y/pparams.imscalef;
-
-    if (image_location.x < 0)
-        image_location.x = 0;
-    else if (image_location.x >= IMG_W/pparams.imscalef)
-        image_location.x = IMG_W/pparams.imscalef-1;
-    if (image_location.y < 0)
-        image_location.y = 0;
-    else if (image_location.y >= IMG_H/pparams.imscalef)
-        image_location.y = IMG_H/pparams.imscalef-1;
-
-    //issue #108:
-    predicted_image_path.back().x = image_location.x;
-    predicted_image_path.back().y = image_location.y;
-    _image_predict_item.x = image_location.x;
-    _image_predict_item.y = image_location.y;
-
 }
 
 void InsectTracker::calc_world_item(BlobProps * pbs, double time [[maybe_unused]]) {

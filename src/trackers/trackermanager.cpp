@@ -526,8 +526,8 @@ void TrackerManager::update_max_change_points() {
     if (_mode == mode_locate_drone || !_dtrkr->image_predict_item().valid)
         roi_radius = 15;
     else
-        roi_radius = ceilf(_dtrkr->image_predict_item().size * 0.6f);
-    roi_radius = std::clamp(roi_radius,15,100);
+        roi_radius = ceilf(_dtrkr->image_predict_item().size * 0.95f);
+    roi_radius = std::clamp(roi_radius,10,100);
 
     if (_dtrkr->image_predict_item().valid &&
             insecttracker_best()->image_predict_item().valid &&
@@ -689,7 +689,7 @@ void TrackerManager::update_max_change_points() {
                                 COG2.x += rect.x;
                                 COG2.y += rect.y;
                                 uchar px_max = diff.at<uchar>(COG2);
-                                _blobs.push_back(tracking::BlobProps(COG2,maxt,radius,px_max,mask));
+                                _blobs.push_back(tracking::BlobProps(COG2,maxt,radius*2,px_max,mask));
 
                                 //remove this COG from the ROI:
                                 cv::circle(diff, COG2, roi_radius, Scalar(0), CV_FILLED);
@@ -708,7 +708,7 @@ void TrackerManager::update_max_change_points() {
             if (single_blob) { // we could not split this blob, so we can use the original COG
                 float radius = sqrtf(mo.m00); // this seems to work reasonably well, it is assuming a close to square-like area
                 if (COG.x == COG.x) { // if not nan
-                    _blobs.push_back(tracking::BlobProps(COG, maxt, radius,max, mask));
+                    _blobs.push_back(tracking::BlobProps(COG, maxt, radius*2,max, mask));
                     if (enable_viz_max_points) {
                         Point2f tmpCOG;
                         tmpCOG.x = COG.x - rect.x;

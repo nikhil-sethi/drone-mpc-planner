@@ -10,8 +10,6 @@ public: tracker_type type() { return tt_insect;}
 private:
     int16_t _insect_trkr_id{-1};
     void start_new_log_line(double time, unsigned long long frame_number);
-protected:
-    void update_insect_prediction();
 public:
     static constexpr float new_tracker_drone_ignore_zone_size = 0.3f;
     void init(int id, VisionData *_visdat, int16_t viz_id);

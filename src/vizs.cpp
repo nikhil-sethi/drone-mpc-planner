@@ -443,16 +443,16 @@ void Visualizer::draw_tracker_viz() {
 
     if ( drn_predicted_path.size()>0 ) {
         auto pred = drn_predicted_path.back();
-        cv::circle(frameL_color,pred.pt()*pparams.imscalef,pred.size*pparams.imscalef,cv::Scalar(0,255,0));
+        cv::circle(frameL_color,pred.pt()*pparams.imscalef,pred.size/2*pparams.imscalef,cv::Scalar(0,255,0));
     }
     if ( drn_path.size()>0 ) {
         auto p = drn_path.back().iti;
-        cv::circle(frameL_color,p.pt()*pparams.imscalef,p.size*pparams.imscalef,cv::Scalar(0,0,255));
+        cv::circle(frameL_color,p.pt()*pparams.imscalef,p.size/2*pparams.imscalef,cv::Scalar(0,0,255));
     }
 
     if ( ins_predicted_path.size()>0 ) {
         auto pred = ins_predicted_path.back();
-        cv::circle(frameL_color,pred.pt()*pparams.imscalef,pred.size*pparams.imscalef,cv::Scalar(0,255,0));
+        cv::circle(frameL_color,pred.pt()*pparams.imscalef,pred.size/2*pparams.imscalef,cv::Scalar(0,255,0));
     }
 
     if (ins_path.size()>0) {

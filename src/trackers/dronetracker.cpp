@@ -6,6 +6,7 @@ namespace tracking {
 bool DroneTracker::init(std::ofstream *logger, VisionData *visdat, int16_t viz_id) {
     enable_viz_diff = false;
     ItemTracker::init(logger,visdat,"drone",viz_id);
+    max_size = dparams.radius*3;
     landing_parameter.deserialize("../../xml/landing_location.xml");
     (*_logger) << "dtrkr_state;";
     return false;
@@ -32,9 +33,10 @@ void DroneTracker::track(double time, bool drone_is_active) {
             float size = world2im_size(drone_startup_location()+cv::Point3f(dparams.radius,0,0),drone_startup_location()-cv::Point3f(dparams.radius,0,0),_visdat->Qfi) / pparams.imscalef;
             _image_predict_item = ImagePredictItem(p,1,size,255,_visdat->frame_id);
             predicted_image_path.push_back(_image_predict_item);
-        } else
+        } else {
             _image_predict_item.valid = false;
-        reset_tracker_ouput(time);
+            reset_tracker_ouput(time);
+        }
 
         if (_landing_pad_location_set && ignores_for_other_trkrs.size() == 0) {
             //some times there is some motion noise around the drone when it is just sitting on the ground
@@ -73,7 +75,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
         if (!_image_predict_item.valid) // hmm, funky
             calc_takeoff_prediction();
         else
-            update_drone_prediction();
+            update_prediction(); // use control inputs to make prediction #282
 
         if (enable_viz_diff) {
             cv::Point2f tmpp = drone_startup_im_location();
@@ -109,8 +111,8 @@ void DroneTracker::track(double time, bool drone_is_active) {
         break;
     } case dts_tracking: {
         ItemTracker::track(time);
-        update_drone_prediction();
-        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_predict_item.size*0.6f);
+        update_prediction(); // use control inputs to make prediction #282
+        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_predict_item.size*pparams.imscalef*0.6f);
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
         else if (!_tracking)
@@ -118,8 +120,8 @@ void DroneTracker::track(double time, bool drone_is_active) {
         break;
     } case dts_detect_yaw: {
         ItemTracker::track(time);
-        update_drone_prediction();
-        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_predict_item.size*0.6f);
+        update_prediction();
+        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_predict_item.size*pparams.imscalef*0.6f);
         break;
     } case dts_landing_init: {
         ignores_for_other_trkrs.push_back(IgnoreBlob(drone_startup_im_location(),_drone_blink_im_size*5,time+landing_ignore_timeout, IgnoreBlob::landing_spot));
@@ -127,8 +129,8 @@ void DroneTracker::track(double time, bool drone_is_active) {
         [[fallthrough]];
     } case dts_landing: {
         ItemTracker::track(time);
-        update_drone_prediction();
-        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_predict_item.size*0.6f);
+        update_prediction();
+        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_predict_item.size*pparams.imscalef*0.6f);
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
         else if (!_tracking)
@@ -245,55 +247,6 @@ void DroneTracker::clean_ignore_blobs(double time) {
             new_ignores_for_insect_tracker.push_back(ignores_for_other_trkrs.at(i));
     }
     ignores_for_other_trkrs= new_ignores_for_insect_tracker;
-}
-
-void DroneTracker::update_drone_prediction() {
-    track_data td = Last_track_data();
-    cv::Point3f pos = td.pos();
-    cv::Point3f vel = td.vel();
-    cv::Point3f acc= td.acc();
-    //todo: use control inputs to make prediction
-
-    // predict insect position for next frame
-    float dt_pred = 1.f/pparams.fps;
-    cv::Point3f predicted_pos = pos + vel*dt_pred + 0.5*acc*powf(dt_pred,2);
-
-    //transform back to image coordinates
-    std::vector<cv::Point3d> world_coordinates,camera_coordinates;
-    cv::Point3f tmp(predicted_pos.x,predicted_pos.y,predicted_pos.z);
-
-    //derotate camera and convert to double:
-    cv::Point3d tmpd;
-    float theta = -_visdat->camera_angle * deg2rad;
-    float temp_y = tmp.y * cosf(theta) + tmp.z * sinf(theta);
-    tmpd.z = static_cast<double>(-tmp.y * sinf(theta) + tmp.z * cosf(theta));
-    tmpd.y = static_cast<double>(temp_y);
-    tmpd.x = static_cast<double>(tmp.x);
-
-    world_coordinates.push_back(tmpd);
-    cv::perspectiveTransform(world_coordinates,camera_coordinates,_visdat->Qfi);
-
-    //update tracker with prediciton
-    cv::Point2f image_location;
-    image_location.x= camera_coordinates.at(0).x/pparams.imscalef;
-    image_location.y= camera_coordinates.at(0).y/pparams.imscalef;
-
-    if (image_location.x < 0)
-        image_location.x = 0;
-    else if (image_location.x >= IMG_W/pparams.imscalef)
-        image_location.x = IMG_W/pparams.imscalef-1;
-    if (image_location.y < 0)
-        image_location.y = 0;
-    else if (image_location.y >= IMG_H/pparams.imscalef)
-        image_location.y = IMG_H/pparams.imscalef-1;
-
-    //issue #108:
-    predicted_image_path.back().x = image_location.x;
-    predicted_image_path.back().y = image_location.y;
-    _image_predict_item.x = image_location.x;
-    _image_predict_item.y = image_location.y;
-    _image_predict_item.size = world2im_size(_world_item.pt+cv::Point3f(dparams.radius,0,0),_world_item.pt-cv::Point3f(dparams.radius,0,0),_visdat->Qfi);
-
 }
 
 cv::Mat DroneTracker::get_big_blob(cv::Mat Mask, int connectivity) {

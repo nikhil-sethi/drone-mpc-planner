@@ -125,8 +125,8 @@ void ItemTracker::calc_world_props_blob_generic(BlobProps * pbs, bool use_max) {
         w.trkr_id = _uid;
 
         p*=pparams.imscalef;
-        float radius = pbs->radius*pparams.imscalef;
-        w.disparity = stereo_match(p,_visdat->diffL,_visdat->diffR,radius);
+        float size = pbs->size*pparams.imscalef;
+        w.disparity = stereo_match(p,_visdat->diffL,_visdat->diffR,size);
 
         if (w.disparity < min_disparity || w.disparity > max_disparity) {
             w.disparity_in_range = false;
@@ -135,10 +135,10 @@ void ItemTracker::calc_world_props_blob_generic(BlobProps * pbs, bool use_max) {
 
             std::vector<Point3d> camera_coordinates, world_coordinates;
             camera_coordinates.push_back(Point3d(p.x,p.y,-w.disparity));
-            camera_coordinates.push_back(Point3d(p.x+radius,p.y,-w.disparity)); // to calc world radius
+            camera_coordinates.push_back(Point3d(p.x+size,p.y,-w.disparity)); // to calc world radius
             cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
 
-            w.radius = cv::norm(world_coordinates[0]-world_coordinates[1]);
+            w.radius = cv::norm(world_coordinates[0]-world_coordinates[1]) / 2;
             w.radius_in_range = w.radius < max_size;
 
             w.x = world_coordinates[0].x;
@@ -279,9 +279,9 @@ void ItemTracker::predict(float dt, int frame_id) {
     predicted_image_path.push_back(_image_predict_item );
 }
 
-float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR, float radius) {
+float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR, float size) {
     //get retangle around blob / changed pixels
-    float rectsize = radius*2.f + 2.f;
+    float rectsize = size + 2.f;
 
     float rectsizeX = ceilf(rectsize*0.5f); // *4.0 results in drone-insect disparity interaction
     float rectsizeY = ceilf(rectsize*0.5f);  // *3.0
@@ -366,6 +366,29 @@ void ItemTracker::check_consistency(float dt) {
         if (dist > 0.4f )
             reset_filters = true;
     }
+}
+
+void ItemTracker::update_prediction() {
+    track_data td = Last_track_data();
+    cv::Point3f pos = td.pos();
+    cv::Point3f vel = td.vel();
+    cv::Point3f acc= td.acc();
+    //todo: use control inputs to make prediction
+
+    // predict insect position for next frame
+    float dt_pred = 1.f/pparams.fps;
+    cv::Point3f predicted_pos = pos + vel*dt_pred + 0.5*acc*powf(dt_pred,2);
+
+    auto p = world2im_2d(predicted_pos,_visdat->Qfi,_visdat->camera_angle);
+
+    //update tracker with prediciton
+    _image_predict_item.x = std::clamp(static_cast<int>(p.x),0,IMG_W-1)/pparams.imscalef;
+    _image_predict_item.y = std::clamp(static_cast<int>(p.y),0,IMG_H-1)/pparams.imscalef;
+    _image_predict_item.size = world2im_size(_world_item.pt+cv::Point3f(dparams.radius,0,0),_world_item.pt-cv::Point3f(dparams.radius,0,0),_visdat->Qfi) / pparams.imscalef;
+    //issue #108:
+    predicted_image_path.back().x = _image_predict_item.x;
+    predicted_image_path.back().y = _image_predict_item.y;
+    predicted_image_path.back().size = _image_predict_item.size;
 }
 
 void ItemTracker::update_prediction_state(cv::Point2f image_location, float disparity) {
@@ -501,7 +524,7 @@ bool ItemTracker::check_ignore_blobs_generic(BlobProps * pbs) {
     bool in_ignore_zone = false;
     for (auto ignore : ignores_for_me) {
         float dist_ignore = sqrtf(powf(ignore.p.x-pbs->x,2)+powf(ignore.p.y-pbs->y,2));
-        if (dist_ignore < pbs->radius + ignore.radius ) {
+        if (dist_ignore < pbs->size + ignore.radius ) {
             ignore.was_used = true;
             pbs->ignores.push_back(ignore);
             in_ignore_zone = true;
@@ -513,13 +536,13 @@ bool ItemTracker::check_ignore_blobs_generic(BlobProps * pbs) {
 
 float ItemTracker::score(BlobProps blob, ImageItem ref) {
     float dist = sqrtf(powf(ref.x-blob.x,2)+powf(ref.y-blob.y,2));
-    float im_size_diff = fabs(ref.size - blob.radius) / (blob.radius + ref.size);
+    float im_size_diff = fabs(ref.size - blob.size) / (blob.size + ref.size);
     float score = 1.f / (dist + 15.f*im_size_diff); // TODO: certainty
 
     if (_image_predict_item.valid) {
         float dist_pred = sqrtf(powf(_image_predict_item.x-blob.x,2)+powf(_image_predict_item.y-blob.y,2));
         float ps = smoother_im_size.latest();
-        float im_size_diff_pred = fabs(ps - blob.radius) / (blob.radius+ps);
+        float im_size_diff_pred = fabs(ps - blob.size) / (blob.size+ps);
         float score_pred = 1.f / (dist_pred + 15.f*im_size_diff_pred); // TODO: certainty
         if (score_pred > score)
             score = score_pred;

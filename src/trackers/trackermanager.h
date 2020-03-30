@@ -33,7 +33,7 @@ struct processed_blobs {
         return cv::Point2f(props->x,props->y);
     }
     float size() {
-        return props->radius;
+        return props->size;
     }
     float pixel_max() {
         return props->pixel_max;

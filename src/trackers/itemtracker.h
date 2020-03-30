@@ -143,6 +143,7 @@ protected:
     bool check_ignore_blobs_generic(BlobProps * pbs);
     void cleanup_paths();
     float score(BlobProps blob, ImageItem ref);
+    void update_prediction();
 public:
 
     int16_t uid() {return _uid;}

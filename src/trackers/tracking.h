@@ -42,11 +42,11 @@ struct BlobWorldProps {
     int trkr_id = -1;
 };
 struct BlobProps {
-    float x,y,radius,pixel_max;
+    float x,y,size,pixel_max;
     std::vector<IgnoreBlob> ignores;
     cv::Mat mask;
     cv::Point2i pt_max; // location of the initially detected maximum pixel change (usefull for led detection)
-    BlobProps(cv::Point2f pt, cv::Point2i ptmax,float blob_radius,float blob_pixel_max, cv::Mat blob_mask) : radius(blob_radius), pixel_max(blob_pixel_max), mask(blob_mask), pt_max(ptmax) {
+    BlobProps(cv::Point2f pt, cv::Point2i ptmax,float blob_size,float blob_pixel_max, cv::Mat blob_mask) : size(blob_size), pixel_max(blob_pixel_max), mask(blob_mask), pt_max(ptmax) {
         x = pt.x;
         y = pt.y;
     }
@@ -82,7 +82,7 @@ struct ImageItem {
     ImageItem(BlobProps blob, int frameid, float matching_score, uint keypointid) {
         x = blob.x;
         y = blob.y;
-        size = blob.radius;
+        size = blob.size;
         pixel_max = blob.pixel_max;
         score = matching_score;
         frame_id = frameid;

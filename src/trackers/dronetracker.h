@@ -109,8 +109,6 @@ private:
     bool detect_lift_off();
     bool detect_takeoff();
 
-    void update_drone_prediction(); //tmp
-
     cv::Mat get_big_blob(cv::Mat Mask, int connectivity);
     cv::Mat extract_mask_column(cv::Mat mask_big, float range_left, float range_right, float side_percentage, enum side side_);
     cv::Mat split_mask_half(cv::Mat mask_big, enum side);
