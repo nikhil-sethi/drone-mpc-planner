@@ -105,7 +105,7 @@ private:
     void clean_ignore_blobs(double time);
 
     void calc_takeoff_prediction();
-    void delete_takeoff_fake_motion(int duration);
+    void delete_takeoff_fake_motion(int frames);
     bool detect_lift_off();
     bool detect_takeoff();
 
@@ -161,6 +161,7 @@ public:
         }
         _target = drone_startup_location();
     }
+    void delete_landing_motion(float duration);
     void calc_world_item(BlobProps * pbs, double time);
     bool check_ignore_blobs(BlobProps * pbs);
 

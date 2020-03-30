@@ -140,14 +140,20 @@ void DroneTracker::track(double time, bool drone_is_active) {
     (*_logger) << static_cast<int16_t>(_drone_tracking_status) << ";";
 }
 
-void DroneTracker::delete_takeoff_fake_motion(int duration) {
+void DroneTracker::delete_takeoff_fake_motion(int nframes) {
     int delete_dst;
     if (_world_item.valid)
         delete_dst = ceilf(normf(_drone_blink_im_location - _world_item.iti.pt()) - _world_item.iti.size);
     else
         delete_dst = world2im_size(_drone_blink_world_location+cv::Point3f(dparams.radius,0,0),_drone_blink_world_location-cv::Point3f(dparams.radius,0,0),_visdat->Qfi);
     delete_dst = std::clamp(delete_dst,30,60) + 5;
-    _visdat->reset_spot_on_motion_map(drone_startup_im_location()*pparams.imscalef, _drone_blink_im_disparity,delete_dst,duration);
+    _visdat->reset_spot_on_motion_map(drone_startup_im_location()*pparams.imscalef, _drone_blink_im_disparity,delete_dst,nframes);
+}
+void DroneTracker::delete_landing_motion(float duration) {
+    int delete_dst;
+    delete_dst = world2im_size(_drone_blink_world_location+cv::Point3f(dparams.radius,0,0),_drone_blink_world_location-cv::Point3f(dparams.radius,0,0),_visdat->Qfi);
+    delete_dst = std::clamp(delete_dst,30,60) + 5;
+    _visdat->reset_spot_on_motion_map(drone_startup_im_location()*pparams.imscalef, _drone_blink_im_disparity,delete_dst,duration*pparams.fps);
 }
 
 void DroneTracker::calc_takeoff_prediction() {
