@@ -178,33 +178,26 @@ bool DroneTracker::detect_lift_off() {
 }
 
 void DroneTracker::calc_world_item(BlobProps * props, double time [[maybe_unused]]) {
-    if (landing()) {
-        props->x = props->pt_max.x; // for a super precise landing, we track the led instead of the drone shape
-        props->y = props->pt_max.y;
-    }
 
-    calc_world_props_blob_generic(props);
-
-    float dist2takeoff =normf(props->world_props.pt() - _drone_blink_world_location);
-    float takeoff_y =  props->world_props.y - _drone_blink_world_location.y;
-
-    if (taking_off() && dist2takeoff < 0.2f && !props->world_props.bkg_check_ok) {
-        props->world_props.bkg_check_ok = true;
-    } else if (landing()) {
-        props->world_props.z+=dparams.radius;
-    }
+    calc_world_props_blob_generic(props,landing());
 
     props->world_props.valid = props->world_props.bkg_check_ok && props->world_props.disparity_in_range && props->world_props.radius_in_range;
 
-    if (inactive()) {
+    if (landing())
+        props->world_props.z -= dparams.radius; // because we track the led during landing
+    else if (inactive())
         props->world_props.valid = false;
-    } else if (taking_off() && props->world_props.valid && !_manual_flight_mode) {
+    else if (taking_off() && !_manual_flight_mode) {
+        float dist2takeoff = normf(props->world_props.pt() - _drone_blink_world_location);
+        float takeoff_y = props->world_props.y - _drone_blink_world_location.y;
+        if ( dist2takeoff < 0.2f && !props->world_props.bkg_check_ok)
+            props->world_props.valid =  props->world_props.disparity_in_range && props->world_props.radius_in_range;
 
         // std::cout << to_string_with_precision(time,2) + "; dist2takeoff: " <<  to_string_with_precision(dist2takeoff,2) << " "
         //           << ", takeoff_y: " << to_string_with_precision(takeoff_y,2)
         //           << ", world size: " << to_string_with_precision(props->world_props.radius,2) << std::endl;
 
-        if (takeoff_y < 0.02f) {
+        if (takeoff_y < 0.02f && props->world_props.valid ) {
             props->world_props.valid = false;
             props->world_props.takeoff_reject = true;
         }

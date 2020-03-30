@@ -139,7 +139,7 @@ protected:
     void init_logger();
     float stereo_match(cv::Point closestL, cv::Mat diffL, cv::Mat diffR, float radius);
     void reset_tracker_ouput(double time);
-    void calc_world_props_blob_generic(BlobProps * pbs);
+    void calc_world_props_blob_generic(BlobProps * pbs, bool use_max);
     bool check_ignore_blobs_generic(BlobProps * pbs);
     void cleanup_paths();
     float score(BlobProps blob, ImageItem ref);

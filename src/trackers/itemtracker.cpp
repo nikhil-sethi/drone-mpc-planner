@@ -113,10 +113,15 @@ void ItemTracker::init_kalman() {
     cv::setIdentity(kfL.measurementNoiseCov, cv::Scalar(1e-1));
 }
 
-void ItemTracker::calc_world_props_blob_generic(BlobProps * pbs) {
+void ItemTracker::calc_world_props_blob_generic(BlobProps * pbs, bool use_max) {
     if (pbs->world_props.trkr_id != _uid) {
         BlobWorldProps w;
-        cv::Point2f p(pbs->x, pbs->y);
+        cv::Point2f p;
+        if (use_max)
+            p = pbs->pt_max;
+        else
+            p = Point2f(pbs->x, pbs->y);
+
         w.trkr_id = _uid;
 
         p*=pparams.imscalef;

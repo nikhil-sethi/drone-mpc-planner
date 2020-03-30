@@ -90,7 +90,7 @@ void InsectTracker::update_insect_prediction() {
 }
 
 void InsectTracker::calc_world_item(BlobProps * pbs, double time [[maybe_unused]]) {
-    calc_world_props_blob_generic(pbs);
+    calc_world_props_blob_generic(pbs,false);
     pbs->world_props.valid = pbs->world_props.bkg_check_ok && pbs->world_props.disparity_in_range & pbs->world_props.radius_in_range;
 
     if (_blobs_are_fused_cnt > 1 * pparams.fps) // if the insect and drone are fused, the drone is accelerating through it and should become seperate again within a limited time

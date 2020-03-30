@@ -130,9 +130,7 @@ BlinkTracker::blinking_drone_states BlinkTracker::detect_blink(double time, bool
 }
 
 void BlinkTracker::calc_world_item(BlobProps * pbs, double time [[maybe_unused]]) {
-    pbs->x = pbs->pt_max.x; // override blob location with actual max location, to pinpoint the location of the led (instead of the average which includes reflections #283
-    pbs->y = pbs->pt_max.y;
-    calc_world_props_blob_generic(pbs);
+    calc_world_props_blob_generic(pbs,true);
     pbs->world_props.valid = pbs->world_props.disparity_in_range && pbs->world_props.radius_in_range;
 }
 bool BlinkTracker::check_ignore_blobs(BlobProps * pbs) {
