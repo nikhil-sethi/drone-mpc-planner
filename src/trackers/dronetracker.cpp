@@ -29,7 +29,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
         _tracking = false;
         if (_landing_pad_location_set) {
             cv::Point2f p= world2im_2d(drone_startup_location(),_visdat->Qfi,_visdat->camera_angle) / pparams.imscalef;
-            float size = world2im_size(drone_startup_location()+cv::Point3f(dparams.radius,0,0),drone_startup_location()-cv::Point3f(dparams.radius,0,0),_visdat->Qfi) / pparams.imscalef / 2; // /2 to make it a radius instead of size again
+            float size = world2im_size(drone_startup_location()+cv::Point3f(dparams.radius,0,0),drone_startup_location()-cv::Point3f(dparams.radius,0,0),_visdat->Qfi) / pparams.imscalef;
             _image_predict_item = ImagePredictItem(p,1,size,255,_visdat->frame_id);
             predicted_image_path.push_back(_image_predict_item);
         } else
@@ -158,8 +158,8 @@ void DroneTracker::calc_takeoff_prediction() {
     float dt = current_time - start_take_off_time;
     cv::Point3f expected_drone_location = drone_startup_location() + 0.5* acc *powf(dt,2);
 
-    float radius = world2im_size(drone_startup_location()+cv::Point3f(dparams.radius,0,0),drone_startup_location()-cv::Point3f(dparams.radius,0,0),_visdat->Qfi) / pparams.imscalef;
-    _image_predict_item = ImagePredictItem(world2im_2d(expected_drone_location,_visdat->Qfi,_visdat->camera_angle),1,radius,255,_visdat->frame_id);
+    float size = world2im_size(drone_startup_location()+cv::Point3f(dparams.radius,0,0),drone_startup_location()-cv::Point3f(dparams.radius,0,0),_visdat->Qfi) / pparams.imscalef;
+    _image_predict_item = ImagePredictItem(world2im_2d(expected_drone_location,_visdat->Qfi,_visdat->camera_angle),1,size,255,_visdat->frame_id);
 }
 
 bool DroneTracker::detect_lift_off() {
