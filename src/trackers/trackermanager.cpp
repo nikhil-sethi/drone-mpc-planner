@@ -207,12 +207,12 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                         }
                         if (enable_viz_max_points) {
                             cv::Mat viz = vizs_maxs.at(blob.id);
-                            cv::Point2i pt(viz.cols/3,viz.rows - 14*(trkr->viz_id()+1));
+                            cv::Point2i pt(viz.cols/4,viz.rows - 14*(trkr->viz_id()+1));
                             putText(viz,to_string_with_precision(score,1),pt,FONT_HERSHEY_SIMPLEX,0.3,tracker_color(trkr));
                         }
                     } else if (enable_viz_max_points) {
                         cv::Mat viz = vizs_maxs.at(blob.id);
-                        cv::Point2i pt(viz.cols/3,viz.rows -6-14*(trkr->viz_id()+1));
+                        cv::Point2i pt(viz.cols/4,viz.rows -6-14*(trkr->viz_id()+1));
                         putText(viz,"Ign.",pt,FONT_HERSHEY_SIMPLEX,0.3,tracker_color(trkr));
                     }
                 }
@@ -274,7 +274,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
 
                                     if (enable_viz_max_points) {
                                         cv::Mat viz = vizs_maxs.at(blob.id);
-                                        cv::Point2i pt(viz.cols/3,viz.rows -6-14*(trkr->viz_id()+1));
+                                        cv::Point2i pt(viz.cols/4,viz.rows -6-14*(trkr->viz_id()+1));
                                         putText(viz,"New",pt,FONT_HERSHEY_SIMPLEX,0.3,tracker_color(trkr));
                                     }
 
@@ -286,14 +286,14 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                             } else {
                                 if (enable_viz_max_points) {
                                     cv::Mat viz = vizs_maxs.at(blob.id);
-                                    cv::Point2i pt(viz.cols/3,viz.rows-6-14*(trkr->viz_id()+1));
+                                    cv::Point2i pt(viz.cols/4,viz.rows-6-14*(trkr->viz_id()+1));
                                     putText(viz,"Ign.",pt,FONT_HERSHEY_SIMPLEX,0.3,tracker_color(trkr));
                                 }
                             }
                         } else {
                             if (enable_viz_max_points) {
                                 cv::Mat viz = vizs_maxs.at(blob.id);
-                                cv::Point2i pt(viz.cols/3,viz.rows -6-14*(trkr->viz_id()+1));
+                                cv::Point2i pt(viz.cols/4,viz.rows -6-14*(trkr->viz_id()+1));
                                 putText(viz,"Trkd.",pt,FONT_HERSHEY_SIMPLEX,0.3,tracker_color(trkr));
                             }
                         }
@@ -485,10 +485,10 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                         msg_str = msg_str + " ign.";
                     if (wblob.takeoff_reject)
                         msg_str = msg_str + " tko.";
-                    putText(viz,msg_str,cv::Point2i(viz.cols/3,viz.rows - 20),FONT_HERSHEY_SIMPLEX,0.3,blob.color());
+                    putText(viz,msg_str,cv::Point2i(viz.cols/4,viz.rows - 20),FONT_HERSHEY_SIMPLEX,0.3,blob.color());
                 }
                 std::string coor_str = to_string_with_precision(wblob.x,3) + ", " + to_string_with_precision(wblob.y,3) + ", " + to_string_with_precision(wblob.z,3);
-                putText(viz,coor_str,cv::Point2i(viz.cols/3,viz.rows - 10),FONT_HERSHEY_SIMPLEX,0.3,blob.color());
+                putText(viz,coor_str,cv::Point2i(viz.cols/4,viz.rows - 10),FONT_HERSHEY_SIMPLEX,0.3,blob.color());
             }
         }
     }
@@ -598,12 +598,13 @@ void TrackerManager::update_max_change_points() {
             //blur, to filter out noise
             cv::GaussianBlur(cropped,cropped,Size(5,5),0);
 
+            int mask_thresh = (max-avg_bkg(0)) * 0.1+avg_bkg(0);
             //threshold to get only pixels that are heigher then the motion noise
             //mask = cropped > bkg_frame(r2)+1;
             if (enable_insect_drone_split)
                 mask = cropped > drn_ins_split_thresh +  static_cast<float>(avg_bkg(0));
             else
-                mask = cropped > (max-avg(0)) * 0.3;
+                mask = cropped > mask_thresh;
 
             Moments mo = moments(mask,true);
             Point2f COG = Point2f(static_cast<float>(mo.m10) / static_cast<float>(mo.m00), static_cast<float>(mo.m01) / static_cast<float>(mo.m00));
@@ -613,6 +614,7 @@ void TrackerManager::update_max_change_points() {
                 Point dummy;
                 minMaxLoc(cropped, &min, &max, &dummy, &dummy);
                 mask = cropped > (max-avg(0)) * 0.6; // use a much higher threshold because the noise was blurred away
+                mask_thresh = (max-avg_bkg(0)) * 0.1+avg_bkg(0);
                 mo = moments(mask,true);
                 COG = Point2f(static_cast<float>(mo.m10) / static_cast<float>(mo.m00), static_cast<float>(mo.m01) / static_cast<float>(mo.m00));
             }
@@ -624,10 +626,13 @@ void TrackerManager::update_max_change_points() {
                 cv::Mat frameL_small_roi;
                 cv::resize(frameL_roi,frameL_small_roi,cv::Size(frameL_roi.cols/pparams.imscalef,frameL_roi.rows/pparams.imscalef));
 
-                viz = create_row_image({roi,mask,frameL_small_roi},CV_8UC1,viz_max_points_resizef);
+                viz = create_row_image({roi,mask,frameL_small_roi,bkg_frame(rect)*10},CV_8UC1,viz_max_points_resizef);
                 cvtColor(viz,viz,CV_GRAY2BGR);
                 if (enable_insect_drone_split)
                     putText(viz,"i-d",Point(0, viz.rows-13),FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,255,255));
+
+                std::string thresh_str = "max: " + to_string_with_precision(max,0) + " avg: " + to_string_with_precision(avg(0),0) + "/" + to_string_with_precision(avg_bkg(0),0) + " t: " + to_string(mask_thresh);
+                putText(viz,thresh_str,cv::Point2i(viz.cols/4,10),FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,0,255));
             }
             bool viz_pushed = false;
 
