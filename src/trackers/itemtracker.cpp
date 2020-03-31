@@ -63,6 +63,10 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
 
     init_logger();
     initialized = true;
+
+    if (pparams.has_screen)
+        enable_draw_stereo_viz = false;
+
 }
 
 void ItemTracker::init_logger() {
@@ -126,7 +130,7 @@ void ItemTracker::calc_world_props_blob_generic(BlobProps * pbs, bool use_max) {
 
         p*=pparams.imscalef;
         float size = pbs->size*pparams.imscalef;
-        w.disparity = stereo_match(p,_visdat->diffL,_visdat->diffR,size);
+        w.disparity = stereo_match(p,size);
 
         if (w.disparity < min_disparity || w.disparity > max_disparity) {
             w.disparity_in_range = false;
@@ -279,25 +283,31 @@ void ItemTracker::predict(float dt, int frame_id) {
     predicted_image_path.push_back(_image_predict_item );
 }
 
-float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR, float size) {
-    //get retangle around blob / changed pixels
-    float rectsize = size + 2.f;
+float ItemTracker::stereo_match(cv::Point closestL,float size) {
 
-    float rectsizeX = ceilf(rectsize*0.5f); // *4.0 results in drone-insect disparity interaction
-    float rectsizeY = ceilf(rectsize*0.5f);  // *3.0
+    cv::Mat diffL,diffR;
+
+    bool use_imscalef; // enable flag for a cpu optimization to work on half res images for disparity matching
+    if (size > 20) {
+        size /=pparams.imscalef;
+        closestL /=pparams.imscalef;
+        diffL = _visdat->diffL_small;
+        diffR = _visdat->diffR_small;
+        use_imscalef = true;
+    } else {
+        use_imscalef = false;
+        diffL = _visdat->diffL;
+        diffR = _visdat->diffR;
+    }
+
+    int rectsize = ceilf((size + 2.f)*0.5f);
+
     int x1,y1,x2,y2;
-    x1 = static_cast<int>((closestL.x-rectsizeX));
-    x2 = static_cast<int>(2*rectsizeX);
-    y1 = static_cast<int>((closestL.y-rectsizeY));
-    y2 = static_cast<int>(2*rectsizeY);
-    if (x1 < 0)
-        x1=0;
-    else if (x1 >= diffL.cols)
-        x1  = diffL.cols-1;
-    if (y1 < 0)
-        y1=0;
-    else if (y1 >= diffL.rows)
-        y1  = diffL.rows-1;
+    x1 = std::clamp(closestL.x-rectsize,0,diffL.cols-1);
+    x2 = 2*rectsize;
+    y1 = std::clamp(closestL.y-rectsize,0,diffL.rows-1);
+    y2 = 2*rectsize;
+
     if (x1+x2 >= diffL.cols)
         x2=diffL.cols-x1;
     if (y1+y2 >= diffL.rows)
@@ -308,19 +318,26 @@ float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR,
     int disparity = 0;
     float minerr = std::numeric_limits<float>::max();
     int tmp_max_disp = max_disparity;
+    if (use_imscalef)
+        tmp_max_disp /=2;
     if (x1 - tmp_max_disp < 0)
         tmp_max_disp = x1;
 
     int disp_start = min_disparity;
     int disp_end = tmp_max_disp;
     if (n_frames_tracking>5) {
-        disp_start = std::max(static_cast<int>(floorf(disparity_prev))-2,disp_start);
-        disp_end = std::min(static_cast<int>(ceilf(disparity_prev))+2,disp_end);
+        auto tmp_disp_prev = disparity_prev;
+        if (use_imscalef)
+            tmp_disp_prev/=2;
+
+        disp_start = std::max(static_cast<int>(floorf(tmp_disp_prev))-2,disp_start);
+        disp_end = std::min(static_cast<int>(ceilf(tmp_disp_prev))+2,disp_end);
     }
 
     int err [tmp_max_disp] = {0};
+    cv::Rect roiR;
     for (int i=disp_start; i<disp_end; i++) {
-        cv::Rect roiR(x1-i,y1,x2,y2);
+        roiR = cv::Rect (x1-i,y1,x2,y2);
         cv::Mat errV = abs(diffL(roiL) - diffR(roiR));
         err[i] = cv::sum(errV)[0];
         if (err[i] < minerr ) {
@@ -331,6 +348,15 @@ float ItemTracker::stereo_match(cv::Point closestL, cv::Mat diffL,cv::Mat diffR,
 
     if (disparity > 0) {
         float sub_err_disp = estimate_sub_disparity(disparity,err);
+        if (use_imscalef)
+            sub_err_disp *=2;
+
+        if (enable_draw_stereo_viz) {
+            if (use_imscalef)
+                viz_disp = create_column_image({diffL(roiL),diffR(roiR)},CV_8UC1,4);
+            else
+                viz_disp = create_column_image({diffL(roiL),diffR(roiR)},CV_8UC1,2);
+        }
         return sub_err_disp;
     } else {
         return 0;

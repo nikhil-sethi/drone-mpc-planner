@@ -514,7 +514,7 @@ bool TrackerManager::tracker_active(ItemTracker * trkr, bool drone_is_active) {
 //is segmented from the background noise, and seen as a blob. It then
 //tries if this blob can be further splitted if necessary.
 void TrackerManager::update_max_change_points() {
-    cv::Mat diff = _visdat->diffL_small;
+    cv::Mat diff = _visdat->diffL_small.clone();
     _blobs.clear();
 
     vizs_maxs.clear();

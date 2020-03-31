@@ -53,6 +53,7 @@ protected:
         }
     };
 
+    bool enable_draw_stereo_viz = false;
     int min_disparity;
     int max_disparity;
 
@@ -137,7 +138,7 @@ protected:
     std::vector<tracking::BlobProps> _all_blobs;
 
     void init_logger();
-    float stereo_match(cv::Point closestL, cv::Mat diffL, cv::Mat diffR, float radius);
+    float stereo_match(cv::Point closestL, float radius);
     void reset_tracker_ouput(double time);
     void calc_world_props_blob_generic(BlobProps * pbs, bool use_max);
     bool check_ignore_blobs_generic(BlobProps * pbs);
@@ -167,6 +168,8 @@ public:
     double last_sighting_time = 0;
 
     bool tracking() {return _tracking;}
+
+    cv::Mat viz_disp;
 
     void close(void);
     void init(std::ofstream *logger, VisionData *_visdat, std::string name, int16_t viz_id);

@@ -568,6 +568,8 @@ void Visualizer::paint() {
             cv::imshow("motion points", _trackers->viz_max_points);
         //        if (_trackers->diff_viz.cols > 0)
         //            cv::imshow("diff", _trackers->diff_viz);
+        if (_trackers->dronetracker()->viz_disp.cols>0)
+            imshow("stereo",_trackers->dronetracker()->viz_disp);
 
         new_tracker_viz_data_requested = true;
     }
