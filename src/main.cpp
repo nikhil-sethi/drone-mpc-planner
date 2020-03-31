@@ -4,7 +4,7 @@
 #include <sstream>
 #include <iostream>
 #include <iomanip>
-#include <signal.h>
+#include <csignal>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h> //usleep
@@ -53,6 +53,7 @@ using namespace std;
 
 /***********Variables****************/
 unsigned char key = 0;
+volatile std::sig_atomic_t term_sig_fired;
 int imgcount; // to measure fps
 GStream output_video_results,output_video_LR,output_video_cuts;
 
@@ -344,6 +345,13 @@ void init_insect_log(int n) {
 }
 
 void handle_key(double time [[maybe_unused]]) {
+    if (term_sig_fired==2) {
+        std::cout <<"\nCaught ctrl-c: " << term_sig_fired << std::endl;
+        key = 27;
+    } else if (term_sig_fired==15) {
+        std::cout <<"\nCaught TERM signal: " << term_sig_fired << std::endl;
+        key = 27;
+    }
     if (key == 27) { // set by an external ctrl-c
         return;
     }
@@ -494,22 +502,18 @@ void close_thread_pool() {
 }
 
 void kill_sig_handler(int s) {
-    std::cout << "Caught ctrl-c:" << s << std::endl;
-    key=27;
-    close(true);
-    exit(0);
+    term_sig_fired = s;
 }
 void init_terminal_signals() {
     //init ctrl - c catch
     struct sigaction sigIntHandler;
     sigIntHandler.sa_handler = kill_sig_handler;
-    sigemptyset(&sigIntHandler.sa_mask);
     sigIntHandler.sa_flags = 0;
     sigaction(SIGINT, &sigIntHandler, NULL);
 
+    //init killall catch
     struct sigaction sigTermHandler;
     sigTermHandler.sa_handler = kill_sig_handler;
-    sigemptyset(&sigTermHandler.sa_mask);
     sigTermHandler.sa_flags = 0;
     sigaction(SIGTERM, &sigTermHandler, NULL);
 }
@@ -738,6 +742,8 @@ void wait_for_dark() {
 
 int main( int argc, char **argv )
 {
+    // signal(SIGINT, kill_sig_handler);
+
     cmdcenter.reset_commandcenter_status_file("Starting");
     bool realsense_reset;
     try {
