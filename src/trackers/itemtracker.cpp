@@ -412,9 +412,10 @@ void ItemTracker::update_prediction() {
     _image_predict_item.y = std::clamp(static_cast<int>(p.y),0,IMG_H-1)/pparams.imscalef;
     _image_predict_item.size = world2im_size(_world_item.pt+cv::Point3f(dparams.radius,0,0),_world_item.pt-cv::Point3f(dparams.radius,0,0),_visdat->Qfi) / pparams.imscalef;
     //issue #108:
-    predicted_image_path.back().x = _image_predict_item.x;
-    predicted_image_path.back().y = _image_predict_item.y;
-    predicted_image_path.back().size = _image_predict_item.size;
+    if (predicted_image_path.size())
+        predicted_image_path.erase(predicted_image_path.end());
+    predicted_image_path.push_back(_image_predict_item);
+
 }
 
 void ItemTracker::update_prediction_state(cv::Point2f image_location, float disparity) {
