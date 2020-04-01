@@ -20,6 +20,7 @@ public: tracker_type type() { return tt_drone;}
 
 private:
     double start_take_off_time = 0;
+    double spinup_detect_time = 0;
     double current_time = 0;
 
     double startup_location_ignore_timeout = 1; // TODO: make this dependent on the motion_update_iterator_max

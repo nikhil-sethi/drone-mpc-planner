@@ -29,7 +29,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
         path.clear();
         _tracking = false;
         if (_landing_pad_location_set) {
-            cv::Point2f p= world2im_2d(drone_startup_location(),_visdat->Qfi,_visdat->camera_angle) / pparams.imscalef;
+            cv::Point3f p= world2im_3d(drone_startup_location(),_visdat->Qfi,_visdat->camera_angle) / pparams.imscalef;
             float size = world2im_size(drone_startup_location()+cv::Point3f(dparams.radius,0,0),drone_startup_location()-cv::Point3f(dparams.radius,0,0),_visdat->Qfi) / pparams.imscalef;
             _image_predict_item = ImagePredictItem(p,1,size,255,_visdat->frame_id);
             predicted_image_path.push_back(_image_predict_item);
@@ -75,7 +75,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
         if (!_image_predict_item.valid) // hmm, funky
             calc_takeoff_prediction();
         else
-            update_prediction(); // use control inputs to make prediction #282
+            update_prediction(time); // use control inputs to make prediction #282
 
         if (enable_viz_diff) {
             cv::Point2f tmpp = drone_startup_im_location();
@@ -86,6 +86,8 @@ void DroneTracker::track(double time, bool drone_is_active) {
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
         else if (_world_item.valid) {
+            if (!spinup_detected)
+                spinup_detect_time = time;
             spinup_detected = true;
             if (detect_lift_off()) {
                 liftoff_detected = true;
@@ -111,7 +113,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
         break;
     } case dts_tracking: {
         ItemTracker::track(time);
-        update_prediction(); // use control inputs to make prediction #282
+        update_prediction(time); // use control inputs to make prediction #282
         _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_predict_item.size*pparams.imscalef*0.6f);
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
@@ -120,7 +122,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
         break;
     } case dts_detect_yaw: {
         ItemTracker::track(time);
-        update_prediction();
+        update_prediction(time);
         _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_predict_item.size*pparams.imscalef*0.6f);
         break;
     } case dts_landing_init: {
@@ -129,7 +131,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
         [[fallthrough]];
     } case dts_landing: {
         ItemTracker::track(time);
-        update_prediction();
+        update_prediction(time);
         _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_predict_item.size*pparams.imscalef*0.6f);
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
@@ -163,11 +165,13 @@ void DroneTracker::calc_takeoff_prediction() {
     cv::Point3f acc = _target-drone_startup_location();
     acc = acc/(normf(acc));
     acc = acc * dparams.thrust;
-    float dt = current_time - start_take_off_time;
+    float dt = static_cast<float>(current_time - spinup_detect_time);
+    if (!spinup_detected)
+        dt = 0;
     cv::Point3f expected_drone_location = drone_startup_location() + 0.5* acc *powf(dt,2);
 
     float size = world2im_size(drone_startup_location()+cv::Point3f(dparams.radius,0,0),drone_startup_location()-cv::Point3f(dparams.radius,0,0),_visdat->Qfi);
-    _image_predict_item = ImagePredictItem(world2im_2d(expected_drone_location,_visdat->Qfi,_visdat->camera_angle)/pparams.imscalef,1,size/pparams.imscalef,255,_visdat->frame_id);
+    _image_predict_item = ImagePredictItem(world2im_3d(expected_drone_location,_visdat->Qfi,_visdat->camera_angle)/pparams.imscalef,1,size/pparams.imscalef,255,_visdat->frame_id);
     //issue #108:
     if (predicted_image_path.size())
         predicted_image_path.erase(predicted_image_path.end());

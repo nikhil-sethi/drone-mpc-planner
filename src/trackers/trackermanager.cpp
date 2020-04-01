@@ -706,9 +706,9 @@ void TrackerManager::update_max_change_points() {
                 vizs_maxs.push_back(viz);
             }
             if (single_blob) { // we could not split this blob, so we can use the original COG
-                float radius = sqrtf(mo.m00); // this seems to work reasonably well, it is assuming a close to square-like area
+                float size = sqrtf(mo.m00/M_PI)*2.f; // assuming a circular shape
                 if (COG.x == COG.x) { // if not nan
-                    _blobs.push_back(tracking::BlobProps(COG, maxt, radius*2,max, mask));
+                    _blobs.push_back(tracking::BlobProps(COG, maxt, size,max, mask));
                     if (enable_viz_max_points) {
                         Point2f tmpCOG;
                         tmpCOG.x = COG.x - rect.x;
@@ -716,7 +716,7 @@ void TrackerManager::update_max_change_points() {
                         tmpCOG *= viz_max_points_resizef;
                         cv::circle(viz,tmpCOG,1,Scalar(0,0,255),1);
                         cv::circle(viz,tmpCOG,roi_radius*viz_max_points_resizef,Scalar(0,0,255),1);  // remove radius
-                        cv::circle(viz,tmpCOG,radius*viz_max_points_resizef,Scalar(0,255,0),1);  // blob radius
+                        cv::circle(viz,tmpCOG,0.5f*size*viz_max_points_resizef,Scalar(0,255,0),1);  // blob radius
                         putText(viz,to_string_with_precision(tmpCOG.y,0),tmpCOG,FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,0,0));
                     }
                     //remove this COG from the ROI:
@@ -740,7 +740,7 @@ void TrackerManager::update_max_change_points() {
                                     tmpCOG *= viz_max_points_resizef;
                                     cv::circle(viz,tmpCOG,1,Scalar(0,0,255),1);
                                     cv::circle(viz,tmpCOG,roi_radius*viz_max_points_resizef,Scalar(0,0,255),1);  // remove radius
-                                    cv::circle(viz,tmpCOG,radius*viz_max_points_resizef,Scalar(0,255,0),1);  // blob radius
+                                    cv::circle(viz,tmpCOG,0.5f*size*viz_max_points_resizef,Scalar(0,255,0),1);  // blob radius
                                     putText(viz,"maxt " + to_string_with_precision(tmpCOG.y,0),tmpCOG,FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,0,0));
                                 }
                                 //remove this COG from the ROI:

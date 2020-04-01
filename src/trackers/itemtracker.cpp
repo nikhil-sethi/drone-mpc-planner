@@ -32,8 +32,6 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
         createTrackbar("background_subtract_zone_factor", window_name, &background_subtract_zone_factor, 100);
     }
 
-    init_kalman();
-
     smoother_posX.init(smooth_width_pos);
     smoother_posY.init(smooth_width_pos);
     smoother_posZ.init(smooth_width_pos);
@@ -92,29 +90,6 @@ void ItemTracker::init_logger() {
         (*_logger) << "saccY_" << _name << "; ";
         (*_logger) << "saccZ_" << _name << "; ";
     }
-}
-
-void ItemTracker::init_kalman() {
-    kfL = cv::KalmanFilter(stateSize, measSize, contrSize, kalman_type);
-    stateL =cv::Mat(stateSize, 1, kalman_type);  // [x,y,v_x,v_y,w,h]
-
-    //TODO: tune kalman init values
-    cv::setIdentity(kfL.transitionMatrix);
-    kfL.measurementMatrix = cv::Mat::zeros(measSize, stateSize, kalman_type);
-    kfL.measurementMatrix.at<float>(0) = 1.0f;
-    kfL.measurementMatrix.at<float>(7) = 1.0f;
-    kfL.measurementMatrix.at<float>(16) = 1.0f;
-    kfL.measurementMatrix.at<float>(23) = 1.0f;
-
-    kfL.processNoiseCov.at<float>(0) = 1e-2f;
-    kfL.processNoiseCov.at<float>(7) = 1e-2f;
-    kfL.processNoiseCov.at<float>(14) = 0.1f;
-    kfL.processNoiseCov.at<float>(21) = 0.1f;
-    kfL.processNoiseCov.at<float>(28) = 1e-2f;
-    kfL.processNoiseCov.at<float>(35) = 1e-2f;
-
-    // Measures Noise Covariance Matrix R
-    cv::setIdentity(kfL.measurementNoiseCov, cv::Scalar(1e-1));
 }
 
 void ItemTracker::calc_world_props_blob_generic(BlobProps * pbs, bool use_max) {
@@ -179,7 +154,6 @@ void ItemTracker::update_world_candidate() { //TODO: rename
 void ItemTracker::track(double time) {
 
     double dt_tracking= (time-t_prev_tracking);
-    double dt_predict= (time-t_prev_predict);
     t_prev_predict = time;
 
     update_world_candidate();
@@ -187,7 +161,6 @@ void ItemTracker::track(double time) {
     if ( _world_item.valid) {
         check_consistency(dt_tracking);
         update_tracker_ouput(_world_item.pt,dt_tracking,time,_world_item.iti.disparity);
-        update_prediction_state(_image_item.pt(), _world_item.iti.disparity);
         n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
         t_prev_tracking = time; // update dt only if item was detected
         n_frames_tracking++;
@@ -200,11 +173,6 @@ void ItemTracker::track(double time) {
             reset_tracker_ouput(time);
         }
     }
-
-    if (_tracking)
-        predict(dt_predict,_visdat->frame_id);
-    else
-        _image_predict_item.valid = false;
 
     cleanup_paths();
 
@@ -258,55 +226,31 @@ void ItemTracker::append_log() {
         track_history.erase(track_history.begin());
 }
 
-void ItemTracker::predict(float dt, int frame_id) {
-    cv::Point2f predicted_image_locationL;
-    kfL.transitionMatrix.at<float>(2) = dt;
-    kfL.transitionMatrix.at<float>(9) = dt;
-    stateL = kfL.predict();
-
-    predicted_image_locationL.x = stateL.at<float>(0);
-    predicted_image_locationL.y = stateL.at<float>(1);
-
-    float certainty;
-    if (_image_predict_item.valid) {
-        certainty  = 1-((1 - _image_predict_item.certainty) * certainty_factor); // certainty_factor times less certain that the previous prediction. The previous prediction certainty is updated with an meas vs predict error score
-    }   else {
-        certainty = certainty_init;
-    }
-
-    if (certainty < 0)
-        certainty = 0;
-    if (certainty > 1)
-        certainty = 1;
-
-    _image_predict_item = ImagePredictItem(predicted_image_locationL,certainty,smoother_im_size.latest(),smoother_brightness.latest(),frame_id);
-    predicted_image_path.push_back(_image_predict_item );
-}
-
 float ItemTracker::stereo_match(cv::Point closestL,float size) {
 
     cv::Mat diffL,diffR;
 
     bool use_imscalef; // enable flag for a cpu optimization to work on half res images for disparity matching
-    if (size > 20) {
+    int radius;
+    if (size > 25) {
         size /=pparams.imscalef;
         closestL /=pparams.imscalef;
         diffL = _visdat->diffL_small;
         diffR = _visdat->diffR_small;
+        radius = ceilf((size + 4.f)*0.5f);
         use_imscalef = true;
     } else {
         use_imscalef = false;
         diffL = _visdat->diffL;
         diffR = _visdat->diffR;
+        radius = ceilf((size + 2.f)*0.5f);
     }
 
-    int rectsize = ceilf((size + 2.f)*0.5f);
-
     int x1,y1,x2,y2;
-    x1 = std::clamp(closestL.x-rectsize,0,diffL.cols-1);
-    x2 = 2*rectsize;
-    y1 = std::clamp(closestL.y-rectsize,0,diffL.rows-1);
-    y2 = 2*rectsize;
+    x1 = std::clamp(closestL.x-radius,0,diffL.cols-1);
+    x2 = 2*radius;
+    y1 = std::clamp(closestL.y-radius,0,diffL.rows-1);
+    y2 = 2*radius;
 
     if (x1+x2 >= diffL.cols)
         x2=diffL.cols-x1;
@@ -325,7 +269,14 @@ float ItemTracker::stereo_match(cv::Point closestL,float size) {
 
     int disp_start = min_disparity;
     int disp_end = tmp_max_disp;
-    if (n_frames_tracking>5) {
+
+    if (_image_predict_item.valid && _image_predict_item.certainty > 0.9f) {
+        float disp_prev = _image_predict_item.disparity *pparams.imscalef;
+        if (use_imscalef)
+            disp_prev/=2;
+        disp_start = std::max(static_cast<int>(floorf(disp_prev))-2,disp_start);
+        disp_end = std::min(static_cast<int>(ceilf(disp_prev))+2,disp_end);
+    } else if (n_frames_tracking>5) {
         auto tmp_disp_prev = disparity_prev;
         if (use_imscalef)
             tmp_disp_prev/=2;
@@ -352,11 +303,23 @@ float ItemTracker::stereo_match(cv::Point closestL,float size) {
             sub_err_disp *=2;
 
         if (enable_draw_stereo_viz) {
-            if (use_imscalef)
-                viz_disp = create_column_image({diffL(roiL),diffR(roiR)},CV_8UC1,4);
-            else
-                viz_disp = create_column_image({diffL(roiL),diffR(roiR)},CV_8UC1,2);
+
+            if (use_imscalef) {
+                roiL.x = roiL.x*2;
+                roiL.y = roiL.y*2;
+                roiL.width = roiL.width*2;
+                roiL.height = roiL.height*2;
+                roiR.x = roiR.x*2;
+                roiR.y = roiR.y*2;
+                roiR.width = roiR.width*2;
+                roiR.height = roiR.height*2;
+            }
+            cv::Mat viz_st1 = create_column_image({_visdat->diffL(roiL),_visdat->diffR(roiR)},CV_8UC1,1);
+            cv::Mat viz_st2 = create_column_image({_visdat->frameL(roiL),_visdat->frameR(roiR)},CV_8UC1,1);
+            viz_disp = create_row_image({viz_st1,viz_st2},CV_8UC1,4);
         }
+
+        std::cout << "Disp: " << sub_err_disp << " pred: " << _image_predict_item.disparity*pparams.imscalef << std::endl;
         return sub_err_disp;
     } else {
         return 0;
@@ -394,58 +357,41 @@ void ItemTracker::check_consistency(float dt) {
     }
 }
 
-void ItemTracker::update_prediction() {
-    track_data td = Last_track_data();
-    cv::Point3f pos = td.pos();
-    cv::Point3f vel = td.vel();
-    cv::Point3f acc= td.acc();
-    //todo: use control inputs to make prediction
+void ItemTracker::update_prediction(double time) {
+    vector<track_data>::reverse_iterator td;
+    for (td = track_history.rbegin(); td != track_history.rend(); ++td) {
+        if (td->pos_valid)
+            break;
+    }
+    if (!td->pos_valid) {
+        _image_predict_item.valid = false;
+    } else {
+        cv::Point3f pos = td->pos();
+        cv::Point3f vel = td->vel();
+        cv::Point3f acc= td->acc();
+        //todo: use control inputs to make prediction
 
-    // predict insect position for next frame
-    float dt_pred = 1.f/pparams.fps;
-    cv::Point3f predicted_pos = pos + vel*dt_pred + 0.5*acc*powf(dt_pred,2);
+        // predict insect position for next frame
+        float dt_pred = static_cast<float>(time - td->time)+1.f/pparams.fps;
+        cv::Point3f predicted_pos = pos + vel*dt_pred + 0.5*acc*powf(dt_pred,2);
 
-    auto p = world2im_2d(predicted_pos,_visdat->Qfi,_visdat->camera_angle);
+        auto p = world2im_3d(predicted_pos,_visdat->Qfi,_visdat->camera_angle);
 
-    //update tracker with prediciton
-    _image_predict_item.x = std::clamp(static_cast<int>(p.x),0,IMG_W-1)/pparams.imscalef;
-    _image_predict_item.y = std::clamp(static_cast<int>(p.y),0,IMG_H-1)/pparams.imscalef;
-    _image_predict_item.size = world2im_size(_world_item.pt+cv::Point3f(dparams.radius,0,0),_world_item.pt-cv::Point3f(dparams.radius,0,0),_visdat->Qfi) / pparams.imscalef;
+        //update tracker with prediciton
+        _image_predict_item.x = std::clamp(static_cast<int>(p.x),0,IMG_W-1)/pparams.imscalef;
+        _image_predict_item.y = std::clamp(static_cast<int>(p.y),0,IMG_H-1)/pparams.imscalef;
+        _image_predict_item.disparity = std::clamp(p.z,0.f,static_cast<float>(max_disparity))/pparams.imscalef;
+        _image_predict_item.size = world2im_size(_world_item.pt+cv::Point3f(dparams.radius,0,0),_world_item.pt-cv::Point3f(dparams.radius,0,0),_visdat->Qfi) / pparams.imscalef;
+    }
     //issue #108:
-    if (predicted_image_path.size())
-        predicted_image_path.erase(predicted_image_path.end());
     predicted_image_path.push_back(_image_predict_item);
 
-}
-
-void ItemTracker::update_prediction_state(cv::Point2f image_location, float disparity) {
-    cv::Mat measL(measSize, 1, kalman_type);
-    measL.at<float>(0) = image_location.x;
-    measL.at<float>(1) = image_location.y;
-    measL.at<float>(2) = disparity;
-
-    if (!_tracking) { // First detection!
-        kfL.errorCovPre.at<float>(0) = 1; // px
-        kfL.errorCovPre.at<float>(7) = 1; // px
-        kfL.errorCovPre.at<float>(14) = 1;
-        kfL.errorCovPre.at<float>(21) = 1;
-        kfL.errorCovPre.at<float>(28) = 1; // px
-        kfL.errorCovPre.at<float>(35) = 1; // px
-
-        stateL.at<float>(0) = measL.at<float>(0);
-        stateL.at<float>(1) = measL.at<float>(1);
-        stateL.at<float>(2) = 0;
-
-        kfL.statePost = stateL;
-        _tracking = true;
-    }
-    else
-        kfL.correct(measL);
 }
 
 void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  double time, float disparity) {
 
     disparity_prev = disparity;
+    _tracking = true;
 
     //_world_item.certainty = calc_certainty(_world_item.iti.k());; // TODO does not work properly
 
@@ -544,7 +490,6 @@ void ItemTracker::reset_tracker_ouput(double time) {
     _image_predict_item.valid = false;
     data.time = time;
     track_history.push_back(data);
-    init_kalman();
 }
 
 bool ItemTracker::check_ignore_blobs_generic(BlobProps * pbs) {

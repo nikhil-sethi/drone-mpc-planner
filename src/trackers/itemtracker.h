@@ -67,30 +67,17 @@ protected:
     void serialize_settings();
 
 private:
-    void predict(float dt, int frame_id);
-
     float estimate_sub_disparity(int disparity,int * err);
     void check_consistency(float dt);
     void update_disparity(float disparity, float dt);
-    void update_prediction_state(cv::Point2f image_location, float disparity);
     void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, double time, float disparity);
 
     void update_world_candidate();
 
     float calc_certainty(cv::KeyPoint item);
-    void init_kalman();
-
-    // Kalman Filter
-    int stateSize = 6;
-    int measSize = 4;
-    int contrSize = 0;
 
     int16_t _uid = -1;
     int16_t _viz_id = -1;
-
-    int kalman_type = CV_32F;
-    cv::KalmanFilter kfL;
-    cv::Mat stateL;
 
     double t_prev_tracking = 0;
     double t_prev_predict = 0;
@@ -144,7 +131,7 @@ protected:
     bool check_ignore_blobs_generic(BlobProps * pbs);
     void cleanup_paths();
     float score(BlobProps blob, ImageItem ref);
-    void update_prediction();
+    void update_prediction(double time);
 public:
 
     int16_t uid() {return _uid;}

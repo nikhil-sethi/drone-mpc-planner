@@ -93,7 +93,7 @@ struct ImageItem {
 };
 struct ImagePredictItem {
     uint frame_id;
-    float x,y,size,certainty;
+    float x,y,disparity,size,certainty;
     float pixel_max;
     bool valid;
     cv::KeyPoint k() {
@@ -103,9 +103,10 @@ struct ImagePredictItem {
         return cv::Point2f(x,y);
     }
     ImagePredictItem() {}
-    ImagePredictItem(cv::Point2f p, float certainty_, float size_, float pixel_max_, int frameid) {
+    ImagePredictItem(cv::Point3f p, float certainty_, float size_, float pixel_max_, int frameid) {
         x = p.x;
         y = p.y;
+        disparity = p.z;
         size = size_;
         pixel_max = pixel_max_;
         certainty = certainty_;

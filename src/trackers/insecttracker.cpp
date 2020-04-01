@@ -36,7 +36,7 @@ void InsectTracker::track(double time) {
         predicted_image_path.clear();
         path.clear();
     } else {
-        update_prediction();
+        update_prediction(time);
     }
     (*_logger) << '\n';
 }
