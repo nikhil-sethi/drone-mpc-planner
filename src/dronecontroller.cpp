@@ -74,9 +74,9 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     pos_reference_filter.init(1.f/pparams.fps, 1, 1.f/pparams.fps*0.001f, 1.f/pparams.fps*0.001f);
     pos_err_i = {0,0,0};
 
-    pos_modelx.init(1.f/pparams.fps, 1, 0.25, 0.38);
-    pos_modely.init(1.f/pparams.fps, 1, 0.25, 0.38);
-    pos_modelz.init(1.f/pparams.fps, 1, 0.25, 0.38);
+    pos_modelx.init(1.f/pparams.fps, 1, 0.2, 0.38);
+    pos_modely.init(1.f/pparams.fps, 1, 0.2, 0.38);
+    pos_modelz.init(1.f/pparams.fps, 1, 0.2, 0.38);
 
     for (uint i=0; i<N_PLANES; i++) {
         d_vel_err_kiv.at(i).init(1.f/pparams.fps);
@@ -365,9 +365,19 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
             pos_modelx.internal_states(data_drone.pos().x, data_drone.pos().x);
             pos_modely.internal_states(data_drone.pos().y, data_drone.pos().y);
             pos_modelz.internal_states(data_drone.pos().z, data_drone.pos().z);
+            if(data_drone.vel_valid) {
+                float correction_gain = 5.f;
+                pos_modelx.internal_states(data_drone.pos().x-data_drone.vel().x/pparams.fps*correction_gain, data_drone.pos().x-2*data_drone.vel().x/pparams.fps*correction_gain);
+                pos_modely.internal_states(data_drone.pos().y-data_drone.vel().y/pparams.fps*correction_gain, data_drone.pos().y-2*data_drone.vel().y/pparams.fps*correction_gain);
+                pos_modelz.internal_states(data_drone.pos().z-data_drone.vel().z/pparams.fps*correction_gain, data_drone.pos().z-2*data_drone.vel().z/pparams.fps*correction_gain);
+            }
         }
         [[fallthrough]];
     } case fm_flying_pid: {
+        pos_modelx.new_sample(data_target_new.pos().x);
+        pos_modely.new_sample(data_target_new.pos().y);
+        pos_modelz.new_sample(data_target_new.pos().z);
+
         check_emergency_kill(data_drone, data_target_new.pos());
 
         if(!data_drone.pos_valid) {
@@ -1087,14 +1097,14 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::
     cv::Point3f vel_err_d = {errvDx, errvDy, errvDz};
 
     if (ki_pos.x>0) {
-        pos_err_i.x += err_x_filtered;
-        pos_err_i.z += err_z_filtered;
+        pos_err_i.x += (err_x_filtered - setpoint_pos.x + pos_modelx.current_output());
+        pos_err_i.z += (err_z_filtered - setpoint_pos.z + pos_modelz.current_output());
     } else {
         pos_err_i.x = 0;
         pos_err_i.z = 0;
     }
 
-    thrust -= err_y_filtered * ki_pos.y;
+    thrust -= (err_y_filtered - setpoint_pos.y + pos_modely.current_output()) * ki_pos.y;
     pos_err_i.y = 0;
 
     return std::tuple(pos_err_p, pos_err_d, vel_err_p, vel_err_d);
@@ -1119,9 +1129,6 @@ void DroneController::check_tracking_lost(track_data data_drone) {
     }
 }
 void DroneController::check_control_and_tracking_problems(track_data data_drone, cv::Point3f setpoint_pos) {
-    pos_modelx.new_sample(setpoint_pos.x);
-    pos_modely.new_sample(setpoint_pos.y);
-    pos_modelz.new_sample(setpoint_pos.z);
 
     model_error += normf({pos_modelx.current_output() - data_drone.pos().x,
                           pos_modely.current_output() - data_drone.pos().y,
