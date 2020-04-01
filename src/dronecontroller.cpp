@@ -26,6 +26,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
                "hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; " <<
                "joyThrottle; joyRoll; joyPitch; joyYaw; " <<
                "joyArmSwitch; joyModeSwitch; joyTakeoffSwitch;" <<
+               "mmArmSwitch; mmModeSwitch;" <<
                "dt; yaw; yaw_smooth;";
     std::cout << "Initialising control." << std::endl;
     settings_file = "../../xml/" + dparams.control + ".xml";
@@ -497,6 +498,8 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
                static_cast<int>(_joy_arm_switch) << "; " <<
                static_cast<int>(_joy_mode_switch) << "; " <<
                static_cast<int>(_joy_takeoff_switch) << "; " <<
+               _rc->arm_switch << "; " <<
+               _rc->mode << "; " <<
                data_drone.dt << "; " <<
                data_drone.yaw <<  "; " <<
                data_drone.yaw_smooth <<  "; ";
