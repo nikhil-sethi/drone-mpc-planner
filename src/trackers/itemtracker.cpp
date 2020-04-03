@@ -318,8 +318,6 @@ float ItemTracker::stereo_match(cv::Point closestL,float size) {
             cv::Mat viz_st2 = create_column_image({_visdat->frameL(roiL),_visdat->frameR(roiR)},CV_8UC1,1);
             viz_disp = create_row_image({viz_st1,viz_st2},CV_8UC1,4);
         }
-
-        std::cout << "Disp: " << sub_err_disp << " pred: " << _image_predict_item.disparity*pparams.imscalef << std::endl;
         return sub_err_disp;
     } else {
         return 0;
