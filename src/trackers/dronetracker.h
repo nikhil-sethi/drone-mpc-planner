@@ -58,9 +58,12 @@ private:
     cv::Point2f _drone_blink_im_location;
     float _drone_blink_im_disparity;
     float _drone_blink_im_size = 5;
+    float _drone_takeoff_image_size;
     cv::Point3f _drone_blink_world_location;
     bool _landing_pad_location_set = false;
     cv::Point3f _landing_pad_world;
+
+    bool enable_takeoff_motion_delete = false;
 
     bool enable_viz_diff = false;
 

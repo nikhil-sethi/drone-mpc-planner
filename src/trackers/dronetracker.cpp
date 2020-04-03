@@ -30,7 +30,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
         _tracking = false;
         if (_landing_pad_location_set) {
             cv::Point3f p= world2im_3d(drone_startup_location(),_visdat->Qfi,_visdat->camera_angle) / pparams.imscalef;
-            float size = world2im_size(drone_startup_location()+cv::Point3f(dparams.radius,0,0),drone_startup_location()-cv::Point3f(dparams.radius,0,0),_visdat->Qfi) / pparams.imscalef;
+            float size = _drone_takeoff_image_size / pparams.imscalef;
             _image_predict_item = ImagePredictItem(p,1,size,255,_visdat->frame_id);
             predicted_image_path.push_back(_image_predict_item);
         } else {
@@ -58,6 +58,8 @@ void DroneTracker::track(double time, bool drone_is_active) {
     } case dts_detecting_takeoff_init: {
         // remove the indefinite startup location and replace with a time out
         start_take_off_time = time;
+        enable_takeoff_motion_delete = false;
+        _drone_takeoff_image_size = world2im_size(_drone_blink_world_location+cv::Point3f(dparams.radius,0,0),_drone_blink_world_location-cv::Point3f(dparams.radius,0,0),_visdat->Qfi);
         ignores_for_other_trkrs.clear();
         ignores_for_other_trkrs.push_back(IgnoreBlob(drone_startup_im_location(),_drone_blink_im_size*5,time+startup_location_ignore_timeout, IgnoreBlob::takeoff_spot));
         _drone_tracking_status = dts_detecting_takeoff;
@@ -92,7 +94,8 @@ void DroneTracker::track(double time, bool drone_is_active) {
                 liftoff_detected = true;
                 if (detect_takeoff()) {
                     _drone_tracking_status = dts_tracking;
-                    delete_takeoff_fake_motion(pparams.fps/2);
+                    enable_takeoff_motion_delete = true;
+                    delete_takeoff_fake_motion(1);
                 }
             }
         }
@@ -139,6 +142,15 @@ void DroneTracker::track(double time, bool drone_is_active) {
         break;
     }
     }
+
+    if (enable_takeoff_motion_delete) {
+        if (normf(cv::Point2f(_world_item.iti.x,_world_item.iti.y) - _drone_blink_im_location) < 1.5f * _drone_takeoff_image_size)
+            delete_takeoff_fake_motion(1);
+        else
+            enable_takeoff_motion_delete = false;
+
+    }
+
     clean_ignore_blobs(time);
     (*_logger) << static_cast<int16_t>(_drone_tracking_status) << ";";
 }
@@ -148,13 +160,13 @@ void DroneTracker::delete_takeoff_fake_motion(int nframes) {
     if (_world_item.valid)
         delete_dst = ceilf(normf(_drone_blink_im_location - _world_item.iti.pt()) - _world_item.iti.size);
     else
-        delete_dst = world2im_size(_drone_blink_world_location+cv::Point3f(dparams.radius,0,0),_drone_blink_world_location-cv::Point3f(dparams.radius,0,0),_visdat->Qfi);
+        delete_dst = _drone_takeoff_image_size;
     delete_dst = std::clamp(delete_dst,30,60) + 5;
     _visdat->reset_spot_on_motion_map(drone_startup_im_location()*pparams.imscalef, _drone_blink_im_disparity,delete_dst,nframes);
 }
 void DroneTracker::delete_landing_motion(float duration) {
     int delete_dst;
-    delete_dst = world2im_size(_drone_blink_world_location+cv::Point3f(dparams.radius,0,0),_drone_blink_world_location-cv::Point3f(dparams.radius,0,0),_visdat->Qfi);
+    delete_dst = _drone_takeoff_image_size;
     delete_dst = std::clamp(delete_dst,30,60) + 5;
     _visdat->reset_spot_on_motion_map(drone_startup_im_location()*pparams.imscalef, _drone_blink_im_disparity,delete_dst,duration*pparams.fps);
 }
@@ -164,13 +176,13 @@ void DroneTracker::calc_takeoff_prediction() {
     cv::Point3f acc = _target-drone_startup_location();
     acc = acc/(normf(acc));
     acc = acc * dparams.thrust;
-    float dt = std::clamp(static_cast<float>(current_time - (spinup_detect_time+0.3)),0.f,1.f);
+    float dt = std::clamp(static_cast<float>(current_time - (spinup_detect_time + 0.3)),0.f,1.f);
     if (!spinup_detected)
         dt = 0;
     cv::Point3f expected_drone_location = drone_startup_location() + 0.5* acc *powf(dt,2);
 
-    float size = world2im_size(drone_startup_location()+cv::Point3f(dparams.radius,0,0),drone_startup_location()-cv::Point3f(dparams.radius,0,0),_visdat->Qfi);
-    _image_predict_item = ImagePredictItem(world2im_3d(expected_drone_location,_visdat->Qfi,_visdat->camera_angle)/pparams.imscalef,1,size/pparams.imscalef,255,_visdat->frame_id);
+
+    _image_predict_item = ImagePredictItem(world2im_3d(expected_drone_location,_visdat->Qfi,_visdat->camera_angle)/pparams.imscalef,1,_drone_takeoff_image_size/pparams.imscalef,255,_visdat->frame_id);
     predicted_image_path.push_back(_image_predict_item);
 }
 
