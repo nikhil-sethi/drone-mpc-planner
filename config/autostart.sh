@@ -47,5 +47,5 @@ while [ 1 ]; do
 
 	./pats --pats-xml /home/pats/code/pats/xml/pats_deploy.xml --drone-id $DRONE_ID 2>&1 | /usr/bin/tee --append terminal.log || true
 
-	sleep 10s
+	sleep 3s
 done
