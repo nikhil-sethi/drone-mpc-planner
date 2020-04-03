@@ -109,7 +109,7 @@ private:
     void clean_ignore_blobs(double time);
 
     void calc_takeoff_prediction();
-    void delete_takeoff_fake_motion(int frames);
+    void delete_takeoff_fake_motion();
     bool detect_lift_off();
     bool detect_takeoff();
 
