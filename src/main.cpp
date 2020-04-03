@@ -145,6 +145,17 @@ void process_video() {
         std::unique_lock<std::mutex> lk(tp[0].m2,std::defer_lock);
         tp[0].data_processed.wait(lk, []() {return tp[0].data_is_processed; });
         tp[0].data_is_processed= false;
+
+        if (term_sig_fired==2) {
+            std::cout <<"\nCaught ctrl-c: " << term_sig_fired << std::endl;
+            key = 27;
+        } else if (term_sig_fired==15) {
+            std::cout <<"\nCaught TERM signal: " << term_sig_fired << std::endl;
+            key = 27;
+        } else if (term_sig_fired) {
+            std::cout <<"\nCaught unknown signal: " << term_sig_fired << std::endl;
+            key = 27;
+        }
         if (pparams.has_screen) {
             static int speed_div;
             if (!(speed_div++ % 4) || ((log_replay_mode && !cam.turbo) || cam.frame_by_frame)) {
@@ -345,13 +356,6 @@ void init_insect_log(int n) {
 }
 
 void handle_key(double time [[maybe_unused]]) {
-    if (term_sig_fired==2) {
-        std::cout <<"\nCaught ctrl-c: " << term_sig_fired << std::endl;
-        key = 27;
-    } else if (term_sig_fired==15) {
-        std::cout <<"\nCaught TERM signal: " << term_sig_fired << std::endl;
-        key = 27;
-    }
     if (key == 27) { // set by an external ctrl-c
         return;
     }
