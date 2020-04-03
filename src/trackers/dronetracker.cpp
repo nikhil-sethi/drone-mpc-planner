@@ -67,15 +67,14 @@ void DroneTracker::track(double time, bool drone_is_active) {
         [[fallthrough]];
     } case dts_detecting_takeoff: {
         delete_takeoff_fake_motion(1);
-        if (!_world_item.valid) {
-            calc_takeoff_prediction();
-        }
+
 
         ItemTracker::track(time);
-        if (!_image_predict_item.valid) // hmm, funky
+        if (!_world_item.valid) {
             calc_takeoff_prediction();
-        else
-            update_prediction(time); // use control inputs to make prediction #282
+        } else {
+            update_prediction(time);
+        }
 
         if (enable_viz_diff) {
             cv::Point2f tmpp = drone_startup_im_location();
@@ -165,16 +164,13 @@ void DroneTracker::calc_takeoff_prediction() {
     cv::Point3f acc = _target-drone_startup_location();
     acc = acc/(normf(acc));
     acc = acc * dparams.thrust;
-    float dt = static_cast<float>(current_time - spinup_detect_time);
+    float dt = std::clamp(static_cast<float>(current_time - (spinup_detect_time+0.3)),0.f,1.f);
     if (!spinup_detected)
         dt = 0;
     cv::Point3f expected_drone_location = drone_startup_location() + 0.5* acc *powf(dt,2);
 
     float size = world2im_size(drone_startup_location()+cv::Point3f(dparams.radius,0,0),drone_startup_location()-cv::Point3f(dparams.radius,0,0),_visdat->Qfi);
     _image_predict_item = ImagePredictItem(world2im_3d(expected_drone_location,_visdat->Qfi,_visdat->camera_angle)/pparams.imscalef,1,size/pparams.imscalef,255,_visdat->frame_id);
-    //issue #108:
-    if (predicted_image_path.size())
-        predicted_image_path.erase(predicted_image_path.end());
     predicted_image_path.push_back(_image_predict_item);
 }
 
