@@ -47,12 +47,6 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
     frame_id = new_frame_id;
     _current_frame_time = time;
 
-    if (use_overexposed_map) {
-        cv::Mat tmp;
-        frameL.copyTo(tmp,overexposed_map);
-        frameL = tmp;
-    }
-
     cv::Mat frameL_prev16 = frameL16;
     cv::Mat frameR_prev16 = frameR16;
     cv::Mat tmpL;
@@ -174,17 +168,15 @@ void VisionData::collect_no_drone_frames(cv::Mat dL) {
     }
 }
 
-void VisionData::create_overexposed_removal_mask(cv::Point2f drone_im_location, float blink_size) {
+void VisionData::create_overexposed_removal_mask(cv::Point2f drone_im_location, float drone_im_size) {
     int dilation_size = 5;
     cv::Mat element = getStructuringElement( cv::MORPH_RECT,cv::Size( 2*dilation_size + 1, 2*dilation_size+1 ),cv::Point( dilation_size, dilation_size ) );
-    cv::Mat mask = frameL < 254;
-    cv::circle(mask,drone_im_location,blink_size*dilation_size,255, cv::FILLED);
-    if (camera_exposure < 5000)
-        cv::circle(mask,drone_im_location,50,255, cv::FILLED); // in case the charging pad is overexposed with daylight
-    cv::erode(mask,overexposed_map,element);
+
+    cv::Mat maskL = frameL < 254;
+    cv::erode(maskL,overexposed_mapL,element);
+    cv::circle(overexposed_mapL,drone_im_location,drone_im_size,255, cv::FILLED);
+
     _reset_motion_integration = true;
-    if (overexposed_map.cols)
-        use_overexposed_map = true;
 }
 
 void VisionData::enable_background_motion_map_calibration(float duration) {

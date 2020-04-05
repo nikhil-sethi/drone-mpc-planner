@@ -54,14 +54,8 @@ cv::Point3f im2world(cv::Point2f p_im,float disparity, cv::Mat Qf, float camera_
     return w;
 }
 //returns the pixel size of a world object]
-int world2im_size(cv::Point3f p1, cv::Point3f p2, cv::Mat Qfi) {
-    //transform back to image coordinates
-    std::vector<cv::Point3d> world_coordinates,camera_coordinates;
-    world_coordinates.push_back(cv::Point3d(p1.x,p1.y,p1.z));
-    world_coordinates.push_back(cv::Point3d(p2.x,p2.y,p2.z));
-    cv::perspectiveTransform(world_coordinates,camera_coordinates,Qfi);
-    double res = cv::norm(camera_coordinates.at(0)-camera_coordinates.at(1));
-    return round(res);
+int world2im_size(cv::Point3f p1, cv::Point3f p2, cv::Mat Qfi, float camera_angle) {
+    return round(cv::norm(world2im_2d(p1,Qfi,camera_angle)-world2im_2d(p2,Qfi,camera_angle)));
 }
 
 bool file_exist (const std::string& name) {

@@ -131,7 +131,7 @@ void TrackerManager::update_trackers(double time,long long frame_number, bool dr
             if (_mode == mode_locate_drone) {
                 if (btrkr->state() == BlinkTracker::bds_found) {
                     _dtrkr->set_drone_landing_location(btrkr->image_item().pt(),btrkr->world_item().iti.disparity,btrkr->smoothed_size_image(),btrkr->world_item().pt);
-                    _camview->p0_bottom_plane(_dtrkr->drone_startup_location().y, true);
+                    _camview->p0_bottom_plane(_dtrkr->drone_takeoff_location().y, true);
                     _mode = mode_wait_for_insect;
                 }
             } else if (btrkr->ignores_for_other_trkrs.size() == 0) {
@@ -244,7 +244,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
             if (!trkr->tracking()) {
                 if (tracker_active(trkr, drone_is_active)) {
                     for (auto &blob : pbs) {
-                        if (!blob.tracked()) {
+                        if (!blob.tracked() && (!blob.props->in_overexposed_area || trkr->type() == tt_blink)) {
 
                             //check against static ignore points
                             auto props = blob.props;
@@ -317,7 +317,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
         //see if there are still keypoints left untracked, create new trackers for them
         for (auto &blob : pbs) {
             auto props = blob.props;
-            if (!blob.tracked() && !blob.ignored && _trackers.size() < 30) { // if so, start tracking it!
+            if (!blob.tracked() && (!props->in_overexposed_area || _mode == mode_locate_drone) && !blob.ignored && _trackers.size() < 30) { // if so, start tracking it!
                 if (_mode == mode_locate_drone) {
 
                     bool too_close = false;
@@ -351,7 +351,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                         if (dronetracker()->tracking()) {
                             dist_to_drone = normf(dronetracker()->world_item().pt- props->world_props.pt());
                         } else {
-                            dist_to_drone = normf(dronetracker()->drone_startup_location() - props->world_props.pt());
+                            dist_to_drone = normf(dronetracker()->drone_takeoff_location()/pparams.imscalef - props->world_props.pt());
                         }
                         if (dist_to_drone < InsectTracker::new_tracker_drone_ignore_zone_size) {
                             InsectTracker *it;
@@ -689,7 +689,7 @@ void TrackerManager::update_max_change_points() {
                                 COG2.x += rect.x;
                                 COG2.y += rect.y;
                                 uchar px_max = diff.at<uchar>(COG2);
-                                _blobs.push_back(tracking::BlobProps(COG2,maxt,radius*2,px_max,mask));
+                                _blobs.push_back(tracking::BlobProps(COG2,maxt,radius*2,px_max,mask,_visdat->is_in_overexposed_area(COG2)));
 
                                 //remove this COG from the ROI:
                                 cv::circle(diff, COG2, roi_radius, Scalar(0), CV_FILLED);
@@ -708,7 +708,7 @@ void TrackerManager::update_max_change_points() {
             if (single_blob) { // we could not split this blob, so we can use the original COG
                 float size = sqrtf(mo.m00/M_PI)*2.f; // assuming a circular shape
                 if (COG.x == COG.x) { // if not nan
-                    _blobs.push_back(tracking::BlobProps(COG, maxt, size,max, mask));
+                    _blobs.push_back(tracking::BlobProps(COG, maxt, size,max, mask,_visdat->is_in_overexposed_area(COG)));
                     if (enable_viz_max_points) {
                         Point2f tmpCOG;
                         tmpCOG.x = COG.x - rect.x;
@@ -732,7 +732,7 @@ void TrackerManager::update_max_change_points() {
                             d.y = ipi.pt().y - maxt.y;
                             float dist = norm(d);
                             if (dist < roi_radius) {
-                                _blobs.push_back(tracking::BlobProps(maxt, maxt, 1,max, mask));
+                                _blobs.push_back(tracking::BlobProps(maxt, maxt, 1,max, mask,_visdat->is_in_overexposed_area(maxt)));
                                 if (enable_viz_max_points) {
                                     Point2f tmpCOG;
                                     tmpCOG.x = maxt.x - rect.x;
@@ -790,7 +790,7 @@ InsectTracker * TrackerManager::insecttracker_best() {
 
     cv::Point3f current_drone_pos = _dtrkr->Last_track_data().pos();
     if (_dtrkr->Last_track_data().pos_valid) {
-        current_drone_pos = _dtrkr->drone_startup_location();
+        current_drone_pos = _dtrkr->drone_takeoff_location();
     }
 
     for (auto trkr : insecttrackers()) {

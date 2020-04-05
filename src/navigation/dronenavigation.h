@@ -159,9 +159,9 @@ public:
 
         cv::Point3f tmp = setpoint_pos_world;
         if (!drone_is_flying()) {
-            tmp.x = _trackers->dronetracker()->drone_startup_location().x;
-            tmp.y = _trackers->dronetracker()->drone_startup_location().y+0.5f;
-            tmp.z = _trackers->dronetracker()->drone_startup_location().z;
+            tmp.x = _trackers->dronetracker()->drone_takeoff_location().x;
+            tmp.y = _trackers->dronetracker()->drone_takeoff_location().y+0.5f;
+            tmp.z = _trackers->dronetracker()->drone_takeoff_location().z;
         }
 
         cv::Point3f resf  =world2im_3d(tmp,_visdat->Qfi,_visdat->camera_angle);

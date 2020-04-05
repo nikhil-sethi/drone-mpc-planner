@@ -46,7 +46,8 @@ struct BlobProps {
     std::vector<IgnoreBlob> ignores;
     cv::Mat mask;
     cv::Point2i pt_max; // location of the initially detected maximum pixel change (usefull for led detection)
-    BlobProps(cv::Point2f pt, cv::Point2i ptmax,float blob_size,float blob_pixel_max, cv::Mat blob_mask) : size(blob_size), pixel_max(blob_pixel_max), mask(blob_mask), pt_max(ptmax) {
+    bool in_overexposed_area;
+    BlobProps(cv::Point2f pt, cv::Point2i ptmax,float blob_size,float blob_pixel_max, cv::Mat blob_mask, bool overexposed_area) : size(blob_size), pixel_max(blob_pixel_max), mask(blob_mask), pt_max(ptmax), in_overexposed_area(overexposed_area) {
         x = pt.x;
         y = pt.y;
     }

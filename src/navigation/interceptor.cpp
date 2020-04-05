@@ -42,8 +42,8 @@ void Interceptor::update(bool drone_at_base, double time) {
         update_far_target(drone_at_base);
         update_insect_in_range();
 
-        if (_intercept_pos.y< _trackers->dronetracker()->drone_startup_location().y + minimal_height)
-            _intercept_pos.y  = _trackers->dronetracker()->drone_startup_location().y + minimal_height;
+        if (_intercept_pos.y< _trackers->dronetracker()->drone_takeoff_location().y + minimal_height)
+            _intercept_pos.y  = _trackers->dronetracker()->drone_takeoff_location().y + minimal_height;
 
         if (!_count_insect_not_in_range)
             _interceptor_state = is_move_to_intercept;
@@ -55,8 +55,8 @@ void Interceptor::update(bool drone_at_base, double time) {
         }
         update_flower_of_fire(time);
         update_insect_in_range();
-        if (_intercept_pos.y< _trackers->dronetracker()->drone_startup_location().y + minimal_height)
-            _intercept_pos.y  = _trackers->dronetracker()->drone_startup_location().y + minimal_height;
+        if (_intercept_pos.y< _trackers->dronetracker()->drone_takeoff_location().y + minimal_height)
+            _intercept_pos.y  = _trackers->dronetracker()->drone_takeoff_location().y + minimal_height;
         if (_count_insect_not_in_range>5) {
             _interceptor_state = is_waiting_in_reach_zone;
             break;
@@ -70,8 +70,8 @@ void Interceptor::update(bool drone_at_base, double time) {
         update_far_target(drone_at_base);
         update_insect_in_range();
 
-        if (_intercept_pos.y< _trackers->dronetracker()->drone_startup_location().y + minimal_height)
-            _intercept_pos.y  = _trackers->dronetracker()->drone_startup_location().y + minimal_height;
+        if (_intercept_pos.y< _trackers->dronetracker()->drone_takeoff_location().y + minimal_height)
+            _intercept_pos.y  = _trackers->dronetracker()->drone_takeoff_location().y + minimal_height;
 
         if (_count_insect_not_in_range>5) {
             _interceptor_state = is_waiting_in_reach_zone;
@@ -89,8 +89,8 @@ void Interceptor::update(bool drone_at_base, double time) {
         }
         update_close_target();
         update_insect_in_range();
-        if (_intercept_pos.y< _trackers->dronetracker()->drone_startup_location().y + minimal_height)
-            _intercept_pos.y  = _trackers->dronetracker()->drone_startup_location().y + minimal_height;
+        if (_intercept_pos.y< _trackers->dronetracker()->drone_takeoff_location().y + minimal_height)
+            _intercept_pos.y  = _trackers->dronetracker()->drone_takeoff_location().y + minimal_height;
         if (_count_insect_not_in_range>5) {
             _interceptor_state = is_waiting_in_reach_zone;
             break;
@@ -146,7 +146,7 @@ void Interceptor::update_far_target(bool drone_at_base) {
 
     cv::Point3f drone_pos;
     if (drone_at_base)
-        drone_pos = _trackers->dronetracker()->drone_startup_location();
+        drone_pos = _trackers->dronetracker()->drone_takeoff_location();
     else {
         drone_pos = dtd.pos();
     }

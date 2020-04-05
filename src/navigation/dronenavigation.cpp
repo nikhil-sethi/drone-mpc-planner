@@ -94,7 +94,6 @@ void DroneNavigation::update(double time) {
             _dctrl->LED(true);
             _dctrl->flight_mode(DroneController::fm_blink);
             locate_drone_start_time = time;
-            _visdat->use_overexposed_map = false;
             _navigation_status = ns_locate_drone_wait_led_on;
             [[fallthrough]];
         } case ns_locate_drone_wait_led_on: {
@@ -131,7 +130,7 @@ void DroneNavigation::update(double time) {
             _visdat->disable_fading = false;
             if (time-time_located_drone>1.0 && (_dctrl->drone_state_inactive() || pparams.joystick != rc_none)) { // delay until blinking stopped
                 _visdat->enable_background_motion_map_calibration(2);
-                _visdat->create_overexposed_removal_mask(_trackers->dronetracker()->drone_startup_im_location()*pparams.imscalef,_trackers->dronetracker()->drone_startup_im_size());
+                _visdat->create_overexposed_removal_mask(_trackers->dronetracker()->drone_takeoff_im_location(),_trackers->dronetracker()->drone_takeoff_im_size());
                 if (_nav_flight_mode == nfm_hunt)
                     _navigation_status = ns_wait_for_insect;
                 else if (_nav_flight_mode == nfm_manual)
@@ -406,7 +405,7 @@ void DroneNavigation::update(double time) {
 void DroneNavigation::next_waypoint(Waypoint wp, double time) {
     current_waypoint = new Waypoint(wp);
     if (wp.mode == wfm_takeoff) {
-        cv::Point3f p = _trackers->dronetracker()->drone_startup_location();
+        cv::Point3f p = _trackers->dronetracker()->drone_takeoff_location();
         setpoint_pos_world =  p + wp.xyz;
         setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, CameraView::relaxed);
     } else if (wp.mode == wfm_landing) {

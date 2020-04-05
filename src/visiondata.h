@@ -73,8 +73,6 @@ private:
     cv::Mat diffL16_back;
     double _current_frame_time = 0;
 
-    cv::Mat overexposed_map;
-
     double prev_time_brightness_check = 0;
     float prev_brightness;
     bool _reset_motion_integration = false;
@@ -99,6 +97,7 @@ public:
     cv::Mat frameL_prev,frameR_prev;
     cv::Mat motion_noise_map;
     cv::Mat diffL,diffR,diffL_small,diffR_small;
+    cv::Mat overexposed_mapL;
 
     cv::Mat viz_frame;
 
@@ -112,7 +111,6 @@ public:
     cv::Mat depth_background_mm;
 
     bool disable_fading = false;
-    bool use_overexposed_map = false;
     bool enable_collect_no_drone_frames = true;
 
     double current_time() {return _current_frame_time;}
@@ -130,4 +128,11 @@ public:
     void delete_from_motion_map(cv::Point p, int disparity, int radius, int duration);
     void reset_spot_on_motion_map(cv::Point p, int disparity, int radius, int duration);
     void exclude_drone_from_motion_fading(cv::Point p, int radius);
+
+    bool is_in_overexposed_area(cv::Point p) {
+        if(overexposed_mapL.cols)
+            return overexposed_mapL.at<uint8_t>(p*pparams.imscalef) == 0;
+        else
+            return true;
+    }
 };

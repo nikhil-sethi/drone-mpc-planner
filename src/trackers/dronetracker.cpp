@@ -29,8 +29,8 @@ void DroneTracker::track(double time, bool drone_is_active) {
         path.clear();
         _tracking = false;
         if (_landing_pad_location_set) {
-            cv::Point3f p= world2im_3d(drone_startup_location(),_visdat->Qfi,_visdat->camera_angle) / pparams.imscalef;
-            float size = _drone_takeoff_image_size / pparams.imscalef;
+            cv::Point3f p= world2im_3d(drone_takeoff_location(),_visdat->Qfi,_visdat->camera_angle) / pparams.imscalef;
+            float size = _drone_takeoff_im_size / pparams.imscalef;
             _image_predict_item = ImagePredictItem(p,1,size,255,_visdat->frame_id);
             predicted_image_path.push_back(_image_predict_item);
         } else {
@@ -42,9 +42,9 @@ void DroneTracker::track(double time, bool drone_is_active) {
             //some times there is some motion noise around the drone when it is just sitting on the ground
             //not sure what that is (might be a flickering led?), but the following makes the insect tracker
             //ignore it. Can be better fixed by having a specialized landingspot detector.
-            ignores_for_other_trkrs.push_back(IgnoreBlob(drone_startup_im_location(),
-                                              _drone_blink_im_size*5,
-                                              time+startup_location_ignore_timeout,
+            ignores_for_other_trkrs.push_back(IgnoreBlob(drone_takeoff_im_location()/pparams.imscalef,
+                                              _drone_takeoff_im_size/pparams.imscalef,
+                                              time+takeoff_location_ignore_timeout,
                                               IgnoreBlob::takeoff_spot));
         }
 
@@ -59,9 +59,8 @@ void DroneTracker::track(double time, bool drone_is_active) {
         // remove the indefinite startup location and replace with a time out
         start_take_off_time = time;
         enable_takeoff_motion_delete = true;
-        _drone_takeoff_image_size = world2im_size(_drone_blink_world_location+cv::Point3f(dparams.radius,0,0),_drone_blink_world_location-cv::Point3f(dparams.radius,0,0),_visdat->Qfi);
         ignores_for_other_trkrs.clear();
-        ignores_for_other_trkrs.push_back(IgnoreBlob(drone_startup_im_location(),_drone_blink_im_size*5,time+startup_location_ignore_timeout, IgnoreBlob::takeoff_spot));
+        ignores_for_other_trkrs.push_back(IgnoreBlob(drone_takeoff_im_location()/pparams.imscalef,drone_takeoff_im_size()/pparams.imscalef,time+takeoff_location_ignore_timeout, IgnoreBlob::takeoff_spot));
         _drone_tracking_status = dts_detecting_takeoff;
         spinup_detected = false;
         _take_off_detection_failed = false;
@@ -76,9 +75,9 @@ void DroneTracker::track(double time, bool drone_is_active) {
         }
 
         if (enable_viz_diff) {
-            cv::Point2f tmpp = drone_startup_im_location();
+            cv::Point2f tmpp = blnk_im_location();
             cv::circle(diff_viz,tmpp*pparams.imscalef,1,cv::Scalar(255,0,0),1);
-            cv::circle(diff_viz,drone_startup_im_location()*pparams.imscalef,1,cv::Scalar(0,0,255),1);
+            cv::circle(diff_viz,blnk_im_location()*pparams.imscalef,1,cv::Scalar(0,0,255),1);
             cv::circle(diff_viz, _world_item.image_coordinates()*pparams.imscalef,3,cv::Scalar(0,255,0),2);
         }
         if (!drone_is_active)
@@ -122,7 +121,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
         _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_predict_item.size*pparams.imscalef*0.6f);
         break;
     } case dts_landing_init: {
-        ignores_for_other_trkrs.push_back(IgnoreBlob(drone_startup_im_location(),_drone_blink_im_size*5,time+landing_ignore_timeout, IgnoreBlob::landing_spot));
+        ignores_for_other_trkrs.push_back(IgnoreBlob(drone_takeoff_im_location()/pparams.imscalef,drone_takeoff_im_size()/pparams.imscalef,time+landing_ignore_timeout, IgnoreBlob::landing_spot));
         _drone_tracking_status = dts_landing;
         [[fallthrough]];
     } case dts_landing: {
@@ -145,36 +144,49 @@ void DroneTracker::track(double time, bool drone_is_active) {
 
 void DroneTracker::delete_takeoff_fake_motion() {
     if (enable_takeoff_motion_delete) {
-        _visdat->reset_spot_on_motion_map(drone_startup_im_location()*pparams.imscalef, _drone_blink_im_disparity,_drone_takeoff_image_size*1.4f,1);
-        if (_world_item.valid &&normf(cv::Point2f(_world_item.iti.x,_world_item.iti.y) - _drone_blink_im_location) > 1.5f * _drone_takeoff_image_size)
+        _visdat->reset_spot_on_motion_map(drone_takeoff_im_location(), _blink_im_disparity,_drone_takeoff_im_size*2.5f,1);
+
+        //to end the deletion of this area, we check if there are not blobs in this area anymore because
+        //they leave a permanent mark if we stop prematurely. Two conditions:
+        //1. the drone must have left the area with a margin of its size
+        //2. other blobs must not be inside the area. (slightly more relaxed, because crop leave movements otherwise are holding this enabled indefinetely)
+        if (_world_item.valid &&normf(cv::Point2f(_world_item.iti.x,_world_item.iti.y)*pparams.imscalef - drone_takeoff_im_location()) > _drone_takeoff_im_size*2.5f + _world_item.iti.size/2*pparams.imscalef ) {
             enable_takeoff_motion_delete = false;
+            for (auto blob : _all_blobs) {
+                if (normf(cv::Point2f(blob.x,blob.y)*pparams.imscalef - drone_takeoff_im_location()) < 2.6f * _drone_takeoff_im_size) {
+                    enable_takeoff_motion_delete = true;
+                }
+            }
+        }
+        if (!enable_takeoff_motion_delete)
+            std::cout << "takeoff_motion_delete done" << std::endl;
     }
 }
 void DroneTracker::delete_landing_motion(float duration) {
     int delete_dst;
-    delete_dst = _drone_takeoff_image_size;
+    delete_dst = _drone_takeoff_im_size;
     delete_dst = std::clamp(delete_dst,30,60) + 5;
-    _visdat->reset_spot_on_motion_map(drone_startup_im_location()*pparams.imscalef, _drone_blink_im_disparity,delete_dst,duration*pparams.fps);
+    _visdat->reset_spot_on_motion_map(drone_takeoff_im_location(), _blink_im_disparity,delete_dst,duration*pparams.fps);
 }
 
 void DroneTracker::calc_takeoff_prediction() {
 
-    cv::Point3f acc = _target-drone_startup_location();
+    cv::Point3f acc = _target-drone_takeoff_location();
     acc = acc/(normf(acc));
     acc = acc * dparams.thrust;
     float dt = std::clamp(static_cast<float>(current_time - (spinup_detect_time + 0.3)),0.f,1.f);
     if (!spinup_detected)
         dt = 0;
-    cv::Point3f expected_drone_location = drone_startup_location() + 0.5* acc *powf(dt,2);
+    cv::Point3f expected_drone_location = drone_takeoff_location() + 0.5* acc *powf(dt,2);
 
 
-    _image_predict_item = ImagePredictItem(world2im_3d(expected_drone_location,_visdat->Qfi,_visdat->camera_angle)/pparams.imscalef,1,_drone_takeoff_image_size/pparams.imscalef,255,_visdat->frame_id);
+    _image_predict_item = ImagePredictItem(world2im_3d(expected_drone_location,_visdat->Qfi,_visdat->camera_angle)/pparams.imscalef,1,_drone_takeoff_im_size/pparams.imscalef,255,_visdat->frame_id);
     predicted_image_path.push_back(_image_predict_item);
 }
 
 bool DroneTracker::detect_lift_off() {
-    float dist2takeoff =normf(_world_item.pt - _drone_blink_world_location);
-    float takeoff_y =  _world_item.pt.y - _drone_blink_world_location.y;
+    float dist2takeoff =normf(_world_item.pt - drone_takeoff_location());
+    float takeoff_y =  _world_item.pt.y - drone_takeoff_location().y;
 
     if (dist2takeoff > 0.1f && takeoff_y > 0.05f && _world_item.radius > dparams.radius/2.f && _world_item.radius < dparams.radius*4.f) {
         take_off_frame_cnt++;
@@ -198,8 +210,8 @@ void DroneTracker::calc_world_item(BlobProps * props, double time [[maybe_unused
     else if (inactive())
         props->world_props.valid = false;
     else if (taking_off() && !_manual_flight_mode) {
-        float dist2takeoff = normf(props->world_props.pt() - _drone_blink_world_location);
-        float takeoff_y = props->world_props.y - _drone_blink_world_location.y;
+        float dist2takeoff = normf(props->world_props.pt() - drone_takeoff_location());
+        float takeoff_y = props->world_props.y - drone_takeoff_location().y;
         if ( dist2takeoff < 0.2f && !props->world_props.bkg_check_ok)
             props->world_props.valid =  props->world_props.disparity_in_range && props->world_props.radius_in_range;
 
@@ -221,7 +233,7 @@ bool DroneTracker::detect_takeoff() {
     uint16_t closest_to_takeoff_im_dst = 999;
     cv::Point2i closest_to_takeoff_point;
     for (auto blob : _all_blobs) {
-        float takeoff_im_dst = normf(cv::Point2f(blob.x,blob.y) - _drone_blink_im_location);
+        float takeoff_im_dst = normf(cv::Point2f(blob.x,blob.y)*pparams.imscalef - drone_takeoff_im_location());
         if (takeoff_im_dst < closest_to_takeoff_im_dst) {
             closest_to_takeoff_im_dst = takeoff_im_dst;
             closest_to_takeoff_point = cv::Point2i(blob.x,blob.y);

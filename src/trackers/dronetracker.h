@@ -23,7 +23,7 @@ private:
     double spinup_detect_time = 0;
     double current_time = 0;
 
-    double startup_location_ignore_timeout = 1; // TODO: make this dependent on the motion_update_iterator_max
+    double takeoff_location_ignore_timeout = 1; // TODO: make this dependent on the motion_update_iterator_max
     double landing_ignore_timeout = 5; // TODO: make this dependent on the motion_update_iterator_max
     double taking_off_ignore_timeout = 0.1; // TODO: make this dependent on the motion_update_iterator_max
 
@@ -55,11 +55,12 @@ private:
         rightside
     };
 
-    cv::Point2f _drone_blink_im_location;
-    float _drone_blink_im_disparity;
-    float _drone_blink_im_size = 5;
-    float _drone_takeoff_image_size;
-    cv::Point3f _drone_blink_world_location;
+    cv::Point2f _blink_im_location;
+    float _blink_im_disparity;
+    float _blink_im_size = 5;
+    float _drone_takeoff_im_size;
+    cv::Point2f _drone_takeoff_im_location;
+    cv::Point3f _blink_world_location;
     bool _landing_pad_location_set = false;
     cv::Point3f _landing_pad_world;
 
@@ -73,34 +74,34 @@ private:
     {
     public:
 
-        xmls::xFloat Drone_startup_image_location_x;
-        xmls::xFloat Drone_startup_image_location_y;
+        xmls::xFloat Drone_takeoff_image_location_x;
+        xmls::xFloat Drone_takeoff_image_location_y;
 
-        xmls::xFloat Drone_startup_world_location_x;
-        xmls::xFloat Drone_startup_world_location_y;
-        xmls::xFloat Drone_startup_world_location_z;
+        xmls::xFloat Drone_takeoff_world_location_x;
+        xmls::xFloat Drone_takeoff_world_location_y;
+        xmls::xFloat Drone_takeoff_world_location_z;
 
         DroneTrackerCalibrationData():
-            Drone_startup_image_location_x(0),
-            Drone_startup_image_location_y(0),
-            Drone_startup_world_location_x(0),
-            Drone_startup_world_location_y(0),
-            Drone_startup_world_location_z(0)
+            Drone_takeoff_image_location_x(0),
+            Drone_takeoff_image_location_y(0),
+            Drone_takeoff_world_location_x(0),
+            Drone_takeoff_world_location_y(0),
+            Drone_takeoff_world_location_z(0)
         {
             // Set the XML class name.
             // This name can differ from the C++ class name
             setClassName("DroneTrackerCalibrationData");
 
             // Set class version
-            setVersion("1.0");
+            setVersion("1.1");
 
             // Register members. Like the class name, member names can differ from their xml depandants
-            Register("Drone_startup_image_location_x", &Drone_startup_image_location_x);
-            Register("Drone_startup_image_location_y", &Drone_startup_image_location_y);
+            Register("Drone_takeoff_image_location_x", &Drone_takeoff_image_location_x);
+            Register("Drone_takeoff_image_location_y", &Drone_takeoff_image_location_y);
 
-            Register("Drone_startup_world_location_x", &Drone_startup_world_location_x);
-            Register("Drone_startup_world_location_y", &Drone_startup_world_location_y);
-            Register("Drone_startup_world_location_z", &Drone_startup_world_location_z);
+            Register("Drone_takeoff_world_location_x", &Drone_takeoff_world_location_x);
+            Register("Drone_takeoff_world_location_y", &Drone_takeoff_world_location_y);
+            Register("Drone_takeoff_world_location_z", &Drone_takeoff_world_location_z);
         };
     };
     void serialize_calib();
@@ -123,10 +124,14 @@ private:
 
 public:
     std::string drone_tracking_state() {return drone_tracking_state_names[_drone_tracking_status];}
-    cv::Point2f drone_startup_im_location() { return _drone_blink_im_location; }
-    float drone_startup_im_size() { return _drone_blink_im_size; }
-    float drone_startup_im_disparity() { return _drone_blink_im_disparity; }
-    cv::Point3f drone_startup_location() {return _drone_blink_world_location + cv::Point3f(0,0,-dparams.radius);}
+    cv::Point2f blnk_im_location() { return _blink_im_location; } // scaled with imscalef
+    float blnk_im_size() { return _blink_im_size; } // scaled with imscalef
+    float blink_im_disparity() { return _blink_im_disparity; }
+    float drone_takeoff_im_size() { return _drone_takeoff_im_size; } // NOT scaled with imscalef
+    cv::Point2f drone_takeoff_im_location() { return _drone_takeoff_im_location;} // NOT scaled with imscalef
+
+    cv::Point3f drone_takeoff_location() {return _blink_world_location + cv::Point3f(0,0,-dparams.radius);}
+
     cv::Point3f drone_landing_location() {
         if(landing_parameter.initialized)
             return cv::Point3f(landing_parameter.x, landing_parameter.y, landing_parameter.z);
@@ -153,15 +158,17 @@ public:
     bool check_smooth_yaw() { return (fabs(yaw_smoother.latest())<landing_yaw_criteria);}
 
     void set_drone_landing_location(cv::Point2f im, float drone_im_disparity,float drone_im_size, cv::Point3f world) {
-        _drone_blink_im_location = im;
-        _drone_blink_im_size = drone_im_size;
-        _drone_blink_im_disparity = drone_im_disparity;
-        _drone_blink_world_location = world;
+        _blink_im_location = im;
+        _blink_im_size = drone_im_size;
+        _blink_im_disparity = drone_im_disparity;
+        _blink_world_location = world;
         if (!_landing_pad_location_set) { // for now, assume the first time set is the actual landing location.
-            _landing_pad_world = drone_startup_location();
+            _landing_pad_world = drone_takeoff_location();
             _landing_pad_location_set = true;
         }
-        _target = drone_startup_location();
+        _target = drone_takeoff_location();
+        _drone_takeoff_im_size = world2im_size(_blink_world_location+cv::Point3f(dparams.radius,0,0),_blink_world_location-cv::Point3f(dparams.radius,0,0),_visdat->Qfi,_visdat->camera_angle);
+        _drone_takeoff_im_location =  world2im_2d(drone_takeoff_location(),_visdat->Qfi,_visdat->camera_angle);
     }
     void delete_landing_motion(float duration);
     void calc_world_item(BlobProps * pbs, double time);
