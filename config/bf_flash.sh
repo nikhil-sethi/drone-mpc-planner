@@ -14,7 +14,7 @@ printf "\b \bOK"
 sleep 0.5
 ./bf_to_dfu.py
 sleep 1
-dfu-util -s 0x08000000 -a 0 -R -D ~/code/betaflight/obj/betaflight_4.0.6_CRAZYBEEF4FR.bin
+dfu-util -s 0x08000000 -a 0 -R -D ./trashcan_firmware.bin
 
 while [ ! -c $port ]
 do
