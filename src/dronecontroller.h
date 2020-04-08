@@ -224,9 +224,9 @@ private:
     std::tuple<float,float> acc_to_deg(cv::Point3f acc);
     std::tuple<float,float> acc_to_quaternion(cv::Point3f acc);
 
-    void check_emergency_kill(track_data data_drone, cv::Point3f setpoint_pos);
+    void check_emergency_kill(track_data data_drone);
     void check_tracking_lost(track_data data_drone);
-    void check_control_and_tracking_problems(track_data data_drone, cv::Point3f setpoint_pos);
+    void check_control_and_tracking_problems(track_data data_drone);
     track_data land(track_data data_drone, track_data data_target_new);
     std::tuple<float, float> update_landing_yoffset(track_data data_drone, track_data data_target_new);
     void calc_ff_landing();

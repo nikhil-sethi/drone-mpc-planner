@@ -374,11 +374,8 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         }
         [[fallthrough]];
     } case fm_flying_pid: {
-        pos_modelx.new_sample(data_target_new.pos().x);
-        pos_modely.new_sample(data_target_new.pos().y);
-        pos_modelz.new_sample(data_target_new.pos().z);
 
-        check_emergency_kill(data_drone, data_target_new.pos());
+        check_emergency_kill(data_drone);
 
         if(!data_drone.pos_valid) {
             pos_err_i = {0,0,0};
@@ -414,7 +411,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         break;
     } case fm_reset_yaw: {
         mode += bf_headless_disabled;
-        check_emergency_kill(data_drone, data_target_new.pos());
+        check_emergency_kill(data_drone);
         control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
         auto_yaw = control_yaw(data_drone, 5); // second argument is the yaw gain, move this to the xml files?
         break;
@@ -426,7 +423,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
     } case fm_landing: {
         mode += bf_headless_disabled;
         data_target_new = land(data_drone, data_target_new);
-        check_emergency_kill(data_drone, data_target_new.pos());
+        check_emergency_kill(data_drone);
         break;
     } case fm_disarmed: {
         auto_roll = JOY_MIDDLE;
@@ -980,6 +977,10 @@ std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f de
 }
 
 void DroneController::control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel) {
+    pos_modelx.new_sample(setpoint_pos.x);
+    pos_modely.new_sample(setpoint_pos.y);
+    pos_modelz.new_sample(setpoint_pos.z);
+
     cv::Point3f kp_pos, ki_pos, kd_pos, kp_vel, kd_vel;
     std::tie(kp_pos, ki_pos, kd_pos, kp_vel, kd_vel) = adjust_control_gains(data_drone, setpoint_pos, setpoint_vel);
 
@@ -1110,9 +1111,9 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::
     return std::tuple(pos_err_p, pos_err_d, vel_err_p, vel_err_d);
 }
 
-void DroneController::check_emergency_kill(track_data data_drone, cv::Point3f setpoint_pos) {
+void DroneController::check_emergency_kill(track_data data_drone) {
     check_tracking_lost(data_drone);
-    check_control_and_tracking_problems(data_drone, setpoint_pos);
+    check_control_and_tracking_problems(data_drone);
 }
 
 
@@ -1128,7 +1129,7 @@ void DroneController::check_tracking_lost(track_data data_drone) {
         kill_cnt_down = 0;
     }
 }
-void DroneController::check_control_and_tracking_problems(track_data data_drone, cv::Point3f setpoint_pos) {
+void DroneController::check_control_and_tracking_problems(track_data data_drone) {
 
     model_error += normf({pos_modelx.current_output() - data_drone.pos().x,
                           pos_modely.current_output() - data_drone.pos().y,
