@@ -209,7 +209,7 @@ void ItemTracker::append_log() {
         else
             (*_logger) << -1 << "; " << -1 << "; " << -1 << "; ";
         if (_image_predict_item.valid)
-            (*_logger) << _image_predict_item.x * pparams.imscalef << "; " << _image_predict_item.y * pparams.imscalef << "; ";
+            (*_logger) << _image_predict_item.x << "; " << _image_predict_item.y << "; ";
         else
             (*_logger) << -1 << "; " << -1   << "; ";
 
@@ -271,7 +271,7 @@ float ItemTracker::stereo_match(cv::Point closestL,float size) {
     int disp_end = tmp_max_disp;
 
     if (_image_predict_item.valid && _image_predict_item.certainty > 0.9f) {
-        float disp_prev = _image_predict_item.disparity *pparams.imscalef;
+        float disp_prev = _image_predict_item.disparity;
         if (use_imscalef)
             disp_prev/=2;
         disp_start = std::max(static_cast<int>(floorf(disp_prev))-2,disp_start);
@@ -376,10 +376,10 @@ void ItemTracker::update_prediction(double time) {
         auto p = world2im_3d(predicted_pos,_visdat->Qfi,_visdat->camera_angle);
 
         //update tracker with prediciton
-        _image_predict_item.x = std::clamp(static_cast<int>(p.x),0,IMG_W-1)/pparams.imscalef;
-        _image_predict_item.y = std::clamp(static_cast<int>(p.y),0,IMG_H-1)/pparams.imscalef;
-        _image_predict_item.disparity = std::clamp(p.z,0.f,static_cast<float>(max_disparity))/pparams.imscalef;
-        _image_predict_item.size = world2im_size(_world_item.pt+cv::Point3f(dparams.radius,0,0),_world_item.pt-cv::Point3f(dparams.radius,0,0),_visdat->Qfi,_visdat->camera_angle) / pparams.imscalef;
+        _image_predict_item.x = std::clamp(static_cast<int>(p.x),0,IMG_W-1);
+        _image_predict_item.y = std::clamp(static_cast<int>(p.y),0,IMG_H-1);
+        _image_predict_item.disparity = std::clamp(p.z,0.f,static_cast<float>(max_disparity));
+        _image_predict_item.size = world2im_size(_world_item.pt+cv::Point3f(dparams.radius,0,0),_world_item.pt-cv::Point3f(dparams.radius,0,0),_visdat->Qfi,_visdat->camera_angle);
     }
     //issue #108:
     predicted_image_path.push_back(_image_predict_item);

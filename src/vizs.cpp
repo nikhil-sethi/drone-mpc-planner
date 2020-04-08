@@ -104,8 +104,8 @@ void Visualizer::plot(void) {
     // ims_trk.push_back(plot_xyd());
     ims_trk.push_back(plot_all_im_drone_pos());
     ims_trk.push_back(plot_all_position());
-    //    ims_trk.push_back(plot_all_velocity());
-    //ims_trk.push_back(plot_all_acceleration());
+    ims_trk.push_back(plot_all_velocity());
+    ims_trk.push_back(plot_all_acceleration());
     // ims_trk.push_back(plot_all_control());
     plotframe = create_row_image(ims_trk,CV_8UC3);
 }
@@ -115,7 +115,7 @@ cv::Mat Visualizer::plot_all_im_drone_pos(void) {
     ims.push_back(plot({im_posX_drone},"Im drone X"));
     ims.push_back(plot({im_posY_drone},"Im drone Y"));
     ims.push_back(plot({im_disp_drone},"Disparity"));
-    ims.push_back(plot({im_size_drone},"Size"));
+    // ims.push_back(plot({im_size_drone},"Size"));
     return create_column_image(ims, CV_8UC3);
 }
 cv::Mat Visualizer::plot_xyd(void) {
@@ -365,7 +365,7 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
     if (tmp.size()>0) {
         std::vector<cv::KeyPoint> keypoints;
         for (uint i = 0; i< tmp.size(); i++) {
-            cv::KeyPoint k(tmp.at(i).x,tmp.at(i).y,24/pparams.imscalef);
+            cv::KeyPoint k(tmp.at(i).x/pparams.imscalef,tmp.at(i).y/pparams.imscalef,24/pparams.imscalef);
             keypoints.push_back(k);
         }
         drawKeypoints( frameL_small, keypoints, frameL_small_drone, Scalar(0,255,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
@@ -443,7 +443,7 @@ void Visualizer::draw_tracker_viz() {
 
     if ( drn_predicted_path.size()>0 ) {
         auto pred = drn_predicted_path.back();
-        cv::circle(frameL_color,pred.pt()*pparams.imscalef,pred.size/2*pparams.imscalef,cv::Scalar(0,255,0));
+        cv::circle(frameL_color,pred.pt(),pred.size/2,cv::Scalar(0,255,0));
     }
     if ( drn_path.size()>0 ) {
         auto p = drn_path.back().iti;
@@ -452,7 +452,7 @@ void Visualizer::draw_tracker_viz() {
 
     if ( ins_predicted_path.size()>0 ) {
         auto pred = ins_predicted_path.back();
-        cv::circle(frameL_color,pred.pt()*pparams.imscalef,pred.size/2*pparams.imscalef,cv::Scalar(0,255,0));
+        cv::circle(frameL_color,pred.pt(),pred.size/2,cv::Scalar(0,255,0));
     }
 
     if (ins_path.size()>0) {

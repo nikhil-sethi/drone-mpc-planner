@@ -49,7 +49,7 @@ void ReplayTracker::update_from_log(unsigned long long frame_number,double time)
 
     bool valid = (log.ins_im_x >= 0 && log.ins_im_y >= 0);
     _image_item = ImageItem (log.ins_im_x/pparams.imscalef,log.ins_im_y/pparams.imscalef,log.ins_disparity,frame_number);
-    _image_predict_item = ImagePredictItem(cv::Point3f(log.ins_pred_im_x/pparams.imscalef,log.ins_pred_im_y/pparams.imscalef,log.ins_disparity/pparams.imscalef),1,1,255,frame_number);
+    _image_predict_item = ImagePredictItem(cv::Point3f(log.ins_pred_im_x,log.ins_pred_im_y,log.ins_disparity),1,1,255,frame_number);
     _image_item.valid = valid;
 
     track_data data;
@@ -81,7 +81,7 @@ void ReplayTracker::update_from_log(unsigned long long frame_number,double time)
 
         _image_item = ImageItem (recalc_im_coor.x/pparams.imscalef,recalc_im_coor.y/pparams.imscalef,recalc_im_coor.z,frame_number);
         _image_item.valid = valid;
-        _image_predict_item = ImagePredictItem(recalc_im_pred_coor/pparams.imscalef,1,1,255,frame_number);
+        _image_predict_item = ImagePredictItem(recalc_im_pred_coor,1,1,255,frame_number);
     }
 
     _image_predict_item.valid = _image_predict_item.x > 0;

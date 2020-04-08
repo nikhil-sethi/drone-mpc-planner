@@ -559,13 +559,13 @@ void TrackerManager::update_max_change_points() {
 
                 if (trkr->tracking() && trkr->type() == tt_insect) {
                     cv::Point2f d;
-                    d.x = ipi.pt().x - maxt.x;
-                    d.y = ipi.pt().y - maxt.y;
+                    d.x = ipi.pt().x - maxt.x*pparams.imscalef;
+                    d.y = ipi.pt().y - maxt.y*pparams.imscalef;
                     float dist = norm(d);
                     float chance = 1;
                     if (ipi.valid &&ipi.pixel_max < 1.5f * motion_thresh_tmp)
                         chance +=chance_multiplier_pixel_max;
-                    if (dist < roi_radius) {
+                    if (dist < roi_radius*pparams.imscalef) {
                         chance += chance_multiplier_dist;
                     }
                     thresh_res = static_cast<uint8_t>(max) > bkg+(motion_thresh_tmp/chance);
@@ -645,8 +645,8 @@ void TrackerManager::update_max_change_points() {
 
             if (enable_insect_drone_split) {
 
-                float dist_to_predict = norm(_dtrkr->image_predict_item().pt() - COG);
-                if (dist_to_predict < 10) {
+                float dist_to_predict = norm(_dtrkr->image_predict_item().pt() - COG*pparams.imscalef);
+                if (dist_to_predict < 20) {
 
                     //check if the blob may be multiple blobs,
                     vector<vector<Point>> contours;
@@ -728,10 +728,10 @@ void TrackerManager::update_max_change_points() {
                         for (auto trkr : _trackers) {
                             tracking::ImagePredictItem ipi = trkr->image_predict_item();
                             cv::Point2f d;
-                            d.x = ipi.pt().x - maxt.x;
-                            d.y = ipi.pt().y - maxt.y;
+                            d.x = ipi.pt().x - maxt.x*pparams.imscalef;
+                            d.y = ipi.pt().y - maxt.y*pparams.imscalef;
                             float dist = norm(d);
-                            if (dist < roi_radius) {
+                            if (dist < roi_radius*pparams.imscalef) {
                                 _blobs.push_back(tracking::BlobProps(maxt, maxt, 1,max, mask,_visdat->is_in_overexposed_area(maxt)));
                                 if (enable_viz_max_points) {
                                     Point2f tmpCOG;
