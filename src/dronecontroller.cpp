@@ -86,6 +86,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     set_led_strength(exposure);
 
     thrust = dparams.thrust;
+    thrust = check_thrust(thrust);
     initial_hover_throttle_guess_non3d = GRAVITY/dparams.thrust*JOY_BOUND_RANGE+dparams.min_throttle;
     initialized = true;
 }
@@ -1106,6 +1107,7 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::
     }
 
     thrust -= (err_y_filtered - setpoint_pos.y + pos_modely.current_output()) * ki_pos.y;
+    thrust = check_thrust(thrust);
     pos_err_i.y = 0;
 
     return std::tuple(pos_err_p, pos_err_d, vel_err_p, vel_err_d);

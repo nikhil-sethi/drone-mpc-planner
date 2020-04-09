@@ -165,6 +165,8 @@ private:
         }
     }
 
+    const float min_thrust = 25;
+    const float max_thrust = 50;
     const float max_bank_angle = 180; // TODO: move to dparams (betaflight setting)
     const float aim_duration = 0.0833333333333f; // TODO: move to dparams, slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
     const float transmission_delay_duration = 0.04f;
@@ -285,6 +287,15 @@ private:
     float init_acpt_ff_land_vel = 0.01f;
     float final_acpt_ff_land_err = final_acpt_dec_land_err;
     float final_acpt_ff_land_vel = final_acpt_dec_land_vel;
+
+    float check_thrust(float thrust_new) {
+        if(thrust_new<min_thrust)
+            return min_thrust;
+        else if (thrust_new>max_thrust)
+            return max_thrust;
+        else
+            return thrust_new;
+    }
 
     inline state_data set_recoveryState(cv::Point3f position) {
         state_data rt;
