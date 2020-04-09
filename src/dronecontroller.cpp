@@ -386,25 +386,6 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
 
         control_model_based(data_drone, data_target_new.pos(),data_target_new.vel());
 
-        //check if we can go back to burning:
-        if (data_drone.pos_valid && data_drone.vel_valid && _joy_state!=js_waypoint) {
-            std::vector<state_data> traj;
-            cv::Point3f burn_direction;
-            float burn_duration;
-            std::tie (std::ignore, std::ignore,burn_duration,burn_direction,traj) = calc_burn(data_drone.state,data_target_new.state,aim_duration);
-
-            //            cout << "burn_duration: " << burn_duration << endl;
-
-            if (trajectory_in_view(traj,CameraView::strict) && burn_duration < 0.2f && burn_duration > 0.01f && false) {
-                std::vector<state_data> traj_back;
-                std::tie (std::ignore, std::ignore,std::ignore,std::ignore,traj_back) = calc_burn(traj.back(),traj.front(),aim_duration);
-                if (trajectory_in_view(traj_back,CameraView::strict) && norm(data_target_new.state.vel)>0.1) { // norm vel is hack to check if not waypoint
-                    _flight_mode = fm_retry_aim_start;
-                    //                    recovery_mode = true; // will be set to false in retry_aim TMP disabled because #131
-                    recovery_pos = data_drone.pos();
-                }
-            }
-        }
         break;
     } case fm_initial_reset_yaw: {
         control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
