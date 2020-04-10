@@ -226,7 +226,7 @@ void ItemTracker::append_log() {
         track_history.erase(track_history.begin());
 }
 
-float ItemTracker::stereo_match(cv::Point closestL,float size) {
+float ItemTracker::stereo_match(cv::Point2f closestL,float size) {
 
     cv::Mat diffL,diffR;
 
@@ -247,9 +247,9 @@ float ItemTracker::stereo_match(cv::Point closestL,float size) {
     }
 
     int x1,y1,x2,y2;
-    x1 = std::clamp(closestL.x-radius,0,diffL.cols-1);
+    x1 = std::clamp(static_cast<int>(roundf(closestL.x))-radius,0,diffL.cols-1);
     x2 = 2*radius;
-    y1 = std::clamp(closestL.y-radius,0,diffL.rows-1);
+    y1 = std::clamp(static_cast<int>(roundf(closestL.y))-radius,0,diffL.rows-1);
     y2 = 2*radius;
 
     if (x1+x2 >= diffL.cols)
@@ -472,7 +472,7 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
 float ItemTracker::calc_certainty(KeyPoint item) {
     float new_tracking_certainty;
     if (_image_predict_item.valid) {
-        new_tracking_certainty = 1.f / powf(powf(_image_predict_item.x - item.pt.x,2) + powf(_image_predict_item.y - item.pt.y,2),0.3f);
+        new_tracking_certainty = 1.f / powf(powf(_image_predict_item.x - item.pt.x*pparams.imscalef,2) + powf(_image_predict_item.y - item.pt.y*pparams.imscalef,2),0.3f);
         new_tracking_certainty*= _image_predict_item.certainty;
         if (new_tracking_certainty>1 || new_tracking_certainty<0 || isnanf(new_tracking_certainty)) { // weird -nan sometimes???
             new_tracking_certainty = 1;
@@ -510,7 +510,7 @@ float ItemTracker::score(BlobProps blob, ImageItem ref) {
     float score = 1.f / (dist + 15.f*im_size_diff); // TODO: certainty
 
     if (_image_predict_item.valid) {
-        float dist_pred = sqrtf(powf(_image_predict_item.x-blob.x,2)+powf(_image_predict_item.y-blob.y,2));
+        float dist_pred = sqrtf(powf(_image_predict_item.x-blob.x*pparams.imscalef,2)+powf(_image_predict_item.y-blob.y*pparams.imscalef,2));
         float ps = smoother_im_size.latest();
         float im_size_diff_pred = fabs(ps - blob.size) / (blob.size+ps);
         float score_pred = 1.f / (dist_pred + 15.f*im_size_diff_pred); // TODO: certainty

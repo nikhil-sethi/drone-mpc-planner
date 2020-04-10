@@ -125,7 +125,7 @@ protected:
     std::vector<tracking::BlobProps> _all_blobs;
 
     void init_logger();
-    float stereo_match(cv::Point closestL, float radius);
+    float stereo_match(cv::Point2f closestL, float radius);
     void reset_tracker_ouput(double time);
     void calc_world_props_blob_generic(BlobProps * pbs, bool use_max);
     bool check_ignore_blobs_generic(BlobProps * pbs);
