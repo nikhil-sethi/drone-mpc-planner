@@ -263,10 +263,6 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_flower_waypoint;
             else if(current_waypoint->mode == wfm_brick)
                 _navigation_status = ns_brick_waypoint;
-            else if (current_waypoint->mode == wfm_yaw_reset)
-                _navigation_status = ns_initial_reset_yaw;
-            else if (current_waypoint->mode == wfm_landing)
-                _navigation_status = ns_land;
             else
                 _navigation_status = ns_approach_waypoint;
             break;
@@ -285,10 +281,11 @@ void DroneNavigation::update(double time) {
                     && normf(_trackers->dronetracker()->Last_track_data().state.vel) < 1.6f
                     && _trackers->dronetracker()->n_frames_tracking>5)
             {
-                if (current_waypoint->mode == wfm_landing) {
+                if (current_waypoint->mode == wfm_landing)
                     _navigation_status = ns_land;
-                    time_initial_reset_yaw = time;
-                } else if (wpid < waypoints.size()) { // next waypoint in flight plan
+                else if (current_waypoint->mode == wfm_yaw_reset)
+                    _navigation_status = ns_initial_reset_yaw;
+                else if (wpid < waypoints.size()) { // next waypoint in flight plan
                     wpid++;
                     _navigation_status = ns_set_waypoint;
                 } else if (wpid == waypoints.size()) {
