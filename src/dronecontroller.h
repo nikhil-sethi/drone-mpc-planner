@@ -126,7 +126,6 @@ private:
         }
     };
 
-    float depth_precision_gain = 0.4f;
     float throttleErrI = 0;
     float rollErrI = 0;
     float pitchErrI = 0;

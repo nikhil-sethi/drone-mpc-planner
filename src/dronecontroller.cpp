@@ -992,9 +992,10 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> Dron
         scale_d *= 1.1f;
         scale_i *= 1.1f;
     }
-    float height_over_ground = data_drone.pos().y-_dtrk->drone_landing_location().y;
-    if(height_over_ground<0.5f) {
-        scale_d.z *= 1.06f;
+    if(_flight_mode==fm_landing) {
+        scale_p *= 0.5f;
+        scale_i *= 0.5f;
+        scale_d *= 0.5f;
     }
 
     float duration_waypoint_update = duration_since_waypoint_changed(data_drone.time);
@@ -1021,20 +1022,13 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> Dron
     kd_pos_throttle_scaled = scale_d.y*kd_pos_throttle;
     kd_pos_pitch_scaled = scale_d.z*kd_pos_pitch;
 
-    float depth_gain = 1;
-    float dist = powf(data_drone.posX_smooth,2)+powf(data_drone.posY_smooth,2)+powf(data_drone.posZ_smooth,2);
-    if (dist > 4) //sqrt(4) = 2m
-        depth_gain  = 1 + dist * depth_precision_gain;
-
     // Arrange gains (needed because may be updated from trackbars)
     cv::Point3f kp_pos(kp_pos_roll_scaled,kp_pos_throttle_scaled,kp_pos_pitch_scaled);
     kp_pos /=100.f;
     cv::Point3f kd_pos(kd_pos_roll_scaled,kd_pos_throttle_scaled,kd_pos_pitch_scaled);
     kd_pos /=100.f;
-    kd_pos.z /= depth_gain;
     cv::Point3f ki_pos(ki_pos_roll_scaled,ki_pos_throttle_scaled,ki_pos_pitch_scaled);
     ki_pos /=1000.f;
-    ki_pos.z /= depth_gain;
     cv::Point3f kp_vel(kp_v_roll,kp_v_throttle,kp_v_pitch);
     kp_vel /= 100.f;
     cv::Point3f kd_vel(kd_v_roll,kd_v_throttle,kd_v_pitch);
