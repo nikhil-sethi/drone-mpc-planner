@@ -138,6 +138,7 @@ private:
         else
             return 0;
     }
+    void set_led_strength(float exposure);
 
     std::string settings_file;
 
@@ -471,7 +472,7 @@ public:
     }
 
     void close (void);
-    void init(std::ofstream *logger, bool fromfile, MultiModule *rc, tracking::DroneTracker *dtrk, CameraView* camvol);
+    void init(std::ofstream *logger, bool fromfile, MultiModule *rc, tracking::DroneTracker *dtrk, CameraView* camvol,float exposure);
     void control(track_data, track_data, track_data, double);
     bool drone_is_active() {
         if ( _flight_mode == fm_inactive || _flight_mode == fm_disarmed || _flight_mode == fm_abort_flight || _flight_mode == fm_joystick_check)

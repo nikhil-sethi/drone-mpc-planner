@@ -628,7 +628,7 @@ void init() {
     visdat.init(cam.Qf, cam.frameL,cam.frameR,cam.camera_angle(),cam.measured_gain(),cam.measured_exposure(),cam.depth_background_mm); // do after cam update to populate frames
     trackers.init(&logger, &visdat, &(cam.camera_volume));
     dnav.init(&logger,&trackers,&dctrl,&visdat, &(cam.camera_volume),replay_dir);
-    dctrl.init(&logger,log_replay_mode,&rc,trackers.dronetracker(), &(cam.camera_volume));
+    dctrl.init(&logger,log_replay_mode,&rc,trackers.dronetracker(), &(cam.camera_volume),cam.measured_exposure());
 
     // Ensure that joystick was found and that we can use it
     if (!dctrl.joystick_ready() && !log_replay_mode && pparams.joystick != rc_none) {

@@ -14,7 +14,7 @@ bool DroneController::joystick_ready() {
     return joystick.isFound();
 }
 
-void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc, tracking::DroneTracker *dtrk, CameraView *camview) {
+void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc, tracking::DroneTracker *dtrk, CameraView *camview, float exposure) {
     _rc = rc;
     _dtrk = dtrk;
     _logger = logger;
@@ -82,9 +82,20 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
         d_pos_err_kiv.at(i).init(1.f/pparams.fps);
     }
 
+    set_led_strength(exposure);
+
     thrust = dparams.thrust;
     initial_hover_throttle_guess_non3d = GRAVITY/dparams.thrust*JOY_BOUND_RANGE+dparams.min_throttle;
     initialized = true;
+}
+
+void DroneController::set_led_strength(float exposure) {
+    if (exposure < 500)
+        dparams.drone_led_strength = 100;
+    else if (exposure <2000)
+        dparams.drone_led_strength = 100 - (exposure/2000.f*50.f);
+    else
+        dparams.drone_led_strength = 50 - ((std::clamp(exposure,2000.f,10000.f)-2000)/8000.f*45.f);
 }
 
 int bound_throttle(int v) {
