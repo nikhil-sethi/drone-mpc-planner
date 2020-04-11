@@ -43,7 +43,7 @@ pushd ~/dependencies
 	sudo snap install sublime-text --classic
 	sudo apt-get update
 	sudo apt install -y cmake g++ libva-dev libswresample-dev libavutil-dev pkg-config libcurl4-openssl-dev ncdu openssh-server ffmpeg astyle unattended-upgrades inotify-tools cpputest
-	sudo apt install  -y openssh-server gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav libgstreamer-plugins-base1.0-* libgstreamer-plugins-bad1.0-* libgstreamer-plugins-good1.0-* terminator
+	sudo apt install  -y openssh-server gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav libgstreamer-plugins-base1.0-* libgstreamer-plugins-bad1.0-* libgstreamer-plugins-good1.0-* gstreamer1.0-vaapi vainfo meld gitk git-gui terminator
 	sudo apt-get remove -y modemmanager
 	touch dependencies-packages.done
 }
@@ -139,6 +139,7 @@ fi
 
 # Add to groups
 sudo usermod -a -G dialout $USER
+sudo usermod -a -G video $USER
 
 if [[ $1 -eq 1 ]] ; then
     # Create nice symlinks

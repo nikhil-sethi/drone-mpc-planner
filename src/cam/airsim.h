@@ -1,6 +1,6 @@
 #pragma once
 #include "defines.h"
-#if CAMMODE == CAMMODE_AIRSIM
+#if FALSE
 #include <iostream>
 #include <fstream>
 #include <vector>

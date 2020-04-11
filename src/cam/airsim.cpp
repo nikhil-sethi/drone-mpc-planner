@@ -1,5 +1,5 @@
 #include "airsim.h"
-#if CAMMODE == CAMMODE_AIRSIM
+#if FALSE
 
 typedef ImageCaptureBase::ImageRequest ImageRequest;
 typedef ImageCaptureBase::ImageResponse ImageResponse;

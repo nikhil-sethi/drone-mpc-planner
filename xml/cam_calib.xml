@@ -1,6 +1,0 @@
-<SerializableClass Type="CamCalibrationData" Version="1.1">
-    <Member Name="Angle_X">0</Member>
-    <Member Name="Angle_Y">35</Member>
-    <Member Name="Angle_Y_Measured_From_Depthmap">35</Member>
-    <Member Name="Exposure">500</Member>
-</SerializableClass>

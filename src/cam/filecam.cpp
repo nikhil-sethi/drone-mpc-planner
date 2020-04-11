@@ -4,101 +4,112 @@
 #include <unistd.h>       //usleep
 
 #include "opencv2/imgproc/imgproc.hpp"
+#include "third_party/stopwatch.h"
 
-bool FileCam::init (int argc __attribute__((unused)), char **argv __attribute__((unused))) {
-    file_rgb = std::string(argv[1]) + "_videoRawRGB.avi";
-    file_stereo = std::string(argv[1]) + "_videoRawLR.avi";
+#include "stopwatch.h"
+static stopwatch_c swc;
 
-    videoLength_rgb = 999999;
-    video_rgb = cv::VideoCapture(file_rgb);
-    video_stereo = cv::VideoCapture(file_stereo);
+void FileCam::init () {
+    if (!file_exist(video_fn)) {
+        std::stringstream serr;
+        serr << "cannot not find " << video_fn;
+        throw my_exit(serr.str());
+    }
+    std::cout << "Reading video from " << video_fn << std::endl;
+    video = cv::VideoCapture(video_fn);
 
-    if (!video_stereo.isOpened()) {
-        std::cerr << "Error opening video file!\n";
-        return true;
+    if (!video.isOpened()) {
+        throw my_exit("Error opening video file!");
     } else {
-        im_width_rgb = static_cast<int>(video_rgb.get(CV_CAP_PROP_FRAME_WIDTH));
-        im_height_rgb = static_cast<int>(video_rgb.get(CV_CAP_PROP_FRAME_HEIGHT));
-        nFrames_rgb = static_cast<int>(video_rgb.get(CV_CAP_PROP_FRAME_COUNT));
-        video_rgb.set(CV_CAP_PROP_POS_FRAMES,0);
-        if (videoLength_rgb > nFrames_rgb) {
-            //videoLength = nFrames;
-        }
-        std::cout << "Opened filecam, nFrames: " << nFrames_rgb << std::endl;
-        frame_id_rgb=0;
-
-        //skip start
-        for (int i =0; i < skipstart; i++) {
-            video_rgb >> frame_rgb;
-            frame_id_rgb++;
-        }
-        camRunning = true;
+        im_width = static_cast<int>(video.get(CV_CAP_PROP_FRAME_WIDTH));
+        im_height = static_cast<int>(video.get(CV_CAP_PROP_FRAME_HEIGHT));
+        nFrames = static_cast<int>(video.get(CV_CAP_PROP_FRAME_COUNT));
+        video.set(CV_CAP_PROP_POS_FRAMES,0);
+        std::cout << "Opened filecam, nFrames: " << nFrames << std::endl;
     }
 
-    float focal_length = 425.680267; // same as fy
-    float cx = 419.639923; // same for both cameras
-    float cy = 235.088562;
-    float baseline = 0.0499379635;
+    if (file_exist(calib_rfn))
+        camparams.deserialize(calib_rfn);
+    else
+        camparams.deserialize(calib_template_rfn);
+    calibration();
+
+    if (!file_exist(depth_map_rfn)) {
+        //todo: make gui warning of this:
+        std::cout << "Warning: could not find " << depth_map_rfn << std::endl;
+        depth_background = cv::Mat::ones(IMG_H,IMG_W,CV_16UC1);
+        depth_background = 10000; // basically disable the depth background map if it is not found
+    } else {
+        depth_background = cv::imread(depth_map_rfn,CV_LOAD_IMAGE_ANYDEPTH);
+    }
+
+    convert_depth_background_to_world();
+
+    camera_volume = def_volume();
+    swc.Start();
+    update();
+
+    initialized = true;
+}
+void FileCam::calibration() {
+    intr = new rs2_intrinsics();
+    intr->fx = camparams.fx;
+    intr->fy = camparams.fy;
+    intr->ppx = camparams.ppx;
+    intr->ppy = camparams.ppy;
+    intr->height = camparams.height;
+    intr->width = camparams.width;
+    intr->model = static_cast<rs2_distortion>(camparams.model);
+    intr->coeffs[0] = camparams.coeffs[0];
+    intr->coeffs[1] = camparams.coeffs[1];
+    intr->coeffs[2] = camparams.coeffs[2];
+    intr->coeffs[3] = camparams.coeffs[3];
+    intr->coeffs[4] = camparams.coeffs[4];
+
+    float focal_length = camparams.fx; // same as fy
+    float cx = camparams.ppx; // same for both cameras
+    float cy = camparams.ppy;
+    float baseline = camparams.baseline;
+    baseline = fabs(baseline);
     Qf = (cv::Mat_<double>(4, 4) << 1.0, 0.0, 0.0, -cx, 0.0, 1.0, 0.0, -cy, 0.0, 0.0, 0.0, focal_length, 0.0, 0.0, 1/baseline, 0.0);
-    switch_mode(cam_mode_stereo);
-    return false;
-}
-
-void FileCam::switch_mode(cam_mode_enum mode) {
-    if (mode != _mode) {
-        if (mode == cam_mode_disabled )
-            go_disabled();
-        else if (mode == cam_mode_color)
-            go_color();
-        else if (mode == cam_mode_stereo)
-            go_stereo();
-    }
-}
-void FileCam::go_color() {
-    _mode = cam_mode_color;
-}
-
-void FileCam::go_stereo() {
-    _mode = cam_mode_stereo;
-}
-
-void FileCam::go_disabled() {
-    _mode = cam_mode_disabled;
-}
-
-
-void FileCam::close () {
-    camRunning = false;
-    video_rgb.release();
 }
 
 void FileCam::update() {
-    static int tmpcnt = frame_id;
-    if (_mode == cam_mode_color) {
-        if (tmpcnt != frame_id) {
-            video_rgb >> frame_rgb;
-            tmpcnt = frame_id;
-        }
-        frame_id_rgb++;
-        if (frame_rgb.empty() || frame_id_rgb >= videoLength_rgb)
-            camRunning=false;
-    } else if(_mode == cam_mode_stereo) {
-        video_stereo >> frameLR;
-        cvtColor(frameLR,frameLR,CV_BGR2GRAY);
-        frame_id_stereo++;
-        frameL = frameLR(cv::Rect(cv::Point(0,0),cv::Point(frameLR.cols/2,frameLR.rows)));
-        frameR = frameLR(cv::Rect(cv::Point(frameLR.cols/2,0),cv::Point(frameLR.cols,frameLR.rows)));
-        if (frameL.empty())
-            camRunning=false;
+    cv::Mat frameLR;
+    for (uint i = 0; i < replay_skip_n_frames+1; i++) {
+        video >> frameLR;
+        frame_cnt++;
     }
-    frame_id++;
+    replay_skip_n_frames = 0;
+    if (frameLR.empty()) {
+        std::cout << "Video end, exiting" << std::endl;
+        throw bag_video_ended();
+    }
+    cvtColor(frameLR,frameLR,CV_BGR2GRAY);
+    frameL = frameLR(cv::Rect(cv::Point(0,0),cv::Point(frameLR.cols/2,frameLR.rows)));
+    frameR = frameLR(cv::Rect(cv::Point(frameLR.cols/2,0),cv::Point(frameLR.cols,frameLR.rows)));
 
-    float delay = pparams.fps;
-    delay = 1/delay;
-    delay *=1e6f;
-    usleep(delay);
+    _frame_number = logreader->retrieve_RS_ID_from_frame_id(frame_cnt-1);
+    _frame_time = ((_frame_number+1) / static_cast<double>(pparams.fps));
+
+    if (!turbo) {
+        while(swc.Read() < (1.f/pparams.fps)*1e3f) {
+            usleep(10);
+        }
+        swc.Restart();
+    }
+
+    while(frame_by_frame) {
+        unsigned char k = cv::waitKey(1);
+        if (k == 'f')
+            break;
+        else if (k== ' ') {
+            frame_by_frame = false;
+            break;
+        }
+    }
 }
 
-void FileCam::nextFrame() {
-    frame_id++;
+void FileCam::close () {
+    video.release();
 }

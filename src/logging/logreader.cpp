@@ -30,6 +30,7 @@ tuple<map<int, LogEntryMain>,map<string, int>> LogReader::read_log(string file) 
         try {
             LogEntryMain entry = create_log_entry(line,headmap);
             map<const int, LogEntryMain>::value_type item(entry.RS_id,entry);
+            RS_IDs.push_back(entry.RS_id);
             log.insert(item);
         } catch (exception& exp ) {
             throw my_exit("Could not read log! File: " +file + '\n' + "Line: " + string(exp.what()) + " at: " + line);
@@ -61,6 +62,7 @@ LogEntryMain LogReader::create_log_entry(string line, map<string, int> headmap) 
     LogEntryMain entry;
     entry.id = stoi(line_data.at(headmap["ID"]));
     entry.RS_id = stoi(line_data.at(headmap["RS_ID"]));
+    entry.elapsed = stod(line_data.at(headmap["elapsed"]));
     auto iid = headmap["insect_log"];
     if (iid)
         entry.insect_replay_log = stoi(line_data.at(iid));

@@ -12,8 +12,8 @@ public:
     void init(std::string path);
     void read_insect_replay_log(std::string path);
     void current_frame_number(unsigned long long RS_id);
-    bool set_next_frame_number();
     double first_takeoff_time() {return _takeoff_time;}
+    long long retrieve_RS_ID_from_frame_id(int frame_number) {return RS_IDs.at(frame_number);} // reverse lookup for filecam
 
     LogEntryMain current_entry;
     std::vector<InsectReader> replay_moths() {
@@ -36,6 +36,8 @@ private:
     std::map<int, LogEntryMain> log_main;
     std::map<std::string, int> headmap_main;
     std::vector<InsectReader> log_insects;
+
+    std::vector<long long> RS_IDs;
 
     double _takeoff_time = INFINITY;
 

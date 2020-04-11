@@ -13,7 +13,12 @@
  */
 class GStream {
 
-
+public:
+    enum render_mode_enum {
+        rm_x264_lq,
+        rm_x264_hq,
+        rm_vaapih264
+    };
 private:
     GstElement *_pipeline,*_appsrc;
 
@@ -27,7 +32,7 @@ private:
 
 
 public:
-    int init(int argc, char **argv, int mode, std::string file, int sizeX, int sizeY, int fps, std::string ip, int port, bool color, bool render_hq);
+    int init(int argc, char **argv, int mode, std::string file, int sizeX, int sizeY, int fps, std::string ip, int port, bool color, render_mode_enum render_mode);
     int write(cv::Mat frame);
     int write(cv::Mat frameL,cv::Mat frameR);
     void close (void);

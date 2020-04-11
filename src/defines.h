@@ -1,10 +1,1 @@
 #pragma once
-#define CAMMODE_REALSENSE 0
-#define CAMMODE_FROMVIDEOFILE 1
-#define CAMMODE_AIRSIM 2
-#define CAMMODE_GENERATOR 3
-
-#define CAMMODE CAMMODE_REALSENSE
-
-#define IMG_W 848
-#define IMG_H 480

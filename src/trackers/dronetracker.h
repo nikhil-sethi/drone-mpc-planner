@@ -104,8 +104,6 @@ private:
             Register("Drone_takeoff_world_location_z", &Drone_takeoff_world_location_z);
         };
     };
-    void serialize_calib();
-    void deserialize_calib(string file);
 
     void clean_ignore_blobs(double time);
 

@@ -35,15 +35,8 @@
 #include "visiondata.h"
 #include "3dviz/visualizer3d.h"
 #include "commandcenterlink.h"
-#if CAMMODE == CAMMODE_FROMVIDEOFILE
 #include "filecam.h"
-#elif CAMMODE == CAMMODE_AIRSIM
-#include "airsim.h"
-#elif CAMMODE == CAMMODE_REALSENSE
-#include "cam.h"
-#elif CAMMODE == CAMMODE_GENERATOR
-#include "generatorcam.h"
-#endif
+#include "realsense.h"
 #ifdef HASGUI
 #include "gui/mainwindow.h"
 #endif
@@ -80,17 +73,7 @@ Visualizer visualizer;
 Visualizer3D visualizer_3d;
 logging::LogReader logreader;
 CommandCenterLink cmdcenter;
-#if CAMMODE == CAMMODE_FROMVIDEOFILE
-FileCam cam;
-#define Cam FileCam //wow that is pretty hacky :)
-#elif CAMMODE == CAMMODE_AIRSIM
-Airsim cam;
-#define Cam Airsim //wow that is pretty hacky :)
-#elif CAMMODE == CAMMODE_REALSENSE
-Cam cam;
-#elif CAMMODE == CAMMODE_GENERATOR
-GeneratorCam cam;
-#endif
+Cam * cam;
 VisionData visdat;
 
 /****Threadpool*******/
@@ -133,13 +116,13 @@ void process_video() {
     //main while loop:
     while (key != 27) // ESC
     {
-        cam.update();
+        cam->update();
 
         Stereo_Frame_Data data;
-        data.frameL = cam.frameL;
-        data.frameR = cam.frameR;
-        data.RS_id = cam.frame_number();
-        data.time = cam.frame_time();
+        data.frameL = cam->frameL;
+        data.frameR = cam->frameR;
+        data.RS_id = cam->frame_number();
+        data.time = cam->frame_time();
         data.imgcount = imgcount;
 
         std::unique_lock<std::mutex> lk(tp[0].m2,std::defer_lock);
@@ -158,7 +141,7 @@ void process_video() {
         }
         if (pparams.has_screen) {
             static int speed_div;
-            if (!(speed_div++ % 4) || ((log_replay_mode && !cam.turbo) || cam.frame_by_frame)) {
+            if (!(speed_div++ % 4) || ((log_replay_mode && !cam->turbo) || cam->frame_by_frame)) {
                 visualizer_3d.run();
                 visualizer.paint();
                 handle_key(data.time);
@@ -175,7 +158,7 @@ void process_video() {
         if (dtr > 1 && recording) {
             recording = false;
             auto time_insect_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
-            logger_insect << "New detection ended at: " << std::put_time(std::localtime(&time_insect_now), "%Y/%m/%d %T") << " Duration: " << dtr << " End cam frame number: " <<  cam.frame_number() << '\n';
+            logger_insect << "New detection ended at: " << std::put_time(std::localtime(&time_insect_now), "%Y/%m/%d %T") << " Duration: " << dtr << " End cam frame number: " <<  cam->frame_number() << '\n';
         }
         if ((trackers.insecttracker_best()->tracking() || dtr < 1) && data.time > 5) {
             recording = true;
@@ -184,16 +167,16 @@ void process_video() {
         if (pparams.video_cuts) {
             static bool was_recording = false;
             static int insect_cnt = 0;
-            if (cam.frame_number() / 2 && cam.frame_number() % 2) {
+            if (cam->frame_number() / 2 && cam->frame_number() % 2) {
                 if (recording != was_recording) {
                     if (recording)
                         insect_cnt++;
                     else if (!recording && insect_cnt>0) {
                         output_video_cuts.close();
                         logger.close();
-                        std::string cvfn = "insect" + to_string(insect_cnt) + ".mp4";
+                        std::string cvfn = "insect" + to_string(insect_cnt) + ".mkv";
                         std::cout << "Opening new video: " << cvfn << std::endl;
-                        if (output_video_cuts.init(main_argc,main_argv,pparams.video_cuts,data_output_dir + cvfn,IMG_W*2,IMG_H,pparams.fps/2, "192.168.1.255",5000,true,false)) {std::cout << "WARNING: could not open cut video " << cvfn << std::endl;}
+                        if (output_video_cuts.init(main_argc,main_argv,pparams.video_cuts,data_output_dir + cvfn,IMG_W*2,IMG_H,pparams.fps/2, "192.168.1.255",5000,true,GStream::rm_vaapih264)) {std::cout << "WARNING: could not open cut video " << cvfn << std::endl;}
                         logger_fn = data_output_dir  + "log" + to_string(insect_cnt) + ".csv";
                         logger.open(logger_fn,std::ofstream::out);
                     }
@@ -203,35 +186,30 @@ void process_video() {
                 if (recording) {
                     static int cut_video_frame_counter = 0;
 
-                    cv::Mat frame(cam.frameL.rows,cam.frameL.cols+trackers.diff_viz.cols,CV_8UC3);
-                    cvtColor(cam.frameL,frame(cv::Rect(0,0,cam.frameL.cols, cam.frameL.rows)),CV_GRAY2BGR);
-                    trackers.diff_viz.copyTo(frame(cv::Rect(cam.frameL.cols,0,trackers.diff_viz.cols, trackers.diff_viz.rows)));
-                    cv::putText(frame,std::to_string(cam.frame_number()) + ": " + to_string_with_precision( cam.frame_time(),2),cv::Point(trackers.diff_viz.cols, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,0,255));
+                    cv::Mat frame(cam->frameL.rows,cam->frameL.cols+trackers.diff_viz.cols,CV_8UC3);
+                    cvtColor(cam->frameL,frame(cv::Rect(0,0,cam->frameL.cols, cam->frameL.rows)),CV_GRAY2BGR);
+                    trackers.diff_viz.copyTo(frame(cv::Rect(cam->frameL.cols,0,trackers.diff_viz.cols, trackers.diff_viz.rows)));
+                    cv::putText(frame,std::to_string(cam->frame_number()) + ": " + to_string_with_precision( cam->frame_time(),2),cv::Point(trackers.diff_viz.cols, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,0,255));
                     int frame_written = output_video_cuts.write(frame);
                     if (!frame_written)
                         cut_video_frame_counter++;
                     std::cout << "Recording! Frames written: " << cut_video_frame_counter << std::endl;
                 }
             }
-            if (!recording && (cam.frame_number() / 2 && cam.frame_number() % 2)) {
+            if (!recording && (cam->frame_number() / 2 && cam->frame_number() % 2)) {
                 logger.close();
                 logger.open(logger_fn,std::ofstream::out);
             }
         }
 
-        if (pparams.video_raw && pparams.video_raw != video_bag) {
+        if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode) {
             int frame_written = 0;
-            if (recording) {
-                cv::Mat frameL  =cam.frameL.clone();
-                cv::putText(frameL,std::to_string(cam.frame_number()),cv::Point(0, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,255);
-                frame_written = output_video_LR.write(frameL,cam.frameR);
-                static int video_frame_counter = 0;
-                if (!frame_written)
-                    video_frame_counter++;
-                else {
-                    std::cout << "PROBLEM: " << frame_written << std::endl;
-                }
-                std::cout << "Recording! Frames written: " << video_frame_counter << std::endl;
+            frame_written = output_video_LR.write(cam->frameL,cam->frameR);
+            int video_frame_counter = 0;
+            if (!frame_written)
+                video_frame_counter++;
+            else {
+                std::cout << "Video frame write PROBLEM: " << frame_written << std::endl;
             }
         }
 
@@ -244,9 +222,9 @@ void process_video() {
             std::cout << "FPS WARNING!" << std::endl;
 
         static double time =0;
-        float dt __attribute__((unused)) = static_cast<float>(cam.frame_time() - time);
-        time = cam.frame_time();
-        std::cout << dnav.navigation_status() <<  "; frame: " <<imgcount << ", " << cam.frame_number() << ". FPS: " << to_string_with_precision(fps,1) << ". Time: " << to_string_with_precision(time,2)  << ", dt " << to_string_with_precision(dt,3) << std::endl;
+        float dt __attribute__((unused)) = static_cast<float>(cam->frame_time() - time);
+        time = cam->frame_time();
+        std::cout << dnav.navigation_status() <<  "; frame: " <<imgcount << ", " << cam->frame_number() << ". FPS: " << to_string_with_precision(fps,1) << ". Time: " << to_string_with_precision(time,2)  << ", dt " << to_string_with_precision(dt,3) << std::endl;
         imgcount++;
         prev_time = t;
 
@@ -260,7 +238,7 @@ void process_video() {
             restart_delay = 0;
 
         if (!log_replay_mode && ((imgcount > pparams.close_after_n_images && pparams.close_after_n_images>0)
-                                 || (cam.measured_exposure() <= pparams.darkness_threshold && pparams.darkness_threshold>0))) {
+                                 || (cam->measured_exposure() <= pparams.darkness_threshold && pparams.darkness_threshold>0))) {
             std::cout << "Initiating periodic restart" << std::endl;
             key =27;
         } else if(restart_delay > 1.5f*dnav.time_out_after_landing*pparams.fps) {
@@ -297,7 +275,7 @@ void process_frame(Stereo_Frame_Data data) {
            << data.RS_id << ";"
            << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << ";"
            << data.time << ";"
-           << cam.measured_exposure() << ";";
+           << cam->measured_exposure() << ";";
 
     trackers.update(data.time,dctrl.drone_is_active());
 #ifdef PROFILING
@@ -426,22 +404,22 @@ void handle_key(double time [[maybe_unused]]) {
     case ' ':
     case 'f':
         if(log_replay_mode)
-            cam.frame_by_frame = true;
+            cam->frame_by_frame = true;
         break;
     case 't':
-        cam.turbo = !cam.turbo;
+        cam->turbo = !cam->turbo;
         break;
     case '>': {
         double dt = logreader.first_takeoff_time() - time - 1;
         if (dt>0 && trackers.mode() != tracking::TrackerManager::mode_locate_drone)
-            cam.skip(dt);
+            cam->skip(dt);
         break;
     }
     case '.':
-        cam.skip_one_sec();
+        cam->skip_one_sec();
         break;
     case ',':
-        cam.back_one_sec();
+        cam->back_one_sec();
         break;
 #endif
     case 'a':
@@ -551,11 +529,11 @@ void init_loggers() {
 void init_video_recorders() {
     /*****init the video writer*****/
     if (pparams.video_result)
-        if (output_video_results.init(main_argc,main_argv,pparams.video_result, data_output_dir + "videoResult.mp4",visualizer.viz_frame_size().width,visualizer.viz_frame_size().height,pparams.fps,"192.168.1.255",5000,true,true)) {throw my_exit("could not open results video");}
-    if (pparams.video_raw && pparams.video_raw != video_bag)
-        if (output_video_LR.init(main_argc,main_argv,pparams.video_raw,data_output_dir + "videoRawLR.mp4",IMG_W*2,IMG_H,pparams.fps, "192.168.1.255",5000,false,false)) {throw my_exit("could not open LR video");}
+        if (output_video_results.init(main_argc,main_argv,pparams.video_result, data_output_dir + "videoResult.mkv",visualizer.viz_frame_size().width,visualizer.viz_frame_size().height,pparams.fps,"192.168.1.255",5000,true,GStream::rm_vaapih264)) {throw my_exit("could not open results video");}
+    if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode)
+        if (output_video_LR.init(main_argc,main_argv,pparams.video_raw,data_output_dir + "videoRawLR.mkv",IMG_W*2,IMG_H,pparams.fps, "192.168.1.255",5000,false,GStream::rm_vaapih264)) {throw my_exit("could not open LR video");}
     if (pparams.video_cuts)
-        if (output_video_cuts.init(main_argc,main_argv,pparams.video_cuts,data_output_dir + "insect" + to_string(0) + ".mp4",IMG_W*2,IMG_H,pparams.fps/2, "192.168.1.255",5000,true,false)) {std::cout << "WARNING: could not open cut video " << data_output_dir + "insect" + to_string(0) + ".mp4" << std::endl;}
+        if (output_video_cuts.init(main_argc,main_argv,pparams.video_cuts,data_output_dir + "insect" + to_string(0) + ".mkv",IMG_W*2,IMG_H,pparams.fps/2, "192.168.1.255",5000,true,GStream::rm_vaapih264)) {std::cout << "WARNING: could not open cut video " << data_output_dir + "insect" + to_string(0) + ".mkv" << std::endl;}
 }
 
 std::tuple<bool,bool,std::string,uint8_t,std::string,std::string> process_arg(int argc, char **argv) {
@@ -620,15 +598,21 @@ void init() {
 #endif
 
     /*****Start capturing images*****/
-    if (log_replay_mode)
-        cam.init(replay_dir);
-    else
-        cam.init();
+    if (log_replay_mode) {
+        if (file_exist(replay_dir+'/' + Realsense::playback_filename()))
+            cam = new Realsense(replay_dir);
+        else if (file_exist(replay_dir+'/' + FileCam::playback_filename()))
+            cam = new FileCam(replay_dir,&logreader);
+        else
+            throw my_exit("Could not find a video in the replay folder!");
+    } else
+        cam = new Realsense();
+    cam->init();
 
-    visdat.init(cam.Qf, cam.frameL,cam.frameR,cam.camera_angle(),cam.measured_gain(),cam.measured_exposure(),cam.depth_background_mm); // do after cam update to populate frames
-    trackers.init(&logger, &visdat, &(cam.camera_volume));
-    dnav.init(&logger,&trackers,&dctrl,&visdat, &(cam.camera_volume),replay_dir);
-    dctrl.init(&logger,log_replay_mode,&rc,trackers.dronetracker(), &(cam.camera_volume),cam.measured_exposure());
+    visdat.init(cam->Qf, cam->frameL,cam->frameR,cam->camera_angle(),cam->measured_gain(),cam->measured_exposure(),cam->depth_background_mm); // do after cam update to populate frames
+    trackers.init(&logger, &visdat, &(cam->camera_volume));
+    dnav.init(&logger,&trackers,&dctrl,&visdat, &(cam->camera_volume),replay_dir);
+    dctrl.init(&logger,log_replay_mode,&rc,trackers.dronetracker(), &(cam->camera_volume),cam->measured_exposure());
 
     // Ensure that joystick was found and that we can use it
     if (!dctrl.joystick_ready() && !log_replay_mode && pparams.joystick != rc_none) {
@@ -637,7 +621,7 @@ void init() {
 
     if (pparams.has_screen) {
         visualizer.init(&visdat,&trackers,&dctrl,&dnav,&rc,log_replay_mode);
-        visualizer_3d.init(&trackers, &(cam.camera_volume), &dctrl, &dnav);
+        visualizer_3d.init(&trackers, &(cam->camera_volume), &dctrl, &dnav);
         if (log_replay_mode)
             visualizer.first_take_off_time = logreader.first_takeoff_time();
     }
@@ -646,7 +630,7 @@ void init() {
 
     init_thread_pool();
 
-    cmdcenter.init(log_replay_mode,&dnav,&dctrl,&rc,&cam,&trackers);
+    cmdcenter.init(log_replay_mode,&dnav,&dctrl,&rc,cam,&trackers);
 
 #ifdef PROFILING
     logger << "t_visdat;t_trkrs;t_nav;t_ctrl;t_prdct;t_frame;"; // trail of the logging heads, needs to happen last
@@ -659,7 +643,8 @@ void close(bool sig_kill) {
     std::cout <<"Closing"<< std::endl;
     cmdcenter.reset_commandcenter_status_file("Closing");
 
-    cam.stop_watchdog();
+    if (!log_replay_mode)
+        static_cast<Realsense *>(cam)->stop_watchdog();
 
     if (pparams.has_screen)
         cv::destroyAllWindows();
@@ -668,7 +653,7 @@ void close(bool sig_kill) {
 #endif
 
     /*****Close everything down*****/
-    cam.close(); // attempt to save the video first
+    cam->close(); // attempt to save the video first
 
     dctrl.close();
     dnav.close();
@@ -681,7 +666,7 @@ void close(bool sig_kill) {
 
     if (pparams.video_result)
         output_video_results.close();
-    if (pparams.video_raw && pparams.video_raw != video_bag)
+    if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode)
         output_video_LR.close();
     if (pparams.video_cuts)
         output_video_cuts.close();
@@ -701,8 +686,9 @@ void wait_for_cam_angle() {
     int enable_delay = 0;
     if (pparams.darkness_threshold > 0 && !log_replay_mode) {
         std::cout << "Checking cam angle." << std::endl;
+        Realsense rs;
         while(true) {
-            auto [roll,pitch,frame_time,frameL] = cam.measure_angle();
+            auto [roll,pitch,frame_time,frameL] = rs.measure_angle();
             static double roll_start_time = frame_time;
             double elapsed_time = (frame_time- roll_start_time) / 1000.;
 
@@ -730,8 +716,9 @@ void wait_for_cam_angle() {
 void wait_for_dark() {
     if (pparams.darkness_threshold > 0 && !log_replay_mode) {
         std::cout << "Checking if dark." << std::endl;
+        Realsense rs;
         while(true) {
-            auto [expo,frameL] = cam.measure_auto_exposure();
+            auto [expo,frameL] = rs.measure_auto_exposure();
             auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
             std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << " Measured exposure: " << expo << std::endl;
             if (expo >pparams.darkness_threshold) {
@@ -746,8 +733,6 @@ void wait_for_dark() {
 
 int main( int argc, char **argv )
 {
-    // signal(SIGINT, kill_sig_handler);
-
     cmdcenter.reset_commandcenter_status_file("Starting");
     bool realsense_reset;
     try {
@@ -760,7 +745,8 @@ int main( int argc, char **argv )
     if (realsense_reset) {
         cmdcenter.reset_commandcenter_status_file("Reseting realsense");
         try {
-            cam.reset();
+            Realsense rs;
+            rs.reset();
         } catch(my_exit const &e) {
             std::cout << "Error: " << e.msg << std::endl;
             cmdcenter.reset_commandcenter_status_file(e.msg);
@@ -799,7 +785,7 @@ int main( int argc, char **argv )
     } catch(rs2::error const &e) {
         cmdcenter.reset_commandcenter_status_file("Resetting realsense");
         try {
-            cam.reset();
+            static_cast<Realsense *>(cam)->reset();
         } catch(my_exit const &e2) {
             std::cout << "Error: " << e2.msg << std::endl;
             cmdcenter.reset_commandcenter_status_file(e2.msg);

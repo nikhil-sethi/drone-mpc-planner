@@ -40,6 +40,7 @@ struct LogEntryInsect {
 struct LogEntryMain {
     int id;
     unsigned long long RS_id;
+    double elapsed;
     bool insect_replay_log;
     bool valid;
     int joyThrottle;

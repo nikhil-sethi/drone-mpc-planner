@@ -11,6 +11,7 @@
 #include "common.h"
 
 stopwatch_c stopwatch;
+int enough = 0;
 int want = 1;
 int want_cnt = 0;
 std::mutex lock_var;
@@ -22,50 +23,24 @@ cv::VideoWriter cvvideo;
 int videomode;
 int colormode;
 
-//static gboolean bus_call (GstBus *bus __attribute__((unused)), GstMessage *msg, gpointer data)
-//{
-//  GMainLoop *loop = static_cast<GMainLoop *> ( data);
-
-//  switch (GST_MESSAGE_TYPE (msg)) {
-
-//    case GST_MESSAGE_EOS: // for some reason this does not seem to work...
-//      g_print ("End of stream\n");
-//      g_main_loop_quit (loop);
-//      break;
-
-//    case GST_MESSAGE_ERROR: {
-//      gchar  *debug;
-//      GError *error;
-
-//      gst_message_parse_error (msg, &error, &debug);
-//      g_free (debug);
-
-//      g_printerr ("Error: %s\n", error->message);
-//      g_error_free (error);
-
-//      g_main_loop_quit (loop);
-//      break;
-//    }
-//    default:
-//      break;
-//  }
-
-//  return TRUE;
-//}
-
 static void cb_need_data (GstElement *appsrc __attribute__((unused)), guint unused_size __attribute__((unused)), gpointer user_data __attribute__((unused))) {
     lock_var.lock();
     want = 1;
+    enough = 0;
     lock_var.unlock();
     want_cnt++;
     wait_for_want.unlock();
+}
+
+static void cb_enough_data (GstElement *appsrc __attribute__((unused)), guint unused_size __attribute__((unused)), gpointer user_data __attribute__((unused))) {
+    enough = 1;
 }
 
 void GStream::block() {
     wait_for_want.lock();
 }
 
-int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, int sizeY,int fps, std::string ip, int port, bool color, bool render_hq) {
+int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, int sizeY,int fps, std::string ip, int port, bool color, render_mode_enum render_mode) {
     videomode = mode;
     gstream_fps  =fps;
     wait_for_want.unlock();
@@ -104,29 +79,26 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
         /* init GStreamer */
         gst_init (&argc, &argv);
 
-        //        GMainLoop *loop;
-        //        loop = g_main_loop_new (NULL, FALSE);
-        //        /* we add a message handler */
-        //        auto bus = gst_pipeline_get_bus (GST_PIPELINE (_pipeline));
-        //        gst_bus_add_watch (bus, bus_call, loop);
-        //        gst_object_unref (bus);
-
         /* setup pipeline */
-        if (mode == video_mp4) {
+        if (mode == video_mkv) {
             //write to file:
             //gst-launch-1.0 videotestsrc ! videoconvert ! video/x-raw,format=I420 ! x264enc ! 'video/x-h264, stream-format=(string)byte-stream'  ! avimux ! filesink location=test.avi
             //gst-launch-1.0 videotestsrc ! video/x-raw,format=RGB,framerate=\(fraction\)15/1,width=1920,height=1080 ! videoconvert ! x264enc speed-preset=ultrafast bitrate=16000 ! 'video/x-h264, stream-format=(string)byte-stream'  ! avimux ! filesink location=test.avi
             //gst-launch-1.0 videotestsrc ! video/x-raw,format=GRAY8,framerate=\(fraction\)90/1,width=1280,height=720 ! videoconvert ! x264enc ! 'video/x-h264, stream-format=(string)byte-stream'  ! avimux ! filesink location=test.avi
+            //gst-launch-1.0 videotestsrc ! video/x-raw,format=GRAY8,framerate=\(fraction\)90/1,width=1696,height=480 ! videoconvert ! vaapih265enc ! h265parse ! matroskamux ! filesink location=test.mkv
+            //for some reason mp4mux gives unplayable video with gst-lauch, while it works perfectly from our application. Matroskamux should be more or less the same for testing purposes.
             _pipeline = gst_pipeline_new ("pipeline");
 
             _appsrc = gst_element_factory_make ("appsrc", "source");
             g_object_set (G_OBJECT (_appsrc),
                           "stream-type", 0, // GST_APP_STREAM_TYPE_STREAM
                           "format", GST_FORMAT_TIME,
-                          "is-live", TRUE,
+                          "is-live", FALSE,
+                          "max-bytes", 5000000, // buffer size before enough-data fires. Default 200000
                           NULL);
 
             g_signal_connect (_appsrc, "need-data", G_CALLBACK(cb_need_data), NULL);
+            g_signal_connect (_appsrc, "enough-data", G_CALLBACK(cb_enough_data), NULL);
 
             if (color) {
                 g_object_set (G_OBJECT (_appsrc), "caps",
@@ -146,34 +118,38 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
 
             conv = gst_element_factory_make ("videoconvert", "conv");
 
-            //for compatibility with play back on e.g. phones, we need to have yuv420p
-            //this will make the color rather ugly though :(
             capsfilter = gst_element_factory_make ("capsfilter", NULL);
             if (color) {
+                //for compatibility with play back on e.g. phones, we need to have yuv420p
+                //this will make the color rather ugly though :(
                 g_object_set (G_OBJECT (capsfilter), "caps",
                               gst_caps_new_simple ("video/x-raw",
                                                    "format", G_TYPE_STRING, "I420",
                                                    NULL), NULL);
             }
-            int render_quality = 1;
-            int bitrate = 8192;
-            if (render_hq) {
-                render_quality = 7;
-                bitrate = 32768;
+
+            if (render_mode == rm_vaapih264) {
+                encoder = gst_element_factory_make ("vaapih265enc", "encoder"); // hardware encoding
+                //The cqp rate-control setting seems to leave noticable noice, so we set a fixed bitrate. 5000 seems to be a nice compromise between quality and size.
+                //For logging (with stringent size and download constraints), cqp could be better though. It is about 5x smaller and the noise does not really influence our algorithms.
+                //To have a similar size as the intel rs bag one would need to increase to 5000000 (5M), but they are using mjpeg which is much less efficient
+                g_object_set (G_OBJECT (encoder),  "rate-control", 2,"bitrate", 5000, NULL);
+            } else {
+
+                int render_quality = 1;
+                int bitrate = 8192;
+                if (render_mode == rm_x264_hq) {
+                    render_quality = 7;
+                    bitrate = 32768;
+                }
+                if (!color)
+                    bitrate/=2;
+
+                encoder = gst_element_factory_make ("x264enc", "encoder"); // soft encoder
+                g_object_set (G_OBJECT (encoder),  "speed-preset", render_quality,"bitrate", bitrate, NULL);
             }
-            if (!color)
-                bitrate/=2;
 
-            //the vaapi encoder uses way less CPU
-            //encoder = gst_element_factory_make ("vaapih264enc", "encoder"); // hardware encoding
-            encoder = gst_element_factory_make ("x264enc", "encoder"); // soft encoder
-            if (color)
-                g_object_set (G_OBJECT (encoder),  "speed-preset", render_quality,"bitrate", bitrate, NULL);
-            else
-                g_object_set (G_OBJECT (encoder),  "speed-preset", render_quality,"bitrate", bitrate, NULL);
-
-            //preferably we would end up with an mp4 file, because phones understand that
-            mux = gst_element_factory_make ("mp4mux", "mux");
+            mux = gst_element_factory_make ("matroskamux", "mux");
 
             //            mux = gst_element_factory_make ("avimux", "mux");
             videosink = gst_element_factory_make ("filesink", "videosink");
@@ -265,7 +241,8 @@ int GStream::prepare_buffer(GstAppSrc* appsrc, cv::Mat *image) {
     GstFlowReturn ret;
 
     lock_var.lock();
-    if (!want) {
+    if (enough) {
+        std::cout << "Skip recording a frame because buffer is full" << std::endl;
         lock_var.unlock();
         return 1;
     }
