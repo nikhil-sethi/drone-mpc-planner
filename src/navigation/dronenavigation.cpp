@@ -128,6 +128,7 @@ void DroneNavigation::update(double time) {
             _dctrl->LED(true);
             _trackers->mode(tracking::TrackerManager::mode_idle);
             _visdat->disable_fading = false;
+            _visdat->enable_collect_no_drone_frames = true;
             if (time-time_located_drone>1.0 && (_dctrl->drone_state_inactive() || pparams.joystick != rc_none)) { // delay until blinking stopped
                 _visdat->enable_background_motion_map_calibration(2);
                 _visdat->create_overexposed_removal_mask(_trackers->dronetracker()->drone_takeoff_im_location(),_trackers->dronetracker()->drone_takeoff_im_size());

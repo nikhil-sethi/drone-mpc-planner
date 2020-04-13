@@ -103,8 +103,7 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
     if (enable_viz_diff)
         viz_frame = diffL*10;
 
-    if (enable_collect_no_drone_frames && _calibrating_background )
-        collect_no_drone_frames(dL); // calibration of background uncertainty map
+    maintain_motion_noise_map();
 
     lock_data.unlock();
 }
@@ -141,30 +140,31 @@ void VisionData::fade(cv::Mat diff16, bool exclude_drone) {
     }
 }
 
-void VisionData::collect_no_drone_frames(cv::Mat dL) {
+void VisionData::maintain_motion_noise_map() {
+    if (frame_id % pparams.fps == 0 && enable_collect_no_drone_frames) {
+        motion_noise_buffer.push_back(abs(diffL16));
+        motion_noise_buffer.erase(motion_noise_buffer.begin());
 
-    if (skip_background_frames > 0) { // during the first frame or two, there is still residual blink
-        skip_background_frames--;
-        return;
+        if (frame_id % pparams.fps * motion_noise_buffer.size() == 1 )
+            _calibrating_background = true;
     }
 
-    diffL16_back += dL;
-    cv::Mat diffL_back = abs(diffL16_back);
-    diffL_back.convertTo(diffL_back, CV_8UC1);
-    cv::resize(diffL_back,diffL_back,smallsize);
+    if (enable_collect_no_drone_frames && _calibrating_background ) {
+        motion_noise_buffer.push_back(abs(diffL16));
+        if (_current_frame_time > calibrating_background_end_time) {
+            _calibrating_background = false;
 
-    cv::Mat mask = diffL_back > motion_noise_map;
-    diffL_back.copyTo(motion_noise_map,mask);
+            cv::Mat bkg = motion_noise_buffer.at(0);
+            for (cv::Mat im : motion_noise_buffer) {
+                cv::Mat mask = im > bkg;
+                im.copyTo(bkg,mask);
+            }
 
-    double minv,maxv;
-    cv::minMaxLoc(motion_noise_map,&minv,&maxv);
-    if (maxv > 100)
-        std::cout << "Warning: max background motion during calibration too high: " << maxv << std::endl;
-
-    if (_current_frame_time > calibrating_background_end_time) {
-        _calibrating_background = false;
-        GaussianBlur(motion_noise_map,motion_noise_map,Size(9,9),0);
-        imwrite(motion_noise_map_wfn,motion_noise_map);
+            bkg.convertTo(bkg, CV_8UC1);
+            cv::resize(bkg,bkg,smallsize);
+            GaussianBlur(bkg,motion_noise_map,Size(9,9),0);
+            imwrite(motion_noise_map_wfn,motion_noise_map);
+        }
     }
 }
 
@@ -184,7 +184,6 @@ void VisionData::enable_background_motion_map_calibration(float duration) {
     diffL16_back = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
     calibrating_background_end_time = _current_frame_time+static_cast<double>(duration);
     _calibrating_background = true;
-    skip_background_frames = 2;
 }
 
 //Keep track of the average brightness, and reset the motion integration frame when it changes to much. (e.g. when someone turns on the lights or something)

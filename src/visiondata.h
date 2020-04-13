@@ -30,7 +30,6 @@ private:
     int motion_update_iterator = 0;
     bool _calibrating_background = false;
     double calibrating_background_end_time = 0;
-    int skip_background_frames = 0;
     std::mutex lock_data;
 
     class VisionParameters: public xmls::Serializable
@@ -87,7 +86,7 @@ private:
 
     bool initialized = false;
 
-    void collect_no_drone_frames(cv::Mat dL);
+    void maintain_motion_noise_map();
     void track_avg_brightness(cv::Mat frame, double time);
 
     void fade(cv::Mat diff16, bool exclude_drone);
@@ -95,6 +94,7 @@ private:
 public:
     cv::Mat frameL,frameR;
     cv::Mat frameL_prev,frameR_prev;
+    std::vector<cv::Mat> motion_noise_buffer;
     cv::Mat motion_noise_map;
     cv::Mat diffL,diffR,diffL_small,diffR_small;
     cv::Mat overexposed_mapL;
