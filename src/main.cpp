@@ -73,7 +73,7 @@ Visualizer visualizer;
 Visualizer3D visualizer_3d;
 logging::LogReader logreader;
 CommandCenterLink cmdcenter;
-Cam * cam;
+std::unique_ptr<Cam> cam;
 VisionData visdat;
 
 /****Threadpool*******/
@@ -600,13 +600,14 @@ void init() {
     /*****Start capturing images*****/
     if (log_replay_mode) {
         if (file_exist(replay_dir+'/' + Realsense::playback_filename()))
-            cam = new Realsense(replay_dir);
+            cam = std::unique_ptr<Cam>(new Realsense(replay_dir));
         else if (file_exist(replay_dir+'/' + FileCam::playback_filename()))
-            cam = new FileCam(replay_dir,&logreader);
+            cam = std::unique_ptr<Cam>(new FileCam(replay_dir,&logreader));
         else
             throw my_exit("Could not find a video in the replay folder!");
     } else
-        cam = new Realsense();
+        cam = std::unique_ptr<Cam>(new Realsense());
+
     cam->init();
 
     visdat.init(cam->Qf, cam->frameL,cam->frameR,cam->camera_angle(),cam->measured_gain(),cam->measured_exposure(),cam->depth_background_mm); // do after cam update to populate frames
@@ -630,7 +631,7 @@ void init() {
 
     init_thread_pool();
 
-    cmdcenter.init(log_replay_mode,&dnav,&dctrl,&rc,cam,&trackers);
+    cmdcenter.init(log_replay_mode,&dnav,&dctrl,&rc,cam.get(),&trackers);
 
 #ifdef PROFILING
     logger << "t_visdat;t_trkrs;t_nav;t_ctrl;t_prdct;t_frame;"; // trail of the logging heads, needs to happen last
@@ -644,7 +645,7 @@ void close(bool sig_kill) {
     cmdcenter.reset_commandcenter_status_file("Closing");
 
     if (!log_replay_mode)
-        static_cast<Realsense *>(cam)->stop_watchdog();
+        static_cast<Realsense *>(cam.get())->stop_watchdog();
 
     if (pparams.has_screen)
         cv::destroyAllWindows();
@@ -653,7 +654,8 @@ void close(bool sig_kill) {
 #endif
 
     /*****Close everything down*****/
-    cam->close(); // attempt to save the video first
+    if (cam)
+        cam->close(); // attempt to save the video first
 
     dctrl.close();
     dnav.close();
@@ -785,7 +787,7 @@ int main( int argc, char **argv )
     } catch(rs2::error const &e) {
         cmdcenter.reset_commandcenter_status_file("Resetting realsense");
         try {
-            static_cast<Realsense *>(cam)->reset();
+            static_cast<Realsense *>(cam.get())->reset();
         } catch(my_exit const &e2) {
             std::cout << "Error: " << e2.msg << std::endl;
             cmdcenter.reset_commandcenter_status_file(e2.msg);
