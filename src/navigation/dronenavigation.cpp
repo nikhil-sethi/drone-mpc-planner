@@ -159,10 +159,13 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_manual;
             } else if (_nav_flight_mode == nfm_hunt) {
                 _trackers->mode(tracking::TrackerManager::mode_wait_for_insect);
-                if(_iceptor.insect_in_range_takeoff()) {
+
+                auto itrkr = _trackers->insecttracker_best();
+
+                if(_iceptor.insect_in_range_takeoff(itrkr)) {
                     _navigation_status = ns_takeoff;
                     repeat = true;
-                } else if(_trackers->insecttracker_best ()->tracking ()) {
+                } else if(itrkr->tracking () && !itrkr->false_positive()) {
                     _dctrl->flight_mode (DroneController::fm_spinup);
                 } else {
                     _dctrl->flight_mode(DroneController::fm_inactive);
@@ -199,7 +202,7 @@ void DroneNavigation::update(double time) {
                 break;
             }
 
-            if (_iceptor.insect_in_range_takeoff() && _nav_flight_mode == nfm_hunt) {
+            if (_iceptor.insect_in_range_takeoff(_trackers->insecttracker_best()) && _nav_flight_mode == nfm_hunt) {
                 setpoint_pos_world = _iceptor.target_position();
                 setpoint_vel_world = _iceptor.target_speed();
                 setpoint_acc_world = _iceptor.target_accelleration();

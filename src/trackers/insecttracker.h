@@ -9,7 +9,9 @@ public: tracker_type type() { return tt_insect;}
 
 private:
     int16_t _insect_trkr_id{-1};
+    uint _fp = 0;
     void start_new_log_line(double time, unsigned long long frame_number);
+    void check_false_positive();
 public:
     static constexpr float new_tracker_drone_ignore_zone_size = 0.3f;
     void init(int id, VisionData *_visdat, int16_t viz_id);
@@ -17,6 +19,9 @@ public:
     bool tracking() {return _tracking;}
     bool properly_tracking() {
         return n_frames_tracking > n_frames_lost && tracking();
+    }
+    bool false_positive() {
+        return _fp>0;
     }
     void append_log(double time, unsigned long long frame_number);
     int16_t insect_trkr_id() {return _insect_trkr_id;}

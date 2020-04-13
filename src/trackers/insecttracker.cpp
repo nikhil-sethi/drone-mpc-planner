@@ -27,9 +27,36 @@ void InsectTracker::append_log(double time, unsigned long long frame_number) {
     (*_logger) << '\n';
 }
 
+void InsectTracker::check_false_positive() {
+
+    //check for a 'permanent motion pair', a spot in the motion map that was permanentely changed after the motion map was reset.
+    //(this could well have been a moving insect, splitting the blob in a permanent speck where it started at the point of the reset,
+    //and the actual flying insect )
+    if (path.size()>1) {
+        float tot = 0;
+        uint cnt = 0;
+        for (auto wi : path) {
+            if (wi.valid) {
+                tot += normf(wi.pt - _world_item.pt);
+                cnt++;
+            }
+        }
+        tot/=cnt;
+        if (tot < 0.03f)
+            _fp++;
+        else
+            _fp = 0;
+    } else {
+        _fp = 0;
+    }
+
+}
+
 void InsectTracker::track(double time) {
 
     start_new_log_line(time,_visdat->frame_id);
+
+    check_false_positive();
     ItemTracker::track(time);
 
     if (!_tracking) {

@@ -12,7 +12,7 @@ void Interceptor::init(tracking::TrackerManager *trackers, VisionData *visdat, C
 
 
 void Interceptor::update(bool drone_at_base, double time) {
-
+    auto best_itrkr = _trackers->insecttracker_best();
     switch (_interceptor_state) {
     case  is_init: {
         _interceptor_state = is_waiting_for_target;
@@ -24,7 +24,7 @@ void Interceptor::update(bool drone_at_base, double time) {
         _intercept_acc = {0,0,0};
         _count_insect_not_in_range++;
 
-        if ( (_trackers->insecttracker_best()->tracking() )) {
+        if ( best_itrkr->tracking() && !best_itrkr->false_positive() ) {
             _interceptor_state = is_waiting_in_reach_zone;
         } else
             break;
@@ -34,7 +34,7 @@ void Interceptor::update(bool drone_at_base, double time) {
         _intercept_acc = {0,0,0};
 
 
-        if ( !_trackers->insecttracker_best()->tracking() ) {
+        if ( !best_itrkr->tracking() || best_itrkr->false_positive()) {
             _interceptor_state = is_waiting_for_target;
             break;
         }
@@ -49,7 +49,7 @@ void Interceptor::update(bool drone_at_base, double time) {
             _interceptor_state = is_move_to_intercept;
         break;
     } case is_flower_of_fire_intercept: {
-        if  (!_trackers->insecttracker_best()->tracking()) {
+        if ( !best_itrkr->tracking() || best_itrkr->false_positive()) {
             _interceptor_state = is_waiting_for_target;
             break;
         }
@@ -63,7 +63,7 @@ void Interceptor::update(bool drone_at_base, double time) {
         }
         break;
     } case is_move_to_intercept: { // move max speed to somewhere close of the insect, preferably 20cm below behind.
-        if  (!_trackers->insecttracker_best()->tracking()) {
+        if ( !best_itrkr->tracking() || best_itrkr->false_positive()) {
             _interceptor_state = is_waiting_for_target;
             break;
         }
@@ -83,7 +83,7 @@ void Interceptor::update(bool drone_at_base, double time) {
 
         break;
     } case is_close_chasing: {
-        if  (!_trackers->insecttracker_best()->tracking()) {
+        if ( !best_itrkr->tracking() || best_itrkr->false_positive()) {
             _interceptor_state = is_waiting_for_target;
             break;
         }

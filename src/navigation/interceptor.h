@@ -68,10 +68,11 @@ public:
     void reset_insect_cleared() {_count_insect_not_in_range = 0;}
 
 
-    bool insect_in_range_takeoff() {
+    bool insect_in_range_takeoff(tracking::InsectTracker * best_itrkr) {
         return !_count_insect_not_in_range
                && hunt_volume_check == CameraView::HuntVolume_OK
-               && _trackers->insecttracker_best()->properly_tracking();
+               && best_itrkr->properly_tracking()
+               && !best_itrkr->false_positive();
     }
     bool insect_in_range() {return !_count_insect_not_in_range;}
     bool insect_cleared() {return _count_insect_not_in_range > insect_cleared_timeout; }
