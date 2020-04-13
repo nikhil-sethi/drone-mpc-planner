@@ -1,7 +1,7 @@
 # diff
 
 # version
-# Betaflight / CRAZYBEEF4FR (C4FR) 4.0.6 Jan  6 2020 / 17:06:50 (b6dd44fda) MSP API: 1.41
+# Betaflight / CRAZYBEEF4FR (C4FR) 4.0.6 Apr  8 2020 / 20:45:46 (cac674809) MSP API: 1.41
 
 # start the command batch
 batch start
@@ -34,6 +34,12 @@ feature MOTOR_STOP
 feature LED_STRIP
 
 # beeper
+beeper -DISARMING
+beeper -ARMING
+beeper -ARMING_GPS_FIX
+beeper -READY_BEEP
+beeper -DISARM_REPEAT
+beeper -ARMED
 beeper -ON_USB
 
 # beacon
@@ -44,11 +50,11 @@ beacon RX_SET
 # serial
 
 # led
-led 0 4,7::C:0
+led 0 4,7::CW:0
 led 1 5,7::CT:6
 led 2 6,7::CT:2
 led 3 7,7::CT:6
-led 4 8,7::C:0
+led 4 8,7::CW:0
 
 # color
 color 1 0,0,1
@@ -92,10 +98,10 @@ set dyn_lpf_gyro_max_hz = 750
 set rx_spi_protocol = FRSKY_D
 set dshot_idle_value = 300
 set motor_pwm_protocol = DSHOT600
+set align_board_roll = 180
 set bat_capacity = 300
-set vbat_min_cell_voltage = 250
-set vbat_warning_cell_voltage = 300
 set vbat_detect_cell_voltage = 30
+set vbat_scale = 113
 set ibata_scale = 1175
 set yaw_motors_reversed = ON
 set pid_process_denom = 2
