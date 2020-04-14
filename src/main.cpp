@@ -202,7 +202,7 @@ void process_video() {
             }
         }
 
-        if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode) {
+        if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode && pparams.op_mode != op_mode_crippled) {
             int frame_written = 0;
             frame_written = output_video_LR.write(cam->frameL,cam->frameR);
             int video_frame_counter = 0;
@@ -530,7 +530,7 @@ void init_video_recorders() {
     /*****init the video writer*****/
     if (pparams.video_result)
         if (output_video_results.init(main_argc,main_argv,pparams.video_result, data_output_dir + "videoResult.mkv",visualizer.viz_frame_size().width,visualizer.viz_frame_size().height,pparams.fps,"192.168.1.255",5000,true,GStream::rm_vaapih264)) {throw my_exit("could not open results video");}
-    if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode)
+    if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode && pparams.op_mode != op_mode_crippled)
         if (output_video_LR.init(main_argc,main_argv,pparams.video_raw,data_output_dir + "videoRawLR.mkv",IMG_W*2,IMG_H,pparams.fps, "192.168.1.255",5000,false,GStream::rm_vaapih264)) {throw my_exit("could not open LR video");}
     if (pparams.video_cuts)
         if (output_video_cuts.init(main_argc,main_argv,pparams.video_cuts,data_output_dir + "insect" + to_string(0) + ".mkv",IMG_W*2,IMG_H,pparams.fps/2, "192.168.1.255",5000,true,GStream::rm_vaapih264)) {std::cout << "WARNING: could not open cut video " << data_output_dir + "insect" + to_string(0) + ".mkv" << std::endl;}
@@ -668,7 +668,7 @@ void close(bool sig_kill) {
 
     if (pparams.video_result)
         output_video_results.close();
-    if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode)
+    if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode && pparams.op_mode != op_mode_crippled)
         output_video_LR.close();
     if (pparams.video_cuts)
         output_video_cuts.close();
