@@ -1,6 +1,6 @@
 # PATS
 
-## Flashing Betaflight:
+## Flashing the drone:
 
 1. Start the bf_flash script to flash the firmware and betaflight settings:
 ```
