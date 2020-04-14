@@ -142,11 +142,14 @@ void VisionData::fade(cv::Mat diff16, bool exclude_drone) {
 
 void VisionData::maintain_motion_noise_map() {
     if (frame_id % pparams.fps == 0 && enable_collect_no_drone_frames) {
+        static uint cnt = 0;
         motion_noise_buffer.push_back(abs(diffL16));
         motion_noise_buffer.erase(motion_noise_buffer.begin());
-
-        if (frame_id % pparams.fps * motion_noise_buffer.size() == 1 )
+        cnt++;
+        if (cnt > motion_noise_buffer.size() && motion_noise_buffer.size() > 1) {
             _calibrating_background = true;
+            cnt = 0;
+        }
     }
 
     if (enable_collect_no_drone_frames && _calibrating_background ) {
