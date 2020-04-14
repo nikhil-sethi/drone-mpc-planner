@@ -2,7 +2,7 @@
 
 ## Flashing Betaflight:
 
-Start the bf_flash script to flash the firmware and betaflight settings:
+1. Start the bf_flash script to flash the firmware and betaflight settings:
 ```
 cd ~/code/pats/config/
 ./bf_flash.py
@@ -10,7 +10,7 @@ cd ~/code/pats/config/
 This may require to install `pip3 install pyserial` or in case of conda `conda install -c anaconda pyserial`.
 The script supports some command line arguments, like setting the drone id or selecting another settings file.
 
-Apply the following settings to BLHeli:  
+2. Apply the following settings to BLHeli:  
 ![BLHeli settings](https://github.com/pats-drones/pats/blob/master/doc/BLHeliSettings.png)
 
 ## Flashing realsense camera:
