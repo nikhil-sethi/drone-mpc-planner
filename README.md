@@ -8,7 +8,7 @@ cd ~/code/pats/config/
 ./bf_flash.py
 ```
 This may require to install `pip3 install pyserial` or in case of conda `conda install -c anaconda pyserial`. You'll also need `sudo apt install dfu-util`.
-The script supports some command line arguments, like setting the drone id or selecting another settings file.
+The script supports some command line arguments, like setting the drone id or selecting another settings file, see `./bf_flash.py --help`. 
 
 2. Apply the following settings to BLHeli:  
 ![BLHeli settings](https://github.com/pats-drones/pats/blob/master/doc/BLHeliSettings.png)
