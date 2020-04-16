@@ -96,6 +96,8 @@ void DroneController::set_led_strength(float exposure) {
         dparams.drone_led_strength = 100 - (exposure/2000.f*50.f);
     else
         dparams.drone_led_strength = 50 - ((std::clamp(exposure,2000.f,10000.f)-2000)/8000.f*45.f);
+
+    std::cout << "Led strength set to: " << dparams.drone_led_strength << std::endl;
 }
 
 int bound_throttle(int v) {

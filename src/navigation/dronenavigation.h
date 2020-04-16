@@ -41,6 +41,7 @@ private:
 
     navigation_states _navigation_status = ns_init;
     double locate_drone_start_time = 0;
+    int locate_drone_attempts = 0;
 
     uint wpid = 0;
     std::vector<Waypoint> waypoints;

@@ -84,6 +84,7 @@ void DroneNavigation::update(double time) {
         switch (_navigation_status) {
         case ns_init: {
             _dctrl->LED(true);
+            locate_drone_attempts = 0;
             _visdat->reset_motion_integration();
             if (time > 1.5) { // skip first second or so due to auto exposure
                 _navigation_status = ns_locate_drone_init;
@@ -92,7 +93,7 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_locate_drone_init: {
             _dctrl->LED(true);
-            _dctrl->flight_mode(DroneController::fm_blink);
+            _dctrl->flight_mode(DroneController::fm_disarmed);
             locate_drone_start_time = time;
             _navigation_status = ns_locate_drone_wait_led_on;
             [[fallthrough]];
@@ -100,6 +101,7 @@ void DroneNavigation::update(double time) {
             if (time - locate_drone_start_time > 0.1) {
                 _visdat->reset_motion_integration();
                 _visdat->disable_fading = true;
+                _dctrl->flight_mode(DroneController::fm_blink);
                 _trackers->mode(tracking::TrackerManager::mode_locate_drone);
                 _navigation_status = ns_wait_locate_drone;
             }
@@ -111,12 +113,15 @@ void DroneNavigation::update(double time) {
             if (_trackers->mode() != tracking::TrackerManager::mode_locate_drone) {
                 _dctrl->flight_mode(DroneController::fm_disarmed);
                 time_located_drone = time;
+                locate_drone_attempts = 0;
                 if (pparams.op_mode == op_mode_crippled) {
                     _navigation_status = ns_crippled;
                 } else
                     _navigation_status = ns_located_drone;
             }
-            if (time - locate_drone_start_time > 30 && pparams.op_mode != op_mode_crippled)
+            if (time - locate_drone_start_time/(locate_drone_attempts+1) > 15 )
+                _navigation_status = ns_locate_drone_init;
+            if (time - locate_drone_start_time > 45 && pparams.op_mode != op_mode_crippled)
                 _navigation_status = ns_drone_problem;
             break;
         } case ns_crippled: {
