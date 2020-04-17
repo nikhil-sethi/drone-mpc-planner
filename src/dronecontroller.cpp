@@ -27,7 +27,8 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
                "joyThrottle; joyRoll; joyPitch; joyYaw; " <<
                "joyArmSwitch; joyModeSwitch; joyTakeoffSwitch;" <<
                "mmArmSwitch; mmModeSwitch;" <<
-               "dt; yaw; yaw_smooth;";
+               "dt; yaw; yaw_smooth;" <<
+               "thrust; integrator_x; integrator_y; integrator_z;";
     std::cout << "Initialising control." << std::endl;
     settings_file = "../../xml/" + dparams.control + ".xml";
 
@@ -515,7 +516,9 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
                _rc->mode << "; " <<
                data_drone.dt << "; " <<
                data_drone.yaw <<  "; " <<
-               data_drone.yaw_smooth <<  "; ";
+               data_drone.yaw_smooth <<  "; " <<
+               thrust << "; " <<
+               pos_err_i.x << "; " << pos_err_i.y << "; " << pos_err_i.z << "; ";
 }
 
 std::tuple<int, int, float, Point3f, std::vector<state_data> > DroneController::calc_burn(state_data state_drone,state_data state_target,float remaining_aim_duration) {
