@@ -1472,6 +1472,12 @@ void DroneController::close () {
         if (pparams.control_tuning)
             serialize_settings();
         initialized = false;
+        if(!log_replay_mode) {
+            float start_thrust = dparams.thrust;
+            dparams.thrust = thrust;
+            dparams.serialize("../../xml/"+string(drone_types_str[pparams.drone])+".xml");
+            dparams.thrust = start_thrust;
+        }
     }
 }
 
