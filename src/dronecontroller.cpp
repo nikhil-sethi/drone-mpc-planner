@@ -1129,6 +1129,10 @@ void DroneController::check_control_and_tracking_problems(track_data data_drone)
 }
 
 track_data DroneController::land(track_data data_drone, track_data data_target_new) {
+    if(duration_since_waypoint_changed(_time)<1.f) {
+        pos_err_i = {0};
+    }
+
     if(data_drone.pos_valid && !feedforward_landing) {
         float vel_err, pos_err;
         std::tie(pos_err, vel_err) = update_landing_yoffset(data_drone, data_target_new);
