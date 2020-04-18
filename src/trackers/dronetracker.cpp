@@ -201,12 +201,14 @@ bool DroneTracker::detect_lift_off() {
 
 void DroneTracker::calc_world_item(BlobProps * props, double time [[maybe_unused]]) {
 
-    calc_world_props_blob_generic(props,landing());
+    bool use_max = _visdat->camera_exposure < 5000 && landing();
+
+    calc_world_props_blob_generic(props,use_max);
 
     props->world_props.valid = props->world_props.bkg_check_ok && props->world_props.disparity_in_range && props->world_props.radius_in_range;
 
-    if (landing())
-        props->world_props.z -= dparams.radius; // because we track the led during landing
+    if (use_max)
+        props->world_props.z -= dparams.radius; // because we track the led instead of the whole blob
     else if (inactive())
         props->world_props.valid = false;
     else if (taking_off() && !_manual_flight_mode) {
