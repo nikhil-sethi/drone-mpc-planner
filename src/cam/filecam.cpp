@@ -88,9 +88,14 @@ void FileCam::update() {
     cvtColor(frameLR,frameLR,CV_BGR2GRAY);
     frameL = frameLR(cv::Rect(cv::Point(0,0),cv::Point(frameLR.cols/2,frameLR.rows)));
     frameR = frameLR(cv::Rect(cv::Point(frameLR.cols/2,0),cv::Point(frameLR.cols,frameLR.rows)));
-
     _frame_number = logreader->retrieve_RS_ID_from_frame_id(frame_cnt-1);
+
     _frame_time = ((_frame_number+1) / static_cast<double>(pparams.fps));
+
+    if (_frame_number==ULONG_MAX) {
+        std::cout << "Log end, exiting. Video frames left: " << nFrames - frame_cnt << std::endl;
+        throw bag_video_ended();
+    }
 
     if (!turbo) {
         while(swc.Read() < (1.f/pparams.fps)*1e3f) {

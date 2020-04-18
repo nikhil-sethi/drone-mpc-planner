@@ -2,6 +2,7 @@
 #include <cmath>
 #include "logging.h"
 #include "insectreader.h"
+#include <limits.h>
 
 namespace logging
 {
@@ -13,7 +14,12 @@ public:
     void read_insect_replay_log(std::string path);
     void current_frame_number(unsigned long long RS_id);
     double first_takeoff_time() {return _takeoff_time;}
-    long long retrieve_RS_ID_from_frame_id(int frame_number) {return RS_IDs.at(frame_number);} // reverse lookup for filecam
+    unsigned long long retrieve_RS_ID_from_frame_id(uint frame_number) { // reverse lookup for filecam
+        if (RS_IDs.size() > frame_number + 1)
+            return RS_IDs.at(frame_number);
+        else
+            return ULONG_MAX;
+    }
 
     LogEntryMain current_entry;
     std::vector<InsectReader> replay_moths() {
@@ -37,7 +43,7 @@ private:
     std::map<std::string, int> headmap_main;
     std::vector<InsectReader> log_insects;
 
-    std::vector<long long> RS_IDs;
+    std::vector<unsigned long long> RS_IDs;
 
     double _takeoff_time = INFINITY;
 
