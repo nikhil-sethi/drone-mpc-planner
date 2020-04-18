@@ -158,6 +158,7 @@ class SystemWidget(QWidget):
         self.im_label.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding)
         self.im_label.setAlignment(Qt.AlignCenter)
         self.im_label.setMinimumSize(100, 100)
+        self.im_label.setToolTip('Click to enlarge!')
 
         sub_layout = QVBoxLayout(self)
         sub_layout.setContentsMargins(0, 0, 0, 0)
