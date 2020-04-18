@@ -29,7 +29,7 @@ class CommandCenterWindow(QMainWindow):
         source_folder = os.path.expanduser(source_folder.strip(" "))
         self.source_folder = source_folder
         self.download(True)
-        
+
         systems = next(os.walk(source_folder))[1]
         systems.sort(key=natural_keys)
         self.system_folders = systems
@@ -52,7 +52,7 @@ class CommandCenterWindow(QMainWindow):
         timer.start(1000)
 
         self.refresh()
-        self.show() 
+        self.show()
         self.refresh()
 
     def download(self,wait=False):
@@ -72,6 +72,7 @@ class CommandCenterWindow(QMainWindow):
 class SystemWidget(QWidget):
     def __init__(self, source_folder,system_folder,parent=None):
         QWidget.__init__(self, parent=parent)
+        self.disable_chk_enable_events = False
 
         self.system_folder = system_folder
         self.source_folder = source_folder
@@ -79,16 +80,18 @@ class SystemWidget(QWidget):
         self.chk_enable = QCheckBox()
         self.chk_enable.setStyleSheet("background-color:rgb(128,0,0)")
         self.chk_enable.setChecked(True)
+        self.chk_enable.stateChanged.connect(self.activate)
 
         self.setContextMenuPolicy(Qt.ActionsContextMenu)
         calibAction = QAction("Calibrate", self)
         calibAction.setIcon(self.style().standardIcon(QStyle.SP_DesktopIcon))
         calibAction.triggered.connect(self.calib)
         self.addAction(calibAction)
-        beepAction = QAction("Beep", self)
-        beepAction.setIcon(self.style().standardIcon(QStyle.SP_MediaVolume))
-        beepAction.triggered.connect(self.beep)
-        self.addAction(beepAction)
+
+        reboot_rtc_Action = QAction("Reboot with rtc timeout", self)
+        reboot_rtc_Action.setIcon(self.style().standardIcon(QStyle.SP_DialogResetButton))
+        reboot_rtc_Action.triggered.connect(self.reboot)
+        self.addAction(reboot_rtc_Action)
 
         btn_restart = QPushButton()
         btn_restart.setToolTip('Restart pats process')
@@ -96,6 +99,7 @@ class SystemWidget(QWidget):
         btn_restart.setMaximumSize(30, 30)
         btn_restart.setStyleSheet("background-color:rgb(128,0,0)")
         btn_restart.clicked.connect(self.restart)
+        self.btn_restart = btn_restart
 
         btn_save_bag = QPushButton()
         btn_save_bag.setToolTip('Restart & save the bag')
@@ -103,6 +107,15 @@ class SystemWidget(QWidget):
         btn_save_bag.setMaximumSize(30, 30)
         btn_save_bag.setStyleSheet("background-color:rgb(128,0,0)")
         btn_save_bag.clicked.connect(self.save_bag)
+        self.btn_save_bag = btn_save_bag
+
+        btn_beep = QPushButton()
+        btn_beep.setToolTip('Beep & blink')
+        btn_beep.setIcon(self.style().standardIcon(QStyle.SP_MediaVolume))
+        btn_beep.setMaximumSize(30, 30)
+        btn_beep.setStyleSheet("background-color:rgb(128,0,0)")
+        btn_beep.clicked.connect(self.beep)
+        self.btn_beep = btn_beep
 
         btn_update = QPushButton()
         btn_update.setToolTip('Update from git')
@@ -110,13 +123,7 @@ class SystemWidget(QWidget):
         btn_update.setMaximumSize(30, 30)
         btn_update.setStyleSheet("background-color:rgb(128,0,0)")
         btn_update.clicked.connect(self.update)
-
-        btn_reboot = QPushButton()
-        btn_reboot.setToolTip('Reboot with rtc timeout')
-        btn_reboot.setIcon(self.style().standardIcon(QStyle.SP_DialogResetButton))
-        btn_reboot.setMaximumSize(30, 30)
-        btn_reboot.setStyleSheet("background-color:rgb(128,0,0)")
-        btn_reboot.clicked.connect(self.reboot)
+        self.btn_update = btn_update
 
         btn_takeoff = QPushButton()
         btn_takeoff.setToolTip('Fly waypoint mission')
@@ -124,6 +131,7 @@ class SystemWidget(QWidget):
         btn_takeoff.setMaximumSize(30, 30)
         btn_takeoff.setStyleSheet("background-color:rgb(128,0,0)")
         btn_takeoff.clicked.connect(self.takeoff)
+        self.btn_takeoff = btn_takeoff
 
         btn_insect_replay_takeoff = QPushButton()
         btn_insect_replay_takeoff.setToolTip('Hunt insect replay')
@@ -131,6 +139,7 @@ class SystemWidget(QWidget):
         btn_insect_replay_takeoff.setMaximumSize(30, 30)
         btn_insect_replay_takeoff.setStyleSheet("background-color:rgb(128,0,0)")
         btn_insect_replay_takeoff.clicked.connect(self.insect_replay_takeoff)
+        self.btn_insect_replay_takeoff = btn_insect_replay_takeoff
 
         control_layout = QHBoxLayout()
         control_layout.setContentsMargins(0, 0, 0, 0)
@@ -138,10 +147,10 @@ class SystemWidget(QWidget):
         control_layout.addWidget(btn_restart)
         control_layout.addWidget(btn_save_bag)
         control_layout.addWidget(btn_update)
-        control_layout.addWidget(btn_reboot)
+        control_layout.addWidget(btn_beep)
         control_layout.addWidget(btn_takeoff)
         control_layout.addWidget(btn_insect_replay_takeoff)
-        
+
         self.txt_label = QLabel()
 
         self.im_label = QLabel()
@@ -155,23 +164,52 @@ class SystemWidget(QWidget):
         sub_layout.addWidget(self.im_label)
         sub_layout.addWidget(self.txt_label)
         sub_layout.addLayout(control_layout)
-    
+
+    def activate(self):
+        if self.disable_chk_enable_events:
+            return
+        self.pats_xml_path = Path(self.source_folder,self.system_folder,'pats_deploy.xml')
+        with open (self.pats_xml_path, "r") as path_xml:
+            xml_lines = path_xml.readlines()
+            new_xml_lines = ''
+            for line in xml_lines:
+                if line.find('\"op_mode\"') != -1:
+                    if self.chk_enable.isChecked():
+                        line = '    <Member Name=\"op_mode\">op_mode_deployed</Member>\n'
+                    else:
+                        line = '    <Member Name=\"op_mode\">op_mode_crippled</Member>\n'
+                elif line.find('\"live_image_frq\"') != -1:
+                    if self.chk_enable.isChecked():
+                        line = '    <Member Name=\"live_image_frq\">1</Member>\n'
+                    else:
+                        line = '    <Member Name=\"live_image_frq\">30</Member>\n'
+                new_xml_lines = new_xml_lines + line
+
+        pats_xml_tmp_file = open("pats.tmp", "w")
+        pats_xml_tmp_file.write(new_xml_lines)
+        pats_xml_tmp_file.close()
+        subprocess.Popen(['./change_settings_system.sh', 'pats'+self.host_id ])
+
+        xml_file = open(self.pats_xml_path, "w")
+        xml_file.write(new_xml_lines)
+        xml_file.close()
+
     def calib(self):
-        subprocess.Popen(['./calib_system.sh', 'pats'+self.hostid])
+        subprocess.Popen(['./calib_system.sh', 'pats'+self.host_id])
     def beep(self):
-        subprocess.Popen(['./beep_system.sh', 'pats'+self.hostid])        
+        subprocess.Popen(['./beep_system.sh', 'pats'+self.host_id])
 
     def restart(self):
-        subprocess.Popen(['./restart_system.sh', 'pats'+self.hostid])
+        subprocess.Popen(['./restart_system.sh', 'pats'+self.host_id])
     def save_bag(self):
-        subprocess.Popen(['./savebag_system.sh', 'pats'+self.hostid])        
+        subprocess.Popen(['./savebag_system.sh', 'pats'+self.host_id])
     def update(self):
-        subprocess.Popen(['./update_system.sh', 'pats'+self.hostid])
+        subprocess.Popen(['./update_system.sh', 'pats'+self.host_id])
     def reboot(self):
         buttonReply = QMessageBox.question(self, 'Maar, weet je dat eigenlijk wel zekerdepeter?!', "Reboot, really?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if buttonReply == QMessageBox.Yes:
             print('Yes clicked.')
-            subprocess.Popen(['./reboot_system.sh', 'pats'+self.hostid])
+            subprocess.Popen(['./reboot_system.sh', 'pats'+self.host_id])
     def takeoff(self):
         self.pats_xml_path = Path(self.source_folder,self.system_folder,'pats_deploy.xml')
         with open (self.pats_xml_path, "r") as path_xml:
@@ -179,31 +217,48 @@ class SystemWidget(QWidget):
             for line in xml_lines:
                 if line.find('\"flightplan\"') != -1:
                     self.flightplan_xml_path = Path(self.source_folder,self.system_folder,line.split('\">../../xml/')[1].split('<')[0])
-                    subprocess.Popen(['./demo_system.sh', 'pats'+self.hostid, self.flightplan_xml_path])
+                    subprocess.Popen(['./demo_system.sh', 'pats'+self.host_id, self.flightplan_xml_path])
     def insect_replay_takeoff(self):
-        subprocess.Popen(['./insect_replay_system.sh', 'pats'+self.hostid])
+        subprocess.Popen(['./insect_replay_system.sh', 'pats'+self.host_id])
     def takeoshow_im_big(self,event):
-        ImDialog(self,self.source_folder,self.system_folder,self.hostid)
+        ImDialog(self,self.source_folder,self.system_folder,self.host_id)
 
     def refresh(self):
+        self.pats_xml_path = Path(self.source_folder,self.system_folder,'pats_deploy.xml')
+        with open (self.pats_xml_path, "r") as path_xml:
+            xml_lines = path_xml.readlines()
+            new_xml_lines = ''
+            for line in xml_lines:
+                if line.find('op_mode_deployed') != -1 and not self.chk_enable.isChecked():
+                    self.disable_chk_enable_events = True
+                    self.chk_enable.setChecked(True)
+                    self.disable_chk_enable_events = False
+                if line.find('op_mode_crippled') != -1 and self.chk_enable.isChecked():
+                    self.disable_chk_enable_events = True
+                    self.chk_enable.setChecked(False)
+                    self.disable_chk_enable_events = False
+
+        source_im_file = Path(self.source_folder,self.system_folder,'status.jpg')
+        pixmap = QPixmap(str(source_im_file))
+        self.im_label.setPixmap(pixmap)
+        self.im_label.setPixmap(pixmap.scaled(self.im_label.size(),Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        txt,system_color = self.get_lbl_txt()
+        self.txt_label.setText(txt)
         if self.chk_enable.isChecked():
-            txt,system_color = self.get_lbl_txt()
-            self.txt_label.setText(txt)
             pal = QPalette(self.txt_label.palette())
             pal.setColor(QPalette.WindowText, system_color)
             self.txt_label.setPalette(pal)
-
-            source_im_file = Path(self.source_folder,self.system_folder,'status.jpg')
-            pixmap = QPixmap(str(source_im_file))
-            self.im_label.setPixmap(pixmap)
-            self.im_label.setPixmap(pixmap.scaled(self.im_label.size(),Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            self.btn_insect_replay_takeoff.setEnabled(True)
+            self.btn_takeoff.setEnabled(True)
         else:
-            pixmap = QPixmap('./darkdummy.jpg')
-            self.im_label.setPixmap(pixmap)
-            self.im_label.setPixmap(pixmap.scaled(self.im_label.size(),Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            # pixmap = QPixmap('./darkdummy.jpg')
+            # self.im_label.setPixmap(pixmap)
+            # self.im_label.setPixmap(pixmap.scaled(self.im_label.size(),Qt.KeepAspectRatio, Qt.SmoothTransformation))
             pal = QPalette(self.txt_label.palette())
             pal.setColor(QPalette.WindowText, QColor(60,0,0))
             self.txt_label.setPalette(pal)
+            self.btn_insect_replay_takeoff.setEnabled(False)
+            self.btn_takeoff.setEnabled(False)
 
     def get_lbl_txt(self):
         source_status_txt_file = Path(self.source_folder,self.system_folder,'status.txt')
@@ -216,8 +271,8 @@ class SystemWidget(QWidget):
         if os.path.exists(source_system_txt_file):
             with open (source_system_txt_file, "r") as sysinf_txt_file:
                 sysinfo_txt=sysinf_txt_file.readlines()
-            self.hostid = sysinfo_txt[0].split(':')[1].strip().replace('pats-proto','')
-            self.droneid = sysinfo_txt[1].split(':')[1].strip()
+            self.host_id = sysinfo_txt[0].split(':')[1].strip().replace('pats-proto','')
+            self.drone_id = sysinfo_txt[1].split(':')[1].strip()
             sha = sysinfo_txt[2].split(':')[1].strip()[:6]
 
             hd = ''
@@ -233,8 +288,8 @@ class SystemWidget(QWidget):
                         ip = line.split()[3].split('/')[0]
                     except:
                         pass
-            
-            res_txt = "Pats-" + self.hostid + '->' + self.droneid + ' @' + sha + '\n'
+
+            res_txt = "Pats-" + self.host_id + '->' + self.drone_id + ' @' + sha + '\n'
             res_txt = res_txt + 'hd: ' + hd + ' ip: ' + ip + '\n'
             hd = float(hd.replace('%',''))
             if hd > 95:
@@ -278,12 +333,12 @@ class SystemWidget(QWidget):
         else:
             res_txt = 'Error: status info file not found'
             system_has_problem = QColor(255,0,0)
-        
+
         if system_has_problem.getRgb()[0] == 0 and system_has_problem.getRgb()[1] == 0 and system_has_problem.getRgb()[2] == 0:
             system_has_problem = QColor(100,100,100)
 
         return res_txt.strip(),system_has_problem
-        
+
 class ImDialog(QDialog):
     def __init__(self,parent,source_folder,system_folder,host_id):
         super().__init__(parent)
@@ -300,7 +355,7 @@ class ImDialog(QDialog):
         self.drone_xml_txt = ''
         self.flightplan_xml_txt = ''
         if os.path.exists(self.pats_xml_path):
-            
+
             with open (self.pats_xml_path, "r") as path_xml:
                 self.pats_xml_txt=path_xml.read()
             with open (self.pats_xml_path, "r") as path_xml:
@@ -316,7 +371,7 @@ class ImDialog(QDialog):
                         if os.path.exists(self.flightplan_xml_path):
                             with open (self.flightplan_xml_path, "r") as flightplan_xml:
                                 self.flightplan_xml_txt=flightplan_xml.read()
-                    
+
 
         self.im_label = QLabel()
 
@@ -334,7 +389,7 @@ class ImDialog(QDialog):
         self.drone_xml_textBox.setPlainText(self.drone_xml_txt)
         self.drone_xml_textBox.setMaximumHeight(300)
 
-        
+
         self.flightplan_xml_textBox.textChanged.connect(self.xml_txt_chng_event)
         self.flightplan_xml_textBox.setStyleSheet("color: rgb(200, 0, 0); background-color: rgb(25, 25, 25);")
         self.flightplan_xml_textBox.setPlainText(self.flightplan_xml_txt)
@@ -370,7 +425,7 @@ class ImDialog(QDialog):
         timer = QTimer(self)
         timer.timeout.connect(self.refresh)
         timer.start(1000)
-        
+
         self.refresh()
 
         self.setAutoFillBackground(True)
@@ -382,7 +437,7 @@ class ImDialog(QDialog):
         self.setWindowFlags(Qt.Window)
         self.show()
         self.refresh() #work around for small initial zooming issue
-  
+
     def xml_txt_chng_event(self):
         new_pats_xml = self.pats_xml_textBox.toPlainText()
         new_drone_xml = self.drone_xml_textBox.toPlainText()
