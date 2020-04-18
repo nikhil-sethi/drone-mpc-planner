@@ -400,7 +400,6 @@ void handle_key(double time [[maybe_unused]]) {
     case 84: // arrow down
         dnav.manual_trigger_prev_wp();
         break;
-#if CAMMODE == CAMMODE_REALSENSE
     case ' ':
     case 'f':
         if(log_replay_mode)
@@ -421,7 +420,6 @@ void handle_key(double time [[maybe_unused]]) {
     case ',':
         cam->back_one_sec();
         break;
-#endif
     case 'a':
         rc.arm(bf_armed);
         dnav.nav_flight_mode(navigation::nfm_waypoint);
@@ -579,6 +577,30 @@ std::tuple<bool,bool,std::string,uint8_t,std::string,std::string> process_arg(in
     return make_tuple(false,replay_mode,arg_log_folder,arg_drone_id,arg_pats_xml_fn,arg_drone_xml_fn);
 }
 
+void check_hardware() {
+    //multimodule rc
+    if (!log_replay_mode)
+        rc.init(drone_id, log_replay_mode);
+
+    // Ensure that joystick was found and that we can use it
+    if (!dctrl.joystick_ready() && !log_replay_mode && pparams.joystick != rc_none) {
+        throw my_exit("no joystick connected.");
+    }
+
+    //init cam and check version
+    if (log_replay_mode) {
+        if (file_exist(replay_dir+'/' + Realsense::playback_filename()))
+            cam = std::unique_ptr<Cam>(new Realsense(replay_dir));
+        else if (file_exist(replay_dir+'/' + FileCam::playback_filename()))
+            cam = std::unique_ptr<Cam>(new FileCam(replay_dir,&logreader));
+        else
+            throw my_exit("Could not find a video in the replay folder!");
+    } else {
+        cam = std::unique_ptr<Cam>(new Realsense());
+        static_cast<Realsense *>(cam.get())->connect_and_check();
+    }
+}
+
 void init() {
     init_terminal_signals();
 
@@ -591,34 +613,11 @@ void init() {
 #ifdef HASGUI
     gui.init(argc,argv);
 #endif
-
-#if CAMMODE == CAMMODE_REALSENSE
-    if (!log_replay_mode)
-        rc.init(drone_id, log_replay_mode);
-#endif
-
-    /*****Start capturing images*****/
-    if (log_replay_mode) {
-        if (file_exist(replay_dir+'/' + Realsense::playback_filename()))
-            cam = std::unique_ptr<Cam>(new Realsense(replay_dir));
-        else if (file_exist(replay_dir+'/' + FileCam::playback_filename()))
-            cam = std::unique_ptr<Cam>(new FileCam(replay_dir,&logreader));
-        else
-            throw my_exit("Could not find a video in the replay folder!");
-    } else
-        cam = std::unique_ptr<Cam>(new Realsense());
-
     cam->init();
-
     visdat.init(cam->Qf, cam->frameL,cam->frameR,cam->camera_angle(),cam->measured_gain(),cam->measured_exposure(),cam->depth_background_mm); // do after cam update to populate frames
     trackers.init(&logger, &visdat, &(cam->camera_volume));
     dnav.init(&logger,&trackers,&dctrl,&visdat, &(cam->camera_volume),replay_dir);
     dctrl.init(&logger,log_replay_mode,&rc,trackers.dronetracker(), &(cam->camera_volume),cam->measured_exposure());
-
-    // Ensure that joystick was found and that we can use it
-    if (!dctrl.joystick_ready() && !log_replay_mode && pparams.joystick != rc_none) {
-        throw my_exit("no joystick connected.");
-    }
 
     if (pparams.has_screen) {
         visualizer.init(&visdat,&trackers,&dctrl,&dnav,&rc,log_replay_mode);
@@ -643,9 +642,6 @@ void init() {
 void close(bool sig_kill) {
     std::cout <<"Closing"<< std::endl;
     cmdcenter.reset_commandcenter_status_file("Closing");
-
-    if (!log_replay_mode)
-        static_cast<Realsense *>(cam.get())->stop_watchdog();
 
     if (pparams.has_screen)
         cv::destroyAllWindows();
@@ -688,9 +684,9 @@ void wait_for_cam_angle() {
     int enable_delay = 0;
     if (pparams.darkness_threshold > 0 && !log_replay_mode) {
         std::cout << "Checking cam angle." << std::endl;
-        Realsense rs;
+
         while(true) {
-            auto [roll,pitch,frame_time,frameL] = rs.measure_angle();
+            auto [roll,pitch,frame_time,frameL] = static_cast<Realsense *>(cam.get())->measure_angle();
             static double roll_start_time = frame_time;
             double elapsed_time = (frame_time- roll_start_time) / 1000.;
 
@@ -718,9 +714,8 @@ void wait_for_cam_angle() {
 void wait_for_dark() {
     if (pparams.darkness_threshold > 0 && !log_replay_mode) {
         std::cout << "Checking if dark." << std::endl;
-        Realsense rs;
         while(true) {
-            auto [expo,frameL] = rs.measure_auto_exposure();
+            auto [expo,frameL] = static_cast<Realsense *>(cam.get())->measure_auto_exposure();
             auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
             std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << " Measured exposure: " << expo << std::endl;
             if (expo >pparams.darkness_threshold) {
@@ -735,44 +730,51 @@ void wait_for_dark() {
 
 int main( int argc, char **argv )
 {
-    cmdcenter.reset_commandcenter_status_file("Starting");
-    bool realsense_reset;
     try {
+        cmdcenter.reset_commandcenter_status_file("Starting");
+        bool realsense_reset;
         std::tie(realsense_reset,log_replay_mode,replay_dir,drone_id,pats_xml_fn,drone_xml_fn) = process_arg(argc,argv);
-    } catch (Exception err) {
-        std::cout << "Error processing command line arguments:" << err.msg << std::endl;
-        return 1;
-    }
 
-    if (realsense_reset) {
-        cmdcenter.reset_commandcenter_status_file("Reseting realsense");
-        try {
+        if (realsense_reset) {
+            cmdcenter.reset_commandcenter_status_file("Reseting realsense");
             Realsense rs;
             rs.reset();
-        } catch(my_exit const &e) {
-            std::cout << "Error: " << e.msg << std::endl;
-            cmdcenter.reset_commandcenter_status_file(e.msg);
-            return 1;
+            return 0;
         }
-        return 0;
-    }
 
-    try {
         pparams.deserialize(pats_xml_fn);
         if (replay_dir == "" && drone_xml_fn == "")
             drone_xml_fn = "../../xml/" + string(drone_types_str[pparams.drone]) + ".xml";
         else
             pparams.has_screen = true; // override log so that vizs always are on when replaying because most of the logs are deployed system now (without a screen)
         dparams.deserialize(drone_xml_fn);
-    } catch(my_exit const &e) {
-        std::cout << "Error reading xml settings: " << e.msg << std::endl;
-        cmdcenter.reset_commandcenter_status_file(e.msg);
+
+        check_hardware();
+        if (!log_replay_mode) {
+            wait_for_cam_angle();
+            wait_for_dark();
+        }
+
+    } catch(my_exit const &err) {
+        std::cout << "Error: " << err.msg << std::endl;
+        cmdcenter.reset_commandcenter_status_file(err.msg);
+        return 1;
+    } catch(rs2::error const &e) {
+        cmdcenter.reset_commandcenter_status_file("Resetting realsense");
+        try {
+            static_cast<Realsense *>(cam.get())->reset();
+        } catch(my_exit const &e2) {
+            std::cout << "Error: " << e2.msg << std::endl;
+            cmdcenter.reset_commandcenter_status_file(e2.msg);
+        }
+        return 1;
+    } catch (Exception err) {
+        cmdcenter.reset_commandcenter_status_file(err.msg);
+        std::cout << "Error: " << err.msg << std::endl;
         return 1;
     }
 
     try {
-        wait_for_cam_angle();
-        wait_for_dark();
         init();
         process_video();
     } catch(bag_video_ended) {
@@ -784,16 +786,6 @@ int main( int argc, char **argv )
         std::cout << "Error: " << e.msg << std::endl;
         cmdcenter.reset_commandcenter_status_file(e.msg);
         return 1;
-    } catch(rs2::error const &e) {
-        cmdcenter.reset_commandcenter_status_file("Resetting realsense");
-        try {
-            static_cast<Realsense *>(cam.get())->reset();
-        } catch(my_exit const &e2) {
-            std::cout << "Error: " << e2.msg << std::endl;
-            cmdcenter.reset_commandcenter_status_file(e2.msg);
-            return 1;
-        }
-        return 0;
     }
 
     close(false);

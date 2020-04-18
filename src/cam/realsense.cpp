@@ -159,26 +159,8 @@ void Realsense::calibration(rs2::stream_profile infared1,rs2::stream_profile inf
     camparams.coeffs[4] = intr->coeffs[4];
     camparams.baseline = e.translation[0];
 }
+void Realsense::connect_and_check() {
 
-void Realsense::init_real() {
-    lock_newframe.lock();
-    std::cout << "Initializing cam" << std::endl;
-
-    bag_fn = "./logging/" + playback_filename();
-
-    calib_rfn = "./logging/" + calib_rfn;
-    depth_map_rfn = "./logging/" + depth_map_rfn;
-    depth_unfiltered_map_rfn = "./logging/" + depth_unfiltered_map_rfn;
-    disparity_map_rfn = "./logging/" + disparity_map_rfn;
-    brightness_map_rfn = "./logging/" + brightness_map_rfn;
-
-    calib_wfn = calib_rfn;
-    depth_map_wfn = depth_map_rfn;
-    depth_unfiltered_map_wfn = depth_unfiltered_map_rfn;
-    disparity_map_wfn = disparity_map_rfn;
-    brightness_map_wfn = brightness_map_rfn;
-
-    rs2::stream_profile infared1,infared2;
     rs2::context ctx; // The context represents the current platform with respect to connected devices
     if (!dev_initialized) {
         rs2::device_list devices = ctx.query_devices();
@@ -208,21 +190,6 @@ void Realsense::init_real() {
     std::cout << name << " ser: " << sn << std::endl;
 
     rs2::depth_sensor rs_depth_sensor = dev.first<rs2::depth_sensor>();
-
-    if (enable_auto_exposure == only_at_startup)
-        check_light_level();
-    //    if (getSecondsSinceFileCreation(calib_rfn) < 60*60 &&
-    //            checkFileExist(depth_map_rfn) &&
-    //            checkFileExist(calib_rfn)) {
-    //std::cout << "Calibration files recent, reusing..."   << std::endl;
-    depth_background = imread(depth_map_rfn,CV_LOAD_IMAGE_ANYDEPTH);
-    camparams.depth_scale = rs_depth_sensor.get_option(RS2_OPTION_DEPTH_UNITS);
-
-    //    } else{
-    calib_pose(true);
-    //    }
-
-    rs_depth_sensor = dev.first<rs2::depth_sensor>();
     std::cout << rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_NAME) << std::endl;
     std::cout << rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION) << std::endl;
     std::cout << rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_PRODUCT_ID) << std::endl;
@@ -237,16 +204,45 @@ void Realsense::init_real() {
         throw my_exit(serr.str());
     }
 
+
+}
+void Realsense::init_real() {
+    lock_newframe.lock();
+    std::cout << "Initializing cam" << std::endl;
+
+    bag_fn = "./logging/" + playback_filename();
+
+    calib_rfn = "./logging/" + calib_rfn;
+    depth_map_rfn = "./logging/" + depth_map_rfn;
+    depth_unfiltered_map_rfn = "./logging/" + depth_unfiltered_map_rfn;
+    disparity_map_rfn = "./logging/" + disparity_map_rfn;
+    brightness_map_rfn = "./logging/" + brightness_map_rfn;
+
+    calib_wfn = calib_rfn;
+    depth_map_wfn = depth_map_rfn;
+    depth_unfiltered_map_wfn = depth_unfiltered_map_rfn;
+    disparity_map_wfn = disparity_map_rfn;
+    brightness_map_wfn = brightness_map_rfn;
+
+    rs2::depth_sensor rs_depth_sensor = dev.first<rs2::depth_sensor>();
+
+    if (enable_auto_exposure == only_at_startup)
+        check_light_level();
+
+    depth_background = imread(depth_map_rfn,CV_LOAD_IMAGE_ANYDEPTH);
+    camparams.depth_scale = rs_depth_sensor.get_option(RS2_OPTION_DEPTH_UNITS);
+
+    calib_pose(true);
+
+    rs_depth_sensor = dev.first<rs2::depth_sensor>();
+
     rs_depth_sensor.set_option(RS2_OPTION_FRAMES_QUEUE_SIZE, 0);
 
     if (rs_depth_sensor.supports(RS2_OPTION_EMITTER_ENABLED))
     {
         rs_depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f);
     }
-    //        if (rs_depth_sensor.supports(RS2_OPTION_LASER_POWER)) {
-    //            auto range = rs_depth_sensor.get_option_range(RS2_OPTION_LASER_POWER);
-    //            rs_depth_sensor.set_option(RS2_OPTION_LASER_POWER, (range.max - range.min)/2 + range.min);
-    //        }
+
     if (enable_auto_exposure == only_at_startup ) {
         exposure = camparams.measured_exposure;
         if (pparams.fps==60 && camparams.measured_exposure>15500) //guarantee 60 FPS when requested
@@ -272,6 +268,7 @@ void Realsense::init_real() {
     }
 
     std::vector<rs2::stream_profile> stream_profiles = rs_depth_sensor.get_stream_profiles();
+    rs2::stream_profile infared1,infared2;
     infared1 = stream_profiles[17]; // infared 1 864x480 60fps
     infared2 = stream_profiles[16]; // infared 2 864x480 60fps
 

@@ -20,6 +20,7 @@ public:
         set_file_paths(replay_dir);
         bag_fn = replay_dir + '/' + playback_filename();
     }
+    void connect_and_check();
     void init() {
         if (from_recorded_bag)
             init_playback();
@@ -31,7 +32,6 @@ public:
     void reset();
 
     void stop_watchdog() {exit_watchdog_thread = true;}
-
 
     void back_one_sec() {
         seek(_frame_time -3);
