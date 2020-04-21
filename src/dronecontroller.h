@@ -181,6 +181,8 @@ private:
     double take_off_start_time = 0;
     double interception_start_time = 0;
     double in_flight_start_time = -1;
+    double ff_land_start_time = 0;
+    int ff_auto_throttle_start;
     track_data data_drone_1g_start;
 
     const float integratorThresholdDistance = 0.3f;
@@ -228,9 +230,6 @@ private:
     void check_emergency_kill(track_data data_drone);
     void check_tracking_lost(track_data data_drone);
     void check_control_and_tracking_problems(track_data data_drone);
-    track_data land(track_data data_drone, track_data data_target_new);
-    std::tuple<float, float> update_landing_yoffset(track_data data_drone, track_data data_target_new);
-    void calc_ff_landing();
     void update_thrust_during_hovering(track_data data_drone, double time);
 
     void blink(double time);
@@ -266,26 +265,7 @@ private:
     void deserialize_settings();
     void serialize_settings();
 
-    float landing_yoffset = 0.f;
-    float landing_velocity = -.1f;
-    float max_ff_land_height = 0.25f;
-    float min_ff_land_height = 0.08f;
     track_data previous_drone_data;
-    double feedforward_land_time = 0;
-    double landing_time;
-    bool feedforward_landing = false;
-
-    float init_acpt_dec_land_err = 0.1f;
-    float init_acpt_dec_land_vel = 0.08f;
-    float final_acpt_dec_land_err = 0.05f;
-    float final_acpt_dec_land_vel = 0.04f;
-    float init_inc_land_err = 0.13f;
-    float init_inc_land_vel = 0.13f;
-
-    float init_acpt_ff_land_err = 0.02f;
-    float init_acpt_ff_land_vel = 0.01f;
-    float final_acpt_ff_land_err = final_acpt_dec_land_err;
-    float final_acpt_ff_land_vel = final_acpt_dec_land_vel;
 
     float check_thrust(float thrust_new) {
         if(thrust_new<min_thrust)
@@ -395,6 +375,9 @@ public:
     }
     bool spinup() {
         return _flight_mode == fm_spinup;
+    }
+    bool landing() {
+        return _flight_mode == fm_landing || _flight_mode ==fm_landing_start;
     }
 
     float duration_spent_taking_off(double time) {

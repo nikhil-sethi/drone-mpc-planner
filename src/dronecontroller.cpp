@@ -165,8 +165,6 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         _flight_mode = fm_take_off_aim;
         std::cout << "Take off aiming" << std::endl;
         _burn_direction_for_thrust_approx = {0};
-        feedforward_landing = false;
-
         auto_throttle = spinup_throttle();
         auto_roll = JOY_MIDDLE;
         auto_pitch = JOY_MIDDLE;
@@ -398,14 +396,20 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         auto_yaw = control_yaw(data_drone, 5); // second argument is the yaw gain, move this to the xml files?
         break;
     } case fm_landing_start: {
-        landing_yoffset = 0;
         _flight_mode = fm_landing;
+        ff_land_start_time = time;
+        ff_auto_throttle_start = auto_throttle;
         auto_yaw = JOY_MIDDLE;
         [[fallthrough]];
     } case fm_landing: {
-        mode += bf_headless_disabled;
-        data_target_new = land(data_drone, data_target_new);
-        check_emergency_kill(data_drone);
+        control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
+        float dt = static_cast<float>(time - ff_land_start_time);
+        auto_throttle  = ff_auto_throttle_start - dt * (ff_auto_throttle_start-JOY_BOUND_MIN);
+        if (dt > 1) {
+            auto_throttle = JOY_BOUND_MIN;
+            _flight_mode = fm_disarmed;
+        }
+        auto_yaw = JOY_MIDDLE;
         break;
     } case fm_disarmed: {
         auto_roll = JOY_MIDDLE;
@@ -474,7 +478,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
     auto_pitch = bound_joystick_value(auto_pitch);
     auto_roll = bound_joystick_value(auto_roll);
 
-    // std::cout << time <<  " rpt: " << roll << ", " << pitch << ", " << throttle << std::endl;
+    //std::cout << time <<  " rpt: " << roll << ", " << pitch << ", " << yaw << ", " << throttle << std::endl;
     if (!log_replay_mode) {
         _rc->queue_commands(throttle,roll,pitch,yaw,mode);
     }
@@ -1118,96 +1122,6 @@ void DroneController::check_control_and_tracking_problems(track_data data_drone)
     if(model_error>model_error_max)
         model_error_max = model_error;
 #endif
-}
-
-track_data DroneController::land(track_data data_drone, track_data data_target_new) {
-    if(duration_since_waypoint_changed(_time)<1.f) {
-        pos_err_i = {0};
-    }
-
-    if(data_drone.pos_valid && !feedforward_landing) {
-        float vel_err, pos_err;
-        std::tie(pos_err, vel_err) = update_landing_yoffset(data_drone, data_target_new);
-        data_target_new.state.pos.y -= landing_yoffset;
-        control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
-        auto_yaw = control_yaw(data_drone, 5);
-
-        previous_drone_data = data_drone;
-        float landing_height = data_drone.pos().y - _dtrk->drone_landing_location().y;
-        float err_height_adaption = sqrt((landing_height-min_ff_land_height)/(max_ff_land_height-min_ff_land_height)) *(final_acpt_ff_land_err-init_acpt_ff_land_err);
-        float vel_height_adaption = sqrt((landing_height-min_ff_land_height)/(max_ff_land_height-min_ff_land_height)) *(final_acpt_ff_land_vel-init_acpt_ff_land_vel);
-
-        if(pos_err<final_acpt_ff_land_err-err_height_adaption
-                && vel_err<final_acpt_dec_land_vel-vel_height_adaption
-                && landing_height<max_ff_land_height) {
-            feedforward_landing = true;
-            calc_ff_landing();
-            landing_time = 1.f/pparams.fps;
-        }
-    } else {
-        if(feedforward_landing==false) {
-            feedforward_landing = true; // Stay in feed forward landing once tracking is lost
-            calc_ff_landing();
-        }
-
-        landing_time += 1./pparams.fps;
-        if(landing_time > feedforward_land_time) {
-            _flight_mode = fm_inactive;
-        }
-    }
-    return data_target_new;
-}
-
-std::tuple<float, float> DroneController::update_landing_yoffset(track_data data_drone, track_data data_target_new) {
-    cv::Point3f err = data_drone.pos()-data_target_new.state.pos;
-    err.y = 0;
-    float horizontal_err = normf(err);
-    float horizontal_vel = normf( cv::Point3f(data_drone.vel().x, 0.f, data_drone.vel().z));
-    float inv_landing_height = _dtrk->drone_landing_location().y+WAYPOINT_LANDING_Y-data_drone.pos().y;
-    if(inv_landing_height<0)
-        inv_landing_height = 0;
-    float err_height_adaption = sqrtf(inv_landing_height/WAYPOINT_LANDING_Y) * (init_acpt_dec_land_err-final_acpt_dec_land_err);
-    float vel_height_adaption = sqrtf(inv_landing_height/WAYPOINT_LANDING_Y) * (init_acpt_dec_land_vel-final_acpt_dec_land_vel);
-
-    if(horizontal_err<init_acpt_dec_land_err - err_height_adaption
-            && horizontal_vel<init_acpt_dec_land_vel - vel_height_adaption
-            && feedforward_landing==false) {
-        landing_yoffset -= landing_velocity/static_cast<float>(pparams.fps);
-    }
-    else if(horizontal_err>init_inc_land_err - err_height_adaption
-            && horizontal_vel>init_inc_land_vel - vel_height_adaption
-            && landing_yoffset > 0
-            && feedforward_landing==false ) {
-        landing_yoffset += 0.2f*landing_velocity/static_cast<float>(pparams.fps);
-    }
-
-    if(landing_yoffset > WAYPOINT_LANDING_Y-min_ff_land_height)
-        landing_yoffset = WAYPOINT_LANDING_Y-min_ff_land_height;
-
-    return std::tuple(horizontal_err, horizontal_vel);
-}
-
-void DroneController::calc_ff_landing() {
-    auto_yaw = JOY_MIDDLE;
-    landing_time = 0;
-
-    float p = 2*previous_drone_data.vel().y/GRAVITY;
-    float q = -2*(previous_drone_data.pos().y - _dtrk->drone_landing_location().y)/GRAVITY;
-    float sqrt_res = sqrtf(powf(p/2, 2) - q);
-    if(isnanf(sqrt_res)) {
-        auto_throttle = JOY_BOUND_MIN;
-        return;
-    }
-
-    landing_time = -p/2 - sqrt_res;
-    if (landing_time<0)
-        landing_time = -p/2 + sqrt_res;
-    if (landing_time<0) {
-        auto_throttle = JOY_BOUND_MIN;
-        landing_time = 0;
-    } else {
-        auto_throttle = spinup_throttle();
-    }
 }
 
 void DroneController::blink(double time) {

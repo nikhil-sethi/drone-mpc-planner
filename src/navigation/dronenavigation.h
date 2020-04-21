@@ -34,6 +34,8 @@ private:
     void serialize_settings();
 
     double time_initial_reset_yaw = 0;
+    double time_wp_reached = -1;
+    double landing_start_time = -1;
     double landed_time = 0;
     nav_flight_modes _nav_flight_mode;
 

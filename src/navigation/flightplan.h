@@ -1,6 +1,5 @@
 #pragma once
 #include "common.h"
-#define WAYPOINT_LANDING_Y 0.5f
 
 namespace navigation {
 enum waypoint_flight_modes {
@@ -24,14 +23,18 @@ static const char* waypoint_flight_modes_str[] = {
 };
 
 struct Waypoint {
-    Waypoint(cv::Point3f p, int distance_threshold_mm, std::string wp_name) {
+    Waypoint(cv::Point3f p, int distance_threshold_mm, float vel_thresh, float hover_pause_time, std::string wp_name) {
         xyz = p;
         name = wp_name;
         threshold_mm = distance_threshold_mm;
+        threshold_v = vel_thresh;
+        hover_pause = hover_pause_time;
         mode  = wfm_flying;
     }
     cv::Point3f xyz = {0};
-    int threshold_mm = 0;
+    int threshold_mm = 50;
+    float threshold_v = 1.7;
+    float hover_pause = 0;
     waypoint_flight_modes mode;
     std::string name;
 protected:
@@ -39,8 +42,10 @@ protected:
 };
 struct Waypoint_Landing : Waypoint {
     Waypoint_Landing() {
-        xyz = cv::Point3f(0,WAYPOINT_LANDING_Y,0); // only for landing wp, relative to the startup location!
+        xyz = cv::Point3f(0,0.75f,0); // only for landing wp, relative to the startup location!
         threshold_mm = 50;
+        threshold_v = 0.2f;
+        hover_pause = 3;
         mode = wfm_landing;
         name = "wp_land";
     }
@@ -49,6 +54,8 @@ struct Waypoint_Yaw_Reset : Waypoint {
     Waypoint_Yaw_Reset() {
         xyz = cv::Point3f(0.0f,-0.3,-1);
         threshold_mm = 50;
+        threshold_v = 0.1f;
+        hover_pause = 3;
         mode = wfm_yaw_reset;
         name = "wp_yaw";
     }
@@ -61,17 +68,17 @@ struct Waypoint_Takeoff : Waypoint {
     }
 };
 struct Waypoint_Flower : Waypoint {
-    Waypoint_Flower(cv::Point3f p,std::string wp_name) : Waypoint(p,0,wp_name) {
+    Waypoint_Flower(cv::Point3f p,std::string wp_name) : Waypoint(p,0,0,0,wp_name) {
         mode = wfm_flower;
     }
 };
 struct Waypoint_Brick : Waypoint {
-    Waypoint_Brick(cv::Point3f p,std::string wp_name) : Waypoint(p,0,wp_name) {
+    Waypoint_Brick(cv::Point3f p,std::string wp_name) : Waypoint(p,0,0,0,wp_name) {
         mode = wfm_brick;
     }
 };
 struct Waypoint_Stay : Waypoint {
-    Waypoint_Stay(cv::Point3f p,std::string wp_name) : Waypoint(p,0,wp_name) {
+    Waypoint_Stay(cv::Point3f p,std::string wp_name) : Waypoint(p,0,0,0,wp_name) {
         mode = wfm_wp_stay;
     }
 };
@@ -104,6 +111,8 @@ class XML_Waypoint: public xmls::Serializable
 public:
     XML_Waypoint_Mode mode;
     xmls::xInt threshold_mm;
+    xmls::xFloat threshold_v;
+    xmls::xFloat hover_pause;
     xmls::xFloat x;
     xmls::xFloat y;
     xmls::xFloat z;
@@ -111,9 +120,11 @@ public:
 
     XML_Waypoint() {
         setClassName("Waypoint");
-        setVersion("1.1");
+        setVersion("1.2");
         Register("type",&mode);
         Register("threshold_mm",&threshold_mm);
+        Register("threshold_v",&threshold_v);
+        Register("hover_pause",&hover_pause);
         Register("x",&x);
         Register("y",&y);
         Register("z",&z);
@@ -127,6 +138,8 @@ public:
             z = wp.xyz.z;
             name = wp.name;
             threshold_mm = wp.threshold_mm;
+            threshold_v = wp.threshold_v;
+            hover_pause = wp.hover_pause;
         }
     }
 
@@ -158,7 +171,7 @@ public:
             break;
         } case waypoint_flight_modes::wfm_flying:
         default: {
-            Waypoint wp(cv::Point3f(x.value(),y.value(),z.value()),threshold_mm.value(),name.value());
+            Waypoint wp(cv::Point3f(x.value(),y.value(),z.value()),threshold_mm.value(),threshold_v.value(),hover_pause.value(),name.value());
             return wp;
             break;
         }
@@ -175,7 +188,7 @@ public:
 
     XML_FlightPlan() {
         setClassName("FlightPlanXML");
-        setVersion("1.1");
+        setVersion("1.2");
         Register("flightplan_name", &flightplan_name);
         Register("waypoints", &waypointsxml);
     }

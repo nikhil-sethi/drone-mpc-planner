@@ -1,32 +1,38 @@
-<SerializableClass Type="FlightPlanXML" Version="1.1">
+<SerializableClass Type="FlightPlanXML" Version="1.2">
     <Member Name="flightplan_name">demo</Member>
     <Collection Name="waypoints">
-        <Class Type="Waypoint" Version="1.1">
+        <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_takeoff</Member>
             <Member Name="threshold_mm"></Member>
             <Member Name="x"></Member>
             <Member Name="y"></Member>
             <Member Name="z"></Member>
         </Class>
-        <Class Type="Waypoint" Version="1.1">
+        <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">100</Member>
+            <Member Name="threshold_v">1.7</Member>
+            <Member Name="hover_pause">0</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.3</Member>
             <Member Name="z">-1.0</Member>
             <Member Name="name">WP1</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.1">
+        <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">100</Member>
+            <Member Name="threshold_v">1.7</Member>
+            <Member Name="hover_pause">0</Member>
             <Member Name="x">-1.0</Member>
             <Member Name="y">-0.3</Member>
             <Member Name="z">-1.0</Member>
             <Member Name="name">WP2</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.1">
+        <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">100</Member>
+            <Member Name="threshold_v">1.7</Member>
+            <Member Name="hover_pause">0</Member>
             <Member Name="x">1.0</Member>
             <Member Name="y">-0.3</Member>
             <Member Name="z">-1.0</Member>
@@ -39,7 +45,7 @@
             <Member Name="y"></Member>
             <Member Name="z"></Member>
         </Class> -->
-        <Class Type="Waypoint" Version="1.1">
+        <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_landing</Member>
             <Member Name="threshold_mm"></Member>
             <Member Name="x"></Member>
