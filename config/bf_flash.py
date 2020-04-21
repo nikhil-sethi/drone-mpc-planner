@@ -22,7 +22,7 @@ def reset_to_dfu(port):
 
 def upload_firmware(firmware):
 	cmd = 'dfu-util -s 0x08000000 -a 0 -R -D ' + firmware
-	subprocess.call(cmd,shell=True)
+	return subprocess.call(cmd,shell=True)
 
 
 def upload_settings(port,drone_id,settings):
@@ -74,7 +74,9 @@ if not args.no_flashing:
 	reset_to_dfu(args.port)
 	print('Uploading ' + args.firmware)
 	time.sleep(1)
-	upload_firmware(args.firmware)
+	if upload_firmware(args.firmware):
+		print("Error, dfu upload failed")
+		exit(1)
 
 while dev_not_exists(args.port):
 	c =  next(spinner)
