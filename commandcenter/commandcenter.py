@@ -184,6 +184,11 @@ class SystemWidget(QWidget):
                         line = '    <Member Name=\"live_image_frq\">1</Member>\n'
                     else:
                         line = '    <Member Name=\"live_image_frq\">30</Member>\n'
+                elif line.find('\"darkness_threshold\"') != -1:
+                    if self.chk_enable.isChecked():
+                        line = '    <Member Name=\"darkness_threshold\">0</Member>\n'
+                    else:
+                        line = '    <Member Name=\"darkness_threshold\">1000</Member>\n'
                 new_xml_lines = new_xml_lines + line
 
         pats_xml_tmp_file = open("pats.tmp", "w")
