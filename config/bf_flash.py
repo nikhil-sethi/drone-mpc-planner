@@ -47,7 +47,7 @@ def upload_settings(port,drone_id,settings):
 	ser = serial.Serial(port=port)
 	time.sleep(1)
 
-print("Uploading settings successfull")
+	print("Uploading settings successfull")
 
 parser = argparse.ArgumentParser(description='Process and check the logs.')
 parser.add_argument('-i', '--drone-id',type=str,default='1')
