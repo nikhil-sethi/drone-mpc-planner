@@ -78,4 +78,4 @@ private:
     void go_disabled();
 
 };
-#endif //CAMMODE_AIRSIM
+#endif

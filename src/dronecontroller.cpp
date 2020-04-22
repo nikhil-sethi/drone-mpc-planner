@@ -1283,10 +1283,6 @@ void DroneController::process_joystick() {
             else if (_joy_mode_switch == jmsm_hunt)
                 _joy_state = js_hunt;
         }
-
-#if CAMMODE == CAMMODE_GENERATOR
-        joy_pitch = JOY_MIDDLE;
-#endif
     }
 }
 

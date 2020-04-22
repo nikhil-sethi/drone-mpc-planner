@@ -125,4 +125,4 @@ void Airsim::close() {
     thread_cam.join();
 }
 
-#endif //CAMMODE_AIRSIM
+#endif
