@@ -10,6 +10,8 @@ from PyQt5.QtGui import QIcon, QPixmap, QPalette,QColor,QKeyEvent
 from pathlib import Path
 from datetime import datetime
 import random,sys,os,re,subprocess,math
+
+dark_mode = False
 class CommandCenterWindow(QMainWindow):
 
     def __init__(self, parent=None):
@@ -21,7 +23,8 @@ class CommandCenterWindow(QMainWindow):
         self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
         self.setAutoFillBackground(True)
         p = self.palette()
-        p.setColor(self.backgroundRole(), QColor(15,15,15))
+        if dark_mode:
+            p.setColor(self.backgroundRole(), QColor(15,15,15))
         self.setPalette(p)
         layout = QGridLayout()
 
@@ -78,7 +81,10 @@ class SystemWidget(QWidget):
         self.source_folder = source_folder
 
         self.chk_enable = QCheckBox()
-        self.chk_enable.setStyleSheet("background-color:rgb(128,0,0)")
+        if dark_mode:
+            self.chk_enable.setStyleSheet("background-color:rgb(128,0,0)")
+        else:
+            self.chk_enable.setStyleSheet("background-color:rgb(160,128,128)")
         self.chk_enable.setChecked(True)
         self.chk_enable.stateChanged.connect(self.activate)
 
@@ -261,7 +267,10 @@ class SystemWidget(QWidget):
             # self.im_label.setPixmap(pixmap)
             # self.im_label.setPixmap(pixmap.scaled(self.im_label.size(),Qt.KeepAspectRatio, Qt.SmoothTransformation))
             pal = QPalette(self.txt_label.palette())
-            pal.setColor(QPalette.WindowText, QColor(60,0,0))
+            if dark_mode:
+                pal.setColor(QPalette.WindowText, QColor(60,0,0))
+            else:
+                pal.setColor(QPalette.WindowText, QColor(160,128,128))
             self.txt_label.setPalette(pal)
             self.btn_insect_replay_takeoff.setEnabled(False)
             self.btn_takeoff.setEnabled(False)
@@ -420,7 +429,8 @@ class ImDialog(QDialog):
         self.tabs.addTab(self.tab_flightplan,"Flightplan")
 
         self.tabs.setMaximumHeight(300)
-        self.tabs.setStyleSheet("color: rgb(200, 0, 0); background-color: rgb(25, 25, 25);")
+        if dark_mode:
+            self.tabs.setStyleSheet("color: rgb(200, 0, 0); background-color: rgb(25, 25, 25);")
 
         v_box = QVBoxLayout()
         v_box.addWidget(self.im_label)
@@ -436,7 +446,8 @@ class ImDialog(QDialog):
 
         self.setAutoFillBackground(True)
         p = self.palette()
-        p.setColor(self.backgroundRole(), QColor(15,15,15))
+        if dark_mode:
+            p.setColor(self.backgroundRole(), QColor(15,15,15))
         self.setPalette(p)
 
         self.setWindowTitle(self.host_id)
