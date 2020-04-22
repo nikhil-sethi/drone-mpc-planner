@@ -2,7 +2,7 @@
 set -e
 echo "Calibrate $1"
 count=0
-until (( count++ >= 5 )) || ssh -T $1 << EOF
+until (( count++ >= 5 )) || ssh -o StrictHostKeyChecking=no -T $1 << EOF
 	touch calib_now
 EOF
 do

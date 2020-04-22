@@ -2,7 +2,7 @@
 set -e
 echo "Reboot $1"
 count=0
-until (( count++ >= 5 )) || ssh -T $1 << EOF
+until (( count++ >= 5 )) || ssh -o StrictHostKeyChecking=no -T $1 << EOF
 	killall pats || true
 	sleep 3
 	killall -9 pats || true

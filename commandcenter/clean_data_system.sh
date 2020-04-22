@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -e
-until (( count++ >= 5 )) || ssh -T $1 << EOF
+until (( count++ >= 5 )) || ssh -o StrictHostKeyChecking=no -T $1 << EOF
 	rm ~/data/0* -rf
 	rm ~/data/bag* -rf
 EOF

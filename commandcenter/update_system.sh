@@ -3,7 +3,7 @@ set -e
 
 echo "Update $1"
 count=0
-until (( count++ >= 5 )) || ssh -T $1 << EOF
+until (( count++ >= 5 )) || ssh -o StrictHostKeyChecking=no -T $1 << EOF
  killall pats || true
  cd code/pats/pc/build
  git fetch
