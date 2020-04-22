@@ -107,13 +107,13 @@ class SystemWidget(QWidget):
         btn_restart.clicked.connect(self.restart)
         self.btn_restart = btn_restart
 
-        btn_save_bag = QPushButton()
-        btn_save_bag.setToolTip('Restart & save the bag')
-        btn_save_bag.setIcon(self.style().standardIcon(QStyle.SP_DriveFDIcon))
-        btn_save_bag.setMaximumSize(30, 30)
-        btn_save_bag.setStyleSheet("background-color:rgb(128,0,0)")
-        btn_save_bag.clicked.connect(self.save_bag)
-        self.btn_save_bag = btn_save_bag
+        btn_download_current_log = QPushButton()
+        btn_download_current_log.setToolTip('Restart & download the current log')
+        btn_download_current_log.setIcon(self.style().standardIcon(QStyle.SP_DriveFDIcon))
+        btn_download_current_log.setMaximumSize(30, 30)
+        btn_download_current_log.setStyleSheet("background-color:rgb(128,0,0)")
+        btn_download_current_log.clicked.connect(self.download_current_log)
+        self.btn_download_current_log = btn_download_current_log
 
         btn_beep = QPushButton()
         btn_beep.setToolTip('Beep & blink')
@@ -151,7 +151,7 @@ class SystemWidget(QWidget):
         control_layout.setContentsMargins(0, 0, 0, 0)
         control_layout.addWidget(self.chk_enable)
         control_layout.addWidget(btn_restart)
-        control_layout.addWidget(btn_save_bag)
+        control_layout.addWidget(btn_download_current_log)
         control_layout.addWidget(btn_update)
         control_layout.addWidget(btn_beep)
         control_layout.addWidget(btn_takeoff)
@@ -213,8 +213,8 @@ class SystemWidget(QWidget):
 
     def restart(self):
         subprocess.Popen(['./restart_system.sh', 'pats'+self.host_id])
-    def save_bag(self):
-        subprocess.Popen(['./savebag_system.sh', 'pats'+self.host_id])
+    def download_current_log(self):
+        subprocess.Popen(['./download_log_system.sh', 'pats'+self.host_id])
     def update(self):
         subprocess.Popen(['./update_system.sh', 'pats'+self.host_id])
     def reboot(self):
