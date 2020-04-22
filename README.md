@@ -13,6 +13,13 @@ The script supports some command line arguments, like setting the drone id or se
 2. Apply the following settings to BLHeli:  
 ![BLHeli settings](https://github.com/pats-drones/pats/blob/master/doc/BLHeliSettings.png)
 
+## Flashing the multimodule:
+```
+cd ~/code/pats/config/multimodule
+./flash.py
+```
+Same remarks as with drone flash script apply.
+
 ## Flashing realsense camera:
 `sudo rs-fw-update -f ~/code/pats/config/Signed_Image_UVC_5_12_3_0.bin`
 

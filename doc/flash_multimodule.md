@@ -1,4 +1,8 @@
 # Flash Multimodule
+There's now a flash script. See 
+[README.md](https://github.com/pats-drones/pats/blob/master/README.md)
+
+## Old manual way
 1. Install Arduino IDE from the website: https://www.arduino.cc/en/Main/Software.
 
  Don’t use the Arduino IDE from the Software Center! This caused problems in the past.
