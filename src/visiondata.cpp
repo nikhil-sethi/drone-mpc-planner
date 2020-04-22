@@ -27,7 +27,7 @@ void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, fl
     frameR.convertTo(frameR16, CV_16SC1);
     diffL16 = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
     diffR16 = cv::Mat::zeros(cv::Size(frameR.cols,frameR.rows),CV_16SC1);
-    motion_noise_map = cv::Mat::zeros(smallsize,CV_8UC1);
+    motion_noise_map = cv::Mat::zeros(smallsize,CV_8UC1) + 128;
     diffL16_back = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
 
     if (pparams.vision_tuning) {
@@ -164,8 +164,11 @@ void VisionData::maintain_motion_noise_map() {
             }
 
             bkg.convertTo(bkg, CV_8UC1);
-            cv::resize(bkg,bkg,smallsize);
+            int dilation_size = 5;
+            cv::Mat element = getStructuringElement( cv::MORPH_RECT,cv::Size( 2*dilation_size + 1, 2*dilation_size+1 ),cv::Point( dilation_size, dilation_size ) );
+            cv::dilate(bkg,bkg,element);
             GaussianBlur(bkg,motion_noise_map,Size(9,9),0);
+            cv::resize(bkg,bkg,smallsize);
             imwrite(motion_noise_map_wfn,motion_noise_map);
         }
     }
