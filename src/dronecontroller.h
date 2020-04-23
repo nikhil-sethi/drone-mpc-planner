@@ -244,6 +244,8 @@ private:
     filtering::Tf_D_f d_vel_err_x, d_vel_err_y, d_vel_err_z;
     filtering::Tf_PT2_3f pos_reference_filter;
 
+    filtering::Smoother smtr_roll,smtr_pitch;
+
     filtering::Tf_PT2_f pos_modelx, pos_modely, pos_modelz;
     float model_error;
     std::array<float, N_PLANES> pos_err_kiv= {0}, vel_err_kiv= {0};

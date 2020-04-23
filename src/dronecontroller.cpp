@@ -71,6 +71,9 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     d_vel_err_y.init (1.f/pparams.fps);
     d_vel_err_z.init (1.f/pparams.fps);
 
+    smtr_roll.init(2,JOY_MIDDLE);
+    smtr_pitch.init(5,JOY_MIDDLE);
+
     pos_reference_filter.init(1.f/pparams.fps, 1, 1.f/pparams.fps*0.001f, 1.f/pparams.fps*0.001f);
     pos_err_i = {0,0,0};
 
@@ -981,6 +984,8 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
 
     desired_acceleration += keep_in_volume_correction_acceleration(data_drone);
     std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(desired_acceleration);
+    auto_roll = smtr_roll.addSample(auto_roll);
+    auto_pitch = smtr_pitch.addSample(auto_pitch);
 }
 
 
@@ -1356,12 +1361,12 @@ void DroneController::close () {
         if (pparams.control_tuning)
             serialize_settings();
         initialized = false;
-        if(!log_replay_mode) {
-            float start_thrust = dparams.thrust;
-            dparams.thrust = thrust;
-            dparams.serialize("../../xml/"+string(drone_types_str[pparams.drone])+".xml");
-            dparams.thrust = start_thrust;
-        }
+        // if(!log_replay_mode) {
+        //     float start_thrust = dparams.thrust;
+        //     dparams.thrust = thrust;
+        //     dparams.serialize("../../xml/"+string(drone_types_str[pparams.drone])+".xml");
+        //     dparams.thrust = start_thrust;
+        // }
     }
 }
 
