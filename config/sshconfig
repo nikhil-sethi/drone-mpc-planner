@@ -16,6 +16,19 @@ Host mavlab-godzilla
 	Hostname mavlab-godzilla-compute.lr.tudelft.nl
 	User pats
 
+Host pats0
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump mavlab-gpu
+        Port 6000
+Host pats0b
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dinstech
+        Port 6000
+
 Host pats1 pats_mooy1
 	Hostname localhost
 	IdentityFile ~/.ssh/pats_id_rsa
