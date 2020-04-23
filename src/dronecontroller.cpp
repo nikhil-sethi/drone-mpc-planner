@@ -44,7 +44,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
         createTrackbar("p_pos_throttle", "Control", &kp_pos_throttle, 3000);
         createTrackbar("i_pos_roll", "Control", &ki_pos_roll, 1000);
         createTrackbar("i_pos_pitch", "Control", &ki_pos_pitch, 1000);
-        createTrackbar("i_pos_throttle", "Control", &ki_pos_throttle, 1000);
+        createTrackbar("i_thrust", "Control", &ki_thrust, 1000);
         createTrackbar("d_pos_roll", "Control", &kd_pos_roll, 1000);
         createTrackbar("d_pos_pitch", "Control", &kd_pos_pitch, 1000);
         createTrackbar("d_pos_throttle", "Control", &kd_pos_throttle, 1000);
@@ -985,7 +985,7 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
 
 
 std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_control_gains(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel) {
-    int kp_pos_roll_scaled, kp_pos_throttle_scaled, kp_pos_pitch_scaled, ki_pos_roll_scaled, ki_pos_throttle_scaled, ki_pos_pitch_scaled, kd_pos_roll_scaled, kd_pos_throttle_scaled, kd_pos_pitch_scaled;
+    int kp_pos_roll_scaled, kp_pos_throttle_scaled, kp_pos_pitch_scaled, ki_pos_roll_scaled, ki_thrust_scaled, ki_pos_pitch_scaled, kd_pos_roll_scaled, kd_pos_throttle_scaled, kd_pos_pitch_scaled;
     cv::Point3f scale_p = {1.f, 1.f, 1.f};
     cv::Point3f scale_i = {1.f, 1.f, 1.f};
     cv::Point3f scale_d = {1.f, 1.f, 1.f};
@@ -1012,7 +1012,7 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> Dron
     kp_pos_throttle_scaled = scale_p.y*kp_pos_throttle;
     kp_pos_pitch_scaled = scale_p.z*kp_pos_pitch;
     ki_pos_roll_scaled = scale_i.x*ki_pos_roll;
-    ki_pos_throttle_scaled = scale_i.y*ki_pos_throttle;
+    ki_thrust_scaled = scale_i.y*ki_thrust;
     ki_pos_pitch_scaled = scale_i.z*ki_pos_pitch;
     kd_pos_roll_scaled = scale_d.x*kd_pos_roll;
     kd_pos_throttle_scaled = scale_d.y*kd_pos_throttle;
@@ -1023,7 +1023,7 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> Dron
     kp_pos /=100.f;
     cv::Point3f kd_pos(kd_pos_roll_scaled,kd_pos_throttle_scaled,kd_pos_pitch_scaled);
     kd_pos /=100.f;
-    cv::Point3f ki_pos(ki_pos_roll_scaled,ki_pos_throttle_scaled,ki_pos_pitch_scaled);
+    cv::Point3f ki_pos(ki_pos_roll_scaled,ki_thrust_scaled,ki_pos_pitch_scaled);
     ki_pos /=1000.f;
     cv::Point3f kp_vel(kp_v_roll,kp_v_throttle,kp_v_pitch);
     kp_vel /= 100.f;
@@ -1313,7 +1313,7 @@ void DroneController::deserialize_settings() {
     kp_pos_throttle= params.kp_pos_throttle.value();
     ki_pos_roll= params.ki_pos_roll.value();
     ki_pos_pitch= params.ki_pos_pitch.value();
-    ki_pos_throttle= params.ki_pos_throttle.value();
+    ki_thrust= params.ki_thrust.value();
     kd_pos_roll= params.kd_pos_roll.value();
     kd_pos_pitch= params.kd_pos_pitch.value();
     kd_pos_throttle= params.kd_pos_throttle.value();
@@ -1332,7 +1332,7 @@ void DroneController::serialize_settings() {
     params.kp_pos_throttle = kp_pos_throttle;
     params.ki_pos_roll = ki_pos_roll;
     params.ki_pos_pitch = ki_pos_pitch;
-    params.ki_pos_throttle = ki_pos_throttle;
+    params.ki_thrust = ki_thrust;
     params.kd_pos_roll = kd_pos_roll;
     params.kd_pos_pitch = kd_pos_pitch;
     params.kd_pos_throttle = kd_pos_throttle;

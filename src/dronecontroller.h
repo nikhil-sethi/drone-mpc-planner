@@ -93,7 +93,7 @@ private:
     {
     public:
         xmls::xInt kp_pos_roll,kp_pos_pitch,kp_pos_throttle;
-        xmls::xInt ki_pos_roll,ki_pos_pitch,ki_pos_throttle;
+        xmls::xInt ki_pos_roll,ki_pos_pitch,ki_thrust;
         xmls::xInt kd_pos_roll,kd_pos_pitch,kd_pos_throttle;
         xmls::xInt kp_v_roll,kp_v_pitch,kp_v_throttle;
         xmls::xInt kd_v_roll,kd_v_pitch,kd_v_throttle;
@@ -104,7 +104,7 @@ private:
             setClassName("ControlParameters");
 
             // Set class version
-            setVersion("1.2");
+            setVersion("1.3");
 
             // Register members. Like the class name, member names can differ from their xml depandants
             Register("kp_pos_roll", &kp_pos_roll);
@@ -112,7 +112,7 @@ private:
             Register("kp_pos_throttle", &kp_pos_throttle);
             Register("ki_pos_roll", &ki_pos_roll);
             Register("ki_pos_pitch", &ki_pos_pitch);
-            Register("ki_pos_throttle", &ki_pos_throttle);
+            Register("ki_thrust", &ki_thrust);
             Register("kd_pos_roll", &kd_pos_roll);
             Register("kd_pos_pitch", &kd_pos_pitch);
             Register("kd_pos_throttle", &kd_pos_throttle);
@@ -236,7 +236,7 @@ private:
     void blink_motors(double time);
 
     cv::Point3f pos_err_i;
-    int kp_pos_roll, kp_pos_throttle, kp_pos_pitch, ki_pos_roll, ki_pos_throttle, ki_pos_pitch, kd_pos_roll, kd_pos_throttle, kd_pos_pitch;
+    int kp_pos_roll, kp_pos_throttle, kp_pos_pitch, ki_pos_roll, ki_thrust, ki_pos_pitch, kd_pos_roll, kd_pos_throttle, kd_pos_pitch;
     int kp_v_roll, kp_v_throttle, kp_v_pitch, kd_v_roll, kd_v_throttle, kd_v_pitch;
     filtering::Tf_PT1_f filter_pos_err_x, filter_pos_err_y, filter_pos_err_z;
     filtering::Tf_PT1_f filter_vel_err_x, filter_vel_err_y, filter_vel_err_z;

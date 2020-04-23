@@ -17,7 +17,7 @@ static const char* navigation_status_names[] = {"ns_init",
                                                 "ns_chasing_insect_ff",
                                                 "ns_chasing_insect",
                                                 "ns_set_waypoint",
-                                                "ns_approach_wp",
+                                                "ns_wp", // approach, but dist is also printed so need the room
                                                 "ns_flower_of_fire",
                                                 "ns_brick_of_fire",
                                                 "ns_goto_landing",
