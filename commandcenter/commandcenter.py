@@ -103,7 +103,8 @@ class SystemWidget(QWidget):
         btn_restart.setToolTip('Restart pats process')
         btn_restart.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
         btn_restart.setMaximumSize(30, 30)
-        btn_restart.setStyleSheet("background-color:rgb(128,0,0)")
+        if dark_mode:
+            btn_restart.setStyleSheet("background-color:rgb(128,0,0)")
         btn_restart.clicked.connect(self.restart)
         self.btn_restart = btn_restart
 
@@ -111,7 +112,8 @@ class SystemWidget(QWidget):
         btn_download_current_log.setToolTip('Restart & download the current log')
         btn_download_current_log.setIcon(self.style().standardIcon(QStyle.SP_DriveFDIcon))
         btn_download_current_log.setMaximumSize(30, 30)
-        btn_download_current_log.setStyleSheet("background-color:rgb(128,0,0)")
+        if dark_mode:
+            btn_download_current_log.setStyleSheet("background-color:rgb(128,0,0)")
         btn_download_current_log.clicked.connect(self.download_current_log)
         self.btn_download_current_log = btn_download_current_log
 
@@ -119,7 +121,8 @@ class SystemWidget(QWidget):
         btn_beep.setToolTip('Beep & blink')
         btn_beep.setIcon(self.style().standardIcon(QStyle.SP_MediaVolume))
         btn_beep.setMaximumSize(30, 30)
-        btn_beep.setStyleSheet("background-color:rgb(128,0,0)")
+        if dark_mode:
+            btn_beep.setStyleSheet("background-color:rgb(128,0,0)")
         btn_beep.clicked.connect(self.beep)
         self.btn_beep = btn_beep
 
@@ -127,7 +130,8 @@ class SystemWidget(QWidget):
         btn_update.setToolTip('Update from git')
         btn_update.setIcon(self.style().standardIcon(QStyle.SP_FileDialogToParent))
         btn_update.setMaximumSize(30, 30)
-        btn_update.setStyleSheet("background-color:rgb(128,0,0)")
+        if dark_mode:
+            btn_update.setStyleSheet("background-color:rgb(128,0,0)")
         btn_update.clicked.connect(self.update)
         self.btn_update = btn_update
 
@@ -135,7 +139,8 @@ class SystemWidget(QWidget):
         btn_takeoff.setToolTip('Fly waypoint mission')
         btn_takeoff.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
         btn_takeoff.setMaximumSize(30, 30)
-        btn_takeoff.setStyleSheet("background-color:rgb(128,0,0)")
+        if dark_mode:
+            btn_takeoff.setStyleSheet("background-color:rgb(128,0,0)")
         btn_takeoff.clicked.connect(self.takeoff)
         self.btn_takeoff = btn_takeoff
 
@@ -143,7 +148,8 @@ class SystemWidget(QWidget):
         btn_insect_replay_takeoff.setToolTip('Hunt insect replay')
         btn_insect_replay_takeoff.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
         btn_insect_replay_takeoff.setMaximumSize(30, 30)
-        btn_insect_replay_takeoff.setStyleSheet("background-color:rgb(128,0,0)")
+        if dark_mode:
+            btn_insect_replay_takeoff.setStyleSheet("background-color:rgb(128,0,0)")
         btn_insect_replay_takeoff.clicked.connect(self.insect_replay_takeoff)
         self.btn_insect_replay_takeoff = btn_insect_replay_takeoff
 
@@ -395,18 +401,21 @@ class ImDialog(QDialog):
         self.flightplan_xml_textBox = QPlainTextEdit()
 
         self.pats_xml_textBox.textChanged.connect(self.xml_txt_chng_event)
-        self.pats_xml_textBox.setStyleSheet("color: rgb(200, 0, 0); background-color: rgb(25, 25, 25);")
+        if dark_mode:
+            self.pats_xml_textBox.setStyleSheet("color: rgb(200, 0, 0); background-color: rgb(25, 25, 25);")
         self.pats_xml_textBox.setPlainText(self.pats_xml_txt)
         self.pats_xml_textBox.setMaximumHeight(300)
 
         self.drone_xml_textBox.textChanged.connect(self.xml_txt_chng_event)
-        self.drone_xml_textBox.setStyleSheet("color: rgb(200, 0, 0); background-color: rgb(25, 25, 25);")
+        if dark_mode:
+            self.drone_xml_textBox.setStyleSheet("color: rgb(200, 0, 0); background-color: rgb(25, 25, 25);")
         self.drone_xml_textBox.setPlainText(self.drone_xml_txt)
         self.drone_xml_textBox.setMaximumHeight(300)
 
 
         self.flightplan_xml_textBox.textChanged.connect(self.xml_txt_chng_event)
-        self.flightplan_xml_textBox.setStyleSheet("color: rgb(200, 0, 0); background-color: rgb(25, 25, 25);")
+        if dark_mode:
+            self.flightplan_xml_textBox.setStyleSheet("color: rgb(200, 0, 0); background-color: rgb(25, 25, 25);")
         self.flightplan_xml_textBox.setPlainText(self.flightplan_xml_txt)
         self.flightplan_xml_textBox.setMaximumHeight(300)
 
