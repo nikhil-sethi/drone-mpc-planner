@@ -52,6 +52,7 @@
             "type": "shell",
             "command": "${workspaceFolder}/pc/build-vscode/pats",
             "args": ["--drone-id", "1"],
+            "dependsOn": ["make"],
             "options": {
                 "cwd": "${workspaceRoot}/pc/build-vscode"
             },
