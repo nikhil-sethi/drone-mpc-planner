@@ -61,46 +61,41 @@ protected:
     int background_subtract_zone_factor;
     float max_size; // world, in meters
 
-
     std::string settings_file;
     void deserialize_settings();
     void serialize_settings();
 
 private:
     float estimate_sub_disparity(int disparity,int * err);
-    void check_consistency(float dt);
     void update_disparity(float disparity, float dt);
-    void update_tracker_ouput(cv::Point3f measured_world_coordinates, float dt, double time, float disparity);
+    void update_state(cv::Point3f measured_world_coordinates, double time);
 
-    void update_world_candidate();
+    void update_blob_filters();
 
     float calc_certainty(cv::KeyPoint item);
 
     int16_t _uid = -1;
     int16_t _viz_id = -1;
 
-    double t_prev_tracking = 0;
-    double t_prev_predict = 0;
-
     float disparity_prev = 0;
 
     filtering::Smoother smoother_score;
     filtering::Smoother smoother_brightness;
 
-    int detected_after_take_off = 0;
 protected:
 
-    filtering::Smoother yaw_smoother;
-
     std::string _name;
+
+    int pos_smth_width = -1;
+    int vel_smth_width = -1;
+    int acc_smth_width = -1;
+    bool skip_wait_smth_spos = true;
+    float disparity_filter_rate = 0.7;
+
     filtering::Smoother smoother_posX, smoother_posY, smoother_posZ;
-    filtering::SmootherDerivative smoother_velX2,smoother_velY2,smoother_velZ2;
-    filtering::Smoother smoother_velX, smoother_velY, smoother_velZ;
-    filtering::SmootherDerivative smoother_accX2,smoother_accY2,smoother_accZ2;
-    filtering::Smoother smoother_accX, smoother_accY, smoother_accZ;
-    const int smooth_width_vel = 10;
-    const int smooth_width_pos = 10;
-    const int smooth_width_acc = 45;
+    filtering::Smoother smoother_velX,smoother_velY,smoother_velZ;
+    filtering::Smoother smoother_accX,smoother_accY,smoother_accZ;
+    filtering::Smoother yaw_smoother;
     const int smooth_blob_props_width = 10;
     bool reset_filters;
 
@@ -160,7 +155,7 @@ public:
 
     void close(void);
     void init(std::ofstream *logger, VisionData *_visdat, std::string name, int16_t viz_id);
-    virtual void track(double time);
+    virtual void update(double time);
     virtual bool check_ignore_blobs(BlobProps * pbs) = 0;
     virtual void calc_world_item(BlobProps * pbs, double time) = 0;
     void append_log();

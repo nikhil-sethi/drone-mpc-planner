@@ -281,6 +281,7 @@ void Realsense::init_real() {
         infared2 = stream_profiles[14]; // infared 2 864x480 90fps
     }
 
+    //TODO: automate above with below:
     // for (uint i = 0; i < stream_profiles.size(); i++) {
     //     try {
     //         if (auto video_stream = stream_profiles[i].as<rs2::video_stream_profile>()) {

@@ -15,7 +15,7 @@ private:
 public:
     static constexpr float new_tracker_drone_ignore_zone_size = 0.3f;
     void init(int id, VisionData *_visdat, int16_t viz_id);
-    void track(double time);
+    void update(double time);
     bool tracking() {return _tracking;}
     bool properly_tracking() {
         return n_frames_tracking > n_frames_lost && tracking();

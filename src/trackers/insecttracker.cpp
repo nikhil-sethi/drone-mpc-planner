@@ -52,12 +52,12 @@ void InsectTracker::check_false_positive() {
 
 }
 
-void InsectTracker::track(double time) {
+void InsectTracker::update(double time) {
 
     start_new_log_line(time,_visdat->frame_id);
 
     check_false_positive();
-    ItemTracker::track(time);
+    ItemTracker::update(time);
 
     if (!_tracking) {
         predicted_image_path.clear();

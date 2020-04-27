@@ -12,7 +12,7 @@ bool DroneTracker::init(std::ofstream *logger, VisionData *visdat, int16_t viz_i
     return false;
 }
 
-void DroneTracker::track(double time, bool drone_is_active) {
+void DroneTracker::update(double time, bool drone_is_active) {
     current_time = time;
 
     if (enable_viz_diff)
@@ -67,7 +67,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
         take_off_frame_cnt = 0;
         [[fallthrough]];
     } case dts_detecting_takeoff: {
-        ItemTracker::track(time);
+        ItemTracker::update(time);
         if (!_world_item.valid) {
             calc_takeoff_prediction();
         } else {
@@ -100,14 +100,14 @@ void DroneTracker::track(double time, bool drone_is_active) {
 
         break;
     } case dts_detecting: {
-        ItemTracker::track(time);
+        ItemTracker::update(time);
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
         else if (n_frames_lost==0)
             _drone_tracking_status = dts_tracking;
         break;
     } case dts_tracking: {
-        ItemTracker::track(time);
+        ItemTracker::update(time);
         update_prediction(time); // use control inputs to make prediction #282
         _visdat->exclude_drone_from_motion_fading(_image_item.ptd(),_image_predict_item.size*0.6f);
         if (!drone_is_active)
@@ -116,7 +116,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
             _drone_tracking_status = dts_detecting;
         break;
     } case dts_detect_yaw: {
-        ItemTracker::track(time);
+        ItemTracker::update(time);
         update_prediction(time);
         _visdat->exclude_drone_from_motion_fading(_image_item.ptd(),_image_predict_item.size*0.6f);
         break;
@@ -125,7 +125,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
         _drone_tracking_status = dts_landing;
         [[fallthrough]];
     } case dts_landing: {
-        ItemTracker::track(time);
+        ItemTracker::update(time);
         update_prediction(time);
         _visdat->exclude_drone_from_motion_fading(_image_item.ptd(),_image_predict_item.size*0.6f);
         if (!drone_is_active)

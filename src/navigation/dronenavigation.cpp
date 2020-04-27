@@ -222,8 +222,6 @@ void DroneNavigation::update(double time) {
                 break;
             [[fallthrough]];
         } case ns_take_off_completed: {
-            //_dctrl->flight_mode(DroneController::fm_flying);
-            _dctrl->hoverthrottle = _trackers->dronetracker()->hover_throttle_estimation;
 
             if (_nav_flight_mode == nfm_hunt) {
                 _navigation_status = ns_start_the_chase;
@@ -538,7 +536,7 @@ cv::Point3f DroneNavigation::square_point(cv::Point3f center, float width, float
 bool DroneNavigation::drone_is_blocked(float speed_threshold) {
     float speed = norm(_trackers->dronetracker()->Last_track_data().vel());
     bool speed_valid = _trackers->dronetracker()->Last_track_data().vel_valid;
-    float error = _dctrl->position_error();
+    float error = 0; // TODO re implement locally : _dctrl->position_error();
 
     if(_dctrl->auto_throttle>1700 && speed<speed_threshold && error>0.3f && speed_valid)
         return true;

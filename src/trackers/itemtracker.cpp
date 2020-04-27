@@ -31,33 +31,30 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
         createTrackbar("Max disparity", window_name, &max_disparity, 255);
         createTrackbar("background_subtract_zone_factor", window_name, &background_subtract_zone_factor, 100);
     }
+    if (pos_smth_width<0)
+        pos_smth_width = pparams.fps/20;
+    if (vel_smth_width<0)
+        vel_smth_width = pparams.fps/20;
+    if (acc_smth_width<0)
+        acc_smth_width = pparams.fps/20;
+    smoother_posX.init(pos_smth_width);
+    smoother_posY.init(pos_smth_width);
+    smoother_posZ.init(pos_smth_width);
 
-    smoother_posX.init(smooth_width_pos);
-    smoother_posY.init(smooth_width_pos);
-    smoother_posZ.init(smooth_width_pos);
+    smoother_velX.init(vel_smth_width);
+    smoother_velY.init(vel_smth_width);
+    smoother_velZ.init(vel_smth_width);
 
-    smoother_velX2.init(6,0.4f);
-    smoother_velY2.init(6,0.4f);
-    smoother_velZ2.init(6,0.4f);
+    smoother_accX.init(acc_smth_width);
+    smoother_accY.init(acc_smth_width);
+    smoother_accZ.init(acc_smth_width);
 
-    smoother_velX.init(smooth_width_vel);
-    smoother_velY.init(smooth_width_vel);
-    smoother_velZ.init(smooth_width_vel);
-
-    smoother_accX2.init(6,0.4f);
-    smoother_accY2.init(6,0.4f);
-    smoother_accZ2.init(6,0.4f);
-
-    smoother_accX.init(smooth_width_acc);
-    smoother_accY.init(smooth_width_acc);
-    smoother_accZ.init(smooth_width_acc);
-
-    yaw_smoother.init(6);
+    yaw_smoother.init(pparams.fps/10);
     smoother_im_size.init(smooth_blob_props_width);
     smoother_score.init(smooth_blob_props_width);
     smoother_brightness.init(smooth_blob_props_width);
 
-    disparity_prev = 0;
+    disparity_prev = -1;
 
     init_logger();
     initialized = true;
@@ -105,12 +102,17 @@ void ItemTracker::calc_world_props_blob_generic(BlobProps * pbs, bool use_max) {
 
         p*=pparams.imscalef;
         float size = pbs->size*pparams.imscalef;
-        w.disparity = stereo_match(p,size);
+        float disparity = stereo_match(p,size);
 
-        if (w.disparity < min_disparity || w.disparity > max_disparity) {
+        if (disparity < min_disparity || disparity > max_disparity) {
             w.disparity_in_range = false;
         } else {
             w.disparity_in_range = true;
+
+            if (disparity_prev>0 && n_frames_tracking> 5)
+                w.disparity = (disparity_filter_rate * disparity ) + ((1-disparity_filter_rate)*disparity_prev); // moving average on disparity
+            else
+                w.disparity = disparity;
 
             std::vector<Point3d> camera_coordinates, world_coordinates;
             camera_coordinates.push_back(Point3d(p.x,p.y,-w.disparity));
@@ -140,34 +142,27 @@ void ItemTracker::calc_world_props_blob_generic(BlobProps * pbs, bool use_max) {
     }
 }
 
-void ItemTracker::update_world_candidate() { //TODO: rename
-    if (_world_item.valid) {
-        if (!_image_item.blob_is_fused) {
-            smoother_im_size.addSample(_image_item.size);
-            smoother_brightness.addSample(_image_item.pixel_max);
-            _blobs_are_fused_cnt = 0;
-        }
-        smoother_score.addSample(_image_item.score);
+void ItemTracker::update_blob_filters() {
+    if (!_image_item.blob_is_fused) {
+        smoother_im_size.addSample(_image_item.size);
+        smoother_brightness.addSample(_image_item.pixel_max);
+        _blobs_are_fused_cnt = 0;
     }
+    smoother_score.addSample(_image_item.score);
+    disparity_prev = _world_item.iti.disparity;
 }
 
-void ItemTracker::track(double time) {
-
-    double dt_tracking= (time-t_prev_tracking);
-    t_prev_predict = time;
-
-    update_world_candidate();
-
+void ItemTracker::update(double time) {
     if ( _world_item.valid) {
-        check_consistency(dt_tracking);
-        update_tracker_ouput(_world_item.pt,dt_tracking,time,_world_item.iti.disparity);
-        n_frames_lost = 0; // update this after calling update_tracker_ouput, so that it can determine how long tracking was lost
-        t_prev_tracking = time; // update dt only if item was detected
+        path.push_back(_world_item);
+        update_state(_world_item.pt,time);
+        update_blob_filters();
+        _tracking = true;
+        n_frames_lost = 0; // update this after calling update_state, so that it can determine how long tracking was lost
         n_frames_tracking++;
     } else {
         n_frames_lost++;
         n_frames_tracking = 0;
-
         if( n_frames_lost >= n_frames_lost_threshold || !_tracking ) {
             _tracking = false;
             reset_tracker_ouput(time);
@@ -217,7 +212,7 @@ void ItemTracker::append_log() {
         //log all world stuff
         track_data last = Last_track_data();
         (*_logger) << last.state.pos.x << "; " << last.state.pos.y << "; " << last.state.pos.z << ";" ;
-        (*_logger) << last.posX_smooth << "; " << last.posY_smooth << "; " << last.posZ_smooth << ";";
+        (*_logger) << last.state.spos.x << "; " << last.state.spos.y << "; " << last.state.spos.z << ";";
         (*_logger) << last.state.vel.x << "; " << last.state.vel.y << "; " << last.state.vel.z << ";" ;
         (*_logger) << last.state.acc.x << "; " << last.state.acc.y << "; " << last.state.acc.z << ";" ;
     }
@@ -341,20 +336,6 @@ float ItemTracker::estimate_sub_disparity(int disparity,int * err) {
     return sub_disp;
 }
 
-void ItemTracker::check_consistency(float dt) {
-
-    if (track_history.size()>1) {
-        auto data = track_history.back();
-
-        cv::Point3f prev_pos =cv::Point3f(data.posX_smooth,data.posY_smooth,data.posZ_smooth);
-        cv::Point3f predicted_pos = dt * data.vel() + prev_pos;
-        float dist = cv::norm(predicted_pos - _world_item.pt);
-
-        if (dist > 0.4f )
-            reset_filters = true;
-    }
-}
-
 void ItemTracker::update_prediction(double time) {
     vector<track_data>::reverse_iterator td;
     for (td = track_history.rbegin(); td != track_history.rend(); ++td) {
@@ -383,18 +364,9 @@ void ItemTracker::update_prediction(double time) {
     }
     //issue #108:
     predicted_image_path.push_back(_image_predict_item);
-
 }
 
-void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float dt,  double time, float disparity) {
-
-    disparity_prev = disparity;
-    _tracking = true;
-
-    //_world_item.certainty = calc_certainty(_world_item.iti.k());; // TODO does not work properly
-
-    path.push_back(_world_item);
-
+void ItemTracker::update_state(Point3f measured_world_coordinates,double time) {
     track_data data;
     data.pos_valid = true;
     data.state.pos = measured_world_coordinates;
@@ -404,68 +376,57 @@ void ItemTracker::update_tracker_ouput(Point3f measured_world_coordinates,float 
     }
     data.yaw_smooth = yaw_smoother.addSample(_world_item.yaw);
 
-    if (n_frames_lost >= smooth_width_vel || reset_filters) { // tracking was regained, after n_frames_lost frames
+    track_data data_prev;
+    if (track_history.size()>0)
+        data_prev = track_history.back();
+
+    if (reset_filters) {
         smoother_posX.reset();
         smoother_posY.reset();
         smoother_posZ.reset();
-        smoother_velX2.reset();
-        smoother_velY2.reset();
-        smoother_velZ2.reset();
         smoother_velX.reset();
         smoother_velY.reset();
         smoother_velZ.reset();
-        smoother_accX2.reset();
-        smoother_accY2.reset();
-        smoother_accZ2.reset();
         smoother_accX.reset();
         smoother_accY.reset();
         smoother_accZ.reset();
-
-        detected_after_take_off = 0;
     }
-
-    // Position estimation
-
-    // smooth position data with simple filter
-    if (reset_filters || track_history.size()<1) {
-        data.posX_smooth = data.state.pos.x;
-        data.posY_smooth = data.state.pos.y;
-        data.posZ_smooth = data.state.pos.z;
+    float dt = n_frames_lost_threshold / pparams.fps;
+    if (reset_filters) {
+        data.state.spos = data.state.pos;
     } else {
-        float pos_filt_rate = 0.3f;
-        auto data_prev = track_history.back();
-        data.posX_smooth = data.state.pos.x*pos_filt_rate + data_prev.posX_smooth*(1.0f-pos_filt_rate);
-        data.posY_smooth = data.state.pos.y*pos_filt_rate + data_prev.posY_smooth*(1.0f-pos_filt_rate);
-        data.posZ_smooth = data.state.pos.z*pos_filt_rate + data_prev.posZ_smooth*(1.0f-pos_filt_rate);
+        data.state.spos.x = smoother_posX.addSample(data.state.pos.x);
+        data.state.spos.y = smoother_posY.addSample(data.state.pos.y);
+        data.state.spos.z = smoother_posZ.addSample(data.state.pos.z);
+        data.spos_valid = smoother_posX.ready();
+
+        if (data_prev.pos_valid && (data.spos_valid || skip_wait_smth_spos )) {
+            dt = static_cast<float>(time - data_prev.time);
+            float vx = (data.state.spos.x - data_prev.state.spos.x) / dt;
+            float vy = (data.state.spos.y - data_prev.state.spos.y) / dt;
+            float vz = (data.state.spos.z - data_prev.state.spos.z) / dt;
+            data.state.vel.x = smoother_velX.addSample(vx);
+            data.state.vel.y = smoother_velY.addSample(vy);
+            data.state.vel.z = smoother_velZ.addSample(vz);
+
+            if (data_prev.vel_valid) {
+                float ax = (data.state.vel.x - data_prev.state.vel.x) / dt;
+                float ay = (data.state.vel.y - data_prev.state.vel.y) / dt;
+                float az = (data.state.vel.z - data_prev.state.vel.z) / dt;
+                data.state.acc.x = smoother_accX.addSample(ax);
+                data.state.acc.y = smoother_accY.addSample(ay);
+                data.state.acc.z = smoother_accZ.addSample(az);
+            }
+        }
     }
 
-    if (!reset_filters) { // dt is making a big jump with reset_filters
-        data.state.vel.x = smoother_velX2.addSample(data.posX_smooth,dt);
-        data.state.vel.y = smoother_velY2.addSample(data.posY_smooth,dt);
-        data.state.vel.z = smoother_velZ2.addSample(data.posZ_smooth,dt);
-    }
-
-    if (smoother_velX2.ready()) {
-        data.state.acc.x = smoother_accX2.addSample(data.state.vel.x,dt);
-        data.state.acc.y = smoother_accY2.addSample(data.state.vel.y,dt);
-        data.state.acc.z = smoother_accZ2.addSample(data.state.vel.z,dt);
-    } else if (track_history.size()>0 && !reset_filters) {
-        auto data_prev = track_history.back();
-        data.state.acc.x = smoother_accX2.addSample((data.posX_smooth-data_prev.posX_smooth)/dt,dt);
-        data.state.acc.y = smoother_accY2.addSample((data.posY_smooth-data_prev.posY_smooth)/dt,dt);
-        data.state.acc.z = smoother_accZ2.addSample((data.posZ_smooth-data_prev.posZ_smooth)/dt,dt);
-    }
-
-    data.vel_valid = smoother_velX2.ready();
-    data.acc_valid = smoother_accX2.ready();
+    data.vel_valid = smoother_velX.ready();
+    data.acc_valid = smoother_accX.ready();
 
     data.time = time;
     last_sighting_time = time;
     data.dt = dt;
-    detected_after_take_off++;
-
     reset_filters = false;
-
     track_history.push_back(data);
 }
 
@@ -485,6 +446,7 @@ float ItemTracker::calc_certainty(KeyPoint item) {
 void ItemTracker::reset_tracker_ouput(double time) {
     track_data data;
     reset_filters = true;
+    disparity_prev = -1;
     _image_predict_item.valid = false;
     data.time = time;
     track_history.push_back(data);

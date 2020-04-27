@@ -238,8 +238,6 @@ private:
     cv::Point3f pos_err_i;
     int kp_pos_roll, kp_pos_throttle, kp_pos_pitch, ki_pos_roll, ki_thrust, ki_pos_pitch, kd_pos_roll, kd_pos_throttle, kd_pos_pitch;
     int kp_v_roll, kp_v_throttle, kp_v_pitch, kd_v_roll, kd_v_throttle, kd_v_pitch;
-    filtering::Tf_PT1_f filter_pos_err_x, filter_pos_err_y, filter_pos_err_z;
-    filtering::Tf_PT1_f filter_vel_err_x, filter_vel_err_y, filter_vel_err_z;
     filtering::Tf_D_f d_pos_err_x, d_pos_err_y, d_pos_err_z;
     filtering::Tf_D_f d_vel_err_x, d_vel_err_y, d_vel_err_z;
     filtering::Tf_PT2_3f pos_reference_filter;
@@ -268,15 +266,6 @@ private:
     void serialize_settings();
 
     track_data previous_drone_data;
-
-    float check_thrust(float thrust_new) {
-        if(thrust_new<min_thrust)
-            return min_thrust;
-        else if (thrust_new>max_thrust)
-            return max_thrust;
-        else
-            return thrust_new;
-    }
 
     inline state_data set_recoveryState(cv::Point3f position) {
         state_data rt;
@@ -413,7 +402,6 @@ public:
         float throttle = _rc->throttle;
         if (log_replay_mode)
             throttle  = _log_auto_throttle;
-        throttle -= hoverthrottle;
         throttle /= static_cast<float>(JOY_BOUND_MAX - JOY_BOUND_MIN);
         return throttle;
     }
@@ -443,8 +431,6 @@ public:
         float commandf = static_cast<float>(command)/static_cast<float>(JOY_BOUND_MAX - JOY_BOUND_MIN);
         return commandf*max_bank_angle;
     }
-
-    float hoverthrottle;
 
     bool _manual_override_take_off_now;
     bool manual_override_take_off_now() { return _manual_override_take_off_now;}
@@ -491,10 +477,6 @@ public:
     }
     void LED(bool b, int value) {
         _rc->LED_drone(b,value);
-    }
-
-    float position_error() {
-        return norm(cv::Point3f(filter_pos_err_x.current_output(), filter_pos_err_y.current_output(), filter_pos_err_z.current_output()));
     }
 
     void beep(bool b) {

@@ -37,17 +37,18 @@ const float deg2rad = M_PIf32/180.f;
 extern std::string data_output_dir;
 
 struct state_data {
-    cv::Point3f pos = {0},vel = {0},acc = {0};
+    cv::Point3f pos = {0},spos = {0},vel = {0},acc = {0};
 };
 
 struct track_data {
     state_data state;
     cv::Point3f pos() {return state.pos;}
+    cv::Point3f spos() {return state.spos;}
     cv::Point3f vel() {return state.vel;}
     cv::Point3f acc() {return state.acc;}
-    float posX_smooth = 0,posY_smooth = 0,posZ_smooth = 0;
     float dt = 0;
     bool pos_valid = false;
+    bool spos_valid = false;
     bool vel_valid = false;
     bool acc_valid = false;
     bool yaw_valid = false;

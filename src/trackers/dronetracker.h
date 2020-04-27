@@ -148,7 +148,7 @@ public:
     cv::Mat diff_viz;
 
     bool init(std::ofstream *logger, VisionData *_visdat, int16_t viz_id);
-    void track(double time, bool drone_is_active);
+    void update(double time, bool drone_is_active);
 
     void land() {_drone_tracking_status = dts_landing_init;}
     void detect_yaw() {_drone_tracking_status = dts_detect_yaw;}

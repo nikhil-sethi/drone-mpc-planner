@@ -9,14 +9,22 @@ bool BlinkTracker::init(VisionData *visdat, int16_t viz_id) {
     // disable logging for the blink tracker. #67
     dummy.open("/dev/null",std::ofstream::out);
     dummy.close();
+
+    disparity_filter_rate = 0.5;
+    pos_smth_width = pparams.fps/15;
+    vel_smth_width = pparams.fps/10;
+    acc_smth_width = pparams.fps/5;
+    skip_wait_smth_spos = false;
+
     ItemTracker::init(&dummy,visdat,"blink",viz_id);
 
     n_frames_lost = 1;
     n_frames_lost_threshold = 120;
+
     return false;
 }
 
-void BlinkTracker::track(double time) {
+void BlinkTracker::update(double time) {
     switch (_blinking_drone_status) {
     case bds_start: {
         _tracking = true;
@@ -33,7 +41,7 @@ void BlinkTracker::track(double time) {
             _blinking_drone_status = bds_failed;
             fail_time_start = time;
         }
-        ItemTracker::track(time);
+        ItemTracker::update(time);
         if (n_frames_lost == 0) {
             _blinking_drone_status = bds_1_blink_off;
             blink_time_start = time;
@@ -41,55 +49,55 @@ void BlinkTracker::track(double time) {
         }
         break;
     } case bds_1_blink_off: {
-        ItemTracker::track(time);
+        ItemTracker::update(time);
         _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
         break;
     } case bds_1_blink_on: {
-        ItemTracker::track(time);
+        ItemTracker::update(time);
         _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
         break;
     } case bds_2_blink_off: {
-        ItemTracker::track(time);
+        ItemTracker::update(time);
         _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
         break;
     } case bds_2_blink_on: {
-        ItemTracker::track(time);
+        ItemTracker::update(time);
         _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
         break;
     } case bds_3_blink_off: {
-        ItemTracker::track(time);
+        ItemTracker::update(time);
         _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
         break;
     } case bds_3_blink_on: {
-        ItemTracker::track(time);
+        ItemTracker::update(time);
         _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
         break;
     } case bds_4_blink_off: {
         attempts = 0;
-        ItemTracker::track(time);
+        ItemTracker::update(time);
         _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
         break;
     } case bds_4_blink_on: {
-        ItemTracker::track(time);
+        ItemTracker::update(time);
         _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
         break;
     } case bds_5_blink_off: {
-        ItemTracker::track(time);
+        ItemTracker::update(time);
         _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
         break;
     } case bds_5_blink_on: {
-        ItemTracker::track(time);
+        ItemTracker::update(time);
         _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
         break;
     } case bds_6_blink_off_calib: {
         _blinking_drone_status = bds_6_blink_off;
         [[fallthrough]];
     } case bds_6_blink_off: {
-        ItemTracker::track(time);
+        ItemTracker::update(time);
         _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
         break;
     } case bds_6_blink_on: {
-        ItemTracker::track(time);
+        ItemTracker::update(time);
         _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
         break;
     } case bds_found: {
@@ -112,7 +120,11 @@ void BlinkTracker::track(double time) {
 
 BlinkTracker::blinking_drone_states BlinkTracker::detect_blink(double time, bool found) {
     const float margin = 0.75f * dparams.blink_period; // the blinking is not a hard on/off, but rather a dimming operation so we need a big margin and blink more often
-    if (Last_track_data().vel_valid && norm(Last_track_data().vel()) > 0.3)
+    if (Last_track_data().vel_valid ) {
+        std::cout << "tmp ip: " << _image_item.pt() << " disp: " << _image_item.disparity << " wp" << _world_item.pt << "v " << Last_track_data().vel() << std::endl;
+        std::cout << "v: " << norm(Last_track_data().vel()) << std::endl;
+    }
+    if (Last_track_data().vel_valid && normf(Last_track_data().vel()) > 0.2f)
         return bds_restart_search;
     float blink_period = static_cast<float>(time - blink_time_start);
     if (found) {

@@ -7,7 +7,6 @@
 #include <iostream>
 #include <fstream>
 #include "smoother.h"
-#include "smootherderivative.h"
 
 namespace filtering {
 class Tf_PT1_f {
@@ -74,7 +73,7 @@ public:
         yk = init_yk1;
         yk1 = init_yk2;
     }
-    
+
     float current_output() {
         return yk;
     }

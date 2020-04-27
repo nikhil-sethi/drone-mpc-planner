@@ -23,7 +23,7 @@ void TrackerManager::init(std::ofstream *logger,VisionData *visdat, CameraView *
     //we have a bit of a situation with the order of initializing the trackers, as this MUST be in the same order as how they are called
     //in the future this is prolly not sustainable, as we have multiple insect trackers etc
     //ATM the blinktracker is therefor not logged, as there can be multiple and they disappear after they are done
-    //Anyway, the track() functions are called in a reverse for loop (must be reversed because items are erased from the list),
+    //Anyway, the update() functions are called in a reverse for loop (must be reversed because items are erased from the list),
     //therefor the init functions must be called in the reverser order as adding them to the _trackers list...
     //...but since we are 'pushing' the items in, this in the end must be in the normal order. Or not. I guess it's a 50% chance thing.
     //#106
@@ -101,7 +101,7 @@ void TrackerManager::update_trackers(double time,long long frame_number, bool dr
             delete trkr;
         } else if(_trackers.at(i)->type() == tt_drone) {
             DroneTracker * dtrkr = static_cast<DroneTracker * >(_trackers.at(i));
-            dtrkr->track(time,tracker_active(dtrkr,drone_is_active));
+            dtrkr->update(time,tracker_active(dtrkr,drone_is_active));
         } else if (_trackers.at(i)->type() == tt_insect) {
             InsectTracker * itrkr = static_cast<InsectTracker * >(_trackers.at(i));
             switch (_mode) {
@@ -112,10 +112,10 @@ void TrackerManager::update_trackers(double time,long long frame_number, bool dr
                 itrkr->append_log(time,frame_number); // write dummy data
                 break;
             } case mode_wait_for_insect: {
-                itrkr->track(time);
+                itrkr->update(time);
                 break;
             } case mode_hunt: {
-                itrkr->track(time);
+                itrkr->update(time);
                 break;
             } case mode_drone_only: {
                 itrkr->append_log(time,frame_number); // write dummy data
@@ -124,10 +124,10 @@ void TrackerManager::update_trackers(double time,long long frame_number, bool dr
             }
         } else if(_trackers.at(i)->type() == tt_replay) {
             ReplayTracker * rtrkr = static_cast<ReplayTracker * >(_trackers.at(i));
-            rtrkr->track(time);
+            rtrkr->update(time);
         } else if (_trackers.at(i)->type() == tt_blink) {
             BlinkTracker * btrkr = static_cast<BlinkTracker * >(_trackers.at(i));
-            btrkr->track(time);
+            btrkr->update(time);
             if (_mode == mode_locate_drone) {
                 if (btrkr->state() == BlinkTracker::bds_found) {
                     _dtrkr->set_drone_landing_location(btrkr->image_item().pt(),btrkr->world_item().iti.disparity,btrkr->smoothed_size_image(),btrkr->world_item().pt);

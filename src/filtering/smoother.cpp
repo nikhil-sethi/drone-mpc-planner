@@ -6,8 +6,7 @@ void Smoother::init(uint16_t width, float value)
     _rbuf.resize(_kernelsize + 1);
     _rotater = 0;
     _runner = value*_kernelsize;
-    for (uint16_t i = 0; i <= _kernelsize; i++)
-    {
+    for (uint16_t i = 0; i < _kernelsize + 1; i++) {
         _rbuf.at(i) = value;
     }
     _ready = true;
@@ -22,29 +21,18 @@ void Smoother::init(uint16_t width)
 void Smoother::reset()
 {
     _rotater = 0;
-    for (uint16_t i = 0; i <= _kernelsize; i++)
-    {
-        _rbuf.at(i) = 0;
-    }
     _runner = 0;
     _ready = false;
-}
-void Smoother::reset_to(float v)
-{
-    _rotater = 0;
-    for (uint16_t i = 0; i <= _kernelsize; i++)
-    {
-        _rbuf.at(i) = v;
+    for (uint16_t i = 0; i < _kernelsize +1; i++) {
+        _rbuf.at(i) = 0;
     }
-    _runner = v*_kernelsize;
-    _ready = true;
 }
 
 float Smoother::addSample(float sample)
 {
     //performs online smoothing filter
 
-    if (isnanf(sample)) // fixes nan, which forever destroy the output
+    if (isnanf(sample)) // fixes nan, which forever destroy the output otherwise
         sample = 0;
     if (_kernelsize == 1)
     {   // disable smoothing... to be sure:

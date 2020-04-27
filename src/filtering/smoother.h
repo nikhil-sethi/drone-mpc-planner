@@ -24,11 +24,7 @@ public:
     float addSample(float sample);
     float latest();
     void reset(void);
-    void reset_to(float v);
-    bool ready()
-    {
-        return _ready;
-    }
+    bool ready() { return _ready;}
     int kernselsize() { return _kernelsize;}
 };
 }

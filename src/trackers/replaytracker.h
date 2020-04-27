@@ -16,7 +16,7 @@ protected:
 public:
     void init(int id, string file, VisionData *_visdat);
     void init(int id,logging::InsectReader, VisionData *visdat);
-    void track(double time);
+    void update(double time);
     void update_from_log(unsigned long long frame_number, double time);
     bool tracking() {return _tracking;}
     int16_t id() {return _id;}

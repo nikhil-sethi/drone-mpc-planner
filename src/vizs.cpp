@@ -46,7 +46,6 @@ void Visualizer::add_plot_sample(void) {
         pitch_calculated.push_back(static_cast<float>(_dctrl->auto_pitch));
         //    yaw_calculated.push_back(static_cast<float>(_dctrl->commandedYaw));
         throttle_calculated.push_back(static_cast<float>(_dctrl->auto_throttle));
-        throttle_hover.push_back(_dctrl->hoverthrottle);
         throttle_min_bound.push_back(static_cast<float>(JOY_BOUND_MIN));
         throttle_max_bound.push_back(static_cast<float>(JOY_BOUND_MAX));
 
@@ -64,9 +63,9 @@ void Visualizer::add_plot_sample(void) {
             im_posY_drone.push_back(_dtrkr->image_item().y);
             im_disp_drone.push_back(_dtrkr->image_item().disparity);
             im_size_drone.push_back(_dtrkr->image_item().size);
-            sposX.push_back(-data.posX_smooth);
-            sposY.push_back(data.posY_smooth);
-            sposZ.push_back(-data.posZ_smooth);
+            sposX.push_back(-data.state.spos.x);
+            sposY.push_back(data.state.spos.y);
+            sposZ.push_back(-data.state.spos.z);
 
 
             if (_dctrl->Joy_State() != DroneController::js_hunt) {
@@ -102,9 +101,9 @@ void Visualizer::add_plot_sample(void) {
 void Visualizer::plot(void) {
     std::vector<cv::Mat> ims_trk;
     // ims_trk.push_back(plot_xyd());
-    ims_trk.push_back(plot_all_im_drone_pos());
+    // ims_trk.push_back(plot_all_im_drone_pos());
     ims_trk.push_back(plot_all_position());
-    // ims_trk.push_back(plot_all_velocity());
+    ims_trk.push_back(plot_all_velocity());
     // ims_trk.push_back(plot_all_acceleration());
     ims_trk.push_back(plot_all_control());
     plotframe = create_row_image(ims_trk,CV_8UC3);
@@ -146,7 +145,7 @@ cv::Mat Visualizer::plot_all_control(void) {
     std::vector<cv::Mat> ims_joy;
     ims_joy.push_back(plot({roll_joystick,roll_calculated},"Roll"));
     ims_joy.push_back(plot({pitch_joystick,pitch_calculated},"Pitch"));
-    ims_joy.push_back(plot({throttle_joystick,throttle_calculated,throttle_hover,throttle_min_bound,throttle_max_bound},"Throttle"));
+    ims_joy.push_back(plot({throttle_joystick,throttle_calculated,throttle_min_bound,throttle_max_bound},"Throttle"));
     return create_column_image(ims_joy, CV_8UC3);
 }
 

@@ -57,9 +57,9 @@ void ReplayTracker::update_from_log(unsigned long long frame_number,double time)
     data.state.pos.x = log.ins_pos_x;
     data.state.pos.y = log.ins_pos_y;
     data.state.pos.z = log.ins_pos_z;
-    data.posX_smooth = log.ins_spos_x;
-    data.posY_smooth = log.ins_spos_y;
-    data.posZ_smooth = log.ins_spos_z;
+    data.state.spos.x = log.ins_spos_x;
+    data.state.spos.y = log.ins_spos_y;
+    data.state.spos.z = log.ins_spos_z;
     data.state.vel.x = log.ins_svel_x;
     data.state.vel.y = log.ins_svel_y;
     data.state.vel.z = log.ins_svel_z;
@@ -111,7 +111,7 @@ void ReplayTracker::update_from_log(unsigned long long frame_number,double time)
     cleanup_paths();
 }
 
-void ReplayTracker::track(double time) {
+void ReplayTracker::update(double time) {
     start_new_log_line(time,_visdat->frame_id);
     update_from_log(_visdat->frame_id,time);
     ItemTracker::append_log();

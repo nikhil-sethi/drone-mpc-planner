@@ -205,13 +205,13 @@ void process_video() {
 
         if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode && pparams.op_mode != op_mode_crippled) {
             int frame_written = 0;
+            static int raw_video_frame_counter = 0;
             // cv::Mat id_fr = cam->frameL.clone();
             // putText(id_fr,std::to_string(data.RS_id),cv::Point(0, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,Scalar(255));
             frame_written = output_video_LR.write(data.frameL,data.frameR);
-            logger_video_ids << frame_written << ";" << data.imgcount << ";" << data.RS_id<< ";" << data.time << '\n';
-            int video_frame_counter = 0;
+            logger_video_ids << raw_video_frame_counter << ";" << data.imgcount << ";" << data.RS_id<< ";" << data.time << '\n';
             if (!frame_written)
-                video_frame_counter++;
+                raw_video_frame_counter++;
             else {
                 std::cout << "Video frame write PROBLEM: " << frame_written << std::endl;
             }
@@ -526,7 +526,7 @@ void init_loggers() {
     logger_fn = data_output_dir  + "log" + to_string(0) + ".csv"; // only used with pparams.video_cuts
 
     logger_insect.open(data_output_dir  + "insect.log",std::ofstream::out);
-    logger_video_ids.open(data_output_dir  + "frames.log",std::ofstream::out);
+    logger_video_ids.open(data_output_dir  + "frames.csv",std::ofstream::out);
 }
 
 void init_video_recorders() {

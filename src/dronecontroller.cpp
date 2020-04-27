@@ -23,7 +23,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
     control_history_max_size = pparams.fps;
     (*_logger) << "valid; flight_mode;" <<
                "target_pos_x; target_pos_y; target_pos_z; " <<
-               "hoverthrottle; autoThrottle; autoRoll; autoPitch; autoYaw; " <<
+               "autoThrottle; autoRoll; autoPitch; autoYaw; " <<
                "joyThrottle; joyRoll; joyPitch; joyYaw; " <<
                "joyArmSwitch; joyModeSwitch; joyTakeoffSwitch;" <<
                "mmArmSwitch; mmModeSwitch;" <<
@@ -56,14 +56,6 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
         createTrackbar("d_v_throttle", "Control", &kd_v_throttle, 200);
 
     }
-
-    hoverthrottle = dparams.initial_hover_throttle;
-    filter_pos_err_x.init(1.f/pparams.fps, 1, 1.f/pparams.fps);
-    filter_pos_err_y.init(1.f/pparams.fps, 1, 1.f/pparams.fps);
-    filter_pos_err_z.init(1.f/pparams.fps, 1, 1.f/pparams.fps);
-    filter_vel_err_x.init(1.f/pparams.fps, 1, 1.f/pparams.fps);
-    filter_vel_err_y.init(1.f/pparams.fps, 1, 1.f/pparams.fps);
-    filter_vel_err_z.init(1.f/pparams.fps, 1, 1.f/pparams.fps);
     d_pos_err_x.init (1.f/pparams.fps);
     d_pos_err_y.init (1.f/pparams.fps);
     d_pos_err_z.init (1.f/pparams.fps);
@@ -88,8 +80,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc
 
     set_led_strength(exposure);
 
-    thrust = dparams.thrust;
-    thrust = check_thrust(thrust);
+    thrust = std::clamp(dparams.thrust,min_thrust,max_thrust);
     initial_hover_throttle_guess_non3d = GRAVITY/dparams.thrust*JOY_BOUND_RANGE+dparams.min_throttle;
     initialized = true;
 }
@@ -350,12 +341,6 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         d_vel_err_x.preset(data_target_new.vel().x - data_drone.state.vel.x);
         d_vel_err_y.preset(data_target_new.vel().y - data_drone.state.vel.y);
         d_vel_err_z.preset(data_target_new.vel().z - data_drone.state.vel.z);
-        filter_pos_err_x.reset (data_target_new.pos().x - data_drone.state.pos.x);
-        filter_pos_err_y.reset (data_target_new.pos().y - data_drone.state.pos.y);
-        filter_pos_err_z.reset (data_target_new.pos().z - data_drone.state.pos.z);
-        filter_vel_err_x.reset (data_target_new.vel().x - data_drone.state.vel.x);
-        filter_vel_err_y.reset (data_target_new.vel().y - data_drone.state.vel.y);
-        filter_vel_err_z.reset (data_target_new.vel().z - data_drone.state.vel.z);
         pos_reference_filter.internal_states(data_target_new.pos(), data_target_new.pos());
 
         model_error = {0};
@@ -496,7 +481,6 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
                data_target_new.pos().x << "; " <<
                data_target_new.pos().y  << "; " <<
                data_target_new.pos().z << "; " <<
-               hoverthrottle << "; " <<
                auto_throttle << "; " <<
                auto_roll << "; " <<
                auto_pitch << "; " <<
@@ -981,11 +965,8 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     desired_acceleration += multf(kp_pos, pos_err_p) + multf(ki_pos, pos_err_i) + multf(kd_pos, pos_err_d); // position controld
     if( !(norm(setpoint_vel)<0.1 && norm(setpoint_pos-data_drone.pos())<0.2) ) // Needed to improve hovering at waypoint
         desired_acceleration += multf(kp_vel, vel_err_p) + multf(kd_vel, vel_err_d); // velocity control
-
     desired_acceleration += keep_in_volume_correction_acceleration(data_drone);
     std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(desired_acceleration);
-    auto_roll = smtr_roll.addSample(auto_roll);
-    auto_pitch = smtr_pitch.addSample(auto_pitch);
 }
 
 
@@ -1040,33 +1021,25 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> Dron
 
 std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::control_error(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, cv::Point3f ki_pos) {
 
-    filter_pos_err_x.change_dynamic(1.f/pparams.fps);
-    filter_pos_err_y.change_dynamic(1.f/pparams.fps);
-    filter_pos_err_z.change_dynamic(1.f/pparams.fps);
-
-    float err_x_filtered, err_y_filtered, err_z_filtered;
+    float err_x_filtered = 0, err_y_filtered = 0, err_z_filtered = 0;
     if(data_drone.pos_valid) {
-        err_x_filtered = filter_pos_err_x.new_sample(setpoint_pos.x - data_drone.state.pos.x);
-        err_y_filtered = filter_pos_err_y.new_sample(setpoint_pos.y - data_drone.state.pos.y);
-        err_z_filtered = filter_pos_err_z.new_sample(setpoint_pos.z - data_drone.state.pos.z);
-    } else {
-        err_x_filtered = filter_pos_err_x.current_output();
-        err_y_filtered = filter_pos_err_y.current_output();
-        err_z_filtered = filter_pos_err_z.current_output();
+        err_x_filtered = setpoint_pos.x - data_drone.state.spos.x;
+        err_y_filtered = setpoint_pos.y - data_drone.state.spos.y;
+        err_z_filtered = setpoint_pos.z - data_drone.state.spos.z;
     }
     cv::Point3f pos_err_p = {err_x_filtered, err_y_filtered, err_z_filtered};
 
     // If the distance is large, then increase the velocity setpoint such that the velocity controller is not counteracting to the position controller:
     cv::Point3f pos_err2vel_set = deadzone(pos_err_p,-1,1) * 1.f;
 
-    float err_velx_filtered = filter_vel_err_x.new_sample(setpoint_vel.x + pos_err2vel_set.x - data_drone.state.vel.x );
-    float err_vely_filtered = filter_vel_err_y.new_sample(setpoint_vel.y + pos_err2vel_set.y - data_drone.state.vel.y);
-    float err_velz_filtered = filter_vel_err_z.new_sample(setpoint_vel.z + pos_err2vel_set.z - data_drone.state.vel.z);
+    float err_velx_filtered = setpoint_vel.x + pos_err2vel_set.x - data_drone.state.vel.x;
+    float err_vely_filtered = setpoint_vel.y + pos_err2vel_set.y - data_drone.state.vel.y;
+    float err_velz_filtered = setpoint_vel.z + pos_err2vel_set.z - data_drone.state.vel.z;
     cv::Point3f vel_err_p = {err_velx_filtered, err_vely_filtered, err_velz_filtered};
 
-    float errDx = d_pos_err_x.new_sample (err_x_filtered);
-    float errDy = d_pos_err_y.new_sample (err_y_filtered);
-    float errDz = d_pos_err_z.new_sample (err_z_filtered);
+    float errDx = -data_drone.state.vel.x;
+    float errDy = -data_drone.state.vel.y;
+    float errDz = -data_drone.state.vel.z;
     cv::Point3f pos_err_d = {errDx, errDy, errDz};
 
     float errvDx = d_vel_err_x.new_sample (err_velx_filtered);
@@ -1083,7 +1056,7 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::
     }
 
     thrust -= (err_y_filtered - setpoint_pos.y + pos_modely.current_output()) * ki_pos.y;
-    thrust = check_thrust(thrust);
+    thrust = std::clamp(thrust,min_thrust,max_thrust);
     pos_err_i.y = 0;
 
     return std::tuple(pos_err_p, pos_err_d, vel_err_p, vel_err_d);
@@ -1116,7 +1089,7 @@ void DroneController::check_control_and_tracking_problems(track_data data_drone)
 
     if(model_error<0)
         model_error = 0;
-    if(model_error>50) {
+    if(model_error>50 && false) {
         _flight_mode = fm_abort_flight;
         flight_submode_name = "fm_abort_flight_model_error";
         std::cout<<std::endl;
