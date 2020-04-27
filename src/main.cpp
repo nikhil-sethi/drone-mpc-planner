@@ -65,6 +65,7 @@ std::string pats_xml_fn,drone_xml_fn;
 
 std::ofstream logger;
 std::ofstream logger_insect;
+std::ofstream logger_video_ids;
 MultiModule rc;
 DroneController dctrl;
 navigation::DroneNavigation dnav;
@@ -204,7 +205,10 @@ void process_video() {
 
         if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode && pparams.op_mode != op_mode_crippled) {
             int frame_written = 0;
-            frame_written = output_video_LR.write(cam->frameL,cam->frameR);
+            // cv::Mat id_fr = cam->frameL.clone();
+            // putText(id_fr,std::to_string(data.RS_id),cv::Point(0, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,Scalar(255));
+            frame_written = output_video_LR.write(data.frameL,data.frameR);
+            logger_video_ids << frame_written << ";" << data.imgcount << ";" << data.RS_id<< ";" << data.time << '\n';
             int video_frame_counter = 0;
             if (!frame_written)
                 video_frame_counter++;
@@ -522,6 +526,7 @@ void init_loggers() {
     logger_fn = data_output_dir  + "log" + to_string(0) + ".csv"; // only used with pparams.video_cuts
 
     logger_insect.open(data_output_dir  + "insect.log",std::ofstream::out);
+    logger_video_ids.open(data_output_dir  + "frames.log",std::ofstream::out);
 }
 
 void init_video_recorders() {
@@ -670,6 +675,7 @@ void close(bool sig_kill) {
         output_video_cuts.close();
 
     logger_insect << std::flush;
+    logger_video_ids << std::flush;
     logger << std::flush;
     logger.close();
     if (!sig_kill) // seems to get stuck. TODO: streamline

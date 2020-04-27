@@ -5,6 +5,7 @@
 
 #include "opencv2/imgproc/imgproc.hpp"
 #include "third_party/stopwatch.h"
+#include <experimental/filesystem>
 
 #include "stopwatch.h"
 static stopwatch_c swc;
@@ -46,11 +47,35 @@ void FileCam::init () {
     convert_depth_background_to_world();
 
     camera_volume = def_volume();
+    read_frame_ids();
     swc.Start();
     update();
+    video.release(); // reset after reading a frame, because this frame was not saved in the log in the first place
+    video = cv::VideoCapture(video_fn);
+    frame_cnt = 0;
 
     initialized = true;
 }
+
+void FileCam::read_frame_ids() {
+    string framesfile = replay_dir + "/frames.csv";
+    ifstream infile(framesfile);
+    string line;
+    while (getline(infile, line)) {
+        try {
+            auto data = logging::split_csv_line(line);
+            frame_id_entry entry;
+            entry.raw_video_frame_counter = stoi(data.at(0));
+            entry.imgcount = stoi(data.at(1));
+            entry.RS_id = stol(data.at(2));
+            entry.time = stod(data.at(3));
+            frames.push_back(entry);
+        } catch (exception& exp ) {
+            throw my_exit("Could not read log! File: " +framesfile + '\n' + "Line: " + string(exp.what()) + " at: " + line);
+        }
+    }
+}
+
 void FileCam::calibration() {
     intr = new rs2_intrinsics();
     intr->fx = camparams.fx;
@@ -88,9 +113,8 @@ void FileCam::update() {
     cvtColor(frameLR,frameLR,CV_BGR2GRAY);
     frameL = frameLR(cv::Rect(cv::Point(0,0),cv::Point(frameLR.cols/2,frameLR.rows)));
     frameR = frameLR(cv::Rect(cv::Point(frameLR.cols/2,0),cv::Point(frameLR.cols,frameLR.rows)));
-    _frame_number = logreader->retrieve_RS_ID_from_frame_id(frame_cnt-1);
-
-    _frame_time = ((_frame_number+1) / static_cast<double>(pparams.fps));
+    _frame_number = frames.at(frame_cnt-1).RS_id;
+    _frame_time = frames.at(frame_cnt-1).time;
 
     if (_frame_number==ULONG_MAX) {
         std::cout << "Log end, exiting. Video frames left: " << nFrames - frame_cnt << std::endl;

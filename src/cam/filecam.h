@@ -10,8 +10,18 @@ private:
     logging::LogReader * logreader;
     std::string video_fn;
     int im_width=0, im_height=0, nFrames=0,frame_cnt = 0;
+    void read_frame_ids();
     void calibration();
     std::string replay_dir;
+
+    struct frame_id_entry {
+        long raw_video_frame_counter;
+        long imgcount;
+        long long RS_id;
+        double time;
+    };
+    std::vector<frame_id_entry> frames;
+
 public:
     static std::string playback_filename() { return "videoRawLR.mkv"; }
     FileCam(string dir, logging::LogReader * log) {
