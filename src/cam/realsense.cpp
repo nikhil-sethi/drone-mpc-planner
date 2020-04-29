@@ -228,6 +228,10 @@ void Realsense::init_real() {
 
     if (enable_auto_exposure == only_at_startup)
         check_light_level();
+    else {
+        std::tie (camparams.measured_exposure,std::ignore)  = measure_auto_exposure();
+        std::cout << "Measured auto exposure: " << camparams.measured_exposure << std::endl;
+    }
 
     depth_background = imread(depth_map_rfn,CV_LOAD_IMAGE_ANYDEPTH);
     camparams.depth_scale = rs_depth_sensor.get_option(RS2_OPTION_DEPTH_UNITS);

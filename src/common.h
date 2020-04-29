@@ -604,7 +604,7 @@ class CamCalibrationData: public xmls::Serializable {
 private:
     xmls::xFloat _angle_x;
     xmls::xFloat _angle_y;
-    xmls::xFloat _exposure;
+    xmls::xInt _exposure;
     xmls::xFloat _gain;
     xmls::xInt _width;
     xmls::xInt _height;
@@ -624,7 +624,7 @@ private:
 public:
     float camera_angle_x = 0;
     float camera_angle_y = 30;
-    float measured_exposure = 15400;
+    int measured_exposure = 15400;
     int measured_gain = 0;
     //rs2_intrinsics
     int width;
