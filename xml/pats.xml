@@ -12,7 +12,7 @@
     <Member Name="joystick">rc_xlite</Member>
     <Member Name="drone">drone_trashcan</Member>
     <Member Name="cam_tuning">false</Member>
-    <Member Name="control_tuning">true</Member>
+    <Member Name="control_tuning">false</Member>
     <Member Name="navigation_tuning">false</Member>
     <Member Name="vision_tuning">false</Member>
     <Member Name="drone_tracking_tuning">false</Member>

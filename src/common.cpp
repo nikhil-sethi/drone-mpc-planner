@@ -58,6 +58,11 @@ int world2im_size(cv::Point3f p1, cv::Point3f p2, cv::Mat Qfi, float camera_angl
     return round(cv::norm(world2im_2d(p1,Qfi,camera_angle)-world2im_2d(p2,Qfi,camera_angle)));
 }
 
+float world2im_sizef(cv::Point3f p1, cv::Point3f p2, cv::Mat Qfi, float camera_angle) {
+    return cv::norm(world2im_2d(p1,Qfi,camera_angle)-world2im_2d(p2,Qfi,camera_angle));
+}
+
+
 bool file_exist (const std::string& name) {
     if (FILE *file = fopen(name.c_str(), "r")) {
         fclose(file);

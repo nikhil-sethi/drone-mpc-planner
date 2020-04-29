@@ -63,13 +63,7 @@ private:
 
     std::string motion_noise_map_wfn = "max_motion_noise.png";
 
-    cv::Mat diffL16;
-    cv::Mat frameL16;
-
-    cv::Mat diffR16;
-    cv::Mat frameR16;
-
-    cv::Mat diffL16_back;
+    cv::Mat diffL16,frameL16,diffR16,frameR16;
     double _current_frame_time = 0;
 
     double prev_time_brightness_check = 0;

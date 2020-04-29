@@ -58,10 +58,11 @@ class MultiModule {
 public:
 
 
-    void init(int drone_id, bool fromfile);
+    void init(int drone_id);
 
     void close();
 
+    int LED_drone() {return _LED_drone;}
     void LED_drone(bool on, int strength_value) {
         if (on)
             _LED_drone = strength_value;

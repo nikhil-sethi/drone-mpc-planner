@@ -1,6 +1,6 @@
 #include "multimodule.h"
 
-void MultiModule::init(int drone_id, bool fromfile) {
+void MultiModule::init(int drone_id) {
     _drone_id = drone_id;
 
     if (dparams.tx == tx_none) {
@@ -37,7 +37,7 @@ void MultiModule::init(int drone_id, bool fromfile) {
         notconnected = RS232_OpenComport(115200,"/dev/pats_mm0");
         if (notconnected)
             notconnected = RS232_OpenComport(115200,"/dev/pats_mm1");
-        if (notconnected && !fromfile) {
+        if (notconnected) {
             throw my_exit("cannot connect the MultiModule");
         } else {
             send_init_package_now = true;

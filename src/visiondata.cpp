@@ -28,7 +28,6 @@ void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, fl
     diffL16 = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
     diffR16 = cv::Mat::zeros(cv::Size(frameR.cols,frameR.rows),CV_16SC1);
     motion_noise_map = cv::Mat::zeros(smallsize,CV_8UC1) + 128;
-    diffL16_back = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
 
     if (pparams.vision_tuning) {
         namedWindow("Background", WINDOW_NORMAL);
@@ -187,7 +186,6 @@ void VisionData::create_overexposed_removal_mask(cv::Point2f drone_im_location, 
 
 void VisionData::enable_background_motion_map_calibration(float duration) {
     motion_noise_map = cv::Mat::zeros(smallsize,CV_8UC1);
-    diffL16_back = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
     calibrating_background_end_time = _current_frame_time+static_cast<double>(duration);
     _calibrating_background = true;
 }

@@ -69,7 +69,7 @@ void FileCam::read_frame_ids() {
             entry.imgcount = stoi(data.at(1));
             entry.RS_id = stol(data.at(2));
             entry.time = stod(data.at(3));
-            frames.push_back(entry);
+            frames_ids.push_back(entry);
         } catch (exception& exp ) {
             throw my_exit("Could not read log! File: " +framesfile + '\n' + "Line: " + string(exp.what()) + " at: " + line);
         }
@@ -113,8 +113,8 @@ void FileCam::update() {
     cvtColor(frameLR,frameLR,CV_BGR2GRAY);
     frameL = frameLR(cv::Rect(cv::Point(0,0),cv::Point(frameLR.cols/2,frameLR.rows)));
     frameR = frameLR(cv::Rect(cv::Point(frameLR.cols/2,0),cv::Point(frameLR.cols,frameLR.rows)));
-    _frame_number = frames.at(frame_cnt-1).RS_id;
-    _frame_time = frames.at(frame_cnt-1).time;
+    _frame_number = frames_ids.at(frame_cnt-1).RS_id;
+    _frame_time = frames_ids.at(frame_cnt-1).time;
 
     if (_frame_number==ULONG_MAX) {
         std::cout << "Log end, exiting. Video frames left: " << nFrames - frame_cnt << std::endl;

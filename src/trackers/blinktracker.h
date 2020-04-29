@@ -30,7 +30,7 @@ public: tracker_type type() { return tt_blink;}
 
 public:
     enum blinking_drone_states {
-        bds_start=1,
+        bds_start=0,
         bds_failed,
         bds_failed_delete_me,
         bds_restart_search,

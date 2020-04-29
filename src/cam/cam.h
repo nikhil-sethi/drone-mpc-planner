@@ -20,7 +20,7 @@
 class Cam {
 protected:
     uint replay_skip_n_frames = 0;
-    unsigned long long _frame_number;
+    unsigned long long _frame_number = 0;
     double _frame_time = 0;
     bool initialized = false;
 

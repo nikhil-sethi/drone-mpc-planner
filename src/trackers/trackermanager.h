@@ -145,6 +145,7 @@ private:
     void match_blobs_to_trackers(bool drone_is_active, double time);
     bool tracker_active(ItemTracker * trkr, bool drone_is_active);
     cv::Scalar color_of_blob(processed_blobs blob);
+    std::vector<BlinkTracker *> blinktrackers();
     std::vector<InsectTracker *> insecttrackers();
     std::vector<ReplayTracker *> replaytrackers();
 
@@ -157,8 +158,9 @@ private:
     InsectTracker * default_itrkr;
 
     std::vector<logging::InsectReader> replay_logs;
+    cv::Mat diff_viz;
 public:
-    cv::Mat viz_max_points,diff_viz;
+    cv::Mat viz_max_points,diff_viz_buf;
     void mode(detection_mode m) {_mode = m;}
     detection_mode mode ()  {return _mode;}
     std::string mode_str() {
@@ -179,6 +181,7 @@ public:
             return trackermanager_mode_names[_mode];
     }
 
+    std::tuple<bool, BlinkTracker *> blinktracker_best();
     InsectTracker *insecttracker_best();
     DroneTracker * dronetracker() { return _dtrkr; }
     void init(ofstream *logger, VisionData *visdat, CameraView *camview);

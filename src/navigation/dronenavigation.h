@@ -170,6 +170,11 @@ public:
         cv::Point3f resf  =world2im_3d(tmp,_visdat->Qfi,_visdat->camera_angle);
         return cv::Point2i(roundf(resf.x),round(resf.y));
     }
+
+    bool drone_is_ready_and_waiting() {
+        return _navigation_status == ns_wait_for_insect || _navigation_status == ns_wait_for_takeoff_command;
+    }
+
     bool drone_is_hunting() {
         if (_nav_flight_mode == nfm_hunt) {
             return _navigation_status == ns_chasing_insect || _navigation_status ==  ns_start_the_chase;

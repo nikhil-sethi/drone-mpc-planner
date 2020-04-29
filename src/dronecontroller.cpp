@@ -467,9 +467,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
     auto_roll = bound_joystick_value(auto_roll);
 
     //std::cout << time <<  " rpt: " << roll << ", " << pitch << ", " << yaw << ", " << throttle << std::endl;
-    if (!log_replay_mode) {
-        _rc->queue_commands(throttle,roll,pitch,yaw,mode);
-    }
+    _rc->queue_commands(throttle,roll,pitch,yaw,mode);
 
     control_data c(Roll(), Throttle(), Pitch(), time);
     control_history.push_back(c);

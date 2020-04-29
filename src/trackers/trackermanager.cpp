@@ -10,7 +10,7 @@ void TrackerManager::init(std::ofstream *logger,VisionData *visdat, CameraView *
     _camview = camview;
 
     if (pparams.has_screen) {
-        enable_viz_max_points = false;
+        enable_viz_max_points = true;
         enable_viz_diff = true;
     }
 
@@ -89,6 +89,8 @@ void TrackerManager::update(double time, bool drone_is_active) {
         viz_max_points = create_column_image(vizs_maxs,CV_8UC3,1);
     else if(enable_viz_max_points)
         viz_max_points = cv::Mat::zeros(5,100,CV_8UC3);
+    if (enable_viz_diff)
+        diff_viz_buf = diff_viz.clone();;
 }
 
 void TrackerManager::update_trackers(double time,long long frame_number, bool drone_is_active) {
@@ -340,6 +342,9 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                             bt->world_item(w);
                             _trackers.push_back( bt);
                             blob.trackers.push_back(bt);
+                        } else {
+                            bt->close();
+                            delete bt;
                         }
                     }
                 } else if (_mode != mode_idle && _mode != mode_drone_only) {
@@ -613,7 +618,7 @@ void TrackerManager::update_max_change_points() {
             if (COG.x != COG.x) {
                 Point dummy;
                 minMaxLoc(cropped, &min, &max, &dummy, &dummy);
-                mask = cropped > (max-avg(0)) * 0.6; // use a much higher threshold because the noise was blurred away
+                mask = cropped > (max-avg(0)) * 0.6; // use a much lower threshold because the noise was blurred away
                 mask_thresh = (max-avg_bkg(0)) * 0.1+avg_bkg(0);
                 mo = moments(mask,true);
                 COG = Point2f(static_cast<float>(mo.m10) / static_cast<float>(mo.m00), static_cast<float>(mo.m01) / static_cast<float>(mo.m00));
@@ -764,6 +769,15 @@ void TrackerManager::update_max_change_points() {
     }
 }
 
+std::vector<BlinkTracker *> TrackerManager::blinktrackers() {
+    std::vector<BlinkTracker *> res;
+    for (auto trkr : _trackers) {
+        if (trkr->type() == tt_blink) {
+            res.push_back(static_cast<BlinkTracker *>(trkr));
+        }
+    }
+    return res;
+}
 std::vector<ReplayTracker *> TrackerManager::replaytrackers() {
     std::vector<ReplayTracker *> res;
     for (auto trkr : _trackers) {
@@ -813,6 +827,20 @@ InsectTracker * TrackerManager::insecttracker_best() {
     }
 
     return best_itrkr;
+}
+std::tuple<bool, BlinkTracker *> TrackerManager::blinktracker_best() {
+    BlinkTracker::blinking_drone_states best_state = BlinkTracker::bds_searching;
+    BlinkTracker * best_btrkr;
+    bool valid = false;
+    for (auto trkr : blinktrackers()) {
+        auto state = trkr->state();
+        if (best_state <= state) {
+            valid = true;
+            state = best_state;
+            best_btrkr = trkr;
+        }
+    }
+    return std::make_tuple(valid,best_btrkr);
 }
 void TrackerManager::deserialize_settings() {
     std::cout << "Reading settings from: " << settings_file << std::endl;

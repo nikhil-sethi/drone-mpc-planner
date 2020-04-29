@@ -36,6 +36,7 @@
 #include "3dviz/visualizer3d.h"
 #include "commandcenterlink.h"
 #include "filecam.h"
+#include "generatorcam.h"
 #include "realsense.h"
 #ifdef HASGUI
 #include "gui/mainwindow.h"
@@ -58,6 +59,7 @@ stopwatch_c stopWatch;
 std::string data_output_dir;
 bool draw_plots = false;
 bool log_replay_mode = false;
+bool generator_mode = false;
 uint8_t drone_id;
 std::string replay_dir;
 std::string logger_fn; //contains filename of current log # for insect logging (same as video #)
@@ -142,7 +144,7 @@ void process_video() {
         }
         if (pparams.has_screen) {
             static int speed_div;
-            if (!(speed_div++ % 4) || ((log_replay_mode && !cam->turbo) || cam->frame_by_frame)) {
+            if (!(speed_div++ % 4) || (((log_replay_mode || generator_mode ) && !cam->turbo) || cam->frame_by_frame)) {
                 visualizer_3d.run();
                 visualizer.paint();
                 handle_key(data.time);
@@ -187,10 +189,10 @@ void process_video() {
                 if (recording) {
                     static int cut_video_frame_counter = 0;
 
-                    cv::Mat frame(cam->frameL.rows,cam->frameL.cols+trackers.diff_viz.cols,CV_8UC3);
+                    cv::Mat frame(cam->frameL.rows,cam->frameL.cols+trackers.diff_viz_buf.cols,CV_8UC3);
                     cvtColor(cam->frameL,frame(cv::Rect(0,0,cam->frameL.cols, cam->frameL.rows)),CV_GRAY2BGR);
-                    trackers.diff_viz.copyTo(frame(cv::Rect(cam->frameL.cols,0,trackers.diff_viz.cols, trackers.diff_viz.rows)));
-                    cv::putText(frame,std::to_string(cam->frame_number()) + ": " + to_string_with_precision( cam->frame_time(),2),cv::Point(trackers.diff_viz.cols, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,0,255));
+                    trackers.diff_viz_buf.copyTo(frame(cv::Rect(cam->frameL.cols,0,trackers.diff_viz_buf.cols, trackers.diff_viz_buf.rows)));
+                    cv::putText(frame,std::to_string(cam->frame_number()) + ": " + to_string_with_precision( cam->frame_time(),2),cv::Point(trackers.diff_viz_buf.cols, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,0,255));
                     int frame_written = output_video_cuts.write(frame);
                     if (!frame_written)
                         cut_video_frame_counter++;
@@ -264,6 +266,11 @@ void process_frame(Stereo_Frame_Data data) {
         logreader.current_frame_number(data.RS_id);
         trackers.process_replay_moth(data.RS_id);
         cmdcenter.trigger_demo_flight_from_log(replay_dir,logreader.current_entry.trkrs_state);
+    } else if (generator_mode) {
+        if (dnav.drone_is_ready_and_waiting()) {
+            dnav.demo_flight(pparams.flightplan);
+            dctrl.joy_takeoff_switch_file_trigger(true);
+        }
     }
 
 #ifdef PROFILING
@@ -361,7 +368,7 @@ void handle_key(double time [[maybe_unused]]) {
         dnav.redetect_drone_location();
         break;
     case 'p':
-        if(log_replay_mode)
+        if(log_replay_mode || generator_mode)
             draw_plots = true;
         break;
     case 'o':
@@ -406,7 +413,7 @@ void handle_key(double time [[maybe_unused]]) {
         break;
     case ' ':
     case 'f':
-        if(log_replay_mode)
+        if(log_replay_mode || generator_mode)
             cam->frame_by_frame = true;
         break;
     case 't':
@@ -539,20 +546,20 @@ void init_video_recorders() {
         if (output_video_cuts.init(main_argc,main_argv,pparams.video_cuts,data_output_dir + "insect" + to_string(0) + ".mkv",IMG_W*2,IMG_H,pparams.fps/2, "192.168.1.255",5000,true,GStream::rm_vaapih264)) {std::cout << "WARNING: could not open cut video " << data_output_dir + "insect" + to_string(0) + ".mkv" << std::endl;}
 }
 
-std::tuple<bool,bool,std::string,uint8_t,std::string,std::string> process_arg(int argc, char **argv) {
+std::tuple<bool,bool,bool, std::string,uint8_t,std::string,std::string> process_arg(int argc, char **argv) {
     main_argc = argc;
     main_argv = argv;
 
     int default_drone_id = 1;
     int arg_drone_id = default_drone_id;
-    bool replay_mode = false;
+    bool replay_mode = false, gen_mode = false;
     std::string arg_log_folder="",arg_pats_xml_fn="../../xml/pats.xml",arg_drone_xml_fn="";
     if (argc > 1) {
         for (int i = 1; i < argc; i++) {
             string s = argv[i];
             bool arg_recognized = false;
             if (s.compare("--rs_reset") == 0) {
-                return make_tuple(true,false,"",0,"","");
+                return make_tuple(true,false,false,"",0,"","");
             } else if (s.compare("--pats-xml") == 0) {
                 arg_recognized = true;
                 i++;
@@ -565,6 +572,10 @@ std::tuple<bool,bool,std::string,uint8_t,std::string,std::string> process_arg(in
                 arg_recognized = true;
                 i++;
                 arg_drone_id = stoi(argv[i]);
+            } else if (s.compare("--generator") == 0) {
+                arg_recognized = true;
+                i++;
+                gen_mode = true;
             } else if (s.compare("--log") == 0) {
                 arg_recognized = true;
                 i++;
@@ -579,16 +590,16 @@ std::tuple<bool,bool,std::string,uint8_t,std::string,std::string> process_arg(in
             }
         }
     }
-    return make_tuple(false,replay_mode,arg_log_folder,arg_drone_id,arg_pats_xml_fn,arg_drone_xml_fn);
+    return make_tuple(false,replay_mode,gen_mode,arg_log_folder,arg_drone_id,arg_pats_xml_fn,arg_drone_xml_fn);
 }
 
 void check_hardware() {
     //multimodule rc
-    if (!log_replay_mode)
-        rc.init(drone_id, log_replay_mode);
+    if (! log_replay_mode &&! generator_mode)
+        rc.init(drone_id);
 
     // Ensure that joystick was found and that we can use it
-    if (!dctrl.joystick_ready() && !log_replay_mode && pparams.joystick != rc_none) {
+    if (!dctrl.joystick_ready() && !log_replay_mode && !generator_mode && pparams.joystick != rc_none) {
         throw my_exit("no joystick connected.");
     }
 
@@ -600,6 +611,9 @@ void check_hardware() {
             cam = std::unique_ptr<Cam>(new FileCam(replay_dir,&logreader));
         else
             throw my_exit("Could not find a video in the replay folder!");
+    } else if (generator_mode) {
+        cam = std::unique_ptr<Cam>(new GeneratorCam());
+        static_cast<GeneratorCam *>(cam.get())->rc(&rc);
     } else {
         cam = std::unique_ptr<Cam>(new Realsense());
         static_cast<Realsense *>(cam.get())->connect_and_check();
@@ -626,6 +640,9 @@ void init() {
 
     if (pparams.has_screen) {
         visualizer.init(&visdat,&trackers,&dctrl,&dnav,&rc,log_replay_mode);
+        if (generator_mode) {
+            visualizer.set_generator_cam(static_cast<GeneratorCam *>(cam.get()));
+        }
         visualizer_3d.init(&trackers, &(cam->camera_volume), &dctrl, &dnav);
         if (log_replay_mode)
             visualizer.first_take_off_time = logreader.first_takeoff_time();
@@ -739,7 +756,7 @@ int main( int argc, char **argv )
     try {
         cmdcenter.reset_commandcenter_status_file("Starting");
         bool realsense_reset;
-        std::tie(realsense_reset,log_replay_mode,replay_dir,drone_id,pats_xml_fn,drone_xml_fn) = process_arg(argc,argv);
+        std::tie(realsense_reset,log_replay_mode,generator_mode,replay_dir,drone_id,pats_xml_fn,drone_xml_fn) = process_arg(argc,argv);
 
         if (realsense_reset) {
             cmdcenter.reset_commandcenter_status_file("Reseting realsense");

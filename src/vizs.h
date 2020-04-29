@@ -12,6 +12,7 @@
 #include "insecttracker.h"
 #include "itemtracker.h"
 #include "dronenavigation.h"
+#include "generatorcam.h"
 
 
 class Visualizer {
@@ -37,6 +38,8 @@ private:
     tracking::TrackerManager * _trackers;
     navigation::DroneNavigation *_dnav;
     MultiModule *_rc;
+    GeneratorCam * generator_cam;
+    bool generator_cam_set = false;
 
     bool enable_plots = false;
 
@@ -106,6 +109,14 @@ public:
         dt = cv::Mat(1,1,CV_32FC1);
         dt_target = cv::Mat(1,1,CV_32FC1);
 
+        gen_posY_drone = cv::Mat (1,1,CV_32FC1);
+        gen_posX_drone = cv::Mat (1,1,CV_32FC1);
+        gen_posZ_drone = cv::Mat (1,1,CV_32FC1);
+        gen_im_posX_drone = cv::Mat (1,1,CV_32FC1);
+        gen_im_posY_drone = cv::Mat (1,1,CV_32FC1);
+        gen_im_disp_drone = cv::Mat (1,1,CV_32FC1);
+        gen_im_size_drone = cv::Mat (1,1,CV_32FC1);
+
         roll_joystick.pop_back();
         roll_calculated.pop_back();
         pitch_joystick.pop_back();
@@ -125,6 +136,14 @@ public:
         im_size_drone.pop_back();
         dt.pop_back();
         dt_target.pop_back();
+
+        gen_posY_drone.pop_back();
+        gen_posX_drone.pop_back();
+        gen_posZ_drone.pop_back();
+        gen_im_posX_drone.pop_back();
+        gen_im_posY_drone.pop_back();
+        gen_im_disp_drone.pop_back();
+        gen_im_size_drone.pop_back();
 
     }
 
@@ -170,12 +189,22 @@ public:
     cv::Mat saccY;
     cv::Mat saccZ;
 
+    cv::Mat gen_posX_drone;
+    cv::Mat gen_posY_drone;
+    cv::Mat gen_posZ_drone;
+
+    cv::Mat gen_im_posX_drone;
+    cv::Mat gen_im_posY_drone;
+    cv::Mat gen_im_disp_drone;
+    cv::Mat gen_im_size_drone;
+
     cv::Size viz_frame_size() {
         return cv::Size(IMG_W*_res_mult + IMG_W,IMG_H*_res_mult+IMG_H*_res_mult/4);
     }
 
     void paint();
     void add_plot_sample(void);
+    void set_generator_cam(GeneratorCam * cam) {generator_cam = cam; generator_cam_set=true;}
     void update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, double time, bool draw_plots, tracking::InsectTracker *itrkr);
     void init(VisionData * visdat, tracking::TrackerManager *imngr, DroneController *dctrl, navigation::DroneNavigation *dnav, MultiModule *rc, bool fromfile);
     void close();

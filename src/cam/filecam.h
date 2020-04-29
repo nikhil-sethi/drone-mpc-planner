@@ -20,7 +20,7 @@ private:
         long long RS_id;
         double time;
     };
-    std::vector<frame_id_entry> frames;
+    std::vector<frame_id_entry> frames_ids;
 
 public:
     static std::string playback_filename() { return "videoRawLR.mkv"; }

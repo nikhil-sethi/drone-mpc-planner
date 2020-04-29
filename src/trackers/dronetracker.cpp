@@ -137,7 +137,6 @@ void DroneTracker::update(double time, bool drone_is_active) {
     }
 
     delete_takeoff_fake_motion();
-
     clean_ignore_blobs(time);
     (*_logger) << static_cast<int16_t>(_drone_tracking_status) << ";";
 }

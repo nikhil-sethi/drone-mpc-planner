@@ -60,7 +60,7 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     initialized = true;
 
     if (pparams.has_screen)
-        enable_draw_stereo_viz = false;
+        enable_draw_stereo_viz = true;
 
 }
 
@@ -221,7 +221,7 @@ void ItemTracker::append_log() {
         track_history.erase(track_history.begin());
 }
 
-float ItemTracker::stereo_match(cv::Point2f closestL,float size) {
+float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
 
     cv::Mat diffL,diffR;
 
@@ -229,7 +229,7 @@ float ItemTracker::stereo_match(cv::Point2f closestL,float size) {
     int radius;
     if (size > 25) {
         size /=pparams.imscalef;
-        closestL /=pparams.imscalef;
+        im_posL /=pparams.imscalef;
         diffL = _visdat->diffL_small;
         diffR = _visdat->diffR_small;
         radius = ceilf((size + 4.f)*0.5f);
@@ -242,9 +242,9 @@ float ItemTracker::stereo_match(cv::Point2f closestL,float size) {
     }
 
     int x1,y1,x2,y2;
-    x1 = std::clamp(static_cast<int>(roundf(closestL.x))-radius,0,diffL.cols-1);
+    x1 = std::clamp(static_cast<int>(roundf(im_posL.x))-radius,0,diffL.cols-1);
     x2 = 2*radius;
-    y1 = std::clamp(static_cast<int>(roundf(closestL.y))-radius,0,diffL.rows-1);
+    y1 = std::clamp(static_cast<int>(roundf(im_posL.y))-radius,0,diffL.rows-1);
     y2 = 2*radius;
 
     if (x1+x2 >= diffL.cols)
@@ -298,20 +298,21 @@ float ItemTracker::stereo_match(cv::Point2f closestL,float size) {
             sub_err_disp *=2;
 
         if (enable_draw_stereo_viz) {
-
             if (use_imscalef) {
                 roiL.x = roiL.x*2;
                 roiL.y = roiL.y*2;
                 roiL.width = roiL.width*2;
                 roiL.height = roiL.height*2;
-                roiR.x = roiR.x*2;
+                roiR.x = x1*2-roundf(sub_err_disp);
                 roiR.y = roiR.y*2;
                 roiR.width = roiR.width*2;
                 roiR.height = roiR.height*2;
-            }
-            cv::Mat viz_st1 = create_column_image({_visdat->diffL(roiL),_visdat->diffR(roiR)},CV_8UC1,1);
-            cv::Mat viz_st2 = create_column_image({_visdat->frameL(roiL),_visdat->frameR(roiR)},CV_8UC1,1);
-            viz_disp = create_row_image({viz_st1,viz_st2},CV_8UC1,4);
+            } else
+                roiR = cv::Rect (x1-roundf(sub_err_disp),y1,x2,y2);
+
+            cv::Mat viz_st1 = create_column_image({_visdat->diffL(roiL),_visdat->diffR(roiR)},CV_8UC1,4);
+            cv::Mat viz_st2 = create_column_image({_visdat->frameL(roiL),_visdat->frameR(roiR)},CV_8UC1,4);
+            viz_disp = create_row_image({viz_st1,viz_st2},CV_8UC1,1);
         }
         return sub_err_disp;
     } else {

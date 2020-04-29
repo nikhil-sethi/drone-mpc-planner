@@ -142,7 +142,7 @@ BlinkTracker::blinking_drone_states BlinkTracker::detect_blink(double time, bool
 }
 
 void BlinkTracker::calc_world_item(BlobProps * pbs, double time [[maybe_unused]]) {
-    calc_world_props_blob_generic(pbs,true);
+    calc_world_props_blob_generic(pbs,false);
     pbs->world_props.valid = pbs->world_props.disparity_in_range && pbs->world_props.radius_in_range;
 }
 bool BlinkTracker::check_ignore_blobs(BlobProps * pbs) {

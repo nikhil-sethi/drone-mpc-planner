@@ -67,6 +67,15 @@ void Visualizer::add_plot_sample(void) {
             sposY.push_back(data.state.spos.y);
             sposZ.push_back(-data.state.spos.z);
 
+            if (generator_cam_set) {
+                gen_posX_drone.push_back(-generator_cam->generated_world_pos.x);
+                gen_posY_drone.push_back(generator_cam->generated_world_pos.y);
+                gen_posZ_drone.push_back(-generator_cam->generated_world_pos.z);
+                gen_im_posX_drone.push_back(generator_cam->generated_im_pos.x/pparams.imscalef);
+                gen_im_posY_drone.push_back(generator_cam->generated_im_pos.y/pparams.imscalef);
+                gen_im_disp_drone.push_back(generator_cam->generated_im_pos.z);
+                gen_im_size_drone.push_back(generator_cam->generated_im_size);
+            }
 
             if (_dctrl->Joy_State() != DroneController::js_hunt) {
                 posX_target.push_back(-_dnav->setpoint().pos().x);
@@ -101,20 +110,26 @@ void Visualizer::add_plot_sample(void) {
 void Visualizer::plot(void) {
     std::vector<cv::Mat> ims_trk;
     // ims_trk.push_back(plot_xyd());
-    // ims_trk.push_back(plot_all_im_drone_pos());
+    ims_trk.push_back(plot_all_im_drone_pos());
     ims_trk.push_back(plot_all_position());
     ims_trk.push_back(plot_all_velocity());
     // ims_trk.push_back(plot_all_acceleration());
-    ims_trk.push_back(plot_all_control());
+    // ims_trk.push_back(plot_all_control());
     plotframe = create_row_image(ims_trk,CV_8UC3);
 }
 
 cv::Mat Visualizer::plot_all_im_drone_pos(void) {
     std::vector<cv::Mat> ims;
-    ims.push_back(plot({im_posX_drone},"Im drone X"));
-    ims.push_back(plot({im_posY_drone},"Im drone Y"));
-    ims.push_back(plot({im_disp_drone},"Disparity"));
-    // ims.push_back(plot({im_size_drone},"Size"));
+    if (gen_im_posX_drone.rows == im_posX_drone.rows) {
+        ims.push_back(plot({im_posX_drone,gen_im_posX_drone},"Im drone X"));
+        ims.push_back(plot({im_posY_drone,gen_im_posY_drone},"Im drone Y"));
+        ims.push_back(plot({im_disp_drone,gen_im_disp_drone},"Disparity"));
+    } else {
+        ims.push_back(plot({im_posX_drone},"Im drone X"));
+        ims.push_back(plot({im_posY_drone},"Im drone Y"));
+        ims.push_back(plot({im_disp_drone},"Disparity"));
+    }
+    // ims.push_back(plot({im_size_drone,gen_im_size_drone},"Size"));
     return create_column_image(ims, CV_8UC3);
 }
 cv::Mat Visualizer::plot_xyd(void) {
@@ -534,11 +549,16 @@ void Visualizer::draw_tracker_viz() {
     cv::Mat frameL_small_drone = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,drn_path,drn_predicted_path);
     cv::Mat frameL_small_insect = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,ins_path,ins_predicted_path);
     frameL_small_drone.copyTo(resFrame(cv::Rect(0,0,frameL_small_drone.cols, frameL_small_drone.rows)));
-    frameL_small_insect.copyTo(resFrame(cv::Rect(resFrame.cols-frameL_small_drone.cols,0,frameL_small_drone.cols, frameL_small_drone.rows)));
+    frameL_small_insect.copyTo(resFrame(cv::Rect(resFrame.cols-frameL_small_drone.cols,frameL_small_drone.rows,frameL_small_drone.cols, frameL_small_drone.rows)));
     draw_target_text(resFrame,time,dis,min_dis);
 
-    if (_trackers->diff_viz.cols > 0) {
-        cv::Mat diff = _trackers->diff_viz;
+    if (_trackers->diff_viz_buf.cols > 0) {
+
+        cv::Mat ext_res_frame = cv::Mat::zeros(resFrame.rows,resFrame.cols+_trackers->diff_viz_buf.cols,CV_8UC3);
+        resFrame.copyTo(ext_res_frame(cv::Rect(0,0,resFrame.cols,resFrame.rows)));
+        _trackers->diff_viz_buf.copyTo(ext_res_frame(cv::Rect(resFrame.cols,frameL_small_drone.rows,_trackers->diff_viz_buf.cols,_trackers->diff_viz_buf.rows)));
+        cv::Mat diff = ext_res_frame(cv::Rect(resFrame.cols,frameL_small_drone.rows,_trackers->diff_viz_buf.cols,_trackers->diff_viz_buf.rows));
+
         putText(diff,"Drone",cv::Point(3,diff.rows-12),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,255,0));
         putText(diff,"Insect",cv::Point(3,diff.rows-24),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,0,255));
         putText(diff,"Replay",cv::Point(3,diff.rows-36),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,0,180));
@@ -546,9 +566,8 @@ void Visualizer::draw_tracker_viz() {
         putText(diff,"Ignored",cv::Point(3,diff.rows-60),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,128,0));
         putText(diff,"Untracked",cv::Point(3,diff.rows-72),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(255,255,55));
         putText(diff,"Multitracked",cv::Point(3,diff.rows-84),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,128,255));
-        cv::Mat ext_res_frame = cv::Mat::zeros(resFrame.rows,resFrame.cols+diff.cols,CV_8UC3);
-        resFrame.copyTo(ext_res_frame(cv::Rect(0,0,resFrame.cols,resFrame.rows)));
-        diff.copyTo(ext_res_frame(cv::Rect(resFrame.cols,frameL_small_drone.rows,diff.cols,diff.rows)));
+
+
         trackframe = ext_res_frame;
     } else
         trackframe = resFrame;
@@ -559,14 +578,12 @@ void Visualizer::paint() {
     if (request_trackframe_paint) {
         request_trackframe_paint = false;
         cv::imshow("tracking results", trackframe);
-        if (_visdat->viz_frame.cols>0)
+        if (_visdat->viz_frame.cols)
             cv::imshow("diff",_visdat->viz_frame);
-        if (_dtrkr->diff_viz.cols > 0)
+        if (_dtrkr->diff_viz.cols)
             cv::imshow("drn_diff", _dtrkr->diff_viz);
-        if (_trackers->viz_max_points.cols > 0)
+        if (_trackers->viz_max_points.cols)
             cv::imshow("motion points", _trackers->viz_max_points);
-        //        if (_trackers->diff_viz.cols > 0)
-        //            cv::imshow("diff", _trackers->diff_viz);
         if (_trackers->dronetracker()->viz_disp.cols>0)
             imshow("stereo",_trackers->dronetracker()->viz_disp);
 
