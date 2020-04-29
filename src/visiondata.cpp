@@ -121,10 +121,14 @@ void VisionData::fade(cv::Mat diff16, bool exclude_drone) {
         if (rec.y < 0)
             rec.y = 0;
         if (rec.width + rec.x >= diff16.cols)
-            rec.width = diff16.cols - rec.x;
+            rec.width = diff16.cols - rec.x - 1;
         if (rec.height + rec.y >= diff16.rows)
-            rec.height = diff16.rows - rec.y;
-        drone_roi = diff16(rec).clone() ;
+            rec.height = diff16.rows - rec.y - 1;
+
+        if (!rec.width || !rec.height)
+            exclude_drone = false; // apparently it is out of the image
+        else
+            drone_roi = diff16(rec).clone() ;
     }
 
     cv::Mat diff16_neg,diff16_pos;
