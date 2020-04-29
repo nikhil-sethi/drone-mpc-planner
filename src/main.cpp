@@ -222,7 +222,7 @@ void process_video() {
         static float prev_time = -1.f/pparams.fps;
         float current_fps = 1.f / (t - prev_time);
         float fps = fps_smoothed.addSample(current_fps);
-        if (fps < pparams.fps / 6 * 5 && !log_replay_mode)
+        if (fps < pparams.fps / 6 * 5 && fps_smoothed.ready() && !log_replay_mode)
             std::cout << "FPS WARNING!" << std::endl;
 
         static double time =0;
