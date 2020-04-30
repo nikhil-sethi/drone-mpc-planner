@@ -759,6 +759,13 @@ int main( int argc, char **argv )
         if (!log_replay_mode) {
             wait_for_cam_angle();
             wait_for_dark();
+        } else {
+            pparams.navigation_tuning = false;
+            pparams.control_tuning = false;
+            pparams.vision_tuning = false;
+            pparams.drone_tracking_tuning = false;
+            pparams.insect_tracking_tuning = false;
+            pparams.cam_tuning = false;
         }
 
     } catch(my_exit const &err) {
