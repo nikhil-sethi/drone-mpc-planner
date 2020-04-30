@@ -273,8 +273,22 @@ void Realsense::init_real() {
 
     std::vector<rs2::stream_profile> stream_profiles = rs_depth_sensor.get_stream_profiles();
     rs2::stream_profile infared1,infared2;
-    infared1 = stream_profiles[17]; // infared 1 864x480 60fps
-    infared2 = stream_profiles[16]; // infared 2 864x480 60fps
+    if (pparams.fps == 60) {
+        infared1 = stream_profiles[17]; // infared 1 864x480 60fps
+        infared2 = stream_profiles[16]; // infared 2 864x480 60fps
+    } else {
+        infared1 = stream_profiles[15]; // infared 1 864x480 90fps
+        infared2 = stream_profiles[14]; // infared 2 864x480 90fps
+    }
+
+    // for (uint i = 0; i < stream_profiles.size(); i++) {
+    //     try {
+    //         if (auto video_stream = stream_profiles[i].as<rs2::video_stream_profile>()) {
+    //             rs2_intrinsics intrinsics = video_stream.get_intrinsics();
+    //             std::cout << video_stream.stream_name() << " " << i << ": " << intrinsics.width << " x " << intrinsics.height << " @" << video_stream.fps() << std::endl;
+    //         }
+    //     } catch (const std::exception& e) {}
+    // }
 
     rs_depth_sensor.open({infared1,infared2});
     rs_depth_sensor.start([&](rs2::frame f) { rs_callback(f); });
