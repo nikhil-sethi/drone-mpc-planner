@@ -10,8 +10,18 @@ cd ~/code/pats/config/firmwares/drone
 This may require to install `pip3 install pyserial` or in case of conda `conda install -c anaconda pyserial`. You'll also need `sudo apt install dfu-util`.
 The script supports some command line arguments, like setting the drone id or selecting another settings file, see `./bf_flash.py --help`. 
 
-2. Apply the following settings to BLHeli:  
+2.1. Apply the following settings to BLHeli:  
 ![BLHeli settings](https://github.com/pats-drones/pats/blob/master/doc/BLHeliSettings.png)
+
+2.2. Flash ESC drivers
+Go to the `Flash all` option in BLHeli. Select file manually and go to `pats/config/firmwares/drone`.
+Choose the driver file depending on the flightcontroller you are using.
+for instance:
+Flightcontroller v2 = S-H-50 16.8
+Flightcontroller v3 = F-H-40 16.8
+
+2.3. Apply the following settings to BLHeli:  
+![BLHeli settings](https://github.com/pats-drones/pats/blob/master/doc/BLHeliESCSetting.jpeg)
 
 ## Flashing the multimodule:
 ```
