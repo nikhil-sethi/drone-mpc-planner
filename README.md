@@ -13,7 +13,7 @@ The script supports some command line arguments, like setting the drone id or se
 2.1. Apply the following settings to BLHeli:  
 ![BLHeli settings](https://github.com/pats-drones/pats/blob/master/doc/BLHeliSettings.png)
 
-2.2. Flash ESC drivers
+2.2. Flash ESC drivers  
 Go to the `Flash all` option in BLHeli. Select file manually and go to `pats/config/firmwares/drone`.
 Choose the driver file depending on the flightcontroller you are using.  
 for instance:  
