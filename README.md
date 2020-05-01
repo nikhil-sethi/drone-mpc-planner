@@ -4,7 +4,7 @@
 
 1. Start the bf_flash script to flash the firmware and betaflight settings:
 ```
-cd ~/code/pats/config/
+cd ~/code/pats/config/firmwares/drone
 ./bf_flash.py
 ```
 This may require to install `pip3 install pyserial` or in case of conda `conda install -c anaconda pyserial`. You'll also need `sudo apt install dfu-util`.
@@ -15,13 +15,13 @@ The script supports some command line arguments, like setting the drone id or se
 
 ## Flashing the multimodule:
 ```
-cd ~/code/pats/config/multimodule
+cd ~/code/pats/config/firmwares/multimodule
 ./flash.py
 ```
 Same remarks as with drone flash script apply.
 
 ## Flashing realsense camera:
-`sudo rs-fw-update -f ~/code/pats/config/Signed_Image_UVC_5_12_3_0.bin`
+`sudo rs-fw-update -f ~/code/pats/config/firmwares/realsense/Signed_Image_UVC_5_12_3_0.bin`
 
 ## Installing correct kernel:
 `sudo apt install linux-headers-4.15.0-55 linux-headers-4.15.0-55-generic linux-image-4.15.0-55-generic linux-modules-4.15.0-55-generic linux-modules-extra-4.15.0-55-generic`  
