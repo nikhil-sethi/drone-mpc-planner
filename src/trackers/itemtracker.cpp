@@ -60,7 +60,7 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     initialized = true;
 
     if (pparams.has_screen)
-        enable_draw_stereo_viz = true;
+        enable_draw_stereo_viz = false;
 
 }
 

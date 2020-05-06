@@ -392,8 +392,9 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
     } case fm_landing: {
         control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
         float dt = static_cast<float>(time - ff_land_start_time);
-        auto_throttle  = ff_auto_throttle_start - dt * (ff_auto_throttle_start-JOY_BOUND_MIN);
-        if (dt > 1) {
+        const float target_time = 0.3f; // TODO: comment
+        auto_throttle  = (ff_auto_throttle_start-JOY_BOUND_MIN) - (1.f/target_time) * dt * (ff_auto_throttle_start-JOY_BOUND_MIN) + JOY_BOUND_MIN;
+        if (dt > target_time) {
             auto_throttle = JOY_BOUND_MIN;
             _flight_mode = fm_disarmed;
         }

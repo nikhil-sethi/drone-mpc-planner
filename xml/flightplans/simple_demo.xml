@@ -38,13 +38,13 @@
             <Member Name="z">-1.0</Member>
             <Member Name="name">WP3</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.2">
+        <!-- <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_wp_stay</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-1.3</Member>
             <Member Name="z">-1.0</Member>
             <Member Name="name">WP3</Member>
-        </Class>
+        </Class> -->
         <!-- <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_yaw_reset</Member>
             <Member Name="threshold_mm"></Member>

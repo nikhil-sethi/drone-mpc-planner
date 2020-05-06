@@ -375,26 +375,26 @@ void DroneNavigation::update(double time) {
         } case ns_landing: {
             cv::Point3f new_pos_setpoint;
             cv::Point3f new_vel_setpoint;
-            cv::Point3f p = _trackers->dronetracker()->drone_landing_location();
-            setpoint_pos_world =  p + current_waypoint->xyz;
+            cv::Point3f pad_pos = _trackers->dronetracker()->drone_landing_location();
+            setpoint_pos_world =  pad_pos + current_waypoint->xyz;
             if (setpoint_pos_world.y > -0.5f) // keep some margin to the top of the view, because atm we have an overshoot problem.
                 setpoint_pos_world.y = -0.5f;
 
             float dt_land = static_cast<float>(time-landing_start_time);
             float v_descend = -0.5f;
-            if (dt_land < 3)
-                v_descend = v_descend*(dt_land/3.f);
+            float target_time = -2.f * current_waypoint->xyz.y/v_descend;
+            if (dt_land < target_time)
+                v_descend = v_descend*(dt_land/target_time);
             new_pos_setpoint.x = setpoint_pos_world.x;
             new_pos_setpoint.y = setpoint_pos_world.y + dt_land* v_descend;
             new_pos_setpoint.z = setpoint_pos_world.z;
             setpoint_vel_world = {0};
             setpoint_acc_world = {0};
-            // setpoint_vel_world = cv::Point3f(0,v_descend,0);
 
-            if (new_pos_setpoint.y < p.y + 0.15f) {
-                new_pos_setpoint.y = p.y + 0.15f;
+            if (new_pos_setpoint.y < pad_pos.y) {
+                // new_pos_setpoint.y = pad_pos.y;
                 setpoint_vel_world = {0};
-                if (!_dctrl->landing())
+                if ((!_dctrl->landing()) && ((_trackers->dronetracker()->Last_track_data().spos().y < pad_pos.y+0.2f) || (!_trackers->dronetracker()->Last_track_data().spos_valid)))
                     _dctrl->flight_mode(DroneController::fm_landing_start);
             }
             setpoint_pos_world = new_pos_setpoint;
