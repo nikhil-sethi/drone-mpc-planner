@@ -109,7 +109,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
     } case dts_tracking: {
         ItemTracker::track(time);
         update_prediction(time); // use control inputs to make prediction #282
-        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_predict_item.size*0.6f);
+        _visdat->exclude_drone_from_motion_fading(_image_item.ptd(),_image_predict_item.size*0.6f);
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
         else if (!_tracking)
@@ -118,7 +118,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
     } case dts_detect_yaw: {
         ItemTracker::track(time);
         update_prediction(time);
-        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_predict_item.size*0.6f);
+        _visdat->exclude_drone_from_motion_fading(_image_item.ptd(),_image_predict_item.size*0.6f);
         break;
     } case dts_landing_init: {
         ignores_for_other_trkrs.push_back(IgnoreBlob(drone_takeoff_im_location()/pparams.imscalef,drone_takeoff_im_size()/pparams.imscalef,time+landing_ignore_timeout, IgnoreBlob::landing_spot));
@@ -127,7 +127,7 @@ void DroneTracker::track(double time, bool drone_is_active) {
     } case dts_landing: {
         ItemTracker::track(time);
         update_prediction(time);
-        _visdat->exclude_drone_from_motion_fading(_image_item.pt()*pparams.imscalef,_image_predict_item.size*0.6f);
+        _visdat->exclude_drone_from_motion_fading(_image_item.ptd(),_image_predict_item.size*0.6f);
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
         else if (!_tracking)

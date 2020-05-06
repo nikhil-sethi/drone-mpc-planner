@@ -67,6 +67,9 @@ struct ImageItem {
     cv::Point2f pt() {
         return cv::Point2f(x,y);
     }
+    cv::Point3f ptd() {
+        return cv::Point3f(x*pparams.imscalef,y*pparams.imscalef,disparity);
+    }
     ImageItem() {}
     ImageItem(float x_, float y_, float disparity_, int frameid) {
         //read from log

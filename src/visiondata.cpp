@@ -80,10 +80,8 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
     diffR16 += dR;
 
     if (!(motion_update_iterator++ % (motion_update_iterator_max+1)) && !disable_fading) { // +1 -> prevent 0
-        //split negative and positive motion
-        fade(diffL16, _exclude_drone_from_motion_fading);
-        _exclude_drone_from_motion_fading = false;
-        fade(diffR16,false);
+        fade(diffL16,exclude_drone_from_motion_fading_spot_L);
+        fade(diffR16,exclude_drone_from_motion_fading_spot_R);
     }
 
     if (motion_spot_to_be_deleted.cnt_active) {
@@ -108,12 +106,12 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
     lock_data.unlock();
 }
 
-void VisionData::fade(cv::Mat diff16, bool exclude_drone) {
+void VisionData::fade(cv::Mat diff16, cv::Point exclude_drone_spot) {
     cv::Mat drone_roi;
     cv::Rect rec ;
-    if (exclude_drone) {
-        cv::Point r(exclude_drone_from_motion_fading_r,exclude_drone_from_motion_fading_r);
-        cv::Point p = exclude_drone_from_motion_fading_spot;
+    if (exclude_drone_spot.x>0) { // this serves as an initialisation flag, as well as an disparity out of image check!
+        cv::Point r(exclude_drone_from_motion_fading_radius,exclude_drone_from_motion_fading_radius);
+        cv::Point p = exclude_drone_spot;
 
         rec = cv::Rect(p-r,p+r);
         if (rec.x < 0)
@@ -125,9 +123,7 @@ void VisionData::fade(cv::Mat diff16, bool exclude_drone) {
         if (rec.height + rec.y >= diff16.rows)
             rec.height = diff16.rows - rec.y - 1;
 
-        if (!rec.width || !rec.height)
-            exclude_drone = false; // apparently it is out of the image
-        else
+        if (rec.width && rec.height) // check if it is not out of the image
             drone_roi = diff16(rec).clone() ;
     }
 
@@ -139,7 +135,7 @@ void VisionData::fade(cv::Mat diff16, bool exclude_drone) {
     diff16 -= diff16_pos;
     diff16 += diff16_neg;
 
-    if (exclude_drone) {
+    if (exclude_drone_spot.x>0 && rec.width && rec.height) {
         drone_roi.copyTo(diff16(rec));
     }
 }
@@ -225,10 +221,10 @@ void VisionData::reset_spot_on_motion_map(cv::Point p, int disparity,int radius,
     motion_spot_to_be_reset.r = radius;
 }
 
-void VisionData::exclude_drone_from_motion_fading(cv::Point p, int radius) {
-    _exclude_drone_from_motion_fading = true;
-    exclude_drone_from_motion_fading_spot = p;
-    exclude_drone_from_motion_fading_r = radius;
+void VisionData::exclude_drone_from_motion_fading(cv::Point3f p, int radius) {
+    exclude_drone_from_motion_fading_spot_L = cv::Point(p.x,p.y);
+    exclude_drone_from_motion_fading_spot_R = cv::Point(p.x-p.z,p.y);
+    exclude_drone_from_motion_fading_radius = radius;
 }
 
 void VisionData::deserialize_settings() {

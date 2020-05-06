@@ -78,9 +78,9 @@ private:
     delete_spot motion_spot_to_be_deleted;
     delete_spot motion_spot_to_be_reset;
 
-    bool _exclude_drone_from_motion_fading = false;
-    cv::Point exclude_drone_from_motion_fading_spot = {0};
-    int exclude_drone_from_motion_fading_r = 0;
+    cv::Point exclude_drone_from_motion_fading_spot_L = {-1};
+    cv::Point exclude_drone_from_motion_fading_spot_R = {-1};
+    int exclude_drone_from_motion_fading_radius = 0;
 
     bool enable_viz_diff = false;
 
@@ -89,7 +89,7 @@ private:
     void maintain_motion_noise_map();
     void track_avg_brightness(cv::Mat frame, double time);
 
-    void fade(cv::Mat diff16, bool exclude_drone);
+    void fade(cv::Mat diff16, cv::Point exclude_drone_spot);
 
 public:
     cv::Mat frameL,frameR;
@@ -127,7 +127,7 @@ public:
 
     void delete_from_motion_map(cv::Point p, int disparity, int radius, int duration);
     void reset_spot_on_motion_map(cv::Point p, int disparity, int radius, int duration);
-    void exclude_drone_from_motion_fading(cv::Point p, int radius);
+    void exclude_drone_from_motion_fading(cv::Point3f p, int radius);
 
     bool is_in_overexposed_area(cv::Point p) {
         if(overexposed_mapL.cols)
