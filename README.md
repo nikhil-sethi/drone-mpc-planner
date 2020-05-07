@@ -21,7 +21,7 @@ Flightcontroller v2 = S-H-50 16.8
 Flightcontroller v3 = F-H-40 16.8
 
 2.3. Apply the following settings to BLHeli:  
-![BLHeli settings](https://github.com/pats-drones/pats/blob/master/doc/BLHeliESCSetting.jpeg)
+![BLHeli settings](https://github.com/pats-drones/pats/blob/master/doc/BLHeliESCSettings.png)
 
 ## Flashing the multimodule:
 ```
