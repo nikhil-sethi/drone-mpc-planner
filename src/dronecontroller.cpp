@@ -1088,7 +1088,7 @@ void DroneController::check_control_and_tracking_problems(track_data data_drone)
 
     if(model_error<0)
         model_error = 0;
-    if(model_error>50 && false) {
+    if(model_error>50) {
         _flight_mode = fm_abort_flight;
         flight_submode_name = "fm_abort_flight_model_error";
         std::cout<<std::endl;
