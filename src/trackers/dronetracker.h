@@ -160,6 +160,7 @@ public:
         _blink_im_size = drone_im_size;
         _blink_im_disparity = drone_im_disparity;
         _blink_world_location = world;
+        std::cout << "blink-location: " << _blink_world_location << std::endl;
         if (!_landing_pad_location_set) { // for now, assume the first time set is the actual landing location.
             _landing_pad_world = drone_takeoff_location();
             _landing_pad_location_set = true;
