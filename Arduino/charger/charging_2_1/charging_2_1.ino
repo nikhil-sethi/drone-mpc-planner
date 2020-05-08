@@ -1,7 +1,7 @@
-   
 #include <Wire.h>
 #include <Adafruit_GFX.h>
-#include "TM1637Display.h"
+#include <TM1637Display.h>
+#include "characters.h"
 
 #define debugln(msg, ...)  {char debug_buf[64]; sprintf(debug_buf, msg "\r\n", ##__VA_ARGS__); Serial.write(debug_buf);}
 
@@ -13,16 +13,9 @@
 #define CLK A4
 #define DIO A5
 
-#define SOFTWARE_VERSION 0.2
+#define SOFTWARE_VERSION 0.3
 
 float getVoltage(bool reset = false);
-
-const uint8_t SEG_DONE[] = {
-  SEG_B | SEG_C | SEG_D | SEG_E | SEG_G,           // d
-  SEG_A | SEG_B | SEG_C | SEG_D | SEG_E | SEG_F,   // O
-  SEG_C | SEG_E | SEG_G,                           // n
-  SEG_A | SEG_D | SEG_E | SEG_F | SEG_G            // E
-};
 
 enum State { STATE_IDLE, STATE_CHARGING, STATE_CHECK_CHARGE, STATE_FULL, STATE_TESTING, STATE_CHARGING_PRECHECK };
 
@@ -35,8 +28,13 @@ float output = 0;
 float battery_charge = 0.0001;
 
 bool test_mode = false;
+bool turbo_mode = false;
 
 float smoothed_current;
+
+enum DisplayStates {  S_VERSION_INIT,  S_VERSION,  S_TURBO_INIT,  S_TURBO,  S_VOLTAGE,
+                      S_CURRENT,  S_LEVEL,  S_OUTPUT,  S_STATE,  S_HELP
+                   };
 
 void setup() {
   Serial.begin(115200);
@@ -48,6 +46,13 @@ void setup() {
   pinMode(A0, INPUT);
   pinMode(VOLTAGE_PIN, INPUT);
 
+
+  pinMode(CLK, INPUT);
+  pinMode(DIO, INPUT);
+
+  if (analogRead(CLK) == 0 && analogRead(DIO) == 1023)
+    turbo_mode = true;
+
   display.setBrightness(0x0f);
 
   getVoltage();
@@ -55,11 +60,13 @@ void setup() {
   state = STATE_CHECK_CHARGE;
 
   smoothed_current = 0;
+
+  display = TM1637Display(CLK, DIO);
 }
 
 void loop() {
   calcSmoothedCurrent();
-  
+
   set_test_mode();
 
   set_status_led();
@@ -74,21 +81,20 @@ void loop() {
   }
 
   if (test_mode)
-    set_current(0);
-  else
-    set_current(desired_current);
-    
-  static long next_display_time = 0;
+    analogWrite(PWM_PIN,  0);
+  //else
+  //analogWrite(PWM_PIN,  (millis() / 2000) % 2 * 255);
 
-  if (millis() > next_display_time)
-  {
-    run_display();
-    next_display_time = millis() + 100;
-  }
-  
+
+  set_current(desired_current);
+  /*
+    debugln("%d", (millis() / 2000) % 2 * 255);
+  */
+  run_display();
+
   static unsigned long timer = millis();
   int wait_time = 10;
-  wait_time = min(wait_time, timer + wait_time - millis());   
+  wait_time = min(wait_time, timer + wait_time - millis());
   timer = millis();
 }
 
@@ -107,7 +113,7 @@ void set_test_mode(void)
     count++;
     isHigh = true;
   }
-  
+
   if (analogRead(CALIB_PIN) < 200 && isHigh == true)
   {
     count++;
@@ -122,163 +128,377 @@ void set_test_mode(void)
 
 void set_status_led(void)
 {
+  int d = 1 + 2 * turbo_mode;
+
   switch (state)
   {
     case STATE_IDLE:
-    {
-      if (millis() % 100 > 50)
-        digitalWrite(LED_PIN, 1);
-      else
-        digitalWrite(LED_PIN, 0);
-     
-      break;
-    }
-    case STATE_CHARGING:
-    {
-      if (battery_charge < 8.4)
       {
-        if (millis() % 1500 > 750)
-          digitalWrite(LED_PIN, 1);
-        else
-          digitalWrite(LED_PIN, 0);
-      }
-      else
-      {
-        if (millis() % 1500 > 100)
-          digitalWrite(LED_PIN, 1);
-        else
-          digitalWrite(LED_PIN, 0);
-      }
-       break;
-    }
-    case STATE_CHECK_CHARGE:
-    {
-        if (millis() % 1000 > 930)
-          digitalWrite(LED_PIN, 1);
-        else
-          digitalWrite(LED_PIN, 0);
-       break;
-    }
-    case STATE_CHARGING_PRECHECK:
-    {
-        if (millis() % 300 > 150)
-          digitalWrite(LED_PIN, 1);
-        else
-          digitalWrite(LED_PIN, 0);
-       break;
-    }
-    default:
-    {
         if (millis() % 100 > 50)
           digitalWrite(LED_PIN, 1);
         else
           digitalWrite(LED_PIN, 0);
-       break;
-    }
+
+        break;
+      }
+    case STATE_CHARGING:
+      {
+        if (battery_charge < 8.4)
+        {
+          if (millis() % (3000 / d) > 1500 / d)
+            digitalWrite(LED_PIN, 1);
+          else
+            digitalWrite(LED_PIN, 0);
+        }
+        else
+        {
+          if (millis() % (3000 / d) > 200 / d)
+            digitalWrite(LED_PIN, 1);
+          else
+            digitalWrite(LED_PIN, 0);
+        }
+        break;
+      }
+    case STATE_CHECK_CHARGE:
+      {
+        if (millis() % (3000 / d) > 2920 / d)
+          digitalWrite(LED_PIN, 1);
+        else
+          digitalWrite(LED_PIN, 0);
+        break;
+      }
+    case STATE_CHARGING_PRECHECK:
+      {
+        if (millis() % (600 / d) > 300 / d)
+          digitalWrite(LED_PIN, 1);
+        else
+          digitalWrite(LED_PIN, 0);
+        break;
+      }
+    default:
+      {
+        if (millis() % 100 > 50)
+          digitalWrite(LED_PIN, 1);
+        else
+          digitalWrite(LED_PIN, 0);
+        break;
+      }
   }
+}
+
+
+void set_val(uint8_t header, int val, uint8_t* data)
+{
+  data[3] = num[0];
+
+  for (int i = 0; i < 4; i++)
+  {
+    data[3 - i] = num[val % 10];
+    if (val < 10)
+      break;
+    val /= 10;
+  }
+
+  if (header > 0)
+    data[0] = header;
+}
+
+void set_val(uint8_t header, float val, int precision, uint8_t* data)
+{
+  int ival = val * pow(10, precision);
+
+  if (precision >= 0 && precision < 4)
+    for (int i = 0; i < precision + 1; i++)
+      data[3 - i] |= N_0;
+
+  set_val(header, ival, data);
+
+  if (precision >= 0 && precision < 4)
+    data[3 - precision] |= SEG_DP;
+}
+
+void get_version_text(uint8_t* data)
+{
+  data[0] = N_v;
+  data[1] = N_E;
+  data[2] = N_r;
+  data[3] = N_s;
+  data[4] = N_i;
+  data[5] = N_o;
+  data[6] = N_n;
+  data[7] = 0;
+
+  uint8_t vers[4] = {};
+  set_val(N_v, SOFTWARE_VERSION, 1, vers);
+
+  data[8] = vers[0];
+  data[9] = vers[1];
+  data[10] = vers[2];
+  data[11] = vers[3];
+}
+
+void get_turbo_text(uint8_t* data)
+{
+  data[0] = N_t;
+  data[1] = N_u;
+  data[2] = N_r;
+  data[3] = N_b;
+  data[4] = N_o;
+  data[5] = N_o;
+  data[6] = N_o;
+  data[7] = N_0;
+  data[8] = N_o;
+  data[9] = N_o;
+  data[10] = N_0;
+  data[11] = N_o;
+  data[12] = N_o;
+  data[13] = N_0;
+  data[14] = N_0;
+  data[15] = N_o;
+  data[16] = N_o;
+  data[17] = N_o;
+  data[18] = N_o;
+}
+
+void set_shifter(uint8_t* shift_data, uint8_t* text, int len)
+{
+  for (int i = 0; i < 40; i++)
+    shift_data[i] = 0;
+
+  for (int i = 0; i < len; i++)
+    shift_data[i + 4] = text[i];
 }
 
 void run_display(void)
 {
-  static long next_display_time = 0;
   static float smoothed_voltage = 0;
   smoothed_voltage = smooth_value(0.5, getVoltage(), smoothed_voltage);
 
-  uint8_t data[] = { 0x00, 0x00, 0x00, 0x00};
+  uint8_t data[] = { 0, 0, 0, 0 };
 
-  static uint8_t vers[18] = { };
+  static uint8_t shift[40] = { };
 
-                        
-  if (millis() < 100)
-  {
-    vers[4] = SEG_C | SEG_D | SEG_E;
-    vers[5] = SEG_A | SEG_D | SEG_E | SEG_F | SEG_G;
-    vers[6] = SEG_E | SEG_G;
-    vers[7] = SEG_C | SEG_D;  
-    vers[8] = SEG_C ;
-    vers[9] = SEG_C | SEG_D | SEG_E | SEG_G;
-    vers[10] = SEG_C | SEG_E | SEG_G;
-  }
-  if (millis() < 5000)
-  {
-    static int next_shift = 400;
-    if (millis() > next_shift)
-    {
-      next_shift += 400;
-      
-      for (int i = 0; i < 17; i++) 
-          vers[i] = vers[i + 1]; 
-    }
-    
-    display.setSegments(vers, 4 , 0);
-  }
-  else if (millis() < 8000)
-  {
-    display.setDotPos(2);
-    display.showNumberDec(SOFTWARE_VERSION * 10, false); 
-    
-    data[0] = SEG_A | SEG_B | SEG_C | SEG_D | SEG_E | SEG_F | SEG_DP ;
-    display.setSegments(data, 1, 2);
-  }
-  else
-  {
-    next_display_time = millis() + 200;
+  static unsigned long timer = millis();
 
-    if (millis() % 7500 < 1500 || test_mode)
-    {
-      if (test_mode)
-      {     
-        display.setDotPos(0);
-        display.showNumberDec(getVoltage() * 1000, false); 
+  static unsigned long next_shift = 500;
+
+  static uint8_t state_disp = S_VERSION_INIT;
+
+  int header_time = 200;
+  int transition_time = 3000;
+  int total_time = 6 * transition_time;
+
+  int disp_state, disp_output;
+  float disp_level, disp_voltage, disp_current;
+
+  disp_state = state;
+
+  static long value_update_time = 0;
+  if (millis() > value_update_time)
+  {
+    disp_output = output;
+    disp_level = battery_charge;
+    disp_voltage = getVoltage();
+    disp_current = getCurrent();
+    value_update_time = millis() + 200;
+  }
+
+  static int shift_count = 0;
+
+  switch (state_disp)
+  {
+    case S_TURBO_INIT:
+      {
+        uint8_t turbo_text[21] = {};
+        get_turbo_text(turbo_text);
+        set_shifter(shift, turbo_text, 21);
+        state_disp = S_TURBO;
+        timer = millis();
+        shift_count = 0;
+        next_shift = millis() + 300;
+
+        break;
       }
-      else
-      {      
-        display.setDotPos(1);
+    case S_VERSION_INIT:
+      {
+        uint8_t version_text[12] = {};
+        get_version_text(version_text);
+        set_shifter(shift, version_text, 12);
+        state_disp = S_VERSION;
+        timer = millis();
+        shift_count = 0;
+        next_shift = millis() + 300;
 
-        display.showNumberDec(getVoltage() * 100, false); 
-
-        data[0] = SEG_B | SEG_C | SEG_D | SEG_E | SEG_F ;
-        display.setSegments(data, 1, 0);
+        break;
       }
-    }
-    else if (millis() % 7500 < 3000)
-    {
-      
-      display.setDotPos(1);
+    case S_TURBO:
+      {
+        if (millis() > next_shift)
+        {
+          next_shift = millis() + 50;
 
-      display.showNumberDec(battery_charge * 100, false);
+          for (int i = 0; i < 28; i++)
+            shift[i] = shift[i + 1];
 
-      data[0] = SEG_D | SEG_E | SEG_F;
-      display.setSegments(data, 1, 0);
+          shift_count++;
+        }
 
-    }
-    else   if (millis() % 7500 < 4500)
-    {
-      display.setDotPos(0);
+        for (int i = 0; i < 4; i++)
+          data[i] = shift[i];
 
-      display.showNumberDec(smoothed_current * 1000, false); 
+        display.setSegments(shift, 4, 0);
 
-      data[0] = SEG_A | SEG_D | SEG_E | SEG_F;
-      display.setSegments(data, 1, 0);
-    }
-    else   if (millis() % 7500 < 6000)
-    {
-      display.setDotPos(-1);
+        if (shift_count > 28)
+        {
+          state_disp = S_VOLTAGE;
+          timer = millis();
+        }
+        break;
+      }
+    case S_VERSION:
+      {
+        if (millis() > next_shift)
+        {
+          next_shift = millis() + 100;
 
-      display.showNumberDec(output, false);
+          if (shift_count < 12)
+            for (int i = 0; i < 28; i++)
+              shift[i] = shift[i + 1];
 
-      data[0] = SEG_C | SEG_D | SEG_E | SEG_G;
-      display.setSegments(data, 1, 0);
-    }
-    else   if (millis() % 7500 < 7500)
-    {
-      display.setDotPos(-1);
-      display.showNumberDec(state, false); 
+          shift_count++;
+        }
 
-      data[0] = SEG_A | SEG_B | SEG_D | SEG_E ;
-      display.setSegments(data, 1, 0);
-    }
+        for (int i = 0; i < 4; i++)
+          data[i] = shift[i];
+
+        display.setSegments(shift, 4, 0);
+
+        if (shift_count > 32)
+        {
+          state_disp = S_HELP;
+          timer = millis();
+        }
+        break;
+      }
+    case S_HELP:
+      {
+        int period = 1500;
+
+        if (millis() - timer  > 5 * period)
+        {
+          state_disp = S_VOLTAGE;
+          timer = millis();
+        }
+
+        if (millis() - timer  < 1 * period)
+        {
+          data[0] = N_V;
+          data[1] = N_o;
+          data[2] = N_L;
+          data[3] = N_t;
+        }
+        else if (millis() - timer  < 2 * period)
+        {
+          data[0] = N_L;
+          data[1] = N_E;
+          data[2] = N_v;
+          data[3] = N_E;
+        }
+        else if (millis() - timer  < 3 * period)
+        {
+          data[0] = N_C;
+          data[1] = N_u;
+          data[2] = N_r;
+          data[3] = N_r;
+        }
+        else if (millis() - timer  < 4 * period)
+        {
+          data[0] = N_o;
+          data[1] = N_u;
+          data[2] = N_t;
+          data[3] = N_p;
+        }
+        else if (millis() - timer  < 5 * period)
+        {
+          data[0] = N_S;
+          data[1] = N_t;
+          data[2] = N_A;
+          data[3] = N_t;
+        }
+
+        break;
+      }
+    case S_VOLTAGE:
+      {
+        if (millis() - timer  > transition_time)
+        {
+          state_disp = S_LEVEL;
+          timer = millis();
+        }
+
+        if (test_mode)
+        {
+          set_val(0, disp_voltage, 4,  data);
+        }
+        else
+        {
+          set_val(N_U, disp_voltage, 2, data);
+        }
+        break;
+      }
+    case S_LEVEL:
+      {
+        if (millis() - timer  > transition_time)
+        {
+          state_disp = S_CURRENT;
+          timer = millis();
+        }
+        set_val(N_L, disp_level, 2, data);
+        break;
+      }
+    case S_CURRENT:
+      {
+        if (millis() - timer  > transition_time)
+        {
+          state_disp = S_OUTPUT;
+          timer = millis();
+        }
+
+        set_val(N_C, disp_current, 3,  data);
+        break;
+      }
+    case S_OUTPUT:
+      {
+        if (millis() - timer  > transition_time)
+        {
+          state_disp = S_STATE;
+          timer = millis();
+        }
+        set_val(N_o, disp_output, data);
+        break;
+      }
+    case S_STATE:
+      {
+        if (millis() - timer  > transition_time)
+        {
+          state_disp = S_VOLTAGE;
+          if (turbo_mode)
+            state_disp = S_TURBO_INIT;
+          timer = millis();
+        }
+
+        set_val(N_S, disp_state, data);
+        break;
+      }
   }
+
+  if (turbo_mode && millis() % 100 > 50)
+    data[3] |= SEG_DP;
+
+  display.setSegments(data, 4, 0);
+
+  if (millis() < timer)
+    timer = millis();
 }
 
 void set_state(int new_state)
@@ -305,11 +525,11 @@ float run_state_machine()
           desired_current = 0.2;
         else if (battery_charge < 8)
           desired_current = 0.45;
-        else if (battery_charge < 8.1)
-          desired_current = 0.4;
-        else if (battery_charge < 8.2)
-          desired_current = 0.3;
         else if (battery_charge < 8.3)
+          desired_current = 0.4;
+        else if (battery_charge < 8.45)
+          desired_current = 0.2;
+        else if (battery_charge < 8.5)
           desired_current = 0.0;
         else
           desired_current = 0.0;
@@ -317,6 +537,9 @@ float run_state_machine()
         float drone_current_consumption = 0.200;
 
         desired_current += drone_current_consumption;
+
+        if (turbo_mode)
+          desired_current += 0.20;
 
         if (battery_charge > 8.5)
           desired_current = 0.0;
@@ -330,7 +553,7 @@ float run_state_machine()
         {
           set_state(STATE_CHECK_CHARGE);
           desired_current = 0;
-          return 3000;
+          return 300;
         }
 
         break;
@@ -347,13 +570,13 @@ float run_state_machine()
           return 1;
 
         set_state(STATE_CHARGING_PRECHECK);
-        return 3000;
+        return 300;
 
         break;
       }
     case STATE_CHARGING_PRECHECK:
       {
-        desired_current = 0; 
+        desired_current = 0;
 
         battery_charge = getVoltage();
 
@@ -361,13 +584,12 @@ float run_state_machine()
           set_state(STATE_CHECK_CHARGE);
 
         set_state(STATE_CHARGING);
-        
+
         no_current_timeout = 0;
 
         break;
       }
   }
-
 
   return 1;
 }
@@ -375,7 +597,7 @@ float run_state_machine()
 float getVoltage(bool reset)
 {
   static float smoothed_voltage = 0;
-  
+
   if (reset)
     smoothed_voltage = 0;
 
@@ -407,9 +629,9 @@ void calcSmoothedCurrent()
 
 void set_current(float current_setpoint) {
   float error = (smoothed_current - current_setpoint);
-  output -= error * 0.1;
+  output -= error * 1.0;
 
-  debugln("%d %d %d %d", int(smoothed_current*1000), int(1000*current_setpoint), int(1000*error), (int)(output));
+  debugln("%d %d %d %d %d %d", int(smoothed_current * 100), int(100 * current_setpoint), -int(100 * error), (int)(output / 2.55), (int)(getVoltage() * 100), (int)(battery_charge * 100));
 
   if (current_setpoint == 0)
     output = 0;
