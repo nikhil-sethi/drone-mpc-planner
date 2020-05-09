@@ -22,6 +22,7 @@ public:
     void init(uint16_t width);
     void init(uint16_t width, float value);
     float addSample(float sample);
+    void change_width(int new_width);
     float latest();
     void reset(void);
     bool ready() { return _ready;}

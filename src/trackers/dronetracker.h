@@ -67,8 +67,8 @@ private:
     bool enable_takeoff_motion_delete = false;
 
     bool enable_viz_diff = false;
-
-
+    bool _manual_flight_mode = false;
+    bool _hover_mode = false;
 
     class DroneTrackerCalibrationData: public xmls::Serializable
     {
@@ -144,7 +144,34 @@ public:
     bool inactive() { return _drone_tracking_status == dts_inactive;}
     bool correct_yaw() { return _drone_tracking_status == dts_detect_yaw;}
 
-    bool _manual_flight_mode = false;
+    void manual_flight_mode(bool value) {
+        _manual_flight_mode =value;
+    }
+    void hover_mode(bool value) {
+        if (value !=_hover_mode) {
+            _hover_mode =value;
+            if (_hover_mode) {
+                pos_smth_width = pparams.fps/20;
+                vel_smth_width = pparams.fps/20;
+                acc_smth_width = pparams.fps/20;
+                disparity_filter_rate = 0.7;
+            } else {
+                pos_smth_width = pparams.fps/30;
+                vel_smth_width = pparams.fps/30;
+                acc_smth_width = pparams.fps/30;
+                disparity_filter_rate = 0.9;
+            }
+            smoother_posX.change_width(pos_smth_width);
+            smoother_posY.change_width(pos_smth_width);
+            smoother_posZ.change_width(pos_smth_width);
+            smoother_velX.change_width(vel_smth_width);
+            smoother_velY.change_width(vel_smth_width);
+            smoother_velZ.change_width(vel_smth_width);
+            smoother_accX.change_width(acc_smth_width);
+            smoother_accY.change_width(acc_smth_width);
+            smoother_accZ.change_width(acc_smth_width);
+        }
+    }
     cv::Mat diff_viz;
 
     bool init(std::ofstream *logger, VisionData *_visdat, int16_t viz_id);

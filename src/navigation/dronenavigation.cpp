@@ -184,6 +184,8 @@ void DroneNavigation::update(double time) {
         } case ns_takeoff: {
             _dctrl->reset_manual_override_take_off_now();
             _dctrl->flight_mode(DroneController::fm_start_takeoff);
+            _dctrl->hover_mode(false);
+            _trackers->dronetracker()->hover_mode(false);
             time_take_off = time;
             if (_nav_flight_mode == nfm_hunt)
                 _trackers->mode(tracking::TrackerManager::mode_hunt);
@@ -369,6 +371,8 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_land: {
             landing_start_time = time;
+            _dctrl->hover_mode(true);
+            _trackers->dronetracker()->hover_mode(true);
             _trackers->dronetracker()->land();
             _navigation_status = ns_landing;
             [[fallthrough]];
@@ -395,7 +399,7 @@ void DroneNavigation::update(double time) {
                 // new_pos_setpoint.y = pad_pos.y;
                 setpoint_vel_world = {0};
                 if ((!_dctrl->landing()) && ((_trackers->dronetracker()->Last_track_data().spos().y < pad_pos.y+0.2f) || (!_trackers->dronetracker()->Last_track_data().spos_valid)))
-                    _dctrl->flight_mode(DroneController::fm_landing_start);
+                    _dctrl->flight_mode(DroneController::fm_ff_landing_start);
             }
             setpoint_pos_world = new_pos_setpoint;
             if (!_dctrl->drone_is_active())
@@ -410,6 +414,8 @@ void DroneNavigation::update(double time) {
             _navigation_status = ns_wait_after_landing;
             landed_time = time;
             _trackers->dronetracker()->delete_landing_motion(time_out_after_landing);
+            _dctrl->hover_mode(false);
+            _trackers->dronetracker()->hover_mode(false);
             [[fallthrough]];
         } case ns_wait_after_landing: {
             if (static_cast<float>(time - landed_time) > time_out_after_landing )

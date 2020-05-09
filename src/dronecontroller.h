@@ -36,8 +36,8 @@ static const char* flight_mode_names[] = { "fm_joystick_check",
                                            "fm_flying_pid",
                                            "fm_initial_reset_yaw",
                                            "fm_reset_yaw",
-                                           "fm_landing_start",
-                                           "fm_landing"
+                                           "fm_ff_landing_start",
+                                           "fm_ff_landing"
                                          };
 
 class DroneController {
@@ -66,8 +66,8 @@ public:
         fm_flying_pid,
         fm_initial_reset_yaw,
         fm_reset_yaw,
-        fm_landing_start,
-        fm_landing
+        fm_ff_landing_start,
+        fm_ff_landing
     };
     enum joy_mode_switch_modes { // raw switch modes
         jmsm_manual,
@@ -95,6 +95,9 @@ private:
         xmls::xInt kp_pos_roll,kp_pos_pitch,kp_pos_throttle;
         xmls::xInt ki_pos_roll,ki_pos_pitch,ki_thrust;
         xmls::xInt kd_pos_roll,kd_pos_pitch,kd_pos_throttle;
+        xmls::xInt kp_pos_roll_hover,kp_pos_pitch_hover,kp_pos_throttle_hover;
+        xmls::xInt ki_pos_roll_hover,ki_pos_pitch_hover,ki_thrust_hover;
+        xmls::xInt kd_pos_roll_hover,kd_pos_pitch_hover,kd_pos_throttle_hover;
         xmls::xInt kp_v_roll,kp_v_pitch,kp_v_throttle;
         xmls::xInt kd_v_roll,kd_v_pitch,kd_v_throttle;
 
@@ -104,7 +107,7 @@ private:
             setClassName("ControlParameters");
 
             // Set class version
-            setVersion("1.3");
+            setVersion("1.4");
 
             // Register members. Like the class name, member names can differ from their xml depandants
             Register("kp_pos_roll", &kp_pos_roll);
@@ -113,6 +116,15 @@ private:
             Register("ki_pos_roll", &ki_pos_roll);
             Register("ki_pos_pitch", &ki_pos_pitch);
             Register("ki_thrust", &ki_thrust);
+            Register("kd_pos_roll", &kd_pos_roll);
+            Register("kd_pos_pitch", &kd_pos_pitch);
+            Register("kd_pos_throttle", &kd_pos_throttle);
+            Register("kp_pos_roll_hover", &kp_pos_roll_hover);
+            Register("kp_pos_pitch_hover", &kp_pos_pitch_hover);
+            Register("kp_pos_throttle_hover", &kp_pos_throttle_hover);
+            Register("ki_pos_roll_hover", &ki_pos_roll_hover);
+            Register("ki_pos_pitch_hover", &ki_pos_pitch_hover);
+            Register("ki_thrust_hover", &ki_thrust_hover);
             Register("kd_pos_roll", &kd_pos_roll);
             Register("kd_pos_pitch", &kd_pos_pitch);
             Register("kd_pos_throttle", &kd_pos_throttle);
@@ -203,6 +215,7 @@ private:
     joy_states _joy_state = js_none;
     int joyDial = 0;
     float scaledjoydial = 0;
+    bool _hover_mode = false;
 
     int control_yaw(track_data data_drone, float gain_yaw);
 
@@ -237,12 +250,11 @@ private:
 
     cv::Point3f pos_err_i;
     int kp_pos_roll, kp_pos_throttle, kp_pos_pitch, ki_pos_roll, ki_thrust, ki_pos_pitch, kd_pos_roll, kd_pos_throttle, kd_pos_pitch;
+    int kp_pos_roll_hover, kp_pos_throttle_hover, kp_pos_pitch_hover, ki_pos_roll_hover, ki_thrust_hover, ki_pos_pitch_hover, kd_pos_roll_hover, kd_pos_throttle_hover, kd_pos_pitch_hover;
     int kp_v_roll, kp_v_throttle, kp_v_pitch, kd_v_roll, kd_v_throttle, kd_v_pitch;
     filtering::Tf_D_f d_pos_err_x, d_pos_err_y, d_pos_err_z;
     filtering::Tf_D_f d_vel_err_x, d_vel_err_y, d_vel_err_z;
     filtering::Tf_PT2_3f pos_reference_filter;
-
-    filtering::Smoother smtr_roll,smtr_pitch;
 
     filtering::Tf_PT2_f pos_modelx, pos_modely, pos_modelz;
     float model_error;
@@ -275,12 +287,13 @@ private:
 
         return rt;
     }
-
 public:
     std::string flight_submode_name = "";
     void flight_mode(flight_modes f) {
         _flight_mode = f;
     }
+    void hover_mode(bool value) { _hover_mode = value;}
+
 
     bool abort_take_off() {
         //check if the take off is not yet too far progressed to abort, if not go to spin up else return true
@@ -353,7 +366,7 @@ public:
     }
 
     float in_flight_duration(double time) {
-        if ((_flight_mode == fm_flying_pid || _flight_mode == fm_reset_yaw || _flight_mode == fm_landing || _flight_mode == fm_initial_reset_yaw)
+        if ((_flight_mode == fm_flying_pid || _flight_mode == fm_reset_yaw || _flight_mode == fm_ff_landing || _flight_mode == fm_initial_reset_yaw)
                 && in_flight_start_time < 0)
             in_flight_start_time = time;
         else if (_flight_mode == fm_disarmed || _flight_mode == fm_inactive || _flight_mode == fm_spinup || _flight_mode == fm_manual)
@@ -368,7 +381,7 @@ public:
         return _flight_mode == fm_spinup;
     }
     bool landing() {
-        return _flight_mode == fm_landing || _flight_mode ==fm_landing_start;
+        return _flight_mode == fm_ff_landing || _flight_mode ==fm_ff_landing_start;
     }
 
     float duration_spent_taking_off(double time) {

@@ -310,7 +310,7 @@ void process_frame(Stereo_Frame_Data data) {
     auto profile_t5_prdct = std::chrono::high_resolution_clock::now();
 #endif
 
-    trackers.dronetracker()->_manual_flight_mode =dnav.drone_is_manual(); // TODO: hacky
+    trackers.dronetracker()->manual_flight_mode(dnav.drone_is_manual()); // TODO: hacky
 
     if (pparams.has_screen) {
         visualizer.add_plot_sample();
