@@ -92,7 +92,7 @@ void DroneTracker::update(double time, bool drone_is_active) {
                     _drone_tracking_status = dts_tracking;
             }
         }
-
+        std::cout << "Time since takeoff: " << start_take_off_time - time << " spinup: " << spinup_detected << std::endl;
         if(!spinup_detected && (start_take_off_time - time) > 0.5)
             _take_off_detection_failed = true;
         else if (spinup_detected && (start_take_off_time - time) > 0.75)
