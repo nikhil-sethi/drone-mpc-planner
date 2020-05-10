@@ -151,15 +151,15 @@ public:
         if (value !=_hover_mode) {
             _hover_mode =value;
             if (_hover_mode) {
-                pos_smth_width = pparams.fps/20;
-                vel_smth_width = pparams.fps/20;
-                acc_smth_width = pparams.fps/20;
+                pos_smth_width = pparams.fps/15;
+                vel_smth_width = pparams.fps/15;
+                acc_smth_width = pparams.fps/15;
                 disparity_filter_rate = 0.7;
             } else {
                 pos_smth_width = pparams.fps/30;
                 vel_smth_width = pparams.fps/30;
                 acc_smth_width = pparams.fps/30;
-                disparity_filter_rate = 0.9;
+                disparity_filter_rate = 0.8;
             }
             smoother_posX.change_width(pos_smth_width);
             smoother_posY.change_width(pos_smth_width);
