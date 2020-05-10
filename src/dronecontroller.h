@@ -119,15 +119,17 @@ private:
             Register("kd_pos_roll", &kd_pos_roll);
             Register("kd_pos_pitch", &kd_pos_pitch);
             Register("kd_pos_throttle", &kd_pos_throttle);
+
             Register("kp_pos_roll_hover", &kp_pos_roll_hover);
             Register("kp_pos_pitch_hover", &kp_pos_pitch_hover);
             Register("kp_pos_throttle_hover", &kp_pos_throttle_hover);
             Register("ki_pos_roll_hover", &ki_pos_roll_hover);
             Register("ki_pos_pitch_hover", &ki_pos_pitch_hover);
             Register("ki_thrust_hover", &ki_thrust_hover);
-            Register("kd_pos_roll", &kd_pos_roll);
-            Register("kd_pos_pitch", &kd_pos_pitch);
-            Register("kd_pos_throttle", &kd_pos_throttle);
+            Register("kd_pos_roll_hover", &kd_pos_roll_hover);
+            Register("kd_pos_pitch_hover", &kd_pos_pitch_hover);
+            Register("kd_pos_throttle_hover", &kd_pos_throttle_hover);
+
             Register("kp_v_roll", &kp_v_roll);
             Register("kp_v_pitch", &kp_v_pitch);
             Register("kp_v_throttle", &kp_v_throttle);
