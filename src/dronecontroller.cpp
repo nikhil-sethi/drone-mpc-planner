@@ -976,11 +976,11 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
 
 
 std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_control_gains(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel) {
-    int kp_pos_roll_scaled, kp_pos_throttle_scaled, kp_pos_pitch_scaled, ki_pos_roll_scaled, ki_thrust_scaled, ki_pos_pitch_scaled, kd_pos_roll_scaled, kd_pos_throttle_scaled, kd_pos_pitch_scaled, kp_v_roll_scaled, kp_v_throttle_scaled, kp_v_pitch_scaled, kd_v_roll_scaled, kd_v_throttle_scaled, kd_v_pitch_scaled;
+    float kp_pos_roll_scaled, kp_pos_throttle_scaled, kp_pos_pitch_scaled, ki_pos_roll_scaled, ki_thrust_scaled, ki_pos_pitch_scaled, kd_pos_roll_scaled, kd_pos_throttle_scaled, kd_pos_pitch_scaled, kp_v_roll_scaled, kp_v_throttle_scaled, kp_v_pitch_scaled, kd_v_roll_scaled, kd_v_throttle_scaled, kd_v_pitch_scaled;
 
     cv::Point3f scale_pos_p = {0.01f, 0.01f, 0.01f};
-    cv::Point3f scale_pos_i = {0.01f, 0.01f, 0.01f};
-    cv::Point3f scale_pos_d = {0.001f, 0.001f, 0.001f};
+    cv::Point3f scale_pos_i = {0.001f, 0.001f, 0.001f};
+    cv::Point3f scale_pos_d = {0.01f, 0.01f, 0.01f};
     cv::Point3f scale_vel_p = {0.01f, 0.01f, 0.01f};
     cv::Point3f scale_vel_d = {0.01f, 0.01f, 0.01f};
 
