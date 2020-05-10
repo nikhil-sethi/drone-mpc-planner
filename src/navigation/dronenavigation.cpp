@@ -274,6 +274,15 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_brick_waypoint;
             else
                 _navigation_status = ns_approach_waypoint;
+
+            if (current_waypoint->threshold_mm <30 && current_waypoint->threshold_mm > 0 ) {
+                _dctrl->hover_mode(true);
+                _trackers->dronetracker()->hover_mode(true);
+            } else {
+                _dctrl->hover_mode(false);
+                _trackers->dronetracker()->hover_mode(false);
+            }
+
             time_wp_reached = -1;
             break;
         } case ns_approach_waypoint: {
@@ -371,8 +380,6 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_land: {
             landing_start_time = time;
-            _dctrl->hover_mode(true);
-            _trackers->dronetracker()->hover_mode(true);
             _trackers->dronetracker()->land();
             _navigation_status = ns_landing;
             [[fallthrough]];
