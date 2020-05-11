@@ -22,7 +22,7 @@ def read_terminalfile(terminal_filepath):
 
 key_horizontallandingprecision = 'horizontal_landing_precision'
 def generate_eval_variables_terminal(terminal_data):
-	crashed_after_landing = False
+	crashed_after_landing = []
 	landings_precision = []
 
 	for i in range(len(terminal_data)):
@@ -30,11 +30,14 @@ def generate_eval_variables_terminal(terminal_data):
 			before = terminal_data[i][key_landinglocation][0]
 			after = terminal_data[i][key_landinglocation][1]
 			if(abs(before[1]-after[1])>0.05):
-				crashed_after_landing = True
+				crashed_after_landing.append(True)
 			else:
+				crashed_after_landing.append(False)
 				before[1] = 0
 				after[1] = 0
 				landings_precision.append(np.linalg.norm(before-after)*1000.)
+		else:
+			crashed_after_landing.append(False)
 
 	terminal_stats={}
 	terminal_stats_unit={}
@@ -44,5 +47,15 @@ def generate_eval_variables_terminal(terminal_data):
 
 
 if __name__ == "__main__":
-	terminal_filepath = '/home/ludwig/Downloads/auto-eval/dl_20200507194707/terminal.log'
-	
+	import os
+	import sys
+	if(len(sys.argv)>=2):
+		folderpath = str(sys.argv[1])
+	else:
+		folderpath =  os.path.expanduser('~/code/pats/pc/build-vscode/logging/')
+	terminal_filepath = folderpath + 'terminal.log'
+
+	terminal_data = read_terminalfile(terminal_filepath)
+	print(terminal_data)
+	terminal_stats, terminal_stats_unit, crashed_after_landing = generate_eval_variables_terminal([terminal_data])
+	print(terminal_stats)

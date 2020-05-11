@@ -41,13 +41,13 @@ def trajectory_error(step_direction, error):
 	traj_err = np.linalg.norm(np.cross(error, step_direction)) / np.linalg.norm(step_direction) 
 	return traj_err
 
-def eval_control(prev_target, target, pos, err, time, step_found, nav_state, step, step_stats):
+def eval_control(prev_target, target, pos, err, time, step_found, nav_state, step, steps_list):
 	setpoint_changed = is_setpoint_changed(prev_target, target)	
 	if(setpoint_changed):
 		if step_found and nav_state!=22:
 			step[key_stepduration] = time - step[key_time]
 			if(step[key_stepduration]>0.3):
-				step_stats.append(step)
+				steps_list.append(step)
 		else:
 			step_found = True
 
@@ -69,7 +69,7 @@ def eval_control(prev_target, target, pos, err, time, step_found, nav_state, ste
 			if(trajectoryerror>step[key_trajectoryerror] or np.isnan(step[key_trajectoryerror])):
 				step[key_trajectoryerror] = trajectoryerror
 
-	return [step_found, step, step_stats]
+	return [step_found, step, steps_list]
 
 key_firstpasstime_unified = 'firstpass_time_unified'
 

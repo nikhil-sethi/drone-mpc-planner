@@ -26,13 +26,20 @@ def eval_current_flightstate(flight, time, nav_state, auto_throttle):
 
 key_missiontime = 'mission_time'
 key_landingtime = 'landing_time'
-def generate_eval_variables_flightstates(flights):
-	crashed = False
+def generate_eval_variables_flightstates(flights, crashed_after_landing):
+	crashed = []
 	mission_time =[]
 	landing_time = []
-	for flight in flights:
-		if(np.isnan(flight[key_landedtime])):
-			crashed = True
+
+	for i in range(len(flights)):
+		flight = flights[i]
+		print(flight)
+		print(crashed_after_landing)
+		print(i)
+		if(np.isnan(flight[key_landedtime]) or crashed_after_landing[i]):
+			crashed.append(True)
+		else:
+			crashed.append(False)
 		if(not np.isnan(flight[key_takeofftime]) and not np.isnan(flight[key_enterlandingtime])):
 			mission_time.append(flight[key_enterlandingtime] - flight[key_takeofftime])
 		if(not np.isnan(flight[key_enterlandingtime]) and not np.isnan(flight[key_landedtime])):

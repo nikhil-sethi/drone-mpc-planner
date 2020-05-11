@@ -8,35 +8,54 @@ import numpy as np
 from evallogfile import eval_logfile
 from evalterminalfile import read_terminalfile
 
-def read_flightset(folderpath):
-	flights_folderpaths = [f.path for f in os.scandir(folderpath) if f.is_dir()]
-	step_stats = []
-	flight_stats = []
-	terminal_stats = []
+def read_flightset_rec(folderpath_list, step_data, flight_data, terminal_data):
+	if(len(folderpath_list)==0):
+		return [step_data, flight_data, terminal_data]
 
-	for flight_folderpath in flights_folderpaths:
-		if(os.path.isfile(flight_folderpath+'/log.csv')):	
-			drone_filepath = flight_folderpath+'/log.csv'
-			steps, flight = eval_logfile(drone_filepath)
-			print(drone_filepath+':'+' N-steps: ',len(steps))
-			step_stats += steps
-			flight_stats += [flight]
+	current_path = folderpath_list.pop(0)
+	subfolders = [f.path for f in os.scandir(current_path) if f.is_dir()]
+	logfile = os.path.isfile(current_path+'/log.csv')
+	N_subfolders = len(subfolders)
 
-			terminal_filepath = flight_folderpath+'/terminal.log'
+	if(N_subfolders>0):
+		folderpath_list += subfolders	
+
+	if(logfile):
+		drone_filepath = current_path+'/log.csv'
+		steps, flight = eval_logfile(drone_filepath)
+		print(drone_filepath+':'+' N-steps: ',len(steps))
+		step_data += steps
+		flight_data += [flight]
+
+		try:
+			terminal_filepath = current_path+'/terminal.log'
 			terminal = read_terminalfile(terminal_filepath)
-			terminal_stats += [terminal]
+			terminal_data += [terminal]
+		except:
+			print(terminal_filepath, 'not found.')
 
-	return step_stats, flight_stats, terminal_stats
+	return read_flightset_rec(folderpath_list, step_data, flight_data, terminal_data)
+
+
+
+def read_flightset(folderpath):
+	folderpath_list = [folderpath]
+	step_data = []
+	flight_data = []
+	terminal_data = []
+
+	return read_flightset_rec(folderpath_list, step_data, flight_data, terminal_data)
 
 if __name__ == "__main__":
 	tic = time.time()
 	if(len(sys.argv)>=2):
 		folderpath = str(sys.argv[1])
 	else:
-		folderpath =  os.path.expanduser('~/code/pats/pc/build-vscode/version-test/')
+		folderpath =  os.path.expanduser('/home/ludwig/Downloads/perf_an-20200512T085620Z-001/perf_an')
 
-	step_stats, flight_stats = read_flightset(folderpath)
-	print('N steps:', len(step_stats))
-	print('N flights:', len(flight_stats))
+	[step_data, flight_data, terminal_data] = read_flightset(folderpath)
+	print(step_data)
+	print(flight_data)
+	print(terminal_data)
 
 	

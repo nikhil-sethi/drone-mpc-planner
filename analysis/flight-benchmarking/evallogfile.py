@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import pandas as pd 
+import pandas as pd
 import numpy as np
 import os
 import pwd
@@ -38,7 +38,7 @@ def eval_logfile(drone_filepath):
 		nav_state = drone_data['nav_state'][i]
 		auto_throttle = drone_data['autoThrottle'][i]
 
-		[step_found, step, step_stats] = eval_control(prev_target,target, pos, err, time, step_found, nav_state, step, step_stats)		
+		[step_found, step, step_stats] = eval_control(prev_target,target, pos, err, time, step_found, nav_state, step, step_stats)
 		flight = eval_current_flightstate(flight, time, nav_state, auto_throttle)
 	return step_stats, flight
 
@@ -48,24 +48,22 @@ if __name__ == "__main__":
 	if(len(sys.argv)>=2):
 		folderpath = str(sys.argv[1])
 	else:
-		folderpath =  os.path.expanduser('~/code/pats/pc/build-vscode/version-test/exampleTuning/')
-		
+		folderpath =  os.path.expanduser('~/code/pats/pc/build-vscode/logging/')
+
 	drone_filepath = folderpath + 'log.csv'
 	print('\nEvaluate: ', folderpath)
-	
+
 	step_stats, flight = eval_logfile(drone_filepath)
 	toc = time.time()
 	print('Found '+str(len(step_stats))+' step responses.')
 	# for step_stat in step_stats:
 	# 	print(step_stat)
-	# print(flight)	
+	# print(flight)
 	control_stats, control_stats_units = generate_eval_variables_control(step_stats)
 	control_eval_stats = calc_stat_varibales(control_stats)
 	plot_stats(control_eval_stats, control_stats_units, 'md')
 
-	state_stats, state_stats_unit = generate_eval_variables_states([flight])
-	print(state_stats)
-	print(state_stats_unit)
+	flightstate_stats, state_stats_unit = generate_eval_variables_flightstates([flight])
+	print(flightstate_stats)
 
 	print('\nEval time: '+str(toc-tic))
-	

@@ -6,10 +6,15 @@ import numpy as np
 def calc_stat_varibales(eval_criteria_data):
 	criteria_stats =  {}
 	for key in eval_criteria_data:
-		if(isinstance(eval_criteria_data[key],(list)) and len(eval_criteria_data[key])):
+		if(isinstance(eval_criteria_data[key][0],(float)) and len(eval_criteria_data[key])):
 			criteria_stats[key] = [len(eval_criteria_data[key]), np.min(eval_criteria_data[key]), np.mean(eval_criteria_data[key]), np.var(eval_criteria_data[key]), np.max(eval_criteria_data[key])]
-		elif(isinstance(eval_criteria_data[key],(bool))):
-			criteria_stats[key] = eval_criteria_data[key]
+		elif(isinstance(eval_criteria_data[key][0],(bool))):
+			N = len(eval_criteria_data[key])
+			N_trues = 0
+			for i in range(N):
+				if(eval_criteria_data[key][i]==True):
+					N_trues += 1
+			criteria_stats[key] = {'N_trues': N_trues, 'N_total': N}
 
 	return criteria_stats
 
@@ -26,14 +31,14 @@ def plot_stats(stats, units, mode):
 				print('|',key,'['+units[key]+'] |','{:.0f}'.format(stats[key][0]),' |','{:.3f}'.format(stats[key][1]),'|','{:.3f}'.format(stats[key][2]),'|','{:.3f}'.format(stats[key][3]),'|','{:.3f}'.format(stats[key][4]),'|')
 
 		for key in stats:
-			if(isinstance(stats[key], (bool))):
+			if(isinstance(stats[key], (dict))):
 				if(first_bool and not first_list):
 					print('')
 				if(first_bool):
 					first_bool = False
 					print('| Criteria | Result |')
 					print('|----------|--------|')
-				print('|',key,'['+str(units[key])+'] |',stats[key],'|')
+				print('|',key,'['+str(units[key])+'] |',str(stats[key]['N_trues'])+'/'+str(stats[key]['N_total']), '|')
 	print('')
 
 
