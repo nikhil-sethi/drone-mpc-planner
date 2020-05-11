@@ -13,7 +13,7 @@
 #define CLK A4
 #define DIO A5
 
-#define SOFTWARE_VERSION 0.3
+#define SOFTWARE_VERSION 0.4
 
 float getVoltage(bool reset = false);
 
@@ -128,7 +128,7 @@ void set_test_mode(void)
 
 void set_status_led(void)
 {
-  int d = 1 + 2 * turbo_mode;
+  int d = 2 + 2 * turbo_mode;
 
   switch (state)
   {
@@ -145,10 +145,21 @@ void set_status_led(void)
       {
         if (battery_charge < 8.4)
         {
-          if (millis() % (3000 / d) > 1500 / d)
-            digitalWrite(LED_PIN, 1);
+          if (smoothed_current > 0.1)
+          {
+            if (millis() % (3000 / d) > 1500 / d)
+              digitalWrite(LED_PIN, 1);
+            else
+              digitalWrite(LED_PIN, 0);
+          }
           else
-            digitalWrite(LED_PIN, 0);
+          {
+            if (millis() % (600 / d) > 300 / d)
+              digitalWrite(LED_PIN, 1);
+            else
+              digitalWrite(LED_PIN, 0);
+          }
+              
         }
         else
         {
@@ -299,7 +310,7 @@ void run_display(void)
     disp_output = output;
     disp_level = battery_charge;
     disp_voltage = getVoltage();
-    disp_current = getCurrent();
+    disp_current = smoothed_current;
     value_update_time = millis() + 200;
   }
 
@@ -384,7 +395,7 @@ void run_display(void)
       {
         int period = 1500;
 
-        if (millis() - timer  > 5 * period)
+        if (millis() - timer  > 3 * period)
         {
           state_disp = S_VOLTAGE;
           timer = millis();
@@ -631,7 +642,7 @@ void set_current(float current_setpoint) {
   float error = (smoothed_current - current_setpoint);
   output -= error * 1.0;
 
-  debugln("%d %d %d %d %d %d", int(smoothed_current * 100), int(100 * current_setpoint), -int(100 * error), (int)(output / 2.55), (int)(getVoltage() * 100), (int)(battery_charge * 100));
+//  debugln("%d %d %d %d %d %d", int(smoothed_current * 100), int(100 * current_setpoint), -int(100 * error), (int)(output / 2.55), (int)(getVoltage() * 10), (int)(battery_charge * 10));
 
   if (current_setpoint == 0)
     output = 0;
