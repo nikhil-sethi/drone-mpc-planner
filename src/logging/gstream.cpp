@@ -133,7 +133,7 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
                 //The cqp rate-control setting seems to leave noticable noice, so we set a fixed bitrate. 5000 seems to be a nice compromise between quality and size.
                 //For logging (with stringent size and download constraints), cqp could be better though. It is about 5x smaller and the noise does not really influence our algorithms.
                 //To have a similar size as the intel rs bag one would need to increase to 5000000 (5M), but they are using mjpeg which is much less efficient
-                g_object_set (G_OBJECT (encoder),  "rate-control", 2,"bitrate", 5000, NULL);
+                g_object_set (G_OBJECT (encoder),  "rate-control", 2,"bitrate", 50000, NULL);
             } else {
 
                 int render_quality = 1;
