@@ -99,7 +99,7 @@ void DroneNavigation::update(double time) {
             _navigation_status = ns_locate_drone_wait_led_on;
             [[fallthrough]];
         } case ns_locate_drone_wait_led_on: {
-            if (time - locate_drone_start_time > 0.1) {
+            if (time - locate_drone_start_time > 1.5) {
                 _visdat->reset_motion_integration();
                 _visdat->disable_fading = true;
                 _dctrl->flight_mode(DroneController::fm_blink);
