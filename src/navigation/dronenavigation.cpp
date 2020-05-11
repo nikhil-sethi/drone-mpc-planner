@@ -1,5 +1,6 @@
 #include <iostream>
 #include "dronenavigation.h"
+#include <experimental/filesystem>
 
 using namespace cv;
 using namespace std;
@@ -50,7 +51,7 @@ void DroneNavigation::deserialize_flightplan(std::string replay_dir) {
     navigation::XML_FlightPlan fp;
     if (replay_dir == "") {
         fp.deserialize(pparams.flightplan);
-        fp.serialize("./logging/flightplan.xml"); // write a copy of the currently used flightplan to the logging dir
+        std::experimental::filesystem::copy(pparams.flightplan, "./logging/flightplan.xml");
     } else {
         fp.deserialize(replay_dir + "/flightplan.xml");
     }

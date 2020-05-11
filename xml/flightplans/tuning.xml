@@ -1,5 +1,5 @@
 <SerializableClass Type="FlightPlanXML" Version="1.2">
-    <Member Name="flightplan_name">demo</Member>
+    <Member Name="flightplan_name">Tuning</Member>
     <Collection Name="waypoints">
         <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_takeoff</Member>
