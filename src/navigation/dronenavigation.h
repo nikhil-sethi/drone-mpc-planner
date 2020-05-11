@@ -82,7 +82,7 @@ public:
         _nav_flight_mode = m;
     }
     std::string navigation_status() {
-        if (_navigation_status == ns_approach_waypoint) {
+        if (_navigation_status == ns_approach_waypoint || _navigation_status == ns_landing) {
             return static_cast<string>(navigation_status_names[_navigation_status]) + " " + current_waypoint->name + " " + to_string_with_precision(_dctrl->dist_to_setpoint(),2);
         } else
 
