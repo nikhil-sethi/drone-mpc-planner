@@ -32,7 +32,7 @@ private:
 
     cv::Point3f _target = {0};
 
-    bool spinup_detected = false;
+    int spinup_detected = 0;
     bool liftoff_detected = false;
     bool _take_off_detection_failed = false;
     uint16_t take_off_frame_cnt = 0;

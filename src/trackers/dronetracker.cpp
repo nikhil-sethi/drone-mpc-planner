@@ -62,7 +62,7 @@ void DroneTracker::update(double time, bool drone_is_active) {
         ignores_for_other_trkrs.clear();
         ignores_for_other_trkrs.push_back(IgnoreBlob(drone_takeoff_im_location()/pparams.imscalef,drone_takeoff_im_size()/pparams.imscalef,time+takeoff_location_ignore_timeout, IgnoreBlob::takeoff_spot));
         _drone_tracking_status = dts_detecting_takeoff;
-        spinup_detected = false;
+        spinup_detected = 0;
         _take_off_detection_failed = false;
         take_off_frame_cnt = 0;
         [[fallthrough]];
@@ -83,21 +83,32 @@ void DroneTracker::update(double time, bool drone_is_active) {
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
         else if (_world_item.valid) {
-            if (!spinup_detected)
+            spinup_detected++;
+            if (spinup_detected==3) {
                 spinup_detect_time = time;
-            spinup_detected = true;
-            if (detect_lift_off()) {
-                liftoff_detected = true;
-                if (detect_takeoff())
-                    _drone_tracking_status = dts_tracking;
+                std::cout << "Spin up detected after: " << time - start_take_off_time << "s" << std::endl;
             }
+            if (detect_lift_off()) {
+                std::cout << "Lift off detected after: " << time - start_take_off_time << "s" << std::endl;
+                liftoff_detected = true;
+                if (detect_takeoff()) {
+                    std::cout << "Take off detected after: " << time - start_take_off_time << "s" << std::endl;
+                    _drone_tracking_status = dts_tracking;
+                }
+            }
+        } else if (spinup_detected < 3) {
+            spinup_detected = 0;
         }
-        std::cout << "Time since takeoff: " << start_take_off_time - time << " spinup: " << spinup_detected << std::endl;
-        if(!spinup_detected && (start_take_off_time - time) > 0.5)
+        if(spinup_detected<3 && (time - start_take_off_time) > 0.7) { // hmm spinup detection really does not work with improper lighting conditions. Have set the time really high. (should be ~0.3-0.4s)
             _take_off_detection_failed = true;
-        else if (spinup_detected && (start_take_off_time - time) > 0.75)
+            std::cout << "No spin up detected in time!" << std::endl;
+        } else if ((time - start_take_off_time) > 0.75) {
             _take_off_detection_failed = true;
-
+            if (liftoff_detected)
+                std::cout << "No takeoff detected in time!" << std::endl;
+            else
+                std::cout << "No liftoff_detected detected in time!" << std::endl;
+        }
         break;
     } case dts_detecting: {
         ItemTracker::update(time);
@@ -174,7 +185,7 @@ void DroneTracker::calc_takeoff_prediction() {
     acc = acc/(normf(acc));
     acc = acc * dparams.thrust;
     float dt = std::clamp(static_cast<float>(current_time - (spinup_detect_time + 0.3)),0.f,1.f);
-    if (!spinup_detected)
+    if (spinup_detected<3)
         dt = 0;
     cv::Point3f expected_drone_location = drone_takeoff_location() + 0.5* acc *powf(dt,2);
 
@@ -187,7 +198,7 @@ bool DroneTracker::detect_lift_off() {
     float dist2takeoff =normf(_world_item.pt - drone_takeoff_location());
     float takeoff_y =  _world_item.pt.y - drone_takeoff_location().y;
 
-    if (dist2takeoff > 0.1f && takeoff_y > 0.05f && _world_item.radius > dparams.radius/2.f && _world_item.radius < dparams.radius*4.f) {
+    if (dist2takeoff > 0.1f && takeoff_y > 0.05f && _world_item.size_in_image() > _blink_im_size/2.f && _world_item.radius < dparams.radius*4.f) {
         take_off_frame_cnt++;
         if (take_off_frame_cnt >= 3) {
             return true;
@@ -241,7 +252,7 @@ bool DroneTracker::detect_takeoff() {
         }
     }
 
-    return _world_item.radius > dparams.radius/2.f && _world_item.radius < dparams.radius*4.f &&
+    return _world_item.size_in_image() > _blink_im_size/2.f  && _world_item.radius < dparams.radius*4.f &&
            closest_to_takeoff_point.x == static_cast<int>(_world_item.iti.x) &&
            closest_to_takeoff_point.y == static_cast<int>(_world_item.iti.y); // maybe should create an id instead of checking the distance
 
