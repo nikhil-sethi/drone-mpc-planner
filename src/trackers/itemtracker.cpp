@@ -166,6 +166,10 @@ void ItemTracker::update(double time) {
         if( n_frames_lost >= n_frames_lost_threshold || !_tracking ) {
             _tracking = false;
             reset_tracker_ouput(time);
+        } else {
+            track_data data;
+            data.time = time;
+            track_history.push_back(data);
         }
     }
 
