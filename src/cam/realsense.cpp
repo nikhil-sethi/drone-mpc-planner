@@ -536,15 +536,9 @@ void Realsense::calib_pose(bool also_do_depth) {
                 }
             }
         }
-        if (hasIMU) {
+        if (hasIMU)
             std::cout << "Camera roll: " << to_string_with_precision(roll,2) << "°- max: " << pparams.max_cam_roll << "°. Pitch: " << to_string_with_precision(pitch,2) << "°" << std::endl;
-            if (fabs(roll) > pparams.max_cam_roll) {
-                wait_cycles = 360; // 1 minute with nframes = 10
-            } else {
-                wait_cycles--;
-            }
-        } else
-            wait_cycles--;
+        wait_cycles--;
     }
 
     if (also_do_depth || !hasIMU) {

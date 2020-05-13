@@ -705,7 +705,7 @@ void close(bool sig_kill) {
 
 void wait_for_cam_angle() {
     int enable_delay = 0;
-    if (pparams.darkness_threshold > 0 && !log_replay_mode) {
+    if (pparams.max_cam_roll > 0 && !log_replay_mode) {
         std::cout << "Checking cam angle." << std::endl;
 
         while(true) {
