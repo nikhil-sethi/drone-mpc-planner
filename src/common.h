@@ -272,6 +272,7 @@ private:
     xBool _viz_plots, _viz_tracking;
     xInt _imscalef;
     xString _flightplan;
+    xString _flightplan_tuning;
     xInt _live_image_frq;
     xFloat _max_cam_roll;
 
@@ -287,6 +288,7 @@ public:
     bool viz_plots, viz_tracking;
     int imscalef;
     std::string flightplan;
+    std::string flightplan_tuning;
     int live_image_frq;
     float max_cam_roll;
 
@@ -320,6 +322,7 @@ public:
         Register("viz_plots",&_viz_plots);
         Register("viz_tracking",&_viz_tracking);
         Register("imscalef",&_imscalef);
+        Register("flightplan_tuning",&_flightplan_tuning);
         Register("flightplan",&_flightplan);
         Register("live_image_frq",&_live_image_frq);
         Register("max_cam_roll",&_max_cam_roll);
@@ -367,6 +370,7 @@ public:
         viz_tracking = _viz_tracking.value();
         imscalef = _imscalef.value();
         flightplan = _flightplan.value();
+        flightplan_tuning = _flightplan_tuning.value();
         live_image_frq = _live_image_frq.value();
         max_cam_roll = _max_cam_roll.value();
     }
@@ -394,6 +398,7 @@ public:
         _viz_tracking = viz_tracking;
         _imscalef = imscalef;
         _flightplan= flightplan;
+        _flightplan_tuning= flightplan_tuning;
         _live_image_frq = live_image_frq;
         _max_cam_roll = max_cam_roll;
 

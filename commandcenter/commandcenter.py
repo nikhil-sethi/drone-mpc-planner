@@ -11,7 +11,7 @@ from pathlib import Path
 from datetime import datetime
 import random,sys,os,re,subprocess,math
 
-dark_mode = False
+dark_mode = True
 class CommandCenterWindow(QMainWindow):
 
     def __init__(self, parent=None):
@@ -94,10 +94,20 @@ class SystemWidget(QWidget):
         calibAction.triggered.connect(self.calib)
         self.addAction(calibAction)
 
-        reboot_rtc_Action = QAction("Reboot with rtc timeout", self)
+        reboot_rtc_Action = QAction("Reboot", self)
         reboot_rtc_Action.setIcon(self.style().standardIcon(QStyle.SP_DialogResetButton))
         reboot_rtc_Action.triggered.connect(self.reboot)
         self.addAction(reboot_rtc_Action)
+
+        update_Action = QAction("Update", self)
+        update_Action.setIcon(self.style().standardIcon(QStyle.SP_FileDialogToParent))
+        update_Action.triggered.connect(self.update)
+        self.addAction(update_Action)
+
+        beep_Action = QAction("Beep", self)
+        beep_Action.setIcon(self.style().standardIcon(QStyle.SP_MediaVolume))
+        beep_Action.triggered.connect(self.beep)
+        self.addAction(beep_Action)
 
         btn_restart = QPushButton()
         btn_restart.setToolTip('Restart pats process')
@@ -117,32 +127,41 @@ class SystemWidget(QWidget):
         btn_download_current_log.clicked.connect(self.download_current_log)
         self.btn_download_current_log = btn_download_current_log
 
-        btn_beep = QPushButton()
-        btn_beep.setToolTip('Beep & blink')
-        btn_beep.setIcon(self.style().standardIcon(QStyle.SP_MediaVolume))
-        btn_beep.setMaximumSize(30, 30)
-        if dark_mode:
-            btn_beep.setStyleSheet("background-color:rgb(128,0,0)")
-        btn_beep.clicked.connect(self.beep)
-        self.btn_beep = btn_beep
+        # btn_beep = QPushButton()
+        # btn_beep.setToolTip('Beep & blink')
+        # btn_beep.setIcon(self.style().standardIcon(QStyle.SP_MediaVolume))
+        # btn_beep.setMaximumSize(30, 30)
+        # if dark_mode:
+        #     btn_beep.setStyleSheet("background-color:rgb(128,0,0)")
+        # btn_beep.clicked.connect(self.beep)
+        # self.btn_beep = btn_beep
 
-        btn_update = QPushButton()
-        btn_update.setToolTip('Update from git')
-        btn_update.setIcon(self.style().standardIcon(QStyle.SP_FileDialogToParent))
-        btn_update.setMaximumSize(30, 30)
-        if dark_mode:
-            btn_update.setStyleSheet("background-color:rgb(128,0,0)")
-        btn_update.clicked.connect(self.update)
-        self.btn_update = btn_update
+        # btn_update = QPushButton()
+        # btn_update.setToolTip('Update from git')
+        # btn_update.setIcon(self.style().standardIcon(QStyle.SP_FileDialogToParent))
+        # btn_update.setMaximumSize(30, 30)
+        # if dark_mode:
+        #     btn_update.setStyleSheet("background-color:rgb(128,0,0)")
+        # btn_update.clicked.connect(self.update)
+        # self.btn_update = btn_update
 
-        btn_takeoff = QPushButton()
-        btn_takeoff.setToolTip('Fly waypoint mission')
-        btn_takeoff.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
-        btn_takeoff.setMaximumSize(30, 30)
+        btn_takeoff_tuning = QPushButton()
+        btn_takeoff_tuning.setToolTip('Fly waypoint mission (tuning)')
+        btn_takeoff_tuning.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+        btn_takeoff_tuning.setMaximumSize(30, 30)
         if dark_mode:
-            btn_takeoff.setStyleSheet("background-color:rgb(128,0,0)")
-        btn_takeoff.clicked.connect(self.takeoff)
-        self.btn_takeoff = btn_takeoff
+            btn_takeoff_tuning.setStyleSheet("background-color:rgb(128,0,0)")
+        btn_takeoff_tuning.clicked.connect(self.takeoff_tuning)
+        self.btn_takeoff_tuning = btn_takeoff_tuning
+
+        btn_takeoff_aggresive_wp = QPushButton()
+        btn_takeoff_aggresive_wp.setToolTip('Fly waypoint mission (aggresive)')
+        btn_takeoff_aggresive_wp.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+        btn_takeoff_aggresive_wp.setMaximumSize(30, 30)
+        if dark_mode:
+            btn_takeoff_aggresive_wp.setStyleSheet("background-color:rgb(128,0,0)")
+        btn_takeoff_aggresive_wp.clicked.connect(self.takeoff_aggresive_wp)
+        self.btn_takeoff_aggresive_wp = btn_takeoff_aggresive_wp
 
         btn_insect_replay_takeoff = QPushButton()
         btn_insect_replay_takeoff.setToolTip('Hunt insect replay')
@@ -156,11 +175,12 @@ class SystemWidget(QWidget):
         control_layout = QHBoxLayout()
         control_layout.setContentsMargins(0, 0, 0, 0)
         control_layout.addWidget(self.chk_enable)
-        control_layout.addWidget(btn_restart)
         control_layout.addWidget(btn_download_current_log)
-        control_layout.addWidget(btn_update)
-        control_layout.addWidget(btn_beep)
-        control_layout.addWidget(btn_takeoff)
+        control_layout.addWidget(btn_restart)
+        # control_layout.addWidget(btn_update)
+        # control_layout.addWidget(btn_beep)
+        control_layout.addWidget(btn_takeoff_tuning)
+        control_layout.addWidget(btn_takeoff_aggresive_wp)
         control_layout.addWidget(btn_insect_replay_takeoff)
 
         self.txt_label = QLabel()
@@ -228,12 +248,20 @@ class SystemWidget(QWidget):
         if buttonReply == QMessageBox.Yes:
             print('Yes clicked.')
             subprocess.Popen(['./reboot_system.sh', 'pats'+self.host_id])
-    def takeoff(self):
+    def takeoff_aggresive_wp(self):
         self.pats_xml_path = Path(self.source_folder,self.system_folder,'pats_deploy.xml')
         with open (self.pats_xml_path, "r") as path_xml:
             xml_lines = path_xml.readlines()
             for line in xml_lines:
                 if line.find('\"flightplan\"') != -1:
+                    self.flightplan_xml_path = Path(self.source_folder,self.system_folder,line.split('\">../../xml/')[1].split('<')[0])
+                    subprocess.Popen(['./demo_system.sh', 'pats'+self.host_id, self.flightplan_xml_path])
+    def takeoff_tuning(self):
+        self.pats_xml_path = Path(self.source_folder,self.system_folder,'pats_deploy.xml')
+        with open (self.pats_xml_path, "r") as path_xml:
+            xml_lines = path_xml.readlines()
+            for line in xml_lines:
+                if line.find('\"flightplan_tuning\"') != -1:
                     self.flightplan_xml_path = Path(self.source_folder,self.system_folder,line.split('\">../../xml/')[1].split('<')[0])
                     subprocess.Popen(['./demo_system.sh', 'pats'+self.host_id, self.flightplan_xml_path])
     def insect_replay_takeoff(self):
@@ -267,7 +295,8 @@ class SystemWidget(QWidget):
             pal.setColor(QPalette.WindowText, system_color)
             self.txt_label.setPalette(pal)
             self.btn_insect_replay_takeoff.setEnabled(True)
-            self.btn_takeoff.setEnabled(True)
+            self.btn_takeoff_tuning.setEnabled(True)
+            self.btn_takeoff_aggresive_wp.setEnabled(True)
         else:
             # pixmap = QPixmap('./darkdummy.jpg')
             # self.im_label.setPixmap(pixmap)
@@ -279,7 +308,8 @@ class SystemWidget(QWidget):
                 pal.setColor(QPalette.WindowText, QColor(160,128,128))
             self.txt_label.setPalette(pal)
             self.btn_insect_replay_takeoff.setEnabled(False)
-            self.btn_takeoff.setEnabled(False)
+            self.btn_takeoff_tuning.setEnabled(False)
+            self.btn_takeoff_aggresive_wp.setEnabled(False)
 
     def get_lbl_txt(self):
         source_status_txt_file = Path(self.source_folder,self.system_folder,'status.txt')
