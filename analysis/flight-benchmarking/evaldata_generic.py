@@ -6,9 +6,9 @@ import numpy as np
 def calc_stat_varibales(eval_criteria_data):
 	criteria_stats =  {}
 	for key in eval_criteria_data:
-		if(isinstance(eval_criteria_data[key][0],(float)) and len(eval_criteria_data[key])):
+		if(len(eval_criteria_data[key])>0 and isinstance(eval_criteria_data[key][0],(float))):
 			criteria_stats[key] = [len(eval_criteria_data[key]), np.min(eval_criteria_data[key]), np.mean(eval_criteria_data[key]), np.var(eval_criteria_data[key]), np.max(eval_criteria_data[key])]
-		elif(isinstance(eval_criteria_data[key][0],(bool))):
+		elif(len(eval_criteria_data[key])>0 and isinstance(eval_criteria_data[key][0],(bool))):
 			N = len(eval_criteria_data[key])
 			N_trues = 0
 			for i in range(N):

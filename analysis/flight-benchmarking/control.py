@@ -73,7 +73,7 @@ def eval_control(prev_target, target, pos, err, time, step_found, nav_state, ste
 
 key_firstpasstime_unified = 'firstpass_time_unified'
 
-def generate_eval_variables_control(step_stats):
+def control_evaldata(step_stats):
 	overshoot = []
 	firstpasserror = []
 	firstpasstime = []
@@ -91,20 +91,29 @@ def generate_eval_variables_control(step_stats):
 		if(not np.isnan(step[key_trajectoryerror])):
 			trajectory_error.append(step[key_trajectoryerror])
 
-	control_stats = {}
-	control_stats_units = {}
-	control_stats[key_overshooterror] = overshoot
-	control_stats_units[key_overshooterror] = 'm'
-	control_stats[key_firstpasserror] = firstpasserror
-	control_stats_units[key_firstpasserror] = 'm'
-	control_stats[key_firstpasstime] = firstpasstime
-	control_stats_units[key_firstpasstime] = 's'
-	control_stats[key_firstpasstime_unified] = firstpass_time_unified
-	control_stats_units[key_firstpasstime_unified] = 's/m'
-	control_stats[key_trajectoryerror] = trajectory_error
-	control_stats_units[key_trajectoryerror] = 'm'
+	control_evaldata = {}
+	if(len(overshoot)>0):
+		control_evaldata[key_overshooterror] = overshoot
+	if(len(firstpasserror)>0):
+		control_evaldata[key_firstpasserror] = firstpasserror
+	if(len(firstpasstime)>0):
+		control_evaldata[key_firstpasstime] = firstpasstime
+	if(len(firstpass_time_unified)>0):
+		control_evaldata[key_firstpasstime_unified] = firstpass_time_unified
+	if(len(trajectory_error)>0):
+		control_evaldata[key_trajectoryerror] = trajectory_error
 
-	return control_stats, control_stats_units
+	return control_evaldata
+
+def control_evaldata_units():
+	control_evaldata_units = {}
+	control_evaldata_units[key_overshooterror] = 'm'
+	control_evaldata_units[key_firstpasserror] = 'm'
+	control_evaldata_units[key_firstpasstime] = 's'
+	control_evaldata_units[key_firstpasstime_unified] = 's/m'
+	control_evaldata_units[key_trajectoryerror] = 'm'
+
+	return control_evaldata_units
 
 if __name__ == "__main__":
 	pass
