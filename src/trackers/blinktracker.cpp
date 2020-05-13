@@ -120,10 +120,6 @@ void BlinkTracker::update(double time) {
 
 BlinkTracker::blinking_drone_states BlinkTracker::detect_blink(double time, bool found) {
     const float margin = 0.75f * dparams.blink_period; // the blinking is not a hard on/off, but rather a dimming operation so we need a big margin and blink more often
-    if (Last_track_data().vel_valid ) {
-        std::cout << "tmp ip: " << _image_item.pt() << " disp: " << _image_item.disparity << " wp" << _world_item.pt << "v " << Last_track_data().vel() << std::endl;
-        std::cout << "v: " << norm(Last_track_data().vel()) << std::endl;
-    }
     if (Last_track_data().vel_valid && normf(Last_track_data().vel()) > 0.2f)
         return bds_restart_search;
     float blink_period = static_cast<float>(time - blink_time_start);
