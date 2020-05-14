@@ -17,7 +17,7 @@ x = 0
 y = 1
 z = 2
 
-def read_dronelog(drone_filepath):
+def read_tuningflight(drone_filepath):
 	drone_data_string = cleanWhitespaces(drone_filepath)
 	drone_data = pd.read_csv(drone_data_string, sep=';')
 
@@ -43,7 +43,6 @@ def read_dronelog(drone_filepath):
 
 
 if __name__ == "__main__":
-	tic = time.time()
 	if(len(sys.argv)>=2):
 		folderpath = str(sys.argv[1])
 	else:
@@ -52,17 +51,10 @@ if __name__ == "__main__":
 	drone_filepath = folderpath + 'log.csv'
 	print('\nEvaluate: ', folderpath)
 
-	step_stats, flight = read_dronelog(drone_filepath)
+	tic = time.time()
+	steps, flightstates_data = read_tuningflight(drone_filepath)
 	toc = time.time()
-	print('Found '+str(len(step_stats))+' step responses.')
-	# for step_stat in step_stats:
-	# 	print(step_stat)
-	# print(flight)
-	control_stats, control_stats_units = control_evaldata(step_stats)
-	control_eval_stats = calc_stat_varibales(control_stats)
-	plot_stats(control_eval_stats, control_stats_units, 'md')
 
-	flightstate_stats, state_stats_unit = flightstates_evaldata([flight])
-	print(flightstate_stats)
-
+	print('Found '+str(len(steps))+' step responses.')
+	print(flightstates_data)
 	print('\nEval time: '+str(toc-tic))

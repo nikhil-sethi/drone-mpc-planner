@@ -21,7 +21,7 @@
     <Member Name="viz_tracking">true</Member>
     <Member Name="imscalef">2</Member>
     <Member Name="flightplan_tuning">../../xml/flightplans/tuning.xml</Member>
-    <Member Name="flightplan">../../xml/flightplans/simple_demo.xml</Member>
+    <Member Name="flightplan">../../xml/flightplans/long_range.xml</Member>
     <Member Name="live_image_frq">1</Member>
     <Member Name="max_cam_roll">0.7</Member>
 </SerializableClass>

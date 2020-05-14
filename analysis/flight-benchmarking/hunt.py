@@ -96,7 +96,7 @@ def hunt_evaldata_units():
 
 
 if __name__ == "__main__":
-	folderpath = '/home/ludwig/Documents/codes/pats/pc/build-vscode/logging'
+	folderpath = '~/code/pats/pc/build-vscode/logging'
 	hunt_data = read_hunt(folderpath)
 	print(hunt_evaldata(hunt_data))
 

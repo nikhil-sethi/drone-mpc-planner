@@ -31,12 +31,13 @@ def flightstates_evaldata(flightstates_data, crashed_after_landing):
 
 	flight = flightstates_data
 	flightstates_evaldata[key_crashed] = False
-	if(crashed_after_landing or np.isnan(flight[key_landedtime])):
-		flightstates_evaldata[key_crashed] = True
-	if(not np.isnan(flight[key_takeofftime]) and not np.isnan(flight[key_enterlandingtime])):
-		flightstates_evaldata[key_missiontime] = flight[key_enterlandingtime] - flight[key_takeofftime]
-	if(not np.isnan(flight[key_enterlandingtime]) and not np.isnan(flight[key_landedtime])):
-		flightstates_evaldata[key_landingtime] = flight[key_landedtime] - flight[key_enterlandingtime]
+	if(len(flight)>0):
+		if(crashed_after_landing or np.isnan(flight[key_landedtime])):
+			flightstates_evaldata[key_crashed] = True
+		if(not np.isnan(flight[key_takeofftime]) and not np.isnan(flight[key_enterlandingtime])):
+			flightstates_evaldata[key_missiontime] = flight[key_enterlandingtime] - flight[key_takeofftime]
+		if(not np.isnan(flight[key_enterlandingtime]) and not np.isnan(flight[key_landedtime])):
+			flightstates_evaldata[key_landingtime] = flight[key_landedtime] - flight[key_enterlandingtime]
 
 	return flightstates_evaldata
 
