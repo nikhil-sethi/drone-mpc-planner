@@ -14,8 +14,8 @@
             <Member Name="threshold_v">1.7</Member>
             <Member Name="hover_pause">0</Member>
             <Member Name="x">0.0</Member>
-            <Member Name="y">-0.3</Member>
-            <Member Name="z">-1.0</Member>
+            <Member Name="y">-1.0</Member>
+            <Member Name="z">-1.5</Member>
             <Member Name="name">WP1</Member>
         </Class>
         <Class Type="Waypoint" Version="1.2">
@@ -23,9 +23,9 @@
             <Member Name="threshold_mm">100</Member>
             <Member Name="threshold_v">1.7</Member>
             <Member Name="hover_pause">0</Member>
-            <Member Name="x">-1.0</Member>
-            <Member Name="y">-0.3</Member>
-            <Member Name="z">-1.0</Member>
+            <Member Name="x">-1.5</Member>
+            <Member Name="y">-1.0</Member>
+            <Member Name="z">-1.5</Member>
             <Member Name="name">WP2</Member>
         </Class>
         <Class Type="Waypoint" Version="1.2">
@@ -33,9 +33,9 @@
             <Member Name="threshold_mm">100</Member>
             <Member Name="threshold_v">1.7</Member>
             <Member Name="hover_pause">0</Member>
-            <Member Name="x">1.0</Member>
-            <Member Name="y">-0.3</Member>
-            <Member Name="z">-1.0</Member>
+            <Member Name="x">1.5</Member>
+            <Member Name="y">-1.0</Member>
+            <Member Name="z">-1.5</Member>
             <Member Name="name">WP3</Member>
         </Class>
         <!-- <Class Type="Waypoint" Version="1.2">
