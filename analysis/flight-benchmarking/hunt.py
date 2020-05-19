@@ -15,7 +15,29 @@ def concatenate_insectlogs(folderpath):
 			data_string = cleanWhitespaces(folderpath+'/'+file)	
 			dataframe = pd.read_csv(data_string, sep=';')
 			insect_data = pd.concat([insect_data, dataframe], ignore_index=True)
-	return insect_data.sort_values(by=['RS_ID']).reset_index()
+
+	replayinsect_data = pd.DataFrame()
+	n_replaylogs = 0
+	for file in os.listdir(folderpath):
+		if file.endswith('.csv') and file.startswith('log_rtrk'):
+			data_string = cleanWhitespaces(folderpath+'/'+file)	
+			dataframe = pd.read_csv(data_string, sep=';')
+			replayinsect_data = pd.concat([replayinsect_data, dataframe], ignore_index=True)
+			n_replaylogs += 1
+
+	key_nlostframes = 'n_frames_lost_insect'
+	key_posxtarget = 'posX_insect'
+	key_posytarget = 'posY_insect'
+	key_posztarget = 'posZ_insect'
+	if(n_replaylogs>0):
+		key_nlostframes = 'n_frames_lost_replay'
+		key_posxtarget = 'posX_replay'
+		key_posytarget = 'posY_replay'
+		key_posztarget = 'posZ_replay'
+		return replayinsect_data.sort_values(by=['RS_ID']).reset_index(), key_nlostframes, key_posxtarget, key_posytarget, key_posztarget
+	else:
+		return insect_data.sort_values(by=['RS_ID']).reset_index() , key_nlostframes, key_posxtarget, key_posytarget, key_posztarget
+
 
 key_minimalerror = 'minimal_error'	
 key_time_minimalerror = 'time_minimal_error'
@@ -27,9 +49,8 @@ def read_hunt(folderpath):
 	drone_data_string = cleanWhitespaces(drone_filepath)
 	drone_data = pd.read_csv(drone_data_string, sep=';')
 
-	insect_data = concatenate_insectlogs(folderpath)
+	insect_data, key_nlostframes, key_posxtarget, key_posytarget, key_posztarget = concatenate_insectlogs(folderpath)
 
-	insect_data = concatenate_insectlogs(folderpath)
 	n_samples_drone = np.size(drone_data,0)
 	n_samples_insect = np.size(insect_data, 0)
 	
@@ -39,9 +60,9 @@ def read_hunt(folderpath):
 	time_at_closest_distance_untracked = np.nan
 	samples_insect_tracked = 0
 	flightstates_data = init_flightstate_data()
-		
+
 	for i in range(n_samples_insect):
-		if(insect_data['n_frames_lost_insect'][i]==0):
+		if(insect_data[key_nlostframes][i]==0):
 			samples_insect_tracked += 1
 	
 	for i in range(n_samples_drone):
@@ -52,15 +73,17 @@ def read_hunt(folderpath):
 
 		try:
 			insect_idx = insect_data[insect_data['RS_ID']==drone_data['RS_ID'][i]].index[0]
-			target = np.array([insect_data['posX_insect'][insect_idx], insect_data['posY_insect'][insect_idx], insect_data['posZ_insect'][insect_idx]])
+			target = np.array([insect_data[key_posxtarget][insect_idx], insect_data[key_posytarget][insect_idx], insect_data[key_posztarget][insect_idx]])
 			
 			if(drone_data['valid'][i]==1):
 				pos = np.array([drone_data['posX_drone'][i], drone_data['posY_drone'][i], drone_data['posZ_drone'][i]])
 				error = np.linalg.norm(target-pos)
+
 				if(error<closest_distance_untracked):
+					# print(str(insect_data['RS_ID'][insect_idx])+':'+str(error)+'@'+str(drone_data['elapsed'][i]))
 					closest_distance_untracked = error
 					time_at_closest_distance_untracked = drone_data['elapsed'][i]
-				if(insect_data['n_frames_lost_insect'][insect_idx]==0):
+				if(insect_data[key_nlostframes][insect_idx]==0):
 					if(error<closest_distance):
 						closest_distance = error
 						time_at_closest_distance = drone_data['elapsed'][i]
@@ -73,7 +96,7 @@ def read_hunt(folderpath):
 	hunt_data[key_time_minimalerror] = time_at_closest_distance - flightstates_data[key_takeofftime]
 	hunt_data[key_minimalerror_untracked] = closest_distance_untracked
 	hunt_data[key_time_minimalerror_untracked] = time_at_closest_distance_untracked - flightstates_data[key_takeofftime]
-	hunt_data[key_insecttracking] = samples_insect_tracked/n_samples_insect
+	hunt_data[key_insecttracking] = samples_insect_tracked/n_samples_insect*100.
 	return flightstates_data, hunt_data
 
 def hunt_evaldata(hunt_data):
@@ -90,13 +113,13 @@ def hunt_evaldata_units():
 	hunt_evaldata_units[key_time_minimalerror] = 's'
 	hunt_evaldata_units[key_minimalerror_untracked] = 'm'
 	hunt_evaldata_units[key_time_minimalerror_untracked] = 's'
-	hunt_evaldata_units[key_insecttracking] = 'ratio'
+	hunt_evaldata_units[key_insecttracking] = '%'
 
 	return hunt_evaldata_units
 
 
 if __name__ == "__main__":
-	folderpath = '~/code/pats/pc/build-vscode/logging'
-	hunt_data = read_hunt(folderpath)
+	folderpath = '/home/ludwig/Downloads/1805 testing/pats12/00027/logging'
+	flight_data, hunt_data = read_hunt(folderpath)
 	print(hunt_evaldata(hunt_data))
 

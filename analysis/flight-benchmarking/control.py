@@ -28,7 +28,11 @@ def init_step_data():
 def is_setpoint_changed(prev_target, target):
 	"""Return as first argument true if the setpoint has changed, else false.
 		Return as second argument the number of dimension which have changed."""
-	ndim_target_changed = 3- np.count_nonzero(abs(target-prev_target)<0.01)
+	if(not any(np.isnan(prev_target)) and not any(np.isnan(target))):
+		ndim_target_changed = 3- np.count_nonzero(abs(target-prev_target)<0.01)
+	else:
+		ndim_target_changed = 0
+
 	return ndim_target_changed!=0
 
 def overshoot_error(time, step_direction, error):
