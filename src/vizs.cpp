@@ -549,7 +549,7 @@ void Visualizer::draw_tracker_viz() {
     cv::Mat frameL_small_drone = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,drn_path,drn_predicted_path);
     cv::Mat frameL_small_insect = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,ins_path,ins_predicted_path);
     frameL_small_drone.copyTo(resFrame(cv::Rect(0,0,frameL_small_drone.cols, frameL_small_drone.rows)));
-    frameL_small_insect.copyTo(resFrame(cv::Rect(resFrame.cols-frameL_small_drone.cols,frameL_small_drone.rows,frameL_small_drone.cols, frameL_small_drone.rows)));
+    frameL_small_insect.copyTo(resFrame(cv::Rect(resFrame.cols-frameL_small_drone.cols,0,frameL_small_drone.cols, frameL_small_drone.rows)));
     draw_target_text(resFrame,time,dis,min_dis);
 
     if (_trackers->diff_viz_buf.cols > 0) {
