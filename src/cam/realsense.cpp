@@ -233,7 +233,7 @@ void Realsense::init_real() {
         std::cout << "Measured auto exposure: " << camparams.measured_exposure << std::endl;
     }
 
-    depth_background = imread(depth_map_rfn,CV_LOAD_IMAGE_ANYDEPTH);
+    depth_background = imread(depth_map_rfn,cv::IMREAD_ANYDEPTH);
     camparams.depth_scale = rs_depth_sensor.get_option(RS2_OPTION_DEPTH_UNITS);
 
     calib_pose(true);
@@ -680,7 +680,7 @@ void Realsense::init_playback() {
         depth_background = cv::Mat::ones(IMG_H,IMG_W,CV_16UC1);
         depth_background = 10000; // basically disable the depth background map if it is not found
     } else {
-        depth_background = imread(depth_map_rfn,CV_LOAD_IMAGE_ANYDEPTH);
+        depth_background = imread(depth_map_rfn,cv::IMREAD_ANYDEPTH);
     }
 
     rs2::config cfg;

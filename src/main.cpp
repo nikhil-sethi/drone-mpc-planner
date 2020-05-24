@@ -190,7 +190,7 @@ void process_video() {
                     static int cut_video_frame_counter = 0;
 
                     cv::Mat frame(cam->frameL.rows,cam->frameL.cols+trackers.diff_viz_buf.cols,CV_8UC3);
-                    cvtColor(cam->frameL,frame(cv::Rect(0,0,cam->frameL.cols, cam->frameL.rows)),CV_GRAY2BGR);
+                    cvtColor(cam->frameL,frame(cv::Rect(0,0,cam->frameL.cols, cam->frameL.rows)),cv::COLOR_GRAY2BGR);
                     trackers.diff_viz_buf.copyTo(frame(cv::Rect(cam->frameL.cols,0,trackers.diff_viz_buf.cols, trackers.diff_viz_buf.rows)));
                     cv::putText(frame,std::to_string(cam->frame_number()) + ": " + to_string_with_precision( cam->frame_time(),2),cv::Point(trackers.diff_viz_buf.cols, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,0,255));
                     int frame_written = output_video_cuts.write(frame);

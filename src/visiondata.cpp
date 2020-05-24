@@ -67,8 +67,8 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
     }
 
     if (motion_spot_to_be_reset.cnt_active) {
-        cv::circle(diffL16,motion_spot_to_be_reset.pt,motion_spot_to_be_reset.r,0,CV_FILLED);
-        cv::circle(diffR16,motion_spot_to_be_reset.pt+ cv::Point(motion_spot_to_be_reset.disparity,0),motion_spot_to_be_reset.r,0,CV_FILLED);
+        cv::circle(diffL16,motion_spot_to_be_reset.pt,motion_spot_to_be_reset.r,0,cv::FILLED);
+        cv::circle(diffR16,motion_spot_to_be_reset.pt+ cv::Point(motion_spot_to_be_reset.disparity,0),motion_spot_to_be_reset.r,0,cv::FILLED);
         motion_spot_to_be_reset.cnt_active--;
     }
 
@@ -84,8 +84,8 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
     }
 
     if (motion_spot_to_be_deleted.cnt_active) {
-        cv::circle(diffL16,motion_spot_to_be_deleted.pt,motion_spot_to_be_deleted.r,0,CV_FILLED);
-        cv::circle(diffR16,motion_spot_to_be_deleted.pt + cv::Point(motion_spot_to_be_deleted.disparity,0),motion_spot_to_be_deleted.r,0,CV_FILLED);
+        cv::circle(diffL16,motion_spot_to_be_deleted.pt,motion_spot_to_be_deleted.r,0,cv::FILLED);
+        cv::circle(diffR16,motion_spot_to_be_deleted.pt + cv::Point(motion_spot_to_be_deleted.disparity,0),motion_spot_to_be_deleted.r,0,cv::FILLED);
         motion_spot_to_be_deleted.cnt_active--;
     }
 

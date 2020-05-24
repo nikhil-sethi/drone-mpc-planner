@@ -240,7 +240,7 @@ void Visualizer::plot(std::vector<cv::Mat> data, cv::Mat *frame, std::string nam
         for (int j = start; j < data.at(i).rows-1; j++)  {
             int y = data.at(i).at<float>(j,1)*amplify_y - min;
             int x = (j-start)*scaleX + 2*line_width;
-            cv::line(*frame, cv::Point(prev_x, fsizey- prev_y*scaleY +line_width*2), cv::Point(x, fsizey - y*scaleY +2*line_width), linecolors[i], line_width, CV_NORMAL, 0);
+            cv::line(*frame, cv::Point(prev_x, fsizey- prev_y*scaleY +line_width*2), cv::Point(x, fsizey - y*scaleY +2*line_width), linecolors[i], line_width);
             prev_y = y;
             prev_x = x;
         }
@@ -288,7 +288,7 @@ cv::Mat Visualizer::plotxy(cv::Mat data1x,cv::Mat data1y, cv::Mat data2x,cv::Mat
         y = y1S.at<float>(j,1) - static_cast<float>(miny);
         y= fsizey - y*scaleY + 2*line_width;
         if (j > start)
-            cv::line(frame, cv::Point(prev_x, prev_y), cv::Point(x, y), green, line_width, CV_AA, 0);
+            cv::line(frame, cv::Point(prev_x, prev_y), cv::Point(x, y), green, line_width, cv::LINE_AA, 0);
         prev_x = x;
         prev_y = y;
     }
@@ -299,7 +299,7 @@ cv::Mat Visualizer::plotxy(cv::Mat data1x,cv::Mat data1y, cv::Mat data2x,cv::Mat
         y = y2S.at<float>(j,1) - static_cast<float>(miny);
         y= fsizey - y*scaleY + 2*line_width;
         if (j > start)
-            cv::line(frame, cv::Point(prev_x, prev_y), cv::Point(x, y), pink, line_width, CV_AA, 0);
+            cv::line(frame, cv::Point(prev_x, prev_y), cv::Point(x, y), pink, line_width, cv::LINE_AA);
         prev_x = x;
         prev_y = y;
     }
@@ -313,7 +313,7 @@ cv::Mat Visualizer::plotxy(cv::Mat data1x,cv::Mat data1y, cv::Mat data2x,cv::Mat
         y = y2S.at<float>(j,1) - static_cast<float>(miny);
         y= fsizey - y*scaleY + 2*line_width;
         if (j > start)
-            cv::line(frame, cv::Point(prev_x, prev_y), cv::Point(x, y), red, line_width, CV_AA, 0);
+            cv::line(frame, cv::Point(prev_x, prev_y), cv::Point(x, y), red, line_width, cv::LINE_AA, 0);
         prev_x = x;
         prev_y = y;
     }
@@ -384,7 +384,7 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
         }
         drawKeypoints( frameL_small, keypoints, frameL_small_drone, Scalar(0,255,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
     } else {
-        cvtColor(frameL_small,frameL_small_drone,CV_GRAY2BGR);
+        cvtColor(frameL_small,frameL_small_drone,cv::COLOR_GRAY2BGR);
     }
 
     if (path.size() > 0) {
@@ -450,7 +450,7 @@ void Visualizer::draw_tracker_viz() {
     resFrame_size.width -=IMG_W;
     cv::Mat resFrame = cv::Mat::zeros(resFrame_size,CV_8UC3);
     cv::Mat frameL_color;
-    cvtColor(frameL,frameL_color,CV_GRAY2BGR);
+    cvtColor(frameL,frameL_color,cv::COLOR_GRAY2BGR);
     cv::Rect rect(0,frameL.rows*_res_mult/4,frameL.cols*_res_mult,frameL.rows*_res_mult);
     cv::Mat roi = resFrame(rect);
     cv::Size size (frameL.cols*_res_mult,frameL.rows*_res_mult);

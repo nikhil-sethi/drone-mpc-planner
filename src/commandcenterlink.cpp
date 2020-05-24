@@ -122,7 +122,7 @@ void CommandCenterLink::reset_commandcenter_status_file(std::string status_msg) 
 
 void CommandCenterLink::write_commandcenter_status_image() {
     cv::Mat out = _cam->frameL.clone();
-    cvtColor(out,out,CV_GRAY2BGR);
+    cvtColor(out,out,cv::COLOR_GRAY2BGR);
     putText(out,"State: " + _dnav->navigation_status() + " " + _trackers->mode_str() + " " + _dctrl->flight_mode() +
             " "  + _trackers->dronetracker()->drone_tracking_state(),cv::Point(5,14),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
     putText(out,"Time:       " + to_string_with_precision(_cam->frame_time(),2),cv::Point(5,28),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));

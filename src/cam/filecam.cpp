@@ -17,15 +17,17 @@ void FileCam::init () {
         throw my_exit(serr.str());
     }
     std::cout << "Reading video from " << video_fn << std::endl;
+    // std::string gcmd = string("filesrc location=") + video_fn + " ! matroskademux ! h265parse ! vaapih265dec ! videoconvert ! video/x-raw,format=GRAY8 ! appsink";
+    std::string gcmd = video_fn;
     video = cv::VideoCapture(video_fn);
 
     if (!video.isOpened()) {
         throw my_exit("Error opening video file!");
     } else {
-        im_width = static_cast<int>(video.get(CV_CAP_PROP_FRAME_WIDTH));
-        im_height = static_cast<int>(video.get(CV_CAP_PROP_FRAME_HEIGHT));
-        nFrames = static_cast<int>(video.get(CV_CAP_PROP_FRAME_COUNT));
-        video.set(CV_CAP_PROP_POS_FRAMES,0);
+        im_width = static_cast<int>(video.get(cv::CAP_PROP_FRAME_WIDTH));
+        im_height = static_cast<int>(video.get(cv::CAP_PROP_FRAME_HEIGHT));
+        nFrames = static_cast<int>(video.get(cv::CAP_PROP_FRAME_COUNT));
+        // video.set(cv::CAP_PROP_POS_FRAMES,0);
         std::cout << "Opened filecam, nFrames: " << nFrames << std::endl;
     }
 
@@ -41,7 +43,7 @@ void FileCam::init () {
         depth_background = cv::Mat::ones(IMG_H,IMG_W,CV_16UC1);
         depth_background = 10000; // basically disable the depth background map if it is not found
     } else {
-        depth_background = cv::imread(depth_map_rfn,CV_LOAD_IMAGE_ANYDEPTH);
+        depth_background = cv::imread(depth_map_rfn,cv::IMREAD_ANYDEPTH);
     }
 
     convert_depth_background_to_world();
@@ -110,7 +112,8 @@ void FileCam::update() {
         std::cout << "Video end, exiting" << std::endl;
         throw bag_video_ended();
     }
-    cvtColor(frameLR,frameLR,CV_BGR2GRAY);
+    if (frameLR.type() == CV_8UC3)
+        cvtColor(frameLR,frameLR,cv::COLOR_BGR2GRAY);
     frameL = frameLR(cv::Rect(cv::Point(0,0),cv::Point(frameLR.cols/2,frameLR.rows)));
     frameR = frameLR(cv::Rect(cv::Point(frameLR.cols/2,0),cv::Point(frameLR.cols,frameLR.rows)));
     _frame_number = frames_ids.at(frame_cnt-1).RS_id;

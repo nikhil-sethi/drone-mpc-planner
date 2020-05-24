@@ -16,7 +16,7 @@ void DroneTracker::update(double time, bool drone_is_active) {
     current_time = time;
 
     if (enable_viz_diff)
-        cv::cvtColor(_visdat->diffL*10,diff_viz,CV_GRAY2BGR);
+        cv::cvtColor(_visdat->diffL*10,diff_viz,cv::COLOR_GRAY2BGR);
 
     switch (_drone_tracking_status) {
     case dts_init: {

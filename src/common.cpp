@@ -133,9 +133,9 @@ cv::Mat create_row_image(std::vector<cv::Mat> ims, int type,float resizef)
         if (im.type() != type)
         {
             if (type == CV_8UC1)
-                cv::cvtColor(im, im, CV_BGR2GRAY);
+                cv::cvtColor(im, im, cv::COLOR_BGR2GRAY);
             else
-                cv::cvtColor(im, im, CV_GRAY2BGR);
+                cv::cvtColor(im, im, cv::COLOR_GRAY2BGR);
         }
 
         cv::resize(im,roi,cv::Size(im.cols*resizef,im.rows*resizef));
@@ -174,9 +174,9 @@ cv::Mat create_column_image(std::vector<cv::Mat> ims, int type,float resizef)
         if (im.type() != type)
         {
             if (type == CV_8UC1)
-                cv::cvtColor(im, im, CV_BGR2GRAY);
+                cv::cvtColor(im, im, cv::COLOR_BGR2GRAY);
             else
-                cv::cvtColor(im, im, CV_GRAY2BGR);
+                cv::cvtColor(im, im, cv::COLOR_GRAY2BGR);
         }
 
         cv::resize(im,roi,cv::Size(im.cols*resizef,im.rows*resizef));
