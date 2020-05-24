@@ -15,6 +15,7 @@ private:
 
     cv::Mat circ_template_light;
     cv::Mat circ_template_dark;
+    cv::Mat frame_bkg;
 
     double takeoff_start_time=-1;
     cv::Point3f current_drone_pos;

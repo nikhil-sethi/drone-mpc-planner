@@ -53,6 +53,7 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     smoother_im_size.init(smooth_blob_props_width);
     smoother_score.init(smooth_blob_props_width);
     smoother_brightness.init(smooth_blob_props_width);
+    smoother_disparity_match_gray_error.init(pparams.fps/18);
 
     disparity_prev = -1;
 
@@ -60,7 +61,7 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     initialized = true;
 
     if (pparams.has_screen)
-        enable_draw_stereo_viz = false;
+        enable_draw_stereo_viz = true;
 
 }
 
@@ -227,21 +228,25 @@ void ItemTracker::append_log() {
 
 float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
 
-    cv::Mat diffL,diffR;
+    cv::Mat diffL,diffR,grayL,grayR;
 
     bool use_imscalef; // enable flag for a cpu optimization to work on half res images for disparity matching
     int radius;
-    if (size > 25) {
+    if (size > 40 ) {
         size /=pparams.imscalef;
         im_posL /=pparams.imscalef;
         diffL = _visdat->diffL_small;
         diffR = _visdat->diffR_small;
+        cv::resize(_visdat->frameL,grayL,cv::Size(diffL.rows,diffL.cols));
+        cv::resize(_visdat->frameR,grayR,cv::Size(diffL.rows,diffL.cols));
         radius = ceilf((size + 4.f)*0.5f);
         use_imscalef = true;
     } else {
         use_imscalef = false;
         diffL = _visdat->diffL;
         diffR = _visdat->diffR;
+        grayL = _visdat->frameL;
+        grayR = _visdat->frameR;
         radius = ceilf((size + 2.f)*0.5f);
     }
 
@@ -259,7 +264,7 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
 
     //shift over the image to find the best match, shift = disparity
     int disparity = 0;
-    float minerr = std::numeric_limits<float>::max();
+    float min_err = std::numeric_limits<float>::max();
     int tmp_max_disp = max_disparity;
     if (use_imscalef)
         tmp_max_disp /=2;
@@ -269,12 +274,13 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
     int disp_start = min_disparity;
     int disp_end = tmp_max_disp;
 
+    float disp_prediction_scaled = _image_predict_item.disparity;
+    if (use_imscalef)
+        disp_prediction_scaled/=2;
+
     if (_image_predict_item.valid && _image_predict_item.certainty > 0.9f) {
-        float disp_prev = _image_predict_item.disparity;
-        if (use_imscalef)
-            disp_prev/=2;
-        disp_start = std::max(static_cast<int>(floorf(disp_prev))-2,disp_start);
-        disp_end = std::min(static_cast<int>(ceilf(disp_prev))+2,disp_end);
+        disp_start = std::max(static_cast<int>(floorf(disp_prediction_scaled))-2,disp_start);
+        disp_end = std::min(static_cast<int>(ceilf(disp_prediction_scaled))+2,disp_end);
     } else if (n_frames_tracking>5) {
         auto tmp_disp_prev = disparity_prev;
         if (use_imscalef)
@@ -284,55 +290,83 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
         disp_end = std::min(static_cast<int>(ceilf(tmp_disp_prev))+2,disp_end);
     }
 
-    int err [tmp_max_disp] = {0};
+    float err [tmp_max_disp] = {0};
     cv::Rect roiR;
+    cv::Mat grayL_masked_best,grayR_masked_best,diff_best,mask_best;
     for (int i=disp_start; i<disp_end; i++) {
         roiR = cv::Rect (x1-i,y1,x2,y2);
-        cv::Mat errV = abs(diffL(roiL) - diffR(roiR));
-        err[i] = cv::sum(errV)[0];
-        if (err[i] < minerr ) {
+        cv::Mat errV;
+
+        cv::Mat mask;
+        cv::bitwise_and(diffL(roiL)>0,diffR(roiR)>0,mask); // a bitwise_or may work better in cases that we don't have a lot of pixels to match. But maybe in that case a direct match on the absdiff(diffL(roiL),diffR(roiR)) works even better
+        cv::Mat grayL_masked,grayR_masked;
+        cv::bitwise_and(grayL(roiL),grayL(roiL),grayL_masked,mask);
+        cv::bitwise_and(grayR(roiR),grayR(roiR),grayR_masked,mask);
+
+        absdiff(grayL_masked,grayR_masked,errV);
+        err[i] = static_cast<float>(cv::sum(errV)[0] /  (cv::sum(diffL(roiL))[0] + cv::sum(diffR(roiR))[0])) ; //if cv::countNonZero(mask) is very low, we may be should match directly on absdiff(diffL(roiL),diffR(roiR))??
+
+        if (err[i] < min_err ) {
             disparity  = i;
-            minerr = err[i];
+            min_err = err[i];
+            if (enable_draw_stereo_viz) {
+                grayL_masked_best = grayL_masked.clone();
+                grayR_masked_best = grayR_masked.clone();
+                mask_best = mask.clone();
+            }
         }
     }
 
     if (disparity > 0) {
-        float sub_err_disp = estimate_sub_disparity(disparity,err);
+        float sub_disp = estimate_sub_disparity(disparity,err);
         if (use_imscalef)
-            sub_err_disp *=2;
+            sub_disp *=2;
+        float final_disparity;
+
+        if (fabs (_image_predict_item.disparity - sub_disp) < 0.5f || !smoother_disparity_match_gray_error.ready() )
+            smoother_disparity_match_gray_error.addSample(min_err);
+
+
+        const float disparity_predict_lower_bound = 3.0f;
+        const float disparity_predict_upper_bound = 5.0f;
+
+        float baseline_gray_error = smoother_disparity_match_gray_error.latest();
+
+        if (min_err<baseline_gray_error*disparity_predict_lower_bound || !_image_predict_item.valid || !smoother_disparity_match_gray_error.ready()) {
+            final_disparity = sub_disp;
+        } else if (min_err>baseline_gray_error*disparity_predict_upper_bound) {
+            final_disparity = _image_predict_item.disparity;
+        } else {
+            float weight_factor = (min_err/baseline_gray_error-disparity_predict_lower_bound)/(disparity_predict_lower_bound+disparity_predict_upper_bound);
+            final_disparity = sub_disp*(1.0f-weight_factor) + _image_predict_item.disparity*weight_factor;
+        }
 
         if (enable_draw_stereo_viz) {
-            if (use_imscalef) {
-                roiL.x = roiL.x*2;
-                roiL.y = roiL.y*2;
-                roiL.width = roiL.width*2;
-                roiL.height = roiL.height*2;
-                roiR.x = x1*2-roundf(sub_err_disp);
-                roiR.y = roiR.y*2;
-                roiR.width = roiR.width*2;
-                roiR.height = roiR.height*2;
-            } else
-                roiR = cv::Rect (x1-roundf(sub_err_disp),y1,x2,y2);
-
-            cv::Mat viz_st1 = create_column_image({_visdat->diffL(roiL),_visdat->diffR(roiR)},CV_8UC1,4);
-            cv::Mat viz_st2 = create_column_image({_visdat->frameL(roiL),_visdat->frameR(roiR)},CV_8UC1,4);
-            viz_disp = create_row_image({viz_st1,viz_st2},CV_8UC1,1);
+            int viz_scale = 4;
+            if (use_imscalef)
+                viz_scale*=2;
+            cv::Mat viz_gray = create_column_image({grayL(roiL),grayR(roiR)},CV_8UC1,viz_scale);
+            cv::Mat viz_motion_abs = create_column_image({diffL(roiL),diffR(roiR)},CV_8UC1,viz_scale);
+            cv::Mat viz_mask = create_column_image({mask_best,mask_best},CV_8UC1,viz_scale);
+            cv::Mat viz_gray_masked = create_column_image({grayL_masked_best,grayR_masked_best},CV_8UC1,viz_scale);
+            cv::Mat viz_test = create_column_image({diffL(roiL)>0,diffR(roiR)>0},CV_8UC1,viz_scale);
+            viz_disp = create_row_image({viz_gray,viz_motion_abs,viz_mask,viz_gray_masked,viz_test},CV_8UC1,1);
         }
-        return sub_err_disp;
+        return final_disparity;
     } else {
         return 0;
     }
 }
 
-float ItemTracker::estimate_sub_disparity(int disparity,int * err) {
-    int y1 = -err[disparity-1];
-    int y2 = -err[disparity];
-    int y3 = -err[disparity+1];
+float ItemTracker::estimate_sub_disparity(int disparity,float * err) {
+    float y1 = -err[disparity-1];
+    float y2 = -err[disparity];
+    float y3 = -err[disparity+1];
     // by assuming a hyperbola shape, the x-location of the hyperbola minimum is determined and used as best guess
-    int h31 = (y3 - y1);
-    int h21 = (y2 - y1) * 4;
-    float sub_disp = static_cast<float>((h21 - h31)) / static_cast<float>(h21 - h31 * 2);
-    sub_disp += sinf(sub_disp*2.0f*M_PIf32)*0.13f;
+    float h31 = (y3 - y1);
+    float h21 = (y2 - y1) * 4.f;
+    float sub_disp = (h21 - h31) / (h21 - h31 * 2.f);
+    sub_disp += sinf(sub_disp*2.f*M_PIf32)*0.13f;
     sub_disp += (disparity-1);
 
     if (sub_disp<disparity-1 || sub_disp>disparity+1 || sub_disp != sub_disp)

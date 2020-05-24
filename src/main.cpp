@@ -224,7 +224,7 @@ void process_video() {
         static float prev_time = -1.f/pparams.fps;
         float current_fps = 1.f / (t - prev_time);
         float fps = fps_smoothed.addSample(current_fps);
-        if (fps < pparams.fps / 6 * 5 && fps_smoothed.ready() && !log_replay_mode)
+        if (fps < pparams.fps / 6 * 5 && fps_smoothed.ready() && !log_replay_mode && !generator_mode)
             std::cout << "FPS WARNING!" << std::endl;
 
         static double time =0;
@@ -773,7 +773,7 @@ int main( int argc, char **argv )
         dparams.deserialize(drone_xml_fn);
 
         check_hardware();
-        if (!log_replay_mode) {
+        if (!log_replay_mode && !generator_mode) {
             wait_for_cam_angle();
             wait_for_dark();
         } else {
@@ -783,6 +783,10 @@ int main( int argc, char **argv )
             pparams.drone_tracking_tuning = false;
             pparams.insect_tracking_tuning = false;
             pparams.cam_tuning = false;
+            if (generator_mode) {
+                pparams.joystick = rc_none;
+            }
+
         }
 
     } catch(my_exit const &err) {

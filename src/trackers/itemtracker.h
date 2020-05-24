@@ -66,7 +66,7 @@ protected:
     void serialize_settings();
 
 private:
-    float estimate_sub_disparity(int disparity,int * err);
+    float estimate_sub_disparity(int disparity,float * err);
     void update_disparity(float disparity, float dt);
     void update_state(cv::Point3f measured_world_coordinates, double time);
 
@@ -81,6 +81,7 @@ private:
 
     filtering::Smoother smoother_score;
     filtering::Smoother smoother_brightness;
+    filtering::Smoother smoother_disparity_match_gray_error;
 
 protected:
 
@@ -120,7 +121,7 @@ protected:
     std::vector<tracking::BlobProps> _all_blobs;
 
     void init_logger();
-    float stereo_match(cv::Point2f closestL, float radius);
+    float stereo_match(cv::Point2f im_posL, float size);
     void reset_tracker_ouput(double time);
     void calc_world_props_blob_generic(BlobProps * pbs, bool use_max);
     bool check_ignore_blobs_generic(BlobProps * pbs);

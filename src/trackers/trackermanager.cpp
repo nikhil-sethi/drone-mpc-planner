@@ -48,7 +48,7 @@ void TrackerManager::update(double time, bool drone_is_active) {
     auto dur1=0,dur2=0,dur3=0,dur4=0;
 #endif
     if (enable_viz_diff) {
-        cv::cvtColor(_visdat->diffL*10,diff_viz,CV_GRAY2BGR);
+        cv::cvtColor(_visdat->diffL*10,diff_viz,cv::COLOR_GRAY2BGR);
     }
 
     reset_trkr_viz_ids();
@@ -523,7 +523,6 @@ void TrackerManager::update_max_change_points() {
     _blobs.clear();
 
     vizs_maxs.clear();
-    uint blob_viz_cnt = 0;
 
     bool enable_insect_drone_split = false;
     float drn_ins_split_thresh;
@@ -579,194 +578,199 @@ void TrackerManager::update_max_change_points() {
         }
 
         if (thresh_res) {
-            //find the COG:
-            //get the Rect containing the max movement:
-            Rect rect(maxt.x-roi_radius, maxt.y-roi_radius, roi_radius*2,roi_radius*2);
-            if (rect.x < 0)
-                rect.x = 0;
-            else if (rect.x+rect.width >= diff.cols)
-                rect.x =  diff.cols -rect.width;
-            if (rect.y < 0)
-                rect.y = 0;
-            else if (rect.y+rect.height >= diff.rows)
-                rect.y =  diff.rows -rect.height;
-            Mat roi(diff,rect); // so, this is the cut out around the max point
-
-            // make a black mask, same size:
-            Mat mask = Mat::zeros(roi.size(), roi.type());
-            // with a white, filled circle in it:
-            cv::circle(mask, Point(roi_radius,roi_radius), roi_radius, 32765, -1);
-            // combine roi & mask:
-            Mat cropped = roi & mask;
-            Scalar avg = mean(cropped);
-            Scalar avg_bkg =mean(bkg_frame(rect));
-            //blur, to filter out noise
-            cv::GaussianBlur(cropped,cropped,Size(5,5),0);
-
-            int mask_thresh = (max-avg_bkg(0)) * 0.1+avg_bkg(0);
-            //threshold to get only pixels that are heigher then the motion noise
-            //mask = cropped > bkg_frame(r2)+1;
-            if (enable_insect_drone_split)
-                mask = cropped > drn_ins_split_thresh +  static_cast<float>(avg_bkg(0));
-            else
-                mask = cropped > mask_thresh;
-
-            Moments mo = moments(mask,true);
-            Point2f COG = Point2f(static_cast<float>(mo.m10) / static_cast<float>(mo.m00), static_cast<float>(mo.m01) / static_cast<float>(mo.m00));
-
-            //due to the blurring, the max may be lowered for small blobs resulting in an empty tresholded mask. In this case, recalculate the max on the blurred crop
-            if (COG.x != COG.x) {
-                Point dummy;
-                minMaxLoc(cropped, &min, &max, &dummy, &dummy);
-                mask = cropped > (max-avg(0)) * 0.6; // use a much lower threshold because the noise was blurred away
-                mask_thresh = (max-avg_bkg(0)) * 0.1+avg_bkg(0);
-                mo = moments(mask,true);
-                COG = Point2f(static_cast<float>(mo.m10) / static_cast<float>(mo.m00), static_cast<float>(mo.m01) / static_cast<float>(mo.m00));
-            }
-
-            Mat viz;
-            if (enable_viz_max_points) {
-                Rect rect_unscaled(rect.x*pparams.imscalef,rect.y*pparams.imscalef,rect.width*pparams.imscalef,rect.height*pparams.imscalef);
-                cv::Mat frameL_roi = _visdat->frameL(rect_unscaled);
-                cv::Mat frameL_small_roi;
-                cv::resize(frameL_roi,frameL_small_roi,cv::Size(frameL_roi.cols/pparams.imscalef,frameL_roi.rows/pparams.imscalef));
-
-                viz = create_row_image({roi,mask,frameL_small_roi,bkg_frame(rect)*10},CV_8UC1,viz_max_points_resizef);
-                cvtColor(viz,viz,CV_GRAY2BGR);
-                if (enable_insect_drone_split)
-                    putText(viz,"i-d",Point(0, viz.rows-13),FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,255,255));
-
-                std::string thresh_str = "max: " + to_string_with_precision(max,0) + " avg: " + to_string_with_precision(avg(0),0) + "/" + to_string_with_precision(avg_bkg(0),0) + " t: " + to_string(mask_thresh);
-                putText(viz,thresh_str,cv::Point2i(viz.cols/4,10),FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,0,255));
-            }
-            bool viz_pushed = false;
-
-            // relative it back to the _approx frame
-            COG.x += rect.x;
-            COG.y += rect.y;
-
-            bool single_blob = true;
-            bool COG_is_nan = false;
-
-            if (enable_insect_drone_split) {
-
-                float dist_to_predict = norm(_dtrkr->image_predict_item().pt() - COG*pparams.imscalef);
-                if (dist_to_predict < 20) {
-
-                    //check if the blob may be multiple blobs,
-                    vector<vector<Point>> contours;
-                    findContours(mask,contours,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_NONE); // If necessary, we could do this on the full resolution image...?
-                    if (contours.size()==1 && enable_insect_drone_split) { // try another threshold value, sometimes we get lucky
-                        drn_ins_split_thresh = insecttracker_best()->image_predict_item().pixel_max*0.3f;
-                        mask = cropped > drn_ins_split_thresh + static_cast<float>(avg_bkg(0));
-                        findContours(mask,contours,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_NONE);
-                    }
-
-                    if (contours.size()>1) {
-                        //ok, definetely multiple blobs. Split them, and find the COG for each.
-                        single_blob = false;
-                        for (uint j = 0; j< contours.size(); j++) {
-                            Point2f COG2;
-                            if (contours.at(j).size() < 3) { // to prevent COG nan
-                                COG2 = contours.at(j).at(0);
-                            } else {
-                                Moments mo2 = moments(contours.at(j),true);
-                                COG2 = Point2f(static_cast<float>(mo2.m10) / static_cast<float>(mo2.m00), static_cast<float>(mo2.m01) / static_cast<float>(mo2.m00));
-                            }
-
-                            if (COG2.x == COG2.x) {// if not nan
-                                cv::Point2f center;
-                                float radius;
-                                cv::minEnclosingCircle(contours.at(j),center,radius);
-                                if (enable_viz_max_points) {
-                                    cv::Mat viz2 = viz.clone();
-                                    cv::Point2f COG2_viz = COG2*viz_max_points_resizef;
-                                    cv::circle(viz2,COG2_viz,1,Scalar(0,0,255),1); //COG
-                                    cv::circle(viz2,COG2_viz,roi_radius*viz_max_points_resizef,Scalar(0,0,255),1);  // remove radius
-                                    cv::circle(viz2,COG2_viz,radius*viz_max_points_resizef,Scalar(0,255,0),1);  // blob radius
-                                    putText(viz2,to_string_with_precision(COG2_viz.y,0),COG2_viz,FONT_HERSHEY_SIMPLEX,0.3,Scalar(100,0,255));
-                                    putText(viz2,std::to_string(blob_viz_cnt) + ", " + std::to_string(j),Point(0, 13),FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,255,0));
-                                    blob_viz_cnt++;
-                                    vizs_maxs.push_back(viz2);
-                                    viz_pushed = true;
-                                }
-                                // relative COG back to the _approx frame, and save it:
-                                COG2.x += rect.x;
-                                COG2.y += rect.y;
-                                uchar px_max = diff.at<uchar>(COG2);
-                                _blobs.push_back(tracking::BlobProps(COG2,maxt,radius*2,px_max,mask,_visdat->is_in_overexposed_area(COG2)));
-
-                                //remove this COG from the ROI:
-                                cv::circle(diff, COG2, roi_radius, Scalar(0), CV_FILLED);
-                            } else {
-                                COG_is_nan = true;
-                            }
-                        }
-                    }
-                }
-            }
-            if (!viz_pushed &&  enable_viz_max_points) {
-                putText(viz,std::to_string(blob_viz_cnt),Point(0, 13),FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,255,255));
-                blob_viz_cnt++;
-                vizs_maxs.push_back(viz);
-            }
-            if (single_blob) { // we could not split this blob, so we can use the original COG
-                float size = sqrtf(mo.m00/M_PI)*2.f; // assuming a circular shape
-                if (COG.x == COG.x) { // if not nan
-                    _blobs.push_back(tracking::BlobProps(COG, maxt, size,max, mask,_visdat->is_in_overexposed_area(COG)));
-                    if (enable_viz_max_points) {
-                        Point2f tmpCOG;
-                        tmpCOG.x = COG.x - rect.x;
-                        tmpCOG.y = COG.y - rect.y;
-                        tmpCOG *= viz_max_points_resizef;
-                        cv::circle(viz,tmpCOG,1,Scalar(0,0,255),1);
-                        cv::circle(viz,tmpCOG,roi_radius*viz_max_points_resizef,Scalar(0,0,255),1);  // remove radius
-                        cv::circle(viz,tmpCOG,0.5f*size*viz_max_points_resizef,Scalar(0,255,0),1);  // blob radius
-                        putText(viz,to_string_with_precision(tmpCOG.y,0),tmpCOG,FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,0,0));
-                    }
-                    //remove this COG from the ROI:
-                    cv::circle(diff, COG, roi_radius, Scalar(0), CV_FILLED);
-                } else {
-                    COG_is_nan = true;
-                    if (enable_insect_drone_split) {
-                        //TODO: below is double code, streamline
-                        for (auto trkr : _trackers) {
-                            tracking::ImagePredictItem ipi = trkr->image_predict_item();
-                            cv::Point2f d;
-                            d.x = ipi.pt().x - maxt.x*pparams.imscalef;
-                            d.y = ipi.pt().y - maxt.y*pparams.imscalef;
-                            float dist = norm(d);
-                            if (dist < roi_radius*pparams.imscalef) {
-                                _blobs.push_back(tracking::BlobProps(maxt, maxt, 1,max, mask,_visdat->is_in_overexposed_area(maxt)));
-                                if (enable_viz_max_points) {
-                                    Point2f tmpCOG;
-                                    tmpCOG.x = maxt.x - rect.x;
-                                    tmpCOG.y = maxt.y - rect.y;
-                                    tmpCOG *= viz_max_points_resizef;
-                                    cv::circle(viz,tmpCOG,1,Scalar(0,0,255),1);
-                                    cv::circle(viz,tmpCOG,roi_radius*viz_max_points_resizef,Scalar(0,0,255),1);  // remove radius
-                                    cv::circle(viz,tmpCOG,0.5f*size*viz_max_points_resizef,Scalar(0,255,0),1);  // blob radius
-                                    putText(viz,"maxt " + to_string_with_precision(tmpCOG.y,0),tmpCOG,FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,0,0));
-                                }
-                                //remove this COG from the ROI:
-                                cv::circle(diff, maxt, roi_radius, Scalar(0), CV_FILLED);
-                                COG_is_nan = false;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            if (COG_is_nan)  //remove the actual maximum from the ROI if the COG algorithm failed:
-                cv::circle(diff, maxt, roi_radius, Scalar(0), CV_FILLED);
-
+            find_cog_and_remove(maxt,max,diff,enable_insect_drone_split,drn_ins_split_thresh,enable_viz_max_points);
         } else {
             if  (static_cast<uint8_t>(max) <= bkg+(motion_thresh_tmp/chance_multiplier_total))
                 break; // done searching for maxima, they are too small now
             else
-                cv::circle(diff, maxt, roi_radius, Scalar(0), CV_FILLED);
+                cv::circle(diff, maxt, roi_radius, Scalar(0), cv::FILLED);
         }
     }
+}
+
+void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat diff,bool enable_insect_drone_split, float drn_ins_split_thresh,bool enable_viz_max_points_local) {
+    uint blob_viz_cnt = 0;
+    Mat bkg_frame = _visdat->motion_noise_map;
+
+    //get the Rect containing the max movement:
+    Rect rect(maxt.x-roi_radius, maxt.y-roi_radius, roi_radius*2,roi_radius*2);
+    if (rect.x < 0)
+        rect.x = 0;
+    else if (rect.x+rect.width >= diff.cols)
+        rect.x =  diff.cols -rect.width;
+    if (rect.y < 0)
+        rect.y = 0;
+    else if (rect.y+rect.height >= diff.rows)
+        rect.y =  diff.rows -rect.height;
+    Mat roi(diff,rect); // so, this is the cut out around the max point
+
+    // make a black mask, same size:
+    Mat mask = Mat::zeros(roi.size(), roi.type());
+    // with a white, filled circle in it:
+    cv::circle(mask, Point(roi_radius,roi_radius), roi_radius, 32765, -1);
+    // combine roi & mask:
+    Mat cropped = roi & mask;
+    Scalar avg = mean(cropped);
+    Scalar avg_bkg =mean(bkg_frame(rect));
+    //blur, to filter out noise
+    cv::GaussianBlur(cropped,cropped,Size(5,5),0);
+
+    int mask_thresh = (max-avg_bkg(0)) * 0.1+avg_bkg(0);
+    //threshold to get only pixels that are heigher then the motion noise
+    //mask = cropped > bkg_frame(r2)+1;
+    if (enable_insect_drone_split)
+        mask_thresh = drn_ins_split_thresh +  static_cast<float>(avg_bkg(0));
+    mask = cropped > mask_thresh;
+    Moments mo = moments(mask,true);
+    Point2f COG = Point2f(static_cast<float>(mo.m10) / static_cast<float>(mo.m00), static_cast<float>(mo.m01) / static_cast<float>(mo.m00));
+
+    //due to the blurring, the max may be lowered for small blobs resulting in an empty tresholded mask. In this case, recalculate the max on the blurred crop
+    if (COG.x != COG.x) {
+        Point dummy;
+        double min;
+        minMaxLoc(cropped, &min, &max, &dummy, &dummy);
+        mask_thresh = (max-avg(0)) * 0.6; // use a much lower threshold because the noise was blurred away
+        mask = cropped > mask_thresh;
+        mo = moments(mask,true);
+        COG = Point2f(static_cast<float>(mo.m10) / static_cast<float>(mo.m00), static_cast<float>(mo.m01) / static_cast<float>(mo.m00));
+    }
+
+    Mat viz;
+    if (enable_viz_max_points_local) {
+        Rect rect_unscaled(rect.x*pparams.imscalef,rect.y*pparams.imscalef,rect.width*pparams.imscalef,rect.height*pparams.imscalef);
+        cv::Mat frameL_roi = _visdat->frameL(rect_unscaled);
+        cv::Mat frameL_small_roi;
+        cv::resize(frameL_roi,frameL_small_roi,cv::Size(frameL_roi.cols/pparams.imscalef,frameL_roi.rows/pparams.imscalef));
+
+        viz = create_row_image({roi,mask,frameL_small_roi,bkg_frame(rect)*10},CV_8UC1,viz_max_points_resizef);
+        cvtColor(viz,viz,cv::COLOR_GRAY2BGR);
+        if (enable_insect_drone_split)
+            putText(viz,"i-d",Point(0, viz.rows-13),FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,255,255));
+
+        std::string thresh_str = "max: " + to_string_with_precision(max,0) + " avg: " + to_string_with_precision(avg(0),0) + "/" + to_string_with_precision(avg_bkg(0),0) + " t: " + to_string(mask_thresh);
+        putText(viz,thresh_str,cv::Point2i(viz.cols/4,10),FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,0,255));
+    }
+    bool viz_pushed = false;
+
+    // relative it back to the _approx frame
+    COG.x += rect.x;
+    COG.y += rect.y;
+
+    bool single_blob = true;
+    bool COG_is_nan = false;
+
+    if (enable_insect_drone_split) {
+
+        float dist_to_predict = norm(_dtrkr->image_predict_item().pt() - COG*pparams.imscalef);
+        if (dist_to_predict < 20) {
+
+            //check if the blob may be multiple blobs,
+            vector<vector<Point>> contours;
+            findContours(mask,contours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_NONE); // If necessary, we could do this on the full resolution image...?
+            if (contours.size()==1 && enable_insect_drone_split) { // try another threshold value, sometimes we get lucky
+                drn_ins_split_thresh = insecttracker_best()->image_predict_item().pixel_max*0.3f;
+                mask = cropped > drn_ins_split_thresh + static_cast<float>(avg_bkg(0));
+                findContours(mask,contours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_NONE);
+            }
+
+            if (contours.size()>1) {
+                //ok, definetely multiple blobs. Split them, and find the COG for each.
+                single_blob = false;
+                for (uint j = 0; j< contours.size(); j++) {
+                    Point2f COG2;
+                    if (contours.at(j).size() < 3) { // to prevent COG nan
+                        COG2 = contours.at(j).at(0);
+                    } else {
+                        Moments mo2 = moments(contours.at(j),true);
+                        COG2 = Point2f(static_cast<float>(mo2.m10) / static_cast<float>(mo2.m00), static_cast<float>(mo2.m01) / static_cast<float>(mo2.m00));
+                    }
+
+                    if (COG2.x == COG2.x) {// if not nan
+                        cv::Point2f center;
+                        float radius;
+                        cv::minEnclosingCircle(contours.at(j),center,radius);
+                        if (enable_viz_max_points_local) {
+                            cv::Mat viz2 = viz.clone();
+                            cv::Point2f COG2_viz = COG2*viz_max_points_resizef;
+                            cv::circle(viz2,COG2_viz,1,Scalar(0,0,255),1); //COG
+                            cv::circle(viz2,COG2_viz,roi_radius*viz_max_points_resizef,Scalar(0,0,255),1);  // remove radius
+                            cv::circle(viz2,COG2_viz,radius*viz_max_points_resizef,Scalar(0,255,0),1);  // blob radius
+                            putText(viz2,to_string_with_precision(COG2_viz.y,0),COG2_viz,FONT_HERSHEY_SIMPLEX,0.3,Scalar(100,0,255));
+                            putText(viz2,std::to_string(blob_viz_cnt) + ", " + std::to_string(j),Point(0, 13),FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,255,0));
+                            blob_viz_cnt++;
+                            vizs_maxs.push_back(viz2);
+                            viz_pushed = true;
+                        }
+                        // relative COG back to the _approx frame, and save it:
+                        COG2.x += rect.x;
+                        COG2.y += rect.y;
+                        uchar px_max = diff.at<uchar>(COG2);
+                        _blobs.push_back(tracking::BlobProps(COG2,maxt,radius*2,px_max,mask,_visdat->is_in_overexposed_area(COG2)));
+
+                        //remove this COG from the ROI:
+                        cv::circle(diff, COG2, roi_radius, Scalar(0), cv::FILLED);
+                    } else {
+                        COG_is_nan = true;
+                    }
+                }
+            }
+        }
+    }
+    if (!viz_pushed &&  enable_viz_max_points_local) {
+        putText(viz,std::to_string(blob_viz_cnt),Point(0, 13),FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,255,255));
+        blob_viz_cnt++;
+        vizs_maxs.push_back(viz);
+    }
+    if (single_blob) { // we could not split this blob, so we can use the original COG
+        float size = sqrtf(mo.m00/M_PI)*2.f; // assuming a circular shape
+        if (COG.x == COG.x) { // if not nan
+            _blobs.push_back(tracking::BlobProps(COG, maxt, size,max, mask,_visdat->is_in_overexposed_area(COG)));
+            if (enable_viz_max_points_local) {
+                Point2f tmpCOG;
+                tmpCOG.x = COG.x - rect.x;
+                tmpCOG.y = COG.y - rect.y;
+                tmpCOG *= viz_max_points_resizef;
+                cv::circle(viz,tmpCOG,1,Scalar(0,0,255),1);
+                cv::circle(viz,tmpCOG,roi_radius*viz_max_points_resizef,Scalar(0,0,255),1);  // remove radius
+                cv::circle(viz,tmpCOG,0.5f*size*viz_max_points_resizef,Scalar(0,255,0),1);  // blob radius
+                putText(viz,to_string_with_precision(tmpCOG.y,0),tmpCOG,FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,0,0));
+            }
+            //remove this COG from the ROI:
+            cv::circle(diff, COG, roi_radius, Scalar(0), cv::FILLED);
+        } else {
+            COG_is_nan = true;
+            if (enable_insect_drone_split) {
+                //TODO: below is double code, streamline
+                for (auto trkr : _trackers) {
+                    tracking::ImagePredictItem ipi = trkr->image_predict_item();
+                    cv::Point2f d;
+                    d.x = ipi.pt().x - maxt.x*pparams.imscalef;
+                    d.y = ipi.pt().y - maxt.y*pparams.imscalef;
+                    float dist = norm(d);
+                    if (dist < roi_radius*pparams.imscalef) {
+                        _blobs.push_back(tracking::BlobProps(maxt, maxt, 1,max, mask,_visdat->is_in_overexposed_area(maxt)));
+                        if (enable_viz_max_points_local) {
+                            Point2f tmpCOG;
+                            tmpCOG.x = maxt.x - rect.x;
+                            tmpCOG.y = maxt.y - rect.y;
+                            tmpCOG *= viz_max_points_resizef;
+                            cv::circle(viz,tmpCOG,1,Scalar(0,0,255),1);
+                            cv::circle(viz,tmpCOG,roi_radius*viz_max_points_resizef,Scalar(0,0,255),1);  // remove radius
+                            cv::circle(viz,tmpCOG,0.5f*size*viz_max_points_resizef,Scalar(0,255,0),1);  // blob radius
+                            putText(viz,"maxt " + to_string_with_precision(tmpCOG.y,0),tmpCOG,FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,0,0));
+                        }
+                        //remove this COG from the ROI:
+                        cv::circle(diff, maxt, roi_radius, Scalar(0), cv::FILLED);
+                        COG_is_nan = false;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    if (COG_is_nan)  //remove the actual maximum from the ROI if the COG algorithm failed:
+        cv::circle(diff, maxt, roi_radius, Scalar(0), cv::FILLED);
+
 }
 
 std::vector<BlinkTracker *> TrackerManager::blinktrackers() {
