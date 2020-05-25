@@ -303,8 +303,10 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
         cv::bitwise_and(grayL(roiL),grayL(roiL),grayL_masked,mask);
         cv::bitwise_and(grayR(roiR),grayR(roiR),grayR_masked,mask);
 
-        absdiff(grayL_masked,grayR_masked,errV);
-        err[i] = static_cast<float>(cv::sum(errV)[0] /  (cv::sum(diffL(roiL))[0] + cv::sum(diffR(roiR))[0])) ; //if cv::countNonZero(mask) is very low, we may be should match directly on absdiff(diffL(roiL),diffR(roiR))??
+//        absdiff(grayL_masked,grayR_masked,errV);
+//        err[i] = static_cast<float>(cv::sum(errV)[0] /  (cv::sum(diffL(roiL))[0] + cv::sum(diffR(roiR))[0])) ; //if cv::countNonZero(mask) is very low, we may be should match directly on absdiff(diffL(roiL),diffR(roiR))??
+        absdiff(diffL(roiL),diffR(roiR),errV);
+        err[i] = static_cast<float>(cv::sum(errV)[0]);
 
         if (err[i] < min_err ) {
             disparity  = i;
@@ -327,8 +329,10 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
             smoother_disparity_match_gray_error.addSample(min_err);
 
 
-        const float disparity_predict_lower_bound = 3.0f;
-        const float disparity_predict_upper_bound = 5.0f;
+        // const float disparity_predict_lower_bound = 3.0f;
+        // const float disparity_predict_upper_bound = 5.0f;
+        const float disparity_predict_lower_bound = 1.2f;
+        const float disparity_predict_upper_bound = 2.0f;
 
         float baseline_gray_error = smoother_disparity_match_gray_error.latest();
 
