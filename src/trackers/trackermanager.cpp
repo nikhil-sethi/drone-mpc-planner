@@ -530,7 +530,7 @@ void TrackerManager::update_max_change_points() {
     if (_mode == mode_locate_drone || !_dtrkr->image_predict_item().valid)
         roi_radius = 15;
     else
-        roi_radius = ceilf(_dtrkr->image_predict_item().size * 0.95f);
+        roi_radius = ceilf(_dtrkr->image_predict_item().size * 0.95f) / pparams.imscalef;
     roi_radius = std::clamp(roi_radius,10,100);
 
     if (_dtrkr->image_predict_item().valid &&
