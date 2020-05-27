@@ -211,7 +211,7 @@ bool DroneTracker::detect_lift_off() {
 
 void DroneTracker::calc_world_item(BlobProps * props, double time [[maybe_unused]]) {
 
-    bool use_max = _visdat->camera_exposure < 5000 && landing();
+    bool use_max = false; //_visdat->camera_exposure < 5000 && landing();
 
     calc_world_props_blob_generic(props,use_max);
 
