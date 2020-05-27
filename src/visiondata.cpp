@@ -27,7 +27,6 @@ void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, fl
     frameR.convertTo(frameR16, CV_16SC1);
     diffL16 = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
     diffR16 = cv::Mat::zeros(cv::Size(frameR.cols,frameR.rows),CV_16SC1);
-    motion_noise_map = cv::Mat::zeros(smallsize,CV_8UC1) + 128;
 
     if (pparams.vision_tuning) {
         namedWindow("Background", WINDOW_NORMAL);
@@ -142,33 +141,45 @@ void VisionData::fade(cv::Mat diff16, cv::Point exclude_drone_spot) {
 void VisionData::maintain_motion_noise_map() {
     if (frame_id % pparams.fps == 0 && enable_collect_no_drone_frames) {
         static uint cnt = 0;
-        motion_noise_buffer.push_back(abs(diffL16));
-        motion_noise_buffer.erase(motion_noise_buffer.begin());
+        motion_noise_bufferL.push_back(abs(diffL16));
+        motion_noise_bufferL.erase(motion_noise_bufferL.begin());
+        motion_noise_bufferR.push_back(abs(diffR16));
+        motion_noise_bufferR.erase(motion_noise_bufferR.begin());
         cnt++;
-        if (cnt > motion_noise_buffer.size() && motion_noise_buffer.size() > 1) {
+        if (cnt > motion_noise_bufferL.size() && motion_noise_bufferL.size() > 1) {
             _calibrating_background = true;
             cnt = 0;
         }
     }
 
     if (enable_collect_no_drone_frames && _calibrating_background ) {
-        motion_noise_buffer.push_back(abs(diffL16));
+        motion_noise_bufferL.push_back(abs(diffL16));
+        motion_noise_bufferR.push_back(abs(diffR16));
         if (_current_frame_time > calibrating_background_end_time) {
             _calibrating_background = false;
 
-            cv::Mat bkg = motion_noise_buffer.at(0);
-            for (cv::Mat im : motion_noise_buffer) {
-                cv::Mat mask = im > bkg;
-                im.copyTo(bkg,mask);
+            cv::Mat bkgL = motion_noise_bufferL.at(0);
+            cv::Mat bkgR = motion_noise_bufferR.at(0);
+            for (cv::Mat im : motion_noise_bufferL) {
+                cv::Mat mask = im > bkgL;
+                im.copyTo(bkgL,mask);
+            }
+            for (cv::Mat im : motion_noise_bufferR) {
+                cv::Mat mask = im > bkgR;
+                im.copyTo(bkgR,mask);
             }
 
-            bkg.convertTo(bkg, CV_8UC1);
+            bkgL.convertTo(bkgL, CV_8UC1);
+            bkgR.convertTo(bkgR, CV_8UC1);
             int dilation_size = 5;
             cv::Mat element = getStructuringElement( cv::MORPH_RECT,cv::Size( 2*dilation_size + 1, 2*dilation_size+1 ),cv::Point( dilation_size, dilation_size ) );
-            cv::dilate(bkg,bkg,element);
-            GaussianBlur(bkg,motion_noise_map,Size(9,9),0);
-            cv::resize(bkg,bkg,smallsize);
-            imwrite(motion_noise_map_wfn,motion_noise_map);
+            cv::dilate(bkgL,bkgL,element);
+            cv::dilate(bkgR,bkgR,element);
+            GaussianBlur(bkgL,motion_noise_mapL,Size(9,9),0);
+            GaussianBlur(bkgR,motion_noise_mapR,Size(9,9),0);
+            cv::resize(bkgL,motion_noise_mapL_small,smallsize);
+            cv::resize(bkgR,motion_noise_mapR_small,smallsize);
+            imwrite(motion_noise_map_wfn,motion_noise_mapL);
         }
     }
 }
@@ -185,7 +196,6 @@ void VisionData::create_overexposed_removal_mask(cv::Point2f drone_im_location, 
 }
 
 void VisionData::enable_background_motion_map_calibration(float duration) {
-    motion_noise_map = cv::Mat::zeros(smallsize,CV_8UC1);
     calibrating_background_end_time = _current_frame_time+static_cast<double>(duration);
     _calibrating_background = true;
 }

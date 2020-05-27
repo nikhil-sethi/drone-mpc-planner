@@ -88,8 +88,9 @@ private:
 public:
     cv::Mat frameL,frameR;
     cv::Mat frameL_prev,frameR_prev;
-    std::vector<cv::Mat> motion_noise_buffer;
-    cv::Mat motion_noise_map;
+    std::vector<cv::Mat> motion_noise_bufferL,motion_noise_bufferR;
+    cv::Mat motion_noise_mapL,motion_noise_mapL_small;
+    cv::Mat motion_noise_mapR,motion_noise_mapR_small;
     cv::Mat diffL,diffR,diffL_small,diffR_small;
     cv::Mat overexposed_mapL;
 

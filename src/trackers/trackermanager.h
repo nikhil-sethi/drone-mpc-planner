@@ -143,7 +143,7 @@ private:
     void update_max_change_points();
     void update_static_ignores();
     void match_blobs_to_trackers(bool drone_is_active, double time);
-    void find_cog_and_remove(cv::Point maxt, double max, cv::Mat diff,bool enable_insect_drone_split, float drn_ins_split_thresh,bool enable_viz_max_points_local);
+    void find_cog_and_remove(cv::Point maxt, double max, cv::Mat diff,bool enable_insect_drone_split, float drn_ins_split_thresh,bool enable_viz_max_points_local,cv::Mat bkg_frame);
     bool tracker_active(ItemTracker * trkr, bool drone_is_active);
     cv::Scalar color_of_blob(processed_blobs blob);
     std::vector<BlinkTracker *> blinktrackers();

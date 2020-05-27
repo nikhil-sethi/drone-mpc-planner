@@ -541,22 +541,25 @@ void TrackerManager::update_max_change_points() {
 
     }
 
-    Mat bkg_frame = _visdat->motion_noise_map;
+    Mat motion_noise_mapL = _visdat->motion_noise_mapL_small;
+    if (!motion_noise_mapL.cols)
+        motion_noise_mapL = cv::Mat::zeros(diff.rows,diff.cols,CV_8UC1);
+
     for (int i = 0; i < max_points_per_frame; i++) {
         Point mint;
         Point maxt;
         double min, max;
         minMaxLoc(diff, &min, &max, &mint, &maxt);
 
-        uint8_t bkg = bkg_frame.at<uint8_t>(maxt.y,maxt.x);
+        uint8_t motion_noise = motion_noise_mapL.at<uint8_t>(maxt.y,maxt.x);
 
         int motion_thresh_tmp = motion_thresh;
         if (_mode == mode_locate_drone) {
             motion_thresh_tmp = motion_thresh + dparams.drone_blink_strength;
-            bkg = 0; // motion noise calib is done during blink detection. To prevent interference do not use the bkg motion noise
+            motion_noise = 0; // motion noise calib is done during blink detection. To prevent interference do not use the motion_noise motion noise
         }
 
-        bool thresh_res = max > bkg+motion_thresh_tmp;
+        bool thresh_res = max > motion_noise+motion_thresh_tmp;
         if (!thresh_res) { // specifcally for the insect tracker, check if there is an increased chance in this area
             for (auto trkr : _trackers) {
                 tracking::ImagePredictItem ipi = trkr->image_predict_item();
@@ -572,15 +575,15 @@ void TrackerManager::update_max_change_points() {
                     if (dist < roi_radius*pparams.imscalef) {
                         chance += chance_multiplier_dist;
                     }
-                    thresh_res = static_cast<uint8_t>(max) > bkg+(motion_thresh_tmp/chance);
+                    thresh_res = static_cast<uint8_t>(max) > motion_noise+(motion_thresh_tmp/chance);
                 }
             }
         }
 
         if (thresh_res) {
-            find_cog_and_remove(maxt,max,diff,enable_insect_drone_split,drn_ins_split_thresh,enable_viz_max_points);
+            find_cog_and_remove(maxt,max,diff,enable_insect_drone_split,drn_ins_split_thresh,enable_viz_max_points,motion_noise_mapL);
         } else {
-            if  (static_cast<uint8_t>(max) <= bkg+(motion_thresh_tmp/chance_multiplier_total))
+            if  (static_cast<uint8_t>(max) <= motion_noise+(motion_thresh_tmp/chance_multiplier_total))
                 break; // done searching for maxima, they are too small now
             else
                 cv::circle(diff, maxt, roi_radius, Scalar(0), cv::FILLED);
@@ -588,9 +591,8 @@ void TrackerManager::update_max_change_points() {
     }
 }
 
-void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat diff,bool enable_insect_drone_split, float drn_ins_split_thresh,bool enable_viz_max_points_local) {
+void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat diff,bool enable_insect_drone_split, float drn_ins_split_thresh,bool enable_viz_max_points_local,cv::Mat motion_noise_mapL) {
     uint blob_viz_cnt = 0;
-    Mat bkg_frame = _visdat->motion_noise_map;
 
     //get the Rect containing the max movement:
     Rect rect(maxt.x-roi_radius, maxt.y-roi_radius, roi_radius*2,roi_radius*2);
@@ -611,13 +613,13 @@ void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat dif
     // combine roi & mask:
     Mat cropped = roi & mask;
     Scalar avg = mean(cropped);
-    Scalar avg_bkg =mean(bkg_frame(rect));
+    Scalar avg_bkg =mean(motion_noise_mapL(rect));
     //blur, to filter out noise
     cv::GaussianBlur(cropped,cropped,Size(5,5),0);
 
     int mask_thresh = (max-avg_bkg(0)) * 0.1+avg_bkg(0);
     //threshold to get only pixels that are heigher then the motion noise
-    //mask = cropped > bkg_frame(r2)+1;
+    //mask = cropped > motion_noise_mapL(r2)+1;
     if (enable_insect_drone_split)
         mask_thresh = drn_ins_split_thresh +  static_cast<float>(avg_bkg(0));
     mask = cropped > mask_thresh;
@@ -642,7 +644,7 @@ void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat dif
         cv::Mat frameL_small_roi;
         cv::resize(frameL_roi,frameL_small_roi,cv::Size(frameL_roi.cols/pparams.imscalef,frameL_roi.rows/pparams.imscalef));
 
-        viz = create_row_image({roi,mask,frameL_small_roi,bkg_frame(rect)*10},CV_8UC1,viz_max_points_resizef);
+        viz = create_row_image({roi,mask,frameL_small_roi,motion_noise_mapL(rect)*10},CV_8UC1,viz_max_points_resizef);
         cvtColor(viz,viz,cv::COLOR_GRAY2BGR);
         if (enable_insect_drone_split)
             putText(viz,"i-d",Point(0, viz.rows-13),FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,255,255));
