@@ -272,12 +272,12 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_chasing_insect: {
             //update target chasing waypoint and speed
-            if (_iceptor.insect_in_range()) {
-                setpoint_pos_world = _iceptor.target_position();
-                setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, CameraView::relaxed);
-                setpoint_vel_world = _iceptor.target_speed();
-                setpoint_acc_world = _iceptor.target_accelleration();
-            }
+            // if (_iceptor.insect_in_range()) {
+            setpoint_pos_world = _iceptor.target_position();
+            setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, CameraView::relaxed);
+            setpoint_vel_world = _iceptor.target_speed();
+            setpoint_acc_world = _iceptor.target_accelleration();
+            // }
 
             if(drone_is_blocked(0.1))
                 _navigation_status = ns_drone_problem;

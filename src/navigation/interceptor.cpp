@@ -6,7 +6,7 @@ void Interceptor::init(tracking::TrackerManager *trackers, VisionData *visdat, C
     _trackers = trackers;
     _visdat = visdat;
     _camview = camview;
-    insect_cleared_timeout = pparams.fps*0.5f;
+    insect_cleared_timeout = pparams.fps*3.f;
     (*_logger) << "interceptor_state;hunt_vol_check;";
 }
 
@@ -78,7 +78,7 @@ void Interceptor::update(bool drone_at_base, double time) {
             break;
         }
 
-        if (fabs(_horizontal_separation) < 0.6f * _vertical_separation && _vertical_separation<0.8f && _vertical_separation>0)
+        if (fabs(_horizontal_separation) < 0.6f  && _vertical_separation<0.8f && _vertical_separation>0)
             _interceptor_state = is_close_chasing;
 
         break;
@@ -177,7 +177,7 @@ void Interceptor::update_close_target() {
     cv::Point3f vector = insect_pos-drone_pos;
     float norm_vector = norm(vector);
 
-    _intercept_pos += 0.2f*vector/norm_vector;
+    _intercept_pos += 1.f*vector/norm_vector;
 
     insect_vel.y = 0; // we don't want to follow the vertical speed of the insect, ever
     insect_vel = 0.5f* insect_vel + vector/norm_vector*0.8f;
