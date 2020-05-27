@@ -239,8 +239,8 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
         diffR = _visdat->diffR_small;
         motion_noise_mapL = _visdat->motion_noise_mapL_small;
         motion_noise_mapR = _visdat->motion_noise_mapR_small;
-        cv::resize(_visdat->frameL,grayL,cv::Size(diffL.rows,diffL.cols));
-        cv::resize(_visdat->frameR,grayR,cv::Size(diffL.rows,diffL.cols));
+        cv::resize(_visdat->frameL,grayL,cv::Size(diffL.cols,diffL.rows));
+        cv::resize(_visdat->frameR,grayR,cv::Size(diffL.cols,diffL.rows));
         radius = ceilf((size + 4.f)*0.5f);
         use_imscalef = true;
     } else {
