@@ -177,6 +177,8 @@ void Interceptor::update_close_target() {
     cv::Point3f vector = insect_pos-drone_pos;
     float norm_vector = norm(vector);
 
+    _intercept_pos += 0.2f*vector/norm_vector;
+
     insect_vel.y = 0; // we don't want to follow the vertical speed of the insect, ever
     insect_vel = 0.5f* insect_vel + vector/norm_vector*0.8f;
     if (norm_vector > 0.05f) // when insect and drone come close to each other, the blobs get fused..., so keep the previous speed vector in that case
