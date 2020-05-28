@@ -583,7 +583,11 @@ void TrackerManager::update_max_change_points() {
         if (thresh_res) {
             find_cog_and_remove(maxt,max,diff,enable_insect_drone_split,drn_ins_split_thresh,enable_viz_max_points,motion_noise_mapL);
         } else {
-            if  (static_cast<uint8_t>(max) <= motion_noise+(motion_thresh_tmp/chance_multiplier_total))
+
+            int tmp_mt_noise = motion_noise;
+            if (max < motion_noise)
+                tmp_mt_noise = 0;
+            if  (static_cast<uint8_t>(max) <= tmp_mt_noise+(motion_thresh_tmp/chance_multiplier_total))
                 break; // done searching for maxima, they are too small now
             else
                 cv::circle(diff, maxt, roi_radius, Scalar(0), cv::FILLED);
