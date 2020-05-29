@@ -1,5 +1,4 @@
 #pragma once
-#include "defines.h"
 #include "cam.h"
 
 #include <condition_variable>

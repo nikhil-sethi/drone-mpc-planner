@@ -1,14 +1,15 @@
 #include "gstream.h"
-#include "defines.h"
-
-#include <gst/gst.h>
-#include <gst/app/gstappsrc.h>
-#include <glib.h>
-
-#include <iostream>
-
 #include "third_party/stopwatch.h"
 #include "common.h"
+
+#include <gst/app/gstappsrc.h>
+
+
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+cv::VideoWriter cvvideo;
+int videomode;
+int colormode;
 
 stopwatch_c stopwatch;
 int enough = 0;
@@ -17,11 +18,6 @@ int want_cnt = 0;
 std::mutex lock_var;
 std::mutex wait_for_want;
 
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc.hpp>
-cv::VideoWriter cvvideo;
-int videomode;
-int colormode;
 
 static void cb_need_data (GstElement *appsrc __attribute__((unused)), guint unused_size __attribute__((unused)), gpointer user_data __attribute__((unused))) {
     lock_var.lock();

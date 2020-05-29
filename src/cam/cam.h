@@ -1,5 +1,4 @@
 #pragma once
-#include "defines.h"
 #include "common.h"
 #include "cameraview.h"
 

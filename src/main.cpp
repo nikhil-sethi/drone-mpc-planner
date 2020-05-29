@@ -21,7 +21,6 @@
 
 #include "common.h"
 #include "cameraview.h"
-#include "defines.h"
 #include "smoother.h"
 #include "multimodule.h"
 #include "stopwatch.h"

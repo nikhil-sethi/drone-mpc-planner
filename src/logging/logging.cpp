@@ -1,5 +1,4 @@
 #include "logging.h"
-#include "defines.h"
 
 #include <algorithm>
 #include <sstream>

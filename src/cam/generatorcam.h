@@ -1,5 +1,4 @@
 #pragma once
-#include "defines.h"
 #include <opencv2/highgui/highgui.hpp>
 #include "common.h"
 #include "cam.h"

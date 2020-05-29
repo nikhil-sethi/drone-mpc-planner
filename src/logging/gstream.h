@@ -1,10 +1,6 @@
 #pragma once
 #include "opencv2/features2d/features2d.hpp"
-
-#include <gst/gst.h>
 #include <gst/app/gstappsrc.h>
-#include <glib.h>
-
 #include <condition_variable>
 
 /*
@@ -24,7 +20,6 @@ private:
 
     int _cols,_rows;
     int prepare_buffer(GstAppSrc* appsrc, cv::Mat * image);
-    //void cb_need_data (GstElement *appsrc, guint unused_size, gpointer user_data);
     int stream_resize_f = 1;
     int gstream_fps;
     int max_gstream_fps = 30;

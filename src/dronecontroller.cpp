@@ -1,6 +1,5 @@
 #include "dronecontroller.h"
 #include "flightplan.h"
-#include "defines.h"
 #include "quaternion.h"
 #include "linalg.h"
 

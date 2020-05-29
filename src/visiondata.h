@@ -14,7 +14,6 @@
 #include <condition_variable>
 
 #include "realsense.h"
-#include "defines.h"
 #include "common.h"
 
 class VisionData {

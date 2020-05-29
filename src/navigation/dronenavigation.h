@@ -1,6 +1,4 @@
 #pragma once
-#include "defines.h"
-
 #include "common.h"
 #include "dronetracker.h"
 #include "dronecontroller.h"

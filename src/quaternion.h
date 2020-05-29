@@ -1,15 +1,13 @@
 #pragma once
-
-#include "defines.h"
 #include "common.h"
 #include <opencv2/highgui/highgui.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
 
-struct quaternion{
+struct quaternion {
     float s;
     cv::Point3f v;
 
-    quaternion(){
+    quaternion() {
         s = 0;
         v = cv::Point3f(0,0,0);
     }
@@ -44,7 +42,7 @@ struct quaternion{
 
         return *this;
     }
-    
+
     quaternion operator /=(float scale) {
         this->s /= scale;
         this->v /= scale;
