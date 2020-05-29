@@ -52,3 +52,10 @@ YUMI
 CloneZilla iso
 Ubuntu 18.04.1 LTS iso
 Pats install script and ssh key files
+
+#image install tweaks:
+- Set DefaultTimeoutStopSec in /etc/systemd/system.conf to 15
+- Change the background
+- remove everything from data folder and remove pats_daemon.log
+- screen lock off
+
