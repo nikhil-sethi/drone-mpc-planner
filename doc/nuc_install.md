@@ -37,12 +37,10 @@
 3. Physically label the NUC
 4. Remove USB dongle, boot up NUC
 5. Change hostname:
-    - `sudo nano /etc/hosts`     Change `127.0.1.1 pats-proto100` to reflect number on the label from step 3
+    - `sudo nano /etc/hosts`     Change `127.0.1.1 pats-proto0` to reflect number on the label from step 3
     - Again for: `sudo nano /etc/hostname`
-    - `sudo sh -c 'echo "pats ALL = (root) NOPASSWD: /usr/sbin/rtcwake" >> /etc/sudoers'`
-    - `echo "alias df='df -h -x squashfs -x tmpfs -x devtmpfs'" >> ~/.bash_aliases`
     - Reboot
-6. Optional: update some random stuff.
+6. Optional: connect wifi
 
 All done!
 
@@ -58,4 +56,6 @@ Pats install script and ssh key files
 - Change the background
 - remove everything from data folder and remove pats_daemon.log
 - screen lock off
+- `sudo sh -c 'echo "pats ALL = (root) NOPASSWD: /usr/sbin/rtcwake" >> /etc/sudoers'`
+- `echo "alias df='df -h -x squashfs -x tmpfs -x devtmpfs'" >> ~/.bash_aliases`
 
