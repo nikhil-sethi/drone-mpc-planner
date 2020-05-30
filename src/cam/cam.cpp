@@ -44,7 +44,7 @@ void Cam::convert_depth_background_to_world() {
         }
 }
 
-CameraView Cam::def_volume () {
+void Cam::def_volume () {
 
     float b_depth, b_ground;
 
@@ -83,11 +83,7 @@ CameraView Cam::def_volume () {
         }
     }
     b_depth = -z_sum/n;
-
-    CameraView camview;
-    camview.init(point_left_top, point_right_top, point_left_bottom, point_right_bottom, b_depth, b_ground, camparams.camera_angle_y);
-
-    return camview;
+    camera_volume.init(point_left_top, point_right_top, point_left_bottom, point_right_bottom, b_depth, b_ground, camparams.camera_angle_y);
 }
 
 cv::Point3f Cam::get_SlopesOfPixel(uint x, uint y) {

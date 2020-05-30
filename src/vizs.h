@@ -146,6 +146,27 @@ public:
         gen_im_size_drone.pop_back();
 
     }
+    ~Visualizer() {
+        roll_joystick.release();
+        roll_calculated.release();
+        pitch_joystick.release();
+        pitch_calculated.release();
+        yaw_joystick.release();
+        yaw_calculated.release();
+        throttle_joystick.release();
+        throttle_calculated.release();
+        throttle_min_bound.release();
+        throttle_max_bound.release();
+        posX_drone.release();
+        posY_drone.release();
+        posZ_drone.release();
+        im_posX_drone.release();
+        im_posY_drone.release();
+        im_disp_drone.release();
+        im_size_drone.release();
+        dt.release();
+        dt_target.release();
+    }
 
     cv::Mat throttle_joystick;
     cv::Mat throttle_calculated;

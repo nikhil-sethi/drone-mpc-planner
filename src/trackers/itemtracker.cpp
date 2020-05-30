@@ -23,6 +23,9 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     settings_file = "../../xml/" + name + "tracker.xml";
     std::string window_name = name + "_trkr";
 
+    _world_item = WorldItem();
+    _world_item.yaw = 0; // tmp solution until yaw is changed
+
     deserialize_settings();
 
     if (pparams.insect_tracking_tuning ||pparams.drone_tracking_tuning) {
@@ -584,6 +587,7 @@ void ItemTracker::deserialize_settings() {
         if (v1 != v2) {
             throw my_exit("XML version difference detected from " + settings_file);
         }
+        infile.close();
     } else {
         throw my_exit("File not found: " + settings_file);
     }

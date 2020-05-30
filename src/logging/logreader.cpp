@@ -36,7 +36,7 @@ tuple<map<int, LogEntryMain>,map<string, int>> LogReader::read_log(string file) 
             throw my_exit("Could not read log! File: " +file + '\n' + "Line: " + string(exp.what()) + " at: " + line);
         }
     }
-
+    infile.close();
     return make_tuple(log,headmap);
 
 }
@@ -48,7 +48,7 @@ void LogReader::read_multi_insect_logs(string path) {
         if (!entry.path().extension().string().compare(".csv") && entry.path().filename().string().compare("log.csv"))
             ins_logs.push_back(entry.path().string());
     }
-    for (auto f : ins_logs) {
+    for (auto & f : ins_logs) {
         InsectReader ir;
         ir.init(f);
         log_insects.push_back(ir);
@@ -90,24 +90,20 @@ LogEntryMain LogReader::create_log_entry(string line, map<string, int> headmap) 
     return entry;
 }
 
-void LogReader::current_frame_number(unsigned long long RS_id) {
+int LogReader::current_frame_number(unsigned long long RS_id) {
     current_entry = log_main[RS_id];
 
-    if (current_entry.RS_id != RS_id) {
-        cout << "Warning, frame not found in log" << endl;
-        while(current_entry.RS_id != RS_id) {
-            RS_id++;
-            current_entry = log_main[RS_id];
-        }
-    }
+    if (current_entry.RS_id != RS_id)
+        return 1;
 
     vector<LogEntryInsect> ins_entries;
-    for (auto ins : log_insects) {
+    for (auto & ins : log_insects) {
         if (!ins.current_frame_number(RS_id)) {
             ins_entries.push_back(ins.current_entry);
         }
     }
     current_entry.insects  = ins_entries;
+    return 0;
 }
 
 } // namespace logging

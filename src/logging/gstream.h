@@ -27,7 +27,7 @@ private:
 
 
 public:
-    int init(int argc, char **argv, int mode, std::string file, int sizeX, int sizeY, int fps, std::string ip, int port, bool color, render_mode_enum render_mode);
+    int init(int mode, std::string file, int sizeX, int sizeY, int fps, std::string ip, int port, bool color, render_mode_enum render_mode);
     int write(cv::Mat frame);
     int write(cv::Mat frameL,cv::Mat frameR);
     void close (void);

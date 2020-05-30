@@ -2,13 +2,14 @@
 
 namespace tracking {
 
-static std::ofstream dummy;
+static std::ofstream blinklogger;
 
 bool BlinkTracker::init(VisionData *visdat, int16_t viz_id) {
 
-    // disable logging for the blink tracker. #67
-    dummy.open("/dev/null",std::ofstream::out);
-    dummy.close();
+    std::string logger_fn;
+    logger_fn = data_output_dir  + "log_btrk" + to_string(viz_id) + ".csv";
+    blinklogger.open(logger_fn,std::ofstream::out);
+    blinklogger << "RS_ID;time;";
 
     disparity_filter_rate = 0.5;
     pos_smth_width = pparams.fps/15;
@@ -16,7 +17,7 @@ bool BlinkTracker::init(VisionData *visdat, int16_t viz_id) {
     acc_smth_width = pparams.fps/5;
     skip_wait_smth_spos = false;
 
-    ItemTracker::init(&dummy,visdat,"blink",viz_id);
+    ItemTracker::init(&blinklogger,visdat,"blink",viz_id);
 
     n_frames_lost = 1;
     n_frames_lost_threshold = 120;

@@ -72,3 +72,5 @@ Host pats1
 	Port 6100
 ```  
 
+## valgrind
+`valgrind --tool=memcheck --leak-check=full --track-origins=yes --track-fds=yes --suppressions=../../config/gst.supp --suppressions=/usr/local/share/opencv4/valgrind.supp --suppressions=/usr/local/share/opencv4/valgrind_3rdparty.supp --suppressions=/usr/share/glib-2.0/valgrind/glib.supp --gen-suppressions=all ./pats --generator 2>&1 | tee log.txt`

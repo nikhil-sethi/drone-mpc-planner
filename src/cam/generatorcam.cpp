@@ -20,19 +20,21 @@ void GeneratorCam::init () {
 
     convert_depth_background_to_world();
 
-    camera_volume = def_volume();
+    def_volume();
 
     cv::Mat clt = cv::Mat::zeros(5000,5000,CV_8UC1);
-    cv::Mat cdt = clt.clone();
+    cv::Mat cdt = cv::Mat::zeros(5000,5000,CV_8UC1);
     int cirk_size = 150;
 
     cv::circle(clt,cv::Point2i(clt.rows/2,clt.cols/2),cirk_size,180,cv::FILLED);
-    cv::GaussianBlur(clt,clt,cv::Size(55,55),25);
-    circ_template_light = clt(cv::Rect(clt.rows/2-250,clt.cols/2-250,500,500)).clone();
+    cv::Mat clt_blurred;
+    cv::GaussianBlur(clt,clt_blurred,cv::Size(55,5),25);
+    circ_template_light = clt_blurred(cv::Rect(clt_blurred.rows/2-250,clt_blurred.cols/2-250,500,500));
 
     cv::circle(cdt,cv::Point2i(cdt.rows/2,cdt.cols/2),cirk_size,80,cv::FILLED);
-    cv::GaussianBlur(cdt,cdt,cv::Size(55,55),25);
-    circ_template_dark = cdt(cv::Rect(cdt.rows/2-250,cdt.cols/2-250,500,500)).clone();
+    cv::Mat cdt_blurred;
+    cv::GaussianBlur(cdt,cdt_blurred,cv::Size(55,55),25);
+    circ_template_dark = cdt_blurred(cv::Rect(cdt_blurred.rows/2-250,cdt_blurred.cols/2-250,500,500));
 
     int wb = IMG_W,hb=IMG_H;
     frame_bkg = cv::Mat::zeros(hb,wb,CV_8UC1);
@@ -46,6 +48,11 @@ void GeneratorCam::init () {
     update();
 
     initialized = true;
+    clt.release();
+    cdt.release();
+    cdt_blurred.release();
+    clt_blurred.release();
+
 }
 
 void GeneratorCam::calibration() {
@@ -117,7 +124,7 @@ void GeneratorCam::update() {
 
         cv::Rect target_rect = cv::Rect(x_ref,floorf(drone_im_pos.y-drone_im_half_size),x_range,ceilf(drone_im_half_size*2.f));
 
-        int patch_size_upscaled  =target_rect.height*upscalef;
+        int patch_size_upscaled  = target_rect.height*upscalef;
 
         cv::Size roi_size_upscaled(target_rect.width*upscalef,target_rect.height*upscalef);
         cv::Size roi_size(target_rect.width,target_rect.height);
@@ -148,7 +155,8 @@ void GeneratorCam::update() {
     }
 
 
-
+    frameL.release();
+    frameR.release();
     frameL = frameL_buf.clone();
     frameR = frameR_buf.clone();
     _frame_number++;
@@ -173,5 +181,9 @@ void GeneratorCam::update() {
 }
 
 void GeneratorCam::close () {
-
+    frame_bkg.release();
+    circ_template_dark.release();
+    circ_template_light.release();
+    Qfi.release();
+    Cam::close();
 }

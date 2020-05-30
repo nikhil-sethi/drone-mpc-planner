@@ -210,19 +210,25 @@ public:
         replay_logs = logs;
     }
     void process_replay_moth(unsigned long long RS_id) {
-        std::vector<logging::InsectReader> replay_logs_updated;
-        for (auto log : replay_logs) {
-            if(log.current_entry.RS_id == RS_id) {
+
+        replay_logs.erase(
+            std::remove_if(
+                replay_logs.begin(),
+                replay_logs.end(),
+        [&](logging::InsectReader const & log) {
+            if ( log.current_entry.RS_id == RS_id) {
                 ReplayTracker *rt;
                 rt = new ReplayTracker();
                 rt->init(next_insecttrkr_id,log,_visdat);
                 _trackers.push_back(rt);
                 next_insecttrkr_id++;
-            } else {
-                replay_logs_updated.push_back(log);
+                return true;
             }
+            return false;
         }
-        replay_logs = replay_logs_updated;
+            ),
+        replay_logs.end()
+        );
     }
 };
 

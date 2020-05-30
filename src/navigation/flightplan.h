@@ -217,6 +217,7 @@ public:
             if (v1 != v2) {
                 throw my_exit("XML version difference detected from " + filepath);
             }
+            infile.close();
         } else {
             throw my_exit("File not found: " + filepath);
         }

@@ -1,8 +1,9 @@
 #pragma once
-#include <opencv2/highgui/highgui.hpp>
 #include "common.h"
 #include "cam.h"
 #include "logreader.h"
+
+#include <gst/app/gstappsink.h>
 
 class FileCam : public Cam {
 private:
@@ -11,6 +12,7 @@ private:
     int im_width=0, im_height=0, nFrames=0,frame_cnt = 0;
     void read_frame_ids();
     void calibration();
+    void init_gstream();
     std::string replay_dir;
 
     struct frame_id_entry {
@@ -29,7 +31,6 @@ public:
         set_file_paths(replay_dir);
         video_fn = replay_dir + '/' + playback_filename();
     }
-    cv::VideoCapture video;
 
     void init();
     void close();

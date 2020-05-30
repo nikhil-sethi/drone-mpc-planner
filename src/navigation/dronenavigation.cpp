@@ -491,6 +491,7 @@ void DroneNavigation::deserialize_settings() {
         if (v1 != v2) {
             throw my_exit("XML version difference detected from " + settings_file);
         }
+        infile.close();
     } else {
         throw my_exit("File not found: " + settings_file);
     }

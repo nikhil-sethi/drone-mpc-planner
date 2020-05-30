@@ -5,15 +5,15 @@ using namespace cv;
 using namespace std;
 namespace tracking {
 
+static std::ofstream insectlogger;
+
 void InsectTracker::init(int id, VisionData *visdat, int16_t viz_id) {
     _insect_trkr_id = id;
-    std::ofstream * logger = new std::ofstream(); // FIXME: use std::shared_ptr?
-    std::string logger_fn;
-    logger_fn = data_output_dir  + "log_itrk" + to_string(id) + ".csv";
-    (*logger).open(logger_fn,std::ofstream::out);
-    (*logger) << "RS_ID;time;";
-    ItemTracker::init(logger,visdat,"insect",viz_id);
-    (*logger) << std::endl;
+    std::string logger_fn = data_output_dir  + "log_itrk" + to_string(id) + ".csv";
+    insectlogger.open(logger_fn,std::ofstream::out);
+    insectlogger << "RS_ID;time;";
+    ItemTracker::init(&insectlogger,visdat,"insect",viz_id);
+    insectlogger << std::endl;
     n_frames_lost = 0;
 }
 void InsectTracker::start_new_log_line(double time, unsigned long long frame_number) {

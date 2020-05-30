@@ -135,7 +135,7 @@ struct WorldItem {
     cv::Point2f image_coordinates() {
         return cv::Point2f(iti.x,iti.y);
     }
-    float yaw;
+    float yaw = 0;
     float distance, distance_bkg;
     float radius;
     bool valid = false;

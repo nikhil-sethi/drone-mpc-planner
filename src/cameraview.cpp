@@ -62,7 +62,10 @@ void CameraView::init(cv::Point3f point_left_top, cv::Point3f point_right_top, c
     plane_supports_hunt.at(right_plane) = plane_supports.at(right_plane);
     plane_supports_hunt.at(camera_plane) = plane_supports.at(camera_plane) + margin_camera*plane_normals.at(camera_plane);
 
-    adjacency_matrix = cv::Mat({N_PLANES, N_PLANES, N_PLANES}, CV_32S, cv::Scalar(0));
+
+    for (uint i = 0; i < N_PLANES; i++)
+        adjacency_matrix.push_back(cv::Mat::zeros(N_PLANES, N_PLANES, CV_32S));
+
     adjacency_entry(1, bottom_plane, front_plane, right_plane);
     adjacency_entry(1, bottom_plane, right_plane, back_plane);
     adjacency_entry(1, bottom_plane, back_plane, left_plane);
@@ -99,7 +102,7 @@ void CameraView::update_plane_vertices() {
     for(uint i=0; i<N_PLANES; i++) {
         for (uint j=i; j<N_PLANES; j++) {
             for (uint k=j; k<N_PLANES; k++) {
-                if(adjacency_matrix.at<int>(i,j,k)==1) {
+                if(adjacency_matrix.at(i).at<int>(j,k)==1) {
                     vertice_pos = intersection_of_3_planes(plane_supports.at(i), plane_normals.at(i),
                                                            plane_supports.at(j), plane_normals.at(j),
                                                            plane_supports.at(k), plane_normals.at(k));
@@ -328,12 +331,12 @@ void CameraView::cout_plane_violation(std::array<bool, N_PLANES> inview_violatio
 
 
 void CameraView::adjacency_entry(uint val, uint p1, uint p2, uint p3) {
-    adjacency_matrix.at<int>(p1, p2, p3) = val;
-    adjacency_matrix.at<int>(p1, p3, p2) = val;
-    adjacency_matrix.at<int>(p2, p1, p3) = val;
-    adjacency_matrix.at<int>(p2, p3, p1) = val;
-    adjacency_matrix.at<int>(p3, p1, p2) = val;
-    adjacency_matrix.at<int>(p3, p2, p1) = val;
+    adjacency_matrix.at(p1).at<int>(p2, p3) = val;
+    adjacency_matrix.at(p1).at<int>(p3, p2) = val;
+    adjacency_matrix.at(p2).at<int>(p1, p3) = val;
+    adjacency_matrix.at(p2).at<int>(p3, p1) = val;
+    adjacency_matrix.at(p3).at<int>(p1, p2) = val;
+    adjacency_matrix.at(p3).at<int>(p2, p1) = val;
 }
 
 

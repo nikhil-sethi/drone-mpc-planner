@@ -12,7 +12,7 @@ class LogReader {
 public:
     void init(std::string path);
     void read_insect_replay_log(std::string path);
-    void current_frame_number(unsigned long long RS_id);
+    int current_frame_number(unsigned long long RS_id);
     double first_takeoff_time() {return _takeoff_time;}
     unsigned long long retrieve_RS_ID_from_frame_id(uint frame_number) { // reverse lookup for filecam
         if (RS_IDs.size() > frame_number + 1)
@@ -24,7 +24,7 @@ public:
     LogEntryMain current_entry;
     std::vector<InsectReader> replay_moths() {
         std::vector<InsectReader> replay_logs;
-        for (auto log : log_insects) {
+        for (auto & log : log_insects) {
             if (log.replay_moth()) {
                 replay_logs.push_back(log);
             }

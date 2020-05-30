@@ -577,6 +577,13 @@ void Visualizer::draw_tracker_viz() {
 void Visualizer::paint() {
     if (request_trackframe_paint) {
         request_trackframe_paint = false;
+
+
+        static bool tracking_viz_initialized = false;
+        if (!tracking_viz_initialized) {
+            tracking_viz_initialized = true;
+            namedWindow("tracking results", cv::WINDOW_OPENGL | cv::WINDOW_AUTOSIZE);
+        }
         cv::imshow("tracking results", trackframe);
         if (_visdat->viz_frame.cols)
             cv::imshow("diff",_visdat->viz_frame);
@@ -584,8 +591,14 @@ void Visualizer::paint() {
             cv::imshow("drn_diff", _dtrkr->diff_viz);
         if (_trackers->viz_max_points.cols)
             cv::imshow("motion points", _trackers->viz_max_points);
-        if (_trackers->dronetracker()->viz_disp.cols>0)
+        if (_trackers->dronetracker()->viz_disp.cols>0) {
+            static bool stereo_viz_initialized = false;
+            if (!stereo_viz_initialized) {
+                stereo_viz_initialized = true;
+                namedWindow("stereo",cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
+            }
             imshow("stereo",_trackers->dronetracker()->viz_disp);
+        }
 
         new_tracker_viz_data_requested = true;
     }

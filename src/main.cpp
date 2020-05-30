@@ -50,8 +50,6 @@ volatile std::sig_atomic_t term_sig_fired;
 int imgcount; // to measure fps
 GStream output_video_results,output_video_LR,output_video_cuts;
 
-int main_argc;
-char **main_argv;
 xmls::PatsParameters pparams;
 xmls::DroneParameters dparams;
 stopwatch_c stopWatch;
@@ -178,7 +176,7 @@ void process_video() {
                         logger.close();
                         std::string cvfn = "insect" + to_string(insect_cnt) + ".mkv";
                         std::cout << "Opening new video: " << cvfn << std::endl;
-                        if (output_video_cuts.init(main_argc,main_argv,pparams.video_cuts,data_output_dir + cvfn,IMG_W*2,IMG_H,pparams.fps/2, "192.168.1.255",5000,true,GStream::rm_vaapih264)) {std::cout << "WARNING: could not open cut video " << cvfn << std::endl;}
+                        if (output_video_cuts.init(pparams.video_cuts,data_output_dir + cvfn,IMG_W*2,IMG_H,pparams.fps/2, "192.168.1.255",5000,true,GStream::rm_vaapih264)) {std::cout << "WARNING: could not open cut video " << cvfn << std::endl;}
                         logger_fn = data_output_dir  + "log" + to_string(insect_cnt) + ".csv";
                         logger.open(logger_fn,std::ofstream::out);
                     }
@@ -219,7 +217,14 @@ void process_video() {
         }
 
         //keep track of time and fps
-        float t = stopWatch.Read() / 1000.f;
+
+        float t_pc = stopWatch.Read() / 1000.f;
+        float t_cam = static_cast<float>(cam->frame_time());
+        float t;
+        if ( log_replay_mode || generator_mode)
+            t = t_pc;
+        else
+            t = t_cam;
         static float prev_time = -1.f/pparams.fps;
         float current_fps = 1.f / (t - prev_time);
         float fps = fps_smoothed.addSample(current_fps);
@@ -229,7 +234,7 @@ void process_video() {
         static double time =0;
         float dt __attribute__((unused)) = static_cast<float>(cam->frame_time() - time);
         time = cam->frame_time();
-        std::cout << dnav.navigation_status() <<  "; frame: " <<imgcount << ", " << cam->frame_number() << ". FPS: " << to_string_with_precision(fps,1) << ". Time: " << to_string_with_precision(time,2)  << ", dt " << to_string_with_precision(dt,3) << std::endl;
+        std::cout << dnav.navigation_status() <<  "; frame: " <<imgcount << ", " << cam->frame_number() << ". FPS: " << to_string_with_precision(fps,1) << ". Time: " << to_string_with_precision(time,2)  << ", dt " << to_string_with_precision(dt,3) << " rs-pc: " << t_cam - t_pc << std::endl;
         imgcount++;
         prev_time = t;
 
@@ -262,7 +267,11 @@ void process_video() {
 void process_frame(Stereo_Frame_Data data) {
 
     if (log_replay_mode) {
-        logreader.current_frame_number(data.RS_id);
+        if (logreader.current_frame_number(data.RS_id)) {
+            key = 27;
+            return;
+        }
+
         trackers.process_replay_moth(data.RS_id);
         cmdcenter.trigger_demo_flight_from_log(replay_dir,logreader.current_entry.trkrs_state);
     } else if (generator_mode) {
@@ -484,6 +493,7 @@ void close_thread_pool() {
         }
         for (uint i = 0; i < NUM_OF_THREADS; i++) {
             tp[i].thread->join();
+            delete tp[i].thread;
         }
 
         std::cout <<"Threads in pool closed"<< std::endl;
@@ -498,14 +508,18 @@ void init_terminal_signals() {
     //init ctrl - c catch
     struct sigaction sigIntHandler;
     sigIntHandler.sa_handler = kill_sig_handler;
-    sigIntHandler.sa_flags = 0;
-    sigaction(SIGINT, &sigIntHandler, NULL);
+    sigIntHandler.sa_flags = SA_NODEFER;
+    sigemptyset(&sigIntHandler.sa_mask);
+    sigaddset(&sigIntHandler.sa_mask, SIGINT);
+    sigaction(SIGINT, &sigIntHandler, 0);
 
     //init killall catch
     struct sigaction sigTermHandler;
     sigTermHandler.sa_handler = kill_sig_handler;
-    sigTermHandler.sa_flags = 0;
-    sigaction(SIGTERM, &sigTermHandler, NULL);
+    sigemptyset(&sigTermHandler.sa_mask);
+    sigaddset(&sigTermHandler.sa_mask, SIGTERM);
+    sigTermHandler.sa_flags = SA_NODEFER;
+    sigaction(SIGTERM, &sigTermHandler, 0);
 }
 
 void init_loggers() {
@@ -538,16 +552,14 @@ void init_loggers() {
 void init_video_recorders() {
     /*****init the video writer*****/
     if (pparams.video_result)
-        if (output_video_results.init(main_argc,main_argv,pparams.video_result, data_output_dir + "videoResult.mkv",visualizer.viz_frame_size().width,visualizer.viz_frame_size().height,pparams.fps,"192.168.1.255",5000,true,GStream::rm_vaapih264)) {throw my_exit("could not open results video");}
+        if (output_video_results.init(pparams.video_result, data_output_dir + "videoResult.mkv",visualizer.viz_frame_size().width,visualizer.viz_frame_size().height,pparams.fps,"192.168.1.255",5000,true,GStream::rm_vaapih264)) {throw my_exit("could not open results video");}
     if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode && pparams.op_mode != op_mode_crippled)
-        if (output_video_LR.init(main_argc,main_argv,pparams.video_raw,data_output_dir + "videoRawLR.mkv",IMG_W*2,IMG_H,pparams.fps, "192.168.1.255",5000,false,GStream::rm_vaapih264)) {throw my_exit("could not open LR video");}
+        if (output_video_LR.init(pparams.video_raw,data_output_dir + "videoRawLR.mkv",IMG_W*2,IMG_H,pparams.fps, "192.168.1.255",5000,false,GStream::rm_vaapih264)) {throw my_exit("could not open LR video");}
     if (pparams.video_cuts)
-        if (output_video_cuts.init(main_argc,main_argv,pparams.video_cuts,data_output_dir + "insect" + to_string(0) + ".mkv",IMG_W*2,IMG_H,pparams.fps/2, "192.168.1.255",5000,true,GStream::rm_vaapih264)) {std::cout << "WARNING: could not open cut video " << data_output_dir + "insect" + to_string(0) + ".mkv" << std::endl;}
+        if (output_video_cuts.init(pparams.video_cuts,data_output_dir + "insect" + to_string(0) + ".mkv",IMG_W*2,IMG_H,pparams.fps/2, "192.168.1.255",5000,true,GStream::rm_vaapih264)) {std::cout << "WARNING: could not open cut video " << data_output_dir + "insect" + to_string(0) + ".mkv" << std::endl;}
 }
 
 std::tuple<bool,bool,bool, std::string,uint8_t,std::string,std::string> process_arg(int argc, char **argv) {
-    main_argc = argc;
-    main_argv = argv;
 
     int default_drone_id = 1;
     int arg_drone_id = default_drone_id;
@@ -693,11 +705,15 @@ void close(bool sig_kill) {
     logger_insect << std::flush;
     logger_video_ids << std::flush;
     logger << std::flush;
+    logger_video_ids.close();
+    logger_insect.close();
     logger.close();
     if (!sig_kill) // seems to get stuck. TODO: streamline
         close_thread_pool();
 
     cmdcenter.close();
+    if(cam)
+        cam.release();
 
     std::cout <<"Closed"<< std::endl;
 }

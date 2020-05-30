@@ -43,12 +43,12 @@ protected:
 
     void set_file_paths(std::string replay_dir);
     void convert_depth_background_to_world();
-    CameraView def_volume();
+    void def_volume();
     cv::Point3f get_SlopesOfPixel(uint x, uint y);
 
 public:
-    bool frame_by_frame;
-    bool turbo;
+    bool frame_by_frame = false;
+    bool turbo = false;
     cv::Mat Qf;
     cv::Mat frameL,frameR;
     cv::Mat depth_background;
@@ -59,7 +59,18 @@ public:
     CameraView camera_volume;
 
     virtual void init() = 0;
-    virtual void close() = 0;
+    virtual void close() {
+        delete intr;
+        Qf.release();
+        frameL.release();
+        frameR.release();
+        depth_background.release();
+        depth_background_3mm.release();
+        depth_background_3mm_world.release();
+        depth_background_mm.release();
+        disparity_background.release();
+        camera_volume.release();
+    }
     virtual void update() = 0;
     void skip(float duration) {
         replay_skip_n_frames+=roundf(pparams.fps*duration);

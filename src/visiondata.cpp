@@ -38,8 +38,8 @@ void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, fl
 
 void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsigned long long new_frame_id) {
     lock_data.lock();
-    frameL_prev = frameL;
-    frameR_prev = frameR;
+    frameL_prev = frameL.clone();
+    frameR_prev = frameR.clone();
     frameL = new_frameL;
     frameR = new_frameR;
     frame_id = new_frame_id;
@@ -89,11 +89,15 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
     }
 
     diffL = abs(diffL16);
-    diffL.convertTo(diffL, CV_8UC1);
+    cv::Mat diffL_tmp;
+    diffL.convertTo(diffL_tmp, CV_8UC1);
+    diffL = diffL_tmp;
     cv::resize(diffL,diffL_small,smallsize);
 
     diffR = abs(diffR16);
-    diffR.convertTo(diffR, CV_8UC1);
+    cv::Mat diffR_tmp;
+    diffR.convertTo(diffR_tmp, CV_8UC1);
+    diffR = diffR_tmp;
     cv::resize(diffR,diffR_small,smallsize);
 
     if (enable_viz_diff)
@@ -253,6 +257,7 @@ void VisionData::deserialize_settings() {
         if (v1 != v2) {
             throw my_exit("XML version difference detected from " + settings_file);
         }
+        infile.close();
     } else {
         throw my_exit("File not found: " + settings_file);
     }

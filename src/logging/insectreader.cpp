@@ -37,6 +37,7 @@ tuple<map<int, LogEntryInsect>,map<string, int>> InsectReader::read_log(string f
             throw my_exit("Could not read insect log! \n" + string(exp.what()) + " at: " + line);
         }
     }
+    infile.close();
 
     return make_tuple(log,headmap);
 

@@ -309,7 +309,7 @@ void Realsense::init_real() {
     if (pparams.video_raw == video_bag)
         dev = rs2::recorder(bag_fn,dev);
 
-    camera_volume = def_volume();
+    def_volume();
 
     update();
     initialized = true;
@@ -710,7 +710,7 @@ void Realsense::init_playback() {
     convert_depth_background_to_world();
     camparams.serialize(calib_wfn); // tmp?
 
-    camera_volume = def_volume();
+    def_volume();
 
     std::cout << "Awaiting first image..." << std::endl;
     swc.Start();
@@ -748,6 +748,7 @@ void Realsense::close() {
         std::cout << "Camera closed" << std::endl;
         initialized = false;
     }
+    Cam::close();
 }
 
 void Realsense::reset() {

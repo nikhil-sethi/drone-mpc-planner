@@ -107,6 +107,7 @@ void CommandCenterLink::write_commandcenter_status_file() {
         status_file << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << '\n';
         status_file << "Runtime: " << to_string_with_precision(_cam->frame_time(),1) << "s" << '\n';
         status_file << nav_status << std::endl;
+        status_file.close();
     }
 }
 
@@ -118,14 +119,16 @@ void CommandCenterLink::reset_commandcenter_status_file(std::string status_msg) 
     status_file << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << '\n';
     status_file << "Runtime: " << 0 << "s" << '\n';
     status_file << status_msg << std::endl;
+    status_file.close();
 }
 
 void CommandCenterLink::write_commandcenter_status_image() {
     cv::Mat out = _cam->frameL.clone();
-    cvtColor(out,out,cv::COLOR_GRAY2BGR);
-    putText(out,"State: " + _dnav->navigation_status() + " " + _trackers->mode_str() + " " + _dctrl->flight_mode() +
+    cv::Mat out_rgb;
+    cvtColor(out,out_rgb,cv::COLOR_GRAY2BGR);
+    putText(out_rgb,"State: " + _dnav->navigation_status() + " " + _trackers->mode_str() + " " + _dctrl->flight_mode() +
             " "  + _trackers->dronetracker()->drone_tracking_state(),cv::Point(5,14),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
-    putText(out,"Time:       " + to_string_with_precision(_cam->frame_time(),2),cv::Point(5,28),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
+    putText(out_rgb,"Time:       " + to_string_with_precision(_cam->frame_time(),2),cv::Point(5,28),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
 
-    cv::imwrite("../../../../pats_monitor_tmp.jpg", out);
+    cv::imwrite("../../../../pats_monitor_tmp.jpg", out_rgb);
 }

@@ -36,7 +36,7 @@ void GStream::block() {
     wait_for_want.lock();
 }
 
-int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, int sizeY,int fps, std::string ip, int port, bool color, render_mode_enum render_mode) {
+int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std::string ip, int port, bool color, render_mode_enum render_mode) {
     videomode = mode;
     gstream_fps  =fps;
     wait_for_want.unlock();
@@ -73,7 +73,7 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
         GstElement *conv, *capsfilter,*encoder, *mux, *rtp, *videosink;
 
         /* init GStreamer */
-        gst_init (&argc, &argv);
+        gst_init (NULL, NULL);
 
         /* setup pipeline */
         if (mode == video_mkv) {
@@ -97,19 +97,23 @@ int GStream::init(int argc, char **argv, int mode, std::string file, int sizeX, 
             g_signal_connect (_appsrc, "enough-data", G_CALLBACK(cb_enough_data), NULL);
 
             if (color) {
+                auto caps = gst_caps_new_simple ("video/x-raw",
+                                                 "format", G_TYPE_STRING, "BGR",
+                                                 "width", G_TYPE_INT, sizeX,
+                                                 "height", G_TYPE_INT, sizeY,
+                                                 "framerate", GST_TYPE_FRACTION, gstream_fps, 1,NULL);
                 g_object_set (G_OBJECT (_appsrc), "caps",
-                              gst_caps_new_simple ("video/x-raw",
-                                                   "format", G_TYPE_STRING, "BGR",
-                                                   "width", G_TYPE_INT, sizeX,
-                                                   "height", G_TYPE_INT, sizeY,
-                                                   "framerate", GST_TYPE_FRACTION, gstream_fps, 1,NULL), NULL);
+                              caps, NULL);
+                gst_caps_unref(caps);
             } else {
+                auto caps = gst_caps_new_simple ("video/x-raw",
+                                                 "format", G_TYPE_STRING, "GRAY8",
+                                                 "width", G_TYPE_INT, sizeX,
+                                                 "height", G_TYPE_INT, sizeY,
+                                                 "framerate", GST_TYPE_FRACTION, gstream_fps, 1,NULL);
                 g_object_set (G_OBJECT (_appsrc), "caps",
-                              gst_caps_new_simple ("video/x-raw",
-                                                   "format", G_TYPE_STRING, "GRAY8",
-                                                   "width", G_TYPE_INT, sizeX,
-                                                   "height", G_TYPE_INT, sizeY,
-                                                   "framerate", GST_TYPE_FRACTION, gstream_fps, 1,NULL), NULL);
+                              caps, NULL);
+                gst_caps_unref(caps);
             }
 
             conv = gst_element_factory_make ("videoconvert", "conv");
