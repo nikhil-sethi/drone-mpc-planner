@@ -200,7 +200,10 @@ public:
     void init_replay_moth(int id) {
         ReplayTracker *rt;
         rt = new ReplayTracker();
-        rt->init(next_insecttrkr_id,"../insect_logs/" + std::to_string(id) + ".csv",_visdat);
+        if(pparams.fps == 90)
+            rt->init(next_insecttrkr_id,"../insect_logs/" + std::to_string(id) + "-90fps.csv",_visdat);
+        else
+            rt->init(next_insecttrkr_id,"../insect_logs/" + std::to_string(id) + ".csv",_visdat);
         _trackers.push_back(rt);
         next_insecttrkr_id++;
     }
