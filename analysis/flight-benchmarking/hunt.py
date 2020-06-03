@@ -3,8 +3,8 @@
 
 import os
 import numpy as np
-import pandas as pd 
-from flightstates import init_flightstate_data, eval_current_flightstate, key_takeofftime 
+import pandas as pd
+from flightstates import init_flightstate_data, eval_current_flightstate, key_takeofftime
 from cleanwhitespaces import cleanWhitespaces
 
 
@@ -12,7 +12,7 @@ def concatenate_insectlogs(folderpath):
 	insect_data = pd.DataFrame()
 	for file in os.listdir(folderpath):
 		if file.endswith('.csv') and file.startswith('log_itrk'):
-			data_string = cleanWhitespaces(folderpath+'/'+file)	
+			data_string = cleanWhitespaces(folderpath+'/'+file)
 			dataframe = pd.read_csv(data_string, sep=';')
 			insect_data = pd.concat([insect_data, dataframe], ignore_index=True)
 
@@ -20,7 +20,7 @@ def concatenate_insectlogs(folderpath):
 	n_replaylogs = 0
 	for file in os.listdir(folderpath):
 		if file.endswith('.csv') and file.startswith('log_rtrk'):
-			data_string = cleanWhitespaces(folderpath+'/'+file)	
+			data_string = cleanWhitespaces(folderpath+'/'+file)
 			dataframe = pd.read_csv(data_string, sep=';')
 			replayinsect_data = pd.concat([replayinsect_data, dataframe], ignore_index=True)
 			n_replaylogs += 1
@@ -39,9 +39,9 @@ def concatenate_insectlogs(folderpath):
 		return insect_data.sort_values(by=['RS_ID']).reset_index() , key_nlostframes, key_posxtarget, key_posytarget, key_posztarget
 
 
-key_minimalerror = 'minimal_error'	
+key_minimalerror = 'minimal_error'
 key_time_minimalerror = 'time_minimal_error'
-key_minimalerror_untracked = 'minimal_error_untracked'	
+key_minimalerror_untracked = 'minimal_error_untracked'
 key_time_minimalerror_untracked = 'time_minimal_error_untracked'
 key_insecttracking = 'insect_tracking'
 def read_hunt(folderpath):
@@ -53,7 +53,7 @@ def read_hunt(folderpath):
 
 	n_samples_drone = np.size(drone_data,0)
 	n_samples_insect = np.size(insect_data, 0)
-	
+
 	closest_distance = np.inf
 	time_at_closest_distance = np.nan
 	closest_distance_untracked = np.inf
@@ -64,7 +64,7 @@ def read_hunt(folderpath):
 	for i in range(n_samples_insect):
 		if(insect_data[key_nlostframes][i]==0):
 			samples_insect_tracked += 1
-	
+
 	for i in range(n_samples_drone):
 		time = drone_data['elapsed'][i]
 		nav_state = drone_data['nav_state'][i]
@@ -74,7 +74,7 @@ def read_hunt(folderpath):
 		try:
 			insect_idx = insect_data[insect_data['RS_ID']==drone_data['RS_ID'][i]].index[0]
 			target = np.array([insect_data[key_posxtarget][insect_idx], insect_data[key_posytarget][insect_idx], insect_data[key_posztarget][insect_idx]])
-			
+
 			if(drone_data['valid'][i]==1):
 				pos = np.array([drone_data['posX_drone'][i], drone_data['posY_drone'][i], drone_data['posZ_drone'][i]])
 				error = np.linalg.norm(target-pos)
@@ -87,10 +87,10 @@ def read_hunt(folderpath):
 					if(error<closest_distance):
 						closest_distance = error
 						time_at_closest_distance = drone_data['elapsed'][i]
-			
+
 		except IndexError:
-			pass	
-				
+			pass
+
 	hunt_data = {}
 	hunt_data[key_minimalerror] = closest_distance
 	hunt_data[key_time_minimalerror] = time_at_closest_distance - flightstates_data[key_takeofftime]

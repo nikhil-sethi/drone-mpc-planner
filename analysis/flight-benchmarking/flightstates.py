@@ -20,7 +20,7 @@ def eval_current_flightstate(flight, time, nav_state, auto_throttle):
 	if(nav_state==23 and np.isnan(flight[key_landedtime])):
 		flight[key_landedtime] = time
 
-	if(auto_throttle>224 and np.isnan(flight[key_takeofftime])):
+	if(nav_state==9 and np.isnan(flight[key_takeofftime])):
 		flight[key_takeofftime] = time
 	return flight
 
