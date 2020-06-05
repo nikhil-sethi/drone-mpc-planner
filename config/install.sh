@@ -34,7 +34,7 @@ mkdir -p ~/code
 		fi
 	fi
 
-	[ -f pats_ssh_files.tar.xz ] {
+	[ ! -f pats_ssh_files.tar.xz ] || {
 			#add deploy key
 		tar -xf pats_ssh_files.tar.xz
 		mkdir -p ~/.ssh
