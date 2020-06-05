@@ -108,6 +108,15 @@ pushd ~/dependencies
 	exec bash
 }
 
+# Uninstall openCV 3
+[ -f opencv-3.4.2.done ] || {
+	pushd opencv-3.4.2
+	pushd build
+	sudo make uninstall
+	popd
+	popd
+}
+
 # Install openCV
 [ -f opencv-4.3.0.done ] || {
 	[ -d opencv-4.3.0 ] || {
