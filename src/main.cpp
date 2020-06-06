@@ -45,7 +45,7 @@ using namespace cv;
 using namespace std;
 
 /***********Variables****************/
-unsigned char key = 0;
+bool exit_now = false;
 volatile std::sig_atomic_t term_sig_fired;
 int imgcount; // to measure fps
 GStream output_video_results,output_video_LR,output_video_cuts;
@@ -103,7 +103,7 @@ MainWindow gui;
 void process_frame(Stereo_Frame_Data data_drone);
 void process_video();
 int main( int argc, char **argv);
-void handle_key(double time);
+bool handle_key(double time);
 void close(bool sig_kill);
 
 /************ code ***********/
@@ -114,7 +114,7 @@ void process_video() {
     stopWatch.Start();
 
     //main while loop:
-    while (key != 27) // ESC
+    while (!exit_now) // ESC
     {
         cam->update();
 
@@ -129,22 +129,14 @@ void process_video() {
         tp[0].data_processed.wait(lk, []() {return tp[0].data_is_processed; });
         tp[0].data_is_processed= false;
 
-        if (term_sig_fired==2) {
-            std::cout <<"\nCaught ctrl-c: " << term_sig_fired << std::endl;
-            key = 27;
-        } else if (term_sig_fired==15) {
-            std::cout <<"\nCaught TERM signal: " << term_sig_fired << std::endl;
-            key = 27;
-        } else if (term_sig_fired) {
-            std::cout <<"\nCaught unknown signal: " << term_sig_fired << std::endl;
-            key = 27;
-        }
+
+        bool escape_key_pressed = false;
         if (pparams.has_screen) {
             static int speed_div;
             if (!(speed_div++ % 4) || (((log_replay_mode || generator_mode ) && !cam->turbo) || cam->frame_by_frame)) {
                 visualizer_3d.run();
                 visualizer.paint();
-                handle_key(data.time);
+                escape_key_pressed = handle_key(data.time);
             }
         }
         tp[0].m1.lock();
@@ -152,6 +144,18 @@ void process_video() {
         tp[0].data_is_new = true;
         tp[0].new_data.notify_one();
         tp[0].m1.unlock();
+
+        if (term_sig_fired==2) {
+            std::cout <<"\nCaught ctrl-c: " << term_sig_fired << std::endl;
+            exit_now = true;
+        } else if (term_sig_fired==15) {
+            std::cout <<"\nCaught TERM signal: " << term_sig_fired << std::endl;
+            exit_now = true;
+        } else if (term_sig_fired) {
+            std::cout <<"\nCaught unknown signal: " << term_sig_fired << std::endl;
+            exit_now = true;
+        } else if (escape_key_pressed)
+            exit_now = true;
 
         static bool recording = false;
         double dtr = data.time - trackers.insecttracker_best()->last_sighting_time;
@@ -250,25 +254,26 @@ void process_video() {
         if (!log_replay_mode && ((imgcount > pparams.close_after_n_images && pparams.close_after_n_images>0)
                                  || (cam->measured_exposure() <= pparams.darkness_threshold && pparams.darkness_threshold>0))) {
             std::cout << "Initiating periodic restart" << std::endl;
-            key =27;
+            exit_now = true;
         } else if(restart_delay > 1.5f*dnav.time_out_after_landing*pparams.fps) {
             std::cout << "Flight termintated" << std::endl;
             if (dctrl.flight_aborted())
                 std::cout << "Control problem: " << dctrl.flight_mode() << std::endl;
             else
                 std::cout << "Nav status: " << dnav.navigation_status() << std::endl;
-            key =27;
+            exit_now = true;
         }
 
 
     } // main while loop
+    std::cout << "Exiting main loop" << std::endl;
 }
 
 void process_frame(Stereo_Frame_Data data) {
 
     if (log_replay_mode) {
         if (logreader.current_frame_number(data.RS_id)) {
-            key = 27;
+            exit_now = true;
             return;
         }
 
@@ -343,24 +348,23 @@ void process_frame(Stereo_Frame_Data data) {
            << dur3 << ";"
            << dur4 << ";"
            << dur5 << ";"
-           << dur_tot << ";"
+           << dur_tot << ";";
 #endif
-           logger  << '\n';
+    logger  << '\n';
 }
 
 void init_insect_log(int n) {
     trackers.init_replay_moth(n);
 }
 
-void handle_key(double time [[maybe_unused]]) {
-    if (key == 27) { // set by an external ctrl-c
-        return;
-    }
-    key = cv::waitKey(1);
+bool handle_key(double time [[maybe_unused]]) {
+    if (exit_now)
+        return true;
+
+    unsigned char key = cv::waitKey(1);
     key = key & 0xff;
-    if (key == 27) {  //esc
-        return; // don't clear key, just exit
-    }
+    if (key == 27)   //esc
+        return true;
 
     switch(key) {
     case 'b':
@@ -452,16 +456,16 @@ void handle_key(double time [[maybe_unused]]) {
         dnav.nav_flight_mode(navigation::nfm_manual);
         break;
     } // end switch key
-    key=0;
+    return false;
 }
 
 //This is where frames get processed after it was received from the cam in the main thread
 void pool_worker(int id ) {
     std::unique_lock<std::mutex> lk(tp[id].m1,std::defer_lock);
-    while(key!=27) {
+    while(!exit_now) {
         tp[id].new_data.wait(lk,[]() {return tp[0].data_is_new;});
         tp[0].data_is_new = false;
-        if (key == 27)
+        if (exit_now)
             break;
         process_frame(tp->data);
         tp[id].m2.lock();
@@ -828,9 +832,9 @@ int main( int argc, char **argv )
         process_video();
     } catch(bag_video_ended) {
         std::cout << "Video ended" << std::endl;
-        key = 27; //secret signal to close everything (it's the esc key)
+        exit_now = true;
     } catch(my_exit const &e) {
-        key = 27;
+        exit_now = true;
         close(false);
         std::cout << "Error: " << e.msg << std::endl;
         cmdcenter.reset_commandcenter_status_file(e.msg);
