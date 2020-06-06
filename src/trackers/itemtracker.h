@@ -113,9 +113,9 @@ protected:
 
     bool _tracking = false;
 
-    ImageItem  _image_item;
+    ImageItem _image_item;
     ImagePredictItem _image_predict_item;
-    WorldItem  _world_item;
+    WorldItem _world_item;
     uint _blobs_are_fused_cnt = 0;
     std::vector<tracking::BlobProps> _all_blobs;
 

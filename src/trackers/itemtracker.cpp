@@ -24,7 +24,6 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     std::string window_name = name + "_trkr";
 
     _world_item = WorldItem();
-    _world_item.yaw = 0; // tmp solution until yaw is changed
 
     deserialize_settings();
 
@@ -456,11 +455,6 @@ void ItemTracker::update_state(Point3f measured_world_coordinates,double time) {
     track_data data;
     data.pos_valid = true;
     data.state.pos = measured_world_coordinates;
-    if(!isnan(_world_item.yaw)) {
-        data.yaw = _world_item.yaw;
-        data.yaw_valid = true;
-    }
-    data.yaw_smooth = yaw_smoother.addSample(_world_item.yaw);
 
     track_data data_prev;
     if (track_history.size()>0)

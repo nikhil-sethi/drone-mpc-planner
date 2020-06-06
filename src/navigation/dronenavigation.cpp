@@ -452,6 +452,7 @@ void DroneNavigation::update(double time) {
 }
 
 void DroneNavigation::next_waypoint(Waypoint wp, double time) {
+    delete current_waypoint;
     current_waypoint = new Waypoint(wp);
     if (wp.mode == wfm_takeoff) {
         cv::Point3f p = _trackers->dronetracker()->drone_takeoff_location();

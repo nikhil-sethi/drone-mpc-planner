@@ -8,8 +8,6 @@ void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, fl
     cv::invert(Qf,Qfi);
     frameL = new_frameL.clone();
     frameR = new_frameR.clone();
-    frameL_prev = frameL;
-    frameR_prev = frameR;
     depth_background_mm = new_depth_background_mm;
 
     enable_viz_diff = false; // Note: the enable_diff_vizs in the insect/drone trackers may be more interesting instead of this one.
@@ -37,22 +35,15 @@ void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, fl
 }
 
 void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsigned long long new_frame_id) {
-    lock_data.lock();
-    frameL_prev = frameL.clone();
-    frameR_prev = frameR.clone();
     frameL = new_frameL;
     frameR = new_frameR;
     frame_id = new_frame_id;
     _current_frame_time = time;
 
-    cv::Mat frameL_prev16 = frameL16;
-    cv::Mat frameR_prev16 = frameR16;
-    cv::Mat tmpL;
-    frameL.convertTo(tmpL, CV_16SC1);
-    frameL16 = tmpL;
-    cv::Mat tmpR;
-    frameR.convertTo(tmpR, CV_16SC1);
-    frameR16 = tmpR;
+    cv::Mat frameL_prev16 = frameL16.clone();
+    cv::Mat frameR_prev16 = frameR16.clone();
+    frameL.convertTo(frameL16, CV_16SC1);
+    frameR.convertTo(frameR16, CV_16SC1);
 
     track_avg_brightness(frameL16,time);
     if (_reset_motion_integration) {
@@ -104,8 +95,6 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
         viz_frame = diffL*10;
 
     maintain_motion_noise_map();
-
-    lock_data.unlock();
 }
 
 void VisionData::fade(cv::Mat diff16, cv::Point exclude_drone_spot) {

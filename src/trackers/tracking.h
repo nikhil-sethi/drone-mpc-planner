@@ -128,14 +128,12 @@ struct WorldItem {
         pt.y = wbp.y;
         pt.z = wbp.z;
         valid = wbp.valid;
-        yaw = wbp.yaw;
     }
     cv::Point3f pt;
     ImageItem  iti;
     cv::Point2f image_coordinates() {
         return cv::Point2f(iti.x,iti.y);
     }
-    float yaw = 0;
     float distance, distance_bkg;
     float radius;
     bool valid = false;

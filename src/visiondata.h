@@ -29,7 +29,6 @@ private:
     int motion_update_iterator = 0;
     bool _calibrating_background = false;
     double calibrating_background_end_time = 0;
-    std::mutex lock_data;
 
     class VisionParameters: public xmls::Serializable
     {
@@ -86,7 +85,6 @@ private:
 
 public:
     cv::Mat frameL,frameR;
-    cv::Mat frameL_prev,frameR_prev;
     std::vector<cv::Mat> motion_noise_bufferL,motion_noise_bufferR;
     cv::Mat motion_noise_mapL,motion_noise_mapL_small;
     cv::Mat motion_noise_mapR,motion_noise_mapR_small;
