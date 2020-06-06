@@ -109,12 +109,14 @@ pushd ~/dependencies
 }
 
 # Uninstall openCV 3
-[ -f opencv-3.4.2.done ] || {
+[ ! -f opencv-3.4.2.done ] || {
 	pushd opencv-3.4.2
 	pushd build
 	sudo make uninstall
+	sudo ldconfig
 	popd
 	popd
+	rm  opencv-3.4.2* -rf
 }
 
 # Install openCV
