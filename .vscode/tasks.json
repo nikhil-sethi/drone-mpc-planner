@@ -10,7 +10,8 @@
             "command": "cmake \"Unix Makefiles\"  ${workspaceRoot}/pc",
             "presentation": {
                 "showReuseMessage": false
-              }
+              },
+              "problemMatcher": []
         },
         {
             "label": "make clean",
