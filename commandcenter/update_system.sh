@@ -11,7 +11,7 @@ until (( count++ >= 5 )) || ssh -o StrictHostKeyChecking=no -T $1 << EOF
  git reset --hard
  git checkout $branch
  git pr
- cmake ..
+ cmake -DCMAKE_BUILD_TYPE=RELEASE ..
  make -j4
  killall -9 pats || true
  echo done

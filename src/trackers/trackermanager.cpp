@@ -525,7 +525,7 @@ void TrackerManager::update_max_change_points() {
     vizs_maxs.clear();
 
     bool enable_insect_drone_split = false;
-    float drn_ins_split_thresh;
+    float drn_ins_split_thresh = 0;
 
     if (_mode == mode_locate_drone || !_dtrkr->image_predict_item().valid)
         roi_radius = 15;

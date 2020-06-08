@@ -281,7 +281,7 @@ cv::Mat Visualizer::plotxy(cv::Mat data1x,cv::Mat data1y, cv::Mat data2x,cv::Mat
     if (start < 0)
         start = 0;
 
-    float x,y;
+    float x=0,y=0;
     for (int j = start; j < x1S.rows-1; j++)  {
         x = x1S.at<float>(j,1) - static_cast<float>(minx);
         x =x*scaleX + 2*line_width;
