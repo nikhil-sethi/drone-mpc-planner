@@ -25,7 +25,7 @@ add_executable(${PROJECT_NAME} ${SRCS} ${THIRD_PARTY_SRCS} ${GUI_SRCS} ${ROS_SRC
 find_package(Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
 find_package(realsense2 REQUIRED)
-find_package( OpenCV REQUIRED )
+find_package( OpenCV 4.3.0 REQUIRED )
 MESSAGE( STATUS "OpenCV_DIR: " ${OpenCV_DIR} )
 MESSAGE( STATUS "OpenCV_LIBS: " ${OpenCV_LIBS} )
 MESSAGE( STATUS "OpenCV_LIB_DIR: " ${OpenCV_LIB_DIR} )
