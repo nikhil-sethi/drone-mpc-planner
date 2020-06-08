@@ -10,8 +10,6 @@ from PyQt5.QtGui import QIcon, QPixmap, QPalette,QColor,QKeyEvent
 from pathlib import Path
 from datetime import datetime
 import random,sys,os,re,subprocess,math
-
-dark_mode = True
 class CommandCenterWindow(QMainWindow):
 
     def __init__(self, parent=None):
@@ -22,10 +20,7 @@ class CommandCenterWindow(QMainWindow):
         self.setCentralWidget(wid)
         self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
         self.setAutoFillBackground(True)
-        p = self.palette()
-        if dark_mode:
-            p.setColor(self.backgroundRole(), QColor(15,15,15))
-        self.setPalette(p)
+
         layout = QGridLayout()
 
         source_folder = '~/Downloads/pats_status'
@@ -76,15 +71,13 @@ class SystemWidget(QWidget):
     def __init__(self, source_folder,system_folder,parent=None):
         QWidget.__init__(self, parent=parent)
         self.disable_chk_enable_events = False
+        self.dark_mode = True
+        self.refresh_darkmode = True
 
         self.system_folder = system_folder
         self.source_folder = source_folder
 
         self.chk_enable = QCheckBox()
-        if dark_mode:
-            self.chk_enable.setStyleSheet("background-color:rgb(128,0,0)")
-        else:
-            self.chk_enable.setStyleSheet("background-color:rgb(160,128,128)")
         self.chk_enable.setChecked(True)
         self.chk_enable.stateChanged.connect(self.activate)
 
@@ -113,8 +106,6 @@ class SystemWidget(QWidget):
         btn_restart.setToolTip('Restart pats process')
         btn_restart.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
         btn_restart.setMaximumSize(30, 30)
-        if dark_mode:
-            btn_restart.setStyleSheet("background-color:rgb(128,0,0)")
         btn_restart.clicked.connect(self.restart)
         self.btn_restart = btn_restart
 
@@ -122,35 +113,13 @@ class SystemWidget(QWidget):
         btn_download_current_log.setToolTip('Restart & download the current log')
         btn_download_current_log.setIcon(self.style().standardIcon(QStyle.SP_DriveFDIcon))
         btn_download_current_log.setMaximumSize(30, 30)
-        if dark_mode:
-            btn_download_current_log.setStyleSheet("background-color:rgb(128,0,0)")
         btn_download_current_log.clicked.connect(self.download_current_log)
         self.btn_download_current_log = btn_download_current_log
-
-        # btn_beep = QPushButton()
-        # btn_beep.setToolTip('Beep & blink')
-        # btn_beep.setIcon(self.style().standardIcon(QStyle.SP_MediaVolume))
-        # btn_beep.setMaximumSize(30, 30)
-        # if dark_mode:
-        #     btn_beep.setStyleSheet("background-color:rgb(128,0,0)")
-        # btn_beep.clicked.connect(self.beep)
-        # self.btn_beep = btn_beep
-
-        # btn_update = QPushButton()
-        # btn_update.setToolTip('Update from git')
-        # btn_update.setIcon(self.style().standardIcon(QStyle.SP_FileDialogToParent))
-        # btn_update.setMaximumSize(30, 30)
-        # if dark_mode:
-        #     btn_update.setStyleSheet("background-color:rgb(128,0,0)")
-        # btn_update.clicked.connect(self.update)
-        # self.btn_update = btn_update
 
         btn_takeoff_tuning = QPushButton()
         btn_takeoff_tuning.setToolTip('Fly waypoint mission (tuning)')
         btn_takeoff_tuning.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
         btn_takeoff_tuning.setMaximumSize(30, 30)
-        if dark_mode:
-            btn_takeoff_tuning.setStyleSheet("background-color:rgb(128,0,0)")
         btn_takeoff_tuning.clicked.connect(self.takeoff_tuning)
         self.btn_takeoff_tuning = btn_takeoff_tuning
 
@@ -158,8 +127,6 @@ class SystemWidget(QWidget):
         btn_takeoff_aggresive_wp.setToolTip('Fly waypoint mission (aggresive)')
         btn_takeoff_aggresive_wp.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
         btn_takeoff_aggresive_wp.setMaximumSize(30, 30)
-        if dark_mode:
-            btn_takeoff_aggresive_wp.setStyleSheet("background-color:rgb(128,0,0)")
         btn_takeoff_aggresive_wp.clicked.connect(self.takeoff_aggresive_wp)
         self.btn_takeoff_aggresive_wp = btn_takeoff_aggresive_wp
 
@@ -167,8 +134,6 @@ class SystemWidget(QWidget):
         btn_insect_replay_takeoff.setToolTip('Hunt insect replay')
         btn_insect_replay_takeoff.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
         btn_insect_replay_takeoff.setMaximumSize(30, 30)
-        if dark_mode:
-            btn_insect_replay_takeoff.setStyleSheet("background-color:rgb(128,0,0)")
         btn_insect_replay_takeoff.clicked.connect(self.insect_replay_takeoff)
         self.btn_insect_replay_takeoff = btn_insect_replay_takeoff
 
@@ -177,8 +142,6 @@ class SystemWidget(QWidget):
         control_layout.addWidget(self.chk_enable)
         control_layout.addWidget(btn_download_current_log)
         control_layout.addWidget(btn_restart)
-        # control_layout.addWidget(btn_update)
-        # control_layout.addWidget(btn_beep)
         control_layout.addWidget(btn_takeoff_tuning)
         control_layout.addWidget(btn_takeoff_aggresive_wp)
         control_layout.addWidget(btn_insect_replay_takeoff)
@@ -267,9 +230,10 @@ class SystemWidget(QWidget):
     def insect_replay_takeoff(self):
         subprocess.Popen(['./insect_replay_system.sh', 'pats'+self.host_id])
     def takeoshow_im_big(self,event):
-        ImDialog(self,self.source_folder,self.system_folder,self.host_id)
+        ImDialog(self,self.source_folder,self.system_folder,self.host_id,self.dark_mode)
 
     def refresh(self):
+        self.check_theme()
         self.pats_xml_path = Path(self.source_folder,self.system_folder,'pats_deploy.xml')
         with open (self.pats_xml_path, "r") as path_xml:
             xml_lines = path_xml.readlines()
@@ -298,18 +262,58 @@ class SystemWidget(QWidget):
             self.btn_takeoff_tuning.setEnabled(True)
             self.btn_takeoff_aggresive_wp.setEnabled(True)
         else:
-            # pixmap = QPixmap('./darkdummy.jpg')
-            # self.im_label.setPixmap(pixmap)
-            # self.im_label.setPixmap(pixmap.scaled(self.im_label.size(),Qt.KeepAspectRatio, Qt.SmoothTransformation))
             pal = QPalette(self.txt_label.palette())
-            if dark_mode:
-                pal.setColor(QPalette.WindowText, QColor(60,0,0))
+            if self.dark_mode:
+                pal.setColor(QPalette.WindowText, QColor(128,0,0))
             else:
                 pal.setColor(QPalette.WindowText, QColor(160,128,128))
             self.txt_label.setPalette(pal)
             self.btn_insect_replay_takeoff.setEnabled(False)
             self.btn_takeoff_tuning.setEnabled(False)
             self.btn_takeoff_aggresive_wp.setEnabled(False)
+
+    def check_theme(self):
+        theme = subprocess.check_output(["/usr/bin/gsettings get org.gnome.desktop.interface gtk-theme"], shell=True) #need to use full path /usr/bin because conda screws things up
+        new_darkmode = str(theme).find('dark') != -1
+        if new_darkmode and not self.dark_mode:
+            self.refresh_darkmode = True
+            self.dark_mode = True
+        elif not new_darkmode and self.dark_mode:
+            self.dark_mode = False
+            self.refresh_darkmode = True
+        syswidget_palette = self.palette()
+
+        if self.dark_mode and self.refresh_darkmode:
+            app.setStyle("Fusion")
+            dark_palette = QPalette()
+            dark_palette.setColor(QPalette.Window, QColor(15, 15, 15))
+            app.setPalette(dark_palette)
+
+            self.im_label.setStyleSheet("QToolTip { color: #000000; background-color: #800000; border: 1px solid black; }")
+            self.chk_enable.setStyleSheet("background-color:rgb(128,0,0)")
+            syswidget_palette.setColor(self.backgroundRole(), QColor(15,15,15))
+            self.btn_insect_replay_takeoff.setStyleSheet("background-color:rgb(128,0,0)")
+            self.btn_takeoff_aggresive_wp.setStyleSheet("background-color:rgb(128,0,0)")
+            self.btn_takeoff_tuning.setStyleSheet("background-color:rgb(128,0,0)")
+            self.btn_restart.setStyleSheet("background-color:rgb(128,0,0)")
+            self.btn_download_current_log.setStyleSheet("background-color:rgb(128,0,0)")
+        elif self.refresh_darkmode:
+
+            light_palette = QPalette()
+            light_palette.setColor(QPalette.Window, QColor(230, 230, 230))
+            app.setPalette(light_palette)
+
+            self.im_label.setStyleSheet("QToolTip { color: #000000; background-color: #9d8080; border: 1px solid black; }")
+            self.chk_enable.setStyleSheet("background-color:rgb(160,128,128)")
+            syswidget_palette.setColor(self.backgroundRole(), QColor(230,230,230))
+            self.btn_insect_replay_takeoff.setStyleSheet("background-color:rgb(160,128,128)")
+            self.btn_takeoff_aggresive_wp.setStyleSheet("background-color:rgb(160,128,128)")
+            self.btn_takeoff_tuning.setStyleSheet("background-color:rgb(160,128,128)")
+            self.btn_restart.setStyleSheet("background-color:rgb(160,128,128)")
+            self.btn_download_current_log.setStyleSheet("background-color:rgb(160,128,128)")
+
+        self.refresh_darkmode = False
+        self.setPalette(syswidget_palette)
 
     def get_lbl_txt(self):
         source_status_txt_file = Path(self.source_folder,self.system_folder,'status.txt')
@@ -373,7 +377,7 @@ class SystemWidget(QWidget):
                         system_has_problem = QColor(0,128,0)
                     elif navstatus.startswith('ns_approach_wp') or navstatus == 'ns_taking_off' or navstatus == 'ns_chasing_insect'or navstatus == 'ns_landing':
                         system_has_problem = QColor(0,255,0)
-                    elif navstatus == 'ns_wait_locate_drone':
+                    elif navstatus == 'ns_wait_locate_drone' or navstatus == 'ns_locate_drone_led':
                         system_has_problem = QColor(255,165,0)
                     elif navstatus.startswith('Roll') or navstatus.startswith('Starting') or navstatus == 'ns_init' or navstatus.startswith('Resetting') or navstatus.startswith('Closed') or navstatus.startswith('Closing'):
                         system_has_problem = QColor(180,180,0)
@@ -391,7 +395,7 @@ class SystemWidget(QWidget):
         return res_txt.strip(),system_has_problem
 
 class ImDialog(QDialog):
-    def __init__(self,parent,source_folder,system_folder,host_id):
+    def __init__(self,parent,source_folder,system_folder,host_id,dark_mode):
         super().__init__(parent)
 
         self.source_folder = source_folder
@@ -561,31 +565,6 @@ def natural_keys(text):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-
-    theme = subprocess.check_output(["/usr/bin/gsettings get org.gnome.desktop.interface gtk-theme"], shell=True) #need to use full path /usr/bin because conda screws things up
-
-    print(theme)
-    if str(theme).find('dark') != -1:
-        app.setStyle("Fusion")
-        dark_palette = QPalette()
-        dark_palette.setColor(QPalette.Window, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.WindowText, Qt.white)
-        dark_palette.setColor(QPalette.Base, QColor(25, 25, 25))
-        dark_palette.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.ToolTipBase, Qt.white)
-        dark_palette.setColor(QPalette.ToolTipText, Qt.white)
-        dark_palette.setColor(QPalette.Text, Qt.white)
-        dark_palette.setColor(QPalette.Button, QColor(53, 53, 53))
-        dark_palette.setColor(QPalette.ButtonText, Qt.white)
-        dark_palette.setColor(QPalette.BrightText, Qt.red)
-        dark_palette.setColor(QPalette.Link, QColor(42, 130, 218))
-        dark_palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
-        dark_palette.setColor(QPalette.HighlightedText, Qt.black)
-        app.setPalette(dark_palette)
-        app.setStyleSheet("QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white; }")
-        dark_mode = True
-    else:
-        dark_mode = False
 
     cc = CommandCenterWindow()
     cc.show()
