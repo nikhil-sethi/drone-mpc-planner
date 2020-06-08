@@ -9,11 +9,19 @@
 #define VOLTAGE_PIN A2
 #define CALIB_PIN A7
 #define LED_PIN 6
+#define BEEPER_PIN_LOW 4
+#define BEEPER_PIN 5
+#define BEEPER_PIN2_LOW 12
+#define BEEPER_PIN2 10
+#define BEEPER_PIN3 3
+
+#define RES_CHECKER_PIN 9 
+#define RES_SETTER_PIN 10
 
 #define CLK A4
 #define DIO A5
 
-#define SOFTWARE_VERSION 0.4
+#define SOFTWARE_VERSION 0.7
 
 float getVoltage(bool reset = false);
 
@@ -32,6 +40,8 @@ bool turbo_mode = false;
 
 float smoothed_current;
 
+float current_measurement_resistor;
+
 enum DisplayStates {  S_VERSION_INIT,  S_VERSION,  S_TURBO_INIT,  S_TURBO,  S_VOLTAGE,
                       S_CURRENT,  S_LEVEL,  S_OUTPUT,  S_STATE,  S_HELP
                    };
@@ -42,6 +52,11 @@ void setup() {
 
   pinMode(11, OUTPUT);
   pinMode(10, OUTPUT);
+  pinMode(BEEPER_PIN_LOW, OUTPUT);
+  pinMode(BEEPER_PIN, OUTPUT);
+  pinMode(BEEPER_PIN2_LOW, OUTPUT);
+  pinMode(BEEPER_PIN2, OUTPUT);
+  pinMode(BEEPER_PIN3, OUTPUT);
   pinMode(LED_PIN, OUTPUT);
   pinMode(A0, INPUT);
   pinMode(VOLTAGE_PIN, INPUT);
@@ -62,14 +77,19 @@ void setup() {
   smoothed_current = 0;
 
   display = TM1637Display(CLK, DIO);
+  digitalWrite(BEEPER_PIN_LOW, 0);
+  digitalWrite(BEEPER_PIN2_LOW, 0);
+  analogWrite(BEEPER_PIN, 0);
+
+  //TCCR2B = TCCR2B & B11111000 | B00000010;    // set timer 2 divisor to     8 for PWM frequency of  3921.16 Hz
+  TCCR1B = TCCR1B & B11111000 | B00000010;    // set timer 1 divisor to     8 for PWM frequency of  3921.16 Hz
+  
+  set_current_measurement_resistor();
+  debugln("current_measurment_resistor %d", int(current_measurement_resistor * 10));
+
 }
 
 void loop() {
-  calcSmoothedCurrent();
-
-  set_test_mode();
-
-  set_status_led();
 
   getVoltage();
 
@@ -81,12 +101,23 @@ void loop() {
   }
 
   if (test_mode)
+  {
     analogWrite(PWM_PIN,  0);
-  //else
+    set_alarm(0);
+  }
+  else
+  {
+    set_current(desired_current);
+
+    calcSmoothedCurrent();
+  
+    set_test_mode();
+  
+    set_status_led();
+  }
   //analogWrite(PWM_PIN,  (millis() / 2000) % 2 * 255);
 
 
-  set_current(desired_current);
   /*
     debugln("%d", (millis() / 2000) % 2 * 255);
   */
@@ -96,6 +127,20 @@ void loop() {
   int wait_time = 10;
   wait_time = min(wait_time, timer + wait_time - millis());
   timer = millis();
+}
+
+void set_current_measurement_resistor()
+{
+  current_measurement_resistor = 3.3;
+  for (int i = 0; i < 10; i ++)
+  {
+    uint8_t set_val = i % 2;
+    digitalWrite(RES_SETTER_PIN, set_val);
+    delay(10);
+    if (digitalRead(RES_CHECKER_PIN) != set_val)
+      return;
+  }  
+  current_measurement_resistor = 0.33;
 }
 
 float smooth_value(float alpha, float value, float smoothed_value)
@@ -126,72 +171,239 @@ void set_test_mode(void)
   }
 }
 
-void set_status_led(void)
+void set_alarm(bool on)
+{
+  //debugln("alarm %d", (int)on);
+  if (on)
+  {
+    digitalWrite(LED_PIN, 1);
+    analogWrite(BEEPER_PIN2, 128);
+    analogWrite(BEEPER_PIN, 128);
+    analogWrite(BEEPER_PIN3, 128);
+  }
+  else
+  {
+    digitalWrite(LED_PIN, 0);
+    analogWrite(BEEPER_PIN, 0);
+    analogWrite(BEEPER_PIN2, 0);
+    analogWrite(BEEPER_PIN3, 0);
+  }
+}
+void set_alarm_blink_only(bool on)
+{
+  if (on)
+  {
+    digitalWrite(LED_PIN, 1);
+  }
+  else
+  {
+    digitalWrite(LED_PIN, 0);
+    
+    analogWrite(BEEPER_PIN, 0);
+    analogWrite(BEEPER_PIN2, 0);
+    analogWrite(BEEPER_PIN3, 0);
+  }
+}
+
+
+void set_alarm_single_beep_inv()
+{
+    int d = 2 + 2 * turbo_mode;
+    if (millis() % (3000 / d) > 200 / d)
+      set_alarm(1);
+    else
+      set_alarm(0);
+}
+
+void set_alarm_half_on_slow()
+{
+    int d = 2 + 2 * turbo_mode;
+    if (millis() % (3000 / d) > 1500 / d)
+      set_alarm(1);
+    else
+      set_alarm(0);
+}
+
+void set_alarm_half_on_fast()
+{
+    int d = 2 + 2 * turbo_mode;
+  if (millis() % (600 / d) > 300 / d)
+    set_alarm(1);
+  else
+    set_alarm(0);
+}
+
+void set_alarm_half_on_super_fast()
+{
+     int d = 3;
+ if (millis() % (600 / d) > 300 / d)
+    set_alarm(1);
+  else
+    set_alarm(0);
+}
+
+void set_alarm_single_beep()
+{
+  int d = 1;
+  if (millis() % (3000 / d) > 2900 / d)
+    set_alarm_blink_only(1);
+  else
+    set_alarm_blink_only(0);
+}
+
+void set_alarm_double_beep()
+{
+  int d = 1;
+  if (millis() % (3000 / d) < 2600 / d)
+    set_alarm_blink_only(0);
+  else if (millis() % (3000 / d) < 2700 / d)
+    set_alarm_blink_only(1);
+  else if (millis() % (3000 / d) < 2800 / d)
+    set_alarm_blink_only(0);
+  else if (millis() % (3000 / d) < 2900 / d)
+    set_alarm_blink_only(1);
+}
+
+void set_alarm_long_double_beep()
 {
   int d = 2 + 2 * turbo_mode;
+  if (millis() % (3000 / d) < 2200 / d)
+    set_alarm(0);
+  else if (millis() % (3000 / d) < 2300 / d)
+    set_alarm(1);
+  else if (millis() % (3000 / d) < 2600 / d)
+    set_alarm(0);
+  else if (millis() % (3000 / d) < 2700 / d)
+    set_alarm(1);
+}
 
+void set_alarm_tripple_beep()
+{
+  int d = 2 + 2 * turbo_mode;
+  if (millis() % (3000 / d) < 2400 / d)
+    set_alarm(0);
+  else if (millis() % (3000 / d) < 2500 / d)
+    set_alarm(1);
+  else if (millis() % (3000 / d) < 2600 / d)
+    set_alarm(0);
+  else if (millis() % (3000 / d) < 2700 / d)
+    set_alarm(1);
+  else if (millis() % (3000 / d) < 2800 / d)
+    set_alarm(0);
+  else if (millis() % (3000 / d) < 2900 / d)
+    set_alarm(1);
+}
+
+void set_alarm_long_tripple_beep()
+{
+  int d = 2 + 2 * turbo_mode;
+  if (millis() % (3000 / d) < 1300 / d)
+    set_alarm(0);
+  else if (millis() % (3000 / d) < 1800 / d)
+    set_alarm(1);
+  else if (millis() % (3000 / d) < 1900 / d)
+    set_alarm(0);
+  else if (millis() % (3000 / d) < 2400 / d)
+    set_alarm(1);
+  else if (millis() % (3000 / d) < 2500 / d)
+    set_alarm(0);
+  else
+    set_alarm(1);
+}
+
+
+void set_alarm_quadruple_beep()
+{
+  int d = 2 + 2 * turbo_mode;
+  if (millis() % (3000 / d) < 2200 / d)
+    set_alarm(0);
+  else if (millis() % (3000 / d) < 2300 / d)
+    set_alarm(1);
+  else if (millis() % (3000 / d) < 2400 / d)
+    set_alarm(0);
+  else if (millis() % (3000 / d) < 2500 / d)
+    set_alarm(1);
+  else if (millis() % (3000 / d) < 2600 / d)
+    set_alarm(0);
+  else if (millis() % (3000 / d) < 2700 / d)
+    set_alarm(1);
+  else if (millis() % (3000 / d) < 2800 / d)
+    set_alarm(0);
+  else if (millis() % (3000 / d) < 2900 / d)
+    set_alarm(1);
+}
+
+static long last_detection_time;
+void set_status_led(void)
+{
+  static unsigned long total_charging_time;
+
+  int d = 2 + 2 * turbo_mode;
+
+  if (state != STATE_CHARGING && millis() - last_detection_time > 1000)
+  {
+    total_charging_time = millis();  
+  }
+  
   switch (state)
   {
     case STATE_IDLE:
       {
         if (millis() % 100 > 50)
-          digitalWrite(LED_PIN, 1);
+          set_alarm(1);
         else
-          digitalWrite(LED_PIN, 0);
+          set_alarm(0);
 
         break;
       }
     case STATE_CHARGING:
       {
-        if (battery_charge < 8.4)
+        last_detection_time = millis();
+
+        if (millis() - total_charging_time < 3000)
         {
-          if (smoothed_current > 0.1)
+            set_alarm_half_on_super_fast();
+        }
+        else if (battery_charge < 8.4)
+        {
+          if (smoothed_current > 0.2)
           {
-            if (millis() % (3000 / d) > 1500 / d)
-              digitalWrite(LED_PIN, 1);
-            else
-              digitalWrite(LED_PIN, 0);
+            set_alarm_single_beep();
           }
           else
           {
-            if (millis() % (600 / d) > 300 / d)
-              digitalWrite(LED_PIN, 1);
-            else
-              digitalWrite(LED_PIN, 0);
+            set_alarm_long_tripple_beep();
           }
-              
         }
         else
         {
-          if (millis() % (3000 / d) > 200 / d)
-            digitalWrite(LED_PIN, 1);
-          else
-            digitalWrite(LED_PIN, 0);
+          set_alarm_double_beep();
         }
         break;
       }
     case STATE_CHECK_CHARGE:
       {
-        if (millis() % (3000 / d) > 2920 / d)
-          digitalWrite(LED_PIN, 1);
-        else
-          digitalWrite(LED_PIN, 0);
+      if (millis() - last_detection_time > 20000)
+      {
+        set_alarm_single_beep_inv();
+      }
+      else
+      {
+        set_alarm_long_double_beep();
+      }
         break;
       }
     case STATE_CHARGING_PRECHECK:
       {
-        if (millis() % (600 / d) > 300 / d)
-          digitalWrite(LED_PIN, 1);
+        if (millis() - last_detection_time > 1000)
+          set_alarm_half_on_fast();
         else
-          digitalWrite(LED_PIN, 0);
+          set_alarm(false);
         break;
       }
     default:
       {
-        if (millis() % 100 > 50)
-          digitalWrite(LED_PIN, 1);
-        else
-          digitalWrite(LED_PIN, 0);
+        set_alarm_half_on_super_fast();
         break;
       }
   }
@@ -315,194 +527,198 @@ void run_display(void)
   }
 
   static int shift_count = 0;
-
-  switch (state_disp)
+  if (test_mode)
   {
-    case S_TURBO_INIT:
-      {
-        uint8_t turbo_text[21] = {};
-        get_turbo_text(turbo_text);
-        set_shifter(shift, turbo_text, 21);
-        state_disp = S_TURBO;
-        timer = millis();
-        shift_count = 0;
-        next_shift = millis() + 300;
+//    set_val(0, disp_voltage, 4,  data);
+    set_val(N_U, disp_voltage, 2, data);
 
-        break;
-      }
-    case S_VERSION_INIT:
-      {
-        uint8_t version_text[12] = {};
-        get_version_text(version_text);
-        set_shifter(shift, version_text, 12);
-        state_disp = S_VERSION;
-        timer = millis();
-        shift_count = 0;
-        next_shift = millis() + 300;
-
-        break;
-      }
-    case S_TURBO:
-      {
-        if (millis() > next_shift)
+  }
+  else
+  {
+    switch (state_disp)
+    {
+      case S_TURBO_INIT:
         {
-          next_shift = millis() + 50;
-
-          for (int i = 0; i < 28; i++)
-            shift[i] = shift[i + 1];
-
-          shift_count++;
-        }
-
-        for (int i = 0; i < 4; i++)
-          data[i] = shift[i];
-
-        display.setSegments(shift, 4, 0);
-
-        if (shift_count > 28)
-        {
-          state_disp = S_VOLTAGE;
+          uint8_t turbo_text[21] = {};
+          get_turbo_text(turbo_text);
+          set_shifter(shift, turbo_text, 21);
+          state_disp = S_TURBO;
           timer = millis();
+          shift_count = 0;
+          next_shift = millis() + 300;
+  
+          break;
         }
-        break;
-      }
-    case S_VERSION:
-      {
-        if (millis() > next_shift)
+      case S_VERSION_INIT:
         {
-          next_shift = millis() + 100;
-
-          if (shift_count < 12)
+          uint8_t version_text[12] = {};
+          get_version_text(version_text);
+          set_shifter(shift, version_text, 12);
+          state_disp = S_VERSION;
+          timer = millis();
+          shift_count = 0;
+          next_shift = millis() + 300;
+  
+          break;
+        }
+      case S_TURBO:
+        {
+          if (millis() > next_shift)
+          {
+            next_shift = millis() + 50;
+  
             for (int i = 0; i < 28; i++)
               shift[i] = shift[i + 1];
-
-          shift_count++;
+  
+            shift_count++;
+          }
+  
+          for (int i = 0; i < 4; i++)
+            data[i] = shift[i];
+  
+          display.setSegments(shift, 4, 0);
+  
+          if (shift_count > 28)
+          {
+            state_disp = S_VOLTAGE;
+            timer = millis();
+          }
+          break;
         }
-
-        for (int i = 0; i < 4; i++)
-          data[i] = shift[i];
-
-        display.setSegments(shift, 4, 0);
-
-        if (shift_count > 32)
+      case S_VERSION:
         {
-          state_disp = S_HELP;
-          timer = millis();
+          if (millis() > next_shift)
+          {
+            next_shift = millis() + 100;
+  
+            if (shift_count < 12)
+              for (int i = 0; i < 28; i++)
+                shift[i] = shift[i + 1];
+  
+            shift_count++;
+          }
+  
+          for (int i = 0; i < 4; i++)
+            data[i] = shift[i];
+  
+          display.setSegments(shift, 4, 0);
+  
+          if (shift_count > 32)
+          {
+            state_disp = S_HELP;
+            timer = millis();
+          }
+          break;
         }
-        break;
-      }
-    case S_HELP:
-      {
-        int period = 1500;
-
-        if (millis() - timer  > 3 * period)
+      case S_HELP:
         {
-          state_disp = S_VOLTAGE;
-          timer = millis();
+          int period = 1500;
+  
+          if (millis() - timer  > 3 * period)
+          {
+            state_disp = S_VOLTAGE;
+            timer = millis();
+          }
+  
+          if (millis() - timer  < 1 * period)
+          {
+            data[0] = N_V;
+            data[1] = N_o;
+            data[2] = N_L;
+            data[3] = N_t;
+          }
+          else if (millis() - timer  < 2 * period)
+          {
+            data[0] = N_L;
+            data[1] = N_E;
+            data[2] = N_v;
+            data[3] = N_E;
+          }
+          else if (millis() - timer  < 3 * period)
+          {
+            data[0] = N_C;
+            data[1] = N_u;
+            data[2] = N_r;
+            data[3] = N_r;
+          }
+          else if (millis() - timer  < 4 * period)
+          {
+            data[0] = N_o;
+            data[1] = N_u;
+            data[2] = N_t;
+            data[3] = N_p;
+          }
+          else if (millis() - timer  < 5 * period)
+          {
+            data[0] = N_S;
+            data[1] = N_t;
+            data[2] = N_A;
+            data[3] = N_t;
+          }
+  
+          break;
         }
-
-        if (millis() - timer  < 1 * period)
+      case S_VOLTAGE:
         {
-          data[0] = N_V;
-          data[1] = N_o;
-          data[2] = N_L;
-          data[3] = N_t;
-        }
-        else if (millis() - timer  < 2 * period)
-        {
-          data[0] = N_L;
-          data[1] = N_E;
-          data[2] = N_v;
-          data[3] = N_E;
-        }
-        else if (millis() - timer  < 3 * period)
-        {
-          data[0] = N_C;
-          data[1] = N_u;
-          data[2] = N_r;
-          data[3] = N_r;
-        }
-        else if (millis() - timer  < 4 * period)
-        {
-          data[0] = N_o;
-          data[1] = N_u;
-          data[2] = N_t;
-          data[3] = N_p;
-        }
-        else if (millis() - timer  < 5 * period)
-        {
-          data[0] = N_S;
-          data[1] = N_t;
-          data[2] = N_A;
-          data[3] = N_t;
-        }
-
-        break;
-      }
-    case S_VOLTAGE:
-      {
-        if (millis() - timer  > transition_time)
-        {
-          state_disp = S_LEVEL;
-          timer = millis();
-        }
-
-        if (test_mode)
-        {
-          set_val(0, disp_voltage, 4,  data);
-        }
-        else
-        {
+          if (millis() - timer  > transition_time)
+          {
+            state_disp = S_LEVEL;
+            timer = millis();
+          }
+  
+     
           set_val(N_U, disp_voltage, 2, data);
+          
+          break;
         }
-        break;
-      }
-    case S_LEVEL:
-      {
-        if (millis() - timer  > transition_time)
+      case S_LEVEL:
         {
-          state_disp = S_CURRENT;
-          timer = millis();
+          if (millis() - timer  > transition_time)
+          {
+            state_disp = S_CURRENT;
+            timer = millis();
+          }
+          set_val(N_L, disp_level, 2, data);
+          break;
         }
-        set_val(N_L, disp_level, 2, data);
-        break;
-      }
-    case S_CURRENT:
-      {
-        if (millis() - timer  > transition_time)
+      case S_CURRENT:
         {
-          state_disp = S_OUTPUT;
-          timer = millis();
+          if (millis() - timer  > transition_time)
+          {
+            state_disp = S_OUTPUT;
+            timer = millis();
+          }
+  
+          set_val(N_C, disp_current, 3,  data);
+          break;
         }
-
-        set_val(N_C, disp_current, 3,  data);
-        break;
-      }
-    case S_OUTPUT:
-      {
-        if (millis() - timer  > transition_time)
+      case S_OUTPUT:
         {
-          state_disp = S_STATE;
-          timer = millis();
+          if (millis() - timer  > transition_time)
+          {
+            state_disp = S_STATE;
+            timer = millis();
+          }
+          set_val(N_o, disp_output, data);
+          break;
         }
-        set_val(N_o, disp_output, data);
-        break;
-      }
-    case S_STATE:
-      {
-        if (millis() - timer  > transition_time)
+      case S_STATE:
         {
-          state_disp = S_VOLTAGE;
-          if (turbo_mode)
-            state_disp = S_TURBO_INIT;
-          timer = millis();
+          if (millis() - timer  > transition_time)
+          {
+            state_disp = S_VOLTAGE;
+            if (turbo_mode)
+              state_disp = S_TURBO_INIT;
+            timer = millis();
+          }
+  
+          set_val(N_S, disp_state, data);
+          break;
         }
-
-        set_val(N_S, disp_state, data);
-        break;
-      }
+    }
+  
+            
   }
-
   if (turbo_mode && millis() % 100 > 50)
     data[3] |= SEG_DP;
 
@@ -524,6 +740,7 @@ float run_state_machine()
 {
   static int no_current_timeout = 0;
 
+  
   switch (state)
   {
     case STATE_IDLE:
@@ -538,10 +755,10 @@ float run_state_machine()
           desired_current = 0.45;
         else if (battery_charge < 8.3)
           desired_current = 0.4;
-        else if (battery_charge < 8.45)
-          desired_current = 0.2;
+        else if (battery_charge < 8.40)
+          desired_current = 0.3;
         else if (battery_charge < 8.5)
-          desired_current = 0.0;
+          desired_current = 0.3;
         else
           desired_current = 0.0;
 
@@ -552,15 +769,15 @@ float run_state_machine()
         if (turbo_mode)
           desired_current += 0.20;
 
-        if (battery_charge > 8.5)
+        if (battery_charge > 8.4)
           desired_current = 0.0;
 
-        if (output > 254 && smoothed_current < 0.01)
+        if (output > 254 && smoothed_current < 0.05)
           no_current_timeout++;
         else
           no_current_timeout = 0;
 
-        if (battery_charge < 3.2 || millis() % 120000 < 1000 || no_current_timeout > 1000)
+        if (battery_charge < 3.2 || millis() % 12000 < 1000 || no_current_timeout > 1000)
         {
           set_state(STATE_CHECK_CHARGE);
           desired_current = 0;
@@ -622,15 +839,21 @@ float getVoltage(bool reset)
   calib *= 0.1;
   voltage += calib;
 
-  smoothed_voltage = 0.9 * smoothed_voltage + 0.1 * voltage;
+  float alpha = 0.1;
+  if (test_mode)
+    alpha /= 5;
+    
+  smoothed_voltage = (1 - alpha) * smoothed_voltage + alpha * voltage;
 
   return smoothed_voltage;
 }
 
 float getCurrent()
 {
+  //debugln("curretn %d", analogRead(A0));
   float voltage = analogRead(A0) / 1024.0 * 5.0;
-  return voltage / 3.2;
+
+  return voltage / current_measurement_resistor;
 }
 
 void calcSmoothedCurrent()
@@ -642,18 +865,19 @@ void set_current(float current_setpoint) {
   float error = (smoothed_current - current_setpoint);
   output -= error * 1.0;
 
-//  debugln("%d %d %d %d %d %d", int(smoothed_current * 100), int(100 * current_setpoint), -int(100 * error), (int)(output / 2.55), (int)(getVoltage() * 10), (int)(battery_charge * 10));
-
-  if (current_setpoint == 0)
-    output = 0;
-
   if (output > 255)
     output = 255;
   if (output < 0)
     output = 0;
 
+//  debugln("%d %d %d %d %d %d", int(smoothed_current * 100), int(100 * current_setpoint), -int(100 * error), (int)(output / 2.55), (int)(getVoltage() * 10), (int)(battery_charge * 10));
+  int o = (int)output;
+  
+  if (current_setpoint == 0)
+    o = 0;
+
   static int test = 1;
   test = 1 - test;
 
-  analogWrite(PWM_PIN,  (int)output);
+  analogWrite(PWM_PIN,  o);
 }
