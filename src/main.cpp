@@ -533,7 +533,7 @@ void init_loggers() {
         data_output_dir = data_output_dir + "replay/";
     if (path_exist(data_output_dir)) {
         std::string rmcmd = "rm -r " + data_output_dir;
-        std::system(rmcmd.c_str());
+        auto res [[maybe_unused]] = std::system(rmcmd.c_str());
     }
 
     mkdir(data_output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
@@ -712,7 +712,7 @@ void close(bool sig_kill) {
     logger_video_ids.close();
     logger_insect.close();
     logger.close();
-    if (!sig_kill) // seems to get stuck. TODO: streamline
+    if (!sig_kill)
         close_thread_pool();
 
     cmdcenter.close();

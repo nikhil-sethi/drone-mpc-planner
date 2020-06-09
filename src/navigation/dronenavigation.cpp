@@ -115,20 +115,12 @@ void DroneNavigation::update(double time) {
                 _dctrl->flight_mode(DroneController::fm_disarmed);
                 time_located_drone = time;
                 locate_drone_attempts = 0;
-                if (pparams.op_mode == op_mode_crippled) {
-                    _navigation_status = ns_crippled;
-                } else
-                    _navigation_status = ns_located_drone;
+                _navigation_status = ns_located_drone;
             }
             if (time - locate_drone_start_time/(locate_drone_attempts+1) > 15 )
                 _navigation_status = ns_locate_drone_init;
             if (time - locate_drone_start_time > 45 && pparams.op_mode != op_mode_crippled)
                 _navigation_status = ns_drone_problem;
-            break;
-        } case ns_crippled: {
-            _dctrl->flight_mode(DroneController::fm_disarmed);
-            int itime = time;
-            _dctrl->LED(true,itime*5 % 50);
             break;
         } case ns_located_drone: {
             _dctrl->LED(true);
@@ -136,15 +128,28 @@ void DroneNavigation::update(double time) {
             _visdat->disable_fading = false;
             _visdat->enable_collect_no_drone_frames = true;
             if (time-time_located_drone>1.0 && (_dctrl->drone_state_inactive() || pparams.joystick != rc_none)) { // delay until blinking stopped
-                _visdat->enable_background_motion_map_calibration(2);
+                _visdat->enable_background_motion_map_calibration(motion_calibration_duration);
                 _visdat->create_overexposed_removal_mask(_trackers->dronetracker()->drone_takeoff_im_location(),_trackers->dronetracker()->drone_takeoff_im_size());
-                if (_nav_flight_mode == nfm_hunt)
+                time_motion_calibration_started = time;
+                _navigation_status = ns_calibrating_motion;
+            }
+            break;
+        } case ns_calibrating_motion: {
+            if (static_cast<float>(time-time_motion_calibration_started) > motion_calibration_duration) {
+                if (pparams.op_mode == op_mode_crippled)
+                    _navigation_status = ns_crippled;
+                else if (_nav_flight_mode == nfm_hunt)
                     _navigation_status = ns_wait_for_insect;
                 else if (_nav_flight_mode == nfm_manual)
                     _navigation_status = ns_manual;
                 else
                     _navigation_status = ns_wait_for_takeoff_command;
             }
+            break;
+        } case ns_crippled: {
+            _dctrl->flight_mode(DroneController::fm_disarmed);
+            int itime = time;
+            _dctrl->LED(true,itime*5 % 50);
             break;
         } case ns_wait_for_takeoff_command: {
             _trackers->mode(tracking::TrackerManager::mode_idle);
@@ -157,7 +162,6 @@ void DroneNavigation::update(double time) {
                 wpid = 0;
                 next_waypoint(waypoints[wpid],time);
                 _navigation_status = ns_takeoff;
-                _visdat->enable_collect_no_drone_frames = false;
                 repeat = true;
             }
             break;
@@ -185,6 +189,7 @@ void DroneNavigation::update(double time) {
         } case ns_takeoff: {
             _dctrl->reset_manual_override_take_off_now();
             _dctrl->flight_mode(DroneController::fm_start_takeoff);
+            _visdat->enable_collect_no_drone_frames = false;
             _dctrl->hover_mode(false);
             _trackers->dronetracker()->hover_mode(false);
             time_take_off = time;

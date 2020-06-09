@@ -65,7 +65,6 @@ protected:
     void serialize_settings();
 
 private:
-    float estimate_sub_disparity(int disparity,float * err);
     void update_disparity(float disparity, float dt);
     void update_state(cv::Point3f measured_world_coordinates, double time);
 
@@ -111,6 +110,9 @@ protected:
     const float certainty_init = 0.1f; // TODO: tune
     const uint path_buf_size = 30;
 
+    const float disparity_predict_lower_bound = 3.0f;
+    const float disparity_predict_upper_bound = 5.0f;
+
     bool _tracking = false;
 
     ImageItem _image_item;
@@ -121,6 +123,9 @@ protected:
 
     void init_logger();
     float stereo_match(cv::Point2f im_posL, float size);
+    std::tuple<int,int> disparity_search_rng(int x1, bool use_imscalef);
+    float estimate_sub_disparity(int disparity,float * err);
+
     void reset_tracker_ouput(double time);
     void calc_world_props_blob_generic(BlobProps * pbs, bool use_max);
     bool check_ignore_blobs_generic(BlobProps * pbs);

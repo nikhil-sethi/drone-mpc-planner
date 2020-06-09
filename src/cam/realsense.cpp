@@ -798,7 +798,7 @@ void Realsense::watchdog_thread(void) {
             usleep(pparams.wdt_timeout_us);
             if (!watchdog) {
                 std::cout << "Watchdog alert! Killing the process." << std::endl;
-                std::system("killall -9 pats");
+                auto res [[maybe_unused]] = std::system("killall -9 pats");
             }
         }
         watchdog = false;

@@ -31,6 +31,8 @@ private:
     void deserialize_settings();
     void serialize_settings();
 
+    float motion_calibration_duration = 2;
+    double time_motion_calibration_started = 0;
     double time_initial_reset_yaw = 0;
     double time_wp_reached = -1;
     double landing_start_time = -1;

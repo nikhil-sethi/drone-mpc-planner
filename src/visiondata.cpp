@@ -54,41 +54,38 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
         diffR16 = cv::Mat::zeros(cv::Size(frameR.cols,frameR.rows),CV_16SC1);
         _reset_motion_integration = false;
         motion_update_iterator = 0;
+    } else {
+
+        if (motion_spot_to_be_reset.cnt_active) {
+            cv::circle(diffL16,motion_spot_to_be_reset.pt,motion_spot_to_be_reset.r,0,cv::FILLED);
+            cv::circle(diffR16,motion_spot_to_be_reset.pt+ cv::Point(motion_spot_to_be_reset.disparity,0),motion_spot_to_be_reset.r,0,cv::FILLED);
+            motion_spot_to_be_reset.cnt_active--;
+        }
+
+        //calcuate the motion difference, through the integral over time (over each pixel)
+        cv::Mat dL = frameL16 - frameL_prev16;
+        diffL16 += dL;
+        cv::Mat dR = frameR16 - frameR_prev16;
+        diffR16 += dR;
+
+        if (!(motion_update_iterator++ % (motion_update_iterator_max+1)) && !disable_fading) { // +1 -> prevent 0
+            fade(diffL16,exclude_drone_from_motion_fading_spot_L);
+            fade(diffR16,exclude_drone_from_motion_fading_spot_R);
+        }
+
+        if (motion_spot_to_be_deleted.cnt_active) {
+            cv::circle(diffL16,motion_spot_to_be_deleted.pt,motion_spot_to_be_deleted.r,0,cv::FILLED);
+            cv::circle(diffR16,motion_spot_to_be_deleted.pt + cv::Point(motion_spot_to_be_deleted.disparity,0),motion_spot_to_be_deleted.r,0,cv::FILLED);
+            motion_spot_to_be_deleted.cnt_active--;
+        }
     }
 
-    if (motion_spot_to_be_reset.cnt_active) {
-        cv::circle(diffL16,motion_spot_to_be_reset.pt,motion_spot_to_be_reset.r,0,cv::FILLED);
-        cv::circle(diffR16,motion_spot_to_be_reset.pt+ cv::Point(motion_spot_to_be_reset.disparity,0),motion_spot_to_be_reset.r,0,cv::FILLED);
-        motion_spot_to_be_reset.cnt_active--;
-    }
-
-    //calcuate the motion difference, through the integral over time (over each pixel)
-    cv::Mat dL = frameL16 - frameL_prev16;
-    diffL16 += dL;
-    cv::Mat dR = frameR16 - frameR_prev16;
-    diffR16 += dR;
-
-    if (!(motion_update_iterator++ % (motion_update_iterator_max+1)) && !disable_fading) { // +1 -> prevent 0
-        fade(diffL16,exclude_drone_from_motion_fading_spot_L);
-        fade(diffR16,exclude_drone_from_motion_fading_spot_R);
-    }
-
-    if (motion_spot_to_be_deleted.cnt_active) {
-        cv::circle(diffL16,motion_spot_to_be_deleted.pt,motion_spot_to_be_deleted.r,0,cv::FILLED);
-        cv::circle(diffR16,motion_spot_to_be_deleted.pt + cv::Point(motion_spot_to_be_deleted.disparity,0),motion_spot_to_be_deleted.r,0,cv::FILLED);
-        motion_spot_to_be_deleted.cnt_active--;
-    }
-
-    diffL = abs(diffL16);
-    cv::Mat diffL_tmp;
-    diffL.convertTo(diffL_tmp, CV_8UC1);
-    diffL = diffL_tmp;
+    cv::Mat diffL16_abs = abs(diffL16);
+    diffL16_abs.convertTo(diffL, CV_8UC1);
     cv::resize(diffL,diffL_small,smallsize);
 
-    diffR = abs(diffR16);
-    cv::Mat diffR_tmp;
-    diffR.convertTo(diffR_tmp, CV_8UC1);
-    diffR = diffR_tmp;
+    cv::Mat diffR16_abs = abs(diffR16);
+    diffR16_abs.convertTo(diffR, CV_8UC1);
     cv::resize(diffR,diffR_small,smallsize);
 
     if (enable_viz_diff)
@@ -149,6 +146,7 @@ void VisionData::maintain_motion_noise_map() {
         motion_noise_bufferL.push_back(abs(diffL16));
         motion_noise_bufferR.push_back(abs(diffR16));
         if (_current_frame_time > calibrating_background_end_time) {
+            std::cout << "Writing motion noise map" << std::endl;
             _calibrating_background = false;
 
             cv::Mat bkgL = motion_noise_bufferL.at(0);

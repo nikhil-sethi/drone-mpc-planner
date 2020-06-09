@@ -585,12 +585,30 @@ void Visualizer::paint() {
             namedWindow("tracking results", cv::WINDOW_OPENGL | cv::WINDOW_AUTOSIZE);
         }
         cv::imshow("tracking results", trackframe);
-        if (_visdat->viz_frame.cols)
+        if (_visdat->viz_frame.cols) {
+            static bool diff_viz_initialized = false;
+            if (!diff_viz_initialized) {
+                diff_viz_initialized = true;
+                namedWindow("diff",cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
+            }
             cv::imshow("diff",_visdat->viz_frame);
-        if (_dtrkr->diff_viz.cols)
+        }
+        if (_dtrkr->diff_viz.cols) {
+            static bool drn_diff_viz_initialized = false;
+            if (!drn_diff_viz_initialized) {
+                drn_diff_viz_initialized = true;
+                namedWindow("drn_diff",cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
+            }
             cv::imshow("drn_diff", _dtrkr->diff_viz);
-        if (_trackers->viz_max_points.cols)
+        }
+        if (_trackers->viz_max_points.cols) {
+            static bool motion_points_viz_initialized = false;
+            if (!motion_points_viz_initialized) {
+                motion_points_viz_initialized = true;
+                namedWindow("motion points",cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
+            }
             cv::imshow("motion points", _trackers->viz_max_points);
+        }
         if (_trackers->dronetracker()->viz_disp.cols>0) {
             static bool stereo_viz_initialized = false;
             if (!stereo_viz_initialized) {
@@ -604,6 +622,11 @@ void Visualizer::paint() {
     }
     if (request_plotframe_paint && plotframe.rows > 0) {
         request_plotframe_paint = false;
+        static bool plot_viz_initialized = false;
+        if (!plot_viz_initialized) {
+            plot_viz_initialized = true;
+            namedWindow("Plots",cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
+        }
         imshow("Plots",plotframe);
     }
 }

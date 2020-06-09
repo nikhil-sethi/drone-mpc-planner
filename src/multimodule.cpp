@@ -71,7 +71,9 @@ void MultiModule::worker_thread(void) {
     std::cout << "Send multimodule thread started!" << std::endl;
     while (!exitSendThread) {
 
-        receive_data();
+        static int receive_decrease_cnt = 0;
+        if (receive_decrease_cnt++ % 10 == 1)
+            receive_data();
 
         if (init_package_nOK_cnt) {
             init_package_nOK_cnt++;
