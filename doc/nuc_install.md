@@ -58,4 +58,5 @@ Pats install script and ssh key files
 - screen lock off
 - `sudo sh -c 'echo "pats ALL = (root) NOPASSWD: /usr/sbin/rtcwake" >> /etc/sudoers'`
 - `echo "alias df='df -h -x squashfs -x tmpfs -x devtmpfs'" >> ~/.bash_aliases`
+- open the project with vscode, install the recommened extensions, and set the ctrl-r hotkey
 
