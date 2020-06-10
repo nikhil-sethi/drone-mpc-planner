@@ -51,8 +51,6 @@ void BlinkTracker::update(double time) {
         break;
     } case bds_1_blink_off: {
         ItemTracker::update(time);
-        min_disparity = std::clamp(static_cast<int>(roundf(_image_item.disparity))-5,params.min_disparity.value(),params.max_disparity.value());
-        max_disparity = std::clamp(static_cast<int>(roundf(_image_item.disparity))+5,params.min_disparity.value(),params.max_disparity.value());
         _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
         break;
     } case bds_1_blink_on: {
@@ -127,8 +125,6 @@ void BlinkTracker::update(double time) {
 
 BlinkTracker::blinking_drone_states BlinkTracker::detect_blink(double time, bool found) {
     const float margin = 0.75f * dparams.blink_period; // the blinking is not a hard on/off, but rather a dimming operation so we need a big margin and blink more often
-    if (Last_track_data().vel_valid && normf(Last_track_data().vel()) > 0.2f)
-        return bds_restart_search;
     float blink_period = static_cast<float>(time - blink_time_start);
     if (found) {
         if ( blink_period > dparams.blink_period - margin && blink_period < dparams.blink_period+margin) {
