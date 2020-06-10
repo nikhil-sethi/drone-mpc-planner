@@ -375,9 +375,9 @@ class SystemWidget(QWidget):
                 if system_has_problem.getRgb()[0] == 0:
                     if navstatus == 'ns_wait_for_insect':
                         system_has_problem = QColor(0,128,0)
-                    elif navstatus.startswith('ns_approach_wp') or navstatus == 'ns_taking_off' or navstatus == 'ns_chasing_insect'or navstatus == 'ns_landing':
+                    elif navstatus.startswith('ns_wp') or navstatus == 'ns_taking_off' or navstatus == 'ns_chasing_insect'or navstatus == 'ns_landing' or navstatus == 'ns_landed' or navstatus == 'ns_wait_after_landing' or navstatus == 'ns_initial_reset_yaw' or navstatus == 'ns_reset_yaw':
                         system_has_problem = QColor(0,255,0)
-                    elif navstatus == 'ns_wait_locate_drone' or navstatus == 'ns_locate_drone_led':
+                    elif navstatus == 'ns_wait_locate_drone' or navstatus == 'ns_locate_drone_led' or  navstatus == 'ns_calibrating_motion':
                         system_has_problem = QColor(255,165,0)
                     elif navstatus.startswith('Roll') or navstatus.startswith('Starting') or navstatus == 'ns_init' or navstatus.startswith('Resetting') or navstatus.startswith('Closed') or navstatus.startswith('Closing'):
                         system_has_problem = QColor(180,180,0)
