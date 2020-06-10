@@ -51,6 +51,8 @@ void BlinkTracker::update(double time) {
         break;
     } case bds_1_blink_off: {
         ItemTracker::update(time);
+        min_disparity = std::clamp(static_cast<int>(roundf(_image_item.disparity))-5,params.min_disparity.value(),params.max_disparity.value());
+        max_disparity = std::clamp(static_cast<int>(roundf(_image_item.disparity))+5,params.min_disparity.value(),params.max_disparity.value());
         _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
         break;
     } case bds_1_blink_on: {

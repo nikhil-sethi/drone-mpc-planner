@@ -65,6 +65,8 @@ void DroneTracker::update(double time, bool drone_is_active) {
         spinup_detected = 0;
         _take_off_detection_failed = false;
         take_off_frame_cnt = 0;
+        min_disparity = std::clamp(static_cast<int>(roundf(_blink_im_disparity))-5,params.min_disparity.value(),params.max_disparity.value());
+        max_disparity = std::clamp(static_cast<int>(roundf(_blink_im_disparity))+5,params.min_disparity.value(),params.max_disparity.value());
         [[fallthrough]];
     } case dts_detecting_takeoff: {
         ItemTracker::update(time);
@@ -120,6 +122,8 @@ void DroneTracker::update(double time, bool drone_is_active) {
     } case dts_tracking: {
         ItemTracker::update(time);
         update_prediction(time); // use control inputs to make prediction #282
+        min_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity))-5,params.min_disparity.value(),params.max_disparity.value());
+        max_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity))+5,params.min_disparity.value(),params.max_disparity.value());
         _visdat->exclude_drone_from_motion_fading(_image_item.ptd(),_image_predict_item.size);
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
@@ -138,6 +142,8 @@ void DroneTracker::update(double time, bool drone_is_active) {
     } case dts_landing: {
         ItemTracker::update(time);
         update_prediction(time);
+        min_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity))-5,params.min_disparity.value(),params.max_disparity.value());
+        max_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity))+5,params.min_disparity.value(),params.max_disparity.value());
         _visdat->exclude_drone_from_motion_fading(_image_item.ptd(),_image_predict_item.size);
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;

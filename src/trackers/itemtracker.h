@@ -61,6 +61,7 @@ protected:
     float max_size; // world, in meters
 
     std::string settings_file;
+    TrackerParams params;
     void deserialize_settings();
     void serialize_settings();
 

@@ -1,5 +1,5 @@
 <SerializableClass Type="TrackerParameters" Version="1.0">
-    <Member Name="min_disparity">1</Member>
+    <Member Name="min_disparity">5</Member>
     <Member Name="max_disparity">20</Member>
     <Member Name="static_ignores_dist_thresh">5</Member>
     <Member Name="score_threshold">10</Member>

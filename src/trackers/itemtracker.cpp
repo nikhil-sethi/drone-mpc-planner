@@ -440,10 +440,15 @@ std::tuple<int,float,int> ItemTracker::disparity_search_rng(int x) {
         disp_end = std::min(static_cast<int>(ceilf(tmp_disp_prev))+4,disp_end);
         disp_pred = (disp_end - disp_start)/2.f + disp_start;
     }
+
     if (disp_start < 1)
         disp_start = 1;
-    if (disp_pred < 1)
-        disp_pred = 1;
+    if (disp_pred < disp_start + 1)
+        disp_pred = disp_start + 1;
+
+    int disp_rng = disp_end - disp_start;
+    if (disp_rng > 20)
+        std::cout << "Warning large disparity search range: " << disp_rng << std::endl;
 
     return std::make_tuple(disp_start,disp_pred,disp_end);
 }
@@ -609,7 +614,6 @@ float ItemTracker::score(BlobProps blob, ImageItem ref) {
 
 void ItemTracker::deserialize_settings() {
     std::cout << "Reading settings from: " << settings_file << std::endl;
-    TrackerParams params;
     if (file_exist(settings_file)) {
         std::ifstream infile(settings_file);
         std::string xmlData((std::istreambuf_iterator<char>(infile)),
@@ -638,8 +642,6 @@ void ItemTracker::deserialize_settings() {
 }
 
 void ItemTracker::serialize_settings() {
-    TrackerParams params;
-
     params.min_disparity = min_disparity;
     params.max_disparity = max_disparity;
     params.score_threshold = _score_threshold;
