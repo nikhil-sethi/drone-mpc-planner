@@ -55,7 +55,6 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     smoother_im_size.init(smooth_blob_props_width);
     smoother_score.init(smooth_blob_props_width);
     smoother_brightness.init(smooth_blob_props_width);
-    smoother_disparity_match_gray_error.init(pparams.fps/18);
 
     disparity_prev = -1;
 
@@ -232,29 +231,20 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
 
     cv::Mat diffL,diffR,grayL,grayR,motion_noise_mapL,motion_noise_mapR;
 
-    bool use_imscalef; // enable flag for a cpu optimization to work on half res images for disparity matching
-    int radius;
-    if (size > 40 ) { // if the blob is so close, is it really necessary to do the masking etc? Maybe we should just use the backup strategy
-        size /=pparams.imscalef;
-        im_posL /=pparams.imscalef;
-        diffL = _visdat->diffL_small;
-        diffR = _visdat->diffR_small;
-        motion_noise_mapL = _visdat->motion_noise_mapL_small;
-        motion_noise_mapR = _visdat->motion_noise_mapR_small;
-        cv::resize(_visdat->frameL,grayL,cv::Size(diffL.cols,diffL.rows)); // TODO: optimization possible
-        cv::resize(_visdat->frameR,grayR,cv::Size(diffL.cols,diffL.rows));
-        radius = ceilf((size + 4.f)*0.5f);
-        use_imscalef = true;
-    } else {
-        use_imscalef = false;
-        diffL = _visdat->diffL;
-        diffR = _visdat->diffR;
-        motion_noise_mapL = _visdat->motion_noise_mapL;
-        motion_noise_mapR = _visdat->motion_noise_mapR;
-        grayL = _visdat->frameL;
-        grayR = _visdat->frameR;
-        radius = ceilf((size + 2.f)*0.5f);
-    }
+    diffL = _visdat->diffL;
+    diffR = _visdat->diffR;
+    motion_noise_mapL = _visdat->motion_noise_mapL;
+    motion_noise_mapR = _visdat->motion_noise_mapR;
+    grayL = _visdat->frameL;
+    grayR = _visdat->frameR;
+    int radius = ceilf((size + 2.f)*0.5f);
+
+    //limit the patches for CPU optimization
+    //We don't resize, but just select the middle rect of the full patch. This way we
+    //still have full resolution (very important for disparity precision), but limit
+    //the amount of pixels being matched, without needing to do cpu intensive resizing. Win win :)
+    if (radius > 20)
+        radius = 20;
 
     int x,y,width,height;
     x = std::clamp(static_cast<int>(roundf(im_posL.x))-radius,0,diffL.cols-1);
@@ -268,45 +258,63 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
         height=diffL.rows-y;
     cv::Rect roiL(x,y,width,height);
 
+    auto [disp_start,disp_pred,disp_end] =  disparity_search_rng(x);
 
-    auto [disp_start,disp_end] =  disparity_search_rng(x, use_imscalef);
-
-    float min_err_masked = std::numeric_limits<float>::max();
     float npixels = static_cast<float>(roiL.width*roiL.height);
     float err_masked [disp_end] = {0};
+
     float masked_pixel_ratio[disp_end] = {0};
     int disparity_masked = 0;
-    cv::Mat grayL_masked_best,grayR_masked_best,diff_best,mask_best; // only for viz
-
-    cv::Rect full_roiR(x-(disp_end-1),y,width+(disp_end-disp_start-1),height);
+    const float min_pxl_ratio = 0.25f;
 
     if (motion_noise_mapL.cols) {
-        cv::Mat masked_diffL = diffL(roiL)>motion_noise_mapL(roiL);
-        cv::Mat masked_diffR = diffR(full_roiR)>motion_noise_mapR(full_roiR);
+        //since the background often isn't a solid color we do matching on the raw image data instead of the motion
+        //using the motion from both images as a mask, we match the disparity over the masked gray image
 
-        float tmp_diffL_sum = cv::sum(diffL(roiL))[0];
-        //shift over the image to find the best match, shift = disparity
-        for (int i=disp_start; i<disp_end; i++) {
-            cv::Rect roiR = cv::Rect (x-i,y,width,height);
-            cv::Rect roiR_masked = cv::Rect (disp_end-1-i,0,width,height);
-            cv::Mat errV;
-            float tmp_diff_sum = tmp_diffL_sum + static_cast<float>(cv::sum(diffR(roiR))[0]);
-            cv::Mat grayL_masked,grayR_masked,mask;
+        cv::Mat diffL_mask_patch = diffL(roiL)>motion_noise_mapL(roiL);
+        if (cv::countNonZero(diffL_mask_patch) / npixels > min_pxl_ratio) {
+            cv::Rect roiR_disparity_rng(x-(disp_end-1),y,width+(disp_end-disp_start-1),height);
+            cv::Mat diffR_mask_patch = diffR(roiR_disparity_rng)>motion_noise_mapR(roiR_disparity_rng);
+            cv::Mat grayL_patch = _visdat->frameL(roiL);
+            cv::Mat grayR_patch = _visdat->frameR(roiR_disparity_rng);
 
-            cv::bitwise_and(masked_diffL,masked_diffR(roiR_masked),mask);
-            cv::bitwise_and(grayL(roiL),grayL(roiL),grayL_masked,mask);
-            cv::bitwise_and(grayR(roiR),grayR(roiR),grayR_masked,mask);
-            masked_pixel_ratio[i] = static_cast<float>(cv::countNonZero(mask)) / npixels;
-            absdiff(grayL_masked,grayR_masked,errV);
-            err_masked[i] = static_cast<float>(cv::sum(errV)[0]) / tmp_diff_sum ;
 
-            if (err_masked[i] < min_err_masked ) {
-                disparity_masked  = i;
-                min_err_masked = err_masked[i];
-                if (enable_draw_stereo_viz) {
-                    grayL_masked_best = grayL_masked.clone();
-                    grayR_masked_best = grayR_masked.clone();
-                    mask_best = mask.clone();
+            bool err_calculated [disp_end] = {false};
+            //search for a minimum matching error
+            int ii = roundf(disp_pred);
+            while(!err_calculated[ii-1] || !err_calculated[ii] || !err_calculated[ii+1] ) {
+                if (!err_calculated[ii-1]) {
+                    std::tie(masked_pixel_ratio[ii-1],err_masked[ii-1]) =  calc_match_score_masked(ii-1, disp_end, width, height,diffL_mask_patch,diffR_mask_patch,grayL_patch, grayR_patch,npixels);
+                    err_calculated[ii-1] = true;
+                }
+                if (!err_calculated[ii]) {
+                    std::tie(masked_pixel_ratio[ii],err_masked[ii]) =  calc_match_score_masked(ii, disp_end, width, height,diffL_mask_patch,diffR_mask_patch,grayL_patch, grayR_patch,npixels);
+                    err_calculated[ii] = true;
+                }
+                if (!err_calculated[ii+1]) {
+                    std::tie(masked_pixel_ratio[ii+1],err_masked[ii+1]) =  calc_match_score_masked(ii+1, disp_end, width, height,diffL_mask_patch,diffR_mask_patch,grayL_patch, grayR_patch,npixels);
+                    err_calculated[ii+1] = true;
+                }
+
+                if (err_masked[ii-1] >= err_masked[ii] && err_masked[ii+1] >= err_masked[ii]) { // minimum found
+                    disparity_masked  = ii;
+                    break;
+                } else if (err_masked[ii-1] > err_masked[ii+1]) { // no minumum here, determine search direction based on slope
+                    int ii_cnt = 0;
+                    while (err_calculated[ii+1] && ii_cnt < disp_end-disp_start) {
+                        ii_cnt++;
+                        ii++;
+                        if (ii > disp_end-2)
+                            ii = disp_start+1;
+                    }
+                } else {
+                    int ii_cnt = 0;
+                    while (err_calculated[ii-1] && ii_cnt < disp_end-disp_start) {
+                        ii_cnt++;
+                        ii--;
+                        if (ii < disp_start+1)
+                            ii = disp_end-2;
+                    }
                 }
             }
         }
@@ -314,113 +322,130 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
 
     int disparity;
     float * err;
-    float min_err;
-    if (masked_pixel_ratio[disparity_masked] < 0.25f || !motion_noise_mapL.cols) {
-        //back up strategy:
+    float err_motion [disp_end] = {0};
+    if (masked_pixel_ratio[disparity_masked] < min_pxl_ratio || !motion_noise_mapL.cols) {
+        //back up strategy: ignore the background, hope for the best, and just do matching directly on the motion
         int disparity_motion = 0;
-        float err_motion [disp_end] = {0};
-        float min_err_motion = std::numeric_limits<float>::max();
-        for (int i=disp_start; i<disp_end; i++) {
-            cv::Rect roiR = cv::Rect (x-i,y,width,height);
-            float tmp_diff_sum = (cv::sum(diffL(roiL))[0] + cv::sum(diffR(roiR))[0]); // TODO: optimization opportuinity. Calculated twice.
-            cv::Mat errV;
+        float tmp_diffL_sum = cv::sum(diffL(roiL))[0];
+        bool err_calculated [disp_end] = {false};
 
-            absdiff(diffL(roiL),diffR(roiR),errV);
-            err_motion[i] = static_cast<float>(cv::sum(errV)[0]) / tmp_diff_sum;
+        int ii = roundf(disp_pred);
+        while(!err_calculated[ii-1] || !err_calculated[ii] || !err_calculated[ii+1] ) {
 
-            if (err_motion[i] < min_err_motion ) {
-                disparity_motion  = i;
-                min_err_motion = err_motion[i];
+            if (!err_calculated[ii-1]) {
+                err_motion[ii-1] = calc_match_score_motion(ii-1,x,y,width,height,tmp_diffL_sum,diffL(roiL),diffR);
+                err_calculated[ii-1] = true;
+            }
+            if (!err_calculated[ii]) {
+                err_motion[ii] = calc_match_score_motion(ii,x,y,width,height,tmp_diffL_sum,diffL(roiL),diffR);
+                err_calculated[ii] = true;
+            }
+            if (!err_calculated[ii+1]) {
+                err_motion[ii+1] = calc_match_score_motion(ii+1,x,y,width,height,tmp_diffL_sum,diffL(roiL),diffR);
+                err_calculated[ii+1] = true;
+            }
+
+            if (err_motion[ii-1] >= err_motion[ii] && err_motion[ii+1] >= err_motion[ii]) { // minimum found
+                disparity_motion  = ii;
+                break;
+            } else if (err_motion[ii-1] > err_motion[ii+1]) { // no minumum here, determine search direction based on slope
+                int ii_cnt = 0;
+                while (err_calculated[ii+1] && ii_cnt < disp_end-disp_start) {
+                    ii_cnt++;
+                    ii++;
+                    if (ii > disp_end-2)
+                        ii = disp_start+1;
+                }
+            } else {
+                int ii_cnt = 0;
+                while (err_calculated[ii-1] && ii_cnt < disp_end-disp_start) {
+                    ii_cnt++;
+                    ii--;
+                    if (ii < disp_start+1)
+                        ii = disp_end-2;
+                }
             }
         }
 
         disparity = disparity_motion;
         err = err_motion;
-        min_err = min_err_motion;
     } else {
         disparity = disparity_masked;
         err = err_masked;
-        min_err = min_err_masked;
     }
 
     if (disparity > 0) {
         float sub_disp = estimate_sub_disparity(disparity,err);
-        if (use_imscalef)
-            sub_disp *=2;
-        float final_disparity;
-
-        if (fabs (_image_predict_item.disparity - sub_disp) < 0.5f || !smoother_disparity_match_gray_error.ready() )
-            smoother_disparity_match_gray_error.addSample(min_err);
-
-        float baseline_gray_error = smoother_disparity_match_gray_error.latest();
-
-        if (min_err<baseline_gray_error*disparity_predict_lower_bound || !_image_predict_item.valid || !smoother_disparity_match_gray_error.ready()) {
-            final_disparity = sub_disp;
-        } else if (min_err>baseline_gray_error*disparity_predict_upper_bound) {
-            final_disparity = _image_predict_item.disparity;
-        } else {
-            float weight_factor = (min_err/baseline_gray_error-disparity_predict_lower_bound)/(disparity_predict_lower_bound+disparity_predict_upper_bound);
-            final_disparity = sub_disp*(1.0f-weight_factor) + _image_predict_item.disparity*weight_factor;
-        }
 
         if (enable_draw_stereo_viz) {
-            cv::Rect roiR;
             int viz_scale = 4;
-            if (use_imscalef) {
-                viz_scale*=2;
-                roiR = cv::Rect (x-round(final_disparity/2.f),y,width,height);
-            } else {
-                roiR = cv::Rect (x-round(final_disparity),y,width,height);
-            }
+            cv::Rect roiR = cv::Rect (x-round(sub_disp),y,width,height);
 
             cv::Mat viz_gray = create_column_image({grayL(roiL),grayR(roiR)},CV_8UC1,viz_scale);
             cv::Mat viz_motion_abs = create_column_image({diffL(roiL),diffR(roiR)},CV_8UC1,viz_scale);
             if (motion_noise_mapL.cols) {
-                cv::Mat viz_mask = create_column_image({mask_best,mask_best},CV_8UC1,viz_scale);
-                cv::Mat viz_gray_masked = create_column_image({grayL_masked_best,grayR_masked_best},CV_8UC1,viz_scale);
                 cv::Mat viz_test = create_column_image({diffL(roiL)>motion_noise_mapL(roiL),diffR(roiR)>motion_noise_mapR(roiR)},CV_8UC1,viz_scale);
                 cv::Mat viz_noise = create_column_image({motion_noise_mapL(roiL),motion_noise_mapR(roiR)},CV_8UC1,viz_scale);
-                viz_disp = create_row_image({viz_gray,viz_motion_abs,viz_mask,viz_gray_masked,viz_noise,viz_test},CV_8UC1,1);
+                viz_disp = create_row_image({viz_gray,viz_motion_abs,viz_noise,viz_test},CV_8UC1,1);
             } else {
                 viz_disp = create_row_image({viz_gray,viz_motion_abs},CV_8UC1,1);
             }
         }
-        return final_disparity;
+        return sub_disp;
     } else {
         return 0;
     }
 }
 
-std::tuple<int,int> ItemTracker::disparity_search_rng(int x, bool use_imscalef) {
+
+float ItemTracker::calc_match_score_motion(int i,int x, int y, int width, int height,float tmp_diffL_sum, cv::Mat diffL_roi, cv::Mat diffR) {
+    cv::Rect roiR = cv::Rect (x-i,y,width,height);
+    float tmp_diff_sum = tmp_diffL_sum + static_cast<float>(cv::sum(diffR(roiR))[0]);
+    cv::Mat errV;
+    absdiff(diffL_roi,diffR(roiR),errV);
+    return static_cast<float>(cv::sum(errV)[0]) / tmp_diff_sum;
+}
+
+std::tuple<float,float> ItemTracker::calc_match_score_masked(int i, int disp_end, int width, int height, cv::Mat diffL_mask_patch, cv::Mat diffR_mask_patch, cv::Mat grayL_patch, cv::Mat grayR_patch, int npixels) {
+    cv::Rect roiR_patch = cv::Rect (disp_end-1-i,0,width,height);
+    cv::Mat errV;
+    cv::Mat grayL_masked,grayR_masked,mask;
+
+    cv::bitwise_and(diffL_mask_patch,diffR_mask_patch(roiR_patch),mask);
+    cv::bitwise_and(grayL_patch,grayL_patch,grayL_masked,mask);
+    cv::bitwise_and(grayR_patch(roiR_patch),grayR_patch(roiR_patch),grayR_masked,mask);
+    float cnz = cv::countNonZero(mask);
+    absdiff(grayL_masked,grayR_masked,errV);
+
+    return std::make_tuple(cnz / npixels,static_cast<float>(cv::sum(errV)[0]) / cnz);
+}
+
+std::tuple<int,float,int> ItemTracker::disparity_search_rng(int x) {
 
     int tmp_max_disp = max_disparity;
-    if (use_imscalef)
-        tmp_max_disp /=2;
     if (x - tmp_max_disp < 0)
         tmp_max_disp = x;
 
     int disp_start = min_disparity;
     int disp_end = tmp_max_disp;
-
-    float disp_prediction_scaled = _image_predict_item.disparity;
-    if (use_imscalef)
-        disp_prediction_scaled/=2;
+    float disp_pred;
 
     if (_image_predict_item.valid && _image_predict_item.certainty > 0.9f) {
-        disp_start = std::max(static_cast<int>(floorf(disp_prediction_scaled))-4,disp_start);
-        disp_end = std::min(static_cast<int>(ceilf(disp_prediction_scaled))+4,disp_end);
+        disp_start = std::max(static_cast<int>(floorf(_image_predict_item.disparity))-4,disp_start);
+        disp_pred = _image_predict_item.disparity;
+        disp_end = std::min(static_cast<int>(ceilf(_image_predict_item.disparity))+4,disp_end);
     } else if (n_frames_tracking>5) {
         auto tmp_disp_prev = disparity_prev;
-        if (use_imscalef)
-            tmp_disp_prev/=2;
-
         disp_start = std::max(static_cast<int>(floorf(tmp_disp_prev))-4,disp_start);
         disp_end = std::min(static_cast<int>(ceilf(tmp_disp_prev))+4,disp_end);
+        disp_pred = (disp_end - disp_start)/2.f + disp_start;
     }
     if (disp_start < 1)
         disp_start = 1;
+    if (disp_pred < 1)
+        disp_pred = 1;
 
-    return std::make_tuple(disp_start,disp_end);
+    return std::make_tuple(disp_start,disp_pred,disp_end);
 }
 
 float ItemTracker::estimate_sub_disparity(int disparity,float * err) {

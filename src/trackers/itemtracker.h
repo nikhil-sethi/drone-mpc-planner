@@ -79,7 +79,6 @@ private:
 
     filtering::Smoother smoother_score;
     filtering::Smoother smoother_brightness;
-    filtering::Smoother smoother_disparity_match_gray_error;
 
 protected:
 
@@ -123,7 +122,9 @@ protected:
 
     void init_logger();
     float stereo_match(cv::Point2f im_posL, float size);
-    std::tuple<int,int> disparity_search_rng(int x1, bool use_imscalef);
+    std::tuple<int,float,int> disparity_search_rng(int x1);
+    std::tuple<float,float> calc_match_score_masked(int i, int disp_end, int width, int height, cv::Mat diffL_mask_patch, cv::Mat diffR_mask_patch, cv::Mat grayL_patch, cv::Mat grayR_patch, int npixels);
+    float calc_match_score_motion(int i,int x, int y, int width, int height,float tmp_diffL_sum, cv::Mat diffL_roi, cv::Mat diffR);
     float estimate_sub_disparity(int disparity,float * err);
 
     void reset_tracker_ouput(double time);
