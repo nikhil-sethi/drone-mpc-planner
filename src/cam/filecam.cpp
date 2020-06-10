@@ -98,7 +98,7 @@ void FileCam::update() {
     }
     replay_skip_n_frames = 0;
 
-    auto buffer = gst_sample_get_buffer (sample);
+    auto buffer = gst_sample_get_buffer(sample);
     if (buffer == NULL || gst_app_sink_is_eos (reinterpret_cast<GstAppSink *>(_appsink)) ) {
         std::cout << "Log end, exiting. Video frames left: " << nFrames - frame_cnt << std::endl;
         gst_sample_unref(sample);

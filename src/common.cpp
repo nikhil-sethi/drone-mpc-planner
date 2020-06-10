@@ -53,13 +53,17 @@ cv::Point3f im2world(cv::Point2f p_im,float disparity, cv::Mat Qf, float camera_
 
     return w;
 }
+
+int world2im_dist(cv::Point3f p1, float dist, cv::Mat Qfi, float camera_angle) {
+    return world2im_size(p1 - cv::Point3f(dist,0,0),p1 + cv::Point3f(dist,0,0),Qfi,camera_angle);
+}
 //returns the pixel size of a world object]
 int world2im_size(cv::Point3f p1, cv::Point3f p2, cv::Mat Qfi, float camera_angle) {
-    return round(cv::norm(world2im_2d(p1,Qfi,camera_angle)-world2im_2d(p2,Qfi,camera_angle)));
+    return round(normf(world2im_2d(p1,Qfi,camera_angle)-world2im_2d(p2,Qfi,camera_angle)));
 }
 
 float world2im_sizef(cv::Point3f p1, cv::Point3f p2, cv::Mat Qfi, float camera_angle) {
-    return cv::norm(world2im_2d(p1,Qfi,camera_angle)-world2im_2d(p2,Qfi,camera_angle));
+    return normf(world2im_2d(p1,Qfi,camera_angle)-world2im_2d(p2,Qfi,camera_angle));
 }
 
 

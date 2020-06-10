@@ -484,6 +484,8 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                         msg_str = msg_str + " dsp.";
                     if (!wblob.bkg_check_ok)
                         msg_str = msg_str + " bkg.";
+                    if (!wblob.im_pos_ok)
+                        msg_str = msg_str + "pre.";
                     if (!wblob.radius_in_range)
                         msg_str = msg_str + " r.";
                     if (blob.props->ignores.size()>0)

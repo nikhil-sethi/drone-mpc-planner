@@ -119,6 +119,10 @@ void BlinkTracker::update(double time) {
     }
 
     clean_ignore_blobs(time);
+    if (_world_item.valid) {
+        last_known_valid_pos = _world_item.pt;
+        last_known_valid_pos_valid = true;
+    }
 }
 
 BlinkTracker::blinking_drone_states BlinkTracker::detect_blink(double time, bool found) {
@@ -140,11 +144,20 @@ BlinkTracker::blinking_drone_states BlinkTracker::detect_blink(double time, bool
     return _blinking_drone_status;
 }
 
-void BlinkTracker::calc_world_item(BlobProps * pbs, double time [[maybe_unused]]) {
-    calc_world_props_blob_generic(pbs,false);
-    pbs->world_props.valid = pbs->world_props.disparity_in_range && pbs->world_props.radius_in_range;
+void BlinkTracker::calc_world_item(BlobProps * props, double time [[maybe_unused]]) {
+
+    const float max_world_dist = 0.05f; // pre-sift blobs using the image coordinates, to prevent having to calculate the stereo_match
+    int max_im_dist = world2im_dist(last_known_valid_pos,max_world_dist,_visdat->Qfi,_visdat->camera_angle);
+    if (last_known_valid_pos_valid && normf(cv::Point2f(props->x,props->y) - _image_item.pt()) > max_im_dist) {
+        props->world_props.im_pos_ok = false;
+        props->world_props.valid = false;
+    } else {
+        calc_world_props_blob_generic(props,false);
+        props->world_props.im_pos_ok = true;
+        props->world_props.valid = props->world_props.disparity_in_range && props->world_props.radius_in_range;
+    }
 }
-bool BlinkTracker::check_ignore_blobs(BlobProps * pbs) {
+bool BlinkTracker::check_ignore_blobs(BlobProps * props) {
 
     std::vector<IgnoreBlob> filtered_ignores_for_me;
     for (auto ign : ignores_for_me) {
@@ -154,7 +167,7 @@ bool BlinkTracker::check_ignore_blobs(BlobProps * pbs) {
     }
     ignores_for_me = filtered_ignores_for_me;
 
-    return this->check_ignore_blobs_generic(pbs);
+    return this->check_ignore_blobs_generic(props);
 }
 
 //Removes all ignore points which timed out

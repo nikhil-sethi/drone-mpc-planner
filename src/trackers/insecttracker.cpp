@@ -72,16 +72,30 @@ void InsectTracker::update(double time) {
     (*_logger) << '\n';
 }
 
-void InsectTracker::calc_world_item(BlobProps * pbs, double time [[maybe_unused]]) {
-    calc_world_props_blob_generic(pbs,false);
-    pbs->world_props.valid = pbs->world_props.bkg_check_ok && pbs->world_props.disparity_in_range & pbs->world_props.radius_in_range;
+void InsectTracker::calc_world_item(BlobProps * props, double time [[maybe_unused]]) {
+
+    if (_image_predict_item.valid) {
+        const float max_world_dist = 0.05f; // pre-sift blobs using the image coordinates, to prevent having to calculate the stereo_match
+        cv::Point3f predicted_world_pos = im2world(_image_predict_item.pt(),_image_predict_item.disparity,_visdat->Qf,_visdat->camera_angle);
+        int max_im_dist = world2im_dist(predicted_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_angle);
+        if (normf(cv::Point2f(props->x*pparams.imscalef,props->y*pparams.imscalef) - _image_predict_item.pt()) > max_im_dist) {
+            props->world_props.im_pos_ok = false;
+            props->world_props.valid = false;
+            return;
+        }
+    }
+
+    calc_world_props_blob_generic(props,false);
+    props->world_props.im_pos_ok = true;
+    props->world_props.valid = props->world_props.bkg_check_ok && props->world_props.disparity_in_range & props->world_props.radius_in_range;
 
     if (_blobs_are_fused_cnt > 1 * pparams.fps) // if the insect and drone are fused, the drone is accelerating through it and should become seperate again within a limited time
-        pbs->world_props.valid = false;
+        props->world_props.valid = false;
+
 }
 
-bool InsectTracker::check_ignore_blobs(BlobProps * pbs) {
-    return this->check_ignore_blobs_generic(pbs);
+bool InsectTracker::check_ignore_blobs(BlobProps * props) {
+    return this->check_ignore_blobs_generic(props);
 }
 
 }

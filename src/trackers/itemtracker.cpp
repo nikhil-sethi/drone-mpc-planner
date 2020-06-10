@@ -439,6 +439,8 @@ std::tuple<int,float,int> ItemTracker::disparity_search_rng(int x) {
         disp_start = std::max(static_cast<int>(floorf(tmp_disp_prev))-4,disp_start);
         disp_end = std::min(static_cast<int>(ceilf(tmp_disp_prev))+4,disp_end);
         disp_pred = (disp_end - disp_start)/2.f + disp_start;
+    } else {
+        disp_pred = (disp_end - disp_start)/2.f + disp_start;
     }
 
     if (disp_start < 1)

@@ -58,6 +58,9 @@ private:
     double fail_time_start = 0;
     double manual_calib_time_start = 0;
 
+    cv::Point3f last_known_valid_pos = {0};
+    bool last_known_valid_pos_valid = false;
+
     blinking_drone_states detect_blink(double time, bool found);
 
     void clean_ignore_blobs(double time);
