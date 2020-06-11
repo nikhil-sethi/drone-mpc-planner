@@ -104,6 +104,11 @@ class SystemWidget(QWidget):
         beep_Action.triggered.connect(self.beep)
         self.addAction(beep_Action)
 
+        shakeAction = QAction("Shake", self)
+        shakeAction.setIcon(self.style().standardIcon(QStyle.SP_DesktopIcon))
+        shakeAction.triggered.connect(self.shake)
+        self.addAction(shakeAction)
+
         btn_restart = QPushButton()
         btn_restart.setToolTip('Restart pats process')
         btn_restart.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
@@ -201,6 +206,8 @@ class SystemWidget(QWidget):
         subprocess.Popen(['./calib_system.sh', 'pats'+self.host_id])
     def beep(self):
         subprocess.Popen(['./beep_system.sh', 'pats'+self.host_id])
+    def shake(self):
+        subprocess.Popen(['./shake_system.sh', 'pats'+self.host_id])
 
     def restart(self):
         subprocess.Popen(['./restart_system.sh', 'pats'+self.host_id])

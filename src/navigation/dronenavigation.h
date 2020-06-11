@@ -55,6 +55,8 @@ private:
     double time_drone_problem = -1;
     double time_located_drone = 0;
     double time_take_off = 0;
+    double time_shake_start = 0;
+    float shake_duration = 5;
 
     std::ofstream *_logger;
     DroneController * _dctrl;
@@ -128,6 +130,10 @@ public:
 
     void redetect_drone_location() {
         _navigation_status = ns_locate_drone_init;
+    }
+
+    void shake_drone() {
+        _navigation_status = ns_start_shaking;
     }
 
     cv::Point2i drone_v_setpoint_im() {

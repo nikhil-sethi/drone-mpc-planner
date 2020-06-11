@@ -12,6 +12,7 @@ void CommandCenterLink::init(bool log_replay_mode,navigation::DroneNavigation * 
     remove(demo_waypoint_fn.c_str());
     remove(calib_fn.c_str());
     remove(beep_fn.c_str());
+    remove(shake_fn.c_str());
 
     _dnav = dnav;
     _dctrl = dctrl;
@@ -72,6 +73,11 @@ void CommandCenterLink::check_commandcenter_triggers() {
             std::cout << "Replay insect demo!" << std::endl;
             _trackers->init_replay_moth(demo_insect_fn);
             remove(demo_insect_fn.c_str());
+        }
+        if (file_exist(shake_fn)) {
+            std::cout << "Shaking drone!" << std::endl;
+            _dnav->shake_drone();
+            remove(shake_fn.c_str());
         }
         if (file_exist(calib_fn)) {
             std::cout << "Calibrating drone!" << std::endl;

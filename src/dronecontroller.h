@@ -37,6 +37,7 @@ static const char* flight_mode_names[] = { "fm_joystick_check",
                                            "fm_initial_reset_yaw",
                                            "fm_reset_yaw",
                                            "fm_ff_landing_start",
+                                           "fm_shake_it_baby",
                                            "fm_ff_landing"
                                          };
 
@@ -67,6 +68,7 @@ public:
         fm_initial_reset_yaw,
         fm_reset_yaw,
         fm_ff_landing_start,
+        fm_shake_it_baby,
         fm_ff_landing
     };
     enum joy_mode_switch_modes { // raw switch modes

@@ -424,14 +424,25 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_landed: {
             wpid = 0;
-            _navigation_status = ns_wait_after_landing;
+            _navigation_status = ns_start_shaking;
             landed_time = time;
             _trackers->dronetracker()->delete_landing_motion(time_out_after_landing);
             _dctrl->hover_mode(false);
             _trackers->dronetracker()->hover_mode(false);
             [[fallthrough]];
+        } case ns_start_shaking: {
+            _navigation_status = ns_shaking_drone;
+            time_shake_start = time;
+            [[fallthrough]];
+        } case ns_shaking_drone: {
+            _dctrl->flight_mode(DroneController::fm_shake_it_baby);
+            if (static_cast<float>(time - time_shake_start) > shake_duration) {
+                _navigation_status = ns_wait_after_landing;
+                _dctrl->flight_mode(DroneController::fm_disarmed);
+            }
+            break;
         } case ns_wait_after_landing: {
-            if (static_cast<float>(time - landed_time) > time_out_after_landing )
+            if (static_cast<float>(time - landed_time) > time_out_after_landing + shake_duration )
                 _navigation_status = ns_locate_drone_init;
             break;
         } case ns_manual: { // also used for disarmed

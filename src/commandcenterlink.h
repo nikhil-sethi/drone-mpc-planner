@@ -13,6 +13,7 @@ private:
     std::string demo_insect_fn = "/home/pats/insect_demo";
     std::string calib_fn = "/home/pats/calib_now";
     std::string beep_fn = "/home/pats/beep_now";
+    std::string shake_fn = "/home/pats/shake_now";
     std::thread thread;
     bool initialized = false;
 
