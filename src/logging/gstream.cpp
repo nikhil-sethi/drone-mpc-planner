@@ -11,7 +11,6 @@ cv::VideoWriter cvvideo;
 int videomode;
 int colormode;
 
-stopwatch_c stopwatch;
 int enough = 0;
 int want = 1;
 int want_cnt = 0;
@@ -228,7 +227,6 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
             }
         }
 
-        stopwatch.Start();
         initialised = true;
         return 0;
     }
@@ -378,7 +376,6 @@ void GStream::close () {
             gst_element_set_state (_pipeline, GST_STATE_NULL);
             gst_object_unref (GST_OBJECT (_pipeline));
         }
-        std::cout << "Average gstream video (processing) fps: " << want_cnt / (stopwatch.Read()*0.001f) << std::endl;
         //max_stream_fps can be lower!
         initialised = false;
     }

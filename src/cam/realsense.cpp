@@ -111,8 +111,10 @@ void Realsense::rs_callback(rs2::frame f) {
             new_frame1 = false;
             new_frame2 = false;
             int fl = rs_frameL.get_frame_number() - last_sync_id;
-            if (fl  > 3)
+            if (fl > 3) {
                 std::cout << "FRAME LOSS: " << fl << std::endl;
+                _frame_loss_cnt++;
+            }
             last_sync_id = rs_frameL.get_frame_number();
         }
         else { // somehow frames are not in sync, resync

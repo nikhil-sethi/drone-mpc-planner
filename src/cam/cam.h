@@ -22,6 +22,7 @@ protected:
     unsigned long long _frame_number = 0;
     double _frame_time = 0;
     bool initialized = false;
+    int _frame_loss_cnt = 0;
 
     //read file names
     std::string calib_rfn = "cam_calib.xml";
@@ -84,4 +85,5 @@ public:
     float measured_gain() { return camparams.measured_gain; }
     unsigned long long frame_number() {return _frame_number;}
     double frame_time() {return _frame_time;}
+    int frame_loss_cnt() {return _frame_loss_cnt;}
 };

@@ -48,6 +48,8 @@ using namespace std;
 bool exit_now = false;
 volatile std::sig_atomic_t term_sig_fired;
 int imgcount; // to measure fps
+int raw_video_frame_counter = 0;
+int n_fps_warnings = 0;
 GStream output_video_results,output_video_LR,output_video_cuts;
 
 xmls::PatsParameters pparams;
@@ -104,6 +106,7 @@ void process_frame(Stereo_Frame_Data data_drone);
 void process_video();
 int main( int argc, char **argv);
 bool handle_key(double time);
+void print_warnings();
 void close(bool sig_kill);
 
 /************ code ***********/
@@ -208,7 +211,6 @@ void process_video() {
 
         if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode && pparams.op_mode != op_mode_crippled) {
             int frame_written = 0;
-            static int raw_video_frame_counter = 0;
             // cv::Mat id_fr = cam->frameL.clone();
             // putText(id_fr,std::to_string(data.RS_id),cv::Point(0, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,Scalar(255));
             frame_written = output_video_LR.write(data.frameL,data.frameR);
@@ -232,8 +234,10 @@ void process_video() {
         static float prev_time = -1.f/pparams.fps;
         float current_fps = 1.f / (t - prev_time);
         float fps = fps_smoothed.addSample(current_fps);
-        if (fps < pparams.fps / 6 * 5 && fps_smoothed.ready() && !log_replay_mode && !generator_mode)
+        if (fps < pparams.fps / 6 * 5 && fps_smoothed.ready() && !log_replay_mode && !generator_mode) {
             std::cout << "FPS WARNING!" << std::endl;
+            n_fps_warnings++;
+        }
 
         static double time =0;
         float dt __attribute__((unused)) = static_cast<float>(cam->frame_time() - time);
@@ -714,12 +718,25 @@ void close(bool sig_kill) {
     logger.close();
     if (!sig_kill)
         close_thread_pool();
-
     cmdcenter.close();
+
+    print_warnings();
     if(cam)
         cam.release();
-
     std::cout <<"Closed"<< std::endl;
+}
+
+void print_warnings() {
+    if (pparams.video_raw) {
+        std::cout <<"Video frames written: " << raw_video_frame_counter-1 << std::endl;
+        if (raw_video_frame_counter != imgcount)
+            std::cout <<"WARNING VIDEO FRAMES MISSING: : " << raw_video_frame_counter - imgcount << std::endl;
+    }
+    if (n_fps_warnings)
+        std::cout <<"WARNING FPS PROBLEMS: : " << n_fps_warnings << std::endl;
+    if (cam->frame_loss_cnt())
+        std::cout <<"WARNING FRAME LOSSES: : " << cam->frame_loss_cnt() << std::endl;
+
 }
 
 void wait_for_cam_angle() {
