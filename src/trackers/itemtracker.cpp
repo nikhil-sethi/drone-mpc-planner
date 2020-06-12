@@ -258,7 +258,10 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
         height=diffL.rows-y;
     cv::Rect roiL(x,y,width,height);
 
-    auto [disp_start,disp_pred,disp_end] =  disparity_search_rng(x);
+    auto [disp_start,disp_pred,disp_rng,disp_end] =  disparity_search_rng(x);
+    if (disp_rng < 3) {
+        return -1; // return out of range which must be handled outside this function
+    }
 
     float npixels = static_cast<float>(roiL.width*roiL.height);
     float err_masked [disp_end] = {0};
@@ -420,7 +423,7 @@ std::tuple<float,float> ItemTracker::calc_match_score_masked(int i, int disp_end
     return std::make_tuple(cnz / npixels,static_cast<float>(cv::sum(errV)[0]) / cnz);
 }
 
-std::tuple<int,float,int> ItemTracker::disparity_search_rng(int x) {
+std::tuple<int,float,int,int> ItemTracker::disparity_search_rng(int x) {
 
     int tmp_max_disp = max_disparity;
     if (x - tmp_max_disp < 0)
@@ -452,7 +455,7 @@ std::tuple<int,float,int> ItemTracker::disparity_search_rng(int x) {
     if (disp_rng > 20)
         std::cout << "Warning large disparity search range: " << disp_rng << std::endl;
 
-    return std::make_tuple(disp_start,disp_pred,disp_end);
+    return std::make_tuple(disp_start,disp_pred,disp_rng,disp_end);
 }
 
 float ItemTracker::estimate_sub_disparity(int disparity,float * err) {
