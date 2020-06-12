@@ -12,6 +12,7 @@ static stopwatch_c swc;
 
 void GeneratorCam::init () {
     camparams.deserialize(calib_rfn);
+    camparams.serialize(calib_wfn);
 
     calibration();
 

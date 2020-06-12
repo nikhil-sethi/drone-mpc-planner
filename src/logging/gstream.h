@@ -19,7 +19,8 @@ private:
     GstElement *_pipeline,*_appsrc;
 
     int _cols,_rows;
-    int prepare_buffer(GstAppSrc* appsrc, cv::Mat * image);
+    int prepare_buffer(GstAppSrc* appsrc, cv::Mat image);
+    int prepare_buffer(GstAppSrc* appsrc, cv::Mat frameL, cv::Mat frameR);
     int stream_resize_f = 1;
     int gstream_fps;
     int max_gstream_fps = 30;

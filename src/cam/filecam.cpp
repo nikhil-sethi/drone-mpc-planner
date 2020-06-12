@@ -109,8 +109,13 @@ void FileCam::update() {
     gst_buffer_map(buffer, &map, GST_MAP_READ);
 
     cv::Mat frameLR(cv::Size(im_width, im_height), CV_8UC1, map.data, cv::Mat::AUTO_STEP);
-    frameLR(cv::Rect(cv::Point(0,0),cv::Point(frameLR.cols/2,frameLR.rows))).copyTo(frameL);
-    frameLR(cv::Rect(cv::Point(frameLR.cols/2,0),cv::Point(frameLR.cols,frameLR.rows))).copyTo(frameR);
+    if (im_width > im_height) {
+        frameLR(cv::Rect(cv::Point(0,0),cv::Point(frameLR.cols/2,frameLR.rows))).copyTo(frameL);
+        frameLR(cv::Rect(cv::Point(frameLR.cols/2,0),cv::Point(frameLR.cols,frameLR.rows))).copyTo(frameR);
+    } else {
+        frameLR(cv::Rect(cv::Point(0,0),cv::Point(frameLR.cols,frameLR.rows/2))).copyTo(frameL);
+        frameLR(cv::Rect(cv::Point(0,frameLR.rows/2),cv::Point(frameLR.cols,frameLR.rows))).copyTo(frameR);
+    }
     _frame_number = frames_ids.at(frame_cnt-1).RS_id;
     _frame_time = frames_ids.at(frame_cnt-1).time;
     if (_frame_number==ULONG_MAX) {

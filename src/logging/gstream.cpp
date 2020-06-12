@@ -89,7 +89,7 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
             g_object_set (G_OBJECT (_appsrc),
                           "stream-type", 0, // GST_APP_STREAM_TYPE_STREAM
                           "format", GST_FORMAT_TIME,
-                          "is-live", FALSE,
+                          "is-live", TRUE,
                           "max-bytes", 5000000, // buffer size before enough-data fires. Default 200000
                           NULL);
 
@@ -234,7 +234,45 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
     }
 }
 
-int GStream::prepare_buffer(GstAppSrc* appsrc, cv::Mat *image) {
+int GStream::prepare_buffer(GstAppSrc* appsrc, cv::Mat frameL, cv::Mat frameR) {
+
+    static GstClockTime timestamp = 0;
+    GstBuffer *buffer;
+    GstFlowReturn ret;
+
+    lock_var.lock();
+    if (enough) {
+        std::cout << "Skip recording a frame because buffer is full" << std::endl;
+        lock_var.unlock();
+        return 1;
+    }
+
+    gsize size = frameL.cols * frameL.rows;
+
+    buffer = gst_buffer_new_allocate (NULL, 2*size, NULL);
+    GstMapInfo info;
+    gst_buffer_map(buffer, &info, GST_MAP_WRITE);
+    memcpy(info.data, frameL.data, size);
+    memcpy(info.data + size, frameR.data, size);
+    gst_buffer_unmap(buffer, &info);
+
+    GST_BUFFER_PTS (buffer) = timestamp;
+    GST_BUFFER_DURATION (buffer) = gst_util_uint64_scale_int (1, GST_SECOND, gstream_fps);
+
+    timestamp += GST_BUFFER_DURATION (buffer);
+
+    ret = gst_app_src_push_buffer(GST_APP_SRC(appsrc), buffer);
+    want = 0;
+    lock_var.unlock();
+    if (ret != GST_FLOW_OK) {
+        std::cout << "GST ERROR DE PERROR" << std::endl;
+        return 2;
+
+    }
+    return 0;
+}
+
+int GStream::prepare_buffer(GstAppSrc* appsrc, cv::Mat image) {
 
     static GstClockTime timestamp = 0;
     GstBuffer *buffer;
@@ -251,12 +289,12 @@ int GStream::prepare_buffer(GstAppSrc* appsrc, cv::Mat *image) {
     if (colormode) {
         cmult =3;
     }
-    gsize size = image->size().width * image->size().height*cmult ;
+    gsize size = image.size().width * image.size().height*cmult ;
 
     buffer = gst_buffer_new_allocate (NULL, size, NULL);
     GstMapInfo info;
-    gst_buffer_map(buffer, &info, GST_MAP_READ);
-    memcpy(info.data, image->data, size);
+    gst_buffer_map(buffer, &info, GST_MAP_WRITE);
+    memcpy(info.data, image.data, size);
     gst_buffer_unmap(buffer, &info);
 
     GST_BUFFER_PTS (buffer) = timestamp;
@@ -276,17 +314,18 @@ int GStream::prepare_buffer(GstAppSrc* appsrc, cv::Mat *image) {
 }
 
 int GStream::write(cv::Mat frameL,cv::Mat frameR) {
-    cv::Mat frame(frameL.rows,frameL.cols+frameR.cols,CV_8UC1);
 
-    frameL.copyTo(frame(cv::Rect(0,0,frameL.cols, frameL.rows)));
-    frameR.copyTo(frame(cv::Rect(frameL.cols,0,frameR.cols, frameR.rows)));
 
     if (videomode == video_mp4_opencv) {
+        cv::Mat frame(frameL.rows,frameL.cols+frameR.cols,CV_8UC1);
+
+        frameL.copyTo(frame(cv::Rect(0,0,frameL.cols, frameL.rows)));
+        frameR.copyTo(frame(cv::Rect(frameL.cols,0,frameR.cols, frameR.rows)));
         cvvideo.write(frame);
         return 0;
     }
     else {
-        int res = prepare_buffer(reinterpret_cast<GstAppSrc*>(_appsrc),&frame);
+        int res = prepare_buffer(reinterpret_cast<GstAppSrc*>(_appsrc),frameL,frameR);
         g_main_context_iteration(g_main_context_default(),FALSE);
         return res;
     }
@@ -309,7 +348,7 @@ int GStream::write(cv::Mat frame) {
         cvvideo.write(tmpframe);
         return 0;
     } else {
-        int res = prepare_buffer(reinterpret_cast<GstAppSrc*>(_appsrc),&tmpframe);
+        int res = prepare_buffer(reinterpret_cast<GstAppSrc*>(_appsrc),tmpframe);
         g_main_context_iteration(g_main_context_default(),FALSE);
         return res;
     }
