@@ -23,27 +23,29 @@ void GeneratorCam::init () {
 
     def_volume();
 
-    cv::Mat clt = cv::Mat::zeros(5000,5000,CV_8UC1);
-    cv::Mat cdt = cv::Mat::zeros(5000,5000,CV_8UC1);
+    cv::UMat clt = cv::UMat::zeros(5000,5000,CV_8UC1);
+    cv::UMat cdt = cv::UMat::zeros(5000,5000,CV_8UC1);
     int cirk_size = 150;
 
     cv::circle(clt,cv::Point2i(clt.rows/2,clt.cols/2),cirk_size,180,cv::FILLED);
-    cv::Mat clt_blurred;
+    cv::UMat clt_blurred;
     cv::GaussianBlur(clt,clt_blurred,cv::Size(55,5),25);
     circ_template_light = clt_blurred(cv::Rect(clt_blurred.rows/2-250,clt_blurred.cols/2-250,500,500));
 
     cv::circle(cdt,cv::Point2i(cdt.rows/2,cdt.cols/2),cirk_size,80,cv::FILLED);
-    cv::Mat cdt_blurred;
+    cv::UMat cdt_blurred;
     cv::GaussianBlur(cdt,cdt_blurred,cv::Size(55,55),25);
     circ_template_dark = cdt_blurred(cv::Rect(cdt_blurred.rows/2-250,cdt_blurred.cols/2-250,500,500));
 
     int wb = IMG_W,hb=IMG_H;
-    frame_bkg = cv::Mat::zeros(hb,wb,CV_8UC1);
+    frame_bkg = cv::UMat::zeros(hb,wb,CV_8UC1);
+    cv::Mat draw_img = frame_bkg.getMat(cv::ACCESS_WRITE);
     for (int i = 0; i < wb; i+=wb/5) {
-        cv::rectangle(frame_bkg,cv::Rect(i,0,wb/15,hb),0,cv::FILLED);
-        cv::rectangle(frame_bkg,cv::Rect(i+wb/15,0,wb/15,hb),64,cv::FILLED);
-        cv::rectangle(frame_bkg,cv::Rect(i+2*wb/15,0,wb/15,hb),255,cv::FILLED);
+        cv::rectangle(draw_img,cv::Rect(i,0,wb/15,hb),0,cv::FILLED);
+        cv::rectangle(draw_img,cv::Rect(i+wb/15,0,wb/15,hb),64,cv::FILLED);
+        cv::rectangle(draw_img,cv::Rect(i+2*wb/15,0,wb/15,hb),255,cv::FILLED);
     }
+    draw_img.release();
 
     swc.Start();
     update();
@@ -111,8 +113,8 @@ void GeneratorCam::update() {
     std::cout << "Generated drone world pos:" << generated_world_pos << " im: " << generated_im_pos << " size: " << generated_im_size << std::endl;
 
     drone_im_half_size*=3.f; // the circle drawn in the template is 1/3 the size of the template to give room for the gaussian filter. Also, the blurring makes the circle smaller (when tresholded)
-    cv::Mat frameL_buf = frame_bkg.clone();
-    cv::Mat frameR_buf = frame_bkg.clone();
+    cv::UMat frameL_buf = frame_bkg.clone();
+    cv::UMat frameR_buf = frame_bkg.clone();
 
     if (drone_im_pos.x+drone_im_half_size < IMG_W && drone_im_pos.x-drone_im_pos.z-drone_im_half_size >= 0 && drone_im_pos.y+drone_im_half_size<IMG_H && drone_im_pos.y-drone_im_half_size >= 0) {
         float upscalef = 30;
@@ -133,13 +135,13 @@ void GeneratorCam::update() {
         cv::Rect dispL_rect_upscaled = cv::Rect(roundf(x_offset_up+drone_im_pos.z*upscalef),0,patch_size_upscaled,patch_size_upscaled);
         cv::Rect dispR_rect_upscaled = cv::Rect(roundf(x_offset_up),0,patch_size_upscaled,patch_size_upscaled);
 
-        cv::Mat im_roiL_upscaled = cv::Mat::zeros(roi_size_upscaled,CV_8UC1);
-        cv::Mat im_roiR_upscaled = im_roiL_upscaled.clone();
+        cv::UMat im_roiL_upscaled = cv::UMat::zeros(roi_size_upscaled,CV_8UC1);
+        cv::UMat im_roiR_upscaled = im_roiL_upscaled.clone();
 
-        cv::Mat im_roiL_upscaled_disp = im_roiL_upscaled(dispL_rect_upscaled);
-        cv::Mat im_roiR_upscaled_disp = im_roiR_upscaled(dispR_rect_upscaled);
+        cv::UMat im_roiL_upscaled_disp = im_roiL_upscaled(dispL_rect_upscaled);
+        cv::UMat im_roiR_upscaled_disp = im_roiR_upscaled(dispR_rect_upscaled);
 
-        cv::Mat circ_template_resized;
+        cv::UMat circ_template_resized;
         if (_rc->LED_drone())
             cv::resize(circ_template_light,circ_template_resized,cv::Size(patch_size_upscaled,patch_size_upscaled),0,0,cv::INTER_NEAREST);
         else
@@ -148,18 +150,23 @@ void GeneratorCam::update() {
         circ_template_resized.copyTo(im_roiL_upscaled_disp);
         circ_template_resized.copyTo(im_roiR_upscaled_disp);
 
-        cv::Mat im_roiL_resized,im_roiR_resized;
+        cv::UMat im_roiL_resized,im_roiR_resized;
         cv::resize(im_roiL_upscaled,im_roiL_resized,roi_size,0,0,cv::INTER_NEAREST);
         cv::resize(im_roiR_upscaled,im_roiR_resized,roi_size,0,0,cv::INTER_NEAREST);
-        cv::bitwise_and(im_roiL_resized,im_roiL_resized,frameL_buf(target_rect),im_roiL_resized>0);
-        cv::bitwise_and(im_roiR_resized,im_roiR_resized,frameR_buf(target_rect),im_roiR_resized>0);
+
+        cv::UMat im_roiL_resized_gt0;
+        cv::UMat im_roiR_resized_gt0;
+        cv::compare(im_roiL_resized,cv::Scalar(0),im_roiL_resized_gt0,cv::CMP_GT);
+        cv::compare(im_roiR_resized,cv::Scalar(0),im_roiR_resized_gt0,cv::CMP_GT);
+        cv::bitwise_and(im_roiL_resized,im_roiL_resized,frameL_buf(target_rect),im_roiL_resized_gt0);
+        cv::bitwise_and(im_roiR_resized,im_roiR_resized,frameR_buf(target_rect),im_roiR_resized_gt0);
     }
 
 
     frameL.release();
     frameR.release();
-    frameL = frameL_buf.clone();
-    frameR = frameR_buf.clone();
+    frameL_buf.copyTo(frameL);
+    frameR_buf.copyTo(frameR);
     _frame_number++;
     _frame_time = _frame_number / static_cast<float>(pparams.fps);
 
