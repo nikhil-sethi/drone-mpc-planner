@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import (QMainWindow,QDialog,QWidget, QPushButton, QCheckBox
     QApplication, QFileDialog, QHBoxLayout, QLabel,QPushButton, QSizePolicy, QSlider, QStyle,
     QVBoxLayout, QGridLayout, QWidget,QMessageBox,QPlainTextEdit,QMenu,QTabWidget)
 from PyQt5.QtGui import QIcon, QPixmap, QPalette,QColor,QKeyEvent
+import shutil
 
 from pathlib import Path
 from datetime import datetime
@@ -25,6 +26,7 @@ class CommandCenterWindow(QMainWindow):
 
         source_folder = '~/Downloads/pats_status'
         source_folder = os.path.expanduser(source_folder.strip(" "))
+        shutil.rmtree(source_folder)
         self.source_folder = source_folder
         self.download(True)
 
