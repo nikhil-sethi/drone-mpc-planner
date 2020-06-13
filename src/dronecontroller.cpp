@@ -1112,7 +1112,7 @@ void DroneController::check_control_and_tracking_problems(track_data data_drone)
     if(model_error>50) {
         _flight_mode = fm_abort_flight;
         flight_submode_name = "fm_abort_flight_model_error";
-        std::cout<<std::endl;
+        std::cout <<  "Err between drone model and measured drone too big!" << std::endl;
     }
 
 #if DRONE_CONTROLLER_DEBUG
