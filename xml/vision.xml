@@ -1,5 +1,5 @@
 <SerializableClass Type="VisionParameters" Version="1.0">
-    <Member Name="motion_update_iterator_max">4</Member>
+    <Member Name="motion_update_iterator_max">6</Member>
     <Member Name="brightness_event_tresh">5</Member>
     <Member Name="brightness_check_period">1</Member>
 </SerializableClass>
