@@ -28,24 +28,25 @@ void GeneratorCam::init () {
     int cirk_size = 150;
 
     cv::circle(clt,cv::Point2i(clt.rows/2,clt.cols/2),cirk_size,180,cv::FILLED);
-    cv::UMat clt_blurred;
-    cv::GaussianBlur(clt,clt_blurred,cv::Size(55,5),25);
-    circ_template_light = clt_blurred(cv::Rect(clt_blurred.rows/2-250,clt_blurred.cols/2-250,500,500));
+    cv::GaussianBlur(clt,clt,cv::Size(55,55),25);
+    circ_template_light = clt(cv::Rect(clt.rows/2-250,clt.cols/2-250,500,500));
 
     cv::circle(cdt,cv::Point2i(cdt.rows/2,cdt.cols/2),cirk_size,80,cv::FILLED);
-    cv::UMat cdt_blurred;
-    cv::GaussianBlur(cdt,cdt_blurred,cv::Size(55,55),25);
-    circ_template_dark = cdt_blurred(cv::Rect(cdt_blurred.rows/2-250,cdt_blurred.cols/2-250,500,500));
+    cv::GaussianBlur(cdt,cdt,cv::Size(55,55),25);
+    circ_template_dark = cdt(cv::Rect(cdt.rows/2-250,cdt.cols/2-250,500,500));
 
     int wb = IMG_W,hb=IMG_H;
     frame_bkg = cv::UMat::zeros(hb,wb,CV_8UC1);
-    cv::Mat draw_img = frame_bkg.getMat(cv::ACCESS_WRITE);
+    // cv::Mat draw_img = frame_bkg.getMat(cv::ACCESS_WRITE);
     for (int i = 0; i < wb; i+=wb/5) {
-        cv::rectangle(draw_img,cv::Rect(i,0,wb/15,hb),0,cv::FILLED);
-        cv::rectangle(draw_img,cv::Rect(i+wb/15,0,wb/15,hb),64,cv::FILLED);
-        cv::rectangle(draw_img,cv::Rect(i+2*wb/15,0,wb/15,hb),255,cv::FILLED);
+        cv::rectangle(frame_bkg,cv::Point2i(i,0),cv::Point2i(i,0)+cv::Point2i(wb/15,hb),0,cv::FILLED);
+        cv::rectangle(frame_bkg,cv::Point2i(i+wb/15,0),cv::Point2i(i+wb/15,0)+cv::Point2i(wb/15,hb),64,cv::FILLED);
+        cv::rectangle(frame_bkg,cv::Point2i(i+2*wb/15,0),cv::Point2i(i+2*wb/15,0)+cv::Point2i(wb/15,hb),255,cv::FILLED);
+        // cv::rectangle(draw_img,cv::Rect(i,0,wb/15,hb),0,cv::FILLED);
+        // cv::rectangle(draw_img,cv::Rect(i+wb/15,0,wb/15,hb),64,cv::FILLED);
+        // cv::rectangle(draw_img,cv::Rect(i+2*wb/15,0,wb/15,hb),255,cv::FILLED);
     }
-    draw_img.release();
+    // draw_img.release();
 
     swc.Start();
     update();
@@ -53,8 +54,6 @@ void GeneratorCam::init () {
     initialized = true;
     clt.release();
     cdt.release();
-    cdt_blurred.release();
-    clt_blurred.release();
 
 }
 
