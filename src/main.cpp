@@ -655,7 +655,7 @@ void init() {
     visdat.init(cam->Qf, cam->frameL,cam->frameR,cam->camera_angle(),cam->measured_gain(),cam->measured_exposure(),cam->depth_background_mm); // do after cam update to populate frames
     trackers.init(&logger, &visdat, &(cam->camera_volume));
     dnav.init(&logger,&trackers,&dctrl,&visdat, &(cam->camera_volume),replay_dir);
-    dctrl.init(&logger,log_replay_mode,&rc,trackers.dronetracker(), &(cam->camera_volume),cam->measured_exposure());
+    dctrl.init(&logger,log_replay_mode,generator_mode,&rc,trackers.dronetracker(), &(cam->camera_volume),cam->measured_exposure());
 
     if (pparams.has_screen) {
         visualizer.init(&visdat,&trackers,&dctrl,&dnav,&rc,log_replay_mode);

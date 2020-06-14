@@ -209,7 +209,8 @@ private:
     std::vector<cv::Point3f> aim_direction_history;
 
     bool initialized = false;
-    bool log_replay_mode;
+    bool log_replay_mode = false;
+    bool generator_mode = false;
     flight_modes _flight_mode = fm_joystick_check; // only set externally (except for disarming), used internally
     joy_mode_switch_modes _joy_mode_switch = jmsm_none;
     betaflight_arming _joy_arm_switch = bf_armed;
@@ -468,7 +469,7 @@ public:
     }
 
     void close (void);
-    void init(std::ofstream *logger, bool fromfile, MultiModule *rc, tracking::DroneTracker *dtrk, CameraView* camvol,float exposure);
+    void init(std::ofstream *logger, bool fromfile, bool generator_mode, MultiModule *rc, tracking::DroneTracker *dtrk, CameraView* camvol,float exposure);
     void control(track_data, track_data, track_data, double);
     bool drone_is_active() {
         if ( _flight_mode == fm_inactive || _flight_mode == fm_disarmed || _flight_mode == fm_abort_flight || _flight_mode == fm_joystick_check)

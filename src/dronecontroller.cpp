@@ -13,11 +13,12 @@ bool DroneController::joystick_ready() {
     return joystick.isFound();
 }
 
-void DroneController::init(std::ofstream *logger,bool fromfile, MultiModule * rc, tracking::DroneTracker *dtrk, CameraView *camview, float exposure) {
+void DroneController::init(std::ofstream *logger,bool fromfile,bool generator, MultiModule * rc, tracking::DroneTracker *dtrk, CameraView *camview, float exposure) {
     _rc = rc;
     _dtrk = dtrk;
     _logger = logger;
     log_replay_mode = fromfile;
+    generator_mode = generator;
     _camview = camview;
     control_history_max_size = pparams.fps;
     (*_logger) << "valid; flight_mode;" <<
@@ -1109,7 +1110,7 @@ void DroneController::check_control_and_tracking_problems(track_data data_drone)
 
     if(model_error<0)
         model_error = 0;
-    if(model_error>50) {
+    if(model_error>50 && !generator_mode) {
         _flight_mode = fm_abort_flight;
         flight_submode_name = "fm_abort_flight_model_error";
         std::cout <<  "Err between drone model and measured drone too big!" << std::endl;
