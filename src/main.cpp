@@ -122,8 +122,8 @@ void process_video() {
         cam->update();
 
         Stereo_Frame_Data data;
-        data.frameL = cam->frameL;
-        data.frameR = cam->frameR;
+        data.frameL = cam->frameL.clone(); // these frames must be cloned because, at least for the generator, the memory is overwritten when a new frame is received
+        data.frameR = cam->frameR.clone(); // it may be different for the realsense cam, but difficult to check
         data.RS_id = cam->frame_number();
         data.time = cam->frame_time();
         data.imgcount = imgcount;
