@@ -73,16 +73,16 @@ pushd ~/dependencies
 }
 
 # Install dev packages
-[ -f dev-dependencies-packages-v1.0.done ] || {
+[ -f dev-dependencies-packages-v1.1.done ] || {
 	wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | sudo apt-key add -
 	sudo apt-get install apt-transport-https
 	echo "deb https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
 	sudo snap install sublime-text --classic
 	sudo snap install code --classic
 	sudo apt-get update
-	sudo apt install -y libqt5opengl5 libqt5opengl5-dev astyle  meld gitk git-gui terminator
+	sudo apt install -y libqt5opengl5 libqt5opengl5-dev astyle  meld gitk git-gui terminator jstest-gtk
 	#libgtk2.0-dev libtbb-dev qt5-default libgtkgl* libgtkgl2.0-* libgtkglext1  libgtkglext1-dev libgtkglext1-dev libgtkgl2.0-dev  libgtk2.0-dev libgtk-3-dev gnome-devel
-	touch dev-dependencies-packages-v1.0.done
+	touch dev-dependencies-packages-v1.1.done
 }
 
 # Install command center packages
