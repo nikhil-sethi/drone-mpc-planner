@@ -85,6 +85,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile,bool generator, M
 
     set_led_strength(exposure);
 
+    max_thrust = dparams.thrust;
     thrust = std::clamp(dparams.thrust,min_thrust,max_thrust);
     initial_hover_throttle_guess_non3d = GRAVITY/dparams.thrust*JOY_BOUND_RANGE+dparams.min_throttle;
     initialized = true;

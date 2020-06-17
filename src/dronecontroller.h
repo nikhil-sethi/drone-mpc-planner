@@ -179,7 +179,7 @@ private:
     }
 
     const float min_thrust = 25;
-    const float max_thrust = 50;
+    float max_thrust = 50;
     const float max_bank_angle = 180; // TODO: move to dparams (betaflight setting)
     const float aim_duration = 0.0833333333333f; // TODO: move to dparams, slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
     const float transmission_delay_duration = 0.04f;
