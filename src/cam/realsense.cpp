@@ -721,8 +721,10 @@ void Realsense::init_playback() {
 }
 
 void Realsense::seek(double time) {
-    std::chrono::nanoseconds nano(static_cast<ulong>(1e9*time));
-    static_cast<rs2::playback>(dev).seek(nano);
+    if (from_recorded_bag) {
+        std::chrono::nanoseconds nano(static_cast<ulong>(1e9*time));
+        static_cast<rs2::playback>(dev).seek(nano);
+    }
 }
 
 void Realsense::close() {
