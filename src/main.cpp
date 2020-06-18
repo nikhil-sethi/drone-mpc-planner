@@ -727,7 +727,7 @@ void close(bool sig_kill) {
 }
 
 void print_warnings() {
-    if (pparams.video_raw) {
+    if (pparams.video_raw && !log_replay_mode) {
         std::cout <<"Video frames written: " << raw_video_frame_counter-1 << std::endl;
         if (raw_video_frame_counter != imgcount)
             std::cout <<"WARNING VIDEO FRAMES MISSING: : " << raw_video_frame_counter - imgcount << std::endl;
