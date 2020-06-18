@@ -1,7 +1,7 @@
-<SerializableClass Type="FlightPlanXML" Version="1.1">
+<SerializableClass Type="FlightPlanXML" Version="1.2">
     <Member Name="flightplan_name">demo</Member>
     <Collection Name="waypoints">
-        <Class Type="Waypoint" Version="1.1">
+        <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_takeoff</Member>
             <Member Name="threshold_mm"></Member>
             <Member Name="x"></Member>
@@ -9,68 +9,73 @@
             <Member Name="z"></Member>
         </Class>
         <!-- Middle Point -->
-        <Class Type="Waypoint" Version="1.1">
+        <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">100</Member>
+            <Member Name="threshold_v">30</Member>
+            <Member Name="hover_pause">0</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.9</Member>
             <Member Name="z">-2.0</Member>
             <Member Name="name">WP_mid</Member>
         </Class>
 
-        <Class Type="Waypoint" Version="1.1">
-            <Member Name="type">wfm_flower</Member>
-            <Member Name="threshold_mm">150</Member>
-            <Member Name="x">0.0</Member>
-            <Member Name="y">-0.9</Member>
-            <Member Name="z">-2.0</Member>
-            <Member Name="name">WP_flower</Member>
-        </Class>
-
         <!-- Star flight -->
-        <Class Type="Waypoint" Version="1.1">
+        <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">150</Member>
+            <Member Name="threshold_v">30</Member>
+            <Member Name="hover_pause">0</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.4</Member>
             <Member Name="z">-2.0</Member>
             <Member Name="name">WP_star1</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.1">
+        <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">150</Member>
+            <Member Name="threshold_v">30</Member>
+            <Member Name="hover_pause">0</Member>
             <Member Name="x">0.29389263</Member>
             <Member Name="y">-1.3045085</Member>
             <Member Name="z">-2.0</Member>
             <Member Name="name">WP_star2</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.1">
+        <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">150</Member>
+            <Member Name="threshold_v">30</Member>
+            <Member Name="hover_pause">0</Member>
             <Member Name="x">-0.47552826</Member>
             <Member Name="y">-0.7454915</Member>
             <Member Name="z">-2.0</Member>
             <Member Name="name">WP_star3</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.1">
+        <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">150</Member>
+            <Member Name="threshold_v">30</Member>
+            <Member Name="hover_pause">0</Member>
             <Member Name="x">0.47552826</Member>
             <Member Name="y">-0.7454915</Member>
             <Member Name="z">-2.0</Member>
             <Member Name="name">WP_star4</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.1">
+        <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">150</Member>
+            <Member Name="threshold_v">30</Member>
+            <Member Name="hover_pause">0</Member>
             <Member Name="x">-0.29389263</Member>
             <Member Name="y">-1.3045085</Member>
             <Member Name="z">-2.0</Member>
             <Member Name="name">WP_star5</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.1">
+        <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">150</Member>
+            <Member Name="threshold_v">30</Member>
+            <Member Name="hover_pause">0</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.4</Member>
             <Member Name="z">-2.0</Member>
@@ -79,73 +84,91 @@
         <!-- End of star flight -->
 
         <!-- Max range fligt -->
-        <Class Type="Waypoint" Version="1.1">
+        <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">150</Member>
+            <Member Name="threshold_v">30</Member>
+            <Member Name="hover_pause">0</Member>
             <Member Name="x">1.0</Member>
             <Member Name="y">-1.6</Member>
             <Member Name="z">-1.2</Member>
             <Member Name="name">WP_rng1</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.1">
+        <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">150</Member>
+            <Member Name="threshold_v">30</Member>
+            <Member Name="hover_pause">0</Member>
             <Member Name="x">-1.0</Member>
             <Member Name="y">-1.6</Member>
             <Member Name="z">-1.2</Member>
             <Member Name="name">WP_rng2</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.1">
+        <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">150</Member>
+            <Member Name="threshold_v">30</Member>
+            <Member Name="hover_pause">0</Member>
             <Member Name="x">-1.0</Member>
             <Member Name="y">-1.6</Member>
             <Member Name="z">-2.7</Member>
             <Member Name="name">WP_rng3</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.1">
+        <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">150</Member>
+            <Member Name="threshold_v">30</Member>
+            <Member Name="hover_pause">0</Member>
             <Member Name="x">0.8</Member>
             <Member Name="y">-0.4</Member>
             <Member Name="z">-1.2</Member>
             <Member Name="name">WP_rng4</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.1">
+        <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">150</Member>
+            <Member Name="threshold_v">30</Member>
+            <Member Name="hover_pause">0</Member>
             <Member Name="x">1.0</Member>
             <Member Name="y">-0.5</Member>
-            <Member Name="z">-2.7</Member>
+            <Member Name="z">-2.5</Member>
             <Member Name="name">WP_rng5</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.1">
+        <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">150</Member>
+            <Member Name="threshold_v">30</Member>
+            <Member Name="hover_pause">0</Member>
             <Member Name="x">1.0</Member>
             <Member Name="y">-1.6</Member>
-            <Member Name="z">-2.7</Member>
+            <Member Name="z">-2.5</Member>
             <Member Name="name">WP_rng6</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.1">
+        <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">150</Member>
+            <Member Name="threshold_v">30</Member>
+            <Member Name="hover_pause">0</Member>
             <Member Name="x">-0.8</Member>
             <Member Name="y">-0.4</Member>
             <Member Name="z">-1.2</Member>
             <Member Name="name">WP_rng7</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.1"> 
+        <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">150</Member>
+            <Member Name="threshold_v">30</Member>
+            <Member Name="hover_pause">0</Member>
             <Member Name="x">-1.0</Member>
             <Member Name="y">-0.5</Member>
-            <Member Name="z">-2.7</Member>
+            <Member Name="z">-2.5</Member>
             <Member Name="name">WP_rng8</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.1">
+        <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">150</Member>
+            <Member Name="threshold_v">30</Member>
+            <Member Name="hover_pause">0</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.9</Member>
             <Member Name="z">-2.0</Member>
@@ -162,7 +185,7 @@
             <Member Name="y"></Member>
             <Member Name="z"></Member>
         </Class> -->
-        <Class Type="Waypoint" Version="1.1">
+        <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_landing</Member>
             <Member Name="threshold_mm"></Member>
             <Member Name="x"></Member>
