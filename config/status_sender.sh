@@ -27,4 +27,8 @@ while inotifywait -e modify,create, $LOCAL_STATUS_TXT_FILE; do
 	if test -f "$LOCAL_STATUS_IM_FILE"; then
 		rsync -z $LOCAL_STATUS_IM_FILE mavlab-gpu:$REMOTE_STATUS_IM_FILE
 	fi
+	while [ -f /home/pats/disable_pats_bkg ]; do
+		sleep 10
+		echo "Waiting until disable_pats_bkg disappears"
+	done
 done

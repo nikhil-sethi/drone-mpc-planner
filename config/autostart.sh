@@ -17,6 +17,12 @@ HOST_ID=$( hostname | tr -dc '0-9' )
 DRONE_ID=$(( $HOST_ID -10 ))
 
 while [ 1 ]; do
+
+	while [ -f /home/pats/disable_pats_bkg ]; do
+		sleep 10
+		echo "Waiting until disable_pats_bkg disappears"
+	done
+
     dt=$(date '+%d/%m/%Y %H:%M:%S');
     echo "$dt"
 	COUNTER=1
