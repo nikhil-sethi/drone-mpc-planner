@@ -482,29 +482,29 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
     while (control_history.size() > control_history_max_size)
         control_history.erase(control_history.begin());
 
-    (*_logger) << static_cast<int>(data_drone.pos_valid)  << "; " <<
-               static_cast<int16_t>(_flight_mode) << "; " <<
-               data_target_new.pos().x << "; " <<
-               data_target_new.pos().y  << "; " <<
-               data_target_new.pos().z << "; " <<
-               auto_throttle << "; " <<
-               auto_roll << "; " <<
-               auto_pitch << "; " <<
-               auto_yaw <<  "; " <<
-               joy_throttle <<  "; " <<
-               joy_roll <<  "; " <<
-               joy_pitch <<  "; " <<
-               joy_yaw << "; " <<
-               static_cast<int>(_joy_arm_switch) << "; " <<
-               static_cast<int>(_joy_mode_switch) << "; " <<
-               static_cast<int>(_joy_takeoff_switch) << "; " <<
-               _rc->arm_switch << "; " <<
-               _rc->mode << "; " <<
-               data_drone.dt << "; " <<
-               data_drone.yaw <<  "; " <<
-               data_drone.yaw_smooth <<  "; " <<
-               thrust << "; " <<
-               pos_err_i.x << "; " << pos_err_i.y << "; " << pos_err_i.z << "; ";
+    (*_logger) << static_cast<int>(data_drone.pos_valid)  << ";" <<
+               static_cast<int16_t>(_flight_mode) << ";" <<
+               data_target_new.pos().x << ";" <<
+               data_target_new.pos().y  << ";" <<
+               data_target_new.pos().z << ";" <<
+               auto_throttle << ";" <<
+               auto_roll << ";" <<
+               auto_pitch << ";" <<
+               auto_yaw <<  ";" <<
+               joy_throttle <<  ";" <<
+               joy_roll <<  ";" <<
+               joy_pitch <<  ";" <<
+               joy_yaw << ";" <<
+               static_cast<int>(_joy_arm_switch) << ";" <<
+               static_cast<int>(_joy_mode_switch) << ";" <<
+               static_cast<int>(_joy_takeoff_switch) << ";" <<
+               _rc->arm_switch << ";" <<
+               _rc->mode << ";" <<
+               data_drone.dt << ";" <<
+               data_drone.yaw <<  ";" <<
+               data_drone.yaw_smooth <<  ";" <<
+               thrust << ";" <<
+               pos_err_i.x << ";" << pos_err_i.y << ";" << pos_err_i.z << ";";
 }
 
 std::tuple<int, int, float, Point3f, std::vector<state_data> > DroneController::calc_burn(state_data state_drone,state_data state_target,float remaining_aim_duration) {

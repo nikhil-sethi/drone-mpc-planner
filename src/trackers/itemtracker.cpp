@@ -68,26 +68,29 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
 
 void ItemTracker::init_logger() {
     if (_logger->is_open()) {
-        (*_logger) << "imLx_" << _name << "; ";
-        (*_logger) << "imLy_" << _name << "; ";
-        (*_logger) << "disparity_" << _name << "; ";
-        (*_logger) << "imLx_pred_" << _name << "; ";
-        (*_logger) << "imLy_pred_" << _name << "; ";
-        (*_logger) << "n_frames_lost_" << _name << "; ";
-        (*_logger) << "n_frames_tracking_" << _name << "; ";
-        (*_logger) << "foundL_" << _name << "; ";
-        (*_logger) << "posX_" << _name << "; ";
-        (*_logger) << "posY_" << _name << "; ";
-        (*_logger) << "posZ_" << _name << "; ";
-        (*_logger) << "sposX_" << _name << "; ";
-        (*_logger) << "sposY_" << _name << "; ";
-        (*_logger) << "sposZ_" << _name << "; ";
-        (*_logger) << "svelX_" << _name << "; ";
-        (*_logger) << "svelY_" << _name << "; ";
-        (*_logger) << "svelZ_" << _name << "; ";
-        (*_logger) << "saccX_" << _name << "; ";
-        (*_logger) << "saccY_" << _name << "; ";
-        (*_logger) << "saccZ_" << _name << "; ";
+        (*_logger) << "imLx_" << _name << ";";
+        (*_logger) << "imLy_" << _name << ";";
+        (*_logger) << "disparity_" << _name << ";";
+        (*_logger) << "size_" << _name << ";";
+        (*_logger) << "score_" << _name << ";";
+        (*_logger) << "imLx_pred_" << _name << ";";
+        (*_logger) << "imLy_pred_" << _name << ";";
+        (*_logger) << "n_frames_lost_" << _name << ";";
+        (*_logger) << "n_frames_tracking_" << _name << ";";
+        (*_logger) << "foundL_" << _name << ";";
+        (*_logger) << "posX_" << _name << ";";
+        (*_logger) << "posY_" << _name << ";";
+        (*_logger) << "posZ_" << _name << ";";
+        (*_logger) << "sposX_" << _name << ";";
+        (*_logger) << "sposY_" << _name << ";";
+        (*_logger) << "sposZ_" << _name << ";";
+        (*_logger) << "svelX_" << _name << ";";
+        (*_logger) << "svelY_" << _name << ";";
+        (*_logger) << "svelZ_" << _name << ";";
+        (*_logger) << "saccX_" << _name << ";";
+        (*_logger) << "saccY_" << _name << ";";
+        (*_logger) << "saccZ_" << _name << ";";
+        (*_logger) << "radius_" << _name << ";";
     }
 }
 
@@ -206,21 +209,23 @@ void ItemTracker::append_log() {
     if (_logger->is_open()) {
         //log all image stuff
         if (path.size()>0)
-            (*_logger) << _image_item.x * pparams.imscalef << "; " << _image_item.y * pparams.imscalef << "; " << _image_item.disparity << "; ";
+            (*_logger) << _image_item.x * pparams.imscalef << ";" << _image_item.y * pparams.imscalef << ";" << _image_item.disparity << ";"
+                       << _image_item.size  << ";" << _image_item.score  << ";";
         else
-            (*_logger) << -1 << "; " << -1 << "; " << -1 << "; ";
+            (*_logger) << -1 << ";" << -1 << ";" << -1 << ";";
         if (_image_predict_item.valid)
-            (*_logger) << _image_predict_item.x << "; " << _image_predict_item.y << "; ";
+            (*_logger) << _image_predict_item.x << ";" << _image_predict_item.y << ";";
         else
-            (*_logger) << -1 << "; " << -1   << "; ";
+            (*_logger) << -1 << ";" << -1   << ";";
 
-        (*_logger) << n_frames_lost << "; " << n_frames_tracking << "; " << _tracking << "; ";
+        (*_logger) << n_frames_lost << ";" << n_frames_tracking << ";" << _tracking << ";";
         //log all world stuff
         track_data last = Last_track_data();
-        (*_logger) << last.state.pos.x << "; " << last.state.pos.y << "; " << last.state.pos.z << ";" ;
-        (*_logger) << last.state.spos.x << "; " << last.state.spos.y << "; " << last.state.spos.z << ";";
-        (*_logger) << last.state.vel.x << "; " << last.state.vel.y << "; " << last.state.vel.z << ";" ;
-        (*_logger) << last.state.acc.x << "; " << last.state.acc.y << "; " << last.state.acc.z << ";" ;
+        (*_logger) << last.state.pos.x << ";" << last.state.pos.y << ";" << last.state.pos.z << ";" ;
+        (*_logger) << last.state.spos.x << ";" << last.state.spos.y << ";" << last.state.spos.z << ";";
+        (*_logger) << last.state.vel.x << ";" << last.state.vel.y << ";" << last.state.vel.z << ";" ;
+        (*_logger) << last.state.acc.x << ";" << last.state.acc.y << ";" << last.state.acc.z << ";" ;
+        (*_logger) << _world_item.radius << ";";
     }
 
     while (track_history.size() > track_history_max_size)
