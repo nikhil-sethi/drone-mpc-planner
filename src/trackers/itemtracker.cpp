@@ -212,7 +212,7 @@ void ItemTracker::append_log() {
             (*_logger) << _image_item.x * pparams.imscalef << ";" << _image_item.y * pparams.imscalef << ";" << _image_item.disparity << ";"
                        << _image_item.size  << ";" << _image_item.score  << ";";
         else
-            (*_logger) << -1 << ";" << -1 << ";" << -1 << ";";
+            (*_logger) << -1 << ";" << -1 << ";" << -1 << ";" << -1 << ";" << -1 << ";";
         if (_image_predict_item.valid)
             (*_logger) << _image_predict_item.x << ";" << _image_predict_item.y << ";";
         else
@@ -225,7 +225,11 @@ void ItemTracker::append_log() {
         (*_logger) << last.state.spos.x << ";" << last.state.spos.y << ";" << last.state.spos.z << ";";
         (*_logger) << last.state.vel.x << ";" << last.state.vel.y << ";" << last.state.vel.z << ";" ;
         (*_logger) << last.state.acc.x << ";" << last.state.acc.y << ";" << last.state.acc.z << ";" ;
-        (*_logger) << _world_item.radius << ";";
+        if (_world_item.valid)
+            (*_logger) << _world_item.radius << ";";
+        else
+            (*_logger) << -1 << ";";
+
     }
 
     while (track_history.size() > track_history_max_size)
