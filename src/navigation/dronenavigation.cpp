@@ -105,10 +105,11 @@ void DroneNavigation::update(double time) {
                 _dctrl->flight_mode(DroneController::fm_blink);
                 _trackers->mode(tracking::TrackerManager::mode_locate_drone);
                 _navigation_status = ns_wait_locate_drone;
+                last_led_doubler_time = time;
             }
             break;
         } case ns_wait_locate_drone: {
-            static double __attribute__((unused)) prev_time = time;
+            static double prev_time = time;
             if (static_cast<float>(time - prev_time) > dparams.blink_period)
                 _dctrl->flight_mode(DroneController::fm_blink);
             if (_trackers->mode() != tracking::TrackerManager::mode_locate_drone) {
@@ -116,6 +117,10 @@ void DroneNavigation::update(double time) {
                 time_located_drone = time;
                 locate_drone_attempts = 0;
                 _navigation_status = ns_located_drone;
+            }
+            if (time - last_led_doubler_time > 3 ) { // if the blink detect takes too long, it may be that the led is not bright enough to be detected
+                last_led_doubler_time = time;
+                _dctrl->double_led_strength();
             }
             if (time - locate_drone_start_time/(locate_drone_attempts+1) > 15 )
                 _navigation_status = ns_locate_drone_init;

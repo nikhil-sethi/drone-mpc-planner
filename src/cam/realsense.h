@@ -38,7 +38,7 @@ public:
 
     void update();
 
-    std::tuple<float,cv::Mat> measure_auto_exposure();
+    std::tuple<float,float,cv::Mat> measure_auto_exposure();
     std::tuple<float,float,double,cv::Mat> measure_angle();
 
 

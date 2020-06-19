@@ -774,10 +774,10 @@ void wait_for_dark() {
     if (pparams.darkness_threshold > 0 && !log_replay_mode) {
         std::cout << "Checking if dark." << std::endl;
         while(true) {
-            auto [expo,frameL] = static_cast<Realsense *>(cam.get())->measure_auto_exposure();
+            auto [expo,gain,frameL] = static_cast<Realsense *>(cam.get())->measure_auto_exposure();
             auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
             std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << " Measured exposure: " << expo << std::endl;
-            if (expo >pparams.darkness_threshold) {
+            if (expo >pparams.darkness_threshold && gain >= 16) { // minimum RS gain is 16, so at the moment this condition does nothing
                 break;
             }
             cv::imwrite("../../../../pats_monitor_tmp.jpg", frameL);

@@ -92,12 +92,24 @@ void DroneController::init(std::ofstream *logger,bool fromfile,bool generator, M
 }
 
 void DroneController::set_led_strength(float exposure) {
-    if (exposure < 500)
-        dparams.drone_led_strength = 100;
-    else if (exposure <2000)
-        dparams.drone_led_strength = 100 - (exposure/2000.f*50.f);
+    float max_ae = 20000;
+    if (pparams.fps == 90)
+        max_ae = 10000;
+    else if (pparams.fps == 60)
+        max_ae = 15000;
     else
-        dparams.drone_led_strength = 50 - ((std::clamp(exposure,2000.f,10000.f)-2000)/8000.f*45.f);
+        std::cout << "Warning, led strength not properly implemented for this fps!" << std::endl;
+
+
+    float thresh_dark = (0.1333f* max_ae);
+    float thresh_bright = (0.0333f* max_ae);
+
+    if (exposure < thresh_bright)
+        dparams.drone_led_strength = 100;
+    else if (exposure < thresh_dark)
+        dparams.drone_led_strength = 100 - (exposure/thresh_dark*50.f);
+    else
+        dparams.drone_led_strength = 50 - ((std::clamp(exposure,thresh_bright,max_ae)-thresh_bright)/(max_ae - thresh_bright)*45.f);
 
     std::cout << "Led strength set to: " << dparams.drone_led_strength << std::endl;
 }
@@ -1111,7 +1123,7 @@ void DroneController::check_control_and_tracking_problems(track_data data_drone)
 
     if(model_error<0)
         model_error = 0;
-    if(model_error>50 && !generator_mode) {
+    if(model_error>150 && !generator_mode) {
         _flight_mode = fm_abort_flight;
         flight_submode_name = "fm_abort_flight_model_error";
         std::cout <<  "Err between drone model and measured drone too big!" << std::endl;

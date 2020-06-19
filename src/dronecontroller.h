@@ -296,7 +296,9 @@ public:
         _flight_mode = f;
     }
     void hover_mode(bool value) { _hover_mode = value;}
-
+    void double_led_strength(){
+        dparams.drone_led_strength = std::clamp(dparams.drone_led_strength*2,5,100);
+    }
 
     bool abort_take_off() {
         //check if the take off is not yet too far progressed to abort, if not go to spin up else return true

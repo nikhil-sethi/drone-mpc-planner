@@ -231,8 +231,8 @@ void Realsense::init_real() {
     if (enable_auto_exposure == only_at_startup)
         check_light_level();
     else {
-        std::tie (camparams.measured_exposure,std::ignore)  = measure_auto_exposure();
-        std::cout << "Measured auto exposure: " << camparams.measured_exposure << std::endl;
+        std::tie (camparams.measured_exposure,camparams.measured_gain,std::ignore) = measure_auto_exposure();
+        std::cout << "Measured auto exposure: " << camparams.measured_exposure << " and gain: " << camparams.measured_gain << std::endl;
     }
 
     depth_background = imread(depth_map_rfn,cv::IMREAD_ANYDEPTH);
@@ -363,7 +363,7 @@ void Realsense::check_light_level() {
     cam.stop();
 }
 
-std::tuple<float,cv::Mat> Realsense::measure_auto_exposure() {
+std::tuple<float,float,cv::Mat> Realsense::measure_auto_exposure() {
 
     if (!dev_initialized) {
         rs2::context ctx;
@@ -394,9 +394,10 @@ std::tuple<float,cv::Mat> Realsense::measure_auto_exposure() {
 
     rs2::frameset frame;
     float new_expos;
+    float new_gain;
 
-    float tmp_exposure =0;
-    int tmp_last_exposure_frame_id = 0;
+    float tmp_exposure =0, tmp_gain = 0;
+    int tmp_last_ae_change_frame_id = 0;
     int actual_exposure_was_measured = 0;
     int i =0;
     for (i= 0; i< 120; i++) { // check for large change in exposure
@@ -404,10 +405,11 @@ std::tuple<float,cv::Mat> Realsense::measure_auto_exposure() {
         frameLt = Mat(im_size, CV_8UC1, const_cast<void *>(frame.get_infrared_frame(1).get_data()), Mat::AUTO_STEP);
         if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
             new_expos = frame.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
+            new_gain = frame.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_GAIN_LEVEL);
             actual_exposure_was_measured++;
-            if (fabs(new_expos - tmp_exposure) > 0.5f )
-                tmp_last_exposure_frame_id = i;
-            if (i - tmp_last_exposure_frame_id >= 15)
+            if (fabs(new_expos - tmp_exposure) > 0.5f  || fabs(new_gain - tmp_gain) > 0.5f)
+                tmp_last_ae_change_frame_id = i;
+            if (i - tmp_last_ae_change_frame_id >= 15)
                 break;
             tmp_exposure = new_expos;
         }
@@ -418,7 +420,7 @@ std::tuple<float,cv::Mat> Realsense::measure_auto_exposure() {
     else if (actual_exposure_was_measured!=i+1)
         std::cout << "Not all frames contained exosure info: " << actual_exposure_was_measured << " / " << i << std::endl;
 
-    return std::make_tuple(new_expos,frameLt);
+    return std::make_tuple(new_expos,new_gain,frameLt);
 
 }
 
