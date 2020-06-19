@@ -9,7 +9,7 @@
 #include <opencv2/imgproc.hpp>
 cv::VideoWriter cvvideo;
 int videomode;
-int colormode;
+int bgr_mode;
 
 int enough = 0;
 int want = 1;
@@ -35,7 +35,7 @@ void GStream::block() {
     wait_for_want.lock();
 }
 
-int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std::string ip, int port, bool color, render_mode_enum render_mode) {
+int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std::string ip, int port, bool color) {
     videomode = mode;
     gstream_fps  =fps;
     wait_for_want.unlock();
@@ -52,7 +52,7 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
     _cols = sizeX;
     _rows = sizeY;
 
-    colormode = color;
+    bgr_mode = color;
 
     if (mode == video_mp4_opencv) {
 
@@ -69,8 +69,8 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
 
     } else {
 
-        GstElement *conv, *capsfilter,*encoder, *mux, *rtp, *videosink;
-
+        GstElement *capsfilter,*conv,*encoder, *mux, *rtp, *videosink, *parse;
+        GstElement *glupload,*glcolorbalance,*glcolorconvert,*glcolorconvert2, *gldownload;
         /* init GStreamer */
         gst_init (NULL, NULL);
 
@@ -81,21 +81,32 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
             //gst-launch-1.0 videotestsrc ! video/x-raw,format=RGB,framerate=\(fraction\)15/1,width=1920,height=1080 ! videoconvert ! x264enc speed-preset=ultrafast bitrate=16000 ! 'video/x-h264, stream-format=(string)byte-stream'  ! avimux ! filesink location=test.avi
             //gst-launch-1.0 videotestsrc ! video/x-raw,format=GRAY8,framerate=\(fraction\)90/1,width=1280,height=720 ! videoconvert ! x264enc ! 'video/x-h264, stream-format=(string)byte-stream'  ! avimux ! filesink location=test.avi
             //gst-launch-1.0 videotestsrc ! video/x-raw,format=GRAY8,framerate=\(fraction\)90/1,width=1696,height=480 ! videoconvert ! vaapih265enc ! h265parse ! matroskamux ! filesink location=test.mkv
-            //for some reason mp4mux gives unplayable video with gst-lauch, while it works perfectly from our application. Matroskamux should be more or less the same for testing purposes.
+
             _pipeline = gst_pipeline_new ("pipeline");
 
             _appsrc = gst_element_factory_make ("appsrc", "source");
+            glupload = gst_element_factory_make ("glupload", "glupload");
+            glcolorconvert = gst_element_factory_make ("glcolorconvert", "glcolorconvert");
+            gldownload = gst_element_factory_make ("gldownload", "gldownload");
+            capsfilter = gst_element_factory_make ("capsfilter", NULL);
+            encoder = gst_element_factory_make ("vaapih265enc", "encoder"); // hardware encoding
+            parse = gst_element_factory_make ("h265parse", "parse");
+            mux = gst_element_factory_make ("matroskamux", "mux");
+            videosink = gst_element_factory_make ("filesink", "videosink");
+
+
             g_object_set (G_OBJECT (_appsrc),
                           "stream-type", 0, // GST_APP_STREAM_TYPE_STREAM
                           "format", GST_FORMAT_TIME,
                           "is-live", TRUE,
                           "max-bytes", 5000000, // buffer size before enough-data fires. Default 200000
                           NULL);
-
             g_signal_connect (_appsrc, "need-data", G_CALLBACK(cb_need_data), NULL);
             g_signal_connect (_appsrc, "enough-data", G_CALLBACK(cb_enough_data), NULL);
+            g_object_set (G_OBJECT (videosink), "location", file.c_str(), NULL);
 
-            if (color) {
+
+            if(bgr_mode) {
                 auto caps = gst_caps_new_simple ("video/x-raw",
                                                  "format", G_TYPE_STRING, "BGR",
                                                  "width", G_TYPE_INT, sizeX,
@@ -104,60 +115,43 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
                 g_object_set (G_OBJECT (_appsrc), "caps",
                               caps, NULL);
                 gst_caps_unref(caps);
+
+// the colorspace conversion to I420 doesn't play nice with our viz. So up the saturation so it looks a bit the same as before.
+
+                glcolorbalance = gst_element_factory_make ("glcolorbalance", "glcolorbalance");
+                g_object_set (G_OBJECT (glcolorbalance), "brightness", 0.03,"saturation",2.0, NULL);
+                glcolorconvert2 = gst_element_factory_make ("glcolorconvert", "conv2");
+
+                // vaapih265enc in gstreamer 1.17 supports main-444 which looks much better for our colored vizs. But currently we are on gstreamer 1.14 and often players dont support 444 either.
+                //(this is why we hack it with the colorbalance above)
+                g_object_set (G_OBJECT (capsfilter), "caps",
+                              gst_caps_new_simple ("video/x-h265",
+                                                   "profile", G_TYPE_STRING, "main",
+                                                   NULL), NULL);
+
+                gst_bin_add_many (GST_BIN (_pipeline), _appsrc,glupload,glcolorconvert,glcolorbalance,glcolorconvert2,gldownload,encoder,capsfilter,parse,mux,videosink, NULL);
+                gst_element_link_many (                _appsrc,glupload,glcolorconvert,glcolorbalance, glcolorconvert2,gldownload,encoder,capsfilter,parse,mux,videosink, NULL);
+
             } else {
                 auto caps = gst_caps_new_simple ("video/x-raw",
-                                                 "format", G_TYPE_STRING, "GRAY8",
+                                                 "format", G_TYPE_STRING, "I420",
                                                  "width", G_TYPE_INT, sizeX,
                                                  "height", G_TYPE_INT, sizeY,
                                                  "framerate", GST_TYPE_FRACTION, gstream_fps, 1,NULL);
                 g_object_set (G_OBJECT (_appsrc), "caps",
                               caps, NULL);
                 gst_caps_unref(caps);
-            }
 
-            conv = gst_element_factory_make ("videoconvert", "conv");
-
-            capsfilter = gst_element_factory_make ("capsfilter", NULL);
-            if (color) {
-                //for compatibility with play back on e.g. phones, we need to have yuv420p
-                //this will make the color rather ugly though :(
-                g_object_set (G_OBJECT (capsfilter), "caps",
-                              gst_caps_new_simple ("video/x-raw",
-                                                   "format", G_TYPE_STRING, "I420",
-                                                   NULL), NULL);
-            }
-
-            if (render_mode == rm_vaapih264) {
-                encoder = gst_element_factory_make ("vaapih265enc", "encoder"); // hardware encoding
                 //The cqp rate-control setting seems to leave noticable noice, so we set a fixed bitrate. 5000 seems to be a nice compromise between quality and size.
                 //For logging (with stringent size and download constraints), cqp could be better though. It is about 5x smaller and the noise does not really influence our algorithms.
                 //To have a similar size as the intel rs bag one would need to increase to 5000000 (5M), but they are using mjpeg which is much less efficient
-                g_object_set (G_OBJECT (encoder),  "rate-control", 2,"bitrate", 50000, NULL);
-            } else {
+                g_object_set (G_OBJECT (encoder),  "rate-control", 2,"bitrate", 5000, NULL);
 
-                int render_quality = 1;
-                int bitrate = 8192;
-                if (render_mode == rm_x264_hq) {
-                    render_quality = 7;
-                    bitrate = 32768;
-                }
-                if (!color)
-                    bitrate/=2;
-
-                encoder = gst_element_factory_make ("x264enc", "encoder"); // soft encoder
-                g_object_set (G_OBJECT (encoder),  "speed-preset", render_quality,"bitrate", bitrate, NULL);
+                gst_bin_add_many (GST_BIN (_pipeline),_appsrc,encoder,mux,videosink,NULL);
+                gst_element_link_many (_appsrc,encoder,mux,videosink,NULL);
             }
 
-            mux = gst_element_factory_make ("matroskamux", "mux");
-
-            //            mux = gst_element_factory_make ("avimux", "mux");
-            videosink = gst_element_factory_make ("filesink", "videosink");
-            g_object_set (G_OBJECT (videosink), "location", file.c_str(), NULL);
-
-            gst_bin_add_many (GST_BIN (_pipeline), _appsrc, conv, capsfilter,encoder,  mux, videosink, NULL);
-            gst_element_link_many (_appsrc, conv, capsfilter, encoder, mux, videosink, NULL);
-
-        } else if (mode == video_stream) {
+        } else if (mode == video_stream) { // streaming has not be updated and tested for a while now...doubt it still works optimal
             //streaming:
             //from: gst-launch-1.0 videotestsrc pattern=snow ! video/x-raw,format=GRAY8,framerate=\(fraction\)90/1,width=1696,height=484 ! videoconvert ! videorate ! video/x-raw,framerate=15/1 ! x264enc ! 'video/x-h264, stream-format=(string)byte-stream' ! rtph264pay pt=96 ! udpsink host=127.0.0.1 port=5000
             //to: gst-launch-1.0 udpsrc port=5004 ! 'application/x-rtp, encoding-name=H264, payload=96' ! queue2 max-size-buffers=1 ! rtph264depay ! avdec_h264 ! videoconvert ! xvimagesink sync=false
@@ -232,6 +226,7 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
     }
 }
 
+//accepts a grayscale stereo pair, which is converted to YUV I420 to be accepted by the vaapi encoder
 int GStream::prepare_buffer(GstAppSrc* appsrc, cv::Mat frameL, cv::Mat frameR) {
 
     static GstClockTime timestamp = 0;
@@ -247,11 +242,12 @@ int GStream::prepare_buffer(GstAppSrc* appsrc, cv::Mat frameL, cv::Mat frameR) {
 
     gsize size = frameL.cols * frameL.rows;
 
-    buffer = gst_buffer_new_allocate (NULL, 2*size, NULL);
+    buffer = gst_buffer_new_allocate (NULL, 3*size, NULL);
     GstMapInfo info;
     gst_buffer_map(buffer, &info, GST_MAP_WRITE);
     memcpy(info.data, frameL.data, size);
     memcpy(info.data + size, frameR.data, size);
+    memset(info.data + 2*size, 128, size); // this converts gray to YV12
     gst_buffer_unmap(buffer, &info);
 
     GST_BUFFER_PTS (buffer) = timestamp;
@@ -284,7 +280,7 @@ int GStream::prepare_buffer(GstAppSrc* appsrc, cv::Mat image) {
     }
 
     int cmult = 1;
-    if (colormode) {
+    if (bgr_mode) {
         cmult =3;
     }
     gsize size = image.size().width * image.size().height*cmult ;

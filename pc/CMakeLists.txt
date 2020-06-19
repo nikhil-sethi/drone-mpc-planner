@@ -49,6 +49,8 @@ pkg_check_modules(GST REQUIRED gstreamer-1.0>=1.8
  gstreamer-video-1.0>=1.8
  gstreamer-app-1.0>=1.8)
 MESSAGE( STATUS "GST_INCLUDE_DIRS: " ${GST_INCLUDE_DIRS} )
+MESSAGE( STATUS "GST_LIBRARIES: " ${GST_LIBRARIES} )
+MESSAGE( STATUS "GST_LIBRARY_DIRS: " ${GST_LIBRARY_DIRS} )
 
 #************airsim******************
 if(WITH_AIRSIM)

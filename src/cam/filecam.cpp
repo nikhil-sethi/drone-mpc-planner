@@ -253,7 +253,7 @@ void FileCam::init_gstream() {
 
 
 void FileCam::close () {
-    gst_element_set_state (_pipeline, GST_STATE_NULL);
-    gst_object_unref (GST_OBJECT (_pipeline));
+    // gst_element_set_state (_pipeline, GST_STATE_NULL);
+    // gst_object_unref (GST_OBJECT (_pipeline));
     Cam::close();
 }

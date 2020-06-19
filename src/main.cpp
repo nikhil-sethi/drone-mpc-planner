@@ -183,7 +183,7 @@ void process_video() {
                         logger.close();
                         std::string cvfn = "insect" + to_string(insect_cnt) + ".mkv";
                         std::cout << "Opening new video: " << cvfn << std::endl;
-                        if (output_video_cuts.init(pparams.video_cuts,data_output_dir + cvfn,IMG_W*2,IMG_H,pparams.fps/2, "192.168.1.255",5000,true,GStream::rm_vaapih264)) {std::cout << "WARNING: could not open cut video " << cvfn << std::endl;}
+                        if (output_video_cuts.init(pparams.video_cuts,data_output_dir + cvfn,IMG_W*2,IMG_H,pparams.fps/2, "192.168.1.255",5000,true)) {std::cout << "WARNING: could not open cut video " << cvfn << std::endl;}
                         logger_fn = data_output_dir  + "log" + to_string(insect_cnt) + ".csv";
                         logger.open(logger_fn,std::ofstream::out);
                     }
@@ -436,7 +436,7 @@ bool handle_key(double time [[maybe_unused]]) {
         cam->turbo = !cam->turbo;
         break;
     case '>': {
-        double dt = logreader.first_takeoff_time() - time - 1;
+        double dt = logreader.first_takeoff_time() - time - 5;
         if (dt>0 && trackers.mode() != tracking::TrackerManager::mode_locate_drone)
             cam->skip(dt);
         break;
@@ -560,11 +560,11 @@ void init_loggers() {
 void init_video_recorders() {
     /*****init the video writer*****/
     if (pparams.video_result)
-        if (output_video_results.init(pparams.video_result, data_output_dir + "videoResult.mkv",visualizer.viz_frame_size().width,visualizer.viz_frame_size().height,pparams.fps,"192.168.1.255",5000,true,GStream::rm_vaapih264)) {throw my_exit("could not open results video");}
+        if (output_video_results.init(pparams.video_result, data_output_dir + "videoResult.mkv",visualizer.viz_frame_size().width,visualizer.viz_frame_size().height,pparams.fps,"192.168.1.255",5000,true)) {throw my_exit("could not open results video");}
     if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode && pparams.op_mode != op_mode_crippled)
-        if (output_video_LR.init(pparams.video_raw,data_output_dir + "videoRawLR.mkv",IMG_W,IMG_H*2,pparams.fps, "192.168.1.255",5000,false,GStream::rm_vaapih264)) {throw my_exit("could not open LR video");}
+        if (output_video_LR.init(pparams.video_raw,data_output_dir + "videoRawLR.mkv",IMG_W,IMG_H*2,pparams.fps, "192.168.1.255",5000,false)) {throw my_exit("could not open LR video");}
     if (pparams.video_cuts)
-        if (output_video_cuts.init(pparams.video_cuts,data_output_dir + "insect" + to_string(0) + ".mkv",IMG_W*2,IMG_H,pparams.fps/2, "192.168.1.255",5000,true,GStream::rm_vaapih264)) {std::cout << "WARNING: could not open cut video " << data_output_dir + "insect" + to_string(0) + ".mkv" << std::endl;}
+        if (output_video_cuts.init(pparams.video_cuts,data_output_dir + "insect" + to_string(0) + ".mkv",IMG_W*2,IMG_H,pparams.fps/2, "192.168.1.255",5000,true)) {std::cout << "WARNING: could not open cut video " << data_output_dir + "insect" + to_string(0) + ".mkv" << std::endl;}
 }
 
 std::tuple<bool,bool,bool, std::string,uint8_t,std::string,std::string> process_arg(int argc, char **argv) {
