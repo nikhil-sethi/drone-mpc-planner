@@ -52,9 +52,9 @@ struct track_data {
     bool spos_valid = false;
     bool vel_valid = false;
     bool acc_valid = false;
-    bool yaw_valid = false;
     double time = 0;
-    float yaw = 0,yaw_smooth = 0;
+    float yaw_deviation = 0;
+    bool yaw_deviation_valid = 0;
 };
 
 struct control_data {

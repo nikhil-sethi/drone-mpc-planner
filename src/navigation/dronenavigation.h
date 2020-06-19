@@ -50,6 +50,7 @@ private:
     std::vector<Waypoint> waypoints;
     Waypoint * current_waypoint = new Waypoint_Landing();
 
+    const double yaw_reset_duration = 6;
 
     double time_drone_problem = -1;
     double time_located_drone = 0;

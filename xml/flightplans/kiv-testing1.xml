@@ -72,13 +72,13 @@
             <Member Name="z">-0.0</Member>
             <Member Name="name">WP8</Member>
         </Class>
-        <!-- <Class Type="Waypoint" Version="1.1">
+        <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_yaw_reset</Member>
             <Member Name="threshold_mm"></Member>
             <Member Name="x"></Member>
             <Member Name="y"></Member>
             <Member Name="z"></Member>
-        </Class> -->
+        </Class>
         <Class Type="Waypoint" Version="1.1">
             <Member Name="type">wfm_landing</Member>
             <Member Name="threshold_mm"></Member>

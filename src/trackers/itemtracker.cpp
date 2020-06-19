@@ -51,7 +51,6 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     smoother_accY.init(acc_smth_width);
     smoother_accZ.init(acc_smth_width);
 
-    yaw_smoother.init(pparams.fps/10);
     smoother_im_size.init(smooth_blob_props_width);
     smoother_score.init(smooth_blob_props_width);
     smoother_brightness.init(smooth_blob_props_width);

@@ -1,5 +1,6 @@
 #include "dronetracker.h"
 #include "multimodule.h"
+#include <numeric>
 
 namespace tracking {
 
@@ -8,7 +9,7 @@ bool DroneTracker::init(std::ofstream *logger, VisionData *visdat, int16_t viz_i
     ItemTracker::init(logger,visdat,"drone",viz_id);
     max_size = dparams.radius*3;
     landing_parameter.deserialize("../../xml/landing_location.xml");
-    (*_logger) << "dtrkr_state;";
+    (*_logger) << "dtrkr_state;yaw_deviation;";
     return false;
 }
 
@@ -134,6 +135,7 @@ void DroneTracker::update(double time, bool drone_is_active) {
         ItemTracker::update(time);
         update_prediction(time);
         _visdat->exclude_drone_from_motion_fading(_image_item.ptd(),_image_predict_item.size);
+        detect_deviation_angle();
         break;
     } case dts_landing_init: {
         ignores_for_other_trkrs.push_back(IgnoreBlob(drone_takeoff_im_location()/pparams.imscalef,drone_takeoff_im_size()/pparams.imscalef,time+landing_ignore_timeout, IgnoreBlob::landing_spot));
@@ -155,7 +157,7 @@ void DroneTracker::update(double time, bool drone_is_active) {
 
     delete_takeoff_fake_motion();
     clean_ignore_blobs(time);
-    (*_logger) << static_cast<int16_t>(_drone_tracking_status) << ";";
+    (*_logger) << static_cast<int16_t>(_drone_tracking_status) << ";" << Last_track_data().yaw_deviation << ";";
 }
 
 void DroneTracker::delete_takeoff_fake_motion() {
@@ -252,9 +254,6 @@ void DroneTracker::calc_world_item(BlobProps * props, double time [[maybe_unused
             props->world_props.valid = false;
             props->world_props.takeoff_reject = true;
         }
-    } else if(correct_yaw() && props->world_props.valid) {
-        yaw = calc_yaw(props, false);
-        props->world_props.yaw = yaw;
     }
 }
 
@@ -292,106 +291,90 @@ void DroneTracker::clean_ignore_blobs(double time) {
     ignores_for_other_trkrs= new_ignores_for_insect_tracker;
 }
 
-cv::Mat DroneTracker::get_big_blob(cv::Mat Mask, int connectivity) {
-    cv::Mat labels, stats, centroids;
-    int nLabels = cv::connectedComponentsWithStats(Mask, labels, stats, centroids, connectivity, CV_32S);
+void DroneTracker::detect_deviation_angle() {
 
-    cv::Mat mask_big;
-    int big_blob;
-    int area = 0;
+    static vector<track_data> bowling_vector;
 
-    for(int i = 1; i<=nLabels; i++) {
-        if(stats.at<int>(i,cv::CC_STAT_AREA) > area) {
-            big_blob = i;
-            area = stats.at<int>(i,cv::CC_STAT_AREA);
-        }
-    }
-    compare(labels, big_blob, mask_big, cv::CMP_EQ);
-    return mask_big;
-}
+    uint index_difference = 15;
 
-cv::Mat DroneTracker::extract_mask_column(cv::Mat mask_big, float range_left, float range_right, float side_percentage, enum side side_) {
-    cv::Mat half_ = mask_big(cv::Range::all(), cv::Range(range_left,range_right)).clone();
-    for(int j=0; j<half_.rows; j++) {
-        half_.at<uchar>(j,(half_.cols-1)*(1-side_)) = round(side_percentage*half_.at<uchar>(j,(half_.cols-1)*(1-side_)));
-    }
-    return half_;
-}
+    track_history.back().yaw_deviation_valid = false;
 
-cv::Mat DroneTracker::split_mask_half(cv::Mat mask_big, enum side side_) {
-    cv::Moments mo = moments(mask_big,true);
-    cv::Point2f COG = cv::Point2f(static_cast<float>(mo.m10) / static_cast<float>(mo.m00), static_cast<float>(mo.m01) / static_cast<float>(mo.m00));
-    float delta = COG.x - mask_big.rows/2;
-    float delta_frac, n;
-    delta_frac = modf(delta, &n);
-    cv::Mat half;
+    bowling_vector.push_back(Last_track_data());
 
-    if(side_==leftside && delta>=0 && delta<mask_big.rows/2) {
-        half = extract_mask_column(mask_big, 2*floor(delta), mask_big.rows/2+ceil(delta), delta_frac, side_);
-    }
-    else if(side_==leftside && delta<0 && delta>-mask_big.rows/2) {
-        half = extract_mask_column(mask_big, 0, mask_big.rows/2+ceil(delta), 1-abs(delta_frac), side_);
-    }
-    else if(side_==rightside && delta>=0 && delta<mask_big.rows/2) {
-        half = extract_mask_column(mask_big, mask_big.rows/2+floor(delta), mask_big.rows, 1-delta_frac, side_);
-    }
-    else if(side_==rightside && delta<0 && delta>-mask_big.rows/2) {
-        half = extract_mask_column(mask_big, mask_big.rows/2+floor(delta), mask_big.rows+2*floor(delta), abs(delta_frac), side_);
-    }
-    return half;
-}
+    if(bowling_vector.size()>= 2*index_difference) {
 
-float DroneTracker::yaw_from_splitted_mask(cv::Mat left, cv::Mat right) { // yaw positive = Clockwise, yaw negative is Counter-Clockwise
-    cv::Moments mo_l = moments(left,true);
-    cv::Point2f COG_l = cv::Point2f(static_cast<float>(mo_l.m10) / static_cast<float>(mo_l.m00), static_cast<float>(mo_l.m01) / static_cast<float>(mo_l.m00));
-    cv::Moments mo_r = moments(right,true);
-    cv::Point2f COG_r = cv::Point2f(static_cast<float>(mo_r.m10) / static_cast<float>(mo_r.m00), static_cast<float>(mo_r.m01) / static_cast<float>(mo_r.m00));
-    yaw = COG_l.y-COG_r.y;
-    return yaw;
-}
+        cv::Point3f point1_3f = bowling_vector.at(0).spos();
+        cv::Point3f point2_3f = bowling_vector.at(index_difference).spos();
+        cv::Point3f point3_3f = bowling_vector.at(2*index_difference-1).spos();
 
-float DroneTracker::calc_yaw(BlobProps * pbs, bool inspect_blob) { // Set inspect_blob = true to see mask. Otherwise set to false.
-    if(inspect_blob==true) {
-        cout<<"Original Drone Mask: "<<endl;
-        cout<<pbs->mask<<endl;
-    }
-    if(!pbs->mask.empty()) {
-        int kernel_int = 2;
-        cv::Mat mask_erode;
-        erode(pbs->mask, mask_erode,getStructuringElement(cv::MORPH_RECT, cv::Size(kernel_int,kernel_int)));
-        if(inspect_blob==true) {
-            cout<<"eroded mask: "<<endl;
-            cout<<mask_erode<<endl;
-        }
+        cv::Mat point1 = cv::Mat::zeros(3,1, CV_64F);
+        cv::Mat point2 =cv::Mat::zeros(3,1, CV_64F);
+        cv::Mat point3 = cv::Mat::zeros(3,1, CV_64F);
 
-        cv::Mat mask_big = get_big_blob(mask_erode, 4);
-        int nrnonzero = countNonZero(mask_big);
-        if(nrnonzero > 1) {
-            if(inspect_blob==true) {
-                cout<<"New Drone Mask: "<<endl;
-                cout<<mask_big<<endl;
-            }
+        point1.at<double>(0,0) = point1_3f.x;
+        point1.at<double>(1,0) = point1_3f.y;
+        point1.at<double>(2,0) = point1_3f.z;
+
+        point2.at<double>(0,0) = point2_3f.x;
+        point2.at<double>(1,0) = point2_3f.y;
+        point2.at<double>(2,0) = point2_3f.z;
+
+        point3.at<double>(0,0) = point3_3f.x;
+        point3.at<double>(1,0) = point3_3f.y;
+        point3.at<double>(2,0) = point3_3f.z;
+
+        cv::Mat vec1 = point2 - point1;
+        cv::Mat vec2 = point3 - point2;
+
+        // std::cout << "point1_3f: " << point1_3f << ", point2_3f: " << point2_3f << ", point3_3f: " << point3_3f  << std::endl;
+        // std::cout << "vec1: " << vec1.at<double>(0) << "," << vec1.at<double>(1) << "," << vec1.at<double>(2) << std::endl;
+        // std::cout << "vec2: " << vec1.at<double>(0) << "," << vec1.at<double>(1) << "," << vec1.at<double>(2) << std::endl;
+        vec1.at<double>(1) = 0;
+        vec2.at<double>(1) = 0;
+
+        deviation_vec1_length = norm(vec1);
+        deviation_vec2_length = norm(vec2);
+
+        // normalize vectors
+        cv::Mat unit_vec1 = vec1.mul(1./norm(vec1));
+        cv::Mat unit_vec2 = vec2.mul(1./norm(vec2));
+
+        cv::Mat cross_vec1_vec2 = unit_vec1.cross(unit_vec2);
+
+        // create skew symetric matrix
+        cv::Mat skew_sym_cross_prod = cv::Mat::zeros(3,3, CV_64F);
+        skew_sym_cross_prod.at<double>(0,1) = -cross_vec1_vec2.at<double>(2);
+        skew_sym_cross_prod.at<double>(0,2) = cross_vec1_vec2.at<double>(1);
+        skew_sym_cross_prod.at<double>(1,0) = cross_vec1_vec2.at<double>(2);
+        skew_sym_cross_prod.at<double>(1,2) = -cross_vec1_vec2.at<double>(0);
+        skew_sym_cross_prod.at<double>(2,0) = -cross_vec1_vec2.at<double>(1);
+        skew_sym_cross_prod.at<double>(2,1) = cross_vec1_vec2.at<double>(0);
+
+        double norm_cross = sqrt(pow(cross_vec1_vec2.at<double>(0),2) +
+                                 pow(cross_vec1_vec2.at<double>(1),2) +
+                                 pow(cross_vec1_vec2.at<double>(2),2));
+
+        double scalar_comp = (1- unit_vec1.dot(unit_vec2))/(pow(norm_cross,2));
+
+        cv::Mat skew_sym_squared = skew_sym_cross_prod * skew_sym_cross_prod;
+        cv::Mat skew_sym_squared_times_scalar = skew_sym_squared.mul(scalar_comp);
+
+        cv::Mat rot_mat = cv::Mat::eye(3,3,CV_64F) + skew_sym_cross_prod
+                          +  skew_sym_squared_times_scalar;
+
+        deviation_angle = std::acos(rot_mat.at<double>(0,0)) ;
+
+        if (rot_mat.at<double>(2,0) > 0) {
+            deviation_angle = -deviation_angle;
         }
 
-        cv::Mat splitted_mask_left, splitted_mask_right;
-        if(nrnonzero > 1) {
-            splitted_mask_left = split_mask_half(mask_big, leftside);
-            splitted_mask_right = split_mask_half(mask_big, rightside);
-        }
-        else if(nrnonzero < 1) {
-            splitted_mask_left = split_mask_half(mask_erode, leftside);
-            splitted_mask_right = split_mask_half(mask_erode, rightside);
-        }
-        if(inspect_blob==true) {
-            cout<<"Left: "<<splitted_mask_left<<endl;
-            cout<<"Right: "<<splitted_mask_right<<endl;
-        }
-        yaw = yaw_from_splitted_mask(splitted_mask_left, splitted_mask_right);
-        if(inspect_blob==true) {
-            cout<<"Yaw: "<<yaw<<endl;
-        }
+        bowling_vector.erase(bowling_vector.begin());
+
+        track_history.back().yaw_deviation = deviation_angle;
+        track_history.back().yaw_deviation_valid = true;
+
     }
-    return yaw;
+
 }
 
 }

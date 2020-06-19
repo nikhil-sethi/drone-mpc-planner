@@ -52,10 +52,10 @@ struct Waypoint_Landing : Waypoint {
 };
 struct Waypoint_Yaw_Reset : Waypoint {
     Waypoint_Yaw_Reset() {
-        xyz = cv::Point3f(0.0f,-0.3,-1);
-        threshold_mm = 50;
-        threshold_v = 0.1f;
-        hover_pause = 3;
+        xyz = cv::Point3f(0,0.5f,0);
+        threshold_mm = 300;
+        threshold_v = 2.0f;
+        hover_pause = 1;
         mode = wfm_yaw_reset;
         name = "wp_yaw";
     }

@@ -27,7 +27,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile,bool generator, M
                "joyThrottle; joyRoll; joyPitch; joyYaw; " <<
                "joyArmSwitch; joyModeSwitch; joyTakeoffSwitch;" <<
                "mmArmSwitch; mmModeSwitch;" <<
-               "dt; yaw; yaw_smooth;" <<
+               "dt;" <<
                "thrust; integrator_x; integrator_y; integrator_z;";
     std::cout << "Initialising control." << std::endl;
     settings_file = "../../xml/" + dparams.control + ".xml";
@@ -393,6 +393,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
 
         break;
     } case fm_initial_reset_yaw: {
+        check_emergency_kill(data_drone);
         control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
         mode += bf_headless_disabled;
         break;
@@ -400,7 +401,9 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         mode += bf_headless_disabled;
         check_emergency_kill(data_drone);
         control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
-        auto_yaw = control_yaw(data_drone, 5); // second argument is the yaw gain, move this to the xml files?
+        if (data_drone.yaw_deviation_valid)
+            correct_yaw(data_drone.yaw_deviation);
+
         break;
     } case fm_ff_landing_start: {
         _flight_mode = fm_ff_landing;
@@ -513,8 +516,6 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
                _rc->arm_switch << ";" <<
                _rc->mode << ";" <<
                data_drone.dt << ";" <<
-               data_drone.yaw <<  ";" <<
-               data_drone.yaw_smooth <<  ";" <<
                thrust << ";" <<
                pos_err_i.x << ";" << pos_err_i.y << ";" << pos_err_i.z << ";";
 }
@@ -738,16 +739,6 @@ std::tuple<cv::Point3f, cv::Point3f> DroneController::predict_drone_state_after_
     //        integrated_pos += integrated_vel * remaining_1g_duration;
 
     return std::make_tuple(integrated_pos, integrated_vel);
-}
-
-int DroneController::control_yaw(track_data data_drone, float gain_yaw) {
-    if(data_drone.yaw_valid) {
-        auto_yaw = JOY_MIDDLE + gain_yaw*data_drone.yaw_smooth*sqrtf(powf(data_drone.state.pos.x,2)+powf(data_drone.state.pos.y,2)+powf(data_drone.state.pos.z,2)); // clockwise is positive
-    }
-    else {
-        auto_yaw = JOY_MIDDLE;
-    }
-    return auto_yaw;
 }
 
 //considering a take off order from just after the aiming phase of: spinning up, burning, spin down, 1g, find the max drone acceleration that best desccribes the current position given dt
@@ -1397,5 +1388,13 @@ void DroneController::close () {
     }
 }
 
+void DroneController::correct_yaw(float deviation_angle) {
+    int target_theta_velocity = 0;
 
+    if (deviation_angle < - _dtrk->min_yaw_deviation)
+        target_theta_velocity = -3;
+    else if (deviation_angle > _dtrk->min_yaw_deviation)
+        target_theta_velocity = 3;
 
+    auto_yaw = JOY_MIDDLE + target_theta_velocity;
+}

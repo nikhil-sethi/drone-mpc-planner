@@ -220,8 +220,6 @@ private:
     float scaledjoydial = 0;
     bool _hover_mode = false;
 
-    int control_yaw(track_data data_drone, float gain_yaw);
-
     bool recovery_mode = false;
     cv::Point3f recovery_pos = {0};
     bool first_directional_burn = false;
@@ -234,6 +232,8 @@ private:
     std::vector<state_data> predict_trajectory(float burn_duration, float remaining_aim_duration, cv::Point3f burn_direction, state_data state_drone);
     void draw_viz(state_data state_drone, state_data state_target, double time, cv::Point3f burn_direction, float burn_duration, float remaining_aim_duration, std::vector<state_data> traj);
     bool trajectory_in_view(std::vector<state_data> traj, CameraView::view_volume_check_mode c);
+
+    void correct_yaw(float deviation_angle);
 
     cv::Point3f keep_in_volume_correction_acceleration(track_data data_drone);
     cv::Point3f kiv_acceleration(std::array<bool, N_PLANES> violated_planes_inview, std::array<bool, N_PLANES> violated_planes_brakedistance);

@@ -22,12 +22,13 @@ private:
     double start_take_off_time = 0;
     double spinup_detect_time = 0;
     double current_time = 0;
+    double time_yaw_not_ok;
+    const double min_yaw_ok_time = 1.5;
 
     double takeoff_location_ignore_timeout = 1; // TODO: make this dependent on the motion_update_iterator_max
     double landing_ignore_timeout = 5; // TODO: make this dependent on the motion_update_iterator_max
     double taking_off_ignore_timeout = 0.1; // TODO: make this dependent on the motion_update_iterator_max
 
-    float yaw;
     const float landing_yaw_criteria = 0.035;
 
     cv::Point3f _target = {0};
@@ -65,6 +66,10 @@ private:
     cv::Point3f _landing_pad_world;
 
     bool enable_takeoff_motion_delete = false;
+
+    double deviation_vec1_length;
+    double deviation_vec2_length;
+    double deviation_angle;
 
     bool enable_viz_diff = false;
     bool _manual_flight_mode = false;
@@ -111,12 +116,8 @@ private:
     void delete_takeoff_fake_motion();
     bool detect_lift_off();
     bool detect_takeoff();
+    void detect_deviation_angle();
 
-    cv::Mat get_big_blob(cv::Mat Mask, int connectivity);
-    cv::Mat extract_mask_column(cv::Mat mask_big, float range_left, float range_right, float side_percentage, enum side side_);
-    cv::Mat split_mask_half(cv::Mat mask_big, enum side);
-    float yaw_from_splitted_mask(cv::Mat left, cv::Mat right);
-    float calc_yaw(BlobProps * pbs, bool inspect_blob);
 
     xmls::LandingParameters landing_parameter;
 
@@ -142,7 +143,6 @@ public:
     bool taking_off() { return _drone_tracking_status == dts_detecting_takeoff_init || _drone_tracking_status == dts_detecting_takeoff;}
     bool landing() { return _drone_tracking_status == dts_landing_init || _drone_tracking_status == dts_landing;}
     bool inactive() { return _drone_tracking_status == dts_inactive;}
-    bool correct_yaw() { return _drone_tracking_status == dts_detect_yaw;}
 
     void manual_flight_mode(bool value) {
         _manual_flight_mode =value;
@@ -178,9 +178,27 @@ public:
     void update(double time, bool drone_is_active);
 
     void land() {_drone_tracking_status = dts_landing_init;}
-    void detect_yaw() {_drone_tracking_status = dts_detect_yaw;}
-    bool check_yaw() { return ((fabs(yaw)<landing_yaw_criteria) && (fabs(yaw)!=0));}
-    bool check_smooth_yaw() { return (fabs(yaw_smoother.latest())<landing_yaw_criteria);}
+    void detect_yaw(double time) {
+        time_yaw_not_ok = time;
+        _drone_tracking_status = dts_detect_yaw;
+    }
+
+    const float min_yaw_deviation = 0.5f;
+    const double min_deviate_vec_length = 0.05;
+
+    bool check_yaw(double time) {
+        if (!check_deviation_vec_length() || !Last_track_data().yaw_deviation_valid)
+            time_yaw_not_ok = time;
+
+        if (time - time_yaw_not_ok > min_yaw_ok_time && time_yaw_not_ok > 0.1 )
+            return false;
+        else
+            return true;
+    }
+
+    bool check_deviation_vec_length() {
+        return deviation_vec1_length < min_deviate_vec_length && deviation_vec2_length < min_deviate_vec_length;
+    }
 
     void set_drone_landing_location(cv::Point2f im, float drone_im_disparity,float drone_im_size, cv::Point3f world) {
         _blink_im_location = im;
