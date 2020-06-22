@@ -10,7 +10,6 @@
 static const char* interceptor_state_names[] = { "is_init",
                                                  "is_awaiti_target",
                                                  "is_await_reach_zone",
-                                                 "is_flower_of_fire",
                                                  "is_move_to_intercept",
                                                  "is_close_chasing"
                                                };
@@ -35,13 +34,12 @@ private:
         is_init=0,
         is_waiting_for_target,
         is_waiting_in_reach_zone,
-        is_flower_of_fire_intercept,
         is_move_to_intercept,
         is_close_chasing
     };
     interceptor_states _interceptor_state = is_init;
 
-    uint _count_insect_not_in_range = 0;
+    uint _count_icpt_postarget_not_in_range = 0;
     double _tti =-1;
     const float minimal_height = 0.2f;
 
@@ -57,24 +55,24 @@ private:
     void update_flower_of_fire(double time);
     void update_far_target(bool drone_at_base);
     void update_close_target();
-    void update_insect_in_range();
+    void update_interceptability();
     cv::Point3f get_circle_pos(float timef);
 
 public:
 
     void init(tracking::TrackerManager *trackers, VisionData *visdat, CameraView *camview, ofstream *logger);
     void update(bool drone_at_base, double time);
-    void reset_insect_cleared() {_count_insect_not_in_range = 0;}
+    void reset_insect_cleared() {_count_icpt_postarget_not_in_range = 0;}
 
 
-    bool insect_in_range_takeoff(tracking::InsectTracker * best_itrkr) {
-        return !_count_insect_not_in_range
+    bool insect_in_range_takeoff(tracking::InsectTracker * best_itrkr) { //This is the takeoff trigger in drone-navigation
+        return !_count_icpt_postarget_not_in_range
                && hunt_volume_check == CameraView::HuntVolume_OK
                && best_itrkr->properly_tracking()
                && !best_itrkr->false_positive();
     }
-    bool insect_in_range() {return !_count_insect_not_in_range;}
-    bool insect_cleared() {return _count_insect_not_in_range > insect_cleared_timeout; }
+    bool insect_in_range() {return !_count_icpt_postarget_not_in_range;}
+    bool insect_cleared() {return _count_icpt_postarget_not_in_range > insect_cleared_timeout; }
     cv::Point3f target_position() {return _intercept_pos;}
     cv::Point3f target_speed() {return _intercept_vel;}
     cv::Point3f target_accelleration() {return _intercept_acc;}

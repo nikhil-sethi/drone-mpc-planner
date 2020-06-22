@@ -23,6 +23,9 @@ public:
     bool false_positive() {
         return _fp>0;
     }
+    int frames_untracked() {
+        return n_frames_lost;
+    }
     void append_log(double time, unsigned long long frame_number);
     int16_t insect_trkr_id() {return _insect_trkr_id;}
 
