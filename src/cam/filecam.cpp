@@ -100,8 +100,9 @@ void FileCam::update() {
 
     auto buffer = gst_sample_get_buffer(sample);
     if (buffer == NULL || gst_app_sink_is_eos (reinterpret_cast<GstAppSink *>(_appsink)) ) {
-        std::cout << "Log end, exiting. Video frames left: " << nFrames - frame_cnt << std::endl;
+        std::cout << "Video EOS detected, exiting." << std::endl;
         gst_sample_unref(sample);
+        gst_buffer_unref(buffer);
         throw bag_video_ended();
     }
 
@@ -119,7 +120,7 @@ void FileCam::update() {
     _frame_number = frames_ids.at(frame_cnt-1).RS_id;
     _frame_time = frames_ids.at(frame_cnt-1).time;
     if (_frame_number==ULONG_MAX) {
-        std::cout << "Log end, exiting. Video frames left: " << nFrames - frame_cnt << std::endl;
+        std::cout << "Log end, exiting." << std::endl;
         gst_buffer_unmap(buffer, &map);
         gst_sample_unref(sample);
         throw bag_video_ended();
@@ -253,7 +254,21 @@ void FileCam::init_gstream() {
 
 
 void FileCam::close () {
-    // gst_element_set_state (_pipeline, GST_STATE_NULL);
-    // gst_object_unref (GST_OBJECT (_pipeline));
+    GstState cur_state;
+    gst_element_get_state (_pipeline, &cur_state, NULL, 0);
+
+    if (cur_state == GST_STATE_PLAYING || cur_state == GST_STATE_PAUSED) {
+        gst_element_set_state (_pipeline, GST_STATE_PAUSED);
+        gst_element_get_state(_pipeline, &cur_state, NULL, GST_CLOCK_TIME_NONE);
+
+        //we are getting an error from this: gst_mini_object_unref: assertion 'GST_MINI_OBJECT_REFCOUNT_VALUE (mini_object) > 0
+        //but as far as I can tell without reason :(
+        //doesn't seem to hurt anything, so no biggy though
+        gst_element_set_state (_pipeline, GST_STATE_NULL);
+
+    }
+    /* Ensure the transition to NULL completes */
+    gst_element_get_state(_pipeline, &cur_state, NULL, GST_CLOCK_TIME_NONE);
+    gst_object_unref (GST_OBJECT (_pipeline));
     Cam::close();
 }
