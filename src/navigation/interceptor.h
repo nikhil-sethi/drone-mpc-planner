@@ -8,7 +8,7 @@
 
 
 static const char* interceptor_state_names[] = { "is_init",
-                                                 "is_awaiti_target",
+                                                 "is_await_target",
                                                  "is_await_reach_zone",
                                                  "is_move_to_intercept",
                                                  "is_close_chasing"
@@ -25,6 +25,7 @@ private:
     tracking::TrackerManager * _trackers;
     VisionData *_visdat;
     CameraView* _camview;
+    cv::Point3f req_intercept_pos;
     cv::Point3f _intercept_pos,_intercept_vel,_intercept_acc;
     float _horizontal_separation, _vertical_separation;
     CameraView::hunt_check_result hunt_volume_check = CameraView::HuntVolume_Unknown;
