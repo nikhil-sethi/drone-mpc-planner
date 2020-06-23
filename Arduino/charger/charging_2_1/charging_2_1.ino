@@ -21,7 +21,7 @@
 #define CLK A4
 #define DIO A5
 
-#define SOFTWARE_VERSION 0.7
+#define SOFTWARE_VERSION 0.8
 
 float getVoltage(bool reset = false);
 
@@ -38,6 +38,7 @@ float battery_charge = 0.0001;
 bool test_mode = false;
 bool turbo_mode = false;
 
+unsigned long last_state_change = 0;
 float smoothed_current;
 
 float current_measurement_resistor;
@@ -45,7 +46,7 @@ float current_measurement_resistor;
 enum DisplayStates {  S_VERSION_INIT,  S_VERSION,  S_TURBO_INIT,  S_TURBO,  S_VOLTAGE,
                       S_CURRENT,  S_LEVEL,  S_OUTPUT,  S_STATE,  S_HELP
                    };
-
+int TCCR0B_orig = TCCR0B;
 void setup() {
   Serial.begin(115200);
   analogReference(EXTERNAL);
@@ -85,8 +86,8 @@ void setup() {
   TCCR1B = TCCR1B & B11111000 | B00000010;    // set timer 1 divisor to     8 for PWM frequency of  3921.16 Hz
   
   set_current_measurement_resistor();
-  debugln("current_measurment_resistor %d", int(current_measurement_resistor * 10));
-
+  //debugln("current_measurment_resistor %d", int(current_measurement_resistor * 10));
+TCCR0B_orig = TCCR0B;
 }
 
 void loop() {
@@ -115,12 +116,15 @@ void loop() {
   
     set_status_led();
   }
+
+/*
+  static int divider = 0;
+
+  divider++;
+  TCCR0B = TCCR0B_orig & B11111000 | (divider / 10)%8;    // set timer 1 divisor to     8 for PWM frequency of  3921.16 Hz
+*/
   //analogWrite(PWM_PIN,  (millis() / 2000) % 2 * 255);
 
-
-  /*
-    debugln("%d", (millis() / 2000) % 2 * 255);
-  */
   run_display();
 
   static unsigned long timer = millis();
@@ -173,7 +177,6 @@ void set_test_mode(void)
 
 void set_alarm(bool on)
 {
-  //debugln("alarm %d", (int)on);
   if (on)
   {
     digitalWrite(LED_PIN, 1);
@@ -205,6 +208,11 @@ void set_alarm_blink_only(bool on)
   }
 }
 
+
+void set_alarm_no_beep()
+{
+    set_alarm(0);
+}
 
 void set_alarm_single_beep_inv()
 {
@@ -334,15 +342,93 @@ void set_alarm_quadruple_beep()
 }
 
 static long last_detection_time;
-void set_status_led(void)
-{
-  static unsigned long total_charging_time;
+static uint8_t drone_detected = false;
+static unsigned long total_charging_timer;
 
+void set_status_led(void)
+{  
+  enum BeepState { BEEP_CHARGING, BEEP_NO_CURRENT, BEEP_NO_DRONE, BEEP_NO_DRONE_ALARM, BEEP_DRONE_DETECTED};
+
+
+  static unsigned long last_detect_time;
+  static unsigned long last_charge_time;
+  
+  unsigned long time_since_last_detect = millis() - last_detect_time;
+  unsigned long time_since_last_charge = millis() - last_charge_time;
+  static int beep_state = BEEP_NO_DRONE;
+
+  //debugln("beep %d %d %d %d %d", int(time_since_last_detect), int(time_since_last_charge), int(total_charging_timer), beep_state, state);
+
+  if (state == STATE_CHARGING && millis() - total_charging_timer < 3000)
+    beep_state = BEEP_DRONE_DETECTED;
+    
+  else if (time_since_last_charge > 2000L && time_since_last_detect < 2000L ) 
+    beep_state = BEEP_NO_CURRENT;
+    
+  else if (time_since_last_charge < 2000L ) 
+    beep_state = BEEP_CHARGING;
+    
+  else if (time_since_last_detect > 10000L ) 
+    beep_state = BEEP_NO_DRONE_ALARM;
+
+  else if (!drone_detected) 
+    beep_state = BEEP_NO_DRONE;
+    
+
+  if (state == STATE_CHARGING)
+    last_detect_time = millis();
+
+  if (smoothed_current > 0.2 || battery_charge >= 8.35)
+    last_charge_time = millis();
+/*
+  if (state != STATE_CHARGING && millis() - last_detect_time > 1000)
+    total_charging_time = millis();  
+  */
+  switch (beep_state)
+  {
+    case BEEP_CHARGING:
+      {
+        set_alarm_no_beep();
+        break;
+      }
+    case BEEP_NO_CURRENT:
+      {
+        set_alarm_long_tripple_beep();
+        break;
+      }
+    case BEEP_NO_DRONE:
+      {
+        set_alarm_long_double_beep();
+        break;
+      }
+    
+    case BEEP_NO_DRONE_ALARM:
+      {
+        set_alarm_single_beep_inv();
+        break;
+      }
+    case BEEP_DRONE_DETECTED:
+      {            
+        set_alarm_half_on_super_fast();
+
+        break;
+      }
+  }
+
+  
+  /*
   int d = 2 + 2 * turbo_mode;
 
-  if (state != STATE_CHARGING && millis() - last_detection_time > 1000)
+  if (state == STATE_CHARGING)
+    last_detection_time = millis();
+
+  //debugln("total_charging_time %d", (int)total_charging_time );
+
+
+  if (millis() - last_state_change < 1000 && !(state == STATE_CHARGING && millis() - total_charging_time < 3000))
   {
-    total_charging_time = millis();  
+    set_alarm_no_beep();
+    return;
   }
   
   switch (state)
@@ -358,7 +444,6 @@ void set_status_led(void)
       }
     case STATE_CHARGING:
       {
-        last_detection_time = millis();
 
         if (millis() - total_charging_time < 3000)
         {
@@ -368,7 +453,7 @@ void set_status_led(void)
         {
           if (smoothed_current > 0.2)
           {
-            set_alarm_single_beep();
+            set_alarm_no_beep();
           }
           else
           {
@@ -407,6 +492,8 @@ void set_status_led(void)
         break;
       }
   }
+
+  */
 }
 
 
@@ -731,7 +818,10 @@ void run_display(void)
 void set_state(int new_state)
 {
   if (state != new_state)
-    debugln("switching form state %d to state %d", state, new_state);
+  {
+    //debugln("switching form state %d to state %d", state, new_state);
+    last_state_change = millis();
+  }
 
   state = new_state;
 }
@@ -739,8 +829,9 @@ void set_state(int new_state)
 float run_state_machine()
 {
   static int no_current_timeout = 0;
+  static uint8_t isCharging = false;
 
-  
+  static int last_output = 0;
   switch (state)
   {
     case STATE_IDLE:
@@ -772,15 +863,30 @@ float run_state_machine()
         if (battery_charge > 8.4)
           desired_current = 0.0;
 
+
+        if (smoothed_current > 0.25)
+          isCharging = true;
+
+        if (isCharging && smoothed_current < 0.05)
+        {
+          output = 0;
+          desired_current = 0;
+          set_current(desired_current);
+          isCharging = false;
+          set_state(STATE_CHECK_CHARGE);
+        }
+
+
         if (output > 254 && smoothed_current < 0.05)
           no_current_timeout++;
         else
           no_current_timeout = 0;
 
-        if (battery_charge < 3.2 || millis() % 12000 < 1000 || no_current_timeout > 1000)
+        if (battery_charge < 3.2 || millis() % 60000 < 300 || no_current_timeout > 1000 || output > last_output + 50)
         {
           set_state(STATE_CHECK_CHARGE);
           desired_current = 0;
+          set_current(desired_current);
           return 300;
         }
 
@@ -788,15 +894,26 @@ float run_state_machine()
       }
     case STATE_CHECK_CHARGE:
       {
+        last_output = output;
         desired_current = 0;
+        set_current(desired_current);
 
         battery_charge = getVoltage();
+        //debugln("battery_charge %d", int(battery_charge*1000));
         if (battery_charge == 0)
           battery_charge = 0.01;
 
         if (battery_charge < 3.2)
+        {
+          drone_detected = false;
           return 1;
-
+        }
+        
+        if (!drone_detected)
+          total_charging_timer = millis();
+          
+        drone_detected = true;
+        
         set_state(STATE_CHARGING_PRECHECK);
         return 300;
 
@@ -805,6 +922,7 @@ float run_state_machine()
     case STATE_CHARGING_PRECHECK:
       {
         desired_current = 0;
+        set_current(desired_current);
 
         battery_charge = getVoltage();
 
@@ -858,19 +976,21 @@ float getCurrent()
 
 void calcSmoothedCurrent()
 {
-  smoothed_current = smooth_value(0.01, getCurrent(), smoothed_current);
+  smoothed_current = smooth_value(0.02, getCurrent(), smoothed_current);
 }
 
 void set_current(float current_setpoint) {
   float error = (smoothed_current - current_setpoint);
   output -= error * 1.0;
-
+  if (smoothed_current > 0.9)
+    output -= error * 10;
+  
   if (output > 255)
     output = 255;
   if (output < 0)
     output = 0;
 
-//  debugln("%d %d %d %d %d %d", int(smoothed_current * 100), int(100 * current_setpoint), -int(100 * error), (int)(output / 2.55), (int)(getVoltage() * 10), (int)(battery_charge * 10));
+  debugln("%d %d %d", int(smoothed_current * 100), (int)(output / 2.55), (int)(state * 10));
   int o = (int)output;
   
   if (current_setpoint == 0)
