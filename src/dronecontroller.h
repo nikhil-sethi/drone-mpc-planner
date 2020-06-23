@@ -345,6 +345,10 @@ public:
                _flight_mode == fm_interception_burn || _flight_mode == fm_interception_burn_start || _flight_mode == fm_retry_aim_start;
     }
 
+    bool at_base() {
+        return _flight_mode<=fm_take_off_aim;
+    }
+
     bool ff_completed() {
         return _flight_mode != fm_take_off_aim &&  _flight_mode != fm_max_burn && _flight_mode != fm_1g;
     }

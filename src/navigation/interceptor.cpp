@@ -6,7 +6,7 @@ void Interceptor::init(tracking::TrackerManager *trackers, VisionData *visdat, C
     _trackers = trackers;
     _visdat = visdat;
     _camview = camview;
-    insect_cleared_timeout = pparams.fps*3.f;
+    insect_cleared_timeout = pparams.fps*1.f;
     (*_logger) << "interceptor_state;hunt_vol_check;";
 }
 
@@ -16,7 +16,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
     switch (_interceptor_state) {
     case  is_init: {
         _interceptor_state = is_waiting_for_target;
-        _intercept_pos = {0,0,0};
+        _intercept_pos = _camview->center_of_volume;
         [[fallthrough]];
 
     } case is_waiting_for_target: {
@@ -55,8 +55,10 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
             break;
         }
 
-        update_far_target(drone_at_base);
-        update_interceptability();
+        if(!best_itrkr->frames_untracked()) {
+            update_far_target(drone_at_base);
+            update_interceptability();
+        }
 
 
         if (fabs(_horizontal_separation) < 0.6f  && _vertical_separation<0.8f && _vertical_separation > -0.1f)
@@ -71,9 +73,11 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
             _interceptor_state = is_waiting_for_target;
             break;
         }
-        update_close_target();
-        update_interceptability();
 
+        if(!best_itrkr->frames_untracked()) {
+            update_close_target();
+            update_interceptability();
+        }
         break;
     }
     }
@@ -89,13 +93,9 @@ void Interceptor::update_far_target(bool drone_at_base) {
     cv::Point3f insect_acc = itd.acc();
 
     track_data dtd = _trackers->dronetracker()->Last_track_data();
-
-    cv::Point3f drone_pos;
+    cv::Point3f drone_pos = dtd.pos();
     if (drone_at_base)
         drone_pos = _trackers->dronetracker()->drone_takeoff_location();
-    else {
-        drone_pos = dtd.pos();
-    }
 
     cv::Point3f drone_vel = dtd.vel();
     calc_tti(insect_pos,_intercept_vel,drone_pos,drone_vel,drone_at_base); // only used for viz _tti
@@ -125,7 +125,7 @@ void Interceptor::update_close_target() {
     cv::Point3f vector = insect_pos-drone_pos;
     float norm_vector = norm(vector);
 
-    _intercept_pos += 1.f*vector/norm_vector;
+    _intercept_pos += 0.5f*vector/norm_vector;
 
     insect_vel.y = 0; // we don't want to follow the vertical speed of the insect, ever
     insect_vel = 0.5f* insect_vel + vector/norm_vector*0.8f;

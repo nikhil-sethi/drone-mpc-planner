@@ -77,7 +77,7 @@ void DroneNavigation::update(double time) {
     if (_dctrl->flight_aborted() || _dctrl->in_flight_duration(time) > 180)
         _navigation_status = ns_drone_problem;
 
-    _iceptor.update(_navigation_status != ns_chasing_insect, time);
+    _iceptor.update(_dctrl->at_base(), time);
     bool repeat = true;
     while (repeat) {
         repeat  = false;
