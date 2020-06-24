@@ -295,15 +295,15 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
             int ii = roundf(disp_pred);
             while(!err_calculated[ii-1] || !err_calculated[ii] || !err_calculated[ii+1] ) {
                 if (!err_calculated[ii-1]) {
-                    std::tie(masked_pixel_ratio[ii-1],err_masked[ii-1]) =  calc_match_score_masked(ii-1, disp_end, width, height,diffL_mask_patch,diffR_mask_patch,grayL_patch, grayR_patch,npixels);
+                    std::tie(masked_pixel_ratio[ii-1],err_masked[ii-1]) = calc_match_score_masked(ii-1, disp_end, width, height,diffL_mask_patch,diffR_mask_patch,grayL_patch, grayR_patch,npixels);
                     err_calculated[ii-1] = true;
                 }
                 if (!err_calculated[ii]) {
-                    std::tie(masked_pixel_ratio[ii],err_masked[ii]) =  calc_match_score_masked(ii, disp_end, width, height,diffL_mask_patch,diffR_mask_patch,grayL_patch, grayR_patch,npixels);
+                    std::tie(masked_pixel_ratio[ii],err_masked[ii]) = calc_match_score_masked(ii, disp_end, width, height,diffL_mask_patch,diffR_mask_patch,grayL_patch, grayR_patch,npixels);
                     err_calculated[ii] = true;
                 }
                 if (!err_calculated[ii+1]) {
-                    std::tie(masked_pixel_ratio[ii+1],err_masked[ii+1]) =  calc_match_score_masked(ii+1, disp_end, width, height,diffL_mask_patch,diffR_mask_patch,grayL_patch, grayR_patch,npixels);
+                    std::tie(masked_pixel_ratio[ii+1],err_masked[ii+1]) = calc_match_score_masked(ii+1, disp_end, width, height,diffL_mask_patch,diffR_mask_patch,grayL_patch, grayR_patch,npixels);
                     err_calculated[ii+1] = true;
                 }
 
@@ -485,7 +485,7 @@ float ItemTracker::estimate_sub_disparity(int disparity,float * err) {
 
 void ItemTracker::update_prediction(double time) {
     vector<track_data>::reverse_iterator td;
-    for (td = track_history.rbegin(); td != track_history.rend(); ++td) {
+    for (td = track_history.rbegin(); td != track_history.rend(); ++td) { // TODO: isn't there some stl algorithm for this?
         if (td->pos_valid)
             break;
     }

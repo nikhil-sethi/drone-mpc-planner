@@ -129,7 +129,6 @@ pushd ~/dependencies
 	pushd opencv-4.3.0
 	mkdir -p build
 	pushd build
-	cmake .. 
 	cmake -DCMAKE_BUILD_TYPE=release -DCMAKE_INSTALL_PREFIX=/usr/local -DWITH_QT=ON -DWITH_OPENGL=ON .. 
 	time make -j$(nproc)
 	sudo make install

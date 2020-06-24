@@ -37,24 +37,17 @@ void GeneratorCam::init () {
 
     int wb = IMG_W,hb=IMG_H;
     frame_bkg = cv::Mat::zeros(hb,wb,CV_8UC1);
-    // cv::Mat draw_img = frame_bkg.getMat(cv::ACCESS_WRITE);
     for (int i = 0; i < wb; i+=wb/5) {
         cv::rectangle(frame_bkg,cv::Point2i(i,0),cv::Point2i(i,0)+cv::Point2i(wb/15,hb),0,cv::FILLED);
         cv::rectangle(frame_bkg,cv::Point2i(i+wb/15,0),cv::Point2i(i+wb/15,0)+cv::Point2i(wb/15,hb),64,cv::FILLED);
         cv::rectangle(frame_bkg,cv::Point2i(i+2*wb/15,0),cv::Point2i(i+2*wb/15,0)+cv::Point2i(wb/15,hb),255,cv::FILLED);
-        // cv::rectangle(draw_img,cv::Rect(i,0,wb/15,hb),0,cv::FILLED);
-        // cv::rectangle(draw_img,cv::Rect(i+wb/15,0,wb/15,hb),64,cv::FILLED);
-        // cv::rectangle(draw_img,cv::Rect(i+2*wb/15,0,wb/15,hb),255,cv::FILLED);
     }
-    // draw_img.release();
-
     swc.Start();
     update();
 
     initialized = true;
     clt.release();
     cdt.release();
-
 }
 
 void GeneratorCam::calibration() {
@@ -82,7 +75,6 @@ void GeneratorCam::calibration() {
 }
 
 void GeneratorCam::update() {
-
     if (_rc->throttle > JOY_BOUND_MIN || takeoff_start_time > 0) {
         if (takeoff_start_time<0)
             takeoff_start_time = _frame_time;

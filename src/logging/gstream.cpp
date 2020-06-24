@@ -44,9 +44,6 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
             sizeX = sizeX/stream_resize_f;
             sizeY = sizeY/stream_resize_f;
         }
-        if (max_gstream_fps < fps) {
-            gstream_fps = max_gstream_fps;
-        }
     }
 
     _cols = sizeX;
@@ -242,7 +239,7 @@ int GStream::prepare_buffer(GstAppSrc* appsrc, cv::Mat frameL, cv::Mat frameR) {
 
     gsize size = frameL.cols * frameL.rows;
 
-    buffer = gst_buffer_new_allocate (NULL, 3*size, NULL);
+    buffer = gst_buffer_new_allocate (NULL, 3*size, NULL); //Would be nice if we could somehow use gst_buffer_new_wrapped_full instead to wrap existing memory
     GstMapInfo info;
     gst_buffer_map(buffer, &info, GST_MAP_WRITE);
     memcpy(info.data, frameL.data, size);
@@ -308,8 +305,6 @@ int GStream::prepare_buffer(GstAppSrc* appsrc, cv::Mat image) {
 }
 
 int GStream::write(cv::Mat frameL,cv::Mat frameR) {
-
-
     if (videomode == video_mp4_opencv) {
         cv::Mat frame(frameL.rows,frameL.cols+frameR.cols,CV_8UC1);
 
@@ -317,8 +312,7 @@ int GStream::write(cv::Mat frameL,cv::Mat frameR) {
         frameR.copyTo(frame(cv::Rect(frameL.cols,0,frameR.cols, frameR.rows)));
         cvvideo.write(frame);
         return 0;
-    }
-    else {
+    } else {
         int res = prepare_buffer(reinterpret_cast<GstAppSrc*>(_appsrc),frameL,frameR);
         g_main_context_iteration(g_main_context_default(),FALSE);
         return res;

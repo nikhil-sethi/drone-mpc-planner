@@ -60,9 +60,11 @@ private:
     void serialize_settings();
 
     std::string motion_noise_map_wfn = "max_motion_noise.png";
+    std::string overexposed_map_wfn = "overexposed.png";
 
     cv::Mat diffL16,frameL16,diffR16,frameR16;
     double _current_frame_time = 0;
+    cv::UMat dilate_element;
 
     double prev_time_brightness_check = 0;
     float prev_brightness;
@@ -73,6 +75,8 @@ private:
     cv::Point exclude_drone_from_motion_fading_spot_L = {-1};
     cv::Point exclude_drone_from_motion_fading_spot_R = {-1};
     int exclude_drone_from_motion_fading_radius = 0;
+
+    cv::Mat overexposed_mapL;
 
     bool enable_viz_diff = false;
 
@@ -89,7 +93,6 @@ public:
     cv::Mat motion_noise_mapL,motion_noise_mapL_small;
     cv::Mat motion_noise_mapR,motion_noise_mapR_small;
     cv::Mat diffL,diffR,diffL_small,diffR_small;
-    cv::Mat overexposed_mapL;
 
     cv::Mat viz_frame;
 

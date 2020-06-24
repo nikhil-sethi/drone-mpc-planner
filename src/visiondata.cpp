@@ -17,6 +17,7 @@ void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, fl
     camera_exposure = new_camera_exposure;
 
     motion_noise_map_wfn = data_output_dir + motion_noise_map_wfn;
+    overexposed_map_wfn = data_output_dir + overexposed_map_wfn;
 
     deserialize_settings();
 
@@ -25,6 +26,10 @@ void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, fl
     frameR.convertTo(frameR16, CV_16SC1);
     diffL16 = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
     diffR16 = cv::Mat::zeros(cv::Size(frameR.cols,frameR.rows),CV_16SC1);
+
+    int dilation_size = 5;
+    cv::Mat element_mat = getStructuringElement( cv::MORPH_RECT,cv::Size( 2*dilation_size + 1, 2*dilation_size+1 ),cv::Point( dilation_size, dilation_size ) );
+    element_mat.copyTo(dilate_element);
 
     if (pparams.vision_tuning) {
         namedWindow("Background", WINDOW_NORMAL);
@@ -46,16 +51,20 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
     frameR.convertTo(frameR16, CV_16SC1);
 
     track_avg_brightness(frameL16,time);
+    static bool reset_motion_integration_prev = false; // used to zero diffL16 and R only once
     if (_reset_motion_integration) {
         std::cout << "Resetting motion" << std::endl;
         frameL_prev16 = frameL16.clone();
         frameR_prev16 = frameR16.clone();
-        diffL16 = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
-        diffR16 = cv::Mat::zeros(cv::Size(frameR.cols,frameR.rows),CV_16SC1);
+        if (!reset_motion_integration_prev) {
+            diffL16 = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
+            diffR16 = cv::Mat::zeros(cv::Size(frameR.cols,frameR.rows),CV_16SC1);
+        }
+        reset_motion_integration_prev = true;
         _reset_motion_integration = false;
         motion_update_iterator = 0;
     } else {
-
+        reset_motion_integration_prev = false;
         if (motion_spot_to_be_reset.cnt_active) {
             cv::circle(diffL16,motion_spot_to_be_reset.pt,motion_spot_to_be_reset.r,0,cv::FILLED);
             cv::circle(diffR16,motion_spot_to_be_reset.pt+ cv::Point(motion_spot_to_be_reset.disparity,0),motion_spot_to_be_reset.r,0,cv::FILLED);
@@ -131,9 +140,9 @@ void VisionData::fade(cv::Mat diff16, cv::Point exclude_drone_spot) {
 void VisionData::maintain_motion_noise_map() {
     if (frame_id % pparams.fps == 0 && enable_collect_no_drone_frames) {
         static uint cnt = 0;
-        motion_noise_bufferL.push_back(abs(diffL16));
+        motion_noise_bufferL.push_back(diffL);
         motion_noise_bufferL.erase(motion_noise_bufferL.begin());
-        motion_noise_bufferR.push_back(abs(diffR16));
+        motion_noise_bufferR.push_back(diffR);
         motion_noise_bufferR.erase(motion_noise_bufferR.begin());
         cnt++;
         if (cnt > motion_noise_bufferL.size() && motion_noise_bufferL.size() > 1) {
@@ -143,8 +152,8 @@ void VisionData::maintain_motion_noise_map() {
     }
 
     if (enable_collect_no_drone_frames && _calibrating_background ) {
-        motion_noise_bufferL.push_back(abs(diffL16));
-        motion_noise_bufferR.push_back(abs(diffR16));
+        motion_noise_bufferL.push_back(diffL);
+        motion_noise_bufferR.push_back(diffR);
         if (_current_frame_time > calibrating_background_end_time) {
             std::cout << "Writing motion noise map" << std::endl;
             _calibrating_background = false;
@@ -160,12 +169,8 @@ void VisionData::maintain_motion_noise_map() {
                 im.copyTo(bkgR,mask);
             }
 
-            bkgL.convertTo(bkgL, CV_8UC1);
-            bkgR.convertTo(bkgR, CV_8UC1);
-            int dilation_size = 5;
-            cv::Mat element = getStructuringElement( cv::MORPH_RECT,cv::Size( 2*dilation_size + 1, 2*dilation_size+1 ),cv::Point( dilation_size, dilation_size ) );
-            cv::dilate(bkgL,bkgL,element);
-            cv::dilate(bkgR,bkgR,element);
+            cv::dilate(bkgL,bkgL,dilate_element);
+            cv::dilate(bkgR,bkgR,dilate_element);
             GaussianBlur(bkgL,motion_noise_mapL,Size(9,9),0);
             GaussianBlur(bkgR,motion_noise_mapR,Size(9,9),0);
             cv::resize(bkgL,motion_noise_mapL_small,smallsize);
@@ -176,12 +181,11 @@ void VisionData::maintain_motion_noise_map() {
 }
 
 void VisionData::create_overexposed_removal_mask(cv::Point2f drone_im_location, float drone_im_size) {
-    int dilation_size = 5;
-    cv::Mat element = getStructuringElement( cv::MORPH_RECT,cv::Size( 2*dilation_size + 1, 2*dilation_size+1 ),cv::Point( dilation_size, dilation_size ) );
 
     cv::Mat maskL = frameL < 254;
-    cv::erode(maskL,overexposed_mapL,element);
+    cv::erode(maskL,overexposed_mapL,dilate_element);
     cv::circle(overexposed_mapL,drone_im_location,drone_im_size,255, cv::FILLED);
+    imwrite(overexposed_map_wfn,overexposed_mapL);
 
     _reset_motion_integration = true;
 }

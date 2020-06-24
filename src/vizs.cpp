@@ -585,14 +585,6 @@ void Visualizer::paint() {
             namedWindow("tracking results", cv::WINDOW_OPENGL | cv::WINDOW_AUTOSIZE);
         }
         cv::imshow("tracking results", trackframe);
-        if (_visdat->viz_frame.cols) {
-            static bool diff_viz_initialized = false;
-            if (!diff_viz_initialized) {
-                diff_viz_initialized = true;
-                namedWindow("diff",cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
-            }
-            cv::imshow("diff",_visdat->viz_frame);
-        }
         if (_dtrkr->diff_viz.cols) {
             static bool drn_diff_viz_initialized = false;
             if (!drn_diff_viz_initialized) {

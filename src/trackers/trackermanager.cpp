@@ -480,18 +480,21 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                 std::string msg_str = std::to_string(blob.id);
                 cv::Mat viz = vizs_maxs.at(blob.id);
                 if (!wblob.valid && !blob.ignored) {
-                    if (!wblob.disparity_in_range)
-                        msg_str = msg_str + " dsp.";
-                    if (!wblob.bkg_check_ok)
-                        msg_str = msg_str + " bkg.";
                     if (!wblob.im_pos_ok)
                         msg_str = msg_str + "pre.";
-                    if (!wblob.radius_in_range)
-                        msg_str = msg_str + " r.";
-                    if (blob.props->ignores.size()>0)
-                        msg_str = msg_str + " ign.";
-                    if (wblob.takeoff_reject)
-                        msg_str = msg_str + " tko.";
+                    else {
+                        if (!wblob.disparity_in_range)
+                            msg_str = msg_str + " dsp.";
+                        if (!wblob.bkg_check_ok)
+                            msg_str = msg_str + " bkg.";
+
+                        if (!wblob.radius_in_range)
+                            msg_str = msg_str + " r.";
+                        if (blob.props->ignores.size()>0)
+                            msg_str = msg_str + " ign.";
+                        if (wblob.takeoff_reject)
+                            msg_str = msg_str + " tko.";
+                    }
                     putText(viz,msg_str,cv::Point2i(viz.cols/4,viz.rows - 20),FONT_HERSHEY_SIMPLEX,0.3,blob.color());
                 }
                 std::string coor_str = to_string_with_precision(wblob.x,3) + ", " + to_string_with_precision(wblob.y,3) + ", " + to_string_with_precision(wblob.z,3);

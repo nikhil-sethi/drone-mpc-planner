@@ -268,7 +268,6 @@ void process_video() {
             exit_now = true;
         }
 
-
     } // main while loop
     std::cout << "Exiting main loop" << std::endl;
 }

@@ -18,7 +18,6 @@ private:
     int prepare_buffer(GstAppSrc* appsrc, cv::Mat frameL, cv::Mat frameR);
     int stream_resize_f = 1;
     int gstream_fps;
-    int max_gstream_fps = 30;
     bool initialised = false;
 
 
