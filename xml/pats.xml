@@ -10,7 +10,7 @@
     <Member Name="video_raw">video_mkv</Member>
     <Member Name="video_result">video_disabled</Member>
     <Member Name="joystick">rc_xlite</Member>
-    <Member Name="drone">drone_trashcan</Member>
+    <Member Name="drone">drone_hammer</Member>
     <Member Name="cam_tuning">false</Member>
     <Member Name="control_tuning">false</Member>
     <Member Name="navigation_tuning">false</Member>
