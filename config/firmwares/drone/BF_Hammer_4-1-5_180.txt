@@ -1,13 +1,14 @@
+# 
+
 # diff
 
 # version
-# Betaflight / CRAZYBEEF4FR (C4FR) 4.1.5
+# Betaflight / CRAZYBEEF4FR (C4FR) 4.1.5 Apr 21 2020 / 14:04:58 (d46efb32d) MSP API: 1.42
 
 # start the command batch
 batch start
 
 board_name CRAZYBEEF4FR
-manufacturer_id 
 
 # resources
 resource MOTOR 1 B07
@@ -15,17 +16,6 @@ resource MOTOR 2 B08
 resource MOTOR 3 B10
 resource MOTOR 4 B06
 resource RX_BIND 1 B02
-
-# timer
-
-# dma
-
-# mixer
-
-# servo
-
-# servo mix
-
 
 # feature
 feature -OSD
@@ -45,10 +35,6 @@ beeper -ON_USB
 
 # beacon
 beacon RX_SET
-
-# map
-
-# serial
 
 # led
 led 0 4,7::CW:0
@@ -83,25 +69,9 @@ aux 3 15 3 900 1025 0 0
 aux 4 28 1 1300 2100 0 0
 aux 5 35 2 1650 2100 0 0
 
-# adjrange
-
-# rxrange
-
-# vtx
-
-# rxfail
-
-# display_name
-
-
-#master
-
-# --sensor&filters--
+# master
 set gyro_sync_denom = 2
 set gyro_lowpass2_hz = 350
-set gyro_1_align_yaw = 900
-set gyro_2_spibus = 1
-set gyro_rpm_notch_harmonics = 1
 set dyn_notch_range = LOW
 set dyn_notch_width_percent = 0
 set dyn_notch_q = 250
@@ -109,27 +79,22 @@ set dyn_notch_min_hz = 100
 set dyn_lpf_gyro_min_hz = 280
 set dyn_lpf_gyro_max_hz = 700
 set acc_calibration = -147,-25,-110
-
-# --motors--
+set rx_spi_protocol = FRSKY_D
 set dshot_idle_value = 500
-set motor_pwm_protocol = DSHOT600
 set dshot_bidir = ON
+set motor_pwm_protocol = DSHOT300
 set motor_poles = 12
-
-# --battery--
+set align_board_roll = 180
 set bat_capacity = 300
 set vbat_min_cell_voltage = 300
 set vbat_warning_cell_voltage = 330
 set vbat_scale = 115
 set ibata_scale = 938
-
-# --orientation--
-set align_board_roll = 180
 set yaw_motors_reversed = ON
 set small_angle = 180
 set pid_process_denom = 1
-
-# --osd--
+set runaway_takeoff_prevention = OFF
+set runaway_takeoff_deactivate_throttle_percent = 25
 set osd_warn_rssi = ON
 set osd_rssi_pos = 2107
 set osd_link_quality_pos = 27
@@ -139,25 +104,18 @@ set osd_crosshairs_pos = 2253
 set osd_craft_name_pos = 2059
 set osd_avg_cell_voltage_pos = 2432
 set osd_disarmed_pos = 2346
-
-# --vtx--
-set vtx_band = 5
-set vtx_channel = 1
-set vtx_power = 2
 set vtx_low_power_disarm = ON
-set vtx_freq = 5658
 set vcd_video_system = NTSC
-
-# -- communication--
 set frsky_spi_tx_id = 1,0
 set frsky_spi_offset = -41
-# offset was -52
 set frsky_spi_bind_hop_data = 0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,66,68,70,72,74,76,78,80,82,84,86,88,91,92,0,0,0
 set frsky_x_rx_num = 1
+set gyro_2_spibus = 1
+set gyro_rpm_notch_harmonics = 1
 
-# --profile--
 profile 0
 
+# profile 0
 set dterm_lowpass2_type = BIQUAD
 set dterm_lowpass2_hz = 0
 set iterm_relax_type = GYRO
@@ -177,17 +135,13 @@ set d_min_pitch = 29
 set d_min_boost_gain = 50
 set d_min_advance = 0
 
-# rateprofile
 rateprofile 0
 
+# rateprofile 0
 set roll_rc_rate = 255
 set pitch_rc_rate = 255
 set roll_srate = 0
 set pitch_srate = 0
-
-# --safety--
-set runaway_takeoff_prevention = OFF
-set runaway_takeoff_deactivate_throttle_percent = 25
 
 # end the command batch
 batch end
