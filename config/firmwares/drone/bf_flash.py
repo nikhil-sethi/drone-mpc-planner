@@ -51,8 +51,8 @@ def upload_settings(port,drone_id,settings):
 
 parser = argparse.ArgumentParser(description='Process and check the logs.')
 parser.add_argument('-i', '--drone-id',type=str,default='1')
-parser.add_argument('-f', '--firmware',help='Firmware *.bin file path',type=str,default='trashcan_firmware.bin')
-parser.add_argument('-s', '--settings',help='Betaflight diff settings file path', type=str,default='BF_Trashcan.txt')
+parser.add_argument('-f', '--firmware',help='Firmware *.bin file path',type=str,default='trashcan_4.1.5.bin')
+parser.add_argument('-s', '--settings',help='Betaflight diff settings file path', type=str,default='BF_Hammer_4-1-5_180.txt')
 parser.add_argument('-p', '--port',type=str,default='/dev/ttyACM0')
 parser.add_argument('-n', '--no-flashing', action='store_true')
 args = parser.parse_args()
