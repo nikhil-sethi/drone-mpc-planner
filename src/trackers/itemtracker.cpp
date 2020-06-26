@@ -54,6 +54,7 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
     smoother_im_size.init(smooth_blob_props_width);
     smoother_score.init(smooth_blob_props_width);
     smoother_brightness.init(smooth_blob_props_width);
+    vel_pt.init(1.f/pparams.fps, 1, 0.020, 0.020);
 
     disparity_prev = -1;
 
@@ -544,12 +545,10 @@ void ItemTracker::update_state(Point3f measured_world_coordinates,double time) {
 
         if (data_prev.pos_valid && (data.spos_valid || skip_wait_smth_spos )) {
             dt = static_cast<float>(time - data_prev.time);
-            float vx = (data.state.spos.x - data_prev.state.spos.x) / dt;
-            float vy = (data.state.spos.y - data_prev.state.spos.y) / dt;
-            float vz = (data.state.spos.z - data_prev.state.spos.z) / dt;
-            data.state.vel.x = smoother_velX.addSample(vx);
-            data.state.vel.y = smoother_velY.addSample(vy);
-            data.state.vel.z = smoother_velZ.addSample(vz);
+            data.state.vel_unfiltered = (data.state.pos - data_prev.state.pos) / dt;
+
+            cv::Point3f v_pt = vel_pt.new_sample(data.state.vel_unfiltered);
+            data.state.vel = v_pt;
 
             if (data_prev.vel_valid) {
                 float ax = (data.state.vel.x - data_prev.state.vel.x) / dt;
@@ -562,7 +561,7 @@ void ItemTracker::update_state(Point3f measured_world_coordinates,double time) {
         }
     }
 
-    data.vel_valid = smoother_velX.ready();
+    data.vel_valid = data.spos_valid;
     data.acc_valid = smoother_accX.ready();
 
     data.time = time;

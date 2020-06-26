@@ -95,6 +95,11 @@ void Visualizer::add_plot_sample(void) {
             svelX.push_back(-data.state.vel.x);
             svelY.push_back(data.state.vel.y);
             svelZ.push_back(-data.state.vel.z);
+
+            velX.push_back(-data.state.vel_unfiltered.x);
+            velY.push_back(data.state.vel_unfiltered.y);
+            velZ.push_back(-data.state.vel_unfiltered.z);
+
         }
         if (data.acc_valid) {
             saccX.push_back(-data.state.acc.x);
@@ -166,15 +171,15 @@ cv::Mat Visualizer::plot_all_control(void) {
 
 cv::Mat Visualizer::plot_all_velocity(void) {
     std::vector<cv::Mat> ims_vel;
-    ims_vel.push_back(plot({svelX}, "VelX"));
-    ims_vel.push_back(plot({svelY},"VelY"));
-    ims_vel.push_back(plot({svelZ},"VelZ"));
+    ims_vel.push_back(plot({velX,svelX},"VelX"));
+    ims_vel.push_back(plot({velY,svelY},"VelY"));
+    ims_vel.push_back(plot({velZ,svelZ},"VelZ"));
     return create_column_image(ims_vel,CV_8UC3);
 }
 
 cv::Mat Visualizer::plot_all_acceleration(void) {
     std::vector<cv::Mat> ims_acc;
-    ims_acc.push_back(plot({saccX}, "AccX"));
+    ims_acc.push_back(plot({saccX},"AccX"));
     ims_acc.push_back(plot({saccY},"AccY"));
     ims_acc.push_back(plot({saccZ},"AccZ"));
     return create_column_image(ims_acc,CV_8UC3);

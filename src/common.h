@@ -38,7 +38,7 @@ const float deg2rad = M_PIf32/180.f;
 extern std::string data_output_dir;
 
 struct state_data {
-    cv::Point3f pos = {0},spos = {0},vel = {0},acc = {0};
+    cv::Point3f pos = {0},spos = {0},vel = {0},vel_unfiltered = {0},acc = {0};
 };
 
 struct track_data {

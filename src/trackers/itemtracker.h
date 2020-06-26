@@ -94,6 +94,7 @@ protected:
     filtering::Smoother smoother_posX, smoother_posY, smoother_posZ;
     filtering::Smoother smoother_velX,smoother_velY,smoother_velZ;
     filtering::Smoother smoother_accX,smoother_accY,smoother_accZ;
+    filtering::Tf_PT2_3f vel_pt;
     const int smooth_blob_props_width = 10;
     bool reset_filters;
 
