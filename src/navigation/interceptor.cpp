@@ -46,11 +46,12 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
         else
             break;
         [[fallthrough]];
-    }  case is_move_to_intercept: {
-        if ( best_itrkr->frames_untracked() > 10
-                || _count_icpt_postarget_not_in_range > 5
-                || best_itrkr->false_positive())
-        {
+    }
+
+    case is_move_to_intercept: {
+        if ( best_itrkr->frames_untracked() > 0.112 * pparams.fps
+                || _count_icpt_postarget_not_in_range > 0.34 * pparams.fps
+                || best_itrkr->false_positive()) {
             _interceptor_state = is_waiting_for_target;
             break;
         }
