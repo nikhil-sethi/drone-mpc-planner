@@ -240,6 +240,8 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
 
     cv::Mat diffL,diffR,grayL,grayR,motion_noise_mapL,motion_noise_mapR;
 
+    uint motion_tresh = 15; // TODO get this from trackermanager params
+
     diffL = _visdat->diffL;
     diffR = _visdat->diffR;
     motion_noise_mapL = _visdat->motion_noise_mapL;
@@ -283,10 +285,10 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
         //since the background often isn't a solid color we do matching on the raw image data instead of the motion
         //using the motion from both images as a mask, we match the disparity over the masked gray image
 
-        cv::Mat diffL_mask_patch = diffL(roiL)>motion_noise_mapL(roiL);
+        cv::Mat diffL_mask_patch = diffL(roiL)>motion_noise_mapL(roiL)+motion_tresh;
         if (cv::countNonZero(diffL_mask_patch) / npixels > min_pxl_ratio) {
             cv::Rect roiR_disparity_rng(x-(disp_end-1),y,width+(disp_end-disp_start-1),height);
-            cv::Mat diffR_mask_patch = diffR(roiR_disparity_rng)>motion_noise_mapR(roiR_disparity_rng);
+            cv::Mat diffR_mask_patch = diffR(roiR_disparity_rng)>motion_noise_mapR(roiR_disparity_rng)+motion_tresh;
             cv::Mat grayL_patch = _visdat->frameL(roiL);
             cv::Mat grayR_patch = _visdat->frameR(roiR_disparity_rng);
 
@@ -396,7 +398,7 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
             cv::Mat viz_gray = create_column_image({grayL(roiL),grayR(roiR)},CV_8UC1,viz_scale);
             cv::Mat viz_motion_abs = create_column_image({diffL(roiL),diffR(roiR)},CV_8UC1,viz_scale);
             if (motion_noise_mapL.cols) {
-                cv::Mat viz_test = create_column_image({diffL(roiL)>motion_noise_mapL(roiL),diffR(roiR)>motion_noise_mapR(roiR)},CV_8UC1,viz_scale);
+                cv::Mat viz_test = create_column_image({diffL(roiL)>motion_noise_mapL(roiL)+motion_tresh,diffR(roiR)>motion_noise_mapR(roiR)+motion_tresh},CV_8UC1,viz_scale);
                 cv::Mat viz_noise = create_column_image({motion_noise_mapL(roiL),motion_noise_mapR(roiR)},CV_8UC1,viz_scale);
                 viz_disp = create_row_image({viz_gray,viz_motion_abs,viz_noise,viz_test},CV_8UC1,1);
             } else {
