@@ -255,8 +255,8 @@ void process_video() {
         else
             restart_delay = 0;
 
-        if (!log_replay_mode && ((imgcount > pparams.close_after_n_images && pparams.close_after_n_images>0)
-                                 || (cam->measured_exposure() <= pparams.darkness_threshold && pparams.darkness_threshold>0))) {
+        if (!log_replay_mode && dctrl.in_flight_duration(time) < 0.1f && ((imgcount > pparams.close_after_n_images && pparams.close_after_n_images>0)
+                || (cam->measured_exposure() <= pparams.darkness_threshold && pparams.darkness_threshold>0))) {
             std::cout << "Initiating periodic restart" << std::endl;
             exit_now = true;
         } else if(restart_delay > 1.5f*dnav.time_out_after_landing*pparams.fps) {
