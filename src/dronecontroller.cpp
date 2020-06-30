@@ -28,7 +28,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile,bool generator, M
                "joyArmSwitch; joyModeSwitch; joyTakeoffSwitch;" <<
                "mmArmSwitch; mmModeSwitch;" <<
                "dt;" <<
-               "thrust; integrator_x; integrator_y; integrator_z;";
+               "thrust; integrator_x; integrator_y; integrator_z;model_error;";
     std::cout << "Initialising control." << std::endl;
     settings_file = "../../xml/" + dparams.control + ".xml";
 
@@ -537,7 +537,8 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
                _rc->mode << ";" <<
                data_drone.dt << ";" <<
                thrust << ";" <<
-               pos_err_i.x << ";" << pos_err_i.y << ";" << pos_err_i.z << ";";
+               pos_err_i.x << ";" << pos_err_i.y << ";" << pos_err_i.z << ";" <<
+               model_error << ";";
 }
 
 std::tuple<int, int, float, Point3f, std::vector<state_data> > DroneController::calc_burn(state_data state_drone,state_data state_target,float remaining_aim_duration) {
@@ -1134,7 +1135,7 @@ void DroneController::check_control_and_tracking_problems(track_data data_drone)
 
     if(model_error<0)
         model_error = 0;
-    if(model_error>150 && !generator_mode) {
+    if(model_error>50 && !generator_mode) {
         _flight_mode = fm_abort_flight;
         flight_submode_name = "fm_abort_flight_model_error";
         std::cout <<  "Err between drone model and measured drone too big!" << std::endl;
