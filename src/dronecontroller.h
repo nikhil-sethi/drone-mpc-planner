@@ -31,7 +31,10 @@ static const char* flight_mode_names[] = { "fm_joystick_check",
                                            "fm_interception_burn",
                                            "fm_interception_burn_spin_down",
                                            "fm_retry_aim_start",
-                                           "fm_abort_flight",
+                                           "fm_abort_takeoff",
+                                           "fm_tracking_lost",
+                                           "fm_model_error",
+                                           "fm_abort",
                                            "fm_flying_pid_init",
                                            "fm_flying_pid",
                                            "fm_initial_reset_yaw",
@@ -62,7 +65,10 @@ public:
         fm_interception_burn,
         fm_interception_burn_spin_down,
         fm_retry_aim_start,
-        fm_abort_flight,
+        fm_abort_takeoff,
+        fm_abort_tracking_lost,
+        fm_abort_model_error,
+        fm_abort,
         fm_flying_pid_init,
         fm_flying_pid,
         fm_initial_reset_yaw,
@@ -262,7 +268,7 @@ private:
     filtering::Tf_PT2_3f pos_reference_filter;
 
     filtering::Tf_PT2_f pos_modelx, pos_modely, pos_modelz;
-    float model_error;
+
     std::array<float, N_PLANES> pos_err_kiv= {0}, vel_err_kiv= {0};
     std::array<filtering::Tf_D_f, N_PLANES> d_pos_err_kiv, d_vel_err_kiv;
     void control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
@@ -293,12 +299,13 @@ private:
         return rt;
     }
 public:
-    std::string flight_submode_name = "";
+    float model_error;
     void flight_mode(flight_modes f) {
-        _flight_mode = f;
+        if (f != fm_abort || !flight_aborted())
+            _flight_mode = f;
     }
     void hover_mode(bool value) { _hover_mode = value;}
-    void double_led_strength(){
+    void double_led_strength() {
         dparams.drone_led_strength = std::clamp(dparams.drone_led_strength*2,5,100);
     }
 
@@ -326,11 +333,8 @@ public:
         return joy_states_names[_joy_state];
     }
     std::string flight_mode() {
-        if(flight_submode_name.empty ()) {
-            return flight_mode_names[_flight_mode];
-        } else {
-            return flight_submode_name;
-        }
+        std::string ME = " ME: " + to_string_with_precision(model_error,0);
+        return flight_mode_names[_flight_mode] + ME;
     }
 
     bool ff_interception() {
@@ -369,7 +373,7 @@ public:
     }
 
     bool flight_aborted() {
-        return _flight_mode == fm_abort_flight;
+        return _flight_mode == fm_abort || _flight_mode == fm_abort_model_error || _flight_mode == fm_abort_tracking_lost || _flight_mode == fm_abort_takeoff;
     }
 
     float in_flight_duration(double time) {
@@ -476,7 +480,9 @@ public:
     void init(std::ofstream *logger, bool fromfile, bool generator_mode, MultiModule *rc, tracking::DroneTracker *dtrk, CameraView* camvol,float exposure);
     void control(track_data, track_data, track_data, double);
     bool drone_is_active() {
-        if ( _flight_mode == fm_inactive || _flight_mode == fm_disarmed || _flight_mode == fm_abort_flight || _flight_mode == fm_joystick_check)
+        if ( _flight_mode == fm_inactive || _flight_mode == fm_disarmed || _flight_mode == fm_joystick_check)
+            return false;
+        else if (flight_aborted())
             return false;
         else if (_joy_mode_switch == jmsm_manual && joy_throttle > JOY_BOUND_MIN && _joy_arm_switch == bf_armed)
             return true;

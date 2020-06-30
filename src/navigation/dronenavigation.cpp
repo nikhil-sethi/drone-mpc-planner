@@ -211,8 +211,7 @@ void DroneNavigation::update(double time) {
             }
             if (_trackers->dronetracker()->take_off_detection_failed()) {
                 std::cout << "Drone was not detected during max burn take off manoeuvre, aborting." << std::endl;
-                _dctrl->flight_mode(DroneController::fm_abort_flight);
-                _dctrl->flight_submode_name = "fm_abort_takeoff";
+                _dctrl->flight_mode(DroneController::fm_abort_takeoff);
                 _navigation_status = ns_drone_problem;
                 break;
             }
@@ -457,7 +456,7 @@ void DroneNavigation::update(double time) {
         } case ns_drone_problem: {
             if (time_drone_problem < 0)
                 time_drone_problem = time;
-            _dctrl->flight_mode(DroneController::fm_abort_flight);
+            _dctrl->flight_mode(DroneController::fm_abort);
             _dctrl->LED(static_cast<int>((time - time_drone_problem) * 10.0) % 10 > 5,100); // blink every half second
             _dctrl->beep(true);
             break;

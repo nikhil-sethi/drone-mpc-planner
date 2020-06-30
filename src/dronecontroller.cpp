@@ -362,7 +362,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         d_vel_err_z.preset(data_target_new.vel().z - data_drone.state.vel.z);
         pos_reference_filter.internal_states(data_target_new.pos(), data_target_new.pos());
 
-        model_error = {0};
+        model_error = 0;
         if(!data_drone.pos_valid && _time-take_off_start_time < 0.5) {
             pos_modelx.internal_states(_dtrk->drone_takeoff_location().x, _dtrk->drone_takeoff_location().x);
             pos_modely.internal_states(_dtrk->drone_takeoff_location().y, _dtrk->drone_takeoff_location().y);
@@ -468,7 +468,10 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         else if (dparams.mode3d)
             _rc->arm(bf_disarmed);
         break;
-    } case fm_abort_flight: {
+    } case fm_abort_tracking_lost: [[fallthrough]];
+    case fm_abort_model_error: [[fallthrough]];
+    case fm_abort_takeoff: [[fallthrough]];
+    case fm_abort: {
         if (dparams.mode3d)
             auto_throttle = JOY_MIDDLE;
         else
@@ -875,19 +878,14 @@ cv::Point3f DroneController::keep_in_volume_correction_acceleration(track_data d
 
     bool flight_mode_with_kiv = _flight_mode==fm_flying_pid || _flight_mode==fm_initial_reset_yaw
                                 || _flight_mode==fm_reset_yaw;
-    if(!flight_mode_with_kiv) {
-        if(flight_submode_name == "fm_pid_keep_in_volume")
-            flight_submode_name = "";
+    if(!flight_mode_with_kiv)
         return cv::Point3f(0,0,0);
-    }
-
 
     if(!drone_in_boundaries || !enough_braking_distance_left) {
-        flight_submode_name = "fm_pid_keep_in_volume";
         cv::Point3f correction_acceleration = kiv_acceleration(violated_planes_inview, violated_planes_brakedistance);
+        std::cout <<"KIV: " << correction_acceleration << std::endl;
         return correction_acceleration;
-    } else if(flight_submode_name == "fm_pid_keep_in_volume")
-        flight_submode_name = "";
+    }
 
     return cv::Point3f(0,0,0);
 }
@@ -1118,10 +1116,8 @@ void DroneController::check_tracking_lost(track_data data_drone) {
     // If keep-in-volume is not strong enough the drone has a chance to come back after some time.
     if(!data_drone.pos_valid) {
         kill_cnt_down++;
-        if (kill_cnt_down > pparams.fps / 2) {
-            _flight_mode = fm_abort_flight;
-            flight_submode_name = "fm_abort_flight_tracking_lost";
-        }
+        if (kill_cnt_down > pparams.fps / 2)
+            _flight_mode = fm_abort_tracking_lost;
     } else {
         kill_cnt_down = 0;
     }
@@ -1135,11 +1131,8 @@ void DroneController::check_control_and_tracking_problems(track_data data_drone)
 
     if(model_error<0)
         model_error = 0;
-    if(model_error>50 && !generator_mode) {
-        _flight_mode = fm_abort_flight;
-        flight_submode_name = "fm_abort_flight_model_error";
-        std::cout <<  "Err between drone model and measured drone too big!" << std::endl;
-    }
+    if(model_error>50 && !generator_mode)
+        _flight_mode = fm_abort_model_error;
 
 #if DRONE_CONTROLLER_DEBUG
     std::cout << "model_error: " << model_error << std::endl;
