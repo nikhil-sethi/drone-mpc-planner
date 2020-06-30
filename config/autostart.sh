@@ -25,16 +25,8 @@ while [ 1 ]; do
 
     dt=$(date '+%d/%m/%Y %H:%M:%S');
     echo "$dt"
-	COUNTER=1
-	while [  $COUNTER -lt 10000 ]; do
-		printf -v PADDEDCOUNTER "%05d" $COUNTER
-		OUTDIR=/home/pats/data/$PADDEDCOUNTER
-		if [ ! -d "$OUTDIR" ]; then
-			echo "Making new data dir: $OUTDIR"
-			COUNTER=10001
-		fi
-		let COUNTER=COUNTER+1
-	done
+    fdt=$(date '+%Y%m%d_%H%M%S');
+	OUTDIR=/home/pats/data/$fdt
 	echo Moving old data to $OUTDIR
 	/bin/mkdir -p $OUTDIR
 	/bin/mv terminal.log $OUTDIR || true
