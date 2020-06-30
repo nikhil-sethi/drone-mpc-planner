@@ -164,13 +164,18 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         break;
     } case fm_spinup: {
         _rc->arm(bf_armed);
+#if ENABLE_SPINUP==true
         start_takeoff_burn_time = 0;
         if (spin_up_start_time < 0.01)
             spin_up_start_time = time;
+        auto_throttle = spinup_throttle();
+#else
+        auto_throttle = JOY_BOUND_MIN;
+        spin_up_start_time = 0;
+#endif
+        mode += bf_PID_loop_disabled;
         auto_roll = JOY_MIDDLE;
         auto_pitch = JOY_MIDDLE;
-        auto_throttle = spinup_throttle();
-        mode += bf_PID_loop_disabled;
         break;
     } case fm_start_takeoff: {
         take_off_start_time = time;

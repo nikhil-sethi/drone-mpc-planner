@@ -157,11 +157,11 @@ CameraView::hunt_check_result CameraView::in_hunt_area(cv::Point3f moth_pos) {
     if(inhuntarea)
         return HuntVolume_OK;
     if(violated_planes.at(top_plane))
-        return HuntVolume_To_High;
+        return HuntVolume_Too_High;
     else if(violated_planes.at(bottom_plane))
-        return HuntVolume_To_Low;
+        return HuntVolume_Too_Low;
     else
-        return HuntVolume_Outside_Huntarea;
+        return HuntVolume_Too_Far_Aside;
 }
 
 

@@ -5,7 +5,9 @@
 #include "trackermanager.h"
 #include "visiondata.h"
 
-
+#define ENABLE_UNIFIED_DIRECTION_TRANSITION false
+#define ENABLE_MOTH_PREDICTION false
+#define ENABLE_VELOCITY_COMPENSATION false
 
 static const char* interceptor_state_names[] = { "is_init",
                                                  "is_await_target",
@@ -28,6 +30,7 @@ private:
     cv::Point3f req_intercept_pos;
     cv::Point3f _intercept_pos,_intercept_vel,_intercept_acc;
     float _horizontal_separation, _vertical_separation;
+    float total_separation;
     CameraView::hunt_check_result hunt_volume_check = CameraView::HuntVolume_Unknown;
     bool view_check = false;
 
@@ -81,8 +84,8 @@ public:
 
 
     std::string Interceptor_State() {
-        if (_interceptor_state == is_move_to_intercept  )
-            return hunt_volume_check_names[hunt_volume_check];
+        // if (_interceptor_state == is_move_to_intercept  )
+        //     return hunt_volume_check_names[hunt_volume_check];
         return interceptor_state_names[_interceptor_state];
     }
 

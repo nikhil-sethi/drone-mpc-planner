@@ -5,7 +5,8 @@
 #include "common.h"
 #include "cameraview.h"
 #define GRAVITY 9.81f
-#define DRONECONTROLLER_DEBUG true
+#define DRONECONTROLLER_DEBUG false
+#define ENABLE_SPINUP true
 
 static const char* joy_states_names[] = { "js_manual",
                                           "js_waypoint",

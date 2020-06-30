@@ -12,10 +12,10 @@
 static const char* hunt_volume_check_names[] = {
     "HV_Unknown",
     "HV_OK",
-    "HV_To_High",
-    "HV_To_Low",
-    "HV_To_Close",
-    "HV_Outside_Huntarea"
+    "HV_Too_High",
+    "HV_Too_Low",
+    "HV_Too_Close",
+    "HV_Too_Far_Aside"
 };
 
 struct intersection_point {
@@ -53,10 +53,10 @@ public:
     enum hunt_check_result {
         HuntVolume_Unknown,
         HuntVolume_OK,
-        HuntVolume_To_High,
-        HuntVolume_To_Low,
-        HuntVolume_To_Close,
-        HuntVolume_Outside_Huntarea
+        HuntVolume_Too_High,
+        HuntVolume_Too_Low,
+        HuntVolume_Too_Close,
+        HuntVolume_Too_Far_Aside
     };
 
     enum view_volume_check_mode {
