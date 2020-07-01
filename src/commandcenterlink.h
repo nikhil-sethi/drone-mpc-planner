@@ -5,7 +5,7 @@ class CommandCenterLink {
 public :
     void init(bool log_replay_mode, navigation::DroneNavigation * dnav,DroneController * dctrl,MultiModule * rc,Cam * cam,tracking::TrackerManager * trackers);
     void close();
-    void reset_commandcenter_status_file(std::string status_msg);
+    void reset_commandcenter_status_file(std::string status_msg, bool never_overwrite);
     void trigger_demo_flight_from_log(std::string replay_dir, int tracker_mode);
 
 private:
@@ -16,6 +16,7 @@ private:
     std::string shake_fn = "/home/pats/shake_now";
     std::thread thread;
     bool initialized = false;
+    bool _never_overwrite = false;
 
     navigation::DroneNavigation * _dnav;
     DroneController * _dctrl;

@@ -160,6 +160,11 @@ void process_video() {
         } else if (escape_key_pressed)
             exit_now = true;
 
+        if (rc.init_package_failure) {
+            exit_now = true;
+            cmdcenter.reset_commandcenter_status_file("MultiModule init package error",true);
+        }
+
         static bool recording = false;
         double dtr = data.time - trackers.insecttracker_best()->last_sighting_time;
         if (dtr > 1 && recording) {
@@ -681,7 +686,7 @@ void init() {
 
 void close(bool sig_kill) {
     std::cout <<"Closing"<< std::endl;
-    cmdcenter.reset_commandcenter_status_file("Closing");
+    cmdcenter.reset_commandcenter_status_file("Closing",false);
 
     if (pparams.has_screen)
         cv::destroyAllWindows();
@@ -763,7 +768,7 @@ void wait_for_cam_angle() {
                 prev_imwrite_time = elapsed_time;
                 cv::imwrite("../../../../pats_monitor_tmp.jpg", frameL);
             }
-            cmdcenter.reset_commandcenter_status_file("Roll: " + to_string_with_precision(roll,2));
+            cmdcenter.reset_commandcenter_status_file("Roll: " + to_string_with_precision(roll,2),false);
             usleep(30000); // measure every third second
         }
     }
@@ -780,7 +785,7 @@ void wait_for_dark() {
                 break;
             }
             cv::imwrite("../../../../pats_monitor_tmp.jpg", frameL);
-            cmdcenter.reset_commandcenter_status_file("Waiting. Exposure: " + std::to_string(static_cast<int>(expo)));
+            cmdcenter.reset_commandcenter_status_file("Waiting. Exposure: " + std::to_string(static_cast<int>(expo)),false);
             usleep(10000000); // measure every 1 minute
         }
     }
@@ -789,12 +794,12 @@ void wait_for_dark() {
 int main( int argc, char **argv )
 {
     try {
-        cmdcenter.reset_commandcenter_status_file("Starting");
+        cmdcenter.reset_commandcenter_status_file("Starting",false);
         bool realsense_reset;
         std::tie(realsense_reset,log_replay_mode,generator_mode,replay_dir,drone_id,pats_xml_fn,drone_xml_fn) = process_arg(argc,argv);
 
         if (realsense_reset) {
-            cmdcenter.reset_commandcenter_status_file("Reseting realsense");
+            cmdcenter.reset_commandcenter_status_file("Reseting realsense",false);
             Realsense rs;
             rs.reset();
             return 0;
@@ -826,19 +831,19 @@ int main( int argc, char **argv )
 
     } catch(my_exit const &err) {
         std::cout << "Error: " << err.msg << std::endl;
-        cmdcenter.reset_commandcenter_status_file(err.msg);
+        cmdcenter.reset_commandcenter_status_file(err.msg,true);
         return 1;
     } catch(rs2::error const &e) {
-        cmdcenter.reset_commandcenter_status_file("Resetting realsense");
+        cmdcenter.reset_commandcenter_status_file("Resetting realsense",false);
         try {
             static_cast<Realsense *>(cam.get())->reset();
         } catch(my_exit const &e2) {
             std::cout << "Error: " << e2.msg << std::endl;
-            cmdcenter.reset_commandcenter_status_file(e2.msg);
+            cmdcenter.reset_commandcenter_status_file(e2.msg,true);
         }
         return 1;
     } catch (Exception err) {
-        cmdcenter.reset_commandcenter_status_file(err.msg);
+        cmdcenter.reset_commandcenter_status_file(err.msg,true);
         std::cout << "Error: " << err.msg << std::endl;
         return 1;
     }
@@ -853,7 +858,7 @@ int main( int argc, char **argv )
         exit_now = true;
         close(false);
         std::cout << "Error: " << e.msg << std::endl;
-        cmdcenter.reset_commandcenter_status_file(e.msg);
+        cmdcenter.reset_commandcenter_status_file(e.msg,true);
         return 1;
     }
 

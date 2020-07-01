@@ -94,7 +94,8 @@ public:
     }
 
     void check_bind_command(void);
-    bool _bind = false;
+
+    bool init_package_failure = false;
 
     // counter used to make sure throttle and arming is safe for binding.
     //(it has happened that the drone takes off uncontrolled when the bind channel was activated)
@@ -141,6 +142,7 @@ private:
     bool initialized = false;
     bool version_check_OK = false;
     int notconnected;
+    bool _bind = false;
 
     std::stringstream received;
 

@@ -78,8 +78,10 @@ void MultiModule::worker_thread(void) {
         if (init_package_nOK_cnt) {
             init_package_nOK_cnt++;
             if (init_package_nOK_cnt > 5 * pparams.fps) {
+                init_package_failure = true;
                 std::cout << "MultiModule wouldn't receive init package within 10 seconds." << std::endl;
-                exit(1);
+                exitSendThread = true;
+                return;
             }
         }
 

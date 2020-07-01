@@ -31,7 +31,7 @@ void CommandCenterLink::close() {
         std::cout << "Closing CommandCenterLink" << std::endl;
         thread.join();
     }
-    reset_commandcenter_status_file("Closed");
+    reset_commandcenter_status_file("Closed",false);
 }
 
 void CommandCenterLink::background_worker() {
@@ -117,7 +117,11 @@ void CommandCenterLink::write_commandcenter_status_file() {
     }
 }
 
-void CommandCenterLink::reset_commandcenter_status_file(std::string status_msg) {
+void CommandCenterLink::reset_commandcenter_status_file(std::string status_msg, bool never_overwrite) {
+    if (_never_overwrite)
+        return;
+    _never_overwrite = never_overwrite;
+
     reset_cnt = pparams.fps*3;
     std::ofstream status_file;
     status_file.open("../../../../pats_status.txt",std::ofstream::out);
