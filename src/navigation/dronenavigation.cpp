@@ -379,7 +379,7 @@ void DroneNavigation::update(double time) {
                                 && _trackers->dronetracker()->n_frames_tracking>5;
 
             if(!_trackers->dronetracker()->check_yaw(time) || (time-time_initial_reset_yaw > yaw_reset_duration && drone_pos_ok)) {
-                _dctrl->flight_mode(DroneController::fm_flying_pid);
+                _dctrl->flight_mode(DroneController::fm_flying_headed_pid);
                 _navigation_status = ns_goto_landing_waypoint;
             }
             break;

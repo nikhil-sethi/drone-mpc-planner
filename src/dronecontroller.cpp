@@ -392,6 +392,22 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         control_model_based(data_drone, data_target_new.pos(),data_target_new.vel());
 
         break;
+    } case fm_flying_headed_pid: { // at the moment used for landing after the yaw reset
+        auto_yaw = JOY_MIDDLE;
+        mode += bf_headless_disabled;
+        check_emergency_kill(data_drone);
+
+        if(!data_drone.pos_valid) {
+            pos_err_i = {0,0,0};
+            if(_time-take_off_start_time < 0.5)
+                data_drone.state.pos = _dtrk->drone_takeoff_location ();
+        }
+
+        control_model_based(data_drone, data_target_new.pos(),data_target_new.vel());
+
+        break;
+
+
     } case fm_initial_reset_yaw: {
         check_emergency_kill(data_drone);
         control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
