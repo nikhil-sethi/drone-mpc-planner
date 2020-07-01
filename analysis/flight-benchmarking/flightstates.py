@@ -6,7 +6,12 @@ import numpy as np
 key_takeofftime = 'takeoff_time'
 key_landedtime = 'landed_time'
 key_enterlandingtime = 'entering_landing_time'
-key_crashed = 'chrashed'
+key_crashed = 'crashed'
+
+ns_taking_off = 10
+ns_landing = 23
+ns_landed = 24
+
 
 def init_flightstate_data():
 	return {key_takeofftime: np.nan,
@@ -14,13 +19,13 @@ def init_flightstate_data():
 			key_enterlandingtime: np.nan}
 
 def eval_current_flightstate(flight, time, nav_state, auto_throttle):
-	if(nav_state==22 and np.isnan(flight[key_enterlandingtime])):
+	if(nav_state==ns_landing and np.isnan(flight[key_enterlandingtime])):
 		flight[key_enterlandingtime] = time
 			
-	if(nav_state==23 and np.isnan(flight[key_landedtime])):
+	if(nav_state==ns_landed and np.isnan(flight[key_landedtime])):
 		flight[key_landedtime] = time
 
-	if(nav_state==9 and np.isnan(flight[key_takeofftime])):
+	if(nav_state==ns_taking_off and np.isnan(flight[key_takeofftime])):
 		flight[key_takeofftime] = time
 	return flight
 

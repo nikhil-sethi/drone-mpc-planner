@@ -6,3 +6,5 @@ src/main\.cpp\.autosave
 
 *.asv
 xml/landing_location*.xml
+
+*.csv#
