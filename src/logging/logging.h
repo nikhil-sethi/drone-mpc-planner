@@ -56,6 +56,8 @@ struct LogEntryMain {
     int auto_roll;
     int auto_pitch;
 
+    float imLx_drone,imLy_drone,disparity_drone;
+
     std::vector<LogEntryInsect> insects;
 
 };

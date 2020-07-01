@@ -78,7 +78,9 @@ LogEntryMain LogReader::create_log_entry(string line, map<string, int> headmap) 
     entry.joyTakeoffSwitch = stoi(line_data.at(headmap["joyTakeoffSwitch"]));
     entry.trkrs_state = stoi(line_data.at(headmap["trkrs_state"]));
 
-
+    entry.imLx_drone = stof(line_data.at(headmap["imLx_drone"]));
+    entry.imLy_drone = stof(line_data.at(headmap["imLy_drone"]));
+    entry.disparity_drone = stof(line_data.at(headmap["disparity_drone"]));
 
     if (_takeoff_time > static_cast<double>(entry.RS_id)/pparams.fps && entry.valid && entry.joyModeSwitch > 0 && entry.auto_throttle > dparams.spinup_throttle_non3d)
         _takeoff_time = static_cast<double>(entry.RS_id)/pparams.fps - 1;
