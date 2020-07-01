@@ -14,18 +14,16 @@ ns_landed = 24
 
 
 def init_flightstate_data():
-	return {key_takeofftime: np.nan,
-			key_landedtime: np.nan,
-			key_enterlandingtime: np.nan}
+	return {key_takeofftime: np.nan, key_landedtime: np.nan, key_enterlandingtime: np.nan}
 
 def eval_current_flightstate(flight, time, nav_state, auto_throttle):
 	if(nav_state==ns_landing and np.isnan(flight[key_enterlandingtime])):
 		flight[key_enterlandingtime] = time
-			
-	if(nav_state==ns_landed and np.isnan(flight[key_landedtime])):
+
+	if(nav_state == ns_landed and np.isnan(flight[key_landedtime])):
 		flight[key_landedtime] = time
 
-	if(nav_state==ns_taking_off and np.isnan(flight[key_takeofftime])):
+	if(nav_state == ns_taking_off and np.isnan(flight[key_takeofftime])):
 		flight[key_takeofftime] = time
 	return flight
 
@@ -34,10 +32,10 @@ key_landingtime = 'landing_time'
 def flightstates_evaldata(flightstates_data, crashed_after_landing):
 	flightstates_evaldata = {}
 
-	if(len(flightstates_data)):
+	if flightstates_data:
 		flight = flightstates_data
 		flightstates_evaldata[key_crashed] = False
-		if(len(flight)>0):
+		if flight:
 			if(crashed_after_landing or np.isnan(flight[key_landedtime])):
 				flightstates_evaldata[key_crashed] = True
 			if(not np.isnan(flight[key_takeofftime]) and not np.isnan(flight[key_enterlandingtime])):

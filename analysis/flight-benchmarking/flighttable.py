@@ -12,7 +12,7 @@ from hunt import hunt_evaldata_units
 class Flighttable(object):
 	def __init__(self):
 		self.__seperator = '\t'
-		self.tablecontent = 'Date'+self.__seperator+'Time'+self.__seperator+'System'
+		self.tablecontent = 'Date'+self.__seperator+'Time'+self.__seperator+'System'+self.__seperator+'Logname'
 
 		self.f_edatunits = flightstates_evaldata_units()
 		for key in self.f_edatunits:
@@ -46,9 +46,9 @@ class Flighttable(object):
 				self.tablecontent += self.__seperator
 
 			if key in data:
-				if(isinstance(data[key], list)):
+				if isinstance(data[key], list):
 					self.tablecontent += '{:.3f}'.format(np.max(data[key]))
-				elif(isinstance(data[key], (str, bool))):
+				elif isinstance(data[key], (str, bool)):
 					self.tablecontent += str(data[key])
 				else:
 					self.tablecontent += '{:.3f}'.format(data[key])

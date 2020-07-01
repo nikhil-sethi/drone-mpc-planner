@@ -13,11 +13,17 @@ def get_system(path):
 
 	return system
 
+def get_foldername(terminal_filepath):
+	path_elements = terminal_filepath.split('/')
+	while "" in path_elements:
+		path_elements.remove("")
+	return path_elements[-2]
 
 key_landinglocation = 'landing_location'
 key_system = 'system'
 key_date = 'date'
 key_datetime = 'datetime'
+key_foldername = 'foldername'
 def read_terminalfile(terminal_filepath):
 	""" @Missing: Catch case terminal.log is not existing """
 	try:
@@ -29,6 +35,7 @@ def read_terminalfile(terminal_filepath):
 		return {}, {}, False
 
 	system = get_system(terminal_filepath)
+	foldername = get_foldername(terminal_filepath)
 
 	landing_locations = []
 	date = "n.a."
@@ -36,10 +43,10 @@ def read_terminalfile(terminal_filepath):
 	replay_moth = False
 	for i in range(len(terminallines)):
 		words = terminallines[i].split(' ')
-		if(i==0 and len(words)>1):
+		if(i == 0 and len(words) > 1):
 			date = words[0]
 			datetime = words[1]
-		if(words[0]=='blink-location:'):
+		if(words[0] == 'blink-location:'):
 			try:
 				landing_location = np.array(eval(words[1]+words[2]+words[3]))
 				landing_locations.append(landing_location)
@@ -52,6 +59,7 @@ def read_terminalfile(terminal_filepath):
 	terminal_data[key_landinglocation] = landing_locations
 	log_data = {}
 	log_data[key_system] = system
+	log_data[key_foldername] = foldername
 	log_data[key_date] = date
 	log_data[key_datetime] = datetime
 	return log_data, terminal_data, replay_moth
@@ -61,11 +69,11 @@ def terminal_evaldata(terminal_data):
 	terminal_evaldata={}
 	crashed_after_landing = False
 
-	if(len(terminal_data)>0):
-		if(len(terminal_data[key_landinglocation])==2):
+	if terminal_data:
+		if len(terminal_data[key_landinglocation]) == 2 :
 			before = terminal_data[key_landinglocation][0]
 			after = terminal_data[key_landinglocation][1]
-			if(abs(before[1]-after[1])>0.05):
+			if abs(before[1]-after[1]) > 0.05:
 				crashed_after_landing = True
 			else:
 				before[1] = 0
@@ -75,7 +83,7 @@ def terminal_evaldata(terminal_data):
 	return terminal_evaldata, crashed_after_landing
 
 def terminal_evaldata_units():
-	terminal_evaldata_unit={}
+	terminal_evaldata_unit = {}
 	terminal_evaldata_unit[key_horizontallandingprecision] = 'mm'
 	return terminal_evaldata_unit
 
@@ -84,15 +92,16 @@ def log_data_units():
 	log_data_unit[key_date] = ''
 	log_data_unit[key_datetime] = ''
 	log_data_unit[key_system] = ''
+	log_data_unit[key_foldername] = ''
 	return log_data_unit
 
 if __name__ == "__main__":
 	import os
 	import sys
-	if(len(sys.argv)>=2):
+	if len(sys.argv) >= 2:
 		folderpath = str(sys.argv[1])
 	else:
-		folderpath =  os.path.expanduser('~/code/pats/pc/build-vscode/logging/')
+		folderpath =  os.path.expanduser('/home/ludwig/Documents/2020-06 testing-koppert/29-06/pats11/00001/')
 	terminal_filepath = folderpath + 'terminal.log'
 
 	log_data, terminal_data, replay_moth = read_terminalfile(terminal_filepath)

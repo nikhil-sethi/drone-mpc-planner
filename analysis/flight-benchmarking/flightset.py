@@ -4,8 +4,6 @@
 import os
 import sys
 import time
-import pandas as pd
-import numpy as np
 from evaldata_generic import calc_stat_varibales, plot_stats
 from flight import read_and_eval_flight
 from control import control_evaldata_units

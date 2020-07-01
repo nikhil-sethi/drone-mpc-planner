@@ -25,7 +25,7 @@ def read_tuningflight(drone_filepath):
 		drone_data = pd.read_csv(drone_data_string, sep=';')
 
 		n_samples_drone = np.size(drone_data,0)
-		if(n_samples_drone>0):
+		if n_samples_drone > 0:
 			target = np.array([drone_data['target_pos_x'][0], drone_data['target_pos_y'][0], drone_data['target_pos_z'][0]])
 			step_found = False
 			step = init_step_data()
@@ -51,7 +51,7 @@ def read_tuningflight(drone_filepath):
 
 
 if __name__ == "__main__":
-	if(len(sys.argv)>=2):
+	if len(sys.argv) >= 2:
 		folderpath = str(sys.argv[1])
 	else:
 		folderpath =  os.path.expanduser('~/code/pats/pc/build-vscode/logging/')

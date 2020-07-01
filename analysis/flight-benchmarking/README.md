@@ -1,5 +1,11 @@
 # Flight-Benchmark
 
+The scripts gather all flights in which the dronenavigation-statemachine reached the state ns_takeing_off. This does not necessarily mean that the drone actually took off.
+
+## Criteria overview
+
+- In the exported csv-table for all criteria with multiple measurements the __max__-value is take.
+
 ## Crash criteria
 
 The drone is considered as crashed, if:
