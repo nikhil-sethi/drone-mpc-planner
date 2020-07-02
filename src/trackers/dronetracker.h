@@ -131,11 +131,15 @@ public:
 
     cv::Point3f drone_takeoff_location() {return _blink_world_location + cv::Point3f(0,0,-dparams.radius);}
 
-    cv::Point3f drone_landing_location() {
+    cv::Point3f drone_landing_location(bool landing_hack) {
+
+        cv::Point3f hack = {0};
+        if (landing_hack)
+            hack = cv::Point3f(0,0,0.04);
         if(landing_parameter.initialized)
-            return cv::Point3f(landing_parameter.x, landing_parameter.y, landing_parameter.z);
+            return cv::Point3f(landing_parameter.x, landing_parameter.y, landing_parameter.z) + hack;
         else
-            return _landing_pad_world;
+            return _landing_pad_world + hack;
     }
 
     bool take_off_detection_failed() { return _take_off_detection_failed;}

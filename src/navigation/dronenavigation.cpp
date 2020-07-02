@@ -402,7 +402,7 @@ void DroneNavigation::update(double time) {
         } case ns_landing: {
             cv::Point3f new_pos_setpoint;
             cv::Point3f new_vel_setpoint;
-            cv::Point3f pad_pos = _trackers->dronetracker()->drone_landing_location();
+            cv::Point3f pad_pos = _trackers->dronetracker()->drone_landing_location(true);
             setpoint_pos_world =  pad_pos + current_waypoint->xyz;
             if (setpoint_pos_world.y > -0.5f) // keep some margin to the top of the view, because atm we have an overshoot problem.
                 setpoint_pos_world.y = -0.5f;
@@ -485,7 +485,7 @@ void DroneNavigation::next_waypoint(Waypoint wp, double time) {
         setpoint_pos_world =  p + wp.xyz;
         setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, CameraView::relaxed);
     } else if (wp.mode == wfm_landing || wp.mode == wfm_yaw_reset) {
-        cv::Point3f p = _trackers->dronetracker()->drone_landing_location();
+        cv::Point3f p = _trackers->dronetracker()->drone_landing_location(true);
         setpoint_pos_world =  p + wp.xyz;
         if (setpoint_pos_world.y > -0.5f) // keep some margin to the top of the view, because atm we have an overshoot problem.
             setpoint_pos_world.y = -0.5f;
