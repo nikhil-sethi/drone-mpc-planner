@@ -20,7 +20,7 @@ for instance:
 Flightcontroller v2 = S-H-50 16.8  
 Flightcontroller v3 = F-H-40 16.8
 
-2.3. Apply the following settings to BLHeli:  
+2.3. These should be the default settings for esc timing:  
 ![BLHeli settings](https://github.com/pats-drones/pats/blob/master/doc/BLHeliESCSettings.PNG)
 
 ## Flashing the multimodule:
