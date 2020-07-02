@@ -448,14 +448,26 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         auto_yaw = JOY_BOUND_MIN;
 
         int spin_value = JOY_BOUND_MIN+ 550;
-        if (itime % 4 == 0) {
+        if (itime % 9 == 0) {
             auto_roll = spin_value;
-        } else if (itime % 4 == 1) {
+        } else if (itime % 9 == 1) {
             auto_pitch = spin_value;
-        } else if (itime % 4 == 2) {
+        } else if (itime % 9 == 2) {
             auto_yaw = spin_value;
-        } else if (itime % 4 == 3) {
+        } else if (itime % 9 == 3) {
             auto_throttle = spin_value;
+        } else if (itime % 9 == 4) {
+            auto_roll = spin_value;
+            auto_pitch = spin_value;
+        } else if (itime % 9 == 5) {
+            auto_yaw = spin_value;
+            auto_throttle = spin_value;
+        } else if (itime % 9 == 7) {
+            auto_roll = spin_value;
+            auto_throttle = spin_value;
+        } else if (itime % 9 == 8) {
+            auto_yaw = spin_value;
+            auto_pitch = spin_value;
         }
         break;
     } case fm_disarmed: {

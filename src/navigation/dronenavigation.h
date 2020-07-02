@@ -56,7 +56,7 @@ private:
     double time_located_drone = 0;
     double time_take_off = 0;
     double time_shake_start = 0;
-    float shake_duration = 5;
+    float shake_duration = 15;
 
     std::ofstream *_logger;
     DroneController * _dctrl;
