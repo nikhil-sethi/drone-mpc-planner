@@ -3,7 +3,7 @@
 # diff
 
 # version
-# Betaflight / CRAZYBEEF4FR (C4FR) 4.1.5 Jul  1 2020 / 16:59:45 (7ddb1fd75) MSP API: 1.42
+# Betaflight / CRAZYBEEF4FR (C4FR) 4.1.5 Jul  1 2020 / 23:34:58 (0b506c11f) MSP API: 1.42
 
 # start the command batch
 batch start
@@ -89,6 +89,7 @@ set dyn_notch_q = 250
 set dyn_notch_min_hz = 100
 set dyn_lpf_gyro_min_hz = 280
 set dyn_lpf_gyro_max_hz = 700
+set rc_smoothing_auto_smoothness = 5
 set rx_spi_protocol = FRSKY_D
 set dshot_idle_value = 500
 set dshot_bidir = ON
