@@ -247,6 +247,8 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_start_the_chase: {
             _iceptor.reset_insect_cleared();
+            _dctrl->hover_mode(false);
+            _trackers->dronetracker()->hover_mode(false);
             _navigation_status = ns_chasing_insect_ff;
             [[fallthrough]];
         } case ns_chasing_insect_ff: {
@@ -269,10 +271,19 @@ void DroneNavigation::update(double time) {
 
             if (_nav_flight_mode == nfm_manual)
                 _navigation_status=ns_manual;
-            else if (_iceptor.insect_cleared())
-                _navigation_status = ns_goto_landing_waypoint;
+            else if (_iceptor.insect_cleared()) {
+                _navigation_status = ns_goto_yaw_waypoint;
+            }
+            break;
+        } case ns_goto_yaw_waypoint: {
+            _dctrl->hover_mode(true);
+            _trackers->dronetracker()->hover_mode(true);
+            next_waypoint(Waypoint_Yaw_Reset(),time);
+            _navigation_status = ns_approach_waypoint;
             break;
         } case ns_goto_landing_waypoint: {
+            _dctrl->hover_mode(true);
+            _trackers->dronetracker()->hover_mode(true);
             next_waypoint(Waypoint_Landing(),time);
             _navigation_status = ns_approach_waypoint;
             break;
