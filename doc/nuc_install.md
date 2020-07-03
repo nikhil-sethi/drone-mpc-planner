@@ -56,7 +56,12 @@ Pats install script and ssh key files
 - Change the background
 - remove everything from data folder and remove pats_daemon.log
 - screen lock off
-- `sudo sh -c 'echo "pats ALL = (root) NOPASSWD: /usr/sbin/rtcwake" >> /etc/sudoers'`
+- allow for normal users:
+```
+sudo sh -c 'echo "pats ALL = (root) NOPASSWD: /usr/sbin/rtcwake" >> /etc/sudoers'
+sudo sh -c 'echo "pats ALL = (root) NOPASSWD: /sbin/swapoff" >> /etc/sudoers'
+sudo sh -c 'echo "pats ALL = (root) NOPASSWD: /bin/systemctl" >> /etc/sudoers'
+```
 - `echo "alias df='df -h -x squashfs -x tmpfs -x devtmpfs'" >> ~/.bash_aliases`
 - open the project with vscode, install the recommened extensions, and set the ctrl-r hotkey
 
