@@ -441,7 +441,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
     } case fm_shake_it_baby: {
         _rc->arm(bf_disarmed);
         mode+=bf_spin_motor;
-        int itime = round(time*16);
+        int itime = round(time*8);
         auto_roll = JOY_BOUND_MIN;
         auto_pitch = JOY_BOUND_MIN;
         auto_throttle = JOY_BOUND_MIN;
