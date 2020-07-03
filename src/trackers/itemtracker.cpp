@@ -296,6 +296,8 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
             bool err_calculated [disp_end] = {false};
             //search for a minimum matching error
             int ii = roundf(disp_pred);
+            if (ii+1 > disp_end) // this can happen if the blob is on the edge of the screen and traveling outwards. Probably this blob cannot have a valid disparity as it left the right camera already
+                ii = disp_end-1;
             while(!err_calculated[ii-1] || !err_calculated[ii] || !err_calculated[ii+1] ) {
                 if (!err_calculated[ii-1]) {
                     std::tie(masked_pixel_ratio[ii-1],err_masked[ii-1]) = calc_match_score_masked(ii-1, disp_end, width, height,diffL_mask_patch,diffR_mask_patch,grayL_patch, grayR_patch,npixels);
