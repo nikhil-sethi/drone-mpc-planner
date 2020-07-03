@@ -1,0 +1,161 @@
+# 
+
+# diff
+
+# version
+# Betaflight / CRAZYBEEF4FR (C4FR) 4.1.5 Jul  1 2020 / 23:34:58 (0b506c11f) MSP API: 1.42
+
+# start the command batch
+batch start
+
+board_name CRAZYBEEF4FR
+
+# name: PatsMob6
+
+# resources
+resource MOTOR 1 B07
+resource MOTOR 2 B10
+resource MOTOR 3 B08
+resource MOTOR 4 B06
+resource RX_BIND 1 B02
+
+# feature
+feature -OSD
+feature -AIRMODE
+feature -ANTI_GRAVITY
+feature MOTOR_STOP
+feature LED_STRIP
+
+# beeper
+beeper -GYRO_CALIBRATED
+beeper -RX_LOST
+beeper -RX_LOST_LANDING
+beeper -DISARMING
+beeper -ARMING
+beeper -ARMING_GPS_FIX
+beeper -GPS_STATUS
+beeper -ACC_CALIBRATION
+beeper -READY_BEEP
+beeper -DISARM_REPEAT
+beeper -ARMED
+beeper -SYSTEM_INIT
+beeper -ON_USB
+beeper -BLACKBOX_ERASE
+beeper -CAM_CONNECTION_OPEN
+beeper -CAM_CONNECTION_CLOSE
+
+# beacon
+beacon RX_SET
+
+# led
+led 0 4,7::CW:0
+led 1 5,7::CT:6
+led 2 6,7::CT:2
+led 3 7,7::CT:6
+led 4 8,7::CW:0
+
+# color
+color 1 0,0,1
+color 3 0,0,255
+color 5 359,0,1
+color 6 359,0,1
+color 7 359,255,255
+
+# mode_color
+mode_color 5 0 9
+mode_color 5 1 11
+mode_color 5 2 2
+mode_color 5 3 13
+mode_color 5 4 10
+mode_color 5 5 3
+mode_color 6 0 0
+mode_color 6 1 2
+mode_color 7 0 7
+
+# aux
+aux 0 0 0 1300 2100 0 0
+aux 1 1 1 900 1300 0 0
+aux 2 13 1 1975 2100 0 0
+aux 3 15 3 900 1025 0 0
+aux 4 28 1 1300 2100 0 0
+aux 5 35 2 1650 2100 0 0
+
+# master
+set gyro_sync_denom = 2
+set gyro_lowpass2_hz = 350
+set dyn_notch_range = LOW
+set dyn_notch_width_percent = 0
+set dyn_notch_q = 250
+set dyn_notch_min_hz = 100
+set dyn_lpf_gyro_min_hz = 280
+set dyn_lpf_gyro_max_hz = 700
+set rc_smoothing_auto_smoothness = 5
+set rx_spi_protocol = FRSKY_D
+set dshot_idle_value = 500
+set dshot_bidir = ON
+set motor_pwm_protocol = DSHOT300
+set motor_poles = 12
+set align_board_yaw = -90
+set bat_capacity = 300
+set vbat_max_cell_voltage = 435
+set vbat_min_cell_voltage = 300
+set vbat_warning_cell_voltage = 310
+set vbat_detect_cell_voltage = 30
+set vbat_scale = 115
+set ibata_scale = 938
+set small_angle = 180
+set pid_process_denom = 1
+set runaway_takeoff_prevention = OFF
+set runaway_takeoff_deactivate_throttle_percent = 25
+set osd_warn_rssi = ON
+set osd_rssi_pos = 2107
+set osd_link_quality_pos = 27
+set osd_tim_2_pos = 2456
+set osd_flymode_pos = 2080
+set osd_crosshairs_pos = 2253
+set osd_craft_name_pos = 2059
+set osd_avg_cell_voltage_pos = 2432
+set osd_disarmed_pos = 2346
+set vtx_low_power_disarm = ON
+set vcd_video_system = NTSC
+set frsky_spi_tx_id = 1,0
+set frsky_spi_offset = -41
+set frsky_spi_bind_hop_data = 0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,66,68,70,72,74,76,78,80,82,84,86,88,91,92,0,0,0
+set frsky_x_rx_num = 1
+set gyro_2_spibus = 1
+set gyro_rpm_notch_harmonics = 1
+set name = PatsMob6
+
+profile 0
+
+# profile 0
+set dyn_lpf_dterm_min_hz = 98
+set dyn_lpf_dterm_max_hz = 238
+set dterm_lowpass2_type = BIQUAD
+set dterm_lowpass2_hz = 210
+set iterm_relax_type = GYRO
+set p_pitch = 50
+set d_pitch = 60
+set p_roll = 45
+set d_roll = 60
+set p_yaw = 36
+set angle_level_strength = 150
+set level_limit = 180
+set d_min_roll = 24
+set d_min_pitch = 26
+set d_min_boost_gain = 50
+set d_min_advance = 0
+set idle_min_rpm = 15
+
+rateprofile 0
+
+# rateprofile 0
+set roll_rc_rate = 255
+set pitch_rc_rate = 255
+set roll_srate = 0
+set pitch_srate = 0
+
+# end the command batch
+batch end
+
+# 
