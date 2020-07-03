@@ -31,6 +31,7 @@ static const char* navigation_status_names[] = {"ns_init",
                                                 "ns_start_shaking",
                                                 "ns_shaking_drone",
                                                 "ns_wait_after_landing",
+                                                "ns_monitoring",
                                                 "ns_manual",
                                                 "ns_drone_problem"
                                                };
@@ -65,6 +66,7 @@ enum navigation_states {
     ns_start_shaking,
     ns_shaking_drone,
     ns_wait_after_landing,
+    ns_monitoring,
     ns_manual, // also for disarmed
     ns_drone_problem
 };

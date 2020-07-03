@@ -618,7 +618,7 @@ std::tuple<bool,bool,bool, std::string,uint8_t,std::string,std::string> process_
 
 void check_hardware() {
     //multimodule rc
-    if (! log_replay_mode &&! generator_mode)
+    if (! log_replay_mode &&! generator_mode && pparams.op_mode != op_mode_monitoring_only)
         rc.init(drone_id);
 
     // Ensure that joystick was found and that we can use it
