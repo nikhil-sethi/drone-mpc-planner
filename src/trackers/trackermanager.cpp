@@ -348,7 +348,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                         }
                     }
                 } else if (_mode != mode_idle && _mode != mode_drone_only) {
-                    default_itrkr->calc_world_item(props,time);
+                    default_itrkr->calc_world_item(props,time); //#405: this is not correct as the default itrkr uses  priors e.g. for disparity calculation
 
                     if (props->world_props.valid) {
                         //ignore a region around the drone (or take off location)

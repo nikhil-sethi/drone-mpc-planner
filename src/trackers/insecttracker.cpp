@@ -62,6 +62,8 @@ void InsectTracker::update(double time) {
     if (!_tracking) {
         predicted_image_path.clear();
         path.clear();
+        min_disparity = params.min_disparity.value();
+        max_disparity = params.max_disparity.value();
     } else {
         update_prediction(time);
         if (_image_item.valid) {

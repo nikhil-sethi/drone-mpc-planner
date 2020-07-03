@@ -513,6 +513,7 @@ void ItemTracker::update_prediction(double time) {
         _image_predict_item.y = std::clamp(static_cast<int>(p.y),0,IMG_H-1);
         _image_predict_item.disparity = std::clamp(p.z,0.f,static_cast<float>(max_disparity));
         _image_predict_item.size = world2im_size(_world_item.pt+cv::Point3f(dparams.radius,0,0),_world_item.pt-cv::Point3f(dparams.radius,0,0),_visdat->Qfi,_visdat->camera_angle);
+        _image_predict_item.valid = true;
     }
     //issue #108:
     predicted_image_path.push_back(_image_predict_item);
