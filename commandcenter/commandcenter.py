@@ -2,10 +2,10 @@
 from PyQt5.QtCore import QDir, Qt, QUrl,QRect,QTimer
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtMultimediaWidgets import QVideoWidget
-from PyQt5.QtWidgets import (QMainWindow,QDialog,QWidget, QPushButton, QCheckBox, QAction,QFrame,
+from PyQt5.QtWidgets import (QMainWindow,QDialog,QWidget, QPushButton, QCheckBox, QComboBox, QAction,QFrame,
     QApplication, QFileDialog, QHBoxLayout, QLabel,QPushButton, QSizePolicy, QSlider, QStyle,
     QVBoxLayout, QGridLayout, QWidget,QMessageBox,QPlainTextEdit,QMenu,QTabWidget)
-from PyQt5.QtGui import QIcon, QPixmap, QPalette,QColor,QKeyEvent
+from PyQt5.QtGui import QIcon,QPixmap, QPalette,QColor,QKeyEvent,QFont
 import shutil
 
 from pathlib import Path
@@ -51,6 +51,7 @@ class CommandCenterWindow(QMainWindow):
         timer.timeout.connect(self.refresh)
         timer.start(1000)
 
+        self.update_combos()
         self.refresh()
         self.show()
         self.refresh()
@@ -69,19 +70,25 @@ class CommandCenterWindow(QMainWindow):
         for sys in self.sys_widgets:
             sys.refresh()
 
+    def update_combos(self):
+        self.download()
+        for sys in self.sys_widgets:
+            sys.update_combos()
+
 class SystemWidget(QWidget):
     def __init__(self, source_folder,system_folder,parent=None):
         QWidget.__init__(self, parent=parent)
-        self.disable_chk_enable_events = False
         self.dark_mode = True
         self.refresh_darkmode = True
 
         self.system_folder = system_folder
         self.source_folder = source_folder
 
-        self.chk_enable = QCheckBox()
-        self.chk_enable.setChecked(True)
-        self.chk_enable.stateChanged.connect(self.activate)
+        self.combo_mode = QComboBox()
+        self.combo_mode.addItem("Crippled")
+        self.combo_mode.addItem("Hunt")
+        self.combo_mode.addItem("Monitoring")
+        self.combo_mode.currentIndexChanged.connect(self.mode_change)
 
         self.setContextMenuPolicy(Qt.ActionsContextMenu)
         calibAction = QAction("Calibrate", self)
@@ -146,21 +153,23 @@ class SystemWidget(QWidget):
 
         control_layout = QHBoxLayout()
         control_layout.setContentsMargins(0, 0, 0, 0)
-        control_layout.addWidget(self.chk_enable)
-        control_layout.addWidget(btn_download_current_log)
+        control_layout.addWidget(self.combo_mode)
         control_layout.addWidget(btn_restart)
+        control_layout.addWidget(btn_download_current_log)
         control_layout.addWidget(btn_takeoff_tuning)
         control_layout.addWidget(btn_takeoff_aggresive_wp)
         control_layout.addWidget(btn_insect_replay_takeoff)
 
         self.txt_label = QLabel()
+        self.txt_label.setFont(QFont('Arial', 8))
 
         self.im_label = QLabel()
         self.im_label.mouseReleaseEvent = self.takeoshow_im_big
         self.im_label.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding)
         self.im_label.setAlignment(Qt.AlignCenter)
-        self.im_label.setMinimumSize(100, 100)
+        self.im_label.setMinimumSize(10, 10)
         self.im_label.setToolTip('Click to enlarge!')
+        self.setMinimumSize(10, 10)
 
         sub_layout = QVBoxLayout(self)
         sub_layout.setContentsMargins(0, 0, 0, 0)
@@ -168,8 +177,8 @@ class SystemWidget(QWidget):
         sub_layout.addWidget(self.txt_label)
         sub_layout.addLayout(control_layout)
 
-    def activate(self):
-        if self.disable_chk_enable_events:
+    def mode_change(self):
+        if (self.updating_combos):
             return
         self.pats_xml_path = Path(self.source_folder,self.system_folder,'pats_deploy.xml')
         with open (self.pats_xml_path, "r") as path_xml:
@@ -177,20 +186,44 @@ class SystemWidget(QWidget):
             new_xml_lines = ''
             for line in xml_lines:
                 if line.find('\"op_mode\"') != -1:
-                    if self.chk_enable.isChecked():
+                    if self.combo_mode.currentText() == "Hunt":
                         line = '    <Member Name=\"op_mode\">op_mode_deployed</Member>\n'
-                    else:
+                    elif self.combo_mode.currentText() == "Crippled":
                         line = '    <Member Name=\"op_mode\">op_mode_crippled</Member>\n'
+                    elif self.combo_mode.currentText() == "Monitoring":
+                        line = '    <Member Name=\"op_mode\">op_mode_monitoring_only</Member>\n'
                 elif line.find('\"live_image_frq\"') != -1:
-                    if self.chk_enable.isChecked():
+                    if self.combo_mode.currentText() == "Hunt":
                         line = '    <Member Name=\"live_image_frq\">1</Member>\n'
                     else:
                         line = '    <Member Name=\"live_image_frq\">30</Member>\n'
                 elif line.find('\"darkness_threshold\"') != -1:
-                    if self.chk_enable.isChecked():
+                    if self.combo_mode.currentText() == "Hunt":
                         line = '    <Member Name=\"darkness_threshold\">0</Member>\n'
                     else:
-                        line = '    <Member Name=\"darkness_threshold\">1000</Member>\n'
+                        line = '    <Member Name=\"darkness_threshold\">5000</Member>\n'
+                elif line.find('\"close_after_n_images\"') != -1:
+                    if self.combo_mode.currentText() == "Hunt":
+                        line = '    <Member Name=\"close_after_n_images\">10800</Member>\n'
+                    else:
+                        line = '    <Member Name=\"close_after_n_images\">324000</Member>\n'
+                elif line.find('\"video_cuts\"') != -1:
+                    if self.combo_mode.currentText() == "Monitoring":
+                        line = '    <Member Name=\"video_cuts\">video_mkv</Member>\n'
+                    else:
+                        line = '    <Member Name=\"video_cuts\">video_disabled</Member>\n'
+                elif line.find('\"video_raw\"') != -1:
+                    if self.combo_mode.currentText() == "Hunt":
+                        line = '    <Member Name=\"video_raw\">video_mkv</Member>\n'
+                    else:
+                        line = '    <Member Name=\"video_raw\">video_disabled</Member>\n'
+                elif line.find('\"max_cam_roll\"') != -1:
+                    if self.combo_mode.currentText() == "Monitoring":
+                        line = '    <Member Name=\"max_cam_roll\">1.5</Member>\n'
+                    else:
+                        line = '    <Member Name=\"max_cam_roll\">0.5</Member>\n'
+
+
                 new_xml_lines = new_xml_lines + line
 
         pats_xml_tmp_file = open("pats.tmp", "w")
@@ -241,6 +274,22 @@ class SystemWidget(QWidget):
     def takeoshow_im_big(self,event):
         ImDialog(self,self.source_folder,self.system_folder,self.host_id,self.dark_mode)
 
+    updating_combos = False
+    def update_combos(self):
+        self.updating_combos = True
+        self.pats_xml_path = Path(self.source_folder,self.system_folder,'pats_deploy.xml')
+        with open (self.pats_xml_path, "r") as path_xml:
+            xml_lines = path_xml.readlines()
+            new_xml_lines = ''
+            for line in xml_lines:
+                if line.find('op_mode_deployed') != -1:
+                    self.combo_mode.setCurrentIndex(1)
+                elif line.find('op_mode_crippled') != -1:
+                    self.combo_mode.setCurrentIndex(0)
+                elif line.find('op_mode_monitoring_only') != -1:
+                    self.combo_mode.setCurrentIndex(2)
+        self.updating_combos = False
+
     def refresh(self):
         self.check_theme()
         self.pats_xml_path = Path(self.source_folder,self.system_folder,'pats_deploy.xml')
@@ -248,14 +297,14 @@ class SystemWidget(QWidget):
             xml_lines = path_xml.readlines()
             new_xml_lines = ''
             for line in xml_lines:
-                if line.find('op_mode_deployed') != -1 and not self.chk_enable.isChecked():
-                    self.disable_chk_enable_events = True
-                    self.chk_enable.setChecked(True)
-                    self.disable_chk_enable_events = False
-                if line.find('op_mode_crippled') != -1 and self.chk_enable.isChecked():
-                    self.disable_chk_enable_events = True
-                    self.chk_enable.setChecked(False)
-                    self.disable_chk_enable_events = False
+                if line.find('op_mode_deployed') != -1 and self.combo_mode.currentText() != "Hunt":
+                    self.combo_mode.setStyleSheet("background-color:rgb(40,40,40)")
+                elif line.find('op_mode_crippled') != -1 and self.combo_mode.currentText() != "Crippled":
+                    self.combo_mode.setStyleSheet("background-color:rgb(40,40,40)")
+                elif line.find('op_mode_monitoring_only') != -1 and self.combo_mode.currentText() != "Monitoring":
+                    self.combo_mode.setStyleSheet("background-color:rgb(40,40,40)")
+                elif line.find('op_mode_') != -1:
+                    self.combo_mode.setStyleSheet("background-color:rgb(128,0,0)")
 
         source_im_file = Path(self.source_folder,self.system_folder,'status.jpg')
         pixmap = QPixmap(str(source_im_file))
@@ -264,19 +313,13 @@ class SystemWidget(QWidget):
         txt,system_color = self.get_lbl_txt()
         self.txt_label.setText(txt)
         pal = QPalette(self.txt_label.palette())
-        if self.chk_enable.isChecked():
-            pal.setColor(QPalette.WindowText, system_color)
-            self.txt_label.setPalette(pal)
+        pal.setColor(QPalette.WindowText, system_color)
+        self.txt_label.setPalette(pal)
+        if self.combo_mode.currentText() == "Hunt":
             self.btn_insect_replay_takeoff.setEnabled(True)
             self.btn_takeoff_tuning.setEnabled(True)
             self.btn_takeoff_aggresive_wp.setEnabled(True)
         else:
-            pal.setColor(QPalette.WindowText, system_color)
-            # if self.dark_mode:
-            #     pal.setColor(QPalette.WindowText, QColor(128,0,0))
-            # else:
-            #     pal.setColor(QPalette.WindowText, QColor(160,128,128))
-            self.txt_label.setPalette(pal)
             self.btn_insect_replay_takeoff.setEnabled(False)
             self.btn_takeoff_tuning.setEnabled(False)
             self.btn_takeoff_aggresive_wp.setEnabled(False)
@@ -299,7 +342,7 @@ class SystemWidget(QWidget):
             app.setPalette(dark_palette)
 
             self.im_label.setStyleSheet("QToolTip { color: #000000; background-color: #800000; border: 1px solid black; }")
-            self.chk_enable.setStyleSheet("background-color:rgb(128,0,0)")
+            self.combo_mode.setStyleSheet("background-color:rgb(128,0,0)")
             syswidget_palette.setColor(self.backgroundRole(), QColor(15,15,15))
             self.btn_insect_replay_takeoff.setStyleSheet("background-color:rgb(128,0,0)")
             self.btn_takeoff_aggresive_wp.setStyleSheet("background-color:rgb(128,0,0)")
@@ -314,6 +357,7 @@ class SystemWidget(QWidget):
 
             self.im_label.setStyleSheet("QToolTip { color: #000000; background-color: #9d8080; border: 1px solid black; }")
             self.chk_enable.setStyleSheet("background-color:rgb(160,128,128)")
+            self.combo_mode.setStyleSheet("background-color:rgb(160,128,128)")
             syswidget_palette.setColor(self.backgroundRole(), QColor(230,230,230))
             self.btn_insect_replay_takeoff.setStyleSheet("background-color:rgb(160,128,128)")
             self.btn_takeoff_aggresive_wp.setStyleSheet("background-color:rgb(160,128,128)")
@@ -379,7 +423,11 @@ class SystemWidget(QWidget):
                 pass
 
             if len(status_txt) > 2:
-                res_txt += status_txt[2]
+
+                if (status_txt[2].startswith("ns_")):
+                    res_txt += "State: " + status_txt[2][3:]
+                else:
+                    res_txt += status_txt[2]
                 navstatus = status_txt[2].strip()
                 if system_has_problem.getRgb()[0] == 0:
 
@@ -434,7 +482,8 @@ class SystemWidget(QWidget):
         if system_has_problem.getRgb()[0] == 0 and system_has_problem.getRgb()[1] == 0 and system_has_problem.getRgb()[2] == 0:
             system_has_problem = QColor(100,100,100)
 
-        return res_txt.strip(),system_has_problem
+        res_txt = res_txt.strip()
+        return res_txt,system_has_problem
 
 class ImDialog(QDialog):
     def __init__(self,parent,source_folder,system_folder,host_id,dark_mode):
