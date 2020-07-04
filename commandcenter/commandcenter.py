@@ -13,7 +13,7 @@ from datetime import datetime
 import random,sys,os,re,subprocess,math
 class CommandCenterWindow(QMainWindow):
 
-    def __init__(self, parent=None):
+    def __init__(self,screen_size,parent=None):
         super(CommandCenterWindow, self).__init__(parent)
         self.setWindowTitle("Pats Command Center")
         self.setWindowIcon(QIcon("./icon.png"))
@@ -44,7 +44,7 @@ class CommandCenterWindow(QMainWindow):
             layout.addWidget(s,int(i/np),i % np)
             i = i + 1
 
-        layout.setGeometry(QRect(0, 0, 640 , 480))
+        self.setMaximumSize(screen_size.width(), screen_size.height())
         wid.setLayout(layout)
 
         timer = QTimer(self)
@@ -656,8 +656,7 @@ def natural_keys(text):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-
-    cc = CommandCenterWindow()
+    cc = CommandCenterWindow(app.primaryScreen().size())
     cc.show()
 
     sys.exit(app.exec_())
