@@ -179,31 +179,29 @@ void process_video() {
         if (pparams.video_cuts) {
             static bool was_recording = false;
             static int insect_cnt = 0;
-            if (cam->frame_number() / 2 && cam->frame_number() % 2) {
-                if (recording != was_recording) {
-                    if (recording)
-                        insect_cnt++;
-                    else if (!recording && insect_cnt>0) {
-                        output_video_cuts.close();
-                        logger.close();
-                        std::string cvfn = "insect" + to_string(insect_cnt) + ".mkv";
-                        std::cout << "Opening new video: " << cvfn << std::endl;
-                        if (output_video_cuts.init(pparams.video_cuts,data_output_dir + cvfn,IMG_W,IMG_H*2,pparams.fps, "192.168.1.255",5000,false)) {std::cout << "WARNING: could not open cut video " << cvfn << std::endl;}
-                        logger_fn = data_output_dir  + "log" + to_string(insect_cnt) + ".csv";
-                        logger.open(logger_fn,std::ofstream::out);
-                    }
-                    was_recording = recording;
-                }
 
-                if (recording) {
-                    static int cut_video_frame_counter = 0;
-                    int frame_written = output_video_cuts.write(data.frameL,data.frameR);
-                    if (!frame_written)
-                        cut_video_frame_counter++;
-                    std::cout << "Recording! Frames written: " << cut_video_frame_counter << std::endl;
+            if (recording != was_recording) {
+                if (recording)
+                    insect_cnt++;
+                else if (!recording && insect_cnt>0) {
+                    output_video_cuts.close();
+                    logger.close();
+                    std::string cvfn = "insect" + to_string(insect_cnt) + ".mkv";
+                    std::cout << "Opening new video: " << cvfn << std::endl;
+                    if (output_video_cuts.init(pparams.video_cuts,data_output_dir + cvfn,IMG_W,IMG_H*2,pparams.fps, "192.168.1.255",5000,false)) {std::cout << "WARNING: could not open cut video " << cvfn << std::endl;}
+                    logger_fn = data_output_dir  + "log" + to_string(insect_cnt) + ".csv";
+                    logger.open(logger_fn,std::ofstream::out);
                 }
+                was_recording = recording;
             }
-            if (!recording && (cam->frame_number() / 2 && cam->frame_number() % 2)) {
+
+            if (recording) {
+                static int cut_video_frame_counter = 0;
+                int frame_written = output_video_cuts.write(data.frameL,data.frameR);
+                if (!frame_written)
+                    cut_video_frame_counter++;
+                std::cout << "Recording! Frames written: " << cut_video_frame_counter << std::endl;
+            } else {
                 logger.close();
                 logger.open(logger_fn,std::ofstream::out);
             }
