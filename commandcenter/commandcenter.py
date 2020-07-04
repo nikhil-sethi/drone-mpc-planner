@@ -263,19 +263,19 @@ class SystemWidget(QWidget):
         self.im_label.setPixmap(pixmap.scaled(self.im_label.size(),Qt.KeepAspectRatio, Qt.SmoothTransformation))
         txt,system_color = self.get_lbl_txt()
         self.txt_label.setText(txt)
+        pal = QPalette(self.txt_label.palette())
         if self.chk_enable.isChecked():
-            pal = QPalette(self.txt_label.palette())
             pal.setColor(QPalette.WindowText, system_color)
             self.txt_label.setPalette(pal)
             self.btn_insect_replay_takeoff.setEnabled(True)
             self.btn_takeoff_tuning.setEnabled(True)
             self.btn_takeoff_aggresive_wp.setEnabled(True)
         else:
-            pal = QPalette(self.txt_label.palette())
-            if self.dark_mode:
-                pal.setColor(QPalette.WindowText, QColor(128,0,0))
-            else:
-                pal.setColor(QPalette.WindowText, QColor(160,128,128))
+            pal.setColor(QPalette.WindowText, system_color)
+            # if self.dark_mode:
+            #     pal.setColor(QPalette.WindowText, QColor(128,0,0))
+            # else:
+            #     pal.setColor(QPalette.WindowText, QColor(160,128,128))
             self.txt_label.setPalette(pal)
             self.btn_insect_replay_takeoff.setEnabled(False)
             self.btn_takeoff_tuning.setEnabled(False)
@@ -382,18 +382,51 @@ class SystemWidget(QWidget):
                 res_txt += status_txt[2]
                 navstatus = status_txt[2].strip()
                 if system_has_problem.getRgb()[0] == 0:
-                    if navstatus == 'ns_wait_for_insect':
-                        system_has_problem = QColor(0,128,0)
-                    elif navstatus.startswith('ns_wp') or navstatus == 'ns_taking_off' or navstatus == 'ns_chasing_insect'or navstatus == 'ns_landing' or navstatus == 'ns_landed' or navstatus == 'ns_wait_after_landing' or navstatus == 'ns_initial_reset_yaw' or navstatus == 'ns_reset_yaw':
-                        system_has_problem = QColor(0,255,0)
-                    elif navstatus == 'ns_wait_locate_drone' or navstatus == 'ns_locate_drone_led' or  navstatus == 'ns_calibrating_motion':
-                        system_has_problem = QColor(255,165,0)
-                    elif navstatus.startswith('Roll') or navstatus.startswith('Starting') or navstatus == 'ns_init' or navstatus.startswith('Resetting') or navstatus.startswith('Closed') or navstatus.startswith('Closing'):
-                        system_has_problem = QColor(180,180,0)
-                if navstatus == 'ns_drone_problem':
-                    system_has_problem = QColor(255,0,0)
-                elif navstatus == 'no RealSense connected':
-                    system_has_problem = QColor(255,0,0)
+
+                    if (navstatus ==  "ns_init" or
+                        navstatus =="ns_locate_drone_init" or
+                        navstatus =="ns_locate_drone_led"  or
+                        navstatus =="ns_wait_locate_drone" or
+                        navstatus =="ns_located_drone" or
+                        navstatus =="ns_calibrating_motion" or
+                        navstatus.startswith('Starting') or
+                        navstatus.startswith('Resetting') or
+                        navstatus.startswith('Closed') or
+                        navstatus.startswith('Closing')) :
+                            system_has_problem = QColor(128,128,128)
+                    elif (navstatus =="ns_crippled" or
+                        navstatus =="ns_manual" or
+                        navstatus.startswith('Waiting.')):
+                            system_has_problem = QColor(255,165,0)
+                    elif (navstatus =="ns_monitoring" or
+                        navstatus =="ns_wait_for_takeoff" or
+                        navstatus =="ns_wait_for_insect"):
+                            system_has_problem = QColor(0,128,0)
+                    elif (navstatus =="ns_takeoff" or
+                        navstatus =="ns_taking_off" or
+                        navstatus =="ns_take_off_completed" or
+                        navstatus =="ns_start_the_chase" or
+                        navstatus =="ns_chasing_insect_ff" or
+                        navstatus =="ns_chasing_insect" or
+                        navstatus =="ns_set_waypoint" or
+                        navstatus =="ns_wp" or
+                        navstatus =="ns_flower_of_fire" or
+                        navstatus =="ns_brick_of_fire" or
+                        navstatus =="ns_goto_landing" or
+                        navstatus =="ns_goto_yaw" or
+                        navstatus =="ns_initial_reset_yaw" or
+                        navstatus =="ns_wait_reset_yaw" or
+                        navstatus =="ns_land" or
+                        navstatus =="ns_landing" or
+                        navstatus =="ns_landed" or
+                        navstatus =="ns_start_shaking" or
+                        navstatus =="ns_shaking_drone" or
+                        navstatus =="ns_wait_after_landing"):
+                            system_has_problem = QColor(0,255,0)
+                    elif (navstatus == "ns_drone_problem" or
+                        navstatus.startswith('Roll') or
+                        navstatus == 'no RealSense connected'):
+                        system_has_problem = QColor(255,0,0)
         else:
             res_txt = 'Error: status info file not found'
             system_has_problem = QColor(255,0,0)
