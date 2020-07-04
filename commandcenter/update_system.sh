@@ -13,7 +13,7 @@ until (( count++ >= 5 )) || ssh -o StrictHostKeyChecking=no -T $1 << EOF
  git checkout $branch
  git pr
  cmake -DCMAKE_BUILD_TYPE=RELEASE ..
- make -j4
+ make -j$(nproc)
  killall -9 pats || true
  echo done
 EOF
