@@ -417,7 +417,7 @@ std::tuple<float,float,cv::Mat> Realsense::measure_auto_exposure() {
     cam.stop();
     if (!actual_exposure_was_measured)
         std::cout << "Warning: no exposure data could be found!!!" << std::endl;
-    else if (actual_exposure_was_measured!=i+1)
+    else if (actual_exposure_was_measured!=i)
         std::cout << "Not all frames contained exosure info: " << actual_exposure_was_measured << " / " << i << std::endl;
 
     return std::make_tuple(new_expos,new_gain,frameLt);
