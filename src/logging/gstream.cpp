@@ -104,6 +104,10 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
 
 
             if(bgr_mode) {
+                //at the moment the pipeline below does not work on the basestations because the gl elements do understnad the X situation.
+                // Swapping with normal videoconvert probably solves the problem, at the cost of cpu usage. Since the color videos atm are only
+                //for rendering afterwards I leave it like this. Hopefully the main-444 profile will be supported in vaapih265enc soon and the gl
+                //components are less needed anyway.
                 auto caps = gst_caps_new_simple ("video/x-raw",
                                                  "format", G_TYPE_STRING, "BGR",
                                                  "width", G_TYPE_INT, sizeX,
@@ -113,7 +117,7 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
                               caps, NULL);
                 gst_caps_unref(caps);
 
-// the colorspace conversion to I420 doesn't play nice with our viz. So up the saturation so it looks a bit the same as before.
+                // the colorspace conversion to I420 doesn't play nice with our viz. So up the saturation so it looks a bit the same as before.
 
                 glcolorbalance = gst_element_factory_make ("glcolorbalance", "glcolorbalance");
                 g_object_set (G_OBJECT (glcolorbalance), "brightness", 0.03,"saturation",2.0, NULL);

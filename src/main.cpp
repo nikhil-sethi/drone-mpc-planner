@@ -188,7 +188,7 @@ void process_video() {
                         logger.close();
                         std::string cvfn = "insect" + to_string(insect_cnt) + ".mkv";
                         std::cout << "Opening new video: " << cvfn << std::endl;
-                        if (output_video_cuts.init(pparams.video_cuts,data_output_dir + cvfn,IMG_W*2,IMG_H,pparams.fps/2, "192.168.1.255",5000,true)) {std::cout << "WARNING: could not open cut video " << cvfn << std::endl;}
+                        if (output_video_cuts.init(pparams.video_cuts,data_output_dir + cvfn,IMG_W,IMG_H*2,pparams.fps, "192.168.1.255",5000,false)) {std::cout << "WARNING: could not open cut video " << cvfn << std::endl;}
                         logger_fn = data_output_dir  + "log" + to_string(insect_cnt) + ".csv";
                         logger.open(logger_fn,std::ofstream::out);
                     }
@@ -197,12 +197,7 @@ void process_video() {
 
                 if (recording) {
                     static int cut_video_frame_counter = 0;
-
-                    cv::Mat frame(cam->frameL.rows,cam->frameL.cols+trackers.diff_viz_buf.cols,CV_8UC3);
-                    cvtColor(cam->frameL,frame(cv::Rect(0,0,cam->frameL.cols, cam->frameL.rows)),cv::COLOR_GRAY2BGR);
-                    trackers.diff_viz_buf.copyTo(frame(cv::Rect(cam->frameL.cols,0,trackers.diff_viz_buf.cols, trackers.diff_viz_buf.rows)));
-                    cv::putText(frame,std::to_string(cam->frame_number()) + ": " + to_string_with_precision( cam->frame_time(),2),cv::Point(trackers.diff_viz_buf.cols, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,0,255));
-                    int frame_written = output_video_cuts.write(frame);
+                    int frame_written = output_video_cuts.write(data.frameL,data.frameR);
                     if (!frame_written)
                         cut_video_frame_counter++;
                     std::cout << "Recording! Frames written: " << cut_video_frame_counter << std::endl;
@@ -568,7 +563,7 @@ void init_video_recorders() {
     if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode && pparams.op_mode != op_mode_crippled)
         if (output_video_LR.init(pparams.video_raw,data_output_dir + "videoRawLR.mkv",IMG_W,IMG_H*2,pparams.fps, "192.168.1.255",5000,false)) {throw my_exit("could not open LR video");}
     if (pparams.video_cuts)
-        if (output_video_cuts.init(pparams.video_cuts,data_output_dir + "insect" + to_string(0) + ".mkv",IMG_W*2,IMG_H,pparams.fps/2, "192.168.1.255",5000,true)) {std::cout << "WARNING: could not open cut video " << data_output_dir + "insect" + to_string(0) + ".mkv" << std::endl;}
+        if (output_video_cuts.init(pparams.video_cuts,data_output_dir + "insect" + to_string(0) + ".mkv",IMG_W,IMG_H*2,pparams.fps, "192.168.1.255",5000,false)) {std::cout << "WARNING: could not open cut video " << data_output_dir + "insect" + to_string(0) + ".mkv" << std::endl;}
 }
 
 std::tuple<bool,bool,bool, std::string,uint8_t,std::string,std::string> process_arg(int argc, char **argv) {
