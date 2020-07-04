@@ -34,7 +34,8 @@ class CommandCenterWindow(QMainWindow):
         systems.sort(key=natural_keys)
         self.system_folders = systems
         n = len(systems)
-        np = int(math.ceil(n/4))
+        div = math.floor(math.sqrt(n))
+        np = int(math.ceil(n/div))
 
         self.sys_widgets = []
         i=0
