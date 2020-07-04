@@ -464,6 +464,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         } else if (itime % 5 == 4) {
             auto_roll = spin_value;
             auto_throttle = spin_value;
+        }
         break;
     } case fm_disarmed: {
         auto_roll = JOY_MIDDLE;
