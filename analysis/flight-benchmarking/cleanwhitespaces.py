@@ -3,9 +3,9 @@
 from io import StringIO
 
 def cleanWhitespaces(filepath):
-	file = open(filepath, "r")
-	datastring = file.read()
-	file.close()
+	with open(filepath, "r") as file:
+		datastring = file.read()
+
 	datastring = datastring.replace(' ', '')
 	datastring = StringIO(datastring)
 	return datastring

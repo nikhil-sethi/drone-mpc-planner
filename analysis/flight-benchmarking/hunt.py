@@ -4,7 +4,7 @@
 import os
 import numpy as np
 import pandas as pd
-from flightstates import init_flightstate_data, eval_current_flightstate, key_takeofftime
+from flightstates import init_flightstate_data, eval_current_flightstate, KEY_TAKEOFFTIME
 from cleanwhitespaces import cleanWhitespaces
 
 
@@ -39,11 +39,11 @@ def concatenate_insectlogs(folderpath):
 		return insect_data.sort_values(by=['RS_ID']).reset_index() , key_nlostframes, key_posxtarget, key_posytarget, key_posztarget
 
 
-key_minimalerror = 'minimal_error'
-key_time_minimalerror = 'time_minimal_error'
-key_minimalerror_untracked = 'minimal_error_untracked'
-key_time_minimalerror_untracked = 'time_minimal_error_untracked'
-key_insecttracking = 'insect_tracking'
+KEY_MINIMALERROR = 'minimal_error'
+KEY_TIME_MINIMALERROR = 'time_minimal_error'
+KET_MINIMALERROR_UNTRACKED = 'minimal_error_untracked'
+KEY_TIME_MINIMALERROR_UNTRACKED = 'time_minimal_error_untracked'
+KEY_INSECTTRACKING = 'insect_tracking'
 def read_hunt(folderpath):
 	drone_filepath = folderpath+'/log.csv'
 	drone_data_string = cleanWhitespaces(drone_filepath)
@@ -72,19 +72,19 @@ def read_hunt(folderpath):
 		flightstates_data = eval_current_flightstate(flightstates_data, time, nav_state, auto_throttle)
 
 		try:
-			insect_idx = insect_data[insect_data['RS_ID']==drone_data['RS_ID'][i]].index[0]
+			insect_idx = insect_data[insect_data['RS_ID'] == drone_data['RS_ID'][i]].index[0]
 			target = np.array([insect_data[key_posxtarget][insect_idx], insect_data[key_posytarget][insect_idx], insect_data[key_posztarget][insect_idx]])
 
 			if(drone_data['valid'][i]==1):
 				pos = np.array([drone_data['posX_drone'][i], drone_data['posY_drone'][i], drone_data['posZ_drone'][i]])
 				error = np.linalg.norm(target-pos)
 
-				if(error<closest_distance_untracked):
+				if(error < closest_distance_untracked):
 					# print(str(insect_data['RS_ID'][insect_idx])+':'+str(error)+'@'+str(drone_data['elapsed'][i]))
 					closest_distance_untracked = error
 					time_at_closest_distance_untracked = drone_data['elapsed'][i]
-				if(insect_data[key_nlostframes][insect_idx]==0):
-					if(error<closest_distance):
+				if(insect_data[key_nlostframes][insect_idx] == 0):
+					if(error < closest_distance):
 						closest_distance = error
 						time_at_closest_distance = drone_data['elapsed'][i]
 
@@ -92,11 +92,11 @@ def read_hunt(folderpath):
 			pass
 
 	hunt_data = {}
-	hunt_data[key_minimalerror] = closest_distance
-	hunt_data[key_time_minimalerror] = time_at_closest_distance - flightstates_data[key_takeofftime]
-	hunt_data[key_minimalerror_untracked] = closest_distance_untracked
-	hunt_data[key_time_minimalerror_untracked] = time_at_closest_distance_untracked - flightstates_data[key_takeofftime]
-	hunt_data[key_insecttracking] = samples_insect_tracked/n_samples_insect*100.
+	hunt_data[KEY_MINIMALERROR] = closest_distance
+	hunt_data[KEY_TIME_MINIMALERROR] = time_at_closest_distance - flightstates_data[KEY_TAKEOFFTIME]
+	hunt_data[KET_MINIMALERROR_UNTRACKED] = closest_distance_untracked
+	hunt_data[KEY_TIME_MINIMALERROR_UNTRACKED] = time_at_closest_distance_untracked - flightstates_data[KEY_TAKEOFFTIME]
+	hunt_data[KEY_INSECTTRACKING] = samples_insect_tracked/n_samples_insect*100.
 	return flightstates_data, hunt_data
 
 def hunt_evaldata(hunt_data):
@@ -109,11 +109,11 @@ def hunt_evaldata(hunt_data):
 
 def hunt_evaldata_units():
 	hunt_evaldata_units = {}
-	hunt_evaldata_units[key_minimalerror] = 'm'
-	hunt_evaldata_units[key_time_minimalerror] = 's'
-	hunt_evaldata_units[key_minimalerror_untracked] = 'm'
-	hunt_evaldata_units[key_time_minimalerror_untracked] = 's'
-	hunt_evaldata_units[key_insecttracking] = '%'
+	hunt_evaldata_units[KEY_MINIMALERROR] = 'm'
+	hunt_evaldata_units[KEY_TIME_MINIMALERROR] = 's'
+	hunt_evaldata_units[KET_MINIMALERROR_UNTRACKED] = 'm'
+	hunt_evaldata_units[KEY_TIME_MINIMALERROR_UNTRACKED] = 's'
+	hunt_evaldata_units[KEY_INSECTTRACKING] = '%'
 
 	return hunt_evaldata_units
 

@@ -6,15 +6,14 @@ import numpy as np
 
 from cleanwhitespaces import cleanWhitespaces
 from tuningflight import read_tuningflight
-from control import init_step_data, eval_control, key_isovershooted, key_overshooterror, key_firstpasserror, key_firstpasstime, key_time, key_stepduration
-from flightstates import init_flightstate_data, eval_current_flightstate, key_takeofftime
+from control import init_step_data, eval_control, KEY_ISOVERSHOOTED, KEY_OVERSHOOTERROR, KEY_FIRSTPASSERROR, KEY_FIRSTPASSTIME, KEY_TIME, KEY_STEPDURATION
+from flightstates import init_flightstate_data, eval_current_flightstate, KEY_TAKEOFFTIME
 
-key_intersectionerror_longrange = 'intersection_error_long_range'
-key_intersectiontime_longrange = 'intersection_time_long_range'
-key_overshoot_longrange = 'overshoot_longrange'
-key_minimalerror_longrange = 'minimal_error_longrange'
-key_timeminimalerror_longrange = 'time_minimal_error_longrange'
-
+KEY_INTERSECTIONERROR_LR = 'intersection_error_long_range'
+KEY_INTERSECTIONTIME_LR = 'intersection_time_long_range'
+KEY_OVERSHOOT_LR = 'overshoot_longrange'
+KEY_MINIMALEROR_LR = 'minimal_error_longrange'
+KEY_TIMEMINIMALERROR_LR = 'time_minimal_error_longrange'
 
 
 def read_longrangeflight(drone_filepath, target):
@@ -24,7 +23,7 @@ def read_longrangeflight(drone_filepath, target):
 	drone_data_string = cleanWhitespaces(drone_filepath)
 	drone_data = pd.read_csv(drone_data_string, sep=';')
 
-	n_samples_drone = np.size(drone_data,0)
+	n_samples_drone = np.size(drone_data, 0)
 	step_found = False
 	steps_data = []
 	step = init_step_data()
@@ -44,21 +43,21 @@ def read_longrangeflight(drone_filepath, target):
 		nav_state = drone_data['nav_state'][i]
 		auto_throttle = drone_data['autoThrottle'][i]
 
-		[step_found, step, steps_data] = eval_control(prev_logtarget,log_target, pos, logerr, time, step_found, nav_state, step, steps_data)
+		[step_found, step, steps_data] = eval_control(prev_logtarget, log_target, pos, logerr, time, step_found, nav_state, step, steps_data)
 		flightstates_data = eval_current_flightstate(flightstates_data, time, nav_state, auto_throttle)
 
-		if(err<closest_distance):
+		if err < closest_distance:
 			closest_distance = err
 			time_at_closest_distance = time
 
-	longrange_data[key_minimalerror_longrange] = closest_distance
-	longrange_data[key_timeminimalerror_longrange] = time_at_closest_distance - flightstates_data[key_takeofftime]
-	if(len(steps_data)>=2 and steps_data[1][key_isovershooted]):
-		longrange_data[key_overshoot_longrange] = steps_data[1][key_overshooterror]
-		longrange_data[key_intersectionerror_longrange] = steps_data[1][key_firstpasserror]
-		step_begin = steps_data[0][key_time] + steps_data[0][key_stepduration]
-		abs_intersection_time = step_begin + steps_data[1][key_firstpasstime]
-		longrange_data[key_intersectiontime_longrange] = abs_intersection_time - flightstates_data[key_takeofftime]
+	longrange_data[KEY_MINIMALEROR_LR] = closest_distance
+	longrange_data[KEY_TIMEMINIMALERROR_LR] = time_at_closest_distance - flightstates_data[KEY_TAKEOFFTIME]
+	if(len(steps_data)>=2 and steps_data[1][KEY_ISOVERSHOOTED]):
+		longrange_data[KEY_OVERSHOOT_LR] = steps_data[1][KEY_OVERSHOOTERROR]
+		longrange_data[KEY_INTERSECTIONERROR_LR] = steps_data[1][KEY_FIRSTPASSERROR]
+		step_begin = steps_data[0][KEY_TIME] + steps_data[0][KEY_STEPDURATION]
+		abs_intersection_time = step_begin + steps_data[1][KEY_FIRSTPASSTIME]
+		longrange_data[KEY_INTERSECTIONTIME_LR] = abs_intersection_time - flightstates_data[KEY_TAKEOFFTIME]
 
 
 	return longrange_data, flightstates_data
@@ -74,11 +73,11 @@ def longrange_evaldata(longrange_data):
 
 def longrange_evaldata_units():
 	rt = {}
-	rt[key_minimalerror_longrange] = 'm'
-	rt[key_timeminimalerror_longrange] = 's'
-	rt[key_overshoot_longrange] = 'm'
-	rt[key_intersectionerror_longrange] = 'm'
-	rt[key_intersectiontime_longrange] = 's'
+	rt[KEY_MINIMALEROR_LR] = 'm'
+	rt[KEY_TIMEMINIMALERROR_LR] = 's'
+	rt[KEY_OVERSHOOT_LR] = 'm'
+	rt[KEY_INTERSECTIONERROR_LR] = 'm'
+	rt[KEY_INTERSECTIONTIME_LR] = 's'
 
 	return rt
 
@@ -98,4 +97,3 @@ if __name__ == "__main__":
 	tic = time.time()
 	print(read_longrangeflight(drone_filepath, np.array([2, -1, -3])))
 	toc = time.time()
-	pass

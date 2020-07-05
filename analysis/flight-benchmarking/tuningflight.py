@@ -21,7 +21,6 @@ def read_tuningflight(drone_filepath):
 	steps_data = []
 	try:
 		drone_data_string = cleanWhitespaces(drone_filepath)
-		print('read_tuningflight:', drone_filepath)
 		drone_data = pd.read_csv(drone_data_string, sep=';')
 
 		n_samples_drone = np.size(drone_data,0)
@@ -40,7 +39,7 @@ def read_tuningflight(drone_filepath):
 				nav_state = drone_data['nav_state'][i]
 				auto_throttle = drone_data['autoThrottle'][i]
 
-				[step_found, step, steps_data] = eval_control(prev_target,target, pos, err, time, step_found, nav_state, step, steps_data)
+				[step_found, step, steps_data] = eval_control(prev_target, target, pos, err, time, step_found, nav_state, step, steps_data)
 				flightstates_data = eval_current_flightstate(flightstates_data, time, nav_state, auto_throttle)
 			return steps_data, flightstates_data
 		else:
