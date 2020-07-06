@@ -449,9 +449,11 @@ void DroneNavigation::update(double time) {
             _trackers->dronetracker()->hover_mode(false);
             [[fallthrough]];
         } case ns_start_shaking: {
-            _navigation_status = ns_shaking_drone;
-            time_shake_start = time;
-            [[fallthrough]];
+            if (static_cast<float>(time - landed_time) > 1.0f) {
+                _navigation_status = ns_shaking_drone;
+                time_shake_start = time;
+            }
+            break;
         } case ns_shaking_drone: {
             _dctrl->flight_mode(DroneController::fm_shake_it_baby);
             if (static_cast<float>(time - time_shake_start) > shake_duration) {
