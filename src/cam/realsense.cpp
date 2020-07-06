@@ -82,9 +82,9 @@ uint last_sync_id = 0;
 void Realsense::rs_callback(rs2::frame f) {
 
     //    if (f.get_profile().stream_index() == 1 )
-    //        std::cout << "Received id "         << f.get_frame_number() << ":" << (static_cast<float>(f.get_timestamp()) -_frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << "         Last: " << last_sync_id << std::endl;
+    //        std::cout << "Received id "         << f.get_frame_number() << ":" << static_cast<float>(f.get_timestamp() -_frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << "         Last: " << last_sync_id << std::endl;
     //    if (f.get_profile().stream_index() == 2 )
-    //        std::cout << "Received id         " << f.get_frame_number() << ":" << (static_cast<float>(f.get_timestamp()) -_frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << " Last: " << last_sync_id << std::endl;
+    //        std::cout << "Received id         " << f.get_frame_number() << ":" << static_cast<float>(f.get_timestamp() -_frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << " Last: " << last_sync_id << std::endl;
 
     if (f.get_frame_number() < last_sync_id-50 && last_sync_id > 300) {
         std::cout << "Warning: rs frame number reset happened!!!" << std::endl;
