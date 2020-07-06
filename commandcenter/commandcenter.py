@@ -357,7 +357,6 @@ class SystemWidget(QWidget):
             app.setPalette(light_palette)
 
             self.im_label.setStyleSheet("QToolTip { color: #000000; background-color: #9d8080; border: 1px solid black; }")
-            self.chk_enable.setStyleSheet("background-color:rgb(160,128,128)")
             self.combo_mode.setStyleSheet("background-color:rgb(160,128,128)")
             syswidget_palette.setColor(self.backgroundRole(), QColor(230,230,230))
             self.btn_insect_replay_takeoff.setStyleSheet("background-color:rgb(160,128,128)")
