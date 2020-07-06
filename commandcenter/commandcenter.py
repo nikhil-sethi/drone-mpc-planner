@@ -3,7 +3,7 @@ from PyQt5.QtCore import QDir, Qt, QUrl,QRect,QTimer
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtWidgets import (QMainWindow,QDialog,QWidget, QPushButton, QCheckBox, QComboBox, QAction,QFrame,
-    QApplication, QFileDialog, QHBoxLayout, QLabel,QPushButton, QSizePolicy, QSlider, QStyle,
+    QApplication, QFileDialog, QHBoxLayout, QLabel,QPushButton, QSizePolicy, QSlider, QStyle, QListWidget,QListWidgetItem,
     QVBoxLayout, QGridLayout, QWidget,QMessageBox,QPlainTextEdit,QMenu,QTabWidget)
 from PyQt5.QtGui import QIcon,QPixmap, QPalette,QColor,QKeyEvent,QFont
 import shutil
@@ -17,45 +17,116 @@ class CommandCenterWindow(QMainWindow):
         super(CommandCenterWindow, self).__init__(parent)
         self.setWindowTitle("Pats Command Center")
         self.setWindowIcon(QIcon("./icon.png"))
-        wid = QWidget(self)
-        self.setCentralWidget(wid)
+        self.wid = QWidget(self)
+        self.setCentralWidget(self.wid)
         self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
         self.setAutoFillBackground(True)
 
-        layout = QGridLayout()
+        select_systems_Act = QAction(self.style().standardIcon(QStyle.SP_FileDialogDetailedView), 'Select systems', self)
+        select_systems_Act.setShortcut('Ctrl+K')
+        select_systems_Act.triggered.connect(self.select_systems)
+
+        reboot_rtc_Action = QAction(self.style().standardIcon(QStyle.SP_DialogResetButton), 'Reboot all systems', self)
+        reboot_rtc_Action.triggered.connect(self.reboot_systems)
+        update_Action = QAction(self.style().standardIcon(QStyle.SP_FileDialogToParent), 'Update all systems', self)
+        update_Action.triggered.connect(self.update_systems)
+        restart_Action = QAction(self.style().standardIcon(QStyle.SP_BrowserReload), 'Restart all systems', self)
+        restart_Action.triggered.connect(self.restart_systems)
+        fly_tuning_Action = QAction(self.style().standardIcon(QStyle.SP_MediaPlay), 'Start tuning flights', self)
+        fly_tuning_Action.triggered.connect(self.fly_tuning_flights)
+        fly_aggresive_Action = QAction(self.style().standardIcon(QStyle.SP_MediaPlay), 'Start aggresive flights', self)
+        fly_aggresive_Action.triggered.connect(self.fly_aggresive_flights)
+        fly_replay_moth_Action = QAction(self.style().standardIcon(QStyle.SP_MediaPlay), 'Hunt replay moths', self)
+        fly_replay_moth_Action.triggered.connect(self.fly_replay_moth)
+
+        self.toolbar = self.addToolBar('Pats Menu')
+        self.toolbar.addAction(select_systems_Act)
+        self.toolbar.addAction(reboot_rtc_Action)
+        self.toolbar.addAction(update_Action)
+        self.toolbar.addAction(restart_Action)
+        self.toolbar.addAction(fly_tuning_Action)
+        self.toolbar.addAction(fly_aggresive_Action)
+        self.toolbar.addAction(fly_replay_moth_Action)
 
         source_folder = '~/Downloads/pats_status'
         source_folder = os.path.expanduser(source_folder.strip(" "))
-        shutil.rmtree(source_folder)
+        # shutil.rmtree(source_folder)
         self.source_folder = source_folder
         self.download(True)
 
-        systems = next(os.walk(source_folder))[1]
-        systems.sort(key=natural_keys)
-        self.system_folders = systems
-        n = len(systems)
-        div = math.floor(math.sqrt(n))
-        np = int(math.ceil(n/div))
 
-        self.sys_widgets = []
-        i=0
-        for f in self.system_folders:
-            s = SystemWidget(source_folder,f)
-            self.sys_widgets.append(s)
-            layout.addWidget(s,int(i/np),i % np)
-            i = i + 1
+        self.layout = QGridLayout()
+        self.populate_systems()
 
         self.setMaximumSize(screen_size.width(), screen_size.height())
-        wid.setLayout(layout)
+
 
         timer = QTimer(self)
         timer.timeout.connect(self.refresh)
         timer.start(1000)
 
-        self.update_combos()
+
         self.refresh()
         self.show()
         self.refresh()
+
+    def populate_systems(self):
+
+        for i in reversed(range(self.layout.count())):
+            self.layout.itemAt(i).widget().setParent(None)
+
+        systems = next(os.walk(self.source_folder))[1]
+        systems.sort(key=natural_keys)
+        self.system_folders = systems
+
+        n = 0
+        for f in self.system_folders:
+            if os.path.exists(Path(self.source_folder,f,'.select')):
+                n = n+1
+
+        if n>1:
+            div = math.floor(math.sqrt(n))
+            np = int(math.ceil(n/div))
+        else:
+            div = 1
+            np=1
+
+        self.sys_widgets = []
+        i=0
+        for f in self.system_folders:
+            if os.path.exists(Path(self.source_folder,f,'.select')):
+                s = SystemWidget(self.source_folder,f)
+                self.sys_widgets.append(s)
+                self.layout.addWidget(s,int(i/np),i % np)
+                i = i + 1
+
+        self.update_combos()
+        self.wid.setLayout(self.layout)
+
+    def select_systems(self):
+        SelectSystemsDialog(self,self.source_folder,self.system_folders)
+        self.populate_systems()
+        self.update()
+    def reboot_systems(self):
+        buttonReply = QMessageBox.question(self, 'Maar, weet je dat eigenlijk wel zekerdepeter?!', "Reboot, really?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if buttonReply == QMessageBox.Yes:
+            for sys in self.sys_widgets:
+                sys.reboot()
+    def update_systems(self):
+        for sys in self.sys_widgets:
+            sys.update()
+    def restart_systems(self):
+        for sys in self.sys_widgets:
+            sys.restart()
+    def fly_tuning_flights(self):
+        for sys in self.sys_widgets:
+            sys.reboot()
+    def fly_aggresive_flights(self):
+        for sys in self.sys_widgets:
+            sys.reboot()
+    def fly_replay_moth(self):
+        for sys in self.sys_widgets:
+            sys.reboot()
 
     def download(self,wait=False):
         rsync_src='mavlab-gpu:/home/pats/status/'
@@ -113,7 +184,7 @@ class SystemWidget(QWidget):
         self.addAction(beep_Action)
 
         shakeAction = QAction("Shake", self)
-        shakeAction.setIcon(self.style().standardIcon(QStyle.SP_DesktopIcon))
+        shakeAction.setIcon(self.style().standardIcon(QStyle.SP_DriveNetIcon))
         shakeAction.triggered.connect(self.shake)
         self.addAction(shakeAction)
 
@@ -252,7 +323,6 @@ class SystemWidget(QWidget):
     def reboot(self):
         buttonReply = QMessageBox.question(self, 'Maar, weet je dat eigenlijk wel zekerdepeter?!', "Reboot, really?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if buttonReply == QMessageBox.Yes:
-            print('Yes clicked.')
             subprocess.Popen(['./reboot_system.sh', 'pats'+self.host_id])
     def takeoff_aggresive_wp(self):
         self.pats_xml_path = Path(self.source_folder,self.system_folder,'pats_deploy.xml')
@@ -495,8 +565,6 @@ class ImDialog(QDialog):
         self.source_im_file = Path(self.source_folder,self.system_folder,'status.jpg')
         self.pats_xml_path = Path(self.source_folder,self.system_folder,'pats_deploy.xml')
 
-
-
         self.pats_xml_txt = ''
         self.drone_xml_txt = ''
         self.flightplan_xml_txt = ''
@@ -536,7 +604,6 @@ class ImDialog(QDialog):
             self.drone_xml_textBox.setStyleSheet("color: rgb(200, 0, 0); background-color: rgb(25, 25, 25);")
         self.drone_xml_textBox.setPlainText(self.drone_xml_txt)
         self.drone_xml_textBox.setMaximumHeight(300)
-
 
         self.flightplan_xml_textBox.textChanged.connect(self.xml_txt_chng_event)
         if dark_mode:
@@ -641,7 +708,43 @@ class ImDialog(QDialog):
         xml_file.write(new_flightplan_xml)
         xml_file.close()
 
+class SelectSystemsDialog(QDialog):
 
+    def __init__(self,parent,source_folder,system_folders):
+        super().__init__(parent)
+        layout = QGridLayout()
+        self.setLayout(layout)
+        self.source_folder = source_folder
+
+        self.listwidget = QListWidget()
+        i=0
+        for f in system_folders:
+
+            item = QListWidgetItem(f)
+            if os.path.exists(Path(source_folder,f,'.select')):
+                item.setCheckState(Qt.Checked)
+            else:
+                item.setCheckState(Qt.Unchecked)
+            self.listwidget.addItem(item)
+
+        layout.addWidget(self.listwidget)
+
+        self.exec()
+
+    def closeEvent(self, event):
+        for i in range(self.listwidget.count()):
+            item = self.listwidget.item(i)
+            p = Path(self.source_folder,item.text(),'.select')
+            if (item.checkState()):
+                if (not os.path.exists(p)):
+                    open(p,'a').close()
+            else:
+                if (os.path.exists(p)):
+                    os.remove(p)
+
+    def keyPressEvent(self, event: QKeyEvent):
+        if event.key() in {Qt.Key_Space, Qt.Key_Escape}:
+            self.close()
 
 def atoi(text):
     return int(text) if text.isdigit() else text
