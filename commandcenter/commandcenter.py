@@ -752,9 +752,34 @@ class SelectSystemsDialog(QDialog):
                 item.setCheckState(Qt.Unchecked)
             self.listwidget.addItem(item)
 
+
+        select_all_PB = QPushButton()
+        select_all_PB.setToolTip('Select all')
+        select_all_PB.setText('Select all')
+        select_all_PB.clicked.connect(self.select_all)
+        self.select_all_PB = select_all_PB
+
+        deselect_all_PB = QPushButton()
+        deselect_all_PB.setToolTip('Deselect all')
+        deselect_all_PB.setText('Deselect all')
+        deselect_all_PB.clicked.connect(self.deselect_all)
+        self.deselect_all_PB = deselect_all_PB
+
+        layout.addWidget(self.select_all_PB)
+        layout.addWidget(self.deselect_all_PB)
         layout.addWidget(self.listwidget)
 
         self.exec()
+
+    def deselect_all(self,event):
+        for i in range(self.listwidget.count()):
+            item = self.listwidget.item(i)
+            item.setCheckState(Qt.Unchecked)
+
+    def select_all(self,event):
+        for i in range(self.listwidget.count()):
+            item = self.listwidget.item(i)
+            item.setCheckState(Qt.Checked)
 
     def closeEvent(self, event):
         for i in range(self.listwidget.count()):
