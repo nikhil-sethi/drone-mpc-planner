@@ -14,7 +14,11 @@ while [ ! -f "$LOCAL_STATUS_TXT_FILE" ]; do
 	sleep 10
 	echo "Warning: $LOCAL_STATUS_TXT_FILE does not exist"
 done
-while inotifywait -e modify,create, $LOCAL_STATUS_TXT_FILE; do
+
+
+inotifywait -q -m -r -e modify -e create -e delete $LOCAL_STATUS_TXT_FILE | \
+while read event; do
+
 	if test -d "$LOCAL_PATS_XML"; then
 		rsync -az $LOCAL_PATS_XML mavlab-gpu:$REMOTE_PATS_XML
 	fi
