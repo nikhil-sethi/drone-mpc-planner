@@ -4,7 +4,7 @@ from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtWidgets import (QMainWindow,QDialog,QWidget, QPushButton, QCheckBox, QComboBox, QAction,QFrame,
     QApplication, QFileDialog, QHBoxLayout, QLabel,QPushButton, QSizePolicy, QSlider, QStyle, QListWidget,QListWidgetItem,
-    QVBoxLayout, QGridLayout, QWidget,QMessageBox,QPlainTextEdit,QMenu,QTabWidget)
+    QVBoxLayout, QGridLayout, QWidget,QMessageBox,QPlainTextEdit,QMenu,QTabWidget,QToolBar)
 from PyQt5.QtGui import QIcon,QPixmap, QPalette,QColor,QKeyEvent,QFont
 import shutil
 
@@ -40,13 +40,26 @@ class CommandCenterWindow(QMainWindow):
         fly_replay_moth_Action.triggered.connect(self.fly_replay_moth)
 
         self.toolbar = self.addToolBar('Pats Menu')
+        self.toolbar.setMovable(False)
+        self.toolbar.setFloatable(False)
         self.toolbar.addAction(select_systems_Act)
+        self.toolbar.addSeparator()
         self.toolbar.addAction(reboot_rtc_Action)
         self.toolbar.addAction(update_Action)
         self.toolbar.addAction(restart_Action)
+        self.toolbar.addSeparator()
         self.toolbar.addAction(fly_tuning_Action)
         self.toolbar.addAction(fly_aggresive_Action)
         self.toolbar.addAction(fly_replay_moth_Action)
+        self.toolbar.addSeparator()
+        self.combo_mode = QComboBox()
+        self.combo_mode.addItem("Crippled")
+        self.combo_mode.addItem("Hunt")
+        self.combo_mode.addItem("Monitoring")
+        self.combo_mode.setCurrentIndex(-1)
+        self.combo_mode.currentIndexChanged.connect(self.mode_change)
+        self.combo_mode.setToolTip('Select mode for all systems')
+        self.toolbar.addWidget(self.combo_mode)
 
         source_folder = '~/Downloads/pats_status'
         source_folder = os.path.expanduser(source_folder.strip(" "))
@@ -127,6 +140,11 @@ class CommandCenterWindow(QMainWindow):
     def fly_replay_moth(self):
         for sys in self.sys_widgets:
             sys.reboot()
+    def mode_change(self):
+        if self.combo_mode.currentIndex() >= 0:
+            for sys in self.sys_widgets:
+                sys.combo_mode.setCurrentIndex(self.combo_mode.currentIndex())
+            self.combo_mode.setCurrentIndex(-1)
 
     def download(self,wait=False):
         rsync_src='mavlab-gpu:/home/pats/status/'
@@ -138,6 +156,13 @@ class CommandCenterWindow(QMainWindow):
             subprocess.Popen(cmd, shell=True,stdout=subprocess.PIPE)
 
     def refresh(self):
+        theme = subprocess.check_output(["/usr/bin/gsettings get org.gnome.desktop.interface gtk-theme"], shell=True) #need to use full path /usr/bin because conda screws things up
+        darkmode = str(theme).find('dark') != -1
+        if darkmode:
+            self.combo_mode.setStyleSheet("background-color:rgb(128,0,0)")
+        else:
+            self.combo_mode.setStyleSheet("background-color:rgb(200,200,200)")
+
         self.download()
         for sys in self.sys_widgets:
             sys.refresh()
