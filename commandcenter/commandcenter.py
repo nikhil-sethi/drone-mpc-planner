@@ -469,10 +469,10 @@ class SystemWidget(QWidget):
 
             res_txt = "Pats-" + self.host_id + '->' + self.drone_id + ' @' + sha + '\n'
             res_txt = res_txt + 'hd: ' + hd + ' ip: ' + ip + '\n'
-            hd = float(hd.replace('%',''))
-            if hd > 95:
-                system_has_problem = QColor(255,0,0)
-
+            if hd != '':
+                hd = float(hd.replace('%',''))
+                if hd > 95:
+                    system_has_problem = QColor(255,0,0)
         else:
             res_txt = 'Error: system info file not found'
             system_has_problem = QColor(255,0,0)
