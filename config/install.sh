@@ -148,8 +148,8 @@ fi
 
 # Install the Pats code
 [ -f pats_code.done ] || {
+	pushd ../code/
 	[ -d ../code/pats ] || {
-		pushd ../code/
 		git clone git@github.com:pats-drones/pats.git
 	}
 	pushd pats
