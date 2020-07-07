@@ -3,7 +3,7 @@
 # diff
 
 # version
-# Betaflight / CRAZYBEEF4FR (C4FR) 4.2.0 Jul  2 2020 / 01:11:29 (norevision) MSP API: 1.43
+# Betaflight / CRAZYBEEF4FR (C4FR) 4.2.0 Jul  7 2020 / 19:48:34 (c245fce6f) MSP API: 1.43
 
 # start the command batch
 batch start
@@ -84,7 +84,6 @@ aux 5 35 2 1650 2100 0 0
 set gyro_lowpass2_hz = 350
 set dyn_lpf_gyro_min_hz = 280
 set dyn_lpf_gyro_max_hz = 700
-set acc_calibration = -78,66,263,1
 set rx_spi_protocol = FRSKY_D
 set dshot_idle_value = 500
 set dshot_bidir = ON
