@@ -406,8 +406,11 @@ class SystemWidget(QWidget):
         pixmap = QPixmap(str(source_im_file))
         self.im_label.setPixmap(pixmap)
         self.im_label.setPixmap(pixmap.scaled(self.im_label.size(),Qt.KeepAspectRatio, Qt.SmoothTransformation))
-        txt,system_color = self.get_lbl_txt()
-        self.txt_label.setText(txt)
+        try:
+            txt,system_color = self.get_lbl_txt()
+            self.txt_label.setText(txt)
+        except:
+            system_color = QColor(0,0,0)
         pal = QPalette(self.txt_label.palette())
         pal.setColor(QPalette.WindowText, system_color)
         self.txt_label.setPalette(pal)
