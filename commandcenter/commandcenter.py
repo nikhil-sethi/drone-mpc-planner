@@ -124,7 +124,7 @@ class CommandCenterWindow(QMainWindow):
         buttonReply = QMessageBox.question(self, 'Maar, weet je dat eigenlijk wel zekerdepeter?!', "Reboot, really?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if buttonReply == QMessageBox.Yes:
             for sys in self.sys_widgets:
-                sys.reboot()
+                sys.reboot_dont_ask()
     def update_systems(self):
         for sys in self.sys_widgets:
             sys.update()
@@ -133,13 +133,13 @@ class CommandCenterWindow(QMainWindow):
             sys.restart()
     def fly_tuning_flights(self):
         for sys in self.sys_widgets:
-            sys.reboot()
+            sys.takeoff_tuning()
     def fly_aggresive_flights(self):
         for sys in self.sys_widgets:
-            sys.reboot()
+            sys.takeoff_aggresive_wp()
     def fly_replay_moth(self):
         for sys in self.sys_widgets:
-            sys.reboot()
+            sys.insect_replay_takeoff()
     def mode_change(self):
         if self.combo_mode.currentIndex() >= 0:
             for sys in self.sys_widgets:
@@ -345,6 +345,8 @@ class SystemWidget(QWidget):
         subprocess.Popen(['./download_log_system.sh', 'pats'+self.host_id])
     def update(self):
         subprocess.Popen(['./update_system.sh', 'pats'+self.host_id])
+    def reboot_dont_ask(self):
+        subprocess.Popen(['./reboot_system.sh', 'pats'+self.host_id])
     def reboot(self):
         buttonReply = QMessageBox.question(self, 'Maar, weet je dat eigenlijk wel zekerdepeter?!', "Reboot, really?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if buttonReply == QMessageBox.Yes:
