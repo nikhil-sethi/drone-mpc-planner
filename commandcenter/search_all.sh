@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -e
 
-#usage: ./search_all.sh 11 13 ns_taking_off
+#usage: ./search_all.sh 11 13 ns_taking_off 20200708_
 
 for i in $(seq $1 $2); do 
 	echo "pats${i}" 
-	./search_in_system.sh "pats${i}" $3 > pats${i}.search.tmp &
+	./search_in_system.sh "pats${i}" $3 $4 > pats${i}.search.tmp &
 done
 
 repeat=1
