@@ -7,7 +7,8 @@ enum tracker_type {
     tt_drone,
     tt_insect,
     tt_blink,
-    tt_replay
+    tt_replay,
+    tt_virtualmoth
 };
 
 struct IgnoreBlob {

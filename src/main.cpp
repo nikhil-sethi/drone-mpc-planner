@@ -422,6 +422,9 @@ bool handle_key(double time [[maybe_unused]]) {
     case '0':
         init_insect_log(62);
         break;
+    case 'v':
+        trackers.init_virtualmoth_moth(tracking::diving, &dctrl);
+        break;
     case 82: // arrow up
         dnav.manual_trigger_next_wp();
         break;

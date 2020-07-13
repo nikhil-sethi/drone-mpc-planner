@@ -3,8 +3,10 @@
 #include "tracking.h"
 #include "itemtracker.h"
 #include "dronetracker.h"
+#include "dronecontroller.h"
 #include "insecttracker.h"
 #include "replaytracker.h"
+#include "virtualmothtracker.h"
 #include "blinktracker.h"
 #include "visiondata.h"
 #include "common.h"
@@ -148,6 +150,7 @@ private:
     std::vector<BlinkTracker *> blinktrackers();
     std::vector<InsectTracker *> insecttrackers();
     std::vector<ReplayTracker *> replaytrackers();
+    std::vector<VirtualmothTracker*> virtualmothtrackers();
 
     void reset_trkr_viz_ids();
 
@@ -229,6 +232,14 @@ public:
             ),
         replay_logs.end()
         );
+    }
+
+    void init_virtualmoth_moth(tracking::mothbehavior behavior_type, DroneController* dctrl) {
+        VirtualmothTracker* vt;
+        vt = new VirtualmothTracker();
+        vt->init(next_insecttrkr_id, behavior_type, _visdat, dctrl);
+        _trackers.push_back(vt);
+        next_insecttrkr_id++;
     }
 };
 

@@ -127,6 +127,9 @@ void TrackerManager::update_trackers(double time,long long frame_number, bool dr
         } else if(_trackers.at(i)->type() == tt_replay) {
             ReplayTracker * rtrkr = static_cast<ReplayTracker * >(_trackers.at(i));
             rtrkr->update(time);
+        } else if(_trackers.at(i)->type() == tt_virtualmoth) {
+            VirtualmothTracker* vtrkr = static_cast<VirtualmothTracker*>(_trackers.at(i));
+            vtrkr->update(time);
         } else if (_trackers.at(i)->type() == tt_blink) {
             BlinkTracker * btrkr = static_cast<BlinkTracker * >(_trackers.at(i));
             btrkr->update(time);
@@ -473,6 +476,10 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                 putText(diff_viz," r",trkr->image_item().pt()*pparams.imscalef,FONT_HERSHEY_SIMPLEX,0.3,cv::Scalar(0,0,180),2);
                 cv::circle(diff_viz,trkr->image_item().pt()*pparams.imscalef,3,cv::Scalar(0,0,180),1);
             }
+            for (auto trkr : virtualmothtrackers()) {
+                putText(diff_viz," v",trkr->image_item().pt()*pparams.imscalef,FONT_HERSHEY_SIMPLEX,0.3,cv::Scalar(0,0,180),2);
+                cv::circle(diff_viz,trkr->image_item().pt()*pparams.imscalef,3,cv::Scalar(0,0,180),1);
+            }
         }
         if (enable_viz_max_points) {
             for (auto blob : pbs) {
@@ -514,6 +521,8 @@ bool TrackerManager::tracker_active(ItemTracker * trkr, bool drone_is_active) {
     } else if (trkr->type() == tt_blink && (_mode != mode_locate_drone)) {
         return false;
     } else if (trkr->type() == tt_replay) {
+        return false;
+    } else if (trkr->type() == tt_virtualmoth) {
         return false;
     }
     return true;
@@ -802,6 +811,15 @@ std::vector<ReplayTracker *> TrackerManager::replaytrackers() {
     }
     return res;
 }
+std::vector<VirtualmothTracker *> TrackerManager::virtualmothtrackers() {
+    std::vector<VirtualmothTracker *> res;
+    for (auto trkr : _trackers) {
+        if (trkr->type() == tt_virtualmoth) {
+            res.push_back(static_cast<VirtualmothTracker *>(trkr));
+        }
+    }
+    return res;
+}
 std::vector<InsectTracker *> TrackerManager::insecttrackers() {
     std::vector<InsectTracker *> res;
     for (auto trkr : _trackers) {
@@ -832,6 +850,15 @@ InsectTracker * TrackerManager::insecttracker_best() {
         }
     }
     for (auto trkr : replaytrackers()) {
+        if (trkr->tracking() ) {
+            float dist = normf(current_drone_pos- trkr->Last_track_data().pos());
+            if (best_dist > dist) {
+                dist = best_dist;
+                best_itrkr = trkr;
+            }
+        }
+    }
+    for (auto trkr : virtualmothtrackers()) {
         if (trkr->tracking() ) {
             float dist = normf(current_drone_pos- trkr->Last_track_data().pos());
             if (best_dist > dist) {
@@ -921,7 +948,7 @@ cv::Scalar TrackerManager::color_of_blob(processed_blobs blob) {
         return cv::Scalar(0,0,255); // red
     else if (trkr->type() == tt_replay)
         return cv::Scalar(0,0,180); // dark red
-    else if (trkr->type() == tt_replay)
+    else if (trkr->type() == tt_virtualmoth)
         return cv::Scalar(255,0,255); // pink
     return cv::Scalar(0,0,0);
 }
