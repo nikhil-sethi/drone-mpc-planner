@@ -7,6 +7,7 @@ public :
     void close();
     void reset_commandcenter_status_file(std::string status_msg, bool never_overwrite);
     void trigger_demo_flight_from_log(std::string replay_dir, int tracker_mode);
+    int n_replay_moth() {return _n_replay_moth;}
 
 private:
     std::string demo_waypoint_fn = "/home/pats/pats_demo.xml";
@@ -25,6 +26,7 @@ private:
     tracking::TrackerManager * _trackers;
     bool _log_replay_mode = false;
     int reset_cnt = 0;
+    int _n_replay_moth = 0;
 
     bool exit_thread = false;
 

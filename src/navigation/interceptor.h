@@ -33,6 +33,7 @@ private:
     float total_separation;
     CameraView::hunt_check_result hunt_volume_check = CameraView::HuntVolume_Unknown;
     bool view_check = false;
+    float _best_distance = -1;
 
     enum interceptor_states {
         is_init=0,
@@ -81,7 +82,7 @@ public:
     cv::Point3f target_speed() {return _intercept_vel;}
     cv::Point3f target_accelleration() {return _intercept_acc;}
     double time_to_intercept() {return _tti;}
-
+    float best_distance() {return _best_distance;}
 
     std::string Interceptor_State() {
         // if (_interceptor_state == is_move_to_intercept  )

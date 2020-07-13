@@ -361,7 +361,7 @@ void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis,float
     putText(resFrame,_trackers->mode_str(),cv::Point(220*_res_mult,96*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
 
     putText(resFrame,_dtrkr->drone_tracking_state(),cv::Point(450*_res_mult,96*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-    putText(resFrame,_dnav->get_Interceptor().Interceptor_State(),cv::Point(450*_res_mult,70*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame,_dnav->interceptor().Interceptor_State(),cv::Point(450*_res_mult,70*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
 
     if (_fromfile) {
         static int popcorn_cnt = 0;
@@ -415,7 +415,10 @@ void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, doubl
         static float min_dis = 9999;
         float dis = 0;
         if (_dtrkr->n_frames_tracking>0 && _itrkr->n_frames_tracking>0) {
-            dis = normf(_dtrkr->Last_track_data().state.pos-_itrkr->Last_track_data().state.pos);
+
+            auto pd = _dtrkr->world_item().pt;
+            auto pi = _itrkr->world_item().pt;
+            dis = normf(pd-pi);
 
             if (dis < min_dis)
                 min_dis = dis;
@@ -535,7 +538,7 @@ void Visualizer::draw_tracker_viz() {
             if (_dnav->drone_is_hunting() && target.x+target.y>0 ) {
                 c2 = red;
                 cv::Point2i text_pos = drone_pos - (drone_pos - target)/2;
-                putText(frameL_color,to_string_with_precision(_dnav->get_Interceptor().time_to_intercept(),2) + "s",text_pos,cv::FONT_HERSHEY_SIMPLEX,0.5,c2);
+                putText(frameL_color,to_string_with_precision(_dnav->interceptor().time_to_intercept(),2) + "s",text_pos,cv::FONT_HERSHEY_SIMPLEX,0.5,c2);
             } else
                 c2 = white;
             cv::line(frameL_color,drone_pos,target,c2,1);

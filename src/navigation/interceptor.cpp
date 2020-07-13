@@ -129,12 +129,12 @@ void Interceptor::update_far_target(bool drone_at_base) {
     _intercept_vel.y = 0;
     _intercept_acc = insect_acc;
     std::cout << "; req-intercept-pos: " << req_intercept_pos << std::endl;
-#if !ENABLE_UNIFIED_DIRECTION_TRANSITION
-    _horizontal_separation = norm(cv::Point2f(drone_pos.x, drone_pos.z) - cv::Point2f(insect_pos.x, insect_pos.z));
+
+    _horizontal_separation = normf(cv::Point2f(drone_pos.x, drone_pos.z) - cv::Point2f(insect_pos.x, insect_pos.z));
     _vertical_separation = insect_pos.y - drone_pos.y;
-#else
     total_separation = normf(insect_pos - drone_pos);
-#endif
+    if (total_separation < _best_distance || _best_distance < 0)
+        _best_distance = total_separation;
 }
 
 void Interceptor::update_close_target() {
@@ -163,12 +163,11 @@ void Interceptor::update_close_target() {
         _intercept_vel = insect_vel;
 
     std::cout << "; req_intercept_pos: " << req_intercept_pos << std::endl;
-#if !ENABLE_UNIFIED_DIRECTION_TRANSITION
-    _horizontal_separation = norm(cv::Point2f(drone_pos.x, drone_pos.z) - cv::Point2f(insect_pos.x, insect_pos.z));
+    _horizontal_separation = normf(cv::Point2f(drone_pos.x, drone_pos.z) - cv::Point2f(insect_pos.x, insect_pos.z));
     _vertical_separation = insect_pos.y - drone_pos.y;
-#else
     total_separation = normf(insect_pos - drone_pos);
-#endif
+    if (total_separation < _best_distance || _best_distance < 0)
+        _best_distance = total_separation;
 }
 
 void Interceptor::update_interceptability() {
@@ -197,10 +196,10 @@ float Interceptor::calc_tti(cv::Point3f insect_pos, cv::Point3f insect_vel, cv::
     const float drone_vel_max = 5; // [m/s]
     const float drone_acc_max = 40; // [m/s^2]
     const double t_estimated_take_off = 0.29; //[s]
-    float ic_dx = norm(insect_pos - drone_pos);
-    float ic_dv = norm(insect_vel - drone_vel);
-    float vi = norm(insect_vel);
-    float vd = norm(drone_vel);
+    float ic_dx = normf(insect_pos - drone_pos);
+    float ic_dv = normf(insect_vel - drone_vel);
+    float vi = normf(insect_vel);
+    float vd = normf(drone_vel);
     /*Part 1, match_v*/
     //First the drone needs some time to match speeds. During this time its average speed v_d_avg = 0.5*(vd-vi) + vd
     //Time needed to match speed:
@@ -238,7 +237,7 @@ void Interceptor::update_flower_of_fire(double time) {
     cv::Point3f insect_pos = itd.pos();
     track_data dtd = _trackers->dronetracker()->Last_track_data();
     cv::Point3f drone_pos = dtd.pos();
-    _horizontal_separation = norm(cv::Point2f(drone_pos.x, drone_pos.z) - cv::Point2f(insect_pos.x, insect_pos.z));
+    _horizontal_separation = normf(cv::Point2f(drone_pos.x, drone_pos.z) - cv::Point2f(insect_pos.x, insect_pos.z));
     _vertical_separation = insect_pos.y - drone_pos.y;
     float timef = static_cast<float>(time);
     cv::Point3f p_now = get_circle_pos(timef);

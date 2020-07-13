@@ -70,6 +70,7 @@ void CommandCenterLink::check_commandcenter_triggers() {
             }
         }
         if (file_exist(demo_insect_fn)) {
+            _n_replay_moth++;
             std::cout << "Replay insect demo!" << std::endl;
             _trackers->init_replay_moth(demo_insect_fn);
             remove(demo_insect_fn.c_str());

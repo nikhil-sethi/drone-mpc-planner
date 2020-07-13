@@ -50,6 +50,7 @@ volatile std::sig_atomic_t term_sig_fired;
 int imgcount; // to measure fps
 int raw_video_frame_counter = 0;
 int n_fps_warnings = 0;
+int insect_cnt = 0;
 GStream output_video_results,output_video_LR,output_video_cuts;
 
 xmls::PatsParameters pparams;
@@ -106,6 +107,7 @@ void process_frame(Stereo_Frame_Data data_drone);
 void process_video();
 int main( int argc, char **argv);
 bool handle_key(double time);
+void save_results_log();
 void print_warnings();
 void close(bool sig_kill);
 
@@ -178,7 +180,6 @@ void process_video() {
 
         if (pparams.video_cuts) {
             static bool was_recording = false;
-            static int insect_cnt = 0;
 
             if (recording != was_recording) {
                 if (recording)
@@ -257,7 +258,7 @@ void process_video() {
                 || (cam->measured_exposure() <= pparams.darkness_threshold && pparams.darkness_threshold>0))) {
             std::cout << "Initiating periodic restart" << std::endl;
             exit_now = true;
-        } else if(restart_delay > 1.5f*dnav.time_out_after_landing*pparams.fps) {
+        } else if(restart_delay > 5) {
             std::cout << "Flight termintated" << std::endl;
             if (dctrl.flight_aborted())
                 std::cout << "Control problem: " << dctrl.flight_mode() << std::endl;
@@ -687,6 +688,8 @@ void close(bool sig_kill) {
     gui.close();
 #endif
 
+    save_results_log();
+
     /*****Close everything down*****/
     if (cam)
         cam->close(); // attempt to save the video first
@@ -721,6 +724,25 @@ void close(bool sig_kill) {
     if(cam)
         cam.release();
     std::cout <<"Closed"<< std::endl;
+}
+
+void save_results_log() {
+    std::ofstream results_log;
+    results_log.open(data_output_dir  + "results.txt",std::ofstream::out);
+    results_log << "op_mode:" << pparams.op_mode << '\n';
+    results_log << "n drone detects:" << dnav.n_drone_detects() << '\n';
+    results_log << "n_insects:" << insect_cnt << '\n';
+    results_log << "n_takeoffs:" << dnav.n_take_offs() << '\n';
+    results_log << "n_landings:" << dnav.n_landings() << '\n';
+    results_log << "n_hunts:" << dnav.n_hunt_flights() << '\n';
+    results_log << "n_replay_hunts:" << cmdcenter.n_replay_moth() << '\n';
+    results_log << "n_wp_flights:" << dnav.n_wp_flights() << '\n';
+    results_log << "best_interception_distance:" << dnav.interceptor().best_distance() << '\n';
+    results_log << "n_drone_detects:" << dnav.n_drone_detects() << '\n';
+    results_log << "drone problem:" << dnav.drone_problem() << '\n';
+    results_log << "Flight_time:" << dnav.flight_time() << '\n';
+    results_log << "Run_time:" << cam->frame_time() << '\n';
+    results_log.close();
 }
 
 void print_warnings() {

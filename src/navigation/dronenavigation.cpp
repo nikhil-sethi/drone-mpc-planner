@@ -144,6 +144,7 @@ void DroneNavigation::update(double time) {
                 _visdat->create_overexposed_removal_mask(_trackers->dronetracker()->drone_takeoff_im_location(),_trackers->dronetracker()->drone_takeoff_im_size());
                 time_motion_calibration_started = time;
                 _navigation_status = ns_calibrating_motion;
+                _n_drone_detects++;
             }
             break;
         } case ns_calibrating_motion: {
@@ -212,10 +213,13 @@ void DroneNavigation::update(double time) {
             _dctrl->hover_mode(false);
             _trackers->dronetracker()->hover_mode(false);
             time_take_off = time;
-            if (_nav_flight_mode == nfm_hunt)
+            if (_nav_flight_mode == nfm_hunt) {
+                _n_hunt_flights++;
                 _trackers->mode(tracking::TrackerManager::mode_hunt);
-            else
+            } else {
+                _n_wp_flights++;
                 _trackers->mode(tracking::TrackerManager::mode_drone_only);
+            }
             _navigation_status=ns_taking_off;
             break;
         } case ns_taking_off: {
@@ -248,7 +252,7 @@ void DroneNavigation::update(double time) {
                 break;
             [[fallthrough]];
         } case ns_take_off_completed: {
-
+            _n_take_offs++;
             if (_nav_flight_mode == nfm_hunt) {
                 _navigation_status = ns_start_the_chase;
                 repeat = true;
@@ -447,6 +451,8 @@ void DroneNavigation::update(double time) {
             _trackers->dronetracker()->delete_landing_motion(time_out_after_landing);
             _dctrl->hover_mode(false);
             _trackers->dronetracker()->hover_mode(false);
+            _flight_time+= static_cast<float>(time-time_take_off);
+            _n_landings++;
             [[fallthrough]];
         } case ns_start_shaking: {
             if (static_cast<float>(time - landed_time) > 1.0f) {
@@ -477,6 +483,8 @@ void DroneNavigation::update(double time) {
         } case ns_drone_problem: {
             if (time_drone_problem < 0)
                 time_drone_problem = time;
+            if (_flight_time<0)
+                _flight_time+= static_cast<float>(time-time_take_off);
             _dctrl->flight_mode(DroneController::fm_abort);
             _dctrl->LED(static_cast<int>((time - time_drone_problem) * 10.0) % 10 > 5,100); // blink every half second
             _dctrl->beep(true);
