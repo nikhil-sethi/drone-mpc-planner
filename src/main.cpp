@@ -372,6 +372,9 @@ bool handle_key(double time [[maybe_unused]]) {
     case 'b':
         rc.bind(true);
         break;
+    case 's':
+        dnav.shake_drone();
+        break;
     case 'B':
         rc.beep();
         break;

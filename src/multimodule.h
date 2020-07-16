@@ -38,12 +38,17 @@ enum betaflight_headless_mode {
     bf_headless_disabled = 50, // semi random number that gives a nice detectable change in the mode switch (1030 in BF), but is small enough to not interfere with the normal modes (can be made smaller prolly if necessary)
     bf_yaw_reset = 100,
     bf_PID_loop_disabled = 150,
-    bf_spin_motor = 200
+    bf_spin_motor = 200,
+    bf_spin_motor_reversed = 250
 };
 
 enum betaflight_arming {
     bf_disarmed = JOY_BOUND_MIN,
     bf_armed = JOY_BOUND_MAX
+};
+enum betaflight_turtle {
+    bf_turtle_disabled = JOY_BOUND_MIN,
+    bf_turtle_enabled = JOY_BOUND_MAX
 };
 
 
@@ -77,6 +82,7 @@ public:
     int roll=JOY_MIDDLE,pitch=JOY_MIDDLE,yaw=JOY_MIDDLE;
     int throttle = JOY_BOUND_MIN;
     int arm_switch = JOY_BOUND_MIN;
+    int turtle_mode = JOY_BOUND_MIN;
 
     std::string Armed() {
         return armed_names[arm_switch>JOY_MIDDLE];
@@ -121,6 +127,9 @@ public:
     }
     void arm(betaflight_arming v) {
         arm_switch = v;
+    }
+    void turtle(betaflight_turtle v) {
+        turtle_mode = v;
     }
     int calibrate_acc_cnt = 0;
     void calibrate_acc() {

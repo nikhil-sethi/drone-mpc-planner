@@ -191,6 +191,8 @@ void MultiModule::send_data(void) {
         if (dparams.tx==tx_cx10)
             channels[5] = tx_rate;
 
+        channels[6] = turtle_mode;
+
         if (calibrate_acc_cnt)
             channels[7] = JOY_BOUND_MIN + JOY_BOUND_RANGE / 100 * 100;
         else
