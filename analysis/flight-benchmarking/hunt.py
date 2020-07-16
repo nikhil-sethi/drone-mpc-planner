@@ -29,14 +29,14 @@ def concatenate_insectlogs(folderpath):
 	key_posxtarget = 'posX_insect'
 	key_posytarget = 'posY_insect'
 	key_posztarget = 'posZ_insect'
-	if(n_replaylogs>0):
+	if n_replaylogs > 0:
 		key_nlostframes = 'n_frames_lost_replay'
 		key_posxtarget = 'posX_replay'
 		key_posytarget = 'posY_replay'
 		key_posztarget = 'posZ_replay'
 		return replayinsect_data.sort_values(by=['RS_ID']).reset_index(), key_nlostframes, key_posxtarget, key_posytarget, key_posztarget
-	else:
-		return insect_data.sort_values(by=['RS_ID']).reset_index() , key_nlostframes, key_posxtarget, key_posytarget, key_posztarget
+
+	return insect_data.sort_values(by=['RS_ID']).reset_index(), key_nlostframes, key_posxtarget, key_posytarget, key_posztarget
 
 
 KEY_MINIMALERROR = 'minimal_error'
@@ -62,10 +62,11 @@ def read_hunt(folderpath):
 	flightstates_data = init_flightstate_data()
 
 	for i in range(n_samples_insect):
-		if(insect_data[key_nlostframes][i]==0):
+		if insect_data[key_nlostframes][i] == 0:
 			samples_insect_tracked += 1
 
-	for i in range(n_samples_drone):
+	first_valid = np.max([np.where(drone_data['valid'] == 1)[0][0] - 2, 1])
+	for i in range(first_valid, n_samples_drone):
 		time = drone_data['elapsed'][i]
 		nav_state = drone_data['nav_state'][i]
 		auto_throttle = drone_data['autoThrottle'][i]
@@ -75,16 +76,16 @@ def read_hunt(folderpath):
 			insect_idx = insect_data[insect_data['RS_ID'] == drone_data['RS_ID'][i]].index[0]
 			target = np.array([insect_data[key_posxtarget][insect_idx], insect_data[key_posytarget][insect_idx], insect_data[key_posztarget][insect_idx]])
 
-			if(drone_data['valid'][i]==1):
+			if drone_data['valid'][i] == 1:
 				pos = np.array([drone_data['posX_drone'][i], drone_data['posY_drone'][i], drone_data['posZ_drone'][i]])
 				error = np.linalg.norm(target-pos)
 
-				if(error < closest_distance_untracked):
+				if error < closest_distance_untracked:
 					# print(str(insect_data['RS_ID'][insect_idx])+':'+str(error)+'@'+str(drone_data['elapsed'][i]))
 					closest_distance_untracked = error
 					time_at_closest_distance_untracked = drone_data['elapsed'][i]
-				if(insect_data[key_nlostframes][insect_idx] == 0):
-					if(error < closest_distance):
+				if insect_data[key_nlostframes][insect_idx] == 0:
+					if error < closest_distance:
 						closest_distance = error
 						time_at_closest_distance = drone_data['elapsed'][i]
 
@@ -119,7 +120,11 @@ def hunt_evaldata_units():
 
 
 if __name__ == "__main__":
-	folderpath = '/home/ludwig/Downloads/1805 testing/pats12/00027/logging'
+	import time as t
+	folderpath = '/home/pats/pc/pc/build-vscode/logging'
+	tic = t.time()
 	flight_data, hunt_data = read_hunt(folderpath)
+	toc = t.time()
+	print('Evaluation time:', toc-tic)
 	print(hunt_evaldata(hunt_data))
 
