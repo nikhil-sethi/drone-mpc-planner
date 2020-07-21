@@ -84,6 +84,7 @@ const uint8_t num[] {
 #define N_y 0b01100110
 #define N_Z 0b01011011
 #define N_z 0b01011011
+#define N__ 0b00010000
 
 
 #endif // __CHARACTERS_H__
