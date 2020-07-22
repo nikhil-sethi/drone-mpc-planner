@@ -104,11 +104,12 @@ static const char* rc_types_str[] = {
     "" // must be the last entry! (check in serializer)
 };
 enum tx_protocols {
-    tx_none = 0,
-    tx_dsmx = 6,
-    tx_cx10=12,
-    tx_frskyd8=3,
-    tx_frskyd16=15
+    tx_none,
+    tx_dsmx,
+    tx_cx10,
+    tx_frskyd8,
+    tx_frskyd16,
+    tx_redpine
 };
 enum d16_subprotocols {
     d16_ch16 = 0,
@@ -117,13 +118,18 @@ enum d16_subprotocols {
     d16_eu8 = 3,
     d16_xclone = 4
 };
+enum redpine_subprotocols {
+    redpine_fast= 0,
+    redpine_slow= 1
+};
 
 static const char* tx_protocols_str[] = {
     "tx_none",
     "tx_dsmx",
     "tx_cx10",
     "tx_frskyd8",
-    "tx_frskyd16"
+    "tx_frskyd16",
+    "tx_redpine"
     "" // must be the last entry! (check in serializer)
 };
 enum drone_types {

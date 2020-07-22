@@ -1,34 +1,51 @@
 #include "multimodule.h"
 
 void MultiModule::init(int drone_id) {
-    _drone_id = drone_id;
+    _drone_id_rxnum = drone_id;
 
-    protocol = dparams.tx;
-    if (dparams.tx == tx_none) {
+    switch (dparams.tx) {
+    case tx_none: {
+        protocol = 0;
         sub_protocol = 0;
         tx_option = 0;
         tx_rate = 0;
-    } else if (dparams.tx == tx_dsmx) {
+        break;
+    } case tx_dsmx: {
+        protocol = 6;
         sub_protocol = 3;
         tx_option = 7;
         tx_rate = 0;
-    } else if (dparams.tx == tx_cx10) {
+        break;
+    } case tx_cx10: {
+        protocol = 12;
         sub_protocol = 1;
         tx_rate = 2000;
         tx_option = 0;
-    } else if (dparams.tx == tx_frskyd8) {
+        break;
+    } case tx_frskyd8: {
+        protocol = 3;
         sub_protocol = 0;
         tx_rate = 0;
         tx_option = 0;
-    } else if (dparams.tx == tx_frskyd16) {
+        break;
+    } case tx_frskyd16: {
+        protocol = 15;
         sub_protocol = d16_eu8;
         tx_rate = 0;
         tx_option = 0;
+        break;
+    } case tx_redpine: {
+        protocol = 50;
+        sub_protocol = redpine_fast;
+        tx_rate = 0;
+        tx_option = 0;
+        break;
+    }
     }
 
     zerothrottle();
 
-    // setup connection with MultiModule
+// setup connection with MultiModule
     if (dparams.tx!=tx_none) {
         notconnected = RS232_OpenComport(115200,"/dev/pats_mm0");
         if (notconnected)
@@ -49,7 +66,7 @@ void MultiModule::send_init_package() {
     packet[2] = dparams.mode3d;
     packet[3] = 0;  //id2...
     packet[4] = 0; // id1
-    packet[5] = _drone_id; //id0
+    packet[5] = _drone_id_tx; //id0
     packet[6] = 68; //header 3
     RS232_SendBuf( static_cast<unsigned char*>( packet), 7);
 }
@@ -135,13 +152,22 @@ void MultiModule::send_data(void) {
     if (dparams.tx != tx_none) {
         lock_rs232.lock();
         unsigned char packet[RXBUFFER_SIZE] = {0}; // a packet is 26 bytes, see multimodule.h
-        packet[0] = 0x55; // headerbyte
-        packet[1] = protocol; //sub_protocol|BindBit|RangeCheckBit|AutoBindBit;
+        if (protocol < 31) {
+            packet[0] = 0x55; // headerbyte
+            packet[1] = protocol; //sub_protocol|BindBit|RangeCheckBit|AutoBindBit;
+        } else {
+            packet[0] = 0x54; // headerbyte
+            packet[1] = (protocol-32) & 0x1F ; //sub_protocol|BindBit|RangeCheckBit|AutoBindBit;
+        }
 
         if (_bind) {
             packet[1] |= MULTI_BINDBIT;
         }
-        packet[2]   = 0 | 0 | sub_protocol << 4; //RxNum | Power | Type
+        uint8_t drone_id_rxnum_low = _drone_id_rxnum &  0b00001111;
+        uint8_t drone_id_rxnum_high = _drone_id_rxnum & 0b00110000;
+        packet[2]   = drone_id_rxnum_low | 0 | sub_protocol << 4; //RxNum | Power | Type
+        if (RXBUFFER_SIZE > 26)
+            packet[26] = (protocol & 0xC0) | drone_id_rxnum_high ;
         if (dparams.tx==tx_dsmx)
             packet[3] = tx_option; //option_protocol, number of channels for DSM
         else
@@ -169,7 +195,7 @@ void MultiModule::send_data(void) {
         channels[1] = pitch;
         channels[2] = throttle;
         channels[3] = yaw;
-        if (dparams.tx==tx_dsmx || dparams.tx==tx_frskyd8 || dparams.tx==tx_frskyd16) {
+        if (dparams.tx==tx_dsmx || dparams.tx==tx_frskyd8 || dparams.tx==tx_frskyd16 | dparams.tx==tx_redpine) {
             channels[4] = arm_switch;
             channels[5] = mode;
         }
@@ -218,7 +244,7 @@ void MultiModule::receive_data() {
             received << tmp.str();
             std::string bufs = received.str();
             const std::string version_str = "Multiprotocol version: ";
-            const std::string required_firmwar_version = "1.5.0.0";
+            const std::string required_firmwar_version = "1.3.1.45";
             auto found = bufs.rfind(version_str) ;
             str_length = found+version_str.length()+required_firmwar_version.length();
             if (found != std::string::npos && str_length < bufs.size()) {

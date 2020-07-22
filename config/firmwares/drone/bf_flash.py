@@ -25,7 +25,7 @@ def upload_firmware(firmware):
 	return subprocess.call(cmd,shell=True)
 
 
-def upload_settings(port,drone_id,settings):
+def upload_settings(port,tx_id,rx_num,settings):
 	ser = serial.Serial(port=port)
 
 	ser.write('#'.encode())
@@ -36,7 +36,9 @@ def upload_settings(port,drone_id,settings):
 			print("Line {}: {}".format(cnt, line), end = '')
 
 			if 'frsky_spi_tx_id' in line:
-				line = 'set frsky_spi_tx_id = ' + str(drone_id) + ',0\n'
+				line = 'set frsky_spi_tx_id = ' + str(tx_id) + ',0\n'
+			if 'frsky_x_rx_num' in line:
+				line = 'set frsky_x_rx_num = ' + str(rx_num) + ',0\n'
 
 			ser.write(line.encode())
 			ser.write('\n'.encode())
@@ -50,12 +52,17 @@ def upload_settings(port,drone_id,settings):
 	print("Uploading settings successfull")
 
 parser = argparse.ArgumentParser(description='Process and check the logs.')
-parser.add_argument('-i', '--drone-id',type=str,default='1')
-parser.add_argument('-f', '--firmware',help='Firmware *.bin file path',type=str,default='pats_4.1.5.bin')
-parser.add_argument('-s', '--settings',help='Betaflight diff settings file path', type=str,default='BF_Hammer_4-1-5_180.txt')
+parser.add_argument('-i', '--drone-id',help='Drone id in case of using D16',type=str,default='1')
+parser.add_argument('-j', '--tx-id',help='Drone id in case of using D8',type=str,default='3')
+parser.add_argument('-f', '--firmware',help='Firmware *.bin file path',type=str,default='pats_4.2.0.bin')
+parser.add_argument('-s', '--settings',help='Betaflight diff settings file path', type=str,default='BF_Hammer_4.2.0_180.txt')
 parser.add_argument('-p', '--port',type=str,default='/dev/ttyACM0')
 parser.add_argument('-n', '--no-flashing', action='store_true')
 args = parser.parse_args()
+
+if int(args.drone_id) > 63:
+	print("Error: drone-id > 63")
+	exit(1)
 
 spinner = spinning_cursor()
 
@@ -89,6 +96,6 @@ while dev_not_exists(args.port):
 
 print('Port detected. Uploading settings...')
 time.sleep(1)
-upload_settings(args.port,args.drone_id,args.settings)
+upload_settings(args.port,args.tx_id,args.drone_id,args.settings)
 
 print('\nAll done!')

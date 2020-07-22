@@ -17,7 +17,7 @@
 #define MULTI_RANGECHECK                    0x20
 #define MULTI_CHANS                         16
 #define MULTI_CHAN_BITS                     11
-#define RXBUFFER_SIZE                       26 // for current (old) 1.5.0.0 MM protocol!
+#define RXBUFFER_SIZE 36
 
 #define JOY_BOUND_MIN                       224   // 1000
 #define JOY_BOUND_MAX                       1824 // 2000
@@ -122,7 +122,8 @@ private:
 
     bool _init_package_failure = false;
     bool send_init_package_now = false;
-    int _drone_id = 1;
+    int _drone_id_tx = 3; // 3 is the hardcoded default in the MM at the moment for D16 (--> MProtocol_id_master = 3; )
+    int _drone_id_rxnum = 0;
     uint init_package_nOK_cnt = 1;
     bool _beep = false;
     int _LED_drone = 5;

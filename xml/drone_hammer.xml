@@ -13,7 +13,7 @@
     <Member Name="blink_period">0.1</Member>
     <Member Name="radius">0.07</Member>
     <Member Name="thrust">65</Member>
-    <Member Name="tx">tx_frskyd8</Member>
+    <Member Name="tx">tx_frskyd16</Member>
     <Member Name="mode3d">false</Member>
     <Member Name="control">control_hammer</Member>
     <Member Name="spinup_throttle_non3d">304</Member>
