@@ -17,6 +17,7 @@
 #define MULTI_RANGECHECK                    0x20
 #define MULTI_CHANS                         16
 #define MULTI_CHAN_BITS                     11
+#define RXBUFFER_SIZE                       26 // for current (old) 1.5.0.0 MM protocol!
 
 #define JOY_BOUND_MIN                       224   // 1000
 #define JOY_BOUND_MAX                       1824 // 2000

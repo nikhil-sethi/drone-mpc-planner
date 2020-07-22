@@ -65,9 +65,7 @@ void MultiModule::worker_thread(void) {
     std::cout << "Send multimodule thread started!" << std::endl;
     while (!exitSendThread) {
 
-        static int receive_decrease_cnt = 0;
-        if (receive_decrease_cnt++ % 10 == 1)
-            receive_data();
+        receive_data();
 
         if (init_package_nOK_cnt) {
             init_package_nOK_cnt++;
@@ -136,8 +134,7 @@ void MultiModule::convert_channels(uint16_t * channels, unsigned char * packet) 
 void MultiModule::send_data(void) {
     if (dparams.tx != tx_none) {
         lock_rs232.lock();
-
-        unsigned char packet[26] = {0}; // a packet is 26 bytes, see multimodule.h
+        unsigned char packet[RXBUFFER_SIZE] = {0}; // a packet is 26 bytes, see multimodule.h
         packet[0] = 0x55; // headerbyte
         packet[1] = protocol; //sub_protocol|BindBit|RangeCheckBit|AutoBindBit;
 
@@ -195,7 +192,7 @@ void MultiModule::send_data(void) {
         convert_channels(channels, &packet[4]);
 
         if (!notconnected) {
-            RS232_SendBuf( static_cast<unsigned char*>( packet), 26);
+            RS232_SendBuf( static_cast<unsigned char*>( packet), RXBUFFER_SIZE);
         }
 
         lock_rs232.unlock();
@@ -217,15 +214,16 @@ void MultiModule::receive_data() {
             }
         }
         if (totn > 0 ) {
+            uint str_length = 0;
             received << tmp.str();
             std::string bufs = received.str();
-            std::string version_str = "Multiprotocol version: ";
-            auto found = bufs.find(version_str) ;
-            if (found != std::string::npos) {
+            const std::string version_str = "Multiprotocol version: ";
+            const std::string required_firmwar_version = "1.5.0.0";
+            auto found = bufs.rfind(version_str) ;
+            str_length = found+version_str.length()+required_firmwar_version.length();
+            if (found != std::string::npos && str_length < bufs.size()) {
 
-                std::string required_firmwar_version = "1.5.0.0";
                 std::string current_firmware_version = bufs.substr(found+version_str.length(),required_firmwar_version.length());
-
 
                 if (current_firmware_version != required_firmwar_version) {
                     if (current_firmware_version.length() >= required_firmwar_version.length()) {
@@ -235,24 +233,20 @@ void MultiModule::receive_data() {
                 } else {
                     std::cout << "Detecting MultiProtocol version " << required_firmwar_version << ": OK" << std::endl;
                     version_check_OK = true;
-                    bufs.replace(found,1,"*");
-                    received.clear();
-                    received << bufs;
                 }
             }
 
-            found = bufs.find("Specify bind ID...") ;
-            if (found != std::string::npos) {
-                bufs.replace(found,1,"*");
-                received.clear();
-                received << bufs;
+            const std::string specify_id = "Specify bind ID...";
+            found = bufs.rfind(specify_id);
+            str_length = found+specify_id.length();
+            if (found != std::string::npos && str_length < bufs.size())
                 send_init_package_now = true;
-            }
-            found = bufs.find("ID received:") ;
-            if (found != std::string::npos) {
-                bufs.replace(found,1,"*");
-                received.clear();
-                received << bufs;
+            const std::string id_received = "ID received:";
+            found = bufs.rfind(id_received);
+            auto delete_until_id_received = found+id_received.length();
+            if (found != std::string::npos && delete_until_id_received < bufs.size()) {
+                send_init_package_now = false;
+
                 std::cout << "Multimodule received init package!" << std::endl;
                 init_package_nOK_cnt = 0;
                 if (!version_check_OK) {
@@ -262,22 +256,22 @@ void MultiModule::receive_data() {
             }
 
             //below checks for the error message the MM gives if it is (already) waiting for the init package, but receives from bytes.
-            found = bufs.find("I want 66");
-            if (found != std::string::npos) {
+            const std::string i_want_66 = "I want 66";
+            found = bufs.rfind(i_want_66);
+            str_length = found+i_want_66.length();
+            if (found != std::string::npos && str_length < bufs.size()) {
                 bufs = bufs.substr(found+9,bufs.length() - (found+9));
-                received.clear();
                 send_init_package_now = true;
             }
 
-            if (bufs.size() > 500) {
-                received.clear();
-                received << bufs.substr(250, bufs.size());
+
+            found = bufs.find_last_of('\r');
+            if (found != std::string::npos) {
+                received.str(std::string());
+                received << bufs.substr(found+1, bufs.size());
             }
 
-
             std::cout << tmp.str()  << std::flush;
-        } else {
-            received.clear(); // this will clear the buffer only after one cycle, because strings may be cut up
         }
     }
 }
