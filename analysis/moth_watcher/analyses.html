@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Moth monitoring system</title>
+    <link rel="stylesheet" type="text/css" href="./style.css">
+</head>
+<body>
+    <h2 id="date_title"></h2>
+    <hr>
+    <h2>Flight duration</h2>
+    <div class="row">
+        <div class="col">
+            <div id="histogram_flight_duration"></div>  
+        </div>
+    </div>
+    
+    <hr>
+
+    <h2>Average velocity</h2>
+    <div class="row">
+        <div class="col">
+            <h3>Mean</h3>
+            <div id="histogram_average_velocity_mean"></div>  
+        </div>
+        <div class="col">
+            <h3>Std</h3>
+            <div id="histogram_average_velocity_std"></div>
+        </div>
+        <div class="col">
+            <h3>Max</h3>
+            <div id="histogram_average_velocity_max"></div> 
+        </div>
+    </div>
+    <hr>
+
+    <h2>Average turning angle</h2>
+    <div class="row">
+        <div class="col">
+            <h3>Mean</h3>
+            <div id="histogram_average_angle_mean"></div>  
+        </div>
+        <div class="col">
+            <h3>Std</h3>
+            <div id="histogram_average_angle_std"></div>
+        </div>
+        <div class="col">
+            <h3>Max</h3>
+            <div id="histogram_average_angle_max"></div> 
+        </div>
+    </div>
+    <hr>
+
+    <h2>Average radial acceleration</h2>
+    <div class="row">
+        <div class="col">
+            <h3>Mean</h3>
+            <div id="histogram_average_acceleration_mean"></div>  
+        </div>
+        <div class="col">
+            <h3>Std</h3>
+            <div id="histogram_average_acceleration_std"></div>
+        </div>
+        <div class="col">
+            <h3>Max</h3>
+            <div id="histogram_average_acceleration_max"></div> 
+        </div>
+    </div>
+    <hr>
+
+    <h2>Lane plot</h2>
+    <div class="row">
+        <div class="col_full">
+            <div id="swim_plot"></div> 
+        </div>
+    </div>
+    <hr>
+    <a href="index.html">Back to calander</a>
+    <script src="analyses.js"></script>
+</body>
+</html>

@@ -23,5 +23,19 @@
         "program": "${workspaceFolder}/cluster.py",
         "args" : ["-s", "/home/houjebek/data_check/checked"]
       }
+      {
+        "name": "Counter",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/moth_watcher/moth_counter.py",
+        "args" : ["-i", "D:\\PATS_data\\out", "-s", "20200101_19000", "-e", "20201201_230000"]
+      }
+      {
+        "name": "Server",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/moth_watcher/moth_server.py",
+        "args" : []
+      }
     ]
   }

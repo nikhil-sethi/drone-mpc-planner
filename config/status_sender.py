@@ -43,32 +43,34 @@ while not os.path.exists(local_status_txt_file):
 first_read = ''
 while True:
 
-    f=open(local_status_txt_file, 'r')
-    try:
-        lines =f.readlines()
-        if (lines[0] != first_read):
-            first_read = lines[0]
+    if os.path.exists(local_status_txt_file):
+        f=open(local_status_txt_file, 'r')
+        try:
+            lines =f.readlines()
+            if lines:
+                if (lines[0] != first_read):
+                    first_read = lines[0]
 
-            if os.path.exists(local_pats_xml):
-                cmd = 'rsync -az ' + local_pats_xml + ' mavlab-gpu:' + remote_pats_xml
-                subprocess.call(cmd, shell=True,stdout=subprocess.PIPE)
-            if os.path.exists(local_status_txt_file):
-                cmd = 'rsync -z ' + local_status_txt_file +' mavlab-gpu:' + remote_status_txt_file
-                subprocess.call(cmd, shell=True,stdout=subprocess.PIPE)
-            if os.path.exists(local_system_txt_file):
-                cmd = 'rsync -z ' + local_system_txt_file +' mavlab-gpu:' + remote_system_txt_file
-                subprocess.call(cmd, shell=True,stdout=subprocess.PIPE)
-            if os.path.exists(local_status_im_file):
-                cmd = 'rsync -z ' + local_status_im_file +' mavlab-gpu:' + remote_status_im_file
-                subprocess.call(cmd, shell=True,stdout=subprocess.PIPE)
-                
-            while os.path.exists(disable_pats_bkg):
-                sleep(10)
-                print( 'Waiting until disable_pats_bkg disappears')
-    except:
-         pass   
-    
-    f.close()
+                    if os.path.exists(local_pats_xml):
+                        cmd = 'rsync -az ' + local_pats_xml + ' mavlab-gpu:' + remote_pats_xml
+                        subprocess.call(cmd, shell=True,stdout=subprocess.PIPE)
+                    if os.path.exists(local_status_txt_file):
+                        cmd = 'rsync -z ' + local_status_txt_file +' mavlab-gpu:' + remote_status_txt_file
+                        subprocess.call(cmd, shell=True,stdout=subprocess.PIPE)
+                    if os.path.exists(local_system_txt_file):
+                        cmd = 'rsync -z ' + local_system_txt_file +' mavlab-gpu:' + remote_system_txt_file
+                        subprocess.call(cmd, shell=True,stdout=subprocess.PIPE)
+                    if os.path.exists(local_status_im_file):
+                        cmd = 'rsync -z ' + local_status_im_file +' mavlab-gpu:' + remote_status_im_file
+                        subprocess.call(cmd, shell=True,stdout=subprocess.PIPE)
+                        
+                    while os.path.exists(disable_pats_bkg):
+                        sleep(10)
+                        print( 'Waiting until disable_pats_bkg disappears')
+        except:
+            pass   
+        
+        f.close()
 
     ip = get_ip()
     if ip.startswith('192.168.8'): #4g stick ip

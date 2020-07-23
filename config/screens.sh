@@ -12,7 +12,7 @@ done
 
 # Start other screens
 i=$(($i + 1))
-/usr/bin/screen -t staupd $i /bin/bash -c '~/code/pats/config/status_sender.py; exec /bin/bash'
+/usr/bin/screen -t staupd $i /bin/bash -c 'cd ~/code/pats/config && ~/code/pats/config/status_sender.py; exec /bin/bash'
 i=$(($i + 1))
 /usr/bin/screen -t pats $i /bin/bash -c 'cd ~/code/pats/config && ~/code/pats/config/autostart.sh 2>&1 | /usr/bin/tee -a ~/pats_daemon.log; exec /bin/bash'
 i=$(($i + 1))

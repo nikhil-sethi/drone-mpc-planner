@@ -1,8 +1,6 @@
 #!/usr/bin/python3
 
 
-
-
 import pandas as pd
 import numpy as np
 import os, math, glob, re
@@ -11,7 +9,9 @@ import subprocess
 import argparse
 
 
-def secs_to_time(seconds: float):
+
+
+def secs_to_time(seconds):
     """converts seconds to a time forma supported by ffmpeg"""
     mins = int(seconds // 60)
     left = seconds % 60
@@ -19,7 +19,7 @@ def secs_to_time(seconds: float):
     millies = str(round(left, 2)).split(".")[-1]
     return f"00:{mins:02}:{secs:02}.{millies[:2]}"
 
-def cut_video_for_moth(absolute_video_path: str, output_path: str, delete_raw: bool=False):
+def cut_video_for_moth(absolute_video_path, output_path, delete_raw=False):
     main_path = os.path.dirname(absolute_video_path)
     log_file_path = os.path.join(main_path, "log_itrk0.csv") # read csv with insect info
 

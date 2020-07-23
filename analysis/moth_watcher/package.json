@@ -1,0 +1,21 @@
+{
+    "name": "Moth_Monitor",
+    "version": "1.0.0",
+    "main": "main.js",
+    "devDependencies": {
+        "electron": "^7.0.0",
+        "electron-builder": "^22.6.1",
+        "electron-rebuild": "^1.11.0"
+    },
+    "scripts": {
+        "start": "electron .",
+        "rebuild": "electron-rebuild -f -w sqlite3",
+        "postinstall": "install-app-deps"
+    },
+    "dependencies": {
+        "d3": "3.5.17",
+        "jquery": "^3.5.1",
+        "sqlite3": "^5.0.0",
+        "timelines-chart": "^2.10.0"
+    }
+}

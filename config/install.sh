@@ -50,7 +50,7 @@ mkdir -p ~/code
 pushd ~/dependencies
 
 # Install pats dependency packages
-[ -f dependencies-packages-v1.2.done ] || {
+[ -f dependencies-packages-v1.3.done ] || {
 	sudo apt-get update  
 	sudo apt install -y cmake g++ libva-dev libswresample-dev libavutil-dev pkg-config libcurl4-openssl-dev ncdu openssh-server ffmpeg unattended-upgrades inotify-tools cpputest python3-pip python-pip dfu-util 
 	sudo apt install -y gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav libgstreamer-plugins-base1.0-* libgstreamer-plugins-bad1.0-* libgstreamer-plugins-good1.0-* gstreamer1.0-vaapi vainfo
@@ -58,8 +58,8 @@ pushd ~/dependencies
 	pip3 install pyserial
 	#specific to enable opencv features and optimizations:
 	sudo apt install -y yasm gfortran libjpeg8-dev libpng-dev libtiff-dev libatlas-base-dev libprotobuf-dev protobuf-compiler libgoogle-glog-dev libgflags-dev libgphoto2-dev libeigen3-dev libhdf5-dev libatlas3-base libatlas-base-dev liblapack3 liblapacke liblapacke-dev liblapack-dev ccache
-	pip3 install numpy pandas
-	touch dependencies-packages-v1.2.done
+	pip3 install numpy pandas scipy sklearn
+	touch dependencies-packages-v1.3.done
 }
 
 # Add librealsense repository
@@ -223,7 +223,23 @@ fi
 	sudo udevadm control --reload-rules && udevadm trigger
 	touch mm_install.done
 }
+
+[ -f analysis-dependencies-packages-v1.0.done ] || {
+	curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+	sudo apt install -y libssl1.0-dev curl nodejs npm nodejs-dev node-gyp
+	pushd ../code/pats/analysis/moth_watcher/
+	npm install
+	npm audit fix
+	popd
+	touch analysis-dependencies-packages-v1.0.done
+}
+
+
+
+
 popd
+
+
 
 sudo apt-get autoremove -y
 sudo apt-get clean -y
