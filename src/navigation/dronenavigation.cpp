@@ -280,7 +280,7 @@ void DroneNavigation::update(double time) {
             //update target chasing waypoint and speed
             // if (_iceptor.insect_in_range()) {
             setpoint_pos_world = _iceptor.target_position();
-            setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, CameraView::relaxed);
+            setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, _trackers->dronetracker()->Last_track_data().pos(), CameraView::relaxed);
             setpoint_vel_world = _iceptor.target_speed();
             setpoint_acc_world = _iceptor.target_accelleration();
             // }

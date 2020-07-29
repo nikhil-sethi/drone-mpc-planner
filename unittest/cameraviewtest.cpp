@@ -99,3 +99,34 @@ TEST(Cameraview, project_in_view_strict) {
         }
     }
 }
+
+TEST(Cameraview, project_in_view_without_changing_direction) {
+    CameraView camview;
+    camview.init(point_left_top, point_right_top, point_left_bottom, point_right_bottom, b_depth, b_height, camera_pitch_deg);
+    cv::Point3f drone_pos = {0., -0.5, -2.};
+    cv::Point3f corrected;
+    bool inview;
+    float error, plane_error;
+    std::array<bool, N_PLANES> plane_violations;
+    for (float x=-10.0f; x<10.f; x+=0.8f) {
+        for (float y=-4.0f; y<=0.f; y+=0.8f) {
+            for (float z=-13.0f; z<=0.f; z+=0.8f) {
+                corrected = camview.setpoint_in_cameraview({x,y,z}, drone_pos, CameraView::relaxed);
+                std::tie(inview, plane_violations) = camview.in_view(corrected, CameraView::relaxed);
+                if(!inview) {
+                    error = 0;
+                    // Check if the point is not in view due to some rounding errors.
+                    for(uint i=0; i<N_PLANES; i++) {
+                        if(plane_violations.at(i)) {
+                            plane_error = shortest_distance_to_plane(corrected, camview.support_vector(i)+camview.safety_margin(CameraView::relaxed)*camview.normal_vector(i), camview.normal_vector(i));
+                            error += abs(plane_error);
+                        }
+                    }
+                    if(error<0.0001f)
+                        inview = true;
+                }
+                CHECK_TRUE(inview);
+            }
+        }
+    }
+}

@@ -101,7 +101,11 @@ public:
     std::tuple<bool, std::array<bool, N_PLANES>> check_distance_to_borders(track_data data_drone, float req_breaking_distance);
     float calc_shortest_distance_to_plane(cv::Point3f drone_pos, uint plane_idx, view_volume_check_mode cm);
     cv::Point3f setpoint_in_cameraview(cv::Point3f pos_setpoint, view_volume_check_mode cm);
+    cv::Point3f setpoint_in_cameraview(cv::Point3f pos_setpoint, cv::Point3f drone_pos, view_volume_check_mode cm);
+    /** @brief If the setpoint is outside the cameravolume it is projected to closest point inside. */
     cv::Point3f project_into_camera_volume(cv::Point3f pos_setpoint, view_volume_check_mode cm, std::array<bool, N_PLANES> violated_planes);
+    /** *brief If the setpoint is outside the cameravolume, it is projected such that the direction stays the same. */
+    cv::Point3f project_into_camera_volume(cv::Point3f pos_setpoint, cv::Point3f drone_pos, view_volume_check_mode cm, std::array<bool, N_PLANES> violated_planes);
     void cout_plane_violation(std::array<bool, N_PLANES> inview_violations, std::array<bool, N_PLANES> breaking_violations);
 
     std::vector<cv::Mat> get_adjacency_matrix() {return adjacency_matrix;}; // For debugging only
