@@ -3,29 +3,25 @@
 void MultiModule::init(int drone_id) {
     _drone_id = drone_id;
 
+    protocol = dparams.tx;
     if (dparams.tx == tx_none) {
-        protocol = 0;
         sub_protocol = 0;
         tx_option = 0;
         tx_rate = 0;
     } else if (dparams.tx == tx_dsmx) {
-        protocol = 6;
         sub_protocol = 3;
         tx_option = 7;
         tx_rate = 0;
     } else if (dparams.tx == tx_cx10) {
-        protocol = 12;
         sub_protocol = 1;
         tx_rate = 2000;
         tx_option = 0;
     } else if (dparams.tx == tx_frskyd8) {
-        protocol = 3;
         sub_protocol = 0;
         tx_rate = 0;
         tx_option = 0;
     } else if (dparams.tx == tx_frskyd16) {
-        protocol = 15;
-        sub_protocol = 1;
+        sub_protocol = d16_eu8;
         tx_rate = 0;
         tx_option = 0;
     }

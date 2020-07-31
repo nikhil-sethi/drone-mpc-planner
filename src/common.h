@@ -105,11 +105,19 @@ static const char* rc_types_str[] = {
 };
 enum tx_protocols {
     tx_none = 0,
-    tx_dsmx,
-    tx_cx10,
-    tx_frskyd8,
-    tx_frskyd16
+    tx_dsmx = 6,
+    tx_cx10=12,
+    tx_frskyd8=3,
+    tx_frskyd16=15
 };
+enum d16_subprotocols {
+    d16_ch16 = 0,
+    d16_ch8 = 1,
+    d16_eu16 = 2,
+    d16_eu8 = 3,
+    d16_xclone = 4
+};
+
 static const char* tx_protocols_str[] = {
     "tx_none",
     "tx_dsmx",
