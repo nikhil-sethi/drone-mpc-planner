@@ -573,7 +573,8 @@ class SystemWidget(QWidget):
                         navstatus =="ns_landed" or
                         navstatus =="ns_start_shaking" or
                         navstatus =="ns_shaking_drone" or
-                        navstatus =="ns_wait_after_landing"):
+                        navstatus =="ns_wait_after_landing" or
+                        navstatus.startswith('wp ')):
                             system_has_problem = QColor(0,255,0)
                     elif (navstatus == "ns_drone_problem" or
                         navstatus.startswith('Roll') or
