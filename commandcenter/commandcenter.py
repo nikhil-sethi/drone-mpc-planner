@@ -319,7 +319,11 @@ class SystemWidget(QWidget):
                         line = '    <Member Name=\"max_cam_roll\">1.5</Member>\n'
                     else:
                         line = '    <Member Name=\"max_cam_roll\">0.5</Member>\n'
-
+                elif line.find('\"watchdog\"') != -1:
+                    if self.combo_mode.currentText() == "Monitoring":
+                        line = '    <Member Name="watchdog">true</Member>\n'
+                    else:
+                        line = '    <Member Name="watchdog">false</Member>\n'
 
                 new_xml_lines = new_xml_lines + line
 
