@@ -95,6 +95,7 @@ void DroneNavigation::update(double time) {
                     _visdat->create_overexposed_removal_mask(_trackers->dronetracker()->drone_takeoff_im_location(),_trackers->dronetracker()->drone_takeoff_im_size());
                     time_motion_calibration_started = time;
                     _navigation_status = ns_calibrating_motion;
+                    _dctrl->LED(false);
                 } else
                     _navigation_status = ns_locate_drone_init;
             }
@@ -151,7 +152,7 @@ void DroneNavigation::update(double time) {
             if (static_cast<float>(time-time_motion_calibration_started) > motion_calibration_duration) {
                 if (pparams.op_mode==op_mode_monitoring_only) {
                     _trackers->mode(tracking::TrackerManager::mode_wait_for_insect);
-                    _dctrl->LED(false);
+                    _dctrl->stop_rc();
                     _navigation_status = ns_monitoring;
                 } else if (pparams.op_mode == op_mode_crippled)
                     _navigation_status = ns_crippled;

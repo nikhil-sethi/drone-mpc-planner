@@ -511,6 +511,9 @@ public:
     void LED(bool b, int value) {
         _rc->LED_drone(b,value);
     }
+    void stop_rc() {
+        _rc->close();
+    }
 
     void beep(bool b) {
         _rc->beep(b);
