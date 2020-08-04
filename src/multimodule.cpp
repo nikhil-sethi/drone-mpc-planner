@@ -33,9 +33,7 @@ void MultiModule::init(int drone_id) {
         notconnected = RS232_OpenComport(115200,"/dev/pats_mm0");
         if (notconnected)
             notconnected = RS232_OpenComport(115200,"/dev/pats_mm1");
-        if (notconnected) {
-            throw my_exit("cannot connect the MultiModule");
-        } else {
+        if (!notconnected) {
             send_init_package_now = true;
             thread_mm = std::thread(&MultiModule::worker_thread,this);
             initialized = true;
@@ -74,7 +72,7 @@ void MultiModule::worker_thread(void) {
         if (init_package_nOK_cnt) {
             init_package_nOK_cnt++;
             if (init_package_nOK_cnt > 5 * pparams.fps) {
-                init_package_failure = true;
+                _init_package_failure = true;
                 std::cout << "MultiModule wouldn't receive init package within 10 seconds." << std::endl;
                 exitSendThread = true;
                 return;

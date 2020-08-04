@@ -162,7 +162,7 @@ void process_video() {
         } else if (escape_key_pressed)
             exit_now = true;
 
-        if (rc.init_package_failure) {
+        if (rc.init_package_failure()) {
             exit_now = true;
             cmdcenter.reset_commandcenter_status_file("MultiModule init package error",true);
         }
@@ -617,6 +617,8 @@ void check_hardware() {
     //multimodule rc
     if (! log_replay_mode &&! generator_mode && dparams.tx != tx_none )
         rc.init(drone_id);
+    if (!rc.connected() && pparams.op_mode != op_mode_monitoring_only)
+        throw my_exit("cannot connect the MultiModule");
 
     // Ensure that joystick was found and that we can use it
     if (!dctrl.joystick_ready() && !log_replay_mode && !generator_mode && pparams.joystick != rc_none) {
