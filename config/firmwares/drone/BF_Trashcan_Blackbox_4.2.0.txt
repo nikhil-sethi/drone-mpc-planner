@@ -98,6 +98,7 @@ set gyro_1_align_yaw = 1800
 set gyro_rpm_notch_harmonics = 2
 set gyro_rpm_notch_q = 600
 set name = Diomedes
+set debug_mode =  DSHOT_RPM_TELEMETRY
 
 profile 0
 

@@ -11,6 +11,7 @@ In case of doing your own build, use the following betaflight building target: `
 
 # Logging
 The drone will save all its info on flash which can be save and erased in the blackbox tab in Betaflight configurator. From there you can reset the drone to mass storage mode and use it like a usb stick. To use this log you'll need Betaflight blackbox explorer. ([link](https://github.com/betaflight/blackbox-log-viewer/releases))
+In order to log rpm set the following setting in the cli: `set debug_mode =  DSHOT_RPM_TELEMETRY`
 
 # Binding
 There is a seperate rc receiver on this drone which cannot be controlled fully through software. So binding has to happen the old way. Find a toothpick, press the tiny button WHILE plugging in the battery. Binds only to D16 protocol!
