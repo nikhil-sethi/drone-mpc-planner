@@ -14,7 +14,7 @@ STAT_FN=~/pats_system_info.txt
 sleep 3s
 
 HOST_ID=$( hostname | tr -dc '0-9' )
-DRONE_ID=$(( $HOST_ID -10 ))
+DRONE_ID=$(( $HOST_ID ))
 
 while [ 1 ]; do
 
