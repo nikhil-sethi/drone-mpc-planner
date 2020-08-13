@@ -309,7 +309,7 @@ void process_frame(Stereo_Frame_Data data) {
 #endif
 
     if (log_replay_mode) {
-        dctrl.insert_log(logreader.current_entry.joyRoll, logreader.current_entry.joyPitch, logreader.current_entry.joyYaw, logreader.current_entry.joyThrottle,logreader.current_entry.joyArmSwitch,logreader.current_entry.joyModeSwitch,logreader.current_entry.joyTakeoffSwitch,logreader.current_entry.auto_roll,logreader.current_entry.auto_pitch,logreader.current_entry.auto_throttle);
+        dctrl.insert_log(logreader.current_entry.joyRoll, logreader.current_entry.joyPitch, logreader.current_entry.joyYaw, logreader.current_entry.joyThrottle,logreader.current_entry.joyArmSwitch,logreader.current_entry.joyModeSwitch,logreader.current_entry.joyTakeoffSwitch,logreader.current_entry.auto_roll,logreader.current_entry.auto_pitch,logreader.current_entry.auto_throttle, logreader.current_entry.telem_acc_z, logreader.current_entry.telem_throttle, logreader.current_entry.telem_throttle_s, logreader.current_entry.maxthrust, logreader.current_entry.telem_thrust_rpm);
     }
     dnav.update(data.time);
 #ifdef PROFILING

@@ -1,4 +1,5 @@
 #include "dronecontroller.h"
+#include "multimodule.h"
 #include "flightplan.h"
 #include "quaternion.h"
 #include "linalg.h"
@@ -24,6 +25,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile,bool generator, M
     (*_logger) << "valid; flight_mode;" <<
                "target_pos_x; target_pos_y; target_pos_z; " <<
                "autoThrottle; autoRoll; autoPitch; autoYaw; " <<
+               "acc[z]; throttle; throttle_S; max_thrust; thrust_rpm;" <<
                "joyThrottle; joyRoll; joyPitch; joyYaw; " <<
                "joyArmSwitch; joyModeSwitch; joyTakeoffSwitch;" <<
                "mmArmSwitch; mmModeSwitch;" <<
@@ -553,6 +555,11 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
                auto_roll << ";" <<
                auto_pitch << ";" <<
                auto_yaw <<  ";" <<
+               _rc->sensor.acc[Z] <<  ";" <<
+               _rc->sensor.throttle <<  ";" <<
+               _rc->sensor.throttle_scaled <<  ";" <<
+               _rc->sensor.thrust_max <<  ";" <<
+               _rc->sensor.thrust_rpm <<  ";" <<
                joy_throttle <<  ";" <<
                joy_roll <<  ";" <<
                joy_pitch <<  ";" <<

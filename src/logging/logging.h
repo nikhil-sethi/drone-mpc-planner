@@ -56,6 +56,12 @@ struct LogEntryMain {
     int auto_roll;
     int auto_pitch;
 
+    float telem_acc_z;
+    uint32_t telem_throttle;
+    float   telem_throttle_s;
+    float   maxthrust;
+    float   telem_thrust_rpm;
+
     float imLx_drone,imLy_drone,disparity_drone;
 
     std::vector<LogEntryInsect> insects;

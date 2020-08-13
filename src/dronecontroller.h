@@ -366,7 +366,7 @@ public:
     void joy_takeoff_switch_file_trigger(bool value) {
         _joy_takeoff_switch = value;
     }
-    void insert_log(int log_joy_roll, int log_joy_pitch, int log_joy_yaw, int log_joy_throttle, int log_joy_arm_switch, int log_joy_mode_switch, int log_joy_take_off_switch,int log_auto_roll, int log_auto_pitch, int log_auto_throttle) {
+    void insert_log(int log_joy_roll, int log_joy_pitch, int log_joy_yaw, int log_joy_throttle, int log_joy_arm_switch, int log_joy_mode_switch, int log_joy_take_off_switch,int log_auto_roll, int log_auto_pitch, int log_auto_throttle, float log_acc_z, uint16_t log_throttle, float log_throttle_s, float log_max_thrust, float log_thrust_rpm) {
         joy_roll = log_joy_roll;
         joy_pitch= log_joy_pitch;
         joy_yaw = log_joy_yaw;
@@ -377,6 +377,11 @@ public:
         _log_auto_roll = log_auto_roll;
         _log_auto_pitch= log_auto_pitch;
         _log_auto_throttle = log_auto_throttle;
+        _log_acc_z = log_acc_z;
+        _log_throttle = log_throttle;
+        _log_throttle_s = log_throttle_s;
+        _log_max_thrust = log_max_thrust;
+        _log_thrust_rpm = log_thrust_rpm;
     }
 
     bool flight_aborted() {
@@ -456,6 +461,43 @@ public:
         pitch /= static_cast<float>(JOY_BOUND_MAX - JOY_BOUND_MIN);
         return pitch;
     }
+    float _log_acc_z;
+    float telem_acc_z() {
+        float acc_z = _rc->sensor.acc[Z];
+        if (log_replay_mode)
+            acc_z = _log_acc_z;
+        return acc_z;
+    }
+    uint16_t _log_throttle;
+    uint16_t telem_throttle() {
+        uint16_t throttle = _rc->sensor.throttle;
+        if (log_replay_mode)
+            throttle = _log_throttle;
+        return throttle;
+    }
+    float _log_throttle_s;
+    float telem_throttle_s() {
+        float throttle_s = _rc->sensor.throttle_scaled;
+        if (log_replay_mode)
+            throttle_s = _log_throttle_s;
+        return throttle_s;
+    }
+    float _log_max_thrust;
+    float telem_max_thrust() {
+        max_thrust = _rc->sensor.thrust_max;
+        if (log_replay_mode)
+            max_thrust = _log_max_thrust;
+        return max_thrust;
+    }
+    float _log_thrust_rpm;
+    float telem_thrust_rpm() {
+        float telem_thrust_rpm = _rc->sensor.thrust_rpm;
+        if (log_replay_mode)
+            telem_thrust_rpm = _log_thrust_rpm;
+        return telem_thrust_rpm;
+    }
+
+
     /** @brief Determines the corresponding roll/pitch angle for a given command */
     float angle_of_command(int command) {
         command -= JOY_MIDDLE;
