@@ -542,8 +542,22 @@ class SystemWidget(QWidget):
 
             if len(status_txt) > 2:
 
+                if len(status_txt) >= 4:
+                    if (status_txt[4].startswith("arming: ")):
+                        arm_state = int(status_txt[4][8:-1])
+                        res_txt += " Arm: " + status_txt[4][8:-1] + ", "
+                    if (status_txt[3].startswith("cell v: ")):
+                        cell_v = float(status_txt[3][8:-1])
+                        if cell_v > 1:
+                            if cell_v < 3.8:
+                                system_has_problem = QColor(255,165,0)
+                            if cell_v < 3.1:
+                                system_has_problem = QColor(255,0,0)
+                        res_txt += status_txt[3][8:-1] + 'V, '
+
+
                 if (status_txt[2].startswith("ns_")):
-                    res_txt += "State: " + status_txt[2][3:]
+                    res_txt += "state: " + status_txt[2][3:]
                 else:
                     res_txt += status_txt[2]
                 navstatus = status_txt[2].strip()
