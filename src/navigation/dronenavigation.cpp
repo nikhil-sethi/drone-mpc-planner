@@ -208,6 +208,8 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_wait_for_takeoff_command;
             break;
         } case ns_takeoff: {
+            if (_nav_flight_mode == nfm_hunt)
+                _dctrl->LED(false);
             _dctrl->reset_manual_override_take_off_now();
             _dctrl->flight_mode(DroneController::fm_start_takeoff);
             _visdat->enable_collect_no_drone_frames = false;
@@ -292,6 +294,7 @@ void DroneNavigation::update(double time) {
             }
             break;
         } case ns_goto_yaw_waypoint: {
+            _dctrl->LED(true);
             _dctrl->hover_mode(true);
             _trackers->dronetracker()->hover_mode(true);
             next_waypoint(Waypoint_Yaw_Reset(),time);
