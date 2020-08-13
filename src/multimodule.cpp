@@ -322,6 +322,14 @@ void MultiModule::receive_sensor(std::string buffer)
         send_init_package_now = true;
         id = (pkg >> 32) & 0xffff;
         data_int = pkg & 0xfffffff;
+        if(id == 0x0750) {
+            /* special treatment // 2 data pkgs in on payload */
+            acc_throttle_pkg(data_int);
+        }
+        if(id == 0x0760) {
+            /* special treatment // 2 data pkgs in on payload */
+            acc_rpm_pkg(data_int);
+        }
         if(((pkg >> 31) & 0x1) == 1) // check if the data is negative
         {
             data_int *= -1;
@@ -330,6 +338,25 @@ void MultiModule::receive_sensor(std::string buffer)
         data_f = float(data_int) / 100;
         process_telem(id, data_f);
     }
+}
+
+void MultiModule::acc_throttle_pkg(uint32_t data)
+{
+
+    sensor.acc[Z] = float((data & 0xFFFF0000) >> 16) / 100;
+    sensor.throttle = uint16_t (data & 0xFFFF);
+
+    sensor.throttle_scaled = (float(sensor.throttle) - THROTTLE_OFFSET) / (THROTTLE_MAX - THROTTLE_MIN);
+    sensor.thrust_max = sensor.acc[Z] / sensor.throttle_scaled;
+
+}
+
+void MultiModule::acc_rpm_pkg(uint32_t data)
+{
+
+    sensor.acc[Z] = float((data & 0xFFFF0000) >> 16) / 100;
+    sensor.thrust_rpm = float(data & 0xFFFF) / 100;
+
 }
 
 void MultiModule::process_telem( uint16_t sensor_id, float data)

@@ -248,6 +248,8 @@ private:
     void convert_channels(uint16_t *channels, unsigned char * packet);
     void zerothrottle();
     void send_init_package();
+    void acc_throttle_pkg(uint32_t data);
+    void acc_rpm_pkg(uint32_t data);
     void process_telem(uint16_t sensor_id, float data);
     void receive_sensor(std::string buffer);
 };
