@@ -195,7 +195,7 @@ void MultiModule::send_data(void) {
         channels[1] = pitch;
         channels[2] = throttle;
         channels[3] = yaw;
-        if (dparams.tx==tx_dsmx || dparams.tx==tx_frskyd8 || dparams.tx==tx_frskyd16 | dparams.tx==tx_redpine) {
+        if ((dparams.tx==tx_dsmx) || (dparams.tx==tx_frskyd8) || (dparams.tx==tx_frskyd16) | (dparams.tx==tx_redpine)) {
             channels[4] = arm_switch;
             channels[5] = mode;
         }
@@ -290,6 +290,7 @@ void MultiModule::receive_data() {
                 send_init_package_now = true;
             }
 
+            receive_sensor(bufs);
 
             found = bufs.find_last_of('\r');
             if (found != std::string::npos) {
@@ -301,6 +302,85 @@ void MultiModule::receive_data() {
         }
     }
 }
+
+void MultiModule::receive_sensor(std::string buffer)
+{
+    uint64_t pkg;
+    uint16_t id;
+    float data_f;
+    int data_int;
+    std::stringstream str;
+
+    const std::string sensor_str = "sensor: ";
+    auto found = buffer.rfind(sensor_str);
+
+    uint str_length = found+sensor_str.length();
+    if (found != std::string::npos && str_length < buffer.size()) {
+        buffer = buffer.substr(found+8,buffer.length() - (found+8));
+        str << buffer;
+        str >> std::hex >> pkg;
+        send_init_package_now = true;
+        id = (pkg >> 32) & 0xffff;
+        data_int = pkg & 0xfffffff;
+        if(((pkg >> 31) & 0x1) == 1) // check if the data is negative
+        {
+            data_int *= -1;
+        }
+
+        data_f = float(data_int) / 100;
+        process_telem(id, data_f);
+    }
+}
+
+void MultiModule::process_telem( uint16_t sensor_id, float data)
+{
+    switch (sensor_id)
+    {
+    case FSSP_DATAID_VFAS   :
+        sensor.batt_v = data;
+        break;
+    case FSSP_DATAID_A4     :
+        sensor.batt_cell_v = data;
+        break;
+    case FSSP_DATAID_CURRENT:
+        sensor.batt_current = data;
+        break;
+    case FSSP_DATAID_RSSI   :
+        sensor.rssi = uint8_t (data);
+        break;
+    case FSSP_DATAID_RPM    :
+        sensor.rpm = uint16_t (data);
+        break;
+    case FSSP_DATAID_ACCX   :
+        sensor.acc[X] = data;
+        break;
+    case FSSP_DATAID_ACCY   :
+        sensor.acc[Y] = data;
+        break;
+    case FSSP_DATAID_ACCZ   :
+        sensor.acc[Z] = data;
+        break;
+    case FSSP_DATAID_ACCN   :
+        sensor.acc[N] = data;
+        break;
+    case FSSP_DATAID_MAX_THRUST :
+        sensor.thrust_max = data;
+        break;
+    case FSSP_DATAID_THROTTLE :
+        sensor.throttle = uint16_t (data);
+        break;
+    case FSSP_DATAID_ARMING :
+        if(data > 23) data = 24;
+        sensor.arming_state = static_cast<arming_states>(data);
+        // std::cout << "Arming state: " << arming_states_str[sensor.arming_state] << std::endl;
+        break;
+
+    default:
+        break;
+    }
+
+}
+
 
 void MultiModule::close() {
     if (initialized) {
