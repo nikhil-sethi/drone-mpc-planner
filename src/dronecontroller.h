@@ -169,21 +169,21 @@ private:
     uint16_t initial_hover_throttle_guess_non3d;
     uint16_t initial_hover_throttle_guess() {
         if (dparams.mode3d)
-            return initial_hover_throttle_guess_non3d / 2 + JOY_MIDDLE;
+            return initial_hover_throttle_guess_non3d / 2 + RC_MIDDLE;
         else {
             return initial_hover_throttle_guess_non3d;
         }
     }
     uint16_t spinup_throttle() {
         if (dparams.mode3d)
-            return JOY_MIDDLE +1;
+            return RC_MIDDLE +1;
         else {
             return dparams.spinup_throttle_non3d;
         }
     }
     uint16_t min_bound_throttle() {
         if (dparams.mode3d)
-            return JOY_BOUND_MIN;
+            return RC_BOUND_MIN;
         else {
             return static_cast<uint16_t>(dparams.min_throttle);
         }
@@ -420,15 +420,15 @@ public:
         return  static_cast<float>(time - time_waypoint_changed) ;
     }
 
-    int joy_throttle = JOY_BOUND_MIN;
-    int joy_roll = JOY_MIDDLE;
-    int joy_pitch = JOY_MIDDLE;
-    int joy_yaw = JOY_MIDDLE;
+    int joy_throttle = RC_BOUND_MIN;
+    int joy_roll = RC_MIDDLE;
+    int joy_pitch = RC_MIDDLE;
+    int joy_yaw = RC_MIDDLE;
 
-    int auto_throttle = JOY_BOUND_MIN;
-    int auto_roll = JOY_MIDDLE;
-    int auto_pitch = JOY_MIDDLE;
-    int auto_yaw = JOY_MIDDLE;
+    int auto_throttle = RC_BOUND_MIN;
+    int auto_roll = RC_MIDDLE;
+    int auto_pitch = RC_MIDDLE;
+    int auto_yaw = RC_MIDDLE;
     float auto_burn_duration = 0;
 
     //Normalized throttle, between [-1 .. 1].
@@ -438,7 +438,7 @@ public:
         float throttle = _rc->throttle;
         if (log_replay_mode)
             throttle  = _log_auto_throttle;
-        throttle /= static_cast<float>(JOY_BOUND_MAX - JOY_BOUND_MIN);
+        throttle /= static_cast<float>(RC_BOUND_MAX - RC_BOUND_MIN);
         return throttle;
     }
     //Normalized roll, between [-1 .. 1].
@@ -447,8 +447,8 @@ public:
         float roll = _rc->roll;
         if (log_replay_mode)
             roll  = _log_auto_roll;
-        roll -= JOY_MIDDLE;
-        roll /= static_cast<float>(JOY_BOUND_MAX - JOY_BOUND_MIN);
+        roll -= RC_MIDDLE;
+        roll /= static_cast<float>(RC_BOUND_MAX - RC_BOUND_MIN);
         return roll;
     }
     //Normalized pitch, between [0 .. 1].
@@ -457,13 +457,13 @@ public:
         float pitch = _rc->pitch;
         if (log_replay_mode)
             pitch = _log_auto_pitch;
-        pitch -= JOY_MIDDLE;
-        pitch /= static_cast<float>(JOY_BOUND_MAX - JOY_BOUND_MIN);
+        pitch -= RC_MIDDLE;
+        pitch /= static_cast<float>(RC_BOUND_MAX - RC_BOUND_MIN);
         return pitch;
     }
     float _log_acc_z;
     float telem_acc_z() {
-        float acc_z = _rc->sensor.acc[Z];
+        float acc_z = _rc->sensor.acc.z;
         if (log_replay_mode)
             acc_z = _log_acc_z;
         return acc_z;
@@ -500,8 +500,8 @@ public:
 
     /** @brief Determines the corresponding roll/pitch angle for a given command */
     float angle_of_command(int command) {
-        command -= JOY_MIDDLE;
-        float commandf = static_cast<float>(command)/static_cast<float>(JOY_BOUND_MAX - JOY_BOUND_MIN);
+        command -= RC_MIDDLE;
+        float commandf = static_cast<float>(command)/static_cast<float>(RC_BOUND_MAX - RC_BOUND_MIN);
         return commandf*max_bank_angle;
     }
 
@@ -533,12 +533,12 @@ public:
             return false;
         else if (flight_aborted())
             return false;
-        else if (_joy_mode_switch == jmsm_manual && joy_throttle > JOY_BOUND_MIN && _joy_arm_switch == bf_armed)
+        else if (_joy_mode_switch == jmsm_manual && joy_throttle > RC_BOUND_MIN && _joy_arm_switch == bf_armed)
             return true;
-        else if ((_joy_mode_switch == jmsm_manual && joy_throttle <= JOY_BOUND_MIN) || _joy_arm_switch == bf_disarmed)
+        else if ((_joy_mode_switch == jmsm_manual && joy_throttle <= RC_BOUND_MIN) || _joy_arm_switch == bf_disarmed)
             return false;
         else
-            return ((auto_throttle > JOY_BOUND_MIN && _flight_mode != fm_spinup) || _flight_mode == fm_start_takeoff || _flight_mode == fm_take_off_aim || _flight_mode == fm_max_burn || _flight_mode == fm_1g ); //FIXME: check if this goes well if due to extreme control throttle is set to 0
+            return ((auto_throttle > RC_BOUND_MIN && _flight_mode != fm_spinup) || _flight_mode == fm_start_takeoff || _flight_mode == fm_take_off_aim || _flight_mode == fm_max_burn || _flight_mode == fm_1g ); //FIXME: check if this goes well if due to extreme control throttle is set to 0
     }
 
     bool drone_state_inactive() {

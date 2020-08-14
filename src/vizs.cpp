@@ -46,8 +46,8 @@ void Visualizer::add_plot_sample(void) {
         pitch_calculated.push_back(static_cast<float>(_dctrl->auto_pitch));
         //    yaw_calculated.push_back(static_cast<float>(_dctrl->commandedYaw));
         throttle_calculated.push_back(static_cast<float>(_dctrl->auto_throttle));
-        throttle_min_bound.push_back(static_cast<float>(JOY_BOUND_MIN));
-        throttle_max_bound.push_back(static_cast<float>(JOY_BOUND_MAX));
+        throttle_min_bound.push_back(static_cast<float>(RC_BOUND_MIN));
+        throttle_max_bound.push_back(static_cast<float>(RC_BOUND_MAX));
 
         track_data data = _dtrkr->Last_track_data();
         dt.push_back(data.dt);

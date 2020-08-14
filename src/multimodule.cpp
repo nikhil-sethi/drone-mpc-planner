@@ -45,7 +45,6 @@ void MultiModule::init(int drone_id) {
 
     zerothrottle();
 
-// setup connection with MultiModule
     if (dparams.tx!=tx_none) {
         notconnected = RS232_OpenComport(115200,"/dev/pats_mm0");
         if (notconnected)
@@ -58,7 +57,7 @@ void MultiModule::init(int drone_id) {
     }
 }
 
-void MultiModule::send_init_package() {
+void MultiModule::send_pats_init_package() {
     //send bind id to the multimodule. It must have this form: [66,67 mode3d,id2,id1,id0,68], otherwise the MM won't proceed.
     unsigned char packet[7];
     packet[0] = 66; //header 1
@@ -68,66 +67,65 @@ void MultiModule::send_init_package() {
     packet[4] = 0; // id1
     packet[5] = _drone_id_tx; //id0
     packet[6] = 68; //header 3
+    usleep(100);
     RS232_SendBuf( static_cast<unsigned char*>( packet), 7);
+    usleep(100);
+    send_init_package_now = false;
 }
 
 void MultiModule::zerothrottle() {
     if (dparams.mode3d)
-        throttle = JOY_MIDDLE;
+        throttle = RC_MIDDLE;
     else
-        throttle = JOY_BOUND_MIN;
+        throttle = RC_BOUND_MIN;
 }
 
 void MultiModule::worker_thread(void) {
     std::cout << "Send multimodule thread started!" << std::endl;
     while (!exitSendThread) {
-
         receive_data();
-
-        if (init_package_nOK_cnt) {
-            init_package_nOK_cnt++;
-            if (init_package_nOK_cnt > 5 * pparams.fps) {
-                _init_package_failure = true;
-                std::cout << "MultiModule wouldn't receive init package within 10 seconds." << std::endl;
-                exitSendThread = true;
-                return;
-            }
+        watchdog_pats_init_package();
+        if (send_init_package_now)
+            send_pats_init_package();
+        else {
+            handle_bind();
+            send_rc_data();
         }
+    }
+}
 
-        if (send_init_package_now) {
-            usleep(100);
-            send_init_package();
-            send_init_package_now = false;
-            usleep(100);
-        } else {
-            if (cycles_until_bind > 0) {
-                cycles_until_bind--;
-                if (cycles_until_bind ==0)
-                    _bind = true;
-                arm_switch = JOY_MIN_THRESH;
-                zerothrottle();
-            }
-            if (cycles_until_bind < 0) {
-                cycles_until_bind++;
-                if (cycles_until_bind == 0)
-                    _bind = false;
-                arm_switch = JOY_MIN_THRESH;
-                zerothrottle();
-            }
-            if (_bind) {
-                arm_switch = JOY_MIN_THRESH;
-                zerothrottle();
-            }
-
-            g_lockData.lock();
-            send_data();
-            g_lockData.unlock();
-            if (_bind) {
-                if (sw_bind.Read() > 20000)
-                    _bind =false;
-            }
-            g_sendData.lock();
+void MultiModule::watchdog_pats_init_package() {
+    if (init_package_nOK_cnt) {
+        init_package_nOK_cnt++;
+        if (init_package_nOK_cnt > 5 * pparams.fps) {
+            _init_package_failure = true;
+            std::cout << "MultiModule wouldn't receive init package within 10 seconds." << std::endl;
+            exitSendThread = true;
+            return;
         }
+    }
+}
+
+void MultiModule::handle_bind() {
+    if (cycles_until_bind > 0) {
+        cycles_until_bind--;
+        if (cycles_until_bind ==0)
+            _bind = true;
+        arm_switch = RC_MIN_THRESH;
+        zerothrottle();
+    }
+    if (cycles_until_bind < 0) {
+        cycles_until_bind++;
+        if (cycles_until_bind == 0)
+            _bind = false;
+        arm_switch = RC_MIN_THRESH;
+        zerothrottle();
+    }
+    if (_bind) {
+        arm_switch = RC_MIN_THRESH;
+        zerothrottle();
+        if (sw_bind.Read() > 20000)
+            _bind =false;
     }
 }
 
@@ -148,10 +146,11 @@ void MultiModule::convert_channels(uint16_t * channels, unsigned char * packet) 
     }
 }
 
-void MultiModule::send_data(void) {
+void MultiModule::send_rc_data(void) {
+    g_sendData.lock();
+    g_lockData.lock();
     if (dparams.tx != tx_none) {
-        lock_rs232.lock();
-        unsigned char packet[RXBUFFER_SIZE] = {0}; // a packet is 26 bytes, see multimodule.h
+        unsigned char packet[RXBUFFER_SIZE] = {0}; // a packet is 36 bytes, see multimodule.h
         if (protocol < 31) {
             packet[0] = 0x55; // headerbyte
             packet[1] = protocol; //sub_protocol|BindBit|RangeCheckBit|AutoBindBit;
@@ -182,16 +181,16 @@ void MultiModule::send_data(void) {
 
         if (calibrate_acc_cnt) {
             calibrate_acc_cnt--;
-            arm_switch = JOY_BOUND_MIN;
-            roll = JOY_MIDDLE;
-            pitch = JOY_BOUND_MIN;
-            yaw = JOY_BOUND_MIN;
-            throttle = JOY_BOUND_MAX;
+            arm_switch = RC_BOUND_MIN;
+            roll = RC_MIDDLE;
+            pitch = RC_BOUND_MIN;
+            yaw = RC_BOUND_MIN;
+            throttle = RC_BOUND_MAX;
         }
         //AETR
         channels[0] = roll;
         if (dparams.tx==tx_cx10)
-            channels[0] = JOY_MAX-roll;
+            channels[0] = RC_MAX-roll;
         channels[1] = pitch;
         channels[2] = throttle;
         channels[3] = yaw;
@@ -202,7 +201,7 @@ void MultiModule::send_data(void) {
         if (_beep || calibrate_acc_cnt ) {
             std::cout << "BEEP" << std::endl;
             channels[4] = bf_disarmed;
-            channels[5] = JOY_BOUND_MAX;
+            channels[5] = RC_BOUND_MAX;
         }
 
         if (dparams.tx==tx_cx10)
@@ -211,18 +210,17 @@ void MultiModule::send_data(void) {
         channels[6] = turtle_mode;
 
         if (calibrate_acc_cnt)
-            channels[7] = JOY_BOUND_MIN + JOY_BOUND_RANGE / 100 * 100;
+            channels[7] = RC_BOUND_MIN + RC_BOUND_RANGE / 100 * 100;
         else
-            channels[7] = JOY_BOUND_MIN + JOY_BOUND_RANGE / 100 * _LED_drone;
+            channels[7] = RC_BOUND_MIN + RC_BOUND_RANGE / 100 * _LED_drone;
 
         convert_channels(channels, &packet[4]);
 
         if (!notconnected) {
             RS232_SendBuf( static_cast<unsigned char*>( packet), RXBUFFER_SIZE);
         }
-
-        lock_rs232.unlock();
     }
+    g_lockData.unlock();
 }
 
 void MultiModule::receive_data() {
@@ -240,59 +238,13 @@ void MultiModule::receive_data() {
             }
         }
         if (totn > 0 ) {
-            uint str_length = 0;
             received << tmp.str();
             std::string bufs = received.str();
-            const std::string version_str = "Multiprotocol version: ";
-            const std::string required_firmwar_version = "1.3.1.45";
-            auto found = bufs.rfind(version_str) ;
-            str_length = found+version_str.length()+required_firmwar_version.length();
-            if (found != std::string::npos && str_length < bufs.size()) {
 
-                std::string current_firmware_version = bufs.substr(found+version_str.length(),required_firmwar_version.length());
+            process_pats_init_packages(bufs);
+            receive_telemetry(bufs);
 
-                if (current_firmware_version != required_firmwar_version) {
-                    if (current_firmware_version.length() >= required_firmwar_version.length()) {
-                        std::cout << "Detected wrong MultiModule firmware version! Detected: " << current_firmware_version << ". Required: "  << required_firmwar_version << "." << std::endl;
-                        exit(1);
-                    }
-                } else {
-                    std::cout << "Detecting MultiProtocol version " << required_firmwar_version << ": OK" << std::endl;
-                    version_check_OK = true;
-                }
-            }
-
-            const std::string specify_id = "Specify bind ID...";
-            found = bufs.rfind(specify_id);
-            str_length = found+specify_id.length();
-            if (found != std::string::npos && str_length < bufs.size())
-                send_init_package_now = true;
-            const std::string id_received = "ID received:";
-            found = bufs.rfind(id_received);
-            auto delete_until_id_received = found+id_received.length();
-            if (found != std::string::npos && delete_until_id_received < bufs.size()) {
-                send_init_package_now = false;
-
-                std::cout << "Multimodule received init package!" << std::endl;
-                init_package_nOK_cnt = 0;
-                if (!version_check_OK) {
-                    std::cout << "MultiProtocol version was not received." << std::endl;
-                    exit(1);
-                }
-            }
-
-            //below checks for the error message the MM gives if it is (already) waiting for the init package, but receives from bytes.
-            const std::string i_want_66 = "I want 66";
-            found = bufs.rfind(i_want_66);
-            str_length = found+i_want_66.length();
-            if (found != std::string::npos && str_length < bufs.size()) {
-                bufs = bufs.substr(found+9,bufs.length() - (found+9));
-                send_init_package_now = true;
-            }
-
-            receive_sensor(bufs);
-
-            found = bufs.find_last_of('\r');
+            auto found = bufs.find_last_of('\r');
             if (found != std::string::npos) {
                 received.str(std::string());
                 received << bufs.substr(found+1, bufs.size());
@@ -303,8 +255,60 @@ void MultiModule::receive_data() {
     }
 }
 
-void MultiModule::receive_sensor(std::string buffer)
-{
+void MultiModule::process_pats_init_packages(std::string bufs) {
+    if (init_package_nOK_cnt) {
+        uint str_length = 0;
+
+        const std::string version_str = "Multiprotocol version: ";
+        const std::string required_firmwar_version = "1.3.1.45";
+        auto found = bufs.rfind(version_str) ;
+        str_length = found+version_str.length()+required_firmwar_version.length();
+        if (found != std::string::npos && str_length < bufs.size()) {
+
+            std::string current_firmware_version = bufs.substr(found+version_str.length(),required_firmwar_version.length());
+
+            if (current_firmware_version != required_firmwar_version) {
+                if (current_firmware_version.length() >= required_firmwar_version.length()) {
+                    std::cout << "Detected wrong MultiModule firmware version! Detected: " << current_firmware_version << ". Required: "  << required_firmwar_version << "." << std::endl;
+                    exit(1);
+                }
+            } else {
+                std::cout << "Detecting MultiProtocol version " << required_firmwar_version << ": OK" << std::endl;
+                version_check_OK = true;
+            }
+        }
+
+        const std::string specify_id = "Specify bind ID...";
+        found = bufs.rfind(specify_id);
+        str_length = found+specify_id.length();
+        if (found != std::string::npos && str_length < bufs.size())
+            send_init_package_now = true;
+        const std::string id_received = "ID received:";
+        found = bufs.rfind(id_received);
+        auto delete_until_id_received = found+id_received.length();
+        if (found != std::string::npos && delete_until_id_received < bufs.size()) {
+            send_init_package_now = false;
+
+            std::cout << "Multimodule received init package!" << std::endl;
+            init_package_nOK_cnt = 0;
+            if (!version_check_OK) {
+                std::cout << "MultiProtocol version was not received." << std::endl;
+                exit(1);
+            }
+
+            //below checks for the error message the MM gives if it is (already) waiting for the init package, but receives wrong bytes.
+            const std::string i_want_66 = "I want 66";
+            found = bufs.rfind(i_want_66);
+            str_length = found+i_want_66.length();
+            if (found != std::string::npos && str_length < bufs.size()) {
+                bufs = bufs.substr(found+9,bufs.length() - (found+9));
+                send_init_package_now = true;
+            }
+        }
+    }
+}
+
+void MultiModule::receive_telemetry(std::string buffer) {
     uint64_t pkg;
     uint16_t id;
     float data_f;
@@ -313,13 +317,11 @@ void MultiModule::receive_sensor(std::string buffer)
 
     const std::string sensor_str = "sensor: ";
     auto found = buffer.rfind(sensor_str);
-
     uint str_length = found+sensor_str.length();
     if (found != std::string::npos && str_length < buffer.size()) {
         buffer = buffer.substr(found+8,buffer.length() - (found+8));
         str << buffer;
         str >> std::hex >> pkg;
-        send_init_package_now = true;
         id = (pkg >> 32) & 0xffff;
         data_int = pkg & 0xfffffff;
         if(id == 0x0750) {
@@ -330,8 +332,7 @@ void MultiModule::receive_sensor(std::string buffer)
             /* special treatment // 2 data pkgs in on payload */
             acc_rpm_pkg(data_int);
         }
-        if(((pkg >> 31) & 0x1) == 1) // check if the data is negative
-        {
+        if(((pkg >> 31) & 0x1) == 1) { // check if the data is negative
             data_int *= -1;
         }
 
@@ -340,29 +341,21 @@ void MultiModule::receive_sensor(std::string buffer)
     }
 }
 
-void MultiModule::acc_throttle_pkg(uint32_t data)
-{
-
-    sensor.acc[Z] = float((data & 0xFFFF0000) >> 16) / 100;
+void MultiModule::acc_throttle_pkg(uint32_t data) {
+    sensor.acc.z = float((data & 0xFFFF0000) >> 16) / 100;
     sensor.throttle = uint16_t (data & 0xFFFF);
 
-    sensor.throttle_scaled = (float(sensor.throttle) - THROTTLE_OFFSET) / (THROTTLE_MAX - THROTTLE_MIN);
-    sensor.thrust_max = sensor.acc[Z] / sensor.throttle_scaled;
-
+    sensor.throttle_scaled = (float(sensor.throttle) - BF_CHN_OFFSET) / (BF_CHN_MAX - BF_CHN_MIN);
+    sensor.thrust_max = sensor.acc.z / sensor.throttle_scaled;
 }
 
-void MultiModule::acc_rpm_pkg(uint32_t data)
-{
-
-    sensor.acc[Z] = float((data & 0xFFFF0000) >> 16) / 100;
+void MultiModule::acc_rpm_pkg(uint32_t data) {
+    sensor.acc.z = float((data & 0xFFFF0000) >> 16) / 100;
     sensor.thrust_rpm = float(data & 0xFFFF) / 100;
-
 }
 
-void MultiModule::process_telem( uint16_t sensor_id, float data)
-{
-    switch (sensor_id)
-    {
+void MultiModule::process_telem( uint16_t sensor_id, float data) {
+    switch (sensor_id) {
     case FSSP_DATAID_VFAS   :
         sensor.batt_v = data;
         break;
@@ -373,65 +366,61 @@ void MultiModule::process_telem( uint16_t sensor_id, float data)
         sensor.batt_current = data;
         break;
     case FSSP_DATAID_RSSI   :
-        sensor.rssi = uint8_t (data);
+        sensor.rssi = static_cast<uint8_t>(data);
         break;
     case FSSP_DATAID_RPM    :
-        sensor.rpm = uint16_t (data);
+        sensor.rpm = static_cast<uint16_t>(data);
         break;
     case FSSP_DATAID_ACCX   :
-        sensor.acc[X] = data;
+        sensor.acc.x = data;
         break;
     case FSSP_DATAID_ACCY   :
-        sensor.acc[Y] = data;
+        sensor.acc.y = data;
         break;
     case FSSP_DATAID_ACCZ   :
-        sensor.acc[Z] = data;
+        sensor.acc.z = data;
         break;
     case FSSP_DATAID_ACCN   :
-        sensor.acc[N] = data;
+        sensor.acc_nominal = data;
         break;
     case FSSP_DATAID_MAX_THRUST :
         sensor.thrust_max = data;
         break;
     case FSSP_DATAID_THROTTLE :
-        sensor.throttle = uint16_t (data);
+        sensor.throttle = static_cast<uint16_t>(data);
         break;
     case FSSP_DATAID_ARMING :
-        if(data > 23) data = 24;
         sensor.arming_state = static_cast<arming_states>(data);
-        // std::cout << "Arming state: " << arming_states_str[sensor.arming_state] << std::endl;
         break;
 
     default:
         break;
     }
-
 }
-
 
 void MultiModule::close() {
     if (initialized) {
         std::cout << "Closing multimodule" << std::endl;
         exitSendThread = true;
-        g_lockData.lock();
         g_sendData.unlock();
-
+        g_lockData.unlock();
         thread_mm.join();
 
-
         // kill throttle when closing the module
-        mode = JOY_BOUND_MIN;
-        arm_switch = JOY_BOUND_MIN;
-        throttle = JOY_BOUND_MIN;
-        roll = JOY_MIDDLE;
-        pitch = JOY_MIDDLE;
-        yaw = JOY_MIDDLE;
+        g_lockData.lock();
+        mode = RC_BOUND_MIN;
+        arm_switch = RC_BOUND_MIN;
+        throttle = RC_BOUND_MIN;
+        roll = RC_MIDDLE;
+        pitch = RC_MIDDLE;
+        yaw = RC_MIDDLE;
         _LED_drone = 0;
-        send_data();
+
+        g_sendData.unlock();
+        g_lockData.unlock();
+        send_rc_data();
         notconnected = true;
         RS232_CloseComport();
-        g_lockData.unlock();
-
     }
     initialized = false;
 }
