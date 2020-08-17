@@ -31,7 +31,7 @@ cd ~/code/pats/config/firmwares/multimodule
 Same remarks as with drone flash script apply.
 
 ## Flashing realsense camera:
-`sudo rs-fw-update -f ~/code/pats/config/firmwares/realsense/Signed_Image_UVC_5_12_3_0.bin`
+`sudo rs-fw-update -f ~/code/pats/config/firmwares/realsense/Signed_Image_UVC_5_12_6_0.bin`
 
 ## Installing correct kernel:
 `sudo apt install linux-headers-4.15.0-55 linux-headers-4.15.0-55-generic linux-image-4.15.0-55-generic linux-modules-4.15.0-55-generic linux-modules-extra-4.15.0-55-generic`  
