@@ -418,10 +418,12 @@ class SystemWidget(QWidget):
                 elif line.find('op_mode_') != -1:
                     self.combo_mode.setStyleSheet("background-color:rgb(128,0,0)")
 
+
         source_im_file = Path(self.source_folder,self.system_folder,'status.jpg')
-        pixmap = QPixmap(str(source_im_file))
-        self.im_label.setPixmap(pixmap)
-        self.im_label.setPixmap(pixmap.scaled(self.im_label.size(),Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        if os.path.exists(source_im_file):
+            pixmap = QPixmap(str(source_im_file))
+            self.im_label.setPixmap(pixmap)
+            self.im_label.setPixmap(pixmap.scaled(self.im_label.size(),Qt.KeepAspectRatio, Qt.SmoothTransformation))
         try:
             txt,system_color = self.get_lbl_txt()
             self.txt_label.setText(txt)
