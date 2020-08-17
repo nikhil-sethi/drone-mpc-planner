@@ -237,10 +237,10 @@ private:
     void convert_channels(uint16_t *channels, unsigned char * packet);
     void zerothrottle();
     void send_pats_init_package();
-    void acc_throttle_pkg(uint32_t data);
-    void acc_rpm_pkg(uint32_t data);
+    void acc_throttle_pkg(int16_t accz, int16_t thr);
+    void acc_rpm_pkg(int16_t accz, int16_t rpm);
     void process_telem(uint16_t sensor_id, float data);
-    void receive_telemetry(std::string buffer);
+    bool receive_telemetry(std::string buffer);
     void process_pats_init_packages(std::string bufs);
     void handle_bind();
     void watchdog_pats_init_package();

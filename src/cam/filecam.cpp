@@ -53,7 +53,7 @@ void FileCam::read_frame_ids() {
     string line;
     while (getline(infile, line)) {
         try {
-            auto data = logging::split_csv_line(line);
+            auto data = split_csv_line(line);
             frame_id_entry entry;
             entry.raw_video_frame_counter = stoi(data.at(0));
             entry.imgcount = stoi(data.at(1));

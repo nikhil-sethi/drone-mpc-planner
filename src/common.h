@@ -7,6 +7,7 @@
 #include <fstream>
 
 int sign(float x);
+vector<string> split_csv_line(string line);
 cv::Point2f world2im_2d(cv::Point3f p, cv::Mat Qfi, float camera_angle);
 cv::Point3f world2im_3d(cv::Point3f p, cv::Mat Qfi, float camera_angle);
 cv::Point3f im2world(cv::Point2f p_im, float disparity, cv::Mat Qf, float camera_angle);

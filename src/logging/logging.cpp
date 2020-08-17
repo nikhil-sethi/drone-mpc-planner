@@ -27,17 +27,6 @@ static inline void trim(string &s) {
     rtrim(s);
 }
 
-vector<string> split_csv_line(string line) {
-    stringstream liness(line);
-    vector<string> line_data;
-    while (!liness.eof()) {
-        string tmp;
-        getline(liness,tmp, ';');
-        line_data.push_back(tmp);
-    }
-    return line_data;
-}
-
 map<string, int> read_head_map(string heads) {
     stringstream heads_ss(heads);
     int cnt=0;

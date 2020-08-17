@@ -5,7 +5,6 @@
 namespace logging
 {
 std::map<std::string, int> read_head_map(std::string heads);
-std::vector<std::string> split_csv_line(std::string line);
 
 struct LogEntryInsect {
     float time;

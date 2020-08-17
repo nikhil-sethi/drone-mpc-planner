@@ -242,15 +242,16 @@ void MultiModule::receive_data() {
             std::string bufs = received.str();
 
             process_pats_init_packages(bufs);
-            receive_telemetry(bufs);
+            bool telemetry_sensor_data_detected = receive_telemetry(bufs);
 
             auto found = bufs.find_last_of('\r');
             if (found != std::string::npos) {
-                received.str(std::string());
+                received.str(std::string()); // clear stringstream
                 received << bufs.substr(found+1, bufs.size());
             }
 
-            std::cout << tmp.str()  << std::flush;
+            if (init_package_nOK_cnt and !telemetry_sensor_data_detected) // during init some interesting info may be printed, after that its mostly telemetry sensor data.
+                std::cout << tmp.str()  << std::flush;
         }
     }
 }
@@ -260,7 +261,7 @@ void MultiModule::process_pats_init_packages(std::string bufs) {
         uint str_length = 0;
 
         const std::string version_str = "Multiprotocol version: ";
-        const std::string required_firmwar_version = "1.3.1.45";
+        const std::string required_firmwar_version = "6.0.0.0";
         auto found = bufs.rfind(version_str) ;
         str_length = found+version_str.length()+required_firmwar_version.length();
         if (found != std::string::npos && str_length < bufs.size()) {
@@ -285,8 +286,8 @@ void MultiModule::process_pats_init_packages(std::string bufs) {
             send_init_package_now = true;
         const std::string id_received = "ID received:";
         found = bufs.rfind(id_received);
-        auto delete_until_id_received = found+id_received.length();
-        if (found != std::string::npos && delete_until_id_received < bufs.size()) {
+        str_length = found+id_received.length();
+        if (found != std::string::npos && str_length < bufs.size()) {
             send_init_package_now = false;
 
             std::cout << "Multimodule received init package!" << std::endl;
@@ -301,98 +302,90 @@ void MultiModule::process_pats_init_packages(std::string bufs) {
             found = bufs.rfind(i_want_66);
             str_length = found+i_want_66.length();
             if (found != std::string::npos && str_length < bufs.size()) {
-                bufs = bufs.substr(found+9,bufs.length() - (found+9));
+                bufs = bufs.substr(found+i_want_66.length(),bufs.length() - (found+i_want_66.length()));
                 send_init_package_now = true;
             }
         }
     }
 }
 
-void MultiModule::receive_telemetry(std::string buffer) {
-    uint64_t pkg;
-    uint16_t id;
-    float data_f;
-    int data_int;
-    std::stringstream str;
-
-    const std::string sensor_str = "sensor: ";
+bool MultiModule::receive_telemetry(std::string buffer) {
+    const std::string sensor_str = "sensor:";
     auto found = buffer.rfind(sensor_str);
     uint str_length = found+sensor_str.length();
     if (found != std::string::npos && str_length < buffer.size()) {
-        buffer = buffer.substr(found+8,buffer.length() - (found+8));
-        str << buffer;
-        str >> std::hex >> pkg;
-        id = (pkg >> 32) & 0xffff;
-        data_int = pkg & 0xfffffff;
-        if(id == 0x0750) {
-            /* special treatment // 2 data pkgs in on payload */
-            acc_throttle_pkg(data_int);
-        }
-        if(id == 0x0760) {
-            /* special treatment // 2 data pkgs in on payload */
-            acc_rpm_pkg(data_int);
-        }
-        if(((pkg >> 31) & 0x1) == 1) { // check if the data is negative
-            data_int *= -1;
-        }
+        buffer = buffer.substr(found+sensor_str.length(),buffer.length() - (found+sensor_str.length()));
 
-        data_f = float(data_int) / 100;
-        process_telem(id, data_f);
+        auto arr = split_csv_line(buffer);
+        uint16_t sensor_id = std::stoi( arr.at(0));
+
+        switch (sensor_id) {
+        case FSSP_DATAID_ACC_THROTTLE_MIX:
+            acc_throttle_pkg(std::stoi(arr.at(1)),std::stoi(arr.at(2)));
+            break;
+        case FSSP_DATAID_ACC_RPM_MIX:
+            acc_rpm_pkg(std::stoi(arr.at(1)),std::stoi(arr.at(2)));
+            break;
+        default:
+            process_telem(sensor_id, std::stof( arr.at(1)));
+            break;
+        }
+        return true;
     }
+    return false;
 }
 
-void MultiModule::acc_throttle_pkg(uint32_t data) {
-    sensor.acc.z = float((data & 0xFFFF0000) >> 16) / 100;
-    sensor.throttle = uint16_t (data & 0xFFFF);
+void MultiModule::acc_throttle_pkg(int16_t accz, int16_t thr) {
+    sensor.acc.z = static_cast<float>(accz) / 100;
+    sensor.throttle = std::clamp(static_cast<int>(thr),BF_CHN_MIN,BF_CHN_MAX); // clamp to prevent rounding errors
 
     sensor.throttle_scaled = (float(sensor.throttle) - BF_CHN_OFFSET) / (BF_CHN_MAX - BF_CHN_MIN);
     sensor.thrust_max = sensor.acc.z / sensor.throttle_scaled;
 }
 
-void MultiModule::acc_rpm_pkg(uint32_t data) {
-    sensor.acc.z = float((data & 0xFFFF0000) >> 16) / 100;
-    sensor.thrust_rpm = float(data & 0xFFFF) / 100;
+void MultiModule::acc_rpm_pkg(int16_t accz, int16_t rpm) {
+    sensor.acc.z = static_cast<float>(accz) / 100.f;
+    sensor.thrust_rpm = static_cast<float>(rpm);
 }
 
 void MultiModule::process_telem( uint16_t sensor_id, float data) {
     switch (sensor_id) {
-    case FSSP_DATAID_VFAS   :
-        sensor.batt_v = data;
+    case FSSP_DATAID_VFAS:
+        sensor.batt_v = data/100.f;
         break;
-    case FSSP_DATAID_A4     :
-        sensor.batt_cell_v = data;
+    case FSSP_DATAID_A4:
+        sensor.batt_cell_v = data/100.f;
         break;
     case FSSP_DATAID_CURRENT:
-        sensor.batt_current = data;
+        sensor.batt_current = data/100.f;
         break;
-    case FSSP_DATAID_RSSI   :
+    case FSSP_DATAID_RSSI:
         sensor.rssi = static_cast<uint8_t>(data);
         break;
-    case FSSP_DATAID_RPM    :
+    case FSSP_DATAID_RPM:
         sensor.rpm = static_cast<uint16_t>(data);
         break;
-    case FSSP_DATAID_ACCX   :
-        sensor.acc.x = data;
+    case FSSP_DATAID_ACCX:
+        sensor.acc.x = data/100.f;
         break;
-    case FSSP_DATAID_ACCY   :
-        sensor.acc.y = data;
+    case FSSP_DATAID_ACCY:
+        sensor.acc.y = data/100.f;
         break;
-    case FSSP_DATAID_ACCZ   :
-        sensor.acc.z = data;
+    case FSSP_DATAID_ACCZ:
+        sensor.acc.z = data/100.f;
         break;
-    case FSSP_DATAID_ACCN   :
-        sensor.acc_nominal = data;
+    case FSSP_DATAID_ACCN:
+        sensor.acc_nominal = data/100.f;
         break;
-    case FSSP_DATAID_MAX_THRUST :
-        sensor.thrust_max = data;
+    case FSSP_DATAID_MAX_THRUST:
+        sensor.thrust_max = data/100.f;
         break;
-    case FSSP_DATAID_THROTTLE :
+    case FSSP_DATAID_THROTTLE:
         sensor.throttle = static_cast<uint16_t>(data);
         break;
-    case FSSP_DATAID_ARMING :
+    case FSSP_DATAID_ARMING:
         sensor.arming_state = static_cast<arming_states>(data);
         break;
-
     default:
         break;
     }
