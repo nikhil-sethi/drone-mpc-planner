@@ -28,8 +28,8 @@ class CommandCenterWindow(QMainWindow):
 
         reboot_rtc_Action = QAction(self.style().standardIcon(QStyle.SP_DialogResetButton), 'Reboot all systems', self)
         reboot_rtc_Action.triggered.connect(self.reboot_systems)
-        update_Action = QAction(self.style().standardIcon(QStyle.SP_FileDialogToParent), 'Update all systems', self)
-        update_Action.triggered.connect(self.update_systems)
+        git_update_Action = QAction(self.style().standardIcon(QStyle.SP_FileDialogToParent), 'Update all systems', self)
+        git_update_Action.triggered.connect(self.git_update_systems)
         restart_Action = QAction(self.style().standardIcon(QStyle.SP_BrowserReload), 'Restart all systems', self)
         restart_Action.triggered.connect(self.restart_systems)
         fly_tuning_Action = QAction(self.style().standardIcon(QStyle.SP_MediaPlay), 'Start tuning flights', self)
@@ -45,7 +45,7 @@ class CommandCenterWindow(QMainWindow):
         self.toolbar.addAction(select_systems_Act)
         self.toolbar.addSeparator()
         self.toolbar.addAction(reboot_rtc_Action)
-        self.toolbar.addAction(update_Action)
+        self.toolbar.addAction(git_update_Action)
         self.toolbar.addAction(restart_Action)
         self.toolbar.addSeparator()
         self.toolbar.addAction(fly_tuning_Action)
@@ -125,9 +125,9 @@ class CommandCenterWindow(QMainWindow):
         if buttonReply == QMessageBox.Yes:
             for sys in self.sys_widgets:
                 sys.reboot_dont_ask()
-    def update_systems(self):
+    def git_update_systems(self):
         for sys in self.sys_widgets:
-            sys.update()
+            sys.git_update()
     def restart_systems(self):
         for sys in self.sys_widgets:
             sys.restart()
@@ -198,10 +198,10 @@ class SystemWidget(QWidget):
         reboot_rtc_Action.triggered.connect(self.reboot)
         self.addAction(reboot_rtc_Action)
 
-        update_Action = QAction("Update", self)
-        update_Action.setIcon(self.style().standardIcon(QStyle.SP_FileDialogToParent))
-        update_Action.triggered.connect(self.update)
-        self.addAction(update_Action)
+        git_update_Action = QAction("Git update", self)
+        git_update_Action.setIcon(self.style().standardIcon(QStyle.SP_FileDialogToParent))
+        git_update_Action.triggered.connect(self.git_update)
+        self.addAction(git_update_Action)
 
         beep_Action = QAction("Beep", self)
         beep_Action.setIcon(self.style().standardIcon(QStyle.SP_MediaVolume))
@@ -219,6 +219,13 @@ class SystemWidget(QWidget):
         btn_restart.setMaximumSize(30, 30)
         btn_restart.clicked.connect(self.restart)
         self.btn_restart = btn_restart
+
+        btn_req_update = QPushButton()
+        btn_req_update.setToolTip('Request update NOW')
+        btn_req_update.setIcon(self.style().standardIcon(QStyle.SP_ArrowDown))
+        btn_req_update.setMaximumSize(30, 30)
+        btn_req_update.clicked.connect(self.req_update)
+        self.btn_req_update = btn_req_update
 
         btn_download_current_log = QPushButton()
         btn_download_current_log.setToolTip('Restart & download the current log')
@@ -251,6 +258,7 @@ class SystemWidget(QWidget):
         control_layout = QHBoxLayout()
         control_layout.setContentsMargins(0, 0, 0, 0)
         control_layout.addWidget(self.combo_mode)
+        control_layout.addWidget(btn_req_update)
         control_layout.addWidget(btn_restart)
         control_layout.addWidget(btn_download_current_log)
         control_layout.addWidget(btn_takeoff_tuning)
@@ -345,9 +353,11 @@ class SystemWidget(QWidget):
 
     def restart(self):
         subprocess.Popen(['./restart_system.sh', 'pats'+self.host_id])
+    def req_update(self):
+        subprocess.Popen(['./req_update_system.sh', 'pats'+self.host_id])
     def download_current_log(self):
         subprocess.Popen(['./download_log_system.sh', 'pats'+self.host_id])
-    def update(self):
+    def git_update(self):
         subprocess.Popen(['./update_system.sh', 'pats'+self.host_id])
     def reboot_dont_ask(self):
         subprocess.Popen(['./reboot_system.sh', 'pats'+self.host_id])
@@ -453,6 +463,7 @@ class SystemWidget(QWidget):
             self.btn_takeoff_aggresive_wp.setStyleSheet("background-color:rgb(128,0,0)")
             self.btn_takeoff_tuning.setStyleSheet("background-color:rgb(128,0,0)")
             self.btn_restart.setStyleSheet("background-color:rgb(128,0,0)")
+            self.btn_req_update.setStyleSheet("background-color:rgb(128,0,0)")
             self.btn_download_current_log.setStyleSheet("background-color:rgb(128,0,0)")
         elif self.refresh_darkmode:
 
@@ -467,6 +478,7 @@ class SystemWidget(QWidget):
             self.btn_takeoff_aggresive_wp.setStyleSheet("background-color:rgb(160,128,128)")
             self.btn_takeoff_tuning.setStyleSheet("background-color:rgb(160,128,128)")
             self.btn_restart.setStyleSheet("background-color:rgb(160,128,128)")
+            self.btn_req_update.setStyleSheet("background-color:rgb(160,128,128)")
             self.btn_download_current_log.setStyleSheet("background-color:rgb(160,128,128)")
 
         self.refresh_darkmode = False
