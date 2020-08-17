@@ -617,17 +617,18 @@ std::tuple<bool,bool,bool, std::string,uint8_t,std::string,std::string> process_
 }
 
 void check_hardware() {
-    //multimodule rc
-    if (! log_replay_mode &&! generator_mode && dparams.tx != tx_none )
-        rc.init(drone_id);
-    if (!rc.connected() && pparams.op_mode != op_mode_monitoring_only)
-        throw my_exit("cannot connect the MultiModule");
+    if (! log_replay_mode) {
+        //multimodule rc
+        if (! generator_mode && dparams.tx != tx_none )
+            rc.init(drone_id);
+        if (!rc.connected() && pparams.op_mode != op_mode_monitoring_only)
+            throw my_exit("cannot connect the MultiModule");
 
-    // Ensure that joystick was found and that we can use it
-    if (!dctrl.joystick_ready() && !log_replay_mode && !generator_mode && pparams.joystick != rc_none) {
-        throw my_exit("no joystick connected.");
+        // Ensure that joystick was found and that we can use it
+        if (!dctrl.joystick_ready() && !generator_mode && pparams.joystick != rc_none) {
+            throw my_exit("no joystick connected.");
+        }
     }
-
     //init cam and check version
     if (log_replay_mode) {
         if (file_exist(replay_dir+'/' + Realsense::playback_filename()))
