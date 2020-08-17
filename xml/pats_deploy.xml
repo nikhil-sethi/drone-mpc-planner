@@ -3,7 +3,7 @@
     <Member Name="darkness_threshold">10000</Member>
     <Member Name="close_after_n_images">10800</Member>
     <Member Name="has_screen">false</Member>
-    <Member Name="op_mode">op_mode_crippled</Member>
+    <Member Name="op_mode">op_mode_monitoring_only</Member>
     <Member Name="watchdog">false</Member>
     <Member Name="fps">90</Member>
     <Member Name="video_cuts">video_disabled</Member>
