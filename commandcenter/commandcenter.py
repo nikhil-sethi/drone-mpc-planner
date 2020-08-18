@@ -359,6 +359,9 @@ class SystemWidget(QWidget):
         subprocess.Popen(['./download_log_system.sh', 'pats'+self.host_id])
     def git_update(self):
         subprocess.Popen(['./update_system.sh', 'pats'+self.host_id])
+        self.updating_combos = True
+        self.combo_mode.setCurrentIndex(2)
+        self.updating_combos = False
     def reboot_dont_ask(self):
         subprocess.Popen(['./reboot_system.sh', 'pats'+self.host_id])
     def reboot(self):
