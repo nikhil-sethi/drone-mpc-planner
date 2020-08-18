@@ -354,7 +354,8 @@ void MultiModule::process_telem( uint16_t sensor_id, float data) {
         sensor.batt_v = data/100.f;
         break;
     case FSSP_DATAID_A4:
-        sensor.batt_cell_v = data/100.f;
+        if (data/100.f < 20 && data >= 0)
+            sensor.batt_cell_v = data/100.f;
         break;
     case FSSP_DATAID_CURRENT:
         sensor.batt_current = data/100.f;
