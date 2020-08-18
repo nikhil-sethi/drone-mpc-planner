@@ -106,8 +106,8 @@ int RS232_OpenComport( int baudrate, const char * dev) {
         return(1);
     }
 
-    status |= TIOCM_DTR;    /* turn on DTR */
-    status |= TIOCM_RTS;    /* turn on RTS */
+    // status |= TIOCM_DTR;    /* turn on DTR */
+    // status |= TIOCM_RTS;    /* turn on RTS */
 
     if(ioctl(Cport, TIOCMSET, &status) == -1)
     {
@@ -165,8 +165,8 @@ void RS232_CloseComport()
         perror("unable to get portstatus\n");
     }
 
-    status &= ~TIOCM_DTR;    /* turn off DTR */
-    status &= ~TIOCM_RTS;    /* turn off RTS */
+    // status &= ~TIOCM_DTR;    /* turn off DTR */
+    // status &= ~TIOCM_RTS;    /* turn off RTS */
 
     if(ioctl(Cport, TIOCMSET, &status) == -1)
     {

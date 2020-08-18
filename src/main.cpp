@@ -241,7 +241,20 @@ void process_video() {
         static double time =0;
         float dt __attribute__((unused)) = static_cast<float>(cam->frame_time() - time);
         time = cam->frame_time();
-        std::cout << dnav.navigation_status() <<  "; frame: " << imgcount << ", " << cam->frame_number() << ". FPS: " << to_string_with_precision(fps,1) << ". Time: " << to_string_with_precision(time,2)  << ", dt " << to_string_with_precision(dt,3) << std::endl;
+        std::cout <<
+                  //   "\r\e[K" <<
+                  dnav.navigation_status() <<
+                  "; frame: " << imgcount <<
+                  ", " << cam->frame_number() <<
+                  ". FPS: " << to_string_with_precision(fps,1) <<
+                  ". Time: " << to_string_with_precision(time,2)  <<
+                  ", dt " << to_string_with_precision(dt,3) <<
+                  ", " << rc.sensor.batt_cell_v <<
+                  "v, arm: " << static_cast<int>(rc.sensor.arming_state) <<
+                  //   ", rssi: " << static_cast<int>(rc.sensor.rssi) <<
+                  std::endl;
+        //   std::flush;
+
         imgcount++;
         prev_time = t;
 

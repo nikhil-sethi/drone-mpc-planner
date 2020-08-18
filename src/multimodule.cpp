@@ -1,6 +1,7 @@
 #include "multimodule.h"
 
 void MultiModule::init(int drone_id) {
+    std::cout << "Opening multimodule" << std::endl;
     _drone_id_rxnum = drone_id;
 
     switch (dparams.tx) {
@@ -50,8 +51,10 @@ void MultiModule::init(int drone_id) {
         if (notconnected)
             notconnected = RS232_OpenComport(115200,"/dev/pats_mm1");
         if (!notconnected) {
+            std::cout << "Opened multimodule port: " << notconnected << std::endl;
             send_init_package_now = true;
-            thread_mm = std::thread(&MultiModule::worker_thread,this);
+            send_thread_mm = std::thread(&MultiModule::send_thread,this);
+            receive_thread_mm = std::thread(&MultiModule::receive_thread,this);
             initialized = true;
         }
     }
@@ -80,10 +83,12 @@ void MultiModule::zerothrottle() {
         throttle = RC_BOUND_MIN;
 }
 
-void MultiModule::worker_thread(void) {
-    std::cout << "Send multimodule thread started!" << std::endl;
+void MultiModule::send_thread(void) {
+    std::cout << "Multimodule send thread ready!" << std::endl;
+    g_sendData.lock();
+    g_sendData.lock(); // wait for first frame to arrive to prevent triggering a wdt in the MM
+    std::cout << "Multimodule send thread started!" << std::endl;
     while (!exitSendThread) {
-        receive_data();
         watchdog_pats_init_package();
         if (send_init_package_now)
             send_pats_init_package();
@@ -93,6 +98,15 @@ void MultiModule::worker_thread(void) {
         }
     }
 }
+
+void MultiModule::receive_thread(void) {
+    std::cout << "Multimodule receive thread started!" << std::endl;
+    while (!exitReceiveThread) {
+        receive_data();
+        usleep(100);
+    }
+}
+
 
 void MultiModule::watchdog_pats_init_package() {
     if (init_package_nOK_cnt) {
@@ -235,6 +249,8 @@ void MultiModule::receive_data() {
                 if (inbuf[0]>0)
                     tmp << inbuf[0];
                 totn += n;
+            } else if (n < 0) {
+                std::cout << "MM read error: " << n << std::endl;
             }
         }
         if (totn > 0 ) {
@@ -250,8 +266,8 @@ void MultiModule::receive_data() {
                 received << bufs.substr(found+1, bufs.size());
             }
 
-            if (init_package_nOK_cnt and !telemetry_sensor_data_detected) // during init some interesting info may be printed, after that its mostly telemetry sensor data.
-                std::cout << tmp.str()  << std::flush;
+            if (!telemetry_sensor_data_detected || init_package_nOK_cnt) // during init some interesting info may be printed, after that its mostly telemetry sensor data.
+                std::cout << "MM: " << tmp.str()  << std::flush;
         }
     }
 }
@@ -261,7 +277,7 @@ void MultiModule::process_pats_init_packages(std::string bufs) {
         uint str_length = 0;
 
         const std::string version_str = "Multiprotocol version: ";
-        const std::string required_firmwar_version = "6.0.0.0";
+        const std::string required_firmwar_version = "6.0.0.15";
         auto found = bufs.rfind(version_str) ;
         str_length = found+version_str.length()+required_firmwar_version.length();
         if (found != std::string::npos && str_length < bufs.size()) {
@@ -398,7 +414,10 @@ void MultiModule::close() {
         exitSendThread = true;
         g_sendData.unlock();
         g_lockData.unlock();
-        thread_mm.join();
+        send_thread_mm.join();
+        usleep(1e5);
+        exitReceiveThread = true;
+        receive_thread_mm.join();
 
         // kill throttle when closing the module
         g_lockData.lock();

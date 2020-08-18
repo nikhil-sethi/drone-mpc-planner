@@ -53,7 +53,7 @@ void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsig
     track_avg_brightness(frameL16,time);
     static bool reset_motion_integration_prev = false; // used to zero diffL16 and R only once
     if (_reset_motion_integration) {
-        std::cout << "Resetting motion" << std::endl;
+        // std::cout << "Resetting motion" << std::endl;
         frameL_prev16 = frameL16.clone();
         frameR_prev16 = frameR16.clone();
         if (!reset_motion_integration_prev) {

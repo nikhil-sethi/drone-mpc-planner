@@ -228,10 +228,13 @@ private:
     std::mutex g_lockData;
     std::mutex g_sendData;
     std::stringstream received;
-    std::thread thread_mm;
+    std::thread send_thread_mm;
+    std::thread receive_thread_mm;
     bool exitSendThread = false;
+    bool exitReceiveThread = false;
 
-    void worker_thread(void);
+    void send_thread(void);
+    void receive_thread(void);
     void send_rc_data(void);
     void receive_data(void);
     void convert_channels(uint16_t *channels, unsigned char * packet);

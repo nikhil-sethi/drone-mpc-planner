@@ -631,7 +631,7 @@ float ItemTracker::score(BlobProps blob, ImageItem ref) {
 }
 
 void ItemTracker::deserialize_settings() {
-    std::cout << "Reading settings from: " << settings_file << std::endl;
+    // std::cout << "Reading settings from: " << settings_file << std::endl;
     if (file_exist(settings_file)) {
         std::ifstream infile(settings_file);
         std::string xmlData((std::istreambuf_iterator<char>(infile)),
@@ -675,7 +675,7 @@ void ItemTracker::serialize_settings() {
 void ItemTracker::close () {
     if (initialized) {
         (*_logger) << std::flush;
-        std::cout << "Closing tracker: " << _name << std::endl;
+        // std::cout << "Closing tracker: " << _name << std::endl;
         if (pparams.insect_tracking_tuning || pparams.drone_tracking_tuning)
             serialize_settings();
         initialized = false;
