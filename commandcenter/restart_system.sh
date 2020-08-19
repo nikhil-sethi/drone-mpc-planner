@@ -6,7 +6,7 @@ until (( count++ >= 5 )) || ssh -o StrictHostKeyChecking=no -T $1 << EOF
 	if pgrep -x "pats" > /dev/null
 	then
 		killall pats || true
-		sleep 3
+		sleep 2
 		if pgrep -x "pats" > /dev/null
 		then
 			killall pats -9 || true
