@@ -65,13 +65,16 @@ enum {
     FSSP_DATAID_ACCX       = 0x0700,
     FSSP_DATAID_ACCY       = 0x0710,
     FSSP_DATAID_ACCZ       = 0x0720,
-    FSSP_DATAID_ACCN       = 0x0730,  // Acc nominal
-    FSSP_DATAID_MAX_THRUST = 0x0740,
-    FSSP_DATAID_ACC_THROTTLE_MIX    = 0x0750,
-    FSSP_DATAID_ACC_RPM_MIX         = 0x0760,
-    FSSP_DATAID_THROTTLE   = 0x0120,
-    FSSP_DATAID_ARMING     = 0x0130,
-    FSSP_DATAID_A4         = 0x0910
+    FSSP_DATAID_A4         = 0x0910,
+
+    //pats specifics:
+    FSSP_DATAID_MAX_THRUST              = 0x0740,
+    FSSP_DATAID_ACC_THROTTLE_MIX        = 0x0741, // acceleration on z axis and throttle in same pkg
+    FSSP_DATAID_ACC_RPM_MIX             = 0x0742, // acceleration on z axis and throttle in same pkg
+    FSSP_DATAID_BF_VERSION              = 0x0743,
+    FSSP_DATAID_THROTTLE                = 0x0744,
+    FSSP_DATAID_ARMING                  = 0x0745
+
 };
 
 // static const char* arming_states_str[] = {
@@ -129,18 +132,20 @@ enum arming_states {
 };
 
 struct sensorvalue {
-    float       batt_v;
-    float       batt_cell_v;
-    float       batt_current;
-    uint8_t     rssi;
-    uint16_t    rpm;
-    cv::Point3f acc;
-    float acc_nominal;
-    float       thrust_max = 4;     // 4G as start value
-    uint16_t    throttle;
-    float       throttle_scaled;
-    arming_states arming_state;
-    float       thrust_rpm;
+    float           batt_v;
+    float           batt_cell_v;
+    float           batt_current;
+    uint8_t         rssi;
+    uint16_t        rpm;
+    cv::Point3f     acc;
+    float           thrust_max = 4;     // 4G as start value
+    uint16_t        throttle;
+    float           throttle_scaled;
+    arming_states   arming_state;
+    float           thrust_rpm;
+    int             bf_major;
+    int             bf_minor;
+    int             bf_patch;
 };
 class MultiModule {
 
@@ -151,6 +156,10 @@ public:
     int arm_switch = RC_BOUND_MIN;
     int turtle_mode = RC_BOUND_MIN;
     sensorvalue sensor;
+    const int bf_major_required = 4;
+    const int bf_minor_required = 2;
+    const int bf_patch_required = 100;
+
 
     void init(int drone_id);
     void close();
@@ -165,6 +174,7 @@ public:
     void LED_drone(int value) { _LED_drone = value; } // led strength value between 0-100, where 0 is off off
 
     bool init_package_failure() { return _init_package_failure;}
+    bool bf_version_error() { return _bf_version_error>10;}
     std::string Armed() { return armed_names[arm_switch>RC_MIDDLE]; }
 
     void queue_commands(int new_throttle,int new_roll, int new_pitch, int new_yaw, int new_mode) {
@@ -212,7 +222,8 @@ private:
     bool initialized = false;
     int notconnected = 1;
     bool _init_package_failure = false;
-    bool version_check_OK = false;
+    uint16_t _bf_version_error = 0;
+    bool mm_version_check_OK = false;
     uint init_package_nOK_cnt = 1;
     bool send_init_package_now = false;
 

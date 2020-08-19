@@ -166,6 +166,10 @@ void process_video() {
             exit_now = true;
             cmdcenter.reset_commandcenter_status_file("MultiModule init package error",true);
         }
+        if (rc.bf_version_error()) {
+            exit_now = true;
+            cmdcenter.reset_commandcenter_status_file("Betaflight version error",true);
+        }
 
         static bool recording = false;
         double dtr = data.time - trackers.insecttracker_best()->last_sighting_time;

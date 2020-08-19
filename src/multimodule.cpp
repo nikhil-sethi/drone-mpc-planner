@@ -277,7 +277,7 @@ void MultiModule::process_pats_init_packages(std::string bufs) {
         uint str_length = 0;
 
         const std::string version_str = "Multiprotocol version: ";
-        const std::string required_firmwar_version = "6.0.0.16";
+        const std::string required_firmwar_version = "6.0.0.17";
         auto found = bufs.rfind(version_str) ;
         str_length = found+version_str.length()+required_firmwar_version.length();
         if (found != std::string::npos && str_length < bufs.size()) {
@@ -291,7 +291,7 @@ void MultiModule::process_pats_init_packages(std::string bufs) {
                 }
             } else {
                 std::cout << "Detecting MultiProtocol version " << required_firmwar_version << ": OK" << std::endl;
-                version_check_OK = true;
+                mm_version_check_OK = true;
             }
         }
 
@@ -308,7 +308,7 @@ void MultiModule::process_pats_init_packages(std::string bufs) {
 
             std::cout << "Multimodule received init package!" << std::endl;
             init_package_nOK_cnt = 0;
-            if (!version_check_OK) {
+            if (!mm_version_check_OK) {
                 std::cout << "MultiProtocol version was not received." << std::endl;
                 exit(1);
             }
@@ -348,7 +348,20 @@ bool MultiModule::receive_telemetry(std::string buffer) {
             //rx rssi is the only one we really want to know:
             sensor.rssi = std::stoi(arr.at(1));
             break;
-        default:
+        case FSSP_DATAID_BF_VERSION: {
+            uint32_t bf_v = std::stoi(arr.at(1));
+            sensor.bf_major = (bf_v & 0x00FF0000) >> 16;
+            sensor.bf_minor = (bf_v & 0x0000FF00) >> 8;
+            sensor.bf_patch = bf_v & 0x000000FF;
+            if (sensor.bf_major != bf_major_required || sensor.bf_minor != bf_minor_required || sensor.bf_patch != bf_patch_required) {
+                std::cout << "Betaflight version detected: " << sensor.bf_major << "." << sensor.bf_minor << "." << sensor.bf_patch <<
+                          ", required: " << bf_major_required << "." << bf_minor_required << "." << bf_patch_required << std::endl;
+                _bf_version_error += 1;
+            } else
+                _bf_version_error = 0 ;
+
+            break;
+        } default:
             process_telem(sensor_id, std::stof( arr.at(1)));
             break;
         }
@@ -393,9 +406,6 @@ void MultiModule::process_telem( uint16_t sensor_id, float data) {
         break;
     case FSSP_DATAID_ACCZ:
         sensor.acc.z = data/100.f;
-        break;
-    case FSSP_DATAID_ACCN:
-        sensor.acc_nominal = data/100.f;
         break;
     case FSSP_DATAID_MAX_THRUST:
         sensor.thrust_max = data/100.f;
