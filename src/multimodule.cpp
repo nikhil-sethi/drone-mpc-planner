@@ -398,6 +398,12 @@ void MultiModule::process_telem( uint16_t sensor_id, float data) {
     case FSSP_DATAID_RPM:
         sensor.rpm = static_cast<uint16_t>(data);
         break;
+    case FSSP_DATAID_ROLL:
+        sensor.roll = data/100.f;
+        break;
+    case FSSP_DATAID_PITCH:
+        sensor.pitch = data/100.f;
+        break;
     case FSSP_DATAID_ACCX:
         sensor.acc.x = data/100.f;
         break;

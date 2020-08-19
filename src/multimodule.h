@@ -62,10 +62,13 @@ enum {
     FSSP_DATAID_CURRENT    = 0x0200,
     FSSP_DATAID_RPM        = 0x0500,
     FSSP_DATAID_RSSI       = 0xF101,
+    FSSP_DATAID_PITCH      = 0x5230,
+    FSSP_DATAID_ROLL       = 0x5240,
     FSSP_DATAID_ACCX       = 0x0700,
     FSSP_DATAID_ACCY       = 0x0710,
     FSSP_DATAID_ACCZ       = 0x0720,
-    FSSP_DATAID_A4         = 0x0910,
+
+    FSSP_DATAID_A4         = 0x0910, // cell voltage
 
     //pats specifics:
     FSSP_DATAID_MAX_THRUST              = 0x0740,
@@ -137,6 +140,8 @@ struct sensorvalue {
     float           batt_current;
     uint8_t         rssi;
     uint16_t        rpm;
+    float           roll;
+    float           pitch;
     cv::Point3f     acc;
     float           thrust_max = 4;     // 4G as start value
     uint16_t        throttle;
