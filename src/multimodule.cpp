@@ -277,7 +277,7 @@ void MultiModule::process_pats_init_packages(std::string bufs) {
         uint str_length = 0;
 
         const std::string version_str = "Multiprotocol version: ";
-        const std::string required_firmwar_version = "6.0.0.15";
+        const std::string required_firmwar_version = "6.0.0.16";
         auto found = bufs.rfind(version_str) ;
         str_length = found+version_str.length()+required_firmwar_version.length();
         if (found != std::string::npos && str_length < bufs.size()) {
@@ -342,6 +342,12 @@ bool MultiModule::receive_telemetry(std::string buffer) {
         case FSSP_DATAID_ACC_RPM_MIX:
             acc_rpm_pkg(std::stoi(arr.at(1)),std::stoi(arr.at(2)));
             break;
+        case FSSP_DATAID_RSSI:
+            //four bytes:
+            // RX_RSSI,TX_RSSI,RX_LQI,TX_LQI;
+            //rx rssi is the only one we really want to know:
+            sensor.rssi = std::stoi(arr.at(1));
+            break;
         default:
             process_telem(sensor_id, std::stof( arr.at(1)));
             break;
@@ -375,9 +381,6 @@ void MultiModule::process_telem( uint16_t sensor_id, float data) {
         break;
     case FSSP_DATAID_CURRENT:
         sensor.batt_current = data/100.f;
-        break;
-    case FSSP_DATAID_RSSI:
-        sensor.rssi = static_cast<uint8_t>(data);
         break;
     case FSSP_DATAID_RPM:
         sensor.rpm = static_cast<uint16_t>(data);
