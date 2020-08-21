@@ -31,7 +31,7 @@ void MultiModule::init(int drone_id) {
         break;
     } case tx_frskyd16: {
         protocol = 15;
-        sub_protocol = d16_eu8;
+        sub_protocol = d16_ch8; // d16_eu8 seems to be generate buggy telemetry #431
         tx_rate = 0;
         tx_option = 0;
         break;

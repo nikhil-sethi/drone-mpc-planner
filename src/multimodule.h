@@ -163,7 +163,7 @@ public:
     sensorvalue sensor;
     const int bf_major_required = 4;
     const int bf_minor_required = 2;
-    const int bf_patch_required = 100;
+    const int bf_patch_required = 101;
 
 
     void init(int drone_id);
