@@ -36,6 +36,10 @@ void DroneNavigation::init(std::ofstream *logger, tracking::TrackerManager * tra
     }
 
     (*_logger) << "nav_state;";
+
+    if (pparams.drone == drone_anvil) // tmp solution because my Anvils don't fit to the pads atm
+        shake_duration = 0;
+
     initialized = true;
 }
 
