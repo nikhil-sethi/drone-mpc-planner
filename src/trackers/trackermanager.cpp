@@ -599,7 +599,7 @@ void TrackerManager::update_max_change_points() {
         } else {
 
             int tmp_mt_noise = motion_noise;
-            if (max < motion_noise)
+            if (max < motion_noise+motion_thresh_tmp)
                 tmp_mt_noise = 0;
             if  (static_cast<uint8_t>(max) <= tmp_mt_noise+(motion_thresh_tmp/chance_multiplier_total))
                 break; // done searching for maxima, they are too small now
