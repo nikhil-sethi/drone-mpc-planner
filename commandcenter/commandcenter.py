@@ -545,7 +545,7 @@ class SystemWidget(QWidget):
 
             if len(status_txt) > 2:
 
-                if len(status_txt) >= 4:
+                if len(status_txt) >= 5:
                     if (status_txt[4].startswith("arming: ")):
                         arm_state = int(status_txt[4][8:-1])
                         res_txt += " Arm: " + status_txt[4][8:-1] + ", "
@@ -557,6 +557,8 @@ class SystemWidget(QWidget):
                             if cell_v < 3.1:
                                 system_has_problem = QColor(255,0,0)
                         res_txt += status_txt[3][8:-1] + 'V, '
+                    if (status_txt[5].startswith("rssi: ")):
+                        res_txt += " rssi: " + status_txt[5][6:-1] + ", "
 
 
                 if (status_txt[2].startswith("ns_")):

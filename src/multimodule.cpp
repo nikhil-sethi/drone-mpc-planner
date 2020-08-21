@@ -342,13 +342,15 @@ bool MultiModule::receive_telemetry(std::string buffer) {
         case FSSP_DATAID_ACC_RPM_MIX:
             acc_rpm_pkg(std::stoi(arr.at(1)),std::stoi(arr.at(2)));
             break;
-        case FSSP_DATAID_RSSI:
+        case FSSP_DATAID_RSSI: {
             //four bytes:
             // RX_RSSI,TX_RSSI,RX_LQI,TX_LQI;
             //rx rssi is the only one we really want to know:
-            sensor.rssi = std::stoi(arr.at(1));
+            int tmp_rssi = std::stoi(arr.at(1));
+            if (tmp_rssi >= -100 && tmp_rssi < 200)
+                sensor.rssi = tmp_rssi;
             break;
-        case FSSP_DATAID_BF_VERSION: {
+        } case FSSP_DATAID_BF_VERSION: {
             uint32_t bf_v = std::stoi(arr.at(1));
             sensor.bf_major = (bf_v & 0x00FF0000) >> 16;
             sensor.bf_minor = (bf_v & 0x0000FF00) >> 8;
@@ -420,7 +422,8 @@ void MultiModule::process_telem( uint16_t sensor_id, float data) {
         sensor.throttle = static_cast<uint16_t>(data);
         break;
     case FSSP_DATAID_ARMING:
-        sensor.arming_state = static_cast<arming_states>(data);
+        if (data >= 0 && data <= 51)
+            sensor.arming_state = static_cast<arming_states>(data);
         break;
     default:
         break;

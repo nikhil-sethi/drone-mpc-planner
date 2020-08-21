@@ -255,7 +255,7 @@ void process_video() {
                   ", dt " << to_string_with_precision(dt,3) <<
                   ", " << rc.sensor.batt_cell_v <<
                   "v, arm: " << static_cast<int>(rc.sensor.arming_state) <<
-                  //   ", rssi: " << static_cast<int>(rc.sensor.rssi) <<
+                  ", rssi: " << static_cast<int>(rc.sensor.rssi) <<
                   std::endl;
         //   std::flush;
 
