@@ -83,29 +83,33 @@ void DroneTracker::update(double time, bool drone_is_active) {
             cv::circle(diff_viz,blnk_im_location()*pparams.imscalef,1,cv::Scalar(0,0,255),1);
             cv::circle(diff_viz, _world_item.image_coordinates()*pparams.imscalef,3,cv::Scalar(0,255,0),2);
         }
+        float takeoff_duration = static_cast<float>(time - start_take_off_time);
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
         else if (_world_item.valid) {
             spinup_detected++;
             if (spinup_detected==3) {
                 spinup_detect_time = time;
-                std::cout << "Spin up detected after: " << time - start_take_off_time << "s" << std::endl;
+                std::cout << "Spin up detected after: " << takeoff_duration << "s" << std::endl;
             }
             if (detect_lift_off()) {
-                std::cout << "Lift off detected after: " << time - start_take_off_time << "s" << std::endl;
+                if (!liftoff_detected)
+                    std::cout << "Lift off detected after: " << takeoff_duration << "s" << std::endl;
                 liftoff_detected = true;
                 if (detect_takeoff()) {
-                    std::cout << "Take off detected after: " << time - start_take_off_time << "s" << std::endl;
+                    std::cout << "Take off detected after: " << takeoff_duration << "s" << std::endl;
                     _drone_tracking_status = dts_tracking;
+                    break;
                 }
             }
         } else if (spinup_detected < 3) {
             spinup_detected = 0;
         }
-        if(spinup_detected<3 && (time - start_take_off_time) > 0.7) { // hmm spinup detection really does not work with improper lighting conditions. Have set the time really high. (should be ~0.3-0.4s)
+
+        if(spinup_detected<3 && takeoff_duration > dparams.full_bat_and_throttle_spinup_duration + 0.3f) { // hmm spinup detection really does not work with improper lighting conditions. Have set the time really high. (should be ~0.3-0.4s)
             _take_off_detection_failed = true;
             std::cout << "No spin up detected in time!" << std::endl;
-        } else if ((time - start_take_off_time) > 0.75) {
+        } else if (takeoff_duration > dparams.full_bat_and_throttle_spinup_duration + 0.35f) {
             _take_off_detection_failed = true;
             if (liftoff_detected)
                 std::cout << "No takeoff detected in time!" << std::endl;

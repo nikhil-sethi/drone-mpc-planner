@@ -189,8 +189,6 @@ private:
         }
     }
 
-    const float min_thrust = 25;
-    float max_thrust = 50;
     const float max_bank_angle = 180; // TODO: move to dparams (betaflight setting)
     const float aim_duration = 0.0833333333333f; // TODO: move to dparams, slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
     const float transmission_delay_duration = 0.04f;
@@ -484,10 +482,10 @@ public:
     }
     float _log_max_thrust;
     float telem_max_thrust() {
-        max_thrust = _rc->sensor.thrust_max;
-        if (log_replay_mode)
-            max_thrust = _log_max_thrust;
-        return max_thrust;
+        // max_thrust = _rc->sensor.thrust_max;
+        // if (log_replay_mode)
+        //     max_thrust = _log_max_thrust;
+        return dparams.thrust+5; // tmp
     }
     float _log_thrust_rpm;
     float telem_thrust_rpm() {

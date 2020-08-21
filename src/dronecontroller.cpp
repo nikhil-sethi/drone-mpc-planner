@@ -87,8 +87,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile,bool generator, M
 
     set_led_strength(exposure);
 
-    max_thrust = dparams.thrust;
-    thrust = std::clamp(dparams.thrust,min_thrust,max_thrust);
+    thrust = std::clamp(dparams.thrust,dparams.thrust-5,dparams.thrust+5);
     initial_hover_throttle_guess_non3d = GRAVITY/dparams.thrust*RC_BOUND_RANGE+dparams.min_throttle;
     initialized = true;
 }
@@ -183,7 +182,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         take_off_start_time = time;
         _flight_mode = fm_take_off_aim;
         std::cout << "Take off aiming" << std::endl;
-        thrust = std::clamp(dparams.thrust,min_thrust,max_thrust);
+        thrust = dparams.thrust;
         _burn_direction_for_thrust_approx = {0};
         auto_throttle = spinup_throttle();
         auto_roll = RC_MIDDLE;
@@ -538,7 +537,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
     auto_pitch = bound_joystick_value(auto_pitch);
     auto_roll = bound_joystick_value(auto_roll);
 
-    //std::cout << time <<  " rpt: " << roll << ", " << pitch << ", " << yaw << ", " << throttle << std::endl;
+    // std::cout << time <<  " rpyt: " << roll << ", " << pitch << ", " << yaw << ", " << throttle << std::endl;
     _rc->queue_commands(throttle,roll,pitch,yaw,mode);
 
     control_data c(Roll(), Throttle(), Pitch(), time);
@@ -914,7 +913,7 @@ cv::Point3f DroneController::keep_in_volume_correction_acceleration(track_data d
 
     if(!drone_in_boundaries || !enough_braking_distance_left) {
         cv::Point3f correction_acceleration = kiv_acceleration(violated_planes_inview, violated_planes_brakedistance);
-        std::cout <<"KIV: " << correction_acceleration << std::endl;
+        // std::cout <<"KIV: " << correction_acceleration << std::endl;
         return correction_acceleration;
     }
 
@@ -1131,7 +1130,8 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::
     }
 
     thrust -= (err_y_filtered - setpoint_pos.y + pos_modely.current_output()) * ki_pos.y;
-    thrust = std::clamp(thrust,min_thrust,max_thrust);
+    thrust = std::clamp(thrust,dparams.thrust-5,dparams.thrust+5);
+    // std::cout << "thrust: " << thrust << std::endl;
     pos_err_i.y = 0;
 
     return std::tuple(pos_err_p, pos_err_d, vel_err_p, vel_err_d);
