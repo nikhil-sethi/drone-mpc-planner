@@ -137,6 +137,7 @@ enum drone_types {
     drone_none,
     drone_trashcan,
     drone_hammer,
+    drone_anvil,
     drone_tinywhoop_d16,
     drone_tinywhoop_d8,
     drone_cx10
@@ -145,6 +146,7 @@ static const char* drone_types_str[] = {
     "drone_none",
     "drone_trashcan",
     "drone_hammer",
+    "drone_anvil",
     "drone_tinywhoop_d16",
     "drone_tinywhoop_d8",
     "drone_cx10",
