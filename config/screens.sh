@@ -14,14 +14,8 @@ done
 i=$(($i + 1))
 /usr/bin/screen -t staupd $i /bin/bash -c '~/code/pats/config/status_sender.py; exec /bin/bash'
 i=$(($i + 1))
-/usr/bin/screen -t pats $i /bin/bash -c '~/code/pats/config/autostart.sh 2>&1 | /usr/bin/tee -a ~/pats_daemon.log; exec /bin/bash'
-i=$(($i + 1))
-/usr/bin/screen -t config $i /bin/bash -c 'cd ~/code/pats/config; exec /bin/bash'
+/usr/bin/screen -t pats $i /bin/bash -c 'cd ~/code/pats/config && ~/code/pats/config/autostart.sh 2>&1 | /usr/bin/tee -a ~/pats_daemon.log; exec /bin/bash'
 i=$(($i + 1))
 /usr/bin/screen -t src $i /bin/bash -c 'cd ~/code/pats/src; exec /bin/bash'
 i=$(($i + 1))
-/usr/bin/screen -t build $i /bin/bash -c 'cd ~/code/pats/pc/build; exec /bin/bash'
-i=$(($i + 1))
 /usr/bin/screen -t data $i /bin/bash -c 'cd ~/data; exec /bin/bash'
-i=$(($i + 1))
-/usr/bin/screen -t home $i /bin/bash -c 'cd ~/; exec /bin/bash'
