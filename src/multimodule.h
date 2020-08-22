@@ -75,7 +75,6 @@ enum {
     FSSP_DATAID_ACC_THROTTLE_MIX        = 0x0741, // acceleration on z axis and throttle in same pkg
     FSSP_DATAID_ACC_RPM_MIX             = 0x0742, // acceleration on z axis and throttle in same pkg
     FSSP_DATAID_BF_VERSION              = 0x0743,
-    FSSP_DATAID_THROTTLE                = 0x0744,
     FSSP_DATAID_ARMING                  = 0x0745
 
 };
@@ -108,30 +107,32 @@ enum {
 //     "ARMING_DISABLED_ALL_GOOD"
 // };
 enum arming_states {
-    ARMING_DISABLED_NO_GYRO         = 0,
-    ARMING_DISABLED_FAILSAFE        = 1,
-    ARMING_DISABLED_RX_FAILSAFE     = 2,
-    ARMING_DISABLED_BAD_RX_RECOVERY = 3,
-    ARMING_DISABLED_BOXFAILSAFE     = 4,
-    ARMING_DISABLED_RUNAWAY_TAKEOFF = 5,
-    ARMING_DISABLED_CRASH_DETECTED  = 6,
-    ARMING_DISABLED_THROTTLE        = 7,
-    ARMING_DISABLED_ANGLE           = 8,
-    ARMING_DISABLED_BOOT_GRACE_TIME = 9,
-    ARMING_DISABLED_NOPREARM        = 10,
-    ARMING_DISABLED_LOAD            = 11,
-    ARMING_DISABLED_CALIBRATING     = 12,
-    ARMING_DISABLED_CLI             = 13,
-    ARMING_DISABLED_CMS_MENU        = 14,
-    ARMING_DISABLED_BST             = 15,
-    ARMING_DISABLED_MSP             = 16,
-    ARMING_DISABLED_PARALYZE        = 17,
-    ARMING_DISABLED_GPS             = 18,
-    ARMING_DISABLED_RESC            = 19,
-    ARMING_DISABLED_RPMFILTER       = 20,
-    ARMING_DISABLED_REBOOT_REQUIRED = 21,
-    ARMING_DISABLED_DSHOT_BITBANG   = 22,
-    ARMING_DISABLED_ARM_SWITCH      = 23 // Needs to be the last element, since it's always activated if one of the others is active when arming
+    ARMING_DISABLED_NO_GYRO         = (1 << 0),
+    ARMING_DISABLED_FAILSAFE        = (1 << 1),
+    ARMING_DISABLED_RX_FAILSAFE     = (1 << 2),
+    ARMING_DISABLED_BAD_RX_RECOVERY = (1 << 3),
+    ARMING_DISABLED_BOXFAILSAFE     = (1 << 4),
+    ARMING_DISABLED_RUNAWAY_TAKEOFF = (1 << 5),
+    ARMING_DISABLED_CRASH_DETECTED  = (1 << 6),
+    ARMING_DISABLED_THROTTLE        = (1 << 7),
+    ARMING_DISABLED_ANGLE           = (1 << 8),
+    ARMING_DISABLED_BOOT_GRACE_TIME = (1 << 9),
+    ARMING_DISABLED_NOPREARM        = (1 << 10),
+    ARMING_DISABLED_LOAD            = (1 << 11),
+    ARMING_DISABLED_CALIBRATING     = (1 << 12),
+    ARMING_DISABLED_CLI             = (1 << 13),
+    ARMING_DISABLED_CMS_MENU        = (1 << 14),
+    ARMING_DISABLED_BST             = (1 << 15),
+    ARMING_DISABLED_MSP             = (1 << 16),
+    ARMING_DISABLED_PARALYZE        = (1 << 17),
+    ARMING_DISABLED_GPS             = (1 << 18),
+    ARMING_DISABLED_RESC            = (1 << 19),
+    ARMING_DISABLED_RPMFILTER       = (1 << 20),
+    ARMING_DISABLED_REBOOT_REQUIRED = (1 << 21),
+    ARMING_DISABLED_DSHOT_BITBANG   = (1 << 22),
+    ARMING_DISABLED_ACC_CALIBRATION = (1 << 23),
+    ARMING_DISABLED_MOTOR_PROTOCOL  = (1 << 24),
+    ARMING_DISABLED_ARM_SWITCH      = (1 << 25)
 };
 
 struct sensorvalue {
@@ -258,7 +259,6 @@ private:
     void send_pats_init_package();
     void acc_throttle_pkg(int16_t accz, int16_t thr);
     void acc_rpm_pkg(int16_t accz, int16_t rpm);
-    void process_telem(uint16_t sensor_id, float data);
     bool receive_telemetry(std::string buffer);
     void process_pats_init_packages(std::string bufs);
     void handle_bind();

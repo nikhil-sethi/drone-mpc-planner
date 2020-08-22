@@ -277,7 +277,7 @@ void MultiModule::process_pats_init_packages(std::string bufs) {
         uint str_length = 0;
 
         const std::string version_str = "Multiprotocol version: ";
-        const std::string required_firmwar_version = "6.0.0.17";
+        const std::string required_firmwar_version = "6.0.0.18";
         auto found = bufs.rfind(version_str) ;
         str_length = found+version_str.length()+required_firmwar_version.length();
         if (found != std::string::npos && str_length < bufs.size()) {
@@ -310,6 +310,7 @@ void MultiModule::process_pats_init_packages(std::string bufs) {
             init_package_nOK_cnt = 0;
             if (!mm_version_check_OK) {
                 std::cout << "MultiProtocol version was not received." << std::endl;
+                std::cout << "We did receive:\n" << bufs << std::endl;
                 exit(1);
             }
 
@@ -347,8 +348,7 @@ bool MultiModule::receive_telemetry(std::string buffer) {
             // RX_RSSI,TX_RSSI,RX_LQI,TX_LQI;
             //rx rssi is the only one we really want to know:
             int tmp_rssi = std::stoi(arr.at(1));
-            if (tmp_rssi >= -100 && tmp_rssi < 200)
-                sensor.rssi = tmp_rssi;
+            sensor.rssi = tmp_rssi;
             break;
         } case FSSP_DATAID_BF_VERSION: {
             uint32_t bf_v = std::stoi(arr.at(1));
@@ -363,8 +363,51 @@ bool MultiModule::receive_telemetry(std::string buffer) {
                 _bf_version_error = 0 ;
 
             break;
+        } case FSSP_DATAID_VFAS: {
+            float data = std::stof( arr.at(1));
+            sensor.batt_v = data/100.f;
+            break;
+        } case FSSP_DATAID_A4: {
+            float data = std::stof( arr.at(1));
+            sensor.batt_cell_v = data/100.f;
+            break;
+        } case FSSP_DATAID_CURRENT: {
+            float data = std::stof( arr.at(1));
+            sensor.batt_current = data/100.f;
+            break;
+        } case FSSP_DATAID_RPM: {
+            int data = std::stoi( arr.at(1));
+            sensor.rpm = static_cast<uint16_t>(data);
+            break;
+        } case FSSP_DATAID_ROLL: {
+            float data = std::stof( arr.at(1));
+            sensor.roll = data/100.f;
+            break;
+        } case FSSP_DATAID_PITCH: {
+            float data = std::stof( arr.at(1));
+            sensor.pitch = data/100.f;
+            break;
+        } case FSSP_DATAID_ACCX: {
+            float data = std::stof( arr.at(1));
+            sensor.acc.x = data/100.f;
+            break;
+        } case FSSP_DATAID_ACCY: {
+            float data = std::stof( arr.at(1));
+            sensor.acc.y = data/100.f;
+            break;
+        } case FSSP_DATAID_ACCZ: {
+            float data = std::stof( arr.at(1));
+            sensor.acc.z = data/100.f;
+            break;
+        } case FSSP_DATAID_MAX_THRUST: {
+            float data = std::stof( arr.at(1));
+            sensor.thrust_max = data/100.f;
+            break;
+        } case FSSP_DATAID_ARMING: {
+            int data = std::stoi( arr.at(1));
+            sensor.arming_state = static_cast<arming_states>(data);
+            break;
         } default:
-            process_telem(sensor_id, std::stof( arr.at(1)));
             break;
         }
         return true;
@@ -383,51 +426,6 @@ void MultiModule::acc_throttle_pkg(int16_t accz, int16_t thr) {
 void MultiModule::acc_rpm_pkg(int16_t accz, int16_t rpm) {
     sensor.acc.z = static_cast<float>(accz) / 100.f;
     sensor.thrust_rpm = static_cast<float>(rpm);
-}
-
-void MultiModule::process_telem( uint16_t sensor_id, float data) {
-    switch (sensor_id) {
-    case FSSP_DATAID_VFAS:
-        sensor.batt_v = data/100.f;
-        break;
-    case FSSP_DATAID_A4:
-        if (data/100.f < 20 && data >= 0)
-            sensor.batt_cell_v = data/100.f;
-        break;
-    case FSSP_DATAID_CURRENT:
-        sensor.batt_current = data/100.f;
-        break;
-    case FSSP_DATAID_RPM:
-        sensor.rpm = static_cast<uint16_t>(data);
-        break;
-    case FSSP_DATAID_ROLL:
-        sensor.roll = data/100.f;
-        break;
-    case FSSP_DATAID_PITCH:
-        sensor.pitch = data/100.f;
-        break;
-    case FSSP_DATAID_ACCX:
-        sensor.acc.x = data/100.f;
-        break;
-    case FSSP_DATAID_ACCY:
-        sensor.acc.y = data/100.f;
-        break;
-    case FSSP_DATAID_ACCZ:
-        sensor.acc.z = data/100.f;
-        break;
-    case FSSP_DATAID_MAX_THRUST:
-        sensor.thrust_max = data/100.f;
-        break;
-    case FSSP_DATAID_THROTTLE:
-        sensor.throttle = static_cast<uint16_t>(data);
-        break;
-    case FSSP_DATAID_ARMING:
-        if (data >= 0 && data <= 51)
-            sensor.arming_state = static_cast<arming_states>(data);
-        break;
-    default:
-        break;
-    }
 }
 
 void MultiModule::close() {
