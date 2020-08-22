@@ -114,7 +114,7 @@ void Interceptor::update_far_target(bool drone_at_base) {
     cv::Point3f insect_pos = itd.pos();
     cv::Point3f insect_vel = itd.vel();
     cv::Point3f insect_acc = itd.acc();
-    std::cout << "far_target: Insect-pos: " << insect_pos;
+    // std::cout << "far_target: Insect-pos: " << insect_pos;
     track_data dtd = _trackers->dronetracker()->Last_track_data();
     cv::Point3f drone_pos = dtd.pos();
 
@@ -128,7 +128,7 @@ void Interceptor::update_far_target(bool drone_at_base) {
     _intercept_vel = insect_vel;
     _intercept_vel.y = 0;
     _intercept_acc = insect_acc;
-    std::cout << "; req-intercept-pos: " << req_intercept_pos << std::endl;
+    // std::cout << "; req-intercept-pos: " << req_intercept_pos << std::endl;
 
     _horizontal_separation = normf(cv::Point2f(drone_pos.x, drone_pos.z) - cv::Point2f(insect_pos.x, insect_pos.z));
     _vertical_separation = insect_pos.y - drone_pos.y;
@@ -142,7 +142,7 @@ void Interceptor::update_close_target() {
     cv::Point3f insect_pos = itd.pos();
     cv::Point3f insect_vel = itd.vel();
     cv::Point3f insect_acc = itd.acc();
-    std::cout << "close-target: Insect-pos: " << insect_pos;
+    //std::cout << "close-target: Insect-pos: " << insect_pos;
 #if ENABLE_MOTH_PREDICTION
     insect_pos += insect_vel * 5.f / pparams.fps;
 #endif
@@ -162,7 +162,7 @@ void Interceptor::update_close_target() {
     if (norm_vector > 0.05f) // when insect and drone come close to each other, the blobs get fused..., so keep the previous speed vector in that case
         _intercept_vel = insect_vel;
 
-    std::cout << "; req_intercept_pos: " << req_intercept_pos << std::endl;
+    // std::cout << "; req_intercept_pos: " << req_intercept_pos << std::endl;
     _horizontal_separation = normf(cv::Point2f(drone_pos.x, drone_pos.z) - cv::Point2f(insect_pos.x, insect_pos.z));
     _vertical_separation = insect_pos.y - drone_pos.y;
     total_separation = normf(insect_pos - drone_pos);

@@ -181,7 +181,6 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
     } case fm_start_takeoff: {
         take_off_start_time = time;
         _flight_mode = fm_take_off_aim;
-        std::cout << "Take off aiming" << std::endl;
         thrust = dparams.thrust;
         _burn_direction_for_thrust_approx = {0};
         auto_throttle = spinup_throttle();
