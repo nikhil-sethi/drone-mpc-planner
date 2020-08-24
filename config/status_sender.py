@@ -71,7 +71,9 @@ while True:
     f.close()
 
     ip = get_ip()
-    if ip.startswith('192') or ip.startswith('172'):
+    if ip.startswith('192.168.8') #4g stick ip
+        wait_for_trigger_or_timeout(3600)
+    elif ip.startswith('192') or ip.startswith('172'):
         wait_for_trigger_or_timeout(1)
     else:
         wait_for_trigger_or_timeout(3600)
