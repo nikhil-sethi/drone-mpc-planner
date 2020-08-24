@@ -22,15 +22,16 @@ void DroneController::init(std::ofstream *logger,bool fromfile,bool generator, M
     generator_mode = generator;
     _camview = camview;
     control_history_max_size = pparams.fps;
-    (*_logger) << "valid; flight_mode;" <<
-               "target_pos_x; target_pos_y; target_pos_z; " <<
-               "autoThrottle; autoRoll; autoPitch; autoYaw; " <<
-               "acc[z]; throttle; throttle_S; max_thrust; thrust_rpm;" <<
-               "joyThrottle; joyRoll; joyPitch; joyYaw; " <<
-               "joyArmSwitch; joyModeSwitch; joyTakeoffSwitch;" <<
-               "mmArmSwitch; mmModeSwitch;" <<
+    (*_logger) << "valid;flight_mode;" <<
+               "target_pos_x;target_pos_y;target_pos_z;" <<
+               "autoThrottle;autoRoll;autoPitch;autoYaw;" <<
+               "joyThrottle;joyRoll;joyPitch;joyYaw; " <<
+               "joyArmSwitch;joyModeSwitch;joyTakeoffSwitch;" <<
+               "mmArmSwitch;mmModeSwitch;" <<
                "dt;" <<
-               "thrust; integrator_x; integrator_y; integrator_z;model_error;";
+               "thrust; integrator_x;integrator_y;integrator_z;model_error;" <<
+               "batt_cell_v;rssi;arm;";
+    ;
     std::cout << "Initialising control." << std::endl;
     settings_file = "../../xml/" + dparams.control + ".xml";
 
@@ -551,11 +552,6 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
                auto_roll << ";" <<
                auto_pitch << ";" <<
                auto_yaw <<  ";" <<
-               _rc->sensor.acc.z <<  ";" <<
-               _rc->sensor.throttle <<  ";" <<
-               _rc->sensor.throttle_scaled <<  ";" <<
-               _rc->sensor.thrust_max <<  ";" <<
-               _rc->sensor.thrust_rpm <<  ";" <<
                joy_throttle <<  ";" <<
                joy_roll <<  ";" <<
                joy_pitch <<  ";" <<
@@ -568,7 +564,10 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
                data_drone.dt << ";" <<
                thrust << ";" <<
                pos_err_i.x << ";" << pos_err_i.y << ";" << pos_err_i.z << ";" <<
-               model_error << ";";
+               model_error << ";" <<
+               _rc->sensor.batt_cell_v  << ";" <<
+               _rc->sensor.rssi  << ";" <<
+               _rc->sensor.arming_state  << ";";
 }
 
 std::tuple<int, int, float, Point3f, std::vector<state_data> > DroneController::calc_burn(state_data state_drone,state_data state_target,float remaining_aim_duration) {
