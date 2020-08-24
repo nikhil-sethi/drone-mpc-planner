@@ -474,8 +474,6 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         else
             auto_throttle = RC_BOUND_MIN;
         _rc->arm(bf_disarmed);
-        if (time > 5 && pparams.joystick == rc_none)
-            _flight_mode = fm_inactive;
         break;
     } case fm_inactive: {
         auto_roll = RC_MIDDLE;

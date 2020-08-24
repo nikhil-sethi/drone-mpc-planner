@@ -542,6 +542,9 @@ public:
     bool drone_state_inactive() {
         return _flight_mode == fm_inactive;
     }
+    bool drone_state_disarmed() {
+        return _flight_mode == fm_disarmed;
+    }
 
     bool joystick_ready();
 
