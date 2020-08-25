@@ -277,12 +277,12 @@ void MultiModule::process_pats_init_packages(std::string bufs) {
         uint str_length = 0;
 
         const std::string version_str = "Multiprotocol version: ";
-        const std::string required_firmwar_version = "6.0.0.18";
-        auto found = bufs.rfind(version_str) ;
-        str_length = found+version_str.length()+required_firmwar_version.length();
-        if (found != std::string::npos && str_length < bufs.size()) {
+        const std::string required_firmwar_version = "6.0.0.19";
+        auto found_version = bufs.rfind(version_str) ;
+        str_length = found_version+version_str.length()+required_firmwar_version.length();
+        if (found_version != std::string::npos && str_length < bufs.size()) {
 
-            std::string current_firmware_version = bufs.substr(found+version_str.length(),required_firmwar_version.length());
+            std::string current_firmware_version = bufs.substr(found_version+version_str.length(),required_firmwar_version.length());
 
             if (current_firmware_version != required_firmwar_version) {
                 if (current_firmware_version.length() >= required_firmwar_version.length()) {
@@ -296,14 +296,14 @@ void MultiModule::process_pats_init_packages(std::string bufs) {
         }
 
         const std::string specify_id = "Specify bind ID...";
-        found = bufs.rfind(specify_id);
-        str_length = found+specify_id.length();
-        if (found != std::string::npos && str_length < bufs.size())
+        auto found_specify_bind_id = bufs.rfind(specify_id);
+        str_length = found_specify_bind_id+specify_id.length();
+        if (found_specify_bind_id != std::string::npos && str_length < bufs.size())
             send_init_package_now = true;
         const std::string id_received = "ID received:";
-        found = bufs.rfind(id_received);
-        str_length = found+id_received.length();
-        if (found != std::string::npos && str_length < bufs.size()) {
+        auto found_id_received = bufs.rfind(id_received);
+        str_length = found_id_received+id_received.length();
+        if (found_id_received != std::string::npos && str_length < bufs.size()) {
             send_init_package_now = false;
 
             std::cout << "Multimodule received init package!" << std::endl;
@@ -316,10 +316,10 @@ void MultiModule::process_pats_init_packages(std::string bufs) {
 
             //below checks for the error message the MM gives if it is (already) waiting for the init package, but receives wrong bytes.
             const std::string i_want_66 = "I want 66";
-            found = bufs.rfind(i_want_66);
-            str_length = found+i_want_66.length();
-            if (found != std::string::npos && str_length < bufs.size()) {
-                bufs = bufs.substr(found+i_want_66.length(),bufs.length() - (found+i_want_66.length()));
+            auto found_66 = bufs.rfind(i_want_66);
+            str_length = found_66+i_want_66.length();
+            if (found_66 != std::string::npos && str_length < bufs.size()) {
+                bufs = bufs.substr(found_66+i_want_66.length(),bufs.length() - (found_66+i_want_66.length()));
                 send_init_package_now = true;
             }
         }
