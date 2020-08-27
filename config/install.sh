@@ -225,6 +225,7 @@ fi
 }
 
 [ -f analysis-dependencies-packages-v1.0.done ] || {
+	mkdir -p ~/data_json
 	curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
 	sudo apt install -y libssl1.0-dev curl nodejs npm nodejs-dev node-gyp
 	pushd ../code/pats/analysis/moth_watcher/
