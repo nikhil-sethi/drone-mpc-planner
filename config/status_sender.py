@@ -91,7 +91,7 @@ while True:
         send_status_update()
 
         now = datetime.now()
-        if now.hour == 12 and not updated_today:
+        if now.hour == 10 and not updated_today:
             updated_today = True
             update_monitor_results()
         if now.hour == 11 and updated_today:
