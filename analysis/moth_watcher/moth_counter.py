@@ -351,7 +351,7 @@ if args.v:
     import matplotlib.pyplot as plt
     mpl.rcParams['legend.fontsize'] = 10
 
-found_dirs = glob.glob(args.i + "/*_*")
+found_dirs = glob.glob(args.i + "/202*_*")
 filtered_dirs = [d for d in found_dirs if todatetime(os.path.basename(os.path.normpath(d))) >= min_date and todatetime(os.path.basename(os.path.normpath(d))) <= max_date] # filter the list of dirs to only contain dirs between certain dates
 flights = []
 for folder in filtered_dirs:
