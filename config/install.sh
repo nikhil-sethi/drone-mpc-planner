@@ -58,7 +58,7 @@ pushd ~/dependencies
 	pip3 install pyserial
 	#specific to enable opencv features and optimizations:
 	sudo apt install -y yasm gfortran libjpeg8-dev libpng-dev libtiff-dev libatlas-base-dev libprotobuf-dev protobuf-compiler libgoogle-glog-dev libgflags-dev libgphoto2-dev libeigen3-dev libhdf5-dev libatlas3-base libatlas-base-dev liblapack3 liblapacke liblapacke-dev liblapack-dev ccache
-	pip3 install numpy pandas scipy sklearn
+	pip3 install numpy pandas scipy sklearn tqdm
 	touch dependencies-packages-v1.3.done
 }
 
