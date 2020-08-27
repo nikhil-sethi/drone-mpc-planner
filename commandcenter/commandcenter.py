@@ -459,6 +459,7 @@ class SystemWidget(QWidget):
             app.setStyle("Fusion")
             dark_palette = QPalette()
             dark_palette.setColor(QPalette.Window, QColor(15, 15, 15))
+            dark_palette.setColor(QPalette.WindowText, QColor(230, 230, 230))
             app.setPalette(dark_palette)
 
             self.im_label.setStyleSheet("QToolTip { color: #000000; background-color: #800000; border: 1px solid black; }")
@@ -474,6 +475,7 @@ class SystemWidget(QWidget):
 
             light_palette = QPalette()
             light_palette.setColor(QPalette.Window, QColor(230, 230, 230))
+            light_palette.setColor(QPalette.WindowText, QColor(15, 15, 15))
             app.setPalette(light_palette)
 
             self.im_label.setStyleSheet("QToolTip { color: #000000; background-color: #9d8080; border: 1px solid black; }")
