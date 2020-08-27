@@ -224,19 +224,16 @@ fi
 	touch mm_install.done
 }
 
-[ -f analysis-dependencies-packages-v1.0.done ] || {
-	mkdir -p ~/data_json
-	curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
-	sudo apt install -y libssl1.0-dev curl nodejs npm nodejs-dev node-gyp
-	pushd ../code/pats/analysis/moth_watcher/
-	npm install
-	npm audit fix
-	popd
-	touch analysis-dependencies-packages-v1.0.done
-}
-
-
-
+# [ -f analysis-dependencies-packages-v1.0.done ] || {
+# 	mkdir -p ~/data_json
+# 	curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+# 	sudo apt install -y libssl1.0-dev curl nodejs nodejs
+# 	pushd ../code/pats/analysis/moth_watcher/
+# 	npm install
+# 	npm audit fix
+# 	popd
+# 	touch analysis-dependencies-packages-v1.0.done
+# }
 
 popd
 
