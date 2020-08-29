@@ -183,12 +183,14 @@ def get_moth_counts_for_dir(path_of_dir, mindate, max_date):
     try:
         header = files[-1]
         df = pd.read_csv(header, sep=";")
+        df["filename"] = os.path.basename(header)
     except:
         print("No header file found") # normally happens when dir got no 'logging' dir
         return []
 
     for file_ in tqdm(files):
         df2 = pd.read_csv(file_, sep=";", names=df.columns)
+        df2["filename"] = os.path.basename(file_)
         df = df.append(df2)
     #read_insect_file
     ins_path = os.path.join(path_of_dir, "logging", "log_itrk0.csv")
@@ -215,6 +217,7 @@ def get_moth_counts_for_dir(path_of_dir, mindate, max_date):
     xs = processed_df["posX_insect"].values
     ys = processed_df["posY_insect"].values
     zs = processed_df["posZ_insect"].values
+    fn = processed_df["filename"].values
 
     # x_img = processed_df["imLx_insect"].values
     # y_img = processed_df["imLy_insect"].values
@@ -222,17 +225,28 @@ def get_moth_counts_for_dir(path_of_dir, mindate, max_date):
     moth_found[(xs == 0) | (ys == 0) | (zs == 0)] = 0 # if xyz values missing, say moth is not seen
     nums, inds, clas = rle(moth_found) # get all possible flight windows
 
+    
     # add seperate flights together that are too close together to be two different flights
-    prev = -9001
+    # prev = -9001
     seq_lens, start_ind = [], []
-    for i in range(len(nums)):
-        if clas[i] == 1:
-            if inds[i] - prev < 10: # if in less than 10 frames the moth is seen again, count as same flight.
-                seq_lens[-1] = inds[i] - start_ind[-1] + nums[i]
-            else:
+    if nums is not None:
+        for i in range(len(nums)):
+            if clas[i] == 1:
+
+                #new
                 start_ind.append(inds[i])
                 seq_lens.append(nums[i])
-            prev = nums[i]+ inds[i]
+
+
+
+    #             if inds[i] - prev < 10: # if in less than 10 frames the moth is seen again, count as same flight.
+    #                 seq_lens[-1] = inds[i] - start_ind[-1] + nums[i]
+    #             else:
+    #                 start_ind.append(inds[i])
+    #                 seq_lens.append(nums[i])
+    #             prev = nums[i]+ inds[i]
+    # else:
+    #     return []
 
     try:
         elapsed_time = processed_df["elapsed"].values
@@ -240,9 +254,10 @@ def get_moth_counts_for_dir(path_of_dir, mindate, max_date):
         print("Error in accessing the elasped time var")
         return []
    
+    prev_rsid = None
     found_flights = []
-    if nums is not None:
-        for i in range(len(seq_lens)):
+    if start_ind is not None:
+        for i in range(len(start_ind)):
             non_smooth_x_p = xs[start_ind[i]:start_ind[i]+seq_lens[i] - 1] # get the x coords for the moth flight
             non_smooth_y_p = ys[start_ind[i]:start_ind[i]+seq_lens[i] - 1]
             non_smooth_z_p = zs[start_ind[i]:start_ind[i]+seq_lens[i] - 1]
@@ -266,6 +281,7 @@ def get_moth_counts_for_dir(path_of_dir, mindate, max_date):
             start = elapsed_time[start_ind[i]]
             end = elapsed_time[start_ind[i]+seq_lens[i] - 1]
             duration = end - start # total duration of the flight
+            filename = fn[start_ind[i]]
 
 
             # # filter on image coords
@@ -275,10 +291,7 @@ def get_moth_counts_for_dir(path_of_dir, mindate, max_date):
             # dy_img = (y_img_p[1:]-y_img_p[:-1])
             # correct_image_movement = np.abs(dx_img).mean() > 0.15 and np.abs(dy_img).mean() > 0.15
 
-            FP_theshold = np.mean(np.ones(shape=(3,3)) - np.abs(np.corrcoef([x_p, -y_p, z_p]))) >= 0.0001
-
-            # correct_dist_mean = mean_vel > 0.1 and mean_vel < 5 # else FP
-            # correct_dist_std = std_vel < 2 # else FP
+            FP_theshold = np.mean(np.ones(shape=(3,3)) - np.abs(np.corrcoef([x_p, y_p, z_p]))) >= 0.008
             correct_duration = duration >= 0.05 and duration < 25 # FP if flight duration is between certain seconds
 
             # if correct_dist_mean and correct_dist_std and correct_duration:
@@ -289,34 +302,38 @@ def get_moth_counts_for_dir(path_of_dir, mindate, max_date):
                 p1[p1 < -1] = -1
                 turning_angle = np.arccos(p1)
                 p = np.vstack([x_p,y_p,z_p])
-                
+                np.seterr(divide='ignore')
                 radius_of_curve = np.divide(np.linalg.norm(p[:,2:] - p[:,:-2]), (2 * np.sin(turning_angle)))
                 radial_accelaration = np.divide(np.sum(v[:,1:] * v[:,:-1], axis=0), radius_of_curve)
 
-                flight_time = datetime.datetime.utcfromtimestamp(time[inds[i]].tolist()/1e9).strftime("%m/%d/%Y, %H:%M:%S") #numpy dt to string
-
+                flight_time = datetime.datetime.utcfromtimestamp(time[start_ind[i]].tolist()/1e9).strftime("%m/%d/%Y, %H:%M:%S") #numpy dt to string
+                
                 if args.v:
-                    
-                    print(f"RS_ID: {RS_ID[start_ind[i]]} - {RS_ID[start_ind[i]+seq_lens[i] - 1]}")
+                
+                    print(f"RS_ID: {RS_ID[start_ind[i]]} - {RS_ID[start_ind[i]+seq_lens[i] - 1]} - {prev_rsid}")
+                    print(filename, correct_duration, FP_theshold)
                     print(f"Start time: {flight_time}")
                     print(f"Flight length: {duration} s, {x_p.shape}")
-                    print(f"Start: {x_p[0], y_p[0], z_p[0]}")
-                    print([correct_image_movement, np.abs(dx_img).mean(), np.abs(dx_img).max(), dx_img.std(), np.abs(dy_img).max(), np.abs(dy_img).mean(), dy_img.std()])
-                    print()
+                    # print(f"Start: {x_p[0], y_p[0], z_p[0]}")
+                    print(np.mean(np.ones(shape=(3,3)) - np.abs(np.corrcoef([x_p, y_p, z_p]))))
                     fig = plt.figure()
                     ax = fig.gca(projection='3d')
                     ax.plot(x_p, -y_p, z_p, label='smoothend flight')
                     ax.scatter(non_smooth_x_p, -non_smooth_y_p, non_smooth_z_p, label='raw flight', marker="x")
+                    ax.scatter([-5], [5], [-5], label='anchor', marker="o")
                     ax.legend()
                     ax.set_xlabel('X axis')
                     ax.set_ylabel('Y axis')
                     ax.set_zlabel('Z axis')
                     plt.show()
+                    prev_rsid = RS_ID[start_ind[i]+seq_lens[i] - 1]
 
                 # add frames together
+                print(flight_time, i , len(seq_lens), filename)
                 flight_data = {"time" : flight_time,
                                 "duration": duration,
                                 "RS_ID" : RS_ID[start_ind[i]],
+                                "Filename" : filename,
                                 "Vel_mean" : mean_vel, # all mean max and std
                                 "Vel_std" : std_vel,
                                 "Vel_max" : part_vel.max(),

@@ -46,10 +46,13 @@ def store_data(data):
         date = iso_8601_format(parsed)
         sql = ''' INSERT INTO analytic_records(system,flight_time,flight_duration,start_RS_ID,\
         velocity_mean,velocity_std,velocity_max,turning_angle_mean,turning_angle_std,turning_angle_max,\
-        radial_accelaration_mean,radial_accelaration_std,radial_accelaration_max)\
-        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?) '''
+        radial_accelaration_mean,radial_accelaration_std,radial_accelaration_max, filename)\
+        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?) '''
         cur = conn.cursor()
-        cur.execute(sql, (data["system"], date, *list(flight.values())[1:]))
+        try:
+            cur.execute(sql, (data["system"], date, *list(flight.values())[1:]))
+        except:
+            continue
         conn.commit()
         print(f"Saved {date} of {data['system']}")
 
