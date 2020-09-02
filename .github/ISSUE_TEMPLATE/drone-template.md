@@ -3,7 +3,7 @@ name: Drone template
 about: Standard issue for every drone we have
 title: Drone [add a funny title]
 labels: Drone (inventory)
-assignees: matejkarasek
+assignees: ''
 
 ---
 
