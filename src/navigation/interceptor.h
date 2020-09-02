@@ -6,7 +6,7 @@
 #include "visiondata.h"
 
 #define ENABLE_UNIFIED_DIRECTION_TRANSITION false
-#define ENABLE_MOTH_PREDICTION false
+#define ENABLE_MOTH_PREDICTION true
 #define ENABLE_VELOCITY_COMPENSATION false
 
 static const char* interceptor_state_names[] = { "is_init",
