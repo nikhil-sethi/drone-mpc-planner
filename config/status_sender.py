@@ -68,7 +68,9 @@ def update_monitor_results():
     yesterday = now - timedelta(days=1)
     date_time_start = now.strftime("%Y%m%d_%H%M%S")
     date_time_end = now.strftime("%Y%m%d_%H%M%S")
-    local_json_file = '~/data_json/' + date_time_end + '.json'
+    if not os.path.exists(homedir + '/data_json/'):
+        os.mkdir(homedir + '/data_json/')
+    local_json_file = homedir + '/data_json/' + date_time_end + '.json'
     remote_json_file='moth_json/' + hostname + '_' + date_time_end + '.json'
     cmd = '../analysis/moth_watcher/moth_counter.py -i ~/data -s ' + date_time_start +' -e ' + date_time_end + ' --filename ' + local_json_file
     result = subprocess.run(cmd, shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
