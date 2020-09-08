@@ -66,7 +66,7 @@ def send_status_update():
 def update_monitor_results():
     now = datetime.now()
     yesterday = now - timedelta(days=1)
-    date_time_start = now.strftime("%Y%m%d_%H%M%S")
+    date_time_start = yesterday.strftime("%Y%m%d_%H%M%S")
     date_time_end = now.strftime("%Y%m%d_%H%M%S")
     if not os.path.exists(homedir + '/data_json/'):
         os.mkdir(homedir + '/data_json/')
