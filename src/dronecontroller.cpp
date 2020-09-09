@@ -566,7 +566,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
                pos_err_i.x << ";" << pos_err_i.y << ";" << pos_err_i.z << ";" <<
                model_error << ";" <<
                _rc->sensor.batt_cell_v  << ";" <<
-               _rc->sensor.rssi  << ";" <<
+               static_cast<int>(_rc->sensor.rssi)  << ";" <<
                _rc->sensor.arming_state  << ";";
 }
 
