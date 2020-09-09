@@ -167,6 +167,10 @@ fi
 }
 
 if [[ $1 -eq 1 ]] ; then
+
+	mkdir -p ~/data_json
+	mkdir -p ~/data
+	
 	# Create nice symlinks
 	[ -f symlinks.done ] || {
 		[ -f ~/.screenrc ] && {
@@ -225,7 +229,6 @@ fi
 }
 
 # [ -f analysis-dependencies-packages-v1.0.done ] || {
-# 	mkdir -p ~/data_json
 # 	curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
 # 	sudo apt install -y libssl1.0-dev curl nodejs nodejs
 # 	pushd ../code/pats/analysis/moth_watcher/
