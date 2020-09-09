@@ -284,7 +284,7 @@ private:
     xRc_type _joystick;
     xDrone_type _drone;
     xOp_mode _op_mode;
-    xInt _wdt_timeout_us,_darkness_threshold,_fps,_close_after_n_images;
+    xInt _wdt_timeout_us,_darkness_threshold,_fps,_close_after_n_images,_max_brightness;
     xBool _cam_tuning, _control_tuning, _navigation_tuning,_vision_tuning,_drone_tracking_tuning,_insect_tracking_tuning;
     xBool _viz_plots, _viz_tracking;
     xInt _imscalef;
@@ -294,7 +294,7 @@ private:
     xFloat _max_cam_roll;
 
 public:
-    int wdt_timeout_us,darkness_threshold,close_after_n_images;
+    int wdt_timeout_us,darkness_threshold,close_after_n_images,max_brightness;
     uint fps;
     bool watchdog,has_screen;
     video_modes video_cuts,video_raw, video_result;
@@ -315,11 +315,12 @@ public:
         setClassName("PatsParameters");
 
         // Set class version
-        setVersion("1.6");
+        setVersion("1.7");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("wdt_timeout_us",&_wdt_timeout_us);
         Register("darkness_threshold",&_darkness_threshold);
+        Register("max_brightness",&_max_brightness);
         Register("close_after_n_images",&_close_after_n_images);
         Register("has_screen",&_has_screen);
         Register("op_mode",&_op_mode);
@@ -368,6 +369,7 @@ public:
 
         wdt_timeout_us = _wdt_timeout_us.value();
         darkness_threshold = _darkness_threshold.value();
+        max_brightness = _max_brightness.value();
         close_after_n_images = _close_after_n_images.value();
         has_screen = _has_screen.value();
         op_mode = _op_mode.value();
@@ -396,6 +398,7 @@ public:
     void serialize(std::string settings_file) {
         _wdt_timeout_us = wdt_timeout_us;
         _darkness_threshold = darkness_threshold;
+        _max_brightness = max_brightness;
         _close_after_n_images = close_after_n_images;
         _has_screen = has_screen;
         _op_mode = op_mode;

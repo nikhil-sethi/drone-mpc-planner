@@ -198,10 +198,10 @@ void DroneNavigation::update(double time) {
 
                 auto itrkr = _trackers->insecttracker_best();
 
-                if(_iceptor.insect_in_range_takeoff(itrkr)) {
+                if(_iceptor.insect_in_range_takeoff(itrkr) && _visdat->no_recent_large_brightness_events(time)) {
                     _navigation_status = ns_takeoff;
                     repeat = true;
-                } else if(itrkr->tracking () && !itrkr->false_positive()) {
+                } else if(itrkr->tracking() && !itrkr->false_positive() && _visdat->no_recent_large_brightness_events(time)) {
                     _dctrl->flight_mode (DroneController::fm_spinup);
                 } else {
                     _dctrl->flight_mode(DroneController::fm_inactive);

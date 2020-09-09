@@ -53,7 +53,6 @@ private:
 
     int motion_update_iterator_max;
     float brightness_event_tresh;
-    float brightness_check_period;
 
     string settings_file = "../../xml/vision.xml";
     void deserialize_settings();
@@ -66,9 +65,9 @@ private:
     double _current_frame_time = 0;
     cv::UMat dilate_element;
 
-    double prev_time_brightness_check = 0;
-    float prev_brightness;
+    float prev_brightness = -1;
     bool _reset_motion_integration = false;
+    double _large_brightness_change_event_time = 0;
     delete_spot motion_spot_to_be_deleted;
     delete_spot motion_spot_to_be_reset;
 
@@ -107,6 +106,13 @@ public:
 
     bool disable_fading = false;
     bool enable_collect_no_drone_frames = true;
+
+    bool no_recent_large_brightness_events(double time) {
+        return static_cast<float>(_large_brightness_change_event_time - time)< 3;
+    }
+    float average_brightness() {
+        return prev_brightness;
+    }
 
     double current_time() {return _current_frame_time;}
 

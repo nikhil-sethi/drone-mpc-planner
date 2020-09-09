@@ -65,6 +65,8 @@ void Realsense::update_real(void) {
 
     if (rs_frameL.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
         camparams.measured_exposure = rs_frameL.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
+        rs2::depth_sensor rs_dev = dev.first<rs2::depth_sensor>();
+        camparams.measured_gain = rs_dev.get_option(RS2_OPTION_GAIN);
     }
 
     _frame_number = rs_frameL.get_frame_number();
@@ -231,8 +233,9 @@ void Realsense::init_real() {
     if (enable_auto_exposure == only_at_startup)
         check_light_level();
     else {
-        std::tie (camparams.measured_exposure,camparams.measured_gain,std::ignore) = measure_auto_exposure();
-        std::cout << "Measured auto exposure: " << camparams.measured_exposure << " and gain: " << camparams.measured_gain << std::endl;
+        float brightness;
+        std::tie (camparams.measured_exposure,camparams.measured_gain,std::ignore,brightness) = measure_auto_exposure();
+        std::cout << "Measured auto exposure: " << camparams.measured_exposure << ", gain: " << camparams.measured_gain << ", brightness: " << brightness << std::endl;
     }
 
     depth_background = imread(depth_map_rfn,cv::IMREAD_ANYDEPTH);
@@ -364,7 +367,7 @@ void Realsense::check_light_level() {
     cam.stop();
 }
 
-std::tuple<float,float,cv::Mat> Realsense::measure_auto_exposure() {
+std::tuple<float,float,cv::Mat,float> Realsense::measure_auto_exposure() {
 
     if (!dev_initialized) {
         rs2::context ctx;
@@ -416,12 +419,16 @@ std::tuple<float,float,cv::Mat> Realsense::measure_auto_exposure() {
         }
     }
     cam.stop();
+
+    cv::Mat frame_top = frameLt(cv::Rect(frameLt.cols/3,0,frameLt.cols/3*2,frameLt.rows/3));
+    float brightness = static_cast<float>(mean( frame_top )[0]);
+
     if (!actual_exposure_was_measured)
         std::cout << "Warning: no exposure data could be found!!!" << std::endl;
     else if (actual_exposure_was_measured!=i)
         std::cout << "Not all frames contained exosure info: " << actual_exposure_was_measured << " / " << i << std::endl;
 
-    return std::make_tuple(new_expos,new_gain,frameLt);
+    return std::make_tuple(new_expos,new_gain,frameLt,brightness);
 
 }
 
