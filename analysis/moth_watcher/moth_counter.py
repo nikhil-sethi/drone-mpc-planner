@@ -7,6 +7,7 @@ import re, datetime
 import argparse, socket
 import pickle
 from tqdm import tqdm
+import datetime
 
 from scipy.interpolate import interp1d
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -178,56 +179,43 @@ def interpolate_zeros_and_spline(vals):
     return spline_model.predict(x)
 
 def get_moth_counts_for_dir(path_of_dir, mindate, max_date):
+
+
+    top_folder = os.path.basename(path_of_dir)
+    dts = datetime.datetime.strptime(top_folder,'%Y%m%d_%H%M%S')
+    if dts <= mindate or dts > max_date:
+        return []
+
     #concat all csv files containing dates
     files = natural_sort([fp for fp in glob.glob(os.path.join(path_of_dir, "logging", "log*.csv")) if "itrk0" not in fp])
     try:
-        header = files[-1]
+        header = files[-1] #last entry is the log.csv file, which contains the header for all other log*.csv files
+        files.pop()  # remove the header file
         df = pd.read_csv(header, sep=";")
         df["filename"] = os.path.basename(header)
     except:
         print("No header file found") # normally happens when dir got no 'logging' dir
         return []
 
-    for file_ in tqdm(files):
-        df2 = pd.read_csv(file_, sep=";", names=df.columns)
-        df2["filename"] = os.path.basename(file_)
-        df = df.append(df2)
     #read_insect_file
     ins_path = os.path.join(path_of_dir, "logging", "log_itrk0.csv")
     df_ins = pd.read_csv(ins_path, sep=";")
 
-    #merge time df and insect df
-    try:
-        comp_df = pd.merge(df, df_ins, on='RS_ID', how='outer')
-        processed_df = comp_df[comp_df["foundL_insect"].notna()]
-    except Exception as e:
-        print("Merge csv error")
-        print(e)
-        return []
+    processed_df = df_ins[df_ins["foundL_insect"].notna()]
     
-    # if df has rows that are above the min/max value, remove them
-    processed_df.loc[:, "time_x"] =  pd.to_datetime(processed_df.loc[:, "time_x"], format='%Y/%m/%d %H:%M:%S') # convert string to datetime object 
-    processed_df = processed_df[(processed_df.loc[:, "time_x"] >= min_date) & (processed_df.loc[:, "time_x"] <= max_date)] 
-
     # now calculate the mean and standard deviation of each suspected moth flight
     moth_found = processed_df["foundL_insect"].values
     
-    time = processed_df["time_x"].values
+    elapsed_time = processed_df["time"].values
     RS_ID = processed_df["RS_ID"].values
     xs = processed_df["posX_insect"].values
     ys = processed_df["posY_insect"].values
     zs = processed_df["posZ_insect"].values
-    fn = processed_df["filename"].values
-
-    # x_img = processed_df["imLx_insect"].values
-    # y_img = processed_df["imLy_insect"].values
 
     moth_found[(xs == 0) | (ys == 0) | (zs == 0)] = 0 # if xyz values missing, say moth is not seen
     nums, inds, clas = rle(moth_found) # get all possible flight windows
 
-    
     # add seperate flights together that are too close together to be two different flights
-    # prev = -9001
     seq_lens, start_ind = [], []
     if nums is not None:
         for i in range(len(nums)):
@@ -237,23 +225,6 @@ def get_moth_counts_for_dir(path_of_dir, mindate, max_date):
                 start_ind.append(inds[i])
                 seq_lens.append(nums[i])
 
-
-
-    #             if inds[i] - prev < 10: # if in less than 10 frames the moth is seen again, count as same flight.
-    #                 seq_lens[-1] = inds[i] - start_ind[-1] + nums[i]
-    #             else:
-    #                 start_ind.append(inds[i])
-    #                 seq_lens.append(nums[i])
-    #             prev = nums[i]+ inds[i]
-    # else:
-    #     return []
-
-    try:
-        elapsed_time = processed_df["elapsed"].values
-    except Exception as e:
-        print("Error in accessing the elasped time var")
-        return []
-   
     prev_rsid = None
     found_flights = []
     if start_ind is not None:
@@ -281,7 +252,7 @@ def get_moth_counts_for_dir(path_of_dir, mindate, max_date):
             start = elapsed_time[start_ind[i]]
             end = elapsed_time[start_ind[i]+seq_lens[i] - 1]
             duration = end - start # total duration of the flight
-            filename = fn[start_ind[i]]
+            filename = 'unknown' #work around #455
 
 
             # # filter on image coords
@@ -306,7 +277,7 @@ def get_moth_counts_for_dir(path_of_dir, mindate, max_date):
                 radius_of_curve = np.divide(np.linalg.norm(p[:,2:] - p[:,:-2]), (2 * np.sin(turning_angle)))
                 radial_accelaration = np.divide(np.sum(v[:,1:] * v[:,:-1], axis=0), radius_of_curve)
 
-                flight_time = datetime.datetime.utcfromtimestamp(time[start_ind[i]].tolist()/1e9).strftime("%m/%d/%Y, %H:%M:%S") #numpy dt to string
+                flight_time = (dts + datetime.timedelta(seconds=elapsed_time[start_ind[i]])).strftime("%m/%d/%Y, %H:%M:%S")
                 
                 if args.v:
                 
@@ -332,7 +303,7 @@ def get_moth_counts_for_dir(path_of_dir, mindate, max_date):
                 print(flight_time, i , len(seq_lens), filename)
                 flight_data = {"time" : flight_time,
                                 "duration": duration,
-                                "RS_ID" : RS_ID[start_ind[i]],
+                                "RS_ID" : str(RS_ID[start_ind[i]]),
                                 "Filename" : filename,
                                 "Vel_mean" : mean_vel, # all mean max and std
                                 "Vel_std" : std_vel,
