@@ -447,24 +447,25 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
     } case fm_shake_it_baby: {
         _rc->arm(bf_disarmed);
         mode+=bf_spin_motor;
-        int itime = round(time*20);
-        auto_roll = RC_BOUND_MIN;
-        auto_pitch = RC_BOUND_MIN;
-        auto_throttle = RC_BOUND_MIN;
-        auto_yaw = RC_BOUND_MIN;
+        int itime = round(time*5);
+        int staticspin = RC_BOUND_MIN + 125;
+        auto_roll = staticspin;
+        auto_pitch = staticspin;
+        auto_throttle = staticspin;
+        auto_yaw = staticspin;
 
-        int spin_value = RC_BOUND_MIN+ 580;
-        if (itime % 5 == 0) {
+        int spin_value = RC_BOUND_MIN + 325;
+        if (itime % 5 == 3) {
             auto_pitch = spin_value;
         } else if (itime % 5 == 1) {
             auto_roll = spin_value;
         } else if (itime % 5 == 2) {
-            auto_throttle = spin_value-30;
-        } else if (itime % 5 == 3) {
+            auto_throttle = spin_value;
+        } else if (itime % 5 == 0) {
             auto_yaw = spin_value;
         } else if (itime % 5 == 4) {
-            auto_roll = spin_value+60;
-            auto_throttle = spin_value+60;
+            auto_roll = spin_value + 50;
+            auto_throttle = spin_value +50;
         }
         break;
     } case fm_disarmed: {
