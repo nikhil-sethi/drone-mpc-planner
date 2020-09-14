@@ -305,8 +305,10 @@ class SystemWidget(QWidget):
                 elif line.find('\"darkness_threshold\"') != -1:
                     if self.combo_mode.currentText() == "Monitoring":
                         line = '    <Member Name=\"darkness_threshold\">5000</Member>\n'
-                    else:
+                    elif self.combo_mode.currentText() == "Crippled":
                         line = '    <Member Name=\"darkness_threshold\">0</Member>\n'
+                    else:
+                        line = '    <Member Name=\"darkness_threshold\">9500</Member>\n'
                 elif line.find('\"close_after_n_images\"') != -1:
                     if self.combo_mode.currentText() == "Hunt":
                         line = '    <Member Name=\"close_after_n_images\">10800</Member>\n'
