@@ -19,14 +19,14 @@
     - Select local_dev
     - Press Enter to detect usb devices
     - After the next screen appears, wait 5 seconds, press ctrl-C
-    - Select sda1 58.G_ntfs_MULTIBOOT….
+    - Select sda1 58.G_ntfs_MULTIBOOT…. (which is the usb dongle)
     - Select the image:
       - Select the “Images” folder, and press enter
       - Press tab twice to select Done! And then press Enter to select that image.
       - It’ll show the source to be the usb stick. Check the size is 58.4GB, press Enter.  
     - Select Beginner
     -  Select **“restoredisk”**
-    - Check the name, select the image **"PATS-IMAGE-LATEST"**
+    - Check the name, select the image **with the most recent date!**
     - Select the main hard drive **“nvmeOn1 500GB….”**
     - Select yes, to check the image
     - Select poweroff
@@ -41,6 +41,7 @@
     - Again for: `sudo nano /etc/hostname`
     - Reboot
 6. Optional: connect wifi
+7. Remove the `~/disable_pats_bkg` file to enable the pats process in the background (preferably after the camera etc is connected)
 
 All done!
 
