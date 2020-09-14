@@ -948,7 +948,7 @@ int main( int argc, char **argv )
             cmdcenter.reset_commandcenter_status_file(e2.msg,true);
         }
         return 1;
-    } catch (Exception err) {
+    } catch (Exception const &err) {
         cmdcenter.reset_commandcenter_status_file(err.msg,true);
         std::cout << "Error: " << err.msg << std::endl;
         return 1;
@@ -957,7 +957,7 @@ int main( int argc, char **argv )
     try {
         init();
         process_video();
-    } catch(bag_video_ended) {
+    } catch(bag_video_ended const &e) {
         std::cout << "Video ended" << std::endl;
         exit_now = true;
     } catch(my_exit const &e) {
