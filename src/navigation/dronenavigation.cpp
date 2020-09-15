@@ -144,7 +144,7 @@ void DroneNavigation::update(double time) {
             _trackers->mode(tracking::TrackerManager::mode_idle);
             _visdat->disable_fading = false;
             _visdat->enable_collect_no_drone_frames = true;
-            if (time-time_located_drone>1.5 && (_dctrl->drone_state_disarmed() || pparams.joystick != rc_none)) { // delay until blinking stopped. Drone must be 1.5s disarmed to get out of a possible (rx) failsafe
+            if (time-time_located_drone>2 && (_dctrl->drone_state_disarmed() || pparams.joystick != rc_none)) { // delay until blinking stopped. Drone must be 1.5s disarmed to get out of a possible (rx) failsafe
                 _visdat->enable_background_motion_map_calibration(motion_calibration_duration);
                 _visdat->create_overexposed_removal_mask(_trackers->dronetracker()->drone_takeoff_im_location(),_trackers->dronetracker()->drone_takeoff_im_size());
                 time_motion_calibration_started = time;
@@ -153,6 +153,11 @@ void DroneNavigation::update(double time) {
             }
             break;
         } case ns_calibrating_motion: {
+
+            if (pparams.op_mode==op_mode_deployed) {  // arm the drone while throttle is still zero (in the wait_for_insect state this is not guaranteed, #430)
+                _dctrl->drone_state_inactive();
+            }
+
             if (static_cast<float>(time-time_motion_calibration_started) > motion_calibration_duration) {
                 if (pparams.op_mode==op_mode_monitoring_only) {
                     _trackers->mode(tracking::TrackerManager::mode_wait_for_insect);
