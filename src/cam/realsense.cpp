@@ -127,16 +127,16 @@ void Realsense::rs_callback(rs2::frame f) {
     }
 }
 
-void Realsense::calibration(rs2::stream_profile infared1,rs2::stream_profile infared2) {
+void Realsense::calibration(rs2::stream_profile infrared1,rs2::stream_profile infrared2) {
     // Obtain focal length and principal point (from intrinsics)
-    auto depth_stream = infared1.as<rs2::video_stream_profile>();
+    auto depth_stream = infrared1.as<rs2::video_stream_profile>();
     auto i = depth_stream.get_intrinsics();
     float focal_length = i.fx; // same as fy
     float cx = i.ppx; // same for both cameras
     float cy = i.ppy;
 
     // Obtain baseline (from extrinsics)
-    rs2_extrinsics e = infared1.get_extrinsics_to(infared2);
+    rs2_extrinsics e = infrared1.get_extrinsics_to(infrared2);
     float baseline = e.translation[0];
 
     baseline = fabs(baseline);
@@ -274,26 +274,27 @@ void Realsense::init_real() {
     }
 
     std::vector<rs2::stream_profile> stream_profiles = rs_depth_sensor.get_stream_profiles();
-    rs2::stream_profile infared1,infared2;
-    if (pparams.fps == 60) {
-        infared1 = stream_profiles[17]; // infared 1 864x480 60fps
-        infared2 = stream_profiles[16]; // infared 2 864x480 60fps
-    } else {
-        infared1 = stream_profiles[15]; // infared 1 864x480 90fps
-        infared2 = stream_profiles[14]; // infared 2 864x480 90fps
+    rs2::stream_profile infrared1,infrared2;
+    for (uint i = 0; i < stream_profiles.size(); i++) {
+        try {
+            if (auto video_stream = stream_profiles[i].as<rs2::video_stream_profile>()) {
+                rs2_intrinsics intrinsics = video_stream.get_intrinsics();
+                // std::cout << video_stream.stream_name() << " " << i << ": " << intrinsics.width << " x " << intrinsics.height << " @" << video_stream.fps() << std::endl;
+                if (video_stream.fps() == static_cast<int>(pparams.fps) && intrinsics.width == 848 && intrinsics.height == 480) {
+                    if (video_stream.stream_name().compare("Infrared 1") == 0)
+                        infrared1 = video_stream;
+                    if (video_stream.stream_name().compare("Infrared 2") == 0)
+                        infrared2 = video_stream;
+                }
+            }
+        } catch (const std::exception& e) {}
+    }
+    if (!infrared1 || !infrared2) {
+        std::cout << "Error: streams not found in the realsense?!?!" << std::endl;
+        exit(1);
     }
 
-    //TODO: automate above with below:
-    // for (uint i = 0; i < stream_profiles.size(); i++) {
-    //     try {
-    //         if (auto video_stream = stream_profiles[i].as<rs2::video_stream_profile>()) {
-    //             rs2_intrinsics intrinsics = video_stream.get_intrinsics();
-    //             std::cout << video_stream.stream_name() << " " << i << ": " << intrinsics.width << " x " << intrinsics.height << " @" << video_stream.fps() << std::endl;
-    //         }
-    //     } catch (const std::exception& e) {}
-    // }
-
-    rs_depth_sensor.open({infared1,infared2});
+    rs_depth_sensor.open({infrared1,infrared2});
     rs_depth_sensor.start([&](rs2::frame f) { rs_callback(f); });
     if (pparams.cam_tuning) {
         namedWindow("Cam tuning", WINDOW_NORMAL);
@@ -301,7 +302,7 @@ void Realsense::init_real() {
         createTrackbar("Gain", "Cam tuning", &gain, 32768);
     }
 
-    calibration(infared1,infared2);
+    calibration(infrared1,infrared2);
     camparams.serialize(calib_wfn);
     convert_depth_background_to_world();
 
@@ -693,7 +694,7 @@ void Realsense::init_playback() {
     dev = cam.get_active_profile().get_device();
     static_cast<rs2::playback>(dev).set_real_time(false);
 
-    rs2::stream_profile infared1,infared2;
+    rs2::stream_profile infrared1,infrared2;
     auto rs_depth_sensor = dev.first<rs2::depth_sensor>();
     camparams.depth_scale = rs_depth_sensor.get_option(RS2_OPTION_DEPTH_UNITS);
 
@@ -705,12 +706,12 @@ void Realsense::init_playback() {
         rs2::stream_profile sp = stream_profiles.at(i);
         std::cout << sp.stream_index() << " -  " << sp.stream_name() << " ; " << sp.stream_type() << std::endl;
         if ( sp.stream_name().compare("Infrared 1") == 0)
-            infared1 = sp;
+            infrared1 = sp;
         else if ( sp.stream_name().compare("Infrared 2") == 0)
-            infared2 = sp;
+            infrared2 = sp;
     }
 
-    calibration(infared1,infared2);
+    calibration(infrared1,infrared2);
     convert_depth_background_to_world();
     camparams.serialize(calib_wfn); // tmp?
 
@@ -760,7 +761,7 @@ void Realsense::close() {
 void Realsense::reset() {
     std::cout << "Resetting cam" << std::endl;
 
-    rs2::stream_profile infared1,infared2;
+    rs2::stream_profile infrared1,infrared2;
     rs2::context ctx; // The context represents the current platform with respect to connected devices
     rs2::device_list devices = ctx.query_devices();
     if (devices.size() == 0) {

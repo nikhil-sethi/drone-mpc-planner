@@ -74,7 +74,7 @@ private:
     std::string bag_fn;
 
     void seek(double time);
-    void calibration(rs2::stream_profile infared1,rs2::stream_profile infared2);
+    void calibration(rs2::stream_profile infrared1,rs2::stream_profile infrared2);
     void init_real();
     void init_playback();
     void update_real();
