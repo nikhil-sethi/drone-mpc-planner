@@ -461,21 +461,21 @@ public:
     }
     float _log_acc_z;
     float telem_acc_z() {
-        float acc_z = _rc->sensor.acc.z;
+        float acc_z = _rc->telemetry.acc.z;
         if (log_replay_mode)
             acc_z = _log_acc_z;
         return acc_z;
     }
     uint16_t _log_throttle;
     uint16_t telem_throttle() {
-        uint16_t throttle = _rc->sensor.throttle;
+        uint16_t throttle = _rc->telemetry.throttle;
         if (log_replay_mode)
             throttle = _log_throttle;
         return throttle;
     }
     float _log_throttle_s;
     float telem_throttle_s() {
-        float throttle_s = _rc->sensor.throttle_scaled;
+        float throttle_s = _rc->telemetry.throttle_scaled;
         if (log_replay_mode)
             throttle_s = _log_throttle_s;
         return throttle_s;
@@ -489,7 +489,7 @@ public:
     }
     float _log_thrust_rpm;
     float telem_thrust_rpm() {
-        float telem_thrust_rpm = _rc->sensor.thrust_rpm;
+        float telem_thrust_rpm = _rc->telemetry.thrust_rpm;
         if (log_replay_mode)
             telem_thrust_rpm = _log_thrust_rpm;
         return telem_thrust_rpm;
@@ -560,6 +560,10 @@ public:
 
     void beep(bool b) {
         _rc->beep(b);
+    }
+
+    telemetry_data telemetry() {
+        return _rc->telemetry;
     }
 
     bool blocked();

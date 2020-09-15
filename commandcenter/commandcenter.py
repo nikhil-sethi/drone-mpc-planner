@@ -538,7 +538,7 @@ class SystemWidget(QWidget):
             try:
                 date_time = datetime.strptime(status_txt[0].strip(), '%Y/%m/%d %H:%M:%S') #e.g. 2020/02/29 23:45:46
                 time_since_update = datetime.now() - date_time
-                if time_since_update.total_seconds() > 300:
+                if time_since_update.total_seconds() > 3700:
                     system_has_problem = QColor(200,0,0)
 
                 res_txt += status_txt[1].strip() + '. upd: ' + str(int(time_since_update.total_seconds())) + 's\n'
@@ -579,12 +579,13 @@ class SystemWidget(QWidget):
                         navstatus.startswith('Starting') or
                         navstatus.startswith('Resetting') or
                         navstatus.startswith('Closed') or
+                        navstatus.startswith('Waiting.') or
                         navstatus.startswith('Closing')) :
                             system_has_problem = QColor(128,128,128)
                     elif (navstatus =="ns_crippled" or
-                        navstatus =="ns_manual" or
-                        navstatus.startswith('Waiting.')):
-                            system_has_problem = QColor(255,165,0)
+                        navstatus =="ns_manual"
+                        ):
+                            system_has_problem = QColor(0,255,255)
                     elif (navstatus =="ns_monitoring" or
                         navstatus =="ns_wait_for_takeoff" or
                         navstatus =="ns_wait_for_insect"):
@@ -612,6 +613,7 @@ class SystemWidget(QWidget):
                         navstatus.startswith('wp ')):
                             system_has_problem = QColor(0,255,0)
                     elif (navstatus == "ns_drone_problem" or
+                        navstatus == "ns_batlow" or
                         navstatus.startswith('Roll') or
                         navstatus == 'no RealSense connected'):
                         system_has_problem = QColor(255,0,0)

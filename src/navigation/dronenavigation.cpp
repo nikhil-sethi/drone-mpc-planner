@@ -199,6 +199,12 @@ void DroneNavigation::update(double time) {
             if (_nav_flight_mode == nfm_manual) {
                 _navigation_status = ns_manual;
             } else if (_nav_flight_mode == nfm_hunt) {
+
+                if (_dctrl->telemetry().batt_cell_v > 2 && _dctrl->telemetry().batt_cell_v < 3.9f) {
+                    _navigation_status = ns_batlow;
+                    break;
+                }
+
                 _trackers->mode(tracking::TrackerManager::mode_wait_for_insect);
 
                 auto itrkr = _trackers->insecttracker_best();
@@ -490,6 +496,10 @@ void DroneNavigation::update(double time) {
             } else if (_nav_flight_mode != nfm_manual) { // waypoint mode
                 _navigation_status=ns_wait_for_takeoff_command;
             }
+            break;
+        } case ns_batlow: {
+            _dctrl->flight_mode(DroneController::fm_abort);
+            _dctrl->LED(static_cast<int>((time - time_drone_problem) * 10.0) % 10 > 5,5); // minimal blink every half second
             break;
         } case ns_drone_problem: {
             if (time_drone_problem < 0)

@@ -114,9 +114,9 @@ void CommandCenterLink::write_commandcenter_status_file() {
         status_file << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << '\n';
         status_file << "Runtime: " << to_string_with_precision(_cam->frame_time(),1) << "s" << '\n';
         status_file << nav_status << std::endl;
-        status_file << "cell v: " << to_string_with_precision(_rc->sensor.batt_cell_v,2) << std::endl;
-        status_file << "arming: " << _rc->sensor.arming_state << std::endl;
-        status_file << "rssi: " << static_cast<int>(_rc->sensor.rssi) << std::endl;
+        status_file << "cell v: " << to_string_with_precision(_rc->telemetry.batt_cell_v,2) << std::endl;
+        status_file << "arming: " << _rc->telemetry.arming_state << std::endl;
+        status_file << "rssi: " << static_cast<int>(_rc->telemetry.rssi) << std::endl;
         status_file.close();
     }
 }

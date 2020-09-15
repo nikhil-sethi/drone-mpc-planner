@@ -253,9 +253,9 @@ void process_video() {
                   ". FPS: " << to_string_with_precision(fps,1) <<
                   ". Time: " << to_string_with_precision(time,2)  <<
                   ", dt " << to_string_with_precision(dt,3) <<
-                  ", " << rc.sensor.batt_cell_v <<
-                  "v, arm: " << static_cast<int>(rc.sensor.arming_state) <<
-                  ", rssi: " << static_cast<int>(rc.sensor.rssi) <<
+                  ", " << rc.telemetry.batt_cell_v <<
+                  "v, arm: " << static_cast<int>(rc.telemetry.arming_state) <<
+                  ", rssi: " << static_cast<int>(rc.telemetry.rssi) <<
                   ", exposure: " << cam->measured_exposure() <<
                   ", gain: " << cam->measured_gain() <<
                   ", brightness: " << visdat.average_brightness() <<
@@ -263,56 +263,56 @@ void process_video() {
         //   std::flush;
 
 
-        if (rc.sensor.arming_state && rc.arm_switch == bf_armed ) {
-            if ( rc.sensor.arming_state & ARMING_DISABLED_NO_GYRO)
+        if (rc.telemetry.arming_state && rc.arm_switch == bf_armed ) {
+            if ( rc.telemetry.arming_state & ARMING_DISABLED_NO_GYRO)
                 std::cout << "ARMING_DISABLED_NO_GYRO | ";
-            if ( rc.sensor.arming_state & ARMING_DISABLED_FAILSAFE)
+            if ( rc.telemetry.arming_state & ARMING_DISABLED_FAILSAFE)
                 std::cout << "ARMING_DISABLED_FAILSAFE | ";
-            if ( rc.sensor.arming_state & ARMING_DISABLED_RX_FAILSAFE)
+            if ( rc.telemetry.arming_state & ARMING_DISABLED_RX_FAILSAFE)
                 std::cout << "ARMING_DISABLED_RX_FAILSAFE | ";
-            if ( rc.sensor.arming_state & ARMING_DISABLED_BAD_RX_RECOVERY)
+            if ( rc.telemetry.arming_state & ARMING_DISABLED_BAD_RX_RECOVERY)
                 std::cout << "ARMING_DISABLED_BAD_RX_RECOVERY | ";
-            if ( rc.sensor.arming_state & ARMING_DISABLED_BOXFAILSAFE)
+            if ( rc.telemetry.arming_state & ARMING_DISABLED_BOXFAILSAFE)
                 std::cout << "ARMING_DISABLED_BOXFAILSAFE | ";
-            if ( rc.sensor.arming_state & ARMING_DISABLED_RUNAWAY_TAKEOFF)
+            if ( rc.telemetry.arming_state & ARMING_DISABLED_RUNAWAY_TAKEOFF)
                 std::cout << "ARMING_DISABLED_RUNAWAY_TAKEOFF | ";
-            if ( rc.sensor.arming_state & ARMING_DISABLED_CRASH_DETECTED)
+            if ( rc.telemetry.arming_state & ARMING_DISABLED_CRASH_DETECTED)
                 std::cout << "ARMING_DISABLED_CRASH_DETECTED | ";
-            if ( rc.sensor.arming_state & ARMING_DISABLED_THROTTLE)
+            if ( rc.telemetry.arming_state & ARMING_DISABLED_THROTTLE)
                 std::cout << "ARMING_DISABLED_THROTTLE | ";
-            if ( rc.sensor.arming_state & ARMING_DISABLED_ANGLE)
+            if ( rc.telemetry.arming_state & ARMING_DISABLED_ANGLE)
                 std::cout << "ARMING_DISABLED_ANGLE | ";
-            if ( rc.sensor.arming_state & ARMING_DISABLED_BOOT_GRACE_TIME)
+            if ( rc.telemetry.arming_state & ARMING_DISABLED_BOOT_GRACE_TIME)
                 std::cout << "ARMING_DISABLED_BOOT_GRACE_TIME | ";
-            if ( rc.sensor.arming_state & ARMING_DISABLED_NOPREARM)
+            if ( rc.telemetry.arming_state & ARMING_DISABLED_NOPREARM)
                 std::cout << "ARMING_DISABLED_NOPREARM | ";
-            if ( rc.sensor.arming_state & ARMING_DISABLED_LOAD)
+            if ( rc.telemetry.arming_state & ARMING_DISABLED_LOAD)
                 std::cout << "ARMING_DISABLED_LOAD | ";
-            if ( rc.sensor.arming_state & ARMING_DISABLED_CALIBRATING)
+            if ( rc.telemetry.arming_state & ARMING_DISABLED_CALIBRATING)
                 std::cout << "ARMING_DISABLED_CALIBRATING | ";
-            if ( rc.sensor.arming_state & ARMING_DISABLED_CLI)
+            if ( rc.telemetry.arming_state & ARMING_DISABLED_CLI)
                 std::cout << "ARMING_DISABLED_CLI | ";
-            if ( rc.sensor.arming_state & ARMING_DISABLED_CMS_MENU)
+            if ( rc.telemetry.arming_state & ARMING_DISABLED_CMS_MENU)
                 std::cout << "ARMING_DISABLED_CMS_MENU | ";
-            if ( rc.sensor.arming_state & ARMING_DISABLED_BST)
+            if ( rc.telemetry.arming_state & ARMING_DISABLED_BST)
                 std::cout << "ARMING_DISABLED_BST | ";
-            if ( rc.sensor.arming_state & ARMING_DISABLED_MSP)
+            if ( rc.telemetry.arming_state & ARMING_DISABLED_MSP)
                 std::cout << "ARMING_DISABLED_MSP | ";
-            if ( rc.sensor.arming_state & ARMING_DISABLED_PARALYZE)
+            if ( rc.telemetry.arming_state & ARMING_DISABLED_PARALYZE)
                 std::cout << "ARMING_DISABLED_PARALYZE | ";
-            if ( rc.sensor.arming_state & ARMING_DISABLED_GPS)
+            if ( rc.telemetry.arming_state & ARMING_DISABLED_GPS)
                 std::cout << "ARMING_DISABLED_GPS | ";
-            if ( rc.sensor.arming_state & ARMING_DISABLED_RESC)
+            if ( rc.telemetry.arming_state & ARMING_DISABLED_RESC)
                 std::cout << "ARMING_DISABLED_RESC | ";
-            if ( rc.sensor.arming_state & ARMING_DISABLED_RPMFILTER)
+            if ( rc.telemetry.arming_state & ARMING_DISABLED_RPMFILTER)
                 std::cout << "ARMING_DISABLED_RPMFILTER | ";
-            if ( rc.sensor.arming_state & ARMING_DISABLED_REBOOT_REQUIRED)
+            if ( rc.telemetry.arming_state & ARMING_DISABLED_REBOOT_REQUIRED)
                 std::cout << "ARMING_DISABLED_REBOOT_REQUIRED | ";
-            if ( rc.sensor.arming_state & ARMING_DISABLED_DSHOT_BITBANG)
+            if ( rc.telemetry.arming_state & ARMING_DISABLED_DSHOT_BITBANG)
                 std::cout << "ARMING_DISABLED_DSHOT_BITBANG | ";
-            if ( rc.sensor.arming_state & ARMING_DISABLED_ACC_CALIBRATION)
+            if ( rc.telemetry.arming_state & ARMING_DISABLED_ACC_CALIBRATION)
                 std::cout << "ARMING_DISABLED_ACC_CALIBRATION | ";
-            if ( rc.sensor.arming_state & ARMING_DISABLED_ARM_SWITCH)
+            if ( rc.telemetry.arming_state & ARMING_DISABLED_ARM_SWITCH)
                 std::cout << "ARMING_DISABLED_ARM_SWITCH ";
             std::cout << std::endl;
         }
@@ -335,7 +335,7 @@ void process_video() {
         } else if ((cam->measured_exposure() <= pparams.darkness_threshold && pparams.darkness_threshold>0)) {
             std::cout << "Initiating restart because exposure (" << cam->measured_exposure() << ") is lower than darkness_threshold (" << pparams.darkness_threshold << ")" << std::endl;
             exit_now = true;
-        } else if (visdat.average_brightness() > pparams.max_brightness && pparams.darkness_threshold>0) {
+        } else if (visdat.average_brightness() < pparams.max_brightness && pparams.darkness_threshold>0) {
             std::cout << "Initiating restart because avg brightness (" << visdat.average_brightness() << ") is higher than max_brightness (" << pparams.max_brightness << ")" << std::endl;
             exit_now = true;
         } else if(restart_delay > 5) {
@@ -884,7 +884,7 @@ void wait_for_dark() {
         while(true) {
             auto [expo,gain,frameL,avg_brightness] = static_cast<Realsense *>(cam.get())->measure_auto_exposure();
             auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
-            std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << " Measured exposure: " << expo << ", gain: " << gain << ", avg_brightness: " << avg_brightness << std::endl;
+            std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << " Measured exposure: " << expo << ", avg_brightness: " << visdat.average_brightness() << std::endl;
             if (expo >pparams.darkness_threshold && gain >= 16 && avg_brightness < pparams.max_brightness) { // minimum RS gain is 16, so at the moment this condition does nothing
                 break;
             }

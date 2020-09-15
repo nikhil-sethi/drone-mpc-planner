@@ -348,15 +348,15 @@ bool MultiModule::receive_telemetry(std::string buffer) {
             // RX_RSSI,TX_RSSI,RX_LQI,TX_LQI;
             //rx rssi is the only one we really want to know:
             int tmp_rssi = std::stoi(arr.at(1));
-            sensor.rssi = tmp_rssi;
+            telemetry.rssi = tmp_rssi;
             break;
         } case FSSP_DATAID_BF_VERSION: {
             uint32_t bf_v = std::stoi(arr.at(1));
-            sensor.bf_major = (bf_v & 0x00FF0000) >> 16;
-            sensor.bf_minor = (bf_v & 0x0000FF00) >> 8;
-            sensor.bf_patch = bf_v & 0x000000FF;
-            if (sensor.bf_major != bf_major_required || sensor.bf_minor != bf_minor_required || sensor.bf_patch != bf_patch_required) {
-                std::cout << "Betaflight version detected: " << sensor.bf_major << "." << sensor.bf_minor << "." << sensor.bf_patch <<
+            telemetry.bf_major = (bf_v & 0x00FF0000) >> 16;
+            telemetry.bf_minor = (bf_v & 0x0000FF00) >> 8;
+            telemetry.bf_patch = bf_v & 0x000000FF;
+            if (telemetry.bf_major != bf_major_required || telemetry.bf_minor != bf_minor_required || telemetry.bf_patch != bf_patch_required) {
+                std::cout << "Betaflight version detected: " << telemetry.bf_major << "." << telemetry.bf_minor << "." << telemetry.bf_patch <<
                           ", required: " << bf_major_required << "." << bf_minor_required << "." << bf_patch_required << std::endl;
                 _bf_version_error += 1;
             } else
@@ -365,47 +365,47 @@ bool MultiModule::receive_telemetry(std::string buffer) {
             break;
         } case FSSP_DATAID_VFAS: {
             float data = std::stof( arr.at(1));
-            sensor.batt_v = data/100.f;
+            telemetry.batt_v = data/100.f;
             break;
         } case FSSP_DATAID_A4: {
             float data = std::stof( arr.at(1));
-            sensor.batt_cell_v = data/100.f;
+            telemetry.batt_cell_v = data/100.f;
             break;
         } case FSSP_DATAID_CURRENT: {
             float data = std::stof( arr.at(1));
-            sensor.batt_current = data/100.f;
+            telemetry.batt_current = data/100.f;
             break;
         } case FSSP_DATAID_RPM: {
             int data = std::stoi( arr.at(1));
-            sensor.rpm = static_cast<uint16_t>(data);
+            telemetry.rpm = static_cast<uint16_t>(data);
             break;
         } case FSSP_DATAID_ROLL: {
             float data = std::stof( arr.at(1));
-            sensor.roll = data/100.f;
+            telemetry.roll = data/100.f;
             break;
         } case FSSP_DATAID_PITCH: {
             float data = std::stof( arr.at(1));
-            sensor.pitch = data/100.f;
+            telemetry.pitch = data/100.f;
             break;
         } case FSSP_DATAID_ACCX: {
             float data = std::stof( arr.at(1));
-            sensor.acc.x = data/100.f;
+            telemetry.acc.x = data/100.f;
             break;
         } case FSSP_DATAID_ACCY: {
             float data = std::stof( arr.at(1));
-            sensor.acc.y = data/100.f;
+            telemetry.acc.y = data/100.f;
             break;
         } case FSSP_DATAID_ACCZ: {
             float data = std::stof( arr.at(1));
-            sensor.acc.z = data/100.f;
+            telemetry.acc.z = data/100.f;
             break;
         } case FSSP_DATAID_MAX_THRUST: {
             float data = std::stof( arr.at(1));
-            sensor.thrust_max = data/100.f;
+            telemetry.thrust_max = data/100.f;
             break;
         } case FSSP_DATAID_ARMING: {
             int data = std::stoi( arr.at(1));
-            sensor.arming_state = static_cast<arming_states>(data);
+            telemetry.arming_state = static_cast<arming_states>(data);
             break;
         } default:
             break;
@@ -416,16 +416,16 @@ bool MultiModule::receive_telemetry(std::string buffer) {
 }
 
 void MultiModule::acc_throttle_pkg(int16_t accz, int16_t thr) {
-    sensor.acc.z = static_cast<float>(accz) / 100;
-    sensor.throttle = std::clamp(static_cast<int>(thr),BF_CHN_MIN,BF_CHN_MAX); // clamp to prevent rounding errors
+    telemetry.acc.z = static_cast<float>(accz) / 100;
+    telemetry.throttle = std::clamp(static_cast<int>(thr),BF_CHN_MIN,BF_CHN_MAX); // clamp to prevent rounding errors
 
-    sensor.throttle_scaled = (float(sensor.throttle) - BF_CHN_OFFSET) / (BF_CHN_MAX - BF_CHN_MIN);
-    sensor.thrust_max = sensor.acc.z / sensor.throttle_scaled;
+    telemetry.throttle_scaled = (float(telemetry.throttle) - BF_CHN_OFFSET) / (BF_CHN_MAX - BF_CHN_MIN);
+    telemetry.thrust_max = telemetry.acc.z / telemetry.throttle_scaled;
 }
 
 void MultiModule::acc_rpm_pkg(int16_t accz, int16_t rpm) {
-    sensor.acc.z = static_cast<float>(accz) / 100.f;
-    sensor.thrust_rpm = static_cast<float>(rpm);
+    telemetry.acc.z = static_cast<float>(accz) / 100.f;
+    telemetry.thrust_rpm = static_cast<float>(rpm);
 }
 
 void MultiModule::close() {

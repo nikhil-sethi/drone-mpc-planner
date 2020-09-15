@@ -565,9 +565,9 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
                thrust << ";" <<
                pos_err_i.x << ";" << pos_err_i.y << ";" << pos_err_i.z << ";" <<
                model_error << ";" <<
-               _rc->sensor.batt_cell_v  << ";" <<
-               static_cast<int>(_rc->sensor.rssi)  << ";" <<
-               _rc->sensor.arming_state  << ";";
+               _rc->telemetry.batt_cell_v  << ";" <<
+               static_cast<int>(_rc->telemetry.rssi)  << ";" <<
+               _rc->telemetry.arming_state  << ";";
 }
 
 std::tuple<int, int, float, Point3f, std::vector<state_data> > DroneController::calc_burn(state_data state_drone,state_data state_target,float remaining_aim_duration) {

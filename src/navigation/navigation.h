@@ -68,6 +68,7 @@ enum navigation_states {
     ns_wait_after_landing,
     ns_monitoring,
     ns_manual, // also for disarmed
+    ns_batlow,
     ns_drone_problem
 };
 
