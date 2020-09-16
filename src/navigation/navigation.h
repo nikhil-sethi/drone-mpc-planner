@@ -33,6 +33,7 @@ static const char* navigation_status_names[] = {"ns_init",
                                                 "ns_wait_after_landing",
                                                 "ns_monitoring",
                                                 "ns_manual",
+                                                "ns_batlow",
                                                 "ns_drone_problem"
                                                };
 

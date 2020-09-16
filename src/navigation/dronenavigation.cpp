@@ -78,7 +78,7 @@ void DroneNavigation::update(double time) {
         _nav_flight_mode = nfm_hunt;
     }
 
-    if (_dctrl->flight_aborted() || _dctrl->in_flight_duration(time) > 180)
+    if ((_dctrl->flight_aborted() && _navigation_status != ns_batlow )|| _dctrl->in_flight_duration(time) > 180)
         _navigation_status = ns_drone_problem;
 
     _iceptor.update(_dctrl->at_base(), time);
