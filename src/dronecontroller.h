@@ -390,7 +390,7 @@ public:
         if ((_flight_mode == fm_flying_pid || _flight_mode == fm_reset_yaw || _flight_mode == fm_ff_landing || _flight_mode == fm_initial_reset_yaw)
                 && in_flight_start_time < 0)
             in_flight_start_time = time;
-        else if (_flight_mode == fm_disarmed || _flight_mode == fm_inactive || _flight_mode == fm_spinup || _flight_mode == fm_manual)
+        else if (_flight_mode == fm_disarmed || _flight_mode == fm_inactive || _flight_mode == fm_spinup || _flight_mode == fm_manual || _flight_mode == fm_abort || _flight_mode == fm_abort_model_error || _flight_mode == fm_abort_tracking_lost)
             in_flight_start_time = -1;
 
         if (in_flight_start_time > 0)
