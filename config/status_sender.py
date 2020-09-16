@@ -47,16 +47,16 @@ def send_status_update():
                 first_read = lines[0]
 
                 if os.path.exists(local_pats_xml):
-                    cmd = 'rsync -az ' + local_pats_xml + ' mavlab-gpu:' + remote_pats_xml
+                    cmd = 'rsync -uaz ' + local_pats_xml + ' mavlab-gpu:' + remote_pats_xml
                     subprocess.call(cmd, shell=True,stdout=subprocess.PIPE)
                 if os.path.exists(local_status_txt_file):
-                    cmd = 'rsync -z ' + local_status_txt_file +' mavlab-gpu:' + remote_status_txt_file
+                    cmd = 'rsync -uz ' + local_status_txt_file +' mavlab-gpu:' + remote_status_txt_file
                     subprocess.call(cmd, shell=True,stdout=subprocess.PIPE)
                 if os.path.exists(local_system_txt_file):
-                    cmd = 'rsync -z ' + local_system_txt_file +' mavlab-gpu:' + remote_system_txt_file
+                    cmd = 'rsync -uz ' + local_system_txt_file +' mavlab-gpu:' + remote_system_txt_file
                     subprocess.call(cmd, shell=True,stdout=subprocess.PIPE)
                 if os.path.exists(local_status_im_file):
-                    cmd = 'rsync -z ' + local_status_im_file +' mavlab-gpu:' + remote_status_im_file
+                    cmd = 'rsync -uz ' + local_status_im_file +' mavlab-gpu:' + remote_status_im_file
                     subprocess.call(cmd, shell=True,stdout=subprocess.PIPE)
     except:
         pass
@@ -75,7 +75,7 @@ def update_monitor_results():
     cmd = '../analysis/moth_watcher/moth_counter.py -i ~/data -s ' + date_time_start +' -e ' + date_time_end + ' --filename ' + local_json_file
     result = subprocess.run(cmd, shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
     print(result.returncode, result.stdout, result.stderr)
-    cmd = 'rsync -z ' + local_json_file +' mavlab-gpu:' + remote_json_file
+    cmd = 'rsync -uz ' + local_json_file +' mavlab-gpu:' + remote_json_file
     subprocess.call(cmd, shell=True,stdout=subprocess.PIPE)
 
 while not os.path.exists(local_status_txt_file):

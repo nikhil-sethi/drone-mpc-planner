@@ -335,7 +335,7 @@ void process_video() {
         } else if ((cam->measured_exposure() <= pparams.darkness_threshold && pparams.darkness_threshold>0)) {
             std::cout << "Initiating restart because exposure (" << cam->measured_exposure() << ") is lower than darkness_threshold (" << pparams.darkness_threshold << ")" << std::endl;
             exit_now = true;
-        } else if (visdat.average_brightness() < pparams.max_brightness && pparams.darkness_threshold>0) {
+        } else if (visdat.average_brightness() > pparams.max_brightness && pparams.darkness_threshold>0) {
             std::cout << "Initiating restart because avg brightness (" << visdat.average_brightness() << ") is higher than max_brightness (" << pparams.max_brightness << ")" << std::endl;
             exit_now = true;
         } else if(restart_delay > 5) {
@@ -884,7 +884,7 @@ void wait_for_dark() {
         while(true) {
             auto [expo,gain,frameL,avg_brightness] = static_cast<Realsense *>(cam.get())->measure_auto_exposure();
             auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
-            std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << " Measured exposure: " << expo << ", avg_brightness: " << visdat.average_brightness() << std::endl;
+            std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << " Measured exposure: " << expo << ", gain: " << gain << ", avg_brightness: " << avg_brightness << std::endl;
             if (expo >pparams.darkness_threshold && gain >= 16 && avg_brightness < pparams.max_brightness) { // minimum RS gain is 16, so at the moment this condition does nothing
                 break;
             }
