@@ -148,7 +148,7 @@ void Interceptor::update_close_target() {
     cv::Point3f insect_acc = itd.acc();
     //std::cout << "close-target: Insect-pos: " << insect_pos;
 #if ENABLE_MOTH_PREDICTION
-    float time_to_intercept = 0.1f;
+    float time_to_intercept = 0.0f;
     insect_pos += time_to_intercept * insect_vel;
 #endif
     track_data dtd = _trackers->dronetracker()->Last_track_data();
@@ -160,7 +160,7 @@ void Interceptor::update_close_target() {
 #endif
     cv::Point3f vector = insect_pos - drone_pos;
     float norm_vector = norm(vector);
-    //req_intercept_pos += 0.9f * vector / norm_vector;
+    req_intercept_pos += 0.9f * vector / norm_vector;
     insect_vel.y = 0; // we don't want to follow the vertical speed of the insect, ever
     insect_vel = 0.5f * insect_vel + vector / norm_vector * 0.8f;
 
