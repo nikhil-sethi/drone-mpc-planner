@@ -200,7 +200,7 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_manual;
             } else if (_nav_flight_mode == nfm_hunt) {
 
-                if (_dctrl->telemetry().batt_cell_v > 2 && _dctrl->telemetry().batt_cell_v < 3.9f) {
+                if (_dctrl->telemetry().batt_cell_v > 2 && _dctrl->telemetry().batt_cell_v < 4.1f) {
                     _navigation_status = ns_batlow;
                     break;
                 }
