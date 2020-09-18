@@ -3,7 +3,7 @@ set -e
 
 echo "Replay insect $1"
 count=0
-until rsync -ze "ssh -o StrictHostKeyChecking=no" ../pc/insect_logs/56-90fps.csv $1:insect_demo
+until (( count++ >= 5 )) || rsync -ze "ssh -o StrictHostKeyChecking=no" ../pc/insect_logs/56-90fps.csv $1:insect_demo
 do
   echo "Retry $count"
   paplay /usr/share/sounds/ubuntu/stereo/bell.ogg

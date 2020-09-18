@@ -3,7 +3,7 @@ set -e
 
 echo "Demo $1"
 count=0
-until rsync -ze "ssh -o StrictHostKeyChecking=no" $2 $1:pats_demo.xml
+until (( count++ >= 5 )) || rsync -ze "ssh -o StrictHostKeyChecking=no" $2 $1:pats_demo.xml
 do
   echo "Retry $count"
   paplay /usr/share/sounds/ubuntu/stereo/bell.ogg
