@@ -164,7 +164,7 @@ public:
     telemetry_data telemetry;
     const int bf_major_required = 4;
     const int bf_minor_required = 2;
-    const int bf_patch_required = 101;
+    const int bf_patch_required = 102;
 
 
     void init(int drone_id);
