@@ -1155,7 +1155,7 @@ void DroneController::check_control_and_tracking_problems(track_data data_drone)
     model_error += normf({pos_modelx.current_output() - data_drone.pos().x,
                           pos_modely.current_output() - data_drone.pos().y,
                           pos_modelz.current_output() - data_drone.pos().z});
-    model_error -= 1.f; // Accept error over time
+    model_error -= 2.f; // Accept error over time
 
     if(model_error<0)
         model_error = 0;
