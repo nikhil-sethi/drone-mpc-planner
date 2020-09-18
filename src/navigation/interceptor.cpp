@@ -69,7 +69,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
 
 #if !ENABLE_UNIFIED_DIRECTION_TRANSITION
 
-        if (fabs(_horizontal_separation) < 0.6f  && _vertical_separation < 0.8f && _vertical_separation > -0.1f)
+        if (fabs(_horizontal_separation) < 0.35f  && _vertical_separation < 0.8f && _vertical_separation > -0.1f)
 #else
         if (total_separation < 0.5f)
 #endif
@@ -95,7 +95,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
 
 #if !ENABLE_UNIFIED_DIRECTION_TRANSITION
 
-        if (!(fabs(_horizontal_separation) < 0.6f && _vertical_separation < 0.8f && _vertical_separation > -0.1f))
+        if (!(fabs(_horizontal_separation) < 0.35f && _vertical_separation < 0.8f && _vertical_separation > -0.1f))
 #else
         if (total_separation >= 0.5f)
 #endif
