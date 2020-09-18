@@ -132,7 +132,7 @@ void DroneNavigation::update(double time) {
             }
             if (time - last_led_doubler_time > 3 ) { // if the blink detect takes too long, it may be that the led is not bright enough to be detected
                 last_led_doubler_time = time;
-                _dctrl->double_led_strength();
+                // _dctrl->double_led_strength();
             }
             if (time - locate_drone_start_time/(locate_drone_attempts+1) > 15 )
                 _navigation_status = ns_locate_drone_init;
