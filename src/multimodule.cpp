@@ -277,7 +277,7 @@ void MultiModule::process_pats_init_packages(std::string bufs) {
         uint str_length = 0;
 
         const std::string version_str = "Multiprotocol version: ";
-        const std::string required_firmwar_version = "6.0.0.19";
+        const std::string required_firmwar_version = "6.0.0.20";
         auto found_version = bufs.rfind(version_str) ;
         str_length = found_version+version_str.length()+required_firmwar_version.length();
         if (found_version != std::string::npos && str_length < bufs.size()) {
