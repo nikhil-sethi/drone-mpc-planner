@@ -4,6 +4,7 @@
 void Cam::set_file_paths(std::string replay_dir) {
     //make sure the origirnam files are not overwritten when playing bags:
     calib_wfn = data_output_dir + calib_rfn;
+    rgb_wfn = data_output_dir + rgb_rfn;
     depth_map_wfn = data_output_dir + depth_map_rfn;
     depth_unfiltered_map_wfn = data_output_dir + depth_unfiltered_map_rfn;
     disparity_map_wfn = data_output_dir + disparity_map_rfn;

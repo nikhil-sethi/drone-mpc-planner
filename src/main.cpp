@@ -617,8 +617,6 @@ void init_terminal_signals() {
 }
 
 void init_loggers() {
-    data_output_dir = "./logging/";
-    mkdir(data_output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     if (log_replay_mode)
         data_output_dir = data_output_dir + "replay/";
     if (path_exist(data_output_dir)) {
@@ -861,13 +859,6 @@ void wait_for_cam_angle() {
 
             auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
             std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << ". Camera roll: " << to_string_with_precision(roll,2) << "°- max: " << pparams.max_cam_roll << "°. Pitch: " << to_string_with_precision(pitch,2) << "°" << std::endl;
-            if (fabs(roll)  < pparams.max_cam_roll && !enable_delay)
-                break;
-
-            if (fabs(roll)  > pparams.max_cam_roll)
-                enable_delay = 60;
-            else
-                enable_delay--;
 
             static double prev_imwrite_time = -pparams.live_image_frq;
             if (elapsed_time - prev_imwrite_time > pparams.live_image_frq && pparams.live_image_frq >= 0) {
@@ -875,6 +866,15 @@ void wait_for_cam_angle() {
                 cv::imwrite("../../../../pats_monitor_tmp.jpg", frameL);
             }
             cmdcenter.reset_commandcenter_status_file("Roll: " + to_string_with_precision(roll,2),false);
+
+            if (fabs(roll)  < pparams.max_cam_roll && !enable_delay)
+                break;
+            else if (fabs(roll)  > pparams.max_cam_roll)
+                enable_delay = 60;
+            else
+                enable_delay--;
+
+
             usleep(30000); // measure every third second
         }
     }
@@ -900,6 +900,9 @@ void wait_for_dark() {
 int main( int argc, char **argv )
 {
     try {
+        data_output_dir = "./logging/";
+        mkdir(data_output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+
         cmdcenter.reset_commandcenter_status_file("Starting",false);
         bool realsense_reset;
         std::tie(realsense_reset,log_replay_mode,generator_mode,replay_dir,drone_id,pats_xml_fn,drone_xml_fn) = process_arg(argc,argv);

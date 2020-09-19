@@ -26,6 +26,7 @@ protected:
 
     //read file names
     std::string calib_rfn = "cam_calib.xml";
+    std::string rgb_rfn = "rgb.png";
     const std::string calib_template_rfn = "../../xml/" + calib_rfn;
     std::string depth_map_rfn = "depth_filtered.png";
     std::string depth_unfiltered_map_rfn = "depth.png";
@@ -34,6 +35,7 @@ protected:
 
     //write file names:
     std::string calib_wfn;
+    std::string rgb_wfn = "logging/rgb.png";
     std::string depth_map_wfn;
     std::string depth_unfiltered_map_wfn;
     std::string disparity_map_wfn;

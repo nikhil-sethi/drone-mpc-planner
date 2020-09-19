@@ -217,13 +217,16 @@ void Realsense::init_real() {
     bag_fn = "./logging/" + playback_filename();
 
     calib_rfn = "./logging/" + calib_rfn;
+    rgb_rfn = "./logging/" + rgb_rfn;
     depth_map_rfn = "./logging/" + depth_map_rfn;
     depth_unfiltered_map_rfn = "./logging/" + depth_unfiltered_map_rfn;
     disparity_map_rfn = "./logging/" + disparity_map_rfn;
     brightness_map_rfn = "./logging/" + brightness_map_rfn;
 
     calib_wfn = calib_rfn;
+    rgb_wfn = rgb_rfn;
     depth_map_wfn = depth_map_rfn;
+    rgb_wfn = rgb_rfn;
     depth_unfiltered_map_wfn = depth_unfiltered_map_rfn;
     disparity_map_wfn = disparity_map_rfn;
     brightness_map_wfn = brightness_map_rfn;
@@ -448,6 +451,7 @@ std::tuple<float,float,double,cv::Mat> Realsense::measure_angle() {
 
     rs2::config cfg;
     cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, pparams.fps);
+    cfg.enable_stream(RS2_STREAM_COLOR, 1920, 1080, RS2_FORMAT_BGR8, 30);
     cfg.enable_stream(RS2_STREAM_ACCEL);
     cfg.enable_stream(RS2_STREAM_GYRO);
     cam.start(cfg);
@@ -482,6 +486,10 @@ std::tuple<float,float,double,cv::Mat> Realsense::measure_angle() {
             pitch = 90.f-atanf(y/z) * rad2deg;
         }
     }
+
+    //rgb image from the rgb sensor of the realsense:
+    cv::Mat frame_bgr = cv::Mat(cv::Size(1920,1080), CV_8UC3, const_cast<void *>(frame.get_color_frame().get_data()), Mat::AUTO_STEP);
+    cv::imwrite(rgb_wfn,frame_bgr);
 
     cam.stop();
     return std::make_tuple(roll,pitch,frame.get_timestamp(),frameLt);
@@ -601,8 +609,8 @@ void Realsense::calib_pose(bool also_do_depth) {
         depth_background = Mat(im_size_dec, CV_16UC1, const_cast<void *>(depth.get_data()), Mat::AUTO_STEP).clone();
         cv::resize(depth_background,depth_background,im_size,0,0,INTER_CUBIC);
         imwrite(depth_map_wfn,depth_background);
-
         imwrite(disparity_map_wfn,disparity_background);
+
     }
     if (hasIMU) {
         camparams.camera_angle_x = roll;
