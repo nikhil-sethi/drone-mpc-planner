@@ -663,8 +663,9 @@ class SystemWidget(QWidget):
                         navstatus =="ns_manual"
                         ):
                             system_has_problem = QColor(0,255,255)
-                    elif (navstatus =="ns_monitoring" or
-                        navstatus =="ns_wait_for_insect"):
+                    elif (navstatus =="ns_monitoring"):
+                        system_has_problem = QColor(255,192,203)
+                    elif ( navstatus =="ns_wait_for_insect"):
                             system_has_problem = QColor(0,128,0)
                     elif (navstatus =="ns_takeoff" or
                         navstatus =="ns_taking_off" or
