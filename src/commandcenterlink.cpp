@@ -61,7 +61,7 @@ void CommandCenterLink::check_commandcenter_triggers() {
     static int demo_div_cnt = 0;
     demo_div_cnt = (demo_div_cnt + 1) % pparams.fps; // only check once per second, to save cpu
     if (!demo_div_cnt) {
-        if (pparams.op_mode == op_modes::op_mode_deployed) {
+        if (pparams.op_mode == op_modes::op_mode_waypoint) {
             if (file_exist(demo_waypoint_fn)) {
                 std::cout << "Waypoint demo!" << std::endl;
                 _dnav->demo_flight(demo_waypoint_fn);

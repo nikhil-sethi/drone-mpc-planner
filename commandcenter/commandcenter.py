@@ -32,11 +32,11 @@ class CommandCenterWindow(QMainWindow):
         git_update_Action.triggered.connect(self.git_update_systems)
         restart_Action = QAction(self.style().standardIcon(QStyle.SP_BrowserReload), 'Restart all systems', self)
         restart_Action.triggered.connect(self.restart_systems)
-        fly_tuning_Action = QAction(self.style().standardIcon(QStyle.SP_MediaPlay), 'Start tuning flights', self)
+        fly_tuning_Action = QAction(self.style().standardIcon(QStyle.SP_MediaPlay), 'Trigger tuning waypoint flights', self)
         fly_tuning_Action.triggered.connect(self.fly_tuning_flights)
-        fly_aggresive_Action = QAction(self.style().standardIcon(QStyle.SP_MediaPlay), 'Start aggresive flights', self)
+        fly_aggresive_Action = QAction(self.style().standardIcon(QStyle.SP_MediaPlay), 'Trigger aggresive waypoint flights', self)
         fly_aggresive_Action.triggered.connect(self.fly_aggresive_flights)
-        fly_replay_moth_Action = QAction(self.style().standardIcon(QStyle.SP_MediaPlay), 'Hunt replay moths', self)
+        fly_replay_moth_Action = QAction(self.style().standardIcon(QStyle.SP_MediaPlay), 'Trigger replay moths', self)
         fly_replay_moth_Action.triggered.connect(self.fly_replay_moth)
 
         self.toolbar = self.addToolBar('Pats Menu')
@@ -53,13 +53,24 @@ class CommandCenterWindow(QMainWindow):
         self.toolbar.addAction(fly_replay_moth_Action)
         self.toolbar.addSeparator()
         self.combo_mode = QComboBox()
-        self.combo_mode.addItem("Crippled")
-        self.combo_mode.addItem("Hunt")
         self.combo_mode.addItem("Monitoring")
+        self.combo_mode.addItem("Waypoint")
+        self.combo_mode.addItem("Hunt")
         self.combo_mode.setCurrentIndex(-1)
         self.combo_mode.currentIndexChanged.connect(self.mode_change)
         self.combo_mode.setToolTip('Select mode for all systems')
         self.toolbar.addWidget(self.combo_mode)
+        self.combo_sub_mode = QComboBox()
+        self.combo_sub_mode.addItem("Default")
+        self.combo_sub_mode.addItem("Koppert")
+        self.combo_sub_mode.addItem("Holstein")
+        self.combo_sub_mode.addItem("WUR")
+        self.combo_sub_mode.addItem("Vogel")
+        self.combo_sub_mode.addItem("Erp")
+        self.combo_sub_mode.setCurrentIndex(-1)
+        self.combo_sub_mode.currentIndexChanged.connect(self.sub_mode_change)
+        self.combo_sub_mode.setToolTip('Select sub mode for all systems')
+        self.toolbar.addWidget(self.combo_sub_mode)
 
         source_folder = '~/Downloads/pats_status'
         source_folder = os.path.expanduser(source_folder.strip(" "))
@@ -145,6 +156,11 @@ class CommandCenterWindow(QMainWindow):
             for sys in self.sys_widgets:
                 sys.combo_mode.setCurrentIndex(self.combo_mode.currentIndex())
             self.combo_mode.setCurrentIndex(-1)
+    def sub_mode_change(self):
+        if self.combo_sub_mode.currentIndex() >= 0:
+            for sys in self.sys_widgets:
+                sys.combo_sub_mode.setCurrentIndex(self.combo_sub_mode.currentIndex())
+            self.combo_sub_mode.setCurrentIndex(-1)
 
     def download(self,wait=False):
         rsync_src='mavlab-gpu:/home/pats/status/'
@@ -160,8 +176,10 @@ class CommandCenterWindow(QMainWindow):
         darkmode = str(theme).find('dark') != -1
         if darkmode:
             self.combo_mode.setStyleSheet("background-color:rgb(128,0,0)")
+            self.combo_sub_mode.setStyleSheet("background-color:rgb(128,0,0)")
         else:
-            self.combo_mode.setStyleSheet("background-color:rgb(200,200,200)")
+            self.combo_mode.setStyleSheet("background-color:rgb(160,128,128)")
+            self.combo_sub_mode.setStyleSheet("background-color:rgb(160,128,128)")
 
         self.download()
         for sys in self.sys_widgets:
@@ -182,10 +200,19 @@ class SystemWidget(QWidget):
         self.source_folder = source_folder
 
         self.combo_mode = QComboBox()
-        self.combo_mode.addItem("Crippled")
-        self.combo_mode.addItem("Hunt")
         self.combo_mode.addItem("Monitoring")
+        self.combo_mode.addItem("Waypoint")
+        self.combo_mode.addItem("Hunt")
         self.combo_mode.currentIndexChanged.connect(self.mode_change)
+        self.combo_sub_mode = QComboBox()
+        self.combo_sub_mode.addItem("Default")
+        self.combo_sub_mode.addItem("Koppert")
+        self.combo_sub_mode.addItem("Holstein")
+        self.combo_sub_mode.addItem("WUR")
+        self.combo_sub_mode.addItem("TomatoWorld")
+        self.combo_sub_mode.addItem("Vogel")
+        self.combo_sub_mode.addItem("Erp")
+        self.combo_sub_mode.currentIndexChanged.connect(self.sub_mode_change)
 
         self.setContextMenuPolicy(Qt.ActionsContextMenu)
         calibAction = QAction("Calibrate", self)
@@ -235,21 +262,21 @@ class SystemWidget(QWidget):
         self.btn_download_current_log = btn_download_current_log
 
         btn_takeoff_tuning = QPushButton()
-        btn_takeoff_tuning.setToolTip('Fly waypoint mission (tuning)')
+        btn_takeoff_tuning.setToolTip('Trigger waypoint mission (tuning)')
         btn_takeoff_tuning.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
         btn_takeoff_tuning.setMaximumSize(30, 30)
         btn_takeoff_tuning.clicked.connect(self.takeoff_tuning)
         self.btn_takeoff_tuning = btn_takeoff_tuning
 
         btn_takeoff_aggresive_wp = QPushButton()
-        btn_takeoff_aggresive_wp.setToolTip('Fly waypoint mission (aggresive)')
+        btn_takeoff_aggresive_wp.setToolTip('Trigger waypoint mission (aggresive)')
         btn_takeoff_aggresive_wp.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
         btn_takeoff_aggresive_wp.setMaximumSize(30, 30)
         btn_takeoff_aggresive_wp.clicked.connect(self.takeoff_aggresive_wp)
         self.btn_takeoff_aggresive_wp = btn_takeoff_aggresive_wp
 
         btn_insect_replay_takeoff = QPushButton()
-        btn_insect_replay_takeoff.setToolTip('Hunt insect replay')
+        btn_insect_replay_takeoff.setToolTip('Trigger insect replay')
         btn_insect_replay_takeoff.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
         btn_insect_replay_takeoff.setMaximumSize(30, 30)
         btn_insect_replay_takeoff.clicked.connect(self.insect_replay_takeoff)
@@ -258,6 +285,7 @@ class SystemWidget(QWidget):
         control_layout = QHBoxLayout()
         control_layout.setContentsMargins(0, 0, 0, 0)
         control_layout.addWidget(self.combo_mode)
+        control_layout.addWidget(self.combo_sub_mode)
         control_layout.addWidget(btn_req_update)
         control_layout.addWidget(btn_restart)
         control_layout.addWidget(btn_download_current_log)
@@ -292,11 +320,11 @@ class SystemWidget(QWidget):
             for line in xml_lines:
                 if line.find('\"op_mode\"') != -1:
                     if self.combo_mode.currentText() == "Hunt":
-                        line = '    <Member Name=\"op_mode\">op_mode_deployed</Member>\n'
-                    elif self.combo_mode.currentText() == "Crippled":
-                        line = '    <Member Name=\"op_mode\">op_mode_crippled</Member>\n'
+                        line = '    <Member Name=\"op_mode\">op_mode_hunt</Member>\n'
+                    elif self.combo_mode.currentText() == "Waypoint":
+                        line = '    <Member Name=\"op_mode\">op_mode_waypoint</Member>\n'
                     elif self.combo_mode.currentText() == "Monitoring":
-                        line = '    <Member Name=\"op_mode\">op_mode_monitoring_only</Member>\n'
+                        line = '    <Member Name=\"op_mode\">op_mode_monitoring</Member>\n'
                 elif line.find('\"live_image_frq\"') != -1:
                     if self.combo_mode.currentText() == "Hunt":
                         line = '    <Member Name=\"live_image_frq\">1</Member>\n'
@@ -304,11 +332,32 @@ class SystemWidget(QWidget):
                         line = '    <Member Name=\"live_image_frq\">30</Member>\n'
                 elif line.find('\"darkness_threshold\"') != -1:
                     if self.combo_mode.currentText() == "Monitoring":
-                        line = '    <Member Name=\"darkness_threshold\">5000</Member>\n'
-                    elif self.combo_mode.currentText() == "Crippled":
-                        line = '    <Member Name=\"darkness_threshold\">0</Member>\n'
+                        if self.combo_sub_mode.currentText() == 'Koppert':
+                            line = '    <Member Name=\"darkness_threshold\">9500</Member>\n'
+                        elif self.combo_sub_mode.currentText() == 'Vogel':
+                            line = '    <Member Name=\"darkness_threshold\">300</Member>\n'
+                        else:
+                            line = '    <Member Name=\"darkness_threshold\">5000</Member>\n'
+                    elif self.combo_mode.currentText() == "Hunt":
+                        if self.combo_sub_mode.currentText() == 'Koppert':
+                            line = '    <Member Name=\"darkness_threshold\">9500</Member>\n'
+                        else:
+                            line = '    <Member Name=\"darkness_threshold\">0</Member>\n'
                     else:
-                        line = '    <Member Name=\"darkness_threshold\">9500</Member>\n'
+                           line = '    <Member Name=\"darkness_threshold\">0</Member>\n'
+                elif line.find('\"max_brightness\"') != -1:
+                    if self.combo_mode.currentText() == "Monitoring":
+                        if self.combo_sub_mode.currentText() == 'Koppert':
+                            line = '    <Member Name=\"max_brightness\">90</Member>\n'
+                        else:
+                            line = '    <Member Name=\"max_brightness\">128</Member>\n'
+                    elif self.combo_mode.currentText() == "Hunt":
+                        if self.combo_sub_mode.currentText() == 'Koppert':
+                            line = '    <Member Name=\"max_brightness\">90</Member>\n'
+                        else:
+                            line = '    <Member Name=\"max_brightness\">255</Member>\n'
+                    else:
+                           line = '    <Member Name=\"max_brightness\">255</Member>\n'
                 elif line.find('\"close_after_n_images\"') != -1:
                     if self.combo_mode.currentText() == "Hunt":
                         line = '    <Member Name=\"close_after_n_images\">10800</Member>\n'
@@ -326,14 +375,16 @@ class SystemWidget(QWidget):
                         line = '    <Member Name=\"video_raw\">video_disabled</Member>\n'
                 elif line.find('\"max_cam_roll\"') != -1:
                     if self.combo_mode.currentText() == "Monitoring":
-                        line = '    <Member Name=\"max_cam_roll\">1.5</Member>\n'
+                        if self.combo_sub_mode.currentText() == 'TomatoWorld':
+                            line = '    <Member Name=\"max_cam_roll\">360</Member>\n'
+                        else:
+                            line = '    <Member Name=\"max_cam_roll\">5</Member>\n'
                     else:
                         line = '    <Member Name=\"max_cam_roll\">0.5</Member>\n'
                 elif line.find('\"watchdog\"') != -1:
-                    if self.combo_mode.currentText() == "Monitoring":
-                        line = '    <Member Name="watchdog">true</Member>\n'
-                    else:
-                        line = '    <Member Name="watchdog">false</Member>\n'
+                    line = '    <Member Name="watchdog">true</Member>\n'
+                elif line.find('\"sub_mode\"') != -1:
+                    line = '    <Member Name="sub_mode">' + self.combo_sub_mode.currentText() + '</Member>\n'
 
                 new_xml_lines = new_xml_lines + line
 
@@ -345,6 +396,8 @@ class SystemWidget(QWidget):
         xml_file = open(self.pats_xml_path, "w")
         xml_file.write(new_xml_lines)
         xml_file.close()
+    def sub_mode_change(self):
+        self.mode_change()
 
     def calib(self):
         subprocess.Popen(['./calib_system.sh', 'pats'+self.host_id])
@@ -362,7 +415,8 @@ class SystemWidget(QWidget):
     def git_update(self):
         subprocess.Popen(['./update_system.sh', 'pats'+self.host_id])
         self.updating_combos = True
-        self.combo_mode.setCurrentIndex(2)
+        self.combo_mode.setCurrentIndex(0)
+        self.combo_sub_mode.setCurrentIndex(0)
         self.updating_combos = False
     def reboot_dont_ask(self):
         subprocess.Popen(['./reboot_system.sh', 'pats'+self.host_id])
@@ -399,12 +453,17 @@ class SystemWidget(QWidget):
             xml_lines = path_xml.readlines()
             new_xml_lines = ''
             for line in xml_lines:
-                if line.find('op_mode_deployed') != -1:
-                    self.combo_mode.setCurrentIndex(1)
-                elif line.find('op_mode_crippled') != -1:
-                    self.combo_mode.setCurrentIndex(0)
-                elif line.find('op_mode_monitoring_only') != -1:
+                if line.find('op_mode_hunt') != -1:
                     self.combo_mode.setCurrentIndex(2)
+                elif line.find('op_mode_waypoint') != -1:
+                    self.combo_mode.setCurrentIndex(1)
+                elif line.find('op_mode_monitoring') != -1:
+                    self.combo_mode.setCurrentIndex(0)
+
+                if line.find('sub_mode') != -1:
+                    sub_mode_str=line.split('>')[1].split('<')[0]
+                    self.combo_sub_mode.setCurrentText(sub_mode_str)
+
         self.updating_combos = False
 
     def refresh(self):
@@ -414,15 +473,26 @@ class SystemWidget(QWidget):
             xml_lines = path_xml.readlines()
             new_xml_lines = ''
             for line in xml_lines:
-                if line.find('op_mode_deployed') != -1 and self.combo_mode.currentText() != "Hunt":
+                if line.find('op_mode_hunt') != -1 and self.combo_mode.currentText() != "Hunt":
                     self.combo_mode.setStyleSheet("background-color:rgb(40,40,40)")
-                elif line.find('op_mode_crippled') != -1 and self.combo_mode.currentText() != "Crippled":
+                elif line.find('op_mode_waypoint') != -1 and self.combo_mode.currentText() != "Waypoint":
                     self.combo_mode.setStyleSheet("background-color:rgb(40,40,40)")
-                elif line.find('op_mode_monitoring_only') != -1 and self.combo_mode.currentText() != "Monitoring":
+                elif line.find('op_mode_monitoring') != -1 and self.combo_mode.currentText() != "Monitoring":
                     self.combo_mode.setStyleSheet("background-color:rgb(40,40,40)")
                 elif line.find('op_mode_') != -1:
-                    self.combo_mode.setStyleSheet("background-color:rgb(128,0,0)")
-
+                    if self.dark_mode:
+                        self.combo_mode.setStyleSheet("background-color:rgb(128,0,0)")
+                    else:
+                        self.combo_mode.setStyleSheet("background-color:rgb(160,128,128)")
+                if line.find('sub_mode') != -1:
+                    sub_mode_str=line.split('>')[1].split('<')[0]
+                    if self.combo_sub_mode.currentText() != sub_mode_str:
+                        self.combo_sub_mode.setStyleSheet("background-color:rgb(40,40,40)")
+                    else:
+                        if self.dark_mode:
+                            self.combo_sub_mode.setStyleSheet("background-color:rgb(128,0,0)")
+                        else:
+                            self.combo_sub_mode.setStyleSheet("background-color:rgb(160,128,128)")
 
         source_im_file = Path(self.source_folder,self.system_folder,'status.jpg')
         if os.path.exists(source_im_file):
@@ -437,12 +507,15 @@ class SystemWidget(QWidget):
         pal = QPalette(self.txt_label.palette())
         pal.setColor(QPalette.WindowText, system_color)
         self.txt_label.setPalette(pal)
-        if self.combo_mode.currentText() == "Hunt":
+        if self.combo_mode.currentText() == "Hunt" or self.combo_mode.currentText() == "Waypoint":
             self.btn_insect_replay_takeoff.setEnabled(True)
+        else:
+            self.btn_insect_replay_takeoff.setEnabled(False)
+
+        if self.combo_mode.currentText() == "Waypoint":
             self.btn_takeoff_tuning.setEnabled(True)
             self.btn_takeoff_aggresive_wp.setEnabled(True)
         else:
-            self.btn_insect_replay_takeoff.setEnabled(False)
             self.btn_takeoff_tuning.setEnabled(False)
             self.btn_takeoff_aggresive_wp.setEnabled(False)
 
@@ -466,6 +539,7 @@ class SystemWidget(QWidget):
 
             self.im_label.setStyleSheet("QToolTip { color: #000000; background-color: #800000; border: 1px solid black; }")
             self.combo_mode.setStyleSheet("background-color:rgb(128,0,0)")
+            self.combo_sub_mode.setStyleSheet("background-color:rgb(128,0,0)")
             syswidget_palette.setColor(self.backgroundRole(), QColor(15,15,15))
             self.btn_insect_replay_takeoff.setStyleSheet("background-color:rgb(128,0,0)")
             self.btn_takeoff_aggresive_wp.setStyleSheet("background-color:rgb(128,0,0)")
@@ -482,6 +556,7 @@ class SystemWidget(QWidget):
 
             self.im_label.setStyleSheet("QToolTip { color: #000000; background-color: #9d8080; border: 1px solid black; }")
             self.combo_mode.setStyleSheet("background-color:rgb(160,128,128)")
+            self.combo_sub_mode.setStyleSheet("background-color:rgb(160,128,128)")
             syswidget_palette.setColor(self.backgroundRole(), QColor(230,230,230))
             self.btn_insect_replay_takeoff.setStyleSheet("background-color:rgb(160,128,128)")
             self.btn_takeoff_aggresive_wp.setStyleSheet("background-color:rgb(160,128,128)")
@@ -584,12 +659,11 @@ class SystemWidget(QWidget):
                         navstatus.startswith('Waiting.') or
                         navstatus.startswith('Closing')) :
                             system_has_problem = QColor(128,128,128)
-                    elif (navstatus =="ns_crippled" or
+                    elif (navstatus =="ns_wait_for_takeoff" or
                         navstatus =="ns_manual"
                         ):
                             system_has_problem = QColor(0,255,255)
                     elif (navstatus =="ns_monitoring" or
-                        navstatus =="ns_wait_for_takeoff" or
                         navstatus =="ns_wait_for_insect"):
                             system_has_problem = QColor(0,128,0)
                     elif (navstatus =="ns_takeoff" or

@@ -153,14 +153,14 @@ static const char* drone_types_str[] = {
     "" // must be the last entry! (check in serializer)
 };
 enum op_modes {
-    op_mode_monitoring_only,
-    op_mode_crippled,
-    op_mode_deployed
+    op_mode_monitoring,
+    op_mode_waypoint,
+    op_mode_hunt
 };
 static const char* op_modes_str[] = {
-    "op_mode_monitoring_only",
-    "op_mode_crippled",
-    "op_mode_deployed",
+    "op_mode_monitoring",
+    "op_mode_waypoint",
+    "op_mode_hunt",
     "" // must be the last entry! (check in serializer)
 };
 
@@ -284,6 +284,7 @@ private:
     xRc_type _joystick;
     xDrone_type _drone;
     xOp_mode _op_mode;
+    xString _sub_mode;
     xInt _wdt_timeout_us,_darkness_threshold,_fps,_close_after_n_images,_max_brightness;
     xBool _cam_tuning, _control_tuning, _navigation_tuning,_vision_tuning,_drone_tracking_tuning,_insect_tracking_tuning;
     xBool _viz_plots, _viz_tracking;
@@ -301,6 +302,7 @@ public:
     rc_types joystick;
     drone_types drone;
     op_modes op_mode;
+    std::string sub_mode;
     bool cam_tuning, control_tuning, navigation_tuning,vision_tuning,drone_tracking_tuning, insect_tracking_tuning;
     bool viz_plots, viz_tracking;
     int imscalef;
@@ -315,7 +317,7 @@ public:
         setClassName("PatsParameters");
 
         // Set class version
-        setVersion("1.7");
+        setVersion("1.8");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("wdt_timeout_us",&_wdt_timeout_us);
@@ -324,6 +326,7 @@ public:
         Register("close_after_n_images",&_close_after_n_images);
         Register("has_screen",&_has_screen);
         Register("op_mode",&_op_mode);
+        Register("sub_mode",&_sub_mode);
         Register("watchdog",&_watchdog);
         Register("fps",&_fps);
         Register("video_cuts",&_video_cuts);
@@ -373,6 +376,7 @@ public:
         close_after_n_images = _close_after_n_images.value();
         has_screen = _has_screen.value();
         op_mode = _op_mode.value();
+        sub_mode = _sub_mode.value();
         watchdog = _watchdog.value();
         fps = _fps.value();
         video_cuts = _video_cuts.value();
@@ -402,6 +406,7 @@ public:
         _close_after_n_images = close_after_n_images;
         _has_screen = has_screen;
         _op_mode = op_mode;
+        _sub_mode = sub_mode;
         _watchdog = watchdog;
         _fps = fps;
         _video_cuts = video_cuts;

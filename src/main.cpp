@@ -212,7 +212,7 @@ void process_video() {
             }
         }
 
-        if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode && pparams.op_mode != op_mode_crippled) {
+        if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode && pparams.op_mode != op_mode_waypoint) {
             int frame_written = 0;
             // cv::Mat id_fr = cam->frameL.clone();
             // putText(id_fr,std::to_string(data.RS_id),cv::Point(0, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,Scalar(255));
@@ -647,7 +647,7 @@ void init_video_recorders() {
     /*****init the video writer*****/
     if (pparams.video_result)
         if (output_video_results.init(pparams.video_result, data_output_dir + "videoResult.mkv",visualizer.viz_frame_size().width,visualizer.viz_frame_size().height,pparams.fps,"192.168.1.255",5000,true)) {throw my_exit("could not open results video");}
-    if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode && pparams.op_mode != op_mode_crippled)
+    if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode && pparams.op_mode != op_mode_waypoint)
         if (output_video_LR.init(pparams.video_raw,data_output_dir + "videoRawLR.mkv",IMG_W,IMG_H*2,pparams.fps, "192.168.1.255",5000,false)) {throw my_exit("could not open LR video");}
     if (pparams.video_cuts)
         if (output_video_cuts.init(pparams.video_cuts,data_output_dir + "insect" + to_string(0) + ".mkv",IMG_W,IMG_H*2,pparams.fps, "192.168.1.255",5000,false)) {std::cout << "WARNING: could not open cut video " << data_output_dir + "insect" + to_string(0) + ".mkv" << std::endl;}
@@ -703,7 +703,7 @@ void check_hardware() {
         //multimodule rc
         if (! generator_mode && dparams.tx != tx_none )
             rc.init(drone_id);
-        if (!rc.connected() && pparams.op_mode != op_mode_monitoring_only)
+        if (!rc.connected() && pparams.op_mode != op_mode_monitoring)
             throw my_exit("cannot connect the MultiModule");
 
         // Ensure that joystick was found and that we can use it
@@ -796,7 +796,7 @@ void close(bool sig_kill) {
 
     if (pparams.video_result)
         output_video_results.close();
-    if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode && pparams.op_mode != op_mode_crippled)
+    if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode && pparams.op_mode != op_mode_waypoint)
         output_video_LR.close();
     if (pparams.video_cuts)
         output_video_cuts.close();
@@ -939,16 +939,16 @@ int main( int argc, char **argv )
         std::cout << "Error: " << err.msg << std::endl;
         cmdcenter.reset_commandcenter_status_file(err.msg,true);
         return 1;
-    } catch(rs2::error const &e) {
+    } catch(rs2::error const &err) {
         cmdcenter.reset_commandcenter_status_file("Resetting realsense",false);
         try {
             static_cast<Realsense *>(cam.get())->reset();
-        } catch(my_exit const &e2) {
-            std::cout << "Error: " << e2.msg << std::endl;
-            cmdcenter.reset_commandcenter_status_file(e2.msg,true);
+        } catch(my_exit const &err2) {
+            std::cout << "Error: " << err2.msg << std::endl;
+            cmdcenter.reset_commandcenter_status_file(err2.msg,true);
         }
         return 1;
-    } catch (Exception const &err) {
+    } catch (cv::Exception const &err) {
         cmdcenter.reset_commandcenter_status_file(err.msg,true);
         std::cout << "Error: " << err.msg << std::endl;
         return 1;
@@ -957,7 +957,7 @@ int main( int argc, char **argv )
     try {
         init();
         process_video();
-    } catch(bag_video_ended const &e) {
+    } catch(bag_video_ended const &err) {
         std::cout << "Video ended" << std::endl;
         exit_now = true;
     } catch(my_exit const &e) {
