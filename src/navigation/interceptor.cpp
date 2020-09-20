@@ -128,7 +128,7 @@ void Interceptor::update_far_target(bool drone_at_base) {
     cv::Point3f drone_vel = dtd.vel();
     calc_tti(insect_pos, _intercept_vel, drone_pos, drone_vel, drone_at_base); // only used for viz _tti
     req_intercept_pos = insect_pos;
-    req_intercept_pos.y -= 0.1f;
+    req_intercept_pos.y -= 0.2f;
     _intercept_vel = insect_vel;
     _intercept_vel.y = 0;
     _intercept_acc = insect_acc;
@@ -148,7 +148,7 @@ void Interceptor::update_close_target() {
     cv::Point3f insect_acc = itd.acc();
     //std::cout << "close-target: Insect-pos: " << insect_pos;
 #if ENABLE_MOTH_PREDICTION
-    float time_to_intercept = 0.0f;
+    float time_to_intercept = 0.1f;
     insect_pos += time_to_intercept * insect_vel;
 #endif
     track_data dtd = _trackers->dronetracker()->Last_track_data();
