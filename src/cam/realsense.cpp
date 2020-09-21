@@ -237,7 +237,7 @@ void Realsense::init_real() {
         check_light_level();
     else {
         float brightness;
-        std::tie (camparams.measured_exposure,camparams.measured_gain,std::ignore,brightness) = measure_auto_exposure();
+        std::tie (camparams.measured_exposure,camparams.measured_gain,std::ignore,std::ignore,brightness) = measure_auto_exposure();
         std::cout << "Measured auto exposure: " << camparams.measured_exposure << ", gain: " << camparams.measured_gain << ", brightness: " << brightness << std::endl;
     }
 
@@ -370,7 +370,7 @@ void Realsense::check_light_level() {
     cam.stop();
 }
 
-std::tuple<float,float,cv::Mat,float> Realsense::measure_auto_exposure() {
+std::tuple<float,float,cv::Mat,cv::Mat,float> Realsense::measure_auto_exposure() {
 
     if (!dev_initialized) {
         rs2::context ctx;
@@ -387,6 +387,7 @@ std::tuple<float,float,cv::Mat,float> Realsense::measure_auto_exposure() {
 
     rs2::config cfg;
     cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, pparams.fps);
+    cfg.enable_stream(RS2_STREAM_COLOR, 1920, 1080, RS2_FORMAT_BGR8, 30);
     cam.start(cfg);
     dev = cam.get_active_profile().get_device(); // after a cam start, dev is changed
     rs2::depth_sensor rs_dev = dev.first<rs2::depth_sensor>();
@@ -431,7 +432,10 @@ std::tuple<float,float,cv::Mat,float> Realsense::measure_auto_exposure() {
     else if (actual_exposure_was_measured!=i)
         std::cout << "Not all frames contained exosure info: " << actual_exposure_was_measured << " / " << i << std::endl;
 
-    return std::make_tuple(new_expos,new_gain,frameLt,brightness);
+
+    cv::Mat frame_bgr = cv::Mat(cv::Size(1920,1080), CV_8UC3, const_cast<void *>(frame.get_color_frame().get_data()), Mat::AUTO_STEP);
+
+    return std::make_tuple(new_expos,new_gain,frameLt,frame_bgr,brightness);
 
 }
 
@@ -451,7 +455,6 @@ std::tuple<float,float,double,cv::Mat> Realsense::measure_angle() {
 
     rs2::config cfg;
     cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, pparams.fps);
-    cfg.enable_stream(RS2_STREAM_COLOR, 1920, 1080, RS2_FORMAT_BGR8, 30);
     cfg.enable_stream(RS2_STREAM_ACCEL);
     cfg.enable_stream(RS2_STREAM_GYRO);
     cam.start(cfg);
@@ -486,10 +489,6 @@ std::tuple<float,float,double,cv::Mat> Realsense::measure_angle() {
             pitch = 90.f-atanf(y/z) * rad2deg;
         }
     }
-
-    //rgb image from the rgb sensor of the realsense:
-    cv::Mat frame_bgr = cv::Mat(cv::Size(1920,1080), CV_8UC3, const_cast<void *>(frame.get_color_frame().get_data()), Mat::AUTO_STEP);
-    cv::imwrite(rgb_wfn,frame_bgr);
 
     cam.stop();
     return std::make_tuple(roll,pitch,frame.get_timestamp(),frameLt);
