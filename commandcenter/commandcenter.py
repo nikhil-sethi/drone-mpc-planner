@@ -195,6 +195,7 @@ class SystemWidget(QWidget):
         QWidget.__init__(self, parent=parent)
         self.dark_mode = True
         self.refresh_darkmode = True
+        self.max_cam_roll = 0.5
 
         self.system_folder = system_folder
         self.source_folder = source_folder
@@ -374,13 +375,15 @@ class SystemWidget(QWidget):
                     else:
                         line = '    <Member Name=\"video_raw\">video_disabled</Member>\n'
                 elif line.find('\"max_cam_roll\"') != -1:
+                    self.max_cam_roll = 0.5
                     if self.combo_mode.currentText() == "Monitoring":
                         if self.combo_sub_mode.currentText() == 'TomatoWorld':
-                            line = '    <Member Name=\"max_cam_roll\">360</Member>\n'
+                            self.max_cam_roll = 360
                         else:
-                            line = '    <Member Name=\"max_cam_roll\">5</Member>\n'
+                            self.max_cam_roll = 5
                     else:
-                        line = '    <Member Name=\"max_cam_roll\">0.5</Member>\n'
+                        self.max_cam_roll = 0.5
+                    line = '    <Member Name=\"max_cam_roll\">' + str(self.max_cam_roll) + '</Member>\n'
                 elif line.find('\"watchdog\"') != -1:
                     line = '    <Member Name="watchdog">true</Member>\n'
                 elif line.find('\"sub_mode\"') != -1:
@@ -691,9 +694,14 @@ class SystemWidget(QWidget):
                             system_has_problem = QColor(0,255,0)
                     elif (navstatus == "ns_drone_problem" or
                         navstatus == "ns_batlow" or
-                        navstatus.startswith('Roll') or
                         navstatus == 'no RealSense connected'):
                         system_has_problem = QColor(255,0,0)
+                    elif navstatus.startswith('Roll'):
+                        roll = float(navstatus.split(' ')[1])
+                        if (abs(roll) > self.max_cam_roll):
+                            system_has_problem = QColor(255,0,0)
+                        else:
+                            system_has_problem = QColor(128,128,128)
         else:
             res_txt = 'Error: status info file not found'
             system_has_problem = QColor(255,0,0)
