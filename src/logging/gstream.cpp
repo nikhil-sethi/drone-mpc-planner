@@ -88,7 +88,11 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
             capsfilter = gst_element_factory_make ("capsfilter", NULL);
             encoder = gst_element_factory_make ("vaapih265enc", "encoder"); // hardware encoding
             parse = gst_element_factory_make ("h265parse", "parse");
-            mux = gst_element_factory_make ("matroskamux", "mux");
+            if (file.back() == '4')
+                mux = gst_element_factory_make ("mp4mux", "mux");
+            else
+                mux = gst_element_factory_make ("matroskamux", "mux");
+
             videosink = gst_element_factory_make ("filesink", "videosink");
 
 
