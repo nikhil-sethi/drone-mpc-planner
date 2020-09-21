@@ -84,6 +84,7 @@ void DroneNavigation::update(double time) {
         _navigation_status = ns_drone_problem;
 
     _iceptor.update(_dctrl->at_base(), time);
+
     bool repeat = true;
     while (repeat) {
         repeat  = false;

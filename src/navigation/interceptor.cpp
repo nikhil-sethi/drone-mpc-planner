@@ -89,7 +89,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
         }
 
         if (!best_itrkr->frames_untracked()) {
-            update_close_target();
+            update_close_target(drone_at_base);
             update_interceptability();
         }
 
@@ -137,11 +137,11 @@ void Interceptor::update_far_target(bool drone_at_base) {
     _horizontal_separation = normf(cv::Point2f(drone_pos.x, drone_pos.z) - cv::Point2f(insect_pos.x, insect_pos.z));
     _vertical_separation = insect_pos.y - drone_pos.y;
     total_separation = normf(insect_pos - drone_pos);
-    if (total_separation < _best_distance || _best_distance < 0)
+    if ((total_separation < _best_distance || _best_distance < 0) && !drone_at_base)
         _best_distance = total_separation;
 }
 
-void Interceptor::update_close_target() {
+void Interceptor::update_close_target(bool drone_at_base) {
     track_data itd = _trackers->insecttracker_best()->Last_track_data();
     cv::Point3f insect_pos = itd.pos();
     cv::Point3f insect_vel = itd.vel();
@@ -171,7 +171,7 @@ void Interceptor::update_close_target() {
     _horizontal_separation = normf(cv::Point2f(drone_pos.x, drone_pos.z) - cv::Point2f(insect_pos.x, insect_pos.z));
     _vertical_separation = insect_pos.y - drone_pos.y;
     total_separation = normf(insect_pos - drone_pos);
-    if (total_separation < _best_distance || _best_distance < 0)
+    if ((total_separation < _best_distance || _best_distance < 0) && !drone_at_base)
         _best_distance = total_separation;
 }
 
