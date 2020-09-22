@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import os,subprocess,time
 
 source_folder = '~/Downloads/moth_jsons'
@@ -17,7 +17,7 @@ def download(wait=False):
 while True:
     download()
     print ('Downloaded')
-    cmd = ['~/code/pats/analysis/moth_watcher/moth_server.py -i ' + source_folder]
+    cmd = ['~/code/pats/analysis/moth_watcher/fill_db_with_jsons.py -i ' + source_folder]
     result = subprocess.run(cmd, shell=True,stdout=subprocess.PIPE)
     print(result.returncode, result.stdout, result.stderr)
     time.sleep(3600)

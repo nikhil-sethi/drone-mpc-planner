@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import numpy as np
 import pandas as pd
 pd.options.mode.chained_assignment = None
@@ -169,7 +169,7 @@ class NaturalCubicSpline(AbstractSpline):
         return X_spl
 
 def interpolate_zeros_and_spline(vals):
-    """Sometimes unexplainable zeros in a flight are found these zeros will be interpolated"""
+    """Sometimes unexplainable zeros in a moth flight are found these zeros will be interpolated"""
     vals = np.trim_zeros(vals)
     idx = np.nonzero(vals)
     x = np.arange(len(vals))
@@ -213,9 +213,9 @@ def get_moth_counts_for_dir(path_of_dir, mindate, max_date):
     zs = processed_df["posZ_insect"].values
 
     moth_found[(xs == 0) | (ys == 0) | (zs == 0)] = 0 # if xyz values missing, say moth is not seen
-    nums, inds, clas = rle(moth_found) # get all possible flight windows
+    nums, inds, clas = rle(moth_found) # get all possible moth flight windows
 
-    # add seperate flights together that are too close together to be two different flights
+    # add seperate moth flights together that are too close together to be two different flights
     seq_lens, start_ind = [], []
     if nums is not None:
         for i in range(len(nums)):
@@ -238,7 +238,7 @@ def get_moth_counts_for_dir(path_of_dir, mindate, max_date):
             y_p = interpolate_zeros_and_spline(non_smooth_y_p)
             z_p = interpolate_zeros_and_spline(non_smooth_z_p)
 
-            t_p = elapsed_time[start_ind[i]:start_ind[i]+seq_lens[i] - 1][:x_p.shape[0]].astype('float64') # get all the elapsed time for this flight - the trailing zeros
+            t_p = elapsed_time[start_ind[i]:start_ind[i]+seq_lens[i] - 1][:x_p.shape[0]].astype('float64') # get all the elapsed time for this moth flight - the trailing zeros
             dt = t_p[1:]-t_p[:-1] # get time between elapsed times
 
             dx = (x_p[1:]-x_p[:-1]) / dt # get the derivative of x coords
@@ -251,7 +251,7 @@ def get_moth_counts_for_dir(path_of_dir, mindate, max_date):
 
             start = elapsed_time[start_ind[i]]
             end = elapsed_time[start_ind[i]+seq_lens[i] - 1]
-            duration = end - start # total duration of the flight
+            duration = end - start # total duration of the moth flight
             filename = 'unknown' #work around #455
 
 
@@ -263,7 +263,7 @@ def get_moth_counts_for_dir(path_of_dir, mindate, max_date):
             # correct_image_movement = np.abs(dx_img).mean() > 0.15 and np.abs(dy_img).mean() > 0.15
 
             FP_theshold = np.mean(np.ones(shape=(3,3)) - np.abs(np.corrcoef([x_p, y_p, z_p]))) >= 0.008
-            correct_duration = duration >= 0.05 and duration < 25 # FP if flight duration is between certain seconds
+            correct_duration = duration >= 0.05 and duration < 25 # FP if moth flight duration is between certain seconds
 
             # if correct_dist_mean and correct_dist_std and correct_duration:
             if correct_duration and FP_theshold:
@@ -289,8 +289,8 @@ def get_moth_counts_for_dir(path_of_dir, mindate, max_date):
                     print(np.mean(np.ones(shape=(3,3)) - np.abs(np.corrcoef([x_p, y_p, z_p]))))
                     fig = plt.figure()
                     ax = fig.gca(projection='3d')
-                    ax.plot(x_p, -y_p, z_p, label='smoothend flight')
-                    ax.scatter(non_smooth_x_p, -non_smooth_y_p, non_smooth_z_p, label='raw flight', marker="x")
+                    ax.plot(x_p, -y_p, z_p, label='smoothend moth flight')
+                    ax.scatter(non_smooth_x_p, -non_smooth_y_p, non_smooth_z_p, label='raw moth flight', marker="x")
                     ax.scatter([-5], [5], [-5], label='anchor', marker="o")
                     ax.legend()
                     ax.set_xlabel('X axis')
@@ -319,14 +319,14 @@ def get_moth_counts_for_dir(path_of_dir, mindate, max_date):
     return found_flights
 
 parser = argparse.ArgumentParser(description='Script that counts the number of detected moths in a directory, bound by the minimum and maximum date\n\
-    example: python3 moth_counter.py -i "{path_directory_of_log_dirs}" -s "20200729_190000" -e "20200729_230000" --send')
+    example: python3 moth_counter.py -i "{path_directory_of_log_dirs}" -s "20200729_190000" -e "20200729_230000"')
 
 parser.add_argument('-i', help="Path to the folder with logs", required=True)
 parser.add_argument('-s', help="Directory date to start from", required=True)
 parser.add_argument('-e', help="Directory date to end on", required=True)
-parser.add_argument('-v', help="View the path of the found flights in a plot", required=False, default=False, action='store_true')
+parser.add_argument('-v', help="View the path of the found moth flights in a plot", required=False, default=False, action='store_true')
 parser.add_argument('--filename', help="Path and filename to store results in", default="./moth.json")
-parser.add_argument('--send', help="Send results to main database", default=False, action='store_true')
+parser.add_argument('--system', help="Path and filename to store results in", default=socket.gethostname())
 
 args = parser.parse_args()
 
@@ -347,29 +347,13 @@ for folder in filtered_dirs:
     flights_in_dir = get_moth_counts_for_dir(folder, min_date, max_date)
     if flights_in_dir != []:
         [flights.append(flight) for flight in flights_in_dir]
-    print(f"Total found flights increased with {len(flights_in_dir)} to {len(flights)}.")
+    print(f"Total found moth flights increased with {len(flights_in_dir)} to {len(flights)}.")
 
 data = {"from" : args.s,
         "till" : args.e, 
         "counts" : len(flights),
         "flights" : flights,
-        "system" : socket.gethostname()}
+        "system" : args.system}
 with open(args.filename, 'w') as outfile:
     json.dump(data, outfile)
 print("Counting complete, saved in {0}".format(args.filename))
-
-if args.send: # send data to server to store values
-    #TODO: sending data is now quite unsafe, especially because IP is hardcoded, solution should be found for this
-
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect(("145.94.54.216", 1243))
-        HEADERSIZE = 10
-        msg = pickle.dumps(data)
-        msg = bytes(f"{len(msg):<{HEADERSIZE}}", 'utf-8')+msg
-        s.send(msg)
-        print("Send data to server")
-    except Exception as e:
-        print("Connection to server failed, could not store data in server database")
-        print("The following error causes the error")
-        print(e)

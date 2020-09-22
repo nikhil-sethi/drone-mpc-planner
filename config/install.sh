@@ -230,7 +230,7 @@ fi
 
 # [ -f analysis-dependencies-packages-v1.0.done ] || {
 # 	curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
-# 	sudo apt install -y libssl1.0-dev curl nodejs nodejs
+# 	sudo apt install -y libssl1.0-dev curl nodejs nodejs sqlitebrowser
 # 	pushd ../code/pats/analysis/moth_watcher/
 # 	npm install
 # 	npm audit fix

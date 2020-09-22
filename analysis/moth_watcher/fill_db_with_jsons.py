@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import socket, json
 import time, argparse
 import pickle, glob, os
@@ -60,42 +60,12 @@ def store_data(data):
 parser = argparse.ArgumentParser(description='Script that adds the json files or incoming json files to the database that is \
     reable for the electron app. \nExample python3 moth_server.py -i "./data"')
 
-parser.add_argument('-i', help="Path to the folder with json files, 's' for server", required=True, default="s")
+parser.add_argument('-i', help="Path to the folder with json files", required=True)
 args = parser.parse_args()
-if args.i != "s":
-    files = glob.glob(args.i + "/*.json")
-    for file_ in files:
-        with open(file_) as json_file:
-            data = json.load(json_file)
-            store_data(data)
-            print(f"Stored data of {file_} to database.")
-else:
-    HEADERSIZE = 10
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind(("145.94.54.216", 1243))
-    s.listen(5)
 
-    while True:
-        # now our endpoint knows about the OTHER endpoint.
-        clientsocket, address = s.accept()
-        print(f"Connection from {address} has been established.")
-
-        try:
-            full_msg = b''
-            new_msg = True
-            while True:
-                msg = clientsocket.recv(16)
-                if new_msg:
-                    msglen = int(msg[:HEADERSIZE])
-                    new_msg = False
-    
-                full_msg += msg
-
-                if len(full_msg)-HEADERSIZE == msglen:
-                    print("full msg recieved")
-                    data = pickle.loads(full_msg[HEADERSIZE:])
-                    store_data(data)
-                    new_msg = True
-                    full_msg = b""
-        except:
-            pass
+files = glob.glob(args.i + "/*.json")
+for file_ in files:
+    with open(file_) as json_file:
+        data = json.load(json_file)
+        store_data(data)
+        print(f"Stored data of {file_} to database.")
