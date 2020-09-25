@@ -9,13 +9,10 @@ void TrackerManager::init(std::ofstream *logger,VisionData *visdat, CameraView *
     _logger = logger;
     _camview = camview;
 
-    if (pparams.has_screen) {
+    if (pparams.has_screen || pparams.video_result || pparams.video_cuts) {
         enable_viz_max_points = false;
         enable_viz_diff = true;
     }
-
-    if (pparams.video_cuts)
-        enable_viz_diff = true;
 
     deserialize_settings();
 

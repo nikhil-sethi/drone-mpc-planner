@@ -1,5 +1,6 @@
 #include "logreader.h"
 #include "common.h"
+#include "navigation.h"
 
 #include <experimental/filesystem>
 
@@ -79,6 +80,7 @@ LogEntryMain LogReader::create_log_entry(string line, map<string, int> headmap) 
     entry.joyModeSwitch = stoi(line_data.at(headmap["joyModeSwitch"]));
     entry.joyTakeoffSwitch = stoi(line_data.at(headmap["joyTakeoffSwitch"]));
     entry.trkrs_state = stoi(line_data.at(headmap["trkrs_state"]));
+    entry.nav_state = stoi(line_data.at(headmap["nav_state"]));
 
     entry.imLx_drone = stof(line_data.at(headmap["imLx_drone"]));
     entry.imLy_drone = stof(line_data.at(headmap["imLy_drone"]));
@@ -86,6 +88,12 @@ LogEntryMain LogReader::create_log_entry(string line, map<string, int> headmap) 
 
     if (_takeoff_time > static_cast<double>(entry.RS_id)/pparams.fps && entry.valid && entry.joyModeSwitch > 0 && entry.auto_throttle > dparams.spinup_throttle_non3d)
         _takeoff_time = static_cast<double>(entry.RS_id)/pparams.fps - 1;
+    if (isinf(_blink_detect_time) && entry.nav_state == navigation::ns_located_drone)
+        _blink_detect_time = entry.elapsed;
+    if (isinf(_yaw_reset_time) && entry.nav_state == navigation::ns_initial_reset_yaw)
+        _yaw_reset_time = entry.elapsed;
+    if (isinf(_drone_problem_time) && entry.nav_state == navigation::ns_drone_problem)
+        _drone_problem_time = entry.elapsed;
 
     entry.auto_throttle = stoi(line_data.at(headmap["autoThrottle"]));
     entry.auto_roll = stoi(line_data.at(headmap["autoRoll"]));

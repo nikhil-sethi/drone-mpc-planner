@@ -28,4 +28,5 @@ public:
     int write(cv::Mat frameL,cv::Mat frameR);
     void close (void);
     void block();
+    void manual_unblock();
 };

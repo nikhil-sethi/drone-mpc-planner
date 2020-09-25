@@ -35,7 +35,7 @@ void DroneNavigation::init(std::ofstream *logger, tracking::TrackerManager * tra
         createTrackbar ("v_sqr", "Nav", &v_sqr, 500);
     }
 
-    (*_logger) << "nav_state;";
+    (*_logger) << "nav_state;nav_state_str;";
 
     if (pparams.drone == drone_anvil) // tmp solution because my Anvils don't fit to the pads atm
         shake_duration = 0;
@@ -512,7 +512,7 @@ void DroneNavigation::update(double time) {
         }
         }
     }
-    (*_logger) << static_cast<int16_t>(_navigation_status) << ";";
+    (*_logger) << static_cast<int16_t>(_navigation_status) << ";" << navigation_status() << ";";
 }
 
 void DroneNavigation::next_waypoint(Waypoint wp, double time) {

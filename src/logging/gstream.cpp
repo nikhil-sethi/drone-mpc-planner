@@ -34,6 +34,9 @@ static void cb_enough_data (GstElement *appsrc __attribute__((unused)), guint un
 void GStream::block() {
     wait_for_want.lock();
 }
+void GStream::manual_unblock() {
+    wait_for_want.unlock();
+}
 
 int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std::string ip, int port, bool color) {
     videomode = mode;

@@ -582,6 +582,9 @@ void Visualizer::draw_tracker_viz() {
 
 }
 
+void Visualizer::render() {
+    new_tracker_viz_data_requested = true;
+}
 void Visualizer::paint() {
     if (request_trackframe_paint) {
         request_trackframe_paint = false;

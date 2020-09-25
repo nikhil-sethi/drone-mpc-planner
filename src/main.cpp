@@ -60,6 +60,8 @@ std::string data_output_dir;
 bool draw_plots = false;
 bool log_replay_mode = false;
 bool generator_mode = false;
+bool render_video_result_mode = false;
+bool skipped_to_hunt = false;
 uint8_t drone_id;
 std::string replay_dir;
 std::string logger_fn; //contains filename of current log # for insect logging (same as video #)
@@ -136,14 +138,35 @@ void process_video() {
 
 
         bool escape_key_pressed = false;
-        if (pparams.has_screen) {
+        if (pparams.has_screen || render_video_result_mode) {
             static int speed_div;
             if (!(speed_div++ % 4) || (((log_replay_mode || generator_mode ) && !cam->turbo) || cam->frame_by_frame)) {
                 visualizer_3d.run();
-                visualizer.paint();
-                escape_key_pressed = handle_key(data.time);
+                if (pparams.has_screen) {
+                    visualizer.paint();
+                    escape_key_pressed = handle_key(data.time);
+                }
+                if (render_video_result_mode)
+                    visualizer.render();
+
             }
         }
+        if (render_video_result_mode) {
+
+            if (dnav.drone_is_ready_and_waiting() && !skipped_to_hunt) {
+                double dt = logreader.first_takeoff_time() - data.time - 0.5;
+                if (dt>0 && trackers.mode() != tracking::TrackerManager::mode_locate_drone)
+                    cam->skip(dt);
+                skipped_to_hunt = true;
+                cam->turbo = false;
+            } else if (!skipped_to_hunt) {
+                cam->turbo = true;
+            }
+            if (dnav.drone_is_yaw_reset() || dnav.drone_problem()) {
+                escape_key_pressed = true;
+            }
+        }
+
         tp[0].m1.lock();
         tp[0].data = data;
         tp[0].data_is_new = true;
@@ -222,6 +245,21 @@ void process_video() {
                 raw_video_frame_counter++;
             else {
                 std::cout << "Video frame write PROBLEM: " << frame_written << std::endl;
+            }
+        }
+
+        if (render_video_result_mode) {
+            if (dnav.n_drone_detects() == 0 && data.time -3 > logreader.first_blink_detect_time() ) {
+                std::cout << "\n\nError: Log results differ from replay results, could not find drone in time.\n" << replay_dir <<"\n\n" << std::endl;
+                exit_now = true;
+            }
+            if (dnav.drone_is_yaw_reset() == 0 && data.time -3 > logreader.first_yaw_reset_time() ) {
+                std::cout << "\n\nError: Log results differ from replay results, should have yaw reset already.\n" << replay_dir <<"\n\n" << std::endl;
+                exit_now = true;
+            }
+            if (dnav.drone_problem() || logreader.current_entry.nav_state == navigation::ns_drone_problem) {
+                std::cout << "\n\nDrone problem. Stopping render\n" << replay_dir <<"\n\n" << std::endl;
+                exit_now = true;
             }
         }
 
@@ -363,6 +401,7 @@ void process_frame(Stereo_Frame_Data data) {
 
         trackers.process_replay_moth(data.RS_id);
         cmdcenter.trigger_demo_flight_from_log(replay_dir,logreader.current_entry.trkrs_state);
+
     } else if (generator_mode) {
         if (dnav.drone_is_ready_and_waiting()) {
             dnav.demo_flight(pparams.flightplan);
@@ -409,13 +448,15 @@ void process_frame(Stereo_Frame_Data data) {
 
     trackers.dronetracker()->manual_flight_mode(dnav.drone_is_manual()); // TODO: hacky
 
-    if (pparams.has_screen) {
+    if (pparams.has_screen || render_video_result_mode) {
         visualizer.add_plot_sample();
         visualizer.update_tracker_data(visdat.frameL,dnav.setpoint().pos(),data.time, draw_plots, trackers.insecttracker_best());
-        if (pparams.video_result) {
-            if (log_replay_mode)
-                output_video_results.block(); // only use this for rendering
-            output_video_results.write(visualizer.trackframe);
+        if (pparams.video_result && !exit_now) {
+            if ((render_video_result_mode && skipped_to_hunt) || !render_video_result_mode) {
+                if (log_replay_mode)
+                    output_video_results.block(); // only use this for rendering
+                output_video_results.write(visualizer.trackframe);
+            }
         }
     }
 #ifdef PROFILING
@@ -563,6 +604,7 @@ void pool_worker(int id ) {
         tp[id].data_processed.notify_one();
         tp[id].m2.unlock();
     }
+    std::cout << "Exit pool thread " << id << std::endl;
 }
 bool threads_initialised = false;
 void init_thread_pool() {
@@ -585,6 +627,8 @@ void close_thread_pool() {
             tp[i].m1.unlock();
             tp[i].m2.unlock();
         }
+        if (render_video_result_mode)
+            output_video_results.manual_unblock();
         for (uint i = 0; i < NUM_OF_THREADS; i++) {
             tp[i].thread->join();
             delete tp[i].thread;
@@ -651,18 +695,18 @@ void init_video_recorders() {
         if (output_video_cuts.init(pparams.video_cuts,data_output_dir + "insect" + to_string(0) + ".mkv",IMG_W,IMG_H*2,pparams.fps, "192.168.1.255",5000,false)) {std::cout << "WARNING: could not open cut video " << data_output_dir + "insect" + to_string(0) + ".mkv" << std::endl;}
 }
 
-std::tuple<bool,bool,bool, std::string,uint8_t,std::string,std::string> process_arg(int argc, char **argv) {
+std::tuple<bool,bool,bool,bool, std::string,uint8_t,std::string,std::string> process_arg(int argc, char **argv) {
 
     int default_drone_id = 1;
     int arg_drone_id = default_drone_id;
-    bool replay_mode = false, gen_mode = false;
+    bool replay_mode = false, render_mode = false, gen_mode = false;
     std::string arg_log_folder="",arg_pats_xml_fn="../../xml/pats.xml",arg_drone_xml_fn="";
     if (argc > 1) {
         for (int i = 1; i < argc; i++) {
             string s = argv[i];
             bool arg_recognized = false;
             if (s.compare("--rs_reset") == 0) {
-                return make_tuple(true,false,false,"",0,"","");
+                return make_tuple(true,false,false,false,"",0,"","");
             } else if (s.compare("--pats-xml") == 0) {
                 arg_recognized = true;
                 i++;
@@ -686,6 +730,10 @@ std::tuple<bool,bool,bool, std::string,uint8_t,std::string,std::string> process_
                 arg_log_folder=argv[i];
                 arg_pats_xml_fn = arg_log_folder + "/pats.xml";
                 arg_drone_xml_fn = arg_log_folder + "/drone.xml";
+            } else if (s.compare("--render") == 0) {
+                arg_recognized = true;
+                i++;
+                render_mode=true;
             }
             if (!arg_recognized) {
                 std::cout << "Error argument nog recognized: " << argv[i] <<std::endl;
@@ -693,7 +741,7 @@ std::tuple<bool,bool,bool, std::string,uint8_t,std::string,std::string> process_
             }
         }
     }
-    return make_tuple(false,replay_mode,gen_mode,arg_log_folder,arg_drone_id,arg_pats_xml_fn,arg_drone_xml_fn);
+    return make_tuple(false,replay_mode,gen_mode,render_mode,arg_log_folder,arg_drone_id,arg_pats_xml_fn,arg_drone_xml_fn);
 }
 
 void check_hardware() {
@@ -731,6 +779,12 @@ void init() {
 
     if (log_replay_mode) {
         logreader.init(replay_dir);
+
+        if (isinf(logreader.first_blink_detect_time()) && render_video_result_mode)
+            throw my_exit("According to the log the drone was never blink detected: " + replay_dir);
+        if (isinf(logreader.first_takeoff_time()) && render_video_result_mode)
+            throw my_exit("According to the log the drone never took off: " + replay_dir );
+
         trackers.init_replay_moth(logreader.replay_moths());
     }
     init_loggers();
@@ -744,7 +798,7 @@ void init() {
     dnav.init(&logger,&trackers,&dctrl,&visdat, &(cam->camera_volume),replay_dir);
     dctrl.init(&logger,log_replay_mode,generator_mode,&rc,trackers.dronetracker(), &(cam->camera_volume),cam->measured_exposure());
 
-    if (pparams.has_screen) {
+    if (pparams.has_screen || render_video_result_mode) {
         visualizer.init(&visdat,&trackers,&dctrl,&dnav,&rc,log_replay_mode);
         if (generator_mode) {
             visualizer.set_generator_cam(static_cast<GeneratorCam *>(cam.get()));
@@ -788,7 +842,7 @@ void close(bool sig_kill) {
     trackers.close();
     if (!log_replay_mode)
         rc.close();
-    if (pparams.has_screen)
+    if (pparams.has_screen || render_video_result_mode)
         visualizer.close();
     visdat.close();
 
@@ -918,7 +972,7 @@ int main( int argc, char **argv )
 
         cmdcenter.reset_commandcenter_status_file("Starting",false);
         bool realsense_reset;
-        std::tie(realsense_reset,log_replay_mode,generator_mode,replay_dir,drone_id,pats_xml_fn,drone_xml_fn) = process_arg(argc,argv);
+        std::tie(realsense_reset,log_replay_mode,generator_mode,render_video_result_mode,replay_dir,drone_id,pats_xml_fn,drone_xml_fn) = process_arg(argc,argv);
 
         if (realsense_reset) {
             cmdcenter.reset_commandcenter_status_file("Reseting realsense",false);
@@ -930,8 +984,10 @@ int main( int argc, char **argv )
         pparams.deserialize(pats_xml_fn);
         if (replay_dir == "" && drone_xml_fn == "")
             drone_xml_fn = "../../xml/" + string(drone_types_str[pparams.drone]) + ".xml";
-        else
+        else if (!render_video_result_mode)
             pparams.has_screen = true; // override log so that vizs always are on when replaying because most of the logs are deployed system now (without a screen)
+        if (render_video_result_mode)
+            pparams.video_result = video_mkv;
         dparams.deserialize(drone_xml_fn);
 
         check_hardware();

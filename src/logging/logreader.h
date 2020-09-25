@@ -14,6 +14,9 @@ public:
     void read_insect_replay_log(std::string path);
     int current_frame_number(unsigned long long RS_id);
     double first_takeoff_time() {return _takeoff_time;}
+    double first_blink_detect_time() {return _blink_detect_time;}
+    double first_yaw_reset_time() {return _yaw_reset_time;}
+    double first_drone_problem_time() {return _drone_problem_time;}
     unsigned long long retrieve_RS_ID_from_frame_id(uint frame_number) { // reverse lookup for filecam
         if (RS_IDs.size() > frame_number + 1)
             return RS_IDs.at(frame_number);
@@ -46,6 +49,9 @@ private:
     std::vector<unsigned long long> RS_IDs;
 
     double _takeoff_time = INFINITY;
+    double _blink_detect_time = INFINITY;
+    double _yaw_reset_time = INFINITY;
+    double _drone_problem_time = INFINITY;
 
 };
 

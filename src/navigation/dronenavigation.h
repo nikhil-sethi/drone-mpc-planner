@@ -177,6 +177,7 @@ public:
             return false;
         }
     }
+    bool drone_is_yaw_reset() {return _navigation_status == ns_wait_reset_yaw || _navigation_status == ns_initial_reset_yaw;}
     bool drone_is_flying() {return _navigation_status < ns_landing && _navigation_status >  ns_take_off_completed;}
     bool drone_is_manual() {return _navigation_status == ns_manual;}
     bool time_for_restart() {return false;} //navigation_status == ns_drone_problem;
