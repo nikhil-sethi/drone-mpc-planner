@@ -19,6 +19,7 @@ private:
     int stream_resize_f = 1;
     int gstream_fps;
     bool initialised = false;
+    std::string _file;
 
 
 public:

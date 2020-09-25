@@ -38,6 +38,7 @@ void GStream::block() {
 int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std::string ip, int port, bool color) {
     videomode = mode;
     gstream_fps  =fps;
+    _file = file;
     wait_for_want.unlock();
     if (videomode == video_stream ) {
         if (stream_resize_f > 1) {
@@ -264,7 +265,7 @@ int GStream::prepare_buffer(GstAppSrc* appsrc, cv::Mat frameL, cv::Mat frameR) {
     want = 0;
     lock_var.unlock();
     if (ret != GST_FLOW_OK) {
-        std::cout << "GST ERROR DE PERROR" << std::endl;
+        std::cout << "GST ERROR DE PERROR from " << _file << std::endl;
         return 2;
 
     }
@@ -305,9 +306,8 @@ int GStream::prepare_buffer(GstAppSrc* appsrc, cv::Mat image) {
     want = 0;
     lock_var.unlock();
     if (ret != GST_FLOW_OK) {
-        std::cout << "GST ERROR DE PERROR" << std::endl;
+        std::cout << "GST ERROR DE PERROR from " << _file << std::endl;
         return 2;
-
     }
     return 0;
 }
