@@ -254,21 +254,23 @@ void FileCam::init_gstream() {
 
 
 void FileCam::close () {
-    GstState cur_state;
-    gst_element_get_state (_pipeline, &cur_state, NULL, 0);
+    if (initialized) {
+        GstState cur_state;
+        gst_element_get_state (_pipeline, &cur_state, NULL, 0);
 
-    if (cur_state == GST_STATE_PLAYING || cur_state == GST_STATE_PAUSED) {
-        gst_element_set_state (_pipeline, GST_STATE_PAUSED);
+        if (cur_state == GST_STATE_PLAYING || cur_state == GST_STATE_PAUSED) {
+            gst_element_set_state (_pipeline, GST_STATE_PAUSED);
+            gst_element_get_state(_pipeline, &cur_state, NULL, GST_CLOCK_TIME_NONE);
+
+            //we are getting an error from this: gst_mini_object_unref: assertion 'GST_MINI_OBJECT_REFCOUNT_VALUE (mini_object) > 0
+            //but as far as I can tell without reason :(
+            //doesn't seem to hurt anything, so no biggy though
+            gst_element_set_state (_pipeline, GST_STATE_NULL);
+
+        }
+        /* Ensure the transition to NULL completes */
         gst_element_get_state(_pipeline, &cur_state, NULL, GST_CLOCK_TIME_NONE);
-
-        //we are getting an error from this: gst_mini_object_unref: assertion 'GST_MINI_OBJECT_REFCOUNT_VALUE (mini_object) > 0
-        //but as far as I can tell without reason :(
-        //doesn't seem to hurt anything, so no biggy though
-        gst_element_set_state (_pipeline, GST_STATE_NULL);
-
+        gst_object_unref (GST_OBJECT (_pipeline));
+        Cam::close();
     }
-    /* Ensure the transition to NULL completes */
-    gst_element_get_state(_pipeline, &cur_state, NULL, GST_CLOCK_TIME_NONE);
-    gst_object_unref (GST_OBJECT (_pipeline));
-    Cam::close();
 }
