@@ -71,7 +71,7 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
     } else {
 
         GstElement *capsfilter,*conv,*encoder, *mux, *rtp, *videosink, *parse;
-        GstElement *glupload,*glcolorbalance,*glcolorconvert,*glcolorconvert2, *gldownload;
+        GstElement *colorbalance,*videoconvert;
         /* init GStreamer */
         gst_init (NULL, NULL);
 
@@ -86,9 +86,7 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
             _pipeline = gst_pipeline_new ("pipeline");
 
             _appsrc = gst_element_factory_make ("appsrc", "source");
-            glupload = gst_element_factory_make ("glupload", "glupload");
-            glcolorconvert = gst_element_factory_make ("glcolorconvert", "glcolorconvert");
-            gldownload = gst_element_factory_make ("gldownload", "gldownload");
+            videoconvert = gst_element_factory_make ("videoconvert", "videoconvert");
             capsfilter = gst_element_factory_make ("capsfilter", NULL);
             encoder = gst_element_factory_make ("vaapih265enc", "encoder"); // hardware encoding
             parse = gst_element_factory_make ("h265parse", "parse");
@@ -127,9 +125,8 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
 
                 // the colorspace conversion to I420 doesn't play nice with our viz. So up the saturation so it looks a bit the same as before.
 
-                glcolorbalance = gst_element_factory_make ("glcolorbalance", "glcolorbalance");
-                g_object_set (G_OBJECT (glcolorbalance), "brightness", 0.03,"saturation",2.0, NULL);
-                glcolorconvert2 = gst_element_factory_make ("glcolorconvert", "conv2");
+                colorbalance = gst_element_factory_make ("videobalance", "videobalance");
+                g_object_set (G_OBJECT (colorbalance), "brightness", 0.15, "contrast", 1.15,"saturation",2.0, NULL);
 
                 // vaapih265enc in gstreamer 1.17 supports main-444 which looks much better for our colored vizs. But currently we are on gstreamer 1.14 and often players dont support 444 either.
                 //(this is why we hack it with the colorbalance above)
@@ -138,8 +135,8 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
                                                    "profile", G_TYPE_STRING, "main",
                                                    NULL), NULL);
 
-                gst_bin_add_many (GST_BIN (_pipeline), _appsrc,glupload,glcolorconvert,glcolorbalance,glcolorconvert2,gldownload,encoder,capsfilter,parse,mux,videosink, NULL);
-                gst_element_link_many (                _appsrc,glupload,glcolorconvert,glcolorbalance, glcolorconvert2,gldownload,encoder,capsfilter,parse,mux,videosink, NULL);
+                gst_bin_add_many (GST_BIN (_pipeline), _appsrc,colorbalance,videoconvert,encoder,capsfilter,parse,mux,videosink, NULL);
+                gst_element_link_many (                _appsrc,colorbalance,videoconvert,encoder,capsfilter,parse,mux,videosink, NULL);
 
             } else {
                 auto caps = gst_caps_new_simple ("video/x-raw",
