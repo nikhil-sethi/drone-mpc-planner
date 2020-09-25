@@ -28,7 +28,6 @@ cv::Point2f world2im_2d(cv::Point3f p_world, cv::Mat Qfi, float camera_angle) {
     return cv::Point2f(p_im.x,p_im.y);
 }
 
-//returns image coordinates from a world coordinate: x,y,disparity
 cv::Point3f world2im_3d(cv::Point3f p_world, cv::Mat Qfi, float camera_angle) {
     //transform back to image coordinates
     std::vector<cv::Point3d> world_coordinates,camera_coordinates;
@@ -47,7 +46,6 @@ cv::Point3f world2im_3d(cv::Point3f p_world, cv::Mat Qfi, float camera_angle) {
     return camera_coordinates.at(0);
 }
 
-//returns image coordinates from a world coordinate: x,y,disparity
 cv::Point3f im2world(cv::Point2f p_im,float disparity, cv::Mat Qf, float camera_angle) {
     std::vector<cv::Point3d> camera_coordinates, world_coordinates;
     camera_coordinates.push_back(cv::Point3d(p_im.x,p_im.y,-disparity));
@@ -69,7 +67,7 @@ cv::Point3f im2world(cv::Point2f p_im,float disparity, cv::Mat Qf, float camera_
 int world2im_dist(cv::Point3f p1, float dist, cv::Mat Qfi, float camera_angle) {
     return world2im_size(p1 - cv::Point3f(dist,0,0),p1 + cv::Point3f(dist,0,0),Qfi,camera_angle);
 }
-//returns the pixel size of a world object]
+//returns the pixel size of a world object
 int world2im_size(cv::Point3f p1, cv::Point3f p2, cv::Mat Qfi, float camera_angle) {
     return round(normf(world2im_2d(p1,Qfi,camera_angle)-world2im_2d(p2,Qfi,camera_angle)));
 }
@@ -77,7 +75,6 @@ int world2im_size(cv::Point3f p1, cv::Point3f p2, cv::Mat Qfi, float camera_angl
 float world2im_sizef(cv::Point3f p1, cv::Point3f p2, cv::Mat Qfi, float camera_angle) {
     return normf(world2im_2d(p1,Qfi,camera_angle)-world2im_2d(p2,Qfi,camera_angle));
 }
-
 
 bool file_exist (const std::string& name) {
     if (FILE *file = fopen(name.c_str(), "r")) {
