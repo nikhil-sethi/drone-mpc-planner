@@ -152,11 +152,12 @@ void process_video() {
             }
         }
         if (render_video_result_mode) {
-
             if (dnav.drone_is_ready_and_waiting() && !skipped_to_hunt) {
                 double dt = logreader.first_takeoff_time() - data.time - 0.5;
-                if (dt>0 && trackers.mode() != tracking::TrackerManager::mode_locate_drone)
+                if (dt>0 && trackers.mode() != tracking::TrackerManager::mode_locate_drone) {
                     cam->skip(dt);
+                    std::cout << "Skipping to " << data.time + dt << std::endl;
+                }
                 skipped_to_hunt = true;
                 cam->turbo = false;
             } else if (!skipped_to_hunt) {

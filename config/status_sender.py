@@ -36,6 +36,15 @@ def get_ip():
         pass
     return ip
 
+def execute(cmd):
+    popen = subprocess.Popen(cmd, shell=True,stdout=subprocess.PIPE)
+    for stdout_line in iter(popen.stdout.readline, ""):
+        if popen.poll() != None:
+            break
+        print(stdout_line.decode('utf-8'),end ='')
+    popen.stdout.close()
+    return
+
 first_read = ''
 def send_status_update():
     global first_read
@@ -73,10 +82,21 @@ def update_monitor_results():
     local_json_file = homedir + '/data_json/' + date_time_end + '.json'
     remote_json_file='moth_json/' + hostname + '_' + date_time_end + '.json'
     cmd = '../analysis/moth_watcher/moth_counter.py -i ~/data -s ' + date_time_start +' -e ' + date_time_end + ' --filename ' + local_json_file
-    result = subprocess.run(cmd, shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-    print(result.returncode, result.stdout, result.stderr)
+    execute(cmd)
     cmd = 'rsync -puz ' + local_json_file +' mavlab-gpu:' + remote_json_file
-    subprocess.call(cmd, shell=True,stdout=subprocess.PIPE)
+    execute(cmd)
+
+def render():
+    now = datetime.now()
+    yesterday = now - timedelta(days=1)
+    date_time_start = yesterday.strftime("%Y%m%d_%H%M%S")
+    date_time_end = now.strftime("%Y%m%d_%H%M%S")
+    if not os.path.exists(homedir + '/data_json/'):
+        os.mkdir(homedir + '/data_json/')
+    local_json_file = homedir + '/data_json/' + date_time_end + '.json'
+    remote_json_file='moth_json/' + hostname + '_' + date_time_end + '.json'
+    cmd = '../config/render_videos.py -i ~/data -s ' + date_time_start +' -e ' + date_time_end
+    execute(cmd)
 
 while not os.path.exists(local_status_txt_file):
     time.sleep(10)
@@ -96,6 +116,7 @@ while True:
         if now.hour == 10 and not updated_today:
             updated_today = True
             update_monitor_results()
+            render()
         if now.hour == 11 and updated_today:
             updated_today = False
 

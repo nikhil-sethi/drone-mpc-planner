@@ -86,8 +86,14 @@ LogEntryMain LogReader::create_log_entry(string line, map<string, int> headmap) 
     entry.imLy_drone = stof(line_data.at(headmap["imLy_drone"]));
     entry.disparity_drone = stof(line_data.at(headmap["disparity_drone"]));
 
-    if (_takeoff_time > static_cast<double>(entry.RS_id)/pparams.fps && entry.valid && entry.joyModeSwitch > 0 && entry.auto_throttle > dparams.spinup_throttle_non3d)
-        _takeoff_time = static_cast<double>(entry.RS_id)/pparams.fps - 1;
+    entry.auto_throttle = stoi(line_data.at(headmap["autoThrottle"]));
+    entry.auto_roll = stoi(line_data.at(headmap["autoRoll"]));
+    entry.auto_pitch = stoi(line_data.at(headmap["autoPitch"]));
+
+    if (isinf(_takeoff_time) && (entry.nav_state == navigation::ns_start_the_chase || entry.nav_state == navigation::ns_set_waypoint))
+        _takeoff_time = entry.elapsed;
+    if (isinf(_takeoff_time) && entry.auto_throttle > dparams.spinup_throttle_non3d) // TMP, should be removed after processing existing data at koppert
+        _takeoff_time = entry.elapsed-2;
     if (isinf(_blink_detect_time) && entry.nav_state == navigation::ns_located_drone)
         _blink_detect_time = entry.elapsed;
     if (isinf(_yaw_reset_time) && entry.nav_state == navigation::ns_initial_reset_yaw)
@@ -95,9 +101,7 @@ LogEntryMain LogReader::create_log_entry(string line, map<string, int> headmap) 
     if (isinf(_drone_problem_time) && entry.nav_state == navigation::ns_drone_problem)
         _drone_problem_time = entry.elapsed;
 
-    entry.auto_throttle = stoi(line_data.at(headmap["autoThrottle"]));
-    entry.auto_roll = stoi(line_data.at(headmap["autoRoll"]));
-    entry.auto_pitch = stoi(line_data.at(headmap["autoPitch"]));
+
 
     return entry;
 }
