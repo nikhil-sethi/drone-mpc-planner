@@ -33,7 +33,9 @@ tuple<map<int, LogEntryMain>,map<string, int>> LogReader::read_log(string file) 
             RS_IDs.push_back(entry.RS_id);
             log.insert(item);
         } catch (exception& exp ) {
-            throw my_exit("Could not read log! File: " +file + '\n' + "Line: " + string(exp.what()) + " at: " + line);
+            string next_line;
+            if (getline(infile, next_line))
+                throw my_exit("Could not read log! File: " +file + '\n' + "Line: " + string(exp.what()) + " at: " + line);
         }
     }
     infile.close();

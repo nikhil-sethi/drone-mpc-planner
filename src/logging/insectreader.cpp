@@ -34,7 +34,9 @@ tuple<map<int, LogEntryInsect>,map<string, int>> InsectReader::read_log(string f
             map<const int, LogEntryInsect>::value_type item(entry.RS_id,entry);
             log.insert(item);
         } catch (exception& exp ) {
-            throw my_exit("Could not read insect log! \n" + string(exp.what()) + " at: " + line);
+            string next_line;
+            if (getline(infile, next_line))
+                throw my_exit("Could not read insect log! \n" + string(exp.what()) + " at: " + line);
         }
     }
     infile.close();
