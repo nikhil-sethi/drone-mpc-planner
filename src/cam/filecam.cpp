@@ -93,6 +93,8 @@ void FileCam::calibration() {
 void FileCam::update() {
     GstSample * sample = NULL;
     for (uint i = 0; i < replay_skip_n_frames+1; i++) {
+        if (i>0)
+            gst_sample_unref(sample);
         sample = gst_app_sink_pull_sample(GST_APP_SINK(_appsink));
         frame_cnt++;
     }

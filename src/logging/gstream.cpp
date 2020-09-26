@@ -114,14 +114,13 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
                 // Swapping with normal videoconvert probably solves the problem, at the cost of cpu usage. Since the color videos atm are only
                 //for rendering afterwards I leave it like this. Hopefully the main-444 profile will be supported in vaapih265enc soon and the gl
                 //components are less needed anyway.
-                auto caps = gst_caps_new_simple ("video/x-raw",
-                                                 "format", G_TYPE_STRING, "BGR",
-                                                 "width", G_TYPE_INT, sizeX,
-                                                 "height", G_TYPE_INT, sizeY,
-                                                 "framerate", GST_TYPE_FRACTION, gstream_fps, 1,NULL);
-                g_object_set (G_OBJECT (_appsrc), "caps",
-                              caps, NULL);
-                gst_caps_unref(caps);
+                auto caps_appsrc = gst_caps_new_simple ("video/x-raw",
+                                                        "format", G_TYPE_STRING, "BGR",
+                                                        "width", G_TYPE_INT, sizeX,
+                                                        "height", G_TYPE_INT, sizeY,
+                                                        "framerate", GST_TYPE_FRACTION, gstream_fps, 1,NULL);
+                g_object_set (G_OBJECT (_appsrc), "caps",caps_appsrc, NULL);
+                gst_caps_unref(caps_appsrc);
 
                 // the colorspace conversion to I420 doesn't play nice with our viz. So up the saturation so it looks a bit the same as before.
 
@@ -130,23 +129,22 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
 
                 // vaapih265enc in gstreamer 1.17 supports main-444 which looks much better for our colored vizs. But currently we are on gstreamer 1.14 and often players dont support 444 either.
                 //(this is why we hack it with the colorbalance above)
-                g_object_set (G_OBJECT (capsfilter), "caps",
-                              gst_caps_new_simple ("video/x-h265",
-                                                   "profile", G_TYPE_STRING, "main",
-                                                   NULL), NULL);
+                auto caps_h265 = gst_caps_new_simple ("video/x-h265",
+                                                      "profile", G_TYPE_STRING, "main",
+                                                      NULL);
+                g_object_set (G_OBJECT (capsfilter), "caps",caps_h265, NULL);
+                gst_caps_unref(caps_h265);
 
                 gst_bin_add_many (GST_BIN (_pipeline), _appsrc,colorbalance,videoconvert,encoder,capsfilter,parse,mux,videosink, NULL);
                 gst_element_link_many (                _appsrc,colorbalance,videoconvert,encoder,capsfilter,parse,mux,videosink, NULL);
-
             } else {
-                auto caps = gst_caps_new_simple ("video/x-raw",
-                                                 "format", G_TYPE_STRING, "I420",
-                                                 "width", G_TYPE_INT, sizeX,
-                                                 "height", G_TYPE_INT, sizeY,
-                                                 "framerate", GST_TYPE_FRACTION, gstream_fps, 1,NULL);
-                g_object_set (G_OBJECT (_appsrc), "caps",
-                              caps, NULL);
-                gst_caps_unref(caps);
+                auto caps_appsrc = gst_caps_new_simple ("video/x-raw",
+                                                        "format", G_TYPE_STRING, "I420",
+                                                        "width", G_TYPE_INT, sizeX,
+                                                        "height", G_TYPE_INT, sizeY,
+                                                        "framerate", GST_TYPE_FRACTION, gstream_fps, 1,NULL);
+                g_object_set (G_OBJECT (_appsrc), "caps",caps_appsrc, NULL);
+                gst_caps_unref(caps_appsrc);
 
                 //The cqp rate-control setting seems to leave noticable noice, so we set a fixed bitrate. 5000 seems to be a nice compromise between quality and size.
                 //For logging (with stringent size and download constraints), cqp could be better though. It is about 5x smaller and the noise does not really influence our algorithms.
