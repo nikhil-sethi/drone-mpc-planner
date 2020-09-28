@@ -25,7 +25,7 @@ var div = d3.select("body").append("div")
     .attr("class", "tooltip-donut")
     .style("opacity", 0);
 
-db_path = "./moth_records.db"
+db_path = "./pats_records.db"
 ds = getSystemsFromDb(db_path);
 var parsed_dates = [];
 ds.then(function (s) {

@@ -1,3 +1,7 @@
 node_modules
 moth_records.db
+pats_records.db
 package-lock.json
+moth_records.db-journal
+pats_records.db-journal
+

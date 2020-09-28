@@ -52,6 +52,7 @@ int raw_video_frame_counter = 0;
 int n_fps_warnings = 0;
 int insect_cnt = 0;
 GStream output_video_results,output_video_LR,output_video_cuts;
+time_t start_datetime;
 
 xmls::PatsParameters pparams;
 xmls::DroneParameters dparams;
@@ -119,6 +120,7 @@ void process_video() {
     filtering::Smoother fps_smoothed;
     fps_smoothed.init(100);
     stopWatch.Start();
+    start_datetime = chrono::system_clock::to_time_t(chrono::system_clock::now());
 
     //main while loop:
     while (!exit_now) // ESC
@@ -871,10 +873,10 @@ void close(bool sig_kill) {
 }
 
 void save_results_log() {
+    auto end_datetime = chrono::system_clock::to_time_t(chrono::system_clock::now());
     std::ofstream results_log;
     results_log.open(data_output_dir  + "results.txt",std::ofstream::out);
     results_log << "op_mode:" << pparams.op_mode << '\n';
-    results_log << "n drone detects:" << dnav.n_drone_detects() << '\n';
     results_log << "n_insects:" << insect_cnt << '\n';
     results_log << "n_takeoffs:" << dnav.n_take_offs() << '\n';
     results_log << "n_landings:" << dnav.n_landings() << '\n';
@@ -883,9 +885,11 @@ void save_results_log() {
     results_log << "n_wp_flights:" << dnav.n_wp_flights() << '\n';
     results_log << "best_interception_distance:" << dnav.interceptor().best_distance() << '\n';
     results_log << "n_drone_detects:" << dnav.n_drone_detects() << '\n';
-    results_log << "drone problem:" << dnav.drone_problem() << '\n';
+    results_log << "drone_problem:" << dnav.drone_problem() << '\n';
     results_log << "Flight_time:" << dnav.flight_time() << '\n';
     results_log << "Run_time:" << cam->frame_time() << '\n';
+    results_log << "Start_datetime:" << std::put_time(std::localtime(&start_datetime), "%Y/%m/%d %T") << '\n';
+    results_log << "End_datetime:" <<  std::put_time(std::localtime(&end_datetime), "%Y/%m/%d %T") << '\n';
     results_log.close();
 }
 

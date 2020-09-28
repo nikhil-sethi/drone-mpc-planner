@@ -2,7 +2,7 @@ let $ = require('jquery');
 let d3 = require('d3');
 var sqlite3 = require('sqlite3').verbose();
 TimelinesChart = require('timelines-chart');
-db_path = "./moth_records.db"
+db_path = "./pats_records.db"
 
 const system = localStorage.getItem("system");
 const selected_hours_1 = localStorage.getItem("selected_hours_1").split(",");
