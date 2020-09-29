@@ -169,9 +169,6 @@ def store_data(data,fn):
     store_mode(fn,data,db_path)
     store_hunts(fn,data,db_path)
 
-
-
-
 parser = argparse.ArgumentParser(description='Script that adds the json files or incoming json files to the database that is reable for the electron app.')
 parser.add_argument('-i', help="Path to the folder with json files", required=True)
 args = parser.parse_args()
@@ -183,8 +180,11 @@ for file_ in pbar:
     with open(file_) as json_file:
         try:
             data = json.load(json_file)
-            store_data(data,os.path.basename(file_))
-            shutil.move(file_,file_+'.OK')
+            if "version" in data and data["version"] == 1.0:
+                store_data(data,os.path.basename(file_))
+                shutil.move(file_,file_+'.OK')
+            else:
+                shutil.move(file_,file_+'.old')
         except:
             shutil.move(file_,file_+'.error')
             continue 

@@ -488,7 +488,8 @@ data_moth = {"from" : args.s,
         "moths" : moths,
         "hunts" : hunts,
         "mode" : statuss,
-        "system" : args.system}
+        "system" : args.system,
+        "version" : '1.0'}
 with open(args.filename, 'w') as outfile:
     json.dump(data_moth, outfile)
 print("Counting complete, saved in {0}".format(args.filename))
