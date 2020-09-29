@@ -42,7 +42,7 @@
         "type": "python",
         "request": "launch",
         "program": "${workspaceFolder}/moth_watcher/jsons_to_db.py",
-        "args" : ["-i", "~/Downloads/moth_jsons"]
+        "args" : ["-i", "~/Downloads/moth_json"]
       }
     ]
   }
