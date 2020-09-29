@@ -14,7 +14,6 @@ def execute(cmd,render_process_dir):
             break
         print(stdout_line.decode('utf-8'),end ='')
     popen.stdout.close()
-    return
 
 parser = argparse.ArgumentParser(description='Script that renders video result in all pats log folders in a directory, bound by the minimum and maximum date\n\
     example: ./render_video.py -i "{path_directory_of_log_dirs}" -s "20200729_190000" -e "20200729_230000"')

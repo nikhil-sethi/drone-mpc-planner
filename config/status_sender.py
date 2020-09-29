@@ -37,14 +37,18 @@ def get_ip():
         pass
     return ip
 
-def execute(cmd):
-    popen = subprocess.Popen(cmd, shell=True,stdout=subprocess.PIPE)
-    for stdout_line in iter(popen.stdout.readline, ""):
-        if popen.poll() != None:
-            break
-        print(stdout_line.decode('utf-8'),end ='')
-    popen.stdout.close()
-    return
+def execute(cmd,retry=1):
+    p_result = None
+    n=0
+    while p_result != 0 and n < retry:
+        popen = subprocess.Popen(cmd, shell=True,stdout=subprocess.PIPE)
+        for stdout_line in iter(popen.stdout.readline, ""):
+            p_result = popen.poll()
+            if p_result != None:
+                n = n+1
+                break
+            print(stdout_line.decode('utf-8'),end ='')
+        popen.stdout.close()
 
 first_read = ''
 def send_status_update():
@@ -85,7 +89,7 @@ def update_monitor_results():
     cmd = '../analysis/moth_watcher/moth_counter.py -i ~/data -s ' + date_time_start +' -e ' + date_time_end + ' --filename ' + local_json_file
     execute(cmd)
     cmd = 'rsync -puz ' + local_json_file +' mavlab-gpu:' + remote_json_file
-    execute(cmd)
+    execute(cmd,5)
 
 def render():
     now = datetime.now()
