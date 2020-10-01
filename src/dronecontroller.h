@@ -256,6 +256,7 @@ private:
     void check_emergency_kill(track_data data_drone);
     void check_tracking_lost(track_data data_drone);
     void check_control_and_tracking_problems(track_data data_drone);
+    void check_snr(track_data data_drone);
     void update_thrust_during_hovering(track_data data_drone, double time);
 
     void blink(double time);
@@ -270,6 +271,11 @@ private:
     filtering::Tf_PT2_3f pos_reference_filter;
 
     filtering::Tf_PT2_f pos_modelx, pos_modely, pos_modelz;
+
+    uint snr_init = 0;
+    uint snr_pbuf_ponter = 0;
+    cv::Point3f snr_pos_buffer[3];
+    uint snr_noise_cnt = 0;
 
     std::array<float, N_PLANES> pos_err_kiv= {0}, vel_err_kiv= {0};
     std::array<filtering::Tf_D_f, N_PLANES> d_pos_err_kiv, d_vel_err_kiv;

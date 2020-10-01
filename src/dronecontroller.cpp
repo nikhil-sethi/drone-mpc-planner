@@ -376,15 +376,21 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
             pos_modelx.internal_states(_dtrk->drone_takeoff_location().x, _dtrk->drone_takeoff_location().x);
             pos_modely.internal_states(_dtrk->drone_takeoff_location().y, _dtrk->drone_takeoff_location().y);
             pos_modelz.internal_states(_dtrk->drone_takeoff_location().z, _dtrk->drone_takeoff_location().z);
+
         } else {
             pos_modelx.internal_states(data_drone.pos().x, data_drone.pos().x);
             pos_modely.internal_states(data_drone.pos().y, data_drone.pos().y);
             pos_modelz.internal_states(data_drone.pos().z, data_drone.pos().z);
+            cv::Point3f snr_pos = {pos_modelx.current_output(), pos_modely.current_output(), pos_modelz.current_output()};
+            std::fill(snr_pos_buffer, snr_pos_buffer+3, snr_pos);
+            snr_init = 3;
+
             if(data_drone.vel_valid) {
                 float correction_gain = 5.f;
                 pos_modelx.internal_states(data_drone.pos().x-data_drone.vel().x/pparams.fps*correction_gain, data_drone.pos().x-2*data_drone.vel().x/pparams.fps*correction_gain);
                 pos_modely.internal_states(data_drone.pos().y-data_drone.vel().y/pparams.fps*correction_gain, data_drone.pos().y-2*data_drone.vel().y/pparams.fps*correction_gain);
                 pos_modelz.internal_states(data_drone.pos().z-data_drone.vel().z/pparams.fps*correction_gain, data_drone.pos().z-2*data_drone.vel().z/pparams.fps*correction_gain);
+
             }
         }
         [[fallthrough]];
@@ -1153,6 +1159,7 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::
 void DroneController::check_emergency_kill(track_data data_drone) {
     check_tracking_lost(data_drone);
     check_control_and_tracking_problems(data_drone);
+    check_snr(data_drone);
 }
 
 
@@ -1186,6 +1193,32 @@ void DroneController::check_control_and_tracking_problems(track_data data_drone)
     if(model_error>model_error_max)
         model_error_max = model_error;
 #endif
+}
+
+void DroneController::check_snr(track_data data_drone) {
+    if(snr_init<3) {
+        if(data_drone.pos_valid) {
+            snr_init++;
+            snr_pos_buffer[snr_pbuf_ponter] = data_drone.pos();
+            snr_pbuf_ponter = (snr_pbuf_ponter+1)%3;
+        }
+    } else {
+        snr_pos_buffer[snr_pbuf_ponter] = data_drone.pos();
+        snr_pbuf_ponter = (snr_pbuf_ponter+1)%3;
+
+        float dpos01 = normf(snr_pos_buffer[(snr_pbuf_ponter-1)%3]-snr_pos_buffer[(snr_pbuf_ponter)%3]);
+        float dpos12 = normf(snr_pos_buffer[(snr_pbuf_ponter-2)%3]-snr_pos_buffer[(snr_pbuf_ponter-1)%3]);
+
+        float err_sample1 = abs(dpos01 - dpos12); // If there is a noise peak at the previous sample this create a high value
+        if(err_sample1>0.2f) {
+            snr_noise_cnt++;
+            std::cout << "Counted peaks in position signal: " << snr_noise_cnt<< "/3" << std::endl;
+            if (snr_noise_cnt>=3) {
+                _flight_mode = fm_abort_model_error;
+                std::cout << "Serious noise detected in the drone tracker" << std::endl;
+            }
+        }
+    }
 }
 
 void DroneController::blink(double time) {
