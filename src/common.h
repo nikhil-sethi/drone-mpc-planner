@@ -455,6 +455,9 @@ private:
     xBool _mode3d;
     xString _control;
     xInt _spinup_throttle_non3d;
+    xFloat _land_cell_v;
+    xInt _max_flight_time;
+    xFloat _min_hunt_cell_v;
 
 public:
     int initial_hover_throttle;
@@ -475,6 +478,9 @@ public:
     bool mode3d;
     string control;
     int spinup_throttle_non3d;
+    float land_cell_v;
+    int max_flight_time;
+    float min_hunt_cell_v;
 
     DroneParameters() {
         // Set the XML class name.
@@ -482,7 +488,7 @@ public:
         setClassName("DroneParameters");
 
         // Set class version
-        setVersion("1.5");
+        setVersion("1.6");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("initial_hover_throttle",&_initial_hover_throttle);
@@ -502,7 +508,9 @@ public:
         Register("tx",&_tx);
         Register("mode3d",&_mode3d);
         Register("control",&_control);
-        Register("spinup_throttle_non3d",&_spinup_throttle_non3d);
+        Register("land_cell_v",&_land_cell_v);
+        Register("max_flight_time",&_max_flight_time);
+        Register("min_hunt_cell_v",&_min_hunt_cell_v);
     }
     void deserialize(std::string filepath) {
         std::cout << "Reading settings from: " << filepath << std::endl;
@@ -544,6 +552,9 @@ public:
         mode3d = _mode3d.value();
         control = _control.value();
         spinup_throttle_non3d = _spinup_throttle_non3d.value();
+        land_cell_v = _land_cell_v.value();
+        max_flight_time = _max_flight_time.value();
+        min_hunt_cell_v = _min_hunt_cell_v.value();
     }
 
     void serialize(std::string filepath) {
@@ -566,6 +577,9 @@ public:
         _mode3d = mode3d;
         _control = control;
         _spinup_throttle_non3d = spinup_throttle_non3d;
+        _land_cell_v = land_cell_v;
+        _max_flight_time = max_flight_time;
+        _min_hunt_cell_v = min_hunt_cell_v;
 
         std::string xmlData = toXML();
         std::ofstream outfile = std::ofstream (filepath);

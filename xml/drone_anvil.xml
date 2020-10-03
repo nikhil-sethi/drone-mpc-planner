@@ -1,4 +1,4 @@
-<SerializableClass Type="DroneParameters" Version="1.5">
+<SerializableClass Type="DroneParameters" Version="1.6">
     <Member Name="initial_hover_throttle">870</Member>
     <Member Name="throttle_bank_factor">0.75</Member>
     <Member Name="max_burn_time">0.7</Member>
@@ -17,4 +17,7 @@
     <Member Name="mode3d">false</Member>
     <Member Name="control">control_anvil</Member>
     <Member Name="spinup_throttle_non3d">315</Member>
+    <Member Name="land_cell_v">3.0</Member>
+    <Member Name="max_flight_time">180</Member>
+    <Member Name="min_hunt_cell_v">4.1</Member>
 </SerializableClass>
