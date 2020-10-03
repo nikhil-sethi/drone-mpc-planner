@@ -19,7 +19,7 @@ pats_cc_update_request = homedir + '/pats_cc_update_request'
 disable_pats_bkg = homedir + '/disable_pats_bkg'
 
 def wait_for_trigger_or_timeout(delay):
-    print("Periodic update after: " + str(delay))
+    print(str(datetime.now()) + ". Periodic update after: " + str(delay))
     while not os.path.exists(pats_cc_update_request) and delay > 0 :
         time.sleep(0.2)
         delay = delay - 0.2
