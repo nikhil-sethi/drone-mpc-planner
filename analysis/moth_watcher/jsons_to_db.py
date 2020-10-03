@@ -48,7 +48,7 @@ def store_moths(fn,data,db_path):
     moths =data["moths"]
     pbar2=tqdm(moths,desc='Moths')
 
-    cur.execute(''' SELECT count(name) FROM sqlite_master WHERE type='table' AND name='moth_records' ''')
+    cur.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='moth_records' ''')
     moth_table_exist = cur.fetchone()[0]==1
 
     sql_insert = ''
@@ -81,7 +81,7 @@ def store_moths(fn,data,db_path):
         # pbar2.set_description(f"Saved moth {date} of {data['system']}")
 
 def store_mode(fn,data,db_path):
-    cur.execute(''' SELECT count(name) FROM sqlite_master WHERE type='table' AND name='mode_records' ''')
+    cur.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='mode_records' ''')
     mode_table_exist = cur.fetchone()[0]==1
 
     if not mode_table_exist:
@@ -118,7 +118,7 @@ def store_hunts(fn,data,db_path):
     hunts =data["hunts"]
     pbar2=tqdm(hunts,desc='Hunts')
 
-    cur.execute(''' SELECT count(name) FROM sqlite_master WHERE type='table' AND name='hunt_records' ''')
+    cur.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='hunt_records' ''')
     hunt_table_exist = cur.fetchone()[0]==1
     conn.commit()
     sql_insert = ''
@@ -175,17 +175,19 @@ args = parser.parse_args()
 
 files = natural_sort([fp for fp in glob.glob(args.i + "/*.json")])
 pbar= tqdm(files, desc='Total: ')
-for file_ in pbar:
-    pbar.set_description(file_)
-    with open(file_) as json_file:
-        try:
-            data = json.load(json_file)
-            if "version" in data and data["version"] == 1.0:
-                store_data(data,os.path.basename(file_))
-                shutil.move(file_,file_+'.OK')
-            else:
-                shutil.move(file_,file_+'.old')
-        except:
-            shutil.move(file_,file_+'.error')
-            continue 
-        
+for filename in pbar:
+    pbar.set_description(filename)
+    flag_fn = filename[:-4] + 'processed'
+    if not os.path.exists(flag_fn):
+        with open(filename) as json_file:
+            with open(flag_fn,'w') as flag_f:
+                try:
+                    data = json.load(json_file)
+                    if "version" in data and data["version"] == '1.0':
+                        store_data(data,os.path.basename(filename))
+                        flag_f.write('OK')
+                    else:
+                        flag_f.write('OLD VERSION')
+                except:
+                    shutil.move(filename,filename +'.error')
+                    continue
