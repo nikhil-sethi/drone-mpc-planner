@@ -509,6 +509,7 @@ void DroneNavigation::update(double time) {
         } case ns_drone_problem: {
             if (time_drone_problem < 0)
                 time_drone_problem = time;
+            duration_drone_problem = static_cast<float>(time - time_drone_problem);
             if (_flight_time<0)
                 _flight_time+= static_cast<float>(time-time_take_off);
             _dctrl->flight_mode(DroneController::fm_abort);

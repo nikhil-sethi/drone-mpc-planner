@@ -54,6 +54,7 @@ private:
     const double yaw_reset_duration = 6;
 
     double time_drone_problem = -1;
+    float duration_drone_problem = 0;
     double time_located_drone = 0;
     double time_take_off = 0;
     double time_shake_start = 0;
@@ -192,5 +193,6 @@ public:
     int n_hunt_flights() {return _n_hunt_flights;}
     float flight_time() {return _flight_time;}
     bool drone_problem() {return time_drone_problem>=0;}
+    bool drone_problem(float min_problem_duration) {return duration_drone_problem>=min_problem_duration;}
 };
 }

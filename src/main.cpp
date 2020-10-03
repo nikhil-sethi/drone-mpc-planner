@@ -370,7 +370,7 @@ void process_video() {
         else
             restart_delay = 0;
 
-        if (dctrl.in_flight_duration(time) < 0.1f || dnav.drone_problem()) {
+        if (dctrl.in_flight_duration(time) < 0.1f || dnav.drone_problem(1)) {
             if (!log_replay_mode  && ((imgcount > pparams.close_after_n_images && pparams.close_after_n_images>0))) {
                 std::cout << "Initiating periodic restart" << std::endl;
                 exit_now = true;
