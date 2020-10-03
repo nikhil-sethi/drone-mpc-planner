@@ -396,13 +396,13 @@ def moth_counts_in_folder(folder):
                 radius_of_curve = np.divide(np.linalg.norm(p[:,2:] - p[:,:-2]), (2 * np.sin(turning_angle)))
                 radial_accelaration = np.divide(np.sum(v[:,1:] * v[:,:-1], axis=0), radius_of_curve)
 
-                moth_flight_time = (dts + datetime.timedelta(seconds=elapsed_time[start_ind[i]])).strftime("%m/%d/%Y, %H:%M:%S")
+                moth_detection_time = (dts + datetime.timedelta(seconds=elapsed_time[start_ind[i]])).strftime('%Y%m%d_%H%M%S')
                 
                 if args.v:
                 
                     print(f"RS_ID: {RS_ID[start_ind[i]]} - {RS_ID[start_ind[i]+seq_lens[i] - 1]} - {prev_rsid}")
                     print(filename, correct_duration, FP_theshold)
-                    print(f"Start time: {moth_flight_time}")
+                    print(f"Start time: {moth_detection_time}")
                     print(f"Moth flight length: {duration} s, {x_p.shape}")
                     # print(f"Start: {x_p[0], y_p[0], z_p[0]}")
                     print(np.mean(np.ones(shape=(3,3)) - np.abs(np.corrcoef([x_p, y_p, z_p]))))
@@ -419,7 +419,7 @@ def moth_counts_in_folder(folder):
                     prev_rsid = RS_ID[start_ind[i]+seq_lens[i] - 1]
 
                 # add frames together
-                moth_data = {"time" : moth_flight_time,
+                moth_data = {"time" : moth_detection_time,
                                 "duration": duration,
                                 "RS_ID" : str(RS_ID[start_ind[i]]),
                                 "Filename" : filename,
@@ -489,7 +489,7 @@ data_moth = {"from" : args.s,
         "hunts" : hunts,
         "mode" : statuss,
         "system" : args.system,
-        "version" : '1.0'}
+        "version" : '1.1'}
 with open(args.filename, 'w') as outfile:
     json.dump(data_moth, outfile)
 print("Counting complete, saved in {0}".format(args.filename))
