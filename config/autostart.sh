@@ -43,6 +43,8 @@ while [ 1 ]; do
 
 	echo "$dt" > terminal.log
 	echo "sha:$SHA" >> terminal.log
+	echo "Hostname: $HOSTNAME" >> terminal.log
+	echo "Drone ID: $DRONE_ID" >> terminal.log
 
 	./pats --pats-xml /home/pats/code/pats/xml/pats_deploy.xml --drone-id $DRONE_ID 2>&1 | /usr/bin/tee --append terminal.log || true
 
