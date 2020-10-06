@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 DEST=~/Downloads/pats_status
-SRC=mavlab-gpu:/home/pats/status/
+SRC=dash:/home/pats/status/
 mkdir -p $DEST
 
 while true; do

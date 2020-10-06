@@ -11,7 +11,7 @@
 #
 # By default this script does nothing.
 
-/home/pats/code/pats/analysis/moth_watcher/moth_server_daemon.sh
+/home/pats/code/pats/dashboard/watch_config/daemon.sh
 
 exit 0
 

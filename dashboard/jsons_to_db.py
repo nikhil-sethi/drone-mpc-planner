@@ -13,7 +13,7 @@ cur = None
 def create_connection(db_file):
     conn = None
     try:
-        conn = sqlite3.connect(db_file)
+        conn = sqlite3.connect(os.path.expanduser(db_file))
     except Exception as e:
         print(e)
     return conn
@@ -170,28 +170,35 @@ def store_data(data,fn):
     store_hunts(fn,data)
 
 parser = argparse.ArgumentParser(description='Script that adds the json files or incoming json files to the database that is reable for the electron app.')
-parser.add_argument('-i', help="Path to the folder with json files", required=True)
+parser.add_argument('-i', '--input_folder', help="Path to the folder with json files", default='~/jsons/')
+parser.add_argument('-p','--period', help="Path to the folder with json files", default=0)
+parser.add_argument('-o','--output_db_path', help="Path to the folder with json files", default='~/pats.db')
 args = parser.parse_args()
 
-database_path = r"pats_records.db"
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-db_path = os.path.join(BASE_DIR, database_path)
-conn = create_connection(db_path)
+conn = create_connection(args.output_db_path)
 cur = conn.cursor()
 
-files = natural_sort([fp for fp in glob.glob(args.i + "/*.json")])
-for filename in files:
-    print('Processing: ' + filename)
-    flag_fn = filename[:-4] + 'processed'
-    if not os.path.exists(flag_fn):
-        with open(filename) as json_file:
-            with open(flag_fn,'w') as flag_f:
-                data = json.load(json_file)
-                required_version='1.1'
-                if "version" in data and data["version"] == required_version:
-                    store_data(data,os.path.basename(filename))
-                    flag_f.write('OK')
-                else:
-                    flag_f.write('WRONG VERSION ' + data["version"] + '. Want: ' + required_version)
+while True:
 
-clean_mode()
+    files = natural_sort([fp for fp in glob.glob(os.path.expanduser(args.input_folder + "/*.json"))])
+    for filename in files:
+        print('Processing: ' + filename)
+        flag_fn = filename[:-4] + 'processed'
+        if not os.path.exists(flag_fn):
+            with open(filename) as json_file:
+                with open(flag_fn,'w') as flag_f:
+                    data = json.load(json_file)
+                    required_version='1.1'
+                    if "version" in data and data["version"] == required_version:
+                        store_data(data,os.path.basename(filename))
+                        flag_f.write('OK')
+                    else:
+                        flag_f.write('WRONG VERSION ' + data["version"] + '. Want: ' + required_version)
+
+    clean_mode()
+
+    if args.period:
+        print(str(datetime.datetime.now()) + ". Periodic update after: " + str(args.period))
+        time.sleep(int(args.period))
+    else:
+        break

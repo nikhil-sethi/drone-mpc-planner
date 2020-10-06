@@ -163,7 +163,7 @@ class CommandCenterWindow(QMainWindow):
             self.combo_sub_mode.setCurrentIndex(-1)
 
     def download(self,wait=False):
-        rsync_src='mavlab-gpu:/home/pats/status/'
+        rsync_src='dash:/home/pats/status/'
         subprocess.call(['mkdir -p ' + self.source_folder ], shell=True)
         cmd = ['rsync -zva --timeout=3 --exclude \'*.jpg.*\' --exclude \'*.xml.*\' --exclude \'*.txt.*\' ' + rsync_src + ' '+ self.source_folder]
         if wait:

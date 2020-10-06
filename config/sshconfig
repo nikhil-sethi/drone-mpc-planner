@@ -11,311 +11,223 @@ Host dash
 	Hostname 37.128.150.141
 	User pats
 
-# MAVLab
 Host mavlab-gpu
 	Hostname 131.180.117.41
-	User pats
-
-Host mavlab-godzilla
-	Hostname mavlab-godzilla-compute.lr.tudelft.nl
 	User pats
 
 Host pats0 pats_game
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-        ProxyJump mavlab-gpu
-        Port 6000
-Host pats0b
-        Hostname localhost
-        IdentityFile ~/.ssh/pats_id_rsa
-        User pats
-        ProxyJump dinstech
+        ProxyJump dash
         Port 6000
 
 Host pats1 pats_mooy1
 	Hostname localhost
 	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
-	ProxyJump mavlab-gpu
-	Port 6100
-
-Host pats1b pats_mooy1b
-	Hostname localhost
-	IdentityFile ~/.ssh/pats_id_rsa
-	User pats
-	ProxyJump dinstech
+	ProxyJump dash
 	Port 6100
 
 Host pats2 pats_holstein2
 	Hostname localhost
 	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
-	ProxyJump mavlab-gpu
-	Port 6200
-
-Host pats2b pats_holstein2b
-	Hostname localhost
-	IdentityFile ~/.ssh/pats_id_rsa
-	User pats
-	ProxyJump dinstech
+	ProxyJump dash
 	Port 6200
 
 Host pats3 pats_oudijk3
 	Hostname localhost
 	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
-	ProxyJump mavlab-gpu
-	Port 6300
-
-Host pats3b pats_oudijk3b
-	Hostname localhost
-	IdentityFile ~/.ssh/pats_id_rsa
-	User pats
-	ProxyJump dinstech
+	ProxyJump dash
 	Port 6300
 
 Host pats4  pats_koppert4
 	Hostname localhost
 	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
-	ProxyJump mavlab-gpu
-	Port 6400
-
-Host pats4b  pats_koppert4b
-	Hostname localhost
-	IdentityFile ~/.ssh/pats_id_rsa	
-	User pats
-	ProxyJump dinstech
+	ProxyJump dash
 	Port 6400
 
 Host pats5 
 	Hostname localhost
 	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
-	ProxyJump mavlab-gpu
-	Port 6500
-
-Host pats5b
-	Hostname localhost
-	IdentityFile ~/.ssh/pats_id_rsa
-	User pats
-	ProxyJump dinstech
+	ProxyJump dash
 	Port 6500
 
 Host pats6 pats_koppert6
 	Hostname localhost
 	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
-	ProxyJump mavlab-gpu
-	Port 6600
-
-Host pats6b  pats_koppert6b
-	Hostname localhost
-	IdentityFile ~/.ssh/pats_id_rsa
-	User pats
-	ProxyJump dinstech
+	ProxyJump dash
 	Port 6600
 
 Host pats7  pats_vde7
 	Hostname localhost
 	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
-	ProxyJump mavlab-gpu
-	Port 6700
-
-Host pats7b pats_vde7b
-	Hostname localhost
-	IdentityFile ~/.ssh/pats_id_rsa
-	User pats
-	ProxyJump dinstech
+	ProxyJump dash
 	Port 6700
 
 Host pats8  pats_lr8
 	Hostname localhost
 	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
-	ProxyJump mavlab-gpu
-	Port 6800
-
-Host pats8b pats_lr8b
-	Hostname localhost
-	IdentityFile ~/.ssh/pats_id_rsa
-	User pats
-	ProxyJump dinstech
+	ProxyJump dash
 	Port 6800
 
 Host pats9 pats_batist9
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-        ProxyJump mavlab-gpu
+        ProxyJump dash
         Port 6900
 
-Host pats9b pats_batist9b
-        Hostname localhost
-        IdentityFile ~/.ssh/pats_id_rsa
-        User pats
-        ProxyJump dinstech
-        Port 6900
-	
 Host pats10
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-        ProxyJump mavlab-gpu
-        Port 7000
-
-Host pats10b
-        Hostname localhost
-        IdentityFile ~/.ssh/pats_id_rsa
-        User pats
-        ProxyJump dinstech
+        ProxyJump dash
         Port 7000
 
 Host pats11
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-        ProxyJump mavlab-gpu
-        Port 7100
-
-Host pats11b
-        Hostname localhost
-        IdentityFile ~/.ssh/pats_id_rsa
-        User pats
-        ProxyJump dinstech
+        ProxyJump dash
         Port 7100
 
 Host pats12
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-        ProxyJump mavlab-gpu
+        ProxyJump dash
         Port 7200
 
 Host pats13
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-        ProxyJump mavlab-gpu
+        ProxyJump dash
         Port 7300
 
 Host pats14
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-        ProxyJump mavlab-gpu
+        ProxyJump dash
         Port 7400
 
 Host pats15
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-        ProxyJump mavlab-gpu
+        ProxyJump dash
         Port 7500
 
 Host pats16
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-        ProxyJump mavlab-gpu
+        ProxyJump dash
         Port 7600
 
 Host pats17
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-        ProxyJump mavlab-gpu
+        ProxyJump dash
         Port 7700
 
 Host pats18
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-        ProxyJump mavlab-gpu
+        ProxyJump dash
         Port 7800
 
 Host pats19
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-        ProxyJump mavlab-gpu
+        ProxyJump dash
         Port 7900
 
 Host pats20
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-        ProxyJump mavlab-gpu
+        ProxyJump dash
         Port 8000
 
 Host pats21
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-        ProxyJump mavlab-gpu
+        ProxyJump dash
         Port 8100
 
 Host pats22
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-        ProxyJump mavlab-gpu
+        ProxyJump dash
         Port 8200
 
 Host pats23
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-        ProxyJump mavlab-gpu
+        ProxyJump dash
         Port 8300
 
 Host pats24
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-        ProxyJump mavlab-gpu
+        ProxyJump dash
         Port 8400
 
 Host pats25
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-        ProxyJump mavlab-gpu
+        ProxyJump dash
         Port 8500
 
 Host pats26
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-        ProxyJump mavlab-gpu
+        ProxyJump dash
         Port 8600
 	
 Host pats27
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-        ProxyJump mavlab-gpu
+        ProxyJump dash
         Port 8700
 	
 Host pats28
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-        ProxyJump mavlab-gpu
+        ProxyJump dash
         Port 8800
 	
 Host pats29
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-        ProxyJump mavlab-gpu
+        ProxyJump dash
         Port 8900
 	
 Host pats30
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
-        ProxyJump mavlab-gpu
+        ProxyJump dash
         Port 9000

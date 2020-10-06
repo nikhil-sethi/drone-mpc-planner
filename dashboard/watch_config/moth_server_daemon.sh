@@ -7,4 +7,4 @@ set -e
 # use screen -r to re-attach to below screen session later, ctrl a,  <number> to go to the <number> window
 user=pats
 
-/bin/su - $user -c "/usr/bin/screen -dm -S daemon ~/code/pats/analysis/moth_watcher/moth_server_screens.sh"
+/bin/su - $user -c "/usr/bin/screen -dm -S daemon ~/code/pats/dashboard/watch_config/screens.sh"

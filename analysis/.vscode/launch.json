@@ -22,27 +22,6 @@
         "request": "launch",
         "program": "${workspaceFolder}/cluster.py",
         "args" : ["-s", "/home/houjebek/data_check/checked"]
-      },
-      {
-        "name": "log_to_json",
-        "type": "python",
-        "request": "launch",
-        "program": "${workspaceFolder}/moth_watcher/log_to_json.py",
-        "args" : ["-i", "/home/houjebek/Downloads/pats_data/tmp"]
-      },
-      {
-        "name": "Server",
-        "type": "python",
-        "request": "launch",
-        "program": "${workspaceFolder}/moth_watcher/moth_server.py",
-        "args" : []
-      },
-      {
-        "name": "jsons_to_db",
-        "type": "python",
-        "request": "launch",
-        "program": "${workspaceFolder}/moth_watcher/jsons_to_db.py",
-        "args" : ["-i", "~/Downloads/moth_json"]
       }
     ]
   }

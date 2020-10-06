@@ -14,7 +14,7 @@ done
 i=$(($i + 1))
 /usr/bin/screen -t co2 $i /bin/bash -c 'cd ~/code/Config/scripts && ~/code/Config/scripts/co2.py; exec /bin/bash'
 i=$(($i + 1))
-/usr/bin/screen -t down $i /bin/bash -c 'cd ~/code/pats/analysis/moth_watcher && ~/code/pats/analysis/moth_watcher/moth_data_downloader.py; exec /bin/bash'
+/usr/bin/screen -t down $i /bin/bash -c 'cd ~/code/pats/dashboard/ && ./downloader.py -rl; exec /bin/bash'
 i=$(($i + 1))
 /usr/bin/screen -t code $i /bin/bash -c 'cd ~/code/pats/; exec /bin/bash'
 i=$(($i + 1))

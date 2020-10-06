@@ -61,16 +61,16 @@ def send_status_update():
                 first_read = lines[0]
 
                 if os.path.exists(local_pats_xml):
-                    cmd = 'rsync -puaz ' + local_pats_xml + ' mavlab-gpu:' + remote_pats_xml
+                    cmd = 'rsync -puaz ' + local_pats_xml + ' dash:' + remote_pats_xml
                     subprocess.call(cmd, shell=True,stdout=subprocess.PIPE)
                 if os.path.exists(local_status_txt_file):
-                    cmd = 'rsync -pzv ' + local_status_txt_file +' mavlab-gpu:' + remote_status_txt_file
+                    cmd = 'rsync -pzv ' + local_status_txt_file +' dash:' + remote_status_txt_file
                     subprocess.call(cmd, shell=True,stdout=subprocess.PIPE)
                 if os.path.exists(local_system_txt_file):
-                    cmd = 'rsync -pz ' + local_system_txt_file +' mavlab-gpu:' + remote_system_txt_file
+                    cmd = 'rsync -pz ' + local_system_txt_file +' dash:' + remote_system_txt_file
                     subprocess.call(cmd, shell=True,stdout=subprocess.PIPE)
                 if os.path.exists(local_status_im_file):
-                    cmd = 'rsync -puz ' + local_status_im_file +' mavlab-gpu:' + remote_status_im_file
+                    cmd = 'rsync -puz ' + local_status_im_file +' dash:' + remote_status_im_file
                     subprocess.call(cmd, shell=True,stdout=subprocess.PIPE)
     except:
         pass
@@ -85,10 +85,10 @@ def update_monitor_results():
     if not os.path.exists(homedir + '/data_json/'):
         os.mkdir(homedir + '/data_json/')
     local_json_file = homedir + '/data_json/' + date_time_end + '.json'
-    remote_json_file='moth_json/' + hostname + '_' + date_time_end + '.json'
-    cmd = '../analysis/moth_watcher/moth_counter.py -i ~/data -s ' + date_time_start +' -e ' + date_time_end + ' --filename ' + local_json_file
+    remote_json_file='jsons/' + hostname + '_' + date_time_end + '.json'
+    cmd = '../dashboard/log_to_json.py -i ~/data -s ' + date_time_start +' -e ' + date_time_end + ' --filename ' + local_json_file
     execute(cmd)
-    cmd = 'rsync -puz ' + local_json_file +' mavlab-gpu:' + remote_json_file
+    cmd = 'rsync -puz ' + local_json_file +' dash:' + remote_json_file
     execute(cmd,5)
 
 def render():
@@ -141,12 +141,12 @@ while True:
         send_status_update()
 
         now = datetime.now()
-        if now.hour == 10 and not updated_today:
+        if now.hour == 9 and not updated_today:
             updated_today = True
             update_monitor_results()
             render()
             clean_hd()
-        if now.hour == 11 and updated_today:
+        if now.hour == 10 and updated_today:
             updated_today = False
 
     ip = get_ip()

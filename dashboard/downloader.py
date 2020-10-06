@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os,subprocess,time,datetime,glob,re
+import os,subprocess,time,datetime,glob,re,argparse
 from tqdm import tqdm
 source_folder = '~/Downloads/moth_jsons'
 
@@ -55,13 +55,25 @@ def download_raw_logs_all():
             cmd = ['rsync -zvaP ' + systemname +':data/' + foldername + ' ' + target_folder]
             execute(cmd,5)
 
+
+parser = argparse.ArgumentParser(description='Script that periodically downloads data from deployed systems')
+parser.add_argument('-j', '--download_jsons', action='store_true')
+parser.add_argument('-r', '--download_renders', action='store_true')
+parser.add_argument('-l', '--download_raw_logs', action='store_true')
+args = parser.parse_args()
+
 while True:
-    download_jsons()
-    print ('Downloaded jsons')
-    cmd = ['~/code/pats/analysis/moth_watcher/fill_db_with_jsons.py -i ' + source_folder]
-    result = subprocess.run(cmd, shell=True,stdout=subprocess.PIPE)
-    print(result.returncode, result.stdout, result.stderr)
-    download_renders_all()
-    download_raw_logs_all()
+    
+    if args.download_jsons:
+        download_jsons()
+        print ('Downloaded jsons')
+    
+    cmd = ['~/code/pats/dashboard/jsons_to_db.py -i ' + source_folder]
+    execute(cmd)
+
+    if args.download_renders:
+        download_renders_all()
+        if args.download_raw_logs:
+            download_raw_logs_all()
 
     time.sleep(3600)

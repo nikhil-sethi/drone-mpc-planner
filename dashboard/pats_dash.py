@@ -178,11 +178,11 @@ def create_heatmap():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Dash app that shows Pats monitoring and system analysis')
-    parser.add_argument('--db', help="Path to the sql database", default='~/code/pats/analysis/moth_watcher/pats_records.db')
+    parser.add_argument('--db', help="Path to the sql database", default='~/pats.db')
     args = parser.parse_args()
     db_path = os.path.expanduser(args.db)
 else:
-    db_path = os.path.expanduser('~/code/pats/analysis/moth_watcher/pats_records.db')
+    db_path = os.path.expanduser('~/pats.db')
 
 load_systems()
 load_moth_data()
