@@ -7,6 +7,10 @@ Host dinstech
 	Port 16666
 	User pats
 
+Host dash
+	Hostname 37.128.150.141
+	User pats
+
 # MAVLab
 Host mavlab-gpu
 	Hostname 131.180.117.41
