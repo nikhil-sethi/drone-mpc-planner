@@ -15,6 +15,7 @@ import plotly.express as px
 import pandas as pd
 import plotly.graph_objects as go
 import numpy as np
+import flask
 
 systems = None
 selected_systems = ''
@@ -175,11 +176,14 @@ def create_heatmap():
     return fig
 
 
-parser = argparse.ArgumentParser(description='Dash app that shows Pats monitoring and system analysis')
-parser.add_argument('--db', help="Path to the sql database", default='~/code/pats/analysis/moth_watcher/pats_records.db')
-args = parser.parse_args()
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Dash app that shows Pats monitoring and system analysis')
+    parser.add_argument('--db', help="Path to the sql database", default='~/code/pats/analysis/moth_watcher/pats_records.db')
+    args = parser.parse_args()
+    db_path = os.path.expanduser(args.db)
+else:
+    db_path = os.path.expanduser('~/code/pats/analysis/moth_watcher/pats_records.db')
 
-db_path = os.path.expanduser(args.db)
 load_systems()
 load_moth_data()
 load_mode_data()
@@ -188,7 +192,8 @@ for i in range(0,24):
     xlabels.append(str((i+12)%24)+'h')
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+server = flask.Flask(__name__)
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets, server=server)
 
 fig=create_heatmap()
 dateranges = ['Last week', 'Last month', 'Last year', 'All']
@@ -243,4 +248,4 @@ def update_output(daterange_value,system_value):
     return fig
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server()
