@@ -21,12 +21,12 @@ def natural_sort(l):
     return sorted(l, key=alphanum_key)
 
 def rle(inarray):
-        """ run length encoding. Partial credit to R rle function. 
+        """ run length encoding. Partial credit to R rle function.
             Multi datatype arrays catered for including non Numpy
             returns: tuple (runlengths, startpositions, values) """
         ia = np.asarray(inarray)                # force numpy
         n = len(ia)
-        if n == 0: 
+        if n == 0:
             return (None, None, None)
         else:
             y = np.array(ia[1:] != ia[:-1])     # pairwise unequal (string safe)
@@ -54,13 +54,13 @@ def get_natural_cubic_spline_model(x, y, minval=None, maxval=None, n_knots=None,
         The input data
     y: np.array of float
         The outpur data
-    minval: float 
+    minval: float
         Minimum of interval containing the knots.
-    maxval: float 
+    maxval: float
         Maximum of the interval containing the knots.
-    n_knots: positive integer 
+    n_knots: positive integer
         The number of knots to create.
-    knots: array or list of floats 
+    knots: array or list of floats
         The knots.
 
     Returns
@@ -111,20 +111,20 @@ class NaturalCubicSpline(AbstractSpline):
     differentiable to the second order at all of the knots.
     This transformer can be created in two ways:
       - By specifying the maximum, minimum, and number of knots.
-      - By specifying the cutpoints directly.  
+      - By specifying the cutpoints directly.
 
     If the knots are not directly specified, the resulting knots are equally
     space within the *interior* of (max, min).  That is, the endpoints are
     *not* included as knots.
     Parameters
     ----------
-    min: float 
+    min: float
         Minimum of interval containing the knots.
-    max: float 
+    max: float
         Maximum of the interval containing the knots.
-    n_knots: positive integer 
+    n_knots: positive integer
         The number of knots to create.
-    knots: array or list of floats 
+    knots: array or list of floats
         The knots.
     """
 
@@ -190,7 +190,7 @@ def system_status_in_folder(folder):
                 if line.find('op_mode') != -1:
                     pats_xml_mode = line.split('_')[3].split('<')[0]
                     break
-    
+
     results_path = Path(folder,'logging','results.txt')
     if not os.path.exists(results_path):
         return ([],'error','')
@@ -225,10 +225,10 @@ def system_status_in_folder(folder):
                 daylight_start = log_start
                 daylight_end = log_start
                 break
-    
+
     daylight_start = daylight_start.strip().replace('/','').replace(':','').replace(' ', '_')
     daylight_end = daylight_end.strip().replace('/','').replace(':','').replace(' ', '_')
-    
+
     if 'Resetting cam' in log_start or log_start == '':
         return ([],'error','')
     log_start_datetime = datetime.datetime.strptime(log_start.strip(), '%d/%m/%Y %H:%M:%S')
@@ -236,20 +236,20 @@ def system_status_in_folder(folder):
 
     log_start = log_start_datetime.strftime('%Y%m%d_%H%M%S')
     operational_log_start = (log_end_datetime -  datetime.timedelta(seconds=runtime)).strftime('%Y%m%d_%H%M%S')
-    
+
     if daylight_start != daylight_end:
             data_status1 = {"from" : daylight_start,
-            "till" : daylight_end, 
+            "till" : daylight_end,
             "mode" : 'wait_for_dark'
             }
             data_status2 = {"from" : operational_log_start,
-            "till" : os.path.basename(folder), 
+            "till" : os.path.basename(folder),
             "mode" : pats_xml_mode
             }
             return ([data_status1, data_status2],pats_xml_mode,operational_log_start)
     else:
         data_status = {"from" : operational_log_start,
-        "till" : os.path.basename(folder), 
+        "till" : os.path.basename(folder),
         "mode" : pats_xml_mode
         }
         return (data_status,pats_xml_mode,operational_log_start)
@@ -288,7 +288,7 @@ def hunts_in_folder(folder,operational_log_start):
                     drone_problem = int(line.strip().split(':')[1])
 
     data_hunt = {"from" : operational_log_start,
-    "till" : os.path.basename(folder), 
+    "till" : os.path.basename(folder),
     "drone_flights" : drone_flights,
     "n_drone_detects" : n_drone_detects,
     "n_insects" : n_insects,
@@ -321,10 +321,10 @@ def moth_counts_in_folder(folder):
     df_ins = pd.read_csv(ins_path, sep=";")
 
     processed_df = df_ins[df_ins["foundL_insect"].notna()]
-    
+
     # now calculate the mean and standard deviation of each suspected moth flight
     moth_found = processed_df["foundL_insect"].values
-    
+
     elapsed_time = processed_df["time"].values
     RS_ID = processed_df["RS_ID"].values
     xs = processed_df["posX_insect"].values
@@ -364,7 +364,7 @@ def moth_counts_in_folder(folder):
             dy = (y_p[1:]-y_p[:-1]) / dt
             dz = (z_p[1:]-z_p[:-1]) / dt
 
-            part_vel = np.sqrt(dx**2+dy**2+dz**2) 
+            part_vel = np.sqrt(dx**2+dy**2+dz**2)
             mean_vel = part_vel.mean()
             std_vel = part_vel.std()
 
@@ -397,9 +397,9 @@ def moth_counts_in_folder(folder):
                 radial_accelaration = np.divide(np.sum(v[:,1:] * v[:,:-1], axis=0), radius_of_curve)
 
                 moth_detection_time = (dts + datetime.timedelta(seconds=elapsed_time[start_ind[i]])).strftime('%Y%m%d_%H%M%S')
-                
+
                 if args.v:
-                
+
                     print(f"RS_ID: {RS_ID[start_ind[i]]} - {RS_ID[start_ind[i]+seq_lens[i] - 1]} - {prev_rsid}")
                     print(filename, correct_duration, FP_theshold)
                     print(f"Start time: {moth_detection_time}")
@@ -468,10 +468,10 @@ for folder in pbar:
     top_folder = os.path.basename(folder)
     dts = datetime.datetime.strptime(top_folder,'%Y%m%d_%H%M%S')
     if dts > min_date and dts <= max_date:
-        
+
         status_in_dir,mode,operational_log_start = system_status_in_folder(folder)
         if status_in_dir != []:
-            statuss.append(status_in_dir) 
+            statuss.append(status_in_dir)
 
         if mode == 'monitoring':
             moths_in_dir = moth_counts_in_folder(folder)
@@ -480,10 +480,10 @@ for folder in pbar:
         elif mode == 'hunt' or mode == 'deploy':
             hunts_in_dir = hunts_in_folder(folder,operational_log_start)
             if hunts_in_dir != []:
-                hunts.append(hunts_in_dir) 
+                hunts.append(hunts_in_dir)
 
 data_moth = {"from" : args.s,
-        "till" : args.e, 
+        "till" : args.e,
         "moth_counts" : len(moths),
         "moths" : moths,
         "hunts" : hunts,

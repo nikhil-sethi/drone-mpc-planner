@@ -50,8 +50,8 @@ def store_moths(fn,data):
                 sql_insert = sql_insert + s + ','
                 sql_values = sql_values + '?,'
             sql_insert = sql_insert[:-1] + sql_values[:-1] + ')'
-        
-        
+
+
         cur.execute(sql_insert, (data["system"], date, *list(moth.values())[1:]))
         conn.commit()
         # pbar2.set_description(f"Saved moth {date} of {data['system']}")
@@ -69,9 +69,9 @@ def store_mode(fn,data):
     mode_data =data["mode"]
 
     sql_insert = 'INSERT INTO mode_records(system,start_datetime,end_datetime,op_mode) VALUES(?,?,?,?)'
-    
+
     pbar2=tqdm(mode_data,desc='Mode: ')
-    for entry in pbar2:  
+    for entry in pbar2:
         sub_entries = [] #there may be another nested level here, in case of waiting for darkness
         if type(entry) == list:
             sub_entries = entry
@@ -114,10 +114,10 @@ def clean_mode():
                 modes[i] = ('_delete',modes[i][1],modes[i][2],modes[i][3])
             else:
                 prev_i = i
-        
+
         modes_cleaned = [entry for entry in modes if entry[0][0][0] != '_']
         all_modes_cleaned = all_modes_cleaned + modes_cleaned
-    
+
     sql_clear_table = 'DELETE FROM mode_records'
     cur.execute(sql_clear_table)
     conn.commit()
@@ -156,11 +156,11 @@ def store_hunts(fn,data):
                 sql_insert = sql_insert + s + ','
                 sql__insert_values = sql__insert_values + '?,'
             sql_insert = sql_insert[:-1] + sql__insert_values[:-1] + ')'
-        
-        
+
+
         cur.execute(sql_insert, (data["system"], dt_from,dt_till, *list(hunt.values())[2:]))
         conn.commit()
-        
+
 def store_data(data,fn):
     global conn
     global cur
