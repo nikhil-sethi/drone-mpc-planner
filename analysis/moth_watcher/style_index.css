@@ -1,5 +1,6 @@
 body{
-   color: #51e2f5
+   color: #51e2f5;
+   /* background-color: #070029 */
 }
 
 rect.bordered {
@@ -10,7 +11,8 @@ rect.bordered {
 text.mono {
     font-size: 10pt;
     font-family: Consolas, courier;
-    fill: #000;
+    /* fill: rgb(145, 0, 0); */
+    fill: rgb(0, 0, 0);
 }
 
 h2{

@@ -19,24 +19,24 @@ selected_hours_1.forEach(function(dt) {
 parsed_dates = [];
 Promise.all(promises).then((values) => {
     parsed_dates = values.flat()
-    histogram("#histogram_flight_duration", parsed_dates.map(elem => elem.flight_duration));
+    histogram("#histogram_flight_duration", parsed_dates.map(elem => elem.duration));
 
     // addHistogram("#histogram_flight_duration", parsed_dates.map(elem => elem.flight_duration))
 
     swim_data = getSwimPlotData(parsed_dates);
     swimPlot('swim_plot', swim_data)    
   
-    histogram("#histogram_average_velocity_mean", parsed_dates.map(elem => elem.velocity_mean));
-    histogram("#histogram_average_velocity_std", parsed_dates.map(elem => elem.velocity_std));
-    histogram("#histogram_average_velocity_max", parsed_dates.map(elem => elem.velocity_max));
+    histogram("#histogram_average_velocity_mean", parsed_dates.map(elem => elem.Vel_mean));
+    histogram("#histogram_average_velocity_std", parsed_dates.map(elem => elem.Vel_std));
+    histogram("#histogram_average_velocity_max", parsed_dates.map(elem => elem.Vel_max));
 
-    histogram("#histogram_average_angle_mean", parsed_dates.map(elem => elem.turning_angle_mean));
-    histogram("#histogram_average_angle_std", parsed_dates.map(elem => elem.turning_angle_std));
-    histogram("#histogram_average_angle_max", parsed_dates.map(elem => elem.turning_angle_max));
+    histogram("#histogram_average_angle_mean", parsed_dates.map(elem => elem.TA_mean));
+    histogram("#histogram_average_angle_std", parsed_dates.map(elem => elem.TA_std));
+    histogram("#histogram_average_angle_max", parsed_dates.map(elem => elem.TA_max));
 
-    histogram("#histogram_average_acceleration_mean", parsed_dates.map(elem => elem.radial_accelaration_mean));
-    histogram("#histogram_average_acceleration_std", parsed_dates.map(elem => elem.radial_accelaration_std));
-    histogram("#histogram_average_acceleration_max", parsed_dates.map(elem => elem.radial_accelaration_max));
+    histogram("#histogram_average_acceleration_mean", parsed_dates.map(elem => elem.RA_mean));
+    histogram("#histogram_average_acceleration_std", parsed_dates.map(elem => elem.RA_std));
+    histogram("#histogram_average_acceleration_max", parsed_dates.map(elem => elem.RA_max));
 });
 
 function swimPlot(plot_id, values){
@@ -83,7 +83,7 @@ function swimPlot(plot_id, values){
 
 function getDataForDt(db_path, system, date){
     var parse_date = d3.time.format("%d/%m/%Y_%H").parse;
-    var format_date = d3.time.format("%Y-%m-%dT%X%Z");
+    var format_date = d3.time.format("%Y%m%d_%H%M%S");
     var min_date = parse_date(date);
     var max_date = addHour.call(min_date);
 
@@ -93,7 +93,7 @@ function getDataForDt(db_path, system, date){
     return new Promise((resolve, reject) => {
         const db = new sqlite3.Database(db_path);
         const dt_data = [];
-        var stat = `SELECT * from analytic_records where system = '${system}' and flight_time between '${min_date}' and '${max_date}'`
+        var stat = `SELECT * from moth_records where system = '${system}' and time between '${min_date}' and '${max_date}'`
         db.each(stat, (err, row) => {
             if (err) {
                 reject(err); // optional: you might choose to swallow errors.
@@ -199,15 +199,15 @@ function getSwimPlotData(data){
         var parse_date;
         lane = [];
         data.forEach(function(dt) {
-            parse_date = d3.time.format("%Y-%m-%dT%H:%M:%S").parse;
-            start = parse_date(dt.flight_time.split("+")[0]);
+            parse_date = d3.time.format("%Y%m%d_%H%M%S").parse;
+            start = parse_date(dt.time);
             end = start;
-            end.setSeconds(start.getSeconds() + dt.flight_duration);
+            end.setSeconds(start.getSeconds() + dt.duration);
             flight_data = {
                 timeRange : [start, end],
-                duration : dt.flight_duration,
+                duration : dt.duration,
                 val : "flight",
-                RS_ID : dt.start_RS_ID,
+                RS_ID : dt.RS_ID,
                 filename : dt.filename,
                 velocity_mean : dt.velocity_mean,
                 velocity_std : dt.velocity_std,

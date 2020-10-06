@@ -17,7 +17,7 @@ var selected_hours_1 = [];
 var selected_hours_2 = [];
 $('#analysebutt').attr('disabled', 'disabled');
 
-var format_date_db = d3.time.format("%Y-%m-%dT%H:%M:%S+00:00").parse;
+var format_date_db = d3.time.format("%Y%m%d_%H%M%S").parse;
 var format_date = d3.time.format("%d/%m/%Y");
 var parse_date = d3.time.format("%d/%m/%Y").parse;
 
@@ -43,14 +43,14 @@ ds.then(function (s) {
         var selectedOption = d3.select(this).property("value")
         d3.select("svg").remove();
         parsed_dates = [];
-        dates = getDatesOfSystemFromDb(db_path, selectedOption);
+        dates = getMothDatesOfSystemFromDb(db_path, selectedOption);
         dates.then(function (d) {
             d.forEach(function (d_) { parsed_dates.push(format_date_db(d_)) });
             data = getData(parsed_dates);
             heatmapChart(data, selectedOption);
         })
     })
-    dates = getDatesOfSystemFromDb(db_path, s[0]);
+    dates = getMothDatesOfSystemFromDb(db_path, s[0]);
     dates.then(function (d) {
         d.forEach(function (d_) { parsed_dates.push(format_date_db(d_)) });
         data = getData(parsed_dates);
@@ -96,7 +96,7 @@ function getData(dates) {
     return data;
 }
 
-function checkButton() {
+function enableAnalyseButton() {
     if (selected_hours_1.length + selected_hours_2.length != 0) {
         $('#analysebutt').removeAttr('disabled');
     } else {
@@ -125,7 +125,7 @@ function heatmapChart(data, system) {
         .attr("class", "timeLabel mono axis");
 
     var colorScale = d3.scale.threshold()
-        .domain([1, 25, 50, 75, 100, 9001])
+        .domain([1, 5, 15, 30, 60, 120])
         .range(colors);
 
 
@@ -152,7 +152,7 @@ function heatmapChart(data, system) {
                     this.style.height = "38";
                     this.style.stroke = "rgb(0,0,0)"
                 }
-                checkButton()
+                enableAnalyseButton()
             })
         });
 
@@ -194,10 +194,10 @@ function heatmapChart(data, system) {
         })
         .on("contextmenu", function (d, i) {
             selection($(`[id*="${d.day + "_" + d.hour}"]`)[0], false);
-            checkButton();
+            enableAnalyseButton();
         });
 
-    cards.transition().duration(100)
+    cards.transition().duration(0)
         .style("fill", function (d) {
             if ((d.hour > 8) && (d.hour <= 17)) { return "rgb(211,211,211)"; }
             if (d.value >= 0) { return colorScale(d.value); }
@@ -210,7 +210,7 @@ function heatmapChart(data, system) {
 
     $("rect").click(function () {
         selection(this);
-        checkButton();
+        enableAnalyseButton();
     });
 
     function selection(elem, left = true) {
@@ -257,7 +257,7 @@ function heatmapChart(data, system) {
     });
 
     var legend = svg.selectAll(".legend")
-        .data([0].concat([0.1, 25, 50, 75, 100]), function (d) { return d; });
+        .data([0].concat([0.1,5,15,30,60]), function (d) { return d; });
 
     // .data([0].concat(colorScale.quantiles()), function (d) { return d; });
 
@@ -290,7 +290,7 @@ function getSystemsFromDb(database) {
     return new Promise((resolve, reject) => {
         const db = new sqlite3.Database(database);
         const systems = [];
-        db.each("SELECT DISTINCT system from analytic_records", (err, row) => {
+        db.each("SELECT DISTINCT system from moth_records", (err, row) => {
             if (err) {
                 reject(err); // optional: you might choose to swallow errors.
             } else {
@@ -306,15 +306,15 @@ function getSystemsFromDb(database) {
     });
 }
 
-function getDatesOfSystemFromDb(database, system) {
+function getMothDatesOfSystemFromDb(database, system) {
     return new Promise((resolve, reject) => {
         const db = new sqlite3.Database(database);
         const dates = [];
-        db.each(`SELECT flight_time  from analytic_records where system = '${system}'`, (err, row) => {
+        db.each(`SELECT time from moth_records where system = '${system}'`, (err, row) => {
             if (err) {
                 reject(err); // optional: you might choose to swallow errors.
             } else {
-                dates.push(row.flight_time); // accumulate the data
+                dates.push(row.time); // accumulate the data
             }
         }, (err, n) => {
             if (err) {
@@ -325,6 +325,4 @@ function getDatesOfSystemFromDb(database, system) {
         });
     });
 }
-
-
 

@@ -4,7 +4,7 @@
       {
         "name": "Current File",
         "type": "python",
-        "args": ["-s /home/houjebek/shares/Monitoring/koppert/4/data"],
+        "args": [],
         "request": "launch",
         "program": "${file}",
         "console": "integratedTerminal"
