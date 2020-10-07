@@ -9,6 +9,7 @@ Host dinstech
 
 Host dash
 	Hostname 37.128.150.141
+        IdentityFile ~/.ssh/pats_id_rsa
 	User pats
 
 Host mavlab-gpu
