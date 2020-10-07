@@ -15,7 +15,7 @@ working_dir=`pwd`
 mkdir -p ~/dependencies
 mkdir -p ~/code
 
-[ -f ssh_keys.done ] || {
+[ -f ~/dependencies/ssh_keys.done ] || {
 	if [[ $1 -eq 1 ]] ; then
 		[ -f ~/dependencies/pats_ssh_files.tar.xz ] || {
 			cp pats_ssh_files.tar.xz ~/dependencies
@@ -46,6 +46,7 @@ mkdir -p ~/code
 		eval `ssh-agent -s`
 		ssh-add ~/.ssh/pats_id_rsa
 	}
+	touch ~/dependencies/ssh_keys.done
 }
 pushd ~/dependencies
 
