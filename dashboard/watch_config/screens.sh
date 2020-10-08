@@ -1,13 +1,13 @@
 #! /usr/bin/env bash
 
 # Configuration
-tunnels=( mavlab-gpu dinstech )
-tunnels_port=( 22 16666 )
+tunnels=( dash mavlab-gpu dinstech )
+tunnels_port=( 22 22 16666 )
 
 # Start tunnels
 for i in ${!tunnels[@]}
 do
-	/usr/bin/screen -t 'tunnel'$i $i /bin/bash -c '~/code/pats/config/tunnel.sh '${tunnels[i]}' '${tunnels_port[i]}'; exec /bin/bash'
+	/usr/bin/screen -t 't'$i $i /bin/bash -c '~/code/pats/config/tunnel.sh '${tunnels[i]}' '${tunnels_port[i]}'; exec /bin/bash'
 done
 
 # Start other screens
