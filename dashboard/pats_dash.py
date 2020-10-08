@@ -58,6 +58,10 @@ def system_sql_str(systems):
 
 def load_moth_data():
     global unique_dates,heatmap_data,selected_systems,selected_dayrange
+    if not len(selected_systems):
+        heatmap_data = []
+        unique_dates = []
+        return
     systems_str = system_sql_str(selected_systems)
     conn,cur = open_db()
     sql_str = 'SELECT MIN(time) from moth_records where ' + systems_str
@@ -113,6 +117,9 @@ def convert_mode_to_number(mode):
 
 def load_mode_data():
     global unique_dates,heatmap_data,modemap_data,selected_systems,selected_dayrange
+    if not len(selected_systems):
+        modemap_data = []
+        return
     systems_str = system_sql_str(selected_systems)
     conn,cur = open_db()
     sql_str = 'SELECT op_mode,start_datetime,end_datetime from mode_records where ' + systems_str
