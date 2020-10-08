@@ -71,6 +71,11 @@ def load_moth_data():
         sql_str += 'and time > "' + start_day + '"'
     cur.execute(sql_str)
     end_date = cur.fetchone()[0]
+    if first_date == None or end_date == None:
+        heatmap_data = []
+        unique_dates = []
+        return
+
     first_date = datetime.datetime.strptime(first_date, "%Y%m%d_%H%M%S")
     end_date = datetime.datetime.strptime(end_date, "%Y%m%d_%H%M%S")
     d = first_date
@@ -117,6 +122,9 @@ def load_mode_data():
     sql_str += ' ORDER BY "start_datetime"'
     cur.execute(sql_str)
     modes = cur.fetchall()
+    if not len(unique_dates):
+        modemap_data = []
+        return
     first_date = datetime.datetime.strptime(unique_dates[0],"%d-%m-%Y")
 
     modemap_data = heatmap_data.copy()
@@ -169,6 +177,8 @@ def create_heatmap():
     h = len(unique_dates) * 30
     if h < 400:
         h=400
+    if not len(unique_dates):
+        h=10
     fig.update_layout(
         height=h,
 
