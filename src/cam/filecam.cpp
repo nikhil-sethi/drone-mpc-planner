@@ -24,7 +24,7 @@ void FileCam::init () {
 
     if (file_exist(calib_rfn))
         camparams.deserialize(calib_rfn);
-    else
+    else if (file_exist(calib_template_rfn))
         camparams.deserialize(calib_template_rfn);
     calibration();
 
@@ -119,8 +119,13 @@ void FileCam::update() {
         frameLR(cv::Rect(cv::Point(0,0),cv::Point(frameLR.cols,frameLR.rows/2))).copyTo(frameL);
         frameLR(cv::Rect(cv::Point(0,frameLR.rows/2),cv::Point(frameLR.cols,frameLR.rows))).copyTo(frameR);
     }
-    _frame_number = frames_ids.at(frame_cnt-1).RS_id;
-    _frame_time = frames_ids.at(frame_cnt-1).time;
+    if (frames_ids.size() > 0) {
+        _frame_number = frames_ids.at(frame_cnt-1).RS_id;
+        _frame_time = frames_ids.at(frame_cnt-1).time;
+    } else {
+        _frame_number++;
+        _frame_time+=1./pparams.fps;
+    }
     if (_frame_number==ULONG_MAX) {
         std::cout << "Log end, exiting." << std::endl;
         gst_buffer_unmap(buffer, &map);

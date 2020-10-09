@@ -31,6 +31,9 @@ public:
         set_file_paths(replay_dir);
         video_fn = replay_dir + '/' + playback_filename();
     }
+    FileCam(string monitor_video_fn) {
+        video_fn = monitor_video_fn;
+    }
 
     void init();
     void close();

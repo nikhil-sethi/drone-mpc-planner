@@ -125,7 +125,7 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
                 // the colorspace conversion to I420 doesn't play nice with our viz. So up the saturation so it looks a bit the same as before.
 
                 colorbalance = gst_element_factory_make ("videobalance", "videobalance");
-                g_object_set (G_OBJECT (colorbalance), "brightness", 0.15, "contrast", 1.15,"saturation",2.0, NULL);
+                g_object_set (G_OBJECT (colorbalance), "brightness", 0.03, "contrast", 1.0,"saturation",2.0, NULL);
 
                 // vaapih265enc in gstreamer 1.17 supports main-444 which looks much better for our colored vizs. But currently we are on gstreamer 1.14 and often players dont support 444 either.
                 //(this is why we hack it with the colorbalance above)

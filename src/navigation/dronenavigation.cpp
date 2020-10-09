@@ -44,14 +44,13 @@ void DroneNavigation::init(std::ofstream *logger, tracking::TrackerManager * tra
 }
 
 void DroneNavigation::deserialize_flightplan(std::string replay_dir) {
-    //Waypoints are relative to the camera position. The camera is 0,0,0.
-    //X image vs world is reversed! Negative world x is right in the image.
-    //Everything below the camera is negative Y, heigher than the camera is positive
-    //Farther away from the camera is negative Z, positive Z should be impossible because the camera can't see that.
-    //The flight plan will be repeated indefinetely, unless there is a landing waypoint somewhere in the list.
     navigation::XML_FlightPlan fp;
     if (replay_dir == "") {
         fp.deserialize(pparams.flightplan);
+        if (file_exist("./logging/flightplan.xml")) {
+            std::string rmcmd = "rm ./logging/flightplan.xml";
+            auto res [[maybe_unused]] = std::system(rmcmd.c_str());
+        }
         std::experimental::filesystem::copy(pparams.flightplan, "./logging/flightplan.xml");
     } else {
         fp.deserialize(replay_dir + "/flightplan.xml");
