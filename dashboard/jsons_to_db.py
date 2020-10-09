@@ -25,13 +25,12 @@ def natural_sort(l):
 
 def store_moths(fn,data):
     moths =data["moths"]
-    pbar2=tqdm(moths,desc='Moths')
 
     cur.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='moth_records' ''')
     moth_table_exist = cur.fetchone()[0]==1
 
     sql_insert = ''
-    for moth in pbar2:
+    for moth in moths:
 
         if not moth_table_exist:
             sql_create = 'CREATE TABLE moth_records(system,time,'
@@ -53,8 +52,7 @@ def store_moths(fn,data):
 
 
         cur.execute(sql_insert, (data["system"], date, *list(moth.values())[1:]))
-        conn.commit()
-        # pbar2.set_description(f"Saved moth {date} of {data['system']}")
+    conn.commit()
 
 def store_mode(fn,data):
     cur.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='mode_records' ''')
@@ -70,8 +68,7 @@ def store_mode(fn,data):
 
     sql_insert = 'INSERT INTO mode_records(system,start_datetime,end_datetime,op_mode) VALUES(?,?,?,?)'
 
-    pbar2=tqdm(mode_data,desc='Mode: ')
-    for entry in pbar2:
+    for entry in mode_data:
         sub_entries = [] #there may be another nested level here, in case of waiting for darkness
         if type(entry) == list:
             sub_entries = entry
@@ -81,7 +78,7 @@ def store_mode(fn,data):
             dt_from = sub_entry['from']
             dt_till = sub_entry['till']
             cur.execute(sql_insert, (data["system"],dt_from,dt_till,sub_entry['mode']))
-            conn.commit()
+    conn.commit()
 
 def load_systems():
     global cur
@@ -95,9 +92,11 @@ def todatetime(string):
     return datetime.datetime.strptime(string, "%Y%m%d_%H%M%S")
 
 def clean_mode():
+
     systems = load_systems()
     all_modes_cleaned = []
-    for system in systems:
+    pbar = tqdm(systems,desc='Cleaning modes db')
+    for system in pbar:
         sql_str = 'SELECT op_mode,start_datetime,end_datetime,system from mode_records where system="' + system + '" ORDER BY "start_datetime"'
         cur.execute(sql_str)
         modes = cur.fetchall()
@@ -128,15 +127,13 @@ def clean_mode():
     conn.commit()
 
 def store_hunts(fn,data):
-    hunts =data["hunts"]
-    pbar2=tqdm(hunts,desc='Hunts')
-
     cur.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='hunt_records' ''')
     hunt_table_exist = cur.fetchone()[0]==1
     conn.commit()
     sql_insert = ''
 
-    for hunt in pbar2:
+    hunts =data["hunts"]
+    for hunt in hunts:
 
         if not hunt_table_exist:
             sql_create_table = 'CREATE TABLE hunt_records(system,start_datetime,end_datetime,'
@@ -159,7 +156,7 @@ def store_hunts(fn,data):
 
 
         cur.execute(sql_insert, (data["system"], dt_from,dt_till, *list(hunt.values())[2:]))
-        conn.commit()
+    conn.commit()
 
 def store_data(data,fn):
     global conn
@@ -181,8 +178,9 @@ cur = conn.cursor()
 while True:
 
     files = natural_sort([fp for fp in glob.glob(os.path.expanduser(args.input_folder + "/*.json"))])
-    for filename in files:
-        print('Processing: ' + filename)
+    pbar = tqdm(files)
+    for filename in pbar:
+        pbar.set_description(os.path.basename(filename))
         flag_fn = filename[:-4] + 'processed'
         if not os.path.exists(flag_fn):
             with open(filename) as json_file:
