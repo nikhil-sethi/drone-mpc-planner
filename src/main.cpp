@@ -56,6 +56,7 @@ time_t start_datetime;
 
 xmls::PatsParameters pparams;
 xmls::DroneParameters dparams;
+xmls::ThrustCalibParameters tparams;
 stopwatch_c stopWatch;
 std::string data_output_dir;
 bool draw_plots = false;
@@ -1023,6 +1024,14 @@ int main( int argc, char **argv )
             pparams.close_after_n_images = -1;
             pparams.has_screen = false;
         }
+
+        if(replay_dir=="")
+            tparams.deserialize("../../xml/thrustcalib.xml");
+        else
+            tparams.deserialize(replay_dir + "/thrustcalib.xml");
+
+        if(tparams.thrust==1000)
+            tparams.thrust = dparams.thrust;
 
         check_hardware();
         if (!log_replay_mode && !generator_mode && !render_monitoring_mode && !render_hunt_mode) {

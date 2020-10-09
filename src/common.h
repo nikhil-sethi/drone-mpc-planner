@@ -787,6 +787,53 @@ public:
     }
 };
 
+class ThrustCalibParameters: public Serializable {
+    public: float thrust;
+    private: xmls::xFloat _thrust;
+
+    public: ThrustCalibParameters() {
+        setClassName("ThrustCalib");
+        setVersion("1.0");
+
+        Register("thrust", &_thrust);
+    }
+
+    public: void deserialize(std::string filepath) {
+        std::cout << "Reading settings from: " << filepath << std::endl;
+        if (file_exist(filepath)) {
+            std::ifstream infile(filepath);
+            std::string xmlData((std::istreambuf_iterator<char>(infile)),
+                                std::istreambuf_iterator<char>());
+
+            if (!Serializable::fromXML(xmlData, this))
+            {   // Deserialization not successful
+                throw my_exit("Cannot read: " + filepath);
+            }
+            ThrustCalibParameters tmp;
+            auto v1 = getVersion();
+            auto v2 = tmp.getVersion();
+            if (v1 != v2) {
+                throw my_exit("XML version difference detected from " + filepath);
+            }
+        } else {
+            //throw my_exit("File not found: " + filepath);
+            _thrust = 1000; //1000 should be a disabling flag;
+        }
+
+        thrust = _thrust.value();
+    }
+
+    public: void serialize(std::string filepath) {
+        _thrust = thrust;
+
+        std::string xmlData = toXML();
+        std::ofstream outfile = std::ofstream (filepath);
+        outfile << xmlData ;
+        outfile.close();
+    }
+};
+
 }
 extern xmls::DroneParameters dparams;
 extern xmls::PatsParameters pparams;
+extern xmls::ThrustCalibParameters tparams;

@@ -316,6 +316,7 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_goto_landing_waypoint: {
             _dctrl->hover_mode(true);
+            _dctrl->enable_thrust_estimation_calibration = true;
             _trackers->dronetracker()->hover_mode(true);
             next_waypoint(Waypoint_Landing(),time);
             _navigation_status = ns_approach_waypoint;
@@ -452,6 +453,7 @@ void DroneNavigation::update(double time) {
             new_pos_setpoint.z = setpoint_pos_world.z;
             setpoint_vel_world = {0};
             setpoint_acc_world = {0};
+            _dctrl->enable_thrust_estimation_calibration = false;
 
             if (new_pos_setpoint.y < pad_pos.y) {
                 // new_pos_setpoint.y = pad_pos.y;

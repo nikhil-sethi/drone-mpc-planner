@@ -76,6 +76,7 @@ void DroneController::init(std::ofstream *logger,bool fromfile,bool generator, M
 
     pos_reference_filter.init(1.f/pparams.fps, 1, 1.f/pparams.fps*0.001f, 1.f/pparams.fps*0.001f);
     pos_err_i = {0,0,0};
+    pos_err_i.y = 0;
 
     pos_modelx.init(1.f/pparams.fps, 1, 0.2, 0.38);
     pos_modely.init(1.f/pparams.fps, 1, 0.2, 0.38);
@@ -88,9 +89,11 @@ void DroneController::init(std::ofstream *logger,bool fromfile,bool generator, M
 
     set_led_strength(exposure);
 
-    thrust = std::clamp(dparams.thrust,dparams.thrust/2.f,dparams.thrust*2.f);
+    thrust = std::clamp(tparams.thrust,dparams.thrust/2.f,dparams.thrust*2.f);
     initial_hover_throttle_guess_non3d = GRAVITY/dparams.thrust*RC_BOUND_RANGE+dparams.min_throttle;
     initialized = true;
+    if(!log_replay_mode)
+        tparams.serialize("./logging/thrustcalib.xml");
 }
 
 void DroneController::set_led_strength(float exposure) {
@@ -182,7 +185,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
     } case fm_start_takeoff: {
         take_off_start_time = time;
         _flight_mode = fm_take_off_aim;
-        thrust = dparams.thrust;
+        //thrust = dparams.thrust;
         _burn_direction_for_thrust_approx = {0};
         auto_throttle = spinup_throttle();
         auto_roll = RC_MIDDLE;
@@ -1125,17 +1128,25 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::
 
     if (ki_pos.x>0) {
         pos_err_i.x += (err_x_filtered - setpoint_pos.x + pos_modelx.current_output());
+        if (!enable_thrust_estimation_calibration)
+            pos_err_i.y += (err_y_filtered - setpoint_pos.y + pos_modely.current_output());
         pos_err_i.z += (err_z_filtered - setpoint_pos.z + pos_modelz.current_output());
     } else {
-        pos_err_i.x = 0;
-        pos_err_i.z = 0;
+        if(pos_err_i.y!=0)
+            remember_last_integrated_y_err = pos_err_i.y;
+        pos_err_i = {0};
     }
 
-    thrust -= (err_y_filtered - setpoint_pos.y + pos_modely.current_output()) * ki_pos.y;
-    thrust = std::clamp(thrust,dparams.thrust/2.f,dparams.thrust*2.f);
-    // std::cout << "thrust: " << thrust << std::endl;
-    pos_err_i.y = 0;
+    if (enable_thrust_estimation_calibration) {
+        if(remember_last_integrated_y_err!=0) {
+            thrust -= ki_thrust_hover*0.001f*remember_last_integrated_y_err;
+            remember_last_integrated_y_err = 0;
+        } else {
+            thrust -= 0.1f * ((err_y_filtered - setpoint_pos.y + pos_modely.current_output()));
+            pos_err_i.y = 0;
+        }
 
+    }
     return std::tuple(pos_err_p, pos_err_d, vel_err_p, vel_err_d);
 }
 
@@ -1429,12 +1440,10 @@ void DroneController::close () {
         if (pparams.control_tuning)
             serialize_settings();
         initialized = false;
-        // if(!log_replay_mode) {
-        //     float start_thrust = dparams.thrust;
-        //     dparams.thrust = thrust;
-        //     dparams.serialize("../../xml/"+string(drone_types_str[pparams.drone])+".xml");
-        //     dparams.thrust = start_thrust;
-        // }
+        if(!log_replay_mode) {
+            tparams.thrust = thrust;
+            tparams.serialize("../../xml/thrustcalib.xml");
+        }
     }
 }
 

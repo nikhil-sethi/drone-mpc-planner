@@ -195,6 +195,7 @@ private:
     float effective_burn_spin_up_duration = 0.15f; // the time to spin up from hover to max
     const float effective_burn_spin_down_duration = 0.1f; // the time to spin down from max to hover
     float thrust;
+    float remember_last_integrated_y_err = 0; // For faster thrust calibration
     cv::Point3f drone_vel_after_takeoff = {0};
     float ground_effect = 1.0f;
     const float lift_off_dist_take_off_aim = 0.02f;
@@ -301,6 +302,7 @@ private:
     }
 public:
     float model_error;
+    bool enable_thrust_estimation_calibration = false;
     void flight_mode(flight_modes f) {
         if (f != fm_abort || !flight_aborted())
             _flight_mode = f;
