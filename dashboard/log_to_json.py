@@ -316,6 +316,16 @@ def moth_counts_in_folder(folder):
         print("No header file found") # normally happens when dir got no 'logging' dir
         return []
 
+    ilog_dict = {}
+    ilog_lst = []
+    for file in files:
+        with open (file, "r") as ilog:
+            first_line=ilog.readline()
+            if first_line != '':
+                first_RS_ID=first_line.split(';')[1]
+                ilog_dict[first_RS_ID] = file
+                ilog_lst += [[int(first_RS_ID),file]]
+
     #read_insect_file
     ins_path = os.path.join(folder, "logging", "log_itrk0.csv")
     df_ins = pd.read_csv(ins_path, sep=";")
@@ -339,8 +349,6 @@ def moth_counts_in_folder(folder):
     if nums is not None:
         for i in range(len(nums)):
             if clas[i] == 1:
-
-                #new
                 start_ind.append(inds[i])
                 seq_lens.append(nums[i])
 
@@ -371,8 +379,15 @@ def moth_counts_in_folder(folder):
             start = elapsed_time[start_ind[i]]
             end = elapsed_time[start_ind[i]+seq_lens[i] - 1]
             duration = end - start # total duration of the moth flight
-            filename = 'unknown' #work around #455
-
+            first_RS_ID = str(int(RS_ID[start_ind[i]]))
+            if  first_RS_ID in ilog_dict:
+                filename = ilog_dict[first_RS_ID]
+            else:
+                first_RS_ID = int(RS_ID[start_ind[i]])
+                filename = 'unknown'
+                for i in range(1,len(ilog_lst)):
+                    if ilog_lst[i-1][0] <= first_RS_ID and ilog_lst[i][0] > first_RS_ID:
+                        filename = ilog_lst[i-1][1]
 
             # # filter on image coords
             # x_img_p = x_img[start_ind[i]:start_ind[i]+seq_lens[i] - 1]
