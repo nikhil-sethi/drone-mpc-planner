@@ -327,7 +327,7 @@ class SystemWidget(QWidget):
                     elif self.combo_mode.currentText() == "Monitoring":
                         line = '    <Member Name=\"op_mode\">op_mode_monitoring</Member>\n'
                 elif line.find('\"live_image_frq\"') != -1:
-                    if self.combo_mode.currentText() == "Hunt":
+                    if self.combo_mode.currentText() == "Hunt" or self.combo_mode.currentText() == "Waypoint":
                         line = '    <Member Name=\"live_image_frq\">1</Member>\n'
                     else:
                         line = '    <Member Name=\"live_image_frq\">30</Member>\n'
@@ -370,7 +370,7 @@ class SystemWidget(QWidget):
                     else:
                         line = '    <Member Name=\"video_cuts\">video_disabled</Member>\n'
                 elif line.find('\"video_raw\"') != -1:
-                    if self.combo_mode.currentText() == "Hunt":
+                    if self.combo_mode.currentText() == "Hunt" or self.combo_mode.currentText() == "Waypoint":
                         line = '    <Member Name=\"video_raw\">video_mkv</Member>\n'
                     else:
                         line = '    <Member Name=\"video_raw\">video_disabled</Member>\n'
