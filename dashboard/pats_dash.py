@@ -50,10 +50,10 @@ def load_systems():
 def system_sql_str(systems):
     if not isinstance(systems, list):
         systems = [systems]
-    systems_str = ''
+    systems_str = '('
     for system in systems:
         systems_str = systems_str + 'system="' + system + '" OR '
-    systems_str = systems_str[:-3]
+    systems_str = systems_str[:-3] + ')'
     return systems_str
 
 def load_moth_data():
@@ -67,7 +67,7 @@ def load_moth_data():
     sql_str = 'SELECT MIN(time) from moth_records where ' + systems_str
     if selected_dayrange > 0:
         start_day = (datetime.datetime.now() - datetime.timedelta(days=selected_dayrange)).strftime("%Y%m%d_%H%M%S")
-        sql_str += 'and time > "' + start_day + '"'
+        sql_str += 'and time>"' + start_day + '"'
     cur.execute(sql_str)
     first_date = cur.fetchone()[0]
     sql_str = 'SELECT MAX(time) from moth_records where ' + systems_str
