@@ -211,7 +211,7 @@ public:
         }
     }
     void beep(bool b) { _beep = b; }
-    void beep() { _beep = !_beep; _LED_drone=100;}
+    void beep() { _beep = !_beep;}
     void arm(betaflight_arming v) { arm_switch = v; }
     void turtle(betaflight_turtle v) { turtle_mode = v; }
     void calibrate_acc() { calibrate_acc_cnt = 200; }

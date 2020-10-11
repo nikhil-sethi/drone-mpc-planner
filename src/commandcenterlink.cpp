@@ -87,7 +87,7 @@ void CommandCenterLink::check_commandcenter_triggers() {
         }
         if (file_exist(beep_fn)) {
             std::cout << "Beeping drone!" << std::endl;
-            _rc->beep();
+            _dnav->set_drone_problem();
             remove(beep_fn.c_str());
         }
     } else {

@@ -88,6 +88,7 @@ public:
     void update(double time);
     void redetect_drone_location() {_navigation_status = ns_locate_drone_init;}
     void shake_drone() {_navigation_status = ns_start_shaking;}
+    void set_drone_problem() {_navigation_status = ns_drone_problem;}
     void demo_flight(std::string flightplan_fn);
 
     nav_flight_modes nav_flight_mode() {return _nav_flight_mode;}
