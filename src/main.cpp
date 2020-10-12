@@ -862,6 +862,14 @@ void close(bool sig_kill) {
         visualizer.close();
     visdat.close();
 
+    std::cout << "Closing logs" << std::endl;
+    logger_insect << std::flush;
+    logger_video_ids << std::flush;
+    logger << std::flush;
+    logger_video_ids.close();
+    logger_insect.close();
+    logger.close();
+
     if (pparams.video_result)
         output_video_results.close();
     if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode && pparams.op_mode != op_mode_waypoint)
@@ -869,12 +877,6 @@ void close(bool sig_kill) {
     if (pparams.video_cuts)
         output_video_cuts.close();
 
-    logger_insect << std::flush;
-    logger_video_ids << std::flush;
-    logger << std::flush;
-    logger_video_ids.close();
-    logger_insect.close();
-    logger.close();
     if (!sig_kill)
         close_thread_pool();
     cmdcenter.close();
@@ -1012,6 +1014,7 @@ int main( int argc, char **argv )
         if(render_monitoring_mode) {
             pparams.op_mode = op_mode_monitoring;
             pparams.video_raw = video_disabled;
+            pparams.close_after_n_images = -1;
             pparams.has_screen = false;
         }
 
