@@ -560,7 +560,7 @@ bool handle_key(double time [[maybe_unused]]) {
         break;
     case ' ':
     case 'f':
-        if(log_replay_mode || generator_mode)
+        if(log_replay_mode || generator_mode || render_hunt_mode || render_monitoring_mode)
             cam->frame_by_frame = true;
         break;
     case 't':
@@ -738,9 +738,12 @@ std::tuple<bool,bool,bool,bool, std::string,uint8_t,std::string,std::string,bool
                 arg_recognized = true;
                 render_mode=true;
             } else if (s.compare("--monitor_render") == 0) {
+                //monitor_render accepts a (concatinated) videorawLR.mkv of monitored insects, but also needs an original logging folder for camera calibraton files.
+                //usage example: ./pats --log logging --monitor_render ~/Bla/vogel.mkv
                 arg_recognized = true;
                 i++;
                 monitor_rndr_mode=true;
+                replay_mode=false;
                 monitor_render_video_fn=argv[i];
             }
             if (!arg_recognized) {
@@ -775,7 +778,7 @@ void check_hardware() {
             throw my_exit("Could not find a video in the replay folder!");
     } else if (render_monitoring_mode) {
         if (file_exist(monitor_video_fn))
-            cam = std::unique_ptr<Cam>(new FileCam(monitor_video_fn));
+            cam = std::unique_ptr<Cam>(new FileCam(replay_dir,monitor_video_fn));
         else
             throw my_exit("Could not find a video file!");
     } else if (generator_mode) {

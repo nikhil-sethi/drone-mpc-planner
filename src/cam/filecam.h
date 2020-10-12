@@ -25,14 +25,16 @@ private:
 
 public:
     static std::string playback_filename() { return "videoRawLR.mkv"; }
-    FileCam(string dir, logging::LogReader * log) {
-        replay_dir = dir;
+    FileCam(string replay_dir_, logging::LogReader * log) {
+        replay_dir = replay_dir_;
         logreader = log;
         set_file_paths(replay_dir);
         video_fn = replay_dir + '/' + playback_filename();
     }
-    FileCam(string monitor_video_fn) {
+    FileCam(string replay_dir_,string monitor_video_fn) {
         video_fn = monitor_video_fn;
+        replay_dir = replay_dir_;
+        set_file_paths(replay_dir);
     }
 
     void init();

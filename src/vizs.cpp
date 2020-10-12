@@ -569,12 +569,11 @@ void Visualizer::draw_tracker_viz() {
 
         putText(diff,"Drone",cv::Point(3,diff.rows-12),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,255,0));
         putText(diff,"Insect",cv::Point(3,diff.rows-24),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,0,255));
-        putText(diff,"Replay",cv::Point(3,diff.rows-36),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,0,180));
+        putText(diff,"Replay/Virtual",cv::Point(3,diff.rows-36),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,0,180));
         putText(diff,"Blink",cv::Point(3,diff.rows-48),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(255,0,255));
         putText(diff,"Ignored",cv::Point(3,diff.rows-60),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,128,0));
         putText(diff,"Untracked",cv::Point(3,diff.rows-72),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(255,255,55));
         putText(diff,"Multitracked",cv::Point(3,diff.rows-84),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,128,255));
-
 
         trackframe = ext_res_frame;
     } else

@@ -466,16 +466,20 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                         s = s + "->" + std::to_string(itrkr->insect_trkr_id());
                     }
                 }
-                putText(diff_viz,s,blob.pt()*pparams.imscalef,FONT_HERSHEY_SIMPLEX,0.3,blob.color(),2);
-                cv::circle(diff_viz,blob.pt()*pparams.imscalef,3,blob.color(),1);
+                cv::Point target_viz_p = (blob.pt() + cv::Point2f(5,-5))*pparams.imscalef;
+                putText(diff_viz,s,target_viz_p,FONT_HERSHEY_SIMPLEX,0.3,blob.color(),2);
+                cv::line(diff_viz,target_viz_p,blob.pt()*pparams.imscalef,blob.color());
+
             }
             for (auto trkr : replaytrackers()) {
-                putText(diff_viz," r",trkr->image_item().pt()*pparams.imscalef,FONT_HERSHEY_SIMPLEX,0.3,cv::Scalar(0,0,180),2);
-                cv::circle(diff_viz,trkr->image_item().pt()*pparams.imscalef,3,cv::Scalar(0,0,180),1);
+                cv::Point target_viz_p = (trkr->image_item().pt() + cv::Point2f(5,-5))*pparams.imscalef;
+                putText(diff_viz," r",target_viz_p,FONT_HERSHEY_SIMPLEX,0.3,cv::Scalar(0,0,180),2);
+                cv::line(diff_viz,target_viz_p,trkr->image_item().pt()*pparams.imscalef,cv::Scalar(0,0,180));
             }
             for (auto trkr : virtualmothtrackers()) {
-                putText(diff_viz," v",trkr->image_item().pt()*pparams.imscalef,FONT_HERSHEY_SIMPLEX,0.3,cv::Scalar(0,0,180),2);
-                cv::circle(diff_viz,trkr->image_item().pt()*pparams.imscalef,3,cv::Scalar(0,0,180),1);
+                cv::Point target_viz_p = (trkr->image_item().pt() + cv::Point2f(5,-5))*pparams.imscalef;
+                putText(diff_viz," v",target_viz_p,FONT_HERSHEY_SIMPLEX,0.3,cv::Scalar(0,0,180),2);
+                cv::line(diff_viz,target_viz_p,trkr->image_item().pt()*pparams.imscalef,cv::Scalar(0,0,180));
             }
         }
         if (enable_viz_max_points) {
