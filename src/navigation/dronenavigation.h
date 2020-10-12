@@ -72,6 +72,7 @@ private:
     cv::Point3f setpoint_acc_world;
 
     bool initialized = false;
+    bool low_battery_triggered = false;
     cv::Point3f square_point(cv::Point3f center, float width, float s);
 
     int _n_take_offs = 0;

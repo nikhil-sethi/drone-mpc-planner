@@ -369,10 +369,12 @@ void DroneNavigation::update(double time) {
                 }
             }
 
-            if (_dctrl->telemetry().batt_cell_v  < dparams.land_cell_v)
+            if (_dctrl->telemetry().batt_cell_v  < dparams.land_cell_v && !low_battery_triggered) {
                 _navigation_status = ns_goto_yaw_waypoint;
+                low_battery_triggered = true;
+            }
 
-            if (_nav_flight_mode == nfm_hunt && _iceptor.insect_in_range())
+            if (_nav_flight_mode == nfm_hunt && _iceptor.insect_in_range() && !low_battery_triggered)
                 _navigation_status = ns_start_the_chase;
             if (_nav_flight_mode == nfm_manual)
                 _navigation_status=ns_manual;
@@ -460,7 +462,7 @@ void DroneNavigation::update(double time) {
             setpoint_pos_world = new_pos_setpoint;
             if (!_dctrl->drone_is_active())
                 _navigation_status = ns_landed;
-            if (_nav_flight_mode == nfm_hunt && _iceptor.insect_in_range() && !_dctrl->landing())
+            if (_nav_flight_mode == nfm_hunt && _iceptor.insect_in_range() && !_dctrl->landing() && !low_battery_triggered)
                 _navigation_status = ns_start_the_chase;
             if (_nav_flight_mode == nfm_manual)
                 _navigation_status=ns_manual;
