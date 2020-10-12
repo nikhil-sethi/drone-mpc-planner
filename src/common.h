@@ -507,6 +507,7 @@ public:
         Register("drone_led_strength",&_drone_led_strength);
         Register("tx",&_tx);
         Register("mode3d",&_mode3d);
+        Register("spinup_throttle_non3d",&_spinup_throttle_non3d);
         Register("control",&_control);
         Register("land_cell_v",&_land_cell_v);
         Register("max_flight_time",&_max_flight_time);
