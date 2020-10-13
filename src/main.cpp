@@ -850,9 +850,8 @@ void close(bool sig_kill) {
     save_results_log();
 
     /*****Close everything down*****/
-    if (cam)
-        cam->close(); // attempt to save the video first
-
+    if (!sig_kill)
+        close_thread_pool();
     dctrl.close();
     dnav.close();
     trackers.close();
@@ -861,6 +860,8 @@ void close(bool sig_kill) {
     if (pparams.has_screen || render_hunt_mode || render_monitoring_mode)
         visualizer.close();
     visdat.close();
+    if (cam)
+        cam->close(); //cam needs to be closed after dnav, because of the camview class!
 
     std::cout << "Closing logs" << std::endl;
     logger_insect << std::flush;
@@ -877,8 +878,7 @@ void close(bool sig_kill) {
     if (pparams.video_cuts)
         output_video_cuts.close();
 
-    if (!sig_kill)
-        close_thread_pool();
+
     cmdcenter.close();
 
     print_warnings();
