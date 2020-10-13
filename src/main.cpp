@@ -166,7 +166,8 @@ void process_video() {
             } else if (!skipped_to_hunt) {
                 cam->turbo = true;
             }
-            if (dnav.drone_is_yaw_reset() || dnav.drone_problem()) {
+            if (dnav.drone_is_yaw_reset()) {
+                std::cout <<"Render mode: yaw reset detected. Stopping." << std::endl;
                 escape_key_pressed = true;
             }
         }
@@ -261,9 +262,14 @@ void process_video() {
                 std::cout << "\n\nError: Log results differ from replay results, should have yaw reset already.\n" << replay_dir <<"\n\n" << std::endl;
                 exit_now = true;
             }
+
+            static int render_drone_problem_cnt = 0;
             if (dnav.drone_problem() || logreader.current_entry.nav_state == navigation::ns_drone_problem) {
-                std::cout << "\n\nDrone problem. Stopping render\n" << replay_dir <<"\n\n" << std::endl;
-                exit_now = true;
+                render_drone_problem_cnt++;
+                if (render_drone_problem_cnt > pparams.fps*2) {
+                    std::cout << "\n\nDrone problem. Stopping render\n" << replay_dir <<"\n\n" << std::endl;
+                    exit_now = true;
+                }
             }
         }
 
