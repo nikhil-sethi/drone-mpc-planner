@@ -239,7 +239,7 @@ void process_video() {
             }
         }
 
-        if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode && pparams.op_mode != op_mode_waypoint) {
+        if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode) {
             int frame_written = 0;
             // cv::Mat id_fr = cam->frameL.clone();
             // putText(id_fr,std::to_string(data.RS_id),cv::Point(0, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,Scalar(255));
@@ -693,7 +693,7 @@ void init_video_recorders() {
     /*****init the video writer*****/
     if (pparams.video_result)
         if (output_video_results.init(pparams.video_result, data_output_dir + "videoResult.mp4",visualizer.viz_frame_size().width,visualizer.viz_frame_size().height,pparams.fps,"192.168.1.255",5000,true)) {throw my_exit("could not open results video");}
-    if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode && pparams.op_mode != op_mode_waypoint)
+    if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode)
         if (output_video_LR.init(pparams.video_raw,data_output_dir + "videoRawLR.mkv",IMG_W,IMG_H*2,pparams.fps, "192.168.1.255",5000,false)) {throw my_exit("could not open LR video");}
     if (pparams.video_cuts)
         if (output_video_cuts.init(pparams.video_cuts,data_output_dir + "insect" + to_string(0) + ".mkv",IMG_W,IMG_H*2,pparams.fps, "192.168.1.255",5000,false)) {std::cout << "WARNING: could not open cut video " << data_output_dir + "insect" + to_string(0) + ".mkv" << std::endl;}
@@ -873,7 +873,7 @@ void close(bool sig_kill) {
 
     if (pparams.video_result)
         output_video_results.close();
-    if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode && pparams.op_mode != op_mode_waypoint)
+    if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode)
         output_video_LR.close();
     if (pparams.video_cuts)
         output_video_cuts.close();
