@@ -18,9 +18,15 @@ def execute(cmd,retry=1):
 
 def download_jsons():
     global source_folder
-    rsync_src='mavlab-gpu:/home/pats/moth_json/'
+    rsync_src='dash:/home/pats/jsons/'
     subprocess.call(['mkdir -p ' + source_folder ], shell=True)
     cmd = ['rsync -zvaP --timeout=3 --exclude \'*.jpg.*\' --exclude \'*.xml.*\' --exclude \'*.txt.*\' ' + rsync_src + ' '+ source_folder]
+    execute(cmd)
+
+def download_db():
+    global source_folder
+    rsync_src='dash:/home/pats/pats.db'
+    cmd = ['rsync -zvaP --timeout=3 --exclude \'*.jpg.*\' --exclude \'*.xml.*\' --exclude \'*.txt.*\' ' + rsync_src + ' '+ '~/pats.db']
     execute(cmd)
 
 def download_renders(pats_id):
@@ -57,23 +63,18 @@ def download_raw_logs_all():
 
 
 parser = argparse.ArgumentParser(description='Script that periodically downloads data from deployed systems')
-parser.add_argument('-j', '--download_jsons', action='store_true')
-parser.add_argument('-r', '--download_renders', action='store_true')
-parser.add_argument('-l', '--download_raw_logs', action='store_true')
+
 args = parser.parse_args()
 
 while True:
-    
-    if args.download_jsons:
-        download_jsons()
-        print ('Downloaded jsons')
-    
-    cmd = ['~/code/pats/dashboard/jsons_to_db.py -i ' + source_folder]
-    execute(cmd)
 
-    if args.download_renders:
-        download_renders_all()
-        if args.download_raw_logs:
-            download_raw_logs_all()
+    download_jsons()
+    print ('Downloaded jsons')
+    download_db()
+    print ('Downloaded db')
+    download_renders_all()
+    print ('Downloaded renders')
+    download_raw_logs_all()
+    print ('Downloaded raw logs')
 
     time.sleep(3600)
