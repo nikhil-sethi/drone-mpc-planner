@@ -90,10 +90,8 @@ LogEntryMain LogReader::create_log_entry(string line, map<string, int> headmap) 
     entry.auto_roll = stoi(line_data.at(headmap["autoRoll"]));
     entry.auto_pitch = stoi(line_data.at(headmap["autoPitch"]));
 
-    if (isinf(_takeoff_time) && (entry.nav_state == navigation::ns_start_the_chase || entry.nav_state == navigation::ns_set_waypoint))
+    if (isinf(_takeoff_time) && (entry.nav_state == navigation::ns_chasing_insect_ff || entry.nav_state == navigation::ns_chasing_insect || entry.nav_state == navigation::ns_set_waypoint))
         _takeoff_time = entry.elapsed;
-    if (isinf(_takeoff_time) && entry.auto_throttle > dparams.spinup_throttle_non3d) // TMP, should be removed after processing existing data at koppert
-        _takeoff_time = entry.elapsed-2;
     if (isinf(_blink_detect_time) && entry.nav_state == navigation::ns_located_drone)
         _blink_detect_time = entry.elapsed;
     if (isinf(_yaw_reset_time) && entry.nav_state == navigation::ns_initial_reset_yaw)

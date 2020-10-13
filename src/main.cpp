@@ -156,7 +156,7 @@ void process_video() {
         }
         if (render_hunt_mode || render_monitoring_mode) {
             if (dnav.drone_is_ready_and_waiting() && !skipped_to_hunt) {
-                double dt = logreader.first_takeoff_time() - data.time - 0.5;
+                double dt = logreader.first_takeoff_time() - data.time - 1.5;
                 if (dt>0 && trackers.mode() != tracking::TrackerManager::mode_locate_drone) {
                     cam->skip(dt);
                     std::cout << "Skipping to " << data.time + dt << std::endl;
@@ -756,7 +756,7 @@ std::tuple<bool,bool,bool,bool, std::string,uint8_t,std::string,std::string,bool
 }
 
 void check_hardware() {
-    if (! log_replay_mode && ! render_monitoring_mode) {
+    if (! log_replay_mode && !render_monitoring_mode && !render_hunt_mode) {
         //multimodule rc
         if (! generator_mode && dparams.tx != tx_none )
             rc.init(drone_id);
@@ -1019,7 +1019,7 @@ int main( int argc, char **argv )
         }
 
         check_hardware();
-        if (!log_replay_mode && !generator_mode && !render_monitoring_mode) {
+        if (!log_replay_mode && !generator_mode && !render_monitoring_mode && !render_hunt_mode) {
             wait_for_cam_angle();
             wait_for_dark();
         } else {
@@ -1029,7 +1029,7 @@ int main( int argc, char **argv )
             pparams.drone_tracking_tuning = false;
             pparams.insect_tracking_tuning = false;
             pparams.cam_tuning = false;
-            if (generator_mode || render_monitoring_mode) {
+            if (generator_mode || render_monitoring_mode || render_hunt_mode) {
                 pparams.joystick = rc_none;
             }
 
