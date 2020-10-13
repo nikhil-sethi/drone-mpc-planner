@@ -263,7 +263,7 @@ void process_video() {
                 exit_now = true;
             }
 
-            static int render_drone_problem_cnt = 0;
+            static uint render_drone_problem_cnt = 0;
             if (dnav.drone_problem() || logreader.current_entry.nav_state == navigation::ns_drone_problem) {
                 render_drone_problem_cnt++;
                 if (render_drone_problem_cnt > pparams.fps*2) {
