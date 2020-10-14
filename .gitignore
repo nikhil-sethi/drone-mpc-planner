@@ -8,3 +8,4 @@ src/main\.cpp\.autosave
 xml/landing_location*.xml
 
 *.csv#
+.dir-locals.el
