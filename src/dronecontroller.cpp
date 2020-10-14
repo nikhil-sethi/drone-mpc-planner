@@ -1144,8 +1144,10 @@ void DroneController::check_tracking_lost(track_data data_drone) {
     // If keep-in-volume is not strong enough the drone has a chance to come back after some time.
     if(!data_drone.pos_valid) {
         kill_cnt_down++;
-        if (kill_cnt_down > pparams.fps / 2)
+        if (kill_cnt_down > pparams.fps / 2) {
             _flight_mode = fm_abort_tracking_lost;
+            std::cout << "Flight aborted: Drone position in valid." << std::endl;
+        }
     } else {
         kill_cnt_down = 0;
     }
@@ -1159,9 +1161,10 @@ void DroneController::check_control_and_tracking_problems(track_data data_drone)
 
     if(model_error<0)
         model_error = 0;
-    if(model_error>50 && !generator_mode)
+    if(model_error>50 && !generator_mode) {
         _flight_mode = fm_abort_model_error;
-
+        std::cout << "Flight aborted: Drone model diverged from drone measurement." << std::endl;
+    }
 #if DRONE_CONTROLLER_DEBUG
     std::cout << "model_error: " << model_error << std::endl;
     if(model_error>model_error_max)
