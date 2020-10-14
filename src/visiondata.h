@@ -108,7 +108,7 @@ public:
     bool enable_collect_no_drone_frames = true;
 
     bool no_recent_large_brightness_events(double time) {
-        return static_cast<float>(_large_brightness_change_event_time - time)< 3;
+        return static_cast<float>(time-_large_brightness_change_event_time)> 3;
     }
     float average_brightness() {
         return prev_brightness;
