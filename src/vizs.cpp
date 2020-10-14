@@ -414,7 +414,7 @@ void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, doubl
 
         static float min_dis = 9999;
         float dis = 0;
-        if (_dtrkr->n_frames_tracking>0 && _itrkr->n_frames_tracking>0) {
+        if (_dtrkr->n_frames_tracking()>0 && _itrkr->n_frames_tracking()>0) {
 
             auto pd = _dtrkr->world_item().pt;
             auto pi = _itrkr->world_item().pt;

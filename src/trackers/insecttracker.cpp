@@ -14,7 +14,7 @@ void InsectTracker::init(int id, VisionData *visdat, int16_t viz_id) {
     insectlogger << "RS_ID;time;";
     ItemTracker::init(&insectlogger,visdat,"insect",viz_id);
     insectlogger << std::endl;
-    n_frames_lost = 0;
+    _n_frames_lost = 0;
 }
 void InsectTracker::start_new_log_line(double time, unsigned long long frame_number) {
     (*_logger) << std::to_string(frame_number) << ";";

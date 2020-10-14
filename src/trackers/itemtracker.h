@@ -100,8 +100,10 @@ protected:
 
     filtering::Smoother smoother_im_size;
 
-    int n_frames_lost = 100;
+    int _n_frames_lost = 100;
     int n_frames_lost_threshold = 10;
+    int _n_frames_tracking =0;
+    double _last_sighting_time = 0;
     std::ofstream *_logger;
     VisionData * _visdat;
     bool initialized = false;
@@ -153,10 +155,12 @@ public:
         _blobs_are_fused_cnt++;
     }
 
-    int n_frames_tracking =0;
-    double last_sighting_time = 0;
-
+    int n_frames_tracking() {return _n_frames_tracking;}
+    double last_sighting_time() {return _last_sighting_time;}
     bool tracking() {return _tracking;}
+    int n_frames_lost() {
+        return _n_frames_lost;
+    }
 
     cv::Mat viz_disp;
 

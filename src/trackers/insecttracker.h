@@ -18,13 +18,10 @@ public:
     void update(double time);
     bool tracking() {return _tracking;}
     bool properly_tracking() {
-        return n_frames_tracking > n_frames_lost && tracking();
+        return _n_frames_tracking > _n_frames_lost && tracking();
     }
     bool false_positive() {
         return _fp>0;
-    }
-    int frames_untracked() {
-        return n_frames_lost;
     }
     void append_log(double time, unsigned long long frame_number);
     int16_t insect_trkr_id() {return _insect_trkr_id;}
@@ -32,7 +29,7 @@ public:
     void calc_world_item(tracking::BlobProps * pbs, double time);
     bool check_ignore_blobs(tracking::BlobProps * pbs);
     bool delete_me() {
-        if ((n_frames_lost > n_frames_lost_threshold && _insect_trkr_id > 0)) {
+        if ((_n_frames_lost > n_frames_lost_threshold && _insect_trkr_id > 0)) {
             _logger->close();
             initialized = false;
             return true;

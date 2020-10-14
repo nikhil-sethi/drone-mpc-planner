@@ -114,7 +114,7 @@ void ItemTracker::calc_world_props_blob_generic(BlobProps * pbs, bool use_max) {
         } else {
             w.disparity_in_range = true;
 
-            if (disparity_prev>0 && n_frames_tracking> 5)
+            if (disparity_prev>0 && _n_frames_tracking> 5)
                 w.disparity = (disparity_filter_rate * disparity ) + ((1-disparity_filter_rate)*disparity_prev); // moving average on disparity
             else
                 w.disparity = disparity;
@@ -163,12 +163,12 @@ void ItemTracker::update(double time) {
         update_state(_world_item.pt,time);
         update_blob_filters();
         _tracking = true;
-        n_frames_lost = 0; // update this after calling update_state, so that it can determine how long tracking was lost
-        n_frames_tracking++;
+        _n_frames_lost = 0; // update this after calling update_state, so that it can determine how long tracking was lost
+        _n_frames_tracking++;
     } else {
-        n_frames_lost++;
-        n_frames_tracking = 0;
-        if( n_frames_lost >= n_frames_lost_threshold || !_tracking ) {
+        _n_frames_lost++;
+        _n_frames_tracking = 0;
+        if( _n_frames_lost >= n_frames_lost_threshold || !_tracking ) {
             _tracking = false;
             reset_tracker_ouput(time);
         } else {
@@ -218,7 +218,7 @@ void ItemTracker::append_log() {
         else
             (*_logger) << -1 << ";" << -1   << ";";
 
-        (*_logger) << n_frames_lost << ";" << n_frames_tracking << ";" << _tracking << ";";
+        (*_logger) << _n_frames_lost << ";" << _n_frames_tracking << ";" << _tracking << ";";
         //log all world stuff
         track_data last = Last_track_data();
         (*_logger) << last.state.pos.x << ";" << last.state.pos.y << ";" << last.state.pos.z << ";" ;
@@ -450,7 +450,7 @@ std::tuple<int,float,int,int> ItemTracker::disparity_search_rng(int x) {
         disp_start = std::max(static_cast<int>(floorf(_image_predict_item.disparity))-4,disp_start);
         disp_pred = _image_predict_item.disparity;
         disp_end = std::min(static_cast<int>(ceilf(_image_predict_item.disparity))+4,disp_end);
-    } else if (n_frames_tracking>5) {
+    } else if (_n_frames_tracking>5) {
         auto tmp_disp_prev = disparity_prev;
         disp_start = std::max(static_cast<int>(floorf(tmp_disp_prev))-4,disp_start);
         disp_end = std::min(static_cast<int>(ceilf(tmp_disp_prev))+4,disp_end);
@@ -571,7 +571,7 @@ void ItemTracker::update_state(Point3f measured_world_coordinates,double time) {
     data.acc_valid = smoother_accX.ready();
 
     data.time = time;
-    last_sighting_time = time;
+    _last_sighting_time = time;
     data.dt = dt;
     reset_filters = false;
     track_history.push_back(data);

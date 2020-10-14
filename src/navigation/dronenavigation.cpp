@@ -207,7 +207,7 @@ void DroneNavigation::update(double time) {
 
                 auto itrkr = _trackers->insecttracker_best();
 
-                if(_iceptor.insect_in_range_takeoff(itrkr) && _visdat->no_recent_large_brightness_events(time)) {
+                if(_iceptor.trigger_takeoff(itrkr) && _visdat->no_recent_large_brightness_events(time)) {
                     _navigation_status = ns_takeoff;
                     repeat = true;
                 } else if(itrkr->tracking() && !itrkr->false_positive() && _visdat->no_recent_large_brightness_events(time)) {
@@ -252,10 +252,10 @@ void DroneNavigation::update(double time) {
                 break;
             }
 
-            if (_iceptor.insect_in_range_takeoff(_trackers->insecttracker_best()) && _nav_flight_mode == nfm_hunt) {
-                setpoint_pos_world = _iceptor.target_position();
-                setpoint_vel_world = _iceptor.target_speed();
-                setpoint_acc_world = _iceptor.target_accelleration();
+            if (_iceptor.trigger_takeoff(_trackers->insecttracker_best()) && _nav_flight_mode == nfm_hunt) {
+                setpoint_pos_world = _iceptor.aim_pos();
+                setpoint_vel_world = _iceptor.aim_vel();
+                setpoint_acc_world = _iceptor.aim_acc();
             } else if (_nav_flight_mode == nfm_hunt && _dctrl->abort_take_off()) {
                 _navigation_status = ns_wait_for_insect;
             }
@@ -278,7 +278,6 @@ void DroneNavigation::update(double time) {
             }
             break;
         } case ns_start_the_chase: {
-            _iceptor.reset_insect_cleared();
             _dctrl->hover_mode(false);
             _trackers->dronetracker()->hover_mode(false);
             _navigation_status = ns_chasing_insect_ff;
@@ -291,11 +290,11 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_chasing_insect: {
             //update target chasing waypoint and speed
-            // if (_iceptor.insect_in_range()) {
-            setpoint_pos_world = _iceptor.target_position();
+            // if (_iceptor.aim_in_range()) {
+            setpoint_pos_world = _iceptor.aim_pos();
             setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, _trackers->dronetracker()->Last_track_data().pos(), CameraView::relaxed);
-            setpoint_vel_world = _iceptor.target_speed();
-            setpoint_acc_world = _iceptor.target_accelleration();
+            setpoint_vel_world = _iceptor.aim_vel();
+            setpoint_acc_world = _iceptor.aim_acc();
             // }
 
             if (_dctrl->telemetry().batt_cell_v  < dparams.land_cell_v) {
@@ -305,7 +304,7 @@ void DroneNavigation::update(double time) {
 
             if (_nav_flight_mode == nfm_manual)
                 _navigation_status=ns_manual;
-            else if (_iceptor.insect_cleared()) {
+            else if (_iceptor.target_cleared()) {
                 _navigation_status = ns_goto_yaw_waypoint;
             }
             break;
@@ -360,7 +359,7 @@ void DroneNavigation::update(double time) {
             }
             if (_dctrl->dist_to_setpoint() *1000 < current_waypoint->threshold_mm * distance_threshold_f
                     && normf(_trackers->dronetracker()->Last_track_data().state.vel) < current_waypoint->threshold_v
-                    && _trackers->dronetracker()->n_frames_tracking>5)
+                    && _trackers->dronetracker()->n_frames_tracking()>5)
             {
                 if ((static_cast<float>(time - time_wp_reached) > current_waypoint->hover_pause && time_wp_reached > 0) || current_waypoint->hover_pause <= 0) {
                     if (current_waypoint->mode == wfm_landing)
@@ -385,7 +384,7 @@ void DroneNavigation::update(double time) {
                 low_battery_triggered = true;
             }
 
-            if (_nav_flight_mode == nfm_hunt && _iceptor.insect_in_range() && !low_battery_triggered)
+            if (_nav_flight_mode == nfm_hunt && _iceptor.aim_in_range() && !low_battery_triggered)
                 _navigation_status = ns_start_the_chase;
             if (_nav_flight_mode == nfm_manual)
                 _navigation_status=ns_manual;
@@ -433,7 +432,7 @@ void DroneNavigation::update(double time) {
             _dctrl->flight_mode(DroneController::fm_reset_yaw);
             bool drone_pos_ok = _dctrl->dist_to_setpoint() *1000 < current_waypoint->threshold_mm * distance_threshold_f
                                 && normf(_trackers->dronetracker()->Last_track_data().state.vel) < current_waypoint->threshold_v
-                                && _trackers->dronetracker()->n_frames_tracking>5;
+                                && _trackers->dronetracker()->n_frames_tracking()>5;
 
             if(!_trackers->dronetracker()->check_yaw(time) || (time-time_initial_reset_yaw > yaw_reset_duration && drone_pos_ok)) {
                 _dctrl->flight_mode(DroneController::fm_flying_headed_pid);
@@ -474,7 +473,7 @@ void DroneNavigation::update(double time) {
             setpoint_pos_world = new_pos_setpoint;
             if (!_dctrl->drone_is_active())
                 _navigation_status = ns_landed;
-            if (_nav_flight_mode == nfm_hunt && _iceptor.insect_in_range() && !_dctrl->landing() && !low_battery_triggered)
+            if (_nav_flight_mode == nfm_hunt && _iceptor.aim_in_range() && !_dctrl->landing()  && !low_battery_triggered)
                 _navigation_status = ns_start_the_chase;
             if (_nav_flight_mode == nfm_manual)
                 _navigation_status=ns_manual;

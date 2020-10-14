@@ -121,7 +121,7 @@ void DroneTracker::update(double time, bool drone_is_active) {
         ItemTracker::update(time);
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
-        else if (n_frames_lost==0)
+        else if (_n_frames_lost==0)
             _drone_tracking_status = dts_tracking;
         break;
     } case dts_tracking: {

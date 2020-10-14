@@ -19,7 +19,7 @@ bool BlinkTracker::init(VisionData *visdat, int16_t viz_id) {
 
     ItemTracker::init(&blinklogger,visdat,"blink",viz_id);
 
-    n_frames_lost = 1;
+    _n_frames_lost = 1;
     n_frames_lost_threshold = 120;
 
     return false;
@@ -43,7 +43,7 @@ void BlinkTracker::update(double time) {
             fail_time_start = time;
         }
         ItemTracker::update(time);
-        if (n_frames_lost == 0) {
+        if (_n_frames_lost == 0) {
             _blinking_drone_status = bds_1_blink_off;
             blink_time_start = time;
             _score_threshold = 100; // increase score threshold after first sightings, so that the tracker rejects moving blobs
@@ -51,55 +51,55 @@ void BlinkTracker::update(double time) {
         break;
     } case bds_1_blink_off: {
         ItemTracker::update(time);
-        _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
+        _blinking_drone_status = detect_blink(time, _n_frames_tracking == 0);
         break;
     } case bds_1_blink_on: {
         ItemTracker::update(time);
-        _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
+        _blinking_drone_status = detect_blink(time, _n_frames_lost == 0);
         break;
     } case bds_2_blink_off: {
         ItemTracker::update(time);
-        _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
+        _blinking_drone_status = detect_blink(time, _n_frames_tracking == 0);
         break;
     } case bds_2_blink_on: {
         ItemTracker::update(time);
-        _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
+        _blinking_drone_status = detect_blink(time, _n_frames_lost == 0);
         break;
     } case bds_3_blink_off: {
         ItemTracker::update(time);
-        _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
+        _blinking_drone_status = detect_blink(time, _n_frames_tracking == 0);
         break;
     } case bds_3_blink_on: {
         ItemTracker::update(time);
-        _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
+        _blinking_drone_status = detect_blink(time, _n_frames_lost == 0);
         break;
     } case bds_4_blink_off: {
         attempts = 0;
         ItemTracker::update(time);
-        _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
+        _blinking_drone_status = detect_blink(time, _n_frames_tracking == 0);
         break;
     } case bds_4_blink_on: {
         ItemTracker::update(time);
-        _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
+        _blinking_drone_status = detect_blink(time, _n_frames_lost == 0);
         break;
     } case bds_5_blink_off: {
         ItemTracker::update(time);
-        _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
+        _blinking_drone_status = detect_blink(time, _n_frames_tracking == 0);
         break;
     } case bds_5_blink_on: {
         ItemTracker::update(time);
-        _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
+        _blinking_drone_status = detect_blink(time, _n_frames_lost == 0);
         break;
     } case bds_6_blink_off_calib: {
         _blinking_drone_status = bds_6_blink_off;
         [[fallthrough]];
     } case bds_6_blink_off: {
         ItemTracker::update(time);
-        _blinking_drone_status = detect_blink(time, n_frames_tracking == 0);
+        _blinking_drone_status = detect_blink(time, _n_frames_tracking == 0);
         break;
     } case bds_6_blink_on: {
         ItemTracker::update(time);
-        _blinking_drone_status = detect_blink(time, n_frames_lost == 0);
+        _blinking_drone_status = detect_blink(time, _n_frames_lost == 0);
         break;
     } case bds_found: {
         append_log(); // no tracking needed in this stage

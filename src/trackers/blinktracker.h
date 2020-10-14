@@ -77,7 +77,7 @@ public:
     bool blinking_drone_located() {return _blinking_drone_status >= bds_found;}
 
     bool delete_me() {
-        return (n_frames_lost > n_frames_lost_threshold) || _blinking_drone_status == bds_failed_delete_me;
+        return (_n_frames_lost > n_frames_lost_threshold) || _blinking_drone_status == bds_failed_delete_me;
     }
 
     float smoothed_size_image() {return smoother_im_size.latest();}

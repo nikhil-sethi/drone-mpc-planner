@@ -9,7 +9,7 @@ void VirtualmothTracker::init(int id, mothbehavior mothbehavior_type, VisionData
     _id = id;
     _visdat = visdat;
     _dctrl = dctrl;
-    n_frames_lost = 0;
+    _n_frames_lost = 0;
     _name = "replay"; //This is also an prefix in the log.csv. For replay-support the log is saved as replay-moth
     behavior_type = mothbehavior_type;
     track_history_max_size = pparams.fps;
@@ -92,8 +92,8 @@ void VirtualmothTracker::update_behavior_based(unsigned long long frame_number, 
     path.push_back(w);
     _world_item = w;
 
-    n_frames_lost = 0;
-    n_frames_tracking++;
+    _n_frames_lost = 0;
+    _n_frames_tracking++;
     _tracking = true;
 
     if (!_tracking) {

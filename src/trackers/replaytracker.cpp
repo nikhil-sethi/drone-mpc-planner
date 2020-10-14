@@ -8,7 +8,7 @@ namespace tracking {
 void ReplayTracker::init(int id,std::string file, VisionData *visdat) {
     _id = id;
     _visdat = visdat;
-    n_frames_lost = 0;
+    _n_frames_lost = 0;
     _name = "replay";
     track_history_max_size = pparams.fps;
     logreader.init(file);
@@ -19,7 +19,7 @@ void ReplayTracker::init(int id,std::string file, VisionData *visdat) {
 void ReplayTracker::init(int id,logging::InsectReader log, VisionData *visdat) {
     _id = id;
     _visdat = visdat;
-    n_frames_lost = 0;
+    _n_frames_lost = 0;
     _name = "replay";
     track_history_max_size = pparams.fps;
     init_logger();
@@ -100,8 +100,8 @@ void ReplayTracker::update_from_log(unsigned long long frame_number,double time)
     path.push_back(w);
     _world_item = w;
 
-    n_frames_lost = log.ins_n_frames_lost;
-    n_frames_tracking = log.ins_n_frames_tracking;
+    _n_frames_lost = log.ins_n_frames_lost;
+    _n_frames_tracking = log.ins_n_frames_tracking;
     _tracking = log.ins_foundL;
 
     if (!_tracking) {

@@ -201,7 +201,7 @@ void process_video() {
         }
 
         static bool recording = false;
-        double dtr = data.time - trackers.insecttracker_best()->last_sighting_time;
+        double dtr = data.time - trackers.insecttracker_best()->last_sighting_time();
         if (dtr > 1 && recording) {
             recording = false;
             auto time_insect_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
