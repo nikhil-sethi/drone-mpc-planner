@@ -203,19 +203,23 @@ float CameraView::calc_shortest_distance_to_plane(cv::Point3f drone_pos, uint pl
 }
 
 
-cv::Point3f CameraView::project_into_camera_volume(cv::Point3f pos_setpoint,
-                                                   cv::Point3f drone_pos,
-                                                   view_volume_check_mode cm,
-                                                   std::array<bool, N_PLANES> violated_planes) {
+cv::Point3f CameraView::project_into_camera_volume(cv::Point3f pos_setpoint, cv::Point3f drone_pos, view_volume_check_mode cm, std::array<bool, N_PLANES> violated_planes) {
     cv::Point3f projected_point, closest_point;
     float ref_distance = 999.f;
     float cmp_distance;
+
+    bool drone_inview;
+    std::array<bool, N_PLANES> drone_violated_planes;
+    std::tie(drone_inview, drone_violated_planes) = in_view(drone_pos, cm);
+    if(!drone_inview)
+        return project_into_camera_volume(pos_setpoint, cm, violated_planes);
+
     for(uint i=0; i<N_PLANES; i++) {
         if(violated_planes.at(i)) {
             projected_point = intersection_of_plane_and_line(cv::Point3f(plane_supports.at(i)) + safety_margin(cm)*cv::Point3f(plane_normals.at(i)),
-                                                             cv::Point3f(plane_normals.at(i)),
-                                                             pos_setpoint,
-                                                             pos_setpoint - drone_pos);
+                              cv::Point3f(plane_normals.at(i)),
+                              pos_setpoint,
+                              pos_setpoint - drone_pos);
             cmp_distance = normf(projected_point - drone_pos);
             if(cmp_distance<ref_distance) {
                 closest_point = projected_point;
