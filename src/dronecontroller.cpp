@@ -634,6 +634,11 @@ std::tuple<int,int,float,cv::Point3f> DroneController::calc_directional_burn(sta
         }
     }
 
+    if(burn_direction.z>0) { // Quick hack to ensure that the drone is not taking of twards the camera
+        burn_direction.z = 0;
+        burn_direction = burn_direction/norm(burn_direction);
+    }
+
     burn_direction = lowest_direction_to_horizontal(burn_direction, min_takeoff_angle);
 
     auto [roll_quat, pitch_quat] = acc_to_quaternion(burn_direction);
