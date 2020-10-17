@@ -361,8 +361,14 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
                 err_calculated[ii+1] = true;
             }
 
-            if (err_motion[ii-1] >= err_motion[ii] && err_motion[ii+1] >= err_motion[ii]) { // minimum found
+            if (err_motion[ii-1] >= err_motion[ii] && err_motion[ii+1] >= err_motion[ii]) // minimum found
                 disparity_motion  = ii;
+
+            float min_err = 0.01;
+            if (ii> 20)
+                min_err = static_cast<float>(ii)/1000.f;
+
+            if (err_motion[ii-1] >= err_motion[ii]+min_err && err_motion[ii+1] >= err_motion[ii]+min_err) {  // global minimum found
                 break;
             } else if (err_motion[ii-1] > err_motion[ii+1]) { // no minumum here, determine search direction based on slope
                 int ii_cnt = 0;
@@ -413,7 +419,6 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
     }
 }
 
-
 float ItemTracker::calc_match_score_motion(int i,int x, int y, int width, int height,float tmp_diffL_sum, cv::Mat diffL_roi, cv::Mat diffR) {
     cv::Rect roiR = cv::Rect (x-i,y,width,height);
     float tmp_diff_sum = tmp_diffL_sum + static_cast<float>(cv::sum(diffR(roiR))[0]);
@@ -456,7 +461,7 @@ std::tuple<int,float,int,int> ItemTracker::disparity_search_rng(int x) {
         disp_end = std::min(static_cast<int>(ceilf(tmp_disp_prev))+4,disp_end);
         disp_pred = (disp_end - disp_start)/2.f + disp_start;
     } else {
-        disp_pred = (disp_end - disp_start)/2.f + disp_start;
+        disp_pred = (disp_end - disp_start)/4.f + disp_start; // #506
     }
 
     if (disp_start < 1)
