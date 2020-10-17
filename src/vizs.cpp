@@ -619,6 +619,14 @@ void Visualizer::paint() {
             }
             imshow("stereo",_trackers->dronetracker()->viz_disp);
         }
+        if (_trackers->insecttracker_best()->viz_disp.cols>0) {
+            static bool stereo_viz_initialized = false;
+            if (!stereo_viz_initialized) {
+                stereo_viz_initialized = true;
+                namedWindow("stereo",cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
+            }
+            imshow("stereo",_trackers->insecttracker_best()->viz_disp);
+        }
 
         new_tracker_viz_data_requested = true;
     }

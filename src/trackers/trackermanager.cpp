@@ -173,11 +173,8 @@ void TrackerManager::update_static_ignores() {
 
 void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) {
 
-    //set all trackers to invalid so we can use this as a flag to notice when tracking is lost.
-    for (auto trkr : _trackers) {
-        trkr->item_invalidize();
+    for (auto trkr : _trackers)
         trkr->all_blobs(_blobs);
-    }
 
     if (_blobs.size()>0) {
         //init keypoints list
@@ -218,7 +215,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                         putText(viz,"Ign.",pt,FONT_HERSHEY_SIMPLEX,0.3,tracker_color(trkr));
                     }
                 }
-                if (best_trkr_score >= trkr->score_threshold() ) {
+                if (best_trkr_score < trkr->score_threshold() ) {
                     best_blob->trackers.push_back(trkr);
                     trkr->calc_world_item(best_blob->props,time);
                     tracking::ImageItem iti(*(best_blob->props),_visdat->frame_id,best_trkr_score,best_blob->id);
@@ -260,7 +257,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                                 //very close to the drone. So ignore it.
                                 if ((trkr->type() == tt_drone) && _dtrkr->tracking()) {
                                     float drone_score = _dtrkr->score(*props);
-                                    if (drone_score > _dtrkr->score_threshold())
+                                    if (drone_score < _dtrkr->score_threshold())
                                         in_im_ignore_zone = true;
                                 }
                             }
@@ -510,6 +507,10 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
             }
         }
     }
+
+    for (auto trkr : _trackers)
+        trkr->item_invalidize();
+
 }
 
 bool TrackerManager::tracker_active(ItemTracker * trkr, bool drone_is_active) {

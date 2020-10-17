@@ -188,8 +188,10 @@ public:
         _image_item = _world_item.iti;
     }
     void item_invalidize() {
-        _image_item.valid = false;
-        _world_item.valid = false;
+        if (_image_item.frame_id != _visdat->frame_id) {
+            _image_item.valid = false;
+            _world_item.valid = false;
+        }
     }
     void all_blobs(std::vector<tracking::BlobProps> blobs) {
         _all_blobs = blobs;
