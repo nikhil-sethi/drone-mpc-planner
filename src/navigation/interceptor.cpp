@@ -11,7 +11,7 @@ void Interceptor::init(tracking::TrackerManager* trackers, VisionData* visdat, C
 }
 
 void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
-    auto best_itrkr = _trackers->insecttracker_best();
+    auto target_trkr = _trackers->target_insecttracker();
 
     switch (_interceptor_state) {
     case  is_init: {
@@ -25,7 +25,9 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
         _aim_acc = {0, 0, 0};
         _n_frames_aim_not_in_range++;
 
-        if ( best_itrkr->tracking() && !best_itrkr->false_positive() ) {
+        if (!target_trkr)
+            break;
+        else  if ( target_trkr->tracking() && !target_trkr->false_positive() ) {
             _interceptor_state = is_waiting_in_reach_zone;
         } else
             break;
@@ -37,7 +39,10 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
         _aim_vel = {0, 0, 0};
         _aim_acc = {0, 0, 0};
 
-        if ( !best_itrkr->tracking() || best_itrkr->false_positive()) {
+        if (!target_trkr) {
+            _interceptor_state = is_waiting_for_target;
+            break;
+        } if ( !target_trkr->tracking() || target_trkr->false_positive()) {
             _interceptor_state = is_waiting_for_target;
             break;
         }
@@ -54,14 +59,18 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
     }
 
     case is_move_to_intercept: {
-        if ( best_itrkr->n_frames_lost() > 0.112 * pparams.fps
+        if (!target_trkr) {
+            _interceptor_state = is_waiting_for_target;
+            break;
+        }
+        if ( target_trkr->n_frames_lost() > 0.112 * pparams.fps
                 || _n_frames_aim_not_in_range > 0.34 * pparams.fps
-                || best_itrkr->false_positive()) {
+                || target_trkr->false_positive()) {
             _interceptor_state = is_waiting_for_target;
             break;
         }
 
-        if (!best_itrkr->n_frames_lost()) {
+        if (!target_trkr->n_frames_lost()) {
             auto req_aim_pos = update_far_target(drone_at_base);
             update_interceptability(req_aim_pos);
         }
@@ -80,14 +89,18 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
     }
 
     case is_close_chasing: {
-        if ( best_itrkr->n_frames_lost() > 0.15f * pparams.fps
+        if (!target_trkr) {
+            _interceptor_state = is_waiting_for_target;
+            break;
+        }
+        if ( target_trkr->n_frames_lost() > 0.15f * pparams.fps
                 || _n_frames_aim_not_in_range > 0.15f * pparams.fps
-                || best_itrkr->false_positive()) {
+                || target_trkr->false_positive()) {
             _interceptor_state = is_waiting_for_target;
             break;
         }
 
-        if (!best_itrkr->n_frames_lost()) {
+        if (!target_trkr->n_frames_lost()) {
             auto req_aim_pos = update_close_target(drone_at_base);
             update_interceptability(req_aim_pos);
         }
@@ -108,7 +121,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
 }
 
 cv::Point3f Interceptor::update_far_target(bool drone_at_base) {
-    track_data target = _trackers->insecttracker_best()->Last_track_data();
+    track_data target = _trackers->target_last_trackdata();
     cv::Point3f predicted_pos = target.pos();
     cv::Point3f predicted_vel = target.vel();
     cv::Point3f predicted_acc = target.acc();
@@ -117,7 +130,7 @@ cv::Point3f Interceptor::update_far_target(bool drone_at_base) {
     float time_to_intercept = 0.2f;
     predicted_pos += time_to_intercept * predicted_vel;
 #endif
-    track_data dtd = _trackers->dronetracker()->Last_track_data();
+    track_data dtd = _trackers->dronetracker()->last_track_data();
     cv::Point3f drone_pos = dtd.pos();
 
     if (drone_at_base)
@@ -142,7 +155,7 @@ cv::Point3f Interceptor::update_far_target(bool drone_at_base) {
 }
 
 cv::Point3f Interceptor::update_close_target(bool drone_at_base) {
-    track_data target = _trackers->insecttracker_best()->Last_track_data();
+    track_data target = _trackers->target_last_trackdata();
     cv::Point3f predicted_pos = target.pos();
     cv::Point3f predicted_vel = target.vel();
     cv::Point3f predicted_acc = target.acc();
@@ -151,7 +164,7 @@ cv::Point3f Interceptor::update_close_target(bool drone_at_base) {
     float time_to_intercept = 0.1f;
     predicted_pos += time_to_intercept * predicted_vel;
 #endif
-    track_data dtd = _trackers->dronetracker()->Last_track_data();
+    track_data dtd = _trackers->dronetracker()->last_track_data();
     cv::Point3f drone_pos = dtd.pos();
     auto req_aim_pos = predicted_pos;
     _aim_acc = predicted_acc;
@@ -177,7 +190,7 @@ cv::Point3f Interceptor::update_close_target(bool drone_at_base) {
 }
 
 void Interceptor::update_interceptability(cv::Point3f req_aim_pos) {
-    target_in_hunt_volume = _camview->in_hunt_area (_trackers->insecttracker_best()->world_item().pt);
+    target_in_hunt_volume = _camview->in_hunt_area (_trackers->target_last_trackdata().pos());
     std::tie(aim_in_view, ignore) = _camview->in_view(req_aim_pos, CameraView::relaxed);
 
     if (aim_in_view) {
@@ -237,9 +250,9 @@ float Interceptor::calc_tti(cv::Point3f target_pos, cv::Point3f target_vel, cv::
 }
 
 void Interceptor::update_flower_of_fire(double time) {
-    track_data target = _trackers->insecttracker_best()->Last_track_data();
+    track_data target = _trackers->target_last_trackdata();
     cv::Point3f target_pos = target.pos();
-    track_data dtd = _trackers->dronetracker()->Last_track_data();
+    track_data dtd = _trackers->dronetracker()->last_track_data();
     cv::Point3f drone_pos = dtd.pos();
     _horizontal_separation = normf(cv::Point2f(drone_pos.x, drone_pos.z) - cv::Point2f(target_pos.x, target_pos.z));
     _vertical_separation = target_pos.y - drone_pos.y;

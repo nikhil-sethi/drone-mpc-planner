@@ -201,15 +201,17 @@ void process_video() {
         }
 
         static bool recording = false;
-        double dtr = data.time - trackers.insecttracker_best()->last_sighting_time();
+        double dtr = data.time - trackers.target_last_detection();
         if (dtr > 1 && recording) {
             recording = false;
             auto time_insect_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
             logger_insect << "New detection ended at: " << std::put_time(std::localtime(&time_insect_now), "%Y/%m/%d %T") << " Duration: " << dtr << " End cam frame number: " <<  cam->frame_number() << '\n';
         }
-        if ((trackers.insecttracker_best()->tracking() || dtr < 1) && data.time > 5) {
+
+        if ((trackers.tracking_a_target() || dtr < 1) && data.time > 5) {
             recording = true;
         }
+
 
         if (pparams.video_cuts) {
             static bool was_recording = false;
@@ -448,7 +450,7 @@ void process_frame(Stereo_Frame_Data data) {
     auto profile_t3_nav = std::chrono::high_resolution_clock::now();
 #endif
 
-    dctrl.control(trackers.dronetracker()->Last_track_data(),dnav.setpoint(),trackers.insecttracker_best()->Last_track_data(),data.time);
+    dctrl.control(trackers.dronetracker()->last_track_data(),dnav.setpoint(),trackers.target_last_trackdata(),data.time);
 #ifdef PROFILING
     auto profile_t4_ctrl = std::chrono::high_resolution_clock::now();
 #endif
@@ -461,7 +463,7 @@ void process_frame(Stereo_Frame_Data data) {
 
     if (pparams.has_screen || render_hunt_mode || render_monitoring_mode) {
         visualizer.add_plot_sample();
-        visualizer.update_tracker_data(visdat.frameL,dnav.setpoint().pos(),data.time, draw_plots, trackers.insecttracker_best());
+        visualizer.update_tracker_data(visdat.frameL,dnav.setpoint().pos(),data.time, draw_plots);
         if (pparams.video_result && !exit_now) {
             if ((render_hunt_mode && skipped_to_hunt) || !render_hunt_mode) {
                 if (log_replay_mode || render_monitoring_mode)

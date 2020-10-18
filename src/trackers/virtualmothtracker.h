@@ -10,12 +10,9 @@ enum mothbehavior {
     escape_turn
 };
 
-
 class VirtualmothTracker : public InsectTracker {
 public:
-    tracker_type type() {
-        return tt_virtualmoth;
-    }
+    tracker_type type() {return tt_virtualmoth;}
 
 private:
     int16_t _id{-1};
@@ -35,27 +32,17 @@ public:
     void init(int id, mothbehavior behavior_type, VisionData* visdat, DroneController* dctrl);
     void update(double time);
     void update_behavior_based(unsigned long long frame_number, double time);
-    bool tracking() {
-        return _tracking;
-    }
-    int16_t id() {
-        return _id;
-    }
+    bool tracking() {return _tracking;}
+    int16_t id() {return _id;}
 
-    bool check_ignore_blobs(BlobProps* pbs [[maybe_unused]]) {
-        return false;
-    }
-    void calc_world_item(BlobProps* pbs, double time [[maybe_unused]]) {
-        pbs->world_props.valid = false;
-    }
+    bool check_ignore_blobs(BlobProps* pbs [[maybe_unused]]) {return false;}
+    void calc_world_item(BlobProps* pbs, double time [[maybe_unused]]) {pbs->world_props.valid = false;}
 
-    /** @todo Clarify stop condition*/
     bool delete_me() {
         if (_delete_me) {
             _logger->close();
             return true;
         }
-
         return false;
     }
 };

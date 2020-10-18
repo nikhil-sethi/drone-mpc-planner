@@ -66,7 +66,10 @@ public:
     void init(tracking::TrackerManager *trackers, VisionData *visdat, CameraView *camview, ofstream *logger);
     void update(bool drone_at_base, double time);
 
-    bool trigger_takeoff(tracking::InsectTracker * best_itrkr) {
+    bool trigger_takeoff() {
+        tracking::InsectTracker * best_itrkr = _trackers->target_insecttracker();
+        if (!best_itrkr)
+            return false;
         return !_n_frames_aim_not_in_range
                && target_in_hunt_volume == CameraView::HuntVolume_OK
                && !best_itrkr->false_positive();

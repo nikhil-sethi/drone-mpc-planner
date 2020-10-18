@@ -103,7 +103,7 @@ protected:
     int _n_frames_lost = 100;
     int n_frames_lost_threshold = 10;
     int _n_frames_tracking =0;
-    double _last_sighting_time = 0;
+    double _last_detection = 0;
     std::ofstream *_logger;
     VisionData * _visdat;
     bool initialized = false;
@@ -156,7 +156,7 @@ public:
     }
 
     int n_frames_tracking() {return _n_frames_tracking;}
-    double last_sighting_time() {return _last_sighting_time;}
+    double last_detection() {return _last_detection;}
     bool tracking() {return _tracking;}
     int n_frames_lost() {
         return _n_frames_lost;
@@ -173,7 +173,7 @@ public:
 
     uint track_history_max_size;
     std::vector<track_data> track_history;
-    track_data Last_track_data() {
+    track_data last_track_data() {
         if (track_history.empty())
             return track_data();
         return track_history.back();
@@ -187,7 +187,7 @@ public:
         _world_item = world_item;
         _image_item = _world_item.iti;
     }
-    void item_invalidize() {
+    void invalidize() {
         if (_image_item.frame_id != _visdat->frame_id) {
             _image_item.valid = false;
             _world_item.valid = false;

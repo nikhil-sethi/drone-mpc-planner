@@ -191,7 +191,7 @@ public:
     const double min_deviate_vec_length = 0.05;
 
     bool check_yaw(double time) {
-        if (!check_deviation_vec_length() || !Last_track_data().yaw_deviation_valid)
+        if (!check_deviation_vec_length() || !last_track_data().yaw_deviation_valid)
             time_yaw_not_ok = time;
 
         if (time - time_yaw_not_ok > min_yaw_ok_time && time_yaw_not_ok > 0.1 )

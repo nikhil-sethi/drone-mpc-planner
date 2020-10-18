@@ -205,9 +205,11 @@ void DroneNavigation::update(double time) {
 
                 _trackers->mode(tracking::TrackerManager::mode_wait_for_insect);
 
-                auto itrkr = _trackers->insecttracker_best();
+                tracking::InsectTracker * itrkr = _trackers->target_insecttracker();
 
-                if(_iceptor.trigger_takeoff(itrkr) && _visdat->no_recent_large_brightness_events(time)) {
+                if (!itrkr) {
+                    _dctrl->flight_mode(DroneController::fm_inactive);
+                } else if(_iceptor.trigger_takeoff() && _visdat->no_recent_large_brightness_events(time)) {
                     _navigation_status = ns_takeoff;
                     repeat = true;
                 } else if(itrkr->tracking() && !itrkr->false_positive() && _visdat->no_recent_large_brightness_events(time)) {
@@ -252,7 +254,7 @@ void DroneNavigation::update(double time) {
                 break;
             }
 
-            if (_iceptor.trigger_takeoff(_trackers->insecttracker_best()) && _nav_flight_mode == nfm_hunt) {
+            if (_iceptor.trigger_takeoff() && _nav_flight_mode == nfm_hunt) {
                 setpoint_pos_world = _iceptor.aim_pos();
                 setpoint_vel_world = _iceptor.aim_vel();
                 setpoint_acc_world = _iceptor.aim_acc();
@@ -292,7 +294,7 @@ void DroneNavigation::update(double time) {
             //update target chasing waypoint and speed
             // if (_iceptor.aim_in_range()) {
             setpoint_pos_world = _iceptor.aim_pos();
-            setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, _trackers->dronetracker()->Last_track_data().pos(), CameraView::relaxed);
+            setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, _trackers->dronetracker()->last_track_data().pos(), CameraView::relaxed);
             setpoint_vel_world = _iceptor.aim_vel();
             setpoint_acc_world = _iceptor.aim_acc();
             // }
@@ -350,7 +352,7 @@ void DroneNavigation::update(double time) {
             }
 
             if (current_waypoint->mode == wfm_landing || current_waypoint->mode == wfm_yaw_reset) {
-                cv::Point3f drone_location = _trackers->dronetracker()->Last_track_data().pos();
+                cv::Point3f drone_location = _trackers->dronetracker()->last_track_data().pos();
                 cv::Point3f dis = setpoint_pos_world_landing - drone_location;
                 if (normf(dis) > 0.4f) {
                     dis = dis/normf(dis);
@@ -358,7 +360,7 @@ void DroneNavigation::update(double time) {
                 }
             }
             if (_dctrl->dist_to_setpoint() *1000 < current_waypoint->threshold_mm * distance_threshold_f
-                    && normf(_trackers->dronetracker()->Last_track_data().state.vel) < current_waypoint->threshold_v
+                    && normf(_trackers->dronetracker()->last_track_data().state.vel) < current_waypoint->threshold_v
                     && _trackers->dronetracker()->n_frames_tracking()>5)
             {
                 if ((static_cast<float>(time - time_wp_reached) > current_waypoint->hover_pause && time_wp_reached > 0) || current_waypoint->hover_pause <= 0) {
@@ -431,7 +433,7 @@ void DroneNavigation::update(double time) {
         } case ns_wait_reset_yaw: {
             _dctrl->flight_mode(DroneController::fm_reset_yaw);
             bool drone_pos_ok = _dctrl->dist_to_setpoint() *1000 < current_waypoint->threshold_mm * distance_threshold_f
-                                && normf(_trackers->dronetracker()->Last_track_data().state.vel) < current_waypoint->threshold_v
+                                && normf(_trackers->dronetracker()->last_track_data().state.vel) < current_waypoint->threshold_v
                                 && _trackers->dronetracker()->n_frames_tracking()>5;
 
             if(!_trackers->dronetracker()->check_yaw(time) || (time-time_initial_reset_yaw > yaw_reset_duration && drone_pos_ok)) {
@@ -467,7 +469,7 @@ void DroneNavigation::update(double time) {
             if (new_pos_setpoint.y < pad_pos.y) {
                 // new_pos_setpoint.y = pad_pos.y;
                 setpoint_vel_world = {0};
-                if ((!_dctrl->landing()) && ((_trackers->dronetracker()->Last_track_data().spos().y < pad_pos.y+0.2f) || (!_trackers->dronetracker()->Last_track_data().spos_valid)))
+                if ((!_dctrl->landing()) && ((_trackers->dronetracker()->last_track_data().spos().y < pad_pos.y+0.2f) || (!_trackers->dronetracker()->last_track_data().spos_valid)))
                     _dctrl->flight_mode(DroneController::fm_ff_landing_start);
             }
             setpoint_pos_world = new_pos_setpoint;
@@ -640,7 +642,7 @@ void DroneNavigation::demo_flight(std::string flightplan_fn) {
         fp.serialize("./logging/flightplan.xml"); // write a copy of the currently used flightplan to the logging dir
         waypoints = fp.waypoints();
         wpid = 0;
-        next_waypoint(waypoints[wpid],_trackers->dronetracker()->Last_track_data().time);
+        next_waypoint(waypoints[wpid],_trackers->dronetracker()->last_track_data().time);
         _navigation_status = ns_takeoff;
     } else
     {

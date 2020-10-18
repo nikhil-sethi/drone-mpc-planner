@@ -161,7 +161,7 @@ void DroneTracker::update(double time, bool drone_is_active) {
 
     delete_takeoff_fake_motion();
     clean_ignore_blobs(time);
-    (*_logger) << static_cast<int16_t>(_drone_tracking_status) << ";" << Last_track_data().yaw_deviation << ";";
+    (*_logger) << static_cast<int16_t>(_drone_tracking_status) << ";" << last_track_data().yaw_deviation << ";";
 }
 
 void DroneTracker::delete_takeoff_fake_motion() {
@@ -292,7 +292,7 @@ void DroneTracker::detect_deviation_angle() {
 
     track_history.back().yaw_deviation_valid = false;
 
-    bowling_vector.push_back(Last_track_data());
+    bowling_vector.push_back(last_track_data());
 
     if(bowling_vector.size()>= 2*index_difference) {
 

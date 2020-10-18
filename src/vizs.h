@@ -33,8 +33,6 @@ private:
 
     VisionData * _visdat;
     DroneController *_dctrl;
-    tracking::DroneTracker *_dtrkr;
-    tracking::InsectTracker *_itrkr;
     tracking::TrackerManager * _trackers;
     navigation::DroneNavigation *_dnav;
     MultiModule *_rc;
@@ -151,7 +149,7 @@ public:
     void render();
     void add_plot_sample(void);
     void set_generator_cam(GeneratorCam * cam) {generator_cam = cam; generator_cam_set=true;}
-    void update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, double time, bool draw_plots, tracking::InsectTracker *itrkr);
+    void update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, double time, bool draw_plots);
     void init(VisionData * visdat, tracking::TrackerManager *imngr, DroneController *dctrl, navigation::DroneNavigation *dnav, MultiModule *rc, bool fromfile);
     void close();
 

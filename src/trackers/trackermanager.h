@@ -158,7 +158,6 @@ private:
     detection_mode _mode;
 
     DroneTracker * _dtrkr;
-    InsectTracker * default_itrkr;
 
     std::vector<logging::InsectReader> replay_logs;
     cv::Mat diff_viz;
@@ -185,12 +184,16 @@ public:
     }
 
     std::tuple<bool, BlinkTracker *> blinktracker_best();
-    InsectTracker *insecttracker_best();
+
+    std::vector<ItemTracker *>all_target_trackers();
+    InsectTracker * target_insecttracker();
+    bool tracking_a_target();
+    double target_last_detection();
+    track_data target_last_trackdata();
     DroneTracker * dronetracker() { return _dtrkr; }
     void init(ofstream *logger, VisionData *visdat, CameraView *camview);
     void update(double time, bool drone_is_active);
     void close();
-
 
     void init_replay_moth(std::string file) {
         ReplayTracker *rt;

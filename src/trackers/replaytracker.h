@@ -21,12 +21,8 @@ public:
     bool tracking() {return _tracking;}
     int16_t id() {return _id;}
 
-    bool check_ignore_blobs(BlobProps * pbs [[maybe_unused]]) {
-        return false;
-    }
-    void calc_world_item(BlobProps * pbs, double time [[maybe_unused]]) {
-        pbs->world_props.valid = false;
-    }
+    bool check_ignore_blobs(BlobProps * pbs [[maybe_unused]]) {return false;}
+    void calc_world_item(BlobProps * pbs, double time [[maybe_unused]]) {pbs->world_props.valid = false;}
 
     bool delete_me() {
         if (logreader.done()) {

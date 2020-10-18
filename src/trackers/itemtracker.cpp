@@ -220,7 +220,7 @@ void ItemTracker::append_log() {
 
         (*_logger) << _n_frames_lost << ";" << _n_frames_tracking << ";" << _tracking << ";";
         //log all world stuff
-        track_data last = Last_track_data();
+        track_data last = last_track_data();
         (*_logger) << last.state.pos.x << ";" << last.state.pos.y << ";" << last.state.pos.z << ";" ;
         (*_logger) << last.state.spos.x << ";" << last.state.spos.y << ";" << last.state.spos.z << ";";
         (*_logger) << last.state.vel.x << ";" << last.state.vel.y << ";" << last.state.vel.z << ";" ;
@@ -576,7 +576,7 @@ void ItemTracker::update_state(Point3f measured_world_coordinates,double time) {
     data.acc_valid = smoother_accX.ready();
 
     data.time = time;
-    _last_sighting_time = time;
+    _last_detection = time;
     data.dt = dt;
     reset_filters = false;
     track_history.push_back(data);
@@ -647,8 +647,6 @@ float ItemTracker::score(BlobProps blob, ImageItem ref) {
     }
 
     float score = im2world_err_ratio*0.75f + 0.25f*im_size_pred_err_ratio;
-    std::cout <<"pred errs: " << score << ", " << im2world_err_ratio << ", " << im_size_pred_err_ratio << std::endl;
-
     return score;
 }
 

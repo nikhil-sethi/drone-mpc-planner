@@ -14,12 +14,10 @@ cv::Scalar linecolors[] = {green,blue,red,cv::Scalar(0,255,255),cv::Scalar(255,2
 cv::Scalar fore_color(255,255,255);
 cv::Scalar background_color(0,0,0);
 
-void Visualizer::init(VisionData *visdat, tracking::TrackerManager *imngr, DroneController *dctrl, navigation::DroneNavigation *dnav, MultiModule *rc, bool fromfile) {
+void Visualizer::init(VisionData *visdat, tracking::TrackerManager *trackers, DroneController *dctrl, navigation::DroneNavigation *dnav, MultiModule *rc, bool fromfile) {
     _visdat = visdat;
     _dctrl = dctrl;
-    _trackers = imngr;
-    _dtrkr = _trackers->dronetracker();
-    _itrkr = _trackers->insecttracker_best();
+    _trackers = trackers;
     _dnav = dnav;
     _rc = rc;
 
@@ -49,20 +47,22 @@ void Visualizer::add_plot_sample(void) {
         throttle_min_bound.push_back(static_cast<float>(RC_BOUND_MIN));
         throttle_max_bound.push_back(static_cast<float>(RC_BOUND_MAX));
 
-        track_data data = _dtrkr->Last_track_data();
+
+        auto dtrkr = _trackers->dronetracker();
+        track_data data = dtrkr->last_track_data();
         dt.push_back(data.dt);
         dt_target.push_back(1.f/pparams.fps);
 
-        track_data data_target = _itrkr->Last_track_data();
+        track_data data_target = _trackers->target_last_trackdata();
 
         if (data.pos_valid) {
             posX_drone.push_back(-data.state.pos.x);
             posY_drone.push_back(data.state.pos.y);
             posZ_drone.push_back(-data.state.pos.z);
-            im_posX_drone.push_back(_dtrkr->image_item().x);
-            im_posY_drone.push_back(_dtrkr->image_item().y);
-            im_disp_drone.push_back(_dtrkr->image_item().disparity);
-            im_size_drone.push_back(_dtrkr->image_item().size);
+            im_posX_drone.push_back(dtrkr->image_item().x);
+            im_posY_drone.push_back(dtrkr->image_item().y);
+            im_disp_drone.push_back(dtrkr->image_item().disparity);
+            im_size_drone.push_back(dtrkr->image_item().size);
             sposX.push_back(-data.state.spos.x);
             sposY.push_back(data.state.spos.y);
             sposZ.push_back(-data.state.spos.z);
@@ -360,7 +360,7 @@ void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis,float
     putText(resFrame, _dctrl->Joy_State_str(),cv::Point(525*_res_mult,82*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     putText(resFrame,_trackers->mode_str(),cv::Point(220*_res_mult,96*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
 
-    putText(resFrame,_dtrkr->drone_tracking_state(),cv::Point(450*_res_mult,96*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame,_trackers->dronetracker()->drone_tracking_state(),cv::Point(450*_res_mult,96*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     putText(resFrame,_dnav->interceptor().Interceptor_State(),cv::Point(450*_res_mult,70*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
 
     if (_fromfile) {
@@ -407,33 +407,36 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
 }
 
 
-void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, double time, bool draw_plots, tracking::InsectTracker *itrkr) {
+void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, double time, bool draw_plots) {
     enable_plots = draw_plots;
     if (new_tracker_viz_data_requested) {
         lock_frame_data.lock();
 
         static float min_dis = 9999;
         float dis = 0;
-        if (_dtrkr->n_frames_tracking()>0 && _itrkr->n_frames_tracking()>0) {
+        auto dtrkr = _trackers->dronetracker();
+        auto itrkr = _trackers->target_insecttracker();
+        if (dtrkr->tracking() && itrkr) {
 
-            auto pd = _dtrkr->world_item().pt;
-            auto pi = _itrkr->world_item().pt;
+            auto pd = dtrkr->world_item().pt;
+            auto pi = itrkr->world_item().pt;
             dis = normf(pd-pi);
 
             if (dis < min_dis)
                 min_dis = dis;
         }
 
-        _itrkr = itrkr;
         tracker_viz_base_data.frameL = frameL;
         tracker_viz_base_data.dis = dis;
         tracker_viz_base_data.min_dis = min_dis;
         tracker_viz_base_data.setpoint = setpoint;
         tracker_viz_base_data.time = time;
-        tracker_viz_base_data.drn_path = _dtrkr->path;
-        tracker_viz_base_data.drn_predicted_path = _dtrkr->predicted_image_path;
-        tracker_viz_base_data.ins_path = _itrkr->path;
-        tracker_viz_base_data.ins_predicted_path = _itrkr->predicted_image_path;
+        tracker_viz_base_data.drn_path = dtrkr->path;
+        tracker_viz_base_data.drn_predicted_path = dtrkr->predicted_image_path;
+        if (itrkr) {
+            tracker_viz_base_data.ins_path = itrkr->path;
+            tracker_viz_base_data.ins_predicted_path = itrkr->predicted_image_path;
+        }
 
         new_tracker_viz_data_requested = false;
         lock_frame_data.unlock();
@@ -595,13 +598,14 @@ void Visualizer::paint() {
             namedWindow("tracking results", cv::WINDOW_OPENGL | cv::WINDOW_AUTOSIZE);
         }
         cv::imshow("tracking results", trackframe);
-        if (_dtrkr->diff_viz.cols) {
+        auto drone_diff_viz = _trackers->dronetracker()->diff_viz;
+        if (drone_diff_viz.cols) {
             static bool drn_diff_viz_initialized = false;
             if (!drn_diff_viz_initialized) {
                 drn_diff_viz_initialized = true;
                 namedWindow("drn_diff",cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
             }
-            cv::imshow("drn_diff", _dtrkr->diff_viz);
+            cv::imshow("drn_diff", drone_diff_viz);
         }
         if (_trackers->viz_max_points.cols) {
             static bool motion_points_viz_initialized = false;
@@ -619,13 +623,15 @@ void Visualizer::paint() {
             }
             imshow("stereo",_trackers->dronetracker()->viz_disp);
         }
-        if (_trackers->insecttracker_best()->viz_disp.cols>0) {
-            static bool stereo_viz_initialized = false;
-            if (!stereo_viz_initialized) {
-                stereo_viz_initialized = true;
-                namedWindow("stereo",cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
+        if (_trackers->target_insecttracker()) {
+            if (_trackers->target_insecttracker()->viz_disp.cols>0) {
+                static bool stereo_viz_initialized = false;
+                if (!stereo_viz_initialized) {
+                    stereo_viz_initialized = true;
+                    namedWindow("stereo",cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
+                }
+                imshow("stereo",_trackers->target_insecttracker()->viz_disp);
             }
-            imshow("stereo",_trackers->insecttracker_best()->viz_disp);
         }
 
         new_tracker_viz_data_requested = true;
