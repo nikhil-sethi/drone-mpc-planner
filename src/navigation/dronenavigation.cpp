@@ -298,8 +298,10 @@ void DroneNavigation::update(double time) {
             setpoint_acc_world = _iceptor.target_accelleration();
             // }
 
-            if (_dctrl->telemetry().batt_cell_v  < dparams.land_cell_v)
+            if (_dctrl->telemetry().batt_cell_v  < dparams.land_cell_v) {
+                low_battery_triggered = true;
                 _navigation_status = ns_goto_yaw_waypoint;
+            }
 
             if (_nav_flight_mode == nfm_manual)
                 _navigation_status=ns_manual;
