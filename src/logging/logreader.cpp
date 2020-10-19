@@ -48,7 +48,7 @@ void LogReader::read_multi_insect_logs(string path) {
     //read multi insect logs
     vector<string> ins_logs;
     for (auto entry : experimental::filesystem::directory_iterator(path)) {
-        if (!entry.path().extension().string().compare(".csv") && entry.path().filename().string().compare("log.csv"))
+        if (!entry.path().extension().string().compare(".csv") && entry.path().filename().string().compare("log.csv") && entry.path().filename().string().compare("frames.csv"))
             ins_logs.push_back(entry.path().string());
     }
     for (auto & f : ins_logs) {

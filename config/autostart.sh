@@ -47,6 +47,7 @@ while [ 1 ]; do
 	echo "Drone ID: $DRONE_ID" >> terminal.log
 
 	./pats --pats-xml /home/pats/code/pats/xml/pats_deploy.xml --drone-id $DRONE_ID 2>&1 | /usr/bin/tee --append terminal.log || true
+	../../config/cut_moths.py -i /home/pats/code/pats/pc/build/
 
 	sleep 5s
 done

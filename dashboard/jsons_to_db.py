@@ -29,6 +29,18 @@ def store_moths(fn,data):
     cur.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='moth_records' ''')
     moth_table_exist = cur.fetchone()[0]==1
 
+    columns = [i[1] for i in cur.execute('PRAGMA table_info(moth_records)')]
+
+    #this section only is needed once to upgrade the db
+    if 'Version' not in columns:
+        cur.execute('ALTER TABLE moth_records ADD COLUMN Version TEXT')
+    if 'Mode' not in columns:
+        cur.execute('ALTER TABLE moth_records ADD COLUMN Mode TEXT')
+    if 'Video_Filename' not in columns:
+        cur.execute('ALTER TABLE moth_records ADD COLUMN Video_Filename TEXT')
+    if 'FP' not in columns:
+        cur.execute('ALTER TABLE moth_records ADD COLUMN FP TEXT')
+
     sql_insert = ''
     for moth in moths:
 
@@ -186,7 +198,7 @@ while True:
             with open(filename) as json_file:
                 with open(flag_fn,'w') as flag_f:
                     data = json.load(json_file)
-                    required_version='1.1'
+                    required_version='1.2'
                     if "version" in data and data["version"] == required_version:
                         store_data(data,os.path.basename(filename))
                         flag_f.write('OK')

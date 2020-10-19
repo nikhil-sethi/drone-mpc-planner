@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
+import os, glob, json,math,re,datetime, argparse, socket, pickle
 import numpy as np
 import pandas as pd
 pd.options.mode.chained_assignment = None
-import os, glob, json
-import re, datetime
-import argparse, socket
-import pickle
 from tqdm import tqdm
-import datetime
 from pathlib import Path
 
 from scipy.interpolate import interp1d
@@ -170,9 +166,13 @@ class NaturalCubicSpline(AbstractSpline):
         return X_spl
 
 def interpolate_zeros_and_spline(vals):
-    """Sometimes unexplainable zeros in a moth flight are found these zeros will be interpolated"""
+    """Sometimes unexplainable zeros in a insect flight are found these zeros will be interpolated"""
     vals = np.trim_zeros(vals)
+    if len(vals) < 2:
+        return vals
     idx = np.nonzero(vals)
+    if len(idx) < 3:
+        return vals
     x = np.arange(len(vals))
     interp = interp1d(x[idx], vals[idx], kind="quadratic")
     y = interp(x)
@@ -303,160 +303,127 @@ def hunts_in_folder(folder,operational_log_start):
     return data_hunt
 
 
-def moth_counts_in_folder(folder):
+def detection_counts_in_folder(folder):
 
     #concat all csv files containing dates
-    files = natural_sort([fp for fp in glob.glob(os.path.join(folder, "logging", "log*.csv")) if "itrk0" not in fp])
-    try:
-        header = files[-1] #last entry is the log.csv file, which contains the header for all other log*.csv files
-        files.pop()  # remove the header file
-        df = pd.read_csv(header, sep=";")
-        df["filename"] = os.path.basename(header)
-    except:
-        print("No header file found") # normally happens when dir got no 'logging' dir
-        return []
+    detection_fns = natural_sort([fp for fp in glob.glob(os.path.join(folder, "logging", "log_*.csv")) if "itrk0" not in fp])
 
-    ilog_dict = {}
-    ilog_lst = []
-    for file in files:
-        with open (file, "r") as ilog:
-            first_line=ilog.readline()
-            if first_line != '':
-                first_RS_ID=first_line.split(';')[1]
-                ilog_dict[first_RS_ID] = file
-                ilog_lst += [[int(first_RS_ID),file]]
+    valid_detections = []
+    prev_RS_ID = -1
+    for detection_fn in detection_fns:
+        with open (detection_fn, "r") as detection_log:
+            log = pd.read_csv(detection_fn, sep=";")
 
-    #read_insect_file
-    ins_path = os.path.join(folder, "logging", "log_itrk0.csv")
-    df_ins = pd.read_csv(ins_path, sep=";")
-
-    processed_df = df_ins[df_ins["foundL_insect"].notna()]
-
-    # now calculate the mean and standard deviation of each suspected moth flight
-    moth_found = processed_df["foundL_insect"].values
-
-    elapsed_time = processed_df["time"].values
-    RS_ID = processed_df["RS_ID"].values
-    xs = processed_df["posX_insect"].values
-    ys = processed_df["posY_insect"].values
-    zs = processed_df["posZ_insect"].values
-
-    moth_found[(xs == 0) | (ys == 0) | (zs == 0)] = 0 # if xyz values missing, say moth is not seen
-    nums, inds, clas = rle(moth_found) # get all possible moth flight windows
-
-    # add seperate moth flights together that are too close together to be two different flights
-    seq_lens, start_ind = [], []
-    if nums is not None:
-        for i in range(len(nums)):
-            if clas[i] == 1:
-                start_ind.append(inds[i])
-                seq_lens.append(nums[i])
-
-    prev_rsid = None
-    found_moths = []
-    if start_ind is not None:
-        for i in range(len(start_ind)):
-            non_smooth_x_p = xs[start_ind[i]:start_ind[i]+seq_lens[i] - 1] # get the x coords for the moth flight
-            non_smooth_y_p = ys[start_ind[i]:start_ind[i]+seq_lens[i] - 1]
-            non_smooth_z_p = zs[start_ind[i]:start_ind[i]+seq_lens[i] - 1]
-            if np.min([non_smooth_x_p.shape[0], non_smooth_y_p.shape[0], non_smooth_z_p.shape[0]]) < 50:
+            elapsed_time = log["time"].values
+            lost = log['n_frames_lost_insect'].values > 0
+            remove_ids = [i for i, x in enumerate(lost) if x]
+            if len(elapsed_time) < 20 or len(elapsed_time) - len(remove_ids) < 5:
                 continue
-            x_p = interpolate_zeros_and_spline(non_smooth_x_p) # splines the tensor and removes trailing zeros
-            y_p = interpolate_zeros_and_spline(non_smooth_y_p)
-            z_p = interpolate_zeros_and_spline(non_smooth_z_p)
 
-            t_p = elapsed_time[start_ind[i]:start_ind[i]+seq_lens[i] - 1][:x_p.shape[0]].astype('float64') # get all the elapsed time for this moth flight - the trailing zeros
-            dt = t_p[1:]-t_p[:-1] # get time between elapsed times
+            RS_ID = log['RS_ID'].values
+            xs = log['sposX_insect'].values
+            ys = log['sposY_insect'].values
+            zs = log['sposZ_insect'].values
 
-            dx = (x_p[1:]-x_p[:-1]) / dt # get the derivative of x coords
-            dy = (y_p[1:]-y_p[:-1]) / dt
-            dz = (z_p[1:]-z_p[:-1]) / dt
+            #FIXME: I don't think this works very well:
+            x_ip = interpolate_zeros_and_spline(xs)
+            y_ip = interpolate_zeros_and_spline(ys)
+            z_ip = interpolate_zeros_and_spline(zs)
 
-            part_vel = np.sqrt(dx**2+dy**2+dz**2)
-            mean_vel = part_vel.mean()
-            std_vel = part_vel.std()
+            time = elapsed_time.astype('float64')
+            dt = time[-1]-time[0]
 
-            start = elapsed_time[start_ind[i]]
-            end = elapsed_time[start_ind[i]+seq_lens[i] - 1]
-            duration = end - start # total duration of the moth flight
-            first_RS_ID = str(int(RS_ID[start_ind[i]]))
-            if  first_RS_ID in ilog_dict:
-                filename = ilog_dict[first_RS_ID]
+            vxs = log['svelX_insect'].values
+            vys = log['svelY_insect'].values
+            vzs = log['svelZ_insect'].values
+
+
+            vx = np.delete(vxs,remove_ids)
+            vy = np.delete(vys,remove_ids)
+            vz = np.delete(vzs,remove_ids)
+
+
+            v = np.sqrt(vx**2+vy**2+vz**2)
+            v_mean = v.mean()
+            v_std = v.std()
+
+            filtered_elepased = np.delete(elapsed_time,remove_ids)
+
+            start = filtered_elepased[0]
+            end = filtered_elepased[-1]
+            duration = end - start
+            first_RS_ID = str(RS_ID[0])
+            filename = os.path.basename(detection_fn)
+            video_filename = os.path.dirname(detection_fn) + '/' + filename.replace('log_itrk','moth').replace('csv','mkv')
+            if not os.path.exists(video_filename):
+                video_filename = 'NA'
             else:
-                first_RS_ID = int(RS_ID[start_ind[i]])
-                filename = 'unknown'
-                for i in range(1,len(ilog_lst)):
-                    if ilog_lst[i-1][0] <= first_RS_ID and ilog_lst[i][0] > first_RS_ID:
-                        filename = ilog_lst[i-1][1]
+                video_filename = os.path.basename(video_filename)
 
-            # # filter on image coords
-            # x_img_p = x_img[start_ind[i]:start_ind[i]+seq_lens[i] - 1]
-            # y_img_p = y_img[start_ind[i]:start_ind[i]+seq_lens[i] - 1]
-            # dx_img = (x_img_p[1:]-x_img_p[:-1])
-            # dy_img = (y_img_p[1:]-y_img_p[:-1])
-            # correct_image_movement = np.abs(dx_img).mean() > 0.15 and np.abs(dy_img).mean() > 0.15
-
-            FP_theshold = np.mean(np.ones(shape=(3,3)) - np.abs(np.corrcoef([x_p, y_p, z_p]))) >= 0.008
-            correct_duration = duration >= 0.05 and duration < 25 # FP if moth flight duration is between certain seconds
+            FP = np.mean(np.ones(shape=(3,3)) - np.abs(np.corrcoef([x_ip, y_ip, z_ip])))
+            FP_OK = FP >= 0.008
+            duration_OK = duration >= 0.05 and duration < 25 # FP if insect flight duration is between certain seconds
 
             # if correct_dist_mean and correct_dist_std and correct_duration:
-            if correct_duration and FP_theshold:
-                v = np.vstack([dx,dy,dz])
-                p1 = np.divide(np.sum(v[:,1:] * v[:,:-1], axis=0), part_vel[1:] * part_vel[:-1])
+            if duration_OK and FP_OK:
+                #I don't know what this does, but it is incorrect #517
+                v_stacked = np.vstack([vx,vy,vz])
+                p1 = np.divide(np.sum(v_stacked[:,1:] * v_stacked[:,:-1], axis=0), v[1:] * v[:-1])
                 p1[p1 > 1] = 1
                 p1[p1 < -1] = -1
                 turning_angle = np.arccos(p1)
-                p = np.vstack([x_p,y_p,z_p])
+                p = np.vstack([x_ip,y_ip,z_ip])
                 np.seterr(divide='ignore')
                 radius_of_curve = np.divide(np.linalg.norm(p[:,2:] - p[:,:-2]), (2 * np.sin(turning_angle)))
-                radial_accelaration = np.divide(np.sum(v[:,1:] * v[:,:-1], axis=0), radius_of_curve)
+                radial_accelaration = np.divide(np.sum(v_stacked[:,1:] * v_stacked[:,:-1], axis=0), radius_of_curve)
 
-                moth_detection_time = (dts + datetime.timedelta(seconds=elapsed_time[start_ind[i]])).strftime('%Y%m%d_%H%M%S')
+                detection_time = (dts + datetime.timedelta(seconds=elapsed_time[0])).strftime('%Y%m%d_%H%M%S')
 
                 if args.v:
-
-                    print(f"RS_ID: {RS_ID[start_ind[i]]} - {RS_ID[start_ind[i]+seq_lens[i] - 1]} - {prev_rsid}")
-                    print(filename, correct_duration, FP_theshold)
-                    print(f"Start time: {moth_detection_time}")
-                    print(f"Moth flight length: {duration} s, {x_p.shape}")
-                    # print(f"Start: {x_p[0], y_p[0], z_p[0]}")
-                    print(np.mean(np.ones(shape=(3,3)) - np.abs(np.corrcoef([x_p, y_p, z_p]))))
+                    print(filename)
+                    print(f'RS_ID: {RS_ID[0]} - {RS_ID[-1]} - {prev_RS_ID}')
+                    print(f'Insect flight length: {"{:.2f}".format(duration)} s')
+                    print(f'FP: {"{:.2f}".format(FP)}')
                     fig = plt.figure()
                     ax = fig.gca(projection='3d')
-                    ax.plot(x_p, -y_p, z_p, label='smoothend moth flight')
-                    ax.scatter(non_smooth_x_p, -non_smooth_y_p, non_smooth_z_p, label='raw moth flight', marker="x")
+                    ax.plot(x_ip, -y_ip, z_ip, label='Insect flight')
                     ax.scatter([-5], [5], [-5], label='anchor', marker="o")
                     ax.legend()
                     ax.set_xlabel('X axis')
                     ax.set_ylabel('Y axis')
                     ax.set_zlabel('Z axis')
                     plt.show()
-                    prev_rsid = RS_ID[start_ind[i]+seq_lens[i] - 1]
 
-                # add frames together
-                moth_data = {"time" : moth_detection_time,
+                detection_data = {"time" : detection_time,
                                 "duration": duration,
-                                "RS_ID" : str(RS_ID[start_ind[i]]),
+                                "RS_ID" : first_RS_ID,
+                                "Vel_mean" : v_mean,
+                                "Vel_std" : v_std,
+                                "Vel_max" : v.max(),
+                                "TA_mean" : str(turning_angle.mean()),
+                                "TA_std" : str(turning_angle.std()),
+                                "TA_max" : str(turning_angle.max()),
+                                "RA_mean" : str(radial_accelaration.mean()),
+                                "RA_std" : str(radial_accelaration.std()),
+                                "RA_max" : str(radial_accelaration.max()),
+                                "FP" : FP,
                                 "Filename" : filename,
-                                "Vel_mean" : mean_vel, # all mean max and std
-                                "Vel_std" : std_vel,
-                                "Vel_max" : part_vel.max(),
-                                "TA_mean" : turning_angle.mean(),
-                                "TA_std" : turning_angle.std(),
-                                "TA_max" : turning_angle.max(),
-                                "RA_mean" : radial_accelaration.mean(),
-                                "RA_std" : radial_accelaration.std(),
-                                "RA_max" : radial_accelaration.max()}
-                found_moths.append(moth_data)
+                                "Video_Filename" : video_filename,
+                                "Mode" : 'monitoring',
+                                "Version": 1.1
+                            }
+                valid_detections.append(detection_data)
 
-    return found_moths
+            prev_RS_ID = first_RS_ID
 
-parser = argparse.ArgumentParser(description='Script that counts the number of detected moths in a directory, bound by the minimum and maximum date.')
+    return valid_detections
+
+parser = argparse.ArgumentParser(description='Script that counts the number of valid insect detections in a directory, bound by the minimum and maximum date.')
 parser.add_argument('-i', help="Path to the folder with logs", required=True)
 parser.add_argument('-s', help="Directory date to start from", default="20000101_000000", required=False)
 parser.add_argument('-e', help="Directory date to end on", default="30000101_000000", required=False)
-parser.add_argument('-v', help="View the path of the found moth flights in a plot", required=False, default=False, action='store_true')
-parser.add_argument('--filename', help="Path and filename to store results in", default="./moth.json")
+parser.add_argument('-v', help="View the path of the found insect flights in a plot", required=False, default=False, action='store_true')
+parser.add_argument('--filename', help="Path and filename to store results in", default="./detections.json")
 parser.add_argument('--system', help="Override system name", default=socket.gethostname())
 args = parser.parse_args()
 
@@ -472,7 +439,7 @@ if args.v:
 found_dirs = glob.glob(args.i + "/202*_*")
 filtered_dirs = [d for d in found_dirs if todatetime(os.path.basename(os.path.normpath(d))) >= min_date and todatetime(os.path.basename(os.path.normpath(d))) <= max_date] # filter the list of dirs to only contain dirs between certain dates
 
-moths = []
+detections = []
 statuss = []
 hunts = []
 
@@ -489,22 +456,22 @@ for folder in pbar:
             statuss.append(status_in_dir)
 
         if mode == 'monitoring':
-            moths_in_dir = moth_counts_in_folder(folder)
-            if moths_in_dir != []:
-                [moths.append(moth) for moth in moths_in_dir]
+            detections_in_folder = detection_counts_in_folder(folder)
+            if detections_in_folder != []:
+                [detections.append(detection) for detection in detections_in_folder]
         elif mode == 'hunt' or mode == 'deploy':
             hunts_in_dir = hunts_in_folder(folder,operational_log_start)
             if hunts_in_dir != []:
                 hunts.append(hunts_in_dir)
 
-data_moth = {"from" : args.s,
+data_detections = {"from" : args.s,
         "till" : args.e,
-        "moth_counts" : len(moths),
-        "moths" : moths,
+        "moth_counts" : len(detections),
+        "moths" : detections,
         "hunts" : hunts,
         "mode" : statuss,
         "system" : args.system,
-        "version" : '1.1'}
+        "version" : '1.2'}
 with open(args.filename, 'w') as outfile:
-    json.dump(data_moth, outfile)
+    json.dump(data_detections, outfile)
 print("Counting complete, saved in {0}".format(args.filename))

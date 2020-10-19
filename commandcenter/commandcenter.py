@@ -364,16 +364,6 @@ class SystemWidget(QWidget):
                         line = '    <Member Name=\"close_after_n_images\">10800</Member>\n'
                     else:
                         line = '    <Member Name=\"close_after_n_images\">324000</Member>\n'
-                elif line.find('\"video_cuts\"') != -1:
-                    if self.combo_mode.currentText() == "Monitoring":
-                        line = '    <Member Name=\"video_cuts\">video_mkv</Member>\n'
-                    else:
-                        line = '    <Member Name=\"video_cuts\">video_disabled</Member>\n'
-                elif line.find('\"video_raw\"') != -1:
-                    if self.combo_mode.currentText() == "Hunt" or self.combo_mode.currentText() == "Waypoint":
-                        line = '    <Member Name=\"video_raw\">video_mkv</Member>\n'
-                    else:
-                        line = '    <Member Name=\"video_raw\">video_disabled</Member>\n'
                 elif line.find('\"max_cam_roll\"') != -1:
                     self.max_cam_roll = 0.5
                     if self.combo_mode.currentText() == "Monitoring":

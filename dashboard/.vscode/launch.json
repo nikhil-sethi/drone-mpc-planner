@@ -1,13 +1,30 @@
 {
     "version": "0.2.0",
     "configurations": [
+
       {
         "name": "Current File",
         "type": "python",
-        "args": [],
+        "args": ["-i","/home/houjebek/Downloads/pats_data/pats4"],
         "request": "launch",
         "program": "${file}",
         "console": "integratedTerminal"
       },
+      {
+        "name": "log_to_json",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/log_to_json.py",
+        "args": ["-i","/home/houjebek/Downloads/pats_data/pats12"],
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "jsons_to_db",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/jsons_to_db.py",
+        "args": ["-i","~/code/pats/dashboard/"],
+        "console": "integratedTerminal"
+      }
     ]
   }

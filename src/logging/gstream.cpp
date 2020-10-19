@@ -88,8 +88,7 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
             _appsrc = gst_element_factory_make ("appsrc", "source");
             videoconvert = gst_element_factory_make ("videoconvert", "videoconvert");
             capsfilter = gst_element_factory_make ("capsfilter", NULL);
-            encoder = gst_element_factory_make ("vaapih265enc", "encoder"); // hardware encoding
-            parse = gst_element_factory_make ("h265parse", "parse");
+
             if (file.back() == '4')
                 mux = gst_element_factory_make ("mp4mux", "mux");
             else
@@ -121,6 +120,8 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
                                                         "framerate", GST_TYPE_FRACTION, gstream_fps, 1,NULL);
                 g_object_set (G_OBJECT (_appsrc), "caps",caps_appsrc, NULL);
                 gst_caps_unref(caps_appsrc);
+                parse = gst_element_factory_make ("h265parse", "parse");
+                encoder = gst_element_factory_make ("vaapih265enc", "encoder"); // hardware encoding
 
                 // the colorspace conversion to I420 doesn't play nice with our viz. So up the saturation so it looks a bit the same as before.
 
@@ -145,11 +146,7 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
                                                         "framerate", GST_TYPE_FRACTION, gstream_fps, 1,NULL);
                 g_object_set (G_OBJECT (_appsrc), "caps",caps_appsrc, NULL);
                 gst_caps_unref(caps_appsrc);
-
-                //The cqp rate-control setting seems to leave noticable noice, so we set a fixed bitrate. 5000 seems to be a nice compromise between quality and size.
-                //For logging (with stringent size and download constraints), cqp could be better though. It is about 5x smaller and the noise does not really influence our algorithms.
-                //To have a similar size as the intel rs bag one would need to increase to 5000000 (5M), but they are using mjpeg which is much less efficient
-                g_object_set (G_OBJECT (encoder),  "rate-control", 2,"bitrate", 5000, NULL);
+                encoder = gst_element_factory_make ("vaapivp9enc", "encoder"); // hardware encoding
 
                 gst_bin_add_many (GST_BIN (_pipeline),_appsrc,encoder,mux,videosink,NULL);
                 gst_element_link_many (_appsrc,encoder,mux,videosink,NULL);

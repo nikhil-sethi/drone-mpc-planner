@@ -16,6 +16,14 @@
         "program": "${workspaceFolder}/render_videos.py",
         "args": ["-i","/home/houjebek/Downloads/pats_data/pats17"],
         "console": "integratedTerminal"
+      },
+      {
+        "name": "cut_moths.py",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/cut_moths.py",
+        "args": ["-i","~/code/pats/pc/build-vscode/"],
+        "console": "integratedTerminal"
         
       }
     ]

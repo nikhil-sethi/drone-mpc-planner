@@ -12,6 +12,7 @@
 static stopwatch_c swc;
 GstElement *_pipeline,*_appsink;
 
+#define USE_DECODEBIN true
 
 void FileCam::init () {
     if (!file_exist(video_fn)) {

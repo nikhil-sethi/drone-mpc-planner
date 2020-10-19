@@ -10,7 +10,7 @@ static std::ofstream insectlogger;
 
 void InsectTracker::init(int id, VisionData *visdat, int16_t viz_id) {
     _insect_trkr_id = id;
-    ItemTracker::init(&insectlogger,visdat,"insect",viz_id);
+    ItemTracker::init(visdat,"insect",viz_id);
     _n_frames_lost = 0;
 }
 void InsectTracker::init_logger() {
