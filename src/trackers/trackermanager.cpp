@@ -356,6 +356,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                                 world_dist_to_drone = normf(_dtrkr->drone_takeoff_location()/pparams.imscalef - props->world_props.pt());
 
                             if (world_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_world && im_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_im) {
+                                it->init_logger();
                                 next_insecttrkr_id++;
                                 tracking::WorldItem w(tracking::ImageItem(*props,_visdat->frame_id,100,blob.id),props->world_props);
                                 it->world_item(w);

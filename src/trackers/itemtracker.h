@@ -107,6 +107,7 @@ protected:
     std::ofstream *_logger;
     VisionData * _visdat;
     bool initialized = false;
+    bool initialized_logger = false;
 
     const float certainty_factor = 1.1f; // TODO: tune
     const float certainty_init = 0.1f; // TODO: tune
@@ -123,7 +124,7 @@ protected:
     uint _blobs_are_fused_cnt = 0;
     std::vector<tracking::BlobProps> _all_blobs;
 
-    void init_logger();
+    void init_logger(std::ofstream *logger);
     float stereo_match(cv::Point2f im_posL, float size);
     std::tuple<int,float,int,int> disparity_search_rng(int x1);
     std::tuple<float,float> calc_match_score_masked(int i, int disp_end, int width, int height, cv::Mat diffL_mask_patch, cv::Mat diffR_mask_patch, cv::Mat grayL_patch, cv::Mat grayR_patch, int npixels);
@@ -166,6 +167,7 @@ public:
 
     void close(void);
     void init(std::ofstream *logger, VisionData *_visdat, std::string name, int16_t viz_id);
+    void init(VisionData *_visdat, std::string name, int16_t viz_id);
     virtual void update(double time);
     virtual bool check_ignore_blobs(BlobProps * pbs) = 0;
     virtual void calc_world_item(BlobProps * pbs, double time) = 0;

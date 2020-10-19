@@ -12,11 +12,14 @@ using namespace std;
 
 namespace tracking {
 
-void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string name, int16_t viz_id) {
+void ItemTracker::init(std::ofstream *logger,VisionData *visdat, std::string name, int16_t viz_id) {
+    init(visdat,name,viz_id);
+    init_logger(logger);
+}
+void ItemTracker::init(VisionData *visdat, std::string name, int16_t viz_id) {
     static int16_t trkr_cntr = 0;
     _uid = trkr_cntr++;
     _viz_id = viz_id;
-    _logger = logger;
     _visdat = visdat;
     _name = name;
     track_history_max_size = pparams.fps;
@@ -58,7 +61,6 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
 
     disparity_prev = -1;
 
-    init_logger();
     initialized = true;
 
     if (pparams.has_screen)
@@ -66,7 +68,8 @@ void ItemTracker::init(std::ofstream *logger, VisionData *visdat, std::string na
 
 }
 
-void ItemTracker::init_logger() {
+void ItemTracker::init_logger(std::ofstream *logger) {
+    _logger = logger;
     if (_logger->is_open()) {
         (*_logger) << "imLx_" << _name << ";";
         (*_logger) << "imLy_" << _name << ";";
@@ -92,6 +95,7 @@ void ItemTracker::init_logger() {
         (*_logger) << "saccZ_" << _name << ";";
         (*_logger) << "radius_" << _name << ";";
     }
+    initialized_logger = true;
 }
 
 void ItemTracker::calc_world_props_blob_generic(BlobProps * pbs, bool use_max) {
@@ -693,13 +697,13 @@ void ItemTracker::serialize_settings() {
 }
 
 void ItemTracker::close () {
-    if (initialized) {
+    if (initialized_logger)
         (*_logger) << std::flush;
-        // std::cout << "Closing tracker: " << _name << std::endl;
-        if (pparams.insect_tracking_tuning || pparams.drone_tracking_tuning)
-            serialize_settings();
-        initialized = false;
-    }
+    if (initialized && (pparams.insect_tracking_tuning || pparams.drone_tracking_tuning))
+        serialize_settings();
+    initialized_logger = false;
+    initialized = false;
+
 }
 
 }

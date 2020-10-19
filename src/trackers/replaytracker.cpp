@@ -34,7 +34,7 @@ void ReplayTracker::init_logger() {
     logger_fn = data_output_dir  + "log_rtrkr" + to_string(_id) + ".csv";
     (*_logger).open(logger_fn,std::ofstream::out);
     (*_logger) << "RS_ID;time;";
-    ItemTracker::init_logger();
+    ItemTracker::init_logger(_logger);
     (*_logger) << std::endl;
 }
 
