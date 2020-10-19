@@ -177,7 +177,10 @@ def create_heatmap():
                         [20/20, 'rgba(255,0,0, 0.85)']
                         ],
 
-            colorbar = dict(lenmode='pixels', len=400,yanchor='top',y=1)
+            colorbar = dict(lenmode='pixels', len=400,yanchor='top',y=1),
+
+            hovertemplate='Time: %{x}<br>Count: %{z}<extra></extra>'
+
             ))
     fig['layout']['xaxis']['side'] = 'top'
     fig['layout']['xaxis']['tickangle'] = 45
