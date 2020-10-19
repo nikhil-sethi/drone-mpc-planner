@@ -334,33 +334,44 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                         }
                     }
                 } else if (_mode != mode_idle && _mode != mode_drone_only) {
-                    InsectTracker *it;
-                    it = new InsectTracker();
-                    it->init(next_insecttrkr_id,_visdat,_trackers.size());
-                    it->calc_world_item(props,time);
-                    bool delete_it = true;
-
-                    if (props->world_props.valid) {
-                        //ignore a region around the drone (or take off location)
-                        float dist_to_drone;
-                        if (dronetracker()->tracking()) {
-                            dist_to_drone = normf(dronetracker()->world_item().pt- props->world_props.pt());
-                        } else {
-                            dist_to_drone = normf(dronetracker()->drone_takeoff_location()/pparams.imscalef - props->world_props.pt());
-                        }
-                        if (dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size) {
-                            next_insecttrkr_id++;
-                            tracking::WorldItem w(tracking::ImageItem(*props,_visdat->frame_id,100,blob.id),props->world_props);
-                            it->world_item(w);
-                            _trackers.push_back(it);
-                            blob.trackers.push_back(it);
-                            delete_it = false;
-                        } else {
-                            blob.ignored = true;
-                        }
+                    float im_dist_to_drone;
+                    if (_dtrkr->tracking()) {
+                        im_dist_to_drone = normf(_dtrkr->image_item().pt()-cv::Point2f(props->x,props->y));
+                    } else {
+                        im_dist_to_drone = normf(_dtrkr->drone_takeoff_im_location()/pparams.imscalef - cv::Point2f(props->x,props->y));
                     }
-                    if (delete_it)
-                        delete it;
+                    if (im_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_im) {
+                        InsectTracker *it;
+                        it = new InsectTracker();
+                        it->init(next_insecttrkr_id,_visdat,_trackers.size());
+                        it->calc_world_item(props,time);
+
+                        bool delete_it = true;
+                        if (props->world_props.valid) {
+                            //ignore a region around the drone (or take off location)
+                            float world_dist_to_drone;
+                            if (_dtrkr->tracking())
+                                world_dist_to_drone = normf(_dtrkr->world_item().pt- props->world_props.pt());
+                            else
+                                world_dist_to_drone = normf(_dtrkr->drone_takeoff_location()/pparams.imscalef - props->world_props.pt());
+
+                            if (world_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_world && im_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_im) {
+                                next_insecttrkr_id++;
+                                tracking::WorldItem w(tracking::ImageItem(*props,_visdat->frame_id,100,blob.id),props->world_props);
+                                it->world_item(w);
+                                _trackers.push_back(it);
+                                blob.trackers.push_back(it);
+                                delete_it = false;
+                            } else {
+                                blob.ignored = true;
+                            }
+                        }
+                        if (delete_it)
+                            delete it;
+                    } else {
+                        blob.ignored = true;
+                    }
+
                 }
             }
         }
