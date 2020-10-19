@@ -46,7 +46,7 @@ public:
 private:
 
     float _camera_angle_y_measured_from_depth = 30;
-    bool hasIMU = false;
+    bool isD455 = false;
     double _frame_time_start = -1;
     string replay_dir;
 

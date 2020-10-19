@@ -188,8 +188,8 @@ void Realsense::connect_and_check() {
     if (dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER))
         sn = std::string("#") + dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
 
-    std::size_t found = name.find("D435I");
-    hasIMU = found!=std::string::npos;
+    std::size_t found = name.find("D455");
+    isD455 = found!=std::string::npos;
 
     std::cout << name << " ser: " << sn << std::endl;
 
@@ -387,7 +387,12 @@ std::tuple<float,float,cv::Mat,cv::Mat,float> Realsense::measure_auto_exposure()
 
     rs2::config cfg;
     cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, pparams.fps);
-    cfg.enable_stream(RS2_STREAM_COLOR, 1920, 1080, RS2_FORMAT_BGR8, 30);
+    if (isD455)
+        cfg.enable_stream(RS2_STREAM_COLOR, 1280, 800, RS2_FORMAT_BGR8, 30);
+    else
+        cfg.enable_stream(RS2_STREAM_COLOR, 1920, 1080, RS2_FORMAT_BGR8, 30);
+
+
     cam.start(cfg);
     dev = cam.get_active_profile().get_device(); // after a cam start, dev is changed
     rs2::depth_sensor rs_dev = dev.first<rs2::depth_sensor>();
@@ -433,7 +438,11 @@ std::tuple<float,float,cv::Mat,cv::Mat,float> Realsense::measure_auto_exposure()
         std::cout << "Not all frames contained exosure info: " << actual_exposure_was_measured << " / " << i << std::endl;
 
 
-    cv::Mat frame_bgr = cv::Mat(cv::Size(1920,1080), CV_8UC3, const_cast<void *>(frame.get_color_frame().get_data()), Mat::AUTO_STEP);
+    cv::Mat frame_bgr;
+    if (isD455)
+        frame_bgr = cv::Mat(cv::Size(1280,800), CV_8UC3, const_cast<void *>(frame.get_color_frame().get_data()), Mat::AUTO_STEP);
+    else
+        frame_bgr = cv::Mat(cv::Size(1920,1080), CV_8UC3, const_cast<void *>(frame.get_color_frame().get_data()), Mat::AUTO_STEP);
 
     return std::make_tuple(new_expos,new_gain,frameLt,frame_bgr,brightness);
 
@@ -519,17 +528,14 @@ void Realsense::calib_pose(bool also_do_depth) {
 
     rs2::config cfg;
     cfg.enable_stream(RS2_STREAM_DEPTH, IMG_W, IMG_H, RS2_FORMAT_Z16, pparams.fps);
-    if (hasIMU) {
-        cfg.enable_stream(RS2_STREAM_ACCEL);
-        cfg.enable_stream(RS2_STREAM_GYRO);
-    }
+    cfg.enable_stream(RS2_STREAM_ACCEL);
+    cfg.enable_stream(RS2_STREAM_GYRO);
+
     cam.start(cfg);
     dev = cam.get_active_profile().get_device(); // after a cam start, dev is changed
     cv::Size im_size(IMG_W, IMG_H);
 
-    uint nframes = 1;
-    if (hasIMU)
-        nframes = 10;
+    uint nframes = 10;
     filtering::Smoother smx,smy,smz;
     smx.init(static_cast<int>(nframes));
     smy.init(static_cast<int>(nframes));
@@ -541,26 +547,23 @@ void Realsense::calib_pose(bool also_do_depth) {
         for (uint i = 0; i < nframes; i++) {
             frame = cam.wait_for_frames();
 
-            if (hasIMU) {
-                auto frame_acc = frame.first(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F);
+            auto frame_acc = frame.first(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F);
 
-                if (frame_acc.is<rs2::motion_frame>()) {
-                    rs2::motion_frame mf = frame_acc.as<rs2::motion_frame>();
-                    rs2_vector xyz = mf.get_motion_data();
-                    x = smx.addSample(xyz.x);
-                    y = smy.addSample(xyz.y);
-                    z = smz.addSample(xyz.z);
-                    roll = atanf(-x/sqrtf(y*y + z*z)) * rad2deg;
-                    pitch = 90.f-atanf(y/z) * rad2deg;
-                }
+            if (frame_acc.is<rs2::motion_frame>()) {
+                rs2::motion_frame mf = frame_acc.as<rs2::motion_frame>();
+                rs2_vector xyz = mf.get_motion_data();
+                x = smx.addSample(xyz.x);
+                y = smy.addSample(xyz.y);
+                z = smz.addSample(xyz.z);
+                roll = atanf(-x/sqrtf(y*y + z*z)) * rad2deg;
+                pitch = 90.f-atanf(y/z) * rad2deg;
             }
         }
-        if (hasIMU)
-            std::cout << "Camera roll: " << to_string_with_precision(roll,2) << "°- max: " << pparams.max_cam_roll << "°. Pitch: " << to_string_with_precision(pitch,2) << "°" << std::endl;
+        std::cout << "Camera roll: " << to_string_with_precision(roll,2) << "°- max: " << pparams.max_cam_roll << "°. Pitch: " << to_string_with_precision(pitch,2) << "°" << std::endl;
         wait_cycles--;
     }
 
-    if (also_do_depth || !hasIMU) {
+    if (also_do_depth) {
 
         // Decimation filter reduces the amount of data (while preserving best samples)
         rs2::decimation_filter dec;
@@ -611,77 +614,8 @@ void Realsense::calib_pose(bool also_do_depth) {
         imwrite(disparity_map_wfn,disparity_background);
 
     }
-    if (hasIMU) {
-        camparams.camera_angle_x = roll;
-        camparams.camera_angle_y = pitch;
-    } else { // determine camera angle from the depth map:
-
-        // obtain Point Cloud
-        rs2::pointcloud pc;
-        rs2::points points;
-        points = pc.calculate(frame.get_depth_frame());
-
-        // init variables for plane fitting
-        auto ptr = points.get_vertices();
-        int pp;
-        int p_smooth = 400;
-        int nr_p_far = 50;
-        int nr_p_close = 50;
-        int ppp;
-
-        std::vector<cv::Point3f> pointsFar;
-        std::vector<cv::Point3f> pointsClose;
-        cv::Point3f point_ = {0,0,0};
-        cv::Point3f point_diff = {0,0,0};
-        float alpha = 0;
-
-        // obtain a set of points 'far away' (half way the image) that are averaged over image lines
-        for (ppp=0; ppp<nr_p_far; ppp++) {
-            auto ptr_new = ptr+points.size()-IMG_W/2-p_smooth/2-IMG_W*(nr_p_close+1+ppp);
-            for (pp=0; pp<p_smooth; pp++) {
-                point_.x += ptr_new->x;
-                point_.y += ptr_new->y;
-                point_.z += ptr_new->z;
-                ptr_new++;
-            }
-            point_/=p_smooth;
-            pointsFar.push_back(point_);
-        }
-
-        // obtain a set of points 'close by' (bottom of the image) that are averaged over image lines
-        for (ppp=0; ppp<nr_p_close; ppp++) {
-            auto ptr_new = ptr+points.size()-IMG_W/2-p_smooth/2-IMG_W*ppp;
-            for (pp=0; pp<p_smooth; pp++) {
-                point_.x += ptr_new->x;
-                point_.y += ptr_new->y;
-                point_.z += ptr_new->z;
-                ptr_new++;
-            }
-            point_/=p_smooth;
-            pointsClose.push_back(point_);
-        }
-
-        // calculate angle between 'far away' and 'close by' points, by avaraging over all combinations between both sets
-        for (ppp=0; ppp<nr_p_close; ppp++) {
-            for (pp=0; pp<nr_p_far; pp++) {
-                point_diff = pointsFar.at(pp)-pointsClose.at(ppp);
-                alpha += atanf(point_diff.y/point_diff.z);
-            }
-        }
-        alpha/=(nr_p_close*nr_p_far);
-
-        float old = _camera_angle_y_measured_from_depth;
-
-        _camera_angle_y_measured_from_depth = -alpha*rad2deg; //[degrees]
-        std::cout << "Measured angle: " << _camera_angle_y_measured_from_depth << std::endl;
-        std::cout << "Estimated angle change: " << _camera_angle_y_measured_from_depth - old << std::endl;
-        std::cout << "Set angle_y: " << camparams.camera_angle_y << std::endl;
-
-        if ((fabs(_camera_angle_y_measured_from_depth - old) > 15 && file_exist(calib_rfn)) || _camera_angle_y_measured_from_depth != _camera_angle_y_measured_from_depth) {
-            _camera_angle_y_measured_from_depth = 0;
-            throw my_exit("camera angle change to big!");
-        }
-    }
+    camparams.camera_angle_x = roll;
+    camparams.camera_angle_y = pitch;
     cam.stop();
 }
 
