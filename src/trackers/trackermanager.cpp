@@ -20,7 +20,7 @@ void TrackerManager::init(std::ofstream *logger,VisionData *visdat, CameraView *
     _dtrkr->init(_logger,_visdat,1);
     _trackers.push_back(_dtrkr);
 
-    (*_logger) << "trkrs_state;";
+    (*_logger) << "trkrs_state;n_trackers;n_blobs;";
 #ifdef PROLILING
     (*_logger) << "dur1;dur2;dur3;dur4;dur5;";
 #endif
@@ -62,7 +62,7 @@ void TrackerManager::update(double time, bool drone_is_active) {
     auto dur5 = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - profile_t0).count();
 #endif
 
-    (*_logger) << static_cast<int16_t>(_mode) << ";";
+    (*_logger) << static_cast<int16_t>(_mode) << ";" << _trackers.size() << ";" << _blobs.size() << ";";
 #ifdef PROLILING
     (*_logger) << dur1 << ";"
                << dur2 << ";"
