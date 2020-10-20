@@ -64,6 +64,25 @@ struct processed_blobs {
             return cv::Scalar(255,0,255); // pink
         return cv::Scalar(0,0,0);
     }
+    std::string prefix() {
+        if (trackers.size() == 0 ) {
+            if (ignored || props->world_props.takeoff_reject)
+                return "";
+            else
+                return "";
+        } else if (trackers.size()>1)
+            return "";
+        ItemTracker * trkr = trackers.at(0);
+        if (trkr->type() == tt_drone)
+            return "D";
+        else if (trkr->type() == tt_insect)
+            return "M";
+        else if (trkr->type() == tt_replay)
+            return "";
+        else if (trkr->type() == tt_blink)
+            return "B";
+        return "";
+    }
 };
 
 /*

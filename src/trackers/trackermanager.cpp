@@ -468,7 +468,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                     }
                 }
                 cv::Point target_viz_p = (blob.pt() + cv::Point2f(5,-5))*pparams.imscalef;
-                putText(diff_viz,s,target_viz_p,FONT_HERSHEY_SIMPLEX,0.3,blob.color(),2);
+                putText(diff_viz,blob.prefix() +  s,target_viz_p,FONT_HERSHEY_SIMPLEX,0.3,blob.color(),2);
                 cv::line(diff_viz,target_viz_p,blob.pt()*pparams.imscalef,blob.color());
 
             }
