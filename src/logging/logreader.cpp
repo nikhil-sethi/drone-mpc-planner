@@ -36,7 +36,7 @@ tuple<map<int, LogEntryMain>,map<string, int>> LogReader::read_log(string file) 
         } catch (exception& exp ) {
             string next_line;
             if (getline(infile, next_line))
-                throw my_exit("Could not read log! File: " +file + '\n' + "Line: " + string(exp.what()) + " at: " + line);
+                throw my_exit("Could not read log! File: " +file + '\n' + "Err: " + string(exp.what()) + " at: " + line);
         }
     }
     infile.close();
@@ -84,7 +84,7 @@ LogEntryMain LogReader::create_log_entry(string line, map<string, int> headmap) 
 
     entry.imLx_drone = stof(line_data.at(headmap["imLx_drone"]));
     entry.imLy_drone = stof(line_data.at(headmap["imLy_drone"]));
-    entry.disparity_drone = stof(line_data.at(headmap["disparity_drone"]));
+    entry.disparity_drone = stod(line_data.at(headmap["disparity_drone"]));
 
     entry.auto_throttle = stoi(line_data.at(headmap["autoThrottle"]));
     entry.auto_roll = stoi(line_data.at(headmap["autoRoll"]));
