@@ -137,8 +137,8 @@ def load_mode_data():
     modemap_data = heatmap_data.copy()
     modemap_data.fill(-666)
     for mode in modes:
-        d_mode_start = datetime.datetime.strptime(mode[1], "%Y%m%d_%H%M%S")
-        d_mode_end = datetime.datetime.strptime(mode[2], "%Y%m%d_%H%M%S")
+        d_mode_start = datetime.datetime.strptime(mode[1], "%Y%m%d_%H%M%S")-datetime.timedelta(hours=12)
+        d_mode_end = datetime.datetime.strptime(mode[2], "%Y%m%d_%H%M%S")-datetime.timedelta(hours=12)
         len_hours = math.ceil((d_mode_end-d_mode_start).seconds/3600)
         day = (datetime.datetime(d_mode_start.year, d_mode_start.month, d_mode_start.day) - first_date).days
         hour = d_mode_start.hour
@@ -154,7 +154,7 @@ def load_mode_data():
     for i in range(0,modemap_data.shape[0]):
         for j in range(0,modemap_data.shape[1]):
             if modemap_data[i,j] < -1:
-                heatmap_data[i,(j+12)%24] = -1
+                heatmap_data[i,j] = -1
 
 def natural_sort_systems(l):
     convert = lambda text: int(text) if text.isdigit() else text.lower()

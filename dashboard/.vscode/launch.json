@@ -25,6 +25,14 @@
         "program": "${workspaceFolder}/jsons_to_db.py",
         "args": ["-i","~/jsons"],
         "console": "integratedTerminal"
+      },
+      {
+        "name": "dash",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/pats_dash.py",
+        "args": [],
+        "console": "integratedTerminal"
       }
     ]
   }
