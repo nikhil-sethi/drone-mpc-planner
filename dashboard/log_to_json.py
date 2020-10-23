@@ -204,7 +204,7 @@ def system_status_in_folder(folder):
                     runtime = float(line.split(':')[1])
                     break
 
-    #open terminal log and check whether we was waiting for darkness
+    #open terminal log and check whether we were waiting for darkness
     terminal_log_path = Path(folder,'terminal.log')
     log_start = ''
     daylight_start = ''
@@ -305,10 +305,11 @@ def hunts_in_folder(folder,operational_log_start):
     return data_hunt
 
 
-def detection_counts_in_folder(folder):
+def detection_counts_in_folder(folder,operational_log_start):
 
     #concat all csv files containing dates
     detection_fns = natural_sort([fp for fp in glob.glob(os.path.join(folder, "logging", "log_*.csv")) if "itrk0" not in fp])
+    monitoring_start_datetime = datetime.datetime.strptime(operational_log_start,'%Y%m%d_%H%M%S')
 
     valid_detections = []
     prev_RS_ID = -1
@@ -379,7 +380,7 @@ def detection_counts_in_folder(folder):
                 radius_of_curve = np.divide(np.linalg.norm(p[:,2:] - p[:,:-2]), (2 * np.sin(turning_angle)))
                 radial_accelaration = np.divide(np.sum(v_stacked[:,1:] * v_stacked[:,:-1], axis=0), radius_of_curve)
 
-                detection_time = (dts + datetime.timedelta(seconds=elapsed_time[0])).strftime('%Y%m%d_%H%M%S')
+                detection_time = (monitoring_start_datetime + datetime.timedelta(seconds=elapsed_time[0])).strftime('%Y%m%d_%H%M%S')
 
                 if args.v:
                     print(filename)
@@ -458,7 +459,7 @@ for folder in pbar:
             statuss.append(status_in_dir)
 
         if mode == 'monitoring':
-            detections_in_folder = detection_counts_in_folder(folder)
+            detections_in_folder = detection_counts_in_folder(folder,operational_log_start)
             if detections_in_folder != []:
                 [detections.append(detection) for detection in detections_in_folder]
         elif mode == 'hunt' or mode == 'deploy':
