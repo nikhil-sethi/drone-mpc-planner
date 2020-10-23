@@ -6,6 +6,8 @@ pd.options.mode.chained_assignment = None
 from tqdm import tqdm
 from pathlib import Path
 
+version = "1.2"
+
 from scipy.interpolate import interp1d
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.linear_model import LinearRegression
@@ -410,7 +412,7 @@ def detection_counts_in_folder(folder):
                                 "Filename" : filename,
                                 "Video_Filename" : video_filename,
                                 "Mode" : 'monitoring',
-                                "Version": 1.1
+                                "Version": version
                             }
                 valid_detections.append(detection_data)
 
@@ -471,7 +473,7 @@ data_detections = {"from" : args.s,
         "hunts" : hunts,
         "mode" : statuss,
         "system" : args.system,
-        "version" : '1.2'}
+        "version" : version}
 with open(args.filename, 'w') as outfile:
     json.dump(data_detections, outfile)
 print("Counting complete, saved in {0}".format(args.filename))

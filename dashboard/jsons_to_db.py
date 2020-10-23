@@ -31,7 +31,7 @@ def store_moths(fn,data):
 
     columns = [i[1] for i in cur.execute('PRAGMA table_info(moth_records)')]
 
-    #this section only is needed once to upgrade the db
+    #this section only is needed once to upgrade the db (and can be removed if the main db is upgraded)
     if 'Version' not in columns:
         cur.execute('ALTER TABLE moth_records ADD COLUMN Version TEXT')
     if 'Mode' not in columns:
@@ -54,6 +54,11 @@ def store_moths(fn,data):
             moth_table_exist = True
 
         date = moth['time']
+
+        #fix a bug that lived for a few days having different versioning in the system table and the moth table (can be removed if these jsons are obsolete)
+        if data["version"] != moth["Version"] and str(moth["Version"]) == "1.1":
+            moth["version"] = "1.2"
+
         if sql_insert == '':
             sql_insert = 'INSERT INTO moth_records(system,time,'
             sql_values = ') VALUES(?,?,'
@@ -198,12 +203,13 @@ while True:
             with open(filename) as json_file:
                 with open(flag_fn,'w') as flag_f:
                     data = json.load(json_file)
-                    required_version='1.2'
-                    if "version" in data and data["version"] == required_version:
+                    required_version1='1.2'
+                    required_version2='1.1'
+                    if "version" in data and data["version"] == required_version1 or data["version"] == required_version2:
                         store_data(data,os.path.basename(filename))
                         flag_f.write('OK')
                     else:
-                        flag_f.write('WRONG VERSION ' + data["version"] + '. Want: ' + required_version)
+                        flag_f.write('WRONG VERSION ' + data["version"] + '. Want: ' + required_version1)
 
     clean_mode()
 

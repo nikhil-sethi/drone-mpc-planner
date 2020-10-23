@@ -23,7 +23,7 @@
         "type": "python",
         "request": "launch",
         "program": "${workspaceFolder}/jsons_to_db.py",
-        "args": ["-i","~/code/pats/dashboard/"],
+        "args": ["-i","~/jsons"],
         "console": "integratedTerminal"
       }
     ]
