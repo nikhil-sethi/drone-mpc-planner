@@ -191,14 +191,14 @@ Host pats24
         ProxyJump dash
         Port 8400
 
-Host pats25
+Host pats25 watch
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
         Port 8500
 
-Host pats26
+Host pats26 darkroom
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
