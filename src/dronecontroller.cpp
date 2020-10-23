@@ -1433,14 +1433,14 @@ void DroneController::serialize_settings() {
     outfile.close();
 }
 
-void DroneController::close () {
+void DroneController::close() {
     std::cout << "Final thrust:" << thrust << std::endl;
     if (initialized) {
         std::cout << "closing controller" << std::endl;
         if (pparams.control_tuning)
             serialize_settings();
         initialized = false;
-        if(!log_replay_mode) {
+        if(!log_replay_mode && !flight_aborted()) {
             tparams.thrust = thrust;
             tparams.serialize("../../xml/thrustcalib.xml");
         }
