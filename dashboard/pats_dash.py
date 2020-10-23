@@ -64,15 +64,16 @@ def load_moth_data():
         return
     systems_str = system_sql_str(selected_systems)
     conn,cur = open_db()
+
     sql_str = 'SELECT MIN(time) from moth_records where ' + systems_str
-    if selected_dayrange > 0:
-        start_day = (datetime.datetime.now() - datetime.timedelta(days=selected_dayrange)).strftime("%Y%m%d_%H%M%S")
-        sql_str += 'and time>"' + start_day + '"'
+    start_date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())+datetime.timedelta(hours=12) - datetime.timedelta(days=selected_dayrange)
+    start_date_str = start_date.strftime("%Y%m%d_%H%M%S")
+    sql_str += 'and time>"' + start_date_str + '"'
     cur.execute(sql_str)
     first_date = cur.fetchone()[0]
+
     sql_str = 'SELECT MAX(time) from moth_records where ' + systems_str
-    if selected_dayrange > 0:
-        sql_str += 'and time > "' + start_day + '"'
+    sql_str += 'and time > "' + start_date_str + '"'
     cur.execute(sql_str)
     end_date = cur.fetchone()[0]
     if first_date == None or end_date == None:
@@ -80,9 +81,8 @@ def load_moth_data():
         unique_dates = []
         return
 
-    first_date = datetime.datetime.strptime(first_date, "%Y%m%d_%H%M%S")
     end_date = datetime.datetime.strptime(end_date, "%Y%m%d_%H%M%S")
-    d = first_date
+    d = start_date
     unique_dates = []
     while d <= end_date:
         unique_dates.append(d.strftime("%d-%m-%Y"))
@@ -91,15 +91,15 @@ def load_moth_data():
     heatmap_data = np.zeros((len(unique_dates),24))
     sql_str = 'SELECT time from moth_records where ' + systems_str
     if selected_dayrange > 0:
-        sql_str += 'and time > "' + start_day + '"'
+        sql_str += 'and time > "' + start_date_str + '"'
     cur.execute(sql_str)
     moths = cur.fetchall()
+    cnt = 0
     for moth in moths:
-        d = datetime.datetime.strptime(moth[0], "%Y%m%d_%H%M%S")
-        day = (datetime.datetime(d.year, d.month, d.day) - first_date).days
-        day = (d - first_date).days
+        d = datetime.datetime.strptime(moth[0], "%Y%m%d_%H%M%S")-datetime.timedelta(hours=12)
+        day = (d.date() - start_date.date()).days
         hour = d.hour
-        heatmap_data[day,(hour+12)%24] += 1
+        heatmap_data[day,hour] += 1
 
 def convert_mode_to_number(mode):
     if  mode == 'monitoring':
@@ -122,10 +122,11 @@ def load_mode_data():
         return
     systems_str = system_sql_str(selected_systems)
     conn,cur = open_db()
+
     sql_str = 'SELECT op_mode,start_datetime,end_datetime from mode_records where ' + systems_str
-    if selected_dayrange > 0:
-        start_day = (datetime.datetime.now() - datetime.timedelta(days=selected_dayrange)).strftime("%Y%m%d_%H%M%S")
-        sql_str += 'and start_datetime > "' + start_day + '"'
+    start_date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())+datetime.timedelta(hours=12) - datetime.timedelta(days=selected_dayrange)
+    start_date_str = start_date.strftime("%Y%m%d_%H%M%S")
+    sql_str += 'and start_datetime > "' + start_date_str + '"'
     sql_str += ' ORDER BY "start_datetime"'
     cur.execute(sql_str)
     modes = cur.fetchall()
@@ -140,8 +141,10 @@ def load_mode_data():
         d_mode_start = datetime.datetime.strptime(mode[1], "%Y%m%d_%H%M%S")-datetime.timedelta(hours=12)
         d_mode_end = datetime.datetime.strptime(mode[2], "%Y%m%d_%H%M%S")-datetime.timedelta(hours=12)
         len_hours = math.ceil((d_mode_end-d_mode_start).seconds/3600)
-        day = (datetime.datetime(d_mode_start.year, d_mode_start.month, d_mode_start.day) - first_date).days
+
+        day = (d_mode_start.date() - start_date.date()).days
         hour = d_mode_start.hour
+
         m = convert_mode_to_number(mode[0])
         for h in range(0,len_hours):
             nh = hour+h
@@ -153,7 +156,7 @@ def load_mode_data():
 
     for i in range(0,modemap_data.shape[0]):
         for j in range(0,modemap_data.shape[1]):
-            if modemap_data[i,j] < -1:
+            if modemap_data[i,j] < -1 and heatmap_data[i,j] == 0:
                 heatmap_data[i,j] = -1
 
 def natural_sort_systems(l):
