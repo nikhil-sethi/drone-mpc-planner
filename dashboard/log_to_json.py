@@ -6,7 +6,7 @@ pd.options.mode.chained_assignment = None
 from tqdm import tqdm
 from pathlib import Path
 
-version = "1.2"
+version = "1.3"
 
 from scipy.interpolate import interp1d
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -317,107 +317,103 @@ def detection_counts_in_folder(folder,operational_log_start):
         with open (detection_fn, "r") as detection_log:
             log = pd.read_csv(detection_fn, sep=";")
 
-            elapsed_time = log["time"].values
-            lost = log['n_frames_lost_insect'].values > 0
-            remove_ids = [i for i, x in enumerate(lost) if x]
-            if len(elapsed_time) < 20 or len(elapsed_time) - len(remove_ids) < 5:
-                continue
+        elapsed_time = log["time"].values
+        lost = log['n_frames_lost_insect'].values > 0
+        remove_ids = [i for i, x in enumerate(lost) if x]
+        if len(elapsed_time) < 20 or len(elapsed_time) - len(remove_ids) < 5:
+            continue
 
-            RS_ID = log['RS_ID'].values
-            xs = log['sposX_insect'].values
-            ys = log['sposY_insect'].values
-            zs = log['sposZ_insect'].values
+        time = elapsed_time.astype('float64')
+        dt = time[-1]-time[0]
+        RS_ID = log['RS_ID'].values
 
-            #FIXME: I don't think this works very well:
-            x_ip = interpolate_zeros_and_spline(xs)
-            y_ip = interpolate_zeros_and_spline(ys)
-            z_ip = interpolate_zeros_and_spline(zs)
+        xs = log['sposX_insect'].values
+        ys = log['sposY_insect'].values
+        zs = log['sposZ_insect'].values
+        x_tracking = np.delete(xs,remove_ids)
+        y_tracking = np.delete(ys,remove_ids)
+        z_tracking = np.delete(zs,remove_ids)
+        pos_start = [x_tracking[0],y_tracking[0],z_tracking[0]]
+        pos_end =  [x_tracking[-1],y_tracking[-1],z_tracking[-1]]
+        diff = np.array(pos_end) - np.array(pos_start)
+        dist_traveled = math.sqrt(np.sum(diff*diff))
 
-            time = elapsed_time.astype('float64')
-            dt = time[-1]-time[0]
+        mid_id = int(round(len(x_tracking)/2))
+        pos_middle =  [x_tracking[mid_id],y_tracking[mid_id],z_tracking[mid_id]]
 
-            vxs = log['svelX_insect'].values
-            vys = log['svelY_insect'].values
-            vzs = log['svelZ_insect'].values
+        alpha_horizontal_start = math.atan2(pos_middle[0] - pos_start[0],pos_middle[2] - pos_start[2])
+        alpha_horizontal_end = math.atan2(pos_end[0] - pos_middle[0],pos_end[2] - pos_middle[2])
+        alpha_vertical_start = math.atan2(pos_middle[0] - pos_start[0],pos_middle[1] - pos_start[1])
+        alpha_vertical_end = math.atan2(pos_end[0] - pos_middle[0],pos_end[1] - pos_middle[1])
 
+        vxs = log['svelX_insect'].values
+        vys = log['svelY_insect'].values
+        vzs = log['svelZ_insect'].values
+        vx_tracking = np.delete(vxs,remove_ids)
+        vy_tracking = np.delete(vys,remove_ids)
+        vz_tracking = np.delete(vzs,remove_ids)
+        v = np.sqrt(vx_tracking**2+vy_tracking**2+vz_tracking**2)
+        v_mean = v.mean()
+        v_std = v.std()
 
-            vx = np.delete(vxs,remove_ids)
-            vy = np.delete(vys,remove_ids)
-            vz = np.delete(vzs,remove_ids)
+        sizes = np.delete(log['radius_insect'].values,remove_ids)
+        size = np.mean(sizes)*2
 
+        filtered_elepased = np.delete(elapsed_time,remove_ids)
+        start = filtered_elepased[0]
+        end = filtered_elepased[-1]
+        duration = end - start
+        first_RS_ID = str(RS_ID[0])
+        filename = os.path.basename(detection_fn)
+        video_filename = os.path.dirname(detection_fn) + '/' + filename.replace('log_itrk','moth').replace('csv','mkv')
+        if not os.path.exists(video_filename):
+            video_filename = 'NA'
+        else:
+            video_filename = os.path.basename(video_filename)
 
-            v = np.sqrt(vx**2+vy**2+vz**2)
-            v_mean = v.mean()
-            v_std = v.std()
+        x_ip = interpolate_zeros_and_spline(xs)
+        y_ip = interpolate_zeros_and_spline(ys)
+        z_ip = interpolate_zeros_and_spline(zs)
+        FP = np.mean(np.ones(shape=(3,3)) - np.abs(np.corrcoef([x_ip, y_ip, z_ip]))) #Qu'est ce que c'est?
 
-            filtered_elepased = np.delete(elapsed_time,remove_ids)
+        detection_time = (monitoring_start_datetime + datetime.timedelta(seconds=elapsed_time[0])).strftime('%Y%m%d_%H%M%S')
 
-            start = filtered_elepased[0]
-            end = filtered_elepased[-1]
-            duration = end - start
-            first_RS_ID = str(RS_ID[0])
-            filename = os.path.basename(detection_fn)
-            video_filename = os.path.dirname(detection_fn) + '/' + filename.replace('log_itrk','moth').replace('csv','mkv')
-            if not os.path.exists(video_filename):
-                video_filename = 'NA'
-            else:
-                video_filename = os.path.basename(video_filename)
+        if args.v:
+            print(filename)
+            print(f'RS_ID: {RS_ID[0]} - {RS_ID[-1]} - {prev_RS_ID}')
+            print(f'Insect flight length: {"{:.2f}".format(duration)} s')
+            print(f'FP: {"{:.2f}".format(FP)}')
+            fig = plt.figure()
+            ax = fig.gca(projection='3d')
+            ax.plot(xs, -ys, zs, label='Insect flight')
+            ax.scatter([-5], [5], [-5], label='anchor', marker="o")
+            ax.legend()
+            ax.set_xlabel('X axis')
+            ax.set_ylabel('Y axis')
+            ax.set_zlabel('Z axis')
+            plt.show()
 
-            FP = np.mean(np.ones(shape=(3,3)) - np.abs(np.corrcoef([x_ip, y_ip, z_ip])))
-            FP_OK = FP >= 0.008
-            duration_OK = duration >= 0.05 and duration < 25 # FP if insect flight duration is between certain seconds
+        detection_data = {"time" : detection_time,
+                        "duration": duration,
+                        "RS_ID" : first_RS_ID,
+                        "Dist_traveled":dist_traveled,
+                        "Size": size,
+                        "Vel_mean" : v_mean,
+                        "Vel_std" : v_std,
+                        "Vel_max" : v.max(),
+                        "Alpha_horizontal_start": alpha_horizontal_start,
+                        "Alpha_horizontal_end": alpha_horizontal_end,
+                        "Alpha_vertical_start": alpha_vertical_start,
+                        "Alpha_vertical_end": alpha_vertical_end,
+                        "FP" : FP,
+                        "Filename" : filename,
+                        "Video_Filename" : video_filename,
+                        "Mode" : 'monitoring',
+                        "Version": version
+                    }
+        valid_detections.append(detection_data)
 
-            # if correct_dist_mean and correct_dist_std and correct_duration:
-            if duration_OK and FP_OK:
-                #I don't know what this does, but it is incorrect #517
-                v_stacked = np.vstack([vx,vy,vz])
-                p1 = np.divide(np.sum(v_stacked[:,1:] * v_stacked[:,:-1], axis=0), v[1:] * v[:-1])
-                p1[p1 > 1] = 1
-                p1[p1 < -1] = -1
-                turning_angle = np.arccos(p1)
-                p = np.vstack([x_ip,y_ip,z_ip])
-                np.seterr(divide='ignore')
-                radius_of_curve = np.divide(np.linalg.norm(p[:,2:] - p[:,:-2]), (2 * np.sin(turning_angle)))
-                radial_accelaration = np.divide(np.sum(v_stacked[:,1:] * v_stacked[:,:-1], axis=0), radius_of_curve)
-
-                detection_time = (monitoring_start_datetime + datetime.timedelta(seconds=elapsed_time[0])).strftime('%Y%m%d_%H%M%S')
-
-                if args.v:
-                    print(filename)
-                    print(f'RS_ID: {RS_ID[0]} - {RS_ID[-1]} - {prev_RS_ID}')
-                    print(f'Insect flight length: {"{:.2f}".format(duration)} s')
-                    print(f'FP: {"{:.2f}".format(FP)}')
-                    fig = plt.figure()
-                    ax = fig.gca(projection='3d')
-                    ax.plot(x_ip, -y_ip, z_ip, label='Insect flight')
-                    ax.scatter([-5], [5], [-5], label='anchor', marker="o")
-                    ax.legend()
-                    ax.set_xlabel('X axis')
-                    ax.set_ylabel('Y axis')
-                    ax.set_zlabel('Z axis')
-                    plt.show()
-
-                detection_data = {"time" : detection_time,
-                                "duration": duration,
-                                "RS_ID" : first_RS_ID,
-                                "Vel_mean" : v_mean,
-                                "Vel_std" : v_std,
-                                "Vel_max" : v.max(),
-                                "TA_mean" : str(turning_angle.mean()),
-                                "TA_std" : str(turning_angle.std()),
-                                "TA_max" : str(turning_angle.max()),
-                                "RA_mean" : str(radial_accelaration.mean()),
-                                "RA_std" : str(radial_accelaration.std()),
-                                "RA_max" : str(radial_accelaration.max()),
-                                "FP" : FP,
-                                "Filename" : filename,
-                                "Video_Filename" : video_filename,
-                                "Mode" : 'monitoring',
-                                "Version": version
-                            }
-                valid_detections.append(detection_data)
-
-            prev_RS_ID = first_RS_ID
+        prev_RS_ID = first_RS_ID
 
     return valid_detections
 

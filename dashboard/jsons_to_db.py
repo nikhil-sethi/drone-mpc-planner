@@ -31,7 +31,8 @@ def store_moths(fn,data):
 
     columns = [i[1] for i in cur.execute('PRAGMA table_info(moth_records)')]
 
-    #this section only is needed once to upgrade the db (and can be removed if the main db is upgraded)
+    #this section only is needed once to upgrade the db (and can be removed if the main db is upgraded and old jsons are not in use anymore)
+    #v1.1/v1.2
     if 'Version' not in columns:
         cur.execute('ALTER TABLE moth_records ADD COLUMN Version TEXT')
     if 'Mode' not in columns:
@@ -40,6 +41,19 @@ def store_moths(fn,data):
         cur.execute('ALTER TABLE moth_records ADD COLUMN Video_Filename TEXT')
     if 'FP' not in columns:
         cur.execute('ALTER TABLE moth_records ADD COLUMN FP TEXT')
+    #v1.3:
+    if 'Dist_traveled' not in columns:
+        cur.execute('ALTER TABLE moth_records ADD COLUMN Dist_traveled TEXT')
+    if 'Size' not in columns:
+        cur.execute('ALTER TABLE moth_records ADD COLUMN Size TEXT')
+    if 'Alpha_horizontal_start' not in columns:
+        cur.execute('ALTER TABLE moth_records ADD COLUMN Alpha_horizontal_start TEXT')
+    if 'Alpha_horizontal_end' not in columns:
+        cur.execute('ALTER TABLE moth_records ADD COLUMN Alpha_horizontal_end TEXT')
+    if 'Alpha_vertical_start' not in columns:
+        cur.execute('ALTER TABLE moth_records ADD COLUMN Alpha_vertical_start TEXT')
+    if 'Alpha_vertical_end' not in columns:
+        cur.execute('ALTER TABLE moth_records ADD COLUMN Alpha_vertical_end TEXT')
 
     sql_insert = ''
     for moth in moths:
@@ -203,9 +217,10 @@ while True:
             with open(filename) as json_file:
                 with open(flag_fn,'w') as flag_f:
                     data = json.load(json_file)
+                    required_version3='1.3'
                     required_version1='1.2'
                     required_version2='1.1'
-                    if "version" in data and data["version"] == required_version1 or data["version"] == required_version2:
+                    if "version" in data and data["version"] == required_version1 or data["version"] == required_version2 or data["version"] == required_version3:
                         store_data(data,os.path.basename(filename))
                         flag_f.write('OK')
                     else:
