@@ -28,6 +28,14 @@ def store_moths(fn,data):
 
     cur.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='moth_records' ''')
     moth_table_exist = cur.fetchone()[0]==1
+    if not moth_table_exist:
+        sql_create = 'CREATE TABLE moth_records(system,time,'
+        for s in list(moths[0].keys())[1:]:
+            sql_create = sql_create + s + ','
+        sql = sql_create[:-1] + ')'
+        cur.execute(sql)
+        conn.commit()
+        moth_table_exist = True
 
     columns = [i[1] for i in cur.execute('PRAGMA table_info(moth_records)')]
 
@@ -58,20 +66,14 @@ def store_moths(fn,data):
     sql_insert = ''
     for moth in moths:
 
-        if not moth_table_exist:
-            sql_create = 'CREATE TABLE moth_records(system,time,'
-            for s in list(moth.keys())[1:]:
-                sql_create = sql_create + s + ','
-            sql = sql_create[:-1] + ')'
-            cur.execute(sql)
-            conn.commit()
-            moth_table_exist = True
-
         date = moth['time']
 
         #fix a bug that lived for a few days having different versioning in the system table and the moth table (can be removed if these jsons are obsolete)
-        if data["version"] != moth["Version"] and str(moth["Version"]) == "1.1":
-            moth["version"] = "1.2"
+        if "version" in data and "Version" in moth:
+            if data["version"] != moth["Version"] and str(moth["Version"]) == "1.1":
+                moth["version"] = "1.2"
+        else:
+                moth["version"] = "1.0"
 
         if sql_insert == '':
             sql_insert = 'INSERT INTO moth_records(system,time,'
@@ -123,7 +125,6 @@ def todatetime(string):
     return datetime.datetime.strptime(string, "%Y%m%d_%H%M%S")
 
 def clean_mode():
-
     systems = load_systems()
     all_modes_cleaned = []
     pbar = tqdm(systems,desc='Cleaning modes db')
@@ -155,6 +156,65 @@ def clean_mode():
     sql_insert = 'INSERT INTO mode_records(op_mode,start_datetime,end_datetime,system) VALUES(?,?,?,?)'
     for mode in all_modes_cleaned:
         cur.execute(sql_insert, mode)
+    conn.commit()
+
+def remove_double_data(table_name_prefix,order_by):
+    systems = load_systems()
+    all_entries_cleaned = []
+    pbar = tqdm(systems,desc='Cleaning double ' +  table_name_prefix +' from db')
+    for system in pbar:
+        sql_str = 'SELECT * from ' + table_name_prefix + '_records where system="' + system + '" ORDER BY ' + order_by
+        cur.execute(sql_str)
+        entries = cur.fetchall()
+
+        prev_i=0
+        for i in range(1,len(entries)):
+            entry = entries[i]
+            prev_entry = entries[prev_i]
+
+            if (prev_entry[1]==entry[1] and prev_entry[2]==entry[2]):
+                entries[i] = ('_duplicate',entries[i][1],entries[i][2])
+            else:
+                prev_i = i
+
+        entries_cleaned = [entry for entry in entries if entry[0][0][0] != '_']
+        all_entries_cleaned += entries_cleaned
+
+
+    columns = [i[1] for i in cur.execute('PRAGMA table_info(' + table_name_prefix + '_records)')]
+
+    #create a temporary backup of the table in case something goes wrong:
+    cur.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='" + table_name_prefix + "_records_dirty'")
+    dirty_table_exist = cur.fetchone()[0]==1
+    if dirty_table_exist:
+        sql_clear_table = 'DROP TABLE ' + table_name_prefix + '_records_dirty'
+        cur.execute(sql_clear_table)
+    conn.commit()
+    sql_rename_table = 'ALTER TABLE ' + table_name_prefix + '_records  RENAME TO ' + table_name_prefix + '_records_dirty'
+    cur.execute(sql_rename_table)
+    conn.commit()
+    sql_create = 'CREATE TABLE ' + table_name_prefix + '_records('
+    for s in columns:
+        sql_create = sql_create + s + ','
+    sql = sql_create[:-1] + ')'
+    cur.execute(sql)
+    conn.commit()
+
+    #create a new table with only distinct rows (unique detections):
+    sql_insert = 'INSERT INTO ' + table_name_prefix + '_records('
+    sql_values = ') VALUES('
+    for s in columns:
+        sql_insert = sql_insert + s + ','
+        sql_values = sql_values + '?,'
+    sql_insert = sql_insert[:-1] + sql_values[:-1] + ')'
+
+    for entrie in all_entries_cleaned:
+        cur.execute(sql_insert, entrie)
+    conn.commit()
+
+    #remove the backup
+    sql_clear_table = 'DROP TABLE ' + table_name_prefix + '_records_dirty'
+    cur.execute(sql_clear_table)
     conn.commit()
 
 def store_hunts(fn,data):
@@ -227,6 +287,8 @@ while True:
                         flag_f.write('WRONG VERSION ' + data["version"] + '. Want: ' + required_version1)
 
     clean_mode()
+    remove_double_data('moth','"time", "duration"')
+    remove_double_data('hunt','"start_datetime", "end_datetime"')
 
     if args.period:
         print(str(datetime.datetime.now()) + ". Periodic update after: " + str(args.period))
