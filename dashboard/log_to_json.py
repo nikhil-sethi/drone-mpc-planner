@@ -181,7 +181,7 @@ def interpolate_zeros_and_spline(vals):
     spline_model = get_natural_cubic_spline_model(x, y, minval=min(x), maxval=max(x), n_knots=7)
     return spline_model.predict(x)
 
-def system_status_in_folder(folder):
+def process_system_status_in_folder(folder):
     pats_xml_mode = ''
     pats_xml_path = Path(folder,'logging','pats.xml')
     if not os.path.exists(pats_xml_path):
@@ -256,7 +256,7 @@ def system_status_in_folder(folder):
         }
         return (data_status,pats_xml_mode,operational_log_start)
 
-def hunts_in_folder(folder,operational_log_start):
+def process_hunts_in_folder(folder,operational_log_start):
     results_path = Path(folder,'logging','results.txt')
     if not os.path.exists(results_path):
         return []
@@ -305,10 +305,10 @@ def hunts_in_folder(folder,operational_log_start):
     return data_hunt
 
 
-def detection_counts_in_folder(folder,operational_log_start):
+def process_detections_in_folder(folder,operational_log_start,mode):
 
     #concat all csv files containing dates
-    detection_fns = natural_sort([fp for fp in glob.glob(os.path.join(folder, "logging", "log_*.csv")) if "itrk0" not in fp])
+    detection_fns = natural_sort([fp for fp in glob.glob(os.path.join(folder, "logging", "log_i*.csv")) if "itrk0" not in fp])
     monitoring_start_datetime = datetime.datetime.strptime(operational_log_start,'%Y%m%d_%H%M%S')
 
     valid_detections = []
@@ -408,7 +408,7 @@ def detection_counts_in_folder(folder,operational_log_start):
                         "FP" : FP,
                         "Filename" : filename,
                         "Video_Filename" : video_filename,
-                        "Mode" : 'monitoring',
+                        "Mode" : mode,
                         "Version": version
                     }
         valid_detections.append(detection_data)
@@ -450,18 +450,17 @@ for folder in pbar:
     dts = datetime.datetime.strptime(top_folder,'%Y%m%d_%H%M%S')
     if dts > min_date and dts <= max_date:
 
-        status_in_dir,mode,operational_log_start = system_status_in_folder(folder)
-        if status_in_dir != []:
-            statuss.append(status_in_dir)
-
-        if mode == 'monitoring':
-            detections_in_folder = detection_counts_in_folder(folder,operational_log_start)
+        status_in_folder,mode,operational_log_start = process_system_status_in_folder(folder)
+        if status_in_folder != []:
+            statuss.append(status_in_folder)
+        if mode == 'monitoring' or mode == 'hunt':
+            detections_in_folder = process_detections_in_folder(folder,operational_log_start,mode)
             if detections_in_folder != []:
                 [detections.append(detection) for detection in detections_in_folder]
-        elif mode == 'hunt' or mode == 'deploy':
-            hunts_in_dir = hunts_in_folder(folder,operational_log_start)
-            if hunts_in_dir != []:
-                hunts.append(hunts_in_dir)
+        if mode == 'hunt' or mode == 'deploy':
+            hunts_in_folder = process_hunts_in_folder(folder,operational_log_start)
+            if hunts_in_folder != []:
+                hunts.append(hunts_in_folder)
 
 data_detections = {"from" : args.s,
         "till" : args.e,
