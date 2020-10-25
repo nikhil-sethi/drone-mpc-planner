@@ -219,7 +219,7 @@ server = flask.Flask(__name__)
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets, server=server)
 
 fig=create_heatmap()
-dateranges = ['Last week', 'Last month', 'Last year', 'All']
+dateranges = ['Last week', 'Last month', 'Last year']
 
 app.layout = html.Div(children=[
     html.H1(children='Pats Dash'),
@@ -260,8 +260,6 @@ def update_output(daterange_value,system_value):
         selected_dayrange = 31
     elif daterange_value == 'Last year':
         selected_dayrange = 365
-    elif daterange_value == 'All':
-        selected_dayrange = 0
 
     selected_systems = system_value
 
