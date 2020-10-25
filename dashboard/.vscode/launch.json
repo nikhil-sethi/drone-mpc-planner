@@ -34,5 +34,13 @@
         "args": [],
         "console": "integratedTerminal"
       }
+      {
+        "name": "viz",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/example_viz.py",
+        "args": [],
+        "console": "integratedTerminal"
+      }
     ]
   }
