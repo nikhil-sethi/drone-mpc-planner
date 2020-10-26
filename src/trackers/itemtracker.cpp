@@ -12,15 +12,16 @@ using namespace std;
 
 namespace tracking {
 
-void ItemTracker::init(std::ofstream *logger,VisionData *visdat, std::string name, int16_t viz_id) {
-    init(visdat,name,viz_id);
+void ItemTracker::init(std::ofstream *logger,VisionData *visdat, int motion_thresh, std::string name, int16_t viz_id) {
+    init(visdat,motion_thresh,name,viz_id);
     init_logger(logger);
 }
-void ItemTracker::init(VisionData *visdat, std::string name, int16_t viz_id) {
+void ItemTracker::init(VisionData *visdat, int motion_thresh, std::string name, int16_t viz_id) {
     static int16_t trkr_cntr = 0;
     _uid = trkr_cntr++;
     _viz_id = viz_id;
     _visdat = visdat;
+    _motion_thresh = motion_thresh;
     _name = name;
     track_history_max_size = pparams.fps;
     settings_file = "../../xml/" + name + "tracker.xml";
@@ -244,8 +245,6 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
 
     cv::Mat diffL,diffR,grayL,grayR,motion_noise_mapL,motion_noise_mapR;
 
-    uint motion_tresh = 15; // TODO get this from trackermanager params
-
     diffL = _visdat->diffL;
     diffR = _visdat->diffR;
     motion_noise_mapL = _visdat->motion_noise_mapL;
@@ -289,10 +288,10 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
         //since the background often isn't a solid color we do matching on the raw image data instead of the motion
         //using the motion from both images as a mask, we match the disparity over the masked gray image
 
-        cv::Mat diffL_mask_patch = diffL(roiL)>motion_noise_mapL(roiL)+motion_tresh;
+        cv::Mat diffL_mask_patch = diffL(roiL)>motion_noise_mapL(roiL)+ _motion_thresh;
         if (cv::countNonZero(diffL_mask_patch) / npixels > min_pxl_ratio) {
             cv::Rect roiR_disparity_rng(x-(disp_end-1),y,width+(disp_end-disp_start-1),height);
-            cv::Mat diffR_mask_patch = diffR(roiR_disparity_rng)>motion_noise_mapR(roiR_disparity_rng)+motion_tresh;
+            cv::Mat diffR_mask_patch = diffR(roiR_disparity_rng)>motion_noise_mapR(roiR_disparity_rng)+_motion_thresh;
             cv::Mat grayL_patch = _visdat->frameL(roiL);
             cv::Mat grayR_patch = _visdat->frameR(roiR_disparity_rng);
 
@@ -410,7 +409,7 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
             cv::Mat viz_gray = create_column_image({grayL(roiL),grayR(roiR)},CV_8UC1,viz_scale);
             cv::Mat viz_motion_abs = create_column_image({diffL(roiL),diffR(roiR)},CV_8UC1,viz_scale);
             if (motion_noise_mapL.cols) {
-                cv::Mat viz_test = create_column_image({diffL(roiL)>motion_noise_mapL(roiL)+motion_tresh,diffR(roiR)>motion_noise_mapR(roiR)+motion_tresh},CV_8UC1,viz_scale);
+                cv::Mat viz_test = create_column_image({diffL(roiL)>motion_noise_mapL(roiL)+_motion_thresh,diffR(roiR)>motion_noise_mapR(roiR)+_motion_thresh},CV_8UC1,viz_scale);
                 cv::Mat viz_noise = create_column_image({motion_noise_mapL(roiL),motion_noise_mapR(roiR)},CV_8UC1,viz_scale);
                 viz_disp = create_row_image({viz_gray,viz_motion_abs,viz_noise,viz_test},CV_8UC1,1);
             } else {
@@ -521,7 +520,7 @@ void ItemTracker::update_prediction(double time) {
         _image_predict_item.x = std::clamp(static_cast<int>(p.x),0,IMG_W-1);
         _image_predict_item.y = std::clamp(static_cast<int>(p.y),0,IMG_H-1);
         _image_predict_item.disparity = std::clamp(p.z,0.f,static_cast<float>(max_disparity));
-        _image_predict_item.size = world2im_size(_world_item.pt+cv::Point3f(dparams.radius,0,0),_world_item.pt-cv::Point3f(dparams.radius,0,0),_visdat->Qfi,_visdat->camera_angle);
+        _image_predict_item.size = world2im_size(_world_item.pt+cv::Point3f(expected_radius,0,0),_world_item.pt-cv::Point3f(expected_radius,0,0),_visdat->Qfi,_visdat->camera_angle);
         _image_predict_item.valid = true;
     }
     //issue #108:

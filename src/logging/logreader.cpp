@@ -48,7 +48,9 @@ void LogReader::read_multi_insect_logs(string path) {
     //read multi insect logs
     vector<string> ins_logs;
     for (auto entry : experimental::filesystem::directory_iterator(path)) {
-        if (!entry.path().extension().string().compare(".csv") && entry.path().filename().string().compare("log.csv") && entry.path().filename().string().compare("frames.csv"))
+
+        if (!entry.path().extension().string().compare(".csv") && (
+                    entry.path().filename().string().rfind("log_i", 0) == 0 || entry.path().filename().string().rfind("log_r", 0) == 0))
             ins_logs.push_back(entry.path().string());
     }
     for (auto & f : ins_logs) {
@@ -110,13 +112,18 @@ int LogReader::current_frame_number(unsigned long long RS_id) {
     if (current_entry.RS_id != RS_id)
         return 1;
 
-    vector<LogEntryInsect> ins_entries;
-    for (auto & ins : log_insects) {
-        if (!ins.current_frame_number(RS_id)) {
-            ins_entries.push_back(ins.current_entry);
+    //Currently log playback based on the insect logs is not used.
+    //I'd rather recalculate the insect based on the vision.
+    //(Replay logs are inserted directly into the trackermanager from somewhere else)
+    if (false) { // so, disable to slightly speed up log playback
+        vector<LogEntryInsect> ins_entries;
+        for (auto & ins : log_insects) {
+            if (!ins.current_frame_number(RS_id)) {
+                ins_entries.push_back(ins.current_entry);
+            }
         }
+        current_entry.insects  = ins_entries;
     }
-    current_entry.insects  = ins_entries;
     return 0;
 }
 

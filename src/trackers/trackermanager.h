@@ -74,13 +74,13 @@ struct processed_blobs {
             return "";
         ItemTracker * trkr = trackers.at(0);
         if (trkr->type() == tt_drone)
-            return "D";
+            return "D ";
         else if (trkr->type() == tt_insect)
-            return "M";
+            return "M ";
         else if (trkr->type() == tt_replay)
             return "";
         else if (trkr->type() == tt_blink)
-            return "B";
+            return "B ";
         return "";
     }
 };
@@ -174,6 +174,7 @@ private:
     void reset_trkr_viz_ids();
 
     uint16_t next_insecttrkr_id = 1;
+    uint16_t next_blinktrkr_id = 1;
     detection_mode _mode;
 
     DroneTracker * _dtrkr;

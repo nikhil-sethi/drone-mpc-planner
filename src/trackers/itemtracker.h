@@ -75,6 +75,7 @@ private:
 
     int16_t _uid = -1;
     int16_t _viz_id = -1;
+    int _motion_thresh = -1;
 
     float disparity_prev = 0;
 
@@ -115,6 +116,7 @@ protected:
 
     const float disparity_predict_lower_bound = 3.0f;
     const float disparity_predict_upper_bound = 5.0f;
+    float expected_radius = 0.01;
 
     bool _tracking = false;
 
@@ -166,8 +168,8 @@ public:
     cv::Mat viz_disp;
 
     void close(void);
-    void init(std::ofstream *logger, VisionData *_visdat, std::string name, int16_t viz_id);
-    void init(VisionData *_visdat, std::string name, int16_t viz_id);
+    void init(std::ofstream *logger, VisionData *_visdat, int motion_thresh, std::string name, int16_t viz_id);
+    void init(VisionData *_visdat, int motion_thresh, std::string name, int16_t viz_id);
     virtual void update(double time);
     virtual bool check_ignore_blobs(BlobProps * pbs) = 0;
     virtual void calc_world_item(BlobProps * pbs, double time) = 0;

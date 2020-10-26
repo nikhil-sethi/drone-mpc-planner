@@ -17,7 +17,7 @@ void TrackerManager::init(std::ofstream *logger,VisionData *visdat, CameraView *
     deserialize_settings();
 
     _dtrkr = new DroneTracker();
-    _dtrkr->init(_logger,_visdat,1);
+    _dtrkr->init(_logger,_visdat,motion_thresh,1);
     _trackers.push_back(_dtrkr);
 
     (*_logger) << "trkrs_state;n_trackers;n_blobs;";
@@ -320,10 +320,11 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                     if (!too_close) {
                         BlinkTracker  * bt;
                         bt = new BlinkTracker();
-
-                        bt->init(_visdat,_trackers.size());
+                        bt->init(next_blinktrkr_id,_visdat,motion_thresh, _trackers.size());
                         bt->calc_world_item(props,time);
                         if (props->world_props.valid) {
+                            bt->init_logger();
+                            next_blinktrkr_id++;
                             tracking::WorldItem w(tracking::ImageItem(*props,_visdat->frame_id,100,blob.id),props->world_props);
                             bt->world_item(w);
                             _trackers.push_back( bt);
@@ -343,7 +344,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                     if (im_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_im) {
                         InsectTracker *it;
                         it = new InsectTracker();
-                        it->init(next_insecttrkr_id,_visdat,_trackers.size());
+                        it->init(next_insecttrkr_id,_visdat,motion_thresh,_trackers.size());
                         it->calc_world_item(props,time);
 
                         bool delete_it = true;

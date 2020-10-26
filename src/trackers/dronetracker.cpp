@@ -4,10 +4,11 @@
 
 namespace tracking {
 
-bool DroneTracker::init(std::ofstream *logger, VisionData *visdat, int16_t viz_id) {
+bool DroneTracker::init(std::ofstream *logger, VisionData *visdat, int motion_thresh, int16_t viz_id) {
     enable_viz_diff = false;
-    ItemTracker::init(logger,visdat,"drone",viz_id);
+    ItemTracker::init(logger,visdat,motion_thresh,"drone",viz_id);
     max_size = dparams.radius*3;
+    expected_radius = dparams.radius;
     landing_parameter.deserialize("../../xml/landing_location.xml");
     (*_logger) << "dtrkr_state;yaw_deviation;";
     return false;

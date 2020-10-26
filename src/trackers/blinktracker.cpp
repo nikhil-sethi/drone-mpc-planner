@@ -4,25 +4,31 @@ namespace tracking {
 
 static std::ofstream blinklogger;
 
-bool BlinkTracker::init(VisionData *visdat, int16_t viz_id) {
-
-    std::string logger_fn;
-    logger_fn = data_output_dir  + "log_btrk" + to_string(viz_id) + ".csv";
-    blinklogger.open(logger_fn,std::ofstream::out);
-    blinklogger << "RS_ID;time;";
-
+bool BlinkTracker::init(int id, VisionData *visdat, int motion_thresh, int16_t viz_id) {
+    _blink_trkr_id = id;
     disparity_filter_rate = 0.5;
     pos_smth_width = pparams.fps/15;
     vel_smth_width = pparams.fps/10;
     acc_smth_width = pparams.fps/5;
     skip_wait_smth_spos = false;
 
-    ItemTracker::init(&blinklogger,visdat,"blink",viz_id);
+    ItemTracker::init(visdat,motion_thresh,"blink",viz_id);
 
+    max_size = dparams.radius*3;
+    expected_radius = dparams.radius;
     _n_frames_lost = 1;
     n_frames_lost_threshold = 120;
 
     return false;
+}
+
+void BlinkTracker::init_logger() {
+    std::string logger_fn;
+    logger_fn = data_output_dir  + "log_btrk" + to_string(_blink_trkr_id) + ".csv";
+    blinklogger.open(logger_fn,std::ofstream::out);
+    blinklogger << "RS_ID;time;";
+    ItemTracker::init_logger(&blinklogger);
+    blinklogger << std::endl;
 }
 
 void BlinkTracker::update(double time) {

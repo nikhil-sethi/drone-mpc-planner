@@ -12,14 +12,14 @@ void InsectReader::init(string file) {
     if (!file_exist(file)) {
         throw my_exit("log file not found!");
     }
-    cout << "Opening insect log: " << file << endl;
     _replay_moth = experimental::filesystem::path(file).filename().string().find("itrk") == string::npos;
+    if (_replay_moth)
+        cout << "Opening replay log: " << file << endl;
+    else
+        cout << "Opening insect log: " << file << endl;
     read_log(file);
-    if (_replay_moth) {
-        current_entry = log.begin()->second;
-        _RS_id = current_entry.RS_id;
-        read_log(file);
-    }
+    current_entry = log.begin()->second;
+    _RS_id = current_entry.RS_id;
 }
 
 tuple<map<int, LogEntryInsect>,map<string, int>> InsectReader::read_log(string file) {

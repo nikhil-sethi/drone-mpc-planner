@@ -52,6 +52,7 @@ public:
     };
 
 private:
+    int16_t _blink_trkr_id{-1};
     blinking_drone_states _blinking_drone_status = bds_start;
     int attempts = 0;
     double blink_time_start = 0;
@@ -69,7 +70,8 @@ public:
     std::string state_str() {return blinking_drone_state_names[_blinking_drone_status];}
     blinking_drone_states state() {return _blinking_drone_status;}
 
-    bool init(VisionData *_visdat, int16_t viz_id);
+    bool init(int id, VisionData *_visdat, int motion_thresh, int16_t viz_id);
+    void init_logger();
     void update(double time);
 
     void calc_world_item(tracking::BlobProps * pbs, double time);
