@@ -68,6 +68,7 @@ private:
     CameraView *_camview;
 
     cv::Point3f setpoint_pos_world;
+    cv::Point3f setpoint_pos_world_landing;
     cv::Point3f setpoint_vel_world;
     cv::Point3f setpoint_acc_world;
 
