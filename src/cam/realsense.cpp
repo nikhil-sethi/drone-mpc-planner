@@ -142,8 +142,6 @@ void Realsense::calibration(rs2::stream_profile infrared1,rs2::stream_profile in
     float baseline = e.translation[0];
 
     baseline = fabs(baseline);
-    if (baseline < 0.04f) //TODO: https://github.com/IntelRealSense/librealsense/issues/5451
-        baseline = 0.05f;
 
     //init Qf: https://stackoverflow.com/questions/27374970/q-matrix-for-the-reprojectimageto3d-function-in-opencv
     Qf = (Mat_<double>(4, 4) << 1.0, 0.0, 0.0, -cx, 0.0, 1.0, 0.0, -cy, 0.0, 0.0, 0.0, focal_length, 0.0, 0.0, 1/baseline, 0.0);
