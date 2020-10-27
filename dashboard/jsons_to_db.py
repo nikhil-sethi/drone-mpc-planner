@@ -23,6 +23,33 @@ def natural_sort(l):
     alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
     return sorted(l, key=alphanum_key)
 
+
+def clean_moth_json_entry(moth):
+    #fix a bug that lived for a few days having different versioning in the system table and the moth table (can be removed if these jsons are obsolete)
+    if "version" in data and "Version" in moth:
+        if data["version"] != moth["Version"] and str(moth["Version"]) == "1.1":
+            moth["Version"] = "1.2"
+    else:
+            moth["Version"] = "1.0"
+
+    #remove unused data from jsons version < 1.4:
+    if float(moth["Version"]) < 1.4:
+        if 'FP' in moth:
+            moth.pop('FP')
+        if 'TA_mean' in moth:
+            moth.pop('TA_mean')
+        if 'TA_std' in moth:
+            moth.pop('TA_std')
+        if 'TA_max' in moth:
+            moth.pop('TA_max')
+        if 'RA_mean' in moth:
+            moth.pop('RA_mean')
+        if 'RA_std' in moth:
+            moth.pop('RA_std')
+        if 'RA_max' in moth:
+            moth.pop('RA_max')
+    return moth
+
 def store_moths(fn,data):
     moths =data["moths"]
 
@@ -30,7 +57,8 @@ def store_moths(fn,data):
     moth_table_exist = cur.fetchone()[0]==1
     if not moth_table_exist:
         sql_create = 'CREATE TABLE moth_records(system,time,'
-        for s in list(moths[0].keys())[1:]:
+        clean_moth = clean_moth_json_entry(moths[0])
+        for s in list(clean_moth.keys())[1:]:
             sql_create = sql_create + s + ','
         sql = sql_create[:-1] + ')'
         cur.execute(sql)
@@ -39,41 +67,47 @@ def store_moths(fn,data):
 
     columns = [i[1] for i in cur.execute('PRAGMA table_info(moth_records)')]
 
-    #this section only is needed once to upgrade the db (and can be removed if the main db is upgraded and old jsons are not in use anymore)
+    #this section really only is needed once to upgrade the db (and can be removed if the main db is upgraded and old jsons are not in use anymore)
+    #v1.0:
+    if 'RS_ID' not in columns:
+        cur.execute('ALTER TABLE moth_records ADD COLUMN RS_ID INT')
+    if 'duration' not in columns:
+        cur.execute('ALTER TABLE moth_records ADD COLUMN duration REAL')
+    if 'Vel_mean' not in columns:
+        cur.execute('ALTER TABLE moth_records ADD COLUMN Vel_mean REAL')
+    if 'Vel_max' not in columns:
+        cur.execute('ALTER TABLE moth_records ADD COLUMN Vel_max REAL')
+    if 'Vel_std' not in columns:
+        cur.execute('ALTER TABLE moth_records ADD COLUMN Vel_std REAL')
     #v1.1/v1.2
     if 'Version' not in columns:
-        cur.execute('ALTER TABLE moth_records ADD COLUMN Version TEXT')
+        cur.execute('ALTER TABLE moth_records ADD COLUMN Version REAL')
     if 'Mode' not in columns:
         cur.execute('ALTER TABLE moth_records ADD COLUMN Mode TEXT')
     if 'Video_Filename' not in columns:
         cur.execute('ALTER TABLE moth_records ADD COLUMN Video_Filename TEXT')
-    if 'FP' not in columns:
-        cur.execute('ALTER TABLE moth_records ADD COLUMN FP TEXT')
     #v1.3:
     if 'Dist_traveled' not in columns:
-        cur.execute('ALTER TABLE moth_records ADD COLUMN Dist_traveled TEXT')
+        cur.execute('ALTER TABLE moth_records ADD COLUMN Dist_traveled REAL')
     if 'Size' not in columns:
-        cur.execute('ALTER TABLE moth_records ADD COLUMN Size TEXT')
+        cur.execute('ALTER TABLE moth_records ADD COLUMN Size REAL')
     if 'Alpha_horizontal_start' not in columns:
-        cur.execute('ALTER TABLE moth_records ADD COLUMN Alpha_horizontal_start TEXT')
+        cur.execute('ALTER TABLE moth_records ADD COLUMN Alpha_horizontal_start REAL')
     if 'Alpha_horizontal_end' not in columns:
-        cur.execute('ALTER TABLE moth_records ADD COLUMN Alpha_horizontal_end TEXT')
+        cur.execute('ALTER TABLE moth_records ADD COLUMN Alpha_horizontal_end REAL')
     if 'Alpha_vertical_start' not in columns:
-        cur.execute('ALTER TABLE moth_records ADD COLUMN Alpha_vertical_start TEXT')
+        cur.execute('ALTER TABLE moth_records ADD COLUMN Alpha_vertical_start REAL')
     if 'Alpha_vertical_end' not in columns:
-        cur.execute('ALTER TABLE moth_records ADD COLUMN Alpha_vertical_end TEXT')
+        cur.execute('ALTER TABLE moth_records ADD COLUMN Alpha_vertical_end REAL')
+    #v1.4:
+    if 'Dist_traject' not in columns:
+        cur.execute('ALTER TABLE moth_records ADD COLUMN Dist_traject REAL')
 
     sql_insert = ''
     for moth in moths:
-
         date = moth['time']
 
-        #fix a bug that lived for a few days having different versioning in the system table and the moth table (can be removed if these jsons are obsolete)
-        if "version" in data and "Version" in moth:
-            if data["version"] != moth["Version"] and str(moth["Version"]) == "1.1":
-                moth["version"] = "1.2"
-        else:
-                moth["version"] = "1.0"
+        moth = clean_moth_json_entry(moth)
 
         if sql_insert == '':
             sql_insert = 'INSERT INTO moth_records(system,time,'
@@ -82,7 +116,6 @@ def store_moths(fn,data):
                 sql_insert = sql_insert + s + ','
                 sql_values = sql_values + '?,'
             sql_insert = sql_insert[:-1] + sql_values[:-1] + ')'
-
 
         cur.execute(sql_insert, (data["system"], date, *list(moth.values())[1:]))
     conn.commit()

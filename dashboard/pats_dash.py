@@ -40,7 +40,7 @@ def open_db():
 def load_systems():
     global systems,selected_systems
     conn,cur = open_db()
-    sql_str = '''SELECT DISTINCT system from mode_records ORDER BY system '''
+    sql_str = '''SELECT DISTINCT system FROM mode_records ORDER BY system '''
     cur.execute(sql_str)
     systems = cur.fetchall()
     systems = natural_sort_systems(systems)
@@ -50,10 +50,10 @@ def load_systems():
 def system_sql_str(systems):
     if not isinstance(systems, list):
         systems = [systems]
-    systems_str = '('
+    systems_str = ' ('
     for system in systems:
         systems_str = systems_str + 'system="' + system + '" OR '
-    systems_str = systems_str[:-3] + ')'
+    systems_str = systems_str[:-4] + ') '
     return systems_str
 
 def load_moth_data():
@@ -65,15 +65,15 @@ def load_moth_data():
     systems_str = system_sql_str(selected_systems)
     conn,cur = open_db()
 
-    sql_str = 'SELECT MIN(time) from moth_records where ' + systems_str
+    sql_str = 'SELECT MIN(time) FROM moth_records WHERE ' + systems_str
     start_date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())+datetime.timedelta(hours=12) - datetime.timedelta(days=selected_dayrange)
     start_date_str = start_date.strftime("%Y%m%d_%H%M%S")
-    sql_str += 'and time>"' + start_date_str + '"'
+    sql_str += 'AND time>"' + start_date_str + '"'
     cur.execute(sql_str)
     first_date = cur.fetchone()[0]
 
-    sql_str = 'SELECT MAX(time) from moth_records where ' + systems_str
-    sql_str += 'and time > "' + start_date_str + '"'
+    sql_str = 'SELECT MAX(time) FROM moth_records WHERE ' + systems_str
+    sql_str += 'AND time > "' + start_date_str + '"'
     cur.execute(sql_str)
     end_date = cur.fetchone()[0]
     if first_date == None or end_date == None:
@@ -89,9 +89,10 @@ def load_moth_data():
         d += datetime.timedelta(days=1)
 
     heatmap_data = np.zeros((len(unique_dates),24))
-    sql_str = 'SELECT time from moth_records where ' + systems_str
+    sql_str = 'SELECT time FROM moth_records WHERE ((duration > 1 AND duration < 10 AND Dist_traveled > 0.15 AND Dist_traveled < 4) OR (Version="1.0" AND duration > 1 AND duration < 10)) AND '
+    sql_str += systems_str
     if selected_dayrange > 0:
-        sql_str += 'and time > "' + start_date_str + '"'
+        sql_str += 'AND time > "' + start_date_str + '"'
     cur.execute(sql_str)
     moths = cur.fetchall()
     cnt = 0
@@ -123,10 +124,10 @@ def load_mode_data():
     systems_str = system_sql_str(selected_systems)
     conn,cur = open_db()
 
-    sql_str = 'SELECT op_mode,start_datetime,end_datetime from mode_records where ' + systems_str
+    sql_str = 'SELECT op_mode,start_datetime,end_datetime FROM mode_records WHERE ' + systems_str
     start_date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())+datetime.timedelta(hours=12) - datetime.timedelta(days=selected_dayrange)
     start_date_str = start_date.strftime("%Y%m%d_%H%M%S")
-    sql_str += 'and start_datetime > "' + start_date_str + '"'
+    sql_str += 'AND start_datetime > "' + start_date_str + '"'
     sql_str += ' ORDER BY "start_datetime"'
     cur.execute(sql_str)
     modes = cur.fetchall()

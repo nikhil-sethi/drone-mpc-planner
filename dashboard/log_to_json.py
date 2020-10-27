@@ -6,7 +6,7 @@ pd.options.mode.chained_assignment = None
 from tqdm import tqdm
 from pathlib import Path
 
-version = "1.3"
+version = "1.4"
 
 from scipy.interpolate import interp1d
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -338,9 +338,12 @@ def process_detections_in_folder(folder,operational_log_start,mode):
         diff = np.array(pos_end) - np.array(pos_start)
         dist_traveled = math.sqrt(np.sum(diff*diff))
 
+        dist_traject = 0
+        for i in range(1,len(x_tracking)):
+            dist_traject += (x_tracking[i] - x_tracking[i-1])**2 + (y_tracking[i] - y_tracking[i-1])**2 + (z_tracking[i] - z_tracking[i-1])**2
+
         mid_id = int(round(len(x_tracking)/2))
         pos_middle =  [x_tracking[mid_id],y_tracking[mid_id],z_tracking[mid_id]]
-
         alpha_horizontal_start = math.atan2(pos_middle[0] - pos_start[0],pos_middle[2] - pos_start[2])
         alpha_horizontal_end = math.atan2(pos_end[0] - pos_middle[0],pos_end[2] - pos_middle[2])
         alpha_vertical_start = math.atan2(pos_middle[0] - pos_start[0],pos_middle[1] - pos_start[1])
@@ -371,18 +374,12 @@ def process_detections_in_folder(folder,operational_log_start,mode):
         else:
             video_filename = os.path.basename(video_filename)
 
-        x_ip = interpolate_zeros_and_spline(xs)
-        y_ip = interpolate_zeros_and_spline(ys)
-        z_ip = interpolate_zeros_and_spline(zs)
-        FP = np.mean(np.ones(shape=(3,3)) - np.abs(np.corrcoef([x_ip, y_ip, z_ip]))) #Qu'est ce que c'est?
-
         detection_time = (monitoring_start_datetime + datetime.timedelta(seconds=elapsed_time[0])).strftime('%Y%m%d_%H%M%S')
 
         if args.v:
             print(filename)
             print(f'RS_ID: {RS_ID[0]} - {RS_ID[-1]} - {prev_RS_ID}')
             print(f'Insect flight length: {"{:.2f}".format(duration)} s')
-            print(f'FP: {"{:.2f}".format(FP)}')
             fig = plt.figure()
             ax = fig.gca(projection='3d')
             ax.plot(xs, -ys, zs, label='Insect flight')
@@ -397,6 +394,7 @@ def process_detections_in_folder(folder,operational_log_start,mode):
                         "duration": duration,
                         "RS_ID" : first_RS_ID,
                         "Dist_traveled":dist_traveled,
+                        "Dist_traject":dist_traject,
                         "Size": size,
                         "Vel_mean" : v_mean,
                         "Vel_std" : v_std,
@@ -405,7 +403,6 @@ def process_detections_in_folder(folder,operational_log_start,mode):
                         "Alpha_horizontal_end": alpha_horizontal_end,
                         "Alpha_vertical_start": alpha_vertical_start,
                         "Alpha_vertical_end": alpha_vertical_end,
-                        "FP" : FP,
                         "Filename" : filename,
                         "Video_Filename" : video_filename,
                         "Mode" : mode,
