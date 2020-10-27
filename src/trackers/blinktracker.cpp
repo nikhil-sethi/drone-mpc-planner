@@ -2,8 +2,6 @@
 
 namespace tracking {
 
-static std::ofstream blinklogger;
-
 bool BlinkTracker::init(int id, VisionData *visdat, int motion_thresh, int16_t viz_id) {
     _blink_trkr_id = id;
     disparity_filter_rate = 0.5;

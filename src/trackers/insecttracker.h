@@ -12,6 +12,7 @@ private:
     uint _fp = 0;
     void start_new_log_line(double time, unsigned long long frame_number);
     void check_false_positive();
+    std::ofstream insectlogger;
 public:
     static constexpr float new_tracker_drone_ignore_zone_size_world = 0.25f;
     static constexpr float new_tracker_drone_ignore_zone_size_im = 10; // pixels

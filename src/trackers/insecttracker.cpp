@@ -5,9 +5,6 @@ using namespace cv;
 using namespace std;
 namespace tracking {
 
-static std::ofstream insectlogger;
-
-
 void InsectTracker::init(int id, VisionData *visdat, int motion_thresh, int16_t viz_id) {
     _insect_trkr_id = id;
     ItemTracker::init(visdat,motion_thresh,"insect",viz_id);
