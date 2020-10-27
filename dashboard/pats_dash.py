@@ -22,6 +22,7 @@ selected_systems = ''
 selected_dayrange = 7
 unique_dates = []
 heatmap_data = []
+hist_data = []
 modemap_data = []
 xlabels=[]
 db_path = ''
@@ -57,7 +58,7 @@ def system_sql_str(systems):
     return systems_str
 
 def load_moth_data():
-    global unique_dates,heatmap_data,selected_systems,selected_dayrange
+    global unique_dates,heatmap_data,hist_data,selected_systems,selected_dayrange
     if not len(selected_systems):
         heatmap_data = []
         unique_dates = []
@@ -89,6 +90,7 @@ def load_moth_data():
         d += datetime.timedelta(days=1)
 
     heatmap_data = np.zeros((len(unique_dates),24))
+    hist_data = np.zeros((len(unique_dates)))
     sql_str = 'SELECT time FROM moth_records WHERE ((duration > 1 AND duration < 10 AND Dist_traveled > 0.15 AND Dist_traveled < 4) OR (Version="1.0" AND duration > 1 AND duration < 10)) AND '
     sql_str += systems_str
     if selected_dayrange > 0:
@@ -101,6 +103,7 @@ def load_moth_data():
         day = (d.date() - start_date.date()).days
         hour = d.hour
         heatmap_data[day,hour] += 1
+        hist_data[day] +=1
 
 def convert_mode_to_number(mode):
     if  mode == 'monitoring':
@@ -165,9 +168,11 @@ def natural_sort_systems(l):
     alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key[0][10:])]
     return sorted(l, key=alphanum_key)
 
+
+
 def create_heatmap():
     global unique_dates,heatmap_data,xlabels
-    fig = go.Figure(data=go.Heatmap(
+    hm = go.Heatmap(
             x=xlabels,
             y=unique_dates,
             z = heatmap_data,
@@ -185,7 +190,8 @@ def create_heatmap():
 
             hovertemplate='Time: %{x}<br>Count: %{z}<extra></extra>'
 
-            ))
+            )
+    fig = go.Figure(data=hm)
     fig['layout']['xaxis']['side'] = 'top'
     fig['layout']['xaxis']['tickangle'] = 45
     h = len(unique_dates) * 30
@@ -195,8 +201,30 @@ def create_heatmap():
         h=10
     fig.update_layout(
         height=h,
-
+        clickmode='event+select'
     )
+
+    return fig
+
+def create_hist():
+    global selected_systems,selected_dayrange,hist_data,unique_dates
+
+    hist = go.Bar(
+        x = unique_dates,
+        y = hist_data,
+        marker=dict(
+            color='green'
+        )
+    )
+
+    fig = go.Figure(data=hist)
+
+    fig.update_layout(
+        title_text='Moth counts',
+        xaxis_title_text='Days [s]',
+        yaxis_title_text='Counts',
+    )
+
     return fig
 
 
@@ -219,8 +247,10 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 server = flask.Flask(__name__)
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets, server=server)
 
-fig=create_heatmap()
+fig_hm=create_heatmap()
+fig_hist=create_hist()
 dateranges = ['Last week', 'Last month', 'Last year']
+video_fn = '/static/render_moth34.mp4'
 
 app.layout = html.Div(children=[
     html.H1(children='Pats Dash'),
@@ -244,14 +274,21 @@ app.layout = html.Div(children=[
             ),
         ], style={'width': '49%', 'display': 'inline-block'}),
     html.Div([
-            dcc.Graph(id='hete-kaart',style={"display": "block","margin-left": "auto","margin-right": "auto","width": "50%"},figure=fig)
-        ])
+            dcc.Graph(id='mot-hist',style={"display": "block","margin-left": "auto","margin-right": "auto","width": "50%"},figure=fig_hm)
+        ]),
+    html.Div([
+            dcc.Graph(id='hete-kaart',style={"display": "block","margin-left": "auto","margin-right": "auto","width": "50%"},figure=fig_hist)
+        ]),
+    # html.Div([
+    #     html.Video(id='insect_video',src=video_fn,controls=True)
+    #     ])
 ])
 
 @app.callback(
     dash.dependencies.Output('hete-kaart', 'figure'),
-    [dash.dependencies.Input('date_range-dropdown', 'value'),
-    dash.dependencies.Input('systems-dropdown', 'value')]
+    dash.dependencies.Output('mot-hist', 'figure'),
+    dash.dependencies.Input('date_range-dropdown', 'value'),
+    dash.dependencies.Input('systems-dropdown', 'value')
 )
 def update_output(daterange_value,system_value):
     global selected_systems,selected_dayrange
@@ -266,8 +303,17 @@ def update_output(daterange_value,system_value):
 
     load_moth_data()
     load_mode_data()
-    fig=create_heatmap()
-    return fig
+    fig_hm=create_heatmap()
+    fig_hist=create_hist()
+    return fig_hm,fig_hist
+
+
+# @app.callback(
+#     dash.dependencies.Output('insect_video', 'src'),
+#     dash.dependencies.Input('hete-kaart', 'on_click')
+# )
+# def heatmap_onclick(heaptmap_value):
+#     return '/static/videoResult_vp9_vbr.mkv'
 
 if __name__ == '__main__':
     app.run_server()
