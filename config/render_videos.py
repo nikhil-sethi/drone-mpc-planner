@@ -40,7 +40,7 @@ for folder in filtered_dirs:
     print(f"Processing {folder}")
     pats_xml_path = Path(folder,'logging','pats.xml')
     results_txt_path = Path(folder,'logging','results.txt')
-    target_path = Path(Path(os.path.expanduser('~/data_rendered/')),os.path.basename(folder) + '_' + socket.gethostname() + '.mp4')
+    target_path = Path(Path(os.path.expanduser('~/data_rendered/')),os.path.basename(folder) + '_' + socket.gethostname() + '.mkv')
     if not os.path.exists(target_path) and os.path.exists(pats_xml_path) and os.path.exists(results_txt_path):
         hunt_mode=False
         n_hunts = 0
@@ -60,27 +60,23 @@ for folder in filtered_dirs:
         if hunt_mode and n_hunts > 0 and n_takeoffs > 0:
             cmd = './pats --log ' +folder + '/logging --render'
             execute(cmd,render_process_dir)
-            video_result_path = Path(render_process_dir, 'logging/replay/videoResult.mp4')
+            video_result_path = Path(render_process_dir, 'logging/replay/videoResult.mkv')
             if os.path.exists(video_result_path):
                 Path(os.path.expanduser('~/data_rendered/')).mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(video_result_path,target_path)
-                shutil.move(str(video_result_path), Path(folder,'videoResult.mp4'))
+                shutil.move(str(video_result_path), Path(folder,'videoResult.mkv'))
 
         #render insects:
         files = tqdm(os.listdir(folder + '/logging/'))
         for file in files:
             if file.startswith('moth') and file.endswith(".mkv"):
-                video_target_path =  folder + '/logging/render_' + os.path.splitext(file)[0] + '.mp4'
+                video_target_path =  folder + '/logging/render_' + os.path.splitext(file)[0] + '.mkv'
 
                 if not os.path.isfile(video_target_path):
                     video_src_path = folder + '/logging/' + file
                     cmd = './pats --log ' + folder + '/logging --monitor-render ' + video_src_path
                     execute(cmd,render_process_dir)
 
-                    video_result_path = render_process_dir + '/logging/replay/videoResult.mp4'
+                    video_result_path = render_process_dir + '/logging/replay/videoResult.mkv'
 
                     shutil.move(video_result_path, video_target_path)
-
-
-
-

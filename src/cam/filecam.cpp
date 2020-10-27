@@ -200,7 +200,7 @@ void FileCam::init_gstream() {
 #else
     GstElement  *demux,*decoder;
     demux = gst_element_factory_make ("matroskademux", "demux");
-    decoder = gst_element_factory_make ("vaapih265dec", "decoder");
+    decoder = gst_element_factory_make ("vaapivp9dec", "decoder");
     g_signal_connect (demux, "pad-added", G_CALLBACK (on_pad_added), decoder);
 
     gst_bin_add_many (GST_BIN (_pipeline), src,demux,decoder,_appsink, NULL);

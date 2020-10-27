@@ -53,6 +53,7 @@ def download_raw_logs_all():
     target_folder = '~/Downloads/pats_raw_logs/'
     subprocess.call(['mkdir -p ' + target_folder ], shell=True)
     files = natural_sort([fp for fp in glob.glob(os.path.expanduser('~/Downloads/pats_renders/*.mp4'))])
+    files += natural_sort([fp for fp in glob.glob(os.path.expanduser('~/Downloads/pats_renders/*.mkv'))])
     pbar= tqdm(files)
     for file_ in pbar:
         foldername = os.path.basename(file_)[:15]

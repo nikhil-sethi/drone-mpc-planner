@@ -70,7 +70,7 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
 
     } else {
 
-        GstElement *capsfilter,*conv,*encoder, *mux, *rtp, *videosink, *parse;
+        GstElement *capsfilter,*conv,*encoder, *mux, *rtp, *videosink;
         GstElement *colorbalance,*videoconvert;
         /* init GStreamer */
         gst_init (NULL, NULL);
@@ -90,12 +90,11 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
             capsfilter = gst_element_factory_make ("capsfilter", NULL);
 
             if (file.back() == '4')
-                mux = gst_element_factory_make ("mp4mux", "mux");
+                mux = gst_element_factory_make ("mp4mux", "mux"); // hmm, vaapivp9enc seems to be incompatible with mp4mux...
             else
                 mux = gst_element_factory_make ("matroskamux", "mux");
 
             videosink = gst_element_factory_make ("filesink", "videosink");
-
 
             g_object_set (G_OBJECT (_appsrc),
                           "stream-type", 0, // GST_APP_STREAM_TYPE_STREAM
@@ -120,24 +119,18 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
                                                         "framerate", GST_TYPE_FRACTION, gstream_fps, 1,NULL);
                 g_object_set (G_OBJECT (_appsrc), "caps",caps_appsrc, NULL);
                 gst_caps_unref(caps_appsrc);
-                parse = gst_element_factory_make ("h265parse", "parse");
-                encoder = gst_element_factory_make ("vaapih265enc", "encoder"); // hardware encoding
-                g_object_set (G_OBJECT (encoder),"rate-control",2, "bitrate", 3000, NULL);
+
+                encoder = gst_element_factory_make ("vaapivp9enc", "encoder"); // hardware encoding
+                g_object_set (G_OBJECT (encoder),"rate-control",4, "bitrate", 3000, NULL);
+                // g_object_set (G_OBJECT (encoder),"rate-control",2,"quality" , 2, NULL); // quality does not seem to do much
 
                 // the colorspace conversion to I420 doesn't play nice with our viz. So up the saturation so it looks a bit the same as before.
                 colorbalance = gst_element_factory_make ("videobalance", "videobalance");
                 g_object_set (G_OBJECT (colorbalance), "brightness", 0.03, "contrast", 1.0,"saturation",2.0, NULL);
 
-                // vaapih265enc in gstreamer 1.17 supports main-444 which looks much better for our colored vizs. But currently we are on gstreamer 1.14 and often players dont support 444 either.
-                //(this is why we hack it with the colorbalance above)
-                auto caps_h265 = gst_caps_new_simple ("video/x-h265",
-                                                      "profile", G_TYPE_STRING, "main",
-                                                      NULL);
-                g_object_set (G_OBJECT (capsfilter), "caps",caps_h265, NULL);
-                gst_caps_unref(caps_h265);
 
-                gst_bin_add_many (GST_BIN (_pipeline), _appsrc,colorbalance,videoconvert,encoder,capsfilter,parse,mux,videosink, NULL);
-                gst_element_link_many (                _appsrc,colorbalance,videoconvert,encoder,capsfilter,parse,mux,videosink, NULL);
+                gst_bin_add_many (GST_BIN (_pipeline), _appsrc,colorbalance,videoconvert,encoder,mux,videosink, NULL);
+                gst_element_link_many (                _appsrc,colorbalance,videoconvert,encoder,mux,videosink, NULL);
             } else {
                 auto caps_appsrc = gst_caps_new_simple ("video/x-raw",
                                                         "format", G_TYPE_STRING, "I420",
