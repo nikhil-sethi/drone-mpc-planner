@@ -93,6 +93,12 @@ public:
     void set_drone_problem() {_navigation_status = ns_drone_problem;}
     void demo_flight(std::string flightplan_fn);
 
+    void render_now_override() {
+        _nav_flight_mode = nfm_none;
+        _navigation_status = ns_monitoring;
+        _trackers->mode(tracking::TrackerManager::mode_wait_for_insect);
+    }
+
     nav_flight_modes nav_flight_mode() {return _nav_flight_mode;}
     void nav_flight_mode(nav_flight_modes m) {
         if (m == nfm_manual)

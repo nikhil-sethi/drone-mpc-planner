@@ -58,7 +58,8 @@ private:
     void deserialize_settings();
     void serialize_settings();
 
-    std::string motion_noise_map_wfn = "max_motion_noise.png";
+    std::string motion_noise_mapL_wfn = "max_motion_noiseL.png";
+    std::string motion_noise_mapR_wfn = "max_motion_noiseR.png";
     std::string overexposed_map_wfn = "overexposed.png";
 
     cv::Mat diffL16,frameL16,diffR16,frameR16;
@@ -75,7 +76,7 @@ private:
     cv::Point exclude_drone_from_motion_fading_spot_R = {-1};
     int exclude_drone_from_motion_fading_radius = 0;
 
-    cv::Mat overexposed_mapL;
+    cv::Mat overexposed_map;
 
     bool enable_viz_diff = false;
 
@@ -117,6 +118,7 @@ public:
     double current_time() {return _current_frame_time;}
 
     void init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, float new_camera_gain, float new_camera_exposure, cv::Mat new_depth_background_mm);
+    void read_motion_and_overexposed_from_image(std::string replay_dir);
     void close();
     void update(cv::Mat new_frameL, cv::Mat new_frameR, double time, unsigned long long new_frame_id);
     void reset_motion_integration() {
@@ -131,8 +133,8 @@ public:
     void exclude_drone_from_motion_fading(cv::Point3f p, int radius);
 
     bool is_in_overexposed_area(cv::Point p) {
-        if(overexposed_mapL.cols)
-            return overexposed_mapL.at<uint8_t>(p*pparams.imscalef) == 0;
+        if(overexposed_map.cols)
+            return overexposed_map.at<uint8_t>(p*pparams.imscalef) == 0;
         else
             return true;
     }

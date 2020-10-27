@@ -60,6 +60,7 @@ xmls::ThrustCalibParameters tparams;
 stopwatch_c stopWatch;
 std::string data_output_dir;
 bool draw_plots = false;
+bool realsense_reset = false;
 bool log_replay_mode = false;
 bool generator_mode = false;
 bool render_hunt_mode = false;
@@ -67,7 +68,7 @@ bool skipped_to_hunt = false;
 uint8_t drone_id;
 std::string replay_dir;
 std::string logger_fn; //contains filename of current log # for insect logging (same as video #)
-std::string pats_xml_fn,drone_xml_fn,monitor_video_fn;
+std::string pats_xml_fn="../../xml/pats.xml",drone_xml_fn,monitor_video_fn;
 bool render_monitor_video_mode = false;
 
 std::ofstream logger;
@@ -708,52 +709,47 @@ void init_video_recorders() {
         if (output_video_cuts.init(pparams.video_cuts,data_output_dir + "insect" + to_string(0) + ".mkv",IMG_W,IMG_H*2,pparams.fps, "192.168.1.255",5000,false)) {std::cout << "WARNING: could not open cut video " << data_output_dir + "insect" + to_string(0) + ".mkv" << std::endl;}
 }
 
-std::tuple<bool,bool,bool,bool, std::string,uint8_t,std::string,std::string,bool,std::string> process_arg(int argc, char **argv) {
-
-    int default_drone_id = 1;
-    int arg_drone_id = default_drone_id;
-    bool replay_mode = false,monitor_video_render_mode=false,render_mode = false, gen_mode = false;
-    std::string arg_log_folder="",arg_pats_xml_fn="../../xml/pats.xml",arg_drone_xml_fn="",monitor_video_render_fn="";
+void process_arg(int argc, char **argv) {
     if (argc > 1) {
         for (int i = 1; i < argc; i++) {
             string s = argv[i];
             bool arg_recognized = false;
-            if (s.compare("--rs_reset") == 0) {
-                return make_tuple(true,false,false,false,"",0,"","",false,"");
+            if (s.compare("--rs-reset") == 0) {
+                realsense_reset = true;
             } else if (s.compare("--pats-xml") == 0) {
                 arg_recognized = true;
                 i++;
-                arg_pats_xml_fn = argv[i];
+                pats_xml_fn = argv[i];
             } else if (s.compare("--drone-xml") == 0) {
                 arg_recognized = true;
                 i++;
-                arg_drone_xml_fn = argv[i];
+                drone_xml_fn = argv[i];
             } else if (s.compare("--drone-id") == 0) {
                 arg_recognized = true;
                 i++;
-                arg_drone_id = stoi(argv[i]);
+                drone_id = stoi(argv[i]);
             } else if (s.compare("--generator") == 0) {
                 arg_recognized = true;
                 i++;
-                gen_mode = true;
+                generator_mode = true;
             } else if (s.compare("--log") == 0) {
                 arg_recognized = true;
                 i++;
-                replay_mode=true;
-                arg_log_folder=argv[i];
-                arg_pats_xml_fn = arg_log_folder + "/pats.xml";
-                arg_drone_xml_fn = arg_log_folder + "/drone.xml";
+                log_replay_mode=true;
+                replay_dir=argv[i];
+                pats_xml_fn = replay_dir + "/pats.xml";
+                drone_xml_fn = replay_dir + "/drone.xml";
             } else if (s.compare("--render") == 0) {
                 arg_recognized = true;
-                render_mode=true;
-            } else if (s.compare("--monitor_video_render") == 0) {
-                //monitor_video_render accepts a (concatinated) videorawLR.mkv of monitored insects, but also needs an original logging folder for camera calibraton files.
+                render_hunt_mode=true;
+            } else if (s.compare("--monitor-render") == 0) {
+                //monitor_render accepts a (concatinated) videorawLR.mkv of monitored insects, but also needs an original logging folder for camera calibraton files.
                 //usage example: ./pats --log logging --monitor_render ~/Bla/vogel.mkv
                 arg_recognized = true;
                 i++;
-                monitor_video_render_mode=true;
-                replay_mode=false;
-                monitor_video_render_fn=argv[i];
+                render_monitor_video_mode=true;
+                log_replay_mode=false;
+                monitor_video_fn=argv[i];
             }
             if (!arg_recognized) {
                 std::cout << "Error argument nog recognized: " << argv[i] <<std::endl;
@@ -761,7 +757,6 @@ std::tuple<bool,bool,bool,bool, std::string,uint8_t,std::string,std::string,bool
             }
         }
     }
-    return make_tuple(false,replay_mode,gen_mode,render_mode,arg_log_folder,arg_drone_id,arg_pats_xml_fn,arg_drone_xml_fn,monitor_video_render_mode,monitor_video_render_fn);
 }
 
 void check_hardware() {
@@ -818,10 +813,15 @@ void init() {
     gui.init(argc,argv);
 #endif
     cam->init();
+    if (render_monitor_video_mode)
+        visdat.read_motion_and_overexposed_from_image(replay_dir); // has to happen before init otherwise wfn's are overwritten
     visdat.init(cam->Qf, cam->frameL,cam->frameR,cam->camera_angle(),cam->measured_gain(),cam->measured_exposure(),cam->depth_background_mm); // do after cam update to populate frames
     trackers.init(&logger, &visdat, &(cam->camera_volume));
     dnav.init(&logger,&trackers,&dctrl,&visdat, &(cam->camera_volume),replay_dir);
     dctrl.init(&logger,log_replay_mode,generator_mode,&rc,trackers.dronetracker(), &(cam->camera_volume),cam->measured_exposure());
+
+    if (render_monitor_video_mode)
+        dnav.render_now_override();
 
     if (pparams.has_screen || render_hunt_mode || render_monitor_video_mode) {
         visualizer.init(&visdat,&trackers,&dctrl,&dnav,&rc,log_replay_mode);
@@ -1000,8 +1000,7 @@ int main( int argc, char **argv )
         mkdir(data_output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
         cmdcenter.reset_commandcenter_status_file("Starting",false);
-        bool realsense_reset;
-        std::tie(realsense_reset,log_replay_mode,generator_mode,render_hunt_mode,replay_dir,drone_id,pats_xml_fn,drone_xml_fn,render_monitor_video_mode,monitor_video_fn) = process_arg(argc,argv);
+        process_arg(argc,argv);
 
         if (realsense_reset) {
             cmdcenter.reset_commandcenter_status_file("Reseting realsense",false);

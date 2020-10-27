@@ -91,7 +91,7 @@ def update_monitor_results():
     cmd = 'rsync -puz ' + local_json_file +' dash:' + remote_json_file
     execute(cmd,5)
 
-def render():
+def render_hunts():
     now = datetime.now()
     yesterday = now - timedelta(days=1)
     date_time_start = yesterday.strftime("%Y%m%d_%H%M%S")
@@ -144,7 +144,7 @@ while True:
         if now.hour == 9 and not updated_today:
             updated_today = True
             update_monitor_results()
-            render()
+            render_hunts()
             clean_hd()
         if now.hour == 10 and updated_today:
             updated_today = False

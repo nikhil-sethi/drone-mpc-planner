@@ -122,9 +122,9 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
                 gst_caps_unref(caps_appsrc);
                 parse = gst_element_factory_make ("h265parse", "parse");
                 encoder = gst_element_factory_make ("vaapih265enc", "encoder"); // hardware encoding
+                g_object_set (G_OBJECT (encoder),"rate-control",2, "bitrate", 3000, NULL);
 
                 // the colorspace conversion to I420 doesn't play nice with our viz. So up the saturation so it looks a bit the same as before.
-
                 colorbalance = gst_element_factory_make ("videobalance", "videobalance");
                 g_object_set (G_OBJECT (colorbalance), "brightness", 0.03, "contrast", 1.0,"saturation",2.0, NULL);
 

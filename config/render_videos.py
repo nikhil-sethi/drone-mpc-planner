@@ -2,6 +2,7 @@
 
 import os,socket,subprocess,time,sys,glob
 import re, datetime, argparse, shutil
+from tqdm import tqdm
 from pathlib import Path
 
 def todatetime(string):
@@ -37,7 +38,6 @@ found_dirs = glob.glob(args.i + "/202*_*")
 filtered_dirs = [d for d in found_dirs if todatetime(os.path.basename(os.path.normpath(d))) >= min_date and todatetime(os.path.basename(os.path.normpath(d))) <= max_date] # filter the list of dirs to only contain dirs between certain dates
 for folder in filtered_dirs:
     print(f"Processing {folder}")
-    cmd = './pats --log ' +folder + '/logging --render'
     pats_xml_path = Path(folder,'logging','pats.xml')
     results_txt_path = Path(folder,'logging','results.txt')
     target_path = Path(Path(os.path.expanduser('~/data_rendered/')),os.path.basename(folder) + '_' + socket.gethostname() + '.mp4')
@@ -58,10 +58,29 @@ for folder in filtered_dirs:
                 if line.find('n_takeoffs') != -1:
                     n_takeoffs = int(line.split(':')[1])
         if hunt_mode and n_hunts > 0 and n_takeoffs > 0:
+            cmd = './pats --log ' +folder + '/logging --render'
             execute(cmd,render_process_dir)
             video_result_path = Path(render_process_dir, 'logging/replay/videoResult.mp4')
             if os.path.exists(video_result_path):
                 Path(os.path.expanduser('~/data_rendered/')).mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(video_result_path,target_path)
                 shutil.move(str(video_result_path), Path(folder,'videoResult.mp4'))
+
+        #render insects:
+        files = tqdm(os.listdir(folder + '/logging/'))
+        for file in files:
+            if file.startswith('moth') and file.endswith(".mkv"):
+                video_target_path =  folder + '/logging/render_' + os.path.splitext(file)[0] + '.mp4'
+
+                if not os.path.isfile(video_target_path):
+                    video_src_path = folder + '/logging/' + file
+                    cmd = './pats --log ' + folder + '/logging --monitor-render ' + video_src_path
+                    execute(cmd,render_process_dir)
+
+                    video_result_path = render_process_dir + '/logging/replay/videoResult.mp4'
+
+                    shutil.move(video_result_path, video_target_path)
+
+
+
 
