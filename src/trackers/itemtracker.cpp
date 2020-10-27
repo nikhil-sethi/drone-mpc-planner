@@ -284,6 +284,9 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
     int disparity_masked = 0;
     const float min_pxl_ratio = 0.25f;
 
+    int disp_cnt = 0; //keep track of how many shifts are calculated until we found the minimum
+    float min_err = INFINITY;
+
     if (motion_noise_mapL.cols) {
         //since the background often isn't a solid color we do matching on the raw image data instead of the motion
         //using the motion from both images as a mask, we match the disparity over the masked gray image
@@ -305,18 +308,24 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
                 if (!err_calculated[ii-1]) {
                     std::tie(masked_pixel_ratio[ii-1],err_masked[ii-1]) = calc_match_score_masked(ii-1, disp_end, width, height,diffL_mask_patch,diffR_mask_patch,grayL_patch, grayR_patch,npixels);
                     err_calculated[ii-1] = true;
+                    disp_cnt++;
                 }
                 if (!err_calculated[ii]) {
                     std::tie(masked_pixel_ratio[ii],err_masked[ii]) = calc_match_score_masked(ii, disp_end, width, height,diffL_mask_patch,diffR_mask_patch,grayL_patch, grayR_patch,npixels);
                     err_calculated[ii] = true;
+                    disp_cnt++;
                 }
                 if (!err_calculated[ii+1]) {
                     std::tie(masked_pixel_ratio[ii+1],err_masked[ii+1]) = calc_match_score_masked(ii+1, disp_end, width, height,diffL_mask_patch,diffR_mask_patch,grayL_patch, grayR_patch,npixels);
                     err_calculated[ii+1] = true;
+                    disp_cnt++;
                 }
 
-                if (err_masked[ii-1] >= err_masked[ii] && err_masked[ii+1] >= err_masked[ii]) { // minimum found
+                if (err_masked[ii-1] >= err_masked[ii] && err_masked[ii+1] >= err_masked[ii] && min_err > err_masked[ii]) { // minimum found
                     disparity_masked  = ii;
+                    min_err = err_masked[ii];
+                }
+                if (err_masked[ii-1] >= err_masked[ii] && err_masked[ii+1] >= err_masked[ii] && min_err > err_masked[ii] && _n_frames_tracking > 0) {  // global minimum found
                     break;
                 } else if (err_masked[ii-1] > err_masked[ii+1]) { // no minumum here, determine search direction based on slope
                     int ii_cnt = 0;
@@ -354,24 +363,24 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
             if (!err_calculated[ii-1]) {
                 err_motion[ii-1] = calc_match_score_motion(ii-1,x,y,width,height,tmp_diffL_sum,diffL(roiL),diffR);
                 err_calculated[ii-1] = true;
+                disp_cnt++;
             }
             if (!err_calculated[ii]) {
                 err_motion[ii] = calc_match_score_motion(ii,x,y,width,height,tmp_diffL_sum,diffL(roiL),diffR);
                 err_calculated[ii] = true;
+                disp_cnt++;
             }
             if (!err_calculated[ii+1]) {
                 err_motion[ii+1] = calc_match_score_motion(ii+1,x,y,width,height,tmp_diffL_sum,diffL(roiL),diffR);
                 err_calculated[ii+1] = true;
+                disp_cnt++;
             }
 
-            if (err_motion[ii-1] >= err_motion[ii] && err_motion[ii+1] >= err_motion[ii]) // minimum found
+            if (err_motion[ii-1] >= err_motion[ii] && err_motion[ii+1] >= err_motion[ii] && min_err > err_motion[ii]) { // minimum found
                 disparity_motion  = ii;
-
-            float min_err = 0.01;
-            if (ii> 20)
-                min_err = static_cast<float>(ii)/1000.f;
-
-            if (err_motion[ii-1] >= err_motion[ii]+min_err && err_motion[ii+1] >= err_motion[ii]+min_err) {  // global minimum found
+                min_err = err_motion[ii];
+            }
+            if (err_motion[ii-1] >= err_motion[ii] && err_motion[ii+1] >= err_motion[ii] && min_err > err_motion[ii] && _n_frames_tracking > 0) {  // global minimum found
                 break;
             } else if (err_motion[ii-1] > err_motion[ii+1]) { // no minumum here, determine search direction based on slope
                 int ii_cnt = 0;
@@ -398,6 +407,9 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
         disparity = disparity_masked;
         err = err_masked;
     }
+
+    if (disp_cnt > 20)
+        std::cout << "Warning large disparity search range: " << disp_cnt << std::endl;
 
     if (disparity > 0) {
         float sub_disp = estimate_sub_disparity(disparity,err);
@@ -473,8 +485,6 @@ std::tuple<int,float,int,int> ItemTracker::disparity_search_rng(int x) {
         disp_pred = disp_start + 1;
 
     int disp_rng = disp_end - disp_start;
-    if (disp_rng > 20)
-        std::cout << "Warning large disparity search range: " << disp_rng << std::endl;
 
     return std::make_tuple(disp_start,disp_pred,disp_rng,disp_end);
 }

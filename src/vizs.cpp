@@ -495,6 +495,7 @@ void Visualizer::draw_tracker_viz() {
             p_ins_ground_wrld.y = -1.92f; // guestimated ground level
             cv::Point2f p_ins_ground_im = world2im_2d(p_ins_ground_wrld,_visdat->Qfi,_visdat->camera_angle);
             cv::line(frameL_color,p_ins_im,p_ins_ground_im,white,1);
+            cv::circle(frameL_color,p_ins_im,wti.iti.size*pparams.imscalef / 2.f,c);
         }
     }
 
