@@ -193,6 +193,11 @@ def clean_mode():
 
 def remove_double_data(table_name_prefix,order_by):
     systems = load_systems()
+    columns = [i[1] for i in cur.execute('PRAGMA table_info(' + table_name_prefix + '_records)')]
+    v_id = -1
+    if 'Version' in columns:
+        v_id = columns.index('Version')
+
     all_entries_cleaned = []
     pbar = tqdm(systems,desc='Cleaning double ' +  table_name_prefix +' from db')
     for system in pbar:
@@ -206,7 +211,14 @@ def remove_double_data(table_name_prefix,order_by):
             prev_entry = entries[prev_i]
 
             if (prev_entry[1]==entry[1] and prev_entry[2]==entry[2]):
-                entries[i] = ('_duplicate',entries[i][1],entries[i][2])
+                if v_id >= 0:
+                    if entry[v_id] > prev_entry[v_id]:
+                        entries[prev_i] = ('_duplicate',entries[prev_i][1],entries[prev_i][2])
+                        prev_i = i
+                    else:
+                        entries[i] = ('_duplicate',entries[i][1],entries[i][2])
+                else:
+                    entries[i] = ('_duplicate',entries[i][1],entries[i][2])
             else:
                 prev_i = i
 
@@ -214,7 +226,7 @@ def remove_double_data(table_name_prefix,order_by):
         all_entries_cleaned += entries_cleaned
 
 
-    columns = [i[1] for i in cur.execute('PRAGMA table_info(' + table_name_prefix + '_records)')]
+
 
     #create a temporary backup of the table in case something goes wrong:
     cur.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='" + table_name_prefix + "_records_dirty'")
@@ -310,14 +322,12 @@ while True:
             with open(filename) as json_file:
                 with open(flag_fn,'w') as flag_f:
                     data = json.load(json_file)
-                    required_version3='1.3'
-                    required_version1='1.2'
-                    required_version2='1.1'
-                    if "version" in data and data["version"] == required_version1 or data["version"] == required_version2 or data["version"] == required_version3:
+                    min_required_version=1.0
+                    if "version" in data and float(data["version"]) >= min_required_version:
                         store_data(data,os.path.basename(filename))
                         flag_f.write('OK')
                     else:
-                        flag_f.write('WRONG VERSION ' + data["version"] + '. Want: ' + required_version1)
+                        flag_f.write('WRONG VERSION ' + data["version"] + '. Want: ' + min_required_version)
 
     clean_mode()
     remove_double_data('moth','"time", "duration"')
