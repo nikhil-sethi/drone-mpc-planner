@@ -24,4 +24,6 @@
     },
     "search.showLineNumbers": true,
     "C_Cpp.autoAddFileAssociations": false,
+    "files.trimTrailingWhitespace": true,
+    "files.trimFinalNewlines": true
 }
