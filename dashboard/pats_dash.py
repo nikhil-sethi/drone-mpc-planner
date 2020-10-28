@@ -184,6 +184,7 @@ def create_heatmap(unique_dates,heatmap_data,xlabels):
     fig = go.Figure(data=hm)
     fig['layout']['xaxis']['side'] = 'top'
     fig['layout']['xaxis']['tickangle'] = 45
+
     h = len(unique_dates) * 30
     if h < 400:
         h=400
@@ -191,6 +192,7 @@ def create_heatmap(unique_dates,heatmap_data,xlabels):
         h=10
     fig.update_layout(
         height=h,
+        title_text='Moth counts per hour',
         clickmode='event+select'
     )
     return fig
@@ -207,7 +209,7 @@ def create_hist(selected_systems,selected_dayrange,hist_data,unique_dates):
     fig = go.Figure(data=hist)
 
     fig.update_layout(
-        title_text='Moth counts',
+        title_text='Moth counts per day',
         xaxis_title_text='Days',
         yaxis_title_text='Counts',
         clickmode='event+select'
