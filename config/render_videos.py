@@ -34,7 +34,7 @@ render_process_dir = os.path.expanduser('~/code/pats/pc/build_render/')
 if os.path.exists(render_process_dir):
     shutil.rmtree(render_process_dir)
 shutil.copytree(original_process_dir,render_process_dir,ignore=shutil.ignore_patterns('*logging*'))
-found_dirs = glob.glob(args.i + "/202*_*")
+found_dirs = glob.glob(os.path.expanduser(args.i) + "/202*_*")
 filtered_dirs = [d for d in found_dirs if todatetime(os.path.basename(os.path.normpath(d))) >= min_date and todatetime(os.path.basename(os.path.normpath(d))) <= max_date] # filter the list of dirs to only contain dirs between certain dates
 for folder in filtered_dirs:
     print(f"Processing {folder}")
@@ -71,12 +71,12 @@ for folder in filtered_dirs:
         for file in files:
             if file.startswith('moth') and file.endswith(".mkv"):
                 video_target_path =  folder + '/logging/render_' + os.path.splitext(file)[0] + '.mkv'
-
-                if not os.path.isfile(video_target_path):
-                    video_src_path = folder + '/logging/' + file
+                video_src_path = folder + '/logging/' + file
+                if not os.path.isfile(video_target_path) and os.stat(video_src_path).st_size > 30000:
                     cmd = './pats --log ' + folder + '/logging --monitor-render ' + video_src_path
                     execute(cmd,render_process_dir)
 
                     video_result_path = render_process_dir + '/logging/replay/videoResult.mkv'
 
-                    shutil.move(video_result_path, video_target_path)
+                    if os.path.exists(video_result_path):
+                        shutil.move(video_result_path, video_target_path)

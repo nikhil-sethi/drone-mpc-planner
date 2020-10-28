@@ -5,3 +5,4 @@ package-lock.json
 moth_records.db-journal
 pats_records.db-journal
 __pycache__
+static

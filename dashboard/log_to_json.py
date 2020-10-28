@@ -6,7 +6,7 @@ pd.options.mode.chained_assignment = None
 from tqdm import tqdm
 from pathlib import Path
 
-version = "1.4"
+version = "1.5"
 
 from scipy.interpolate import interp1d
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -324,7 +324,6 @@ def process_detections_in_folder(folder,operational_log_start,mode):
             continue
 
         time = elapsed_time.astype('float64')
-        dt = time[-1]-time[0]
         RS_ID = log['RS_ID'].values
 
         xs = log['sposX_insect'].values
@@ -333,14 +332,12 @@ def process_detections_in_folder(folder,operational_log_start,mode):
         x_tracking = np.delete(xs,remove_ids)
         y_tracking = np.delete(ys,remove_ids)
         z_tracking = np.delete(zs,remove_ids)
+
         pos_start = [x_tracking[0],y_tracking[0],z_tracking[0]]
         pos_end =  [x_tracking[-1],y_tracking[-1],z_tracking[-1]]
         diff = np.array(pos_end) - np.array(pos_start)
         dist_traveled = math.sqrt(np.sum(diff*diff))
-
-        dist_traject = 0
-        for i in range(1,len(x_tracking)):
-            dist_traject += (x_tracking[i] - x_tracking[i-1])**2 + (y_tracking[i] - y_tracking[i-1])**2 + (z_tracking[i] - z_tracking[i-1])**2
+        dist_traject = math.sqrt(np.sum((x_tracking[1:] - x_tracking[:-1])**2 + (y_tracking[1:] - y_tracking[:-1])**2 + (z_tracking[1:] - z_tracking[:-1])**2))
 
         mid_id = int(round(len(x_tracking)/2))
         pos_middle =  [x_tracking[mid_id],y_tracking[mid_id],z_tracking[mid_id]]
@@ -404,6 +401,7 @@ def process_detections_in_folder(folder,operational_log_start,mode):
                         "Alpha_vertical_start": alpha_vertical_start,
                         "Alpha_vertical_end": alpha_vertical_end,
                         "Filename" : filename,
+                        "Folder" : os.path.basename(folder),
                         "Video_Filename" : video_filename,
                         "Mode" : mode,
                         "Version": version

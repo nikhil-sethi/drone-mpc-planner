@@ -102,6 +102,9 @@ def store_moths(fn,data):
     #v1.4:
     if 'Dist_traject' not in columns:
         cur.execute('ALTER TABLE moth_records ADD COLUMN Dist_traject REAL')
+    #v1.5:
+    if 'Folder' not in columns:
+        cur.execute('ALTER TABLE moth_records ADD COLUMN Folder REAL')
 
     sql_insert = ''
     for moth in moths:
