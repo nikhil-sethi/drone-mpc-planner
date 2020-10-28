@@ -313,7 +313,7 @@ def dropdown_click(daterange_value,selected_systems):
     dash.dependencies.Input('hete_kaart', 'clickData')
 )
 def heatmap_clickData(daterange_value,selected_systems,clickData):
-    if clickData == None:
+    if clickData == None or not len(selected_systems):
         return go.Figure(data=go.Scatter())
 
     selected_dayrange = selected_dates(daterange_value)
@@ -323,6 +323,8 @@ def heatmap_clickData(daterange_value,selected_systems,clickData):
     x = xlabels.index(clickData['points'][0]['x'])
     y = unique_dates.index(clickData['points'][0]['y'])
     moths = heatmap_data_lists[y,x]
+    if moths == None:
+        return go.Figure(data=go.Scatter())
     df_scatter = pd.DataFrame(moths,columns=moth_columns)
 
     distinct_cols = px.colors.qualitative.Alphabet
@@ -344,8 +346,12 @@ def heatmap_clickData(daterange_value,selected_systems,clickData):
     fig = go.Figure(data=scatter)
     fig.update_layout(
         title_text='Selected moths',
+        xaxis_title = 'Duration [s]',
+        yaxis_title = 'Velocity [m/s]',
         clickmode='event+select'
     )
+    # fig['layout']['xaxis']['title']='Duration'
+    # fig['layout']['yaxis']['title']='Velocity [m/s]'
     return fig
 
 @app.callback(
@@ -356,7 +362,7 @@ def heatmap_clickData(daterange_value,selected_systems,clickData):
     dash.dependencies.Input('verstrooide_kaart', 'clickData')
 )
 def scatter_clickData(daterange_value,selected_systems,clickData_hm,clickData_dot):
-    if clickData_dot == None:
+    if clickData_dot == None or clickData_hm ==None or not len(selected_systems) or not len(clickData_hm):
         return ''
 
     selected_dayrange = selected_dates(daterange_value)
@@ -367,7 +373,6 @@ def scatter_clickData(daterange_value,selected_systems,clickData_hm,clickData_do
     y = unique_dates.index(clickData_hm['points'][0]['y'])
     moths = heatmap_data_lists[y,x]
     df_scatter = pd.DataFrame(moths,columns=moth_columns)
-
 
     point_id = clickData_dot['points'][0]['pointIndex']
     tmp = df_scatter.values[point_id]
