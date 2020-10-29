@@ -8,9 +8,9 @@ KEY_LANDEDTIME = 'landed_time'
 KET_ENTERLANDINGTIME = 'entering_landing_time'
 KEY_CRASHED = 'crashed'
 
-NS_TAKING_OFF = 10
+NS_TAKING_OFF = 9
 NS_LANDING = 23
-NS_LANDED = 24
+NS_LANDED = 25
 
 
 def init_flightstate_data():
