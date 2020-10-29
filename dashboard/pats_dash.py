@@ -4,11 +4,14 @@ import datetime,time, argparse,math,pickle, glob, os, re
 import numpy as np
 import pandas as pd
 
-import dash,flask
+import dash,dash_auth,flask
 import dash_core_components as dcc
 import dash_html_components as html
 import plotly.express as px
 import plotly.graph_objects as go
+
+from werkzeug.security import generate_password_hash, check_password_hash
+
 
 db_path = ''
 
@@ -23,14 +26,30 @@ def open_db():
         print(e)
     return conn,cur
 
-def load_systems():
+def load_systems(username):
     conn,cur = open_db()
     sql_str = '''SELECT DISTINCT system FROM mode_records ORDER BY system '''
     cur.execute(sql_str)
     systems = cur.fetchall()
     systems = natural_sort_systems(systems)
     systems = [d[0] for d in systems]
-    return systems
+
+    authorized_systems = []
+    user_pass_dict,user_group_dict = read_cred_db()
+
+    group = user_group_dict[username]
+    for sys in systems:
+        sys_id = int(sys.replace('pats','').replace('-proto',''))
+        if (group == 'admin' or group == 'pats') and (sys_id != 25 and sys_id != 26 and sys_id != 10):
+            authorized_systems.append(sys)
+        elif group == 'koppertcress' and (sys_id > 10 and sys_id <= 21 or sys_id ==4 or sys_id == 6):
+            authorized_systems.append(sys)
+        elif (group == 'wur') and (sys_id == 23 or sys_id == 24):
+            authorized_systems.append(sys)
+        elif (group == 'holstein') and (sys_id == 2 or sys_id == 22):
+            authorized_systems.append(sys)
+
+    return authorized_systems
 
 def system_sql_str(systems):
     if not isinstance(systems, list):
@@ -118,6 +137,8 @@ def convert_mode_to_number(mode):
         return -666
 
 def load_mode_data(unique_dates,moth_columns,heatmap_data,selected_systems,selected_dayrange):
+    if not len(unique_dates):
+        return [],[]
     systems_str = system_sql_str(selected_systems)
     conn,cur = open_db()
 
@@ -217,6 +238,22 @@ def create_hist(selected_systems,selected_dayrange,hist_data,unique_dates):
 
     return fig
 
+def read_cred_db():
+    cred_file = os.path.expanduser('~/.dash_auth')
+
+    if os.path.exists(cred_file):
+        user_pass_dict = {}
+        user_group_dict = {}
+        with open (cred_file, "r") as creds_file:
+                creds = creds_file.readlines()
+                for cred in creds:
+                    cred = cred.split(':')
+                    user_group_dict[cred[0].strip()] = cred[1].strip()
+                    user_pass_dict[cred[0].strip()] = cred[2].strip()
+    else:
+        user_pass_dict = {'user': 'user'}
+        user_group_dict = {'user': 'admin'}
+    return user_pass_dict,user_group_dict
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Dash app that shows Pats monitoring and system analysis')
@@ -229,19 +266,23 @@ else:
 if not os.path.exists('static'):
     os.makedirs('static')
 
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+server = flask.Flask(__name__)
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets, server=server)
+
+user_pass_dict,_ = read_cred_db()
+auth = dash_auth.BasicAuth(app,user_pass_dict)
+
 #initials empty values for gui:
 dateranges = ['Last week', 'Last month', 'Last year']
 xlabels = []
 for i in range(0,24):
     xlabels.append(str((i+12)%24)+'h')
-systems = load_systems()
+
+systems = []
 fig_hm=go.Figure(data=go.Heatmap())
 fig_hist=go.Figure(data=go.Histogram())
 fig_scatter = go.Figure(data=go.Scatter())
-
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-server = flask.Flask(__name__)
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets, server=server)
 app.layout = html.Div(children=[
     html.H1(children='Pats Dash'),
     html.Div([
@@ -249,7 +290,6 @@ app.layout = html.Div(children=[
             dcc.Dropdown(
                 id='systems_dropdown',
                 options=[{"label": system, "value": system} for system in systems],
-                value=systems[0],
                 multi=True
             ),
         ], style={'width': '49%', 'display': 'inline-block'}),
@@ -273,7 +313,7 @@ app.layout = html.Div(children=[
             dcc.Graph(id='verstrooide_kaart',style={"display": "block","margin-left": "auto","margin-right": "auto","width": "50%"},figure=fig_scatter)
         ]),
     html.Div([
-        html.Video(id='insect_video',src='',controls=True)
+        html.Video(id='insect_video',src='',style={"display": "block","margin-left": "auto","margin-right": "auto","width": "75%"},controls=True,loop=True,autoPlay=True)
         ]),
     html.Div(id='intermediate-value', style={'display': 'none'})
 ])
@@ -289,44 +329,61 @@ def selected_dates(daterange_value):
     return selected_dayrange
 
 @app.callback(
+    dash.dependencies.Output('systems_dropdown', 'options'),
+    dash.dependencies.Input('date_range_dropdown', 'options')
+)
+def system_clickData(selected_system):
+    username = flask.request.authorization['username']
+    systems = load_systems(username)
+    options = []
+    for system in systems:
+        options.append({"label": system, "value": system} )
+    return options
+
+@app.callback(
     dash.dependencies.Output('hete_kaart', 'figure'),
     dash.dependencies.Output('staaf_kaart', 'figure'),
+    dash.dependencies.Output('hete_kaart', 'style'),
+    dash.dependencies.Output('staaf_kaart', 'style'),
     dash.dependencies.Input('date_range_dropdown', 'value'),
     dash.dependencies.Input('systems_dropdown', 'value')
 )
 def dropdown_click(daterange_value,selected_systems):
-
     selected_dayrange = selected_dates(daterange_value)
-    if not len(selected_systems):
-        return go.Figure(data=go.Scatter()),go.Figure(data=go.Histogram())
+    if selected_systems == None or not len(selected_systems):
+        return go.Figure(data=go.Scatter()),go.Figure(data=go.Histogram()),{'display': 'none'},{'display': 'none'}
 
 
     unique_dates,heatmap_data,heatmap_data_lists,hist_data,moth_columns = load_moth_data(selected_systems,selected_dayrange)
+    if not len(unique_dates):
+        return go.Figure(data=go.Scatter()),go.Figure(data=go.Histogram()),{'display': 'none'},{'display': 'none'}
     heatmap_data,modemap_data = load_mode_data(unique_dates,moth_columns,heatmap_data,selected_systems,selected_dayrange)
     fig_hm=create_heatmap(unique_dates,heatmap_data,xlabels)
     fig_hist=create_hist(selected_systems,selected_dayrange,hist_data,unique_dates)
-    return fig_hm,fig_hist
-
+    return fig_hm,fig_hist,{"display": "block","margin-left": "auto","margin-right": "auto","width": "50%"},{"display": "block","margin-left": "auto","margin-right": "auto","width": "50%"}
 
 @app.callback(
     dash.dependencies.Output('verstrooide_kaart', 'figure'),
+    dash.dependencies.Output('verstrooide_kaart', 'style'),
     dash.dependencies.Input('date_range_dropdown', 'value'),
     dash.dependencies.Input('systems_dropdown', 'value'),
     dash.dependencies.Input('hete_kaart', 'clickData')
 )
 def heatmap_clickData(daterange_value,selected_systems,clickData):
-    if clickData == None or not len(selected_systems):
-        return go.Figure(data=go.Scatter())
+    if clickData == None or selected_systems == None or not len(selected_systems):
+        return go.Figure(data=go.Scatter()),{'display': 'none'}
 
     selected_dayrange = selected_dates(daterange_value)
     unique_dates,heatmap_data,heatmap_data_lists,hist_data,moth_columns = load_moth_data(selected_systems,selected_dayrange)
+    if not len(unique_dates):
+        return go.Figure(data=go.Scatter()),{'display': 'none'}
     heatmap_data,modemap_data = load_mode_data(unique_dates,moth_columns,heatmap_data,selected_systems,selected_dayrange)
 
     x = xlabels.index(clickData['points'][0]['x'])
     y = unique_dates.index(clickData['points'][0]['y'])
     moths = heatmap_data_lists[y,x]
     if moths == None:
-        return go.Figure(data=go.Scatter())
+        return go.Figure(data=go.Scatter()),{'display': 'none'}
     df_scatter = pd.DataFrame(moths,columns=moth_columns)
 
     distinct_cols = px.colors.qualitative.Alphabet
@@ -354,10 +411,11 @@ def heatmap_clickData(daterange_value,selected_systems,clickData):
     )
     # fig['layout']['xaxis']['title']='Duration'
     # fig['layout']['yaxis']['title']='Velocity [m/s]'
-    return fig
+    return fig,{"display": "block","margin-left": "auto","margin-right": "auto","width": "50%"}
 
 @app.callback(
     dash.dependencies.Output('insect_video', 'src'),
+    dash.dependencies.Output('insect_video', 'style'),
     dash.dependencies.Input('date_range_dropdown', 'value'),
     dash.dependencies.Input('systems_dropdown', 'value'),
     dash.dependencies.Input('hete_kaart', 'clickData'),
@@ -365,10 +423,12 @@ def heatmap_clickData(daterange_value,selected_systems,clickData):
 )
 def scatter_clickData(daterange_value,selected_systems,clickData_hm,clickData_dot):
     if clickData_dot == None or clickData_hm ==None or not len(selected_systems) or not len(clickData_hm):
-        return ''
+        return '',{'display': 'none'}
 
     selected_dayrange = selected_dates(daterange_value)
     unique_dates,heatmap_data,heatmap_data_lists,hist_data,moth_columns = load_moth_data(selected_systems,selected_dayrange)
+    if not len(unique_dates):
+        return '',{'display': 'none'}
     heatmap_data,modemap_data = load_mode_data(unique_dates,moth_columns,heatmap_data,selected_systems,selected_dayrange)
 
     x = xlabels.index(clickData_hm['points'][0]['x'])
@@ -381,9 +441,9 @@ def scatter_clickData(daterange_value,selected_systems,clickData_hm,clickData_do
     video_fn = tmp[moth_columns.index('Video_Filename')]
 
     if video_fn == None:
-        return ''
+        return '',{'display': 'none'}
     if video_fn == 'NA':
-        return ''
+        return '',{'display': 'none'}
     sys_name = tmp[moth_columns.index('system')].replace('-proto','')
     target_video_fn = '/static/' + tmp[moth_columns.index('Folder')] + '_' + sys_name + '_' + video_fn
 
@@ -392,7 +452,7 @@ def scatter_clickData(daterange_value,selected_systems,clickData_hm,clickData_do
         cmd = ['rsync -a ' + rsync_src + ' ' + target_video_fn[1:]]
         execute(cmd)
 
-    return target_video_fn
+    return target_video_fn,{"display": "block","margin-left": "auto","margin-right": "auto","width": "75%"}
 
 
 if __name__ == '__main__':
