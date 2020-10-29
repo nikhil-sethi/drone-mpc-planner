@@ -285,6 +285,7 @@ fig_hist=go.Figure(data=go.Histogram())
 fig_scatter = go.Figure(data=go.Scatter())
 app.layout = html.Div(children=[
     html.H1(children='Pats Dash'),
+
     html.Div([
             html.Div('Select systems:'),
             dcc.Dropdown(
@@ -304,16 +305,29 @@ app.layout = html.Div(children=[
             ),
         ], style={'width': '49%', 'display': 'inline-block'}),
     html.Div([
-            dcc.Graph(id='staaf_kaart',style={"display": "block","margin-left": "auto","margin-right": "auto","width": "50%"},figure=fig_hm)
+            dcc.Graph(id='staaf_kaart',style={"display": "block","margin-left": "auto","margin-right": "auto","width": "50%"},figure=fig_hist)
         ]),
     html.Div([
-            dcc.Graph(id='hete_kaart',style={"display": "block","margin-left": "auto","margin-right": "auto","width": "50%"},figure=fig_hist)
+            html.Br(),
+            dcc.Loading(
+                id="loading_1",
+                children=dcc.Graph(id="hete_kaart",style={"display": 'none'}, figure=fig_hm),
+                type="default"
+            )
         ]),
     html.Div([
-            dcc.Graph(id='verstrooide_kaart',style={"display": "block","margin-left": "auto","margin-right": "auto","width": "50%"},figure=fig_scatter)
+            dcc.Loading(
+                id="loading_2",
+                children=dcc.Graph(id="verstrooide_kaart",style={"display": 'none'}, figure=fig_scatter),
+                type="default"
+            ),
         ]),
     html.Div([
-        html.Video(id='insect_video',src='',style={"display": "block","margin-left": "auto","margin-right": "auto","width": "75%"},controls=True,loop=True,autoPlay=True)
+            dcc.Loading(
+                id="loading_3",
+                children=html.Video(id="insect_video",style={"display": "none","margin-left": "auto","margin-right": "auto","width": "75%"},controls=True,loop=True,autoPlay=True),
+                type="default"
+            ),
         ]),
     html.Div(id='intermediate-value', style={'display': 'none'})
 ])
@@ -327,6 +341,7 @@ def selected_dates(daterange_value):
     elif daterange_value == 'Last year':
         selected_dayrange = 365
     return selected_dayrange
+
 
 @app.callback(
     dash.dependencies.Output('systems_dropdown', 'options'),
