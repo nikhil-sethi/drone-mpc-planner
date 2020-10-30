@@ -102,7 +102,7 @@ void CommandCenterLink::write_commandcenter_status_file() {
     nav_status = _dnav->navigation_status();
 
     static double prev_imwrite_time = -pparams.live_image_frq;
-    if (_cam->frame_time() - prev_imwrite_time > pparams.live_image_frq && pparams.live_image_frq >= 0) {
+    if (_cam->frame_time() - prev_imwrite_time > pparams.live_image_frq && pparams.live_image_frq > 0) {
         prev_imwrite_time = _cam->frame_time();
         write_commandcenter_status_image();
         status_update_needed = true;
