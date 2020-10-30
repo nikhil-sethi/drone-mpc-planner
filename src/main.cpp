@@ -719,6 +719,7 @@ void process_arg(int argc, char **argv) {
             bool arg_recognized = false;
             if (s.compare("--rs-reset") == 0) {
                 realsense_reset = true;
+                arg_recognized = true;
             } else if (s.compare("--pats-xml") == 0) {
                 arg_recognized = true;
                 i++;

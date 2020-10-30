@@ -10,7 +10,7 @@ STAT_FN=~/pats_system_info.txt
 #export LRS_LOG_LEVEL="DEBUG"
 
 #perform a one time hardware reset (fixes some issues with cold boot and plugged realsense)
-./pats --rs_reset | /usr/bin/tee terminal.log || true
+./pats --rs-reset | /usr/bin/tee terminal.log || true
 sleep 15s # wait some time to enumerate device again after a reset
 
 HOST_ID=$( hostname | tr -dc '0-9' )
