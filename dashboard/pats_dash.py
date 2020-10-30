@@ -424,8 +424,6 @@ def heatmap_clickData(daterange_value,selected_systems,clickData):
         yaxis_title = 'Velocity [m/s]',
         clickmode='event+select'
     )
-    # fig['layout']['xaxis']['title']='Duration'
-    # fig['layout']['yaxis']['title']='Velocity [m/s]'
     return fig,{"display": "block","margin-left": "auto","margin-right": "auto","width": "50%"}
 
 @app.callback(

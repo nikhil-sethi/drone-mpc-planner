@@ -3,6 +3,7 @@
 import os,socket,subprocess,time,sys,glob
 import re, datetime, argparse, shutil
 from pathlib import Path
+from tqdm import tqdm
 
 def execute(cmd):
     popen = subprocess.Popen(cmd, shell=True,stderr=subprocess.STDOUT,stdout=subprocess.PIPE)
@@ -29,7 +30,7 @@ def system_was_monitoring_in_folder(folder):
                         return False
     print("Error: op_mode not found in pats.xml not found in: " + folder)
     return False
-                
+
 def natural_sort(l):
     convert = lambda text: int(text) if text.isdigit() else text.lower()
     alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
@@ -48,15 +49,16 @@ if not os.path.exists(frames_fn):
 with open(frames_fn, 'r') as flog:
 
     if system_was_monitoring_in_folder(folder):
-        files = natural_sort([fp for fp in glob.glob(os.path.join(folder, "logging", "log_itrk*.csv")) if "itrk0" not in fp])
+        files = tqdm(natural_sort([fp for fp in glob.glob(os.path.join(folder, "logging", "log_itrk*.csv")) if "itrk0" not in fp]))
 
         video_in_file = folder + '/logging/videoRawLR.mkv'
         if os.path.exists(video_in_file):
             for file in files:
+                files.set_description(os.path.basename(file))
                 with open(file, 'r') as ilog:
                     lines = ilog.read().splitlines()
                     fn = os.path.basename(file)
-                    file_id = fn.split('.')[0][8:]                   
+                    file_id = fn.split('.')[0][8:]
                     if len(lines) > 40: # only cut a video if it is of substantial length...
                         video_start_rs_id = int(lines[1].split(';')[0])
                         while True:
@@ -86,4 +88,3 @@ with open(frames_fn, 'r') as flog:
             os.remove(video_in_file)
         else:
             print("VideoRawLR not found")
-
