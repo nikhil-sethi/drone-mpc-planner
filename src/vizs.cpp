@@ -495,7 +495,10 @@ void Visualizer::draw_tracker_viz() {
             p_ins_ground_wrld.y = -1.92f; // guestimated ground level
             cv::Point2f p_ins_ground_im = world2im_2d(p_ins_ground_wrld,_visdat->Qfi,_visdat->camera_angle);
             cv::line(frameL_color,p_ins_im,p_ins_ground_im,white,1);
-            cv::circle(frameL_color,p_ins_im,wti.iti.size*pparams.imscalef / 2.f,c);
+            float ins_size = wti.iti.size;
+            if (ins_size <= 0) //replay insects don't have a proper size
+                ins_size = 2;
+            cv::circle(frameL_color,p_ins_im,ins_size*pparams.imscalef / 2.f,c);
         }
     }
 
