@@ -181,6 +181,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         mode += bf_PID_loop_disabled;
         auto_roll = RC_MIDDLE;
         auto_pitch = RC_MIDDLE;
+        auto_yaw = RC_MIDDLE;
         break;
     } case fm_start_takeoff: {
         take_off_start_time = time;
@@ -190,6 +191,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         auto_throttle = spinup_throttle();
         auto_roll = RC_MIDDLE;
         auto_pitch = RC_MIDDLE;
+        auto_yaw = RC_MIDDLE;
 
         if (dparams.mode3d) {
             _rc->arm(bf_armed);
@@ -260,9 +262,6 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
             _flight_mode = fm_1g;
         break;
     }  case fm_1g: {
-//        auto_roll = RC_MIDDLE;
-//        auto_pitch = RC_MIDDLE;
-
         // Wait until velocity of drone after take-off is constant, then estimate this velocity using sufficient samples
         if (static_cast<float>(time - start_takeoff_burn_time) > auto_burn_duration + effective_burn_spin_down_duration + transmission_delay_duration - 1.f / pparams.fps) {
             if(_joy_state == js_waypoint)
@@ -480,6 +479,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
     } case fm_disarmed: {
         auto_roll = RC_MIDDLE;
         auto_pitch = RC_MIDDLE;
+        auto_yaw = RC_MIDDLE;
         if (dparams.mode3d)
             auto_throttle = RC_MIDDLE;
         else
@@ -489,6 +489,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
     } case fm_inactive: {
         auto_roll = RC_MIDDLE;
         auto_pitch = RC_MIDDLE;
+        auto_yaw = RC_MIDDLE;
         spin_up_start_time = 0;
         mode += bf_yaw_reset;
 
@@ -511,6 +512,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
             auto_throttle = RC_BOUND_MIN;
         auto_roll = RC_MIDDLE;
         auto_pitch = RC_MIDDLE;
+        auto_yaw = RC_MIDDLE;
         break;
     } case fm_joystick_check: {
         if (pparams.joystick == rc_none) {
@@ -525,6 +527,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
             auto_throttle = RC_BOUND_MIN;
         auto_roll = RC_MIDDLE;
         auto_pitch = RC_MIDDLE;
+        auto_yaw = RC_MIDDLE;
         _rc->arm(bf_disarmed);
         break;
     }
