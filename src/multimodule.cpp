@@ -311,6 +311,7 @@ void MultiModule::process_pats_init_packages(std::string bufs) {
             if (!mm_version_check_OK) {
                 std::cout << "MultiProtocol version was not received." << std::endl;
                 std::cout << "We did receive:\n" << bufs << std::endl;
+                std::cout << "However, I didn't really like that. So BYE!:\n" << bufs << std::endl;
                 exit(1);
             }
 
