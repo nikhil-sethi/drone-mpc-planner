@@ -618,8 +618,6 @@ void TrackerManager::update_max_change_points() {
 }
 
 void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat diff,bool enable_insect_drone_split, float drn_ins_split_thresh,bool enable_viz_max_points_local,cv::Mat motion_noise_mapL) {
-    uint blob_viz_cnt = 0;
-
     //get the Rect containing the max movement:
     Rect rect(maxt.x-roi_radius, maxt.y-roi_radius, roi_radius*2,roi_radius*2);
     if (rect.x < 0)
@@ -719,14 +717,13 @@ void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat dif
                         cv::minEnclosingCircle(contours.at(j),center,radius);
                         if (enable_viz_max_points_local) {
                             cv::Mat viz2 = viz.clone();
+                            vizs_maxs.push_back(viz2);
                             cv::Point2f COG2_viz = COG2*viz_max_points_resizef;
                             cv::circle(viz2,COG2_viz,1,Scalar(0,0,255),1); //COG
                             cv::circle(viz2,COG2_viz,roi_radius*viz_max_points_resizef,Scalar(0,0,255),1);  // remove radius
                             cv::circle(viz2,COG2_viz,radius*viz_max_points_resizef,Scalar(0,255,0),1);  // blob radius
                             putText(viz2,to_string_with_precision(COG2_viz.y,0),COG2_viz,FONT_HERSHEY_SIMPLEX,0.3,Scalar(100,0,255));
-                            putText(viz2,std::to_string(blob_viz_cnt) + ", " + std::to_string(j),Point(0, 13),FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,255,0));
-                            blob_viz_cnt++;
-                            vizs_maxs.push_back(viz2);
+                            putText(viz2,std::to_string(vizs_maxs.size()) + ", " + std::to_string(j),Point(0, 13),FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,255,0));
                             viz_pushed = true;
                         }
                         // relative COG back to the _approx frame, and save it:
@@ -745,9 +742,8 @@ void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat dif
         }
     }
     if (!viz_pushed &&  enable_viz_max_points_local) {
-        putText(viz,std::to_string(blob_viz_cnt),Point(0, 13),FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,255,255));
-        blob_viz_cnt++;
         vizs_maxs.push_back(viz);
+        putText(viz,std::to_string(vizs_maxs.size()),Point(0, 13),FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,255,255));
     }
     if (single_blob) { // we could not split this blob, so we can use the original COG
         float size = sqrtf(mo.m00/M_PI)*2.f; // assuming a circular shape
