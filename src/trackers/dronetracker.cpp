@@ -64,6 +64,7 @@ void DroneTracker::update(double time, bool drone_is_active) {
         ignores_for_other_trkrs.clear();
         ignores_for_other_trkrs.push_back(IgnoreBlob(drone_takeoff_im_location()/pparams.imscalef,drone_takeoff_im_size()/pparams.imscalef,time+takeoff_location_ignore_timeout, IgnoreBlob::takeoff_spot));
         _drone_tracking_status = dts_detecting_takeoff;
+        liftoff_detected = false;
         spinup_detected = 0;
         _take_off_detection_failed = false;
         take_off_frame_cnt = 0;
@@ -173,7 +174,7 @@ void DroneTracker::delete_takeoff_fake_motion() {
         //they leave a permanent mark if we stop prematurely. Two conditions:
         //1. the drone must have left the area with a margin of its size
         //2. other blobs must not be inside the area. (slightly more relaxed, because crop leave movements otherwise are holding this enabled indefinetely)
-        if (_world_item.valid &&normf(cv::Point2f(_world_item.iti.x,_world_item.iti.y)*pparams.imscalef - drone_takeoff_im_location()) > _drone_takeoff_im_size*2.5f + _world_item.iti.size/2*pparams.imscalef ) {
+        if (_world_item.valid &&normf(cv::Point2f(_world_item.iti.x,_world_item.iti.y)*pparams.imscalef - drone_takeoff_im_location()) > _drone_takeoff_im_size*2.5f + _world_item.iti.size/2*pparams.imscalef && liftoff_detected) {
             enable_takeoff_motion_delete = false;
             for (auto blob : _all_blobs) {
                 if (normf(cv::Point2f(blob.x,blob.y)*pparams.imscalef - drone_takeoff_im_location()) < 2.6f * _drone_takeoff_im_size) {
