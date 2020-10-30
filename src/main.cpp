@@ -533,7 +533,7 @@ bool handle_key(double time [[maybe_unused]]) {
         init_insect_log(56);
         break;
     case '2':
-        init_insect_log(53);
+        init_insect_log(66);
         break;
     case '3':
         init_insect_log(58);
