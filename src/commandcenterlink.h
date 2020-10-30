@@ -3,11 +3,18 @@
 
 class CommandCenterLink {
 public :
-    void init(bool log_replay_mode, navigation::DroneNavigation * dnav,DroneController * dctrl,MultiModule * rc,Cam * cam,tracking::TrackerManager * trackers);
+    void init(bool log_replay_mode, navigation::DroneNavigation * dnav,DroneController * dctrl,MultiModule * rc,tracking::TrackerManager * trackers);
     void close();
     void reset_commandcenter_status_file(std::string status_msg, bool never_overwrite);
     void trigger_demo_flight_from_log(std::string replay_dir, int tracker_mode);
     int n_replay_moth() {return _n_replay_moth;}
+    void update(cv::Mat frame, double time) {
+        _time_since_start = time;
+        if (new_frame_request) {
+            _frame = frame.clone();
+            new_frame_request =0;
+        }
+    };
 
 private:
     std::string demo_waypoint_fn = "/home/pats/pats_demo.xml";
@@ -19,10 +26,13 @@ private:
     bool initialized = false;
     bool _never_overwrite = false;
 
+    int new_frame_request = 1;
+    cv::Mat _frame;
+    double _time_since_start = 0;
+
     navigation::DroneNavigation * _dnav;
     DroneController * _dctrl;
     MultiModule * _rc;
-    Cam * _cam;
     tracking::TrackerManager * _trackers;
     bool _log_replay_mode = false;
     int reset_cnt = 0;

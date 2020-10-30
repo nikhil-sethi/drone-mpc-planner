@@ -7,7 +7,7 @@
 #include <unistd.h> //usleep
 #include<iostream>
 
-void CommandCenterLink::init(bool log_replay_mode,navigation::DroneNavigation * dnav,DroneController * dctrl,MultiModule * rc,Cam * cam,tracking::TrackerManager * trackers) {
+void CommandCenterLink::init(bool log_replay_mode,navigation::DroneNavigation * dnav,DroneController * dctrl,MultiModule * rc,tracking::TrackerManager * trackers) {
     remove(demo_insect_fn.c_str());
     remove(demo_waypoint_fn.c_str());
     remove(calib_fn.c_str());
@@ -17,7 +17,6 @@ void CommandCenterLink::init(bool log_replay_mode,navigation::DroneNavigation * 
     _dnav = dnav;
     _dctrl = dctrl;
     _rc = rc;
-    _cam = cam;
     _trackers = trackers;
     _log_replay_mode = log_replay_mode;
 
@@ -102,8 +101,8 @@ void CommandCenterLink::write_commandcenter_status_file() {
     nav_status = _dnav->navigation_status();
 
     static double prev_imwrite_time = -pparams.live_image_frq;
-    if (_cam->frame_time() - prev_imwrite_time > pparams.live_image_frq && pparams.live_image_frq > 0) {
-        prev_imwrite_time = _cam->frame_time();
+    if (_time_since_start - prev_imwrite_time > pparams.live_image_frq && pparams.live_image_frq > 0) {
+        prev_imwrite_time = _time_since_start;
         write_commandcenter_status_image();
         status_update_needed = true;
     }
@@ -112,7 +111,7 @@ void CommandCenterLink::write_commandcenter_status_file() {
         status_file.open("../../../../pats_status.txt",std::ofstream::out);
         auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
         status_file << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << '\n';
-        status_file << "Runtime: " << to_string_with_precision(_cam->frame_time(),1) << "s" << '\n';
+        status_file << "Runtime: " << to_string_with_precision(_time_since_start,1) << "s" << '\n';
         status_file << nav_status << std::endl;
         status_file << "cell v: " << to_string_with_precision(_rc->telemetry.batt_cell_v,2) << std::endl;
         status_file << "arming: " << _rc->telemetry.arming_state << std::endl;
@@ -137,14 +136,19 @@ void CommandCenterLink::reset_commandcenter_status_file(std::string status_msg, 
 }
 
 void CommandCenterLink::write_commandcenter_status_image() {
-    cv::Mat out = _cam->frameL.clone();
-    if (out.cols) {
-        cv::Mat out_rgb;
-        cvtColor(out,out_rgb,cv::COLOR_GRAY2BGR);
-        putText(out_rgb,"State: " + _dnav->navigation_status() + " " + _trackers->mode_str() + " " + _dctrl->flight_mode() +
-                " "  + _trackers->dronetracker()->drone_tracking_state(),cv::Point(5,14),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
-        putText(out_rgb,"Time:       " + to_string_with_precision(_cam->frame_time(),2),cv::Point(5,28),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
+    if (_frame.cols>0) {
+        if (!new_frame_request) {
+            if (_frame.cols) {
+                cv::Mat out_rgb;
+                cvtColor(_frame,out_rgb,cv::COLOR_GRAY2BGR);
+                putText(out_rgb,"State: " + _dnav->navigation_status() + " " + _trackers->mode_str() + " " + _dctrl->flight_mode() +
+                        " "  + _trackers->dronetracker()->drone_tracking_state(),cv::Point(5,14),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
+                putText(out_rgb,"Time:       " + to_string_with_precision(_time_since_start,2),cv::Point(5,28),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
 
-        cv::imwrite("../../../../pats_monitor_tmp.jpg", out_rgb);
-    }
+                cv::imwrite("../../../../pats_monitor_tmp.jpg", out_rgb);
+            }
+            new_frame_request = 1;
+        }
+    } else
+        new_frame_request = 1;
 }

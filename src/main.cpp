@@ -473,6 +473,9 @@ void process_frame(Stereo_Frame_Data data) {
             }
         }
     }
+    if (!render_hunt_mode && !render_monitor_video_mode)
+        cmdcenter.update(data.frameL,data.time);
+
 #ifdef PROFILING
     auto dur1_visdat = std::chrono::duration_cast<std::chrono::microseconds>(profile_t1_visdat - profile_t0).count();
     auto dur2 = std::chrono::duration_cast<std::chrono::microseconds>(profile_t2_trkrs - profile_t1_visdat).count();
@@ -837,8 +840,8 @@ void init() {
 
     init_thread_pool();
 
-    if (!render_hunt_mode and !render_monitor_video_mode)
-        cmdcenter.init(log_replay_mode,&dnav,&dctrl,&rc,cam.get(),&trackers);
+    if (!render_hunt_mode && !render_monitor_video_mode)
+        cmdcenter.init(log_replay_mode,&dnav,&dctrl,&rc,&trackers);
 
 #ifdef PROFILING
     logger << "t_visdat;t_trkrs;t_nav;t_ctrl;t_prdct;t_frame;"; // trail of the logging heads, needs to happen last
@@ -849,7 +852,7 @@ void init() {
 
 void close(bool sig_kill) {
     std::cout <<"Closing"<< std::endl;
-    if (!render_hunt_mode and !render_monitor_video_mode)
+    if (!render_hunt_mode && !render_monitor_video_mode)
         cmdcenter.reset_commandcenter_status_file("Closing",false);
 
     if (pparams.has_screen)
@@ -889,7 +892,7 @@ void close(bool sig_kill) {
     if (pparams.video_cuts)
         output_video_cuts.close();
 
-    if (!render_hunt_mode and !render_monitor_video_mode)
+    if (!render_hunt_mode && !render_monitor_video_mode)
         cmdcenter.close();
 
     print_warnings();
@@ -1002,7 +1005,7 @@ int main( int argc, char **argv )
         mkdir(data_output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
         process_arg(argc,argv);
-        if (!render_hunt_mode and !render_monitor_video_mode)
+        if (!render_hunt_mode  && !render_monitor_video_mode)
             cmdcenter.reset_commandcenter_status_file("Starting",false);
 
         if (realsense_reset) {
