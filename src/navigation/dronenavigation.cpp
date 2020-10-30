@@ -212,7 +212,7 @@ void DroneNavigation::update(double time) {
                 } else if(_iceptor.trigger_takeoff() && _visdat->no_recent_large_brightness_events(time)) {
                     _navigation_status = ns_takeoff;
                     repeat = true;
-                } else if(itrkr->tracking() && !itrkr->false_positive() && _visdat->no_recent_large_brightness_events(time)) {
+                } else if(itrkr->properly_tracking() && !itrkr->false_positive() && _visdat->no_recent_large_brightness_events(time)) {
                     _dctrl->flight_mode (DroneController::fm_spinup);
                 } else {
                     _dctrl->flight_mode(DroneController::fm_inactive);
@@ -650,4 +650,3 @@ void DroneNavigation::demo_flight(std::string flightplan_fn) {
     }
 }
 }
-

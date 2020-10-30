@@ -20,7 +20,7 @@ public:
     void init_logger();
     void update(double time);
     bool tracking() {return _tracking;}
-    bool properly_tracking() {return _n_frames_tracking > _n_frames_lost && tracking();}
+    bool properly_tracking() {return _n_frames_tracking > 3 && _tracking;}
     bool false_positive() {return _fp>0;}
     void append_log(double time, unsigned long long frame_number);
     int16_t insect_trkr_id() {return _insect_trkr_id;}
