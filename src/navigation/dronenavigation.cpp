@@ -299,7 +299,7 @@ void DroneNavigation::update(double time) {
             setpoint_acc_world = _iceptor.aim_acc();
             // }
 
-            if (_dctrl->telemetry().batt_cell_v  < dparams.land_cell_v) {
+            if (_dctrl->telemetry().batt_cell_v > 2 && _dctrl->telemetry().batt_cell_v  < dparams.land_cell_v ) {
                 low_battery_triggered = true;
                 _navigation_status = ns_goto_yaw_waypoint;
             }
@@ -381,7 +381,7 @@ void DroneNavigation::update(double time) {
                 }
             }
 
-            if (_dctrl->telemetry().batt_cell_v  < dparams.land_cell_v && !low_battery_triggered) {
+            if (_dctrl->telemetry().batt_cell_v > 2 && _dctrl->telemetry().batt_cell_v  < dparams.land_cell_v && !low_battery_triggered) {
                 _navigation_status = ns_goto_yaw_waypoint;
                 low_battery_triggered = true;
             }
