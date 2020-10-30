@@ -735,20 +735,20 @@ void process_arg(int argc, char **argv) {
             } else if (s.compare("--log") == 0) {
                 arg_recognized = true;
                 i++;
-                log_replay_mode=true;
+                log_replay_mode = true;
                 replay_dir=argv[i];
                 pats_xml_fn = replay_dir + "/pats.xml";
                 drone_xml_fn = replay_dir + "/drone.xml";
             } else if (s.compare("--render") == 0) {
                 arg_recognized = true;
-                render_hunt_mode=true;
+                render_hunt_mode = true;
             } else if (s.compare("--monitor-render") == 0) {
                 //monitor_render accepts a (concatinated) videorawLR.mkv of monitored insects, but also needs an original logging folder for camera calibraton files.
                 //usage example: ./pats --log logging --monitor_render ~/Bla/vogel.mkv
                 arg_recognized = true;
                 i++;
-                render_monitor_video_mode=true;
-                log_replay_mode=false;
+                render_monitor_video_mode = true;
+                log_replay_mode = false;
                 monitor_video_fn=argv[i];
             }
             if (!arg_recognized) {
@@ -837,7 +837,8 @@ void init() {
 
     init_thread_pool();
 
-    cmdcenter.init(log_replay_mode,&dnav,&dctrl,&rc,cam.get(),&trackers);
+    if (!render_hunt_mode and !render_monitor_video_mode)
+        cmdcenter.init(log_replay_mode,&dnav,&dctrl,&rc,cam.get(),&trackers);
 
 #ifdef PROFILING
     logger << "t_visdat;t_trkrs;t_nav;t_ctrl;t_prdct;t_frame;"; // trail of the logging heads, needs to happen last
@@ -848,7 +849,8 @@ void init() {
 
 void close(bool sig_kill) {
     std::cout <<"Closing"<< std::endl;
-    cmdcenter.reset_commandcenter_status_file("Closing",false);
+    if (!render_hunt_mode and !render_monitor_video_mode)
+        cmdcenter.reset_commandcenter_status_file("Closing",false);
 
     if (pparams.has_screen)
         cv::destroyAllWindows();
@@ -887,8 +889,8 @@ void close(bool sig_kill) {
     if (pparams.video_cuts)
         output_video_cuts.close();
 
-
-    cmdcenter.close();
+    if (!render_hunt_mode and !render_monitor_video_mode)
+        cmdcenter.close();
 
     print_warnings();
     if(cam)
@@ -999,8 +1001,9 @@ int main( int argc, char **argv )
         data_output_dir = "./logging/";
         mkdir(data_output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
-        cmdcenter.reset_commandcenter_status_file("Starting",false);
         process_arg(argc,argv);
+        if (!render_hunt_mode and !render_monitor_video_mode)
+            cmdcenter.reset_commandcenter_status_file("Starting",false);
 
         if (realsense_reset) {
             cmdcenter.reset_commandcenter_status_file("Reseting realsense",false);
