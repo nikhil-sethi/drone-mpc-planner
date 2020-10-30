@@ -1173,11 +1173,11 @@ void DroneController::check_control_and_tracking_problems(track_data data_drone)
     model_error += normf({pos_modelx.current_output() - data_drone.pos().x,
                           pos_modely.current_output() - data_drone.pos().y,
                           pos_modelz.current_output() - data_drone.pos().z});
-    model_error -= 2.f; // Accept error over time
+    model_error -= 1.f; // Accept error over time
 
     if(model_error<0)
         model_error = 0;
-    if(model_error>50 && !generator_mode) {
+    if(model_error>70 && !generator_mode) {
         _flight_mode = fm_abort_model_error;
         std::cout << "Flight aborted: Drone model diverged from drone measurement." << std::endl;
     }
