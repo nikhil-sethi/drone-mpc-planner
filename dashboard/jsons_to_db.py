@@ -6,6 +6,7 @@ import numpy as np
 import datetime
 import sqlite3
 from tqdm import tqdm
+from json.decoder import JSONDecodeError
 
 conn = None
 cur = None
@@ -324,13 +325,16 @@ while True:
         if not os.path.exists(flag_fn):
             with open(filename) as json_file:
                 with open(flag_fn,'w') as flag_f:
-                    data = json.load(json_file)
-                    min_required_version=1.0
-                    if "version" in data and float(data["version"]) >= min_required_version:
-                        store_data(data,os.path.basename(filename))
-                        flag_f.write('OK')
-                    else:
-                        flag_f.write('WRONG VERSION ' + data["version"] + '. Want: ' + min_required_version)
+                    try:
+                        data = json.load(json_file)
+                        min_required_version=1.0
+                        if "version" in data and float(data["version"]) >= min_required_version:
+                            store_data(data,os.path.basename(filename))
+                            flag_f.write('OK')
+                        else:
+                            flag_f.write('WRONG VERSION ' + data["version"] + '. Want: ' + min_required_version)
+                    except JSONDecodeError:
+                        flag_f.write('JSONDecodeError')
 
     clean_mode()
     remove_double_data('moth','"time", "duration"')
