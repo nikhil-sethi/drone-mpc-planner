@@ -203,14 +203,16 @@ def remove_double_data(table_name_prefix,order_by):
         v_id = columns.index('Version')
 
     all_entries_cleaned = []
-    pbar = tqdm(systems,desc='Cleaning double ' +  table_name_prefix +' from db')
-    for system in pbar:
+    pbar_systems = tqdm(systems)
+    for system in pbar_systems:
+        pbar_systems.set_description('Cleaning double ' +  table_name_prefix +' from db, system: ' + system)
         sql_str = 'SELECT * from ' + table_name_prefix + '_records where system="' + system + '" ORDER BY ' + order_by
         cur.execute(sql_str)
         entries = cur.fetchall()
 
         prev_i=0
-        for i in range(1,len(entries)):
+        pbar_entries = tqdm(range(1,len(entries)))
+        for i in pbar_entries:
             entry = entries[i]
             prev_entry = entries[prev_i]
 
