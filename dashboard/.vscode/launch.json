@@ -5,7 +5,7 @@
       {
         "name": "Current File",
         "type": "python",
-        "args": ["-i","/home/houjebek/Downloads/pats_data/pats4"],
+        "args": [],
         "request": "launch",
         "program": "${file}",
         "console": "integratedTerminal"

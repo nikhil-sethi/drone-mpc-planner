@@ -131,6 +131,7 @@ def store_moths(fn,data):
 
         cur.execute(sql_insert, (data["system"], date, *list(moth.values())[1:]))
     conn.commit()
+    return len(moths)
 
 def create_modes_table():
         sql_create = 'CREATE TABLE mode_records(uid INTEGER PRIMARY KEY,system TEXT,start_datetime TEXT,end_datetime TEXT,op_mode TEXT)'
@@ -317,26 +318,28 @@ def store_hunts(fn,data):
 
         cur.execute(sql_insert, (data["system"], dt_from,dt_till, *list(hunt.values())[2:]))
     conn.commit()
+    return len(hunts)
 
 def store_data(data,fn):
     global conn
     global cur
 
-    store_moths(fn,data)
+    n_moths = store_moths(fn,data)
     store_mode(fn,data)
-    store_hunts(fn,data)
+    n_hunts = store_hunts(fn,data)
 
-parser = argparse.ArgumentParser(description='Script that adds the json files or incoming json files to the database that is reable for the electron app.')
+    return n_moths,n_hunts
+
+parser = argparse.ArgumentParser(description='Script that adds the json files to an sql database.')
 parser.add_argument('-i', '--input_folder', help="Path to the folder with json files", default='~/jsons/')
-parser.add_argument('-p','--period', help="Path to the folder with json files", default=0)
-parser.add_argument('-o','--output_db_path', help="Path to the folder with json files", default='~/pats.db')
+parser.add_argument('-p','--period', help="Repeat this script every period", default=0)
+parser.add_argument('-o','--output_db_path', help="Path to sql database", default='~/pats.db')
 args = parser.parse_args()
 
 conn = create_connection(args.output_db_path)
 cur = conn.cursor()
 
 while True:
-
     files = natural_sort([fp for fp in glob.glob(os.path.expanduser(args.input_folder + "/*.json"))])
     pbar = tqdm(files)
     for filename in pbar:
@@ -350,8 +353,11 @@ while True:
                             data = json.load(json_file)
                             min_required_version=1.0
                             if "version" in data and float(data["version"]) >= min_required_version:
-                                store_data(data,os.path.basename(filename))
+                                n_moths,n_hunts = store_data(data,os.path.basename(filename))
                                 flag_f.write('OK')
+                                flag_f.write('. Insect detections: ' + str(n_moths))
+                                flag_f.write('. Hunts: ' + str(n_hunts))
+                                flag_f.write('.')
                             else:
                                 flag_f.write('WRONG VERSION ' + data["version"] + '. Want: ' + min_required_version)
                         except JSONDecodeError:
