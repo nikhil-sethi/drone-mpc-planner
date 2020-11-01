@@ -51,16 +51,24 @@ def clean_moth_json_entry(moth):
             moth.pop('RA_max')
     return moth
 
+def get_column_data_type(column):
+    if column == 'duration' or column == 'Version' or column == 'Vel_mean' or column == 'Vel_max' or column == 'Vel_std' or column == 'Version' or column == 'Dist_traveled' or column == 'Size' or column == 'Alpha_horizontal_start' or column == 'Alpha_horizontal_end' or column == 'Alpha_vertical_start' or column == 'Alpha_vertical_end' or column == 'Dist_traject':
+        return 'REAL'
+    elif column == 'RS_ID':
+        return 'INT'
+    else:
+        return 'TEXT'
+
 def store_moths(fn,data):
     moths =data["moths"]
 
     cur.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='moth_records' ''')
     moth_table_exist = cur.fetchone()[0]==1
     if not moth_table_exist:
-        sql_create = 'CREATE TABLE moth_records(system,time,'
-        clean_moth = clean_moth_json_entry(moths[0])
+        sql_create = 'CREATE TABLE moth_records(uid INTEGER PRIMARY KEY, system,time,'
+        clean_moth = clean_moth_json_entry(moths[-1]) #select the last moth as a prototype for the columns. Last because that probably is in last version
         for s in list(clean_moth.keys())[1:]:
-            sql_create = sql_create + s + ','
+            sql_create = sql_create + s + ' ' + get_column_data_type(s) + ','
         sql = sql_create[:-1] + ')'
         cur.execute(sql)
         conn.commit()
@@ -105,7 +113,7 @@ def store_moths(fn,data):
         cur.execute('ALTER TABLE moth_records ADD COLUMN Dist_traject REAL')
     #v1.5:
     if 'Folder' not in columns:
-        cur.execute('ALTER TABLE moth_records ADD COLUMN Folder REAL')
+        cur.execute('ALTER TABLE moth_records ADD COLUMN Folder TEXT')
 
     sql_insert = ''
     for moth in moths:
@@ -124,15 +132,17 @@ def store_moths(fn,data):
         cur.execute(sql_insert, (data["system"], date, *list(moth.values())[1:]))
     conn.commit()
 
+def create_modes_table():
+        sql_create = 'CREATE TABLE mode_records(uid INTEGER PRIMARY KEY,system TEXT,start_datetime TEXT,end_datetime TEXT,op_mode TEXT)'
+        cur.execute(sql_create)
+        conn.commit()
+
 def store_mode(fn,data):
     cur.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='mode_records' ''')
     mode_table_exist = cur.fetchone()[0]==1
 
     if not mode_table_exist:
-        sql_create = 'CREATE TABLE mode_records(system,start_datetime,end_datetime,op_mode)'
-        cur.execute(sql_create)
-        conn.commit()
-        moth_table_exist = True
+        create_modes_table()
 
     mode_data =data["mode"]
 
@@ -152,7 +162,7 @@ def store_mode(fn,data):
 
 def load_systems():
     global cur
-    sql_str = '''SELECT DISTINCT system from mode_records'''
+    sql_str = '''SELECT DISTINCT system FROM mode_records'''
     cur.execute(sql_str)
     systems = cur.fetchall()
     systems = [d[0] for d in systems]
@@ -161,12 +171,19 @@ def load_systems():
 def todatetime(string):
     return datetime.datetime.strptime(string, "%Y%m%d_%H%M%S")
 
-def clean_mode():
+def concat_modes():
     systems = load_systems()
+    columns = [i[1] for i in cur.execute('PRAGMA table_info(mode_records)')]
+    uid_id = columns.index('uid')
+    t_id = columns.index('start_datetime')
+    t2_id = columns.index('end_datetime')
+    sys_id = columns.index('system')
+    mode_id = columns.index('op_mode')
+
     all_modes_cleaned = []
-    pbar = tqdm(systems,desc='Cleaning modes db')
+    pbar = tqdm(systems,desc='Concatenating modes db')
     for system in pbar:
-        sql_str = 'SELECT op_mode,start_datetime,end_datetime,system from mode_records where system="' + system + '" ORDER BY "start_datetime"'
+        sql_str = 'SELECT * FROM mode_records WHERE system="' + system + '" ORDER BY "start_datetime"'
         cur.execute(sql_str)
         modes = cur.fetchall()
 
@@ -174,99 +191,100 @@ def clean_mode():
         for i in range(1,len(modes)):
             entry = modes[i]
             prev_entry = modes[prev_i]
-            d = todatetime(entry[1]) - todatetime(prev_entry[2])
-            if (prev_entry[0]==entry[0] and prev_entry[1]==entry[1] and prev_entry[2]==entry[2]):
-                modes[i] = ('_duplicate',modes[i][1],modes[i][2],modes[i][3])
-            elif (prev_entry[0]==entry[0] and d < datetime.timedelta(minutes=10)):
-                modes[prev_i] = (modes[prev_i][0],modes[prev_i][1],modes[i][2],modes[i][3])
-                modes[i] = ('_delete',modes[i][1],modes[i][2],modes[i][3])
+            d = todatetime(entry[t_id]) - todatetime(prev_entry[t2_id])
+            if (prev_entry[t_id]==entry[t_id] and prev_entry[t2_id]==entry[t2_id]):
+                upd_dupe_entry = list(prev_entry)
+                upd_dupe_entry[mode_id] = '_duplicate'
+                modes[i] = tuple(upd_dupe_entry)
+            elif (d < datetime.timedelta(minutes=10) and prev_entry[mode_id]==entry[mode_id]):
+                upd_prev_entry = list(prev_entry)
+                upd_prev_entry[t2_id] = entry[t2_id]
+                modes[prev_i] = tuple(upd_prev_entry)
+
+                upd_dupe_entry = list(prev_entry)
+                upd_dupe_entry[mode_id] = '_delete'
+                modes[i] = tuple(upd_dupe_entry)
             else:
                 prev_i = i
 
-        modes_cleaned = [entry for entry in modes if entry[0][0][0] != '_']
+        modes_cleaned = [entry for entry in modes if entry[mode_id][0] != '_']
         all_modes_cleaned = all_modes_cleaned + modes_cleaned
 
     sql_clear_table = 'DELETE FROM mode_records'
     cur.execute(sql_clear_table)
     conn.commit()
 
-    sql_insert = 'INSERT INTO mode_records(op_mode,start_datetime,end_datetime,system) VALUES(?,?,?,?)'
+    sql_insert = 'INSERT INTO mode_records('
+    sql__insert_values = ') VALUES('
+    for s in columns:
+        sql_insert = sql_insert + s + ','
+        sql__insert_values = sql__insert_values + '?,'
+    sql_insert = sql_insert[:-1] + sql__insert_values[:-1] + ')'
     for mode in all_modes_cleaned:
         cur.execute(sql_insert, mode)
     conn.commit()
 
-def remove_double_data(table_name_prefix,order_by):
+def remove_double_data(table_name_prefix):
     systems = load_systems()
     columns = [i[1] for i in cur.execute('PRAGMA table_info(' + table_name_prefix + '_records)')]
     v_id = -1
+    uid_id = columns.index('uid')
     if 'Version' in columns:
         v_id = columns.index('Version')
+    if 'time' in columns: # work around slightly annoying situation that we have time+duration in the moth table, and start_datetime and end_datetime in all other tables:
+        t_id = columns.index('time')
+        t2_id = columns.index('duration')
+        order_by = '"time", "duration"'
+    else:
+        t_id = columns.index('start_datetime')
+        t2_id = columns.index('end_datetime')
+        order_by = '"start_datetime", "end_datetime"'
 
-    all_entries_cleaned = []
-    pbar_systems = tqdm(systems)
+    tot_doubles = 0
+    pbar_systems = tqdm(systems, leave=False)
     for system in pbar_systems:
-        pbar_systems.set_description('Cleaning double ' +  table_name_prefix +' from db, system: ' + system)
-        sql_str = 'SELECT * from ' + table_name_prefix + '_records where system="' + system + '" ORDER BY ' + order_by
+        pbar_systems.set_description('Cleaning double ' +  table_name_prefix +' FROM db, system: ' + system)
+
+        sql_str = 'SELECT count(system) FROM ' + table_name_prefix + '_records WHERE system="' + system + '"'
         cur.execute(sql_str)
-        entries = cur.fetchall()
+        totn = int(cur.fetchall()[0][0])
+        pbar_entries = tqdm(total=2*totn, leave=False)
+        n=0
 
-        prev_i=0
-        pbar_entries = tqdm(range(1,len(entries)))
-        for i in pbar_entries:
-            entry = entries[i]
-            prev_entry = entries[prev_i]
+        sql_str = 'SELECT * FROM ' + table_name_prefix + '_records WHERE system="' + system + '" ORDER BY ' + order_by
+        cur.execute(sql_str)
 
-            if (prev_entry[1]==entry[1] and prev_entry[2]==entry[2]):
+        prev_entry = cur.fetchone()
+        entry = cur.fetchone()
+        doubles_uids = []
+        while entry is not None:
+            pbar_entries.update(1)
+
+            if (prev_entry[t_id]==entry[t_id] and prev_entry[t2_id]==entry[t2_id]):
                 if v_id >= 0:
                     if entry[v_id] > prev_entry[v_id]:
-                        entries[prev_i] = ('_duplicate',entries[prev_i][1],entries[prev_i][2])
-                        prev_i = i
+                        doubles_uids.append(prev_entry[uid_id])
+                        prev_entry = entry
                     else:
-                        entries[i] = ('_duplicate',entries[i][1],entries[i][2])
+                        doubles_uids.append(entry[uid_id])
                 else:
-                    entries[i] = ('_duplicate',entries[i][1],entries[i][2])
+                    doubles_uids.append(entry[uid_id])
             else:
-                prev_i = i
+                prev_entry = entry
 
-        entries_cleaned = [entry for entry in entries if entry[0][0][0] != '_']
-        all_entries_cleaned += entries_cleaned
+            entry = cur.fetchone()
 
-
-
-
-    #create a temporary backup of the table in case something goes wrong:
-    cur.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='" + table_name_prefix + "_records_dirty'")
-    dirty_table_exist = cur.fetchone()[0]==1
-    if dirty_table_exist:
-        sql_clear_table = 'DROP TABLE ' + table_name_prefix + '_records_dirty'
-        cur.execute(sql_clear_table)
-    conn.commit()
-    sql_rename_table = 'ALTER TABLE ' + table_name_prefix + '_records  RENAME TO ' + table_name_prefix + '_records_dirty'
-    cur.execute(sql_rename_table)
-    conn.commit()
-    sql_create = 'CREATE TABLE ' + table_name_prefix + '_records('
-    for s in columns:
-        sql_create = sql_create + s + ','
-    sql = sql_create[:-1] + ')'
-    cur.execute(sql)
-    conn.commit()
-
-    #create a new table with only distinct rows (unique detections):
-    sql_insert = 'INSERT INTO ' + table_name_prefix + '_records('
-    sql_values = ') VALUES('
-    for s in columns:
-        sql_insert = sql_insert + s + ','
-        sql_values = sql_values + '?,'
-    sql_insert = sql_insert[:-1] + sql_values[:-1] + ')'
-
-    for entrie in all_entries_cleaned:
-        cur.execute(sql_insert, entrie)
-    conn.commit()
-
-    #remove the backup
-    sql_clear_table = 'DROP TABLE ' + table_name_prefix + '_records_dirty'
-    cur.execute(sql_clear_table)
-    conn.commit()
+        if (len(doubles_uids)):
+            tot_doubles+=len(doubles_uids)
+            sql_del_str = 'DELETE FROM ' + table_name_prefix + '_records WHERE uid='
+            for entry in doubles_uids:
+                pbar_entries.update(1)
+                sql_str = sql_del_str + str(entry)
+                cur.execute(sql_str)
+                tmp = cur.fetchall()
+            conn.commit()
+        pbar_entries.close()
+    print("Found and deleted " + str(tot_doubles) + " doubles in " + table_name_prefix + " records.")
 
 def store_hunts(fn,data):
     cur.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='hunt_records' ''')
@@ -278,9 +296,9 @@ def store_hunts(fn,data):
     for hunt in hunts:
 
         if not hunt_table_exist:
-            sql_create_table = 'CREATE TABLE hunt_records(system,start_datetime,end_datetime,'
+            sql_create_table = 'CREATE TABLE hunt_records(uid INTEGER PRIMARY KEY,system,start_datetime,end_datetime,'
             for s in list(hunt.keys())[2:]:
-                sql_create_table = sql_create_table + s + ','
+                sql_create_table = sql_create_table + s + ' ' + get_column_data_type(s) + ','
             sql_create_table = sql_create_table[:-1] + ')'
             cur.execute(sql_create_table)
             conn.commit()
@@ -327,20 +345,23 @@ while True:
         if not os.path.exists(flag_fn):
             with open(filename) as json_file:
                 with open(flag_fn,'w') as flag_f:
-                    try:
-                        data = json.load(json_file)
-                        min_required_version=1.0
-                        if "version" in data and float(data["version"]) >= min_required_version:
-                            store_data(data,os.path.basename(filename))
-                            flag_f.write('OK')
-                        else:
-                            flag_f.write('WRONG VERSION ' + data["version"] + '. Want: ' + min_required_version)
-                    except JSONDecodeError:
-                        flag_f.write('JSONDecodeError')
+                    if os.stat(filename).st_size < 30000000:
+                        try:
+                            data = json.load(json_file)
+                            min_required_version=1.0
+                            if "version" in data and float(data["version"]) >= min_required_version:
+                                store_data(data,os.path.basename(filename))
+                                flag_f.write('OK')
+                            else:
+                                flag_f.write('WRONG VERSION ' + data["version"] + '. Want: ' + min_required_version)
+                        except JSONDecodeError:
+                            flag_f.write('JSONDecodeError')
+                    else:
+                        flag_f.write('File size too big')
 
-    clean_mode()
-    remove_double_data('moth','"time", "duration"')
-    remove_double_data('hunt','"start_datetime", "end_datetime"')
+    concat_modes()
+    remove_double_data('moth')
+    remove_double_data('hunt')
 
     if args.period:
         print(str(datetime.datetime.now()) + ". Periodic update after: " + str(args.period))

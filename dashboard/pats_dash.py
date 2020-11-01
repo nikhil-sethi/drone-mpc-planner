@@ -98,6 +98,9 @@ def load_moth_data(selected_systems,selected_dayrange):
         unique_dates.append(d.strftime("%d-%m-%Y"))
         d += datetime.timedelta(days=1)
 
+    moth_columns = [i[1] for i in cur.execute('PRAGMA table_info(moth_records)')]
+    start_date_col = moth_columns.index('time')
+
     heatmap_data = np.zeros((len(unique_dates),24))
     heatmap_data_lists = np.empty((len(unique_dates),24),dtype=object)
     hist_data = np.zeros((len(unique_dates)))
@@ -109,7 +112,7 @@ def load_moth_data(selected_systems,selected_dayrange):
     moths = cur.fetchall()
     cnt = 0
     for moth in moths:
-        d = datetime.datetime.strptime(moth[1], "%Y%m%d_%H%M%S")-datetime.timedelta(hours=12)
+        d = datetime.datetime.strptime(moth[start_date_col], "%Y%m%d_%H%M%S")-datetime.timedelta(hours=12)
         day = (d.date() - start_date.date()).days
         hour = d.hour
         heatmap_data[day,hour] += 1
@@ -119,7 +122,7 @@ def load_moth_data(selected_systems,selected_dayrange):
             heatmap_data_lists[day,hour].append(moth)
         hist_data[day] +=1
 
-    moth_columns = [i[1] for i in cur.execute('PRAGMA table_info(moth_records)')]
+
     return unique_dates,heatmap_data,heatmap_data_lists,hist_data,moth_columns
 
 def convert_mode_to_number(mode):
@@ -136,13 +139,13 @@ def convert_mode_to_number(mode):
     else:
         return -666
 
-def load_mode_data(unique_dates,moth_columns,heatmap_data,selected_systems,selected_dayrange):
+def load_mode_data(unique_dates,heatmap_data,selected_systems,selected_dayrange):
     if not len(unique_dates):
         return [],[]
     systems_str = system_sql_str(selected_systems)
     conn,cur = open_db()
 
-    sql_str = 'SELECT op_mode,start_datetime,end_datetime FROM mode_records WHERE ' + systems_str
+    sql_str = 'SELECT * FROM mode_records WHERE ' + systems_str
     start_date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())+datetime.timedelta(hours=12) - datetime.timedelta(days=selected_dayrange)
     start_date_str = start_date.strftime("%Y%m%d_%H%M%S")
     sql_str += 'AND start_datetime > "' + start_date_str + '"'
@@ -152,17 +155,22 @@ def load_mode_data(unique_dates,moth_columns,heatmap_data,selected_systems,selec
 
     first_date = datetime.datetime.strptime(unique_dates[0],"%d-%m-%Y")
 
+    mode_columns = [i[1] for i in cur.execute('PRAGMA table_info(mode_records)')]
+    start_col = mode_columns.index('start_datetime')
+    end_col = mode_columns.index('end_datetime')
+    mode_col = mode_columns.index('op_mode')
+
     modemap_data = heatmap_data.copy()
     modemap_data.fill(-666)
     for mode in modes:
-        d_mode_start = datetime.datetime.strptime(mode[1], "%Y%m%d_%H%M%S")-datetime.timedelta(hours=12)
-        d_mode_end = datetime.datetime.strptime(mode[2], "%Y%m%d_%H%M%S")-datetime.timedelta(hours=12)
+        d_mode_start = datetime.datetime.strptime(mode[start_col], "%Y%m%d_%H%M%S")-datetime.timedelta(hours=12)
+        d_mode_end = datetime.datetime.strptime(mode[end_col], "%Y%m%d_%H%M%S")-datetime.timedelta(hours=12)
         len_hours = math.ceil((d_mode_end-d_mode_start).seconds/3600)
 
         day = (d_mode_start.date() - start_date.date()).days
         hour = d_mode_start.hour
 
-        m = convert_mode_to_number(mode[0])
+        m = convert_mode_to_number(mode[mode_col])
         for h in range(0,len_hours):
             nh = hour+h
             nh = nh % 24
@@ -372,7 +380,7 @@ def dropdown_click(daterange_value,selected_systems):
     unique_dates,heatmap_data,heatmap_data_lists,hist_data,moth_columns = load_moth_data(selected_systems,selected_dayrange)
     if not len(unique_dates):
         return go.Figure(data=go.Scatter()),go.Figure(data=go.Histogram()),{'display': 'none'},{'display': 'none'}
-    heatmap_data,modemap_data = load_mode_data(unique_dates,moth_columns,heatmap_data,selected_systems,selected_dayrange)
+    heatmap_data,modemap_data = load_mode_data(unique_dates,heatmap_data,selected_systems,selected_dayrange)
     fig_hm=create_heatmap(unique_dates,heatmap_data,xlabels)
     fig_hist=create_hist(selected_systems,selected_dayrange,hist_data,unique_dates)
     return fig_hm,fig_hist,{"display": "block","margin-left": "auto","margin-right": "auto","width": "50%"},{"display": "block","margin-left": "auto","margin-right": "auto","width": "50%"}
@@ -392,7 +400,7 @@ def heatmap_clickData(daterange_value,selected_systems,clickData):
     unique_dates,heatmap_data,heatmap_data_lists,hist_data,moth_columns = load_moth_data(selected_systems,selected_dayrange)
     if not len(unique_dates):
         return go.Figure(data=go.Scatter()),{'display': 'none'}
-    heatmap_data,modemap_data = load_mode_data(unique_dates,moth_columns,heatmap_data,selected_systems,selected_dayrange)
+    heatmap_data,modemap_data = load_mode_data(unique_dates,heatmap_data,selected_systems,selected_dayrange)
 
     x = xlabels.index(clickData['points'][0]['x'])
     y = unique_dates.index(clickData['points'][0]['y'])
@@ -442,7 +450,7 @@ def scatter_clickData(daterange_value,selected_systems,clickData_hm,clickData_do
     unique_dates,heatmap_data,heatmap_data_lists,hist_data,moth_columns = load_moth_data(selected_systems,selected_dayrange)
     if not len(unique_dates):
         return '',{'display': 'none'}
-    heatmap_data,modemap_data = load_mode_data(unique_dates,moth_columns,heatmap_data,selected_systems,selected_dayrange)
+    heatmap_data,modemap_data = load_mode_data(unique_dates,heatmap_data,selected_systems,selected_dayrange)
 
     x = xlabels.index(clickData_hm['points'][0]['x'])
     y = unique_dates.index(clickData_hm['points'][0]['y'])
