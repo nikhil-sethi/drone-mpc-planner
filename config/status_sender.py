@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os,socket,subprocess,time,sys,shutil,glob,re
+import os,socket,subprocess,time,sys,shutil,glob,re,argparse
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -116,15 +116,27 @@ def clean_hd():
                 if Path(deamon_log).stat().st_size > 1024*1024*1024: #1GB
                     os.remove(deamon_log)
             found_dirs = natural_sort(glob.glob(data_dir + "/202*_*"))
-            oldest_dir_date =  datetime.strptime(os.path.basename(found_dirs[0]),"%Y%m%d_%H%M%S")
-            if ((datetime.now() - oldest_dir_date) > timedelta(days=14)):
-                print('removing: ' + found_dirs[0])
-                shutil.rmtree(found_dirs[0])
-            else:
-                break
+            for dir in found_dirs:
+                try:
+                    dir_date =  datetime.strptime(os.path.basename(dir),"%Y%m%d_%H%M%S")
+                except :
+                    shutil.rmtree(dir)
+                    break
+                if ((datetime.now() - dir_date) > timedelta(days=14)):
+                    print('removing: ' + dir)
+                    if os.path.exists(dir + '/logging'):
+                        shutil.rmtree(dir)
+                        break
+                    shutil.rmtree(dir)
+                else:
+                    return
         else:
-            break
+            return
 
+
+parser = argparse.ArgumentParser(description='Headless status sender to dash and commandcenter')
+parser.add_argument('-t','--hour', help="Update results at the start of this hour.", default=9)
+args = parser.parse_args()
 
 while not os.path.exists(local_status_txt_file):
     time.sleep(10)
@@ -141,19 +153,18 @@ while True:
         send_status_update()
 
         now = datetime.now()
-        if now.hour == 9 and not updated_today:
+        if now.hour == int(args.hour) and not updated_today:
             updated_today = True
             update_monitor_results()
             render_hunts()
             clean_hd()
-        if now.hour == 10 and updated_today:
+        if now.hour == int(args.hour)+1 and updated_today:
             updated_today = False
 
     ip = get_ip()
     if ip.startswith('192.168.8'): #4g stick ip
-        wait_for_trigger_or_timeout(3600)
+        wait_for_trigger_or_timeout(3600*6)
     elif ip.startswith('192') or ip.startswith('172'):
         wait_for_trigger_or_timeout(1)
     else:
-        wait_for_trigger_or_timeout(3600)
-
+        wait_for_trigger_or_timeout(3600*6)
