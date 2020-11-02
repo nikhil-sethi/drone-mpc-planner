@@ -282,7 +282,7 @@ user_pass_dict,_ = read_cred_db()
 auth = dash_auth.BasicAuth(app,user_pass_dict)
 
 #initials empty values for gui:
-dateranges = ['Last week', 'Last month', 'Last year']
+dateranges = ['Last week','Last two weeks', 'Last month', 'Last three months']
 xlabels = []
 for i in range(0,24):
     xlabels.append(str((i+12)%24)+'h')
@@ -344,10 +344,12 @@ app.layout = html.Div(children=[
 def selected_dates(daterange_value):
     if daterange_value == 'Last week':
         selected_dayrange = 7
+    if daterange_value == 'Last two weeks':
+        selected_dayrange = 14
     elif daterange_value == 'Last month':
         selected_dayrange = 31
-    elif daterange_value == 'Last year':
-        selected_dayrange = 365
+    elif daterange_value == 'Last three months':
+        selected_dayrange = 92
     return selected_dayrange
 
 
