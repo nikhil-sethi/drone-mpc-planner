@@ -16,6 +16,8 @@ i=$(($i + 1))
 i=$(($i + 1))
 /usr/bin/screen -t down $i /bin/bash -c 'cd ~/code/pats/dashboard/ && ./downloader.py; exec /bin/bash'
 i=$(($i + 1))
+/usr/bin/screen -t backup $i /bin/bash -c 'cd ~/code/pats/dashboard/ && ./dash_backup.py; exec /bin/bash'
+i=$(($i + 1))
 /usr/bin/screen -t code $i /bin/bash -c 'cd ~/code/pats/; exec /bin/bash'
 i=$(($i + 1))
 /usr/bin/screen -t data $i /bin/bash -c 'cd ~/Downloads/moth_jsons; exec /bin/bash'
