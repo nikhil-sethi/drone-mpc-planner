@@ -139,6 +139,8 @@ void DroneTracker::update(double time, bool drone_is_active) {
         break;
     } case dts_detect_yaw: {
         ItemTracker::update(time);
+        min_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity))-5,params.min_disparity.value(),params.max_disparity.value());
+        max_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity))+5,params.min_disparity.value(),params.max_disparity.value());
         update_prediction(time);
         _visdat->exclude_drone_from_motion_fading(_image_item.ptd(),_image_predict_item.size);
         detect_deviation_angle();
