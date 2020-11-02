@@ -109,6 +109,7 @@ void DroneNavigation::update(double time) {
             _dctrl->LED(true);
             _dctrl->flight_mode(DroneController::fm_disarmed);
             locate_drone_start_time = time;
+            locate_drone_attempts++;
             _navigation_status = ns_locate_drone_wait_led_on;
             [[fallthrough]];
         } case ns_locate_drone_wait_led_on: {
@@ -135,7 +136,7 @@ void DroneNavigation::update(double time) {
                 last_led_doubler_time = time;
                 // _dctrl->double_led_strength();
             }
-            if (time - locate_drone_start_time/(locate_drone_attempts+1) > 15 )
+            if (time - locate_drone_start_time > 15 )
                 _navigation_status = ns_locate_drone_init;
             if (time - locate_drone_start_time > 45 && pparams.op_mode != op_mode_waypoint)
                 _navigation_status = ns_drone_problem;

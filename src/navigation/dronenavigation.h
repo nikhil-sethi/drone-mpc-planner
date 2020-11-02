@@ -7,6 +7,7 @@
 #include "interceptor.h"
 #include "navigation.h"
 #include "flightplan.h"
+#include <string>
 
 namespace navigation {
 
@@ -108,6 +109,8 @@ public:
     std::string navigation_status() {
         if (_navigation_status == ns_approach_waypoint || _navigation_status == ns_landing) {
             return static_cast<string>(navigation_status_names[_navigation_status]) + " " + current_waypoint->name + " " + to_string_with_precision(_dctrl->dist_to_setpoint(),2);
+        } else if (_navigation_status == ns_wait_locate_drone || _navigation_status == ns_locate_drone_wait_led_on) {
+            return static_cast<string>(navigation_status_names[_navigation_status]) + " " + std::to_string(locate_drone_attempts);
         } else
             return navigation_status_names[_navigation_status];
     }

@@ -561,6 +561,31 @@ class SystemWidget(QWidget):
         self.refresh_darkmode = False
         self.setPalette(syswidget_palette)
 
+    def check_if_flying(self,navstatus):
+        return (navstatus =="ns_takeoff" or
+            navstatus =="ns_taking_off" or
+            navstatus =="ns_take_off_completed" or
+            navstatus =="ns_start_the_chase" or
+            navstatus =="ns_chasing_insect_ff" or
+            navstatus =="ns_chasing_insect" or
+            navstatus =="ns_set_waypoint" or
+            navstatus =="ns_wp" or
+            navstatus =="ns_flower_of_fire" or
+            navstatus =="ns_brick_of_fire" or
+            navstatus =="ns_goto_landing" or
+            navstatus =="ns_goto_yaw" or
+            navstatus =="ns_initial_reset_yaw" or
+            navstatus =="ns_wait_reset_yaw" or
+            navstatus =="ns_land" or
+            navstatus =="ns_landing" or
+            navstatus =="ns_landed" or
+            navstatus =="ns_start_shaking" or
+            navstatus =="ns_shaking_drone" or
+            navstatus =="ns_wait_after_landing" or
+            navstatus.startswith('wp_') or
+            navstatus.startswith('wp ') or
+            navstatus.startswith('ns_wp'))
+
     def get_lbl_txt(self):
         source_status_txt_file = Path(self.source_folder,self.system_folder,'status.txt')
         source_system_txt_file = Path(self.source_folder,self.system_folder,'system.txt')
@@ -623,7 +648,8 @@ class SystemWidget(QWidget):
                         res_txt += " Arm: " + status_txt[4][8:-1] + ", "
                     if (status_txt[3].startswith("cell v: ")):
                         cell_v = float(status_txt[3][8:-1])
-                        if cell_v > 1:
+                        navstatus = status_txt[2].strip()
+                        if cell_v > 1 and not self.check_if_flying(navstatus) and not navstatus == "ns_drone_problem":
                             if cell_v < 3.8:
                                 system_has_problem = QColor(255,165,0)
                             if cell_v < 3.1:
@@ -643,7 +669,6 @@ class SystemWidget(QWidget):
                     if (navstatus ==  "ns_init" or
                         navstatus =="ns_locate_drone_init" or
                         navstatus =="ns_locate_drone_led"  or
-                        navstatus =="ns_wait_locate_drone" or
                         navstatus =="ns_located_drone" or
                         navstatus =="ns_calibrating_motion" or
                         navstatus.startswith('Starting') or
@@ -652,36 +677,24 @@ class SystemWidget(QWidget):
                         navstatus.startswith('Waiting.') or
                         navstatus.startswith('Closing')) :
                             system_has_problem = QColor(128,128,128)
-                    elif (navstatus =="ns_wait_for_takeoff" or
-                        navstatus =="ns_manual"
-                        ):
+
+                    elif navstatus.startswith("ns_wait_locate_drone"):
+                        if int(navstatus.split(' ')[1]) == 1:
+                            system_has_problem = QColor(128,128,128)
+                        elif int(navstatus.split(' ')[1]) == 2:
+                            system_has_problem = QColor(128,128,0)
+                        elif int(navstatus.split(' ')[1]) > 2:
+                            system_has_problem = QColor(255,0,0)
+                        else:
+                            system_has_problem = QColor(128,128,128)
+                    elif (navstatus =="ns_wait_for_takeoff" or navstatus =="ns_manual" ):
                             system_has_problem = QColor(0,255,255)
                     elif (navstatus =="ns_monitoring"):
                         system_has_problem = QColor(255,192,203)
                     elif ( navstatus =="ns_wait_for_insect"):
                             system_has_problem = QColor(0,128,0)
-                    elif (navstatus =="ns_takeoff" or
-                        navstatus =="ns_taking_off" or
-                        navstatus =="ns_take_off_completed" or
-                        navstatus =="ns_start_the_chase" or
-                        navstatus =="ns_chasing_insect_ff" or
-                        navstatus =="ns_chasing_insect" or
-                        navstatus =="ns_set_waypoint" or
-                        navstatus =="ns_wp" or
-                        navstatus =="ns_flower_of_fire" or
-                        navstatus =="ns_brick_of_fire" or
-                        navstatus =="ns_goto_landing" or
-                        navstatus =="ns_goto_yaw" or
-                        navstatus =="ns_initial_reset_yaw" or
-                        navstatus =="ns_wait_reset_yaw" or
-                        navstatus =="ns_land" or
-                        navstatus =="ns_landing" or
-                        navstatus =="ns_landed" or
-                        navstatus =="ns_start_shaking" or
-                        navstatus =="ns_shaking_drone" or
-                        navstatus =="ns_wait_after_landing" or
-                        navstatus.startswith('wp ')):
-                            system_has_problem = QColor(0,255,0)
+                    elif(self.check_if_flying(navstatus)):
+                        system_has_problem = QColor(0,255,0)
                     elif (navstatus == "ns_drone_problem" or
                         navstatus == "ns_batlow" or
                         navstatus == 'no RealSense connected'):
