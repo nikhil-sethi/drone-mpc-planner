@@ -6,7 +6,7 @@ pd.options.mode.chained_assignment = None
 from tqdm import tqdm
 from pathlib import Path
 
-version = "1.5"
+version = "1.6"
 
 from scipy.interpolate import interp1d
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -25,7 +25,7 @@ def process_system_status_in_folder(folder):
     pats_xml_mode = ''
     pats_xml_path = Path(folder,'logging','pats.xml')
     if not os.path.exists(pats_xml_path):
-        return ([],'error','')
+        return ([],'error: xml does not exist','')
     with open (pats_xml_path, "r") as pats_xml:
             xml_lines = pats_xml.readlines()
             for line in xml_lines:
@@ -35,7 +35,7 @@ def process_system_status_in_folder(folder):
 
     results_path = Path(folder,'logging','results.txt')
     if not os.path.exists(results_path):
-        return ([],'error','')
+        return ([],'error results.txt does not exist','')
     runtime = -1
     with open (results_path, "r") as results_txt:
             result_lines = results_txt.readlines()
@@ -71,8 +71,10 @@ def process_system_status_in_folder(folder):
     daylight_start = daylight_start.strip().replace('/','').replace(':','').replace(' ', '_')
     daylight_end = daylight_end.strip().replace('/','').replace(':','').replace(' ', '_')
 
+    if log_start.startswith('Error'):
+        return ([],'error: ' + log_start,'')
     if 'Resetting cam' in log_start or log_start == '':
-        return ([],'error','')
+        return ([],'error: log_start: ' + log_start,'')
     log_start_datetime = datetime.datetime.strptime(log_start.strip(), '%d/%m/%Y %H:%M:%S')
     log_end_datetime = datetime.datetime.strptime( os.path.basename(folder), '%Y%m%d_%H%M%S')
 
@@ -276,6 +278,7 @@ filtered_dirs = [d for d in found_dirs if todatetime(os.path.basename(os.path.no
 detections = []
 statuss = []
 hunts = []
+errors = []
 
 pbar = tqdm(filtered_dirs)
 for folder in pbar:
@@ -296,6 +299,8 @@ for folder in pbar:
             hunts_in_folder = process_hunts_in_folder(folder,operational_log_start)
             if hunts_in_folder != []:
                 hunts.append(hunts_in_folder)
+        if mode.startswith('error'):
+            errors.append(mode + '(' + folder + ')')
 
 data_detections = {"from" : args.s,
         "till" : args.e,
@@ -303,6 +308,7 @@ data_detections = {"from" : args.s,
         "moths" : detections,
         "hunts" : hunts,
         "mode" : statuss,
+        "errors" : errors,
         "system" : args.system,
         "version" : version}
 with open(args.filename, 'w') as outfile:
