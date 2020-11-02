@@ -1035,9 +1035,10 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
 
     cv::Point3f desired_acceleration = {0};
     desired_acceleration += multf(kp_pos, pos_err_p) + multf(ki_pos, pos_err_i) + multf(kd_pos, pos_err_d); // position controld
-    if( !(norm(setpoint_vel)<0.1 && norm(setpoint_pos-data_drone.pos())<0.2) ) // Needed to improve hovering at waypoint
+    if( !(norm(setpoint_vel)<0.1 && norm(setpoint_pos-data_drone.pos())<0.2 && data_drone.pos_valid) ) // Needed to improve hovering at waypoint
         desired_acceleration += multf(kp_vel, vel_err_p) + multf(kd_vel, vel_err_d); // velocity control
-    desired_acceleration += keep_in_volume_correction_acceleration(data_drone);
+    if (data_drone.pos_valid && data_drone.vel_valid)
+        desired_acceleration += keep_in_volume_correction_acceleration(data_drone);
     std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(desired_acceleration);
 }
 
@@ -1119,20 +1120,25 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::
 
     // If the distance is large, then increase the velocity setpoint such that the velocity controller is not counteracting to the position controller:
     cv::Point3f pos_err2vel_set = deadzone(pos_err_p,-1,1) * 1.f;
+    float err_velx_filtered = 0,err_vely_filtered = 0,err_velz_filtered = 0;
+    float errDx = 0,errDy = 0,errDz = 0;
+    float errvDx = 0,errvDy = 0,errvDz = 0;
+    if(data_drone.vel_valid) {
+        err_velx_filtered = setpoint_vel.x + pos_err2vel_set.x - data_drone.state.vel.x;
+        err_vely_filtered = setpoint_vel.y + pos_err2vel_set.y - data_drone.state.vel.y;
+        err_velz_filtered = setpoint_vel.z + pos_err2vel_set.z - data_drone.state.vel.z;
 
-    float err_velx_filtered = setpoint_vel.x + pos_err2vel_set.x - data_drone.state.vel.x;
-    float err_vely_filtered = setpoint_vel.y + pos_err2vel_set.y - data_drone.state.vel.y;
-    float err_velz_filtered = setpoint_vel.z + pos_err2vel_set.z - data_drone.state.vel.z;
+        errDx = -data_drone.state.vel.x;
+        errDy = -data_drone.state.vel.y;
+        errDz = -data_drone.state.vel.z;
+
+        errvDx = d_vel_err_x.new_sample (err_velx_filtered);
+        errvDy = d_vel_err_y.new_sample (err_vely_filtered);
+        errvDz = d_vel_err_z.new_sample (err_velz_filtered);
+    }
+
     cv::Point3f vel_err_p = {err_velx_filtered, err_vely_filtered, err_velz_filtered};
-
-    float errDx = -data_drone.state.vel.x;
-    float errDy = -data_drone.state.vel.y;
-    float errDz = -data_drone.state.vel.z;
     cv::Point3f pos_err_d = {errDx, errDy, errDz};
-
-    float errvDx = d_vel_err_x.new_sample (err_velx_filtered);
-    float errvDy = d_vel_err_y.new_sample (err_vely_filtered);
-    float errvDz = d_vel_err_z.new_sample (err_velz_filtered);
     cv::Point3f vel_err_d = {errvDx, errvDy, errvDz};
 
     if (ki_pos.x>0) {

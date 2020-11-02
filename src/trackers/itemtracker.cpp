@@ -116,6 +116,7 @@ void ItemTracker::calc_world_props_blob_generic(BlobProps * pbs, bool use_max) {
 
         if (disparity < min_disparity || disparity > max_disparity) {
             w.disparity_in_range = false;
+            w.disparity  = NAN;
         } else {
             w.disparity_in_range = true;
 
