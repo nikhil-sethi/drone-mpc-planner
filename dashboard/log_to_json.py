@@ -155,9 +155,14 @@ def process_detections_in_folder(folder,operational_log_start,mode):
 
     valid_detections = []
     prev_RS_ID = -1
-    for detection_fn in detection_fns:
+    pbar_detections = tqdm(detection_fns, leave=False)
+    for detection_fn in pbar_detections:
         with open (detection_fn, "r") as detection_log:
-            log = pd.read_csv(detection_fn, sep=";")
+            try:
+                log = pd.read_csv(detection_fn, sep=";")
+            except Exception as e:
+                print(detection_fn + ': ' + str(e))
+                continue
 
         elapsed_time = log["time"].values
         lost = log['n_frames_lost_insect'].values > 0
@@ -288,7 +293,7 @@ statuss = []
 hunts = []
 errors = []
 
-pbar = tqdm(filtered_dirs)
+pbar = tqdm(filtered_dirs,leave=False)
 for folder in pbar:
     pbar.set_description(folder)
 

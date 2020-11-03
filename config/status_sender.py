@@ -18,15 +18,6 @@ remote_pats_xml='status/' + hostname + '/'
 pats_cc_update_request = homedir + '/pats_cc_update_request'
 disable_pats_bkg = homedir + '/disable_pats_bkg'
 
-def wait_for_trigger_or_timeout(delay):
-    print(str(datetime.now()) + ". Periodic update after: " + str(delay))
-    while not os.path.exists(pats_cc_update_request) and delay > 0 :
-        time.sleep(0.2)
-        delay = delay - 0.2
-    if os.path.exists(pats_cc_update_request):
-        print("Manual update trigger detected...")
-        os.remove(pats_cc_update_request)
-
 def get_ip():
     cmd = 'ip  -o -4 -f inet a show up primary scope global'
     output = subprocess.check_output(cmd, shell=True).decode(sys.stdout.encoding)
@@ -143,28 +134,41 @@ while not os.path.exists(local_status_txt_file):
     print('Warning: ' + local_status_txt_file + ' does not exist')
 
 updated_today = False
+metered_connection = True
 while True:
 
     while os.path.exists(disable_pats_bkg):
         time.sleep(10)
         print( 'Waiting until disable_pats_bkg disappears')
 
-    if os.path.exists(local_status_txt_file): #f this file does not exist, the system is probably not functional
-        send_status_update()
+    ip = get_ip()
+    if ip.startswith('192.168.8'): #4g stick ip
+        metered_connection = True
+    elif ip.startswith('192') or ip.startswith('172'):
+        metered_connection = False
+    else:
+        metered_connection = True
+
+    if os.path.exists(local_status_txt_file): #if this file does not exist, the system is probably not functional
 
         now = datetime.now()
-        if now.hour == int(args.hour) and not updated_today:
-            updated_today = True
+        if (not metered_connection):
+            print("Updating now: " + str(now))
+            send_status_update()
+
+        update_now_override = False
+        if os.path.exists(pats_cc_update_request):
+            print("Manual update trigger detected...")
+            os.remove(pats_cc_update_request)
+            send_status_update()
+
+        if (now.hour == int(args.hour) and not updated_today):
+            print("Metered connection mode. Updating now: " + str(now))
+            send_status_update()
             update_monitor_results()
             render_hunts()
             clean_hd()
         if now.hour == int(args.hour)+1 and updated_today:
             updated_today = False
 
-    ip = get_ip()
-    if ip.startswith('192.168.8'): #4g stick ip
-        wait_for_trigger_or_timeout(3600*6)
-    elif ip.startswith('192') or ip.startswith('172'):
-        wait_for_trigger_or_timeout(1)
-    else:
-        wait_for_trigger_or_timeout(3600*6)
+    time.sleep(1)
