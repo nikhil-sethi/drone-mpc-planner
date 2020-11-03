@@ -165,6 +165,14 @@ def process_detections_in_folder(folder,operational_log_start,mode):
         if len(elapsed_time) < 20 or len(elapsed_time) - len(remove_ids) < 5:
             continue
 
+        #there can be infs in the velocity columns, due to some weird double frameid occurance from the realsense. #540
+        vxs = log['svelX_insect'].values
+        vys = log['svelY_insect'].values
+        vzs = log['svelZ_insect'].values
+        inf_ids = [i for i, x in enumerate(vxs) if math.isinf(x)]
+        if (len(inf_ids)):
+            remove_ids.extend(inf_ids)
+
         time = elapsed_time.astype('float64')
         RS_ID = log['RS_ID'].values
 
@@ -188,15 +196,15 @@ def process_detections_in_folder(folder,operational_log_start,mode):
         alpha_vertical_start = math.atan2(pos_middle[0] - pos_start[0],pos_middle[1] - pos_start[1])
         alpha_vertical_end = math.atan2(pos_end[0] - pos_middle[0],pos_end[1] - pos_middle[1])
 
-        vxs = log['svelX_insect'].values
-        vys = log['svelY_insect'].values
-        vzs = log['svelZ_insect'].values
         vx_tracking = np.delete(vxs,remove_ids)
         vy_tracking = np.delete(vys,remove_ids)
         vz_tracking = np.delete(vzs,remove_ids)
         v = np.sqrt(vx_tracking**2+vy_tracking**2+vz_tracking**2)
         v_mean = v.mean()
         v_std = v.std()
+
+        if math.isinf(v_mean) or math.isinf(v_mean):
+            print(v_mean)
 
         sizes = np.delete(log['radius_insect'].values,remove_ids)
         size = np.mean(sizes)*2
