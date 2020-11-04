@@ -1045,7 +1045,7 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::
 
     if (ki_pos.x>0) {
         pos_err_i.x += (err_x_filtered - setpoint_pos.x + pos_modelx.current_output());
-        if (!enable_thrust_estimation_calibration)
+        if (!enable_thrust_calibration)
             pos_err_i.y += (err_y_filtered - setpoint_pos.y + pos_modely.current_output());
         pos_err_i.z += (err_z_filtered - setpoint_pos.z + pos_modelz.current_output());
     } else {
@@ -1054,7 +1054,7 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::
         pos_err_i = {0};
     }
 
-    if (enable_thrust_estimation_calibration) {
+    if (enable_thrust_calibration) {
         if(remember_last_integrated_y_err!=0) {
             drone_calibration.thrust -= ki_thrust_hover*0.001f*remember_last_integrated_y_err;
             remember_last_integrated_y_err = 0;
@@ -1415,7 +1415,7 @@ void DroneController::close() {
         std::cout << "Closing controller." << std::endl;
         if (pparams.control_tuning)
             serialize_settings();
-        if(!flight_aborted() && !log_replay_mode) {
+        if(store_thrust_calibration && !log_replay_mode) {
             drone_calibration.serialize(drone_calib_wfn);
             drone_calibration.serialize("../../xml/" + drone_calib_fn);
         }

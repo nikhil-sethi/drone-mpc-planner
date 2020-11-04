@@ -282,7 +282,8 @@ private:
 
 public:
     float model_error;
-    bool enable_thrust_estimation_calibration = false;
+    bool enable_thrust_calibration = false;
+    bool store_thrust_calibration = false;
     void flight_mode(flight_modes f) {
         if (f != fm_abort || !flight_aborted())
             _flight_mode = f;

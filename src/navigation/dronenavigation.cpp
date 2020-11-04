@@ -230,6 +230,7 @@ void DroneNavigation::update(double time) {
         } case ns_takeoff: {
             _dctrl->reset_manual_override_take_off_now();
             _dctrl->flight_mode(DroneController::fm_start_takeoff);
+            _dctrl->store_thrust_calibration = false;
             _visdat->enable_collect_no_drone_frames = false;
             _dctrl->hover_mode(false);
             _trackers->dronetracker()->hover_mode(false);
@@ -324,7 +325,7 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_goto_landing_waypoint: {
             _dctrl->hover_mode(true);
-            _dctrl->enable_thrust_estimation_calibration = true;
+            _dctrl->enable_thrust_calibration = true;
             _trackers->dronetracker()->hover_mode(true);
             next_waypoint(Waypoint_Landing(),time);
             _navigation_status = ns_approach_waypoint;
@@ -464,7 +465,7 @@ void DroneNavigation::update(double time) {
             new_pos_setpoint.z = setpoint_pos_world.z;
             setpoint_vel_world = {0};
             setpoint_acc_world = {0};
-            _dctrl->enable_thrust_estimation_calibration = false;
+            _dctrl->enable_thrust_calibration = false;
 
             if (new_pos_setpoint.y < pad_pos.y) {
                 // new_pos_setpoint.y = pad_pos.y;
@@ -486,6 +487,7 @@ void DroneNavigation::update(double time) {
             landed_time = time;
             _trackers->dronetracker()->delete_landing_motion(time_out_after_landing);
             _dctrl->hover_mode(false);
+            _dctrl->store_thrust_calibration = true;
             _trackers->dronetracker()->hover_mode(false);
             _flight_time+= static_cast<float>(time-time_take_off);
             _n_landings++;
