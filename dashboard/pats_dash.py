@@ -288,9 +288,10 @@ for i in range(0,24):
     xlabels.append(str((i+12)%24)+'h')
 
 systems = []
-fig_hm=go.Figure(data=go.Heatmap())
+fig_hm = go.Figure(data=go.Heatmap())
 fig_hist=go.Figure(data=go.Histogram())
 fig_scatter = go.Figure(data=go.Scatter())
+fig_path = go.Figure(data=go.Scatter3d())
 app.layout = html.Div(children=[
     html.H1(children='Pats Dash'),
 
@@ -336,6 +337,11 @@ app.layout = html.Div(children=[
                 children=html.Video(id="insect_video",style={"display": "none","margin-left": "auto","margin-right": "auto","width": "75%"},controls=True,loop=True,autoPlay=True),
                 type="default"
             ),
+            dcc.Loading(
+                id="loading_4",
+                children=dcc.Graph(id="route_kaart",style={"display": 'none'}, figure=fig_path),
+                type="default"
+            )
         ]),
     html.Div(id='intermediate-value', style={'display': 'none'})
 ])
@@ -418,14 +424,18 @@ def heatmap_clickData(daterange_value,selected_systems,clickData):
     scatter = go.Scattergl(
         x = df_scatter['duration'],
         y = df_scatter['Vel_mean'],
-        mode='markers',
+        mode = 'markers',
+        customdata  = np.stack((df_scatter['system'] + '/' + df_scatter['Folder'] + '/' + df_scatter['Filename'],
+         df_scatter['Video_Filename']), axis=-1),
         marker=dict(
             color=df_scatter['system_ids'],
             colorscale=distinct_cols
         ),
         hovertemplate = "<b>System %{marker.color}</b><br><br>" +
         "Size: %{y}<br>" +
-        "Duration: %{x}<br>"
+        "Duration: %{x}<br>" +
+        "File: %{customdata[0]}<br>" +
+        "Video: %{customdata[1]}<br>"
     )
     fig = go.Figure(data=scatter)
     fig.update_layout(
@@ -439,6 +449,8 @@ def heatmap_clickData(daterange_value,selected_systems,clickData):
 @app.callback(
     dash.dependencies.Output('insect_video', 'src'),
     dash.dependencies.Output('insect_video', 'style'),
+    dash.dependencies.Output('route_kaart', 'figure'),
+    dash.dependencies.Output('route_kaart', 'style'),
     dash.dependencies.Input('date_range_dropdown', 'value'),
     dash.dependencies.Input('systems_dropdown', 'value'),
     dash.dependencies.Input('hete_kaart', 'clickData'),
@@ -446,12 +458,12 @@ def heatmap_clickData(daterange_value,selected_systems,clickData):
 )
 def scatter_clickData(daterange_value,selected_systems,clickData_hm,clickData_dot):
     if clickData_dot == None or clickData_hm ==None or not len(selected_systems) or not len(clickData_hm):
-        return '',{'display': 'none'}
+        return '',{'display': 'none'},go.Figure(data=go.Scatter3d()),{'display': 'none'}
 
     selected_dayrange = selected_dates(daterange_value)
     unique_dates,heatmap_data,heatmap_data_lists,hist_data,moth_columns = load_moth_data(selected_systems,selected_dayrange)
     if not len(unique_dates):
-        return '',{'display': 'none'}
+        return '',{'display': 'none'},go.Figure(data=go.Scatter3d()),{'display': 'none'}
     heatmap_data,modemap_data = load_mode_data(unique_dates,heatmap_data,selected_systems,selected_dayrange)
 
     x = xlabels.index(clickData_hm['points'][0]['x'])
@@ -461,21 +473,48 @@ def scatter_clickData(daterange_value,selected_systems,clickData_hm,clickData_do
 
     point_id = clickData_dot['points'][0]['pointIndex']
     tmp = df_scatter.values[point_id]
-    video_fn = tmp[moth_columns.index('Video_Filename')]
-
-    if video_fn == None:
-        return '',{'display': 'none'}
-    if video_fn == 'NA':
-        return '',{'display': 'none'}
     sys_name = tmp[moth_columns.index('system')].replace('-proto','')
-    target_video_fn = '/static/' + tmp[moth_columns.index('Folder')] + '_' + sys_name + '_' + video_fn
+    log_fn = tmp[moth_columns.index('Filename')]
+    video_fn = tmp[moth_columns.index('Video_Filename')]
+    if video_fn != 'NA' and video_fn != None:
+        target_video_fn = 'static/' + tmp[moth_columns.index('Folder')] + '_' + sys_name + '_' + video_fn
+        if not os.path.isfile(target_video_fn):
+            rsync_src = sys_name + ':data/' +tmp[moth_columns.index('Folder')] + '/logging/render_' + video_fn
+            cmd = ['rsync -a ' + rsync_src + ' ' + target_video_fn]
+            execute(cmd)
+            target_video_fn = '/' + target_video_fn
 
-    if not os.path.isfile(target_video_fn):
-        rsync_src = sys_name + ':data/' +tmp[moth_columns.index('Folder')] + '/logging/render_' + video_fn
-        cmd = ['rsync -a ' + rsync_src + ' ' + target_video_fn[1:]]
+    target_log_fn = 'static/' + tmp[moth_columns.index('Folder')] + '_' + sys_name + '_' + log_fn
+    if not os.path.isfile(target_log_fn):
+        rsync_src = sys_name + ':data/' +tmp[moth_columns.index('Folder')] + '/logging/' + log_fn
+        cmd = ['rsync -az ' + rsync_src + ' ' + target_log_fn]
         execute(cmd)
+    if not os.path.isfile(target_log_fn):
+        return '',{'display': 'none'},go.Figure(data=go.Scatter3d()),{'display': 'none'}
 
-    return target_video_fn,{"display": "block","margin-left": "auto","margin-right": "auto","width": "75%"}
+    df_ilog = pd.read_csv(target_log_fn,delimiter=';')
+    target_log_fn = '/' + target_log_fn
+
+    rows_without_tracking = df_ilog[ df_ilog['n_frames_tracking_insect'] == 0 ].index
+    df_ilog.drop(rows_without_tracking , inplace=True)
+
+    scatter = go.Scatter3d(
+        x = df_ilog['sposX_insect'],
+        y = -df_ilog['sposZ_insect'],
+        z = df_ilog['sposY_insect'],
+        text = df_ilog['time'],
+        mode='markers',
+        hovertemplate = "<b>t= %{text}</b><br>x= %{x}<br>y= %{y}<br>z= %{z}"
+    )
+    fig = go.Figure(data=scatter)
+    fig.update_layout(
+        title_text='Moth path',
+    )
+
+    if video_fn == None or video_fn == 'NA':
+        return '',{"display": 'none'},fig,{"display": "block","margin-left": "auto","margin-right": "auto","width": "100%"}
+    else:
+        return target_video_fn,{"display": "block","margin-left": "auto","margin-right": "auto","width": "75%"},fig,{"display": "block","margin-left": "auto","margin-right": "auto","width": "100%"}
 
 
 if __name__ == '__main__':
