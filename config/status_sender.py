@@ -90,7 +90,6 @@ def render_hunts():
     cmd = '../config/render_videos.py -i ~/data -s ' + date_time_start +' -e ' + date_time_end
     execute(cmd)
 
-
 def natural_sort(l):
     convert = lambda text: int(text) if text.isdigit() else text.lower()
     alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
@@ -124,6 +123,19 @@ def clean_hd():
         else:
             return
 
+def check_if_metered():
+    ip = get_ip()
+    if ip.startswith('192.168.8'): #4g stick ip
+        return True
+    elif ip.startswith('192') or ip.startswith('172'):
+        return False
+    else:
+        return True
+
+def block_if_disabled():
+    while os.path.exists(disable_pats_bkg):
+        time.sleep(10)
+        print( 'Waiting until disable_pats_bkg disappears')
 
 parser = argparse.ArgumentParser(description='Headless status sender to dash and commandcenter')
 parser.add_argument('-t','--hour', help="Update results at the start of this hour.", default=9)
@@ -134,20 +146,14 @@ while not os.path.exists(local_status_txt_file):
     print('Warning: ' + local_status_txt_file + ' does not exist')
 
 updated_today = False
-metered_connection = True
+metered_connection = check_if_metered()
+if metered_connection:
+   print("Metered connection mode. Updating at: " + str(args.hour) + ':00')
+
 while True:
 
-    while os.path.exists(disable_pats_bkg):
-        time.sleep(10)
-        print( 'Waiting until disable_pats_bkg disappears')
-
-    ip = get_ip()
-    if ip.startswith('192.168.8'): #4g stick ip
-        metered_connection = True
-    elif ip.startswith('192') or ip.startswith('172'):
-        metered_connection = False
-    else:
-        metered_connection = True
+    block_if_disabled()
+    metered_connection = check_if_metered()
 
     if os.path.exists(local_status_txt_file): #if this file does not exist, the system is probably not functional
 
@@ -156,15 +162,16 @@ while True:
             print("Updating now: " + str(now))
             send_status_update()
 
-        update_now_override = False
         if os.path.exists(pats_cc_update_request):
             print("Manual update trigger detected...")
             os.remove(pats_cc_update_request)
             send_status_update()
 
         if (now.hour == int(args.hour) and not updated_today):
-            print("Metered connection mode. Updating now: " + str(now))
-            send_status_update()
+            if (metered_connection):
+                print("Metered connection mode. Updating now: " + str(now))
+                send_status_update()
+            updated_today = True
             update_monitor_results()
             render_hunts()
             clean_hd()
