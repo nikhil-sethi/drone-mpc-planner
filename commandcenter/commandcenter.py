@@ -22,10 +22,12 @@ class CommandCenterWindow(QMainWindow):
         self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
         self.setAutoFillBackground(True)
 
-        select_systems_Act = QAction(self.style().standardIcon(QStyle.SP_FileDialogDetailedView), 'Select systems', self)
-        select_systems_Act.setShortcut('Ctrl+K')
-        select_systems_Act.triggered.connect(self.select_systems)
+        select_systems_Action = QAction(self.style().standardIcon(QStyle.SP_FileDialogDetailedView), 'Select systems', self)
+        select_systems_Action.setShortcut('Ctrl+K')
+        select_systems_Action.triggered.connect(self.select_systems)
 
+        request_updates_Action = QAction(self.style().standardIcon(QStyle.SP_ArrowDown), 'More status more NOW!', self)
+        request_updates_Action.triggered.connect(self.request_updates)
         reboot_rtc_Action = QAction(self.style().standardIcon(QStyle.SP_DialogResetButton), 'Reboot all systems', self)
         reboot_rtc_Action.triggered.connect(self.reboot_systems)
         git_update_Action = QAction(self.style().standardIcon(QStyle.SP_FileDialogToParent), 'Update all systems', self)
@@ -42,11 +44,13 @@ class CommandCenterWindow(QMainWindow):
         self.toolbar = self.addToolBar('Pats Menu')
         self.toolbar.setMovable(False)
         self.toolbar.setFloatable(False)
-        self.toolbar.addAction(select_systems_Act)
+        self.toolbar.addAction(select_systems_Action)
         self.toolbar.addSeparator()
-        self.toolbar.addAction(reboot_rtc_Action)
-        self.toolbar.addAction(git_update_Action)
+        self.toolbar.addAction(request_updates_Action)
+        self.toolbar.addSeparator()
         self.toolbar.addAction(restart_Action)
+        self.toolbar.addAction(git_update_Action)
+        self.toolbar.addAction(reboot_rtc_Action)
         self.toolbar.addSeparator()
         self.toolbar.addAction(fly_tuning_Action)
         self.toolbar.addAction(fly_aggresive_Action)
@@ -131,14 +135,19 @@ class CommandCenterWindow(QMainWindow):
         SelectSystemsDialog(self,self.source_folder,self.system_folders)
         self.populate_systems()
         self.update()
+    def request_updates(self):
+        for sys in self.sys_widgets:
+            sys.request_update()
     def reboot_systems(self):
         buttonReply = QMessageBox.question(self, 'Maar, weet je dat eigenlijk wel zekerdepeter?!', "Reboot, really?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if buttonReply == QMessageBox.Yes:
             for sys in self.sys_widgets:
                 sys.reboot_dont_ask()
     def git_update_systems(self):
-        for sys in self.sys_widgets:
-            sys.git_update()
+        buttonReply = QMessageBox.question(self, 'Maar, weet je dat eigenlijk wel zekerdepeter?!', "Update, really?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if buttonReply == QMessageBox.Yes:
+            for sys in self.sys_widgets:
+                sys.git_update()
     def restart_systems(self):
         for sys in self.sys_widgets:
             sys.restart()
@@ -248,12 +257,12 @@ class SystemWidget(QWidget):
         btn_restart.clicked.connect(self.restart)
         self.btn_restart = btn_restart
 
-        btn_req_update = QPushButton()
-        btn_req_update.setToolTip('Request update NOW')
-        btn_req_update.setIcon(self.style().standardIcon(QStyle.SP_ArrowDown))
-        btn_req_update.setMaximumSize(30, 30)
-        btn_req_update.clicked.connect(self.req_update)
-        self.btn_req_update = btn_req_update
+        btn_request_update = QPushButton()
+        btn_request_update.setToolTip('Request update NOW')
+        btn_request_update.setIcon(self.style().standardIcon(QStyle.SP_ArrowDown))
+        btn_request_update.setMaximumSize(30, 30)
+        btn_request_update.clicked.connect(self.request_update)
+        self.btn_request_update = btn_request_update
 
         btn_download_current_log = QPushButton()
         btn_download_current_log.setToolTip('Restart & download the current log')
@@ -287,7 +296,7 @@ class SystemWidget(QWidget):
         control_layout.setContentsMargins(0, 0, 0, 0)
         control_layout.addWidget(self.combo_mode)
         control_layout.addWidget(self.combo_sub_mode)
-        control_layout.addWidget(btn_req_update)
+        control_layout.addWidget(btn_request_update)
         control_layout.addWidget(btn_restart)
         control_layout.addWidget(btn_download_current_log)
         control_layout.addWidget(btn_takeoff_tuning)
@@ -401,7 +410,7 @@ class SystemWidget(QWidget):
 
     def restart(self):
         subprocess.Popen(['./restart_system.sh', 'pats'+self.host_id])
-    def req_update(self):
+    def request_update(self):
         subprocess.Popen(['./req_update_system.sh', 'pats'+self.host_id])
     def download_current_log(self):
         subprocess.Popen(['./download_log_system.sh', 'pats'+self.host_id])
@@ -538,7 +547,7 @@ class SystemWidget(QWidget):
             self.btn_takeoff_aggresive_wp.setStyleSheet("background-color:rgb(128,0,0)")
             self.btn_takeoff_tuning.setStyleSheet("background-color:rgb(128,0,0)")
             self.btn_restart.setStyleSheet("background-color:rgb(128,0,0)")
-            self.btn_req_update.setStyleSheet("background-color:rgb(128,0,0)")
+            self.btn_request_update.setStyleSheet("background-color:rgb(128,0,0)")
             self.btn_download_current_log.setStyleSheet("background-color:rgb(128,0,0)")
         elif self.refresh_darkmode:
 
@@ -555,7 +564,7 @@ class SystemWidget(QWidget):
             self.btn_takeoff_aggresive_wp.setStyleSheet("background-color:rgb(160,128,128)")
             self.btn_takeoff_tuning.setStyleSheet("background-color:rgb(160,128,128)")
             self.btn_restart.setStyleSheet("background-color:rgb(160,128,128)")
-            self.btn_req_update.setStyleSheet("background-color:rgb(160,128,128)")
+            self.btn_request_update.setStyleSheet("background-color:rgb(160,128,128)")
             self.btn_download_current_log.setStyleSheet("background-color:rgb(160,128,128)")
 
         self.refresh_darkmode = False
@@ -633,7 +642,7 @@ class SystemWidget(QWidget):
             try:
                 date_time = datetime.strptime(status_txt[0].strip(), '%Y/%m/%d %H:%M:%S') #e.g. 2020/02/29 23:45:46
                 time_since_update = datetime.now() - date_time
-                if time_since_update.total_seconds() > 3700:
+                if time_since_update.total_seconds() > 3600*24:
                     system_has_problem = QColor(200,0,0)
 
                 res_txt += status_txt[1].strip() + '. upd: ' + str(int(time_since_update.total_seconds())) + 's\n'
