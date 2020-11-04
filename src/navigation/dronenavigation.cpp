@@ -151,27 +151,31 @@ void DroneNavigation::update(double time) {
                 _visdat->create_overexposed_removal_mask(_trackers->dronetracker()->drone_takeoff_im_location(),_trackers->dronetracker()->drone_takeoff_im_size());
                 time_motion_calibration_started = time;
                 _navigation_status = ns_calibrating_motion;
+                _dctrl->start_landing_acc_calibration();
                 _n_drone_detects++;
             }
             break;
         } case ns_calibrating_motion: {
-
-            if (pparams.op_mode==op_mode_hunt) {  // arm the drone while throttle is still zero (in the wait_for_insect state this is not guaranteed, #430)
-                _dctrl->drone_state_inactive();
-            }
+            if (pparams.op_mode==op_mode_hunt)   // arm the drone while throttle is still zero (in the wait_for_insect state this is not guaranteed, #430)
+                _dctrl->flight_mode(DroneController::fm_inactive);
 
             if (static_cast<float>(time-time_motion_calibration_started) > motion_calibration_duration) {
                 if (pparams.op_mode==op_mode_monitoring) {
                     _trackers->mode(tracking::TrackerManager::mode_wait_for_insect);
                     _dctrl->stop_rc();
                     _navigation_status = ns_monitoring;
-                } else if (pparams.op_mode == op_mode_waypoint || _nav_flight_mode == nfm_waypoint)
-                    _navigation_status = ns_wait_for_takeoff_command;
-                else if (_nav_flight_mode == nfm_hunt)
-                    _navigation_status = ns_wait_for_insect;
-                else if (_nav_flight_mode == nfm_manual)
+                } else if (_nav_flight_mode == nfm_manual)
                     _navigation_status = ns_manual;
-                else
+                else if (pparams.op_mode == op_mode_waypoint || pparams.op_mode == op_mode_hunt) {
+                    if (_dctrl->landing_acc_calibration_done()) {
+                        if (pparams.op_mode == op_mode_waypoint || _nav_flight_mode == nfm_waypoint)
+                            _navigation_status = ns_wait_for_takeoff_command;
+                        else if (_nav_flight_mode == nfm_hunt)
+                            _navigation_status = ns_wait_for_insect;
+                        else
+                            _navigation_status = ns_wait_for_takeoff_command;
+                    }
+                } else
                     _navigation_status = ns_wait_for_takeoff_command;
             }
             break;

@@ -95,11 +95,6 @@ public:
         js_none // in case of no joystick
     };
 private:
-
-    uint16_t kill_cnt_down = 0;
-    double spin_up_start_time = 0;
-    double start_takeoff_burn_time = 0;
-
     class ControlParameters: public xmls::Serializable
     {
     public:
@@ -151,10 +146,78 @@ private:
         }
     };
 
-    float throttleErrI = 0;
-    float rollErrI = 0;
-    float pitchErrI = 0;
-    int autoLandThrottleDecrease = 0;
+    MultiModule * _rc;
+    tracking::DroneTracker * _dtrk;
+    CameraView * _camview;
+    std::ofstream *_logger;
+
+    std::string control_parameters_rfn;
+    const std::string drone_calib_fn = "drone_calibration.xml";
+    std::string drone_calib_rfn = "../../xml/" + drone_calib_fn;
+    std::string drone_calib_wfn = "./logging/" + drone_calib_fn;
+    xmls::DroneCalibration drone_calibration;
+
+    const int required_landing_acc_calibration_cnt = 15;
+    int landing_acc_calibration_cnt = -1;
+    cv::Point3f landing_acc_calibration;
+
+    const float max_bank_angle = 180;
+    const float aim_duration = 0.0833333333333f; //Slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
+    const float transmission_delay_duration = 0.04f;
+    float effective_burn_spin_up_duration = 0.15f; // the time to spin up from hover to max
+    const float effective_burn_spin_down_duration = 0.1f; // the time to spin down from max to hover
+    float remember_last_integrated_y_err = 0; // For faster thrust calibration
+    cv::Point3f drone_vel_after_takeoff = {0};
+
+    const float lift_off_dist_take_off_aim = 0.02f;
+    const float take_off_burn_duration = 0.08f;
+    float min_takeoff_angle = 45.f/180.f*static_cast<float>(M_PI);
+
+    double take_off_start_time = 0;
+    double interception_start_time = 0;
+    double in_flight_start_time = -1;
+    double ff_land_start_time = 0;
+    int ff_auto_throttle_start;
+
+    cv::Point3f _burn_direction_for_thrust_approx = {0};
+
+    float _dist_to_setpoint = 999;
+    double _time;
+    double time_waypoint_changed = 0;
+
+    uint16_t kill_cnt_down = 0;
+    double spin_up_start_time = 0;
+    double start_takeoff_burn_time = 0;
+
+    std::vector<cv::Point3f> aim_direction_history;
+
+    bool initialized = false;
+    bool log_replay_mode = false;
+    bool generator_mode = false;
+    flight_modes _flight_mode = fm_joystick_check; // only set externally (except for disarming), used internally
+    joy_mode_switch_modes _joy_mode_switch = jmsm_none;
+    betaflight_arming _joy_arm_switch = bf_armed;
+    bool _joy_takeoff_switch = false;
+    joy_states _joy_state = js_none;
+    int joyDial = 0;
+    float scaledjoydial = 0;
+
+    bool _hover_mode = false;
+
+    cv::Point3f pos_err_i;
+    int kp_pos_roll, kp_pos_throttle, kp_pos_pitch, ki_pos_roll, ki_thrust, ki_pos_pitch, kd_pos_roll, kd_pos_throttle, kd_pos_pitch;
+    int kp_pos_roll_hover, kp_pos_throttle_hover, kp_pos_pitch_hover, ki_pos_roll_hover, ki_thrust_hover, ki_pos_pitch_hover, kd_pos_roll_hover, kd_pos_throttle_hover, kd_pos_pitch_hover;
+    int kp_v_roll, kp_v_throttle, kp_v_pitch, kd_v_roll, kd_v_throttle, kd_v_pitch;
+    filtering::Tf_D_f d_vel_err_x, d_vel_err_y, d_vel_err_z;
+    filtering::Tf_PT2_f pos_modelx, pos_modely, pos_modelz;
+
+    uint snr_init = 0;
+    uint snr_pbuf_ponter = 0;
+    cv::Point3f snr_pos_buffer[3];
+    uint snr_noise_cnt = 0;
+
+    std::array<float, N_PLANES> pos_err_kiv= {0}, vel_err_kiv= {0};
+    std::array<filtering::Tf_D_f, N_PLANES> d_pos_err_kiv, d_vel_err_kiv;
 
     float time_spent_spinning_up(double time) {
         if (spin_up_start_time> 0)
@@ -163,8 +226,6 @@ private:
             return 0;
     }
     void set_led_strength(float exposure);
-
-    std::string settings_file;
 
     uint16_t initial_hover_throttle_guess_non3d;
     uint16_t initial_hover_throttle_guess() {
@@ -181,74 +242,18 @@ private:
             return dparams.spinup_throttle_non3d;
         }
     }
-    uint16_t min_bound_throttle() {
-        if (dparams.mode3d)
-            return RC_BOUND_MIN;
-        else {
-            return static_cast<uint16_t>(dparams.min_throttle);
-        }
-    }
 
-    const float max_bank_angle = 180; // TODO: move to dparams (betaflight setting)
-    const float aim_duration = 0.0833333333333f; // TODO: move to dparams, slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
-    const float transmission_delay_duration = 0.04f;
-    float effective_burn_spin_up_duration = 0.15f; // the time to spin up from hover to max
-    const float effective_burn_spin_down_duration = 0.1f; // the time to spin down from max to hover
-    float thrust;
-    float remember_last_integrated_y_err = 0; // For faster thrust calibration
-    cv::Point3f drone_vel_after_takeoff = {0};
-    float ground_effect = 1.0f;
-    const float lift_off_dist_take_off_aim = 0.02f;
-    const float take_off_burn_duration = 0.08f;
-    float min_takeoff_angle = 45.f/180.f*static_cast<float>(M_PI);
-
-    double take_off_start_time = 0;
-    double interception_start_time = 0;
-    double in_flight_start_time = -1;
-    double ff_land_start_time = 0;
-    int ff_auto_throttle_start;
-    track_data data_drone_1g_start;
-
-    const float integratorThresholdDistance = 0.3f;
-    cv::Point3f _burn_direction_for_thrust_approx = {0};
-
-    float _dist_to_setpoint = 999;
-    double _time;
-    double time_waypoint_changed = 0;
-
-    std::vector<cv::Point3f> aim_direction_history;
-
-    bool initialized = false;
-    bool log_replay_mode = false;
-    bool generator_mode = false;
-    flight_modes _flight_mode = fm_joystick_check; // only set externally (except for disarming), used internally
-    joy_mode_switch_modes _joy_mode_switch = jmsm_none;
-    betaflight_arming _joy_arm_switch = bf_armed;
-    bool _joy_takeoff_switch = false;
-    joy_states _joy_state = js_none;
-    int joyDial = 0;
-    float scaledjoydial = 0;
-    bool _hover_mode = false;
-
-    bool recovery_mode = false;
-    cv::Point3f recovery_pos = {0};
-    bool first_directional_burn = false;
     void approx_effective_thrust(track_data data_drone, cv::Point3f burn_direction, float burn_duration, float dt_burn);
     float thrust_to_throttle(float thrust_ratio);
     std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> predict_drone_after_burn(state_data state_drone, cv::Point3f burn_direction, float remaining_aim_duration, float burn_duration);
-    std::tuple<cv::Point3f, cv::Point3f> predict_drone_state_after_spindown(cv::Point3f integrated_pos, cv::Point3f integrated_vel, cv::Point3f burn_accelleration);
     std::tuple<int, int, float, cv::Point3f, std::vector<state_data> > calc_burn(state_data state_drone, state_data state_target, float remaining_aim_duration);
     std::tuple<int, int, float, cv::Point3f> calc_directional_burn(state_data state_drone, state_data state_target, float remaining_aim_duration);
     std::vector<state_data> predict_trajectory(float burn_duration, float remaining_aim_duration, cv::Point3f burn_direction, state_data state_drone);
     void draw_viz(state_data state_drone, state_data state_target, double time, cv::Point3f burn_direction, float burn_duration, float remaining_aim_duration, std::vector<state_data> traj);
+    void calibrate_landing();
     bool trajectory_in_view(std::vector<state_data> traj, CameraView::view_volume_check_mode c);
-
-    void correct_yaw(float deviation_angle);
-
     cv::Point3f keep_in_volume_correction_acceleration(track_data data_drone);
     cv::Point3f kiv_acceleration(std::array<bool, N_PLANES> violated_planes_inview, std::array<bool, N_PLANES> violated_planes_brakedistance);
-
-    void adapt_reffilter_dynamic(track_data data_drone, track_data data_target);
 
     std::tuple<float,float> acc_to_deg(cv::Point3f acc);
     std::tuple<float,float> acc_to_quaternion(cv::Point3f acc);
@@ -257,55 +262,24 @@ private:
     void check_tracking_lost(track_data data_drone);
     void check_control_and_tracking_problems(track_data data_drone);
     void check_snr(track_data data_drone);
-    void update_thrust_during_hovering(track_data data_drone, double time);
+
+    void correct_yaw(float deviation_angle);
 
     void blink(double time);
     void blink_motors(double time);
 
-    cv::Point3f pos_err_i;
-    int kp_pos_roll, kp_pos_throttle, kp_pos_pitch, ki_pos_roll, ki_thrust, ki_pos_pitch, kd_pos_roll, kd_pos_throttle, kd_pos_pitch;
-    int kp_pos_roll_hover, kp_pos_throttle_hover, kp_pos_pitch_hover, ki_pos_roll_hover, ki_thrust_hover, ki_pos_pitch_hover, kd_pos_roll_hover, kd_pos_throttle_hover, kd_pos_pitch_hover;
-    int kp_v_roll, kp_v_throttle, kp_v_pitch, kd_v_roll, kd_v_throttle, kd_v_pitch;
-    filtering::Tf_D_f d_pos_err_x, d_pos_err_y, d_pos_err_z;
-    filtering::Tf_D_f d_vel_err_x, d_vel_err_y, d_vel_err_z;
-    filtering::Tf_PT2_3f pos_reference_filter;
-
-    filtering::Tf_PT2_f pos_modelx, pos_modely, pos_modelz;
-
-    uint snr_init = 0;
-    uint snr_pbuf_ponter = 0;
-    cv::Point3f snr_pos_buffer[3];
-    uint snr_noise_cnt = 0;
-
-    std::array<float, N_PLANES> pos_err_kiv= {0}, vel_err_kiv= {0};
-    std::array<filtering::Tf_D_f, N_PLANES> d_pos_err_kiv, d_vel_err_kiv;
     void control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
-
     std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> adjust_control_gains(track_data drone_data, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
     std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> control_error(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, cv::Point3f ki_pos);
     std::tuple<int,int,int> calc_feedforward_control(cv::Point3f desired_acceleration);
 
-    MultiModule * _rc;
-    tracking::DroneTracker * _dtrk;
-    CameraView * _camview;
-
-    std::ofstream *_logger;
     void send_data_joystick(void);
     void read_joystick(void);
     void process_joystick();
-    void deserialize_settings();
+    void load_calibration(std::string replay_dir);
+    void load_control_parameters();
     void serialize_settings();
 
-    track_data previous_drone_data;
-
-    inline state_data set_recoveryState(cv::Point3f position) {
-        state_data rt;
-        rt.pos = position;
-        rt.vel = {0};
-        rt.acc = {0};
-
-        return rt;
-    }
 public:
     float model_error;
     bool enable_thrust_estimation_calibration = false;
@@ -489,12 +463,6 @@ public:
         return throttle_s;
     }
     float _log_max_thrust;
-    float telem_max_thrust() {
-        // max_thrust = _rc->sensor.thrust_max;
-        // if (log_replay_mode)
-        //     max_thrust = _log_max_thrust;
-        return dparams.thrust+5; // tmp
-    }
     float _log_thrust_rpm;
     float telem_thrust_rpm() {
         float telem_thrust_rpm = _rc->telemetry.thrust_rpm;
@@ -502,7 +470,6 @@ public:
             telem_thrust_rpm = _log_thrust_rpm;
         return telem_thrust_rpm;
     }
-
 
     /** @brief Determines the corresponding roll/pitch angle for a given command */
     float angle_of_command(int command) {
@@ -532,7 +499,7 @@ public:
     }
 
     void close (void);
-    void init(std::ofstream *logger, bool fromfile, bool generator_mode, MultiModule *rc, tracking::DroneTracker *dtrk, CameraView* camvol,float exposure);
+    void init(std::ofstream *logger, std::string replay_dir, bool generator_mode, MultiModule *rc, tracking::DroneTracker *dtrk, CameraView* camvol,float exposure);
     void control(track_data, track_data, track_data, double);
     bool drone_is_active() {
         if ( _flight_mode == fm_inactive || _flight_mode == fm_disarmed || _flight_mode == fm_joystick_check)
@@ -573,6 +540,12 @@ public:
     telemetry_data telemetry() {
         return _rc->telemetry;
     }
+
+    void start_landing_acc_calibration() {
+        if (fabs(drone_calibration.landed_acc_z) < 1)
+            landing_acc_calibration_cnt = required_landing_acc_calibration_cnt;
+    }
+    bool landing_acc_calibration_done() {return landing_acc_calibration_cnt  < 0 || log_replay_mode;}
 
     bool blocked();
 };

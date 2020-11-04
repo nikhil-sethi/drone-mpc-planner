@@ -199,7 +199,7 @@ void DroneTracker::calc_takeoff_prediction() {
 
     cv::Point3f acc = _target-drone_takeoff_location();
     acc = acc/(normf(acc));
-    acc = acc * dparams.thrust;
+    acc = acc * dparams.default_thrust;
     float dt = std::clamp(static_cast<float>(current_time - (spinup_detect_time + 0.3)),0.f,1.f);
     if (spinup_detected<3)
         dt = 0;

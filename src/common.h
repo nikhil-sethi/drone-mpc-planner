@@ -448,7 +448,7 @@ private:
     xFloat _hover_throttle_b;
     xFloat _blink_period;
     xFloat _radius;
-    xFloat _thrust;
+    xFloat _default_thrust;
     xInt _drone_blink_strength;
     xInt _drone_led_strength;
     xTx_protocol _tx;
@@ -471,7 +471,7 @@ public:
     float hover_throttle_b;
     float blink_period;
     float radius;
-    float thrust;
+    float default_thrust;
     int drone_blink_strength;
     int drone_led_strength;
     tx_protocols tx;
@@ -502,7 +502,7 @@ public:
         Register("hover_throttle_b",&_hover_throttle_b);
         Register("blink_period",&_blink_period);
         Register("radius",&_radius);
-        Register("thrust",&_thrust);
+        Register("thrust",&_default_thrust);
         Register("drone_blink_strength",&_drone_blink_strength);
         Register("drone_led_strength",&_drone_led_strength);
         Register("tx",&_tx);
@@ -545,7 +545,7 @@ public:
         hover_throttle_a = _hover_throttle_a.value();
         hover_throttle_b = _hover_throttle_b.value();
         blink_period = _blink_period.value();
-        thrust = _thrust.value();
+        default_thrust = _default_thrust.value();
         radius = _radius.value();
         drone_blink_strength = _drone_blink_strength.value();
         drone_led_strength = _drone_led_strength.value();
@@ -570,7 +570,7 @@ public:
         _hover_throttle_a = hover_throttle_a;
         _hover_throttle_b = hover_throttle_b;
         _blink_period = blink_period;
-        _thrust = thrust;
+        _default_thrust = default_thrust;
         _radius = radius;
         _drone_blink_strength = drone_blink_strength;
         _drone_led_strength = drone_led_strength;
@@ -650,7 +650,7 @@ public:
     }
 };
 
-class CamCalibrationData: public xmls::Serializable {
+class CamCalibration: public xmls::Serializable {
 private:
     xmls::xFloat _angle_x;
     xmls::xFloat _angle_y;
@@ -689,7 +689,7 @@ public:
     float baseline;
     float depth_scale;
 
-    CamCalibrationData() {
+    CamCalibration() {
         // Set the XML class name.
         // This name can differ from the C++ class name
         setClassName("CamCalibrationData");
@@ -729,7 +729,7 @@ public:
             {   // Deserialization not successful
                 throw my_exit("Cannot read: " + filepath);
             }
-            CamCalibrationData tmp;
+            CamCalibration tmp;
             auto v1 = getVersion();
             auto v2 = tmp.getVersion();
             if (v1 != v2) {
@@ -787,18 +787,29 @@ public:
     }
 };
 
-class ThrustCalibParameters: public Serializable {
-    public: float thrust;
-    private: xmls::xFloat _thrust;
+class DroneCalibration: public Serializable {
+public: float landed_acc_x = 0;
+public: float landed_acc_y = 0;
+public: float landed_acc_z = 0;
+public: int drone_id =-1;
+public: float thrust =-1;
+private: xmls::xFloat _landed_acc_x;
+private: xmls::xFloat _landed_acc_y;
+private: xmls::xFloat _landed_acc_z;
+private: xmls::xInt _drone_id;
+private: xmls::xFloat _thrust;
 
-    public: ThrustCalibParameters() {
-        setClassName("ThrustCalib");
-        setVersion("1.0");
-
+public: DroneCalibration() {
+        setClassName("DroneCalibration");
+        setVersion("1.1");
+        Register("drone_id", &_drone_id);
+        Register("landed_acc_x", &_landed_acc_x);
+        Register("landed_acc_y", &_landed_acc_y);
+        Register("landed_acc_z", &_landed_acc_z);
         Register("thrust", &_thrust);
     }
 
-    public: void deserialize(std::string filepath) {
+public: void deserialize(std::string filepath) {
         std::cout << "Reading settings from: " << filepath << std::endl;
         if (file_exist(filepath)) {
             std::ifstream infile(filepath);
@@ -809,21 +820,28 @@ class ThrustCalibParameters: public Serializable {
             {   // Deserialization not successful
                 throw my_exit("Cannot read: " + filepath);
             }
-            ThrustCalibParameters tmp;
+            DroneCalibration tmp;
             auto v1 = getVersion();
             auto v2 = tmp.getVersion();
             if (v1 != v2) {
                 throw my_exit("XML version difference detected from " + filepath);
             }
         } else {
-            //throw my_exit("File not found: " + filepath);
-            _thrust = 1000; //1000 should be a disabling flag;
+            throw my_exit("File not found: " + filepath);
         }
 
+        landed_acc_x = _landed_acc_x.value();
+        landed_acc_y = _landed_acc_y.value();
+        landed_acc_z = _landed_acc_z.value();
+        drone_id = _drone_id.value();
         thrust = _thrust.value();
     }
 
-    public: void serialize(std::string filepath) {
+public: void serialize(std::string filepath) {
+        _landed_acc_x = landed_acc_x;
+        _landed_acc_y = landed_acc_y;
+        _landed_acc_z = landed_acc_z;
+        _drone_id = drone_id;
         _thrust = thrust;
 
         std::string xmlData = toXML();
@@ -836,4 +854,3 @@ class ThrustCalibParameters: public Serializable {
 }
 extern xmls::DroneParameters dparams;
 extern xmls::PatsParameters pparams;
-extern xmls::ThrustCalibParameters tparams;

@@ -42,7 +42,7 @@ protected:
     std::string brightness_map_wfn;
 
     rs2_intrinsics * intr;
-    xmls::CamCalibrationData camparams;
+    xmls::CamCalibration camparams;
 
     void set_file_paths(std::string replay_dir);
     void convert_depth_background_to_world();

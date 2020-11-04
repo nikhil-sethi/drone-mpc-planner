@@ -80,13 +80,13 @@ void GeneratorCam::update() {
             takeoff_start_time = _frame_time;
         float dt_takeoff = static_cast<float>(_frame_time - takeoff_start_time) - dparams.full_bat_and_throttle_spinup_duration;
         if (dt_takeoff < 0.2f && dt_takeoff>0)
-            current_drone_pos =drone_start_pos+cv::Point3f(0,0.2f*dparams.thrust*powf(dt_takeoff,2),0);
+            current_drone_pos =drone_start_pos+cv::Point3f(0,0.2f*dparams.default_thrust*powf(dt_takeoff,2),0);
         else if (dt_takeoff < 0)
-            current_drone_pos =drone_start_pos+cv::Point3f(0,0.2f*dparams.thrust*powf(0,2),0);
+            current_drone_pos =drone_start_pos+cv::Point3f(0,0.2f*dparams.default_thrust*powf(0,2),0);
         else if (dt_takeoff < 1)
-            current_drone_pos = drone_start_pos+cv::Point3f(0,0.2f*dparams.thrust*powf(0.2,2),0);
+            current_drone_pos = drone_start_pos+cv::Point3f(0,0.2f*dparams.default_thrust*powf(0.2,2),0);
         else if (dt_takeoff < 2) {
-            auto pos1 = drone_start_pos +  cv::Point3f(0,0.2f*dparams.thrust*powf(0.2,2),0);
+            auto pos1 = drone_start_pos +  cv::Point3f(0,0.2f*dparams.default_thrust*powf(0.2,2),0);
             auto pos2 = drone_start_pos  + cv::Point3f(sinf(dt_takeoff)/M_PIf32*2.f- 0.15f,0,cosf(dt_takeoff)/M_PIf32*2.f - 0.15f);
             current_drone_pos = (1- (dt_takeoff - 1)) * pos1 + (dt_takeoff - 1) * pos2;
         } else { //do some flight:

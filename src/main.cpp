@@ -56,7 +56,6 @@ time_t start_datetime;
 
 xmls::PatsParameters pparams;
 xmls::DroneParameters dparams;
-xmls::ThrustCalibParameters tparams;
 stopwatch_c stopWatch;
 std::string data_output_dir;
 bool draw_plots = false;
@@ -822,7 +821,7 @@ void init() {
     visdat.init(cam->Qf, cam->frameL,cam->frameR,cam->camera_angle(),cam->measured_gain(),cam->measured_exposure(),cam->depth_background_mm); // do after cam update to populate frames
     trackers.init(&logger, &visdat, &(cam->camera_volume));
     dnav.init(&logger,&trackers,&dctrl,&visdat, &(cam->camera_volume),replay_dir);
-    dctrl.init(&logger,log_replay_mode,generator_mode,&rc,trackers.dronetracker(), &(cam->camera_volume),cam->measured_exposure());
+    dctrl.init(&logger,replay_dir,generator_mode,&rc,trackers.dronetracker(), &(cam->camera_volume),cam->measured_exposure());
 
     if (render_monitor_video_mode)
         dnav.render_now_override();
@@ -1032,14 +1031,6 @@ int main( int argc, char **argv )
             pparams.close_after_n_images = -1;
             pparams.has_screen = false;
         }
-
-        if(replay_dir=="")
-            tparams.deserialize("../../xml/thrustcalib.xml");
-        else
-            tparams.deserialize(replay_dir + "/thrustcalib.xml");
-
-        if(tparams.thrust==1000)
-            tparams.thrust = dparams.thrust;
 
         check_hardware();
         if (!log_replay_mode && !generator_mode && !render_monitor_video_mode && !render_hunt_mode) {

@@ -216,6 +216,7 @@ public:
     void turtle(betaflight_turtle v) { turtle_mode = v; }
     void calibrate_acc() { calibrate_acc_cnt = 200; }
     bool connected() {return !notconnected;}
+    int drone_id() {return _drone_id_rxnum;}
 
 private:
     int protocol;
