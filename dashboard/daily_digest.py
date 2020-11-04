@@ -52,7 +52,7 @@ def send_mail(now):
             d = datetime.strptime(f_date, "%Y%m%d_%H%M%S")
             f_sys = f.split('_')[0]
 
-            if d > now - timedelta(hours=3):
+            if d > now - timedelta(hours=5):
 
                 with open (file, "r") as fr_processed:
                     msg = fr_processed.readline()
