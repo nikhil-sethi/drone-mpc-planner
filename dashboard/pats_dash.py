@@ -11,7 +11,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 from werkzeug.security import generate_password_hash, check_password_hash
-
+from flask import Flask, send_from_directory
+from urllib.parse import quote as urlquote
 
 db_path = ''
 
@@ -367,7 +368,9 @@ app.layout = html.Div(children=[
                 children=dcc.Graph(id="route_kaart",style={"display": 'none'}, figure=fig_path),
                 type="default"
             )
+
         ]),
+    html.Div([html.Ul(id="log_file_link")],style={'width': '49%','padding-left':'50%','padding-right':'50%','display': 'block'},id='log_file_link_container'),
     html.Div([html.Br(),html.Br()]),
     html.Div(id='intermediate-value', style={'display': 'none'})
 ])
@@ -476,24 +479,32 @@ def heatmap_clickData(daterange_value,selected_systems,clickData,scatter_x_value
     )
     return fig,{"display": "block","margin-left": "auto","margin-right": "auto","width": "50%"},{'width': '49%', 'display': 'inline-block'},{'width': '49%', 'display': 'inline-block'}
 
+
+def file_download_link(filename):
+    location = "{}".format(urlquote(filename))
+    return html.A('Download log',href=location,style={"display": "block"})
+
 @app.callback(
     dash.dependencies.Output('insect_video', 'src'),
     dash.dependencies.Output('insect_video', 'style'),
     dash.dependencies.Output('route_kaart', 'figure'),
     dash.dependencies.Output('route_kaart', 'style'),
+    dash.dependencies.Output("log_file_link", "children"),
     dash.dependencies.Input('date_range_dropdown', 'value'),
     dash.dependencies.Input('systems_dropdown', 'value'),
     dash.dependencies.Input('hete_kaart', 'clickData'),
     dash.dependencies.Input('verstrooide_kaart', 'clickData')
 )
 def scatter_clickData(daterange_value,selected_systems,clickData_hm,clickData_dot):
+    file_link = html.A("File not available.",style={'display': 'none'})
     if clickData_dot == None or clickData_hm ==None or not len(selected_systems) or not len(clickData_hm):
-        return '',{'display': 'none'},go.Figure(data=go.Scatter3d()),{'display': 'none'}
+        return '',{'display': 'none'},go.Figure(data=go.Scatter3d()),{'display': 'none'},file_link
+
 
     selected_dayrange = selected_dates(daterange_value)
     unique_dates,heatmap_data,heatmap_data_lists,hist_data,moth_columns = load_moth_data(selected_systems,selected_dayrange)
     if not len(unique_dates):
-        return '',{'display': 'none'},go.Figure(data=go.Scatter3d()),{'display': 'none'}
+        return '',{'display': 'none'},go.Figure(data=go.Scatter3d()),{'display': 'none'},file_link
     heatmap_data,modemap_data = load_mode_data(unique_dates,heatmap_data,selected_systems,selected_dayrange)
 
     x = xlabels.index(clickData_hm['points'][0]['x'])
@@ -520,7 +531,7 @@ def scatter_clickData(daterange_value,selected_systems,clickData_hm,clickData_do
         cmd = ['rsync -az ' + rsync_src + ' ' + target_log_fn]
         execute(cmd)
     if not os.path.isfile(target_log_fn):
-        return '',{'display': 'none'},go.Figure(data=go.Scatter3d()),{'display': 'none'}
+        return '',{'display': 'none'},go.Figure(data=go.Scatter3d()),{'display': 'none'},file_link
 
     df_ilog = pd.read_csv(target_log_fn,delimiter=';')
     target_log_fn = '/' + target_log_fn
@@ -541,10 +552,12 @@ def scatter_clickData(daterange_value,selected_systems,clickData_hm,clickData_do
         title_text='Moth path',
     )
 
+    file_link =file_download_link(target_log_fn)
+
     if video_fn == None or video_fn == 'NA':
-        return '',{"display": 'none'},fig,{"display": "block","margin-left": "auto","margin-right": "auto","width": "100%"}
+        return '',{"display": 'none'},fig,{"display": "block","margin-left": "auto","margin-right": "auto","width": "100%"},file_link
     else:
-        return target_video_fn,{"display": "block","margin-left": "auto","margin-right": "auto","width": "75%"},fig,{"display": "block","margin-left": "auto","margin-right": "auto","width": "100%"}
+        return target_video_fn,{"display": "block","margin-left": "auto","margin-right": "auto","width": "75%"},fig,{"display": "block","margin-left": "auto","margin-right": "auto","width": "100%"},file_link
 
 
 if __name__ == '__main__':
