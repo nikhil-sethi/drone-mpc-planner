@@ -53,7 +53,7 @@
             <Member Name="threshold_v">1.7</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.4</Member>
-            <Member Name="z">-1.0</Member>
+            <Member Name="z">-3.0</Member>
             <Member Name="name">longY+</Member>
         </Class>
         <Class Type="Waypoint" Version="1.2">
