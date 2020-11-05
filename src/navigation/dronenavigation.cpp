@@ -230,7 +230,6 @@ void DroneNavigation::update(double time) {
         } case ns_takeoff: {
             _dctrl->reset_manual_override_take_off_now();
             _dctrl->flight_mode(DroneController::fm_start_takeoff);
-            _dctrl->store_thrust_calibration = false;
             _visdat->enable_collect_no_drone_frames = false;
             _dctrl->hover_mode(false);
             _trackers->dronetracker()->hover_mode(false);
@@ -485,10 +484,10 @@ void DroneNavigation::update(double time) {
             wpid = 0;
             _navigation_status = ns_start_shaking;
             landed_time = time;
+            _trackers->dronetracker()->hover_mode(false);
             _trackers->dronetracker()->delete_landing_motion(time_out_after_landing);
             _dctrl->hover_mode(false);
-            _dctrl->store_thrust_calibration = true;
-            _trackers->dronetracker()->hover_mode(false);
+            _dctrl->save_calibration();
             _flight_time+= static_cast<float>(time-time_take_off);
             _n_landings++;
             [[fallthrough]];

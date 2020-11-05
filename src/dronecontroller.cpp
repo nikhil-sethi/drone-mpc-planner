@@ -1331,6 +1331,12 @@ void DroneController::load_calibration(std::string replay_dir) {
     drone_calibration.serialize(drone_calib_wfn);
 }
 
+void DroneController::save_calibration() {
+    if(!log_replay_mode) {
+        drone_calibration.serialize("../../xml/" + drone_calib_fn);
+    }
+}
+
 void DroneController::load_control_parameters() {
     control_parameters_rfn = "../../xml/" + dparams.control + ".xml";
     std::cout << "Reading settings from: " << control_parameters_rfn << std::endl;
@@ -1419,10 +1425,6 @@ void DroneController::close() {
         std::cout << "Closing controller." << std::endl;
         if (pparams.control_tuning)
             serialize_settings();
-        if(store_thrust_calibration && !log_replay_mode) {
-            drone_calibration.serialize(drone_calib_wfn);
-            drone_calibration.serialize("../../xml/" + drone_calib_fn);
-        }
         initialized = false;
     }
 }

@@ -283,7 +283,6 @@ private:
 public:
     float model_error;
     bool enable_thrust_calibration = false;
-    bool store_thrust_calibration = false;
     void flight_mode(flight_modes f) {
         if (f != fm_abort || !flight_aborted())
             _flight_mode = f;
@@ -549,4 +548,7 @@ public:
     bool landing_acc_calibration_done() {return landing_acc_calibration_cnt  < 0 || log_replay_mode;}
 
     bool blocked();
+
+    void save_calibration();
+
 };
