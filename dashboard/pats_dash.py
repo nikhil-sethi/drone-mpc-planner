@@ -287,6 +287,13 @@ xlabels = []
 for i in range(0,24):
     xlabels.append(str((i+12)%24)+'h')
 
+scatter_columns = { 'duration' : 'Duration',
+                    'Vel_mean':'Velocity mean',
+                    'Vel_max':'Velocity max',
+                    'Dist_traveled':'Distance traveled',
+                    'Dist_traject':'Distance trajectory',
+                    'Size':'Size'}
+
 systems = []
 fig_hm = go.Figure(data=go.Heatmap())
 fig_hist=go.Figure(data=go.Histogram())
@@ -325,6 +332,24 @@ app.layout = html.Div(children=[
             )
         ]),
     html.Div([
+            html.Div('Select x axis:'),
+            dcc.Dropdown(
+                id='scatter_x_dropdown',
+                options=[{"label": scatter_columns[key], "value": key} for key in scatter_columns],
+                value='duration',
+                clearable=False
+            ),
+        ], style={'width': '49%', 'display': 'inline-block'},id='scatter_x_dropdown_container'),
+    html.Div([
+            html.Div('Select y axis:'),
+            dcc.Dropdown(
+                id='scatter_y_dropdown',
+                options=[{"label": scatter_columns[key], "value": key} for key in scatter_columns],
+                value='Vel_mean',
+                clearable=False
+            ),
+        ], style={'width': '49%', 'display': 'inline-block'},id='scatter_y_dropdown_container'),
+    html.Div([
             dcc.Loading(
                 id="loading_2",
                 children=dcc.Graph(id="verstrooide_kaart",style={"display": 'none'}, figure=fig_scatter),
@@ -343,6 +368,7 @@ app.layout = html.Div(children=[
                 type="default"
             )
         ]),
+    html.Div([html.Br(),html.Br()]),
     html.Div(id='intermediate-value', style={'display': 'none'})
 ])
 
@@ -396,25 +422,29 @@ def dropdown_click(daterange_value,selected_systems):
 @app.callback(
     dash.dependencies.Output('verstrooide_kaart', 'figure'),
     dash.dependencies.Output('verstrooide_kaart', 'style'),
+    dash.dependencies.Output('scatter_x_dropdown_container', 'style'),
+    dash.dependencies.Output('scatter_y_dropdown_container', 'style'),
     dash.dependencies.Input('date_range_dropdown', 'value'),
     dash.dependencies.Input('systems_dropdown', 'value'),
-    dash.dependencies.Input('hete_kaart', 'clickData')
+    dash.dependencies.Input('hete_kaart', 'clickData'),
+    dash.dependencies.Input('scatter_x_dropdown', 'value'),
+    dash.dependencies.Input('scatter_y_dropdown', 'value'),
 )
-def heatmap_clickData(daterange_value,selected_systems,clickData):
+def heatmap_clickData(daterange_value,selected_systems,clickData,scatter_x_value,scatter_y_value):
     if clickData == None or selected_systems == None or not len(selected_systems):
-        return go.Figure(data=go.Scatter()),{'display': 'none'}
+        return go.Figure(data=go.Scatter()),{'display': 'none'},{'display': 'none'},{'display': 'none'}
 
     selected_dayrange = selected_dates(daterange_value)
     unique_dates,heatmap_data,heatmap_data_lists,hist_data,moth_columns = load_moth_data(selected_systems,selected_dayrange)
     if not len(unique_dates):
-        return go.Figure(data=go.Scatter()),{'display': 'none'}
+        return go.Figure(data=go.Scatter()),{'display': 'none'},{'display': 'none'},{'display': 'none'}
     heatmap_data,modemap_data = load_mode_data(unique_dates,heatmap_data,selected_systems,selected_dayrange)
 
     x = xlabels.index(clickData['points'][0]['x'])
     y = unique_dates.index(clickData['points'][0]['y'])
     moths = heatmap_data_lists[y,x]
     if moths == None:
-        return go.Figure(data=go.Scatter()),{'display': 'none'}
+        return go.Figure(data=go.Scatter()),{'display': 'none'},{'display': 'none'},{'display': 'none'}
     df_scatter = pd.DataFrame(moths,columns=moth_columns)
 
     distinct_cols = px.colors.qualitative.Alphabet
@@ -422,8 +452,8 @@ def heatmap_clickData(daterange_value,selected_systems,clickData):
     df_scatter['system_ids'] = system_ids
 
     scatter = go.Scattergl(
-        x = df_scatter['duration'],
-        y = df_scatter['Vel_mean'],
+        x = df_scatter[scatter_x_value],
+        y = df_scatter[scatter_y_value],
         mode = 'markers',
         customdata  = np.stack((df_scatter['system'] + '/' + df_scatter['Folder'] + '/' + df_scatter['Filename'],
          df_scatter['Video_Filename']), axis=-1),
@@ -432,19 +462,19 @@ def heatmap_clickData(daterange_value,selected_systems,clickData):
             colorscale=distinct_cols
         ),
         hovertemplate = "<b>System %{marker.color}</b><br><br>" +
-        "Size: %{y}<br>" +
-        "Duration: %{x}<br>" +
+        "x: %{y}<br>" +
+        "y: %{x}<br>" +
         "File: %{customdata[0]}<br>" +
         "Video: %{customdata[1]}<br>"
     )
     fig = go.Figure(data=scatter)
     fig.update_layout(
         title_text='Selected moths',
-        xaxis_title = 'Duration [s]',
-        yaxis_title = 'Velocity [m/s]',
+        xaxis_title = scatter_columns[scatter_x_value],
+        yaxis_title = scatter_columns[scatter_y_value],
         clickmode='event+select'
     )
-    return fig,{"display": "block","margin-left": "auto","margin-right": "auto","width": "50%"}
+    return fig,{"display": "block","margin-left": "auto","margin-right": "auto","width": "50%"},{'width': '49%', 'display': 'inline-block'},{'width': '49%', 'display': 'inline-block'}
 
 @app.callback(
     dash.dependencies.Output('insect_video', 'src'),
