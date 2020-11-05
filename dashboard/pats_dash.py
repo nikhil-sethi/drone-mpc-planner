@@ -49,6 +49,10 @@ def load_systems(username):
             authorized_systems.append(sys)
         elif (group == 'holstein') and (sys_id == 2 or sys_id == 22):
             authorized_systems.append(sys)
+        elif (group == 'vde') and (sys_id == 7):
+            authorized_systems.append(sys)
+        elif (group == 'lyprauta') and (sys_id == 27):
+            authorized_systems.append(sys)
 
     return authorized_systems
 
