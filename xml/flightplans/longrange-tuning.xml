@@ -16,25 +16,25 @@
             <Member Name="threshold_v">1.7</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.7</Member>
-            <Member Name="z">-2.0</Member>
+            <Member Name="z">-3.0</Member>
             <Member Name="name">Middle</Member>
         </Class>
         <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">50</Member>
             <Member Name="threshold_v">1.7</Member>
-            <Member Name="x">-1.0</Member>
+            <Member Name="x">-3.0</Member>
             <Member Name="y">-0.7</Member>
-            <Member Name="z">-2.</Member>
+            <Member Name="z">-3.</Member>
             <Member Name="name">longX-</Member>
         </Class>
         <Class Type="Waypoint" Version="1.2">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">50</Member>
             <Member Name="threshold_v">1.7</Member>
-            <Member Name="x">1.0</Member>
+            <Member Name="x">3.0</Member>
             <Member Name="y">-0.7</Member>
-            <Member Name="z">-2.</Member>
+            <Member Name="z">-3.</Member>
             <Member Name="name">longX+</Member>
         </Class>
 
@@ -44,7 +44,7 @@
             <Member Name="threshold_v">1.7</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.7</Member>
-            <Member Name="z">-2.0</Member>
+            <Member Name="z">-3.0</Member>
             <Member Name="name">Middle</Member>
         </Class>
         <Class Type="Waypoint" Version="1.2">
@@ -53,7 +53,7 @@
             <Member Name="threshold_v">1.7</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.4</Member>
-            <Member Name="z">-2.0</Member>
+            <Member Name="z">-1.0</Member>
             <Member Name="name">longY+</Member>
         </Class>
         <Class Type="Waypoint" Version="1.2">
@@ -62,7 +62,7 @@
             <Member Name="threshold_v">1.7</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-1.2</Member>
-            <Member Name="z">-2.0</Member>
+            <Member Name="z">-3.0</Member>
             <Member Name="name">longY-</Member>
         </Class>
 
@@ -72,7 +72,7 @@
             <Member Name="threshold_v">1.7</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.7</Member>
-            <Member Name="z">-2.</Member>
+            <Member Name="z">-3.</Member>
             <Member Name="name">Middle</Member>
         </Class>
         <Class Type="Waypoint" Version="1.2">
@@ -90,95 +90,9 @@
             <Member Name="threshold_v">1.7</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.7</Member>
-            <Member Name="z">-2.75</Member>
+            <Member Name="z">-5</Member>
             <Member Name="name">longZ-</Member>
         </Class>
-        
-
-        <!-- Short range tests: -->
-        <!-- <Class Type="Waypoint" Version="1.2">
-            <Member Name="type">wfm_flying</Member>
-            <Member Name="threshold_mm">50</Member>
-            <Member Name="threshold_v">1.7</Member>
-            <Member Name="x">0.0</Member>
-            <Member Name="y">-0.7</Member>
-            <Member Name="z">-2.0</Member>
-            <Member Name="name">Middle</Member>
-        </Class>
-        <Class Type="Waypoint" Version="1.2">
-            <Member Name="type">wfm_flying</Member>
-            <Member Name="threshold_mm">50</Member>
-            <Member Name="threshold_v">1.7</Member>
-            <Member Name="x">-0.2</Member>
-            <Member Name="y">-0.7</Member>
-            <Member Name="z">-2.0</Member>
-            <Member Name="name">shortX-</Member>
-        </Class>
-        <Class Type="Waypoint" Version="1.2">
-            <Member Name="type">wfm_flying</Member>
-            <Member Name="threshold_mm">50</Member>
-            <Member Name="threshold_v">1.7</Member>
-            <Member Name="x">0.2</Member>
-            <Member Name="y">-0.7</Member>
-            <Member Name="z">-2.0</Member>
-            <Member Name="name">shortX+</Member>
-        </Class>
-
-        <Class Type="Waypoint" Version="1.2">
-            <Member Name="type">wfm_flying</Member>
-            <Member Name="threshold_mm">50</Member>
-            <Member Name="threshold_v">1.7</Member>
-            <Member Name="x">0.0</Member>
-            <Member Name="y">-0.7</Member>
-            <Member Name="z">-2.0</Member>
-            <Member Name="name">Middle</Member>
-        </Class>
-        <Class Type="Waypoint" Version="1.2">
-            <Member Name="type">wfm_flying</Member>
-            <Member Name="threshold_mm">50</Member>
-            <Member Name="threshold_v">1.7</Member>
-            <Member Name="x">0.0</Member>
-            <Member Name="y">-0.7</Member>
-            <Member Name="z">-1.8</Member>
-            <Member Name="name">shortZ+</Member>
-        </Class>
-        <Class Type="Waypoint" Version="1.2">
-            <Member Name="type">wfm_flying</Member>
-            <Member Name="threshold_mm">50</Member>
-            <Member Name="threshold_v">1.7</Member>
-            <Member Name="x">0.0</Member>
-            <Member Name="y">-0.7</Member>
-            <Member Name="z">-2.2</Member>
-            <Member Name="name">shortZ-</Member>
-        </Class>
-        
-        <Class Type="Waypoint" Version="1.2">
-            <Member Name="type">wfm_flying</Member>
-            <Member Name="threshold_mm">50</Member>
-            <Member Name="threshold_v">1.7</Member>
-            <Member Name="x">0.0</Member>
-            <Member Name="y">-0.7</Member>
-            <Member Name="z">-2.0</Member>
-            <Member Name="name">Middle</Member>
-        </Class>
-        <Class Type="Waypoint" Version="1.2">
-            <Member Name="type">wfm_flying</Member>
-            <Member Name="threshold_mm">50</Member>
-            <Member Name="threshold_v">1.7</Member>
-            <Member Name="x">0.0</Member>
-            <Member Name="y">-0.5</Member>
-            <Member Name="z">-2.0</Member>
-            <Member Name="name">shortY+</Member>
-        </Class>
-        <Class Type="Waypoint" Version="1.2">
-            <Member Name="type">wfm_flying</Member>
-            <Member Name="threshold_mm">50</Member>
-            <Member Name="threshold_v">1.7</Member>
-            <Member Name="x">0.0</Member>
-            <Member Name="y">-0.9</Member>
-            <Member Name="z">-2.0</Member>
-            <Member Name="name">shortY-</Member>
-        </Class> -->
 
         <!-- End flight -->
         <Class Type="Waypoint" Version="1.2">
