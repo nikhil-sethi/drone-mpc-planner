@@ -1106,26 +1106,28 @@ void DroneController::check_control_and_tracking_problems(track_data data_drone)
 }
 
 void DroneController::check_snr(track_data data_drone) {
-    if(snr_init<3) {
-        if(data_drone.pos_valid) {
-            snr_init++;
+    if(_time>take_off_start_time+1) {
+        if(snr_init<3) {
+            if(data_drone.pos_valid) {
+                snr_init++;
+                snr_pos_buffer[snr_pbuf_ponter] = data_drone.pos();
+                snr_pbuf_ponter = (snr_pbuf_ponter+1)%3;
+            }
+        } else {
             snr_pos_buffer[snr_pbuf_ponter] = data_drone.pos();
             snr_pbuf_ponter = (snr_pbuf_ponter+1)%3;
-        }
-    } else {
-        snr_pos_buffer[snr_pbuf_ponter] = data_drone.pos();
-        snr_pbuf_ponter = (snr_pbuf_ponter+1)%3;
 
-        float dpos01 = normf(snr_pos_buffer[(snr_pbuf_ponter-1)%3]-snr_pos_buffer[(snr_pbuf_ponter)%3]);
-        float dpos12 = normf(snr_pos_buffer[(snr_pbuf_ponter-2)%3]-snr_pos_buffer[(snr_pbuf_ponter-1)%3]);
+            float dpos01 = normf(snr_pos_buffer[(snr_pbuf_ponter-1)%3]-snr_pos_buffer[(snr_pbuf_ponter)%3]);
+            float dpos12 = normf(snr_pos_buffer[(snr_pbuf_ponter-2)%3]-snr_pos_buffer[(snr_pbuf_ponter-1)%3]);
 
-        float err_sample1 = abs(dpos01 - dpos12); // If there is a noise peak at the previous sample this create a high value
-        if(err_sample1>0.2f) {
-            snr_noise_cnt++;
-            std::cout << "Counted peaks in position signal: " << snr_noise_cnt<< "/3" << std::endl;
-            if (snr_noise_cnt>=3) {
-                _flight_mode = fm_abort_model_error;
-                std::cout << "Serious noise detected in the drone tracker" << std::endl;
+            float err_sample1 = abs(dpos01 - dpos12); // If there is a noise peak at the previous sample this create a high value
+            if(err_sample1>0.2f) {
+                snr_noise_cnt++;
+                std::cout << "Counted peaks in position signal: " << snr_noise_cnt<< "/3" << std::endl;
+                if (snr_noise_cnt>=3) {
+                    _flight_mode = fm_abort_model_error;
+                    std::cout << "Serious noise detected in the drone tracker" << std::endl;
+                }
             }
         }
     }
