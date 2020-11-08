@@ -1,5 +1,5 @@
 server {
-    server_name dash.pats-drones.com dash.pats-drones.nl;
+    server_name pats-c.com pats-c.nl dash.pats-drones.com dash.pats-drones.nl;
 
     location / {
         include proxy_params;
@@ -7,16 +7,30 @@ server {
     }
 
     listen 443 ssl; # managed by Certbot
-    ssl_certificate /etc/letsencrypt/live/dash.pats-drones.com/fullchain.pem; # managed by Certbot
-    ssl_certificate_key /etc/letsencrypt/live/dash.pats-drones.com/privkey.pem; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/pats-c.com-0001/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/pats-c.com-0001/privkey.pem; # managed by Certbot
     include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+
+
+
 
 
 }
 
 
 server {
+    if ($host = pats-c.com) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+    if ($host = pats-c.nl) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
     if ($host = dash.pats-drones.nl) {
         return 301 https://$host$request_uri;
     } # managed by Certbot
@@ -28,8 +42,12 @@ server {
 
 
     listen 80;
-    server_name dash.pats-drones.com dash.pats-drones.nl;
+    server_name pats-c.com pats-c.nl dash.pats-drones.com dash.pats-drones.nl;
     return 404; # managed by Certbot
+
+
+
+
 
 
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import socket, json,shutil,subprocess,sqlite3
 import datetime,time, argparse,math,pickle, glob, os, re
+from dash_core_components.Dropdown import Dropdown
 import numpy as np
 import pandas as pd
 
@@ -9,12 +10,25 @@ import dash_core_components as dcc
 import dash_html_components as html
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.io as pio
+from dash.dependencies import Output, Input, State
+import dash_bootstrap_components as dbc
+import dash_daq as daq
 
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, send_from_directory
 from urllib.parse import quote as urlquote
 
 db_path = ''
+db_classification_path = ''
+heatmap_max=50
+
+
+server = flask.Flask(__name__)
+app = dash.Dash(__name__, server=server)
+app.title = 'PATS-C'
+
+pio.templates.default = 'plotly_dark'
 
 def open_db():
     global db_path
@@ -26,9 +40,19 @@ def open_db():
     except Exception as e:
         print(e)
     return conn,cur
+def open_classification_db():
+    global db_classification_path
+    conn = None
+    cur = None
+    try:
+        conn = sqlite3.connect(db_classification_path)
+        cur = conn.cursor()
+    except Exception as e:
+        print(e)
+    return conn,cur
 
 def load_systems(username):
-    conn,cur = open_db()
+    _,cur = open_db()
     sql_str = '''SELECT DISTINCT system FROM mode_records ORDER BY system '''
     cur.execute(sql_str)
     systems = cur.fetchall()
@@ -70,21 +94,22 @@ def execute(cmd,retry=1):
     n=0
     while p_result != 0 and n < retry:
         popen = subprocess.Popen(cmd, shell=True,stdout=subprocess.PIPE)
-        for stdout_line in iter(popen.stdout.readline, ""):
+        for stdout_line in iter(popen.stdout.readline, ''):
             p_result = popen.poll()
-            if p_result != None:
+            if p_result or p_result==0:
                 n = n+1
                 break
             print(stdout_line.decode('utf-8'),end ='')
+            time.sleep(0.1)
         popen.stdout.close()
 
 def load_moth_data(selected_systems,selected_dayrange):
     systems_str = system_sql_str(selected_systems)
-    conn,cur = open_db()
+    _,cur = open_db()
 
     sql_str = 'SELECT MIN(time) FROM moth_records WHERE ' + systems_str
     start_date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())+datetime.timedelta(hours=12) - datetime.timedelta(days=selected_dayrange)
-    start_date_str = start_date.strftime("%Y%m%d_%H%M%S")
+    start_date_str = start_date.strftime('%Y%m%d_%H%M%S')
     sql_str += 'AND time>"' + start_date_str + '"'
     cur.execute(sql_str)
     first_date = cur.fetchone()[0]
@@ -93,39 +118,49 @@ def load_moth_data(selected_systems,selected_dayrange):
     sql_str += 'AND time > "' + start_date_str + '"'
     cur.execute(sql_str)
     end_date = cur.fetchone()[0]
-    if first_date == None or end_date == None:
+    if not first_date or not end_date:
         return [],[],[],[],[]
 
-    end_date = datetime.datetime.strptime(end_date, "%Y%m%d_%H%M%S")
+    end_date = datetime.datetime.strptime(end_date, '%Y%m%d_%H%M%S')
     d = start_date-datetime.timedelta(hours=12)
     unique_dates = []
     while d <= end_date - datetime.timedelta(hours=12):
-        unique_dates.append(d.strftime("%d-%m-%Y"))
+        unique_dates.append(d.strftime('%d-%m-%Y'))
         d += datetime.timedelta(days=1)
 
     moth_columns = [i[1] for i in cur.execute('PRAGMA table_info(moth_records)')]
-    start_date_col = moth_columns.index('time')
+
 
     heatmap_data = np.zeros((len(unique_dates),24))
     heatmap_data_lists = np.empty((len(unique_dates),24),dtype=object)
-    hist_data = np.zeros((len(unique_dates)))
+
     sql_str = 'SELECT * FROM moth_records WHERE ((duration > 1 AND duration < 10 AND Dist_traveled > 0.15 AND Dist_traveled < 4) OR (Version="1.0" AND duration > 1 AND duration < 10)) AND '
     sql_str += systems_str
     if selected_dayrange > 0:
         sql_str += 'AND time > "' + start_date_str + '"'
     cur.execute(sql_str)
     moths = cur.fetchall()
-    cnt = 0
+
+
+    start_date_col = moth_columns.index('time')
     for moth in moths:
-        d = datetime.datetime.strptime(moth[start_date_col], "%Y%m%d_%H%M%S")-datetime.timedelta(hours=12)
+        d = datetime.datetime.strptime(moth[start_date_col], '%Y%m%d_%H%M%S')-datetime.timedelta(hours=12)
         day = (d.date() - start_date.date()).days
         hour = d.hour
         heatmap_data[day,hour] += 1
-        if heatmap_data_lists[day,hour] == None:
+        if not heatmap_data_lists[day,hour]:
             heatmap_data_lists[day,hour] = [moth]
         else:
             heatmap_data_lists[day,hour].append(moth)
-        hist_data[day] +=1
+
+
+    hist_data = np.zeros((len(unique_dates),len(selected_systems)))
+    hist_data = pd.DataFrame(hist_data,columns=selected_systems)
+    start_date_col = moth_columns.index('time')
+    for moth in moths:
+        d = datetime.datetime.strptime(moth[start_date_col], '%Y%m%d_%H%M%S')-datetime.timedelta(hours=12)
+        day = (d.date() - start_date.date()).days
+        hist_data[moth[moth_columns.index('system')]][day] += 1
 
 
     return unique_dates,heatmap_data,heatmap_data_lists,hist_data,moth_columns
@@ -152,13 +187,13 @@ def load_mode_data(unique_dates,heatmap_data,selected_systems,selected_dayrange)
 
     sql_str = 'SELECT * FROM mode_records WHERE ' + systems_str
     start_date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())+datetime.timedelta(hours=12) - datetime.timedelta(days=selected_dayrange)
-    start_date_str = start_date.strftime("%Y%m%d_%H%M%S")
+    start_date_str = start_date.strftime('%Y%m%d_%H%M%S')
     sql_str += 'AND start_datetime > "' + start_date_str + '"'
     sql_str += ' ORDER BY "start_datetime"'
     cur.execute(sql_str)
     modes = cur.fetchall()
 
-    first_date = datetime.datetime.strptime(unique_dates[0],"%d-%m-%Y")
+    first_date = datetime.datetime.strptime(unique_dates[0],'%d-%m-%Y')
 
     mode_columns = [i[1] for i in cur.execute('PRAGMA table_info(mode_records)')]
     start_col = mode_columns.index('start_datetime')
@@ -168,8 +203,8 @@ def load_mode_data(unique_dates,heatmap_data,selected_systems,selected_dayrange)
     modemap_data = heatmap_data.copy()
     modemap_data.fill(-666)
     for mode in modes:
-        d_mode_start = datetime.datetime.strptime(mode[start_col], "%Y%m%d_%H%M%S")-datetime.timedelta(hours=12)
-        d_mode_end = datetime.datetime.strptime(mode[end_col], "%Y%m%d_%H%M%S")-datetime.timedelta(hours=12)
+        d_mode_start = datetime.datetime.strptime(mode[start_col], '%Y%m%d_%H%M%S')-datetime.timedelta(hours=12)
+        d_mode_end = datetime.datetime.strptime(mode[end_col], '%Y%m%d_%H%M%S')-datetime.timedelta(hours=12)
         len_hours = math.ceil((d_mode_end-d_mode_start).seconds/3600)
 
         day = (d_mode_start.date() - start_date.date()).days
@@ -195,25 +230,36 @@ def natural_sort_systems(l):
     alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key[0][10:])]
     return sorted(l, key=alphanum_key)
 
-def create_heatmap(unique_dates,heatmap_data,xlabels):
+def create_heatmap(unique_dates,heatmap_counts,xlabels, selected_cells):
+    hover_label = pd.DataFrame(heatmap_counts).astype(int).astype(str)
+    hover_label[hover_label=='-1'] = 'NA'
+    heatmap_data = np.clip(heatmap_counts, -1, heatmap_max)
+    if (selected_cells):
+        selected_cells = pd.read_json(selected_cells, orient='split')
+        for _,cel in selected_cells.iterrows():
+            x=cel['x']
+            y=cel['y']
+            if heatmap_data[y,x]>=0:
+                heatmap_data[y,x]=-2
+
     hm = go.Heatmap(
             x=xlabels,
             y=unique_dates,
             z = heatmap_data,
-            type = 'heatmap',
-            zmin=-1,
-            zmax=19,
-
+            customdata = hover_label,
+            zmin=-2,
+            zmid=heatmap_max/2,
+            zmax=heatmap_max,
             colorscale = [
-                        [0, 'rgba(0, 0, 0, 0.85)'],
-                        [1/20, 'rgba(6,154,121, 0.85)'],
-                        [20/20, 'rgba(255,0,0, 0.85)']
+                        [0, 'rgba(128, 128, 200, 0.65)'], #selected cell
+                        [1/(heatmap_max+2), 'rgba(0, 0, 0, 1.0)'], #system inactive
+                        [2/(heatmap_max+2), 'rgba(0,255,0, 1.0)'],
+                        [1, 'rgba(255,0,0, 1.0)']
                         ],
-
-            colorbar = dict(lenmode='pixels', len=400,yanchor='top',y=1),
-
-            hovertemplate='Time: %{x}<br>Count: %{z}<extra></extra>'
-
+            colorbar = dict(lenmode='pixels', len=len(unique_dates)*50,yanchor='top',y=1),
+            hovertemplate='Time: %{x}<br>' +
+            'Count: %{customdata}' +
+             '<extra></extra>'
             )
     fig = go.Figure(data=hm)
     fig['layout']['xaxis']['side'] = 'top'
@@ -226,30 +272,153 @@ def create_heatmap(unique_dates,heatmap_data,xlabels):
         h=10
     fig.update_layout(
         height=h,
-        title_text='Moth counts per hour',
+        title_text='Moth counts per hour:',
         clickmode='event+select'
     )
-    return fig
+    style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '50%'}
+    return fig,style
+def create_hist(df_hist,unique_dates,selected_systems):
+    fig = go.Figure()
+    cnt = 0
+    for sys in selected_systems:
 
-def create_hist(selected_systems,selected_dayrange,hist_data,unique_dates):
-    hist = go.Bar(
-        x = unique_dates,
-        y = hist_data,
-        marker=dict(
-            color='green'
+        hist_data = df_hist[sys]
+        hist = go.Bar(
+            x = unique_dates,
+            y = hist_data,
+            marker_color = px.colors.qualitative.Vivid[cnt],
+            name = sys.replace('proto','').replace('pats','Pats')
         )
-    )
-
-    fig = go.Figure(data=hist)
+        cnt+=1
+        fig.add_trace(hist)
 
     fig.update_layout(
         title_text='Moth counts per day',
         xaxis_title_text='Days',
         yaxis_title_text='Counts',
+        barmode='stack',
         clickmode='event+select'
     )
+    hist_style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '50%'}
+    return fig,hist_style
 
-    return fig
+def classification_to_symbol(x):
+    if not x:
+        return 0
+    return classification_options.index(x)
+def remove_nones_classification(x):
+    if not x:
+        return classification_options[0]
+    return x
+def video_available_to_symbol(x):
+    if not x or x == 'NA':
+        return 1
+    return 0
+def create_scatter(moths,selected_systems,scatter_x_value,scatter_y_value):
+    df_scatter = pd.DataFrame(moths,columns=moth_columns)
+    df_scatter['system_ids'] = df_scatter['system'].str.replace('pats-proto','').astype(int)
+    df_scatter['system_color'] = df_scatter['system'].apply(selected_systems.index).astype(int)
+    df_scatter['classification_symbol'] = df_scatter['Human_classification'].apply(classification_to_symbol)
+    df_scatter['Human_classification'] = df_scatter['Human_classification'].apply(remove_nones_classification)
+    df_scatter['video_symbol'] = df_scatter['Video_Filename'].apply(video_available_to_symbol)
+    df_scatter['classification_symbol'] = df_scatter['classification_symbol']
+
+    scat_fig = go.Figure()
+    for sys in selected_systems:
+        df_scatter_sys = df_scatter[df_scatter['system']==sys]
+        for classification in classification_options:
+            df = df_scatter_sys[df_scatter['Human_classification']==classification]
+            df = df.fillna('')
+            if not df.empty:
+                scatter = go.Scattergl(
+                    name = sys.replace('proto','').replace('pats','Pats') + ', ' + classification,
+                    showlegend=True,
+                    x = df[scatter_x_value],
+                    y = df[scatter_y_value],
+                    mode = 'markers',
+                    customdata  = np.stack(
+                        (df['system'] + '/' + df['Folder'] + '/' + df['Filename'],
+                        df['Video_Filename'],
+                        df['Human_classification'],
+                        df['system_ids'],
+                        df['uid']
+                    ), axis=-1),
+                    marker=dict(
+                        cmin = 0,
+                        cmax = 9,
+                        color=df['system_color'],
+                        colorscale=px.colors.qualitative.Vivid,
+                        symbol=df['classification_symbol'],
+                        size=10,
+                        line=dict(width=2,color='DarkSlateGrey')
+                    ),
+                    hovertemplate = '<b>System %{customdata[3]}</b><br><br>' +
+                    'x: %{y}<br>' +
+                    'y: %{x}<br>' +
+                    'File: %{customdata[0]}<br>' +
+                    'Video: %{customdata[1]}<br>' +
+                    'Ground truth: %{customdata[2]}<br>' +
+                    '<extra></extra>'
+                )
+                scat_fig.add_trace(scatter)
+
+
+    scat_fig.update_layout(
+        title_text='Selected moths:',
+        xaxis_title = scatter_columns[scatter_x_value],
+        yaxis_title = scatter_columns[scatter_y_value],
+        clickmode='event+select',
+        legend_title_text='Legend',
+    )
+    return scat_fig
+
+def download_log(selected_moth):
+    sys_name = selected_moth[moth_columns.index('system')].replace('-proto','')
+    log_fn = selected_moth[moth_columns.index('Filename')]
+    log_folder = selected_moth[moth_columns.index('Folder')]
+    if not log_folder or log_fn == 'unknown':
+        return ''
+    target_log_fn = 'static/' + log_folder + '_' + sys_name + '_' + log_fn
+    if not os.path.isfile(target_log_fn):
+        rsync_src = sys_name + ':data/' + log_folder + '/logging/' + log_fn
+        cmd = ['rsync --timeout=5 -az ' + rsync_src + ' ' + target_log_fn]
+        execute(cmd)
+    return target_log_fn
+def file_download_link(filename):
+    location = '{}'.format(urlquote(filename))
+    return html.A('Download log',href=location,style={'display': 'block'})
+def create_path_plot(target_log_fn):
+    df_ilog = pd.read_csv(target_log_fn,delimiter=';')
+    target_log_fn = '/' + target_log_fn
+    rows_without_tracking = df_ilog[ df_ilog['n_frames_tracking_insect'] == 0 ].index
+    df_ilog = df_ilog.drop(rows_without_tracking)
+    scatter = go.Scatter3d(
+        x = df_ilog['sposX_insect'],
+        y = -df_ilog['sposZ_insect'],
+        z = df_ilog['sposY_insect'],
+        text = df_ilog['time'],
+        mode='markers',
+        hovertemplate = '<b>t= %{text}</b><br>x= %{x}<br>y= %{y}<br>z= %{z}'
+    )
+    fig = go.Figure(data=scatter)
+    fig.update_layout(
+        title_text='Moth path:',
+    )
+    style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '50%'}
+    return fig,style
+def download_video(selected_moth):
+    video_fn = selected_moth[moth_columns.index('Video_Filename')]
+    sys_name = selected_moth[moth_columns.index('system')].replace('-proto','')
+
+    target_video_fn = ''
+    if video_fn and video_fn != 'NA':
+        target_video_fn = 'static/' + selected_moth[moth_columns.index('Folder')] + '_' + sys_name + '_' + video_fn
+        if not os.path.isfile(target_video_fn):
+            rsync_src = sys_name + ':data/' +selected_moth[moth_columns.index('Folder')] + '/logging/render_' + video_fn
+            cmd = ['rsync --timeout=5 -a ' + rsync_src + ' ' + target_video_fn]
+            execute(cmd)
+            target_video_fn = '/' + target_video_fn
+    return target_video_fn
 
 def read_cred_db():
     cred_file = os.path.expanduser('~/.dash_auth')
@@ -257,7 +426,7 @@ def read_cred_db():
     if os.path.exists(cred_file):
         user_pass_dict = {}
         user_group_dict = {}
-        with open (cred_file, "r") as creds_file:
+        with open (cred_file, 'r') as creds_file:
                 creds = creds_file.readlines()
                 for cred in creds:
                     cred = cred.split(':')
@@ -268,26 +437,227 @@ def read_cred_db():
         user_group_dict = {'user': 'admin'}
     return user_pass_dict,user_group_dict
 
+def selected_dates(selected_daterange):
+    if selected_daterange == 'Last week':
+        return 7
+    if selected_daterange == 'Last two weeks':
+        return 14
+    elif selected_daterange == 'Last month':
+        return 31
+    elif selected_daterange == 'Last three months':
+        return 92
+    else:
+        return 1
+
+@app.callback(
+    Output('systems_dropdown', 'options'),
+    Input('date_range_dropdown', 'options'))
+def init_system_dropdown(_): #unfortunately we have to do this init through a click event, because authorization doesn't work otherwise
+    username = flask.request.authorization['username']
+    systems = load_systems(username)
+    options = []
+    for system in systems:
+        options.append({'label': system, 'value': system} )
+    return options
+
+@app.callback(
+    Output('hete_kaart', 'figure'),
+    Output('staaf_kaart', 'figure'),
+    Output('hete_kaart', 'style'),
+    Output('staaf_kaart', 'style'),
+    Output('verstrooide_kaart', 'figure'),
+    Output('verstrooide_kaart', 'style'),
+    Output('scatter_dropdown_container', 'style'),
+    Output('selected_heatmap_data', 'children'),
+    Output('Loading_animation','style'),
+    Input('date_range_dropdown', 'value'),
+    Input('systems_dropdown', 'value'),
+    Input('hete_kaart', 'clickData'),
+    Input('scatter_x_dropdown', 'value'),
+    Input('scatter_y_dropdown', 'value'),
+    Input('classification_dropdown', 'value'),
+    State('selected_heatmap_data', 'children'))
+def update_ui_heatmap(selected_daterange,selected_systems,selected_hm_cells,scatter_x_value,scatter_y_value,classification_dropdown,selected_heat):
+    hm_fig=go.Figure(data=go.Heatmap())
+    hist_fig=go.Figure(data=go.Histogram())
+    hm_style={'display': 'none'}
+    hist_style={'display': 'none'}
+    scat_fig=go.Figure(data=go.Scatter())
+    scat_style={'display': 'none'}
+    scat_axis_select_style={'display': 'none'}
+    Loading_animation_style={'display': 'block'}
+
+    ctx = dash.callback_context
+    if ctx.triggered[0]['prop_id'] == 'date_range_dropdown.value' or ctx.triggered[0]['prop_id'] == 'systems_dropdown.value':
+        selected_heat = None
+
+    selected_dayrange = selected_dates(selected_daterange)
+    if not selected_systems or not selected_systems:
+        return hm_fig,hist_fig,hm_style,hist_style,scat_fig,scat_style,scat_axis_select_style,selected_heat,Loading_animation_style
+
+    unique_dates,heatmap_data,heatmap_data_lists,df_hist,_ = load_moth_data(selected_systems,selected_dayrange)
+    if not len(unique_dates):
+        return hm_fig,hist_fig,hm_style,hist_style,scat_fig,scat_style,scat_axis_select_style,selected_heat,Loading_animation_style
+
+    hist_fig,hist_style=create_hist(df_hist,unique_dates,selected_systems)
+
+    #update and show the scatter, only if needed (i.e. when selection in the heatmap changed):
+    if ctx.triggered[0]['prop_id'] == 'hete_kaart.clickData' or ctx.triggered[0]['prop_id'] == 'classification_dropdown.value' or ctx.triggered[0]['prop_id'] == 'scatter_x_dropdown.value' or ctx.triggered[0]['prop_id'] == 'scatter_y_dropdown.value':
+        if not selected_hm_cells:
+            selected_heat = None
+        else:
+            moths = []
+            selected_heat = []
+            for cel in selected_hm_cells['points']:
+                x = xlabels.index(cel['x'])
+                y = unique_dates.index(cel['y'])
+                if heatmap_data_lists[y,x]:
+                    moths.extend(heatmap_data_lists[y,x])
+                    selected_heat.append([x,y])
+
+            selected_heat = pd.DataFrame(selected_heat,columns=['x','y'])
+            selected_heat = selected_heat.to_json(date_format='iso', orient='split')
+            if moths:
+                scat_fig = create_scatter(moths,selected_systems,scatter_x_value,scatter_y_value)
+                scat_axis_select_style={'display': 'table','textAlign':'center','width':'50%','margin':'auto'}
+                scat_style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '50%'}
+
+    heatmap_data,_ = load_mode_data(unique_dates,heatmap_data,selected_systems,selected_dayrange) #add mode info to heatmap, which makes the heatmap show when the system was online (color) or offline (black)
+    hm_fig,hm_style=create_heatmap(unique_dates,heatmap_data,xlabels,selected_heat)
+
+    Loading_animation_style = {'display': 'none'}
+
+    return hm_fig,hist_fig,hm_style,hist_style,scat_fig,scat_style,scat_axis_select_style,selected_heat,Loading_animation_style
+
+@app.callback(
+    Output('insect_video', 'src'),
+    Output('insect_video', 'style'),
+    Output('route_kaart', 'figure'),
+    Output('route_kaart', 'style'),
+    Output('log_file_link', 'children'),
+    Output('selected_scatter_moth', 'children'),
+    Output('classification_dropdown', 'value'),
+    Output('classify_container', 'style'),
+    Output('Loading_animation_moth','style'),
+    Input('date_range_dropdown', 'value'),
+    Input('systems_dropdown', 'value'),
+    Input('hete_kaart', 'clickData'),
+    Input('verstrooide_kaart', 'clickData'),
+    State('verstrooide_kaart','figure'))
+def update_moth_ui(selected_daterange,selected_systems,clickData_hm,clickData_dot,scatter_fig_state):
+    target_video_fn = ''
+    video_style={'display': 'none'}
+    path_fig=go.Figure(data=go.Scatter3d())
+    path_style={'display': 'none'}
+    file_link = html.A('File not available.',style={'display': 'none'})
+    selected_moth=None
+    classification = classification_options[0]
+    classify_style={'display': 'none'}
+    Loading_animation_style={'display': 'block'}
+
+    ctx = dash.callback_context
+    if not 'selectedpoints' in scatter_fig_state['data'][0] or ctx.triggered[0]['prop_id'] != 'verstrooide_kaart.clickData':
+        return target_video_fn,video_style,path_fig,path_style,file_link,selected_moth,classification,classify_style,Loading_animation_style
+
+    sql_str = 'SELECT * FROM moth_records WHERE uid=' + str(clickData_dot['points'][0]['customdata'][4])
+    _,cur = open_db()
+    cur.execute(sql_str)
+    entry = cur.fetchall()
+    selected_moth = entry[0]
+
+    target_log_fn = download_log(selected_moth)
+    if not os.path.isfile(target_log_fn):
+        return target_video_fn,video_style,path_fig,path_style,file_link,selected_moth,classification,classify_style,Loading_animation_style
+    file_link =file_download_link(target_log_fn)
+
+    if 'Human_classification' in moth_columns:
+        classification=selected_moth[moth_columns.index('Human_classification')]
+    classify_style = {'display':'block','textAlign':'center','width':'25%','margin':'auto'}
+
+    path_fig,path_style = create_path_plot(target_log_fn)
+
+    target_video_fn = download_video(selected_moth)
+    Loading_animation_style = {'display': 'none'}
+    if target_video_fn != '':
+        video_style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '75%'}
+
+    return target_video_fn,video_style,path_fig,path_style,file_link,selected_moth,classification,classify_style,Loading_animation_style
+
+@app.callback(
+    Output(component_id='classification_hidden', component_property='children'),
+    Input('classification_dropdown', 'value'),
+    Input('selected_scatter_moth', 'children'))
+def classification_value(selected_classification,selected_moth):
+    ctx = dash.callback_context
+    if not selected_moth or ctx.triggered[0]['prop_id'] != 'classification_dropdown.value':
+        return []
+    conn,cur = open_db()
+    cols = [i[1] for i in cur.execute('PRAGMA table_info(moth_records)')]
+
+    current_classification = selected_moth[cols.index('Human_classification')]
+    if not current_classification:
+        current_classification = classification_options[0]
+    if current_classification != selected_classification:
+        sql_str = 'UPDATE moth_records SET Human_classification="' + selected_classification + '" WHERE uid=' + str(selected_moth[cols.index('uid')])
+        cur.execute(sql_str)
+        conn.commit()
+
+        #also save user classifications to a seperate database, because the moth database sometimes needs to be rebuild from the logs/jsons
+        conn_class,cur_class = open_classification_db()
+        cur_class.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='classification_records' ''')
+        table_exists = cur_class.fetchone()[0]
+        if not table_exists:
+            sql_create = 'CREATE TABLE classification_records(uid INTEGER PRIMARY KEY,moth_uid INTEGER,system TEXT,time TEXT,duration REAL,user TEXT,classification TEXT)'
+            cur_class.execute(sql_create)
+            conn_class.commit()
+
+        username = flask.request.authorization['username']
+        sql_insert = 'INSERT INTO classification_records(moth_uid,system,time,duration,user,classification) VALUES(?,?,?,?,?,?)'
+        data = [selected_moth[cols.index('uid')],str(selected_moth[cols.index('system')]),str(selected_moth[cols.index('time')]),str(selected_moth[cols.index('duration')]),username,selected_classification]
+        cur_class.execute(sql_insert, data)
+        conn_class.commit()
+
+    return selected_classification
+
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Dash app that shows Pats monitoring and system analysis')
-    parser.add_argument('--db', help="Path to the sql database", default='~/pats.db')
+    parser = argparse.ArgumentParser(description='Dash app that shows PATS-C monitoring and system analysis')
+    parser.add_argument('--db', help='Path to the sql database', default='~/pats.db')
+    parser.add_argument('--db_classification', help='Path to the sql database', default='~/pats_human_classification.db')
     args = parser.parse_args()
     db_path = os.path.expanduser(args.db)
+    db_classification_path = os.path.expanduser(args.db_classification)
 else:
     db_path = os.path.expanduser('~/pats.db')
+    db_classification_path = os.path.expanduser('~/pats_human_classification.db')
 
 if not os.path.exists('static'):
     os.makedirs('static')
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-server = flask.Flask(__name__)
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets, server=server)
+conn,cur = open_db()
+moth_columns = [i[1] for i in cur.execute('PRAGMA table_info(moth_records)')]
+if 'Human_classification' not in moth_columns:
+    cur.execute('ALTER TABLE moth_records ADD COLUMN Human_classification TEXT')
+
+    if os.path.exists(db_classification_path):
+        conn_class,cur_class = open_classification_db()
+        classification_columns = [i[1] for i in cur_class.execute('PRAGMA table_info(classification_records)')]
+        sql_str = 'SELECT * FROM classification_records'
+        cur_class.execute(sql_str)
+        classification_data = cur_class.fetchall()
+        for entry in classification_data:
+            sql_where=' WHERE uid=' + str(entry[classification_columns.index('moth_uid')]) + ' AND time="' + str(entry[classification_columns.index('time')]) + '" AND duration=' + str(entry[classification_columns.index('duration')])
+            sql_str = 'UPDATE moth_records SET Human_classification="' + entry[classification_columns.index('classification')] + '"' + sql_where
+            cur.execute(sql_str)
+            tmp = cur.fetchall()
+        conn.commit()
+        print('Re-added cliassification results to main db. Added ' + str(len(classification_data)) + ' classifications.')
 
 user_pass_dict,_ = read_cred_db()
 auth = dash_auth.BasicAuth(app,user_pass_dict)
 
 #initials empty values for gui:
 dateranges = ['Last week','Last two weeks', 'Last month', 'Last three months']
+classification_options = ['Not classified','Moth!','Empty/nothing to see','Other insect','Other false positive']
 xlabels = []
 for i in range(0,24):
     xlabels.append(str((i+12)%24)+'h')
@@ -305,264 +675,86 @@ fig_hist=go.Figure(data=go.Histogram())
 fig_scatter = go.Figure(data=go.Scatter())
 fig_path = go.Figure(data=go.Scatter3d())
 app.layout = html.Div(children=[
-    html.H1(children='Pats Dash'),
-
+    html.H1(children='PATS-C'),
     html.Div([
+        html.Div([
             html.Div('Select systems:'),
-            dcc.Dropdown(
+            html.Div(dcc.Dropdown(
                 id='systems_dropdown',
-                options=[{"label": system, "value": system} for system in systems],
+                options=[{'label': system, 'value': system} for system in systems],
                 multi=True
-            ),
-        ], style={'width': '49%', 'display': 'inline-block'}),
-    html.Div([
+            ), className='dash-bootstrap'),
+        ], style={'width': '50%', 'display': 'inline-block'}),
+        html.Div([
             html.Div('Select range:'),
-            dcc.Dropdown(
+            html.Div(dcc.Dropdown(
                 id='date_range_dropdown',
-                options=[{"label": daterange, "value": daterange} for daterange in dateranges],
+                options=[{'label': daterange, 'value': daterange} for daterange in dateranges],
                 value=dateranges[0],
                 searchable=False,
                 clearable=False
-            ),
-        ], style={'width': '49%', 'display': 'inline-block'}),
+            ), className='dash-bootstrap'),
+        ], style={'width': '50%', 'display': 'inline-block'})
+    ],style={'display': 'block','textAlign':'center','width':'50%','margin':'auto'}),
     html.Div([
-            dcc.Graph(id='staaf_kaart',style={"display": "block","margin-left": "auto","margin-right": "auto","width": "50%"},figure=fig_hist)
-        ]),
-    html.Div([
-            html.Br(),
-            dcc.Loading(
-                id="loading_1",
-                children=dcc.Graph(id="hete_kaart",style={"display": 'none'}, figure=fig_hm),
-                type="default"
-            )
-        ]),
-    html.Div([
-            html.Div('Select x axis:'),
-            dcc.Dropdown(
-                id='scatter_x_dropdown',
-                options=[{"label": scatter_columns[key], "value": key} for key in scatter_columns],
-                value='duration',
-                clearable=False
-            ),
-        ], style={'width': '49%', 'display': 'inline-block'},id='scatter_x_dropdown_container'),
-    html.Div([
-            html.Div('Select y axis:'),
-            dcc.Dropdown(
-                id='scatter_y_dropdown',
-                options=[{"label": scatter_columns[key], "value": key} for key in scatter_columns],
-                value='Vel_mean',
-                clearable=False
-            ),
-        ], style={'width': '49%', 'display': 'inline-block'},id='scatter_y_dropdown_container'),
-    html.Div([
-            dcc.Loading(
-                id="loading_2",
-                children=dcc.Graph(id="verstrooide_kaart",style={"display": 'none'}, figure=fig_scatter),
-                type="default"
-            ),
-        ]),
-    html.Div([
-            dcc.Loading(
-                id="loading_3",
-                children=html.Video(id="insect_video",style={"display": "none","margin-left": "auto","margin-right": "auto","width": "75%"},controls=True,loop=True,autoPlay=True),
-                type="default"
-            ),
-            dcc.Loading(
-                id="loading_4",
-                children=dcc.Graph(id="route_kaart",style={"display": 'none'}, figure=fig_path),
-                type="default"
-            )
-
-        ]),
-    html.Div([html.Ul(id="log_file_link")],style={'width': '49%','padding-left':'50%','padding-right':'50%','display': 'block'},id='log_file_link_container'),
-    html.Div([html.Br(),html.Br()]),
-    html.Div(id='intermediate-value', style={'display': 'none'})
-])
-
-
-def selected_dates(daterange_value):
-    if daterange_value == 'Last week':
-        selected_dayrange = 7
-    if daterange_value == 'Last two weeks':
-        selected_dayrange = 14
-    elif daterange_value == 'Last month':
-        selected_dayrange = 31
-    elif daterange_value == 'Last three months':
-        selected_dayrange = 92
-    return selected_dayrange
-
-
-@app.callback(
-    dash.dependencies.Output('systems_dropdown', 'options'),
-    dash.dependencies.Input('date_range_dropdown', 'options')
-)
-def system_clickData(selected_system):
-    username = flask.request.authorization['username']
-    systems = load_systems(username)
-    options = []
-    for system in systems:
-        options.append({"label": system, "value": system} )
-    return options
-
-@app.callback(
-    dash.dependencies.Output('hete_kaart', 'figure'),
-    dash.dependencies.Output('staaf_kaart', 'figure'),
-    dash.dependencies.Output('hete_kaart', 'style'),
-    dash.dependencies.Output('staaf_kaart', 'style'),
-    dash.dependencies.Input('date_range_dropdown', 'value'),
-    dash.dependencies.Input('systems_dropdown', 'value')
-)
-def dropdown_click(daterange_value,selected_systems):
-    selected_dayrange = selected_dates(daterange_value)
-    if selected_systems == None or not len(selected_systems):
-        return go.Figure(data=go.Scatter()),go.Figure(data=go.Histogram()),{'display': 'none'},{'display': 'none'}
-
-
-    unique_dates,heatmap_data,heatmap_data_lists,hist_data,moth_columns = load_moth_data(selected_systems,selected_dayrange)
-    if not len(unique_dates):
-        return go.Figure(data=go.Scatter()),go.Figure(data=go.Histogram()),{'display': 'none'},{'display': 'none'}
-    heatmap_data,modemap_data = load_mode_data(unique_dates,heatmap_data,selected_systems,selected_dayrange)
-    fig_hm=create_heatmap(unique_dates,heatmap_data,xlabels)
-    fig_hist=create_hist(selected_systems,selected_dayrange,hist_data,unique_dates)
-    return fig_hm,fig_hist,{"display": "block","margin-left": "auto","margin-right": "auto","width": "50%"},{"display": "block","margin-left": "auto","margin-right": "auto","width": "50%"}
-
-@app.callback(
-    dash.dependencies.Output('verstrooide_kaart', 'figure'),
-    dash.dependencies.Output('verstrooide_kaart', 'style'),
-    dash.dependencies.Output('scatter_x_dropdown_container', 'style'),
-    dash.dependencies.Output('scatter_y_dropdown_container', 'style'),
-    dash.dependencies.Input('date_range_dropdown', 'value'),
-    dash.dependencies.Input('systems_dropdown', 'value'),
-    dash.dependencies.Input('hete_kaart', 'clickData'),
-    dash.dependencies.Input('scatter_x_dropdown', 'value'),
-    dash.dependencies.Input('scatter_y_dropdown', 'value'),
-)
-def heatmap_clickData(daterange_value,selected_systems,clickData,scatter_x_value,scatter_y_value):
-    if clickData == None or selected_systems == None or not len(selected_systems):
-        return go.Figure(data=go.Scatter()),{'display': 'none'},{'display': 'none'},{'display': 'none'}
-
-    selected_dayrange = selected_dates(daterange_value)
-    unique_dates,heatmap_data,heatmap_data_lists,hist_data,moth_columns = load_moth_data(selected_systems,selected_dayrange)
-    if not len(unique_dates):
-        return go.Figure(data=go.Scatter()),{'display': 'none'},{'display': 'none'},{'display': 'none'}
-    heatmap_data,modemap_data = load_mode_data(unique_dates,heatmap_data,selected_systems,selected_dayrange)
-
-    x = xlabels.index(clickData['points'][0]['x'])
-    y = unique_dates.index(clickData['points'][0]['y'])
-    moths = heatmap_data_lists[y,x]
-    if moths == None:
-        return go.Figure(data=go.Scatter()),{'display': 'none'},{'display': 'none'},{'display': 'none'}
-    df_scatter = pd.DataFrame(moths,columns=moth_columns)
-
-    distinct_cols = px.colors.qualitative.Alphabet
-    system_ids = df_scatter['system'].str.replace('pats-proto','').astype(int)
-    df_scatter['system_ids'] = system_ids
-
-    scatter = go.Scattergl(
-        x = df_scatter[scatter_x_value],
-        y = df_scatter[scatter_y_value],
-        mode = 'markers',
-        customdata  = np.stack((df_scatter['system'] + '/' + df_scatter['Folder'] + '/' + df_scatter['Filename'],
-         df_scatter['Video_Filename']), axis=-1),
-        marker=dict(
-            color=df_scatter['system_ids'],
-            colorscale=distinct_cols
+        dcc.Loading(
+            children=html.Div([html.Br(),html.Br(),html.Br()],id='Loading_animation',style={'display': 'none'}),
+            type='default'
         ),
-        hovertemplate = "<b>System %{marker.color}</b><br><br>" +
-        "x: %{y}<br>" +
-        "y: %{x}<br>" +
-        "File: %{customdata[0]}<br>" +
-        "Video: %{customdata[1]}<br>"
-    )
-    fig = go.Figure(data=scatter)
-    fig.update_layout(
-        title_text='Selected moths',
-        xaxis_title = scatter_columns[scatter_x_value],
-        yaxis_title = scatter_columns[scatter_y_value],
-        clickmode='event+select'
-    )
-    return fig,{"display": "block","margin-left": "auto","margin-right": "auto","width": "50%"},{'width': '49%', 'display': 'inline-block'},{'width': '49%', 'display': 'inline-block'}
-
-
-def file_download_link(filename):
-    location = "{}".format(urlquote(filename))
-    return html.A('Download log',href=location,style={"display": "block"})
-
-@app.callback(
-    dash.dependencies.Output('insect_video', 'src'),
-    dash.dependencies.Output('insect_video', 'style'),
-    dash.dependencies.Output('route_kaart', 'figure'),
-    dash.dependencies.Output('route_kaart', 'style'),
-    dash.dependencies.Output("log_file_link", "children"),
-    dash.dependencies.Input('date_range_dropdown', 'value'),
-    dash.dependencies.Input('systems_dropdown', 'value'),
-    dash.dependencies.Input('hete_kaart', 'clickData'),
-    dash.dependencies.Input('verstrooide_kaart', 'clickData')
-)
-def scatter_clickData(daterange_value,selected_systems,clickData_hm,clickData_dot):
-    file_link = html.A("File not available.",style={'display': 'none'})
-    if clickData_dot == None or clickData_hm ==None or not len(selected_systems) or not len(clickData_hm):
-        return '',{'display': 'none'},go.Figure(data=go.Scatter3d()),{'display': 'none'},file_link
-
-
-    selected_dayrange = selected_dates(daterange_value)
-    unique_dates,heatmap_data,heatmap_data_lists,hist_data,moth_columns = load_moth_data(selected_systems,selected_dayrange)
-    if not len(unique_dates):
-        return '',{'display': 'none'},go.Figure(data=go.Scatter3d()),{'display': 'none'},file_link
-    heatmap_data,modemap_data = load_mode_data(unique_dates,heatmap_data,selected_systems,selected_dayrange)
-
-    x = xlabels.index(clickData_hm['points'][0]['x'])
-    y = unique_dates.index(clickData_hm['points'][0]['y'])
-    moths = heatmap_data_lists[y,x]
-    df_scatter = pd.DataFrame(moths,columns=moth_columns)
-
-    point_id = clickData_dot['points'][0]['pointIndex']
-    tmp = df_scatter.values[point_id]
-    sys_name = tmp[moth_columns.index('system')].replace('-proto','')
-    log_fn = tmp[moth_columns.index('Filename')]
-    video_fn = tmp[moth_columns.index('Video_Filename')]
-    if video_fn != 'NA' and video_fn != None:
-        target_video_fn = 'static/' + tmp[moth_columns.index('Folder')] + '_' + sys_name + '_' + video_fn
-        if not os.path.isfile(target_video_fn):
-            rsync_src = sys_name + ':data/' +tmp[moth_columns.index('Folder')] + '/logging/render_' + video_fn
-            cmd = ['rsync -a ' + rsync_src + ' ' + target_video_fn]
-            execute(cmd)
-            target_video_fn = '/' + target_video_fn
-
-    target_log_fn = 'static/' + tmp[moth_columns.index('Folder')] + '_' + sys_name + '_' + log_fn
-    if not os.path.isfile(target_log_fn):
-        rsync_src = sys_name + ':data/' +tmp[moth_columns.index('Folder')] + '/logging/' + log_fn
-        cmd = ['rsync -az ' + rsync_src + ' ' + target_log_fn]
-        execute(cmd)
-    if not os.path.isfile(target_log_fn):
-        return '',{'display': 'none'},go.Figure(data=go.Scatter3d()),{'display': 'none'},file_link
-
-    df_ilog = pd.read_csv(target_log_fn,delimiter=';')
-    target_log_fn = '/' + target_log_fn
-
-    rows_without_tracking = df_ilog[ df_ilog['n_frames_tracking_insect'] == 0 ].index
-    df_ilog.drop(rows_without_tracking , inplace=True)
-
-    scatter = go.Scatter3d(
-        x = df_ilog['sposX_insect'],
-        y = -df_ilog['sposZ_insect'],
-        z = df_ilog['sposY_insect'],
-        text = df_ilog['time'],
-        mode='markers',
-        hovertemplate = "<b>t= %{text}</b><br>x= %{x}<br>y= %{y}<br>z= %{z}"
-    )
-    fig = go.Figure(data=scatter)
-    fig.update_layout(
-        title_text='Moth path',
-    )
-
-    file_link =file_download_link(target_log_fn)
-
-    if video_fn == None or video_fn == 'NA':
-        return '',{"display": 'none'},fig,{"display": "block","margin-left": "auto","margin-right": "auto","width": "100%"},file_link
-    else:
-        return target_video_fn,{"display": "block","margin-left": "auto","margin-right": "auto","width": "75%"},fig,{"display": "block","margin-left": "auto","margin-right": "auto","width": "100%"},file_link
-
+        dcc.Graph(id='staaf_kaart',style={'display': 'none','margin-left': 'auto','margin-right': 'auto','textAlign':'center', 'width': '50%'},figure=fig_hist)
+    ]),
+    html.Div([
+        dcc.Graph(id='hete_kaart',style={'display': 'none'}, figure=fig_hm)
+    ]),
+    html.Div([
+        html.Br(),
+        html.Div('Select x axis:',style={'display':'table-cell'}),
+        html.Div(dcc.Dropdown(
+            id='scatter_x_dropdown',
+            options=[{'label': scatter_columns[key], 'value': key} for key in scatter_columns],
+            value='duration',
+            clearable=False
+        ),style={'display': 'table-cell'},className='dash-bootstrap'),
+        html.Div('Select y axis:',style={'display':'table-cell'}),
+        html.Div(dcc.Dropdown(
+            id='scatter_y_dropdown',
+            options=[{'label': scatter_columns[key], 'value': key} for key in scatter_columns],
+            value='Vel_mean',
+            clearable=False
+        ),style={'display': 'table-cell'},className='dash-bootstrap'),
+    ],style={'display': 'none','textAlign':'center','width':'50%','margin':'auto'},id='scatter_dropdown_container'),
+    html.Div([
+        dcc.Graph(id='verstrooide_kaart',style={'display': 'none'}, figure=fig_scatter)
+    ]),
+    html.Div([
+        dcc.Loading(
+            children=html.Div([html.Br(),html.Br(),html.Br()],id='Loading_animation_moth',style={'display': 'none'}),
+            type='default'
+        ),
+        dcc.Graph(id='route_kaart',style={'display': 'none'}, figure=fig_path),
+        html.Video(id='insect_video',style={'display': 'none'},controls=True,loop=True,autoPlay=True),
+    ]),
+    html.Div([
+        html.Div([
+            'Human classification:']
+            ),
+        html.Div(dcc.Dropdown(
+            id='classification_dropdown',
+            options=[{'label': c, 'value': c} for c in classification_options],
+            value=classification_options[0],
+            clearable=False,
+        ),className='dash-bootstrap'),
+    ], style= {'display':'none','textAlign':'center','width':'25%','margin':'auto'},id='classify_container'),
+    html.Div([
+        html.Br(),
+        html.Ul(id='log_file_link'),
+        html.Br(),
+        html.Br()
+        ],style={'textAlign':'center','width': '25%','margin':'auto','display': 'none'}),
+    html.Div(id='selected_heatmap_data', style={'display': 'none'}),
+    html.Div(id='selected_scatter_moth', style={'display': 'none'}),
+    html.Div(id='classification_hidden', style={'display': 'none'})
+])
 
 if __name__ == '__main__':
     app.run_server(debug=True)

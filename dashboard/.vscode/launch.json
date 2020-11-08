@@ -33,7 +33,7 @@
         "program": "${workspaceFolder}/pats_dash.py",
         "args": [],
         "console": "integratedTerminal"
-      }
+      },
       {
         "name": "viz",
         "type": "python",
