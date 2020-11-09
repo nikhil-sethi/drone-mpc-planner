@@ -661,7 +661,7 @@ auth = dash_auth.BasicAuth(app,user_pass_dict)
 
 #initials empty values for gui:
 dateranges = ['Last week','Last two weeks', 'Last month', 'Last three months']
-classification_options = ['Not classified','Moth!','Empty/nothing to see','Other insect','Other false positive']
+classification_options = ['Not classified','Moth!','Empty/nothing to see','Other insect','Plant','Other false positive']
 xlabels = []
 for i in range(0,24):
     xlabels.append(str((i+12)%24)+'h')
