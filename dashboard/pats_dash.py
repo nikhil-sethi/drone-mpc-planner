@@ -355,8 +355,8 @@ def create_scatter(moths,selected_systems,scatter_x_value,scatter_y_value):
                         line=dict(width=2,color='DarkSlateGrey')
                     ),
                     hovertemplate = '<b>System %{customdata[3]}</b><br><br>' +
-                    'x: %{y}<br>' +
-                    'y: %{x}<br>' +
+                    'x: %{x}<br>' +
+                    'y: %{y}<br>' +
                     'File: %{customdata[0]}<br>' +
                     'Video: %{customdata[1]}<br>' +
                     'Ground truth: %{customdata[2]}<br>' +
