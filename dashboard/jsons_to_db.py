@@ -348,7 +348,7 @@ while True:
         if not os.path.exists(flag_fn):
             with open(filename) as json_file:
                 with open(flag_fn,'w') as flag_f:
-                    if os.stat(filename).st_size < 30000000:
+                    if os.stat(filename).st_size < 40000000:
                         try:
                             data = json.load(json_file)
                             min_required_version=1.0
