@@ -192,7 +192,7 @@ def process_detections_in_folder(folder,operational_log_start,mode):
         pos_end =  [x_tracking[-1],y_tracking[-1],z_tracking[-1]]
         diff = np.array(pos_end) - np.array(pos_start)
         dist_traveled = math.sqrt(np.sum(diff*diff))
-        dist_traject = np.sum(math.sqrt((x_tracking[1:] - x_tracking[:-1])**2 + (y_tracking[1:] - y_tracking[:-1])**2 + (z_tracking[1:] - z_tracking[:-1])**2))
+        dist_traject = np.sum(np.sqrt((x_tracking[1:] - x_tracking[:-1])**2 + (y_tracking[1:] - y_tracking[:-1])**2 + (z_tracking[1:] - z_tracking[:-1])**2))
 
         mid_id = int(round(len(x_tracking)/2))
         pos_middle =  [x_tracking[mid_id],y_tracking[mid_id],z_tracking[mid_id]]
