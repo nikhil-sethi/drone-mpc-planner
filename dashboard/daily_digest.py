@@ -49,19 +49,21 @@ def send_mail(now):
         f = os. path. splitext(os.path.basename((file)))[0]
         if f.startswith('pats'):
             f_date = f.split('_')[-2] + '_' + f.split('_')[-1]
-            d = datetime.strptime(f_date, "%Y%m%d_%H%M%S")
-            f_sys = f.split('_')[0]
+            try:
+                d = datetime.strptime(f_date, "%Y%m%d_%H%M%S")
+                f_sys = f.split('_')[0]
 
-            if d > now - timedelta(hours=5):
+                if d > now - timedelta(hours=5):
 
-                with open (file, "r") as fr_processed:
-                    msg = fr_processed.readline()
-                    recent_files.append([f_sys,msg])
-                    if f_sys in systems:
-                        systems.remove(f_sys)
-                    else:
-                        print('Warning, system does not exist: ' + f_sys)
-
+                    with open (file, "r") as fr_processed:
+                        msg = fr_processed.readline()
+                        recent_files.append([f_sys,msg])
+                        if f_sys in systems:
+                            systems.remove(f_sys)
+                        else:
+                            print('Warning, system does not exist: ' + f_sys)
+            except:
+                pass
     mail_txt = 'Pats status report ' + str(now) + '\n\n'
     if (len(systems)>0):
         mail_txt += 'WARNINGS: \nNothing received from: '
