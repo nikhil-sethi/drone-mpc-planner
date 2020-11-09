@@ -405,6 +405,9 @@ def create_path_plot(target_log_fn):
     fig = go.Figure(data=scatter)
     fig.update_layout(
         title_text='Moth path:',
+         scene=dict(
+                 aspectmode='data'
+         )
     )
     style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '50%'}
     return fig,style
