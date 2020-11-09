@@ -99,7 +99,9 @@ def execute(cmd,retry=1):
             if p_result or p_result==0:
                 n = n+1
                 break
+            print(str(cmd) + ' resulted in error:')
             print(stdout_line.decode('utf-8'),end ='')
+
             time.sleep(0.1)
         popen.stdout.close()
 
