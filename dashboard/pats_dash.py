@@ -245,21 +245,20 @@ def create_heatmap(unique_dates,heatmap_counts,xlabels, selected_cells):
                 heatmap_data[y,x]=-2
 
     hm = go.Heatmap(
-            x=xlabels,
-            y=unique_dates,
+            x = xlabels,
+            y = unique_dates,
             z = heatmap_data,
             customdata = hover_label,
-            zmin=-2,
-            zmid=heatmap_max/2,
-            zmax=heatmap_max,
+            zmin = -2,
+            zmid = heatmap_max/2,
+            zmax = heatmap_max,
             colorscale = [
                         [0, 'rgba(128, 128, 200, 0.65)'], #selected cell
                         [1/(heatmap_max+2), 'rgba(0, 0, 0, 1.0)'], #system inactive
                         [2/(heatmap_max+2), 'rgba(0,255,0, 1.0)'],
                         [1, 'rgba(255,0,0, 1.0)']
                         ],
-            colorbar = dict(lenmode='pixels', len=len(unique_dates)*50,yanchor='top',y=1),
-            hovertemplate='Time: %{x}<br>' +
+            hovertemplate = 'Time: %{x}<br>' +
             'Count: %{customdata}' +
              '<extra></extra>'
             )
@@ -267,10 +266,11 @@ def create_heatmap(unique_dates,heatmap_counts,xlabels, selected_cells):
     fig['layout']['xaxis']['side'] = 'top'
     fig['layout']['xaxis']['tickangle'] = 45
 
-    h = len(unique_dates) * 30
-    if h < 400:
-        h=400
-    if not len(unique_dates):
+    if len(unique_dates) > 14:
+        h = len(unique_dates) * 15+200
+    elif len(unique_dates):
+        h = len(unique_dates) * 30+200
+    else:
         h=10
     fig.update_layout(
         height=h,
