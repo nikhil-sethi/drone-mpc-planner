@@ -572,6 +572,8 @@ def update_moth_ui(selected_daterange,selected_systems,clickData_hm,clickData_do
 
     if 'Human_classification' in moth_columns:
         classification=selected_moth[moth_columns.index('Human_classification')]
+    if not classification:
+        classification = classification_options[0]
     classify_style = {'display':'block','textAlign':'center','width':'25%','margin':'auto'}
 
     path_fig,path_style = create_path_plot(target_log_fn)
