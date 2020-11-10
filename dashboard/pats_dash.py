@@ -472,26 +472,17 @@ def init_system_dropdown(_): #unfortunately we have to do this init through a cl
     Output('staaf_kaart', 'figure'),
     Output('hete_kaart', 'style'),
     Output('staaf_kaart', 'style'),
-    Output('verstrooide_kaart', 'figure'),
-    Output('verstrooide_kaart', 'style'),
-    Output('scatter_dropdown_container', 'style'),
     Output('selected_heatmap_data', 'children'),
     Output('Loading_animation','style'),
     Input('date_range_dropdown', 'value'),
     Input('systems_dropdown', 'value'),
     Input('hete_kaart', 'clickData'),
-    Input('scatter_x_dropdown', 'value'),
-    Input('scatter_y_dropdown', 'value'),
-    Input('classification_dropdown', 'value'),
     State('selected_heatmap_data', 'children'))
-def update_ui_heatmap(selected_daterange,selected_systems,selected_hm_cells,scatter_x_value,scatter_y_value,classification_dropdown,selected_heat):
+def update_ui_hist_and_heat(selected_daterange,selected_systems,selected_hm_cells,selected_heat):
     hm_fig=go.Figure(data=go.Heatmap())
     hist_fig=go.Figure(data=go.Histogram())
     hm_style={'display': 'none'}
     hist_style={'display': 'none'}
-    scat_fig=go.Figure(data=go.Scatter())
-    scat_style={'display': 'none'}
-    scat_axis_select_style={'display': 'none'}
     Loading_animation_style={'display': 'block'}
 
     ctx = dash.callback_context
@@ -500,41 +491,76 @@ def update_ui_heatmap(selected_daterange,selected_systems,selected_hm_cells,scat
 
     selected_dayrange = selected_dates(selected_daterange)
     if not selected_systems or not selected_systems:
-        return hm_fig,hist_fig,hm_style,hist_style,scat_fig,scat_style,scat_axis_select_style,selected_heat,Loading_animation_style
-
+        return hm_fig,hist_fig,hm_style,hist_style,selected_heat,Loading_animation_style
     unique_dates,heatmap_data,heatmap_data_lists,df_hist,_ = load_moth_data(selected_systems,selected_dayrange)
     if not len(unique_dates):
-        return hm_fig,hist_fig,hm_style,hist_style,scat_fig,scat_style,scat_axis_select_style,selected_heat,Loading_animation_style
+        return hm_fig,hist_fig,hm_style,hist_style,selected_heat,Loading_animation_style
 
     hist_fig,hist_style=create_hist(df_hist,unique_dates,selected_systems)
 
-    #update and show the scatter, only if needed (i.e. when selection in the heatmap changed):
-    if ctx.triggered[0]['prop_id'] == 'hete_kaart.clickData' or ctx.triggered[0]['prop_id'] == 'classification_dropdown.value' or ctx.triggered[0]['prop_id'] == 'scatter_x_dropdown.value' or ctx.triggered[0]['prop_id'] == 'scatter_y_dropdown.value':
+    if ctx.triggered[0]['prop_id'] == 'hete_kaart.clickData' or ctx.triggered[0]['prop_id'] == 'classification_dropdown.value':
         if not selected_hm_cells:
             selected_heat = None
         else:
-            moths = []
             selected_heat = []
             for cel in selected_hm_cells['points']:
                 x = xlabels.index(cel['x'])
                 y = unique_dates.index(cel['y'])
                 if heatmap_data_lists[y,x]:
-                    moths.extend(heatmap_data_lists[y,x])
                     selected_heat.append([x,y])
 
             selected_heat = pd.DataFrame(selected_heat,columns=['x','y'])
             selected_heat = selected_heat.to_json(date_format='iso', orient='split')
-            if moths:
-                scat_fig = create_scatter(moths,selected_systems,scatter_x_value,scatter_y_value)
-                scat_axis_select_style={'display': 'table','textAlign':'center','width':'50%','margin':'auto'}
-                scat_style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '50%'}
 
     heatmap_data,_ = load_mode_data(unique_dates,heatmap_data,selected_systems,selected_dayrange) #add mode info to heatmap, which makes the heatmap show when the system was online (color) or offline (black)
     hm_fig,hm_style=create_heatmap(unique_dates,heatmap_data,xlabels,selected_heat)
 
     Loading_animation_style = {'display': 'none'}
 
-    return hm_fig,hist_fig,hm_style,hist_style,scat_fig,scat_style,scat_axis_select_style,selected_heat,Loading_animation_style
+    return hm_fig,hist_fig,hm_style,hist_style,selected_heat,Loading_animation_style
+
+@app.callback(
+    Output('verstrooide_kaart', 'figure'),
+    Output('verstrooide_kaart', 'style'),
+    Output('scatter_dropdown_container', 'style'),
+    Input('date_range_dropdown', 'value'),
+    Input('systems_dropdown', 'value'),
+    Input('hete_kaart', 'clickData'),
+    Input('scatter_x_dropdown', 'value'),
+    Input('scatter_y_dropdown', 'value'),
+    Input('classification_dropdown', 'value'),
+    State('selected_heatmap_data', 'children'))
+def update_ui_scatter(selected_daterange,selected_systems,selected_hm_cells,scatter_x_value,scatter_y_value,classification_dropdown,selected_heat):
+    scat_fig=go.Figure(data=go.Scatter())
+    scat_style={'display': 'none'}
+    scat_axis_select_style={'display': 'none'}
+
+    ctx = dash.callback_context
+
+    selected_dayrange = selected_dates(selected_daterange)
+    if not selected_systems or not selected_systems:
+        return scat_fig,scat_style,scat_axis_select_style
+
+    unique_dates,_,heatmap_data_lists,_,_ = load_moth_data(selected_systems,selected_dayrange)
+    if not len(unique_dates):
+        return scat_fig,scat_style,scat_axis_select_style
+
+    if ctx.triggered[0]['prop_id'] == 'hete_kaart.clickData' or ctx.triggered[0]['prop_id'] == 'classification_dropdown.value' or ctx.triggered[0]['prop_id'] == 'scatter_x_dropdown.value' or ctx.triggered[0]['prop_id'] == 'scatter_y_dropdown.value':
+        if selected_hm_cells:
+            moths = []
+
+            for cel in selected_hm_cells['points']:
+                x = xlabels.index(cel['x'])
+                y = unique_dates.index(cel['y'])
+                if heatmap_data_lists[y,x]:
+                    moths.extend(heatmap_data_lists[y,x])
+
+            if moths:
+                scat_fig = create_scatter(moths,selected_systems,scatter_x_value,scatter_y_value)
+                scat_axis_select_style={'display': 'table','textAlign':'center','width':'50%','margin':'auto'}
+                scat_style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '50%'}
+
+    return scat_fig,scat_style,scat_axis_select_style
 
 @app.callback(
     Output('insect_video', 'src'),
