@@ -426,8 +426,8 @@ def download_video(selected_moth):
             cmd = ['rsync --timeout=5 -a ' + rsync_src + ' ' + target_video_fn]
             execute(cmd)
             target_video_fn = '/' + target_video_fn
-        if not os.path.isfile(target_video_fn[1:]):
-            target_video_fn = ''
+            if not os.path.isfile(target_video_fn[1:]):
+                target_video_fn = ''
     return target_video_fn
 
 def read_cred_db():
