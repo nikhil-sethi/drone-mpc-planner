@@ -283,13 +283,16 @@ def create_hist(df_hist,unique_dates,selected_systems):
     fig = go.Figure()
     cnt = 0
     for sys in selected_systems:
-
         hist_data = df_hist[sys]
+        syss = [sys] * len(hist_data)
         hist = go.Bar(
             x = unique_dates,
             y = hist_data,
+            customdata = np.transpose([syss,syss]), #ok, we should only need one column of syss, spend an hour or streamlining this just to conclude something weird is going on in there...
             marker_color = px.colors.qualitative.Vivid[cnt],
-            name = sys.replace('proto','').replace('pats','Pats')
+            name = sys.replace('proto','').replace('pats','Pats'),
+            hovertemplate = '<b>System %{customdata[0]}</b><br><br>' +
+                    '<extra></extra>'
         )
         cnt+=1
         fig.add_trace(hist)
@@ -338,7 +341,7 @@ def create_scatter(moths,selected_systems,scatter_x_value,scatter_y_value):
                     x = df[scatter_x_value],
                     y = df[scatter_y_value],
                     mode = 'markers',
-                    customdata  = np.stack(
+                    customdata = np.stack(
                         (df['system'] + '/' + df['Folder'] + '/' + df['Filename'],
                         df['Video_Filename'],
                         df['Human_classification'],
@@ -526,40 +529,49 @@ def update_ui_hist_and_heat(selected_daterange,selected_systems,selected_hm_cell
     Input('date_range_dropdown', 'value'),
     Input('systems_dropdown', 'value'),
     Input('hete_kaart', 'clickData'),
+    Input('staaf_kaart', 'selectedData'),
     Input('scatter_x_dropdown', 'value'),
     Input('scatter_y_dropdown', 'value'),
     Input('classification_dropdown', 'value'),
     State('selected_heatmap_data', 'children'))
-def update_ui_scatter(selected_daterange,selected_systems,selected_hm_cells,scatter_x_value,scatter_y_value,classification_dropdown,selected_heat):
+def update_ui_scatter(selected_daterange,selected_systems,hm_selected_cells,hist_selected_bars,scatter_x_value,scatter_y_value,classification_dropdown,selected_heat):
     scat_fig=go.Figure(data=go.Scatter())
     scat_style={'display': 'none'}
     scat_axis_select_style={'display': 'none'}
 
     ctx = dash.callback_context
 
-    selected_dayrange = selected_dates(selected_daterange)
-    if not selected_systems or not selected_systems:
+    if not selected_systems:
         return scat_fig,scat_style,scat_axis_select_style
 
-    unique_dates,_,heatmap_data_lists,_,_ = load_moth_data(selected_systems,selected_dayrange)
-    if not len(unique_dates):
-        return scat_fig,scat_style,scat_axis_select_style
+    if ctx.triggered[0]['prop_id'] == 'staaf_kaart.selectedData' or ctx.triggered[0]['prop_id'] == 'hete_kaart.clickData' or ctx.triggered[0]['prop_id'] == 'classification_dropdown.value' or ctx.triggered[0]['prop_id'] == 'scatter_x_dropdown.value' or ctx.triggered[0]['prop_id'] == 'scatter_y_dropdown.value':
+        moths = []
+        if hm_selected_cells:
+            for cel in hm_selected_cells['points']:
+                hour = int(cel['x'].replace('h',''))
+                start_date = datetime.datetime.strptime(cel['y'], '%d-%m-%Y') + datetime.timedelta(hours=hour)
+                end_date = start_date + datetime.timedelta(hours=1)
+                sql_str = 'SELECT * FROM moth_records WHERE time >"' + start_date.strftime('%Y%m%d_%H%M%S') + '" AND time <= "' + end_date.strftime('%Y%m%d_%H%M%S') + '" AND ' + system_sql_str(selected_systems)
+                _,cur = open_db()
+                cur.execute(sql_str)
+                entries = cur.fetchall()
+                moths.extend(entries)
 
-    if ctx.triggered[0]['prop_id'] == 'hete_kaart.clickData' or ctx.triggered[0]['prop_id'] == 'classification_dropdown.value' or ctx.triggered[0]['prop_id'] == 'scatter_x_dropdown.value' or ctx.triggered[0]['prop_id'] == 'scatter_y_dropdown.value':
-        if selected_hm_cells:
-            moths = []
+        elif hist_selected_bars:
+            for bar in hist_selected_bars['points']:
+                sys = bar['customdata'][0]
+                start_date = datetime.datetime.strptime(bar['x'], '%d-%m-%Y') + datetime.timedelta(hours=12)
+                end_date = start_date + datetime.timedelta(days=1)
+                sql_str = 'SELECT * FROM moth_records WHERE system="' + sys + '" AND time >"' + start_date.strftime('%Y%m%d_%H%M%S') + '" AND time <= "' + end_date.strftime('%Y%m%d_%H%M%S') + '"'
+                _,cur = open_db()
+                cur.execute(sql_str)
+                entries = cur.fetchall()
+                moths.extend(entries)
 
-            for cel in selected_hm_cells['points']:
-                x = xlabels.index(cel['x'])
-                y = unique_dates.index(cel['y'])
-                if heatmap_data_lists[y,x]:
-                    moths.extend(heatmap_data_lists[y,x])
-
-            if moths:
-                scat_fig = create_scatter(moths,selected_systems,scatter_x_value,scatter_y_value)
-                scat_axis_select_style={'display': 'table','textAlign':'center','width':'50%','margin':'auto'}
-                scat_style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '50%'}
-
+        if moths:
+            scat_fig = create_scatter(moths,selected_systems,scatter_x_value,scatter_y_value)
+            scat_axis_select_style={'display': 'table','textAlign':'center','width':'50%','margin':'auto'}
+            scat_style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '50%'}
     return scat_fig,scat_style,scat_axis_select_style
 
 @app.callback(
@@ -589,13 +601,15 @@ def update_moth_ui(selected_daterange,selected_systems,clickData_hm,clickData_do
     Loading_animation_style={'display': 'block'}
 
     ctx = dash.callback_context
-    if not 'selectedpoints' in scatter_fig_state['data'][0] or ctx.triggered[0]['prop_id'] != 'verstrooide_kaart.clickData':
+    if not 'selectedpoints' in scatter_fig_state['data'][0] or ctx.triggered[0]['prop_id'] != 'verstrooide_kaart.clickData' or not selected_systems:
         return target_video_fn,video_style,path_fig,path_style,file_link,selected_moth,classification,classify_style,Loading_animation_style
 
     sql_str = 'SELECT * FROM moth_records WHERE uid=' + str(clickData_dot['points'][0]['customdata'][4])
     _,cur = open_db()
     cur.execute(sql_str)
     entry = cur.fetchall()
+    if not len(entry):
+        return target_video_fn,video_style,path_fig,path_style,file_link,selected_moth,classification,classify_style,Loading_animation_style
     selected_moth = entry[0]
 
     target_log_fn = download_log(selected_moth)
@@ -690,7 +704,6 @@ if 'Human_classification' not in moth_columns:
 user_pass_dict,_ = read_cred_db()
 auth = dash_auth.BasicAuth(app,user_pass_dict)
 
-#initials empty values for gui:
 dateranges = ['Last week','Last two weeks', 'Last month', 'Last three months']
 classification_options = ['Not classified','Moth!','Empty/nothing to see','Other insect','Plant','Other false positive']
 xlabels = []
