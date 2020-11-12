@@ -4,10 +4,11 @@ using namespace std;
 
 namespace tracking {
 
-void TrackerManager::init(std::ofstream *logger,VisionData *visdat, CameraView *camview) {
+void TrackerManager::init(std::ofstream *logger,string replay_dir_,VisionData *visdat, CameraView *camview) {
     _visdat = visdat;
     _logger = logger;
     _camview = camview;
+    replay_dir = replay_dir_;
 
     if (pparams.has_screen || pparams.video_result || pparams.video_cuts) {
         enable_viz_max_points = false;
@@ -15,6 +16,7 @@ void TrackerManager::init(std::ofstream *logger,VisionData *visdat, CameraView *
     }
 
     deserialize_settings();
+    read_false_positives();
 
     _dtrkr = new DroneTracker();
     _dtrkr->init(_logger,_visdat,motion_thresh,1);
@@ -85,6 +87,13 @@ void TrackerManager::update_trackers(double time,long long frame_number, bool dr
         uint i = ii-1;
         if (_trackers.at(i)->delete_me()) {
             ItemTracker * trkr = _trackers.at(i);
+            if (trkr->type() == tt_insect ) {
+                InsectTracker * itrkr = static_cast<InsectTracker * >(_trackers.at(i));
+                auto fpt = itrkr->false_positive();
+                if (fpt)
+                    false_positives.push_back(FalsePositive(itrkr->track_history.begin()->world_item,fpt,time));
+            }
+            trkr->close();
             _trackers.erase(_trackers.begin() + i);
             delete trkr;
         } else if(_trackers.at(i)->type() == tt_drone) {
@@ -123,7 +132,7 @@ void TrackerManager::update_trackers(double time,long long frame_number, bool dr
                 if (btrkr->state() == BlinkTracker::bds_found) {
                     _dtrkr->set_drone_landing_location(btrkr->image_item().pt(),btrkr->world_item().iti.disparity,btrkr->smoothed_size_image(),btrkr->world_item().pt);
                     _camview->p0_bottom_plane(_dtrkr->drone_takeoff_location().y, true);
-                    _mode = mode_wait_for_insect;
+                    _mode = mode_idle;
                 }
             } else if (btrkr->ignores_for_other_trkrs.size() == 0) {
                 if (btrkr->state() != BlinkTracker::bds_found) {
@@ -134,6 +143,7 @@ void TrackerManager::update_trackers(double time,long long frame_number, bool dr
                         _visdat->delete_from_motion_map(btrkr->image_item().pt()*pparams.imscalef,btrkr->image_item().disparity,btrkr->image_item().size*pparams.imscalef+5,1);
                 }
 
+                btrkr->close();
                 _trackers.erase(_trackers.begin() + i);
                 delete btrkr;
             }
@@ -144,15 +154,19 @@ void TrackerManager::update_trackers(double time,long long frame_number, bool dr
 //for each tracker collect the static ignores from each other tracker
 void TrackerManager::update_static_ignores() {
     tracking::IgnoreBlob landingspot;
-    for ( auto & trkr1 : _trackers) {
-        std::vector<tracking::IgnoreBlob> ignores;
-        for ( auto & trkr2 : _trackers) {
-            if (trkr1->uid()!=trkr2->uid()) {
-                for (auto & ign : trkr2->ignores_for_other_trkrs) {
-                    ignores.push_back(ign);
-                    if (ign.ignore_type == tracking::IgnoreBlob::takeoff_spot) {
-                        landingspot = ign;
-                    }
+    for ( auto & trkr : _trackers) {
+        update_static_ignores(trkr);
+    }
+}
+void TrackerManager::update_static_ignores(ItemTracker * trkr1) {
+    tracking::IgnoreBlob landingspot;
+    std::vector<tracking::IgnoreBlob> ignores;
+    for ( auto & trkr2 : _trackers) {
+        if (trkr1->uid()!=trkr2->uid()) {
+            for (auto & ign : trkr2->ignores_for_other_trkrs) {
+                ignores.push_back(ign);
+                if (ign.ignore_type == tracking::IgnoreBlob::takeoff_spot) {
+                    landingspot = ign;
                 }
             }
         }
@@ -166,13 +180,27 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
         trkr->all_blobs(_blobs);
 
     if (_blobs.size()>0) {
-        //init keypoints list
+        //init keypoints list and check fp's
         std::vector<processed_blobs> pbs;
         uint id_cnt = 0;
         for (auto & blob : _blobs) {
             pbs.push_back(processed_blobs(&blob,id_cnt));
             id_cnt++;
+            for (auto & fp : false_positives) {
+                float dist = normf(fp.im_pt-blob.pt());
+                if (dist < fp.im_size) {
+                    blob.false_positive = true;
+                    fp.last_seen_time = time;
+                    fp.detection_count++;
+                }
+            }
         }
+
+        //erase dissipated fp's
+        false_positives.erase(
+            std::remove_if(false_positives.begin(), false_positives.end(),
+        [&](auto& fp) {return time - fp.last_seen_time > std::clamp(fp.detection_count * 10,1,60);} ),
+        false_positives.end());
 
         //first check if there are trackers that were already tracking something, which prediction matches a new keypoint
         for (auto trkr : _trackers) {
@@ -232,7 +260,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
             if (!trkr->tracking()) {
                 if (tracker_active(trkr, drone_is_active)) {
                     for (auto &blob : pbs) {
-                        if (!blob.tracked() && (!blob.props->in_overexposed_area || trkr->type() == tt_blink)) {
+                        if (!blob.tracked() && (!blob.props->in_overexposed_area || trkr->type() == tt_blink) && (!blob.props->false_positive || trkr->type() == tt_blink)) {
 
                             //check against static ignore points
                             auto props = blob.props;
@@ -305,7 +333,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
         //see if there are still keypoints left untracked, create new trackers for them
         for (auto &blob : pbs) {
             auto props = blob.props;
-            if (!blob.tracked() && (!props->in_overexposed_area || _mode == mode_locate_drone) && !blob.ignored && _trackers.size() < 30) { // if so, start tracking it!
+            if (!blob.tracked() && (!props->in_overexposed_area || _mode == mode_locate_drone) && (!props->false_positive || _mode == mode_locate_drone) && !blob.ignored && _trackers.size() < 30) { // if so, start tracking it!
                 if (_mode == mode_locate_drone) {
 
                     bool too_close = false;
@@ -322,7 +350,12 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                         bt = new BlinkTracker();
                         bt->init(next_blinktrkr_id,_visdat,motion_thresh, _trackers.size());
                         bt->calc_world_item(props,time);
+                        bool ignore = true;
                         if (props->world_props.valid) {
+                            update_static_ignores(bt);
+                            ignore = bt->check_ignore_blobs(props);
+                        }
+                        if (!ignore) {
                             bt->init_logger();
                             next_blinktrkr_id++;
                             tracking::WorldItem w(tracking::ImageItem(*props,_visdat->frame_id,100,blob.id),props->world_props);
@@ -346,15 +379,25 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                         it = new InsectTracker();
                         it->init(next_insecttrkr_id,_visdat,motion_thresh,_trackers.size());
                         it->calc_world_item(props,time);
+                        if (!props->world_props.bkg_check_ok) {
+                            tracking::WorldItem w(tracking::ImageItem(*props,_visdat->frame_id,-1,blob.id),props->world_props);
+                            false_positives.push_back(FalsePositive(w,fp_bkg,time));
+                        }
 
                         bool delete_it = true;
+                        bool ignore = true;
                         if (props->world_props.valid) {
+                            update_static_ignores(it);
+                            ignore = it->check_ignore_blobs(props);
+                            blob.ignored = ignore;
+                        }
+                        if (!ignore) {
                             //ignore a region around the drone (or take off location)
                             float world_dist_to_drone;
                             if (_dtrkr->tracking())
                                 world_dist_to_drone = normf(_dtrkr->world_item().pt- props->world_props.pt());
                             else
-                                world_dist_to_drone = normf(_dtrkr->drone_takeoff_location()/pparams.imscalef - props->world_props.pt());
+                                world_dist_to_drone = normf(_dtrkr->drone_takeoff_location() - props->world_props.pt());
 
                             if (world_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_world && im_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_im) {
                                 it->init_logger();
@@ -368,8 +411,10 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                                 blob.ignored = true;
                             }
                         }
-                        if (delete_it)
+                        if (delete_it) {
+                            it->close();
                             delete it;
+                        }
                     } else {
                         blob.ignored = true;
                     }
@@ -510,6 +555,15 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
                 std::string coor_str = to_string_with_precision(wblob.x,3) + ", " + to_string_with_precision(wblob.y,3) + ", " + to_string_with_precision(wblob.z,3);
                 putText(viz,coor_str,cv::Point2i(viz.cols/4,viz.rows - 10),FONT_HERSHEY_SIMPLEX,0.3,blob.color());
             }
+        }
+    }
+
+    if (enable_viz_diff) {
+        auto blue =cv::Scalar(255,0,0);
+        for (auto fp : false_positives) {
+            auto p_center = fp.im_pt*pparams.imscalef;
+            cv::circle(diff_viz,p_center,fp.im_size/2.f*pparams.imscalef,blue);
+            cv::putText(diff_viz,to_string_with_precision(time-fp.last_seen_time,1) + ", #" + std::to_string(fp.detection_count),p_center+cv::Point2f(10,0),FONT_HERSHEY_SIMPLEX,0.3,blue,2);
         }
     }
 
@@ -845,11 +899,11 @@ std::vector<ItemTracker *> TrackerManager::all_target_trackers() {
     return res;
 }
 
-track_data TrackerManager::target_last_trackdata() {
+TrackData TrackerManager::target_last_trackdata() {
     if (target_insecttracker())
         return target_insecttracker()->last_track_data();
     else {
-        track_data d;
+        TrackData d;
         return d;
     }
 }
@@ -950,12 +1004,66 @@ void TrackerManager::serialize_settings() {
     outfile.close();
 }
 
+void TrackerManager::read_false_positives() {
+    string false_positive_rfn;
+    if (replay_dir == "")
+        false_positive_rfn = "./" + false_positive_fn;
+    else
+        false_positive_rfn = replay_dir + "/initial_" + false_positive_fn;
+
+    if (file_exist(false_positive_rfn)) {
+
+        std::string line = "";
+        try {
+            ifstream infile(false_positive_rfn);
+            string heads;
+            getline(infile, heads);
+
+            while (getline(infile, line)) {
+                auto splitted_line = split_csv_line(line);
+                FalsePositive fp(static_cast<false_positive_type>(stoi(splitted_line.at(0))),stoi(splitted_line.at(2)),stof(splitted_line.at(3)),stof(splitted_line.at(4)),stof(splitted_line.at(5)) );
+                false_positives.push_back(fp);
+            }
+            if (replay_dir == "")
+                save_false_positives("./logging/initial_" + false_positive_fn);
+            else
+                save_false_positives("./logging/replay/initial_" + false_positive_fn);
+        } catch (exception& exp ) {
+            throw my_exit("Warning: could not read false positives file: " + false_positive_rfn + '\n' + "Line: " + string(exp.what()) + " at: " + line);
+        }
+    }
+}
+void TrackerManager::save_false_positives() {
+    if (replay_dir == "") {
+        save_false_positives("./logging/" + false_positive_fn);
+        save_false_positives("../" + false_positive_fn);
+    } else {
+        save_false_positives("./logging/replay/" + false_positive_fn);
+    }
+}
+void TrackerManager::save_false_positives(string false_positive_wfn) {
+    std::ofstream fp_writer;
+    fp_writer.open(false_positive_wfn,std::ofstream::out);
+    fp_writer << "type;type_str;detection_count;imx;imy;im_size\n";
+    for (auto fp : false_positives) {
+        fp_writer << std::to_string(static_cast<int>(fp.type)) << ";" <<
+                  false_positive_names[fp.type] << ";" <<
+                  fp.detection_count  << ";" <<
+                  fp.im_pt.x  << ";" <<
+                  fp.im_pt.y  << ";" <<
+                  fp.im_size  << "\n";
+    }
+    fp_writer.flush();
+    fp_writer.close();
+}
+
 void TrackerManager::close () {
     if (initialized) {
         for (auto trkr : _trackers)
             trkr->close();
-        //        serialize_settings();
+        save_false_positives();
         initialized = false;
+
     }
 }
 

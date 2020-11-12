@@ -162,6 +162,7 @@ private:
     void update_trackers(double time, long long frame_number, bool drone_is_active);
     void update_max_change_points();
     void update_static_ignores();
+    void update_static_ignores(ItemTracker * trkr);
     void match_blobs_to_trackers(bool drone_is_active, double time);
     void find_cog_and_remove(cv::Point maxt, double max, cv::Mat diff,bool enable_insect_drone_split, float drn_ins_split_thresh,bool enable_viz_max_points_local,cv::Mat bkg_frame);
     bool tracker_active(ItemTracker * trkr, bool drone_is_active);
