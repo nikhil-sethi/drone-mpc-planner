@@ -54,9 +54,9 @@ struct BlobProps {
 };
 
 struct ImageItem {
-    uint frame_id;
-    uint keypoint_id;
-    float x,y,size,pixel_max,score,disparity = 0;
+    uint frame_id = 0;
+    uint keypoint_id = 0;
+    float x = 0,y = 0,size = 0,pixel_max = 0,score = 0,disparity = 0;
     bool valid = false;
     bool blob_is_fused = false;
 
@@ -95,10 +95,10 @@ struct ImageItem {
     }
 };
 struct ImagePredictItem {
-    uint frame_id;
-    float x,y,disparity,size,certainty;
-    float pixel_max;
-    bool valid;
+    uint frame_id = 0;
+    float x = 0,y = 0,disparity = 0,size = 0,certainty = 0;
+    float pixel_max = 0;
+    bool valid = false;
     cv::KeyPoint k() {
         return cv::KeyPoint(x,y,size);
     }
@@ -129,13 +129,13 @@ struct WorldItem {
         pt.z = wbp.z;
         valid = wbp.valid;
     }
-    cv::Point3f pt;
+    cv::Point3f pt = {0};
     ImageItem  iti;
     cv::Point2f image_coordinates() {
         return cv::Point2f(iti.x,iti.y);
     }
-    float distance, distance_bkg;
-    float radius;
+    float distance = 0, distance_bkg = 0;
+    float radius = 0;
     bool valid = false;
 
     uint frame_id() {
@@ -146,5 +146,27 @@ struct WorldItem {
     }
 
 };
+struct StateData {
+    cv::Point3f pos = {0},spos = {0},vel = {0},vel_unfiltered = {0},acc = {0};
+};
+struct TrackData {
+    WorldItem world_item;
+    ImagePredictItem predicted_image_item;
+    StateData state;
+    cv::Point3f pos() {return state.pos;}
+    cv::Point3f spos() {return state.spos;}
+    cv::Point3f vel() {return state.vel;}
+    cv::Point3f acc() {return state.acc;}
+    float dt = 0;
+    bool pos_valid = false;
+    bool spos_valid = false;
+    bool vel_valid = false;
+    bool acc_valid = false;
+    double time = 0;
+    float yaw_deviation = 0;
+    bool yaw_deviation_valid = 0;
+};
+
+
 
 }

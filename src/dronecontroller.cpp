@@ -5,6 +5,7 @@
 #include "linalg.h"
 
 using namespace cv;
+using namespace tracking;
 
 // Create an instance of Joystick
 static Joystick joystick("/dev/input/js0");
@@ -109,7 +110,7 @@ void DroneController::set_led_strength(float exposure) {
     std::cout << "Led strength set to: " << dparams.drone_led_strength << std::endl;
 }
 
-void DroneController::control(track_data data_drone, track_data data_target_new, track_data data_raw_insect, double time) {
+void DroneController::control(TrackData data_drone, TrackData data_target_new, TrackData data_raw_insect, double time) {
     _time = time;
 
     if (!log_replay_mode && pparams.joystick != rc_none)
@@ -176,7 +177,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         }
         [[fallthrough]];
     } case fm_take_off_aim: {
-        state_data state_drone_takeoff = data_drone.state;
+        StateData state_drone_takeoff = data_drone.state;
         state_drone_takeoff.pos = _dtrk->drone_takeoff_location() + cv::Point3f(0,lift_off_dist_take_off_aim,0);
         state_drone_takeoff.vel = {0};
 
@@ -195,7 +196,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
             auto_throttle = initial_hover_throttle_guess();
 
             _burn_direction_for_thrust_approx = burn_direction; // to be used later to approx effective thrust
-            std::vector<state_data> trajectory = predict_trajectory(auto_burn_duration, 0, burn_direction, state_drone_takeoff);
+            std::vector<StateData> trajectory = predict_trajectory(auto_burn_duration, 0, burn_direction, state_drone_takeoff);
             if (log_replay_mode) // todo: tmp solution, call from visualizer instead if this viz remains to be needed
                 draw_viz(state_drone_takeoff,data_raw_insect.state,time,burn_direction,auto_burn_duration,remaining_aim_duration,trajectory);
         } else
@@ -260,7 +261,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         [[fallthrough]];
     }   case fm_interception_aim: {
         cv::Point3f burn_direction;
-        state_data state_drone_better = data_drone.state;
+        StateData state_drone_better = data_drone.state;
         state_drone_better.vel = drone_vel_after_takeoff;
 
         float remaining_aim_duration = aim_duration - static_cast<float>(time - interception_start_time);
@@ -268,7 +269,7 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
 
         if (remaining_aim_duration<0)
             remaining_aim_duration = 0;
-        std::vector<state_data> traj;
+        std::vector<StateData> traj;
         std::tie (auto_roll, auto_pitch, auto_burn_duration,burn_direction,traj) = calc_burn(state_drone_better,data_raw_insect.state,remaining_aim_duration);
 
         if (log_replay_mode) // todo: tmp solution, call from visualizer instead if this viz remains to be needed
@@ -279,10 +280,10 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
         if (!trajectory_in_view(traj,CameraView::relaxed) || auto_burn_duration > 1.1f || auto_burn_duration == 0.0f) {
             _flight_mode = fm_flying_pid_init;
         } else {
-            std::vector<state_data> traj_back;
+            std::vector<StateData> traj_back;
             cv::Point3f burn_direction_back;
             float auto_burn_duration_back;
-            state_data target_back = traj.front();
+            StateData target_back = traj.front();
             target_back.vel = {0};
             target_back.acc = {0};
             std::tie (std::ignore, std::ignore,auto_burn_duration_back,burn_direction_back,traj_back) = calc_burn(traj.back(),target_back,aim_duration);
@@ -538,14 +539,14 @@ void DroneController::control(track_data data_drone, track_data data_target_new,
                _rc->telemetry.arming_state  << ";";
 }
 
-std::tuple<int, int, float, Point3f, std::vector<state_data> > DroneController::calc_burn(state_data state_drone,state_data state_target,float remaining_aim_duration) {
+std::tuple<int, int, float, Point3f, std::vector<StateData> > DroneController::calc_burn(StateData state_drone,StateData state_target,float remaining_aim_duration) {
     remaining_aim_duration +=  transmission_delay_duration + 1.f / pparams.fps;
     auto [auto_roll_burn, auto_pitch_burn, burn_duration,burn_direction] = calc_directional_burn(state_drone,state_target,remaining_aim_duration);
     auto traj = predict_trajectory(burn_duration, remaining_aim_duration, burn_direction, state_drone);
     return std::make_tuple(auto_roll_burn, auto_pitch_burn, burn_duration,burn_direction,traj);
 }
 
-std::tuple<int,int,float,cv::Point3f> DroneController::calc_directional_burn(state_data state_drone, state_data state_target, float remaining_aim_duration) {
+std::tuple<int,int,float,cv::Point3f> DroneController::calc_directional_burn(StateData state_drone, StateData state_target, float remaining_aim_duration) {
 
     cv::Point3f target_pos_after_aim = state_target.pos + remaining_aim_duration * state_target.vel;
 
@@ -617,7 +618,7 @@ std::tuple<int,int,float,cv::Point3f> DroneController::calc_directional_burn(sta
 
 //calculate the predicted drone location after a burn
 std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::predict_drone_after_burn(
-    state_data state_drone, cv::Point3f burn_direction,float remaining_aim_duration, float burn_duration) {
+    StateData state_drone, cv::Point3f burn_direction,float remaining_aim_duration, float burn_duration) {
 
     cv::Point3f integrated_pos = state_drone.pos;
     cv::Point3f integrated_vel = state_drone.vel;
@@ -658,8 +659,8 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::predict_drone
 }
 
 void DroneController::draw_viz(
-    state_data state_drone, state_data state_target,double time, cv::Point3f burn_direction,
-    float burn_duration, float remaining_aim_duration, std::vector<state_data> traj) {
+    StateData state_drone, StateData state_target,double time, cv::Point3f burn_direction,
+    float burn_duration, float remaining_aim_duration, std::vector<StateData> traj) {
 
     double viz_time_after_aim = time + static_cast<double>(remaining_aim_duration + transmission_delay_duration + 1.f/pparams.fps);
     viz_target_pos_after_burn = state_target.pos + (remaining_aim_duration + burn_duration) * state_target.vel; // TODO: transmission_delay_duration + 1.f/pparams.fps ???
@@ -701,13 +702,13 @@ void DroneController::calibrate_landing() {
     }
 }
 
-std::vector<state_data> DroneController::predict_trajectory(float burn_duration, float remaining_aim_duration, cv::Point3f burn_direction, state_data state_drone) {
-    std::vector<state_data> traj;
+std::vector<StateData> DroneController::predict_trajectory(float burn_duration, float remaining_aim_duration, cv::Point3f burn_direction, StateData state_drone) {
+    std::vector<StateData> traj;
     cv::Point3f integrated_pos, integrated_vel;
     for (float f=0; f <= burn_duration; f+=1.f/pparams.fps) {
         std::tie (integrated_pos, integrated_vel,std::ignore) = predict_drone_after_burn(
                     state_drone, burn_direction,remaining_aim_duration,f);
-        state_data state;
+        StateData state;
         state.pos = integrated_pos;
         state.vel = integrated_vel;
         traj.push_back(state);
@@ -715,7 +716,7 @@ std::vector<state_data> DroneController::predict_trajectory(float burn_duration,
     return traj;
 }
 
-bool DroneController::trajectory_in_view(std::vector<state_data> traj, CameraView::view_volume_check_mode c) {
+bool DroneController::trajectory_in_view(std::vector<StateData> traj, CameraView::view_volume_check_mode c) {
     for (auto state : traj) {
         bool inview;
         std::tie(inview, ignore) = _camview->in_view(state.pos,c);
@@ -744,7 +745,7 @@ std::tuple<float,float> DroneController::acc_to_quaternion(cv::Point3f acc) {
 }
 
 //considering a take off order from just after the aiming phase of: spinning up, burning, spin down, 1g, find the max drone acceleration that best desccribes the current position given dt
-void DroneController::approx_effective_thrust(track_data data_drone, cv::Point3f burn_direction, float burn_duration, float dt_burn) {
+void DroneController::approx_effective_thrust(TrackData data_drone, cv::Point3f burn_direction, float burn_duration, float dt_burn) {
 
     cv::Point3f pos_after_aim =  _dtrk->drone_takeoff_location() + cv::Point3f(0,lift_off_dist_take_off_aim,0);
     float partial_effective_burn_spin_up_duration = effective_burn_spin_down_duration; // if the burn duration is long enough this is equal otherwise it may be shortened
@@ -812,7 +813,7 @@ float DroneController::thrust_to_throttle(float thrust_ratio) {
     return p1*powf(thrust_ratio,4) + p2*powf(thrust_ratio,3) + p3*powf(thrust_ratio,2) + p4*thrust_ratio + p5;
 }
 
-cv::Point3f DroneController::keep_in_volume_correction_acceleration(track_data data_drone) {
+cv::Point3f DroneController::keep_in_volume_correction_acceleration(TrackData data_drone) {
     float drone_rotating_time = 6.f/pparams.fps; // Est. time to rotate the drone around 180 deg. see betaflight
     float safety = 2.f;
     std::array<float, N_PLANES> speed_error_normal_to_plane;
@@ -926,7 +927,7 @@ std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f de
     return std::make_tuple(roll_cmd,pitch_cmd,throttle_cmd);
 }
 
-void DroneController::control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel) {
+void DroneController::control_model_based(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel) {
     pos_modelx.new_sample(setpoint_pos.x);
     pos_modely.new_sample(setpoint_pos.y);
     pos_modelz.new_sample(setpoint_pos.z);
@@ -946,7 +947,7 @@ void DroneController::control_model_based(track_data data_drone, cv::Point3f set
     std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(desired_acceleration);
 }
 
-std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_control_gains(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel) {
+std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_control_gains(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel) {
     float kp_pos_roll_scaled, kp_pos_throttle_scaled, kp_pos_pitch_scaled, ki_pos_roll_scaled, ki_thrust_scaled, ki_pos_pitch_scaled, kd_pos_roll_scaled, kd_pos_throttle_scaled, kd_pos_pitch_scaled, kp_v_roll_scaled, kp_v_throttle_scaled, kp_v_pitch_scaled, kd_v_roll_scaled, kd_v_throttle_scaled, kd_v_pitch_scaled;
 
     cv::Point3f scale_pos_p = {0.01f, 0.01f, 0.01f};
@@ -1011,7 +1012,7 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> Dron
     return std::tuple(kp_pos, ki_pos, kd_pos, kp_vel, kd_vel);
 }
 
-std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::control_error(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, cv::Point3f ki_pos) {
+std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::control_error(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, cv::Point3f ki_pos) {
     float err_x_filtered = 0, err_y_filtered = 0, err_z_filtered = 0;
     if(data_drone.pos_valid) {
         err_x_filtered = setpoint_pos.x - data_drone.state.spos.x;
@@ -1067,13 +1068,13 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::
     return std::tuple(pos_err_p, pos_err_d, vel_err_p, vel_err_d);
 }
 
-void DroneController::check_emergency_kill(track_data data_drone) {
+void DroneController::check_emergency_kill(TrackData data_drone) {
     check_tracking_lost(data_drone);
     check_control_and_tracking_problems(data_drone);
     check_snr(data_drone);
 }
 
-void DroneController::check_tracking_lost(track_data data_drone) {
+void DroneController::check_tracking_lost(TrackData data_drone) {
     // If keep-in-volume is not strong enough the drone has a chance to come back after some time.
     if(!data_drone.pos_valid) {
         kill_cnt_down++;
@@ -1085,7 +1086,7 @@ void DroneController::check_tracking_lost(track_data data_drone) {
         kill_cnt_down = 0;
     }
 }
-void DroneController::check_control_and_tracking_problems(track_data data_drone) {
+void DroneController::check_control_and_tracking_problems(TrackData data_drone) {
 
     model_error += normf({pos_modelx.current_output() - data_drone.pos().x,
                           pos_modely.current_output() - data_drone.pos().y,
@@ -1105,7 +1106,7 @@ void DroneController::check_control_and_tracking_problems(track_data data_drone)
 #endif
 }
 
-void DroneController::check_snr(track_data data_drone) {
+void DroneController::check_snr(TrackData data_drone) {
     if(_time>take_off_start_time+1) {
         if(snr_init<3) {
             if(data_drone.pos_valid) {

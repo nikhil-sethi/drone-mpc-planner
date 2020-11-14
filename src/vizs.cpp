@@ -1,6 +1,7 @@
 #include "vizs.h"
 using namespace cv;
 using namespace std;
+using namespace tracking;
 
 cv::Scalar white(255,255,255);
 cv::Scalar black(0,0,0);
@@ -10,7 +11,6 @@ cv::Scalar red(60,60,255);
 cv::Scalar pink(147,20,255);
 cv::Scalar linecolors[] = {green,blue,red,cv::Scalar(0,255,255),cv::Scalar(255,255,0),cv::Scalar(255,0,255),cv::Scalar(128,128,255),cv::Scalar(255,128,128)};
 
-//cv::Scalar background_color(255,255,255);
 cv::Scalar fore_color(255,255,255);
 cv::Scalar background_color(0,0,0);
 
@@ -49,11 +49,11 @@ void Visualizer::add_plot_sample(void) {
 
 
         auto dtrkr = _trackers->dronetracker();
-        track_data data = dtrkr->last_track_data();
+        TrackData data = dtrkr->last_track_data();
         dt.push_back(data.dt);
         dt_target.push_back(1.f/pparams.fps);
 
-        track_data data_target = _trackers->target_last_trackdata();
+        TrackData data_target = _trackers->target_last_trackdata();
 
         if (data.pos_valid) {
             posX_drone.push_back(-data.state.pos.x);
@@ -374,18 +374,18 @@ void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis,float
         if (popcorn_cnt > 35)
             popcorn_cnt  = 0;
     }
-
 }
 
-cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, std::vector<tracking::WorldItem> path,std::vector<tracking::ImagePredictItem> predicted_path) {
+cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, std::vector<tracking::TrackData> path) {
 
     cv::Mat frameL_small_drone;
-    std::vector<tracking::ImagePredictItem> tmp = predicted_path;
-    if (tmp.size()>0) {
+    if (path.size() > 0) {
         std::vector<cv::KeyPoint> keypoints;
-        for (uint i = 0; i< tmp.size(); i++) {
-            cv::KeyPoint k(tmp.at(i).x/pparams.imscalef,tmp.at(i).y/pparams.imscalef,24/pparams.imscalef);
-            keypoints.push_back(k);
+        for (uint i = 0; i< path.size(); i++) {
+            if (path.at(i).predicted_image_item.valid) {
+                cv::KeyPoint k(path.at(i).predicted_image_item.x/pparams.imscalef,path.at(i).predicted_image_item.y/pparams.imscalef,24/pparams.imscalef);
+                keypoints.push_back(k);
+            }
         }
         drawKeypoints( frameL_small, keypoints, frameL_small_drone, Scalar(0,255,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
     } else {
@@ -395,7 +395,7 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
     if (path.size() > 0) {
         std::vector<cv::KeyPoint> keypoints;
         for (uint i = 0; i< path.size(); i++) {
-            cv::KeyPoint k(path.at(i).iti.x,path.at(i).iti.y,12/pparams.imscalef);
+            cv::KeyPoint k(path.at(i).world_item.iti.x,path.at(i).world_item.iti.y,12/pparams.imscalef);
             keypoints.push_back(k);
         }
         drawKeypoints( frameL_small_drone, keypoints, frameL_small_drone, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
@@ -431,12 +431,6 @@ void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, doubl
         tracker_viz_base_data.min_dis = min_dis;
         tracker_viz_base_data.setpoint = setpoint;
         tracker_viz_base_data.time = time;
-        tracker_viz_base_data.drn_path = dtrkr->path;
-        tracker_viz_base_data.drn_predicted_path = dtrkr->predicted_image_path;
-        if (itrkr) {
-            tracker_viz_base_data.ins_path = itrkr->path;
-            tracker_viz_base_data.ins_predicted_path = itrkr->predicted_image_path;
-        }
 
         new_tracker_viz_data_requested = false;
         lock_frame_data.unlock();
@@ -452,10 +446,17 @@ void Visualizer::draw_tracker_viz() {
     cv::Point3f setpoint = tracker_viz_base_data.setpoint;
     double time = tracker_viz_base_data.time;
 
-    std::vector<tracking::WorldItem> drn_path = tracker_viz_base_data.drn_path;
-    std::vector<tracking::ImagePredictItem> drn_predicted_path = tracker_viz_base_data.drn_predicted_path;
-    std::vector<tracking::WorldItem> ins_path = tracker_viz_base_data.ins_path;
-    std::vector<tracking::ImagePredictItem> ins_predicted_path = tracker_viz_base_data.ins_predicted_path;
+    std::vector<tracking::TrackData> drn_path = _trackers->dronetracker()->track_history;
+    tracking::TrackData last_drone_detection;
+    if (drn_path.size())
+        last_drone_detection = drn_path.back();
+
+    std::vector<tracking::TrackData> ins_path;
+    if (_trackers->target_insecttracker())
+        ins_path = _trackers->target_insecttracker()->track_history;
+    tracking::TrackData last_insect_detection;
+    if (ins_path.size())
+        last_insect_detection = ins_path.back();
 
     cv::Size resFrame_size = viz_frame_size();
     resFrame_size.width -=IMG_W;
@@ -466,23 +467,23 @@ void Visualizer::draw_tracker_viz() {
     cv::Mat roi = resFrame(rect);
     cv::Size size (frameL.cols*_res_mult,frameL.rows*_res_mult);
 
-    if ( drn_predicted_path.size()>0 ) {
-        auto pred = drn_predicted_path.back();
+    if ( last_drone_detection.predicted_image_item.valid) {
+        auto pred =  last_drone_detection.predicted_image_item;
         cv::circle(frameL_color,pred.pt(),pred.size/2,cv::Scalar(0,255,0));
     }
-    if ( drn_path.size()>0 ) {
-        auto p = drn_path.back().iti;
+    if ( last_drone_detection.world_item.iti.valid) {
+        auto p =  last_drone_detection.world_item.iti;
         cv::circle(frameL_color,p.pt()*pparams.imscalef,p.size/2*pparams.imscalef,cv::Scalar(0,0,255));
     }
 
-    if ( ins_predicted_path.size()>0 ) {
-        auto pred = ins_predicted_path.back();
+    if (last_insect_detection.predicted_image_item.valid) {
+        auto pred = last_insect_detection.predicted_image_item;
         cv::circle(frameL_color,pred.pt(),pred.size/2,cv::Scalar(0,255,0));
     }
 
-    if (ins_path.size()>0) {
+    if ( last_insect_detection.world_item.iti.valid) {
         std::stringstream ss;
-        tracking::WorldItem wti = ins_path.back();
+        tracking::WorldItem wti = last_insect_detection.world_item;
         if (wti.valid) {
             ss << "i " << to_string_with_precision(wti.distance,1);
             cv::Scalar c(0,0,255);
@@ -509,7 +510,7 @@ void Visualizer::draw_tracker_viz() {
 
 
         if (!_dctrl->viz_drone_trajectory.empty() && ! drn_path.empty()) {
-            double raak = norm(_dctrl->viz_drone_trajectory.back() .pos- drn_path.back().pt);
+            double raak = norm(_dctrl->viz_drone_trajectory.back() .pos- last_drone_detection.world_item.pt);
             putText(resFrame,"trgt: |"  + to_string_with_precision(raak,2) + "|",cv::Point(460*_res_mult,12*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
         }
 
@@ -523,14 +524,14 @@ void Visualizer::draw_tracker_viz() {
         }
 
         for (uint i=0; i < drn_path.size(); i++) {
-            cv::Point2f p = world2im_2d(drn_path.at(i).pt,_visdat->Qfi, _visdat->camera_angle);
+            cv::Point2f p = world2im_2d(drn_path.at(i).world_item.pt,_visdat->Qfi, _visdat->camera_angle);
             cv::circle(frameL_color,p,1,blue);
         }
     }
 
-    if (drn_path.size()>0) {
+    if (last_drone_detection.world_item.iti.valid) {
         std::stringstream ss;
-        tracking::WorldItem wti = drn_path.back();
+        tracking::WorldItem wti = last_drone_detection.world_item;
         ss << "d " << to_string_with_precision(wti.distance,1);
         cv::Scalar c(0,0,255);
         if (wti.distance_bkg >wti.distance )
@@ -561,8 +562,8 @@ void Visualizer::draw_tracker_viz() {
     cv::Size vizsizeL(size.width/4,size.height/4);
     cv::Mat frameL_small;
     cv::resize(frameL,frameL_small,cv::Size(frameL.cols/pparams.imscalef,frameL.rows/pparams.imscalef));
-    cv::Mat frameL_small_drone = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,drn_path,drn_predicted_path);
-    cv::Mat frameL_small_insect = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,ins_path,ins_predicted_path);
+    cv::Mat frameL_small_drone = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,drn_path);
+    cv::Mat frameL_small_insect = draw_sub_tracking_viz(frameL_small,vizsizeL,setpoint,ins_path);
     frameL_small_drone.copyTo(resFrame(cv::Rect(0,0,frameL_small_drone.cols, frameL_small_drone.rows)));
     frameL_small_insect.copyTo(resFrame(cv::Rect(resFrame.cols-frameL_small_drone.cols,0,frameL_small_drone.cols, frameL_small_drone.rows)));
     draw_target_text(resFrame,time,dis,min_dis);

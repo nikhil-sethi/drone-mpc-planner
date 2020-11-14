@@ -165,7 +165,7 @@ CameraView::hunt_check_result CameraView::in_hunt_area(cv::Point3f moth_pos) {
 }
 
 
-std::tuple<bool, std::array<bool, N_PLANES>> CameraView::check_distance_to_borders(track_data data_drone, float req_breaking_distance) {
+std::tuple<bool, std::array<bool, N_PLANES>> CameraView::check_distance_to_borders(tracking::TrackData data_drone, float req_breaking_distance) {
     std::vector<cv::Point3f> p{data_drone.pos (), data_drone.vel ()};
     std::array<float, N_PLANES> distances_to_planes = calc_distance_to_borders (p);
     std::array<bool, N_PLANES> violated_planes = {{false}};

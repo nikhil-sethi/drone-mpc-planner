@@ -28,7 +28,7 @@ private:
     cv::Mat plot_all_velocity(void);
     cv::Mat plot_all_position(void);
     void draw_target_text(cv::Mat resFrame, double time, float dis, float min_dis);
-    cv::Mat draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, std::vector<tracking::WorldItem> path, std::vector<tracking::ImagePredictItem> predicted_path);
+    cv::Mat draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, std::vector<tracking::TrackData> path);
     void draw_tracker_viz();
 
     VisionData * _visdat;
@@ -71,11 +71,6 @@ private:
         double time;
         float dis;
         float min_dis;
-
-        std::vector<tracking::WorldItem> drn_path;
-        std::vector<tracking::ImagePredictItem> drn_predicted_path;
-        std::vector<tracking::WorldItem> ins_path;
-        std::vector<tracking::ImagePredictItem> ins_predicted_path;
     };
     Tracker_viz_base_data tracker_viz_base_data;
 

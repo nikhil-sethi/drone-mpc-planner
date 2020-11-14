@@ -46,7 +46,7 @@ void Visualizer3D::run()
 
 void Visualizer3D::addDrone()
 {
-    track_data data = _dtrkr->last_track_data();
+    TrackData data = _dtrkr->last_track_data();
 
     if (data.pos_valid) {
         pub_tf.add_transform(static_cast<double>(data.pos().x), static_cast<double>(data.pos().y), static_cast<double>(data.pos().z), 0, 0, 0, 1, _time, "pats_frame", "hunter");
@@ -56,7 +56,7 @@ void Visualizer3D::addDrone()
 
 void Visualizer3D::addInsect()
 {
-    track_data data = _itrkr->last_track_data();
+    TrackData data = _itrkr->last_track_data();
 
     if (data.pos_valid && data.pos().x != 0.0f)
     {
@@ -67,7 +67,7 @@ void Visualizer3D::addInsect()
 
 void Visualizer3D::addTarget()
 {
-    track_data data = _itrkr->last_track_data();
+    TrackData data = _itrkr->last_track_data();
 
     if (_dctrl->Joy_State() != DroneController::js_hunt) {
 

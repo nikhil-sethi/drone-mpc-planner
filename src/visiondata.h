@@ -104,6 +104,7 @@ public:
     cv::Mat depth_background;
     cv::Mat disparity_background;
     cv::Mat depth_background_mm;
+    cv::Mat frameL_background;
 
     bool disable_fading = false;
     bool enable_collect_no_drone_frames = true;

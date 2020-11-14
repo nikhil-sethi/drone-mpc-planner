@@ -165,7 +165,6 @@ void ItemTracker::update_blob_filters() {
 
 void ItemTracker::update(double time) {
     if ( _world_item.valid) {
-        path.push_back(_world_item);
         update_state(_world_item.pt,time);
         update_blob_filters();
         _tracking = true;
@@ -178,35 +177,21 @@ void ItemTracker::update(double time) {
             _tracking = false;
             reset_tracker_ouput(time);
         } else {
-            track_data data;
+            TrackData data;
+            data.world_item = _world_item;
+            data.predicted_image_item = _image_predict_item;
             data.time = time;
             track_history.push_back(data);
         }
     }
 
-    cleanup_paths();
+    cleanup_history();
 
     append_log();
 }
 
 //make sure the vectors that contain the path data don't endlesly grow
-void ItemTracker::cleanup_paths() {
-    if (_visdat->frame_id > path_buf_size) {
-        if (path.size() > 0) {
-            if (path.begin()->frame_id() < _visdat->frame_id - path_buf_size)
-                path.erase(path.begin());
-            if (path.begin()->frame_id() > _visdat->frame_id ) //at the end of a realsense video loop, frame_id resets
-                path.clear();
-        }
-
-        if (predicted_image_path.size() > 0) {
-            if (predicted_image_path.begin()->frame_id < _visdat->frame_id - path_buf_size )
-                predicted_image_path.erase(predicted_image_path.begin());
-            if (predicted_image_path.begin()->frame_id > _visdat->frame_id ) //at the end of a realsense video loop, frame_id resets
-                predicted_image_path.clear();
-        }
-    }
-
+void ItemTracker::cleanup_history() {
     while (track_history.size() > track_history_max_size)
         track_history.erase(track_history.begin());
 }
@@ -214,7 +199,7 @@ void ItemTracker::cleanup_paths() {
 void ItemTracker::append_log() {
     if (_logger->is_open()) {
         //log all image stuff
-        if (path.size()>0)
+        if (_tracking)
             (*_logger) << _image_item.x * pparams.imscalef << ";" << _image_item.y * pparams.imscalef << ";" << _image_item.disparity << ";"
                        << _image_item.size  << ";" << _image_item.score  << ";";
         else
@@ -226,7 +211,7 @@ void ItemTracker::append_log() {
 
         (*_logger) << _n_frames_lost << ";" << _n_frames_tracking << ";" << _tracking << ";";
         //log all world stuff
-        track_data last = last_track_data();
+        TrackData last = last_track_data();
         (*_logger) << last.state.pos.x << ";" << last.state.pos.y << ";" << last.state.pos.z << ";" ;
         (*_logger) << last.state.spos.x << ";" << last.state.spos.y << ";" << last.state.spos.z << ";";
         (*_logger) << last.state.vel.x << ";" << last.state.vel.y << ";" << last.state.vel.z << ";" ;
@@ -510,7 +495,7 @@ float ItemTracker::estimate_sub_disparity(int disparity,float * err) {
 }
 
 void ItemTracker::update_prediction(double time) {
-    vector<track_data>::reverse_iterator td;
+    vector<TrackData>::reverse_iterator td;
     for (td = track_history.rbegin(); td != track_history.rend(); ++td) { // TODO: isn't there some stl algorithm for this?
         if (td->pos_valid)
             break;
@@ -536,16 +521,14 @@ void ItemTracker::update_prediction(double time) {
         _image_predict_item.size = world2im_size(_world_item.pt+cv::Point3f(expected_radius,0,0),_world_item.pt-cv::Point3f(expected_radius,0,0),_visdat->Qfi,_visdat->camera_angle);
         _image_predict_item.valid = true;
     }
-    //issue #108:
-    predicted_image_path.push_back(_image_predict_item);
 }
 
 void ItemTracker::update_state(Point3f measured_world_coordinates,double time) {
-    track_data data;
+    TrackData data;
     data.pos_valid = true;
     data.state.pos = measured_world_coordinates;
 
-    track_data data_prev;
+    TrackData data_prev;
     if (track_history.size()>0)
         data_prev = track_history.back();
 
@@ -594,6 +577,8 @@ void ItemTracker::update_state(Point3f measured_world_coordinates,double time) {
     data.time = time;
     _last_detection = time;
     data.dt = dt;
+    data.world_item = _world_item;
+    data.predicted_image_item = _image_predict_item;
     reset_filters = false;
     track_history.push_back(data);
 }
@@ -612,7 +597,7 @@ float ItemTracker::calc_certainty(KeyPoint item) {
 }
 
 void ItemTracker::reset_tracker_ouput(double time) {
-    track_data data;
+    TrackData data;
     reset_filters = true;
     disparity_prev = -1;
     _image_predict_item.valid = false;
@@ -715,7 +700,6 @@ void ItemTracker::close () {
         serialize_settings();
     initialized_logger = false;
     initialized = false;
-
 }
 
 }

@@ -3,6 +3,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
 #include "common.h"
+#include "tracking.h"
 
 #define N_PLANES 7 //adapt this to the number of planes in plane index!
 #define N_PLANE_VERTICES 10 //adapt this to the number of corner points in point_index
@@ -98,7 +99,7 @@ public:
     hunt_check_result in_hunt_area(cv::Point3f moth_pos);
 
     /** @brief Checks wheather enough braking distance is left a long the current drone velocity to every plane. */
-    std::tuple<bool, std::array<bool, N_PLANES>> check_distance_to_borders(track_data data_drone, float req_breaking_distance);
+    std::tuple<bool, std::array<bool, N_PLANES>> check_distance_to_borders(tracking::TrackData data_drone, float req_breaking_distance);
     float calc_shortest_distance_to_plane(cv::Point3f drone_pos, uint plane_idx, view_volume_check_mode cm);
     cv::Point3f setpoint_in_cameraview(cv::Point3f pos_setpoint, view_volume_check_mode cm);
     cv::Point3f setpoint_in_cameraview(cv::Point3f pos_setpoint, cv::Point3f drone_pos, view_volume_check_mode cm);

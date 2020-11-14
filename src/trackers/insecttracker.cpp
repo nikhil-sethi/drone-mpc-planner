@@ -35,10 +35,11 @@ void InsectTracker::check_false_positive() {
     //check for a 'permanent motion pair', a spot in the motion map that was permanentely changed after the motion map was reset.
     //(this could well have been a moving insect, splitting the blob in a permanent speck where it started at the point of the reset,
     //and the actual flying insect )
-    if (path.size()>1) {
+    if (track_history.size()>1) {
         float tot = 0;
         uint cnt = 0;
-        for (auto wi : path) {
+        for (auto ti : track_history) {
+            auto wi = ti.world_item;
             if (wi.valid) {
                 tot += normf(wi.pt - _world_item.pt);
                 cnt++;
@@ -63,8 +64,6 @@ void InsectTracker::update(double time) {
     ItemTracker::update(time);
 
     if (!_tracking) {
-        predicted_image_path.clear();
-        path.clear();
         min_disparity = params.min_disparity.value();
         max_disparity = params.max_disparity.value();
     } else {

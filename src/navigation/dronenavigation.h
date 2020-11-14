@@ -126,8 +126,8 @@ public:
             return navigation_status_names[_navigation_status];
     }
 
-    track_data setpoint() {
-        track_data data_target;
+    tracking::TrackData setpoint() {
+        tracking::TrackData data_target;
         data_target.state.pos = setpoint_pos_world;
         data_target.state.vel = setpoint_vel_world;
         data_target.state.acc = setpoint_acc_world;

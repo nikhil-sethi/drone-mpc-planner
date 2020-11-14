@@ -27,14 +27,11 @@ void DroneTracker::update(double time, bool drone_is_active) {
         break;
     }  case dts_inactive: {
         start_take_off_time = time;
-        predicted_image_path.clear();
-        path.clear();
         _tracking = false;
         if (_landing_pad_location_set) {
             cv::Point3f p= world2im_3d(drone_takeoff_location(),_visdat->Qfi,_visdat->camera_angle);
             float size = _drone_takeoff_im_size;
             _image_predict_item = ImagePredictItem(p,1,size,255,_visdat->frame_id);
-            predicted_image_path.push_back(_image_predict_item);
         } else {
             _image_predict_item.valid = false;
             reset_tracker_ouput(time);
@@ -204,10 +201,7 @@ void DroneTracker::calc_takeoff_prediction() {
     if (spinup_detected<3)
         dt = 0;
     cv::Point3f expected_drone_location = drone_takeoff_location() + 0.5* acc *powf(dt,2);
-
-
     _image_predict_item = ImagePredictItem(world2im_3d(expected_drone_location,_visdat->Qfi,_visdat->camera_angle),1,_drone_takeoff_im_size,255,_visdat->frame_id);
-    predicted_image_path.push_back(_image_predict_item);
 }
 
 bool DroneTracker::detect_lift_off() {
@@ -290,7 +284,7 @@ void DroneTracker::clean_ignore_blobs(double time) {
 
 void DroneTracker::detect_deviation_angle() {
 
-    static vector<track_data> bowling_vector;
+    static vector<TrackData> bowling_vector;
 
     uint index_difference = 15;
 

@@ -52,10 +52,36 @@ void VirtualmothTracker::update_behavior_based(unsigned long long frame_number, 
     if(escape_triggered) {
         insect_vel += cv::Point3f(0., -2, 0.)/static_cast<float>(pparams.fps);
     }
+
+    _n_frames_lost = 0;
+    _n_frames_tracking++;
+    _tracking = true;
+
+
     insect_pos += 1./pparams.fps * insect_vel;
-    bool valid = true;
-    track_data data;
-    data.pos_valid = valid;
+
+    cv::Point3f insect_im = world2im_3d(insect_pos, _visdat->Qfi, _visdat->camera_angle);
+
+    _image_item = ImageItem (insect_im.x / pparams.imscalef, insect_im.y / pparams.imscalef, insect_im.z, frame_number);
+    _image_item.valid = true;
+
+    _image_predict_item = ImagePredictItem(cv::Point3f(insect_im.x, insect_im.y, insect_im.z), 1, 1, 255, frame_number);
+    _image_predict_item.valid = _image_predict_item.x > 0;
+
+    WorldItem w;
+    w.iti = _image_item;
+    w.valid = true;
+    w.pt.x = insect_pos.x;
+    w.pt.y = insect_pos.y;
+    w.pt.z = insect_pos.z;
+    w.distance = norm(w.pt);
+    w.iti.x = std::clamp(static_cast<int>(w.iti.x), 0, _visdat->depth_background_mm.cols);
+    w.iti.y = std::clamp(static_cast<int>(w.iti.y), 0, _visdat->depth_background_mm.rows);
+    w.distance_bkg = _visdat->depth_background_mm.at<float>(w.iti.y, w.iti.x);
+    _world_item = w;
+
+    TrackData data;
+    data.pos_valid = true;
     data.state.pos.x = insect_pos.x;
     data.state.pos.y = insect_pos.y;
     data.state.pos.z = insect_pos.z;
@@ -66,44 +92,17 @@ void VirtualmothTracker::update_behavior_based(unsigned long long frame_number, 
     data.state.vel.y = insect_vel.y;
     data.state.vel.z = insect_vel.z;
     data.state.acc.x = 0;
-    data.state.acc.y = 0; //-2/pparams.fps/pparams.fps;
+    data.state.acc.y = 0;
     data.state.acc.z = 0;
     data.time = time;
     track_history.push_back(data);
+    data.world_item = w;
+    data.predicted_image_item = _image_predict_item;
 
-    cv::Point3f insect_im = world2im_3d(insect_pos, _visdat->Qfi, _visdat->camera_angle);
-
-    _image_item = ImageItem (insect_im.x / pparams.imscalef, insect_im.y / pparams.imscalef, insect_im.z, frame_number);
-    _image_predict_item = ImagePredictItem(cv::Point3f(insect_im.x, insect_im.y, insect_im.z), 1, 1, 255, frame_number);
-    _image_item.valid = valid;
-
-    _image_predict_item.valid = _image_predict_item.x > 0;
-    predicted_image_path.push_back(_image_predict_item);
-    WorldItem w;
-    w.iti = _image_item;
-    w.valid = valid;
-    w.pt.x = insect_pos.x;
-    w.pt.y = insect_pos.y;
-    w.pt.z = insect_pos.z;
-    w.distance = norm(w.pt);
-    w.iti.x = std::clamp(static_cast<int>(w.iti.x), 0, _visdat->depth_background_mm.cols);
-    w.iti.y = std::clamp(static_cast<int>(w.iti.y), 0, _visdat->depth_background_mm.rows);
-    w.distance_bkg = _visdat->depth_background_mm.at<float>(w.iti.y, w.iti.x);
-    path.push_back(w);
-    _world_item = w;
-
-    _n_frames_lost = 0;
-    _n_frames_tracking++;
-    _tracking = true;
-
-    if (!_tracking) {
-        predicted_image_path.clear();
-        _image_predict_item.valid = false;
-    }
     if(time-start_time>5)
         _delete_me = true;
 
-    cleanup_paths();
+    cleanup_history();
 }
 
 

@@ -1,6 +1,8 @@
 #include "interceptor.h"
 #include "opencv2/imgproc.hpp"
 
+using namespace tracking;
+
 void Interceptor::init(tracking::TrackerManager* trackers, VisionData* visdat, CameraView* camview, std::ofstream* logger) {
     _logger = logger;
     _trackers = trackers;
@@ -121,7 +123,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
 }
 
 cv::Point3f Interceptor::update_far_target(bool drone_at_base) {
-    track_data target = _trackers->target_last_trackdata();
+    TrackData target = _trackers->target_last_trackdata();
     cv::Point3f predicted_pos = target.pos();
     cv::Point3f predicted_vel = target.vel();
     cv::Point3f predicted_acc = target.acc();
@@ -130,7 +132,7 @@ cv::Point3f Interceptor::update_far_target(bool drone_at_base) {
     float time_to_intercept = 0.2f;
     predicted_pos += time_to_intercept * predicted_vel;
 #endif
-    track_data dtd = _trackers->dronetracker()->last_track_data();
+    TrackData dtd = _trackers->dronetracker()->last_track_data();
     cv::Point3f drone_pos = dtd.pos();
 
     if (drone_at_base)
@@ -155,7 +157,7 @@ cv::Point3f Interceptor::update_far_target(bool drone_at_base) {
 }
 
 cv::Point3f Interceptor::update_close_target(bool drone_at_base) {
-    track_data target = _trackers->target_last_trackdata();
+    TrackData target = _trackers->target_last_trackdata();
     cv::Point3f predicted_pos = target.pos();
     cv::Point3f predicted_vel = target.vel();
     cv::Point3f predicted_acc = target.acc();
@@ -164,7 +166,7 @@ cv::Point3f Interceptor::update_close_target(bool drone_at_base) {
     float time_to_intercept = 0.1f;
     predicted_pos += time_to_intercept * predicted_vel;
 #endif
-    track_data dtd = _trackers->dronetracker()->last_track_data();
+    TrackData dtd = _trackers->dronetracker()->last_track_data();
     cv::Point3f drone_pos = dtd.pos();
     auto req_aim_pos = predicted_pos;
     _aim_acc = predicted_acc;
@@ -250,9 +252,9 @@ float Interceptor::calc_tti(cv::Point3f target_pos, cv::Point3f target_vel, cv::
 }
 
 void Interceptor::update_flower_of_fire(double time) {
-    track_data target = _trackers->target_last_trackdata();
+    TrackData target = _trackers->target_last_trackdata();
     cv::Point3f target_pos = target.pos();
-    track_data dtd = _trackers->dronetracker()->last_track_data();
+    TrackData dtd = _trackers->dronetracker()->last_track_data();
     cv::Point3f drone_pos = dtd.pos();
     _horizontal_separation = normf(cv::Point2f(drone_pos.x, drone_pos.z) - cv::Point2f(target_pos.x, target_pos.z));
     _vertical_separation = target_pos.y - drone_pos.y;
@@ -304,6 +306,3 @@ void Interceptor::intercept_spiral() {
     //        cv::RotatedRect rr = cv::fitEllipse(pts);
     //    }
 }
-
-
-

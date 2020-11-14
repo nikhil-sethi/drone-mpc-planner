@@ -136,7 +136,7 @@ protected:
     void reset_tracker_ouput(double time);
     void calc_world_props_blob_generic(BlobProps * pbs, bool use_max);
     bool check_ignore_blobs_generic(BlobProps * pbs);
-    void cleanup_paths();
+    void cleanup_history();
     float score(BlobProps blob, ImageItem ref);
     void update_prediction(double time);
 public:
@@ -147,8 +147,6 @@ public:
 
     virtual ~ItemTracker() {}
 
-    std::vector<WorldItem> path;
-    std::vector<ImagePredictItem> predicted_image_path;
     std::vector<IgnoreBlob> ignores_for_other_trkrs;
     std::vector<IgnoreBlob> ignores_for_me;
 
@@ -176,10 +174,10 @@ public:
     void append_log();
 
     uint track_history_max_size;
-    std::vector<track_data> track_history;
-    track_data last_track_data() {
+    std::vector<TrackData> track_history;
+    TrackData last_track_data() {
         if (track_history.empty())
-            return track_data();
+            return TrackData();
         return track_history.back();
     }
     virtual bool delete_me() = 0;

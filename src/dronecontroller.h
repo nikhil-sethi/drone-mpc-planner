@@ -4,6 +4,7 @@
 #include "multimodule.h"
 #include "common.h"
 #include "cameraview.h"
+#include "tracking.h"
 #define GRAVITY 9.81f
 #define DRONECONTROLLER_DEBUG false
 #define ENABLE_SPINUP true
@@ -243,34 +244,34 @@ private:
         }
     }
 
-    void approx_effective_thrust(track_data data_drone, cv::Point3f burn_direction, float burn_duration, float dt_burn);
+    void approx_effective_thrust(tracking::TrackData data_drone, cv::Point3f burn_direction, float burn_duration, float dt_burn);
     float thrust_to_throttle(float thrust_ratio);
-    std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> predict_drone_after_burn(state_data state_drone, cv::Point3f burn_direction, float remaining_aim_duration, float burn_duration);
-    std::tuple<int, int, float, cv::Point3f, std::vector<state_data> > calc_burn(state_data state_drone, state_data state_target, float remaining_aim_duration);
-    std::tuple<int, int, float, cv::Point3f> calc_directional_burn(state_data state_drone, state_data state_target, float remaining_aim_duration);
-    std::vector<state_data> predict_trajectory(float burn_duration, float remaining_aim_duration, cv::Point3f burn_direction, state_data state_drone);
-    void draw_viz(state_data state_drone, state_data state_target, double time, cv::Point3f burn_direction, float burn_duration, float remaining_aim_duration, std::vector<state_data> traj);
+    std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> predict_drone_after_burn(tracking::StateData state_drone, cv::Point3f burn_direction, float remaining_aim_duration, float burn_duration);
+    std::tuple<int, int, float, cv::Point3f, std::vector<tracking::StateData> > calc_burn(tracking::StateData state_drone, tracking::StateData state_target, float remaining_aim_duration);
+    std::tuple<int, int, float, cv::Point3f> calc_directional_burn(tracking::StateData state_drone, tracking::StateData state_target, float remaining_aim_duration);
+    std::vector<tracking::StateData> predict_trajectory(float burn_duration, float remaining_aim_duration, cv::Point3f burn_direction, tracking::StateData state_drone);
+    void draw_viz(tracking::StateData state_drone, tracking::StateData state_target, double time, cv::Point3f burn_direction, float burn_duration, float remaining_aim_duration, std::vector<tracking::StateData> traj);
     void calibrate_landing();
-    bool trajectory_in_view(std::vector<state_data> traj, CameraView::view_volume_check_mode c);
-    cv::Point3f keep_in_volume_correction_acceleration(track_data data_drone);
+    bool trajectory_in_view(std::vector<tracking::StateData> traj, CameraView::view_volume_check_mode c);
+    cv::Point3f keep_in_volume_correction_acceleration(tracking::TrackData data_drone);
     cv::Point3f kiv_acceleration(std::array<bool, N_PLANES> violated_planes_inview, std::array<bool, N_PLANES> violated_planes_brakedistance);
 
     std::tuple<float,float> acc_to_deg(cv::Point3f acc);
     std::tuple<float,float> acc_to_quaternion(cv::Point3f acc);
 
-    void check_emergency_kill(track_data data_drone);
-    void check_tracking_lost(track_data data_drone);
-    void check_control_and_tracking_problems(track_data data_drone);
-    void check_snr(track_data data_drone);
+    void check_emergency_kill(tracking::TrackData data_drone);
+    void check_tracking_lost(tracking::TrackData data_drone);
+    void check_control_and_tracking_problems(tracking::TrackData data_drone);
+    void check_snr(tracking::TrackData data_drone);
 
     void correct_yaw(float deviation_angle);
 
     void blink(double time);
     void blink_motors(double time);
 
-    void control_model_based(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
-    std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> adjust_control_gains(track_data drone_data, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
-    std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> control_error(track_data data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, cv::Point3f ki_pos);
+    void control_model_based(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
+    std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> adjust_control_gains(tracking::TrackData drone_data, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
+    std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> control_error(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, cv::Point3f ki_pos);
     std::tuple<int,int,int> calc_feedforward_control(cv::Point3f desired_acceleration);
 
     void send_data_joystick(void);
@@ -487,7 +488,7 @@ public:
 
     cv::Point3f viz_drone_pos_after_burn = {0};
     cv::Point3f viz_target_pos_after_burn = {0};
-    std::vector<state_data> viz_drone_trajectory;
+    std::vector<tracking::StateData> viz_drone_trajectory;
 
     double viz_time_after_burn = {0};
 
@@ -500,7 +501,7 @@ public:
 
     void close (void);
     void init(std::ofstream *logger, std::string replay_dir, bool generator_mode, MultiModule *rc, tracking::DroneTracker *dtrk, CameraView* camvol,float exposure);
-    void control(track_data, track_data, track_data, double);
+    void control(tracking::TrackData, tracking::TrackData, tracking::TrackData, double);
     bool drone_is_active() {
         if ( _flight_mode == fm_inactive || _flight_mode == fm_disarmed || _flight_mode == fm_joystick_check)
             return false;

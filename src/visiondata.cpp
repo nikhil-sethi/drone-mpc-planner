@@ -9,6 +9,7 @@ void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, fl
     frameL = new_frameL.clone();
     frameR = new_frameR.clone();
     depth_background_mm = new_depth_background_mm;
+    frameL_background = new_frameL.clone();
 
     enable_viz_diff = false; // Note: the enable_diff_vizs in the insect/drone trackers may be more interesting instead of this one.
 
@@ -170,6 +171,7 @@ void VisionData::maintain_motion_noise_map() {
         cnt++;
         if (cnt > motion_noise_bufferL.size() && motion_noise_bufferL.size() > 1) {
             _calibrating_background = true;
+            frameL_background = frameL/2 + frameL_background/2;
             cnt = 0;
         }
     }
@@ -222,6 +224,7 @@ void VisionData::track_avg_brightness(cv::Mat frame,double time) {
     cv::Mat frame_top = frame(cv::Rect(frame.cols/3,0,frame.cols/3*2,frame.rows/3)); // only check the middle & top third of the image, to save CPU
     float brightness = static_cast<float>(mean( frame_top )[0]);
     if (fabs(brightness - prev_brightness) > brightness_event_tresh  && prev_brightness >= 0) {
+        frameL_background = frame;
         std::cout << "Warning, large brightness change: " << prev_brightness << " -> " << brightness  << std::endl;
         _reset_motion_integration = true;
         _large_brightness_change_event_time = time;

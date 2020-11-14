@@ -33,8 +33,6 @@ void BlinkTracker::update(double time) {
     switch (_blinking_drone_status) {
     case bds_start: {
         _tracking = true;
-        path.clear();
-        predicted_image_path.clear();
         _blinking_drone_status = bds_searching;
         [[fallthrough]];
     } case bds_restart_search: {

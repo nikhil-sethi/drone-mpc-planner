@@ -38,26 +38,6 @@ const float deg2rad = M_PIf32/180.f;
 
 extern std::string data_output_dir;
 
-struct state_data {
-    cv::Point3f pos = {0},spos = {0},vel = {0},vel_unfiltered = {0},acc = {0};
-};
-
-struct track_data {
-    state_data state;
-    cv::Point3f pos() {return state.pos;}
-    cv::Point3f spos() {return state.spos;}
-    cv::Point3f vel() {return state.vel;}
-    cv::Point3f acc() {return state.acc;}
-    float dt = 0;
-    bool pos_valid = false;
-    bool spos_valid = false;
-    bool vel_valid = false;
-    bool acc_valid = false;
-    double time = 0;
-    float yaw_deviation = 0;
-    bool yaw_deviation_valid = 0;
-};
-
 struct control_data {
     control_data(float r, float tr, float p, double t) {
         throttle = tr;

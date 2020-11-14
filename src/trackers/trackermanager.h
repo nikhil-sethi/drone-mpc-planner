@@ -210,7 +210,7 @@ public:
     InsectTracker * target_insecttracker();
     bool tracking_a_target();
     double target_last_detection();
-    track_data target_last_trackdata();
+    TrackData target_last_trackdata();
     DroneTracker * dronetracker() { return _dtrkr; }
     void init(ofstream *logger, VisionData *visdat, CameraView *camview);
     void update(double time, bool drone_is_active);
