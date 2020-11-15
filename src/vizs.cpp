@@ -369,10 +369,9 @@ void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis,float
         std::string popstr = "POPCORN TIME";
         if (first_take_off_time - time > 0 )
             popstr += " IN " + to_string_with_precision( first_take_off_time - time,1);
-        if (popcorn_cnt < 20)
-            putText(resFrame,popstr,cv::Point(400*_res_mult,24*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
-        if (popcorn_cnt > 35)
-            popcorn_cnt  = 0;
+        putText(resFrame,popstr,cv::Point(400*_res_mult,28*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255-popcorn_cnt,popcorn_cnt,255));
+        popcorn_cnt = popcorn_cnt % 255;
+
     }
 }
 
@@ -582,6 +581,7 @@ void Visualizer::draw_tracker_viz() {
         putText(diff,"Ignored",cv::Point(3,diff.rows-60),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,128,0));
         putText(diff,"Untracked",cv::Point(3,diff.rows-72),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(255,255,55));
         putText(diff,"Multitracked",cv::Point(3,diff.rows-84),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,128,255));
+        putText(diff,"False positive",cv::Point(3,diff.rows-96),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(255,0,0));
 
         trackframe = ext_res_frame;
     } else
