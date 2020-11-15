@@ -206,6 +206,8 @@ void DroneNavigation::update(double time) {
                 if (_dctrl->telemetry().batt_cell_v > 2 && _dctrl->telemetry().batt_cell_v < dparams.min_hunt_cell_v) {
                     _navigation_status = ns_batlow;
                     break;
+                } else if (_trackers->too_many_false_positives()) {
+                    _navigation_status = ns_tracker_problem;
                 }
 
                 _trackers->mode(tracking::TrackerManager::mode_wait_for_insect);
@@ -519,7 +521,10 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_batlow: {
             _dctrl->flight_mode(DroneController::fm_abort);
-            _dctrl->LED(static_cast<int>((time - time_drone_problem) * 10.0) % 10 > 5,5); // minimal blink every half second
+            _dctrl->LED(static_cast<int>((time - time_drone_problem) * 10.0) % 10 > 5, 5); // minimal blink every 5 seconds
+            break;
+        } case ns_tracker_problem: {
+            _dctrl->LED(static_cast<int>((time - time_drone_problem) * 2.0) % 2 > 1, 5); // faster blink every second
             break;
         } case ns_drone_problem: {
             if (time_drone_problem < 0)

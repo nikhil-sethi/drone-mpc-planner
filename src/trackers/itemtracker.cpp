@@ -164,12 +164,14 @@ void ItemTracker::update_blob_filters() {
 }
 
 void ItemTracker::update(double time) {
+    n_frames++;
     if ( _world_item.valid) {
         update_state(_world_item.pt,time);
         update_blob_filters();
         _tracking = true;
         _n_frames_lost = 0; // update this after calling update_state, so that it can determine how long tracking was lost
         _n_frames_tracking++;
+        _n_frames_tracked++;
     } else {
         _n_frames_lost++;
         _n_frames_tracking = 0;
@@ -615,7 +617,6 @@ bool ItemTracker::check_ignore_blobs_generic(BlobProps * pbs) {
             in_ignore_zone = true;
         }
     }
-
     return in_ignore_zone;
 }
 

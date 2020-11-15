@@ -9,8 +9,9 @@ public: tracker_type type() {return tt_insect;}
 
 private:
     int16_t _insect_trkr_id{-1};
-    uint _fp = 0;
+    uint _fp_cnt = 0;
     void start_new_log_line(double time, unsigned long long frame_number);
+    void close_log_line();
     void check_false_positive();
     std::ofstream insectlogger;
 public:
@@ -21,7 +22,7 @@ public:
     void update(double time);
     bool tracking() {return _tracking;}
     bool properly_tracking() {return _n_frames_tracking > 3 && _tracking;}
-    bool false_positive() {return _fp>0;}
+    tracking::false_positive_type false_positive();
     void append_log(double time, unsigned long long frame_number);
     int16_t insect_trkr_id() {return _insect_trkr_id;}
 

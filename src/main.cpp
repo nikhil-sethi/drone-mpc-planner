@@ -819,7 +819,7 @@ void init() {
     if (render_monitor_video_mode)
         visdat.read_motion_and_overexposed_from_image(replay_dir); // has to happen before init otherwise wfn's are overwritten
     visdat.init(cam->Qf, cam->frameL,cam->frameR,cam->camera_angle(),cam->measured_gain(),cam->measured_exposure(),cam->depth_background_mm); // do after cam update to populate frames
-    trackers.init(&logger, &visdat, &(cam->camera_volume));
+    trackers.init(&logger,replay_dir, &visdat, &(cam->camera_volume));
     dnav.init(&logger,&trackers,&dctrl,&visdat, &(cam->camera_volume),replay_dir);
     dctrl.init(&logger,replay_dir,generator_mode,&rc,trackers.dronetracker(), &(cam->camera_volume),cam->measured_exposure());
 

@@ -43,8 +43,10 @@ struct BlobWorldProps {
 struct BlobProps {
     float x,y,size,pixel_max;
     std::vector<IgnoreBlob> ignores;
+    bool false_positive = false;
     cv::Mat mask;
     cv::Point2i pt_max; // location of the initially detected maximum pixel change (usefull for led detection)
+    cv::Point2f pt() {return cv::Point2f(x,y);}
     bool in_overexposed_area;
     BlobProps(cv::Point2f pt, cv::Point2i ptmax,float blob_size,float blob_pixel_max, cv::Mat blob_mask, bool overexposed_area) : size(blob_size), pixel_max(blob_pixel_max), mask(blob_mask), pt_max(ptmax), in_overexposed_area(overexposed_area) {
         x = pt.x;
@@ -167,6 +169,37 @@ struct TrackData {
     bool yaw_deviation_valid = 0;
 };
 
+[[maybe_unused]] static const char* false_positive_names[] = {"fp_not_a_fp",
+                                                              "fp_short_detection",
+                                                              "fp_static_location",
+                                                              "fp_bkg"
+                                                             };
+enum false_positive_type {
+    fp_not_a_fp = 0,
+    fp_short_detection,
+    fp_static_location,
+    fp_bkg
+};
 
+struct FalsePositive {
+    FalsePositive(WorldItem world_item,false_positive_type type_,double last_seen_time_) {
+        im_size = world_item.iti.size;
+        im_pt = world_item.iti.pt();
+        type = type_;
+        last_seen_time = last_seen_time_;
+    }
+    FalsePositive(false_positive_type type_, int detection_count_, float imx, float imy, float im_size_) {
+        im_size = im_size_;
+        im_pt = cv::Point2f(imx,imy);
+        detection_count = detection_count_;
+        type = type_;
+        last_seen_time = 0;
+    }
+    false_positive_type type;
+    cv::Point2f im_pt = {0};
+    float im_size = 0;
+    double last_seen_time = {0};
+    int detection_count = 1;
+};
 
 }

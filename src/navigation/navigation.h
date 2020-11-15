@@ -33,6 +33,7 @@ namespace navigation {
                                                                  "ns_monitoring",
                                                                  "ns_manual",
                                                                  "ns_batlow",
+                                                                 "ns_tracker_problem",
                                                                  "ns_drone_problem"
                                                                 };
 
@@ -68,6 +69,7 @@ enum navigation_states {
     ns_monitoring,
     ns_manual, // also for disarmed
     ns_batlow,
+    ns_tracker_problem,
     ns_drone_problem
 };
 

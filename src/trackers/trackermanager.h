@@ -85,10 +85,6 @@ struct processed_blobs {
     }
 };
 
-/*
- * This class appoints the found image points to the drone and insect item tracker(s)
- *
- */
 class TrackerManager {
 
 public: cv::Scalar tracker_color( ItemTracker * trkr) {
@@ -131,6 +127,11 @@ private:
     void deserialize_settings();
     void serialize_settings();
 
+    const string false_positive_fn = "false_positives.csv";
+    void read_false_positives();
+    void save_false_positives();
+    void save_false_positives(std::string false_positive_wfn);
+
 public:
     enum detection_mode {
         mode_idle,
@@ -147,6 +148,9 @@ private:
     VisionData *_visdat;
     CameraView *_camview;
     bool initialized = false;
+    std::string replay_dir;
+
+    std::vector<FalsePositive> false_positives;
 
     bool enable_viz_max_points = false; // flag for enabling the maxs visiualization
     std::vector<cv::Mat> vizs_maxs;
@@ -203,6 +207,7 @@ public:
         } else
             return trackermanager_mode_names[_mode];
     }
+    bool too_many_false_positives() {return false_positives.size()>20;}
 
     std::tuple<bool, BlinkTracker *> blinktracker_best();
 
@@ -212,7 +217,7 @@ public:
     double target_last_detection();
     TrackData target_last_trackdata();
     DroneTracker * dronetracker() { return _dtrkr; }
-    void init(ofstream *logger, VisionData *visdat, CameraView *camview);
+    void init(ofstream *logger,string replay_dir, VisionData *visdat, CameraView *camview);
     void update(double time, bool drone_is_active);
     void close();
 
@@ -242,7 +247,7 @@ public:
             std::remove_if(
                 replay_logs.begin(),
                 replay_logs.end(),
-        [&](logging::InsectReader const & log) {
+        [&](auto log) {
             if ( log.current_entry.RS_id == RS_id) {
                 ReplayTracker *rt;
                 rt = new ReplayTracker();

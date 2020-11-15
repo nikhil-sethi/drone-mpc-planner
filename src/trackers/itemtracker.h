@@ -103,7 +103,9 @@ protected:
 
     int _n_frames_lost = 100;
     int n_frames_lost_threshold = 10;
-    int _n_frames_tracking =0;
+    int _n_frames_tracking =0;  // reset after interruptions
+    int _n_frames_tracked =0;   // total tracked frames ever
+    int n_frames =0;           // lifetime of the tracker
     double _last_detection = 0;
     std::ofstream *_logger;
     VisionData * _visdat;
