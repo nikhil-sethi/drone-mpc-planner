@@ -153,6 +153,11 @@ set ff_smooth_factor = 0
 set ff_boost = 20
 set idle_min_rpm = 10
 
+Set throttle_limit_type = scale
+Set throttle_limit_percent = 85
+
+
+
 rateprofile 0
 
 # rateprofile 0
