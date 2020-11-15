@@ -14,7 +14,7 @@ cur = None
 def create_connection(db_file):
     conn = None
     try:
-        conn = sqlite3.connect(os.path.expanduser(db_file))
+        conn = sqlite3.connect(os.path.expanduser(db_file),timeout=30.0)
     except Exception as e:
         print(e)
     return conn
@@ -134,9 +134,9 @@ def store_moths(fn,data):
     return len(moths)
 
 def create_modes_table():
-        sql_create = 'CREATE TABLE mode_records(uid INTEGER PRIMARY KEY,system TEXT,start_datetime TEXT,end_datetime TEXT,op_mode TEXT)'
-        cur.execute(sql_create)
-        conn.commit()
+    sql_create = 'CREATE TABLE mode_records(uid INTEGER PRIMARY KEY,system TEXT,start_datetime TEXT,end_datetime TEXT,op_mode TEXT)'
+    cur.execute(sql_create)
+    conn.commit()
 
 def store_mode(fn,data):
     cur.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='mode_records' ''')
@@ -282,9 +282,9 @@ def remove_double_data(table_name_prefix):
                 pbar_entries.update(1)
                 sql_str = sql_del_str + str(entry)
                 cur.execute(sql_str)
-                tmp = cur.fetchall()
-            conn.commit()
+                _ = cur.fetchall()
         pbar_entries.close()
+    conn.commit()
     print("Found and deleted " + str(tot_doubles) + " doubles in " + table_name_prefix + " records.")
 
 def store_hunts(fn,data):
