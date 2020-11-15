@@ -628,7 +628,7 @@ float ItemTracker::score(BlobProps blob, ImageItem ref) {
 
         cv::Point3f last_world_pos = im2world(_image_item.pt(),_image_item.disparity,_visdat->Qf,_visdat->camera_angle);
         float max_im_dist = world2im_dist(last_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_angle);
-        float world_projected_im_err = normf(cv::Point2f(blob.x*pparams.imscalef,blob.y*pparams.imscalef) - _image_predict_item.pt());
+        float world_projected_im_err = normf(cv::Point2f(blob.x*pparams.imscalef,blob.y*pparams.imscalef) - _image_item.pt()*pparams.imscalef);
         im2world_err_ratio = world_projected_im_err/max_im_dist;
 
         float prev_size = smoother_im_size.latest();

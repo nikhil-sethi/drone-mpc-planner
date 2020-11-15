@@ -34,6 +34,7 @@ void BlinkTracker::update(double time) {
     case bds_start: {
         _tracking = true;
         _blinking_drone_status = bds_searching;
+        _image_predict_item = ImagePredictItem(_image_item.ptd(),1,_image_item.size,_image_item.pixel_max,_visdat->frame_id);
         [[fallthrough]];
     } case bds_restart_search: {
         attempts++;
@@ -48,7 +49,7 @@ void BlinkTracker::update(double time) {
         if (_n_frames_lost == 0) {
             _blinking_drone_status = bds_1_blink_off;
             blink_time_start = time;
-            _score_threshold = 100; // increase score threshold after first sightings, so that the tracker rejects moving blobs
+            _score_threshold = 10; // increase score threshold after first sightings, so that the tracker rejects moving blobs
         }
         break;
     } case bds_1_blink_off: {

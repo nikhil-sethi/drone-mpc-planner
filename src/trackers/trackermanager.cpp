@@ -204,7 +204,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
 
         //first check if there are trackers that were already tracking something, which prediction matches a new keypoint
         for (auto trkr : _trackers) {
-            float best_trkr_score = 1;
+            float best_trkr_score = INFINITY;
             processed_blobs *best_blob = &pbs.at(0);
 
             if (tracker_active(trkr,drone_is_active) && trkr->tracking()) {
