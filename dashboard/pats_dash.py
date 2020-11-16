@@ -391,7 +391,7 @@ def download_log(selected_moth):
     return target_log_fn
 def file_download_link(filename):
     location = '{}'.format(urlquote(filename))
-    return html.A('Download log',href=location,style={'display': 'block'})
+    return html.A('Download log',href=location,style={'display': 'block'}),{'textAlign':'center','width': '25%','margin':'auto','display': 'block'}
 def create_path_plot(target_log_fn):
     df_ilog = pd.read_csv(target_log_fn,delimiter=';')
     target_log_fn = '/' + target_log_fn
@@ -580,6 +580,7 @@ def update_ui_scatter(selected_daterange,selected_systems,hm_selected_cells,hist
     Output('route_kaart', 'figure'),
     Output('route_kaart', 'style'),
     Output('log_file_link', 'children'),
+    Output('log_file_link_container', 'style'),
     Output('selected_scatter_moth', 'children'),
     Output('classification_dropdown', 'value'),
     Output('classify_container', 'style'),
@@ -595,6 +596,7 @@ def update_moth_ui(selected_daterange,selected_systems,clickData_hm,clickData_do
     path_fig=go.Figure(data=go.Scatter3d())
     path_style={'display': 'none'}
     file_link = html.A('File not available.',style={'display': 'none'})
+    file_link_style = {'textAlign':'center','width': '25%','margin':'auto','display': 'none'}
     selected_moth=None
     classification = classification_options[0]
     classify_style={'display': 'none'}
@@ -602,20 +604,20 @@ def update_moth_ui(selected_daterange,selected_systems,clickData_hm,clickData_do
 
     ctx = dash.callback_context
     if not 'selectedpoints' in scatter_fig_state['data'][0] or ctx.triggered[0]['prop_id'] != 'verstrooide_kaart.clickData' or not selected_systems:
-        return target_video_fn,video_style,path_fig,path_style,file_link,selected_moth,classification,classify_style,Loading_animation_style
+        return target_video_fn,video_style,path_fig,path_style,file_link,file_link_style,selected_moth,classification,classify_style,Loading_animation_style
 
     sql_str = 'SELECT * FROM moth_records WHERE uid=' + str(clickData_dot['points'][0]['customdata'][4])
     _,cur = open_db()
     cur.execute(sql_str)
     entry = cur.fetchall()
     if not len(entry):
-        return target_video_fn,video_style,path_fig,path_style,file_link,selected_moth,classification,classify_style,Loading_animation_style
+        return target_video_fn,video_style,path_fig,path_style,file_link,file_link_style,selected_moth,classification,classify_style,Loading_animation_style
     selected_moth = entry[0]
 
     target_log_fn = download_log(selected_moth)
     if not os.path.isfile(target_log_fn):
-        return target_video_fn,video_style,path_fig,path_style,file_link,selected_moth,classification,classify_style,Loading_animation_style
-    file_link =file_download_link(target_log_fn)
+        return target_video_fn,video_style,path_fig,path_style,file_link,file_link_style,selected_moth,classification,classify_style,Loading_animation_style
+    file_link,file_link_style =file_download_link(target_log_fn)
 
     if 'Human_classification' in moth_columns:
         classification=selected_moth[moth_columns.index('Human_classification')]
@@ -630,7 +632,7 @@ def update_moth_ui(selected_daterange,selected_systems,clickData_hm,clickData_do
     if target_video_fn != '':
         video_style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '75%'}
 
-    return target_video_fn,video_style,path_fig,path_style,file_link,selected_moth,classification,classify_style,Loading_animation_style
+    return target_video_fn,video_style,path_fig,path_style,file_link,file_link_style,selected_moth,classification,classify_style,Loading_animation_style
 
 @app.callback(
     Output(component_id='classification_hidden', component_property='children'),
@@ -798,7 +800,7 @@ app.layout = html.Div(children=[
         html.Ul(id='log_file_link'),
         html.Br(),
         html.Br()
-        ],style={'textAlign':'center','width': '25%','margin':'auto','display': 'none'}),
+        ],style={'display': 'none'},id='log_file_link_container'),
     html.Div(id='selected_heatmap_data', style={'display': 'none'}),
     html.Div(id='selected_scatter_moth', style={'display': 'none'}),
     html.Div(id='classification_hidden', style={'display': 'none'})
