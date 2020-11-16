@@ -174,7 +174,7 @@ def process_detections_in_folder(folder,operational_log_start,mode):
         vxs = log['svelX_insect'].values
         vys = log['svelY_insect'].values
         vzs = log['svelZ_insect'].values
-        inf_ids = [i for i, x in enumerate(vxs) if math.isinf(x)]
+        inf_ids = [i for i, x in enumerate(vxs) if math.isinf(x) or math.isnan(x)]
         if (len(inf_ids)):
             remove_ids.extend(inf_ids)
 
@@ -207,9 +207,6 @@ def process_detections_in_folder(folder,operational_log_start,mode):
         v = np.sqrt(vx_tracking**2+vy_tracking**2+vz_tracking**2)
         v_mean = v.mean()
         v_std = v.std()
-
-        if math.isinf(v_mean) or math.isinf(v_mean):
-            print(v_mean)
 
         sizes = np.delete(log['radius_insect'].values,remove_ids)
         size = np.mean(sizes)*2
