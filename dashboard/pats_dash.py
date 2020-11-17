@@ -332,7 +332,8 @@ def create_scatter(moths,selected_systems,scatter_x_value,scatter_y_value):
     for sys in selected_systems:
         df_scatter_sys = df_scatter[df_scatter['system']==sys]
         for classification in classification_options:
-            df = df_scatter_sys[df_scatter['Human_classification']==classification]
+            tmp1 = list(df_scatter['Human_classification']==classification) #which rows have the same classification
+            df = df_scatter_sys[tmp1] #retrieve only those rows that have the same classficication
             df = df.fillna('')
             if not df.empty:
                 scatter = go.Scattergl(
