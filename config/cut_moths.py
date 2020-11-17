@@ -86,12 +86,12 @@ with open(frames_fn, 'r') as flog:
 
                             if video_start_time < 0:
                                 continue
-                            video_start_time = video_start_time - 2
+                            video_start_time = video_start_time - 1
                             if (video_start_time<0):
                                 video_start_time = 0
                             video_end_rs_id = int(lines[-2].split(';')[0])
                             video_end_video_id = video_end_rs_id - (video_start_rs_id-video_start_video_id)
-                            video_end_time = float(video_end_video_id)/90 + 2
+                            video_end_time = float(video_end_video_id)/90 + 1
                             video_duration = video_end_time - video_start_time
                             # print (str(file_id) + ': from ' + str(round(video_start_time,1)) + ' to ' + str(round(video_end_time,1)))
                             log_folder = folder + '/logging/'
