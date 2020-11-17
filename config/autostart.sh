@@ -26,12 +26,16 @@ while [ 1 ]; do
     dt=$(date '+%d/%m/%Y %H:%M:%S');
     echo "$dt"
     fdt=$(date '+%Y%m%d_%H%M%S');
-	OUTDIR=/home/pats/data/$fdt
-	echo Moving old data to $OUTDIR
-	/bin/mkdir -p $OUTDIR
-	/bin/mv terminal.log $OUTDIR || true
-	/bin/mv rgb*.png $OUTDIR || true
-	/bin/mv logging $OUTDIR || true
+	OUTDIR_LOG=/home/pats/data/$fdt
+	OUTDIR_IMAGES=/home/pats/data_images/
+	echo Moving daytime monitoring images to $OUTDIR_IMAGES
+	/bin/mkdir -p $OUTDIR_IMAGES
+	/bin/mv rgb*.png $OUTDIR_IMAGES || true
+	/bin/mv stereo*.png $OUTDIR_IMAGES || true
+	echo Moving old data to $OUTDIR_LOG
+	/bin/mkdir -p $OUTDIR_LOG
+	/bin/mv terminal.log $OUTDIR_LOG || true
+	/bin/mv logging $OUTDIR_LOG || true
 
 	echo "Hostname: $HOSTNAME" > $STAT_FN
 	echo "Drone ID: $DRONE_ID" >> $STAT_FN
