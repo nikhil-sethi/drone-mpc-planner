@@ -235,7 +235,7 @@ void Realsense::init_real() {
         check_light_level();
     else {
         float brightness;
-        std::tie (camparams.measured_exposure,camparams.measured_gain,std::ignore,std::ignore,brightness) = measure_auto_exposure();
+        std::tie (camparams.measured_exposure,camparams.measured_gain,std::ignore,std::ignore,std::ignore,brightness) = measure_auto_exposure();
         std::cout << "Measured auto exposure: " << camparams.measured_exposure << ", gain: " << camparams.measured_gain << ", brightness: " << brightness << std::endl;
     }
 
@@ -368,7 +368,7 @@ void Realsense::check_light_level() {
     cam.stop();
 }
 
-std::tuple<float,float,cv::Mat,cv::Mat,float> Realsense::measure_auto_exposure() {
+std::tuple<float,float,cv::Mat,cv::Mat,cv::Mat,float> Realsense::measure_auto_exposure() {
 
     if (!dev_initialized) {
         rs2::context ctx;
@@ -385,6 +385,7 @@ std::tuple<float,float,cv::Mat,cv::Mat,float> Realsense::measure_auto_exposure()
 
     rs2::config cfg;
     cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, pparams.fps);
+    cfg.enable_stream(RS2_STREAM_INFRARED, 2, IMG_W, IMG_H, RS2_FORMAT_Y8, pparams.fps);
     if (isD455)
         cfg.enable_stream(RS2_STREAM_COLOR, 1280, 800, RS2_FORMAT_BGR8, 30);
     else
@@ -401,7 +402,7 @@ std::tuple<float,float,cv::Mat,cv::Mat,float> Realsense::measure_auto_exposure()
     cam.wait_for_frames(); // first frame seems to be weird, ignore it
 
     cv::Size im_size(IMG_W, IMG_H);
-    cv::Mat frameLt;
+    cv::Mat frameLt,frameRt;
 
     rs2::frameset frame;
     float new_expos;
@@ -414,6 +415,7 @@ std::tuple<float,float,cv::Mat,cv::Mat,float> Realsense::measure_auto_exposure()
     for (i= 0; i< 120; i++) { // check for large change in exposure
         frame = cam.wait_for_frames();
         frameLt = Mat(im_size, CV_8UC1, const_cast<void *>(frame.get_infrared_frame(1).get_data()), Mat::AUTO_STEP);
+        frameRt = Mat(im_size, CV_8UC1, const_cast<void *>(frame.get_infrared_frame(2).get_data()), Mat::AUTO_STEP);
         if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
             new_expos = frame.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
             new_gain = frame.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_GAIN_LEVEL);
@@ -442,7 +444,7 @@ std::tuple<float,float,cv::Mat,cv::Mat,float> Realsense::measure_auto_exposure()
     else
         frame_bgr = cv::Mat(cv::Size(1920,1080), CV_8UC3, const_cast<void *>(frame.get_color_frame().get_data()), Mat::AUTO_STEP);
 
-    return std::make_tuple(new_expos,new_gain,frameLt,frame_bgr,brightness);
+    return std::make_tuple(new_expos,new_gain,frameLt,frameRt,frame_bgr,brightness);
 
 }
 

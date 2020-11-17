@@ -973,7 +973,7 @@ void wait_for_dark() {
         std::cout << "Checking if dark." << std::endl;
         int last_save_bgr_hour = -1;
         while(true) {
-            auto [expo,gain,frameL,frame_bgr,avg_brightness] = static_cast<Realsense *>(cam.get())->measure_auto_exposure();
+            auto [expo,gain,frameL,frameR,frame_bgr,avg_brightness] = static_cast<Realsense *>(cam.get())->measure_auto_exposure();
             auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
             std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << " Measured exposure: " << expo << ", gain: " << gain << ", avg_brightness: " << avg_brightness << std::endl;
             if (expo >pparams.darkness_threshold && gain >= 16 && avg_brightness < pparams.max_brightness) { // minimum RS gain is 16, so at the moment this condition does nothing
@@ -985,14 +985,13 @@ void wait_for_dark() {
             if ((std::localtime(&t)->tm_hour == 13 && last_save_bgr_hour !=13 )  ||
                     (std::localtime(&t)->tm_hour == 11 && last_save_bgr_hour !=11 ) ||
                     (std::localtime(&t)->tm_hour == 15 && last_save_bgr_hour !=15 )) {
-                std::stringstream rgb_fn;
-                rgb_fn << "rgb_" << std::put_time(std::localtime(&t), "%Y%m%d_%H%M%S") << ".png";
-                cv::imwrite(rgb_fn.str(),frame_bgr);
+                std::stringstream date_ss;
+                date_ss << std::put_time(std::localtime(&t), "%Y%m%d_%H%M%S");
+                cv::imwrite("rgb_" + date_ss.str() + ".png",frame_bgr);
+                cv::imwrite("stereoL_" + date_ss.str() + ".png",frameL);
+                cv::imwrite("stereoR_" + date_ss.str() + ".png",frameR);
                 last_save_bgr_hour = std::localtime(&t)->tm_hour;
             }
-
-
-
             usleep(10000000); // measure every 1 minute
         }
     }
