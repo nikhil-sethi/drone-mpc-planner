@@ -10,6 +10,6 @@
         "dotjoshjohnson.xml",
         "ms-python.python",
         "visualstudioexptteam.vscodeintellicode",
-        "kiteco.kite"
+        "ms-python.vscode-pylance"
     ]
 }
