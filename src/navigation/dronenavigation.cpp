@@ -388,8 +388,11 @@ void DroneNavigation::update(double time) {
                 low_battery_triggered = true;
             }
 
-            if (_nav_flight_mode == nfm_hunt && _iceptor.aim_in_range() && !low_battery_triggered)
+            if (_nav_flight_mode == nfm_hunt && _iceptor.aim_in_range() && !low_battery_triggered) {
+                _dctrl->enable_thrust_calibration = false;
                 _navigation_status = ns_start_the_chase;
+            }
+
             if (_nav_flight_mode == nfm_manual)
                 _navigation_status=ns_manual;
             break;
