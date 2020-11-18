@@ -212,8 +212,8 @@ private:
     filtering::Tf_D_f d_vel_err_x, d_vel_err_y, d_vel_err_z;
     filtering::Tf_PT2_f pos_modelx, pos_modely, pos_modelz;
 
-    uint snr_init = 0;
-    uint snr_pbuf_ponter = 0;
+    uint snr_buf_pointer = 0;
+    uint snr_buf_filled = 0;
     cv::Point3f snr_pos_buffer[3];
     uint snr_noise_cnt = 0;
 

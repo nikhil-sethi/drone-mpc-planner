@@ -339,7 +339,6 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
             pos_modelz.internal_states(data_drone.pos().z, data_drone.pos().z);
             cv::Point3f snr_pos = {pos_modelx.current_output(), pos_modely.current_output(), pos_modelz.current_output()};
             std::fill(snr_pos_buffer, snr_pos_buffer+3, snr_pos);
-            snr_init = 3;
 
             if(data_drone.vel_valid) {
                 float correction_gain = 5.f;
@@ -1107,28 +1106,28 @@ void DroneController::check_control_and_tracking_problems(TrackData data_drone) 
 }
 
 void DroneController::check_snr(TrackData data_drone) {
-    if(_time>take_off_start_time+1) {
-        if(snr_init<3) {
-            if(data_drone.pos_valid) {
-                snr_init++;
-                snr_pos_buffer[snr_pbuf_ponter] = data_drone.pos();
-                snr_pbuf_ponter = (snr_pbuf_ponter+1)%3;
-            }
-        } else {
-            snr_pos_buffer[snr_pbuf_ponter] = data_drone.pos();
-            snr_pbuf_ponter = (snr_pbuf_ponter+1)%3;
+    if(data_drone.pos_valid) {
+        snr_pos_buffer[snr_buf_pointer] = data_drone.pos();
+        snr_buf_pointer = (snr_buf_pointer+1)%3;
+        if(snr_buf_filled < 3)
+            snr_buf_filled++;
+    } else {
+        snr_buf_filled = 0;
+    }
+    if(_time-take_off_start_time>1 && snr_buf_filled>=3) {
+        float dpos01 = normf(snr_pos_buffer[(snr_buf_pointer-1)%3]-snr_pos_buffer[(snr_buf_pointer)%3]);
+        float dpos12 = normf(snr_pos_buffer[(snr_buf_pointer-2)%3]-snr_pos_buffer[(snr_buf_pointer-1)%3]);
 
-            float dpos01 = normf(snr_pos_buffer[(snr_pbuf_ponter-1)%3]-snr_pos_buffer[(snr_pbuf_ponter)%3]);
-            float dpos12 = normf(snr_pos_buffer[(snr_pbuf_ponter-2)%3]-snr_pos_buffer[(snr_pbuf_ponter-1)%3]);
-
-            float err_sample1 = abs(dpos01 - dpos12); // If there is a noise peak at the previous sample this create a high value
-            if(err_sample1>0.2f) {
-                snr_noise_cnt++;
-                std::cout << "Counted peaks in position signal: " << snr_noise_cnt<< "/3" << std::endl;
-                if (snr_noise_cnt>=3) {
-                    _flight_mode = fm_abort_model_error;
-                    std::cout << "Serious noise detected in the drone tracker" << std::endl;
-                }
+        float err_sample1 = abs(dpos01 - dpos12); // If there is a noise peak at the previous sample this create a high value
+        if(err_sample1>0.2f) {
+            snr_noise_cnt++;
+            std::cout << "Counted peaks in position signal: " << snr_noise_cnt<< "/3 - data: [" <<
+                      snr_pos_buffer[0] << ", " <<
+                      snr_pos_buffer[1] << ", " <<
+                      snr_pos_buffer[2] << "]" << std::endl;
+            if (snr_noise_cnt>=3) {
+                _flight_mode = fm_abort_model_error;
+                std::cout << "Serious noise detected in the drone tracker" << std::endl;
             }
         }
     }
