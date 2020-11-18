@@ -939,7 +939,7 @@ InsectTracker * TrackerManager::target_insecttracker() {
             if (trkr->type() == tt_insect || trkr->type() == tt_replay || trkr->type() == tt_virtualmoth) {
                 float dist = normf(current_drone_pos- trkr->last_track_data().pos());
                 if (best_dist > dist) {
-                    dist = best_dist;
+                    best_dist = dist;
                     best_itrkr = static_cast<InsectTracker *>(trkr);
                 }
             }
