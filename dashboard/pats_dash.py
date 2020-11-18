@@ -22,7 +22,7 @@ from urllib.parse import quote as urlquote
 db_path = ''
 db_classification_path = ''
 heatmap_max=50
-
+pre_fp_sql_filter_str = '((duration > 1 AND duration < 10 AND Dist_traveled > 0.15 AND Dist_traveled < 4) OR (Version="1.0" AND duration > 1 AND duration < 10))'
 
 server = flask.Flask(__name__)
 app = dash.Dash(__name__, server=server)
@@ -60,7 +60,7 @@ def load_systems(username):
     systems = [d[0] for d in systems]
 
     authorized_systems = []
-    user_pass_dict,user_group_dict = read_cred_db()
+    _,user_group_dict = read_cred_db()
 
     group = user_group_dict[username]
     for sys in systems:
@@ -136,13 +136,12 @@ def load_moth_data(selected_systems,selected_dayrange):
     heatmap_data = np.zeros((len(unique_dates),24))
     heatmap_data_lists = np.empty((len(unique_dates),24),dtype=object)
 
-    sql_str = 'SELECT * FROM moth_records WHERE ((duration > 1 AND duration < 10 AND Dist_traveled > 0.15 AND Dist_traveled < 4) OR (Version="1.0" AND duration > 1 AND duration < 10)) AND '
+    sql_str = 'SELECT * FROM moth_records WHERE ' + pre_fp_sql_filter_str + ' AND '
     sql_str += systems_str
     if selected_dayrange > 0:
         sql_str += 'AND time > "' + start_date_str + '"'
     cur.execute(sql_str)
     moths = cur.fetchall()
-
 
     start_date_col = moth_columns.index('time')
     for moth in moths:
@@ -155,7 +154,6 @@ def load_moth_data(selected_systems,selected_dayrange):
         else:
             heatmap_data_lists[day,hour].append(moth)
 
-
     hist_data = np.zeros((len(unique_dates),len(selected_systems)))
     hist_data = pd.DataFrame(hist_data,columns=selected_systems)
     start_date_col = moth_columns.index('time')
@@ -165,7 +163,7 @@ def load_moth_data(selected_systems,selected_dayrange):
         hist_data[moth[moth_columns.index('system')]][day] += 1
 
 
-    return unique_dates,heatmap_data,heatmap_data_lists,hist_data,moth_columns
+    return unique_dates,heatmap_data,heatmap_data_lists,hist_data
 
 def convert_mode_to_number(mode):
     if  mode == 'monitoring':
@@ -195,8 +193,6 @@ def load_mode_data(unique_dates,heatmap_data,selected_systems,selected_dayrange)
     cur.execute(sql_str)
     modes = cur.fetchall()
 
-    first_date = datetime.datetime.strptime(unique_dates[0],'%d-%m-%Y')
-
     mode_columns = [i[1] for i in cur.execute('PRAGMA table_info(mode_records)')]
     start_col = mode_columns.index('start_datetime')
     end_col = mode_columns.index('end_datetime')
@@ -225,7 +221,7 @@ def load_mode_data(unique_dates,heatmap_data,selected_systems,selected_dayrange)
         for j in range(0,modemap_data.shape[1]):
             if modemap_data[i,j] < -1 and heatmap_data[i,j] == 0:
                 heatmap_data[i,j] = -1
-    return heatmap_data,modemap_data
+    return heatmap_data
 
 def natural_sort_systems(l):
     convert = lambda text: int(text) if text.isdigit() else text.lower()
@@ -496,7 +492,7 @@ def update_ui_hist_and_heat(selected_daterange,selected_systems,selected_hm_cell
     selected_dayrange = selected_dates(selected_daterange)
     if not selected_systems or not selected_systems:
         return hm_fig,hist_fig,hm_style,hist_style,selected_heat,Loading_animation_style
-    unique_dates,heatmap_data,heatmap_data_lists,df_hist,_ = load_moth_data(selected_systems,selected_dayrange)
+    unique_dates,heatmap_data,_,df_hist = load_moth_data(selected_systems,selected_dayrange)
     if not len(unique_dates):
         return hm_fig,hist_fig,hm_style,hist_style,selected_heat,Loading_animation_style
 
@@ -510,13 +506,12 @@ def update_ui_hist_and_heat(selected_daterange,selected_systems,selected_hm_cell
             for cel in selected_hm_cells['points']:
                 x = xlabels.index(cel['x'])
                 y = unique_dates.index(cel['y'])
-                if heatmap_data_lists[y,x]:
-                    selected_heat.append([x,y])
+                selected_heat.append([x,y])
 
             selected_heat = pd.DataFrame(selected_heat,columns=['x','y'])
             selected_heat = selected_heat.to_json(date_format='iso', orient='split')
 
-    heatmap_data,_ = load_mode_data(unique_dates,heatmap_data,selected_systems,selected_dayrange) #add mode info to heatmap, which makes the heatmap show when the system was online (color) or offline (black)
+    heatmap_data = load_mode_data(unique_dates,heatmap_data,selected_systems,selected_dayrange) #add mode info to heatmap, which makes the heatmap show when the system was online (color) or offline (black)
     hm_fig,hm_style=create_heatmap(unique_dates,heatmap_data,xlabels,selected_heat)
 
     Loading_animation_style = {'display': 'none'}
@@ -550,9 +545,11 @@ def update_ui_scatter(selected_daterange,selected_systems,hm_selected_cells,hist
         if hm_selected_cells:
             for cel in hm_selected_cells['points']:
                 hour = int(cel['x'].replace('h',''))
+                if hour <12:
+                    hour+=24
                 start_date = datetime.datetime.strptime(cel['y'], '%d-%m-%Y') + datetime.timedelta(hours=hour)
                 end_date = start_date + datetime.timedelta(hours=1)
-                sql_str = 'SELECT * FROM moth_records WHERE time >"' + start_date.strftime('%Y%m%d_%H%M%S') + '" AND time <= "' + end_date.strftime('%Y%m%d_%H%M%S') + '" AND ' + system_sql_str(selected_systems)
+                sql_str = 'SELECT * FROM moth_records WHERE time >"' + start_date.strftime('%Y%m%d_%H%M%S') + '" AND time <= "' + end_date.strftime('%Y%m%d_%H%M%S') + '" AND ' + system_sql_str(selected_systems) + ' AND ' + pre_fp_sql_filter_str
                 _,cur = open_db()
                 cur.execute(sql_str)
                 entries = cur.fetchall()
@@ -563,7 +560,7 @@ def update_ui_scatter(selected_daterange,selected_systems,hm_selected_cells,hist
                 sys = bar['customdata'][0]
                 start_date = datetime.datetime.strptime(bar['x'], '%d-%m-%Y') + datetime.timedelta(hours=12)
                 end_date = start_date + datetime.timedelta(days=1)
-                sql_str = 'SELECT * FROM moth_records WHERE system="' + sys + '" AND time >"' + start_date.strftime('%Y%m%d_%H%M%S') + '" AND time <= "' + end_date.strftime('%Y%m%d_%H%M%S') + '"'
+                sql_str = 'SELECT * FROM moth_records WHERE system="' + sys + '" AND time >"' + start_date.strftime('%Y%m%d_%H%M%S') + '" AND time <= "' + end_date.strftime('%Y%m%d_%H%M%S') + '"' + ' AND ' + pre_fp_sql_filter_str
                 _,cur = open_db()
                 cur.execute(sql_str)
                 entries = cur.fetchall()
