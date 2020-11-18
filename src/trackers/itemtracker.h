@@ -31,8 +31,8 @@ protected:
     {
     public:
         xmls::xInt min_disparity,max_disparity;
-        xmls::xInt score_threshold, background_subtract_zone_factor;
-        xmls::xFloat max_size;
+        xmls::xInt background_subtract_zone_factor;
+        xmls::xFloat max_size,score_threshold;
 
         TrackerParams() {
             // Set the XML class name.
@@ -56,7 +56,7 @@ protected:
     int min_disparity;
     int max_disparity;
 
-    int _score_threshold;
+    float _score_threshold;
     int background_subtract_zone_factor;
     float max_size; // world, in meters
 
@@ -121,6 +121,8 @@ protected:
     float expected_radius = 0.01;
 
     bool _tracking = false;
+    TrackData last_valid_trackdata_for_prediction;
+    TrackData last_vel_valid_trackdata_for_prediction;
 
     ImageItem _image_item;
     ImagePredictItem _image_predict_item;
@@ -139,7 +141,7 @@ protected:
     void calc_world_props_blob_generic(BlobProps * pbs, bool use_max);
     bool check_ignore_blobs_generic(BlobProps * pbs);
     void cleanup_history();
-    float score(BlobProps blob, ImageItem ref);
+    float score(BlobProps * blob, ImageItem * ref);
     void update_prediction(double time);
 public:
 
@@ -201,10 +203,17 @@ public:
         _all_blobs = blobs;
     }
 
-    float score_threshold() {return static_cast<float>(_score_threshold);}
+    float score_threshold() {return _score_threshold;}
+    float predicted_score() {
+        if (smoother_score.ready()) {
+            float res = std::clamp(smoother_score.latest()*3.f,0.05f,_score_threshold);
+            return res;
+        } else
+            return _score_threshold;
+    }
 
-    virtual float score(BlobProps blob) {
-        return score(blob,_image_item);
+    virtual float score(BlobProps * blob) {
+        return score(blob,&_image_item);
     }
 
 };

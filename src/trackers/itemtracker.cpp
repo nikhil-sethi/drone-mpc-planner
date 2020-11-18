@@ -56,7 +56,7 @@ void ItemTracker::init(VisionData *visdat, int motion_thresh, std::string name, 
     smoother_accZ.init(acc_smth_width);
 
     smoother_im_size.init(smooth_blob_props_width);
-    smoother_score.init(smooth_blob_props_width);
+    smoother_score.init(smooth_blob_props_width,_score_threshold);
     smoother_brightness.init(smooth_blob_props_width);
     vel_filt.init(1.f/pparams.fps, 1, 0.020, 0.020);
 
@@ -82,15 +82,19 @@ void ItemTracker::init_logger(std::ofstream *logger) {
         (*_logger) << "n_frames_lost_" << _name << ";";
         (*_logger) << "n_frames_tracking_" << _name << ";";
         (*_logger) << "foundL_" << _name << ";";
+        (*_logger) << "pos_valid_" << _name << ";";
         (*_logger) << "posX_" << _name << ";";
         (*_logger) << "posY_" << _name << ";";
         (*_logger) << "posZ_" << _name << ";";
+        (*_logger) << "spos_valid_" << _name << ";";
         (*_logger) << "sposX_" << _name << ";";
         (*_logger) << "sposY_" << _name << ";";
         (*_logger) << "sposZ_" << _name << ";";
+        (*_logger) << "vel_valid_" << _name << ";";
         (*_logger) << "svelX_" << _name << ";";
         (*_logger) << "svelY_" << _name << ";";
         (*_logger) << "svelZ_" << _name << ";";
+        (*_logger) << "acc_valid_" << _name << ";";
         (*_logger) << "saccX_" << _name << ";";
         (*_logger) << "saccY_" << _name << ";";
         (*_logger) << "saccZ_" << _name << ";";
@@ -180,7 +184,6 @@ void ItemTracker::update(double time) {
             reset_tracker_ouput(time);
         } else {
             TrackData data;
-            data.world_item = _world_item;
             data.predicted_image_item = _image_predict_item;
             data.time = time;
             track_history.push_back(data);
@@ -214,10 +217,10 @@ void ItemTracker::append_log() {
         (*_logger) << _n_frames_lost << ";" << _n_frames_tracking << ";" << _tracking << ";";
         //log all world stuff
         TrackData last = last_track_data();
-        (*_logger) << last.state.pos.x << ";" << last.state.pos.y << ";" << last.state.pos.z << ";" ;
-        (*_logger) << last.state.spos.x << ";" << last.state.spos.y << ";" << last.state.spos.z << ";";
-        (*_logger) << last.state.vel.x << ";" << last.state.vel.y << ";" << last.state.vel.z << ";" ;
-        (*_logger) << last.state.acc.x << ";" << last.state.acc.y << ";" << last.state.acc.z << ";" ;
+        (*_logger) << last.pos_valid << ";" << last.state.pos.x << ";" << last.state.pos.y << ";" << last.state.pos.z << ";" ;
+        (*_logger) << last.spos_valid << ";" << last.state.spos.x << ";" << last.state.spos.y << ";" << last.state.spos.z << ";";
+        (*_logger) << last.vel_valid << ";" << last.state.vel.x << ";" << last.state.vel.y << ";" << last.state.vel.z << ";" ;
+        (*_logger) << last.acc_valid << ";" << last.state.acc.x << ";" << last.state.acc.y << ";" << last.state.acc.z << ";" ;
         if (_world_item.valid)
             (*_logger) << _world_item.radius << ";";
         else
@@ -497,21 +500,29 @@ float ItemTracker::estimate_sub_disparity(int disparity,float * err) {
 }
 
 void ItemTracker::update_prediction(double time) {
-    vector<TrackData>::reverse_iterator td;
-    for (td = track_history.rbegin(); td != track_history.rend(); ++td) { // TODO: isn't there some stl algorithm for this?
-        if (td->pos_valid)
-            break;
+    if (track_history.back().pos_valid) {
+        last_valid_trackdata_for_prediction = track_history.back();
+        if(track_history.back().vel_valid)
+            last_vel_valid_trackdata_for_prediction = track_history.back();
     }
-    if (!td->pos_valid) {
+
+    if (!last_valid_trackdata_for_prediction.pos_valid) {
         _image_predict_item.valid = false;
     } else {
-        cv::Point3f pos = td->pos();
-        cv::Point3f vel = td->vel();
-        cv::Point3f acc= td->acc();
-        //todo: use control inputs to make prediction
+        cv::Point3f pos = last_valid_trackdata_for_prediction.pos();
+        cv::Point3f vel = last_vel_valid_trackdata_for_prediction.vel();
+        cv::Point3f acc= last_vel_valid_trackdata_for_prediction.acc();
+        if (!last_vel_valid_trackdata_for_prediction.vel_valid)
+            vel = {0};
+        if (!last_vel_valid_trackdata_for_prediction.acc_valid)
+            acc = {0};
 
         // predict insect position for next frame
-        float dt_pred = static_cast<float>(time - td->time)+1.f/pparams.fps;
+        float dt_pred = static_cast<float>(time - last_valid_trackdata_for_prediction.time)+1.f/pparams.fps;
+        if (dt_pred> 0.3f) {
+            _image_predict_item.valid = false;
+            return;
+        }
         cv::Point3f predicted_pos = pos + vel*dt_pred + 0.5*acc*powf(dt_pred,2);
 
         auto p = world2im_3d(predicted_pos,_visdat->Qfi,_visdat->camera_angle);
@@ -520,7 +531,7 @@ void ItemTracker::update_prediction(double time) {
         _image_predict_item.x = std::clamp(static_cast<int>(p.x),0,IMG_W-1);
         _image_predict_item.y = std::clamp(static_cast<int>(p.y),0,IMG_H-1);
         _image_predict_item.disparity = std::clamp(p.z,0.f,static_cast<float>(params.max_disparity.value()));
-        _image_predict_item.size = world2im_size(_world_item.pt+cv::Point3f(expected_radius,0,0),_world_item.pt-cv::Point3f(expected_radius,0,0),_visdat->Qfi,_visdat->camera_angle);
+        _image_predict_item.size = world2im_size(last_valid_trackdata_for_prediction.world_item.pt+cv::Point3f(expected_radius,0,0),last_valid_trackdata_for_prediction.world_item.pt-cv::Point3f(expected_radius,0,0),_visdat->Qfi,_visdat->camera_angle);
         _image_predict_item.valid = true;
     }
 }
@@ -549,19 +560,16 @@ void ItemTracker::update_state(Point3f measured_world_coordinates,double time) {
     if (reset_filters) {
         data.state.spos = data.state.pos;
     } else {
-
         data.state.spos.x = smoother_posX.addSample(data.state.pos.x);
         data.state.spos.y = smoother_posY.addSample(data.state.pos.y);
         data.state.spos.z = smoother_posZ.addSample(data.state.pos.z);
-        data.spos_valid = smoother_posX.ready();
 
         if (data_prev.pos_valid && (data.spos_valid || skip_wait_smth_spos )) {
             dt = static_cast<float>(time - data_prev.time);
             data.state.vel_unfiltered = (data.state.pos - data_prev.state.pos) / dt;
-
             cv::Point3f v_pt = vel_filt.new_sample(data.state.vel_unfiltered);
             data.state.vel = v_pt;
-
+            data.vel_valid = true;
             if (data_prev.vel_valid) {
                 float ax = (data.state.vel.x - data_prev.state.vel.x) / dt;
                 float ay = (data.state.vel.y - data_prev.state.vel.y) / dt;
@@ -569,12 +577,11 @@ void ItemTracker::update_state(Point3f measured_world_coordinates,double time) {
                 data.state.acc.x = smoother_accX.addSample(ax);
                 data.state.acc.y = smoother_accY.addSample(ay);
                 data.state.acc.z = smoother_accZ.addSample(az);
+                data.acc_valid = smoother_accX.ready();
             }
         }
-    }
 
-    data.vel_valid = data.spos_valid;
-    data.acc_valid = smoother_accX.ready();
+    }
 
     data.time = time;
     _last_detection = time;
@@ -620,7 +627,7 @@ bool ItemTracker::check_ignore_blobs_generic(BlobProps * pbs) {
     return in_ignore_zone;
 }
 
-float ItemTracker::score(BlobProps blob, ImageItem ref) {
+float ItemTracker::score(BlobProps * blob, ImageItem * ref) {
     float im2world_err_ratio, im_size_pred_err_ratio;
     const float max_world_dist = 0.05f; // max distance a blob can travel in one frame
 
@@ -628,24 +635,26 @@ float ItemTracker::score(BlobProps blob, ImageItem ref) {
 
         cv::Point3f last_world_pos = im2world(_image_item.pt(),_image_item.disparity,_visdat->Qf,_visdat->camera_angle);
         float max_im_dist = world2im_dist(last_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_angle);
-        float world_projected_im_err = normf(cv::Point2f(blob.x*pparams.imscalef,blob.y*pparams.imscalef) - _image_item.pt()*pparams.imscalef);
+        float world_projected_im_err = normf(blob->pt()*pparams.imscalef - _image_item.pt()*pparams.imscalef);
         im2world_err_ratio = world_projected_im_err/max_im_dist;
 
         float prev_size = smoother_im_size.latest();
-        im_size_pred_err_ratio = fabs(prev_size - blob.size) / (blob.size+prev_size);
+        im_size_pred_err_ratio = fabs(prev_size - blob->size) / (blob->size+prev_size);
     } else if (_image_predict_item.valid) {
         cv::Point3f predicted_world_pos = im2world(_image_predict_item.pt(),_image_predict_item.disparity,_visdat->Qf,_visdat->camera_angle);
         float max_im_dist = world2im_dist(predicted_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_angle);
-        float world_projected_im_err = normf(cv::Point2f(blob.x*pparams.imscalef,blob.y*pparams.imscalef) - _image_predict_item.pt());
+        float world_projected_im_err = normf(blob->pt()*pparams.imscalef - _image_predict_item.pt());
         im2world_err_ratio = world_projected_im_err/max_im_dist;
 
         float prev_size = smoother_im_size.latest();
-        im_size_pred_err_ratio = fabs(prev_size - blob.size) / (blob.size+prev_size);
+        im_size_pred_err_ratio = fabs(prev_size - blob->size) / (blob->size+prev_size);
 
-    } else {
-        im_size_pred_err_ratio = fabs(ref.size - blob.size) / (blob.size + ref.size);
+    } else if (ref->valid) {
+        im_size_pred_err_ratio = fabs(ref->size - blob->size) / (blob->size + ref->size);
         float max_im_dist = 25;
-        im2world_err_ratio = sqrtf(powf(ref.x-blob.x,2)+powf(ref.y-blob.y,2))/max_im_dist;
+        im2world_err_ratio = sqrtf(powf(ref->x-blob->x,2)+powf(ref->y-blob->y,2))/max_im_dist;
+    } else {
+        return INFINITY;
     }
 
     float score = im2world_err_ratio*0.75f + 0.25f*im_size_pred_err_ratio;

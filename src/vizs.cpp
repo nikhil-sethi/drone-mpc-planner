@@ -405,7 +405,6 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
     return frameL_small_drone;
 }
 
-
 void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, double time, bool draw_plots) {
     enable_plots = draw_plots;
     if (new_tracker_viz_data_requested) {
@@ -423,6 +422,10 @@ void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, doubl
 
             if (dis < min_dis)
                 min_dis = dis;
+        }
+
+        if (dtrkr->takeoff_location_valid()) {
+            ground_y = dtrkr->takeoff_location().y;
         }
 
         tracker_viz_base_data.frameL = frameL;
@@ -475,31 +478,33 @@ void Visualizer::draw_tracker_viz() {
         cv::circle(frameL_color,p.pt()*pparams.imscalef,p.size/2*pparams.imscalef,cv::Scalar(0,0,255));
     }
 
-    if (last_insect_detection.predicted_image_item.valid) {
-        auto pred = last_insect_detection.predicted_image_item;
-        cv::circle(frameL_color,pred.pt(),pred.size/2,cv::Scalar(0,255,0));
-    }
-
-    if ( last_insect_detection.world_item.iti.valid) {
+    cv::Scalar itrkr_color = cv::Scalar(0,0,128);
+    if ( last_insect_detection.predicted_image_item.valid) {
         std::stringstream ss;
         tracking::WorldItem wti = last_insect_detection.world_item;
+
+        cv::Point2i p_ins_im = last_insect_detection.predicted_image_item.pt();
+        float ins_size = last_insect_detection.predicted_image_item.size;
+        ss << "i ";
         if (wti.valid) {
-            ss << "i " << to_string_with_precision(wti.distance,1);
-            cv::Scalar c(0,0,255);
-            if (wti.distance_bkg >wti.distance )
-                c = cv::Scalar(0,180,255); //first number cannot be 0 because of super weird qtcreator / gdb bug
-            cv::Point2i p_ins_im  = wti.iti.pt() *pparams.imscalef;
-            putText(frameL_color,ss.str(),p_ins_im,cv::FONT_HERSHEY_SIMPLEX,0.5,c);
-            cv::line(frameL_color,p_ins_im,p_ins_im,c,2);
-            cv::Point3f p_ins_ground_wrld = wti.pt;
-            p_ins_ground_wrld.y = -1.92f; // guestimated ground level
-            cv::Point2f p_ins_ground_im = world2im_2d(p_ins_ground_wrld,_visdat->Qfi,_visdat->camera_angle);
-            cv::line(frameL_color,p_ins_im,p_ins_ground_im,white,1);
-            float ins_size = wti.iti.size;
-            if (ins_size <= 0) //replay insects don't have a proper size
-                ins_size = 2;
-            cv::circle(frameL_color,p_ins_im,ins_size*pparams.imscalef / 2.f,c);
+            ss << to_string_with_precision(wti.distance,1);
+            itrkr_color = cv::Scalar(0,0,255);
+            p_ins_im  = wti.iti.pt() * pparams.imscalef;
+            ins_size = wti.iti.size * pparams.imscalef;
         }
+        if (ins_size <= 0) //replay insects don't have a proper size
+            ins_size = 2;
+
+        putText(frameL_color,ss.str(),p_ins_im,cv::FONT_HERSHEY_SIMPLEX,0.5,itrkr_color);
+        cv::line(frameL_color,p_ins_im,p_ins_im,itrkr_color,2);
+        cv::Point3f p_ins_ground_wrld = wti.pt;
+        p_ins_ground_wrld.y = ground_y;
+        cv::Point2f p_ins_ground_im = world2im_2d(p_ins_ground_wrld,_visdat->Qfi,_visdat->camera_angle);
+        cv::line(frameL_color,p_ins_im,p_ins_ground_im,itrkr_color,1);
+
+
+        cv::circle(frameL_color,p_ins_im,ins_size*pparams.imscalef / 2.f,itrkr_color);
+
     }
 
     if (_dctrl->ff_interception()) {

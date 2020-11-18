@@ -85,12 +85,12 @@ public:
 
     float smoothed_size_image() {return smoother_im_size.latest();}
 
-    float score(tracking::BlobProps blob) {
+    float score(tracking::BlobProps * blob) {
         if (track_history.size()>0) {
             tracking::ImageItem first = track_history.at(0).world_item.iti;
-            return ItemTracker::score(blob,first);
+            return ItemTracker::score(blob,&first);
         } else {
-            return ItemTracker::score(blob,_image_item);
+            return ItemTracker::score(blob,&_image_item);
         }
     }
 

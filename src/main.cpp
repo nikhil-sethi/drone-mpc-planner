@@ -442,7 +442,7 @@ void process_frame(Stereo_Frame_Data data) {
     auto profile_t2_trkrs = std::chrono::high_resolution_clock::now();
 #endif
 
-    if (log_replay_mode) {
+    if (log_replay_mode && pparams.op_mode != op_mode_monitoring) {
         dctrl.insert_log(logreader.current_entry.joyRoll, logreader.current_entry.joyPitch, logreader.current_entry.joyYaw, logreader.current_entry.joyThrottle,logreader.current_entry.joyArmSwitch,logreader.current_entry.joyModeSwitch,logreader.current_entry.joyTakeoffSwitch,logreader.current_entry.auto_roll,logreader.current_entry.auto_pitch,logreader.current_entry.auto_throttle, logreader.current_entry.telem_acc_z, logreader.current_entry.telem_throttle, logreader.current_entry.telem_throttle_s, logreader.current_entry.maxthrust, logreader.current_entry.telem_thrust_rpm);
     }
     dnav.update(data.time);
@@ -450,7 +450,8 @@ void process_frame(Stereo_Frame_Data data) {
     auto profile_t3_nav = std::chrono::high_resolution_clock::now();
 #endif
 
-    dctrl.control(trackers.dronetracker()->last_track_data(),dnav.setpoint(),trackers.target_last_trackdata(),data.time);
+    if (pparams.op_mode != op_mode_monitoring)
+        dctrl.control(trackers.dronetracker()->last_track_data(),dnav.setpoint(),trackers.target_last_trackdata(),data.time);
 #ifdef PROFILING
     auto profile_t4_ctrl = std::chrono::high_resolution_clock::now();
 #endif
@@ -821,7 +822,8 @@ void init() {
     visdat.init(cam->Qf, cam->frameL,cam->frameR,cam->camera_angle(),cam->measured_gain(),cam->measured_exposure(),cam->depth_background_mm); // do after cam update to populate frames
     trackers.init(&logger,replay_dir, &visdat, &(cam->camera_volume));
     dnav.init(&logger,&trackers,&dctrl,&visdat, &(cam->camera_volume),replay_dir);
-    dctrl.init(&logger,replay_dir,generator_mode,&rc,trackers.dronetracker(), &(cam->camera_volume),cam->measured_exposure());
+    if (pparams.op_mode != op_mode_monitoring)
+        dctrl.init(&logger,replay_dir,generator_mode,&rc,trackers.dronetracker(), &(cam->camera_volume),cam->measured_exposure());
 
     if (render_monitor_video_mode)
         dnav.render_now_override();

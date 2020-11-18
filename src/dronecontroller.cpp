@@ -119,10 +119,10 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
 
     if (_joy_state== js_waypoint)
         data_raw_insect = data_target_new; // the takeoff burn uses raw insect, but wp flight mode also uses takeoff burn
-    _dtrk->update_drone_target(data_raw_insect.pos());
+    _dtrk->update_target(data_raw_insect.pos());
 
     if (!data_raw_insect.pos_valid) // if tracking is lost, set the raw setpoint to just above takeoff location, because otherwise the (takeoff) may go towards 0,0,0 (the camera)
-        data_raw_insect.state.pos = _dtrk->drone_takeoff_location() + cv::Point3f(0,0.5,0);
+        data_raw_insect.state.pos = _dtrk->takeoff_location() + cv::Point3f(0,0.5,0);
 
     _dist_to_setpoint = normf(data_drone.state.pos - data_target_new.state.pos); // TODO: [k] update this with raw data in burn mode???
 
@@ -178,7 +178,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         [[fallthrough]];
     } case fm_take_off_aim: {
         StateData state_drone_takeoff = data_drone.state;
-        state_drone_takeoff.pos = _dtrk->drone_takeoff_location() + cv::Point3f(0,lift_off_dist_take_off_aim,0);
+        state_drone_takeoff.pos = _dtrk->takeoff_location() + cv::Point3f(0,lift_off_dist_take_off_aim,0);
         state_drone_takeoff.vel = {0};
 
         float remaing_spinup_time = dparams.full_bat_and_throttle_spinup_duration - aim_duration - time_spent_spinning_up(take_off_start_time);
@@ -329,9 +329,9 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
 
         model_error = 0;
         if(!data_drone.pos_valid && _time-take_off_start_time < 0.5) {
-            pos_modelx.internal_states(_dtrk->drone_takeoff_location().x, _dtrk->drone_takeoff_location().x);
-            pos_modely.internal_states(_dtrk->drone_takeoff_location().y, _dtrk->drone_takeoff_location().y);
-            pos_modelz.internal_states(_dtrk->drone_takeoff_location().z, _dtrk->drone_takeoff_location().z);
+            pos_modelx.internal_states(_dtrk->takeoff_location().x, _dtrk->takeoff_location().x);
+            pos_modely.internal_states(_dtrk->takeoff_location().y, _dtrk->takeoff_location().y);
+            pos_modelz.internal_states(_dtrk->takeoff_location().z, _dtrk->takeoff_location().z);
 
         } else {
             pos_modelx.internal_states(data_drone.pos().x, data_drone.pos().x);
@@ -356,7 +356,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         if(!data_drone.pos_valid) {
             pos_err_i = {0,0,0};
             if(_time-take_off_start_time < 0.5)
-                data_drone.state.pos = _dtrk->drone_takeoff_location ();
+                data_drone.state.pos = _dtrk->takeoff_location ();
         }
 
         control_model_based(data_drone, data_target_new.pos(),data_target_new.vel());
@@ -369,7 +369,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         if(!data_drone.pos_valid) {
             pos_err_i = {0,0,0};
             if(_time-take_off_start_time < 0.5)
-                data_drone.state.pos = _dtrk->drone_takeoff_location ();
+                data_drone.state.pos = _dtrk->takeoff_location ();
         }
         control_model_based(data_drone, data_target_new.pos(),data_target_new.vel());
         break;
@@ -746,7 +746,7 @@ std::tuple<float,float> DroneController::acc_to_quaternion(cv::Point3f acc) {
 //considering a take off order from just after the aiming phase of: spinning up, burning, spin down, 1g, find the max drone acceleration that best desccribes the current position given dt
 void DroneController::approx_effective_thrust(TrackData data_drone, cv::Point3f burn_direction, float burn_duration, float dt_burn) {
 
-    cv::Point3f pos_after_aim =  _dtrk->drone_takeoff_location() + cv::Point3f(0,lift_off_dist_take_off_aim,0);
+    cv::Point3f pos_after_aim =  _dtrk->takeoff_location() + cv::Point3f(0,lift_off_dist_take_off_aim,0);
     float partial_effective_burn_spin_up_duration = effective_burn_spin_down_duration; // if the burn duration is long enough this is equal otherwise it may be shortened
     cv::Point3f acc = burn_direction * drone_calibration.thrust ; // initial guess, variable to be optimized
     cv::Point3f meas_pos =  data_drone.pos(); // current measured drone position

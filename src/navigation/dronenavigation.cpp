@@ -97,7 +97,7 @@ void DroneNavigation::update(double time) {
                 if (pparams.op_mode==op_mode_monitoring) {
                     _dctrl->flight_mode(DroneController::fm_disarmed);
                     _visdat->enable_background_motion_map_calibration(motion_calibration_duration);
-                    _visdat->create_overexposed_removal_mask(_trackers->dronetracker()->drone_takeoff_im_location(),_trackers->dronetracker()->drone_takeoff_im_size());
+                    _visdat->create_overexposed_removal_mask(_trackers->dronetracker()->takeoff_im_location(),_trackers->dronetracker()->takeoff_im_size());
                     time_motion_calibration_started = time;
                     _navigation_status = ns_calibrating_motion;
                     _dctrl->LED(false);
@@ -148,7 +148,7 @@ void DroneNavigation::update(double time) {
             _visdat->enable_collect_no_drone_frames = true;
             if (time-time_located_drone>2 && (_dctrl->drone_state_disarmed() || pparams.joystick != rc_none)) { // delay until blinking stopped. Drone must be 1.5s disarmed to get out of a possible (rx) failsafe
                 _visdat->enable_background_motion_map_calibration(motion_calibration_duration);
-                _visdat->create_overexposed_removal_mask(_trackers->dronetracker()->drone_takeoff_im_location(),_trackers->dronetracker()->drone_takeoff_im_size());
+                _visdat->create_overexposed_removal_mask(_trackers->dronetracker()->takeoff_im_location(),_trackers->dronetracker()->takeoff_im_size());
                 time_motion_calibration_started = time;
                 _navigation_status = ns_calibrating_motion;
                 _dctrl->start_landing_acc_calibration();
@@ -208,6 +208,7 @@ void DroneNavigation::update(double time) {
                     break;
                 } else if (_trackers->too_many_false_positives()) {
                     _navigation_status = ns_tracker_problem;
+                    break;
                 }
 
                 _trackers->mode(tracking::TrackerManager::mode_wait_for_insect);
@@ -454,7 +455,7 @@ void DroneNavigation::update(double time) {
         } case ns_landing: {
             cv::Point3f new_pos_setpoint;
             cv::Point3f new_vel_setpoint;
-            cv::Point3f pad_pos = _trackers->dronetracker()->drone_landing_location(true);
+            cv::Point3f pad_pos = _trackers->dronetracker()->landing_location(true);
             setpoint_pos_world =  pad_pos + current_waypoint->xyz;
             if (setpoint_pos_world.y > -0.5f) // keep some margin to the top of the view, because atm we have an overshoot problem.
                 setpoint_pos_world.y = -0.5f;
@@ -550,11 +551,11 @@ void DroneNavigation::next_waypoint(Waypoint wp, double time) {
     delete current_waypoint;
     current_waypoint = new Waypoint(wp);
     if (wp.mode == wfm_takeoff) {
-        cv::Point3f p = _trackers->dronetracker()->drone_takeoff_location();
+        cv::Point3f p = _trackers->dronetracker()->takeoff_location();
         setpoint_pos_world =  p + wp.xyz;
         setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, CameraView::relaxed);
     } else if (wp.mode == wfm_landing || wp.mode == wfm_yaw_reset) {
-        cv::Point3f p = _trackers->dronetracker()->drone_landing_location(true);
+        cv::Point3f p = _trackers->dronetracker()->landing_location(true);
         setpoint_pos_world =  p + wp.xyz;
         if (setpoint_pos_world.y > -0.5f) // keep some margin to the top of the view, because atm we have an overshoot problem.
             setpoint_pos_world.y = -0.5f;

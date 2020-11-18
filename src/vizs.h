@@ -48,6 +48,8 @@ private:
     const int line_width = 2;
     const float text_size = 0.3;
 
+    float ground_y = -1.92f; // guestimated ground level
+
     std::mutex lock_plot_data;
     std::mutex lock_frame_data;
     std::thread thread_viz;

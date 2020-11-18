@@ -136,7 +136,7 @@ cv::Point3f Interceptor::update_far_target(bool drone_at_base) {
     cv::Point3f drone_pos = dtd.pos();
 
     if (drone_at_base)
-        drone_pos = _trackers->dronetracker()->drone_takeoff_location();
+        drone_pos = _trackers->dronetracker()->takeoff_location();
 
     cv::Point3f drone_vel = dtd.vel();
     calc_tti(predicted_pos, _aim_vel, drone_pos, drone_vel, drone_at_base); // only used for viz _tti

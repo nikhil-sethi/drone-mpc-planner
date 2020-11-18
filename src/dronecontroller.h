@@ -525,21 +525,28 @@ public:
     bool joystick_ready();
 
     void LED(bool b) {
-        _rc->LED_drone(b,dparams.drone_led_strength);
+        if (initialized)
+            _rc->LED_drone(b,dparams.drone_led_strength);
     }
     void LED(bool b, int value) {
-        _rc->LED_drone(b,value);
+        if (initialized)
+            _rc->LED_drone(b,value);
     }
     void stop_rc() {
-        _rc->close();
+        if (initialized)
+            _rc->close();
     }
-
     void beep(bool b) {
-        _rc->beep(b);
+        if (initialized)
+            _rc->beep(b);
     }
-
-    telemetry_data telemetry() {
-        return _rc->telemetry;
+    Telemetry telemetry() {
+        if (initialized)
+            return _rc->telemetry;
+        else {
+            Telemetry t;
+            return t;
+        }
     }
 
     void start_landing_acc_calibration() {

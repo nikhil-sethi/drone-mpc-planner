@@ -135,7 +135,7 @@ enum arming_states {
     ARMING_DISABLED_ARM_SWITCH      = (1 << 25)
 };
 
-struct telemetry_data {
+struct Telemetry {
     float           batt_v;
     float           batt_cell_v;
     float           batt_current;
@@ -161,7 +161,7 @@ public:
     int throttle = RC_BOUND_MIN;
     int arm_switch = RC_BOUND_MIN;
     int turtle_mode = RC_BOUND_MIN;
-    telemetry_data telemetry;
+    Telemetry telemetry;
     const int bf_major_required = 4;
     const int bf_minor_required = 2;
     const int bf_patch_required = 102;

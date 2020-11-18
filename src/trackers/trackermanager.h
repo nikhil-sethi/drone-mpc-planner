@@ -26,7 +26,7 @@ static const char* trackermanager_mode_names[] = {"tm_idle",
                                                  };
 
 struct processed_blobs {
-    processed_blobs(BlobProps * blob, uint16_t new_id) {
+    processed_blobs(BlobProps *blob, uint16_t new_id) {
         props = blob;
         id = new_id;
     }
@@ -41,7 +41,7 @@ struct processed_blobs {
     }
     uint16_t id;
     cv::Mat mask;
-    BlobProps * props;
+    BlobProps *props;
     std::vector<ItemTracker *> trackers;
     bool tracked() { return trackers.size()>0;}
     bool ignored = false;
@@ -53,7 +53,7 @@ struct processed_blobs {
                 return cv::Scalar(255,255,55); // light blue
         } else if (trackers.size()>1)
             return cv::Scalar(0,128,255); // orange
-        ItemTracker * trkr = trackers.at(0);
+        ItemTracker *trkr = trackers.at(0);
         if (trkr->type() == tt_drone)
             return cv::Scalar(0,255,0); // green
         else if (trkr->type() == tt_insect)
@@ -72,7 +72,7 @@ struct processed_blobs {
                 return "";
         } else if (trackers.size()>1)
             return "";
-        ItemTracker * trkr = trackers.at(0);
+        ItemTracker *trkr = trackers.at(0);
         if (trkr->type() == tt_drone)
             return "D ";
         else if (trkr->type() == tt_insect)
@@ -87,7 +87,7 @@ struct processed_blobs {
 
 class TrackerManager {
 
-public: cv::Scalar tracker_color( ItemTracker * trkr) {
+public: cv::Scalar tracker_color( ItemTracker *trkr) {
         if (trkr->type() == tt_drone)
             return cv::Scalar(0,255,0);
         else if (trkr->type() == tt_insect)
@@ -165,11 +165,21 @@ private:
 
     void update_trackers(double time, long long frame_number, bool drone_is_active);
     void update_max_change_points();
-    void update_static_ignores();
-    void update_static_ignores(ItemTracker * trkr);
+    void collect_static_ignores();
+    void collect_static_ignores(ItemTracker *trkr);
+    void check_match_conflicts(std::vector<processed_blobs> *pbs,double time);
+    void flag_used_static_ignores(std::vector<processed_blobs> *pbs);
+    void prep_blobs(std::vector<processed_blobs> *pbs,double time);
+    void erase_dissipated_fps(double time);
+    void match_existing_trackers(std::vector<processed_blobs> *pbs,bool drone_is_active, double time);
+    void match_trackers_that_lost(std::vector<processed_blobs> *pbs,bool drone_is_active, double time);
+    void create_new_insect_trackers(std::vector<processed_blobs> *pbs, double time);
+    void draw_viz(std::vector<processed_blobs> *pbs, double time);
     void match_blobs_to_trackers(bool drone_is_active, double time);
-    void find_cog_and_remove(cv::Point maxt, double max, cv::Mat diff,bool enable_insect_drone_split, float drn_ins_split_thresh,bool enable_viz_max_points_local,cv::Mat bkg_frame);
-    bool tracker_active(ItemTracker * trkr, bool drone_is_active);
+    void find_cog_and_remove(cv::Point maxt, double max, cv::Mat diff,bool enable_insect_drone_split, float drn_ins_split_thresh,cv::Mat bkg_frame);
+    bool tracker_active(ItemTracker *trkr, bool drone_is_active);
+    void prep_vizs();
+    void finish_vizs();
     cv::Scalar color_of_blob(processed_blobs blob);
     std::vector<BlinkTracker *> blinktrackers();
     std::vector<InsectTracker *> insecttrackers();
@@ -182,7 +192,9 @@ private:
     uint16_t next_blinktrkr_id = 1;
     detection_mode _mode;
 
-    DroneTracker * _dtrkr;
+    DroneTracker *_dtrkr;
+    unsigned long long target_insecttracker_frameid_updated = 0;
+    InsectTracker *_target_insecttracker;
 
     std::vector<logging::InsectReader> replay_logs;
     cv::Mat diff_viz;
@@ -195,7 +207,7 @@ public:
             int best_state = 0;
             for (auto trkr : _trackers)   {
                 if (trkr->type() == tt_blink)   {
-                    BlinkTracker * btrkr = static_cast<BlinkTracker * >(trkr);
+                    BlinkTracker *btrkr = static_cast<BlinkTracker *>(trkr);
                     if (btrkr->state() > best_state)
                         best_state = btrkr->state();
                 }
@@ -212,11 +224,11 @@ public:
     std::tuple<bool, BlinkTracker *> blinktracker_best();
 
     std::vector<ItemTracker *>all_target_trackers();
-    InsectTracker * target_insecttracker();
+    InsectTracker *target_insecttracker();
     bool tracking_a_target();
     double target_last_detection();
     TrackData target_last_trackdata();
-    DroneTracker * dronetracker() { return _dtrkr; }
+    DroneTracker *dronetracker() { return _dtrkr; }
     void init(ofstream *logger,string replay_dir, VisionData *visdat, CameraView *camview);
     void update(double time, bool drone_is_active);
     void close();
@@ -263,8 +275,8 @@ public:
         );
     }
 
-    void init_virtualmoth_moth(tracking::mothbehavior behavior_type, DroneController* dctrl) {
-        VirtualmothTracker* vt;
+    void init_virtualmoth_moth(tracking::mothbehavior behavior_type, DroneController*dctrl) {
+        VirtualmothTracker *vt;
         vt = new VirtualmothTracker();
         vt->init(next_insecttrkr_id, behavior_type, _visdat, dctrl);
         _trackers.push_back(vt);

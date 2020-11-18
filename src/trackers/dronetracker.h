@@ -59,11 +59,11 @@ private:
     cv::Point2f _blink_im_location;
     float _blink_im_disparity;
     float _blink_im_size = 5;
-    float _drone_takeoff_im_size;
-    cv::Point2f _drone_takeoff_im_location;
+    float _takeoff_im_size;
+    cv::Point2f _takeoff_im_location;
     cv::Point3f _blink_world_location;
-    bool _landing_pad_location_set = false;
-    cv::Point3f _landing_pad_world;
+    bool _takeoff_location_valid = false;
+    cv::Point3f _landing_world;
 
     bool enable_takeoff_motion_delete = false;
 
@@ -126,12 +126,13 @@ public:
     cv::Point2f blnk_im_location() { return _blink_im_location; } // scaled with imscalef
     float blnk_im_size() { return _blink_im_size; } // scaled with imscalef
     float blink_im_disparity() { return _blink_im_disparity; }
-    float drone_takeoff_im_size() { return _drone_takeoff_im_size; } // NOT scaled with imscalef
-    cv::Point2f drone_takeoff_im_location() { return _drone_takeoff_im_location;} // NOT scaled with imscalef
+    float takeoff_im_size() { return _takeoff_im_size; } // NOT scaled with imscalef
+    cv::Point2f takeoff_im_location() { return _takeoff_im_location;} // NOT scaled with imscalef
 
-    cv::Point3f drone_takeoff_location() {return _blink_world_location + cv::Point3f(0,0,-dparams.radius);}
+    bool takeoff_location_valid() {return _takeoff_location_valid;}
+    cv::Point3f takeoff_location() {return _blink_world_location + cv::Point3f(0,0,-dparams.radius);}
 
-    cv::Point3f drone_landing_location(bool landing_hack) {
+    cv::Point3f landing_location(bool landing_hack) {
 
         cv::Point3f hack = {0};
         if (landing_hack)
@@ -139,7 +140,7 @@ public:
         if(landing_parameter.initialized)
             return cv::Point3f(landing_parameter.x, landing_parameter.y, landing_parameter.z) + hack;
         else
-            return _landing_pad_world + hack;
+            return _landing_world + hack;
     }
 
     bool take_off_detection_failed() { return _take_off_detection_failed;}
@@ -204,19 +205,19 @@ public:
         return deviation_vec1_length < min_deviate_vec_length && deviation_vec2_length < min_deviate_vec_length;
     }
 
-    void set_drone_landing_location(cv::Point2f im, float drone_im_disparity,float drone_im_size, cv::Point3f world) {
+    void set_landing_location(cv::Point2f im, float im_disparity,float im_size, cv::Point3f world) {
         _blink_im_location = im;
-        _blink_im_size = drone_im_size;
-        _blink_im_disparity = drone_im_disparity;
+        _blink_im_size = im_size;
+        _blink_im_disparity = im_disparity;
         _blink_world_location = world;
         std::cout << "blink-location: " << _blink_world_location << std::endl;
-        if (!_landing_pad_location_set) { // for now, assume the first time set is the actual landing location.
-            _landing_pad_world = drone_takeoff_location();
-            _landing_pad_location_set = true;
+        if (!_takeoff_location_valid) { // for now, assume the first time set is the actual landing location.
+            _landing_world = takeoff_location();
+            _takeoff_location_valid = true;
         }
-        _target = drone_takeoff_location();
-        _drone_takeoff_im_size = world2im_size(_blink_world_location+cv::Point3f(dparams.radius,0,0),_blink_world_location-cv::Point3f(dparams.radius,0,0),_visdat->Qfi,_visdat->camera_angle);
-        _drone_takeoff_im_location =  world2im_2d(drone_takeoff_location(),_visdat->Qfi,_visdat->camera_angle);
+        _target = takeoff_location();
+        _takeoff_im_size = world2im_size(_blink_world_location+cv::Point3f(dparams.radius,0,0),_blink_world_location-cv::Point3f(dparams.radius,0,0),_visdat->Qfi,_visdat->camera_angle);
+        _takeoff_im_location =  world2im_2d(takeoff_location(),_visdat->Qfi,_visdat->camera_angle);
     }
     void delete_landing_motion(float duration);
     void calc_world_item(BlobProps * pbs, double time);
@@ -224,7 +225,7 @@ public:
 
     double time_since_take_off() {return start_take_off_time - current_time;}
 
-    void update_drone_target(cv::Point3f target) { _target = target; }
+    void update_target(cv::Point3f target) { _target = target; }
 
     bool delete_me() {return false;}
 

@@ -2,7 +2,7 @@
     <Member Name="min_disparity">1</Member>
     <Member Name="max_disparity">100</Member>
     <Member Name="static_ignores_dist_thresh">5</Member>
-    <Member Name="score_threshold">1</Member>
+    <Member Name="score_threshold">0.8</Member>
     <Member Name="background_subtract_zone_factor">97</Member>
     <Member Name="max_size">0.1</Member>
 </SerializableClass>

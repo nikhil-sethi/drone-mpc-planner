@@ -35,7 +35,6 @@ void InsectTracker::append_log(double time, unsigned long long frame_number) {
 }
 
 void InsectTracker::check_false_positive() {
-
     //there are several known fp's:
     // 1. a 'permanent motion pair', a spot in the motion map that was permanentely changed after the motion map was reset.
     //(this could well have been a moving insect, splitting the blob in a permanent speck where it started at the point of the reset,
@@ -47,23 +46,24 @@ void InsectTracker::check_false_positive() {
 
     //A check whether an object is actually moving through the image seems to be quite robust to filter out 1,4 and possibly 5:
     //A check whether a detection was tracked for more then a few frames filters out 2 and 3
-    if (track_history.size()>1) {
-        float tot = 0;
-        uint cnt = 0;
-        for (auto ti : track_history) {
-            auto wi = ti.world_item;
-            if (wi.valid) {
-                tot += normf(wi.pt - _world_item.pt);
-                cnt++;
-            }
-        }
-        tot/=cnt;
-        if (tot < 0.03f && cnt > 1)
-            _fp_cnt++;
-        else
+
+    if (track_history.size() < track_history_max_size) {
+        auto wti_0 = track_history.at(0).world_item;
+        assert(wti_0.valid); // the first ever point tracked should always be valid
+        if (track_history.size()>1) {
+            if (_world_item.valid)
+                dist_integrator_fp += normf(_world_item.pt - wti_0.pt);
+            float tot = dist_integrator_fp/_n_frames_tracked;
+            if (tot < 0.03f && _n_frames_tracked > 1)
+                _fp_cnt++;
+            else
+                _fp_cnt = 0;
+        } else {
             _fp_cnt = 0;
-    } else {
-        _fp_cnt = 0;
+        }
+    } else if (_fp_cnt> 3) {
+        _tracking = false; //bye
+        _n_frames_lost = n_frames_lost_threshold;
     }
 }
 tracking::false_positive_type InsectTracker::false_positive() {
@@ -84,10 +84,7 @@ void InsectTracker::update(double time) {
     ItemTracker::update(time);
     check_false_positive();
 
-    if (!_tracking) {
-        min_disparity = params.min_disparity.value();
-        max_disparity = params.max_disparity.value();
-    } else {
+    if (_tracking) {
         update_prediction(time);
         if (_image_item.valid) {
             min_disparity = std::clamp(static_cast<int>(roundf(_image_item.disparity))-5,params.min_disparity.value(),params.max_disparity.value());
@@ -99,18 +96,14 @@ void InsectTracker::update(double time) {
 }
 
 void InsectTracker::calc_world_item(BlobProps * props, double time [[maybe_unused]]) {
-
     calc_world_props_blob_generic(props,false);
     props->world_props.im_pos_ok = true;
     props->world_props.valid = props->world_props.bkg_check_ok && props->world_props.disparity_in_range & props->world_props.radius_in_range;
 
     if (_blobs_are_fused_cnt > 1 * pparams.fps) // if the insect and drone are fused, the drone is accelerating through it and should become seperate again within a limited time
         props->world_props.valid = false;
-
 }
 
-bool InsectTracker::check_ignore_blobs(BlobProps * props) {
-    return this->check_ignore_blobs_generic(props);
-}
+bool InsectTracker::check_ignore_blobs(BlobProps * props) { return this->check_ignore_blobs_generic(props);}
 
 }
