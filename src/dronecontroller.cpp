@@ -1121,10 +1121,6 @@ void DroneController::check_snr(TrackData data_drone) {
         float err_sample1 = abs(dpos01 - dpos12); // If there is a noise peak at the previous sample this create a high value
         if(err_sample1>0.2f) {
             snr_noise_cnt++;
-            std::cout << "Counted peaks in position signal: " << snr_noise_cnt<< "/3 - data: [" <<
-                      snr_pos_buffer[0] << ", " <<
-                      snr_pos_buffer[1] << ", " <<
-                      snr_pos_buffer[2] << "]" << std::endl;
             if (snr_noise_cnt>=3) {
                 _flight_mode = fm_abort_model_error;
                 std::cout << "Serious noise detected in the drone tracker" << std::endl;
