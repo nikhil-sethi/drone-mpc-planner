@@ -1122,7 +1122,7 @@ void DroneController::check_snr(TrackData data_drone) {
         float dpos12 = normf(snr_pos_buffer[(snr_buf_pointer-2)%3]-snr_pos_buffer[(snr_buf_pointer-1)%3]);
 
         float err_sample1 = abs(dpos01 - dpos12); // If there is a noise peak at the previous sample this create a high value
-        if(err_sample1>0.2f) {
+        if(err_sample1>0.4f) {
             snr_noise_cnt++;
             if (snr_noise_cnt>=3) {
                 _flight_mode = fm_abort_model_error;
