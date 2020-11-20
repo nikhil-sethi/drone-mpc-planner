@@ -1087,22 +1087,25 @@ void DroneController::check_tracking_lost(TrackData data_drone) {
 }
 void DroneController::check_control_and_tracking_problems(TrackData data_drone) {
 
-    model_error += normf({pos_modelx.current_output() - data_drone.pos().x,
-                          pos_modely.current_output() - data_drone.pos().y,
-                          pos_modelz.current_output() - data_drone.pos().z});
-    model_error -= 1.f; // Accept error over time
+    if(data_drone.pos_valid) {
+        model_error += normf({pos_modelx.current_output() - data_drone.pos().x,
+                              pos_modely.current_output() - data_drone.pos().y,
+                              pos_modelz.current_output() - data_drone.pos().z});
+        model_error -= 1.f; // Accept error over time
 
-    if(model_error<0)
-        model_error = 0;
-    if(model_error>70 && !generator_mode) {
-        _flight_mode = fm_abort_model_error;
-        std::cout << "Flight aborted: Drone model diverged from drone measurement." << std::endl;
-    }
+        if(model_error<0)
+            model_error = 0;
+        if(model_error>70 && !generator_mode) {
+            _flight_mode = fm_abort_model_error;
+            std::cout << "Flight aborted: Drone model diverged from drone measurement." << std::endl;
+        }
 #if DRONE_CONTROLLER_DEBUG
-    std::cout << "model_error: " << model_error << std::endl;
-    if(model_error>model_error_max)
-        model_error_max = model_error;
+        std::cout << "model_error: " << model_error << std::endl;
+        if(model_error>model_error_max)
+            model_error_max = model_error;
 #endif
+
+    }
 }
 
 void DroneController::check_snr(TrackData data_drone) {
