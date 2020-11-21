@@ -79,7 +79,7 @@ void DroneNavigation::update(double time) {
         _nav_flight_mode = nfm_hunt;
     }
 
-    if ((_dctrl->flight_aborted() && _navigation_status != ns_batlow )|| _dctrl->in_flight_duration(time) > dparams.max_flight_time)
+    if ((_dctrl->flight_aborted() && _navigation_status != ns_batlow && _navigation_status != ns_tracker_problem && _navigation_status != ns_manual )|| _dctrl->in_flight_duration(time) > dparams.max_flight_time)
         _navigation_status = ns_drone_problem;
 
     _iceptor.update(_dctrl->at_base(), time);
@@ -527,6 +527,7 @@ void DroneNavigation::update(double time) {
             _dctrl->LED(static_cast<int>((time - time_drone_problem) * 10.0) % 10 > 5, 5); // minimal blink every 5 seconds
             break;
         } case ns_tracker_problem: {
+            _dctrl->flight_mode(DroneController::fm_abort);
             _dctrl->LED(static_cast<int>((time - time_drone_problem) * 2.0) % 2 > 1, 5); // faster blink every second
             break;
         } case ns_drone_problem: {

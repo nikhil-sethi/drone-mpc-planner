@@ -1079,7 +1079,7 @@ void DroneController::check_tracking_lost(TrackData data_drone) {
         kill_cnt_down++;
         if (kill_cnt_down > pparams.fps / 2) {
             _flight_mode = fm_abort_tracking_lost;
-            std::cout << "Flight aborted: Drone position in valid." << std::endl;
+            std::cout << "Flight aborted: Drone position invalid." << std::endl;
         }
     } else {
         kill_cnt_down = 0;
