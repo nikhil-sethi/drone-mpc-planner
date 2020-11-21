@@ -183,7 +183,7 @@ def load_mode_data(unique_dates,heatmap_data,selected_systems,selected_dayrange)
     if not len(unique_dates):
         return [],[]
     systems_str = system_sql_str(selected_systems)
-    conn,cur = open_db()
+    _,cur = open_db()
 
     sql_str = 'SELECT * FROM mode_records WHERE ' + systems_str
     start_date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())+datetime.timedelta(hours=12) - datetime.timedelta(days=selected_dayrange)
@@ -203,7 +203,10 @@ def load_mode_data(unique_dates,heatmap_data,selected_systems,selected_dayrange)
     for mode in modes:
         d_mode_start = datetime.datetime.strptime(mode[start_col], '%Y%m%d_%H%M%S')-datetime.timedelta(hours=12)
         d_mode_end = datetime.datetime.strptime(mode[end_col], '%Y%m%d_%H%M%S')-datetime.timedelta(hours=12)
-        len_hours = math.ceil((d_mode_end-d_mode_start).seconds/3600)
+        if d_mode_end > d_mode_start: #there were some wrong logs. This check can possibly be removed at some point.
+            len_hours = math.ceil((d_mode_end-d_mode_start).seconds/3600)
+        else:
+            continue
 
         day = (d_mode_start.date() - start_date.date()).days
         hour = d_mode_start.hour

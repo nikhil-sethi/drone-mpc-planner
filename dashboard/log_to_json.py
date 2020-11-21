@@ -43,6 +43,9 @@ def process_system_status_in_folder(folder):
                 if line.find('Run_time') != -1:
                     runtime = float(line.split(':')[1])
                     break
+    if runtime<0:
+        #something bad must have happened. A crash of the program prevents the writing of results.txt
+        return ([],'error results.txt does not contain run_time','')
 
     #open terminal log and check whether we were waiting for darkness
     terminal_log_path = Path(folder,'terminal.log')
