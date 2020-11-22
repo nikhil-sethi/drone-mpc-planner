@@ -161,7 +161,8 @@ void MultiModule::convert_channels(uint16_t * channels, unsigned char * packet) 
 }
 
 void MultiModule::send_rc_data(void) {
-    g_sendData.lock();
+    auto now=std::chrono::steady_clock::now();
+    g_sendData.try_lock_until(now + std::chrono::milliseconds(30));
     g_lockData.lock();
     if (dparams.tx != tx_none) {
         unsigned char packet[RXBUFFER_SIZE] = {0}; // a packet is 36 bytes, see multimodule.h

@@ -244,7 +244,7 @@ private:
     int calibrate_acc_cnt = 0;
 
     std::mutex g_lockData;
-    std::mutex g_sendData;
+    std::timed_mutex g_sendData;
     std::stringstream received;
     std::thread send_thread_mm;
     std::thread receive_thread_mm;
