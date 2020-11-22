@@ -140,7 +140,7 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
                 g_object_set (G_OBJECT (_appsrc), "caps",caps_appsrc, NULL);
                 gst_caps_unref(caps_appsrc);
                 encoder = gst_element_factory_make ("vaapivp9enc", "encoder"); // hardware encoding
-                g_object_set (G_OBJECT (encoder),"rate-control",2, "quality-level", 1,"bitrate", 15000, NULL);
+                g_object_set (G_OBJECT (encoder),"rate-control",2, "quality-level", 1,"bitrate", 7500, NULL);
 
 
                 gst_bin_add_many (GST_BIN (_pipeline),_appsrc,encoder,mux,videosink,NULL);
