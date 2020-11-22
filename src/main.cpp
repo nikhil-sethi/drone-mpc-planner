@@ -313,60 +313,8 @@ void process_video() {
                   std::endl;
         //   std::flush;
 
-
-        if (rc.telemetry.arming_state && rc.arm_switch == bf_armed ) {
-            if ( rc.telemetry.arming_state & ARMING_DISABLED_NO_GYRO)
-                std::cout << "ARMING_DISABLED_NO_GYRO | ";
-            if ( rc.telemetry.arming_state & ARMING_DISABLED_FAILSAFE)
-                std::cout << "ARMING_DISABLED_FAILSAFE | ";
-            if ( rc.telemetry.arming_state & ARMING_DISABLED_RX_FAILSAFE)
-                std::cout << "ARMING_DISABLED_RX_FAILSAFE | ";
-            if ( rc.telemetry.arming_state & ARMING_DISABLED_BAD_RX_RECOVERY)
-                std::cout << "ARMING_DISABLED_BAD_RX_RECOVERY | ";
-            if ( rc.telemetry.arming_state & ARMING_DISABLED_BOXFAILSAFE)
-                std::cout << "ARMING_DISABLED_BOXFAILSAFE | ";
-            if ( rc.telemetry.arming_state & ARMING_DISABLED_RUNAWAY_TAKEOFF)
-                std::cout << "ARMING_DISABLED_RUNAWAY_TAKEOFF | ";
-            if ( rc.telemetry.arming_state & ARMING_DISABLED_CRASH_DETECTED)
-                std::cout << "ARMING_DISABLED_CRASH_DETECTED | ";
-            if ( rc.telemetry.arming_state & ARMING_DISABLED_THROTTLE)
-                std::cout << "ARMING_DISABLED_THROTTLE | ";
-            if ( rc.telemetry.arming_state & ARMING_DISABLED_ANGLE)
-                std::cout << "ARMING_DISABLED_ANGLE | ";
-            if ( rc.telemetry.arming_state & ARMING_DISABLED_BOOT_GRACE_TIME)
-                std::cout << "ARMING_DISABLED_BOOT_GRACE_TIME | ";
-            if ( rc.telemetry.arming_state & ARMING_DISABLED_NOPREARM)
-                std::cout << "ARMING_DISABLED_NOPREARM | ";
-            if ( rc.telemetry.arming_state & ARMING_DISABLED_LOAD)
-                std::cout << "ARMING_DISABLED_LOAD | ";
-            if ( rc.telemetry.arming_state & ARMING_DISABLED_CALIBRATING)
-                std::cout << "ARMING_DISABLED_CALIBRATING | ";
-            if ( rc.telemetry.arming_state & ARMING_DISABLED_CLI)
-                std::cout << "ARMING_DISABLED_CLI | ";
-            if ( rc.telemetry.arming_state & ARMING_DISABLED_CMS_MENU)
-                std::cout << "ARMING_DISABLED_CMS_MENU | ";
-            if ( rc.telemetry.arming_state & ARMING_DISABLED_BST)
-                std::cout << "ARMING_DISABLED_BST | ";
-            if ( rc.telemetry.arming_state & ARMING_DISABLED_MSP)
-                std::cout << "ARMING_DISABLED_MSP | ";
-            if ( rc.telemetry.arming_state & ARMING_DISABLED_PARALYZE)
-                std::cout << "ARMING_DISABLED_PARALYZE | ";
-            if ( rc.telemetry.arming_state & ARMING_DISABLED_GPS)
-                std::cout << "ARMING_DISABLED_GPS | ";
-            if ( rc.telemetry.arming_state & ARMING_DISABLED_RESC)
-                std::cout << "ARMING_DISABLED_RESC | ";
-            if ( rc.telemetry.arming_state & ARMING_DISABLED_RPMFILTER)
-                std::cout << "ARMING_DISABLED_RPMFILTER | ";
-            if ( rc.telemetry.arming_state & ARMING_DISABLED_REBOOT_REQUIRED)
-                std::cout << "ARMING_DISABLED_REBOOT_REQUIRED | ";
-            if ( rc.telemetry.arming_state & ARMING_DISABLED_DSHOT_BITBANG)
-                std::cout << "ARMING_DISABLED_DSHOT_BITBANG | ";
-            if ( rc.telemetry.arming_state & ARMING_DISABLED_ACC_CALIBRATION)
-                std::cout << "ARMING_DISABLED_ACC_CALIBRATION | ";
-            if ( rc.telemetry.arming_state & ARMING_DISABLED_ARM_SWITCH)
-                std::cout << "ARMING_DISABLED_ARM_SWITCH ";
-            std::cout << std::endl;
-        }
+        if (rc.telemetry.arming_state && rc.arm_switch == bf_armed )
+            std::cout << rc.arming_state_str() << std::endl;
 
         imgcount++;
         prev_time = t;
@@ -700,6 +648,9 @@ void init_loggers() {
 
     logger_insect.open(data_output_dir  + "insect.log",std::ofstream::out);
     logger_video_ids.open(data_output_dir  + "frames.csv",std::ofstream::out);
+
+    if (rc.connected())
+        rc.init_logger();
 }
 
 void init_video_recorders() {

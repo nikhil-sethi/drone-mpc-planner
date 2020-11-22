@@ -59,6 +59,11 @@ void MultiModule::init(int drone_id) {
         }
     }
 }
+void MultiModule::init_logger() {
+    std::string logger_fn = data_output_dir  + "log_telem.txt";
+    telem_logger.open(logger_fn,std::ofstream::out);
+    logger_initialized = true;
+}
 
 void MultiModule::send_pats_init_package() {
     //send bind id to the multimodule. It must have this form: [66,67 mode3d,id2,id1,id0,68], otherwise the MM won't proceed.
@@ -341,9 +346,13 @@ bool MultiModule::receive_telemetry(std::string buffer) {
         switch (sensor_id) {
         case FSSP_DATAID_ACC_THROTTLE_MIX:
             acc_throttle_pkg(std::stoi(arr.at(1)),std::stoi(arr.at(2)));
+            if (logger_initialized)
+                telem_logger << _time << ";FSSP_DATAID_ACC_THROTTLE_MIX;" << telemetry.acc.z << ";" << telemetry.throttle << ";" << telemetry.throttle_scaled << ";" << telemetry.thrust_max << "\n";
             break;
         case FSSP_DATAID_ACC_RPM_MIX:
             acc_rpm_pkg(std::stoi(arr.at(1)),std::stoi(arr.at(2)));
+            if (logger_initialized)
+                telem_logger << _time << ";FSSP_DATAID_ACC_RPM_MIX;" << telemetry.acc.z << ";" << telemetry.thrust_rpm << "\n";
             break;
         case FSSP_DATAID_RSSI: {
             //four bytes:
@@ -351,6 +360,8 @@ bool MultiModule::receive_telemetry(std::string buffer) {
             //rx rssi is the only one we really want to know:
             int tmp_rssi = std::stoi(arr.at(1));
             telemetry.rssi = tmp_rssi;
+            if (logger_initialized)
+                telem_logger << _time << ";FSSP_DATAID_RSSI;" << static_cast<int>(telemetry.rssi) << ";" << telemetry.thrust_rpm << "\n";
             break;
         } case FSSP_DATAID_BF_VERSION: {
             uint32_t bf_v = std::stoi(arr.at(1));
@@ -363,51 +374,74 @@ bool MultiModule::receive_telemetry(std::string buffer) {
                 _bf_version_error += 1;
             } else
                 _bf_version_error = 0 ;
-
+            if (logger_initialized)
+                telem_logger << _time << ";FSSP_DATAID_BF_VERSION;" << telemetry.bf_major << "." << telemetry.bf_minor << "." << telemetry.bf_patch << "\n";
             break;
         } case FSSP_DATAID_VFAS: {
             float data = std::stof( arr.at(1));
             telemetry.batt_v = data/100.f;
+            if (logger_initialized)
+                telem_logger << _time << ";FSSP_DATAID_VFAS;" << telemetry.batt_v << "\n";
             break;
         } case FSSP_DATAID_A4: {
             float data = std::stof( arr.at(1));
             telemetry.batt_cell_v = data/100.f;
+            if (logger_initialized)
+                telem_logger << _time << ";FSSP_DATAID_A4;" << telemetry.batt_cell_v << "\n";
             break;
         } case FSSP_DATAID_CURRENT: {
             float data = std::stof( arr.at(1));
             telemetry.batt_current = data/100.f;
+            if (logger_initialized)
+                telem_logger << _time << ";FSSP_DATAID_CURRENT;" << telemetry.batt_current << "\n";
             break;
         } case FSSP_DATAID_RPM: {
             int data = std::stoi( arr.at(1));
             telemetry.rpm = static_cast<uint16_t>(data);
+            if (logger_initialized)
+                telem_logger << _time << ";FSSP_DATAID_RPM;" << telemetry.rpm << "\n";
             break;
         } case FSSP_DATAID_ROLL: {
             float data = std::stof( arr.at(1));
             telemetry.roll = data/100.f;
+            if (logger_initialized)
+                telem_logger << _time << ";FSSP_DATAID_ROLL;" << telemetry.roll << "\n";
             break;
         } case FSSP_DATAID_PITCH: {
             float data = std::stof( arr.at(1));
             telemetry.pitch = data/100.f;
+            if (logger_initialized)
+                telem_logger << _time << ";FSSP_DATAID_PITCH;" << telemetry.pitch << "\n";
             break;
         } case FSSP_DATAID_ACCX: {
             float data = std::stof( arr.at(1));
             telemetry.acc.x = data/100.f;
+            if (logger_initialized)
+                telem_logger << _time << ";FSSP_DATAID_ACCX;" << telemetry.acc.x << "\n";
             break;
         } case FSSP_DATAID_ACCY: {
             float data = std::stof( arr.at(1));
             telemetry.acc.y = data/100.f;
+            if (logger_initialized)
+                telem_logger << _time << ";FSSP_DATAID_ACCY;" << telemetry.acc.y << "\n";
             break;
         } case FSSP_DATAID_ACCZ: {
             float data = std::stof( arr.at(1));
             telemetry.acc.z = data/100.f;
+            if (logger_initialized)
+                telem_logger << _time << ";FSSP_DATAID_ACCZ;" << telemetry.acc.z << "\n";
             break;
         } case FSSP_DATAID_MAX_THRUST: {
             float data = std::stof( arr.at(1));
             telemetry.thrust_max = data/100.f;
+            if (logger_initialized)
+                telem_logger << _time << ";FSSP_DATAID_MAX_THRUST;" << telemetry.thrust_max << "\n";
             break;
         } case FSSP_DATAID_ARMING: {
             int data = std::stoi( arr.at(1));
             telemetry.arming_state = static_cast<arming_states>(data);
+            if (logger_initialized)
+                telem_logger << _time << ";FSSP_DATAID_ARMING;" << arming_state_str() << "\n";
             break;
         } default:
             break;
@@ -456,6 +490,10 @@ void MultiModule::close() {
         send_rc_data();
         notconnected = true;
         RS232_CloseComport();
+        if (logger_initialized) {
+            telem_logger.flush();
+            telem_logger.close();
+        }
     }
     initialized = false;
 }

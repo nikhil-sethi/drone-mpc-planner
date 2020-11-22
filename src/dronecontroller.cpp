@@ -504,7 +504,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
     auto_yaw = std::clamp(auto_yaw,RC_BOUND_MIN,RC_BOUND_MAX);
 
     // std::cout << time <<  " rpyt: " << roll << ", " << pitch << ", " << yaw << ", " << throttle << std::endl;
-    _rc->queue_commands(throttle,roll,pitch,yaw,mode);
+    _rc->queue_commands(throttle,roll,pitch,yaw,mode,time);
 
     control_data c(Roll(), Throttle(), Pitch(), time);
     control_history.push_back(c);

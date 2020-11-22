@@ -79,33 +79,6 @@ enum {
 
 };
 
-// static const char* arming_states_str[] = {
-//     "ARMING_DISABLED_NO_GYRO",
-//     "ARMING_DISABLED_FAILSAFE",
-//     "ARMING_DISABLED_RX_FAILSAFE",
-//     "ARMING_DISABLED_BAD_RX_RECOVERY",
-//     "ARMING_DISABLED_BOXFAILSAFE",
-//     "ARMING_DISABLED_RUNAWAY_TAKEOFF",
-//     "ARMING_DISABLED_CRASH_DETECTED",
-//     "ARMING_DISABLED_THROTTLE",
-//     "ARMING_DISABLED_ANGLE",
-//     "ARMING_DISABLED_BOOT_GRACE_TIME",
-//     "ARMING_DISABLED_NOPREARM",
-//     "ARMING_DISABLED_LOAD",
-//     "ARMING_DISABLED_CALIBRATING",
-//     "ARMING_DISABLED_CLI",
-//     "ARMING_DISABLED_CMS_MENU",
-//     "ARMING_DISABLED_BST",
-//     "ARMING_DISABLED_MSP",
-//     "ARMING_DISABLED_PARALYZE",
-//     "ARMING_DISABLED_GPS",
-//     "ARMING_DISABLED_RESC",
-//     "ARMING_DISABLED_RPMFILTER",
-//     "ARMING_DISABLED_REBOOT_REQUIRED",
-//     "ARMING_DISABLED_DSHOT_BITBANG",
-//     "ARMING_DISABLED_ARM_SWITCH",
-//     "ARMING_DISABLED_ALL_GOOD"
-// };
 enum arming_states {
     ARMING_DISABLED_NO_GYRO         = (1 << 0),
     ARMING_DISABLED_FAILSAFE        = (1 << 1),
@@ -168,6 +141,7 @@ public:
 
 
     void init(int drone_id);
+    void init_logger();
     void close();
 
     int LED_drone() {return _LED_drone;}
@@ -183,7 +157,7 @@ public:
     bool bf_version_error() { return _bf_version_error>10;}
     std::string Armed() { return armed_names[arm_switch>RC_MIDDLE]; }
 
-    void queue_commands(int new_throttle,int new_roll, int new_pitch, int new_yaw, int new_mode) {
+    void queue_commands(int new_throttle,int new_roll, int new_pitch, int new_yaw, int new_mode, double time) {
         if (!exitSendThread) {
             g_lockData.lock();
             throttle = new_throttle;
@@ -191,6 +165,7 @@ public:
             pitch = new_pitch;
             yaw = new_yaw;
             mode = new_mode;
+            _time = time;
             g_lockData.unlock();
             g_sendData.unlock();
         }
@@ -218,6 +193,61 @@ public:
     bool connected() {return !notconnected;}
     int drone_id() {return _drone_id_rxnum;}
 
+    std::string arming_state_str() {
+        std::string res = "";
+        if ( telemetry.arming_state & ARMING_DISABLED_NO_GYRO)
+            res += "ARMING_DISABLED_NO_GYRO | ";
+        if ( telemetry.arming_state & ARMING_DISABLED_FAILSAFE)
+            res += "ARMING_DISABLED_FAILSAFE | ";
+        if ( telemetry.arming_state & ARMING_DISABLED_RX_FAILSAFE)
+            res += "ARMING_DISABLED_RX_FAILSAFE | ";
+        if ( telemetry.arming_state & ARMING_DISABLED_BAD_RX_RECOVERY)
+            res += "ARMING_DISABLED_BAD_RX_RECOVERY | ";
+        if ( telemetry.arming_state & ARMING_DISABLED_BOXFAILSAFE)
+            res += "ARMING_DISABLED_BOXFAILSAFE | ";
+        if ( telemetry.arming_state & ARMING_DISABLED_RUNAWAY_TAKEOFF)
+            res += "ARMING_DISABLED_RUNAWAY_TAKEOFF | ";
+        if ( telemetry.arming_state & ARMING_DISABLED_CRASH_DETECTED)
+            res += "ARMING_DISABLED_CRASH_DETECTED | ";
+        if ( telemetry.arming_state & ARMING_DISABLED_THROTTLE)
+            res += "ARMING_DISABLED_THROTTLE | ";
+        if ( telemetry.arming_state & ARMING_DISABLED_ANGLE)
+            res += "ARMING_DISABLED_ANGLE | ";
+        if ( telemetry.arming_state & ARMING_DISABLED_BOOT_GRACE_TIME)
+            res += "ARMING_DISABLED_BOOT_GRACE_TIME | ";
+        if ( telemetry.arming_state & ARMING_DISABLED_NOPREARM)
+            res += "ARMING_DISABLED_NOPREARM | ";
+        if ( telemetry.arming_state & ARMING_DISABLED_LOAD)
+            res += "ARMING_DISABLED_LOAD | ";
+        if ( telemetry.arming_state & ARMING_DISABLED_CALIBRATING)
+            res += "ARMING_DISABLED_CALIBRATING | ";
+        if ( telemetry.arming_state & ARMING_DISABLED_CLI)
+            res += "ARMING_DISABLED_CLI | ";
+        if ( telemetry.arming_state & ARMING_DISABLED_CMS_MENU)
+            res += "ARMING_DISABLED_CMS_MENU | ";
+        if ( telemetry.arming_state & ARMING_DISABLED_BST)
+            res += "ARMING_DISABLED_BST | ";
+        if ( telemetry.arming_state & ARMING_DISABLED_MSP)
+            res += "ARMING_DISABLED_MSP | ";
+        if ( telemetry.arming_state & ARMING_DISABLED_PARALYZE)
+            res += "ARMING_DISABLED_PARALYZE | ";
+        if ( telemetry.arming_state & ARMING_DISABLED_GPS)
+            res += "ARMING_DISABLED_GPS | ";
+        if ( telemetry.arming_state & ARMING_DISABLED_RESC)
+            res += "ARMING_DISABLED_RESC | ";
+        if ( telemetry.arming_state & ARMING_DISABLED_RPMFILTER)
+            res += "ARMING_DISABLED_RPMFILTER | ";
+        if ( telemetry.arming_state & ARMING_DISABLED_REBOOT_REQUIRED)
+            res += "ARMING_DISABLED_REBOOT_REQUIRED | ";
+        if ( telemetry.arming_state & ARMING_DISABLED_DSHOT_BITBANG)
+            res += "ARMING_DISABLED_DSHOT_BITBANG | ";
+        if ( telemetry.arming_state & ARMING_DISABLED_ACC_CALIBRATION)
+            res += "ARMING_DISABLED_ACC_CALIBRATION | ";
+        if ( telemetry.arming_state & ARMING_DISABLED_ARM_SWITCH)
+            res += "ARMING_DISABLED_ARM_SWITCH ";
+        return res;
+    }
+
 private:
     int protocol;
     int sub_protocol;
@@ -225,8 +255,10 @@ private:
     int tx_rate;
     int _drone_id_tx = 3; // 3 is the hardcoded default in the MM at the moment for D16 (--> MProtocol_id_master = 3; )
     int _drone_id_rxnum = 0;
+    double _time = 0;
 
     bool initialized = false;
+    bool logger_initialized = false;
     int notconnected = 1;
     bool _init_package_failure = false;
     uint16_t _bf_version_error = 0;
@@ -251,6 +283,8 @@ private:
     bool exitSendThread = false;
     bool exitReceiveThread = false;
 
+    std::ofstream telem_logger;
+
     void send_thread(void);
     void receive_thread(void);
     void send_rc_data(void);
@@ -264,4 +298,5 @@ private:
     void process_pats_init_packages(std::string bufs);
     void handle_bind();
     void watchdog_pats_init_package();
+
 };
