@@ -5,15 +5,16 @@
 #include "trackermanager.h"
 #include "visiondata.h"
 
-#define ENABLE_UNIFIED_DIRECTION_TRANSITION false
+#define ENABLE_UNIFIED_DIRECTION_TRANSITION true
 #define ENABLE_MOTH_PREDICTION true
-#define ENABLE_VELOCITY_COMPENSATION false
+#define ENABLE_VELOCITY_COMPENSATION true
 
 static const char* interceptor_state_names[] = { "is_init",
                                                  "is_await_target",
                                                  "is_await_reach_zone",
                                                  "is_move_to_intercept",
-                                                 "is_close_chasing"
+                                                 "is_close_chasing",
+                                                 "is_killing"
                                                };
 
 /*
@@ -45,7 +46,8 @@ private:
         is_waiting_for_target,
         is_waiting_in_reach_zone,
         is_move_to_intercept,
-        is_close_chasing
+        is_close_chasing,
+        is_killing
     };
     interceptor_states _interceptor_state = is_init;
 

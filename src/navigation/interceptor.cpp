@@ -81,7 +81,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
 
         if (fabs(_horizontal_separation) < 0.35f  && _vertical_separation < 0.8f && _vertical_separation > -0.1f)
 #else
-        if (total_separation < 0.5f)
+        if (total_separation < 0.4f)
 #endif
             _interceptor_state = is_close_chasing;
         else
@@ -105,23 +105,38 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
         if (!target_trkr->n_frames_lost()) {
             auto req_aim_pos = update_close_target(drone_at_base);
             update_interceptability(req_aim_pos);
+            _interceptor_state = is_killing;
+            break;
         }
+        break;
+    }
+    case is_killing: {
+        update_close_target(drone_at_base);
 
 #if !ENABLE_UNIFIED_DIRECTION_TRANSITION
 
         if (!(fabs(_horizontal_separation) < 0.35f && _vertical_separation < 0.8f && _vertical_separation > -0.1f))
 #else
-        if (total_separation >= 0.5f)
+        if (total_separation >= 0.45f)
 #endif
             _interceptor_state = is_move_to_intercept;
 
+
+        if (!target_trkr) {
+            _interceptor_state = is_waiting_for_target;
+            break;
+        }
+        if ( target_trkr->n_frames_lost() > 0.15f * pparams.fps
+                || _n_frames_aim_not_in_range > 0.15f * pparams.fps
+                || target_trkr->false_positive()) {
+            _interceptor_state = is_waiting_for_target;
+            break;
+        }
         break;
     }
     }
-
     (*_logger) << static_cast<int16_t>(_interceptor_state) << ";" << static_cast<int16_t>(target_in_hunt_volume) << ";";
 }
-
 cv::Point3f Interceptor::update_far_target(bool drone_at_base) {
     TrackData target = _trackers->target_last_trackdata();
     cv::Point3f predicted_pos = target.pos();
