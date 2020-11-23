@@ -18,7 +18,7 @@ def natural_sort_systems(l):
 def load_systems():
     conn = sqlite3.connect(os.path.expanduser(args.db_path))
     cur = conn.cursor()
-    sql_str = '''SELECT DISTINCT system FROM mode_records ORDER BY system '''
+    sql_str = '''SELECT system_name FROM systems WHERE is_active = 1'''
     cur.execute(sql_str)
     systems = cur.fetchall()
     systems = natural_sort_systems(systems)
@@ -92,7 +92,7 @@ parser = argparse.ArgumentParser(description='Script that adds the json files or
 parser.add_argument('-i', '--input_folder', help="Path to the folder with json files", default='~/jsons/')
 parser.add_argument('-t','--hour', help="Send email at the start of this hour.", default=11)
 parser.add_argument('-m', help="Mail address to send to.", default='monitoring@pats-drones.com')
-parser.add_argument('-d','--db_path', help="Path to sql database", default='~/pats.db')
+parser.add_argument('-d','--db_path', help="Path to sql database", default='~/pats_systems.db')
 args = parser.parse_args()
 
 updated_today = False

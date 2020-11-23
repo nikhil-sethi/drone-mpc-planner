@@ -28,7 +28,9 @@ def backup(now):
     execute(cmd)
     cmd = 'rsync -az dash:.dash_auth ~/'
     execute(cmd)
-    cmd = 'tar -zcvf ~/dash_backups/' + target_str + ' ~/pats.db .dash_auth ~/pats_human_classification.db ~/jsons'
+    cmd = 'rsync -az dash:pats_systems.db ~/'
+    execute(cmd)
+    cmd = 'tar -zcvf ~/dash_backups/' + target_str + ' ~/pats.db .dash_auth ~/pats_human_classification.db ~/jsons ~/pats_systems.db'
     execute(cmd)
     return target_str
 
