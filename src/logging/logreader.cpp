@@ -94,7 +94,7 @@ LogEntryMain LogReader::create_log_entry(string line, map<string, int> headmap) 
 
     if (isinf(_takeoff_time) && (entry.nav_state == navigation::ns_chasing_insect_ff || entry.nav_state == navigation::ns_chasing_insect || entry.nav_state == navigation::ns_set_waypoint))
         _takeoff_time = entry.elapsed;
-    if (isinf(_blink_detect_time) && entry.nav_state == navigation::ns_located_drone)
+    if (isinf(_blink_detect_time) && entry.nav_state == navigation::ns_calibrating_motion)
         _blink_detect_time = entry.elapsed;
     if (isinf(_yaw_reset_time) && entry.nav_state == navigation::ns_initial_reset_yaw)
         _yaw_reset_time = entry.elapsed;
@@ -128,4 +128,3 @@ int LogReader::current_frame_number(unsigned long long RS_id) {
 }
 
 } // namespace logging
-
