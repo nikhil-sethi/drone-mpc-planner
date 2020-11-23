@@ -103,19 +103,15 @@ void ItemTracker::init_logger(std::ofstream *logger) {
     initialized_logger = true;
 }
 
-void ItemTracker::calc_world_props_blob_generic(BlobProps * pbs, bool use_max) {
-    if (pbs->world_props.trkr_id != _uid) {
+void ItemTracker::calc_world_props_blob_generic(BlobProps * blob) {
+    if (blob->world_props.trkr_id != _uid) {
         BlobWorldProps w;
         cv::Point2f p;
-        if (use_max)
-            p = pbs->pt_max;
-        else
-            p = Point2f(pbs->x, pbs->y);
 
+        p = blob->pt_unscaled();
         w.trkr_id = _uid;
 
-        p*=pparams.imscalef;
-        float size = pbs->size*pparams.imscalef;
+        float size = blob->size;
         float disparity = stereo_match(p,size);
 
         if (disparity < min_disparity || disparity > max_disparity) {
@@ -153,7 +149,7 @@ void ItemTracker::calc_world_props_blob_generic(BlobProps * pbs, bool use_max) {
             else
                 w.bkg_check_ok = true;
         }
-        pbs->world_props = w;
+        blob->world_props = w;
     }
 }
 
@@ -205,7 +201,7 @@ void ItemTracker::append_log() {
     if (_logger->is_open()) {
         //log all image stuff
         if (_tracking)
-            (*_logger) << _image_item.x * pparams.imscalef << ";" << _image_item.y * pparams.imscalef << ";" << _image_item.disparity << ";"
+            (*_logger) << _image_item.x << ";" << _image_item.y << ";" << _image_item.disparity << ";"
                        << _image_item.size  << ";" << _image_item.score  << ";";
         else
             (*_logger) << -1 << ";" << -1 << ";" << -1 << ";" << -1 << ";" << -1 << ";";
@@ -592,19 +588,6 @@ void ItemTracker::update_state(Point3f measured_world_coordinates,double time) {
     track_history.push_back(data);
 }
 
-float ItemTracker::calc_certainty(KeyPoint item) {
-    float new_tracking_certainty;
-    if (_image_predict_item.valid) {
-        new_tracking_certainty = 1.f / powf(powf(_image_predict_item.x - item.pt.x*pparams.imscalef,2) + powf(_image_predict_item.y - item.pt.y*pparams.imscalef,2),0.3f);
-        new_tracking_certainty*= _image_predict_item.certainty;
-        if (new_tracking_certainty>1 || new_tracking_certainty<0 || isnanf(new_tracking_certainty)) { // weird -nan sometimes???
-            new_tracking_certainty = 1;
-        }
-    } else // if there was no prediciton, certainty prolly is quite low
-        new_tracking_certainty = certainty_init;
-    return new_tracking_certainty;
-}
-
 void ItemTracker::reset_tracker_ouput(double time) {
     TrackData data;
     reset_filters = true;
@@ -614,13 +597,13 @@ void ItemTracker::reset_tracker_ouput(double time) {
     track_history.push_back(data);
 }
 
-bool ItemTracker::check_ignore_blobs_generic(BlobProps * pbs) {
+bool ItemTracker::check_ignore_blobs_generic(BlobProps * blob) {
     bool in_ignore_zone = false;
     for (auto ignore : ignores_for_me) {
-        float dist_ignore = sqrtf(powf(ignore.p.x-pbs->x,2)+powf(ignore.p.y-pbs->y,2));
-        if (dist_ignore < pbs->size + ignore.radius ) {
+        float dist_ignore = normf(ignore.p - blob->pt());
+        if (dist_ignore < blob->size + ignore.radius ) {
             ignore.was_used = true;
-            pbs->ignores.push_back(ignore);
+            blob->ignores.push_back(ignore);
             in_ignore_zone = true;
         }
     }
@@ -635,7 +618,7 @@ float ItemTracker::score(BlobProps * blob, ImageItem * ref) {
 
         cv::Point3f last_world_pos = im2world(_image_item.pt(),_image_item.disparity,_visdat->Qf,_visdat->camera_angle);
         float max_im_dist = world2im_dist(last_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_angle);
-        float world_projected_im_err = normf(blob->pt()*pparams.imscalef - _image_item.pt()*pparams.imscalef);
+        float world_projected_im_err = normf(blob->pt_unscaled() - _image_item.pt());
         im2world_err_ratio = world_projected_im_err/max_im_dist;
 
         float prev_size = smoother_im_size.latest();
@@ -643,16 +626,16 @@ float ItemTracker::score(BlobProps * blob, ImageItem * ref) {
     } else if (_image_predict_item.valid) {
         cv::Point3f predicted_world_pos = im2world(_image_predict_item.pt(),_image_predict_item.disparity,_visdat->Qf,_visdat->camera_angle);
         float max_im_dist = world2im_dist(predicted_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_angle);
-        float world_projected_im_err = normf(blob->pt()*pparams.imscalef - _image_predict_item.pt());
+        float world_projected_im_err = normf(blob->pt_unscaled() - _image_predict_item.pt());
         im2world_err_ratio = world_projected_im_err/max_im_dist;
 
         float prev_size = smoother_im_size.latest();
         im_size_pred_err_ratio = fabs(prev_size - blob->size) / (blob->size+prev_size);
 
     } else if (ref->valid) {
-        im_size_pred_err_ratio = fabs(ref->size - blob->size) / (blob->size + ref->size);
+        im_size_pred_err_ratio = fabs(ref->size - blob->size*pparams.imscalef) / (blob->size + ref->size*pparams.imscalef);
         float max_im_dist = 25;
-        im2world_err_ratio = sqrtf(powf(ref->x-blob->x,2)+powf(ref->y-blob->y,2))/max_im_dist;
+        im2world_err_ratio = sqrtf(powf(ref->x-blob->x*pparams.imscalef,2)+powf(ref->y-blob->y*pparams.imscalef,2))/max_im_dist;
     } else {
         return INFINITY;
     }
@@ -670,17 +653,17 @@ void ItemTracker::deserialize_settings() {
 
         if (!xmls::Serializable::fromXML(xmlData, &params))
         {   // Deserialization not successful
-            throw my_exit("Cannot read: " + settings_file);
+            throw MyExit("Cannot read: " + settings_file);
         }
         TrackerParams tmp;
         auto v1 = params.getVersion();
         auto v2 = tmp.getVersion();
         if (v1 != v2) {
-            throw my_exit("XML version difference detected from " + settings_file);
+            throw MyExit("XML version difference detected from " + settings_file);
         }
         infile.close();
     } else {
-        throw my_exit("File not found: " + settings_file);
+        throw MyExit("File not found: " + settings_file);
     }
 
     min_disparity = params.min_disparity.value();

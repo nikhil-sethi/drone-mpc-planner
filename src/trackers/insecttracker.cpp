@@ -96,7 +96,7 @@ void InsectTracker::update(double time) {
 }
 
 void InsectTracker::calc_world_item(BlobProps * props, double time [[maybe_unused]]) {
-    calc_world_props_blob_generic(props,false);
+    calc_world_props_blob_generic(props);
     props->world_props.im_pos_ok = true;
     props->world_props.valid = props->world_props.bkg_check_ok && props->world_props.disparity_in_range & props->world_props.radius_in_range;
 

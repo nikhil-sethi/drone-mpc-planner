@@ -100,7 +100,7 @@ public:
             if (waypoint_flight_modes_str[i] == sHelp)
                 return static_cast<waypoint_flight_modes>(i);
         }
-        throw my_exit("wrong waypoint_flight_mode: " + sHelp);
+        throw MyExit("wrong waypoint_flight_mode: " + sHelp);
     };
 
     XML_Waypoint_Mode operator=(const waypoint_flight_modes value) {AssignValue(value); return *this;};
@@ -209,17 +209,17 @@ public:
 
             if (!Serializable::fromXML(xmlData, this))
             {   // Deserialization not successful
-                throw my_exit("Cannot read: " + filepath);
+                throw MyExit("Cannot read: " + filepath);
             }
             XML_FlightPlan tmp;
             auto v1 = getVersion();
             auto v2 = tmp.getVersion();
             if (v1 != v2) {
-                throw my_exit("XML version difference detected from " + filepath);
+                throw MyExit("XML version difference detected from " + filepath);
             }
             infile.close();
         } else {
-            throw my_exit("File not found: " + filepath);
+            throw MyExit("File not found: " + filepath);
         }
     }
 

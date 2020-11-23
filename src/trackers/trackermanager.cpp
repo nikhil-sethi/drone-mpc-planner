@@ -229,7 +229,7 @@ void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat dif
 
     if (enable_insect_drone_split && target_insecttracker()) {
 
-        float dist_to_predict = norm(_dtrkr->image_predict_item().pt() - COG*pparams.imscalef);
+        float dist_to_predict = normf(_dtrkr->image_predict_item().pt() - COG*pparams.imscalef);
         if (dist_to_predict < 20) {
 
             //check if the blob may be multiple blobs,
@@ -372,7 +372,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
     for (auto trkr : _trackers)
         trkr->all_blobs(_blobs);
 
-    std::vector<processed_blobs> pbs;
+    std::vector<ProcessedBlob> pbs;
     if (_blobs.size()>0) {
         prep_blobs(&pbs,time);
         match_existing_trackers(&pbs,drone_is_active,time);
@@ -387,14 +387,14 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
     for (auto trkr : _trackers)
         trkr->invalidize();
 }
-void TrackerManager::prep_blobs(std::vector<processed_blobs> *pbs,double time) {
+void TrackerManager::prep_blobs(std::vector<ProcessedBlob> *pbs,double time) {
     //init processed blob list and check on fp's
     uint id_cnt = 0;
     for (auto & blob : _blobs) {
-        pbs->push_back(processed_blobs(&blob,id_cnt));
+        pbs->push_back(ProcessedBlob(&blob,id_cnt));
         id_cnt++;
         for (auto & fp : false_positives) {
-            float dist = normf(fp.im_pt-blob.pt());
+            float dist = normf(fp.im_pt-blob.pt()*pparams.imscalef);
             if (dist < fp.im_size) {
                 blob.false_positive = true;
                 fp.last_seen_time = time;
@@ -403,11 +403,11 @@ void TrackerManager::prep_blobs(std::vector<processed_blobs> *pbs,double time) {
         }
     }
 }
-void TrackerManager::match_existing_trackers(std::vector<processed_blobs> *pbs,bool drone_is_active, double time) {
+void TrackerManager::match_existing_trackers(std::vector<ProcessedBlob> *pbs,bool drone_is_active, double time) {
     //first check if there are trackers that were already tracking something, which prediction matches a new keypoint
     for (auto trkr : _trackers) {
         float best_trkr_score = INFINITY;
-        processed_blobs *best_blob;
+        ProcessedBlob *best_blob;
 
         if (tracker_active(trkr,drone_is_active) && trkr->tracking()) {
             for (auto &blob : *pbs) {
@@ -442,7 +442,7 @@ void TrackerManager::match_existing_trackers(std::vector<processed_blobs> *pbs,b
         }
     }
 }
-void TrackerManager::check_match_conflicts(std::vector<processed_blobs> *pbs,double time) {
+void TrackerManager::check_match_conflicts(std::vector<ProcessedBlob> *pbs,double time) {
     //check if there are blobs having multiple trackers attached
     for (auto &blob_i : *pbs) {
         if (blob_i.trackers.size()> 1) {
@@ -539,7 +539,7 @@ void TrackerManager::check_match_conflicts(std::vector<processed_blobs> *pbs,dou
     }
 
 }
-void TrackerManager::match_trackers_that_lost(std::vector<processed_blobs> *pbs,bool drone_is_active, double time) {
+void TrackerManager::match_trackers_that_lost(std::vector<ProcessedBlob> *pbs,bool drone_is_active, double time) {
     //see if there are trackers that are not tracking yet and if there are untracked points left, which can be bound together.
     for (auto trkr : _trackers) {
         if (!trkr->tracking()) {
@@ -603,12 +603,12 @@ void TrackerManager::match_trackers_that_lost(std::vector<processed_blobs> *pbs,
         }
     }
 }
-void TrackerManager::flag_used_static_ignores(std::vector<processed_blobs> *pbs) {
+void TrackerManager::flag_used_static_ignores(std::vector<ProcessedBlob> *pbs) {
     //see if there are static ignore points that are detected. If so set was_used flag
     for (auto trkr : _trackers) {
         for (auto blob : *pbs) {
             for (auto& ignore : trkr->ignores_for_other_trkrs) {
-                float dist_ignore = normf(ignore.p - cv::Point2f(blob.props->x,blob.props->y));
+                float dist_ignore = normf(ignore.p - blob.pt());
                 if (dist_ignore < blob.size() + ignore.radius ) {
                     ignore.was_used = true;
                 }
@@ -616,7 +616,7 @@ void TrackerManager::flag_used_static_ignores(std::vector<processed_blobs> *pbs)
         }
     }
 }
-void TrackerManager::create_new_insect_trackers(std::vector<processed_blobs> *pbs, double time) {
+void TrackerManager::create_new_insect_trackers(std::vector<ProcessedBlob> *pbs, double time) {
     //see if there are still blobs left untracked, create new trackers for them
     for (auto &blob : *pbs) {
         auto props = blob.props;
@@ -626,7 +626,7 @@ void TrackerManager::create_new_insect_trackers(std::vector<processed_blobs> *pb
                 bool too_close = false;
                 for (auto btrkr : _trackers) {
                     if (btrkr->type() == tt_blink) {
-                        if (normf(btrkr->image_item().pt() - cv::Point2f(props->x,props->y))  < roi_radius) {
+                        if (normf(btrkr->image_item().pt() - props->pt_unscaled())  < roi_radius*pparams.imscalef) {
                             too_close = true;
                         }
                     }
@@ -657,10 +657,10 @@ void TrackerManager::create_new_insect_trackers(std::vector<processed_blobs> *pb
             } else if (_mode != mode_idle && _mode != mode_drone_only) {
                 float im_dist_to_drone;
                 if (_dtrkr->tracking()) {
-                    im_dist_to_drone = normf(_dtrkr->image_item().pt()-cv::Point2f(props->x,props->y));
+                    im_dist_to_drone = normf(_dtrkr->image_item().pt()-props->pt_unscaled());
                 } else {
                     if (_dtrkr->takeoff_location_valid())
-                        im_dist_to_drone = normf(_dtrkr->takeoff_im_location()/pparams.imscalef - cv::Point2f(props->x,props->y));
+                        im_dist_to_drone = normf(_dtrkr->takeoff_im_location() - props->pt_unscaled());
                     else
                         im_dist_to_drone = INFINITY;
                 }
@@ -773,7 +773,7 @@ void TrackerManager::update_trackers(double time,long long frame_number, bool dr
                     if (btrkr->last_track_data().vel_valid)
                         v = norm(btrkr->last_track_data().vel());
                     if (v < 0.2)
-                        _visdat->delete_from_motion_map(btrkr->image_item().pt()*pparams.imscalef,btrkr->image_item().disparity,btrkr->image_item().size*pparams.imscalef+5,1);
+                        _visdat->delete_from_motion_map(btrkr->image_item().pt(),btrkr->image_item().disparity,btrkr->image_item().size+5,1);
                 }
 
                 btrkr->close();
@@ -791,7 +791,7 @@ void TrackerManager::prep_vizs() {
 
     reset_trkr_viz_ids();
 }
-void TrackerManager::draw_viz(std::vector<processed_blobs> *pbs, double time) {
+void TrackerManager::draw_viz(std::vector<ProcessedBlob> *pbs, double time) {
     if (enable_viz_diff) {
         for (auto blob : *pbs) {
             std::string s = std::to_string(blob.id);
@@ -801,26 +801,26 @@ void TrackerManager::draw_viz(std::vector<processed_blobs> *pbs, double time) {
                     s = s + "->" + std::to_string(itrkr->insect_trkr_id());
                 }
             }
-            cv::Point target_viz_p = (blob.pt() + cv::Point2f(5,-5))*pparams.imscalef;
+            cv::Point target_viz_p = (blob.props->pt_unscaled() + cv::Point2f(10,-10));
             putText(diff_viz,blob.prefix() +  s,target_viz_p,FONT_HERSHEY_SIMPLEX,0.3,blob.color(),2);
-            cv::line(diff_viz,target_viz_p,blob.pt()*pparams.imscalef,blob.color());
+            cv::line(diff_viz,target_viz_p,blob.props->pt_unscaled(),blob.color());
 
         }
         for (auto trkr : replaytrackers()) {
-            cv::Point target_viz_p = (trkr->image_item().pt() + cv::Point2f(5,-5))*pparams.imscalef;
+            cv::Point target_viz_p = (trkr->image_item().pt() + cv::Point2f(10,-10));
             putText(diff_viz," r",target_viz_p,FONT_HERSHEY_SIMPLEX,0.3,cv::Scalar(0,0,180),2);
-            cv::line(diff_viz,target_viz_p,trkr->image_item().pt()*pparams.imscalef,cv::Scalar(0,0,180));
+            cv::line(diff_viz,target_viz_p,trkr->image_item().pt(),cv::Scalar(0,0,180));
         }
         for (auto trkr : virtualmothtrackers()) {
-            cv::Point target_viz_p = (trkr->image_item().pt() + cv::Point2f(5,-5))*pparams.imscalef;
+            cv::Point target_viz_p = (trkr->image_item().pt() + cv::Point2f(10,-10));
             putText(diff_viz," v",target_viz_p,FONT_HERSHEY_SIMPLEX,0.3,cv::Scalar(0,0,180),2);
-            cv::line(diff_viz,target_viz_p,trkr->image_item().pt()*pparams.imscalef,cv::Scalar(0,0,180));
+            cv::line(diff_viz,target_viz_p,trkr->image_item().pt(),cv::Scalar(0,0,180));
         }
 
         auto blue =cv::Scalar(255,0,0);
         for (auto fp : false_positives) {
-            auto p_center = fp.im_pt*pparams.imscalef;
-            cv::circle(diff_viz,p_center,fp.im_size/2.f*pparams.imscalef,blue);
+            auto p_center = fp.im_pt;
+            cv::circle(diff_viz,p_center,fp.im_size,blue);
             cv::putText(diff_viz,to_string_with_precision(time-fp.last_seen_time,1) + ", #" + std::to_string(fp.detection_count),p_center+cv::Point2f(10,0),FONT_HERSHEY_SIMPLEX,0.3,blue,2);
         }
     }
@@ -1017,17 +1017,17 @@ void TrackerManager::deserialize_settings() {
 
         if (!xmls::Serializable::fromXML(xmlData, &params))
         {   // Deserialization not successful
-            throw my_exit("Cannot read: " + settings_file);
+            throw MyExit("Cannot read: " + settings_file);
         }
         TrackerManagerParameters tmp;
         auto v1 = params.getVersion();
         auto v2 = tmp.getVersion();
         if (v1 != v2) {
-            throw my_exit("XML version difference detected from " + settings_file);
+            throw MyExit("XML version difference detected from " + settings_file);
         }
         infile.close();
     } else {
-        throw my_exit("File not found: " + settings_file);
+        throw MyExit("File not found: " + settings_file);
     }
 
     max_points_per_frame = params.max_points_per_frame.value();
@@ -1072,7 +1072,7 @@ void TrackerManager::read_false_positives() {
             else
                 save_false_positives("./logging/replay/initial_" + false_positive_fn);
         } catch (exception& exp ) {
-            throw my_exit("Warning: could not read false positives file: " + false_positive_rfn + '\n' + "Line: " + string(exp.what()) + " at: " + line);
+            throw MyExit("Warning: could not read false positives file: " + false_positive_rfn + '\n' + "Line: " + string(exp.what()) + " at: " + line);
         }
     }
 }
@@ -1110,7 +1110,7 @@ void TrackerManager::close () {
     }
 }
 
-cv::Scalar TrackerManager::color_of_blob(processed_blobs blob) {
+cv::Scalar TrackerManager::color_of_blob(ProcessedBlob blob) {
     if (blob.trackers.size() == 0 ) {
         if (blob.ignored)
             return cv::Scalar(0,128,0); // dark green

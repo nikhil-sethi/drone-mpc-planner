@@ -506,7 +506,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
     // std::cout << time <<  " rpyt: " << roll << ", " << pitch << ", " << yaw << ", " << throttle << std::endl;
     _rc->queue_commands(throttle,roll,pitch,yaw,mode,time);
 
-    control_data c(Roll(), Throttle(), Pitch(), time);
+    ControlData c(Roll(), Throttle(), Pitch(), time);
     control_history.push_back(c);
     while (control_history.size() > control_history_max_size)
         control_history.erase(control_history.begin());
@@ -739,7 +739,7 @@ std::tuple<float,float> DroneController::acc_to_deg(cv::Point3f acc) {
 std::tuple<float,float> DroneController::acc_to_quaternion(cv::Point3f acc) {
     cv::Point3f acc_BF = {-acc.z,-acc.x,-acc.y};
     cv::Point3f acc_BF_hover = {0,0,-1};
-    quaternion q = rot_quat(acc_BF_hover, acc_BF);
+    Quaternion q = rot_quat(acc_BF_hover, acc_BF);
     return std::make_tuple(q.v.x,q.v.y);
 }
 
@@ -1314,7 +1314,7 @@ void DroneController::load_calibration(std::string replay_dir) {
         xmls::DroneCalibration tmp;
         try {
             tmp.deserialize(drone_calib_rfn);
-        } catch(my_exit const &err) {
+        } catch(MyExit const &err) {
             std::cout << "Error, corrupted drone calibration xml:" << err.msg << std::endl;
         }
         if (tmp.drone_id != _rc->drone_id()) {
@@ -1348,17 +1348,17 @@ void DroneController::load_control_parameters() {
                             std::istreambuf_iterator<char>());
 
         if (!xmls::Serializable::fromXML(xmlData, &params))
-            throw my_exit("Cannot read: " + control_parameters_rfn);
+            throw MyExit("Cannot read: " + control_parameters_rfn);
 
         ControlParameters tmp;
         auto v1 = params.getVersion();
         auto v2 = tmp.getVersion();
         if (v1 != v2) {
-            throw my_exit("XML version difference detected from " + control_parameters_rfn);
+            throw MyExit("XML version difference detected from " + control_parameters_rfn);
         }
         infile.close();
     } else {
-        throw my_exit("File not found: " + control_parameters_rfn);
+        throw MyExit("File not found: " + control_parameters_rfn);
     }
 
     kp_pos_roll= params.kp_pos_roll.value();

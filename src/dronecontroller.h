@@ -493,7 +493,7 @@ public:
     double viz_time_after_burn = {0};
 
     uint control_history_max_size;
-    std::vector<control_data> control_history;
+    std::vector<ControlData> control_history;
 
     float dist_to_setpoint() {
         return _dist_to_setpoint;

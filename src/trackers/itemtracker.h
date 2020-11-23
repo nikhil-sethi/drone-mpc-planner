@@ -71,8 +71,6 @@ private:
 
     void update_blob_filters();
 
-    float calc_certainty(cv::KeyPoint item);
-
     int16_t _uid = -1;
     int16_t _viz_id = -1;
     int _motion_thresh = -1;
@@ -138,8 +136,8 @@ protected:
     float estimate_sub_disparity(int disparity,float * err);
 
     void reset_tracker_ouput(double time);
-    void calc_world_props_blob_generic(BlobProps * pbs, bool use_max);
-    bool check_ignore_blobs_generic(BlobProps * pbs);
+    void calc_world_props_blob_generic(BlobProps * blob);
+    bool check_ignore_blobs_generic(BlobProps * blob);
     void cleanup_history();
     float score(BlobProps * blob, ImageItem * ref);
     void update_prediction(double time);
@@ -173,8 +171,8 @@ public:
     void init(std::ofstream *logger, VisionData *_visdat, int motion_thresh, std::string name, int16_t viz_id);
     void init(VisionData *_visdat, int motion_thresh, std::string name, int16_t viz_id);
     virtual void update(double time);
-    virtual bool check_ignore_blobs(BlobProps * pbs) = 0;
-    virtual void calc_world_item(BlobProps * pbs, double time) = 0;
+    virtual bool check_ignore_blobs(BlobProps * blob) = 0;
+    virtual void calc_world_item(BlobProps * blob, double time) = 0;
     void append_log();
 
     uint track_history_max_size;

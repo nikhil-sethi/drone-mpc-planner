@@ -78,9 +78,9 @@ void DroneTracker::update(double time, bool drone_is_active) {
 
         if (enable_viz_diff) {
             cv::Point2f tmpp = blnk_im_location();
-            cv::circle(diff_viz,tmpp*pparams.imscalef,1,cv::Scalar(255,0,0),1);
-            cv::circle(diff_viz,blnk_im_location()*pparams.imscalef,1,cv::Scalar(0,0,255),1);
-            cv::circle(diff_viz, _world_item.image_coordinates()*pparams.imscalef,3,cv::Scalar(0,255,0),2);
+            cv::circle(diff_viz,tmpp,1,cv::Scalar(255,0,0),1);
+            cv::circle(diff_viz,blnk_im_location(),1,cv::Scalar(0,0,255),1);
+            cv::circle(diff_viz, _world_item.image_coordinates(),3,cv::Scalar(0,255,0),2);
         }
         float takeoff_duration = static_cast<float>(time - start_take_off_time);
         if (!drone_is_active)
@@ -173,10 +173,10 @@ void DroneTracker::delete_takeoff_fake_motion() {
         //they leave a permanent mark if we stop prematurely. Two conditions:
         //1. the drone must have left the area with a margin of its size
         //2. other blobs must not be inside the area. (slightly more relaxed, because crop leave movements otherwise are holding this enabled indefinetely)
-        if (_world_item.valid &&normf(cv::Point2f(_world_item.iti.x,_world_item.iti.y)*pparams.imscalef - takeoff_im_location()) > _takeoff_im_size*2.5f + _world_item.iti.size/2*pparams.imscalef && liftoff_detected) {
+        if (_world_item.valid &&normf(_world_item.iti.pt() - takeoff_im_location()) > _takeoff_im_size*2.5f + _world_item.iti.size && liftoff_detected) {
             enable_takeoff_motion_delete = false;
             for (auto blob : _all_blobs) {
-                if (normf(cv::Point2f(blob.x,blob.y)*pparams.imscalef - takeoff_im_location()) < 2.6f * _takeoff_im_size) {
+                if (normf(blob.pt_unscaled() - takeoff_im_location()) < 2.6f * _takeoff_im_size) {
                     enable_takeoff_motion_delete = true;
                 }
             }
@@ -221,15 +221,11 @@ bool DroneTracker::detect_lift_off() {
 
 void DroneTracker::calc_world_item(BlobProps * props, double time [[maybe_unused]]) {
 
-    bool use_max = false; //_visdat->camera_exposure < 5000 && landing();
-
-    calc_world_props_blob_generic(props,use_max);
+    calc_world_props_blob_generic(props);
     props->world_props.im_pos_ok = true;
     props->world_props.valid = props->world_props.bkg_check_ok && props->world_props.disparity_in_range && props->world_props.radius_in_range;
 
-    if (use_max)
-        props->world_props.z -= dparams.radius; // because we track the led instead of the whole blob
-    else if (inactive())
+    if (inactive())
         props->world_props.valid = false;
     else if (taking_off() && !_manual_flight_mode) {
         float dist2takeoff = normf(props->world_props.pt() - takeoff_location());
@@ -252,10 +248,10 @@ bool DroneTracker::detect_takeoff() {
     uint16_t closest_to_takeoff_im_dst = 999;
     cv::Point2i closest_to_takeoff_point;
     for (auto blob : _all_blobs) {
-        float takeoff_im_dst = normf(cv::Point2f(blob.x,blob.y)*pparams.imscalef - takeoff_im_location());
+        float takeoff_im_dst = normf(blob.pt_unscaled() - takeoff_im_location());
         if (takeoff_im_dst < closest_to_takeoff_im_dst) {
             closest_to_takeoff_im_dst = takeoff_im_dst;
-            closest_to_takeoff_point = cv::Point2i(blob.x,blob.y);
+            closest_to_takeoff_point = cv::Point2i(blob.x*pparams.imscalef,blob.y*pparams.imscalef);
         }
     }
 

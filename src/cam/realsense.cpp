@@ -32,7 +32,7 @@ void Realsense::update_playback(void) {
     double duration = static_cast<double>(static_cast<rs2::playback>(dev).get_duration().count()) / 1e9;
     if (frame_time() > duration-0.1) {
         std::cout << "Video end, exiting" << std::endl;
-        throw bag_video_ended();
+        throw BagVideoEnded();
     }
     frameL = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(fs.get_infrared_frame(1).get_data()), Mat::AUTO_STEP).clone();
     frameR = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(fs.get_infrared_frame(2).get_data()), Mat::AUTO_STEP).clone();
@@ -167,9 +167,9 @@ void Realsense::connect_and_check() {
     if (!dev_initialized) {
         rs2::device_list devices = ctx.query_devices();
         if (devices.size() == 0) {
-            throw my_exit("no RealSense connected");
+            throw MyExit("no RealSense connected");
         } else if (devices.size() > 1) {
-            throw my_exit("more than one RealSense connected....");
+            throw MyExit("more than one RealSense connected....");
         } else
             dev = devices[0];
     }
@@ -203,7 +203,7 @@ void Realsense::connect_and_check() {
     if (current_firmware_version != required_firmwar_version) { // wtf, string equality check is reversed!??
         std::stringstream serr;
         serr << "detected wrong RealSense firmware version! Detected: " << current_firmware_version << ". Required: "  << required_firmwar_version << ".";
-        throw my_exit(serr.str());
+        throw MyExit(serr.str());
     }
 
 
@@ -374,9 +374,9 @@ std::tuple<float,float,cv::Mat,cv::Mat,cv::Mat,float> Realsense::measure_auto_ex
         rs2::context ctx;
         rs2::device_list devices = ctx.query_devices();
         if (devices.size() == 0) {
-            throw my_exit("no RealSense connected");
+            throw MyExit("no RealSense connected");
         } else if (devices.size() > 1) {
-            throw my_exit("more than one RealSense connected....");
+            throw MyExit("more than one RealSense connected....");
         } else {
             dev = devices[0];
             dev_initialized = true;
@@ -453,9 +453,9 @@ std::tuple<float,float,double,cv::Mat> Realsense::measure_angle() {
         rs2::context ctx;
         rs2::device_list devices = ctx.query_devices();
         if (devices.size() == 0) {
-            throw my_exit("no RealSense connected");
+            throw MyExit("no RealSense connected");
         } else if (devices.size() > 1) {
-            throw my_exit("more than one RealSense connected....");
+            throw MyExit("more than one RealSense connected....");
         } else {
             dev = devices[0];
             dev_initialized = true;
@@ -523,7 +523,7 @@ void Realsense::calib_pose(bool also_do_depth) {
     {
         rs_depth_sensor.set_option(RS2_OPTION_VISUAL_PRESET, RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY);
     } else {
-        throw my_exit("This is not a depth sensor");
+        throw MyExit("This is not a depth sensor");
     }
 
     rs2::config cfg;
@@ -624,7 +624,7 @@ void Realsense::init_playback() {
     if (!file_exist(bag_fn)) {
         std::stringstream serr;
         serr << "cannot not find " << bag_fn;
-        throw my_exit(serr.str());
+        throw MyExit(serr.str());
     }
 
     if (!file_exist(depth_map_rfn)) {
@@ -713,7 +713,7 @@ void Realsense::reset() {
     rs2::context ctx; // The context represents the current platform with respect to connected devices
     rs2::device_list devices = ctx.query_devices();
     if (devices.size() == 0) {
-        throw my_exit("no RealSense connected");
+        throw MyExit("no RealSense connected");
     } else if (devices.size() > 1) {
         std::cout << "Warning detected more then one device. Resetting everything" << std::endl;
         rs2::device devt;

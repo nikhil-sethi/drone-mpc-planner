@@ -106,22 +106,22 @@ void CameraView::update_plane_vertices() {
                     vertice_pos = intersection_of_3_planes(plane_supports.at(i), plane_normals.at(i),
                                                            plane_supports.at(j), plane_normals.at(j),
                                                            plane_supports.at(k), plane_normals.at(k));
-                    vertices.push_back(intersection_point(vertice_pos, i, j, k));
+                    vertices.push_back(IntersectionPoint(vertice_pos, i, j, k));
 
                     vertice_pos = intersection_of_3_planes(plane_supports.at(i)+safety_margin(relaxed)*plane_normals.at(i), plane_normals.at(i),
                                                            plane_supports.at(j)+safety_margin(relaxed)*plane_normals.at(j), plane_normals.at(j),
                                                            plane_supports.at(k)+safety_margin(relaxed)*plane_normals.at(k), plane_normals.at(k));
-                    vertices_relaxed.push_back(intersection_point(vertice_pos, i, j, k));
+                    vertices_relaxed.push_back(IntersectionPoint(vertice_pos, i, j, k));
 
                     vertice_pos = intersection_of_3_planes(plane_supports.at(i)+safety_margin(strict)*plane_normals.at(i), plane_normals.at(i),
                                                            plane_supports.at(j)+safety_margin(strict)*plane_normals.at(j), plane_normals.at(j),
                                                            plane_supports.at(k)+safety_margin(strict)*plane_normals.at(k), plane_normals.at(k));
-                    vertices_strict.push_back(intersection_point(vertice_pos, i, j, k));
+                    vertices_strict.push_back(IntersectionPoint(vertice_pos, i, j, k));
 
                     vertice_pos = intersection_of_3_planes(plane_supports_hunt.at(i), plane_normals_hunt.at(i),
                                                            plane_supports_hunt.at(j), plane_normals_hunt.at(j),
                                                            plane_supports_hunt.at(k), plane_normals_hunt.at(k));
-                    vertices_hunt.push_back(intersection_point(vertice_pos, i, j, k));
+                    vertices_hunt.push_back(IntersectionPoint(vertice_pos, i, j, k));
                 }
             }
         }
@@ -241,7 +241,7 @@ cv::Point3f CameraView::project_into_camera_volume(cv::Point3f pos_setpoint, vie
             projected_point = pos_setpoint + abs(calc_shortest_distance_to_plane(pos_setpoint, i, cm))*cv::Point3f(plane_normals.at(i));
 
             // check if point is correct plane segment (the one which actually limits the volume)
-            std::vector<intersection_point> _plane_vertices = plane_vertices(i, cm);
+            std::vector<IntersectionPoint> _plane_vertices = plane_vertices(i, cm);
             bool in_segment = in_plane_segment(projected_point, _plane_vertices);
             if(!in_segment)
                 projected_point = project_into_plane_segment(projected_point, _plane_vertices);
@@ -257,7 +257,7 @@ cv::Point3f CameraView::project_into_camera_volume(cv::Point3f pos_setpoint, vie
 }
 
 
-bool CameraView::in_plane_segment(cv::Point3f p, std::vector<intersection_point> _plane_vertices) {
+bool CameraView::in_plane_segment(cv::Point3f p, std::vector<IntersectionPoint> _plane_vertices) {
     // If the plane is in the segment (polygon) then the sum of all angles between the point and the pairwise vertices is 2pi or -2pi.
     // http://www.eecs.umich.edu/courses/eecs380/HANDOUTS/PROJ2/InsidePoly.html
     float angle_sum = 0;
@@ -275,7 +275,7 @@ bool CameraView::in_plane_segment(cv::Point3f p, std::vector<intersection_point>
 }
 
 
-cv::Point3f CameraView::project_into_plane_segment(cv::Point3f p, std::vector<intersection_point> _plane_vertices) {
+cv::Point3f CameraView::project_into_plane_segment(cv::Point3f p, std::vector<IntersectionPoint> _plane_vertices) {
     // https://stackoverflow.com/questions/42248202/find-the-projection-of-a-point-on-the-convex-hull-with-scipy?noredirect=1
     cv::Point3f closest_point, cmp_point;
     float ref_distance=9999.f;
@@ -296,8 +296,8 @@ cv::Point3f CameraView::project_into_plane_segment(cv::Point3f p, std::vector<in
 }
 
 
-std::vector<intersection_point> CameraView::plane_vertices(uint plane_idx, view_volume_check_mode cm) {
-    std::vector<intersection_point> plane_vertices;
+std::vector<IntersectionPoint> CameraView::plane_vertices(uint plane_idx, view_volume_check_mode cm) {
+    std::vector<IntersectionPoint> plane_vertices;
     for(uint i=0; i<N_PLANE_VERTICES; i++) {
         for(uint j=0; j<3; j++) {
             if(vertices_relaxed.at(i).planes.at(j)==static_cast<int>(plane_idx)) {
@@ -379,7 +379,7 @@ void CameraView::adjacency_entry(uint val, uint p1, uint p2, uint p3) {
 }
 
 
-bool CameraView::vertices_on_one_edge(intersection_point p1, intersection_point p2) {
+bool CameraView::vertices_on_one_edge(IntersectionPoint p1, IntersectionPoint p2) {
     uint common_planes = 0;
     for(uint i=0; i<3; i++) {
         for(uint j=0; j<3; j++) {

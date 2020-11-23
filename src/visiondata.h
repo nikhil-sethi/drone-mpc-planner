@@ -18,7 +18,7 @@
 
 class VisionData {
 public:
-    struct delete_spot {
+    struct DeleteSpot {
         cv::Point pt = {0};
         int disparity = 0;
         int r = 0;
@@ -69,8 +69,8 @@ private:
     float prev_brightness = -1;
     bool _reset_motion_integration = false;
     double _large_brightness_change_event_time = 0;
-    delete_spot motion_spot_to_be_deleted;
-    delete_spot motion_spot_to_be_reset;
+    DeleteSpot motion_spot_to_be_deleted;
+    DeleteSpot motion_spot_to_be_reset;
 
     cv::Point exclude_drone_from_motion_fading_spot_L = {-1};
     cv::Point exclude_drone_from_motion_fading_spot_R = {-1};

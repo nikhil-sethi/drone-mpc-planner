@@ -65,7 +65,7 @@ void VirtualmothTracker::update_behavior_based(unsigned long long frame_number, 
 
     cv::Point3f insect_im = world2im_3d(insect_pos, _visdat->Qfi, _visdat->camera_angle);
 
-    _image_item = ImageItem (insect_im.x / pparams.imscalef, insect_im.y / pparams.imscalef, insect_im.z, frame_number);
+    _image_item = ImageItem (insect_im.x, insect_im.y, insect_im.z, frame_number);
     _image_item.valid = true;
 
     _image_predict_item = ImagePredictItem(cv::Point3f(insect_im.x, insect_im.y, insect_im.z), 1, 1, 255, frame_number);
@@ -78,8 +78,8 @@ void VirtualmothTracker::update_behavior_based(unsigned long long frame_number, 
     w.pt.y = insect_pos.y;
     w.pt.z = insect_pos.z;
     w.distance = norm(w.pt);
-    w.iti.x = std::clamp(static_cast<int>(w.iti.x), 0, _visdat->depth_background_mm.cols);
-    w.iti.y = std::clamp(static_cast<int>(w.iti.y), 0, _visdat->depth_background_mm.rows);
+    w.iti.x = std::clamp(static_cast<int>(w.iti.x), 0, IMG_W);
+    w.iti.y = std::clamp(static_cast<int>(w.iti.y), 0, IMG_H);
     w.distance_bkg = _visdat->depth_background_mm.at<float>(w.iti.y, w.iti.x);
     _world_item = w;
 

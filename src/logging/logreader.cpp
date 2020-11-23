@@ -10,7 +10,7 @@ namespace logging
 
 void LogReader::init(string path) {
     if (!file_exist(path)) {
-        throw my_exit("log file not found!");
+        throw MyExit("log file not found!");
     }
     cout << "Opening log folder: " << path << endl;
 
@@ -36,7 +36,7 @@ tuple<map<int, LogEntryMain>,map<string, int>> LogReader::read_log(string file) 
         } catch (exception& exp ) {
             string next_line;
             if (getline(infile, next_line))
-                throw my_exit("Could not read log! File: " +file + '\n' + "Err: " + string(exp.what()) + " at: " + line);
+                throw MyExit("Could not read log! File: " +file + '\n' + "Err: " + string(exp.what()) + " at: " + line);
         }
     }
     infile.close();

@@ -15,13 +15,13 @@ private:
     void init_gstream();
     std::string replay_dir;
 
-    struct frame_id_entry {
+    struct Frame_ID_Entry {
         long raw_video_frame_counter;
         long imgcount;
         long long RS_id;
         double time;
     };
-    std::vector<frame_id_entry> frames_ids;
+    std::vector<Frame_ID_Entry> frames_ids;
 
 public:
     static std::string playback_filename() { return "videoRawLR.mkv"; }

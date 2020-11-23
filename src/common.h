@@ -38,8 +38,8 @@ const float deg2rad = M_PIf32/180.f;
 
 extern std::string data_output_dir;
 
-struct control_data {
-    control_data(float r, float tr, float p, double t) {
+struct ControlData {
+    ControlData(float r, float tr, float p, double t) {
         throttle = tr;
         roll = r;
         pitch = p;
@@ -49,14 +49,13 @@ struct control_data {
     double time;
 };
 
-struct my_exit : public std::exception {
+struct MyExit : public std::exception {
     std::string msg;
-    my_exit(std::string return_value) : msg(return_value) {}
+    MyExit(std::string return_value) : msg(return_value) {}
 };
-struct bag_video_ended : public std::exception {
-    bag_video_ended() {}
+struct BagVideoEnded : public std::exception {
+    BagVideoEnded() {}
 };
-
 
 enum video_modes {
     video_disabled = 0,
@@ -164,7 +163,7 @@ public:
             if (video_modes_str[i] == sHelp)
                 return static_cast<video_modes>(i);
         }
-        throw my_exit("wrong video_mode: " + sHelp);
+        throw MyExit("wrong video_mode: " + sHelp);
     };
 
     xVideo_mode operator=(const video_modes value) {AssignValue(value); return *this;};
@@ -186,7 +185,7 @@ public:
             if (rc_types_str[i] == sHelp)
                 return static_cast<rc_types>(i);
         }
-        throw my_exit("wrong rc_type: " + sHelp);
+        throw MyExit("wrong rc_type: " + sHelp);
     };
 
     xRc_type operator=(const rc_types value) {AssignValue(value); return *this;};
@@ -208,7 +207,7 @@ public:
             if (tx_protocols_str[i] == sHelp)
                 return static_cast<tx_protocols>(i);
         }
-        throw my_exit("wrong tx_protocol: " + sHelp);
+        throw MyExit("wrong tx_protocol: " + sHelp);
     };
 
     xTx_protocol operator=(const tx_protocols value) {AssignValue(value); return *this;};
@@ -229,7 +228,7 @@ public:
             if (op_modes_str[i] == sHelp)
                 return static_cast<op_modes>(i);
         }
-        throw my_exit("wrong op_mode: " + sHelp);
+        throw MyExit("wrong op_mode: " + sHelp);
     };
 
     xOp_mode operator=(const op_modes value) {AssignValue(value); return *this;};
@@ -251,7 +250,7 @@ public:
             if (drone_types_str[i] == sHelp)
                 return static_cast<drone_types>(i);
         }
-        throw my_exit("wrong drone_type: " + sHelp);
+        throw MyExit("wrong drone_type: " + sHelp);
     };
 
     xDrone_type operator=(const drone_types value) {AssignValue(value); return *this;};
@@ -337,17 +336,17 @@ public:
 
             if (!Serializable::fromXML(xmlData, this))
             {   // Deserialization not successful
-                throw my_exit("Cannot read: " + settings_file);
+                throw MyExit("Cannot read: " + settings_file);
             }
             PatsParameters tmp;
             auto v1 = getVersion();
             auto v2 = tmp.getVersion();
             if (v1 != v2) {
-                throw my_exit("XML version difference detected from " + settings_file);
+                throw MyExit("XML version difference detected from " + settings_file);
             }
             infile.close();
         } else {
-            throw my_exit("File not found: " + settings_file);
+            throw MyExit("File not found: " + settings_file);
         }
 
         wdt_timeout_us = _wdt_timeout_us.value();
@@ -502,17 +501,17 @@ public:
 
             if (!Serializable::fromXML(xmlData, this))
             {   // Deserialization not successful
-                throw my_exit("Cannot read: " + filepath);
+                throw MyExit("Cannot read: " + filepath);
             }
             DroneParameters tmp;
             auto v1 = getVersion();
             auto v2 = tmp.getVersion();
             if (v1 != v2) {
-                throw my_exit("XML version difference detected from " + filepath);
+                throw MyExit("XML version difference detected from " + filepath);
             }
             infile.close();
         } else {
-            throw my_exit("File not found: " + filepath);
+            throw MyExit("File not found: " + filepath);
         }
 
         initial_hover_throttle = _initial_hover_throttle.value();
@@ -599,13 +598,13 @@ public:
 
             if (!Serializable::fromXML(xmlData, this))
             {   // Deserialization not successful
-                throw my_exit("Cannot read: " + filepath);
+                throw MyExit("Cannot read: " + filepath);
             }
             LandingParameters tmp;
             auto v1 = getVersion();
             auto v2 = tmp.getVersion();
             if (v1 != v2) {
-                throw my_exit("XML version difference detected from " + filepath);
+                throw MyExit("XML version difference detected from " + filepath);
             }
             infile.close();
         } else {
@@ -707,17 +706,17 @@ public:
 
             if (!Serializable::fromXML(xmlData, this))
             {   // Deserialization not successful
-                throw my_exit("Cannot read: " + filepath);
+                throw MyExit("Cannot read: " + filepath);
             }
             CamCalibration tmp;
             auto v1 = getVersion();
             auto v2 = tmp.getVersion();
             if (v1 != v2) {
-                throw my_exit("XML version difference detected from " + filepath);
+                throw MyExit("XML version difference detected from " + filepath);
             }
             infile.close();
         } else {
-            throw my_exit("File not found: " + filepath);
+            throw MyExit("File not found: " + filepath);
         }
 
         camera_angle_x = _angle_x.value();
@@ -798,16 +797,16 @@ public: void deserialize(std::string filepath) {
 
             if (!Serializable::fromXML(xmlData, this))
             {   // Deserialization not successful
-                throw my_exit("Cannot read: " + filepath);
+                throw MyExit("Cannot read: " + filepath);
             }
             DroneCalibration tmp;
             auto v1 = getVersion();
             auto v2 = tmp.getVersion();
             if (v1 != v2) {
-                throw my_exit("XML version difference detected from " + filepath);
+                throw MyExit("XML version difference detected from " + filepath);
             }
         } else {
-            throw my_exit("File not found: " + filepath);
+            throw MyExit("File not found: " + filepath);
         }
 
         landed_acc_x = _landed_acc_x.value();

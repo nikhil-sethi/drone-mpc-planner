@@ -59,10 +59,10 @@ void Visualizer::add_plot_sample(void) {
             posX_drone.push_back(-data.state.pos.x);
             posY_drone.push_back(data.state.pos.y);
             posZ_drone.push_back(-data.state.pos.z);
-            im_posX_drone.push_back(dtrkr->image_item().x);
-            im_posY_drone.push_back(dtrkr->image_item().y);
+            im_posX_drone.push_back(dtrkr->image_item().x/pparams.imscalef);
+            im_posY_drone.push_back(dtrkr->image_item().y/pparams.imscalef);
+            im_size_drone.push_back(dtrkr->image_item().size/pparams.imscalef);
             im_disp_drone.push_back(dtrkr->image_item().disparity);
-            im_size_drone.push_back(dtrkr->image_item().size);
             sposX.push_back(-data.state.spos.x);
             sposY.push_back(data.state.spos.y);
             sposZ.push_back(-data.state.spos.z);
@@ -73,8 +73,8 @@ void Visualizer::add_plot_sample(void) {
                 gen_posZ_drone.push_back(-generator_cam->generated_world_pos.z);
                 gen_im_posX_drone.push_back(generator_cam->generated_im_pos.x/pparams.imscalef);
                 gen_im_posY_drone.push_back(generator_cam->generated_im_pos.y/pparams.imscalef);
+                gen_im_size_drone.push_back(generator_cam->generated_im_size/pparams.imscalef);
                 gen_im_disp_drone.push_back(generator_cam->generated_im_pos.z);
-                gen_im_size_drone.push_back(generator_cam->generated_im_size);
             }
 
             if (_dctrl->Joy_State() != DroneController::js_hunt) {
@@ -394,7 +394,7 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
     if (path.size() > 0) {
         std::vector<cv::KeyPoint> keypoints;
         for (uint i = 0; i< path.size(); i++) {
-            cv::KeyPoint k(path.at(i).world_item.iti.x,path.at(i).world_item.iti.y,12/pparams.imscalef);
+            cv::KeyPoint k(path.at(i).world_item.iti.x/pparams.imscalef,path.at(i).world_item.iti.y/pparams.imscalef,12/pparams.imscalef);
             keypoints.push_back(k);
         }
         drawKeypoints( frameL_small_drone, keypoints, frameL_small_drone, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
@@ -475,7 +475,7 @@ void Visualizer::draw_tracker_viz() {
     }
     if ( last_drone_detection.world_item.iti.valid) {
         auto p =  last_drone_detection.world_item.iti;
-        cv::circle(frameL_color,p.pt()*pparams.imscalef,p.size/2*pparams.imscalef,cv::Scalar(0,0,255));
+        cv::circle(frameL_color,p.pt(),p.size/2,cv::Scalar(0,0,255));
     }
 
     cv::Scalar itrkr_color = cv::Scalar(0,0,128);
@@ -489,8 +489,8 @@ void Visualizer::draw_tracker_viz() {
         if (wti.valid) {
             ss << to_string_with_precision(wti.distance,1);
             itrkr_color = cv::Scalar(0,0,255);
-            p_ins_im  = wti.iti.pt() * pparams.imscalef;
-            ins_size = wti.iti.size * pparams.imscalef;
+            p_ins_im  = wti.iti.pt();
+            ins_size = wti.iti.size;
         }
         if (ins_size <= 0) //replay insects don't have a proper size
             ins_size = 2;
@@ -503,7 +503,7 @@ void Visualizer::draw_tracker_viz() {
         cv::line(frameL_color,p_ins_im,p_ins_ground_im,itrkr_color,1);
 
 
-        cv::circle(frameL_color,p_ins_im,ins_size*pparams.imscalef / 2.f,itrkr_color);
+        cv::circle(frameL_color,p_ins_im,ins_size / 2.f,itrkr_color);
 
     }
 
@@ -540,7 +540,7 @@ void Visualizer::draw_tracker_viz() {
         cv::Scalar c(0,0,255);
         if (wti.distance_bkg >wti.distance )
             c = cv::Scalar(0,180,255); //first number cannot be 0 because of super weird qtcreator / gdb bug
-        cv::Point2i drone_pos (wti.iti.x*pparams.imscalef,wti.iti.y*pparams.imscalef);
+        cv::Point2i drone_pos (wti.iti.x,wti.iti.y);
         putText(frameL_color,ss.str(),drone_pos,cv::FONT_HERSHEY_SIMPLEX,0.5,c);
         cv::line(frameL_color,drone_pos,drone_pos,c,2);
 

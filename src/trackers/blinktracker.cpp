@@ -147,11 +147,11 @@ void BlinkTracker::calc_world_item(BlobProps * props, double time [[maybe_unused
 
     const float max_world_dist = 0.05f; // pre-sift blobs using the image coordinates, to prevent having to calculate the stereo_match
     int max_im_dist = world2im_dist(last_known_valid_pos,max_world_dist,_visdat->Qfi,_visdat->camera_angle);
-    if (last_known_valid_pos_valid && normf(cv::Point2f(props->x,props->y) - _image_item.pt()) > max_im_dist) {
+    if (last_known_valid_pos_valid && normf(props->pt_unscaled() - _image_item.pt()) > max_im_dist) {
         props->world_props.im_pos_ok = false;
         props->world_props.valid = false;
     } else {
-        calc_world_props_blob_generic(props,false);
+        calc_world_props_blob_generic(props);
         props->world_props.im_pos_ok = true;
         props->world_props.valid = props->world_props.disparity_in_range && props->world_props.radius_in_range;
     }

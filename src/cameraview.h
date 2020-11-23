@@ -19,8 +19,8 @@ static const char* hunt_volume_check_names[] = {
     "HV_Too_Far_Aside"
 };
 
-struct intersection_point {
-    intersection_point(cv::Mat p, int p1, int p2, int p3) {
+struct IntersectionPoint {
+    IntersectionPoint(cv::Mat p, int p1, int p2, int p3) {
         pos = p;
         planes = {p1, p2, p3};
     }
@@ -148,10 +148,10 @@ private:
     std::array<cv::Mat, N_PLANES> plane_supports_hunt;
 
     // Define corner points
-    std::vector<intersection_point> vertices;
-    std::vector<intersection_point> vertices_relaxed;
-    std::vector<intersection_point> vertices_strict;
-    std::vector<intersection_point> vertices_hunt;
+    std::vector<IntersectionPoint> vertices;
+    std::vector<IntersectionPoint> vertices_relaxed;
+    std::vector<IntersectionPoint> vertices_strict;
+    std::vector<IntersectionPoint> vertices_hunt;
 
     /** @brief Calculates the distance to the borders. */
     std::array<float, N_PLANES> calc_distance_to_borders(std::vector<cv::Point3f> p);
@@ -159,10 +159,10 @@ private:
     void adjacency_entry(uint val, uint p1, uint p2, uint p3);
 
     void update_plane_vertices();
-    std::vector<intersection_point> plane_vertices(uint plane_idx, view_volume_check_mode cm);
-    bool vertices_on_one_edge(intersection_point p1, intersection_point p2);
-    bool in_plane_segment(cv::Point3f p, std::vector<intersection_point> _plane_vertices);
-    cv::Point3f project_into_plane_segment(cv::Point3f p, std::vector<intersection_point> _plane_vertices);
+    std::vector<IntersectionPoint> plane_vertices(uint plane_idx, view_volume_check_mode cm);
+    bool vertices_on_one_edge(IntersectionPoint p1, IntersectionPoint p2);
+    bool in_plane_segment(cv::Point3f p, std::vector<IntersectionPoint> _plane_vertices);
+    cv::Point3f project_into_plane_segment(cv::Point3f p, std::vector<IntersectionPoint> _plane_vertices);
 
 
 };

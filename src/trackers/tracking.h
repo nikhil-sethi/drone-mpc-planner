@@ -11,7 +11,7 @@ enum tracker_type {
     tt_virtualmoth
 };
 
-struct IgnoreBlob {
+struct IgnoreBlob { // scaled with pparams.imscalef
     enum IgnoreType {
         takeoff_spot,
         blink_spot,
@@ -25,8 +25,8 @@ struct IgnoreBlob {
         invalid_after = timeout;
         radius = ignore_radius;
     }
-    cv::Point2f p;
-    float radius;
+    cv::Point2f p; // scaled with pparams.imscalef
+    float radius; // scaled with pparams.imscalef
     double invalid_after;
     bool was_used = true;
     IgnoreType ignore_type;
@@ -40,13 +40,14 @@ struct BlobWorldProps {
     cv::Point3f pt() {return cv::Point3f(x,y,z);}
     int trkr_id = -1;
 };
-struct BlobProps {
-    float x,y,size,pixel_max;
+struct BlobProps { // scaled with pparams.imscalef
+    float x,y,size,pixel_max; // these values are scaled with pparams.imscaled
     std::vector<IgnoreBlob> ignores;
     bool false_positive = false;
     cv::Mat mask;
     cv::Point2i pt_max; // location of the initially detected maximum pixel change (usefull for led detection)
-    cv::Point2f pt() {return cv::Point2f(x,y);}
+    cv::Point2f pt() {return cv::Point2f(x,y);} //scaled with pparams.imscaled
+    cv::Point2f pt_unscaled() {return cv::Point2f(x,y)*pparams.imscalef;}
     bool in_overexposed_area;
     BlobProps(cv::Point2f pt, cv::Point2i ptmax,float blob_size,float blob_pixel_max, cv::Mat blob_mask, bool overexposed_area) : size(blob_size), pixel_max(blob_pixel_max), mask(blob_mask), pt_max(ptmax), in_overexposed_area(overexposed_area) {
         x = pt.x;
@@ -62,14 +63,11 @@ struct ImageItem {
     bool valid = false;
     bool blob_is_fused = false;
 
-    cv::KeyPoint k() {
-        return cv::KeyPoint(x,y,size);
-    }
     cv::Point2f pt() {
         return cv::Point2f(x,y);
     }
     cv::Point3f ptd() {
-        return cv::Point3f(x*pparams.imscalef,y*pparams.imscalef,disparity);
+        return cv::Point3f(x,y,disparity);
     }
     ImageItem() {}
     ImageItem(float x_, float y_, float disparity_, int frameid) {
@@ -85,9 +83,9 @@ struct ImageItem {
         valid = true; //todo: implement when the log is not valid
     }
     ImageItem(BlobProps blob, int frameid, float matching_score, uint keypointid) {
-        x = blob.x;
-        y = blob.y;
-        size = blob.size;
+        x = blob.x*pparams.imscalef;
+        y = blob.y*pparams.imscalef;
+        size = blob.size*pparams.imscalef;
         pixel_max = blob.pixel_max;
         score = matching_score;
         frame_id = frameid;

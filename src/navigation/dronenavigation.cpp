@@ -582,17 +582,17 @@ void DroneNavigation::deserialize_settings() {
 
         if (!xmls::Serializable::fromXML(xmlData, &params))
         {   // Deserialization not successful
-            throw my_exit("Cannot read: " + settings_file);
+            throw MyExit("Cannot read: " + settings_file);
         }
         navigationParameters tmp;
         auto v1 = params.getVersion();
         auto v2 = tmp.getVersion();
         if (v1 != v2) {
-            throw my_exit("XML version difference detected from " + settings_file);
+            throw MyExit("XML version difference detected from " + settings_file);
         }
         infile.close();
     } else {
-        throw my_exit("File not found: " + settings_file);
+        throw MyExit("File not found: " + settings_file);
     }
 
     distance_threshold_f = params.distance_threshold_f.value();

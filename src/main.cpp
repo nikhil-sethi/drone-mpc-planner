@@ -656,9 +656,9 @@ void init_loggers() {
 void init_video_recorders() {
     /*****init the video writer*****/
     if (pparams.video_result)
-        if (output_video_results.init(pparams.video_result, data_output_dir + "videoResult.mkv",visualizer.viz_frame_size().width,visualizer.viz_frame_size().height,pparams.fps,"192.168.1.255",5000,true)) {throw my_exit("could not open results video");}
+        if (output_video_results.init(pparams.video_result, data_output_dir + "videoResult.mkv",visualizer.viz_frame_size().width,visualizer.viz_frame_size().height,pparams.fps,"192.168.1.255",5000,true)) {throw MyExit("could not open results video");}
     if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode)
-        if (output_video_LR.init(pparams.video_raw,data_output_dir + "videoRawLR.mkv",IMG_W,IMG_H*2,pparams.fps, "192.168.1.255",5000,false)) {throw my_exit("could not open LR video");}
+        if (output_video_LR.init(pparams.video_raw,data_output_dir + "videoRawLR.mkv",IMG_W,IMG_H*2,pparams.fps, "192.168.1.255",5000,false)) {throw MyExit("could not open LR video");}
     if (pparams.video_cuts)
         if (output_video_cuts.init(pparams.video_cuts,data_output_dir + "insect" + to_string(0) + ".mkv",IMG_W,IMG_H*2,pparams.fps, "192.168.1.255",5000,false)) {std::cout << "WARNING: could not open cut video " << data_output_dir + "insect" + to_string(0) + ".mkv" << std::endl;}
 }
@@ -720,11 +720,11 @@ void check_hardware() {
         if (! generator_mode && dparams.tx != tx_none )
             rc.init(drone_id);
         if (!rc.connected() && pparams.op_mode != op_mode_monitoring)
-            throw my_exit("cannot connect the MultiModule");
+            throw MyExit("cannot connect the MultiModule");
 
         // Ensure that joystick was found and that we can use it
         if (!dctrl.joystick_ready() && !generator_mode && pparams.joystick != rc_none) {
-            throw my_exit("no joystick connected.");
+            throw MyExit("no joystick connected.");
         }
     }
     //init cam and check version
@@ -734,12 +734,12 @@ void check_hardware() {
         else if (file_exist(replay_dir+'/' + FileCam::playback_filename()))
             cam = std::unique_ptr<Cam>(new FileCam(replay_dir,&logreader));
         else
-            throw my_exit("Could not find a video in the replay folder!");
+            throw MyExit("Could not find a video in the replay folder!");
     } else if (render_monitor_video_mode) {
         if (file_exist(monitor_video_fn))
             cam = std::unique_ptr<Cam>(new FileCam(replay_dir,monitor_video_fn));
         else
-            throw my_exit("Could not find a video file!");
+            throw MyExit("Could not find a video file!");
     } else if (generator_mode) {
         cam = std::unique_ptr<Cam>(new GeneratorCam());
         static_cast<GeneratorCam *>(cam.get())->rc(&rc);
@@ -756,9 +756,9 @@ void init() {
         logreader.init(replay_dir);
 
         if (isinf(logreader.first_blink_detect_time()) && render_hunt_mode)
-            throw my_exit("According to the log the drone was never blink detected: " + replay_dir);
+            throw MyExit("According to the log the drone was never blink detected: " + replay_dir);
         if (isinf(logreader.first_takeoff_time()) && render_hunt_mode)
-            throw my_exit("According to the log the drone never took off: " + replay_dir );
+            throw MyExit("According to the log the drone never took off: " + replay_dir );
 
         trackers.init_replay_moth(logreader.replay_moths());
     }
@@ -1001,7 +1001,7 @@ int main( int argc, char **argv )
 
         }
 
-    } catch(my_exit const &err) {
+    } catch(MyExit const &err) {
         std::cout << "Error: " << err.msg << std::endl;
         cmdcenter.reset_commandcenter_status_file(err.msg,true);
         return 1;
@@ -1009,7 +1009,7 @@ int main( int argc, char **argv )
         cmdcenter.reset_commandcenter_status_file("Resetting realsense",false);
         try {
             static_cast<Realsense *>(cam.get())->reset();
-        } catch(my_exit const &err2) {
+        } catch(MyExit const &err2) {
             std::cout << "Error: " << err2.msg << std::endl;
             cmdcenter.reset_commandcenter_status_file(err2.msg,true);
         }
@@ -1023,10 +1023,10 @@ int main( int argc, char **argv )
     try {
         init();
         process_video();
-    } catch(bag_video_ended const &err) {
+    } catch(BagVideoEnded const &err) {
         std::cout << "Video ended" << std::endl;
         exit_now = true;
-    } catch(my_exit const &e) {
+    } catch(MyExit const &e) {
         exit_now = true;
         close(false);
         std::cout << "Error: " << e.msg << std::endl;

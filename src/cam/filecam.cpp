@@ -18,7 +18,7 @@ void FileCam::init () {
     if (!file_exist(video_fn)) {
         std::stringstream serr;
         serr << "cannot not find " << video_fn;
-        throw my_exit(serr.str());
+        throw MyExit(serr.str());
     }
     std::cout << "Reading video from " << video_fn << std::endl;
     init_gstream();
@@ -55,14 +55,14 @@ void FileCam::read_frame_ids() {
     while (getline(infile, line)) {
         try {
             auto data = split_csv_line(line);
-            frame_id_entry entry;
+            Frame_ID_Entry entry;
             entry.raw_video_frame_counter = stoi(data.at(0));
             entry.imgcount = stoi(data.at(1));
             entry.RS_id = stol(data.at(2));
             entry.time = stod(data.at(3));
             frames_ids.push_back(entry);
         } catch (exception& exp ) {
-            throw my_exit("Could not read log! File: " +framesfile + '\n' + "Line: " + string(exp.what()) + " at: " + line);
+            throw MyExit("Could not read log! File: " +framesfile + '\n' + "Line: " + string(exp.what()) + " at: " + line);
         }
     }
     infile.close();
@@ -106,7 +106,7 @@ void FileCam::update() {
         std::cout << "Video EOS detected, exiting." << std::endl;
         gst_sample_unref(sample);
         gst_buffer_unref(buffer);
-        throw bag_video_ended();
+        throw BagVideoEnded();
     }
 
     GstMapInfo map;
@@ -131,7 +131,7 @@ void FileCam::update() {
         std::cout << "Log end, exiting." << std::endl;
         gst_buffer_unmap(buffer, &map);
         gst_sample_unref(sample);
-        throw bag_video_ended();
+        throw BagVideoEnded();
     }
     if (!turbo) {
         while(swc.Read() < (1.f/pparams.fps)*1e3f) {

@@ -54,7 +54,7 @@ void ReplayTracker::update_from_log(unsigned long long frame_number,double time)
     _tracking = log.ins_foundL;
     bool valid = (log.ins_im_x >= 0 && log.ins_im_y >= 0);
 
-    _image_item = ImageItem (log.ins_im_x/pparams.imscalef,log.ins_im_y/pparams.imscalef,log.ins_disparity,frame_number);
+    _image_item = ImageItem (log.ins_im_x,log.ins_im_y,log.ins_disparity,frame_number);
     _image_item.valid = valid;
     _image_predict_item = ImagePredictItem(cv::Point3f(log.ins_pred_im_x,log.ins_pred_im_y,log.ins_disparity),1,1,255,frame_number);
     _image_predict_item.valid = _image_predict_item.x > 0 && _tracking;
@@ -66,8 +66,8 @@ void ReplayTracker::update_from_log(unsigned long long frame_number,double time)
     w.pt.y = log.ins_pos_y;
     w.pt.z = log.ins_pos_z;
     w.distance = norm(w.pt);
-    w.iti.x = std::clamp(static_cast<int>(w.iti.x),0,_visdat->depth_background_mm.cols);
-    w.iti.y = std::clamp(static_cast<int>(w.iti.y),0,_visdat->depth_background_mm.rows);
+    w.iti.x = std::clamp(static_cast<int>(w.iti.x),0,IMG_W);
+    w.iti.y = std::clamp(static_cast<int>(w.iti.y),0,IMG_H);
     w.distance_bkg = _visdat->depth_background_mm.at<float>(w.iti.y,w.iti.x);
     _world_item = w;
 
