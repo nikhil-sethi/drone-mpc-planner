@@ -60,7 +60,8 @@ private:
 
     std::string motion_noise_mapL_wfn = "max_motion_noiseL.png";
     std::string motion_noise_mapR_wfn = "max_motion_noiseR.png";
-    std::string overexposed_map_wfn = "overexposed.png";
+    std::string overexposed_mapL_wfn = "overexposedL.png";
+    std::string overexposed_mapR_wfn = "overexposedR.png";
 
     cv::Mat diffL16,frameL16,diffR16,frameR16;
     double _current_frame_time = 0;
@@ -76,9 +77,9 @@ private:
     cv::Point exclude_drone_from_motion_fading_spot_R = {-1};
     int exclude_drone_from_motion_fading_radius = 0;
 
-    cv::Mat overexposed_map;
+    std::vector<cv::Mat> motion_noise_bufferL,motion_noise_bufferR;
 
-    bool enable_viz_diff = false;
+    bool enable_viz_motion = false;
 
     bool initialized = false;
 
@@ -89,11 +90,11 @@ private:
 
 public:
     cv::Mat frameL,frameR;
-    std::vector<cv::Mat> motion_noise_bufferL,motion_noise_bufferR;
     cv::Mat motion_noise_mapL,motion_noise_mapL_small;
     cv::Mat motion_noise_mapR,motion_noise_mapR_small;
     cv::Mat diffL,diffR,diffL_small,diffR_small;
-
+    cv::Mat overexposed_mapL,overexposed_mapL_small;
+    cv::Mat overexposed_mapR,overexposed_mapR_small;
     cv::Mat viz_frame;
 
     unsigned long long  frame_id;
@@ -127,16 +128,12 @@ public:
     }
     void enable_background_motion_map_calibration(float duration);
     bool calibrating_background() {return _calibrating_background;}
-    void create_overexposed_removal_mask(cv::Point2f drone_im_location,float blink_size);
+    void create_overexposed_removal_mask(cv::Point3f drone_im_location,float blink_size);
 
     void delete_from_motion_map(cv::Point p, int disparity, int radius, int duration);
     void reset_spot_on_motion_map(cv::Point p, int disparity, int radius, int duration);
     void exclude_drone_from_motion_fading(cv::Point3f p, int radius);
 
-    bool is_in_overexposed_area(cv::Point p) {
-        if(overexposed_map.cols)
-            return overexposed_map.at<uint8_t>(p*pparams.imscalef) == 0;
-        else
-            return true;
-    }
+    bool overexposed(cv::Point blob_pt);
+
 };

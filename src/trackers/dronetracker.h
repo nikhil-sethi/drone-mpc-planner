@@ -71,7 +71,7 @@ private:
     double deviation_vec2_length;
     double deviation_angle;
 
-    bool enable_viz_diff = false;
+    bool enable_viz_motion = false;
     bool _manual_flight_mode = false;
     bool _hover_mode = false;
 

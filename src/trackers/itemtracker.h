@@ -129,7 +129,7 @@ protected:
     std::vector<tracking::BlobProps> _all_blobs;
 
     void init_logger(std::ofstream *logger);
-    float stereo_match(cv::Point2f im_posL, float size);
+    float stereo_match(BlobProps * blob);
     std::tuple<int,float,int,int> disparity_search_rng(int x1);
     std::tuple<float,float> calc_match_score_masked(int i, int disp_end, int width, int height, cv::Mat diffL_mask_patch, cv::Mat diffR_mask_patch, cv::Mat grayL_patch, cv::Mat grayR_patch, int npixels);
     float calc_match_score_motion(int i,int x, int y, int width, int height,float tmp_diffL_sum, cv::Mat diffL_roi, cv::Mat diffR);
@@ -146,6 +146,7 @@ public:
     int16_t uid() {return _uid;}
     int16_t viz_id() { return _viz_id;}
     void viz_id(int16_t id) {_viz_id = id;}
+    std::string name() {return _name;}
 
     virtual ~ItemTracker() {}
 
@@ -161,6 +162,7 @@ public:
     int n_frames_tracking() {return _n_frames_tracking;}
     double last_detection() {return _last_detection;}
     bool tracking() {return _tracking;}
+    bool properly_tracking() {return _n_frames_tracking > 3 && _tracking;}
     int n_frames_lost() {
         return _n_frames_lost;
     }

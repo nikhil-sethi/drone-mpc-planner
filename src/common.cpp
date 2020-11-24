@@ -211,6 +211,17 @@ void show_row_image(std::vector<cv::Mat> ims, std::string window_name, int type,
     cv::Mat res = create_row_image(ims,type,resizef);
     cv::imshow(window_name, res);
 }
+cv::Rect clamp_rect(cv::Rect r, int w, int h) {
+    if (r.x < 0)
+        r.x = 0;
+    if (r.y < 0)
+        r.y = 0;
+    if (r.x + r.width >= w)
+        r.width = w - r.x-1;
+    if (r.y + r.height >= h)
+        r.height = h - r.y-1;
+    return r;
+}
 
 std::string to_string_with_precision(float f, const int n)
 {

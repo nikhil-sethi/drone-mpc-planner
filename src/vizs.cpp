@@ -394,8 +394,10 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
     if (path.size() > 0) {
         std::vector<cv::KeyPoint> keypoints;
         for (uint i = 0; i< path.size(); i++) {
-            cv::KeyPoint k(path.at(i).world_item.iti.x/pparams.imscalef,path.at(i).world_item.iti.y/pparams.imscalef,12/pparams.imscalef);
-            keypoints.push_back(k);
+            if (path.at(i).world_item.iti.valid) {
+                cv::KeyPoint k(path.at(i).world_item.iti.x/pparams.imscalef,path.at(i).world_item.iti.y/pparams.imscalef,12/pparams.imscalef);
+                keypoints.push_back(k);
+            }
         }
         drawKeypoints( frameL_small_drone, keypoints, frameL_small_drone, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
     }
@@ -587,6 +589,7 @@ void Visualizer::draw_tracker_viz() {
         putText(diff,"Untracked",cv::Point(3,diff.rows-72),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(255,255,55));
         putText(diff,"Multitracked",cv::Point(3,diff.rows-84),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,128,255));
         putText(diff,"False positive",cv::Point(3,diff.rows-96),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(255,0,0));
+        putText(diff,"Overexposed noise",cv::Point(3,diff.rows-96),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(128,128,128));
 
         trackframe = ext_res_frame;
     } else
@@ -617,13 +620,21 @@ void Visualizer::paint() {
             }
             cv::imshow("drn_diff", drone_diff_viz);
         }
+        if (_trackers->viz_trkrs_buf.cols) {
+            static bool trkrs_blobs_viz_initialized = false;
+            if (!trkrs_blobs_viz_initialized) {
+                trkrs_blobs_viz_initialized = true;
+                namedWindow("trackers & blobs",cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
+            }
+            cv::imshow("trackers & blobs", _trackers->viz_trkrs_buf);
+        }
         if (_trackers->viz_max_points.cols) {
             static bool motion_points_viz_initialized = false;
             if (!motion_points_viz_initialized) {
                 motion_points_viz_initialized = true;
-                namedWindow("motion points",cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
+                namedWindow("motion blobs",cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
             }
-            cv::imshow("motion points", _trackers->viz_max_points);
+            cv::imshow("motion blobs", _trackers->viz_max_points);
         }
         if (_trackers->dronetracker()->viz_disp.cols>0) {
             static bool stereo_viz_initialized = false;

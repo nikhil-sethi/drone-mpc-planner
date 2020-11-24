@@ -106,13 +106,11 @@ void ItemTracker::init_logger(std::ofstream *logger) {
 void ItemTracker::calc_world_props_blob_generic(BlobProps * blob) {
     if (blob->world_props.trkr_id != _uid) {
         BlobWorldProps w;
-        cv::Point2f p;
-
-        p = blob->pt_unscaled();
+        cv::Point2f p = blob->pt_unscaled();
+        float size = blob->size_unscaled();
         w.trkr_id = _uid;
 
-        float size = blob->size;
-        float disparity = stereo_match(p,size);
+        float disparity = stereo_match(blob);
 
         if (disparity < min_disparity || disparity > max_disparity) {
             w.disparity_in_range = false;
@@ -228,7 +226,11 @@ void ItemTracker::append_log() {
         track_history.erase(track_history.begin());
 }
 
-float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
+float ItemTracker::stereo_match(BlobProps * blob) {
+
+    cv::Point2f im_posL = blob->pt_unscaled();
+    float size = blob->size_unscaled();
+
 
     cv::Mat diffL,diffR,grayL,grayR,motion_noise_mapL,motion_noise_mapR;
 
@@ -238,7 +240,7 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
     motion_noise_mapR = _visdat->motion_noise_mapR;
     grayL = _visdat->frameL;
     grayR = _visdat->frameR;
-    int radius = ceilf((size + 2.f)*0.5f);
+    int radius = ceilf((size + 4.f)*0.5f);
 
     //limit the patches for CPU optimization
     //We don't resize, but just select the middle rect of the full patch. This way we
@@ -278,10 +280,13 @@ float ItemTracker::stereo_match(cv::Point2f im_posL,float size) {
         //since the background often isn't a solid color we do matching on the raw image data instead of the motion
         //using the motion from both images as a mask, we match the disparity over the masked gray image
 
-        cv::Mat diffL_mask_patch = diffL(roiL)>motion_noise_mapL(roiL)+ _motion_thresh;
+        float used_motion_thresh = _motion_thresh;
+        if (blob->threshold_method != 1)
+            used_motion_thresh = 1;
+        cv::Mat diffL_mask_patch = diffL(roiL)>motion_noise_mapL(roiL)+ used_motion_thresh;
         if (cv::countNonZero(diffL_mask_patch) / npixels > min_pxl_ratio) {
             cv::Rect roiR_disparity_rng(x-(disp_end-1),y,width+(disp_end-disp_start-1),height);
-            cv::Mat diffR_mask_patch = diffR(roiR_disparity_rng)>motion_noise_mapR(roiR_disparity_rng)+_motion_thresh;
+            cv::Mat diffR_mask_patch = diffR(roiR_disparity_rng)>motion_noise_mapR(roiR_disparity_rng)+used_motion_thresh;
             cv::Mat grayL_patch = _visdat->frameL(roiL);
             cv::Mat grayR_patch = _visdat->frameR(roiR_disparity_rng);
 
@@ -622,7 +627,7 @@ float ItemTracker::score(BlobProps * blob, ImageItem * ref) {
         im2world_err_ratio = world_projected_im_err/max_im_dist;
 
         float prev_size = smoother_im_size.latest();
-        im_size_pred_err_ratio = fabs(prev_size - blob->size) / (blob->size+prev_size);
+        im_size_pred_err_ratio = fabs(prev_size - blob->size_unscaled()) / (blob->size_unscaled()+prev_size);
     } else if (_image_predict_item.valid) {
         cv::Point3f predicted_world_pos = im2world(_image_predict_item.pt(),_image_predict_item.disparity,_visdat->Qf,_visdat->camera_angle);
         float max_im_dist = world2im_dist(predicted_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_angle);
@@ -630,10 +635,10 @@ float ItemTracker::score(BlobProps * blob, ImageItem * ref) {
         im2world_err_ratio = world_projected_im_err/max_im_dist;
 
         float prev_size = smoother_im_size.latest();
-        im_size_pred_err_ratio = fabs(prev_size - blob->size) / (blob->size+prev_size);
+        im_size_pred_err_ratio = fabs(prev_size - blob->size_unscaled()) / (blob->size_unscaled()+prev_size);
 
     } else if (ref->valid) {
-        im_size_pred_err_ratio = fabs(ref->size - blob->size*pparams.imscalef) / (blob->size + ref->size*pparams.imscalef);
+        im_size_pred_err_ratio = fabs(ref->size - blob->size_unscaled()) / (blob->size_unscaled() + ref->size);
         float max_im_dist = 25;
         im2world_err_ratio = sqrtf(powf(ref->x-blob->x*pparams.imscalef,2)+powf(ref->y-blob->y*pparams.imscalef,2))/max_im_dist;
     } else {
@@ -641,6 +646,11 @@ float ItemTracker::score(BlobProps * blob, ImageItem * ref) {
     }
 
     float score = im2world_err_ratio*0.75f + 0.25f*im_size_pred_err_ratio;
+    if (!properly_tracking() && (blob->in_overexposed_area || blob->false_positive))
+        score*=1.5f;
+    else if (blob->in_overexposed_area || blob->false_positive)
+        score*=1.25f;
+
     return score;
 }
 

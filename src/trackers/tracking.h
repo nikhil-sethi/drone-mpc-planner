@@ -45,11 +45,12 @@ struct BlobProps { // scaled with pparams.imscalef
     std::vector<IgnoreBlob> ignores;
     bool false_positive = false;
     cv::Mat mask;
-    cv::Point2i pt_max; // location of the initially detected maximum pixel change (usefull for led detection)
     cv::Point2f pt() {return cv::Point2f(x,y);} //scaled with pparams.imscaled
     cv::Point2f pt_unscaled() {return cv::Point2f(x,y)*pparams.imscalef;}
+    float size_unscaled() {return size*pparams.imscalef;}
     bool in_overexposed_area;
-    BlobProps(cv::Point2f pt, cv::Point2i ptmax,float blob_size,float blob_pixel_max, cv::Mat blob_mask, bool overexposed_area) : size(blob_size), pixel_max(blob_pixel_max), mask(blob_mask), pt_max(ptmax), in_overexposed_area(overexposed_area) {
+    int threshold_method;
+    BlobProps(cv::Point2f pt,float blob_size,float blob_pixel_max, cv::Mat blob_mask, bool overexposed_area, int threshold_method_) : size(blob_size), pixel_max(blob_pixel_max), mask(blob_mask), in_overexposed_area(overexposed_area),threshold_method(threshold_method_) {
         x = pt.x;
         y = pt.y;
     }
@@ -58,7 +59,7 @@ struct BlobProps { // scaled with pparams.imscalef
 
 struct ImageItem {
     uint frame_id = 0;
-    uint keypoint_id = 0;
+    uint blob_id = 0;
     float x = 0,y = 0,size = 0,pixel_max = 0,score = 0,disparity = 0;
     bool valid = false;
     bool blob_is_fused = false;
@@ -78,18 +79,18 @@ struct ImageItem {
         size  = -1;
         score = -1;
         pixel_max = -1;
-        keypoint_id = 666;
+        blob_id = 666;
         frame_id = frameid;
         valid = true; //todo: implement when the log is not valid
     }
-    ImageItem(BlobProps blob, int frameid, float matching_score, uint keypointid) {
+    ImageItem(BlobProps blob, int frameid, float matching_score, uint blob_id_) {
         x = blob.x*pparams.imscalef;
         y = blob.y*pparams.imscalef;
-        size = blob.size*pparams.imscalef;
+        size = blob.size_unscaled();
         pixel_max = blob.pixel_max;
         score = matching_score;
         frame_id = frameid;
-        keypoint_id = keypointid;
+        blob_id = blob_id_;
         disparity = blob.world_props.disparity;
         valid = true;
     }

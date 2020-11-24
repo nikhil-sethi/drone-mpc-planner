@@ -354,7 +354,7 @@ void process_video() {
 
 void process_frame(Stereo_Frame_Data data) {
 
-    if (log_replay_mode) {
+    if (log_replay_mode && pparams.op_mode != op_mode_monitoring) {
         if (logreader.current_frame_number(data.RS_id)) {
             exit_now = true;
             return;
@@ -421,7 +421,7 @@ void process_frame(Stereo_Frame_Data data) {
             }
         }
     }
-    if (!render_hunt_mode && !render_monitor_video_mode)
+    if (!render_hunt_mode && !render_monitor_video_mode && !log_replay_mode)
         cmdcenter.update(data.frameL,data.time);
 
 #ifdef PROFILING
@@ -475,6 +475,14 @@ bool handle_key(double time [[maybe_unused]]) {
     case 'p':
         if(log_replay_mode || generator_mode)
             draw_plots = true;
+        break;
+    case '[':
+        if(log_replay_mode || generator_mode)
+            trackers.enable_trkr_viz();
+        break;
+    case ']':
+        if(log_replay_mode || generator_mode)
+            trackers.enable_blob_viz();
         break;
     case 'o':
         dctrl.LED(true);
@@ -752,7 +760,7 @@ void check_hardware() {
 void init() {
     init_terminal_signals();
 
-    if (log_replay_mode) {
+    if (log_replay_mode && pparams.op_mode!=op_mode_monitoring) {
         logreader.init(replay_dir);
 
         if (isinf(logreader.first_blink_detect_time()) && render_hunt_mode)

@@ -49,6 +49,8 @@ struct ProcessedBlob {
         if (trackers.size() == 0 ) {
             if (ignored || props->world_props.takeoff_reject)
                 return cv::Scalar(0,128,0); // dark green
+            else if (props->in_overexposed_area)
+                return cv::Scalar(128,128,128);  // gray
             else
                 return cv::Scalar(255,255,55); // light blue
         } else if (trackers.size()>1)
@@ -68,6 +70,8 @@ struct ProcessedBlob {
         if (trackers.size() == 0 ) {
             if (ignored || props->world_props.takeoff_reject)
                 return "";
+            else if (props->in_overexposed_area)
+                return "E";
             else
                 return "";
         } else if (trackers.size()>1)
@@ -152,9 +156,10 @@ private:
 
     std::vector<FalsePositive> false_positives;
 
-    bool enable_viz_max_points = false; // flag for enabling the maxs visiualization
+    bool enable_viz_blobs = false;
+    bool enable_viz_trackers = false;
+    bool enable_viz_motion = false;
     std::vector<cv::Mat> vizs_maxs;
-    bool enable_viz_diff = false; // flag for enabling the diff visiualization
     const float viz_max_points_resizef = 4.0;
 
     const float chance_multiplier_pixel_max = 0.5f;
@@ -179,6 +184,7 @@ private:
     void find_cog_and_remove(cv::Point maxt, double max, cv::Mat diff,bool enable_insect_drone_split, float drn_ins_split_thresh,cv::Mat bkg_frame);
     bool tracker_active(ItemTracker *trkr, bool drone_is_active);
     void prep_vizs();
+    std::tuple<cv::Rect,cv::Rect,int> calc_trkr_viz_roi(ImageItem iti);
     void finish_vizs();
     cv::Scalar color_of_blob(ProcessedBlob blob);
     std::vector<BlinkTracker *> blinktrackers();
@@ -199,7 +205,10 @@ private:
     std::vector<logging::InsectReader> replay_logs;
     cv::Mat diff_viz;
 public:
-    cv::Mat viz_max_points,diff_viz_buf;
+    cv::Mat viz_max_points,diff_viz_buf,viz_trkrs_buf;
+
+    void enable_blob_viz() { enable_viz_blobs = true;}
+    void enable_trkr_viz() { enable_viz_trackers = true;}
     void mode(detection_mode m) {_mode = m;}
     detection_mode mode ()  {return _mode;}
     std::string mode_str() {

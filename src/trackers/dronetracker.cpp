@@ -5,7 +5,7 @@
 namespace tracking {
 
 bool DroneTracker::init(std::ofstream *logger, VisionData *visdat, int motion_thresh, int16_t viz_id) {
-    enable_viz_diff = false;
+    enable_viz_motion = false;
     ItemTracker::init(logger,visdat,motion_thresh,"drone",viz_id);
     max_size = dparams.radius*3;
     expected_radius = dparams.radius;
@@ -17,7 +17,7 @@ bool DroneTracker::init(std::ofstream *logger, VisionData *visdat, int motion_th
 void DroneTracker::update(double time, bool drone_is_active) {
     current_time = time;
 
-    if (enable_viz_diff)
+    if (enable_viz_motion)
         cv::cvtColor(_visdat->diffL*10,diff_viz,cv::COLOR_GRAY2BGR);
 
     switch (_drone_tracking_status) {
@@ -76,7 +76,7 @@ void DroneTracker::update(double time, bool drone_is_active) {
             update_prediction(time);
         }
 
-        if (enable_viz_diff) {
+        if (enable_viz_motion) {
             cv::Point2f tmpp = blnk_im_location();
             cv::circle(diff_viz,tmpp,1,cv::Scalar(255,0,0),1);
             cv::circle(diff_viz,blnk_im_location(),1,cv::Scalar(0,0,255),1);

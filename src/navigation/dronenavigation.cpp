@@ -97,7 +97,7 @@ void DroneNavigation::update(double time) {
                 if (pparams.op_mode==op_mode_monitoring) {
                     _dctrl->flight_mode(DroneController::fm_disarmed);
                     _visdat->enable_background_motion_map_calibration(motion_calibration_duration);
-                    _visdat->create_overexposed_removal_mask(_trackers->dronetracker()->takeoff_im_location(),_trackers->dronetracker()->takeoff_im_size());
+                    _visdat->create_overexposed_removal_mask(_trackers->dronetracker()->takeoff_location(),_trackers->dronetracker()->takeoff_im_size());
                     time_motion_calibration_started = time;
                     _navigation_status = ns_calibrating_motion;
                     _dctrl->LED(false);
@@ -148,7 +148,7 @@ void DroneNavigation::update(double time) {
             _visdat->enable_collect_no_drone_frames = true;
             if (time-time_located_drone>5 && (_dctrl->drone_state_disarmed() || pparams.joystick != rc_none)) { // delay until blinking stopped. Drone must be 1.5s disarmed to get out of a possible (rx) failsafe
                 _visdat->enable_background_motion_map_calibration(motion_calibration_duration);
-                _visdat->create_overexposed_removal_mask(_trackers->dronetracker()->takeoff_im_location(),_trackers->dronetracker()->takeoff_im_size());
+                _visdat->create_overexposed_removal_mask(_trackers->dronetracker()->takeoff_location(),_trackers->dronetracker()->takeoff_im_size());
                 time_motion_calibration_started = time;
                 _navigation_status = ns_calibrating_motion;
                 _dctrl->start_landing_acc_calibration();
