@@ -67,7 +67,7 @@ def load_systems(username):
         sys_id = int(sys.replace('pats','').replace('-proto',''))
         if (group == 'admin' or group == 'pats') and (sys_id != 25 and sys_id != 26 and sys_id != 10):
             authorized_systems.append(sys)
-        elif group == 'koppertcress' and (sys_id > 10 and sys_id <= 21 or sys_id ==4 or sys_id == 6):
+        elif group == 'koppertcress' and (sys_id ==4 or sys_id == 6):
             authorized_systems.append(sys)
         elif (group == 'wur') and (sys_id == 23 or sys_id == 24):
             authorized_systems.append(sys)
