@@ -460,7 +460,7 @@ std::tuple<int,float,int,int> ItemTracker::disparity_search_rng(int x) {
     int disp_end = tmp_max_disp;
     float disp_pred;
 
-    if (_image_predict_item.valid && _image_predict_item.certainty > 0.9f) {
+    if (_image_predict_item.valid) {
         disp_start = std::max(static_cast<int>(floorf(_image_predict_item.disparity))-4,disp_start);
         disp_pred = _image_predict_item.disparity;
         disp_end = std::min(static_cast<int>(ceilf(_image_predict_item.disparity))+4,disp_end);
@@ -528,12 +528,15 @@ void ItemTracker::update_prediction(double time) {
 
         auto p = world2im_3d(predicted_pos,_visdat->Qfi,_visdat->camera_angle);
 
-        //update tracker with prediciton
-        _image_predict_item.x = std::clamp(static_cast<int>(p.x),0,IMG_W-1);
-        _image_predict_item.y = std::clamp(static_cast<int>(p.y),0,IMG_H-1);
-        _image_predict_item.disparity = std::clamp(p.z,0.f,static_cast<float>(params.max_disparity.value()));
-        _image_predict_item.size = world2im_size(last_valid_trackdata_for_prediction.world_item.pt+cv::Point3f(expected_radius,0,0),last_valid_trackdata_for_prediction.world_item.pt-cv::Point3f(expected_radius,0,0),_visdat->Qfi,_visdat->camera_angle);
-        _image_predict_item.valid = true;
+        cv::Point3f pt;
+        pt.x = std::clamp(static_cast<int>(p.x),0,IMG_W-1);
+        pt.y = std::clamp(static_cast<int>(p.y),0,IMG_H-1);
+        pt.z = std::clamp(p.z,0.f,static_cast<float>(params.max_disparity.value()));
+        float size = world2im_size(last_valid_trackdata_for_prediction.world_item.pt+cv::Point3f(expected_radius,0,0),last_valid_trackdata_for_prediction.world_item.pt-cv::Point3f(expected_radius,0,0),_visdat->Qfi,_visdat->camera_angle);
+        float pixel_max = _image_predict_item.pixel_max;
+        if (_image_item.valid)
+            pixel_max = _image_item.pixel_max;
+        _image_predict_item = ImagePredictItem(pt,size,pixel_max,_visdat->frame_id);
     }
 }
 

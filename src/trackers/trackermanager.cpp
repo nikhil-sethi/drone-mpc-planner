@@ -42,7 +42,7 @@ void TrackerManager::update(double time, bool drone_is_active) {
     dur1 = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - profile_t0).count();
 #endif
     if (_mode != mode_idle) {
-        update_max_change_points();
+        find_blobs();
 #ifdef PROLILING
         dur2 = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - profile_t0).count();
 #endif
@@ -79,7 +79,7 @@ void TrackerManager::update(double time, bool drone_is_active) {
 //maxima in the motion image that are higher than a threshold, the area around the maximum
 //is segmented from the background motion noise, and seen as a blob. In special cases it then
 //tries if this blob can be further splitted if necessary.
-void TrackerManager::update_max_change_points() {
+void TrackerManager::find_blobs() {
     cv::Mat diff = _visdat->diffL_small.clone();
     _blobs.clear();
 

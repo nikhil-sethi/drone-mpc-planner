@@ -56,7 +56,7 @@ void ReplayTracker::update_from_log(unsigned long long frame_number,double time)
 
     _image_item = ImageItem (log.ins_im_x,log.ins_im_y,log.ins_disparity,frame_number);
     _image_item.valid = valid;
-    _image_predict_item = ImagePredictItem(cv::Point3f(log.ins_pred_im_x,log.ins_pred_im_y,log.ins_disparity),1,1,255,frame_number);
+    _image_predict_item = ImagePredictItem(cv::Point3f(log.ins_pred_im_x,log.ins_pred_im_y,log.ins_disparity),1,255,frame_number);
     _image_predict_item.valid = _image_predict_item.x > 0 && _tracking;
 
     WorldItem w;

@@ -169,7 +169,7 @@ private:
     std::vector<tracking::BlobProps> _blobs;
 
     void update_trackers(double time, long long frame_number, bool drone_is_active);
-    void update_max_change_points();
+    void find_blobs();
     void collect_static_ignores();
     void collect_static_ignores(ItemTracker *trkr);
     void check_match_conflicts(std::vector<ProcessedBlob> *pbs,double time);

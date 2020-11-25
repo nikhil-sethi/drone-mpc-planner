@@ -68,7 +68,7 @@ void VirtualmothTracker::update_behavior_based(unsigned long long frame_number, 
     _image_item = ImageItem (insect_im.x, insect_im.y, insect_im.z, frame_number);
     _image_item.valid = true;
 
-    _image_predict_item = ImagePredictItem(cv::Point3f(insect_im.x, insect_im.y, insect_im.z), 1, 1, 255, frame_number);
+    _image_predict_item = ImagePredictItem(cv::Point3f(insect_im.x, insect_im.y, insect_im.z),1,255,frame_number);
     _image_predict_item.valid = _image_predict_item.x > 0;
 
     WorldItem w;

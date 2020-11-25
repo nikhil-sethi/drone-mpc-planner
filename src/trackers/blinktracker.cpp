@@ -34,7 +34,7 @@ void BlinkTracker::update(double time) {
     case bds_start: {
         _tracking = true;
         _blinking_drone_status = bds_searching;
-        _image_predict_item = ImagePredictItem(_image_item.ptd(),1,_image_item.size,_image_item.pixel_max,_visdat->frame_id);
+        _image_predict_item = ImagePredictItem(_image_item.ptd(),_image_item.size,_image_item.pixel_max,_visdat->frame_id);
         [[fallthrough]];
     } case bds_restart_search: {
         attempts++;
