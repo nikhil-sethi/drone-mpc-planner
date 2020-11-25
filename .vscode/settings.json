@@ -25,5 +25,10 @@
     "search.showLineNumbers": true,
     "C_Cpp.autoAddFileAssociations": false,
     "files.trimTrailingWhitespace": true,
-    "files.trimFinalNewlines": true
+    "files.trimFinalNewlines": true,
+    "terminal.integrated.commandsToSkipShell": [
+        "workbench.action.debug.stepInto",
+        "workbench.action.debug.stepOut",
+        "workbench.action.debug.stepOver"
+    ]
 }
