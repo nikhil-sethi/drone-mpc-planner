@@ -589,7 +589,7 @@ void Visualizer::draw_tracker_viz() {
         putText(diff,"Untracked",cv::Point(3,diff.rows-72),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(255,255,55));
         putText(diff,"Multitracked",cv::Point(3,diff.rows-84),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,128,255));
         putText(diff,"False positive",cv::Point(3,diff.rows-96),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(255,0,0));
-        putText(diff,"Overexposed noise",cv::Point(3,diff.rows-96),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(128,128,128));
+        putText(diff,"Overexposed noise",cv::Point(3,diff.rows-108),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(128,128,128));
 
         trackframe = ext_res_frame;
     } else

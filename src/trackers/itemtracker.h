@@ -130,8 +130,9 @@ protected:
 
     void init_logger(std::ofstream *logger);
     float stereo_match(BlobProps * blob);
-    std::tuple<int,float,int,int> disparity_search_rng(int x1);
-    std::tuple<float,float> calc_match_score_masked(int i, int disp_end, int width, int height, cv::Mat diffL_mask_patch, cv::Mat diffR_mask_patch, cv::Mat grayL_patch, cv::Mat grayR_patch, int npixels);
+    std::tuple<int,float,int,int> disparity_search_rng(BlobProps * blob,int x,int radius);
+    int calc_rough_disparity(BlobProps * blob,int radius);
+    std::tuple<float,float> calc_match_score_masked(int i,int disp_end,int width,int height,cv::Mat diffL_mask_patch,cv::Mat diffR_mask_patch,cv::Mat grayL_patch,cv::Mat grayR_patch,int npixels);
     float calc_match_score_motion(int i,int x, int y, int width, int height,float tmp_diffL_sum, cv::Mat diffL_roi, cv::Mat diffR);
     float estimate_sub_disparity(int disparity,float * err);
 
