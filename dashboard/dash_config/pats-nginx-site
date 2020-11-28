@@ -1,5 +1,5 @@
 server {
-    server_name pats-c.com pats-c.nl dash.pats-drones.com dash.pats-drones.nl;
+    server_name www.pats-c.com www.pats-c.nl pats-c.com pats-c.nl;
 
     location / {
         include proxy_params;
@@ -15,10 +15,7 @@ server {
 
 
 
-
-
 }
-
 
 server {
     if ($host = pats-c.com) {
@@ -31,18 +28,18 @@ server {
     } # managed by Certbot
 
 
-    if ($host = dash.pats-drones.nl) {
+    if ($host = www.pats-c.com) {
         return 301 https://$host$request_uri;
     } # managed by Certbot
 
 
-    if ($host = dash.pats-drones.com) {
+    if ($host = www.pats-c.nl) {
         return 301 https://$host$request_uri;
     } # managed by Certbot
 
 
     listen 80;
-    server_name pats-c.com pats-c.nl dash.pats-drones.com dash.pats-drones.nl;
+    server_name www.pats-c.com www.pats-c.nl pats-c.com pats-c.nl;
     return 404; # managed by Certbot
 
 
