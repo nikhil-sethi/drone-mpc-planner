@@ -53,16 +53,16 @@ def send_status_update():
 
                 if os.path.exists(local_pats_xml):
                     cmd = 'rsync -puaz ' + local_pats_xml + ' dash:' + remote_pats_xml
-                    subprocess.call(cmd, shell=True,stdout=subprocess.PIPE)
+                    execute(cmd)
                 if os.path.exists(local_status_txt_file):
-                    cmd = 'rsync -pzv ' + local_status_txt_file +' dash:' + remote_status_txt_file
-                    subprocess.call(cmd, shell=True,stdout=subprocess.PIPE)
+                    cmd = 'rsync -pz ' + local_status_txt_file +' dash:' + remote_status_txt_file
+                    execute(cmd)
                 if os.path.exists(local_system_txt_file):
                     cmd = 'rsync -pz ' + local_system_txt_file +' dash:' + remote_system_txt_file
-                    subprocess.call(cmd, shell=True,stdout=subprocess.PIPE)
+                    execute(cmd)
                 if os.path.exists(local_status_im_file):
                     cmd = 'rsync -puz ' + local_status_im_file +' dash:' + remote_status_im_file
-                    subprocess.call(cmd, shell=True,stdout=subprocess.PIPE)
+                    execute(cmd)
     except:
         pass
 
@@ -149,7 +149,8 @@ updated_today = False
 metered_connection = check_if_metered()
 if metered_connection:
    print("Metered connection mode. Updating at: " + str(args.hour) + ':00')
-
+print('Starting status sender with render update at ' + str(args.hour))
+print('\n')
 while True:
 
     block_if_disabled()
@@ -159,23 +160,30 @@ while True:
 
         now = datetime.now()
         if (not metered_connection):
+            print ("\033[A                             \033[A")
             print("Updating now: " + str(now))
             send_status_update()
+        else:
+            print ("\033[A                                                        \033[A")
+            print("Metered connection mode. Next update at: " + str(args.hour))
 
         if os.path.exists(pats_cc_update_request):
-            print("Manual update trigger detected...")
+            print("\nManual update trigger detected...")
             os.remove(pats_cc_update_request)
             send_status_update()
 
         if (now.hour == int(args.hour) and not updated_today):
             if (metered_connection):
-                print("Metered connection mode. Updating now: " + str(now))
+                print("\nMetered connection mode. Updating now: " + str(now))
                 send_status_update()
-            updated_today = True
+            print("\nStarting data aggregation: " + str(now) + '\n')
             update_monitor_results()
             render_hunts()
             clean_hd()
-        if now.hour == int(args.hour)+1 and updated_today:
+            updated_today = True
+
+        if now.hour != int(args.hour) and updated_today:
+            print("\nResetting updated_today flag: " + str(now) + '\n')
             updated_today = False
 
     time.sleep(1)
