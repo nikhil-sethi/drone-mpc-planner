@@ -77,7 +77,7 @@ def update_monitor_results():
         os.mkdir(homedir + '/data_json/')
     local_json_file = homedir + '/data_json/' + date_time_end + '.json'
     remote_json_file='jsons/' + hostname + '_' + date_time_end + '.json'
-    cmd = '../dashboard/log_to_json.py -i ~/data -s ' + date_time_start +' -e ' + date_time_end + ' --filename ' + local_json_file
+    cmd = '../config/log_to_json.py -i ~/data -s ' + date_time_start +' -e ' + date_time_end + ' --filename ' + local_json_file
     execute(cmd)
     cmd = 'rsync -puz ' + local_json_file +' dash:' + remote_json_file
     execute(cmd,5)

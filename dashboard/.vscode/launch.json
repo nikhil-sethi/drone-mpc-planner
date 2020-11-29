@@ -11,14 +11,6 @@
         "console": "integratedTerminal"
       },
       {
-        "name": "log_to_json",
-        "type": "python",
-        "request": "launch",
-        "program": "${workspaceFolder}/log_to_json.py",
-        "args": ["-i","/home/houjebek/Downloads/pats_data/pats12"],
-        "console": "integratedTerminal"
-      },
-      {
         "name": "jsons_to_db",
         "type": "python",
         "request": "launch",
@@ -27,10 +19,10 @@
         "console": "integratedTerminal"
       },
       {
-        "name": "dash",
+        "name": "PATS-C",
         "type": "python",
         "request": "launch",
-        "program": "${workspaceFolder}/pats_dash.py",
+        "program": "${workspaceFolder}/pats_c.py",
         "args": [],
         "console": "integratedTerminal"
       },

@@ -16,11 +16,6 @@ until (( count++ >= 5 )) || ssh -o StrictHostKeyChecking=no -T $1 << EOF
  make -j$(nproc)
  killall -9 pats || true
  echo update done
- # cd /home/pats/data_json
- # rm *.json
- # cd /home/pats/code/pats/dashboard/
- # ./log_to_json.py -i ~/data/ --filename ~/data_json/up_to20201004.json
- # rsync -azPv /home/pats/data_json/up_to20201004.json dash:jsons/up_to20201004_\${HOSTNAME}.json
 EOF
 do
   echo "$1 retry $count"
