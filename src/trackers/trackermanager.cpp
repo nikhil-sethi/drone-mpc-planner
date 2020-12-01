@@ -700,6 +700,11 @@ void TrackerManager::update_trackers(double time,long long frame_number, bool dr
         uint i = ii-1;
         if (_trackers.at(i)->delete_me()) {
             ItemTracker *trkr = _trackers.at(i);
+            auto t_trkr = target_insecttracker();
+            if (t_trkr) {
+                if (target_insecttracker()->uid() == trkr->uid())
+                    target_insecttracker_frameid_updated = 0;
+            }
             if (trkr->type() == tt_insect ) {
                 InsectTracker *itrkr = static_cast<InsectTracker *>(_trackers.at(i));
                 auto fpt = itrkr->false_positive();
@@ -1097,7 +1102,7 @@ double TrackerManager::target_last_detection() {
 
 InsectTracker *TrackerManager::target_insecttracker() {
 
-    if (target_insecttracker_frameid_updated == _visdat->frame_id)
+    if (target_insecttracker_frameid_updated == _visdat->frame_id && _target_insecttracker)
         return _target_insecttracker;
 
     if (target_insecttracker_frameid_updated>0)
