@@ -34,6 +34,7 @@ namespace navigation {
                                                                  "ns_manual",
                                                                  "ns_batlow",
                                                                  "ns_tracker_problem",
+                                                                 "ns_drone_lost",
                                                                  "ns_drone_problem"
                                                                 };
 
@@ -70,13 +71,13 @@ enum navigation_states {
     ns_manual, // also for disarmed
     ns_batlow,
     ns_tracker_problem,
+    ns_drone_lost,
     ns_drone_problem
 };
 
 class navigationParameters: public xmls::Serializable
 {
 public:
-    xmls::xInt distance_threshold_f;
     xmls::xFloat time_out_after_landing;
 
     navigationParameters() {
@@ -88,7 +89,6 @@ public:
         setVersion("1.1");
 
         // Register members. Like the class name, member names can differ from their xml depandants
-        Register("distance_threshold_f",&distance_threshold_f);
         Register("time_out_after_landing",&time_out_after_landing);
     }
 };

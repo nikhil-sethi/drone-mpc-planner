@@ -118,6 +118,11 @@ void DroneTracker::update(double time, bool drone_is_active) {
         break;
     } case dts_detecting: {
         ItemTracker::update(time);
+        TrackData data;
+        data.predicted_image_item = _image_predict_item;
+        data.time = time;
+        track_history.push_back(data);
+        update_drone_prediction(time);
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
         else if (_n_frames_lost==0)
@@ -125,7 +130,7 @@ void DroneTracker::update(double time, bool drone_is_active) {
         break;
     } case dts_tracking: {
         ItemTracker::update(time);
-        update_prediction(time); // use control inputs to make prediction #282
+        update_drone_prediction(time);
         min_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity))-5,params.min_disparity.value(),params.max_disparity.value());
         max_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity))+5,params.min_disparity.value(),params.max_disparity.value());
         _visdat->exclude_drone_from_motion_fading(_image_item.ptd(),_image_predict_item.size);
@@ -136,11 +141,11 @@ void DroneTracker::update(double time, bool drone_is_active) {
         break;
     } case dts_detect_yaw: {
         ItemTracker::update(time);
+        update_drone_prediction(time);
         min_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity))-5,params.min_disparity.value(),params.max_disparity.value());
         max_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity))+5,params.min_disparity.value(),params.max_disparity.value());
-        update_prediction(time);
         _visdat->exclude_drone_from_motion_fading(_image_item.ptd(),_image_predict_item.size);
-        detect_deviation_angle();
+        detect_deviation_yaw_angle();
         break;
     } case dts_landing_init: {
         ignores_for_other_trkrs.push_back(IgnoreBlob(takeoff_im_location()/pparams.imscalef,takeoff_im_size()/pparams.imscalef,time+landing_ignore_timeout, IgnoreBlob::landing_spot));
@@ -165,6 +170,36 @@ void DroneTracker::update(double time, bool drone_is_active) {
     (*_logger) << static_cast<int16_t>(_drone_tracking_status) << ";" << last_track_data().yaw_deviation << ";";
 }
 
+float DroneTracker::score(BlobProps * blob) {
+    if (_drone_tracking_status == dts_detecting && _image_predict_item.out_of_image) {
+        float im2world_err_ratio, im_size_pred_err_ratio;
+        const float max_world_dist = 0.05f; // max distance a blob can travel in one frame
+        cv::Point3f predicted_world_pos = im2world(_image_predict_item.pt,_image_predict_item.disparity,_visdat->Qf,_visdat->camera_angle);
+        float max_im_dist = world2im_dist(predicted_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_angle);
+        float world_projected_im_err = normf(blob->pt_unscaled() - _image_predict_item.pt);
+        im2world_err_ratio = world_projected_im_err/max_im_dist;
+        im_size_pred_err_ratio = fabs(_image_predict_item.size - blob->size_unscaled()) / (blob->size_unscaled()+_image_predict_item.size);
+
+        float score = im2world_err_ratio*0.25f + 0.75f*im_size_pred_err_ratio;
+        if (!properly_tracking() && (blob->in_overexposed_area || blob->false_positive))
+            score*=1.5f;
+        else if (blob->in_overexposed_area || blob->false_positive)
+            score*=1.25f;
+
+        return score;
+    } else
+        return ItemTracker::score(blob,&_image_item);
+}
+
+void DroneTracker::update_drone_prediction(double time) { // need to use control inputs to make prediction #282
+    if (_tracking)
+        update_prediction(time);
+    else if (lost()) {
+        _image_predict_item.valid = false;
+    } else { // just keep looking for the drone on the last known location:
+        _image_predict_item.frame_id = _visdat->frame_id;
+    }
+}
 void DroneTracker::delete_takeoff_fake_motion() {
     if (enable_takeoff_motion_delete) {
         _visdat->reset_spot_on_motion_map(takeoff_im_location(), _blink_im_disparity,_takeoff_im_size*2.5f,1);
@@ -278,7 +313,7 @@ void DroneTracker::clean_ignore_blobs(double time) {
     ignores_for_other_trkrs= new_ignores_for_insect_tracker;
 }
 
-void DroneTracker::detect_deviation_angle() {
+void DroneTracker::detect_deviation_yaw_angle() {
 
     static vector<TrackData> bowling_vector;
 

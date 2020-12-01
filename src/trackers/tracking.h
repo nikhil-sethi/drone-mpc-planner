@@ -50,11 +50,13 @@ struct BlobProps { // scaled with pparams.imscalef
     float size_unscaled() {return size*pparams.imscalef;}
     bool in_overexposed_area;
     int threshold_method;
-    BlobProps(cv::Point2f pt,float blob_size,float blob_pixel_max, cv::Mat blob_mask, bool overexposed_area, int threshold_method_) : size(blob_size), pixel_max(blob_pixel_max), mask(blob_mask), in_overexposed_area(overexposed_area),threshold_method(threshold_method_) {
+    BlobProps(cv::Point2f pt,float blob_size,float blob_pixel_max, cv::Mat blob_mask, bool overexposed_area, int threshold_method_, int frame_id_) : size(blob_size), pixel_max(blob_pixel_max), mask(blob_mask), in_overexposed_area(overexposed_area),threshold_method(threshold_method_) {
         x = pt.x;
         y = pt.y;
+        frame_id = frame_id_;
     }
     BlobWorldProps world_props;
+    int frame_id;
 };
 
 struct ImageItem {
@@ -97,16 +99,19 @@ struct ImageItem {
 };
 struct ImagePredictItem {
     uint frame_id = 0;
-    float x = 0,y = 0,disparity = 0,size = 0;
+    float disparity = 0,size = 0;
     float pixel_max = 0;
+    bool out_of_image = false;
     bool valid = false;
-    cv::Point2f pt() {
-        return cv::Point2f(x,y);
-    }
+    cv::Point2f pt;
+    cv::Point2f pt_unbound;
     ImagePredictItem() {}
     ImagePredictItem(cv::Point3f p,float size_,float pixel_max_,int frameid) {
-        x = p.x;
-        y = p.y;
+        pt_unbound.x = p.x;
+        pt_unbound.y = p.y;
+        out_of_image = (p.x<0 || p.y < 0 || p.x >= IMG_W || p.y >= IMG_H);
+        pt.x = std::clamp(p.x,0.f,IMG_Wf-1);
+        pt.y = std::clamp(p.y,0.f,IMG_Hf-1);
         disparity = p.z;
         size = size_;
         pixel_max = pixel_max_;
@@ -159,6 +164,7 @@ struct TrackData {
     bool spos_valid = false;
     bool vel_valid = false;
     bool acc_valid = false;
+    bool out_of_image() {return predicted_image_item.out_of_image;}
     double time = 0;
     float yaw_deviation = 0;
     bool yaw_deviation_valid = 0;

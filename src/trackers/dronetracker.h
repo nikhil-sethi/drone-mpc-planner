@@ -10,7 +10,7 @@ static const char* drone_tracking_state_names[] = { "dts_init",
                                                     "dts_detecting_takeoff_init",
                                                     "dts_detecting_takeoff",
                                                     "dts_detecting",
-                                                    "dts_detected",
+                                                    "dts_tracking",
                                                     "dts_detect_yaw",
                                                     "dts_landing_init",
                                                     "dts_landing"
@@ -116,8 +116,8 @@ private:
     void delete_takeoff_fake_motion();
     bool detect_lift_off();
     bool detect_takeoff();
-    void detect_deviation_angle();
-
+    void detect_deviation_yaw_angle();
+    void update_drone_prediction(double time);
 
     xmls::LandingParameters landing_parameter;
 
@@ -148,6 +148,7 @@ public:
     bool taking_off() { return _drone_tracking_status == dts_detecting_takeoff_init || _drone_tracking_status == dts_detecting_takeoff;}
     bool landing() { return _drone_tracking_status == dts_landing_init || _drone_tracking_status == dts_landing;}
     bool inactive() { return _drone_tracking_status == dts_inactive;}
+    bool lost() {return _n_frames_lost > static_cast<int>(pparams.fps*2);}
 
     void manual_flight_mode(bool value) {
         _manual_flight_mode =value;
@@ -230,6 +231,8 @@ public:
     bool delete_me() {return false;}
 
     float hover_throttle_estimation;
+
+    float score(BlobProps * blob);
 };
 
 }

@@ -12,10 +12,6 @@
 
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 
-
-#define IMG_W 848
-#define IMG_H 480
-
 class Cam {
 protected:
     uint replay_skip_n_frames = 0;

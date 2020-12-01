@@ -33,9 +33,6 @@ static const char* flight_mode_names[] = { "fm_joystick_check",
                                            "fm_interception_burn",
                                            "fm_interception_burn_spin_down",
                                            "fm_retry_aim_start",
-                                           "fm_abort_takeoff",
-                                           "fm_tracking_lost",
-                                           "fm_model_error",
                                            "fm_abort",
                                            "fm_pid_init",
                                            "fm_pid",
@@ -68,9 +65,6 @@ public:
         fm_interception_burn,
         fm_interception_burn_spin_down,
         fm_retry_aim_start,
-        fm_abort_takeoff,
-        fm_abort_tracking_lost,
-        fm_abort_model_error,
         fm_abort,
         fm_flying_pid_init,
         fm_flying_pid,
@@ -215,11 +209,6 @@ private:
     filtering::Tf_D_f d_vel_err_x, d_vel_err_y, d_vel_err_z;
     filtering::Tf_PT2_f pos_modelx, pos_modely, pos_modelz;
 
-    uint snr_buf_pointer = 0;
-    uint snr_buf_filled = 0;
-    cv::Point3f snr_pos_buffer[3];
-    uint snr_noise_cnt = 0;
-
     std::array<float, N_PLANES> pos_err_kiv= {0}, vel_err_kiv= {0};
     std::array<filtering::Tf_D_f, N_PLANES> d_pos_err_kiv, d_vel_err_kiv;
 
@@ -262,11 +251,6 @@ private:
     std::tuple<float,float> acc_to_deg(cv::Point3f acc);
     std::tuple<float,float> acc_to_quaternion(cv::Point3f acc);
 
-    void check_emergency_kill(tracking::TrackData data_drone);
-    void check_tracking_lost(tracking::TrackData data_drone);
-    void check_control_and_tracking_problems(tracking::TrackData data_drone);
-    void check_snr(tracking::TrackData data_drone);
-
     void correct_yaw(float deviation_angle);
 
     void blink(double time);
@@ -290,8 +274,7 @@ public:
     float model_error;
     bool enable_thrust_calibration = false;
     void flight_mode(flight_modes f) {
-        if (f != fm_abort || !flight_aborted())
-            _flight_mode = f;
+        _flight_mode = f;
     }
     void hover_mode(bool value) { _hover_mode = value;}
     void double_led_strength() {
@@ -370,15 +353,11 @@ public:
         _log_thrust_rpm = log_thrust_rpm;
     }
 
-    bool flight_aborted() {
-        return _flight_mode == fm_abort || _flight_mode == fm_abort_model_error || _flight_mode == fm_abort_tracking_lost || _flight_mode == fm_abort_takeoff;
-    }
-
     float in_flight_duration(double time) {
         if ((_flight_mode == fm_flying_pid || _flight_mode == fm_reset_yaw || _flight_mode == fm_ff_landing || _flight_mode == fm_initial_reset_yaw)
                 && in_flight_start_time < 0)
             in_flight_start_time = time;
-        else if (_flight_mode == fm_disarmed || _flight_mode == fm_inactive || _flight_mode == fm_spinup || _flight_mode == fm_manual || _flight_mode == fm_abort || _flight_mode == fm_abort_model_error || _flight_mode == fm_abort_tracking_lost)
+        else if (_flight_mode == fm_disarmed || _flight_mode == fm_inactive || _flight_mode == fm_spinup || _flight_mode == fm_manual || _flight_mode == fm_abort)
             in_flight_start_time = -1;
 
         if (in_flight_start_time > 0)
@@ -508,9 +487,9 @@ public:
     void init(std::ofstream *logger, std::string replay_dir, bool generator_mode, MultiModule *rc, tracking::DroneTracker *dtrk, CameraView* camvol,float exposure);
     void control(tracking::TrackData, tracking::TrackData, tracking::TrackData, double);
     bool drone_is_active() {
-        if ( _flight_mode == fm_inactive || _flight_mode == fm_disarmed || _flight_mode == fm_joystick_check)
+        if (_flight_mode == fm_inactive || _flight_mode == fm_disarmed || _flight_mode == fm_joystick_check)
             return false;
-        else if (flight_aborted())
+        else if (_flight_mode == fm_abort)
             return false;
         else if (_joy_mode_switch == jmsm_manual && joy_throttle > RC_BOUND_MIN && _joy_arm_switch == bf_armed)
             return true;

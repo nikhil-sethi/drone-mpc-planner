@@ -177,7 +177,7 @@ private:
     void prep_blobs(std::vector<ProcessedBlob> *pbs,double time);
     void erase_dissipated_fps(double time);
     void match_existing_trackers(std::vector<ProcessedBlob> *pbs,bool drone_is_active, double time);
-    void match_trackers_that_lost(std::vector<ProcessedBlob> *pbs,bool drone_is_active, double time);
+    void rematch_drone_tracker(std::vector<ProcessedBlob> *pbs,bool drone_is_active, double time);
     void create_new_insect_trackers(std::vector<ProcessedBlob> *pbs, double time);
     void draw_viz(std::vector<ProcessedBlob> *pbs, double time);
     void match_blobs_to_trackers(bool drone_is_active, double time);

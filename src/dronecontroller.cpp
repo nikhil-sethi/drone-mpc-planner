@@ -337,8 +337,6 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
             pos_modelx.internal_states(data_drone.pos().x, data_drone.pos().x);
             pos_modely.internal_states(data_drone.pos().y, data_drone.pos().y);
             pos_modelz.internal_states(data_drone.pos().z, data_drone.pos().z);
-            cv::Point3f snr_pos = {pos_modelx.current_output(), pos_modely.current_output(), pos_modelz.current_output()};
-            std::fill(snr_pos_buffer, snr_pos_buffer+3, snr_pos);
 
             if(data_drone.vel_valid) {
                 float correction_gain = 5.f;
@@ -350,9 +348,6 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         }
         [[fallthrough]];
     } case fm_flying_pid: {
-
-        check_emergency_kill(data_drone);
-
         if(!data_drone.pos_valid) {
             pos_err_i = {0,0,0};
             if(_time-take_off_start_time < 0.5)
@@ -365,7 +360,6 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
     } case fm_flying_headed_pid: { // at the moment used for landing after the yaw reset
         auto_yaw = RC_MIDDLE;
         mode += bf_headless_disabled;
-        check_emergency_kill(data_drone);
         if(!data_drone.pos_valid) {
             pos_err_i = {0,0,0};
             if(_time-take_off_start_time < 0.5)
@@ -374,13 +368,11 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         control_model_based(data_drone, data_target_new.pos(),data_target_new.vel());
         break;
     } case fm_initial_reset_yaw: {
-        check_emergency_kill(data_drone);
         control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
         mode += bf_headless_disabled;
         break;
     } case fm_reset_yaw: {
         mode += bf_headless_disabled;
-        check_emergency_kill(data_drone);
         control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
         if (data_drone.yaw_deviation_valid)
             correct_yaw(data_drone.yaw_deviation);
@@ -456,10 +448,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         else if (dparams.mode3d)
             _rc->arm(bf_disarmed);
         break;
-    } case fm_abort_tracking_lost: [[fallthrough]];
-    case fm_abort_model_error: [[fallthrough]];
-    case fm_abort_takeoff: [[fallthrough]];
-    case fm_abort: {
+    } case fm_abort: {
         if (dparams.mode3d)
             auto_throttle = RC_MIDDLE;
         else
@@ -976,6 +965,15 @@ bool DroneController::prop_wash(cv::Point3f drone_velocity, cv::Point3f des_acc_
 }
 
 void DroneController::control_model_based(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel) {
+
+    if (_dtrk->image_predict_item().out_of_image) {
+        auto_roll = RC_MIDDLE;
+        auto_pitch = RC_MIDDLE;
+        auto_yaw = RC_MIDDLE;
+        auto_throttle = spinup_throttle();
+        return;
+    }
+
     pos_modelx.new_sample(setpoint_pos.x);
     pos_modely.new_sample(setpoint_pos.y);
     pos_modelz.new_sample(setpoint_pos.z);
@@ -1114,71 +1112,6 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::
 
     }
     return std::tuple(pos_err_p, pos_err_d, vel_err_p, vel_err_d);
-}
-
-void DroneController::check_emergency_kill(TrackData data_drone) {
-    check_tracking_lost(data_drone);
-    check_control_and_tracking_problems(data_drone);
-    check_snr(data_drone);
-}
-
-void DroneController::check_tracking_lost(TrackData data_drone) {
-    // If keep-in-volume is not strong enough the drone has a chance to come back after some time.
-    if(!data_drone.pos_valid) {
-        kill_cnt_down++;
-        if (kill_cnt_down > pparams.fps / 2) {
-            _flight_mode = fm_abort_tracking_lost;
-            std::cout << "Flight aborted: Drone position invalid." << std::endl;
-        }
-    } else {
-        kill_cnt_down = 0;
-    }
-}
-void DroneController::check_control_and_tracking_problems(TrackData data_drone) {
-
-    if(data_drone.pos_valid) {
-        model_error += normf({pos_modelx.current_output() - data_drone.pos().x,
-                              pos_modely.current_output() - data_drone.pos().y,
-                              pos_modelz.current_output() - data_drone.pos().z});
-        model_error -= 1.f; // Accept error over time
-
-        if(model_error<0)
-            model_error = 0;
-        if(model_error>70 && !generator_mode) {
-            _flight_mode = fm_abort_model_error;
-            std::cout << "Flight aborted: Drone model diverged from drone measurement." << std::endl;
-        }
-#if DRONE_CONTROLLER_DEBUG
-        std::cout << "model_error: " << model_error << std::endl;
-        if(model_error>model_error_max)
-            model_error_max = model_error;
-#endif
-
-    }
-}
-
-void DroneController::check_snr(TrackData data_drone) {
-    if(data_drone.pos_valid) {
-        snr_pos_buffer[snr_buf_pointer] = data_drone.pos();
-        snr_buf_pointer = (snr_buf_pointer+1)%3;
-        if(snr_buf_filled < 3)
-            snr_buf_filled++;
-    } else {
-        snr_buf_filled = 0;
-    }
-    if(_time-take_off_start_time>1 && snr_buf_filled>=3) {
-        float dpos01 = normf(snr_pos_buffer[(snr_buf_pointer-1)%3]-snr_pos_buffer[(snr_buf_pointer)%3]);
-        float dpos12 = normf(snr_pos_buffer[(snr_buf_pointer-2)%3]-snr_pos_buffer[(snr_buf_pointer-1)%3]);
-
-        float err_sample1 = abs(dpos01 - dpos12); // If there is a noise peak at the previous sample this create a high value
-        if(err_sample1>0.4f) {
-            snr_noise_cnt++;
-            if (snr_noise_cnt>=3) {
-                _flight_mode = fm_abort_model_error;
-                std::cout << "Serious noise detected in the drone tracker" << std::endl;
-            }
-        }
-    }
 }
 
 void DroneController::correct_yaw(float deviation_angle) {

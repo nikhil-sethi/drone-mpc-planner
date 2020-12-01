@@ -382,7 +382,7 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
         std::vector<cv::KeyPoint> keypoints;
         for (uint i = 0; i< path.size(); i++) {
             if (path.at(i).predicted_image_item.valid) {
-                cv::KeyPoint k(path.at(i).predicted_image_item.x/pparams.imscalef,path.at(i).predicted_image_item.y/pparams.imscalef,24/pparams.imscalef);
+                cv::KeyPoint k(path.at(i).predicted_image_item.pt.x/pparams.imscalef,path.at(i).predicted_image_item.pt.y/pparams.imscalef,24/pparams.imscalef);
                 keypoints.push_back(k);
             }
         }
@@ -473,7 +473,7 @@ void Visualizer::draw_tracker_viz() {
 
     if ( last_drone_detection.predicted_image_item.valid) {
         auto pred =  last_drone_detection.predicted_image_item;
-        cv::circle(frameL_color,pred.pt(),pred.size/2,cv::Scalar(0,255,0));
+        cv::circle(frameL_color,pred.pt,pred.size/2,cv::Scalar(0,255,0));
     }
     if ( last_drone_detection.world_item.iti.valid) {
         auto p =  last_drone_detection.world_item.iti;
@@ -485,7 +485,7 @@ void Visualizer::draw_tracker_viz() {
         std::stringstream ss;
         tracking::WorldItem wti = last_insect_detection.world_item;
 
-        cv::Point2i p_ins_im = last_insect_detection.predicted_image_item.pt();
+        cv::Point2i p_ins_im = last_insect_detection.predicted_image_item.pt;
         float ins_size = last_insect_detection.predicted_image_item.size;
         ss << "i ";
         if (wti.valid) {

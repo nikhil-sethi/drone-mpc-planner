@@ -24,6 +24,7 @@ void ItemTracker::init(VisionData *visdat, int motion_thresh, std::string name, 
     _motion_thresh = motion_thresh;
     _name = name;
     track_history_max_size = pparams.fps;
+    n_frames_lost_threshold = pparams.fps/9;
     settings_file = "../../xml/" + name + "tracker.xml";
     std::string window_name = name + "_trkr";
 
@@ -68,7 +69,6 @@ void ItemTracker::init(VisionData *visdat, int motion_thresh, std::string name, 
         enable_draw_stereo_viz = false;
 
 }
-
 void ItemTracker::init_logger(std::ofstream *logger) {
     _logger = logger;
     if (_logger->is_open()) {
@@ -175,7 +175,6 @@ void ItemTracker::update(double time) {
         _n_frames_tracking = 0;
         if( _n_frames_lost >= n_frames_lost_threshold || !_tracking ) {
             _tracking = false;
-            reset_tracker_ouput(time);
         } else {
             TrackData data;
             data.predicted_image_item = _image_predict_item;
@@ -204,7 +203,7 @@ void ItemTracker::append_log() {
         else
             (*_logger) << -1 << ";" << -1 << ";" << -1 << ";" << -1 << ";" << -1 << ";";
         if (_image_predict_item.valid)
-            (*_logger) << _image_predict_item.x << ";" << _image_predict_item.y << ";";
+            (*_logger) << _image_predict_item.pt_unbound.x << ";" << _image_predict_item.pt_unbound.y << ";";
         else
             (*_logger) << -1 << ";" << -1   << ";";
 
@@ -272,6 +271,8 @@ float ItemTracker::stereo_match(BlobProps * blob) {
     float masked_pixel_ratio[disp_end] = {0};
     int disparity_masked = 0;
     const float min_pxl_ratio = 0.25f;
+    bool not_enough_pixels = false;
+    bool masked_method_was_tried = false;
 
     int disp_cnt = 0; //keep track of how many shifts are calculated until we found the minimum
     float min_err = INFINITY;
@@ -290,7 +291,7 @@ float ItemTracker::stereo_match(BlobProps * blob) {
             cv::Mat grayL_patch = _visdat->frameL(roiL);
             cv::Mat grayR_patch = _visdat->frameR(roiR_disparity_rng);
 
-
+            masked_method_was_tried=true;
             bool err_calculated [disp_end] = {false};
             //search for a minimum matching error
             int ii = roundf(disp_pred);
@@ -317,7 +318,11 @@ float ItemTracker::stereo_match(BlobProps * blob) {
                     disparity_masked  = ii;
                     min_err = err_masked[ii];
                 }
-                if (err_masked[ii-1] >= err_masked[ii] && err_masked[ii+1] >= err_masked[ii] && min_err > err_masked[ii] && _n_frames_tracking > 0) {  // global minimum found
+                if (masked_pixel_ratio[ii-1] < min_pxl_ratio && masked_pixel_ratio[ii] < min_pxl_ratio && masked_pixel_ratio[ii+1] < min_pxl_ratio) {
+                    not_enough_pixels = true;
+                    break; // it is very unlikely that no pixels at all are available, Try again with the fallback strategy
+                }
+                if (err_masked[ii-1] >= err_masked[ii] && err_masked[ii+1] >= err_masked[ii] && min_err >= err_masked[ii]) {  // global minimum found
                     break;
                 } else if (err_masked[ii-1] > err_masked[ii+1]) { // no minumum here, determine search direction based on slope
                     int ii_cnt = 0;
@@ -343,7 +348,7 @@ float ItemTracker::stereo_match(BlobProps * blob) {
     int disparity;
     float * err;
     float err_motion [disp_end] = {0};
-    if (masked_pixel_ratio[disparity_masked] < min_pxl_ratio || !motion_noise_mapL.cols) {
+    if (not_enough_pixels || !masked_method_was_tried) {
         //back up strategy: ignore the background, hope for the best, and just do matching directly on the motion
         int disparity_motion = 0;
         float tmp_diffL_sum = cv::sum(diffL(roiL))[0];
@@ -374,7 +379,7 @@ float ItemTracker::stereo_match(BlobProps * blob) {
                 disparity_motion  = ii;
                 min_err = err_motion[ii];
             }
-            if (err_motion[ii-1] >= err_motion[ii] && err_motion[ii+1] >= err_motion[ii] && min_err > err_motion[ii] && _n_frames_tracking > 0) {  // global minimum found
+            if (err_motion[ii-1] >= err_motion[ii] && err_motion[ii+1] >= err_motion[ii] && min_err >= err_motion[ii]) {  // global minimum found
                 break;
             } else if (err_motion[ii-1] > err_motion[ii+1]) { // no minumum here, determine search direction based on slope
                 int ii_cnt = 0;
@@ -460,26 +465,31 @@ std::tuple<int,float,int,int> ItemTracker::disparity_search_rng(BlobProps * blob
     int disp_end = tmp_max_disp;
     float disp_pred;
 
-    if (_image_predict_item.valid) {
-        disp_start = std::max(static_cast<int>(floorf(_image_predict_item.disparity))-4,disp_start);
+    if (_image_predict_item.valid && _n_frames_lost < n_frames_lost_threshold ) {
         disp_pred = _image_predict_item.disparity;
-        disp_end = std::min(static_cast<int>(ceilf(_image_predict_item.disparity))+4,disp_end);
-    } else if (_n_frames_tracking>5) {
-        auto tmp_disp_prev = disparity_prev;
-        disp_start = std::max(static_cast<int>(floorf(tmp_disp_prev))-4,disp_start);
-        disp_end = std::min(static_cast<int>(ceilf(tmp_disp_prev))+4,disp_end);
-        disp_pred = (disp_end - disp_start)/2.f + disp_start;
+        disp_start = std::max(static_cast<int>(floorf(disp_pred))-4,disp_start);
+        disp_end = std::min(static_cast<int>(ceilf(disp_pred))+4,disp_end);
+    } else if (_n_frames_tracking>5 && disparity_prev > 0) {
+        disp_pred = disparity_prev;
+        disp_start = std::max(static_cast<int>(floorf(disp_pred))-4,disp_start);
+        disp_end = std::min(static_cast<int>(ceilf(disp_pred))+4,disp_end);
     } else {
         disp_pred = calc_rough_disparity(blob,radius);
         if (disp_pred < 0)
             return std::make_tuple(-1,-1,-1,-1);
-        disp_start = std::max(static_cast<int>(floorf(disp_pred))-4,disp_start);
-        disp_end = std::min(static_cast<int>(ceilf(disp_pred))+4,disp_end);
+        int r = std::clamp(static_cast<int>(roundf(blob->size_unscaled()/2.f)),4,8);
+        disp_start = std::max(static_cast<int>(floorf(disp_pred))-r,params.min_disparity.value());
+        disp_end = std::min(static_cast<int>(ceilf(disp_pred))+r,params.max_disparity.value());
+        if (x - disp_end < 0)
+            disp_end = x;
+        min_disparity = disp_start;
+        max_disparity = disp_end;
     }
     if (disp_start < 1)
         disp_start = 1;
     if (disp_pred < disp_start + 1)
         disp_pred = disp_start + 1;
+
 
     int disp_rng = disp_end - disp_start;
 
@@ -512,7 +522,6 @@ int ItemTracker::calc_rough_disparity(BlobProps * blob,int radius) {
         disparity = -1;
     return disparity;
 }
-
 float ItemTracker::estimate_sub_disparity(int disparity,float * err) {
     float y1 = -err[disparity-1];
     float y2 = -err[disparity];
@@ -557,16 +566,11 @@ void ItemTracker::update_prediction(double time) {
         cv::Point3f predicted_pos = pos + vel*dt_pred + 0.5*acc*powf(dt_pred,2);
 
         auto p = world2im_3d(predicted_pos,_visdat->Qfi,_visdat->camera_angle);
-
-        cv::Point3f pt;
-        pt.x = std::clamp(static_cast<int>(p.x),0,IMG_W-1);
-        pt.y = std::clamp(static_cast<int>(p.y),0,IMG_H-1);
-        pt.z = std::clamp(p.z,0.f,static_cast<float>(params.max_disparity.value()));
         float size = world2im_size(last_valid_trackdata_for_prediction.world_item.pt+cv::Point3f(expected_radius,0,0),last_valid_trackdata_for_prediction.world_item.pt-cv::Point3f(expected_radius,0,0),_visdat->Qfi,_visdat->camera_angle);
         float pixel_max = _image_predict_item.pixel_max;
         if (_image_item.valid)
             pixel_max = _image_item.pixel_max;
-        _image_predict_item = ImagePredictItem(pt,size,pixel_max,_visdat->frame_id);
+        _image_predict_item = ImagePredictItem(p,size,pixel_max,_visdat->frame_id);
     }
 }
 
@@ -653,23 +657,18 @@ float ItemTracker::score(BlobProps * blob, ImageItem * ref) {
     const float max_world_dist = 0.05f; // max distance a blob can travel in one frame
 
     if (_image_item.valid && _world_item.valid) {
-
         cv::Point3f last_world_pos = im2world(_image_item.pt(),_image_item.disparity,_visdat->Qf,_visdat->camera_angle);
         float max_im_dist = world2im_dist(last_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_angle);
         float world_projected_im_err = normf(blob->pt_unscaled() - _image_item.pt());
         im2world_err_ratio = world_projected_im_err/max_im_dist;
-
         float prev_size = smoother_im_size.latest();
         im_size_pred_err_ratio = fabs(prev_size - blob->size_unscaled()) / (blob->size_unscaled()+prev_size);
     } else if (_image_predict_item.valid) {
-        cv::Point3f predicted_world_pos = im2world(_image_predict_item.pt(),_image_predict_item.disparity,_visdat->Qf,_visdat->camera_angle);
+        cv::Point3f predicted_world_pos = im2world(_image_predict_item.pt,_image_predict_item.disparity,_visdat->Qf,_visdat->camera_angle);
         float max_im_dist = world2im_dist(predicted_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_angle);
-        float world_projected_im_err = normf(blob->pt_unscaled() - _image_predict_item.pt());
+        float world_projected_im_err = normf(blob->pt_unscaled() - _image_predict_item.pt);
         im2world_err_ratio = world_projected_im_err/max_im_dist;
-
-        float prev_size = smoother_im_size.latest();
-        im_size_pred_err_ratio = fabs(prev_size - blob->size_unscaled()) / (blob->size_unscaled()+prev_size);
-
+        im_size_pred_err_ratio = fabs(_image_predict_item.size - blob->size_unscaled()) / (blob->size_unscaled()+_image_predict_item.size);
     } else if (ref->valid) {
         im_size_pred_err_ratio = fabs(ref->size - blob->size_unscaled()) / (blob->size_unscaled() + ref->size);
         float max_im_dist = 25;
@@ -715,7 +714,6 @@ void ItemTracker::deserialize_settings() {
     background_subtract_zone_factor = params.background_subtract_zone_factor.value();
     max_size = params.max_size.value();
 }
-
 void ItemTracker::serialize_settings() {
     params.min_disparity = min_disparity;
     params.max_disparity = max_disparity;

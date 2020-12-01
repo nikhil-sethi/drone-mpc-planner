@@ -1,4 +1,3 @@
 <SerializableClass Type="navigationParameters" Version="1.1">
-    <Member Name="distance_threshold_f">1</Member>
     <Member Name="time_out_after_landing">3</Member>
 </SerializableClass>

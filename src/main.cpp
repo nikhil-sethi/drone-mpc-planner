@@ -322,11 +322,6 @@ void process_video() {
         if (fps != fps || isinf(fps))
             fps_smoothed.reset();
 
-        static uint restart_delay = 0;
-        if (dnav.time_for_restart())
-            restart_delay++;
-        else
-            restart_delay = 0;
 
         if (dctrl.in_flight_duration(time) < 0.1f || dnav.drone_problem(1)) {
             if (!log_replay_mode  && ((imgcount > pparams.close_after_n_images && pparams.close_after_n_images>0))) {
@@ -337,13 +332,6 @@ void process_video() {
                 exit_now = true;
             } else if (visdat.average_brightness() > pparams.max_brightness && pparams.darkness_threshold>0) {
                 std::cout << "Initiating restart because avg brightness (" << visdat.average_brightness() << ") is higher than max_brightness (" << pparams.max_brightness << ")" << std::endl;
-                exit_now = true;
-            } else if(restart_delay > 5) {
-                std::cout << "Flight termintated" << std::endl;
-                if (dctrl.flight_aborted())
-                    std::cout << "Control problem: " << dctrl.flight_mode() << std::endl;
-                else
-                    std::cout << "Nav status: " << dnav.navigation_status() << std::endl;
                 exit_now = true;
             }
         }

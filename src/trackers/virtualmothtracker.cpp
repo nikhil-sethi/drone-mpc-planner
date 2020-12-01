@@ -60,16 +60,12 @@ void VirtualmothTracker::update_behavior_based(unsigned long long frame_number, 
     _n_frames_tracking++;
     _tracking = true;
 
-
     insect_pos += 1./pparams.fps * insect_vel;
-
     cv::Point3f insect_im = world2im_3d(insect_pos, _visdat->Qfi, _visdat->camera_angle);
-
     _image_item = ImageItem (insect_im.x, insect_im.y, insect_im.z, frame_number);
     _image_item.valid = true;
-
     _image_predict_item = ImagePredictItem(cv::Point3f(insect_im.x, insect_im.y, insect_im.z),1,255,frame_number);
-    _image_predict_item.valid = _image_predict_item.x > 0;
+    _image_predict_item.valid = _image_predict_item.pt.x > 0;
 
     WorldItem w;
     w.iti = _image_item;

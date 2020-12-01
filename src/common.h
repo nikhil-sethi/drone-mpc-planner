@@ -6,6 +6,11 @@
 #include <iostream>
 #include <fstream>
 
+#define IMG_W 848
+#define IMG_H 480
+#define IMG_Wf 848.f
+#define IMG_Hf 480.f
+
 int sign(float x);
 vector<string> split_csv_line(string line);
 cv::Point2f world2im_2d(cv::Point3f p, cv::Mat Qfi, float camera_angle);

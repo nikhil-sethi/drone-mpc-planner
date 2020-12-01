@@ -22,7 +22,6 @@ private:
     int w_sqr = 600;
     int v_sqr = 100;
 
-    int distance_threshold_f = 0;
     float time_out_after_landing = 0;
     int setpoint_slider_X = 250;
     int setpoint_slider_Y = 250;
@@ -94,6 +93,7 @@ private:
             }
         }
     }
+    void check_abort_autonomus_flight_conditions();
 
 public:
 
@@ -204,7 +204,6 @@ public:
     bool drone_is_yaw_reset() {return _navigation_status == ns_wait_reset_yaw || _navigation_status == ns_initial_reset_yaw;}
     bool drone_is_flying() {return _navigation_status < ns_landing && _navigation_status >  ns_take_off_completed;}
     bool drone_is_manual() {return _navigation_status == ns_manual;}
-    bool time_for_restart() {return false;} //navigation_status == ns_drone_problem;
 
     Interceptor interceptor() {return _iceptor;}
     int distance_threshold_mm() { return current_waypoint->threshold_mm; }

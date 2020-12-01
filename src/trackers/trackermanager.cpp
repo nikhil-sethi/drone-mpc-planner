@@ -98,7 +98,7 @@ void TrackerManager::find_blobs() {
         auto image_predict_item = target_insecttracker()->image_predict_item();
         if (_dtrkr->image_predict_item().valid &&
                 image_predict_item.valid &&
-                norm(_dtrkr->image_predict_item().pt() - image_predict_item.pt()) < roi_radius) {
+                norm(_dtrkr->image_predict_item().pt - image_predict_item.pt) < roi_radius) {
             enable_insect_drone_split = true;
             drn_ins_split_thresh = image_predict_item.pixel_max*0.2f;
         }
@@ -128,8 +128,8 @@ void TrackerManager::find_blobs() {
                 tracking::ImagePredictItem ipi = trkr->image_predict_item();
                 if (trkr->tracking() && trkr->type() == tt_insect) {
                     cv::Point2f d;
-                    d.x = ipi.pt().x - maxt.x*pparams.imscalef;
-                    d.y = ipi.pt().y - maxt.y*pparams.imscalef;
+                    d.x = ipi.pt.x - maxt.x*pparams.imscalef;
+                    d.y = ipi.pt.y - maxt.y*pparams.imscalef;
                     float dist = norm(d);
                     float chance = 1;
                     if (ipi.valid &&ipi.pixel_max < 1.5f * motion_thresh_tmp)
@@ -217,7 +217,13 @@ void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat dif
         cv::Mat frameL_small_roi;
         cv::resize(frameL_roi,frameL_small_roi,cv::Size(frameL_roi.cols/pparams.imscalef,frameL_roi.rows/pparams.imscalef));
 
-        viz = create_row_image({roi,mask,frameL_small_roi,motion_noise_mapL(rect)*10,_visdat->overexposed_mapL_small(rect)},CV_8UC1,viz_max_points_resizef);
+        cv::Mat overexposed_roi;
+        if (_visdat->overexposed_mapL_small.cols)
+            overexposed_roi = _visdat->overexposed_mapL_small(rect);
+        else
+            overexposed_roi = cv::Mat::zeros(cv::Size(rect.width,rect.height),CV_8UC1);
+
+        viz = create_row_image({roi,mask,frameL_small_roi,motion_noise_mapL(rect)*10,overexposed_roi},CV_8UC1,viz_max_points_resizef);
         cvtColor(viz,viz,cv::COLOR_GRAY2BGR);
         if (enable_insect_drone_split)
             putText(viz,"i-d",Point(0, viz.rows-13),FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,255,255));
@@ -233,7 +239,7 @@ void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat dif
 
     if (enable_insect_drone_split && target_insecttracker()) {
 
-        float dist_to_predict = normf(_dtrkr->image_predict_item().pt() - COG*pparams.imscalef);
+        float dist_to_predict = normf(_dtrkr->image_predict_item().pt - COG*pparams.imscalef);
         if (dist_to_predict < 20) {
 
             //check if the blob may be multiple blobs,
@@ -277,7 +283,7 @@ void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat dif
                         COG2.x += rect.x;
                         COG2.y += rect.y;
                         uchar px_max = diff.at<uchar>(COG2);
-                        _blobs.push_back(tracking::BlobProps(COG2,radius*2,px_max,mask,_visdat->overexposed(COG2),threshold_method));
+                        _blobs.push_back(tracking::BlobProps(COG2,radius*2,px_max,mask,_visdat->overexposed(COG2),threshold_method,_visdat->frame_id));
 
                         //remove this COG from the ROI:
                         cv::circle(diff, COG2, roi_radius, Scalar(0), cv::FILLED);
@@ -295,7 +301,7 @@ void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat dif
     if (single_blob) { // we could not split this blob, so we can use the original COG
         float size = sqrtf(mo.m00/M_PI)*2.f; // assuming a circular shape
         if (COG.x == COG.x) { // if not nan
-            _blobs.push_back(tracking::BlobProps(COG,size,max,mask,_visdat->overexposed(COG),threshold_method));
+            _blobs.push_back(tracking::BlobProps(COG,size,max,mask,_visdat->overexposed(COG),threshold_method,_visdat->frame_id));
             if (enable_viz_blobs) {
                 Point2f tmpCOG;
                 tmpCOG.x = COG.x - rect.x;
@@ -315,11 +321,11 @@ void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat dif
                 for (auto trkr : _trackers) {
                     tracking::ImagePredictItem ipi = trkr->image_predict_item();
                     cv::Point2f d;
-                    d.x = ipi.pt().x - maxt.x*pparams.imscalef;
-                    d.y = ipi.pt().y - maxt.y*pparams.imscalef;
+                    d.x = ipi.pt.x - maxt.x*pparams.imscalef;
+                    d.y = ipi.pt.y - maxt.y*pparams.imscalef;
                     float dist = norm(d);
                     if (dist < roi_radius*pparams.imscalef) {
-                        _blobs.push_back(tracking::BlobProps(maxt,1,max,mask,_visdat->overexposed(maxt),threshold_method));
+                        _blobs.push_back(tracking::BlobProps(maxt,1,max,mask,_visdat->overexposed(maxt),threshold_method,_visdat->frame_id));
                         if (enable_viz_blobs) {
                             Point2f tmpCOG;
                             tmpCOG.x = maxt.x - rect.x;
@@ -381,7 +387,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
         prep_blobs(&pbs,time);
         match_existing_trackers(&pbs,drone_is_active,time);
         check_match_conflicts(&pbs,time);
-        match_trackers_that_lost(&pbs,drone_is_active,time);
+        rematch_drone_tracker(&pbs,drone_is_active,time);
         flag_used_static_ignores(&pbs);
         create_new_insect_trackers(&pbs,time);
     }
@@ -543,70 +549,43 @@ void TrackerManager::check_match_conflicts(std::vector<ProcessedBlob> *pbs,doubl
     }
 
 }
-void TrackerManager::match_trackers_that_lost(std::vector<ProcessedBlob> *pbs,bool drone_is_active, double time) {
-    //see if there are trackers that are not tracking yet and if there are untracked points left, which can be bound together.
-    for (auto trkr : _trackers) {
-        if (!trkr->tracking()) {
-            if (tracker_active(trkr, drone_is_active)) {
-                for (auto &blob : *pbs) {
-                    if (!blob.tracked() && (!blob.props->in_overexposed_area || trkr->type() == tt_blink) && (!blob.props->false_positive || trkr->type() == tt_blink)) {
+void TrackerManager::rematch_drone_tracker(std::vector<ProcessedBlob> *pbs,bool drone_is_active, double time) {
+    auto trkr = _dtrkr;
+    if (!_dtrkr->tracking() && tracker_active(_dtrkr, drone_is_active)) {
+        for (auto &blob : *pbs) {
+            if (!blob.tracked() && (!blob.props->false_positive)) {
 
-                        //check against static ignore points
-                        auto props = blob.props;
-                        bool in_im_ignore_zone = trkr->check_ignore_blobs(props);
-                        if (in_im_ignore_zone)
-                            blob.ignored = true;
+                //check against static ignore points
+                auto props = blob.props;
+                bool in_im_ignore_zone = _dtrkr->check_ignore_blobs(props);
+                if (in_im_ignore_zone)
+                    blob.ignored = true;
 
-                        if (!in_im_ignore_zone) {
-                            //Check if this blob may be some residual drone motion
-                            //If the insect was lost, it is unlikely that it or another insect pops up
-                            //very close to the drone. So ignore it.
-                            if ((trkr->type() == tt_drone) && _dtrkr->tracking()) {
-                                float drone_score = _dtrkr->score(props);
-                                if (drone_score > _dtrkr->score_threshold())
-                                    in_im_ignore_zone = true;
-                            }
-                        }
+                if (!in_im_ignore_zone) {
 
-                        if (!in_im_ignore_zone) {
-                            //The tracker has lost the item, or is still initializing.
-                            //there is no valid prediction, the score is therefor as low as possible
-                            trkr->calc_world_item(props,time);
-                            tracking::WorldItem w(tracking::ImageItem(*props,_visdat->frame_id,0,blob.id),props->world_props);
-                            if (w.valid) {
-                                trkr->world_item(w);
-                                blob.trackers.push_back(trkr);
+                    auto score = trkr->score(props);
+                    if (score<trkr->score_threshold()) {
 
-                                if (enable_viz_blobs) {
-                                    cv::Mat viz = vizs_maxs.at(blob.id);
-                                    cv::Point2i pt(viz.cols/5+2,viz.rows -6-14*(trkr->viz_id()+1));
-                                    putText(viz,"New",pt,FONT_HERSHEY_SIMPLEX,0.3,tracker_color(trkr));
-                                }
+                        trkr->calc_world_item(props,time);
+                        tracking::WorldItem w(tracking::ImageItem(*props,_visdat->frame_id,0,blob.id),props->world_props);
+                        if (w.valid) {
+                            trkr->world_item(w);
+                            blob.trackers.push_back(trkr);
 
-                                // There may be other interesting blobs to consider but since there is no
-                                // history available at this point, its hard to calculate which one would
-                                // be better. So just pick the first one...:
-                                break;
-                            }
-                        } else {
-                            if (enable_viz_blobs) {
-                                cv::Mat viz = vizs_maxs.at(blob.id);
-                                cv::Point2i pt(viz.cols/5+2,viz.rows-6-14*(trkr->viz_id()+1));
-                                putText(viz,"Ign.",pt,FONT_HERSHEY_SIMPLEX,0.3,tracker_color(trkr));
-                            }
-                        }
-                    } else {
-                        if (enable_viz_blobs) {
-                            cv::Mat viz = vizs_maxs.at(blob.id);
-                            cv::Point2i pt(viz.cols/5+2,viz.rows -6-14*(trkr->viz_id()+1));
-                            putText(viz,"Trkd.",pt,FONT_HERSHEY_SIMPLEX,0.3,tracker_color(trkr));
+                            // There may be other interesting blobs to consider but since there is no
+                            // history available at this point, its hard to calculate which one would
+                            // be better. So just pick the first one...:
+                            break;
                         }
                     }
                 }
+
             }
         }
     }
 }
+
+
 void TrackerManager::flag_used_static_ignores(std::vector<ProcessedBlob> *pbs) {
     //see if there are static ignore points that are detected. If so set was_used flag
     for (auto trkr : _trackers) {
@@ -935,12 +914,38 @@ void TrackerManager::draw_viz(std::vector<ProcessedBlob> *pbs, double time) {
                 putText(viz_descr,"Max: " + to_string_with_precision(iti.pixel_max,1),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
                 putText(viz_descr,"i: [" + to_string_with_precision(iti.x,1) + ", " + to_string_with_precision(iti.y,1) + "], " +  to_string_with_precision(iti.disparity,2),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
                 putText(viz_descr,"w: [" + to_string_with_precision(wti.pt.x,2) + ", " + to_string_with_precision(wti.pt.y,2) + ", " + to_string_with_precision(wti.pt.z,2) + "]",cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
+
+                int text_w = 0;
+                if (trkr->image_predict_item().out_of_image) {
+                    std::string flag = "OUT OF IMAGE";
+                    putText(viz_descr,flag,cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_TRIPLEX,0.4,cv::Scalar(0,0,255));
+                    int baseline;
+                    Size text_size = getTextSize(flag,FONT_HERSHEY_TRIPLEX,0.75,2,&baseline);
+                    text_w+=text_size.width;
+                }
                 if (trkr->type() == tt_insect) {
                     InsectTracker *itrkr = static_cast<InsectTracker *> (trkr);
-                    if (itrkr->false_positive())
-                        putText(viz_descr,"FALSE POSITIVE",cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_TRIPLEX,0.4,cv::Scalar(255,0,0));
-                } else if (iti.blob_is_fused)
-                    putText(viz_descr,"Fused",cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,128,255));
+                    if (itrkr->false_positive()) {
+                        std::string flag = "";
+                        if (text_w > 0)
+                            flag+= " | ";
+                        flag+="FALSE POSITIVE";
+                        putText(viz_descr,flag,cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_TRIPLEX,0.4,cv::Scalar(255,0,0));
+                        int baseline;
+                        Size text_size = getTextSize(flag,FONT_HERSHEY_TRIPLEX,0.75,2,&baseline);
+                        text_w+=text_size.width;
+                    }
+                } else if (iti.blob_is_fused) {
+                    std::string flag = "";
+                    if (text_w > 0)
+                        flag+= " | ";
+                    flag+="Fused";
+                    putText(viz_descr,flag,cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_TRIPLEX,0.4,cv::Scalar(0,128,255));
+                    int baseline;
+                    Size text_size = getTextSize(flag,FONT_HERSHEY_TRIPLEX,0.75,2,&baseline);
+                    text_w+=text_size.width;
+                }
+
             } else {
                 putText(viz_descr,"No blob found",cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,red);
                 if (trkr->type() == tt_insect) {
@@ -949,10 +954,26 @@ void TrackerManager::draw_viz(std::vector<ProcessedBlob> *pbs, double time) {
                 } else
                     putText(viz_descr,"tr uid: " + std::to_string(trkr->uid()),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
                 putText(viz_descr,"Lost: " + std::to_string(trkr->n_frames_lost()),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
+                int text_w = 0;
+                if (trkr->image_predict_item().out_of_image) {
+                    std::string flag = "OUT OF IMAGE";
+                    putText(viz_descr,flag,cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_TRIPLEX,0.4,cv::Scalar(0,0,255));
+                    int baseline;
+                    Size text_size = getTextSize(flag,FONT_HERSHEY_TRIPLEX,0.75,2,&baseline);
+                    text_w+=text_size.width;
+                }
                 if (trkr->type() == tt_insect) {
                     InsectTracker *itrkr = static_cast<InsectTracker *> (trkr);
-                    if (itrkr->false_positive())
-                        putText(viz_descr,"FALSE POSITIVE",cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_TRIPLEX,0.4,cv::Scalar(255,0,0));
+                    if (itrkr->false_positive()) {
+                        std::string flag = "";
+                        if (text_w > 0)
+                            flag+= " | ";
+                        flag+="FALSE POSITIVE";
+                        putText(viz_descr,flag,cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_TRIPLEX,0.4,cv::Scalar(255,0,0));
+                        int baseline;
+                        Size text_size = getTextSize(flag,FONT_HERSHEY_TRIPLEX,0.75,2,&baseline);
+                        text_w+=text_size.width;
+                    }
                 }
                 h+=roiD.height;
             }
