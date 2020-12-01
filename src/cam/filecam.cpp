@@ -273,7 +273,7 @@ void FileCam::close () {
             //we are getting an error from this: gst_mini_object_unref: assertion 'GST_MINI_OBJECT_REFCOUNT_VALUE (mini_object) > 0
             //but as far as I can tell without reason :(
             //doesn't seem to hurt anything, so no biggy though
-            gst_element_set_state (_pipeline, GST_STATE_NULL);
+            // gst_element_set_state (_pipeline, GST_STATE_NULL);
 
         }
         /* Ensure the transition to NULL completes */
