@@ -56,9 +56,9 @@ def send_mail(now):
                 if d > now - timedelta(hours=5):
 
                     with open (file, "r") as fr_processed:
-                        msg = fr_processed.readline()
-                        recent_files.append([f_sys,msg])
                         if f_sys in systems:
+                            msg = fr_processed.readline()
+                            recent_files.append([f_sys,msg])
                             systems.remove(f_sys)
                         else:
                             print('Warning, system does not exist: ' + f_sys)
