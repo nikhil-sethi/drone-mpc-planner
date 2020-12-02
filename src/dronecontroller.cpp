@@ -884,37 +884,11 @@ cv::Point3f DroneController::kiv_acceleration(std::array<bool, N_PLANES> violate
 
 std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f desired_acceleration) {
     // Determine the required acceleration for the drone
-    cv::Point3f req_acc = desired_acceleration + cv::Point3f(0,GRAVITY,0);
-    cv::Point3f dir_req_acc = req_acc/norm(req_acc);
-    cv::Point3f direction = dir_req_acc;
-
-    // If the magnitude of the required acceleration is to high apply the maximal magnitude
-    // and find the direction which still applies the correct direction.
-    if(normf(req_acc) > drone_calibration.thrust) {
-        req_acc *= drone_calibration.thrust/normf(req_acc);
-        direction = req_acc/normf(req_acc);
-
-        cv::Point3f res_acc, dir_res_acc;
-        float angle_err;
-
-        // Iterative approximate the acceleration needed to find the target acceleration vector:
-        for (int i = 0; i < 100; i++) {
-            res_acc = direction*norm(req_acc) - cv::Point3f(0,GRAVITY,0);
-            dir_res_acc = res_acc/norm(res_acc);
-
-            angle_err = dir_res_acc.dot(dir_req_acc); //=cos(angle-err)
-
-            if(angle_err>0.9998f) { //0.9998 error corresponds 1 deg
-                break;
-            } else {
-                direction -= dir_res_acc - dir_req_acc;
-                direction /= norm(direction);
-            }
-        }
-    }
+    cv::Point3f des_acc_drone = desired_acceleration_drone(desired_acceleration, drone_calibration.thrust);
+    cv::Point3f direction = des_acc_drone/normf(des_acc_drone);
 
     // .. and then calc throttle control:
-    float throttlef = normf(req_acc)/drone_calibration.thrust;
+    float throttlef = normf(des_acc_drone)/drone_calibration.thrust;
     int throttle_cmd =  static_cast<uint16_t>(roundf(thrust_to_throttle(throttlef)));
 
     if (throttle_cmd < dparams.min_throttle)
@@ -924,6 +898,58 @@ std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f de
     int roll_cmd =  roundf((roll_quat * RC_BOUND_RANGE / 2.f) + RC_MIDDLE); // convert to RC commands range
     int pitch_cmd = roundf((-pitch_quat * RC_BOUND_RANGE / 2.f) + RC_MIDDLE);
     return std::make_tuple(roll_cmd,pitch_cmd,throttle_cmd);
+}
+
+
+cv::Point3f DroneController::desired_acceleration_drone(cv::Point3f des_acc, float thrust) {
+    // Calculate safe acceleration (max desired acceleration which cannot the
+    // thrust constraints if it gravity compensated) for case in the further calculation
+    // something goes wrong
+    cv::Point3f acc_backup = des_acc/normf(des_acc)*(thrust-GRAVITY) + cv::Point3f(0,GRAVITY,0);
+
+    cv::Point3f req_acc = des_acc + cv::Point3f(0,GRAVITY,0);
+
+    if(normf(req_acc)<thrust)
+        return req_acc;
+
+    if(normf(des_acc)>thrust)
+        des_acc = des_acc*thrust/normf(des_acc);
+
+    float denominator = des_acc.dot(des_acc);
+    float p = 2*des_acc.y*GRAVITY/denominator;
+    float q = (powf(GRAVITY, 2) - powf(thrust, 2))/denominator;
+
+    float root_square = powf(p/2.f, 2)-q;
+    if(root_square<0.f) {
+        std::cout << "WARNING: Unexpected results in `desired_acceleration_drone`. Return safe acceleration."<<std::endl;
+        return acc_backup;
+    }
+
+    float k1 = -p/2.f + sqrt(root_square);
+    float k2 = -p/2.f - sqrt(root_square);
+
+    bool k1_valid = 0<=k1 && k1<=1;
+    bool k2_valid = 0<=k2 && k2<=1;
+
+    if(k1_valid && !k2_valid) {
+        return k1*des_acc + cv::Point3f(0,GRAVITY,0);
+    } else if(!k1_valid && k2_valid) {
+        return k2*des_acc + cv::Point3f(0,GRAVITY,0);
+    } else if(k1_valid && k2_valid) {
+        if(k1>=k2) {
+            return k1*des_acc + cv::Point3f(0,GRAVITY,0);
+        } else {
+            return k2*des_acc + cv::Point3f(0,GRAVITY,0);
+        }
+    } else if(!k1_valid && !k2_valid) {
+        std::cout << "WARNING: Unexpected results in `desired_acceleration_drone`. Return safe acceleration."<<std::endl;
+        return acc_backup;
+    }
+    else {
+        std::cout << "WARNING: Unexpected results in `desired_acceleration_drone`. Return safe acceleration."<<std::endl;
+        return acc_backup;
+    }
+
 }
 
 void DroneController::control_model_based(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel) {
