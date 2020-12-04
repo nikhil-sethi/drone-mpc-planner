@@ -387,9 +387,14 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
         prep_blobs(&pbs,time);
         match_existing_trackers(&pbs,drone_is_active,time);
         check_match_conflicts(&pbs,time);
-        rematch_drone_tracker(&pbs,drone_is_active,time);
-        flag_used_static_ignores(&pbs);
-        create_new_insect_trackers(&pbs,time);
+        if (_mode == mode_locate_drone) {
+            rematch_blink_tracker(&pbs,time);
+            create_new_blink_trackers(&pbs,time);
+        } else {
+            rematch_drone_tracker(&pbs,drone_is_active,time);
+            flag_used_static_ignores(&pbs);
+            create_new_insect_trackers(&pbs,time);
+        }
     }
 
     draw_viz(&pbs,time);
@@ -584,6 +589,36 @@ void TrackerManager::rematch_drone_tracker(std::vector<ProcessedBlob> *pbs,bool 
         }
     }
 }
+void TrackerManager::rematch_blink_tracker(std::vector<ProcessedBlob> *pbs, double time) {
+    for (auto trkr : _trackers) {
+        if (trkr->type() == tt_blink) {
+            for (auto &blob : *pbs) {
+                if (!blob.tracked()) {
+
+                    //check against static ignore points
+                    auto props = blob.props;
+                    bool in_im_ignore_zone = trkr->check_ignore_blobs(props);
+                    if (in_im_ignore_zone)
+                        blob.ignored = true;
+
+                    if (!in_im_ignore_zone) {
+                        auto score = trkr->score(props);
+                        if (score<trkr->score_threshold()) {
+                            trkr->calc_world_item(props,time);
+                            tracking::WorldItem w(tracking::ImageItem(*props,_visdat->frame_id,0,blob.id),props->world_props);
+                            if (w.valid) {
+                                trkr->world_item(w);
+                                blob.trackers.push_back(trkr);
+                                break;
+                            }
+                        }
+                    }
+
+                }
+            }
+        }
+    }
+}
 
 
 void TrackerManager::flag_used_static_ignores(std::vector<ProcessedBlob> *pbs) {
@@ -604,96 +639,99 @@ void TrackerManager::create_new_insect_trackers(std::vector<ProcessedBlob> *pbs,
     for (auto &blob : *pbs) {
         auto props = blob.props;
         if (!blob.tracked() && (!props->in_overexposed_area || _mode == mode_locate_drone) && (!props->false_positive || _mode == mode_locate_drone) && !blob.ignored && _trackers.size() < 30) { // if so, start tracking it!
-            if (_mode == mode_locate_drone) {
+            float im_dist_to_drone;
+            if (_dtrkr->tracking()) {
+                im_dist_to_drone = normf(_dtrkr->image_item().pt()-props->pt_unscaled());
+            } else {
+                if (_dtrkr->takeoff_location_valid())
+                    im_dist_to_drone = normf(_dtrkr->takeoff_im_location() - props->pt_unscaled());
+                else
+                    im_dist_to_drone = INFINITY;
+            }
+            if (im_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_im) {
+                InsectTracker *it;
+                it = new InsectTracker();
+                it->init(next_insecttrkr_id,_visdat,motion_thresh,_trackers.size());
+                it->calc_world_item(props,time);
+                if (!props->world_props.bkg_check_ok)
+                    tracking::WorldItem w(tracking::ImageItem(*props,_visdat->frame_id,-1,blob.id),props->world_props);
 
-                bool too_close = false;
-                for (auto btrkr : _trackers) {
-                    if (btrkr->type() == tt_blink) {
-                        if (normf(btrkr->image_item().pt() - props->pt_unscaled())  < roi_radius*pparams.imscalef) {
-                            too_close = true;
-                        }
-                    }
+                bool delete_it = true;
+                bool ignore = true;
+                if (props->world_props.valid) {
+                    collect_static_ignores(it);
+                    ignore = it->check_ignore_blobs(props);
+                    blob.ignored = ignore;
                 }
-
-                if (!too_close) {
-                    BlinkTracker  *bt;
-                    bt = new BlinkTracker();
-                    bt->init(next_blinktrkr_id,_visdat,motion_thresh, _trackers.size());
-                    bt->calc_world_item(props,time);
-                    bool ignore = true;
-                    if (props->world_props.valid) {
-                        collect_static_ignores(bt);
-                        ignore = bt->check_ignore_blobs(props);
-                    }
-                    if (!ignore) {
-                        bt->init_logger();
-                        next_blinktrkr_id++;
-                        tracking::WorldItem w(tracking::ImageItem(*props,_visdat->frame_id,0,blob.id),props->world_props);
-                        bt->world_item(w);
-                        _trackers.push_back( bt);
-                        blob.trackers.push_back(bt);
-                    } else {
-                        bt->close();
-                        delete bt;
-                    }
-                }
-            } else if (_mode != mode_idle && _mode != mode_drone_only) {
-                float im_dist_to_drone;
-                if (_dtrkr->tracking()) {
-                    im_dist_to_drone = normf(_dtrkr->image_item().pt()-props->pt_unscaled());
-                } else {
-                    if (_dtrkr->takeoff_location_valid())
-                        im_dist_to_drone = normf(_dtrkr->takeoff_im_location() - props->pt_unscaled());
+                if (!ignore) {
+                    //ignore a region around the drone (or take off location)
+                    float world_dist_to_drone;
+                    if (_dtrkr->tracking())
+                        world_dist_to_drone = normf(_dtrkr->world_item().pt- props->world_props.pt());
                     else
-                        im_dist_to_drone = INFINITY;
+                        world_dist_to_drone = normf(_dtrkr->takeoff_location() - props->world_props.pt());
+
+                    if (world_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_world && im_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_im) {
+                        it->init_logger();
+                        next_insecttrkr_id++;
+                        tracking::WorldItem w(tracking::ImageItem(*props,_visdat->frame_id,0,blob.id),props->world_props);
+                        it->world_item(w);
+                        _trackers.push_back(it);
+                        blob.trackers.push_back(it);
+                        delete_it = false;
+                    } else {
+                        blob.ignored = true;
+                    }
                 }
-                if (im_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_im) {
-                    InsectTracker *it;
-                    it = new InsectTracker();
-                    it->init(next_insecttrkr_id,_visdat,motion_thresh,_trackers.size());
-                    it->calc_world_item(props,time);
-                    if (!props->world_props.bkg_check_ok)
-                        tracking::WorldItem w(tracking::ImageItem(*props,_visdat->frame_id,-1,blob.id),props->world_props);
+                if (delete_it) {
+                    it->close();
+                    delete it;
+                }
+            } else {
+                blob.ignored = true;
+            }
+        }
+    }
+}
+void TrackerManager::create_new_blink_trackers(std::vector<ProcessedBlob> *pbs, double time) {
+    //see if there are still blobs left untracked, create new trackers for them
+    for (auto &blob : *pbs) {
+        auto props = blob.props;
+        if (!blob.tracked() && (!props->in_overexposed_area || _mode == mode_locate_drone) && (!props->false_positive || _mode == mode_locate_drone) && !blob.ignored && _trackers.size() < 30) { // if so, start tracking it!
+            bool too_close = false;
+            for (auto btrkr : _trackers) {
+                if (btrkr->type() == tt_blink) {
+                    if (normf(btrkr->image_item().pt() - props->pt_unscaled())  < roi_radius*pparams.imscalef) {
+                        too_close = true;
+                    }
+                }
+            }
 
-                    bool delete_it = true;
-                    bool ignore = true;
-                    if (props->world_props.valid) {
-                        collect_static_ignores(it);
-                        ignore = it->check_ignore_blobs(props);
-                        blob.ignored = ignore;
-                    }
-                    if (!ignore) {
-                        //ignore a region around the drone (or take off location)
-                        float world_dist_to_drone;
-                        if (_dtrkr->tracking())
-                            world_dist_to_drone = normf(_dtrkr->world_item().pt- props->world_props.pt());
-                        else
-                            world_dist_to_drone = normf(_dtrkr->takeoff_location() - props->world_props.pt());
-
-                        if (world_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_world && im_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_im) {
-                            it->init_logger();
-                            next_insecttrkr_id++;
-                            tracking::WorldItem w(tracking::ImageItem(*props,_visdat->frame_id,0,blob.id),props->world_props);
-                            it->world_item(w);
-                            _trackers.push_back(it);
-                            blob.trackers.push_back(it);
-                            delete_it = false;
-                        } else {
-                            blob.ignored = true;
-                        }
-                    }
-                    if (delete_it) {
-                        it->close();
-                        delete it;
-                    }
+            if (!too_close) {
+                BlinkTracker  *bt;
+                bt = new BlinkTracker();
+                bt->init(next_blinktrkr_id,_visdat,motion_thresh, _trackers.size());
+                bt->calc_world_item(props,time);
+                bool ignore = true;
+                if (props->world_props.valid) {
+                    collect_static_ignores(bt);
+                    ignore = bt->check_ignore_blobs(props);
+                }
+                if (!ignore) {
+                    bt->init_logger();
+                    next_blinktrkr_id++;
+                    tracking::WorldItem w(tracking::ImageItem(*props,_visdat->frame_id,0,blob.id),props->world_props);
+                    bt->world_item(w);
+                    _trackers.push_back( bt);
+                    blob.trackers.push_back(bt);
                 } else {
-                    blob.ignored = true;
+                    bt->close();
+                    delete bt;
                 }
             }
         }
     }
 }
-
 void TrackerManager::update_trackers(double time,long long frame_number, bool drone_is_active) {
     //perform all tracker update functions or logging placeholders, also delete old trackers
     for (uint ii=_trackers.size(); ii != 0; ii--) { // reverse because deleting from this list.
