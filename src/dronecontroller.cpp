@@ -883,11 +883,18 @@ cv::Point3f DroneController::kiv_acceleration(std::array<bool, N_PLANES> violate
 }
 
 std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f desired_acceleration) {
-    // Determine the required acceleration for the drone
+
+    cv::Point3f drone_vel = _dtrk->last_track_data().vel();
+    bool propwash = prop_wash(drone_vel, desired_acceleration);
+    std::cout << "Propwash-detection-triggered: " << propwash << std::endl;
+    if(propwash) {
+        desired_acceleration /= normf(desired_acceleration);
+        desired_acceleration *= 0.65f*drone_calibration.thrust; //at ~0.8 drone starts crashing
+    }
+
     cv::Point3f des_acc_drone = desired_acceleration_drone(desired_acceleration, drone_calibration.thrust);
     cv::Point3f direction = des_acc_drone/normf(des_acc_drone);
 
-    // .. and then calc throttle control:
     float throttlef = normf(des_acc_drone)/drone_calibration.thrust;
     int throttle_cmd =  static_cast<uint16_t>(roundf(thrust_to_throttle(throttlef)));
 
@@ -950,6 +957,22 @@ cv::Point3f DroneController::desired_acceleration_drone(cv::Point3f des_acc, flo
         return acc_backup;
     }
 
+}
+
+bool DroneController::prop_wash(cv::Point3f drone_velocity, cv::Point3f des_acc_drone) {
+    float speed = normf(drone_velocity);
+
+    if(speed==0 || normf(des_acc_drone)==0)
+        return false; //Assume no propwash is happening
+
+    float dot = des_acc_drone.dot(drone_velocity)/normf(des_acc_drone)/normf(drone_velocity);
+    dot = 1 - (dot + 1)/2;
+    float vel_ind = speed>3.35f ? 1.f : speed/3.35f;
+    std::cout << "Propwash-indicator: " << dot << ", " << vel_ind << "->" << dot*vel_ind << std::endl;
+    if(dot*vel_ind > 0.85f) {
+        return true;
+    } else
+        return false;
 }
 
 void DroneController::control_model_based(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel) {

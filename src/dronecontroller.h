@@ -169,6 +169,9 @@ private:
     const float effective_burn_spin_down_duration = 0.1f; // the time to spin down from max to hover
     float remember_last_integrated_y_err = 0; // For faster thrust calibration
     cv::Point3f drone_vel_after_takeoff = {0};
+    // propwash_safety_angle: The higher the value the higher the chance of propwash
+    // but for the case the drone can accelerate the higher the thrust in the correct direction
+    const float propwash_safety_angle = 4.f/5.f*static_cast<float>(M_PI);
 
     const float lift_off_dist_take_off_aim = 0.02f;
     const float take_off_burn_duration = 0.08f;
@@ -274,6 +277,7 @@ private:
     std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> control_error(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, cv::Point3f ki_pos);
     std::tuple<int,int,int> calc_feedforward_control(cv::Point3f desired_acceleration);
     cv::Point3f desired_acceleration_drone(cv::Point3f des_acc, float thrust);
+    bool prop_wash(cv::Point3f drone_velocity, cv::Point3f des_acc_drone);
 
     void send_data_joystick(void);
     void read_joystick(void);
