@@ -267,10 +267,10 @@ void process_video() {
             }
 
             static uint render_drone_problem_cnt = 0;
-            if (dnav.drone_problem() || logreader.current_entry.nav_state == navigation::ns_drone_problem) {
+            if (dnav.drone_problem() || logreader.current_entry.nav_state == navigation::ns_drone_problem || logreader.current_entry.nav_state == navigation::ns_drone_lost || logreader.current_entry.nav_state == navigation::ns_batlow || logreader.current_entry.nav_state == navigation::ns_tracker_problem) {
                 render_drone_problem_cnt++;
                 if (render_drone_problem_cnt > pparams.fps*2) {
-                    std::cout << "\n\nDrone problem. Stopping render\n" << replay_dir <<"\n\n" << std::endl;
+                    std::cout << "\nProblem: " << dnav.navigation_status() << ". Stopping render\n" << replay_dir <<"\n\n" << std::endl;
                     exit_now = true;
                 }
             }
