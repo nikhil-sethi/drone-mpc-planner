@@ -33,15 +33,15 @@ static const char* flight_mode_names[] = { "fm_joystick_check",
                                            "fm_interception_burn",
                                            "fm_interception_burn_spin_down",
                                            "fm_retry_aim_start",
-                                           "fm_abort",
                                            "fm_pid_init",
                                            "fm_pid",
                                            "fm_headed_pid",
                                            "fm_initial_reset_yaw",
                                            "fm_reset_yaw",
                                            "fm_ff_landing_start",
+                                           "fm_ff_landing",
                                            "fm_shake_it_baby",
-                                           "fm_ff_landing"
+                                           "fm_abort"
                                          };
 
 class DroneController {
@@ -65,15 +65,15 @@ public:
         fm_interception_burn,
         fm_interception_burn_spin_down,
         fm_retry_aim_start,
-        fm_abort,
         fm_flying_pid_init,
         fm_flying_pid,
         fm_flying_headed_pid,
         fm_initial_reset_yaw,
         fm_reset_yaw,
         fm_ff_landing_start,
+        fm_ff_landing,
         fm_shake_it_baby,
-        fm_ff_landing
+        fm_abort
     };
     enum joy_mode_switch_modes { // raw switch modes
         jmsm_manual,
@@ -489,7 +489,7 @@ public:
     bool drone_is_active() {
         if (_flight_mode == fm_inactive || _flight_mode == fm_disarmed || _flight_mode == fm_joystick_check)
             return false;
-        else if (_flight_mode == fm_abort)
+        else if (_flight_mode == fm_abort || _flight_mode == fm_shake_it_baby || _flight_mode == fm_blink)
             return false;
         else if (_joy_mode_switch == jmsm_manual && joy_throttle > RC_BOUND_MIN && _joy_arm_switch == bf_armed)
             return true;
