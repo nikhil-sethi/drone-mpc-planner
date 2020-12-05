@@ -153,13 +153,14 @@ void GeneratorCam::update() {
         cv::bitwise_and(im_roiR_resized,im_roiR_resized,frameR_buf(target_rect),im_roiR_resized_gt0);
     }
 
-
-    frameL.release();
-    frameR.release();
+    cv::Mat frameL,frameR;
     frameL_buf.copyTo(frameL);
     frameR_buf.copyTo(frameR);
     _frame_number++;
     _frame_time = _frame_number / static_cast<float>(pparams.fps);
+    StereoPair * sp = new StereoPair(frameL,frameR,_frame_number,_frame_time);
+    buf.insert(std::pair(_frame_number,sp));
+    delete_old_frames();
 
     if (!turbo) {
         while(swc.Read() < (1.f/pparams.fps)*1e3f) {

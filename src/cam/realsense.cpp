@@ -11,13 +11,36 @@ using namespace std;
 static stopwatch_c swc;
 
 void Realsense::update(void) {
+    delete_old_frames();
     if (from_recorded_bag)
         update_playback();
     else
         update_real();
 }
 
-double incremented_playback_frametime = (1.f/pparams.fps)/2.f;
+void Realsense::delete_old_frames() {
+    //At the moment we actually only need 1 frame from the past.
+    //Sometimes there's some processing delay in the process_frame thread, so we have another few frames as buffer.
+    //If we set this number to bigger then 7 the RS software locks up. Apparantely there is some limit of
+    //keeping 7 frame callbacks in memory, even when not using the rs pipeline system.
+    while (buf.size() > 4) {
+        auto itr_buf = buf.begin();
+        auto itr_rs_buf = rs_buf.begin();
+        auto tmp1 = itr_buf->second;
+        auto tmp2 = itr_rs_buf->second;
+        tmp1->processed.lock();
+        buf.erase(itr_buf->first);
+        rs_buf.erase(itr_rs_buf->first);
+        delete tmp1; delete tmp2;
+    }
+}
+void Realsense::delete_all_frames() {
+    Cam::delete_all_frames();
+    for (auto & sp : rs_buf) {
+        delete sp.second;
+    }
+}
+
 void Realsense::update_playback(void) {
 
     rs2::frameset fs;
@@ -25,17 +48,21 @@ void Realsense::update_playback(void) {
         fs = cam.wait_for_frames();
     replay_skip_n_frames = 0;
     if (_frame_time_start <0)
-        _frame_time_start = fs.get_timestamp();
-    _frame_number = fs.get_frame_number();
-    _frame_time = (fs.get_timestamp() -_frame_time_start)/1000.;
+        _frame_time_start = fs.get_timestamp()/1.e3;
+    auto rs_frameL = fs.get_infrared_frame(1);
+    auto rs_frameR = fs.get_infrared_frame(2);
 
+    RSStereoPair * rsp = new RSStereoPair(rs_frameL,rs_frameR);
+    rs_buf.insert(std::pair(rs_frameL.get_frame_number(),rsp));
+    cv::Mat frameL = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(rs_frameL.get_data()), Mat::AUTO_STEP);
+    cv::Mat frameR = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(rs_frameR.get_data()), Mat::AUTO_STEP);
+    StereoPair * sp = new StereoPair(frameL,frameR,rs_frameL.get_frame_number(),rs_frameL.get_timestamp()/1.e3 - _frame_time_start);
+    buf.insert(std::pair(rs_frameL.get_frame_number(),sp));
     double duration = static_cast<double>(static_cast<rs2::playback>(dev).get_duration().count()) / 1e9;
     if (frame_time() > duration-0.1) {
         std::cout << "Video end, exiting" << std::endl;
-        throw BagVideoEnded();
+        throw ReplayVideoEnded();
     }
-    frameL = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(fs.get_infrared_frame(1).get_data()), Mat::AUTO_STEP).clone();
-    frameR = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(fs.get_infrared_frame(2).get_data()), Mat::AUTO_STEP).clone();
 
     if (!turbo) {
         while(swc.Read() < (1.f/pparams.fps)*1e3f) {
@@ -56,37 +83,25 @@ void Realsense::update_playback(void) {
 }
 
 void Realsense::update_real(void) {
-
     lock_newframe.lock(); // wait for a new frame passed by the rs callback
-
-    lock_frame_data.lock();
-    frameL = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(rs_frameL.get_data()), Mat::AUTO_STEP).clone();
-    frameR = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(rs_frameR.get_data()), Mat::AUTO_STEP).clone();
-
-    if (rs_frameL.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
-        camparams.measured_exposure = rs_frameL.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
-        rs2::depth_sensor rs_dev = dev.first<rs2::depth_sensor>();
-        camparams.measured_gain = rs_dev.get_option(RS2_OPTION_GAIN);
-    }
-
-    _frame_number = rs_frameL.get_frame_number();
-    if (_frame_time_start <0)
-        _frame_time_start = rs_frameL.get_timestamp();
-    _frame_time = (rs_frameL.get_timestamp() -_frame_time_start)/1000.;
-    //    std::cout << "-------------frame id: " << _frame_number << " time: " << _frame_time << std::endl;
-    lock_frame_data.unlock();
-
     watchdog = true;
-
+    if (watchdog_attempt_to_continue) {
+        std::cout << "Frame processed. Buffer: ";
+        for (auto fr : rs_buf) {
+            std::cout << fr.first << " ";
+        }
+        std::cout << std::endl;
+    }
 }
 
-uint last_sync_id = 0;
 void Realsense::rs_callback(rs2::frame f) {
 
-    //    if (f.get_profile().stream_index() == 1 )
-    //        std::cout << "Received id "         << f.get_frame_number() << ":" << static_cast<float>(f.get_timestamp() -_frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << "         Last: " << last_sync_id << std::endl;
-    //    if (f.get_profile().stream_index() == 2 )
-    //        std::cout << "Received id         " << f.get_frame_number() << ":" << static_cast<float>(f.get_timestamp() -_frame_time_start)/1e3f << "@" << f.get_profile().stream_index() << " Last: " << last_sync_id << std::endl;
+    if (watchdog_attempt_to_continue) {
+        if (f.get_profile().stream_index() == 1 )
+            std::cout << "Received id "         << f.get_frame_number() << ":" << f.get_timestamp()/1.e3- _frame_time_start << "@" << f.get_profile().stream_index() << "         Last: " << last_sync_id << std::endl;
+        if (f.get_profile().stream_index() == 2 )
+            std::cout << "Received id         " << f.get_frame_number() << ":" << f.get_timestamp()/1.e3 -_frame_time_start << "@" << f.get_profile().stream_index() << " Last: " << last_sync_id << std::endl;
+    }
 
     if (f.get_frame_number() < last_sync_id-50 && last_sync_id > 300) {
         std::cout << "Warning: rs frame number reset happened!!!" << std::endl;
@@ -104,20 +119,33 @@ void Realsense::rs_callback(rs2::frame f) {
     }
     if (new_frame1 && new_frame2) {
         if (rs_frameL_cbtmp.get_frame_number() == rs_frameR_cbtmp.get_frame_number()) {
-            lock_frame_data.lock();
-            rs_frameL = rs_frameL_cbtmp;
-            rs_frameR = rs_frameR_cbtmp;
-            lock_frame_data.unlock();
+
+            if (_frame_time_start <0)
+                _frame_time_start = rs_frameL_cbtmp.get_timestamp()/1.e3;
+
+            RSStereoPair * rsp = new RSStereoPair(rs_frameL_cbtmp,rs_frameR_cbtmp);
+            rs_buf.insert(std::pair(rs_frameL_cbtmp.get_frame_number(),rsp));
+            cv::Mat frameL = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(rs_frameL_cbtmp.get_data()), Mat::AUTO_STEP);
+            cv::Mat frameR = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(rs_frameR_cbtmp.get_data()), Mat::AUTO_STEP);
+            StereoPair * sp = new StereoPair(frameL,frameR,rs_frameL_cbtmp.get_frame_number(),rs_frameL_cbtmp.get_timestamp()/1.e3 - _frame_time_start);
+            buf.insert(std::pair(rs_frameL_cbtmp.get_frame_number(),sp));
 
             lock_newframe.unlock(); // signal to processor that a new frame is ready to be processed
+
+            if (rs_frameL_cbtmp.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
+                camparams.measured_exposure = rs_frameL_cbtmp.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
+                rs2::depth_sensor rs_dev = dev.first<rs2::depth_sensor>();
+                camparams.measured_gain = rs_dev.get_option(RS2_OPTION_GAIN);
+            }
+
             new_frame1 = false;
             new_frame2 = false;
-            int fl = rs_frameL.get_frame_number() - last_sync_id;
+            int fl = rs_frameL_cbtmp.get_frame_number() - last_sync_id;
             if (fl > 3) {
                 std::cout << "FRAME LOSS: " << fl << std::endl;
                 _frame_loss_cnt++;
             }
-            last_sync_id = rs_frameL.get_frame_number();
+            last_sync_id = rs_frameL_cbtmp.get_frame_number();
         }
         else { // somehow frames are not in sync, resync
             if (f.get_profile().stream_index() == 1)
@@ -685,12 +713,10 @@ void Realsense::close() {
         if (!dev.as<rs2::playback>()) {
             auto rs_depth_sensor = dev.first<rs2::depth_sensor>();
             lock_newframe.unlock();
-            lock_frame_data.unlock();
             rs_depth_sensor.stop();
             rs_depth_sensor.close();
             for (uint i = 0; i < 10; i++ ) {
                 lock_newframe.unlock();
-                lock_frame_data.unlock();
                 usleep(1000);
             }
         } else {
@@ -746,16 +772,24 @@ void Realsense::watchdog_thread(void) {
     while (!exit_watchdog_thread) {
         usleep(pparams.wdt_timeout_us);
         if (!watchdog && !exit_watchdog_thread) {
-            std::cout << "Watchdog alert! Attempting to continue" << std::endl;
+            std::cout << "Watchdogbuf alert! Attempting to continue" << std::endl;
+            watchdog_attempt_to_continue = true;
             new_frame1 =true;
             new_frame2 = true;
-            lock_newframe.unlock(); // wait for a new frame passed by the rs callback
+            std::cout << "RS frames in buf: ";
+            for (auto fr : rs_buf) {
+                std::cout << fr.first << " ";
+            }
+            std::cout << std::endl;
             usleep(pparams.wdt_timeout_us);
             if (!watchdog) {
                 std::cout << "Watchdog alert! Killing the process." << std::endl;
                 auto res [[maybe_unused]] = std::system("killall -9 pats");
+            } else {
+                std::cout << "Seems to work again." << std::endl;
             }
         }
+        watchdog_attempt_to_continue = false;
         watchdog = false;
     }
 }

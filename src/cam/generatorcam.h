@@ -7,6 +7,9 @@
 class GeneratorCam : public Cam {
 private:
 
+    unsigned long long _frame_number = 0;
+    double _frame_time = 0;
+
     MultiModule * _rc;
     cv::Point3f drone_start_pos;
     cv::Mat Qfi;

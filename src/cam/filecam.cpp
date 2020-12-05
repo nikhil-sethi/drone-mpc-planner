@@ -66,7 +66,7 @@ void FileCam::read_frame_ids() {
             Frame_ID_Entry entry;
             entry.raw_video_frame_counter = stoi(data.at(0));
             entry.imgcount = stoi(data.at(1));
-            entry.RS_id = stol(data.at(2));
+            entry.rs_id = stol(data.at(2));
             entry.time = stod(data.at(3));
             frames_ids.push_back(entry);
         } catch (exception& exp ) {
@@ -114,12 +114,13 @@ void FileCam::update() {
         std::cout << "Video EOS detected, exiting." << std::endl;
         gst_sample_unref(sample);
         gst_buffer_unref(buffer);
-        throw BagVideoEnded();
+        throw ReplayVideoEnded();
     }
 
     GstMapInfo map;
     gst_buffer_map(buffer, &map, GST_MAP_READ);
 
+    cv::Mat frameL,frameR;
     cv::Mat frameLR(cv::Size(im_width, im_height), CV_8UC1, map.data, cv::Mat::AUTO_STEP);
     if (im_width > im_height) {
         frameLR(cv::Rect(cv::Point(0,0),cv::Point(frameLR.cols/2,frameLR.rows))).copyTo(frameL);
@@ -128,19 +129,26 @@ void FileCam::update() {
         frameLR(cv::Rect(cv::Point(0,0),cv::Point(frameLR.cols,frameLR.rows/2))).copyTo(frameL);
         frameLR(cv::Rect(cv::Point(0,frameLR.rows/2),cv::Point(frameLR.cols,frameLR.rows))).copyTo(frameR);
     }
+
+    unsigned long long frame_number_new;
+    double frame_time_new;
     if (frames_ids.size() > 0) {
-        _frame_number = frames_ids.at(frame_cnt-1).RS_id;
-        _frame_time = frames_ids.at(frame_cnt-1).time;
+        frame_number_new = frames_ids.at(frame_cnt-1).rs_id;
+        frame_time_new = frames_ids.at(frame_cnt-1).time;
     } else {
-        _frame_number++;
-        _frame_time+=1./pparams.fps;
+        frame_number_new = frame_number()+1;
+        frame_time_new = frame_time() + 1./pparams.fps;
     }
-    if (_frame_number==ULONG_MAX) {
+    if (frame_number_new==ULONG_MAX) {
         std::cout << "Log end, exiting." << std::endl;
         gst_buffer_unmap(buffer, &map);
         gst_sample_unref(sample);
-        throw BagVideoEnded();
+        throw ReplayVideoEnded();
     }
+    StereoPair * sp = new StereoPair(frameL,frameR,frame_number_new,frame_time_new);
+    buf.insert(std::pair(frame_number_new,sp));
+    delete_old_frames();
+
     if (!turbo) {
         while(swc.Read() < (1.f/pparams.fps)*1e3f) {
             usleep(1000);

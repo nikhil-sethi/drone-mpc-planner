@@ -29,6 +29,7 @@
     "terminal.integrated.commandsToSkipShell": [
         "workbench.action.debug.stepInto",
         "workbench.action.debug.stepOut",
-        "workbench.action.debug.stepOver"
+        "workbench.action.debug.stepOver",
+        "editor.debug.action.toggleBreakpoint"
     ]
 }

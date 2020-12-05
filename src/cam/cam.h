@@ -15,10 +15,9 @@
 class Cam {
 protected:
     uint replay_skip_n_frames = 0;
-    unsigned long long _frame_number = 0;
-    double _frame_time = 0;
     bool initialized = false;
     int _frame_loss_cnt = 0;
+    std::map<unsigned long long,StereoPair *> buf;
 
     //read file names
     std::string calib_rfn = "cam_calib.xml";
@@ -44,12 +43,13 @@ protected:
     void convert_depth_background_to_world();
     void def_volume();
     cv::Point3f get_SlopesOfPixel(uint x, uint y);
+    virtual void delete_old_frames();
+    virtual void delete_all_frames();
 
 public:
     bool frame_by_frame = false;
     bool turbo = false;
     cv::Mat Qf;
-    cv::Mat frameL,frameR;
     cv::Mat depth_background;
     cv::Mat depth_background_3mm;
     cv::Mat depth_background_3mm_world;
@@ -61,14 +61,13 @@ public:
     virtual void close() {
         delete intr;
         Qf.release();
-        frameL.release();
-        frameR.release();
         depth_background.release();
         depth_background_3mm.release();
         depth_background_3mm_world.release();
         depth_background_mm.release();
         disparity_background.release();
         camera_volume.release();
+        delete_all_frames();
     }
     virtual void update() = 0;
     void skip(float duration) {
@@ -81,7 +80,15 @@ public:
     float camera_angle() { return camparams.camera_angle_y; }
     float measured_exposure() { return camparams.measured_exposure; }
     float measured_gain() { return camparams.measured_gain; }
-    unsigned long long frame_number() {return _frame_number;}
-    double frame_time() {return _frame_time;}
+    unsigned long long frame_number()  {return last()->rs_id;}
+    double frame_time()  {return last()->time;}
+
+    StereoPair * last() {
+        auto p = buf.cend();
+        p--;
+        return p->second;
+    }
+    StereoPair * frame(unsigned long long rs_id) {return buf.at(rs_id);}
+
     int frame_loss_cnt() {return _frame_loss_cnt;}
 };

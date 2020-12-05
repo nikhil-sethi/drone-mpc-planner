@@ -19,7 +19,7 @@ void InsectReader::init(string file) {
         cout << "Opening insect log: " << file << endl;
     read_log(file);
     current_entry = log.begin()->second;
-    _RS_id = current_entry.RS_id;
+    _rs_id = current_entry.rs_id;
 }
 
 tuple<map<int, LogEntryInsect>,map<string, int>> InsectReader::read_log(string file) {
@@ -31,7 +31,7 @@ tuple<map<int, LogEntryInsect>,map<string, int>> InsectReader::read_log(string f
     while (getline(infile, line)) {
         try {
             LogEntryInsect entry = create_log_entry(line);
-            map<const int, LogEntryInsect>::value_type item(entry.RS_id,entry);
+            map<const int, LogEntryInsect>::value_type item(entry.rs_id,entry);
             log.insert(item);
         } catch (exception& exp ) {
             string next_line;
@@ -51,7 +51,7 @@ LogEntryInsect InsectReader::create_log_entry(string line) {
     LogEntryInsect entry;
     entry.time = stod(line_data.at(headmap["time"]));
     entry.replay = stoi(line_data.at(headmap["replay"]));
-    entry.RS_id = stod(line_data.at(headmap["RS_ID"]));
+    entry.rs_id = stod(line_data.at(headmap["RS_ID"]));
     entry.ins_pos_x = stod(line_data.at(headmap["posX"]));
     entry.ins_pos_y = stod(line_data.at(headmap["posY"]));
     entry.ins_pos_z = stod(line_data.at(headmap["posZ"]));
@@ -77,8 +77,8 @@ LogEntryInsect InsectReader::create_log_entry(string line) {
     entry.ins_n_frames_lost = stoi(line_data.at(headmap["n_frames_lost"]));
     entry.ins_n_frames_tracking = stoi(line_data.at(headmap["n_frames_tracking"]));
     entry.ins_foundL = stoi(line_data.at(headmap["foundL"]));
-    if (entry.RS_id > last_RS_id)
-        last_RS_id = entry.RS_id;
+    if (entry.rs_id > last_rs_id)
+        last_rs_id = entry.rs_id;
 
     return entry;
 }

@@ -54,13 +54,25 @@ struct ControlData {
     float throttle,roll,pitch;
     double time;
 };
+struct StereoPair {
+    StereoPair(cv::Mat left_,cv::Mat right_, unsigned long long rs_id_, double time_) {
+        left = left_;
+        right = right_;
+        rs_id = rs_id_;
+        time = time_;
+    }
+    cv::Mat left,right;
+    unsigned long long rs_id;
+    double time;
+    std::mutex processed;
+};
 
 struct MyExit : public std::exception {
     std::string msg;
     MyExit(std::string return_value) : msg(return_value) {}
 };
-struct BagVideoEnded : public std::exception {
-    BagVideoEnded() {}
+struct ReplayVideoEnded : public std::exception {
+    ReplayVideoEnded() {}
 };
 
 enum video_modes {

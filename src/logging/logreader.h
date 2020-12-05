@@ -12,14 +12,14 @@ class LogReader {
 public:
     void init(std::string path);
     void read_insect_replay_log(std::string path);
-    int current_frame_number(unsigned long long RS_id);
+    int current_frame_number(unsigned long long rs_id);
     double first_takeoff_time() {return _takeoff_time;}
     double first_blink_detect_time() {return _blink_detect_time;}
     double first_yaw_reset_time() {return _yaw_reset_time;}
     double first_drone_problem_time() {return _drone_problem_time;}
-    unsigned long long retrieve_RS_ID_from_frame_id(uint frame_number) { // reverse lookup for filecam
-        if (RS_IDs.size() > frame_number + 1)
-            return RS_IDs.at(frame_number);
+    unsigned long long retrieve_rs_id_from_frame_id(uint frame_number) { // reverse lookup for filecam
+        if (rs_ids.size() > frame_number + 1)
+            return rs_ids.at(frame_number);
         else
             return ULONG_MAX;
     }
@@ -46,7 +46,7 @@ private:
     std::map<std::string, int> headmap_main;
     std::vector<InsectReader> log_insects;
 
-    std::vector<unsigned long long> RS_IDs;
+    std::vector<unsigned long long> rs_ids;
 
     double _takeoff_time = INFINITY;
     double _blink_detect_time = INFINITY;

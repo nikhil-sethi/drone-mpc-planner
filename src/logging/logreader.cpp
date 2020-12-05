@@ -30,8 +30,8 @@ tuple<map<int, LogEntryMain>,map<string, int>> LogReader::read_log(string file) 
     while (getline(infile, line)) {
         try {
             LogEntryMain entry = create_log_entry(line,headmap);
-            map<const int, LogEntryMain>::value_type item(entry.RS_id,entry);
-            RS_IDs.push_back(entry.RS_id);
+            map<const int, LogEntryMain>::value_type item(entry.rs_id,entry);
+            rs_ids.push_back(entry.rs_id);
             log.insert(item);
         } catch (exception& exp ) {
             string next_line;
@@ -66,7 +66,7 @@ LogEntryMain LogReader::create_log_entry(string line, map<string, int> headmap) 
 
     LogEntryMain entry;
     entry.id = stoi(line_data.at(headmap["ID"]));
-    entry.RS_id = stoi(line_data.at(headmap["RS_ID"]));
+    entry.rs_id = stoi(line_data.at(headmap["RS_ID"]));
     entry.elapsed = stod(line_data.at(headmap["elapsed"]));
     auto iid = headmap["insect_log"];
     if (iid)
@@ -106,10 +106,10 @@ LogEntryMain LogReader::create_log_entry(string line, map<string, int> headmap) 
     return entry;
 }
 
-int LogReader::current_frame_number(unsigned long long RS_id) {
-    current_entry = log_main[RS_id];
+int LogReader::current_frame_number(unsigned long long rs_id) {
+    current_entry = log_main[rs_id];
 
-    if (current_entry.RS_id != RS_id)
+    if (current_entry.rs_id != rs_id)
         return 1;
 
     //Currently log playback based on the insect logs is not used.
@@ -118,7 +118,7 @@ int LogReader::current_frame_number(unsigned long long RS_id) {
     if (false) { // so, disable to slightly speed up log playback
         vector<LogEntryInsect> ins_entries;
         for (auto & ins : log_insects) {
-            if (!ins.current_frame_number(RS_id)) {
+            if (!ins.current_frame_number(rs_id)) {
                 ins_entries.push_back(ins.current_entry);
             }
         }

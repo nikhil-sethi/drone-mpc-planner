@@ -104,3 +104,16 @@ cv::Point3f Cam::get_SlopesOfPixel(uint x, uint y) {
 
     return w;
 }
+
+void Cam::delete_old_frames() {
+    while (buf.size() > 10) {
+        auto sp =  buf.begin()->second;
+        buf.erase(buf.begin()->first);
+        delete sp;
+    }
+}
+void Cam::delete_all_frames() {
+    for (auto & sp : buf) {
+        delete sp.second;
+    }
+}

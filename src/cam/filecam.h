@@ -18,7 +18,7 @@ private:
     struct Frame_ID_Entry {
         long raw_video_frame_counter;
         long imgcount;
-        long long RS_id;
+        long long rs_id;
         double time;
     };
     std::vector<Frame_ID_Entry> frames_ids;

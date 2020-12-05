@@ -86,12 +86,6 @@ VisionData visdat;
 
 /****Threadpool*******/
 #define NUM_OF_THREADS 1
-struct Stereo_Frame_Data {
-    cv::Mat frameL,frameR;
-    uint imgcount;
-    unsigned long long RS_id;
-    double time;
-};
 struct Processer {
     int id;
     std::thread * thread;
@@ -99,7 +93,7 @@ struct Processer {
     std::condition_variable data_processed,new_data;
     bool data_is_new = false;
     bool data_is_processed = true;
-    Stereo_Frame_Data data;
+    StereoPair * frame;
 };
 Processer tp[NUM_OF_THREADS];
 
@@ -108,7 +102,7 @@ MainWindow gui;
 #endif
 
 /*******Private prototypes*********/
-void process_frame(Stereo_Frame_Data data_drone);
+void process_frame(StereoPair * frame);
 void process_video();
 int main( int argc, char **argv);
 bool handle_key(double time);
@@ -128,18 +122,11 @@ void process_video() {
     while (!exit_now) // ESC
     {
         cam->update();
-
-        Stereo_Frame_Data data;
-        data.frameL = cam->frameL.clone(); // these frames must be cloned because, at least for the generator, the memory is overwritten when a new frame is received
-        data.frameR = cam->frameR.clone(); // it may be different for the realsense cam, but difficult to check
-        data.RS_id = cam->frame_number();
-        data.time = cam->frame_time();
-        data.imgcount = imgcount;
-
+        auto frame = cam->last();
+        frame->processed.lock();
         std::unique_lock<std::mutex> lk(tp[0].m2,std::defer_lock);
         tp[0].data_processed.wait(lk, []() {return tp[0].data_is_processed; });
         tp[0].data_is_processed= false;
-
 
         bool escape_key_pressed = false;
         if (pparams.has_screen || render_hunt_mode || render_monitor_video_mode) {
@@ -148,7 +135,7 @@ void process_video() {
                 visualizer_3d.run();
                 if (pparams.has_screen) {
                     visualizer.paint();
-                    escape_key_pressed = handle_key(data.time);
+                    escape_key_pressed = handle_key(frame->time);
                 }
                 if (render_hunt_mode || render_monitor_video_mode)
                     visualizer.render();
@@ -157,10 +144,10 @@ void process_video() {
         }
         if (render_hunt_mode || render_monitor_video_mode) {
             if (dnav.drone_is_ready_and_waiting() && !skipped_to_hunt) {
-                double dt = logreader.first_takeoff_time() - data.time - 1.5;
+                double dt = logreader.first_takeoff_time() - frame->time - 1.5;
                 if (dt>0 && trackers.mode() != tracking::TrackerManager::mode_locate_drone) {
                     cam->skip(dt);
-                    std::cout << "Skipping to " << data.time + dt << std::endl;
+                    std::cout << "Skipping to " << frame->time + dt << std::endl;
                 }
                 skipped_to_hunt = true;
                 cam->turbo = false;
@@ -174,7 +161,7 @@ void process_video() {
         }
 
         tp[0].m1.lock();
-        tp[0].data = data;
+        tp[0].frame = frame;
         tp[0].data_is_new = true;
         tp[0].new_data.notify_one();
         tp[0].m1.unlock();
@@ -201,14 +188,14 @@ void process_video() {
         }
 
         static bool recording = false;
-        double dtr = data.time - trackers.target_last_detection();
+        double dtr = frame->time - trackers.target_last_detection();
         if (dtr > 1 && recording) {
             recording = false;
             auto time_insect_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
             logger_insect << "New detection ended at: " << std::put_time(std::localtime(&time_insect_now), "%Y/%m/%d %T") << " Duration: " << dtr << " End cam frame number: " <<  cam->frame_number() << '\n';
         }
 
-        if ((trackers.tracking_a_target() || dtr < 1) && data.time > 5) {
+        if ((trackers.tracking_a_target() || dtr < 1) && frame->time > 5) {
             recording = true;
         }
 
@@ -233,7 +220,7 @@ void process_video() {
 
             if (recording) {
                 static int cut_video_frame_counter = 0;
-                int frame_written = output_video_cuts.write(data.frameL,data.frameR);
+                int frame_written = output_video_cuts.write(frame->left,frame->right);
                 if (!frame_written)
                     cut_video_frame_counter++;
                 std::cout << "Recording! Frames written: " << cut_video_frame_counter << std::endl;
@@ -246,9 +233,9 @@ void process_video() {
         if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode) {
             int frame_written = 0;
             // cv::Mat id_fr = cam->frameL.clone();
-            // putText(id_fr,std::to_string(data.RS_id),cv::Point(0, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,Scalar(255));
-            frame_written = output_video_LR.write(data.frameL,data.frameR);
-            logger_video_ids << raw_video_frame_counter << ";" << data.imgcount << ";" << data.RS_id<< ";" << data.time << '\n';
+            // putText(id_fr,std::to_string(frame->rs_id),cv::Point(0, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,Scalar(255));
+            frame_written = output_video_LR.write(frame->left,frame->right);
+            logger_video_ids << raw_video_frame_counter << ";" << imgcount << ";" << frame->rs_id<< ";" << frame->time << '\n';
             if (!frame_written)
                 raw_video_frame_counter++;
             else {
@@ -257,11 +244,11 @@ void process_video() {
         }
 
         if (render_hunt_mode) {
-            if (dnav.n_drone_detects() == 0 && data.time -3 > logreader.first_blink_detect_time() ) {
+            if (dnav.n_drone_detects() == 0 && frame->time -3 > logreader.first_blink_detect_time() ) {
                 std::cout << "\n\nError: Log results differ from replay results, could not find drone in time.\n" << replay_dir <<"\n\n" << std::endl;
                 exit_now = true;
             }
-            if (dnav.drone_is_yaw_reset() == 0 && data.time -3 > logreader.first_yaw_reset_time() ) {
+            if (dnav.drone_is_yaw_reset() == 0 && frame->time -3 > logreader.first_yaw_reset_time() ) {
                 std::cout << "\n\nError: Log results differ from replay results, should have yaw reset already.\n" << replay_dir <<"\n\n" << std::endl;
                 exit_now = true;
             }
@@ -340,15 +327,15 @@ void process_video() {
     std::cout << "Exiting main loop" << std::endl;
 }
 
-void process_frame(Stereo_Frame_Data data) {
+void process_frame(StereoPair * frame) {
 
     if (log_replay_mode && pparams.op_mode != op_mode_monitoring) {
-        if (logreader.current_frame_number(data.RS_id)) {
+        if (logreader.current_frame_number(frame->rs_id)) {
             exit_now = true;
             return;
         }
 
-        trackers.process_replay_moth(data.RS_id);
+        trackers.process_replay_moth(frame->rs_id);
         cmdcenter.trigger_demo_flight_from_log(replay_dir,logreader.current_entry.trkrs_state);
 
     } else if (generator_mode) {
@@ -361,19 +348,19 @@ void process_frame(Stereo_Frame_Data data) {
 #ifdef PROFILING
     auto profile_t0 = std::chrono::high_resolution_clock::now();
 #endif
-    visdat.update(data.frameL,data.frameR,data.time,data.RS_id);
+    visdat.update(frame);
 #ifdef PROFILING
     auto profile_t1_visdat = std::chrono::high_resolution_clock::now();
 #endif
 
     auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
-    logger << data.imgcount << ";"
-           << data.RS_id << ";"
+    logger << imgcount << ";"
+           << frame->rs_id << ";"
            << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << ";"
-           << data.time << ";"
+           << frame->time << ";"
            << cam->measured_exposure() << ";";
 
-    trackers.update(data.time,dctrl.drone_is_active());
+    trackers.update(frame->time,dctrl.drone_is_active());
 #ifdef PROFILING
     auto profile_t2_trkrs = std::chrono::high_resolution_clock::now();
 #endif
@@ -381,13 +368,13 @@ void process_frame(Stereo_Frame_Data data) {
     if (log_replay_mode && pparams.op_mode != op_mode_monitoring) {
         dctrl.insert_log(logreader.current_entry.joyRoll, logreader.current_entry.joyPitch, logreader.current_entry.joyYaw, logreader.current_entry.joyThrottle,logreader.current_entry.joyArmSwitch,logreader.current_entry.joyModeSwitch,logreader.current_entry.joyTakeoffSwitch,logreader.current_entry.auto_roll,logreader.current_entry.auto_pitch,logreader.current_entry.auto_throttle, logreader.current_entry.telem_acc_z, logreader.current_entry.telem_throttle, logreader.current_entry.telem_throttle_s, logreader.current_entry.maxthrust, logreader.current_entry.telem_thrust_rpm);
     }
-    dnav.update(data.time);
+    dnav.update(frame->time);
 #ifdef PROFILING
     auto profile_t3_nav = std::chrono::high_resolution_clock::now();
 #endif
 
     if (pparams.op_mode != op_mode_monitoring)
-        dctrl.control(trackers.dronetracker()->last_track_data(),dnav.setpoint(),trackers.target_last_trackdata(),data.time);
+        dctrl.control(trackers.dronetracker()->last_track_data(),dnav.setpoint(),trackers.target_last_trackdata(),frame->time);
 #ifdef PROFILING
     auto profile_t4_ctrl = std::chrono::high_resolution_clock::now();
 #endif
@@ -400,7 +387,7 @@ void process_frame(Stereo_Frame_Data data) {
 
     if (pparams.has_screen || render_hunt_mode || render_monitor_video_mode) {
         visualizer.add_plot_sample();
-        visualizer.update_tracker_data(visdat.frameL,dnav.setpoint().pos(),data.time, draw_plots);
+        visualizer.update_tracker_data(visdat.frameL,dnav.setpoint().pos(),frame->time, draw_plots);
         if (pparams.video_result && !exit_now) {
             if ((render_hunt_mode && skipped_to_hunt) || !render_hunt_mode) {
                 if (log_replay_mode || render_monitor_video_mode)
@@ -410,7 +397,7 @@ void process_frame(Stereo_Frame_Data data) {
         }
     }
     if (!render_hunt_mode && !render_monitor_video_mode && !log_replay_mode)
-        cmdcenter.update(data.frameL,data.time);
+        cmdcenter.update(frame->left,frame->time);
 
 #ifdef PROFILING
     auto dur1_visdat = std::chrono::duration_cast<std::chrono::microseconds>(profile_t1_visdat - profile_t0).count();
@@ -428,6 +415,7 @@ void process_frame(Stereo_Frame_Data data) {
            << dur5 << ";"
            << dur_tot << ";";
 #endif
+    frame->processed.unlock();
     logger  << '\n';
 }
 
@@ -559,7 +547,7 @@ void pool_worker(int id ) {
         tp[0].data_is_new = false;
         if (exit_now)
             break;
-        process_frame(tp->data);
+        process_frame(tp->frame);
         tp[id].m2.lock();
         tp[id].data_is_processed = true;
         tp[id].data_processed.notify_one();
@@ -766,7 +754,7 @@ void init() {
     cam->init();
     if (render_monitor_video_mode)
         visdat.read_motion_and_overexposed_from_image(replay_dir); // has to happen before init otherwise wfn's are overwritten
-    visdat.init(cam->Qf, cam->frameL,cam->frameR,cam->camera_angle(),cam->measured_gain(),cam->measured_exposure(),cam->depth_background_mm); // do after cam update to populate frames
+    visdat.init(cam.get()); // do after cam update to populate frames
     trackers.init(&logger,replay_dir, &visdat, &(cam->camera_volume));
     dnav.init(&logger,&trackers,&dctrl,&visdat, &(cam->camera_volume),replay_dir);
     if (pparams.op_mode != op_mode_monitoring)
@@ -1019,7 +1007,7 @@ int main( int argc, char **argv )
     try {
         init();
         process_video();
-    } catch(BagVideoEnded const &err) {
+    } catch(ReplayVideoEnded const &err) {
         std::cout << "Video ended" << std::endl;
         exit_now = true;
     } catch(MyExit const &e) {

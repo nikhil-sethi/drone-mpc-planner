@@ -8,20 +8,20 @@ class InsectReader {
 
 public:
     void init(std::string file);
-    bool current_frame_number(unsigned long long RS_id) {
-        _RS_id = RS_id;
-        if (log.find( RS_id ) != log.end()) {
-            current_entry = log.at(RS_id);
+    bool current_frame_number(unsigned long long rs_id) {
+        _rs_id = rs_id;
+        if (log.find( rs_id ) != log.end()) {
+            current_entry = log.at(rs_id);
             return false;
         } else {
             return true;
         }
     }
     bool increase_frame_number() {
-        while(last_RS_id > _RS_id) {
-            _RS_id ++;
-            if (log.find( _RS_id ) != log.end()) {
-                current_entry = log.at(_RS_id);
+        while(last_rs_id > _rs_id) {
+            _rs_id ++;
+            if (log.find( _rs_id ) != log.end()) {
+                current_entry = log.at(_rs_id);
                 return false;
             }
         }
@@ -43,10 +43,10 @@ private:
 
     std::map<int, LogEntryInsect> log;
     std::map<std::string, int> headmap;
-    unsigned long long last_RS_id{0};
+    unsigned long long last_rs_id{0};
     bool _done{false};
     bool _replay_moth{false};
-    unsigned long long _RS_id{0};
+    unsigned long long _rs_id{0};
 };
 
 }

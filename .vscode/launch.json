@@ -6,7 +6,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/pc/build-vscode/pats",
-            "args": ["--log","logging"],
+            "args": [],
             "stopAtEntry": false,
             "preLaunchTask": "make",
             "cwd": "${workspaceFolder}/pc/build-vscode",

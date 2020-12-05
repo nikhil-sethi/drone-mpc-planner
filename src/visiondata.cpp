@@ -3,19 +3,22 @@
 using namespace cv;
 using namespace std;
 
-void VisionData::init(cv::Mat new_Qf, cv::Mat new_frameL, cv::Mat new_frameR, float new_camera_angle, float new_camera_gain, float new_camera_exposure, cv::Mat new_depth_background_mm) {
-    Qf = new_Qf;
+//void VisionData::init(cv::Mat new_Qf, StereoPair * frame, float new_camera_angle, float new_camera_gain, float new_camera_exposure, cv::Mat new_depth_background_mm) {
+void VisionData::init(Cam * cam) {
+    _cam = cam;
+    Qf = cam->Qf;
     cv::invert(Qf,Qfi);
-    frameL = new_frameL.clone();
-    frameR = new_frameR.clone();
-    depth_background_mm = new_depth_background_mm;
-    frameL_background = new_frameL.clone();
+    auto frame = cam->last();
+    frameL = frame->left;
+    frameR = frame->right;
+    depth_background_mm = cam->depth_background_mm;
+    frameL_background = frameL.clone();
 
     enable_viz_motion = false; // Note: the enable_diff_vizs in the insect/drone trackers may be more interesting instead of this one.
 
-    camera_angle = new_camera_angle;
-    camera_gain = new_camera_gain;
-    camera_exposure = new_camera_exposure;
+    camera_angle = _cam->camera_angle();
+    camera_gain = _cam->measured_gain();
+    camera_exposure = _cam->measured_exposure();
 
     motion_noise_mapL_wfn = data_output_dir + motion_noise_mapL_wfn;
     motion_noise_mapR_wfn = data_output_dir + motion_noise_mapR_wfn;
@@ -71,23 +74,24 @@ void VisionData::read_motion_and_overexposed_from_image(std::string replay_dir) 
     _calibrating_background = false;
 }
 
-void VisionData::update(cv::Mat new_frameL,cv::Mat new_frameR,double time, unsigned long long new_frame_id) {
-    frameL = new_frameL;
-    frameR = new_frameR;
-    frame_id = new_frame_id;
-    _current_frame_time = time;
+void VisionData::update(StereoPair * data) {
+    frameL = data->left;
+    frameR = data->right;
+    frame_id = data->rs_id;
+    _current_frame_time = data->time;
 
-    cv::Mat frameL_prev16 = frameL16.clone();
-    cv::Mat frameR_prev16 = frameR16.clone();
+    cv::Mat frameL_prev16 = frameL16;
+    cv::Mat frameR_prev16 = frameR16;
+    frameL16 = cv::Mat();
+    frameR16 = cv::Mat();
     frameL.convertTo(frameL16, CV_16SC1);
     frameR.convertTo(frameR16, CV_16SC1);
 
-    track_avg_brightness(frameL,time);
+    track_avg_brightness(frameL,_current_frame_time);
     static bool reset_motion_integration_prev = false; // used to zero diffL16 and R only once
     if (_reset_motion_integration) {
-        // std::cout << "Resetting motion" << std::endl;
-        frameL_prev16 = frameL16.clone();
-        frameR_prev16 = frameR16.clone();
+        frameL_prev16 = frameL16;
+        frameR_prev16 = frameR16;
         if (!reset_motion_integration_prev) {
             diffL16 = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
             diffR16 = cv::Mat::zeros(cv::Size(frameR.cols,frameR.rows),CV_16SC1);

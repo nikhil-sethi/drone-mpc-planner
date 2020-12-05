@@ -264,14 +264,14 @@ public:
     void init_replay_moth(std::vector<logging::InsectReader> logs) {
         replay_logs = logs;
     }
-    void process_replay_moth(unsigned long long RS_id) {
+    void process_replay_moth(unsigned long long rs_id) {
 
         replay_logs.erase(
             std::remove_if(
                 replay_logs.begin(),
                 replay_logs.end(),
         [&](auto log) {
-            if ( log.current_entry.RS_id == RS_id) {
+            if ( log.current_entry.rs_id == rs_id) {
                 ReplayTracker *rt;
                 rt = new ReplayTracker();
                 rt->init(next_insecttrkr_id,log,_visdat);

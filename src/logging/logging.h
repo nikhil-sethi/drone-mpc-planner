@@ -9,7 +9,7 @@ std::map<std::string, int> read_head_map(std::string heads);
 struct LogEntryInsect {
     float time;
     bool replay;
-    unsigned long long RS_id;
+    unsigned long long rs_id;
 
     float ins_im_x;
     float ins_im_y;
@@ -38,7 +38,7 @@ struct LogEntryInsect {
 };
 struct LogEntryMain {
     int id;
-    unsigned long long RS_id;
+    unsigned long long rs_id;
     double elapsed;
     bool insect_replay_log;
     bool valid;
