@@ -145,6 +145,7 @@ if [[ $1 -eq 1 ]] ; then
 		git config --global push.default simple
 		git config --global user.email "${HOSTNAME}@pats.com"
 		git config --global user.name $HOSTNAME
+		touch git.done
 	}
 fi
 
