@@ -2,7 +2,7 @@
     "configurations": [
         {
             "name": "Linux",
-            "defines": [],
+            "defines": ["HAS_AIRSIM=0"],
             "compilerPath": "/usr/bin/g++",
             "cStandard": "c11",
             "cppStandard": "c++17",

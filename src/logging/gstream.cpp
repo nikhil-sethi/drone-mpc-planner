@@ -139,9 +139,15 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
                                                         "framerate", GST_TYPE_FRACTION, gstream_fps, 1,NULL);
                 g_object_set (G_OBJECT (_appsrc), "caps",caps_appsrc, NULL);
                 gst_caps_unref(caps_appsrc);
-                encoder = gst_element_factory_make ("vaapivp9enc", "encoder"); // hardware encoding
-                g_object_set (G_OBJECT (encoder),"rate-control",2, "quality-level", 1,"bitrate", 7500, NULL);
 
+                // verify that vaapivp9enc is available
+                if(gst_element_factory_find ("vaapivp9enc")) {
+                    encoder = gst_element_factory_make ("vaapivp9enc", "encoder"); // hardware encoding
+                    g_object_set (G_OBJECT (encoder),"rate-control",2, "quality-level", 1,"bitrate", 7500, NULL);
+                } else {
+                    std::cout << "Warning: could not find vaapivp9, falling back to x264" << std::endl;
+                    encoder = gst_element_factory_make ("x264enc", "encoder");
+                }
 
                 gst_bin_add_many (GST_BIN (_pipeline),_appsrc,encoder,mux,videosink,NULL);
                 gst_element_link_many (_appsrc,encoder,mux,videosink,NULL);

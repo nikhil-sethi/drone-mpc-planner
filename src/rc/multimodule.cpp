@@ -1,62 +1,68 @@
 #include "multimodule.h"
 
+bool MultiModule::connected() {
+    std::cout << "Connecting multimodule" << std::endl;
+    if(notconnected) {
+        switch (dparams.tx) {
+        case tx_none: {
+            protocol = 0;
+            sub_protocol = 0;
+            tx_option = 0;
+            tx_rate = 0;
+            break;
+        } case tx_dsmx: {
+            protocol = 6;
+            sub_protocol = 3;
+            tx_option = 7;
+            tx_rate = 0;
+            break;
+        } case tx_cx10: {
+            protocol = 12;
+            sub_protocol = 1;
+            tx_rate = 2000;
+            tx_option = 0;
+            break;
+        } case tx_frskyd8: {
+            protocol = 3;
+            sub_protocol = 0;
+            tx_rate = 0;
+            tx_option = 0;
+            break;
+        } case tx_frskyd16: {
+            protocol = 15;
+            sub_protocol = d16_ch8; // d16_eu8 seems to be generate buggy telemetry #431
+            tx_rate = 0;
+            tx_option = 0;
+            break;
+        } case tx_redpine: {
+            protocol = 50;
+            sub_protocol = redpine_fast;
+            tx_rate = 0;
+            tx_option = 0;
+            break;
+        }
+        }
+
+        zerothrottle();
+
+        if (dparams.tx!=tx_none) {
+            notconnected = RS232_OpenComport(115200,"/dev/pats_mm0");
+            if (notconnected)
+                notconnected = RS232_OpenComport(115200,"/dev/pats_mm1");
+        }
+    }
+    return !notconnected;
+}
+
 void MultiModule::init(int drone_id) {
-    std::cout << "Opening multimodule" << std::endl;
     _drone_id_rxnum = drone_id;
 
-    switch (dparams.tx) {
-    case tx_none: {
-        protocol = 0;
-        sub_protocol = 0;
-        tx_option = 0;
-        tx_rate = 0;
-        break;
-    } case tx_dsmx: {
-        protocol = 6;
-        sub_protocol = 3;
-        tx_option = 7;
-        tx_rate = 0;
-        break;
-    } case tx_cx10: {
-        protocol = 12;
-        sub_protocol = 1;
-        tx_rate = 2000;
-        tx_option = 0;
-        break;
-    } case tx_frskyd8: {
-        protocol = 3;
-        sub_protocol = 0;
-        tx_rate = 0;
-        tx_option = 0;
-        break;
-    } case tx_frskyd16: {
-        protocol = 15;
-        sub_protocol = d16_ch8; // d16_eu8 seems to be generate buggy telemetry #431
-        tx_rate = 0;
-        tx_option = 0;
-        break;
-    } case tx_redpine: {
-        protocol = 50;
-        sub_protocol = redpine_fast;
-        tx_rate = 0;
-        tx_option = 0;
-        break;
-    }
-    }
-
-    zerothrottle();
-
-    if (dparams.tx!=tx_none) {
-        notconnected = RS232_OpenComport(115200,"/dev/pats_mm0");
-        if (notconnected)
-            notconnected = RS232_OpenComport(115200,"/dev/pats_mm1");
-        if (!notconnected) {
-            std::cout << "Opened multimodule port: " << notconnected << std::endl;
-            send_init_package_now = true;
-            send_thread_mm = std::thread(&MultiModule::send_thread,this);
-            receive_thread_mm = std::thread(&MultiModule::receive_thread,this);
-            initialized = true;
-        }
+    if (!notconnected) {
+        std::cout << "Opened multimodule port: " << notconnected << std::endl;
+        send_init_package_now = true;
+        send_thread_mm = std::thread(&MultiModule::send_thread,this);
+        receive_thread_mm = std::thread(&MultiModule::receive_thread,this);
+        initialized = true;
     }
 }
 void MultiModule::init_logger() {

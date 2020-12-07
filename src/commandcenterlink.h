@@ -3,7 +3,7 @@
 
 class CommandCenterLink {
 public :
-    void init(bool log_replay_mode, navigation::DroneNavigation * dnav,DroneController * dctrl,MultiModule * rc,tracking::TrackerManager * trackers);
+    void init(bool log_replay_mode, navigation::DroneNavigation * dnav,DroneController * dctrl,Rc * rc,tracking::TrackerManager * trackers);
     void close();
     void reset_commandcenter_status_file(std::string status_msg, bool never_overwrite);
     void trigger_demo_flight_from_log(std::string replay_dir, int tracker_mode);
@@ -32,7 +32,7 @@ private:
 
     navigation::DroneNavigation * _dnav;
     DroneController * _dctrl;
-    MultiModule * _rc;
+    Rc * _rc;
     tracking::TrackerManager * _trackers;
     bool _log_replay_mode = false;
     int reset_cnt = 0;

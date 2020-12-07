@@ -14,7 +14,7 @@ cv::Scalar linecolors[] = {green,blue,red,cv::Scalar(0,255,255),cv::Scalar(255,2
 cv::Scalar fore_color(255,255,255);
 cv::Scalar background_color(0,0,0);
 
-void Visualizer::init(VisionData *visdat, tracking::TrackerManager *trackers, DroneController *dctrl, navigation::DroneNavigation *dnav, MultiModule *rc, bool fromfile) {
+void Visualizer::init(VisionData *visdat, tracking::TrackerManager *trackers, DroneController *dctrl, navigation::DroneNavigation *dnav, Rc *rc, bool fromfile) {
     _visdat = visdat;
     _dctrl = dctrl;
     _trackers = trackers;

@@ -141,7 +141,7 @@ private:
         }
     };
 
-    MultiModule * _rc;
+    Rc * _rc;
     tracking::DroneTracker * _dtrk;
     CameraView * _camview;
     std::ofstream *_logger;
@@ -190,6 +190,7 @@ private:
 
     bool initialized = false;
     bool log_replay_mode = false;
+    bool airsim_mode = false;
     bool generator_mode = false;
     bool propwash = false;
     flight_modes _flight_mode = fm_joystick_check; // only set externally (except for disarming), used internally
@@ -482,7 +483,7 @@ public:
     }
 
     void close (void);
-    void init(std::ofstream *logger, std::string replay_dir, bool generator_mode, MultiModule *rc, tracking::DroneTracker *dtrk, CameraView* camvol,float exposure);
+    void init(std::ofstream *logger, std::string replay_dir, bool generator_mode, bool airsim, Rc *rc, tracking::DroneTracker *dtrk, CameraView* camvol,float exposure);
     void control(tracking::TrackData, tracking::TrackData, tracking::TrackData, double);
     bool drone_is_active() {
         if (_flight_mode == fm_inactive || _flight_mode == fm_disarmed || _flight_mode == fm_joystick_check)
@@ -535,7 +536,7 @@ public:
         if (fabs(drone_calibration.landed_acc_z) < 1)
             landing_acc_calibration_cnt = required_landing_acc_calibration_cnt;
     }
-    bool landing_acc_calibration_done() {return landing_acc_calibration_cnt  < 0 || log_replay_mode;}
+    bool landing_acc_calibration_done() {return landing_acc_calibration_cnt  < 0 || log_replay_mode || airsim_mode;}
 
     void save_calibration();
 

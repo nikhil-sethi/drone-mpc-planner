@@ -1,5 +1,5 @@
 #include "dronecontroller.h"
-#include "multimodule.h"
+#include "rc.h"
 #include "flightplan.h"
 #include "quaternion.h"
 #include "linalg.h"
@@ -15,12 +15,13 @@ bool DroneController::joystick_ready() {
     return joystick.isFound();
 }
 
-void DroneController::init(std::ofstream *logger,string replay_dir,bool generator, MultiModule * rc, tracking::DroneTracker *dtrk, CameraView *camview, float exposure) {
+void DroneController::init(std::ofstream *logger,string replay_dir,bool generator,bool airsim, Rc * rc, tracking::DroneTracker *dtrk, CameraView *camview, float exposure) {
     _rc = rc;
     _dtrk = dtrk;
     _logger = logger;
     log_replay_mode = replay_dir!="";
     generator_mode = generator;
+    airsim_mode = airsim;
     _camview = camview;
     control_history_max_size = pparams.fps;
     (*_logger) << "valid;flight_mode;" <<

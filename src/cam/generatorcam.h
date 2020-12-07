@@ -2,7 +2,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include "common.h"
 #include "cam.h"
-#include "multimodule.h"
+#include "rc.h"
 
 class GeneratorCam : public Cam {
 private:
@@ -10,7 +10,7 @@ private:
     unsigned long long _frame_number = 0;
     double _frame_time = 0;
 
-    MultiModule * _rc;
+    Rc * _rc;
     cv::Point3f drone_start_pos;
     cv::Mat Qfi;
     void calibration();
@@ -47,7 +47,7 @@ public:
     float generated_im_size = 0;
 
     void init();
-    void rc(MultiModule * rc) {_rc = rc;}
+    void rc(Rc * rc) {_rc = rc;}
     void close();
     void update();
 

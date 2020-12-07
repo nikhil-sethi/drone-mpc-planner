@@ -7,7 +7,7 @@
 #include <unistd.h> //usleep
 #include<iostream>
 
-void CommandCenterLink::init(bool log_replay_mode,navigation::DroneNavigation * dnav,DroneController * dctrl,MultiModule * rc,tracking::TrackerManager * trackers) {
+void CommandCenterLink::init(bool log_replay_mode,navigation::DroneNavigation * dnav,DroneController * dctrl,Rc * rc,tracking::TrackerManager * trackers) {
     remove(demo_insect_fn.c_str());
     remove(demo_waypoint_fn.c_str());
     remove(calib_fn.c_str());
@@ -51,7 +51,10 @@ void CommandCenterLink::trigger_demo_flight_from_log(std::string replay_dir, int
     static tracking::TrackerManager::detection_mode prev_tracker_mode = tracking::TrackerManager::detection_mode::mode_idle;
 
     if (pparams.joystick == rc_none && static_cast<tracking::TrackerManager::detection_mode>(tracker_mode) == tracking::TrackerManager::detection_mode::mode_drone_only && prev_tracker_mode != tracking::TrackerManager::detection_mode::mode_drone_only) {
-        _dnav->demo_flight(replay_dir + "/pats_demo.xml");
+        if (file_exist(replay_dir + "/pats_demo.xml"))
+            _dnav->demo_flight(replay_dir + "/pats_demo.xml");
+        else
+            _dnav->demo_flight(replay_dir + "/flightplan.xml");
     }
     prev_tracker_mode = static_cast<tracking::TrackerManager::detection_mode>(tracker_mode);
 }

@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # sources
-FILE(GLOB SRCS "${SRC_DIR}*.cpp" "${SRC_DIR}*.h" "${SRC_DIR}navigation/*.cpp" "${SRC_DIR}navigation/*.h" "${SRC_DIR}cam/*.cpp" "${SRC_DIR}cam/*.h" "${SRC_DIR}trackers/*.cpp" "${SRC_DIR}trackers/*.h" "${SRC_DIR}filtering/*.cpp" "${SRC_DIR}filtering/*.h" "${SRC_DIR}logging/*.h" "${SRC_DIR}logging/*.cpp" )
+FILE(GLOB SRCS "${SRC_DIR}*.cpp" "${SRC_DIR}*.h" "${SRC_DIR}navigation/*.cpp" "${SRC_DIR}navigation/*.h" "${SRC_DIR}cam/*.cpp" "${SRC_DIR}cam/*.h" "${SRC_DIR}trackers/*.cpp" "${SRC_DIR}trackers/*.h" "${SRC_DIR}filtering/*.cpp" "${SRC_DIR}filtering/*.h" "${SRC_DIR}logging/*.h" "${SRC_DIR}logging/*.cpp" "${SRC_DIR}rc/*.h" "${SRC_DIR}rc/*.cpp" "${SRC_DIR}airsim/*.cpp" "${SRC_DIR}airsim/*.h")
 FILE(GLOB THIRD_PARTY_SRCS "${SRC_DIR}third_party/*.h" "${SRC_DIR}third_party/*.hpp" "${SRC_DIR}third_party/*.cpp" "${SRC_DIR}third_party/*.c" "${SRC_DIR}third_party/cereal/*.hpp" "${SRC_DIR}third_party/tinyxml/*.h" "${SRC_DIR}third_party/tinyxml/*.cpp" "../xml/*.xml" "../xml/flightplans/*.xml" "${SRC_DIR}third_party/3dviz/*.cpp" "${SRC_DIR}third_party/3dviz/*.h")
 
 if(VIZ_3D)
@@ -52,39 +52,29 @@ MESSAGE( STATUS "GST_LIBRARY_DIRS: " ${GST_LIBRARY_DIRS} )
 
 #************airsim******************
 if(WITH_AIRSIM)
- set (AIRSIM_ROOT /home/houjebek/code/AirSim)
+  set(USER $ENV{USER})
+  set(AIRSIM_ROOT /home/${USER}/code/AirSim)
+  add_subdirectory("${AIRSIM_ROOT}/cmake/rpclib_wrapper" rpclib_wrapper)
+  add_subdirectory("${AIRSIM_ROOT}/cmake/AirLib" AirLib)
+  add_subdirectory("${AIRSIM_ROOT}/cmake/MavLinkCom" MavLinkCom)
 
- add_subdirectory("${AIRSIM_ROOT}/cmake/rpclib_wrapper" rpclib_wrapper)
- add_subdirectory("${AIRSIM_ROOT}/cmake/AirLib" AirLib)
- add_subdirectory("${AIRSIM_ROOT}/cmake/MavLinkCom" MavLinkCom)
+  set(RPC_LIB_INCLUDES " ${AIRSIM_ROOT}/external/rpclib/rpclib-2.2.1/include")
+  set(RPC_LIB rpc)
+  message(STATUS "found RPC_LIB_INCLUDES=${RPC_LIB_INCLUDES}")
 
- LIST(APPEND CMAKE_MODULE_PATH "${AIRSIM_ROOT}/cmake")
- LIST(APPEND CMAKE_MODULE_PATH "${AIRSIM_ROOT}/cmake/cmake-modules")
- INCLUDE("${AIRSIM_ROOT}/cmake/cmake-modules/CommonSetup.cmake")
-
- #setup include and lib for rpclib which will be referenced by other projects
- set(RPCLIB_VERSION_FOLDER rpclib-2.2.1)
- set(RPC_LIB_INCLUDES " ${AIRSIM_ROOT}/external/rpclib/${RPCLIB_VERSION_FOLDER}/include")
- #name of .a file with lib prefix
- set(RPC_LIB rpc)
- message(STATUS "found RPC_LIB_INCLUDES=${RPC_LIB_INCLUDES}")
-
- set(CMAKE_CXX_FLAGS "\
-  -ggdb -fdiagnostics-show-option \
-  ${RPC_LIB_DEFINES} ${CMAKE_CXX_FLAGS}")
- set(CXX_EXP_LIB "-lstdc++fs -fmax-errors=10 -Wnoexcept -Wstrict-null-sentinel")
-
- include_directories(
-  SYSTEM ${AIRSIM_ROOT}/../airsim-test
-  SYSTEM ${AIRSIM_ROOT}/AirLib/deps/eigen3
-  SYSTEM ${AIRSIM_ROOT}/AirLib/include
-  SYSTEM ${RPC_LIB_INCLUDES}
-  SYSTEM ${AIRSIM_ROOT}/MavLinkCom/include
-  SYSTEM ${AIRSIM_ROOT}/MavLinkCom/common_utils
+  include_directories(SYSTEM
+    include
+    ${AIRSIM_ROOT}/AirLib/deps/eigen3
+    ${AIRSIM_ROOT}/AirLib/include
+    ${RPC_LIB_INCLUDES}
+    ${AIRSIM_ROOT}/MavLinkCom/include
+    ${AIRSIM_ROOT}/MavLinkCom/common_utils
   )
-
- link_directories(${AIRSIM_ROOT}/build_debug/output/lib/)
+  SET(HAS_AIRSIM 1)
+else()
+  SET(HAS_AIRSIM 0)
 endif()
+ADD_DEFINITIONS(-DHAS_AIRSIM=${HAS_AIRSIM})
 #/airsim*******************
 
 
@@ -95,6 +85,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}/trackers")
 target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}/filtering")
 target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}/logging")
 target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}/cam")
+target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}/rc")
+target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}/airsim")
 target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}/navigation")
 target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}/third_party/ros_msgs/")
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE "${SRC_DIR}/third_party")
@@ -102,9 +94,6 @@ target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${GST_INCLUDE_DIRS})
 if(VIZ_3D)
     target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE "${SRC_DIR}third_party/3dviz/ros_msgs/")
     target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE "${SRC_DIR}third_party/3dviz/publishers/")
-endif()
-if(WITH_AIRSIM)
-    target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${AIRSIM_ROOT}/AirLib/deps/eigen3)
 endif()
 
 target_link_libraries(${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})
@@ -118,6 +107,4 @@ if(VIZ_3D)
 endif()
 if(WITH_AIRSIM)
     target_link_libraries(${PROJECT_NAME} AirLib)
-    target_link_libraries(${PROJECT_NAME} ${RPC_LIB})
-    target_link_libraries(${PROJECT_NAME} MavLinkCom)
 endif()

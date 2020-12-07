@@ -126,7 +126,7 @@ struct Telemetry {
     int             bf_minor;
     int             bf_patch;
 };
-class MultiModule {
+class Rc {
 
 public:
     uint16_t mode = RC_BOUND_MIN; // set to angle mode in BF
@@ -140,9 +140,11 @@ public:
     const int bf_patch_required = 102;
 
 
-    void init(int drone_id);
-    void init_logger();
-    void close();
+    virtual void init(int drone_id) = 0;
+    virtual void init_logger() = 0;
+    virtual int drone_id() = 0;
+    virtual void close() = 0;
+    virtual bool connected() = 0;
 
     int LED_drone() {return _LED_drone;}
     void LED_drone(bool on, int strength_value) {
@@ -190,8 +192,6 @@ public:
     void arm(betaflight_arming v) { arm_switch = v; }
     void turtle(betaflight_turtle v) { turtle_mode = v; }
     void calibrate_acc() { calibrate_acc_cnt = 200; }
-    bool connected() {return !notconnected;}
-    int drone_id() {return _drone_id_rxnum;}
 
     std::string arming_state_str() {
         std::string res = "";
@@ -248,13 +248,7 @@ public:
         return res;
     }
 
-private:
-    int protocol;
-    int sub_protocol;
-    int tx_option;
-    int tx_rate;
-    int _drone_id_tx = 3; // 3 is the hardcoded default in the MM at the moment for D16 (--> MProtocol_id_master = 3; )
-    int _drone_id_rxnum = 0;
+protected:
     double _time = 0;
 
     bool initialized = false;

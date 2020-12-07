@@ -35,7 +35,7 @@ private:
     DroneController *_dctrl;
     tracking::TrackerManager * _trackers;
     navigation::DroneNavigation *_dnav;
-    MultiModule *_rc;
+    Rc *_rc;
     GeneratorCam * generator_cam;
     bool generator_cam_set = false;
 
@@ -147,7 +147,7 @@ public:
     void add_plot_sample(void);
     void set_generator_cam(GeneratorCam * cam) {generator_cam = cam; generator_cam_set=true;}
     void update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, double time, bool draw_plots);
-    void init(VisionData * visdat, tracking::TrackerManager *imngr, DroneController *dctrl, navigation::DroneNavigation *dnav, MultiModule *rc, bool fromfile);
+    void init(VisionData * visdat, tracking::TrackerManager *imngr, DroneController *dctrl, navigation::DroneNavigation *dnav, Rc *rc, bool fromfile);
     void close();
 
 };

@@ -37,6 +37,8 @@
 #include "filecam.h"
 #include "generatorcam.h"
 #include "realsense.h"
+#include "airsimcam.h"
+#include "airsimcontroller.h"
 
 using namespace cv;
 using namespace std;
@@ -59,11 +61,14 @@ bool draw_plots = false;
 bool realsense_reset = false;
 bool log_replay_mode = false;
 bool generator_mode = false;
+bool airsim_mode = false;
+bool airsim_wp_mode = false;
 bool render_hunt_mode = false;
 bool skipped_to_hunt = false;
 bool watchdog_skip_video_delay_override = false;
 uint8_t drone_id;
 std::string replay_dir;
+std::string airsim_map;
 std::string logger_fn; //contains filename of current log # for insect logging (same as video #)
 std::string pats_xml_fn="../../xml/pats.xml",drone_xml_fn,monitor_video_fn;
 bool render_monitor_video_mode = false;
@@ -71,7 +76,7 @@ bool render_monitor_video_mode = false;
 std::ofstream logger;
 std::ofstream logger_insect;
 std::ofstream logger_video_ids;
-MultiModule rc;
+std::unique_ptr<Rc> rc;
 DroneController dctrl;
 navigation::DroneNavigation dnav;
 tracking::TrackerManager trackers;
@@ -156,6 +161,8 @@ void process_video() {
                 escape_key_pressed = true;
             }
         }
+        if (airsim_wp_mode && dnav.drone_is_ready_and_waiting() && rc->arm_switch == bf_armed)
+            dnav.demo_flight(pparams.flightplan);
 
         tp[0].m1.lock();
         tp[0].frame = frame;
@@ -175,11 +182,11 @@ void process_video() {
         } else if (escape_key_pressed)
             exit_now = true;
 
-        if (rc.init_package_failure()) {
+        if (rc->init_package_failure()) {
             exit_now = true;
             cmdcenter.reset_commandcenter_status_file("MultiModule init package error",true);
         }
-        if (rc.bf_version_error()) {
+        if (rc->bf_version_error()) {
             exit_now = true;
             cmdcenter.reset_commandcenter_status_file("Betaflight version error",true);
         }
@@ -228,7 +235,7 @@ void process_video() {
         static float prev_time = -1.f/pparams.fps;
         float current_fps = 1.f / (t - prev_time);
         float fps = fps_smoothed.addSample(current_fps);
-        if (fps < pparams.fps / 6 * 5 && fps_smoothed.ready() && !log_replay_mode && !generator_mode) {
+        if (fps < pparams.fps / 6 * 5 && fps_smoothed.ready() && !log_replay_mode && !generator_mode && !airsim_mode) {
             std::cout << "FPS WARNING!" << std::endl;
             n_fps_warnings++;
         }
@@ -244,17 +251,17 @@ void process_video() {
                   ". FPS: " << to_string_with_precision(fps,1) <<
                   ". Time: " << to_string_with_precision(time,2)  <<
                   ", dt " << to_string_with_precision(dt,3) <<
-                  ", " << rc.telemetry.batt_cell_v <<
-                  "v, arm: " << static_cast<int>(rc.telemetry.arming_state) <<
-                  ", rssi: " << static_cast<int>(rc.telemetry.rssi) <<
+                  ", " << rc->telemetry.batt_cell_v <<
+                  "v, arm: " << static_cast<int>(rc->telemetry.arming_state) <<
+                  ", rssi: " << static_cast<int>(rc->telemetry.rssi) <<
                   ", exposure: " << cam->measured_exposure() <<
                   ", gain: " << cam->measured_gain() <<
                   ", brightness: " << visdat.average_brightness() <<
                   std::endl;
         //   std::flush;
 
-        if (rc.telemetry.arming_state && rc.arm_switch == bf_armed )
-            std::cout << rc.arming_state_str() << std::endl;
+        if (rc->telemetry.arming_state && rc->arm_switch == bf_armed )
+            std::cout << rc->arming_state_str() << std::endl;
 
         imgcount++;
         prev_time = t;
@@ -386,16 +393,16 @@ bool handle_key(double time [[maybe_unused]]) {
 
     switch(key) {
     case 'b':
-        rc.bind(true);
+        rc->bind(true);
         break;
     case 's':
         dnav.shake_drone();
         break;
     case 'B':
-        rc.beep();
+        rc->beep();
         break;
     case 'c':
-        rc.calibrate_acc();
+        rc->calibrate_acc();
         break;
     case 'l':
         dnav.redetect_drone_location();
@@ -457,7 +464,7 @@ bool handle_key(double time [[maybe_unused]]) {
         break;
     case ' ':
     case 'f':
-        if(log_replay_mode || generator_mode || render_hunt_mode || render_monitor_video_mode)
+        if(log_replay_mode || generator_mode || render_hunt_mode || render_monitor_video_mode || airsim_mode)
             cam->frame_by_frame = true;
         break;
     case 't':
@@ -476,15 +483,15 @@ bool handle_key(double time [[maybe_unused]]) {
         cam->back_one_sec();
         break;
     case 'a':
-        rc.arm(bf_armed);
+        rc->arm(bf_armed);
         dnav.nav_flight_mode(navigation::nfm_waypoint);
         break;
     case 'h':
-        rc.arm(bf_armed);
+        rc->arm(bf_armed);
         dnav.nav_flight_mode(navigation::nfm_hunt);
         break;
     case 'd':
-        rc.arm(bf_disarmed);
+        rc->arm(bf_disarmed);
         dnav.nav_flight_mode(navigation::nfm_manual);
         break;
     } // end switch key
@@ -585,8 +592,8 @@ void init_loggers() {
     logger_insect.open(data_output_dir  + "insect.log",std::ofstream::out);
     logger_video_ids.open(data_output_dir  + "frames.csv",std::ofstream::out);
 
-    if (rc.connected())
-        rc.init_logger();
+    if (rc->connected())
+        rc->init_logger();
 }
 
 void init_video_recorders() {
@@ -639,6 +646,27 @@ void process_arg(int argc, char **argv) {
                 render_monitor_video_mode = true;
                 log_replay_mode = false;
                 monitor_video_fn=argv[i];
+            } else if (s.compare("--airsim") == 0) {
+                arg_recognized = true;
+                i++;
+                if(HAS_AIRSIM) {
+                    airsim_mode = true;
+                    airsim_map = (argv[i]) ? argv[i] : "";
+                } else {
+                    std::cout << "Error: using airsim mode but AirSim is not compiled. Add -DWITH_AIRSIM=TRUE flag when cmaking." <<std::endl;
+                    exit(1);
+                }
+            } else if (s.compare("--airsim-wp") == 0) {
+                arg_recognized = true;
+                i++;
+                if(HAS_AIRSIM) {
+                    airsim_mode = true;
+                    airsim_wp_mode = true;
+                    airsim_map = (argv[i]) ? argv[i] : "";
+                } else {
+                    std::cout << "Error: using airsim mode but AirSim is not compiled. Add -DWITH_AIRSIM=TRUE flag when cmaking." <<std::endl;
+                    exit(1);
+                }
             }
             if (!arg_recognized) {
                 std::cout << "Error argument nog recognized: " << argv[i] <<std::endl;
@@ -649,17 +677,24 @@ void process_arg(int argc, char **argv) {
 }
 
 void check_hardware() {
-    if (pparams.op_mode != op_mode_monitoring && !log_replay_mode && !render_monitor_video_mode && !render_hunt_mode) {
-        //multimodule rc
-        if (! generator_mode && dparams.tx != tx_none)
-            rc.init(drone_id);
-        if (!rc.connected() && pparams.op_mode != op_mode_monitoring)
-            throw MyExit("cannot connect the MultiModule");
-
+    if (pparams.op_mode != op_mode_monitoring && !log_replay_mode && !render_monitor_video_mode && !render_hunt_mode && !generator_mode) {
         // Ensure that joystick was found and that we can use it
-        if (!dctrl.joystick_ready() && !generator_mode && pparams.joystick != rc_none) {
+        if (!dctrl.joystick_ready() && pparams.joystick != rc_none && ! airsim_wp_mode) {
             throw MyExit("no joystick connected.");
         }
+
+        // init rc
+        if(airsim_mode) {
+            rc = std::unique_ptr<Rc>(new AirSimController());
+        } else if (dparams.tx != tx_none ) {
+            rc = std::unique_ptr<Rc>(new MultiModule());
+        }
+        if (!rc->connected() && pparams.op_mode != op_mode_monitoring) {
+            std::string rc_type = (airsim_mode) ? "AirSim" : "MultiModule";
+            throw MyExit("cannot connect to " + rc_type);
+        }
+    } else {
+        rc = std::unique_ptr<Rc>(new MultiModule());
     }
     //init cam and check version
     if (log_replay_mode) {
@@ -676,7 +711,9 @@ void check_hardware() {
             throw MyExit("Could not find a video file!");
     } else if (generator_mode) {
         cam = std::unique_ptr<Cam>(new GeneratorCam());
-        static_cast<GeneratorCam *>(cam.get())->rc(&rc);
+        static_cast<GeneratorCam *>(cam.get())->rc(rc.get());
+    } else if(airsim_mode) {
+        cam = std::unique_ptr<Cam>(new AirSimCam(airsim_map));
     } else {
         cam = std::unique_ptr<Cam>(new Realsense());
         static_cast<Realsense *>(cam.get())->connect_and_check();
@@ -698,6 +735,7 @@ void init() {
     }
     init_loggers();
 
+    rc->init(drone_id);
     cam->init();
     if (render_monitor_video_mode)
         visdat.read_motion_and_overexposed_from_image(replay_dir); // has to happen before init otherwise wfn's are overwritten
@@ -705,13 +743,13 @@ void init() {
     trackers.init(&logger,replay_dir, &visdat, &(cam->camera_volume));
     dnav.init(&logger,&trackers,&dctrl,&visdat, &(cam->camera_volume),replay_dir);
     if (pparams.op_mode != op_mode_monitoring)
-        dctrl.init(&logger,replay_dir,generator_mode,&rc,trackers.dronetracker(), &(cam->camera_volume),cam->measured_exposure());
+        dctrl.init(&logger,replay_dir,generator_mode,airsim_mode,rc.get(),trackers.dronetracker(), &(cam->camera_volume),cam->measured_exposure());
 
     if (render_monitor_video_mode)
         dnav.render_now_override();
 
     if (pparams.has_screen || render_hunt_mode || render_monitor_video_mode) {
-        visualizer.init(&visdat,&trackers,&dctrl,&dnav,&rc,log_replay_mode);
+        visualizer.init(&visdat,&trackers,&dctrl,&dnav,rc.get(),log_replay_mode);
         if (generator_mode) {
             visualizer.set_generator_cam(static_cast<GeneratorCam *>(cam.get()));
         }
@@ -728,7 +766,7 @@ void init() {
         thread_watchdog = std::thread(&watchdog_worker);
 
     if (!render_hunt_mode && !render_monitor_video_mode)
-        cmdcenter.init(log_replay_mode,&dnav,&dctrl,&rc,&trackers);
+        cmdcenter.init(log_replay_mode,&dnav,&dctrl,rc.get(),&trackers);
 
 #ifdef PROFILING
     logger << "t_visdat;t_trkrs;t_nav;t_ctrl;t_prdct;t_frame;"; // trail of the logging heads, needs to happen last
@@ -754,7 +792,7 @@ void close(bool sig_kill) {
     dnav.close();
     trackers.close();
     if (!log_replay_mode)
-        rc.close();
+        rc->close();
     if (pparams.has_screen || render_hunt_mode || render_monitor_video_mode)
         visualizer.close();
     visdat.close();
@@ -780,6 +818,8 @@ void close(bool sig_kill) {
     print_warnings();
     if(cam)
         cam.release();
+    if(rc)
+        rc.release();
     if (render_monitor_video_mode || render_hunt_mode)
         thread_watchdog.join();
     std::cout <<"Closed"<< std::endl;
@@ -939,7 +979,7 @@ int main( int argc, char **argv )
         }
 
         check_hardware();
-        if (!log_replay_mode && !generator_mode && !render_monitor_video_mode && !render_hunt_mode) {
+        if (!log_replay_mode && !generator_mode && !render_monitor_video_mode && !render_hunt_mode && !airsim_mode) {
             wait_for_cam_angle();
             wait_for_dark();
         } else {
@@ -949,7 +989,7 @@ int main( int argc, char **argv )
             pparams.drone_tracking_tuning = false;
             pparams.insect_tracking_tuning = false;
             pparams.cam_tuning = false;
-            if (generator_mode || render_monitor_video_mode || render_hunt_mode) {
+            if (generator_mode || render_monitor_video_mode || render_hunt_mode || airsim_wp_mode) {
                 pparams.joystick = rc_none;
             }
 
