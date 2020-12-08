@@ -80,6 +80,18 @@ def load_systems(username):
 
     return authorized_systems
 
+def remove_unauthoirized_system(selected_systems): #this is solely a security related check
+    if not selected_systems:
+        return selected_systems
+    username = flask.request.authorization['username']
+    systems = load_systems(username)
+    authorized_systems = []
+    for s in selected_systems:
+        if s in systems:
+            authorized_systems.append(s)
+    return authorized_systems
+
+
 def system_sql_str(systems):
     if not isinstance(systems, list):
         systems = [systems]
@@ -121,7 +133,7 @@ def load_moth_data(selected_systems,selected_dayrange):
     cur.execute(sql_str)
     end_date = cur.fetchone()[0]
     if not first_date or not end_date:
-        return [],[],[],[],[]
+        return [],[],[],[]
 
     end_date = datetime.datetime.strptime(end_date, '%Y%m%d_%H%M%S')
     d = start_date-datetime.timedelta(hours=12)
@@ -491,7 +503,7 @@ def update_ui_hist_and_heat(selected_daterange,selected_systems,selected_hm_cell
     ctx = dash.callback_context
     if ctx.triggered[0]['prop_id'] == 'date_range_dropdown.value' or ctx.triggered[0]['prop_id'] == 'systems_dropdown.value':
         selected_heat = None
-
+    selected_systems = remove_unauthoirized_system(selected_systems)
     selected_dayrange = selected_dates(selected_daterange)
     if not selected_systems or not selected_systems:
         return hm_fig,hist_fig,hm_style,hist_style,selected_heat,Loading_animation_style
@@ -540,6 +552,7 @@ def update_ui_scatter(selected_daterange,selected_systems,hm_selected_cells,hist
 
     ctx = dash.callback_context
 
+    selected_systems = remove_unauthoirized_system(selected_systems)
     if not selected_systems:
         return scat_fig,scat_style,scat_axis_select_style
 
@@ -603,6 +616,7 @@ def update_moth_ui(selected_daterange,selected_systems,clickData_hm,clickData_do
     classify_style={'display': 'none'}
     Loading_animation_style={'display': 'block'}
 
+    selected_systems = remove_unauthoirized_system(selected_systems)
     ctx = dash.callback_context
     if not 'selectedpoints' in scatter_fig_state['data'][0] or ctx.triggered[0]['prop_id'] != 'verstrooide_kaart.clickData' or not selected_systems:
         return target_video_fn,video_style,path_fig,path_style,file_link,file_link_style,selected_moth,classification,classify_style,Loading_animation_style
