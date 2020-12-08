@@ -51,7 +51,7 @@ Host pats4  pats_koppert4
 	ProxyJump dash
 	Port 6400
 
-Host pats5 
+Host pats5
 	Hostname localhost
 	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
@@ -204,28 +204,28 @@ Host pats26 darkroom
         User pats
         ProxyJump dash
         Port 8600
-	
+
 Host pats27
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
         Port 8700
-	
+
 Host pats28
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
         Port 8800
-	
+
 Host pats29
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
         Port 8900
-	
+
 Host pats30
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
@@ -268,27 +268,27 @@ Host pats35
         ProxyJump dash
         Port 9500
 
-Host pats36 darkroom
+Host pats36
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
         Port 9600
-	
+
 Host pats37
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
         Port 9700
-	
+
 Host pats38
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
         Port 9800
-	
+
 Host pats39
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
