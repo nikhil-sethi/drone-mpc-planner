@@ -529,7 +529,7 @@ public:
         if (initialized)
             return _rc->telemetry;
         else {
-            Telemetry t;
+            Telemetry t = {0};
             return t;
         }
     }

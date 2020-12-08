@@ -134,7 +134,7 @@ public:
     int throttle = RC_BOUND_MIN;
     int arm_switch = RC_BOUND_MIN;
     int turtle_mode = RC_BOUND_MIN;
-    Telemetry telemetry;
+    Telemetry telemetry = {0};
     const int bf_major_required = 4;
     const int bf_minor_required = 2;
     const int bf_patch_required = 102;
