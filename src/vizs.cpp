@@ -474,6 +474,8 @@ void Visualizer::draw_tracker_viz() {
     if ( last_drone_detection.predicted_image_item.valid) {
         auto pred =  last_drone_detection.predicted_image_item;
         cv::circle(frameL_color,pred.pt,pred.size/2,cv::Scalar(0,255,0));
+    } else if(_trackers->dronetracker()->takeoff_location_valid()) {
+        cv::circle(frameL_color,_trackers->dronetracker()->takeoff_im_location(),_trackers->dronetracker()->takeoff_im_size()/2,cv::Scalar(0,255,0));
     }
     if ( last_drone_detection.world_item.iti.valid) {
         auto p =  last_drone_detection.world_item.iti;
@@ -563,6 +565,7 @@ void Visualizer::draw_tracker_viz() {
             cv::line(frameL_color,drone_pos,tv,cv::Scalar(0,255,0),1);
         }
     }
+
     cv::resize(frameL_color,roi,size);
 
     cv::Size vizsizeL(size.width/4,size.height/4);
