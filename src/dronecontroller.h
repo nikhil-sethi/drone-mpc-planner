@@ -192,6 +192,7 @@ private:
     bool initialized = false;
     bool log_replay_mode = false;
     bool generator_mode = false;
+    bool propwash = false;
     flight_modes _flight_mode = fm_joystick_check; // only set externally (except for disarming), used internally
     joy_mode_switch_modes _joy_mode_switch = jmsm_none;
     betaflight_arming _joy_arm_switch = bf_armed;

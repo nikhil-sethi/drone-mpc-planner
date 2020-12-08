@@ -29,7 +29,7 @@ void DroneController::init(std::ofstream *logger,string replay_dir,bool generato
                "joyThrottle;joyRoll;joyPitch;joyYaw; " <<
                "joyArmSwitch;joyModeSwitch;joyTakeoffSwitch;" <<
                "mmArmSwitch;mmModeSwitch;" <<
-               "dt;" <<
+               "dt;propwash;" <<
                "thrust; integrator_x;integrator_y;integrator_z;model_error;" <<
                "batt_cell_v;rssi;arm;";
     ;
@@ -519,6 +519,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
                _rc->arm_switch << ";" <<
                _rc->mode << ";" <<
                data_drone.dt << ";" <<
+               propwash << ";" <<
                drone_calibration.thrust << ";" <<
                pos_err_i.x << ";" << pos_err_i.y << ";" << pos_err_i.z << ";" <<
                model_error << ";" <<
@@ -874,8 +875,7 @@ cv::Point3f DroneController::kiv_acceleration(std::array<bool, N_PLANES> violate
 std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f desired_acceleration) {
 
     cv::Point3f drone_vel = _dtrk->last_track_data().vel();
-    bool propwash = prop_wash(drone_vel, desired_acceleration);
-    std::cout << "Propwash-detection-triggered: " << propwash << std::endl;
+    propwash = prop_wash(drone_vel, desired_acceleration);
     if(propwash) {
         desired_acceleration /= normf(desired_acceleration);
         desired_acceleration *= 0.65f*drone_calibration.thrust; //at ~0.8 drone starts crashing
@@ -956,9 +956,9 @@ bool DroneController::prop_wash(cv::Point3f drone_velocity, cv::Point3f des_acc_
 
     float dot = des_acc_drone.dot(drone_velocity)/normf(des_acc_drone)/normf(drone_velocity);
     dot = 1 - (dot + 1)/2;
-    float vel_ind = speed>3.35f ? 1.f : speed/3.35f;
+    float vel_ind = speed>3.f ? 1.f : speed/3.f;
     std::cout << "Propwash-indicator: " << dot << ", " << vel_ind << "->" << dot*vel_ind << std::endl;
-    if(dot*vel_ind > 0.85f) {
+    if(dot*vel_ind > 0.75f) {
         return true;
     } else
         return false;
