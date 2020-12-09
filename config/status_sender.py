@@ -168,7 +168,7 @@ while True:
             print("Metered connection mode. Next update at: " + str(args.hour))
 
         if os.path.exists(pats_cc_update_request):
-            print("\nManual update trigger detected...")
+            print("\nManual update trigger detected...\n")
             os.remove(pats_cc_update_request)
             send_status_update()
 
