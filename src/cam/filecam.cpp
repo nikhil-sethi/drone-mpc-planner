@@ -55,6 +55,14 @@ void FileCam::read_frame_ids() {
     while (getline(infile, line)) {
         try {
             auto data = split_csv_line(line);
+            if (data.size() != 4) {
+                if (getline(infile, line))
+                    throw MyExit("Could not read log! File: " +framesfile + '\n' + " at: " + line);
+                else {
+                    std::cout << "Warning, last line corrupted of frames.csv. Processes did not close properly?" << std::endl;
+                    break;
+                }
+            }
             Frame_ID_Entry entry;
             entry.raw_video_frame_counter = stoi(data.at(0));
             entry.imgcount = stoi(data.at(1));
@@ -62,7 +70,7 @@ void FileCam::read_frame_ids() {
             entry.time = stod(data.at(3));
             frames_ids.push_back(entry);
         } catch (exception& exp ) {
-            throw MyExit("Could not read log! File: " +framesfile + '\n' + "Line: " + string(exp.what()) + " at: " + line);
+            throw MyExit("Could not read log! File: " +framesfile + '\n' + "Err: " + string(exp.what()) + " at: " + line);
         }
     }
     infile.close();

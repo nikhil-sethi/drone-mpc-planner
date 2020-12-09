@@ -711,9 +711,9 @@ void process_arg(int argc, char **argv) {
 }
 
 void check_hardware() {
-    if (! log_replay_mode && !render_monitor_video_mode && !render_hunt_mode) {
+    if (pparams.op_mode != op_mode_monitoring && !log_replay_mode && !render_monitor_video_mode && !render_hunt_mode) {
         //multimodule rc
-        if (! generator_mode && dparams.tx != tx_none )
+        if (! generator_mode && dparams.tx != tx_none)
             rc.init(drone_id);
         if (!rc.connected() && pparams.op_mode != op_mode_monitoring)
             throw MyExit("cannot connect the MultiModule");
