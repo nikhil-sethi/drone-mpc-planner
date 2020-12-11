@@ -3,9 +3,9 @@
 ## [Installation]
 Start [install.sh](config/install.sh) with argument 0 (non monitoring mode) to install all requirements.
 
-## [Firmwares](config/firmwares/Readme.md)
+## [Firmwares](config/firmwares/README.md)
 
-## [Simulator](doc/simulator.md)
+## [Simulator](./doc/simulator.md)
 
 ## Installing correct kernel:
 `sudo apt install linux-headers-4.15.0-55 linux-headers-4.15.0-55-generic linux-image-4.15.0-55-generic linux-modules-4.15.0-55-generic linux-modules-extra-4.15.0-55-generic`  
