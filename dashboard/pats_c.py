@@ -64,7 +64,7 @@ def open_systems_db():
 
 def load_systems(username):
     _,cur = open_systems_db()
-    sql_str = '''SELECT systems.system_name FROM systems,group_system_connection,customer_group_connection,customers WHERE group_system_connection.system_id = systems.system_id AND group_system_connection.group_id = customer_group_connection.group_id AND customer_group_connection.customer_id = customers.customer_id AND customers.name = ? ORDER BY systems.system_id'''
+    sql_str = '''SELECT DISTINCT systems.system_name FROM systems,group_system_connection,customer_group_connection,customers WHERE group_system_connection.system_id = systems.system_id AND group_system_connection.group_id = customer_group_connection.group_id AND customer_group_connection.customer_id = customers.customer_id AND customers.name = ? ORDER BY systems.system_id'''
     cur.execute(sql_str,(username,))
     systems = cur.fetchall()
     authorized_systems = [d[0] for d in systems]
