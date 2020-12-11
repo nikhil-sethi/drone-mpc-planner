@@ -1,37 +1,11 @@
 # PATS
 
-## Flashing the drone:
+## [Installation]
+Start [install.sh](config/install.sh) with argument 0 (non monitoring mode) to install all requirements.
 
-1. Start the bf_flash script to flash the firmware and betaflight settings:
-```
-cd ~/code/pats/config/firmwares/drone
-./bf_flash.py
-```
-This may require to install `pip3 install pyserial` or in case of conda `conda install -c anaconda pyserial`. You'll also need `sudo apt install dfu-util`.
-The script supports some command line arguments, like setting the drone id or selecting another settings file, see `./bf_flash.py --help`. 
+## [Firmwares](config/firmwares/Readme.md)
 
-2.1. Apply the following settings to BLHeli:  
-![BLHeli settings](https://github.com/pats-drones/pats/blob/master/doc/BLHeliSettings.png)
-
-2.2. Flash ESC drivers  
-Go to the `Flash all` option in BLHeli. Select file manually and go to `pats/config/firmwares/drone`.
-Choose the driver file depending on the flightcontroller you are using.  
-for instance:  
-Flightcontroller v2 = S-H-50 16.8  
-Flightcontroller v3 = F-H-40 16.8
-
-2.3. These should be the default settings for esc timing:  
-![BLHeli settings](https://github.com/pats-drones/pats/blob/master/doc/BLHeliESCSettings.PNG)
-
-## Flashing the multimodule:
-```
-cd ~/code/pats/config/firmwares/multimodule
-./flash.py
-```
-Same remarks as with drone flash script apply.
-
-## Flashing realsense camera:
-`sudo rs-fw-update -f ~/code/pats/config/firmwares/realsense/Signed_Image_UVC_5_12_6_0.bin`
+## [Simulator](doc/simulator.md)
 
 ## Installing correct kernel:
 `sudo apt install linux-headers-4.15.0-55 linux-headers-4.15.0-55-generic linux-image-4.15.0-55-generic linux-modules-4.15.0-55-generic linux-modules-extra-4.15.0-55-generic`  
@@ -40,22 +14,6 @@ Same remarks as with drone flash script apply.
 Change `GRUB_DEFAULT=0` to `GRUB_DEFAULT="Advanced options for Ubuntu>Ubuntu, with Linux 4.15.0-55-generic"`  
 `sudo update-grub`  
 Other known working kernel is 4.18.0.25
-
-## Converting videos
-Convert first 10s videoLR.avi:  
-`find -iname videoRawLR.avi -exec ffmpeg -i {} -ss 00:00:00 -to 00:00:10 -c:v copy {}_first10s.mp4 \;` 
-
-Convert videoLR.avi:  
-`find -iname videoRawLR.avi -exec ffmpeg -i {} -c:v copy {}.mp4 \; -exec rm {} \;` 
-
-Re-encode old videoLR.avi:  
-`find -iname videoRawLR.avi -exec ffmpeg -i {} -c:v libx264 -level 3.0 -pix_fmt yuv420p -crf 21 -preset slow {}_reencoded.mp4 \; -exec rm {} \;` 
-
-Re-encode color result video's (not necessary anymore):
-`find -iname videoResult.avi -exec ffmpeg -i {} -c:v libx264 -preset slow -pix_fmt yuv420p -profile:v high -level 4.0 -b:v 15M -bf 2 -crf 18 {}.mp4 \;`
-
-`find -iname videoResult.avi -exec ffmpeg -i {} -f matroska -c:v libvpx -crf 21 -b:v 15M {}.mkv \;` 
-
 
 ## Installing new keys:  
 `ssh-keygen -t rsa -b 4096 -C "pats@pats.com"`  
