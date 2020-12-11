@@ -21,6 +21,7 @@ from urllib.parse import quote as urlquote
 
 db_path = ''
 db_classification_path = ''
+db_systems_path = ''
 heatmap_max=50
 pre_fp_sql_filter_str = '((duration > 1 AND duration < 10 AND Dist_traveled > 0.15 AND Dist_traveled < 4) OR (Version="1.0" AND duration > 1 AND duration < 10))'
 
@@ -50,33 +51,23 @@ def open_classification_db():
     except Exception as e:
         print(e)
     return conn,cur
+def open_systems_db():
+    global db_systems_path
+    conn = None
+    cur = None
+    try:
+        conn = sqlite3.connect(db_systems_path)
+        cur = conn.cursor()
+    except Exception as e:
+        print(e)
+    return conn,cur
 
 def load_systems(username):
-    _,cur = open_db()
-    sql_str = '''SELECT DISTINCT system FROM mode_records ORDER BY system '''
-    cur.execute(sql_str)
+    _,cur = open_systems_db()
+    sql_str = '''SELECT systems.system_name FROM systems,group_system_connection,customer_group_connection,customers WHERE group_system_connection.system_id = systems.system_id AND group_system_connection.group_id = customer_group_connection.group_id AND customer_group_connection.customer_id = customers.customer_id AND customers.name = ? ORDER BY systems.system_id'''
+    cur.execute(sql_str,(username,))
     systems = cur.fetchall()
-    systems = natural_sort_systems(systems)
-    systems = [d[0] for d in systems]
-
-    authorized_systems = []
-    _,user_group_dict = read_cred_db()
-
-    group = user_group_dict[username]
-    for sys in systems:
-        sys_id = int(sys.replace('pats','').replace('-proto',''))
-        if (group == 'admin' or group == 'pats') and (sys_id != 25 and sys_id != 26 and sys_id != 10):
-            authorized_systems.append(sys)
-        elif group == 'koppertcress' and (sys_id ==4 or sys_id == 6):
-            authorized_systems.append(sys)
-        elif (group == 'wur') and (sys_id == 23 or sys_id == 24):
-            authorized_systems.append(sys)
-        elif (group == 'holstein') and (sys_id == 2 or sys_id == 22):
-            authorized_systems.append(sys)
-        elif (group == 'vde') and (sys_id == 7):
-            authorized_systems.append(sys)
-        elif (group == 'lyprauta') and (sys_id == 27):
-            authorized_systems.append(sys)
+    authorized_systems = [d[0] for d in systems]
 
     return authorized_systems
 
@@ -689,12 +680,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Dash app that shows PATS-C monitoring and system analysis')
     parser.add_argument('--db', help='Path to the sql database', default='~/pats.db')
     parser.add_argument('--db_classification', help='Path to the sql database', default='~/pats_human_classification.db')
+    parser.add_argument('--db_systems', help='Path to the system sql database', default='~/pats_systems.db')
     args = parser.parse_args()
     db_path = os.path.expanduser(args.db)
     db_classification_path = os.path.expanduser(args.db_classification)
+    db_systems_path = os.path.expanduser(args.db_systems)
 else:
     db_path = os.path.expanduser('~/pats.db')
     db_classification_path = os.path.expanduser('~/pats_human_classification.db')
+    db_systems_path = os.path.expanduser('~/pats_systems.db')
 
 if not os.path.exists('static'):
     os.makedirs('static')
