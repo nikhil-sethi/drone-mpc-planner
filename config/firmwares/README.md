@@ -16,9 +16,9 @@ The script supports some command line arguments, like setting the drone id or se
 Go to the `Flash all` option in BLHeli. Select file manually and go to `pats/config/firmwares/drone`.
 Choose the driver file depending on the flightcontroller you are using.
 for instance:
-Flightcontroller Anvil = O-H-5 16.9
-Flightcontroller Hammer CB v2 = S-H-50 16.9
-Flightcontroller Hammer CB v2 = F-H-40 16.9
+Flightcontroller Anvil = O-H-5 16.9  
+Flightcontroller Hammer CB v2 = S-H-50 16.9  
+Flightcontroller Hammer CB v2 = F-H-40 16.9  
 
 4. For the Anvil, apply the following settings, and then click write all settings:
 ![BLHeli settings](../../doc/BLHeliESCSettings_Anvil.png)
