@@ -330,7 +330,7 @@ void process_video() {
             } else if ((cam->measured_exposure() <= pparams.darkness_threshold && pparams.darkness_threshold>0)) {
                 std::cout << "Initiating restart because exposure (" << cam->measured_exposure() << ") is lower than darkness_threshold (" << pparams.darkness_threshold << ")" << std::endl;
                 exit_now = true;
-            } else if (visdat.average_brightness() > pparams.max_brightness+10 && pparams.darkness_threshold>0 && cam->measured_exposure() <= pparams.darkness_threshold) {
+            } else if (visdat.average_brightness() > pparams.max_brightness+10 && pparams.darkness_threshold>0) {
                 std::cout << "Initiating restart because avg brightness (" << visdat.average_brightness() << ") is higher than max_brightness (" << pparams.max_brightness+10 << ")" << std::endl;
                 exit_now = true;
             }
