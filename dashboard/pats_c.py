@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import socket, json,shutil,subprocess,sqlite3
 import datetime,time, argparse,math,pickle, glob, os, re
+from dash_core_components.Checklist import Checklist
 from dash_core_components.Dropdown import Dropdown
 import numpy as np
 import pandas as pd
@@ -22,12 +23,15 @@ from urllib.parse import quote as urlquote
 db_path = ''
 db_classification_path = ''
 db_systems_path = ''
+group_checkboxes = []
+subgroup_checkboxes = []
 heatmap_max=50
 pre_fp_sql_filter_str = '((duration > 1 AND duration < 10 AND Dist_traveled > 0.15 AND Dist_traveled < 4) OR (Version="1.0" AND duration > 1 AND duration < 10))'
 
 server = flask.Flask(__name__)
 app = dash.Dash(__name__, server=server)
 app.title = 'PATS-C'
+app.config['suppress_callback_exceptions'] = True
 
 pio.templates.default = 'plotly_dark'
 
@@ -62,13 +66,31 @@ def open_systems_db():
         print(e)
     return conn,cur
 
+def load_systems_group(group_name):
+    _,cur = open_systems_db()
+    sql_str = '''SELECT system_id FROM systems JOIN groups ON groups.group_id = systems.group_id WHERE groups.name = ? ORDER BY system_id'''
+    cur.execute(sql_str,(group_name,))
+    systems = cur.fetchall()
+    systems = ['pats-proto'+str(d[0]) for d in systems]
+    return systems
+
+def load_groups():
+    global group_dict
+    username = flask.request.authorization['username']
+    _,cur = open_systems_db()
+    sql_str = '''SELECT groups.name FROM groups JOIN customer_group_connection ON customer_group_connection.group_id = groups.group_id JOIN customers ON customers.customer_id = customer_group_connection.customer_id WHERE customers.name = ? ORDER BY groups.name'''
+    cur.execute(sql_str,(username,))
+    groups = cur.fetchall()
+    group_dict = {}
+    for group in groups:
+        group_dict[group[0]] = load_systems_group(group[0])
+
 def load_systems(username):
     _,cur = open_systems_db()
-    sql_str = '''SELECT DISTINCT systems.system_name FROM systems,group_system_connection,customer_group_connection,customers WHERE group_system_connection.system_id = systems.system_id AND group_system_connection.group_id = customer_group_connection.group_id AND customer_group_connection.customer_id = customers.customer_id AND customers.name = ? ORDER BY systems.system_id'''
+    sql_str = '''SELECT DISTINCT systems.system_name FROM systems,customer_group_connection,customers WHERE  systems.group_id = customer_group_connection.group_id AND customer_group_connection.customer_id = customers.customer_id AND customers.name = ? ORDER BY systems.system_id '''
     cur.execute(sql_str,(username,))
     systems = cur.fetchall()
     authorized_systems = [d[0] for d in systems]
-
     return authorized_systems
 
 def remove_unauthoirized_system(selected_systems): #this is solely a security related check
@@ -81,7 +103,6 @@ def remove_unauthoirized_system(selected_systems): #this is solely a security re
         if s in systems:
             authorized_systems.append(s)
     return authorized_systems
-
 
 def system_sql_str(systems):
     if not isinstance(systems, list):
@@ -281,18 +302,18 @@ def create_heatmap(unique_dates,heatmap_counts,xlabels, selected_cells):
     )
     style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '50%'}
     return fig,style
-def create_hist(df_hist,unique_dates,selected_systems):
+def create_hist(df_hist,unique_dates,system_labels):
     fig = go.Figure()
     cnt = 0
-    for sys in selected_systems:
+    for sys in system_labels.keys():
         hist_data = df_hist[sys]
-        syss = [sys] * len(hist_data)
+        syss = [system_labels[sys]] * len(hist_data)
         hist = go.Bar(
             x = unique_dates,
             y = hist_data,
             customdata = np.transpose([syss,syss]), #ok, we should only need one column of syss, spend an hour or streamlining this just to conclude something weird is going on in there...
             marker_color = px.colors.qualitative.Vivid[cnt],
-            name = sys.replace('proto','').replace('pats','Pats'),
+            name = system_labels[sys],
             hovertemplate = '<b>System %{customdata[0]}</b><br><br>' +
                     '<extra></extra>'
         )
@@ -321,25 +342,26 @@ def video_available_to_symbol(x):
     if not x or x == 'NA':
         return 1
     return 0
-def create_scatter(moths,selected_systems,scatter_x_value,scatter_y_value):
+def create_scatter(moths,system_labels,scatter_x_value,scatter_y_value):
     df_scatter = pd.DataFrame(moths,columns=moth_columns)
     df_scatter['system_ids'] = df_scatter['system'].str.replace('pats-proto','').astype(int)
-    df_scatter['system_color'] = df_scatter['system'].apply(selected_systems.index).astype(int)
+    df_scatter['system_color'] = df_scatter['system'].apply(list(system_labels.keys()).index).astype(int)
     df_scatter['classification_symbol'] = df_scatter['Human_classification'].apply(classification_to_symbol)
     df_scatter['Human_classification'] = df_scatter['Human_classification'].apply(remove_nones_classification)
     df_scatter['video_symbol'] = df_scatter['Video_Filename'].apply(video_available_to_symbol)
     df_scatter['classification_symbol'] = df_scatter['classification_symbol']
 
     scat_fig = go.Figure()
-    for sys in selected_systems:
+    for sys in system_labels.keys():
         df_scatter_sys = df_scatter[df_scatter['system']==sys]
         for classification in classification_options:
             tmp1 = list(df_scatter_sys['Human_classification']==classification) #which rows have the same classification
             df = df_scatter_sys[tmp1] #retrieve only those rows that have the same classficication
             df = df.fillna('')
             if not df.empty:
+                current_labels = [system_labels[sys] for x in df[scatter_x_value]]
                 scatter = go.Scattergl(
-                    name = sys.replace('proto','').replace('pats','Pats') + ', ' + classification,
+                    name = system_labels[sys] + ', ' + classification,
                     showlegend=True,
                     x = df[scatter_x_value],
                     y = df[scatter_y_value],
@@ -348,7 +370,7 @@ def create_scatter(moths,selected_systems,scatter_x_value,scatter_y_value):
                         (df['system'] + '/' + df['Folder'] + '/' + df['Filename'],
                         df['Video_Filename'],
                         df['Human_classification'],
-                        df['system_ids'],
+                        current_labels,
                         df['uid']
                     ), axis=-1),
                     marker=dict(
@@ -463,14 +485,18 @@ def selected_dates(selected_daterange):
         return 1
 
 @app.callback(
-    Output('systems_dropdown', 'options'),
+    Output('systems_dropdown','options'),
     Input('date_range_dropdown', 'options'))
 def init_system_dropdown(_): #unfortunately we have to do this init through a click event, because authorization doesn't work otherwise
-    username = flask.request.authorization['username']
-    systems = load_systems(username)
+    load_groups()
     options = []
-    for system in systems:
-        options.append({'label': system, 'value': system} )
+    for group in group_dict.keys():
+        for i,system in enumerate(group_dict[group]):
+            if group == 'pats' or group == 'maintance' or group == 'admin' or group == 'unassigned_systems' or group == 'deactivated_systems':
+                options.append({'label':system,'value':system,'title':system})
+            else:
+                options.append({'label':group+' '+str(i+1),'value':system,'title':system})
+    #systems = remove_unauthoirized_system(systems)
     return options
 
 @app.callback(
@@ -483,26 +509,28 @@ def init_system_dropdown(_): #unfortunately we have to do this init through a cl
     Input('date_range_dropdown', 'value'),
     Input('systems_dropdown', 'value'),
     Input('hete_kaart', 'clickData'),
-    State('selected_heatmap_data', 'children'))
-def update_ui_hist_and_heat(selected_daterange,selected_systems,selected_hm_cells,selected_heat):
+    State('selected_heatmap_data', 'children'),
+    State('systems_dropdown','options'))
+def update_ui_hist_and_heat(selected_daterange,selected_systems,selected_hm_cells,selected_heat,system_options):
     hm_fig=go.Figure(data=go.Heatmap())
     hist_fig=go.Figure(data=go.Histogram())
     hm_style={'display': 'none'}
     hist_style={'display': 'none'}
     Loading_animation_style={'display': 'block'}
+    system_labels = {x['value'] : x['label'] for x in system_options if x['value'] in selected_systems}
 
     ctx = dash.callback_context
     if ctx.triggered[0]['prop_id'] == 'date_range_dropdown.value' or ctx.triggered[0]['prop_id'] == 'systems_dropdown.value':
         selected_heat = None
     selected_systems = remove_unauthoirized_system(selected_systems)
     selected_dayrange = selected_dates(selected_daterange)
-    if not selected_systems or not selected_systems:
+    if not selected_systems or not selected_dayrange:
         return hm_fig,hist_fig,hm_style,hist_style,selected_heat,Loading_animation_style
     unique_dates,heatmap_data,_,df_hist = load_moth_data(selected_systems,selected_dayrange)
     if not len(unique_dates):
         return hm_fig,hist_fig,hm_style,hist_style,selected_heat,Loading_animation_style
 
-    hist_fig,hist_style=create_hist(df_hist,unique_dates,selected_systems)
+    hist_fig,hist_style=create_hist(df_hist,unique_dates,system_labels)
 
     if ctx.triggered[0]['prop_id'] == 'hete_kaart.clickData' or ctx.triggered[0]['prop_id'] == 'classification_dropdown.value':
         if not selected_hm_cells:
@@ -535,11 +563,16 @@ def update_ui_hist_and_heat(selected_daterange,selected_systems,selected_hm_cell
     Input('scatter_x_dropdown', 'value'),
     Input('scatter_y_dropdown', 'value'),
     Input('classification_dropdown', 'value'),
-    State('selected_heatmap_data', 'children'))
-def update_ui_scatter(selected_daterange,selected_systems,hm_selected_cells,hist_selected_bars,scatter_x_value,scatter_y_value,classification_dropdown,selected_heat):
+    State('selected_heatmap_data', 'children'),
+    State('systems_dropdown','options'))
+def update_ui_scatter(selected_daterange,selected_systems,hm_selected_cells,hist_selected_bars,scatter_x_value,scatter_y_value,classification_dropdown,selected_heat,system_options):
     scat_fig=go.Figure(data=go.Scatter())
     scat_style={'display': 'none'}
     scat_axis_select_style={'display': 'none'}
+    if system_options and selected_systems:
+        system_labels = {x['value'] : x['label'] for x in system_options if x['value'] in selected_systems}
+    else:
+         system_labels = None
 
     ctx = dash.callback_context
 
@@ -574,7 +607,7 @@ def update_ui_scatter(selected_daterange,selected_systems,hm_selected_cells,hist
                 moths.extend(entries)
 
         if moths:
-            scat_fig = create_scatter(moths,selected_systems,scatter_x_value,scatter_y_value)
+            scat_fig = create_scatter(moths,system_labels,scatter_x_value,scatter_y_value)
             scat_axis_select_style={'display': 'table','textAlign':'center','width':'50%','margin':'auto'}
             scat_style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '50%'}
     return scat_fig,scat_style,scat_axis_select_style
@@ -721,13 +754,14 @@ xlabels = []
 for i in range(0,24):
     xlabels.append(str((i+12)%24)+'h')
 
-scatter_columns = { 'duration' : 'Duration',
-                    'Vel_mean':'Velocity mean',
-                    'Vel_max':'Velocity max',
-                    'Dist_traveled':'Distance traveled',
-                    'Dist_traject':'Distance trajectory',
-                    'Size':'Size'}
+scatter_columns = { 'duration' : 'Duration (s)',
+                    'Vel_mean':'Velocity mean (m/s)',
+                    'Vel_max':'Velocity max (m/s)',
+                    'Dist_traveled':'Distance traveled (m)',
+                    'Dist_traject':'Distance trajectory (m)',
+                    'Size':'Size (m)'}
 
+group_dict = {}
 systems = []
 fig_hm = go.Figure(data=go.Heatmap())
 fig_hist=go.Figure(data=go.Histogram())
@@ -740,8 +774,9 @@ app.layout = html.Div(children=[
             html.Div('Select systems:'),
             html.Div(dcc.Dropdown(
                 id='systems_dropdown',
-                options=[{'label': system, 'value': system} for system in systems],
-                multi=True
+                options=[{'label': group, 'value': group} for group in group_dict.keys()],
+                multi=True,
+                placeholder = 'Select systems'
             ), className='dash-bootstrap'),
         ], style={'width': '50%', 'display': 'inline-block'}),
         html.Div([
@@ -778,7 +813,7 @@ app.layout = html.Div(children=[
         html.Div(dcc.Dropdown(
             id='scatter_y_dropdown',
             options=[{'label': scatter_columns[key], 'value': key} for key in scatter_columns],
-            value='Vel_mean',
+            value='Size',
             clearable=False
         ),style={'display': 'table-cell'},className='dash-bootstrap'),
     ],style={'display': 'none','textAlign':'center','width':'50%','margin':'auto'},id='scatter_dropdown_container'),
