@@ -295,3 +295,73 @@ Host pats39
         User pats
         ProxyJump dash
         Port 9900
+
+Host pats40
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 10000
+
+Host pats41
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 10100
+
+Host pats42
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 10200
+
+Host pats43
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 10300
+
+Host pats44
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 10400
+
+Host pats45
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 10500
+
+Host pats46
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 10600
+
+Host pats47
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 10700
+
+Host pats48
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 10800
+
+Host pats49
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 10900
