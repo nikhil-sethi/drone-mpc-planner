@@ -97,7 +97,8 @@ def load_moth_df(selected_systems,start_date,end_date):
     username = flask.request.authorization['username']
     con, cur = open_db()
     cur.execute('ATTACH DATABASE ? AS sdb', (db_systems_path,))
-    sql_str = '''SELECT moth_records.* FROM moth_records JOIN sdb.groups on moth_records.Size > sdb.groups.minimal_size
+    sql_str = '''SELECT moth_records.* FROM moth_records
+    JOIN sdb.groups on (moth_records.Size > sdb.groups.minimal_size OR moth_records.Version="1.0")
     JOIN sdb.systems ON sdb.systems.group_id = sdb.groups.group_id AND sdb.systems.system_name = moth_records.system
     JOIN sdb.customer_group_connection ON sdb.systems.group_id = sdb.customer_group_connection.group_id
     JOIN sdb.customers ON sdb.customers.customer_id = sdb.customer_group_connection.customer_id WHERE sdb.customers.name = ? AND
