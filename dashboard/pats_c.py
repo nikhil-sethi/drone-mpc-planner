@@ -4,6 +4,7 @@ import datetime,time, argparse,math,pickle, glob, os, re
 from dash_core_components.Checklist import Checklist
 from dash_core_components.Dropdown import Dropdown
 import numpy as np
+from numpy.lib.arraysetops import unique
 import pandas as pd
 
 import dash,dash_auth,flask
@@ -23,9 +24,8 @@ from urllib.parse import quote as urlquote
 db_path = ''
 db_classification_path = ''
 db_systems_path = ''
-group_checkboxes = []
-subgroup_checkboxes = []
-heatmap_max=50
+df_moth_data = pd.DataFrame()
+heatmap_max = 50
 pre_fp_sql_filter_str = '((duration > 1 AND duration < 10 AND Dist_traveled > 0.15 AND Dist_traveled < 4) OR (Version="1.0" AND duration > 1 AND duration < 10))'
 
 server = flask.Flask(__name__)
@@ -93,6 +93,21 @@ def load_systems(username):
     authorized_systems = [d[0] for d in systems]
     return authorized_systems
 
+def load_moth_df(selected_systems,start_date,end_date):
+    username = flask.request.authorization['username']
+    con, cur = open_db()
+    cur.execute('ATTACH DATABASE ? AS sdb', (db_systems_path,))
+    sql_str = '''SELECT moth_records.* FROM moth_records JOIN sdb.groups on moth_records.Size > sdb.groups.minimal_size
+    JOIN sdb.systems ON sdb.systems.group_id = sdb.groups.group_id AND sdb.systems.system_name = moth_records.system
+    JOIN sdb.customer_group_connection ON sdb.systems.group_id = sdb.customer_group_connection.group_id
+    JOIN sdb.customers ON sdb.customers.customer_id = sdb.customer_group_connection.customer_id WHERE sdb.customers.name = ? AND
+    ((moth_records.duration > 1 AND moth_records.duration < 10 AND moth_records.Dist_traveled > 0.15 AND moth_records.Dist_traveled < 4)
+    OR (moth_records.Version="1.0" AND moth_records.duration > 1 AND moth_records.duration < 10)) AND moth_records.time > ? AND Moth_records.time <= ?
+    AND moth_records.system IN (%s)''' %('?,'*len(selected_systems))[:-1]
+    moth_df = pd.read_sql_query(sql_str,con,params = (username,start_date.strftime('%Y%m%d_%H%M%S'),end_date.strftime('%Y%m%d_%H%M%S'),*selected_systems))
+    moth_df['time'] = pd.to_datetime(moth_df['time'], format = '%Y%m%d_%H%M%S')
+    return moth_df
+
 def remove_unauthoirized_system(selected_systems): #this is solely a security related check
     if not selected_systems:
         return selected_systems
@@ -130,64 +145,26 @@ def execute(cmd,retry=1):
         popen.stdout.close()
 
 def load_moth_data(selected_systems,selected_dayrange):
-    systems_str = system_sql_str(selected_systems)
-    _,cur = open_db()
+    end_date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
+    start_date = end_date + datetime.timedelta(hours=12) - datetime.timedelta(days=selected_dayrange)
+    moth_df = load_moth_df(selected_systems,start_date,end_date)
 
-    sql_str = 'SELECT MIN(time) FROM moth_records WHERE ' + systems_str
-    start_date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())+datetime.timedelta(hours=12) - datetime.timedelta(days=selected_dayrange)
-    start_date_str = start_date.strftime('%Y%m%d_%H%M%S')
-    sql_str += 'AND time>"' + start_date_str + '"'
-    cur.execute(sql_str)
-    first_date = cur.fetchone()[0]
-
-    sql_str = 'SELECT MAX(time) FROM moth_records WHERE ' + systems_str
-    sql_str += 'AND time > "' + start_date_str + '"'
-    cur.execute(sql_str)
-    end_date = cur.fetchone()[0]
-    if not first_date or not end_date:
+    if moth_df['time'].max() == moth_df['time'].max() and moth_df['time'].min() == moth_df['time'].min():
+        unique_dates = pd.date_range(start_date-datetime.timedelta(hours=12),moth_df['time'].max()-datetime.timedelta(hours=12),freq = 'd')
+    else:
         return [],[],[],[]
 
-    end_date = datetime.datetime.strptime(end_date, '%Y%m%d_%H%M%S')
-    d = start_date-datetime.timedelta(hours=12)
-    unique_dates = []
-    while d <= end_date - datetime.timedelta(hours=12):
-        unique_dates.append(d.strftime('%d-%m-%Y'))
-        d += datetime.timedelta(days=1)
+    hist_data = pd.DataFrame(index=unique_dates,columns=selected_systems)
+    for system,group in (moth_df[['time']]-datetime.timedelta(hours=12)).groupby(moth_df.system):
+        hist_data[system] = group.groupby(group.time.dt.date).count()
+    hist_data.fillna(0,inplace = True)
 
-    moth_columns = [i[1] for i in cur.execute('PRAGMA table_info(moth_records)')]
+    heatmap_df = pd.DataFrame(np.zeros((24,len(unique_dates))),index=range(24),columns=(unique_dates.strftime('%Y%m%d_%H%M%S')))
+    for date,hours in (moth_df[['time']]-datetime.timedelta(hours=12)).groupby((moth_df.time-datetime.timedelta(hours=12)).dt.date):
+        heatmap_df[date.strftime('%Y%m%d_%H%M%S')] = (hours.groupby(hours.time.dt.hour).count())
+    heatmap_data = ((heatmap_df.fillna(0)).to_numpy()).T
 
-
-    heatmap_data = np.zeros((len(unique_dates),24))
-    heatmap_data_lists = np.empty((len(unique_dates),24),dtype=object)
-
-    sql_str = 'SELECT * FROM moth_records WHERE ' + pre_fp_sql_filter_str + ' AND '
-    sql_str += systems_str
-    if selected_dayrange > 0:
-        sql_str += 'AND time > "' + start_date_str + '"'
-    cur.execute(sql_str)
-    moths = cur.fetchall()
-
-    start_date_col = moth_columns.index('time')
-    for moth in moths:
-        d = datetime.datetime.strptime(moth[start_date_col], '%Y%m%d_%H%M%S')-datetime.timedelta(hours=12)
-        day = (d.date() - start_date.date()).days
-        hour = d.hour
-        heatmap_data[day,hour] += 1
-        if not heatmap_data_lists[day,hour]:
-            heatmap_data_lists[day,hour] = [moth]
-        else:
-            heatmap_data_lists[day,hour].append(moth)
-
-    hist_data = np.zeros((len(unique_dates),len(selected_systems)))
-    hist_data = pd.DataFrame(hist_data,columns=selected_systems)
-    start_date_col = moth_columns.index('time')
-    for moth in moths:
-        d = datetime.datetime.strptime(moth[start_date_col], '%Y%m%d_%H%M%S')-datetime.timedelta(hours=12)
-        day = (d.date() - start_date.date()).days
-        hist_data[moth[moth_columns.index('system')]][day] += 1
-
-
-    return unique_dates,heatmap_data,heatmap_data_lists,hist_data
+    return unique_dates,heatmap_data,[],hist_data
 
 def convert_mode_to_number(mode):
     if  mode == 'monitoring':
@@ -269,7 +246,7 @@ def create_heatmap(unique_dates,heatmap_counts,xlabels, selected_cells):
 
     hm = go.Heatmap(
             x = xlabels,
-            y = unique_dates,
+            y = unique_dates.strftime('%d-%m-%Y'),
             z = heatmap_data,
             customdata = hover_label,
             zmin = -2,
@@ -309,7 +286,7 @@ def create_hist(df_hist,unique_dates,system_labels):
         hist_data = df_hist[sys]
         syss = [system_labels[sys]] * len(hist_data)
         hist = go.Bar(
-            x = unique_dates,
+            x = unique_dates.strftime('%d-%m-%Y'),
             y = hist_data,
             customdata = np.transpose([syss,syss]), #ok, we should only need one column of syss, spend an hour or streamlining this just to conclude something weird is going on in there...
             marker_color = px.colors.qualitative.Vivid[cnt],
@@ -343,7 +320,7 @@ def video_available_to_symbol(x):
         return 1
     return 0
 def create_scatter(moths,system_labels,scatter_x_value,scatter_y_value):
-    df_scatter = pd.DataFrame(moths,columns=moth_columns)
+    df_scatter = moths
     df_scatter['system_ids'] = df_scatter['system'].str.replace('pats-proto','').astype(int)
     df_scatter['system_color'] = df_scatter['system'].apply(list(system_labels.keys()).index).astype(int)
     df_scatter['classification_symbol'] = df_scatter['Human_classification'].apply(classification_to_symbol)
@@ -352,6 +329,7 @@ def create_scatter(moths,system_labels,scatter_x_value,scatter_y_value):
     df_scatter['classification_symbol'] = df_scatter['classification_symbol']
 
     scat_fig = go.Figure()
+    scat_fig.update_yaxes({'range':(df_scatter[scatter_y_value].min()-0.005,df_scatter[scatter_y_value].max()+0.005)})
     for sys in system_labels.keys():
         df_scatter_sys = df_scatter[df_scatter['system']==sys]
         for classification in classification_options:
@@ -486,18 +464,21 @@ def selected_dates(selected_daterange):
 
 @app.callback(
     Output('systems_dropdown','options'),
+    Output('systems_dropdown','value'),
     Input('date_range_dropdown', 'options'))
 def init_system_dropdown(_): #unfortunately we have to do this init through a click event, because authorization doesn't work otherwise
     load_groups()
     options = []
+    values = []
     for group in group_dict.keys():
         for i,system in enumerate(group_dict[group]):
             if group == 'pats' or group == 'maintance' or group == 'admin' or group == 'unassigned_systems' or group == 'deactivated_systems':
                 options.append({'label':system,'value':system,'title':system})
             else:
                 options.append({'label':group+' '+str(i+1),'value':system,'title':system})
-    #systems = remove_unauthoirized_system(systems)
-    return options
+    if len(group_dict.keys()) == 1:
+        values = [x['value'] for x in options ]
+    return options, values
 
 @app.callback(
     Output('hete_kaart', 'figure'),
@@ -539,7 +520,7 @@ def update_ui_hist_and_heat(selected_daterange,selected_systems,selected_hm_cell
             selected_heat = []
             for cel in selected_hm_cells['points']:
                 x = xlabels.index(cel['x'])
-                y = unique_dates.index(cel['y'])
+                y = (unique_dates.strftime('%d-%m-%Y').tolist()).index(cel['y'])
                 selected_heat.append([x,y])
 
             selected_heat = pd.DataFrame(selected_heat,columns=['x','y'])
@@ -581,32 +562,22 @@ def update_ui_scatter(selected_daterange,selected_systems,hm_selected_cells,hist
         return scat_fig,scat_style,scat_axis_select_style
 
     if ctx.triggered[0]['prop_id'] == 'staaf_kaart.selectedData' or ctx.triggered[0]['prop_id'] == 'hete_kaart.clickData' or ctx.triggered[0]['prop_id'] == 'classification_dropdown.value' or ctx.triggered[0]['prop_id'] == 'scatter_x_dropdown.value' or ctx.triggered[0]['prop_id'] == 'scatter_y_dropdown.value':
-        moths = []
+        moths = pd.DataFrame()
         if hm_selected_cells:
             for cel in hm_selected_cells['points']:
                 hour = int(cel['x'].replace('h',''))
-                if hour <12:
-                    hour+=24
+                if hour < 12:
+                    hour += 24
                 start_date = datetime.datetime.strptime(cel['y'], '%d-%m-%Y') + datetime.timedelta(hours=hour)
-                end_date = start_date + datetime.timedelta(hours=1)
-                sql_str = 'SELECT * FROM moth_records WHERE time >"' + start_date.strftime('%Y%m%d_%H%M%S') + '" AND time <= "' + end_date.strftime('%Y%m%d_%H%M%S') + '" AND ' + system_sql_str(selected_systems) + ' AND ' + pre_fp_sql_filter_str
-                _,cur = open_db()
-                cur.execute(sql_str)
-                entries = cur.fetchall()
-                moths.extend(entries)
+                moths = moths.append(load_moth_df(selected_systems,start_date,start_date + datetime.timedelta(hours=1)))
 
         elif hist_selected_bars:
             for bar in hist_selected_bars['points']:
                 sys = bar['customdata'][0]
                 start_date = datetime.datetime.strptime(bar['x'], '%d-%m-%Y') + datetime.timedelta(hours=12)
-                end_date = start_date + datetime.timedelta(days=1)
-                sql_str = 'SELECT * FROM moth_records WHERE system="' + sys + '" AND time >"' + start_date.strftime('%Y%m%d_%H%M%S') + '" AND time <= "' + end_date.strftime('%Y%m%d_%H%M%S') + '"' + ' AND ' + pre_fp_sql_filter_str
-                _,cur = open_db()
-                cur.execute(sql_str)
-                entries = cur.fetchall()
-                moths.extend(entries)
+                moths = moths.append(load_moth_df(sys,start_date,start_date + datetime.timedelta(days=1)))
 
-        if moths:
+        if not moths.empty:
             scat_fig = create_scatter(moths,system_labels,scatter_x_value,scatter_y_value)
             scat_axis_select_style={'display': 'table','textAlign':'center','width':'50%','margin':'auto'}
             scat_style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '50%'}
