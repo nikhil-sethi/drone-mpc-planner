@@ -37,9 +37,6 @@
 #include "filecam.h"
 #include "generatorcam.h"
 #include "realsense.h"
-#ifdef HASGUI
-#include "gui/mainwindow.h"
-#endif
 
 using namespace cv;
 using namespace std;
@@ -95,10 +92,6 @@ struct Processer {
     StereoPair * frame;
 };
 Processer tp[NUM_OF_THREADS];
-
-#ifdef HASGUI
-MainWindow gui;
-#endif
 
 /*******Private prototypes*********/
 void process_frame(StereoPair * frame);
@@ -701,9 +694,6 @@ void init() {
     }
     init_loggers();
 
-#ifdef HASGUI
-    gui.init(argc,argv);
-#endif
     cam->init();
     if (render_monitor_video_mode)
         visdat.read_motion_and_overexposed_from_image(replay_dir); // has to happen before init otherwise wfn's are overwritten
@@ -747,9 +737,6 @@ void close(bool sig_kill) {
 
     if (pparams.has_screen)
         cv::destroyAllWindows();
-#ifdef HASGUI
-    gui.close();
-#endif
 
     save_results_log();
 

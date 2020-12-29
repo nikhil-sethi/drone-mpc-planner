@@ -12,14 +12,12 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # sources
 FILE(GLOB SRCS "${SRC_DIR}*.cpp" "${SRC_DIR}*.h" "${SRC_DIR}navigation/*.cpp" "${SRC_DIR}navigation/*.h" "${SRC_DIR}cam/*.cpp" "${SRC_DIR}cam/*.h" "${SRC_DIR}trackers/*.cpp" "${SRC_DIR}trackers/*.h" "${SRC_DIR}filtering/*.cpp" "${SRC_DIR}filtering/*.h" "${SRC_DIR}logging/*.h" "${SRC_DIR}logging/*.cpp" )
 FILE(GLOB THIRD_PARTY_SRCS "${SRC_DIR}third_party/*.h" "${SRC_DIR}third_party/*.hpp" "${SRC_DIR}third_party/*.cpp" "${SRC_DIR}third_party/*.c" "${SRC_DIR}third_party/cereal/*.hpp" "${SRC_DIR}third_party/tinyxml/*.h" "${SRC_DIR}third_party/tinyxml/*.cpp" "../xml/*.xml" "../xml/flightplans/*.xml" "${SRC_DIR}third_party/3dviz/*.cpp" "${SRC_DIR}third_party/3dviz/*.h")
-if(WITH_GUI)
-    FILE(GLOB GUI_SRCS "${SRC_DIR}gui/*.cpp" "${SRC_DIR}gui/*.h")
-endif()
+
 if(VIZ_3D)
     FILE(GLOB ROS_SRCS "${SRC_DIR}third_party/3dviz/ros_msgs/*.cxx" "${SRC_DIR}third_party/3dviz/ros_msgs/*.h" "${SRC_DIR}third_party/3dviz/fastrtps/*.cxx" "${SRC_DIR}third_party/3dviz/fastrtps/*.h" "${SRC_DIR}third_party/3dviz/publishers/*.cpp" "${SRC_DIR}third_party/3dviz/publishers/*.h")
 endif()
 
-add_executable(${PROJECT_NAME} ${SRCS} ${THIRD_PARTY_SRCS} ${GUI_SRCS} ${ROS_SRCS} ${QT_RESOURCES}) 
+add_executable(${PROJECT_NAME} ${SRCS} ${THIRD_PARTY_SRCS} ${ROS_SRCS} ${QT_RESOURCES})
 
 # add packages
 find_package(Threads REQUIRED)
@@ -90,27 +88,6 @@ endif()
 #/airsim*******************
 
 
-#**************QML***********
-if(WITH_GUI)
-    # Find includes in corresponding build directories
-    set(CMAKE_INCLUDE_CURRENT_DIR ON)
-    # Instruct CMake to run moc automatically when needed
-    set(CMAKE_AUTOMOC ON)
-    # Create code from a list of Qt designer ui files
-    set(CMAKE_AUTOUIC ON)
-
-    find_package(Qt5 COMPONENTS Widgets Qml Quick REQUIRED)
-    qt5_add_resources(QT_RESOURCES ${SRC_DIR}gui/qml.qrc)
-
-    SET(HASGUI TRUE)
-    ADD_DEFINITIONS(-DHASGUI=${HASGUI})
-
-    qt5_use_modules(${PROJECT_NAME} Widgets)
-    qt5_use_modules(${PROJECT_NAME} Qml)
-    qt5_use_modules(${PROJECT_NAME} Quick)
-endif()
-#**************/QML***********
-
 target_compile_options (${PROJECT_NAME} PRIVATE  ${GST_CFLAGS})
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${SRC_DIR}")
@@ -138,11 +115,6 @@ target_link_libraries(${PROJECT_NAME} stdc++fs) #until we upgrade to gcc 8
 target_link_libraries(${PROJECT_NAME} ${FASTRTPS_LIBRARIES})
 if(VIZ_3D)
     target_link_libraries(${PROJECT_NAME} fastrtps)
-endif()
-if(WITH_GUI)
-    target_link_libraries(Qt5::Quick)
-    target_link_libraries(Qt5::Qml)
-    target_link_libraries(Qt5::Widgets)
 endif()
 if(WITH_AIRSIM)
     target_link_libraries(${PROJECT_NAME} AirLib)
