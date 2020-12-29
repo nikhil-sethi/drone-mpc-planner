@@ -231,6 +231,7 @@ public:
             return trackermanager_mode_names[_mode];
     }
     bool too_many_false_positives() {return false_positives.size()>20;}
+    int insect_detections() {return next_insecttrkr_id-1;}
 
     std::tuple<bool, BlinkTracker *> blinktracker_best();
 
@@ -261,11 +262,8 @@ public:
         _trackers.push_back(rt);
         next_insecttrkr_id++;
     }
-    void init_replay_moth(std::vector<logging::InsectReader> logs) {
-        replay_logs = logs;
-    }
+    void init_replay_moth(std::vector<logging::InsectReader> logs) { replay_logs = logs; }
     void process_replay_moth(unsigned long long rs_id) {
-
         replay_logs.erase(
             std::remove_if(
                 replay_logs.begin(),

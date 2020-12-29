@@ -10,7 +10,7 @@ void TrackerManager::init(std::ofstream *logger,string replay_dir_,VisionData *v
     _camview = camview;
     replay_dir = replay_dir_;
 
-    if (pparams.has_screen || pparams.video_result || pparams.video_cuts) {
+    if (pparams.has_screen || pparams.video_result) {
         enable_viz_blobs = false; // can be enable during runtime by key-pressing '['
         enable_viz_trackers = false; // can be enable during runtime by key-pressing ']'
         enable_viz_motion = true; // part of the main visualisation

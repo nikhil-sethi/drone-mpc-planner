@@ -277,7 +277,7 @@ public:
 class PatsParameters: public Serializable {
 private:
     xBool _watchdog,_has_screen;
-    xVideo_mode _video_cuts,_video_raw, _video_result;
+    xVideo_mode _video_raw, _video_result;
     xRc_type _joystick;
     xDrone_type _drone;
     xOp_mode _op_mode;
@@ -295,7 +295,7 @@ public:
     int wdt_timeout_us,darkness_threshold,close_after_n_images,max_brightness;
     uint fps;
     bool watchdog,has_screen;
-    video_modes video_cuts,video_raw, video_result;
+    video_modes video_raw, video_result;
     rc_types joystick;
     drone_types drone;
     op_modes op_mode;
@@ -326,7 +326,6 @@ public:
         Register("sub_mode",&_sub_mode);
         Register("watchdog",&_watchdog);
         Register("fps",&_fps);
-        Register("video_cuts",&_video_cuts);
         Register("video_raw",&_video_raw);
         Register("video_result",&_video_result);
         Register("joystick",&_joystick);
@@ -376,7 +375,6 @@ public:
         sub_mode = _sub_mode.value();
         watchdog = _watchdog.value();
         fps = _fps.value();
-        video_cuts = _video_cuts.value();
         video_raw = _video_raw.value();
         video_result = _video_result.value();
         joystick = _joystick.value();
@@ -406,7 +404,6 @@ public:
         _sub_mode = sub_mode;
         _watchdog = watchdog;
         _fps = fps;
-        _video_cuts = video_cuts;
         _video_raw = video_raw;
         _video_result = video_result;
         _joystick = joystick;

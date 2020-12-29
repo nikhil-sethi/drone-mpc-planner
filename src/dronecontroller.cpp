@@ -957,7 +957,7 @@ bool DroneController::prop_wash(cv::Point3f drone_velocity, cv::Point3f des_acc_
     float dot = des_acc_drone.dot(drone_velocity)/normf(des_acc_drone)/normf(drone_velocity);
     dot = 1 - (dot + 1)/2;
     float vel_ind = speed>3.f ? 1.f : speed/3.f;
-    std::cout << "Propwash-indicator: " << dot << ", " << vel_ind << "->" << dot*vel_ind << std::endl;
+    // std::cout << "Propwash-indicator: " << dot << ", " << vel_ind << "->" << dot*vel_ind << std::endl;
     if(dot*vel_ind > 0.75f) {
         return true;
     } else

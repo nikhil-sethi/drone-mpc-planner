@@ -50,8 +50,7 @@ volatile std::sig_atomic_t term_sig_fired;
 int imgcount; // to measure fps
 int raw_video_frame_counter = 0;
 int n_fps_warnings = 0;
-int insect_cnt = 0;
-GStream output_video_results,output_video_LR,output_video_cuts;
+GStream output_video_results,output_video_LR;
 time_t start_datetime;
 
 xmls::PatsParameters pparams;
@@ -187,49 +186,6 @@ void process_video() {
             cmdcenter.reset_commandcenter_status_file("Betaflight version error",true);
         }
 
-        static bool recording = false;
-        double dtr = frame->time - trackers.target_last_detection();
-        if (dtr > 1 && recording) {
-            recording = false;
-            auto time_insect_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
-            logger_insect << "New detection ended at: " << std::put_time(std::localtime(&time_insect_now), "%Y/%m/%d %T") << " Duration: " << dtr << " End cam frame number: " <<  cam->frame_number() << '\n';
-        }
-
-        if ((trackers.tracking_a_target() || dtr < 1) && frame->time > 5) {
-            recording = true;
-        }
-
-
-        if (pparams.video_cuts) {
-            static bool was_recording = false;
-
-            if (recording != was_recording) {
-                if (recording)
-                    insect_cnt++;
-                else if (!recording && insect_cnt>0) {
-                    output_video_cuts.close();
-                    logger.close();
-                    std::string cvfn = "insect" + to_string(insect_cnt) + ".mkv";
-                    std::cout << "Opening new video: " << cvfn << std::endl;
-                    if (output_video_cuts.init(pparams.video_cuts,data_output_dir + cvfn,IMG_W,IMG_H*2,pparams.fps, "192.168.1.255",5000,false)) {std::cout << "WARNING: could not open cut video " << cvfn << std::endl;}
-                    logger_fn = data_output_dir  + "log" + to_string(insect_cnt) + ".csv";
-                    logger.open(logger_fn,std::ofstream::out);
-                }
-                was_recording = recording;
-            }
-
-            if (recording) {
-                static int cut_video_frame_counter = 0;
-                int frame_written = output_video_cuts.write(frame->left,frame->right);
-                if (!frame_written)
-                    cut_video_frame_counter++;
-                std::cout << "Recording! Frames written: " << cut_video_frame_counter << std::endl;
-            } else {
-                logger.close();
-                logger.open(logger_fn,std::ofstream::out);
-            }
-        }
-
         if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode) {
             int frame_written = 0;
             // cv::Mat id_fr = cam->frameL.clone();
@@ -264,7 +220,6 @@ void process_video() {
         }
 
         //keep track of time and fps
-
         float t_pc = stopWatch.Read() / 1000.f;
         float t_cam = static_cast<float>(cam->frame_time());
         float t;
@@ -643,8 +598,6 @@ void init_video_recorders() {
         if (output_video_results.init(pparams.video_result, data_output_dir + "videoResult.mkv",visualizer.viz_frame_size().width,visualizer.viz_frame_size().height,pparams.fps,"192.168.1.255",5000,true)) {throw MyExit("could not open results video");}
     if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode)
         if (output_video_LR.init(pparams.video_raw,data_output_dir + "videoRawLR.mkv",IMG_W,IMG_H*2,pparams.fps, "192.168.1.255",5000,false)) {throw MyExit("could not open LR video");}
-    if (pparams.video_cuts)
-        if (output_video_cuts.init(pparams.video_cuts,data_output_dir + "insect" + to_string(0) + ".mkv",IMG_W,IMG_H*2,pparams.fps, "192.168.1.255",5000,false)) {std::cout << "WARNING: could not open cut video " << data_output_dir + "insect" + to_string(0) + ".mkv" << std::endl;}
 }
 
 void process_arg(int argc, char **argv) {
@@ -826,8 +779,6 @@ void close(bool sig_kill) {
         output_video_results.close();
     if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode)
         output_video_LR.close();
-    if (pparams.video_cuts)
-        output_video_cuts.close();
 
     if (!render_hunt_mode && !render_monitor_video_mode)
         cmdcenter.close();
@@ -843,7 +794,7 @@ void save_results_log() {
     std::ofstream results_log;
     results_log.open(data_output_dir  + "results.txt",std::ofstream::out);
     results_log << "op_mode:" << pparams.op_mode << '\n';
-    results_log << "n_insects:" << insect_cnt << '\n';
+    results_log << "n_insects:" << trackers.insect_detections() << '\n';
     results_log << "n_takeoffs:" << dnav.n_take_offs() << '\n';
     results_log << "n_landings:" << dnav.n_landings() << '\n';
     results_log << "n_hunts:" << dnav.n_hunt_flights() << '\n';
