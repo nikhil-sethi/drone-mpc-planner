@@ -450,14 +450,14 @@ void Visualizer::draw_tracker_viz() {
     cv::Point3f setpoint = tracker_viz_base_data.setpoint;
     double time = tracker_viz_base_data.time;
 
-    std::vector<tracking::TrackData> drn_path = _trackers->dronetracker()->track_history;
+    std::vector<tracking::TrackData> drn_path = _trackers->dronetracker()->track();
     tracking::TrackData last_drone_detection;
     if (drn_path.size())
         last_drone_detection = drn_path.back();
 
     std::vector<tracking::TrackData> ins_path;
     if (_trackers->target_insecttracker())
-        ins_path = _trackers->target_insecttracker()->track_history;
+        ins_path = _trackers->target_insecttracker()->track();
     tracking::TrackData last_insect_detection;
     if (ins_path.size())
         last_insect_detection = ins_path.back();

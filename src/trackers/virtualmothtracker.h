@@ -5,14 +5,12 @@
 
 namespace tracking {
 
-enum mothbehavior {
-    diving,
-    escape_turn
-};
-
-class VirtualmothTracker : public InsectTracker {
+class VirtualMothTracker : public InsectTracker {
 public:
-    tracker_type type() {return tt_virtualmoth;}
+    enum mothbehavior {
+        diving,
+        escape_turn
+    };
 
 private:
     int16_t _id{-1};
@@ -26,26 +24,18 @@ private:
     bool escape_triggered = false;
     mothbehavior behavior_type;
 
-protected:
-    void init_logger();
 public:
     void init(int id, mothbehavior behavior_type, VisionData* visdat, DroneController* dctrl);
-    void update(double time);
-    void update_behavior_based(unsigned long long frame_number, double time);
-    bool tracking() {return _tracking;}
-    int16_t id() {return _id;}
-
+    void init_logger();
     bool check_ignore_blobs(BlobProps* pbs [[maybe_unused]]) {return false;}
     void calc_world_item(BlobProps* pbs, double time [[maybe_unused]]) {pbs->world_props.valid = false;}
+    void update(double time);
+    void update_behavior_based(unsigned long long frame_number, double time);
+    bool delete_me();
 
-    bool delete_me() {
-        if (_delete_me) {
-            _logger->close();
-            return true;
-        }
-        return false;
-    }
+    bool tracking() {return _tracking;}
+    int16_t id() {return _id;}
+    tracker_type type() {return tt_virtualmoth;}
 };
 
 }
-

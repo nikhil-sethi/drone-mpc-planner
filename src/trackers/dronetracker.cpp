@@ -121,7 +121,7 @@ void DroneTracker::update(double time, bool drone_is_active) {
         TrackData data;
         data.predicted_image_item = _image_predict_item;
         data.time = time;
-        track_history.push_back(data);
+        _track.push_back(data);
         update_drone_prediction(time);
         if (!drone_is_active)
             _drone_tracking_status = dts_inactive;
@@ -319,7 +319,7 @@ void DroneTracker::detect_deviation_yaw_angle() {
 
     uint index_difference = 15;
 
-    track_history.back().yaw_deviation_valid = false;
+    _track.back().yaw_deviation_valid = false;
 
     bowling_vector.push_back(last_track_data());
 
@@ -354,8 +354,9 @@ void DroneTracker::detect_deviation_yaw_angle() {
         vec1.at<double>(1) = 0;
         vec2.at<double>(1) = 0;
 
-        deviation_vec1_length = norm(vec1);
-        deviation_vec2_length = norm(vec2);
+        double deviation_vec1_length = norm(vec1);
+        double deviation_vec2_length = norm(vec2);
+        yaw_deviation_vec_length_OK = deviation_vec1_length < min_deviate_vec_length && deviation_vec2_length < min_deviate_vec_length;
 
         // normalize vectors
         cv::Mat unit_vec1 = vec1.mul(1./norm(vec1));
@@ -392,11 +393,66 @@ void DroneTracker::detect_deviation_yaw_angle() {
 
         bowling_vector.erase(bowling_vector.begin());
 
-        track_history.back().yaw_deviation = deviation_angle;
-        track_history.back().yaw_deviation_valid = true;
+        _track.back().yaw_deviation = deviation_angle;
+        _track.back().yaw_deviation_valid = true;
 
     }
-
 }
+bool DroneTracker::check_yaw(double time) {
+    if (!yaw_deviation_vec_length_OK || !last_track_data().yaw_deviation_valid)
+        time_yaw_not_ok = time;
+
+    if (time - time_yaw_not_ok > min_yaw_ok_time && time_yaw_not_ok > 0.1 )
+        return false;
+    else
+        return true;
+}
+
+void DroneTracker::set_landing_location(cv::Point2f im, float im_disparity,float im_size, cv::Point3f world) {
+    _blink_im_location = im;
+    _blink_im_size = im_size;
+    _blink_im_disparity = im_disparity;
+    _blink_world_location = world;
+    std::cout << "blink-location: " << _blink_world_location << std::endl;
+    if (!_takeoff_location_valid) { // for now, assume the first time set is the actual landing location.
+        _landing_world_location = takeoff_location();
+        _takeoff_location_valid = true;
+    }
+    _target = takeoff_location();
+    _takeoff_im_size = world2im_size(_blink_world_location+cv::Point3f(dparams.radius,0,0),_blink_world_location-cv::Point3f(dparams.radius,0,0),_visdat->Qfi,_visdat->camera_angle);
+    _takeoff_im_location =  world2im_2d(takeoff_location(),_visdat->Qfi,_visdat->camera_angle);
+}
+void DroneTracker::hover_mode(bool value)  {
+    if (value !=_hover_mode) {
+        _hover_mode =value;
+        if (_hover_mode) {
+            pos_smth_width = pparams.fps/15;
+            vel_smth_width = pparams.fps/15;
+            acc_smth_width = pparams.fps/15;
+            disparity_filter_rate = 0.7;
+        } else {
+            pos_smth_width = pparams.fps/30;
+            vel_smth_width = pparams.fps/30;
+            acc_smth_width = pparams.fps/30;
+            disparity_filter_rate = 0.8;
+        }
+        smoother_posX.change_width(pos_smth_width);
+        smoother_posY.change_width(pos_smth_width);
+        smoother_posZ.change_width(pos_smth_width);
+        smoother_accX.change_width(acc_smth_width);
+        smoother_accY.change_width(acc_smth_width);
+        smoother_accZ.change_width(acc_smth_width);
+    }
+}
+cv::Point3f DroneTracker::landing_location(bool landing_hack) {
+    cv::Point3f hack = {0};
+    if (landing_hack)
+        hack = cv::Point3f(0,0,0.04);
+    if(landing_parameter.initialized)
+        return cv::Point3f(landing_parameter.x, landing_parameter.y, landing_parameter.z) + hack;
+    else
+        return _landing_world_location + hack;
+}
+
 
 }

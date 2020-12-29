@@ -747,7 +747,7 @@ void TrackerManager::update_trackers(double time,long long frame_number, bool dr
                 InsectTracker *itrkr = static_cast<InsectTracker *>(_trackers.at(i));
                 auto fpt = itrkr->false_positive();
                 if (fpt)
-                    false_positives.push_back(FalsePositive(itrkr->track_history.begin()->world_item,fpt,time));
+                    false_positives.push_back(FalsePositive(itrkr->track().begin()->world_item,fpt,time));
             }
             trkr->close();
             _trackers.erase(_trackers.begin() + i);
@@ -779,7 +779,7 @@ void TrackerManager::update_trackers(double time,long long frame_number, bool dr
             ReplayTracker *rtrkr = static_cast<ReplayTracker *>(_trackers.at(i));
             rtrkr->update(time);
         } else if(_trackers.at(i)->type() == tt_virtualmoth) {
-            VirtualmothTracker*vtrkr = static_cast<VirtualmothTracker*>(_trackers.at(i));
+            VirtualMothTracker*vtrkr = static_cast<VirtualMothTracker*>(_trackers.at(i));
             vtrkr->update(time);
         } else if (_trackers.at(i)->type() == tt_blink) {
             BlinkTracker *btrkr = static_cast<BlinkTracker *>(_trackers.at(i));
@@ -1087,11 +1087,11 @@ std::vector<ReplayTracker *> TrackerManager::replaytrackers() {
     }
     return res;
 }
-std::vector<VirtualmothTracker *> TrackerManager::virtualmothtrackers() {
-    std::vector<VirtualmothTracker *> res;
+std::vector<VirtualMothTracker *> TrackerManager::virtualmothtrackers() {
+    std::vector<VirtualMothTracker *> res;
     for (auto trkr : _trackers) {
         if (trkr->type() == tt_virtualmoth) {
-            res.push_back(static_cast<VirtualmothTracker *>(trkr));
+            res.push_back(static_cast<VirtualMothTracker *>(trkr));
         }
     }
     return res;

@@ -30,7 +30,7 @@ void DroneController::init(std::ofstream *logger,string replay_dir,bool generato
                "joyArmSwitch;joyModeSwitch;joyTakeoffSwitch;" <<
                "mmArmSwitch;mmModeSwitch;" <<
                "dt;propwash;" <<
-               "thrust; integrator_x;integrator_y;integrator_z;model_error;" <<
+               "thrust; integrator_x;integrator_y;integrator_z;" <<
                "batt_cell_v;rssi;arm;";
     ;
     std::cout << "Initialising control." << std::endl;
@@ -327,7 +327,6 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         d_vel_err_y.preset(data_target_new.vel().y - data_drone.state.vel.y);
         d_vel_err_z.preset(data_target_new.vel().z - data_drone.state.vel.z);
 
-        model_error = 0;
         if(!data_drone.pos_valid && _time-take_off_start_time < 0.5) {
             pos_modelx.internal_states(_dtrk->takeoff_location().x, _dtrk->takeoff_location().x);
             pos_modely.internal_states(_dtrk->takeoff_location().y, _dtrk->takeoff_location().y);
@@ -522,7 +521,6 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
                propwash << ";" <<
                drone_calibration.thrust << ";" <<
                pos_err_i.x << ";" << pos_err_i.y << ";" << pos_err_i.z << ";" <<
-               model_error << ";" <<
                _rc->telemetry.batt_cell_v  << ";" <<
                static_cast<int>(_rc->telemetry.rssi)  << ";" <<
                _rc->telemetry.arming_state  << ";";

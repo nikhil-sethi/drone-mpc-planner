@@ -47,10 +47,10 @@ void InsectTracker::check_false_positive() {
     //A check whether an object is actually moving through the image seems to be quite robust to filter out 1,4 and possibly 5:
     //A check whether a detection was tracked for more then a few frames filters out 2 and 3
 
-    if (track_history.size() < track_history_max_size) {
-        auto wti_0 = track_history.at(0).world_item;
+    if (_track.size() < track_history_max_size) {
+        auto wti_0 = _track.at(0).world_item;
         assert(wti_0.valid); // the first ever point tracked should always be valid
-        if (track_history.size()>1) {
+        if (_track.size()>1) {
             if (_world_item.valid)
                 dist_integrator_fp += normf(_world_item.pt - wti_0.pt);
             float tot = dist_integrator_fp/_n_frames_tracked;
@@ -105,5 +105,14 @@ void InsectTracker::calc_world_item(BlobProps * props, double time [[maybe_unuse
 }
 
 bool InsectTracker::check_ignore_blobs(BlobProps * props) { return this->check_ignore_blobs_generic(props);}
+
+bool InsectTracker::delete_me() {
+    if ((_n_frames_lost > n_frames_lost_threshold)) {
+        _logger->close();
+        initialized = false;
+        return true;
+    } else
+        return false;
+}
 
 }

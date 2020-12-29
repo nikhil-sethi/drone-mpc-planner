@@ -182,4 +182,16 @@ void BlinkTracker::clean_ignore_blobs(double time) {
     ignores_for_other_trkrs= new_ignores_for_insect_tracker;
 }
 
+float BlinkTracker::score(tracking::BlobProps * blob) {
+    if (_track.size()>0) {
+        tracking::ImageItem first = _track.at(0).world_item.iti;
+        return ItemTracker::score(blob,&first);
+    } else {
+        return ItemTracker::score(blob,&_image_item);
+    }
+}
+bool BlinkTracker::delete_me() {
+    return (_n_frames_lost > n_frames_lost_threshold) || _blinking_drone_status == bds_failed_delete_me;
+}
+
 }

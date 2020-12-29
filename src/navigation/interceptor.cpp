@@ -306,15 +306,15 @@ void Interceptor::intercept_spiral() {
     //    ccircle.y = direction_insect.y*r - _itrkr->get_last_track_data().posY;
     //    if (_itrkr->n_frames_tracking>2) {
     //        std::vector<cv::Point2f> pts;
-    //        cv::Point2f p0(_itrkr->track_history.at(0).posX,_itrkr->track_history.at(0).posZ);
-    //        cv::Point2f p1(_itrkr->track_history.at(1).posX,_itrkr->track_history.at(1).posZ);
-    //        cv::Point2f p2(_itrkr->track_history.at(2).posX,_itrkr->track_history.at(2).posZ);
+    //        cv::Point2f p0(_itrkr->track().at(0).posX,_itrkr->track().at(0).posZ);
+    //        cv::Point2f p1(_itrkr->track().at(1).posX,_itrkr->track().at(1).posZ);
+    //        cv::Point2f p2(_itrkr->track().at(2).posX,_itrkr->track().at(2).posZ);
     //        cv::Point2f a = p0-p2;
     //        float d = fabs(a.x*p1.x + a.y+p1.y) / (powf(a.x,2) + powf(a.y,2));
-    //        for (uint i = _itrkr->track_history.size()-5; i<_itrkr->track_history.size(); i++){
-    //            if (_itrkr->track_history.at(i).valid) {
-    //                float x = _itrkr->track_history.at(i).posX;
-    //                float z = _itrkr->track_history.at(i).posZ;
+    //        for (uint i = _itrkr->track().size()-5; i<_itrkr->track().size(); i++){
+    //            if (_itrkr->track().at(i).valid) {
+    //                float x = _itrkr->track().at(i).posX;
+    //                float z = _itrkr->track().at(i).posZ;
     //                pts.push_back(cv::Point2f(x,z));
     //            }
     //        }

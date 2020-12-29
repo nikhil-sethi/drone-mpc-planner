@@ -88,7 +88,7 @@ void ReplayTracker::update_from_log(unsigned long long frame_number,double time)
     data.time = time;
     data.predicted_image_item = _image_predict_item;
     data.world_item = w;
-    track_history.push_back(data);
+    _track.push_back(data);
 
     cleanup_history();
 }
@@ -99,5 +99,14 @@ void ReplayTracker::update(double time) {
     ItemTracker::append_log();
     (*_logger) << '\n';
 }
+
+bool ReplayTracker::delete_me() {
+        if (logreader.done()) {
+            _logger->close();
+            return true;
+        }
+        return false;
+    }
+
 
 }

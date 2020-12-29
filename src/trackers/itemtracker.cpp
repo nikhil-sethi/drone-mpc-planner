@@ -48,10 +48,6 @@ void ItemTracker::init(VisionData *visdat, int motion_thresh, std::string name, 
     smoother_posY.init(pos_smth_width);
     smoother_posZ.init(pos_smth_width);
 
-    smoother_velX.init(vel_smth_width);
-    smoother_velY.init(vel_smth_width);
-    smoother_velZ.init(vel_smth_width);
-
     smoother_accX.init(acc_smth_width);
     smoother_accY.init(acc_smth_width);
     smoother_accZ.init(acc_smth_width);
@@ -179,7 +175,7 @@ void ItemTracker::update(double time) {
             TrackData data;
             data.predicted_image_item = _image_predict_item;
             data.time = time;
-            track_history.push_back(data);
+            _track.push_back(data);
         }
     }
 
@@ -190,8 +186,8 @@ void ItemTracker::update(double time) {
 
 //make sure the vectors that contain the path data don't endlesly grow
 void ItemTracker::cleanup_history() {
-    while (track_history.size() > track_history_max_size)
-        track_history.erase(track_history.begin());
+    while (_track.size() > track_history_max_size)
+        _track.erase(_track.begin());
 }
 
 void ItemTracker::append_log() {
@@ -221,8 +217,8 @@ void ItemTracker::append_log() {
 
     }
 
-    while (track_history.size() > track_history_max_size)
-        track_history.erase(track_history.begin());
+    while (_track.size() > track_history_max_size)
+        _track.erase(_track.begin());
 }
 
 float ItemTracker::stereo_match(BlobProps * blob) {
@@ -540,10 +536,10 @@ float ItemTracker::estimate_sub_disparity(int disparity,float * err) {
 }
 
 void ItemTracker::update_prediction(double time) {
-    if (track_history.back().pos_valid) {
-        last_valid_trackdata_for_prediction = track_history.back();
-        if(track_history.back().vel_valid)
-            last_vel_valid_trackdata_for_prediction = track_history.back();
+    if (_track.back().pos_valid) {
+        last_valid_trackdata_for_prediction = _track.back();
+        if(_track.back().vel_valid)
+            last_vel_valid_trackdata_for_prediction = _track.back();
     }
 
     if (!last_valid_trackdata_for_prediction.pos_valid) {
@@ -580,22 +576,19 @@ void ItemTracker::update_state(Point3f measured_world_coordinates,double time) {
     data.state.pos = measured_world_coordinates;
 
     TrackData data_prev;
-    if (track_history.size()>0)
-        data_prev = track_history.back();
+    if (_track.size()>0)
+        data_prev = _track.back();
 
-    if (reset_filters) {
+    if (reset_smoothers) {
         smoother_posX.reset();
         smoother_posY.reset();
         smoother_posZ.reset();
-        smoother_velX.reset();
-        smoother_velY.reset();
-        smoother_velZ.reset();
         smoother_accX.reset();
         smoother_accY.reset();
         smoother_accZ.reset();
     }
     float dt = n_frames_lost_threshold / pparams.fps;
-    if (reset_filters) {
+    if (reset_smoothers) {
         data.state.spos = data.state.pos;
     } else {
         data.state.spos.x = smoother_posX.addSample(data.state.pos.x);
@@ -626,17 +619,17 @@ void ItemTracker::update_state(Point3f measured_world_coordinates,double time) {
     data.dt = dt;
     data.world_item = _world_item;
     data.predicted_image_item = _image_predict_item;
-    reset_filters = false;
-    track_history.push_back(data);
+    reset_smoothers = false;
+    _track.push_back(data);
 }
 
 void ItemTracker::reset_tracker_ouput(double time) {
     TrackData data;
-    reset_filters = true;
+    reset_smoothers = true;
     disparity_prev = -1;
     _image_predict_item.valid = false;
     data.time = time;
-    track_history.push_back(data);
+    _track.push_back(data);
 }
 
 bool ItemTracker::check_ignore_blobs_generic(BlobProps * blob) {

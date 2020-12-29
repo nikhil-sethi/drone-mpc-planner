@@ -26,8 +26,6 @@ static const char* blinking_drone_state_names[] = { "",
                                                   };
 
 class BlinkTracker : public ItemTracker {
-public: tracker_type type() { return tt_blink;}
-
 public:
     enum blinking_drone_states {
         bds_start=0,
@@ -68,31 +66,19 @@ private:
     void clean_ignore_blobs(double time);
 
 public:
-    std::string state_str() {return blinking_drone_state_names[_blinking_drone_status];}
-    blinking_drone_states state() {return _blinking_drone_status;}
-
     bool init(int id, VisionData *_visdat, int motion_thresh, int16_t viz_id);
     void init_logger();
     void update(double time);
-
     void calc_world_item(tracking::BlobProps * pbs, double time);
     bool check_ignore_blobs(tracking::BlobProps * pbs);
-    bool blinking_drone_located() {return _blinking_drone_status >= bds_found;}
+    bool delete_me();
 
-    bool delete_me() {
-        return (_n_frames_lost > n_frames_lost_threshold) || _blinking_drone_status == bds_failed_delete_me;
-    }
-
+    tracker_type type() { return tt_blink;}
+    std::string state_str() {return blinking_drone_state_names[_blinking_drone_status];}
+    blinking_drone_states state() {return _blinking_drone_status;}
     float smoothed_size_image() {return smoother_im_size.latest();}
-
-    float score(tracking::BlobProps * blob) {
-        if (track_history.size()>0) {
-            tracking::ImageItem first = track_history.at(0).world_item.iti;
-            return ItemTracker::score(blob,&first);
-        } else {
-            return ItemTracker::score(blob,&_image_item);
-        }
-    }
+    float score(tracking::BlobProps * blob);
+    bool blinking_drone_located() {return _blinking_drone_status >= bds_found;}
 
 };
 

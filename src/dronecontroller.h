@@ -163,9 +163,7 @@ private:
     const float effective_burn_spin_down_duration = 0.1f; // the time to spin down from max to hover
     float remember_last_integrated_y_err = 0; // For faster thrust calibration
     cv::Point3f drone_vel_after_takeoff = {0};
-    // propwash_safety_angle: The higher the value the higher the chance of propwash
-    // but for the case the drone can accelerate the higher the thrust in the correct direction
-    const float propwash_safety_angle = 4.f/5.f*static_cast<float>(M_PI);
+    const float propwash_safety_angle = 4.f/5.f*static_cast<float>(M_PI); // The higher the value the higher the chance of propwash
 
     const float lift_off_dist_take_off_aim = 0.02f;
     const float take_off_burn_duration = 0.08f;
@@ -272,7 +270,6 @@ private:
     void serialize_settings();
 
 public:
-    float model_error;
     bool enable_thrust_calibration = false;
     void flight_mode(flight_modes f) {
         _flight_mode = f;
@@ -306,8 +303,7 @@ public:
         return joy_states_names[_joy_state];
     }
     std::string flight_mode() {
-        std::string ME = " ME: " + to_string_with_precision(model_error,0);
-        return flight_mode_names[_flight_mode] + ME;
+        return flight_mode_names[_flight_mode];
     }
 
     bool ff_interception() {
@@ -539,8 +535,6 @@ public:
             landing_acc_calibration_cnt = required_landing_acc_calibration_cnt;
     }
     bool landing_acc_calibration_done() {return landing_acc_calibration_cnt  < 0 || log_replay_mode;}
-
-    bool blocked();
 
     void save_calibration();
 

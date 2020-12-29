@@ -1,11 +1,9 @@
 #pragma once
 #include "itemtracker.h"
-#include "insectreader.h"
 
 namespace tracking {
 
 class InsectTracker : public ItemTracker {
-public: tracker_type type() {return tt_insect;}
 
 private:
     int16_t _insect_trkr_id{-1};
@@ -22,21 +20,15 @@ public:
 
     void init(int id, VisionData *_visdat, int motion_thresh, int16_t viz_id);
     void init_logger();
-    void update(double time);
-    tracking::false_positive_type false_positive();
     void append_log(double time, unsigned long long frame_number);
-    int16_t insect_trkr_id() {return _insect_trkr_id;}
-
     void calc_world_item(tracking::BlobProps * pbs, double time);
     bool check_ignore_blobs(tracking::BlobProps * pbs);
-    bool delete_me() {
-        if ((_n_frames_lost > n_frames_lost_threshold)) {
-            _logger->close();
-            initialized = false;
-            return true;
-        } else
-            return false;
-    }
+    void update(double time);
+    bool delete_me();
+
+    int16_t insect_trkr_id() {return _insect_trkr_id;}
+    tracking::false_positive_type false_positive();
+    tracker_type type() {return tt_insect;}
 };
 
 }

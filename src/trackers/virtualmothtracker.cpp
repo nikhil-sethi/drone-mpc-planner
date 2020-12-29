@@ -5,7 +5,7 @@ using namespace cv;
 using namespace std;
 namespace tracking {
 
-void VirtualmothTracker::init(int id, mothbehavior mothbehavior_type, VisionData* visdat, DroneController* dctrl) {
+void VirtualMothTracker::init(int id, mothbehavior mothbehavior_type, VisionData* visdat, DroneController* dctrl) {
     _id = id;
     _visdat = visdat;
     _dctrl = dctrl;
@@ -19,7 +19,7 @@ void VirtualmothTracker::init(int id, mothbehavior mothbehavior_type, VisionData
     insect_vel = {-1., 0, 0};
 }
 
-void VirtualmothTracker::init_logger() {
+void VirtualMothTracker::init_logger() {
     //writing of new log:
     _logger = new std::ofstream(); // FIXME: use std::shared_ptr?
     std::string logger_fn;
@@ -30,12 +30,12 @@ void VirtualmothTracker::init_logger() {
     (*_logger) << std::endl;
 }
 
-void VirtualmothTracker::start_new_log_line(double time, unsigned long long frame_number) {
+void VirtualMothTracker::start_new_log_line(double time, unsigned long long frame_number) {
     (*_logger) << std::to_string(frame_number) << ";";
     (*_logger) << std::to_string(time) << ";";
 }
 
-void VirtualmothTracker::update(double time) {
+void VirtualMothTracker::update(double time) {
     start_new_log_line(time, _visdat->frame_id);
     update_behavior_based(_visdat->frame_id, time);
     n_frames++;
@@ -45,7 +45,7 @@ void VirtualmothTracker::update(double time) {
     (*_logger) << '\n';
 }
 
-void VirtualmothTracker::update_behavior_based(unsigned long long frame_number, double time) {
+void VirtualMothTracker::update_behavior_based(unsigned long long frame_number, double time) {
     if(start_time<=0)
         start_time = time;
 
@@ -94,7 +94,7 @@ void VirtualmothTracker::update_behavior_based(unsigned long long frame_number, 
     data.state.acc.y = 0;
     data.state.acc.z = 0;
     data.time = time;
-    track_history.push_back(data);
+    _track.push_back(data);
     data.world_item = w;
     data.predicted_image_item = _image_predict_item;
 
@@ -104,5 +104,12 @@ void VirtualmothTracker::update_behavior_based(unsigned long long frame_number, 
     cleanup_history();
 }
 
+bool VirtualMothTracker::delete_me() {
+    if (_delete_me) {
+        _logger->close();
+        return true;
+    }
+    return false;
+}
 
 }
