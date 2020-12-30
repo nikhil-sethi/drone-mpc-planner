@@ -13,7 +13,6 @@ bool DroneTracker::init(std::ofstream *logger, VisionData *visdat, int motion_th
     (*_logger) << "dtrkr_state;yaw_deviation;";
     return false;
 }
-
 void DroneTracker::update(double time, bool drone_is_active) {
     current_time = time;
 
@@ -190,7 +189,6 @@ float DroneTracker::score(BlobProps * blob) {
     } else
         return ItemTracker::score(blob,&_image_item);
 }
-
 void DroneTracker::update_drone_prediction(double time) { // need to use control inputs to make prediction #282
     if (_tracking)
         update_prediction(time);
@@ -200,6 +198,31 @@ void DroneTracker::update_drone_prediction(double time) { // need to use control
         _image_predict_item.frame_id = _visdat->frame_id;
     }
 }
+void DroneTracker::calc_world_item(BlobProps * props, double time [[maybe_unused]]) {
+
+    calc_world_props_blob_generic(props);
+    props->world_props.im_pos_ok = true;
+    props->world_props.valid = props->world_props.bkg_check_ok && props->world_props.disparity_in_range && props->world_props.radius_in_range;
+
+    if (inactive())
+        props->world_props.valid = false;
+    else if (taking_off() && !_manual_flight_mode) {
+        float dist2takeoff = normf(props->world_props.pt() - takeoff_location());
+        float takeoff_y = props->world_props.y - takeoff_location().y;
+        if ( dist2takeoff < 0.2f && !props->world_props.bkg_check_ok)
+            props->world_props.valid =  props->world_props.disparity_in_range && props->world_props.radius_in_range;
+
+        // std::cout << to_string_with_precision(time,2) + "; dist2takeoff: " <<  to_string_with_precision(dist2takeoff,2) << " "
+        //           << ", takeoff_y: " << to_string_with_precision(takeoff_y,2)
+        //           << ", world size: " << to_string_with_precision(props->world_props.radius,2) << std::endl;
+
+        if (takeoff_y < 0.02f && props->world_props.valid ) {
+            props->world_props.valid = false;
+            props->world_props.takeoff_reject = true;
+        }
+    }
+}
+
 void DroneTracker::delete_takeoff_fake_motion() {
     if (enable_takeoff_motion_delete) {
         _visdat->reset_spot_on_motion_map(takeoff_im_location(), _blink_im_disparity,_takeoff_im_size*2.5f,1);
@@ -238,7 +261,6 @@ void DroneTracker::calc_takeoff_prediction() {
     cv::Point3f expected_drone_location = takeoff_location() + 0.5* acc *powf(dt,2);
     _image_predict_item = ImagePredictItem(world2im_3d(expected_drone_location,_visdat->Qfi,_visdat->camera_angle),_takeoff_im_size,255,_visdat->frame_id);
 }
-
 bool DroneTracker::detect_lift_off() {
     float dist2takeoff =normf(_world_item.pt - takeoff_location());
     float takeoff_y =  _world_item.pt.y - takeoff_location().y;
@@ -253,32 +275,6 @@ bool DroneTracker::detect_lift_off() {
     }
     return false;
 }
-
-void DroneTracker::calc_world_item(BlobProps * props, double time [[maybe_unused]]) {
-
-    calc_world_props_blob_generic(props);
-    props->world_props.im_pos_ok = true;
-    props->world_props.valid = props->world_props.bkg_check_ok && props->world_props.disparity_in_range && props->world_props.radius_in_range;
-
-    if (inactive())
-        props->world_props.valid = false;
-    else if (taking_off() && !_manual_flight_mode) {
-        float dist2takeoff = normf(props->world_props.pt() - takeoff_location());
-        float takeoff_y = props->world_props.y - takeoff_location().y;
-        if ( dist2takeoff < 0.2f && !props->world_props.bkg_check_ok)
-            props->world_props.valid =  props->world_props.disparity_in_range && props->world_props.radius_in_range;
-
-        // std::cout << to_string_with_precision(time,2) + "; dist2takeoff: " <<  to_string_with_precision(dist2takeoff,2) << " "
-        //           << ", takeoff_y: " << to_string_with_precision(takeoff_y,2)
-        //           << ", world size: " << to_string_with_precision(props->world_props.radius,2) << std::endl;
-
-        if (takeoff_y < 0.02f && props->world_props.valid ) {
-            props->world_props.valid = false;
-            props->world_props.takeoff_reject = true;
-        }
-    }
-}
-
 bool DroneTracker::detect_takeoff() {
     uint16_t closest_to_takeoff_im_dst = 999;
     cv::Point2i closest_to_takeoff_point;
@@ -299,7 +295,6 @@ bool DroneTracker::detect_takeoff() {
 bool DroneTracker::check_ignore_blobs(BlobProps * pbs) {
     return this->check_ignore_blobs_generic(pbs);
 }
-
 //Removes all ignore points which timed out
 void DroneTracker::clean_ignore_blobs(double time) {
     std::vector<IgnoreBlob> new_ignores_for_insect_tracker;
@@ -311,6 +306,29 @@ void DroneTracker::clean_ignore_blobs(double time) {
             new_ignores_for_insect_tracker.push_back(ignores_for_other_trkrs.at(i));
     }
     ignores_for_other_trkrs= new_ignores_for_insect_tracker;
+}
+
+void DroneTracker::hover_mode(bool value)  {
+    if (value !=_hover_mode) {
+        _hover_mode =value;
+        if (_hover_mode) {
+            pos_smth_width = pparams.fps/15;
+            vel_smth_width = pparams.fps/15;
+            acc_smth_width = pparams.fps/15;
+            disparity_filter_rate = 0.7;
+        } else {
+            pos_smth_width = pparams.fps/30;
+            vel_smth_width = pparams.fps/30;
+            acc_smth_width = pparams.fps/30;
+            disparity_filter_rate = 0.8;
+        }
+        smoother_posX.change_width(pos_smth_width);
+        smoother_posY.change_width(pos_smth_width);
+        smoother_posZ.change_width(pos_smth_width);
+        smoother_accX.change_width(acc_smth_width);
+        smoother_accY.change_width(acc_smth_width);
+        smoother_accZ.change_width(acc_smth_width);
+    }
 }
 
 void DroneTracker::detect_deviation_yaw_angle() {
@@ -422,28 +440,6 @@ void DroneTracker::set_landing_location(cv::Point2f im, float im_disparity,float
     _takeoff_im_size = world2im_size(_blink_world_location+cv::Point3f(dparams.radius,0,0),_blink_world_location-cv::Point3f(dparams.radius,0,0),_visdat->Qfi,_visdat->camera_angle);
     _takeoff_im_location =  world2im_2d(takeoff_location(),_visdat->Qfi,_visdat->camera_angle);
 }
-void DroneTracker::hover_mode(bool value)  {
-    if (value !=_hover_mode) {
-        _hover_mode =value;
-        if (_hover_mode) {
-            pos_smth_width = pparams.fps/15;
-            vel_smth_width = pparams.fps/15;
-            acc_smth_width = pparams.fps/15;
-            disparity_filter_rate = 0.7;
-        } else {
-            pos_smth_width = pparams.fps/30;
-            vel_smth_width = pparams.fps/30;
-            acc_smth_width = pparams.fps/30;
-            disparity_filter_rate = 0.8;
-        }
-        smoother_posX.change_width(pos_smth_width);
-        smoother_posY.change_width(pos_smth_width);
-        smoother_posZ.change_width(pos_smth_width);
-        smoother_accX.change_width(acc_smth_width);
-        smoother_accY.change_width(acc_smth_width);
-        smoother_accZ.change_width(acc_smth_width);
-    }
-}
 cv::Point3f DroneTracker::landing_location(bool landing_hack) {
     cv::Point3f hack = {0};
     if (landing_hack)
@@ -453,6 +449,5 @@ cv::Point3f DroneTracker::landing_location(bool landing_hack) {
     else
         return _landing_world_location + hack;
 }
-
 
 }

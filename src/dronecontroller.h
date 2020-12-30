@@ -164,6 +164,7 @@ private:
     float remember_last_integrated_y_err = 0; // For faster thrust calibration
     cv::Point3f drone_vel_after_takeoff = {0};
     const float propwash_safety_angle = 4.f/5.f*static_cast<float>(M_PI); // The higher the value the higher the chance of propwash
+    const float landing_target_time = 0.3f;
 
     const float lift_off_dist_take_off_aim = 0.02f;
     const float take_off_burn_duration = 0.08f;

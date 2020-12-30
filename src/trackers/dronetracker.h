@@ -73,9 +73,8 @@ private:
     double current_time = 0;
     double time_yaw_not_ok = -1;
 
-    double takeoff_location_ignore_timeout = 1; // TODO: make this dependent on the motion_update_iterator_max
-    double landing_ignore_timeout = 5; // TODO: make this dependent on the motion_update_iterator_max
-    double taking_off_ignore_timeout = 0.1; // TODO: make this dependent on the motion_update_iterator_max
+    double takeoff_location_ignore_timeout = 1;
+    double landing_ignore_timeout = 5;
     int spinup_detected = 0;
     bool liftoff_detected = false;
     bool _take_off_detection_failed = false;

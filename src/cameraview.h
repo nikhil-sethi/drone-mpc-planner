@@ -87,7 +87,7 @@ public:
             plane.release();
     }
 
-    std::array<cv::Mat, N_PLANES> plane_normals; // TODO: MOVE this to private if possible
+    std::array<cv::Mat, N_PLANES> plane_normals;
     std::array<cv::Mat, N_PLANES> plane_supports;
     cv::Point3f center_of_volume = {0,-1,-2};
 

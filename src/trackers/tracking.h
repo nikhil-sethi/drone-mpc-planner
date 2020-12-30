@@ -83,7 +83,7 @@ struct ImageItem {
         pixel_max = -1;
         blob_id = 666;
         frame_id = frameid;
-        valid = true; //todo: implement when the log is not valid
+        valid = true;
     }
     ImageItem(BlobProps blob, int frameid, float matching_score, uint blob_id_) {
         x = blob.x*pparams.imscalef;

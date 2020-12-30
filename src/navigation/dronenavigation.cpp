@@ -495,10 +495,13 @@ void DroneNavigation::update(double time) {
         } case ns_manual: { // also used for disarmed
             wpid = 0;
             _trackers->mode(tracking::TrackerManager::mode_drone_only);
+            _trackers->dronetracker()->manual_flight_mode(true);
             if (_nav_flight_mode == nfm_hunt) {
                 _navigation_status=ns_wait_for_insect;
+                _trackers->dronetracker()->manual_flight_mode(false);
             } else if (_nav_flight_mode != nfm_manual) { // waypoint mode
                 _navigation_status=ns_wait_for_takeoff_command;
+                _trackers->dronetracker()->manual_flight_mode(false);
             }
             break;
         } case ns_batlow: {

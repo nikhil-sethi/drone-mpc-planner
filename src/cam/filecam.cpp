@@ -30,7 +30,6 @@ void FileCam::init () {
     calibration();
 
     if (!file_exist(depth_map_rfn)) {
-        //todo: make gui warning of this:
         std::cout << "Warning: could not find " << depth_map_rfn << std::endl;
         depth_background = cv::Mat::ones(IMG_H,IMG_W,CV_16UC1);
         depth_background = 10000; // basically disable the depth background map if it is not found

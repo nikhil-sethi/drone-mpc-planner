@@ -317,7 +317,6 @@ void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat dif
         } else {
             COG_is_nan = true;
             if (enable_insect_drone_split) {
-                //TODO: below is double code, streamline
                 for (auto trkr : _trackers) {
                     tracking::ImagePredictItem ipi = trkr->image_predict_item();
                     cv::Point2f d;
@@ -523,7 +522,6 @@ void TrackerManager::check_match_conflicts(std::vector<ProcessedBlob> *pbs,doubl
                             dtrkr->blobs_are_fused();
                             itrkr->blobs_are_fused();
 
-                            //TODO: do something sensible in cases 1,2,4:
                             // hmm, apparantely there is no blob close by, so now there are a few possibilities:
                             //1. The insect is lost (e.g. too far, too small, into the flowers)
                             //2. The drone is lost (e.g. crashed)
