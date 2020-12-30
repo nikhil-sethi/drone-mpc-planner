@@ -7,3 +7,4 @@ pats_records.db-journal
 __pycache__
 static
 mail.tmp
+pats_c/config.py

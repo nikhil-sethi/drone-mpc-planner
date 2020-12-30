@@ -22,10 +22,18 @@
         "name": "PATS-C",
         "type": "python",
         "request": "launch",
-        "program": "${workspaceFolder}/pats_c.py",
-        "args": [],
-        "console": "integratedTerminal"
-      },
+        "module": "flask",
+        "env": {
+            "FLASK_APP": "pats_c",
+            "FLASK_ENV": "development",
+            "FLASK_DEBUG": "1"
+        },
+        "args": [
+            "run",
+            "--no-reload"
+        ],
+        "jinja": true
+    },
       {
         "name": "viz",
         "type": "python",
