@@ -1,8 +1,8 @@
 #! /usr/bin/env bash
 
 # Configuration
-tunnels=( dash mavlab-gpu dinstech  )
-tunnels_port=( 22 22 16666)
+tunnels=( dash dinstech  )
+tunnels_port=( 22 16666)
 
 # Start tunnels
 for i in ${!tunnels[@]}

@@ -18,7 +18,7 @@ SSH_PORT=${2:-22}
 # Retry tunnel
 echo "Creating tunnel at $IP:$SSH_PORT with port $PORT"
 while [ 1 ]; do
- 	/usr/bin/autossh -M 0 -o "ExitOnForwardFailure yes" -o "ServerAliveInterval 10" -o "ServerAliveCountMax 3" -NR $PORT:localhost:22 $USER@$IP -p $SSH_PORT
+ 	/usr/bin/autossh -M 0 -o "ExitOnForwardFailure yes" -o "ServerAliveInterval 180" -o "ServerAliveCountMax 3" -C4NR $PORT:localhost:22 $USER@$IP -p $SSH_PORT
 
 	echo waiting 10s for starting tunnel
 	sleep 10s
