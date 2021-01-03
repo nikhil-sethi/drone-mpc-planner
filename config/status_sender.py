@@ -18,16 +18,6 @@ remote_pats_xml='status/' + hostname + '/'
 pats_cc_update_request = homedir + '/pats_cc_update_request'
 disable_pats_bkg = homedir + '/disable_pats_bkg'
 
-def get_ip():
-    cmd = 'ip  -o -4 -f inet a show up primary scope global'
-    output = subprocess.check_output(cmd, shell=True).decode(sys.stdout.encoding)
-    ip = ''
-    try:
-        ip = output.split()[3].split('/')[0]
-    except:
-        pass
-    return ip
-
 def execute(cmd,retry=1):
     p_result = None
     n=0
@@ -124,13 +114,12 @@ def clean_hd():
             return
 
 def check_if_metered():
-    ip = get_ip()
-    if ip.startswith('192.168.8'): #4g stick ip
-        return True
-    elif ip.startswith('192') or ip.startswith('172'):
-        return False
-    else:
-        return True
+    cmd = 'ip route'
+    output = subprocess.check_output(cmd, shell=True).decode(sys.stdout.encoding)
+    ip = ''
+
+    output_lines = output.splitlines()
+    return 'enx0c5b8f279a64' in output_lines[0]
 
 def block_if_disabled():
     while os.path.exists(disable_pats_bkg):

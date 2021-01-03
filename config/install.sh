@@ -17,13 +17,13 @@ mkdir -p ~/code
 
 [ -f ~/dependencies/ssh_keys.done ] || {
 	if [[ $1 -eq 1 ]] ; then
-		[ -f ~/dependencies/pats_ssh_files.tar.xz ] || {
-			cp pats_ssh_files.tar.xz ~/dependencies
+		[ -f ~/dependencies/pats_ssh_files_v3.tar.xz ] || {
+			cp pats_ssh_files_v3.tar.xz ~/dependencies
 		}
 
-		#Change hostname: sudo hostname pats-proto1 
-		#Update: sudo nano /etc/hosts 
-		#Change 127.0.1.1 pats-proto1 
+		#Change hostname: sudo hostname pats-proto1
+		#Update: sudo nano /etc/hosts
+		#Change 127.0.1.1 pats-proto1
 		#Make it persistant, update: sudo nano /etc/hostname
 		if [[ $HOSTNAME == pats-proto* ]];
 		then
@@ -34,9 +34,9 @@ mkdir -p ~/code
 		fi
 	fi
 
-	[ ! -f pats_ssh_files.tar.xz ] || {
+	[ ! -f pats_ssh_files_v3.tar.xz ] || {
 			#add deploy key
-		tar -xf pats_ssh_files.tar.xz
+		tar -xf pats_ssh_files_v3.tar.xz
 		mkdir -p ~/.ssh
 		mv authorized_keys ~/.ssh/
 		mv id_rsa ~/.ssh/pats_id_rsa
@@ -52,7 +52,7 @@ pushd ~/dependencies
 
 # Install pats dependency packages
 [ -f dependencies-packages-v1.5.done ] || {
-	sudo apt-get update  
+	sudo apt-get update
 	sudo apt install -y cmake g++ libva-dev libswresample-dev libavutil-dev pkg-config libcurl4-openssl-dev ncdu openssh-server ffmpeg unattended-upgrades inotify-tools cpputest python3-pip python-pip dfu-util exfat-utils vnstat ifmetric
 	sudo apt install -y gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav libgstreamer-plugins-base1.0-* libgstreamer-plugins-bad1.0-* libgstreamer-plugins-good1.0-* gstreamer1.0-vaapi vainfo
 	sudo apt-get remove -y modemmanager
@@ -60,7 +60,7 @@ pushd ~/dependencies
 	#specific to enable opencv features and optimizations:
 	sudo apt install -y yasm gfortran libjpeg8-dev libpng-dev libtiff-dev libatlas-base-dev libprotobuf-dev protobuf-compiler libgoogle-glog-dev libgflags-dev libgphoto2-dev libeigen3-dev libhdf5-dev libatlas3-base libatlas-base-dev liblapack3 liblapacke liblapacke-dev liblapack-dev ccache
 	pip3 install numpy pandas scipy sklearn tqdm
-	touch dependencies-packages-v1.3.done
+	touch dependencies-packages-v1.5.done
 }
 
 # Add librealsense repository
@@ -97,12 +97,12 @@ pushd ~/dependencies
 [ -f cmake-3.11.4.done ] || {
 	[ -d cmake-3.11.4 ] || {
 		wget https://cmake.org/files/v3.11/cmake-3.11.4.tar.gz
-		tar -xvf cmake-3.11.4.tar.gz				
+		tar -xvf cmake-3.11.4.tar.gz
 	}
 	pushd cmake-3.11.4
 	./bootstrap --parallel=$(nproc) --system-curl
 	make -j$(nproc)
-	sudo make install	
+	sudo make install
 	popd
 	touch cmake-3.11.4.done
 	popd
@@ -126,12 +126,12 @@ pushd ~/dependencies
 	[ -d opencv-4.3.0 ] || {
 		wget https://github.com/opencv/opencv/archive/4.3.0.tar.gz
 		mv 4.3.0.tar.gz opencv-4.3.0.tar.gz
-		tar -xf opencv-4.3.0.tar.gz		
+		tar -xf opencv-4.3.0.tar.gz
 	}
 	pushd opencv-4.3.0
 	mkdir -p build
 	pushd build
-	cmake -DCMAKE_BUILD_TYPE=release -DCMAKE_INSTALL_PREFIX=/usr/local -DWITH_QT=ON -DWITH_OPENGL=ON .. 
+	cmake -DCMAKE_BUILD_TYPE=release -DCMAKE_INSTALL_PREFIX=/usr/local -DWITH_QT=ON -DWITH_OPENGL=ON ..
 	time make -j$(nproc)
 	sudo make install
 	popd
@@ -164,7 +164,7 @@ fi
 	popd
 	popd
 	popd
-	
+
 	touch pats_code.done
 }
 
@@ -172,45 +172,51 @@ if [[ $1 -eq 1 ]] ; then
 
 	mkdir -p ~/data_json
 	mkdir -p ~/data
-	
+
 	# Create nice symlinks
-	[ -f symlinks.done ] || {
+	[ -f symlinks-v1.0.done ] || {
 		[ -f ~/.screenrc ] && {
-			cp -n ~/.screenrc{,.bak}
+			cp ~/.screenrc{,.bak} --backup=numbered
 			rm ~/.screenrc
 		}
 		ln -s ~/code/pats/config/.screenrc ~/
-		
+
 		[ -f ~/.bashrc ] && {
-			cp -n ~/.bashrc{,.bak}
+			cp ~/.bashrc{,.bak} --backup=numbered
 			rm ~/.bashrc
 		}
 		ln -s ~/code/pats/config/.bashrc ~/
 
 		[ -f /etc/ssh/sshd_config ] && {
-			sudo cp  -n /etc/ssh/sshd_config{,.bak}
+			sudo cp  /etc/ssh/sshd_config{,.bak} --backup=numbered
 			sudo rm /etc/ssh/sshd_config
 		}
 		sudo ln -s ~/code/pats/config/sshd_config /etc/ssh/
 
+		[ -f /etc/network/interfaces ] && {
+				sudo cp /etc/network/interfaces{,.bak} --backup=numbered
+				sudo rm /etc/network/interfaces
+		}
+		sudo ln -s ~/code/pats/config/interfaces /etc/network/interfaces
+
 		[ -f /etc/apt/apt.conf.d/50unattended-upgrades ] && {
-				sudo cp  -n /etc/apt/apt.conf.d/50unattended-upgrades{,.bak}
+				sudo cp  /etc/apt/apt.conf.d/50unattended-upgrades{,.bak} --backup=numbered
 				sudo rm /etc/apt/apt.conf.d/50unattended-upgrades
 		}
 		sudo ln -s ~/code/pats/config/50unattended-upgrades /etc/apt/apt.conf.d/
 
 		[ -f /etc/rc.local ] && {
-			sudo cp  -n /etc/rc.local{,.bak}
+			sudo cp  /etc/rc.local{,.bak} --backup=numbered
 			sudo rm /etc/rc.local
 		}
 		sudo ln -s ~/code/pats/config/rc.local /etc/rc.local
 
 		rm ~/.ssh/config -f
 		ln -s ~/code/pats/config/sshconfig ~/.ssh/config
-				
+
 		sudo systemctl restart ssh.service
-		
-		touch symlinks.done
+
+		touch symlinks-v1.0.done
 	}
 fi
 
@@ -230,15 +236,6 @@ fi
 	touch mm_install.done
 }
 
-# [ -f analysis-dependencies-packages-v1.0.done ] || {
-# 	curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
-# 	sudo apt install -y libssl1.0-dev curl nodejs nodejs sqlitebrowser
-# 	pushd ../code/pats/analysis/moth_watcher/
-# 	npm install
-# 	npm audit fix
-# 	popd
-# 	touch analysis-dependencies-packages-v1.0.done
-# }
 
 popd
 
@@ -248,9 +245,11 @@ sudo apt-get autoremove -y
 sudo apt-get clean -y
 
 set +x
-echo "***********************************************************"
-echo todo: 
-echo 1. Set bios to startup always at power on
-echo 2. Add phone wifi ssid with: sudo nmcli device wifi connect !SSID! password !PASS!
-echo 3. Change hostname stuff
-echo "***********************************************************"
+echo "********************** ALL DONE ***************************"
+if [[ $1 -eq 1 ]] ; then
+	echo todo:
+	echo 1. Set bios to startup always at power on
+	echo 2. Add phone wifi ssid with: sudo nmcli device wifi connect !SSID! password !PASS!
+	echo 3. Change hostname stuff
+	echo "***********************************************************"
+fi
