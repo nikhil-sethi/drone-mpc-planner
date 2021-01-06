@@ -119,7 +119,10 @@ def check_if_metered():
     ip = ''
 
     output_lines = output.splitlines()
-    return 'enx0c5b8f279a64' in output_lines[0]
+    if len(output_lines):
+        return 'enx0c5b8f279a64' in output_lines[0]
+    else:
+        return False
 
 def block_if_disabled():
     while os.path.exists(disable_pats_bkg):
