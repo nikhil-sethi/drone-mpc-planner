@@ -766,12 +766,12 @@ void Realsense::reset() {
 }
 
 void Realsense::watchdog_thread(void) {
-    std::cout << "Watchdog thread started" << std::endl;
+    std::cout << "Realsense watchdog thread started" << std::endl;
     usleep(10000000); //wait until camera is running for sure
     while (!exit_watchdog_thread) {
         usleep(pparams.wdt_timeout_us);
         if (!watchdog && !exit_watchdog_thread) {
-            std::cout << "Watchdogbuf alert! Attempting to continue" << std::endl;
+            std::cout << "Realsense  watchdog buf alert! Attempting to continue" << std::endl;
             watchdog_attempt_to_continue = true;
             new_frame1 =true;
             new_frame2 = true;
@@ -782,7 +782,7 @@ void Realsense::watchdog_thread(void) {
             std::cout << std::endl;
             usleep(pparams.wdt_timeout_us);
             if (!watchdog) {
-                std::cout << "Watchdog alert! Killing the process." << std::endl;
+                std::cout << "Realsense  watchdog alert! Killing the process." << std::endl;
                 auto res [[maybe_unused]] = std::system("killall -9 pats");
             } else {
                 std::cout << "Seems to work again." << std::endl;

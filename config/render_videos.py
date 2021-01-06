@@ -71,11 +71,11 @@ for folder in filtered_dirs:
         for file in files:
             if file.startswith('moth') and file.endswith(".mkv"):
                 video_target_path =  folder + '/logging/render_' + os.path.splitext(file)[0] + '.mkv'
+                log_target_path =  folder + '/logging/render_' + os.path.splitext(file)[0] + '.txt'
                 video_src_path = folder + '/logging/' + file
                 if not os.path.isfile(video_target_path) and os.stat(video_src_path).st_size > 30000:
-                    cmd = './pats --log ' + folder + '/logging --monitor-render ' + video_src_path
+                    cmd = './pats --log ' + folder + '/logging --monitor-render ' + video_src_path + ' 2>&1 | /usr/bin/tee ' + log_target_path
                     execute(cmd,render_process_dir)
-
                     video_result_path = render_process_dir + '/logging/replay/videoResult.mkv'
 
                     if os.path.exists(video_result_path):

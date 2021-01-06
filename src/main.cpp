@@ -43,6 +43,7 @@ using namespace std;
 
 /***********Variables****************/
 bool exit_now = false;
+bool watchdog = true;
 volatile std::sig_atomic_t term_sig_fired;
 int imgcount; // to measure fps
 int raw_video_frame_counter = 0;
@@ -92,6 +93,7 @@ struct Processer {
     StereoPair * frame;
 };
 Processer tp[NUM_OF_THREADS];
+std::thread thread_watchdog;
 
 /*******Private prototypes*********/
 void process_frame(StereoPair * frame);
@@ -101,6 +103,7 @@ bool handle_key(double time);
 void save_results_log();
 void print_warnings();
 void close(bool sig_kill);
+void watchdog_worker(void);
 
 /************ code ***********/
 void process_video() {
@@ -362,6 +365,7 @@ void process_frame(StereoPair * frame) {
            << dur_tot << ";";
 #endif
     frame->processed.unlock();
+    watchdog = true;
     logger  << '\n';
 }
 
@@ -718,6 +722,9 @@ void init() {
 
     init_thread_pool();
 
+    if (render_monitor_video_mode || render_hunt_mode) //for normal operation there's a watchdog in the realsense cam class.
+        thread_watchdog = std::thread(&watchdog_worker);
+
     if (!render_hunt_mode && !render_monitor_video_mode)
         cmdcenter.init(log_replay_mode,&dnav,&dctrl,&rc,&trackers);
 
@@ -771,6 +778,7 @@ void close(bool sig_kill) {
     print_warnings();
     if(cam)
         cam.release();
+    thread_watchdog.join();
     std::cout <<"Closed"<< std::endl;
 }
 
@@ -867,6 +875,21 @@ void wait_for_dark() {
             }
             usleep(10000000); // measure every 1 minute
         }
+    }
+}
+
+void watchdog_worker(void) {
+    std::cout << "Main watchdog thread started" << std::endl;
+    usleep(10000000); //wait until camera is running for sure
+    while (!exit_now) {
+        usleep(pparams.wdt_timeout_us);
+        if (!watchdog && !exit_now) {
+            std::cout << "Main watchdog alert! Killing the process." << std::endl;
+            exit_now = true;
+            usleep(5e5);
+            auto res [[maybe_unused]] = std::system("killall -9 pats");
+        }
+        watchdog = false;
     }
 }
 
