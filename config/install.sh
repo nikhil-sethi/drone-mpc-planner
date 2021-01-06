@@ -51,7 +51,7 @@ mkdir -p ~/code
 pushd ~/dependencies
 
 # Install pats dependency packages
-[ -f dependencies-packages-v1.5.done ] || {
+[ -f dependencies-packages-v1.6.done ] || {
 	sudo apt-get update
 	sudo apt install -y cmake g++ libva-dev libswresample-dev libavutil-dev pkg-config libcurl4-openssl-dev ncdu openssh-server ffmpeg unattended-upgrades inotify-tools cpputest python3-pip python-pip dfu-util exfat-utils vnstat ifmetric
 	sudo apt install -y gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav libgstreamer-plugins-base1.0-* libgstreamer-plugins-bad1.0-* libgstreamer-plugins-good1.0-* gstreamer1.0-vaapi vainfo
@@ -59,8 +59,8 @@ pushd ~/dependencies
 	pip3 install pyserial
 	#specific to enable opencv features and optimizations:
 	sudo apt install -y yasm gfortran libjpeg8-dev libpng-dev libtiff-dev libatlas-base-dev libprotobuf-dev protobuf-compiler libgoogle-glog-dev libgflags-dev libgphoto2-dev libeigen3-dev libhdf5-dev libatlas3-base libatlas-base-dev liblapack3 liblapacke liblapacke-dev liblapack-dev ccache
-	pip3 install numpy pandas scipy sklearn tqdm
-	touch dependencies-packages-v1.5.done
+	pip3 install cython numpy pandas scipy sklearn tqdm
+	touch dependencies-packages-v1.6.done
 }
 
 # Add librealsense repository
