@@ -33,16 +33,16 @@ def download_renders(pats_id):
     cmd = ['rsync -azvP pats' + str(pats_id) + ':data_rendered/* ~/Downloads/pats_renders']
     execute(cmd)
 def download_renders_all():
-    download_renders(11)
-    download_renders(12)
-    download_renders(13)
-    download_renders(14)
-    download_renders(15)
-    download_renders(16)
-    download_renders(17)
-    download_renders(18)
-    download_renders(19)
-    download_renders(21)
+    download_renders(30)
+    download_renders(31)
+    download_renders(32)
+    download_renders(33)
+    download_renders(34)
+    download_renders(35)
+    download_renders(36)
+    download_renders(37)
+    download_renders(38)
+    download_renders(39)
 
 def natural_sort(l):
     convert = lambda text: int(text) if text.isdigit() else text.lower()
