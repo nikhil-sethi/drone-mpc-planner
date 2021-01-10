@@ -680,6 +680,7 @@ class SystemWidget(QWidget):
                         navstatus =="ns_locate_drone_led"  or
                         navstatus =="ns_located_drone" or
                         navstatus =="ns_calibrating_motion" or
+                        navstatus =="ns_calibrating_drone" or
                         navstatus.startswith('Starting') or
                         navstatus.startswith('Resetting') or
                         navstatus.startswith('Closed') or

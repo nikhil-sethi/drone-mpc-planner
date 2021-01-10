@@ -163,16 +163,19 @@ void DroneNavigation::update(double time) {
                     _navigation_status = ns_monitoring;
                 } else if (_nav_flight_mode == nfm_manual)
                     _navigation_status = ns_manual;
-                else if (pparams.op_mode == op_mode_waypoint || pparams.op_mode == op_mode_hunt) {
-                    if (_dctrl->landing_acc_calibration_done()) {
-                        if (pparams.op_mode == op_mode_waypoint || _nav_flight_mode == nfm_waypoint)
-                            _navigation_status = ns_wait_for_takeoff_command;
-                        else if (_nav_flight_mode == nfm_hunt)
-                            _navigation_status = ns_wait_for_insect;
-                        else
-                            _navigation_status = ns_wait_for_takeoff_command;
-                    }
-                } else
+                else if (pparams.op_mode == op_mode_waypoint || pparams.op_mode == op_mode_hunt)
+                    _navigation_status = ns_calibrating_drone;
+                else
+                    _navigation_status = ns_wait_for_takeoff_command;
+            }
+            break;
+        } case ns_calibrating_drone: {
+            if (_dctrl->landing_acc_calibration_done()) {
+                if (pparams.op_mode == op_mode_waypoint || _nav_flight_mode == nfm_waypoint)
+                    _navigation_status = ns_wait_for_takeoff_command;
+                else if (_nav_flight_mode == nfm_hunt)
+                    _navigation_status = ns_wait_for_insect;
+                else
                     _navigation_status = ns_wait_for_takeoff_command;
             }
             break;
