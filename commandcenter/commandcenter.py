@@ -359,6 +359,8 @@ class SystemWidget(QWidget):
                     if self.combo_mode.currentText() == "Monitoring":
                         if self.combo_sub_mode.currentText() == 'Koppert':
                             line = '    <Member Name=\"max_brightness\">50</Member>\n'
+                        elif self.combo_sub_mode.currentText() == 'Holstein':
+                            line = '    <Member Name=\"max_brightness\">100</Member>\n'
                         else:
                             line = '    <Member Name=\"max_brightness\">128</Member>\n'
                     elif self.combo_mode.currentText() == "Hunt":
