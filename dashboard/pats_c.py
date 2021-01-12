@@ -95,17 +95,22 @@ def load_systems(username):
 
 def load_moth_df(selected_systems,start_date,end_date):
     username = flask.request.authorization['username']
-    con, cur = open_db()
-    cur.execute('ATTACH DATABASE ? AS sdb', (db_systems_path,))
-    sql_str = '''SELECT moth_records.* FROM moth_records
-    JOIN sdb.groups on (moth_records.Size > sdb.groups.minimal_size OR moth_records.Version="1.0")
-    JOIN sdb.systems ON sdb.systems.group_id = sdb.groups.group_id AND sdb.systems.system_name = moth_records.system
-    JOIN sdb.customer_group_connection ON sdb.systems.group_id = sdb.customer_group_connection.group_id
-    JOIN sdb.customers ON sdb.customers.customer_id = sdb.customer_group_connection.customer_id WHERE sdb.customers.name = ? AND
-    ((moth_records.duration > 1 AND moth_records.duration < 10 AND moth_records.Dist_traveled > 0.15 AND moth_records.Dist_traveled < 4)
-    OR (moth_records.Version="1.0" AND moth_records.duration > 1 AND moth_records.duration < 10)) AND moth_records.time > ? AND Moth_records.time <= ?
-    AND moth_records.system IN (%s)''' %('?,'*len(selected_systems))[:-1]
-    moth_df = pd.read_sql_query(sql_str,con,params = (username,start_date.strftime('%Y%m%d_%H%M%S'),end_date.strftime('%Y%m%d_%H%M%S'),*selected_systems))
+    _, sys_cur = open_systems_db()
+    sys_cur.execute('''SELECT systems.system_name, groups.minimal_size FROM systems,groups
+    JOIN customer_group_connection ON systems.group_id = customer_group_connection.group_id
+    JOIN customers ON customers.customer_id = customer_group_connection.customer_id WHERE
+    systems.group_id = groups.group_id AND customers.name = ? AND systems.system_name IN (%s)
+    ORDER BY systems.system_id'''%('?,'*len(selected_systems))[:-1], (username,*selected_systems))
+    ordered_systems = sys_cur.fetchall()
+
+    moth_df = pd.DataFrame()
+    con, _ = open_db()
+    sql_str = '''SELECT moth_records.* FROM moth_records WHERE (moth_records.system = ?)
+    AND moth_records.time > ? AND moth_records.time <= ?
+    AND (moth_records.duration > 1 AND moth_records.duration < 10 AND (moth_records.Version="1.0"
+    OR (moth_records.Dist_traveled > 0.15 AND moth_records.Dist_traveled < 4 AND moth_records.Size > ? )))'''
+    for (system,min_size) in ordered_systems:
+        moth_df = moth_df.append(pd.read_sql_query(sql_str,con,params = (system,start_date.strftime('%Y%m%d_%H%M%S'),end_date.strftime('%Y%m%d_%H%M%S'),min_size)))
     moth_df['time'] = pd.to_datetime(moth_df['time'], format = '%Y%m%d_%H%M%S')
     return moth_df
 
@@ -290,7 +295,7 @@ def create_hist(df_hist,unique_dates,system_labels):
             x = unique_dates.strftime('%d-%m-%Y'),
             y = hist_data,
             customdata = np.transpose([syss,syss]), #ok, we should only need one column of syss, spend an hour or streamlining this just to conclude something weird is going on in there...
-            marker_color = px.colors.qualitative.Vivid[cnt],
+            marker_color = px.colors.qualitative.Vivid[cnt%(len(px.colors.qualitative.Vivid))],
             name = system_labels[sys],
             hovertemplate = '<b>System %{customdata[0]}</b><br><br>' +
                     '<extra></extra>'
