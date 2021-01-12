@@ -778,7 +778,8 @@ void close(bool sig_kill) {
     print_warnings();
     if(cam)
         cam.release();
-    thread_watchdog.join();
+    if (render_monitor_video_mode || render_hunt_mode)
+        thread_watchdog.join();
     std::cout <<"Closed"<< std::endl;
 }
 
