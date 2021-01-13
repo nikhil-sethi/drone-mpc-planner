@@ -61,6 +61,7 @@ bool log_replay_mode = false;
 bool generator_mode = false;
 bool render_hunt_mode = false;
 bool skipped_to_hunt = false;
+bool watchdog_skip_video_delay_override = false;
 uint8_t drone_id;
 std::string replay_dir;
 std::string logger_fn; //contains filename of current log # for insect logging (same as video #)
@@ -141,6 +142,7 @@ void process_video() {
             if (dnav.drone_is_ready_and_waiting() && !skipped_to_hunt) {
                 double dt = logreader.first_takeoff_time() - frame->time - 1.5;
                 if (dt>0 && trackers.mode() != tracking::TrackerManager::mode_locate_drone) {
+                    watchdog_skip_video_delay_override = true;
                     cam->skip(dt);
                     std::cout << "Skipping to " << frame->time + dt << std::endl;
                 }
@@ -884,6 +886,14 @@ void watchdog_worker(void) {
     usleep(10000000); //wait until camera is running for sure
     while (!exit_now) {
         usleep(pparams.wdt_timeout_us);
+        if (watchdog_skip_video_delay_override) {
+            for (int i = 0; i < 20; i++) {
+                if (exit_now)
+                    break;
+                usleep(1e6);
+            }
+            watchdog_skip_video_delay_override = false;
+        }
         if (!watchdog && !exit_now) {
             std::cout << "Main watchdog alert! Killing the process." << std::endl;
             exit_now = true;
