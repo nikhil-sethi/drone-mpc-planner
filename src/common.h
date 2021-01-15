@@ -135,7 +135,8 @@ enum drone_types {
     drone_none,
     drone_trashcan,
     drone_hammer,
-    drone_anvil,
+    drone_anvil_crazybee,
+    drone_anvil_superbee,
     drone_tinywhoop_d16,
     drone_tinywhoop_d8,
     drone_cx10
@@ -144,7 +145,8 @@ static const char* drone_types_str[] = {
     "drone_none",
     "drone_trashcan",
     "drone_hammer",
-    "drone_anvil",
+    "drone_anvil_crazybee",
+    "drone_anvil_superbee",
     "drone_tinywhoop_d16",
     "drone_tinywhoop_d8",
     "drone_cx10",
@@ -453,6 +455,8 @@ private:
     xFloat _land_cell_v;
     xInt _max_flight_time;
     xFloat _min_hunt_cell_v;
+    xFloat _landing_target_time;
+    xInt _static_shakeit_throttle;
 
 public:
     int initial_hover_throttle;
@@ -476,6 +480,8 @@ public:
     float land_cell_v;
     int max_flight_time;
     float min_hunt_cell_v;
+    float landing_target_time;
+    int static_shakeit_throttle;
 
     DroneParameters() {
         // Set the XML class name.
@@ -483,7 +489,7 @@ public:
         setClassName("DroneParameters");
 
         // Set class version
-        setVersion("1.6");
+        setVersion("1.7");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("initial_hover_throttle",&_initial_hover_throttle);
@@ -507,6 +513,8 @@ public:
         Register("land_cell_v",&_land_cell_v);
         Register("max_flight_time",&_max_flight_time);
         Register("min_hunt_cell_v",&_min_hunt_cell_v);
+        Register("landing_target_time",&_landing_target_time);
+        Register("static_shakeit_throttle",&_static_shakeit_throttle);
     }
     void deserialize(std::string filepath) {
         std::cout << "Reading settings from: " << filepath << std::endl;
@@ -551,6 +559,8 @@ public:
         land_cell_v = _land_cell_v.value();
         max_flight_time = _max_flight_time.value();
         min_hunt_cell_v = _min_hunt_cell_v.value();
+        landing_target_time = _landing_target_time.value();
+        static_shakeit_throttle = _static_shakeit_throttle.value();
     }
 
     void serialize(std::string filepath) {
@@ -576,6 +586,8 @@ public:
         _land_cell_v = land_cell_v;
         _max_flight_time = max_flight_time;
         _min_hunt_cell_v = min_hunt_cell_v;
+        _landing_target_time = landing_target_time;
+        _static_shakeit_throttle = static_shakeit_throttle;
 
         std::string xmlData = toXML();
         std::ofstream outfile = std::ofstream (filepath);

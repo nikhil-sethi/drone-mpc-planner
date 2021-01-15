@@ -1,25 +1,25 @@
 <SerializableClass Type="DroneParameters" Version="1.7">
-    <Member Name="initial_hover_throttle">675</Member>
+    <Member Name="initial_hover_throttle">870</Member>
     <Member Name="throttle_bank_factor">0.75</Member>
-    <Member Name="max_burn_time">0.35</Member>
-    <Member Name="min_throttle">305</Member>
+    <Member Name="max_burn_time">0.7</Member>
+    <Member Name="min_throttle">315</Member>
     <Member Name="full_bat_and_throttle_im_effect">3</Member>
     <Member Name="full_bat_and_throttle_take_off_acc">20</Member>
-    <Member Name="full_bat_and_throttle_spinup_time">0.4</Member>
+    <Member Name="full_bat_and_throttle_spinup_time">0.5</Member>
     <Member Name="hover_throttle_a">865</Member>
     <Member Name="hover_throttle_b">495</Member>
-    <Member Name="drone_blink_strength">50</Member>
+    <Member Name="drone_blink_strength">30</Member>
     <Member Name="drone_led_strength">5</Member>
     <Member Name="blink_period">0.1</Member>
     <Member Name="radius">0.05</Member>
-    <Member Name="thrust">65</Member> <!-- overwritten, if xml/thrustcalib.xml exists -->
+    <Member Name="thrust">15</Member> <!-- overwritten, if xml/thrustcalib.xml exists -->
     <Member Name="tx">tx_frskyd16</Member>
     <Member Name="mode3d">false</Member>
-    <Member Name="control">control_trashcan</Member>
-    <Member Name="spinup_throttle_non3d">304</Member>
+    <Member Name="control">control_anvil_crazybee</Member>
+    <Member Name="spinup_throttle_non3d">330</Member>
     <Member Name="land_cell_v">3.0</Member>
     <Member Name="max_flight_time">180</Member>
     <Member Name="min_hunt_cell_v">4.1</Member>
-    <Member Name="landing_target_time">0.3</Member>
-    <Member Name="static_shakeit_throttle">125</Member>
+    <Member Name="landing_target_time">0.8</Member>
+    <Member Name="static_shakeit_throttle">175</Member>
 </SerializableClass>

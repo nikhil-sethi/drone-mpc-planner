@@ -1,0 +1,28 @@
+<SerializableClass Type="FlightPlanXML" Version="1.2">
+    <Member Name="flightplan_name">just-hover</Member>
+    <Collection Name="waypoints">
+        <Class Type="Waypoint" Version="1.2">
+            <Member Name="type">wfm_takeoff</Member>
+            <Member Name="threshold_mm"></Member>
+            <Member Name="x"></Member>
+            <Member Name="y"></Member>
+            <Member Name="z"></Member>
+        </Class>
+
+        <!-- Back to landing -->
+        <Class Type="Waypoint" Version="1.2">
+            <Member Name="type">wfm_yaw_reset</Member>
+            <Member Name="threshold_mm"></Member>
+            <Member Name="x"></Member>
+            <Member Name="y"></Member>
+            <Member Name="z"></Member>
+        </Class> -->
+        <Class Type="Waypoint" Version="1.2">
+            <Member Name="type">wfm_landing</Member>
+            <Member Name="threshold_mm"></Member>
+            <Member Name="x"></Member>
+            <Member Name="y"></Member>
+            <Member Name="z"></Member>
+        </Class>
+    </Collection>
+</SerializableClass>
