@@ -465,7 +465,7 @@ bool handle_key(double time [[maybe_unused]]) {
         break;
     case '>': {
         double dt = logreader.first_takeoff_time() - time - 5;
-        if (dt>0 && trackers.mode() != tracking::TrackerManager::mode_locate_drone)
+        if (dt>0 && dnav.drone_is_ready_and_waiting())
             cam->skip(dt);
         break;
     }
