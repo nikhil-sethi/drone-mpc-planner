@@ -405,14 +405,24 @@ def create_path_plot(target_log_fn):
     rows_without_tracking = df_ilog[ df_ilog['n_frames_tracking_insect'] == 0 ].index
     df_ilog = df_ilog.drop(rows_without_tracking)
     scatter = go.Scatter3d(
-        x = df_ilog['sposX_insect'],
+        x = -df_ilog['sposX_insect'],
         y = -df_ilog['sposZ_insect'],
         z = df_ilog['sposY_insect'],
         text = df_ilog['time'],
-        mode='markers',
+        mode = 'markers',
+        name = 'Moth path',
         hovertemplate = '<b>t= %{text}</b><br>x= %{x}<br>y= %{y}<br>z= %{z}'
     )
-    fig = go.Figure(data=scatter)
+    camera_pos = go.Scatter3d(
+        x = (0,), y = (0,), z = (0,),
+        mode = 'markers',
+        marker = dict(
+            symbol = 'circle',
+            color = 'red'),
+        name = 'Camera position',
+        hovertemplate = 'Camera position'
+    )
+    fig = go.Figure(data=[scatter,camera_pos])
     fig.update_layout(
         title_text='Moth path:',
          scene=dict(
