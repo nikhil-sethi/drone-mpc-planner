@@ -154,11 +154,7 @@ def load_moth_data(selected_systems,selected_dayrange):
     end_date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
     start_date = end_date + datetime.timedelta(hours=12) - datetime.timedelta(days=selected_dayrange)
     moth_df = load_moth_df(selected_systems,start_date,end_date)
-
-    if moth_df['time'].max() == moth_df['time'].max() and moth_df['time'].min() == moth_df['time'].min():
-        unique_dates = pd.date_range(start_date-datetime.timedelta(hours=12),moth_df['time'].max()-datetime.timedelta(hours=12),freq = 'd')
-    else:
-        return [],[],[],[]
+    unique_dates = pd.date_range(start_date-datetime.timedelta(hours=12),end_date-datetime.timedelta(hours=12),freq = 'd')
 
     hist_data = pd.DataFrame(index=unique_dates,columns=selected_systems)
     for system,group in (moth_df[['time']]-datetime.timedelta(hours=12)).groupby(moth_df.system):
@@ -285,8 +281,10 @@ def create_heatmap(unique_dates,heatmap_counts,xlabels, selected_cells):
     )
     style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '50%'}
     return fig,style
+
 def create_hist(df_hist,unique_dates,system_labels):
     fig = go.Figure()
+    fig.update_yaxes(rangemode = "nonnegative")
     cnt = 0
     for sys in system_labels.keys():
         hist_data = df_hist[sys]
