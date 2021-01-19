@@ -151,10 +151,13 @@ def execute(cmd,retry=1):
         popen.stdout.close()
 
 def load_moth_data(selected_systems,selected_dayrange):
+    # We count moths from 12 in the afternoon to 12 in the afternoon. Therefore we shift the data in the for loops with 12 hours.
+    # So a moth at 23:00 on 14-01 is counted at 14-01 and a moth at 2:00 on 15-01 also at 14-01
+    # A moth seen at 13:00 on 14-01 still belongs to 14-01 but when seen at 11:00 on 14-01 is counted at 13-01
     end_date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
-    start_date = end_date + datetime.timedelta(hours=12) - datetime.timedelta(days=selected_dayrange)
-    moth_df = load_moth_df(selected_systems,start_date,end_date)
-    unique_dates = pd.date_range(start_date-datetime.timedelta(hours=12),end_date-datetime.timedelta(hours=12),freq = 'd')
+    start_date = end_date - datetime.timedelta(days=selected_dayrange)
+    moth_df = load_moth_df(selected_systems,start_date,end_date+datetime.timedelta(hours=12)) #Shift to include the moths of today until 12:00 in the afternoon.
+    unique_dates = pd.date_range(start_date,end_date-datetime.timedelta(days=1),freq = 'd')
 
     hist_data = pd.DataFrame(index=unique_dates,columns=selected_systems)
     for system,group in (moth_df[['time']]-datetime.timedelta(hours=12)).groupby(moth_df.system):
