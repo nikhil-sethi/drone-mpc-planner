@@ -120,7 +120,7 @@ def check_if_metered():
 
     output_lines = output.splitlines()
     if len(output_lines):
-        return 'enx0c5b8f279a64' in output_lines[0]
+        return 'enx0' in output_lines[0]
     else:
         return False
 
