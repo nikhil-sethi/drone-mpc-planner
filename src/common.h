@@ -5,6 +5,7 @@
 #include "third_party/tinyxml/XMLSerialization.h"
 #include <iostream>
 #include <fstream>
+#include <mutex>
 
 #define IMG_W 848
 #define IMG_H 480
