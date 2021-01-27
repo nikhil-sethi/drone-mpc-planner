@@ -6,7 +6,7 @@
     <Member Name="ki_pos_pitch">30</Member>
     <Member Name="ki_thrust">100</Member>
     <Member Name="kd_pos_roll">485</Member>
-    <Member Name="kd_pos_pitch">460</Member>
+    <Member Name="kd_pos_pitch">440</Member>
     <Member Name="kd_pos_throttle">590</Member>
 
     <Member Name="kp_pos_roll_hover">1250</Member>
@@ -16,7 +16,7 @@
     <Member Name="ki_pos_pitch_hover">30</Member>
     <Member Name="ki_thrust_hover">200</Member>
     <Member Name="kd_pos_roll_hover">550</Member>
-    <Member Name="kd_pos_pitch_hover">200</Member>
+    <Member Name="kd_pos_pitch_hover">400</Member>
     <Member Name="kd_pos_throttle_hover">450</Member>
     <Member Name="kp_v_roll">0</Member>
     <Member Name="kp_v_pitch">0</Member>
