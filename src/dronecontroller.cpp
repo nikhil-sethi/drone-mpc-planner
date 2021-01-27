@@ -803,7 +803,7 @@ float DroneController::thrust_to_throttle(float thrust_ratio) {
 cv::Point3f DroneController::keep_in_volume_correction_acceleration(TrackData data_drone) {
     float drone_rotating_time = 6.f/pparams.fps; // Est. time to rotate the drone around 180 deg. see betaflight
     float safety = 2.f;
-    std::array<float, N_PLANES> speed_error_normal_to_plane;
+    std::array<float, N_PLANES> speed_error_normal_to_plane = {0};
     float effective_acceleration, remaining_breaking_distance_normal_to_plane, required_breaking_time, allowed_velocity_normal_to_plane;
     bool enough_braking_distance_left=true;
     std::array<bool, N_PLANES> violated_planes_brakedistance = {false};
@@ -816,6 +816,12 @@ cv::Point3f DroneController::keep_in_volume_correction_acceleration(TrackData da
             remaining_breaking_distance_normal_to_plane = 0;
         effective_acceleration = drone_calibration.thrust/safety + cv::Point3f(0,-GRAVITY,0).dot(cv::Point3f(_camview->plane_normals.at(i)));
         required_breaking_time = sqrt(2*remaining_breaking_distance_normal_to_plane/effective_acceleration);
+        if(required_breaking_time!=required_breaking_time) { // if required_breaking_time is nan
+            // drone thrust including the safety is not strong enough to compensate gravity!
+            // assume drone can at least accelerate slightly against gravity:
+            effective_acceleration = 2.5;
+            required_breaking_time = sqrt(2*remaining_breaking_distance_normal_to_plane/effective_acceleration);
+        }
         allowed_velocity_normal_to_plane = required_breaking_time * effective_acceleration;
         speed_error_normal_to_plane.at(i) = current_drone_speed_normal_to_plane - allowed_velocity_normal_to_plane;
         if(speed_error_normal_to_plane.at(i)>0) {
