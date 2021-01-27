@@ -30,6 +30,7 @@ void InsectTracker::close_log_line() {
 }
 void InsectTracker::append_log(double time, unsigned long long frame_number) {
     start_new_log_line(time,frame_number);
+    _n_frames_lost++;
     ItemTracker::append_log();
     (*_logger) << '\n';
 }
