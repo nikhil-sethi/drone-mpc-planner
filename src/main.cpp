@@ -190,6 +190,23 @@ void process_video() {
             exit_now = true;
             cmdcenter.reset_commandcenter_status_file("Betaflight version error",true);
         }
+        if (rc->bf_uid_error()) {
+            if (rc->bf_uid_str() == "hacr") {
+                std::cout <<"Detected a drone config that fits, reloading!" << std::endl;
+                pparams.drone= drone_hammer;
+                pparams.serialize(pats_xml_fn);
+            } else if(rc->bf_uid_str() == "ancr") {
+                std::cout <<"Detected a drone config that fits, reloading!" << std::endl;
+                pparams.drone= drone_anvil_crazybee;
+                pparams.serialize(pats_xml_fn);
+            } else if(rc->bf_uid_str() == "ansu") {
+                std::cout <<"Detected a drone config that fits, reloading!" << std::endl;
+                pparams.drone= drone_anvil_superbee;
+                pparams.serialize(pats_xml_fn);
+            }
+            exit_now = true;
+            cmdcenter.reset_commandcenter_status_file("Wrong drone config error",true);
+        }
 
         if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode) {
             int frame_written = 0;

@@ -375,13 +375,25 @@ bool MultiModule::receive_telemetry(std::string buffer) {
             telemetry.bf_minor = (bf_v & 0x0000FF00) >> 8;
             telemetry.bf_patch = bf_v & 0x000000FF;
             if (telemetry.bf_major != bf_major_required || telemetry.bf_minor != bf_minor_required || telemetry.bf_patch != bf_patch_required) {
-                std::cout << "Betaflight version detected: " << telemetry.bf_major << "." << telemetry.bf_minor << "." << telemetry.bf_patch <<
+                std::cout << "Wrong betaflight version detected: " << telemetry.bf_major << "." << telemetry.bf_minor << "." << telemetry.bf_patch <<
                           ", required: " << bf_major_required << "." << bf_minor_required << "." << bf_patch_required << std::endl;
                 _bf_version_error += 1;
             } else
                 _bf_version_error = 0 ;
             if (logger_initialized)
                 telem_logger << _time << ";FSSP_DATAID_BF_VERSION;" << telemetry.bf_major << "." << telemetry.bf_minor << "." << telemetry.bf_patch << "\n";
+            break;
+        } case FSSP_DATAID_BF_UID: {
+            uint32_t bf_uid = std::stoi(arr.at(1));
+            char * bf_uid_arr = reinterpret_cast<char *> (&bf_uid);
+            _bf_uid_str = string(bf_uid_arr).substr(0,4);
+            if (_bf_uid_str != dparams.name) {
+                std::cout << "Wrong drone uid detected: " + _bf_uid_str + ", required: " + dparams.name + "." << std::endl;
+                _bf_uid_error += 1;
+            } else
+                _bf_uid_error = 0 ;
+            if (logger_initialized)
+                telem_logger << _time << ";FSSP_DATAID_BF_UID;" << bf_uid << "\n";
             break;
         } case FSSP_DATAID_VFAS: {
             float data = std::stof( arr.at(1));

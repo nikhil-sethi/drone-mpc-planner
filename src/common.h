@@ -434,6 +434,7 @@ public:
 
 class DroneParameters: public Serializable {
 private:
+    xString _name;
     xInt _initial_hover_throttle;
     xFloat _throttle_bank_factor;
     xFloat _max_burn_time;
@@ -459,6 +460,7 @@ private:
     xInt _static_shakeit_throttle;
 
 public:
+    std::string name;
     int initial_hover_throttle;
     float throttle_bank_factor;
     double max_burn_time;
@@ -489,9 +491,10 @@ public:
         setClassName("DroneParameters");
 
         // Set class version
-        setVersion("1.7");
+        setVersion("1.8");
 
         // Register members. Like the class name, member names can differ from their xml depandants
+        Register("name",&_name);
         Register("initial_hover_throttle",&_initial_hover_throttle);
         Register("throttle_bank_factor",&_throttle_bank_factor);
         Register("max_burn_time",&_max_burn_time);
@@ -538,6 +541,7 @@ public:
             throw MyExit("File not found: " + filepath);
         }
 
+        name = _name.value();
         initial_hover_throttle = _initial_hover_throttle.value();
         throttle_bank_factor = _throttle_bank_factor.value();
         max_burn_time = _max_burn_time.value();
@@ -564,7 +568,7 @@ public:
     }
 
     void serialize(std::string filepath) {
-
+        _name = name;
         _initial_hover_throttle = initial_hover_throttle;
         _throttle_bank_factor = throttle_bank_factor;
         _max_burn_time = max_burn_time;

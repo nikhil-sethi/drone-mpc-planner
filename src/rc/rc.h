@@ -75,6 +75,7 @@ enum {
     FSSP_DATAID_ACC_THROTTLE_MIX        = 0x0741, // acceleration on z axis and throttle in same pkg
     FSSP_DATAID_ACC_RPM_MIX             = 0x0742, // acceleration on z axis and throttle in same pkg
     FSSP_DATAID_BF_VERSION              = 0x0743,
+    FSSP_DATAID_BF_UID                  = 0x0744,
     FSSP_DATAID_ARMING                  = 0x0745
 
 };
@@ -137,7 +138,7 @@ public:
     Telemetry telemetry = {0};
     const int bf_major_required = 4;
     const int bf_minor_required = 2;
-    const int bf_patch_required = 102;
+    const int bf_patch_required = 103;
 
 
     virtual void init(int drone_id) = 0;
@@ -157,6 +158,8 @@ public:
 
     bool init_package_failure() { return _init_package_failure;}
     bool bf_version_error() { return _bf_version_error>10;}
+    bool bf_uid_error() { return _bf_uid_error>10;}
+    std::string bf_uid_str() {return _bf_uid_str;}
     std::string Armed() { return armed_names[arm_switch>RC_MIDDLE]; }
 
     void queue_commands(int new_throttle,int new_roll, int new_pitch, int new_yaw, int new_mode, double time) {
@@ -256,6 +259,8 @@ protected:
     int notconnected = 1;
     bool _init_package_failure = false;
     uint16_t _bf_version_error = 0;
+    uint16_t _bf_uid_error = 0;
+    std::string _bf_uid_str = "";
     bool mm_version_check_OK = false;
     uint init_package_nOK_cnt = 1;
     bool send_init_package_now = false;
