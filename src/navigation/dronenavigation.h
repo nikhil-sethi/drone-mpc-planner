@@ -63,7 +63,7 @@ private:
     std::ofstream *_logger;
     DroneController * _dctrl;
     tracking::TrackerManager * _trackers;
-    Interceptor _iceptor;
+    Interceptor * _iceptor;
     VisionData *_visdat;
     CameraView *_camview;
 
@@ -98,7 +98,7 @@ private:
 public:
 
     void close (void);
-    void init(std::ofstream *logger, tracking::TrackerManager * imngr, DroneController *dctrl, VisionData *visdat, CameraView *camview, string replay_dir);
+    void init(std::ofstream *logger, tracking::TrackerManager * imngr, DroneController *dctrl, VisionData *visdat, CameraView *camview, string replay_dir, Interceptor *iceptor);
     void update(double time);
     void redetect_drone_location() {_navigation_status = ns_locate_drone_init;}
     void shake_drone() {_navigation_status = ns_start_shaking;}
@@ -205,7 +205,6 @@ public:
     bool drone_is_flying() {return _navigation_status < ns_landing && _navigation_status >  ns_take_off_completed;}
     bool drone_is_manual() {return _navigation_status == ns_manual;}
 
-    Interceptor interceptor() {return _iceptor;}
     int distance_threshold_mm() { return current_waypoint->threshold_mm; }
 
     int n_take_offs() {return _n_take_offs;}

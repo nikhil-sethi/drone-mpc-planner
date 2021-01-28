@@ -880,17 +880,17 @@ cv::Point3f DroneController::kiv_acceleration(std::array<bool, N_PLANES> violate
     return correction_acceleration;
 }
 
-std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f desired_acceleration) {
+std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f desired_acc) {
 
     cv::Point3f drone_vel = _dtrk->last_track_data().vel();
-    propwash = prop_wash(drone_vel, desired_acceleration);
+    propwash = prop_wash(drone_vel, desired_acc);
     float control_margin = GRAVITY * tanf(acosf(GRAVITY/drone_calibration.thrust)); // see doc/control-margin.svg
     if(propwash) {
-        desired_acceleration /= normf(desired_acceleration);
-        desired_acceleration *= 0.7f*control_margin;
+        desired_acc /= normf(desired_acc);
+        desired_acc *= 0.7f*control_margin;
     }
 
-    cv::Point3f des_acc_drone = desired_acceleration_drone(desired_acceleration, drone_calibration.thrust);
+    cv::Point3f des_acc_drone = desired_acceleration_drone(desired_acc, drone_calibration.thrust);
     cv::Point3f direction = des_acc_drone/normf(des_acc_drone);
 
     float throttlef = normf(des_acc_drone)/drone_calibration.thrust;
@@ -988,6 +988,11 @@ void DroneController::control_model_based(TrackData data_drone, cv::Point3f setp
         auto_throttle = spinup_throttle();
         return;
     }
+    cv::Point3f desired_acc = desired_acceleration(data_drone,setpoint_pos,setpoint_vel);
+    std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(desired_acc);
+}
+
+cv::Point3f DroneController::desired_acceleration(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel) {
 
     pos_modelx.new_sample(setpoint_pos.x);
     pos_modely.new_sample(setpoint_pos.y);
@@ -1005,7 +1010,8 @@ void DroneController::control_model_based(TrackData data_drone, cv::Point3f setp
         desired_acceleration += multf(kp_vel, vel_err_p) + multf(kd_vel, vel_err_d); // velocity control
     if (data_drone.pos_valid && data_drone.vel_valid)
         desired_acceleration += keep_in_volume_correction_acceleration(data_drone);
-    std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(desired_acceleration);
+
+    return desired_acceleration;
 }
 
 std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_control_gains(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel) {

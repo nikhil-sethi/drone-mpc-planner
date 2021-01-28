@@ -13,6 +13,7 @@
 #include "itemtracker.h"
 #include "dronenavigation.h"
 #include "generatorcam.h"
+#include "interceptor.h"
 
 
 class Visualizer {
@@ -37,6 +38,7 @@ private:
     navigation::DroneNavigation *_dnav;
     Rc *_rc;
     GeneratorCam * generator_cam;
+    Interceptor *_iceptor;
     bool generator_cam_set = false;
 
     bool enable_plots = false;
@@ -147,7 +149,7 @@ public:
     void add_plot_sample(void);
     void set_generator_cam(GeneratorCam * cam) {generator_cam = cam; generator_cam_set=true;}
     void update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, double time, bool draw_plots);
-    void init(VisionData * visdat, tracking::TrackerManager *imngr, DroneController *dctrl, navigation::DroneNavigation *dnav, Rc *rc, bool fromfile);
+    void init(VisionData * visdat, tracking::TrackerManager *imngr, DroneController *dctrl, navigation::DroneNavigation *dnav, Rc *rc, bool fromfile, Interceptor *iceptor);
     void close();
 
 };

@@ -27,6 +27,7 @@ private:
     std::ofstream *_logger;
     tracking::TrackerManager * _trackers;
     VisionData *_visdat;
+    DroneController *_dctrl;
 
     cv::Point3f _aim_pos,_aim_vel,_aim_acc;
 
@@ -35,12 +36,12 @@ private:
     bool aim_in_view = false;
     uint _n_frames_aim_not_in_range = 0;
     float n_frames_target_cleared_timeout;
+    tracking::InsectTracker *_target_insecttracker = NULL;
 
     float _horizontal_separation, _vertical_separation;
     float total_separation;
     float _best_distance = -1;
     double _tti =-1;
-
     enum interceptor_states {
         is_init=0,
         is_waiting_for_target,
@@ -63,13 +64,17 @@ private:
     cv::Point3f update_close_target(bool drone_at_base);
     void update_interceptability(cv::Point3f req_aim_pos);
     cv::Point3f get_circle_pos(float timef);
+    tracking::InsectTracker *update_target_insecttracker();
 
 public:
-    void init(tracking::TrackerManager *trackers, VisionData *visdat, CameraView *camview, ofstream *logger);
+    void init(tracking::TrackerManager *trackers, VisionData *visdat, CameraView *camview, ofstream *logger, DroneController *dctrl);
     void update(bool drone_at_base, double time);
+    tracking::InsectTracker *target_insecttracker(){return _target_insecttracker;}
+
+    tracking::TrackData target_last_trackdata();
 
     bool trigger_takeoff() {
-        tracking::InsectTracker * best_itrkr = _trackers->target_insecttracker();
+        tracking::InsectTracker * best_itrkr = target_insecttracker();
         if (!best_itrkr)
             return false;
         return !_n_frames_aim_not_in_range

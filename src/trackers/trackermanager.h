@@ -3,7 +3,6 @@
 #include "tracking.h"
 #include "itemtracker.h"
 #include "dronetracker.h"
-#include "dronecontroller.h"
 #include "insecttracker.h"
 #include "replaytracker.h"
 #include "virtualmothtracker.h"
@@ -14,7 +13,7 @@
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
-
+class Interceptor;
 namespace tracking {
 
 static const char* trackermanager_mode_names[] = {"tm_idle",
@@ -130,13 +129,13 @@ private:
     std::ofstream *_logger;
     VisionData *_visdat;
     CameraView *_camview;
+    Interceptor * _iceptor;
 
     std::vector<FalsePositive> false_positives;
     std::vector<tracking::BlobProps> _blobs;
 
     std::vector<ItemTracker *> _trackers;
     DroneTracker *_dtrkr;
-    InsectTracker *_target_insecttracker;
     std::vector<BlinkTracker *> blinktrackers();
     std::vector<InsectTracker *> insecttrackers();
     std::vector<ReplayTracker *> replaytrackers();
@@ -145,7 +144,6 @@ private:
 
     uint16_t next_insecttrkr_id = 1;
     uint16_t next_blinktrkr_id = 1;
-    unsigned long long target_insecttracker_frameid_updated = 0;
 
     cv::Mat diff_viz;
     bool enable_viz_blobs = false;
@@ -195,7 +193,8 @@ private:
 public:
     cv::Mat viz_max_points,diff_viz_buf,viz_trkrs_buf;
 
-    void init(ofstream *logger,string replay_dir, VisionData *visdat, CameraView *camview);
+    void init(ofstream *logger,string replay_dir, VisionData *visdat, CameraView *camview, Interceptor *iceptor);
+
     void init_replay_moth(std::string file) {
         ReplayTracker *rt;
         rt = new ReplayTracker();
@@ -268,12 +267,7 @@ public:
 
     std::tuple<bool, BlinkTracker *> blinktracker_best();
     std::vector<ItemTracker *>all_target_trackers();
-    InsectTracker *target_insecttracker();
     DroneTracker *dronetracker() { return _dtrkr; }
-
-    bool tracking_a_target();
-    double target_last_detection();
-    TrackData target_last_trackdata();
 
     void enable_blob_viz() { enable_viz_blobs = true;}
     void enable_trkr_viz() { enable_viz_trackers = true;}

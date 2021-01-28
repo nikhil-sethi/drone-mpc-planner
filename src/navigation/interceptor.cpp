@@ -3,17 +3,18 @@
 
 using namespace tracking;
 
-void Interceptor::init(tracking::TrackerManager* trackers, VisionData* visdat, CameraView* camview, std::ofstream* logger) {
+void Interceptor::init(tracking::TrackerManager* trackers, VisionData* visdat, CameraView* camview, std::ofstream* logger, DroneController *dctrl) {
     _logger = logger;
     _trackers = trackers;
     _visdat = visdat;
     _camview = camview;
+    _dctrl = dctrl;
     n_frames_target_cleared_timeout = pparams.fps * 1.f;
     (*_logger) << "interceptor_state;hunt_vol_check;";
 }
 
 void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
-    auto target_trkr = _trackers->target_insecttracker();
+    auto target_trkr = update_target_insecttracker();
 
     switch (_interceptor_state) {
     case  is_init: {
@@ -138,7 +139,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
     (*_logger) << static_cast<int16_t>(_interceptor_state) << ";" << static_cast<int16_t>(target_in_hunt_volume) << ";";
 }
 cv::Point3f Interceptor::update_far_target(bool drone_at_base) {
-    TrackData target = _trackers->target_last_trackdata();
+    TrackData target = target_last_trackdata();
     cv::Point3f predicted_pos = target.pos();
     cv::Point3f predicted_vel = target.vel();
     cv::Point3f predicted_acc = target.acc();
@@ -172,7 +173,7 @@ cv::Point3f Interceptor::update_far_target(bool drone_at_base) {
 }
 
 cv::Point3f Interceptor::update_close_target(bool drone_at_base) {
-    TrackData target = _trackers->target_last_trackdata();
+    TrackData target = target_last_trackdata();
     cv::Point3f predicted_pos = target.pos();
     cv::Point3f predicted_vel = target.vel();
     cv::Point3f predicted_acc = target.acc();
@@ -207,7 +208,7 @@ cv::Point3f Interceptor::update_close_target(bool drone_at_base) {
 }
 
 void Interceptor::update_interceptability(cv::Point3f req_aim_pos) {
-    target_in_hunt_volume = _camview->in_hunt_area (_trackers->target_last_trackdata().pos());
+    target_in_hunt_volume = _camview->in_hunt_area (target_last_trackdata().pos());
     std::tie(aim_in_view, ignore) = _camview->in_view(req_aim_pos, CameraView::relaxed);
 
     if (aim_in_view) {
@@ -267,7 +268,7 @@ float Interceptor::calc_tti(cv::Point3f target_pos, cv::Point3f target_vel, cv::
 }
 
 void Interceptor::update_flower_of_fire(double time) {
-    TrackData target = _trackers->target_last_trackdata();
+    TrackData target = target_last_trackdata();
     cv::Point3f target_pos = target.pos();
     TrackData dtd = _trackers->dronetracker()->last_track_data();
     cv::Point3f drone_pos = dtd.pos();
@@ -291,6 +292,41 @@ cv::Point3f Interceptor::get_circle_pos(float timef) {
     return p;
 }
 
+tracking::InsectTracker *Interceptor::update_target_insecttracker(){
+    float best_acceleration = INFINITY;
+    InsectTracker *best_itrkr = NULL;
+    auto all_trackers = _trackers->all_target_trackers();
+
+    TrackData tracking_data = _trackers->dronetracker()->last_track_data();
+    if (_trackers->dronetracker()->drone_on_landing_pad()) {
+        //Decision could be made when drone hasn't taken off yet
+        tracking_data.pos_valid = true;
+        tracking_data.state.pos = _trackers->dronetracker()->takeoff_location();
+    }
+    for (auto trkr : all_trackers) {
+        if (trkr->tracking()) {
+            cv::Point3f current_insect_pos =trkr->last_track_data().pos();
+            cv::Point3f current_insect_vel =trkr->last_track_data().vel();
+            if (trkr->type() == tt_insect || trkr->type() == tt_replay || trkr->type() == tt_virtualmoth) {
+                float req_acceleration = normf(_dctrl->desired_acceleration(tracking_data,current_insect_pos, current_insect_vel));
+                if (best_acceleration > req_acceleration) {
+                    best_acceleration = req_acceleration;
+                    best_itrkr = static_cast<InsectTracker *>(trkr);
+                }
+            }
+        }
+    }
+    _target_insecttracker = best_itrkr;
+    return best_itrkr;
+}
+tracking::TrackData Interceptor::target_last_trackdata() {
+    if (target_insecttracker())
+        return target_insecttracker()->last_track_data();
+    else {
+        TrackData d;
+        return d;
+    }
+}
 
 void Interceptor::intercept_spiral() {
     //1. asume moth will spiral down.

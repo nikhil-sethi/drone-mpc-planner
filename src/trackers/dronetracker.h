@@ -97,6 +97,7 @@ private:
     const double min_yaw_ok_time = 1.5;
 
     bool enable_viz_motion = false;
+    bool drone_on_pad = true;
 
     void calc_takeoff_prediction();
     void delete_takeoff_fake_motion();
@@ -145,6 +146,7 @@ public:
     bool inactive() { return _drone_tracking_status == dts_inactive;}
     bool lost() {return _n_frames_lost > static_cast<int>(pparams.fps*2);}
     std::string drone_tracking_state() {return drone_tracking_state_names[_drone_tracking_status];}
+    bool drone_on_landing_pad() {return drone_on_pad;}
 
 };
 

@@ -89,6 +89,7 @@ void DroneTracker::update(double time, bool drone_is_active) {
             if (spinup_detected==3) {
                 spinup_detect_time = time;
                 std::cout << "Spin up detected after: " << takeoff_duration << "s" << std::endl;
+                drone_on_pad = false;
             }
             if (detect_lift_off()) {
                 if (!liftoff_detected)

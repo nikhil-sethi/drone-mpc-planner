@@ -39,6 +39,7 @@
 #include "realsense.h"
 #include "airsimcam.h"
 #include "airsimcontroller.h"
+#include "interceptor.h"
 
 using namespace cv;
 using namespace std;
@@ -86,6 +87,7 @@ logging::LogReader logreader;
 CommandCenterLink cmdcenter;
 std::unique_ptr<Cam> cam;
 VisionData visdat;
+Interceptor iceptor;
 
 /****Threadpool*******/
 #define NUM_OF_THREADS 1
@@ -345,13 +347,14 @@ void process_frame(StereoPair * frame) {
     if (log_replay_mode && pparams.op_mode != op_mode_monitoring) {
         dctrl.insert_log(logreader.current_entry.joyRoll, logreader.current_entry.joyPitch, logreader.current_entry.joyYaw, logreader.current_entry.joyThrottle,logreader.current_entry.joyArmSwitch,logreader.current_entry.joyModeSwitch,logreader.current_entry.joyTakeoffSwitch,logreader.current_entry.auto_roll,logreader.current_entry.auto_pitch,logreader.current_entry.auto_throttle, logreader.current_entry.telem_acc_z, logreader.current_entry.telem_throttle, logreader.current_entry.telem_throttle_s, logreader.current_entry.maxthrust, logreader.current_entry.telem_thrust_rpm);
     }
+    iceptor.update(dctrl.at_base(),frame->time);
     dnav.update(frame->time);
 #ifdef PROFILING
     auto profile_t3_nav = std::chrono::high_resolution_clock::now();
 #endif
 
     if (pparams.op_mode != op_mode_monitoring)
-        dctrl.control(trackers.dronetracker()->last_track_data(),dnav.setpoint(),trackers.target_last_trackdata(),frame->time);
+        dctrl.control(trackers.dronetracker()->last_track_data(),dnav.setpoint(),iceptor.target_last_trackdata(),frame->time);
 #ifdef PROFILING
     auto profile_t4_ctrl = std::chrono::high_resolution_clock::now();
 #endif
@@ -757,8 +760,9 @@ void init() {
     if (render_monitor_video_mode)
         visdat.read_motion_and_overexposed_from_image(replay_dir); // has to happen before init otherwise wfn's are overwritten
     visdat.init(cam.get()); // do after cam update to populate frames
-    trackers.init(&logger,replay_dir, &visdat, &(cam->camera_volume));
-    dnav.init(&logger,&trackers,&dctrl,&visdat, &(cam->camera_volume),replay_dir);
+    trackers.init(&logger,replay_dir, &visdat, &(cam->camera_volume), &iceptor);
+    dnav.init(&logger,&trackers,&dctrl,&visdat, &(cam->camera_volume),replay_dir, &iceptor);
+    iceptor.init(&trackers,&visdat,&(cam->camera_volume),&logger,&dctrl);
     if (pparams.op_mode != op_mode_monitoring)
         dctrl.init(&logger,replay_dir,generator_mode,airsim_mode,rc.get(),trackers.dronetracker(), &(cam->camera_volume),cam->measured_exposure());
 
@@ -766,7 +770,7 @@ void init() {
         dnav.render_now_override();
 
     if (pparams.has_screen || render_hunt_mode || render_monitor_video_mode) {
-        visualizer.init(&visdat,&trackers,&dctrl,&dnav,rc.get(),log_replay_mode);
+        visualizer.init(&visdat,&trackers,&dctrl,&dnav,rc.get(),log_replay_mode,&iceptor);
         if (generator_mode) {
             visualizer.set_generator_cam(static_cast<GeneratorCam *>(cam.get()));
         }
@@ -853,7 +857,7 @@ void save_results_log() {
     results_log << "n_hunts:" << dnav.n_hunt_flights() << '\n';
     results_log << "n_replay_hunts:" << cmdcenter.n_replay_moth() << '\n';
     results_log << "n_wp_flights:" << dnav.n_wp_flights() << '\n';
-    results_log << "best_interception_distance:" << dnav.interceptor().best_distance() << '\n';
+    results_log << "best_interception_distance:" << iceptor.best_distance() << '\n';
     results_log << "n_drone_detects:" << dnav.n_drone_detects() << '\n';
     results_log << "drone_problem:" << dnav.drone_problem() << '\n';
     results_log << "Flight_time:" << dnav.flight_time() << '\n';

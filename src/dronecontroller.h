@@ -255,12 +255,12 @@ private:
     void blink(double time);
     void blink_motors(double time);
 
-    void control_model_based(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
     std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> adjust_control_gains(tracking::TrackData drone_data, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
     std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> control_error(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, cv::Point3f ki_pos);
     std::tuple<int,int,int> calc_feedforward_control(cv::Point3f desired_acceleration);
     cv::Point3f desired_acceleration_drone(cv::Point3f des_acc, float thrust);
     bool prop_wash(cv::Point3f drone_velocity, cv::Point3f des_acc_drone);
+    void control_model_based(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
 
     void send_data_joystick(void);
     void read_joystick(void);
@@ -270,6 +270,8 @@ private:
     void serialize_settings();
 
 public:
+
+    cv::Point3f desired_acceleration(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
     bool enable_thrust_calibration = false;
     void flight_mode(flight_modes f) {
         _flight_mode = f;

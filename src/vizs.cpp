@@ -14,12 +14,13 @@ cv::Scalar linecolors[] = {green,blue,red,cv::Scalar(0,255,255),cv::Scalar(255,2
 cv::Scalar fore_color(255,255,255);
 cv::Scalar background_color(0,0,0);
 
-void Visualizer::init(VisionData *visdat, tracking::TrackerManager *trackers, DroneController *dctrl, navigation::DroneNavigation *dnav, Rc *rc, bool fromfile) {
+void Visualizer::init(VisionData *visdat, tracking::TrackerManager *trackers, DroneController *dctrl, navigation::DroneNavigation *dnav, Rc *rc, bool fromfile, Interceptor *iceptor) {
     _visdat = visdat;
     _dctrl = dctrl;
     _trackers = trackers;
     _dnav = dnav;
     _rc = rc;
+    _iceptor = iceptor;
 
     _fromfile = fromfile;
     if (_fromfile) {
@@ -53,7 +54,7 @@ void Visualizer::add_plot_sample(void) {
         dt.push_back(data.dt);
         dt_target.push_back(1.f/pparams.fps);
 
-        TrackData data_target = _trackers->target_last_trackdata();
+        TrackData data_target = _iceptor->target_last_trackdata();
 
         if (data.pos_valid) {
             posX_drone.push_back(-data.state.pos.x);
@@ -361,7 +362,7 @@ void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis,float
     putText(resFrame,_trackers->mode_str(),cv::Point(220*_res_mult,96*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
 
     putText(resFrame,_trackers->dronetracker()->drone_tracking_state(),cv::Point(450*_res_mult,96*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-    putText(resFrame,_dnav->interceptor().Interceptor_State(),cv::Point(450*_res_mult,70*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame,_iceptor->Interceptor_State(),cv::Point(450*_res_mult,70*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
 
     if (_fromfile) {
         static int popcorn_cnt = 0;
@@ -415,7 +416,7 @@ void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, doubl
         static float min_dis = 9999;
         float dis = 0;
         auto dtrkr = _trackers->dronetracker();
-        auto itrkr = _trackers->target_insecttracker();
+        auto itrkr = _iceptor->target_insecttracker();
         if (dtrkr->tracking() && itrkr) {
 
             auto pd = dtrkr->world_item().pt;
@@ -456,8 +457,8 @@ void Visualizer::draw_tracker_viz() {
         last_drone_detection = drn_path.back();
 
     std::vector<tracking::TrackData> ins_path;
-    if (_trackers->target_insecttracker())
-        ins_path = _trackers->target_insecttracker()->track();
+    if (_iceptor->target_insecttracker())
+        ins_path = _iceptor->target_insecttracker()->track();
     tracking::TrackData last_insect_detection;
     if (ins_path.size())
         last_insect_detection = ins_path.back();
@@ -554,7 +555,7 @@ void Visualizer::draw_tracker_viz() {
             if (_dnav->drone_is_hunting() && target.x+target.y>0 ) {
                 c2 = red;
                 cv::Point2i text_pos = drone_pos - (drone_pos - target)/2;
-                putText(frameL_color,to_string_with_precision(_dnav->interceptor().time_to_intercept(),2) + "s",text_pos,cv::FONT_HERSHEY_SIMPLEX,0.5,c2);
+                putText(frameL_color,to_string_with_precision(_iceptor->time_to_intercept(),2) + "s",text_pos,cv::FONT_HERSHEY_SIMPLEX,0.5,c2);
             } else
                 c2 = white;
             cv::line(frameL_color,drone_pos,target,c2,1);
@@ -647,14 +648,14 @@ void Visualizer::paint() {
             }
             imshow("stereo",_trackers->dronetracker()->viz_disp);
         }
-        if (_trackers->target_insecttracker()) {
-            if (_trackers->target_insecttracker()->viz_disp.cols>0) {
+        if (_iceptor->target_insecttracker()) {
+            if (_iceptor->target_insecttracker()->viz_disp.cols>0) {
                 static bool stereo_viz_initialized = false;
                 if (!stereo_viz_initialized) {
                     stereo_viz_initialized = true;
                     namedWindow("stereo",cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
                 }
-                imshow("stereo",_trackers->target_insecttracker()->viz_disp);
+                imshow("stereo",_iceptor->target_insecttracker()->viz_disp);
             }
         }
 

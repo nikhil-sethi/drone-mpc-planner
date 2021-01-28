@@ -1,13 +1,15 @@
 #include "trackermanager.h"
+#include "interceptor.h"
 using namespace cv;
 using namespace std;
 
 namespace tracking {
 
-void TrackerManager::init(std::ofstream *logger,string replay_dir_,VisionData *visdat, CameraView *camview) {
+void TrackerManager::init(std::ofstream *logger,string replay_dir_,VisionData *visdat, CameraView *camview, Interceptor *iceptor) {
     _visdat = visdat;
     _logger = logger;
     _camview = camview;
+    _iceptor = iceptor;
     replay_dir = replay_dir_;
 
     if (pparams.has_screen || pparams.video_result) {
@@ -94,8 +96,8 @@ void TrackerManager::find_blobs() {
         roi_radius = ceilf(_dtrkr->image_predict_item().size * 0.95f) / pparams.imscalef;
     roi_radius = std::clamp(roi_radius,10,100);
 
-    if (target_insecttracker()) {
-        auto image_predict_item = target_insecttracker()->image_predict_item();
+    if (_iceptor->target_insecttracker()) {
+        auto image_predict_item = _iceptor->target_insecttracker()->image_predict_item();
         if (_dtrkr->image_predict_item().valid &&
                 image_predict_item.valid &&
                 norm(_dtrkr->image_predict_item().pt - image_predict_item.pt) < roi_radius) {
@@ -237,7 +239,7 @@ void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat dif
     bool single_blob = true;
     bool COG_is_nan = false;
 
-    if (enable_insect_drone_split && target_insecttracker()) {
+    if (enable_insect_drone_split && _iceptor->target_insecttracker()) {
 
         float dist_to_predict = normf(_dtrkr->image_predict_item().pt - COG*pparams.imscalef);
         if (dist_to_predict < 20) {
@@ -246,7 +248,7 @@ void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat dif
             vector<vector<Point>> contours;
             findContours(mask,contours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_NONE); // If necessary, we could do this on the full resolution image...?
             if (contours.size()==1 && enable_insect_drone_split) { // try another threshold value, sometimes we get lucky
-                drn_ins_split_thresh = target_insecttracker()->image_predict_item().pixel_max*0.3f;
+                drn_ins_split_thresh = _iceptor->target_insecttracker()->image_predict_item().pixel_max*0.3f;
                 Scalar avg_bkg =mean(motion_noise_mapL(rect));
                 mask = cropped > drn_ins_split_thresh + static_cast<float>(avg_bkg(0));
                 findContours(mask,contours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_NONE);
@@ -736,11 +738,6 @@ void TrackerManager::update_trackers(double time,long long frame_number, bool dr
         uint i = ii-1;
         if (_trackers.at(i)->delete_me()) {
             ItemTracker *trkr = _trackers.at(i);
-            auto t_trkr = target_insecttracker();
-            if (t_trkr) {
-                if (target_insecttracker()->uid() == trkr->uid())
-                    target_insecttracker_frameid_updated = 0;
-            }
             if (trkr->type() == tt_insect ) {
                 InsectTracker *itrkr = static_cast<InsectTracker *>(_trackers.at(i));
                 auto fpt = itrkr->false_positive();
@@ -1115,66 +1112,6 @@ std::vector<ItemTracker *> TrackerManager::all_target_trackers() {
     return res;
 }
 
-TrackData TrackerManager::target_last_trackdata() {
-    if (target_insecttracker())
-        return target_insecttracker()->last_track_data();
-    else {
-        TrackData d;
-        return d;
-    }
-}
-bool TrackerManager::tracking_a_target() {
-    if (target_insecttracker())
-        return target_insecttracker()->tracking();
-    else
-        return false;
-}
-double TrackerManager::target_last_detection() {
-    if (target_insecttracker()) {
-        return target_insecttracker()->last_detection();
-    } else
-        return 0;
-}
-
-InsectTracker *TrackerManager::target_insecttracker() {
-
-    if (target_insecttracker_frameid_updated == _visdat->frame_id && _target_insecttracker)
-        return _target_insecttracker;
-
-    if (target_insecttracker_frameid_updated>0)
-        if (_target_insecttracker)
-            if (_target_insecttracker->tracking()) { // #599
-                target_insecttracker_frameid_updated = _visdat->frame_id;
-                return _target_insecttracker;
-            }
-
-    float best_dist = INFINITY;
-    InsectTracker *best_itrkr = NULL;
-
-    cv::Point3f current_drone_pos = _dtrkr->last_track_data().pos();
-    if (_dtrkr->last_track_data().pos_valid) {
-        if (_dtrkr->takeoff_location_valid())
-            current_drone_pos = _dtrkr->takeoff_location();
-        else
-            current_drone_pos = cv::Point3f(0,-1.5,-1.5);
-    }
-
-    for (auto trkr : _trackers) {
-        if (trkr->tracking() ) {
-            if (trkr->type() == tt_insect || trkr->type() == tt_replay || trkr->type() == tt_virtualmoth) {
-                float dist = normf(current_drone_pos- trkr->last_track_data().pos());
-                if (best_dist > dist) {
-                    best_dist = dist;
-                    best_itrkr = static_cast<InsectTracker *>(trkr);
-                }
-            }
-        }
-    }
-
-    target_insecttracker_frameid_updated = _visdat->frame_id;
-    _target_insecttracker = best_itrkr;
-    return best_itrkr;
-}
 std::tuple<bool, BlinkTracker *> TrackerManager::blinktracker_best() {
     BlinkTracker::blinking_drone_states best_state = BlinkTracker::bds_searching;
     BlinkTracker *best_btrkr;
