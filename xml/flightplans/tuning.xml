@@ -90,10 +90,10 @@
             <Member Name="threshold_v">1.7</Member>
             <Member Name="x">0.0</Member>
             <Member Name="y">-0.7</Member>
-            <Member Name="z">-2.75</Member>
+            <Member Name="z">-2.5</Member>
             <Member Name="name">longZ-</Member>
         </Class>
-        
+
 
         <!-- Short range tests: -->
         <!-- <Class Type="Waypoint" Version="1.2">

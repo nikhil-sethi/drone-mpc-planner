@@ -20,6 +20,6 @@
     <Member Name="land_cell_v">3.0</Member>
     <Member Name="max_flight_time">180</Member>
     <Member Name="min_hunt_cell_v">4.1</Member>
-    <Member Name="landing_target_time">0.8</Member>
+    <Member Name="landing_target_time">0.2</Member>
     <Member Name="static_shakeit_throttle">250</Member>
 </SerializableClass>

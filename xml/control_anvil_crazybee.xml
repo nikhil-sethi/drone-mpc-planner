@@ -5,7 +5,7 @@
     <Member Name="ki_pos_roll">30</Member>
     <Member Name="ki_pos_pitch">30</Member>
     <Member Name="ki_thrust">100</Member>
-    <Member Name="kd_pos_roll">400</Member>
+    <Member Name="kd_pos_roll">420</Member>
     <Member Name="kd_pos_pitch">360</Member>
     <Member Name="kd_pos_throttle">580</Member>
     <Member Name="kp_pos_roll_hover">1250</Member>
