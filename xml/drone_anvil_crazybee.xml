@@ -1,5 +1,5 @@
 <SerializableClass Type="DroneParameters" Version="1.8">
-    <Member Name="name">ancb</Member>
+    <Member Name="name">ancr</Member>
     <Member Name="initial_hover_throttle">870</Member>
     <Member Name="throttle_bank_factor">0.75</Member>
     <Member Name="max_burn_time">0.7</Member>
