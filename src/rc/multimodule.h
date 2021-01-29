@@ -17,7 +17,7 @@ class MultiModule : public Rc {
 
 public:
     void init(int drone_id);
-    bool connected();
+    bool connect();
     void init_logger();
     void close();
     void bind(bool b);

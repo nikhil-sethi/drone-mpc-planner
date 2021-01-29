@@ -15,7 +15,7 @@ private:
 
 public:
     void init(int  __attribute__((unused)));
-    bool connected();
+    bool connect();
     void close();
     void bind(bool __attribute__((unused))) {}
     void init_logger();

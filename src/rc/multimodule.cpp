@@ -1,6 +1,6 @@
 #include "multimodule.h"
 
-bool MultiModule::connected() {
+bool MultiModule::connect() {
     std::cout << "Connecting multimodule" << std::endl;
     if(notconnected) {
         switch (dparams.tx) {
@@ -50,6 +50,7 @@ bool MultiModule::connected() {
             if (notconnected)
                 notconnected = RS232_OpenComport(115200,"/dev/pats_mm1");
         }
+        std::cout << "Opened multimodule port: " << notconnected << std::endl;
     }
     return !notconnected;
 }
@@ -58,7 +59,6 @@ void MultiModule::init(int drone_id) {
     _drone_id_rxnum = drone_id;
 
     if (!notconnected) {
-        std::cout << "Opened multimodule port: " << notconnected << std::endl;
         send_init_package_now = true;
         send_thread_mm = std::thread(&MultiModule::send_thread,this);
         receive_thread_mm = std::thread(&MultiModule::receive_thread,this);

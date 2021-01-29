@@ -145,7 +145,7 @@ public:
     virtual void init_logger() = 0;
     virtual int drone_id() = 0;
     virtual void close() = 0;
-    virtual bool connected() = 0;
+    virtual bool connect() = 0;
 
     int LED_drone() {return _LED_drone;}
     void LED_drone(bool on, int strength_value) {
@@ -161,6 +161,7 @@ public:
     bool bf_uid_error() { return _bf_uid_error>10;}
     std::string bf_uid_str() {return _bf_uid_str;}
     std::string Armed() { return armed_names[arm_switch>RC_MIDDLE]; }
+    bool connected() {return !notconnected;}
 
     void queue_commands(int new_throttle,int new_roll, int new_pitch, int new_yaw, int new_mode, double time) {
         if (!exitSendThread) {

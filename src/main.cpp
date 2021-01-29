@@ -706,7 +706,7 @@ void check_hardware() {
         } else if (dparams.tx != tx_none ) {
             rc = std::unique_ptr<Rc>(new MultiModule());
         }
-        if (!rc->connected() && pparams.op_mode != op_mode_monitoring) {
+        if (!rc->connect() && pparams.op_mode != op_mode_monitoring) {
             std::string rc_type = (airsim_mode) ? "AirSim" : "MultiModule";
             throw MyExit("cannot connect to " + rc_type);
         }

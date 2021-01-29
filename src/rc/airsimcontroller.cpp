@@ -1,6 +1,6 @@
 #include "airsimcontroller.h"
 
-bool AirSimController::connected() {
+bool AirSimController::connect() {
     if(notconnected) {
         std::cout << "Connecting AirSimController" << std::endl;
         sim.init(drone_name);
