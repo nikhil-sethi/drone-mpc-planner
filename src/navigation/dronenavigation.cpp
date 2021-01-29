@@ -181,14 +181,17 @@ void DroneNavigation::update(double time) {
             _dctrl->LED(true,itime*5 % 45+5);
             _trackers->mode(tracking::TrackerManager::mode_idle);
             _dctrl->flight_mode(DroneController::fm_inactive);
-            if (_nav_flight_mode == nfm_hunt)
+            if (_nav_flight_mode == nfm_hunt) {
                 _navigation_status = ns_wait_for_insect;
-            else if (_nav_flight_mode == nfm_manual)
+                _dctrl->LED(true);
+            } else if (_nav_flight_mode == nfm_manual) {
                 _navigation_status = ns_manual;
-            else if ( _dctrl->manual_override_take_off_now()) {
+                _dctrl->LED(true);
+            } else if ( _dctrl->manual_override_take_off_now()) {
                 wpid = 0;
                 next_waypoint(waypoints[wpid],time);
                 _navigation_status = ns_takeoff;
+                _dctrl->LED(true);
                 repeat = true;
             }
             break;
