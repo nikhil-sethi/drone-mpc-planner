@@ -677,7 +677,11 @@ void DroneController::calibrate_landing() {
                     _rc->telemetry.acc.z < max_acc.z && _rc->telemetry.acc.z > min_acc.z ) {
                 landing_acc_calibration += _rc->telemetry.acc;
                 landing_acc_calibration_cnt--;
+            } else {
+                std::cout << "Landing calibration failure: ACC not in range: [" << _rc->telemetry.acc.x << ", " << _rc->telemetry.acc.y << ", " << _rc->telemetry.acc.z << "] " << std::endl;
             }
+        } else {
+            std::cout << "Landing calibration failure: voltage not in range: " << _rc->telemetry.batt_cell_v << "V" << std::endl;
         }
     } else if (landing_acc_calibration_cnt == 0) {
         landing_acc_calibration /= static_cast<float>(required_landing_acc_calibration_cnt);
