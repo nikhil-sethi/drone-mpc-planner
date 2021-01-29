@@ -119,7 +119,7 @@ set frsky_x_rx_num = 20
 set gyro_2_spibus = 1
 set gyro_rpm_notch_harmonics = 2
 set gyro_rpm_notch_q = 600
-set name = Hammer
+set name = hacr
 
 profile 0
 
