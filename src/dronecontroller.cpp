@@ -192,7 +192,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
             cv::Point3f burn_direction;
             std::tie (auto_roll, auto_pitch,auto_burn_duration,burn_direction) = calc_directional_burn(state_drone_takeoff,data_raw_insect.state,0);
             if (burn_limit_hack)
-                auto_burn_duration = take_off_burn_duration;
+                auto_burn_duration = dparams.take_off_burn_duration;
             aim_direction_history.push_back(burn_direction);
             auto_throttle = initial_hover_throttle_guess();
 

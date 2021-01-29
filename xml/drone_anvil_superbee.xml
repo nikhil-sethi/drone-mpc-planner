@@ -23,4 +23,5 @@
     <Member Name="min_hunt_cell_v">4.1</Member>
     <Member Name="landing_target_time">0.2</Member>
     <Member Name="static_shakeit_throttle">250</Member>
+    <Member Name="take_off_burn_duration">0.11</Member>
 </SerializableClass>
