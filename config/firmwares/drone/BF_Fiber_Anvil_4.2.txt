@@ -13,10 +13,6 @@ board_name CRAZYBEEF4FR
 # name: Anvil
 
 # resources
-resource MOTOR 1 B07
-resource MOTOR 2 B10
-resource MOTOR 3 B08
-resource MOTOR 4 B06
 resource RX_BIND 1 B02
 
 # feature
@@ -95,7 +91,6 @@ set dshot_idle_value = 500
 set dshot_bidir = ON
 set motor_pwm_protocol = DSHOT300
 set motor_poles = 12
-set align_board_yaw = 270
 set bat_capacity = 300
 set vbat_max_cell_voltage = 435
 set vbat_min_cell_voltage = 300
