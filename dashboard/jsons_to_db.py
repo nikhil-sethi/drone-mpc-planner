@@ -1,55 +1,13 @@
 #!/usr/bin/env python3
-import socket, json,shutil
-import time, argparse
-import pickle, glob, os, re
-import numpy as np
+import json
+import glob, os, re
 import datetime
-import sqlite3
 from tqdm import tqdm
 from json.decoder import JSONDecodeError
+from lib_patsc import *
 
 conn = None
 cur = None
-
-def create_connection(db_file):
-    conn = None
-    try:
-        conn = sqlite3.connect(os.path.expanduser(db_file),timeout=30.0)
-    except Exception as e:
-        print(e)
-    return conn
-
-def natural_sort(l):
-    convert = lambda text: int(text) if text.isdigit() else text.lower()
-    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
-    return sorted(l, key=alphanum_key)
-
-
-def clean_moth_json_entry(moth):
-    #fix a bug that lived for a few days having different versioning in the system table and the moth table (can be removed if these jsons are obsolete)
-    if "version" in data and "Version" in moth:
-        if data["version"] != moth["Version"] and str(moth["Version"]) == "1.1":
-            moth["Version"] = "1.2"
-    else:
-            moth["Version"] = "1.0"
-
-    #remove unused data from jsons version < 1.4:
-    if float(moth["Version"]) < 1.4:
-        if 'FP' in moth:
-            moth.pop('FP')
-        if 'TA_mean' in moth:
-            moth.pop('TA_mean')
-        if 'TA_std' in moth:
-            moth.pop('TA_std')
-        if 'TA_max' in moth:
-            moth.pop('TA_max')
-        if 'RA_mean' in moth:
-            moth.pop('RA_mean')
-        if 'RA_std' in moth:
-            moth.pop('RA_std')
-        if 'RA_max' in moth:
-            moth.pop('RA_max')
-    return moth
 
 def get_column_data_type(column):
     if column == 'duration' or column == 'Version' or column == 'Vel_mean' or column == 'Vel_max' or column == 'Vel_std' or column == 'Version' or column == 'Dist_traveled' or column == 'Size' or column == 'Alpha_horizontal_start' or column == 'Alpha_horizontal_end' or column == 'Alpha_vertical_start' or column == 'Alpha_vertical_end' or column == 'Dist_traject':
@@ -59,14 +17,14 @@ def get_column_data_type(column):
     else:
         return 'TEXT'
 
-def store_moths(fn,data):
+def store_moths(data):
     moths =data["moths"]
 
     cur.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='moth_records' ''')
     moth_table_exist = cur.fetchone()[0]==1
     if not moth_table_exist:
         sql_create = 'CREATE TABLE moth_records(uid INTEGER PRIMARY KEY, system,time,'
-        clean_moth = clean_moth_json_entry(moths[-1]) #select the last moth as a prototype for the columns. Last because that probably is in last version
+        clean_moth = clean_moth_json_entry(moths[-1],data) #select the last moth as a prototype for the columns. Last because that probably is in last version
         for s in list(clean_moth.keys())[1:]:
             sql_create = sql_create + s + ' ' + get_column_data_type(s) + ','
         sql = sql_create[:-1] + ')'
@@ -119,7 +77,7 @@ def store_moths(fn,data):
     for moth in moths:
         date = moth['time']
 
-        moth = clean_moth_json_entry(moth)
+        moth = clean_moth_json_entry(moth,data)
 
         if sql_insert == '':
             sql_insert = 'INSERT INTO moth_records(system,time,'
@@ -138,7 +96,7 @@ def create_modes_table():
     cur.execute(sql_create)
     conn.commit()
 
-def store_mode(fn,data):
+def store_mode(data):
     cur.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='mode_records' ''')
     mode_table_exist = cur.fetchone()[0]==1
 
@@ -287,7 +245,7 @@ def remove_double_data(table_name_prefix):
     conn.commit()
     print("Found and deleted " + str(tot_doubles) + " doubles in " + table_name_prefix + " records.")
 
-def store_hunts(fn,data):
+def store_hunts(data):
     cur.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='hunt_records' ''')
     hunt_table_exist = cur.fetchone()[0]==1
     conn.commit()
@@ -315,35 +273,22 @@ def store_hunts(fn,data):
                 sql__insert_values = sql__insert_values + '?,'
             sql_insert = sql_insert[:-1] + sql__insert_values[:-1] + ')'
 
-
         cur.execute(sql_insert, (data["system"], dt_from,dt_till, *list(hunt.values())[2:]))
     conn.commit()
     return len(hunts)
 
-def store_data(data,fn):
-    global conn
-    global cur
-
-    n_moths = store_moths(fn,data)
-    store_mode(fn,data)
-    n_hunts = store_hunts(fn,data)
-
+def process_json(data):
+    n_moths = store_moths(data)
+    store_mode(data)
+    n_hunts = store_hunts(data)
     return n_moths,n_hunts
 
-parser = argparse.ArgumentParser(description='Script that adds the json files to an sql database.')
-parser.add_argument('-i', '--input_folder', help="Path to the folder with json files", default='~/jsons/')
-parser.add_argument('-p','--period', help="Repeat this script every period", default=0)
-parser.add_argument('-o','--output_db_path', help="Path to sql database", default='~/pats.db')
-args = parser.parse_args()
-
-conn = create_connection(args.output_db_path)
-cur = conn.cursor()
-
-while True:
-    files = natural_sort([fp for fp in glob.glob(os.path.expanduser(args.input_folder + "/*.json"))])
+def jsons_to_db(input_folder,output_db_path):
+    conn = open_db(output_db_path)
+    files = natural_sort([fp for fp in glob.glob(os.path.expanduser(input_folder + "/*.json"))])
     pbar = tqdm(files)
     for filename in pbar:
-        pbar.set_description(os.path.basename(filename))
+        pbar.set_description('DB update: ' + os.path.basename(filename))
         flag_fn = filename[:-4] + 'processed'
         if not os.path.exists(flag_fn):
             with open(filename) as json_file:
@@ -353,24 +298,20 @@ while True:
                             data = json.load(json_file)
                             min_required_version=1.0
                             if "version" in data and float(data["version"]) >= min_required_version:
-                                n_moths,n_hunts = store_data(data,os.path.basename(filename))
+                                n_moths,n_hunts = process_json(data)
                                 flag_f.write('OK')
                                 flag_f.write('. Insect detections: ' + str(n_moths))
                                 flag_f.write('. Hunts: ' + str(n_hunts))
-                                flag_f.write('.')
+                                flag_f.write('.\n')
                             else:
-                                flag_f.write('WRONG VERSION ' + data["version"] + '. Want: ' + min_required_version)
+                                flag_f.write('WRONG VERSION ' + data["version"] + '. Want: ' + min_required_version + '\n')
                         except JSONDecodeError:
-                            flag_f.write('JSONDecodeError')
+                            flag_f.write('JSONDecodeError \n')
                     else:
-                        flag_f.write('File size too big')
+                        flag_f.write('File size too big \n')
 
     concat_modes()
     remove_double_data('moth')
     remove_double_data('hunt')
 
-    if args.period:
-        print(str(datetime.datetime.now()) + ". Periodic update after: " + str(args.period))
-        time.sleep(int(args.period))
-    else:
-        break
+jsons_to_db('~/jsons/','~/pats.db')
