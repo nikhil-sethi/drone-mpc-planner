@@ -932,6 +932,12 @@ cv::Point3f DroneController::desired_acceleration_drone(cv::Point3f des_acc, flo
     float k1 = -p/2.f + sqrt(root_square);
     float k2 = -p/2.f - sqrt(root_square);
 
+    // Avoid warnings based on rounding errors
+    if(k1>1.f && k1<1.05f)
+        k1 = 1.;
+    if(k2>1.f && k2<1.05f)
+        k2 = 1.;
+
     bool k1_valid = 0<=k1 && k1<=1;
     bool k2_valid = 0<=k2 && k2<=1;
 
