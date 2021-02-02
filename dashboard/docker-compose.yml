@@ -1,0 +1,42 @@
+version: '3.5'
+
+services:
+  pats_c:
+    restart: unless-stopped
+    build: ./pats_c
+    ports:
+      - "8000:8000"
+    volumes:
+      - /home/flask/pats_c
+      - ~/patsc/static/:/home/flask/pats_c/static/
+      - ~/patsc/db/:/home/flask/patsc/db/
+      - ~/.ssh/:/home/flask/.ssh/
+    command: gunicorn --workers=4 "pats_c:create_app()" -b :8000 --worker-tmp-dir /dev/shm
+
+  nginx:
+    image: nginx
+    restart: unless-stopped
+    expose:
+      - 80
+      - 443
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ~/patsc/static/:/static
+      - ./nginx:/etc/nginx/conf.d
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    links:
+      - pats_c
+    depends_on:
+      - pats_c
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+
+  certbot:
+    image: certbot/certbot
+    restart: unless-stopped
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"

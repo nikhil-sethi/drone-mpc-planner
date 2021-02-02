@@ -23,12 +23,6 @@ def download_jsons():
     cmd = ['rsync -zvaP --timeout=3 --exclude \'*.jpg.*\' --exclude \'*.xml.*\' --exclude \'*.txt.*\' ' + rsync_src + ' '+ source_folder]
     execute(cmd)
 
-def download_db():
-    global source_folder
-    rsync_src='dash:/home/pats/pats.db'
-    cmd = ['rsync -zvaP --timeout=3 --exclude \'*.jpg.*\' --exclude \'*.xml.*\' --exclude \'*.txt.*\' ' + rsync_src + ' '+ '~/pats.db']
-    execute(cmd)
-
 def download_renders(pats_id):
     cmd = ['rsync -azvP pats' + str(pats_id) + ':data_rendered/* ~/Downloads/pats_renders']
     execute(cmd)
@@ -69,10 +63,6 @@ args = parser.parse_args()
 
 while True:
 
-    download_jsons()
-    print ('Downloaded jsons')
-    download_db()
-    print ('Downloaded db')
     download_renders_all()
     print ('Downloaded renders')
     download_raw_logs_all()

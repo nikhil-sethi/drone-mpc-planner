@@ -8,29 +8,28 @@ db = SQLAlchemy()
 dash = pats_c.dash_application()
 
 def create_app():
-
     current_folder = os.path.dirname(os.path.realpath(__file__))
     parent_folder = os.path.realpath(os.path.join(current_folder,os.pardir))
-    app = Flask(__name__, static_folder=os.path.join(current_folder,'assets'))
+    server = Flask(__name__, static_folder=os.path.join(current_folder,'assets'))
 
-    db_path = os.path.join(os.path.expanduser('~'), 'pats_creds.db')
-    config_path = os.path.join(os.path.expanduser('~'), '.pats-c-key.py')
+    db_path = os.path.expanduser('~/patsc/db/pats_creds.db')
+    config_path = os.path.expanduser('~/patsc/db/.pats-c-key.py')
     db_uri = 'sqlite:///{}'.format(db_path)
-    app.config.from_pyfile(config_path)
-    app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    server.config.from_pyfile(config_path)
+    server.config['SQLALCHEMY_DATABASE_URI'] = db_uri
+    server.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    db.init_app(app)
+    db.init_app(server)
 
     login_manager = LoginManager()
     login_manager.login_view = 'auth.login'
-    login_manager.init_app(app)
+    login_manager.init_app(server)
 
-    dash.init_app(app=app)
+    dash.init_app(app=server)
 
-    for view_func in app.view_functions:
+    for view_func in server.view_functions:
        if view_func.startswith(dash.config['url_base_pathname']):
-            app.view_functions[view_func] = login_required(app.view_functions[view_func])
+            server.view_functions[view_func] = login_required(server.view_functions[view_func])
 
     from .models import User
 
@@ -39,15 +38,15 @@ def create_app():
         return User.query.get(int(user_id))
 
     from .auth import auth as auth_blueprint
-    app.register_blueprint(auth_blueprint)
+    server.register_blueprint(auth_blueprint)
 
     from .main import main as main_blueprint
-    app.register_blueprint(main_blueprint)
+    server.register_blueprint(main_blueprint)
 
     # Function is necessary for the video requests of pats-c
-    @app.route('/static/<path:filename>')
+    @server.route('/static/<path:filename>')
     @login_required
     def base_static(filename):
-        return send_from_directory(os.path.join(parent_folder,'static'), filename)
+        return send_from_directory(os.path.join('../static/') , filename)
 
-    return app
+    return server

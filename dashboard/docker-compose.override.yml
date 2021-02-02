@@ -1,0 +1,16 @@
+version: '3.5'
+
+services:
+  pats_c:
+    restart: unless-stopped
+    build: ./pats_c
+    ports:
+      - "8002:8002"
+    volumes:
+      - /home/flask/pats_c
+      - ~/patsc/static/:/home/flask/pats_c/static/
+      - ~/patsc/db/:/home/flask/patsc/db/
+      - ~/.ssh/:/home/flask/patsc/ssh_tmp
+      - ../config/:/home/flask/patsc/config_tmp
+      - ~/code/pats/config/:/home/flask/code/pats/config/
+    command: gunicorn --workers=1 "pats_c:create_app()" -b :8002 --worker-tmp-dir /dev/shm

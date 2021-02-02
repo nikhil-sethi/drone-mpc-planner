@@ -1,8 +1,8 @@
 #! /usr/bin/env bash
 
 # Configuration
-tunnels=( dash mavlab-gpu dinstech )
-tunnels_port=( 22 22 16666 )
+tunnels=( dash dinstech )
+tunnels_port=( 22 16666 )
 
 # Start tunnels
 for i in ${!tunnels[@]}
@@ -14,9 +14,9 @@ done
 i=$(($i + 1))
 /usr/bin/screen -t co2 $i /bin/bash -c 'cd ~/code/Config/scripts && ~/code/Config/scripts/co2.py; exec /bin/bash'
 i=$(($i + 1))
-/usr/bin/screen -t down $i /bin/bash -c 'cd ~/code/pats/dashboard/ && ./downloader.py; exec /bin/bash'
+/usr/bin/screen -t down $i /bin/bash -c 'cd ~/code/pats/dashboard/ && ./watch_config/downloader.py; exec /bin/bash'
 i=$(($i + 1))
-/usr/bin/screen -t backup $i /bin/bash -c 'cd ~/code/pats/dashboard/ && ./dash_backup.py; exec /bin/bash'
+/usr/bin/screen -t backup $i /bin/bash -c 'cd ~/code/pats/dashboard/ && ./watch_config/dash_backup.py; exec /bin/bash'
 i=$(($i + 1))
 /usr/bin/screen -t code $i /bin/bash -c 'cd ~/code/pats/; exec /bin/bash'
 i=$(($i + 1))

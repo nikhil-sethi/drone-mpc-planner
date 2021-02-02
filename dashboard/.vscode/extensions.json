@@ -10,6 +10,8 @@
         "dotjoshjohnson.xml",
         "ms-python.python",
         "visualstudioexptteam.vscodeintellicode",
-        "ms-python.vscode-pylance"
+        "ms-python.vscode-pylance",
+        "ms-azuretools.vscode-docker",
+        "ms-vscode-remote.remote-containers"
     ]
 }

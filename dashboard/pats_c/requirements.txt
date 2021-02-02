@@ -1,0 +1,14 @@
+numpy
+pandas
+dash
+dash_auth
+flask
+flask_login
+flask_sqlalchemy
+dash_core_components
+dash_html_components
+dash
+dash_bootstrap_components
+dash_daq
+plotly
+gunicorn

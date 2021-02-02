@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-import socket, json,shutil,subprocess,sqlite3
-import datetime,time, argparse,math,pickle, glob, os, re
+import subprocess,sqlite3
+import datetime,time, math, os, re
 import numpy as np
 import pandas as pd
 
-import dash,dash_auth,flask
+import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import plotly.express as px
@@ -17,9 +17,9 @@ import dash_daq as daq
 from flask_login import current_user
 from urllib.parse import quote as urlquote
 
-db_path = os.path.expanduser('~/pats.db')
-db_classification_path = os.path.expanduser('~/pats_human_classification.db')
-db_systems_path = os.path.expanduser('~/pats_systems.db')
+db_path = os.path.expanduser('~/patsc/db/pats.db')
+db_classification_path = os.path.expanduser('~/patsc/db/pats_human_classification.db')
+db_systems_path = os.path.expanduser('~/patsc/db/pats_systems.db')
 group_dict = {}
 moth_columns = []
 heatmap_max = 50
@@ -37,6 +37,10 @@ def open_db():
     global db_path
     conn = None
     cur = None
+    print('Opening DB: ' + db_path)
+    if not os.path.exists(db_path):
+        print("Error: db does not exist: " + db_path)
+        exit(1)
     try:
         conn = sqlite3.connect(db_path)
         cur = conn.cursor()
@@ -412,10 +416,10 @@ def download_log(selected_moth):
     log_folder = selected_moth[moth_columns.index('Folder')]
     if not log_folder or log_fn == 'unknown':
         return ''
-    target_log_fn = 'static/' + log_folder + '_' + sys_name + '_' + log_fn
+    target_log_fn = './static/' + log_folder + '_' + sys_name + '_' + log_fn
     if not os.path.isfile(target_log_fn):
         rsync_src = sys_name + ':data/' + log_folder + '/logging/' + log_fn
-        cmd = ['rsync --timeout=5 -az ' + rsync_src + ' ' + target_log_fn]
+        cmd = ['rsync --timeout=5 -az -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ' + rsync_src + ' ' + target_log_fn]
         execute(cmd)
     return target_log_fn
 def file_download_link(filename):
@@ -462,7 +466,8 @@ def download_video(selected_moth):
         target_video_fn = 'static/' + selected_moth[moth_columns.index('Folder')] + '_' + sys_name + '_' + video_fn
         if not os.path.isfile(target_video_fn):
             rsync_src = sys_name + ':data/' +selected_moth[moth_columns.index('Folder')] + '/logging/render_' + video_fn
-            cmd = ['rsync --timeout=5 -a ' + rsync_src + ' ' + target_video_fn]
+            cmd = ['rsync --timeout=5 -a -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ' + rsync_src + ' ' + target_video_fn]
+            print (cmd)
             execute(cmd)
         target_video_fn = '/' + target_video_fn
         if not os.path.isfile(target_video_fn[1:]):
@@ -482,7 +487,7 @@ def selected_dates(selected_daterange):
         return 1
 
 def dash_application():
-
+    print("Starting PATS-C dash application!")
     app = dash.Dash(__name__, server=False, url_base_pathname='/pats-c/',title='PATS-C')
 
     pio.templates.default = 'plotly_dark'
@@ -687,8 +692,8 @@ def dash_application():
 
         return selected_classification
 
-    if not os.path.exists('static'):
-        os.makedirs('static')
+    if not os.path.exists(os.path.expanduser('~/patsc/static/')):
+        os.makedirs(os.path.expanduser('~/patsc/static/'))
 
     conn,cur = open_db()
     moth_columns = [i[1] for i in cur.execute('PRAGMA table_info(moth_records)')]
