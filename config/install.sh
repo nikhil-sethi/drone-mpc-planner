@@ -200,7 +200,6 @@ if [[ $1 -eq 1 ]] ; then
 		sudo ln -s ~/code/pats/config/interfaces /etc/network/interfaces
 
 		[ -f /etc/apt/apt.conf.d/50unattended-upgrades ] && {
-				sudo cp  /etc/apt/apt.conf.d/50unattended-upgrades{,.bak} --backup=numbered
 				sudo rm /etc/apt/apt.conf.d/50unattended-upgrades
 		}
 		sudo ln -s ~/code/pats/config/50unattended-upgrades /etc/apt/apt.conf.d/
