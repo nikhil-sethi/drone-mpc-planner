@@ -489,10 +489,12 @@ def init_system_dropdown(_): #unfortunately we have to do this init through a cl
     values = []
     for group in group_dict.keys():
         for i,system in enumerate(group_dict[group]):
-            if group == 'pats' or group == 'maintance' or group == 'admin' or group == 'unassigned_systems' or group == 'deactivated_systems':
-                options.append({'label':system,'value':system,'title':system})
+            if group == 'pats':
+                options.append({'label':system.replace('-proto',''),'value':system,'title':system.replace('-proto','')})
+            elif group == 'maintance' or group == 'admin' or group == 'unassigned_systems' or group == 'deactivated_systems':
+                pass
             else:
-                options.append({'label':group+' '+str(i+1),'value':system,'title':system})
+                options.append({'label':group+' '+str(i+1),'value':system,'title':system.replace('-proto','')})
     if len(group_dict.keys()) == 1:
         values = [x['value'] for x in options ]
     return options, values
