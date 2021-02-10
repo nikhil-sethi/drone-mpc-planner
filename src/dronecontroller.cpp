@@ -884,9 +884,10 @@ std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f de
 
     cv::Point3f drone_vel = _dtrk->last_track_data().vel();
     propwash = prop_wash(drone_vel, desired_acceleration);
+    float control_margin = GRAVITY * tanf(acosf(GRAVITY/drone_calibration.thrust)); // see doc/control-margin.svg
     if(propwash) {
         desired_acceleration /= normf(desired_acceleration);
-        desired_acceleration *= 0.65f*drone_calibration.thrust; //at ~0.8 drone starts crashing
+        desired_acceleration *= 0.7f*control_margin;
     }
 
     cv::Point3f des_acc_drone = desired_acceleration_drone(desired_acceleration, drone_calibration.thrust);
