@@ -38,7 +38,7 @@ Same remarks as with drone flash script apply.
 
 Flashing:
 
-    ./avrdude -C./avrdude.conf -v -patmega328p -carduino -P/dev/ttyUSB0 -b115200 -D -Uflash:w:$HOME/code/pats/Arduino/charger/charging_1_2/charging_pad.ino.eightanaloginputs.hex:i
+  $HOME/code/pats/config/firmwares/charging/avrdude  && ./avrdude -C./avrdude.conf -v -patmega328p -carduino -P/dev/ttyUSB0 -b115200 -D -Uflash:w:$HOME/code/pats/config/firmwares/charging/charging_pad.ino.eightanaloginputs.hex:i
 
 Sound decryption:
 
