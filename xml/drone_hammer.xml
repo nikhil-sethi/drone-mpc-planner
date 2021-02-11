@@ -1,4 +1,4 @@
-<SerializableClass Type="DroneParameters" Version="1.8">
+<SerializableClass Type="DroneParameters" Version="1.9">
     <Member Name="name">hacr</Member>
     <Member Name="initial_hover_throttle">675</Member>
     <Member Name="throttle_bank_factor">0.75</Member>
@@ -23,5 +23,5 @@
     <Member Name="min_hunt_cell_v">4.1</Member>
     <Member Name="landing_target_time">0.3</Member>
     <Member Name="static_shakeit_throttle">125</Member>
-    <Member Name="take_off_burn_duration">0.08</Member>
+    <Member Name="target_takeoff_velocity">2.2</Member>
 </SerializableClass>

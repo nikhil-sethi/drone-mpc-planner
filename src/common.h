@@ -458,7 +458,7 @@ private:
     xFloat _min_hunt_cell_v;
     xFloat _landing_target_time;
     xInt _static_shakeit_throttle;
-    xFloat _take_off_burn_duration;
+    xFloat _target_takeoff_velocity;
 
 public:
     std::string name;
@@ -485,7 +485,7 @@ public:
     float min_hunt_cell_v;
     float landing_target_time;
     int static_shakeit_throttle;
-    float take_off_burn_duration;
+    float target_takeoff_velocity;
 
     DroneParameters() {
         // Set the XML class name.
@@ -493,7 +493,7 @@ public:
         setClassName("DroneParameters");
 
         // Set class version
-        setVersion("1.8");
+        setVersion("1.9");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("name",&_name);
@@ -520,7 +520,7 @@ public:
         Register("min_hunt_cell_v",&_min_hunt_cell_v);
         Register("landing_target_time",&_landing_target_time);
         Register("static_shakeit_throttle",&_static_shakeit_throttle);
-        Register("take_off_burn_duration", &_take_off_burn_duration);
+        Register("target_takeoff_velocity", &_target_takeoff_velocity);
     }
     void deserialize(std::string filepath) {
         std::cout << "Reading settings from: " << filepath << std::endl;
@@ -568,7 +568,7 @@ public:
         min_hunt_cell_v = _min_hunt_cell_v.value();
         landing_target_time = _landing_target_time.value();
         static_shakeit_throttle = _static_shakeit_throttle.value();
-        take_off_burn_duration = _take_off_burn_duration.value();
+        target_takeoff_velocity = _target_takeoff_velocity.value();
     }
 
     void serialize(std::string filepath) {
@@ -596,7 +596,7 @@ public:
         _min_hunt_cell_v = min_hunt_cell_v;
         _landing_target_time = landing_target_time;
         _static_shakeit_throttle = static_shakeit_throttle;
-        _take_off_burn_duration = take_off_burn_duration;
+        _target_takeoff_velocity = target_takeoff_velocity;
 
         std::string xmlData = toXML();
         std::ofstream outfile = std::ofstream (filepath);

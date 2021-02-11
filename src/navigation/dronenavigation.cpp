@@ -346,8 +346,6 @@ void DroneNavigation::update(double time) {
                 setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, CameraView::relaxed);
             }
 
-            update_setpoint_for_approaching_yaw_and_landing();
-
             if (_dctrl->dist_to_setpoint() *1000 < current_waypoint->threshold_mm
                     && normf(_trackers->dronetracker()->last_track_data().state.vel) < current_waypoint->threshold_v
                     && _trackers->dronetracker()->n_frames_tracking()>5)
@@ -454,7 +452,9 @@ void DroneNavigation::update(double time) {
             if (new_pos_setpoint.y < pad_pos.y) {
                 // new_pos_setpoint.y = pad_pos.y;
                 setpoint_vel_world = {0};
-                if ((!_dctrl->landing()) && ((_trackers->dronetracker()->last_track_data().spos().y < pad_pos.y+0.2f) || (!_trackers->dronetracker()->last_track_data().spos_valid)))
+                if ((!_dctrl->landing())
+                        && ((_trackers->dronetracker()->last_track_data().spos().y < pad_pos.y+0.2f)
+                            || (!_trackers->dronetracker()->last_track_data().spos_valid)))
                     _dctrl->flight_mode(DroneController::fm_ff_landing_start);
             }
             setpoint_pos_world = new_pos_setpoint;
@@ -558,7 +558,6 @@ void DroneNavigation::next_waypoint(Waypoint wp, double time) {
             setpoint_pos_world.y = -0.5f;
         setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, CameraView::relaxed);
         setpoint_pos_world_landing = setpoint_pos_world;
-        update_setpoint_for_approaching_yaw_and_landing();
     } else {
         setpoint_pos_world =  wp.xyz;
         setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, CameraView::relaxed);

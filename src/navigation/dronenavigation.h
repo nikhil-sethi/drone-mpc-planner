@@ -83,16 +83,6 @@ private:
     int _n_hunt_flights = 0;
     float _flight_time = -1;
 
-    void update_setpoint_for_approaching_yaw_and_landing() {
-        if (current_waypoint->mode == wfm_landing || current_waypoint->mode == wfm_yaw_reset) {
-            cv::Point3f drone_location = _trackers->dronetracker()->last_track_data().pos();
-            cv::Point3f dis = setpoint_pos_world_landing - drone_location;
-            if (normf(dis) > 0.4f) {
-                dis = dis/normf(dis);
-                setpoint_pos_world = drone_location + 0.4*dis;
-            }
-        }
-    }
     void check_abort_autonomus_flight_conditions();
 
 public:
