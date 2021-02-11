@@ -16,9 +16,9 @@ The script supports some command line arguments, like setting the drone id or se
 Go to the `Flash all` option in BLHeli. Select file manually and go to `pats/config/firmwares/drone`.
 Choose the driver file depending on the flightcontroller you are using.
 for instance:
-Flightcontroller Anvil = O-H-5 16.9  
-Flightcontroller Hammer CB v2 = S-H-50 16.9  
-Flightcontroller Hammer CB v2 = F-H-40 16.9  
+Flightcontroller Anvil = O-H-5 16.9
+Flightcontroller Hammer CB v2 = S-H-50 16.9
+Flightcontroller Hammer CB v2 = F-H-40 16.9
 
 4. For the Anvil, apply the following settings, and then click write all settings:
 ![BLHeli settings](../../doc/BLHeliESCSettings_Anvil.png)
@@ -36,15 +36,15 @@ Same remarks as with drone flash script apply.
 
 5. To flash the _ANVIL_ charging pads follow these instructions
 
-Flashing:
+## Flashing charging pad:
 
-  $HOME/code/pats/config/firmwares/charging/avrdude  && ./avrdude -C./avrdude.conf -v -patmega328p -carduino -P/dev/ttyUSB0 -b115200 -D -Uflash:w:$HOME/code/pats/config/firmwares/charging/charging_pad.ino.eightanaloginputs.hex:i
+    $HOME/code/pats/config/firmwares/charging/avrdude  && ./avrdude -C./avrdude.conf -v -patmega328p -carduino -P/dev/ttyUSB0 -b115200 -D -Uflash:w:$HOME/code/pats/config/firmwares/charging/charging_pad.ino.eightanaloginputs.hex:i
 
 Sound decryption:
 
 | Sounds            | Meaning                          |
 |-------------------|----------------------------------|
-| Mario theme       | no drone detected                |
+| Mario theme       | Drone not detected               |
 | Mario dies        | Drone removed                    |
 | Level up          | Drone connected                  |
 | Underground sound | Drone connected but no charging* |
