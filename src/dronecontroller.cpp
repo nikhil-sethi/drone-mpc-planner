@@ -106,7 +106,7 @@ void DroneController::set_led_strength(float exposure) {
     else if (exposure < thresh_dark)
         dparams.drone_led_strength = 100 - (exposure/thresh_dark*50.f);
     else
-        dparams.drone_led_strength = 50 - ((std::clamp(exposure,thresh_bright,max_ae)-thresh_bright)/(max_ae - thresh_bright)*45.f);
+        dparams.drone_led_strength = 50 - ((std::clamp(exposure,thresh_bright,max_ae)-thresh_bright)/(max_ae - thresh_bright)*35.f);
 
     std::cout << "Led strength set to: " << dparams.drone_led_strength << std::endl;
 }
@@ -387,7 +387,9 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
     } case fm_ff_landing: {
         control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
         float dt = static_cast<float>(time - ff_land_start_time);
-        auto_throttle  = (ff_auto_throttle_start-RC_BOUND_MIN) - (1.f/dparams.landing_target_time) * dt * (ff_auto_throttle_start-RC_BOUND_MIN) + RC_BOUND_MIN;
+        auto_throttle  = ff_auto_throttle_start
+                         - drone_calibration.thrust/38.f * (1.f/dparams.landing_target_time) * dt * (ff_auto_throttle_start-RC_BOUND_MIN);
+
         if (dt > dparams.landing_target_time) {
             auto_throttle = RC_BOUND_MIN;
             _flight_mode = fm_shake_it_baby;
