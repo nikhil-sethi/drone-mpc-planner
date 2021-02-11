@@ -34,9 +34,7 @@ Same remarks as with drone flash script apply.
 ## Flashing realsense camera:
 `sudo rs-fw-update -f ~/code/pats/config/firmwares/realsense/Signed_Image_UVC_5_12_6_0.bin`
 
-5. To flash the _ANVIL_ charging pads follow these instructions
-
-## Flashing charging pad:
+## Flashing Anvil charging pad:
 
     $HOME/code/pats/config/firmwares/charging/avrdude  && ./avrdude -C./avrdude.conf -v -patmega328p -carduino -P/dev/ttyUSB0 -b115200 -D -Uflash:w:$HOME/code/pats/config/firmwares/charging/charging_pad.ino.eightanaloginputs.hex:i
 
