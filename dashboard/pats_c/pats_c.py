@@ -74,10 +74,9 @@ def open_systems_db():
 
 def load_systems_group(group_name):
     _,cur = open_systems_db()
-    sql_str = '''SELECT system_id FROM systems JOIN groups ON groups.group_id = systems.group_id WHERE groups.name = ? ORDER BY system_id'''
+    sql_str = '''SELECT system_name,location FROM systems JOIN groups ON groups.group_id = systems.group_id WHERE groups.name = ? ORDER BY system_id'''
     cur.execute(sql_str,(group_name,))
     systems = cur.fetchall()
-    systems = ['pats-proto'+str(d[0]) for d in systems]
     return systems
 
 def load_groups():
@@ -96,17 +95,29 @@ def load_groups():
 
 def init_system_dropdown():
     group_dict = load_groups()
-    options = []
-    values = []
+    sys_options = []
+    group_options = []
+    group_value = None
+    group_style={'width': '25%', 'display': 'inline-block'}
+    sys_style={'width': '50%', 'display': 'inline-block'}
     for group in group_dict.keys():
-        for i,system in enumerate(group_dict[group]):
-            if group == 'pats' or group == 'maintance' or group == 'admin' or group == 'unassigned_systems' or group == 'deactivated_systems':
-                options.append({'label':system.replace('-proto',' '),'value':system,'title':system.replace('-proto',' ')})
-            else:
-                options.append({'label':group+' '+str(i+1),'value':system,'title':system.replace('-proto',' ')})
-    if len(group_dict.keys()) == 1:
-        values = [x['value'] for x in options ]
-    return options, values
+        if not ( group == 'maintance' or group == 'admin' or group == 'unassigned_systems' or group == 'deactivated_systems'):
+            group_options.append({'label':group,'value':group})
+            for i,(system,location) in enumerate(group_dict[group]):
+                if group == 'pats':
+                    sys_options.append({'label':system.replace('-proto',''),'value':system,'title':system.replace('-proto','')})
+                elif location:
+                    if len(group_dict.keys()) == 1:
+                        sys_options.append({'label':location,'value':system,'title':system.replace('-proto','')})
+                    else:
+                        sys_options.append({'label':group+' '+location,'value':system,'title':system.replace('-proto','')})
+                else:
+                    sys_options.append({'label':group+' '+str(i+1),'value':system,'title':system.replace('-proto','')})
+        if len(group_dict.keys()) == 1:
+            group_value = list(group_dict.keys())
+            group_style={'width': '0%', 'display': 'none'}
+            sys_style={'width': '75%', 'display': 'inline-block'}
+    return sys_options, sys_style, group_options, group_value, group_style
 
 def load_systems(username):
     _,cur = open_systems_db()
@@ -498,6 +509,19 @@ def dash_application():
     pio.templates.default = 'plotly_dark'
 
     @app.callback(
+        Output('systems_dropdown','value'),
+        Input('groups_dropdown','value'))
+    def select_system_group(selected_group):
+        group_dict = load_groups()
+        value = []
+        if selected_group:
+            for group in selected_group:
+                systems = [d[0] for d in group_dict[group]]
+                value.extend(systems)
+        print(value)
+        return value
+
+    @app.callback(
         Output('hete_kaart', 'figure'),
         Output('staaf_kaart', 'figure'),
         Output('hete_kaart', 'style'),
@@ -728,7 +752,7 @@ def dash_application():
         fig_hist=go.Figure(data=go.Histogram())
         fig_scatter = go.Figure(data=go.Scatter())
         fig_path = go.Figure(data=go.Scatter3d())
-        system_options, system_values = init_system_dropdown()
+        system_options, system_style, group_options, group_value, group_style = init_system_dropdown()
         return html.Div(children=[
             dbc.Navbar([
                 dbc.Col(html.H1(children='PATS-C')),
@@ -742,15 +766,25 @@ def dash_application():
             ),
             html.Div([
                 html.Div([
+                    html.Div('Select customer:'),
+                    html.Div(dcc.Dropdown(
+                        id='groups_dropdown',
+                        options=group_options,
+                        value=group_value,
+                        clearable=True,
+                        multi=True,
+                        placeholder = 'Select customer'
+                    ), className='dash-bootstrap'),
+                ], style=group_style),
+                html.Div([
                     html.Div('Select systems:'),
                     html.Div(dcc.Dropdown(
                         id='systems_dropdown',
                         options=system_options,
-                        value=system_values,
                         multi=True,
                         placeholder = 'Select systems'
                     ), className='dash-bootstrap'),
-                ], style={'width': '50%', 'display': 'inline-block'}),
+                ], style=system_style),
                 html.Div([
                     html.Div('Select range:'),
                     html.Div(dcc.Dropdown(
@@ -760,7 +794,7 @@ def dash_application():
                         searchable=False,
                         clearable=False
                     ), className='dash-bootstrap'),
-                ], style={'width': '50%', 'display': 'inline-block'})
+                ], style={'width': '25%', 'display': 'inline-block'})
             ],style={'display': 'block','textAlign':'center','width':'50%','margin':'auto'}),
             html.Div([
                 dcc.Loading(
