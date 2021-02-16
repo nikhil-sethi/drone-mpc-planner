@@ -36,7 +36,10 @@ Same remarks as with drone flash script apply.
 
 ## Flashing Anvil charging pad:
 
-    $HOME/code/pats/config/firmwares/charging/avrdude  && ./avrdude -C./avrdude.conf -v -patmega328p -carduino -P/dev/ttyUSB0 -b115200 -D -Uflash:w:$HOME/code/pats/config/firmwares/charging/charging_pad.ino.eightanaloginputs.hex:i
+  cd $HOME/code/pats/config/firmwares/charging/avrdude  && ./avrdude -C./avrdude.conf -v -patmega328p -carduino -P/dev/ttyUSB0 -b115200 -D -Uflash:w:$HOME/code/pats/config/firmwares/charging/charging_pad.ino.eightanaloginputs.hex:i
+
+  Flash all connected charging pads:
+  cd $HOME/code/pats/config/firmwares/charging/avrdude  &&  for i in {0..12}; do ./avrdude -C./avrdude.conf -v -patmega328p -carduino -P/dev/ttyUSB${i} -b115200 -D -Uflash:w:$HOME/code/pats/config/firmwares/charging/charging_pad.ino.eightanaloginputs.hex:i ; done
 
 Sound decryption:
 

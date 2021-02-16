@@ -25,7 +25,7 @@
 #define CLK A4
 #define DIO A5
 
-#define SOFTWARE_VERSION 125
+#define SOFTWARE_VERSION 126
 
 #define ONE_S_DRONE true
 
@@ -83,6 +83,7 @@ void setup() {
   }
 
   // setupPWM16();
+  /* TCCR1B = TCCR1B & B11111000 | B00000010;    // set timer 1 divisor to     8 for PWM frequency of  3921.16 Hz */
 }
 uint16_t icr = 0xffff;
 void setupPWM16() {
@@ -388,23 +389,27 @@ float run_state_machine() {
   static int no_current_timeout = 0;
   static uint8_t isCharging = false;
 
+  static unsigned long last_charging = 0;
   static int last_output = 0;
   // debugln("state %d", state);
+  if (millis() - last_charging > 5000)
+    last_output = 0;
+
   switch (state) {
     case STATE_IDLE: {
       break;
     }
     case STATE_CHARGING: {
-      if (battery_charge < 5)
+      if (battery_charge < 3)
         desired_current = 0.3;
+      else if (battery_charge < 5)
+        desired_current = 0.5;
       else if (battery_charge < 8)
         desired_current = 0.45;
-      else if (battery_charge < 8.3)
-        desired_current = 0.4;
+      else if (battery_charge < 8.35)
+        desired_current = 0.3;
       else if (battery_charge < 8.40)
-        desired_current = 0.3;
-      else if (battery_charge < 8.5)
-        desired_current = 0.3;
+        desired_current = 0.1;
       else
         desired_current = 0.0;
 
@@ -412,8 +417,16 @@ float run_state_machine() {
 
       desired_current += drone_current_consumption;
 
-      if (battery_charge > 8.4)
+      if (battery_charge > 8.4) {
         desired_current = 0.0;
+
+        set_state(STATE_CHECK_CHARGE);
+        desired_current = 0;
+        set_current(desired_current);
+        return 600;
+      }
+
+      last_charging = millis();
 
       if (smoothed_current > 0.25)
         isCharging = true;
@@ -425,6 +438,7 @@ float run_state_machine() {
         isCharging = false;
         debugln("no current");
         set_state(STATE_CHECK_CHARGE);
+        return 600;
       }
 
       if (output > 254 && smoothed_current < 0.05)
@@ -441,25 +455,26 @@ float run_state_machine() {
         desired_current = 0;
         set_current(desired_current);
 
-        return 300;
+        last_output = output;
+        return 600;
       }
 
       break;
     }
     case STATE_CHECK_CHARGE: {
-      last_output = output;
       set_current(0);
       // output = 0;
-      battery_charge = getVoltage();
+      float voltage = getVoltage();
 
-      if (battery_charge == 0)
-        battery_charge = 0.01;
+      if (voltage == 0)
+        voltage = 0.01;
 
-      if (battery_charge < min_battery_charge) {
+      if (voltage < min_battery_charge) {
         drone_detected = false;
         total_charging_timer = millis();
         /* debugln("no drone detected"); */
-        return 1;
+        battery_charge = voltage;
+        return 100;
       }
 
       drone_detected = true;
@@ -516,7 +531,8 @@ float getVoltage(bool reset) {
   voltage *= 2.02;
   voltage += voltage_calibration_value;
 
-  float alpha = 0.1;
+  float alpha = 0.05;
+
   if (test_mode)
     alpha /= 5;
 
