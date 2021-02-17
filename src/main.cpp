@@ -206,8 +206,10 @@ void process_video() {
                 pparams.drone= drone_anvil_superbee;
                 pparams.serialize(pats_xml_fn);
             }
-            exit_now = true;
-            cmdcenter.reset_commandcenter_status_file("Wrong drone config error",true);
+            if(!dnav.drone_is_flying()) {
+                exit_now = true;
+                cmdcenter.reset_commandcenter_status_file("Wrong drone config error",true);
+            }
         }
 
         if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode) {
