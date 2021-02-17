@@ -461,18 +461,23 @@ def download_video(selected_moth):
     video_fn = selected_moth[moth_columns.index('Video_Filename')]
     sys_name = selected_moth[moth_columns.index('system')].replace('-proto','')
 
-    target_video_fn = ''
+    target_video_mp4_fn = ''
     if video_fn and video_fn != 'NA':
-        target_video_fn = 'static/' + selected_moth[moth_columns.index('Folder')] + '_' + sys_name + '_' + video_fn
-        if not os.path.isfile(target_video_fn):
+        target_video_mkv_fn = 'static/' + selected_moth[moth_columns.index('Folder')] + '_' + sys_name + '_' + video_fn
+        target_video_mp4_fn = target_video_mkv_fn[0:-3] + 'mp4'
+
+        if not os.path.isfile(target_video_mkv_fn) and  not os.path.isfile(target_video_mp4_fn):
             rsync_src = sys_name + ':data/' +selected_moth[moth_columns.index('Folder')] + '/logging/render_' + video_fn
-            cmd = ['rsync --timeout=5 -a -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ' + rsync_src + ' ' + target_video_fn]
-            print (cmd)
+            cmd = ['rsync --timeout=5 -a -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ' + rsync_src + ' ' + target_video_mkv_fn]
             execute(cmd)
-        target_video_fn = '/' + target_video_fn
-        if not os.path.isfile(target_video_fn[1:]):
-            target_video_fn = ''
-    return target_video_fn
+        if not os.path.isfile(target_video_mp4_fn) and os.path.isfile(target_video_mkv_fn):
+            mp4_to_mkv_cmd = ['ffmpeg -y -i ' + target_video_mkv_fn + ' -c:v copy -an ' + target_video_mkv_fn[0:-3] + 'mp4']
+            execute(mp4_to_mkv_cmd)
+        if not os.path.isfile(target_video_mp4_fn):
+            return ''
+        target_video_mp4_fn = '/' + target_video_mp4_fn
+
+    return target_video_mp4_fn
 
 def selected_dates(selected_daterange):
     if selected_daterange == 'Last week':

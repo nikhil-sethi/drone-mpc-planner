@@ -1,7 +1,6 @@
-FROM python:3.6.9-stretch
-
+FROM python:3.6.9-buster
 RUN apt-get update && \
-  apt-get install -y openssh-client rsync
+  apt-get install -y openssh-client rsync ffmpeg
 RUN pip3 install --upgrade pip
 COPY requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt
