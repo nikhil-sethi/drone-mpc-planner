@@ -8,7 +8,7 @@ from json.decoder import JSONDecodeError
 import lib_patsc as patsc
 
 def read_cred_lg_db():
-    cred_file = os.path.expanduser('~/.lg_auth')
+    cred_file = os.path.expanduser('~/patsc/.lg_auth')
     if os.path.exists(cred_file):
         with open (cred_file, 'r') as creds_file:
                 user = creds_file.readline().strip()
@@ -73,7 +73,6 @@ def write_values(token,module_id,col_id,name,json):
             print('LG throttling... Retrying in 1s\n\n')
             sleep(5)
             write_values(token,module_id,col_id,name,json)
-
 
 def sys_info_table(token):
     #LG uses a module for each sensor (a system, in our case) (identified with a module_id),
@@ -226,9 +225,8 @@ def upload_json_to_LG(token,json_data,sys_info):
     else:
         return 'WARNING: EMPTY'
 
-
 def load_system_info():
-    sys_db_con,sys_db_cur = patsc.open_db(os.path.expanduser('~/pats_systems.db'))
+    sys_db_con,sys_db_cur = patsc.open_db(os.path.expanduser('~/patsc/db/pats_systems.db'))
     sql_str = '''SELECT system_name,is_active,LG FROM systems'''
     systems = pd.read_sql_query(sql_str,sys_db_con)
     systems['system_name'] = systems['system_name'].str.replace('-proto' , '')
@@ -278,4 +276,5 @@ def jsons_to_LG(input_folder):
                     else:
                         flag_f.write('File size too big\n')
 
-jsons_to_LG('~/jsons/')
+if __name__ == "__main__":
+    jsons_to_LG('~/jsons/')

@@ -7,7 +7,7 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
-db_path = os.path.expanduser('~/pats.db')
+db_path = os.path.expanduser('~/patsc/db/pats.db')
 conn = sqlite3.connect(db_path)
 cur = conn.cursor()
 

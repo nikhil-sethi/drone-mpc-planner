@@ -96,20 +96,20 @@ def send_mail(now):
     cmd = 'mail -s "Pats daily status digest" sys-maintenance@pats-drones.com < mail.tmp'
     execute(cmd)
 
-parser = argparse.ArgumentParser(description='Script that adds the json files or incoming json files to the database that is reable for the electron app.')
-parser.add_argument('-i', '--input_folder', help="Path to the folder with json files", default='~/jsons/')
-parser.add_argument('-t','--hour', help="Send email at the start of this hour.", default=11)
-parser.add_argument('-m', help="Mail address to send to.", default='monitoring@pats-drones.com')
-parser.add_argument('-d','--db_path', help="Path to sql database", default='~/pats_systems.db')
-args = parser.parse_args()
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Script that adds the json files or incoming json files to the database that is reable for the electron app.')
+    parser.add_argument('-i', '--input_folder', help="Path to the folder with json files", default='~/jsons/')
+    parser.add_argument('-t','--hour', help="Send email at the start of this hour.", default=11)
+    parser.add_argument('-d','--db_path', help="Path to sql database", default='~/patsc/db/pats_systems.db')
+    args = parser.parse_args()
 
-updated_today = False
-while  True:
-    now = datetime.now()
-    if now.hour == int(args.hour) and not updated_today:
-        updated_today = True
-        send_mail(now)
+    updated_today = False
+    while  True:
+        now = datetime.now()
+        if now.hour == int(args.hour) and not updated_today:
+            updated_today = True
+            send_mail(now)
 
-    if now.hour == int(args.hour)+1 and updated_today:
-        updated_today = False
-    time.sleep(10)
+        if now.hour == int(args.hour)+1 and updated_today:
+            updated_today = False
+        time.sleep(10)

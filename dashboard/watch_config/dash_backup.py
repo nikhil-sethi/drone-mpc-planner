@@ -22,15 +22,15 @@ def backup(now):
     target_str = now.strftime('%Y%m%d_%H%M%S') + '.tar.gz'
     cmd = 'rsync -azvP dash:jsons/* ~/jsons/'
     execute(cmd)
-    cmd = 'rsync -az dash:pats.db ~/patsc/db/'
+    cmd = 'rsync -az dash:patsc/db/pats.db ~/patsc/db/'
     execute(cmd)
-    cmd = 'rsync -az dash:pats_human_classification.db ~/patsc/db/'
+    cmd = 'rsync -az dash:patsc/db/pats_human_classification.db ~/patsc/db/'
     execute(cmd)
-    cmd = 'rsync -az dash:.pats-c-key.py ~/patsc/db/'
+    cmd = 'rsync -az dash:patsc/db/.pats-c-key.py ~/patsc/db/'
     execute(cmd)
-    cmd = 'rsync -az dash:pats_creds.db ~/patsc/db/'
+    cmd = 'rsync -az dash:patsc/db/pats_creds.db ~/patsc/db/'
     execute(cmd)
-    cmd = 'rsync -az dash:pats_systems.db ~/patsc/db/'
+    cmd = 'rsync -az dash:patsc/db/pats_systems.db ~/patsc/db/'
     execute(cmd)
     cmd = 'tar -zcvf ~/dash_backups/' + target_str + ' ~/patsc/db/ ~/jsons'
     execute(cmd)

@@ -6,9 +6,6 @@ from tqdm import tqdm
 from json.decoder import JSONDecodeError
 from lib_patsc import *
 
-conn = None
-cur = None
-
 def get_column_data_type(column):
     if column == 'duration' or column == 'Version' or column == 'Vel_mean' or column == 'Vel_max' or column == 'Vel_std' or column == 'Version' or column == 'Dist_traveled' or column == 'Size' or column == 'Alpha_horizontal_start' or column == 'Alpha_horizontal_end' or column == 'Alpha_vertical_start' or column == 'Alpha_vertical_end' or column == 'Dist_traject':
         return 'REAL'
@@ -17,7 +14,7 @@ def get_column_data_type(column):
     else:
         return 'TEXT'
 
-def store_moths(data):
+def store_moths(data,cur,conn):
     moths =data["moths"]
 
     cur.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='moth_records' ''')
@@ -91,12 +88,12 @@ def store_moths(data):
     conn.commit()
     return len(moths)
 
-def create_modes_table():
+def create_modes_table(cur,conn):
     sql_create = 'CREATE TABLE mode_records(uid INTEGER PRIMARY KEY,system TEXT,start_datetime TEXT,end_datetime TEXT,op_mode TEXT)'
     cur.execute(sql_create)
     conn.commit()
 
-def store_mode(data):
+def store_mode(data,cur,conn):
     cur.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='mode_records' ''')
     mode_table_exist = cur.fetchone()[0]==1
 
@@ -119,8 +116,7 @@ def store_mode(data):
             cur.execute(sql_insert, (data["system"],dt_from,dt_till,sub_entry['mode']))
     conn.commit()
 
-def load_systems():
-    global cur
+def load_systems(cur):
     sql_str = '''SELECT DISTINCT system FROM mode_records'''
     cur.execute(sql_str)
     systems = cur.fetchall()
@@ -130,8 +126,8 @@ def load_systems():
 def todatetime(string):
     return datetime.datetime.strptime(string, "%Y%m%d_%H%M%S")
 
-def concat_modes():
-    systems = load_systems()
+def concat_modes(cur,conn):
+    systems = load_systems(cur)
     columns = [i[1] for i in cur.execute('PRAGMA table_info(mode_records)')]
     uid_id = columns.index('uid')
     t_id = columns.index('start_datetime')
@@ -183,8 +179,8 @@ def concat_modes():
         cur.execute(sql_insert, mode)
     conn.commit()
 
-def remove_double_data(table_name_prefix):
-    systems = load_systems()
+def remove_double_data(table_name_prefix,cur,conn):
+    systems = load_systems(cur)
     columns = [i[1] for i in cur.execute('PRAGMA table_info(' + table_name_prefix + '_records)')]
     v_id = -1
     uid_id = columns.index('uid')
@@ -245,7 +241,7 @@ def remove_double_data(table_name_prefix):
     conn.commit()
     print("Found and deleted " + str(tot_doubles) + " doubles in " + table_name_prefix + " records.")
 
-def store_hunts(data):
+def store_hunts(data,cur,conn):
     cur.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='hunt_records' ''')
     hunt_table_exist = cur.fetchone()[0]==1
     conn.commit()
@@ -277,14 +273,14 @@ def store_hunts(data):
     conn.commit()
     return len(hunts)
 
-def process_json(data):
-    n_moths = store_moths(data)
-    store_mode(data)
-    n_hunts = store_hunts(data)
+def process_json(data,cur,conn):
+    n_moths = store_moths(data,cur,conn)
+    store_mode(data,cur,conn)
+    n_hunts = store_hunts(data,cur,conn)
     return n_moths,n_hunts
 
 def jsons_to_db(input_folder,output_db_path):
-    conn = open_db(output_db_path)
+    conn,cur = open_db(output_db_path)
     files = natural_sort([fp for fp in glob.glob(os.path.expanduser(input_folder + "/*.json"))])
     pbar = tqdm(files)
     for filename in pbar:
@@ -298,7 +294,7 @@ def jsons_to_db(input_folder,output_db_path):
                             data = json.load(json_file)
                             min_required_version=1.0
                             if "version" in data and float(data["version"]) >= min_required_version:
-                                n_moths,n_hunts = process_json(data)
+                                n_moths,n_hunts = process_json(data,cur,conn)
                                 flag_f.write('OK')
                                 flag_f.write('. Insect detections: ' + str(n_moths))
                                 flag_f.write('. Hunts: ' + str(n_hunts))
@@ -310,8 +306,9 @@ def jsons_to_db(input_folder,output_db_path):
                     else:
                         flag_f.write('File size too big \n')
 
-    concat_modes()
-    remove_double_data('moth')
-    remove_double_data('hunt')
+    concat_modes(cur,conn)
+    remove_double_data('moth',cur,conn)
+    remove_double_data('hunt',cur,conn)
 
-jsons_to_db('~/jsons/','~/pats.db')
+if __name__ == "__main__":
+    jsons_to_db('~/jsons/','~/patsc/db/pats.db')
