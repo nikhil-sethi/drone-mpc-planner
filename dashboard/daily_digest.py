@@ -24,15 +24,6 @@ def load_systems():
     systems = pd.read_sql_query(sql_str,conn)
     return systems
 
-def write_systems(changed_systems):
-    conn = sqlite3.connect(os.path.expanduser(args.db_path))
-    cur = conn.cursor()
-    sql_str = '''UPDATE systems SET first_warning=?, maintenance=? WHERE system_name=? '''
-    for sys,date,maintenance in changed_systems:
-        cur.execute(sql_str,(date,maintenance,sys))
-    conn.commit()
-    conn.close()
-
 def execute(cmd):
     p_result = None
     n=0
