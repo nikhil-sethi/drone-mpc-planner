@@ -9,8 +9,8 @@ until (( count++ >= 5 )) || ssh -o StrictHostKeyChecking=no -T $1 << EOF
 		killall pats || true
 	fi
 	sleep 0.5
-	mv ~/code/pats/pc/build/logging ~/data/dl_$t
-	mv ~/code/pats/pc/build/terminal.log ~/data/dl_$t
+	mv ~/code/pats/base/build/logging ~/data/dl_$t
+	mv ~/code/pats/base/build/terminal.log ~/data/dl_$t
 	sleep 2
 	if pgrep -x "pats" > /dev/null
 	then

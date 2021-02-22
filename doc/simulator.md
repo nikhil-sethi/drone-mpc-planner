@@ -643,7 +643,7 @@ Make sure the simulation is running. Use the play button in the Unreal Editor an
 <summary>Error: using airsim mode but AirSim is not compiled. Add -DWITH_AIRSIM=TRUE flag when cmaking.</summary>
 <p>
 
-Run `cmake .. -DWITH_AIRSIM=TRUE` in the folder `config/pc/build-vscode`.
+Run `cmake .. -DWITH_AIRSIM=TRUE` in the folder `base/build-vscode`.
 
 </p>
 </details>

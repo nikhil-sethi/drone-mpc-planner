@@ -1,0 +1,32 @@
+{
+    "cmake.sourceDirectory": "${workspaceFolder}/base/",
+    "cmake.buildDirectory": "${workspaceFolder}/base/build-vscode",
+    "cmake.configureOnOpen": true,
+    "cmake.preferredGenerators":[
+        "Unix Makefiles",
+        "Ninja"
+    ],
+    "astyle.astylerc": "${workspaceFolder}/../config/astylerc",
+    "astyle.cpp.enable": true,
+    "breadcrumbs.enabled": true,
+    "editor.defaultFormatter": "chiehyu.vscode-astyle",
+    "editor.tabSize": 4,
+    "editor.formatOnSave": true,
+    "search.exclude": {
+        "**/build*/**": true,
+        "**/replay_insects/**": true,
+        "**/install/**": true,
+        "**/third_party/**": true,
+        "/usr/**": true,
+    },
+    "search.showLineNumbers": true,
+    "C_Cpp.autoAddFileAssociations": false,
+    "files.trimTrailingWhitespace": true,
+    "files.trimFinalNewlines": true,
+    "terminal.integrated.commandsToSkipShell": [
+        "workbench.action.debug.stepInto",
+        "workbench.action.debug.stepOut",
+        "workbench.action.debug.stepOver",
+        "editor.debug.action.toggleBreakpoint"
+    ]
+}

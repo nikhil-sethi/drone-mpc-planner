@@ -1,0 +1,38 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Current File",
+        "type": "python",
+        "args": [],
+        "request": "launch",
+        "program": "${file}",
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "log_to_json",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/log_to_json.py",
+        "args": ["-i","~/data/"],
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "render_videos.py",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/render_videos.py",
+        "args": ["-i","~/data/"],
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "cut_moths.py",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/cut_moths.py",
+        "args": ["-i","~/code/pats/base/build-vscode/"],
+        "console": "integratedTerminal"
+
+      }
+    ]
+  }

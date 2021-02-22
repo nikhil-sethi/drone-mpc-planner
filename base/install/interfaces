@@ -1,0 +1,18 @@
+# interfaces(5) file used by ifup(8) and ifdown(8)
+auto lo
+iface lo inet loopback
+
+auto lo enx0c5b8f279a64
+iface lo inet loopback
+
+allow-hotplug enx0c5b8f279a64
+iface enx0c5b8f279a64 inet dhcp
+    metric 20999
+
+auto lo enx001e101f0000
+iface lo inet loopback
+
+allow-hotplug enx001e101f0000
+iface enx001e101f0000 inet dhcp
+    metric 20999
+
