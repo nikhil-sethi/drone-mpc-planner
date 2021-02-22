@@ -5,6 +5,8 @@
 #include "common.h"
 #include "cameraview.h"
 #include "tracking.h"
+#include "landingcontroller.h"
+
 #define GRAVITY 9.81f
 #define DRONECONTROLLER_DEBUG false
 #define ENABLE_SPINUP true
@@ -270,6 +272,7 @@ private:
     void serialize_settings();
 
 public:
+    LandingController land_ctrl;
 
     cv::Point3f desired_acceleration(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
     bool enable_thrust_calibration = false;

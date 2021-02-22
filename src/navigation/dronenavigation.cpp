@@ -430,33 +430,15 @@ void DroneNavigation::update(double time) {
             _navigation_status = ns_landing;
             [[fallthrough]];
         } case ns_landing: {
-            cv::Point3f new_pos_setpoint;
-            cv::Point3f new_vel_setpoint;
-            cv::Point3f pad_pos = _trackers->dronetracker()->landing_location(true);
-            setpoint_pos_world =  pad_pos + current_waypoint->xyz;
-            if (setpoint_pos_world.y > -0.5f) // keep some margin to the top of the view, because atm we have an overshoot problem.
-                setpoint_pos_world.y = -0.5f;
-
             float dt_land = static_cast<float>(time-landing_start_time);
-            float v_descend = -0.5f;
-            float target_time = -2.f * current_waypoint->xyz.y/v_descend;
-            if (dt_land < target_time)
-                v_descend = v_descend*(dt_land/target_time);
-            new_pos_setpoint.x = setpoint_pos_world.x;
-            new_pos_setpoint.y = setpoint_pos_world.y + dt_land* v_descend;
-            new_pos_setpoint.z = setpoint_pos_world.z;
-            setpoint_vel_world = {0};
-            setpoint_acc_world = {0};
+            cv::Point3f pad_pos = _trackers->dronetracker()->landing_location(true);
+            cv::Point3f new_pos_setpoint = _dctrl->land_ctrl.setpoint_cc_landing(pad_pos, current_waypoint, dt_land);
             _dctrl->enable_thrust_calibration = false;
 
-            if (new_pos_setpoint.y < pad_pos.y) {
-                // new_pos_setpoint.y = pad_pos.y;
-                setpoint_vel_world = {0};
-                if ((!_dctrl->landing())
-                        && ((_trackers->dronetracker()->last_track_data().spos().y < pad_pos.y+0.2f)
-                            || (!_trackers->dronetracker()->last_track_data().spos_valid)))
-                    _dctrl->flight_mode(DroneController::fm_ff_landing_start);
-            }
+            if(_dctrl->land_ctrl.switch_to_ff_landing(_trackers->dronetracker()->last_track_data(),
+                    new_pos_setpoint, pad_pos, _dctrl->landing()))
+                _dctrl->flight_mode(DroneController::fm_ff_landing_start);
+
             setpoint_pos_world = new_pos_setpoint;
             if (!_dctrl->drone_is_active())
                 _navigation_status = ns_landed;

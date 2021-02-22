@@ -387,8 +387,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
     } case fm_ff_landing: {
         control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
         float dt = static_cast<float>(time - ff_land_start_time);
-        auto_throttle  = ff_auto_throttle_start
-                         - drone_calibration.thrust/38.f * (1.f/dparams.landing_target_time) * dt * (ff_auto_throttle_start-RC_BOUND_MIN);
+        auto_throttle = land_ctrl.ff_auto_throttle(ff_auto_throttle_start, drone_calibration.thrust, dparams.landing_target_time, dt);
 
         if (dt > dparams.landing_target_time) {
             auto_throttle = RC_BOUND_MIN;
