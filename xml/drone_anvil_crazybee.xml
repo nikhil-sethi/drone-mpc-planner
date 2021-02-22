@@ -1,4 +1,4 @@
-<SerializableClass Type="DroneParameters" Version="1.9">
+<SerializableClass Type="DroneParameters" Version="1.10">
     <Member Name="name">ancr</Member>
     <Member Name="initial_hover_throttle">870</Member>
     <Member Name="throttle_bank_factor">0.75</Member>
@@ -21,7 +21,6 @@
     <Member Name="land_cell_v">3.0</Member>
     <Member Name="max_flight_time">180</Member>
     <Member Name="min_hunt_cell_v">4.1</Member>
-    <Member Name="landing_target_time">0.8</Member>
     <Member Name="static_shakeit_throttle">300</Member>
     <Member Name="target_takeoff_velocity">2.2</Member>
 </SerializableClass>

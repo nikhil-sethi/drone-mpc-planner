@@ -456,7 +456,6 @@ private:
     xFloat _land_cell_v;
     xInt _max_flight_time;
     xFloat _min_hunt_cell_v;
-    xFloat _landing_target_time;
     xInt _static_shakeit_throttle;
     xFloat _target_takeoff_velocity;
 
@@ -483,7 +482,6 @@ public:
     float land_cell_v;
     int max_flight_time;
     float min_hunt_cell_v;
-    float landing_target_time;
     int static_shakeit_throttle;
     float target_takeoff_velocity;
 
@@ -493,7 +491,7 @@ public:
         setClassName("DroneParameters");
 
         // Set class version
-        setVersion("1.9");
+        setVersion("1.10");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("name",&_name);
@@ -518,7 +516,6 @@ public:
         Register("land_cell_v",&_land_cell_v);
         Register("max_flight_time",&_max_flight_time);
         Register("min_hunt_cell_v",&_min_hunt_cell_v);
-        Register("landing_target_time",&_landing_target_time);
         Register("static_shakeit_throttle",&_static_shakeit_throttle);
         Register("target_takeoff_velocity", &_target_takeoff_velocity);
     }
@@ -566,7 +563,6 @@ public:
         land_cell_v = _land_cell_v.value();
         max_flight_time = _max_flight_time.value();
         min_hunt_cell_v = _min_hunt_cell_v.value();
-        landing_target_time = _landing_target_time.value();
         static_shakeit_throttle = _static_shakeit_throttle.value();
         target_takeoff_velocity = _target_takeoff_velocity.value();
     }
@@ -594,7 +590,6 @@ public:
         _land_cell_v = land_cell_v;
         _max_flight_time = max_flight_time;
         _min_hunt_cell_v = min_hunt_cell_v;
-        _landing_target_time = landing_target_time;
         _static_shakeit_throttle = static_shakeit_throttle;
         _target_takeoff_velocity = target_takeoff_velocity;
 

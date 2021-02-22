@@ -385,11 +385,11 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         auto_yaw = RC_MIDDLE;
         [[fallthrough]];
     } case fm_ff_landing: {
-        control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
+        control_model_based(data_drone, data_drone.pos(), data_target_new.vel());
         float dt = static_cast<float>(time - ff_land_start_time);
-        auto_throttle = land_ctrl.ff_auto_throttle(ff_auto_throttle_start, drone_calibration.thrust, dparams.landing_target_time, dt);
+        auto_throttle = land_ctrl.ff_auto_throttle(ff_auto_throttle_start, dt);
 
-        if (dt > dparams.landing_target_time) {
+        if (dt > land_ctrl.time_ff_landing()) {
             auto_throttle = RC_BOUND_MIN;
             _flight_mode = fm_shake_it_baby;
         }

@@ -1,6 +1,5 @@
 #include "landingcontroller.h"
-#include "flightplan.h"
-#include <opencv2/core/types.hpp>
+#include "rc.h"
 
 cv::Point3f LandingController::setpoint_cc_landing(cv::Point3f landing_location, navigation::Waypoint* current_waypoint, float dt_land) {
     cv::Point3f pad_pos = landing_location;
@@ -31,6 +30,6 @@ bool LandingController::switch_to_ff_landing(tracking::TrackData drone_track_dat
     return false;
 }
 
-int LandingController::ff_auto_throttle(int ff_auto_throttle_start, float thrust, float landing_target_time, float dt ) {
-    return ff_auto_throttle_start - thrust/38.f * (1.f/landing_target_time) * dt * (ff_auto_throttle_start-RC_BOUND_MIN);
+int LandingController::ff_auto_throttle(int ff_auto_throttle_start, float dt ) {
+    return ff_auto_throttle_start - (1.f/powf(_time_ff_landing, 2)) * powf(dt, 2) * (ff_auto_throttle_start-RC_BOUND_MIN);
 }
