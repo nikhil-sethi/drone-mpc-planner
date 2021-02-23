@@ -790,5 +790,7 @@ void Realsense::watchdog_thread(void) {
         }
         watchdog_attempt_to_continue = false;
         watchdog = false;
+        set_external_wdt_flag();
+
     }
 }

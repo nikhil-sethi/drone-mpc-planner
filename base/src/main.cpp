@@ -898,15 +898,23 @@ void wait_for_cam_angle() {
             static double prev_imwrite_time = -pparams.live_image_frq;
             if (elapsed_time - prev_imwrite_time > pparams.live_image_frq && pparams.live_image_frq >= 0) {
                 prev_imwrite_time = elapsed_time;
-                cv::imwrite("../../../../pats_monitor_tmp.jpg", frameL);
+                cv::imwrite("../../../../pats/status/monitor_tmp.jpg", frameL);
             }
+            static double prev_wdt_flag_time = 0;
+            if (elapsed_time - prev_wdt_flag_time > 10) {
+                prev_wdt_flag_time = elapsed_time;
+                set_external_wdt_flag();
+            }
+
             cmdcenter.reset_commandcenter_status_file("Roll: " + to_string_with_precision(roll,2),false);
 
             if (fabs(roll)  < pparams.max_cam_roll && !enable_delay)
                 break;
-            else if (fabs(roll)  > pparams.max_cam_roll)
+            else if (fabs(roll)  > pparams.max_cam_roll) {
+                if (!enable_delay)
+                    std::ofstream output("logging/cam_roll_problem_flag"); //set a file flag that is periodically being checked by an external python script:
                 enable_delay = 60;
-            else
+            } else
                 enable_delay--;
 
 
@@ -926,7 +934,7 @@ void wait_for_dark() {
             if (expo >pparams.darkness_threshold && gain >= 16 && avg_brightness < pparams.max_brightness-10) { // minimum RS gain is 16, so at the moment this condition does nothing
                 break;
             }
-            cv::imwrite("../../../../pats_monitor_tmp.jpg", frameL);
+            cv::imwrite("../../../../pats/status/monitor_tmp.jpg", frameL);
             cmdcenter.reset_commandcenter_status_file("Waiting. Exposure: " + std::to_string(static_cast<int>(expo)) + ", brightness: " + std::to_string(static_cast<int>(visdat.average_brightness())),false);
 
             if ((std::localtime(&t)->tm_hour == 13 && last_save_bgr_hour !=13 )  ||
@@ -939,7 +947,8 @@ void wait_for_dark() {
                 cv::imwrite("stereoR_" + date_ss.str() + ".png",frameR);
                 last_save_bgr_hour = std::localtime(&t)->tm_hour;
             }
-            usleep(10000000); // measure every 1 minute
+            set_external_wdt_flag();
+            usleep(10000000); // measure every 10 seconds
         }
     }
 }

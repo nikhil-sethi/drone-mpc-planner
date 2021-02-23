@@ -3,7 +3,7 @@ set -e
 echo "Requesting update $1"
 count=0
 until (( count++ >= 5 )) || ssh -o StrictHostKeyChecking=no -T $1 << EOF
-	touch pats_cc_update_request
+	touch pats/flags/cc_update_request
 EOF
 do
   echo "$1 retry $count"

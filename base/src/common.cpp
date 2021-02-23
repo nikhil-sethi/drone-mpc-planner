@@ -267,3 +267,7 @@ cv::Point3f pats_to_betaflight_coord(cv::Point3f vec) {
 cv::Point3f betaflight_to_pats_coord(cv::Point3f vec) {
     return cv::Point3f(-vec.y, -vec.z, -vec.x);
 }
+
+void set_external_wdt_flag() {
+    std::ofstream output("../../../../pats/flags/proces_wdt_flag"); //set a file flag that is periodically being checked by an external python script:
+}

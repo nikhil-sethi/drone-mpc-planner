@@ -17,11 +17,11 @@ public :
     };
 
 private:
-    std::string demo_waypoint_fn = "/home/pats/pats_demo.xml";
-    std::string demo_insect_fn = "/home/pats/insect_demo";
-    std::string calib_fn = "/home/pats/calib_now";
-    std::string beep_fn = "/home/pats/beep_now";
-    std::string shake_fn = "/home/pats/shake_now";
+    std::string demo_waypoint_fn = "/home/pats/pats/flags/pats_demo.xml";
+    std::string demo_insect_fn = "/home/pats/pats/flags/insect_demo";
+    std::string calib_fn = "/home/pats/pats/flags/calib_now";
+    std::string beep_fn = "/home/pats/pats/flags/beep_now";
+    std::string shake_fn = "/home/pats/pats/flags/shake_now";
     std::thread thread;
     bool initialized = false;
     bool _never_overwrite = false;

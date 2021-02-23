@@ -1,6 +1,6 @@
 {
-    "cmake.sourceDirectory": "${workspaceFolder}/base/",
-    "cmake.buildDirectory": "${workspaceFolder}/base/build-vscode",
+    "cmake.sourceDirectory": "${workspaceFolder}/",
+    "cmake.buildDirectory": "${workspaceFolder}/build-vscode/",
     "cmake.configureOnOpen": true,
     "cmake.preferredGenerators":[
         "Unix Makefiles",
@@ -16,6 +16,7 @@
         "**/build*/**": true,
         "**/replay_insects/**": true,
         "**/install/**": true,
+        "**/data_processing/**": true,
         "**/third_party/**": true,
         "/usr/**": true,
     },

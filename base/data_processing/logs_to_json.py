@@ -1,31 +1,32 @@
 #!/usr/bin/env python3
-import os, glob, json,math,re,datetime, argparse, socket, pickle
+import os,glob,json,math,argparse,socket,logging,subprocess
 import numpy as np
 import pandas as pd
-pd.options.mode.chained_assignment = None
-from tqdm import tqdm
 from pathlib import Path
+import lib_base as lb
+from lib_base import datetime_to_str,natural_sort,str_to_datetime
+from datetime import datetime, timedelta
+
 
 version = "1.7"
 
-from scipy.interpolate import interp1d
-from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.linear_model import LinearRegression
-from sklearn.pipeline import Pipeline
-
-def natural_sort(l):
-    convert = lambda text: int(text) if text.isdigit() else text.lower()
-    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
-    return sorted(l, key=alphanum_key)
-
-def todatetime(string):
-    return datetime.datetime.strptime(string, "%Y%m%d_%H%M%S")
-
 def process_system_status_in_folder(folder):
+    logging.getLogger('logs_to_json').info('Processing status...')
     pats_xml_mode = ''
     pats_xml_path = Path(folder,'logging','pats.xml')
+    terminal_log_path = Path(folder,'terminal.log')
     if not os.path.exists(pats_xml_path):
-        return ([],'error: xml does not exist','')
+        if os.path.exists(Path(folder,'logging','cam_roll_problem_flag')):
+            return ([],'Error: Cam roll angle problem!','')
+        if not os.path.exists(terminal_log_path):
+            return ([],'Error: xml and terminal log do not exist','')
+        else:
+            with open (terminal_log_path, "r") as terminal_log:
+                log_start = terminal_log.readline()
+                if log_start.strip() == 'Resetting cam':
+                    return ([],'Resetting cam','')
+        line = subprocess.check_output(['tail', '-1', terminal_log_path]).decode("utf8").strip()
+        return ([],'Error: xml does not exist. Last terminal line: ' + line,'')
     with open (pats_xml_path, "r") as pats_xml:
             xml_lines = pats_xml.readlines()
             for line in xml_lines:
@@ -35,7 +36,7 @@ def process_system_status_in_folder(folder):
 
     results_path = Path(folder,'logging','results.txt')
     if not os.path.exists(results_path):
-        return ([],'error results.txt does not exist','')
+        return ([],'Error: results.txt does not exist','')
     runtime = -1
     with open (results_path, "r") as results_txt:
             result_lines = results_txt.readlines()
@@ -45,10 +46,9 @@ def process_system_status_in_folder(folder):
                     break
     if runtime<0:
         #something bad must have happened. A crash of the program prevents the writing of results.txt
-        return ([],'error results.txt does not contain run_time','')
+        return ([],'Error: results.txt does not contain run_time','')
 
     #open terminal log and check whether we were waiting for darkness
-    terminal_log_path = Path(folder,'terminal.log')
     log_start = ''
     daylight_start = ''
     daylight_end = ''
@@ -75,14 +75,14 @@ def process_system_status_in_folder(folder):
     daylight_end = daylight_end.strip().replace('/','').replace(':','').replace(' ', '_')
 
     if log_start.startswith('Error'):
-        return ([],'error: ' + log_start,'')
-    if 'Resetting cam' in log_start or log_start == '':
-        return ([],'error: log_start: ' + log_start,'')
-    log_start_datetime = datetime.datetime.strptime(log_start.strip(), '%d/%m/%Y %H:%M:%S')
-    log_end_datetime = datetime.datetime.strptime( os.path.basename(folder), '%Y%m%d_%H%M%S')
+        return ([],'Error: ' + log_start,'')
+    if log_start == '':
+        return ([],'Error: log_start empty!?','')
+    log_start_datetime = datetime.strptime(log_start.strip(), '%d/%m/%Y %H:%M:%S')
+    log_end_datetime = str_to_datetime( os.path.basename(folder))
 
-    log_start = log_start_datetime.strftime('%Y%m%d_%H%M%S')
-    operational_log_start = (log_end_datetime -  datetime.timedelta(seconds=runtime)).strftime('%Y%m%d_%H%M%S')
+    log_start = datetime_to_str(log_start_datetime)
+    operational_log_start = datetime_to_str(log_end_datetime -  timedelta(seconds=runtime))
 
     if daylight_start != daylight_end:
             data_status1 = {"from" : daylight_start,
@@ -102,6 +102,7 @@ def process_system_status_in_folder(folder):
         return (data_status,pats_xml_mode,operational_log_start)
 
 def process_hunts_in_folder(folder,operational_log_start):
+    logging.getLogger('logs_to_json').info('Processing hunts...')
     results_path = Path(folder,'logging','results.txt')
     if not os.path.exists(results_path):
         return []
@@ -149,22 +150,21 @@ def process_hunts_in_folder(folder,operational_log_start):
 
     return data_hunt
 
-
 def process_detections_in_folder(folder,operational_log_start,mode):
 
-    #concat all csv files containing dates
+    logger = logging.getLogger('logs_to_json')
     detection_fns = natural_sort([fp for fp in glob.glob(os.path.join(folder, "logging", "log_i*.csv")) if "itrk0" not in fp])
-    monitoring_start_datetime = datetime.datetime.strptime(operational_log_start,'%Y%m%d_%H%M%S')
+    monitoring_start_datetime = str_to_datetime(operational_log_start)
 
     valid_detections = []
-    prev_RS_ID = -1
-    pbar_detections = tqdm(detection_fns, leave=False)
-    for detection_fn in pbar_detections:
+
+    for detection_fn in detection_fns:
+        logger.info("Processing insects in " + detection_fn)
         with open (detection_fn, "r") as detection_log:
             try:
                 log = pd.read_csv(detection_fn, sep=";")
             except Exception as e:
-                print(detection_fn + ': ' + str(e))
+                logger.info(detection_fn + ': ' + str(e))
                 continue
 
         elapsed_time = log["time"].values
@@ -226,21 +226,7 @@ def process_detections_in_folder(folder,operational_log_start,mode):
         else:
             video_filename = os.path.basename(video_filename)
 
-        detection_time = (monitoring_start_datetime + datetime.timedelta(seconds=elapsed_time[0])).strftime('%Y%m%d_%H%M%S')
-
-        if args.v:
-            print(filename)
-            print(f'RS_ID: {RS_ID[0]} - {RS_ID[-1]} - {prev_RS_ID}')
-            print(f'Insect flight length: {"{:.2f}".format(duration)} s')
-            fig = plt.figure()
-            ax = fig.gca(projection='3d')
-            ax.plot(xs, -ys, zs, label='Insect flight')
-            ax.scatter([-5], [5], [-5], label='anchor', marker="o")
-            ax.legend()
-            ax.set_xlabel('X axis')
-            ax.set_ylabel('Y axis')
-            ax.set_zlabel('Z axis')
-            plt.show()
+        detection_time = datetime_to_str(monitoring_start_datetime + timedelta(seconds=elapsed_time[0]))
 
         detection_data = {"time" : detection_time,
                         "duration": duration,
@@ -263,68 +249,93 @@ def process_detections_in_folder(folder,operational_log_start,mode):
                     }
         valid_detections.append(detection_data)
 
-        prev_RS_ID = first_RS_ID
-
     return valid_detections
 
-parser = argparse.ArgumentParser(description='Script that counts the number of valid insect detections in a directory, bound by the minimum and maximum date.')
-parser.add_argument('-i', help="Path to the folder with logs", required=True)
-parser.add_argument('-s', help="Directory date to start from", default="20000101_000000", required=False)
-parser.add_argument('-e', help="Directory date to end on", default="30000101_000000", required=False)
-parser.add_argument('-v', help="View the path of the found insect flights in a plot", required=False, default=False, action='store_true')
-parser.add_argument('--filename', help="Path and filename to store results in", default="./detections.json")
-parser.add_argument('--system', help="Override system name", default=socket.gethostname())
-args = parser.parse_args()
+def logs_to_json(start_datetime,end_datetime,json_fn,data_folder,sys_str):
 
-min_date = todatetime(args.s)
-max_date = todatetime(args.e)
+    found_dirs = glob.glob(data_folder + "/202*_*")
+    filtered_dirs = [d for d in found_dirs if str_to_datetime(os.path.basename(os.path.normpath(d))) >= start_datetime and str_to_datetime(os.path.basename(os.path.normpath(d))) <= end_datetime] # filter the list of dirs to only contain dirs between certain dates
+    filtered_dirs = natural_sort(filtered_dirs)
 
-if args.v:
-    import matplotlib as mpl
-    from mpl_toolkits.mplot3d import Axes3D
-    import matplotlib.pyplot as plt
-    mpl.rcParams['legend.fontsize'] = 10
+    detections = []
+    statuss = []
+    hunts = []
+    errors = []
+    cam_resets = 0
 
-found_dirs = glob.glob(args.i + "/202*_*")
-filtered_dirs = [d for d in found_dirs if todatetime(os.path.basename(os.path.normpath(d))) >= min_date and todatetime(os.path.basename(os.path.normpath(d))) <= max_date] # filter the list of dirs to only contain dirs between certain dates
-filtered_dirs = natural_sort(filtered_dirs)
+    logger = logging.getLogger('logs_to_json')
+    for folder in filtered_dirs:
+        logger.info("Processing " + folder)
 
-detections = []
-statuss = []
-hunts = []
-errors = []
+        top_folder = os.path.basename(folder)
+        dts = str_to_datetime(top_folder)
+        if dts > start_datetime and dts <= end_datetime:
 
-pbar = tqdm(filtered_dirs,leave=False)
-for folder in pbar:
-    pbar.set_description(folder)
+            status_in_folder,mode,operational_log_start = process_system_status_in_folder(folder)
+            if status_in_folder != []:
+                statuss.append(status_in_folder)
+            if mode == 'monitoring' or mode == 'hunt':
+                detections_in_folder = process_detections_in_folder(folder,operational_log_start,mode)
+                if detections_in_folder != []:
+                    [detections.append(detection) for detection in detections_in_folder]
+            if mode == 'hunt' or mode == 'deploy':
+                hunts_in_folder = process_hunts_in_folder(folder,operational_log_start)
+                if hunts_in_folder != []:
+                    hunts.append(hunts_in_folder)
+            if mode.startswith('Error:'):
+                errors.append(mode + '(' + folder + ')')
+            if mode.startswith('Resetting cam'):
+                cam_resets+=1
 
-    top_folder = os.path.basename(folder)
-    dts = datetime.datetime.strptime(top_folder,'%Y%m%d_%H%M%S')
-    if dts > min_date and dts <= max_date:
+    data_detections = {"from" : lb.datetime_to_str(start_datetime),
+            "till" : lb.datetime_to_str(end_datetime),
+            "moth_counts" : len(detections),
+            "moths" : detections,
+            "hunts" : hunts,
+            "mode" : statuss,
+            "errors" : errors,
+            "cam_resets" : cam_resets,
+            "system" : sys_str,
+            "version" : version}
+    with open(json_fn, 'w') as outfile:
+        json.dump(data_detections, outfile)
+    logger.info("Counting complete, saved in {0}".format(json_fn))
 
-        status_in_folder,mode,operational_log_start = process_system_status_in_folder(folder)
-        if status_in_folder != []:
-            statuss.append(status_in_folder)
-        if mode == 'monitoring' or mode == 'hunt':
-            detections_in_folder = process_detections_in_folder(folder,operational_log_start,mode)
-            if detections_in_folder != []:
-                [detections.append(detection) for detection in detections_in_folder]
-        if mode == 'hunt' or mode == 'deploy':
-            hunts_in_folder = process_hunts_in_folder(folder,operational_log_start)
-            if hunts_in_folder != []:
-                hunts.append(hunts_in_folder)
-        if mode.startswith('error'):
-            errors.append(mode + '(' + folder + ')')
+def send_json_of_last_day():
+    now = datetime.today()
+    yesterday = now - timedelta(days=1)
+    if not os.path.exists(lb.json_dir):
+        os.mkdir(lb.json_dir)
+    local_json_file = lb.json_dir + datetime_to_str(now) + '.json'
+    remote_json_file='jsons/' + socket.gethostname() + '_' + datetime_to_str(now) + '.json'
+    logs_to_json(yesterday,now,local_json_file,lb.data_dir,socket.gethostname())
+    cmd = 'rsync -puz ' + local_json_file +' dash:' + remote_json_file
+    lb.execute(cmd,5,'logs_to_json')
 
-data_detections = {"from" : args.s,
-        "till" : args.e,
-        "moth_counts" : len(detections),
-        "moths" : detections,
-        "hunts" : hunts,
-        "mode" : statuss,
-        "errors" : errors,
-        "system" : args.system,
-        "version" : version}
-with open(args.filename, 'w') as outfile:
-    json.dump(data_detections, outfile)
-print("Counting complete, saved in {0}".format(args.filename))
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Script that counts the number of valid insect detections in a directory, bound by the minimum and maximum date.')
+    parser.add_argument('-i', help="Path to the folder with logs", required=False,default=lb.data_dir)
+    parser.add_argument('-s', help="Directory date to start from", required=False)
+    parser.add_argument('-e', help="Directory date to end on", required=False)
+    parser.add_argument('--filename', help="Path and filename to store results in", default="./detections.json")
+    parser.add_argument('--system', help="Override system name", default=socket.gethostname())
+    args = parser.parse_args()
+
+    logging.basicConfig( )
+    logger = logging.getLogger('logs_to_json')
+    logger.setLevel(logging.DEBUG)
+
+    json_fn = args.filename
+    data_folder = args.i
+    sys_str = args.system
+
+
+    if not args.s and not args.e:
+        send_json_of_last_day()
+    elif not args.s:
+        logs_to_json(lb.str_to_datetime('20000101_000000'),str_to_datetime(args.e),json_fn,data_folder,sys_str)
+    elif not args.e:
+        logs_to_json(str_to_datetime(args.s),lb.str_to_datetime('30000101_000000'),json_fn,data_folder,sys_str)
+    else:
+        logs_to_json(str_to_datetime(args.s),str_to_datetime(args.e),json_fn,data_folder,sys_str)

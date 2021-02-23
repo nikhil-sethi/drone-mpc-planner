@@ -41,7 +41,7 @@
     - Again for: `sudo nano /etc/hostname`
     - Reboot
 6. Optional: connect wifi
-7. Remove the `~/disable_pats_bkg` file to enable the pats process in the background (preferably after the camera etc is connected)
+7. Remove the `~/pats/flags/disable` file to enable the pats process in the background (preferably after the camera etc is connected)
 
 All done!
 
@@ -55,7 +55,7 @@ Pats install script and ssh key files
 #image install tweaks:
 - Set DefaultTimeoutStopSec in /etc/systemd/system.conf to 15
 - Change the background
-- remove everything from data folder and remove pats_daemon.log
+- remove everything from data folder and remove pats_daemon.log and the pats_logs/term.log
 - screen lock off
 - allow for normal users:
 ```

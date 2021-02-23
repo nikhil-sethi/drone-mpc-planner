@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+import os,shutil,datetime,glob,logging,socket
+import lib_base as lb
+from pathlib import Path
+
+
+
+def clean_hd():
+    logger = logging.getLogger('clean_hd')
+
+    if not os.path.exists(lb.data_dir):
+        os.mkdir(lb.data_dir)
+
+    while True:
+        total_used_space,_,free_space = shutil.disk_usage(lb.data_dir)
+        logger.info('Free space: ' + str(free_space / 1024 / 1024 / 1024) + 'GB --> ' +str(round(free_space /  total_used_space * 100)) + '% free')
+        if (free_space /  total_used_space < 0.2):
+            if os.path.exists(lb.term_log_path):
+                if Path(lb.term_log_path).stat().st_size > 1024*1024*1024: #1GB
+                    os.remove(lb.term_log_path)
+            found_dirs = lb.natural_sort(glob.glob(lb.data_dir + "/202*_*"))
+            for dir in found_dirs:
+                try:
+                    dir_date =  datetime.strptime(os.path.basename(dir),"%Y%m%d_%H%M%S")
+                except :
+                    shutil.rmtree(dir)
+                    break
+                if ((datetime.now() - dir_date) > datetime.timedelta(days=14)):
+                    logger.info('removing: ' + dir)
+                    if os.path.exists(dir + '/logging'):
+                        shutil.rmtree(dir)
+                        break
+                    shutil.rmtree(dir)
+                else:
+                    return
+        else:
+            return
+
+if __name__ == "__main__":
+    clean_hd()

@@ -111,7 +111,7 @@ void CommandCenterLink::write_commandcenter_status_file() {
     }
     if (status_update_needed) {
         std::ofstream status_file;
-        status_file.open("../../../../pats_status.txt",std::ofstream::out);
+        status_file.open("../../../../pats/status/status.txt",std::ofstream::out);
         auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
         status_file << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << '\n';
         status_file << "Runtime: " << to_string_with_precision(_time_since_start,1) << "s" << '\n';
@@ -130,7 +130,7 @@ void CommandCenterLink::reset_commandcenter_status_file(std::string status_msg, 
 
     reset_cnt = pparams.fps*3;
     std::ofstream status_file;
-    status_file.open("../../../../pats_status.txt",std::ofstream::out);
+    status_file.open("../../../../pats/status/status.txt",std::ofstream::out);
     auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
     status_file << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << '\n';
     status_file << "Runtime: " << 0 << "s" << '\n';
@@ -148,7 +148,7 @@ void CommandCenterLink::write_commandcenter_status_image() {
                         " "  + _trackers->dronetracker()->drone_tracking_state(),cv::Point(5,14),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
                 putText(out_rgb,"Time:       " + to_string_with_precision(_time_since_start,2),cv::Point(5,28),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
 
-                cv::imwrite("../../../../pats_monitor_tmp.jpg", out_rgb);
+                cv::imwrite("../../../../pats/status/monitor_tmp.jpg", out_rgb);
             }
             new_frame_request = 1;
         }

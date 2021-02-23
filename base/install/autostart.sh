@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 
-#sleep 20 && usb_modeswitch -v 12d1 -p 1f01 -M 55534243123456780000000000000a11062000000000000100000000000000 &
-
-
 set -ex
 cd /home/pats/code/pats/base/build/
 
-STAT_FN=~/pats_system_info.txt
+mkdir -p /home/pats/pats/flags
+mkdir -p /home/pats/pats/status
+mkdir -p /home/pats/pats/logs
+mkdir -p /home/pats/pats/jsons
+mkdir -p /home/pats/pats/data
+mkdir -p /home/pats/pats/images
+
+STAT_FN=~/pats/status/system_info.txt
 #export LRS_LOG_LEVEL="DEBUG"
 
 #perform a one time hardware reset (fixes some issues with cold boot and plugged realsense)
@@ -18,16 +22,16 @@ DRONE_ID=$(( $HOST_ID ))
 
 while [ 1 ]; do
 
-	while [ -f /home/pats/disable_pats_bkg ]; do
+	while [ -f /home/pats/pats/flags/disable ]; do
 		sleep 10
-		echo "Waiting until disable_pats_bkg disappears"
+		echo "Waiting until disable flag disappears"
 	done
 
     dt=$(date '+%d/%m/%Y %H:%M:%S');
     echo "$dt"
     fdt=$(date '+%Y%m%d_%H%M%S');
-	OUTDIR_LOG=/home/pats/data/$fdt
-	OUTDIR_IMAGES=/home/pats/data_images/
+	OUTDIR_LOG=/home/pats/pats/data/$fdt
+	OUTDIR_IMAGES=/home/pats/pats/images/
 	echo Moving daytime monitoring images to $OUTDIR_IMAGES
 	/bin/mkdir -p $OUTDIR_IMAGES
 	/bin/mv rgb*.png $OUTDIR_IMAGES || true
@@ -51,7 +55,6 @@ while [ 1 ]; do
 	echo "Drone ID: $DRONE_ID" >> terminal.log
 
 	./pats --pats-xml /home/pats/code/pats/base/xml/pats_deploy.xml --drone-id $DRONE_ID 2>&1 | /usr/bin/tee --append terminal.log || true
-	../../config/cut_moths.py -i /home/pats/code/pats/base/build/
 
 	sleep 5s
 done

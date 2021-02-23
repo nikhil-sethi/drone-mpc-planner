@@ -10,10 +10,10 @@
         "console": "integratedTerminal"
       },
       {
-        "name": "log_to_json",
+        "name": "logs_to_json",
         "type": "python",
         "request": "launch",
-        "program": "${workspaceFolder}/log_to_json.py",
+        "program": "${workspaceFolder}/logs_to_json.py",
         "args": ["-i","~/data/"],
         "console": "integratedTerminal"
       },

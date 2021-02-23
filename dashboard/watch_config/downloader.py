@@ -24,7 +24,7 @@ def download_jsons():
     execute(cmd)
 
 def download_renders(pats_id):
-    cmd = ['rsync -azvP pats' + str(pats_id) + ':data_rendered/* ~/Downloads/pats_renders']
+    cmd = ['rsync -azvP pats' + str(pats_id) + ':pats/renders/* ~/Downloads/pats_renders']
     execute(cmd)
 def download_renders_all():
     download_renders(30)

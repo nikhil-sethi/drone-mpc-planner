@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 DEST=~/Downloads/pats_status
-SRC=dash:/home/pats/status/
+SRC=dash:/home/pats/pats/status/
 mkdir -p $DEST
 
 while true; do
