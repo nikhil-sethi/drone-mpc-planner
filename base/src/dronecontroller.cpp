@@ -22,7 +22,8 @@ void DroneController::init(std::ofstream *logger,string replay_dir,bool generato
     log_replay_mode = replay_dir!="";
     generator_mode = generator;
     airsim_mode = airsim;
-    _camview = camview;
+
+    kiv_ctrl.init(camview, &drone_calibration);
     control_history_max_size = pparams.fps;
     (*_logger) << "valid;flight_mode;" <<
                "target_pos_x;target_pos_y;target_pos_z;" <<
@@ -30,7 +31,7 @@ void DroneController::init(std::ofstream *logger,string replay_dir,bool generato
                "joyThrottle;joyRoll;joyPitch;joyYaw; " <<
                "joyArmSwitch;joyModeSwitch;joyTakeoffSwitch;" <<
                "mmArmSwitch;mmModeSwitch;" <<
-               "dt;propwash;" <<
+               "dt;propwash;kiv;" <<
                "thrust; integrator_x;integrator_y;integrator_z;" <<
                "batt_cell_v;rssi;arm;";
     ;
@@ -77,10 +78,6 @@ void DroneController::init(std::ofstream *logger,string replay_dir,bool generato
     pos_modelx.init(1.f/pparams.fps, 1, 0.2, 0.38);
     pos_modely.init(1.f/pparams.fps, 1, 0.2, 0.38);
     pos_modelz.init(1.f/pparams.fps, 1, 0.2, 0.38);
-    for (uint i=0; i<N_PLANES; i++) {
-        d_vel_err_kiv.at(i).init(1.f/pparams.fps);
-        d_pos_err_kiv.at(i).init(1.f/pparams.fps);
-    }
 
     set_led_strength(exposure);
 
@@ -278,7 +275,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
 
         auto_throttle = initial_hover_throttle_guess();
 
-        if (!trajectory_in_view(traj,CameraView::relaxed) || auto_burn_duration > 1.1f || auto_burn_duration == 0.0f) {
+        if (!kiv_ctrl.trajectory_in_view(traj,CameraView::relaxed) || auto_burn_duration > 1.1f || auto_burn_duration == 0.0f) {
             _flight_mode = fm_flying_pid_init;
         } else {
             std::vector<StateData> traj_back;
@@ -288,7 +285,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
             target_back.vel = {0};
             target_back.acc = {0};
             std::tie (std::ignore, std::ignore,auto_burn_duration_back,burn_direction_back,traj_back) = calc_burn(traj.back(),target_back,aim_duration);
-            if (!trajectory_in_view(traj_back,CameraView::relaxed)) {
+            if (!kiv_ctrl.trajectory_in_view(traj_back,CameraView::relaxed)) {
                 _flight_mode = fm_flying_pid_init;
             } else if (remaining_aim_duration < 0.01f)
                 _flight_mode = fm_interception_burn_start;
@@ -520,6 +517,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
                _rc->mode << ";" <<
                data_drone.dt << ";" <<
                propwash << ";" <<
+               kiv_ctrl.active << ";" <<
                drone_calibration.thrust << ";" <<
                pos_err_i.x << ";" << pos_err_i.y << ";" << pos_err_i.z << ";" <<
                _rc->telemetry.batt_cell_v  << ";" <<
@@ -708,15 +706,6 @@ std::vector<StateData> DroneController::predict_trajectory(float burn_duration, 
     return traj;
 }
 
-bool DroneController::trajectory_in_view(std::vector<StateData> traj, CameraView::view_volume_check_mode c) {
-    for (auto state : traj) {
-        bool inview;
-        std::tie(inview, ignore) = _camview->in_view(state.pos,c);
-        if (!inview)
-            return false;
-    }
-    return true;
-}
 
 std::tuple<float,float> DroneController::acc_to_deg(cv::Point3f acc) {
     float norm_burn_vector_XZ = sqrt(powf(acc.x,2)+powf(acc.z,2));
@@ -805,81 +794,6 @@ float DroneController::thrust_to_throttle(float thrust_ratio) {
     return p1*powf(thrust_ratio,4) + p2*powf(thrust_ratio,3) + p3*powf(thrust_ratio,2) + p4*thrust_ratio + p5;
 }
 
-cv::Point3f DroneController::keep_in_volume_correction_acceleration(TrackData data_drone) {
-    float drone_rotating_time = 6.f/pparams.fps; // Est. time to rotate the drone around 180 deg. see betaflight
-    float safety = 2.f;
-    std::array<float, N_PLANES> speed_error_normal_to_plane = {0};
-    float effective_acceleration, remaining_breaking_distance_normal_to_plane, required_breaking_time, allowed_velocity_normal_to_plane;
-    bool enough_braking_distance_left=true;
-    std::array<bool, N_PLANES> violated_planes_brakedistance = {false};
-    float current_drone_speed_normal_to_plane;
-    for(uint i=0; i<N_PLANES; i++) {
-        current_drone_speed_normal_to_plane = data_drone.state.vel.dot(-cv::Point3f(_camview->plane_normals.at(i)));
-        remaining_breaking_distance_normal_to_plane = _camview->calc_shortest_distance_to_plane(data_drone.pos(), i, CameraView::relaxed)
-                - current_drone_speed_normal_to_plane*(drone_rotating_time+transmission_delay_duration);
-        if(remaining_breaking_distance_normal_to_plane<0)
-            remaining_breaking_distance_normal_to_plane = 0;
-        effective_acceleration = drone_calibration.thrust/safety + cv::Point3f(0,-GRAVITY,0).dot(cv::Point3f(_camview->plane_normals.at(i)));
-        required_breaking_time = sqrt(2*remaining_breaking_distance_normal_to_plane/effective_acceleration);
-        if(required_breaking_time!=required_breaking_time) { // if required_breaking_time is nan
-            // drone thrust including the safety is not strong enough to compensate gravity!
-            // assume drone can at least accelerate slightly against gravity:
-            effective_acceleration = 2.5;
-            required_breaking_time = sqrt(2*remaining_breaking_distance_normal_to_plane/effective_acceleration);
-        }
-        allowed_velocity_normal_to_plane = required_breaking_time * effective_acceleration;
-        speed_error_normal_to_plane.at(i) = current_drone_speed_normal_to_plane - allowed_velocity_normal_to_plane;
-        if(speed_error_normal_to_plane.at(i)>0) {
-            enough_braking_distance_left = false;
-            violated_planes_brakedistance.at(i) = true;
-        }
-    }
-
-    bool drone_in_boundaries;
-    std::array<bool, N_PLANES> violated_planes_inview;
-    std::tie(drone_in_boundaries, violated_planes_inview) = _camview->in_view(data_drone.pos(), CameraView::relaxed);
-
-    for (uint i=0; i<N_PLANES; i++) {
-        pos_err_kiv.at(i) = -_camview->calc_shortest_distance_to_plane(data_drone.pos(), i, CameraView::relaxed);
-        d_pos_err_kiv.at(i).new_sample(pos_err_kiv.at(i));
-        if(data_drone.vel_valid) { // ask sjoerd
-            vel_err_kiv.at(i) = speed_error_normal_to_plane.at(i);
-            d_vel_err_kiv.at(i).new_sample(vel_err_kiv.at(i));
-        }
-    }
-
-    bool flight_mode_with_kiv = _flight_mode==fm_flying_pid || _flight_mode==fm_initial_reset_yaw
-                                || _flight_mode==fm_reset_yaw;
-    if(!flight_mode_with_kiv)
-        return cv::Point3f(0,0,0);
-
-    if(!drone_in_boundaries || !enough_braking_distance_left) {
-        cv::Point3f correction_acceleration = kiv_acceleration(violated_planes_inview, violated_planes_brakedistance);
-        // std::cout <<"KIV: " << correction_acceleration << std::endl;
-        return correction_acceleration;
-    }
-    return cv::Point3f(0,0,0);
-}
-
-cv::Point3f DroneController::kiv_acceleration(std::array<bool, N_PLANES> violated_planes_inview, std::array<bool, N_PLANES> violated_planes_brakedistance) {
-#if CAMERA_VIEW_DEBUGGING
-    _camview->cout_plane_violation(violated_planes_inview, violated_planes_brakedistance);
-#endif
-    cv::Point3f correction_acceleration(0,0,0);
-    for(uint i=0; i<N_PLANES; i++) {
-        if(!(_time-start_takeoff_burn_time<0.45 && i==CameraView::bottom_plane)) {
-            if(violated_planes_inview.at(i)) {
-                bool d_against_p_error = (sign(d_pos_err_kiv.at(i).current_output())!=sign(pos_err_kiv.at(i)));
-                correction_acceleration += _camview->normal_vector(i)*(4.f*pos_err_kiv.at(i)
-                                           + d_against_p_error * 0.1f*d_pos_err_kiv.at(i).current_output());
-            }
-
-            if(violated_planes_brakedistance.at(i))
-                correction_acceleration += _camview->normal_vector(i)*(0.5f*vel_err_kiv.at(i) + 0.01f*d_vel_err_kiv.at(i).current_output());
-        }
-    }
-    return correction_acceleration;
-}
 
 std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f desired_acc) {
 
@@ -994,7 +908,7 @@ void DroneController::control_model_based(TrackData data_drone, cv::Point3f setp
 }
 
 cv::Point3f DroneController::desired_acceleration(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool choosing_insect ) {
-    if(!choosing_insect){
+    if(!choosing_insect) {
         pos_modelx.new_sample(setpoint_pos.x);
         pos_modely.new_sample(setpoint_pos.y);
         pos_modelz.new_sample(setpoint_pos.z);
@@ -1010,8 +924,13 @@ cv::Point3f DroneController::desired_acceleration(TrackData data_drone, cv::Poin
     desired_acceleration += multf(kp_pos, pos_err_p) + multf(ki_pos, pos_err_i) + multf(kd_pos, pos_err_d); // position controld
     if( !(norm(setpoint_vel)<0.1 && norm(setpoint_pos-data_drone.pos())<0.2 && data_drone.pos_valid) ) // Needed to improve hovering at waypoint
         desired_acceleration += multf(kp_vel, vel_err_p) + multf(kd_vel, vel_err_d); // velocity control
+
+    bool flight_mode_with_kiv = _flight_mode==fm_flying_pid || _flight_mode==fm_initial_reset_yaw
+                                || _flight_mode==fm_reset_yaw;
+
     if (data_drone.pos_valid && data_drone.vel_valid && !choosing_insect)
-        desired_acceleration += keep_in_volume_correction_acceleration(data_drone);
+        desired_acceleration += kiv_ctrl.update(data_drone,
+                                                transmission_delay_duration, flight_mode_with_kiv && !_time-start_takeoff_burn_time<0.45);
 
     return desired_acceleration;
 }

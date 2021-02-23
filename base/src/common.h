@@ -11,6 +11,7 @@
 #define IMG_H 480
 #define IMG_Wf 848.f
 #define IMG_Hf 480.f
+#define GRAVITY 9.81f
 
 int sign(float x);
 vector<string> split_csv_line(string line);

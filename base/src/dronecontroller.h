@@ -6,8 +6,8 @@
 #include "cameraview.h"
 #include "tracking.h"
 #include "landingcontroller.h"
+#include "keepinviewcontroller.h"
 
-#define GRAVITY 9.81f
 #define DRONECONTROLLER_DEBUG false
 #define ENABLE_SPINUP true
 
@@ -145,7 +145,6 @@ private:
 
     Rc * _rc;
     tracking::DroneTracker * _dtrk;
-    CameraView * _camview;
     std::ofstream *_logger;
 
     std::string control_parameters_rfn;
@@ -158,9 +157,9 @@ private:
     int landing_acc_calibration_cnt = -1;
     cv::Point3f landing_acc_calibration;
 
+    const float transmission_delay_duration = 0.04f;
     const float max_bank_angle = 180;
     const float aim_duration = 0.0833333333333f; //Slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
-    const float transmission_delay_duration = 0.04f;
     float effective_burn_spin_up_duration = 0.15f; // the time to spin up from hover to max
     const float effective_burn_spin_down_duration = 0.1f; // the time to spin down from max to hover
     float remember_last_integrated_y_err = 0; // For faster thrust calibration
@@ -273,6 +272,7 @@ private:
 
 public:
     LandingController land_ctrl;
+    KeepInViewController kiv_ctrl;
 
     cv::Point3f desired_acceleration(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool choosing_insect);
     bool enable_thrust_calibration = false;
