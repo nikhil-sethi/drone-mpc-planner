@@ -989,15 +989,16 @@ void DroneController::control_model_based(TrackData data_drone, cv::Point3f setp
         auto_throttle = spinup_throttle();
         return;
     }
-    cv::Point3f desired_acc = desired_acceleration(data_drone,setpoint_pos,setpoint_vel);
+    cv::Point3f desired_acc = desired_acceleration(data_drone,setpoint_pos,setpoint_vel,false);
     std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(desired_acc);
 }
 
-cv::Point3f DroneController::desired_acceleration(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel) {
-
-    pos_modelx.new_sample(setpoint_pos.x);
-    pos_modely.new_sample(setpoint_pos.y);
-    pos_modelz.new_sample(setpoint_pos.z);
+cv::Point3f DroneController::desired_acceleration(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool choosing_insect ) {
+    if(!choosing_insect){
+        pos_modelx.new_sample(setpoint_pos.x);
+        pos_modely.new_sample(setpoint_pos.y);
+        pos_modelz.new_sample(setpoint_pos.z);
+    }
 
     cv::Point3f kp_pos, ki_pos, kd_pos, kp_vel, kd_vel;
     std::tie(kp_pos, ki_pos, kd_pos, kp_vel, kd_vel) = adjust_control_gains(data_drone, setpoint_pos, setpoint_vel);
@@ -1009,7 +1010,7 @@ cv::Point3f DroneController::desired_acceleration(TrackData data_drone, cv::Poin
     desired_acceleration += multf(kp_pos, pos_err_p) + multf(ki_pos, pos_err_i) + multf(kd_pos, pos_err_d); // position controld
     if( !(norm(setpoint_vel)<0.1 && norm(setpoint_pos-data_drone.pos())<0.2 && data_drone.pos_valid) ) // Needed to improve hovering at waypoint
         desired_acceleration += multf(kp_vel, vel_err_p) + multf(kd_vel, vel_err_d); // velocity control
-    if (data_drone.pos_valid && data_drone.vel_valid)
+    if (data_drone.pos_valid && data_drone.vel_valid && !choosing_insect)
         desired_acceleration += keep_in_volume_correction_acceleration(data_drone);
 
     return desired_acceleration;

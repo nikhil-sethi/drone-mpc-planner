@@ -274,7 +274,7 @@ private:
 public:
     LandingController land_ctrl;
 
-    cv::Point3f desired_acceleration(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
+    cv::Point3f desired_acceleration(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool choosing_insect);
     bool enable_thrust_calibration = false;
     void flight_mode(flight_modes f) {
         _flight_mode = f;
