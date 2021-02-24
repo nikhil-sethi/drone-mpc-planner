@@ -1322,7 +1322,7 @@ void DroneController::load_calibration(std::string replay_dir) {
         } catch(MyExit const &err) {
             std::cout << "Error, corrupted drone calibration xml:" << err.msg << std::endl;
         }
-        if (tmp.drone_id != _rc->drone_id()) {
+        if (tmp.drone_id != _rc->drone_id() && replay_dir == "") {
             std::cout << "Drone ID mismatch. Using default values, but calibration is needed!" << std::endl;
             drone_calibration.thrust = dparams.default_thrust;
             drone_calibration.drone_id = _rc->drone_id();
