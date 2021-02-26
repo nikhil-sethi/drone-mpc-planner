@@ -25,9 +25,11 @@
 #define CLK A4
 #define DIO A5
 
-#define SOFTWARE_VERSION 126
+#define SOFTWARE_VERSION 128
 
 #define ONE_S_DRONE true
+#define HIGH_RES_PWM true 
+#define PWM_RES 10
 
 float voltage_calibration_value = 0.0;
 
@@ -82,11 +84,27 @@ void setup() {
     delay(500);
   }
 
-  // setupPWM16();
+  if (HIGH_RES_PWM)
+  {
+    setupPWM16(PWM_RES);
   /* TCCR1B = TCCR1B & B11111000 | B00000010;    // set timer 1 divisor to     8 for PWM frequency of  3921.16 Hz */
+    TCCR1B = TCCR1B & B11111000 | B00000001;    // set timer 1 divisor to     1 for PWM frequency of 31372.55 Hz
+  }
 }
-uint16_t icr = 0xffff;
-void setupPWM16() {
+uint16_t icr = 0x0fff;
+void setupPWM16(int resolution) {
+  switch(resolution) {
+    case 16:icr=0xffff;break;
+    case 15:icr=0x7fff;break;
+    case 14:icr=0x3fff;break;
+    case 13:icr=0x1fff;break;
+    case 12:icr=0x0fff;break;
+    case 11:icr=0x07ff;break;
+    case 10:icr=0x03ff;break;
+    case  9:icr=0x01ff;break;
+    case  8:icr=0x00ff;break;
+    default:icr=0x00ff;break;
+  }
   DDRB |= _BV(PB1) | _BV(PB2);                  /* set pins as outputs */
   TCCR1A = _BV(COM1A1) | _BV(COM1B1)            /* non-inverting PWM */
            | _BV(WGM11);                        /* mode 14: fast PWM, TOP=ICR1 */
@@ -309,6 +327,9 @@ void set_status_led(void) {
   switch (beep_state) {
     case BEEP_CHARGING: {
       set_alarm_connected();
+      /* if (smoothed_current > 100 && get_beep_time() > 2000 ) */
+        /* set_alarm_charging(); */
+         
       break;
     }
     case BEEP_NO_CURRENT: {
@@ -394,7 +415,7 @@ float run_state_machine() {
   // debugln("state %d", state);
   if (millis() - last_charging > 5000)
     last_output = 0;
-
+  
   switch (state) {
     case STATE_IDLE: {
       break;
@@ -405,15 +426,15 @@ float run_state_machine() {
       else if (battery_charge < 5)
         desired_current = 0.5;
       else if (battery_charge < 8)
-        desired_current = 0.45;
+        desired_current = 0.5;
       else if (battery_charge < 8.35)
-        desired_current = 0.3;
+        desired_current = 0.4;
       else if (battery_charge < 8.40)
         desired_current = 0.1;
       else
         desired_current = 0.0;
 
-      float drone_current_consumption = 0.300;
+      float drone_current_consumption = 0.2;
 
       desired_current += drone_current_consumption;
 
@@ -446,8 +467,12 @@ float run_state_machine() {
       else
         no_current_timeout = 0;
 
-      if (battery_charge < min_battery_charge || millis() % 120000 < 300 ||
-          (no_current_timeout > 1000 && millis() > 60000) || output > last_output + 50) {
+      uint32_t check_period = 60000;
+      if (millis() - total_charging_timer < 41000)
+        check_period = 20000;
+
+      if (battery_charge < min_battery_charge || millis() % check_period < 2000 ||
+          (no_current_timeout > 1000 && millis() > 60000) || output > last_output + 5000) {
         debugln("no charge %d  %d  %d  %d  %d", int(100 * battery_charge), int(100 * min_battery_charge),
                 int(millis() % 120000 < 300), int(no_current_timeout), int(output > last_output + 50));
 
@@ -544,6 +569,7 @@ float getVoltage(bool reset) {
 float getCurrent() {
   float voltage = analogRead(CURRENT_PIN) / 1024.0 * 5.0;
   voltage *= 1.3;
+
   return voltage / current_measurement_resistor;
 }
 
@@ -553,12 +579,23 @@ void calcSmoothedCurrent() {
 
 void set_current(float current_setpoint) {
   float error = (smoothed_current - current_setpoint);
-  output -= error * 1.0;
-  if (smoothed_current > 0.9)
-    output -= error * 10;
+  float c = 1.0;
+  int max_output = 255;
+  if (HIGH_RES_PWM) { 
+    max_output = pow(2,PWM_RES); 
+    c = max_output/255.0;
+    c /= 3;
+    c = 1;
+  }
+  /* c = 1.0/4.0; */
 
-  if (output > 255)
-    output = 255;
+  output -= error * c; 
+  if (smoothed_current > 0.9)
+    output -= error * 2 * c;
+
+
+  if (output > max_output)
+    output = max_output;
   if (output < 0)
     output = 0;
 
@@ -572,5 +609,7 @@ void set_current(float current_setpoint) {
   static int test = 1;
   test = 1 - test;
 
+  /* debugln("cur %d",int (voltage * 100 / current_measurement_resistor)); */
+  /* debugln("out %d",int (output)); */
   analogWrite(PWM_PIN, o);
 }

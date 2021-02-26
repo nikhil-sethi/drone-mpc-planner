@@ -155,8 +155,22 @@ void set_alarm_connected() {
                   NOTE_E6, note/4,
                   NOTE_C6, note/4,
                   NOTE_D6, note/4,
-                  NOTE_G6, note/4,
+                  NOTE_G6, note/4
                   };
+  poly_beep(beeps, len, get_beep_time());
+}
+
+void set_alarm_charging() {
+  int note = 500;
+  int len = 14;
+  int beeps[len] = {
+                  NOTE_C1, note*100,
+                  NOTE_C1, note*100,
+                  NOTE_C1, note*100,
+                  NOTE_C1, note*100,
+                  NOTE_C1, note*100,
+                  NOTE_C1, note*100,
+                  NOTE_C1, note*100};
   poly_beep(beeps, len, get_beep_time());
 }
 
