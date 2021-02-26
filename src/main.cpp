@@ -763,8 +763,8 @@ void init() {
         visdat.read_motion_and_overexposed_from_image(replay_dir); // has to happen before init otherwise wfn's are overwritten
     visdat.init(cam.get()); // do after cam update to populate frames
     trackers.init(&logger,replay_dir, &visdat, &(cam->camera_volume), &iceptor);
-    dnav.init(&logger,&trackers,&dctrl,&visdat, &(cam->camera_volume),replay_dir, &iceptor);
     iceptor.init(&trackers,&visdat,&(cam->camera_volume),&logger,&dctrl);
+    dnav.init(&logger,&trackers,&dctrl,&visdat, &(cam->camera_volume),replay_dir, &iceptor);
     if (pparams.op_mode != op_mode_monitoring)
         dctrl.init(&logger,replay_dir,generator_mode,airsim_mode,rc.get(),trackers.dronetracker(), &(cam->camera_volume),cam->measured_exposure());
 
