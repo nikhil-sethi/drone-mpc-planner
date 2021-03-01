@@ -75,23 +75,25 @@ pushd ~/dependencies
 }
 
 # Install dev packages
-[ -f dev-dependencies-packages-v1.1.done ] || {
-	wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | sudo apt-key add -
-	sudo apt-get install apt-transport-https
-	echo "deb https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
-	sudo snap install sublime-text --classic
-	sudo snap install code --classic
-	sudo apt-get update
-	sudo apt install -y libqt5opengl5 libqt5opengl5-dev astyle  meld gitk git-gui terminator jstest-gtk
-	#libgtk2.0-dev libtbb-dev qt5-default libgtkgl* libgtkgl2.0-* libgtkglext1  libgtkglext1-dev libgtkglext1-dev libgtkgl2.0-dev  libgtk2.0-dev libgtk-3-dev gnome-devel
-	touch dev-dependencies-packages-v1.1.done
-}
+if [[ $1 -eq 0 ]] ; then
+	[ -f dev-dependencies-packages-v1.1.done ] || {
+		wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | sudo apt-key add -
+		sudo apt-get install apt-transport-https
+		echo "deb https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
+		sudo snap install sublime-text --classic
+		sudo snap install code --classic
+		sudo apt-get update
+		sudo apt install -y libqt5opengl5 libqt5opengl5-dev astyle  meld gitk git-gui terminator jstest-gtk
+		#libgtk2.0-dev libtbb-dev qt5-default libgtkgl* libgtkgl2.0-* libgtkglext1  libgtkglext1-dev libgtkglext1-dev libgtkgl2.0-dev  libgtk2.0-dev libgtk-3-dev gnome-devel
+		touch dev-dependencies-packages-v1.1.done
+	}
 
-# Install command center packages
-[ -f cc-dependencies-packages-v1.0.done ] || {
-	sudo apt install -y python3-pyqt5 python3-pyqt5.qtmultimedia python3-pyqt5.qtquick
-	touch cc-dependencies-packages-v1.0.done
-}
+	# Install command center packages
+	[ -f cc-dependencies-packages-v1.0.done ] || {
+		sudo apt install -y python3-pyqt5 python3-pyqt5.qtmultimedia python3-pyqt5.qtquick
+		touch cc-dependencies-packages-v1.0.done
+	}
+fi
 
 # Install cmake with https support (required for opencv contrib)
 [ -f cmake-3.11.4.done ] || {
@@ -257,11 +259,7 @@ fi
 	touch mm_install_v1.1.done
 }
 
-
 popd
-
-
-
 sudo apt-get autoremove -y
 sudo apt-get clean -y
 
