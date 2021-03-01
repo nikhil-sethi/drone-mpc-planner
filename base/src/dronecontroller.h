@@ -7,6 +7,7 @@
 #include "tracking.h"
 #include "landingcontroller.h"
 #include "keepinviewcontroller.h"
+#include "propwashhandler.h"
 
 #define DRONECONTROLLER_DEBUG false
 #define ENABLE_SPINUP true
@@ -164,7 +165,6 @@ private:
     const float effective_burn_spin_down_duration = 0.1f; // the time to spin down from max to hover
     float remember_last_integrated_y_err = 0; // For faster thrust calibration
     cv::Point3f drone_vel_after_takeoff = {0};
-    const float propwash_safety_angle = 4.f/5.f*static_cast<float>(M_PI); // The higher the value the higher the chance of propwash
 
     const float lift_off_dist_take_off_aim = 0.02f;
     float min_takeoff_angle = 45.f/180.f*static_cast<float>(M_PI);
@@ -191,7 +191,6 @@ private:
     bool log_replay_mode = false;
     bool airsim_mode = false;
     bool generator_mode = false;
-    bool propwash = false;
     flight_modes _flight_mode = fm_joystick_check; // only set externally (except for disarming), used internally
     joy_mode_switch_modes _joy_mode_switch = jmsm_none;
     betaflight_arming _joy_arm_switch = bf_armed;
@@ -260,7 +259,6 @@ private:
     std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> control_error(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, cv::Point3f ki_pos);
     std::tuple<int,int,int> calc_feedforward_control(cv::Point3f desired_acceleration);
     cv::Point3f desired_acceleration_drone(cv::Point3f des_acc, float thrust);
-    bool prop_wash(cv::Point3f drone_velocity, cv::Point3f des_acc_drone);
     void control_model_based(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
 
     void send_data_joystick(void);
@@ -269,6 +267,8 @@ private:
     void load_calibration(std::string replay_dir);
     void load_control_parameters();
     void serialize_settings();
+
+    PropwashHandler propwash_hndl;
 
 public:
     LandingController land_ctrl;

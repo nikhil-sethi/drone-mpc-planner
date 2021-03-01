@@ -516,7 +516,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
                _rc->arm_switch << ";" <<
                _rc->mode << ";" <<
                data_drone.dt << ";" <<
-               propwash << ";" <<
+               propwash_hndl.propwash() << ";" <<
                kiv_ctrl.active << ";" <<
                drone_calibration.thrust << ";" <<
                pos_err_i.x << ";" << pos_err_i.y << ";" << pos_err_i.z << ";" <<
@@ -798,12 +798,7 @@ float DroneController::thrust_to_throttle(float thrust_ratio) {
 std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f desired_acc) {
 
     cv::Point3f drone_vel = _dtrk->last_track_data().vel();
-    propwash = prop_wash(drone_vel, desired_acc);
-    float control_margin = GRAVITY * tanf(acosf(GRAVITY/drone_calibration.thrust)); // see doc/control-margin.svg
-    if(propwash) {
-        desired_acc /= normf(desired_acc);
-        desired_acc *= 0.7f*control_margin;
-    }
+    desired_acc = propwash_hndl.update(drone_vel, desired_acc, drone_calibration.thrust);
 
     cv::Point3f des_acc_drone = desired_acceleration_drone(desired_acc, drone_calibration.thrust);
     cv::Point3f direction = des_acc_drone/normf(des_acc_drone);
@@ -878,21 +873,6 @@ cv::Point3f DroneController::desired_acceleration_drone(cv::Point3f des_acc, flo
 
 }
 
-bool DroneController::prop_wash(cv::Point3f drone_velocity, cv::Point3f des_acc_drone) {
-    float speed = normf(drone_velocity);
-
-    if(speed==0 || normf(des_acc_drone)==0)
-        return false; //Assume no propwash is happening
-
-    float dot = des_acc_drone.dot(drone_velocity)/normf(des_acc_drone)/normf(drone_velocity);
-    dot = 1 - (dot + 1)/2;
-    float vel_ind = speed>3.f ? 1.f : speed/3.f;
-    // std::cout << "Propwash-indicator: " << dot << ", " << vel_ind << "->" << dot*vel_ind << std::endl;
-    if(dot*vel_ind > 0.75f) {
-        return true;
-    } else
-        return false;
-}
 
 void DroneController::control_model_based(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel) {
 
