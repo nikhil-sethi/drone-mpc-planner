@@ -1,3 +1,4 @@
+<SerializableClass Type="PatsParameters" Version="1.8">
     <Member Name="wdt_timeout_us">500000</Member>
     <Member Name="darkness_threshold">0</Member>
     <Member Name="max_brightness">255</Member>
