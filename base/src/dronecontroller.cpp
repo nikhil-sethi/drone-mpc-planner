@@ -800,7 +800,7 @@ std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f de
     cv::Point3f drone_vel = _dtrk->last_track_data().vel();
     desired_acc = propwash_hndl.update(drone_vel, desired_acc, drone_calibration.thrust);
 
-    cv::Point3f des_acc_drone = desired_acceleration_drone(desired_acc, drone_calibration.thrust);
+    cv::Point3f des_acc_drone = compensate_gravity_and_crop_to_drone_limit(desired_acc, drone_calibration.thrust);
     cv::Point3f direction = des_acc_drone/normf(des_acc_drone);
 
     float throttlef = normf(des_acc_drone)/drone_calibration.thrust;
@@ -816,7 +816,7 @@ std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f de
 }
 
 
-cv::Point3f DroneController::desired_acceleration_drone(cv::Point3f des_acc, float thrust) {
+cv::Point3f DroneController::compensate_gravity_and_crop_to_drone_limit(cv::Point3f des_acc, float thrust) {
     // Calculate safe acceleration (max desired acceleration which cannot the
     // thrust constraints if it gravity compensated) for case in the further calculation
     // something goes wrong
@@ -883,11 +883,11 @@ void DroneController::control_model_based(TrackData data_drone, cv::Point3f setp
         auto_throttle = spinup_throttle();
         return;
     }
-    cv::Point3f desired_acc = desired_acceleration(data_drone,setpoint_pos,setpoint_vel,false);
+    cv::Point3f desired_acc = pid_error(data_drone,setpoint_pos,setpoint_vel,false);
     std::tie(auto_roll, auto_pitch, auto_throttle) = calc_feedforward_control(desired_acc);
 }
 
-cv::Point3f DroneController::desired_acceleration(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool choosing_insect ) {
+cv::Point3f DroneController::pid_error(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool choosing_insect ) {
     if(!choosing_insect) {
         pos_modelx.new_sample(setpoint_pos.x);
         pos_modely.new_sample(setpoint_pos.y);
@@ -900,19 +900,19 @@ cv::Point3f DroneController::desired_acceleration(TrackData data_drone, cv::Poin
     cv::Point3f pos_err_p, pos_err_d, vel_err_p, vel_err_d;
     std::tie(pos_err_p, pos_err_d, vel_err_p, vel_err_d) = control_error(data_drone, setpoint_pos, setpoint_vel,ki_pos);
 
-    cv::Point3f desired_acceleration = {0};
-    desired_acceleration += multf(kp_pos, pos_err_p) + multf(ki_pos, pos_err_i) + multf(kd_pos, pos_err_d); // position controld
+    cv::Point3f error = {0};
+    error += multf(kp_pos, pos_err_p) + multf(ki_pos, pos_err_i) + multf(kd_pos, pos_err_d); // position controld
     if( !(norm(setpoint_vel)<0.1 && norm(setpoint_pos-data_drone.pos())<0.2 && data_drone.pos_valid) ) // Needed to improve hovering at waypoint
-        desired_acceleration += multf(kp_vel, vel_err_p) + multf(kd_vel, vel_err_d); // velocity control
+        error += multf(kp_vel, vel_err_p) + multf(kd_vel, vel_err_d); // velocity control
 
     bool flight_mode_with_kiv = _flight_mode==fm_flying_pid || _flight_mode==fm_initial_reset_yaw
                                 || _flight_mode==fm_reset_yaw;
 
     if (data_drone.pos_valid && data_drone.vel_valid && !choosing_insect)
-        desired_acceleration += kiv_ctrl.update(data_drone,
-                                                transmission_delay_duration, flight_mode_with_kiv && !_time-start_takeoff_burn_time<0.45);
+        error += kiv_ctrl.update(data_drone,
+                                 transmission_delay_duration, flight_mode_with_kiv && !_time-start_takeoff_burn_time<0.45);
 
-    return desired_acceleration;
+    return error;
 }
 
 std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_control_gains(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel) {

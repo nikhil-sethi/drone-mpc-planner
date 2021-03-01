@@ -292,7 +292,7 @@ cv::Point3f Interceptor::get_circle_pos(float timef) {
     return p;
 }
 
-tracking::InsectTracker *Interceptor::update_target_insecttracker(){
+tracking::InsectTracker *Interceptor::update_target_insecttracker() {
     float best_acceleration = INFINITY;
     InsectTracker *best_itrkr = NULL;
     auto all_trackers = _trackers->all_target_trackers();
@@ -308,7 +308,7 @@ tracking::InsectTracker *Interceptor::update_target_insecttracker(){
             cv::Point3f current_insect_pos =trkr->last_track_data().pos();
             cv::Point3f current_insect_vel =trkr->last_track_data().vel();
             if (trkr->type() == tt_insect || trkr->type() == tt_replay || trkr->type() == tt_virtualmoth) {
-                float req_acceleration = normf(_dctrl->desired_acceleration(tracking_data,current_insect_pos, current_insect_vel,true));
+                float req_acceleration = normf(_dctrl->pid_error(tracking_data,current_insect_pos, current_insect_vel,true));
                 if (best_acceleration > req_acceleration) {
                     best_acceleration = req_acceleration;
                     best_itrkr = static_cast<InsectTracker *>(trkr);
