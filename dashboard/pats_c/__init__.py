@@ -2,15 +2,16 @@ import os
 from flask import Flask, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import login_required, LoginManager
-from . import pats_c
+
+from . import pats_c, system_widget
 
 db = SQLAlchemy()
-dash = pats_c.dash_application()
+dash_c = pats_c.dash_application()
+dash_sys_wid = system_widget.dash_application()
 
 
 def create_app():
     current_folder = os.path.dirname(os.path.realpath(__file__))
-    parent_folder = os.path.realpath(os.path.join(current_folder, os.pardir))
     server = Flask(__name__, static_folder=os.path.join(current_folder, 'assets'))
 
     db_path = os.path.expanduser('~/patsc/db/pats_creds.db')
@@ -26,10 +27,13 @@ def create_app():
     login_manager.login_view = 'auth.login'
     login_manager.init_app(server)
 
-    dash.init_app(app=server)
+    dash_c.init_app(app=server)
+    dash_sys_wid.init_app(app=server)
 
     for view_func in server.view_functions:
-        if view_func.startswith(dash.config['url_base_pathname']):
+        if view_func.startswith(dash_c.config['url_base_pathname']):
+            server.view_functions[view_func] = login_required(server.view_functions[view_func])
+        if view_func.startswith(dash_sys_wid.config['url_base_pathname']):
             server.view_functions[view_func] = login_required(server.view_functions[view_func])
 
     from .models import User

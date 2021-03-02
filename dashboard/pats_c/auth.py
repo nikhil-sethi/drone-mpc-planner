@@ -36,7 +36,10 @@ def logout():
     return redirect(url_for('main.index'))
 
 # These methods can be use to create new users. We only want to do that internally right now.
+
+
 @auth.route('/bram')
+@login_required
 def signup():
     return render_template('signup.html')
 
