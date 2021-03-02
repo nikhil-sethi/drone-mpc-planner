@@ -359,6 +359,13 @@ Host pats48
         ProxyJump dash
         Port 10800
 
+Host pats49
+	Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 10900
+	
 Host pats50
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
