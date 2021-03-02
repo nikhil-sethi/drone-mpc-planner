@@ -15,7 +15,7 @@ def read_cred_lg_db():
                 passw = creds_file.readline().strip()
                 return user,passw
     else:
-        print('Error: authorization not found')
+        print('Error: ~/patsc/.lg_auth authorization not found')
         exit(1)
 
 def retrieve_token():
@@ -140,9 +140,9 @@ def process_moth_in_json(data,sys_info):
                     t0 = t
                 if t > t1:
                     t1 = t
-    t0 = t0 - datetime.timedelta(seconds=t0.second,minutes=t0.minute - math.floor(t0.minute/5)*5)
-    t1 = t1 - datetime.timedelta(seconds=t1.second,minutes=t1.minute - math.ceil(datetime.timedelta(seconds=t1.second,minutes=t1.minute ).total_seconds()/300)*5)
-    bin_cnt = math.ceil((t1 - t0).total_seconds() / 300)
+    t00 = t0 - datetime.timedelta(seconds=t0.second,minutes=t0.minute - math.floor(t0.minute/5)*5)
+    t11 = t1 - datetime.timedelta(seconds=t1.second,minutes=t1.minute - math.ceil(datetime.timedelta(seconds=t1.second,minutes=t1.minute ).total_seconds()/300)*5)
+    bin_cnt = math.ceil((t11 - t00).total_seconds() / 300)
 
     bins = [0]*bin_cnt
     for moth in data['moths']:
@@ -150,12 +150,17 @@ def process_moth_in_json(data,sys_info):
         if patsc.true_positive(moth,sys_info['minimal_size']):
             t = datetime.datetime.strptime(moth['time'], '%Y%m%d_%H%M%S')
             if t > sys_info['start_date'] and t < sys_info['expiration_date']:
-                dt = t - t0
+                dt = t - t00
                 id = math.floor(dt.total_seconds() / 300)
+                if id  >= bin_cnt:
+                    #this is an edge case that probably should go in the next bin, or increase the
+                    # bin_cnt with one, but this means it will overlap with the next bin, which
+                    # could be overwritten. Better to have a small 5 minute shift for this edge case...
+                    id = bin_cnt-1
                 bins[id] +=1
 
     LG_data = []
-    times = [(t0+datetime.timedelta(minutes=5)*x ).strftime('%Y-%m-%dT%H:%M:%S') for x in range(bin_cnt)]
+    times = [(t00+datetime.timedelta(minutes=5)*x ).strftime('%Y-%m-%dT%H:%M:%S') for x in range(bin_cnt)]
     for i in range(0,len(bins)):
         LG_data.append({'Offset': 0.0,'TimeStamp': times[i], 'Value' : bins[i]})
 
