@@ -148,11 +148,11 @@ class errors_to_vps_task(pats_task):
     def task_func(self):
         if not os.path.exists(lb.log_dir):
             os.mkdir(lb.log_dir)
-        remote_err_file='daily_basestation_errors/' + socket.gethostname() + '_' + lb.datetime_to_str(datetime.today()) + '.log'
-        cmd = 'rsync -puz ' + lb.daily_errs_log +' dash:' + remote_err_file
-        lb.execute(cmd,5,'logs_to_json')
-        os.remove(lb.daily_errs_log)
-
+        if os.path.exists(lb.daily_errs_log):
+            remote_err_file='daily_basestation_errors/' + socket.gethostname() + '_' + lb.datetime_to_str(datetime.today()) + '.log'
+            cmd = 'rsync -puz ' + lb.daily_errs_log +' dash:' + remote_err_file
+            lb.execute(cmd,5,'logs_to_json')
+            os.remove(lb.daily_errs_log)
 class render_task(pats_task):
 
     def __init__(self):
