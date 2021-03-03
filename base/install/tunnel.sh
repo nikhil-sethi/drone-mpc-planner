@@ -8,11 +8,11 @@
 set -ex
 # Settings
 USER=pats
-BASE_PORT=6000
+BASE_PORT=10000
 IP=$1
 HOSTNAME=$( hostname )
 HOST_ID=$( hostname | tr -dc '0-9' )
-PORT=$(( $BASE_PORT + $HOST_ID * 100 ))
+PORT=$(( $BASE_PORT + $HOST_ID ))
 SSH_PORT=${2:-22}
 
 # Retry tunnel

@@ -37,7 +37,7 @@
 3. Physically label the NUC
 4. Remove USB dongle, boot up NUC
 5. Change hostname:
-    - `sudo nano /etc/hosts`     Change `127.0.1.1 pats-proto0` to reflect number on the label from step 3
+    - `sudo nano /etc/hosts`     Change `127.0.1.1 pats0` to reflect number on the label from step 3
     - Again for: `sudo nano /etc/hostname`
     - Reboot
 6. Optional: connect wifi

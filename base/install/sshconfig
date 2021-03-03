@@ -21,488 +21,983 @@ Host pats0 pats_game
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 6000
+        Port 10000
 
 Host pats1 pats_mooy1
 	Hostname localhost
 	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
 	ProxyJump dash
-	Port 6100
+	Port 10001
 
 Host pats2 pats_holstein2
 	Hostname localhost
 	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
 	ProxyJump dash
-	Port 6200
+	Port 10002
 
 Host pats3 pats_oudijk3
 	Hostname localhost
 	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
 	ProxyJump dash
-	Port 6300
+	Port 10003
 
 Host pats4  pats_koppert4
 	Hostname localhost
 	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
 	ProxyJump dash
-	Port 6400
+	Port 10004
 
 Host pats5
 	Hostname localhost
 	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
 	ProxyJump dash
-	Port 6500
+	Port 10005
 
 Host pats6 pats_koppert6
 	Hostname localhost
 	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
 	ProxyJump dash
-	Port 6600
+	Port 10006
 
 Host pats7  pats_vde7
 	Hostname localhost
 	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
 	ProxyJump dash
-	Port 6700
+	Port 10007
 
 Host pats8  pats_lr8
 	Hostname localhost
 	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
 	ProxyJump dash
-	Port 6800
+	Port 10008
 
 Host pats9 pats_batist9
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 6900
+        Port 10009
 
 Host pats10
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 7000
+        Port 10010
 
 Host pats11
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 7100
+        Port 10011
 
 Host pats12
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 7200
+        Port 10012
 
 Host pats13
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 7300
+        Port 10013
 
 Host pats14
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 7400
+        Port 10014
 
 Host pats15
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 7500
+        Port 10015
 
 Host pats16
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 7600
+        Port 10016
 
 Host pats17
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 7700
+        Port 10017
 
 Host pats18
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 7800
+        Port 10018
 
 Host pats19
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 7900
+        Port 10019
 
 Host pats20
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 8000
+        Port 10020
 
 Host pats21
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 8100
+        Port 10021
 
 Host pats22
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 8200
+        Port 10022
 
 Host pats23
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 8300
+        Port 10023
 
 Host pats24
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 8400
+        Port 10024
 
 Host pats25 watch
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 8500
+        Port 10025
 
 Host pats26 darkroom
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 8600
+        Port 10026
 
 Host pats27
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 8700
+        Port 10027
 
 Host pats28
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 8800
+        Port 10028
 
 Host pats29
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 8900
+        Port 10029
 
 Host pats30
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 9000
+        Port 10030
 
 Host pats31
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 9100
+        Port 10031
 
 Host pats32
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 9200
+        Port 10032
 
 Host pats33
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 9300
+        Port 10033
 
 Host pats34
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 9400
+        Port 10034
 
 Host pats35
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 9500
+        Port 10035
 
 Host pats36
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 9600
+        Port 10036
 
 Host pats37
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 9700
+        Port 10037
 
 Host pats38
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 9800
+        Port 10038
 
 Host pats39
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 9900
+        Port 10039
 
 Host pats40
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 10000
+        Port 10040
 
 Host pats41
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 10100
+        Port 10041
 
 Host pats42
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 10200
+        Port 10042
 
 Host pats43
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 10300
+        Port 10043
 
 Host pats44
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 10400
+        Port 10044
 
 Host pats45
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 10500
+        Port 10045
 
 Host pats46
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 10600
+        Port 10046
 
 Host pats47
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 10700
+        Port 10047
 
 Host pats48
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 10800
+        Port 10048
 
 Host pats49
 	Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 10900
+        Port 10049
 	
 Host pats50
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 11000
+        Port 10050
 
 Host pats51
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 11100
+        Port 10051
 
 Host pats52
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 11200
+        Port 10052
 
 Host pats53
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 11300
+        Port 10053
 
 Host pats54
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 11400
+        Port 10054
 
 Host pats55
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 11500
+        Port 10055
 
 Host pats56
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 11600
+        Port 10056
 
 Host pats57
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 11700
+        Port 10057
 
 Host pats58
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 11800
+        Port 10058
 
 Host pats59
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 11900
+        Port 10059
 
 Host pats60
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 12000
+        Port 10060
 
 Host pats61
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 12100
+        Port 10061
 
 Host pats62
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 12200
+        Port 10062
 
 Host pats63
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 12300
+        Port 10063
 
 Host pats64
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 12400
+        Port 10064
 
 Host pats65
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 12500
+        Port 10065
 
 Host pats66
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 12600
+        Port 10066
 
 Host pats67
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 12700
+        Port 10067
 
 Host pats68
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 12800
+        Port 10068
 
 Host pats69
         Hostname localhost
         IdentityFile ~/.ssh/pats_id_rsa
         User pats
         ProxyJump dash
-        Port 12900
+        Port 10069
 
+
+
+#**********************************************
+
+
+
+Host pats0o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 6000
+
+Host pats1o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 6100
+
+Host pats2o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 6200
+
+Host pats3o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 6300
+
+Host pats4o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 6400
+
+Host pats5o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 6500
+
+Host pats6o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 6600
+
+Host pats7o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 6700
+
+Host pats8o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 6800
+
+Host pats9o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 6900
+
+Host pats10o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 7000
+
+Host pats11o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 7100
+
+Host pats12o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 7200
+
+Host pats13o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 7300
+
+Host pats14o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 7400
+
+Host pats15o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 7500
+
+Host pats16o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 7600
+
+Host pats17o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 7700
+
+Host pats18o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 7800
+
+Host pats19o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 7900
+
+Host pats20o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 8000
+
+Host pats21o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 8100
+
+Host pats22o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 8200
+
+Host pats23o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 8300
+
+Host pats24o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 8400
+
+Host pats25o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 8500
+
+Host pats26o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 8600
+
+Host pats27o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 8700
+
+Host pats28o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 8800
+
+Host pats29o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 8900
+
+Host pats30o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 9000
+
+Host pats31o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 9100
+
+Host pats32o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 9200
+
+Host pats33o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 9300
+
+Host pats34o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 9400
+
+Host pats35o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 9500
+
+Host pats36o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 9600
+
+Host pats37o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 9700
+
+Host pats38o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 9800
+
+Host pats39o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 9900
+
+Host pats40o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 10000
+
+Host pats41o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 10100
+
+Host pats42o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 10200
+
+Host pats43o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 10300
+
+Host pats44o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 10400
+
+Host pats45o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 10500
+
+Host pats46o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 10600
+
+Host pats47o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 10700
+
+Host pats48o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 10800
+
+Host pats49o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 10900
+        
+Host pats50o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 11000
+
+Host pats51o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 11100
+
+Host pats52o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 11200
+
+Host pats53o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 11300
+
+Host pats54o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 11400
+
+Host pats55o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 11500
+
+Host pats56o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 11600
+
+Host pats57o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 11700
+
+Host pats58o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 11800
+
+Host pats59o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 11900
+
+Host pats60o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 12000
+
+Host pats61o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 12100
+
+Host pats62o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 12200
+
+Host pats63o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 12300
+
+Host pats64o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 12400
+
+Host pats65o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 12500
+
+Host pats66o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 12600
+
+Host pats67o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 12700
+
+Host pats68o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 12800
+
+Host pats69o
+        Hostname localhost
+        IdentityFile ~/.ssh/pats_id_rsa
+        User pats
+        ProxyJump dash
+        Port 12900

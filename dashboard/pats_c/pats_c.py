@@ -74,18 +74,32 @@ def open_systems_db():
 
 def load_systems_group(group_name):
     _,cur = open_systems_db()
-    sql_str = '''SELECT system,location FROM systems JOIN groups ON groups.group_id = systems.group_id WHERE groups.name = ? ORDER BY system_id'''
-    cur.execute(sql_str,(group_name,))
+    sql_str = f'''SELECT system,location FROM systems JOIN groups ON groups.group_id = systems.group_id WHERE groups.name = "{group_name}" ORDER BY system_id'''
+    cur.execute(sql_str)
     systems = cur.fetchall()
     return systems
+
+# this function can be removed after all systems have been upgraded to use the 10000 based port.
+#it adds an o to the ssh name (to be found in the ssh config), using the system database as source for whether a system was updated.
+def add_o_for_no_port_upgrade(system):
+    _,cur = open_systems_db()
+    sql_str = f'''SELECT port_upgrade FROM systems WHERE system = "{system}"'''
+    cur.execute(sql_str)
+    port_upgrade = cur.fetchall()
+    if port_upgrade[0][0] == 1:
+        add_o = ''
+    else:
+        add_o = 'o'
+
+    return add_o
 
 def load_groups():
     if current_user:
         if current_user.is_authenticated:
             username = current_user.username #['username']
             _,cur = open_systems_db()
-            sql_str = '''SELECT groups.name FROM groups JOIN customer_group_connection ON customer_group_connection.group_id = groups.group_id JOIN customers ON customers.customer_id = customer_group_connection.customer_id WHERE customers.name = ? ORDER BY groups.name'''
-            cur.execute(sql_str,(username,))
+            sql_str = f'''SELECT groups.name FROM groups JOIN customer_group_connection ON customer_group_connection.group_id = groups.group_id JOIN customers ON customers.customer_id = customer_group_connection.customer_id WHERE customers.name = "{username}" ORDER BY groups.name'''
+            cur.execute(sql_str)
             groups = cur.fetchall()
             group_dict = {}
             for group in groups:
@@ -124,7 +138,7 @@ def load_systems(username):
     sql_str = '''SELECT DISTINCT systems.system FROM systems,customer_group_connection,customers WHERE  systems.group_id = customer_group_connection.group_id AND customer_group_connection.customer_id = customers.customer_id AND customers.name = ? ORDER BY systems.system_id '''
     cur.execute(sql_str,(username,))
     systems = cur.fetchall()
-    authorized_systems = [d[0] for d in systems]
+    authorized_systems = [d[0].replace('-proto','') for d in systems]
     return authorized_systems
 
 def load_moth_df(selected_systems,start_date,end_date):
@@ -139,13 +153,19 @@ def load_moth_df(selected_systems,start_date,end_date):
 
     moth_df = pd.DataFrame()
     con, _ = open_db()
-    sql_str = '''SELECT moth_records.* FROM moth_records WHERE (moth_records.system = ?)
-    AND moth_records.time > ? AND moth_records.time <= ?
-    AND (moth_records.duration > 1 AND moth_records.duration < 10 AND (moth_records.Version="1.0"
-    OR (moth_records.Dist_traveled > 0.15 AND moth_records.Dist_traveled < 4 AND moth_records.Size > ? )))'''
+
     for (system,min_size) in ordered_systems:
-        moth_df = moth_df.append(pd.read_sql_query(sql_str,con,params = (system,start_date.strftime('%Y%m%d_%H%M%S'),end_date.strftime('%Y%m%d_%H%M%S'),min_size)))
+        sql_str = f'''SELECT moth_records.* FROM moth_records
+        WHERE (system = "{system}" OR system = "{system.replace('pats','pats-proto')}")
+        AND time > "{start_date.strftime('%Y%m%d_%H%M%S')}" AND time <= "{end_date.strftime('%Y%m%d_%H%M%S')}"
+        AND (duration > 1 AND duration < 10
+        AND (Version="1.0"
+        OR (Dist_traveled > 0.15 AND Dist_traveled < 4 AND Size > {min_size} )))'''
+        sql_str = sql_str.replace('\n','')
+        moth_df = moth_df.append(pd.read_sql_query(sql_str,con))
+
     moth_df['time'] = pd.to_datetime(moth_df['time'], format = '%Y%m%d_%H%M%S')
+    moth_df['system'].replace({'-proto':''},regex=True,inplace=True)
     return moth_df
 
 def remove_unauthoirized_system(selected_systems): #this is solely a security related check
@@ -164,7 +184,7 @@ def system_sql_str(systems):
         systems = [systems]
     systems_str = ' ('
     for system in systems:
-        systems_str = systems_str + 'system="' + system + '" OR '
+        systems_str = systems_str + 'system="' + system + '" OR ' + 'system="' + system.replace('pats','pats-proto') + '" OR '
     systems_str = systems_str[:-4] + ') '
     return systems_str
 
@@ -362,7 +382,7 @@ def video_available_to_symbol(x):
     return 0
 def create_scatter(moths,system_labels,scatter_x_value,scatter_y_value):
     df_scatter = moths
-    df_scatter['system_ids'] = df_scatter['system'].str.replace('pats-proto','').astype(int)
+    df_scatter['system_ids'] = df_scatter['system'].str.replace('pats-proto','').str.replace('pats','').astype(int)
     df_scatter['system_color'] = df_scatter['system'].apply(list(system_labels.keys()).index).astype(int)
     df_scatter['classification_symbol'] = df_scatter['Human_classification'].apply(classification_to_symbol)
     df_scatter['Human_classification'] = df_scatter['Human_classification'].apply(remove_nones_classification)
@@ -429,7 +449,8 @@ def download_log(selected_moth):
         return ''
     target_log_fn = './static/' + log_folder + '_' + sys_name + '_' + log_fn
     if not os.path.isfile(target_log_fn):
-        rsync_src = sys_name + ':data/' + log_folder + '/logging/' + log_fn
+        add_o = add_o_for_no_port_upgrade(sys_name)
+        rsync_src = sys_name + add_o + ':data/' + log_folder + '/logging/' + log_fn
         cmd = ['rsync --timeout=5 -az -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ' + rsync_src + ' ' + target_log_fn]
         execute(cmd)
     return target_log_fn
@@ -478,7 +499,8 @@ def download_video(selected_moth):
         target_video_mp4_fn = target_video_mkv_fn[0:-3] + 'mp4'
 
         if not os.path.isfile(target_video_mkv_fn) and  not os.path.isfile(target_video_mp4_fn):
-            rsync_src = sys_name + ':data/' +selected_moth[moth_columns.index('Folder')] + '/logging/render_' + video_fn
+            add_o = add_o_for_no_port_upgrade(sys_name)
+            rsync_src = sys_name + add_o + ':data/' +selected_moth[moth_columns.index('Folder')] + '/logging/render_' + video_fn
             cmd = ['rsync --timeout=5 -a -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ' + rsync_src + ' ' + target_video_mkv_fn]
             execute(cmd)
         if not os.path.isfile(target_video_mp4_fn) and os.path.isfile(target_video_mkv_fn):

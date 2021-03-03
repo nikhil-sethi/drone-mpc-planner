@@ -21,11 +21,11 @@ mkdir -p ~/code
 			cp pats_ssh_files_v3.tar.xz ~/dependencies
 		}
 
-		#Change hostname: sudo hostname pats-proto1
+		#Change hostname:
 		#Update: sudo nano /etc/hosts
-		#Change 127.0.1.1 pats-proto1
+		#Change 127.0.1.1 pats*
 		#Make it persistant, update: sudo nano /etc/hostname
-		if [[ $HOSTNAME == pats-proto* ]];
+		if [[ $HOSTNAME == pats* ]];
 		then
 		  echo "Hostname changed detected, good."
 		else
