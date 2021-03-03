@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import time, threading,pause,os,time,logging,logging.handlers,abc,subprocess,sys
+import time, threading,pause,os,time,logging,logging.handlers,abc,subprocess,sys,socket
 from datetime import date, datetime, timedelta
 from pathlib import Path
 import lib_base as lb
@@ -87,8 +87,13 @@ class pats_task(metaclass=abc.ABCMeta):
 
         file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         fh = logging.handlers.RotatingFileHandler(filename=lb.log_dir + self.name + '.log', maxBytes=1024*1024*100, backupCount=1)
+        fh_errs = logging.handlers.RotatingFileHandler(filename=lb.daily_errs_log, maxBytes=1024*1024*3, backupCount=1)
         fh.setFormatter(file_format)
+        fh.level = logging.DEBUG
+        fh_errs.setFormatter(file_format)
+        fh_errs.level = logging.ERROR
         self.logger.addHandler(fh)
+        self.logger.addHandler(fh_errs)
         self.logger.setLevel(logging.DEBUG)
         self.logger.info(self.name + ' reporting in!')
         start_trigger_time = self.next_trigger()
@@ -134,6 +139,19 @@ class logs_to_json_task(pats_task):
 
     def task_func(self):
         send_json_of_last_day()
+
+class errors_to_vps_task(pats_task):
+
+    def __init__(self):
+        super(errors_to_vps_task,self).__init__('errors_to_vps',timedelta(hours=10,minutes=30),timedelta(seconds=1))
+
+    def task_func(self):
+        if not os.path.exists(lb.log_dir):
+            os.mkdir(lb.log_dir)
+        remote_err_file='daily_basestation_errors/' + socket.gethostname() + '_' + lb.datetime_to_str(datetime.today()) + '.log'
+        cmd = 'rsync -puz ' + lb.daily_errs_log +' dash:' + remote_err_file
+        lb.execute(cmd,5,'logs_to_json')
+        os.remove(lb.daily_errs_log)
 
 class render_task(pats_task):
 
@@ -231,6 +249,7 @@ tasks.append(logs_to_json_task())
 tasks.append(render_task())
 tasks.append(wdt_pats_task())
 tasks.append(wdt_tunnel_task())
+tasks.append(errors_to_vps_task())
 
 while True:
     os.system('clear')

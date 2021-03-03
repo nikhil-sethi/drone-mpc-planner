@@ -2,17 +2,17 @@ import logging,subprocess,re,sys,os,time,socket
 from datetime import datetime
 
 flags_dir = os.path.expanduser('~/pats/flags/')
-disable_flag = os.path.expanduser('~/pats/flags/disable')
-cc_update_request = os.path.expanduser('~/pats/flags/cc_update_request')
-daemon_wdt_flag =os.path.expanduser('~/pats/flags/daemon_wdt_flag')
-proces_wdt_flag =os.path.expanduser('~/pats/flags/proces_wdt_flag')
-
 log_dir = os.path.expanduser('~/pats/logs/')
 data_dir =  os.path.expanduser('~/pats/data/')
 json_dir = os.path.expanduser('~/pats/jsons/')
 renders_dir = os.path.expanduser('~/pats/renders/')
 
+daily_errs_log = log_dir + 'all_errors.log'
 term_log_path =  log_dir + 'term.log'
+disable_flag = flags_dir + 'disable'
+cc_update_request = flags_dir + 'cc_update_request'
+daemon_wdt_flag =flags_dir + 'daemon_wdt_flag'
+proces_wdt_flag =flags_dir + 'proces_wdt_flag'
 
 local_status_txt_file=os.path.expanduser('~/pats/status/status.txt')
 local_system_txt_file=os.path.expanduser('~/pats/status/system_info.txt')
