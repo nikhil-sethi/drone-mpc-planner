@@ -143,7 +143,7 @@ class logs_to_json_task(pats_task):
 class errors_to_vps_task(pats_task):
 
     def __init__(self):
-        super(errors_to_vps_task,self).__init__('errors_to_vps',timedelta(hours=10,minutes=30),timedelta(seconds=1))
+        super(errors_to_vps_task,self).__init__('errors_to_vps',timedelta(hours=10,minutes=30),timedelta(hours=1))
 
     def task_func(self):
         if not os.path.exists(lb.log_dir):
