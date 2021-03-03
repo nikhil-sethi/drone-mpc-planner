@@ -1,6 +1,7 @@
 import logging,subprocess,re,sys,os,time,socket
 from datetime import datetime
 
+flags_dir = os.path.expanduser('~/pats/flags/')
 disable_flag = os.path.expanduser('~/pats/flags/disable')
 cc_update_request = os.path.expanduser('~/pats/flags/cc_update_request')
 daemon_wdt_flag =os.path.expanduser('~/pats/flags/daemon_wdt_flag')

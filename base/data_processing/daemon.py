@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import time, threading,pause,os,time,logging,logging.handlers,abc
+import time, threading,pause,os,time,logging,logging.handlers,abc,subprocess,sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
 import lib_base as lb
@@ -143,10 +143,10 @@ class render_task(pats_task):
     def task_func(self):
         render_last_day()
 
-class wdt_task(pats_task):
+class wdt_pats_task(pats_task):
 
     def __init__(self):
-        super(wdt_task,self).__init__('wdt',timedelta(),timedelta(seconds=300))
+        super(wdt_pats_task,self).__init__('wdt_pats',timedelta(),timedelta(seconds=300))
 
     def task_func(self):
         if os.path.exists(lb.proces_wdt_flag):
@@ -156,6 +156,53 @@ class wdt_task(pats_task):
             self.logger.error('pats process watchdog alert! Pats Process does not seem to function. Restarting...')
             cmd = 'killall -9 pats'
             lb.execute(cmd,1,logger_name=self.name)
+
+class wdt_tunnel_task(pats_task):
+
+# What I want to happen is the following:
+# - restart the NUC if the tunnel is failing, but:
+# - only if absolutely necessary and it does not hurt the monitoring operation
+# - and make sure it can never constantly restart, so that we have a good chance
+#   of re establishing contact manually if there is some unforeseen problem
+#   with the wdt or whatever
+
+# On the other hand, I do want to know if there are problems with tunnel more
+# often. So, it is logged once per hour, but only once per day is it allowed to
+# actually reboot itself. This moment at 13:00 is chosen such that it can't
+# influence the monitoring results. The post processing scripts should be done by
+# then, and the system is just waiting for darkness.
+
+    def __init__(self):
+        super(wdt_tunnel_task,self).__init__('wdt_tunnel',timedelta(),timedelta(hours=1))
+
+    tunnel_ok_time = datetime.today()
+    def task_func(self):
+        cmd = 'lsof -i tcp:22'
+        output = ''
+        try:
+            output = subprocess.check_output(cmd, shell=True)
+        except:
+            pass
+        if output:
+            output = output.decode(sys.stdout.encoding)
+            output = output.splitlines()
+        tunnel_ok = False
+
+        for line in output:
+            if line:
+                if '->dash.pats-drones.com:ssh (ESTABLISHED)' in line:
+                    self.tunnel_ok_time = datetime.today()
+                    tunnel_ok = True
+
+        if (datetime.today() - self.tunnel_ok_time).total_seconds() > 3*60*60 and datetime.today().hour == 13:
+            self.error_cnt +=1
+            self.logger.error('Tunnel watchdog alert! Rebooting!')
+            cmd = 'sudo rtcwake -m off -s 120'
+            lb.execute(cmd,1,logger_name=self.name)
+        elif not tunnel_ok:
+            self.error_cnt +=1
+            self.logger.error('Tunnel watchdog alert! Holding of reboot until 13:00 though')
+
 
 def init_status_cc():
     file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -172,21 +219,25 @@ logging.basicConfig( )
 lb.block_if_disabled()
 if not os.path.exists(lb.log_dir):
     os.mkdir(lb.log_dir)
+if not os.path.exists(lb.flags_dir):
+    os.mkdir(lb.flags_dir)
 init_status_cc()
-clean_hd_worker = clean_hd_task()
-cut_moth_worker = cut_moths_task()
-logs_to_json_worker = logs_to_json_task()
-render_worker = render_task()
-wdt_worker = wdt_task()
+
+tasks = []
+
+tasks.append(clean_hd_task())
+tasks.append(cut_moths_task())
+tasks.append(logs_to_json_task())
+tasks.append(render_task())
+tasks.append(wdt_pats_task())
+tasks.append(wdt_tunnel_task())
 
 while True:
     os.system('clear')
     print('Status sender: ' + status_cc_status_str)
-    print('HD cleaner: ' + clean_hd_worker.status_str + ' #Errors:' + str(clean_hd_worker.error_cnt))
-    print('Moth cutter: ' + cut_moth_worker.status_str + ' #Errors:' + str(cut_moth_worker.error_cnt))
-    print('Json processor: ' + logs_to_json_worker.status_str + ' #Errors:' + str(logs_to_json_worker.error_cnt))
-    print('Renderer: ' + render_worker.status_str + ' #Errors:' + str(render_worker.error_cnt))
-    print('WDT: ' + wdt_worker.status_str + ' #Errors:' + str(wdt_worker.error_cnt))
+
+    for task in tasks:
+        print(task.name + ': ' + task.status_str + ' #Errors:' + str(task.error_cnt))
 
     Path(lb.daemon_wdt_flag).touch()
     time.sleep(1)
