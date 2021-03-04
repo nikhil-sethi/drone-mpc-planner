@@ -5,7 +5,7 @@
 1. Start the bf_flash script to flash the firmware and betaflight settings:
 ```
 cd ~/code/pats/config/firmwares/drone
-./bf_flash.py
+./bf_flash.py -i <ID>
 ```
 This may require to install `pip3 install pyserial` or in case of conda `conda install -c anaconda pyserial`. You'll also need `sudo apt install dfu-util`.
 The script supports some command line arguments, like setting the drone id or selecting another settings file, see `./bf_flash.py --help`.
