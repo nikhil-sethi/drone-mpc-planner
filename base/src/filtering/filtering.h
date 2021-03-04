@@ -8,16 +8,17 @@
 #include "smoother.h"
 
 namespace filtering {
+
 class Tf_PT1_f {
 private:
     float y;
     float sample_time;
-    float time_constant_factor;
+    float time_factor;
     float K;
 public:
-    void init(float init_sample_time, float init_K, float init_time_constant) {
+    void init(float init_sample_time, float init_K, float T) {
         sample_time = init_sample_time;
-        time_constant_factor = 1 / (init_time_constant/sample_time +1); //https://de.wikipedia.org/wiki/PT1-Glied
+        change_dynamic(T);
         K = init_K;
         y = 0;
     }
@@ -26,16 +27,54 @@ public:
         y = y0;
     }
 
-    void change_dynamic(float new_time_constant) {
-        time_constant_factor = 1 / (new_time_constant/sample_time +1); //https://de.wikipedia.org/wiki/PT1-Glied
+    void change_dynamic(float T) {
+        if(T>0)
+            time_factor = 1 - exp(-sample_time/T);
+        else
+            time_factor = 1.f;
     }
 
     float new_sample(float input) {
-        y = time_constant_factor*(K*input - y) + y; //https://de.wikipedia.org/wiki/PT1-Glied
+        y = time_factor*(K*input - y) + y;
         return y;
     }
 
     float current_output() {
+        return y;
+    }
+};
+
+class Tf_PT1_3f {
+private:
+    cv::Point3f y;
+    float sample_time;
+    float time_factor;
+    float K;
+public:
+    void init(float init_sample_time, float init_K, float T) {
+        sample_time = init_sample_time;
+        change_dynamic(T);
+        K = init_K;
+        y = cv::Point3f(0,0,0);
+    }
+
+    void reset(cv::Point3f y0) {
+        y = y0;
+    }
+
+    void change_dynamic(float T) {
+        if(T>0)
+            time_factor = 1 - exp(-sample_time/T);
+        else
+            time_factor = 1.f;
+    }
+
+    cv::Point3f new_sample(cv::Point3f input) {
+        y = time_factor*(K*input - y) + y;
+        return y;
+    }
+
+    cv::Point3f current_output() {
         return y;
     }
 };
