@@ -13,7 +13,7 @@ RUN mkdir -p /home/flask/pats_c
 RUN mkdir -p /home/flask/patsc/db/
 RUN mkdir -p /home/flask/patsc/static/
 RUN mkdir -p /home/flask/.ssh
-RUN ln -s /home/flask/patsc/config_tmp/sshconfig /home/flask/.ssh/config
+RUN ln -s /home/flask/patsc/base_install/sshconfig /home/flask/.ssh/config
 RUN ln -s /home/flask/patsc/ssh_tmp/id_rsa /home/flask/.ssh/id_rsa
 RUN ln -s /home/flask/patsc/ssh_tmp/id_rsa.pub /home/flask/.ssh/id_rsa.pub
 RUN ln -s /home/flask/patsc/ssh_tmp/id_rsa /home/flask/.ssh/pats_id_rsa

@@ -11,7 +11,7 @@ services:
       - ~/patsc/static/:/home/flask/pats_c/static/
       - ~/patsc/db/:/home/flask/patsc/db/
       - ~/.ssh/:/home/flask/patsc/ssh_tmp
-      - ../config/:/home/flask/patsc/config_tmp
+      - ../base/install/:/home/flask/patsc/base_install
       - ~/code/pats/config/:/home/flask/code/pats/config/
     command: gunicorn --workers=4 "pats_c:create_app()" -b :8001 --worker-tmp-dir /dev/shm
 
