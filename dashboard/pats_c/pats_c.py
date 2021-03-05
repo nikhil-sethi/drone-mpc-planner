@@ -74,7 +74,7 @@ def open_systems_db():
 
 def load_systems_group(group_name):
     _,cur = open_systems_db()
-    sql_str = '''SELECT system_name,location FROM systems JOIN groups ON groups.group_id = systems.group_id WHERE groups.name = ? ORDER BY system_id'''
+    sql_str = '''SELECT system,location FROM systems JOIN groups ON groups.group_id = systems.group_id WHERE groups.name = ? ORDER BY system_id'''
     cur.execute(sql_str,(group_name,))
     systems = cur.fetchall()
     return systems
@@ -121,7 +121,7 @@ def init_system_dropdown():
 
 def load_systems(username):
     _,cur = open_systems_db()
-    sql_str = '''SELECT DISTINCT systems.system_name FROM systems,customer_group_connection,customers WHERE  systems.group_id = customer_group_connection.group_id AND customer_group_connection.customer_id = customers.customer_id AND customers.name = ? ORDER BY systems.system_id '''
+    sql_str = '''SELECT DISTINCT systems.system FROM systems,customer_group_connection,customers WHERE  systems.group_id = customer_group_connection.group_id AND customer_group_connection.customer_id = customers.customer_id AND customers.name = ? ORDER BY systems.system_id '''
     cur.execute(sql_str,(username,))
     systems = cur.fetchall()
     authorized_systems = [d[0] for d in systems]
@@ -130,10 +130,10 @@ def load_systems(username):
 def load_moth_df(selected_systems,start_date,end_date):
     username = current_user.username
     _, sys_cur = open_systems_db()
-    sys_cur.execute('''SELECT systems.system_name, groups.minimal_size FROM systems,groups
+    sys_cur.execute('''SELECT systems.system, groups.minimal_size FROM systems,groups
     JOIN customer_group_connection ON systems.group_id = customer_group_connection.group_id
     JOIN customers ON customers.customer_id = customer_group_connection.customer_id WHERE
-    systems.group_id = groups.group_id AND customers.name = ? AND systems.system_name IN (%s)
+    systems.group_id = groups.group_id AND customers.name = ? AND systems.system IN (%s)
     ORDER BY systems.system_id'''%('?,'*len(selected_systems))[:-1], (username,*selected_systems))
     ordered_systems = sys_cur.fetchall()
 

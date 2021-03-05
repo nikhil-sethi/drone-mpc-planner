@@ -232,12 +232,12 @@ def upload_json_to_LG(token,json_data,sys_info):
 
 def load_system_info():
     sys_db_con,sys_db_cur = patsc.open_db(os.path.expanduser('~/patsc/db/pats_systems.db'))
-    sql_str = '''SELECT system_name,is_active,LG FROM systems'''
+    sql_str = '''SELECT system,active,LG FROM systems'''
     systems = pd.read_sql_query(sql_str,sys_db_con)
-    systems['system_name'] = systems['system_name'].str.replace('-proto' , '')
-    systems['system_name'] = systems['system_name'].str.upper()
+    systems['system'] = systems['system'].str.replace('-proto' , '')
+    systems['system'] = systems['system'].str.upper()
 
-    sys_db_cur.execute('''SELECT systems.system_name, groups.minimal_size FROM systems JOIN groups ON groups.group_id = systems.group_id''')
+    sys_db_cur.execute('''SELECT systems.system, groups.minimal_size FROM systems JOIN groups ON groups.group_id = systems.group_id''')
     size_data = sys_db_cur.fetchall()
     systems['minimal_size'] = [item[1] for item in size_data]
 
@@ -260,9 +260,9 @@ def jsons_to_LG(input_folder):
                         try:
                             json_data = json.load(json_file)
                             sys_name = json_data['system'].replace('-proto','').upper()
-                            if sys_name in systems_df['system_name'].values:
-                                sys_info = systems_df.loc[systems_df['system_name'] == sys_name]
-                                if sys_info.iloc[0]['is_active'] and sys_info.iloc[0]['LG']:
+                            if sys_name in systems_df['system'].values:
+                                sys_info = systems_df.loc[systems_df['system'] == sys_name]
+                                if sys_info.iloc[0]['active'] and sys_info.iloc[0]['LG']:
                                     min_required_version=1.0
                                     if 'version' in json_data and float(json_data['version']) >= min_required_version:
                                         sys_LG = LG_lookup.loc[LG_lookup['lg_module_id'] == int(sys_info['LG'])]

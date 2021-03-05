@@ -19,7 +19,7 @@ def natural_sort_systems(l):
 def load_systems():
     conn = sqlite3.connect(os.path.expanduser(args.db_path))
     cur = conn.cursor()
-    sql_str = '''SELECT system_name,maintenance FROM systems WHERE is_active = 1 ORDER BY system_id'''
+    sql_str = '''SELECT system,maintenance FROM systems WHERE active = 1 ORDER BY system_id'''
     cur.execute(sql_str)
     systems = pd.read_sql_query(sql_str,conn)
     return systems
@@ -54,10 +54,10 @@ def send_mail(now):
                 if d > now - timedelta(hours=5):
 
                     with open (file, "r") as fr_processed:
-                        if f_sys in systems['system_name'].values:
+                        if f_sys in systems['system'].values:
                             msg = fr_processed.readline()
                             recent_files.append([f_sys,msg])
-                            systems = systems.drop(systems[systems['system_name']==f_sys].index)
+                            systems = systems.drop(systems[systems['system']==f_sys].index)
                         else:
                             print('Warning, system does not exist: ' + f_sys)
             except:
