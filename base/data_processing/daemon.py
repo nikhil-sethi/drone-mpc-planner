@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-import time, threading,pause,os,time,logging,logging.handlers,abc,subprocess,sys,socket
+import time, threading,pause,os,time,logging,logging.handlers,abc,subprocess,sys,socket, re
 from datetime import date, datetime, timedelta
+from datetime import time as dttime
 from pathlib import Path
 import lib_base as lb
 from clean_hd import clean_hd
@@ -87,11 +88,13 @@ class pats_task(metaclass=abc.ABCMeta):
 
         file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         fh = logging.handlers.RotatingFileHandler(filename=lb.log_dir + self.name + '.log', maxBytes=1024*1024*100, backupCount=1)
-        fh_errs = logging.handlers.RotatingFileHandler(filename=lb.daily_errs_log, maxBytes=1024*1024*3, backupCount=1)
+        fh_errs = logging.handlers.TimedRotatingFileHandler(filename=lb.daily_errs_log, when='MIDNIGHT', backupCount=10, atTime=dttime(hour=10,minute=40))
         fh.setFormatter(file_format)
         fh.level = logging.DEBUG
         fh_errs.setFormatter(file_format)
         fh_errs.level = logging.ERROR
+        fh_errs.suffix = "%Y%m%d" # Use the date as suffixs for old logs. e.g. all_errors.log.20210319.
+        fh_errs.extMatch = re.compile(r"^\d{8}$") # Reformats the suffix such that it is predictable.
         self.logger.addHandler(fh)
         self.logger.addHandler(fh_errs)
         self.logger.setLevel(logging.DEBUG)
@@ -143,16 +146,19 @@ class logs_to_json_task(pats_task):
 class errors_to_vps_task(pats_task):
 
     def __init__(self):
-        super(errors_to_vps_task,self).__init__('errors_to_vps',timedelta(hours=10,minutes=30),timedelta(hours=1))
+        super(errors_to_vps_task,self).__init__('errors_to_vps',timedelta(hours=10,minutes=45),timedelta(hours=24))
 
     def task_func(self):
+        self.logger.error('Rotate!') #this forces the rotation of all_errors.log
+        time.sleep(1)
         if not os.path.exists(lb.log_dir):
             os.mkdir(lb.log_dir)
-        if os.path.exists(lb.daily_errs_log):
+        yesterday_file = lb.daily_errs_log + '.' + (datetime.today()-timedelta(days=1)).strftime("%Y%m%d")
+        if os.path.exists(yesterday_file):
             remote_err_file='daily_basestation_errors/' + socket.gethostname() + '_' + lb.datetime_to_str(datetime.today()) + '.log'
-            cmd = 'rsync -puz ' + lb.daily_errs_log +' dash:' + remote_err_file
-            lb.execute(cmd,5,'logs_to_json')
-            os.remove(lb.daily_errs_log)
+            cmd = 'rsync -puz ' + yesterday_file +' dash:' + remote_err_file
+            lb.execute(cmd,5,logger_name=self.name)
+            self.logger.info(yesterday_file + ' send to dash.')
 class render_task(pats_task):
 
     def __init__(self):
