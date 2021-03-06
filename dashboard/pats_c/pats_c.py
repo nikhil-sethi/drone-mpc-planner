@@ -291,6 +291,7 @@ def create_hist(df_hist,unique_dates,system_labels):
     fig = go.Figure()
     fig.update_yaxes(rangemode = "nonnegative")
     cnt = 0
+    bar_totals = df_hist.sum(axis=1).astype(int)
     for sys in system_labels.keys():
         hist_data = df_hist[sys]
         sys_str = [system_labels[sys]] * len(hist_data)
@@ -298,11 +299,10 @@ def create_hist(df_hist,unique_dates,system_labels):
         hist = go.Bar(
             x = unique_dates.strftime('%d-%m-%Y'),
             y = hist_data,
-            customdata = np.transpose([sys_str,sys_names]),
+            customdata = np.transpose([sys_str,sys_names,hist_data.astype(int),bar_totals]),
             marker_color = px.colors.qualitative.Vivid[cnt%(len(px.colors.qualitative.Vivid))],
             name = system_labels[sys],
-            hovertemplate = '<b>System %{customdata[0]}</b><br><br>' +
-                    '<extra></extra>'
+            hovertemplate = '<b>%{customdata[0]}</b><br>Count: %{customdata[2]} / %{customdata[3]}<br><extra></extra>'
         )
         cnt+=1
         fig.add_trace(hist)
