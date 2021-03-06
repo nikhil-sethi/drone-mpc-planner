@@ -293,11 +293,12 @@ def create_hist(df_hist,unique_dates,system_labels):
     cnt = 0
     for sys in system_labels.keys():
         hist_data = df_hist[sys]
-        syss = [system_labels[sys]] * len(hist_data)
+        sys_str = [system_labels[sys]] * len(hist_data)
+        sys_names = [sys] * len(hist_data)
         hist = go.Bar(
             x = unique_dates.strftime('%d-%m-%Y'),
             y = hist_data,
-            customdata = np.transpose([syss,syss]), #ok, we should only need one column of syss, spend an hour or streamlining this just to conclude something weird is going on in there...
+            customdata = np.transpose([sys_str,sys_names]),
             marker_color = px.colors.qualitative.Vivid[cnt%(len(px.colors.qualitative.Vivid))],
             name = system_labels[sys],
             hovertemplate = '<b>System %{customdata[0]}</b><br><br>' +
@@ -589,9 +590,9 @@ def dash_application():
 
             elif hist_selected_bars:
                 for bar in hist_selected_bars['points']:
-                    sys = bar['customdata'][0]
+                    sys = bar['customdata'][1]
                     start_date = datetime.datetime.strptime(bar['x'], '%d-%m-%Y') + datetime.timedelta(hours=12)
-                    moths = moths.append(load_moth_df(sys,start_date,start_date + datetime.timedelta(days=1)))
+                    moths = moths.append(load_moth_df([sys],start_date,start_date + datetime.timedelta(days=1)))
 
             if not moths.empty:
                 scat_fig = create_scatter(moths,system_labels,scatter_x_value,scatter_y_value)
