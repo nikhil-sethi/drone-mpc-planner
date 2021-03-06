@@ -26,13 +26,10 @@ def load_systems():
 
 def execute(cmd):
     p_result = None
-    n=0
-
     popen = subprocess.Popen(cmd, shell=True,stdout=subprocess.PIPE)
     for stdout_line in iter(popen.stdout.readline, ""):
         p_result = popen.poll()
         if p_result != None:
-            n = n+1
             break
         print(stdout_line.decode('utf-8'),end ='')
     popen.stdout.close()
@@ -49,10 +46,8 @@ def send_mail(now):
             f_date = f.split('_')[-2] + '_' + f.split('_')[-1]
             try:
                 d = datetime.strptime(f_date, "%Y%m%d_%H%M%S")
-                f_sys = f.split('_')[0]
-
+                f_sys = f.split('_')[0].replace('-proto','')
                 if d > now - timedelta(hours=5):
-
                     with open (file, "r") as fr_processed:
                         if f_sys in systems['system'].values:
                             msg = fr_processed.readline()
@@ -80,14 +75,14 @@ def send_mail(now):
         mail_txt = mail_txt[:-2] + '\n'
         for sys,message in recent_files:
             if not message.startswith('OK.'):
-                mail_txt += sys + ': ' + message + '\n'
+                mail_txt += sys + ': ' + message.strip() + '\n'
         mail_txt += '\n'
 
     recent_files = natural_sort_systems(recent_files)
     mail_txt += 'System status:\n'
     for sys,message in recent_files:
         if message.startswith('OK. '):
-            mail_txt += sys + ':\t' + message.replace('OK.','') + '\n'
+            mail_txt += sys + ':\t' + message.replace('OK.','').strip() + '\n'
 
     print(mail_txt)
     with open('mail.tmp','w') as mail_f:
