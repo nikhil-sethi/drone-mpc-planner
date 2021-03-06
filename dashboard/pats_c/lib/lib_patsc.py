@@ -1,18 +1,34 @@
 #!/usr/bin/env python3
 import os, re
 import sqlite3
-from tqdm import tqdm
-from json.decoder import JSONDecodeError
 
-def open_db(db_file):
-    conn = None
-    cur = None
+db_data_path = os.path.expanduser('~/patsc/db/pats.db')
+db_classification_path = os.path.expanduser('~/patsc/db/pats_human_classification.db')
+db_systems_path = os.path.expanduser('~/patsc/db/pats_systems.db')
+
+def open_data_db():
+    con = None
     try:
-        conn = sqlite3.connect(os.path.expanduser(db_file),timeout=30.0)
-        cur = conn.cursor()
+        con = sqlite3.connect(db_data_path,timeout=15.0)
+        con.execute('pragma journal_mode=wal')
     except Exception as e:
         print(e)
-    return conn,cur
+    return con
+def open_classification_db():
+    con = None
+    try:
+        con = sqlite3.connect(db_classification_path)
+    except Exception as e:
+        print(e)
+    return con
+def open_systems_db():
+    con = None
+    try:
+        con = sqlite3.connect(db_systems_path)
+        con.execute('pragma journal_mode=wal')
+    except Exception as e:
+        print(e)
+    return con
 
 def natural_sort(l):
     convert = lambda text: int(text) if text.isdigit() else text.lower()

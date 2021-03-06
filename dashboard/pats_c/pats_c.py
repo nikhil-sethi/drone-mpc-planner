@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import subprocess,sqlite3
+import subprocess
 import datetime,time, math, os, re
 import numpy as np
 import pandas as pd
@@ -13,13 +13,11 @@ import plotly.io as pio
 from dash.dependencies import Output, Input, State
 import dash_bootstrap_components as dbc
 import dash_daq as daq
+import pats_c.lib.lib_patsc as patsc
 
 from flask_login import current_user
 from urllib.parse import quote as urlquote
 
-db_path = os.path.expanduser('~/patsc/db/pats.db')
-db_classification_path = os.path.expanduser('~/patsc/db/pats_human_classification.db')
-db_systems_path = os.path.expanduser('~/patsc/db/pats_systems.db')
 group_dict = {}
 moth_columns = []
 heatmap_max = 50
@@ -33,77 +31,34 @@ scatter_columns = { 'duration' : 'Duration (s)',
                     'Dist_traject':'Distance trajectory (m)',
                     'Size':'Size (m)'}
 
-def open_db():
-    global db_path
-    conn = None
-    cur = None
-    print('Opening DB: ' + db_path)
-    if not os.path.exists(db_path):
-        print("Error: db does not exist: " + db_path)
-        exit(1)
-    try:
-        conn = sqlite3.connect(db_path)
-        cur = conn.cursor()
-    except Exception as e:
-        print(e)
-    return conn,cur
-
-_,cur = open_db()
-moth_columns = [i[1] for i in cur.execute('PRAGMA table_info(moth_records)')]
-
-def open_classification_db():
-    global db_classification_path
-    conn = None
-    cur = None
-    try:
-        conn = sqlite3.connect(db_classification_path)
-        cur = conn.cursor()
-    except Exception as e:
-        print(e)
-    return conn,cur
-def open_systems_db():
-    global db_systems_path
-    conn = None
-    cur = None
-    try:
-        conn = sqlite3.connect(db_systems_path)
-        cur = conn.cursor()
-    except Exception as e:
-        print(e)
-    return conn,cur
-
-def load_systems_group(group_name):
-    _,cur = open_systems_db()
+def load_systems_group(group_name,cur):
     sql_str = f'''SELECT system,location FROM systems JOIN groups ON groups.group_id = systems.group_id WHERE groups.name = "{group_name}" ORDER BY system_id'''
-    cur.execute(sql_str)
-    systems = cur.fetchall()
+    systems = cur.execute(sql_str).fetchall()
     return systems
 
 # this function can be removed after all systems have been upgraded to use the 10000 based port.
 #it adds an o to the ssh name (to be found in the ssh config), using the system database as source for whether a system was updated.
 def add_o_for_no_port_upgrade(system):
-    _,cur = open_systems_db()
     sql_str = f'''SELECT port_upgrade FROM systems WHERE system = "{system}"'''
-    cur.execute(sql_str)
-    port_upgrade = cur.fetchall()
+    with patsc.open_systems_db() as con:
+        port_upgrade = con.execute(sql_str).fetchall()
     if port_upgrade[0][0] == 1:
         add_o = ''
     else:
         add_o = 'o'
-
     return add_o
 
 def load_groups():
     if current_user:
         if current_user.is_authenticated:
-            username = current_user.username #['username']
-            _,cur = open_systems_db()
-            sql_str = f'''SELECT groups.name FROM groups JOIN customer_group_connection ON customer_group_connection.group_id = groups.group_id JOIN customers ON customers.customer_id = customer_group_connection.customer_id WHERE customers.name = "{username}" ORDER BY groups.name'''
-            cur.execute(sql_str)
-            groups = cur.fetchall()
-            group_dict = {}
-            for group in groups:
-                group_dict[group[0]] = load_systems_group(group[0])
+            username = current_user.username
+            with patsc.open_systems_db() as con:
+                sql_str = f'''SELECT groups.name FROM groups JOIN customer_group_connection ON customer_group_connection.group_id = groups.group_id JOIN customers ON customers.customer_id = customer_group_connection.customer_id WHERE customers.name = "{username}" ORDER BY groups.name'''
+                cur = con.execute(sql_str)
+                groups = cur.fetchall()
+                group_dict = {}
+                for group in groups:
+                    group_dict[group[0]] = load_systems_group(group[0],cur)
             return group_dict
     return {}
 
@@ -134,36 +89,32 @@ def init_system_dropdown():
     return sys_options, sys_style, group_options, group_value, group_style
 
 def load_systems(username):
-    _,cur = open_systems_db()
-    sql_str = '''SELECT DISTINCT systems.system FROM systems,customer_group_connection,customers WHERE  systems.group_id = customer_group_connection.group_id AND customer_group_connection.customer_id = customers.customer_id AND customers.name = ? ORDER BY systems.system_id '''
-    cur.execute(sql_str,(username,))
-    systems = cur.fetchall()
+    with patsc.open_systems_db() as con:
+        sql_str = '''SELECT DISTINCT systems.system FROM systems,customer_group_connection,customers WHERE  systems.group_id = customer_group_connection.group_id AND customer_group_connection.customer_id = customers.customer_id AND customers.name = ? ORDER BY systems.system_id '''
+        systems = con.execute(sql_str,(username,)).fetchall()
     authorized_systems = [d[0].replace('-proto','') for d in systems]
     return authorized_systems
 
 def load_moth_df(selected_systems,start_date,end_date):
     username = current_user.username
-    _, sys_cur = open_systems_db()
-    sys_cur.execute('''SELECT systems.system, groups.minimal_size FROM systems,groups
-    JOIN customer_group_connection ON systems.group_id = customer_group_connection.group_id
-    JOIN customers ON customers.customer_id = customer_group_connection.customer_id WHERE
-    systems.group_id = groups.group_id AND customers.name = ? AND systems.system IN (%s)
-    ORDER BY systems.system_id'''%('?,'*len(selected_systems))[:-1], (username,*selected_systems))
-    ordered_systems = sys_cur.fetchall()
+    with patsc.open_systems_db() as con:
+        ordered_systems = con.execute('''SELECT systems.system, groups.minimal_size FROM systems,groups
+        JOIN customer_group_connection ON systems.group_id = customer_group_connection.group_id
+        JOIN customers ON customers.customer_id = customer_group_connection.customer_id WHERE
+        systems.group_id = groups.group_id AND customers.name = ? AND systems.system IN (%s)
+        ORDER BY systems.system_id'''%('?,'*len(selected_systems))[:-1], (username,*selected_systems)).fetchall()
 
     moth_df = pd.DataFrame()
-    con, _ = open_db()
-
-    for (system,min_size) in ordered_systems:
-        sql_str = f'''SELECT moth_records.* FROM moth_records
-        WHERE (system = "{system}" OR system = "{system.replace('pats','pats-proto')}")
-        AND time > "{start_date.strftime('%Y%m%d_%H%M%S')}" AND time <= "{end_date.strftime('%Y%m%d_%H%M%S')}"
-        AND (duration > 1 AND duration < 10
-        AND (Version="1.0"
-        OR (Dist_traveled > 0.15 AND Dist_traveled < 4 AND Size > {min_size} )))'''
-        sql_str = sql_str.replace('\n','')
-        moth_df = moth_df.append(pd.read_sql_query(sql_str,con))
-
+    with patsc.open_data_db() as con:
+        for (system,min_size) in ordered_systems:
+            sql_str = f'''SELECT moth_records.* FROM moth_records
+            WHERE (system = "{system}" OR system = "{system.replace('pats','pats-proto')}")
+            AND time > "{start_date.strftime('%Y%m%d_%H%M%S')}" AND time <= "{end_date.strftime('%Y%m%d_%H%M%S')}"
+            AND (duration > 1 AND duration < 10
+            AND (Version="1.0"
+            OR (Dist_traveled > 0.15 AND Dist_traveled < 4 AND Size > {min_size} )))'''
+            sql_str = sql_str.replace('\n','')
+            moth_df = moth_df.append(pd.read_sql_query(sql_str,con))
     moth_df['time'] = pd.to_datetime(moth_df['time'], format = '%Y%m%d_%H%M%S')
     moth_df['system'].replace({'-proto':''},regex=True,inplace=True)
     return moth_df
@@ -243,17 +194,14 @@ def load_mode_data(unique_dates,heatmap_data,selected_systems,selected_dayrange)
     if not len(unique_dates):
         return [],[]
     systems_str = system_sql_str(selected_systems)
-    _,cur = open_db()
-
     sql_str = 'SELECT * FROM mode_records WHERE ' + systems_str
     start_date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())+datetime.timedelta(hours=12) - datetime.timedelta(days=selected_dayrange)
     start_date_str = start_date.strftime('%Y%m%d_%H%M%S')
     sql_str += 'AND start_datetime > "' + start_date_str + '"'
     sql_str += ' ORDER BY "start_datetime"'
-    cur.execute(sql_str)
-    modes = cur.fetchall()
-
-    mode_columns = [i[1] for i in cur.execute('PRAGMA table_info(mode_records)')]
+    with patsc.open_data_db() as con:
+        modes = con.execute(sql_str).fetchall()
+        mode_columns = [i[1] for i in con.execute('PRAGMA table_info(mode_records)')]
     start_col = mode_columns.index('start_datetime')
     end_col = mode_columns.index('end_datetime')
     mode_col = mode_columns.index('op_mode')
@@ -441,7 +389,7 @@ def create_scatter(moths,system_labels,scatter_x_value,scatter_y_value):
     )
     return scat_fig
 
-def download_log(selected_moth):
+def download_log(selected_moth,moth_columns):
     sys_name = selected_moth[moth_columns.index('system')].replace('-proto','')
     log_fn = selected_moth[moth_columns.index('Filename')]
     log_folder = selected_moth[moth_columns.index('Folder')]
@@ -492,7 +440,7 @@ def create_path_plot(target_log_fn):
     )
     style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '50%'}
     return fig,style
-def download_video(selected_moth):
+def download_video(selected_moth,moth_columns):
     video_fn = selected_moth[moth_columns.index('Video_Filename')]
     sys_name = selected_moth[moth_columns.index('system')].replace('-proto','')
 
@@ -685,14 +633,13 @@ def dash_application():
             return target_video_fn,video_style,path_fig,path_style,file_link,file_link_style,selected_moth,classification,classify_style,Loading_animation_style
 
         sql_str = 'SELECT * FROM moth_records WHERE uid=' + str(clickData_dot['points'][0]['customdata'][4])
-        _,cur = open_db()
-        cur.execute(sql_str)
-        entry = cur.fetchall()
+        with patsc.open_data_db() as con:
+            entry = con.execute(sql_str).fetchall()
         if not len(entry):
             return target_video_fn,video_style,path_fig,path_style,file_link,file_link_style,selected_moth,classification,classify_style,Loading_animation_style
         selected_moth = entry[0]
 
-        target_log_fn = download_log(selected_moth)
+        target_log_fn = download_log(selected_moth,moth_columns)
         if not os.path.isfile(target_log_fn):
             return target_video_fn,video_style,path_fig,path_style,file_link,file_link_style,selected_moth,classification,classify_style,Loading_animation_style
         file_link,file_link_style =file_download_link(target_log_fn)
@@ -705,7 +652,7 @@ def dash_application():
 
         path_fig,path_style = create_path_plot(target_log_fn)
 
-        target_video_fn = download_video(selected_moth)
+        target_video_fn = download_video(selected_moth,moth_columns)
         Loading_animation_style = {'display': 'none'}
         if target_video_fn != '':
             video_style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '75%'}
@@ -720,55 +667,51 @@ def dash_application():
         ctx = dash.callback_context
         if not selected_moth or ctx.triggered[0]['prop_id'] != 'classification_dropdown.value':
             return []
-        conn,cur = open_db()
-        cols = [i[1] for i in cur.execute('PRAGMA table_info(moth_records)')]
 
-        current_classification = selected_moth[cols.index('Human_classification')]
+        current_classification = selected_moth[moth_columns.index('Human_classification')]
         if not current_classification:
             current_classification = classification_options[0]
         if current_classification != selected_classification:
-            sql_str = 'UPDATE moth_records SET Human_classification="' + selected_classification + '" WHERE uid=' + str(selected_moth[cols.index('uid')])
-            cur.execute(sql_str)
-            conn.commit()
+            sql_str = 'UPDATE moth_records SET Human_classification="' + selected_classification + '" WHERE uid=' + str(selected_moth[moth_columns.index('uid')])
+            with patsc.open_data_db() as con:
+                con.execute(sql_str)
 
             #also save user classifications to a seperate database, because the moth database sometimes needs to be rebuild from the logs/jsons
-            conn_class,cur_class = open_classification_db()
-            cur_class.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='classification_records' ''')
-            table_exists = cur_class.fetchone()[0]
-            if not table_exists:
-                sql_create = 'CREATE TABLE classification_records(uid INTEGER PRIMARY KEY,moth_uid INTEGER,system TEXT,time TEXT,duration REAL,user TEXT,classification TEXT)'
-                cur_class.execute(sql_create)
-                conn_class.commit()
+            with patsc.open_classification_db() as con_class:
+                table_exists = con_class.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='classification_records' ''').fetchone()[0]
+                if not table_exists:
+                    sql_create = 'CREATE TABLE classification_records(uid INTEGER PRIMARY KEY,moth_uid INTEGER,system TEXT,time TEXT,duration REAL,user TEXT,classification TEXT)'
+                    con_class.execute(sql_create)
+                    con_class.commit()
 
-            username = current_user.username
-            sql_insert = 'INSERT INTO classification_records(moth_uid,system,time,duration,user,classification) VALUES(?,?,?,?,?,?)'
-            data = [selected_moth[cols.index('uid')],str(selected_moth[cols.index('system')]),str(selected_moth[cols.index('time')]),str(selected_moth[cols.index('duration')]),username,selected_classification]
-            cur_class.execute(sql_insert, data)
-            conn_class.commit()
+                username = current_user.username
+                sql_insert = 'INSERT INTO classification_records(moth_uid,system,time,duration,user,classification) VALUES(?,?,?,?,?,?)'
+                data = [selected_moth[moth_columns.index('uid')],str(selected_moth[moth_columns.index('system')]),str(selected_moth[moth_columns.index('time')]),str(selected_moth[moth_columns.index('duration')]),username,selected_classification]
+                con_class.execute(sql_insert, data)
+                con_class.commit()
 
         return selected_classification
 
     if not os.path.exists(os.path.expanduser('~/patsc/static/')):
         os.makedirs(os.path.expanduser('~/patsc/static/'))
 
-    conn,cur = open_db()
-    moth_columns = [i[1] for i in cur.execute('PRAGMA table_info(moth_records)')]
-    if 'Human_classification' not in moth_columns:
-        cur.execute('ALTER TABLE moth_records ADD COLUMN Human_classification TEXT')
+    with patsc.open_data_db() as con:
+        moth_columns = [i[1] for i in con.execute('PRAGMA table_info(moth_records)')]
+        if 'Human_classification' not in moth_columns:
+            con.execute('ALTER TABLE moth_records ADD COLUMN Human_classification TEXT')
 
-        if os.path.exists(db_classification_path):
-            conn_class,cur_class = open_classification_db()
-            classification_columns = [i[1] for i in cur_class.execute('PRAGMA table_info(classification_records)')]
-            sql_str = 'SELECT * FROM classification_records'
-            cur_class.execute(sql_str)
-            classification_data = cur_class.fetchall()
-            for entry in classification_data:
-                sql_where=' WHERE uid=' + str(entry[classification_columns.index('moth_uid')]) + ' AND time="' + str(entry[classification_columns.index('time')]) + '" AND duration=' + str(entry[classification_columns.index('duration')])
-                sql_str = 'UPDATE moth_records SET Human_classification="' + entry[classification_columns.index('classification')] + '"' + sql_where
-                cur.execute(sql_str)
-                tmp = cur.fetchall()
-            conn.commit()
-            print('Re-added cliassification results to main db. Added ' + str(len(classification_data)) + ' classifications.')
+            if os.path.exists(patsc.db_classification_path):
+                with patsc.open_classification_db() as con_class:
+                    classification_columns = [i[1] for i in con_class.execute('PRAGMA table_info(classification_records)')]
+                    sql_str = 'SELECT * FROM classification_records'
+                    classification_data = con_class.execute(sql_str).fetchall()
+
+                for entry in classification_data:
+                    sql_where=' WHERE uid=' + str(entry[classification_columns.index('moth_uid')]) + ' AND time="' + str(entry[classification_columns.index('time')]) + '" AND duration=' + str(entry[classification_columns.index('duration')])
+                    sql_str = 'UPDATE moth_records SET Human_classification="' + entry[classification_columns.index('classification')] + '"' + sql_where
+                    con.execute(sql_str)
+                con.commit()
+                print('Re-added cliassification results to main db. Added ' + str(len(classification_data)) + ' classifications.')
 
     xlabels = []
     for i in range(0,24):

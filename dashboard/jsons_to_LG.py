@@ -5,7 +5,7 @@ import numpy as np
 from tqdm import tqdm
 from time import sleep
 from json.decoder import JSONDecodeError
-import lib_patsc as patsc
+import pats_c.lib.lib_patsc as patsc
 
 def read_cred_lg_db():
     cred_file = os.path.expanduser('~/patsc/.lg_auth')
@@ -238,15 +238,11 @@ def upload_json_to_LG(token,json_data,sys_info):
         return 'WARNING: EMPTY'
 
 def load_system_info():
-    sys_db_con,sys_db_cur = patsc.open_db(os.path.expanduser('~/patsc/db/pats_systems.db'))
-    sql_str = '''SELECT system,active,LG FROM systems'''
-    systems = pd.read_sql_query(sql_str,sys_db_con)
-    systems['system'] = systems['system'].str.replace('-proto' , '')
-    systems['system'] = systems['system'].str.upper()
-
-    sys_db_cur.execute('''SELECT systems.system, groups.minimal_size FROM systems JOIN groups ON groups.group_id = systems.group_id''')
-    size_data = sys_db_cur.fetchall()
-    systems['minimal_size'] = [item[1] for item in size_data]
+    sql_str = '''SELECT system,active,LG,groups.minimal_size FROM systems JOIN groups ON groups.group_id = systems.group_id'''
+    with patsc.open_systems_db() as con:
+        systems = pd.read_sql_query(sql_str,con)
+        systems['system'] = systems['system'].str.replace('-proto' , '')
+        systems['system'] = systems['system'].str.upper()
 
     return systems
 

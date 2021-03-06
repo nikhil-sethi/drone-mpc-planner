@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
-import socket, json,shutil,sqlite3,subprocess
+import subprocess
 import time, argparse
-import pickle, glob, os, re
-from datetime import datetime, timedelta, date
+import glob, os, re
+from datetime import datetime, timedelta
 import pandas as pd
-
-def natural_sort(l):
-    convert = lambda text: int(text) if text.isdigit() else text.lower()
-    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
-    return sorted(l, key=alphanum_key)
-
+import pats_c.lib.lib_patsc as patsc
 
 def natural_sort_systems(l):
     convert = lambda text: int(text) if text.isdigit() else text.lower()
@@ -17,11 +12,10 @@ def natural_sort_systems(l):
     return sorted(l, key=alphanum_key)
 
 def load_systems():
-    conn = sqlite3.connect(os.path.expanduser(args.db_path))
-    cur = conn.cursor()
-    sql_str = '''SELECT system,maintenance FROM systems WHERE active = 1 ORDER BY system_id'''
-    cur.execute(sql_str)
-    systems = pd.read_sql_query(sql_str,conn)
+    with patsc.open_systems_db() as con:
+        sql_str = '''SELECT system,maintenance FROM systems WHERE active = 1 ORDER BY system_id'''
+        con.execute(sql_str)
+        systems = pd.read_sql_query(sql_str,con)
     return systems
 
 def execute(cmd):
@@ -34,9 +28,8 @@ def execute(cmd):
         print(stdout_line.decode('utf-8'),end ='')
     popen.stdout.close()
 
-
 def send_mail(now):
-    files = natural_sort([fp for fp in glob.glob(os.path.expanduser(args.input_folder + "/*.processed"))])
+    files = patsc.natural_sort([fp for fp in glob.glob(os.path.expanduser(args.input_folder + "/*.processed"))])
     systems = load_systems()
     mail_txt = ''
     recent_files = []
@@ -95,7 +88,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Script that adds the json files or incoming json files to the database that is reable for the electron app.')
     parser.add_argument('-i', '--input_folder', help="Path to the folder with json files", default='~/jsons/')
     parser.add_argument('-t','--hour', help="Send email at the start of this hour.", default=11)
-    parser.add_argument('-d','--db_path', help="Path to sql database", default='~/patsc/db/pats_systems.db')
     args = parser.parse_args()
 
     updated_today = False
