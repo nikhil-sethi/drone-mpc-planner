@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import subprocess
 import datetime,time, math, os, re
+from dateutil.relativedelta import relativedelta
 import numpy as np
 import pandas as pd
 
@@ -21,8 +22,6 @@ from urllib.parse import quote as urlquote
 group_dict = {}
 moth_columns = []
 heatmap_max = 50
-pre_fp_sql_filter_str = '((duration > 1 AND duration < 10 AND Dist_traveled > 0.15 AND Dist_traveled < 4) OR (Version="1.0" AND duration > 1 AND duration < 10))'
-dateranges = ['Last week','Last two weeks', 'Last month', 'Last three months']
 classification_options = ['Not classified','Moth!','Empty/nothing to see','Other insect','Plant','Other false positive']
 scatter_columns = { 'duration' : 'Duration (s)',
                     'Vel_mean':'Velocity mean (m/s)',
@@ -67,8 +66,8 @@ def init_system_dropdown():
     sys_options = []
     group_options = []
     group_value = None
-    group_style={'width': '25%', 'display': 'inline-block'}
-    sys_style={'width': '50%', 'display': 'inline-block'}
+    group_style={'width': '30%', 'display': 'inline-block'}
+    sys_style={'width': '70%', 'display': 'inline-block'}
     for group in group_dict.keys():
         if not ( group == 'maintance' or group == 'admin' or group == 'unassigned_systems' or group == 'deactivated_systems'):
             group_options.append({'label':group,'value':group})
@@ -85,7 +84,7 @@ def init_system_dropdown():
         if len(group_dict.keys()) == 1:
             group_value = list(group_dict.keys())
             group_style={'width': '0%', 'display': 'none'}
-            sys_style={'width': '75%', 'display': 'inline-block'}
+            sys_style={'width': '100%', 'display': 'inline-block'}
     return sys_options, sys_style, group_options, group_value, group_style
 
 def load_systems(username):
@@ -155,12 +154,12 @@ def execute(cmd,retry=1):
             time.sleep(0.1)
         popen.stdout.close()
 
-def load_moth_data(selected_systems,selected_dayrange):
+def load_moth_data(selected_systems,start_date,end_date):
     # We count moths from 12 in the afternoon to 12 in the afternoon. Therefore we shift the data in the for loops with 12 hours.
     # So a moth at 23:00 on 14-01 is counted at 14-01 and a moth at 2:00 on 15-01 also at 14-01
     # A moth seen at 13:00 on 14-01 still belongs to 14-01 but when seen at 11:00 on 14-01 is counted at 13-01
-    end_date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
-    start_date = end_date - datetime.timedelta(days=selected_dayrange)
+    end_date = datetime.datetime.combine(end_date, datetime.datetime.min.time())
+    start_date = datetime.datetime.combine(start_date, datetime.datetime.min.time())
     moth_df = load_moth_df(selected_systems,start_date,end_date+datetime.timedelta(hours=12)) #Shift to include the moths of today until 12:00 in the afternoon.
     unique_dates = pd.date_range(start_date,end_date-datetime.timedelta(days=1),freq = 'd')
 
@@ -190,12 +189,12 @@ def convert_mode_to_number(mode):
     else:
         return -666
 
-def load_mode_data(unique_dates,heatmap_data,selected_systems,selected_dayrange):
+def load_mode_data(unique_dates,heatmap_data,selected_systems,start_date,end_date):
     if not len(unique_dates):
         return [],[]
     systems_str = system_sql_str(selected_systems)
     sql_str = 'SELECT * FROM mode_records WHERE ' + systems_str
-    start_date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())+datetime.timedelta(hours=12) - datetime.timedelta(days=selected_dayrange)
+    start_date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())+datetime.timedelta(hours=12) - datetime.timedelta(days=(end_date-start_date).days)
     start_date_str = start_date.strftime('%Y%m%d_%H%M%S')
     sql_str += 'AND start_datetime > "' + start_date_str + '"'
     sql_str += ' ORDER BY "start_datetime"'
@@ -284,7 +283,7 @@ def create_heatmap(unique_dates,heatmap_counts,xlabels, selected_cells):
         title_text='Moth counts per hour:',
         clickmode='event+select'
     )
-    style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '50%'}
+    style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '80%'}
     return fig,style
 
 def create_hist(df_hist,unique_dates,system_labels):
@@ -314,7 +313,7 @@ def create_hist(df_hist,unique_dates,system_labels):
         barmode='stack',
         clickmode='event+select'
     )
-    hist_style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '50%'}
+    hist_style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '80%'}
     return fig,hist_style
 
 def classification_to_symbol(x):
@@ -439,7 +438,7 @@ def create_path_plot(target_log_fn):
                  aspectmode='data'
          )
     )
-    style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '50%'}
+    style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '80%'}
     return fig,style
 def download_video(selected_moth,moth_columns):
     video_fn = selected_moth[moth_columns.index('Video_Filename')]
@@ -467,18 +466,6 @@ def download_video(selected_moth,moth_columns):
 
     return target_video_mp4_fn
 
-def selected_dates(selected_daterange):
-    if selected_daterange == 'Last week':
-        return 7
-    if selected_daterange == 'Last two weeks':
-        return 14
-    elif selected_daterange == 'Last month':
-        return 31
-    elif selected_daterange == 'Last three months':
-        return 92
-    else:
-        return 1
-
 def dash_application():
     print("Starting PATS-C dash application!")
     app = dash.Dash(__name__, server=False, url_base_pathname='/pats-c/',title='PATS-C')
@@ -504,12 +491,13 @@ def dash_application():
         Output('staaf_kaart', 'style'),
         Output('selected_heatmap_data', 'children'),
         Output('Loading_animation','style'),
-        Input('date_range_dropdown', 'value'),
+        Input('date_range_picker', 'start_date'),
+        Input('date_range_picker', 'end_date'),
         Input('systems_dropdown', 'value'),
         Input('hete_kaart', 'clickData'),
         State('selected_heatmap_data', 'children'),
         State('systems_dropdown','options'))
-    def update_ui_hist_and_heat(selected_daterange,selected_systems,selected_hm_cells,selected_heat,system_options):
+    def update_ui_hist_and_heat(start_date,end_date,selected_systems,selected_hm_cells,selected_heat,system_options):
         hm_fig=go.Figure(data=go.Heatmap())
         hist_fig=go.Figure(data=go.Histogram())
         hm_style={'display': 'none'}
@@ -518,13 +506,15 @@ def dash_application():
         system_labels = {x['value'] : x['label'] for x in system_options if x['value'] in selected_systems}
 
         ctx = dash.callback_context
-        if ctx.triggered[0]['prop_id'] == 'date_range_dropdown.value' or ctx.triggered[0]['prop_id'] == 'systems_dropdown.value':
+        if ctx.triggered[0]['prop_id'] == 'date_range_picker.value' or ctx.triggered[0]['prop_id'] == 'systems_dropdown.value':
             selected_heat = None
         selected_systems = remove_unauthoirized_system(selected_systems)
-        selected_dayrange = selected_dates(selected_daterange)
-        if not selected_systems or not selected_dayrange:
+        if start_date and end_date:
+            end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+            start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+        if not selected_systems or not end_date or not start_date or (end_date-start_date).days<1:
             return hm_fig,hist_fig,hm_style,hist_style,selected_heat,Loading_animation_style
-        unique_dates,heatmap_data,_,df_hist = load_moth_data(selected_systems,selected_dayrange)
+        unique_dates,heatmap_data,_,df_hist = load_moth_data(selected_systems,start_date,end_date)
         if not len(unique_dates):
             return hm_fig,hist_fig,hm_style,hist_style,selected_heat,Loading_animation_style
 
@@ -543,7 +533,7 @@ def dash_application():
                 selected_heat = pd.DataFrame(selected_heat,columns=['x','y'])
                 selected_heat = selected_heat.to_json(date_format='iso', orient='split')
 
-        heatmap_data = load_mode_data(unique_dates,heatmap_data,selected_systems,selected_dayrange) #add mode info to heatmap, which makes the heatmap show when the system was online (color) or offline (black)
+        heatmap_data = load_mode_data(unique_dates,heatmap_data,selected_systems,start_date,end_date) #add mode info to heatmap, which makes the heatmap show when the system was online (color) or offline (black)
         hm_fig,hm_style=create_heatmap(unique_dates,heatmap_data,xlabels,selected_heat)
 
         Loading_animation_style = {'display': 'none'}
@@ -554,7 +544,8 @@ def dash_application():
         Output('verstrooide_kaart', 'figure'),
         Output('verstrooide_kaart', 'style'),
         Output('scatter_dropdown_container', 'style'),
-        Input('date_range_dropdown', 'value'),
+        Input('date_range_picker', 'start_date'),
+        Input('date_range_picker', 'end_date'),
         Input('systems_dropdown', 'value'),
         Input('hete_kaart', 'clickData'),
         Input('staaf_kaart', 'selectedData'),
@@ -563,7 +554,7 @@ def dash_application():
         Input('classification_dropdown', 'value'),
         State('selected_heatmap_data', 'children'),
         State('systems_dropdown','options'))
-    def update_ui_scatter(selected_daterange,selected_systems,hm_selected_cells,hist_selected_bars,scatter_x_value,scatter_y_value,classification_dropdown,selected_heat,system_options):
+    def update_ui_scatter(start_date,end_date,selected_systems,hm_selected_cells,hist_selected_bars,scatter_x_value,scatter_y_value,classification_dropdown,selected_heat,system_options):
         scat_fig=go.Figure(data=go.Scatter())
         scat_style={'display': 'none'}
         scat_axis_select_style={'display': 'none'}
@@ -597,7 +588,7 @@ def dash_application():
             if not moths.empty:
                 scat_fig = create_scatter(moths,system_labels,scatter_x_value,scatter_y_value)
                 scat_axis_select_style={'display': 'table','textAlign':'center','width':'50%','margin':'auto'}
-                scat_style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '50%'}
+                scat_style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '80%'}
         return scat_fig,scat_style,scat_axis_select_style
 
     @app.callback(
@@ -611,12 +602,13 @@ def dash_application():
         Output('classification_dropdown', 'value'),
         Output('classify_container', 'style'),
         Output('Loading_animation_moth','style'),
-        Input('date_range_dropdown', 'value'),
+        Input('date_range_picker', 'start_date'),
+        Input('date_range_picker', 'end_date'),
         Input('systems_dropdown', 'value'),
         Input('hete_kaart', 'clickData'),
         Input('verstrooide_kaart', 'clickData'),
         State('verstrooide_kaart','figure'))
-    def update_moth_ui(selected_daterange,selected_systems,clickData_hm,clickData_dot,scatter_fig_state):
+    def update_moth_ui(start_date,end_date,selected_systems,clickData_hm,clickData_dot,scatter_fig_state):
         target_video_fn = ''
         video_style={'display': 'none'}
         path_fig=go.Figure(data=go.Scatter3d())
@@ -656,7 +648,7 @@ def dash_application():
         target_video_fn = download_video(selected_moth,moth_columns)
         Loading_animation_style = {'display': 'none'}
         if target_video_fn != '':
-            video_style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '75%'}
+            video_style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '80%'}
 
         return target_video_fn,video_style,path_fig,path_style,file_link,file_link_style,selected_moth,classification,classify_style,Loading_animation_style
 
@@ -737,7 +729,7 @@ def dash_application():
             ),
             html.Div([
                 html.Div([
-                    html.Div('Select customer:'),
+                    html.Div('Customer:'),
                     html.Div(dcc.Dropdown(
                         id='groups_dropdown',
                         options=group_options,
@@ -748,7 +740,7 @@ def dash_application():
                     ), className='dash-bootstrap'),
                 ], style=group_style),
                 html.Div([
-                    html.Div('Select systems:'),
+                    html.Div('Systems:'),
                     html.Div(dcc.Dropdown(
                         id='systems_dropdown',
                         options=system_options,
@@ -756,23 +748,32 @@ def dash_application():
                         placeholder = 'Select systems'
                     ), className='dash-bootstrap'),
                 ], style=system_style),
-                html.Div([
-                    html.Div('Select range:'),
-                    html.Div(dcc.Dropdown(
-                        id='date_range_dropdown',
-                        options=[{'label': daterange, 'value': daterange} for daterange in dateranges],
-                        value=dateranges[0],
-                        searchable=False,
-                        clearable=False
-                    ), className='dash-bootstrap'),
-                ], style={'width': '25%', 'display': 'inline-block'})
-            ],style={'display': 'block','textAlign':'center','width':'50%','margin':'auto'}),
+            ],style={'display': 'block','textAlign':'left','width':'80%','margin':'auto'}),
+            html.Div([
+                html.Div('Date range: '),
+                html.Div(dcc.DatePickerRange(
+                        id='date_range_picker',
+                        clearable=True,
+                        minimum_nights=7,
+                        with_portal=True,
+                        display_format='DD MMM \'YY',
+                        min_date_allowed=datetime.date(2020,9,1),
+                        max_date_allowed=datetime.datetime.today(),
+                        start_date=(datetime.date.today() - relativedelta(months=1)),
+                        end_date=datetime.date.today(),
+                        number_of_months_shown=3,
+                        start_date_placeholder_text="Start period",
+                        reopen_calendar_on_clear=True,
+                        end_date_placeholder_text="End period",
+                        persistence=True
+                    ),style={'display': 'inline-block','width':'30%'},className='dash-bootstrap')],style={'display':'block','textAlign':'left','width':'80%','margin':'auto'}),
+            html.Br(),
             html.Div([
                 dcc.Loading(
                     children=html.Div([html.Br(),html.Br(),html.Br()],id='Loading_animation',style={'display': 'none'}),
                     type='default'
                 ),
-                dcc.Graph(id='staaf_kaart',style={'display': 'none','margin-left': 'auto','margin-right': 'auto','textAlign':'center', 'width': '50%'},figure=fig_hist)
+                dcc.Graph(id='staaf_kaart',style={'display': 'none','margin-left': 'auto','margin-right': 'auto','textAlign':'center', 'width': '80%'},figure=fig_hist)
             ]),
             html.Div([
                 dcc.Graph(id='hete_kaart',style={'display': 'none'}, figure=fig_hm)
