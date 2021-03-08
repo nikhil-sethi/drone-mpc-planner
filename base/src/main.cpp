@@ -75,7 +75,6 @@ std::string pats_xml_fn="../xml/pats.xml",drone_xml_fn,monitor_video_fn;
 bool render_monitor_video_mode = false;
 
 std::ofstream logger;
-std::ofstream logger_insect;
 std::ofstream logger_video_ids;
 std::unique_ptr<Rc> rc;
 DroneController dctrl;
@@ -611,7 +610,6 @@ void init_loggers() {
     logger << "ID;RS_ID;time;elapsed;Exposure;";
     logger_fn = data_output_dir  + "log" + to_string(0) + ".csv"; // only used with pparams.video_cuts
 
-    logger_insect.open(data_output_dir  + "insect.log",std::ofstream::out);
     logger_video_ids.open(data_output_dir  + "frames.csv",std::ofstream::out);
 
     if (rc->connected())
@@ -823,11 +821,9 @@ void close(bool sig_kill) {
         cam->close(); //cam needs to be closed after dnav, because of the camview class!
 
     std::cout << "Closing logs" << std::endl;
-    logger_insect << std::flush;
     logger_video_ids << std::flush;
     logger << std::flush;
     logger_video_ids.close();
-    logger_insect.close();
     logger.close();
 
     if (pparams.video_result)
