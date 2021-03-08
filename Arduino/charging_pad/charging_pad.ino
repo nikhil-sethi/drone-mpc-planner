@@ -12,28 +12,15 @@
 
 #define PWM_PIN 9
 #define VOLTAGE_PIN A2
-#define CALIB_PIN A7
 #define CURRENT_PIN A0
-
-#define RES_CHECKER_PIN 9
-#define RES_SETTER_PIN 10
 
 #define EEPROM_CALIB_VALUE 0
 #define EEPROM_CALIB_DONE_START 1
 #define EEPROM_CALIB_DONE_STEPS 10
 
-#define CLK A4
-#define DIO A5
-
-#define SOFTWARE_VERSION 128
+#define SOFTWARE_VERSION 130
 
 #define ONE_S_DRONE true
-#define HIGH_RES_PWM true 
-#define PWM_RES 10
-
-float voltage_calibration_value = 0.0;
-
-float getVoltage(bool reset = false);
 
 enum State { STATE_IDLE, STATE_CHARGING, STATE_CHECK_CHARGE, STATE_FULL, STATE_TESTING, STATE_CHARGING_PRECHECK };
 
@@ -41,17 +28,16 @@ int state = 0;
 
 float desired_current = 0;
 float output = 0;
-float battery_charge = 0.0001;
-
-bool test_mode = false;
-
-unsigned long last_state_change = 0;
+float battery_charge = 0;
 float smoothed_current;
+float smoothed_voltage;
 
-float current_measurement_resistor;
-
-float min_battery_charge = 1.5;
+float current_measurement_resistor = 0.33;
+float voltage_calibration_value = 0.0;
+float min_battery_charge = 1.0;
 float max_battery_charge = 8.4;
+
+bool calibration_mode = false;
 
 void setup() {
   Serial.begin(115200);
@@ -61,110 +47,47 @@ void setup() {
   pinMode(BEEPER_PIN, OUTPUT);
   pinMode(LED_PIN, OUTPUT);
   pinMode(VOLTAGE_PIN, INPUT);
-  pinMode(CALIB_PIN, INPUT);
   pinMode(CURRENT_PIN, INPUT);
 
-  pinMode(CLK, INPUT);
-  pinMode(DIO, INPUT);
-
-  getVoltage();
+  calcSmoothedVoltage();
+  calcSmoothedCurrent();
 
   state = STATE_CHECK_CHARGE;
 
   smoothed_current = 0;
+  smoothed_voltage = 0;
 
   analogWrite(BEEPER_PIN, 0);
-
-  set_current_measurement_resistor();
-
-  if (ONE_S_DRONE) {
-    set_alarm(0);
-    delay(2000);
-    set_alarm(0);
-    delay(500);
-  }
-
-  if (HIGH_RES_PWM)
-  {
-    setupPWM16(PWM_RES);
-  /* TCCR1B = TCCR1B & B11111000 | B00000010;    // set timer 1 divisor to     8 for PWM frequency of  3921.16 Hz */
-    TCCR1B = TCCR1B & B11111000 | B00000001;    // set timer 1 divisor to     1 for PWM frequency of 31372.55 Hz
-  }
-}
-uint16_t icr = 0x0fff;
-void setupPWM16(int resolution) {
-  switch(resolution) {
-    case 16:icr=0xffff;break;
-    case 15:icr=0x7fff;break;
-    case 14:icr=0x3fff;break;
-    case 13:icr=0x1fff;break;
-    case 12:icr=0x0fff;break;
-    case 11:icr=0x07ff;break;
-    case 10:icr=0x03ff;break;
-    case  9:icr=0x01ff;break;
-    case  8:icr=0x00ff;break;
-    default:icr=0x00ff;break;
-  }
-  DDRB |= _BV(PB1) | _BV(PB2);                  /* set pins as outputs */
-  TCCR1A = _BV(COM1A1) | _BV(COM1B1)            /* non-inverting PWM */
-           | _BV(WGM11);                        /* mode 14: fast PWM, TOP=ICR1 */
-  TCCR1B = _BV(WGM13) | _BV(WGM12) | _BV(CS10); /* prescaler 1 */
-  ICR1 = icr;                                   /* TOP counter value (freeing OCR1A*/
-}
-
-void analogWrite16(uint8_t pin, uint16_t val) {
-  switch (pin) {
-    case 9:
-      OCR1A = val;
-      break;
-    case 10:
-      OCR1B = val;
-      break;
-  }
 }
 
 void loop() {
-  getVoltage();
+  calcSmoothedVoltage();
+  set_calibration_mode();
 
   static long next_loop_time = 0;
-
-  if (millis() > next_loop_time) {
+  if (millis() > next_loop_time)
     next_loop_time = millis() + run_state_machine();
-  }
 
-  set_test_mode();
-
-  if (test_mode) {
+  if (calibration_mode) {
     analogWrite(PWM_PIN, 0);
-    set_alarm_test_mode();
+    set_alarm_calibrating();
 
     static long print_volt_timer = 0;
     if (millis() - print_volt_timer > 1000) {
       char str_volt[6];
-      float voltage = getVoltage();
+      float voltage = getSmoothedVoltage();
 
-      dtostrf(getVoltage(), 4, 2, str_volt);
+      dtostrf(getSmoothedVoltage(), 4, 2, str_volt);
       debugln("voltage %s", str_volt);
       print_volt_timer = millis();
     }
   } else {
     set_current(desired_current);
-
     calcSmoothedCurrent();
-
-    set_status_led();
+    set_status_beeps();
   }
 
-  /*
-    static int divider = 0;
-
-    divider++;
-    TCCR0B = TCCR0B_orig & B11111000 | (divider / 10)%8;    // set timer 1 divisor to     8 for PWM frequency of 3921.16
-    Hz
-  */
-  // analogWrite(PWM_PIN,  (millis() / 2000) % 2 * 255);
   static unsigned long display_timer = 0;
-
   if (millis() > display_timer) {
     run_display();
     display_timer = millis() + 300;
@@ -176,15 +99,11 @@ void loop() {
   timer = millis();
 }
 
-void set_current_measurement_resistor() {
-  current_measurement_resistor = 0.33;
-}
-
 float smooth_value(float alpha, float value, float smoothed_value) {
   return alpha * value + (1.0 - alpha) * smoothed_value;
 }
 
-void set_test_mode(void) {
+void set_calibration_mode(void) {
   String input_string, command, value;
 
   while (Serial.available()) {
@@ -208,7 +127,7 @@ void set_test_mode(void) {
       for (byte i = 0; i < EEPROM_CALIB_DONE_STEPS; i++) {
         EEPROM.write(i + EEPROM_CALIB_DONE_START, 0);
       }
-      test_mode = true;
+      calibration_mode = true;
       voltage_calibration_value = 0;
     }
   }
@@ -217,7 +136,7 @@ void set_test_mode(void) {
   if (doOnce) {
     for (byte i = 0; i < EEPROM_CALIB_DONE_STEPS; i++) {
       if (EEPROM.read(i + EEPROM_CALIB_DONE_START) != i) {
-        test_mode = true;
+        calibration_mode = true;
         return;
       }
     }
@@ -238,7 +157,7 @@ void calibrate(float voltage) {
   Serial.println("calibrate: ");
   Serial.println(voltage);
 
-  voltage_calibration_value += voltage - getVoltage();
+  voltage_calibration_value += voltage - getSmoothedVoltage();
 
   if (fabs(voltage_calibration_value > 0.2)) {
     voltage_calibration_value = 0;
@@ -255,68 +174,46 @@ void calibrate(float voltage) {
   EEPROM.write(EEPROM_CALIB_VALUE, int8_t(voltage_calibration_value * 100));
 }
 
-static long last_detection_time;
 static uint8_t drone_detected = false;
-static unsigned long total_charging_timer;
+static unsigned long total_charging_timer = 0;
+static unsigned long last_detect_time;
 
-void set_status_led(void) {
+void set_status_beeps(void) {
   static int old_beep_state = 0;
-  enum BeepState { BEEP_CHARGING, BEEP_NO_CURRENT, BEEP_NO_DRONE, BEEP_NO_DRONE_ALARM, BEEP_DRONE_DETECTED };
+  enum BeepState {
+    BEEP_VERSION,
+    BEEP_CHARGING,
+    BEEP_NO_CURRENT,
+    BEEP_NO_DRONE,
+    BEEP_NO_DRONE_ALARM,
+    BEEP_DRONE_DETECTED
+  };
 
-  static unsigned long last_detect_time;
-  static unsigned long last_charge_time;
-
-  unsigned long time_since_last_detect = millis() - last_detect_time;
-  unsigned long time_since_last_charge = millis() - last_charge_time;
+  static unsigned long last_charge_time = 0;
   static unsigned long current_timeout = 0;
-
+  unsigned long time_since_last_charge = millis() - last_charge_time;
   static int beep_state = BEEP_NO_DRONE;
 
-  // debugln("beep %d %d %d %d %d", int(time_since_last_detect), int(time_since_last_charge), int(total_charging_timer),
-  // beep_state, state);
-
-  /* debugln("%d", state); */
-  /* debugln("%d", int( millis() - total_charging_timer) ); */
-  /* debugln("beep state %d", beep_state ); */
-  /* if (state == STATE_CHARGING && millis() - total_charging_timer < 6000) { */
-  /* debugln("beep drone detected"); */
-  /* beep_state = BEEP_DRONE_DETECTED; */
-  /* } */
-
-  if (state == STATE_CHARGING)
+  if (millis() < 5000)
+    beep_state = BEEP_VERSION;
+  else if (battery_charge >= max_battery_charge)
     beep_state = BEEP_CHARGING;
-  /* else if (time_since_last_charge > 2000L && time_since_last_detect < 2000L) */
-  else if (current_timeout > 2000L && time_since_last_detect < 2000L && battery_charge < max_battery_charge)
+  else if (state == STATE_CHARGING && current_timeout > 2000L)
     beep_state = BEEP_NO_CURRENT;
-
-  else if (time_since_last_charge < 2000L)
-    beep_state = BEEP_CHARGING;
-
-  else if (time_since_last_detect > 10000L)
-    beep_state = BEEP_NO_DRONE_ALARM;
-
   else if (!drone_detected)
     beep_state = BEEP_NO_DRONE;
+  else
+    beep_state = BEEP_CHARGING;
 
-  if (state == STATE_CHARGING)
-    last_detect_time = millis();
-
-  /* debugln("battery_charge %d", (int)(1000*battery_charge)); */
-  if (smoothed_current > 0.2 || battery_charge >= 8.35)
+  if (getSmoothedCurrent() > 0.2 || battery_charge >= max_battery_charge)
     last_charge_time = millis();
-  /*
-    if (state != STATE_CHARGING && millis() - last_detect_time > 1000)
-      total_charging_time = millis();
-    */
 
   static unsigned long old_time = 0;
   int dt = millis() - old_time;
 
-  /* debugln("current_timeout %d ", current_timeout); */
-  if (state == STATE_CHARGING && smoothed_current < 0.2 && battery_charge < max_battery_charge)
+  if (state == STATE_CHARGING && getSmoothedCurrent() < 0.2 && battery_charge < max_battery_charge)
     current_timeout += dt;
-
-  if (smoothed_current > 0.2)
+  if (getSmoothedCurrent() > 0.2)
     current_timeout = 0;
 
   old_time = millis();
@@ -326,47 +223,34 @@ void set_status_led(void) {
 
   switch (beep_state) {
     case BEEP_CHARGING: {
-      set_alarm_connected();
-      /* if (smoothed_current > 100 && get_beep_time() > 2000 ) */
-        /* set_alarm_charging(); */
-         
+      if (getSmoothedCurrent() > 0.100 && millis() - total_charging_timer > 2000L)
+        set_alarm_charging();
+      else
+        set_alarm_connected();
       break;
     }
     case BEEP_NO_CURRENT: {
       set_alarm_no_current();
       break;
     }
+    case BEEP_VERSION: {
+      set_alarm_version(SOFTWARE_VERSION);
+      break;
+    }
     case BEEP_NO_DRONE: {
-      if (get_beep_time < 10000)
+      if (millis() - last_detect_time < 10000)
         set_alarm_disconnected();
       else
         set_alarm_no_drone();
-      break;
-    }
-    case BEEP_NO_DRONE_ALARM: {
-      set_alarm_no_drone();
-      break;
-    }
-    case BEEP_DRONE_DETECTED: {
-      /* set_alarm_half_on_super_fast(); */
-      set_alarm_connected();
       break;
     }
   }
   old_beep_state = beep_state;
 }
 
-void set_shifter(uint8_t* shift_data, uint8_t* text, int len) {
-  for (int i = 0; i < 40; i++)
-    shift_data[i] = 0;
-
-  for (int i = 0; i < len; i++)
-    shift_data[i + 4] = text[i];
-}
-
 void run_display(void) {
   static float smoothed_voltage = 0;
-  smoothed_voltage = smooth_value(0.5, getVoltage(), smoothed_voltage);
+  smoothed_voltage = smooth_value(0.5, getSmoothedVoltage(), smoothed_voltage);
 
   static int disp_state, disp_output;
   static float disp_level, disp_voltage, disp_current;
@@ -375,17 +259,17 @@ void run_display(void) {
   if (millis() > value_update_time) {
     disp_output = output;
     disp_level = battery_charge;
-    disp_voltage = getVoltage();
+    disp_voltage = getSmoothedVoltage();
 
     if (ONE_S_DRONE) {
       disp_voltage /= 2;
       disp_level /= 2;
     }
-    disp_current = smoothed_current;
+    disp_current = getSmoothedCurrent();
     value_update_time = millis() + 200;
   }
 
-  if (!test_mode) {
+  if (!calibration_mode) {
     static char buf[100];
     sprintf(buf, "disp: len, 65, ver, %03d, vlt, %03d, lvl, %03d, cur, %03d, csp, %03d, stt, %03d, out, %03d",
             SOFTWARE_VERSION, int(disp_voltage * 100), int(disp_level * 100), int(disp_current * 1000),
@@ -394,17 +278,36 @@ void run_display(void) {
   }
 }
 
+String get_state_name(int state) {
+  switch (state) {
+    case STATE_IDLE:
+      return "STATE_IDLE";
+    case STATE_CHARGING:
+      return "STATE_CHARGING";
+    case STATE_CHECK_CHARGE:
+      return "STATE_CHECK_CHARGE";
+    case STATE_FULL:
+      return "STATE_FULL";
+    case STATE_TESTING:
+      return "STATE_TESTING";
+    case STATE_CHARGING_PRECHECK:
+      return "STATE_CHARGING_PRECHECK";
+  }
+}
+
 void set_state(int new_state) {
   if (state != new_state) {
-    debugln("switching form state %d to state %d", state, new_state);
-    last_state_change = millis();
+    Serial.print("switching form state   ");
+    Serial.print(get_state_name(state));
+    Serial.print("         ");
+    Serial.print(get_state_name(new_state));
+    Serial.print("\n");
+    state = new_state;
   }
-
-  state = new_state;
 }
 
 float run_state_machine() {
-  if (millis() > 0000)
+  if (millis() > 60000)
     min_battery_charge = 3.2;
 
   static int no_current_timeout = 0;
@@ -412,129 +315,90 @@ float run_state_machine() {
 
   static unsigned long last_charging = 0;
   static int last_output = 0;
-  // debugln("state %d", state);
-  if (millis() - last_charging > 5000)
-    last_output = 0;
-  
+
   switch (state) {
     case STATE_IDLE: {
       break;
     }
     case STATE_CHARGING: {
-      if (battery_charge < 3)
-        desired_current = 0.3;
-      else if (battery_charge < 5)
-        desired_current = 0.5;
-      else if (battery_charge < 8)
-        desired_current = 0.5;
-      else if (battery_charge < 8.35)
-        desired_current = 0.4;
-      else if (battery_charge < 8.40)
+      desired_current = 0;
+
+      if (battery_charge > max_battery_charge)
+        desired_current = 0;
+      else if (battery_charge > max_battery_charge - 0.05)
         desired_current = 0.1;
-      else
-        desired_current = 0.0;
+      else if (battery_charge > 7.0)
+        desired_current = 0.5;
+      else if (battery_charge > min_battery_charge)
+        desired_current = 0.3;
 
       float drone_current_consumption = 0.2;
-
       desired_current += drone_current_consumption;
 
-      if (battery_charge > 8.4) {
-        desired_current = 0.0;
+      uint32_t check_period = 60000;
+      static uint32_t next_check_time = 0;
 
-        set_state(STATE_CHECK_CHARGE);
-        desired_current = 0;
-        set_current(desired_current);
-        return 600;
-      }
-
-      last_charging = millis();
-
-      if (smoothed_current > 0.25)
-        isCharging = true;
-
-      if (isCharging && smoothed_current < 0.01) {
-        output = 0;
-        desired_current = 0;
-        set_current(desired_current);
-        isCharging = false;
-        debugln("no current");
-        set_state(STATE_CHECK_CHARGE);
-        return 600;
-      }
-
-      if (output > 254 && smoothed_current < 0.05)
+      if (output > 254 && getSmoothedCurrent() < 0.05)
         no_current_timeout++;
       else
         no_current_timeout = 0;
 
-      uint32_t check_period = 60000;
       if (millis() - total_charging_timer < 41000)
         check_period = 20000;
 
-      if (battery_charge < min_battery_charge || millis() % check_period < 2000 ||
-          (no_current_timeout > 1000 && millis() > 60000) || output > last_output + 5000) {
-        debugln("no charge %d  %d  %d  %d  %d", int(100 * battery_charge), int(100 * min_battery_charge),
-                int(millis() % 120000 < 300), int(no_current_timeout), int(output > last_output + 50));
+      if (millis() > next_check_time || no_current_timeout > 1000 || output > last_output + 50 ||
+          battery_charge >= max_battery_charge) {
+        debugln("no charge %d  %d  %d  %d  %d", millis() > next_check_time, no_current_timeout > 1000,
+                output > last_output + 50, battery_charge >= max_battery_charge);
 
         set_state(STATE_CHECK_CHARGE);
         desired_current = 0;
         set_current(desired_current);
-
         last_output = output;
-        return 600;
+        output = 0;
+        next_check_time = millis() + check_period;
+        return 1;
       }
-
       break;
     }
     case STATE_CHECK_CHARGE: {
       set_current(0);
-      // output = 0;
-      float voltage = getVoltage();
-
-      if (voltage == 0)
-        voltage = 0.01;
+      float voltage = getSmoothedVoltage();
 
       if (voltage < min_battery_charge) {
         drone_detected = false;
         total_charging_timer = millis();
         /* debugln("no drone detected"); */
         battery_charge = voltage;
+        last_output = 0;
         return 100;
       }
-
+      last_detect_time = millis();
       drone_detected = true;
-
       set_state(STATE_CHARGING_PRECHECK);
-      return 2000;
-
-      break;
+      return 500;
     }
     case STATE_CHARGING_PRECHECK: {
-      desired_current = 0;
-      set_current(desired_current);
-
-      battery_charge = getVoltage();
-
-      if (battery_charge < min_battery_charge)
+      battery_charge = getSmoothedVoltage();
+      debugln("bettery_charge %d   %d", int(battery_charge * 1000), int(min_battery_charge * 1000));
+      if (battery_charge < min_battery_charge) {
         set_state(STATE_CHECK_CHARGE);
+        return 1;
+      }
 
+      if (millis() - total_charging_timer < 14000) {
+        set_state(STATE_CHECK_CHARGE);
+        return 1000;
+      }
       set_state(STATE_CHARGING);
-
       no_current_timeout = 0;
-
       break;
     }
   }
-
   return 1;
 }
 
-float getVoltage(bool reset) {
-  static float smoothed_voltage = 0;
-
-  if (reset)
-    smoothed_voltage = 0;
-
+float getVoltage() {
   for (int i = 0; i < 5; i++) {
     analogRead(VOLTAGE_PIN);
     delay(1);
@@ -550,20 +414,26 @@ float getVoltage(bool reset) {
     print_count = 0;
   }
 
-  if (ONE_S_DRONE && !test_mode)
+  if (ONE_S_DRONE && !calibration_mode)
     voltage *= 2;
 
   voltage *= 2.02;
   voltage += voltage_calibration_value;
+  /* debugln("%d",int(voltage*1000)); */
+  return voltage;
+}
 
-  float alpha = 0.05;
+float getSmoothedVoltage() {
+  return smoothed_voltage;
+}
 
-  if (test_mode)
+void calcSmoothedVoltage() {
+  float alpha = 0.5;
+
+  if (calibration_mode)
     alpha /= 5;
 
-  smoothed_voltage = (1 - alpha) * smoothed_voltage + alpha * voltage;
-
-  return smoothed_voltage;
+  smoothed_voltage = (1 - alpha) * smoothed_voltage + alpha * getVoltage();
 }
 
 float getCurrent() {
@@ -573,26 +443,29 @@ float getCurrent() {
   return voltage / current_measurement_resistor;
 }
 
+float getSmoothedCurrent() {
+  return smoothed_current;
+}
+
 void calcSmoothedCurrent() {
-  smoothed_current = smooth_value(0.01, getCurrent(), smoothed_current);
+  smoothed_current = smooth_value(0.05, getCurrent(), smoothed_current);
 }
 
 void set_current(float current_setpoint) {
-  float error = (smoothed_current - current_setpoint);
+  float error = (getSmoothedCurrent() - current_setpoint);
   float c = 1.0;
   int max_output = 255;
-  if (HIGH_RES_PWM) { 
-    max_output = pow(2,PWM_RES); 
-    c = max_output/255.0;
-    c /= 3;
-    c = 1;
-  }
-  /* c = 1.0/4.0; */
 
-  output -= error * c; 
-  if (smoothed_current > 0.9)
-    output -= error * 2 * c;
+  // gain scheduling
+  if (error > 0.5)
+    c *= 2;
+  if (error > 1.0)
+    c *= 2;
 
+  output -= error * c;
+
+  if (getSmoothedCurrent() > 1.2)
+    output /= 2;
 
   if (output > max_output)
     output = max_output;
@@ -600,16 +473,8 @@ void set_current(float current_setpoint) {
     output = 0;
 
   int o = (int)output;
-
-  if (current_setpoint == 0) {
+  if (current_setpoint == 0)
     o = 0;
-    // ssmoothed_current = 0;
-  }
 
-  static int test = 1;
-  test = 1 - test;
-
-  /* debugln("cur %d",int (voltage * 100 / current_measurement_resistor)); */
-  /* debugln("out %d",int (output)); */
   analogWrite(PWM_PIN, o);
 }

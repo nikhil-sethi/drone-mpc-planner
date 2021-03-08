@@ -9,6 +9,7 @@
             "args": ["--log" , "logging"],
             "stopAtEntry": false,
             "preLaunchTask": "make",
+            "args": ["--log" , "/home/wouter/code/pats (copy)/pc/build-vscode/logging"],
             "cwd": "${workspaceFolder}/build-vscode",
             "environment": [],
             "externalConsole": false,

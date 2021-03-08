@@ -120,7 +120,7 @@ void set_beep(int freq) {
   old_freq = freq;
 }
 
-void poly_beep(int* tones, int len, unsigned long t) {
+void poly_beep(int* tones, int len, unsigned long t, bool repeat = false) {
   int total_time = 0;
 
   for (int i = 0; i < len / 2; i++) {
@@ -131,6 +131,7 @@ void poly_beep(int* tones, int len, unsigned long t) {
 
     char buf[30];
     sprintf(buf, "tone %d %d %d", tones[i * 2], int(t), int(total_time));
+    /* Serial.println(buf); */
 
     if (tones[i * 2] && total_time - t > 40) {
       set_beep(tones[i * 2]);
@@ -141,8 +142,9 @@ void poly_beep(int* tones, int len, unsigned long t) {
   }
 
   if (t > total_time) {
-    /* Serial.println("no_beep 2"); */
     set_beep(0);
+    if (repeat)
+      reset_beep_time();
     return;
   }
 }
@@ -161,22 +163,33 @@ void set_alarm_connected() {
 }
 
 void set_alarm_charging() {
-  int note = 500;
+  int note = 1000;
   int len = 14;
   int beeps[len] = {
-                  NOTE_C1, note*100,
-                  NOTE_C1, note*100,
-                  NOTE_C1, note*100,
-                  NOTE_C1, note*100,
-                  NOTE_C1, note*100,
-                  NOTE_C1, note*100,
-                  NOTE_C1, note*100};
-  poly_beep(beeps, len, get_beep_time());
+                  NOTE_C1, note/8,
+                  0, note/8,
+                  NOTE_C1, note/8,
+                  0, note/8,
+                  NOTE_C1, note/8,
+                  0, note/8,
+                  0, note/2,
+                  };
+
+  poly_beep(beeps, len, get_beep_time() % note*len*2);
+}
+
+void set_alarm_calibrating() {
+  int note = 500;
+  int len = 2;
+  int beeps[len] = {
+                  NOTE_C1, note/8,
+                  };
+  poly_beep(beeps, len, get_beep_time()%5000);
 }
 
 void set_alarm_no_current() {
   int note = 500;
-  int len = 12;
+  int len = 14;
   int beeps[len] = {NOTE_C3, note/4,
                   NOTE_C4, note/4,
                   NOTE_A3, note/4,
@@ -184,11 +197,11 @@ void set_alarm_no_current() {
                   NOTE_AS3, note/4,
                   NOTE_AS4, note/4,
                   };
-  poly_beep(beeps, len, get_beep_time() % 30000);
+  poly_beep(beeps, len, get_beep_time()%30000);
 }
 
 void set_alarm_no_drone() {
-  int note = 1001;
+  int note = 1000;
   int len = 20;
   int beeps[len] = {NOTE_E5, note/8,
                   NOTE_E5, note/8,
@@ -201,7 +214,129 @@ void set_alarm_no_drone() {
                   0, note/4,
                   NOTE_G4, note/4,
                   };
-  poly_beep(beeps, len, get_beep_time() % 60000);
+  poly_beep(beeps, len, get_beep_time()%30000);
+}
+
+int get_version_tone(int value, int position)
+{
+  int zero = NOTE_C1;
+  int one = NOTE_C5;
+  int five = NOTE_G5;
+
+  switch (value)
+  {
+    case 0: { 
+      if (position == 0 )
+        return zero; 
+      break;
+    }
+    case 1: { 
+      if (position == 0 )
+        return one; 
+      break;
+    }
+    case 2: { 
+      if (position == 0 )
+        return one; 
+      if (position == 1 )
+        return one; 
+      break;
+    }
+    case 3: { 
+      if (position == 0 )
+        return one; 
+      if (position == 1 )
+        return one; 
+      if (position == 2 )
+        return one; 
+      break;
+    }
+    case 4: { 
+      if (position == 0 )
+        return one; 
+      if (position == 1 )
+        return five; 
+      break;
+    }
+    case 5: { 
+      if (position == 0 )
+        return five; 
+      break;
+    }
+    case 6: { 
+      if (position == 0 )
+        return five; 
+      if (position == 1 )
+        return one; 
+      break;
+    }
+    case 7: { 
+      if (position == 0 )
+        return five; 
+      if (position == 1 )
+        return one; 
+      if (position == 2 )
+        return one; 
+      break;
+    }
+    case 8: { 
+      if (position == 0 )
+        return five; 
+      if (position == 1 )
+        return one; 
+      if (position == 2 )
+        return one; 
+      if (position == 3 )
+        return one; 
+      break;
+    }
+    case 9: { 
+      if (position == 0 )
+        return five; 
+      if (position == 1 )
+        return one; 
+      if (position == 2 )
+        return five; 
+      break;
+    }
+  }
+  return 0;
+}
+
+void set_alarm_version(int version) {
+  int note = 1000;
+  int len = 30;
+  int beeps[len] = {
+                  get_version_tone(version/100,0), note/4,
+                  get_version_tone(version/100,1), note/4,
+                  get_version_tone(version/100,2), note/4,
+                  get_version_tone(version/100,3), note/4,
+                  0, note/8,
+                  get_version_tone(version%100/10,0), note/4,
+                  get_version_tone(version%100/10,1), note/4,
+                  get_version_tone(version%100/10,2), note/4,
+                  get_version_tone(version%100/10,3), note/4,
+                  0, note/8,
+                  get_version_tone(version%10,0), note/4,
+                  get_version_tone(version%10,1), note/4,
+                  get_version_tone(version%10,2), note/4,
+                  get_version_tone(version%10,3), note/4,
+                  0, note/8,
+                  };
+
+  poly_beep(beeps, len, get_beep_time());
+}
+
+void set_alarm_no_drone2() {
+  int note = 1000;
+  int len = 10;
+  int beeps[len] = {NOTE_C5, note/8,
+                  NOTE_G5, note/8,
+                  NOTE_C5, note/8,
+                  NOTE_G5, note/8,
+                  0, note/8,
+                  };
+  poly_beep(beeps, len, get_beep_time()%25000);
 }
 
 void set_alarm(bool on) {
