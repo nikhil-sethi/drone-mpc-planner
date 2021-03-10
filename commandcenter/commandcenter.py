@@ -241,9 +241,14 @@ class SystemWidget(QWidget):
         self.addAction(git_update_Action)
 
         beep_Action = QAction("Beep", self)
-        beep_Action.setIcon(self.style().standardIcon(QStyle.SP_MediaVolume))
+        beep_Action.setIcon(self.style().standardIcon(QStyle.SP_MessageBoxWarning))
         beep_Action.triggered.connect(self.beep)
         self.addAction(beep_Action)
+
+        blink_Action = QAction("Blink", self)
+        blink_Action.setIcon(self.style().standardIcon(QStyle.SP_FileDialogContentsView))
+        blink_Action.triggered.connect(self.blink)
+        self.addAction(blink_Action)
 
         shakeAction = QAction("Shake", self)
         shakeAction.setIcon(self.style().standardIcon(QStyle.SP_DriveNetIcon))
@@ -407,6 +412,8 @@ class SystemWidget(QWidget):
         subprocess.Popen(['./calib_system.sh', 'pats'+self.host_id])
     def beep(self):
         subprocess.Popen(['./beep_system.sh', 'pats'+self.host_id])
+    def blink(self):
+        subprocess.Popen(['./blink_system.sh', 'pats'+self.host_id])
     def shake(self):
         subprocess.Popen(['./shake_system.sh', 'pats'+self.host_id])
 

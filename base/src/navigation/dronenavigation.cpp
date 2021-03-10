@@ -60,7 +60,7 @@ void DroneNavigation::update(double time) {
         if (_dctrl->Joy_State() == DroneController::js_checking ||
                 _dctrl->Joy_State() == DroneController::js_none ||
                 _dctrl->Joy_State() == DroneController::js_disarmed )
-            _nav_flight_mode = nfm_none;
+            _nav_flight_mode = nfm_manual;
         else if(_dctrl->Joy_State() == DroneController::js_hunt)
             _nav_flight_mode = nfm_hunt;
         else if(_dctrl->Joy_State() == DroneController::js_waypoint)
@@ -75,7 +75,6 @@ void DroneNavigation::update(double time) {
         _nav_flight_mode = nfm_hunt;
     }
 
-
     bool repeat = true;
     while (repeat) {
         repeat  = false;
@@ -88,11 +87,8 @@ void DroneNavigation::update(double time) {
             if (time > 1.5) { // skip first second or so due to auto exposure
                 if (pparams.op_mode==op_mode_monitoring) {
                     _dctrl->flight_mode(DroneController::fm_disarmed);
-                    _visdat->enable_background_motion_map_calibration(motion_calibration_duration);
-                    _visdat->create_overexposed_removal_mask(_trackers->dronetracker()->takeoff_location(),_trackers->dronetracker()->takeoff_im_size());
-                    time_motion_calibration_started = time;
-                    _navigation_status = ns_calibrating_motion;
                     _dctrl->LED(false);
+                    _navigation_status = ns_start_calibrating_motion;
                 } else
                     _navigation_status = ns_locate_drone_init;
             }
@@ -102,7 +98,14 @@ void DroneNavigation::update(double time) {
             _dctrl->flight_mode(DroneController::fm_disarmed);
             locate_drone_start_time = time;
             locate_drone_attempts++;
-            _navigation_status = ns_locate_drone_wait_led_on;
+            if (dparams.led_type == led_none && (! _dctrl->takeoff_calib_valid() || force_pad_redetect)) {
+                std::cout << "Error: The drone has no led, and no valid drone calibration (with takeoff location) was found..." << std::endl;
+                _navigation_status = ns_unable_to_locate;
+            } else if (_dctrl->takeoff_calib_valid() && !force_pad_redetect)
+                _navigation_status = ns_start_calibrating_motion;
+            else
+                _navigation_status = ns_locate_drone_wait_led_on;
+            force_pad_redetect = false;
             [[fallthrough]];
         } case ns_locate_drone_wait_led_on: {
             if (time - locate_drone_start_time > 1.5) {
@@ -138,42 +141,65 @@ void DroneNavigation::update(double time) {
             _trackers->mode(tracking::TrackerManager::mode_idle);
             _visdat->disable_fading = false;
             _visdat->enable_collect_no_drone_frames = true;
-            if (time-time_located_drone>5 && (_dctrl->drone_state_disarmed() || pparams.joystick != rc_none)) { // delay until blinking stopped. Drone must be 1.5s disarmed to get out of a possible (rx) failsafe
-                _visdat->enable_background_motion_map_calibration(motion_calibration_duration);
-                _visdat->create_overexposed_removal_mask(_trackers->dronetracker()->takeoff_location(),_trackers->dronetracker()->takeoff_im_size());
-                time_motion_calibration_started = time;
-                _navigation_status = ns_calibrating_motion;
-                _dctrl->start_landing_acc_calibration();
+            if (time-time_located_drone>5 && (_dctrl->state_disarmed() || pparams.joystick != rc_none)) { // delay until blinking stopped. Drone must be 1.5s disarmed to get out of a possible (rx) failsafe
+                _navigation_status = ns_calibrating_pad;
                 _n_drone_detects++;
             }
             break;
-        } case ns_calibrating_motion: {
-            if (pparams.op_mode==op_mode_hunt)   // arm the drone while throttle is still zero (in the wait_for_insect state this is not guaranteed, #430)
+        } case ns_calibrating_pad: {
+            if (_dctrl->pad_calibration_done())
+                _navigation_status = ns_start_calibrating_motion;
+            break;
+        } case ns_start_calibrating_motion: {
+            _visdat->enable_background_motion_map_calibration(motion_calibration_duration);
+            _visdat->create_overexposed_removal_mask(_trackers->dronetracker()->takeoff_location(),_trackers->dronetracker()->takeoff_im_size());
+            time_motion_calibration_started = time;
+            if (pparams.op_mode==op_mode_monitoring) {
+                _navigation_status = ns_calibrating_motion;
+                _trackers->mode(tracking::TrackerManager::mode_wait_for_insect);
+                _dctrl->stop_rc();
+            } else
+                _navigation_status = ns_check_telemetry;
+            break;
+        } case ns_check_telemetry: {
+            if (_dctrl->telemetry_OK() || ! dparams.Telemetry())
+                _navigation_status = ns_check_pad_att;
+            break;
+        } case ns_check_pad_att: {
+            if (_dctrl->attitude_on_pad_OK() || ! dparams.Telemetry())
+                _navigation_status = ns_wait_to_arm;
+            break;
+        } case ns_wait_to_arm: {
+            if (_dctrl->ready_for_first_arm(time)) {
+                _navigation_status = ns_calibrating_motion;
                 _dctrl->flight_mode(DroneController::fm_inactive);
-
+            }
+            break;
+        } case ns_calibrating_motion: {
+            if (_dctrl->arming_problem()) {
+                _dctrl->flight_mode(DroneController::fm_disarmed);
+                time_motion_calibration_started = time;
+                _navigation_status = ns_wait_to_arm;
+            }
             if (static_cast<float>(time-time_motion_calibration_started) > motion_calibration_duration) {
-                if (pparams.op_mode==op_mode_monitoring) {
-                    _trackers->mode(tracking::TrackerManager::mode_wait_for_insect);
-                    _dctrl->stop_rc();
-                    _navigation_status = ns_monitoring;
-                } else if (_nav_flight_mode == nfm_manual)
-                    _navigation_status = ns_manual;
-                else if (pparams.op_mode == op_mode_waypoint || pparams.op_mode == op_mode_hunt)
-                    _navigation_status = ns_calibrating_drone;
-                else
-                    _navigation_status = ns_wait_for_takeoff_command;
+                _navigation_status= ns_calibrating_motion_done;
             }
             break;
-        } case ns_calibrating_drone: {
-            if (_dctrl->landing_acc_calibration_done()) {
-                if (pparams.op_mode == op_mode_waypoint || _nav_flight_mode == nfm_waypoint)
-                    _navigation_status = ns_wait_for_takeoff_command;
-                else if (_nav_flight_mode == nfm_hunt)
-                    _navigation_status = ns_wait_for_insect;
-                else
-                    _navigation_status = ns_wait_for_takeoff_command;
-            }
-            break;
+        } case ns_calibrating_motion_done: {
+            _n_drone_readys++;
+            if (pparams.op_mode==op_mode_monitoring)
+                _navigation_status = ns_monitoring;
+            else if (_nav_flight_mode == nfm_manual)
+                _navigation_status = ns_manual;
+            else if (_nav_flight_mode == nfm_waypoint)
+                _navigation_status = ns_wait_for_takeoff_command;
+            else if (_nav_flight_mode == nfm_hunt)
+                _navigation_status = ns_wait_for_insect;
+            else if (pparams.op_mode == op_mode_waypoint)
+                _navigation_status = ns_wait_for_takeoff_command;
+            else if (pparams.op_mode == op_mode_hunt )
+                _navigation_status = ns_wait_for_insect;
+            break; // don't fallthrough because we need an entry in the log
         } case ns_wait_for_takeoff_command: {
             int itime = time;
             _dctrl->LED(true,itime*5 % 45+5);
@@ -327,7 +353,6 @@ void DroneNavigation::update(double time) {
             else
                 _navigation_status = ns_approach_waypoint;
 
-
             if (current_waypoint->threshold_mm <30 && current_waypoint->threshold_mm > 0 ) {
                 _dctrl->hover_mode(true);
                 _trackers->dronetracker()->hover_mode(true);
@@ -440,7 +465,7 @@ void DroneNavigation::update(double time) {
                 _dctrl->flight_mode(DroneController::fm_ff_landing_start);
 
             setpoint_pos_world = new_pos_setpoint;
-            if (!_dctrl->drone_is_active())
+            if (!_dctrl->active())
                 _navigation_status = ns_landed;
             if (_nav_flight_mode == nfm_hunt && _iceptor->aim_in_range() && !_dctrl->landing()  && !low_battery_triggered)
                 _navigation_status = ns_start_the_chase;
@@ -473,7 +498,7 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_wait_after_landing: {
             if (static_cast<float>(time - landed_time) > time_out_after_landing + shake_duration )
-                _navigation_status = ns_locate_drone_init;
+                _navigation_status = ns_start_calibrating_motion;
             break;
         } case ns_manual: { // also used for disarmed
             wpid = 0;
@@ -498,6 +523,9 @@ void DroneNavigation::update(double time) {
         } case ns_drone_lost: {
             _dctrl->flight_mode(DroneController::fm_abort);
             _dctrl->LED(static_cast<int>((time - time_drone_problem) * 2.0) % 2 > 1, 5); // faster blink every second
+            break;
+        } case ns_unable_to_locate: {
+            _dctrl->flight_mode(DroneController::fm_abort);
             break;
         } case ns_drone_problem: {
             if (time_drone_problem < 0)

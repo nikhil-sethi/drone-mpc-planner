@@ -94,14 +94,14 @@ LogEntryMain LogReader::create_log_entry(string line, map<string, int> headmap) 
 
     if (isinf(_takeoff_time) && (entry.nav_state == navigation::ns_chasing_insect_ff || entry.nav_state == navigation::ns_chasing_insect || entry.nav_state == navigation::ns_set_waypoint))
         _takeoff_time = entry.elapsed;
-    if (isinf(_blink_detect_time) && entry.nav_state == navigation::ns_calibrating_motion)
-        _blink_detect_time = entry.elapsed;
+    if (isinf(_drone_ready_time) && entry.nav_state == navigation::ns_calibrating_motion_done)
+        _drone_ready_time = entry.elapsed;
     if (isinf(_yaw_reset_time) && entry.nav_state == navigation::ns_initial_reset_yaw)
         _yaw_reset_time = entry.elapsed;
     if (isinf(_drone_problem_time) && entry.nav_state == navigation::ns_drone_problem)
         _drone_problem_time = entry.elapsed;
-
-
+    if (isinf(_first_blink_time) && entry.nav_state == navigation::ns_wait_locate_drone)
+        _first_blink_time = entry.elapsed;
 
     return entry;
 }

@@ -42,6 +42,8 @@ private:
 
     void next_waypoint(Waypoint wp, double time);
 
+    bool force_pad_redetect = false;
+
     navigation_states _navigation_status = ns_init;
     double locate_drone_start_time = 0;
     int locate_drone_attempts = 0;
@@ -79,6 +81,7 @@ private:
     int _n_take_offs = 0;
     int _n_landings = 0;
     int _n_drone_detects = 0;
+    int _n_drone_readys = 0;
     int _n_wp_flights = 0;
     int _n_hunt_flights = 0;
     float _flight_time = -1;
@@ -90,7 +93,8 @@ public:
     void close (void);
     void init(std::ofstream *logger, tracking::TrackerManager * imngr, DroneController *dctrl, VisionData *visdat, CameraView *camview, string replay_dir, Interceptor *iceptor);
     void update(double time);
-    void redetect_drone_location() {_navigation_status = ns_locate_drone_init;}
+    void redetect_drone_location() {_navigation_status = ns_locate_drone_init; force_pad_redetect=true; locate_drone_attempts=0;}
+    void replay_detect_drone_location() { force_pad_redetect=true;}
     void shake_drone() {_navigation_status = ns_start_shaking;}
     void set_drone_problem() {_navigation_status = ns_drone_problem;}
     void demo_flight(std::string flightplan_fn);
@@ -143,7 +147,7 @@ public:
     cv::Point2i drone_v_setpoint_im() {
 
         cv::Point3f tmp = 0.1*setpoint_vel_world + setpoint_pos_world;
-        if (!drone_is_flying())
+        if (!drone_flying())
             tmp = {0};
 
         std::vector<cv::Point3d> world_length,camera_length;
@@ -173,7 +177,7 @@ public:
         //transform to image coordinates:
 
         cv::Point3f tmp = setpoint_pos_world;
-        if (!drone_is_flying()) {
+        if (!drone_flying()) {
             tmp.x = _trackers->dronetracker()->takeoff_location().x;
             tmp.y = _trackers->dronetracker()->takeoff_location().y+0.5f;
             tmp.z = _trackers->dronetracker()->takeoff_location().z;
@@ -183,23 +187,24 @@ public:
         return cv::Point2i(roundf(resf.x),round(resf.y));
     }
 
-    bool drone_is_ready_and_waiting() {return _navigation_status == ns_wait_for_insect || _navigation_status == ns_wait_for_takeoff_command;}
-    bool drone_is_hunting() {
+    bool drone_ready_and_waiting() {return _navigation_status == ns_wait_for_insect || _navigation_status == ns_wait_for_takeoff_command;}
+    bool drone_hunting() {
         if (_nav_flight_mode == nfm_hunt) {
             return _navigation_status == ns_chasing_insect || _navigation_status ==  ns_start_the_chase;
         } else {
             return false;
         }
     }
-    bool drone_is_yaw_reset() {return _navigation_status == ns_wait_reset_yaw || _navigation_status == ns_initial_reset_yaw;}
-    bool drone_is_flying() {return _navigation_status < ns_landing && _navigation_status >  ns_take_off_completed;}
-    bool drone_is_manual() {return _navigation_status == ns_manual;}
+    bool drone_resetting_yaw() {return _navigation_status == ns_wait_reset_yaw || _navigation_status == ns_initial_reset_yaw;}
+    bool drone_flying() {return _navigation_status < ns_landing && _navigation_status >  ns_take_off_completed;}
+    bool drone_manual() {return _navigation_status == ns_manual;}
 
     int distance_threshold_mm() { return current_waypoint->threshold_mm; }
 
     int n_take_offs() {return _n_take_offs;}
     int n_landings() {return _n_landings;}
     int n_drone_detects() {return _n_drone_detects;}
+    int n_drone_readys() {return _n_drone_readys;}
     int n_wp_flights() {return _n_wp_flights;}
     int n_hunt_flights() {return _n_hunt_flights;}
     float flight_time() {return _flight_time;}

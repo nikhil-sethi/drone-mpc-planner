@@ -22,6 +22,7 @@ private:
     std::string calib_fn = "/home/pats/pats/flags/calib_now";
     std::string beep_fn = "/home/pats/pats/flags/beep_now";
     std::string shake_fn = "/home/pats/pats/flags/shake_now";
+    std::string blink_fn = "/home/pats/pats/flags/blink_now";
     std::thread thread;
     bool initialized = false;
     bool _never_overwrite = false;

@@ -14,7 +14,9 @@
 #define GRAVITY 9.81f
 
 int sign(float x);
-vector<string> split_csv_line(string line);
+vector
+<string> split_csv_line(string);
+vector<string> split_csv_line(string,char);
 cv::Point2f world2im_2d(cv::Point3f p, cv::Mat Qfi, float camera_angle);
 cv::Point3f world2im_3d(cv::Point3f p, cv::Mat Qfi, float camera_angle);
 cv::Point3f im2world(cv::Point2f p_im, float disparity, cv::Mat Qf, float camera_angle);
@@ -123,6 +125,20 @@ enum redpine_subprotocols {
     redpine_slow= 1
 };
 
+static const char* led_types_str[] = {
+    "led_none",
+    "led_strip",
+    "led_fiber_ir",
+    "led_fiber_uv",
+    "" // must be the last entry! (check in serializer)
+};
+enum led_types {
+    led_none,
+    led_strip,
+    led_fiber_ir,
+    led_fiber_uv
+};
+
 static const char* tx_protocols_str[] = {
     "tx_none",
     "tx_dsmx",
@@ -138,9 +154,7 @@ enum drone_types {
     drone_hammer,
     drone_anvil_crazybee,
     drone_anvil_superbee,
-    drone_tinywhoop_d16,
-    drone_tinywhoop_d8,
-    drone_cx10
+    drone_qutt
 };
 static const char* drone_types_str[] = {
     "drone_none",
@@ -148,9 +162,7 @@ static const char* drone_types_str[] = {
     "drone_hammer",
     "drone_anvil_crazybee",
     "drone_anvil_superbee",
-    "drone_tinywhoop_d16",
-    "drone_tinywhoop_d8",
-    "drone_cx10",
+    "drone_qutt",
     "" // must be the last entry! (check in serializer)
 };
 enum op_modes {
@@ -233,6 +245,28 @@ public:
     };
 
     xTx_protocol operator=(const tx_protocols value) {AssignValue(value); return *this;};
+};
+
+class xLed_types: public MemberBase {
+private:
+    void AssignValue(const led_types value) {
+        m_sValue = led_types_str[value];
+    };
+public:
+    xLed_types() {AssignValue(static_cast<led_types>(0));};
+    xLed_types(led_types value) {AssignValue(value);};
+    led_types value() {
+        string sHelp =  m_sValue;
+        transform(sHelp.begin(), sHelp.end(), sHelp.begin(), ::tolower);
+
+        for (uint i = 0; led_types_str[i] != string(""); i++) {
+            if (led_types_str[i] == sHelp)
+                return static_cast<led_types>(i);
+        }
+        throw MyExit("wrong led_type: " + sHelp);
+    };
+
+    xLed_types operator=(const led_types value) {AssignValue(value); return *this;};
 };
 
 class xOp_mode: public MemberBase {
@@ -459,6 +493,7 @@ private:
     xFloat _min_hunt_cell_v;
     xInt _static_shakeit_throttle;
     xFloat _target_takeoff_velocity;
+    xLed_types _led_type;
 
 public:
     std::string name;
@@ -485,6 +520,9 @@ public:
     float min_hunt_cell_v;
     int static_shakeit_throttle;
     float target_takeoff_velocity;
+    led_types led_type;
+
+    bool Telemetry() { return tx == tx_frskyd16; }
 
     DroneParameters() {
         // Set the XML class name.
@@ -492,7 +530,7 @@ public:
         setClassName("DroneParameters");
 
         // Set class version
-        setVersion("1.10");
+        setVersion("1.11");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("name",&_name);
@@ -519,6 +557,7 @@ public:
         Register("min_hunt_cell_v",&_min_hunt_cell_v);
         Register("static_shakeit_throttle",&_static_shakeit_throttle);
         Register("target_takeoff_velocity", &_target_takeoff_velocity);
+        Register("led_type",&_led_type);
     }
     void deserialize(std::string filepath) {
         std::cout << "Reading settings from: " << filepath << std::endl;
@@ -566,6 +605,7 @@ public:
         min_hunt_cell_v = _min_hunt_cell_v.value();
         static_shakeit_throttle = _static_shakeit_throttle.value();
         target_takeoff_velocity = _target_takeoff_velocity.value();
+        led_type = _led_type.value();
     }
 
     void serialize(std::string filepath) {
@@ -593,6 +633,7 @@ public:
         _min_hunt_cell_v = min_hunt_cell_v;
         _static_shakeit_throttle = static_shakeit_throttle;
         _target_takeoff_velocity = target_takeoff_velocity;
+        _led_type = led_type;
 
         std::string xmlData = toXML();
         std::ofstream outfile = std::ofstream (filepath);
@@ -800,24 +841,37 @@ public:
 };
 
 class DroneCalibration: public Serializable {
-public: float landed_acc_x = 0;
-public: float landed_acc_y = 0;
-public: float landed_acc_z = 0;
+public: string pad_calib_date = "";
+public: float pad_pos_x = 0;
+public: float pad_pos_y = 0;
+public: float pad_pos_z = 0;
+public: float pad_roll = 0;
+public: float pad_pitch = 0;
+public: string drone_name = "";
 public: int drone_id =-1;
 public: float thrust =-1;
-private: xmls::xFloat _landed_acc_x;
-private: xmls::xFloat _landed_acc_y;
-private: xmls::xFloat _landed_acc_z;
+private: xmls::xString _pad_calib_date;
+private: xmls::xFloat _pad_pos_x;
+private: xmls::xFloat _pad_pos_y;
+private: xmls::xFloat _pad_pos_z;
+private: xmls::xFloat _pad_roll;
+private: xmls::xFloat _pad_pitch;
 private: xmls::xInt _drone_id;
+private: xmls::xString _drone_name;
 private: xmls::xFloat _thrust;
 
 public: DroneCalibration() {
         setClassName("DroneCalibration");
-        setVersion("1.1");
+        setVersion("1.2");
         Register("drone_id", &_drone_id);
-        Register("landed_acc_x", &_landed_acc_x);
-        Register("landed_acc_y", &_landed_acc_y);
-        Register("landed_acc_z", &_landed_acc_z);
+        Register("drone_name", &_drone_name);
+        Register("pad_calib_date", &_pad_calib_date);
+        Register("pad_pos_x", &_pad_pos_x);
+        Register("pad_pos_y", &_pad_pos_y);
+        Register("pad_pos_z", &_pad_pos_z);
+        Register("pad_roll", &_pad_roll);
+        Register("pad_pitch", &_pad_pitch);
+
         Register("thrust", &_thrust);
     }
 
@@ -842,17 +896,25 @@ public: void deserialize(std::string filepath) {
             throw MyExit("File not found: " + filepath);
         }
 
-        landed_acc_x = _landed_acc_x.value();
-        landed_acc_y = _landed_acc_y.value();
-        landed_acc_z = _landed_acc_z.value();
+        pad_calib_date = _pad_calib_date.value();
+        pad_pos_x = _pad_pos_x.value();
+        pad_pos_y = _pad_pos_y.value();
+        pad_pos_z = _pad_pos_z.value();
+        pad_roll = _pad_roll.value();
+        pad_pitch = _pad_pitch.value();
         drone_id = _drone_id.value();
+        drone_name = _drone_name.value();
         thrust = _thrust.value();
     }
 
 public: void serialize(std::string filepath) {
-        _landed_acc_x = landed_acc_x;
-        _landed_acc_y = landed_acc_y;
-        _landed_acc_z = landed_acc_z;
+        _pad_calib_date = pad_calib_date;
+        _pad_pos_x = pad_pos_x;
+        _pad_pos_y = pad_pos_y;
+        _pad_pos_z = pad_pos_z;
+        _pad_roll = pad_roll;
+        _pad_pitch = pad_pitch;
+        _drone_name = drone_name;
         _drone_id = drone_id;
         _thrust = thrust;
 

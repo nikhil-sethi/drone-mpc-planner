@@ -21,6 +21,17 @@ vector<string> split_csv_line(string line) {
     }
     return line_data;
 }
+vector<string> split_csv_line(string line, char denominator) {
+    stringstream liness(line);
+    vector<string> line_data;
+    while (!liness.eof()) {
+        string tmp;
+        getline(liness,tmp, denominator);
+        line_data.push_back(tmp);
+    }
+    return line_data;
+}
+
 
 //strips disparity from world2im_3d
 cv::Point2f world2im_2d(cv::Point3f p_world, cv::Mat Qfi, float camera_angle) {

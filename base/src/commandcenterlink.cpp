@@ -92,6 +92,11 @@ void CommandCenterLink::check_commandcenter_triggers() {
             _dnav->set_drone_problem();
             remove(beep_fn.c_str());
         }
+        if (file_exist(blink_fn)) {
+            std::cout << "Redetecting drone location!" << std::endl;
+            _dnav->redetect_drone_location();
+            remove(blink_fn.c_str());
+        }
     } else {
         _dctrl->joy_takeoff_switch_file_trigger(false);
     }

@@ -518,8 +518,8 @@ void Visualizer::draw_tracker_viz() {
         cv::Point2f viz_target_pos_after_burn_im = world2im_2d(_dctrl->viz_target_pos_after_burn,_visdat->Qfi, _visdat->camera_angle);
 
 
-        if (!_dctrl->viz_drone_trajectory.empty() && ! drn_path.empty()) {
-            double raak = norm(_dctrl->viz_drone_trajectory.back() .pos- last_drone_detection.world_item.pt);
+        if (!_dctrl->viz_trajectory.empty() && ! drn_path.empty()) {
+            double raak = norm(_dctrl->viz_trajectory.back() .pos- last_drone_detection.world_item.pt);
             putText(resFrame,"trgt: |"  + to_string_with_precision(raak,2) + "|",cv::Point(460*_res_mult,12*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
         }
 
@@ -527,8 +527,8 @@ void Visualizer::draw_tracker_viz() {
         viz_drone_pos_after_burn_im.x+=15;
         putText(frameL_color,to_string_with_precision(_dctrl->viz_time_after_burn,2),viz_drone_pos_after_burn_im,cv::FONT_HERSHEY_SIMPLEX,0.5,pink);
 
-        for (uint i=0; i< _dctrl->viz_drone_trajectory.size(); i++) {
-            cv::Point2f p = world2im_2d(_dctrl->viz_drone_trajectory.at(i).pos,_visdat->Qfi, _visdat->camera_angle);
+        for (uint i=0; i< _dctrl->viz_trajectory.size(); i++) {
+            cv::Point2f p = world2im_2d(_dctrl->viz_trajectory.at(i).pos,_visdat->Qfi, _visdat->camera_angle);
             cv::circle(frameL_color,p,1,pink);
         }
 
@@ -549,10 +549,10 @@ void Visualizer::draw_tracker_viz() {
         putText(frameL_color,ss.str(),drone_pos,cv::FONT_HERSHEY_SIMPLEX,0.5,c);
         cv::line(frameL_color,drone_pos,drone_pos,c,2);
 
-        if (_dnav->drone_is_flying() && !_dctrl->ff_interception()) { //draw line from drone to target setpoint
+        if (_dnav->drone_flying() && !_dctrl->ff_interception()) { //draw line from drone to target setpoint
             cv::Point2i target = _dnav->drone_setpoint_im();
             cv::Scalar c2;
-            if (_dnav->drone_is_hunting() && target.x+target.y>0 ) {
+            if (_dnav->drone_hunting() && target.x+target.y>0 ) {
                 c2 = red;
                 cv::Point2i text_pos = drone_pos - (drone_pos - target)/2;
                 putText(frameL_color,to_string_with_precision(_iceptor->time_to_intercept(),2) + "s",text_pos,cv::FONT_HERSHEY_SIMPLEX,0.5,c2);

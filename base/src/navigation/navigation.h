@@ -7,8 +7,13 @@ namespace navigation {
                                                                  "ns_locate_drone_led",
                                                                  "ns_wait_locate_drone",
                                                                  "ns_located_drone",
+                                                                 "ns_calibrating_pad",
+                                                                 "ns_check_telemetry",
+                                                                 "ns_check_pad_att",
+                                                                 "ns_wait_to_arm",
+                                                                 "ns_start_calibrating_motion",
                                                                  "ns_calibrating_motion",
-                                                                 "ns_calibrating_drone",
+                                                                 "ns_calibrating_motion_done",
                                                                  "ns_wait_for_takeoff",
                                                                  "ns_wait_for_insect",
                                                                  "ns_takeoff",
@@ -36,6 +41,7 @@ namespace navigation {
                                                                  "ns_batlow",
                                                                  "ns_tracker_problem",
                                                                  "ns_drone_lost",
+                                                                 "ns_unable_to_locate",
                                                                  "ns_drone_problem"
                                                                 };
 
@@ -45,8 +51,13 @@ enum navigation_states {
     ns_locate_drone_wait_led_on,
     ns_wait_locate_drone,
     ns_located_drone,
+    ns_calibrating_pad,
+    ns_check_telemetry,
+    ns_check_pad_att,
+    ns_wait_to_arm,
+    ns_start_calibrating_motion,
     ns_calibrating_motion,
-    ns_calibrating_drone,
+    ns_calibrating_motion_done,
     ns_wait_for_takeoff_command,
     ns_wait_for_insect,
     ns_takeoff,
@@ -74,6 +85,7 @@ enum navigation_states {
     ns_batlow,
     ns_tracker_problem,
     ns_drone_lost,
+    ns_unable_to_locate,
     ns_drone_problem
 };
 

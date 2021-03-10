@@ -60,7 +60,6 @@ enum betaflight_turtle {
 enum {
     FSSP_DATAID_VFAS       = 0x0210,
     FSSP_DATAID_CURRENT    = 0x0200,
-    FSSP_DATAID_RPM        = 0x0500,
     FSSP_DATAID_RSSI       = 0xF101,
     FSSP_DATAID_PITCH      = 0x5230,
     FSSP_DATAID_ROLL       = 0x5240,
@@ -71,12 +70,10 @@ enum {
     FSSP_DATAID_A4         = 0x0910, // cell voltage
 
     //pats specifics:
-    FSSP_DATAID_MAX_THRUST              = 0x0740,
-    FSSP_DATAID_ACC_THROTTLE_MIX        = 0x0741, // acceleration on z axis and throttle in same pkg
-    FSSP_DATAID_ACC_RPM_MIX             = 0x0742, // acceleration on z axis and throttle in same pkg
     FSSP_DATAID_BF_VERSION              = 0x0743,
     FSSP_DATAID_BF_UID                  = 0x0744,
-    FSSP_DATAID_ARMING                  = 0x0745
+    FSSP_DATAID_ARMING                  = 0x0745,
+    FSSP_DATAID_ROLL_PITCH              = 0x0746
 
 };
 
@@ -112,20 +109,19 @@ enum arming_states {
 struct Telemetry {
     float           batt_v;
     float           batt_cell_v;
+    uint32_t        batt_cell_v_package_id;
     float           batt_current;
     uint8_t         rssi;
-    uint16_t        rpm;
     float           roll;
     float           pitch;
+    uint32_t        roll_pitch_package_id;
     cv::Point3f     acc;
-    float           thrust_max = 4;     // 4G as start value
-    uint16_t        throttle;
-    float           throttle_scaled;
     arming_states   arming_state;
-    float           thrust_rpm;
+    uint32_t        arming_state_package_id;
     int             bf_major;
     int             bf_minor;
     int             bf_patch;
+    std::string     bf_uid_str;
 };
 class Rc {
 
@@ -138,8 +134,7 @@ public:
     Telemetry telemetry = {0};
     const int bf_major_required = 4;
     const int bf_minor_required = 2;
-    const int bf_patch_required = 103;
-
+    const int bf_patch_required = 105;
 
     virtual void init(int drone_id) = 0;
     virtual void init_logger() = 0;
@@ -159,7 +154,8 @@ public:
     bool init_package_failure() { return _init_package_failure;}
     bool bf_version_error() { return _bf_version_error>10;}
     bool bf_uid_error() { return _bf_uid_error>10;}
-    std::string bf_uid_str() {return _bf_uid_str;}
+    bool bf_telem_OK() { return _bf_uid_error<0 && _bf_version_error<0;}
+    std::string bf_uid_str() {return telemetry.bf_uid_str;}
     std::string Armed() { return armed_names[arm_switch>RC_MIDDLE]; }
     bool connected() {return !notconnected;}
 
@@ -193,9 +189,16 @@ public:
     }
     void beep(bool b) { _beep = b; }
     void beep() { _beep = !_beep;}
-    void arm(betaflight_arming v) { arm_switch = v; }
+    void arm(betaflight_arming v) {
+        arm_switch = v;
+        if (_time_disarmed<0 and v == bf_disarmed)
+            _time_disarmed = _time;
+        else if (_time_disarmed >= 0 and v == bf_armed)
+            _time_disarmed = -1;
+    }
     void turtle(betaflight_turtle v) { turtle_mode = v; }
     void calibrate_acc() { calibrate_acc_cnt = 200; }
+    double time_disarmed() { return _time_disarmed;}
 
     std::string arming_state_str() {
         std::string res = "";
@@ -254,14 +257,14 @@ public:
 
 protected:
     double _time = 0;
+    double _time_disarmed = -1;
 
     bool initialized = false;
     bool logger_initialized = false;
     int notconnected = 1;
     bool _init_package_failure = false;
-    uint16_t _bf_version_error = 0;
-    uint16_t _bf_uid_error = 0;
-    std::string _bf_uid_str = "";
+    int16_t _bf_version_error = 0;
+    int16_t _bf_uid_error = 0;
     bool mm_version_check_OK = false;
     uint init_package_nOK_cnt = 1;
     bool send_init_package_now = false;

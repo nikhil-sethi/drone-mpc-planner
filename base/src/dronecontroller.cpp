@@ -23,7 +23,7 @@ void DroneController::init(std::ofstream *logger,string replay_dir,bool generato
     generator_mode = generator;
     airsim_mode = airsim;
 
-    kiv_ctrl.init(camview, &drone_calibration);
+    kiv_ctrl.init(camview, &calibration);
     control_history_max_size = pparams.fps;
     (*_logger) << "valid;flight_mode;" <<
                "target_pos_x;target_pos_y;target_pos_z;" <<
@@ -81,31 +81,37 @@ void DroneController::init(std::ofstream *logger,string replay_dir,bool generato
 
     set_led_strength(exposure);
 
-    drone_calibration.thrust = std::clamp(drone_calibration.thrust,dparams.default_thrust/2.f,dparams.default_thrust*2.f);
+    calibration.thrust = std::clamp(calibration.thrust,dparams.default_thrust/2.f,dparams.default_thrust*2.f);
+    pad_att_calibration_roll.init(required_pad_att_calibration_cnt);
+    pad_att_calibration_pitch.init(required_pad_att_calibration_cnt);
     initial_hover_throttle_guess_non3d = GRAVITY/dparams.default_thrust*RC_BOUND_RANGE+dparams.min_throttle;
     initialized = true;
 }
 
 void DroneController::set_led_strength(float exposure) {
-    float max_ae = 20000;
-    if (pparams.fps == 90)
-        max_ae = 10000;
-    else if (pparams.fps == 60)
-        max_ae = 15000;
-    else
-        std::cout << "Warning, led strength not properly implemented for this fps!" << std::endl;
-
-    float thresh_dark = (0.1333f* max_ae);
-    float thresh_bright = (0.0333f* max_ae);
-
-    if (exposure < thresh_bright)
+    if (dparams.led_type == led_fiber_uv)
         dparams.drone_led_strength = 100;
-    else if (exposure < thresh_dark)
-        dparams.drone_led_strength = 100 - (exposure/thresh_dark*50.f);
-    else
-        dparams.drone_led_strength = 50 - ((std::clamp(exposure,thresh_bright,max_ae)-thresh_bright)/(max_ae - thresh_bright)*35.f);
+    else {
+        float max_ae = 20000;
+        if (pparams.fps == 90)
+            max_ae = 10000;
+        else if (pparams.fps == 60)
+            max_ae = 15000;
+        else
+            std::cout << "Warning, led strength not properly implemented for this fps!" << std::endl;
 
+        float thresh_dark = (0.1333f* max_ae);
+        float thresh_bright = (0.0333f* max_ae);
+
+        if (exposure < thresh_bright)
+            dparams.drone_led_strength = 100;
+        else if (exposure < thresh_dark)
+            dparams.drone_led_strength = 100 - (exposure/thresh_dark*50.f);
+        else
+            dparams.drone_led_strength = 50 - ((std::clamp(exposure,thresh_bright,max_ae)-thresh_bright)/(max_ae - thresh_bright)*35.f);
+    }
     std::cout << "Led strength set to: " << dparams.drone_led_strength << std::endl;
+
 }
 
 void DroneController::control(TrackData data_drone, TrackData data_target_new, TrackData data_raw_insect, double time) {
@@ -139,6 +145,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
     } case fm_blink: {
         _rc->arm(bf_disarmed);
         blink(time);
+        calibrate_pad_attitude();
         //#268:
         // mode+=bf_spin_motor;
         // blink_motors(time);
@@ -168,7 +175,6 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         auto_pitch = RC_MIDDLE;
         auto_yaw = RC_MIDDLE;
 
-        landing_acc_calibration_cnt = -1;
         if (dparams.mode3d) {
             _rc->arm(bf_armed);
             break;
@@ -189,7 +195,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
             cv::Point3f burn_direction;
             std::tie (auto_roll, auto_pitch,auto_burn_duration,burn_direction) = calc_directional_burn(state_drone_takeoff,data_raw_insect.state,0);
             if (burn_limit_hack)
-                auto_burn_duration = dparams.target_takeoff_velocity/drone_calibration.thrust;
+                auto_burn_duration = dparams.target_takeoff_velocity/calibration.thrust;
             aim_direction_history.push_back(burn_direction);
             auto_throttle = initial_hover_throttle_guess();
 
@@ -254,13 +260,13 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         interception_start_time = time;
         approx_effective_thrust(data_drone,_burn_direction_for_thrust_approx,auto_burn_duration,static_cast<float>(time-start_takeoff_burn_time));
         _burn_direction_for_thrust_approx = {0};
-        std::cout << "Estimated acc: " << drone_calibration.thrust << std::endl;
+        std::cout << "Estimated acc: " << calibration.thrust << std::endl;
         _flight_mode =   fm_interception_aim;
         [[fallthrough]];
     }   case fm_interception_aim: {
         cv::Point3f burn_direction;
         StateData state_drone_better = data_drone.state;
-        state_drone_better.vel = drone_vel_after_takeoff;
+        state_drone_better.vel = vel_after_takeoff;
 
         float remaining_aim_duration = aim_duration - static_cast<float>(time - interception_start_time);
         data_raw_insect.state.vel = {0}; // aim to the current target position
@@ -420,12 +426,12 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         auto_roll = RC_MIDDLE;
         auto_pitch = RC_MIDDLE;
         auto_yaw = RC_MIDDLE;
-        calibrate_landing();
         if (dparams.mode3d)
             auto_throttle = RC_MIDDLE;
         else
             auto_throttle = RC_BOUND_MIN;
         _rc->arm(bf_disarmed);
+        calibrate_pad_attitude();
         break;
     } case fm_inactive: {
         auto_roll = RC_MIDDLE;
@@ -433,8 +439,6 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         auto_yaw = RC_MIDDLE;
         spin_up_start_time = 0;
         mode += bf_yaw_reset;
-
-        calibrate_landing();
 
         if (dparams.mode3d)
             auto_throttle = RC_MIDDLE;
@@ -444,6 +448,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
             _rc->arm(bf_armed);
         else if (dparams.mode3d)
             _rc->arm(bf_disarmed);
+        calibrate_pad_attitude();
         break;
     } case fm_abort: {
         if (dparams.mode3d)
@@ -518,7 +523,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
                data_drone.dt << ";" <<
                propwash_hndl.propwash() << ";" <<
                kiv_ctrl.active << ";" <<
-               drone_calibration.thrust << ";" <<
+               calibration.thrust << ";" <<
                pos_err_i.x << ";" << pos_err_i.y << ";" << pos_err_i.z << ";" <<
                _rc->telemetry.batt_cell_v  << ";" <<
                static_cast<int>(_rc->telemetry.rssi)  << ";" <<
@@ -623,7 +628,7 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::predict_drone
         integrated_vel += drone_acc_during_aim * remaining_aim_duration;
     }
 
-    cv::Point3f burn_accelleration = burn_direction * drone_calibration.thrust;
+    cv::Point3f burn_accelleration = burn_direction * calibration.thrust;
     if (burn_duration  > effective_burn_spin_up_duration) {
         burn_accelleration -=cv::Point3f(0,GRAVITY,0);
         // Phase: spin up
@@ -658,37 +663,56 @@ void DroneController::draw_viz(
 
         viz_drone_pos_after_burn =  traj.back().pos;
         viz_time_after_burn = viz_time_after_aim + static_cast<double>(burn_duration );
-        viz_drone_trajectory = predict_trajectory(burn_duration, 0, burn_direction, state_drone);
+        viz_trajectory = predict_trajectory(burn_duration, 0, burn_direction, state_drone);
     } else {
         viz_time_after_burn = viz_time_after_aim + static_cast<double>(burn_duration);
-        viz_drone_trajectory = traj;
+        viz_trajectory = traj;
         viz_drone_pos_after_burn =  traj.back().pos;
     }
 }
 
-void DroneController::calibrate_landing() {
-    if (landing_acc_calibration_cnt>0) {
-        if (_rc->telemetry.batt_cell_v > 4.0f && _rc->telemetry.batt_cell_v < 4.4f) { // #468/#303: need better way to determine if drone is being charged
-            cv::Point3f max_acc(0.2f,0.2f,1.1f);
-            cv::Point3f min_acc(-0.2f,-0.2f,0.9f);
-            if (_rc->telemetry.acc.x < max_acc.x && _rc->telemetry.acc.x > min_acc.x &&
-                    _rc->telemetry.acc.y < max_acc.y && _rc->telemetry.acc.y > min_acc.y &&
-                    _rc->telemetry.acc.z < max_acc.z && _rc->telemetry.acc.z > min_acc.z ) {
-                landing_acc_calibration += _rc->telemetry.acc;
-                landing_acc_calibration_cnt--;
-            } else {
-                std::cout << "Landing calibration failure: ACC not in range: [" << _rc->telemetry.acc.x << ", " << _rc->telemetry.acc.y << ", " << _rc->telemetry.acc.z << "] " << std::endl;
-            }
-        } else {
-            std::cout << "Landing calibration failure: voltage not in range: " << _rc->telemetry.batt_cell_v << "V" << std::endl;
+bool check_att_bounds(cv::Point2f att, cv::Point2f att_min,cv::Point2f att_max) {
+    return att.x > att_min.x && att.x < att_max.x &&
+           att.y > att_min.y && att.y < att_max.y;
+}
+void DroneController::calibrate_pad_attitude() {
+    static uint32_t prev_roll_pitch_package_id = 0;
+    if (_rc->telemetry.roll_pitch_package_id > prev_roll_pitch_package_id) {
+        prev_roll_pitch_package_id = _rc->telemetry.roll_pitch_package_id;
+        if (check_att_bounds(cv::Point2f(_rc->telemetry.roll,_rc->telemetry.pitch),min_att_calibration,max_att_calibration)) {
+            pad_att_calibration_roll.addSample(_rc->telemetry.roll);
+            pad_att_calibration_pitch.addSample(_rc->telemetry.pitch);
         }
-    } else if (landing_acc_calibration_cnt == 0) {
-        landing_acc_calibration /= static_cast<float>(required_landing_acc_calibration_cnt);
-        drone_calibration.landed_acc_x = landing_acc_calibration.x;
-        drone_calibration.landed_acc_y = landing_acc_calibration.y;
-        drone_calibration.landed_acc_z = landing_acc_calibration.z;
-        std::cout << "Landing attitude calibrated: " << landing_acc_calibration << std::endl;
-        landing_acc_calibration_cnt = -1; // flag that calibration is finished
+    }
+}
+bool DroneController::attitude_on_pad_OK() {
+    static bool landing_att_calibration_msg_printed = false;
+    if (pad_att_calibration_roll.ready()) {
+        cv::Point2f current_att(pad_att_calibration_roll.latest(),pad_att_calibration_pitch.latest());
+        cv::Point2f pad_att_calibration(calibration.pad_roll,calibration.pad_pitch);
+        if (!landing_att_calibration_msg_printed)
+            std::cout << "Received enough att telemetry samples from drone. Diff with original blink att: " << current_att - pad_att_calibration << std::endl;
+        landing_att_calibration_msg_printed = true;
+        return check_att_bounds(current_att,pad_att_calibration-max_att_calibration_diff,pad_att_calibration+max_att_calibration_diff);
+    } else
+        return false;
+}
+bool DroneController::pad_calibration_done() {
+    if (pad_att_calibration_roll.ready() || !dparams.Telemetry()) {
+        calibration.pad_pos_x = _dtrk->takeoff_location().x;
+        calibration.pad_pos_y = _dtrk->takeoff_location().y;
+        calibration.pad_pos_z = _dtrk->takeoff_location().z;
+        calibration.pad_roll = pad_att_calibration_roll.latest();
+        calibration.pad_pitch = pad_att_calibration_pitch.latest();
+        auto date = chrono::system_clock::to_time_t(chrono::system_clock::now());
+        std::stringstream ss;
+        ss << std::put_time(std::localtime(&date), "%Y/%m/%d %T");
+        calibration.pad_calib_date = ss.str();
+        save_calibration();
+        return true;
+    } else {
+        std::cout << "Drone calibration failed: attitude not received or not accepted!" << std::endl;
+        return false;
     }
 }
 
@@ -730,7 +754,7 @@ void DroneController::approx_effective_thrust(TrackData data_drone, cv::Point3f 
 
     cv::Point3f pos_after_aim =  _dtrk->takeoff_location() + cv::Point3f(0,lift_off_dist_take_off_aim,0);
     float partial_effective_burn_spin_up_duration = effective_burn_spin_down_duration; // if the burn duration is long enough this is equal otherwise it may be shortened
-    cv::Point3f acc = burn_direction * drone_calibration.thrust ; // initial guess, variable to be optimized
+    cv::Point3f acc = burn_direction * calibration.thrust ; // initial guess, variable to be optimized
     cv::Point3f meas_pos =  data_drone.pos(); // current measured drone position
     cv::Point3f integrated_vel = {0};
     for (int i = 0; i<100; i++) {
@@ -781,8 +805,8 @@ void DroneController::approx_effective_thrust(TrackData data_drone, cv::Point3f 
             break;
 
     }
-    drone_calibration.thrust = static_cast<float>(norm(acc));
-    drone_vel_after_takeoff = integrated_vel * 1.15f; // add some magical battery healt factor. Better ideas welcome
+    calibration.thrust = static_cast<float>(norm(acc));
+    vel_after_takeoff = integrated_vel * 1.15f; // add some magical battery healt factor. Better ideas welcome
 }
 
 float DroneController::thrust_to_throttle(float thrust_ratio) {
@@ -798,12 +822,12 @@ float DroneController::thrust_to_throttle(float thrust_ratio) {
 std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f desired_acc) {
 
     cv::Point3f drone_vel = _dtrk->last_track_data().vel();
-    desired_acc = propwash_hndl.update(drone_vel, desired_acc, drone_calibration.thrust);
+    desired_acc = propwash_hndl.update(drone_vel, desired_acc, calibration.thrust);
 
-    cv::Point3f des_acc_drone = compensate_gravity_and_crop_to_drone_limit(desired_acc, drone_calibration.thrust);
+    cv::Point3f des_acc_drone = compensate_gravity_and_crop_to_limit(desired_acc, calibration.thrust);
     cv::Point3f direction = des_acc_drone/normf(des_acc_drone);
 
-    float throttlef = normf(des_acc_drone)/drone_calibration.thrust;
+    float throttlef = normf(des_acc_drone)/calibration.thrust;
     int throttle_cmd =  static_cast<uint16_t>(roundf(thrust_to_throttle(throttlef)));
 
     if (throttle_cmd < dparams.min_throttle)
@@ -816,7 +840,7 @@ std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f de
 }
 
 
-cv::Point3f DroneController::compensate_gravity_and_crop_to_drone_limit(cv::Point3f des_acc, float thrust) {
+cv::Point3f DroneController::compensate_gravity_and_crop_to_limit(cv::Point3f des_acc, float thrust) {
     // Calculate safe acceleration (max desired acceleration which cannot the
     // thrust constraints if it gravity compensated) for case in the further calculation
     // something goes wrong
@@ -1025,10 +1049,10 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::
 
     if (enable_thrust_calibration) {
         if(remember_last_integrated_y_err!=0) {
-            drone_calibration.thrust -= ki_thrust_hover*0.001f*remember_last_integrated_y_err;
+            calibration.thrust -= ki_thrust_hover*0.001f*remember_last_integrated_y_err;
             remember_last_integrated_y_err = 0;
         } else {
-            drone_calibration.thrust -= 0.1f * ((err_y_filtered - setpoint_pos.y + pos_modely.current_output()));
+            calibration.thrust -= 0.1f * ((err_y_filtered - setpoint_pos.y + pos_modely.current_output()));
             pos_err_i.y = 0;
         }
 
@@ -1210,36 +1234,51 @@ void DroneController::process_joystick() {
 
 void DroneController::load_calibration(std::string replay_dir) {
     if (replay_dir!="") {
-        drone_calib_rfn = replay_dir + '/' + drone_calib_fn;
-        drone_calib_wfn = "./logging/replay/" + drone_calib_fn;
+        calib_rfn = replay_dir + '/' + calib_fn;
+        calib_wfn = "./logging/replay/" + calib_fn;
     }
 
-    if (file_exist(drone_calib_rfn)) {
+    if (file_exist(calib_rfn)) {
         xmls::DroneCalibration tmp;
         try {
-            tmp.deserialize(drone_calib_rfn);
+            tmp.deserialize(calib_rfn);
         } catch(MyExit const &err) {
             std::cout << "Error, corrupted drone calibration xml:" << err.msg << std::endl;
         }
-        if (tmp.drone_id != _rc->drone_id() && replay_dir == "") {
-            std::cout << "Drone ID mismatch. Using default values, but calibration is needed!" << std::endl;
-            drone_calibration.thrust = dparams.default_thrust;
-            drone_calibration.drone_id = _rc->drone_id();
+        if ((tmp.drone_id != _rc->drone_id() || tmp.drone_name.compare(dparams.name)) && replay_dir == "") {
+            std::cout << "Drone mismatch. Using default values, but calibration is needed!" << std::endl;
+            calibration.thrust = dparams.default_thrust;
+            calibration.drone_id = _rc->drone_id();
+            calibration.drone_name = dparams.name;
         } else {
-            drone_calibration.deserialize(drone_calib_rfn);
+            calibration.deserialize(calib_rfn);
         }
     } else {
         std::cout << "Drone calibration missing. Using default values, but calibration is needed!" << std::endl;
-        drone_calibration.thrust = dparams.default_thrust;
-        drone_calibration.drone_id = _rc->drone_id();
+        calibration.thrust = dparams.default_thrust;
+        calibration.drone_id = _rc->drone_id();
+        calibration.drone_name = dparams.name;
     }
-    drone_calibration.serialize(drone_calib_wfn);
+    calibration.serialize(calib_wfn);
 }
 
 void DroneController::save_calibration() {
-    if(!log_replay_mode) {
-        drone_calibration.serialize("../xml/" + drone_calib_fn);
-    }
+    if(!log_replay_mode)
+        calibration.serialize("../xml/" + calib_fn);
+    calibration.serialize(calib_wfn);
+}
+bool DroneController::takeoff_calib_valid() {
+    if (!calibration.pad_calib_date.length())
+        return false;
+    if (log_replay_mode)
+        return true;
+    std::stringstream ss;
+    ss << calibration.pad_calib_date;
+    std::tm t = {};
+    ss >> std::get_time(&t, "%Y/%m/%d %T");
+    auto now = chrono::system_clock::to_time_t(chrono::system_clock::now());
+    double  diff = std::difftime(std::mktime(&t),now) / (60. * 60. * 24.);
+    return diff < 0.8;
 }
 
 void DroneController::load_control_parameters() {

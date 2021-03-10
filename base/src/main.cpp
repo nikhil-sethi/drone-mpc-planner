@@ -23,6 +23,7 @@
 #include "cameraview.h"
 #include "smoother.h"
 #include "multimodule.h"
+#include "replayrc.h"
 #include "stopwatch.h"
 #include "dronetracker.h"
 #include "dronecontroller.h"
@@ -105,6 +106,7 @@ std::thread thread_watchdog;
 /*******Private prototypes*********/
 void process_frame(StereoPair * frame);
 void process_video();
+void skip_to_hunt(double,double);
 int main( int argc, char **argv);
 bool handle_key(double time);
 void save_results_log();
@@ -144,25 +146,22 @@ void process_video() {
 
             }
         }
+        if (log_replay_mode && !skipped_to_hunt)
+            skip_to_hunt(5,frame->time);
+
         if (render_hunt_mode || render_monitor_video_mode) {
-            if (dnav.drone_is_ready_and_waiting() && !skipped_to_hunt) {
-                double dt = logreader.first_takeoff_time() - frame->time - 1.5;
-                if (dt>0 && trackers.mode() != tracking::TrackerManager::mode_locate_drone) {
-                    watchdog_skip_video_delay_override = true;
-                    cam->skip(dt);
-                    std::cout << "Skipping to " << frame->time + dt << std::endl;
-                }
-                skipped_to_hunt = true;
+            if (dnav.drone_ready_and_waiting() && !skipped_to_hunt) {
+                skip_to_hunt(1.5,frame->time);
                 cam->turbo = false;
             } else if (!skipped_to_hunt) {
                 cam->turbo = true;
             }
-            if (dnav.drone_is_yaw_reset()) {
+            if (dnav.drone_resetting_yaw()) {
                 std::cout <<"Render mode: yaw reset detected. Stopping." << std::endl;
                 escape_key_pressed = true;
             }
         }
-        if (airsim_wp_mode && dnav.drone_is_ready_and_waiting() && rc->arm_switch == bf_armed)
+        if (airsim_wp_mode && dnav.drone_ready_and_waiting() && rc->arm_switch == bf_armed)
             dnav.demo_flight(pparams.flightplan);
 
         tp[0].m1.lock();
@@ -187,7 +186,7 @@ void process_video() {
             exit_now = true;
             cmdcenter.reset_commandcenter_status_file("MultiModule init package error",true);
         }
-        if (rc->bf_version_error()) {
+        if (rc->bf_version_error() and !dnav.drone_flying()) {
             exit_now = true;
             cmdcenter.reset_commandcenter_status_file("Betaflight version error",true);
         }
@@ -204,8 +203,12 @@ void process_video() {
                 std::cout <<"Detected a drone config that fits, reloading!" << std::endl;
                 pparams.drone= drone_anvil_superbee;
                 pparams.serialize(pats_xml_fn);
+            } else if(rc->bf_uid_str() == "qutt") {
+                std::cout <<"Detected a drone config that fits, reloading!" << std::endl;
+                pparams.drone= drone_qutt;
+                pparams.serialize(pats_xml_fn);
             }
-            if(!dnav.drone_is_flying()) {
+            if(!dnav.drone_flying()) {
                 exit_now = true;
                 cmdcenter.reset_commandcenter_status_file("Wrong drone config error",true);
             }
@@ -225,11 +228,11 @@ void process_video() {
         }
 
         if (render_hunt_mode) {
-            if (dnav.n_drone_detects() == 0 && frame->time -3 > logreader.first_blink_detect_time() ) {
+            if (!dnav.n_drone_readys() && frame->time -3 > logreader.first_drone_ready_time() ) {
                 std::cout << "\n\nError: Log results differ from replay results, could not find drone in time.\n" << replay_dir <<"\n\n" << std::endl;
                 exit_now = true;
             }
-            if (dnav.drone_is_yaw_reset() == 0 && frame->time -3 > logreader.first_yaw_reset_time() ) {
+            if (!dnav.drone_resetting_yaw() && frame->time -3 > logreader.first_yaw_reset_time() ) {
                 std::cout << "\n\nError: Log results differ from replay results, should have yaw reset already.\n" << replay_dir <<"\n\n" << std::endl;
                 exit_now = true;
             }
@@ -309,17 +312,21 @@ void process_video() {
 
 void process_frame(StereoPair * frame) {
 
+
+
+
     if (log_replay_mode && pparams.op_mode != op_mode_monitoring) {
         if (logreader.current_frame_number(frame->rs_id)) {
             exit_now = true;
             return;
         }
+        static_cast<ReplayRc *>(rc.get())->telemetry_from_log(frame->time);
 
         trackers.process_replay_moth(frame->rs_id);
         cmdcenter.trigger_demo_flight_from_log(replay_dir,logreader.current_entry.trkrs_state);
 
     } else if (generator_mode) {
-        if (dnav.drone_is_ready_and_waiting()) {
+        if (dnav.drone_ready_and_waiting()) {
             dnav.demo_flight(pparams.flightplan);
             dctrl.joy_takeoff_switch_file_trigger(true);
         }
@@ -340,13 +347,13 @@ void process_frame(StereoPair * frame) {
            << frame->time << ";"
            << cam->measured_exposure() << ";";
 
-    trackers.update(frame->time,dctrl.drone_is_active());
+    trackers.update(frame->time,dctrl.active());
 #ifdef PROFILING
     auto profile_t2_trkrs = std::chrono::high_resolution_clock::now();
 #endif
 
     if (log_replay_mode && pparams.op_mode != op_mode_monitoring) {
-        dctrl.insert_log(logreader.current_entry.joyRoll, logreader.current_entry.joyPitch, logreader.current_entry.joyYaw, logreader.current_entry.joyThrottle,logreader.current_entry.joyArmSwitch,logreader.current_entry.joyModeSwitch,logreader.current_entry.joyTakeoffSwitch,logreader.current_entry.auto_roll,logreader.current_entry.auto_pitch,logreader.current_entry.auto_throttle, logreader.current_entry.telem_acc_z, logreader.current_entry.telem_throttle, logreader.current_entry.telem_throttle_s, logreader.current_entry.maxthrust, logreader.current_entry.telem_thrust_rpm);
+        dctrl.insert_log(logreader.current_entry.joyRoll, logreader.current_entry.joyPitch, logreader.current_entry.joyYaw, logreader.current_entry.joyThrottle,logreader.current_entry.joyArmSwitch,logreader.current_entry.joyModeSwitch,logreader.current_entry.joyTakeoffSwitch,logreader.current_entry.auto_roll,logreader.current_entry.auto_pitch,logreader.current_entry.auto_throttle, logreader.current_entry.telem_acc_z);
     }
     iceptor.update(dctrl.at_base(),frame->time);
     dnav.update(frame->time);
@@ -397,6 +404,16 @@ void process_frame(StereoPair * frame) {
     frame->processed.unlock();
     watchdog = true;
     logger  << '\n';
+}
+
+void skip_to_hunt(double pre_delay, double time) {
+    double dt = logreader.first_takeoff_time() - time - pre_delay;
+    if (dt>0 && !isinf(dt) && dnav.drone_ready_and_waiting()) {
+        watchdog_skip_video_delay_override = true;
+        cam->skip(dt);
+        skipped_to_hunt = true;
+        std::cout << "Skipping to " << time + dt << std::endl;
+    }
 }
 
 void init_insect_log(int n) {
@@ -491,12 +508,6 @@ bool handle_key(double time [[maybe_unused]]) {
     case 't':
         cam->turbo = !cam->turbo;
         break;
-    case '>': {
-        double dt = logreader.first_takeoff_time() - time - 5;
-        if (dt>0 && dnav.drone_is_ready_and_waiting())
-            cam->skip(dt);
-        break;
-    }
     case '.':
         cam->skip_one_sec();
         break;
@@ -713,6 +724,8 @@ void check_hardware() {
             std::string rc_type = (airsim_mode) ? "AirSim" : "MultiModule";
             throw MyExit("cannot connect to " + rc_type);
         }
+    } else if (log_replay_mode) {
+        rc = std::unique_ptr<Rc>(new ReplayRc(replay_dir));
     } else {
         rc = std::unique_ptr<Rc>(new MultiModule());
     }
@@ -746,8 +759,8 @@ void init() {
     if (log_replay_mode && pparams.op_mode!=op_mode_monitoring) {
         logreader.init(replay_dir);
 
-        if (isinf(logreader.first_blink_detect_time()) && render_hunt_mode)
-            throw MyExit("According to the log the drone was never blink detected: " + replay_dir);
+        if (isinf(logreader.first_drone_ready_time()) && render_hunt_mode)
+            throw MyExit("According to the log the drone was never ready: " + replay_dir);
         if (isinf(logreader.first_takeoff_time()) && render_hunt_mode)
             throw MyExit("According to the log the drone never took off: " + replay_dir );
 
@@ -763,6 +776,10 @@ void init() {
     trackers.init(&logger,replay_dir, &visdat, &(cam->camera_volume), &iceptor);
     iceptor.init(&trackers,&visdat,&(cam->camera_volume),&logger,&dctrl);
     dnav.init(&logger,&trackers,&dctrl,&visdat, &(cam->camera_volume),replay_dir, &iceptor);
+    if (log_replay_mode) {
+        if (logreader.blink_at_startup())
+            dnav.replay_detect_drone_location();
+    }
     if (pparams.op_mode != op_mode_monitoring)
         dctrl.init(&logger,replay_dir,generator_mode,airsim_mode,rc.get(),trackers.dronetracker(), &(cam->camera_volume),cam->measured_exposure());
 
