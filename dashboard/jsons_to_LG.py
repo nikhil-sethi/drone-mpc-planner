@@ -211,7 +211,14 @@ def process_mode_in_json(data,sys_info):
             id_final = math.floor(dt_final.total_seconds() / 300)
             id_final = int(np.clip(id_final,0,bin_cnt))
             for i in range(id_start,id_final):
-                bins[i] = int(status['mode'] == 'op_mode_monitoring')
+                if status['mode'] == 'op_mode_monitoring' or status['mode'] == 'monitoring':
+                    bins[i] = 1
+                elif status['mode'] == 'wait_for_dark':
+                    bins[i] = 2
+                elif status['mode'] == 'error':
+                    bins[i] = 4
+                else:
+                    bins[i] = 4 #this should not be possible
 
     LG_data = []
     times = [(t0+datetime.timedelta(minutes=5)*x ).strftime('%Y-%m-%dT%H:%M:%S') for x in range(bin_cnt)]
