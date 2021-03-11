@@ -606,9 +606,10 @@ def dash_application():
         Input('date_range_picker', 'end_date'),
         Input('systems_dropdown', 'value'),
         Input('hete_kaart', 'clickData'),
+        Input('staaf_kaart', 'clickData'),
         Input('verstrooide_kaart', 'clickData'),
         State('verstrooide_kaart','figure'))
-    def update_moth_ui(start_date,end_date,selected_systems,clickData_hm,clickData_dot,scatter_fig_state):
+    def update_moth_ui(start_date,end_date,selected_systems,clickData_hm,clickData_hist,clickData_dot,scatter_fig_state):
         target_video_fn = ''
         video_style={'display': 'none'}
         path_fig=go.Figure(data=go.Scatter3d())
