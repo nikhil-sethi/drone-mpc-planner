@@ -1277,7 +1277,7 @@ bool DroneController::takeoff_calib_valid() {
     std::tm t = {};
     ss >> std::get_time(&t, "%Y/%m/%d %T");
     auto now = chrono::system_clock::to_time_t(chrono::system_clock::now());
-    double  diff = std::difftime(std::mktime(&t),now) / (60. * 60. * 24.);
+    double  diff = std::difftime(now,std::mktime(&t)) / (60. * 60. * 24.);
     return diff < 0.8;
 }
 
