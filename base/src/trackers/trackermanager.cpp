@@ -5,10 +5,10 @@ using namespace std;
 
 namespace tracking {
 
-void TrackerManager::init(std::ofstream *logger,string replay_dir_,VisionData *visdat, CameraView *camview, Interceptor *iceptor) {
+void TrackerManager::init(std::ofstream *logger,string replay_dir_,VisionData *visdat, Interceptor *iceptor) {
     _visdat = visdat;
     _logger = logger;
-    _camview = camview;
+
     _iceptor = iceptor;
     replay_dir = replay_dir_;
 
@@ -643,8 +643,8 @@ void TrackerManager::create_new_insect_trackers(std::vector<ProcessedBlob> *pbs,
             if (_dtrkr->tracking()) {
                 im_dist_to_drone = normf(_dtrkr->image_item().pt()-props->pt_unscaled());
             } else {
-                if (_dtrkr->takeoff_location_valid())
-                    im_dist_to_drone = normf(_dtrkr->takeoff_im_location() - props->pt_unscaled());
+                if (_dtrkr->pad_location_valid())
+                    im_dist_to_drone = normf(_dtrkr->pad_im_location() - props->pt_unscaled());
                 else
                     im_dist_to_drone = INFINITY;
             }
@@ -669,7 +669,7 @@ void TrackerManager::create_new_insect_trackers(std::vector<ProcessedBlob> *pbs,
                     if (_dtrkr->tracking())
                         world_dist_to_drone = normf(_dtrkr->world_item().pt- props->world_props.pt());
                     else
-                        world_dist_to_drone = normf(_dtrkr->takeoff_location() - props->world_props.pt());
+                        world_dist_to_drone = normf(_dtrkr->pad_location() - props->world_props.pt());
 
                     if (world_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_world && im_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_im) {
                         it->init_logger();
@@ -781,8 +781,6 @@ void TrackerManager::update_trackers(double time,long long frame_number, bool dr
             btrkr->update(time);
             if (_mode == mode_locate_drone) {
                 if (btrkr->state() == BlinkTracker::bds_found) {
-                    _dtrkr->set_landing_location(btrkr->image_item().pt(),btrkr->world_item().iti.disparity,btrkr->smoothed_size_image(),btrkr->world_item().pt);
-                    _camview->p0_bottom_plane(_dtrkr->takeoff_location().y, true);
                     _mode = mode_idle;
                 }
             } else if (btrkr->ignores_for_other_trkrs.size() == 0) {

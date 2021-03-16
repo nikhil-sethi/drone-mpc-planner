@@ -146,6 +146,7 @@ private:
 
     Rc * _rc;
     tracking::DroneTracker * _dtrk;
+    CameraView *_camview;
     std::ofstream *_logger;
 
     std::string control_parameters_rfn;

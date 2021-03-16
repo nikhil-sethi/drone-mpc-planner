@@ -193,7 +193,7 @@ private:
 public:
     cv::Mat viz_max_points,diff_viz_buf,viz_trkrs_buf;
 
-    void init(ofstream *logger,string replay_dir, VisionData *visdat, CameraView *camview, Interceptor *iceptor);
+    void init(ofstream *logger,string replay_dir, VisionData *visdat, Interceptor *iceptor);
 
     void init_replay_moth(std::string file) {
         ReplayTracker *rt;

@@ -152,7 +152,7 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_start_calibrating_motion: {
             _visdat->enable_background_motion_map_calibration(motion_calibration_duration);
-            _visdat->create_overexposed_removal_mask(_trackers->dronetracker()->takeoff_location(),_trackers->dronetracker()->takeoff_im_size());
+            _visdat->create_overexposed_removal_mask(_trackers->dronetracker()->pad_location(),_trackers->dronetracker()->pad_im_size());
             time_motion_calibration_started = time;
             if (pparams.op_mode==op_mode_monitoring) {
                 _navigation_status = ns_calibrating_motion;
@@ -456,7 +456,7 @@ void DroneNavigation::update(double time) {
             [[fallthrough]];
         } case ns_landing: {
             float dt_land = static_cast<float>(time-landing_start_time);
-            cv::Point3f pad_pos = _trackers->dronetracker()->landing_location(true);
+            cv::Point3f pad_pos = _trackers->dronetracker()->pad_location(true);
             cv::Point3f new_pos_setpoint = _dctrl->land_ctrl.setpoint_cc_landing(pad_pos, current_waypoint, dt_land);
             _dctrl->enable_thrust_calibration = false;
 
@@ -558,11 +558,11 @@ void DroneNavigation::next_waypoint(Waypoint wp, double time) {
     delete current_waypoint;
     current_waypoint = new Waypoint(wp);
     if (wp.mode == wfm_takeoff) {
-        cv::Point3f p = _trackers->dronetracker()->takeoff_location();
+        cv::Point3f p = _trackers->dronetracker()->pad_location(true);
         setpoint_pos_world =  p + wp.xyz;
         setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, CameraView::relaxed);
     } else if (wp.mode == wfm_landing || wp.mode == wfm_yaw_reset) {
-        cv::Point3f p = _trackers->dronetracker()->landing_location(true);
+        cv::Point3f p = _trackers->dronetracker()->pad_location(true);
         setpoint_pos_world =  p + wp.xyz;
         if (setpoint_pos_world.y > -0.5f) // keep some margin to the top of the view, because atm we have an overshoot problem.
             setpoint_pos_world.y = -0.5f;

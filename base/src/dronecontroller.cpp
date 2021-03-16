@@ -22,6 +22,7 @@ void DroneController::init(std::ofstream *logger,string replay_dir,bool generato
     log_replay_mode = replay_dir!="";
     generator_mode = generator;
     airsim_mode = airsim;
+    _camview = camview;
 
     kiv_ctrl.init(camview, &calibration);
     control_history_max_size = pparams.fps;
@@ -126,7 +127,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
     _dtrk->update_target(data_raw_insect.pos());
 
     if (!data_raw_insect.pos_valid) // if tracking is lost, set the raw setpoint to just above takeoff location, because otherwise the (takeoff) may go towards 0,0,0 (the camera)
-        data_raw_insect.state.pos = _dtrk->takeoff_location() + cv::Point3f(0,0.5,0);
+        data_raw_insect.state.pos = _dtrk->pad_location() + cv::Point3f(0,0.5,0);
 
     _dist_to_setpoint = normf(data_drone.state.pos - data_target_new.state.pos);
 
@@ -182,7 +183,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         [[fallthrough]];
     } case fm_take_off_aim: {
         StateData state_drone_takeoff = data_drone.state;
-        state_drone_takeoff.pos = _dtrk->takeoff_location() + cv::Point3f(0,lift_off_dist_take_off_aim,0);
+        state_drone_takeoff.pos = _dtrk->pad_location() + cv::Point3f(0,lift_off_dist_take_off_aim,0);
         state_drone_takeoff.vel = {0};
 
         float remaing_spinup_time = dparams.full_bat_and_throttle_spinup_duration - aim_duration - time_spent_spinning_up(take_off_start_time);
@@ -332,9 +333,9 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         d_vel_err_z.preset(data_target_new.vel().z - data_drone.state.vel.z);
 
         if(!data_drone.pos_valid && _time-take_off_start_time < 0.5) {
-            pos_modelx.internal_states(_dtrk->takeoff_location().x, _dtrk->takeoff_location().x);
-            pos_modely.internal_states(_dtrk->takeoff_location().y, _dtrk->takeoff_location().y);
-            pos_modelz.internal_states(_dtrk->takeoff_location().z, _dtrk->takeoff_location().z);
+            pos_modelx.internal_states(_dtrk->pad_location().x, _dtrk->pad_location().x);
+            pos_modely.internal_states(_dtrk->pad_location().y, _dtrk->pad_location().y);
+            pos_modelz.internal_states(_dtrk->pad_location().z, _dtrk->pad_location().z);
 
         } else {
             pos_modelx.internal_states(data_drone.pos().x, data_drone.pos().x);
@@ -354,7 +355,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         if(!data_drone.pos_valid) {
             pos_err_i = {0,0,0};
             if(_time-take_off_start_time < 0.5)
-                data_drone.state.pos = _dtrk->takeoff_location ();
+                data_drone.state.pos = _dtrk->pad_location ();
         }
 
         control_model_based(data_drone, data_target_new.pos(),data_target_new.vel());
@@ -366,7 +367,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         if(!data_drone.pos_valid) {
             pos_err_i = {0,0,0};
             if(_time-take_off_start_time < 0.5)
-                data_drone.state.pos = _dtrk->takeoff_location ();
+                data_drone.state.pos = _dtrk->pad_location ();
         }
         control_model_based(data_drone, data_target_new.pos(),data_target_new.vel());
         break;
@@ -699,9 +700,9 @@ bool DroneController::attitude_on_pad_OK() {
 }
 bool DroneController::pad_calibration_done() {
     if (pad_att_calibration_roll.ready() || !dparams.Telemetry()) {
-        calibration.pad_pos_x = _dtrk->takeoff_location().x;
-        calibration.pad_pos_y = _dtrk->takeoff_location().y;
-        calibration.pad_pos_z = _dtrk->takeoff_location().z;
+        calibration.pad_pos_x = _dtrk->pad_location().x;
+        calibration.pad_pos_y = _dtrk->pad_location().y;
+        calibration.pad_pos_z = _dtrk->pad_location().z;
         calibration.pad_roll = pad_att_calibration_roll.latest();
         calibration.pad_pitch = pad_att_calibration_pitch.latest();
         auto date = chrono::system_clock::to_time_t(chrono::system_clock::now());
@@ -709,6 +710,10 @@ bool DroneController::pad_calibration_done() {
         ss << std::put_time(std::localtime(&date), "%Y/%m/%d %T");
         calibration.pad_calib_date = ss.str();
         save_calibration();
+
+        _dtrk->set_pad_location(calibration.pad_pos());
+        _camview->p0_bottom_plane(calibration.pad_pos_y, true);
+
         return true;
     } else {
         std::cout << "Drone calibration failed: attitude not received or not accepted!" << std::endl;
@@ -752,7 +757,7 @@ std::tuple<float,float> DroneController::acc_to_quaternion(cv::Point3f acc) {
 //considering a take off order from just after the aiming phase of: spinning up, burning, spin down, 1g, find the max drone acceleration that best desccribes the current position given dt
 void DroneController::approx_effective_thrust(TrackData data_drone, cv::Point3f burn_direction, float burn_duration, float dt_burn) {
 
-    cv::Point3f pos_after_aim =  _dtrk->takeoff_location() + cv::Point3f(0,lift_off_dist_take_off_aim,0);
+    cv::Point3f pos_after_aim =  _dtrk->pad_location() + cv::Point3f(0,lift_off_dist_take_off_aim,0);
     float partial_effective_burn_spin_up_duration = effective_burn_spin_down_duration; // if the burn duration is long enough this is equal otherwise it may be shortened
     cv::Point3f acc = burn_direction * calibration.thrust ; // initial guess, variable to be optimized
     cv::Point3f meas_pos =  data_drone.pos(); // current measured drone position
@@ -1260,6 +1265,9 @@ void DroneController::load_calibration(std::string replay_dir) {
         calibration.drone_name = dparams.name;
     }
     calibration.serialize(calib_wfn);
+
+    _dtrk->set_pad_location(calibration.pad_pos());
+    _camview->p0_bottom_plane(calibration.pad_pos_y, true);
 }
 
 void DroneController::save_calibration() {

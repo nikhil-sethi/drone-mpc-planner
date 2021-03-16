@@ -81,15 +81,11 @@ private:
     uint16_t take_off_frame_cnt = 0;
     bool enable_takeoff_motion_delete = false;
 
-    cv::Point2f _blink_im_location;
-    float _blink_im_disparity;
-    float _blink_im_size = 5;
-    float _takeoff_im_size;
-    cv::Point2f _takeoff_im_location;
-    cv::Point3f _blink_world_location;
-    bool _takeoff_location_valid = false;
-    cv::Point3f _landing_world_location;
-    xmls::LandingParameters landing_parameter;
+    float _pad_im_size;
+    cv::Point2f _pad_im_location;
+    float _pad_disparity;
+    bool _pad_location_valid = false;
+    cv::Point3f _pad_world_location;
 
     double deviation_angle;
     bool yaw_deviation_vec_length_OK = false;
@@ -126,20 +122,20 @@ public:
 
     void manual_flight_mode(bool value) { _manual_flight_mode =value; }
     void hover_mode(bool value);
-    void set_landing_location(cv::Point2f im, float im_disparity,float im_size, cv::Point3f world);
+
     void delete_landing_motion(float duration);
 
     tracker_type type() { return tt_drone;}
     float score(BlobProps * blob);
     double time_since_take_off() {return start_take_off_time - current_time;}
-    cv::Point2f blnk_im_location() { return _blink_im_location; }
-    float blnk_im_size() { return _blink_im_size; }
-    float blink_im_disparity() { return _blink_im_disparity; }
-    float takeoff_im_size() { return _takeoff_im_size; }
-    cv::Point2f takeoff_im_location() { return _takeoff_im_location;}
-    bool takeoff_location_valid() {return _takeoff_location_valid;}
-    cv::Point3f takeoff_location() {return _blink_world_location + cv::Point3f(0,0,-dparams.radius);}
-    cv::Point3f landing_location(bool landing_hack);
+    cv::Point3f pad_location(bool landing_hack);
+    cv::Point3f pad_location() { return _pad_world_location; };
+    void set_pad_location_from_blink(cv::Point3f);
+    void set_pad_location(cv::Point3f pad_world);
+    cv::Point2f pad_im_location() { return _pad_im_location; }
+    float pad_im_size() { return _pad_im_size; }
+    float pad_disparity() { return _pad_disparity; }
+    bool pad_location_valid() {return _pad_location_valid;}
     bool take_off_detection_failed() { return _take_off_detection_failed;}
     bool taking_off() { return _drone_tracking_status == dts_detecting_takeoff_init || _drone_tracking_status == dts_detecting_takeoff;}
     bool landing() { return _drone_tracking_status == dts_landing_init || _drone_tracking_status == dts_landing;}

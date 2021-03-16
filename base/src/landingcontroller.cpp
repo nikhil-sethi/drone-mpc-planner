@@ -1,8 +1,8 @@
 #include "landingcontroller.h"
 #include "rc.h"
 
-cv::Point3f LandingController::setpoint_cc_landing(cv::Point3f landing_location, navigation::Waypoint* current_waypoint, float dt_land) {
-    cv::Point3f pad_pos = landing_location;
+cv::Point3f LandingController::setpoint_cc_landing(cv::Point3f pad_location, navigation::Waypoint* current_waypoint, float dt_land) {
+    cv::Point3f pad_pos = pad_location;
     cv::Point3f setpoint_pos_world =  pad_pos + current_waypoint->xyz;
     if (setpoint_pos_world.y > -0.5f) // keep some margin to the top of the view, because atm we have an overshoot problem.
         setpoint_pos_world.y = -0.5f;

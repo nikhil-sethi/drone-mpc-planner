@@ -427,8 +427,8 @@ void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, doubl
                 min_dis = dis;
         }
 
-        if (dtrkr->takeoff_location_valid()) {
-            ground_y = dtrkr->takeoff_location().y;
+        if (dtrkr->pad_location_valid()) {
+            ground_y = dtrkr->pad_location().y;
         }
 
         tracker_viz_base_data.frameL = frameL;
@@ -475,8 +475,8 @@ void Visualizer::draw_tracker_viz() {
     if ( last_drone_detection.predicted_image_item.valid) {
         auto pred =  last_drone_detection.predicted_image_item;
         cv::circle(frameL_color,pred.pt,pred.size/2,cv::Scalar(0,255,0));
-    } else if(_trackers->dronetracker()->takeoff_location_valid()) {
-        cv::circle(frameL_color,_trackers->dronetracker()->takeoff_im_location(),_trackers->dronetracker()->takeoff_im_size()/2,cv::Scalar(0,255,0));
+    } else if(_trackers->dronetracker()->pad_location_valid()) {
+        cv::circle(frameL_color,_trackers->dronetracker()->pad_im_location(),_trackers->dronetracker()->pad_im_size()/2,cv::Scalar(0,255,0));
     }
     if ( last_drone_detection.world_item.iti.valid) {
         auto p =  last_drone_detection.world_item.iti;

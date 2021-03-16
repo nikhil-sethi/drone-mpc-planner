@@ -642,67 +642,6 @@ public:
     }
 };
 
-class LandingParameters: public Serializable {
-private:
-    xFloat _x, _y, _z;
-public:
-    float x, y, z;
-    bool initialized = false;
-
-    LandingParameters() {
-        // Set the XML class name.
-        // This name can differ from the C++ class name
-        setClassName("LandingParameters");
-
-        // Set class version
-        setVersion("1.0");
-
-        // Register members. Like the class name, member names can differ from their xml depandants
-        Register("x",&_x);
-        Register("y",&_y);
-        Register("z",&_z);
-    }
-
-    void deserialize(std::string filepath) {
-        std::cout << "Reading settings from: " << filepath << std::endl;
-        if (file_exist(filepath)) {
-            std::ifstream infile(filepath);
-            std::string xmlData((std::istreambuf_iterator<char>(infile)),
-                                std::istreambuf_iterator<char>());
-
-            if (!Serializable::fromXML(xmlData, this))
-            {   // Deserialization not successful
-                throw MyExit("Cannot read: " + filepath);
-            }
-            LandingParameters tmp;
-            auto v1 = getVersion();
-            auto v2 = tmp.getVersion();
-            if (v1 != v2) {
-                throw MyExit("XML version difference detected from " + filepath);
-            }
-            infile.close();
-        } else {
-            return;
-        }
-
-        x = _x.value();
-        y = _y.value();
-        z = _z.value();
-        initialized = true;
-    }
-
-    void serialize(std::string filepath) {
-        _x = x;
-        _y = y;
-        _z = z;
-
-        std::string xmlData = toXML();
-        std::ofstream outfile = std::ofstream (filepath);
-        outfile << xmlData ;
-        outfile.close();
-    }
-};
-
 class CamCalibration: public xmls::Serializable {
 private:
     xmls::xFloat _angle_x;
@@ -859,6 +798,8 @@ private: xmls::xFloat _pad_pitch;
 private: xmls::xInt _drone_id;
 private: xmls::xString _drone_name;
 private: xmls::xFloat _thrust;
+
+public: cv::Point3f pad_pos() { return cv::Point3f(pad_pos_x,pad_pos_y,pad_pos_z);}
 
 public: DroneCalibration() {
         setClassName("DroneCalibration");
