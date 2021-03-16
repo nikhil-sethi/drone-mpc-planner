@@ -16,12 +16,12 @@
     <Member Name="thrust">16</Member> <!-- overwritten, if xml/drone_calibration.xml exists -->
     <Member Name="tx">tx_frskyd8</Member>
     <Member Name="mode3d">false</Member>
-    <Member Name="control">control_anvil_superbee</Member>
+    <Member Name="control">control_tinywhoop</Member>
     <Member Name="spinup_throttle_non3d">330</Member>
     <Member Name="land_cell_v">3.0</Member>
     <Member Name="max_flight_time">180</Member>
     <Member Name="min_hunt_cell_v">4.1</Member>
     <Member Name="static_shakeit_throttle">250</Member>
     <Member Name="target_takeoff_velocity">1.</Member>
-    <Member Name="led_type">led_strip</Member>
+    <Member Name="led_type">led_none</Member>
 </SerializableClass>
