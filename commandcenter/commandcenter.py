@@ -615,7 +615,7 @@ class SystemWidget(QWidget):
         if os.path.exists(source_system_txt_file):
             with open (source_system_txt_file, "r") as sysinf_txt_file:
                 sysinfo_txt=sysinf_txt_file.readlines()
-            self.host_id = sysinfo_txt[0].split(':')[1].strip().replace('pats-proto','')
+            self.host_id = sysinfo_txt[0].split(':')[1].strip().replace('pats-proto','').replace('pats','')
             self.drone_id = sysinfo_txt[1].split(':')[1].strip()
             sha = sysinfo_txt[2].split(':')[1].strip()[:6]
 
