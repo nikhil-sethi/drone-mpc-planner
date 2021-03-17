@@ -781,6 +781,7 @@ void TrackerManager::update_trackers(double time,long long frame_number, bool dr
             btrkr->update(time);
             if (_mode == mode_locate_drone) {
                 if (btrkr->state() == BlinkTracker::bds_found) {
+                    _dtrkr->set_pad_location_from_blink(btrkr->world_item().pt);
                     _mode = mode_idle;
                 }
             } else if (btrkr->ignores_for_other_trkrs.size() == 0) {

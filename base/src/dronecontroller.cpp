@@ -710,10 +710,7 @@ bool DroneController::pad_calibration_done() {
         ss << std::put_time(std::localtime(&date), "%Y/%m/%d %T");
         calibration.pad_calib_date = ss.str();
         save_calibration();
-
-        _dtrk->set_pad_location(calibration.pad_pos());
         _camview->p0_bottom_plane(calibration.pad_pos_y, true);
-
         return true;
     } else {
         std::cout << "Drone calibration failed: attitude not received or not accepted!" << std::endl;
