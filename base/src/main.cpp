@@ -207,6 +207,10 @@ void process_video() {
                 std::cout <<"Detected a drone config that fits, reloading!" << std::endl;
                 pparams.drone= drone_qutt;
                 pparams.serialize(pats_xml_fn);
+            } else if(rc->bf_uid_str() == "quf4") {
+                std::cout <<"Detected a drone config that fits, reloading!" << std::endl;
+                pparams.drone= drone_quf4;
+                pparams.serialize(pats_xml_fn);
             }
             if(!dnav.drone_flying()) {
                 exit_now = true;

@@ -1,5 +1,5 @@
 <SerializableClass Type="DroneParameters" Version="1.11">
-    <Member Name="name">qutt</Member>
+    <Member Name="name">quf4</Member>
     <Member Name="initial_hover_throttle">870</Member>
     <Member Name="throttle_bank_factor">0.75</Member>
     <Member Name="max_burn_time">0.7</Member>
@@ -14,7 +14,7 @@
     <Member Name="blink_period">0.1</Member>
     <Member Name="radius">0.05</Member>
     <Member Name="thrust">16</Member> <!-- overwritten, if xml/drone_calibration.xml exists -->
-    <Member Name="tx">tx_frskyd8</Member>
+    <Member Name="tx">tx_frskyd16</Member>
     <Member Name="mode3d">false</Member>
     <Member Name="control">control_tinywhoop</Member>
     <Member Name="spinup_throttle_non3d">330</Member>
