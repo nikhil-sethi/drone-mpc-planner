@@ -18,7 +18,7 @@
 #define EEPROM_CALIB_DONE_START 1
 #define EEPROM_CALIB_DONE_STEPS 10
 
-#define SOFTWARE_VERSION 130
+#define SOFTWARE_VERSION 131
 
 #define ONE_S_DRONE true
 
@@ -376,7 +376,7 @@ float run_state_machine() {
       last_detect_time = millis();
       drone_detected = true;
       set_state(STATE_CHARGING_PRECHECK);
-      return 500;
+      return 2000;
     }
     case STATE_CHARGING_PRECHECK: {
       battery_charge = getSmoothedVoltage();
@@ -428,7 +428,7 @@ float getSmoothedVoltage() {
 }
 
 void calcSmoothedVoltage() {
-  float alpha = 0.5;
+  float alpha = 0.1;
 
   if (calibration_mode)
     alpha /= 5;
