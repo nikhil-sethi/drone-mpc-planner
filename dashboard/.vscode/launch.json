@@ -2,6 +2,8 @@
     "version": "0.2.0",
     "configurations": [
 
+
+
       {
         "name": "Current File",
         "type": "python",
@@ -41,6 +43,14 @@
         "program": "${workspaceFolder}/example_viz.py",
         "args": [],
         "console": "integratedTerminal"
-      }
+      },
+      {
+        "name": "Daily digest",
+        "type": "python",
+        "args": ["--dry-run"],
+        "request": "launch",
+        "program": "${workspaceFolder}/daily_digest.py",
+        "console": "integratedTerminal"
+      },
     ]
   }

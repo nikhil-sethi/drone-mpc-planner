@@ -251,7 +251,7 @@ def store_hunts(data):
         hunt_table_exist = cur.fetchone()[0]==1
         sql_insert = ''
 
-        hunts =data["hunts"]
+        hunts = data["hunts"]
         for hunt in hunts:
 
             if not hunt_table_exist:
@@ -277,11 +277,16 @@ def store_hunts(data):
         con.commit()
     return len(hunts)
 
-def process_json(data):
-    n_moths = store_moths(data)
-    store_mode(data)
-    n_hunts = store_hunts(data)
-    return n_moths,n_hunts
+def count_errors(data):
+    errors = data['errors']
+    return len(errors)
+
+def process_json(data,cur,conn):
+    n_moths = store_moths(data,cur,conn)
+    store_mode(data,cur,conn)
+    n_hunts = store_hunts(data,cur,conn)
+    n_errors = count_errors(data)
+    return n_moths,n_hunts,n_errors
 
 def jsons_to_db(input_folder):
     files = patsc.natural_sort([fp for fp in glob.glob(os.path.expanduser(input_folder + "/*.json"))])
@@ -297,10 +302,11 @@ def jsons_to_db(input_folder):
                             data = json.load(json_file)
                             min_required_version=1.0
                             if "version" in data and float(data["version"]) >= min_required_version:
-                                n_moths,n_hunts = process_json(data)
+                                n_moths,n_hunts,n_errors = process_json(data)
                                 flag_f.write('OK')
                                 flag_f.write('. Insect detections: ' + str(n_moths))
                                 flag_f.write('. Hunts: ' + str(n_hunts))
+                                flag_f.write('. Errors from jsons: ' + str(n_errors))
                                 flag_f.write('.\n')
                             elif "version" in data:
                                 flag_f.write('WRONG VERSION ' + data["version"] + '. Want: ' + min_required_version + '\n')

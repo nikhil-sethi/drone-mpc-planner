@@ -29,74 +29,130 @@ def execute(cmd):
         print(stdout_line.decode('utf-8'),end ='')
     popen.stdout.close()
 
-def send_mail(now):
-    files = patsc.natural_sort([fp for fp in glob.glob(os.path.expanduser(args.input_folder + "/*.processed"))])
+def get_moth_counts(now):
+    today_str = now.strftime('%Y%m%d')
+    files = patsc.natural_sort([fp for fp in glob.glob(os.path.expanduser(args.input_folder + '*' + today_str + '*.processed'))])
     systems = load_systems()
-    mail_txt = ''
-    recent_files = []
+    systems['msg'] = ''
     for file in files:
-        f = os. path. splitext(os.path.basename((file)))[0]
+        f = os.path.splitext(os.path.basename((file)))[0]
         if f.startswith('pats'):
             f_date = f.split('_')[-2] + '_' + f.split('_')[-1]
             try:
                 d = datetime.strptime(f_date, "%Y%m%d_%H%M%S")
                 f_sys = f.split('_')[0].replace('-proto','')
-                if d > now - timedelta(hours=5):
-                    with open (file, "r") as fr_processed:
-                        if f_sys in systems['system'].values:
-                            msg = fr_processed.readline()
-                            recent_files.append([f_sys,msg])
-                            systems = systems.drop(systems[systems['system']==f_sys].index)
-                        else:
-                            print('Warning, system does not exist: ' + f_sys)
+                with open (file, "r") as fr_processed:
+                    if f_sys in systems['system'].values:
+                        msg = fr_processed.readline()
+                        systems.loc[systems['system']==f_sys,'msg'] = msg
+                    else:
+                        print('Warning, system does not exist: ' + f_sys)
             except:
                 pass
+    return systems
+
+def get_daily_errors(now):
+    today_str = now.strftime('%Y%m%d')
+    err_files = patsc.natural_sort([fp for fp in glob.glob(os.path.expanduser('~/daily_basestation_errors/*' + today_str + '*'))])
+    systems = load_systems()
+    systems['err'] = 0
+    for err_file in err_files:
+        e_f = os.path.splitext(os.path.basename((err_file)))[0]
+        if e_f.startswith('pats'):
+            e_f_date = e_f.split('_')[-2] + '_' + e_f.split('_')[-1]
+            try:
+                d = datetime.strptime(e_f_date, "%Y%m%d_%H%M%S")
+                f_sys = e_f.split('_')[0].replace('-proto','')
+                with open (err_file, "r") as fr_processed:
+                    if f_sys in systems['system'].values:
+                        msg = fr_processed.readlines()
+                        systems.loc[systems['system']==f_sys,'err'] = len(msg)
+                    else:
+                        print('Warning, system does not exist: ' + f_sys)
+            except Exception as e:
+                pass
+    return systems
+
+def send_mail(now,dry_run):
+    systems = get_moth_counts(now)
+    systems = systems.merge(get_daily_errors(now),how='inner',on=['system','maintenance'])
+
     mail_txt = 'Pats status report ' + str(now) + '\n\n'
-    if (len(systems)>0):
-        mail_txt += 'WARNINGS: \nNothing received from: '
-        for sys,maintenance in systems.to_numpy():
+    mail_warnings = ''
+    if (sum(systems['msg']=='')>0):
+        for sys,maintenance,_,_ in systems[systems['msg']==''].to_numpy():
             if maintenance:
                 try:
                     date = datetime.strptime(maintenance,'%Y%m%d')
                     if datetime.today() - date <= timedelta(days=1):
-                        recent_files.append([sys,'OK. under maintenance'])
+                        systems.loc[systems['system']==sys,'msg'] = 'OK. under maintenance \n'
                     else:
-                        mail_txt += sys + ', '
+                        mail_warnings += sys + ', '
                 except:
-                    mail_txt += sys + ': date_error, '
+                    mail_warnings += sys + ': date_error, '
             else:
-                mail_txt += sys + ', '
-        mail_txt = mail_txt[:-2] + '\n'
-        for sys,message in recent_files:
-            if not message.startswith('OK.'):
-                mail_txt += sys + ': ' + message.strip() + '\n'
-        mail_txt += '\n'
+                mail_warnings += sys + ', '
+        mail_warnings = mail_warnings[:-2] + '\n'
 
-    recent_files = natural_sort_systems(recent_files)
+        for sys,_,message,err in systems.to_numpy():
+            if not message.startswith('OK.') and message:
+                err_message = ''
+                if err > 1:
+                    err_message = ' System errors: ' + str(err-1) + '. '
+                mail_warnings += sys + ': ' + message.strip() + err_message + '\n'
+        mail_warnings += '\n'
+    if mail_warnings:
+        mail_txt += 'WARNINGS: \nNothing received from: ' + mail_warnings
+
+    mail_err = ''
+    if (sum(systems['err']>1)>0): # err > 1 because we force rotation with an error
+        for sys,maintenance,_,_ in systems[systems['err']>1].to_numpy():
+            if maintenance:
+                try:
+                    date = datetime.strptime(maintenance,'%Y%m%d')
+                    if datetime.today() - date <= timedelta(days=1):
+                        systems.loc[systems['system']==sys,'msg'] = 'OK. under maintenance \n'
+                    else:
+                        mail_err += sys + ', '
+                except:
+                    mail_err += sys + ': date_error, '
+            else:
+                mail_err += sys + ', '
+        mail_err = mail_err[:-2] + '\n'
+    if mail_err:
+        mail_txt += 'ERRORS: \n' + mail_err
+
     mail_txt += 'System status:\n'
-    for sys,message in recent_files:
+    for sys,_,message,err in systems.to_numpy():
         if message.startswith('OK. '):
-            mail_txt += sys + ':\t' + message.replace('OK.','').strip() + '\n'
+            err_message = ''
+            if err > 1:
+                err_message = ' System errors: ' + str(err-1) + '. '
+            mail_txt += sys + ':\t' + message.replace('OK.','').strip() + err_message + '\n'
 
     print(mail_txt)
     with open('mail.tmp','w') as mail_f:
         mail_f.write(mail_txt)
 
-    cmd = 'mail -s "Pats daily status digest" sys-maintenance@pats-drones.com < mail.tmp'
-    execute(cmd)
+    if not dry_run:
+        cmd = 'mail -s "Pats daily status digest" sys-maintenance@pats-drones.com < mail.tmp'
+        execute(cmd)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Script that adds the json files or incoming json files to the database that is reable for the electron app.')
     parser.add_argument('-i', '--input_folder', help="Path to the folder with json files", default='~/jsons/')
     parser.add_argument('-t','--hour', help="Send email at the start of this hour.", default=11)
+    parser.add_argument('--dry-run', help="Run script now without sending mail", dest='dry_run', action='store_true')
     args = parser.parse_args()
 
     updated_today = False
     while  True:
         now = datetime.now()
-        if now.hour == int(args.hour) and not updated_today:
+        if (now.hour == int(args.hour) and not updated_today) or args.dry_run:
             updated_today = True
-            send_mail(now)
+            send_mail(now,args.dry_run)
+            if args.dry_run:
+                break
 
         if now.hour == int(args.hour)+1 and updated_today:
             updated_today = False
