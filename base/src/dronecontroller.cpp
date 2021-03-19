@@ -673,8 +673,13 @@ void DroneController::draw_viz(
 }
 
 bool check_att_bounds(cv::Point2f att, cv::Point2f att_min,cv::Point2f att_max) {
-    return att.x > att_min.x && att.x < att_max.x &&
-           att.y > att_min.y && att.y < att_max.y;
+    bool att_check = att.x > att_min.x && att.x < att_max.x &&
+                     att.y > att_min.y && att.y < att_max.y;
+
+    if(!att_check)
+        std::cout << "Pad attitude off: roll:" << att.x << "; pitch: " << att.y << std::endl;
+
+    return att_check;
 }
 void DroneController::calibrate_pad_attitude() {
     static uint32_t prev_roll_pitch_package_id = 0;
@@ -694,7 +699,9 @@ bool DroneController::attitude_on_pad_OK() {
         if (!landing_att_calibration_msg_printed)
             std::cout << "Received enough att telemetry samples from drone. Diff with original blink att: " << current_att - pad_att_calibration << std::endl;
         landing_att_calibration_msg_printed = true;
-        return check_att_bounds(current_att,pad_att_calibration-max_att_calibration_diff,pad_att_calibration+max_att_calibration_diff);
+        return check_att_bounds(current_att,
+                                pad_att_calibration - max_att_calibration_diff,
+                                pad_att_calibration + max_att_calibration_diff);
     } else
         return false;
 }
