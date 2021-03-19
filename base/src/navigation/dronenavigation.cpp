@@ -176,11 +176,12 @@ void DroneNavigation::update(double time) {
             }
             break;
         } case ns_calibrating_motion: {
-            if (_dctrl->arming_problem()) {
-                _dctrl->flight_mode(DroneController::fm_disarmed);
-                time_motion_calibration_started = time;
-                _navigation_status = ns_wait_to_arm;
-            }
+            if (pparams.op_mode != op_mode_monitoring)
+                if (_dctrl->arming_problem()) {
+                    _dctrl->flight_mode(DroneController::fm_disarmed);
+                    time_motion_calibration_started = time;
+                    _navigation_status = ns_wait_to_arm;
+                }
             if (static_cast<float>(time-time_motion_calibration_started) > motion_calibration_duration) {
                 _navigation_status= ns_calibrating_motion_done;
             }

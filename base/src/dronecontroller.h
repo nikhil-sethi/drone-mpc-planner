@@ -460,9 +460,7 @@ public:
     uint control_history_max_size;
     std::vector<ControlData> control_history;
 
-    float dist_to_setpoint() {
-        return _dist_to_setpoint;
-    }
+    float dist_to_setpoint() { return _dist_to_setpoint; }
 
     void close (void);
     void init(std::ofstream *logger, std::string replay_dir, bool generator_mode, bool airsim, Rc *rc, tracking::DroneTracker *dtrk, CameraView* camvol,float exposure);
@@ -482,8 +480,16 @@ public:
     bool state_inactive() { return _flight_mode == fm_inactive; }
     bool state_disarmed() { return _flight_mode == fm_disarmed; }
     bool ready_for_first_arm(double time) {return time - _rc->time_disarmed() > 1.5 && _rc->time_disarmed() >= 0;}
-    bool telemetry_OK() { return _rc->bf_telem_OK();}
-    bool arming_problem() { return _rc->telemetry.arming_state != 0; }
+    bool telemetry_OK() {
+        if (initialized)
+            return _rc->bf_telem_OK();
+        return false;
+    }
+    bool arming_problem() {
+        if (initialized)
+            return _rc->telemetry.arming_state != 0;
+        return true;
+    }
 
     bool joystick_ready();
 
