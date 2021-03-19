@@ -30,4 +30,7 @@ root	ALL=(ALL:ALL) ALL
 #includedir /etc/sudoers.d
 
 pats ALL = (root) NOPASSWD: /usr/sbin/rtcwake
-
+pats ALL = (root) NOPASSWD: /sbin/swapoff
+pats ALL = (root) NOPASSWD: /bin/systemctl
+pats ALL = (root) NOPASSWD: /usr/bin/nmcli
+pats ALL = (root) NOPASSWD: /usr/sbin/nethogs
