@@ -230,6 +230,19 @@ if [[ $1 -eq 1 ]] ; then
 		}
 		sudo ln -s ~/code/pats/base/install/50unattended-upgrades /etc/apt/apt.conf.d/
 
+
+		[ -f /etc/apt/apt.conf.d/10periodic ] && {
+				sudo rm /etc/apt/apt.conf.d/10periodic
+		}
+		sudo ln -s ~/code/pats/base/install/10periodic /etc/apt/apt.conf.d/
+
+
+		[ -f /etc/apt/apt.conf.d/20auto-upgrades ] && {
+				sudo rm /etc/apt/apt.conf.d/20auto-upgrades
+		}
+		sudo ln -s ~/code/pats/base/install/20auto-upgrades /etc/apt/apt.conf.d/
+
+
 		[ -f /etc/rc.local ] && {
 			sudo cp  /etc/rc.local{,.bak} --backup=numbered
 			sudo rm /etc/rc.local
