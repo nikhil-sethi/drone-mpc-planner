@@ -1,7 +1,7 @@
 # PATS
 
 ## [Installation]
-Start [install.sh](config/install.sh) with argument 0 (non monitoring mode) to install all requirements.
+Start [install.sh](base/install/install.sh) with argument 0 (non monitoring mode) to install all requirements.
 
 ## [Firmwares](config/firmwares/README.md)
 
@@ -27,7 +27,7 @@ Host pats1
 	IdentityFile ~/.ssh/pats_id_rsa
 	User pats
 	ProxyJump mavlab-gpu
-	Port 6100
+	Port 10001
 ```  
 
 ## valgrind
