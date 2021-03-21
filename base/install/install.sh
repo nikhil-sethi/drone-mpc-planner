@@ -52,7 +52,7 @@ pushd ~/dependencies
 
 # Install pats dependency packages
 [ -f dependencies-packages-v1.9.done ] || {
-	sudo apt-get update
+	sudo apt update
 	sudo apt install -y cmake g++ libva-dev libswresample-dev libavutil-dev pkg-config libcurl4-openssl-dev ncdu openssh-server ffmpeg unattended-upgrades inotify-tools cpputest python3-pip python-pip dfu-util exfat-utils vnstat ifmetric net-tools lm-sensors nethogs
 	sudo apt install -y gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav libgstreamer-plugins-base1.0-* libgstreamer-plugins-bad1.0-* libgstreamer-plugins-good1.0-* gstreamer1.0-vaapi vainfo
 	sudo apt-get remove -y modemmanager
@@ -82,7 +82,7 @@ if [[ $1 -eq 0 ]] ; then
 		echo "deb https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
 		sudo snap install sublime-text --classic
 		sudo snap install code --classic
-		sudo apt-get update
+		sudo apt update
 		sudo apt install -y libqt5opengl5 libqt5opengl5-dev astyle  meld gitk git-gui terminator jstest-gtk
 		#libgtk2.0-dev libtbb-dev qt5-default libgtkgl* libgtkgl2.0-* libgtkglext1  libgtkglext1-dev libgtkglext1-dev libgtkgl2.0-dev  libgtk2.0-dev libgtk-3-dev gnome-devel
 		touch dev-dependencies-packages-v1.1.done
@@ -148,23 +148,28 @@ if [[ $1 -eq 1 ]] ; then
 		git config --global user.email "${HOSTNAME}@pats.com"
 		git config --global user.name $HOSTNAME
 
-		#sudo apt-get install bash-completion
-		git config --global alias.co checkout
-		git config --global alias.br branch
-		git config --global alias.ci commit
-		git config --global alias.st status
-		git config --global alias.dt "difftool -d"
-		git config --global alias.ls "log --oneline"
-
-		git config --global alias.s status
-		git config --global alias.ss "status --short"
-		git config --global alias.ssb "status --short --branch"
-		git config --global alias.pr "pull --rebase"
-		git config --global alias.cp "cherry-pick"
-
 		touch git.done
 	}
 fi
+
+[ -f git_aliases_v1.0.done ] || {
+
+	#sudo apt install bash-completion
+	git config --global alias.co checkout
+	git config --global alias.br branch
+	git config --global alias.ci commit
+	git config --global alias.st status
+	git config --global alias.dt "difftool -d"
+	git config --global alias.ls "log --oneline"
+
+	git config --global alias.s status
+	git config --global alias.ss "status --short"
+	git config --global alias.ssb "status --short --branch"
+	git config --global alias.pr "pull --rebase"
+	git config --global alias.cp "cherry-pick"
+
+	touch git.done
+}
 
 # Install the Pats code
 [ -f pats_code_v1.1.done ] || {
@@ -195,7 +200,7 @@ if [[ $1 -eq 1 ]] ; then
 	mkdir -p ~/pats/images
 
 	# Create nice symlinks
-	[ -f symlinks-v1.1.done ] || {
+	[ -f symlinks-v1.2.done ] || {
 		[ -f ~/.screenrc ] && {
 			cp ~/.screenrc{,.bak} --backup=numbered
 			rm ~/.screenrc
@@ -234,9 +239,12 @@ if [[ $1 -eq 1 ]] ; then
 		rm ~/.ssh/config -f
 		ln -s ~/code/pats/base/install/sshconfig ~/.ssh/config
 
+		sudo cp  /etc/sudoers{,.bak} --backup=numbered
+		sudo cp ~/code/pats/base/install/sudoers /etc/sudoers
+
 		sudo systemctl restart ssh.service
 
-		touch symlinks-v1.1.done
+		touch symlinks-v1.2.done
 	}
 fi
 
