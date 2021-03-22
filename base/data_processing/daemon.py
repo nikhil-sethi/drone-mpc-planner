@@ -7,8 +7,8 @@ import lib_base as lb
 from clean_hd import clean_hd
 from status_cc import send_status_update
 from render_videos import render_last_day
-from logs_to_json import send_json_of_last_day
-from cut_moths import cut_moths_current_night
+from logs_to_json import process_all_logs_to_jsons,send_all_jsons
+from cut_moths import cut_moths_all
 
 status_cc_status_str = ''
 def status_cc_worker():
@@ -130,10 +130,10 @@ class clean_hd_task(pats_task):
 class cut_moths_task(pats_task):
 
     def __init__(self):
-        super(cut_moths_task,self).__init__('cut_moths',timedelta(),timedelta(minutes=15))
+        super(cut_moths_task,self).__init__('cut_moths',timedelta(),timedelta(minutes=60))
 
     def task_func(self):
-        cut_moths_current_night()
+        cut_moths_all()
 
 class logs_to_json_task(pats_task):
 
@@ -141,7 +141,8 @@ class logs_to_json_task(pats_task):
         super(logs_to_json_task,self).__init__('logs_to_json',timedelta(hours=10),timedelta(hours=24))
 
     def task_func(self):
-        send_json_of_last_day()
+        process_all_logs_to_jsons()
+        send_all_jsons()
 
 class errors_to_vps_task(pats_task):
 

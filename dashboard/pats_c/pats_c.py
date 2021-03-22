@@ -35,18 +35,6 @@ def load_systems_group(group_name,cur):
     systems = cur.execute(sql_str).fetchall()
     return systems
 
-# this function can be removed after all systems have been upgraded to use the 10000 based port.
-#it adds an o to the ssh name (to be found in the ssh config), using the system database as source for whether a system was updated.
-def add_o_for_no_port_upgrade(system):
-    sql_str = f'''SELECT port_upgrade FROM systems WHERE system = "{system}"'''
-    with patsc.open_systems_db() as con:
-        port_upgrade = con.execute(sql_str).fetchall()
-    if port_upgrade[0][0] == 1:
-        add_o = ''
-    else:
-        add_o = 'o'
-    return add_o
-
 def load_groups():
     if current_user:
         if current_user.is_authenticated:
@@ -397,11 +385,7 @@ def download_log(selected_moth,moth_columns):
         return ''
     target_log_fn = './static/' + log_folder + '_' + sys_name + '_' + log_fn
     if not os.path.isfile(target_log_fn):
-        add_o = add_o_for_no_port_upgrade(sys_name)
-        if add_o:
-            rsync_src = sys_name + add_o + ':data/' + log_folder + '/logging/' + log_fn
-        else:
-            rsync_src = sys_name + add_o + ':pats/data/' + log_folder + '/logging/' + log_fn
+        rsync_src = sys_name + ':pats/data/processed/' + log_folder + '/logging/' + log_fn
         cmd = ['rsync --timeout=5 -az -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ' + rsync_src + ' ' + target_log_fn]
         execute(cmd)
     return target_log_fn
@@ -450,11 +434,7 @@ def download_video(selected_moth,moth_columns):
         target_video_mp4_fn = target_video_mkv_fn[0:-3] + 'mp4'
 
         if not os.path.isfile(target_video_mkv_fn) and  not os.path.isfile(target_video_mp4_fn):
-            add_o = add_o_for_no_port_upgrade(sys_name)
-            if add_o:
-                rsync_src = sys_name + add_o + ':data/' +selected_moth[moth_columns.index('Folder')] + '/logging/render_' + video_fn
-            else:
-                rsync_src = sys_name + add_o + ':pats/data/' +selected_moth[moth_columns.index('Folder')] + '/logging/render_' + video_fn
+            rsync_src = sys_name + ':pats/data/processed/' +selected_moth[moth_columns.index('Folder')] + '/logging/render_' + video_fn
             cmd = ['rsync --timeout=5 -a -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ' + rsync_src + ' ' + target_video_mkv_fn]
             execute(cmd)
         if not os.path.isfile(target_video_mp4_fn) and os.path.isfile(target_video_mkv_fn):

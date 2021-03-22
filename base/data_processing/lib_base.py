@@ -52,6 +52,7 @@ def execute(cmd,retry=1,logger_name=''):
             else:
                 logger.info(stdout_line.decode('utf-8'))
         popen.stdout.close()
+    return p_result
 
 def check_if_metered():
     cmd = 'ip route'

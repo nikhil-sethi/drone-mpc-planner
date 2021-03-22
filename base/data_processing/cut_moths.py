@@ -96,13 +96,10 @@ def cut_moths(folder):
                 else:
                     print("VideoRawLR not found")
 
-def cut_moths_current_night():
+def cut_moths_all():
     logger = logging.getLogger('cut_moth')
     found_dirs = glob.glob(lb.data_dir + '/202*_*')
-    now = datetime.today()
-    yesterday = now - timedelta(hours=8)
-    filtered_dirs = [d for d in found_dirs if lb.str_to_datetime(os.path.basename(os.path.normpath(d))) >= yesterday and lb.str_to_datetime(os.path.basename(os.path.normpath(d))) <= now] # filter the list of dirs to only contain dirs between certain dates
-    for folder in filtered_dirs:
+    for folder in found_dirs:
         video_in_file = folder + '/logging/videoRawLR.mkv'
         if os.path.exists(video_in_file):
             logger.info('Processing ' + folder)
@@ -121,6 +118,6 @@ if __name__ == '__main__':
     logger.setLevel(logging.DEBUG)
 
     if not args.i:
-        cut_moths_current_night()
+        cut_moths_all()
     else:
         cut_moths(args.i)
