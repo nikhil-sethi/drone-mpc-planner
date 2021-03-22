@@ -7,7 +7,7 @@
 #include <unistd.h> //usleep
 #include<iostream>
 
-void CommandCenterLink::init(bool log_replay_mode,navigation::DroneNavigation * dnav,DroneController * dctrl,Rc * rc,tracking::TrackerManager * trackers) {
+void CommandCenterLink::init(bool log_replay_mode,navigation::DroneNavigation * dnav,DroneController * dctrl,Rc * rc,tracking::TrackerManager * trackers,VisionData *visdat) {
     remove(demo_insect_fn.c_str());
     remove(demo_waypoint_fn.c_str());
     remove(calib_fn.c_str());
@@ -19,6 +19,7 @@ void CommandCenterLink::init(bool log_replay_mode,navigation::DroneNavigation * 
     _rc = rc;
     _trackers = trackers;
     _log_replay_mode = log_replay_mode;
+    _visdat = visdat;
 
     thread = std::thread(&CommandCenterLink::background_worker,this);
     initialized = true;
@@ -124,6 +125,8 @@ void CommandCenterLink::write_commandcenter_status_file() {
         status_file << "cell v: " << to_string_with_precision(_rc->telemetry.batt_cell_v,2) << std::endl;
         status_file << "arming: " << _rc->telemetry.arming_state << std::endl;
         status_file << "rssi: " << static_cast<int>(_rc->telemetry.rssi) << std::endl;
+        status_file << "drone att: " << _rc->telemetry.roll << ", " << _rc->telemetry.pitch << std::endl;
+        status_file << "cam angle: " << _visdat->camera_angle << std::endl;
         status_file.close();
     }
 }

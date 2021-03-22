@@ -808,7 +808,7 @@ void init() {
         thread_watchdog = std::thread(&watchdog_worker);
 
     if (!render_hunt_mode && !render_monitor_video_mode)
-        cmdcenter.init(log_replay_mode,&dnav,&dctrl,rc.get(),&trackers);
+        cmdcenter.init(log_replay_mode,&dnav,&dctrl,rc.get(),&trackers,&visdat);
 
 #ifdef PROFILING
     logger << "t_visdat;t_trkrs;t_nav;t_ctrl;t_prdct;t_frame;"; // trail of the logging heads, needs to happen last
