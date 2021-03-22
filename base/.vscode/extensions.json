@@ -11,6 +11,7 @@
         "chiehyu.vscode-astyle",
         "ms-vscode.cmake-tools",
         "ms-vscode.cpptools",
-        "twxs.cmake"
+        "twxs.cmake",
+        "ms-vscode.cpptools-extension-pack"
     ]
 }
