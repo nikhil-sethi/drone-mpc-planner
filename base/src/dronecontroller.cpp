@@ -957,7 +957,8 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> Dron
     cv::Point3f scale_vel_d = {0.01f, 0.01f, 0.01f};
 
     float duration_waypoint_update = duration_since_waypoint_changed(data_drone.time);
-    if (normf(setpoint_vel) >= 0.01f || duration_waypoint_update <= 1) {
+    if (_flight_mode!=fm_flying_headed_pid
+            && (normf(setpoint_vel) >= 0.01f || duration_waypoint_update <= 1)) {
         scale_pos_i.x = -1; // flag that i is not used currently
         scale_pos_i.z = -1;
     }
