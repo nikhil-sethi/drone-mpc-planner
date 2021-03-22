@@ -680,7 +680,7 @@ void DroneController::calibrate_pad_attitude() {
     static uint32_t prev_roll_pitch_package_id = 0;
     if (_rc->telemetry.roll_pitch_package_id > prev_roll_pitch_package_id) {
         prev_roll_pitch_package_id = _rc->telemetry.roll_pitch_package_id;
-        if (check_att_bounds(cv::Point2f(_rc->telemetry.roll,_rc->telemetry.pitch),min_att_calibration,max_att_calibration)) {
+        if (check_att_bounds(cv::Point2f(_rc->telemetry.roll,_rc->telemetry.pitch),cv::Point2f(-360,-360),cv::Point2f(360,360))) {
             pad_att_calibration_roll.addSample(_rc->telemetry.roll);
             pad_att_calibration_pitch.addSample(_rc->telemetry.pitch);
         }
@@ -699,7 +699,13 @@ bool DroneController::attitude_on_pad_OK() {
         return false;
 }
 bool DroneController::pad_calibration_done() {
-    if (pad_att_calibration_roll.ready() || !dparams.Telemetry()) {
+    if (!dparams.Telemetry()) {
+        std::cout << "Warning: drone has no telemetry capability. Skipping att calibration." << std::endl;
+        return true;
+    } else if (!pad_att_calibration_roll.ready()) {
+        std::cout << "Drone calibration failed: attitude not received!" << std::endl;
+        return false;
+    } else if (check_att_bounds(cv::Point2f(pad_att_calibration_roll.latest(),pad_att_calibration_pitch.latest()),-max_att_calibration,max_att_calibration)) {
         calibration.pad_pos_x = _dtrk->pad_location().x;
         calibration.pad_pos_y = _dtrk->pad_location().y;
         calibration.pad_pos_z = _dtrk->pad_location().z;
@@ -713,7 +719,7 @@ bool DroneController::pad_calibration_done() {
         _camview->p0_bottom_plane(calibration.pad_pos_y, true);
         return true;
     } else {
-        std::cout << "Drone calibration failed: attitude not received or not accepted!" << std::endl;
+        std::cout << "Drone calibration failed: attitude not within accetable bounds: [" << pad_att_calibration_roll.latest() << ", " << pad_att_calibration_pitch.latest() << "]" << std::endl;
         return false;
     }
 }
