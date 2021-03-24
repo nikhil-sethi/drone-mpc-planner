@@ -269,7 +269,7 @@ void DroneNavigation::update(double time) {
                 _n_wp_flights++;
                 _trackers->mode(tracking::TrackerManager::mode_drone_only);
             }
-            _navigation_status=ns_taking_off;
+            _navigation_status = ns_taking_off;
             break;
         } case ns_taking_off: {
             if (_nav_flight_mode == nfm_manual) {
@@ -471,7 +471,7 @@ void DroneNavigation::update(double time) {
             if (_nav_flight_mode == nfm_hunt && _iceptor->aim_in_range() && !_dctrl->landing()  && !low_battery_triggered)
                 _navigation_status = ns_start_the_chase;
             if (_nav_flight_mode == nfm_manual)
-                _navigation_status=ns_manual;
+                _navigation_status = ns_manual;
             break;
         } case ns_landed: {
             wpid = 0;
@@ -506,10 +506,10 @@ void DroneNavigation::update(double time) {
             _trackers->mode(tracking::TrackerManager::mode_drone_only);
             _trackers->dronetracker()->manual_flight_mode(true);
             if (_nav_flight_mode == nfm_hunt) {
-                _navigation_status=ns_wait_for_insect;
+                _navigation_status = ns_wait_for_insect;
                 _trackers->dronetracker()->manual_flight_mode(false);
             } else if (_nav_flight_mode != nfm_manual) { // waypoint mode
-                _navigation_status=ns_wait_for_takeoff_command;
+                _navigation_status = ns_wait_for_takeoff_command;
                 _trackers->dronetracker()->manual_flight_mode(false);
             }
             break;
