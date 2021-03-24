@@ -1,14 +1,14 @@
-    <SerializableClass Type="FlightPlanXML" Version="1.2">
+    <SerializableClass Type="FlightPlanXML" Version="1.3">
     <Member Name="flightplan_name">demo</Member>
     <Collection Name="waypoints">
-        <Class Type="Waypoint" Version="1.2">
+        <Class Type="Waypoint" Version="1.3">
             <Member Name="type">wfm_takeoff</Member>
             <Member Name="threshold_mm"></Member>
             <Member Name="x"></Member>
             <Member Name="y"></Member>
             <Member Name="z"></Member>
         </Class>
-        <Class Type="Waypoint" Version="1.2">
+        <Class Type="Waypoint" Version="1.3">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">50</Member>
             <Member Name="threshold_v">.8</Member>
@@ -18,7 +18,7 @@
             <Member Name="z">-1.31234752</Member>
             <Member Name="name">prep</Member>
         </Class>
-        <Class Type="Waypoint" Version="1.2">
+        <Class Type="Waypoint" Version="1.3">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">250</Member>
             <Member Name="threshold_v">100.</Member>
@@ -28,7 +28,7 @@
             <Member Name="z">-1</Member>
             <Member Name="name">init</Member>
         </Class>
-        <!-- <Class Type="Waypoint" Version="1.2"> -->
+        <!-- <Class Type="Waypoint" Version="1.3"> -->
         <!--     <Member Name="type">wfm_flying</Member> -->
         <!--     <Member Name="threshold_mm">100</Member> -->
         <!--     <Member Name="threshold_v">1.7</Member> -->
@@ -38,7 +38,7 @@
         <!--     <Member Name="z">-3</Member> -->
         <!--     <Member Name="name">trig</Member> -->
         <!-- </Class> -->
-        <Class Type="Waypoint" Version="1.2">
+        <Class Type="Waypoint" Version="1.3">
             <Member Name="type">wfm_flying</Member>
             <Member Name="threshold_mm">100</Member>
             <Member Name="threshold_v">1.7</Member>
@@ -49,14 +49,21 @@
             <Member Name="name">trig</Member>
         </Class>
 
-        <Class Type="Waypoint" Version="1.2">
+        <Class Type="Waypoint" Version="1.3">
             <Member Name="type">wfm_yaw_reset</Member>
             <Member Name="threshold_mm"></Member>
             <Member Name="x"></Member>
             <Member Name="y"></Member>
             <Member Name="z"></Member>
         </Class>
-        <Class Type="Waypoint" Version="1.2">
+        <Class Type="Waypoint" Version="1.3">
+            <Member Name="type">wfm_thrust_calib</Member>
+            <Member Name="threshold_mm"></Member>
+            <Member Name="x"></Member>
+            <Member Name="y"></Member>
+            <Member Name="z"></Member>
+        </Class>
+        <Class Type="Waypoint" Version="1.3">
             <Member Name="type">wfm_landing</Member>
             <Member Name="threshold_mm"></Member>
             <Member Name="x"></Member>

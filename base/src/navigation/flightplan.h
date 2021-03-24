@@ -9,7 +9,8 @@ enum waypoint_flight_modes {
     wfm_brick,
     wfm_wp_stay,
     wfm_landing,
-    wfm_yaw_reset
+    wfm_yaw_reset,
+    wfm_thrust_calib
 };
 static const char* waypoint_flight_modes_str[] = {
     "wfm_takeoff",
@@ -19,6 +20,7 @@ static const char* waypoint_flight_modes_str[] = {
     "wfm_wp_stay",
     "wfm_landing",
     "wfm_yaw_reset",
+    "wfm_thrust_calib",
     "" // must be the last entry! (check in serializer)
 };
 
@@ -58,6 +60,16 @@ struct Waypoint_Yaw_Reset : Waypoint {
         hover_pause = 1;
         mode = wfm_yaw_reset;
         name = "wp_yaw";
+    }
+};
+struct Waypoint_Thrust_Calibration : Waypoint {
+    Waypoint_Thrust_Calibration() {
+        xyz = cv::Point3f(0,0.5f,0);
+        threshold_mm = 15;
+        threshold_v = 0.15f;
+        hover_pause = 1;
+        mode = wfm_thrust_calib;
+        name = "wp_thrust_calib";
     }
 };
 struct Waypoint_Takeoff : Waypoint {
@@ -161,6 +173,10 @@ public:
             Waypoint_Yaw_Reset wp;
             return wp;
             break;
+        }case waypoint_flight_modes::wfm_thrust_calib: {
+             Waypoint_Thrust_Calibration wp;
+             return wp;
+             break;
         } case waypoint_flight_modes::wfm_brick: {
             Waypoint_Brick wp(cv::Point3f(x.value(),y.value(),z.value()),name.value());
             return wp;
@@ -188,7 +204,7 @@ public:
 
     XML_FlightPlan() {
         setClassName("FlightPlanXML");
-        setVersion("1.2");
+        setVersion("1.3");
         Register("flightplan_name", &flightplan_name);
         Register("waypoints", &waypointsxml);
     }

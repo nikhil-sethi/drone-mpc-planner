@@ -196,6 +196,8 @@ private:
     bool log_replay_mode = false;
     bool airsim_mode = false;
     bool generator_mode = false;
+    bool enable_thrust_calibration = false;
+    bool enable_thrust_calib_trig = false;
     flight_modes _flight_mode = fm_joystick_check; // only set externally (except for disarming), used internally
     joy_mode_switch_modes _joy_mode_switch = jmsm_none;
     betaflight_arming _joy_arm_switch = bf_armed;
@@ -280,7 +282,6 @@ public:
     KeepInViewController kiv_ctrl;
 
     cv::Point3f pid_error(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool choosing_insect);
-    bool enable_thrust_calibration = false;
     void flight_mode(flight_modes f) {
         _flight_mode = f;
     }
@@ -516,6 +517,14 @@ public:
             Telemetry t = {0};
             return t;
         }
+    }
+
+    void thrust_calibration(bool value) {
+        if(value && value!=enable_thrust_calibration)
+            enable_thrust_calib_trig = true;
+        else
+            enable_thrust_calib_trig = false;
+        enable_thrust_calibration = value;
     }
 
     bool attitude_on_pad_OK();

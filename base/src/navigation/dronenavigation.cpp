@@ -338,9 +338,14 @@ void DroneNavigation::update(double time) {
             next_waypoint(Waypoint_Yaw_Reset(),time);
             _navigation_status = ns_approach_waypoint;
             break;
+        } case ns_goto_thrust_calib_waypoint: {
+            _dctrl->hover_mode(true);
+            _trackers->dronetracker()->hover_mode(true);
+            next_waypoint(Waypoint_Thrust_Calibration(), time);
+            _navigation_status = ns_approach_waypoint;
+            break;
         } case ns_goto_landing_waypoint: {
             _dctrl->hover_mode(true);
-            _dctrl->enable_thrust_calibration = true;
             _trackers->dronetracker()->hover_mode(true);
             next_waypoint(Waypoint_Landing(),time);
             _navigation_status = ns_approach_waypoint;
@@ -377,11 +382,15 @@ void DroneNavigation::update(double time) {
                     && _trackers->dronetracker()->n_frames_tracking()>5)
             {
                 if ((static_cast<float>(time - time_wp_reached) > current_waypoint->hover_pause && time_wp_reached > 0) || current_waypoint->hover_pause <= 0) {
-                    if (current_waypoint->mode == wfm_landing)
+                    if (current_waypoint->mode == wfm_landing) {
+                        _dctrl->thrust_calibration(false);
                         _navigation_status = ns_land;
-                    else if (current_waypoint->mode == wfm_yaw_reset) {
+                    } else if (current_waypoint->mode == wfm_yaw_reset) {
                         _navigation_status = ns_initial_reset_yaw;
                         time_initial_reset_yaw = time;
+                    } else if(current_waypoint->mode == wfm_thrust_calib) {
+                        _navigation_status = ns_calibrate_thrust;
+                        time_init_thrust_calib = time;
                     } else if (wpid < waypoints.size()) { // next waypoint in flight plan
                         wpid++;
                         _navigation_status = ns_set_waypoint;
@@ -395,7 +404,6 @@ void DroneNavigation::update(double time) {
             }
 
             if (_nav_flight_mode == nfm_hunt && _iceptor->aim_in_range() && !low_battery_triggered) {
-                _dctrl->enable_thrust_calibration = false;
                 _navigation_status = ns_start_the_chase;
             }
 
@@ -446,9 +454,16 @@ void DroneNavigation::update(double time) {
 
             if(!_trackers->dronetracker()->check_yaw(time) || (time-time_initial_reset_yaw > yaw_reset_duration && drone_pos_ok)) {
                 _dctrl->flight_mode(DroneController::fm_flying_headed_pid);
-                _navigation_status = ns_goto_landing_waypoint;
+                _navigation_status = ns_goto_thrust_calib_waypoint;
             }
             check_abort_autonomus_flight_conditions();
+            break;
+        } case ns_calibrate_thrust: {
+            _dctrl->thrust_calibration(true);
+            _dctrl->flight_mode(DroneController::fm_flying_headed_pid);
+            if(time-time_init_thrust_calib > static_cast<double>(current_waypoint->hover_pause)) {
+                _navigation_status = ns_goto_landing_waypoint;
+            }
             break;
         } case ns_land: {
             landing_start_time = time;
@@ -459,7 +474,6 @@ void DroneNavigation::update(double time) {
             float dt_land = static_cast<float>(time-landing_start_time);
             cv::Point3f pad_pos = _trackers->dronetracker()->pad_location(true);
             cv::Point3f new_pos_setpoint = _dctrl->land_ctrl.setpoint_cc_landing(pad_pos, current_waypoint, dt_land);
-            _dctrl->enable_thrust_calibration = false;
 
             if(_dctrl->land_ctrl.switch_to_ff_landing(_trackers->dronetracker()->last_track_data(),
                     new_pos_setpoint, pad_pos, _dctrl->landing()))
@@ -562,7 +576,7 @@ void DroneNavigation::next_waypoint(Waypoint wp, double time) {
         cv::Point3f p = _trackers->dronetracker()->pad_location(true);
         setpoint_pos_world =  p + wp.xyz;
         setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, CameraView::relaxed);
-    } else if (wp.mode == wfm_landing || wp.mode == wfm_yaw_reset) {
+    } else if (wp.mode == wfm_landing || wp.mode == wfm_yaw_reset || wp.mode == wfm_thrust_calib) {
         cv::Point3f p = _trackers->dronetracker()->pad_location(true);
         setpoint_pos_world =  p + wp.xyz;
         if (setpoint_pos_world.y > -0.5f) // keep some margin to the top of the view, because atm we have an overshoot problem.

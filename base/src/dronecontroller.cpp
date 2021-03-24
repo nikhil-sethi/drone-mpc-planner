@@ -957,7 +957,7 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> Dron
     cv::Point3f scale_vel_d = {0.01f, 0.01f, 0.01f};
 
     float duration_waypoint_update = duration_since_waypoint_changed(data_drone.time);
-    if (_flight_mode!=fm_flying_headed_pid
+    if (!enable_thrust_calibration
             && (normf(setpoint_vel) >= 0.01f || duration_waypoint_update <= 1)) {
         scale_pos_i.x = -1; // flag that i is not used currently
         scale_pos_i.z = -1;
@@ -1045,27 +1045,26 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::
     cv::Point3f pos_err_d = {errDx, errDy, errDz};
     cv::Point3f vel_err_d = {errvDx, errvDy, errvDz};
 
-    if (ki_pos.x>0) {
+    bool integrator_enabled = ki_pos.x>0;
+    if (integrator_enabled) {
         pos_err_i.x += (err_x_filtered - setpoint_pos.x + pos_modelx.current_output());
+        pos_err_i.z += (err_z_filtered - setpoint_pos.z + pos_modelz.current_output());
         if (!enable_thrust_calibration)
             pos_err_i.y += (err_y_filtered - setpoint_pos.y + pos_modely.current_output());
-        pos_err_i.z += (err_z_filtered - setpoint_pos.z + pos_modelz.current_output());
+        if(enable_thrust_calib_trig) {
+            calibration.thrust -= ki_thrust_hover*0.001f*remember_last_integrated_y_err;
+            pos_err_i.y = 0;
+        }
+        if (enable_thrust_calibration) {
+            calibration.thrust -= 0.1f * ((err_y_filtered - setpoint_pos.y + pos_modely.current_output()));
+            pos_err_i.y = 0;
+        }
     } else {
-        if(pos_err_i.y!=0)
+        if(pos_err_i.y !=0)
             remember_last_integrated_y_err = pos_err_i.y;
         pos_err_i = {0};
     }
 
-    if (enable_thrust_calibration) {
-        if(remember_last_integrated_y_err!=0) {
-            calibration.thrust -= ki_thrust_hover*0.001f*remember_last_integrated_y_err;
-            remember_last_integrated_y_err = 0;
-        } else {
-            calibration.thrust -= 0.1f * ((err_y_filtered - setpoint_pos.y + pos_modely.current_output()));
-            pos_err_i.y = 0;
-        }
-
-    }
     return std::tuple(pos_err_p, pos_err_d, vel_err_p, vel_err_d);
 }
 
