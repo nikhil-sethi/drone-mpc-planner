@@ -63,11 +63,13 @@ class pats_task(metaclass=abc.ABCMeta):
     logger = logging.Logger
     error_cnt = 0
 
-    def __init__(self,name, start_td, td):
+
+    def __init__(self,name, start_td, td,run_at_init):
         self.name = name
         self.periodic_td = td
         self.start_td=start_td
         self.logger = logging.getLogger(self.name)
+        self.run_at_init = run_at_init
 
         self.thr = threading.Thread(target=self.do_work, daemon=True)
         self.thr.start()
@@ -100,6 +102,8 @@ class pats_task(metaclass=abc.ABCMeta):
         self.logger.setLevel(logging.DEBUG)
         self.logger.info(self.name + ' reporting in!')
         start_trigger_time = self.next_trigger()
+        if self.run_at_init:
+            start_trigger_time = datetime.today()
         self.status_str = 'First start at: ' + start_trigger_time.strftime("%d-%m-%Y %H:%M:%S")
 
         while True:
@@ -122,7 +126,7 @@ class pats_task(metaclass=abc.ABCMeta):
 class clean_hd_task(pats_task):
 
     def __init__(self):
-        super(clean_hd_task,self).__init__('clean_hd',timedelta(hours=8),timedelta(hours=24))
+        super(clean_hd_task,self).__init__('clean_hd',timedelta(hours=8),timedelta(hours=24),False)
 
     def task_func(self):
         clean_hd()
@@ -130,7 +134,7 @@ class clean_hd_task(pats_task):
 class cut_moths_task(pats_task):
 
     def __init__(self):
-        super(cut_moths_task,self).__init__('cut_moths',timedelta(),timedelta(minutes=60))
+        super(cut_moths_task,self).__init__('cut_moths',timedelta(),timedelta(minutes=60),False)
 
     def task_func(self):
         cut_moths_all()
@@ -138,7 +142,7 @@ class cut_moths_task(pats_task):
 class logs_to_json_task(pats_task):
 
     def __init__(self):
-        super(logs_to_json_task,self).__init__('logs_to_json',timedelta(hours=10),timedelta(hours=24))
+        super(logs_to_json_task,self).__init__('logs_to_json',timedelta(hours=10),timedelta(hours=24),False)
 
     def task_func(self):
         process_all_logs_to_jsons()
@@ -147,7 +151,7 @@ class logs_to_json_task(pats_task):
 class errors_to_vps_task(pats_task):
 
     def __init__(self):
-        super(errors_to_vps_task,self).__init__('errors_to_vps',timedelta(hours=10,minutes=45),timedelta(hours=24))
+        super(errors_to_vps_task,self).__init__('errors_to_vps',timedelta(hours=10,minutes=45),timedelta(hours=24),False)
 
     def task_func(self):
         self.logger.error('Rotate!') #this forces the rotation of all_errors.log
@@ -163,7 +167,7 @@ class errors_to_vps_task(pats_task):
 class render_task(pats_task):
 
     def __init__(self):
-        super(render_task,self).__init__('render',timedelta(hours=11),timedelta(hours=24))
+        super(render_task,self).__init__('render',timedelta(hours=11),timedelta(hours=24),False)
 
     def task_func(self):
         render_last_day()
@@ -171,7 +175,7 @@ class render_task(pats_task):
 class wdt_pats_task(pats_task):
 
     def __init__(self):
-        super(wdt_pats_task,self).__init__('wdt_pats',timedelta(),timedelta(seconds=300))
+        super(wdt_pats_task,self).__init__('wdt_pats',timedelta(),timedelta(seconds=300),False)
 
     def task_func(self):
         if os.path.exists(lb.proces_wdt_flag):
@@ -198,7 +202,7 @@ class wdt_tunnel_task(pats_task):
 # then, and the system is just waiting for darkness.
 
     def __init__(self):
-        super(wdt_tunnel_task,self).__init__('wdt_tunnel',timedelta(),timedelta(hours=1))
+        super(wdt_tunnel_task,self).__init__('wdt_tunnel',timedelta(),timedelta(hours=1),False)
 
     tunnel_ok_time = datetime.today()
     def task_func(self):
@@ -229,6 +233,23 @@ class wdt_tunnel_task(pats_task):
             self.logger.error('Tunnel watchdog alert! Holding of reboot until 13:00 though')
 
 
+class check_system_task(pats_task):
+    def __init__(self):
+        super(check_system_task,self).__init__('check_system_task',timedelta(),timedelta(minutes=5),True)
+
+    def task_func(self):
+        cmd = 'sensors'
+        output = subprocess.check_output(cmd, shell=True).decode(sys.stdout.encoding)
+        output_lines = output.splitlines()
+        for line in output_lines:
+            if 'Package id 0' in line:
+                cpu_temp_str = line.split(':')[1].split('(')[0].strip()
+                temp = float(cpu_temp_str.replace('°C','').replace('+',''))
+                if temp > 80:
+                    self.logger.error('CPU Temperature too high: ' + cpu_temp_str)
+                else:
+                    self.logger.info('CPU Temperature: ' + cpu_temp_str)
+
 def init_status_cc():
     file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     logger_status_cc = logging.getLogger('status_cc')
@@ -257,6 +278,7 @@ tasks.append(render_task())
 tasks.append(wdt_pats_task())
 tasks.append(wdt_tunnel_task())
 tasks.append(errors_to_vps_task())
+tasks.append(check_system_task())
 
 while True:
     os.system('clear')
