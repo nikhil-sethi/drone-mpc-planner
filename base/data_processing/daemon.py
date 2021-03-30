@@ -26,6 +26,10 @@ def status_cc_worker():
     if disabled_flag_detected:
         logger.info('Warning: disable flag active...')
 
+    #force an update at startup, otherwise it takes very long to pop up in the cc:
+    if not disabled_flag_detected and not status_file_missing and lb.check_if_metered():
+        send_status_update()
+
     while True:
 
         if status_file_missing == os.path.exists(lb.local_status_txt_file):
