@@ -35,7 +35,7 @@ mkdir -p ~/code
 	fi
 
 	[ ! -f pats_ssh_files_v3.tar.xz ] || {
-			#add deploy key
+		#add deploy key
 		tar -xf pats_ssh_files_v3.tar.xz
 		mkdir -p ~/.ssh
 		mv authorized_keys ~/.ssh/
@@ -51,9 +51,9 @@ mkdir -p ~/code
 pushd ~/dependencies
 
 # Install pats dependency packages
-[ -f dependencies-packages-v1.10.done ] || {
+[ -f dependencies-packages-v1.11.done ] || {
 	sudo apt update
-	sudo apt install -y cmake g++ libva-dev libswresample-dev libavutil-dev pkg-config libcurl4-openssl-dev ncdu openssh-server ffmpeg unattended-upgrades inotify-tools cpputest python3-pip dfu-util exfat-utils vnstat ifmetric net-tools lm-sensors nethogs
+	sudo apt install -y g++ libva-dev libswresample-dev libavutil-dev pkg-config libcurl4-openssl-dev ncdu openssh-server ffmpeg unattended-upgrades inotify-tools cpputest python3-pip dfu-util exfat-utils vnstat ifmetric net-tools lm-sensors nethogs htop git nano screen autossh usb-modeswitch
 	sudo apt install -y gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav libgstreamer-plugins-base1.0-0 libgstreamer-plugins-bad1.0-0 libgstreamer-plugins-good1.0-0 gstreamer1.0-vaapi vainfo
 	sudo apt-get remove -y modemmanager
 	pip3 install cython pyserial
@@ -62,21 +62,32 @@ pushd ~/dependencies
 	pip3 install numpy pandas scipy sklearn tqdm pause
 
 	if [[ $1 -eq 1 ]] ; then
-		sudo apt purge snapd # remove snap, because it uses data
+		sudo apt purge -y snapd # remove snap, because it uses data
 	fi
 
-	touch dependencies-packages-v1.10.done
+	touch dependencies-packages-v1.11.done
 }
 
+
+
 # Add librealsense repository
-[ -f librealsense-packages.done ] || {
-	sudo apt-key adv --keyserver hkp://keys.gnupg.net:80 --recv-key C8B3A55A6F3EFCDE
-	sudo add-apt-repository "deb http://realsense-hw-public.s3.amazonaws.com/Debian/apt-repo bionic main" -u
+[ -f librealsense-packages_v1.1.done ] || {
+
+	sudo apt install -y software-properties-common
+	sudo apt-key adv --keyserver keys.gnupg.net --recv-key F6E65AC044F831AC80A06380C8B3A55A6F3EFCDE || sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-key F6E65AC044F831AC80A06380C8B3A55A6F3EFCDE
+	sudo add-apt-repository "deb https://librealsense.intel.com/Debian/apt-repo bionic main" -u
 	sudo apt update
 
 	# Install packages
-	sudo apt install -y librealsense2-dkms librealsense2-dev librealsense2-dbg librealsense2-utils libva-dev libswresample-dev libavutil-dev pkg-config htop git vim nano screen g++ cmake autossh usb-modeswitch -y
-	touch librealsense-packages.done
+	sudo apt install -y librealsense2-dkms librealsense2-dev librealsense2-dbg librealsense2-utils -y
+
+	[ ! -f librealsense-packages.done ] || {
+		#remove old ppa:
+		sudo add-apt-repository --remove "deb http://realsense-hw-public.s3.amazonaws.com/Debian/apt-repo bionic main"
+		rm librealsense-packages.done
+	}
+
+	touch librealsense-packages_v1.1.done
 }
 
 # Install dev packages
@@ -84,8 +95,9 @@ if [[ $1 -eq 0 ]] ; then
 	[ -f dev-dependencies-packages-v1.1.done ] || {
 		wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | sudo apt-key add -
 		sudo apt-get install apt-transport-https
-		echo "deb https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
-		sudo snap install sublime-text --classic
+		#to install sublime
+		#echo "deb https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
+		#sudo snap install sublime-text --classic
 		sudo snap install code --classic
 		sudo apt update
 		sudo apt install -y libqt5opengl5 libqt5opengl5-dev astyle  meld gitk git-gui terminator jstest-gtk
@@ -173,7 +185,7 @@ fi
 	git config --global alias.pr "pull --rebase"
 	git config --global alias.cp "cherry-pick"
 
-	touch git.done
+	touch git_aliases_v1.0.done
 }
 
 # Install the Pats code
