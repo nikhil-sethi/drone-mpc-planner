@@ -156,9 +156,9 @@ private:
     xmls::DroneCalibration calibration;
 
     const int required_pad_att_calibration_cnt = 15;
-    const cv::Point2f max_att_calibration = cv::Point2f(2.5f,2.5f);
-    const cv::Point2f min_att_calibration = cv::Point2f(-2.5f,-2.5f);
-    const cv::Point2f max_att_calibration_diff = cv::Point2f(0.5f,0.5f);
+    const cv::Point2f max_att_calibration = cv::Point2f(7.5f,7.5f);
+    const cv::Point2f min_att_calibration = cv::Point2f(-7.5f,-7.5f);
+    const cv::Point2f max_att_calibration_diff = cv::Point2f(1.0f,1.0f);
     bool pat_att_calibration_valid = false;
     filtering::Smoother pad_att_calibration_roll;
     filtering::Smoother pad_att_calibration_pitch;
