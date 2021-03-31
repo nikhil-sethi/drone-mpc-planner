@@ -327,7 +327,7 @@ private:
     xBool _viz_plots, _viz_tracking;
     xInt _imscalef;
     xString _flightplan;
-    xString _flightplan_tuning;
+    xString _flightplan_calib_thrust;
     xInt _live_image_frq;
     xFloat _max_cam_roll;
 
@@ -344,7 +344,7 @@ public:
     bool viz_plots, viz_tracking;
     int imscalef;
     std::string flightplan;
-    std::string flightplan_tuning;
+    std::string flightplan_calib_thrust;
     int live_image_frq;
     float max_cam_roll;
 
@@ -354,7 +354,7 @@ public:
         setClassName("PatsParameters");
 
         // Set class version
-        setVersion("1.8");
+        setVersion("1.9");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("wdt_timeout_us",&_wdt_timeout_us);
@@ -379,8 +379,8 @@ public:
         Register("viz_plots",&_viz_plots);
         Register("viz_tracking",&_viz_tracking);
         Register("imscalef",&_imscalef);
-        Register("flightplan_tuning",&_flightplan_tuning);
         Register("flightplan",&_flightplan);
+        Register("flightplan_calib_thrust",&_flightplan_calib_thrust);
         Register("live_image_frq",&_live_image_frq);
         Register("max_cam_roll",&_max_cam_roll);
     }
@@ -429,7 +429,7 @@ public:
         viz_tracking = _viz_tracking.value();
         imscalef = _imscalef.value();
         flightplan = _flightplan.value();
-        flightplan_tuning = _flightplan_tuning.value();
+        flightplan_calib_thrust = _flightplan_calib_thrust.value();
         live_image_frq = _live_image_frq.value();
         max_cam_roll = _max_cam_roll.value();
     }
@@ -458,7 +458,7 @@ public:
         _viz_tracking = viz_tracking;
         _imscalef = imscalef;
         _flightplan= flightplan;
-        _flightplan_tuning= flightplan_tuning;
+        _flightplan_calib_thrust= flightplan_calib_thrust;
         _live_image_frq = live_image_frq;
         _max_cam_roll = max_cam_roll;
 

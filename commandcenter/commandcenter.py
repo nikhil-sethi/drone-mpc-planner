@@ -34,10 +34,8 @@ class CommandCenterWindow(QMainWindow):
         git_update_Action.triggered.connect(self.git_update_systems)
         restart_Action = QAction(self.style().standardIcon(QStyle.SP_BrowserReload), 'Restart all systems', self)
         restart_Action.triggered.connect(self.restart_systems)
-        fly_tuning_Action = QAction(self.style().standardIcon(QStyle.SP_MediaPlay), 'Trigger tuning waypoint flights', self)
-        fly_tuning_Action.triggered.connect(self.fly_tuning_flights)
-        fly_aggresive_Action = QAction(self.style().standardIcon(QStyle.SP_MediaPlay), 'Trigger aggresive waypoint flights', self)
-        fly_aggresive_Action.triggered.connect(self.fly_aggresive_flights)
+        fly_flightplan_Action = QAction(self.style().standardIcon(QStyle.SP_MediaPlay), 'Trigger waypoint flight', self)
+        fly_flightplan_Action.triggered.connect(self.fly_flightplan_flight)
         fly_replay_moth_Action = QAction(self.style().standardIcon(QStyle.SP_MediaPlay), 'Trigger replay moths', self)
         fly_replay_moth_Action.triggered.connect(self.fly_replay_moth)
 
@@ -52,8 +50,7 @@ class CommandCenterWindow(QMainWindow):
         self.toolbar.addAction(git_update_Action)
         self.toolbar.addAction(reboot_rtc_Action)
         self.toolbar.addSeparator()
-        self.toolbar.addAction(fly_tuning_Action)
-        self.toolbar.addAction(fly_aggresive_Action)
+        self.toolbar.addAction(fly_flightplan_Action)
         self.toolbar.addAction(fly_replay_moth_Action)
         self.toolbar.addSeparator()
         self.combo_mode = QComboBox()
@@ -151,12 +148,9 @@ class CommandCenterWindow(QMainWindow):
     def restart_systems(self):
         for sys in self.sys_widgets:
             sys.restart()
-    def fly_tuning_flights(self):
+    def fly_flightplan_flight(self):
         for sys in self.sys_widgets:
-            sys.takeoff_tuning()
-    def fly_aggresive_flights(self):
-        for sys in self.sys_widgets:
-            sys.takeoff_aggresive_wp()
+            sys.flightplan_takeoff()
     def fly_replay_moth(self):
         for sys in self.sys_widgets:
             sys.insect_replay_takeoff()
@@ -225,10 +219,16 @@ class SystemWidget(QWidget):
         self.combo_sub_mode.currentIndexChanged.connect(self.sub_mode_change)
 
         self.setContextMenuPolicy(Qt.ActionsContextMenu)
-        calibAction = QAction("Calibrate", self)
-        calibAction.setIcon(self.style().standardIcon(QStyle.SP_DesktopIcon))
-        calibAction.triggered.connect(self.calib)
-        self.addAction(calibAction)
+        calib_IMU_Action = QAction("Calibrate IMU", self)
+        calib_IMU_Action.setIcon(self.style().standardIcon(QStyle.SP_DesktopIcon))
+        calib_IMU_Action.triggered.connect(self.calib)
+        self.addAction(calib_IMU_Action)
+
+        self.setContextMenuPolicy(Qt.ActionsContextMenu)
+        calib_thrust_Action = QAction("Calibrate Thrust", self)
+        calib_thrust_Action.setIcon(self.style().standardIcon(QStyle.SP_DesktopIcon))
+        calib_thrust_Action.triggered.connect(self.flightplan_calib_thrust_takeoff)
+        self.addAction(calib_thrust_Action)
 
         reboot_rtc_Action = QAction("Reboot", self)
         reboot_rtc_Action.setIcon(self.style().standardIcon(QStyle.SP_DialogResetButton))
@@ -276,19 +276,12 @@ class SystemWidget(QWidget):
         btn_download_current_log.clicked.connect(self.download_current_log)
         self.btn_download_current_log = btn_download_current_log
 
-        btn_takeoff_tuning = QPushButton()
-        btn_takeoff_tuning.setToolTip('Trigger waypoint mission (tuning)')
-        btn_takeoff_tuning.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
-        btn_takeoff_tuning.setMaximumSize(30, 30)
-        btn_takeoff_tuning.clicked.connect(self.takeoff_tuning)
-        self.btn_takeoff_tuning = btn_takeoff_tuning
-
-        btn_takeoff_aggresive_wp = QPushButton()
-        btn_takeoff_aggresive_wp.setToolTip('Trigger waypoint mission (aggresive)')
-        btn_takeoff_aggresive_wp.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
-        btn_takeoff_aggresive_wp.setMaximumSize(30, 30)
-        btn_takeoff_aggresive_wp.clicked.connect(self.takeoff_aggresive_wp)
-        self.btn_takeoff_aggresive_wp = btn_takeoff_aggresive_wp
+        btn_flightplan_takeoff = QPushButton()
+        btn_flightplan_takeoff.setToolTip('Trigger flightplan mission')
+        btn_flightplan_takeoff.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+        btn_flightplan_takeoff.setMaximumSize(30, 30)
+        btn_flightplan_takeoff.clicked.connect(self.flightplan_takeoff)
+        self.btn_flightplan_takeoff = btn_flightplan_takeoff
 
         btn_insect_replay_takeoff = QPushButton()
         btn_insect_replay_takeoff.setToolTip('Trigger insect replay')
@@ -304,8 +297,7 @@ class SystemWidget(QWidget):
         control_layout.addWidget(btn_request_update)
         control_layout.addWidget(btn_restart)
         control_layout.addWidget(btn_download_current_log)
-        control_layout.addWidget(btn_takeoff_tuning)
-        control_layout.addWidget(btn_takeoff_aggresive_wp)
+        control_layout.addWidget(btn_flightplan_takeoff)
         control_layout.addWidget(btn_insect_replay_takeoff)
 
         self.txt_label = QLabel()
@@ -435,7 +427,7 @@ class SystemWidget(QWidget):
         buttonReply = QMessageBox.question(self, 'Maar, weet je dat eigenlijk wel zekerdepeter?!', "Reboot, really?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if buttonReply == QMessageBox.Yes:
             subprocess.Popen(['./reboot_system.sh', 'pats'+self.host_id])
-    def takeoff_aggresive_wp(self):
+    def flightplan_takeoff(self):
         self.pats_xml_path = Path(self.source_folder,self.system_folder,'pats_deploy.xml')
         with open (self.pats_xml_path, "r") as path_xml:
             xml_lines = path_xml.readlines()
@@ -443,12 +435,12 @@ class SystemWidget(QWidget):
                 if line.find('\"flightplan\"') != -1:
                     self.flightplan_xml_path = Path(self.source_folder,self.system_folder,line.split('\">../xml/')[1].split('<')[0])
                     subprocess.Popen(['./demo_system.sh', 'pats'+self.host_id, self.flightplan_xml_path])
-    def takeoff_tuning(self):
+    def flightplan_calib_thrust_takeoff(self):
         self.pats_xml_path = Path(self.source_folder,self.system_folder,'pats_deploy.xml')
         with open (self.pats_xml_path, "r") as path_xml:
             xml_lines = path_xml.readlines()
             for line in xml_lines:
-                if line.find('\"flightplan_tuning\"') != -1:
+                if line.find('\"flightplan_calib_thrust\"') != -1:
                     self.flightplan_xml_path = Path(self.source_folder,self.system_folder,line.split('\">../xml/')[1].split('<')[0])
                     subprocess.Popen(['./demo_system.sh', 'pats'+self.host_id, self.flightplan_xml_path])
     def insect_replay_takeoff(self):
@@ -518,17 +510,15 @@ class SystemWidget(QWidget):
         pal = QPalette(self.txt_label.palette())
         pal.setColor(QPalette.WindowText, system_color)
         self.txt_label.setPalette(pal)
-        if self.combo_mode.currentText() == "Hunt" or self.combo_mode.currentText() == "Waypoint":
+        if self.combo_mode.currentText() == "Hunt":
             self.btn_insect_replay_takeoff.setEnabled(True)
         else:
             self.btn_insect_replay_takeoff.setEnabled(False)
 
         if self.combo_mode.currentText() == "Waypoint":
-            self.btn_takeoff_tuning.setEnabled(True)
-            self.btn_takeoff_aggresive_wp.setEnabled(True)
+            self.btn_flightplan_takeoff.setEnabled(True)
         else:
-            self.btn_takeoff_tuning.setEnabled(False)
-            self.btn_takeoff_aggresive_wp.setEnabled(False)
+            self.btn_flightplan_takeoff.setEnabled(False)
 
     def check_theme(self):
         theme = subprocess.check_output(["/usr/bin/gsettings get org.gnome.desktop.interface gtk-theme"], shell=True) #need to use full path /usr/bin because conda screws things up
@@ -553,8 +543,7 @@ class SystemWidget(QWidget):
             self.combo_sub_mode.setStyleSheet("background-color:rgb(128,0,0)")
             syswidget_palette.setColor(self.backgroundRole(), QColor(15,15,15))
             self.btn_insect_replay_takeoff.setStyleSheet("background-color:rgb(128,0,0)")
-            self.btn_takeoff_aggresive_wp.setStyleSheet("background-color:rgb(128,0,0)")
-            self.btn_takeoff_tuning.setStyleSheet("background-color:rgb(128,0,0)")
+            self.btn_flightplan_takeoff.setStyleSheet("background-color:rgb(128,0,0)")
             self.btn_restart.setStyleSheet("background-color:rgb(128,0,0)")
             self.btn_request_update.setStyleSheet("background-color:rgb(128,0,0)")
             self.btn_download_current_log.setStyleSheet("background-color:rgb(128,0,0)")
@@ -570,8 +559,7 @@ class SystemWidget(QWidget):
             self.combo_sub_mode.setStyleSheet("background-color:rgb(160,128,128)")
             syswidget_palette.setColor(self.backgroundRole(), QColor(230,230,230))
             self.btn_insect_replay_takeoff.setStyleSheet("background-color:rgb(160,128,128)")
-            self.btn_takeoff_aggresive_wp.setStyleSheet("background-color:rgb(160,128,128)")
-            self.btn_takeoff_tuning.setStyleSheet("background-color:rgb(160,128,128)")
+            self.btn_flightplan_takeoff.setStyleSheet("background-color:rgb(160,128,128)")
             self.btn_restart.setStyleSheet("background-color:rgb(160,128,128)")
             self.btn_request_update.setStyleSheet("background-color:rgb(160,128,128)")
             self.btn_download_current_log.setStyleSheet("background-color:rgb(160,128,128)")
