@@ -256,7 +256,7 @@ float ItemTracker::stereo_match(BlobProps * blob) {
         height=diffL.rows-y;
     cv::Rect roiL(x,y,width,height);
 
-    auto [disp_start,disp_pred,disp_rng,disp_end] =  disparity_search_rng(blob,x,radius);
+    auto [disp_start,disp_pred,disp_rng,disp_end,calculated_rough_disp] =  disparity_search_rng(blob,x,radius);
     if (disp_rng < 3) {
         return -1; // return out of range which must be handled outside this function
     }
@@ -425,7 +425,17 @@ float ItemTracker::stereo_match(BlobProps * blob) {
         }
         return sub_disp;
     } else {
-        return 0;
+        // disparity matching failed for unknown reasons. This is a bit of a pickle, for now we just return the predicted
+        // disparity, unless the sanity check using rough disparity does not agree... Further discussion in #362
+        if (calculated_rough_disp)
+            return disp_pred;
+        else {
+            auto disp_rough = calc_rough_disparity(blob,radius);
+            if (properly_tracking() && fabs(disp_pred-disp_rough) < 2)
+                return disp_pred;
+            else
+                return disp_rough;
+        }
     }
 }
 
@@ -451,7 +461,7 @@ std::tuple<float,float> ItemTracker::calc_match_score_masked(int i, int disp_end
     return std::make_tuple(cnz / npixels,static_cast<float>(cv::sum(errV)[0]) / cnz);
 }
 
-std::tuple<int,float,int,int> ItemTracker::disparity_search_rng(BlobProps * blob,int x,int radius) {
+std::tuple<int,float,int,int,bool> ItemTracker::disparity_search_rng(BlobProps * blob,int x,int radius) {
 
     int tmp_max_disp = max_disparity;
     if (x - tmp_max_disp < 0)
@@ -460,6 +470,7 @@ std::tuple<int,float,int,int> ItemTracker::disparity_search_rng(BlobProps * blob
     int disp_start = min_disparity;
     int disp_end = tmp_max_disp;
     float disp_pred;
+    bool calculated_rough_disp = false;
 
     if (_image_predict_item.valid && _n_frames_lost < n_frames_lost_threshold ) {
         disp_pred = _image_predict_item.disparity;
@@ -471,8 +482,9 @@ std::tuple<int,float,int,int> ItemTracker::disparity_search_rng(BlobProps * blob
         disp_end = std::min(static_cast<int>(ceilf(disp_pred))+4,disp_end);
     } else {
         disp_pred = calc_rough_disparity(blob,radius);
+        calculated_rough_disp = true;
         if (disp_pred < 0)
-            return std::make_tuple(-1,-1,-1,-1);
+            return std::make_tuple(-1,-1,-1,-1,true);
         int r = std::clamp(static_cast<int>(roundf(blob->size_unscaled()/2.f)),4,8);
         disp_start = std::max(static_cast<int>(floorf(disp_pred))-r,params.min_disparity.value());
         disp_end = std::min(static_cast<int>(ceilf(disp_pred))+r,params.max_disparity.value());
@@ -489,7 +501,7 @@ std::tuple<int,float,int,int> ItemTracker::disparity_search_rng(BlobProps * blob
 
     int disp_rng = disp_end - disp_start;
 
-    return std::make_tuple(disp_start,disp_pred,disp_rng,disp_end);
+    return std::make_tuple(disp_start,disp_pred,disp_rng,disp_end,calculated_rough_disp);
 }
 int ItemTracker::calc_rough_disparity(BlobProps * blob,int radius) {
     //find the maximum motion location in the right image

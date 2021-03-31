@@ -636,59 +636,61 @@ void TrackerManager::flag_used_static_ignores(std::vector<ProcessedBlob> *pbs) {
 }
 void TrackerManager::create_new_insect_trackers(std::vector<ProcessedBlob> *pbs, double time) {
     //see if there are still blobs left untracked, create new trackers for them
-    for (auto &blob : *pbs) {
-        auto props = blob.props;
-        if (!blob.tracked() && (!props->in_overexposed_area || _mode == mode_locate_drone) && (!props->false_positive || _mode == mode_locate_drone) && !blob.ignored && _trackers.size() < 30) { // if so, start tracking it!
-            float im_dist_to_drone;
-            if (_dtrkr->tracking()) {
-                im_dist_to_drone = normf(_dtrkr->image_item().pt()-props->pt_unscaled());
-            } else {
-                if (_dtrkr->pad_location_valid())
-                    im_dist_to_drone = normf(_dtrkr->pad_im_location() - props->pt_unscaled());
-                else
-                    im_dist_to_drone = INFINITY;
-            }
-            if (im_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_im) {
-                InsectTracker *it;
-                it = new InsectTracker();
-                it->init(next_insecttrkr_id,_visdat,motion_thresh,_trackers.size());
-                it->calc_world_item(props,time);
-                if (!props->world_props.bkg_check_ok)
-                    tracking::WorldItem w(tracking::ImageItem(*props,_visdat->frame_id,-1,blob.id),props->world_props);
-
-                bool delete_it = true;
-                bool ignore = true;
-                if (props->world_props.valid) {
-                    collect_static_ignores(it);
-                    ignore = it->check_ignore_blobs(props);
-                    blob.ignored = ignore;
-                }
-                if (!ignore) {
-                    //ignore a region around the drone (or take off location)
-                    float world_dist_to_drone;
-                    if (_dtrkr->tracking())
-                        world_dist_to_drone = normf(_dtrkr->world_item().pt- props->world_props.pt());
+    if (_mode != mode_drone_only) {
+        for (auto &blob : *pbs) {
+            auto props = blob.props;
+            if (!blob.tracked() && (!props->in_overexposed_area || _mode == mode_locate_drone) && (!props->false_positive || _mode == mode_locate_drone) && !blob.ignored && _trackers.size() < 30) { // if so, start tracking it!
+                float im_dist_to_drone;
+                if (_dtrkr->tracking()) {
+                    im_dist_to_drone = normf(_dtrkr->image_item().pt()-props->pt_unscaled());
+                } else {
+                    if (_dtrkr->pad_location_valid())
+                        im_dist_to_drone = normf(_dtrkr->pad_im_location() - props->pt_unscaled());
                     else
-                        world_dist_to_drone = normf(_dtrkr->pad_location() - props->world_props.pt());
+                        im_dist_to_drone = INFINITY;
+                }
+                if (im_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_im) {
+                    InsectTracker *it;
+                    it = new InsectTracker();
+                    it->init(next_insecttrkr_id,_visdat,motion_thresh,_trackers.size());
+                    it->calc_world_item(props,time);
+                    if (!props->world_props.bkg_check_ok)
+                        tracking::WorldItem w(tracking::ImageItem(*props,_visdat->frame_id,-1,blob.id),props->world_props);
 
-                    if (world_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_world && im_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_im) {
-                        it->init_logger();
-                        next_insecttrkr_id++;
-                        tracking::WorldItem w(tracking::ImageItem(*props,_visdat->frame_id,0,blob.id),props->world_props);
-                        it->world_item(w);
-                        _trackers.push_back(it);
-                        blob.trackers.push_back(it);
-                        delete_it = false;
-                    } else {
-                        blob.ignored = true;
+                    bool delete_it = true;
+                    bool ignore = true;
+                    if (props->world_props.valid) {
+                        collect_static_ignores(it);
+                        ignore = it->check_ignore_blobs(props);
+                        blob.ignored = ignore;
                     }
+                    if (!ignore) {
+                        //ignore a region around the drone (or take off location)
+                        float world_dist_to_drone;
+                        if (_dtrkr->tracking())
+                            world_dist_to_drone = normf(_dtrkr->world_item().pt- props->world_props.pt());
+                        else
+                            world_dist_to_drone = normf(_dtrkr->pad_location() - props->world_props.pt());
+
+                        if (world_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_world && im_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_im) {
+                            it->init_logger();
+                            next_insecttrkr_id++;
+                            tracking::WorldItem w(tracking::ImageItem(*props,_visdat->frame_id,0,blob.id),props->world_props);
+                            it->world_item(w);
+                            _trackers.push_back(it);
+                            blob.trackers.push_back(it);
+                            delete_it = false;
+                        } else {
+                            blob.ignored = true;
+                        }
+                    }
+                    if (delete_it) {
+                        it->close();
+                        delete it;
+                    }
+                } else {
+                    blob.ignored = true;
                 }
-                if (delete_it) {
-                    it->close();
-                    delete it;
-                }
-            } else {
-                blob.ignored = true;
             }
         }
     }
