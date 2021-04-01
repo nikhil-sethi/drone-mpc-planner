@@ -18,7 +18,7 @@
 #define EEPROM_CALIB_DONE_START 1
 #define EEPROM_CALIB_DONE_STEPS 10
 
-#define SOFTWARE_VERSION 131
+#define SOFTWARE_VERSION 132
 
 #define ONE_S_DRONE true
 
@@ -113,7 +113,10 @@ void set_calibration_mode(void) {
       input_string += c;
     }
   }
-
+  
+  if (voltage_calibration_value < -0.3)
+    input_string = "reset";
+    
   if (input_string.length() > 0) {
     Serial.println(input_string);
 
@@ -141,10 +144,8 @@ void set_calibration_mode(void) {
       }
     }
     int8_t value = EEPROM.read(EEPROM_CALIB_VALUE);
-    ;
-
     voltage_calibration_value = float(value) / 100;
-
+    
     char str_volt[6];
     dtostrf(voltage_calibration_value, 4, 2, str_volt);
     debugln("voltage calibration %s", str_volt);
@@ -159,7 +160,7 @@ void calibrate(float voltage) {
 
   voltage_calibration_value += voltage - getSmoothedVoltage();
 
-  if (fabs(voltage_calibration_value > 0.2)) {
+  if (fabs(voltage_calibration_value) > 0.2) {
     voltage_calibration_value = 0;
     Serial.println("ERROR: invalid calibration:");
     Serial.println(voltage_calibration_value);
@@ -410,7 +411,9 @@ float getVoltage() {
   print_count++;
   if (print_count > 1000) {
     debugln("raw_voltage %d", analogRead(VOLTAGE_PIN));
-    debugln("voltage_calibration %d", voltage_calibration_value * 1000);
+    char str_volt[6];
+    dtostrf(voltage_calibration_value, 4, 2, str_volt);
+    debugln("voltage calibration %s", str_volt);
     print_count = 0;
   }
 

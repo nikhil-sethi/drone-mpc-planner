@@ -49,5 +49,8 @@ Sound decryption:
 | Mario dies        | Drone removed                    |
 | Level up          | Drone connected                  |
 | Underground sound | Drone connected but no charging* |
+| Low ticks         | Current is flowing               |
+| Intermittent ticks| Needs calibration                |
+| Startup beeps     | Encodes software version         /
 
  * Contact resistance to the battery too high (Charging legs, broken wires, etc)
