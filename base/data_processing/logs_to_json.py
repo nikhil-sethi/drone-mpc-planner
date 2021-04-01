@@ -329,6 +329,7 @@ def process_all_logs_to_jsons():
     logs_to_json(datetime.min,now,local_json_file,lb.data_dir,socket.gethostname())
 
 def send_all_jsons():
+    logger = logging.getLogger('logs_to_json')
     Path(lb.json_dir + '/sent').mkdir(parents=True, exist_ok=True)
     for json_fn in glob.glob(lb.json_dir + '/*.json'):
         remote_json_file='jsons/' + socket.gethostname() + '_' + os.path.basename(json_fn)
