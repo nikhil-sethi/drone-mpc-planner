@@ -431,14 +431,18 @@ void DroneTracker::set_pad_location_from_blink(cv::Point3f blink_world) {
     _pad_world_location = blink_world + cv::Point3f(0,0,-dparams.radius);
     _target = _pad_world_location;
     _pad_im_size = world2im_size(_pad_world_location+cv::Point3f(dparams.radius,0,0),_pad_world_location-cv::Point3f(dparams.radius,0,0),_visdat->Qfi,_visdat->camera_angle);
-    _pad_im_location =  world2im_2d(pad_location(),_visdat->Qfi,_visdat->camera_angle);
+    auto pt_im3 = world2im_3d(pad_location(),_visdat->Qfi,_visdat->camera_angle);
+    _pad_im_location =  cv::Point2f(pt_im3.x,pt_im3.y);
+    _pad_disparity =  pt_im3.z;
     _pad_location_valid = true;
 }
 
 void DroneTracker::set_pad_location( cv::Point3f pad_world) {
     _pad_world_location = pad_world;
-    _pad_im_location =  world2im_2d(pad_location(),_visdat->Qfi,_visdat->camera_angle);
     _pad_im_size = world2im_size(_pad_world_location+cv::Point3f(dparams.radius,0,0),_pad_world_location-cv::Point3f(dparams.radius,0,0),_visdat->Qfi,_visdat->camera_angle);
+    auto pt_im3 = world2im_3d(_pad_world_location,_visdat->Qfi,_visdat->camera_angle);
+    _pad_im_location =  cv::Point2f(pt_im3.x,pt_im3.y);
+    _pad_disparity =  pt_im3.z;
     _pad_location_valid = true;
 }
 
