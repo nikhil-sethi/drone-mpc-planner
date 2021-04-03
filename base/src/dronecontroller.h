@@ -38,9 +38,9 @@ static const char* flight_mode_names[] = { "fm_joystick_check",
                                            "fm_retry_aim_start",
                                            "fm_pid_init",
                                            "fm_pid",
-                                           "fm_headed_pid",
                                            "fm_initial_reset_yaw",
                                            "fm_reset_yaw",
+                                           "fm_calib_thrust",
                                            "fm_ff_landing_start",
                                            "fm_ff_landing",
                                            "fm_shake_it_baby",
@@ -70,9 +70,9 @@ public:
         fm_retry_aim_start,
         fm_flying_pid_init,
         fm_flying_pid,
-        fm_flying_headed_pid,
         fm_initial_reset_yaw,
         fm_reset_yaw,
+        fm_calib_thrust,
         fm_ff_landing_start,
         fm_ff_landing,
         fm_shake_it_baby,
@@ -151,14 +151,12 @@ private:
 
     std::string control_parameters_rfn;
     const std::string calib_fn = "drone_calibration.xml";
-    std::string calib_rfn = "../xml/" + calib_fn;
-    std::string calib_wfn = "./logging/" + calib_fn;
+
     xmls::DroneCalibration calibration;
 
     const int required_pad_att_calibration_cnt = 15;
-    const cv::Point2f max_att_calibration = cv::Point2f(7.5f,7.5f);
-    const cv::Point2f min_att_calibration = cv::Point2f(-7.5f,-7.5f);
-    const cv::Point2f max_att_calibration_diff = cv::Point2f(1.0f,1.0f);
+    const cv::Point2f allowed_pad_att_calibration_range = cv::Point2f(7.5f,7.5f);
+    const cv::Point2f allowed_att_calibration_range = cv::Point2f(1.0f,1.0f); // the max difference between the current att and the att measured during the last blink detect
     bool pat_att_calibration_valid = false;
     filtering::Smoother pad_att_calibration_roll;
     filtering::Smoother pad_att_calibration_pitch;
@@ -170,6 +168,7 @@ private:
     const float effective_burn_spin_down_duration = 0.1f; // the time to spin down from max to hover
     float remember_last_integrated_y_err = 0; // For faster thrust calibration
     cv::Point3f vel_after_takeoff = {0};
+    float burn_thrust = -1;
 
     const float lift_off_dist_take_off_aim = 0.02f;
     float min_takeoff_angle = 45.f/180.f*static_cast<float>(M_PI);
@@ -197,7 +196,6 @@ private:
     bool airsim_mode = false;
     bool generator_mode = false;
     bool enable_thrust_calibration = false;
-    bool enable_thrust_calib_trig = false;
     flight_modes _flight_mode = fm_joystick_check; // only set externally (except for disarming), used internally
     joy_mode_switch_modes _joy_mode_switch = jmsm_none;
     betaflight_arming _joy_arm_switch = bf_armed;
@@ -242,6 +240,7 @@ private:
         }
     }
 
+    void save_calibration();
     void approx_effective_thrust(tracking::TrackData data_drone, cv::Point3f burn_direction, float burn_duration, float dt_burn);
     float thrust_to_throttle(float thrust_ratio);
     std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> predict_drone_after_burn(tracking::StateData state_drone, cv::Point3f burn_direction, float remaining_aim_duration, float burn_duration);
@@ -275,7 +274,7 @@ private:
     void load_control_parameters();
     void serialize_settings();
 
-    PropwashHandler propwash_hndl;
+    PropwashHandler propwash_handler;
 
 public:
     LandingController land_ctrl;
@@ -519,17 +518,11 @@ public:
         }
     }
 
-    void thrust_calibration(bool value) {
-        if(value && value!=enable_thrust_calibration)
-            enable_thrust_calib_trig = true;
-        else
-            enable_thrust_calib_trig = false;
-        enable_thrust_calibration = value;
-    }
-
+    void init_thrust_calibration();
+    void save_thrust_calibration();
     bool attitude_on_pad_OK();
     bool pad_calibration_done();
-    void save_calibration();
     bool takeoff_calib_valid();
+    bool thrust_calib_valid();
 
 };

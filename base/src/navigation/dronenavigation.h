@@ -12,56 +12,37 @@
 namespace navigation {
 
 class DroneNavigation {
-public:
 
 private:
-    int v_crcl1 = 250;
-    int v_crcl2 = 500;
-    int r_crcl1 = 5;
-    int r_crcl2 = 15;
-    int w_sqr = 600;
-    int v_sqr = 100;
-
-    float time_out_after_landing = 0;
-    int setpoint_slider_X = 250;
-    int setpoint_slider_Y = 250;
-    int setpoint_slider_Z = 250;
-
-    void deserialize_flightplan(string replay_dir);
-    string settings_file = "../xml/navigation.xml";
-    void deserialize_settings();
-    void serialize_settings();
-
-    float motion_calibration_duration = 2;
-    double time_motion_calibration_started = 0;
-    double time_initial_reset_yaw = 0;
-    double time_init_thrust_calib = 0;
-    double time_wp_reached = -1;
-    double landing_start_time = -1;
-    double landed_time = 0;
+    navigation_states _navigation_status = ns_init;
     nav_flight_modes _nav_flight_mode = nfm_none;
 
-    void next_waypoint(Waypoint wp, double time);
-
+    bool initialized = false;
+    bool low_battery_triggered = false;
     bool force_pad_redetect = false;
-
-    navigation_states _navigation_status = ns_init;
-    double locate_drone_start_time = 0;
-    int locate_drone_attempts = 0;
-    double last_led_doubler_time = 0;
 
     uint wpid = 0;
     std::vector<Waypoint> waypoints;
     Waypoint * current_waypoint = new Waypoint_Landing();
 
-    const double yaw_reset_duration = 6;
-
+    double time_start_motion_calibration = 0;
+    double time_start_initial_reset_yaw = 0;
+    double time_start_thrust_calibration = 0;
+    double time_wp_reached = -1;
+    double time_start_landing = -1;
+    double time_landed = 0;
+    double time_start_locating_drone = 0;
+    int locate_drone_attempts = 0;
+    double time_last_led_doubler = 0;
     double time_drone_problem = -1;
     float duration_drone_problem = 0;
     double time_located_drone = 0;
     double time_take_off = 0;
     double time_shake_start = 0;
-    float shake_duration = 15;
+    float time_out_after_landing = 0;
+    const float duration_shake = 15;
+    const float duration_motion_calibration = 2;
+    const double duration_yaw_reset = 6;
 
     std::ofstream *_logger;
     DroneController * _dctrl;
@@ -69,15 +50,6 @@ private:
     Interceptor * _iceptor;
     VisionData *_visdat;
     CameraView *_camview;
-
-    cv::Point3f setpoint_pos_world = {0};
-    cv::Point3f setpoint_pos_world_landing = {0};
-    cv::Point3f setpoint_vel_world = {0};
-    cv::Point3f setpoint_acc_world = {0};
-
-    bool initialized = false;
-    bool low_battery_triggered = false;
-    cv::Point3f square_point(cv::Point3f center, float width, float s);
 
     int _n_take_offs = 0;
     int _n_landings = 0;
@@ -87,7 +59,29 @@ private:
     int _n_hunt_flights = 0;
     float _flight_time = -1;
 
+    cv::Point3f setpoint_pos_world = {0};
+    cv::Point3f setpoint_pos_world_landing = {0};
+    cv::Point3f setpoint_vel_world = {0};
+    cv::Point3f setpoint_acc_world = {0};
+    int setpoint_slider_X = 250;
+    int setpoint_slider_Y = 250;
+    int setpoint_slider_Z = 250;
+
+    int v_crcl1 = 250;
+    int v_crcl2 = 500;
+    int r_crcl1 = 5;
+    int r_crcl2 = 15;
+    int w_sqr = 600;
+    int v_sqr = 100;
+
+    void deserialize_flightplan(string replay_dir);
+    string settings_file = "../xml/navigation.xml";
+    void deserialize_settings();
+    void serialize_settings();
+    void next_waypoint(Waypoint wp, double time);
+    cv::Point3f square_point(cv::Point3f center, float width, float s);
     void check_abort_autonomus_flight_conditions();
+
 
 public:
 

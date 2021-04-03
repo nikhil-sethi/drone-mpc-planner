@@ -791,6 +791,7 @@ public: float pad_pitch = 0;
 public: string drone_name = "";
 public: int drone_id =-1;
 public: float thrust =-1;
+public: string thrust_calib_date = "";
 private: xmls::xString _pad_calib_date;
 private: xmls::xFloat _pad_pos_x;
 private: xmls::xFloat _pad_pos_y;
@@ -800,6 +801,7 @@ private: xmls::xFloat _pad_pitch;
 private: xmls::xInt _drone_id;
 private: xmls::xString _drone_name;
 private: xmls::xFloat _thrust;
+private: xmls::xString _thrust_calib_date;
 
 public: cv::Point3f pad_pos() { return cv::Point3f(pad_pos_x,pad_pos_y,pad_pos_z);}
 
@@ -814,8 +816,8 @@ public: DroneCalibration() {
         Register("pad_pos_z", &_pad_pos_z);
         Register("pad_roll", &_pad_roll);
         Register("pad_pitch", &_pad_pitch);
-
         Register("thrust", &_thrust);
+        Register("thrust_calib_date", &_thrust_calib_date);
     }
 
 public: void deserialize(std::string filepath) {
@@ -848,6 +850,7 @@ public: void deserialize(std::string filepath) {
         drone_id = _drone_id.value();
         drone_name = _drone_name.value();
         thrust = _thrust.value();
+        thrust_calib_date = _thrust_calib_date.value();
     }
 
 public: void serialize(std::string filepath) {
@@ -860,6 +863,7 @@ public: void serialize(std::string filepath) {
         _drone_name = drone_name;
         _drone_id = drone_id;
         _thrust = thrust;
+        _thrust_calib_date = thrust_calib_date;
 
         std::string xmlData = toXML();
         std::ofstream outfile = std::ofstream (filepath);
