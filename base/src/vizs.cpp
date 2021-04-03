@@ -562,8 +562,8 @@ void Visualizer::draw_tracker_viz() {
 
             //draw speed vector:
             cv::Point2i tv = _dnav->drone_v_setpoint_im();
-            putText(frameL_color,"v",tv,cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,255,0));
-            cv::line(frameL_color,drone_pos,tv,cv::Scalar(0,255,0),1);
+            putText(frameL_color,"v",tv,cv::FONT_HERSHEY_SIMPLEX,0.5,green);
+            cv::line(frameL_color,drone_pos,tv,green,1);
         }
     }
 

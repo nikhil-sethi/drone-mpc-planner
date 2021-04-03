@@ -70,10 +70,10 @@ private:
     VisionData *_visdat;
     CameraView *_camview;
 
-    cv::Point3f setpoint_pos_world;
-    cv::Point3f setpoint_pos_world_landing;
-    cv::Point3f setpoint_vel_world;
-    cv::Point3f setpoint_acc_world;
+    cv::Point3f setpoint_pos_world = {0};
+    cv::Point3f setpoint_pos_world_landing = {0};
+    cv::Point3f setpoint_vel_world = {0};
+    cv::Point3f setpoint_acc_world = {0};
 
     bool initialized = false;
     bool low_battery_triggered = false;
@@ -151,7 +151,7 @@ public:
         if (!drone_flying())
             tmp = {0};
 
-        std::vector<cv::Point3d> world_length,camera_length;
+        std::vector<cv::Point3d> world_pts,im_pts;
         cv::Point3d tmpd;
         float theta = -_visdat->camera_angle * deg2rad;
         float temp_y = tmp.y * cosf(theta) + tmp.z * sinf(theta);
@@ -159,20 +159,20 @@ public:
         tmpd.y = static_cast<double>(temp_y);
         tmpd.x = static_cast<double>(tmp.x);
 
-        world_length.push_back(tmpd);
-        cv::perspectiveTransform(world_length,camera_length,_visdat->Qfi);
+        world_pts.push_back(tmpd);
+        cv::perspectiveTransform(world_pts,im_pts,_visdat->Qfi);
 
-        if (camera_length[0].x > IMG_W)
-            camera_length[0].x = IMG_W;
-        if (camera_length[0].y > IMG_H)
-            camera_length[0].y = IMG_H;
+        if (im_pts[0].x > IMG_W)
+            im_pts[0].x = IMG_W;
+        if (im_pts[0].y > IMG_H)
+            im_pts[0].y = IMG_H;
 
-        if (camera_length[0].x < 0)
-            camera_length[0].x = 0;
-        if (camera_length[0].y < 0)
-            camera_length[0].y = 0;
+        if (im_pts[0].x < 0)
+            im_pts[0].x = 0;
+        if (im_pts[0].y < 0)
+            im_pts[0].y = 0;
 
-        return cv::Point2i(camera_length[0].x,camera_length[0].y);
+        return cv::Point2i(im_pts[0].x,im_pts[0].y);
     }
     cv::Point2i drone_setpoint_im() {
         //transform to image coordinates:
@@ -184,7 +184,7 @@ public:
             tmp.z = _trackers->dronetracker()->pad_location().z;
         }
 
-        cv::Point3f resf  =world2im_3d(tmp,_visdat->Qfi,_visdat->camera_angle);
+        cv::Point3f resf = world2im_3d(tmp,_visdat->Qfi,_visdat->camera_angle);
         return cv::Point2i(roundf(resf.x),round(resf.y));
     }
 

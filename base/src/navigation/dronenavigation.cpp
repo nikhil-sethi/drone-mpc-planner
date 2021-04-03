@@ -295,7 +295,7 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_wait_for_insect;
             }
 
-            if (!_trackers->dronetracker()->taking_off() && time - time_take_off > dparams.max_burn_time)
+            if (!_trackers->dronetracker()->taking_off())
                 _navigation_status = ns_take_off_completed;
             else
                 break;
@@ -445,6 +445,7 @@ void DroneNavigation::update(double time) {
                 _trackers->dronetracker()->detect_yaw(time);
                 _navigation_status = ns_wait_reset_yaw;
             }
+            check_abort_autonomus_flight_conditions();
             break;
         } case ns_wait_reset_yaw: {
             _dctrl->flight_mode(DroneController::fm_reset_yaw);

@@ -225,13 +225,13 @@ void DroneTracker::calc_world_item(BlobProps * props, double time [[maybe_unused
 
 void DroneTracker::delete_takeoff_fake_motion() {
     if (enable_takeoff_motion_delete) {
-        _visdat->reset_spot_on_motion_map(_pad_im_location, _pad_disparity,_pad_im_size*2.5f,1);
+        _visdat->reset_spot_on_motion_map(_pad_im_location, _pad_disparity,_pad_im_size,1);
 
-        //to end the deletion of this area, we check if there are not blobs in this area anymore because
+        //to end the deletion of this area, we check if there are no blobs in this area anymore because
         //they leave a permanent mark if we stop prematurely. Two conditions:
         //1. the drone must have left the area with a margin of its size
         //2. other blobs must not be inside the area. (slightly more relaxed, because crop leave movements otherwise are holding this enabled indefinetely)
-        if (_world_item.valid &&normf(_world_item.iti.pt() - _pad_im_location) > _pad_im_size*2.5f + _world_item.iti.size && liftoff_detected) {
+        if (_world_item.valid && liftoff_detected && normf(_world_item.iti.pt() - _pad_im_location) > _pad_im_size + 0.6f * _world_item.iti.size ) {
             enable_takeoff_motion_delete = false;
             for (auto blob : _all_blobs) {
                 if (normf(blob.pt_unscaled() - _pad_im_location) < 2.6f * _pad_im_size) {
@@ -430,7 +430,7 @@ void DroneTracker::set_pad_location_from_blink(cv::Point3f blink_world) {
     std::cout << "blink-location: " << blink_world << std::endl;
     _pad_world_location = blink_world + cv::Point3f(0,0,-dparams.radius);
     _target = _pad_world_location;
-    _pad_im_size = world2im_size(_pad_world_location+cv::Point3f(dparams.radius,0,0),_pad_world_location-cv::Point3f(dparams.radius,0,0),_visdat->Qfi,_visdat->camera_angle);
+    _pad_im_size = world2im_size(_pad_world_location+1.5f*cv::Point3f(dparams.radius,0,0),_pad_world_location-1.5f*cv::Point3f(dparams.radius,0,0),_visdat->Qfi,_visdat->camera_angle);
     auto pt_im3 = world2im_3d(pad_location(),_visdat->Qfi,_visdat->camera_angle);
     _pad_im_location =  cv::Point2f(pt_im3.x,pt_im3.y);
     _pad_disparity =  pt_im3.z;
@@ -439,7 +439,7 @@ void DroneTracker::set_pad_location_from_blink(cv::Point3f blink_world) {
 
 void DroneTracker::set_pad_location( cv::Point3f pad_world) {
     _pad_world_location = pad_world;
-    _pad_im_size = world2im_size(_pad_world_location+cv::Point3f(dparams.radius,0,0),_pad_world_location-cv::Point3f(dparams.radius,0,0),_visdat->Qfi,_visdat->camera_angle);
+    _pad_im_size = world2im_size(_pad_world_location+1.5f*cv::Point3f(dparams.radius,0,0),_pad_world_location-1.5f*cv::Point3f(dparams.radius,0,0),_visdat->Qfi,_visdat->camera_angle);
     auto pt_im3 = world2im_3d(_pad_world_location,_visdat->Qfi,_visdat->camera_angle);
     _pad_im_location =  cv::Point2f(pt_im3.x,pt_im3.y);
     _pad_disparity =  pt_im3.z;

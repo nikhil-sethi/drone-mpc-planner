@@ -147,7 +147,7 @@ void process_video() {
             }
         }
         if (log_replay_mode && !skipped_to_hunt)
-            skip_to_hunt(5,frame->time);
+            skip_to_hunt(1.5,frame->time);
 
         if (render_hunt_mode || render_monitor_video_mode) {
             if (dnav.drone_ready_and_waiting() && !skipped_to_hunt) {

@@ -22,6 +22,6 @@
     <Member Name="max_flight_time">180</Member>
     <Member Name="min_hunt_cell_v">4.1</Member>
     <Member Name="static_shakeit_throttle">250</Member>
-    <Member Name="target_takeoff_velocity">1.</Member>
+    <Member Name="target_takeoff_velocity">2.2</Member>
     <Member Name="led_type">led_strip</Member>
 </SerializableClass>
