@@ -78,6 +78,9 @@ def process_system_status_in_folder(folder):
         return ([],'Error: ' + log_start,'')
     if log_start == '':
         return ([],'Error: log_start empty!?','')
+    if log_start.startswith('Resetting cam'):
+        return ([],'Error: ' + log_start,'')
+
     log_start_datetime = datetime.strptime(log_start.strip(), '%d/%m/%Y %H:%M:%S')
     log_end_datetime = str_to_datetime( os.path.basename(folder))
 
