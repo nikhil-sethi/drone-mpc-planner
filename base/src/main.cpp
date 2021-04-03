@@ -146,8 +146,11 @@ void process_video() {
 
             }
         }
-        if (log_replay_mode && !skipped_to_hunt)
+        if (log_replay_mode && !skipped_to_hunt) {
             skip_to_hunt(1.5,frame->time);
+            if (skipped_to_hunt)
+                cam->turbo = false;
+        }
 
         if (render_hunt_mode || render_monitor_video_mode) {
             if (dnav.drone_ready_and_waiting() && !skipped_to_hunt) {
@@ -273,17 +276,18 @@ void process_video() {
         std::cout <<
                   //   "\r\e[K" <<
                   dnav.navigation_status() <<
-                  "; frame: " << imgcount <<
+                  "; " << imgcount <<
                   ", " << cam->frame_number() <<
+                  ". T: " << to_string_with_precision(time,2)  <<
                   ". FPS: " << to_string_with_precision(fps,1) <<
-                  ". Time: " << to_string_with_precision(time,2)  <<
-                  ", dt " << to_string_with_precision(dt,3) <<
                   ", " << rc->telemetry.batt_cell_v <<
                   "v, arm: " << static_cast<int>(rc->telemetry.arming_state) <<
+                  ", thr: " << rc->throttle <<
+                  ", att: [" << rc->telemetry.roll << "," << rc->telemetry.pitch << "]" <<
                   ", rssi: " << static_cast<int>(rc->telemetry.rssi) <<
-                  ", exposure: " << cam->measured_exposure() <<
+                  ", exp: " << cam->measured_exposure() <<
                   ", gain: " << cam->measured_gain() <<
-                  ", brightness: " << visdat.average_brightness() <<
+                  ", bright: " << visdat.average_brightness() <<
                   std::endl;
         //   std::flush;
 

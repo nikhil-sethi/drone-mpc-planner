@@ -48,7 +48,7 @@ protected:
 
 public:
     bool frame_by_frame = false;
-    bool turbo = false;
+    bool turbo = true;
     cv::Mat Qf;
     cv::Mat depth_background;
     cv::Mat depth_background_3mm;
