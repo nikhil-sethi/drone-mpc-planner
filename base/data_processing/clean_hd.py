@@ -18,7 +18,7 @@ def clean_hd():
             if os.path.exists(lb.term_log_path):
                 if Path(lb.term_log_path).stat().st_size > 1024*1024*1024: #1GB
                     os.remove(lb.term_log_path)
-            found_dirs = lb.natural_sort(glob.glob(lb.data_dir + "/202*_*"))
+            found_dirs = lb.natural_sort(glob.glob(lb.data_dir + "*/202*_*"))
             for dir in found_dirs:
                 try:
                     dir_date =  datetime.strptime(os.path.basename(dir),"%Y%m%d_%H%M%S")
