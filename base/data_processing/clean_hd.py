@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-import os,shutil,datetime,glob,logging,socket
+import os,shutil,glob,logging,socket
 import lib_base as lb
 from pathlib import Path
+from datetime import datetime,timedelta
 
 
 
@@ -22,10 +23,12 @@ def clean_hd():
             for dir in found_dirs:
                 try:
                     dir_date =  datetime.strptime(os.path.basename(dir),"%Y%m%d_%H%M%S")
-                except :
+                except:
+                    logger.error('could not get date from: ' + dir)
+                    logger.info('removing: ' + dir)
                     shutil.rmtree(dir)
                     break
-                if ((datetime.now() - dir_date) > datetime.timedelta(days=14)):
+                if ((datetime.now() - dir_date) > timedelta(days=14)):
                     logger.info('removing: ' + dir)
                     if os.path.exists(dir + '/logging'):
                         shutil.rmtree(dir)
