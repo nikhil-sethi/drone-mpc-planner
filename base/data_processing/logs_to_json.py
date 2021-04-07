@@ -53,7 +53,7 @@ def process_system_status_in_folder(folder):
     daylight_start = ''
     daylight_end = ''
     prev_line = ''
-    with open (terminal_log_path, "r", encoding='latin-1') as terminal_log:
+    with open (terminal_log_path, "r") as terminal_log:
         log_start = terminal_log.readline()
         while not daylight_end:
             line = terminal_log.readline()
