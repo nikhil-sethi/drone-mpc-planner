@@ -28,7 +28,7 @@ def render(start_datetime,end_datetime,data_folder):
     if os.path.exists(render_process_dir):
         shutil.rmtree(render_process_dir)
     shutil.copytree(original_process_dir,render_process_dir,ignore=shutil.ignore_patterns('*logging*'))
-    found_dirs = glob.glob(os.path.expanduser(data_folder) + "/202*_*")
+    found_dirs = glob.glob(os.path.expanduser(data_folder) + "*/202*_*")
     filtered_dirs = [d for d in found_dirs if lb.str_to_datetime(os.path.basename(os.path.normpath(d))) >= start_datetime and lb.str_to_datetime(os.path.basename(os.path.normpath(d))) <= end_datetime] # filter the list of dirs to only contain dirs between certain dates
     for folder in filtered_dirs:
         logger.info(f"Processing folder: {folder}")
