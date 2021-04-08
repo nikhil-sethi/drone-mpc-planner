@@ -374,7 +374,11 @@ void DroneNavigation::update(double time) {
             time_wp_reached = -1;
             break;
         } case ns_approach_waypoint: {
-            if (pparams.navigation_tuning && current_waypoint->mode != wfm_landing && current_waypoint->mode != wfm_takeoff ) {
+            if (pparams.navigation_tuning &&
+                    current_waypoint->mode != wfm_thrust_calib &&
+                    current_waypoint->mode != wfm_yaw_reset &&
+                    current_waypoint->mode != wfm_landing &&
+                    current_waypoint->mode != wfm_takeoff ) {
                 setpoint_pos_world.x = waypoints[wpid].xyz.x + (250-setpoint_slider_X)/100.f;
                 setpoint_pos_world.y = waypoints[wpid].xyz.y + (250-setpoint_slider_Y)/100.f;
                 setpoint_pos_world.z = waypoints[wpid].xyz.z + (setpoint_slider_Z-250)/100.f;
