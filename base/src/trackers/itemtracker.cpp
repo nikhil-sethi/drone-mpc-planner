@@ -53,7 +53,6 @@ void ItemTracker::init(VisionData *visdat, int motion_thresh, std::string name, 
     smoother_accZ.init(acc_smth_width);
 
     smoother_im_size.init(smooth_blob_props_width);
-    smoother_score.init(smooth_blob_props_width,_score_threshold);
     smoother_brightness.init(smooth_blob_props_width);
     vel_filt.init(1.f/pparams.fps, 1, 0.020, 0.020);
 
@@ -153,7 +152,6 @@ void ItemTracker::update_blob_filters() {
         smoother_brightness.addSample(_image_item.pixel_max);
         _blobs_are_fused_cnt = 0;
     }
-    smoother_score.addSample(_image_item.score);
     disparity_prev = _world_item.iti.disparity;
 }
 
@@ -658,31 +656,36 @@ bool ItemTracker::check_ignore_blobs_generic(BlobProps * blob) {
 }
 
 float ItemTracker::score(BlobProps * blob, ImageItem * ref) {
-    float im2world_err_ratio, im_size_pred_err_ratio;
+    float im_dist_err_ratio, im_size_pred_err_ratio;
     const float max_world_dist = 0.05f; // max distance a blob can travel in one frame
 
     if (_image_item.valid && _world_item.valid) {
         cv::Point3f last_world_pos = im2world(_image_item.pt(),_image_item.disparity,_visdat->Qf,_visdat->camera_angle);
         float max_im_dist = world2im_dist(last_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_angle);
         float world_projected_im_err = normf(blob->pt_unscaled() - _image_item.pt());
-        im2world_err_ratio = world_projected_im_err/max_im_dist;
+        float world_projected_pred_im_err = INFINITY;
+        if (_image_predict_item.valid)
+            world_projected_pred_im_err = normf(blob->pt_unscaled() - _image_predict_item.pt);
+        if (world_projected_pred_im_err < world_projected_im_err)
+            world_projected_im_err = world_projected_pred_im_err;
+        im_dist_err_ratio = world_projected_im_err/max_im_dist;
         float prev_size = smoother_im_size.latest();
         im_size_pred_err_ratio = fabs(prev_size - blob->size_unscaled()) / (blob->size_unscaled()+prev_size);
     } else if (_image_predict_item.valid) {
         cv::Point3f predicted_world_pos = im2world(_image_predict_item.pt,_image_predict_item.disparity,_visdat->Qf,_visdat->camera_angle);
         float max_im_dist = world2im_dist(predicted_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_angle);
         float world_projected_im_err = normf(blob->pt_unscaled() - _image_predict_item.pt);
-        im2world_err_ratio = world_projected_im_err/max_im_dist;
+        im_dist_err_ratio = world_projected_im_err/max_im_dist;
         im_size_pred_err_ratio = fabs(_image_predict_item.size - blob->size_unscaled()) / (blob->size_unscaled()+_image_predict_item.size);
     } else if (ref->valid) {
         im_size_pred_err_ratio = fabs(ref->size - blob->size_unscaled()) / (blob->size_unscaled() + ref->size);
         float max_im_dist = 25;
-        im2world_err_ratio = sqrtf(powf(ref->x-blob->x*pparams.imscalef,2)+powf(ref->y-blob->y*pparams.imscalef,2))/max_im_dist;
+        im_dist_err_ratio = sqrtf(powf(ref->x-blob->x*pparams.imscalef,2)+powf(ref->y-blob->y*pparams.imscalef,2))/max_im_dist;
     } else {
         return INFINITY;
     }
 
-    float score = im2world_err_ratio*0.75f + 0.25f*im_size_pred_err_ratio;
+    float score = im_dist_err_ratio*0.75f + 0.25f*im_size_pred_err_ratio;
     if (!properly_tracking() && (blob->in_overexposed_area || blob->false_positive))
         score*=1.5f;
     else if (blob->in_overexposed_area || blob->false_positive)

@@ -465,6 +465,10 @@ bool handle_key(double time [[maybe_unused]]) {
         if(log_replay_mode || generator_mode)
             trackers.enable_blob_viz();
         break;
+    case '\\':
+        if(log_replay_mode || generator_mode)
+            trackers.dronetracker()->enable_draw_stereo_viz = true;
+        break;
     case 'o':
         dctrl.LED(true);
         dnav.nav_flight_mode(navigation::nfm_manual);

@@ -21,7 +21,6 @@ private:
     int16_t _viz_id = -1;
     int _motion_thresh = -1;
     float disparity_prev = 0;
-    bool enable_draw_stereo_viz = false;
 
     void update_disparity(float disparity, float dt);
     void update_state(cv::Point3f measured_world_coordinates, double time);
@@ -77,7 +76,6 @@ protected:
     const int smooth_blob_props_width = 10;
     bool skip_wait_smth_spos = true;
     filtering::Smoother smoother_im_size;
-    filtering::Smoother smoother_score;
     filtering::Smoother smoother_brightness;
     filtering::Smoother smoother_posX, smoother_posY, smoother_posZ;
     filtering::Smoother smoother_accX,smoother_accY,smoother_accZ;
@@ -123,6 +121,7 @@ public:
     std::vector<IgnoreBlob> ignores_for_other_trkrs;
     std::vector<IgnoreBlob> ignores_for_me;
     cv::Mat viz_disp;
+    bool enable_draw_stereo_viz = false;
 
     int16_t uid() {return _uid;}
     int16_t viz_id() { return _viz_id;}
@@ -174,13 +173,8 @@ public:
     }
 
     virtual float score(BlobProps * blob) { return score(blob,&_image_item); }
-    float score_threshold() {return _score_threshold;}
-    float predicted_score() {
-        if (smoother_score.ready()) {
-            float res = std::clamp(smoother_score.latest()*3.f,0.05f,_score_threshold);
-            return res;
-        } else
-            return _score_threshold;
+    float score_threshold() {
+        return std::clamp(_score_threshold+_n_frames_lost*0.3f*_score_threshold,0.f,1.5f*_score_threshold);
     }
 
 };

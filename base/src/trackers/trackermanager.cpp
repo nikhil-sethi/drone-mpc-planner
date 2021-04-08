@@ -439,8 +439,8 @@ void TrackerManager::match_existing_trackers(std::vector<ProcessedBlob> *pbs,boo
                     }
                     if (enable_viz_blobs && trkr->viz_id() < 6) {
                         cv::Mat viz = vizs_maxs.at(blob.id);
-                        cv::Point2i pt(viz.cols/5 + 2,viz.rows - 14*(trkr->viz_id()+1));
-                        putText(viz,"#" + std::to_string(trkr->viz_id()) + ":" + to_string_with_precision(score,2) + "/" + to_string_with_precision(trkr->predicted_score(),2),pt,FONT_HERSHEY_SIMPLEX,0.3,tracker_color(trkr));
+                        cv::Point2i pt(viz.cols/5 + 2,viz.rows - 20*(trkr->viz_id()+1));
+                        putText(viz,"#" + std::to_string(trkr->viz_id()) + ": " + to_string_with_precision(score,2),pt,FONT_HERSHEY_SIMPLEX,0.4,tracker_color(trkr));
                     }
                 } else if (enable_viz_blobs) {
                     cv::Mat viz = vizs_maxs.at(blob.id);
