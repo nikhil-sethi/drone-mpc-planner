@@ -84,6 +84,7 @@ private:
     float _pad_im_size;
     cv::Point2f _pad_im_location;
     float _pad_disparity;
+    float _drone_on_pad_im_size;
     bool _pad_location_valid = false;
     cv::Point3f _pad_world_location;
 

@@ -44,8 +44,10 @@ void InsectTracker::check_false_positive() {
     // 3. Camera noise pixels, this noise seems to be stronger with overexposed areas
     // 4. Static objects with actual motion (e.g. a ventilator)
     // 5. A moving plant, e.g. caused by down wash from the drone
+    // 6. Reflections from the drone led on reflective surfaces (i.e. the new charging pad)
+    // 7. Flickering of and slowly moving vertical wires used to grow certain crops
 
-    //A check whether an object is actually moving through the image seems to be quite robust to filter out 1,4 and possibly 5:
+    //A check whether an object is actually moving through the image seems to be quite robust to filter out 1,4 and possibly 5 and 7:
     //A check whether a detection was tracked for more then a few frames filters out 2 and 3
 
     if (_track.size() < track_history_max_size) {

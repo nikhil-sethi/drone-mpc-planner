@@ -483,6 +483,7 @@ private:
     xFloat _hover_throttle_b;
     xFloat _blink_period;
     xFloat _radius;
+    xFloat _pad_radius;
     xFloat _default_thrust;
     xInt _drone_blink_strength;
     xInt _drone_led_strength;
@@ -510,6 +511,7 @@ public:
     float hover_throttle_b;
     float blink_period;
     float radius;
+    float pad_radius;
     float default_thrust;
     int drone_blink_strength;
     int drone_led_strength;
@@ -532,7 +534,7 @@ public:
         setClassName("DroneParameters");
 
         // Set class version
-        setVersion("1.11");
+        setVersion("1.12");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("name",&_name);
@@ -547,6 +549,7 @@ public:
         Register("hover_throttle_b",&_hover_throttle_b);
         Register("blink_period",&_blink_period);
         Register("radius",&_radius);
+        Register("pad_radius",&_pad_radius);
         Register("thrust",&_default_thrust);
         Register("drone_blink_strength",&_drone_blink_strength);
         Register("drone_led_strength",&_drone_led_strength);
@@ -596,6 +599,7 @@ public:
         blink_period = _blink_period.value();
         default_thrust = _default_thrust.value();
         radius = _radius.value();
+        pad_radius = _pad_radius.value();
         drone_blink_strength = _drone_blink_strength.value();
         drone_led_strength = _drone_led_strength.value();
         tx = _tx.value();
@@ -624,6 +628,7 @@ public:
         _blink_period = blink_period;
         _default_thrust = default_thrust;
         _radius = radius;
+        _pad_radius = pad_radius;
         _drone_blink_strength = drone_blink_strength;
         _drone_led_strength = drone_led_strength;
         _tx = tx;

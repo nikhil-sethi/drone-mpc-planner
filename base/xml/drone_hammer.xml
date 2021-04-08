@@ -1,4 +1,4 @@
-<SerializableClass Type="DroneParameters" Version="1.11">
+<SerializableClass Type="DroneParameters" Version="1.12">
     <Member Name="name">hacr</Member>
     <Member Name="initial_hover_throttle">675</Member>
     <Member Name="throttle_bank_factor">0.75</Member>
@@ -13,6 +13,7 @@
     <Member Name="drone_led_strength">5</Member>
     <Member Name="blink_period">0.1</Member>
     <Member Name="radius">0.07</Member>
+    <Member Name="pad_radius">0.16</Member>
     <Member Name="thrust">38</Member> <!-- overwritten, if xml/drone_calibration.xml exists -->
     <Member Name="tx">tx_frskyd16</Member>
     <Member Name="mode3d">false</Member>
