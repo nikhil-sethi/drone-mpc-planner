@@ -409,8 +409,10 @@ void DroneNavigation::update(double time) {
                 }
             }
 
-            if (_nav_flight_mode == nfm_hunt && _iceptor->aim_in_range() && !low_battery_triggered)
+            if (_nav_flight_mode == nfm_hunt && _iceptor->aim_in_range() && !low_battery_triggered) {
                 _navigation_status = ns_start_the_chase;
+                _dctrl->flight_mode(DroneController::fm_flying_pid);
+            }
 
             check_abort_autonomus_flight_conditions();
             break;
@@ -453,13 +455,14 @@ void DroneNavigation::update(double time) {
                                 && normf(_trackers->dronetracker()->last_track_data().state.vel) < current_waypoint->threshold_v
                                 && _trackers->dronetracker()->n_frames_tracking()>5;
 
-            if(!_trackers->dronetracker()->check_yaw(time) || (time-time_start_initial_reset_yaw > duration_yaw_reset && drone_pos_ok))
+            if(!_trackers->dronetracker()->check_yaw(time) || (time-time_start_initial_reset_yaw > duration_yaw_reset && drone_pos_ok)) {
                 _navigation_status = ns_goto_thrust_calib_waypoint;
+                _dctrl->flight_mode(DroneController::fm_calib_thrust);
+            }
             check_abort_autonomus_flight_conditions();
             break;
         } case ns_calibrate_thrust: {
             _dctrl->init_thrust_calibration();
-            _dctrl->flight_mode(DroneController::fm_calib_thrust);
             _navigation_status = ns_calibrating_thrust;
             [[fallthrough]];
         } case ns_calibrating_thrust: {
