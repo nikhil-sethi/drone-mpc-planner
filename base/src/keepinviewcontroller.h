@@ -11,7 +11,8 @@ private:
     const float safety = 2.f;
 
     // States:
-    std::array<float, N_PLANES> pos_err_kiv= {0}, vel_err_kiv= {0};
+    std::array<float, N_PLANES> pos_err_kiv = {0}, vel_err_kiv = {0};
+    bool enabled = true;
 
     // Handles:
     xmls::DroneCalibration* _dcalib;
@@ -26,4 +27,6 @@ public:
     cv::Point3f update(tracking::TrackData data_drone, float transmission_delay_duration, bool correction_requested);
     cv::Point3f kiv_acceleration(std::array<bool, N_PLANES> violated_planes_inview, std::array<bool, N_PLANES> violated_planes_brakedistance);
     bool trajectory_in_view(std::vector<tracking::StateData> traj, CameraView::view_volume_check_mode c);
+    void enable() {enabled = true;};
+    void disable() {enabled = false;};
 };
