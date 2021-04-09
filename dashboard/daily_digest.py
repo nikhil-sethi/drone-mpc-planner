@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 import subprocess
 import time, argparse
-import glob, os, re
+import glob, os, re, sys
 from datetime import datetime, timedelta
 import pandas as pd
-import pats_c.lib.lib_patsc as patsc
+sys.path.append('pats_c/lib')
+import lib_patsc as patsc
 
 def natural_sort_systems(l):
     convert = lambda text: int(text) if text.isdigit() else text.lower()

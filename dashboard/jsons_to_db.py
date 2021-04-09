@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 import json
-import glob, os, re
+import glob, os, re, sys
 import datetime
 from tqdm import tqdm
 from json.decoder import JSONDecodeError
-import pats_c.lib.lib_patsc as patsc
+sys.path.append('pats_c/lib')
+import lib_patsc as patsc
 
 def get_column_data_type(column):
     if column == 'duration' or column == 'Version' or column == 'Vel_mean' or column == 'Vel_max' or column == 'Vel_std' or column == 'Version' or column == 'Dist_traveled' or column == 'Size' or column == 'Alpha_horizontal_start' or column == 'Alpha_horizontal_end' or column == 'Alpha_vertical_start' or column == 'Alpha_vertical_end' or column == 'Dist_traject':
@@ -301,8 +302,10 @@ def jsons_to_db(input_folder):
                                 flag_f.write('. Insect detections: ' + str(n_moths))
                                 flag_f.write('. Hunts: ' + str(n_hunts))
                                 flag_f.write('.\n')
-                            else:
+                            elif "version" in data:
                                 flag_f.write('WRONG VERSION ' + data["version"] + '. Want: ' + min_required_version + '\n')
+                            else:
+                                flag_f.write('NO VERSION DETECTED')
                         except JSONDecodeError:
                             flag_f.write('JSONDecodeError \n')
                     else:

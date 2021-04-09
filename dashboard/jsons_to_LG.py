@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-import requests,json,datetime,glob,os,math
+import requests,json,datetime,glob,os,math,sys
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
 from time import sleep
 from json.decoder import JSONDecodeError
-import pats_c.lib.lib_patsc as patsc
+sys.path.append('pats_c/lib')
+import lib_patsc as patsc
 
 def read_cred_lg_db():
     cred_file = os.path.expanduser('~/patsc/.lg_auth')
