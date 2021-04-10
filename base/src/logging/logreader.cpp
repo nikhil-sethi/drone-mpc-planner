@@ -96,7 +96,7 @@ LogEntryMain LogReader::create_log_entry(string line, map<string, int> headmap) 
         _takeoff_time = entry.elapsed;
     if (isinf(_drone_ready_time) && entry.nav_state == navigation::ns_calibrating_motion_done)
         _drone_ready_time = entry.elapsed;
-    if (isinf(_yaw_reset_time) && entry.nav_state == navigation::ns_initial_reset_yaw)
+    if (isinf(_yaw_reset_time) && entry.nav_state == navigation::ns_reset_headless_yaw)
         _yaw_reset_time = entry.elapsed;
     if (isinf(_drone_problem_time) && entry.nav_state == navigation::ns_drone_problem)
         _drone_problem_time = entry.elapsed;

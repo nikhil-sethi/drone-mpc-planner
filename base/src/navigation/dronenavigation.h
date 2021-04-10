@@ -26,7 +26,7 @@ private:
     Waypoint * current_waypoint = new Waypoint_Landing();
 
     double time_start_motion_calibration = 0;
-    double time_start_initial_reset_yaw = 0;
+    double time_start_reset_headless_yaw = 0;
     double time_start_thrust_calibration = 0;
     double time_wp_reached = -1;
     double time_start_landing = -1;
@@ -42,7 +42,8 @@ private:
     float time_out_after_landing = 0;
     const float duration_shake = 15;
     const float duration_motion_calibration = 2;
-    const double duration_yaw_reset = 6;
+    const double duration_correct_yaw = 6;
+    const double duration_reset_headless_yaw = 2;
 
     std::ofstream *_logger;
     DroneController * _dctrl;
@@ -79,6 +80,7 @@ private:
     void deserialize_settings();
     void serialize_settings();
     void next_waypoint(Waypoint wp, double time);
+    bool drone_at_wp();
     cv::Point3f square_point(cv::Point3f center, float width, float s);
     void check_abort_autonomus_flight_conditions();
 
@@ -190,7 +192,7 @@ public:
             return false;
         }
     }
-    bool drone_resetting_yaw() {return _navigation_status == ns_wait_reset_yaw || _navigation_status == ns_initial_reset_yaw;}
+    bool drone_resetting_yaw() {return _navigation_status == ns_correct_yaw || _navigation_status == ns_reset_headless_yaw;}
     bool drone_flying() {return _navigation_status < ns_landing && _navigation_status >  ns_take_off_completed;}
     bool drone_manual() {return _navigation_status == ns_manual;}
 

@@ -351,20 +351,19 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         }
         control_model_based(data_drone, data_target_new.pos(),data_target_new.vel());
         break;
-    } case fm_initial_reset_yaw: {
-        control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
+    } case fm_calib_thrust:
+    case fm_prep_to_land:
+    case fm_reset_headless_yaw:
+    case fm_headed:{
         mode += bf_headless_disabled;
+        auto_yaw = RC_MIDDLE;
+        control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
         break;
-    } case fm_reset_yaw: {
+    } case fm_correct_yaw: {
         mode += bf_headless_disabled;
         control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
         if (data_drone.yaw_deviation_valid)
             correct_yaw(data_drone.yaw_deviation);
-        break;
-    } case fm_calib_thrust: {
-        auto_yaw = RC_MIDDLE;
-        mode += bf_headless_disabled;
-        control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
         break;
     } case fm_ff_landing_start: {
         _flight_mode = fm_ff_landing;
@@ -941,8 +940,8 @@ cv::Point3f DroneController::pid_error(TrackData data_drone, cv::Point3f setpoin
     if( !(norm(setpoint_vel)<0.1 && norm(setpoint_pos-data_drone.pos())<0.2 && data_drone.pos_valid) ) // Needed to improve hovering at waypoint
         error += multf(kp_vel, vel_err_p) + multf(kd_vel, vel_err_d); // velocity control
 
-    bool flight_mode_with_kiv = _flight_mode==fm_flying_pid || _flight_mode==fm_initial_reset_yaw
-                                || _flight_mode==fm_reset_yaw;
+    bool flight_mode_with_kiv = _flight_mode==fm_flying_pid || _flight_mode==fm_reset_headless_yaw
+                                || _flight_mode==fm_correct_yaw;
 
     if (data_drone.pos_valid && data_drone.vel_valid && !choosing_insect)
         error += kiv_ctrl.update(data_drone,

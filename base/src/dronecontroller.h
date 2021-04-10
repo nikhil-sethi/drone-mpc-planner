@@ -38,9 +38,11 @@ static const char* flight_mode_names[] = { "fm_joystick_check",
                                            "fm_retry_aim_start",
                                            "fm_pid_init",
                                            "fm_pid",
-                                           "fm_initial_reset_yaw",
-                                           "fm_reset_yaw",
+                                           "fm_headed",
+                                           "fm_reset_headless_yaw",
+                                           "fm_correct_yaw",
                                            "fm_calib_thrust",
+                                           "fm_prep_to_land",
                                            "fm_ff_landing_start",
                                            "fm_ff_landing",
                                            "fm_shake_it_baby",
@@ -70,9 +72,11 @@ public:
         fm_retry_aim_start,
         fm_flying_pid_init,
         fm_flying_pid,
-        fm_initial_reset_yaw,
-        fm_reset_yaw,
+        fm_headed,
+        fm_reset_headless_yaw,
+        fm_correct_yaw,
         fm_calib_thrust,
+        fm_prep_to_land,
         fm_ff_landing_start,
         fm_ff_landing,
         fm_shake_it_baby,
@@ -281,13 +285,9 @@ public:
     KeepInViewController kiv_ctrl;
 
     cv::Point3f pid_error(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool choosing_insect);
-    void flight_mode(flight_modes f) {
-        _flight_mode = f;
-    }
+    void flight_mode(flight_modes f) { _flight_mode = f; }
     void hover_mode(bool value) { _hover_mode = value;}
-    void double_led_strength() {
-        dparams.drone_led_strength = std::clamp(dparams.drone_led_strength*2,5,100);
-    }
+    void double_led_strength() { dparams.drone_led_strength = std::clamp(dparams.drone_led_strength*2,5,100); }
 
     bool abort_take_off() {
         //check if the take off is not yet too far progressed to abort, if not go to spin up else return true
@@ -357,7 +357,7 @@ public:
     }
 
     float in_flight_duration(double time) {
-        if ((_flight_mode == fm_flying_pid || _flight_mode == fm_reset_yaw || _flight_mode == fm_ff_landing || _flight_mode == fm_initial_reset_yaw)
+        if ((_flight_mode == fm_flying_pid || _flight_mode == fm_correct_yaw || _flight_mode == fm_ff_landing || _flight_mode == fm_reset_headless_yaw)
                 && in_flight_start_time < 0)
             in_flight_start_time = time;
         else if (_flight_mode == fm_disarmed || _flight_mode == fm_inactive || _flight_mode == fm_spinup || _flight_mode == fm_manual || _flight_mode == fm_abort)
