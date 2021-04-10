@@ -20,6 +20,7 @@ private:
     bool initialized = false;
     bool low_battery_triggered = false;
     bool force_pad_redetect = false;
+    bool force_thrust_calib = false;
 
     uint wpid = 0;
     std::vector<Waypoint> waypoints;

@@ -343,7 +343,7 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_goto_thrust_calib_waypoint: {
             _dctrl->flight_mode(DroneController::fm_headed);
-            if (!_dctrl->thrust_calib_valid()) {
+            if (!_dctrl->thrust_calib_valid() || force_thrust_calib) {
                 _dctrl->hover_mode(true);
                 _trackers->dronetracker()->hover_mode(true);
                 next_waypoint(Waypoint_Thrust_Calibration(), time);
@@ -686,6 +686,8 @@ void DroneNavigation::demo_flight(std::string flightplan_fn) {
     if (_nav_flight_mode == nfm_waypoint) {
         navigation::XML_FlightPlan fp;
         fp.deserialize(flightplan_fn);
+        if (!strcmp(fp.flightplan_name.c_str(),"thrust-calibration"))
+            force_thrust_calib = true;
         fp.serialize("./logging/flightplan.xml"); // write a copy of the currently used flightplan to the logging dir
         waypoints = fp.waypoints();
         wpid = 0;
