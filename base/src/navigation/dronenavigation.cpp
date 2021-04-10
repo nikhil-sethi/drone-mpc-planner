@@ -684,6 +684,10 @@ cv::Point3f DroneNavigation::square_point(cv::Point3f center, float width, float
 
 void DroneNavigation::demo_flight(std::string flightplan_fn) {
     if (_nav_flight_mode == nfm_waypoint) {
+        if (_navigation_status != ns_wait_for_takeoff_command) {
+            std::cout << "Warning: received demo trigger, but not in ns_wait_for_takeoff_command!" << std::endl;
+            return;
+        }
         navigation::XML_FlightPlan fp;
         fp.deserialize(flightplan_fn);
         if (!strcmp(fp.flightplan_name.c_str(),"thrust-calibration"))
@@ -695,7 +699,7 @@ void DroneNavigation::demo_flight(std::string flightplan_fn) {
         _navigation_status = ns_takeoff;
     } else
     {
-        std::cout << "Warning: received waypoint trigger, but not in waypoint mode!" << std::endl;
+        std::cout << "Warning: received demo trigger, but not in waypoint mode!" << std::endl;
     }
 }
 }
