@@ -40,7 +40,7 @@ private:
     double time_take_off = 0;
     double time_shake_start = 0;
     float time_out_after_landing = 0;
-    const float duration_shake = 15;
+    const float duration_shake = 10;
     const float duration_motion_calibration = 2;
     const double duration_correct_yaw = 6;
     const double duration_reset_headless_yaw = 2;
