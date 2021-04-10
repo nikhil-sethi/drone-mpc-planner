@@ -222,10 +222,9 @@ void process_video() {
         }
 
         if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode) {
-            int frame_written = 0;
             // cv::Mat id_fr = cam->frameL.clone();
             // putText(id_fr,std::to_string(frame->rs_id),cv::Point(0, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,Scalar(255));
-            frame_written = output_video_LR.write(frame->left,frame->right);
+            int frame_written = output_video_LR.write(frame->left,frame->right);
             logger_video_ids << raw_video_frame_counter << ";" << imgcount << ";" << frame->rs_id<< ";" << frame->time << '\n';
             if (!frame_written)
                 raw_video_frame_counter++;
@@ -278,8 +277,8 @@ void process_video() {
                   dnav.navigation_status() <<
                   "; " << imgcount <<
                   ", " << cam->frame_number() <<
-                  ". T: " << to_string_with_precision(time,2)  <<
-                  ". FPS: " << to_string_with_precision(fps,1) <<
+                  ", T: " << to_string_with_precision(time,2)  <<
+                  " @ " << to_string_with_precision(fps,1) <<
                   ", " << rc->telemetry.batt_cell_v <<
                   "v, arm: " << static_cast<int>(rc->telemetry.arming_state) <<
                   ", thr: " << rc->throttle <<

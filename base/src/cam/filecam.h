@@ -36,6 +36,28 @@ public:
         replay_dir = replay_dir_;
         set_file_paths(replay_dir);
     }
+    void skip(float duration) {
+        //This function calculates how many frames need to be skip in order to just duration seconds.
+        //This is complicated because there are two sources of error:
+        //1. the realsense sometimes skips frames
+        //2. the videowriter sometimes skips frames
+        //But we have frames.csv in which all frame ids are written, including a frames_written_in_video cnt.
+        //So we simply loop through this list to find where we are now, and where we need to be, and use the diff between
+        //the two frames_written_in_video counnts
+        auto frame = last();
+        auto current_time = frame->time;
+        uint video_id_now = 0;
+        uint video_id_skip = 0;
+        for (auto id : frames_ids) {
+            if (id.time> static_cast<double>(duration)+current_time) {
+                video_id_skip = id.raw_video_frame_counter;
+                break;
+            }
+            if (id.time> current_time && !video_id_now)
+                video_id_now = id.raw_video_frame_counter;
+        }
+        replay_skip_n_frames = video_id_skip - video_id_now;
+    }
 
     void init();
     void close();

@@ -70,7 +70,7 @@ public:
         delete_all_frames();
     }
     virtual void update() = 0;
-    void skip(float duration) {
+    virtual void skip(float duration) {
         replay_skip_n_frames+=roundf(pparams.fps*duration);
     }
     void skip_one_sec() {

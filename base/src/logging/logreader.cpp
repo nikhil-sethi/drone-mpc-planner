@@ -92,7 +92,7 @@ LogEntryMain LogReader::create_log_entry(string line, map<string, int> headmap) 
     entry.auto_roll = stoi(line_data.at(headmap["autoRoll"]));
     entry.auto_pitch = stoi(line_data.at(headmap["autoPitch"]));
 
-    if (isinf(_takeoff_time) && (entry.nav_state == navigation::ns_chasing_insect_ff || entry.nav_state == navigation::ns_chasing_insect || entry.nav_state == navigation::ns_set_waypoint))
+    if (isinf(_takeoff_time) && (entry.nav_state == navigation::ns_chasing_insect_ff || entry.nav_state == navigation::ns_chasing_insect || entry.nav_state == navigation::ns_set_waypoint || entry.nav_state == navigation::ns_taking_off))
         _takeoff_time = entry.elapsed;
     if (isinf(_drone_ready_time) && entry.nav_state == navigation::ns_calibrating_motion_done)
         _drone_ready_time = entry.elapsed;
