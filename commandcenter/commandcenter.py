@@ -587,18 +587,24 @@ class SystemWidget(QWidget):
             navstatus =="ns_flower_of_fire" or
             navstatus =="ns_brick_of_fire" or
             navstatus =="ns_goto_landing" or
+            navstatus =="ns_goto_thrust_calib_waypoint" or
             navstatus =="ns_goto_yaw" or
-            navstatus =="ns_initial_reset_yaw" or
-            navstatus =="ns_wait_reset_yaw" or
+            navstatus =="ns_reset_headless_yaw" or
+            navstatus =="ns_resetting_headless_yaw" or
+            navstatus =="ns_correct_yaw" or
+            navstatus =="ns_correcting_yaw" or
+            navstatus =="ns_calibrate_thrust" or
+            navstatus =="ns_calibrating_thrust" or
             navstatus =="ns_land" or
             navstatus =="ns_landing" or
             navstatus =="ns_landed" or
             navstatus =="ns_start_shaking" or
             navstatus =="ns_shaking_drone" or
-            navstatus =="ns_wait_after_landing" or
+            navstatus =="ns_wait_after_shake" or
             navstatus.startswith('wp_') or
             navstatus.startswith('wp ') or
-            navstatus.startswith('ns_wp'))
+            navstatus.startswith('ns_wp') or
+            navstatus.startswith('ns_landing'))
 
     def get_lbl_txt(self):
         source_status_txt_file = Path(self.source_folder,self.system_folder,'status.txt')
