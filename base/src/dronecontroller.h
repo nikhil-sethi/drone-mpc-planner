@@ -187,7 +187,7 @@ private:
 
     float _dist_to_setpoint = 999;
     double _time;
-    double time_waypoint_changed = 0;
+    double time_waypoint_moved = 0;
 
     uint16_t kill_cnt_down = 0;
     double spin_up_start_time = 0;
@@ -256,6 +256,8 @@ private:
     bool trajectory_in_view(std::vector<tracking::StateData> traj, CameraView::view_volume_check_mode c);
     cv::Point3f keep_in_volume_correction_acceleration(tracking::TrackData data_drone);
     cv::Point3f kiv_acceleration(std::array<bool, N_PLANES> violated_planes_inview, std::array<bool, N_PLANES> violated_planes_brakedistance);
+    float duration_since_waypoint_moved(double time) { return  static_cast<float>(time - time_waypoint_moved); }
+    bool disable_horizontal_integrators(cv::Point3f setpoint_vel,double time);
 
     std::tuple<float,float> acc_to_deg(cv::Point3f acc);
     std::tuple<float,float> acc_to_quaternion(cv::Point3f acc);
@@ -265,8 +267,8 @@ private:
     void blink(double time);
     void blink_motors(double time);
 
-    std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> adjust_control_gains(tracking::TrackData drone_data, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
-    std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> control_error(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, cv::Point3f ki_pos);
+    std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> adjust_control_gains(tracking::TrackData drone_data, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel,bool no_horizontal_i);
+    std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> control_error(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool no_horizontal_i);
     std::tuple<int,int,int> calc_feedforward_control(cv::Point3f desired_acceleration);
     cv::Point3f compensate_gravity_and_crop_to_limit(cv::Point3f des_acc, float thrust);
     void control_model_based(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
@@ -381,12 +383,7 @@ public:
         return  static_cast<float>(time - start_takeoff_burn_time) ;
     }
 
-    void nav_waypoint_changed(double time) {
-        time_waypoint_changed = time;
-    }
-    float duration_since_waypoint_changed(double time) {
-        return  static_cast<float>(time - time_waypoint_changed) ;
-    }
+    void nav_waypoint_moved(double time) { time_waypoint_moved = time; }
 
     int joy_throttle = RC_BOUND_MIN;
     int joy_roll = RC_MIDDLE;

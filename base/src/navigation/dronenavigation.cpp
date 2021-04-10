@@ -584,6 +584,7 @@ void DroneNavigation::check_abort_autonomus_flight_conditions() {
 }
 
 void DroneNavigation::next_waypoint(Waypoint wp, double time) {
+    float dist_to_new_wp = normf(wp.xyz - current_waypoint->xyz);
     delete current_waypoint;
     current_waypoint = new Waypoint(wp);
     if (wp.mode == wfm_takeoff) {
@@ -601,7 +602,8 @@ void DroneNavigation::next_waypoint(Waypoint wp, double time) {
         setpoint_pos_world =  wp.xyz;
         setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, CameraView::relaxed);
     }
-    _dctrl->nav_waypoint_changed(time);
+    if (dist_to_new_wp > 0.1f)
+        _dctrl->nav_waypoint_moved(time);
 
     setpoint_vel_world = {0,0,0};
     setpoint_acc_world = {0,0,0};
