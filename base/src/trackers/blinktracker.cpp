@@ -146,7 +146,7 @@ BlinkTracker::blinking_drone_states BlinkTracker::detect_blink(double time, bool
 void BlinkTracker::calc_world_item(BlobProps * props, double time [[maybe_unused]]) {
 
     const float max_world_dist = 0.05f; // pre-sift blobs using the image coordinates, to prevent having to calculate the stereo_match
-    int max_im_dist = world2im_dist(last_known_valid_pos,max_world_dist,_visdat->Qfi,_visdat->camera_angle);
+    int max_im_dist = world2im_dist(last_known_valid_pos,max_world_dist,_visdat->Qfi,_visdat->camera_pitch);
     if (last_known_valid_pos_valid && normf(props->pt_unscaled() - _image_item.pt()) > max_im_dist) {
         props->world_props.im_pos_ok = false;
         props->world_props.valid = false;

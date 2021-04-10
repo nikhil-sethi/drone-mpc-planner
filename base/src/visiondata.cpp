@@ -16,7 +16,8 @@ void VisionData::init(Cam * cam) {
 
     enable_viz_motion = false; // Note: the enable_diff_vizs in the insect/drone trackers may be more interesting instead of this one.
 
-    camera_angle = _cam->camera_angle();
+    camera_pitch = _cam->camera_pitch();
+    camera_roll = _cam->camera_roll();
     camera_gain = _cam->measured_gain();
     camera_exposure = _cam->measured_exposure();
 
@@ -220,7 +221,7 @@ void VisionData::maintain_motion_noise_map() {
 
 void VisionData::create_overexposed_removal_mask(cv::Point3f drone_im_location, float drone_im_size) {
 
-    cv::Point3f p =world2im_3d(drone_im_location,Qfi,camera_angle);
+    cv::Point3f p =world2im_3d(drone_im_location,Qfi,camera_pitch);
 
     cv::Point2i drone_imL_location(roundf(p.x),roundf(p.y));
     cv::Point2i drone_imR_location(roundf(p.x - p.z),roundf(p.y));

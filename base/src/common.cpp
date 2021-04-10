@@ -34,17 +34,17 @@ vector<string> split_csv_line(string line, char denominator) {
 
 
 //strips disparity from world2im_3d
-cv::Point2f world2im_2d(cv::Point3f p_world, cv::Mat Qfi, float camera_angle) {
-    cv::Point3f p_im = world2im_3d(p_world,Qfi,camera_angle);
+cv::Point2f world2im_2d(cv::Point3f p_world, cv::Mat Qfi, float camera_pitch) {
+    cv::Point3f p_im = world2im_3d(p_world,Qfi,camera_pitch);
     return cv::Point2f(p_im.x,p_im.y);
 }
 
-cv::Point3f world2im_3d(cv::Point3f p_world, cv::Mat Qfi, float camera_angle) {
+cv::Point3f world2im_3d(cv::Point3f p_world, cv::Mat Qfi, float camera_pitch) {
     //transform back to image coordinates
     std::vector<cv::Point3d> world_coordinates,camera_coordinates;
     //derotate camera and convert to double:
     cv::Point3d tmpd (p_world.x,p_world.y,p_world.z);
-    float theta = -camera_angle * deg2rad;
+    float theta = -camera_pitch * deg2rad;
     float temp_y = p_world.y * cosf(theta) + p_world.z * sinf(theta);
     tmpd.z = -p_world.y * sinf(theta) + p_world.z * cosf(theta);
     tmpd.y = temp_y;
@@ -57,7 +57,7 @@ cv::Point3f world2im_3d(cv::Point3f p_world, cv::Mat Qfi, float camera_angle) {
     return camera_coordinates.at(0);
 }
 
-cv::Point3f im2world(cv::Point2f p_im,float disparity, cv::Mat Qf, float camera_angle) {
+cv::Point3f im2world(cv::Point2f p_im,float disparity, cv::Mat Qf, float camera_pitch) {
     std::vector<cv::Point3d> camera_coordinates, world_coordinates;
     camera_coordinates.push_back(cv::Point3d(p_im.x,p_im.y,-disparity));
     cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
@@ -67,7 +67,7 @@ cv::Point3f im2world(cv::Point2f p_im,float disparity, cv::Mat Qf, float camera_
     w.y = world_coordinates[0].y;
     w.z = world_coordinates[0].z;
     //compensate camera rotation:
-    float theta = camera_angle * deg2rad;
+    float theta = camera_pitch * deg2rad;
     float temp_y = w.y * cosf(theta) + w.z * sinf(theta);
     w.z = -w.y * sinf(theta) + w.z * cosf(theta);
     w.y = temp_y;
@@ -75,16 +75,16 @@ cv::Point3f im2world(cv::Point2f p_im,float disparity, cv::Mat Qf, float camera_
     return w;
 }
 
-int world2im_dist(cv::Point3f p1, float dist, cv::Mat Qfi, float camera_angle) {
-    return world2im_size(p1 - cv::Point3f(dist,0,0),p1 + cv::Point3f(dist,0,0),Qfi,camera_angle);
+int world2im_dist(cv::Point3f p1, float dist, cv::Mat Qfi, float camera_pitch) {
+    return world2im_size(p1 - cv::Point3f(dist,0,0),p1 + cv::Point3f(dist,0,0),Qfi,camera_pitch);
 }
 //returns the pixel size of a world object
-int world2im_size(cv::Point3f p1, cv::Point3f p2, cv::Mat Qfi, float camera_angle) {
-    return round(normf(world2im_2d(p1,Qfi,camera_angle)-world2im_2d(p2,Qfi,camera_angle)));
+int world2im_size(cv::Point3f p1, cv::Point3f p2, cv::Mat Qfi, float camera_pitch) {
+    return round(normf(world2im_2d(p1,Qfi,camera_pitch)-world2im_2d(p2,Qfi,camera_pitch)));
 }
 
-float world2im_sizef(cv::Point3f p1, cv::Point3f p2, cv::Mat Qfi, float camera_angle) {
-    return normf(world2im_2d(p1,Qfi,camera_angle)-world2im_2d(p2,Qfi,camera_angle));
+float world2im_sizef(cv::Point3f p1, cv::Point3f p2, cv::Mat Qfi, float camera_pitch) {
+    return normf(world2im_2d(p1,Qfi,camera_pitch)-world2im_2d(p2,Qfi,camera_pitch));
 }
 
 bool file_exist (const std::string& name) {

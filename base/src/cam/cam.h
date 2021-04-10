@@ -77,7 +77,9 @@ public:
         replay_skip_n_frames+=pparams.fps;
     }
     virtual void back_one_sec() =0;
-    float camera_angle() { return camparams.camera_angle_y; }
+    float camera_pitch() { return camparams.camera_angle_y; }
+    float camera_roll() { return camparams.camera_angle_x; }
+
     float measured_exposure() { return camparams.measured_exposure; }
     float measured_gain() { return camparams.measured_gain; }
     unsigned long long frame_number()  {return last()->rs_id;}

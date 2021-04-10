@@ -221,7 +221,7 @@ class SystemWidget(QWidget):
         self.setContextMenuPolicy(Qt.ActionsContextMenu)
         calib_IMU_Action = QAction("Calibrate IMU", self)
         calib_IMU_Action.setIcon(self.style().standardIcon(QStyle.SP_DesktopIcon))
-        calib_IMU_Action.triggered.connect(self.calib)
+        calib_IMU_Action.triggered.connect(self.calib_imu)
         self.addAction(calib_IMU_Action)
 
         self.setContextMenuPolicy(Qt.ActionsContextMenu)
@@ -229,6 +229,17 @@ class SystemWidget(QWidget):
         calib_thrust_Action.setIcon(self.style().standardIcon(QStyle.SP_DesktopIcon))
         calib_thrust_Action.triggered.connect(self.flightplan_calib_thrust_takeoff)
         self.addAction(calib_thrust_Action)
+
+        blink_Action = QAction("Blink", self)
+        blink_Action.setIcon(self.style().standardIcon(QStyle.SP_FileDialogContentsView))
+        blink_Action.triggered.connect(self.blink)
+        self.addAction(blink_Action)
+
+        self.setContextMenuPolicy(Qt.ActionsContextMenu)
+        clear_calib_Action = QAction("Clear thrust & blink", self)
+        clear_calib_Action.setIcon(self.style().standardIcon(QStyle.SP_DialogCancelButton))
+        clear_calib_Action.triggered.connect(self.clear_calib)
+        self.addAction(clear_calib_Action)
 
         reboot_rtc_Action = QAction("Reboot", self)
         reboot_rtc_Action.setIcon(self.style().standardIcon(QStyle.SP_DialogResetButton))
@@ -240,20 +251,15 @@ class SystemWidget(QWidget):
         git_update_Action.triggered.connect(self.git_update)
         self.addAction(git_update_Action)
 
-        beep_Action = QAction("Beep", self)
-        beep_Action.setIcon(self.style().standardIcon(QStyle.SP_MessageBoxWarning))
-        beep_Action.triggered.connect(self.beep)
-        self.addAction(beep_Action)
-
-        blink_Action = QAction("Blink", self)
-        blink_Action.setIcon(self.style().standardIcon(QStyle.SP_FileDialogContentsView))
-        blink_Action.triggered.connect(self.blink)
-        self.addAction(blink_Action)
-
         shakeAction = QAction("Shake", self)
         shakeAction.setIcon(self.style().standardIcon(QStyle.SP_DriveNetIcon))
         shakeAction.triggered.connect(self.shake)
         self.addAction(shakeAction)
+
+        beep_Action = QAction("Beep", self)
+        beep_Action.setIcon(self.style().standardIcon(QStyle.SP_MessageBoxWarning))
+        beep_Action.triggered.connect(self.beep)
+        self.addAction(beep_Action)
 
         btn_restart = QPushButton()
         btn_restart.setToolTip('Restart pats process')
@@ -400,10 +406,12 @@ class SystemWidget(QWidget):
     def sub_mode_change(self):
         self.mode_change()
 
-    def calib(self):
-        subprocess.Popen(['./calib_system.sh', 'pats'+self.host_id])
+    def calib_imu(self):
+        subprocess.Popen(['./calib_imu_system.sh', 'pats'+self.host_id])
     def beep(self):
         subprocess.Popen(['./beep_system.sh', 'pats'+self.host_id])
+    def clear_calib(self):
+        subprocess.Popen(['./clear_calib_system.sh', 'pats'+self.host_id])
     def blink(self):
         subprocess.Popen(['./blink_system.sh', 'pats'+self.host_id])
     def shake(self):
@@ -664,7 +672,6 @@ class SystemWidget(QWidget):
                     if (status_txt[5].startswith("rssi: ")):
                         res_txt += " rssi: " + status_txt[5][6:-1] + ", "
 
-
                 if (status_txt[2].startswith("ns_")):
                     res_txt += "state: " + status_txt[2][3:]
                 else:
@@ -756,9 +763,18 @@ class ImDialog(QDialog):
 
         self.im_label = QLabel()
 
+        self.status_lbl = QLabel()
+        self.system_lbl = QLabel()
         self.pats_xml_textBox = QPlainTextEdit()
         self.drone_xml_textBox = QPlainTextEdit()
         self.flightplan_xml_textBox = QPlainTextEdit()
+
+        if dark_mode:
+            self.status_lbl.setStyleSheet("color: rgb(200, 0, 0); background-color: rgb(25, 25, 25);")
+        self.status_lbl.setMaximumHeight(300)
+        if dark_mode:
+            self.system_lbl.setStyleSheet("color: rgb(200, 0, 0); background-color: rgb(25, 25, 25);")
+        self.system_lbl.setMaximumHeight(300)
 
         self.pats_xml_textBox.textChanged.connect(self.xml_txt_chng_event)
         if dark_mode:
@@ -779,10 +795,16 @@ class ImDialog(QDialog):
         self.flightplan_xml_textBox.setMaximumHeight(300)
 
         self.tabs = QTabWidget()
+        self.tab_status = QWidget()
         self.tab_pats = QWidget()
         self.tab_drone = QWidget()
         self.tab_flightplan = QWidget()
         self.tabs.resize(300,200)
+
+        self.tab_status.layout = QHBoxLayout(self.tab_status)
+        self.tab_status.layout.addWidget(self.status_lbl)
+        self.tab_status.layout.addWidget(self.system_lbl)
+        self.tabs.addTab(self.tab_status,"Status")
 
         self.tab_pats.layout = QVBoxLayout(self.tab_pats)
         self.tab_pats.layout.addWidget(self.pats_xml_textBox)
@@ -838,6 +860,20 @@ class ImDialog(QDialog):
         self.setMinimumSize(pixmap.width(),pixmap.height())
         self.im_label.setPixmap(pixmap)
         self.im_label.setPixmap(pixmap.scaled(self.im_label.size(),Qt.KeepAspectRatio, Qt.SmoothTransformation))
+
+        source_status_txt_file = Path(self.source_folder,self.system_folder,'status.txt')
+        status_txt = ''
+        if os.path.exists(source_status_txt_file):
+            status_txt = []
+            with open (source_status_txt_file, "r") as status_txt_file:
+                status_txt=status_txt_file.read()
+        source_system_txt_file = Path(self.source_folder,self.system_folder,'system.txt')
+        if os.path.exists(source_system_txt_file):
+            with open (source_system_txt_file, "r") as sysinf_txt_file:
+                sysinfo_txt=sysinf_txt_file.read()
+
+        self.status_lbl.setText('Status:\n' + status_txt)
+        self.system_lbl.setText('System:\n' + sysinfo_txt)
 
     def keyPressEvent(self, event: QKeyEvent):
         if event.key() in {Qt.Key_Space, Qt.Key_Escape}:

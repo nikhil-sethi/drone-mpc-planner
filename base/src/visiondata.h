@@ -81,7 +81,7 @@ public:
     unsigned long long  frame_id;
     cv::Size smallsize;
     cv::Mat Qf,Qfi;
-    float camera_angle;
+    float camera_roll,camera_pitch;
     float camera_gain,camera_exposure;
     bool disable_fading = false;
     bool enable_collect_no_drone_frames = true;

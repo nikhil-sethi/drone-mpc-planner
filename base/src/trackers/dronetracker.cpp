@@ -27,7 +27,7 @@ void DroneTracker::update(double time, bool drone_is_active) {
         start_take_off_time = time;
         _tracking = false;
         if (_pad_location_valid) {
-            cv::Point3f p= world2im_3d(pad_location(),_visdat->Qfi,_visdat->camera_angle);
+            cv::Point3f p= world2im_3d(pad_location(),_visdat->Qfi,_visdat->camera_pitch);
             float size = _drone_on_pad_im_size;
             _image_predict_item = ImagePredictItem(p,size,255,_visdat->frame_id);
         } else {
@@ -173,8 +173,8 @@ float DroneTracker::score(BlobProps * blob) {
     if (_drone_tracking_status == dts_detecting && _image_predict_item.out_of_image) {
         float im2world_err_ratio, im_size_pred_err_ratio;
         const float max_world_dist = 0.05f; // max distance a blob can travel in one frame
-        cv::Point3f predicted_world_pos = im2world(_image_predict_item.pt,_image_predict_item.disparity,_visdat->Qf,_visdat->camera_angle);
-        float max_im_dist = world2im_dist(predicted_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_angle);
+        cv::Point3f predicted_world_pos = im2world(_image_predict_item.pt,_image_predict_item.disparity,_visdat->Qf,_visdat->camera_pitch);
+        float max_im_dist = world2im_dist(predicted_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_pitch);
         float world_projected_im_err = normf(blob->pt_unscaled() - _image_predict_item.pt);
         im2world_err_ratio = world_projected_im_err/max_im_dist;
         im_size_pred_err_ratio = fabs(_image_predict_item.size - blob->size_unscaled()) / (blob->size_unscaled()+_image_predict_item.size);
@@ -260,7 +260,7 @@ void DroneTracker::calc_takeoff_prediction() {
     if (spinup_detected<3)
         dt = 0;
     cv::Point3f expected_drone_location = pad_location() + 0.5* acc *powf(dt,2);
-    _image_predict_item = ImagePredictItem(world2im_3d(expected_drone_location,_visdat->Qfi,_visdat->camera_angle),_drone_on_pad_im_size,255,_visdat->frame_id);
+    _image_predict_item = ImagePredictItem(world2im_3d(expected_drone_location,_visdat->Qfi,_visdat->camera_pitch),_drone_on_pad_im_size,255,_visdat->frame_id);
 }
 bool DroneTracker::detect_lift_off() {
     float dist2takeoff =normf(_world_item.pt - pad_location());
@@ -432,9 +432,9 @@ void DroneTracker::set_pad_location_from_blink(cv::Point3f blink_world) {
     std::cout << "blink-location: " << blink_world << std::endl;
     _pad_world_location = blink_world + cv::Point3f(0,0,-dparams.radius);
     _target = _pad_world_location;
-    _pad_im_size = world2im_size(_pad_world_location+cv::Point3f(dparams.pad_radius,0,0),_pad_world_location-cv::Point3f(dparams.pad_radius,0,0),_visdat->Qfi,_visdat->camera_angle);
-    _drone_on_pad_im_size = world2im_size(_pad_world_location+cv::Point3f(dparams.radius,0,0),_pad_world_location-cv::Point3f(dparams.radius,0,0),_visdat->Qfi,_visdat->camera_angle);
-    auto pt_im3 = world2im_3d(pad_location(),_visdat->Qfi,_visdat->camera_angle);
+    _pad_im_size = world2im_size(_pad_world_location+cv::Point3f(dparams.pad_radius,0,0),_pad_world_location-cv::Point3f(dparams.pad_radius,0,0),_visdat->Qfi,_visdat->camera_pitch);
+    _drone_on_pad_im_size = world2im_size(_pad_world_location+cv::Point3f(dparams.radius,0,0),_pad_world_location-cv::Point3f(dparams.radius,0,0),_visdat->Qfi,_visdat->camera_pitch);
+    auto pt_im3 = world2im_3d(pad_location(),_visdat->Qfi,_visdat->camera_pitch);
     _pad_im_location =  cv::Point2f(pt_im3.x,pt_im3.y);
     _pad_disparity =  pt_im3.z;
     _pad_location_valid = true;
@@ -442,9 +442,9 @@ void DroneTracker::set_pad_location_from_blink(cv::Point3f blink_world) {
 
 void DroneTracker::set_pad_location( cv::Point3f pad_world) {
     _pad_world_location = pad_world;
-    _pad_im_size = world2im_size(_pad_world_location+cv::Point3f(dparams.pad_radius,0,0),_pad_world_location-cv::Point3f(dparams.pad_radius,0,0),_visdat->Qfi,_visdat->camera_angle);
-    _drone_on_pad_im_size = world2im_size(_pad_world_location+cv::Point3f(dparams.radius,0,0),_pad_world_location-cv::Point3f(dparams.radius,0,0),_visdat->Qfi,_visdat->camera_angle);
-    auto pt_im3 = world2im_3d(_pad_world_location,_visdat->Qfi,_visdat->camera_angle);
+    _pad_im_size = world2im_size(_pad_world_location+cv::Point3f(dparams.pad_radius,0,0),_pad_world_location-cv::Point3f(dparams.pad_radius,0,0),_visdat->Qfi,_visdat->camera_pitch);
+    _drone_on_pad_im_size = world2im_size(_pad_world_location+cv::Point3f(dparams.radius,0,0),_pad_world_location-cv::Point3f(dparams.radius,0,0),_visdat->Qfi,_visdat->camera_pitch);
+    auto pt_im3 = world2im_3d(_pad_world_location,_visdat->Qfi,_visdat->camera_pitch);
     _pad_im_location =  cv::Point2f(pt_im3.x,pt_im3.y);
     _pad_disparity =  pt_im3.z;
     _pad_location_valid = true;

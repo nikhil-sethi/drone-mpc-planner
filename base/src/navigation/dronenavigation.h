@@ -147,7 +147,7 @@ public:
 
         std::vector<cv::Point3d> world_pts,im_pts;
         cv::Point3d tmpd;
-        float theta = -_visdat->camera_angle * deg2rad;
+        float theta = -_visdat->camera_pitch * deg2rad;
         float temp_y = tmp.y * cosf(theta) + tmp.z * sinf(theta);
         tmpd.z = static_cast<double>(-tmp.y * sinf(theta) + tmp.z * cosf(theta));
         tmpd.y = static_cast<double>(temp_y);
@@ -178,7 +178,7 @@ public:
             tmp.z = _trackers->dronetracker()->pad_location().z;
         }
 
-        cv::Point3f resf = world2im_3d(tmp,_visdat->Qfi,_visdat->camera_angle);
+        cv::Point3f resf = world2im_3d(tmp,_visdat->Qfi,_visdat->camera_pitch);
         return cv::Point2i(roundf(resf.x),round(resf.y));
     }
 

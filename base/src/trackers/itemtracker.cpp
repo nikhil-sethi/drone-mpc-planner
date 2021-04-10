@@ -130,7 +130,7 @@ void ItemTracker::calc_world_props_blob_generic(BlobProps * blob) {
             w.y = world_coordinates[0].y;
             w.z = world_coordinates[0].z;
             //compensate camera rotation:
-            float theta = _visdat->camera_angle * deg2rad;
+            float theta = _visdat->camera_pitch * deg2rad;
             float temp_y = w.y * cosf(theta) + w.z * sinf(theta);
             w.z = -w.y * sinf(theta) + w.z * cosf(theta);
             w.y = temp_y;
@@ -571,8 +571,8 @@ void ItemTracker::update_prediction(double time) {
         }
         cv::Point3f predicted_pos = pos + vel*dt_pred + 0.5*acc*powf(dt_pred,2);
 
-        auto p = world2im_3d(predicted_pos,_visdat->Qfi,_visdat->camera_angle);
-        float size = world2im_size(last_valid_trackdata_for_prediction.world_item.pt+cv::Point3f(expected_radius,0,0),last_valid_trackdata_for_prediction.world_item.pt-cv::Point3f(expected_radius,0,0),_visdat->Qfi,_visdat->camera_angle);
+        auto p = world2im_3d(predicted_pos,_visdat->Qfi,_visdat->camera_pitch);
+        float size = world2im_size(last_valid_trackdata_for_prediction.world_item.pt+cv::Point3f(expected_radius,0,0),last_valid_trackdata_for_prediction.world_item.pt-cv::Point3f(expected_radius,0,0),_visdat->Qfi,_visdat->camera_pitch);
         float pixel_max = _image_predict_item.pixel_max;
         if (_image_item.valid)
             pixel_max = _image_item.pixel_max;
@@ -660,8 +660,8 @@ float ItemTracker::score(BlobProps * blob, ImageItem * ref) {
     const float max_world_dist = 0.05f; // max distance a blob can travel in one frame
 
     if (_image_item.valid && _world_item.valid) {
-        cv::Point3f last_world_pos = im2world(_image_item.pt(),_image_item.disparity,_visdat->Qf,_visdat->camera_angle);
-        float max_im_dist = world2im_dist(last_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_angle);
+        cv::Point3f last_world_pos = im2world(_image_item.pt(),_image_item.disparity,_visdat->Qf,_visdat->camera_pitch);
+        float max_im_dist = world2im_dist(last_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_pitch);
         float world_projected_im_err = normf(blob->pt_unscaled() - _image_item.pt());
         float world_projected_pred_im_err = INFINITY;
         if (_image_predict_item.valid)
@@ -672,8 +672,8 @@ float ItemTracker::score(BlobProps * blob, ImageItem * ref) {
         float prev_size = smoother_im_size.latest();
         im_size_pred_err_ratio = fabs(prev_size - blob->size_unscaled()) / (blob->size_unscaled()+prev_size);
     } else if (_image_predict_item.valid) {
-        cv::Point3f predicted_world_pos = im2world(_image_predict_item.pt,_image_predict_item.disparity,_visdat->Qf,_visdat->camera_angle);
-        float max_im_dist = world2im_dist(predicted_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_angle);
+        cv::Point3f predicted_world_pos = im2world(_image_predict_item.pt,_image_predict_item.disparity,_visdat->Qf,_visdat->camera_pitch);
+        float max_im_dist = world2im_dist(predicted_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_pitch);
         float world_projected_im_err = normf(blob->pt_unscaled() - _image_predict_item.pt);
         im_dist_err_ratio = world_projected_im_err/max_im_dist;
         im_size_pred_err_ratio = fabs(_image_predict_item.size - blob->size_unscaled()) / (blob->size_unscaled()+_image_predict_item.size);
