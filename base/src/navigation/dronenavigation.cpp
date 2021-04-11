@@ -536,18 +536,26 @@ void DroneNavigation::update(double time) {
             }
             break;
         } case ns_batlow: {
+            if (time_drone_problem < 0)
+                time_drone_problem = time;
             _dctrl->flight_mode(DroneController::fm_abort);
             _dctrl->LED(static_cast<int>((time - time_drone_problem) * 10.0) % 10 > 5, 5); // minimal blink every 5 seconds
             break;
         } case ns_tracker_problem: {
+            if (time_drone_problem < 0)
+                time_drone_problem = time;
             _dctrl->flight_mode(DroneController::fm_abort);
             _dctrl->LED(static_cast<int>((time - time_drone_problem) * 2.0) % 2 > 1, 5); // faster blink every second
             break;
         } case ns_drone_lost: {
+            if (time_drone_problem < 0)
+                time_drone_problem = time;
             _dctrl->flight_mode(DroneController::fm_abort);
             _dctrl->LED(static_cast<int>((time - time_drone_problem) * 2.0) % 2 > 1, 5); // faster blink every second
             break;
         } case ns_unable_to_locate: {
+            if (time_drone_problem < 0)
+                time_drone_problem = time;
             _dctrl->flight_mode(DroneController::fm_abort);
             break;
         } case ns_drone_problem: {
