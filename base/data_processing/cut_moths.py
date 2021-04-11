@@ -61,7 +61,7 @@ def cut_moths(folder):
                                             print('Error: could not find frame in frames.csv')
                                             break
                                         if int(fline.split(';')[2]) == video_start_rs_id:
-                                            video_start_video_id = int(fline.split(';')[1])
+                                            video_start_video_id = int(fline.split(';')[0])
                                             video_start_time = float(video_start_video_id)/90
                                             break
                                         if int(fline.split(';')[2]) > video_start_rs_id:
