@@ -711,16 +711,16 @@ bool DroneController::pad_calibration_done() {
 }
 
 void DroneController::init_thrust_calibration() {
-    calibration.thrust -= ki_thrust_hover*0.001f*remember_last_integrated_y_err;
+    calibration.thrust -= ki_thrust_hover*0.001f*pos_err_i.y; //TODO: get the 0.001 from the scale constants
     pos_err_i.y = 0;
-    enable_thrust_calibration = true;
+    thrust_calibration = true;
 }
 void DroneController::save_thrust_calibration() {
     auto date = chrono::system_clock::to_time_t(chrono::system_clock::now());
     std::stringstream ss;
     ss << std::put_time(std::localtime(&date), "%Y/%m/%d %T");
     calibration.thrust_calib_date = ss.str();
-    enable_thrust_calibration = false;
+    thrust_calibration = false;
     save_calibration();
 }
 
@@ -928,13 +928,13 @@ cv::Point3f DroneController::pid_error(TrackData data_drone, cv::Point3f setpoin
         pos_modelz.new_sample(setpoint_pos.z);
     }
 
-    bool no_horizontal_i = disable_horizontal_integrators(setpoint_vel,data_drone.time);
+    bool enable_horizontal_integrators = horizontal_integrators(setpoint_vel,data_drone.time);
 
     cv::Point3f kp_pos, ki_pos, kd_pos, kp_vel, kd_vel;
-    std::tie(kp_pos, ki_pos, kd_pos, kp_vel, kd_vel) = adjust_control_gains(data_drone, setpoint_pos, setpoint_vel,no_horizontal_i);
+    std::tie(kp_pos, ki_pos, kd_pos, kp_vel, kd_vel) = adjust_control_gains(data_drone, setpoint_pos, setpoint_vel,enable_horizontal_integrators);
 
     cv::Point3f pos_err_p, pos_err_d, vel_err_p, vel_err_d;
-    std::tie(pos_err_p, pos_err_d, vel_err_p, vel_err_d) = control_error(data_drone, setpoint_pos, setpoint_vel,no_horizontal_i);
+    std::tie(pos_err_p, pos_err_d, vel_err_p, vel_err_d) = control_error(data_drone, setpoint_pos, setpoint_vel,enable_horizontal_integrators);
 
     cv::Point3f error = {0};
     error += multf(kp_pos, pos_err_p) + multf(ki_pos, pos_err_i) + multf(kd_pos, pos_err_d); // position controld
@@ -951,12 +951,12 @@ cv::Point3f DroneController::pid_error(TrackData data_drone, cv::Point3f setpoin
     return error;
 }
 
-bool DroneController::disable_horizontal_integrators(cv::Point3f setpoint_vel,double time) {
+bool DroneController::horizontal_integrators(cv::Point3f setpoint_vel,double time) {
     float duration_waypoint_update = duration_since_waypoint_moved(time);
-    return  !enable_thrust_calibration && (normf(setpoint_vel) >= 0.01f || duration_waypoint_update <= 1);
+    return  thrust_calibration || (normf(setpoint_vel) < 0.01f && duration_waypoint_update > 1);
 }
 
-std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_control_gains(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool no_horizontal_i) {
+std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_control_gains(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool enable_horizontal_integrators) {
     float kp_pos_roll_scaled, kp_pos_throttle_scaled, kp_pos_pitch_scaled, ki_pos_roll_scaled, ki_thrust_scaled, ki_pos_pitch_scaled, kd_pos_roll_scaled, kd_pos_throttle_scaled, kd_pos_pitch_scaled, kp_v_roll_scaled, kp_v_throttle_scaled, kp_v_pitch_scaled, kd_v_roll_scaled, kd_v_throttle_scaled, kd_v_pitch_scaled;
 
     cv::Point3f scale_pos_p = {0.01f, 0.01f, 0.01f};
@@ -965,7 +965,7 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> Dron
     cv::Point3f scale_vel_p = {0.01f, 0.01f, 0.01f};
     cv::Point3f scale_vel_d = {0.01f, 0.01f, 0.01f};
 
-    if (no_horizontal_i) {
+    if (!enable_horizontal_integrators) {
         scale_pos_i.x = 0;
         scale_pos_i.z = 0;
     }
@@ -1020,7 +1020,7 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> Dron
     return std::tuple(kp_pos, ki_pos, kd_pos, kp_vel, kd_vel);
 }
 
-std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::control_error(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel,bool no_horizontal_i) {
+std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::control_error(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel,bool enable_horizontal_integrators) {
     float err_x_filtered = 0, err_y_filtered = 0, err_z_filtered = 0;
     if(data_drone.pos_valid) {
         err_x_filtered = setpoint_pos.x - data_drone.state.spos.x;
@@ -1052,17 +1052,15 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::
     cv::Point3f pos_err_d = {errDx, errDy, errDz};
     cv::Point3f vel_err_d = {errvDx, errvDy, errvDz};
 
-    if (!no_horizontal_i) {
+    if (enable_horizontal_integrators) {
         pos_err_i.x += (err_x_filtered - setpoint_pos.x + pos_modelx.current_output());
         pos_err_i.z += (err_z_filtered - setpoint_pos.z + pos_modelz.current_output());
-        if (enable_thrust_calibration) {
+        if (thrust_calibration) {
             calibration.thrust -= 0.1f * ((err_y_filtered - setpoint_pos.y + pos_modely.current_output()));
             pos_err_i.y = 0;
         } else
             pos_err_i.y += (err_y_filtered - setpoint_pos.y + pos_modely.current_output());
     } else {
-        if(pos_err_i.y !=0)
-            remember_last_integrated_y_err = pos_err_i.y;
         pos_err_i = {0};
     }
 

@@ -170,7 +170,6 @@ private:
     const float aim_duration = 0.0833333333333f; //Slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
     float effective_burn_spin_up_duration = 0.15f; // the time to spin up from hover to max
     const float effective_burn_spin_down_duration = 0.1f; // the time to spin down from max to hover
-    float remember_last_integrated_y_err = 0; // For faster thrust calibration
     cv::Point3f vel_after_takeoff = {0};
     float burn_thrust = -1;
 
@@ -199,7 +198,7 @@ private:
     bool log_replay_mode = false;
     bool airsim_mode = false;
     bool generator_mode = false;
-    bool enable_thrust_calibration = false;
+    bool thrust_calibration = false;
     flight_modes _flight_mode = fm_joystick_check; // only set externally (except for disarming), used internally
     joy_mode_switch_modes _joy_mode_switch = jmsm_none;
     betaflight_arming _joy_arm_switch = bf_armed;
@@ -257,7 +256,7 @@ private:
     cv::Point3f keep_in_volume_correction_acceleration(tracking::TrackData data_drone);
     cv::Point3f kiv_acceleration(std::array<bool, N_PLANES> violated_planes_inview, std::array<bool, N_PLANES> violated_planes_brakedistance);
     float duration_since_waypoint_moved(double time) { return  static_cast<float>(time - time_waypoint_moved); }
-    bool disable_horizontal_integrators(cv::Point3f setpoint_vel,double time);
+    bool horizontal_integrators(cv::Point3f setpoint_vel,double time);
 
     std::tuple<float,float> acc_to_deg(cv::Point3f acc);
     std::tuple<float,float> acc_to_quaternion(cv::Point3f acc);
@@ -267,8 +266,8 @@ private:
     void blink(double time);
     void blink_motors(double time);
 
-    std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> adjust_control_gains(tracking::TrackData drone_data, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel,bool no_horizontal_i);
-    std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> control_error(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool no_horizontal_i);
+    std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> adjust_control_gains(tracking::TrackData drone_data, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel,bool enable_horizontal_integrators);
+    std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> control_error(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool enable_horizontal_integrators);
     std::tuple<int,int,int> calc_feedforward_control(cv::Point3f desired_acceleration);
     cv::Point3f compensate_gravity_and_crop_to_limit(cv::Point3f des_acc, float thrust);
     void control_model_based(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
