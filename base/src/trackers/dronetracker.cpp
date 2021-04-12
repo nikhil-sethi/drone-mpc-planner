@@ -171,15 +171,15 @@ void DroneTracker::update(double time, bool drone_is_active) {
 
 float DroneTracker::score(BlobProps * blob) {
     if (_drone_tracking_status == dts_detecting && _image_predict_item.out_of_image) {
-        float im2world_err_ratio, im_size_pred_err_ratio;
+        float im_dist_err_ratio, im_size_pred_err_ratio;
         const float max_world_dist = 0.05f; // max distance a blob can travel in one frame
         cv::Point3f predicted_world_pos = im2world(_image_predict_item.pt,_image_predict_item.disparity,_visdat->Qf,_visdat->camera_pitch);
         float max_im_dist = world2im_dist(predicted_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_pitch);
         float world_projected_im_err = normf(blob->pt_unscaled() - _image_predict_item.pt);
-        im2world_err_ratio = world_projected_im_err/max_im_dist;
+        im_dist_err_ratio = world_projected_im_err/max_im_dist;
         im_size_pred_err_ratio = fabs(_image_predict_item.size - blob->size_unscaled()) / (blob->size_unscaled()+_image_predict_item.size);
 
-        float score = im2world_err_ratio*0.25f + 0.75f*im_size_pred_err_ratio;
+        float score = im_dist_err_ratio*0.25f + 0.75f*im_size_pred_err_ratio;
         if (!properly_tracking() && (blob->in_overexposed_area || blob->false_positive))
             score*=1.5f;
         else if (blob->in_overexposed_area || blob->false_positive)
