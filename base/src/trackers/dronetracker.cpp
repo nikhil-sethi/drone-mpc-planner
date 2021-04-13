@@ -67,6 +67,8 @@ void DroneTracker::update(double time, bool drone_is_active) {
         max_disparity = std::clamp(static_cast<int>(roundf(_pad_disparity))+5,params.min_disparity.value(),params.max_disparity.value());
         [[fallthrough]];
     } case dts_detecting_takeoff: {
+        min_disparity = std::clamp(static_cast<int>(roundf(_pad_disparity))-5,params.min_disparity.value(),params.max_disparity.value());
+        max_disparity = std::clamp(static_cast<int>(roundf(_pad_disparity))+5,params.min_disparity.value(),params.max_disparity.value());
         ItemTracker::update(time);
         if (!_world_item.valid) {
             calc_takeoff_prediction();
