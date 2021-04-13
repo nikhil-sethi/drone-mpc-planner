@@ -362,7 +362,10 @@ void process_frame(StereoPair * frame) {
     if (log_replay_mode && pparams.op_mode != op_mode_monitoring) {
         dctrl.insert_log(logreader.current_entry.joyRoll, logreader.current_entry.joyPitch, logreader.current_entry.joyYaw, logreader.current_entry.joyThrottle,logreader.current_entry.joyArmSwitch,logreader.current_entry.joyModeSwitch,logreader.current_entry.joyTakeoffSwitch,logreader.current_entry.auto_roll,logreader.current_entry.auto_pitch,logreader.current_entry.auto_throttle, logreader.current_entry.telem_acc_z);
     }
-    iceptor.update(dctrl.at_base(),frame->time);
+    if (pparams.op_mode == op_mode_hunt)
+        iceptor.update(dctrl.at_base(),frame->time);
+    else
+        iceptor.write_dummy_csv();
     dnav.update(frame->time);
 #ifdef PROFILING
     auto profile_t3_nav = std::chrono::high_resolution_clock::now();

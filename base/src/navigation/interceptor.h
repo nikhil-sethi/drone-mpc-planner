@@ -69,7 +69,7 @@ private:
 public:
     void init(tracking::TrackerManager *trackers, VisionData *visdat, CameraView *camview, ofstream *logger, DroneController *dctrl);
     void update(bool drone_at_base, double time);
-    tracking::InsectTracker *target_insecttracker(){return _target_insecttracker;}
+    tracking::InsectTracker *target_insecttracker() {return _target_insecttracker;}
 
     tracking::TrackData target_last_trackdata();
 
@@ -88,6 +88,7 @@ public:
     cv::Point3f aim_acc() {return _aim_acc;}
     double time_to_intercept() {return _tti;}
     float best_distance() {return _best_distance;}
+    void write_dummy_csv();
 
     std::string Interceptor_State() {return interceptor_state_names[_interceptor_state];}
 };

@@ -13,6 +13,9 @@ void Interceptor::init(tracking::TrackerManager* trackers, VisionData* visdat, C
     (*_logger) << "interceptor_state;hunt_vol_check;";
 }
 
+void Interceptor::write_dummy_csv() {
+    (*_logger) << static_cast<int16_t>(_interceptor_state) << ";" << static_cast<int16_t>(target_in_hunt_volume) << ";";
+}
 void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
     auto target_trkr = update_target_insecttracker();
 
