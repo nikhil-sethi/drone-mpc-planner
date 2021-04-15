@@ -291,7 +291,7 @@ void process_video() {
                   std::endl;
         //   std::flush;
 
-        if (rc->telemetry.arming_state && rc->arm_switch == bf_armed )
+        if (rc->telemetry.arming_state && !dnav.drone_ready_and_waiting())
             std::cout << rc->arming_state_str() << std::endl;
 
         imgcount++;
