@@ -13,6 +13,7 @@
 #include <condition_variable>
 #include<iostream>
 #include <chrono>
+#include <experimental/filesystem>
 
 #include "opencv2/features2d/features2d.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
@@ -476,15 +477,43 @@ bool handle_key(double time [[maybe_unused]]) {
         dnav.nav_flight_mode(navigation::nfm_manual);
         break;
     case '1':
-        init_insect_log(56);
+        if (dnav.nav_flight_mode() == navigation::nfm_waypoint) {
+            if (dnav.drone_ready_and_waiting() ) {
+                std::string fp = "../xml/flightplans/thrust-calib.xml";
+                std::cout << "Flightplan trigger:" << fp << std::endl;
+                dnav.demo_flight(fp);
+                dctrl.joy_takeoff_switch_file_trigger(true);
+                experimental::filesystem::copy_file(fp,"./logging/pats_demo.xml");
+            }
+        } else
+            init_insect_log(56);
         break;
     case '2':
-        init_insect_log(66);
+        if (dnav.nav_flight_mode() == navigation::nfm_waypoint) {
+            if (dnav.drone_ready_and_waiting() ) {
+                std::string fp = "../xml/flightplans/simple-demo-darkroom.xml";
+                std::cout << "Flightplan trigger:" << fp << std::endl;
+                dnav.demo_flight(fp);
+                dctrl.joy_takeoff_switch_file_trigger(true);
+                experimental::filesystem::copy_file(fp,"./logging/pats_demo.xml");
+            }
+        } else
+            init_insect_log(66);
         break;
     case '3':
-        init_insect_log(58);
+        if (dnav.nav_flight_mode() == navigation::nfm_waypoint) {
+            if (dnav.drone_ready_and_waiting() ) {
+                std::string fp = "../xml/flightplans/simple-demo-koppert.xml";
+                std::cout << "Flightplan trigger:" << fp << std::endl;
+                dnav.demo_flight(fp);
+                dctrl.joy_takeoff_switch_file_trigger(true);
+                experimental::filesystem::copy_file(fp,"./logging/pats_demo.xml");
+            }
+        } else
+            init_insect_log(58);
         break;
     case '4':
+
         init_insect_log(54);
         break;
     case '5':

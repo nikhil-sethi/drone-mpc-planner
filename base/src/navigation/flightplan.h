@@ -67,7 +67,7 @@ struct Waypoint_Thrust_Calibration : Waypoint {
         xyz = cv::Point3f(0,0.5f,0);
         threshold_mm = 15;
         threshold_v = 0.15f;
-        hover_pause = 1;
+        hover_pause = 5;
         mode = wfm_thrust_calib;
         name = "wp_thrust_calib";
     }
@@ -173,10 +173,10 @@ public:
             Waypoint_Yaw_Reset wp;
             return wp;
             break;
-        }case waypoint_flight_modes::wfm_thrust_calib: {
-             Waypoint_Thrust_Calibration wp;
-             return wp;
-             break;
+        } case waypoint_flight_modes::wfm_thrust_calib: {
+            Waypoint_Thrust_Calibration wp;
+            return wp;
+            break;
         } case waypoint_flight_modes::wfm_brick: {
             Waypoint_Brick wp(cv::Point3f(x.value(),y.value(),z.value()),name.value());
             return wp;

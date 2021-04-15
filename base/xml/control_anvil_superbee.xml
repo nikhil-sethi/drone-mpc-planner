@@ -14,7 +14,7 @@
     <Member Name="kp_pos_throttle_hover">1000</Member>
     <Member Name="ki_pos_roll_hover">30</Member>
     <Member Name="ki_pos_pitch_hover">30</Member>
-    <Member Name="ki_thrust_hover">200</Member>
+    <Member Name="ki_thrust_hover">150</Member>
     <Member Name="kd_pos_roll_hover">310</Member>
     <Member Name="kd_pos_pitch_hover">280</Member>
     <Member Name="kd_pos_throttle_hover">450</Member>
