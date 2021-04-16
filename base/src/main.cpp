@@ -456,20 +456,20 @@ bool handle_key(double time [[maybe_unused]]) {
         dnav.redetect_drone_location();
         break;
     case 'p':
-        if(log_replay_mode || generator_mode)
+        if(log_replay_mode || generator_mode || render_monitor_video_mode)
             draw_plots = true;
         break;
     case '[':
-        if(log_replay_mode || generator_mode)
+        if(log_replay_mode || generator_mode || render_monitor_video_mode)
             trackers.enable_trkr_viz();
         break;
     case ']':
-        if(log_replay_mode || generator_mode)
+        if(log_replay_mode || generator_mode || render_monitor_video_mode)
             trackers.enable_blob_viz();
         break;
     case '\\':
-        if(log_replay_mode || generator_mode)
-            trackers.dronetracker()->enable_draw_stereo_viz = true;
+        if(log_replay_mode || generator_mode || render_monitor_video_mode)
+            trackers.enable_draw_stereo_viz();
         break;
     case 'o':
         dctrl.LED(true);
@@ -842,7 +842,7 @@ void init() {
 
     init_thread_pool();
 
-    if (render_monitor_video_mode || render_hunt_mode) //for normal operation there's a watchdog in the realsense cam class.
+    if ((render_monitor_video_mode || render_hunt_mode) && !pparams.has_screen) //for normal operation there's a watchdog in the realsense cam class.
         thread_watchdog = std::thread(&watchdog_worker);
 
     if (!render_hunt_mode && !render_monitor_video_mode)
@@ -898,7 +898,7 @@ void close(bool sig_kill) {
         cam.release();
     if(rc)
         rc.release();
-    if (render_monitor_video_mode || render_hunt_mode)
+    if ((render_monitor_video_mode || render_hunt_mode) && !pparams.has_screen)
         thread_watchdog.join();
     std::cout <<"Closed"<< std::endl;
 }
@@ -1053,7 +1053,7 @@ int main( int argc, char **argv )
             drone_xml_fn = "../xml/" + string(drone_types_str[pparams.drone]) + ".xml";
         else if (!render_hunt_mode)
             pparams.has_screen = true; // override log so that vizs always are on when replaying because most of the logs are deployed system now (without a screen)
-        if (render_hunt_mode || render_monitor_video_mode) {
+        if ((render_hunt_mode || render_monitor_video_mode) && !pparams.has_screen) {
             pparams.video_result = video_mkv;
 
         }

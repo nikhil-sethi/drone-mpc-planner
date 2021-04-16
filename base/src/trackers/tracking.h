@@ -35,7 +35,7 @@ struct IgnoreBlob { // scaled with pparams.imscalef
 
 struct BlobWorldProps {
     float x,y,z,distance,distance_bkg,radius;
-    float disparity; // not really a world prop, but OK.
+    float disparity,motion_sum; // not really world props, but OK.
     bool radius_in_range = false,disparity_in_range = false,bkg_check_ok = false,takeoff_reject = false,im_pos_ok = false, valid = false;
     cv::Point3f pt() {return cv::Point3f(x,y,z);}
     int trkr_id = -1;
@@ -62,7 +62,7 @@ struct BlobProps { // scaled with pparams.imscalef
 struct ImageItem {
     uint frame_id = 0;
     uint blob_id = 0;
-    float x = 0,y = 0,size = 0,pixel_max = 0,score = 0,disparity = 0;
+    float x = 0,y = 0,size = 0,pixel_max = 0,score = 0,disparity = 0,motion_sum = 0;
     bool valid = false;
     bool blob_is_fused = false;
 
@@ -81,6 +81,7 @@ struct ImageItem {
         size  = -1;
         score = -1;
         pixel_max = -1;
+        motion_sum = -1;
         blob_id = 666;
         frame_id = frameid;
         valid = true;
@@ -94,6 +95,7 @@ struct ImageItem {
         frame_id = frameid;
         blob_id = blob_id_;
         disparity = blob.world_props.disparity;
+        motion_sum = blob.world_props.motion_sum;
         valid = true;
     }
 };

@@ -13,8 +13,8 @@ void TrackerManager::init(std::ofstream *logger,string replay_dir_,VisionData *v
     replay_dir = replay_dir_;
 
     if (pparams.has_screen || pparams.video_result) {
-        enable_viz_blobs = false; // can be enable during runtime by key-pressing '['
-        enable_viz_trackers = false; // can be enable during runtime by key-pressing ']'
+        _enable_viz_blob = false; // can be enable during runtime by key-pressing '['
+        _enable_viz_tracker = false; // can be enable during runtime by key-pressing ']'
         enable_viz_motion = true; // part of the main visualisation
     }
 
@@ -275,7 +275,7 @@ void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat dif
     }
 
     Mat viz;
-    if (enable_viz_blobs) {
+    if (_enable_viz_blob) {
         Rect rect_unscaled(rect.x*pparams.imscalef,rect.y*pparams.imscalef,rect.width*pparams.imscalef,rect.height*pparams.imscalef);
         cv::Mat frameL_roi = _visdat->frameL(rect_unscaled);
         cv::Mat frameL_small_roi;
@@ -332,7 +332,7 @@ void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat dif
                         cv::Point2f center;
                         float radius;
                         cv::minEnclosingCircle(contours.at(j),center,radius);
-                        if (enable_viz_blobs) {
+                        if (_enable_viz_blob) {
                             cv::Mat viz2 = viz.clone();
                             vizs_maxs.push_back(viz2);
                             cv::Point2f COG2_viz = COG2*viz_max_points_resizef;
@@ -358,7 +358,7 @@ void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat dif
             }
         }
     }
-    if (!viz_pushed &&  enable_viz_blobs) {
+    if (!viz_pushed &&  _enable_viz_blob) {
         vizs_maxs.push_back(viz);
         putText(viz,std::to_string(vizs_maxs.size()-1),Point(0, 13),FONT_HERSHEY_SIMPLEX,0.3,Scalar(255,255,255));
     }
@@ -366,7 +366,7 @@ void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat dif
         float size = sqrtf(mo.m00/M_PI)*2.f; // assuming a circular shape
         if (COG.x == COG.x) { // if not nan
             _blobs.push_back(tracking::BlobProps(COG,size,max,mask,_visdat->overexposed(COG),threshold_method,_visdat->frame_id));
-            if (enable_viz_blobs) {
+            if (_enable_viz_blob) {
                 Point2f tmpCOG;
                 tmpCOG.x = COG.x - rect.x;
                 tmpCOG.y = COG.y - rect.y;
@@ -389,7 +389,7 @@ void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat dif
                     float dist = norm(d);
                     if (dist < roi_radius*pparams.imscalef) {
                         _blobs.push_back(tracking::BlobProps(maxt,1,max,mask,_visdat->overexposed(maxt),threshold_method,_visdat->frame_id));
-                        if (enable_viz_blobs) {
+                        if (_enable_viz_blob) {
                             Point2f tmpCOG;
                             tmpCOG.x = maxt.x - rect.x;
                             tmpCOG.y = maxt.y - rect.y;
@@ -499,12 +499,12 @@ void TrackerManager::match_existing_trackers(std::vector<ProcessedBlob> *pbs,boo
                         best_trkr_score = score;
                         best_blob = &blob;
                     }
-                    if (enable_viz_blobs && trkr->viz_id() < 6) {
+                    if (_enable_viz_blob && trkr->viz_id() < 6) {
                         cv::Mat viz = vizs_maxs.at(blob.id);
                         cv::Point2i pt(viz.cols/5 + 2,viz.rows - 20*(trkr->viz_id()+1));
                         putText(viz,"#" + std::to_string(trkr->viz_id()) + ": " + to_string_with_precision(score,2),pt,FONT_HERSHEY_SIMPLEX,0.4,tracker_color(trkr));
                     }
-                } else if (enable_viz_blobs) {
+                } else if (_enable_viz_blob) {
                     cv::Mat viz = vizs_maxs.at(blob.id);
                     cv::Point2i pt(viz.cols/5+2,viz.rows -6-14*(trkr->viz_id()+1));
                     putText(viz,"Ign.",pt,FONT_HERSHEY_SIMPLEX,0.3,tracker_color(trkr));
@@ -714,7 +714,7 @@ void TrackerManager::create_new_insect_trackers(std::vector<ProcessedBlob> *pbs,
                 if (im_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_im) {
                     InsectTracker *it;
                     it = new InsectTracker();
-                    it->init(next_insecttrkr_id,_visdat,motion_thresh,_trackers.size());
+                    it->init(next_insecttrkr_id,_visdat,motion_thresh,_trackers.size(),_enable_draw_stereo_viz);
                     it->calc_world_item(props,time);
                     if (!props->world_props.bkg_check_ok)
                         tracking::WorldItem w(tracking::ImageItem(*props,_visdat->frame_id,-1,blob.id),props->world_props);
@@ -905,7 +905,7 @@ void TrackerManager::draw_viz(std::vector<ProcessedBlob> *pbs, double time) {
             cv::putText(diff_viz,to_string_with_precision(time-fp.last_seen_time,1) + ", #" + std::to_string(fp.detection_count),p_center+cv::Point2f(10,0),FONT_HERSHEY_SIMPLEX,0.4,blue,2);
         }
     }
-    if (enable_viz_blobs) {
+    if (_enable_viz_blob) {
         for (auto blob : *pbs) {
             auto wblob = blob.props->world_props;
             std::string msg_str = std::to_string(blob.id);
@@ -936,7 +936,7 @@ void TrackerManager::draw_viz(std::vector<ProcessedBlob> *pbs, double time) {
             }
         }
     }
-    if (enable_viz_trackers) {
+    if (_enable_viz_tracker) {
         int h = 0;
         cv::Scalar white = cv::Scalar(255,255,255);
         cv::Scalar red = cv::Scalar(0,0,255);
@@ -1014,7 +1014,7 @@ void TrackerManager::draw_viz(std::vector<ProcessedBlob> *pbs, double time) {
                 putText(viz_descr,"Size: " + to_string_with_precision(image_item.size,1),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
                 putText(viz_descr,"Max: " + to_string_with_precision(image_item.pixel_max,1),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
                 putText(viz_descr,"i: [" + to_string_with_precision(image_item.x,1) + ", " + to_string_with_precision(image_item.y,1) + "], " +  to_string_with_precision(image_item.disparity,2),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
-                putText(viz_descr,"w: [" + to_string_with_precision(wti.pt.x,2) + ", " + to_string_with_precision(wti.pt.y,2) + ", " + to_string_with_precision(wti.pt.z,2) + "]",cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
+                putText(viz_descr,"w: [" + to_string_with_precision(wti.pt.x,2) + ", " + to_string_with_precision(wti.pt.y,2) + ", " + to_string_with_precision(wti.pt.z,2) + "] ||" + to_string_with_precision(wti.radius*200.f,2) + "||",cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
 
                 int text_w = 0;
                 if (trkr->image_predict_item().out_of_image) {
@@ -1097,9 +1097,9 @@ std::tuple<Rect,Rect,int> TrackerManager::calc_trkr_viz_roi(ImageItem image_item
     return std::make_tuple(roiL,roiR,resize_factor);
 }
 void TrackerManager::finish_vizs() {
-    if (enable_viz_blobs && vizs_maxs.size()>0)
+    if (_enable_viz_blob && vizs_maxs.size()>0)
         viz_max_points = create_column_image(vizs_maxs,CV_8UC3,1);
-    else if(enable_viz_blobs)
+    else if(_enable_viz_blob)
         viz_max_points = cv::Mat::zeros(5,100,CV_8UC3);
     if (enable_viz_motion)
         diff_viz_buf = diff_viz.clone();;

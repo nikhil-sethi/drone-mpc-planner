@@ -59,10 +59,6 @@ void ItemTracker::init(VisionData *visdat, int motion_thresh, std::string name, 
     disparity_prev = -1;
 
     initialized = true;
-
-    if (pparams.has_screen)
-        enable_draw_stereo_viz = false;
-
 }
 void ItemTracker::init_logger(std::ofstream *logger) {
     _logger = logger;
@@ -72,6 +68,7 @@ void ItemTracker::init_logger(std::ofstream *logger) {
         (*_logger) << "disparity_" << _name << ";";
         (*_logger) << "size_" << _name << ";";
         (*_logger) << "score_" << _name << ";";
+        (*_logger) << "motion_sum_" << _name << ";";
         (*_logger) << "imLx_pred_" << _name << ";";
         (*_logger) << "imLy_pred_" << _name << ";";
         (*_logger) << "n_frames_lost_" << _name << ";";
@@ -125,6 +122,20 @@ void ItemTracker::calc_world_props_blob_generic(BlobProps * blob) {
 
             w.radius = cv::norm(world_coordinates[0]-world_coordinates[1]) / 2;
             w.radius_in_range = w.radius < max_size;
+
+            if (w.radius_in_range) {
+                int radius = size/2;
+                int x = std::clamp(static_cast<int>(roundf(p.x))-radius,0,_visdat->diffL.cols-1);
+                int y = std::clamp(static_cast<int>(roundf(p.y))-radius,0,_visdat->diffL.rows-1);
+                int width = size;
+                int height = size;
+                if (x+width >= _visdat->diffL.cols)
+                    width=_visdat->diffL.cols-x;
+                if (y+height >= _visdat->diffL.rows)
+                    height=_visdat->diffL.rows-y;
+                cv::Rect roi_brightness_sum(x,y,width,height);
+                w.motion_sum = cv::sum(_visdat->diffL(roi_brightness_sum))[0];
+            }
 
             w.x = world_coordinates[0].x;
             w.y = world_coordinates[0].y;
@@ -193,9 +204,9 @@ void ItemTracker::append_log() {
         //log all image stuff
         if (_tracking)
             (*_logger) << _image_item.x << ";" << _image_item.y << ";" << _image_item.disparity << ";"
-                       << _image_item.size  << ";" << _image_item.score  << ";";
+                       << _image_item.size  << ";" << _image_item.score  << ";" << _image_item.motion_sum  << ";";
         else
-            (*_logger) << -1 << ";" << -1 << ";" << -1 << ";" << -1 << ";" << -1 << ";";
+            (*_logger) << -1 << ";" << -1 << ";" << -1 << ";" << -1 << ";" << -1 << ";" << -1 << ";";
         if (_image_predict_item.valid)
             (*_logger) << _image_predict_item.pt_unbound.x << ";" << _image_predict_item.pt_unbound.y << ";";
         else
@@ -220,13 +231,10 @@ void ItemTracker::append_log() {
 }
 
 float ItemTracker::stereo_match(BlobProps * blob) {
-
     cv::Point2f im_posL = blob->pt_unscaled();
     float size = blob->size_unscaled();
 
-
     cv::Mat diffL,diffR,grayL,grayR,motion_noise_mapL,motion_noise_mapR;
-
     diffL = _visdat->diffL;
     diffR = _visdat->diffR;
     motion_noise_mapL = _visdat->motion_noise_mapL;
@@ -270,6 +278,7 @@ float ItemTracker::stereo_match(BlobProps * blob) {
 
     int disp_cnt = 0; //keep track of how many shifts are calculated until we found the minimum
     float min_err = INFINITY;
+    cv::Mat grayL_masked_final,grayR_masked_final,mask_final;
 
     if (motion_noise_mapL.cols) {
         //since the background often isn't a solid color we do matching on the raw image data instead of the motion
@@ -336,6 +345,14 @@ float ItemTracker::stereo_match(BlobProps * blob) {
                     }
                 }
             }
+
+            if (enable_draw_stereo_viz && !not_enough_pixels) {
+                cv::Rect roiR_patch = cv::Rect (disp_end-1-disparity_masked,0,width,height);
+                cv::bitwise_and(diffL_mask_patch,diffR_mask_patch(roiR_patch),mask_final);
+                cv::bitwise_and(grayL_patch,grayL_patch,grayL_masked_final,mask_final);
+                cv::bitwise_and(grayR_patch(roiR_patch),grayR_patch(roiR_patch),grayR_masked_final,mask_final);
+            }
+
         }
     }
 
@@ -345,7 +362,7 @@ float ItemTracker::stereo_match(BlobProps * blob) {
     if (not_enough_pixels || !masked_method_was_tried) {
         //back up strategy: ignore the background, hope for the best, and just do matching directly on the motion
         int disparity_motion = 0;
-        float tmp_diffL_sum = cv::sum(diffL(roiL))[0];
+        float diffL_sum = cv::sum(diffL(roiL))[0];
         bool err_calculated [disp_end] = {false};
 
         int ii = roundf(disp_pred);
@@ -354,17 +371,17 @@ float ItemTracker::stereo_match(BlobProps * blob) {
         while(!err_calculated[ii-1] || !err_calculated[ii] || !err_calculated[ii+1] ) {
 
             if (!err_calculated[ii-1]) {
-                err_motion[ii-1] = calc_match_score_motion(ii-1,x,y,width,height,tmp_diffL_sum,diffL(roiL),diffR);
+                err_motion[ii-1] = calc_match_score_motion(ii-1,x,y,width,height,diffL_sum,diffL(roiL),diffR);
                 err_calculated[ii-1] = true;
                 disp_cnt++;
             }
             if (!err_calculated[ii]) {
-                err_motion[ii] = calc_match_score_motion(ii,x,y,width,height,tmp_diffL_sum,diffL(roiL),diffR);
+                err_motion[ii] = calc_match_score_motion(ii,x,y,width,height,diffL_sum,diffL(roiL),diffR);
                 err_calculated[ii] = true;
                 disp_cnt++;
             }
             if (!err_calculated[ii+1]) {
-                err_motion[ii+1] = calc_match_score_motion(ii+1,x,y,width,height,tmp_diffL_sum,diffL(roiL),diffR);
+                err_motion[ii+1] = calc_match_score_motion(ii+1,x,y,width,height,diffL_sum,diffL(roiL),diffR);
                 err_calculated[ii+1] = true;
                 disp_cnt++;
             }
@@ -413,12 +430,18 @@ float ItemTracker::stereo_match(BlobProps * blob) {
 
             cv::Mat viz_gray = create_column_image({grayL(roiL),grayR(roiR)},CV_8UC1,viz_scale);
             cv::Mat viz_motion_abs = create_column_image({diffL(roiL),diffR(roiR)},CV_8UC1,viz_scale);
+            cv::Mat viz_noise = create_column_image({motion_noise_mapL(roiL),motion_noise_mapR(roiR)},CV_8UC1,viz_scale);
             if (motion_noise_mapL.cols) {
-                cv::Mat viz_test = create_column_image({diffL(roiL)>motion_noise_mapL(roiL)+_motion_thresh,diffR(roiR)>motion_noise_mapR(roiR)+_motion_thresh},CV_8UC1,viz_scale);
-                cv::Mat viz_noise = create_column_image({motion_noise_mapL(roiL),motion_noise_mapR(roiR)},CV_8UC1,viz_scale);
-                viz_disp = create_row_image({viz_gray,viz_motion_abs,viz_noise,viz_test},CV_8UC1,1);
+                cv::Mat viz_mask = create_column_image({diffL(roiL)>motion_noise_mapL(roiL)+_motion_thresh,diffR(roiR)>motion_noise_mapR(roiR)+_motion_thresh},CV_8UC1,viz_scale);
+                if (grayL_masked_final.cols) {
+                    cv::Mat viz_gray_masked = create_column_image({grayL_masked_final,grayR_masked_final},CV_8UC1,viz_scale);
+                    cv::Mat viz_mask_combined = create_column_image({mask_final,mask_final},CV_8UC1,viz_scale);
+                    viz_disp = create_row_image({viz_gray,viz_motion_abs,viz_noise,viz_mask,viz_mask_combined,viz_gray_masked},CV_8UC1,1);
+                } else {
+                    viz_disp = create_row_image({viz_gray,viz_motion_abs,viz_noise,viz_mask},CV_8UC1,1);
+                }
             } else {
-                viz_disp = create_row_image({viz_gray,viz_motion_abs},CV_8UC1,1);
+                viz_disp = create_row_image({viz_gray,viz_motion_abs,viz_noise},CV_8UC1,1);
             }
         }
         return sub_disp;
@@ -437,12 +460,12 @@ float ItemTracker::stereo_match(BlobProps * blob) {
     }
 }
 
-float ItemTracker::calc_match_score_motion(int i,int x, int y, int width, int height,float tmp_diffL_sum, cv::Mat diffL_roi, cv::Mat diffR) {
+float ItemTracker::calc_match_score_motion(int i,int x, int y, int width, int height,float diffL_sum, cv::Mat diffL_roi, cv::Mat diffR) {
     cv::Rect roiR = cv::Rect (x-i,y,width,height);
-    float tmp_diff_sum = tmp_diffL_sum + static_cast<float>(cv::sum(diffR(roiR))[0]);
+    float diff_sum = diffL_sum + static_cast<float>(cv::sum(diffR(roiR))[0]);
     cv::Mat errV;
     absdiff(diffL_roi,diffR(roiR),errV);
-    return static_cast<float>(cv::sum(errV)[0]) / tmp_diff_sum;
+    return static_cast<float>(cv::sum(errV)[0]) / diff_sum;
 }
 
 std::tuple<float,float> ItemTracker::calc_match_score_masked(int i, int disp_end, int width, int height, cv::Mat diffL_mask_patch, cv::Mat diffR_mask_patch, cv::Mat grayL_patch, cv::Mat grayR_patch, int npixels) {

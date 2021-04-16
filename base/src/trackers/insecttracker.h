@@ -18,7 +18,7 @@ public:
     static constexpr float new_tracker_drone_ignore_zone_size_world = 0.25f;
     static constexpr float new_tracker_drone_ignore_zone_size_im = 10; // pixels
 
-    void init(int id, VisionData *_visdat, int motion_thresh, int16_t viz_id);
+    void init(int id, VisionData *_visdat, int motion_thresh, int16_t viz_id, bool enable_stereo_viz);
     void init_logger();
     void append_log(double time, unsigned long long frame_number);
     void calc_world_item(tracking::BlobProps * pbs, double time);

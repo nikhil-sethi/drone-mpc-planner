@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os,glob,json,math,argparse,socket,logging,subprocess,shutil
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -8,7 +9,7 @@ from lib_base import datetime_to_str,natural_sort,str_to_datetime
 from datetime import datetime, timedelta
 
 
-version = "1.7"
+version = "1.8"
 
 def process_system_status_in_folder(folder):
     logging.getLogger('logs_to_json').info('Processing status...')
@@ -153,6 +154,114 @@ def process_hunts_in_folder(folder,operational_log_start):
 
     return data_hunt
 
+def autocorr(x,lags):
+    '''numpy.corrcoef, partial'''
+
+    corr=[1. if l==0 else np.corrcoef(x[l:],x[:-l])[0][1] for l in lags]
+    return np.array(corr)
+
+def process_log(detection_fn,folder,mode,monitoring_start_datetime):
+
+    try:
+        log = pd.read_csv(detection_fn, sep=";")
+    except Exception as e:
+        logger.info(detection_fn + ': ' + str(e))
+        return {}
+
+    elapsed_time = log["time"].values
+    lost = log['n_frames_lost_insect'].values > 0
+    remove_ids = [i for i, x in enumerate(lost) if x]
+    if len(elapsed_time) < 20 or len(elapsed_time) - len(remove_ids) < 5:
+        return {}
+
+    #there can be infs in the velocity columns, due to some weird double frameid occurance from the realsense. #540
+    vxs = log['svelX_insect'].values
+    vys = log['svelY_insect'].values
+    vzs = log['svelZ_insect'].values
+    inf_ids = [i for i, x in enumerate(vxs) if math.isinf(x) or math.isnan(x)]
+    if (len(inf_ids)):
+        remove_ids.extend(inf_ids)
+
+    time = elapsed_time.astype('float64')
+    RS_ID = log['RS_ID'].values
+
+    xs = log['sposX_insect'].values
+    ys = log['sposY_insect'].values
+    zs = log['sposZ_insect'].values
+    x_tracking = np.delete(xs,remove_ids).astype('float64')
+    y_tracking = np.delete(ys,remove_ids).astype('float64')
+    z_tracking = np.delete(zs,remove_ids).astype('float64')
+
+    pos_start = [x_tracking[0],y_tracking[0],z_tracking[0]]
+    pos_end =  [x_tracking[-1],y_tracking[-1],z_tracking[-1]]
+    diff = np.array(pos_end) - np.array(pos_start)
+    dist_traveled = math.sqrt(np.sum(diff*diff))
+    dist_traject = np.sum(np.sqrt((x_tracking[1:] - x_tracking[:-1])**2 + (y_tracking[1:] - y_tracking[:-1])**2 + (z_tracking[1:] - z_tracking[:-1])**2))
+
+    mid_id = int(round(len(x_tracking)/2))
+    pos_middle =  [x_tracking[mid_id],y_tracking[mid_id],z_tracking[mid_id]]
+    alpha_horizontal_start = math.atan2(pos_middle[0] - pos_start[0],pos_middle[2] - pos_start[2])
+    alpha_horizontal_end = math.atan2(pos_end[0] - pos_middle[0],pos_end[2] - pos_middle[2])
+    alpha_vertical_start = math.atan2(pos_middle[0] - pos_start[0],pos_middle[1] - pos_start[1])
+    alpha_vertical_end = math.atan2(pos_end[0] - pos_middle[0],pos_end[1] - pos_middle[1])
+
+    vx_tracking = np.delete(vxs,remove_ids)
+    vy_tracking = np.delete(vys,remove_ids)
+    vz_tracking = np.delete(vzs,remove_ids)
+    v = np.sqrt(vx_tracking**2+vy_tracking**2+vz_tracking**2)
+    v_mean = v.mean()
+    v_std = v.std()
+
+    radiuss = np.delete(log['radius_insect'].values,remove_ids)
+    size = np.mean(radiuss)*2
+
+    motion_sums = np.delete(log['motion_sum_insect'].values,remove_ids)
+    d_motion_sums = motion_sums[1:] - motion_sums[:-1]
+
+    ps = np.abs(np.fft.rfft(d_motion_sums))
+    ps_max_id = np.argmax(ps)
+    freqs = np.fft.rfftfreq(d_motion_sums.size, 1/90)
+    wing_beat = freqs[ps_max_id]
+    # idx = np.argsort(freqs)
+    # plt.plot(freqs[idx], ps[idx]**2)
+    # plt.show()
+
+    filtered_elepased = np.delete(elapsed_time,remove_ids)
+    start = filtered_elepased[0]
+    end = filtered_elepased[-1]
+    duration = end - start
+    first_RS_ID = str(RS_ID[0])
+    filename = os.path.basename(detection_fn)
+    video_filename = os.path.dirname(detection_fn) + '/' + filename.replace('log_itrk','moth').replace('csv','mkv')
+    if not os.path.exists(video_filename):
+        video_filename = 'NA'
+    else:
+        video_filename = os.path.basename(video_filename)
+
+    detection_time = datetime_to_str(monitoring_start_datetime + timedelta(seconds=elapsed_time[0]))
+
+    detection_data = {"time" : detection_time,
+                    "duration": duration,
+                    "RS_ID" : first_RS_ID,
+                    "Dist_traveled":dist_traveled,
+                    "Dist_traject":dist_traject,
+                    "Size": size,
+                    "Wing_beat": wing_beat,
+                    "Vel_mean" : v_mean,
+                    "Vel_std" : v_std,
+                    "Vel_max" : v.max(),
+                    "Alpha_horizontal_start": alpha_horizontal_start,
+                    "Alpha_horizontal_end": alpha_horizontal_end,
+                    "Alpha_vertical_start": alpha_vertical_start,
+                    "Alpha_vertical_end": alpha_vertical_end,
+                    "Filename" : filename,
+                    "Folder" : os.path.basename(folder),
+                    "Video_Filename" : video_filename,
+                    "Mode" : mode,
+                    "Version": version
+                }
+    return detection_data
+
 def process_detections_in_folder(folder,operational_log_start,mode):
 
     logger = logging.getLogger('logs_to_json')
@@ -163,94 +272,9 @@ def process_detections_in_folder(folder,operational_log_start,mode):
 
     for detection_fn in detection_fns:
         logger.info("Processing insects in " + detection_fn)
-        with open (detection_fn, "r") as detection_log:
-            try:
-                log = pd.read_csv(detection_fn, sep=";")
-            except Exception as e:
-                logger.info(detection_fn + ': ' + str(e))
-                continue
-
-        elapsed_time = log["time"].values
-        lost = log['n_frames_lost_insect'].values > 0
-        remove_ids = [i for i, x in enumerate(lost) if x]
-        if len(elapsed_time) < 20 or len(elapsed_time) - len(remove_ids) < 5:
-            continue
-
-        #there can be infs in the velocity columns, due to some weird double frameid occurance from the realsense. #540
-        vxs = log['svelX_insect'].values
-        vys = log['svelY_insect'].values
-        vzs = log['svelZ_insect'].values
-        inf_ids = [i for i, x in enumerate(vxs) if math.isinf(x) or math.isnan(x)]
-        if (len(inf_ids)):
-            remove_ids.extend(inf_ids)
-
-        time = elapsed_time.astype('float64')
-        RS_ID = log['RS_ID'].values
-
-        xs = log['sposX_insect'].values
-        ys = log['sposY_insect'].values
-        zs = log['sposZ_insect'].values
-        x_tracking = np.delete(xs,remove_ids).astype('float64')
-        y_tracking = np.delete(ys,remove_ids).astype('float64')
-        z_tracking = np.delete(zs,remove_ids).astype('float64')
-
-        pos_start = [x_tracking[0],y_tracking[0],z_tracking[0]]
-        pos_end =  [x_tracking[-1],y_tracking[-1],z_tracking[-1]]
-        diff = np.array(pos_end) - np.array(pos_start)
-        dist_traveled = math.sqrt(np.sum(diff*diff))
-        dist_traject = np.sum(np.sqrt((x_tracking[1:] - x_tracking[:-1])**2 + (y_tracking[1:] - y_tracking[:-1])**2 + (z_tracking[1:] - z_tracking[:-1])**2))
-
-        mid_id = int(round(len(x_tracking)/2))
-        pos_middle =  [x_tracking[mid_id],y_tracking[mid_id],z_tracking[mid_id]]
-        alpha_horizontal_start = math.atan2(pos_middle[0] - pos_start[0],pos_middle[2] - pos_start[2])
-        alpha_horizontal_end = math.atan2(pos_end[0] - pos_middle[0],pos_end[2] - pos_middle[2])
-        alpha_vertical_start = math.atan2(pos_middle[0] - pos_start[0],pos_middle[1] - pos_start[1])
-        alpha_vertical_end = math.atan2(pos_end[0] - pos_middle[0],pos_end[1] - pos_middle[1])
-
-        vx_tracking = np.delete(vxs,remove_ids)
-        vy_tracking = np.delete(vys,remove_ids)
-        vz_tracking = np.delete(vzs,remove_ids)
-        v = np.sqrt(vx_tracking**2+vy_tracking**2+vz_tracking**2)
-        v_mean = v.mean()
-        v_std = v.std()
-
-        sizes = np.delete(log['radius_insect'].values,remove_ids)
-        size = np.mean(sizes)*2
-
-        filtered_elepased = np.delete(elapsed_time,remove_ids)
-        start = filtered_elepased[0]
-        end = filtered_elepased[-1]
-        duration = end - start
-        first_RS_ID = str(RS_ID[0])
-        filename = os.path.basename(detection_fn)
-        video_filename = os.path.dirname(detection_fn) + '/' + filename.replace('log_itrk','moth').replace('csv','mkv')
-        if not os.path.exists(video_filename):
-            video_filename = 'NA'
-        else:
-            video_filename = os.path.basename(video_filename)
-
-        detection_time = datetime_to_str(monitoring_start_datetime + timedelta(seconds=elapsed_time[0]))
-
-        detection_data = {"time" : detection_time,
-                        "duration": duration,
-                        "RS_ID" : first_RS_ID,
-                        "Dist_traveled":dist_traveled,
-                        "Dist_traject":dist_traject,
-                        "Size": size,
-                        "Vel_mean" : v_mean,
-                        "Vel_std" : v_std,
-                        "Vel_max" : v.max(),
-                        "Alpha_horizontal_start": alpha_horizontal_start,
-                        "Alpha_horizontal_end": alpha_horizontal_end,
-                        "Alpha_vertical_start": alpha_vertical_start,
-                        "Alpha_vertical_end": alpha_vertical_end,
-                        "Filename" : filename,
-                        "Folder" : os.path.basename(folder),
-                        "Video_Filename" : video_filename,
-                        "Mode" : mode,
-                        "Version": version
-                    }
-        valid_detections.append(detection_data)
+        detection_data = process_log(detection_fn,folder,mode,monitoring_start_datetime)
+        if detection_data:
+            valid_detections.append(detection_data)
 
     return valid_detections
 
@@ -325,7 +349,6 @@ def logs_to_json(start_datetime,end_datetime,json_fn,data_folder,sys_str):
             shutil.move(folder,junk_folder)
     logger.info("Data folders moved")
 
-
 def process_all_logs_to_jsons():
     now = datetime.today()
     local_json_file = lb.json_dir + datetime_to_str(now) + '.json'
@@ -347,6 +370,7 @@ if __name__ == "__main__":
     parser.add_argument('-i', help="Path to the folder with logs", required=False,default=lb.data_dir)
     parser.add_argument('-s', help="Directory date to start from", required=False)
     parser.add_argument('-e', help="Directory date to end on", required=False)
+    parser.add_argument('-o',  help="Process just this one log", required=False)
     parser.add_argument('--filename', help="Path and filename to store results in", default="./detections.json")
     parser.add_argument('--system', help="Override system name", default=socket.gethostname())
     args = parser.parse_args()

@@ -5,12 +5,13 @@ using namespace cv;
 using namespace std;
 namespace tracking {
 
-void InsectTracker::init(int id, VisionData *visdat, int motion_thresh, int16_t viz_id) {
+void InsectTracker::init(int id, VisionData *visdat, int motion_thresh, int16_t viz_id, bool enable_stereo_viz) {
     _insect_trkr_id = id;
     ItemTracker::init(visdat,motion_thresh,"insect",viz_id);
     expected_radius = 0.01;
     max_size = 0.03;
     _n_frames_lost = 0;
+    enable_draw_stereo_viz = enable_stereo_viz;
 }
 void InsectTracker::init_logger() {
     std::string logger_fn = data_output_dir  + "log_itrk" + to_string(_insect_trkr_id) + ".csv";

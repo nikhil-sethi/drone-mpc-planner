@@ -155,9 +155,11 @@ private:
     uint16_t next_blinktrkr_id = 1;
 
     cv::Mat diff_viz;
-    bool enable_viz_blobs = false;
-    bool enable_viz_trackers = false;
+    bool _enable_viz_blob = false;
+    bool _enable_viz_tracker = false;
     bool enable_viz_motion = false;
+    bool _enable_draw_stereo_viz = false;
+
     std::vector<cv::Mat> vizs_maxs;
     const float viz_max_points_resizef = 4.0;
 
@@ -277,8 +279,14 @@ public:
     std::vector<ItemTracker *>all_target_trackers();
     DroneTracker *dronetracker() { return _dtrkr; }
 
-    void enable_blob_viz() { enable_viz_blobs = true;}
-    void enable_trkr_viz() { enable_viz_trackers = true;}
+    void enable_draw_stereo_viz() {
+        _enable_draw_stereo_viz = true;
+        for (auto trkr : _trackers) {
+            trkr->enable_draw_stereo_viz = true;
+        }
+    }
+    void enable_blob_viz() { _enable_viz_blob = true;}
+    void enable_trkr_viz() { _enable_viz_tracker = true;}
     cv::Scalar tracker_color( ItemTracker *trkr) {
         if (trkr->type() == tt_drone)
             return cv::Scalar(0,255,0);

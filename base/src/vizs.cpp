@@ -644,18 +644,18 @@ void Visualizer::paint() {
             static bool stereo_viz_initialized = false;
             if (!stereo_viz_initialized) {
                 stereo_viz_initialized = true;
-                namedWindow("stereo",cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
+                namedWindow("stereo drone",cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
             }
-            imshow("stereo",_trackers->dronetracker()->viz_disp);
+            imshow("stereo drone",_trackers->dronetracker()->viz_disp);
         }
         if (_iceptor->target_insecttracker()) {
             if (_iceptor->target_insecttracker()->viz_disp.cols>0) {
                 static bool stereo_viz_initialized = false;
                 if (!stereo_viz_initialized) {
                     stereo_viz_initialized = true;
-                    namedWindow("stereo",cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
+                    namedWindow("stereo insect",cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
                 }
-                imshow("stereo",_iceptor->target_insecttracker()->viz_disp);
+                imshow("stereo insect",_iceptor->target_insecttracker()->viz_disp);
             }
         }
 
