@@ -36,6 +36,13 @@ public:
     };
 
 private:
+    enum preselector_roi_states {
+        roi_state_drone = 0,
+        roi_state_blink,
+        roi_state_prior_insects,
+        roi_state_no_prior
+    };
+
     struct ProcessedBlob {
         ProcessedBlob(BlobProps *blob, uint16_t new_id) {
             props = blob;
@@ -99,6 +106,8 @@ private:
             return "";
         }
     };
+
+
     class TrackerManagerParameters: public xmls::Serializable
     {
     public:
@@ -157,7 +166,6 @@ private:
     int motion_thresh;
     const float chance_multiplier_pixel_max = 0.5f;
     const float chance_multiplier_dist = 3;
-    const float chance_multiplier_total = chance_multiplier_dist + chance_multiplier_pixel_max;
 
     void update_trackers(double time, long long frame_number, bool drone_is_active);
     void find_blobs();

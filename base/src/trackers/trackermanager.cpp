@@ -77,6 +77,29 @@ void TrackerManager::update(double time, bool drone_is_active) {
     finish_vizs();
 }
 
+cv::Rect pre_select_roi(ImagePredictItem item, cv::Mat diff) {
+    cv::Point max;
+    cv::Point min;
+
+    cv::Point2f pt = item.pt / pparams.imscalef;
+    int roi_dist = item.size * 2;
+    roi_dist = std::clamp(roi_dist, 10,300);
+
+    int x_min = pt.x - roi_dist;
+    x_min = std::clamp(x_min, 0, diff.cols);
+
+    int x_max = pt.x + roi_dist;
+    x_max = std::clamp(x_max, 0, diff.cols);
+
+    int y_min = pt.y - roi_dist;
+    y_min = std::clamp(y_min, 0, diff.rows);
+
+    int y_max = pt.y + roi_dist;
+    y_max =  std::clamp(y_max, 0, diff.rows);
+
+    return cv::Rect(x_min, y_min, x_max - x_min, y_max - y_min);
+}
+
 //Pats Blob finder. Looks for a limited number of
 //maxima in the motion image that are higher than a threshold, the area around the maximum
 //is segmented from the background motion noise, and seen as a blob. In special cases it then
@@ -110,52 +133,91 @@ void TrackerManager::find_blobs() {
     if (!motion_noise_mapL.cols)
         motion_noise_mapL = cv::Mat::zeros(diff.rows,diff.cols,CV_8UC1);
 
-    for (int i = 0; i < max_points_per_frame; i++) {
-        Point mint;
-        Point maxt;
-        double min, max;
-        minMaxLoc(diff, &min, &max, &mint, &maxt);
+    auto insect_trackers = insecttrackers();
+    if (_iceptor->target_insecttracker()) {
+        auto it = std::find(insect_trackers.begin(), insect_trackers.end(), _iceptor->target_insecttracker());
+        if (it != insect_trackers.end())
+            std::iter_swap(insect_trackers.begin(),it);
+    }
 
-        uint8_t motion_noise = motion_noise_mapL.at<uint8_t>(maxt.y,maxt.x);
-
-        int motion_thresh_tmp = motion_thresh;
-        if (_mode == mode_locate_drone) {
-            motion_thresh_tmp = motion_thresh + dparams.drone_blink_strength;
-            motion_noise = 0; // motion noise calib is done during blink detection. To prevent interference do not use the motion_noise motion noise
-        }
-
-        bool thresh_res = max > motion_noise+motion_thresh_tmp;
-        if (!thresh_res) { // specifcally for the insect tracker, check if there is an increased chance in this area
-            for (auto trkr : _trackers) {
-                tracking::ImagePredictItem ipi = trkr->image_predict_item();
-                if (trkr->tracking() && trkr->type() == tt_insect) {
-                    cv::Point2f d;
-                    d.x = ipi.pt.x - maxt.x*pparams.imscalef;
-                    d.y = ipi.pt.y - maxt.y*pparams.imscalef;
-                    float dist = norm(d);
-                    float chance = 1;
-                    if (ipi.valid &&ipi.pixel_max < 1.5f * motion_thresh_tmp)
-                        chance +=chance_multiplier_pixel_max;
-                    if (dist < roi_radius*pparams.imscalef) {
-                        chance += chance_multiplier_dist;
-                    }
-                    thresh_res = static_cast<uint8_t>(max) > motion_noise+(motion_thresh_tmp/chance);
-                }
+    auto roi_preselect_state = roi_state_drone;
+    double min_val, max_val;
+    auto itrkr = insect_trackers.begin();
+    unsigned int item_attempt = 0;
+    int i = 0;
+    while (i <= max_points_per_frame) {
+        switch (roi_preselect_state) {
+        case roi_state_drone: {
+            if (_mode == mode_locate_drone) {
+                roi_preselect_state = roi_state_blink;
+                continue;
             }
-        }
+            else if (_dtrkr->inactive()) {
+                roi_preselect_state = roi_state_prior_insects;
+                continue;
+            }
+            item_attempt++;
+            auto pre_select_roi_rect = pre_select_roi(_dtrkr->image_predict_item(),diff);
+            Point min_pos_pre_roi,max_pos_pre_roi;
+            minMaxLoc(diff(pre_select_roi_rect), &min_val, &max_val, &min_pos_pre_roi, &max_pos_pre_roi);
+            int motion_noise = motion_noise_mapL(pre_select_roi_rect).at<uint8_t>(max_pos_pre_roi.y,max_pos_pre_roi.x);
+            bool max_is_valid = max_val > motion_noise+motion_thresh;
+            if (max_is_valid) {
+                cv::Point max_pos = max_pos_pre_roi + cv::Point(pre_select_roi_rect.x, pre_select_roi_rect.y);
+                find_cog_and_remove(max_pos,max_val,diff,enable_insect_drone_split,drn_ins_split_thresh,motion_noise_mapL);
+            }
+            if (!max_is_valid || item_attempt >= 3)
+                roi_preselect_state = roi_state_prior_insects;
+            i++;
+            break;
+        } case roi_state_prior_insects: {
+            if (insect_trackers.size()==0) {
+                roi_preselect_state = roi_state_no_prior;
+                continue;
+            }
 
-        if (thresh_res) {
-            find_cog_and_remove(maxt,max,diff,enable_insect_drone_split,drn_ins_split_thresh,motion_noise_mapL);
-        } else {
+            auto pre_select_roi_rect = pre_select_roi((*itrkr)->image_predict_item(),diff);
+            Point min_pos_pre_roi,max_pos_pre_roi;
+            minMaxLoc(diff(pre_select_roi_rect), &min_val, &max_val, &min_pos_pre_roi, &max_pos_pre_roi);
+            int motion_noise = motion_noise_mapL(pre_select_roi_rect).at<uint8_t>(max_pos_pre_roi.y,max_pos_pre_roi.x);
 
-            int tmp_mt_noise = motion_noise;
-            if (max < motion_noise+motion_thresh_tmp)
-                tmp_mt_noise = 0;
-            if  (static_cast<uint8_t>(max) <= tmp_mt_noise+(motion_thresh_tmp/chance_multiplier_total))
-                break; // done searching for maxima, they are too small now
+            auto ipi = (*itrkr)->image_predict_item();
+            float chance = 1;
+            if ((*itrkr)->tracking()) {
+                chance += chance_multiplier_dist;
+                if (ipi.valid && ipi.pixel_max < 1.5f * motion_noise)
+                    chance += chance_multiplier_pixel_max;
+            }
+            if (static_cast<uint8_t>(max_val) > motion_noise+(motion_noise/chance)) {
+                cv::Point max_pos = max_pos_pre_roi + cv::Point(pre_select_roi_rect.x, pre_select_roi_rect.y);
+                find_cog_and_remove(max_pos,max_val,diff,enable_insect_drone_split,drn_ins_split_thresh,motion_noise_mapL);
+            }
+
+            itrkr++;
+            if (itrkr == insect_trackers.end())
+                roi_preselect_state = roi_state_no_prior;
+            i++;
+            break;
+        } case roi_state_blink: {
+            Point min_pos,max_pos;
+            minMaxLoc(diff, &min_val, &max_val, &min_pos, &max_pos);
+            if (max_val > motion_thresh + dparams.drone_blink_strength)
+                find_cog_and_remove(max_pos,max_val,diff,enable_insect_drone_split,drn_ins_split_thresh,motion_noise_mapL);
+            i++;
+            break;
+        } case roi_state_no_prior: {
+            Point min_pos,max_pos;
+            minMaxLoc(diff, &min_val, &max_val, &min_pos, &max_pos);
+            int motion_noise = motion_noise_mapL.at<uint8_t>(max_pos.y,max_pos.x);
+            if (max_val > motion_noise+motion_thresh)
+                find_cog_and_remove(max_pos,max_val,diff,enable_insect_drone_split,drn_ins_split_thresh,motion_noise_mapL);
             else
-                cv::circle(diff, maxt, roi_radius, Scalar(0), cv::FILLED);
+                return;
+            i++;
+            break;
         }
+        }
+
     }
 }
 void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat diff,bool enable_insect_drone_split, float drn_ins_split_thresh,cv::Mat motion_noise_mapL) {
