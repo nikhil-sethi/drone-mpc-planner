@@ -26,7 +26,7 @@ def system_was_monitoring_in_folder(folder):
 
 
 def cut_moths(folder):
-    logger = logging.getLogger('cut_moth')
+    logger = logging.getLogger('cut_moths')
     frames_fn = folder + '/logging/frames.csv'
     cut_log_fn = folder + '/logging/cut_moth.log'
     if not os.path.exists(frames_fn):
@@ -90,23 +90,25 @@ def cut_moths(folder):
                             else:
                                 clog.write('Not enough lines!\n')
 
-                    lb.execute(ffmpeg_cmd,1,'cut_moth')
+                    lb.execute(ffmpeg_cmd,1,'cut_moths')
                     os.remove(video_in_file)
 
                 else:
                     print("VideoRawLR not found")
 
 def cut_moths_all():
-    logger = logging.getLogger('cut_moth')
+    logger = logging.getLogger('cut_moths')
     found_dirs = glob.glob(lb.data_dir + '/202*_*')
     for folder in found_dirs:
-        video_in_file = folder + '/logging/videoRawLR.mkv'
-        if os.path.exists(video_in_file):
-            logger.info('Processing ' + folder)
-            cut_moths(folder)
-        else:
-            logger.info('Skipping ' + folder + ' because no videoRawLR.mkv')
-
+        try:
+            video_in_file = folder + '/logging/videoRawLR.mkv'
+            if os.path.exists(video_in_file):
+                logger.info('Processing ' + folder)
+                cut_moths(folder)
+            else:
+                logger.info('Skipping ' + folder + ' because no videoRawLR.mkv')
+        except Exception as e:
+            logger.error('Error in ' + folder + '; ' + str(e))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Script that cuts the raw video into moths based on the log')
@@ -114,7 +116,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     logging.basicConfig( )
-    logger = logging.getLogger('cut_moth')
+    logger = logging.getLogger('cut_moths')
     logger.setLevel(logging.DEBUG)
 
     if not args.i:
