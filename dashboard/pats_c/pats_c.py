@@ -84,7 +84,7 @@ def load_systems(username):
 def load_moth_df(selected_systems,start_date,end_date):
     username = current_user.username
     with patsc.open_systems_db() as con:
-        ordered_systems = con.execute('''SELECT systems.system, groups.minimal_size FROM systems,groups
+        ordered_systems = con.execute('''SELECT systems.system, groups.minimal_size, systems.installation_date FROM systems,groups
         JOIN customer_group_connection ON systems.group_id = customer_group_connection.group_id
         JOIN customers ON customers.customer_id = customer_group_connection.customer_id WHERE
         systems.group_id = groups.group_id AND customers.name = ? AND systems.system IN (%s)
@@ -92,10 +92,16 @@ def load_moth_df(selected_systems,start_date,end_date):
 
     moth_df = pd.DataFrame()
     with patsc.open_data_db() as con:
-        for (system,min_size) in ordered_systems:
+        for (system,min_size,installation_date) in ordered_systems:
+            try:
+                installation_date = datetime.datetime.strptime(installation_date,'%Y%m%d_%H%M%S')
+                real_start_date = max([installation_date,start_date])
+            except ValueError as e:
+                print(f'ERROR startdate {system}: ' + str(e))
+                real_start_date = start_date
             sql_str = f'''SELECT moth_records.* FROM moth_records
             WHERE (system = "{system}" OR system = "{system.replace('pats','pats-proto')}")
-            AND time > "{start_date.strftime('%Y%m%d_%H%M%S')}" AND time <= "{end_date.strftime('%Y%m%d_%H%M%S')}"
+            AND time > "{real_start_date.strftime('%Y%m%d_%H%M%S')}" AND time <= "{end_date.strftime('%Y%m%d_%H%M%S')}"
             AND (duration > 1 AND duration < 10
             AND (Version="1.0"
             OR (Dist_traveled > 0.15 AND Dist_traveled < 4 AND Size > {min_size} )))'''
