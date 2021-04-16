@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-import subprocess
-import datetime,time, math, os, re
+import datetime, math, os, re
 from dateutil.relativedelta import relativedelta
 import numpy as np
 import pandas as pd
@@ -125,22 +124,6 @@ def system_sql_str(systems):
         systems_str = systems_str + 'system="' + system + '" OR ' + 'system="' + system.replace('pats','pats-proto') + '" OR '
     systems_str = systems_str[:-4] + ') '
     return systems_str
-
-def execute(cmd,retry=1):
-    p_result = None
-    n=0
-    while p_result != 0 and n < retry:
-        popen = subprocess.Popen(cmd, shell=True,stdout=subprocess.PIPE)
-        for stdout_line in iter(popen.stdout.readline, ''):
-            p_result = popen.poll()
-            if p_result or p_result==0:
-                n = n+1
-                break
-            print(str(cmd) + ' resulted in error:')
-            print(stdout_line.decode('utf-8'),end ='')
-
-            time.sleep(0.1)
-        popen.stdout.close()
 
 def load_moth_data(selected_systems,start_date,end_date):
     # We count moths from 12 in the afternoon to 12 in the afternoon. Therefore we shift the data in the for loops with 12 hours.
@@ -387,7 +370,7 @@ def download_log(selected_moth,moth_columns):
     if not os.path.isfile(target_log_fn):
         rsync_src = sys_name + ':pats/data/processed/' + log_folder + '/logging/' + log_fn
         cmd = ['rsync --timeout=5 -az -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ' + rsync_src + ' ' + target_log_fn]
-        execute(cmd)
+        patsc.execute(cmd)
     return target_log_fn
 def file_download_link(filename):
     location = '/{}'.format(urlquote(filename))
@@ -436,10 +419,10 @@ def download_video(selected_moth,moth_columns):
         if not os.path.isfile(target_video_mkv_fn) and  not os.path.isfile(target_video_mp4_fn):
             rsync_src = sys_name + ':pats/data/processed/' +selected_moth[moth_columns.index('Folder')] + '/logging/render_' + video_fn
             cmd = ['rsync --timeout=5 -a -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ' + rsync_src + ' ' + target_video_mkv_fn]
-            execute(cmd)
+            patsc.execute(cmd)
         if not os.path.isfile(target_video_mp4_fn) and os.path.isfile(target_video_mkv_fn):
             mp4_to_mkv_cmd = ['ffmpeg -y -i ' + target_video_mkv_fn + ' -c:v copy -an ' + target_video_mkv_fn[0:-3] + 'mp4']
-            execute(mp4_to_mkv_cmd)
+            patsc.execute(mp4_to_mkv_cmd)
         if not os.path.isfile(target_video_mp4_fn):
             return ''
         target_video_mp4_fn = '/' + target_video_mp4_fn

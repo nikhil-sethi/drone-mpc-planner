@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os, re
+import logging, os, re, subprocess
 import sqlite3
 
 db_data_path = os.path.expanduser('~/patsc/db/pats.db')
@@ -66,3 +66,23 @@ def true_positive(moth,minimal_size):
         return moth['duration'] > 1 and moth['duration'] < 10
     else:
         return moth['duration'] > 1 and moth['duration'] < 10 and moth['Dist_traveled'] > 0.15 and moth['Dist_traveled'] < 4 and moth['Size'] > minimal_size
+
+def execute(cmd,retry=1,logger_name=''):
+    if logger_name != '':
+        logger = logging.getLogger(logger_name)
+
+    p_result = None
+    n=0
+    while p_result != 0 and n < retry:
+        popen = subprocess.Popen(cmd, shell=True,stdout=subprocess.PIPE)
+        for stdout_line in iter(popen.stdout.readline, ""):
+            p_result = popen.poll()
+            if p_result != None:
+                n = n+1
+                break
+            if logger_name == '':
+                print(stdout_line.decode('utf-8'),end ='')
+            else:
+                logger.info(stdout_line.decode('utf-8'))
+        popen.stdout.close()
+    return p_result
