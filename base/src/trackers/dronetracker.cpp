@@ -233,7 +233,7 @@ void DroneTracker::delete_takeoff_fake_motion() {
         //they leave a permanent mark if we stop prematurely. Two conditions:
         //1. the drone must have left the area with a margin of its size
         //2. other blobs must not be inside the area. (slightly more relaxed, because crop leave movements otherwise are holding this enabled indefinetely)
-        if (_world_item.valid && liftoff_detected && normf(_world_item.iti.pt() - _pad_im_location) > _pad_im_size + 0.6f * _world_item.iti.size ) {
+        if (_world_item.valid && liftoff_detected && normf(_world_item.image_item.pt() - _pad_im_location) > _pad_im_size + 0.6f * _world_item.image_item.size ) {
             enable_takeoff_motion_delete = false;
             for (auto blob : _all_blobs) {
                 if (normf(blob.pt_unscaled() - _pad_im_location) < 2.f * _pad_im_size) {
@@ -291,8 +291,8 @@ bool DroneTracker::detect_takeoff() {
 
     return  _world_item.radius > dparams.radius*0.25f  &&
             _world_item.radius < dparams.radius*4.f &&
-            closest_to_takeoff_point.x == static_cast<int>(_world_item.iti.x) &&
-            closest_to_takeoff_point.y == static_cast<int>(_world_item.iti.y); // maybe should create an id instead of checking the distance
+            closest_to_takeoff_point.x == static_cast<int>(_world_item.image_item.x) &&
+            closest_to_takeoff_point.y == static_cast<int>(_world_item.image_item.y); // maybe should create an id instead of checking the distance
 
 }
 

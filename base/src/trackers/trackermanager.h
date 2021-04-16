@@ -187,7 +187,7 @@ private:
     bool tracker_active(ItemTracker *trkr, bool drone_is_active);
 
     void prep_vizs();
-    std::tuple<cv::Rect,cv::Rect,int> calc_trkr_viz_roi(ImageItem iti);
+    std::tuple<cv::Rect,cv::Rect,int> calc_trkr_viz_roi(ImageItem image_item);
     void reset_trkr_viz_ids();
     void finish_vizs();
     cv::Scalar color_of_blob(ProcessedBlob blob);

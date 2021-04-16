@@ -395,8 +395,8 @@ cv::Mat Visualizer::draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsize
     if (path.size() > 0) {
         std::vector<cv::KeyPoint> keypoints;
         for (uint i = 0; i< path.size(); i++) {
-            if (path.at(i).world_item.iti.valid) {
-                cv::KeyPoint k(path.at(i).world_item.iti.x/pparams.imscalef,path.at(i).world_item.iti.y/pparams.imscalef,12/pparams.imscalef);
+            if (path.at(i).world_item.image_item.valid) {
+                cv::KeyPoint k(path.at(i).world_item.image_item.x/pparams.imscalef,path.at(i).world_item.image_item.y/pparams.imscalef,12/pparams.imscalef);
                 keypoints.push_back(k);
             }
         }
@@ -478,8 +478,8 @@ void Visualizer::draw_tracker_viz() {
     } else if(_trackers->dronetracker()->pad_location_valid()) {
         cv::circle(frameL_color,_trackers->dronetracker()->pad_im_location(),_trackers->dronetracker()->pad_im_size()/2,cv::Scalar(0,255,0));
     }
-    if ( last_drone_detection.world_item.iti.valid) {
-        auto p =  last_drone_detection.world_item.iti;
+    if ( last_drone_detection.world_item.image_item.valid) {
+        auto p =  last_drone_detection.world_item.image_item;
         cv::circle(frameL_color,p.pt(),p.size/2,cv::Scalar(0,0,255));
     }
 
@@ -494,8 +494,8 @@ void Visualizer::draw_tracker_viz() {
         if (wti.valid) {
             ss << to_string_with_precision(wti.distance,1);
             itrkr_color = cv::Scalar(0,0,255);
-            p_ins_im  = wti.iti.pt();
-            ins_size = wti.iti.size;
+            p_ins_im  = wti.image_item.pt();
+            ins_size = wti.image_item.size;
         }
         if (ins_size <= 0) //replay insects don't have a proper size
             ins_size = 2;
@@ -538,14 +538,14 @@ void Visualizer::draw_tracker_viz() {
         }
     }
 
-    if (last_drone_detection.world_item.iti.valid) {
+    if (last_drone_detection.world_item.image_item.valid) {
         std::stringstream ss;
         tracking::WorldItem wti = last_drone_detection.world_item;
         ss << "d " << to_string_with_precision(wti.distance,1);
         cv::Scalar c(0,0,255);
         if (wti.distance_bkg >wti.distance )
             c = cv::Scalar(0,180,255); //first number cannot be 0 because of super weird qtcreator / gdb bug
-        cv::Point2i drone_pos (wti.iti.x,wti.iti.y);
+        cv::Point2i drone_pos (wti.image_item.x,wti.image_item.y);
         putText(frameL_color,ss.str(),drone_pos,cv::FONT_HERSHEY_SIMPLEX,0.5,c);
         cv::line(frameL_color,drone_pos,drone_pos,c,2);
 

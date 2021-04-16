@@ -152,7 +152,7 @@ void ItemTracker::update_blob_filters() {
         smoother_brightness.addSample(_image_item.pixel_max);
         _blobs_are_fused_cnt = 0;
     }
-    disparity_prev = _world_item.iti.disparity;
+    disparity_prev = _world_item.image_item.disparity;
 }
 
 void ItemTracker::update(double time) {

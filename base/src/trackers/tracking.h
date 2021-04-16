@@ -122,7 +122,7 @@ struct ImagePredictItem {
 struct WorldItem {
     WorldItem() {}
     WorldItem(ImageItem new_iti, BlobWorldProps wbp) {
-        iti = new_iti;
+        image_item = new_iti;
         distance = wbp.distance;
         distance_bkg = wbp.distance_bkg;
         radius = wbp.radius;
@@ -132,19 +132,19 @@ struct WorldItem {
         valid = wbp.valid;
     }
     cv::Point3f pt = {0};
-    ImageItem  iti;
+    ImageItem  image_item;
     cv::Point2f image_coordinates() {
-        return cv::Point2f(iti.x,iti.y);
+        return cv::Point2f(image_item.x,image_item.y);
     }
     float distance = 0, distance_bkg = 0;
     float radius = 0;
     bool valid = false;
 
     uint frame_id() {
-        return iti.frame_id;
+        return image_item.frame_id;
     }
     float size_in_image() {
-        return iti.size;
+        return image_item.size;
     }
 
 };
@@ -184,8 +184,8 @@ enum false_positive_type {
 
 struct FalsePositive {
     FalsePositive(WorldItem world_item,false_positive_type type_,double last_seen_time_) {
-        im_size = world_item.iti.size;
-        im_pt = world_item.iti.pt();
+        im_size = world_item.image_item.size;
+        im_pt = world_item.image_item.pt();
         type = type_;
         last_seen_time = last_seen_time_;
     }

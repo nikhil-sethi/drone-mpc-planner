@@ -60,15 +60,15 @@ void ReplayTracker::update_from_log(unsigned long long frame_number,double time)
     _image_predict_item.valid = _image_predict_item.pt.x > 0 && _tracking;
 
     WorldItem w;
-    w.iti = _image_item;
+    w.image_item = _image_item;
     w.valid = valid;
     w.pt.x = log.ins_pos_x;
     w.pt.y = log.ins_pos_y;
     w.pt.z = log.ins_pos_z;
     w.distance = norm(w.pt);
-    w.iti.x = std::clamp(static_cast<int>(w.iti.x),0,IMG_W);
-    w.iti.y = std::clamp(static_cast<int>(w.iti.y),0,IMG_H);
-    w.distance_bkg = _visdat->depth_background_mm.at<float>(w.iti.y,w.iti.x);
+    w.image_item.x = std::clamp(static_cast<int>(w.image_item.x),0,IMG_W);
+    w.image_item.y = std::clamp(static_cast<int>(w.image_item.y),0,IMG_H);
+    w.distance_bkg = _visdat->depth_background_mm.at<float>(w.image_item.y,w.image_item.x);
     _world_item = w;
 
     TrackData data;

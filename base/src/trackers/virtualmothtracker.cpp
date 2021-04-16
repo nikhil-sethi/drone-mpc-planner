@@ -68,15 +68,15 @@ void VirtualMothTracker::update_behavior_based(unsigned long long frame_number, 
     _image_predict_item.valid = _image_predict_item.pt.x > 0;
 
     WorldItem w;
-    w.iti = _image_item;
+    w.image_item = _image_item;
     w.valid = true;
     w.pt.x = insect_pos.x;
     w.pt.y = insect_pos.y;
     w.pt.z = insect_pos.z;
     w.distance = norm(w.pt);
-    w.iti.x = std::clamp(static_cast<int>(w.iti.x), 0, IMG_W);
-    w.iti.y = std::clamp(static_cast<int>(w.iti.y), 0, IMG_H);
-    w.distance_bkg = _visdat->depth_background_mm.at<float>(w.iti.y, w.iti.x);
+    w.image_item.x = std::clamp(static_cast<int>(w.image_item.x), 0, IMG_W);
+    w.image_item.y = std::clamp(static_cast<int>(w.image_item.y), 0, IMG_H);
+    w.distance_bkg = _visdat->depth_background_mm.at<float>(w.image_item.y, w.image_item.x);
     _world_item = w;
 
     TrackData data;

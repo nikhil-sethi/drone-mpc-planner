@@ -184,7 +184,7 @@ void BlinkTracker::clean_ignore_blobs(double time) {
 
 float BlinkTracker::score(tracking::BlobProps * blob) {
     if (_track.size()>0) {
-        tracking::ImageItem first = _track.at(0).world_item.iti;
+        tracking::ImageItem first = _track.at(0).world_item.image_item;
         return ItemTracker::score(blob,&first);
     } else {
         return ItemTracker::score(blob,&_image_item);

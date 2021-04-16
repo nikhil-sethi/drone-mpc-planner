@@ -163,11 +163,11 @@ public:
     WorldItem world_item() {return _world_item;}
     void world_item(WorldItem world_item) {
         _world_item = world_item;
-        _image_item = _world_item.iti;
+        _image_item = _world_item.image_item;
     }
     void all_blobs(std::vector<tracking::BlobProps> blobs) { _all_blobs = blobs; }
     void blobs_are_fused() {
-        _world_item.iti.blob_is_fused = true;
+        _world_item.image_item.blob_is_fused = true;
         _image_item.blob_is_fused = true;
         _blobs_are_fused_cnt++;
     }

@@ -513,8 +513,8 @@ void TrackerManager::match_existing_trackers(std::vector<ProcessedBlob> *pbs,boo
             if (best_trkr_score < trkr->score_threshold() ) {
                 best_blob->trackers.push_back(trkr);
                 trkr->calc_world_item(best_blob->props,time);
-                tracking::ImageItem iti(*(best_blob->props),_visdat->frame_id,best_trkr_score,best_blob->id);
-                tracking::WorldItem w(iti,best_blob->props->world_props);
+                tracking::ImageItem image_item(*(best_blob->props),_visdat->frame_id,best_trkr_score,best_blob->id);
+                tracking::WorldItem w(image_item,best_blob->props->world_props);
                 trkr->world_item(w);
             }
         }
@@ -945,9 +945,9 @@ void TrackerManager::draw_viz(std::vector<ProcessedBlob> *pbs, double time) {
         int descr_h = 10*size_text; // -> lines of text in description frame
         int req_h=0, req_w=descr_w;
         for (auto trkr : _trackers) { //dry run to figure out size of the final viz
-            auto iti = trkr->image_item();
-            if (iti.valid) {
-                auto [roiL,roiR,resize_factor] = calc_trkr_viz_roi(iti);
+            auto image_item = trkr->image_item();
+            if (image_item.valid) {
+                auto [roiL,roiR,resize_factor] = calc_trkr_viz_roi(image_item);
                 int height = roiL.height;
                 if (roiR.height> height)
                     height = roiR.height;
@@ -966,15 +966,15 @@ void TrackerManager::draw_viz(std::vector<ProcessedBlob> *pbs, double time) {
 
         cv::Mat viz_tracker = cv::Mat::zeros(cv::Size(req_w,req_h),CV_8UC3);
         for (auto trkr : _trackers) {
-            auto iti = trkr->image_item();
+            auto image_item = trkr->image_item();
             auto wti = trkr->world_item();
             cv::Rect roiD(0,h,descr_w,descr_h);
             cv::Mat viz_descr =  viz_tracker(roiD);
             int y_text = 1;
             putText(viz_descr,"Tracker " + std::to_string(trkr->viz_id()) + ": " + trkr->name(),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_DUPLEX,0.4,white);
 
-            if (iti.valid) {
-                auto [roiL,roiR,resize_factor] = calc_trkr_viz_roi(iti);
+            if (image_item.valid) {
+                auto [roiL,roiR,resize_factor] = calc_trkr_viz_roi(image_item);
 
                 std::vector<cv::Mat> vizsL;
                 vizsL.push_back(_visdat->frameL(roiL));
@@ -1005,15 +1005,15 @@ void TrackerManager::draw_viz(std::vector<ProcessedBlob> *pbs, double time) {
 
                 if (trkr->type() == tt_insect) {
                     InsectTracker *itrkr = static_cast<InsectTracker *> (trkr);
-                    putText(viz_descr,"blob id -> iid: " + std::to_string(iti.blob_id) + " -> " + std::to_string(itrkr->insect_trkr_id()),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
+                    putText(viz_descr,"blob id -> iid: " + std::to_string(image_item.blob_id) + " -> " + std::to_string(itrkr->insect_trkr_id()),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
                 } else
-                    putText(viz_descr,"blob id -> tr uid: " + std::to_string(iti.blob_id) + " -> " + std::to_string(trkr->uid()),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
+                    putText(viz_descr,"blob id -> tr uid: " + std::to_string(image_item.blob_id) + " -> " + std::to_string(trkr->uid()),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
                 putText(viz_descr,std::to_string(resize_factor) + "x",cv::Point2i(viz_descr.cols-16,size_text),FONT_HERSHEY_SIMPLEX,0.4,red);
-                putText(viz_descr,"Score: " + to_string_with_precision(iti.score,2),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
+                putText(viz_descr,"Score: " + to_string_with_precision(image_item.score,2),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
                 putText(viz_descr,"# frames: " + std::to_string(trkr->n_frames_tracking()),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
-                putText(viz_descr,"Size: " + to_string_with_precision(iti.size,1),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
-                putText(viz_descr,"Max: " + to_string_with_precision(iti.pixel_max,1),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
-                putText(viz_descr,"i: [" + to_string_with_precision(iti.x,1) + ", " + to_string_with_precision(iti.y,1) + "], " +  to_string_with_precision(iti.disparity,2),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
+                putText(viz_descr,"Size: " + to_string_with_precision(image_item.size,1),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
+                putText(viz_descr,"Max: " + to_string_with_precision(image_item.pixel_max,1),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
+                putText(viz_descr,"i: [" + to_string_with_precision(image_item.x,1) + ", " + to_string_with_precision(image_item.y,1) + "], " +  to_string_with_precision(image_item.disparity,2),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
                 putText(viz_descr,"w: [" + to_string_with_precision(wti.pt.x,2) + ", " + to_string_with_precision(wti.pt.y,2) + ", " + to_string_with_precision(wti.pt.z,2) + "]",cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
 
                 int text_w = 0;
@@ -1036,7 +1036,7 @@ void TrackerManager::draw_viz(std::vector<ProcessedBlob> *pbs, double time) {
                         Size text_size = getTextSize(flag,FONT_HERSHEY_TRIPLEX,0.75,2,&baseline);
                         text_w+=text_size.width;
                     }
-                } else if (iti.blob_is_fused) {
+                } else if (image_item.blob_is_fused) {
                     std::string flag = "";
                     if (text_w > 0)
                         flag+= " | ";
@@ -1083,10 +1083,10 @@ void TrackerManager::draw_viz(std::vector<ProcessedBlob> *pbs, double time) {
         viz_trkrs_buf = viz_tracker.clone();
     }
 }
-std::tuple<Rect,Rect,int> TrackerManager::calc_trkr_viz_roi(ImageItem iti) {
-    cv::Rect roiL(iti.x - iti.size-5,iti.y - iti.size-5,iti.size*2+10,iti.size*2+10);
+std::tuple<Rect,Rect,int> TrackerManager::calc_trkr_viz_roi(ImageItem image_item) {
+    cv::Rect roiL(image_item.x - image_item.size-5,image_item.y - image_item.size-5,image_item.size*2+10,image_item.size*2+10);
     roiL = clamp_rect(roiL,IMG_W,IMG_H);
-    cv::Rect roiR(iti.x - iti.disparity - iti.size-5,iti.y - iti.size-5,iti.size*2+10,iti.size*2+10);
+    cv::Rect roiR(image_item.x - image_item.disparity - image_item.size-5,image_item.y - image_item.size-5,image_item.size*2+10,image_item.size*2+10);
     roiR = clamp_rect(roiR,IMG_W,IMG_H);
     int resize_factor =1 ;
     if (roiL.height < 15)
