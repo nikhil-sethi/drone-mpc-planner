@@ -300,15 +300,14 @@ void process_video() {
         if (fps != fps || isinf(fps))
             fps_smoothed.reset();
 
-
         if (dctrl.in_flight_duration(time) < 0.1f || dnav.drone_problem(1)) {
-            if (!log_replay_mode  && ((imgcount > pparams.close_after_n_images && pparams.close_after_n_images>0))) {
+            if (!log_replay_mode  && ((imgcount > pparams.close_after_n_images && pparams.close_after_n_images > 0))) {
                 std::cout << "Initiating periodic restart" << std::endl;
                 exit_now = true;
-            } else if ((cam->measured_exposure() <= pparams.darkness_threshold && pparams.darkness_threshold>0)) {
+            } else if ((cam->measured_exposure() <= pparams.darkness_threshold && pparams.darkness_threshold > 0)) {
                 std::cout << "Initiating restart because exposure (" << cam->measured_exposure() << ") is lower than darkness_threshold (" << pparams.darkness_threshold << ")" << std::endl;
                 exit_now = true;
-            } else if (visdat.average_brightness() > pparams.max_brightness+10 && pparams.darkness_threshold>0) {
+            } else if (visdat.average_brightness() > pparams.max_brightness+10 && pparams.darkness_threshold > 0) {
                 std::cout << "Initiating restart because avg brightness (" << visdat.average_brightness() << ") is higher than max_brightness (" << pparams.max_brightness+10 << ")" << std::endl;
                 exit_now = true;
             }

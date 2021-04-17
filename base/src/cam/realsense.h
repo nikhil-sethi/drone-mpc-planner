@@ -18,6 +18,16 @@ public:
     }
     void connect_and_check();
     void init() {
+        if (pparams.fps == 90) {
+            max_auto_exposure = 10000;
+        } else if (pparams.fps == 60) {
+            max_auto_exposure = 15500;
+        } else if (pparams.fps == 30) {
+            max_auto_exposure = 32200;
+        } else {
+            std::cout << "Error: unknown fps, not implemented" << std::endl;
+            exit(1);
+        }
         if (from_recorded_bag)
             init_playback();
         else
@@ -57,6 +67,7 @@ private:
     bool from_recorded_bag;
     std::string bag_fn;
 
+    int max_auto_exposure;
     enum auto_exposure_enum {disabled = 0, enabled = 1, only_at_startup=2};
     const auto_exposure_enum enable_auto_exposure = enabled;
     int exposure = 11000; //84*(31250/256); // >11000 -> 60fps, >15500 -> 30fps, < 20 = crash
