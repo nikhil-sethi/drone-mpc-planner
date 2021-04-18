@@ -322,7 +322,8 @@ private:
     xDrone_type _drone;
     xOp_mode _op_mode;
     xString _sub_mode;
-    xInt _wdt_timeout_us,_darkness_threshold,_fps,_close_after_n_images,_max_brightness;
+    xInt _wdt_timeout_us,_fps,_close_after_n_images;
+    xInt _exposure_threshold,_gain_threshold,_brightness_threshold;
     xBool _cam_tuning, _control_tuning, _navigation_tuning,_vision_tuning,_drone_tracking_tuning,_insect_tracking_tuning;
     xBool _viz_plots, _viz_tracking;
     xInt _imscalef;
@@ -330,9 +331,11 @@ private:
     xString _flightplan_calib_thrust;
     xInt _live_image_frq;
     xFloat _max_cam_roll;
+    xInt _n_cams;
 
 public:
-    int wdt_timeout_us,darkness_threshold,close_after_n_images,max_brightness;
+    int exposure_threshold,gain_threshold,brightness_threshold;
+    int wdt_timeout_us,close_after_n_images;
     uint fps;
     bool watchdog,has_screen;
     video_modes video_raw, video_result;
@@ -347,6 +350,7 @@ public:
     std::string flightplan_calib_thrust;
     int live_image_frq;
     float max_cam_roll;
+    int n_cams;
 
     PatsParameters() {
         // Set the XML class name.
@@ -354,12 +358,13 @@ public:
         setClassName("PatsParameters");
 
         // Set class version
-        setVersion("1.9");
+        setVersion("1.10");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("wdt_timeout_us",&_wdt_timeout_us);
-        Register("darkness_threshold",&_darkness_threshold);
-        Register("max_brightness",&_max_brightness);
+        Register("exposure_threshold",&_exposure_threshold);
+        Register("gain_threshold",&_gain_threshold);
+        Register("brightness_threshold",&_brightness_threshold);
         Register("close_after_n_images",&_close_after_n_images);
         Register("has_screen",&_has_screen);
         Register("op_mode",&_op_mode);
@@ -383,6 +388,7 @@ public:
         Register("flightplan_calib_thrust",&_flightplan_calib_thrust);
         Register("live_image_frq",&_live_image_frq);
         Register("max_cam_roll",&_max_cam_roll);
+        Register("n_cams",&_n_cams);
     }
     void deserialize(std::string settings_file) {
         std::cout << "Reading settings from: " << settings_file << std::endl;
@@ -407,8 +413,9 @@ public:
         }
 
         wdt_timeout_us = _wdt_timeout_us.value();
-        darkness_threshold = _darkness_threshold.value();
-        max_brightness = _max_brightness.value();
+        exposure_threshold = _exposure_threshold.value();
+        gain_threshold = _gain_threshold.value();
+        brightness_threshold = _brightness_threshold.value();
         close_after_n_images = _close_after_n_images.value();
         has_screen = _has_screen.value();
         op_mode = _op_mode.value();
@@ -432,12 +439,14 @@ public:
         flightplan_calib_thrust = _flightplan_calib_thrust.value();
         live_image_frq = _live_image_frq.value();
         max_cam_roll = _max_cam_roll.value();
+        n_cams = _n_cams.value();
     }
 
     void serialize(std::string settings_file) {
         _wdt_timeout_us = wdt_timeout_us;
-        _darkness_threshold = darkness_threshold;
-        _max_brightness = max_brightness;
+        _exposure_threshold = exposure_threshold;
+        _gain_threshold = gain_threshold;
+        _brightness_threshold = brightness_threshold;
         _close_after_n_images = close_after_n_images;
         _has_screen = has_screen;
         _op_mode = op_mode;
@@ -461,6 +470,7 @@ public:
         _flightplan_calib_thrust= flightplan_calib_thrust;
         _live_image_frq = live_image_frq;
         _max_cam_roll = max_cam_roll;
+        _n_cams = n_cams;
 
         std::string xmlData = toXML();
         std::ofstream outfile = std::ofstream (settings_file);
@@ -655,6 +665,7 @@ private:
     xmls::xFloat _angle_y;
     xmls::xInt _exposure;
     xmls::xFloat _gain;
+    xmls::xFloat _brightness;
     xmls::xInt _width;
     xmls::xInt _height;
     xmls::xFloat _ppx;
@@ -675,6 +686,7 @@ public:
     float camera_angle_y = 30;
     int measured_exposure = 15400;
     int measured_gain = 0;
+    int measured_brightness = 0;
     //rs2_intrinsics
     int width;
     int height;
@@ -694,13 +706,14 @@ public:
         setClassName("CamCalibrationData");
 
         // Set class version
-        setVersion("1.3");
+        setVersion("1.4");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("Angle_X", &_angle_x);
         Register("Angle_Y", &_angle_y);
         Register("Exposure", &_exposure);
         Register("Gain", &_gain);
+        Register("Brightness", &_brightness);
         Register("Width", &_width);
         Register("Height", &_height);
         Register("ppx", &_ppx);
@@ -743,6 +756,7 @@ public:
         camera_angle_y = _angle_y.value();
         measured_exposure = _exposure.value();
         measured_gain = _gain.value();
+        measured_brightness = _brightness.value();
         width = _width.value();
         height = _height.value();
         ppx = _ppx.value();
@@ -764,6 +778,7 @@ public:
         _angle_y = camera_angle_y;
         _exposure = measured_exposure;
         _gain = measured_gain;
+        _brightness = measured_brightness;
         _width = width;
         _height = height;
         _ppx = ppx;

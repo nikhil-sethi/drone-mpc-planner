@@ -5,6 +5,7 @@
 #include <deque>
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 
+
 class Realsense : public Cam {
 
 public:
@@ -16,7 +17,7 @@ public:
         set_file_paths(replay_dir);
         bag_fn = replay_dir + '/' + playback_filename();
     }
-    void connect_and_check();
+    void connect_and_check(string ser_nr,int id);
     void init() {
         if (pparams.fps == 90) {
             max_auto_exposure = 10000;
@@ -40,12 +41,15 @@ public:
     void update();
     std::tuple<float,float,cv::Mat,cv::Mat,cv::Mat,float> measure_auto_exposure();
     std::tuple<float,float,double,cv::Mat> measure_angle();
+    bool master() {return !_id;}
 
 protected:
     void delete_old_frames();
     void delete_all_frames();
 private:
     bool dev_initialized = false;
+    bool exposure_initialized = false;
+    bool angle_initialized = false;
 
     bool new_frame1 = false;
     bool new_frame2 = false;
@@ -60,22 +64,21 @@ private:
     };
     std::map<unsigned long long,RSStereoPair * > rs_buf;
 
-    float _camera_angle_y_measured_from_depth = 30;
     bool isD455 = false;
     double _frame_time_start = -1;
     string replay_dir;
     bool from_recorded_bag;
-    std::string bag_fn;
+    string bag_fn;
+    string serial_nr_str;
+    string serial_nr;
+    int _id;
 
     int max_auto_exposure;
-    enum auto_exposure_enum {disabled = 0, enabled = 1, only_at_startup=2};
-    const auto_exposure_enum enable_auto_exposure = enabled;
-    int exposure = 11000; //84*(31250/256); // >11000 -> 60fps, >15500 -> 30fps, < 20 = crash
-    int gain = 0;
 
     std::mutex lock_newframe;
     rs2::device dev;
-    rs2::pipeline cam;
+    rs2::pipeline cam_playback;
+    static inline rs2::context const ctx;
 
     bool exit_watchdog_thread = false;
     bool watchdog = true,watchdog_attempt_to_continue = false;
@@ -90,6 +93,5 @@ private:
     void update_playback();
     void rs_callback(rs2::frame f);
     void rs_callback_playback(rs2::frame f);
-    void check_light_level();
-    void calib_pose(bool also_do_depth);
+    void calib_depth_background();
 };

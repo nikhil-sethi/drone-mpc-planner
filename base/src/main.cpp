@@ -304,11 +304,14 @@ void process_video() {
             if (!log_replay_mode  && ((imgcount > pparams.close_after_n_images && pparams.close_after_n_images > 0))) {
                 std::cout << "Initiating periodic restart" << std::endl;
                 exit_now = true;
-            } else if ((cam->measured_exposure() <= pparams.darkness_threshold && pparams.darkness_threshold > 0)) {
-                std::cout << "Initiating restart because exposure (" << cam->measured_exposure() << ") is lower than darkness_threshold (" << pparams.darkness_threshold << ")" << std::endl;
+            } else if ((cam->measured_exposure() <= pparams.exposure_threshold && pparams.exposure_threshold > 0)) {
+                std::cout << "Initiating restart because exposure (" << cam->measured_exposure() << ") is lower than threshold (" << pparams.exposure_threshold << ")" << std::endl;
                 exit_now = true;
-            } else if (visdat.average_brightness() > pparams.max_brightness+10 && pparams.darkness_threshold > 0) {
-                std::cout << "Initiating restart because avg brightness (" << visdat.average_brightness() << ") is higher than max_brightness (" << pparams.max_brightness+10 << ")" << std::endl;
+            } else if ((cam->measured_gain() < pparams.gain_threshold && pparams.exposure_threshold > 0)) {
+                std::cout << "Initiating restart because gain (" << cam->measured_gain() << ") is lower than threshold (" << pparams.gain_threshold << ")" << std::endl;
+                exit_now = true;
+            } else if (visdat.average_brightness() > pparams.brightness_threshold+10 && pparams.exposure_threshold > 0) {
+                std::cout << "Initiating restart because avg brightness (" << visdat.average_brightness() << ") is higher than threshold (" << pparams.brightness_threshold+10 << ")" << std::endl;
                 exit_now = true;
             }
         }
@@ -658,11 +661,8 @@ void init_loggers() {
     }
 
     logger.open(data_output_dir  + "log.csv",std::ofstream::out);
-    cout << "data_output_dir: " << data_output_dir << endl;
-
     logger << "ID;RS_ID;time;elapsed;Exposure;";
     logger_fn = data_output_dir  + "log" + to_string(0) + ".csv"; // only used with pparams.video_cuts
-
     logger_video_ids.open(data_output_dir  + "frames.csv",std::ofstream::out);
 
     if (rc->connected())
@@ -772,6 +772,7 @@ void check_hardware() {
         rc = std::unique_ptr<Rc>(new MultiModule());
     }
     //init cam and check version
+    std::cout << "Connecting camera..." << std::endl;
     if (log_replay_mode) {
         if (file_exist(replay_dir+'/' + Realsense::playback_filename()))
             cam = std::unique_ptr<Cam>(new Realsense(replay_dir));
@@ -791,7 +792,7 @@ void check_hardware() {
         cam = std::unique_ptr<Cam>(new AirSimCam(airsim_map));
     } else {
         cam = std::unique_ptr<Cam>(new Realsense());
-        static_cast<Realsense *>(cam.get())->connect_and_check();
+        static_cast<Realsense *>(cam.get())->connect_and_check("",0);
     }
 }
 
@@ -940,7 +941,7 @@ void print_warnings() {
 void wait_for_cam_angle() {
     int enable_delay = 0;
     if (pparams.max_cam_roll > 0 && !log_replay_mode) {
-        std::cout << "Checking cam angle." << std::endl;
+        std::cout << "Checking cam angle..." << std::endl;
 
         while(true) {
             auto [roll,pitch,frame_time,frameL] = static_cast<Realsense *>(cam.get())->measure_angle();
@@ -979,18 +980,18 @@ void wait_for_cam_angle() {
 }
 
 void wait_for_dark() {
-    if (pparams.darkness_threshold > 0 && !log_replay_mode) {
-        std::cout << "Checking if dark." << std::endl;
+    if (pparams.exposure_threshold > 0 && !log_replay_mode) {
+        std::cout << "Checking if dark..." << std::endl;
         int last_save_bgr_hour = -1;
         while(true) {
             auto [expo,gain,frameL,frameR,frame_bgr,avg_brightness] = static_cast<Realsense *>(cam.get())->measure_auto_exposure();
             auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
-            std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << " Measured exposure: " << expo << ", gain: " << gain << ", avg_brightness: " << avg_brightness << std::endl;
-            if (expo >pparams.darkness_threshold && gain >= 16 && avg_brightness < pparams.max_brightness-10) { // minimum RS gain is 16, so at the moment this condition does nothing
+            std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << " Measured exposure: " << expo << ", gain: " << gain << ", brightness: " << avg_brightness << std::endl;
+            if (expo >pparams.exposure_threshold && gain >= pparams.gain_threshold && avg_brightness < pparams.brightness_threshold-10) {
                 break;
             }
             cv::imwrite("../../../../pats/status/monitor_tmp.jpg", frameL);
-            cmdcenter.reset_commandcenter_status_file("Waiting. Exposure: " + std::to_string(static_cast<int>(expo)) + ", brightness: " + std::to_string(static_cast<int>(visdat.average_brightness())),false);
+            cmdcenter.reset_commandcenter_status_file("Waiting. Exposure: " + std::to_string(static_cast<int>(expo)) + ", gain: " + std::to_string(static_cast<int>(gain))  + ", brightness: " + std::to_string(static_cast<int>(visdat.average_brightness())),false);
 
             if ((std::localtime(&t)->tm_hour == 13 && last_save_bgr_hour !=13 )  ||
                     (std::localtime(&t)->tm_hour == 11 && last_save_bgr_hour !=11 ) ||

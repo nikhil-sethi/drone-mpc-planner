@@ -45,7 +45,7 @@ void Realsense::update_playback(void) {
 
     rs2::frameset fs;
     for (uint i = 0; i < replay_skip_n_frames+1; i++)
-        fs = cam.wait_for_frames();
+        fs = cam_playback.wait_for_frames();
     replay_skip_n_frames = 0;
     if (_frame_time_start <0)
         _frame_time_start = fs.get_timestamp()/1.e3;
@@ -132,11 +132,10 @@ void Realsense::rs_callback(rs2::frame f) {
 
             lock_newframe.unlock(); // signal to processor that a new frame is ready to be processed
 
-            if (rs_frameL_cbtmp.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
+            if (rs_frameL_cbtmp.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE))
                 camparams.measured_exposure = rs_frameL_cbtmp.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
-                rs2::depth_sensor rs_dev = dev.first<rs2::depth_sensor>();
-                camparams.measured_gain = rs_dev.get_option(RS2_OPTION_GAIN);
-            }
+            if (rs_frameL_cbtmp.supports_frame_metadata(RS2_FRAME_METADATA_GAIN_LEVEL))
+                camparams.measured_gain = rs_frameL_cbtmp.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_GAIN_LEVEL);
 
             new_frame1 = false;
             new_frame2 = false;
@@ -189,121 +188,98 @@ void Realsense::calibration(rs2::stream_profile infrared1,rs2::stream_profile in
     camparams.coeffs[4] = intr->coeffs[4];
     camparams.baseline = e.translation[0];
 }
-void Realsense::connect_and_check() {
-
-    rs2::context ctx; // The context represents the current platform with respect to connected devices
-    if (!dev_initialized) {
-        rs2::device_list devices = ctx.query_devices();
-        if (devices.size() == 0) {
-            throw MyExit("no RealSense connected");
-        } else if (devices.size() > 1) {
-            throw MyExit("more than one RealSense connected....");
-        } else
-            dev = devices[0];
+void Realsense::connect_and_check(string ser_nr,int id) {
+    _id = id;
+    rs2::device_list devices = ctx.query_devices();
+    if (devices.size() == 0) {
+        throw MyExit("no RealSense connected");
+    } else if (devices.size() > 1 && !ser_nr.compare("")) {
+        throw MyExit("more than one RealSense connected....");
+    } else if (ser_nr == "") {
+        dev = devices[0];
+    } else {
+        bool found = false;
+        for (auto d : devices) {
+            string current_sn = "########";
+            if (d.supports(RS2_CAMERA_INFO_SERIAL_NUMBER))
+                current_sn = std::string("#") + d.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+            if (current_sn == ser_nr) {
+                dev = d;
+                found = true;
+                break;
+            }
+        }
+        if (!found)
+            throw MyExit("Could not find RealSense with sn: " + ser_nr);
     }
 
-    std::cout << "Found the following device:";
-
-    // Each device provides some information on itself, such as name:
     std::string name = "Unknown Device";
     if (dev.supports(RS2_CAMERA_INFO_NAME))
         name = dev.get_info(RS2_CAMERA_INFO_NAME);
 
-    // and the serial number of the device:
-    std::string sn = "########";
-    if (dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER))
-        sn = std::string("#") + dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+    serial_nr_str = "########";
+    if (dev.supports(RS2_CAMERA_INFO_SERIAL_NUMBER)) {
+        serial_nr_str = std::string("#") + dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+        serial_nr = string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
+    } else
+        throw MyExit("device does not support serial number?!");
 
     std::size_t found = name.find("D455");
     isD455 = found!=std::string::npos;
 
-    std::cout << name << " ser: " << sn << std::endl;
-
     rs2::depth_sensor rs_depth_sensor = dev.first<rs2::depth_sensor>();
-    std::cout << rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_NAME) << std::endl;
-    std::cout << rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION) << std::endl;
-    std::cout << rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_PRODUCT_ID) << std::endl;
-
-    std::string required_firmwar_version = "05.12.06.00";
+    const std::string required_firmwar_version = "05.12.06.00";
     std::string current_firmware_version = rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION);
     current_firmware_version  = current_firmware_version.substr (0,required_firmwar_version.length()); //fix for what seems to be appended garbage...? 255.255.255.255 on a newline
 
-    if (current_firmware_version != required_firmwar_version) { // wtf, string equality check is reversed!??
+    std::string master_or_slave_str = "master";
+    if (!master())
+        master_or_slave_str = "slave";
+    std::cout << name << ", sn: " << serial_nr_str << ", fw: " << current_firmware_version << ", " << master_or_slave_str << std::endl;
+
+    if (current_firmware_version != required_firmwar_version) {
         std::stringstream serr;
         serr << "detected wrong RealSense firmware version! Detected: " << current_firmware_version << ". Required: "  << required_firmwar_version << ".";
         throw MyExit(serr.str());
     }
-
-
+    dev_initialized = true;
 }
 void Realsense::init_real() {
     lock_newframe.lock();
-    std::cout << "Initializing cam" << std::endl;
+    std::cout << "Initializing cam " << serial_nr_str << std::endl;
 
-    bag_fn = "./logging/" + playback_filename();
+    bag_fn = "./logging/record" + std::to_string(_id) + ".bag";
 
-    calib_rfn = "./logging/" + calib_rfn;
-    rgb_rfn = "./logging/" + rgb_rfn;
-    depth_map_rfn = "./logging/" + depth_map_rfn;
-    depth_unfiltered_map_rfn = "./logging/" + depth_unfiltered_map_rfn;
-    disparity_map_rfn = "./logging/" + disparity_map_rfn;
-    brightness_map_rfn = "./logging/" + brightness_map_rfn;
-
-    calib_wfn = calib_rfn;
-    rgb_wfn = rgb_rfn;
-    depth_map_wfn = depth_map_rfn;
-    rgb_wfn = rgb_rfn;
-    depth_unfiltered_map_wfn = depth_unfiltered_map_rfn;
-    disparity_map_wfn = disparity_map_rfn;
-    brightness_map_wfn = brightness_map_rfn;
+    calib_wfn = "./logging/cam_calib" + std::to_string(_id) + ".xml";
+    rgb_wfn = "./logging/rgb" + std::to_string(_id) + ".png";
+    depth_map_wfn = "./logging/depth_filtered" + std::to_string(_id) + ".png";
+    depth_unfiltered_map_wfn = "./logging/depth" + std::to_string(_id) + ".png";
+    disparity_map_wfn = "./logging/disparity" + std::to_string(_id) + ".png";
+    brightness_map_wfn = "./logging/brightness" + std::to_string(_id) + ".png";
 
     rs2::depth_sensor rs_depth_sensor = dev.first<rs2::depth_sensor>();
 
-    if (enable_auto_exposure == only_at_startup)
-        check_light_level();
-    else {
-        float brightness;
-        std::tie (camparams.measured_exposure,camparams.measured_gain,std::ignore,std::ignore,std::ignore,brightness) = measure_auto_exposure();
-        std::cout << "Measured auto exposure: " << camparams.measured_exposure << ", gain: " << camparams.measured_gain << ", brightness: " << brightness << std::endl;
+    if (!exposure_initialized && master()) {
+        measure_auto_exposure();
+        std::cout << "Measured auto exposure: " << camparams.measured_exposure << ", gain: " << camparams.measured_gain << ", brightness: " << camparams.measured_brightness << std::endl;
+    }
+    if (!angle_initialized && master()) {
+        measure_angle();
+        std::cout << "Camera roll: " << to_string_with_precision(camparams.camera_angle_x,2) << "°- max: " << pparams.max_cam_roll << "°. Pitch: " << to_string_with_precision(camparams.camera_angle_y,2) << "°" << std::endl;
     }
 
-    depth_background = imread(depth_map_rfn,cv::IMREAD_ANYDEPTH);
-    camparams.depth_scale = rs_depth_sensor.get_option(RS2_OPTION_DEPTH_UNITS);
-
-    calib_pose(true);
+    calib_depth_background(); // this function may be merged into measure_angle or measure_auto_exposure to speed up things slightly, but it requires the laser which disturbs other systems, so I like to keep it seperate like this because then it will only be excuted once
 
     rs_depth_sensor = dev.first<rs2::depth_sensor>();
-
     rs_depth_sensor.set_option(RS2_OPTION_FRAMES_QUEUE_SIZE, 0);
-
     if (rs_depth_sensor.supports(RS2_OPTION_EMITTER_ENABLED))
-    {
         rs_depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f);
-    }
-
-    if (enable_auto_exposure == only_at_startup ) {
-        exposure = camparams.measured_exposure;
-        if (pparams.fps==60 && camparams.measured_exposure>15500) //guarantee 60 FPS when requested
-            exposure = 15500;
-        gain = camparams.measured_gain;
-    }
-    if ( enable_auto_exposure == enabled) {
-        if (rs_depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
-            rs_depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,1.0);
-        }
-    } else {
-        if (rs_depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE)) {
-            rs_depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,0.0);
-        }
-        if (rs_depth_sensor.supports(RS2_OPTION_EXPOSURE)) {
-            // auto range = rs_depth_sensor.get_option_range(RS2_OPTION_EXPOSURE);
-            rs_depth_sensor.set_option(RS2_OPTION_EXPOSURE, exposure);
-        }
-        if (rs_depth_sensor.supports(RS2_OPTION_GAIN)) {
-            // auto range = rs_depth_sensor.get_option_range(RS2_OPTION_GAIN);
-            rs_depth_sensor.set_option(RS2_OPTION_GAIN, gain); // increasing this causes noise
-        }
-    }
+    else
+        throw MyExit("No laser emmitter option?!");
+    if (rs_depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+        rs_depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE,1.0);
+    else
+        throw MyExit("No auto exposure option?!");
 
     std::vector<rs2::stream_profile> stream_profiles = rs_depth_sensor.get_stream_profiles();
     rs2::stream_profile infrared1,infrared2;
@@ -328,11 +304,6 @@ void Realsense::init_real() {
 
     rs_depth_sensor.open({infrared1,infrared2});
     rs_depth_sensor.start([&](rs2::frame f) { rs_callback(f); });
-    if (pparams.cam_tuning) {
-        namedWindow("Cam tuning", WINDOW_NORMAL);
-        createTrackbar("Exposure", "Cam tuning", &exposure, 32768);
-        createTrackbar("Gain", "Cam tuning", &gain, 32768);
-    }
 
     calibration(infrared1,infrared2);
     camparams.serialize(calib_wfn);
@@ -350,56 +321,8 @@ void Realsense::init_real() {
     initialized = true;
 }
 
-void Realsense::check_light_level() {
-
-    std::cout << "Checking if scene brightness has changed" << std::endl;
-    //boot the camera and set it to the same settings as the previous session
-    rs2::config cfg;
-    cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, pparams.fps);
-    cam.start(cfg);
-    dev = cam.get_active_profile().get_device(); // after a cam start, dev is changed
-    rs2::depth_sensor rs_dev = dev.first<rs2::depth_sensor>();
-
-    rs_dev.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);
-    rs_dev.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f);
-
-    cv::Size im_size(IMG_W, IMG_H);
-    cv::Mat frameLt;
-
-    rs2::frameset frame;
-    float new_expos = 0,new_gain = 0;
-    int nframes_delay = 30.f;
-    for (int i = 0; i< nframes_delay; i++) // allow some time to settle
-        frame = cam.wait_for_frames();
-
-    float tmp_exposure =-1;
-    float tmp_gain =-1;
-    int tmp_last_exposure_frame_id = 0;
-    for (int i = 0; i< 120; i++) { // check for large change in exposure
-        frame = cam.wait_for_frames();
-        frameLt = Mat(im_size, CV_8UC1, const_cast<void *>(frame.get_infrared_frame(1).get_data()), Mat::AUTO_STEP);
-        new_gain = rs_dev.get_option(RS2_OPTION_GAIN);
-        if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
-            new_expos = frame.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
-            if (fabs(new_expos - tmp_exposure) > 0.5f  || fabs(tmp_gain-new_gain) > 0.5f)
-                tmp_last_exposure_frame_id = i;
-            if (i - tmp_last_exposure_frame_id >= 10)
-                break;
-            tmp_exposure = new_expos;
-        }
-    }
-    camparams.measured_exposure = new_expos;
-    camparams.measured_gain = new_gain;
-
-    imwrite(brightness_map_wfn,frameLt);
-
-    cam.stop();
-}
-
 std::tuple<float,float,cv::Mat,cv::Mat,cv::Mat,float> Realsense::measure_auto_exposure() {
-
     if (!dev_initialized) {
-        rs2::context ctx;
         rs2::device_list devices = ctx.query_devices();
         if (devices.size() == 0) {
             throw MyExit("no RealSense connected");
@@ -412,6 +335,7 @@ std::tuple<float,float,cv::Mat,cv::Mat,cv::Mat,float> Realsense::measure_auto_ex
     }
 
     rs2::config cfg;
+    cfg.enable_device(serial_nr);
     cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, pparams.fps);
     cfg.enable_stream(RS2_STREAM_INFRARED, 2, IMG_W, IMG_H, RS2_FORMAT_Y8, pparams.fps);
     if (isD455)
@@ -419,7 +343,7 @@ std::tuple<float,float,cv::Mat,cv::Mat,cv::Mat,float> Realsense::measure_auto_ex
     else
         cfg.enable_stream(RS2_STREAM_COLOR, 1920, 1080, RS2_FORMAT_BGR8, 30);
 
-
+    rs2::pipeline cam(ctx);
     cam.start(cfg);
     dev = cam.get_active_profile().get_device(); // after a cam start, dev is changed
     rs2::depth_sensor rs_dev = dev.first<rs2::depth_sensor>();
@@ -438,9 +362,10 @@ std::tuple<float,float,cv::Mat,cv::Mat,cv::Mat,float> Realsense::measure_auto_ex
 
     float tmp_exposure =0, tmp_gain = 0;
     int tmp_last_ae_change_frame_id = 0;
-    int actual_exposure_was_measured = 0;
-    int i =0;
-    for (i= 0; i< 120; i++) { // check for large change in exposure
+    uint actual_exposure_was_measured = 0;
+    uint i =0;
+
+    for (i= 0; i< 2*pparams.fps; i++) { // check for large change in exposure
         frame = cam.wait_for_frames();
         frameLt = Mat(im_size, CV_8UC1, const_cast<void *>(frame.get_infrared_frame(1).get_data()), Mat::AUTO_STEP);
         frameRt = Mat(im_size, CV_8UC1, const_cast<void *>(frame.get_infrared_frame(2).get_data()), Mat::AUTO_STEP);
@@ -455,6 +380,7 @@ std::tuple<float,float,cv::Mat,cv::Mat,cv::Mat,float> Realsense::measure_auto_ex
             tmp_exposure = new_expos;
         }
     }
+
     cam.stop();
 
     cv::Mat frame_top = frameLt(cv::Rect(frameLt.cols/3,0,frameLt.cols/3*2,frameLt.rows/3));
@@ -472,13 +398,16 @@ std::tuple<float,float,cv::Mat,cv::Mat,cv::Mat,float> Realsense::measure_auto_ex
     else
         frame_bgr = cv::Mat(cv::Size(1920,1080), CV_8UC3, const_cast<void *>(frame.get_color_frame().get_data()), Mat::AUTO_STEP);
 
+    camparams.measured_exposure = new_expos;
+    camparams.measured_gain = new_gain;
+    camparams.measured_brightness = brightness;
+    exposure_initialized=true;
     return std::make_tuple(new_expos,new_gain,frameLt,frameRt,frame_bgr,brightness);
 
 }
 
 std::tuple<float,float,double,cv::Mat> Realsense::measure_angle() {
     if (!dev_initialized) {
-        rs2::context ctx;
         rs2::device_list devices = ctx.query_devices();
         if (devices.size() == 0) {
             throw MyExit("no RealSense connected");
@@ -491,12 +420,13 @@ std::tuple<float,float,double,cv::Mat> Realsense::measure_angle() {
     }
 
     rs2::config cfg;
+    cfg.enable_device(serial_nr);
     cfg.enable_stream(RS2_STREAM_INFRARED, 1, IMG_W, IMG_H, RS2_FORMAT_Y8, pparams.fps);
     cfg.enable_stream(RS2_STREAM_ACCEL);
     cfg.enable_stream(RS2_STREAM_GYRO);
+    rs2::pipeline cam(ctx);
     cam.start(cfg);
     dev = cam.get_active_profile().get_device(); // after a cam start, dev is changed
-
     rs2::depth_sensor rs_dev = dev.first<rs2::depth_sensor>();
     cv::Size im_size(IMG_W, IMG_H);
     rs_dev.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);
@@ -528,13 +458,16 @@ std::tuple<float,float,double,cv::Mat> Realsense::measure_angle() {
     }
 
     cam.stop();
+    camparams.camera_angle_x = roll;
+    camparams.camera_angle_y = pitch;
+    angle_initialized = true;
     return std::make_tuple(roll,pitch,frame.get_timestamp(),frameLt);
 
 }
 
-void Realsense::calib_pose(bool also_do_depth) {
+void Realsense::calib_depth_background() {
 
-    std::cout << "Measuring pose..." << std::endl;
+    std::cout << "Measuring depth background..." << std::endl;
     auto rs_depth_sensor = dev.first<rs2::depth_sensor>();
     camparams.depth_scale = rs_depth_sensor.get_option(RS2_OPTION_DEPTH_UNITS);
 
@@ -555,95 +488,67 @@ void Realsense::calib_pose(bool also_do_depth) {
     }
 
     rs2::config cfg;
+    cfg.enable_device(serial_nr);
     cfg.enable_stream(RS2_STREAM_DEPTH, IMG_W, IMG_H, RS2_FORMAT_Z16, pparams.fps);
-    cfg.enable_stream(RS2_STREAM_ACCEL);
-    cfg.enable_stream(RS2_STREAM_GYRO);
-
+    rs2::pipeline cam(ctx);
     cam.start(cfg);
     dev = cam.get_active_profile().get_device(); // after a cam start, dev is changed
     cv::Size im_size(IMG_W, IMG_H);
 
     uint nframes = 10;
-    filtering::Smoother smx,smy,smz;
-    smx.init(static_cast<int>(nframes));
-    smy.init(static_cast<int>(nframes));
-    smz.init(static_cast<int>(nframes));
-    float x = 0,y = 0,z = 0, roll = 0, pitch = 0;
     rs2::frameset frame;
-    uint wait_cycles = 1;
-    while (wait_cycles) {
-        for (uint i = 0; i < nframes; i++) {
-            frame = cam.wait_for_frames();
-
-            auto frame_acc = frame.first(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F);
-
-            if (frame_acc.is<rs2::motion_frame>()) {
-                rs2::motion_frame mf = frame_acc.as<rs2::motion_frame>();
-                rs2_vector xyz = mf.get_motion_data();
-                x = smx.addSample(xyz.x);
-                y = smy.addSample(xyz.y);
-                z = smz.addSample(xyz.z);
-                roll = atanf(-x/sqrtf(y*y + z*z)) * rad2deg;
-                pitch = 90.f-atanf(y/z) * rad2deg;
-            }
-        }
-        std::cout << "Camera roll: " << to_string_with_precision(roll,2) << "°- max: " << pparams.max_cam_roll << "°. Pitch: " << to_string_with_precision(pitch,2) << "°" << std::endl;
-        wait_cycles--;
+    for (uint i = 0; i < nframes; i++) {
+        frame = cam.wait_for_frames();
     }
 
-    if (also_do_depth) {
+    // Decimation filter reduces the amount of data (while preserving best samples)
+    rs2::decimation_filter dec;
+    // If the demo is too slow, make sure you run in Release (-DCMAKE_BUILD_TYPE=Release)
+    // but you can also increase the following parameter to decimate depth more (reducing quality)
+    dec.set_option(RS2_OPTION_FILTER_MAGNITUDE, 2);
+    // Define transformations from and to Disparity domain
+    rs2::disparity_transform depth2disparity;
+    rs2::disparity_transform disparity2depth(false);
+    // Define spatial filter (edge-preserving)
+    rs2::spatial_filter spat;
+    // Enable hole-filling
+    // Hole filling is an aggressive heuristic and it gets the depth wrong many times
+    // However, this demo is not built to handle holes
+    // (the shortest-path will always prefer to "cut" through the holes since they have zero 3D distance)
+    spat.set_option(RS2_OPTION_HOLES_FILL, 5); // 5 = fill all the zero pixels
+    // Define temporal filter
+    rs2::temporal_filter temp;
+    // Spatially align all streams to depth viewport
+    // We do this because:
+    //   a. Usually depth has wider FOV, and we only really need depth for this demo
+    //   b. We don't want to introduce new holes
+    rs2::align align_to(RS2_STREAM_DEPTH);
+    auto depth = dec.process(frame.get_depth_frame());
+    // To make sure far-away objects are filtered proportionally
+    // we try to switch to disparity domain
+    depth = depth2disparity.process(depth);
+    // Apply spatial filtering
+    depth = spat.process(depth);
+    // Apply temporal filtering
+    depth = temp.process(depth);
+    // If we are in disparity domain, switch back to depth
+    cv::Size im_size_dec(IMG_W/2, IMG_H/2);
+    disparity_background = Mat(im_size_dec, CV_32F, const_cast<void *>(depth.get_data()), Mat::AUTO_STEP).clone();
+    cv::resize(disparity_background,disparity_background,im_size,0,0,INTER_CUBIC);
+    depth = disparity2depth.process(depth);
 
-        // Decimation filter reduces the amount of data (while preserving best samples)
-        rs2::decimation_filter dec;
-        // If the demo is too slow, make sure you run in Release (-DCMAKE_BUILD_TYPE=Release)
-        // but you can also increase the following parameter to decimate depth more (reducing quality)
-        dec.set_option(RS2_OPTION_FILTER_MAGNITUDE, 2);
-        // Define transformations from and to Disparity domain
-        rs2::disparity_transform depth2disparity;
-        rs2::disparity_transform disparity2depth(false);
-        // Define spatial filter (edge-preserving)
-        rs2::spatial_filter spat;
-        // Enable hole-filling
-        // Hole filling is an aggressive heuristic and it gets the depth wrong many times
-        // However, this demo is not built to handle holes
-        // (the shortest-path will always prefer to "cut" through the holes since they have zero 3D distance)
-        spat.set_option(RS2_OPTION_HOLES_FILL, 5); // 5 = fill all the zero pixels
-        // Define temporal filter
-        rs2::temporal_filter temp;
-        // Spatially align all streams to depth viewport
-        // We do this because:
-        //   a. Usually depth has wider FOV, and we only really need depth for this demo
-        //   b. We don't want to introduce new holes
-        rs2::align align_to(RS2_STREAM_DEPTH);
-        auto depth = dec.process(frame.get_depth_frame());
-        // To make sure far-away objects are filtered proportionally
-        // we try to switch to disparity domain
-        depth = depth2disparity.process(depth);
-        // Apply spatial filtering
-        depth = spat.process(depth);
-        // Apply temporal filtering
-        depth = temp.process(depth);
-        // If we are in disparity domain, switch back to depth
-        cv::Size im_size_dec(IMG_W/2, IMG_H/2);
-        disparity_background = Mat(im_size_dec, CV_32F, const_cast<void *>(depth.get_data()), Mat::AUTO_STEP).clone();
-        cv::resize(disparity_background,disparity_background,im_size,0,0,INTER_CUBIC);
-        depth = disparity2depth.process(depth);
+    //to get a x,y distance
+    //frame.get_depth_frame().get_distance()
 
-        //to get a x,y distance
-        //frame.get_depth_frame().get_distance()
+    //original depth map:
+    depth_background = Mat(im_size, CV_16UC1, const_cast<void *>(frame.get_depth_frame().get_data()), Mat::AUTO_STEP).clone();
+    imwrite(depth_unfiltered_map_wfn,depth_background);
+    //filtered depth map:
+    depth_background = Mat(im_size_dec, CV_16UC1, const_cast<void *>(depth.get_data()), Mat::AUTO_STEP).clone();
+    cv::resize(depth_background,depth_background,im_size,0,0,INTER_CUBIC);
+    imwrite(depth_map_wfn,depth_background);
+    imwrite(disparity_map_wfn,disparity_background);
 
-        //original depth map:
-        depth_background = Mat(im_size, CV_16UC1, const_cast<void *>(frame.get_depth_frame().get_data()), Mat::AUTO_STEP).clone();
-        imwrite(depth_unfiltered_map_wfn,depth_background);
-        //filtered depth map:
-        depth_background = Mat(im_size_dec, CV_16UC1, const_cast<void *>(depth.get_data()), Mat::AUTO_STEP).clone();
-        cv::resize(depth_background,depth_background,im_size,0,0,INTER_CUBIC);
-        imwrite(depth_map_wfn,depth_background);
-        imwrite(disparity_map_wfn,disparity_background);
-
-    }
-    camparams.camera_angle_x = roll;
-    camparams.camera_angle_y = pitch;
     cam.stop();
 }
 
@@ -665,8 +570,8 @@ void Realsense::init_playback() {
 
     rs2::config cfg;
     cfg.enable_device_from_file(bag_fn);
-    cam.start(cfg);
-    dev = cam.get_active_profile().get_device();
+    cam_playback.start(cfg);
+    dev = cam_playback.get_active_profile().get_device();
     static_cast<rs2::playback>(dev).set_real_time(false);
 
     rs2::stream_profile infrared1,infrared2;
@@ -719,7 +624,7 @@ void Realsense::close() {
                 usleep(1000);
             }
         } else {
-            cam.stop();
+            cam_playback.stop();
         }
         if (pparams.watchdog && !from_recorded_bag) {
             std::cout << "Waiting for camera watchdog." << std::endl;
@@ -733,9 +638,7 @@ void Realsense::close() {
 
 void Realsense::reset() {
     std::cout << "Resetting cam" << std::endl;
-
     rs2::stream_profile infrared1,infrared2;
-    rs2::context ctx; // The context represents the current platform with respect to connected devices
     rs2::device_list devices = ctx.query_devices();
     if (devices.size() == 0) {
         throw MyExit("no RealSense connected");
