@@ -3,7 +3,9 @@ import os,datetime
 import pandas as pd
 import pats_c.lib.lib_patsc as patsc
 
-insect = 'tomato_looper'
+insect = 'stinky'
+download_renders = False # leave to false because it uses a lot of data
+download_raw_cuts = False  # leave to false because it REALLY uses a lot of data, only for wifi systems!
 start_date = datetime.date.today() - datetime.timedelta(days=14)
 
 if insect == 'tomato_looper': #(turkse mot)
@@ -24,6 +26,13 @@ elif insect == 'duponchelia':
     AND Dist_traveled > 0.15
     AND Dist_traveled < 4
     AND Size > 0.01'''
+elif insect == 'stinky':
+    selected_systems = ['pats53']
+    filter_str = f'''" AND time >= "20210412_224000" AND time < "20210412_231500"
+    AND Dist_traveled > 0.15
+    AND Dist_traveled < 4
+    AND Size > 0.01
+    AND duration > 0.3 AND duration < 10'''
 filter_str = filter_str.replace('\n','')
 
 with patsc.open_data_db() as con:
@@ -37,9 +46,14 @@ with patsc.open_data_db() as con:
         download_str = ''
         for entry in download_list:
             download_str += entry + ' '
+            download_str += entry + ' '
+            if download_renders:
+                download_str += entry.replace('log_itrk','render_moth').replace('.csv','.mkv') + ' '
+            if download_raw_cuts:
+                download_str += entry.replace('log_itrk','moth').replace('.csv','.mkv') + ' '
 
         print('Tarring ' + str(len(download_list)) + ' logs on ' + system + '...')
-        tar_cmd = ['ssh -o StrictHostKeyChecking=no -T ' + system +  ' "rm -rf  /home/pats/dataset_logs.tar.gz && cd /home/pats/pats/data/processed/ && tar -czf /home/pats/dataset_logs.tar.gz ' + download_str +'"']
+        tar_cmd = ['ssh -o StrictHostKeyChecking=no -T ' + system +  ' "rm -rf  /home/pats/dataset_logs.tar.gz && cd /home/pats/pats/data/processed/ && tar --ignore-failed-read -czf /home/pats/dataset_logs.tar.gz ' + download_str +'"']
         if patsc.execute(tar_cmd,3) != 0:
             print('Error :(')
             exit(1)
