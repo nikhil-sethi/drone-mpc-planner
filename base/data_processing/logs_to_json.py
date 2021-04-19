@@ -190,9 +190,9 @@ def process_detections_in_folder(folder,operational_log_start,mode):
         xs = log['sposX_insect'].values
         ys = log['sposY_insect'].values
         zs = log['sposZ_insect'].values
-        x_tracking = np.delete(xs,remove_ids)
-        y_tracking = np.delete(ys,remove_ids)
-        z_tracking = np.delete(zs,remove_ids)
+        x_tracking = np.delete(xs,remove_ids).astype('float64')
+        y_tracking = np.delete(ys,remove_ids).astype('float64')
+        z_tracking = np.delete(zs,remove_ids).astype('float64')
 
         pos_start = [x_tracking[0],y_tracking[0],z_tracking[0]]
         pos_end =  [x_tracking[-1],y_tracking[-1],z_tracking[-1]]
