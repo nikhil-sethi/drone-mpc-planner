@@ -14,7 +14,7 @@ void InsectTracker::init(int id, VisionData *visdat, int motion_thresh, int16_t 
     enable_draw_stereo_viz = enable_stereo_viz;
 }
 void InsectTracker::init_logger() {
-    std::string logger_fn = data_output_dir  + "log_itrk" + to_string(_insect_trkr_id) + ".csv";
+    logger_fn = data_output_dir  + "log_itrk" + to_string(_insect_trkr_id) + ".csv";
     insectlogger.open(logger_fn,std::ofstream::out);
     insectlogger << "RS_ID;time;";
     ItemTracker::init_logger(&insectlogger);
@@ -112,8 +112,12 @@ bool InsectTracker::check_ignore_blobs(BlobProps * props) { return this->check_i
 
 bool InsectTracker::delete_me() {
     if ((_n_frames_lost > n_frames_lost_threshold)) {
+        (*_logger) << std::flush;
         _logger->close();
         initialized = false;
+        initialized_logger = false;
+        if (false_positive())
+            remove(logger_fn.c_str());
         return true;
     } else
         return false;
