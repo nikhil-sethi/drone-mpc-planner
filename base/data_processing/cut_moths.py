@@ -25,7 +25,7 @@ def system_was_monitoring_in_folder(folder):
     return False
 
 
-def cut_moths(folder):
+def cut_moths(folder,dry_run=False):
     logger = logging.getLogger('cut_moths')
     frames_fn = folder + '/logging/frames.csv'
     cut_log_fn = folder + '/logging/cut_moth.log'
@@ -49,6 +49,8 @@ def cut_moths(folder):
                             file_id = fn.split('.')[0][8:]
                             if len(lines) > 10: # only cut a video if it is of substantial length...
                                 heads = lines[0].split(';')
+                                if len(lines[-1].split(';')) != len(heads): #sometimes the last line was not completely finished.
+                                    del lines[-1]
                                 fp = lines[-1].split(';')[heads.index('fp')]
                                 if fp == 'fp_not_a_fp':
                                     video_start_rs_id = int(lines[1].split(';')[0])
@@ -90,13 +92,14 @@ def cut_moths(folder):
                             else:
                                 clog.write('Not enough lines!\n')
 
-                    lb.execute(ffmpeg_cmd,1,'cut_moths')
-                    os.remove(video_in_file)
+                    if not dry_run:
+                        lb.execute(ffmpeg_cmd,1,'cut_moths')
+                        os.remove(video_in_file)
 
                 else:
                     print("VideoRawLR not found")
 
-def cut_moths_all():
+def cut_moths_all(dry_run=False):
     logger = logging.getLogger('cut_moths')
     found_dirs = glob.glob(lb.data_dir + '/202*_*')
     for folder in found_dirs:
@@ -104,7 +107,7 @@ def cut_moths_all():
             video_in_file = folder + '/logging/videoRawLR.mkv'
             if os.path.exists(video_in_file):
                 logger.info('Processing ' + folder)
-                cut_moths(folder)
+                cut_moths(folder,dry_run)
             else:
                 logger.info('Skipping ' + folder + ' because no videoRawLR.mkv')
         except Exception as e:
@@ -113,6 +116,7 @@ def cut_moths_all():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Script that cuts the raw video into moths based on the log')
     parser.add_argument('-i', help="Path to the folder. If not provided all folders of the past day will be ran", required=False)
+    parser.add_argument('--dry-run', help="Just run, don't cut or delete anything", dest='dry_run',action='store_true',required=False)
     args = parser.parse_args()
 
     logging.basicConfig( )
@@ -120,6 +124,6 @@ if __name__ == '__main__':
     logger.setLevel(logging.DEBUG)
 
     if not args.i:
-        cut_moths_all()
+        cut_moths_all(args.dry_run)
     else:
-        cut_moths(args.i)
+        cut_moths(args.i,args.dry_run)
