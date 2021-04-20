@@ -45,6 +45,40 @@
 
 All done!
 
+## NUC create image instructions
+    - **Make sure the system hostname is called pats0**
+    - Connect NUC install the first usb stick
+    - Power up and press F10 during boot
+    - Select USB : SanDisk : Part 0 : Boot Drive
+    - Select “System Tools”
+    - Select “clonezilla-live- ...”
+    - Select “clonezilla live  (Default settings….)”
+    - Select English
+    - Select Keep default keyboard layout
+    - Select Start_Clonezilla
+    - Select “device-image”
+    - Select local_dev
+    - Press Enter to detect usb devices
+    - After the next screen appears, wait 5 seconds, press ctrl-C
+    - Select sda1 58.G_ntfs_MULTIBOOT…. (which is the usb dongle)
+    - Select the image:
+      - Select the “Images” folder, and press enter
+      - Press tab twice to select Done! And then press Enter to select that image.
+      - It’ll show the source to be the usb stick. Check the size is 58.4GB, press Enter.  
+    - Select Beginner
+    -  Select **“savedisk”**
+    - Leave the default name, being the date of today for the image name.
+    - Select the main hard drive **“nvmeOn1 500GB….”**
+    - Select yes, to check the image
+    - Select "fsck - interactively..." 
+    - Select "yes check the saved image"
+    - Select "senc - Not to encrypt ..."
+    - Select poweroff
+    - Follow the instructions and press y when asked
+    - Wait 10 minutes until it powers off.
+    - Repeat the procedure for the other USB stick
+    - Copy the image to the backups in BigPats
+
 ## Tools used to make the install stick:
 YUMI
 # Contents:
@@ -52,7 +86,7 @@ CloneZilla iso
 Ubuntu 18.04.1 LTS iso
 Pats install script and ssh key files
 
-#image install tweaks:
+##image install tweaks:
 - Set DefaultTimeoutStopSec in /etc/systemd/system.conf to 15
 - Change the background
 - remove everything from data folder and remove pats_daemon.log and the pats_logs/term.log
