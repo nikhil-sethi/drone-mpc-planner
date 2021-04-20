@@ -284,10 +284,10 @@ def count_errors(data):
     errors = data['errors']
     return len(errors)
 
-def process_json(data,cur,conn):
-    n_moths = store_moths(data,cur,conn)
-    store_mode(data,cur,conn)
-    n_hunts = store_hunts(data,cur,conn)
+def process_json(data):
+    n_moths = store_moths(data)
+    store_mode(data)
+    n_hunts = store_hunts(data)
     n_errors = count_errors(data)
     return n_moths,n_hunts,n_errors
 
