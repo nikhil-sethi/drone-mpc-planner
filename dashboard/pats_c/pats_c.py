@@ -111,6 +111,40 @@ def load_moth_df(selected_systems,start_date,end_date):
     moth_df['system'].replace({'-proto':''},regex=True,inplace=True)
     return moth_df
 
+def load_moth_of_hour(selected_systems,start_date,end_date,hour):
+    username = current_user.username
+    with patsc.open_systems_db() as con:
+        ordered_systems = con.execute('''SELECT systems.system, groups.minimal_size, systems.installation_date FROM systems,groups
+        JOIN customer_group_connection ON systems.group_id = customer_group_connection.group_id
+        JOIN customers ON customers.customer_id = customer_group_connection.customer_id WHERE
+        systems.group_id = groups.group_id AND customers.name = ? AND systems.system IN (%s)
+        ORDER BY systems.system_id'''%('?,'*len(selected_systems))[:-1], (username,*selected_systems)).fetchall()
+
+    hour_str = str(hour)
+    if len(hour_str)==1:
+        hour_str = '0' + hour_str
+    moth_df = pd.DataFrame()
+    with patsc.open_data_db() as con:
+        for (system,min_size,installation_date) in ordered_systems:
+            try:
+                installation_date = datetime.datetime.strptime(installation_date,'%Y%m%d_%H%M%S')
+                real_start_date = max([installation_date,start_date])
+            except ValueError as e:
+                print(f'ERROR startdate {system}: ' + str(e))
+                real_start_date = start_date
+            sql_str = f'''SELECT moth_records.* FROM moth_records
+            WHERE (system = "{system}" OR system = "{system.replace('pats','pats-proto')}")
+            AND time > "{real_start_date.strftime('%Y%m%d_%H%M%S')}" AND time <= "{end_date.strftime('%Y%m%d_%H%M%S')}"
+            AND time LIKE "_________{hour_str}____"
+            AND (duration > 1 AND duration < 10
+            AND (Version="1.0"
+            OR (Dist_traveled > 0.15 AND Dist_traveled < 4 AND Size > {min_size} )))'''
+            sql_str = sql_str.replace('\n','')
+            moth_df = moth_df.append(pd.read_sql_query(sql_str,con))
+    moth_df['time'] = pd.to_datetime(moth_df['time'], format = '%Y%m%d_%H%M%S')
+    moth_df['system'].replace({'-proto':''},regex=True,inplace=True)
+    return moth_df
+
 def remove_unauthoirized_system(selected_systems): #this is solely a security related check
     if not selected_systems:
         return selected_systems
@@ -141,16 +175,19 @@ def load_moth_data(selected_systems,start_date,end_date):
     unique_dates = pd.date_range(start_date,end_date-datetime.timedelta(days=1),freq = 'd')
 
     hist_data = pd.DataFrame(index=unique_dates,columns=selected_systems)
+    hist_24h_data = pd.DataFrame(index=range(0,23),columns=selected_systems)
     for system,group in (moth_df[['time']]-datetime.timedelta(hours=12)).groupby(moth_df.system):
         hist_data[system] = group.groupby(group.time.dt.date).count()
+        hist_24h_data[system] = group.groupby(group.time.dt.hour).count()
     hist_data.fillna(0,inplace = True)
+    hist_24h_data.fillna(0,inplace = True)
 
     heatmap_df = pd.DataFrame(np.zeros((24,len(unique_dates))),index=range(24),columns=(unique_dates.strftime('%Y%m%d_%H%M%S')))
     for date,hours in (moth_df[['time']]-datetime.timedelta(hours=12)).groupby((moth_df.time-datetime.timedelta(hours=12)).dt.date):
         heatmap_df[date.strftime('%Y%m%d_%H%M%S')] = (hours.groupby(hours.time.dt.hour).count())
     heatmap_data = ((heatmap_df.fillna(0)).to_numpy()).T
 
-    return unique_dates,heatmap_data,[],hist_data
+    return unique_dates,heatmap_data,[],hist_data,hist_24h_data
 
 def convert_mode_to_number(mode):
     if  mode == 'monitoring':
@@ -286,6 +323,37 @@ def create_hist(df_hist,unique_dates,system_labels):
     fig.update_layout(
         title_text='Moth counts per day',
         xaxis_title_text='Days',
+        yaxis_title_text='Counts',
+        barmode='stack',
+        clickmode='event+select'
+    )
+    hist_style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '80%'}
+    return fig,hist_style
+
+def create_24h_hist(hist_24h_data,hour_labels,system_labels):
+    fig = go.Figure()
+    fig.update_yaxes(rangemode = "nonnegative")
+    cnt = 0
+    bar_totals = hist_24h_data.sum(axis=1).astype(int)
+
+    for sys in system_labels.keys():
+        hist_data = hist_24h_data[sys]
+        sys_str = [system_labels[sys]] * len(hist_data)
+        sys_names = [sys] * len(hist_data)
+        hist = go.Bar(
+            x = hour_labels,
+            y = hist_data,
+            customdata = np.transpose([sys_str,sys_names,hist_data.astype(int),bar_totals]),
+            marker_color = px.colors.qualitative.Vivid[cnt%(len(px.colors.qualitative.Vivid))],
+            name = system_labels[sys],
+            hovertemplate = '<b>%{customdata[0]}</b><br>Count: %{customdata[2]} / %{customdata[3]}<br><extra></extra>'
+        )
+        cnt+=1
+        fig.add_trace(hist)
+
+    fig.update_layout(
+        title_text='Moth period counts per hour',
+        xaxis_title_text='Hours',
         yaxis_title_text='Counts',
         barmode='stack',
         clickmode='event+select'
@@ -456,8 +524,10 @@ def dash_application():
     @app.callback(
         Output('hete_kaart', 'figure'),
         Output('staaf_kaart', 'figure'),
+        Output('staaf24h_kaart', 'figure'),
         Output('hete_kaart', 'style'),
         Output('staaf_kaart', 'style'),
+        Output('staaf24h_kaart', 'style'),
         Output('selected_heatmap_data', 'children'),
         Output('Loading_animation','style'),
         Input('date_range_picker', 'start_date'),
@@ -469,8 +539,10 @@ def dash_application():
     def update_ui_hist_and_heat(start_date,end_date,selected_systems,selected_hm_cells,selected_heat,system_options):
         hm_fig=go.Figure(data=go.Heatmap())
         hist_fig=go.Figure(data=go.Histogram())
+        hist24h_fig=go.Figure(data=go.Histogram())
         hm_style={'display': 'none'}
         hist_style={'display': 'none'}
+        hist24h_style={'display': 'none'}
         Loading_animation_style={'display': 'block'}
         system_labels = {x['value'] : x['label'] for x in system_options if x['value'] in selected_systems}
 
@@ -482,12 +554,13 @@ def dash_application():
             end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
             start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
         if not selected_systems or not end_date or not start_date or (end_date-start_date).days<1:
-            return hm_fig,hist_fig,hm_style,hist_style,selected_heat,Loading_animation_style
-        unique_dates,heatmap_data,_,df_hist = load_moth_data(selected_systems,start_date,end_date)
+            return hm_fig,hist_fig,hist24h_fig,hm_style,hist_style,hist24h_style,selected_heat,Loading_animation_style
+        unique_dates,heatmap_data,_,df_hist,hist_24h_data = load_moth_data(selected_systems,start_date,end_date)
         if not len(unique_dates):
-            return hm_fig,hist_fig,hm_style,hist_style,selected_heat,Loading_animation_style
+            return hm_fig,hist_fig,hist24h_fig,hm_style,hist_style,hist24h_style,selected_heat,Loading_animation_style
 
-        hist_fig,hist_style=create_hist(df_hist,unique_dates,system_labels)
+        hist_fig,hist_style = create_hist(df_hist,unique_dates,system_labels)
+        hist24h_fig,hist24h_style = create_24h_hist(hist_24h_data,hour_labels,system_labels)
 
         if ctx.triggered[0]['prop_id'] == 'hete_kaart.clickData' or ctx.triggered[0]['prop_id'] == 'classification_dropdown.value':
             if not selected_hm_cells:
@@ -495,7 +568,7 @@ def dash_application():
             else:
                 selected_heat = []
                 for cel in selected_hm_cells['points']:
-                    x = xlabels.index(cel['x'])
+                    x = hour_labels.index(cel['x'])
                     y = (unique_dates.strftime('%d-%m-%Y').tolist()).index(cel['y'])
                     selected_heat.append([x,y])
 
@@ -503,11 +576,11 @@ def dash_application():
                 selected_heat = selected_heat.to_json(date_format='iso', orient='split')
 
         heatmap_data = load_mode_data(unique_dates,heatmap_data,selected_systems,start_date,end_date) #add mode info to heatmap, which makes the heatmap show when the system was online (color) or offline (black)
-        hm_fig,hm_style=create_heatmap(unique_dates,heatmap_data,xlabels,selected_heat)
+        hm_fig,hm_style=create_heatmap(unique_dates,heatmap_data,hour_labels,selected_heat)
 
         Loading_animation_style = {'display': 'none'}
 
-        return hm_fig,hist_fig,hm_style,hist_style,selected_heat,Loading_animation_style
+        return hm_fig,hist_fig,hist24h_fig,hm_style,hist_style,hist24h_style,selected_heat,Loading_animation_style
 
     @app.callback(
         Output('verstrooide_kaart', 'figure'),
@@ -518,12 +591,13 @@ def dash_application():
         Input('systems_dropdown', 'value'),
         Input('hete_kaart', 'clickData'),
         Input('staaf_kaart', 'selectedData'),
+        Input('staaf24h_kaart', 'selectedData'),
         Input('scatter_x_dropdown', 'value'),
         Input('scatter_y_dropdown', 'value'),
         Input('classification_dropdown', 'value'),
         State('selected_heatmap_data', 'children'),
         State('systems_dropdown','options'))
-    def update_ui_scatter(start_date,end_date,selected_systems,hm_selected_cells,hist_selected_bars,scatter_x_value,scatter_y_value,classification_dropdown,selected_heat,system_options):
+    def update_ui_scatter(start_date,end_date,selected_systems,hm_selected_cells,hist_selected_bars,hist24h_selected_bars,scatter_x_value,scatter_y_value,classification_dropdown,selected_heat,system_options):
         scat_fig=go.Figure(data=go.Scatter())
         scat_style={'display': 'none'}
         scat_axis_select_style={'display': 'none'}
@@ -538,7 +612,7 @@ def dash_application():
         if not selected_systems:
             return scat_fig,scat_style,scat_axis_select_style
 
-        if ctx.triggered[0]['prop_id'] == 'staaf_kaart.selectedData' or ctx.triggered[0]['prop_id'] == 'hete_kaart.clickData' or ctx.triggered[0]['prop_id'] == 'classification_dropdown.value' or ctx.triggered[0]['prop_id'] == 'scatter_x_dropdown.value' or ctx.triggered[0]['prop_id'] == 'scatter_y_dropdown.value':
+        if ctx.triggered[0]['prop_id'] == 'staaf_kaart.selectedData' or ctx.triggered[0]['prop_id'] == 'staaf24h_kaart.selectedData' or ctx.triggered[0]['prop_id'] == 'hete_kaart.clickData' or ctx.triggered[0]['prop_id'] == 'classification_dropdown.value' or ctx.triggered[0]['prop_id'] == 'scatter_x_dropdown.value' or ctx.triggered[0]['prop_id'] == 'scatter_y_dropdown.value':
             moths = pd.DataFrame()
             if hm_selected_cells:
                 for cel in hm_selected_cells['points']:
@@ -547,12 +621,18 @@ def dash_application():
                         hour += 24
                     start_date = datetime.datetime.strptime(cel['y'], '%d-%m-%Y') + datetime.timedelta(hours=hour)
                     moths = moths.append(load_moth_df(selected_systems,start_date,start_date + datetime.timedelta(hours=1)))
-
             elif hist_selected_bars:
                 for bar in hist_selected_bars['points']:
                     sys = bar['customdata'][1]
                     start_date = datetime.datetime.strptime(bar['x'], '%d-%m-%Y') + datetime.timedelta(hours=12)
                     moths = moths.append(load_moth_df([sys],start_date,start_date + datetime.timedelta(days=1)))
+            elif hist24h_selected_bars:
+                start_date =  datetime.datetime.strptime(start_date,'%Y-%m-%d')
+                end_date =  datetime.datetime.strptime(end_date,'%Y-%m-%d')
+                for bar in hist24h_selected_bars['points']:
+                    sys = bar['customdata'][1]
+                    hour = int(bar['x'].replace('h',''))
+                    moths = moths.append(load_moth_of_hour([sys],start_date,end_date,hour))
 
             if not moths.empty:
                 scat_fig = create_scatter(moths,system_labels,scatter_x_value,scatter_y_value)
@@ -576,9 +656,10 @@ def dash_application():
         Input('systems_dropdown', 'value'),
         Input('hete_kaart', 'clickData'),
         Input('staaf_kaart', 'clickData'),
+        Input('staaf24h_kaart', 'clickData'),
         Input('verstrooide_kaart', 'clickData'),
         State('verstrooide_kaart','figure'))
-    def update_moth_ui(start_date,end_date,selected_systems,clickData_hm,clickData_hist,clickData_dot,scatter_fig_state):
+    def update_moth_ui(start_date,end_date,selected_systems,clickData_hm,clickData_hist,clickData_hist24h,clickData_dot,scatter_fig_state):
         target_video_fn = ''
         video_style={'display': 'none'}
         path_fig=go.Figure(data=go.Scatter3d())
@@ -676,13 +757,14 @@ def dash_application():
                 con.commit()
                 print('Re-added cliassification results to main db. Added ' + str(len(classification_data)) + ' classifications.')
 
-    xlabels = []
+    hour_labels = []
     for i in range(0,24):
-        xlabels.append(str((i+12)%24)+'h')
+        hour_labels.append(str((i+12)%24)+'h')
 
     def make_layout():
         fig_hm = go.Figure(data=go.Heatmap())
         fig_hist=go.Figure(data=go.Histogram())
+        fig_hist24h=go.Figure(data=go.Histogram())
         fig_scatter = go.Figure(data=go.Scatter())
         fig_path = go.Figure(data=go.Scatter3d())
         system_options, system_style, group_options, group_value, group_style = init_system_dropdown()
@@ -744,6 +826,9 @@ def dash_application():
                     type='default'
                 ),
                 dcc.Graph(id='staaf_kaart',style={'display': 'none','margin-left': 'auto','margin-right': 'auto','textAlign':'center', 'width': '80%'},figure=fig_hist)
+            ]),
+            html.Div([
+                dcc.Graph(id='staaf24h_kaart',style={'display': 'none','margin-left': 'auto','margin-right': 'auto','textAlign':'center', 'width': '80%'},figure=fig_hist24h)
             ]),
             html.Div([
                 dcc.Graph(id='hete_kaart',style={'display': 'none'}, figure=fig_hm)
