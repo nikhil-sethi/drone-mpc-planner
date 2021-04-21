@@ -215,16 +215,19 @@ def process_log(detection_fn,folder,mode,monitoring_start_datetime):
     radiuss = np.delete(log['radius_insect'].values,remove_ids)
     size = np.mean(radiuss)*2
 
-    motion_sums = np.delete(log['motion_sum_insect'].values,remove_ids)
-    d_motion_sums = motion_sums[1:] - motion_sums[:-1]
+    if 'motion_sum_insect' in log:
+        motion_sums = np.delete(log['motion_sum_insect'].values,remove_ids)
+        d_motion_sums = motion_sums[1:] - motion_sums[:-1]
 
-    ps = np.abs(np.fft.rfft(d_motion_sums))
-    ps_max_id = np.argmax(ps)
-    freqs = np.fft.rfftfreq(d_motion_sums.size, 1/90)
-    wing_beat = freqs[ps_max_id]
-    # idx = np.argsort(freqs)
-    # plt.plot(freqs[idx], ps[idx]**2)
-    # plt.show()
+        ps = np.abs(np.fft.rfft(d_motion_sums))
+        ps_max_id = np.argmax(ps)
+        freqs = np.fft.rfftfreq(d_motion_sums.size, 1/90)
+        wing_beat = freqs[ps_max_id]
+        # idx = np.argsort(freqs)
+        # plt.plot(freqs[idx], ps[idx]**2)
+        # plt.show()
+    else:
+        wing_beat = -1
 
     filtered_elepased = np.delete(elapsed_time,remove_ids)
     start = filtered_elepased[0]
