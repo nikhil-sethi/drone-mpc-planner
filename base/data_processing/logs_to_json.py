@@ -205,9 +205,9 @@ def process_log(detection_fn,folder,mode,monitoring_start_datetime):
     alpha_vertical_start = math.atan2(pos_middle[0] - pos_start[0],pos_middle[1] - pos_start[1])
     alpha_vertical_end = math.atan2(pos_end[0] - pos_middle[0],pos_end[1] - pos_middle[1])
 
-    vx_tracking = np.delete(vxs,remove_ids)
-    vy_tracking = np.delete(vys,remove_ids)
-    vz_tracking = np.delete(vzs,remove_ids)
+    vx_tracking = np.delete(vxs,remove_ids).astype('float64')
+    vy_tracking = np.delete(vys,remove_ids).astype('float64')
+    vz_tracking = np.delete(vzs,remove_ids).astype('float64')
     v = np.sqrt(vx_tracking**2+vy_tracking**2+vz_tracking**2)
     v_mean = v.mean()
     v_std = v.std()
