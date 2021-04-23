@@ -248,14 +248,14 @@ void Realsense::init_real() {
     lock_newframe.lock();
     std::cout << "Initializing cam " << serial_nr_str << std::endl;
 
-    bag_fn = "./logging/record" + std::to_string(_id) + ".bag";
+    bag_fn = "./logging/record.bag";
 
-    calib_wfn = "./logging/cam_calib" + std::to_string(_id) + ".xml";
-    rgb_wfn = "./logging/rgb" + std::to_string(_id) + ".png";
-    depth_map_wfn = "./logging/depth_filtered" + std::to_string(_id) + ".png";
-    depth_unfiltered_map_wfn = "./logging/depth" + std::to_string(_id) + ".png";
-    disparity_map_wfn = "./logging/disparity" + std::to_string(_id) + ".png";
-    brightness_map_wfn = "./logging/brightness" + std::to_string(_id) + ".png";
+    calib_wfn = "./logging/cam_calib.xml";
+    rgb_wfn = "./logging/rgb.png";
+    depth_map_wfn = "./logging/depth_filtered.png";
+    depth_unfiltered_map_wfn = "./logging/depth.png";
+    disparity_map_wfn = "./logging/disparity.png";
+    brightness_map_wfn = "./logging/brightness.png";
 
     rs2::depth_sensor rs_depth_sensor = dev.first<rs2::depth_sensor>();
 
