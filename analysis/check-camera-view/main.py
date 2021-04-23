@@ -31,24 +31,10 @@ bottom = 4
 back = 5
 camera = 6
 
-def get_view_planes(filepath=None):
-    n_front = np.array([[0, 0.43420371, -0.90081471]]).T
-    n_top = np.array([[0, -0.99650627, 0.083518513]]).T
-    n_left = np.array([[-0.70126724, -0.40229687, -0.58854181]]).T
-    n_right = np.array([[0.70580268, -0.39976308, -0.58483499]]).T
-    n_bottom = np.array([[0, 1, 0]]).T
-    n_back = np.array([[0, 0, 1]]).T
-    n_camera = np.array([[0, -0.56431156, -0.82556188]]).T
 
-    p0_front = np.array([[0,0,0]]).T
-    p0_top = np.array([[0,0,0]]).T
-    p0_left = np.array([[0,0,0]]).T
-    p0_right = np.array([[0,0,0]]).T
-    p0_bottom = np.array([[0, -1.413, 0]]).T
-    p0_back = np.array([[0, 0, -10]]).T
-    p0_camera = np.array([[0, -0.47966483, -0.70172763]]).T
+def get_view_planes(filepath):
 
-    if(filepath):
+    if filepath:
         file = open(filepath, "r")
         datastring = file.read()
         file.close()
@@ -56,34 +42,66 @@ def get_view_planes(filepath=None):
         lines = datastring.split('\n')
         for line in lines:
             words = line.split(' ')
-            if words[0]=='Cameraview>p0_front:':
-                p0_front = np.array(eval(words[1]+words[2]+words[3])).reshape([3,1])
-            elif words[0]=='Cameraview>n_front:':
-                n_front = np.array(eval(words[1]+words[2]+words[3])).reshape([3,1])
-            elif words[0]=='Cameraview>p0_top:':
-                p0_top = np.array(eval(words[1]+words[2]+words[3])).reshape([3,1])
-            elif words[0]=='Cameraview>n_top:':
-                n_top = np.array(eval(words[1]+words[2]+words[3])).reshape([3,1])
-            elif words[0]=='Cameraview>p0_left:':
-                p0_left = np.array(eval(words[1]+words[2]+words[3])).reshape([3,1])
-            elif words[0]=='Cameraview>n_left:':
-                n_left = np.array(eval(words[1]+words[2]+words[3])).reshape([3,1])
-            elif words[0]=='Cameraview>p0_right:':
-                p0_right = np.array(eval(words[1]+words[2]+words[3])).reshape([3,1])
-            elif words[0]=='Cameraview>n_right:':
-                n_right = np.array(eval(words[1]+words[2]+words[3])).reshape([3,1])
-            elif words[0]=='Cameraview>p0_bottom:':
-                p0_bottom = np.array(eval(words[1]+words[2]+words[3])).reshape([3,1])
-            elif words[0]=='Cameraview>n_bottom:':
-                n_bottom = np.array(eval(words[1]+words[2]+words[3])).reshape([3,1])
-            elif words[0]=='Cameraview>p0_back:':
-                p0_back = np.array(eval(words[1]+words[2]+words[3])).reshape([3,1])
-            elif words[0]=='Cameraview>n_back:':
-                n_back = np.array(eval(words[1]+words[2]+words[3])).reshape([3,1])
-            elif words[0]=='Cameraview>p0_camera:':
-                p0_camera = np.array(eval(words[1]+words[2]+words[3])).reshape([3,1])
-            elif words[0]=='Cameraview>n_camera:':
-                n_camera = np.array(eval(words[1]+words[2]+words[3])).reshape([3,1])
+            if words[0] == 'Cameraview>p0_front:':
+                p0_front = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>n_front:':
+                n_front = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>p0_top:':
+                p0_top = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>n_top:':
+                n_top = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>p0_left:':
+                p0_left = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>n_left:':
+                n_left = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>p0_right:':
+                p0_right = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>n_right:':
+                n_right = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>p0_bottom:':
+                p0_bottom = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>n_bottom:':
+                n_bottom = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>p0_back:':
+                p0_back = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>n_back:':
+                n_back = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>p0_camera:':
+                p0_camera = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>n_camera:':
+                n_camera = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+
+            elif words[0] == 'Cameraview>p0_front_hunt:':
+                p0_front_hunt = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>n_front_hunt:':
+                n_front_hunt = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>p0_top_hunt:':
+                p0_top_hunt = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>n_top_hunt:':
+                n_top_hunt = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>p0_left_hunt:':
+                p0_left_hunt = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>n_left_hunt:':
+                n_left_hunt = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>p0_right_hunt:':
+                p0_right_hunt = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>n_right_hunt:':
+                n_right_hunt = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>p0_bottom_hunt:':
+                p0_bottom_hunt = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>n_bottom_hunt:':
+                n_bottom_hunt = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>p0_back_hunt:':
+                p0_back_hunt = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>n_back_hunt:':
+                n_back_hunt = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>p0_camera_hunt:':
+                p0_camera_hunt = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+            elif words[0] == 'Cameraview>n_camera_hunt:':
+                n_camera_hunt = np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
+
+    else:
+        raise('No file given!')
 
     plane_front = [p0_front, n_front]
     plane_top = [p0_top, n_top]
@@ -93,10 +111,19 @@ def get_view_planes(filepath=None):
     plane_back = [p0_back, n_back]
     plane_camera = [p0_camera, n_camera]
 
+    plane_front_hunt = [p0_front_hunt, n_front_hunt]
+    plane_top_hunt = [p0_top_hunt, n_top_hunt]
+    plane_left_hunt = [p0_left_hunt, n_left_hunt]
+    plane_right_hunt = [p0_right_hunt, n_right_hunt]
+    plane_bottom_hunt = [p0_bottom_hunt, n_bottom_hunt]
+    plane_back_hunt = [p0_back_hunt, n_back_hunt]
+    plane_camera_hunt = [p0_camera_hunt, n_camera_hunt]
+
     planes = [plane_front, plane_top, plane_left, plane_right, plane_bottom, plane_back, plane_camera]
+    hunt_planes = [plane_front_hunt, plane_top_hunt, plane_left_hunt, plane_right_hunt, plane_bottom_hunt, plane_back_hunt, plane_camera_hunt]
     plane_names = ['plane_front', 'plane_top', 'plane_left', 'plane_right', 'plane_bottom', 'plane_back', 'plane_camera']
 
-    return planes, plane_names
+    return planes, plane_names, hunt_planes
 
 
 def get_drone_blink_location(filepath=None):
@@ -109,27 +136,31 @@ def get_drone_blink_location(filepath=None):
         lines = datastring.split('\n')
         for line in lines:
             words = line.split(' ')
-            if(words[0]=='Blink-drone-location:'):
-                return np.array(eval(words[1]+words[2]+words[3])).reshape([3,1])
+            if words[0] == 'Blink-drone-location:':
+                return np.array(eval(words[1] + words[2] + words[3])).reshape([3, 1])
 
     return drone_state
 
-    
+
 if __name__ == "__main__":
 
     # SETUP SCENARIO:
-    drone_location = np.array([[1.02554, -1.3925,-2.3399]]).T #get_drone_blink_location(r'volume_log.txt')
+    drone_location = np.array([[1.02554, -1.3925, -2.3399]]).T # get_drone_blink_location(r'volume_log.txt')
     drone_state = [drone_location, np.array([[-0, -1, 0]]).T]
-    planes, plane_names = get_view_planes(r'volume_log.txt')
+    planes, plane_names, hunt_planes = get_view_planes(r'volume_log.txt')
 
     # Plot the frame of the viewable area
-    colors = ['r', 'b', 'g', 'orange', 'purple', 'yellow']
+    colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     fig.suptitle('Volume definition')
     xcamera, xfrd, xfld, xbld, xbrd, xblu, xbru, xflu, xfru, xflm, xfrm = get_cornerPoints(planes)
     plot_frame(ax, xcamera, xfrd, xfld, xbld, xbrd, xblu, xbru, xflu, xfru, xflm, xfrm, 'k')
-    plot_normal_vectors(ax, planes[front][n], planes[top][n], planes[left][n], planes[right][n], planes[bottom][n], planes[back][n], colors)
+    plot_normal_vectors(ax, planes, plane_names, colors)
+
+    xcamera, xfrd, xfld, xbld, xbrd, xblu, xbru, xflu, xfru, xflm, xfrm = get_cornerPoints(hunt_planes)
+    plot_frame(ax, xcamera, xfrd, xfld, xbld, xbrd, xblu, xbru, xflu, xfru, xflm, xfrm, 'r')
+    
     ax.legend()
     ax.set_xlabel('x [m]')
     ax.set_ylabel('y [m]')
@@ -141,19 +172,19 @@ if __name__ == "__main__":
 #    fixed = np.array([[-2.23553, -1.42678, -2.15853]]).T
     point = drone_state[0]
     print(is_pointInVolume(drone_state[0], planes))
-    ax.plot([drone_state[0][0,0]],[drone_state[0][1,0]],[drone_state[0][2,0]],'ko')
+    ax.plot([drone_state[0][0, 0]], [drone_state[0][1, 0]], [drone_state[0][2, 0]], 'ko')
 
     # Check distance to frames:
     dist, intersection_point, plane_idx = get_distanceToPlanes(drone_state, planes)
     print('min dist to plane', plane_names[plane_idx], 'with distance', dist, 'm.')
 
     ax.plot([drone_state[0][0, 0]], [drone_state[0][1, 0]], [drone_state[0][2, 0]], 'bx', label='drone_position')
-    ax.plot([drone_state[0][0, 0], drone_state[0][0, 0]+drone_state[1][0, 0]],
-            [drone_state[0][1, 0], drone_state[0][1, 0]+drone_state[1][1, 0]],
-            [drone_state[0][2, 0], drone_state[0][2, 0]+drone_state[1][2, 0]], 'b', label='drone_velocity')
+    ax.plot([drone_state[0][0, 0], drone_state[0][0, 0] + drone_state[1][0, 0]],
+            [drone_state[0][1, 0], drone_state[0][1, 0] + drone_state[1][1, 0]],
+            [drone_state[0][2, 0], drone_state[0][2, 0] + drone_state[1][2, 0]], 'b', label='drone_velocity')
     ax.plot([intersection_point[0, 0]], [intersection_point[1, 0]], [intersection_point[2, 0]], 'rx', label='intersection point')
-    ax.plot([0., 0.], [0., -sin(40/180*pi)*2], [0., -cos(40/180*pi)*2], 'k')
-    ax.plot([0.], [-sin(40/180*pi)*1], [-cos(40/180*pi)*1], 'kx')
+    ax.plot([0., 0.], [0., -sin(40 / 180 * pi) * 2], [0., -cos(40 / 180 * pi) * 2], 'k')
+    ax.plot([0.], [-sin(40 / 180 * pi) * 1], [-cos(40 / 180 * pi) * 1], 'kx')
     ax.legend()
     plt.show()
 #

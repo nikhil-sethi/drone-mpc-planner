@@ -24,13 +24,21 @@ def plot_frame(ax, xcamera, xfrd, xfld, xbld, xbrd, xblu, xbru, xflu, xfru, xflm
             [xfrm[z, 0], xflm[z, 0]])
 
 
-def plot_normal_vectors(ax, n_front, n_top, n_left, n_right, n_bottom, n_back, colors):
-    normal_vectors = [n_front, n_top, n_left, n_right, n_bottom, n_back]
-    names = ['front', 'top', 'left', 'right', 'bottom', 'back']
+def plot_normal_vectors(ax, planes, plane_names, colors):
 
-    for i in range(len(normal_vectors)):
-        ax.plot([0, normal_vectors[i][0, 0]], [0, normal_vectors[i][1, 0]], [0, normal_vectors[i][2, 0]],
-                color=colors[i], label=names[i])
+    for i, plane in enumerate(planes):
+        if plane_names[i]!="plane_left" and plane_names[i]!="plane_right":
+            ax.plot([0, plane[1][0, 0]],
+                    [0, plane[1][1, 0]],
+                    [0, plane[1][2, 0]],
+                    color=colors[i],
+                    label=plane_names[i])
+        else: 
+            ax.plot([plane[0][0, 0], plane[0][0, 0] + plane[1][0, 0]],
+                    [0, plane[1][1, 0]],
+                    [0, plane[1][2, 0]],
+                    color=colors[i],
+                    label=plane_names[i])
 
 
 def plot_plane_characteristics(ax, planes, colors):
@@ -40,10 +48,10 @@ def plot_plane_characteristics(ax, planes, colors):
     y = 1
     z = 2
 
-    for i in range(len(planes)):
-        ax.plot([planes[i][p0][x], planes[i][p0][x] + planes[i][n][x]],
-                [planes[i][p0][y], planes[i][p0][y] + planes[i][n][y]],
-                [planes[i][p0][z], planes[i][p0][z] + planes[i][n][z]], color=colors[i])
+    for i, plane in enumerate(planes):
+        ax.plot([plane[p0][x], plane[p0][x] + plane[n][x]],
+                [plane[p0][y], plane[p0][y] + plane[n][y]],
+                [plane[p0][z], plane[p0][z] + plane[n][z]], color=colors[i])
 
 
 if __name__ == "__main__":

@@ -89,6 +89,8 @@ public:
 
     std::array<cv::Mat, N_PLANES> plane_normals;
     std::array<cv::Mat, N_PLANES> plane_supports;
+    std::array<cv::Mat, N_PLANES> plane_normals_hunt;
+    std::array<cv::Mat, N_PLANES> plane_supports_hunt;
     cv::Point3f center_of_volume = {0,-1,-2};
 
     void init(cv::Point3f point_left_top, cv::Point3f point_right_top, cv::Point3f point_left_bottom, cv::Point3f point_right_bottom,
@@ -143,9 +145,6 @@ private:
 
     std::vector<cv::Mat> adjacency_matrix; // planes are vertices,
 
-    // Define limitation planes in plane normal form:
-    std::array<cv::Mat, N_PLANES> plane_normals_hunt;
-    std::array<cv::Mat, N_PLANES> plane_supports_hunt;
 
     // Define corner points
     std::vector<IntersectionPoint> vertices;
@@ -163,7 +162,6 @@ private:
     bool vertices_on_one_edge(IntersectionPoint p1, IntersectionPoint p2);
     bool in_plane_segment(cv::Point3f p, std::vector<IntersectionPoint> _plane_vertices);
     cv::Point3f project_into_plane_segment(cv::Point3f p, std::vector<IntersectionPoint> _plane_vertices);
-
 
 };
 

@@ -78,6 +78,10 @@ void CameraView::init(cv::Point3f point_left_top, cv::Point3f point_right_top, c
     adjacency_entry(1, top_plane, back_plane, right_plane);
 
     update_plane_vertices();
+
+#if CAMERA_VIEW_DEBUGGING
+    std::cout << *this <<std::endl;
+#endif
 }
 
 
@@ -87,9 +91,6 @@ void CameraView::p0_bottom_plane(float b_height, bool update_vertices) {
 
     if(update_vertices)
         update_plane_vertices();
-#if CAMERA_VIEW_DEBUGGING
-    std::cout << *this <<std::endl;
-#endif
 }
 
 
@@ -394,6 +395,7 @@ bool CameraView::vertices_on_one_edge(IntersectionPoint p1, IntersectionPoint p2
 
 
 std::ostream &operator<<(std::ostream &os, const CameraView &c) {
+
     os << "Cameraview>p0_front: " << c.plane_supports.at(CameraView::front_plane).t() << std::endl;
     os << "Cameraview>n_front: " << c.plane_normals.at(CameraView::front_plane).t() << std::endl;
     os << "Cameraview>p0_top: " << c.plane_supports.at(CameraView::top_plane).t() << std::endl;
@@ -408,5 +410,20 @@ std::ostream &operator<<(std::ostream &os, const CameraView &c) {
     os << "Cameraview>n_back: " << c.plane_normals.at(CameraView::back_plane).t() << std::endl;
     os << "Cameraview>p0_camera: " << c.plane_supports.at(CameraView::camera_plane).t() << std::endl;
     os << "Cameraview>n_camera: " << c.plane_normals.at(CameraView::camera_plane).t() << std::endl;
+
+    os << "Cameraview>p0_front_hunt: " << c.plane_supports_hunt.at(CameraView::front_plane).t() << std::endl;
+    os << "Cameraview>n_front_hunt: " << c.plane_normals_hunt.at(CameraView::front_plane).t() << std::endl;
+    os << "Cameraview>p0_top_hunt: " << c.plane_supports_hunt.at(CameraView::top_plane).t() << std::endl;
+    os << "Cameraview>n_top_hunt: " << c.plane_normals_hunt.at(CameraView::top_plane).t() << std::endl;
+    os << "Cameraview>p0_left_hunt: " << c.plane_supports_hunt.at(CameraView::left_plane).t() << std::endl;
+    os << "Cameraview>n_left_hunt: " << c.plane_normals_hunt.at(CameraView::left_plane).t() << std::endl;
+    os << "Cameraview>p0_right_hunt: " << c.plane_supports_hunt.at(CameraView::right_plane).t() << std::endl;
+    os << "Cameraview>n_right_hunt: " << c.plane_normals_hunt.at(CameraView::right_plane).t() << std::endl;
+    os << "Cameraview>p0_bottom_hunt: " << c.plane_supports_hunt.at(CameraView::bottom_plane).t() << std::endl;
+    os << "Cameraview>n_bottom_hunt: " << c.plane_normals_hunt.at(CameraView::bottom_plane).t() << std::endl;
+    os << "Cameraview>p0_back_hunt: " << c.plane_supports_hunt.at(CameraView::back_plane).t() << std::endl;
+    os << "Cameraview>n_back_hunt: " << c.plane_normals_hunt.at(CameraView::back_plane).t() << std::endl;
+    os << "Cameraview>p0_camera_hunt: " << c.plane_supports_hunt.at(CameraView::camera_plane).t() << std::endl;
+    os << "Cameraview>n_camera_hunt: " << c.plane_normals_hunt.at(CameraView::camera_plane).t() << std::endl;
     return os;
 }
