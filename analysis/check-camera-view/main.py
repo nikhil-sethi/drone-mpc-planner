@@ -12,6 +12,7 @@ Created on Fri Sep  6 14:50:55 2019
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from io import StringIO
 from math import pi, sin, cos
 from plotter import plot_frame, plot_normal_vectors
 from calc_linalg import calc_planeNormVec, is_pointInVolume, get_orthogonalVector, get_distanceToPlane, get_distanceToPlanes, get_intersectionOf3Planes, get_hesseNormalForm, get_cornerPoints
@@ -142,10 +143,19 @@ def get_drone_blink_location(filepath=None):
     return drone_state
 
 
+def cleanWhitespaces(filepath):
+    file = open(filepath, "r")
+    datastring = file.read()
+    file.close()
+    datastring = datastring.replace(' ', '')
+    datastring = StringIO(datastring)
+    return datastring
+
+
 if __name__ == "__main__":
 
     # SETUP SCENARIO:
-    drone_location = np.array([[1.02554, -1.3925, -2.3399]]).T # get_drone_blink_location(r'volume_log.txt')
+    drone_location = np.array([[1.02554, -1.3925, -2.3399]]).T  # get_drone_blink_location(r'volume_log.txt')
     drone_state = [drone_location, np.array([[-0, -1, 0]]).T]
     planes, plane_names, hunt_planes = get_view_planes(r'volume_log.txt')
 
@@ -159,8 +169,8 @@ if __name__ == "__main__":
     plot_normal_vectors(ax, planes, plane_names, colors)
 
     xcamera, xfrd, xfld, xbld, xbrd, xblu, xbru, xflu, xfru, xflm, xfrm = get_cornerPoints(hunt_planes)
-    plot_frame(ax, xcamera, xfrd, xfld, xbld, xbrd, xblu, xbru, xflu, xfru, xflm, xfrm, 'r')
-    
+    plot_frame(ax, xcamera, xfrd, xfld, xbld, xbrd, xblu, xbru, xflu, xfru, xflm, xfrm, 'b')
+
     ax.legend()
     ax.set_xlabel('x [m]')
     ax.set_ylabel('y [m]')
@@ -186,7 +196,25 @@ if __name__ == "__main__":
     ax.plot([0., 0.], [0., -sin(40 / 180 * pi) * 2], [0., -cos(40 / 180 * pi) * 2], 'k')
     ax.plot([0.], [-sin(40 / 180 * pi) * 1], [-cos(40 / 180 * pi) * 1], 'kx')
     ax.legend()
-    plt.show()
 #
 #    disttop, isptop = get_distanceToPlane(drone_state, planes[top])
 #    print('min dist to plane',plane_names[top],'with distance',disttop,'m.')
+
+    ## Check insects:
+    import pandas as pd
+    # insects = [53, 54, 56, 58, 61, 62, 63, 64, 66]
+    insects = [53]
+    for insect in insects: # TODO This loop is very slow!
+        filepath = '../../base/replay_insects/' + str(insect) + '-90fps.csv'
+        rawtext = cleanWhitespaces(filepath)
+        insect_data = pd.read_csv(rawtext, sep=';')
+        # for i in range(np.size(insect_data['posX_insect'])):
+            point = np.array([[insect_data['posX_insect'][i],
+                               insect_data['posY_insect'][i],
+                               insect_data['posZ_insect'][i]]]).T
+            inview = is_pointInVolume(point, hunt_planes)
+            if inview:
+                ax.plot(point[0], point[1], point[2], 'go')
+            else:
+                ax.plot(point[0], point[1], point[2], 'ro')
+    plt.show()
