@@ -925,7 +925,7 @@ void print_warnings() {
     if (pparams.video_raw && !log_replay_mode) {
         std::cout <<"Video frames written: " << raw_video_frame_counter-1 << std::endl;
         if (raw_video_frame_counter != imgcount)
-            std::cout <<"WARNING VIDEO FRAMES MISSING: : " << raw_video_frame_counter - imgcount << std::endl;
+            std::cout <<"WARNING VIDEO FRAMES MISSING: " << imgcount - raw_video_frame_counter << std::endl;
     }
     if (n_fps_warnings)
         std::cout <<"WARNING FPS PROBLEMS: : " << n_fps_warnings << std::endl;

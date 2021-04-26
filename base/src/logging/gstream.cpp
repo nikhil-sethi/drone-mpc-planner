@@ -100,7 +100,7 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
                           "stream-type", 0, // GST_APP_STREAM_TYPE_STREAM
                           "format", GST_FORMAT_TIME,
                           "is-live", TRUE,
-                          "max-bytes", 5000000, // buffer size before enough-data fires. Default 200000
+                          "max-bytes", 100000000, // buffer size before enough-data fires. Default 200000
                           NULL);
             g_signal_connect (_appsrc, "need-data", G_CALLBACK(cb_need_data), NULL);
             g_signal_connect (_appsrc, "enough-data", G_CALLBACK(cb_enough_data), NULL);
