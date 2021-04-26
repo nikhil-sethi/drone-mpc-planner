@@ -10,7 +10,6 @@ private:
     uint _fp_cnt = 0;
     float dist_integrator_fp =0;
     std::ofstream insectlogger;
-    std::string logger_fn;
 
     void start_new_log_line(double time, unsigned long long frame_number);
     void close_log_line();

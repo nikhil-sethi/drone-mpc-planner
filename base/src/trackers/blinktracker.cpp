@@ -21,7 +21,6 @@ bool BlinkTracker::init(int id, VisionData *visdat, int motion_thresh, int16_t v
 }
 
 void BlinkTracker::init_logger() {
-    std::string logger_fn;
     logger_fn = data_output_dir  + "log_btrk" + to_string(_blink_trkr_id) + ".csv";
     blinklogger.open(logger_fn,std::ofstream::out);
     blinklogger << "RS_ID;time;";

@@ -22,7 +22,6 @@ void VirtualMothTracker::init(int id, mothbehavior mothbehavior_type, VisionData
 void VirtualMothTracker::init_logger() {
     //writing of new log:
     _logger = new std::ofstream(); // FIXME: use std::shared_ptr?
-    std::string logger_fn;
     logger_fn = data_output_dir  + "log_rtrkr" + to_string(_id) + ".csv";
     (*_logger).open(logger_fn, std::ofstream::out);
     (*_logger) << "RS_ID;time;";

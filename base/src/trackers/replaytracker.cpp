@@ -29,7 +29,6 @@ void ReplayTracker::init(int id,logging::InsectReader log, VisionData *visdat) {
 
 void ReplayTracker::init_logger() {
     _logger = new std::ofstream();
-    std::string logger_fn;
     logger_fn = data_output_dir  + "log_rtrkr" + to_string(_id) + ".csv";
     (*_logger).open(logger_fn,std::ofstream::out);
     (*_logger) << "RS_ID;time;";

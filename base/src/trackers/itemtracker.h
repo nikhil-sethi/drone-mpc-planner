@@ -55,6 +55,7 @@ protected:
     std::string _name;
     std::string settings_file;
     TrackerParams params;
+    std::string logger_fn;
     std::ofstream *_logger;
     VisionData * _visdat;
     bool initialized = false;
