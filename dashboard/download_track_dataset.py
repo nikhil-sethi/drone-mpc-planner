@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-import os,datetime
+import os,datetime,pathlib
 import pandas as pd
 import pats_c.lib.lib_patsc as patsc
 
-insect = 'stinky'
+insect = 'tomato_looper'
 download_renders = False # leave to false because it uses a lot of data
 download_raw_cuts = False  # leave to false because it REALLY uses a lot of data, only for wifi systems!
 start_date = datetime.date.today() - datetime.timedelta(days=14)
@@ -43,28 +43,28 @@ with patsc.open_data_db() as con:
         df = pd.read_sql_query(sql_str,con)
 
         download_list = df['Folder'] + '/logging/' + df['Filename']
-        download_str = ''
-        for entry in download_list:
-            download_str += entry + ' '
-            download_str += entry + ' '
-            if download_renders:
-                download_str += entry.replace('log_itrk','render_moth').replace('.csv','.mkv') + ' '
-            if download_raw_cuts:
-                download_str += entry.replace('log_itrk','moth').replace('.csv','.mkv') + ' '
+        download_list.to_csv('files_to_be_tarred.tmp',index=False,header=False)
+        rsync_upload_cmd = ['rsync --timeout=5 -az -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ' + 'files_to_be_tarred.tmp' + ' ' + system+':files_to_be_tarred.tmp']
+        patsc.execute(rsync_upload_cmd,5)
 
         print('Tarring ' + str(len(download_list)) + ' logs on ' + system + '...')
-        tar_cmd = ['ssh -o StrictHostKeyChecking=no -T ' + system +  ' "rm -rf  /home/pats/dataset_logs.tar.gz && cd /home/pats/pats/data/processed/ && tar --ignore-failed-read -czf /home/pats/dataset_logs.tar.gz ' + download_str +'"']
+        tar_cmd = ['ssh -o StrictHostKeyChecking=no -T ' + system +  ' "rm -rf  /home/pats/dataset_logs.tar.gz && cd /home/pats/pats/data/processed/ && tar --ignore-failed-read -czf /home/pats/dataset_logs.tar.gz --files-from=/home/pats/files_to_be_tarred.tmp"']
         if patsc.execute(tar_cmd,3) != 0:
             print('Error :(')
             exit(1)
         print('Downloading data from ' + system)
         target_path=os.path.expanduser('~/Downloads/pats_dataset/' + insect + '/')
-        if not os.path.exists(target_path):
-            os.mkdir( target_path)
+        pathlib.Path(target_path).mkdir(parents=True, exist_ok=True)
         rsync_cmd = ['rsync --timeout=5 -az -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ' + system+':dataset_logs.tar.gz' + ' ' + target_path + system + '_dataset_logs.tar.gz']
         patsc.execute(rsync_cmd,5)
+
         print('Untarring ' + target_path + system + '_dataset_logs.tar.gz')
-        if not os.path.exists(target_path + system):
-            os.mkdir( target_path + system)
+        pathlib.Path(target_path + system).mkdir(parents=True, exist_ok=True)
         untar_cmd = 'tar -xf ' + target_path + system + '_dataset_logs.tar.gz -C ' + target_path + system + '/'
         patsc.execute(untar_cmd)
+
+        print('Clean up...')
+        os.remove(target_path + system + '_dataset_logs.tar.gz')
+        os.remove('files_to_be_tarred.tmp')
+        cleanup_cmd = ['ssh -o StrictHostKeyChecking=no -T ' + system +  ' "rm -rf  /home/pats/dataset_logs.tar.gz && rm /home/pats/files_to_be_tarred.tmp"']
+        patsc.execute(cleanup_cmd)
