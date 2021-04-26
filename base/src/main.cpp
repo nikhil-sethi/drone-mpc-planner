@@ -1052,7 +1052,7 @@ int main( int argc, char **argv )
         pparams.deserialize(pats_xml_fn);
         if (replay_dir == "" && drone_xml_fn == "")
             drone_xml_fn = "../xml/" + string(drone_types_str[pparams.drone]) + ".xml";
-        else if (!render_hunt_mode)
+        else if (!render_hunt_mode && !render_monitor_video_mode)
             pparams.has_screen = true; // override log so that vizs always are on when replaying because most of the logs are deployed system now (without a screen)
         if ((render_hunt_mode || render_monitor_video_mode) && !pparams.has_screen) {
             pparams.video_result = video_mkv;
