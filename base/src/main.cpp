@@ -66,6 +66,7 @@ bool log_replay_mode = false;
 bool generator_mode = false;
 bool airsim_mode = false;
 bool airsim_wp_mode = false;
+bool render_monitor_video_mode = false;
 bool render_hunt_mode = false;
 bool skipped_to_hunt = false;
 bool watchdog_skip_video_delay_override = false;
@@ -74,7 +75,6 @@ std::string replay_dir;
 std::string airsim_map;
 std::string logger_fn; //contains filename of current log # for insect logging (same as video #)
 std::string pats_xml_fn="../xml/pats.xml",drone_xml_fn,monitor_video_fn;
-bool render_monitor_video_mode = false;
 
 std::ofstream logger;
 std::ofstream logger_video_ids;
@@ -149,17 +149,13 @@ void process_video() {
         }
         if (log_replay_mode && !skipped_to_hunt) {
             skip_to_hunt(1.5,frame->time);
-            if (skipped_to_hunt)
+            if (skipped_to_hunt && !render_monitor_video_mode && !render_hunt_mode)
                 cam->turbo = false;
         }
 
-        if (render_hunt_mode || render_monitor_video_mode) {
-            if (dnav.drone_ready_and_waiting() && !skipped_to_hunt) {
+        if (render_hunt_mode) {
+            if (dnav.drone_ready_and_waiting() && !skipped_to_hunt)
                 skip_to_hunt(1.5,frame->time);
-                cam->turbo = false;
-            } else if (!skipped_to_hunt) {
-                cam->turbo = true;
-            }
             if (dnav.drone_resetting_yaw()) {
                 std::cout <<"Render mode: yaw reset detected. Stopping." << std::endl;
                 escape_key_pressed = true;
@@ -389,7 +385,7 @@ void process_frame(StereoPair * frame) {
         visualizer.update_tracker_data(visdat.frameL,dnav.setpoint().pos(),frame->time, draw_plots);
         if (pparams.video_result && !exit_now) {
             if ((render_hunt_mode && skipped_to_hunt) || !render_hunt_mode) {
-                if (log_replay_mode || render_monitor_video_mode)
+                if (log_replay_mode || render_monitor_video_mode || render_hunt_mode)
                     output_video_results.block(); // only use this for rendering
                 output_video_results.write(visualizer.trackframe);
             }
@@ -655,7 +651,7 @@ void init_loggers() {
 
     mkdir(data_output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
-    if (replay_dir == "") {
+    if (!log_replay_mode) {
         pparams.serialize("./logging/pats.xml");
         dparams.serialize("./logging/drone.xml");
     }
@@ -773,7 +769,7 @@ void check_hardware() {
     }
     //init cam and check version
     std::cout << "Connecting camera..." << std::endl;
-    if (log_replay_mode) {
+    if (log_replay_mode && !render_monitor_video_mode) {
         if (file_exist(replay_dir+'/' + Realsense::playback_filename()))
             cam = std::unique_ptr<Cam>(new Realsense(replay_dir));
         else if (file_exist(replay_dir+'/' + FileCam::playback_filename()))
@@ -1039,7 +1035,7 @@ int main( int argc, char **argv )
         mkdir(data_output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
         process_arg(argc,argv);
-        if (!render_hunt_mode  && !render_monitor_video_mode)
+        if (!log_replay_mode && !generator_mode && !render_monitor_video_mode && !render_hunt_mode && !airsim_mode)
             cmdcenter.reset_commandcenter_status_file("Starting",false);
 
         if (realsense_reset) {
@@ -1050,20 +1046,19 @@ int main( int argc, char **argv )
         }
 
         pparams.deserialize(pats_xml_fn);
-        if (replay_dir == "" && drone_xml_fn == "")
+        if (drone_xml_fn == "") // should be empty still, but can have the --drone-xml arg override
             drone_xml_fn = "../xml/" + string(drone_types_str[pparams.drone]) + ".xml";
-        else if (!render_hunt_mode && !render_monitor_video_mode)
-            pparams.has_screen = true; // override log so that vizs always are on when replaying because most of the logs are deployed system now (without a screen)
-        if ((render_hunt_mode || render_monitor_video_mode) && !pparams.has_screen) {
-            pparams.video_result = video_mkv;
-
-        }
         dparams.deserialize(drone_xml_fn);
+
+        if ( log_replay_mode && !render_hunt_mode && !render_monitor_video_mode )
+            pparams.has_screen = true; // override log so that vizs always are on when replaying because most of the logs are deployed system now (without a screen)
+        if (render_hunt_mode)
+            pparams.video_result = video_mkv;
         if(render_monitor_video_mode) {
+            pparams.video_result = video_mkv;
             pparams.op_mode = op_mode_monitoring;
             pparams.video_raw = video_disabled;
             pparams.close_after_n_images = -1;
-            pparams.has_screen = false;
         }
 
         check_hardware();
@@ -1077,10 +1072,8 @@ int main( int argc, char **argv )
             pparams.drone_tracking_tuning = false;
             pparams.insect_tracking_tuning = false;
             pparams.cam_tuning = false;
-            if (generator_mode || render_monitor_video_mode || render_hunt_mode || airsim_wp_mode) {
+            if (generator_mode || render_monitor_video_mode || render_hunt_mode || airsim_wp_mode)
                 pparams.joystick = rc_none;
-            }
-
         }
 
     } catch(MyExit const &err) {
