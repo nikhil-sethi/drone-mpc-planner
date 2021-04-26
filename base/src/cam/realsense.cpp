@@ -190,6 +190,16 @@ void Realsense::calibration(rs2::stream_profile infrared1,rs2::stream_profile in
 }
 void Realsense::connect_and_check(string ser_nr,int id) {
     _id = id;
+
+    if (from_recorded_bag) {
+        set_read_file_paths(replay_dir);
+        set_write_file_paths(data_output_dir);
+        bag_fn = replay_dir + '/' + playback_filename();
+    } else {
+        set_write_file_paths(data_output_dir);
+        bag_fn = "./logging/record" + std::to_string(_id) + ".bag";
+    }
+
     rs2::device_list devices = ctx.query_devices();
     if (devices.size() == 0) {
         throw MyExit("no RealSense connected");
@@ -247,15 +257,6 @@ void Realsense::connect_and_check(string ser_nr,int id) {
 void Realsense::init_real() {
     lock_newframe.lock();
     std::cout << "Initializing cam " << serial_nr_str << std::endl;
-
-    bag_fn = "./logging/record.bag";
-
-    calib_wfn = "./logging/cam_calib.xml";
-    rgb_wfn = "./logging/rgb.png";
-    depth_map_wfn = "./logging/depth_filtered.png";
-    depth_unfiltered_map_wfn = "./logging/depth.png";
-    disparity_map_wfn = "./logging/disparity.png";
-    brightness_map_wfn = "./logging/brightness.png";
 
     rs2::depth_sensor rs_depth_sensor = dev.first<rs2::depth_sensor>();
 
@@ -593,7 +594,7 @@ void Realsense::init_playback() {
 
     calibration(infrared1,infrared2);
     convert_depth_background_to_world();
-    camparams.serialize(calib_wfn); // tmp?
+    camparams.serialize(calib_wfn);
 
     def_volume();
 

@@ -10,11 +10,16 @@ class Realsense : public Cam {
 
 public:
     static std::string playback_filename() { return "record.bag"; }
-    Realsense() { from_recorded_bag = false; }
+    Realsense() {
+        from_recorded_bag = false;
+        set_write_file_paths(data_output_dir);
+        bag_fn = "./logging/record" + std::to_string(_id) + ".bag";
+    }
     Realsense(string dir) {
         replay_dir = dir;
         from_recorded_bag = true;
-        set_file_paths(replay_dir);
+        set_read_file_paths(replay_dir);
+        set_write_file_paths(data_output_dir);
         bag_fn = replay_dir + '/' + playback_filename();
     }
     void connect_and_check(string ser_nr,int id);
@@ -71,7 +76,6 @@ private:
     string bag_fn;
     string serial_nr_str;
     string serial_nr;
-    int _id;
 
     int max_auto_exposure;
 

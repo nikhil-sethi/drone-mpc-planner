@@ -28,13 +28,15 @@ public:
     FileCam(string replay_dir_, logging::LogReader * log) {
         replay_dir = replay_dir_;
         logreader = log;
-        set_file_paths(replay_dir);
+        set_read_file_paths(replay_dir);
+        set_write_file_paths(data_output_dir);
         video_fn = replay_dir + '/' + playback_filename();
     }
     FileCam(string replay_dir_,string monitor_video_fn) {
         video_fn = monitor_video_fn;
         replay_dir = replay_dir_;
-        set_file_paths(replay_dir);
+        set_read_file_paths(replay_dir);
+        set_write_file_paths(data_output_dir);
     }
     void skip(float duration) {
         //This function calculates how many frames need to be skip in order to just duration seconds.

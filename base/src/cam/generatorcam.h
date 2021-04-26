@@ -25,17 +25,6 @@ private:
 public:
 
     GeneratorCam() {
-        calib_wfn = "./logging/" + calib_rfn;
-        calib_rfn = "../xml/generator_cam_calib.xml";
-        depth_map_rfn = "./logging/" + depth_map_rfn;
-        depth_unfiltered_map_rfn = "./logging/" + depth_unfiltered_map_rfn;
-        disparity_map_rfn = "./logging/" + disparity_map_rfn;
-        brightness_map_rfn = "./logging/" + brightness_map_rfn;
-        depth_map_wfn = depth_map_rfn;
-        depth_unfiltered_map_wfn = depth_unfiltered_map_rfn;
-        disparity_map_wfn = disparity_map_rfn;
-        brightness_map_wfn = brightness_map_rfn;
-
         drone_start_pos = cv::Point3f(0,-1.3,-1.5);
         current_drone_pos = drone_start_pos;
     }

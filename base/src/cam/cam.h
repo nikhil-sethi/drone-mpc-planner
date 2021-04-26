@@ -14,32 +14,32 @@
 
 class Cam {
 protected:
+    int _id = 0;
     uint replay_skip_n_frames = 0;
     bool initialized = false;
     int _frame_loss_cnt = 0;
     std::map<unsigned long long,StereoPair *> buf;
 
     //read file names
-    std::string calib_rfn = "cam_calib.xml";
-    std::string rgb_rfn = "rgb.png";
-    const std::string calib_template_rfn = "../xml/" + calib_rfn;
-    std::string depth_map_rfn = "depth_filtered.png";
-    std::string depth_unfiltered_map_rfn = "depth.png";
-    std::string disparity_map_rfn = "disparity.png";
-    std::string brightness_map_rfn = "brightness.png";
+    std::string calib_rfn;
+    std::string rgb_rfn;
+    const std::string calib_template_rfn;
+    std::string depth_map_rfn;
+    std::string depth_unfiltered_map_rfn;
+    std::string disparity_map_rfn;
+    std::string brightness_map_rfn;
 
     //write file names:
     std::string calib_wfn;
-    std::string rgb_wfn = "logging/rgb.png";
     std::string depth_map_wfn;
     std::string depth_unfiltered_map_wfn;
     std::string disparity_map_wfn;
-    std::string brightness_map_wfn;
 
     rs2_intrinsics * intr;
     xmls::CamCalibration camparams;
 
-    void set_file_paths(std::string replay_dir);
+    void set_read_file_paths(std::string replay_dir);
+    void set_write_file_paths(std::string output_dir);
     void convert_depth_background_to_world();
     void def_volume();
     cv::Point3f get_SlopesOfPixel(uint x, uint y);

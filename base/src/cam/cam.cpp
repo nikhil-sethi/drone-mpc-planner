@@ -1,20 +1,28 @@
 #include "cam.h"
 #include <librealsense2/rsutil.h>
 
-void Cam::set_file_paths(std::string replay_dir) {
-    //make sure the origirnam files are not overwritten when playing bags:
-    calib_wfn = data_output_dir + calib_rfn;
-    rgb_wfn = data_output_dir + rgb_rfn;
-    depth_map_wfn = data_output_dir + depth_map_rfn;
-    depth_unfiltered_map_wfn = data_output_dir + depth_unfiltered_map_rfn;
-    disparity_map_wfn = data_output_dir + disparity_map_rfn;
-    brightness_map_wfn = data_output_dir + brightness_map_rfn;
+void Cam::set_write_file_paths(std::string output_dir) {
 
-    calib_rfn = replay_dir + '/' + calib_rfn;
-    depth_map_rfn = replay_dir + '/' + depth_map_rfn;
-    depth_unfiltered_map_rfn = replay_dir + '/' + depth_unfiltered_map_rfn;
-    disparity_map_rfn = replay_dir + '/' + disparity_map_rfn;
-    brightness_map_rfn = replay_dir + '/' + brightness_map_rfn;
+    string idstr = std::to_string(_id);
+
+    calib_wfn = output_dir + "/cam_calib" + idstr + ".xml";;
+    depth_map_wfn = output_dir + "/depth_filtered" + idstr + ".png";
+    depth_unfiltered_map_wfn = output_dir + "/depth" + idstr + ".png";
+    disparity_map_wfn = output_dir + "/disparity" + idstr + ".png";
+}
+
+void Cam::set_read_file_paths(std::string read_dir) {
+
+    string idstr = std::to_string(_id);
+    calib_rfn = read_dir + "/cam_calib" + idstr + ".xml";;
+    if (!file_exist(calib_rfn)) {
+        calib_rfn = read_dir + "/cam_calib.xml";
+        idstr = "";
+    }
+    depth_map_rfn = read_dir + "/depth_filtered" + idstr + ".png";
+    depth_unfiltered_map_rfn = read_dir + "/depth" + idstr + ".png";
+    disparity_map_rfn = read_dir + "/disparity" + idstr + ".png";
+    brightness_map_rfn = read_dir + "/brightness" + idstr + ".png";
 }
 
 
