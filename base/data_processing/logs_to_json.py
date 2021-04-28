@@ -373,7 +373,7 @@ if __name__ == "__main__":
     parser.add_argument('-i', help="Path to the folder with logs", required=False,default=lb.data_dir)
     parser.add_argument('-s', help="Directory date to start from", required=False)
     parser.add_argument('-e', help="Directory date to end on", required=False)
-    parser.add_argument('-o',  help="Process just this one log", required=False)
+    parser.add_argument('-o',  help="Dry run process just this one log", required=False)
     parser.add_argument('--filename', help="Path and filename to store results in", default="./detections.json")
     parser.add_argument('--system', help="Override system name", default=socket.gethostname())
     args = parser.parse_args()
@@ -386,7 +386,9 @@ if __name__ == "__main__":
     data_folder = args.i
     sys_str = args.system
 
-    if not args.s and not args.e:
+    if args.o:
+        status_in_folder,mode,operational_log_start = process_system_status_in_folder(args.o)
+    elif not args.s and not args.e:
         process_all_logs_to_jsons()
         send_all_jsons()
     elif not args.s:

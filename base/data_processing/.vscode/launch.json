@@ -14,7 +14,7 @@
         "type": "python",
         "request": "launch",
         "program": "${workspaceFolder}/logs_to_json.py",
-        "args": ["-i","~/data/"],
+        "args": ["-o","~/pats/data/junk/20210426_214910"],
         "console": "integratedTerminal"
       },
       {
