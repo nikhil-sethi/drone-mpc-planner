@@ -458,6 +458,10 @@ void DroneNavigation::update(double time) {
             if(!_trackers->dronetracker()->check_yaw(time) || (time-time_start_reset_headless_yaw > duration_correct_yaw && drone_at_wp()))
                 _navigation_status = ns_goto_thrust_calib_waypoint;
             check_abort_autonomus_flight_conditions();
+            if (low_battery_triggered) {
+                std::cout << "Warning: skipping thrust calibration because battery low." << std::endl;
+                _navigation_status = ns_goto_landing_waypoint;
+            }
             break;
         } case ns_calibrate_thrust: {
             _dctrl->init_thrust_calibration();
@@ -471,6 +475,10 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_goto_landing_waypoint;
             }
             check_abort_autonomus_flight_conditions();
+            if (low_battery_triggered) {
+                std::cout << "Warning: skipping thrust calibration because battery low." << std::endl;
+                _navigation_status = ns_goto_landing_waypoint;
+            }
             break;
         } case ns_land: {
             time_start_landing = time;
@@ -586,7 +594,8 @@ void DroneNavigation::check_abort_autonomus_flight_conditions() {
     if (_trackers->dronetracker()->lost())
         _navigation_status = ns_drone_lost;
     if (_dctrl->telemetry().batt_cell_v > 2 && _dctrl->telemetry().batt_cell_v  < dparams.land_cell_v && !low_battery_triggered) {
-        _navigation_status = ns_goto_yaw_waypoint;
+        if (current_waypoint->mode != wfm_landing && current_waypoint->mode != wfm_thrust_calib && current_waypoint->mode != wfm_yaw_reset)
+            _navigation_status = ns_goto_yaw_waypoint;
         low_battery_triggered = true;
     }
 }
