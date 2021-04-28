@@ -860,7 +860,8 @@ void close(bool sig_kill) {
     if (pparams.has_screen)
         cv::destroyAllWindows();
 
-    save_results_log();
+    if (imgcount>0)
+        save_results_log();
 
     /*****Close everything down*****/
     if (!sig_kill)
