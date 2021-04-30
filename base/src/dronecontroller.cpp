@@ -378,7 +378,10 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
 
         if (dt > land_ctrl.time_ff_landing()) {
             auto_throttle = RC_BOUND_MIN;
-            _flight_mode = fm_shake_it_baby;
+            if (dparams.static_shakeit_throttle>0)
+                _flight_mode = fm_shake_it_baby;
+            else
+                _flight_mode = fm_inactive;
         }
         break;
     } case fm_shake_it_baby: {

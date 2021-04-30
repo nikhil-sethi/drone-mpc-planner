@@ -535,6 +535,9 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_shaking_drone;
                 time_shake_start = time;
             }
+            if (dparams.static_shakeit_throttle < 0) {
+                _navigation_status = ns_wait_after_shake;
+            }
             break;
         } case ns_shaking_drone: {
             _dctrl->flight_mode(DroneController::fm_shake_it_baby);
