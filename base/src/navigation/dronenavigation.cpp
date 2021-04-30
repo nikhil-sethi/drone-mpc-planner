@@ -156,7 +156,6 @@ void DroneNavigation::update(double time) {
             time_start_motion_calibration = time;
             if (pparams.op_mode==op_mode_monitoring) {
                 _navigation_status = ns_calibrating_motion;
-                _trackers->mode(tracking::TrackerManager::mode_wait_for_insect);
                 _dctrl->stop_rc();
             } else
                 _navigation_status = ns_check_telemetry;
@@ -236,7 +235,7 @@ void DroneNavigation::update(double time) {
             }
             break;
         } case ns_monitoring: {
-
+            _trackers->mode(tracking::TrackerManager::mode_wait_for_insect);
             break;
         } case ns_wait_for_insect: {
             if (_nav_flight_mode == nfm_manual) {

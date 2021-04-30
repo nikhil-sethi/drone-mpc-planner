@@ -132,7 +132,7 @@ private:
     const string false_positive_fn = "false_positives.csv";
 
     bool initialized = false;
-    detection_mode _mode;
+    detection_mode _mode = mode_idle;
     std::string replay_dir;
 
     std::ofstream *_logger;
