@@ -608,10 +608,8 @@ void Visualizer::paint() {
     if (request_trackframe_paint) {
         request_trackframe_paint = false;
 
-
-        static bool tracking_viz_initialized = false;
-        if (!tracking_viz_initialized) {
-            tracking_viz_initialized = true;
+        if (!_tracking_viz_initialized) {
+            _tracking_viz_initialized = true;
             namedWindow("tracking results", cv::WINDOW_OPENGL | cv::WINDOW_AUTOSIZE);
         }
         cv::imshow("tracking results", trackframe);

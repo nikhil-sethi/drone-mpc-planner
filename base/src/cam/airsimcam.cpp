@@ -71,16 +71,6 @@ void AirSimCam::update()
     delete_old_frames();
 
     sim.log(sp->rs_id);
-
-    while(frame_by_frame) {
-        unsigned char k = cv::waitKey(0);
-        if (k == 'f')
-            break;
-        else if (k== ' ') {
-            frame_by_frame = false;
-            break;
-        }
-    }
 }
 
 void AirSimCam::close()

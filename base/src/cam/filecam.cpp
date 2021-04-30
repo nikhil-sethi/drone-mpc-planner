@@ -158,15 +158,6 @@ void FileCam::update() {
     gst_buffer_unmap(buffer, &map);
     gst_sample_unref(sample);
 
-    while(frame_by_frame) {
-        unsigned char k = cv::waitKey(0);
-        if (k == 'f')
-            break;
-        else if (k== ' ') {
-            frame_by_frame = false;
-            break;
-        }
-    }
 }
 
 static void on_pad_added (GstElement *element, GstPad *src_pad, gpointer data)

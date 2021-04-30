@@ -40,6 +40,7 @@ private:
     GeneratorCam * generator_cam;
     Interceptor *_iceptor;
     bool generator_cam_set = false;
+    bool _tracking_viz_initialized = false;
 
     bool enable_plots = false;
 
@@ -143,6 +144,7 @@ public:
     cv::Size viz_frame_size() {
         return cv::Size(IMG_W*_res_mult + IMG_W,IMG_H*_res_mult+IMG_H*_res_mult/4);
     }
+    bool tracking_viz_initialized() { return _tracking_viz_initialized; }
 
     void paint();
     void render();

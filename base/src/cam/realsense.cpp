@@ -70,16 +70,6 @@ void Realsense::update_playback(void) {
         }
         swc.Restart();
     }
-
-    while(frame_by_frame) {
-        unsigned char k = cv::waitKey(1);
-        if (k == 'f')
-            break;
-        else if (k== ' ') {
-            frame_by_frame = false;
-            break;
-        }
-    }
 }
 
 void Realsense::update_real(void) {
