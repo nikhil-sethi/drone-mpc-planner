@@ -130,13 +130,15 @@ static const char* led_types_str[] = {
     "led_strip",
     "led_fiber_ir",
     "led_fiber_uv",
+    "led_top_uv",
     "" // must be the last entry! (check in serializer)
 };
 enum led_types {
     led_none,
     led_strip,
     led_fiber_ir,
-    led_fiber_uv
+    led_fiber_uv,
+    led_top_uv
 };
 
 static const char* tx_protocols_str[] = {

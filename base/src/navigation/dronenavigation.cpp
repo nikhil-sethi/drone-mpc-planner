@@ -84,10 +84,9 @@ void DroneNavigation::update(double time) {
             locate_drone_attempts = 0;
             _visdat->reset_motion_integration();
             _trackers->mode(tracking::TrackerManager::mode_idle);
-            if (time > 1.5) { // skip first second or so due to auto exposure
+            if (time > 1.5) { // skip first second or so due to auto exposure settling
                 if (pparams.op_mode==op_mode_monitoring) {
                     _dctrl->flight_mode(DroneController::fm_disarmed);
-                    _dctrl->LED(false);
                     _navigation_status = ns_start_calibrating_motion;
                 } else
                     _navigation_status = ns_locate_drone_init;
@@ -189,6 +188,24 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_calibrating_motion_done: {
             _n_drone_readys++;
+
+            switch (dparams.led_type) {
+            case led_none:
+                _dctrl->LED(false);
+                break;
+            case led_strip:
+                _dctrl->LED(true);
+                break;
+            case led_fiber_ir:
+                _dctrl->LED(true);
+                break;
+            case led_fiber_uv:
+                _dctrl->LED(true);
+                break;
+            case led_top_uv:
+                _dctrl->LED(false);
+                break;
+            }
             if (pparams.op_mode==op_mode_monitoring)
                 _navigation_status = ns_monitoring;
             else if (_nav_flight_mode == nfm_manual)
@@ -209,15 +226,12 @@ void DroneNavigation::update(double time) {
             _dctrl->flight_mode(DroneController::fm_inactive);
             if (_nav_flight_mode == nfm_hunt) {
                 _navigation_status = ns_wait_for_insect;
-                _dctrl->LED(true);
             } else if (_nav_flight_mode == nfm_manual) {
                 _navigation_status = ns_manual;
-                _dctrl->LED(true);
             } else if ( _dctrl->manual_override_take_off_now()) {
                 wpid = 0;
                 next_waypoint(waypoints[wpid],time);
                 _navigation_status = ns_takeoff;
-                _dctrl->LED(true);
                 repeat = true;
             }
             break;
@@ -309,6 +323,7 @@ void DroneNavigation::update(double time) {
             } else {
                 wpid++;
                 _navigation_status = ns_set_waypoint;
+                _dctrl->LED(true);
             }
             check_abort_autonomus_flight_conditions();
             break;
@@ -319,6 +334,7 @@ void DroneNavigation::update(double time) {
             _navigation_status = ns_chasing_insect_ff;
             [[fallthrough]];
         } case ns_chasing_insect_ff: {
+            _dctrl->LED(true);
             if (_dctrl->ff_completed())
                 _navigation_status = ns_chasing_insect;
             check_abort_autonomus_flight_conditions();
@@ -533,6 +549,7 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_manual: { // also used for disarmed
             wpid = 0;
+            _dctrl->LED(true);
             _trackers->mode(tracking::TrackerManager::mode_drone_only);
             _trackers->dronetracker()->manual_flight_mode(true);
             if (_nav_flight_mode == nfm_hunt) {
@@ -553,13 +570,13 @@ void DroneNavigation::update(double time) {
             if (time_drone_problem < 0)
                 time_drone_problem = time;
             _dctrl->flight_mode(DroneController::fm_abort);
-            _dctrl->LED(static_cast<int>((time - time_drone_problem) * 2.0) % 2 > 1, 5); // faster blink every second
+            _dctrl->LED(static_cast<int>((time - time_drone_problem) * 2.0) % 2 > 0, 5); // faster blink every second
             break;
         } case ns_drone_lost: {
             if (time_drone_problem < 0)
                 time_drone_problem = time;
             _dctrl->flight_mode(DroneController::fm_abort);
-            _dctrl->LED(static_cast<int>((time - time_drone_problem) * 2.0) % 2 > 1, 5); // faster blink every second
+            _dctrl->LED(static_cast<int>((time - time_drone_problem) * 2.0) % 2 > 0, 5); // faster blink every second
             break;
         } case ns_unable_to_locate: {
             if (time_drone_problem < 0)

@@ -1394,6 +1394,8 @@ void DroneController::serialize_settings() {
 
 void DroneController::close() {
     if (initialized) {
+        LED(true);
+        beep(false);
         std::cout << "Closing controller." << std::endl;
         if (pparams.control_tuning)
             serialize_settings();
