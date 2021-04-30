@@ -89,7 +89,7 @@ void DroneController::init(std::ofstream *logger,string replay_dir,bool generato
 }
 
 void DroneController::set_led_strength(float exposure) {
-    if (dparams.led_type == led_fiber_uv)
+    if (dparams.led_type == led_fiber_uv || dparams.led_type == led_top_uv)
         dparams.drone_led_strength = 100;
     else {
         float max_ae = 20000;
