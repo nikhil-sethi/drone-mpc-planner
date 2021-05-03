@@ -31,7 +31,6 @@ def status_cc_worker():
         send_status_update()
 
     while True:
-
         if status_file_missing == os.path.exists(lb.local_status_txt_file):
             status_file_missing = not os.path.exists(lb.local_status_txt_file)
             logger.info('Warning: status file went missing...')
@@ -91,7 +90,6 @@ class pats_task(metaclass=abc.ABCMeta):
         return start_trigger_time
 
     def do_work(self):
-
         file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         fh = logging.handlers.RotatingFileHandler(filename=lb.log_dir + self.name + '.log', maxBytes=1024*1024*100, backupCount=1)
         fh_errs = logging.handlers.TimedRotatingFileHandler(filename=lb.daily_errs_log, when='MIDNIGHT', backupCount=10, atTime=dttime(hour=10,minute=40))
@@ -128,7 +126,6 @@ class pats_task(metaclass=abc.ABCMeta):
         pass
 
 class clean_hd_task(pats_task):
-
     def __init__(self):
         super(clean_hd_task,self).__init__('clean_hd',timedelta(hours=8),timedelta(hours=24),False)
 
@@ -136,7 +133,6 @@ class clean_hd_task(pats_task):
         clean_hd()
 
 class cut_moths_task(pats_task):
-
     def __init__(self):
         super(cut_moths_task,self).__init__('cut_moths',timedelta(),timedelta(minutes=60),False)
 
@@ -144,7 +140,6 @@ class cut_moths_task(pats_task):
         cut_moths_all()
 
 class logs_to_json_task(pats_task):
-
     def __init__(self):
         super(logs_to_json_task,self).__init__('logs_to_json',timedelta(hours=10),timedelta(hours=24),False)
 
@@ -153,7 +148,6 @@ class logs_to_json_task(pats_task):
         send_all_jsons()
 
 class errors_to_vps_task(pats_task):
-
     def __init__(self):
         super(errors_to_vps_task,self).__init__('errors_to_vps',timedelta(hours=10,minutes=45),timedelta(hours=24),False)
 
@@ -169,7 +163,6 @@ class errors_to_vps_task(pats_task):
             lb.execute(cmd,5,logger_name=self.name)
             self.logger.info(yesterday_file + ' send to dash.')
 class render_task(pats_task):
-
     def __init__(self):
         super(render_task,self).__init__('render',timedelta(hours=11),timedelta(hours=24),False)
 
@@ -177,11 +170,23 @@ class render_task(pats_task):
         render_last_day()
 
 class wdt_pats_task(pats_task):
-
     def __init__(self):
         super(wdt_pats_task,self).__init__('wdt_pats',timedelta(),timedelta(seconds=300),False)
+        self.no_realsense_cnt = 0
 
     def task_func(self):
+
+        if not os.path.exists(lb.no_realsense_flag):
+            self.no_realsense_cnt = 0
+        else:
+            os.remove(lb.no_realsense_flag)
+            self.no_realsense_cnt += 1
+            self.logger.warning('Could not find realsense. #' + str(self.no_realsense_cnt))
+        if self.no_realsense_cnt >12: # 5 x 12 = 1 hour
+                self.logger.error('Could not find realsense for over an hour! Rebooting...')
+                cmd = 'sudo rtcwake -m off -s 120'
+                lb.execute(cmd,1,logger_name=self.name)
+
         if os.path.exists(lb.proces_wdt_flag):
             os.remove(lb.proces_wdt_flag)
         else:
@@ -191,7 +196,6 @@ class wdt_pats_task(pats_task):
             lb.execute(cmd,1,logger_name=self.name)
 
 class wdt_tunnel_task(pats_task):
-
 # What I want to happen is the following:
 # - restart the NUC if the tunnel is failing, but:
 # - only if absolutely necessary and it does not hurt the monitoring operation

@@ -42,6 +42,7 @@ cv::Point3f deadzone(cv::Point3f p,float lo, float hi);
 cv::Point3f pats_to_betaflight_coord(cv::Point3f vec);
 cv::Point3f betaflight_to_pats_coord(cv::Point3f vec);
 void set_external_wdt_flag();
+void set_no_realsense_flag();
 
 const float rad2deg = 180.f/M_PIf32;
 const float deg2rad = M_PIf32/180.f;
@@ -70,7 +71,10 @@ struct StereoPair {
     double time;
     std::mutex processed;
 };
-
+struct NoRealsenseConnected : public std::exception {
+    std::string msg;
+    NoRealsenseConnected() : msg("no RealSense connected") {}
+};
 struct MyExit : public std::exception {
     std::string msg;
     MyExit(std::string return_value) : msg(return_value) {}

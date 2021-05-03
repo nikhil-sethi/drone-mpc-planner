@@ -192,7 +192,7 @@ void Realsense::connect_and_check(string ser_nr,int id) {
 
     rs2::device_list devices = ctx.query_devices();
     if (devices.size() == 0) {
-        throw MyExit("no RealSense connected");
+        throw NoRealsenseConnected();
     } else if (devices.size() > 1 && !ser_nr.compare("")) {
         throw MyExit("more than one RealSense connected....");
     } else if (ser_nr == "") {
@@ -316,7 +316,7 @@ std::tuple<float,float,cv::Mat,cv::Mat,cv::Mat,float> Realsense::measure_auto_ex
     if (!dev_initialized) {
         rs2::device_list devices = ctx.query_devices();
         if (devices.size() == 0) {
-            throw MyExit("no RealSense connected");
+            throw NoRealsenseConnected();
         } else if (devices.size() > 1) {
             throw MyExit("more than one RealSense connected....");
         } else {
@@ -401,7 +401,7 @@ std::tuple<float,float,double,cv::Mat> Realsense::measure_angle() {
     if (!dev_initialized) {
         rs2::device_list devices = ctx.query_devices();
         if (devices.size() == 0) {
-            throw MyExit("no RealSense connected");
+            throw NoRealsenseConnected();
         } else if (devices.size() > 1) {
             throw MyExit("more than one RealSense connected....");
         } else {
@@ -632,7 +632,7 @@ void Realsense::reset() {
     rs2::stream_profile infrared1,infrared2;
     rs2::device_list devices = ctx.query_devices();
     if (devices.size() == 0) {
-        throw MyExit("no RealSense connected");
+        throw NoRealsenseConnected();
     } else if (devices.size() > 1) {
         std::cout << "Warning detected more then one device. Resetting everything" << std::endl;
         rs2::device devt;

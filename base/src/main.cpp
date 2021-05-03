@@ -1110,6 +1110,10 @@ int main( int argc, char **argv )
             cmdcenter.reset_commandcenter_status_file(err2.msg,true);
         }
         return 1;
+    } catch (NoRealsenseConnected const &err) {
+        set_no_realsense_flag();
+        std::cout << "Error: " << err.msg << std::endl;
+        return 1;
     } catch (cv::Exception const &err) {
         cmdcenter.reset_commandcenter_status_file(err.msg,true);
         std::cout << "Error: " << err.msg << std::endl;

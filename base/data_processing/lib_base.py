@@ -13,6 +13,7 @@ disable_flag = flags_dir + 'disable'
 cc_update_request = flags_dir + 'cc_update_request'
 daemon_wdt_flag =flags_dir + 'daemon_wdt_flag'
 proces_wdt_flag =flags_dir + 'proces_wdt_flag'
+no_realsense_flag =flags_dir + 'no_realsense_flag'
 
 local_status_txt_file=os.path.expanduser('~/pats/status/status.txt')
 local_system_txt_file=os.path.expanduser('~/pats/status/system_info.txt')

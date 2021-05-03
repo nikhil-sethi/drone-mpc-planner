@@ -282,3 +282,6 @@ cv::Point3f betaflight_to_pats_coord(cv::Point3f vec) {
 void set_external_wdt_flag() {
     std::ofstream output("../../../../pats/flags/proces_wdt_flag"); //set a file flag that is periodically being checked by an external python script:
 }
+void set_no_realsense_flag() {
+    std::ofstream output("../../../../pats/flags/no_realsense_flag");
+}
