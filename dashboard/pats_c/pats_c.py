@@ -294,7 +294,7 @@ def create_heatmap(unique_dates,heatmap_counts,xlabels, selected_cells):
         h=10
     fig.update_layout(
         height=h,
-        title_text='Moth counts per hour:',
+        title_text='Activity summed per hour',
         clickmode='event+select'
     )
     style={'display': 'block','margin-left': 'auto','margin-right': 'auto','width': '80%'}
@@ -321,7 +321,7 @@ def create_hist(df_hist,unique_dates,system_labels):
         fig.add_trace(hist)
 
     fig.update_layout(
-        title_text='Moth counts per day',
+        title_text='Activity summed per day',
         xaxis_title_text='Days',
         yaxis_title_text='Counts',
         barmode='stack',
@@ -352,7 +352,7 @@ def create_24h_hist(hist_24h_data,hour_labels,system_labels):
         fig.add_trace(hist)
 
     fig.update_layout(
-        title_text='Moth period counts per hour',
+        title_text='Average activity throughout a day',
         xaxis_title_text='Hours',
         yaxis_title_text='Counts',
         barmode='stack',
@@ -426,7 +426,7 @@ def create_scatter(moths,system_labels,scatter_x_value,scatter_y_value):
 
 
     scat_fig.update_layout(
-        title_text='Selected moths:',
+        title_text='Selected insects:',
         xaxis_title = scatter_columns[scatter_x_value],
         yaxis_title = scatter_columns[scatter_y_value],
         clickmode='event+select',
@@ -460,7 +460,7 @@ def create_path_plot(target_log_fn):
         z = df_ilog['sposY_insect'],
         text = df_ilog['time'],
         mode = 'markers',
-        name = 'Moth path',
+        name = 'Flight path',
         hovertemplate = '<b>t= %{text}</b><br>x= %{x}<br>y= %{y}<br>z= %{z}'
     )
     camera_pos = go.Scatter3d(
@@ -474,7 +474,7 @@ def create_path_plot(target_log_fn):
     )
     fig = go.Figure(data=[scatter,camera_pos])
     fig.update_layout(
-        title_text='Moth path:',
+        title_text='Insect flight path',
          scene=dict(
                  aspectmode='data'
          )
