@@ -6,7 +6,9 @@ until (( count++ >= 5 )) || ssh -o StrictHostKeyChecking=no -T $1 << EOF
 	killall pats || true
 	sleep 3
 	killall -9 pats || true
-	sudo rtcwake -m off -s 120
+	sudo rtcwake -m no -s 20
+	sudo swapoff -a
+	sudo systemctl poweroff
 EOF
 do
   echo "$1 retry $count"
