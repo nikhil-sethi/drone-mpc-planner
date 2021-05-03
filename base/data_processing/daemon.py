@@ -165,7 +165,7 @@ class errors_to_vps_task(pats_task):
         yesterday_file = lb.daily_errs_log + '.' + (datetime.today()-timedelta(days=1)).strftime("%Y%m%d")
         if os.path.exists(yesterday_file):
             remote_err_file='daily_basestation_errors/' + socket.gethostname() + '_' + lb.datetime_to_str(datetime.today()) + '.log'
-            cmd = 'rsync -puz ' + yesterday_file +' dash:' + remote_err_file
+            cmd = 'rsync -az ' + yesterday_file +' dash:' + remote_err_file
             lb.execute(cmd,5,logger_name=self.name)
             self.logger.info(yesterday_file + ' send to dash.')
 class render_task(pats_task):

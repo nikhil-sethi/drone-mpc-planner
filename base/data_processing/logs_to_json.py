@@ -362,7 +362,7 @@ def send_all_jsons():
     Path(lb.json_dir + '/sent').mkdir(parents=True, exist_ok=True)
     for json_fn in glob.glob(lb.json_dir + '/*.json'):
         remote_json_file='jsons/' + socket.gethostname() + '_' + os.path.basename(json_fn)
-        cmd = 'rsync -puz ' + json_fn +' dash:' + remote_json_file
+        cmd = 'rsync -az ' + json_fn +' dash:' + remote_json_file
         if lb.execute(cmd,3,'logs_to_json') == 0:
             json_sent_fn = lb.json_dir + '/sent/' + os.path.basename(json_fn)
             os.rename(json_fn,json_sent_fn)

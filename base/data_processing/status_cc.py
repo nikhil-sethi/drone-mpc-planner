@@ -14,16 +14,16 @@ def send_status_update():
                 first_read = lines[0]
 
                 if os.path.exists(lb.local_pats_xml):
-                    cmd = 'rsync -puaz ' + lb.local_pats_xml + ' dash:' + lb.remote_pats_xml
+                    cmd = 'rsync -az ' + lb.local_pats_xml + ' dash:' + lb.remote_pats_xml
                     lb.execute(cmd,1,'status_cc')
                 if os.path.exists(lb.local_status_txt_file):
-                    cmd = 'rsync -pz ' + lb.local_status_txt_file +' dash:' + lb.remote_status_txt_file
+                    cmd = 'rsync -az ' + lb.local_status_txt_file +' dash:' + lb.remote_status_txt_file
                     lb.execute(cmd,1,'status_cc')
                 if os.path.exists(lb.local_system_txt_file):
-                    cmd = 'rsync -pz ' + lb.local_system_txt_file +' dash:' + lb.remote_system_txt_file
+                    cmd = 'rsync -az ' + lb.local_system_txt_file +' dash:' + lb.remote_system_txt_file
                     lb.execute(cmd,1,'status_cc')
                 if os.path.exists(lb.local_status_im_file):
-                    cmd = 'rsync -puz ' + lb.local_status_im_file +' dash:' + lb.remote_status_im_file
+                    cmd = 'rsync -a ' + lb.local_status_im_file +' dash:' + lb.remote_status_im_file
                     lb.execute(cmd,1,'status_cc')
     except:
         pass
