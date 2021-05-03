@@ -222,7 +222,7 @@ void process_video() {
             }
         }
 
-        if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode) {
+        if (pparams.video_raw && pparams.video_raw != video_bag) {
             // cv::Mat id_fr = cam->frameL.clone();
             // putText(id_fr,std::to_string(frame->rs_id),cv::Point(0, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,Scalar(255));
             int frame_written = output_video_LR.write(frame->left,frame->right);
@@ -517,7 +517,6 @@ bool handle_key(double time [[maybe_unused]]) {
             init_insect_log(58);
         break;
     case '4':
-
         init_insect_log(54);
         break;
     case '5':
@@ -556,7 +555,7 @@ bool handle_key(double time [[maybe_unused]]) {
         cam->turbo = !cam->turbo;
         break;
     case '.':
-        cam->skip_one_sec();
+        cam->skip(5);
         break;
     case ',':
         cam->back_one_sec();
@@ -688,7 +687,7 @@ void init_video_recorders() {
     /*****init the video writer*****/
     if (pparams.video_result)
         if (output_video_results.init(pparams.video_result, data_output_dir + "videoResult.mkv",visualizer.viz_frame_size().width,visualizer.viz_frame_size().height,pparams.fps,"192.168.1.255",5000,true)) {throw MyExit("could not open results video");}
-    if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode)
+    if (pparams.video_raw && pparams.video_raw != video_bag)
         if (output_video_LR.init(pparams.video_raw,data_output_dir + "videoRawLR.mkv",IMG_W,IMG_H*2,pparams.fps, "192.168.1.255",5000,false)) {throw MyExit("could not open LR video");}
 }
 
@@ -904,7 +903,7 @@ void close(bool sig_kill) {
 
     if (pparams.video_result)
         output_video_results.close();
-    if (pparams.video_raw && pparams.video_raw != video_bag && !log_replay_mode)
+    if (pparams.video_raw && pparams.video_raw != video_bag)
         output_video_LR.close();
 
     if (!render_hunt_mode && !render_monitor_video_mode)
@@ -1070,6 +1069,8 @@ int main( int argc, char **argv )
             drone_xml_fn = "../xml/" + string(drone_types_str[pparams.drone]) + ".xml";
         dparams.deserialize(drone_xml_fn);
 
+        if (log_replay_mode)
+            pparams.video_raw = video_disabled;
         if ( log_replay_mode && !render_hunt_mode && !render_monitor_video_mode )
             pparams.has_screen = true; // override log so that vizs always are on when replaying because most of the logs are deployed system now (without a screen)
         if (render_hunt_mode)
