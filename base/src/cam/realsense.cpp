@@ -358,8 +358,7 @@ std::tuple<float,float,cv::Mat,cv::Mat,cv::Mat,float> Realsense::measure_auto_ex
 
     for (i= 0; i< 2*pparams.fps; i++) { // check for large change in exposure
         frame = cam.wait_for_frames();
-        frameLt = Mat(im_size, CV_8UC1, const_cast<void *>(frame.get_infrared_frame(1).get_data()), Mat::AUTO_STEP);
-        frameRt = Mat(im_size, CV_8UC1, const_cast<void *>(frame.get_infrared_frame(2).get_data()), Mat::AUTO_STEP);
+
         if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
             new_expos = frame.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
             new_gain = frame.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_GAIN_LEVEL);
@@ -371,9 +370,10 @@ std::tuple<float,float,cv::Mat,cv::Mat,cv::Mat,float> Realsense::measure_auto_ex
             tmp_exposure = new_expos;
         }
     }
-
     cam.stop();
 
+    frameLt = Mat(im_size, CV_8UC1, const_cast<void *>(frame.get_infrared_frame(1).get_data()), Mat::AUTO_STEP).clone();
+    frameRt = Mat(im_size, CV_8UC1, const_cast<void *>(frame.get_infrared_frame(2).get_data()), Mat::AUTO_STEP).clone();
     cv::Mat frame_top = frameLt(cv::Rect(frameLt.cols/3,0,frameLt.cols/3*2,frameLt.rows/3));
     float brightness = static_cast<float>(mean( frame_top )[0]);
 
@@ -382,12 +382,12 @@ std::tuple<float,float,cv::Mat,cv::Mat,cv::Mat,float> Realsense::measure_auto_ex
     else if (actual_exposure_was_measured!=i)
         std::cout << "Not all frames contained exosure info: " << actual_exposure_was_measured << " / " << i << std::endl;
 
-
+    auto framergb = frame.get_color_frame();
     cv::Mat frame_bgr;
     if (isD455)
-        frame_bgr = cv::Mat(cv::Size(1280,800), CV_8UC3, const_cast<void *>(frame.get_color_frame().get_data()), Mat::AUTO_STEP);
+        frame_bgr = cv::Mat(cv::Size(1280,800), CV_8UC3, const_cast<void *>(framergb.get_data()), Mat::AUTO_STEP).clone();
     else
-        frame_bgr = cv::Mat(cv::Size(1920,1080), CV_8UC3, const_cast<void *>(frame.get_color_frame().get_data()), Mat::AUTO_STEP);
+        frame_bgr = cv::Mat(cv::Size(1920,1080), CV_8UC3, const_cast<void *>(framergb.get_data()), Mat::AUTO_STEP).clone();
 
     camparams.measured_exposure = new_expos;
     camparams.measured_gain = new_gain;
