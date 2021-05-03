@@ -391,6 +391,8 @@ def create_scatter(moths,system_labels,scatter_x_value,scatter_y_value):
             df = df_scatter_sys[tmp1] #retrieve only those rows that have the same classficication
             df = df.fillna('')
             if not df.empty:
+                # df['time'].apply(lambda x: x.strftime('%H:%M:%S %d-%m-%Y'))
+                df['time_for_humans'] = df['time'].dt.strftime('%H:%M:%S %d-%m-%Y')
                 current_labels = [system_labels[sys] for x in df[scatter_x_value]]
                 scatter = go.Scattergl(
                     name = system_labels[sys] + ', ' + classification,
@@ -403,7 +405,8 @@ def create_scatter(moths,system_labels,scatter_x_value,scatter_y_value):
                         df['Video_Filename'],
                         df['Human_classification'],
                         current_labels,
-                        df['uid']
+                        df['uid'],
+                        df['time_for_humans'],
                     ), axis=-1),
                     marker=dict(
                         cmin = 0,
@@ -417,6 +420,7 @@ def create_scatter(moths,system_labels,scatter_x_value,scatter_y_value):
                     hovertemplate = '<b>System %{customdata[3]}</b><br><br>' +
                     'x: %{x}<br>' +
                     'y: %{y}<br>' +
+                    't: %{customdata[5]}<br>' +
                     'File: %{customdata[0]}<br>' +
                     'Video: %{customdata[1]}<br>' +
                     'Ground truth: %{customdata[2]}<br>' +
