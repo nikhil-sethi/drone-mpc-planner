@@ -1039,9 +1039,12 @@ void watchdog_worker(void) {
         }
         if (!watchdog && !exit_now) {
             std::cout << "Main watchdog alert! Killing the process." << std::endl;
+            pid_t pid = getpid();
+            std::cout << "pid: " << pid << std::endl;
             exit_now = true;
             usleep(5e5);
-            auto res [[maybe_unused]] = std::system("killall -9 pats");
+            string kill_cmd = "kill -9 " + std::to_string(pid);
+            auto res [[maybe_unused]] = std::system(kill_cmd.c_str());
         }
         watchdog = false;
     }

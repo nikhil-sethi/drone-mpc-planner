@@ -28,6 +28,7 @@ def render(start_datetime,end_datetime,data_folder):
     if os.path.exists(render_process_dir):
         shutil.rmtree(render_process_dir)
     shutil.copytree(original_process_dir,render_process_dir,ignore=shutil.ignore_patterns('*logging*'))
+    shutil.move(render_process_dir + '/pats',render_process_dir + '/pats_render')
     found_dirs = glob.glob(os.path.expanduser(data_folder) + "*/202*_*")
     filtered_dirs = [d for d in found_dirs if lb.str_to_datetime(os.path.basename(os.path.normpath(d))) >= start_datetime and lb.str_to_datetime(os.path.basename(os.path.normpath(d))) <= end_datetime] # filter the list of dirs to only contain dirs between certain dates
     for folder in filtered_dirs:
@@ -52,7 +53,7 @@ def render(start_datetime,end_datetime,data_folder):
                     if line.find('n_takeoffs') != -1:
                         n_takeoffs = int(line.split(':')[1])
             if hunt_mode and n_hunts > 0 and n_takeoffs > 0:
-                cmd = './pats --log ' +folder + '/logging --render'
+                cmd = './pats_render --log ' +folder + '/logging --render'
                 execute(cmd,render_process_dir)
                 video_result_path = Path(render_process_dir, 'logging/replay/videoResult.mkv')
                 if os.path.exists(video_result_path):
@@ -70,7 +71,7 @@ def render(start_datetime,end_datetime,data_folder):
                     video_src_path = folder + '/logging/' + file
                     if not os.path.isfile(video_target_path) and os.stat(video_src_path).st_size > 30000:
                         logger.info(f"Rendering {file}")
-                        cmd = './pats --log ' + folder + '/logging --monitor-render ' + video_src_path + ' 2>&1 | /usr/bin/tee ' + log_target_path
+                        cmd = './pats_render --log ' + folder + '/logging --monitor-render ' + video_src_path + ' 2>&1 | /usr/bin/tee ' + log_target_path
                         execute(cmd,render_process_dir)
                         video_result_path = render_process_dir + '/logging/replay/videoResult.mkv'
 
