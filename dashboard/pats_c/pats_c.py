@@ -352,7 +352,7 @@ def create_24h_hist(hist_24h_data,hour_labels,system_labels):
         fig.add_trace(hist)
 
     fig.update_layout(
-        title_text='Average activity throughout a day',
+        title_text='Activity throughout the day',
         xaxis_title_text='Hours',
         yaxis_title_text='Counts',
         barmode='stack',
