@@ -14,7 +14,7 @@
         "type": "python",
         "request": "launch",
         "program": "${workspaceFolder}/logs_to_json.py",
-        "args": ["-o","~/pats/data/junk/20210426_214910"],
+        "args": ["-i","~/pats/data/"],
         "console": "integratedTerminal"
       },
       {
@@ -22,7 +22,7 @@
         "type": "python",
         "request": "launch",
         "program": "${workspaceFolder}/render_videos.py",
-        "args": ["-i","~/data/"],
+        "args": ["-i","~/pats/data/"],
         "console": "integratedTerminal"
       },
       {

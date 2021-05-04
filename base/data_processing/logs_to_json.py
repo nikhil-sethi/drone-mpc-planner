@@ -236,10 +236,12 @@ def process_log(detection_fn,folder,mode,monitoring_start_datetime):
     first_RS_ID = str(RS_ID[0])
     filename = os.path.basename(detection_fn)
     video_filename = os.path.dirname(detection_fn) + '/' + filename.replace('log_itrk','moth').replace('csv','mkv')
-    if not os.path.exists(video_filename):
-        video_filename = 'NA'
-    else:
+    if os.path.exists(video_filename) and duration > 1 and duration < 10: # this filter is also used in PATS-C
+        render_tag_filename = os.path.dirname(detection_fn) + '/' + filename.replace('log_itrk','moth').replace('csv','render_tag')
+        Path(render_tag_filename).touch()
         video_filename = os.path.basename(video_filename)
+    else :
+        video_filename = 'NA'
 
     detection_time = datetime_to_str(monitoring_start_datetime + timedelta(seconds=elapsed_time[0]))
 
@@ -373,7 +375,7 @@ if __name__ == "__main__":
     parser.add_argument('-i', help="Path to the folder with logs", required=False,default=lb.data_dir)
     parser.add_argument('-s', help="Directory date to start from", required=False)
     parser.add_argument('-e', help="Directory date to end on", required=False)
-    parser.add_argument('-o',  help="Dry run process just this one log", required=False)
+    parser.add_argument('--dry-run',  help="Dry run process system status just this one log", required=False)
     parser.add_argument('--filename', help="Path and filename to store results in", default="./detections.json")
     parser.add_argument('--system', help="Override system name", default=socket.gethostname())
     args = parser.parse_args()
@@ -386,11 +388,13 @@ if __name__ == "__main__":
     data_folder = args.i
     sys_str = args.system
 
-    if args.o:
-        status_in_folder,mode,operational_log_start = process_system_status_in_folder(args.o)
-    elif not args.s and not args.e:
+    if args.dry_run:
+        status_in_folder,mode,operational_log_start = process_system_status_in_folder(args.dry_run)
+    elif not args.s and not args.e and not args.i:
         process_all_logs_to_jsons()
         send_all_jsons()
+    elif not args.s and not args.e:
+        logs_to_json(lb.str_to_datetime('20000101_000000'),lb.str_to_datetime('30000101_000000'),json_fn,data_folder,sys_str)
     elif not args.s:
         logs_to_json(lb.str_to_datetime('20000101_000000'),str_to_datetime(args.e),json_fn,data_folder,sys_str)
     elif not args.e:

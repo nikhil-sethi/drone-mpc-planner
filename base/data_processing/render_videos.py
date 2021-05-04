@@ -14,12 +14,12 @@ def execute(cmd,render_process_dir):
         logger.info(stdout_line.decode('utf-8'))
     popen.stdout.close()
 
-def render_last_day(data_dir=lb.data_dir):
+def render_last_day(data_dir=lb.data_dir,abort_deadline=datetime.strptime('30000101_100000','%Y%m%d_%H%M%S')):
     now = datetime.today()
     yesterday = now - timedelta(days=1)
-    render(yesterday,now,data_dir)
+    render(yesterday,now,data_dir,abort_deadline)
 
-def render(start_datetime,end_datetime,data_folder):
+def render(start_datetime,end_datetime,data_folder,abort_deadline=datetime.strptime('30000101_100000','%Y%m%d_%H%M%S')):
     logger = logging.getLogger('render')
 
     original_process_dir = os.path.expanduser('~/code/pats/base/build/')
@@ -32,6 +32,9 @@ def render(start_datetime,end_datetime,data_folder):
     found_dirs = glob.glob(os.path.expanduser(data_folder) + "*/202*_*")
     filtered_dirs = [d for d in found_dirs if lb.str_to_datetime(os.path.basename(os.path.normpath(d))) >= start_datetime and lb.str_to_datetime(os.path.basename(os.path.normpath(d))) <= end_datetime] # filter the list of dirs to only contain dirs between certain dates
     for folder in filtered_dirs:
+        if datetime.now()>abort_deadline:
+            logger.warning('Time for rendering exceeded. Aborting rendering prematurely.')
+            return
         logger.info(f"Processing folder: {folder}")
         pats_xml_path = Path(folder,'logging','pats.xml')
         results_txt_path = Path(folder,'logging','results.txt')
@@ -64,12 +67,16 @@ def render(start_datetime,end_datetime,data_folder):
             #render insects:
             files = os.listdir(folder + '/logging/')
             for file in files:
+                if datetime.now()>abort_deadline:
+                    logger.warning('Time for rendering exceeded. Aborting rendering prematurely.')
+                    return
                 if file.startswith('moth') and file.endswith(".mkv"):
                     logger.info(f"Processing {file}")
                     video_target_path =  folder + '/logging/render_' + os.path.splitext(file)[0] + '.mkv'
                     log_target_path =  folder + '/logging/render_' + os.path.splitext(file)[0] + '.txt'
                     video_src_path = folder + '/logging/' + file
-                    if not os.path.isfile(video_target_path) and os.stat(video_src_path).st_size > 30000:
+                    tag_path = folder + '/logging/' + file.replace('.mkv','.render_tag') # the render tag is set in logs_to_json using similar filtering as what PATS-C is supposed to use
+                    if not os.path.isfile(video_target_path) and os.path.isfile(tag_path):
                         logger.info(f"Rendering {file}")
                         cmd = './pats_render --log ' + folder + '/logging --monitor-render ' + video_src_path + ' 2>&1 | /usr/bin/tee ' + log_target_path
                         execute(cmd,render_process_dir)
@@ -92,7 +99,7 @@ if __name__ == "__main__":
     logger.setLevel(logging.DEBUG)
 
     if not args.s and not args.e:
-        render_last_day(args.i)
+        render_last_day(args.i,abort_deadline=datetime.now() + timedelta(hours=3))
     elif not args.s:
         render(lb.str_to_datetime('20000101_000000'),args.e,args.i)
     elif not args.e:
