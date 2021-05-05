@@ -7,6 +7,8 @@ Start [install.sh](base/install/install.sh) with argument 0 (non monitoring mode
 
 ## [Simulator](./doc/simulator.md)
 
+## [Hardware](https://docs.google.com/document/d/1Bx1VfjAtfZx1tshCKbtL3htAQ21Cfe5XGOk_ckEZDgQ/edit#heading=h.kqrayfudspan)
+
 ## Installing correct kernel:
 `sudo apt install linux-headers-4.15.0-55 linux-headers-4.15.0-55-generic linux-image-4.15.0-55-generic linux-modules-4.15.0-55-generic linux-modules-extra-4.15.0-55-generic`  
 
