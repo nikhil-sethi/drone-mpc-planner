@@ -51,6 +51,13 @@ set name = quf4
 
 profile 0
 
+# profile 0
+set vbat_sag_compensation = 100
+set d_pitch = 65
+set d_roll = 60
+set angle_level_strength = 90
+set d_min_roll = 0
+set d_min_pitch = 0
 rateprofile 0
 
 # rateprofile 0

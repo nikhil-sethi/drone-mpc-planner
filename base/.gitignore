@@ -13,3 +13,7 @@ videoRawL.avi
 videoRawLR.avi
 settings*.dat
 false_positives.csv
+
+mpc-design/*.csv
+*.p
+*.pyc
