@@ -92,7 +92,7 @@ class pats_task(metaclass=abc.ABCMeta):
     def do_work(self):
         file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         fh = logging.handlers.RotatingFileHandler(filename=lb.log_dir + self.name + '.log', maxBytes=1024*1024*100, backupCount=1)
-        fh_errs = logging.handlers.TimedRotatingFileHandler(filename=lb.daily_errs_log, when='MIDNIGHT', backupCount=10, atTime=dttime(hour=10,minute=40))
+        fh_errs = logging.handlers.TimedRotatingFileHandler(filename=lb.daily_errs_log, when='MIDNIGHT', backupCount=10, atTime=dttime(hour=9,minute=25)) # the time is 5 minutes before the trigger time of the errors_to_vps script
         fh.setFormatter(file_format)
         fh.level = logging.DEBUG
         fh_errs.setFormatter(file_format)
@@ -141,7 +141,7 @@ class cut_moths_task(pats_task):
 
 class logs_to_json_task(pats_task):
     def __init__(self):
-        super(logs_to_json_task,self).__init__('logs_to_json',timedelta(hours=10),timedelta(hours=24),False)
+        super(logs_to_json_task,self).__init__('logs_to_json',timedelta(hours=8, minutes=30),timedelta(hours=24),False)
 
     def task_func(self):
         process_all_logs_to_jsons()
@@ -149,7 +149,7 @@ class logs_to_json_task(pats_task):
 
 class errors_to_vps_task(pats_task):
     def __init__(self):
-        super(errors_to_vps_task,self).__init__('errors_to_vps',timedelta(hours=10,minutes=45),timedelta(hours=24),False)
+        super(errors_to_vps_task,self).__init__('errors_to_vps',timedelta(hours=9,minutes=30),timedelta(hours=24),False) # if you change this time, make sure to also change the file rotate time!
 
     def task_func(self):
         self.logger.error('Rotate!') #this forces the rotation of all_errors.log
@@ -164,7 +164,7 @@ class errors_to_vps_task(pats_task):
             self.logger.info(yesterday_file + ' send to dash.')
 class render_task(pats_task):
     def __init__(self):
-        super(render_task,self).__init__('render',timedelta(hours=11),timedelta(hours=24),False)
+        super(render_task,self).__init__('render',timedelta(hours=9),timedelta(hours=24),False)
 
     def task_func(self):
         render_last_day(abort_deadline=datetime.now() + timedelta(hours=3))

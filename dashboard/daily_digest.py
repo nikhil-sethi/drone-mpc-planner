@@ -3,6 +3,7 @@ import subprocess
 import time, argparse
 import glob, os, re, sys
 from datetime import datetime, timedelta
+from pytz import timezone
 import pandas as pd
 sys.path.append('pats_c/lib')
 import lib_patsc as patsc
@@ -141,13 +142,14 @@ def send_mail(now,dry_run):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Script that adds the json files or incoming json files to the database that is reable for the electron app.')
     parser.add_argument('-i', '--input_folder', help="Path to the folder with json files", default='~/jsons/')
-    parser.add_argument('-t','--hour', help="Send email at the start of this hour.", default=11)
+    parser.add_argument('-t','--hour', help="Send email at the start of this hour.", default=10)
     parser.add_argument('--dry-run', help="Run script now without sending mail", dest='dry_run', action='store_true')
     args = parser.parse_args()
 
     updated_today = False
+    cet = timezone('Europe/Amsterdam')
     while  True:
-        now = datetime.now()
+        now = datetime.now(cet)
         if (now.hour == int(args.hour) and not updated_today) or args.dry_run:
             updated_today = True
             send_mail(now,args.dry_run)
