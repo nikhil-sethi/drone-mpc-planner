@@ -333,7 +333,8 @@ void DroneNavigation::update(double time) {
             _navigation_status = ns_chasing_insect_ff;
             [[fallthrough]];
         } case ns_chasing_insect_ff: {
-            _dctrl->LED(true);
+            if (dparams.led_type != led_top_uv)
+                _dctrl->LED(true);
             if (_dctrl->ff_completed())
                 _navigation_status = ns_chasing_insect;
             check_abort_autonomus_flight_conditions();

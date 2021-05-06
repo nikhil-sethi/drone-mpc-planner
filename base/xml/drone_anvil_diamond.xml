@@ -1,0 +1,28 @@
+<SerializableClass Type="DroneParameters" Version="1.12">
+    <Member Name="name">andi</Member>
+    <Member Name="initial_hover_throttle">870</Member>
+    <Member Name="throttle_bank_factor">0.75</Member>
+    <Member Name="max_burn_time">0.7</Member>
+    <Member Name="min_throttle">315</Member>
+    <Member Name="full_bat_and_throttle_im_effect">3</Member>
+    <Member Name="full_bat_and_throttle_take_off_acc">20</Member>
+    <Member Name="full_bat_and_throttle_spinup_time">0.5</Member>
+    <Member Name="hover_throttle_a">865</Member>
+    <Member Name="hover_throttle_b">495</Member>
+    <Member Name="drone_blink_strength">30</Member>
+    <Member Name="drone_led_strength">5</Member>
+    <Member Name="blink_period">0.1</Member>
+    <Member Name="radius">0.05</Member>
+    <Member Name="pad_radius">0.12</Member>
+    <Member Name="thrust">18</Member> <!-- overwritten, if xml/drone_calibration.xml exists -->
+    <Member Name="tx">tx_frskyd16</Member>
+    <Member Name="mode3d">false</Member>
+    <Member Name="control">control_anvil_diamond</Member>
+    <Member Name="spinup_throttle_non3d">330</Member>
+    <Member Name="land_cell_v">3.0</Member>
+    <Member Name="max_flight_time">180</Member>
+    <Member Name="min_hunt_cell_v">4.1</Member>
+    <Member Name="static_shakeit_throttle">300</Member>
+    <Member Name="target_takeoff_velocity">2.2</Member>
+    <Member Name="led_type">led_strip</Member>
+</SerializableClass>

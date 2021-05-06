@@ -162,7 +162,8 @@ enum drone_types {
     drone_anvil_superbee,
     drone_qutt,
     drone_quf4,
-    drone_quto
+    drone_quto,
+    drone_anvil_diamond
 };
 static const char* drone_types_str[] = {
     "drone_none",
@@ -172,7 +173,8 @@ static const char* drone_types_str[] = {
     "drone_anvil_superbee",
     "drone_qutt",
     "drone_quf4",
-    "drone_quto"
+    "drone_quto",
+    "drone_anvil_diamond",
     "" // must be the last entry! (check in serializer)
 };
 enum op_modes {

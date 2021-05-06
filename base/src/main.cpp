@@ -203,6 +203,10 @@ void process_video() {
                 std::cout <<"Detected a drone config that fits, reloading!" << std::endl;
                 pparams.drone= drone_anvil_superbee;
                 pparams.serialize(pats_xml_fn);
+            } else if(rc->bf_uid_str() == "andi") {
+                std::cout <<"Detected a drone config that fits, reloading!" << std::endl;
+                pparams.drone= drone_anvil_diamond;
+                pparams.serialize(pats_xml_fn);
             } else if(rc->bf_uid_str() == "qutt") {
                 std::cout <<"Detected a drone config that fits, reloading!" << std::endl;
                 pparams.drone= drone_qutt;
