@@ -5,15 +5,6 @@ from datetime import datetime, timedelta
 from pathlib import Path
 import lib_base as lb
 
-def execute(cmd,render_process_dir):
-    logger = logging.getLogger('render')
-    popen = subprocess.Popen(cmd, shell=True,stderr=subprocess.STDOUT,stdout=subprocess.PIPE,cwd=render_process_dir)
-    for stdout_line in iter(popen.stdout.readline, ""):
-        if popen.poll() != None:
-            break
-        logger.info(stdout_line.decode('utf-8'))
-    popen.stdout.close()
-
 def render_last_day(data_dir=lb.data_dir,abort_deadline=datetime.strptime('30000101_100000','%Y%m%d_%H%M%S')):
     now = datetime.today()
     yesterday = now - timedelta(days=1)
@@ -56,13 +47,16 @@ def render(start_datetime,end_datetime,data_folder,abort_deadline=datetime.strpt
                     if line.find('n_takeoffs') != -1:
                         n_takeoffs = int(line.split(':')[1])
             if hunt_mode and n_hunts > 0 and n_takeoffs > 0:
+                logger.info(f"Rendering hunt {folder}")
                 cmd = './pats_render --log ' +folder + '/logging --render'
-                execute(cmd,render_process_dir)
+                lb.execute(cmd,logger_name='render',render_process_dir=render_process_dir)
                 video_result_path = Path(render_process_dir, 'logging/replay/videoResult.mkv')
                 if os.path.exists(video_result_path):
                     Path(lb.renders_dir).mkdir(parents=True, exist_ok=True)
                     shutil.copyfile(video_result_path,target_path)
                     shutil.move(str(video_result_path), Path(folder,'videoResult.mkv'))
+                else:
+                    logger.error(f"hunt render not found after rendering {folder}")
 
             #render insects:
             files = os.listdir(folder + '/logging/')
@@ -79,11 +73,21 @@ def render(start_datetime,end_datetime,data_folder,abort_deadline=datetime.strpt
                     if not os.path.isfile(video_target_path) and os.path.isfile(tag_path):
                         logger.info(f"Rendering {file}")
                         cmd = './pats_render --log ' + folder + '/logging --monitor-render ' + video_src_path + ' 2>&1 | /usr/bin/tee ' + log_target_path
-                        execute(cmd,render_process_dir)
-                        video_result_path = render_process_dir + '/logging/replay/videoResult.mkv'
+                        render_ok = False
+                        for i in range(1,5):
+                            if lb.execute(cmd,logger_name='render',render_process_dir=render_process_dir) == 0:
+                                render_ok = True
+                                break
+                            logger.warning('Render attempt ' + str(i) + f' failed for {file}')
 
-                        if os.path.exists(video_result_path):
-                            shutil.move(video_result_path, video_target_path)
+                        if render_ok:
+                            video_result_path = render_process_dir + '/logging/replay/videoResult.mkv'
+                            if os.path.exists(video_result_path):
+                                shutil.move(video_result_path, video_target_path)
+                            else:
+                                logger.logging.error(f'Error, render missing...? {file}')
+                        else:
+                            logger.logging.error(f'Error, render failed for {file}')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Script that renders video result in all pats log folders in a directory, bound by the minimum and maximum date\n\

@@ -35,14 +35,14 @@ def natural_sort(l):
     alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
     return sorted(l, key = alphanum_key)
 
-def execute(cmd,retry=1,logger_name=''):
+def execute(cmd,retry=1,logger_name='',render_process_dir=None):
     if logger_name != '':
         logger = logging.getLogger(logger_name)
 
     p_result = None
     n=0
     while p_result != 0 and n < retry:
-        popen = subprocess.Popen(cmd, shell=True,stdout=subprocess.PIPE)
+        popen = subprocess.Popen(cmd, shell=True,stdout=subprocess.PIPE,cwd=render_process_dir)
         for stdout_line in iter(popen.stdout.readline, ""):
             p_result = popen.poll()
             if p_result != None:
