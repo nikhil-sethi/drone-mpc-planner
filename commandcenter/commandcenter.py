@@ -343,36 +343,36 @@ class SystemWidget(QWidget):
                         line = '    <Member Name=\"live_image_frq\">1</Member>\n'
                     else:
                         line = '    <Member Name=\"live_image_frq\">30</Member>\n'
-                elif line.find('\"darkness_threshold\"') != -1:
+                elif line.find('\"exposure_threshold\"') != -1:
                     if self.combo_mode.currentText() == "Monitoring":
                         if self.combo_sub_mode.currentText() == 'Koppert':
-                            line = '    <Member Name=\"darkness_threshold\">9500</Member>\n'
+                            line = '    <Member Name=\"exposure_threshold\">9500</Member>\n'
                         elif self.combo_sub_mode.currentText() == 'Vogel':
-                            line = '    <Member Name=\"darkness_threshold\">300</Member>\n'
+                            line = '    <Member Name=\"exposure_threshold\">300</Member>\n'
                         else:
-                            line = '    <Member Name=\"darkness_threshold\">5000</Member>\n'
+                            line = '    <Member Name=\"exposure_threshold\">5000</Member>\n'
                     elif self.combo_mode.currentText() == "Hunt":
                         if self.combo_sub_mode.currentText() == 'Koppert':
-                            line = '    <Member Name=\"darkness_threshold\">9500</Member>\n'
+                            line = '    <Member Name=\"exposure_threshold\">9500</Member>\n'
                         else:
-                            line = '    <Member Name=\"darkness_threshold\">0</Member>\n'
+                            line = '    <Member Name=\"exposure_threshold\">0</Member>\n'
                     else:
-                           line = '    <Member Name=\"darkness_threshold\">0</Member>\n'
-                elif line.find('\"max_brightness\"') != -1:
+                           line = '    <Member Name=\"exposure_threshold\">0</Member>\n'
+                elif line.find('\"brightness_threshold\"') != -1:
                     if self.combo_mode.currentText() == "Monitoring":
                         if self.combo_sub_mode.currentText() == 'Koppert':
-                            line = '    <Member Name=\"max_brightness\">50</Member>\n'
+                            line = '    <Member Name=\"brightness_threshold\">50</Member>\n'
                         elif self.combo_sub_mode.currentText() == 'Holstein':
-                            line = '    <Member Name=\"max_brightness\">100</Member>\n'
+                            line = '    <Member Name=\"brightness_threshold\">100</Member>\n'
                         else:
-                            line = '    <Member Name=\"max_brightness\">128</Member>\n'
+                            line = '    <Member Name=\"brightness_threshold\">128</Member>\n'
                     elif self.combo_mode.currentText() == "Hunt":
                         if self.combo_sub_mode.currentText() == 'Koppert':
-                            line = '    <Member Name=\"max_brightness\">50</Member>\n'
+                            line = '    <Member Name=\"brightness_threshold\">50</Member>\n'
                         else:
-                            line = '    <Member Name=\"max_brightness\">255</Member>\n'
+                            line = '    <Member Name=\"brightness_threshold\">255</Member>\n'
                     else:
-                           line = '    <Member Name=\"max_brightness\">255</Member>\n'
+                           line = '    <Member Name=\"brightness_threshold\">255</Member>\n'
                 elif line.find('\"close_after_n_images\"') != -1:
                     if self.combo_mode.currentText() == "Hunt":
                         line = '    <Member Name=\"close_after_n_images\">10800</Member>\n'
