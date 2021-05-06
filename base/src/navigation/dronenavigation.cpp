@@ -579,7 +579,7 @@ void DroneNavigation::update(double time) {
             if (time_drone_problem < 0)
                 time_drone_problem = time;
             _dctrl->flight_mode(DroneController::fm_abort);
-            _dctrl->LED(static_cast<int>((time - time_drone_problem) * 2.0) % 2 > 0, 5); // faster blink every second
+            _dctrl->LED(static_cast<int>((time - time_drone_problem) * 2.0) % 2 > 0, 100); // faster blink every second
             break;
         } case ns_unable_to_locate: {
             if (time_drone_problem < 0)
