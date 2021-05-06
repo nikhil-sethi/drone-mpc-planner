@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
-import sys,os,re,subprocess,stat,argparse,time
+import sys,os,grp,subprocess,stat,argparse,time
 import serial # pip3 install pyserial or if you use conda: conda install -c anaconda pyserial
 
+
 def dev_not_exists(path):
+
 	try:
-		return stat.S_ISBLK(os.stat(path).st_mode)
+		if not stat.S_ISBLK(os.stat(path).st_mode):
+			stat_info = os.stat(path)
+			gid = stat_info.st_gid
+			group = grp.getgrgid(gid)[0]
+			return group != 'dialout'
+		return True
+
 	except:
 		return True
 
@@ -55,9 +63,10 @@ parser = argparse.ArgumentParser(description='Process and check the logs.')
 parser.add_argument('-i', '--drone-id',help='Drone id in case of using D16',type=str,default='1')
 parser.add_argument('-j', '--tx-id',help='Drone id in case of using D8',type=str,default='3')
 parser.add_argument('-f', '--firmware',help='Firmware *.bin file path',type=str,default='pats_4.2.bin')
-parser.add_argument('-s', '--settings',help='Betaflight diff settings file path', type=str,default='BF_Anvil_4.2.txt')
+parser.add_argument('-s', '--settings',help='Betaflight diff settings file path', type=str,default='BF_Anvil_4.2_3led.txt')
 parser.add_argument('-p', '--port',type=str,default='/dev/ttyACM0')
 parser.add_argument('-n', '--no-flashing', action='store_true')
+parser.add_argument('-d', '--dfu', help='Assume drone is already in DFU mode', action='store_true')
 args = parser.parse_args()
 
 if int(args.drone_id) > 63:
@@ -66,28 +75,38 @@ if int(args.drone_id) > 63:
 
 spinner = spinning_cursor()
 
-if not args.no_flashing:
-	while dev_not_exists(args.port):
-		c =  next(spinner)
-		s = c + 'Waiting for port ' + args.port + c
-		print(s, end = '')
-		sys.stdout.flush()
-		time.sleep(0.1)
-		for x in s:
-			sys.stdout.write('\b')
+if args.no_flashing and args.dfu:
+	print('Error: conflicting arguments!')
+	exit(1)
 
-	print('Port detected. Resetting to DFU mode...')
-	time.sleep(0.5)
-	reset_to_dfu(args.port)
+if not args.no_flashing:
+	if not args.dfu:
+		while dev_not_exists(args.port):
+			c =  next(spinner)
+			s = c + 'Waiting for port ' + args.port + c
+			print(s, end = '')
+			sys.stdout.flush()
+			time.sleep(0.1)
+			for x in s:
+				sys.stdout.write('\b')
+
+		print('Port detected. Resetting to DFU mode...')
+		time.sleep(0.5)
+		reset_to_dfu(args.port)
+
 	print('Uploading ' + args.firmware)
 	time.sleep(1)
 	if upload_firmware(args.firmware):
 		print("Error, dfu upload failed")
 		exit(1)
 
+delay = False
 while dev_not_exists(args.port):
 	c =  next(spinner)
-	s = c + 'Human, replug usb NOW' + c
+	if not args.no_flashing:
+		s = c + 'Human, replug usb NOW' + c
+	else:
+		s = c + 'Waiting for port: ' + args.port + c
 	print(s, end = '')
 	sys.stdout.flush()
 	time.sleep(0.1)
@@ -95,7 +114,6 @@ while dev_not_exists(args.port):
 		sys.stdout.write('\b')
 
 print('Port detected. Uploading settings...')
-time.sleep(1)
 upload_settings(args.port,args.tx_id,args.drone_id,args.settings)
 
 print('\nAll done!')

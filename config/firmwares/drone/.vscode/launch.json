@@ -1,0 +1,22 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Current File",
+        "type": "python",
+        "args": [],
+        "request": "launch",
+        "program": "${file}",
+        "console": "integratedTerminal"
+      },
+      {
+        "name": "bf_flash",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/bf_flash.py",
+        "args": ["-i","26"],
+        "console": "integratedTerminal"
+      },
+
+    ]
+  }
