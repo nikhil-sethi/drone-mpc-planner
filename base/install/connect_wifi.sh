@@ -6,9 +6,11 @@ if [ $# -eq 0 ]
 fi
 
 killall ssh
-sudo nmcli device wifi connect $1 password $2 &
+sudo nmcli device wifi connect "$1" password "$2" &
 sleep 60
+set +e
 killall pats
+killall ssh
 sleep 2
 sudo rtcwake -m no -s 10
 sudo swapoff -a
