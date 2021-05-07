@@ -53,6 +53,7 @@ aux 5 35 2 1650 2100 0 0
 set small_angle = 180
 set runaway_takeoff_prevention = OFF
 set runaway_takeoff_deactivate_throttle_percent = 25
+set vbat_detect_cell_voltage = 350
 set telemetry_disabled_current = ON
 set telemetry_disabled_fuel = ON
 set telemetry_disabled_mode = ON
