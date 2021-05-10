@@ -252,15 +252,15 @@ def natural_sort_systems(l):
     alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key[0][10:])]
     return sorted(l, key=alphanum_key)
 
-def create_heatmap(unique_dates,heatmap_counts,xlabels, selected_cells):
+def create_heatmap(unique_dates,heatmap_counts,xlabels, selected_heat):
     hover_label = pd.DataFrame(heatmap_counts).astype(int).astype(str)
     hover_label[hover_label=='-1'] = 'NA'
     heatmap_data = np.clip(heatmap_counts, -1, heatmap_max)
-    if (selected_cells):
-        selected_cells = pd.read_json(selected_cells, orient='split')
-        for _,cel in selected_cells.iterrows():
+    if selected_heat:
+        selected_heat = pd.read_json(selected_heat, orient='split')
+        for _,cel in selected_heat.iterrows():
             x=cel['x']
-            y=cel['y']
+            y = (unique_dates.strftime('%d-%m-%Y').tolist()).index(cel['lalaladate'])
             if heatmap_data[y,x]>=0:
                 heatmap_data[y,x]=-2
 
@@ -525,6 +525,38 @@ def dash_application():
                 value.extend(systems)
         return value
 
+    def update_selected_heat(clickData_hm,selected_heat):
+        if not clickData_hm:
+            return None
+        else:
+            for cel in clickData_hm['points']:
+                if cel['z'] == -1:
+                    return None # if a black cell is clicked, interpret that as cancelling the whole selection
+
+                x = hour_labels.index(cel['x'])
+
+                unclicked = False
+                columns=['x','lalaladate','hour'] #lalaladate -> python bug prevents me from using 'date' https://stackoverflow.com/questions/48369578/prevent-pandas-to-json-from-adding-time-component-to-date-object
+                if not selected_heat:
+                    selected_heat = pd.DataFrame(columns=columns)
+                else:
+                    selected_heat = pd.read_json(selected_heat, orient='split')
+                for index, _ in selected_heat.iterrows():
+                    if cel['z'] == -2:
+                        selected_heat = selected_heat.drop(index=index)
+                        unclicked = True
+                        break
+
+                if not unclicked:
+                    df_row= pd.DataFrame([[x,cel['y'],int(hour_labels[x].replace('h',''))]],columns=columns)
+                    if selected_heat.empty:
+                        selected_heat = df_row
+                    else:
+                        selected_heat = selected_heat.append(df_row, ignore_index=True)
+
+            selected_heat = selected_heat.to_json(date_format='iso', orient='split')
+        return selected_heat
+
     @app.callback(
         Output('hete_kaart', 'figure'),
         Output('staaf_kaart', 'figure'),
@@ -540,7 +572,7 @@ def dash_application():
         Input('hete_kaart', 'clickData'),
         State('selected_heatmap_data', 'children'),
         State('systems_dropdown','options'))
-    def update_ui_hist_and_heat(start_date,end_date,selected_systems,selected_hm_cells,selected_heat,system_options):
+    def update_ui_hist_and_heat(start_date,end_date,selected_systems,clickData_hm,selected_heat,system_options):
         hm_fig=go.Figure(data=go.Heatmap())
         hist_fig=go.Figure(data=go.Histogram())
         hist24h_fig=go.Figure(data=go.Histogram())
@@ -553,6 +585,7 @@ def dash_application():
         ctx = dash.callback_context
         if ctx.triggered[0]['prop_id'] == 'date_range_picker.value' or ctx.triggered[0]['prop_id'] == 'systems_dropdown.value':
             selected_heat = None
+            clickData_hm = None
         selected_systems = remove_unauthoirized_system(selected_systems)
         if start_date and end_date:
             end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
@@ -567,17 +600,7 @@ def dash_application():
         hist24h_fig,hist24h_style = create_24h_hist(hist_24h_data,hour_labels,system_labels)
 
         if ctx.triggered[0]['prop_id'] == 'hete_kaart.clickData' or ctx.triggered[0]['prop_id'] == 'classification_dropdown.value':
-            if not selected_hm_cells:
-                selected_heat = None
-            else:
-                selected_heat = []
-                for cel in selected_hm_cells['points']:
-                    x = hour_labels.index(cel['x'])
-                    y = (unique_dates.strftime('%d-%m-%Y').tolist()).index(cel['y'])
-                    selected_heat.append([x,y])
-
-                selected_heat = pd.DataFrame(selected_heat,columns=['x','y'])
-                selected_heat = selected_heat.to_json(date_format='iso', orient='split')
+            selected_heat = update_selected_heat(clickData_hm,selected_heat)
 
         heatmap_data = load_mode_data(unique_dates,heatmap_data,selected_systems,start_date,end_date) #add mode info to heatmap, which makes the heatmap show when the system was online (color) or offline (black)
         hm_fig,hm_style=create_heatmap(unique_dates,heatmap_data,hour_labels,selected_heat)
@@ -601,7 +624,7 @@ def dash_application():
         Input('classification_dropdown', 'value'),
         State('selected_heatmap_data', 'children'),
         State('systems_dropdown','options'))
-    def update_ui_scatter(start_date,end_date,selected_systems,hm_selected_cells,hist_selected_bars,hist24h_selected_bars,scatter_x_value,scatter_y_value,classification_dropdown,selected_heat,system_options):
+    def update_ui_scatter(start_date,end_date,selected_systems,clickData_hm,hist_selected_bars,hist24h_selected_bars,scatter_x_value,scatter_y_value,classification_dropdown,selected_heat,system_options):
         scat_fig=go.Figure(data=go.Scatter())
         scat_style={'display': 'none'}
         scat_axis_select_style={'display': 'none'}
@@ -617,13 +640,18 @@ def dash_application():
             return scat_fig,scat_style,scat_axis_select_style
 
         if ctx.triggered[0]['prop_id'] == 'staaf_kaart.selectedData' or ctx.triggered[0]['prop_id'] == 'staaf24h_kaart.selectedData' or ctx.triggered[0]['prop_id'] == 'hete_kaart.clickData' or ctx.triggered[0]['prop_id'] == 'classification_dropdown.value' or ctx.triggered[0]['prop_id'] == 'scatter_x_dropdown.value' or ctx.triggered[0]['prop_id'] == 'scatter_y_dropdown.value':
+            if ctx.triggered[0]['prop_id'] == 'hete_kaart.clickData':
+                selected_heat = update_selected_heat(clickData_hm,selected_heat)
+            elif ctx.triggered[0]['prop_id'] == 'staaf_kaart.selectedData' or ctx.triggered[0]['prop_id'] == 'staaf24h_kaart.selectedData':
+                selected_heat = None
             moths = pd.DataFrame()
-            if hm_selected_cells:
-                for cel in hm_selected_cells['points']:
-                    hour = int(cel['x'].replace('h',''))
+            if selected_heat:
+                selected_heat = pd.read_json(selected_heat, orient='split')
+                for _, hm_cell in selected_heat.iterrows():
+                    hour = hm_cell['hour']
                     if hour < 12:
                         hour += 24
-                    start_date = datetime.datetime.strptime(cel['y'], '%d-%m-%Y') + datetime.timedelta(hours=hour)
+                    start_date = datetime.datetime.strptime(hm_cell['lalaladate'],'%d-%m-%Y') + datetime.timedelta(hours=hour)
                     moths = moths.append(load_moth_df(selected_systems,start_date,start_date + datetime.timedelta(hours=1)))
             elif hist_selected_bars:
                 for bar in hist_selected_bars['points']:
