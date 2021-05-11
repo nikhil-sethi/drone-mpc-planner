@@ -93,6 +93,7 @@ def cut_moths(folder,dry_run=False):
                                 clog.write('Not enough lines!\n')
 
                     if not dry_run:
+                        logger.info(ffmpeg_cmd)
                         lb.execute(ffmpeg_cmd,1,'cut_moths')
                         os.remove(video_in_file)
 

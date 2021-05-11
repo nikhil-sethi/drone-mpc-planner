@@ -237,9 +237,13 @@ def process_log(detection_fn,folder,mode,monitoring_start_datetime):
     filename = os.path.basename(detection_fn)
     video_filename = os.path.dirname(detection_fn) + '/' + filename.replace('log_itrk','moth').replace('csv','mkv')
     if os.path.exists(video_filename) and duration > 1 and duration < 10: # this filter is also used in PATS-C
-        render_tag_filename = os.path.dirname(detection_fn) + '/' + filename.replace('log_itrk','moth').replace('csv','render_tag')
-        Path(render_tag_filename).touch()
-        video_filename = os.path.basename(video_filename)
+        if os.stat(video_filename).st_size > 30000:
+            render_tag_filename = os.path.dirname(detection_fn) + '/' + filename.replace('log_itrk','moth').replace('csv','render_tag')
+            Path(render_tag_filename).touch()
+            video_filename = os.path.basename(video_filename)
+        else:
+            logger.error("video file doesn't have many bytes" + str(os.stat(video_filename).st_size))
+            video_filename = 'NA'
     else :
         video_filename = 'NA'
 
