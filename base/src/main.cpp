@@ -262,7 +262,7 @@ void process_video() {
         float t_pc = stopWatch.Read() / 1000.f;
         float t_cam = static_cast<float>(cam->frame_time());
         float t;
-        if ( log_replay_mode || generator_mode)
+        if ( log_replay_mode || generator_mode || render_hunt_mode || render_monitor_video_mode)
             t = t_pc;
         else
             t = t_cam;
