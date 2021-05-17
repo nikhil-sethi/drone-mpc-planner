@@ -196,8 +196,8 @@ void VisionData::maintain_motion_noise_map() {
             std::cout << "Writing motion noise map" << std::endl;
             _calibrating_background = false;
 
-            cv::Mat bkgL = motion_noise_bufferL.at(0);
-            cv::Mat bkgR = motion_noise_bufferR.at(0);
+            cv::Mat bkgL = motion_noise_bufferL.at(0).clone();
+            cv::Mat bkgR = motion_noise_bufferR.at(0).clone();
             for (cv::Mat im : motion_noise_bufferL) {
                 cv::Mat mask = im > bkgL;
                 im.copyTo(bkgL,mask);
