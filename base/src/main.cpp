@@ -320,6 +320,16 @@ void process_video() {
             }
         }
 
+        while(cam->frame_by_frame ) {
+            unsigned char k = cv::waitKey(0);
+            if (k == 'f')
+                break;
+            else if (k== ' ') {
+                cam->frame_by_frame = false;
+                break;
+            }
+        }
+
     } // main while loop
     std::cout << "Exiting main loop" << std::endl;
 }
@@ -577,18 +587,6 @@ bool handle_key(double time [[maybe_unused]]) {
         dnav.nav_flight_mode(navigation::nfm_manual);
         break;
     } // end switch key
-
-
-    while(cam->frame_by_frame ) {
-        unsigned char k = cv::waitKey(0);
-        if (k == 'f')
-            break;
-        else if (k== ' ') {
-            cam->frame_by_frame = false;
-            break;
-        }
-    }
-
 
     return false;
 }
