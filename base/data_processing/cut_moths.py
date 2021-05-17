@@ -39,6 +39,7 @@ def cut_moths(folder,dry_run=False):
                 video_in_file = folder + '/logging/videoRawLR.mkv'
                 ffmpeg_cmd_init = 'ffmpeg -y -i ' + video_in_file
                 ffmpeg_cmd = ffmpeg_cmd_init
+                arg_cnt = 0
                 if os.path.exists(video_in_file):
                     for file in files:
                         logger.info('Processing ' + file)
@@ -87,18 +88,30 @@ def cut_moths(folder,dry_run=False):
                                     cmd = ' -c:v copy -an -ss ' + str(round(video_start_time,1)) + ' -t ' + str(round(video_duration,1)) + ' ' + video_out_file
                                     ffmpeg_cmd += cmd
                                     clog.write(cmd + '\n' )
+                                    arg_cnt += 1
+                                    if arg_cnt > 1000: # to prevent a too large argument list, wrap every 1000 video's
+                                        execute_cut(ffmpeg_cmd,dry_run)
+                                        arg_cnt = 0
+                                        ffmpeg_cmd = ffmpeg_cmd_init
+
                                 else:
                                     clog.write(fp + '\n')
                             else:
                                 clog.write('Not enough lines!\n')
 
+                    execute_cut(ffmpeg_cmd,dry_run)
                     if not dry_run:
-                        logger.info(ffmpeg_cmd)
-                        lb.execute(ffmpeg_cmd,1,'cut_moths')
                         os.remove(video_in_file)
 
                 else:
                     print("VideoRawLR not found")
+
+def execute_cut(ffmpeg_cmd,dry_run):
+    logger = logging.getLogger('cut_moths')
+    logger.info(ffmpeg_cmd)
+    if not dry_run:
+        lb.execute(ffmpeg_cmd,1,'cut_moths')
+
 
 def cut_moths_all(dry_run=False):
     logger = logging.getLogger('cut_moths')
