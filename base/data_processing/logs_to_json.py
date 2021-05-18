@@ -161,7 +161,7 @@ def autocorr(x,lags):
     return np.array(corr)
 
 def process_log(detection_fn,folder,mode,monitoring_start_datetime):
-
+    logger = logging.getLogger('logs_to_json')
     try:
         log = pd.read_csv(detection_fn, sep=";")
     except Exception as e:
@@ -384,9 +384,9 @@ if __name__ == "__main__":
     parser.add_argument('--system', help="Override system name", default=socket.gethostname())
     args = parser.parse_args()
 
-    logging.basicConfig( )
-    logger = logging.getLogger('logs_to_json')
-    logger.setLevel(logging.DEBUG)
+    #logging.basicConfig( )
+    #logger = logging.getLogger('logs_to_json')
+    #logger.setLevel(logging.DEBUG)
 
     json_fn = args.filename
     data_folder = args.i
