@@ -805,7 +805,7 @@ void TrackerManager::update_trackers(double time,long long frame_number, bool dr
             if (trkr->type() == tt_insect ) {
                 InsectTracker *itrkr = static_cast<InsectTracker *>(_trackers.at(i));
                 auto fpt = itrkr->false_positive();
-                if (fpt && itrkr->track().size())
+                if (fpt == fp_static_location && itrkr->track().size())
                     false_positives.push_back(FalsePositive(itrkr->track().begin()->world_item,fpt,time));
             }
             trkr->close();

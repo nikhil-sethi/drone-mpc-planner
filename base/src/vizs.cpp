@@ -586,7 +586,7 @@ void Visualizer::draw_tracker_viz() {
         cv::Mat diff = ext_res_frame(cv::Rect(resFrame.cols,frameL_small_drone.rows,_trackers->diff_viz_buf.cols,_trackers->diff_viz_buf.rows));
 
         putText(diff,"Drone",cv::Point(3,diff.rows-12),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,255,0));
-        putText(diff,"Insect",cv::Point(3,diff.rows-24),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,0,255));
+        putText(diff,"Insect blb->trk",cv::Point(3,diff.rows-24),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,0,255));
         putText(diff,"Replay/Virtual",cv::Point(3,diff.rows-36),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,0,180));
         putText(diff,"Blink",cv::Point(3,diff.rows-48),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(255,0,255));
         putText(diff,"Ignored",cv::Point(3,diff.rows-60),FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,128,0));

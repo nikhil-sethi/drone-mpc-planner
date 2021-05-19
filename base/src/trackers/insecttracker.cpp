@@ -57,8 +57,8 @@ void InsectTracker::check_false_positive() {
         if (_track.size()>1) {
             if (_world_item.valid)
                 dist_integrator_fp += normf(_world_item.pt - wti_0.pt);
-            float tot = dist_integrator_fp/_n_frames_tracked;
-            if (tot < 0.03f && _n_frames_tracked > 1)
+            float tot = dist_integrator_fp/(_n_frames_tracked-1);
+            if (tot < 0.01f && _n_frames_tracked > 1)
                 _fp_cnt++;
             else
                 _fp_cnt = 0;
@@ -77,7 +77,7 @@ tracking::false_positive_type InsectTracker::false_positive() {
         return tracking::false_positive_type::fp_short_detection;
     else if ( properly_tracking() && _n_frames_tracked < n_frames/4 )
         return tracking::false_positive_type::fp_short_detection;
-    else if ( !_tracking && _n_frames_tracked < n_frames_lost_threshold )
+    else if ( !_tracking && _n_frames_tracked < n_frames_lost_threshold && _n_frames_tracked)
         return tracking::false_positive_type::fp_short_detection;
     else
         return tracking::false_positive_type::fp_not_a_fp;
@@ -102,7 +102,13 @@ void InsectTracker::update(double time) {
 void InsectTracker::calc_world_item(BlobProps * props, double time [[maybe_unused]]) {
     calc_world_props_blob_generic(props);
     props->world_props.im_pos_ok = true;
-    props->world_props.valid = props->world_props.bkg_check_ok && props->world_props.disparity_in_range & props->world_props.radius_in_range;
+    props->world_props.valid = props->world_props.disparity_in_range & props->world_props.radius_in_range;
+    if (!props->world_props.bkg_check_ok && props->world_props.distance>1.2f*props->world_props.distance_bkg)
+        //We need to allow for marging for moth flying through the crops, but at some point the chance of
+        //some tracking problem too great. Not really sure when though, so this cut-off number 1.2 may need further tuning.
+        //The problem that used to be solved using the bkg_check_ok was tracking of shadows. But current set up that does not seem
+        // to be a concern anymore.
+        props->world_props.valid = false;
 
     if (_blobs_are_fused_cnt > 1 * pparams.fps) // if the insect and drone are fused, the drone is accelerating through it and should become seperate again within a limited time
         props->world_props.valid = false;
