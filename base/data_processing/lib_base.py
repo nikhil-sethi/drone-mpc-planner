@@ -35,7 +35,7 @@ def natural_sort(l):
     alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
     return sorted(l, key = alphanum_key)
 
-def execute(cmd,retry=1,logger_name='',render_process_dir=None):
+def execute(cmd,retry=1,logger_name='',render_process_dir=None,verbose=True):
     if logger_name != '':
         logger = logging.getLogger(logger_name)
 
@@ -48,9 +48,9 @@ def execute(cmd,retry=1,logger_name='',render_process_dir=None):
             if p_result != None:
                 n = n+1
                 break
-            if logger_name == '':
+            if verbose and logger_name == '':
                 print(stdout_line.decode('utf-8'),end ='')
-            else:
+            elif logger_name != '':
                 logger.info(stdout_line.decode('utf-8'))
         popen.stdout.close()
     return p_result
