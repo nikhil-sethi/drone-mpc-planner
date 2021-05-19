@@ -694,6 +694,13 @@ float ItemTracker::score(BlobProps * blob, ImageItem * ref) {
         im_dist_err_ratio = world_projected_im_err/max_im_dist;
         float prev_size = smoother_im_size.latest();
         im_size_pred_err_ratio = fabs(prev_size - blob->size_unscaled()) / (blob->size_unscaled()+prev_size);
+        if (!smoother_im_size.ready())
+            im_size_pred_err_ratio *= 0.5f;
+        if (!properly_tracking()) {
+            float im_dist = normf(blob->pt_unscaled() - ref->pt());
+            if (im_dist_err_ratio > 0.1f* (im_dist / prev_size))
+                im_dist_err_ratio = 0.1f* (im_dist / prev_size);
+        }
     } else if (_image_predict_item.valid) {
         cv::Point3f predicted_world_pos = im2world(_image_predict_item.pt,_image_predict_item.disparity,_visdat->Qf,_visdat->camera_pitch);
         float max_im_dist = world2im_dist(predicted_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_pitch);
