@@ -67,12 +67,13 @@ class pats_task(metaclass=abc.ABCMeta):
     error_cnt = 0
 
 
-    def __init__(self,name, start_td, td,run_at_init):
+    def __init__(self,name, start_td, td, run_at_init, error_file_handler):
         self.name = name
         self.periodic_td = td
         self.start_td=start_td
         self.logger = logging.getLogger(self.name)
         self.run_at_init = run_at_init
+        self.error_file_handler = error_file_handler
 
         self.thr = threading.Thread(target=self.do_work, daemon=True)
         self.thr.start()
@@ -92,15 +93,10 @@ class pats_task(metaclass=abc.ABCMeta):
     def do_work(self):
         file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         fh = logging.handlers.RotatingFileHandler(filename=lb.log_dir + self.name + '.log', maxBytes=1024*1024*100, backupCount=1)
-        fh_errs = logging.handlers.TimedRotatingFileHandler(filename=lb.daily_errs_log, when='MIDNIGHT', backupCount=10, atTime=dttime(hour=9,minute=25)) # the time is 5 minutes before the trigger time of the errors_to_vps script
         fh.setFormatter(file_format)
         fh.level = logging.DEBUG
-        fh_errs.setFormatter(file_format)
-        fh_errs.level = logging.ERROR
-        fh_errs.suffix = "%Y%m%d" # Use the date as suffixs for old logs. e.g. all_errors.log.20210319.
-        fh_errs.extMatch = re.compile(r"^\d{8}$") # Reformats the suffix such that it is predictable.
         self.logger.addHandler(fh)
-        self.logger.addHandler(fh_errs)
+        self.logger.addHandler(self.error_file_handler)
         self.logger.setLevel(logging.DEBUG)
         self.logger.info(self.name + ' reporting in!')
         start_trigger_time = self.next_trigger()
@@ -126,30 +122,30 @@ class pats_task(metaclass=abc.ABCMeta):
         pass
 
 class clean_hd_task(pats_task):
-    def __init__(self):
-        super(clean_hd_task,self).__init__('clean_hd',timedelta(hours=8),timedelta(hours=24),False)
+    def __init__(self,error_file_handler):
+        super(clean_hd_task,self).__init__('clean_hd',timedelta(hours=8),timedelta(hours=24),False,error_file_handler)
 
     def task_func(self):
         clean_hd()
 
 class cut_moths_task(pats_task):
-    def __init__(self):
-        super(cut_moths_task,self).__init__('cut_moths',timedelta(),timedelta(minutes=60),False)
+    def __init__(self,error_file_handler):
+        super(cut_moths_task,self).__init__('cut_moths',timedelta(),timedelta(minutes=60),False,error_file_handler)
 
     def task_func(self):
         cut_moths_all()
 
 class logs_to_json_task(pats_task):
-    def __init__(self):
-        super(logs_to_json_task,self).__init__('logs_to_json',timedelta(hours=8, minutes=30),timedelta(hours=24),False)
+    def __init__(self,error_file_handler):
+        super(logs_to_json_task,self).__init__('logs_to_json',timedelta(hours=8, minutes=30),timedelta(hours=24),False,error_file_handler)
 
     def task_func(self):
         process_all_logs_to_jsons()
         send_all_jsons()
 
 class errors_to_vps_task(pats_task):
-    def __init__(self):
-        super(errors_to_vps_task,self).__init__('errors_to_vps',timedelta(hours=9,minutes=30),timedelta(hours=24),False) # if you change this time, make sure to also change the file rotate time!
+    def __init__(self,error_file_handler,rotate_time):
+        super(errors_to_vps_task,self).__init__('errors_to_vps',datetime.combine(date.min, rotate_time) - datetime.min + timedelta(minutes=5),timedelta(hours=24),False,error_file_handler)
 
     def task_func(self):
         self.logger.error('Rotate!') #this forces the rotation of all_errors.log
@@ -162,16 +158,18 @@ class errors_to_vps_task(pats_task):
             cmd = 'rsync -az ' + yesterday_file +' dash:' + remote_err_file
             lb.execute(cmd,5,logger_name=self.name)
             self.logger.info(yesterday_file + ' send to dash.')
+        else:
+            self.logger.error('Error file rotation did not work')
 class render_task(pats_task):
-    def __init__(self):
-        super(render_task,self).__init__('render',timedelta(hours=9),timedelta(hours=24),False)
+    def __init__(self,error_file_handler):
+        super(render_task,self).__init__('render',timedelta(hours=9),timedelta(hours=24),False,error_file_handler)
 
     def task_func(self):
         render_last_day(abort_deadline=datetime.now() + timedelta(hours=3))
 
 class wdt_pats_task(pats_task):
-    def __init__(self):
-        super(wdt_pats_task,self).__init__('wdt_pats',timedelta(),timedelta(seconds=300),False)
+    def __init__(self,error_file_handler):
+        super(wdt_pats_task,self).__init__('wdt_pats',timedelta(),timedelta(seconds=300),False,error_file_handler)
         self.no_realsense_cnt = 0
 
     def task_func(self):
@@ -209,8 +207,8 @@ class wdt_tunnel_task(pats_task):
 # influence the monitoring results. The post processing scripts should be done by
 # then, and the system is just waiting for darkness.
 
-    def __init__(self):
-        super(wdt_tunnel_task,self).__init__('wdt_tunnel',timedelta(),timedelta(hours=1),False)
+    def __init__(self,error_file_handler):
+        super(wdt_tunnel_task,self).__init__('wdt_tunnel',timedelta(),timedelta(hours=1),False,error_file_handler)
 
     tunnel_ok_time = datetime.today()
     def task_func(self):
@@ -242,8 +240,8 @@ class wdt_tunnel_task(pats_task):
 
 
 class check_system_task(pats_task):
-    def __init__(self):
-        super(check_system_task,self).__init__('check_system_task',timedelta(),timedelta(minutes=5),True)
+    def __init__(self,error_file_handler):
+        super(check_system_task,self).__init__('check_system_task',timedelta(),timedelta(minutes=5),True,error_file_handler)
 
     def task_func(self):
         cmd = 'sensors'
@@ -277,16 +275,23 @@ if not os.path.exists(lb.flags_dir):
     os.mkdir(lb.flags_dir)
 init_status_cc()
 
-tasks = []
+rotate_time = dttime(hour=9,minute=25)
+file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+error_file_handler = logging.handlers.TimedRotatingFileHandler(filename=lb.daily_errs_log, when='MIDNIGHT', backupCount=10, atTime=rotate_time)
+error_file_handler.setFormatter(file_format)
+error_file_handler.level = logging.ERROR
+error_file_handler.suffix = "%Y%m%d" # Use the date as suffixs for old logs. e.g. all_errors.log.20210319.
+error_file_handler.extMatch = re.compile(r"^\d{8}$") # Reformats the suffix such that it is predictable.
 
-tasks.append(clean_hd_task())
-tasks.append(cut_moths_task())
-tasks.append(logs_to_json_task())
-tasks.append(render_task())
-tasks.append(wdt_pats_task())
-tasks.append(wdt_tunnel_task())
-tasks.append(errors_to_vps_task())
-tasks.append(check_system_task())
+tasks = []
+tasks.append(clean_hd_task(error_file_handler))
+tasks.append(cut_moths_task(error_file_handler))
+tasks.append(logs_to_json_task(error_file_handler))
+tasks.append(render_task(error_file_handler))
+tasks.append(wdt_pats_task(error_file_handler))
+tasks.append(wdt_tunnel_task(error_file_handler))
+tasks.append(errors_to_vps_task(error_file_handler,rotate_time))
+tasks.append(check_system_task(error_file_handler))
 
 while True:
     os.system('clear')
