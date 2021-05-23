@@ -384,9 +384,9 @@ if __name__ == "__main__":
     parser.add_argument('--system', help="Override system name", default=socket.gethostname())
     args = parser.parse_args()
 
-    #logging.basicConfig( )
-    #logger = logging.getLogger('logs_to_json')
-    #logger.setLevel(logging.DEBUG)
+    logging.basicConfig( )
+    logger = logging.getLogger('logs_to_json')
+    logger.setLevel(logging.DEBUG)
 
     json_fn = args.filename
     data_folder = args.i
