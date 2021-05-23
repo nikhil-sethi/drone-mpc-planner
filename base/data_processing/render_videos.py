@@ -80,14 +80,26 @@ def render(start_datetime,end_datetime,data_folder,abort_deadline=datetime.strpt
                                 break
                             logger.warning('Render attempt ' + str(i) + f' failed for {file}')
 
-                        if render_ok:
-                            video_result_path = render_process_dir + '/logging/replay/videoResult.mkv'
-                            if os.path.exists(video_result_path):
-                                shutil.move(video_result_path, video_target_path)
-                            else:
-                                logger.logging.error(f'Error, render missing...? {file}')
+                        video_result_path = render_process_dir + '/logging/replay/videoResult.mkv'
+                        results_txt_path = Path(render_process_dir,'logging', 'replay','results.txt')
+                        if not render_ok:
+                            logger.logging.error(f'Render failed for {file}')
+                        elif not os.path.exists(video_result_path):
+                            logger.logging.error(f'Render missing...? {file}')
+                        elif not os.path.exists(results_txt_path):
+                            logger.logging.error(f'Results.txt missing...? {file}')
                         else:
-                            logger.logging.error(f'Error, render failed for {file}')
+                            with open (results_txt_path, "r") as results_txt:
+                                results_lines = results_txt.readlines()
+                                n_insects=-1
+                                for line in results_lines:
+                                    if line.find('n_insects') != -1:
+                                        n_insects = int(line.split(':')[1])
+                                        break
+                                if n_insects > 0 :
+                                    shutil.move(video_result_path, video_target_path)
+                                else:
+                                    logger.logging.error(f'Rendered empty video...? {file}')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Script that renders video result in all pats log folders in a directory, bound by the minimum and maximum date\n\
