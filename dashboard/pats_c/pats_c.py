@@ -621,10 +621,9 @@ def dash_application():
         Input('staaf24h_kaart', 'selectedData'),
         Input('scatter_x_dropdown', 'value'),
         Input('scatter_y_dropdown', 'value'),
-        Input('classification_dropdown', 'value'),
         State('selected_heatmap_data', 'children'),
         State('systems_dropdown','options'))
-    def update_ui_scatter(start_date,end_date,selected_systems,clickData_hm,hist_selected_bars,hist24h_selected_bars,scatter_x_value,scatter_y_value,classification_dropdown,selected_heat,system_options):
+    def update_ui_scatter(start_date,end_date,selected_systems,clickData_hm,hist_selected_bars,hist24h_selected_bars,scatter_x_value,scatter_y_value,selected_heat,system_options):
         scat_fig=go.Figure(data=go.Scatter())
         scat_style={'display': 'none'}
         scat_axis_select_style={'display': 'none'}
@@ -639,7 +638,7 @@ def dash_application():
         if not selected_systems:
             return scat_fig,scat_style,scat_axis_select_style
 
-        if ctx.triggered[0]['prop_id'] == 'staaf_kaart.selectedData' or ctx.triggered[0]['prop_id'] == 'staaf24h_kaart.selectedData' or ctx.triggered[0]['prop_id'] == 'hete_kaart.clickData' or ctx.triggered[0]['prop_id'] == 'classification_dropdown.value' or ctx.triggered[0]['prop_id'] == 'scatter_x_dropdown.value' or ctx.triggered[0]['prop_id'] == 'scatter_y_dropdown.value':
+        if ctx.triggered[0]['prop_id'] == 'staaf_kaart.selectedData' or ctx.triggered[0]['prop_id'] == 'staaf24h_kaart.selectedData' or ctx.triggered[0]['prop_id'] == 'hete_kaart.clickData' or ctx.triggered[0]['prop_id'] == 'scatter_x_dropdown.value' or ctx.triggered[0]['prop_id'] == 'scatter_y_dropdown.value':
             if ctx.triggered[0]['prop_id'] == 'hete_kaart.clickData':
                 selected_heat = update_selected_heat(clickData_hm,selected_heat)
             elif ctx.triggered[0]['prop_id'] == 'staaf_kaart.selectedData' or ctx.triggered[0]['prop_id'] == 'staaf24h_kaart.selectedData':
