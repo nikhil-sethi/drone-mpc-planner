@@ -19,9 +19,11 @@ SSH_PORT=${2:-22}
 echo "Creating tunnel at $IP:$SSH_PORT with port $PORT"
 while [ 1 ]; do
  	
- 	echo waiting 10s for starting tunnel
+ 	dt=$(date '+%d/%m/%Y %H:%M:%S');
+	echo "${dt}: waiting 10s for starting tunnel"
  	sleep 10s # sleep first so that if the wifi is still being conencted, that happens before the tunnel is created
+	
 
- 	/usr/bin/autossh -M 0 -o "ExitOnForwardFailure yes" -o "ServerAliveInterval 180" -o "ServerAliveCountMax 3" -C4NR $PORT:localhost:22 $USER@$IP -p $SSH_PORT
+ 	/usr/bin/autossh -M 0 -o "ExitOnForwardFailure yes" -o "ServerAliveInterval 180" -o "ServerAliveCountMax 3" -C4NR $PORT:localhost:22 $USER@$IP -p $SSH_PORT 2>&1 | ts
 
 done
