@@ -137,6 +137,7 @@ public:
             _image_item.valid = false;
             _world_item.valid = false;
         }
+        blobs_fused_update();
     }
     virtual bool check_ignore_blobs(BlobProps * blob) = 0;
     virtual void calc_world_item(BlobProps * blob, double time) = 0;
@@ -167,6 +168,10 @@ public:
         _image_item = _world_item.image_item;
     }
     void all_blobs(std::vector<tracking::BlobProps> blobs) { _all_blobs = blobs; }
+    void blobs_fused_update() {
+        if (_blobs_are_fused_cnt && !_image_item.valid && type() == tt_insect)
+            blobs_are_fused();
+    }
     void blobs_are_fused() {
         _world_item.image_item.blob_is_fused = true;
         _image_item.blob_is_fused = true;
@@ -175,6 +180,8 @@ public:
 
     virtual float score(BlobProps * blob) { return score(blob,&_image_item); }
     float score_threshold() {
+        if (_blobs_are_fused_cnt && type() == tt_insect)
+            return _score_threshold * 2;
         return std::clamp(_score_threshold+_n_frames_lost*0.3f*_score_threshold,0.f,1.5f*_score_threshold);
     }
 

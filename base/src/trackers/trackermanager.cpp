@@ -548,8 +548,8 @@ void TrackerManager::check_match_conflicts(std::vector<ProcessedBlob> *pbs,doubl
                         for (auto &blob_j : *pbs) {
                             if (blob_i.id != blob_j.id && !blob_j.tracked()) {
                                 auto props_j = blob_j.props;
-                                float dist = cv::norm(blob_i.pt()-blob_j.pt());
-                                if (dist < 2.f* (blob_i.size() + blob_j.size())) {
+                                float dist = cv::norm(blob_i.pt()-blob_j.pt()) * pparams.imscalef;
+                                if (dist < _dtrkr->image_predict_item().size) {
                                     if(blob_i.size() > blob_j.size()) {
                                         dtrkr->calc_world_item(props_i,time);
                                         tracking::WorldItem wi(tracking::ImageItem(*props_i,_visdat->frame_id,0,blob_i.id),props_i->world_props);
@@ -1036,7 +1036,8 @@ void TrackerManager::draw_viz(std::vector<ProcessedBlob> *pbs, double time) {
                         Size text_size = getTextSize(flag,FONT_HERSHEY_TRIPLEX,0.75,2,&baseline);
                         text_w+=text_size.width;
                     }
-                } else if (image_item.blob_is_fused) {
+                }
+                if (image_item.blob_is_fused) {
                     std::string flag = "";
                     if (text_w > 0)
                         flag+= " | ";

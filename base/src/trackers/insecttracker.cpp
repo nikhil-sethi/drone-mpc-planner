@@ -110,14 +110,14 @@ void InsectTracker::calc_world_item(BlobProps * props, double time [[maybe_unuse
         // to be a concern anymore.
         props->world_props.valid = false;
 
-    if (_blobs_are_fused_cnt > 1 * pparams.fps) // if the insect and drone are fused, the drone is accelerating through it and should become seperate again within a limited time
+    if (_blobs_are_fused_cnt > pparams.fps) // if the insect and drone are fused, the drone is accelerating through it and should become seperate again within a limited time
         props->world_props.valid = false;
 }
 
 bool InsectTracker::check_ignore_blobs(BlobProps * props) { return this->check_ignore_blobs_generic(props);}
 
 bool InsectTracker::delete_me() {
-    if ((_n_frames_lost > n_frames_lost_threshold)) {
+    if ((_n_frames_lost > n_frames_lost_threshold && !_image_item.blob_is_fused)) {
         (*_logger) << std::flush;
         _logger->close();
         initialized = false;

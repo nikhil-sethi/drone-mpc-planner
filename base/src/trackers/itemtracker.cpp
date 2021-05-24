@@ -178,7 +178,7 @@ void ItemTracker::update(double time) {
     } else {
         _n_frames_lost++;
         _n_frames_tracking = 0;
-        if( _n_frames_lost >= n_frames_lost_threshold || !_tracking ) {
+        if(( _n_frames_lost >= n_frames_lost_threshold && ! _image_item.blob_is_fused) || !_tracking ) {
             _tracking = false;
         } else {
             TrackData data;
