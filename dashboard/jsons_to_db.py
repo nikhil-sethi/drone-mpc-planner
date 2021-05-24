@@ -17,6 +17,8 @@ def get_column_data_type(column):
 
 def store_moths(data):
     moths =data["moths"]
+    if not len(moths):
+        return
     with patsc.open_data_db() as con:
         cur = con.cursor()
         cur.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='moth_records' ''')
@@ -28,6 +30,7 @@ def store_moths(data):
                 sql_create = sql_create + s + ' ' + get_column_data_type(s) + ','
             sql = sql_create[:-1] + ')'
             cur.execute(sql)
+            cur.execute('CREATE INDEX idx_sys_name ON moth_records(system);')
             con.commit()
             moth_table_exist = True
 
@@ -96,6 +99,7 @@ def store_moths(data):
 def create_modes_table(cur,con):
     sql_create = 'CREATE TABLE mode_records(uid INTEGER PRIMARY KEY,system TEXT,start_datetime TEXT,end_datetime TEXT,op_mode TEXT)'
     cur.execute(sql_create)
+    cur.execute('CREATE INDEX idx_mode_sys_name ON mode_records(system,start_datetime);')
     con.commit()
 
 def store_mode(data):
@@ -263,6 +267,7 @@ def store_hunts(data):
                     sql_create_table = sql_create_table + s + ' ' + get_column_data_type(s) + ','
                 sql_create_table = sql_create_table[:-1] + ')'
                 cur.execute(sql_create_table)
+                cur.execute('CREATE INDEX idx_hunt_sys_name ON hunt_records(system);')
                 con.commit()
                 hunt_table_exist = True
 
@@ -281,8 +286,11 @@ def store_hunts(data):
     return len(hunts)
 
 def count_errors(data):
-    errors = data['errors']
-    return len(errors)
+    if 'errors' in data:
+        errors = data['errors']
+        return len(errors)
+    else:
+        return 0
 
 def process_json(data):
     n_moths = store_moths(data)

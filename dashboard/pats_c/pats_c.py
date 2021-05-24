@@ -99,16 +99,38 @@ def load_moth_df(selected_systems,start_date,end_date):
             except ValueError as e:
                 print(f'ERROR startdate {system}: ' + str(e))
                 real_start_date = start_date
+
+
+            if end_date.date() == datetime.datetime.today().date():
+                time_str = f'''time > "{real_start_date.strftime('%Y%m%d_%H%M%S')}"'''
+            else:
+                time_str =  f'''time > "{real_start_date.strftime('%Y%m%d_%H%M%S')}" AND time <= "{end_date.strftime('%Y%m%d_%H%M%S')}"'''
+
+            if start_date > datetime.datetime.strptime("20210401_000000",'%Y%m%d_%H%M%S'): # remove proto #533 closed in march 2021, so most systems probably were updated in april
+                system_sql_str = f'''system = "{system}"'''
+                uses_proto = False
+            else:
+                system_sql_str = f'''(system = "{system}" OR system = "{system.replace('pats','pats-proto')}")'''
+                uses_proto = True
+
+            if start_date > datetime.datetime.strptime("20210101_000000",'%Y%m%d_%H%M%S'): # new (size) filtering was introduced on 24th december 2020 #648
+                if min_size > 0:
+                    insect_str = f'''Dist_traveled > 0.15 AND Dist_traveled < 4 AND Size > {min_size}'''
+                else:
+                    insect_str = f'''Dist_traveled > 0.15 AND Dist_traveled < 4 '''
+            else:
+                insect_str = 'Version="1.0"'
+
             sql_str = f'''SELECT moth_records.* FROM moth_records
-            WHERE (system = "{system}" OR system = "{system.replace('pats','pats-proto')}")
-            AND time > "{real_start_date.strftime('%Y%m%d_%H%M%S')}" AND time <= "{end_date.strftime('%Y%m%d_%H%M%S')}"
-            AND (duration > 1 AND duration < 10
-            AND (Version="1.0"
-            OR (Dist_traveled > 0.15 AND Dist_traveled < 4 AND Size > {min_size} )))'''
-            sql_str = sql_str.replace('\n','')
+                WHERE {system_sql_str}
+                AND {time_str}
+                AND duration > 1 AND duration < 10
+                AND {insect_str}'''
+            sql_str = " ".join(sql_str.split()) # removes any double spaces and newlines etc
             moth_df = moth_df.append(pd.read_sql_query(sql_str,con))
     moth_df['time'] = pd.to_datetime(moth_df['time'], format = '%Y%m%d_%H%M%S')
-    moth_df['system'].replace({'-proto':''},regex=True,inplace=True)
+    if uses_proto:
+        moth_df['system'].replace({'-proto':''},regex=True,inplace=True)
     return moth_df
 
 def load_moth_of_hour(selected_systems,start_date,end_date,hour):
