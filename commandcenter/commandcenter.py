@@ -629,7 +629,7 @@ class SystemWidget(QWidget):
                         hd = line.split()[4]
                     except:
                         pass
-                if line.find('wlp58s0') != -1:
+                if line.find('wlp58s0') != -1 or line.find('wlp0s20f3') != -1:
                     try:
                         ip = line.split()[3].split('/')[0]
                     except:
