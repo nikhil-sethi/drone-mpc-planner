@@ -89,20 +89,20 @@ private:
                 if (ignored || props->world_props.takeoff_reject)
                     return "";
                 else if (props->in_overexposed_area)
-                    return "E";
+                    return "e";
                 else
                     return "";
             } else if (trackers.size()>1)
                 return "";
             ItemTracker *trkr = trackers.at(0);
             if (trkr->type() == tt_drone)
-                return "D ";
+                return "d ";
             else if (trkr->type() == tt_insect)
-                return "M ";
+                return "m ";
             else if (trkr->type() == tt_replay)
-                return "";
+                return "r";
             else if (trkr->type() == tt_blink)
-                return "B ";
+                return "b ";
             return "";
         }
     };
@@ -160,11 +160,11 @@ private:
     bool enable_viz_motion = false;
     bool _enable_draw_stereo_viz = false;
 
-    std::vector<cv::Mat> vizs_maxs;
-    const float viz_max_points_resizef = 4.0;
+    std::vector<cv::Mat> vizs_blobs;
+    const float viz_blobs_resizef = 4.0;
 
     int max_points_per_frame;
-    int roi_radius;
+    int default_roi_radius = 15; //this is the expected im size of the drone at the charging pad
     int motion_thresh;
     const float chance_multiplier_pixel_max = 0.5f;
     const float chance_multiplier_dist = 3;
@@ -183,7 +183,8 @@ private:
     void create_new_insect_trackers(std::vector<ProcessedBlob> *pbs, double time);
     void create_new_blink_trackers(std::vector<ProcessedBlob> *pbs, double time);
     void match_blobs_to_trackers(bool drone_is_active, double time);
-    void find_cog_and_remove(cv::Point maxt, double max, cv::Mat diff,bool enable_insect_drone_split, float drn_ins_split_thresh,cv::Mat bkg_frame);
+    std::tuple<float,bool,float> tune_detection_radius(cv::Point maxt);
+    void find_cog_and_remove(cv::Point maxt, double max, cv::Mat diff,cv::Mat bkg_frame);
 
     bool tracker_active(ItemTracker *trkr, bool drone_is_active);
 
