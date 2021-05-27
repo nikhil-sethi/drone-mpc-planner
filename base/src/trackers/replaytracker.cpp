@@ -45,7 +45,7 @@ void ReplayTracker::update_from_log(unsigned long long frame_number,double time)
     auto log = logreader.current_entry;
     logreader.increase_frame_number();
 
-    n_frames++;
+    _n_frames++;
     _n_frames_lost = log.ins_n_frames_lost;
     _n_frames_tracking = log.ins_n_frames_tracking;
     if(_n_frames_tracking>0)

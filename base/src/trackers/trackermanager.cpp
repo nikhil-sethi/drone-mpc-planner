@@ -73,7 +73,7 @@ void TrackerManager::update(double time, bool drone_is_active) {
                << dur4 << ";"
                << dur5 << ";";
 #endif
-
+    draw_trackers_viz();
     finish_vizs();
 }
 
@@ -460,7 +460,8 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
         }
     }
 
-    draw_viz(&pbs,time);
+    draw_motion_viz(&pbs,time);
+    draw_blob_viz(&pbs);
 
     for (auto trkr : _trackers)
         trkr->invalidize();
@@ -872,70 +873,7 @@ void TrackerManager::prep_vizs() {
 
     reset_trkr_viz_ids();
 }
-void TrackerManager::draw_viz(std::vector<ProcessedBlob> *pbs, double time) {
-    if (enable_viz_motion) {
-        for (auto blob : *pbs) {
-            std::string s = std::to_string(blob.id);
-            for (auto trkr : blob.trackers) {
-                if (trkr->type() == tt_insect) {
-                    InsectTracker *itrkr = static_cast<InsectTracker*>(trkr);
-                    s = s + "->" + std::to_string(itrkr->insect_trkr_id());
-                }
-            }
-            cv::Point target_viz_p = (blob.props->pt_unscaled() + cv::Point2f(10,-10));
-            putText(diff_viz,blob.prefix() +  s,target_viz_p,FONT_HERSHEY_SIMPLEX,0.4,blob.color(),2);
-            cv::line(diff_viz,target_viz_p,blob.props->pt_unscaled(),blob.color());
-
-        }
-        for (auto trkr : replaytrackers()) {
-            cv::Point target_viz_p = (trkr->image_item().pt() + cv::Point2f(10,-10));
-            putText(diff_viz," r",target_viz_p,FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,0,180),2);
-            cv::line(diff_viz,target_viz_p,trkr->image_item().pt(),cv::Scalar(0,0,180));
-        }
-        for (auto trkr : virtualmothtrackers()) {
-            cv::Point target_viz_p = (trkr->image_item().pt() + cv::Point2f(10,-10));
-            putText(diff_viz," v",target_viz_p,FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,0,180),2);
-            cv::line(diff_viz,target_viz_p,trkr->image_item().pt(),cv::Scalar(0,0,180));
-        }
-
-        auto blue =cv::Scalar(255,0,0);
-        for (auto fp : false_positives) {
-            auto p_center = fp.im_pt;
-            cv::circle(diff_viz,p_center,fp.im_size,blue);
-            cv::putText(diff_viz,to_string_with_precision(time-fp.last_seen_time,1) + ", #" + std::to_string(fp.detection_count),p_center+cv::Point2f(10,0),FONT_HERSHEY_SIMPLEX,0.4,blue,2);
-        }
-    }
-    if (_enable_viz_blob) {
-        for (auto blob : *pbs) {
-            auto wblob = blob.props->world_props;
-            std::string msg_str = std::to_string(blob.id);
-            cv::Mat viz = vizs_maxs.at(blob.id);
-            if (!wblob.valid && !blob.ignored) {
-                if (blob.props->in_overexposed_area && !blob.tracked()) {
-                    msg_str = msg_str + "exp.";
-                } else  if (!wblob.im_pos_ok && !blob.tracked())
-                    msg_str = msg_str + "pre.";
-                else {
-                    if (!wblob.disparity_in_range)
-                        msg_str = msg_str + " dsp.";
-                    if (!wblob.bkg_check_ok)
-                        msg_str = msg_str + " bkg.";
-
-                    if (!wblob.radius_in_range)
-                        msg_str = msg_str + " r.";
-                    if (blob.props->ignores.size()>0)
-                        msg_str = msg_str + " ign.";
-                    if (wblob.takeoff_reject)
-                        msg_str = msg_str + " tko.";
-                }
-                putText(viz,msg_str,cv::Point2i(viz.cols/5+2,viz.rows - 8),FONT_HERSHEY_SIMPLEX,0.4,blob.color());
-            }
-            if (wblob.valid) {
-                std::string coor_str = "[" + to_string_with_precision(wblob.x,2) + ", " + to_string_with_precision(wblob.y,2) + ", " + to_string_with_precision(wblob.z,2) +"]";
-                putText(viz,coor_str,cv::Point2i(viz.cols/5+2,viz.rows - 8),FONT_HERSHEY_SIMPLEX,0.4,blob.color());
-            }
-        }
-    }
+void TrackerManager::draw_trackers_viz() {
     if (_enable_viz_tracker) {
         int h = 0;
         cv::Scalar white = cv::Scalar(255,255,255);
@@ -1010,7 +948,7 @@ void TrackerManager::draw_viz(std::vector<ProcessedBlob> *pbs, double time) {
                     putText(viz_descr,"blob id -> tr uid: " + std::to_string(image_item.blob_id) + " -> " + std::to_string(trkr->uid()),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
                 putText(viz_descr,std::to_string(resize_factor) + "x",cv::Point2i(viz_descr.cols-16,size_text),FONT_HERSHEY_SIMPLEX,0.4,red);
                 putText(viz_descr,"Score: " + to_string_with_precision(image_item.score,2),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
-                putText(viz_descr,"# frames: " + std::to_string(trkr->n_frames_tracking()),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
+                putText(viz_descr,"# frames: " + std::to_string(trkr->n_frames_tracking()) + " / " + std::to_string(trkr->n_frames()),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
                 putText(viz_descr,"Size: " + to_string_with_precision(image_item.size,1),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
                 putText(viz_descr,"Max: " + to_string_with_precision(image_item.pixel_max,1),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
                 putText(viz_descr,"i: [" + to_string_with_precision(image_item.x,1) + ", " + to_string_with_precision(image_item.y,1) + "], " +  to_string_with_precision(image_item.disparity,2),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
@@ -1055,7 +993,7 @@ void TrackerManager::draw_viz(std::vector<ProcessedBlob> *pbs, double time) {
                     putText(viz_descr,"iid: " + std::to_string(itrkr->insect_trkr_id()),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
                 } else
                     putText(viz_descr,"tr uid: " + std::to_string(trkr->uid()),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
-                putText(viz_descr,"Lost: " + std::to_string(trkr->n_frames_lost()),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
+                putText(viz_descr,"Lost: " + std::to_string(trkr->n_frames_lost()) + " / " + std::to_string(trkr->n_frames()),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
                 int text_w = 0;
                 if (trkr->image_predict_item().out_of_image) {
                     std::string flag = "OUT OF IMAGE";
@@ -1082,6 +1020,73 @@ void TrackerManager::draw_viz(std::vector<ProcessedBlob> *pbs, double time) {
 
         }
         viz_trkrs_buf = viz_tracker.clone();
+    }
+}
+void TrackerManager::draw_motion_viz(std::vector<ProcessedBlob> *pbs, double time) {
+    if (enable_viz_motion) {
+        for (auto blob : *pbs) {
+            std::string s = std::to_string(blob.id);
+            for (auto trkr : blob.trackers) {
+                if (trkr->type() == tt_insect) {
+                    InsectTracker *itrkr = static_cast<InsectTracker*>(trkr);
+                    s = s + "->" + std::to_string(itrkr->insect_trkr_id());
+                }
+            }
+            cv::Point target_viz_p = (blob.props->pt_unscaled() + cv::Point2f(10,-10));
+            putText(diff_viz,blob.prefix() +  s,target_viz_p,FONT_HERSHEY_SIMPLEX,0.4,blob.color(),2);
+            cv::line(diff_viz,target_viz_p,blob.props->pt_unscaled(),blob.color());
+
+        }
+        for (auto trkr : replaytrackers()) {
+            cv::Point target_viz_p = (trkr->image_item().pt() + cv::Point2f(10,-10));
+            putText(diff_viz," r",target_viz_p,FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,0,180),2);
+            cv::line(diff_viz,target_viz_p,trkr->image_item().pt(),cv::Scalar(0,0,180));
+        }
+        for (auto trkr : virtualmothtrackers()) {
+            cv::Point target_viz_p = (trkr->image_item().pt() + cv::Point2f(10,-10));
+            putText(diff_viz," v",target_viz_p,FONT_HERSHEY_SIMPLEX,0.4,cv::Scalar(0,0,180),2);
+            cv::line(diff_viz,target_viz_p,trkr->image_item().pt(),cv::Scalar(0,0,180));
+        }
+
+        auto blue =cv::Scalar(255,0,0);
+        for (auto fp : false_positives) {
+            auto p_center = fp.im_pt;
+            cv::circle(diff_viz,p_center,fp.im_size,blue);
+            cv::putText(diff_viz,to_string_with_precision(time-fp.last_seen_time,1) + ", #" + std::to_string(fp.detection_count),p_center+cv::Point2f(10,0),FONT_HERSHEY_SIMPLEX,0.4,blue,2);
+        }
+    }
+}
+void TrackerManager::draw_blob_viz(std::vector<ProcessedBlob> *pbs) {
+    if (_enable_viz_blob) {
+        for (auto blob : *pbs) {
+            auto wblob = blob.props->world_props;
+            std::string msg_str = std::to_string(blob.id);
+            cv::Mat viz = vizs_maxs.at(blob.id);
+            if (!wblob.valid && !blob.ignored) {
+                if (blob.props->in_overexposed_area && !blob.tracked()) {
+                    msg_str = msg_str + "exp.";
+                } else  if (!wblob.im_pos_ok && !blob.tracked())
+                    msg_str = msg_str + "pre.";
+                else {
+                    if (!wblob.disparity_in_range)
+                        msg_str = msg_str + " dsp.";
+                    if (!wblob.bkg_check_ok)
+                        msg_str = msg_str + " bkg.";
+
+                    if (!wblob.radius_in_range)
+                        msg_str = msg_str + " r.";
+                    if (blob.props->ignores.size()>0)
+                        msg_str = msg_str + " ign.";
+                    if (wblob.takeoff_reject)
+                        msg_str = msg_str + " tko.";
+                }
+                putText(viz,msg_str,cv::Point2i(viz.cols/5+2,viz.rows - 8),FONT_HERSHEY_SIMPLEX,0.4,blob.color());
+            }
+            if (wblob.valid) {
+                std::string coor_str = "[" + to_string_with_precision(wblob.x,2) + ", " + to_string_with_precision(wblob.y,2) + ", " + to_string_with_precision(wblob.z,2) +"]";
+                putText(viz,coor_str,cv::Point2i(viz.cols/5+2,viz.rows - 8),FONT_HERSHEY_SIMPLEX,0.4,blob.color());
+            }
+        }
     }
 }
 std::tuple<Rect,Rect,int> TrackerManager::calc_trkr_viz_roi(ImageItem image_item) {

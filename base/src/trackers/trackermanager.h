@@ -182,15 +182,17 @@ private:
     void rematch_blink_tracker(std::vector<ProcessedBlob> *pbs, double time);
     void create_new_insect_trackers(std::vector<ProcessedBlob> *pbs, double time);
     void create_new_blink_trackers(std::vector<ProcessedBlob> *pbs, double time);
-    void draw_viz(std::vector<ProcessedBlob> *pbs, double time);
     void match_blobs_to_trackers(bool drone_is_active, double time);
     void find_cog_and_remove(cv::Point maxt, double max, cv::Mat diff,bool enable_insect_drone_split, float drn_ins_split_thresh,cv::Mat bkg_frame);
 
     bool tracker_active(ItemTracker *trkr, bool drone_is_active);
 
     void prep_vizs();
+    void draw_motion_viz(std::vector<ProcessedBlob> *pbs, double time);
+    void draw_blob_viz(std::vector<ProcessedBlob> *pbs);
     std::tuple<cv::Rect,cv::Rect,int> calc_trkr_viz_roi(ImageItem image_item);
     void reset_trkr_viz_ids();
+    void draw_trackers_viz();
     void finish_vizs();
     cv::Scalar color_of_blob(ProcessedBlob blob);
 

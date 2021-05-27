@@ -75,7 +75,7 @@ tracking::false_positive_type InsectTracker::false_positive() {
         return tracking::false_positive_type::fp_static_location;
     else if ( properly_tracking() && _n_frames_tracked < n_frames_lost_threshold/2 )
         return tracking::false_positive_type::fp_short_detection;
-    else if ( properly_tracking() && _n_frames_tracked < n_frames/4 )
+    else if ( properly_tracking() && _n_frames_tracked < _n_frames/4 )
         return tracking::false_positive_type::fp_short_detection;
     else if ( !_tracking && _n_frames_tracked < n_frames_lost_threshold && _n_frames_tracked)
         return tracking::false_positive_type::fp_short_detection;

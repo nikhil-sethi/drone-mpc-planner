@@ -90,7 +90,7 @@ protected:
     int n_frames_lost_threshold = 10;
     int _n_frames_tracking =0;  // reset after interruptions
     int _n_frames_tracked =0;   // total tracked frames ever
-    int n_frames =0;           // lifetime of the tracker
+    int _n_frames =0;           // lifetime of the tracker
     double _last_detection = 0;
 
     ImageItem _image_item;
@@ -154,6 +154,7 @@ public:
     }
     virtual tracker_type type() = 0;
 
+    int n_frames() {return _n_frames;}
     int n_frames_tracking() {return _n_frames_tracking;}
     double last_detection() {return _last_detection;}
     bool tracking() {return _tracking;}

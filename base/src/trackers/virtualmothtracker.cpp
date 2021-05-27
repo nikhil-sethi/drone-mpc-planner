@@ -37,7 +37,7 @@ void VirtualMothTracker::start_new_log_line(double time, unsigned long long fram
 void VirtualMothTracker::update(double time) {
     start_new_log_line(time, _visdat->frame_id);
     update_behavior_based(_visdat->frame_id, time);
-    n_frames++;
+    _n_frames++;
     _n_frames_tracking++;
     _n_frames_tracked++;
     ItemTracker::append_log();

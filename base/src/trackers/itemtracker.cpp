@@ -167,7 +167,7 @@ void ItemTracker::update_blob_filters() {
 }
 
 void ItemTracker::update(double time) {
-    n_frames++;
+    _n_frames++;
     if ( _world_item.valid) {
         update_state(_world_item.pt,time);
         update_blob_filters();
