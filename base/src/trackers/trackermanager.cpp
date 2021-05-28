@@ -145,7 +145,7 @@ void TrackerManager::find_blobs() {
             bool max_is_valid = max_val > motion_noise+motion_thresh;
             if (max_is_valid) {
                 cv::Point max_pos = max_pos_pre_roi + cv::Point(pre_select_roi_rect.x, pre_select_roi_rect.y);
-                find_cog_and_remove(max_pos,max_val,diff,motion_noise_mapL);
+                find_cog_and_remove(max_pos,max_val,motion_noise,diff,motion_noise_mapL);
             }
             if (!max_is_valid || item_attempt >= 3)
                 roi_preselect_state = roi_state_prior_insects;
@@ -171,7 +171,7 @@ void TrackerManager::find_blobs() {
             }
             if (static_cast<uint8_t>(max_val) > motion_noise+(motion_noise/chance)) {
                 cv::Point max_pos = max_pos_pre_roi + cv::Point(pre_select_roi_rect.x, pre_select_roi_rect.y);
-                find_cog_and_remove(max_pos,max_val,diff,motion_noise_mapL);
+                find_cog_and_remove(max_pos,max_val,motion_noise,diff,motion_noise_mapL);
             }
 
             itrkr++;
@@ -183,7 +183,7 @@ void TrackerManager::find_blobs() {
             Point min_pos,max_pos;
             minMaxLoc(diff, &min_val, &max_val, &min_pos, &max_pos);
             if (max_val > motion_thresh + dparams.drone_blink_strength)
-                find_cog_and_remove(max_pos,max_val,diff,motion_noise_mapL);
+                find_cog_and_remove(max_pos,max_val,0,diff,motion_noise_mapL);
             i++;
             break;
         } case roi_state_no_prior: {
@@ -191,7 +191,7 @@ void TrackerManager::find_blobs() {
             minMaxLoc(diff, &min_val, &max_val, &min_pos, &max_pos);
             int motion_noise = motion_noise_mapL.at<uint8_t>(max_pos.y,max_pos.x);
             if (max_val > motion_noise+motion_thresh)
-                find_cog_and_remove(max_pos,max_val,diff,motion_noise_mapL);
+                find_cog_and_remove(max_pos,max_val,motion_noise,diff,motion_noise_mapL);
             else
                 return;
             i++;
@@ -244,7 +244,7 @@ std::tuple<float,bool,float> TrackerManager::tune_detection_radius(cv::Point max
     }
     return std::make_tuple(roi_radius,enable_insect_drone_split,drn_ins_split_thresh);
 }
-void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat diff,cv::Mat motion_noise_mapL) {
+void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, int motion_noise, cv::Mat diff,cv::Mat motion_noise_mapL) {
 
     auto [roi_radius,enable_insect_drone_split,drn_ins_split_thresh] = tune_detection_radius(maxt);
 
@@ -374,7 +374,7 @@ void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat dif
                         COG2.x += rect.x;
                         COG2.y += rect.y;
                         uchar px_max = diff.at<uchar>(COG2);
-                        _blobs.push_back(tracking::BlobProps(COG2,radius*2,px_max,mask,_visdat->overexposed(COG2),threshold_method,_visdat->frame_id));
+                        _blobs.push_back(tracking::BlobProps(COG2,radius*2,px_max,motion_noise,mask,_visdat->overexposed(COG2),threshold_method,_visdat->frame_id));
 
                         //remove this COG from the ROI:
                         cv::circle(diff, COG2, roi_radius, Scalar(0), cv::FILLED);
@@ -392,7 +392,7 @@ void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat dif
     if (single_blob) { // we could not split this blob, so we can use the original COG
         float size = sqrtf(mo.m00/M_PI)*2.f; // assuming a circular shape
         if (COG.x == COG.x) { // if not nan
-            _blobs.push_back(tracking::BlobProps(COG,size,max,mask,_visdat->overexposed(COG),threshold_method,_visdat->frame_id));
+            _blobs.push_back(tracking::BlobProps(COG,size,max,motion_noise,mask,_visdat->overexposed(COG),threshold_method,_visdat->frame_id));
             if (_enable_viz_blob) {
                 Point2f tmpCOG;
                 tmpCOG.x = COG.x - rect.x;
@@ -415,7 +415,7 @@ void TrackerManager::find_cog_and_remove(cv::Point maxt, double max, cv::Mat dif
                     d.y = ipi.pt.y - maxt.y*pparams.imscalef;
                     float dist = norm(d);
                     if (dist < roi_radius*pparams.imscalef) {
-                        _blobs.push_back(tracking::BlobProps(maxt,1,max,mask,_visdat->overexposed(maxt),threshold_method,_visdat->frame_id));
+                        _blobs.push_back(tracking::BlobProps(maxt,1,max,motion_noise,mask,_visdat->overexposed(maxt),threshold_method,_visdat->frame_id));
                         if (_enable_viz_blob) {
                             Point2f tmpCOG;
                             tmpCOG.x = maxt.x - rect.x;
@@ -737,7 +737,7 @@ void TrackerManager::create_new_insect_trackers(std::vector<ProcessedBlob> *pbs,
                     else
                         im_dist_to_drone = INFINITY;
                 }
-                if (im_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_im) {
+                if (im_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_im && blob.pixel_max() > blob.motion_noise()+ motion_thresh ) {
                     InsectTracker *it;
                     it = new InsectTracker();
                     it->init(next_insecttrkr_id,_visdat,motion_thresh,_trackers.size(),_enable_draw_stereo_viz);

@@ -42,6 +42,7 @@ struct BlobWorldProps {
 };
 struct BlobProps { // scaled with pparams.imscalef
     float x,y,size,pixel_max; // these values are scaled with pparams.imscaled
+    int motion_noise;
     std::vector<IgnoreBlob> ignores;
     bool false_positive = false;
     cv::Mat mask;
@@ -50,7 +51,7 @@ struct BlobProps { // scaled with pparams.imscalef
     float size_unscaled() {return size*pparams.imscalef;}
     bool in_overexposed_area;
     int threshold_method;
-    BlobProps(cv::Point2f pt,float blob_size,float blob_pixel_max, cv::Mat blob_mask, bool overexposed_area, int threshold_method_, int frame_id_) : size(blob_size), pixel_max(blob_pixel_max), mask(blob_mask), in_overexposed_area(overexposed_area),threshold_method(threshold_method_) {
+    BlobProps(cv::Point2f pt,float blob_size,float blob_pixel_max,int blob_pixel_motion_noise, cv::Mat blob_mask, bool overexposed_area, int threshold_method_, int frame_id_) : size(blob_size), pixel_max(blob_pixel_max), motion_noise(blob_pixel_motion_noise), mask(blob_mask), in_overexposed_area(overexposed_area),threshold_method(threshold_method_) {
         x = pt.x;
         y = pt.y;
         frame_id = frame_id_;

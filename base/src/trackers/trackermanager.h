@@ -48,15 +48,10 @@ private:
             props = blob;
             id = new_id;
         }
-        cv::Point2f pt() { // scaled with pparams.imscalef
-            return cv::Point2f(props->x,props->y);
-        }
-        float size() { // scaled with pparams.imscalef
-            return props->size;
-        }
-        float pixel_max() {
-            return props->pixel_max;
-        }
+        cv::Point2f pt() {return cv::Point2f(props->x,props->y);} // scaled with pparams.imscalef
+        float size() {return props->size;}  // scaled with pparams.imscalef
+        float pixel_max() {return props->pixel_max;}
+        float motion_noise() {return props->motion_noise;}
         uint16_t id;
         cv::Mat mask;
         BlobProps *props;
@@ -184,7 +179,7 @@ private:
     void create_new_blink_trackers(std::vector<ProcessedBlob> *pbs, double time);
     void match_blobs_to_trackers(bool drone_is_active, double time);
     std::tuple<float,bool,float> tune_detection_radius(cv::Point maxt);
-    void find_cog_and_remove(cv::Point maxt, double max, cv::Mat diff,cv::Mat bkg_frame);
+    void find_cog_and_remove(cv::Point maxt, double max, int motion_noise, cv::Mat diff,cv::Mat motion_noise_mapL);
 
     bool tracker_active(ItemTracker *trkr, bool drone_is_active);
 
