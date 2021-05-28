@@ -117,6 +117,11 @@ void InsectTracker::calc_world_item(BlobProps * props, double time [[maybe_unuse
 bool InsectTracker::check_ignore_blobs(BlobProps * props) { return this->check_ignore_blobs_generic(props);}
 
 bool InsectTracker::delete_me() {
+    if (_blobs_are_fused_cnt && !_image_item.blob_is_fused) {
+        _n_frames_lost = 0;
+        _blobs_are_fused_cnt = 0;
+    }
+
     if ((_n_frames_lost > n_frames_lost_threshold && !_image_item.blob_is_fused)) {
         (*_logger) << std::flush;
         _logger->close();

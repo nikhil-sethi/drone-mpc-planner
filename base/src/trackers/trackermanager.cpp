@@ -491,7 +491,7 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
     draw_blob_viz(&pbs);
 
     for (auto trkr : _trackers)
-        trkr->invalidize();
+        trkr->invalidize(false);
 }
 void TrackerManager::prep_blobs(std::vector<ProcessedBlob> *pbs,double time) {
     //init processed blob list and check on fp's
@@ -632,10 +632,8 @@ void TrackerManager::check_match_conflicts(std::vector<ProcessedBlob> *pbs,doubl
                     }
                 }
                 for (auto trkr : blob_i.trackers) {
-                    if (trkr->uid() != best_tracker->uid()) {
-                        WorldItem w;
-                        trkr->world_item(w);
-                    }
+                    if (trkr->uid() != best_tracker->uid())
+                        trkr->invalidize(true);
                 }
                 blob_i.trackers.clear();
                 blob_i.trackers.push_back(best_tracker);
@@ -968,11 +966,7 @@ void TrackerManager::draw_trackers_viz() {
                 else
                     h+=roiD.height;
 
-                if (trkr->type() == tt_insect) {
-                    InsectTracker *itrkr = static_cast<InsectTracker *> (trkr);
-                    putText(viz_descr,"blob id -> uid: " + std::to_string(image_item.blob_id) + " -> " + std::to_string(itrkr->uid()),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
-                } else
-                    putText(viz_descr,"blob id -> tr uid: " + std::to_string(image_item.blob_id) + " -> " + std::to_string(trkr->uid()),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
+                putText(viz_descr,"blob id -> tr_uid: " + std::to_string(image_item.blob_id) + " -> " + std::to_string(trkr->uid()),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
                 putText(viz_descr,std::to_string(resize_factor) + "x",cv::Point2i(viz_descr.cols-16,size_text),FONT_HERSHEY_SIMPLEX,0.4,red);
                 putText(viz_descr,"Score: " + to_string_with_precision(image_item.score,2),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
                 putText(viz_descr,"# frames: " + std::to_string(trkr->n_frames_tracking()) + " / " + std::to_string(trkr->n_frames()),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
@@ -1015,11 +1009,7 @@ void TrackerManager::draw_trackers_viz() {
 
             } else {
                 putText(viz_descr,"No blob found",cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,red);
-                if (trkr->type() == tt_insect) {
-                    InsectTracker *itrkr = static_cast<InsectTracker *> (trkr);
-                    putText(viz_descr,"iid: " + std::to_string(itrkr->insect_trkr_id()),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
-                } else
-                    putText(viz_descr,"tr uid: " + std::to_string(trkr->uid()),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
+                putText(viz_descr,"tr_uid: " + std::to_string(trkr->uid()),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
                 putText(viz_descr,"Lost: " + std::to_string(trkr->n_frames_lost()) + " / " + std::to_string(trkr->n_frames()),cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_SIMPLEX,0.4,white);
                 int text_w = 0;
                 if (trkr->image_predict_item().out_of_image) {

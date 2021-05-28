@@ -132,8 +132,8 @@ public:
     void init(std::ofstream *logger, VisionData *_visdat, int motion_thresh, std::string name, int16_t viz_id);
     void init(VisionData *_visdat, int motion_thresh, std::string name, int16_t viz_id);
     virtual void update(double time);
-    void invalidize() {
-        if (_image_item.frame_id != _visdat->frame_id) {
+    void invalidize(bool force) {
+        if (_image_item.frame_id != _visdat->frame_id || force) {
             _image_item.valid = false;
             _world_item.valid = false;
         }
