@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-import socket, json,shutil,sqlite3,subprocess
-import time, argparse
-import pickle, glob, os, re
+import subprocess
+import time
 from datetime import datetime, timedelta
+from pytz import timezone
 
 def execute(cmd):
     p_result = None
@@ -37,13 +37,14 @@ def backup(now):
     return target_str
 
 updated_today = False
+cet = timezone('Europe/Amsterdam')
 while  True:
-    now = datetime.now()
-    if now.hour == int(3) and not updated_today:
+    now = datetime.now(cet)
+    if (now.hour == int(10) and not updated_today):
         updated_today = True
         target_str = backup(now)
         print('Backed up to: ' + target_str)
 
-    if now.hour == int(3)+1 and updated_today:
+    if now.hour == int(10)+1 and updated_today:
         updated_today = False
     time.sleep(10)
