@@ -222,6 +222,8 @@ def convert_mode_to_number(mode):
         return -3
     elif mode == 'wait_for_dark':
         return -4
+    elif mode == 'down':
+        return -5
     else:
         return -666
 
@@ -265,7 +267,9 @@ def load_mode_data(unique_dates,heatmap_data,selected_systems,start_date,end_dat
 
     for i in range(0,modemap_data.shape[0]):
         for j in range(0,modemap_data.shape[1]):
-            if modemap_data[i,j] < -1 and heatmap_data[i,j] == 0:
+            if modemap_data[i,j] == -5 and heatmap_data[i,j] == 0:
+                heatmap_data[i,j] = -2
+            elif modemap_data[i,j] < -1 and heatmap_data[i,j] == 0:
                 heatmap_data[i,j] = -1
     return heatmap_data
 
@@ -274,30 +278,35 @@ def natural_sort_systems(l):
     alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key[0][10:])]
     return sorted(l, key=alphanum_key)
 
-def create_heatmap(unique_dates,heatmap_counts,xlabels, selected_heat):
+def create_heatmap(unique_dates,heatmap_counts,xlabels,selected_heat):
     hover_label = pd.DataFrame(heatmap_counts).astype(int).astype(str)
     hover_label[hover_label=='-1'] = 'NA'
-    heatmap_data = np.clip(heatmap_counts, -1, heatmap_max)
+    if current_user:
+        if  current_user.username == 'kevin' or current_user.username == 'jorn' or current_user.username == 'bram' or current_user.username == 'sjoerd':
+            heatmap_data = np.clip(heatmap_counts, -2, heatmap_max)
+        else:
+            heatmap_data = np.clip(heatmap_counts, -1, heatmap_max)
     if selected_heat:
         selected_heat = pd.read_json(selected_heat, orient='split')
         for _,cel in selected_heat.iterrows():
             x=cel['x']
             y = (unique_dates.strftime('%d-%m-%Y').tolist()).index(cel['lalaladate'])
             if heatmap_data[y,x]>=0:
-                heatmap_data[y,x]=-2
+                heatmap_data[y,x]=-3
 
     hm = go.Heatmap(
             x = xlabels,
             y = unique_dates.strftime('%d-%m-%Y'),
             z = heatmap_data,
             customdata = hover_label,
-            zmin = -2,
+            zmin = -3,
             zmid = heatmap_max/2,
             zmax = heatmap_max,
             colorscale = [
                         [0, 'rgba(128, 128, 200, 0.65)'], #selected cell
-                        [1/(heatmap_max+2), 'rgba(0, 0, 0, 1.0)'], #system inactive
-                        [2/(heatmap_max+2), 'rgba(0,255,0, 1.0)'],
+                        [1/(heatmap_max+3), 'rgba(5,5,75,1.0)'], #system down
+                        [2/(heatmap_max+3), 'rgba(0, 0, 0, 1.0)'], #system inactive
+                        [3/(heatmap_max+3), 'rgba(0,255,0, 1.0)'],
                         [1, 'rgba(255,0,0, 1.0)']
                         ],
             hovertemplate = 'Time: %{x}<br>' +

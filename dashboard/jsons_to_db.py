@@ -2,6 +2,7 @@
 import json
 import glob, os, re, sys
 import datetime
+from time import strftime
 from tqdm import tqdm
 from json.decoder import JSONDecodeError
 sys.path.append('pats_c/lib')
@@ -174,6 +175,17 @@ def concat_modes():
             modes_cleaned = [entry for entry in modes if entry[mode_id][0] != '_']
             all_modes_cleaned = all_modes_cleaned + modes_cleaned
 
+        modes_including_downtime = []
+        for i in range(0,len(all_modes_cleaned)-1):
+            all_modes_cleaned[i] = [len(modes_including_downtime),all_modes_cleaned[i][1],all_modes_cleaned[i][2],all_modes_cleaned[i][3],all_modes_cleaned[i][4]]
+            modes_including_downtime.append(all_modes_cleaned[i])
+            t_end_date_current_session = datetime.datetime.strptime(all_modes_cleaned[i][t2_id],'%Y%m%d_%H%M%S')
+            t_start_date_next_session = datetime.datetime.strptime(all_modes_cleaned[i+1][t_id],'%Y%m%d_%H%M%S')
+            in_between_time = t_start_date_next_session - t_end_date_current_session
+            if in_between_time > datetime.timedelta(hours=1):
+                down = [len(modes_including_downtime),all_modes_cleaned[i][1],all_modes_cleaned[i][t2_id],all_modes_cleaned[i+1][t_id],'down']
+                modes_including_downtime.append(down)
+
         sql_clear_table = 'DELETE FROM mode_records'
         cur.execute(sql_clear_table)
         con.commit()
@@ -184,7 +196,7 @@ def concat_modes():
             sql_insert = sql_insert + s + ','
             sql__insert_values = sql__insert_values + '?,'
         sql_insert = sql_insert[:-1] + sql__insert_values[:-1] + ')'
-        for mode in all_modes_cleaned:
+        for mode in modes_including_downtime:
             cur.execute(sql_insert, mode)
         con.commit()
 
