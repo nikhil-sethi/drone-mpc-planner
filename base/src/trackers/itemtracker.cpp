@@ -766,8 +766,10 @@ void ItemTracker::serialize_settings() {
 }
 
 void ItemTracker::close () {
-    if (initialized_logger)
+    if (initialized_logger) {
         (*_logger) << std::flush;
+        _logger->close();
+    }
     if (initialized && (pparams.insect_tracking_tuning || pparams.drone_tracking_tuning))
         serialize_settings();
     initialized_logger = false;

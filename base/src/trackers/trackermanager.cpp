@@ -740,7 +740,9 @@ void TrackerManager::create_new_insect_trackers(std::vector<ProcessedBlob> *pbs,
                 if (im_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_im && blob.pixel_max() > blob.motion_noise()+ motion_thresh ) {
                     InsectTracker *it;
                     it = new InsectTracker();
+                    std::cout << "Creating new insecttracker: " << next_insecttrkr_id << std::endl;
                     it->init(next_insecttrkr_id,_visdat,motion_thresh,_trackers.size(),_enable_draw_stereo_viz);
+                    std::cout << "Creating new insecttracker: " << next_insecttrkr_id << " uid: " << it->uid() << std::endl;
                     it->calc_world_item(props,time);
                     if (!props->world_props.bkg_check_ok)
                         tracking::WorldItem w(tracking::ImageItem(*props,_visdat->frame_id,-1,blob.id),props->world_props);
@@ -768,6 +770,7 @@ void TrackerManager::create_new_insect_trackers(std::vector<ProcessedBlob> *pbs,
                             _trackers.push_back(it);
                             blob.trackers.push_back(it);
                             delete_it = false;
+                            std::cout << "Keeping insecttracker: " << next_insecttrkr_id << " uid: " << it->uid() << std::endl;
                         } else {
                             blob.ignored = true;
                         }
@@ -836,6 +839,7 @@ void TrackerManager::update_trackers(double time,long long frame_number, bool dr
             }
             trkr->close();
             _trackers.erase(_trackers.begin() + i);
+            std::cout << "Deleting tracker: " << trkr->uid() << std::endl;
             delete trkr;
         } else if(_trackers.at(i)->type() == tt_drone) {
             DroneTracker *dtrkr = static_cast<DroneTracker *>(_trackers.at(i));

@@ -123,8 +123,10 @@ bool InsectTracker::delete_me() {
     }
 
     if ((_n_frames_lost > n_frames_lost_threshold && !_image_item.blob_is_fused)) {
-        (*_logger) << std::flush;
-        _logger->close();
+        if (initialized_logger) {
+            (*_logger) << std::flush;
+            _logger->close();
+        }
         initialized = false;
         initialized_logger = false;
         if (false_positive())
