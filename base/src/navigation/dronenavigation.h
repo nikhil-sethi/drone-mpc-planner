@@ -84,7 +84,7 @@ private:
     bool drone_at_wp();
     cv::Point3f square_point(cv::Point3f center, float width, float s);
     void check_abort_autonomus_flight_conditions();
-
+    void maintain_motion_map(double time);
 
 public:
 

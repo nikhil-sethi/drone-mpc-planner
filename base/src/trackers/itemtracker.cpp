@@ -234,11 +234,11 @@ float ItemTracker::stereo_match(BlobProps * blob) {
     cv::Point2f im_posL = blob->pt_unscaled();
     float size = blob->size_unscaled();
 
-    cv::Mat diffL,diffR,grayL,grayR,motion_noise_mapL,motion_noise_mapR;
+    cv::Mat diffL,diffR,grayL,grayR,motion_filtered_noise_mapL,motion_filtered_noise_mapR;
     diffL = _visdat->diffL;
     diffR = _visdat->diffR;
-    motion_noise_mapL = _visdat->motion_noise_mapL;
-    motion_noise_mapR = _visdat->motion_noise_mapR;
+    motion_filtered_noise_mapL = _visdat->motion_filtered_noise_mapL;
+    motion_filtered_noise_mapR = _visdat->motion_filtered_noise_mapR;
     grayL = _visdat->frameL;
     grayR = _visdat->frameR;
     int radius = ceilf((size + 4.f)*0.5f);
@@ -280,17 +280,17 @@ float ItemTracker::stereo_match(BlobProps * blob) {
     float min_err = INFINITY;
     cv::Mat grayL_masked_final,grayR_masked_final,mask_final;
 
-    if (motion_noise_mapL.cols) {
+    if (motion_filtered_noise_mapL.cols) {
         //since the background often isn't a solid color we do matching on the raw image data instead of the motion
         //using the motion from both images as a mask, we match the disparity over the masked gray image
 
         float used_motion_thresh = _motion_thresh;
         if (blob->threshold_method != 1)
             used_motion_thresh = 1;
-        cv::Mat diffL_mask_patch = diffL(roiL)>motion_noise_mapL(roiL)+ used_motion_thresh;
+        cv::Mat diffL_mask_patch = diffL(roiL)>motion_filtered_noise_mapL(roiL)+ used_motion_thresh;
         if (cv::countNonZero(diffL_mask_patch) / npixels > min_pxl_ratio) {
             cv::Rect roiR_disparity_rng(x-(disp_end-1),y,width+(disp_end-disp_start-1),height);
-            cv::Mat diffR_mask_patch = diffR(roiR_disparity_rng)>motion_noise_mapR(roiR_disparity_rng)+used_motion_thresh;
+            cv::Mat diffR_mask_patch = diffR(roiR_disparity_rng)>motion_filtered_noise_mapR(roiR_disparity_rng)+used_motion_thresh;
             cv::Mat grayL_patch = _visdat->frameL(roiL);
             cv::Mat grayR_patch = _visdat->frameR(roiR_disparity_rng);
 
@@ -430,9 +430,9 @@ float ItemTracker::stereo_match(BlobProps * blob) {
 
             cv::Mat viz_gray = create_column_image({grayL(roiL),grayR(roiR)},CV_8UC1,viz_scale);
             cv::Mat viz_motion_abs = create_column_image({diffL(roiL),diffR(roiR)},CV_8UC1,viz_scale);
-            cv::Mat viz_noise = create_column_image({motion_noise_mapL(roiL),motion_noise_mapR(roiR)},CV_8UC1,viz_scale);
-            if (motion_noise_mapL.cols) {
-                cv::Mat viz_mask = create_column_image({diffL(roiL)>motion_noise_mapL(roiL)+_motion_thresh,diffR(roiR)>motion_noise_mapR(roiR)+_motion_thresh},CV_8UC1,viz_scale);
+            cv::Mat viz_noise = create_column_image({motion_filtered_noise_mapL(roiL),motion_filtered_noise_mapR(roiR)},CV_8UC1,viz_scale);
+            if (motion_filtered_noise_mapL.cols) {
+                cv::Mat viz_mask = create_column_image({diffL(roiL)>motion_filtered_noise_mapL(roiL)+_motion_thresh,diffR(roiR)>motion_filtered_noise_mapR(roiR)+_motion_thresh},CV_8UC1,viz_scale);
                 if (grayL_masked_final.cols) {
                     cv::Mat viz_gray_masked = create_column_image({grayL_masked_final,grayR_masked_final},CV_8UC1,viz_scale);
                     cv::Mat viz_mask_combined = create_column_image({mask_final,mask_final},CV_8UC1,viz_scale);
@@ -542,8 +542,8 @@ int ItemTracker::calc_rough_disparity(BlobProps * blob,int radius) {
     double min, max;
     minMaxLoc(blurred, &min, &max, &mint, &maxt);
     int disparity = blurred.cols - maxt.x - radius + offset;
-    if (_visdat->motion_noise_mapR.cols) {
-        cv::Mat noiseR_roi = _visdat->motion_noise_mapR(roiR);
+    if (_visdat->motion_filtered_noise_mapR.cols) {
+        cv::Mat noiseR_roi = _visdat->motion_filtered_noise_mapR(roiR);
         auto pm = noiseR_roi.at<uint8_t>(maxt);
         if (max < pm)
             disparity = -1;

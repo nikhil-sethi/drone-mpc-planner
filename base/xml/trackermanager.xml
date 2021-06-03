@@ -1,5 +1,5 @@
 <SerializableClass Type="TrackerManagerParameters" Version="1.0">
     <Member Name="max_points_per_frame">10</Member>
     <Member Name="roi_radius">15</Member>
-    <Member Name="motion_thresh">10</Member>
+    <Member Name="motion_thresh">5</Member>
 </SerializableClass>

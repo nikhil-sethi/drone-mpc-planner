@@ -490,6 +490,14 @@ bool handle_key(double time [[maybe_unused]]) {
         if(log_replay_mode || generator_mode || render_monitor_video_mode)
             trackers.enable_draw_stereo_viz();
         break;
+    case ';':
+        if(log_replay_mode || generator_mode || render_monitor_video_mode)
+            visualizer.enable_draw_noise_viz();
+        break;
+    case '\'':
+        if(log_replay_mode || generator_mode || render_monitor_video_mode)
+            visualizer.enable_draw_exposure_viz();
+        break;
     case 'o':
         dctrl.LED(true);
         dnav.nav_flight_mode(navigation::nfm_manual);
@@ -829,8 +837,6 @@ void init() {
 
     rc->init(drone_id);
     cam->init();
-    if (render_monitor_video_mode)
-        visdat.read_motion_and_overexposed_from_image(replay_dir); // has to happen before init otherwise wfn's are overwritten
     visdat.init(cam.get()); // do after cam update to populate frames
     trackers.init(&logger,replay_dir, &visdat, &iceptor);
     iceptor.init(&trackers,&visdat,&(cam->camera_volume),&logger,&dctrl);

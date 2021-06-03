@@ -12,7 +12,6 @@ void VisionData::init(Cam * cam) {
     frameL = frame->left;
     frameR = frame->right;
     depth_background_mm = cam->depth_background_mm;
-    frameL_background = frameL.clone();
 
     enable_viz_motion = false; // Note: the enable_diff_vizs in the insect/drone trackers may be more interesting instead of this one.
 
@@ -21,11 +20,6 @@ void VisionData::init(Cam * cam) {
     camera_gain = _cam->measured_gain();
     camera_exposure = _cam->measured_exposure();
 
-    motion_noise_mapL_wfn = data_output_dir + motion_noise_mapL_wfn;
-    motion_noise_mapR_wfn = data_output_dir + motion_noise_mapR_wfn;
-    overexposed_mapL_wfn = data_output_dir + overexposed_mapL_wfn;
-    overexposed_mapR_wfn = data_output_dir + overexposed_mapR_wfn;
-
     deserialize_settings();
 
     smallsize =cv::Size(frameL.cols/pparams.imscalef,frameL.rows/pparams.imscalef);
@@ -33,6 +27,14 @@ void VisionData::init(Cam * cam) {
     frameR.convertTo(frameR16, CV_16SC1);
     diffL16 = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);
     diffR16 = cv::Mat::zeros(cv::Size(frameR.cols,frameR.rows),CV_16SC1);
+    overexposed_bufferL16 = frameL16.clone(); //cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_16SC1);;
+    overexposed_bufferR16 = frameR16.clone(); // cv::Mat::zeros(cv::Size(frameR.cols,frameR.rows),CV_16SC1);;
+    overexposed_mapL = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_8UC1);
+    overexposed_mapR = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_8UC1);
+    motion_max_noise_mapL = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_8UC1);
+    motion_filtered_noise_mapL = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_8UC1);
+    motion_filtered_noise_mapR = cv::Mat::zeros(cv::Size(frameL.cols,frameL.rows),CV_8UC1);
+    motion_filtered_noise_mapL_small = cv::Mat::zeros(smallsize,CV_8UC1);
 
     int dilation_size = 5;
     cv::Mat element_mat = getStructuringElement( cv::MORPH_RECT,cv::Size( 2*dilation_size + 1, 2*dilation_size+1 ),cv::Point( dilation_size, dilation_size ) );
@@ -44,35 +46,6 @@ void VisionData::init(Cam * cam) {
     }
 
     initialized = true;
-}
-
-void VisionData::read_motion_and_overexposed_from_image(std::string replay_dir) {
-    std::string motion_noise_mapL_rfn = replay_dir + '/' + motion_noise_mapL_wfn;
-    std::string motion_noise_mapR_rfn = replay_dir + '/' + motion_noise_mapR_wfn;
-    std::string overexposed_mapL_rfn = replay_dir + '/' + overexposed_mapL_wfn;
-    std::string overexposed_mapR_rfn = replay_dir + '/' + overexposed_mapR_wfn;
-    if (!file_exist(motion_noise_mapR_rfn)) { //TODO: remove in a few weeks,for older logs that don't have seperate max_motion_noise.pngs yet. (probably can be removed in the near future)
-        motion_noise_mapL_rfn = replay_dir + "/max_motion_noise.png";
-        motion_noise_mapR_rfn = replay_dir + "/max_motion_noise.png";
-    }
-    motion_noise_mapL = cv::imread(motion_noise_mapL_rfn,cv::IMREAD_ANYDEPTH);
-    motion_noise_mapR = cv::imread(motion_noise_mapR_rfn,cv::IMREAD_ANYDEPTH);
-
-    if (!file_exist(overexposed_mapR_rfn)) { //TODO: remove in a few weeks, tmp for older logs that don't have seperate max_motion_noise.pngs yet. (probably can be removed in the near future)
-        overexposed_mapL_rfn = replay_dir + "/overexposed.png";
-        overexposed_mapR_rfn = replay_dir + "/overexposed.png";
-    }
-    overexposed_mapL = cv::imread(overexposed_mapL_rfn,cv::IMREAD_ANYDEPTH);
-    overexposed_mapR = cv::imread(overexposed_mapR_rfn,cv::IMREAD_ANYDEPTH);
-
-    smallsize =cv::Size(motion_noise_mapL.cols/pparams.imscalef,motion_noise_mapL.rows/pparams.imscalef);
-    cv::resize(motion_noise_mapL,motion_noise_mapL_small,smallsize);
-    cv::resize(motion_noise_mapR,motion_noise_mapR_small,smallsize);
-    cv::resize(overexposed_mapL,overexposed_mapL_small,smallsize);
-
-    _reset_motion_integration = true;
-    enable_collect_no_drone_frames = false;
-    _calibrating_background = false;
 }
 
 void VisionData::update(StereoPair * data) {
@@ -137,7 +110,6 @@ void VisionData::update(StereoPair * data) {
     if (enable_viz_motion)
         viz_frame = diffL*10;
 
-    maintain_motion_noise_map();
 }
 
 void VisionData::fade(cv::Mat diff16, cv::Point exclude_drone_spot) {
@@ -174,27 +146,31 @@ void VisionData::fade(cv::Mat diff16, cv::Point exclude_drone_spot) {
     }
 }
 
-void VisionData::maintain_motion_noise_map() {
-    if (frame_id % pparams.fps == 0 && enable_collect_no_drone_frames) {
-        static uint cnt = 0;
-        motion_noise_bufferL.push_back(diffL);
-        motion_noise_bufferL.erase(motion_noise_bufferL.begin());
-        motion_noise_bufferR.push_back(diffR);
-        motion_noise_bufferR.erase(motion_noise_bufferR.begin());
-        cnt++;
-        if (cnt > motion_noise_bufferL.size() && motion_noise_bufferL.size() > 1) {
-            _calibrating_background = true;
-            frameL_background = frameL/2 + frameL_background/2;
-            cnt = 0;
+void VisionData::maintain_noise_maps() {
+    if (frame_id % pparams.fps == 0) {
+        motion_noise_bufferL.push_back(diffL.clone());
+        motion_noise_bufferR.push_back(diffR.clone());
+        cv::Mat mask = diffL > motion_max_noise_mapL;
+        diffL.copyTo(motion_max_noise_mapL,mask);
+        if (motion_noise_bufferL.size() > motion_buf_size_target) {
+            _calibrating_motion_noise_map = true;
+            save_every_nth_frame_during_motion_calib = 1;
         }
+
+        overexposed_bufferL16 = (overexposed_bufferL16*7 + frameL16) / 8;
+        overexposed_bufferR16 = (overexposed_bufferR16*7 + frameR16) / 8;
+        overexposed_mapL = overexposed_bufferL16 > 200;
+        overexposed_mapR = overexposed_bufferL16 > 200;
     }
 
-    if (enable_collect_no_drone_frames && _calibrating_background ) {
-        motion_noise_bufferL.push_back(diffL);
-        motion_noise_bufferR.push_back(diffR);
-        if (_current_frame_time > calibrating_background_end_time) {
-            std::cout << "Writing motion noise map" << std::endl;
-            _calibrating_background = false;
+    if ( _calibrating_motion_noise_map) {
+        if (!(frame_id % save_every_nth_frame_during_motion_calib)) {
+            motion_noise_bufferL.push_back(diffL.clone());
+            motion_noise_bufferR.push_back(diffR.clone());
+        }
+        if (_current_frame_time > calibrating_noise_map_end_time && motion_noise_bufferL.size() > motion_buf_size_target) {
+            std::cout << "Rebuilding motion noise map" << std::endl;
+            _calibrating_motion_noise_map = false;
 
             cv::Mat bkgL = motion_noise_bufferL.at(0).clone();
             cv::Mat bkgR = motion_noise_bufferR.at(0).clone();
@@ -207,53 +183,43 @@ void VisionData::maintain_motion_noise_map() {
                 im.copyTo(bkgR,mask);
             }
 
+            motion_max_noise_mapL = bkgL.clone();
             cv::dilate(bkgL,bkgL,dilate_element);
             cv::dilate(bkgR,bkgR,dilate_element);
-            GaussianBlur(bkgL,motion_noise_mapL,Size(9,9),0);
-            GaussianBlur(bkgR,motion_noise_mapR,Size(9,9),0);
-            cv::resize(bkgL,motion_noise_mapL_small,smallsize);
-            cv::resize(bkgR,motion_noise_mapR_small,smallsize);
-            imwrite(motion_noise_mapL_wfn,motion_noise_mapL);
-            imwrite(motion_noise_mapR_wfn,motion_noise_mapR);
+            GaussianBlur(bkgL,motion_filtered_noise_mapL,Size(9,9),0);
+            GaussianBlur(bkgR,motion_filtered_noise_mapR,Size(9,9),0);
+            cv::resize(bkgL,motion_filtered_noise_mapL_small,smallsize);
+
+            motion_noise_bufferL.clear();
+            motion_noise_bufferR.clear();
+
         }
     }
 }
 
-void VisionData::create_overexposed_removal_mask(cv::Point3f drone_im_location, float drone_im_size) {
-
-    cv::Point3f p =world2im_3d(drone_im_location,Qfi,camera_pitch);
-
-    cv::Point2i drone_imL_location(roundf(p.x),roundf(p.y));
-    cv::Point2i drone_imR_location(roundf(p.x - p.z),roundf(p.y));
-    cv::Mat maskL = frameL < 254;
-    cv::erode(maskL,overexposed_mapL,dilate_element);
-    cv::circle(overexposed_mapL,drone_imL_location,drone_im_size,255, cv::FILLED);
-    imwrite(overexposed_mapL_wfn,overexposed_mapL);
-
-    cv::Mat maskR = frameR < 254;
-    cv::erode(maskR,overexposed_mapR,dilate_element);
-    cv::circle(overexposed_mapR,drone_imR_location,drone_im_size,255, cv::FILLED);
-    imwrite(overexposed_mapR_wfn,overexposed_mapR);
-
-    cv::resize(overexposed_mapL,overexposed_mapL_small,smallsize);
-    cv::resize(overexposed_mapR,overexposed_mapR_small,smallsize);
-    _reset_motion_integration = true;
+int VisionData::max_noise(cv::Point blob_pt) {
+    //get the max noise in a small area around the blob point, meant to be used to detect new insects
+    const int size = 10;
+    cv::Point2i p (std::clamp(static_cast<int>(roundf(blob_pt.x*pparams.imscalef))-size/2,0,IMG_W-size),std::clamp(static_cast<int>(roundf(blob_pt.y*pparams.imscalef))-size/2,0,IMG_H-size));
+    cv::Rect roi(p,cv::Size(size,size));
+    double max;
+    cv::minMaxIdx(motion_max_noise_mapL(roi),NULL,&max,NULL,NULL);
+    return static_cast<int>(round(max));
 }
+
 bool VisionData::overexposed(cv::Point blob_pt) {
     //check in a small area around the blob point if there are any overexposed pixels (which are 0 in the overexposed map)
-    const int size = 16;
-    if(overexposed_mapL.cols) {
-        cv::Point2i p (std::clamp(static_cast<int>(roundf(blob_pt.x*pparams.imscalef))-size/2,0,IMG_W-size),std::clamp(static_cast<int>(roundf(blob_pt.y*pparams.imscalef))-size/2,0,IMG_H-size));
-        cv::Rect roi(p,cv::Size(size,size));
-        int s = cv::sum(overexposed_mapL(roi))[0];
-        return s != size*size*255;
-    } else
-        return true;
+    const int size = 20;
+    cv::Point2i p (std::clamp(static_cast<int>(roundf(blob_pt.x*pparams.imscalef))-size/2,0,IMG_W-size),std::clamp(static_cast<int>(roundf(blob_pt.y*pparams.imscalef))-size/2,0,IMG_H-size));
+    cv::Rect roi(p,cv::Size(size,size));
+    int s = cv::sum(overexposed_mapL(roi))[0];
+    return s > 0;
 }
 
-void VisionData::enable_background_motion_map_calibration(float duration) {
-    calibrating_background_end_time = _current_frame_time+static_cast<double>(duration);
-    _calibrating_background = true;
+void VisionData::enable_noise_map_calibration(float duration) {
+    calibrating_noise_map_end_time = _current_frame_time+static_cast<double>(duration);
+    save_every_nth_frame_during_motion_calib = static_cast<int>(round((pparams.fps*duration) / motion_buf_size_target));
+    _calibrating_motion_noise_map = true;
 }
 
 //Keep track of the average brightness, and reset the motion integration frame when it changes to much. (e.g. when someone turns on the lights or something)
@@ -261,7 +227,6 @@ void VisionData::track_avg_brightness(cv::Mat frame,double time) {
     cv::Mat frame_top = frame(cv::Rect(frame.cols/3,0,frame.cols/3*2,frame.rows/3)); // only check the middle & top third of the image, to save CPU
     float brightness = static_cast<float>(mean( frame_top )[0]);
     if (fabs(brightness - prev_brightness) > brightness_event_tresh  && prev_brightness >= 0) {
-        frameL_background = frame;
         std::cout << "Warning, large brightness change: " << prev_brightness << " -> " << brightness  << std::endl;
         _reset_motion_integration = true;
         _large_brightness_change_event_time = time;

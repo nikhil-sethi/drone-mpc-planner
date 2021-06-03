@@ -154,6 +154,7 @@ private:
     bool _enable_viz_tracker = false;
     bool enable_viz_motion = false;
     bool _enable_draw_stereo_viz = false;
+    double time_since_tracking_nothing = 0;
 
     std::vector<cv::Mat> vizs_blobs;
     const float viz_blobs_resizef = 4.0;
@@ -179,7 +180,7 @@ private:
     void create_new_blink_trackers(std::vector<ProcessedBlob> *pbs, double time);
     void match_blobs_to_trackers(bool drone_is_active, double time);
     std::tuple<float,bool,float> tune_detection_radius(cv::Point maxt);
-    void find_cog_and_remove(cv::Point maxt, double max, int motion_noise, cv::Mat diff,cv::Mat motion_noise_mapL);
+    void find_cog_and_remove(cv::Point maxt, double max, int motion_noise, cv::Mat diff,cv::Mat motion_filtered_noise_mapL);
 
     bool tracker_active(ItemTracker *trkr, bool drone_is_active);
 
@@ -276,6 +277,14 @@ public:
     std::tuple<bool, BlinkTracker *> blinktracker_best();
     std::vector<ItemTracker *>all_target_trackers();
     DroneTracker *dronetracker() { return _dtrkr; }
+    float tracking_anything_duration(double time) {
+        for (auto trkr : _trackers) {
+            if (trkr->n_frames_tracking()>0)
+                return static_cast<float>(time - time_since_tracking_nothing);
+        }
+        time_since_tracking_nothing = time;
+        return 0;
+    }
 
     void enable_draw_stereo_viz() {
         _enable_draw_stereo_viz = true;

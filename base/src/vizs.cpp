@@ -613,6 +613,13 @@ void Visualizer::paint() {
             namedWindow("tracking results", cv::WINDOW_OPENGL | cv::WINDOW_AUTOSIZE);
         }
         cv::imshow("tracking results", trackframe);
+
+
+        if (_viz_noise_initialized && _visdat->motion_max_noise_mapL.cols)
+            cv::imshow("noise map", _visdat->motion_max_noise_mapL*10);
+        if (_viz_exposure_initialized && _visdat->overexposed_mapL.cols)
+            cv::imshow("exposure map", _visdat->overexposed_mapL);
+
         auto drone_diff_viz = _trackers->dronetracker()->diff_viz;
         if (drone_diff_viz.cols) {
             static bool drn_diff_viz_initialized = false;

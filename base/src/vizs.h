@@ -41,6 +41,8 @@ private:
     Interceptor *_iceptor;
     bool generator_cam_set = false;
     bool _tracking_viz_initialized = false;
+    bool _viz_noise_initialized = false;
+    bool _viz_exposure_initialized = false;
 
     bool enable_plots = false;
 
@@ -153,5 +155,14 @@ public:
     void update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, double time, bool draw_plots);
     void init(VisionData * visdat, tracking::TrackerManager *imngr, DroneController *dctrl, navigation::DroneNavigation *dnav, Rc *rc, bool fromfile, Interceptor *iceptor);
     void close();
+
+    void enable_draw_noise_viz() {
+        _viz_noise_initialized = true;
+        cv::namedWindow("noise map", cv::WINDOW_OPENGL | cv::WINDOW_AUTOSIZE);
+    }
+    void enable_draw_exposure_viz() {
+        _viz_exposure_initialized = true;
+        cv::namedWindow("exposure map", cv::WINDOW_OPENGL | cv::WINDOW_AUTOSIZE);
+    }
 
 };
