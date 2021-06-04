@@ -105,7 +105,8 @@ void DroneNavigation::update(double time) {
             else
                 _navigation_status = ns_locate_drone_wait_led_on;
             force_pad_redetect = false;
-            [[fallthrough]];
+            repeat = true;
+            break;
         } case ns_locate_drone_wait_led_on: {
             if (time - time_start_locating_drone > 1.5) {
                 _visdat->reset_motion_integration();
@@ -158,14 +159,17 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_check_telemetry;
             break;
         } case ns_check_telemetry: {
+            maintain_motion_map(time);
             if (_dctrl->telemetry_OK() || ! dparams.Telemetry())
                 _navigation_status = ns_check_pad_att;
             break;
         } case ns_check_pad_att: {
+            maintain_motion_map(time);
             if (_dctrl->attitude_on_pad_OK() || ! dparams.Telemetry())
                 _navigation_status = ns_wait_to_arm;
             break;
         } case ns_wait_to_arm: {
+            maintain_motion_map(time);
             if (_dctrl->ready_for_first_arm(time)) {
                 _navigation_status = ns_calibrating_motion;
                 _dctrl->flight_mode(DroneController::fm_inactive);
