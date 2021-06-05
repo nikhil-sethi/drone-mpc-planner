@@ -1,16 +1,17 @@
 import os
 from flask import Flask, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import login_required,LoginManager
+from flask_login import login_required, LoginManager
 from . import pats_c
 
 db = SQLAlchemy()
 dash = pats_c.dash_application()
 
+
 def create_app():
     current_folder = os.path.dirname(os.path.realpath(__file__))
-    parent_folder = os.path.realpath(os.path.join(current_folder,os.pardir))
-    server = Flask(__name__, static_folder=os.path.join(current_folder,'assets'))
+    parent_folder = os.path.realpath(os.path.join(current_folder, os.pardir))
+    server = Flask(__name__, static_folder=os.path.join(current_folder, 'assets'))
 
     db_path = os.path.expanduser('~/patsc/db/pats_creds.db')
     config_path = os.path.expanduser('~/patsc/db/.pats-c-key.py')
@@ -28,7 +29,7 @@ def create_app():
     dash.init_app(app=server)
 
     for view_func in server.view_functions:
-       if view_func.startswith(dash.config['url_base_pathname']):
+        if view_func.startswith(dash.config['url_base_pathname']):
             server.view_functions[view_func] = login_required(server.view_functions[view_func])
 
     from .models import User
@@ -47,6 +48,6 @@ def create_app():
     @server.route('/static/<path:filename>')
     @login_required
     def base_static(filename):
-        return send_from_directory(os.path.join('../static/') , filename)
+        return send_from_directory(os.path.join('../static/'), filename)
 
     return server

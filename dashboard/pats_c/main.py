@@ -6,12 +6,14 @@ from . import db
 
 main = Blueprint('main', __name__)
 
+
 @main.route('/')
 def index():
     if current_user.is_authenticated:
         return redirect(url_for('/pats-c/'))
     else:
         return redirect(url_for('auth.login'))
+
 
 @main.before_request
 def login_in_check():

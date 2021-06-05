@@ -27,13 +27,13 @@ def plot_frame(ax, xcamera, xfrd, xfld, xbld, xbrd, xblu, xbru, xflu, xfru, xflm
 def plot_normal_vectors(ax, planes, plane_names, colors):
 
     for i, plane in enumerate(planes):
-        if plane_names[i]!="plane_left" and plane_names[i]!="plane_right":
+        if plane_names[i] != "plane_left" and plane_names[i] != "plane_right":
             ax.plot([0, plane[1][0, 0]],
                     [0, plane[1][1, 0]],
                     [0, plane[1][2, 0]],
                     color=colors[i],
                     label=plane_names[i])
-        else: 
+        else:
             ax.plot([plane[0][0, 0], plane[0][0, 0] + plane[1][0, 0]],
                     [0, plane[1][1, 0]],
                     [0, plane[1][2, 0]],

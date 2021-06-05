@@ -95,7 +95,7 @@ if not ok:
     sys.exit()
 
 # inverting image to counter wrapping problem of red in HSV
-first_frame = 255-first_frame
+first_frame = 255 - first_frame
 
 drone_detection_thres = np.array([[80, 70, 70], [95, 255, 255]])
 
@@ -108,7 +108,7 @@ cv2.imshow("image", first_frame)
 # Detect the tape on the floor and determine angle
 if detect_tape:
     roi = cv2.selectROI(first_frame)
-    roi = first_frame[roi[1]:roi[1]+roi[3], roi[0]:roi[0]+roi[2]]
+    roi = first_frame[roi[1]:roi[1] + roi[3], roi[0]:roi[0] + roi[2]]
     tape_angle, lower, upper = referenceDetection(
         roi, existing_settings, tune_reference_detection)
 
@@ -145,7 +145,7 @@ while(cap.isOpened):
             # countering noise of realsense camera
             cv2.dilate(frame, kernel, iterations=1)
             cv2.erode(frame, kernel, iterations=1)
-            frame = 255-frame
+            frame = 255 - frame
 
             threshold_red_image = detectRed(frame)
 
@@ -187,7 +187,7 @@ while(cap.isOpened):
         previous_frame = current_frame - 1
 
         if next_frame == blink_frame - 1:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, next_frame+21)
+            cap.set(cv2.CAP_PROP_POS_FRAMES, next_frame + 21)
 
         key = cv2.waitKey(play)
 

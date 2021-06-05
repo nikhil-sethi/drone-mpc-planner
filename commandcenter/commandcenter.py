@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
-from PyQt5.QtCore import QDir, Qt, QUrl,QRect,QTimer
-from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
-from PyQt5.QtMultimediaWidgets import QVideoWidget
-from PyQt5.QtWidgets import (QMainWindow,QDialog,QWidget, QPushButton, QCheckBox, QComboBox, QAction,QFrame,
-    QApplication, QFileDialog, QHBoxLayout, QLabel,QPushButton, QSizePolicy, QSlider, QStyle, QListWidget,QListWidgetItem,
-    QVBoxLayout, QGridLayout, QWidget,QMessageBox,QPlainTextEdit,QMenu,QTabWidget,QToolBar)
-from PyQt5.QtGui import QIcon,QPixmap, QPalette,QColor,QKeyEvent,QFont
-import shutil
-
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtWidgets import (QMainWindow, QDialog, QWidget, QPushButton, QComboBox, QAction,
+                             QApplication, QHBoxLayout, QLabel, QSizePolicy, QStyle, QListWidget, QListWidgetItem,
+                             QVBoxLayout, QGridLayout, QMessageBox, QPlainTextEdit, QTabWidget)
+from PyQt5.QtGui import QIcon, QPixmap, QPalette, QColor, QKeyEvent, QFont
 from pathlib import Path
 from datetime import datetime
-import random,sys,os,re,subprocess,math
+import sys
+import os
+import re
+import subprocess
+import math
+
+
 class CommandCenterWindow(QMainWindow):
 
-    def __init__(self,screen_size,parent=None):
+    def __init__(self, screen_size, parent=None):
         super(CommandCenterWindow, self).__init__(parent)
         self.setWindowTitle("Pats Command Center")
         self.setWindowIcon(QIcon("./icon.png"))
@@ -79,103 +81,104 @@ class CommandCenterWindow(QMainWindow):
         self.source_folder = source_folder
         self.download(True)
 
-
         self.layout = QGridLayout()
         self.populate_systems()
 
         self.setMaximumSize(screen_size.width(), screen_size.height())
 
-
         timer = QTimer(self)
         timer.timeout.connect(self.refresh)
         timer.start(1000)
-
 
         self.refresh()
         self.show()
         self.refresh()
 
     def populate_systems(self):
-
         for i in reversed(range(self.layout.count())):
             self.layout.itemAt(i).widget().setParent(None)
-
         systems = next(os.walk(self.source_folder))[1]
         systems.sort(key=natural_keys)
         self.system_folders = systems
 
         n = 0
         for f in self.system_folders:
-            if os.path.exists(Path(self.source_folder,f,'.select')):
-                n = n+1
-
-        if n>1:
+            if os.path.exists(Path(self.source_folder, f, '.select')):
+                n = n + 1
+        if n > 1:
             div = math.floor(math.sqrt(n))
-            np = int(math.ceil(n/div))
+            np = int(math.ceil(n / div))
         else:
             div = 1
-            np=1
+            np = 1
 
         self.sys_widgets = []
-        i=0
+        i = 0
         for f in self.system_folders:
-            if os.path.exists(Path(self.source_folder,f,'.select')):
-                s = SystemWidget(self.source_folder,f)
+            if os.path.exists(Path(self.source_folder, f, '.select')):
+                s = SystemWidget(self.source_folder, f)
                 self.sys_widgets.append(s)
-                self.layout.addWidget(s,int(i/np),i % np)
+                self.layout.addWidget(s, int(i / np), i % np)
                 i = i + 1
-
         self.update_combos()
         self.wid.setLayout(self.layout)
 
     def select_systems(self):
-        SelectSystemsDialog(self,self.source_folder,self.system_folders)
+        SelectSystemsDialog(self, self.source_folder, self.system_folders)
         self.populate_systems()
         self.update()
+
     def request_updates(self):
         for sys in self.sys_widgets:
             sys.request_update()
+
     def reboot_systems(self):
         buttonReply = QMessageBox.question(self, 'Maar, weet je dat eigenlijk wel zekerdepeter?!', "Reboot, really?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if buttonReply == QMessageBox.Yes:
             for sys in self.sys_widgets:
                 sys.reboot_dont_ask()
+
     def git_update_systems(self):
         buttonReply = QMessageBox.question(self, 'Maar, weet je dat eigenlijk wel zekerdepeter?!', "Update, really?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if buttonReply == QMessageBox.Yes:
             for sys in self.sys_widgets:
                 sys.git_update()
+
     def restart_systems(self):
         for sys in self.sys_widgets:
             sys.restart()
+
     def fly_flightplan_flight(self):
         for sys in self.sys_widgets:
             sys.flightplan_takeoff()
+
     def fly_replay_moth(self):
         for sys in self.sys_widgets:
             sys.insect_replay_takeoff()
+
     def mode_change(self):
         if self.combo_mode.currentIndex() >= 0:
             for sys in self.sys_widgets:
                 sys.combo_mode.setCurrentIndex(self.combo_mode.currentIndex())
             self.combo_mode.setCurrentIndex(-1)
+
     def sub_mode_change(self):
         if self.combo_sub_mode.currentIndex() >= 0:
             for sys in self.sys_widgets:
                 sys.combo_sub_mode.setCurrentIndex(self.combo_sub_mode.currentIndex())
             self.combo_sub_mode.setCurrentIndex(-1)
 
-    def download(self,wait=False):
-        rsync_src='dash:/home/pats/status/'
-        subprocess.call(['mkdir -p ' + self.source_folder ], shell=True)
-        cmd = ['rsync -zva --timeout=3 --exclude \'*.jpg.*\' --exclude \'*.xml.*\' --exclude \'*.txt.*\' ' + rsync_src + ' '+ self.source_folder]
+    def download(self, wait=False):
+        rsync_src = 'dash:/home/pats/status/'
+        subprocess.call(['mkdir -p ' + self.source_folder], shell=True)
+        cmd = ['rsync -zva --timeout=3 --exclude \'*.jpg.*\' --exclude \'*.xml.*\' --exclude \'*.txt.*\' ' + rsync_src + ' ' + self.source_folder]
         if wait:
-            subprocess.call(cmd, shell=True,stdout=subprocess.PIPE)
+            subprocess.call(cmd, shell=True, stdout=subprocess.PIPE)
         else:
-            subprocess.Popen(cmd, shell=True,stdout=subprocess.PIPE)
+            subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 
     def refresh(self):
-        theme = subprocess.check_output(["/usr/bin/gsettings get org.gnome.desktop.interface gtk-theme"], shell=True) #need to use full path /usr/bin because conda screws things up
+        theme = subprocess.check_output(["/usr/bin/gsettings get org.gnome.desktop.interface gtk-theme"], shell=True)  # need to use full path /usr/bin because conda screws things up
         darkmode = str(theme).find('dark') != -1
         if darkmode:
             self.combo_mode.setStyleSheet("background-color:rgb(128,0,0)")
@@ -193,8 +196,9 @@ class CommandCenterWindow(QMainWindow):
         for sys in self.sys_widgets:
             sys.update_combos()
 
+
 class SystemWidget(QWidget):
-    def __init__(self, source_folder,system_folder,parent=None):
+    def __init__(self, source_folder, system_folder, parent=None):
         QWidget.__init__(self, parent=parent)
         self.dark_mode = True
         self.refresh_darkmode = True
@@ -311,7 +315,7 @@ class SystemWidget(QWidget):
 
         self.im_label = QLabel()
         self.im_label.mouseReleaseEvent = self.takeoshow_im_big
-        self.im_label.setSizePolicy(QSizePolicy.Expanding,QSizePolicy.Expanding)
+        self.im_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.im_label.setAlignment(Qt.AlignCenter)
         self.im_label.setMinimumSize(10, 10)
         self.im_label.setToolTip('Click to enlarge!')
@@ -326,8 +330,8 @@ class SystemWidget(QWidget):
     def mode_change(self):
         if (self.updating_combos):
             return
-        self.pats_xml_path = Path(self.source_folder,self.system_folder,'pats_deploy.xml')
-        with open (self.pats_xml_path, "r") as path_xml:
+        self.pats_xml_path = Path(self.source_folder, self.system_folder, 'pats_deploy.xml')
+        with open(self.pats_xml_path, "r") as path_xml:
             xml_lines = path_xml.readlines()
             new_xml_lines = ''
             for line in xml_lines:
@@ -357,7 +361,7 @@ class SystemWidget(QWidget):
                         else:
                             line = '    <Member Name=\"exposure_threshold\">0</Member>\n'
                     else:
-                           line = '    <Member Name=\"exposure_threshold\">0</Member>\n'
+                        line = '    <Member Name=\"exposure_threshold\">0</Member>\n'
                 elif line.find('\"brightness_threshold\"') != -1:
                     if self.combo_mode.currentText() == "Monitoring":
                         if self.combo_sub_mode.currentText() == 'Koppert':
@@ -372,7 +376,7 @@ class SystemWidget(QWidget):
                         else:
                             line = '    <Member Name=\"brightness_threshold\">255</Member>\n'
                     else:
-                           line = '    <Member Name=\"brightness_threshold\">255</Member>\n'
+                        line = '    <Member Name=\"brightness_threshold\">255</Member>\n'
                 elif line.find('\"close_after_n_images\"') != -1:
                     if self.combo_mode.currentText() == "Hunt":
                         line = '    <Member Name=\"close_after_n_images\">10800</Member>\n'
@@ -398,69 +402,84 @@ class SystemWidget(QWidget):
         pats_xml_tmp_file = open("pats.tmp", "w")
         pats_xml_tmp_file.write(new_xml_lines)
         pats_xml_tmp_file.close()
-        subprocess.Popen(['./change_settings_system.sh', 'pats'+self.host_id ])
+        subprocess.Popen(['./change_settings_system.sh', 'pats' + self.host_id])
 
         xml_file = open(self.pats_xml_path, "w")
         xml_file.write(new_xml_lines)
         xml_file.close()
+
     def sub_mode_change(self):
         self.mode_change()
 
     def calib_imu(self):
-        subprocess.Popen(['./calib_imu_system.sh', 'pats'+self.host_id])
+        subprocess.Popen(['./calib_imu_system.sh', 'pats' + self.host_id])
+
     def beep(self):
-        subprocess.Popen(['./beep_system.sh', 'pats'+self.host_id])
+        subprocess.Popen(['./beep_system.sh', 'pats' + self.host_id])
+
     def clear_calib(self):
-        subprocess.Popen(['./clear_calib_system.sh', 'pats'+self.host_id])
+        subprocess.Popen(['./clear_calib_system.sh', 'pats' + self.host_id])
+
     def blink(self):
-        subprocess.Popen(['./blink_system.sh', 'pats'+self.host_id])
+        subprocess.Popen(['./blink_system.sh', 'pats' + self.host_id])
+
     def shake(self):
-        subprocess.Popen(['./shake_system.sh', 'pats'+self.host_id])
+        subprocess.Popen(['./shake_system.sh', 'pats' + self.host_id])
 
     def restart(self):
-        subprocess.Popen(['./restart_system.sh', 'pats'+self.host_id])
+        subprocess.Popen(['./restart_system.sh', 'pats' + self.host_id])
+
     def request_update(self):
-        subprocess.Popen(['./req_update_system.sh', 'pats'+self.host_id])
+        subprocess.Popen(['./req_update_system.sh', 'pats' + self.host_id])
+
     def download_current_log(self):
-        subprocess.Popen(['./download_log_system.sh', 'pats'+self.host_id])
+        subprocess.Popen(['./download_log_system.sh', 'pats' + self.host_id])
+
     def git_update(self):
-        subprocess.Popen(['./update_system.sh', 'pats'+self.host_id])
+        subprocess.Popen(['./update_system.sh', 'pats' + self.host_id])
         self.updating_combos = True
         self.combo_mode.setCurrentIndex(0)
         self.combo_sub_mode.setCurrentIndex(0)
         self.updating_combos = False
+
     def reboot_dont_ask(self):
-        subprocess.Popen(['./reboot_system.sh', 'pats'+self.host_id])
+        subprocess.Popen(['./reboot_system.sh', 'pats' + self.host_id])
+
     def reboot(self):
         buttonReply = QMessageBox.question(self, 'Maar, weet je dat eigenlijk wel zekerdepeter?!', "Reboot, really?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if buttonReply == QMessageBox.Yes:
-            subprocess.Popen(['./reboot_system.sh', 'pats'+self.host_id])
+            subprocess.Popen(['./reboot_system.sh', 'pats' + self.host_id])
+
     def flightplan_takeoff(self):
-        self.pats_xml_path = Path(self.source_folder,self.system_folder,'pats_deploy.xml')
-        with open (self.pats_xml_path, "r") as path_xml:
+        self.pats_xml_path = Path(self.source_folder, self.system_folder, 'pats_deploy.xml')
+        with open(self.pats_xml_path, "r") as path_xml:
             xml_lines = path_xml.readlines()
             for line in xml_lines:
                 if line.find('\"flightplan\"') != -1:
-                    self.flightplan_xml_path = Path(self.source_folder,self.system_folder,line.split('\">../xml/')[1].split('<')[0])
-                    subprocess.Popen(['./demo_system.sh', 'pats'+self.host_id, self.flightplan_xml_path])
+                    self.flightplan_xml_path = Path(self.source_folder, self.system_folder, line.split('\">../xml/')[1].split('<')[0])
+                    subprocess.Popen(['./demo_system.sh', 'pats' + self.host_id, self.flightplan_xml_path])
+
     def flightplan_calib_thrust_takeoff(self):
-        self.pats_xml_path = Path(self.source_folder,self.system_folder,'pats_deploy.xml')
-        with open (self.pats_xml_path, "r") as path_xml:
+        self.pats_xml_path = Path(self.source_folder, self.system_folder, 'pats_deploy.xml')
+        with open(self.pats_xml_path, "r") as path_xml:
             xml_lines = path_xml.readlines()
             for line in xml_lines:
                 if line.find('\"flightplan_calib_thrust\"') != -1:
-                    self.flightplan_xml_path = Path(self.source_folder,self.system_folder,line.split('\">../xml/')[1].split('<')[0])
-                    subprocess.Popen(['./demo_system.sh', 'pats'+self.host_id, self.flightplan_xml_path])
+                    self.flightplan_xml_path = Path(self.source_folder, self.system_folder, line.split('\">../xml/')[1].split('<')[0])
+                    subprocess.Popen(['./demo_system.sh', 'pats' + self.host_id, self.flightplan_xml_path])
+
     def insect_replay_takeoff(self):
-        subprocess.Popen(['./insect_replay_system.sh', 'pats'+self.host_id])
-    def takeoshow_im_big(self,event):
-        ImDialog(self,self.source_folder,self.system_folder,self.host_id,self.dark_mode)
+        subprocess.Popen(['./insect_replay_system.sh', 'pats' + self.host_id])
+
+    def takeoshow_im_big(self, event):
+        ImDialog(self, self.source_folder, self.system_folder, self.host_id, self.dark_mode)
 
     updating_combos = False
+
     def update_combos(self):
         self.updating_combos = True
-        self.pats_xml_path = Path(self.source_folder,self.system_folder,'pats_deploy.xml')
-        with open (self.pats_xml_path, "r") as path_xml:
+        self.pats_xml_path = Path(self.source_folder, self.system_folder, 'pats_deploy.xml')
+        with open(self.pats_xml_path, "r") as path_xml:
             xml_lines = path_xml.readlines()
             new_xml_lines = ''
             for line in xml_lines:
@@ -472,15 +491,15 @@ class SystemWidget(QWidget):
                     self.combo_mode.setCurrentIndex(0)
 
                 if line.find('sub_mode') != -1:
-                    sub_mode_str=line.split('>')[1].split('<')[0]
+                    sub_mode_str = line.split('>')[1].split('<')[0]
                     self.combo_sub_mode.setCurrentText(sub_mode_str)
 
         self.updating_combos = False
 
     def refresh(self):
         self.check_theme()
-        self.pats_xml_path = Path(self.source_folder,self.system_folder,'pats_deploy.xml')
-        with open (self.pats_xml_path, "r") as path_xml:
+        self.pats_xml_path = Path(self.source_folder, self.system_folder, 'pats_deploy.xml')
+        with open(self.pats_xml_path, "r") as path_xml:
             xml_lines = path_xml.readlines()
             new_xml_lines = ''
             for line in xml_lines:
@@ -496,7 +515,7 @@ class SystemWidget(QWidget):
                     else:
                         self.combo_mode.setStyleSheet("background-color:rgb(160,128,128)")
                 if line.find('sub_mode') != -1:
-                    sub_mode_str=line.split('>')[1].split('<')[0]
+                    sub_mode_str = line.split('>')[1].split('<')[0]
                     if self.combo_sub_mode.currentText() != sub_mode_str:
                         self.combo_sub_mode.setStyleSheet("background-color:rgb(40,40,40)")
                     else:
@@ -505,16 +524,16 @@ class SystemWidget(QWidget):
                         else:
                             self.combo_sub_mode.setStyleSheet("background-color:rgb(160,128,128)")
 
-        source_im_file = Path(self.source_folder,self.system_folder,'status.jpg')
+        source_im_file = Path(self.source_folder, self.system_folder, 'status.jpg')
         if os.path.exists(source_im_file):
             pixmap = QPixmap(str(source_im_file))
             self.im_label.setPixmap(pixmap)
-            self.im_label.setPixmap(pixmap.scaled(self.im_label.size(),Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            self.im_label.setPixmap(pixmap.scaled(self.im_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
         try:
-            txt,system_color = self.get_lbl_txt()
+            txt, system_color = self.get_lbl_txt()
             self.txt_label.setText(txt)
         except:
-            system_color = QColor(0,0,0)
+            system_color = QColor(0, 0, 0)
         pal = QPalette(self.txt_label.palette())
         pal.setColor(QPalette.WindowText, system_color)
         self.txt_label.setPalette(pal)
@@ -529,7 +548,7 @@ class SystemWidget(QWidget):
             self.btn_flightplan_takeoff.setEnabled(False)
 
     def check_theme(self):
-        theme = subprocess.check_output(["/usr/bin/gsettings get org.gnome.desktop.interface gtk-theme"], shell=True) #need to use full path /usr/bin because conda screws things up
+        theme = subprocess.check_output(["/usr/bin/gsettings get org.gnome.desktop.interface gtk-theme"], shell=True)  # need to use full path /usr/bin because conda screws things up
         new_darkmode = str(theme).find('dark') != -1
         if new_darkmode and not self.dark_mode:
             self.refresh_darkmode = True
@@ -549,7 +568,7 @@ class SystemWidget(QWidget):
             self.im_label.setStyleSheet("QToolTip { color: #000000; background-color: #800000; border: 1px solid black; }")
             self.combo_mode.setStyleSheet("background-color:rgb(128,0,0)")
             self.combo_sub_mode.setStyleSheet("background-color:rgb(128,0,0)")
-            syswidget_palette.setColor(self.backgroundRole(), QColor(15,15,15))
+            syswidget_palette.setColor(self.backgroundRole(), QColor(15, 15, 15))
             self.btn_insect_replay_takeoff.setStyleSheet("background-color:rgb(128,0,0)")
             self.btn_flightplan_takeoff.setStyleSheet("background-color:rgb(128,0,0)")
             self.btn_restart.setStyleSheet("background-color:rgb(128,0,0)")
@@ -565,7 +584,7 @@ class SystemWidget(QWidget):
             self.im_label.setStyleSheet("QToolTip { color: #000000; background-color: #9d8080; border: 1px solid black; }")
             self.combo_mode.setStyleSheet("background-color:rgb(160,128,128)")
             self.combo_sub_mode.setStyleSheet("background-color:rgb(160,128,128)")
-            syswidget_palette.setColor(self.backgroundRole(), QColor(230,230,230))
+            syswidget_palette.setColor(self.backgroundRole(), QColor(230, 230, 230))
             self.btn_insect_replay_takeoff.setStyleSheet("background-color:rgb(160,128,128)")
             self.btn_flightplan_takeoff.setStyleSheet("background-color:rgb(160,128,128)")
             self.btn_restart.setStyleSheet("background-color:rgb(160,128,128)")
@@ -575,49 +594,49 @@ class SystemWidget(QWidget):
         self.refresh_darkmode = False
         self.setPalette(syswidget_palette)
 
-    def check_if_flying(self,navstatus):
-        return (navstatus =="ns_takeoff" or
-            navstatus =="ns_taking_off" or
-            navstatus =="ns_take_off_completed" or
-            navstatus =="ns_start_the_chase" or
-            navstatus =="ns_chasing_insect_ff" or
-            navstatus =="ns_chasing_insect" or
-            navstatus =="ns_set_waypoint" or
-            navstatus =="ns_wp" or
-            navstatus =="ns_flower_of_fire" or
-            navstatus =="ns_brick_of_fire" or
-            navstatus =="ns_goto_landing" or
-            navstatus =="ns_goto_thrust_calib_waypoint" or
-            navstatus =="ns_goto_yaw" or
-            navstatus =="ns_reset_headless_yaw" or
-            navstatus =="ns_resetting_headless_yaw" or
-            navstatus =="ns_correct_yaw" or
-            navstatus =="ns_correcting_yaw" or
-            navstatus =="ns_calibrate_thrust" or
-            navstatus =="ns_calibrating_thrust" or
-            navstatus =="ns_land" or
-            navstatus =="ns_landing" or
-            navstatus =="ns_landed" or
-            navstatus =="ns_start_shaking" or
-            navstatus =="ns_shaking_drone" or
-            navstatus =="ns_wait_after_shake" or
-            navstatus.startswith('wp_') or
-            navstatus.startswith('wp ') or
-            navstatus.startswith('ns_wp') or
-            navstatus.startswith('ns_landing'))
+    def check_if_flying(self, navstatus):
+        return (navstatus == "ns_takeoff" or
+                navstatus == "ns_taking_off" or
+                navstatus == "ns_take_off_completed" or
+                navstatus == "ns_start_the_chase" or
+                navstatus == "ns_chasing_insect_ff" or
+                navstatus == "ns_chasing_insect" or
+                navstatus == "ns_set_waypoint" or
+                navstatus == "ns_wp" or
+                navstatus == "ns_flower_of_fire" or
+                navstatus == "ns_brick_of_fire" or
+                navstatus == "ns_goto_landing" or
+                navstatus == "ns_goto_thrust_calib_waypoint" or
+                navstatus == "ns_goto_yaw" or
+                navstatus == "ns_reset_headless_yaw" or
+                navstatus == "ns_resetting_headless_yaw" or
+                navstatus == "ns_correct_yaw" or
+                navstatus == "ns_correcting_yaw" or
+                navstatus == "ns_calibrate_thrust" or
+                navstatus == "ns_calibrating_thrust" or
+                navstatus == "ns_land" or
+                navstatus == "ns_landing" or
+                navstatus == "ns_landed" or
+                navstatus == "ns_start_shaking" or
+                navstatus == "ns_shaking_drone" or
+                navstatus == "ns_wait_after_shake" or
+                navstatus.startswith('wp_') or
+                navstatus.startswith('wp ') or
+                navstatus.startswith('ns_wp') or
+                navstatus.startswith('ns_landing'))
 
     def get_lbl_txt(self):
-        source_status_txt_file = Path(self.source_folder,self.system_folder,'status.txt')
-        source_system_txt_file = Path(self.source_folder,self.system_folder,'system.txt')
+        source_status_txt_file = Path(self.source_folder, self.system_folder, 'status.txt')
+        source_system_txt_file = Path(self.source_folder, self.system_folder, 'system.txt')
 
         res_txt = ''
-        system_has_problem = QColor(0,0,0)
+        system_has_problem = QColor(0, 0, 0)
 
         sysinfo_txt = ''
         if os.path.exists(source_system_txt_file):
-            with open (source_system_txt_file, "r") as sysinf_txt_file:
-                sysinfo_txt=sysinf_txt_file.readlines()
-            self.host_id = sysinfo_txt[0].split(':')[1].strip().replace('pats-proto','').replace('pats','')
+            with open(source_system_txt_file, "r") as sysinf_txt_file:
+                sysinfo_txt = sysinf_txt_file.readlines()
+            self.host_id = sysinfo_txt[0].split(':')[1].strip().replace('pats-proto', '').replace('pats', '')
             self.drone_id = sysinfo_txt[1].split(':')[1].strip()
             sha = sysinfo_txt[2].split(':')[1].strip()[:6]
 
@@ -638,23 +657,23 @@ class SystemWidget(QWidget):
             res_txt = "Pats-" + self.host_id + '->' + self.drone_id + ' @' + sha + '\n'
             res_txt = res_txt + 'hd: ' + hd + ' ip: ' + ip + '\n'
             if hd != '':
-                hd = float(hd.replace('%',''))
+                hd = float(hd.replace('%', ''))
                 if hd > 95:
-                    system_has_problem = QColor(255,0,0)
+                    system_has_problem = QColor(255, 0, 0)
         else:
             res_txt = 'Error: system info file not found'
-            system_has_problem = QColor(255,0,0)
+            system_has_problem = QColor(255, 0, 0)
 
         if os.path.exists(source_status_txt_file):
             status_txt = []
-            with open (source_status_txt_file, "r") as status_txt_file:
-                status_txt=status_txt_file.readlines()
+            with open(source_status_txt_file, "r") as status_txt_file:
+                status_txt = status_txt_file.readlines()
 
             try:
-                date_time = datetime.strptime(status_txt[0].strip(), '%Y/%m/%d %H:%M:%S') #e.g. 2020/02/29 23:45:46
+                date_time = datetime.strptime(status_txt[0].strip(), '%Y/%m/%d %H:%M:%S')  # e.g. 2020/02/29 23:45:46
                 time_since_update = datetime.now() - date_time
-                if time_since_update.total_seconds() > 3600*24:
-                    system_has_problem = QColor(200,0,0)
+                if time_since_update.total_seconds() > 3600 * 24:
+                    system_has_problem = QColor(200, 0, 0)
 
                 res_txt += status_txt[1].strip() + '. upd: ' + str(int(time_since_update.total_seconds())) + 's\n'
             except:
@@ -671,9 +690,9 @@ class SystemWidget(QWidget):
                         navstatus = status_txt[2].strip()
                         if cell_v > 1 and not self.check_if_flying(navstatus) and not navstatus == "ns_drone_problem":
                             if cell_v < 3.8:
-                                system_has_problem = QColor(255,165,0)
+                                system_has_problem = QColor(255, 165, 0)
                             if cell_v < 3.1:
-                                system_has_problem = QColor(255,0,0)
+                                system_has_problem = QColor(255, 0, 0)
                         res_txt += status_txt[3][8:-1] + 'V, '
                     if (status_txt[5].startswith("rssi: ")):
                         res_txt += " rssi: " + status_txt[5][6:-1] + ", "
@@ -685,87 +704,87 @@ class SystemWidget(QWidget):
                 navstatus = status_txt[2].strip()
                 if system_has_problem.getRgb()[0] == 0:
 
-                    if (navstatus ==  "ns_init" or
-                        navstatus =="ns_locate_drone_init" or
-                        navstatus =="ns_locate_drone_led"  or
-                        navstatus =="ns_located_drone" or
-                        navstatus =="ns_calibrating_motion" or
-                        navstatus =="ns_calibrating_drone" or
+                    if (navstatus == "ns_init" or
+                        navstatus == "ns_locate_drone_init" or
+                        navstatus == "ns_locate_drone_led" or
+                        navstatus == "ns_located_drone" or
+                        navstatus == "ns_calibrating_motion" or
+                        navstatus == "ns_calibrating_drone" or
                         navstatus.startswith('Starting') or
                         navstatus.startswith('Resetting') or
                         navstatus.startswith('Closed') or
                         navstatus.startswith('Waiting.') or
-                        navstatus.startswith('Closing')) :
-                            system_has_problem = QColor(128,128,128)
+                            navstatus.startswith('Closing')):
+                        system_has_problem = QColor(128, 128, 128)
 
                     elif navstatus.startswith("ns_wait_locate_drone"):
                         if int(navstatus.split(' ')[1]) == 1:
-                            system_has_problem = QColor(128,128,128)
+                            system_has_problem = QColor(128, 128, 128)
                         elif int(navstatus.split(' ')[1]) == 2:
-                            system_has_problem = QColor(128,128,0)
+                            system_has_problem = QColor(128, 128, 0)
                         elif int(navstatus.split(' ')[1]) > 2:
-                            system_has_problem = QColor(255,0,0)
+                            system_has_problem = QColor(255, 0, 0)
                         else:
-                            system_has_problem = QColor(128,128,128)
-                    elif (navstatus =="ns_wait_for_takeoff" or navstatus =="ns_manual" ):
-                            system_has_problem = QColor(0,255,255)
-                    elif (navstatus =="ns_monitoring"):
-                        system_has_problem = QColor(255,192,203)
-                    elif ( navstatus =="ns_wait_for_insect"):
-                            system_has_problem = QColor(0,128,0)
+                            system_has_problem = QColor(128, 128, 128)
+                    elif (navstatus == "ns_wait_for_takeoff" or navstatus == "ns_manual"):
+                        system_has_problem = QColor(0, 255, 255)
+                    elif (navstatus == "ns_monitoring"):
+                        system_has_problem = QColor(255, 192, 203)
+                    elif (navstatus == "ns_wait_for_insect"):
+                        system_has_problem = QColor(0, 128, 0)
                     elif(self.check_if_flying(navstatus)):
-                        system_has_problem = QColor(0,255,0)
+                        system_has_problem = QColor(0, 255, 0)
                     elif (navstatus == "ns_drone_problem" or
-                        navstatus == "ns_batlow" or
-                        navstatus == 'no RealSense connected'):
-                        system_has_problem = QColor(255,0,0)
+                          navstatus == "ns_batlow" or
+                          navstatus == 'no RealSense connected'):
+                        system_has_problem = QColor(255, 0, 0)
                     elif navstatus.startswith('Roll'):
                         roll = float(navstatus.split(' ')[1])
                         if (abs(roll) > self.max_cam_roll):
-                            system_has_problem = QColor(255,0,0)
+                            system_has_problem = QColor(255, 0, 0)
                         else:
-                            system_has_problem = QColor(128,128,128)
+                            system_has_problem = QColor(128, 128, 128)
         else:
             res_txt = 'Error: status info file not found'
-            system_has_problem = QColor(255,0,0)
+            system_has_problem = QColor(255, 0, 0)
 
         if system_has_problem.getRgb()[0] == 0 and system_has_problem.getRgb()[1] == 0 and system_has_problem.getRgb()[2] == 0:
-            system_has_problem = QColor(100,100,100)
+            system_has_problem = QColor(100, 100, 100)
 
         res_txt = res_txt.strip()
-        return res_txt,system_has_problem
+        return res_txt, system_has_problem
+
 
 class ImDialog(QDialog):
-    def __init__(self,parent,source_folder,system_folder,host_id,dark_mode):
+    def __init__(self, parent, source_folder, system_folder, host_id, dark_mode):
         super().__init__(parent)
 
         self.source_folder = source_folder
         self.system_folder = system_folder
         self.host_id = host_id
-        self.source_im_file = Path(self.source_folder,self.system_folder,'status.jpg')
-        self.pats_xml_path = Path(self.source_folder,self.system_folder,'pats_deploy.xml')
+        self.source_im_file = Path(self.source_folder, self.system_folder, 'status.jpg')
+        self.pats_xml_path = Path(self.source_folder, self.system_folder, 'pats_deploy.xml')
 
         self.pats_xml_txt = ''
         self.drone_xml_txt = ''
         self.flightplan_xml_txt = ''
         if os.path.exists(self.pats_xml_path):
 
-            with open (self.pats_xml_path, "r") as path_xml:
-                self.pats_xml_txt=path_xml.read()
-            with open (self.pats_xml_path, "r") as path_xml:
+            with open(self.pats_xml_path, "r") as path_xml:
+                self.pats_xml_txt = path_xml.read()
+            with open(self.pats_xml_path, "r") as path_xml:
                 xml_lines = path_xml.readlines()
                 for line in xml_lines:
                     if line.find('\"drone\"') != -1:
-                        self.drone_xml_path = Path(self.source_folder,self.system_folder,line.split('\">')[1].split('<')[0] + '.xml')
+                        self.drone_xml_path = Path(self.source_folder, self.system_folder, line.split('\">')[1].split('<')[0] + '.xml')
                         if os.path.exists(self.drone_xml_path):
-                            with open (self.drone_xml_path, "r") as drone_xml:
-                                self.drone_xml_txt=drone_xml.read()
+                            with open(self.drone_xml_path, "r") as drone_xml:
+                                self.drone_xml_txt = drone_xml.read()
                     if line.find('\"flightplan\"') != -1:
-                        self.flightplan_xml_path = Path(self.source_folder,self.system_folder,line.split('\">../xml/')[1].split('<')[0])
+                        self.flightplan_xml_path = Path(self.source_folder, self.system_folder, line.split('\">../xml/')[1].split('<')[0])
                         if os.path.exists(self.flightplan_xml_path):
-                            with open (self.flightplan_xml_path, "r") as flightplan_xml:
-                                self.flightplan_xml_txt=flightplan_xml.read()
-
+                            with open(self.flightplan_xml_path, "r") as flightplan_xml:
+                                self.flightplan_xml_txt = flightplan_xml.read()
 
         self.im_label = QLabel()
 
@@ -805,24 +824,24 @@ class ImDialog(QDialog):
         self.tab_pats = QWidget()
         self.tab_drone = QWidget()
         self.tab_flightplan = QWidget()
-        self.tabs.resize(300,200)
+        self.tabs.resize(300, 200)
 
         self.tab_status.layout = QHBoxLayout(self.tab_status)
         self.tab_status.layout.addWidget(self.status_lbl)
         self.tab_status.layout.addWidget(self.system_lbl)
-        self.tabs.addTab(self.tab_status,"Status")
+        self.tabs.addTab(self.tab_status, "Status")
 
         self.tab_pats.layout = QVBoxLayout(self.tab_pats)
         self.tab_pats.layout.addWidget(self.pats_xml_textBox)
-        self.tabs.addTab(self.tab_pats,"Pats")
+        self.tabs.addTab(self.tab_pats, "Pats")
 
         self.tab_drone.layout = QVBoxLayout(self.tab_drone)
         self.tab_drone.layout.addWidget(self.drone_xml_textBox)
-        self.tabs.addTab(self.tab_drone,"Drone")
+        self.tabs.addTab(self.tab_drone, "Drone")
 
         self.tab_flightplan.layout = QVBoxLayout(self.tab_flightplan)
         self.tab_flightplan.layout.addWidget(self.flightplan_xml_textBox)
-        self.tabs.addTab(self.tab_flightplan,"Flightplan")
+        self.tabs.addTab(self.tab_flightplan, "Flightplan")
 
         self.tabs.setMaximumHeight(300)
         if dark_mode:
@@ -843,13 +862,13 @@ class ImDialog(QDialog):
         self.setAutoFillBackground(True)
         p = self.palette()
         if dark_mode:
-            p.setColor(self.backgroundRole(), QColor(15,15,15))
+            p.setColor(self.backgroundRole(), QColor(15, 15, 15))
         self.setPalette(p)
 
         self.setWindowTitle(self.host_id)
         self.setWindowFlags(Qt.Window)
         self.show()
-        self.refresh() #work around for small initial zooming issue
+        self.refresh()  # work around for small initial zooming issue
 
     def xml_txt_chng_event(self):
         new_pats_xml = self.pats_xml_textBox.toPlainText()
@@ -860,23 +879,22 @@ class ImDialog(QDialog):
         else:
             self.setWindowTitle(self.host_id)
 
-
     def refresh(self):
         pixmap = QPixmap(str(self.source_im_file))
-        self.setMinimumSize(pixmap.width(),pixmap.height())
+        self.setMinimumSize(pixmap.width(), pixmap.height())
         self.im_label.setPixmap(pixmap)
-        self.im_label.setPixmap(pixmap.scaled(self.im_label.size(),Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        self.im_label.setPixmap(pixmap.scaled(self.im_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
 
-        source_status_txt_file = Path(self.source_folder,self.system_folder,'status.txt')
+        source_status_txt_file = Path(self.source_folder, self.system_folder, 'status.txt')
         status_txt = ''
         if os.path.exists(source_status_txt_file):
             status_txt = []
-            with open (source_status_txt_file, "r") as status_txt_file:
-                status_txt=status_txt_file.read()
-        source_system_txt_file = Path(self.source_folder,self.system_folder,'system.txt')
+            with open(source_status_txt_file, "r") as status_txt_file:
+                status_txt = status_txt_file.read()
+        source_system_txt_file = Path(self.source_folder, self.system_folder, 'system.txt')
         if os.path.exists(source_system_txt_file):
-            with open (source_system_txt_file, "r") as sysinf_txt_file:
-                sysinfo_txt=sysinf_txt_file.read()
+            with open(source_system_txt_file, "r") as sysinf_txt_file:
+                sysinfo_txt = sysinf_txt_file.read()
 
         self.status_lbl.setText('Status:\n' + status_txt)
         self.system_lbl.setText('System:\n' + sysinfo_txt)
@@ -904,7 +922,7 @@ class ImDialog(QDialog):
         flightplan_xml_tmp_file.close()
 
         self.setWindowTitle(self.host_id)
-        subprocess.Popen(['./change_settings_system.sh', 'pats'+self.host_id,os.path.basename(self.drone_xml_path),os.path.basename(self.flightplan_xml_path) ])
+        subprocess.Popen(['./change_settings_system.sh', 'pats' + self.host_id, os.path.basename(self.drone_xml_path), os.path.basename(self.flightplan_xml_path)])
         xml_file = open(self.pats_xml_path, "w")
         xml_file.write(new_pats_xml)
         xml_file.close()
@@ -917,25 +935,25 @@ class ImDialog(QDialog):
         xml_file.write(new_flightplan_xml)
         xml_file.close()
 
+
 class SelectSystemsDialog(QDialog):
 
-    def __init__(self,parent,source_folder,system_folders):
+    def __init__(self, parent, source_folder, system_folders):
         super().__init__(parent)
         layout = QGridLayout()
         self.setLayout(layout)
         self.source_folder = source_folder
 
         self.listwidget = QListWidget()
-        i=0
+        i = 0
         for f in system_folders:
 
             item = QListWidgetItem(f)
-            if os.path.exists(Path(source_folder,f,'.select')):
+            if os.path.exists(Path(source_folder, f, '.select')):
                 item.setCheckState(Qt.Checked)
             else:
                 item.setCheckState(Qt.Unchecked)
             self.listwidget.addItem(item)
-
 
         select_all_PB = QPushButton()
         select_all_PB.setToolTip('Select all')
@@ -955,12 +973,12 @@ class SelectSystemsDialog(QDialog):
 
         self.exec()
 
-    def deselect_all(self,event):
+    def deselect_all(self, event):
         for i in range(self.listwidget.count()):
             item = self.listwidget.item(i)
             item.setCheckState(Qt.Unchecked)
 
-    def select_all(self,event):
+    def select_all(self, event):
         for i in range(self.listwidget.count()):
             item = self.listwidget.item(i)
             item.setCheckState(Qt.Checked)
@@ -968,10 +986,10 @@ class SelectSystemsDialog(QDialog):
     def closeEvent(self, event):
         for i in range(self.listwidget.count()):
             item = self.listwidget.item(i)
-            p = Path(self.source_folder,item.text(),'.select')
+            p = Path(self.source_folder, item.text(), '.select')
             if (item.checkState()):
                 if (not os.path.exists(p)):
-                    open(p,'a').close()
+                    open(p, 'a').close()
             else:
                 if (os.path.exists(p)):
                     os.remove(p)
@@ -980,8 +998,10 @@ class SelectSystemsDialog(QDialog):
         if event.key() in {Qt.Key_Space, Qt.Key_Escape}:
             self.close()
 
+
 def atoi(text):
     return int(text) if text.isdigit() else text
+
 
 def natural_keys(text):
     '''
@@ -989,7 +1009,8 @@ def natural_keys(text):
     http://nedbatchelder.com/blog/200712/human_sorting.html
     (See Toothy's implementation in the comments)
     '''
-    return [ atoi(c) for c in re.split(r'(\d+)', text) ]
+    return [atoi(c) for c in re.split(r'(\d+)', text)]
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

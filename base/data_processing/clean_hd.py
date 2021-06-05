@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-import os,shutil,glob,logging,socket
+import os
+import shutil
+import glob
+import logging
+import socket
 import lib_base as lb
 from pathlib import Path
-from datetime import datetime,timedelta
-
+from datetime import datetime, timedelta
 
 
 def clean_hd():
@@ -13,16 +16,16 @@ def clean_hd():
         os.mkdir(lb.data_dir)
 
     while True:
-        total_used_space,_,free_space = shutil.disk_usage(lb.data_dir)
-        logger.info('Free space: ' + str(free_space / 1024 / 1024 / 1024) + 'GB --> ' +str(round(free_space /  total_used_space * 100)) + '% free')
-        if (free_space /  total_used_space < 0.2):
+        total_used_space, _, free_space = shutil.disk_usage(lb.data_dir)
+        logger.info('Free space: ' + str(free_space / 1024 / 1024 / 1024) + 'GB --> ' + str(round(free_space / total_used_space * 100)) + '% free')
+        if (free_space / total_used_space < 0.2):
             if os.path.exists(lb.term_log_path):
-                if Path(lb.term_log_path).stat().st_size > 1024*1024*1024: #1GB
+                if Path(lb.term_log_path).stat().st_size > 1024 * 1024 * 1024:  # 1GB
                     os.remove(lb.term_log_path)
-            found_dirs = sorted(glob.glob(lb.data_dir + "*/202*_*"),key=os.path.getmtime)
+            found_dirs = sorted(glob.glob(lb.data_dir + "*/202*_*"), key=os.path.getmtime)
             for dir in found_dirs:
                 try:
-                    dir_date =  datetime.strptime(os.path.basename(dir),"%Y%m%d_%H%M%S")
+                    dir_date = datetime.strptime(os.path.basename(dir), "%Y%m%d_%H%M%S")
                 except:
                     logger.error('could not get date from: ' + dir)
                     logger.info('removing: ' + dir)
@@ -38,6 +41,7 @@ def clean_hd():
                     return
         else:
             return
+
 
 if __name__ == "__main__":
     clean_hd()

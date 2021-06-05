@@ -5,18 +5,18 @@ import cv2
 
 def detectRed(frame):
 
-    hMin = cv2.getTrackbarPos('HMin','image')
-    sMin = cv2.getTrackbarPos('SMin','image')
-    vMin = cv2.getTrackbarPos('VMin','image')
+    hMin = cv2.getTrackbarPos('HMin', 'image')
+    sMin = cv2.getTrackbarPos('SMin', 'image')
+    vMin = cv2.getTrackbarPos('VMin', 'image')
 
-    hMax = cv2.getTrackbarPos('HMax','image')
-    sMax = cv2.getTrackbarPos('SMax','image')
-    vMax = cv2.getTrackbarPos('VMax','image')
+    hMax = cv2.getTrackbarPos('HMax', 'image')
+    sMax = cv2.getTrackbarPos('SMax', 'image')
+    vMax = cv2.getTrackbarPos('VMax', 'image')
 
     # Set minimum and max HSV values to display
     lower = np.array([hMin, sMin, vMin])
     upper = np.array([hMax, sMax, vMax])
-    
+
     result = frame.copy()
     # frame_inv = 255-frame
     image = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -76,7 +76,7 @@ def angleDetection(backImage, frame):
         for corner in box_corners:
             for other_corner in box_corners:
                 distance = np.floor(np.sqrt(
-                    (corner[0]-other_corner[0])**2 + (corner[1]-other_corner[1])**2))
+                    (corner[0] - other_corner[0])**2 + (corner[1] - other_corner[1])**2))
                 # print("distance = {0}, longside = {1}".format(
                 # distance, longside))
                 if np.abs(distance - longside) < 5:
@@ -98,14 +98,12 @@ def angleDetection(backImage, frame):
         delta_y = top_corner[1] - bottom_corner[1]
 
         # calculate angle in degrees
-        angle = np.arctan(delta_x/delta_y) * (180/np.pi)
+        angle = np.arctan(delta_x / delta_y) * (180 / np.pi)
 
         return largest_blob, angle
 
 
 def DetectionTuning(image, default_thres, lower=None, upper=None):
-
-    
 
     cv2.namedWindow('tuning', cv2.WINDOW_NORMAL)
 
@@ -215,7 +213,6 @@ def createVideoTrackbars(frame, lower=None, upper=None):
         cv2.setTrackbarPos('VMax', frame, upper[2])
 
 
-
 def referenceDetection(frame, existing_settings, tune_reference_detection):
 
     if existing_settings is not None and (existing_settings.index == 'lower_tape_filter').any() and (existing_settings.index == 'upper_tape_filter').any():
@@ -233,7 +230,7 @@ def referenceDetection(frame, existing_settings, tune_reference_detection):
     default_thres = None
 
     if tune_reference_detection:
-        lower, upper = DetectionTuning(frame,default_thres, lower, upper)
+        lower, upper = DetectionTuning(frame, default_thres, lower, upper)
 
     cv2.namedWindow("tape detection", cv2.WINDOW_NORMAL)
     result = frame.copy()

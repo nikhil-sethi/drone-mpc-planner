@@ -25,23 +25,23 @@ flash_time = 7.52
 # flash_time = 5.01
 
 
-frame_period = 1/60
+frame_period = 1 / 60
 
 visual_angle_data = pd.read_csv(
     str(current_dir.parents[0]) + r"/visual_angle_data/{0}_visual_angle_data.csv".format(filename))
 pats_data = pd.read_csv(str(current_dir.parents[0]) + r"/pats_yaw_data/{0}_pats_log.csv".format(filename), sep=";")
 
-existing_settings = pd.read_csv(str(current_dir.parents[0]) +  r'/visual_angle_data/{0}_settings.csv'.format(filename), sep=",")
+existing_settings = pd.read_csv(str(current_dir.parents[0]) + r'/visual_angle_data/{0}_settings.csv'.format(filename), sep=",")
 existing_settings = existing_settings.set_index("setting", drop=False)
 blink_frame = existing_settings.loc['blink_frame', :][1]
 
 time_elapsed = flash_time + \
-    (visual_angle_data["frame"]-blink_frame)*frame_period
+    (visual_angle_data["frame"] - blink_frame) * frame_period
 
 visual_angle_data['angle'] = visual_angle_data['angle'].replace(180, np.nan)
 
-normalized_angle = visual_angle_data['angle']/max(visual_angle_data['angle'])
-normalized_yaw = pats_data[' yaw']/max(pats_data[' yaw'])
+normalized_angle = visual_angle_data['angle'] / max(visual_angle_data['angle'])
+normalized_yaw = pats_data[' yaw'] / max(pats_data[' yaw'])
 
 f1 = plt.figure(1)
 plt.title(filename + ": Drone Angle During landing procedure (normalized)")

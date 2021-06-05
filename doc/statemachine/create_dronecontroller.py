@@ -9,17 +9,17 @@ with open('../../base/src/dronecontroller.cpp') as f:
 current_state = ''
 dot_src = "digraph dronecontroller {\n"
 for line in src:
-    if '*_logger' in line and current_state!= '':
+    if '*_logger' in line and current_state != '':
         break
 
     if 'case' in line:
         words = line.split(' ')
-        current_state = words[words.index('case')+1][:-1]
-        dot_src += '\t'+current_state+';\n'
+        current_state = words[words.index('case') + 1][:-1]
+        dot_src += '\t' + current_state + ';\n'
 
     if '_flight_mode' in line and current_state != '':
         state_transition = line.split(' ')[-1][:-1]
-        dot_src += '\t'+current_state+' -> '+state_transition+';\n'
+        dot_src += '\t' + current_state + ' -> ' + state_transition + ';\n'
 
 
 dot_src += '}\n'

@@ -200,20 +200,20 @@ if __name__ == "__main__":
 #    disttop, isptop = get_distanceToPlane(drone_state, planes[top])
 #    print('min dist to plane',plane_names[top],'with distance',disttop,'m.')
 
-    ## Check insects:
+    # Check insects:
     import pandas as pd
     # insects = [53, 54, 56, 58, 61, 62, 63, 64, 66]
     insects = [53]
-    for insect in insects: # TODO This loop is very slow!
+    for insect in insects:  # TODO This loop is very slow!
         filepath = '../../base/replay_insects/' + str(insect) + '-90fps.csv'
         rawtext = cleanWhitespaces(filepath)
         insect_data = pd.read_csv(rawtext, sep=';')
         # for i in range(np.size(insect_data['posX_insect'])):
-            point = np.array([[insect_data['posX_insect'][i],
-                               insect_data['posY_insect'][i],
-                               insect_data['posZ_insect'][i]]]).T
-            inview = is_pointInVolume(point, hunt_planes)
-            if inview:
+         point = np.array([[insect_data['posX_insect'][i],
+                             insect_data['posY_insect'][i],
+                             insect_data['posZ_insect'][i]]]).T
+          inview = is_pointInVolume(point, hunt_planes)
+           if inview:
                 ax.plot(point[0], point[1], point[2], 'go')
             else:
                 ax.plot(point[0], point[1], point[2], 'ro')

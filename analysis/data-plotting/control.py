@@ -14,10 +14,10 @@ client.clear()
 client.hide_window()
 client.set_datasource_option("Column Delimiter", ";", 0)
 client.set_datasource_option("Column Type", 2, 0)
-client.set_datasource_option("Data Start", 2-1, 0)
-client.set_datasource_option("Fields Line", 1-1, 0)
+client.set_datasource_option("Data Start", 2 - 1, 0)
+client.set_datasource_option("Fields Line", 1 - 1, 0)
 client.set_datasource_option("Read Fields", True, 0)
-client.set_datasource_option("Units Line", 2-1, 0)
+client.set_datasource_option("Units Line", 2 - 1, 0)
 client.set_datasource_option("Read Units", False, 0)
 
 data_vectors = []
@@ -26,15 +26,19 @@ for i in range(len(field_names)):
     data_vectors.append(dv)
 
 # Because the kst2 API is super crappy!
-def data_vector(name):   
+
+
+def data_vector(name):
     for i in range(len(data_vectors)):
         if(data_vectors[i].field() == name):
             return data_vectors[i]
+
 
 def vector_index(name):
     for i in range(len(data_vectors)):
         if(data_vectors[i].field() == name):
             return data_vectors[i]
+
 
 color_bg = '#eeeeec'
 color_bg = '#a0a0a4'

@@ -7,9 +7,11 @@ from . import db
 
 auth = Blueprint('auth', __name__)
 
+
 @auth.route('/login')
 def login():
     return render_template('login.html')
+
 
 @auth.route('/login', methods=['POST'])
 def login_post():
@@ -26,6 +28,7 @@ def login_post():
     login_user(user, remember=remember)
     return redirect(url_for('/pats-c/'))
 
+
 @auth.route('/logout')
 @login_required
 def logout():
@@ -36,6 +39,7 @@ def logout():
 @auth.route('/bram')
 def signup():
     return render_template('signup.html')
+
 
 @auth.route('/bram', methods=['POST'])
 def signup_post():

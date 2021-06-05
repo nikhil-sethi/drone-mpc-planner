@@ -4,15 +4,16 @@ import time
 from datetime import datetime, timedelta
 from pytz import timezone
 
+
 def execute(cmd):
     p_result = None
 
-    popen = subprocess.Popen(cmd, shell=True,stdout=subprocess.PIPE)
+    popen = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for stdout_line in iter(popen.stdout.readline, ""):
         p_result = popen.poll()
         if p_result != None:
             break
-        print(stdout_line.decode('utf-8'),end ='')
+        print(stdout_line.decode('utf-8'), end='')
     popen.stdout.close()
 
 
@@ -36,15 +37,16 @@ def backup(now):
     execute(cmd)
     return target_str
 
+
 updated_today = False
 cet = timezone('Europe/Amsterdam')
-while  True:
+while True:
     now = datetime.now(cet)
     if (now.hour == int(10) and not updated_today):
         updated_today = True
         target_str = backup(now)
         print('Backed up to: ' + target_str)
 
-    if now.hour == int(10)+1 and updated_today:
+    if now.hour == int(10) + 1 and updated_today:
         updated_today = False
     time.sleep(10)
