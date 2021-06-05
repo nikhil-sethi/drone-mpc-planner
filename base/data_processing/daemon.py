@@ -316,12 +316,19 @@ tasks.append(wdt_tunnel_task(error_file_handler))
 tasks.append(errors_to_vps_task(error_file_handler, rotate_time))
 tasks.append(check_system_task(error_file_handler))
 
+start_sha = subprocess.check_output(["git", "describe"]).decode(sys.stdout.encoding).strip()
+start_time = datetime.today().strftime("%d-%m-%Y %H:%M:%S")
+
 while True:
     os.system('clear')
+    print('PATS daemon ' + start_sha + '. Started: ' + start_time)
     print('Status sender: ' + status_cc_status_str)
 
     for task in tasks:
         print(task.name + ': ' + task.status_str + ' #Errors:' + str(task.error_cnt))
 
     Path(lb.daemon_wdt_flag).touch()
+    current_sha = subprocess.check_output(["git", "describe"]).decode(sys.stdout.encoding).strip()
+    if start_sha != current_sha:
+        exit(0)
     time.sleep(1)
