@@ -136,11 +136,11 @@ def render(start_datetime,end_datetime,data_folder,abort_deadline=datetime.strpt
         results_txt_path = Path(render_process_dir,'logging', 'replay','results.txt')
 
         if not render_ok:
-            logger.logging.error(f'Render failed for {video_src_path}')
+            logger.error(f'Render failed for {video_src_path}')
         elif not os.path.exists(video_result_path):
-            logger.logging.error(f'Render missing...? {video_src_path}')
+            logger.error(f'Render missing...? {video_src_path}')
         elif not os.path.exists(results_txt_path):
-            logger.logging.error(f'Results.txt missing...? {video_src_path}')
+            logger.error(f'Results.txt missing...? {video_src_path}')
         else:
             with open (results_txt_path, "r") as results_txt:
                 results_lines = results_txt.readlines()
@@ -152,7 +152,7 @@ def render(start_datetime,end_datetime,data_folder,abort_deadline=datetime.strpt
                 if n_insects > 0 :
                     shutil.move(video_result_path, video_target_path)
                 else:
-                    logger.logging.error(f'Rendered empty video...? {video_src_path}')
+                    logger.error(f'Rendered empty video...? {video_src_path}')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Script that renders video result in all pats log folders in a directory, bound by the minimum and maximum date\n\
