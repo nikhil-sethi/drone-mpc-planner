@@ -3,6 +3,7 @@ import datetime
 import math
 import os
 import re
+from dash_html_components.Br import Br
 from dateutil.relativedelta import relativedelta
 import numpy as np
 import pandas as pd
@@ -54,6 +55,26 @@ def load_groups():
     return {}
 
 
+def insect_db():  # based on https://docs.google.com/spreadsheets/d/1au4vwYKK7ih5FH_bwsKNETznB1LkGS_cITTGC87jYGY/edit#gid=0
+    insects = []
+    insects.append({'label': 'Chrysodeixis chalcites (Turkse mot)', 'avg_size': 0.04, 'std_dev': 0.005})
+    insects.append({'label': 'Tuta aboluta', 'avg_size': 0.01, 'std_dev': 0.001})
+    insects.append({'label': 'Duponchelia', 'avg_size': 0.02, 'std_dev': 0.001})
+    insects.append({'label': 'Opogona', 'avg_size': 0.022, 'std_dev': 0.004})
+    insects.append({'label': 'No size filter', 'avg_size': 0, 'std_dev': 0})
+    return insects
+
+
+def init_insects_dropdown():
+    date_style = {'width': '30%', 'display': 'inline-block'}
+    insect_style = {'width': '70%', 'display': 'inline-block', 'float': 'right'}
+    insects = insect_db()
+    insect_options = []
+    for insect in insects:
+        insect_options.append({'label': insect['label'], 'value': insect})
+    return insect_options, date_style, insect_style
+
+
 def init_system_dropdown():
     group_dict = load_groups()
     sys_options = []
@@ -61,6 +82,7 @@ def init_system_dropdown():
     group_value = None
     group_style = {'width': '30%', 'display': 'inline-block'}
     sys_style = {'width': '70%', 'display': 'inline-block'}
+
     for group in group_dict.keys():
         if not (group == 'maintance' or group == 'admin' or group == 'unassigned_systems' or group == 'deactivated_systems'):
             group_options.append({'label': group, 'value': group})
@@ -89,10 +111,37 @@ def load_systems(username):
     return authorized_systems
 
 
-def load_moth_df(selected_systems, start_date, end_date):
+def create_insect_filter_sql_str(start_date, insect_type):
+    duration_str = ' AND duration > 1 AND duration < 10'
+    insect_str = ''
+    close_insect_str = ''
+    if start_date < datetime.datetime.strptime("20210101_000000", '%Y%m%d_%H%M%S'):  # new (size) filtering was introduced on 24th december 2020 #648
+        insect_str = '((Version="1.0" AND time < "20210101_000000") OR ('
+        close_insect_str = '))'
+    min_size = insect_type['avg_size'] - insect_type['std_dev']
+    max_size = insect_type['avg_size'] + 2 * insect_type['std_dev']
+    if insect_type['avg_size'] > 0:
+        insect_str = insect_str + f'''Dist_traveled > 0.15 AND Dist_traveled < 4 AND Size > {min_size} AND Size < {max_size}''' + close_insect_str
+    else:
+        insect_str = insect_str + f'''Dist_traveled > 0.15 AND Dist_traveled < 4 ''' + close_insect_str
+
+    return insect_str + duration_str
+
+
+def create_system_filter_sql_str(start_date, system):
+    if start_date > datetime.datetime.strptime("20210401_000000", '%Y%m%d_%H%M%S'):  # remove proto #533 closed in march 2021, so most systems probably were updated in april
+        system_sql_str = f'''system = "{system}"'''
+        uses_proto = False
+    else:
+        system_sql_str = f'''(system = "{system}" OR system = "{system.replace('pats','pats-proto')}")'''
+        uses_proto = True
+    return system_sql_str, uses_proto
+
+
+def load_moth_df(selected_systems, start_date, end_date, insect_type):
     username = current_user.username
     with patsc.open_systems_db() as con:
-        ordered_systems = con.execute('''SELECT systems.system, groups.minimal_size, systems.installation_date FROM systems,groups
+        ordered_systems = con.execute('''SELECT systems.system, systems.installation_date FROM systems,groups
         JOIN customer_group_connection ON systems.group_id = customer_group_connection.group_id
         JOIN customers ON customers.customer_id = customer_group_connection.customer_id WHERE
         systems.group_id = groups.group_id AND customers.name = ? AND systems.system IN (%s)
@@ -100,7 +149,7 @@ def load_moth_df(selected_systems, start_date, end_date):
 
     moth_df = pd.DataFrame()
     with patsc.open_data_db() as con:
-        for (system, min_size, installation_date) in ordered_systems:
+        for (system, installation_date) in ordered_systems:
             try:
                 installation_date = datetime.datetime.strptime(installation_date, '%Y%m%d_%H%M%S')
                 real_start_date = max([installation_date, start_date])
@@ -109,28 +158,13 @@ def load_moth_df(selected_systems, start_date, end_date):
                 real_start_date = start_date
 
             time_str = f'''time > "{real_start_date.strftime('%Y%m%d_%H%M%S')}" AND time <= "{end_date.strftime('%Y%m%d_%H%M%S')}"'''
-            if start_date > datetime.datetime.strptime("20210401_000000", '%Y%m%d_%H%M%S'):  # remove proto #533 closed in march 2021, so most systems probably were updated in april
-                system_sql_str = f'''system = "{system}"'''
-                uses_proto = False
-            else:
-                system_sql_str = f'''(system = "{system}" OR system = "{system.replace('pats','pats-proto')}")'''
-                uses_proto = True
-
-            insect_str = ''
-            close_insect_str = ''
-            if start_date < datetime.datetime.strptime("20210101_000000", '%Y%m%d_%H%M%S'):  # new (size) filtering was introduced on 24th december 2020 #648
-                insect_str = '((Version="1.0" AND time < "20210101_000000") OR ('
-                close_insect_str = '))'
-            if min_size > 0:
-                insect_str = insect_str + f'''Dist_traveled > 0.15 AND Dist_traveled < 4 AND Size > {min_size}''' + close_insect_str
-            else:
-                insect_str = insect_str + f'''Dist_traveled > 0.15 AND Dist_traveled < 4 ''' + close_insect_str
+            system_sql_str, uses_proto = create_system_filter_sql_str(start_date, system)
+            insect_filter_str = create_insect_filter_sql_str(start_date, insect_type)
 
             sql_str = f'''SELECT moth_records.* FROM moth_records
                 WHERE {system_sql_str}
                 AND {time_str}
-                AND duration > 1 AND duration < 10
-                AND {insect_str}'''
+                AND {insect_filter_str}'''
             sql_str = " ".join(sql_str.split())  # removes any double spaces and newlines etc
             moth_df = moth_df.append(pd.read_sql_query(sql_str, con))
     moth_df['time'] = pd.to_datetime(moth_df['time'], format='%Y%m%d_%H%M%S')
@@ -139,10 +173,10 @@ def load_moth_df(selected_systems, start_date, end_date):
     return moth_df
 
 
-def load_moth_of_hour(selected_systems, start_date, end_date, hour):
+def load_moth_of_hour(selected_systems, start_date, end_date, hour, insect_type):
     username = current_user.username
     with patsc.open_systems_db() as con:
-        ordered_systems = con.execute('''SELECT systems.system, groups.minimal_size, systems.installation_date FROM systems,groups
+        ordered_systems = con.execute('''SELECT systems.system, systems.installation_date FROM systems,groups
         JOIN customer_group_connection ON systems.group_id = customer_group_connection.group_id
         JOIN customers ON customers.customer_id = customer_group_connection.customer_id WHERE
         systems.group_id = groups.group_id AND customers.name = ? AND systems.system IN (%s)
@@ -153,21 +187,24 @@ def load_moth_of_hour(selected_systems, start_date, end_date, hour):
         hour_str = '0' + hour_str
     moth_df = pd.DataFrame()
     with patsc.open_data_db() as con:
-        for (system, min_size, installation_date) in ordered_systems:
+        for (system, installation_date) in ordered_systems:
             try:
                 installation_date = datetime.datetime.strptime(installation_date, '%Y%m%d_%H%M%S')
                 real_start_date = max([installation_date, start_date])
             except ValueError as e:
                 print(f'ERROR startdate {system}: ' + str(e))
                 real_start_date = start_date
+
+            system_sql_str, _ = create_system_filter_sql_str(start_date, system)
+            insect_filter_str = create_insect_filter_sql_str(start_date, insect_type)
+
             sql_str = f'''SELECT moth_records.* FROM moth_records
-            WHERE (system = "{system}" OR system = "{system.replace('pats','pats-proto')}")
-            AND time > "{real_start_date.strftime('%Y%m%d_%H%M%S')}" AND time <= "{end_date.strftime('%Y%m%d_%H%M%S')}"
-            AND time LIKE "_________{hour_str}____"
-            AND (duration > 1 AND duration < 10
-            AND (Version="1.0"
-            OR (Dist_traveled > 0.15 AND Dist_traveled < 4 AND Size > {min_size} )))'''
-            sql_str = sql_str.replace('\n', '')
+                WHERE {system_sql_str}
+                AND time > "{real_start_date.strftime('%Y%m%d_%H%M%S')}" AND time <= "{end_date.strftime('%Y%m%d_%H%M%S')}"
+                AND time LIKE "_________{hour_str}____"
+                AND {insect_filter_str}'''
+            sql_str = " ".join(sql_str.split())  # removes any double spaces and newlines etc
+
             moth_df = moth_df.append(pd.read_sql_query(sql_str, con))
     moth_df['time'] = pd.to_datetime(moth_df['time'], format='%Y%m%d_%H%M%S')
     moth_df['system'].replace({'-proto': ''}, regex=True, inplace=True)
@@ -196,13 +233,13 @@ def system_sql_str(systems):
     return systems_str
 
 
-def load_moth_data(selected_systems, start_date, end_date):
+def load_moth_data(selected_systems, start_date, end_date, insect_type):
     # We count moths from 12 in the afternoon to 12 in the afternoon. Therefore we shift the data in the for loops with 12 hours.
     # So a moth at 23:00 on 14-01 is counted at 14-01 and a moth at 2:00 on 15-01 also at 14-01
     # A moth seen at 13:00 on 14-01 still belongs to 14-01 but when seen at 11:00 on 14-01 is counted at 13-01
     end_date = datetime.datetime.combine(end_date, datetime.datetime.min.time())
     start_date = datetime.datetime.combine(start_date, datetime.datetime.min.time())
-    moth_df = load_moth_df(selected_systems, start_date, end_date + datetime.timedelta(hours=12))  # Shift to include the moths of today until 12:00 in the afternoon.
+    moth_df = load_moth_df(selected_systems, start_date, end_date + datetime.timedelta(hours=12), insect_type)  # Shift to include the moths of today until 12:00 in the afternoon.
     unique_dates = pd.date_range(start_date, end_date - datetime.timedelta(days=1), freq='d')
 
     hist_data = pd.DataFrame(index=unique_dates, columns=selected_systems)
@@ -629,10 +666,11 @@ def dash_application():
         Input('date_range_picker', 'start_date'),
         Input('date_range_picker', 'end_date'),
         Input('systems_dropdown', 'value'),
+        Input('insects_dropdown', 'value'),
         Input('hete_kaart', 'clickData'),
         State('selected_heatmap_data', 'children'),
         State('systems_dropdown', 'options'))
-    def update_ui_hist_and_heat(start_date, end_date, selected_systems, clickData_hm, selected_heat, system_options):
+    def update_ui_hist_and_heat(start_date, end_date, selected_systems, insect_types, clickData_hm, selected_heat, system_options):
         hm_fig = go.Figure(data=go.Heatmap())
         hist_fig = go.Figure(data=go.Histogram())
         hist24h_fig = go.Figure(data=go.Histogram())
@@ -643,16 +681,16 @@ def dash_application():
         system_labels = {x['value']: x['label'] for x in system_options if x['value'] in selected_systems}
 
         ctx = dash.callback_context
-        if ctx.triggered[0]['prop_id'] == 'date_range_picker.value' or ctx.triggered[0]['prop_id'] == 'systems_dropdown.value':
+        if ctx.triggered[0]['prop_id'] == 'date_range_picker.value' or ctx.triggered[0]['prop_id'] == 'systems_dropdown.value' or ctx.triggered[0]['prop_id'] == 'insects_dropdown.value':
             selected_heat = None
             clickData_hm = None
         selected_systems = remove_unauthoirized_system(selected_systems)
         if start_date and end_date:
             end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
             start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
-        if not selected_systems or not end_date or not start_date or (end_date - start_date).days < 1:
+        if not selected_systems or not insect_types or not end_date or not start_date or (end_date - start_date).days < 1:
             return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, Loading_animation_style
-        unique_dates, heatmap_data, _, df_hist, hist_24h_data = load_moth_data(selected_systems, start_date, end_date)
+        unique_dates, heatmap_data, _, df_hist, hist_24h_data = load_moth_data(selected_systems, start_date, end_date, insect_types)
         if not len(unique_dates):
             return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, Loading_animation_style
 
@@ -676,6 +714,7 @@ def dash_application():
         Input('date_range_picker', 'start_date'),
         Input('date_range_picker', 'end_date'),
         Input('systems_dropdown', 'value'),
+        Input('insects_dropdown', 'value'),
         Input('hete_kaart', 'clickData'),
         Input('staaf_kaart', 'selectedData'),
         Input('staaf24h_kaart', 'selectedData'),
@@ -683,7 +722,7 @@ def dash_application():
         Input('scatter_y_dropdown', 'value'),
         State('selected_heatmap_data', 'children'),
         State('systems_dropdown', 'options'))
-    def update_ui_scatter(start_date, end_date, selected_systems, clickData_hm, hist_selected_bars, hist24h_selected_bars, scatter_x_value, scatter_y_value, selected_heat, system_options):
+    def update_ui_scatter(start_date, end_date, selected_systems, insect_types, clickData_hm, hist_selected_bars, hist24h_selected_bars, scatter_x_value, scatter_y_value, selected_heat, system_options):
         scat_fig = go.Figure(data=go.Scatter())
         scat_style = {'display': 'none'}
         scat_axis_select_style = {'display': 'none'}
@@ -695,7 +734,7 @@ def dash_application():
         ctx = dash.callback_context
 
         selected_systems = remove_unauthoirized_system(selected_systems)
-        if not selected_systems:
+        if not selected_systems or not insect_types:
             return scat_fig, scat_style, scat_axis_select_style
 
         if ctx.triggered[0]['prop_id'] == 'staaf_kaart.selectedData' or ctx.triggered[0]['prop_id'] == 'staaf24h_kaart.selectedData' or ctx.triggered[0]['prop_id'] == 'hete_kaart.clickData' or ctx.triggered[0]['prop_id'] == 'scatter_x_dropdown.value' or ctx.triggered[0]['prop_id'] == 'scatter_y_dropdown.value':
@@ -711,19 +750,19 @@ def dash_application():
                     if hour < 12:
                         hour += 24
                     start_date = datetime.datetime.strptime(hm_cell['lalaladate'], '%d-%m-%Y') + datetime.timedelta(hours=hour)
-                    moths = moths.append(load_moth_df(selected_systems, start_date, start_date + datetime.timedelta(hours=1)))
+                    moths = moths.append(load_moth_df(selected_systems, start_date, start_date + datetime.timedelta(hours=1), insect_types))
             elif hist_selected_bars:
                 for bar in hist_selected_bars['points']:
                     sys = bar['customdata'][1]
                     start_date = datetime.datetime.strptime(bar['x'], '%d-%m-%Y') + datetime.timedelta(hours=12)
-                    moths = moths.append(load_moth_df([sys], start_date, start_date + datetime.timedelta(days=1)))
+                    moths = moths.append(load_moth_df([sys], start_date, start_date + datetime.timedelta(days=1), insect_types))
             elif hist24h_selected_bars:
                 start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
                 end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
                 for bar in hist24h_selected_bars['points']:
                     sys = bar['customdata'][1]
                     hour = int(bar['x'].replace('h', ''))
-                    moths = moths.append(load_moth_of_hour([sys], start_date, end_date, hour))
+                    moths = moths.append(load_moth_of_hour([sys], start_date, end_date, hour, insect_types))
 
             if not moths.empty:
                 scat_fig = create_scatter(moths, system_labels, scatter_x_value, scatter_y_value)
@@ -745,12 +784,13 @@ def dash_application():
         Input('date_range_picker', 'start_date'),
         Input('date_range_picker', 'end_date'),
         Input('systems_dropdown', 'value'),
+        Input('insects_dropdown', 'value'),
         Input('hete_kaart', 'clickData'),
         Input('staaf_kaart', 'clickData'),
         Input('staaf24h_kaart', 'clickData'),
         Input('verstrooide_kaart', 'clickData'),
         State('verstrooide_kaart', 'figure'))
-    def update_moth_ui(start_date, end_date, selected_systems, clickData_hm, clickData_hist, clickData_hist24h, clickData_dot, scatter_fig_state):
+    def update_moth_ui(start_date, end_date, selected_systems, selected_insects, clickData_hm, clickData_hist, clickData_hist24h, clickData_dot, scatter_fig_state):
         target_video_fn = ''
         video_style = {'display': 'none'}
         path_fig = go.Figure(data=go.Scatter3d())
@@ -764,7 +804,7 @@ def dash_application():
 
         selected_systems = remove_unauthoirized_system(selected_systems)
         ctx = dash.callback_context
-        if not 'selectedpoints' in scatter_fig_state['data'][0] or ctx.triggered[0]['prop_id'] != 'verstrooide_kaart.clickData' or not selected_systems:
+        if not 'selectedpoints' in scatter_fig_state['data'][0] or ctx.triggered[0]['prop_id'] != 'verstrooide_kaart.clickData' or not selected_systems or not selected_insects:
             return target_video_fn, video_style, path_fig, path_style, file_link, file_link_style, selected_moth, classification, classify_style, Loading_animation_style
 
         sql_str = 'SELECT * FROM moth_records WHERE uid=' + str(clickData_dot['points'][0]['customdata'][4])
@@ -859,19 +899,21 @@ def dash_application():
         fig_scatter = go.Figure(data=go.Scatter())
         fig_path = go.Figure(data=go.Scatter3d())
         system_options, system_style, group_options, group_value, group_style = init_system_dropdown()
-        return html.Div(children=[
-            dbc.Navbar([
+        insect_options, date_style, insect_style = init_insects_dropdown()
+        return html.Div([
+            dbc.Navbar
+            ([
                 dbc.Col(html.H1(children='PATS-C')),
                 dbc.Col(html.H1()),
                 dbc.Col(
                     dbc.Nav(dbc.NavItem(dbc.NavLink("Sign out", href="/logout", external_link=True)), navbar=True),
                     width="auto",
-                ), ],
-                color="#222",
-                dark=True,
-            ),
-            html.Div([
-                html.Div([
+                ),
+            ], color="#222", dark=True,),
+            html.Div
+            ([
+                html.Div
+                ([
                     html.Div('Customer:'),
                     html.Div(dcc.Dropdown(
                         id='groups_dropdown',
@@ -882,7 +924,8 @@ def dash_application():
                         placeholder='Select customer'
                     ), className='dash-bootstrap'),
                 ], style=group_style),
-                html.Div([
+                html.Div
+                ([
                     html.Div('Systems:'),
                     html.Div(dcc.Dropdown(
                         id='systems_dropdown',
@@ -892,39 +935,59 @@ def dash_application():
                     ), className='dash-bootstrap'),
                 ], style=system_style),
             ], style={'display': 'block', 'textAlign': 'left', 'width': '80%', 'margin': 'auto'}),
-            html.Div([
-                html.Div('Date range: '),
-                html.Div(dcc.DatePickerRange(
-                    id='date_range_picker',
-                    clearable=True,
-                    minimum_nights=7,
-                    with_portal=True,
-                    display_format='DD MMM \'YY',
-                    min_date_allowed=datetime.date(2020, 9, 1),
-                    max_date_allowed=datetime.datetime.today(),
-                    start_date=(datetime.date.today() - relativedelta(months=1)),
-                    end_date=datetime.date.today(),
-                    number_of_months_shown=3,
-                    start_date_placeholder_text="Start period",
-                    reopen_calendar_on_clear=True,
-                    end_date_placeholder_text="End period",
-                    persistence=True
-                ), style={'display': 'inline-block', 'width': '30%'}, className='dash-bootstrap')], style={'display': 'block', 'textAlign': 'left', 'width': '80%', 'margin': 'auto'}),
+            html.Div
+            ([
+                html.Div
+                ([
+                    html.Div('Date range: '),
+                    html.Div(dcc.DatePickerRange(
+                        id='date_range_picker',
+                        clearable=True,
+                        minimum_nights=7,
+                        with_portal=True,
+                        display_format='DD MMM \'YY',
+                        min_date_allowed=datetime.date(2020, 9, 1),
+                        max_date_allowed=datetime.datetime.today(),
+                        start_date=(datetime.date.today() - relativedelta(months=1)),
+                        end_date=datetime.date.today(),
+                        number_of_months_shown=3,
+                        start_date_placeholder_text="Start period",
+                        reopen_calendar_on_clear=True,
+                        end_date_placeholder_text="End period",
+                        persistence=True
+                    ), className='dash-bootstrap')
+                ], style=date_style),
+                html.Div
+                ([
+                    html.Div('Insects:'),
+                    html.Div(dcc.Dropdown(
+                        id='insects_dropdown',
+                        options=insect_options,
+                        multi=False,
+                        value=insect_options[0]['value'],
+                        placeholder='Select insects'
+                    ), className='dash-bootstrap'),
+                ], style=insect_style),
+            ], style={'display': 'block', 'textAlign': 'left', 'width': '80%', 'margin': 'auto'}),
             html.Br(),
-            html.Div([
+            html.Div
+            ([
                 dcc.Loading(
                     children=html.Div([html.Br(), html.Br(), html.Br()], id='Loading_animation', style={'display': 'none'}),
                     type='default'
                 ),
                 dcc.Graph(id='staaf_kaart', style={'display': 'none', 'margin-left': 'auto', 'margin-right': 'auto', 'textAlign': 'center', 'width': '80%'}, figure=fig_hist)
             ]),
-            html.Div([
+            html.Div
+            ([
                 dcc.Graph(id='staaf24h_kaart', style={'display': 'none', 'margin-left': 'auto', 'margin-right': 'auto', 'textAlign': 'center', 'width': '80%'}, figure=fig_hist24h)
             ]),
-            html.Div([
+            html.Div
+            ([
                 dcc.Graph(id='hete_kaart', style={'display': 'none'}, figure=fig_hm)
             ]),
-            html.Div([
+            html.Div
+            ([
                 html.Br(),
                 html.Div('Select x axis:', style={'display': 'table-cell'}),
                 html.Div(dcc.Dropdown(
@@ -941,10 +1004,12 @@ def dash_application():
                     clearable=False
                 ), style={'display': 'table-cell'}, className='dash-bootstrap'),
             ], style={'display': 'none', 'textAlign': 'center', 'width': '50%', 'margin': 'auto'}, id='scatter_dropdown_container'),
-            html.Div([
+            html.Div
+            ([
                 dcc.Graph(id='verstrooide_kaart', style={'display': 'none'}, figure=fig_scatter)
             ]),
-            html.Div([
+            html.Div
+            ([
                 dcc.Loading(
                     children=html.Div([html.Br(), html.Br(), html.Br()], id='Loading_animation_moth', style={'display': 'none'}),
                     type='default'
@@ -952,10 +1017,12 @@ def dash_application():
                 dcc.Graph(id='route_kaart', style={'display': 'none'}, figure=fig_path),
                 html.Video(id='insect_video', style={'display': 'none'}, controls=True, loop=True, autoPlay=True),
             ]),
-            html.Div([
-                html.Div([
-                    'Human classification:']
-                ),
+            html.Div
+            ([
+                html.Div
+                ([
+                    'Human classification:'
+                ]),
                 html.Div(dcc.Dropdown(
                     id='classification_dropdown',
                     options=[{'label': c, 'value': c} for c in classification_options],
@@ -963,7 +1030,8 @@ def dash_application():
                     clearable=False,
                 ), className='dash-bootstrap'),
             ], style={'display': 'none', 'textAlign': 'center', 'width': '25%', 'margin': 'auto'}, id='classify_container'),
-            html.Div([
+            html.Div
+            ([
                 html.Br(),
                 html.Ul(id='log_file_link'),
                 html.Br(),
@@ -977,3 +1045,4 @@ def dash_application():
     app.layout = make_layout
 
     return app
+
