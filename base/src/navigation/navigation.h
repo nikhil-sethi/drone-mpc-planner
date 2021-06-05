@@ -3,6 +3,7 @@
 
 namespace navigation {
 [[maybe_unused]] static const char* navigation_status_names[] = {"ns_init",
+                                                                 "ns_init_render",
                                                                  "ns_locate_drone_init",
                                                                  "ns_locate_drone_led",
                                                                  "ns_wait_locate_drone",
@@ -52,6 +53,7 @@ namespace navigation {
 
 enum navigation_states {
     ns_init=0,
+    ns_init_render,
     ns_locate_drone_init,
     ns_locate_drone_wait_led_on,
     ns_wait_locate_drone,

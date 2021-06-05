@@ -99,8 +99,11 @@ public:
 
     void render_now_override() {
         _nav_flight_mode = nfm_none;
-        _navigation_status = ns_monitoring;
-        _trackers->mode(tracking::TrackerManager::mode_wait_for_insect);
+        _navigation_status = ns_init_render;
+        _dctrl->flight_mode(DroneController::fm_monitoring);
+        _trackers->mode(tracking::TrackerManager::mode_idle);
+        _visdat->reset_motion_integration();
+        _visdat->enable_noise_map_calibration();
     }
 
     nav_flight_modes nav_flight_mode() {return _nav_flight_mode;}

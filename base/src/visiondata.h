@@ -97,6 +97,7 @@ public:
     void close();
     void update(StereoPair * current);
     void maintain_noise_maps();
+    void enable_noise_map_calibration();
     void enable_noise_map_calibration(float duration);
     bool calibrating_background() {return _calibrating_motion_noise_map;}
     void create_overexposed_removal_mask(bool filter_drone, cv::Point3f drone_im_location,float blink_size);

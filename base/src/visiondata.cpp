@@ -216,9 +216,14 @@ bool VisionData::overexposed(cv::Point blob_pt) {
     return s > 0;
 }
 
+void VisionData::enable_noise_map_calibration() {
+    enable_noise_map_calibration(motion_buf_size_target/pparams.fps);
+}
 void VisionData::enable_noise_map_calibration(float duration) {
     calibrating_noise_map_end_time = _current_frame_time+static_cast<double>(duration);
     save_every_nth_frame_during_motion_calib = static_cast<int>(round((pparams.fps*duration) / motion_buf_size_target));
+    if (save_every_nth_frame_during_motion_calib<1)
+        save_every_nth_frame_during_motion_calib = 1;
     _calibrating_motion_noise_map = true;
 }
 

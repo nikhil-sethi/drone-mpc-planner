@@ -436,6 +436,8 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
             _rc->arm(bf_disarmed);
         calibrate_pad_attitude();
         break;
+    } case fm_monitoring: {
+        break;
     } case fm_abort: {
         if (dparams.mode3d)
             auto_throttle = RC_MIDDLE;

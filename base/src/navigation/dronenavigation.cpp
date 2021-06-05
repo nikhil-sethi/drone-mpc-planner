@@ -86,10 +86,17 @@ void DroneNavigation::update(double time) {
             _trackers->mode(tracking::TrackerManager::mode_idle);
             if (time > 1.5) { // skip first second or so due to auto exposure settling
                 if (pparams.op_mode==op_mode_monitoring) {
-                    _dctrl->flight_mode(DroneController::fm_disarmed);
+                    _dctrl->flight_mode(DroneController::fm_monitoring);
                     _navigation_status = ns_start_calibrating_motion;
                 } else
                     _navigation_status = ns_locate_drone_init;
+            }
+            break;
+        } case ns_init_render: {
+            _visdat->maintain_noise_maps();
+            if (time > 1) {
+                _navigation_status = ns_monitoring;
+                _trackers->mode(tracking::TrackerManager::mode_wait_for_insect);
             }
             break;
         } case ns_locate_drone_init: {

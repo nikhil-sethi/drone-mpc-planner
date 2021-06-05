@@ -335,10 +335,6 @@ void process_video() {
 }
 
 void process_frame(StereoPair * frame) {
-
-
-
-
     if (log_replay_mode && pparams.op_mode != op_mode_monitoring) {
         if (logreader.current_frame_number(frame->rs_id)) {
             exit_now = true;
