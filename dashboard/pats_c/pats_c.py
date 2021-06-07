@@ -31,7 +31,8 @@ scatter_columns = {'duration': 'Duration (s)',
                    'Vel_max': 'Velocity max (m/s)',
                    'Dist_traveled': 'Distance traveled (m)',
                    'Dist_traject': 'Distance trajectory (m)',
-                   'Size': 'Size (m)'}
+                   'Size': 'Size (m)',
+                   'Wing_beat': 'Wing beat (Hz)'}
 
 
 def load_systems_group(group_name, cur):
@@ -1045,4 +1046,3 @@ def dash_application():
     app.layout = make_layout
 
     return app
-
