@@ -116,13 +116,15 @@ def load_moth_df(selected_systems, start_date, end_date):
                 system_sql_str = f'''(system = "{system}" OR system = "{system.replace('pats','pats-proto')}")'''
                 uses_proto = True
 
-            if start_date > datetime.datetime.strptime("20210101_000000", '%Y%m%d_%H%M%S'):  # new (size) filtering was introduced on 24th december 2020 #648
-                if min_size > 0:
-                    insect_str = f'''Dist_traveled > 0.15 AND Dist_traveled < 4 AND Size > {min_size}'''
-                else:
-                    insect_str = f'''Dist_traveled > 0.15 AND Dist_traveled < 4 '''
+            insect_str = ''
+            close_insect_str = ''
+            if start_date < datetime.datetime.strptime("20210101_000000", '%Y%m%d_%H%M%S'):  # new (size) filtering was introduced on 24th december 2020 #648
+                insect_str = '((Version="1.0" AND time < "20210101_000000") OR ('
+                close_insect_str = '))'
+            if min_size > 0:
+                insect_str = insect_str + f'''Dist_traveled > 0.15 AND Dist_traveled < 4 AND Size > {min_size}''' + close_insect_str
             else:
-                insect_str = 'Version="1.0"'
+                insect_str = insect_str + f'''Dist_traveled > 0.15 AND Dist_traveled < 4 ''' + close_insect_str
 
             sql_str = f'''SELECT moth_records.* FROM moth_records
                 WHERE {system_sql_str}
