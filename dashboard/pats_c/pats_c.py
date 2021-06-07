@@ -100,12 +100,7 @@ def load_moth_df(selected_systems,start_date,end_date):
                 print(f'ERROR startdate {system}: ' + str(e))
                 real_start_date = start_date
 
-
-            if end_date.date() == datetime.datetime.today().date():
-                time_str = f'''time > "{real_start_date.strftime('%Y%m%d_%H%M%S')}"'''
-            else:
-                time_str =  f'''time > "{real_start_date.strftime('%Y%m%d_%H%M%S')}" AND time <= "{end_date.strftime('%Y%m%d_%H%M%S')}"'''
-
+            time_str =  f'''time > "{real_start_date.strftime('%Y%m%d_%H%M%S')}" AND time <= "{end_date.strftime('%Y%m%d_%H%M%S')}"'''
             if start_date > datetime.datetime.strptime("20210401_000000",'%Y%m%d_%H%M%S'): # remove proto #533 closed in march 2021, so most systems probably were updated in april
                 system_sql_str = f'''system = "{system}"'''
                 uses_proto = False
