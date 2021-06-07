@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
+import sys
+sys.path.append('pats_c/lib')  # noqa
 import lib_patsc as patsc
 import json
 import glob
 import os
-import re
-import sys
 import datetime
-from time import strftime
 from tqdm import tqdm
 from json.decoder import JSONDecodeError
-sys.path.append('pats_c/lib')
 
 
 def get_column_data_type(column):

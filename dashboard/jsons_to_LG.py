@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import sys
+sys.path.append('pats_c/lib')  # noqa
 import lib_patsc as patsc
 import requests
 import json
@@ -6,13 +8,11 @@ import datetime
 import glob
 import os
 import math
-import sys
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
 from time import sleep
 from json.decoder import JSONDecodeError
-sys.path.append('pats_c/lib')
 
 
 def read_cred_lg_db():

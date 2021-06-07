@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import sys
+sys.path.append('pats_c/lib')  # noqa
 import lib_patsc as patsc
 import subprocess
 import time
@@ -6,11 +8,10 @@ import argparse
 import glob
 import os
 import re
-import sys
+
 from datetime import datetime, timedelta
 from pytz import timezone
 import pandas as pd
-sys.path.append('pats_c/lib')
 
 
 def natural_sort_systems(l):
