@@ -144,8 +144,12 @@ void TrackerManager::find_blobs() {
                 cv::Point max_pos = max_pos_pre_roi + cv::Point(pre_select_roi_rect.x, pre_select_roi_rect.y);
                 find_cog_and_remove(max_pos,max_val,motion_noise,diff,motion_filtered_noise_mapL);
             }
-            if (!max_is_valid || item_attempt >= 3)
-                roi_preselect_state = roi_state_prior_insects;
+            if (!max_is_valid || item_attempt >= 3) {
+                if (!insect_trackers.size())
+                    roi_preselect_state = roi_state_no_prior;
+                else
+                    roi_preselect_state = roi_state_prior_insects;
+            }
             i++;
             break;
         } case roi_state_prior_insects: {
