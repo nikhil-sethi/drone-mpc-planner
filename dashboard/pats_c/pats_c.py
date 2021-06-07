@@ -548,7 +548,7 @@ def file_download_link(filename):
     return html.A('Download log', href=location, style={'display': 'block'}), {'textAlign': 'center', 'width': '25%', 'margin': 'auto', 'display': 'block'}
 
 
-def create_path_plot(target_log_fn):
+def create_path_plot(target_log_fn, selected_moth, moth_columns):
     df_ilog = pd.read_csv(target_log_fn, delimiter=';')
     target_log_fn = '/' + target_log_fn
     rows_without_tracking = df_ilog[df_ilog['n_frames_tracking_insect'] == 0].index
@@ -572,8 +572,9 @@ def create_path_plot(target_log_fn):
         hovertemplate='Camera position'
     )
     fig = go.Figure(data=[scatter, camera_pos])
+    title_str = 'Insect flight path of detecton at: ' + datetime.datetime.strptime(str(selected_moth[moth_columns.index('time')]), '%Y%m%d_%H%M%S').strftime('%d-%m-%Y %H:%M:%S')
     fig.update_layout(
-        title_text='Insect flight path',
+        title_text=title_str,
         scene=dict(
             aspectmode='data'
         )
@@ -826,7 +827,7 @@ def dash_application():
             classification = classification_options[0]
         classify_style = {'display': 'block', 'textAlign': 'center', 'width': '25%', 'margin': 'auto'}
 
-        path_fig, path_style = create_path_plot(target_log_fn)
+        path_fig, path_style = create_path_plot(target_log_fn, selected_moth, moth_columns)
 
         target_video_fn = download_video(selected_moth, moth_columns)
         Loading_animation_style = {'display': 'none'}
