@@ -271,7 +271,7 @@ def jsons_to_LG(input_folder):
     token = retrieve_token()
     LG_lookup = sys_info_table(token)
     systems_df = load_system_info()
-
+    LG_404_err = False
     files = patsc.natural_sort([fp for fp in glob.glob(os.path.expanduser(input_folder + '/*.json'))])
     pbar = tqdm(files)
     for filename in pbar:
@@ -292,8 +292,16 @@ def jsons_to_LG(input_folder):
                                         sys_LG = LG_lookup.loc[LG_lookup['lg_module_id'] == int(sys_info['LG'])]
                                         sys_info = pd.concat([sys_info.reset_index(drop=True), sys_LG.reset_index(drop=True)], axis=1)
                                         sys_info = sys_info.to_dict('records')[0]
-                                        res = upload_json_to_LG(token, json_data, sys_info)
-                                        flag_f.write(res + '\n')
+                                        try:
+                                            res = upload_json_to_LG(token, json_data, sys_info)
+                                        except Exception as e:
+                                            if '404' in e.args[0]:
+                                                LG_404_err = True
+                                            else:
+                                                print(e)
+                                                exit(1)  # until we have developped proper logging #871
+                                        else:
+                                            flag_f.write(res + '\n')
                                     else:
                                         flag_f.write('WRONG VERSION ' + json_data['version'] + '. Required: ' + min_required_version + '\n')
                                 else:
@@ -304,6 +312,11 @@ def jsons_to_LG(input_folder):
                             flag_f.write('JSONDecodeError\n')
                     else:
                         flag_f.write('File size too big\n')
+        if LG_404_err:
+            if os.path.exists(flag_fn):
+                os.remove(flag_fn)
+            print('LG server seems to be down... aborting')
+            break
 
 
 if __name__ == "__main__":

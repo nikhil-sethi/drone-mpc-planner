@@ -11,8 +11,14 @@ parser.add_argument('-p', '--period', help="Repeat this script every period", de
 args = parser.parse_args()
 
 while True:
-    jsons_to_db(args.input_folder)
-    jsons_to_LG(args.input_folder)
+    try:
+        jsons_to_db(args.input_folder)
+    except Exception as e:
+        print(str(e))
+    try:
+        jsons_to_LG(args.input_folder)
+    except Exception as e:
+        print(str(e))
 
     if args.period:
         print(str(datetime.datetime.now()) + ". Periodic update after: " + str(args.period))
