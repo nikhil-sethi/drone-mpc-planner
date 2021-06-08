@@ -135,8 +135,9 @@ void FileCam::update() {
         frame_number_new = frames_ids.at(frame_cnt-1).rs_id;
         frame_time_new = frames_ids.at(frame_cnt-1).time;
     } else {
-        frame_number_new = frame_number()+1;
-        frame_time_new = frame_time() + 1./pparams.fps;
+        auto f = last();
+        frame_number_new = f->rs_id+1;
+        frame_time_new = f->time + 1./pparams.fps;
     }
     if (frame_number_new==ULONG_MAX) {
         std::cout << "Log end, exiting." << std::endl;

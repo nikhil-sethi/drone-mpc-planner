@@ -39,6 +39,4 @@ public:
     void rc(Rc * rc) {_rc = rc;}
     void close();
     void update();
-
-    void back_one_sec() {}
 };

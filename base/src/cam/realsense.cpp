@@ -59,7 +59,7 @@ void Realsense::update_playback(void) {
     StereoPair * sp = new StereoPair(frameL,frameR,rs_frameL.get_frame_number(),rs_frameL.get_timestamp()/1.e3 - _frame_time_start);
     buf.insert(std::pair(rs_frameL.get_frame_number(),sp));
     double duration = static_cast<double>(static_cast<rs2::playback>(dev).get_duration().count()) / 1e9;
-    if (frame_time() > duration-0.1) {
+    if (last()->time > duration-0.1) {
         std::cout << "Video end, exiting" << std::endl;
         throw ReplayVideoEnded();
     }
@@ -88,9 +88,9 @@ void Realsense::rs_callback(rs2::frame f) {
 
     if (watchdog_attempt_to_continue) {
         if (f.get_profile().stream_index() == 1 )
-            std::cout << "Received id "         << f.get_frame_number() << ":" << f.get_timestamp()/1.e3- _frame_time_start << "@" << f.get_profile().stream_index() << "         Last: " << last_sync_id << std::endl;
+            std::cout << "Received idL "         << f.get_frame_number() << ":" << f.get_timestamp()/1.e3- _frame_time_start << "@" << f.get_profile().stream_index() << "         Last: " << last_sync_id << std::endl;
         if (f.get_profile().stream_index() == 2 )
-            std::cout << "Received id         " << f.get_frame_number() << ":" << f.get_timestamp()/1.e3 -_frame_time_start << "@" << f.get_profile().stream_index() << " Last: " << last_sync_id << std::endl;
+            std::cout << "Received idR         " << f.get_frame_number() << ":" << f.get_timestamp()/1.e3 -_frame_time_start << "@" << f.get_profile().stream_index() << " Last: " << last_sync_id << std::endl;
     }
 
     if (f.get_frame_number() < last_sync_id-50 && last_sync_id > 300) {

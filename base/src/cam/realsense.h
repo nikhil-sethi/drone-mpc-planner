@@ -42,7 +42,6 @@ public:
     void close();
     void reset();
     void stop_watchdog() {exit_watchdog_thread = true;}
-    void back_one_sec() { seek(frame_time() -3); }
     void update();
     std::tuple<float,float,cv::Mat,cv::Mat,cv::Mat,float> measure_auto_exposure();
     std::tuple<float,float,double,cv::Mat> measure_angle();

@@ -27,5 +27,4 @@ public:
     void init();
     void close();
     void update();
-    void back_one_sec() {}
 };

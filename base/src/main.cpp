@@ -260,7 +260,7 @@ void process_video() {
 
         //keep track of time and fps
         float t_pc = stopWatch.Read() / 1000.f;
-        float t_cam = static_cast<float>(cam->frame_time());
+        float t_cam = static_cast<float>(frame->time);
         float t;
         if ( log_replay_mode || generator_mode || render_hunt_mode || render_monitor_video_mode)
             t = t_pc;
@@ -274,15 +274,12 @@ void process_video() {
             n_fps_warnings++;
         }
 
-        static double time =0;
-        float dt __attribute__((unused)) = static_cast<float>(cam->frame_time() - time);
-        time = cam->frame_time();
         std::cout <<
                   //   "\r\e[K" <<
                   dnav.navigation_status() <<
                   "; " << imgcount <<
-                  ", " << cam->frame_number() <<
-                  ", T: " << to_string_with_precision(time,2)  <<
+                  ", " << frame->rs_id <<
+                  ", T: " << to_string_with_precision(frame->time,2)  <<
                   " @ " << to_string_with_precision(fps,1) <<
                   ", " << rc->telemetry.batt_cell_v <<
                   "v, arm: " << static_cast<int>(rc->telemetry.arming_state) <<
@@ -304,7 +301,7 @@ void process_video() {
         if (fps != fps || isinf(fps))
             fps_smoothed.reset();
 
-        if (dctrl.in_flight_duration(time) < 0.1f || dnav.drone_problem(1)) {
+        if (dctrl.in_flight_duration(frame->time) < 0.1f || dnav.drone_problem(1)) {
             if (!log_replay_mode  && ((imgcount > pparams.close_after_n_images && pparams.close_after_n_images > 0))) {
                 std::cout << "Initiating periodic restart" << std::endl;
                 exit_now = true;
@@ -433,7 +430,7 @@ void skip_to_hunt(double pre_delay, double time) {
     double dt = logreader.first_takeoff_time() - time - pre_delay;
     if (dt>0 && !isinf(dt) && dnav.drone_ready_and_waiting()) {
         watchdog_skip_video_delay_override = true;
-        cam->skip(dt);
+        static_cast<FileCam *>(cam.get())->skip(dt);
         skipped_to_hunt = true;
         std::cout << "Skipping to " << time + dt << std::endl;
     }
@@ -573,10 +570,10 @@ bool handle_key(double time [[maybe_unused]]) {
         cam->turbo = !cam->turbo;
         break;
     case '.':
-        cam->skip(5);
+        static_cast<FileCam *>(cam.get())->skip(5);
         break;
     case ',':
-        cam->back_one_sec();
+        static_cast<FileCam *>(cam.get())->back_one_sec();
         break;
     case 'a':
         rc->arm(bf_armed);
@@ -938,7 +935,7 @@ void save_results_log() {
     results_log << "n_drone_detects:" << dnav.n_drone_detects() << '\n';
     results_log << "drone_problem:" << dnav.drone_problem() << '\n';
     results_log << "Flight_time:" << dnav.flight_time() << '\n';
-    results_log << "Run_time:" << cam->frame_time() << '\n';
+    results_log << "Run_time:" << visdat.current_time() << '\n';
     results_log << "Start_datetime:" << std::put_time(std::localtime(&start_datetime), "%Y/%m/%d %T") << '\n';
     results_log << "End_datetime:" <<  std::put_time(std::localtime(&end_datetime), "%Y/%m/%d %T") << '\n';
     results_log.close();

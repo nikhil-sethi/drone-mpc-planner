@@ -70,20 +70,11 @@ public:
         delete_all_frames();
     }
     virtual void update() = 0;
-    virtual void skip(float duration) {
-        replay_skip_n_frames+=roundf(pparams.fps*duration);
-    }
-    void skip_one_sec() {
-        replay_skip_n_frames+=pparams.fps;
-    }
-    virtual void back_one_sec() =0;
     float camera_pitch() { return camparams.camera_angle_y; }
     float camera_roll() { return camparams.camera_angle_x; }
 
     float measured_exposure() { return camparams.measured_exposure; }
     float measured_gain() { return camparams.measured_gain; }
-    unsigned long long frame_number()  {return last()->rs_id;}
-    double frame_time()  {return last()->time;}
 
     StereoPair * last() {
         auto p = buf.cend();
