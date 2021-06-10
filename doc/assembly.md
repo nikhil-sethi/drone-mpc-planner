@@ -1,2 +1,2 @@
-## [Basestation](./doc/basestation.md)
-## [LED module](./doc/LED.md)
+## [Basestation](./doc/basestation_assembly.md)
+## [LED module](./doc/LED_assembly.md)
