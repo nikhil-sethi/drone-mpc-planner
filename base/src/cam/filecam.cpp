@@ -98,7 +98,7 @@ void FileCam::calibration() {
     Qf = (cv::Mat_<double>(4, 4) << 1.0, 0.0, 0.0, -cx, 0.0, 1.0, 0.0, -cy, 0.0, 0.0, 0.0, focal_length, 0.0, 0.0, 1/baseline, 0.0);
 }
 
-void FileCam::update() {
+StereoPair * FileCam::update() {
     GstSample * sample = NULL;
     for (uint i = 0; i < replay_skip_n_frames+1; i++) {
         if (i>0)
@@ -135,7 +135,7 @@ void FileCam::update() {
         frame_number_new = frames_ids.at(frame_cnt-1).rs_id;
         frame_time_new = frames_ids.at(frame_cnt-1).time;
     } else {
-        auto f = last();
+        auto f = current();
         frame_number_new = f->rs_id+1;
         frame_time_new = f->time + 1./pparams.fps;
     }
@@ -146,19 +146,18 @@ void FileCam::update() {
         throw ReplayVideoEnded();
     }
     StereoPair * sp = new StereoPair(frameL,frameR,frame_number_new,frame_time_new);
+    _current = sp;
     buf.insert(std::pair(frame_number_new,sp));
     delete_old_frames();
-
     if (!turbo) {
         while(swc.Read() < (1.f/pparams.fps)*1e3f) {
             usleep(1000);
         }
         swc.Restart();
     }
-
     gst_buffer_unmap(buffer, &map);
     gst_sample_unref(sample);
-
+    return _current;
 }
 
 static void on_pad_added (GstElement *element, GstPad *src_pad, gpointer data)

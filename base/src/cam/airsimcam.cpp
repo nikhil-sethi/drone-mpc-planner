@@ -57,7 +57,7 @@ void AirSimCam::calibration() {
 }
 
 // refresh the camera images requested by the AirSim API
-void AirSimCam::update()
+StereoPair * AirSimCam::update()
 {
     /*
         to simulate 90 FPS we actually need 1/90=0.011111111111111112
@@ -67,10 +67,12 @@ void AirSimCam::update()
 
     // retrieve the frame from AirSim
     StereoPair * sp = sim.new_frame(desiredFrameTime);
+    _current = sp;
     buf.insert(std::pair(sp->rs_id,sp));
     delete_old_frames();
 
     sim.log(sp->rs_id);
+    return _current;
 }
 
 void AirSimCam::close()

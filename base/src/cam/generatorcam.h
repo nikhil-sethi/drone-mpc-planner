@@ -38,5 +38,5 @@ public:
     void init();
     void rc(Rc * rc) {_rc = rc;}
     void close();
-    void update();
+    StereoPair * update();
 };

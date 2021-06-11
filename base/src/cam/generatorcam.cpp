@@ -74,7 +74,7 @@ void GeneratorCam::calibration() {
     cv::invert(Qf,Qfi);
 }
 
-void GeneratorCam::update() {
+StereoPair * GeneratorCam::update() {
     if (_rc->throttle > RC_BOUND_MIN || takeoff_start_time > 0) {
         if (takeoff_start_time<0)
             takeoff_start_time = _frame_time;
@@ -159,6 +159,7 @@ void GeneratorCam::update() {
     _frame_number++;
     _frame_time = _frame_number / static_cast<float>(pparams.fps);
     StereoPair * sp = new StereoPair(frameL,frameR,_frame_number,_frame_time);
+    _current = sp;
     buf.insert(std::pair(_frame_number,sp));
     delete_old_frames();
 
@@ -168,6 +169,7 @@ void GeneratorCam::update() {
         }
         swc.Restart();
     }
+    return _current;
 }
 
 void GeneratorCam::close () {

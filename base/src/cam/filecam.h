@@ -46,7 +46,7 @@ public:
         //But we have frames.csv in which all frame ids are written, including a frames_written_in_video cnt.
         //So we simply loop through this list to find where we are now, and where we need to be, and use the diff between
         //the two frames_written_in_video counnts
-        auto frame = last();
+        auto frame = current();
         auto current_time = frame->time;
         uint video_id_now = 0;
         uint video_id_skip = 0;
@@ -63,7 +63,7 @@ public:
 
     void init();
     void close();
-    void update();
+    StereoPair * update();
 
     void back_one_sec() {}
 };

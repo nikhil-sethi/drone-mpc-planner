@@ -307,3 +307,7 @@ std::string exec(const char* cmd) {
     }
     return result;
 }
+
+void set_fps_warning_flag() {
+    std::ofstream output("../../../../pats/flags/fps_warning_flag");
+}

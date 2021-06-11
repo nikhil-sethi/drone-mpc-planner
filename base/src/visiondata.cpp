@@ -8,7 +8,7 @@ void VisionData::init(Cam * cam) {
     _cam = cam;
     Qf = cam->Qf;
     cv::invert(Qf,Qfi);
-    auto frame = cam->last();
+    auto frame = cam->current();
     frameL = frame->left;
     frameR = frame->right;
     depth_background_mm = cam->depth_background_mm;

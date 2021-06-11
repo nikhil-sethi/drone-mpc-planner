@@ -10,28 +10,81 @@ using namespace std;
 
 static stopwatch_c swc;
 
-void Realsense::update(void) {
-    delete_old_frames();
-    if (from_recorded_bag)
-        update_playback();
-    else
-        update_real();
+StereoPair * Realsense::update(void) {
+
+    auto buf_copy = buf;
+    auto last_iter = buf_copy.cend();
+    last_iter--;
+    auto new_current = last_iter;
+    _last = last_iter->second;
+
+    bool skipping_frames = false;
+
+    if (new_current->second->rs_id == _current->rs_id) { // we need to wait for a new frame. Processing won :)
+        while (last_iter->second->rs_id==_current->rs_id) {
+            update_real();
+            last_iter = buf.cend();
+            last_iter--;
+        }
+        _current = last_iter->second;
+    } else if (new_current->second->rs_id == _current->rs_id+1) { // next frame on top of the buffer and ready to go. Camera won :|
+        _current = new_current->second;
+    } else { // we are lagging behind or the rs_id has skipped one. :(
+        auto current_original = _current;
+        unsigned long long new_rs_id = -1;
+        new_current = buf_copy.cend();
+        while ((new_rs_id > current_original->rs_id && new_current != buf_copy.cbegin())) {
+            new_current--;
+            if (new_current ==  buf_copy.cbegin() || new_current->second->rs_id - current_original->rs_id>3) {
+                if (current_original->rs_id == _current->rs_id) {
+                    _current = _last;
+                    std::cout << "Skipping frames :(" << std::endl;
+                }
+                break;
+            } else if (current_original->rs_id == new_current->second->rs_id && _current->rs_id != current_original->rs_id) {
+                break;
+            } else
+                _current = new_current->second;
+            new_rs_id = new_current->second->rs_id;
+        }
+        skipping_frames = true;
+        std::cout << "Frame lag warning" << std::endl;
+    }
+    _current->processing = true;
+    delete_old_frames(skipping_frames);
+    return _current;
 }
 
-void Realsense::delete_old_frames() {
+void Realsense::delete_old_frames(bool skipping_frames) {
     //At the moment we actually only need 1 frame from the past.
     //Sometimes there's some processing delay in the process_frame thread, so we have another few frames as buffer.
     //If we set this number to bigger then 7 the RS software locks up. Apparantely there is some limit of
     //keeping 7 frame callbacks in memory, even when not using the rs pipeline system.
-    while (buf.size() > 4) {
-        auto itr_buf = buf.begin();
-        auto itr_rs_buf = rs_buf.begin();
+
+    auto itr_buf = buf.begin();
+    auto itr_rs_buf = rs_buf.begin();
+    auto itr_stop = buf.cend();
+    itr_stop--;
+    while (itr_stop != itr_buf && buf.size()>2) {
         auto tmp1 = itr_buf->second;
         auto tmp2 = itr_rs_buf->second;
-        tmp1->processed.lock();
-        buf.erase(itr_buf->first);
-        rs_buf.erase(itr_rs_buf->first);
-        delete tmp1; delete tmp2;
+        if (!tmp1->processing) {
+            auto itr_buf_tmp = itr_buf;
+            auto itr_rs_buf_tmp = itr_rs_buf;
+            itr_buf++;
+            itr_rs_buf++;
+
+            buf.erase(itr_buf_tmp->first);
+            rs_buf.erase(itr_rs_buf_tmp->first);
+
+            delete tmp1; delete tmp2;
+        } else if (!skipping_frames) {
+            break;
+        } else {
+            skipping_frames = false;
+            itr_buf++;
+            itr_rs_buf++;
+        }
     }
 }
 void Realsense::delete_all_frames() {
@@ -59,7 +112,7 @@ void Realsense::update_playback(void) {
     StereoPair * sp = new StereoPair(frameL,frameR,rs_frameL.get_frame_number(),rs_frameL.get_timestamp()/1.e3 - _frame_time_start);
     buf.insert(std::pair(rs_frameL.get_frame_number(),sp));
     double duration = static_cast<double>(static_cast<rs2::playback>(dev).get_duration().count()) / 1e9;
-    if (last()->time > duration-0.1) {
+    if (sp->time > duration-0.1) {
         std::cout << "Video end, exiting" << std::endl;
         throw ReplayVideoEnded();
     }
@@ -118,7 +171,10 @@ void Realsense::rs_callback(rs2::frame f) {
             cv::Mat frameL = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(rs_frameL_cbtmp.get_data()), Mat::AUTO_STEP);
             cv::Mat frameR = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(rs_frameR_cbtmp.get_data()), Mat::AUTO_STEP);
             StereoPair * sp = new StereoPair(frameL,frameR,rs_frameL_cbtmp.get_frame_number(),rs_frameL_cbtmp.get_timestamp()/1.e3 - _frame_time_start);
-            buf.insert(std::pair(rs_frameL_cbtmp.get_frame_number(),sp));
+            if (buf.size() < 5)
+                buf.insert(std::pair(rs_frameL_cbtmp.get_frame_number(),sp));
+            else
+                std::cout << "BUF OVERFLOW, SKIPPING A FRAME" << std::endl;
 
             lock_newframe.unlock(); // signal to processor that a new frame is ready to be processed
 
@@ -309,7 +365,11 @@ void Realsense::init_real() {
 
     def_volume();
 
-    update();
+    update_real();
+    auto p = buf.cend();
+    p--;
+    _current = p->second;
+    _current->processing = true;
     initialized = true;
 }
 

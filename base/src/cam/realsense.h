@@ -42,13 +42,13 @@ public:
     void close();
     void reset();
     void stop_watchdog() {exit_watchdog_thread = true;}
-    void update();
+    StereoPair * update();
     std::tuple<float,float,cv::Mat,cv::Mat,cv::Mat,float> measure_auto_exposure();
     std::tuple<float,float,double,cv::Mat> measure_angle();
     bool master() {return !_id;}
 
 protected:
-    void delete_old_frames();
+    void delete_old_frames(bool skipping_frames);
     void delete_all_frames();
 private:
     bool dev_initialized = false;

@@ -26,5 +26,5 @@ public:
     }
     void init();
     void close();
-    void update();
+    StereoPair * update();
 };

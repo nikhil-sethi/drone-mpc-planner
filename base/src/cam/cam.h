@@ -19,6 +19,8 @@ protected:
     bool initialized = false;
     int _frame_loss_cnt = 0;
     std::map<unsigned long long,StereoPair *> buf;
+    StereoPair * _current;
+    StereoPair * _last;
 
     //read file names
     std::string calib_rfn;
@@ -69,18 +71,14 @@ public:
         camera_volume.release();
         delete_all_frames();
     }
-    virtual void update() = 0;
+    virtual StereoPair * update() = 0;
     float camera_pitch() { return camparams.camera_angle_y; }
     float camera_roll() { return camparams.camera_angle_x; }
 
     float measured_exposure() { return camparams.measured_exposure; }
     float measured_gain() { return camparams.measured_gain; }
 
-    StereoPair * last() {
-        auto p = buf.cend();
-        p--;
-        return p->second;
-    }
+    StereoPair * current() { return _current; }
     StereoPair * frame(unsigned long long rs_id) {return buf.at(rs_id);}
 
     int frame_loss_cnt() {return _frame_loss_cnt;}

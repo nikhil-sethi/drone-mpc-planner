@@ -103,6 +103,7 @@ struct Processer {
 };
 Processer tp[NUM_OF_THREADS];
 std::thread thread_watchdog;
+StereoPair * prev_frame;
 
 /*******Private prototypes*********/
 void process_frame(StereoPair * frame);
@@ -124,11 +125,8 @@ void process_video() {
     start_datetime = chrono::system_clock::to_time_t(chrono::system_clock::now());
 
     //main while loop:
-    while (!exit_now) // ESC
-    {
-        cam->update();
-        auto frame = cam->last();
-        frame->processed.lock();
+    while (!exit_now) { 
+        auto frame = cam->update();
         std::unique_lock<std::mutex> lk(tp[0].m2,std::defer_lock);
         tp[0].data_processed.wait(lk, []() {return tp[0].data_is_processed; });
         tp[0].data_is_processed= false;
@@ -270,8 +268,13 @@ void process_video() {
         float current_fps = 1.f / (t - prev_time);
         float fps = fps_smoothed.addSample(current_fps);
         if (fps < pparams.fps / 6 * 5 && fps_smoothed.ready() && !log_replay_mode && !generator_mode && !airsim_mode && !render_hunt_mode && !render_monitor_video_mode) {
-            std::cout << "FPS WARNING!" << std::endl;
             n_fps_warnings++;
+            std::cout << "FPS WARNING: " << n_fps_warnings << std::endl;
+            if (t_cam < 2 ) {
+                std::cout << "Error: Detected FPS warning during start up, assuming there's some camera problem. Cowardly exiting." << std::endl;
+                set_fps_warning_flag();
+                exit_now = true;
+            }
         }
 
         std::cout <<
@@ -353,6 +356,8 @@ void process_frame(StereoPair * frame) {
     auto profile_t0 = std::chrono::high_resolution_clock::now();
 #endif
     visdat.update(frame);
+    prev_frame->processing = false;
+    prev_frame = frame;
 #ifdef PROFILING
     auto profile_t1_visdat = std::chrono::high_resolution_clock::now();
 #endif
@@ -421,7 +426,6 @@ void process_frame(StereoPair * frame) {
            << dur5 << ";"
            << dur_tot << ";";
 #endif
-    frame->processed.unlock();
     watchdog = true;
     logger  << '\n';
 }
@@ -830,6 +834,7 @@ void init() {
 
     rc->init(drone_id);
     cam->init();
+    prev_frame = cam->current();
     visdat.init(cam.get()); // do after cam update to populate frames
     trackers.init(&logger,replay_dir, &visdat, &iceptor);
     iceptor.init(&trackers,&visdat,&(cam->camera_volume),&logger,&dctrl);
