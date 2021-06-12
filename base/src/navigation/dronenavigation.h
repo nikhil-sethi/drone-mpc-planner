@@ -26,6 +26,7 @@ private:
     std::vector<Waypoint> waypoints;
     Waypoint * current_waypoint = new Waypoint_Landing();
 
+    double time_first_frame = -1;
     double time_start_motion_calibration = 0;
     double time_start_reset_headless_yaw = 0;
     double time_start_thrust_calibration = 0;

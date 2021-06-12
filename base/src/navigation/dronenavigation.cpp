@@ -80,11 +80,13 @@ void DroneNavigation::update(double time) {
         repeat  = false;
         switch (_navigation_status) {
         case ns_init: {
+            if (time_first_frame<0)
+                time_first_frame = time;
             _dctrl->LED(true);
             locate_drone_attempts = 0;
             _visdat->reset_motion_integration();
             _trackers->mode(tracking::TrackerManager::mode_idle);
-            if (time > 1.5) { // skip first second or so due to auto exposure settling
+            if (time-time_first_frame > 1.5) { // skip first second or so due to auto exposure settling
                 if (pparams.op_mode==op_mode_monitoring) {
                     _dctrl->flight_mode(DroneController::fm_monitoring);
                     _navigation_status = ns_start_calibrating_motion;
@@ -93,8 +95,10 @@ void DroneNavigation::update(double time) {
             }
             break;
         } case ns_init_render: {
+            if (time_first_frame<0)
+                time_first_frame = time;
             _visdat->maintain_noise_maps();
-            if (time > 1) {
+            if (time-time_first_frame > 1) {
                 _navigation_status = ns_monitoring;
                 _trackers->mode(tracking::TrackerManager::mode_wait_for_insect);
             }
