@@ -15,7 +15,7 @@ from pathlib import Path
 import lib_base as lb
 from lib_base import datetime_to_str, natural_sort, str_to_datetime
 from datetime import datetime, timedelta
-
+from cut_moths import cut_moths
 
 version = "1.8"
 
@@ -321,6 +321,8 @@ def logs_to_json(start_datetime, end_datetime, json_fn, data_folder, sys_str):
     logger = logging.getLogger('logs_to_json')
     for folder in filtered_dirs:
         logger.info("Processing " + folder)
+        if os.path.exists(folder + '/logging/videoRawLR.avi'):  # this folder was probably not yet processed in cut_moth.
+            cut_moths(folder)
 
         top_folder = os.path.basename(folder)
         dts = str_to_datetime(top_folder)
