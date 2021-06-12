@@ -481,7 +481,7 @@ def remove_nones_classification(x):
 
 
 def video_available_to_symbol(x):
-    if not x or x == 'NA':
+    if not x or x.startswith('NA'):
         return 1
     return 0
 
@@ -610,7 +610,7 @@ def download_video(selected_insect, insect_columns):
     sys_name = selected_insect[insect_columns.index('system')].replace('-proto', '')
 
     target_video_mp4_fn = ''
-    if video_fn and video_fn != 'NA':
+    if video_fn and not video_fn.startswith('NA'):
         target_video_mkv_fn = 'static/' + selected_insect[insect_columns.index('Folder')] + '_' + sys_name + '_' + video_fn
         target_video_mp4_fn = target_video_mkv_fn[0:-3] + 'mp4'
 

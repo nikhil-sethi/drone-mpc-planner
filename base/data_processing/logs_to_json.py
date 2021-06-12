@@ -256,9 +256,9 @@ def process_log(detection_fn, folder, mode, monitoring_start_datetime):
             video_filename = os.path.basename(video_filename)
         else:
             logger.error("video file doesn't have many bytes" + str(os.stat(video_filename).st_size))
-            video_filename = 'NA'
+            video_filename = 'NA; video corrupted'
     else:
-        video_filename = 'NA'
+        video_filename = 'NA; detection too short'
 
     detection_time = datetime_to_str(monitoring_start_datetime + timedelta(seconds=elapsed_time[0]))
 

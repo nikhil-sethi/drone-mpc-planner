@@ -184,7 +184,7 @@ class render_task(pats_task):
         super(render_task, self).__init__('render', timedelta(hours=9), timedelta(hours=24), False, error_file_handler)
 
     def task_func(self):
-        render_last_day(abort_deadline=datetime.now() + timedelta(hours=3))
+        render_last_day(abort_deadline=datetime.now() + timedelta(hours=7))
 
 
 class wdt_pats_task(pats_task):
