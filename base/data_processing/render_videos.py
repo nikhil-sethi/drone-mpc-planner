@@ -160,10 +160,9 @@ def render(start_datetime, end_datetime, data_folder, abort_deadline=datetime.st
                     if line.find('n_insects') != -1:
                         n_insects = int(line.split(':')[1])
                         break
-                if n_insects > 0:
-                    shutil.move(video_result_path, video_target_path)
-                else:
-                    logger.error(f'Rendered empty video...? {video_src_path}')
+                shutil.move(video_result_path, video_target_path)
+                if n_insects == 0:
+                    logger.warning(f'Rendered empty video...? {video_src_path}')
 
 
 if __name__ == "__main__":
