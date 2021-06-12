@@ -7,6 +7,7 @@ from dash_html_components.Br import Br
 from dateutil.relativedelta import relativedelta
 import numpy as np
 import pandas as pd
+from enum import Enum
 
 import dash
 import dash_core_components as dcc
@@ -33,6 +34,12 @@ scatter_columns = {'duration': 'Duration (s)',
                    'Dist_traject': 'Distance trajectory (m)',
                    'Size': 'Size (m)',
                    'Wing_beat': 'Wing beat (Hz)'}
+
+
+class Heatmap_Cell(Enum):
+    selected_cell = -3
+    system_down_cell = -2
+    system_offline_cell = -1
 
 
 def load_systems_group(group_name, cur):
@@ -317,9 +324,9 @@ def load_mode_data(unique_dates, heatmap_data, selected_systems, start_date, end
     for i in range(0, modemap_data.shape[0]):
         for j in range(0, modemap_data.shape[1]):
             if modemap_data[i, j] == -5 and heatmap_data[i, j] == 0:
-                heatmap_data[i, j] = -2
+                heatmap_data[i, j] = Heatmap_Cell.system_down_cell.value
             elif modemap_data[i, j] < -1 and heatmap_data[i, j] == 0:
-                heatmap_data[i, j] = -1
+                heatmap_data[i, j] = Heatmap_Cell.system_offline_cell.value
     return heatmap_data
 
 
@@ -334,23 +341,23 @@ def create_heatmap(unique_dates, heatmap_counts, xlabels, selected_heat):
     hover_label[hover_label == '-1'] = 'NA'
     if current_user:
         if current_user.username == 'kevin' or current_user.username == 'jorn' or current_user.username == 'bram' or current_user.username == 'sjoerd':
-            heatmap_data = np.clip(heatmap_counts, -2, heatmap_max)
+            heatmap_data = np.clip(heatmap_counts, Heatmap_Cell.system_down_cell.value, heatmap_max)
         else:
-            heatmap_data = np.clip(heatmap_counts, -1, heatmap_max)
+            heatmap_data = np.clip(heatmap_counts, Heatmap_Cell.system_offline_cell.value, heatmap_max)
     if selected_heat:
         selected_heat = pd.read_json(selected_heat, orient='split')
         for _, cel in selected_heat.iterrows():
             x = cel['x']
             y = (unique_dates.strftime('%d-%m-%Y').tolist()).index(cel['lalaladate'])
             if heatmap_data[y, x] >= 0:
-                heatmap_data[y, x] = -3
+                heatmap_data[y, x] = Heatmap_Cell.selected_cell.value
 
     hm = go.Heatmap(
         x=xlabels,
         y=unique_dates.strftime('%d-%m-%Y'),
         z=heatmap_data,
         customdata=hover_label,
-        zmin=-3,
+        zmin=Heatmap_Cell.selected_cell.value,
         zmid=heatmap_max / 2,
         zmax=heatmap_max,
         colorscale=[
@@ -629,7 +636,7 @@ def dash_application():
             return None
         else:
             for cel in clickData_hm['points']:
-                if cel['z'] == -1:
+                if cel['z'] == Heatmap_Cell.system_offline_cell.value or cel['z'] == Heatmap_Cell.system_down_cell.value:
                     return None  # if a black cell is clicked, interpret that as cancelling the whole selection
 
                 x = hour_labels.index(cel['x'])
@@ -641,7 +648,7 @@ def dash_application():
                 else:
                     selected_heat = pd.read_json(selected_heat, orient='split')
                 for index, _ in selected_heat.iterrows():
-                    if cel['z'] == -2:
+                    if cel['z'] == Heatmap_Cell.selected_cell.value:
                         selected_heat = selected_heat.drop(index=index)
                         unclicked = True
                         break
