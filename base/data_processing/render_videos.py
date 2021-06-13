@@ -75,7 +75,7 @@ def create_render_lists(data_folder, start_datetime, end_datetime):
             # check monitoring renders:
             files = os.listdir(folder + '/logging/')
             for file in files:
-                if file.startswith('moth') and file.endswith(".mkv"):
+                if file.startswith('insect') and file.endswith(".mkv"):
                     video_target_path = folder + '/logging/render_' + os.path.splitext(file)[0] + '.mkv'
                     log_target_path = folder + '/logging/render_' + os.path.splitext(file)[0] + '.txt'
                     video_src_path = folder + '/logging/' + file

@@ -86,7 +86,7 @@ def cut_moths(folder, dry_run=False):
                                     video_end_time = float(video_end_video_id) / 90 + 1
                                     video_duration = video_end_time - video_start_time
                                     log_folder = folder + '/logging/'
-                                    video_out_file = log_folder + '/moth' + file_id + '.mkv'
+                                    video_out_file = log_folder + '/insect' + file_id + '.mkv'
                                     video_out_file = video_out_file.replace(os.path.expanduser('~'), '~')
                                     video_out_file = video_out_file.replace('//', '/')
                                     cmd = ' -c:v copy -an -ss ' + str(round(video_start_time, 1)) + ' -t ' + str(round(video_duration, 1)) + ' ' + video_out_file
@@ -134,7 +134,7 @@ def cut_moths_all(dry_run=False):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Script that cuts the raw video into moths based on the log')
+    parser = argparse.ArgumentParser(description='Script that cuts the raw video into insects based on the log')
     parser.add_argument('-i', help="Path to the folder. If not provided all folders of the past day will be ran", required=False)
     parser.add_argument('--dry-run', help="Just run, don't cut or delete anything", dest='dry_run', action='store_true', required=False)
     args = parser.parse_args()

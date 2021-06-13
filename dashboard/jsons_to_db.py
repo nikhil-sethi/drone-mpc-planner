@@ -34,7 +34,7 @@ def store_moths(data):
                 sql_create = sql_create + s + ' ' + get_column_data_type(s) + ','
             sql = sql_create[:-1] + ')'
             cur.execute(sql)
-            cur.execute('CREATE INDEX idx_sys_name ON moth_records(system);')
+            cur.execute('CREATE INDEX idx_moth_sys_name ON moth_records(system);')
             con.commit()
             moth_table_exist = True
 

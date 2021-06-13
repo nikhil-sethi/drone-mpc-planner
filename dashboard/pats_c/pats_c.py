@@ -23,8 +23,8 @@ import pats_c.lib.lib_patsc as patsc
 from flask_login import current_user
 from urllib.parse import quote as urlquote
 
-group_dict = {}
-moth_columns = []
+customer_dict = {}
+insect_columns = []
 heatmap_max = 50
 classification_options = ['Not classified', 'Moth!', 'Empty/nothing to see', 'Other insect', 'Plant', 'Other false positive']
 scatter_columns = {'duration': 'Duration (s)',
@@ -42,80 +42,92 @@ class Heatmap_Cell(Enum):
     system_offline_cell = -1
 
 
-def load_systems_group(group_name, cur):
-    sql_str = f'''SELECT system,location FROM systems JOIN groups ON groups.group_id = systems.group_id WHERE groups.name = "{group_name}" ORDER BY system_id'''
+def load_systems_customer(customer_name, cur):
+    sql_str = f'''SELECT system,location FROM systems JOIN customers ON customers.customer_id = systems.customer_id WHERE customers.name = "{customer_name}" ORDER BY system_id'''
     systems = cur.execute(sql_str).fetchall()
     return systems
 
 
-def load_groups():
+def load_customers():
     if current_user:
         if current_user.is_authenticated:
             username = current_user.username
             with patsc.open_systems_db() as con:
-                sql_str = f'''SELECT groups.name FROM groups JOIN customer_group_connection ON customer_group_connection.group_id = groups.group_id JOIN customers ON customers.customer_id = customer_group_connection.customer_id WHERE customers.name = "{username}" ORDER BY groups.name'''
+                sql_str = f'''SELECT customers.name FROM customers JOIN user_customer_connection ON user_customer_connection.customer_id = customers.customer_id JOIN users ON users.user_id = user_customer_connection.user_id WHERE users.name = "{username}" ORDER BY customers.name'''
                 cur = con.execute(sql_str)
-                groups = cur.fetchall()
-                group_dict = {}
-                for group in groups:
-                    group_dict[group[0]] = load_systems_group(group[0], cur)
-            return group_dict
+                customers = cur.fetchall()
+                customer_dict = {}
+                for customer in customers:
+                    customer_dict[customer[0]] = load_systems_customer(customer[0], cur)
+            return customer_dict
     return {}
 
 
 def insect_db():  # based on https://docs.google.com/spreadsheets/d/1au4vwYKK7ih5FH_bwsKNETznB1LkGS_cITTGC87jYGY/edit#gid=0
     insects = []
-    insects.append({'label': 'Chrysodeixis chalcites (Turkse mot)', 'avg_size': 0.04, 'std_dev': 0.005})
-    insects.append({'label': 'Tuta aboluta', 'avg_size': 0.01, 'std_dev': 0.001})
-    insects.append({'label': 'Duponchelia', 'avg_size': 0.02, 'std_dev': 0.001})
-    insects.append({'label': 'Opogona', 'avg_size': 0.022, 'std_dev': 0.004})
-    insects.append({'label': 'No size filter', 'avg_size': 0, 'std_dev': 0})
+    insects.append({'sql_column': 'chrysodeixis_chalcites', 'label': 'Chrysodeixis chalcites (Turkse mot)', 'avg_size': 0.04, 'std_dev': 0.005})
+    insects.append({'sql_column': 'tuta_absoluta', 'label': 'Tuta absoluta', 'avg_size': 0.01, 'std_dev': 0.001})
+    insects.append({'sql_column': 'duponchelia_fovealis', 'label': 'Duponchelia fovealis', 'avg_size': 0.02, 'std_dev': 0.001})
+    insects.append({'sql_column': 'opogona_sacchari', 'label': 'Opogona sacchari', 'avg_size': 0.022, 'std_dev': 0.004})
+    insects.append({'sql_column': 'nezara_viridula', 'label': 'Nezara viridula (Stink wants)', 'avg_size': 0.022, 'std_dev': 0.004})
+    insects.append({'sql_column': '', 'label': 'No size filter', 'avg_size': 0, 'std_dev': 0})
     return insects
 
 
 def init_insects_dropdown():
+    insect_options = []
     date_style = {'width': '30%', 'display': 'inline-block'}
     insect_style = {'width': '70%', 'display': 'inline-block', 'float': 'right'}
-    insects = insect_db()
-    insect_options = []
-    for insect in insects:
-        insect_options.append({'label': insect['label'], 'value': insect})
+    if current_user:
+        if current_user.is_authenticated:
+            username = current_user.username
+            with patsc.open_systems_db() as con:
+                sql_str = f'''SELECT * FROM customers JOIN user_customer_connection ON user_customer_connection.customer_id = customers.customer_id JOIN users ON users.user_id = user_customer_connection.user_id WHERE users.name = "{username}" ORDER BY customers.name'''
+                customer_df = pd.read_sql_query(sql_str, con)
+                customer_df = customer_df.replace(r'^\s*$', np.nan, regex=True)
+                insects = insect_db()
+                for insect in insects:
+                    if insect['sql_column']:
+                        if customer_df[insect['sql_column']].sum():
+                            insect_options.append({'label': insect['label'], 'value': insect})
+                    else:
+                        insect_options.append({'label': insect['label'], 'value': insect})
     return insect_options, date_style, insect_style
 
 
-def init_system_dropdown():
-    group_dict = load_groups()
+def init_system_and_customer_dropdown():
+    customer_dict = load_customers()
     sys_options = []
-    group_options = []
-    group_value = None
-    group_style = {'width': '30%', 'display': 'inline-block'}
+    customer_options = []
+    customer_value = None
+    customer_style = {'width': '30%', 'display': 'inline-block'}
     sys_style = {'width': '70%', 'display': 'inline-block'}
 
-    for group in group_dict.keys():
-        if not (group == 'maintance' or group == 'admin' or group == 'unassigned_systems' or group == 'deactivated_systems'):
-            group_options.append({'label': group, 'value': group})
-            for i, (system, location) in enumerate(group_dict[group]):
-                if group == 'pats':
-                    sys_options.append({'label': system.replace('-proto', ''), 'value': system, 'title': system.replace('-proto', '')})
+    for customer in customer_dict.keys():
+        if not (customer == 'Maintance' or customer == 'Admin' or customer == 'Unassigned_systems' or customer == 'Deactivated_systems'):
+            customer_options.append({'label': customer, 'value': customer})
+            for i, (system, location) in enumerate(customer_dict[customer]):
+                if customer == 'Pats':
+                    sys_options.append({'label': system, 'value': system, 'title': system})
                 elif location:
-                    if len(group_dict.keys()) == 1:
-                        sys_options.append({'label': location, 'value': system, 'title': system.replace('-proto', '')})
+                    if len(customer_dict.keys()) == 1:
+                        sys_options.append({'label': location, 'value': system, 'title': system})
                     else:
-                        sys_options.append({'label': group + ' ' + location, 'value': system, 'title': system.replace('-proto', '')})
+                        sys_options.append({'label': customer + ' ' + location, 'value': system, 'title': system})
                 else:
-                    sys_options.append({'label': group + ' ' + str(i + 1), 'value': system, 'title': system.replace('-proto', '')})
-        if len(group_dict.keys()) == 1:
-            group_value = list(group_dict.keys())
-            group_style = {'width': '0%', 'display': 'none'}
-            sys_style = {'width': '100%', 'display': 'inline-block'}
-    return sys_options, sys_style, group_options, group_value, group_style
+                    sys_options.append({'label': customer + ' ' + str(i + 1), 'value': system, 'title': system})
+    if len(customer_dict.keys()) == 1:
+        customer_value = list(customer_dict.keys())
+        customer_style = {'width': '0%', 'display': 'none'}
+        sys_style = {'width': '100%', 'display': 'inline-block'}
+    return sys_options, sys_style, customer_options, customer_value, customer_style
 
 
 def load_systems(username):
     with patsc.open_systems_db() as con:
-        sql_str = '''SELECT DISTINCT systems.system FROM systems,customer_group_connection,customers WHERE  systems.group_id = customer_group_connection.group_id AND customer_group_connection.customer_id = customers.customer_id AND customers.name = ? ORDER BY systems.system_id '''
+        sql_str = '''SELECT DISTINCT systems.system FROM systems,user_customer_connection,users WHERE  systems.customer_id = user_customer_connection.customer_id AND user_customer_connection.user_id = users.user_id AND users.name = ? ORDER BY systems.system_id '''
         systems = con.execute(sql_str, (username,)).fetchall()
-    authorized_systems = [d[0].replace('-proto', '') for d in systems]
+    authorized_systems = [d[0] for d in systems]
     return authorized_systems
 
 
@@ -136,26 +148,27 @@ def create_insect_filter_sql_str(start_date, insect_type):
     return insect_str + duration_str
 
 
+def use_proto(start_date):
+    return start_date <= datetime.datetime.strptime("20210401_000000", '%Y%m%d_%H%M%S')
+
+
 def create_system_filter_sql_str(start_date, system):
-    if start_date > datetime.datetime.strptime("20210401_000000", '%Y%m%d_%H%M%S'):  # remove proto #533 closed in march 2021, so most systems probably were updated in april
-        system_sql_str = f'''system = "{system}"'''
-        uses_proto = False
+    if use_proto(start_date):  # remove proto #533 closed in march 2021, so most systems probably were updated in april
+        return f'''(system = "{system}" OR system = "{system.replace('pats','pats-proto')}")'''
     else:
-        system_sql_str = f'''(system = "{system}" OR system = "{system.replace('pats','pats-proto')}")'''
-        uses_proto = True
-    return system_sql_str, uses_proto
+        return f'''system = "{system}"'''
 
 
-def load_moth_df(selected_systems, start_date, end_date, insect_type):
+def load_insect_df(selected_systems, start_date, end_date, insect_type):
     username = current_user.username
     with patsc.open_systems_db() as con:
-        ordered_systems = con.execute('''SELECT systems.system, systems.installation_date FROM systems,groups
-        JOIN customer_group_connection ON systems.group_id = customer_group_connection.group_id
-        JOIN customers ON customers.customer_id = customer_group_connection.customer_id WHERE
-        systems.group_id = groups.group_id AND customers.name = ? AND systems.system IN (%s)
+        ordered_systems = con.execute('''SELECT systems.system, systems.installation_date FROM systems,customers
+        JOIN user_customer_connection ON systems.customer_id = user_customer_connection.customer_id
+        JOIN users ON users.user_id = user_customer_connection.user_id WHERE
+        systems.customer_id = customers.customer_id AND users.name = ? AND systems.system IN (%s)
         ORDER BY systems.system_id''' % ('?,' * len(selected_systems))[:-1], (username, *selected_systems)).fetchall()
 
-    moth_df = pd.DataFrame()
+    insect_df = pd.DataFrame()
     with patsc.open_data_db() as con:
         for (system, installation_date) in ordered_systems:
             try:
@@ -166,34 +179,34 @@ def load_moth_df(selected_systems, start_date, end_date, insect_type):
                 real_start_date = start_date
 
             time_str = f'''time > "{real_start_date.strftime('%Y%m%d_%H%M%S')}" AND time <= "{end_date.strftime('%Y%m%d_%H%M%S')}"'''
-            system_sql_str, uses_proto = create_system_filter_sql_str(start_date, system)
-            insect_filter_str = create_insect_filter_sql_str(start_date, insect_type)
+            system_str = create_system_filter_sql_str(start_date, system)
+            insect_str = create_insect_filter_sql_str(start_date, insect_type)
 
             sql_str = f'''SELECT moth_records.* FROM moth_records
-                WHERE {system_sql_str}
+                WHERE {system_str}
                 AND {time_str}
-                AND {insect_filter_str}'''
+                AND {insect_str}'''
             sql_str = " ".join(sql_str.split())  # removes any double spaces and newlines etc
-            moth_df = moth_df.append(pd.read_sql_query(sql_str, con))
-    moth_df['time'] = pd.to_datetime(moth_df['time'], format='%Y%m%d_%H%M%S')
-    if uses_proto:
-        moth_df['system'].replace({'-proto': ''}, regex=True, inplace=True)
-    return moth_df
+            insect_df = insect_df.append(pd.read_sql_query(sql_str, con))
+    insect_df['time'] = pd.to_datetime(insect_df['time'], format='%Y%m%d_%H%M%S')
+    if use_proto(start_date):
+        insect_df['system'].replace({'-proto': ''}, regex=True, inplace=True)
+    return insect_df
 
 
-def load_moth_of_hour(selected_systems, start_date, end_date, hour, insect_type):
+def load_insects_of_hour(selected_systems, start_date, end_date, hour, insect_type):
     username = current_user.username
     with patsc.open_systems_db() as con:
-        ordered_systems = con.execute('''SELECT systems.system, systems.installation_date FROM systems,groups
-        JOIN customer_group_connection ON systems.group_id = customer_group_connection.group_id
-        JOIN customers ON customers.customer_id = customer_group_connection.customer_id WHERE
-        systems.group_id = groups.group_id AND customers.name = ? AND systems.system IN (%s)
+        ordered_systems = con.execute('''SELECT systems.system, systems.installation_date FROM systems,customers
+        JOIN user_customer_connection ON systems.customer_id = user_customer_connection.customer_id
+        JOIN users ON users.user_id = user_customer_connection.user_id WHERE
+        systems.customer_id = customers.customer_id AND users.name = ? AND systems.system IN (%s)
         ORDER BY systems.system_id''' % ('?,' * len(selected_systems))[:-1], (username, *selected_systems)).fetchall()
 
     hour_str = str(hour)
     if len(hour_str) == 1:
         hour_str = '0' + hour_str
-    moth_df = pd.DataFrame()
+    insect_df = pd.DataFrame()
     with patsc.open_data_db() as con:
         for (system, installation_date) in ordered_systems:
             try:
@@ -203,20 +216,21 @@ def load_moth_of_hour(selected_systems, start_date, end_date, hour, insect_type)
                 print(f'ERROR startdate {system}: ' + str(e))
                 real_start_date = start_date
 
-            system_sql_str, _ = create_system_filter_sql_str(start_date, system)
-            insect_filter_str = create_insect_filter_sql_str(start_date, insect_type)
+            system_str = create_system_filter_sql_str(start_date, system)
+            insect_str = create_insect_filter_sql_str(start_date, insect_type)
 
             sql_str = f'''SELECT moth_records.* FROM moth_records
-                WHERE {system_sql_str}
+                WHERE {system_str}
                 AND time > "{real_start_date.strftime('%Y%m%d_%H%M%S')}" AND time <= "{end_date.strftime('%Y%m%d_%H%M%S')}"
                 AND time LIKE "_________{hour_str}____"
-                AND {insect_filter_str}'''
+                AND {insect_str}'''
             sql_str = " ".join(sql_str.split())  # removes any double spaces and newlines etc
 
-            moth_df = moth_df.append(pd.read_sql_query(sql_str, con))
-    moth_df['time'] = pd.to_datetime(moth_df['time'], format='%Y%m%d_%H%M%S')
-    moth_df['system'].replace({'-proto': ''}, regex=True, inplace=True)
-    return moth_df
+            insect_df = insect_df.append(pd.read_sql_query(sql_str, con))
+    insect_df['time'] = pd.to_datetime(insect_df['time'], format='%Y%m%d_%H%M%S')
+    if use_proto(start_date):
+        insect_df['system'].replace({'-proto': ''}, regex=True, inplace=True)
+    return insect_df
 
 
 def remove_unauthoirized_system(selected_systems):  # this is solely a security related check
@@ -241,25 +255,25 @@ def system_sql_str(systems):
     return systems_str
 
 
-def load_moth_data(selected_systems, start_date, end_date, insect_type):
-    # We count moths from 12 in the afternoon to 12 in the afternoon. Therefore we shift the data in the for loops with 12 hours.
-    # So a moth at 23:00 on 14-01 is counted at 14-01 and a moth at 2:00 on 15-01 also at 14-01
-    # A moth seen at 13:00 on 14-01 still belongs to 14-01 but when seen at 11:00 on 14-01 is counted at 13-01
+def load_insect_data(selected_systems, start_date, end_date, insect_type):
+    # We count insects from 12 in the afternoon to 12 in the afternoon. Therefore we shift the data in the for loops with 12 hours.
+    # So a insect at 23:00 on 14-01 is counted at 14-01 and a insect at 2:00 on 15-01 also at 14-01
+    # A insect seen at 13:00 on 14-01 still belongs to 14-01 but when seen at 11:00 on 14-01 is counted at 13-01
     end_date = datetime.datetime.combine(end_date, datetime.datetime.min.time())
     start_date = datetime.datetime.combine(start_date, datetime.datetime.min.time())
-    moth_df = load_moth_df(selected_systems, start_date, end_date + datetime.timedelta(hours=12), insect_type)  # Shift to include the moths of today until 12:00 in the afternoon.
+    insect_df = load_insect_df(selected_systems, start_date, end_date + datetime.timedelta(hours=12), insect_type)  # Shift to include the insects of today until 12:00 in the afternoon.
     unique_dates = pd.date_range(start_date, end_date - datetime.timedelta(days=1), freq='d')
 
     hist_data = pd.DataFrame(index=unique_dates, columns=selected_systems)
     hist_24h_data = pd.DataFrame(index=range(0, 23), columns=selected_systems)
-    for system, group in (moth_df[['time']] - datetime.timedelta(hours=12)).groupby(moth_df.system):
-        hist_data[system] = group.groupby(group.time.dt.date).count()
-        hist_24h_data[system] = group.groupby(group.time.dt.hour).count()
+    for system, customer in (insect_df[['time']] - datetime.timedelta(hours=12)).groupby(insect_df.system):
+        hist_data[system] = customer.groupby(customer.time.dt.date).count()
+        hist_24h_data[system] = customer.groupby(customer.time.dt.hour).count()
     hist_data.fillna(0, inplace=True)
     hist_24h_data.fillna(0, inplace=True)
 
     heatmap_df = pd.DataFrame(np.zeros((24, len(unique_dates))), index=range(24), columns=(unique_dates.strftime('%Y%m%d_%H%M%S')))
-    for date, hours in (moth_df[['time']] - datetime.timedelta(hours=12)).groupby((moth_df.time - datetime.timedelta(hours=12)).dt.date):
+    for date, hours in (insect_df[['time']] - datetime.timedelta(hours=12)).groupby((insect_df.time - datetime.timedelta(hours=12)).dt.date):
         heatmap_df[date.strftime('%Y%m%d_%H%M%S')] = (hours.groupby(hours.time.dt.hour).count())
     heatmap_data = ((heatmap_df.fillna(0)).to_numpy()).T
 
@@ -471,8 +485,8 @@ def video_available_to_symbol(x):
     return 0
 
 
-def create_scatter(moths, system_labels, scatter_x_value, scatter_y_value):
-    df_scatter = moths
+def create_scatter(insects, system_labels, scatter_x_value, scatter_y_value):
+    df_scatter = insects
     df_scatter['system_ids'] = df_scatter['system'].str.replace('pats-proto', '').str.replace('pats', '').astype(int)
     df_scatter['system_color'] = df_scatter['system'].apply(list(system_labels.keys()).index).astype(int)
     df_scatter['classification_symbol'] = df_scatter['Human_classification'].apply(classification_to_symbol)
@@ -536,10 +550,10 @@ def create_scatter(moths, system_labels, scatter_x_value, scatter_y_value):
     return scat_fig
 
 
-def download_log(selected_moth, moth_columns):
-    sys_name = selected_moth[moth_columns.index('system')].replace('-proto', '')
-    log_fn = selected_moth[moth_columns.index('Filename')]
-    log_folder = selected_moth[moth_columns.index('Folder')]
+def download_log(selected_insect, insect_columns):
+    sys_name = selected_insect[insect_columns.index('system')].replace('-proto', '')
+    log_fn = selected_insect[insect_columns.index('Filename')]
+    log_folder = selected_insect[insect_columns.index('Folder')]
     if not log_folder or log_fn == 'unknown':
         return ''
     target_log_fn = './static/' + log_folder + '_' + sys_name + '_' + log_fn
@@ -555,7 +569,7 @@ def file_download_link(filename):
     return html.A('Download log', href=location, style={'display': 'block'}), {'textAlign': 'center', 'width': '25%', 'margin': 'auto', 'display': 'block'}
 
 
-def create_path_plot(target_log_fn, selected_moth, moth_columns):
+def create_path_plot(target_log_fn, selected_insect, insect_columns):
     df_ilog = pd.read_csv(target_log_fn, delimiter=';')
     target_log_fn = '/' + target_log_fn
     rows_without_tracking = df_ilog[df_ilog['n_frames_tracking_insect'] == 0].index
@@ -579,7 +593,7 @@ def create_path_plot(target_log_fn, selected_moth, moth_columns):
         hovertemplate='Camera position'
     )
     fig = go.Figure(data=[scatter, camera_pos])
-    title_str = 'Insect flight path of detecton at: ' + datetime.datetime.strptime(str(selected_moth[moth_columns.index('time')]), '%Y%m%d_%H%M%S').strftime('%d-%m-%Y %H:%M:%S')
+    title_str = 'Insect flight path of detecton at: ' + datetime.datetime.strptime(str(selected_insect[insect_columns.index('time')]), '%Y%m%d_%H%M%S').strftime('%d-%m-%Y %H:%M:%S')
     fig.update_layout(
         title_text=title_str,
         scene=dict(
@@ -590,17 +604,17 @@ def create_path_plot(target_log_fn, selected_moth, moth_columns):
     return fig, style
 
 
-def download_video(selected_moth, moth_columns):
-    video_fn = selected_moth[moth_columns.index('Video_Filename')]
-    sys_name = selected_moth[moth_columns.index('system')].replace('-proto', '')
+def download_video(selected_insect, insect_columns):
+    video_fn = selected_insect[insect_columns.index('Video_Filename')]
+    sys_name = selected_insect[insect_columns.index('system')].replace('-proto', '')
 
     target_video_mp4_fn = ''
     if video_fn and video_fn != 'NA':
-        target_video_mkv_fn = 'static/' + selected_moth[moth_columns.index('Folder')] + '_' + sys_name + '_' + video_fn
+        target_video_mkv_fn = 'static/' + selected_insect[insect_columns.index('Folder')] + '_' + sys_name + '_' + video_fn
         target_video_mp4_fn = target_video_mkv_fn[0:-3] + 'mp4'
 
         if not os.path.isfile(target_video_mkv_fn) and not os.path.isfile(target_video_mp4_fn):
-            rsync_src = sys_name + ':pats/data/processed/' + selected_moth[moth_columns.index('Folder')] + '/logging/render_' + video_fn
+            rsync_src = sys_name + ':pats/data/processed/' + selected_insect[insect_columns.index('Folder')] + '/logging/render_' + video_fn
             cmd = ['rsync --timeout=5 -a -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" ' + rsync_src + ' ' + target_video_mkv_fn]
             patsc.execute(cmd)
         if not os.path.isfile(target_video_mp4_fn) and os.path.isfile(target_video_mkv_fn):
@@ -621,13 +635,13 @@ def dash_application():
 
     @app.callback(
         Output('systems_dropdown', 'value'),
-        Input('groups_dropdown', 'value'))
-    def select_system_group(selected_group):
-        group_dict = load_groups()
+        Input('customers_dropdown', 'value'))
+    def select_system_customer(selected_customer):
+        customer_dict = load_customers()
         value = []
-        if selected_group:
-            for group in selected_group:
-                systems = [d[0] for d in group_dict[group]]
+        if selected_customer:
+            for customer in selected_customer:
+                systems = [d[0] for d in customer_dict[customer]]
                 value.extend(systems)
         return value
 
@@ -686,11 +700,11 @@ def dash_application():
         hm_style = {'display': 'none'}
         hist_style = {'display': 'none'}
         hist24h_style = {'display': 'none'}
-        Loading_animation_style = {'display': 'block'}
+        loading_animation_style = {'display': 'block'}
         system_labels = {x['value']: x['label'] for x in system_options if x['value'] in selected_systems}
 
-        ctx = dash.callback_context
-        if ctx.triggered[0]['prop_id'] == 'date_range_picker.value' or ctx.triggered[0]['prop_id'] == 'systems_dropdown.value' or ctx.triggered[0]['prop_id'] == 'insects_dropdown.value':
+        prop_id = dash.callback_context.triggered[0]['prop_id']
+        if prop_id == 'date_range_picker.value' or prop_id == 'systems_dropdown.value' or prop_id == 'insects_dropdown.value':
             selected_heat = None
             clickData_hm = None
         selected_systems = remove_unauthoirized_system(selected_systems)
@@ -698,23 +712,23 @@ def dash_application():
             end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
             start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
         if not selected_systems or not insect_types or not end_date or not start_date or (end_date - start_date).days < 1:
-            return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, Loading_animation_style
-        unique_dates, heatmap_data, _, df_hist, hist_24h_data = load_moth_data(selected_systems, start_date, end_date, insect_types)
+            return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, loading_animation_style
+        unique_dates, heatmap_data, _, df_hist, hist_24h_data = load_insect_data(selected_systems, start_date, end_date, insect_types)
         if not len(unique_dates):
-            return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, Loading_animation_style
+            return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, loading_animation_style
 
         hist_fig, hist_style = create_hist(df_hist, unique_dates, system_labels)
         hist24h_fig, hist24h_style = create_24h_hist(hist_24h_data, hour_labels, system_labels)
 
-        if ctx.triggered[0]['prop_id'] == 'hete_kaart.clickData' or ctx.triggered[0]['prop_id'] == 'classification_dropdown.value':
+        if prop_id == 'hete_kaart.clickData' or prop_id == 'classification_dropdown.value':
             selected_heat = update_selected_heat(clickData_hm, selected_heat)
 
         heatmap_data = load_mode_data(unique_dates, heatmap_data, selected_systems, start_date, end_date)  # add mode info to heatmap, which makes the heatmap show when the system was online (color) or offline (black)
         hm_fig, hm_style = create_heatmap(unique_dates, heatmap_data, hour_labels, selected_heat)
 
-        Loading_animation_style = {'display': 'none'}
+        loading_animation_style = {'display': 'none'}
 
-        return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, Loading_animation_style
+        return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, loading_animation_style
 
     @app.callback(
         Output('verstrooide_kaart', 'figure'),
@@ -740,18 +754,17 @@ def dash_application():
         else:
             system_labels = None
 
-        ctx = dash.callback_context
-
         selected_systems = remove_unauthoirized_system(selected_systems)
         if not selected_systems or not insect_types:
             return scat_fig, scat_style, scat_axis_select_style
 
-        if ctx.triggered[0]['prop_id'] == 'staaf_kaart.selectedData' or ctx.triggered[0]['prop_id'] == 'staaf24h_kaart.selectedData' or ctx.triggered[0]['prop_id'] == 'hete_kaart.clickData' or ctx.triggered[0]['prop_id'] == 'scatter_x_dropdown.value' or ctx.triggered[0]['prop_id'] == 'scatter_y_dropdown.value':
-            if ctx.triggered[0]['prop_id'] == 'hete_kaart.clickData':
+        prop_id = dash.callback_context.triggered[0]['prop_id']
+        if prop_id == 'staaf_kaart.selectedData' or prop_id == 'staaf24h_kaart.selectedData' or prop_id == 'hete_kaart.clickData' or prop_id == 'scatter_x_dropdown.value' or prop_id == 'scatter_y_dropdown.value':
+            if prop_id == 'hete_kaart.clickData':
                 selected_heat = update_selected_heat(clickData_hm, selected_heat)
-            elif ctx.triggered[0]['prop_id'] == 'staaf_kaart.selectedData' or ctx.triggered[0]['prop_id'] == 'staaf24h_kaart.selectedData':
+            elif prop_id == 'staaf_kaart.selectedData' or prop_id == 'staaf24h_kaart.selectedData':
                 selected_heat = None
-            moths = pd.DataFrame()
+            insects = pd.DataFrame()
             if selected_heat:
                 selected_heat = pd.read_json(selected_heat, orient='split')
                 for _, hm_cell in selected_heat.iterrows():
@@ -759,22 +772,22 @@ def dash_application():
                     if hour < 12:
                         hour += 24
                     start_date = datetime.datetime.strptime(hm_cell['lalaladate'], '%d-%m-%Y') + datetime.timedelta(hours=hour)
-                    moths = moths.append(load_moth_df(selected_systems, start_date, start_date + datetime.timedelta(hours=1), insect_types))
+                    insects = insects.append(load_insect_df(selected_systems, start_date, start_date + datetime.timedelta(hours=1), insect_types))
             elif hist_selected_bars:
                 for bar in hist_selected_bars['points']:
                     sys = bar['customdata'][1]
                     start_date = datetime.datetime.strptime(bar['x'], '%d-%m-%Y') + datetime.timedelta(hours=12)
-                    moths = moths.append(load_moth_df([sys], start_date, start_date + datetime.timedelta(days=1), insect_types))
+                    insects = insects.append(load_insect_df([sys], start_date, start_date + datetime.timedelta(days=1), insect_types))
             elif hist24h_selected_bars:
                 start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
                 end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
                 for bar in hist24h_selected_bars['points']:
                     sys = bar['customdata'][1]
                     hour = int(bar['x'].replace('h', ''))
-                    moths = moths.append(load_moth_of_hour([sys], start_date, end_date, hour, insect_types))
+                    insects = insects.append(load_insects_of_hour([sys], start_date, end_date, hour, insect_types))
 
-            if not moths.empty:
-                scat_fig = create_scatter(moths, system_labels, scatter_x_value, scatter_y_value)
+            if not insects.empty:
+                scat_fig = create_scatter(insects, system_labels, scatter_x_value, scatter_y_value)
                 scat_axis_select_style = {'display': 'table', 'textAlign': 'center', 'width': '50%', 'margin': 'auto'}
                 scat_style = {'display': 'block', 'margin-left': 'auto', 'margin-right': 'auto', 'width': '80%'}
         return scat_fig, scat_style, scat_axis_select_style
@@ -786,10 +799,10 @@ def dash_application():
         Output('route_kaart', 'style'),
         Output('log_file_link', 'children'),
         Output('log_file_link_container', 'style'),
-        Output('selected_scatter_moth', 'children'),
+        Output('selected_scatter_insect', 'children'),
         Output('classification_dropdown', 'value'),
         Output('classify_container', 'style'),
-        Output('Loading_animation_moth', 'style'),
+        Output('Loading_animation_insect', 'style'),
         Input('date_range_picker', 'start_date'),
         Input('date_range_picker', 'end_date'),
         Input('systems_dropdown', 'value'),
@@ -799,68 +812,68 @@ def dash_application():
         Input('staaf24h_kaart', 'clickData'),
         Input('verstrooide_kaart', 'clickData'),
         State('verstrooide_kaart', 'figure'))
-    def update_moth_ui(start_date, end_date, selected_systems, selected_insects, clickData_hm, clickData_hist, clickData_hist24h, clickData_dot, scatter_fig_state):
+    def update_insect_ui(start_date, end_date, selected_systems, selected_insects, clickData_hm, clickData_hist, clickData_hist24h, clickData_dot, scatter_fig_state):
         target_video_fn = ''
         video_style = {'display': 'none'}
         path_fig = go.Figure(data=go.Scatter3d())
         path_style = {'display': 'none'}
         file_link = html.A('File not available.', style={'display': 'none'})
         file_link_style = {'textAlign': 'center', 'width': '25%', 'margin': 'auto', 'display': 'none'}
-        selected_moth = None
+        selected_insect = []
         classification = classification_options[0]
         classify_style = {'display': 'none'}
-        Loading_animation_style = {'display': 'block'}
+        loading_animation_style = {'display': 'block'}
 
         selected_systems = remove_unauthoirized_system(selected_systems)
-        ctx = dash.callback_context
-        if not 'selectedpoints' in scatter_fig_state['data'][0] or ctx.triggered[0]['prop_id'] != 'verstrooide_kaart.clickData' or not selected_systems or not selected_insects:
-            return target_video_fn, video_style, path_fig, path_style, file_link, file_link_style, selected_moth, classification, classify_style, Loading_animation_style
+        prop_id = dash.callback_context.triggered[0]['prop_id']
+        if not 'selectedpoints' in scatter_fig_state['data'][0] or prop_id != 'verstrooide_kaart.clickData' or not selected_systems or not selected_insects:
+            return target_video_fn, video_style, path_fig, path_style, file_link, file_link_style, selected_insect, classification, classify_style, loading_animation_style
 
         sql_str = 'SELECT * FROM moth_records WHERE uid=' + str(clickData_dot['points'][0]['customdata'][4])
         with patsc.open_data_db() as con:
             entry = con.execute(sql_str).fetchall()
         if not len(entry):
-            return target_video_fn, video_style, path_fig, path_style, file_link, file_link_style, selected_moth, classification, classify_style, Loading_animation_style
-        selected_moth = entry[0]
+            return target_video_fn, video_style, path_fig, path_style, file_link, file_link_style, selected_insect, classification, classify_style, loading_animation_style
+        selected_insect = entry[0]
 
-        target_log_fn = download_log(selected_moth, moth_columns)
+        target_log_fn = download_log(selected_insect, insect_columns)
         if not os.path.isfile(target_log_fn):
-            return target_video_fn, video_style, path_fig, path_style, file_link, file_link_style, selected_moth, classification, classify_style, Loading_animation_style
+            return target_video_fn, video_style, path_fig, path_style, file_link, file_link_style, selected_insect, classification, classify_style, loading_animation_style
         file_link, file_link_style = file_download_link(target_log_fn)
 
-        if 'Human_classification' in moth_columns:
-            classification = selected_moth[moth_columns.index('Human_classification')]
+        if 'Human_classification' in insect_columns:
+            classification = selected_insect[insect_columns.index('Human_classification')]
         if not classification:
             classification = classification_options[0]
         classify_style = {'display': 'block', 'textAlign': 'center', 'width': '25%', 'margin': 'auto'}
 
-        path_fig, path_style = create_path_plot(target_log_fn, selected_moth, moth_columns)
+        path_fig, path_style = create_path_plot(target_log_fn, selected_insect, insect_columns)
 
-        target_video_fn = download_video(selected_moth, moth_columns)
-        Loading_animation_style = {'display': 'none'}
+        target_video_fn = download_video(selected_insect, insect_columns)
+        loading_animation_style = {'display': 'none'}
         if target_video_fn != '':
             video_style = {'display': 'block', 'margin-left': 'auto', 'margin-right': 'auto', 'width': '80%'}
 
-        return target_video_fn, video_style, path_fig, path_style, file_link, file_link_style, selected_moth, classification, classify_style, Loading_animation_style
+        return target_video_fn, video_style, path_fig, path_style, file_link, file_link_style, selected_insect, classification, classify_style, loading_animation_style
 
     @app.callback(
         Output(component_id='classification_hidden', component_property='children'),
         Input('classification_dropdown', 'value'),
-        Input('selected_scatter_moth', 'children'))
-    def classification_value(selected_classification, selected_moth):
-        ctx = dash.callback_context
-        if not selected_moth or ctx.triggered[0]['prop_id'] != 'classification_dropdown.value':
+        Input('selected_scatter_insect', 'children'))
+    def classification_value(selected_classification, selected_insect):
+        prop_id = dash.callback_context.triggered[0]['prop_id']
+        if not selected_insect or prop_id != 'classification_dropdown.value':
             return []
 
-        current_classification = selected_moth[moth_columns.index('Human_classification')]
+        current_classification = selected_insect[insect_columns.index('Human_classification')]
         if not current_classification:
             current_classification = classification_options[0]
         if current_classification != selected_classification:
-            sql_str = 'UPDATE moth_records SET Human_classification="' + selected_classification + '" WHERE uid=' + str(selected_moth[moth_columns.index('uid')])
+            sql_str = 'UPDATE moth_records SET Human_classification="' + selected_classification + '" WHERE uid=' + str(selected_insect[insect_columns.index('uid')])
             with patsc.open_data_db() as con:
                 con.execute(sql_str)
 
-            # also save user classifications to a seperate database, because the moth database sometimes needs to be rebuild from the logs/jsons
+            # also save user classifications to a seperate database, because the insect database sometimes needs to be rebuild from the logs/jsons
             with patsc.open_classification_db() as con_class:
                 table_exists = con_class.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='classification_records' ''').fetchone()[0]
                 if not table_exists:
@@ -870,7 +883,7 @@ def dash_application():
 
                 username = current_user.username
                 sql_insert = 'INSERT INTO classification_records(moth_uid,system,time,duration,user,classification) VALUES(?,?,?,?,?,?)'
-                data = [selected_moth[moth_columns.index('uid')], str(selected_moth[moth_columns.index('system')]), str(selected_moth[moth_columns.index('time')]), str(selected_moth[moth_columns.index('duration')]), username, selected_classification]
+                data = [selected_insect[insect_columns.index('uid')], str(selected_insect[insect_columns.index('system')]), str(selected_insect[insect_columns.index('time')]), str(selected_insect[insect_columns.index('duration')]), username, selected_classification]
                 con_class.execute(sql_insert, data)
                 con_class.commit()
 
@@ -880,8 +893,8 @@ def dash_application():
         os.makedirs(os.path.expanduser('~/patsc/static/'))
 
     with patsc.open_data_db() as con:
-        moth_columns = [i[1] for i in con.execute('PRAGMA table_info(moth_records)')]
-        if 'Human_classification' not in moth_columns:
+        insect_columns = [i[1] for i in con.execute('PRAGMA table_info(moth_records)')]
+        if 'Human_classification' not in insect_columns:
             con.execute('ALTER TABLE moth_records ADD COLUMN Human_classification TEXT')
 
             if os.path.exists(patsc.db_classification_path):
@@ -907,7 +920,7 @@ def dash_application():
         fig_hist24h = go.Figure(data=go.Histogram())
         fig_scatter = go.Figure(data=go.Scatter())
         fig_path = go.Figure(data=go.Scatter3d())
-        system_options, system_style, group_options, group_value, group_style = init_system_dropdown()
+        system_options, system_style, customer_options, customer_value, customer_style = init_system_and_customer_dropdown()
         insect_options, date_style, insect_style = init_insects_dropdown()
         return html.Div([
             dbc.Navbar
@@ -925,14 +938,14 @@ def dash_application():
                 ([
                     html.Div('Customer:'),
                     html.Div(dcc.Dropdown(
-                        id='groups_dropdown',
-                        options=group_options,
-                        value=group_value,
+                        id='customers_dropdown',
+                        options=customer_options,
+                        value=customer_value,
                         clearable=True,
                         multi=True,
                         placeholder='Select customer'
                     ), className='dash-bootstrap'),
-                ], style=group_style),
+                ], style=customer_style),
                 html.Div
                 ([
                     html.Div('Systems:'),
@@ -973,7 +986,7 @@ def dash_application():
                         id='insects_dropdown',
                         options=insect_options,
                         multi=False,
-                        value=insect_options[0]['value'],
+                        value=insect_options[0]['value'] if insect_options else "",
                         placeholder='Select insects'
                     ), className='dash-bootstrap'),
                 ], style=insect_style),
@@ -1020,7 +1033,7 @@ def dash_application():
             html.Div
             ([
                 dcc.Loading(
-                    children=html.Div([html.Br(), html.Br(), html.Br()], id='Loading_animation_moth', style={'display': 'none'}),
+                    children=html.Div([html.Br(), html.Br(), html.Br()], id='Loading_animation_insect', style={'display': 'none'}),
                     type='default'
                 ),
                 dcc.Graph(id='route_kaart', style={'display': 'none'}, figure=fig_path),
@@ -1047,7 +1060,7 @@ def dash_application():
                 html.Br()
             ], style={'display': 'none'}, id='log_file_link_container'),
             html.Div(id='selected_heatmap_data', style={'display': 'none'}),
-            html.Div(id='selected_scatter_moth', style={'display': 'none'}),
+            html.Div(id='selected_scatter_insect', style={'display': 'none'}),
             html.Div(id='classification_hidden', style={'display': 'none'})
         ])
 
