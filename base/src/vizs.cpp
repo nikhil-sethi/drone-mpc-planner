@@ -615,8 +615,10 @@ void Visualizer::paint() {
         cv::imshow("tracking results", trackframe);
 
 
-        if (_viz_noise_initialized && _visdat->motion_max_noise_mapL.cols)
+        if (_viz_noise_initialized && _visdat->motion_max_noise_mapL.cols) {
+            cv::imshow("filtered noise map", _visdat->motion_filtered_noise_mapL*10);
             cv::imshow("noise map", _visdat->motion_max_noise_mapL*10);
+        }
         if (_viz_exposure_initialized && _visdat->overexposed_mapL.cols)
             cv::imshow("exposure map", _visdat->overexposed_mapL);
 

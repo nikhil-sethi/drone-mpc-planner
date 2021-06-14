@@ -159,6 +159,7 @@ public:
     void enable_draw_noise_viz() {
         _viz_noise_initialized = true;
         cv::namedWindow("noise map", cv::WINDOW_OPENGL | cv::WINDOW_AUTOSIZE);
+        cv::namedWindow("filtered noise map", cv::WINDOW_OPENGL | cv::WINDOW_AUTOSIZE);
     }
     void enable_draw_exposure_viz() {
         _viz_exposure_initialized = true;
