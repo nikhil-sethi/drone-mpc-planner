@@ -153,12 +153,12 @@ void TrackerManager::find_blobs() {
             i++;
             break;
         } case roi_state_prior_insects: {
-            auto pre_select_roi_rect = pre_select_roi((*itrkr)->image_predict_item(),diff);
+            auto ipi = (*itrkr)->image_predict_item();
+            auto pre_select_roi_rect = pre_select_roi(ipi,diff);
             Point min_pos_pre_roi,max_pos_pre_roi;
             minMaxLoc(diff(pre_select_roi_rect), &min_val, &max_val, &min_pos_pre_roi, &max_pos_pre_roi);
             int motion_noise = motion_filtered_noise_mapL(pre_select_roi_rect).at<uint8_t>(max_pos_pre_roi.y,max_pos_pre_roi.x);
 
-            auto ipi = (*itrkr)->image_predict_item();
             float chance = 1;
             if ((*itrkr)->tracking()) {
                 chance += chance_multiplier_dist;
