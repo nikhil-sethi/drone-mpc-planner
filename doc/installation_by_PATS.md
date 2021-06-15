@@ -1,6 +1,6 @@
 For installing a PATS-C system in a greenhouse, bring the following parts and and equipment
 
-Parts
+**Parts**
  - Basestation
  - LED-module
  - Aluminum profile
@@ -9,7 +9,7 @@ Parts
  - Power cables (2/5/10m, maybe extension cables as well)
  - Tie wraps (various sizes)
 
-Tools
+**Tools**
  - Electric screwdriver with PH2 bit
  - Velcro strap
  - Side cutter
