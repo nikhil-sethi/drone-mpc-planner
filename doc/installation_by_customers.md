@@ -5,4 +5,4 @@ When sending PATS-C systems to customers make sure to box all the following part
  - Aluminum Profile
  - M5x20 screw
  - Metal straps (4x)
- - Power cable (2m) and CHECK plug type!
+ - Power cable (2m) and CHECK plug type for international customers!
