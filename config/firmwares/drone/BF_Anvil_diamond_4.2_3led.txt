@@ -13,10 +13,6 @@ board_name CRAZYBEEF4FR
 # name: andi
 
 # resources
-resource MOTOR 1 B10
-resource MOTOR 2 B06
-resource MOTOR 3 B07
-resource MOTOR 4 B08
 resource RX_BIND 1 B02
 
 # feature
@@ -157,13 +153,6 @@ set ff_interpolate_sp = ON
 set ff_smooth_factor = 0
 set ff_boost = 20
 set idle_min_rpm = 15
-
-profile 1
-
-profile 2
-
-# restore original profile selection
-profile 0
 
 rateprofile 0
 
