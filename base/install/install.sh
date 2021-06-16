@@ -266,7 +266,7 @@ if [[ $1 -eq 1 ]] ; then
 	touch ~/pats/flags/disable
 
 	# Create nice symlinks
-	[ -f symlinks-v1.2.done ] || {
+	[ -f symlinks-v1.3.done ] || {
 		[ -f ~/.screenrc ] && {
 			cp ~/.screenrc{,.bak} --backup=numbered
 			rm ~/.screenrc
@@ -321,9 +321,33 @@ if [[ $1 -eq 1 ]] ; then
 		sudo cp  /etc/sudoers{,.bak} --backup=numbered
 		sudo cp ~/code/pats/base/install/sudoers /etc/sudoers
 
+
+		[ -f /etc/NetworkManager/NetworkManager.conf ] && {
+			sudo cp /etc/NetworkManager/NetworkManager.conf{,.bak} --backup=numbered
+			sudo rm /etc/NetworkManager/NetworkManager.conf
+		}
+		sudo ln -s ~/code/pats/base/install/NetworkManager.conf /etc/NetworkManager/NetworkManager.conf
+
+		[ -f /etc/netplan/networkmanager.yaml ] && {
+			sudo cp /etc/netplan/networkmanager.yaml{,.bak} --backup=numbered
+			sudo rm /etc/netplan/networkmanager.yaml
+		}
+		sudo ln -s ~/code/pats/base/install/networkmanager.yaml /etc/netplan/networkmanager.yaml
+		sudo netplan generate
+		sudo netplan apply
+		sudo service NetworkManager restart
+
+		[ -f /etc/systemd/system.conf ] && {
+			sudo cp /etc/systemd/system.conf{,.bak} --backup=numbered
+			sudo rm /etc/systemd/system.conf
+		}
+		sudo ln -s ~/code/pats/base/install/system.conf /etc/systemd/system.conf
+		
+
 		sudo systemctl restart ssh.service
 
-		touch symlinks-v1.2.done
+
+		touch symlinks-v1.3.done
 	}
 fi
 

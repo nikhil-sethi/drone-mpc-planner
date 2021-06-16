@@ -368,16 +368,12 @@ void DroneNavigation::update(double time) {
         } case ns_goto_yaw_waypoint: {
             _dctrl->flight_mode(DroneController::fm_flying_pid);
             _dctrl->LED(true);
-            _dctrl->hover_mode(true); // TODO: cause of #843 ??
-            _trackers->dronetracker()->hover_mode(true);
             next_waypoint(Waypoint_Yaw_Reset(),time);
             _navigation_status = ns_approach_waypoint;
             break;
         } case ns_goto_thrust_calib_waypoint: {
             _dctrl->flight_mode(DroneController::fm_headed);
             if (!_dctrl->thrust_calib_valid() || force_thrust_calib) {
-                _dctrl->hover_mode(true);
-                _trackers->dronetracker()->hover_mode(true);
                 next_waypoint(Waypoint_Thrust_Calibration(), time);
                 _navigation_status = ns_approach_waypoint;
             } else
@@ -385,8 +381,6 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_goto_landing_waypoint: {
             _dctrl->flight_mode(DroneController::fm_headed);
-            _dctrl->hover_mode(true);
-            _trackers->dronetracker()->hover_mode(true);
             next_waypoint(Waypoint_Landing(),time);
             _navigation_status = ns_approach_waypoint;
             break;
@@ -404,13 +398,11 @@ void DroneNavigation::update(double time) {
             else
                 _dctrl->flight_mode(DroneController::fm_flying_pid);
 
-            if (current_waypoint->threshold_mm <30 && current_waypoint->threshold_mm > 0 ) { //TODO: cause of #843 ??
-                _dctrl->hover_mode(true);
-                _trackers->dronetracker()->hover_mode(true);
-            } else {
+            if (current_waypoint->mode != wfm_thrust_calib && current_waypoint->mode != wfm_yaw_reset && current_waypoint->mode != wfm_landing) {
                 _dctrl->hover_mode(false);
                 _trackers->dronetracker()->hover_mode(false);
             }
+
             time_prev_wp_reached = time;
             time_wp_reached = -1;
             break;
@@ -456,6 +448,10 @@ void DroneNavigation::update(double time) {
                     time_wp_reached = time;
                 }
             }
+            if (drone_close_to_wp() && current_waypoint->threshold_mm <= hover_mode_wp_dist_threshold && current_waypoint->threshold_mm > 0 ) {
+                _dctrl->hover_mode(true);
+                _trackers->dronetracker()->hover_mode(true);
+            }
 
             if (_nav_flight_mode == nfm_hunt && _iceptor->aim_in_range() && !low_battery_triggered)
                 _navigation_status = ns_start_the_chase;
@@ -492,6 +488,10 @@ void DroneNavigation::update(double time) {
             _dctrl->flight_mode(DroneController::fm_reset_headless_yaw);
             [[fallthrough]];
         } case ns_resetting_headless_yaw: {
+            if (drone_close_to_wp() ) {
+                _dctrl->hover_mode(true);
+                _trackers->dronetracker()->hover_mode(true);
+            }
             if(time-time_start_reset_headless_yaw>duration_reset_headless_yaw)
                 _navigation_status = ns_correct_yaw;
             check_abort_autonomus_flight_conditions();
@@ -509,6 +509,10 @@ void DroneNavigation::update(double time) {
                 std::cout << "Warning: skipping thrust calibration because battery low." << std::endl;
                 _navigation_status = ns_goto_landing_waypoint;
             }
+            if (drone_close_to_wp() ) {
+                _dctrl->hover_mode(true);
+                _trackers->dronetracker()->hover_mode(true);
+            }
             break;
         } case ns_calibrate_thrust: {
             _dctrl->init_thrust_calibration();
@@ -520,6 +524,10 @@ void DroneNavigation::update(double time) {
             if(time-time_start_thrust_calibration > static_cast<double>(current_waypoint->hover_pause)) {
                 _dctrl->save_thrust_calibration();
                 _navigation_status = ns_goto_landing_waypoint;
+            }
+            if (drone_close_to_wp() ) {
+                _dctrl->hover_mode(true);
+                _trackers->dronetracker()->hover_mode(true);
             }
             check_abort_autonomus_flight_conditions();
             if (low_battery_triggered) {
@@ -537,7 +545,10 @@ void DroneNavigation::update(double time) {
             float dt_land = static_cast<float>(time-time_start_landing);
             cv::Point3f pad_pos = _trackers->dronetracker()->pad_location(true);
             cv::Point3f new_pos_setpoint = _dctrl->land_ctrl.setpoint_cc_landing(pad_pos, current_waypoint, dt_land);
-
+            if (drone_close_to_wp() ) {
+                _dctrl->hover_mode(true);
+                _trackers->dronetracker()->hover_mode(true);
+            }
             if(_dctrl->land_ctrl.switch_to_ff_landing(_trackers->dronetracker()->last_track_data(),
                     new_pos_setpoint, pad_pos, _dctrl->landing()))
                 _dctrl->flight_mode(DroneController::fm_ff_landing_start);
@@ -639,6 +650,11 @@ void DroneNavigation::maintain_motion_map(double time) {
         _visdat->maintain_noise_maps();
 }
 
+bool DroneNavigation::drone_close_to_wp() {
+    return (_dctrl->dist_to_setpoint() < 0.1f
+            && normf(_trackers->dronetracker()->last_track_data().state.vel) < 0.5f
+            && _trackers->dronetracker()->properly_tracking());
+}
 
 bool DroneNavigation::drone_at_wp() {
     return (_dctrl->dist_to_setpoint() *1000 < current_waypoint->threshold_mm

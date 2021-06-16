@@ -66,15 +66,11 @@ All done!
     - NUC 11:
         - Boot the NUC from the stick, select boot and install **with  hwe** and reboot
         - Enable GUC:
-            - `sudo nano /etc/default/grub`     ----> `GRUB_CMDLINE_LINUX_DEFAULT="i915.enable_guc=2"`
+            - `sudo nano /etc/default/grub`    ----> `GRUB_CMDLINE_LINUX_DEFAULT="i915.enable_guc=2"`
             - `sudo update-grub`
     - NUC 7/8:
         - Boot the NUC from the stick, select boot and install and reboot
     - Install above packages (e.g. `mkdir -p ~/usb && sudo mount /dev/sda2 ~/usb -o rw` and cd to the folder with the debs and `sudo dpkg -i *`)
-    - Fix the start job problem
-        - `sudo nano /etc/netplan/01-netcfg.yaml`, set optional: true to any devices that may not always be available.
-        - `sudo netplan apply`
-    - Set `DefaultTimeoutStopSec` with `sudo nano /etc/systemd/system.conf`, uncomment and set to 15
     - Enable WiFi (e.g. `sudo nmcli device wifi connect <SSID> password <PASS>`)
     - Run the install script
     - Reboot

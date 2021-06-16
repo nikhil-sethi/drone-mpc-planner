@@ -25,7 +25,7 @@ static const char* waypoint_flight_modes_str[] = {
     "wfm_long_range",
     "" // must be the last entry! (check in serializer)
 };
-
+const int hover_mode_wp_dist_threshold = 300;
 struct Waypoint {
     Waypoint(cv::Point3f p, int distance_threshold_mm, float vel_thresh, float hover_pause_time, std::string wp_name) {
         xyz = p;
@@ -58,7 +58,7 @@ struct Waypoint_Landing : Waypoint {
 struct Waypoint_Yaw_Reset : Waypoint {
     Waypoint_Yaw_Reset() {
         xyz = cv::Point3f(0,0.5f,0);
-        threshold_mm = 300;
+        threshold_mm = hover_mode_wp_dist_threshold;
         threshold_v = 2.0f;
         hover_pause = 1;
         mode = wfm_yaw_reset;

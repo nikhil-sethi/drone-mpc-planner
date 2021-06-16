@@ -84,6 +84,7 @@ private:
     void serialize_settings();
     void next_waypoint(Waypoint wp, double time);
     bool drone_at_wp();
+    bool drone_close_to_wp();
     cv::Point3f square_point(cv::Point3f center, float width, float s);
     void check_abort_autonomus_flight_conditions();
     void maintain_motion_map(double time);
