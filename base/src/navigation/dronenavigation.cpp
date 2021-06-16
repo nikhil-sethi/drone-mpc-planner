@@ -339,6 +339,7 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_set_waypoint;
                 _dctrl->LED(true);
             }
+            time_prev_wp_reached = time;
             check_abort_autonomus_flight_conditions();
             break;
         } case ns_start_the_chase: {
@@ -367,7 +368,7 @@ void DroneNavigation::update(double time) {
         } case ns_goto_yaw_waypoint: {
             _dctrl->flight_mode(DroneController::fm_flying_pid);
             _dctrl->LED(true);
-            _dctrl->hover_mode(true);
+            _dctrl->hover_mode(true); // TODO: cause of #843 ??
             _trackers->dronetracker()->hover_mode(true);
             next_waypoint(Waypoint_Yaw_Reset(),time);
             _navigation_status = ns_approach_waypoint;
@@ -398,14 +399,19 @@ void DroneNavigation::update(double time) {
             else
                 _navigation_status = ns_approach_waypoint;
 
-            if (current_waypoint->threshold_mm <30 && current_waypoint->threshold_mm > 0 ) {
+            if (current_waypoint->mode == wfm_long_range)
+                _dctrl->flight_mode(DroneController::fm_long_range_forth);
+            else
+                _dctrl->flight_mode(DroneController::fm_flying_pid);
+
+            if (current_waypoint->threshold_mm <30 && current_waypoint->threshold_mm > 0 ) { //TODO: cause of #843 ??
                 _dctrl->hover_mode(true);
                 _trackers->dronetracker()->hover_mode(true);
             } else {
                 _dctrl->hover_mode(false);
                 _trackers->dronetracker()->hover_mode(false);
             }
-
+            time_prev_wp_reached = time;
             time_wp_reached = -1;
             break;
         } case ns_approach_waypoint: {
@@ -420,7 +426,17 @@ void DroneNavigation::update(double time) {
                 setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, CameraView::relaxed);
             }
 
-            if (drone_at_wp()) {
+            if (current_waypoint->mode == wfm_long_range) {
+                if (static_cast<float>(time-time_prev_wp_reached) < static_cast<Waypoint_Long_Range*>(current_waypoint)->pitch_duration) {
+                    _dctrl->flight_mode(DroneController::fm_long_range_forth);
+                } else {
+                    _dctrl->flight_mode(DroneController::fm_long_range_back);
+                    if (_trackers->dronetracker()->world_item().valid && _trackers->dronetracker()->world_item().distance < 6) {
+                        wpid++;
+                        _navigation_status = ns_set_waypoint;
+                    }
+                }
+            } else if (drone_at_wp()) {
                 if ((static_cast<float>(time - time_wp_reached) > current_waypoint->hover_pause && time_wp_reached > 0) || current_waypoint->hover_pause <= 0) {
                     if (current_waypoint->mode == wfm_landing) {
                         _navigation_status = ns_land;
@@ -753,6 +769,11 @@ void DroneNavigation::demo_flight(std::string flightplan_fn) {
             force_thrust_calib = true;
         fp.serialize("./logging/flightplan.xml"); // write a copy of the currently used flightplan to the logging dir
         waypoints = fp.waypoints();
+        if (!pparams.long_range_mode)
+            for (auto w : waypoints) {
+                if (w.mode == wfm_long_range)
+                    throw MyExit("Long range flightplan needs long_range_mode in pats xml enabled!");
+            }
         wpid = 0;
         next_waypoint(waypoints[wpid],_trackers->dronetracker()->last_track_data().time);
         _navigation_status = ns_takeoff;

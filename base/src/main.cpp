@@ -536,7 +536,16 @@ bool handle_key(double time [[maybe_unused]]) {
             init_insect_log(58);
         break;
     case '4':
-        init_insect_log(54);
+        if (dnav.nav_flight_mode() == navigation::nfm_waypoint) {
+            if (dnav.drone_ready_and_waiting() ) {
+                std::string fp = "../xml/flightplans/bejo.xml";
+                std::cout << "Flightplan trigger:" << fp << std::endl;
+                dnav.demo_flight(fp);
+                dctrl.joy_takeoff_switch_file_trigger(true);
+                experimental::filesystem::copy_file(fp,"./logging/pats_demo.xml");
+            }
+        } else
+            init_insect_log(54);
         break;
     case '5':
         init_insect_log(63);

@@ -10,7 +10,8 @@ enum waypoint_flight_modes {
     wfm_wp_stay,
     wfm_landing,
     wfm_yaw_reset,
-    wfm_thrust_calib
+    wfm_thrust_calib,
+    wfm_long_range
 };
 static const char* waypoint_flight_modes_str[] = {
     "wfm_takeoff",
@@ -21,6 +22,7 @@ static const char* waypoint_flight_modes_str[] = {
     "wfm_landing",
     "wfm_yaw_reset",
     "wfm_thrust_calib",
+    "wfm_long_range",
     "" // must be the last entry! (check in serializer)
 };
 
@@ -37,6 +39,7 @@ struct Waypoint {
     int threshold_mm = 50;
     float threshold_v = 1.7;
     float hover_pause = 0;
+    float pitch_duration = 0;
     waypoint_flight_modes mode;
     std::string name;
 protected:
@@ -94,6 +97,12 @@ struct Waypoint_Stay : Waypoint {
         mode = wfm_wp_stay;
     }
 };
+struct Waypoint_Long_Range : Waypoint {
+    Waypoint_Long_Range(cv::Point3f p,std::string wp_name, float pitch_duration_) : Waypoint(p,0,0,0,wp_name) {
+        mode = wfm_long_range;
+        pitch_duration = pitch_duration_;
+    }
+};
 
 class XML_Waypoint_Mode: public xmls::MemberBase
 {
@@ -125,6 +134,7 @@ public:
     xmls::xInt threshold_mm;
     xmls::xFloat threshold_v;
     xmls::xFloat hover_pause;
+    xmls::xFloat pitch_duration;
     xmls::xFloat x;
     xmls::xFloat y;
     xmls::xFloat z;
@@ -132,11 +142,12 @@ public:
 
     XML_Waypoint() {
         setClassName("Waypoint");
-        setVersion("1.2");
+        setVersion("1.3"); // not used at the moment
         Register("type",&mode);
         Register("threshold_mm",&threshold_mm);
         Register("threshold_v",&threshold_v);
         Register("hover_pause",&hover_pause);
+        Register("pitch_duration",&pitch_duration);
         Register("x",&x);
         Register("y",&y);
         Register("z",&z);
@@ -153,6 +164,10 @@ public:
             threshold_v = wp.threshold_v;
             hover_pause = wp.hover_pause;
         }
+        if (wp.mode == wfm_long_range)
+            pitch_duration = static_cast<Waypoint_Long_Range *>(&wp)->pitch_duration;
+        else
+            pitch_duration = 0;
     }
 
     Waypoint waypoint() {
@@ -183,6 +198,10 @@ public:
             break;
         } case waypoint_flight_modes::wfm_flower: {
             Waypoint_Flower wp(cv::Point3f(x.value(),y.value(),z.value()),name.value());
+            return wp;
+            break;
+        } case waypoint_flight_modes::wfm_long_range: {
+            Waypoint_Long_Range wp(cv::Point3f(x.value(),y.value(),z.value()),name.value(),pitch_duration.value());
             return wp;
             break;
         } case waypoint_flight_modes::wfm_flying:

@@ -91,7 +91,13 @@ void Cam::def_volume () {
             }
         }
     }
-    b_depth = -z_sum/n;
+    if (pparams.long_range_mode)
+        b_depth = -100;
+    else {
+        b_depth = -z_sum/n;
+        if(b_depth<-10.f)
+            b_depth = -10.f; //10 m is the max supported depth by the realsense
+    }
     camera_volume.init(point_left_top, point_right_top, point_left_bottom, point_right_bottom, b_depth, b_ground, camparams.camera_angle_y);
 }
 

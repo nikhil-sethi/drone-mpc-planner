@@ -1,4 +1,4 @@
-<SerializableClass Type="PatsParameters" Version="1.10">
+<SerializableClass Type="PatsParameters" Version="1.11">
     <Member Name="wdt_timeout_us">500000</Member>
     <Member Name="exposure_threshold">5000</Member>
     <Member Name="gain_threshold">16</Member>
@@ -27,4 +27,5 @@
     <Member Name="live_image_frq">30</Member>
     <Member Name="max_cam_roll">1.5</Member>
     <Member Name="n_cams">1</Member>
+    <Member Name="long_range_mode">false</Member>
 </SerializableClass>

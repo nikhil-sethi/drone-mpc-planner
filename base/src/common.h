@@ -345,6 +345,7 @@ private:
     xInt _live_image_frq;
     xFloat _max_cam_roll;
     xInt _n_cams;
+    xBool _long_range_mode;
 
 public:
     int exposure_threshold,gain_threshold,brightness_threshold;
@@ -364,6 +365,7 @@ public:
     int live_image_frq;
     float max_cam_roll;
     int n_cams;
+    bool long_range_mode;
 
     PatsParameters() {
         // Set the XML class name.
@@ -371,7 +373,7 @@ public:
         setClassName("PatsParameters");
 
         // Set class version
-        setVersion("1.10");
+        setVersion("1.11");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("wdt_timeout_us",&_wdt_timeout_us);
@@ -402,6 +404,7 @@ public:
         Register("live_image_frq",&_live_image_frq);
         Register("max_cam_roll",&_max_cam_roll);
         Register("n_cams",&_n_cams);
+        Register("long_range_mode",&_long_range_mode);
     }
     void deserialize(std::string settings_file) {
         std::cout << "Reading settings from: " << settings_file << std::endl;
@@ -453,6 +456,7 @@ public:
         live_image_frq = _live_image_frq.value();
         max_cam_roll = _max_cam_roll.value();
         n_cams = _n_cams.value();
+        long_range_mode = _long_range_mode.value();
     }
 
     void serialize(std::string settings_file) {
@@ -484,6 +488,7 @@ public:
         _live_image_frq = live_image_frq;
         _max_cam_roll = max_cam_roll;
         _n_cams = n_cams;
+        _long_range_mode = long_range_mode;
 
         std::string xmlData = toXML();
         std::ofstream outfile = std::ofstream (settings_file);

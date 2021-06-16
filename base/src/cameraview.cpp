@@ -28,9 +28,6 @@ void CameraView::init(cv::Point3f point_left_top, cv::Point3f point_right_top, c
     plane_normals.at(right_plane) = get_plane_normal_vector (point_right_bottom, point_right_top);
     plane_supports.at(right_plane) = (cv::Mat_<float>(3,1) << 0, 0, 0);
 
-    if(b_depth<-10.f)
-        b_depth = -10.f; //10 m is the max supported depth by the realsense
-
     plane_normals.at(back_plane) = (cv::Mat_<float>(3,1) << 0, 0, 1);
     plane_supports.at(back_plane) = (cv::Mat_<float>(3,1) << 0, 0, b_depth);
 

@@ -30,6 +30,7 @@ private:
     double time_start_motion_calibration = 0;
     double time_start_reset_headless_yaw = 0;
     double time_start_thrust_calibration = 0;
+    double time_prev_wp_reached = -1;
     double time_wp_reached = -1;
     double time_start_landing = -1;
     double time_landed = 0;

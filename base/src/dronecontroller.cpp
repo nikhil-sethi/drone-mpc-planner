@@ -111,7 +111,6 @@ void DroneController::set_led_strength(float exposure) {
             dparams.drone_led_strength = 50 - ((std::clamp(exposure,thresh_bright,max_ae)-thresh_bright)/(max_ae - thresh_bright)*35.f);
     }
     std::cout << "Led strength set to: " << dparams.drone_led_strength << std::endl;
-
 }
 
 void DroneController::control(TrackData data_drone, TrackData data_target_new, TrackData data_raw_insect, double time) {
@@ -349,6 +348,18 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
                 data_drone.state.pos = _dtrk->pad_location ();
         }
         control_model_based(data_drone, data_target_new.pos(),data_target_new.vel());
+        break;
+    } case fm_long_range_forth: {
+        mode += bf_headless_disabled;
+        auto_yaw = RC_MIDDLE;
+        control_model_based(data_drone, data_target_new.pos(),data_target_new.vel());
+        auto_pitch = RC_MIDDLE+RC_BOUND_RANGE/2/8;
+        break;
+    } case fm_long_range_back: {
+        mode += bf_headless_disabled;
+        auto_yaw = RC_MIDDLE;
+        control_model_based(data_drone, data_target_new.pos(),data_target_new.vel());
+        auto_pitch = RC_MIDDLE-RC_BOUND_RANGE/2/8;
         break;
     } case fm_calib_thrust:
     case fm_prep_to_land:
@@ -1052,6 +1063,21 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::
         errvDy = d_vel_err_y.new_sample (err_vely_filtered);
         errvDz = d_vel_err_z.new_sample (err_velz_filtered);
     }
+
+    if (_flight_mode == fm_long_range_back || _flight_mode == fm_long_range_forth) {
+        err_z_filtered = 0;
+        pos_err_p.z = 0;
+        errDz = 0;
+    } else if (data_drone.world_item.distance> 1) { // reduce sensitivity at longer distances because the disparity gets whacky
+        err_z_filtered /= 1 + 0.1f * (data_drone.world_item.distance * data_drone.world_item.distance);
+        pos_err_p.z = err_z_filtered;
+        errDz /= 1 + 0.1f * (data_drone.world_item.distance * data_drone.world_item.distance);
+    } else  if (data_drone.world_item.distance> 10) {
+        err_z_filtered = 0.4f;
+        pos_err_p.z = err_z_filtered;
+        errDz = 0;
+    }
+    err_z_filtered = std::clamp(err_z_filtered,-0.4f,0.4f); // BEJO test speed limit. TODO: add some mode bool to trigger this
 
     cv::Point3f vel_err_p = {err_velx_filtered, err_vely_filtered, err_velz_filtered};
     cv::Point3f pos_err_d = {errDx, errDy, errDz};
