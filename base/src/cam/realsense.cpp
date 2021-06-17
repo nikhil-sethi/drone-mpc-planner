@@ -9,6 +9,7 @@ using namespace cv;
 using namespace std;
 
 static stopwatch_c swc;
+bool new_frame_ready{false};
 
 StereoPair * Realsense::update(void) {
 
@@ -126,7 +127,9 @@ void Realsense::update_playback(void) {
 }
 
 void Realsense::update_real(void) {
-    lock_newframe.lock(); // wait for a new frame passed by the rs callback
+    std::unique_lock<std::mutex> lk(lock_newframe_mutex);
+    lock_newframe.wait(lk, [] { return new_frame_ready; }); // wait for a new frame passed by the rs callback
+    new_frame_ready = false;
     watchdog = true;
     if (watchdog_attempt_to_continue) {
         std::cout << "Frame processed. Buffer: ";
@@ -176,7 +179,11 @@ void Realsense::rs_callback(rs2::frame f) {
             else
                 std::cout << "BUF OVERFLOW, SKIPPING A FRAME" << std::endl;
 
-            lock_newframe.unlock(); // signal to processor that a new frame is ready to be processed
+            {   // signal to processor that a new frame is ready to be processed
+                std::scoped_lock<std::mutex> lck(lock_newframe_mutex);
+                new_frame_ready = true;
+            }
+            lock_newframe.notify_all();
 
             if (rs_frameL_cbtmp.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE))
                 camparams.measured_exposure = rs_frameL_cbtmp.get_frame_metadata(rs2_frame_metadata_value::RS2_FRAME_METADATA_ACTUAL_EXPOSURE);
@@ -302,7 +309,6 @@ void Realsense::connect_and_check(string ser_nr,int id) {
     dev_initialized = true;
 }
 void Realsense::init_real() {
-    lock_newframe.lock();
     std::cout << "Initializing cam " << serial_nr_str << std::endl;
 
     rs2::depth_sensor rs_depth_sensor = dev.first<rs2::depth_sensor>();
@@ -668,11 +674,12 @@ void Realsense::close() {
         std::cout << "Closing camera" << std::endl;
         if (!dev.as<rs2::playback>()) {
             auto rs_depth_sensor = dev.first<rs2::depth_sensor>();
-            lock_newframe.unlock();
+            lock_newframe.notify_all();
             rs_depth_sensor.stop();
             rs_depth_sensor.close();
             for (uint i = 0; i < 10; i++ ) {
-                lock_newframe.unlock();
+                new_frame_ready  = true;
+                lock_newframe.notify_all();
                 usleep(1000);
             }
         } else {

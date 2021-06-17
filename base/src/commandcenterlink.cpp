@@ -2,7 +2,6 @@
 #include "commandcenterlink.h"
 #include "trackermanager.h"
 
-#include <mutex>
 #include <thread>
 #include <unistd.h> //usleep
 #include<iostream>

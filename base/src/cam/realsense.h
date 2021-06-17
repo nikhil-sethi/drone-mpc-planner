@@ -78,7 +78,8 @@ private:
 
     int max_auto_exposure;
 
-    std::mutex lock_newframe;
+    std::mutex lock_newframe_mutex;
+    std::condition_variable lock_newframe;
     rs2::device dev;
     rs2::pipeline cam_playback;
     static inline rs2::context const ctx;
