@@ -193,6 +193,7 @@ def process_log(detection_fn, folder, mode, monitoring_start_datetime):
     inf_ids = [i for i, x in enumerate(vxs) if math.isinf(x) or math.isnan(x)]
     if (len(inf_ids)):
         remove_ids.extend(inf_ids)
+        logger.warning('Detected infs in velocity. See #540')
 
     time = elapsed_time.astype('float64')
     RS_ID = log['RS_ID'].values
