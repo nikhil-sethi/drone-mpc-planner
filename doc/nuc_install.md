@@ -46,7 +46,10 @@
 All done!
 
 ## NUC create image instructions
+1. Prep the image
     - **Make sure the system hostname is called pats0**
+    - Set DefaultTimeoutStopSec in /etc/systemd/system.conf to 15
+2. Create the image with clonezilla
     - Connect NUC install the first usb stick
     - Power up and press F10 during boot
     - Select USB : SanDisk : Part 0 : Boot Drive
@@ -76,27 +79,13 @@ All done!
     - Select poweroff
     - Follow the instructions and press y when asked
     - Wait 10 minutes until it powers off.
+3. Copy the image:
     - Repeat the procedure for the other USB stick
     - Copy the image to the backups in BigPats
 
 ## Tools used to make the install stick:
-YUMI
-# Contents:
-CloneZilla iso
-Ubuntu 18.04.1 LTS iso
-Pats install script and ssh key files
-
-##image install tweaks:
-- Set DefaultTimeoutStopSec in /etc/systemd/system.conf to 15
-- Change the background
-- remove everything from data folder and remove pats_daemon.log and the pats_logs/term.log
-- screen lock off
-- allow for normal users:
-```
-sudo sh -c 'echo "pats ALL = (root) NOPASSWD: /usr/sbin/rtcwake" >> /etc/sudoers'
-sudo sh -c 'echo "pats ALL = (root) NOPASSWD: /sbin/swapoff" >> /etc/sudoers'
-sudo sh -c 'echo "pats ALL = (root) NOPASSWD: /bin/systemctl" >> /etc/sudoers'
-```
-- `echo "alias df='df -h -x squashfs -x tmpfs -x devtmpfs'" >> ~/.bash_aliases`
-- open the project with vscode, install the recommened extensions, and set the ctrl-r hotkey
+1. YUMI
+2. CloneZilla iso
+3. Ubuntu 18.04.* LTS iso
+4. Pats install script and ssh key files
 
