@@ -120,6 +120,12 @@ if [ -f /etc/bash_completion ]; then
 	. /etc/bash_completion
 fi
 
+CPU_str=$(lscpu | grep -i 'model name' | uniq)
+if [[ $CPU_str == *"i3-7100U"* ]] || [[ $CPU_str == *"i3-8109U"* ]]; then
+  #also done in the autostarter.sh
+  export LIBVA_DRIVER_NAME=i965
+fi
+
 # Auto-screen invocation. see: http://taint.org/wk/RemoteLoginAutoScreen
 # if we're coming from a remote SSH connection, in an interactive session
 # then automatically put us into a screen(1) session.   Only try once

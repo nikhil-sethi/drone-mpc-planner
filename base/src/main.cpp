@@ -1106,6 +1106,7 @@ int main( int argc, char **argv )
         cmdcenter.reset_commandcenter_status_file(err.msg,true);
         return 1;
     } catch(rs2::error const &err) {
+        std::cout << "Realsense error: " << err.what() << std::endl;
         cmdcenter.reset_commandcenter_status_file("Resetting realsense",false);
         try {
             static_cast<Realsense *>(cam.get())->reset();

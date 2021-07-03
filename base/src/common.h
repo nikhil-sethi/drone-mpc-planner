@@ -43,6 +43,7 @@ cv::Point3f pats_to_betaflight_coord(cv::Point3f vec);
 cv::Point3f betaflight_to_pats_coord(cv::Point3f vec);
 void set_external_wdt_flag();
 void set_no_realsense_flag();
+std::string exec(const char* cmd);
 
 const float rad2deg = 180.f/M_PIf32;
 const float deg2rad = M_PIf32/180.f;

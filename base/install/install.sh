@@ -10,73 +10,89 @@ if [[ $1 -eq 1 ]] ; then
 fi
 
 set -ex
-working_dir=`pwd`
-# Create dependencies directory
 mkdir -p ~/dependencies
 mkdir -p ~/code
 
-[ -f ~/dependencies/ssh_keys.done ] || {
-	if [[ $1 -eq 1 ]] ; then
-		[ -f ~/dependencies/pats_ssh_files_v3.tar.xz ] || {
-			cp pats_ssh_files_v3.tar.xz ~/dependencies
-		}
+CPU_str=$(lscpu | grep -i 'model name' | uniq)
+CPU=0
+if [[ $CPU_str == *"AMD"* ]]; then
+	CPU=1
+elif [[ $CPU_str == *"i3-7100U"* ]]; then
+	CPU=1
+elif [[ $CPU_str == *"i3-8109U"* ]]; then
+	CPU=1
+elif [[ $CPU_str == *"i3-1115G4"* ]]; then
+	CPU=2
+fi
+echo "CPU type: $CPU"
 
-		#Change hostname:
-		#Update: sudo nano /etc/hosts
-		#Change 127.0.1.1 pats*
-		#Make it persistant, update: sudo nano /etc/hostname
-		if [[ $HOSTNAME == pats* ]];
-		then
-		  echo "Hostname changed detected, good."
-		else
-		  echo "Change hostname before running this script!"
-		  exit 1
-		fi
+if [ ! -f ~/dependencies/ssh_keys.done ] && [ $1 -eq 1 ] ; then
+
+	#Change hostname:
+	#Update: sudo nano /etc/hosts
+	#Change 127.0.1.1 pats*
+	#Make it persistant, update: sudo nano /etc/hostname
+	if [[ $HOSTNAME == pats* ]]; then
+		echo "Hostname changed detected, good."
+	else
+		echo "Change hostname before running this script!"
+		exit 1
 	fi
 
-	[ ! -f pats_ssh_files_v3.tar.xz ] || {
-		#add deploy key
-		tar -xf pats_ssh_files_v3.tar.xz
+	[ -f ~/dependencies/pats_ssh_files_v3.1.tar.xz ] || {
 		mkdir -p ~/.ssh
-		mv authorized_keys ~/.ssh/
-		mv id_rsa ~/.ssh/pats_id_rsa
-		chmod 600 ~/.ssh/pats_id_rsa
-		mv id_rsa.pub ~/.ssh/pats_pats_id_rsa.pub
-		mv known_hosts ~/.ssh/
+		cp pats_ssh_files_v3.1.tar.xz ~/.ssh
+		pushd ~/.ssh
+
+		tar -xf pats_ssh_files_v3.1.tar.xz
 		eval `ssh-agent -s`
-		ssh-add ~/.ssh/pats_id_rsa
+
+		# this is not necessary if the ssh keys from the tar package are correct already
+		#chmod 600 ~/.ssh/pats_id_rsa
+		#ssh-add ~/.ssh/pats_id_rsa
+
+		[ -f config ] || { #if the pats repo does not exist yet, temporarily move the config to prevent git clone problems (which uses ssh)
+			mv config config_tmp
+		}
+
+		popd
 	}
+
 	touch ~/dependencies/ssh_keys.done
-}
+fi
 pushd ~/dependencies
 
 # Install pats dependency packages
-[ -f dependencies-packages-v1.13.done ] || {
+[ -f dependencies-packages-v1.15.done ] || {
 	sudo apt update
-	sudo apt install -y build-essential g++ gdb libva-dev libswresample-dev libavutil-dev pkg-config libcurl4-openssl-dev ncdu openssh-server ffmpeg unattended-upgrades inotify-tools cpputest python3-pip dfu-util exfat-utils vnstat ifmetric net-tools lm-sensors nethogs htop git nano screen autossh usb-modeswitch moreutils
-	sudo apt install -y gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav libgstreamer-plugins-base1.0-0 libgstreamer-plugins-bad1.0-0 libgstreamer-plugins-good1.0-0 gstreamer1.0-vaapi vainfo
-	sudo apt-get remove -y modemmanager
-	pip3 install cython pyserial
+	sudo apt install -y build-essential g++ gdb libva-dev libswresample-dev libavutil-dev pkg-config libcurl4-openssl-dev ncdu openssh-server ffmpeg unattended-upgrades inotify-tools cpputest python3-pip dfu-util exfat-utils vnstat ifmetric net-tools lm-sensors nethogs htop git nano screen autossh usb-modeswitch moreutils cmake vainfo intel-gpu-tools
+	if [ $CPU -eq 1 ]; then
+		# gstreamer packages:
+		sudo apt install -y gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav libgstreamer-plugins-base1.0-0 libgstreamer-plugins-bad1.0-0 libgstreamer-plugins-good1.0-0 gstreamer1.0-vaapi libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+	elif [ $CPU -eq 2 ]; then
+		sudo apt install -y intel-media-va-driver-non-free
+		# gstreamer compile packages:
+		sudo apt install -y libudev-dev nasm meson ninja-build flex bison libdrm-dev
+	fi
+
 	#specific to enable opencv features and optimizations:
-	sudo apt install -y yasm gfortran libjpeg8-dev libpng-dev libtiff-dev libatlas-base-dev libprotobuf-dev protobuf-compiler libgoogle-glog-dev libgflags-dev libgphoto2-dev libeigen3-dev libhdf5-dev libatlas3-base libatlas-base-dev liblapack3 liblapacke liblapacke-dev liblapack-dev ccache
-	pip3 install numpy pandas scipy sklearn tqdm pause
-	pip install xmltodict requests # for huawei-hilink-status
+	sudo apt install -y yasm gfortran libjpeg8-dev libpng-dev libtiff-dev libatlas-base-dev libprotobuf-dev protobuf-compiler libgoogle-glog-dev libgflags-dev libgphoto2-dev libeigen3-dev libhdf5-dev libatlas3-base libatlas-base-dev liblapack3 liblapacke liblapacke-dev liblapack-dev ccache qtbase5-dev
+
+	sudo apt-get remove -y modemmanager
 
 	if [[ $1 -eq 1 ]] ; then
 		sudo apt purge -y snapd # remove snap, because it uses data
 	fi
 
-	touch dependencies-packages-v1.13.done
+	touch dependencies-packages-v1.15.done
 }
-
-
 
 # Add librealsense repository
 [ -f librealsense-packages_v1.1.done ] || {
 
 	sudo apt install -y software-properties-common
 	sudo apt-key adv --keyserver keys.gnupg.net --recv-key F6E65AC044F831AC80A06380C8B3A55A6F3EFCDE || sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-key F6E65AC044F831AC80A06380C8B3A55A6F3EFCDE
-	sudo add-apt-repository "deb https://librealsense.intel.com/Debian/apt-repo bionic main" -u
+	sudo add-apt-repository "deb https://librealsense.intel.com/Debian/apt-repo $(lsb_release -cs) main" -u
 	sudo apt update
 
 	# Install packages
@@ -88,7 +104,24 @@ pushd ~/dependencies
 		rm librealsense-packages.done
 	}
 
+	if [ $CPU -eq 2 ] && [ ! -f librealsense-kernel-patch_v1.0.done ]; then
+		git clone git@github.com:IntelRealSense/librealsense.git
+		pushd librealsense/
+		#./scripts/setup_udev_rules.sh
+		./scripts/patch-realsense-ubuntu-lts.sh
+		popd
+		touch librealsense-kernel-patch_v1.0.done
+	fi
+
 	touch librealsense-packages_v1.1.done
+}
+
+[ -f python-packages-v1.0.done ] || {
+	pip3 install cython pyserial
+	pip3 install numpy pandas scipy sklearn tqdm pause
+	pip3 install xmltodict requests # for huawei-hilink-status
+	pip3 install torch torchvision umap bioinfokit # deep learning
+	touch python-packages-v1.0.done
 }
 
 # Install dev packages
@@ -105,6 +138,10 @@ if [[ $1 -eq 0 ]] ; then
 		#libgtk2.0-dev libtbb-dev qt5-default libgtkgl* libgtkgl2.0-* libgtkglext1  libgtkglext1-dev libgtkglext1-dev libgtkgl2.0-dev  libgtk2.0-dev libgtk-3-dev gnome-devel
 		touch dev-dependencies-packages-v1.1.done
 	}
+	
+	[ -f dnn-dependencies-packages-v1.0.done ] || {
+		pip3 install matplotlib
+	}
 
 	# Install command center packages
 	[ -f cc-dependencies-packages-v1.0.done ] || {
@@ -113,22 +150,26 @@ if [[ $1 -eq 0 ]] ; then
 	}
 fi
 
-# Install cmake with https support (required for opencv contrib)
-[ -f cmake-3.11.4.done ] || {
-	[ -d cmake-3.11.4 ] || {
-		wget https://cmake.org/files/v3.11/cmake-3.11.4.tar.gz
-		tar -xvf cmake-3.11.4.tar.gz
+if [ $CPU -eq 2 ] && [ $1 -eq 1 ] && [ ! -f gstreamer-v1.18.4.done ]; then
+	pushd ~/code/
+	[ -d pats ] || {
+		git clone git@github.com:pats-drones/pats.git # needed for the patch
+		pushd pats
+		git checkout opencv_452 #tmp!
+		popd
 	}
-	pushd cmake-3.11.4
-	./bootstrap --parallel=$(nproc) --system-curl
-	make -j$(nproc)
-	sudo make install
 	popd
-	touch cmake-3.11.4.done
+	git clone https://gitlab.freedesktop.org/gstreamer/gst-build.git
+	pushd gst-build/
+	git checkout 1.18.4
+	meson builddir -Dvaapi=enabled -Dgst_debug=false -Dgstreamer-vaapi:with_x11=no --buildtype=release --prefix=/usr/local
+	patch gst-plugins-base/gst-libs/gst/gl/meson.build ~/code/pats/base/install/gst_1.18.4_fix.patch
+	ninja -C builddir
+	sudo ninja install -C builddir
+	sudo ldconfig
 	popd
-	echo "Restarting Bash. I'm NOT finished. Start me again!"
-	exec bash
-}
+	touch gstreamer-v1.18.4.done
+fi
 
 # Uninstall openCV 3
 [ ! -f opencv-3.4.2.done ] || {
@@ -142,22 +183,26 @@ fi
 }
 
 # Install openCV
-[ -f opencv-4.3.0.done ] || {
-	[ -d opencv-4.3.0 ] || {
-		wget https://github.com/opencv/opencv/archive/4.3.0.tar.gz
-		mv 4.3.0.tar.gz opencv-4.3.0.tar.gz
-		tar -xf opencv-4.3.0.tar.gz
+if [ ! -f opencv-4.5.2.done ] && [ ! -f opencv-4.3.0.done ] ; then
+	[ -d opencv-4.5.2 ] || {
+		wget https://github.com/opencv/opencv/archive/4.5.2.tar.gz
+		mv 4.5.2.tar.gz opencv-4.5.2.tar.gz
+		tar -xf opencv-4.5.2.tar.gz
 	}
-	pushd opencv-4.3.0
+	pushd opencv-4.5.2
 	mkdir -p build
 	pushd build
-	cmake -DCMAKE_BUILD_TYPE=release -DCMAKE_INSTALL_PREFIX=/usr/local -DWITH_QT=ON -DWITH_OPENGL=ON ..
+	cmake -DCMAKE_BUILD_TYPE=release -DCMAKE_INSTALL_PREFIX=/usr/local -DWITH_QT=ON -DWITH_OPENGL=ON -DWITH_FFMPEG=OFF ..
+	[ -h ~/dependencies/gst-build/ ] || { #gstreamer 1.18.4 seems to cause some ffmpeg compile problem with opencv
+		cmake -DWITH_FFMPEG=OFF ..
+	}
 	time make -j$(nproc)
 	sudo make install
+	sudo ldconfig
 	popd
 	popd
-	touch opencv-4.3.0.done
-}
+	touch opencv-4.5.2.done
+fi
 
 if [[ $1 -eq 1 ]] ; then
 	[ -f git.done ] || {
@@ -165,7 +210,6 @@ if [[ $1 -eq 1 ]] ; then
 		git config --global push.default simple
 		git config --global user.email "${HOSTNAME}@pats.com"
 		git config --global user.name $HOSTNAME
-
 		touch git.done
 	}
 fi
@@ -198,11 +242,15 @@ fi
 	pushd pats
 	mkdir -p base/build
 	pushd base/build
-	cmake ..
+	cmake -DCMAKE_BUILD_TYPE=Release ..
 	make -j$(nproc)
 	popd
 	popd
 	popd
+
+	if [ ! ~/.ssh/config ] && [ $1 -eq 1 ] && [ ! ~/.ssh/config_tmp ]; then
+		mv ~/.ssh/config_tmp ~/.ssh/config
+	fi
 
 	touch pats_code_v1.1.done
 }
@@ -216,6 +264,7 @@ if [[ $1 -eq 1 ]] ; then
 	mkdir -p ~/pats/flags
 	mkdir -p ~/pats/status
 	mkdir -p ~/pats/images
+	touch ~/pats/flags/disable
 
 	# Create nice symlinks
 	[ -f symlinks-v1.2.done ] || {

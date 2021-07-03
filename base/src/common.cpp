@@ -285,3 +285,25 @@ void set_external_wdt_flag() {
 void set_no_realsense_flag() {
     std::ofstream output("../../../../pats/flags/no_realsense_flag");
 }
+std::string exec(const char* cmd) {
+    std::array<char, 128> buffer;
+    std::string result;
+
+    auto pipe = popen(cmd, "r"); // get rid of shared_ptr
+
+    if (!pipe) throw std::runtime_error("popen() failed!");
+
+    while (!feof(pipe)) {
+        if (fgets(buffer.data(), 128, pipe) != nullptr)
+            result += buffer.data();
+    }
+
+    auto rc = pclose(pipe);
+
+    if (rc == EXIT_SUCCESS) { // == 0
+
+    } else if (rc == EXIT_FAILURE) {  // EXIT_FAILURE is not used by all programs, maybe needs some adaptation.
+
+    }
+    return result;
+}

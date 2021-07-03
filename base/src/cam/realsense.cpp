@@ -228,18 +228,19 @@ void Realsense::connect_and_check(string ser_nr,int id) {
     isD455 = found!=std::string::npos;
 
     rs2::depth_sensor rs_depth_sensor = dev.first<rs2::depth_sensor>();
-    const std::string required_firmwar_version = "05.12.06.00";
+    const std::string required_firmware1_version = "05.12.06.00";
+    const std::string required_firmware2_version = "05.12.14.50";
     std::string current_firmware_version = rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION);
-    current_firmware_version  = current_firmware_version.substr (0,required_firmwar_version.length()); //fix for what seems to be appended garbage...? 255.255.255.255 on a newline
+    current_firmware_version  = current_firmware_version.substr (0,required_firmware1_version.length()); //fix for what seems to be appended garbage...? 255.255.255.255 on a newline
 
     std::string master_or_slave_str = "master";
     if (!master())
         master_or_slave_str = "slave";
     std::cout << name << ", sn: " << serial_nr_str << ", fw: " << current_firmware_version << ", " << master_or_slave_str << std::endl;
 
-    if (current_firmware_version != required_firmwar_version) {
+    if (current_firmware_version != required_firmware1_version && current_firmware_version != required_firmware2_version) {
         std::stringstream serr;
-        serr << "detected wrong RealSense firmware version! Detected: " << current_firmware_version << ". Required: "  << required_firmwar_version << ".";
+        serr << "detected wrong RealSense firmware version! Detected: " << current_firmware_version << ". Required: "  << required_firmware1_version << " or " << required_firmware2_version << ".";
         throw MyExit(serr.str());
     }
     dev_initialized = true;

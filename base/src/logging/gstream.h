@@ -9,13 +9,18 @@
  */
 class GStream {
 
-public:
 private:
+
+    enum vp9_modes {
+        normal,
+        nuc11
+    };
     GstElement *_pipeline,*_appsrc;
 
     int _cols,_rows;
     int prepare_buffer(GstAppSrc* appsrc, cv::Mat image);
     int prepare_buffer(GstAppSrc* appsrc, cv::Mat frameL, cv::Mat frameR);
+    vp9_modes vp9_mode();
     int stream_resize_f = 1;
     int gstream_fps;
     bool initialised = false;

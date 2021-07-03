@@ -38,6 +38,19 @@ void GStream::manual_unblock() {
     wait_for_want.unlock();
 }
 
+GStream::vp9_modes GStream::vp9_mode() {
+    auto res = exec("lscpu | grep -i 'model name' | uniq");
+    if (res.find("i3-7100U") != string::npos)
+        return vp9_modes::normal;
+    else if(res.find("i3-8109U") != string::npos)
+        return vp9_modes::normal;
+    else if(res.find("AMD") != string::npos)
+        return vp9_modes::nuc11;
+    else if(res.find("i3-1115G4") != string::npos)
+        return vp9_modes::nuc11;
+    return vp9_modes::normal;
+}
+
 int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std::string ip, int port, bool color) {
     videomode = mode;
     gstream_fps  =fps;
@@ -49,6 +62,8 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
             sizeY = sizeY/stream_resize_f;
         }
     }
+
+    auto vp9 = vp9_mode();
 
     _cols = sizeX;
     _rows = sizeY;
@@ -82,6 +97,7 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
             //gst-launch-1.0 videotestsrc ! video/x-raw,format=RGB,framerate=\(fraction\)15/1,width=1920,height=1080 ! videoconvert ! x264enc speed-preset=ultrafast bitrate=16000 ! 'video/x-h264, stream-format=(string)byte-stream'  ! avimux ! filesink location=test.avi
             //gst-launch-1.0 videotestsrc ! video/x-raw,format=GRAY8,framerate=\(fraction\)90/1,width=1280,height=720 ! videoconvert ! x264enc ! 'video/x-h264, stream-format=(string)byte-stream'  ! avimux ! filesink location=test.avi
             //gst-launch-1.0 videotestsrc ! video/x-raw,format=GRAY8,framerate=\(fraction\)90/1,width=1696,height=480 ! videoconvert ! vaapih265enc ! h265parse ! matroskamux ! filesink location=test.mkv
+            //gst-launch-1.0 videotestsrc ! video/x-raw,format=GRAY8,framerate=\(fraction\)90/1,width=1696,height=480 ! videoconvert ! vaapivp9enc ! matroskamux ! filesink location=test.mkv
 
             _pipeline = gst_pipeline_new ("pipeline");
 
@@ -100,7 +116,7 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
                           "stream-type", 0, // GST_APP_STREAM_TYPE_STREAM
                           "format", GST_FORMAT_TIME,
                           "is-live", TRUE,
-                          "max-bytes", 100000000, // buffer size before enough-data fires. Default 200000
+                          "max-bytes", 500000000, // buffer size before enough-data fires. Default 200000
                           NULL);
             g_signal_connect (_appsrc, "need-data", G_CALLBACK(cb_need_data), NULL);
             g_signal_connect (_appsrc, "enough-data", G_CALLBACK(cb_enough_data), NULL);
@@ -142,15 +158,41 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
 
                 // verify that vaapivp9enc is available
                 if(gst_element_factory_find ("vaapivp9enc")) {
+                    std::cout << "Using vp9 vaapi encoding" << std::endl;
                     encoder = gst_element_factory_make ("vaapivp9enc", "encoder"); // hardware encoding
-                    g_object_set (G_OBJECT (encoder),"rate-control",2, "quality-level", 1,"bitrate", 7500, NULL);
-                } else {
-                    std::cout << "Warning: could not find vaapivp9, falling back to x264" << std::endl;
-                    encoder = gst_element_factory_make ("x264enc", "encoder");
-                }
 
-                gst_bin_add_many (GST_BIN (_pipeline),_appsrc,encoder,mux,videosink,NULL);
-                gst_element_link_many (_appsrc,encoder,mux,videosink,NULL);
+                    int quality = 1;
+                    if (vp9 == nuc11)
+                        quality = 3;
+                    g_object_set (G_OBJECT (encoder),"rate-control",2, "quality-level", quality,"bitrate", 7500, NULL);
+
+                    if (vp9 == nuc11) {
+                        gst_bin_add_many (GST_BIN (_pipeline),_appsrc,videoconvert,encoder,mux,videosink,NULL);
+                        gst_element_link_many (_appsrc,videoconvert,encoder,mux,videosink,NULL);
+                    } else {
+                        gst_bin_add_many (GST_BIN (_pipeline),_appsrc,encoder,mux,videosink,NULL);
+                        gst_element_link_many (_appsrc,encoder,mux,videosink,NULL);
+                    }
+
+                    // } else if(gst_element_factory_find ("vaapih265enc")) { // seems to be problematic on AMD
+                    //     encoder = gst_element_factory_make ("vaapih265enc", "encoder"); // hardware encoding
+                    //     //The cqp rate-control setting seems to leave noticable noice, so we set a fixed bitrate. 5000 seems to be a nice compromise between quality and size.
+                    //     //For logging (with stringent size and download constraints), cqp could be better though. It is about 5x smaller and the noise does not really influence our algorithms.
+                    //     //To have a similar size as the intel rs bag one would need to increase to 5000000 (5M), but they are using mjpeg which is much less efficient
+                    //     g_object_set (G_OBJECT (encoder),  "rate-control", 2,"bitrate", 5000, NULL);
+                } else if(gst_element_factory_find ("vaapih264enc")) {
+                    std::cout << "Using h264 vaapi encoding" << std::endl;
+                    encoder = gst_element_factory_make ("vaapih264enc", "encoder"); // hardware encoding
+                    g_object_set (G_OBJECT (encoder),  "rate-control", 2,"bitrate", 5000, NULL);
+                    auto parser = gst_element_factory_make ("h264parse", "parser");
+                    gst_bin_add_many (GST_BIN (_pipeline),_appsrc,videoconvert,encoder,parser,mux,videosink,NULL);
+                    gst_element_link_many (_appsrc,videoconvert,encoder,parser,mux,videosink,NULL);
+                } else {
+                    std::cout << "Warning: could not find vaapi, falling back to x264" << std::endl;
+                    encoder = gst_element_factory_make ("x264enc", "encoder");
+                    gst_bin_add_many (GST_BIN (_pipeline),_appsrc,encoder,mux,videosink,NULL);
+                    gst_element_link_many (_appsrc,encoder,mux,videosink,NULL);
+                }
             }
 
         } else if (mode == video_stream) { // streaming has not be updated and tested for a while now...doubt it still works optimal

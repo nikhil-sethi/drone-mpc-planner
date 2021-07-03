@@ -20,6 +20,13 @@ sleep 15s # wait some time to enumerate device again after a reset
 HOST_ID=$( hostname | tr -dc '0-9' )
 DRONE_ID=$(( $HOST_ID ))
 
+CPU_str=$(lscpu | grep -i 'model name' | uniq)
+if [[ $CPU_str == *"i3-7100U"* ]] || [[ $CPU_str == *"i3-8109U"* ]]; then
+  #also done in .bashrc
+  echo $CPU_str
+  export LIBVA_DRIVER_NAME=i965
+fi
+
 while [ 1 ]; do
 
 	while [ -f /home/pats/pats/flags/disable ]; do
