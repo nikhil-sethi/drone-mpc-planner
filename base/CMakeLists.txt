@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11.0)
+cmake_minimum_required(VERSION 3.10.2)
 project(pats)
 
 set(SRC_DIR ./src/)
@@ -8,6 +8,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lstdc++fs -msse3 -Wall -Wextra -Wlogica
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+MESSAGE( STATUS "CMAKE BUILD TYPE: " ${CMAKE_BUILD_TYPE} )
 
 # sources
 FILE(GLOB SRCS "${SRC_DIR}*.cpp" "${SRC_DIR}*.h" "${SRC_DIR}navigation/*.cpp" "${SRC_DIR}navigation/*.h" "${SRC_DIR}cam/*.cpp" "${SRC_DIR}cam/*.h" "${SRC_DIR}trackers/*.cpp" "${SRC_DIR}trackers/*.h" "${SRC_DIR}filtering/*.cpp" "${SRC_DIR}filtering/*.h" "${SRC_DIR}logging/*.h" "${SRC_DIR}logging/*.cpp" "${SRC_DIR}rc/*.h" "${SRC_DIR}rc/*.cpp" "${SRC_DIR}airsim/*.cpp" "${SRC_DIR}airsim/*.h")
