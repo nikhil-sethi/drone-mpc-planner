@@ -215,7 +215,7 @@ std::tuple<float,bool,float> TrackerManager::tune_detection_radius(cv::Point max
     float best_im_dist = INFINITY;
     if (!drn_predict.valid || best_im_dist > drn_predict.size *0.45f ) { //0.45 -> divide by 2 and 10% margin
         for (auto trkr : _trackers) {
-            if (trkr->image_predict_item().valid && trkr->type() == tt_insect) {
+            if (trkr->image_predict_item().valid && trkr->type() != tt_replay && trkr->type() != tt_virtualmoth) {
                 float im_dist = normf(trkr->image_predict_item().pt - max_unscaled);
                 if (im_dist < best_im_dist) {
                     best_im_dist = im_dist;
