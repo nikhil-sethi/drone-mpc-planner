@@ -67,11 +67,12 @@ struct StereoPair {
         right = right_;
         rs_id = rs_id_;
         time = time_;
+        processing = false;
     }
     cv::Mat left,right;
     unsigned long long rs_id;
     double time;
-    std::mutex processed;
+    bool processing;
 };
 struct NoRealsenseConnected : public std::exception {
     std::string msg;
