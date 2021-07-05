@@ -138,7 +138,7 @@ if [[ $1 -eq 0 ]] ; then
 		#libgtk2.0-dev libtbb-dev qt5-default libgtkgl* libgtkgl2.0-* libgtkglext1  libgtkglext1-dev libgtkglext1-dev libgtkgl2.0-dev  libgtk2.0-dev libgtk-3-dev gnome-devel
 		touch dev-dependencies-packages-v1.1.done
 	}
-	
+
 	[ -f dnn-dependencies-packages-v1.0.done ] || {
 		pip3 install matplotlib
 	}
@@ -155,7 +155,6 @@ if [ $CPU -eq 2 ] && [ $1 -eq 1 ] && [ ! -f gstreamer-v1.18.4.done ]; then
 	[ -d pats ] || {
 		git clone git@github.com:pats-drones/pats.git # needed for the patch
 		pushd pats
-		git checkout opencv_452 #tmp!
 		popd
 	}
 	popd
