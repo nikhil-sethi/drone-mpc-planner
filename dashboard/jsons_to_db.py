@@ -152,6 +152,7 @@ def concat_modes():
         t_id = columns.index('start_datetime')
         t2_id = columns.index('end_datetime')
         mode_id = columns.index('op_mode')
+        sys_id = columns.index('system')
 
         all_modes_cleaned = []
         pbar = tqdm(systems, desc='Concatenating modes db')
@@ -183,16 +184,39 @@ def concat_modes():
             modes_cleaned = [entry for entry in modes if entry[mode_id][0] != '_']
             all_modes_cleaned = all_modes_cleaned + modes_cleaned
 
-        # modes_including_downtime = []
+        # tmp remove downs
+        # all_modes_cleaned_no_down = []
         # for i in range(0, len(all_modes_cleaned) - 1):
-        #     all_modes_cleaned[i] = [len(modes_including_downtime), all_modes_cleaned[i][1], all_modes_cleaned[i][2], all_modes_cleaned[i][3], all_modes_cleaned[i][4]]
-        #     modes_including_downtime.append(all_modes_cleaned[i])
-        #     t_end_date_current_session = datetime.datetime.strptime(all_modes_cleaned[i][t2_id], '%Y%m%d_%H%M%S')
-        #     t_start_date_next_session = datetime.datetime.strptime(all_modes_cleaned[i + 1][t_id], '%Y%m%d_%H%M%S')
-        #     in_between_time = t_start_date_next_session - t_end_date_current_session
-        #     if in_between_time > datetime.timedelta(hours=1):
-        #         down = [len(modes_including_downtime), all_modes_cleaned[i][1], all_modes_cleaned[i][t2_id], all_modes_cleaned[i + 1][t_id], 'down']
-        #         modes_including_downtime.append(down)
+        #     if all_modes_cleaned[i][4] != 'down':
+        #         mode_new_id = [len(all_modes_cleaned_no_down), all_modes_cleaned[i][1], all_modes_cleaned[i][2], all_modes_cleaned[i][3], all_modes_cleaned[i][4]]
+        #         all_modes_cleaned_no_down.append(mode_new_id)
+        # all_modes_cleaned = all_modes_cleaned_no_down
+
+        # there seemed to be some bug that caused mode entries with negative duration... get rid of those:
+        all_modes_cleaned_negative_time = []
+        pbar = tqdm(range(0, len(all_modes_cleaned)), desc='Removing negative modes durations')
+        for i in pbar:
+            mode = [len(all_modes_cleaned_negative_time), all_modes_cleaned[i][1], all_modes_cleaned[i][2], all_modes_cleaned[i][3], all_modes_cleaned[i][4]]
+            t_start_date_current_session = todatetime(all_modes_cleaned[i][t_id])
+            t_end_date_current_session = todatetime(all_modes_cleaned[i][t2_id])
+            if t_end_date_current_session > t_start_date_current_session:
+                all_modes_cleaned_negative_time.append(mode)
+            else:
+                print('Corrupted mode data found' + str(mode))
+        all_modes_cleaned = all_modes_cleaned_negative_time
+
+        modes_including_downtime = []
+        pbar = tqdm(range(0, len(all_modes_cleaned) - 1), 'Finding down time')
+        for i in pbar:
+            mode = [len(modes_including_downtime), all_modes_cleaned[i][1], all_modes_cleaned[i][2], all_modes_cleaned[i][3], all_modes_cleaned[i][4]]
+            t_end_date_current_session = todatetime(all_modes_cleaned[i][t2_id])
+            t_start_date_next_session = todatetime(all_modes_cleaned[i + 1][t_id])
+            modes_including_downtime.append(mode)
+            in_between_time = t_start_date_next_session - t_end_date_current_session
+            if in_between_time > datetime.timedelta(hours=1) and all_modes_cleaned[i][sys_id] == all_modes_cleaned[i + 1][sys_id]:
+                down = [len(modes_including_downtime), all_modes_cleaned[i][1], all_modes_cleaned[i][t2_id], all_modes_cleaned[i + 1][t_id], 'down']
+                modes_including_downtime.append(down)
+        all_modes_cleaned = modes_including_downtime
 
         sql_clear_table = 'DELETE FROM mode_records'
         cur.execute(sql_clear_table)
@@ -204,7 +228,8 @@ def concat_modes():
             sql_insert = sql_insert + s + ','
             sql__insert_values = sql__insert_values + '?,'
         sql_insert = sql_insert[:-1] + sql__insert_values[:-1] + ')'
-        for mode in all_modes_cleaned:
+        pbar = tqdm(all_modes_cleaned, "Recreating mode table")
+        for mode in pbar:
             cur.execute(sql_insert, mode)
         con.commit()
 
