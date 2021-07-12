@@ -7,7 +7,6 @@
 #include "tracking.h"
 #include "landingcontroller.h"
 #include "keepinviewcontroller.h"
-#include "propwashhandler.h"
 
 #define DRONECONTROLLER_DEBUG false
 #define ENABLE_SPINUP true
@@ -284,8 +283,6 @@ private:
     void load_calibration(std::string replay_dir);
     void load_control_parameters();
     void serialize_settings();
-
-    PropwashHandler propwash_handler;
 
 public:
     LandingController land_ctrl;

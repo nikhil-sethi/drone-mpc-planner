@@ -32,7 +32,7 @@ void DroneController::init(std::ofstream *logger,string replay_dir,bool generato
                "joyThrottle;joyRoll;joyPitch;joyYaw; " <<
                "joyArmSwitch;joyModeSwitch;joyTakeoffSwitch;" <<
                "mmArmSwitch;mmModeSwitch;" <<
-               "dt;propwash;kiv;" <<
+               "dt;kiv;" <<
                "thrust; integrator_x;integrator_y;integrator_z;" <<
                "batt_cell_v;rssi;arm;";
     ;
@@ -520,7 +520,6 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
                _rc->arm_switch << ";" <<
                _rc->mode << ";" <<
                data_drone.dt << ";" <<
-               propwash_handler.propwash() << ";" <<
                kiv_ctrl.active << ";" <<
                calibration.thrust << ";" <<
                pos_err_i.x << ";" << pos_err_i.y << ";" << pos_err_i.z << ";" <<
@@ -846,9 +845,6 @@ float DroneController::thrust_to_throttle(float thrust_ratio) {
 
 
 std::tuple<int,int,int> DroneController::calc_feedforward_control(cv::Point3f desired_acc) {
-
-    cv::Point3f drone_vel = _dtrk->last_track_data().vel();
-    desired_acc = propwash_handler.update(drone_vel, desired_acc, calibration.thrust);
 
     cv::Point3f des_acc_drone = compensate_gravity_and_crop_to_limit(desired_acc, calibration.thrust);
     cv::Point3f direction = des_acc_drone/normf(des_acc_drone);
