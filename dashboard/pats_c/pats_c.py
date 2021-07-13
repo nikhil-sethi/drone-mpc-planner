@@ -63,13 +63,14 @@ def load_customers():
     return {}
 
 
-def insect_db():  # based on https://docs.google.com/spreadsheets/d/1au4vwYKK7ih5FH_bwsKNETznB1LkGS_cITTGC87jYGY/edit#gid=0
+def insect_db():  # see also https://docs.google.com/spreadsheets/d/1au4vwYKK7ih5FH_bwsKNETznB1LkGS_cITTGC87jYGY/edit#gid=0
     insects = []
-    insects.append({'sql_column': 'chrysodeixis_chalcites', 'label': 'Chrysodeixis chalcites (Turkse mot)', 'avg_size': 0.04, 'std_dev': 0.005})
-    insects.append({'sql_column': 'tuta_absoluta', 'label': 'Tuta absoluta', 'avg_size': 0.01, 'std_dev': 0.001})
-    insects.append({'sql_column': 'duponchelia_fovealis', 'label': 'Duponchelia fovealis', 'avg_size': 0.02, 'std_dev': 0.001})
-    insects.append({'sql_column': 'opogona_sacchari', 'label': 'Opogona sacchari', 'avg_size': 0.022, 'std_dev': 0.004})
+    insects.append({'sql_column': 'chrysodeixis_chalcites', 'label': 'Chrysodeixis chalcites (Turkse mot)', 'avg_size': 0.03, 'std_dev': 0.005})
+    insects.append({'sql_column': 'tuta_absoluta', 'label': 'Tuta absoluta', 'avg_size': 0.007, 'std_dev': 0.0025})
+    insects.append({'sql_column': 'duponchelia_fovealis', 'label': 'Duponchelia fovealis', 'avg_size': 0.016, 'std_dev': 0.004})
+    insects.append({'sql_column': 'opogona_sacchari', 'label': 'Opogona sacchari', 'avg_size': 0.018, 'std_dev': 0.0035})
     insects.append({'sql_column': 'nezara_viridula', 'label': 'Nezara viridula (Stink wants)', 'avg_size': 0.022, 'std_dev': 0.004})
+    insects.append({'sql_column': 'lyprauta', 'label': 'Lyprauta oberthuri (potworm)', 'avg_size': 0.006, 'std_dev': 0.002})
     insects.append({'sql_column': '', 'label': 'No size filter', 'avg_size': 0, 'std_dev': 0})
     return insects
 
