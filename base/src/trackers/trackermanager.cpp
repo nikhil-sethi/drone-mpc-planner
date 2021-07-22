@@ -192,7 +192,9 @@ void TrackerManager::find_blobs() {
                     find_cog_and_remove(max_pos,max_val,motion_noise,diff,motion_filtered_noise_mapL);
                 else  // probably noise spickle. Remove a very small area:
                     cv::circle(diff, max_pos, 2, Scalar(0), cv::FILLED);
-            } else
+            } else if (max_val > 2 * motion_thresh)
+                cv::circle(diff, max_pos, 2, Scalar(0), cv::FILLED);
+            else
                 return;
             i++;
             break;
