@@ -105,6 +105,7 @@ struct ImagePredictItem {
     float disparity = 0,size = 0;
     float pixel_max = 0;
     bool out_of_image = false;
+    bool out_of_image_right = false;
     bool valid = false;
     cv::Point2f pt;
     cv::Point2f pt_unbound;
@@ -116,6 +117,7 @@ struct ImagePredictItem {
         pt.x = std::clamp(p.x,0.f,IMG_Wf-1);
         pt.y = std::clamp(p.y,0.f,IMG_Hf-1);
         disparity = p.z;
+        out_of_image_right = p.x-disparity<0;
         size = size_;
         pixel_max = pixel_max_;
         frame_id = frameid;

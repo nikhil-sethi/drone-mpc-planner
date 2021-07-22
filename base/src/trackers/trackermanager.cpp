@@ -989,6 +989,12 @@ void TrackerManager::draw_trackers_viz() {
                     int baseline;
                     Size text_size = getTextSize(flag,FONT_HERSHEY_TRIPLEX,0.75,2,&baseline);
                     text_w+=text_size.width;
+                } else if (trkr->image_predict_item().out_of_image_right) {
+                    std::string flag = "OUT OF RIGHT IMAGE";
+                    putText(viz_descr,flag,cv::Point2i(1,y_text++ * size_text),FONT_HERSHEY_TRIPLEX,0.4,cv::Scalar(0,0,255));
+                    int baseline;
+                    Size text_size = getTextSize(flag,FONT_HERSHEY_TRIPLEX,0.75,2,&baseline);
+                    text_w+=text_size.width;
                 }
                 if (trkr->type() == tt_insect) {
                     InsectTracker *itrkr = static_cast<InsectTracker *> (trkr);

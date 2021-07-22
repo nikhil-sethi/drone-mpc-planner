@@ -233,6 +233,33 @@ void ItemTracker::append_log() {
 float ItemTracker::stereo_match(BlobProps * blob) {
     cv::Point2f im_posL = blob->pt_unscaled();
     float size = blob->size_unscaled();
+    int radius = ceilf((size + 4.f)*0.5f);
+
+    if (im_posL.x - _image_predict_item.disparity <= 0 && _image_predict_item.valid)
+        return -1; // if the center of the blob falls out of the right image, disparity becomes tricky, return out of range which must be handled outside this function
+
+    // When the blob gets too close to the left edge, the blob may already be partially out of the frameR.
+    // We can tolerate that by shifting the center of the blob used for the disparity matching inwards the image a bit.
+    // In other words, we then only use the rightmost part of the blob for matching, and through away the part that has a
+    // high chance of not being visible in frameR anyway. And as long as we do it in both images, for matching it doesn't
+    // matter too much.
+    // A better alternative may be to calculate the disparity using the frameR as a base instead of frameL in the case the
+    // blob is in the left half of the image, but that requires a more work.
+    BlobProps blob_shifted = *blob;
+    if (im_posL.x - radius- max_disparity <= 0) {
+        size /=2.f;
+        im_posL.x+= size;
+        radius = ceilf((size + 4.f)*0.5f);
+        blob_shifted.size/=2;
+        blob_shifted.x+=blob_shifted.size;
+    }
+
+    //limit the patches for CPU optimization
+    //We don't resize, but just select the middle rect of the full patch. This way we
+    //still have full resolution (very important for disparity precision), but limit
+    //the amount of pixels being matched, without needing to do cpu intensive resizing. Win win :)
+    if (radius > 20)
+        radius = 20;
 
     cv::Mat diffL,diffR,grayL,grayR,motion_filtered_noise_mapL,motion_filtered_noise_mapR;
     diffL = _visdat->diffL;
@@ -241,14 +268,6 @@ float ItemTracker::stereo_match(BlobProps * blob) {
     motion_filtered_noise_mapR = _visdat->motion_filtered_noise_mapR;
     grayL = _visdat->frameL;
     grayR = _visdat->frameR;
-    int radius = ceilf((size + 4.f)*0.5f);
-
-    //limit the patches for CPU optimization
-    //We don't resize, but just select the middle rect of the full patch. This way we
-    //still have full resolution (very important for disparity precision), but limit
-    //the amount of pixels being matched, without needing to do cpu intensive resizing. Win win :)
-    if (radius > 20)
-        radius = 20;
 
     int x,y,width,height;
     x = std::clamp(static_cast<int>(roundf(im_posL.x))-radius,0,diffL.cols-1);
@@ -262,9 +281,9 @@ float ItemTracker::stereo_match(BlobProps * blob) {
         height=diffL.rows-y;
     cv::Rect roiL(x,y,width,height);
 
-    auto [disp_start,disp_pred,disp_rng,disp_end,calculated_rough_disp] =  disparity_search_rng(blob,x,radius);
+    auto [disp_start,disp_pred,disp_rng,disp_end,calculated_rough_disp] =  disparity_search_rng(&blob_shifted,x,radius);
     if (disp_rng < 3) {
-        return -1; // return out of range which must be handled outside this function
+        return -1; // return out of range which must be handled outside this function, this should in theory already been caught above...
     }
 
     float npixels = static_cast<float>(roiL.width*roiL.height);
@@ -346,7 +365,7 @@ float ItemTracker::stereo_match(BlobProps * blob) {
                 }
             }
 
-            if (enable_draw_stereo_viz && !not_enough_pixels) {
+            if (enable_draw_stereo_viz && !not_enough_pixels && disparity_masked) {
                 cv::Rect roiR_patch = cv::Rect (disp_end-1-disparity_masked,0,width,height);
                 cv::bitwise_and(diffL_mask_patch,diffR_mask_patch(roiR_patch),mask_final);
                 cv::bitwise_and(grayL_patch,grayL_patch,grayL_masked_final,mask_final);
@@ -451,7 +470,7 @@ float ItemTracker::stereo_match(BlobProps * blob) {
         if (calculated_rough_disp)
             return disp_pred;
         else {
-            auto disp_rough = calc_rough_disparity(blob,radius);
+            auto disp_rough = calc_rough_disparity(&blob_shifted,radius);
             if (properly_tracking() && fabs(disp_pred-disp_rough) < 2)
                 return disp_pred;
             else
@@ -485,7 +504,7 @@ std::tuple<float,float> ItemTracker::calc_match_score_masked(int i, int disp_end
 std::tuple<int,float,int,int,bool> ItemTracker::disparity_search_rng(BlobProps * blob,int x,int radius) {
 
     int tmp_max_disp = max_disparity;
-    if (x - tmp_max_disp < 0)
+    if (x - max_disparity < 0)
         tmp_max_disp = x;
 
     int disp_start = min_disparity;
