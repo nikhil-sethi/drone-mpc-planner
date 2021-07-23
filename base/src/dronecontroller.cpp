@@ -1073,7 +1073,6 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::
         pos_err_p.z = err_z_filtered;
         errDz = 0;
     }
-    err_z_filtered = std::clamp(err_z_filtered,-0.4f,0.4f); // BEJO test speed limit. TODO: add some mode bool to trigger this
 
     cv::Point3f vel_err_p = {err_velx_filtered, err_vely_filtered, err_velz_filtered};
     cv::Point3f pos_err_d = {errDx, errDy, errDz};
