@@ -29,7 +29,7 @@
             <Member Name="threshold_mm">100</Member>
             <Member Name="threshold_v">1.7</Member>
             <Member Name="hover_pause">0</Member>
-            <Member Name="x">1.5</Member>
+            <Member Name="x">1.0</Member>
             <Member Name="y">-0.75</Member>
             <Member Name="z">-1.5</Member>
             <Member Name="name">WP3</Member>
