@@ -453,9 +453,6 @@ void DroneNavigation::update(double time) {
                 _trackers->dronetracker()->hover_mode(true);
             }
 
-            if (_nav_flight_mode == nfm_hunt && _iceptor->aim_in_range() && !low_battery_triggered)
-                _navigation_status = ns_start_the_chase;
-
             check_abort_autonomus_flight_conditions();
             break;
         } case ns_flower_waypoint: {
