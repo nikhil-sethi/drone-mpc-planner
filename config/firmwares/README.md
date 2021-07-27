@@ -34,6 +34,12 @@ Same remarks as with drone flash script apply.
 ## Flashing realsense camera:
 `sudo rs-fw-update -f ~/code/pats/config/firmwares/realsense/Signed_Image_UVC_5_12_14_50.bin`
 
+## Flashing Baseboard:
+
+```
+  cd $HOME/code/pats/config/firmwares/charging/avrdude  && ./avrdude -C./avrdude.conf -v -patmega328p -carduino -P/dev/baseboard -b115200 -D -Uflash:w:$HOME/code/pats/config/firmwares/charging/baseboard.ino.standard.hex:i
+```
+
 ## Initializing new Anvil charging pad:
 ### Programming Bootloader
 1. Run Adruino IDE

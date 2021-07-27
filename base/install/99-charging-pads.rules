@@ -1,0 +1,7 @@
+ACTION=="add", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60",  SYMLINK+="charging_pad"
+
+SUBSYSTEM=="tty", \
+    ENV{ID_MODEL}=="CP2105_Dual_USB_to_UART_Bridge_Controller", \
+    ENV{ID_VENDOR_ID}=="10c4", ENV{ID_MODEL_ID}=="ea70", \
+    ENV{ID_USB_INTERFACE_NUM}=="01" \
+    SYMLINK+="baseboard"

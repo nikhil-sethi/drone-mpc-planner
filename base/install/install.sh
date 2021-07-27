@@ -370,6 +370,16 @@ fi
 	touch mm_install_v1.1.done
 }
 
+#install driver for baseboard:
+[ -f baseboard_install_v1.1.done ] || {
+	[ -f /lib/udev/rules.d/99-charging-pads.rules ] && {
+		sudo rm /lib/udev/rules.d/99-charging-pads.rules
+	}
+	sudo ln -s ~/code/pats/base/install/99-charging-pads.rules /lib/udev/rules.d/
+	sudo udevadm control --reload-rules && udevadm trigger
+	touch baseboard_install_v1.1.done
+}
+
 popd
 sudo apt-get autoremove -y
 sudo apt-get clean -y
