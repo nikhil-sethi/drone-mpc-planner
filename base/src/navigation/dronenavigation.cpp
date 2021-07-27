@@ -369,6 +369,7 @@ void DroneNavigation::update(double time) {
             _dctrl->flight_mode(DroneController::fm_flying_pid);
             _dctrl->LED(true);
             next_waypoint(Waypoint_Yaw_Reset(),time);
+            _dctrl->nav_waypoint_moved(time); // trigger wp movement. If we were hunting there was no previous wp, or if a flight abort was triggered the previous wp may not have been reached...
             _navigation_status = ns_approach_waypoint;
             break;
         } case ns_goto_thrust_calib_waypoint: {

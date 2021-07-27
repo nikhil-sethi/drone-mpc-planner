@@ -272,7 +272,7 @@ private:
     void blink_motors(double time);
 
     std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> adjust_control_gains(tracking::TrackData drone_data, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel,bool enable_horizontal_integrators);
-    std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> control_error(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool enable_horizontal_integrators);
+    std::tuple<cv::Point3f, cv::Point3f> control_error(tracking::TrackData data_drone, cv::Point3f setpoint_pos, bool enable_horizontal_integrators);
     std::tuple<int,int,int> calc_feedforward_control(cv::Point3f desired_acceleration);
     cv::Point3f compensate_gravity_and_crop_to_limit(cv::Point3f des_acc, float thrust);
     void control_model_based(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
