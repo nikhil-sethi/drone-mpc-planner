@@ -949,7 +949,7 @@ cv::Point3f DroneController::pid_error(TrackData data_drone, cv::Point3f setpoin
     std::tie(kp_pos, ki_pos, kd_pos, kp_vel, kd_vel) = adjust_control_gains(data_drone, setpoint_pos, setpoint_vel,enable_horizontal_integrators);
 
     cv::Point3f pos_err_p, pos_err_d;
-    std::tie(pos_err_p, pos_err_d) = control_error(data_drone, setpoint_pos, enable_horizontal_integrators);
+    std::tie(pos_err_p, pos_err_d) = control_error(data_drone, setpoint_pos, enable_horizontal_integrators,dry_run);
 
     cv::Point3f error = {0};
     error += multf(kp_pos, pos_err_p) + multf(ki_pos, pos_err_i) + multf(kd_pos, pos_err_d); // position controld
@@ -1031,7 +1031,7 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> Dron
     return std::tuple(kp_pos, ki_pos, kd_pos, kp_vel, kd_vel);
 }
 
-std::tuple<cv::Point3f, cv::Point3f> DroneController::control_error(TrackData data_drone, cv::Point3f setpoint_pos, bool enable_horizontal_integrators) {
+std::tuple<cv::Point3f, cv::Point3f> DroneController::control_error(TrackData data_drone, cv::Point3f setpoint_pos, bool enable_horizontal_integrators, bool dry_run) {
     //WARNING: this function is not allowed to store any information (or apply filters that store), because it is also being used for dummy calculations in the interceptor!
 
     float err_x_filtered = 0, err_y_filtered = 0, err_z_filtered = 0;
@@ -1073,7 +1073,7 @@ std::tuple<cv::Point3f, cv::Point3f> DroneController::control_error(TrackData da
             pos_err_i.y = 0;
         } else
             pos_err_i.y += (err_y_filtered - setpoint_pos.y + pos_modely.current_output());
-    } else {
+    } else if (!dry_run) {
         pos_err_i = {0};
     }
 
