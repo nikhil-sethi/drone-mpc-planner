@@ -374,7 +374,7 @@ class SystemWidget(QWidget):
                         if self.combo_sub_mode.currentText() == 'Koppert':
                             line = '    <Member Name=\"brightness_threshold\">50</Member>\n'
                         else:
-                            line = '    <Member Name=\"brightness_threshold\">255</Member>\n'
+                            line = '    <Member Name=\"brightness_threshold\">90</Member>\n'
                     else:
                         line = '    <Member Name=\"brightness_threshold\">255</Member>\n'
                 elif line.find('\"close_after_n_images\"') != -1:
