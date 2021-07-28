@@ -359,7 +359,7 @@ class SystemWidget(QWidget):
                         if self.combo_sub_mode.currentText() == 'Koppert':
                             line = '    <Member Name=\"exposure_threshold\">9500</Member>\n'
                         else:
-                            line = '    <Member Name=\"exposure_threshold\">0</Member>\n'
+                            line = '    <Member Name=\"exposure_threshold\">5000</Member>\n'
                     else:
                         line = '    <Member Name=\"exposure_threshold\">0</Member>\n'
                 elif line.find('\"brightness_threshold\"') != -1:
