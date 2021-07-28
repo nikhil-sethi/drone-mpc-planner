@@ -258,7 +258,7 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_manual;
             } else if (_nav_flight_mode == nfm_hunt) {
 
-                if (_dctrl->telemetry().batt_cell_v > 2 && _dctrl->telemetry().batt_cell_v < dparams.min_hunt_cell_v) {
+                if (_dctrl->telemetry().batt_cell_v > 2 && _dctrl->telemetry().batt_cell_v < dparams.min_hunt_cell_v && time - time_take_off > 15) {
                     _navigation_status = ns_batlow;
                     break;
                 } else if (_trackers->too_many_false_positives()) {
@@ -275,7 +275,7 @@ void DroneNavigation::update(double time) {
                 } else if(_iceptor->trigger_takeoff() && _visdat->no_recent_large_brightness_events(time)) {
                     _navigation_status = ns_takeoff;
                     repeat = true;
-                } else if(itrkr->properly_tracking() && !itrkr->false_positive() && _visdat->no_recent_large_brightness_events(time)) {
+                } else if(itrkr->properly_tracking() && !itrkr->false_positive() && _visdat->no_recent_large_brightness_events(time) && _dctrl->telemetry().batt_cell_v > dparams.min_hunt_cell_v) {
                     _dctrl->flight_mode (DroneController::fm_spinup);
                 } else {
                     _dctrl->flight_mode(DroneController::fm_inactive);
