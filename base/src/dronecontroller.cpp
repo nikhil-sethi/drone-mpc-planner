@@ -697,6 +697,10 @@ bool DroneController::attitude_on_pad_OK() {
     } else
         return false;
 }
+void DroneController::invalidize_blink() {
+    calibration.pad_calib_date = "2000/01/01 00:00:00";
+    save_calibration();
+}
 bool DroneController::pad_calibration_done() {
     if (!dparams.Telemetry()) {
         std::cout << "Warning: drone has no telemetry capability. Skipping att calibration." << std::endl;

@@ -113,8 +113,10 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_unable_to_locate;
             } else if (_dctrl->takeoff_calib_valid() && !force_pad_redetect)
                 _navigation_status = ns_start_calibrating_motion;
-            else
+            else {
+                _dctrl->invalidize_blink();
                 _navigation_status = ns_locate_drone_wait_led_on;
+            }
             force_pad_redetect = false;
             repeat = true;
             break;

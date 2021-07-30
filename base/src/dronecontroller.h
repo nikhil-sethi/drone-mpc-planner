@@ -515,6 +515,7 @@ public:
     void init_thrust_calibration();
     void save_thrust_calibration();
     bool attitude_on_pad_OK();
+    void invalidize_blink();
     bool pad_calibration_done();
     bool takeoff_calib_valid();
     bool thrust_calib_valid();
