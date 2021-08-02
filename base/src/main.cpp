@@ -125,7 +125,7 @@ void process_video() {
     start_datetime = chrono::system_clock::to_time_t(chrono::system_clock::now());
 
     //main while loop:
-    while (!exit_now) { 
+    while (!exit_now) {
         auto frame = cam->update();
         std::unique_lock<std::mutex> lk(tp[0].m2,std::defer_lock);
         tp[0].data_processed.wait(lk, []() {return tp[0].data_is_processed; });
@@ -304,7 +304,7 @@ void process_video() {
         if (fps != fps || isinf(fps))
             fps_smoothed.reset();
 
-        if (dctrl.in_flight_duration(frame->time) < 0.1f || dnav.drone_problem(1)) {
+        if (dctrl.in_flight_duration(frame->time) < 1.f/pparams.fps || dnav.drone_problem(1)) {
             if (!log_replay_mode  && ((imgcount > pparams.close_after_n_images && pparams.close_after_n_images > 0))) {
                 std::cout << "Initiating periodic restart" << std::endl;
                 exit_now = true;
