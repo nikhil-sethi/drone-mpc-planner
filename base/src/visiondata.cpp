@@ -232,7 +232,8 @@ void VisionData::track_avg_brightness(cv::Mat frame,double time) {
     cv::Mat frame_top = frame(cv::Rect(frame.cols/3,0,frame.cols/3*2,frame.rows/3)); // only check the middle & top third of the image, to save CPU
     float brightness = static_cast<float>(mean( frame_top )[0]);
     if (fabs(brightness - prev_brightness) > brightness_event_tresh  && prev_brightness >= 0) {
-        std::cout << "Warning, large brightness change: " << prev_brightness << " -> " << brightness  << std::endl;
+        if (time > 1.5)
+            std::cout << "Warning, large brightness change: " << prev_brightness << " -> " << brightness  << std::endl;
         _reset_motion_integration = true;
         _large_brightness_change_event_time = time;
     }

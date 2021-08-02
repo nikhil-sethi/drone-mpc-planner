@@ -11,16 +11,8 @@ class Realsense : public Cam {
 public:
     static std::string playback_filename() { return "record.bag"; }
     Realsense() {
-        from_recorded_bag = false;
         set_write_file_paths(data_output_dir);
         bag_fn = "./logging/record" + std::to_string(_id) + ".bag";
-    }
-    Realsense(string dir) {
-        replay_dir = dir;
-        from_recorded_bag = true;
-        set_read_file_paths(replay_dir);
-        set_write_file_paths(data_output_dir);
-        bag_fn = replay_dir + '/' + playback_filename();
     }
     void connect_and_check(string ser_nr,int id);
     void init() {
@@ -34,10 +26,7 @@ public:
             std::cout << "Error: unknown fps, not implemented" << std::endl;
             exit(1);
         }
-        if (from_recorded_bag)
-            init_playback();
-        else
-            init_real();
+        init_real();
     }
     void close();
     void reset();
@@ -70,8 +59,6 @@ private:
 
     bool isD455 = false;
     double _frame_time_start = -1;
-    string replay_dir;
-    bool from_recorded_bag;
     string bag_fn;
     string serial_nr_str;
     string serial_nr;
@@ -89,12 +76,9 @@ private:
     std::thread thread_watchdog;
     void watchdog_thread(void);
 
-    void seek(double time);
     void calibration(rs2::stream_profile infrared1,rs2::stream_profile infrared2);
     void init_real();
-    void init_playback();
     void update_real();
-    void update_playback();
     void rs_callback(rs2::frame f);
     void rs_callback_playback(rs2::frame f);
     void calib_depth_background();

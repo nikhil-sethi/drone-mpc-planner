@@ -123,7 +123,6 @@ void process_video() {
     fps_smoothed.init(100);
     stopWatch.Start();
     start_datetime = chrono::system_clock::to_time_t(chrono::system_clock::now());
-
     //main while loop:
     while (!exit_now) {
         auto frame = cam->update();
@@ -804,9 +803,7 @@ void check_hardware() {
     //init cam and check version
     std::cout << "Connecting camera..." << std::endl;
     if (log_replay_mode && !render_monitor_video_mode) {
-        if (file_exist(replay_dir+'/' + Realsense::playback_filename()))
-            cam = std::unique_ptr<Cam>(new Realsense(replay_dir));
-        else if (file_exist(replay_dir+'/' + FileCam::playback_filename()))
+        if (file_exist(replay_dir+'/' + FileCam::playback_filename()))
             cam = std::unique_ptr<Cam>(new FileCam(replay_dir,&logreader));
         else
             throw MyExit("Could not find a video in the replay folder!");
