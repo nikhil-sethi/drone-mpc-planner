@@ -248,10 +248,10 @@ def process_log(detection_fn, folder, mode, monitoring_start_datetime):
     duration = end - start
     first_RS_ID = str(RS_ID[0])
     filename = os.path.basename(detection_fn)
-    video_filename = os.path.dirname(detection_fn) + '/' + filename.replace('log_itrk', 'moth').replace('csv', 'mkv')
+    video_filename = os.path.dirname(detection_fn) + '/' + filename.replace('log_itrk', 'insect').replace('csv', 'mkv')
     if os.path.exists(video_filename) and duration > 1 and duration < 10:  # this filter is also used in PATS-C
         if os.stat(video_filename).st_size > 30000:
-            render_tag_filename = os.path.dirname(detection_fn) + '/' + filename.replace('log_itrk', 'moth').replace('csv', 'render_tag')
+            render_tag_filename = os.path.dirname(detection_fn) + '/' + filename.replace('log_itrk', 'insect').replace('csv', 'render_tag')
             Path(render_tag_filename).touch()
             video_filename = os.path.basename(video_filename)
         else:
