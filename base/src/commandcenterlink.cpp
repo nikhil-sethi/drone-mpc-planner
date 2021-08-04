@@ -20,8 +20,10 @@ void CommandCenterLink::init(bool log_replay_mode,navigation::DroneNavigation * 
     _log_replay_mode = log_replay_mode;
     _visdat = visdat;
 
-    thread = std::thread(&CommandCenterLink::background_worker,this);
-    initialized = true;
+    if (!_log_replay_mode) {
+        thread = std::thread(&CommandCenterLink::background_worker,this);
+        initialized = true;
+    }
 }
 
 void CommandCenterLink::close() {
