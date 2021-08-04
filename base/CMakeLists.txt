@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.10.2)
 project(pats)
 
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
 set(SRC_DIR ./src/)
 set(ignoreMe "${QT_QMAKE_EXECUTABLE}") #get rid unused variable warning:
 include(CheckCXXCompilerFlag)
