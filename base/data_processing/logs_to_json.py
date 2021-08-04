@@ -255,9 +255,13 @@ def process_log(detection_fn, folder, mode, monitoring_start_datetime):
             Path(render_tag_filename).touch()
             video_filename = os.path.basename(video_filename)
         else:
-            logger.error("video file doesn't have many bytes" + str(os.stat(video_filename).st_size))
+            logger.warning("video file doesn't have many bytes" + str(os.stat(video_filename).st_size))
             video_filename = 'NA; video corrupted'
+    elif not os.path.exists(video_filename):
+        logger.warning("video file source does not exist: " + video_filename)
+        video_filename = 'NA; video not available'
     else:
+        logger.info("detection too short to render video: " + str(duration))
         video_filename = 'NA; detection too short'
 
     detection_time = datetime_to_str(monitoring_start_datetime + timedelta(seconds=elapsed_time[0]))
