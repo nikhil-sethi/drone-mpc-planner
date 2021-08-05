@@ -81,6 +81,9 @@ def store_moths(data):
         # v1.8:
         if 'Wing_beat' not in columns:
             cur.execute('ALTER TABLE moth_records ADD COLUMN Wing_beat REAL')
+        # v1.9
+        if 'Monster' not in columns:
+            cur.execute('ALTER TABLE moth_records ADD COLUMN Monster INT')
 
         sql_insert = ''
         for moth in moths:

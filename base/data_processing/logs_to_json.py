@@ -17,7 +17,7 @@ from lib_base import datetime_to_str, natural_sort, str_to_datetime
 from datetime import datetime, timedelta
 from cut_moths import cut_moths
 
-version = "1.8"
+version = "1.9"
 
 
 def process_system_status_in_folder(folder):
@@ -242,6 +242,12 @@ def process_log(detection_fn, folder, mode, monitoring_start_datetime):
     else:
         wing_beat = -1
 
+    monster = False
+    if 'fp' in log:
+        fps = log['fp'].values
+        if fps[-1] == 'fp_too_big' or fps[-1] == 'fp_too_far':
+            monster = True
+
     filtered_elepased = np.delete(elapsed_time, remove_ids)
     start = filtered_elepased[0]
     end = filtered_elepased[-1]
@@ -284,6 +290,7 @@ def process_log(detection_fn, folder, mode, monitoring_start_datetime):
                       "Folder": os.path.basename(folder),
                       "Video_Filename": video_filename,
                       "Mode": mode,
+                      "Monster": monster,
                       "Version": version
                       }
     return detection_data
