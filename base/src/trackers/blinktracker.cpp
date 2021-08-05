@@ -11,7 +11,7 @@ bool BlinkTracker::init(int id, VisionData *visdat, int motion_thresh, int16_t v
 
     ItemTracker::init(visdat,motion_thresh,"blink",viz_id);
 
-    max_size = dparams.radius*3;
+    max_radius = dparams.radius*3;
     expected_radius = dparams.radius;
     _n_frames_lost = 1;
     n_frames_lost_threshold = pparams.fps;

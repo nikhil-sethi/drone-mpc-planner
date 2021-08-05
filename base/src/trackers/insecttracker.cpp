@@ -9,7 +9,7 @@ void InsectTracker::init(int id, VisionData *visdat, int motion_thresh, int16_t 
     _insect_trkr_id = id;
     ItemTracker::init(visdat,motion_thresh,"insect",viz_id);
     expected_radius = 0.01;
-    max_size = 0.03;
+    max_radius = 0.03;
     _n_frames_lost = 0;
     enable_draw_stereo_viz = enable_stereo_viz;
 }
@@ -47,10 +47,10 @@ void InsectTracker::check_false_positive() {
     // 5. A moving plant, e.g. caused by down wash from the drone
     // 6. Reflections from the drone led on reflective surfaces (i.e. the new charging pad)
     // 7. Flickering of and slowly moving vertical wires used to grow certain crops
+    // 8. Monsters. Which can be anything big and moving. Like humans, or sweeping lights, or cats, etc...
 
     //A check whether an object is actually moving through the image seems to be quite robust to filter out 1,4 and possibly 5 and 7:
     //A check whether a detection was tracked for more then a few frames filters out 2 and 3
-
     if (_track.size() < track_history_max_size) {
         auto wti_0 = _track.at(0).world_item;
         assert(wti_0.valid); // the first ever point tracked should always be valid
@@ -59,25 +59,47 @@ void InsectTracker::check_false_positive() {
                 dist_integrator_fp += normf(_world_item.pt - wti_0.pt);
             float tot = dist_integrator_fp/(_n_frames_tracked-1);
             if (tot < 0.01f && _n_frames_tracked > 1)
-                _fp_cnt++;
+                _fp_static_cnt++;
             else
-                _fp_cnt = 0;
+                _fp_static_cnt = 0;
         } else {
-            _fp_cnt = 0;
+            _fp_static_cnt = 0;
         }
-    } else if (_fp_cnt> 3) {
-        _tracking = false; //bye
-        _n_frames_lost = n_frames_lost_threshold;
+    } else if (_fp_static_cnt> 3) { // stop tracking this one so that it will be added to the false_positive list in the trackermanager
+        _tracking = false;
+        _n_frames_lost = n_frames_lost_threshold+1;
+    }
+
+    // a check on big things, or things too far away to be a visible insect handles 8
+    if (_world_item.valid) {
+        if ( _world_item.radius > 3 * max_radius) {
+            _fp_too_big_cnt++;
+        } else if (_fp_too_big_cnt && _world_item.radius < max_radius && _fp_too_big_cnt <= 30)
+            _fp_too_big_cnt--;
+
+        if ( _world_item.distance > 6)
+            _fp_too_far_cnt++;
+        else if (_fp_too_far_cnt && _world_item.distance < 6)
+            _fp_too_far_cnt--;
     }
 }
 tracking::false_positive_type InsectTracker::false_positive() {
-    if (_fp_cnt>3)
+
+    if (!_world_item.valid && _fp_static_cnt>3)
         return tracking::false_positive_type::fp_static_location;
-    else if ( properly_tracking() && _n_frames_tracked < n_frames_lost_threshold/2 )
-        return tracking::false_positive_type::fp_short_detection;
-    else if ( properly_tracking() && _n_frames_tracked < _n_frames/4 )
-        return tracking::false_positive_type::fp_short_detection;
-    else if ( !_tracking && _n_frames_tracked < n_frames_lost_threshold && _n_frames_tracked)
+    else if (_world_item.valid) {
+        if (_fp_too_big_cnt > 10 ||  _world_item.radius > 3* max_radius)
+            return tracking::false_positive_type::fp_too_big;
+        if (_fp_too_far_cnt > 10 ||  _world_item.distance > 6)
+            return tracking::false_positive_type::fp_too_far;
+    } else {
+        if (_fp_too_big_cnt >= n_frames_lost_threshold || (_fp_too_big_cnt * 2 >= _n_frames_tracked && _n_frames_tracked*2 >= n_frames_lost_threshold) )
+            return tracking::false_positive_type::fp_too_big;
+        if ( _fp_too_far_cnt >= n_frames_lost_threshold || (_fp_too_far_cnt * 2 >= _n_frames_tracked && _n_frames_tracked*2 >= n_frames_lost_threshold))
+            return tracking::false_positive_type::fp_too_far;
+    }
+
+    if ( !_world_item.valid && _n_frames_tracked < n_frames_lost_threshold && _n_frames)
         return tracking::false_positive_type::fp_short_detection;
     else
         return tracking::false_positive_type::fp_not_a_fp;
@@ -102,7 +124,7 @@ void InsectTracker::update(double time) {
 void InsectTracker::calc_world_item(BlobProps * props, double time [[maybe_unused]]) {
     calc_world_props_blob_generic(props);
     props->world_props.im_pos_ok = true;
-    props->world_props.valid = props->world_props.disparity_in_range & props->world_props.radius_in_range;
+    props->world_props.valid = props->world_props.disparity_in_range ;
     if (!props->world_props.bkg_check_ok && props->world_props.distance>1.2f*props->world_props.distance_bkg)
         //We need to allow for marging for moth flying through the crops, but at some point the chance of
         //some tracking problem too great. Not really sure when though, so this cut-off number 1.2 may need further tuning.
@@ -129,7 +151,8 @@ bool InsectTracker::delete_me() {
         }
         initialized = false;
         initialized_logger = false;
-        if (false_positive())
+        auto fp = false_positive();
+        if (fp == fp_short_detection || fp == fp_static_location)
             remove(logger_fn.c_str());
         return true;
     } else

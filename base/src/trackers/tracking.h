@@ -34,30 +34,29 @@ struct IgnoreBlob { // scaled with pparams.imscalef
 };
 
 struct BlobWorldProps {
-    float x,y,z,distance,distance_bkg,radius;
-    float disparity,motion_sum; // not really world props, but OK.
+    float x=0,y=0,z=0,distance=0,distance_bkg=0,radius=0;
+    float disparity,motion_sum=0; // not really world props, but OK.
     bool radius_in_range = false,disparity_in_range = false,bkg_check_ok = false,takeoff_reject = false,im_pos_ok = false, valid = false;
     cv::Point3f pt() {return cv::Point3f(x,y,z);}
     int trkr_id = -1;
 };
 struct BlobProps { // scaled with pparams.imscalef
-    float x,y,size,pixel_max; // these values are scaled with pparams.imscaled
-    int motion_noise;
+    float x=0,y=0,size=0; // these values are scaled with pparams.imscaled
+    uint32_t n_motion_pixels=0,motion_sum=0;
+    uint8_t motion_noise=0,pixel_max=0;
     std::vector<IgnoreBlob> ignores;
     bool false_positive = false;
-    cv::Mat mask;
     cv::Point2f pt() {return cv::Point2f(x,y);} //scaled with pparams.imscaled
     cv::Point2f pt_unscaled() {return cv::Point2f(x,y)*pparams.imscalef;}
     float size_unscaled() {return size*pparams.imscalef;}
-    bool in_overexposed_area;
-    int threshold_method;
-    BlobProps(cv::Point2f pt,float blob_size,float blob_pixel_max,int blob_pixel_motion_noise, cv::Mat blob_mask, bool overexposed_area, int threshold_method_, int frame_id_) : size(blob_size), pixel_max(blob_pixel_max), motion_noise(blob_pixel_motion_noise), mask(blob_mask), in_overexposed_area(overexposed_area),threshold_method(threshold_method_) {
+    bool in_overexposed_area=false;
+    BlobProps(cv::Point2f pt,float size_,uint32_t n_motion_pixels_, uint32_t motion_sum_, uint8_t pixel_max_, uint8_t pixel_motion_noise_, bool overexposed_area, int frame_id_) : size(size_), n_motion_pixels(n_motion_pixels_), motion_sum(motion_sum_), motion_noise(pixel_motion_noise_), pixel_max(pixel_max_), in_overexposed_area(overexposed_area) {
         x = pt.x;
         y = pt.y;
         frame_id = frame_id_;
     }
     BlobWorldProps world_props;
-    int frame_id;
+    int frame_id=0;
 };
 
 struct ImageItem {
@@ -176,13 +175,17 @@ struct TrackData {
 [[maybe_unused]] static const char* false_positive_names[] = {"fp_not_a_fp",
                                                               "fp_short_detection",
                                                               "fp_static_location",
-                                                              "fp_bkg"
+                                                              "fp_bkg",
+                                                              "fp_too_big",
+                                                              "fp_too_far"
                                                              };
 enum false_positive_type {
     fp_not_a_fp = 0,
     fp_short_detection,
     fp_static_location,
-    fp_bkg
+    fp_bkg,
+    fp_too_big,
+    fp_too_far
 };
 
 struct FalsePositive {

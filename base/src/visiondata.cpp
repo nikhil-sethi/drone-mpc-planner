@@ -48,6 +48,7 @@ void VisionData::init(Cam * cam) {
 }
 
 void VisionData::update(StereoPair * data) {
+    track_avg_brightness(data->left,frameL,_current_frame_time);
     frameL = data->left;
     frameR = data->right;
     frame_id = data->rs_id;
@@ -60,7 +61,6 @@ void VisionData::update(StereoPair * data) {
     frameL.convertTo(frameL16, CV_16SC1);
     frameR.convertTo(frameR16, CV_16SC1);
 
-    track_avg_brightness(frameL,_current_frame_time);
     static bool reset_motion_integration_prev = false; // used to zero diffL16 and R only once
     if (_reset_motion_integration) {
         frameL_prev16 = frameL16;
@@ -101,7 +101,6 @@ void VisionData::update(StereoPair * data) {
     cv::Mat diffL16_abs = abs(diffL16);
     diffL16_abs.convertTo(diffL, CV_8UC1);
     cv::resize(diffL,diffL_small,smallsize);
-
     cv::Mat diffR16_abs = abs(diffR16);
     diffR16_abs.convertTo(diffR, CV_8UC1);
     cv::resize(diffR,diffR_small,smallsize);
@@ -227,18 +226,31 @@ void VisionData::enable_noise_map_calibration(float duration) {
 }
 
 //Keep track of the average brightness, and reset the motion integration frame when it changes to much. (e.g. when someone turns on the lights or something)
-void VisionData::track_avg_brightness(cv::Mat frame,double time) {
-    cv::Mat frame_top = frame(cv::Rect(frame.cols/3,0,frame.cols/3*2,frame.rows/3)); // only check the middle & top third of the image, to save CPU
-    float brightness = static_cast<float>(mean( frame_top )[0]);
-    if (fabs(brightness - prev_brightness) > brightness_event_tresh  && prev_brightness >= 0) {
-        if (time > 1.5)
-            std::cout << "Warning, large brightness change: " << prev_brightness << " -> " << brightness  << std::endl;
-        _reset_motion_integration = true;
-        _large_brightness_change_event_time = time;
-    }
-    prev_brightness = brightness;
+void VisionData::track_avg_brightness(cv::Mat frameL_new, cv::Mat frameL_prev, double time) {
+    cv::Mat frame_top = frameL_new(cv::Rect(frameL_new.cols/3,0,frameL_new.cols/3*2,frameL_new.rows/3)); // only check the middle & top third of the image, to save CPU
+    float brightness_new = static_cast<float>(mean( frame_top )[0]);
+    float brightness_diff = fabs(brightness_new - brightness_prev);
+    large_brightness_event = false;
+    if (time > 1.5) {
+        if (brightness_diff > brightness_event_tresh) {
+            std::cout << "Warning, large brightness change: " << brightness_prev << " -> " << brightness_new  << std::endl;
+            large_brightness_event = true;
+            large_brightness_event_time = time;
+        } else if(brightness_diff > 0.3f)  { // capture subtle autoexposure changes
+            float brightness_ff_new = static_cast<float>(mean(frameL_new)[0]);
+            float brightness_ff_prev = static_cast<float>(mean(frameL_prev)[0]);
+            float brightness_ff_diff = fabs(brightness_ff_new - brightness_ff_prev);
 
+            if (brightness_ff_diff > 0.1f) {
+                std::cout << "Warning, small brightness change: " << brightness_prev << " -> " << brightness_new << "=" <<  brightness_diff << ". And ff brightness " << brightness_ff_prev << " -> " << brightness_ff_new << " = " << brightness_ff_diff << std::endl;
+                large_brightness_event = true;
+                large_brightness_event_time = time;
+            }
+        }
+    }
+    brightness_prev = brightness_new;
 }
+
 
 void VisionData::delete_from_motion_map(cv::Point p, int disparity,int radius, int duration) {
     motion_spot_to_be_deleted.cnt_active = duration;

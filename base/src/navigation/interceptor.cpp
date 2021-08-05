@@ -33,7 +33,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
 
         if (!target_trkr)
             break;
-        else  if ( target_trkr->tracking() && !target_trkr->false_positive() ) {
+        else  if ( target_trkr->tracking() && !target_trkr->false_positive() && !_trackers->monster_alert()) {
             _interceptor_state = is_waiting_in_reach_zone;
         } else
             break;
@@ -48,7 +48,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
         if (!target_trkr) {
             _interceptor_state = is_waiting_for_target;
             break;
-        } if ( !target_trkr->tracking() || target_trkr->false_positive()) {
+        } if ( !target_trkr->tracking() || target_trkr->false_positive() || _trackers->monster_alert()) {
             _interceptor_state = is_waiting_for_target;
             break;
         }
@@ -71,7 +71,8 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
         }
         if ( target_trkr->n_frames_lost() > 0.112 * pparams.fps
                 || _n_frames_aim_not_in_range > 0.34 * pparams.fps
-                || target_trkr->false_positive()) {
+                || target_trkr->false_positive()
+                || _trackers->monster_alert()) {
             _interceptor_state = is_waiting_for_target;
             break;
         }
@@ -101,7 +102,8 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
         }
         if ( target_trkr->n_frames_lost() > 0.15f * pparams.fps
                 || _n_frames_aim_not_in_range > 0.15f * pparams.fps
-                || target_trkr->false_positive()) {
+                || target_trkr->false_positive()
+                || _trackers->monster_alert()) {
             _interceptor_state = is_waiting_for_target;
             break;
         }
@@ -132,7 +134,8 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
         }
         if ( target_trkr->n_frames_lost() > 0.15f * pparams.fps
                 || _n_frames_aim_not_in_range > 0.15f * pparams.fps
-                || target_trkr->false_positive()) {
+                || target_trkr->false_positive()
+                || _trackers->monster_alert()) {
             _interceptor_state = is_waiting_for_target;
             break;
         }

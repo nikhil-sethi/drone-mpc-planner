@@ -194,6 +194,17 @@ def load_insect_df(selected_systems, start_date, end_date, insect_type):
                          AND {time_str}
                          AND {insect_str}'''  # nosec see #952
             insect_df = insect_df.append(pd.read_sql_query(sql_str, con, params=system_params))
+
+            # TODO:
+            # time_str = f'''time > "{(real_start_date-datetime.timedelta(minutes=5)).strftime('%Y%m%d_%H%M%S')}" AND time <= "{(end_date+datetime.timedelta(minutes=5)).strftime('%Y%m%d_%H%M%S')}"'''
+            # sql_str = f'''SELECT moth_records.monsters FROM moth_records
+            #     WHERE {system_str}
+            #     AND {time_str}
+            #     AND monster == 1'''
+            # sql_str = " ".join(sql_str.split())  # removes any double spaces and newlines etc
+            # monster_df = insect_df.append(pd.read_sql_query(sql_str, con))
+            # insect_df.loc[[((monster_df > insect_time - pd.Timedelta(minutes=5)) * (monster_df < insect_time + pd.Timedelta(minutes=5))).any() for insect_time in insect_df['time'].values]]
+
     insect_df['time'] = pd.to_datetime(insect_df['time'], format='%Y%m%d_%H%M%S')
     if use_proto(start_date):
         insect_df['system'].replace({'-proto': ''}, regex=True, inplace=True)

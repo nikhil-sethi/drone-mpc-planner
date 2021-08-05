@@ -7,7 +7,7 @@ namespace tracking {
 bool DroneTracker::init(std::ofstream *logger, VisionData *visdat, int motion_thresh, int16_t viz_id) {
     enable_viz_motion = false;
     ItemTracker::init(logger,visdat,motion_thresh,"drone",viz_id);
-    max_size = dparams.radius*3;
+    max_radius = dparams.radius*3;
     expected_radius = dparams.radius;
     (*_logger) << "dtrkr_state;yaw_deviation;";
     return false;

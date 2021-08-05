@@ -80,7 +80,8 @@ public:
             return false;
         return !_n_frames_aim_not_in_range
                && target_in_flight_area
-               && !best_itrkr->false_positive();
+               && !best_itrkr->false_positive()
+		&& !_trackers->monster_alert();
     }
     bool aim_in_range() {return !_n_frames_aim_not_in_range;}
     bool target_cleared() {return _n_frames_aim_not_in_range > n_frames_target_cleared_timeout;}

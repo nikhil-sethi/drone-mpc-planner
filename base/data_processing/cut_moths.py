@@ -56,7 +56,7 @@ def cut_moths(folder, dry_run=False):
                                 if len(lines[-1].split(';')) != len(heads):  # sometimes the last line was not completely finished.
                                     del lines[-1]
                                 fp = lines[-1].split(';')[heads.index('fp')]
-                                if fp == 'fp_not_a_fp':
+                                if fp == 'fp_not_a_fp' or fp == 'fp_too_big' or fp == 'fp_too_far':
                                     video_start_rs_id = int(lines[1].split(';')[0])
                                     while True:
                                         fline = flog.readline()

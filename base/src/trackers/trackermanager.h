@@ -50,8 +50,8 @@ private:
         }
         cv::Point2f pt() {return cv::Point2f(props->x,props->y);} // scaled with pparams.imscalef
         float size() {return props->size;}  // scaled with pparams.imscalef
-        float pixel_max() {return props->pixel_max;}
-        float motion_noise() {return props->motion_noise;}
+        uint8_t pixel_max() {return props->pixel_max;}
+        uint8_t motion_noise() {return props->motion_noise;}
         uint16_t id;
         cv::Mat mask;
         BlobProps *props;
@@ -71,9 +71,12 @@ private:
             ItemTracker *trkr = trackers.at(0);
             if (trkr->type() == tt_drone)
                 return cv::Scalar(0,255,0); // green
-            else if (trkr->type() == tt_insect)
-                return cv::Scalar(0,0,255); // red
-            else if (trkr->type() == tt_replay)
+            else if (trkr->type() == tt_insect) {
+                if (static_cast<InsectTracker *>(trkr)->false_positive())
+                    return cv::Scalar(255,0,0); //blue
+                else
+                    return cv::Scalar(0,0,255); // red
+            } else if (trkr->type() == tt_replay)
                 return cv::Scalar(0,0,180); // dark red
             else if (trkr->type() == tt_blink)
                 return cv::Scalar(255,0,255); // pink
@@ -155,6 +158,12 @@ private:
     bool enable_viz_motion = false;
     bool _enable_draw_stereo_viz = false;
     double time_since_tracking_nothing = 0;
+    double time_since_monsters = 0;
+    bool _monster_alert = false;
+    int _fp_monsters_count = 0;
+    int _fp_statics_count = 0;
+    int _fp_shorts_count = 0;
+    int _insects_count = 0;
 
     std::vector<cv::Mat> vizs_blobs;
     const float viz_blobs_resizef = 4.0;
@@ -180,7 +189,7 @@ private:
     void create_new_blink_trackers(std::vector<ProcessedBlob> *pbs, double time);
     void match_blobs_to_trackers(bool drone_is_active, double time);
     std::tuple<float,bool,float> tune_detection_radius(cv::Point maxt);
-    void find_cog_and_remove(cv::Point maxt, double max, int motion_noise, cv::Mat diff,cv::Mat motion_filtered_noise_mapL);
+    void floodfind_and_remove(cv::Point maxt, uint8_t max, uint8_t motion_noise, cv::Mat diff, cv::Mat motion_filtered_noise_mapL);
 
     bool tracker_active(ItemTracker *trkr, bool drone_is_active);
 
@@ -272,7 +281,12 @@ public:
             return trackermanager_mode_names[_mode];
     }
     bool too_many_false_positives() {return false_positives.size()>20;}
-    int insect_detections() {return next_insecttrkr_id-1;}
+    int detections_count() {return next_insecttrkr_id-1;}
+    int fp_monsters_count() {return _fp_monsters_count;}
+    int fp_statics_count() {return _fp_statics_count;}
+    int fp_shorts_count() {return _fp_shorts_count;}
+    int insects_count() {return _insects_count;}
+    bool monster_alert() { return _monster_alert;}
 
     std::tuple<bool, BlinkTracker *> blinktracker_best();
     std::vector<ItemTracker *>all_target_trackers();

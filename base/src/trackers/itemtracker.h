@@ -68,7 +68,7 @@ protected:
 
     float _score_threshold;
     int background_subtract_zone_factor;
-    float max_size; // world, in meters
+    float max_radius; // world, in meters
     float expected_radius = 0.01;
 
     int pos_smth_width = -1;

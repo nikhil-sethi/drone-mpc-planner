@@ -279,7 +279,7 @@ void DroneNavigation::update(double time) {
                 } else if(_iceptor->trigger_takeoff() && _visdat->no_recent_large_brightness_events(time)) {
                     _navigation_status = ns_takeoff;
                     repeat = true;
-                } else if(itrkr->properly_tracking() && !itrkr->false_positive() && _visdat->no_recent_large_brightness_events(time) && _dctrl->telemetry().batt_cell_v > dparams.min_hunt_cell_v) {
+                } else if(itrkr->properly_tracking() && !itrkr->false_positive() && _visdat->no_recent_large_brightness_events(time) && _dctrl->telemetry().batt_cell_v > dparams.min_hunt_cell_v && !_trackers->monster_alert()) {
                     _dctrl->flight_mode (DroneController::fm_spinup);
                 } else {
                     _dctrl->flight_mode(DroneController::fm_inactive);

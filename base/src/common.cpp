@@ -234,14 +234,12 @@ void show_row_image(std::vector<cv::Mat> ims, std::string window_name, int type,
     cv::imshow(window_name, res);
 }
 cv::Rect clamp_rect(cv::Rect r, int w, int h) {
-    if (r.x < 0)
-        r.x = 0;
-    if (r.y < 0)
-        r.y = 0;
+    r.x = std::clamp(r.x,0,w-1); // rect width must be atleast 1, so w-1
+    r.y = std::clamp(r.y,0,h-1); // idem
     if (r.x + r.width >= w)
-        r.width = w - r.x-1;
+        r.width = w - r.x;
     if (r.y + r.height >= h)
-        r.height = h - r.y-1;
+        r.height = h - r.y;
     return r;
 }
 

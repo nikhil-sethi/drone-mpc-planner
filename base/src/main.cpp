@@ -289,15 +289,26 @@ void process_video() {
                   ", " << frame->rs_id <<
                   ", T: " << to_string_with_precision(frame->time,2)  <<
                   " @ " << to_string_with_precision(fps,1) <<
-                  ", " << rc->telemetry.batt_cell_v <<
-                  "v, arm: " << static_cast<int>(rc->telemetry.arming_state) <<
-                  ", thr: " << rc->throttle <<
-                  ", att: [" << rc->telemetry.roll << "," << rc->telemetry.pitch << "]" <<
-                  ", rssi: " << static_cast<int>(rc->telemetry.rssi) <<
                   ", exp: " << cam->measured_exposure() <<
                   ", gain: " << cam->measured_gain() <<
-                  ", bright: " << visdat.average_brightness() <<
-                  std::endl;
+                  ", bright: " << to_string_with_precision(visdat.average_brightness(),1);
+
+        if (pparams.op_mode == op_mode_monitoring) {
+            if (trackers.detections_count())
+                std::cout  <<
+                           ", detections: " << trackers.detections_count() <<
+                           ", insects: " << trackers.insects_count();
+        } else {
+            std:: cout <<
+                       ", " << rc->telemetry.batt_cell_v <<
+                       "v, arm: " << static_cast<int>(rc->telemetry.arming_state) <<
+                       ", thr: " << rc->throttle <<
+                       ", att: [" << rc->telemetry.roll << "," << rc->telemetry.pitch << "]" <<
+                       ", rssi: " << static_cast<int>(rc->telemetry.rssi);
+        }
+        if (trackers.monster_alert())
+            std:: cout << ", monsters: " << trackers.fp_monsters_count();
+        std:: cout << std::endl;
         //   std::flush;
 
         if (rc->telemetry.arming_state && !dnav.drone_ready_and_waiting())
@@ -951,7 +962,11 @@ void save_results_log() {
     std::ofstream results_log;
     results_log.open(data_output_dir  + "results.txt",std::ofstream::out);
     results_log << "op_mode:" << pparams.op_mode << '\n';
-    results_log << "n_insects:" << trackers.insect_detections() << '\n';
+    results_log << "n_detections:" << trackers.detections_count() << '\n';
+    results_log << "n_monsters:" << trackers.fp_monsters_count() << '\n';
+    results_log << "n_static_fps:" << trackers.fp_statics_count() << '\n';
+    results_log << "n_short_fps:" << trackers.fp_shorts_count() << '\n';
+    results_log << "n_insects:" << trackers.insects_count() << '\n';
     results_log << "n_takeoffs:" << dnav.n_take_offs() << '\n';
     results_log << "n_landings:" << dnav.n_landings() << '\n';
     results_log << "n_hunts:" << dnav.n_hunt_flights() << '\n';

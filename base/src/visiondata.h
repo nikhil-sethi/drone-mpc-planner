@@ -49,18 +49,20 @@ private:
     double calibrating_noise_map_end_time = 0;
     const float motion_buf_size_target = 60;
     int save_every_nth_frame_during_motion_calib = 3;
-
     int motion_update_iterator_max;
-    float brightness_event_tresh;
+
     string settings_file = "../xml/vision.xml";
 
     cv::Mat diffL16,frameL16,diffR16,frameR16;
     double _current_frame_time = 0;
     cv::UMat dilate_element;
 
-    float prev_brightness = -1;
+    float brightness_event_tresh;
+    float brightness_prev = -1;
     bool _reset_motion_integration = false;
-    double _large_brightness_change_event_time = 0;
+    bool large_brightness_event = false;
+    const float large_brightness_change_timeout = 0.3;
+    double large_brightness_event_time = -large_brightness_change_timeout; // minus to not trigger a brightness warning at startup
     DeleteSpot motion_spot_to_be_deleted;
     DeleteSpot motion_spot_to_be_reset;
 
@@ -72,7 +74,7 @@ private:
 
     void deserialize_settings();
     void serialize_settings();
-    void track_avg_brightness(cv::Mat frame, double time);
+    void track_avg_brightness(cv::Mat frameL_new, cv::Mat frameL_prev, double time);
     void fade(cv::Mat diff16, cv::Point exclude_drone_spot);
 
 public:
@@ -108,9 +110,9 @@ public:
     bool overexposed(cv::Point blob_pt);
 
     bool no_recent_large_brightness_events(double time) {
-        return static_cast<float>(time-_large_brightness_change_event_time)> 3;
+        return static_cast<float>(time-large_brightness_event_time)> large_brightness_change_timeout;
     }
-    float average_brightness() { return prev_brightness; }
+    float average_brightness() { return brightness_prev; }
     double current_time() {return _current_frame_time;}
     void reset_motion_integration() {_reset_motion_integration = true;}
 };

@@ -96,7 +96,7 @@ void ItemTracker::init_logger(std::ofstream *logger) {
 
 void ItemTracker::calc_world_props_blob_generic(BlobProps * blob) {
     if (blob->world_props.trkr_id != _uid) {
-        BlobWorldProps w;
+        BlobWorldProps w = {0};
         cv::Point2f p = blob->pt_unscaled();
         float size = blob->size_unscaled();
         w.trkr_id = _uid;
@@ -115,30 +115,17 @@ void ItemTracker::calc_world_props_blob_generic(BlobProps * blob) {
                 w.disparity = disparity;
 
             cv::Point3f world_coordinates = im2world(p,w.disparity,_visdat->Qf,_visdat->camera_roll,_visdat->camera_pitch);
+            w.x = world_coordinates.x;
+            w.y = world_coordinates.y;
+            w.z = world_coordinates.z;
+
             cv::Point2f p_size = p;
             p_size.x += size;
             cv::Point3f world_coordinates_size = im2world(p_size,w.disparity,_visdat->Qf,_visdat->camera_roll,_visdat->camera_pitch);
 
-            w.radius = cv::norm(world_coordinates_size-world_coordinates) / 2;
-            w.radius_in_range = w.radius < max_size;
-
-            if (w.radius_in_range) {
-                int radius = size/2;
-                int x = std::clamp(static_cast<int>(roundf(p.x))-radius,0,_visdat->diffL.cols-1);
-                int y = std::clamp(static_cast<int>(roundf(p.y))-radius,0,_visdat->diffL.rows-1);
-                int width = size;
-                int height = size;
-                if (x+width >= _visdat->diffL.cols)
-                    width=_visdat->diffL.cols-x;
-                if (y+height >= _visdat->diffL.rows)
-                    height=_visdat->diffL.rows-y;
-                cv::Rect roi_brightness_sum(x,y,width,height);
-                w.motion_sum = cv::sum(_visdat->diffL(roi_brightness_sum))[0];
-            }
-
-            w.x = world_coordinates.x;
-            w.y = world_coordinates.y;
-            w.z = world_coordinates.z;
+            w.radius = static_cast<float>(cv::norm(world_coordinates_size-world_coordinates)) / 2.f;
+            w.radius_in_range = w.radius < max_radius;
+            w.motion_sum = blob->motion_sum;
 
             w.distance_bkg = _visdat->depth_background_mm.at<float>(p.y,p.x);
             w.distance = sqrtf(powf(w.x,2) + powf(w.y,2) +powf(w.z,2));
@@ -294,8 +281,6 @@ float ItemTracker::stereo_match(BlobProps * blob) {
         //using the motion from both images as a mask, we match the disparity over the masked gray image
 
         float used_motion_thresh = _motion_thresh;
-        if (blob->threshold_method != 1)
-            used_motion_thresh = 1;
         cv::Mat diffL_mask_patch = diffL(roiL)>motion_filtered_noise_mapL(roiL)+ used_motion_thresh;
         if (cv::countNonZero(diffL_mask_patch) / npixels > min_pxl_ratio) {
             cv::Rect roiR_disparity_rng(x-(disp_end-1),y,width+(disp_end-disp_start-1),height);
@@ -694,7 +679,7 @@ float ItemTracker::score(BlobProps * blob, ImageItem * ref) {
 
     if (_image_item.valid && _world_item.valid) {
         cv::Point3f last_world_pos = im2world(_image_item.pt(),_image_item.disparity,_visdat->Qf,_visdat->camera_roll,_visdat->camera_pitch);
-        float max_im_dist = world2im_dist(last_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_roll,_visdat->camera_pitch);
+        float max_im_dist = world2im_dist(last_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_roll,_visdat->camera_pitch) + _image_item.size/2;
         float world_projected_im_err = normf(blob->pt_unscaled() - _image_item.pt());
         float world_projected_pred_im_err = INFINITY;
         if (_image_predict_item.valid)
@@ -713,7 +698,7 @@ float ItemTracker::score(BlobProps * blob, ImageItem * ref) {
         }
     } else if (_image_predict_item.valid) {
         cv::Point3f predicted_world_pos = im2world(_image_predict_item.pt,_image_predict_item.disparity,_visdat->Qf,_visdat->camera_roll,_visdat->camera_pitch);
-        float max_im_dist = world2im_dist(predicted_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_roll,_visdat->camera_pitch);
+        float max_im_dist = world2im_dist(predicted_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_roll,_visdat->camera_pitch) + _image_predict_item.size/2;
         float world_projected_im_err = normf(blob->pt_unscaled() - _image_predict_item.pt);
         im_dist_err_ratio = world_projected_im_err/max_im_dist;
         im_size_pred_err_ratio = fabs(_image_predict_item.size - blob->size_unscaled()) / (blob->size_unscaled()+_image_predict_item.size);
@@ -760,14 +745,14 @@ void ItemTracker::deserialize_settings() {
     max_disparity = params.max_disparity.value();
     _score_threshold = params.score_threshold.value();
     background_subtract_zone_factor = params.background_subtract_zone_factor.value();
-    max_size = params.max_size.value();
+    max_radius = params.max_size.value();
 }
 void ItemTracker::serialize_settings() {
     params.min_disparity = min_disparity;
     params.max_disparity = max_disparity;
     params.score_threshold = _score_threshold;
     params.background_subtract_zone_factor = background_subtract_zone_factor;
-    params.max_size = max_size;
+    params.max_size = max_radius;
 
     std::string xmlData = params.toXML();
     std::ofstream outfile = std::ofstream (settings_file);

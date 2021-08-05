@@ -358,15 +358,27 @@ void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis,float
     putText(resFrame,_trackers->dronetracker()->drone_tracking_state(),cv::Point(450,96),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     putText(resFrame,_iceptor->Interceptor_State(),cv::Point(450,70),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
 
-    if (_fromfile) {
-        static int popcorn_cnt = 0;
-        popcorn_cnt++;
-        std::string popstr = "POPCORN TIME";
-        if (first_take_off_time - time > 0 )
-            popstr += " IN " + to_string_with_precision( first_take_off_time - time,1);
-        putText(resFrame,popstr,cv::Point(400,28),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255-popcorn_cnt,popcorn_cnt,255));
-        popcorn_cnt = popcorn_cnt % 255;
 
+    std::string warnings = "";
+    static int warning_color_cnt = 0;
+    warning_color_cnt++;
+    warning_color_cnt = warning_color_cnt % 255;
+
+    if (not _visdat->no_recent_large_brightness_events(time))
+        warnings += "BRIGHTNESS ";
+    if (_trackers->monster_alert())
+        warnings += "MONSTER ALERT ";
+    if (_fromfile) {
+        warnings += "POPCORN TIME";
+        if (first_take_off_time - time > 0 && pparams.op_mode != op_mode_monitoring)
+            warnings += " IN " + to_string_with_precision( first_take_off_time - time,1);
+        warnings += " ";
+    }
+
+    if (warnings != "") {
+        int baseline=0;
+        auto s = getTextSize(warnings,cv::FONT_HERSHEY_SIMPLEX,0.5,1,&baseline);
+        putText(resFrame,warnings,cv::Point(400-s.width/2,28),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255-warning_color_cnt,warning_color_cnt,255));
     }
 }
 
