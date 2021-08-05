@@ -375,6 +375,8 @@ def jsons_to_db(input_folder):
                                 flag_f.write('NO VERSION DETECTED')
                         except JSONDecodeError:
                             flag_f.write('JSONDecodeError \n')
+                        except Exception as error:
+                            flag_f.write('ERROR: ' + str(error))
                     else:
                         flag_f.write('File size too big \n')
 
