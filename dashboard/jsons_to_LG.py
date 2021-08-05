@@ -258,7 +258,7 @@ def upload_json_to_LG(token, json_data, sys_info):
 
 
 def load_system_info():
-    sql_str = '''SELECT system,active,LG,groups.minimal_size FROM systems JOIN groups ON groups.group_id = systems.group_id'''
+    sql_str = '''SELECT system,active,LG,customers.minimal_size FROM systems JOIN customers ON customers.customer_id = systems.customer_id'''
     with patsc.open_systems_db() as con:
         systems = pd.read_sql_query(sql_str, con)
         systems['system'] = systems['system'].str.replace('-proto', '')
