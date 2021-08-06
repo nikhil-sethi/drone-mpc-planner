@@ -11,6 +11,7 @@ import subprocess
 import sys
 import socket
 import re
+import serial
 from datetime import date, datetime, timedelta
 from datetime import time as dttime
 from pathlib import Path
@@ -188,11 +189,25 @@ class render_task(pats_task):
 
 
 class wdt_pats_task(pats_task):
+
+    def start_baseboard_serial(self):
+        try:
+            self.base_serial = serial.Serial('/dev/baseboard', 115200, timeout=0.01)
+            self.logger.info("Connected to baseboard")
+        except:
+            self.base_serial = None
+            self.logger.warning("No baseboard found")
+
     def __init__(self, error_file_handler):
         super(wdt_pats_task, self).__init__('wdt_pats', timedelta(), timedelta(seconds=300), False, error_file_handler)
         self.no_realsense_cnt = 0
+        self.start_baseboard_serial()
+        if self.base_serial:
+            self.base_serial.write(b'enable watchdog')
 
     def task_func(self):
+        if self.base_serial:
+            self.base_serial.write(b'Harrow!')
 
         if not os.path.exists(lb.no_realsense_flag):
             self.no_realsense_cnt = 0
