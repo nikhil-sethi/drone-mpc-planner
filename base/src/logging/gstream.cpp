@@ -177,16 +177,11 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
                 gst_caps_unref(caps_appsrc);
 
                 // verify that vaapivp9enc is available
-                if(gst_element_factory_find ("vaapivp9enc")) {
+                if(gst_element_factory_find ("vaapivp9enc") && vp9 != nuc11) {
                     std::cout << "Using vp9 vaapi encoding" << std::endl;
                     encoder = gst_element_factory_make ("vaapivp9enc", "encoder"); // hardware encoding
 
-                    int quality = 1;
-
-                    // On NUC11 / gstreamer 1.18 the quality control actually works. It may be that it does not matter for the older NUC7&8 but needs to be tested out. (we coulp possibly then do with a single quality setting for all)
-                    if (vp9 == nuc11)
-                        quality = 3;
-                    g_object_set (G_OBJECT (encoder),"rate-control",2, "quality-level", quality,"bitrate", 7500, NULL);
+                    g_object_set (G_OBJECT (encoder),"rate-control",2, "bitrate", 7500, NULL);
 
                     if (vp9 == nuc11) { // For reasons I don't understand, 1.18 needs an extra videoconvert element...
                         gst_bin_add_many (GST_BIN (_pipeline),_appsrc,videoconvert,encoder,mux,videosink,NULL);
@@ -205,7 +200,7 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
                 } else if(gst_element_factory_find ("vaapih264enc")) {
                     std::cout << "Using h264 vaapi encoding" << std::endl;
                     encoder = gst_element_factory_make ("vaapih264enc", "encoder"); // hardware encoding
-                    g_object_set (G_OBJECT (encoder),  "rate-control", 2,"bitrate", 5000, NULL);
+                    g_object_set (G_OBJECT (encoder),  "rate-control", 2,"bitrate", 15000, NULL);
                     auto parser = gst_element_factory_make ("h264parse", "parser");
                     gst_bin_add_many (GST_BIN (_pipeline),_appsrc,videoconvert,encoder,parser,mux,videosink,NULL);
                     gst_element_link_many (_appsrc,videoconvert,encoder,parser,mux,videosink,NULL);
