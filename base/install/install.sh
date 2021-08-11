@@ -263,7 +263,9 @@ if [[ $1 -eq 1 ]] ; then
 	mkdir -p ~/pats/flags
 	mkdir -p ~/pats/status
 	mkdir -p ~/pats/images
-	touch ~/pats/flags/disable
+	[ -f symlinks-*.done ] || {
+		touch ~/pats/flags/disable
+	}
 
 	# Create nice symlinks
 	[ -f symlinks-v1.3.done ] || {
