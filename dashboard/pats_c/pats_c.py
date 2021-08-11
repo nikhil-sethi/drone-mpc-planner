@@ -63,18 +63,6 @@ def load_customers():
     return {}
 
 
-def insect_db():  # see also https://docs.google.com/spreadsheets/d/1au4vwYKK7ih5FH_bwsKNETznB1LkGS_cITTGC87jYGY/edit#gid=0
-    insects = []
-    insects.append({'sql_column': 'chrysodeixis_chalcites', 'label': 'Chrysodeixis chalcites (Turkse mot)', 'avg_size': 0.03, 'std_dev': 0.005})
-    insects.append({'sql_column': 'tuta_absoluta', 'label': 'Tuta absoluta', 'avg_size': 0.007, 'std_dev': 0.0025})
-    insects.append({'sql_column': 'duponchelia_fovealis', 'label': 'Duponchelia fovealis', 'avg_size': 0.016, 'std_dev': 0.004})
-    insects.append({'sql_column': 'opogona_sacchari', 'label': 'Opogona sacchari', 'avg_size': 0.018, 'std_dev': 0.0035})
-    insects.append({'sql_column': 'nezara_viridula', 'label': 'Nezara viridula (Stink wants)', 'avg_size': 0.022, 'std_dev': 0.004})
-    insects.append({'sql_column': 'lyprauta', 'label': 'Lyprauta oberthuri (potworm)', 'avg_size': 0.006, 'std_dev': 0.002})
-    insects.append({'sql_column': '', 'label': 'No size filter', 'avg_size': 0, 'std_dev': 0})
-    return insects
-
-
 def init_insects_dropdown():
     insect_options = []
     date_style = {'width': '30%', 'display': 'inline-block'}
@@ -83,16 +71,18 @@ def init_insects_dropdown():
         if current_user.is_authenticated:
             username = current_user.username
             with patsc.open_systems_db() as con:
-                sql_str = f'''SELECT * FROM customers JOIN user_customer_connection ON user_customer_connection.customer_id = customers.customer_id JOIN users ON users.user_id = user_customer_connection.user_id WHERE users.name = "{username}" ORDER BY customers.name'''
-                customer_df = pd.read_sql_query(sql_str, con)
-                customer_df = customer_df.replace(r'^\s*$', np.nan, regex=True)
-                insects = insect_db()
-                for insect in insects:
-                    if insect['sql_column']:
-                        if customer_df[insect['sql_column']].sum():
-                            insect_options.append({'label': insect['label'], 'value': insect})
-                    else:
-                        insect_options.append({'label': insect['label'], 'value': insect})
+                sql_str = '''SELECT DISTINCT insects.name,avg_size,std_size FROM insects
+                JOIN crop_insect_connection ON crop_insect_connection.insect_id = insects.insect_id
+                JOIN crops ON crops.crop_id = crop_insect_connection.crop_id
+                JOIN customers ON customers.crop_id = crops.crop_id
+                JOIN user_customer_connection ON user_customer_connection.customer_id = customers.customer_id
+                JOIN users ON users.user_id = user_customer_connection.user_id
+                WHERE users.name = :username ORDER BY insects.name'''
+                insects = con.execute(sql_str, (username,))
+                for name, avg_size, std_size in insects:
+                    insect_options.append({'label': name, 'value': {'label': name, 'avg_size': avg_size, 'std_dev': std_size}})
+
+    insect_options.append({'label': 'No size filter', 'value': {'label': 'No size filter', 'avg_size': 0, 'std_dev': 0}})
     return insect_options, date_style, insect_style
 
 
