@@ -289,6 +289,7 @@ void DroneNavigation::update(double time) {
             _dctrl->reset_manual_override_take_off_now();
             _dctrl->flight_mode(DroneController::fm_start_takeoff);
             _dctrl->hover_mode(false);
+            _dctrl->nav_waypoint_moved(time);
             _trackers->dronetracker()->hover_mode(false);
             time_take_off = time;
             if (_nav_flight_mode == nfm_hunt) {
@@ -331,6 +332,7 @@ void DroneNavigation::update(double time) {
             [[fallthrough]];
         } case ns_take_off_completed: {
             _n_take_offs++;
+            _dctrl->nav_waypoint_moved(time);
             if (_nav_flight_mode == nfm_hunt) {
                 _navigation_status = ns_start_the_chase;
                 repeat = true;
