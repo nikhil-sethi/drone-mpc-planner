@@ -502,7 +502,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         control_history.erase(control_history.begin());
 
     (*_logger) << static_cast<int>(data_drone.pos_valid)  << ";" <<
-               static_cast<int16_t>(_flight_mode) << ";" <<
+               flight_mode_names[_flight_mode] << ";" <<
                data_target_new.pos().x << ";" <<
                data_target_new.pos().y  << ";" <<
                data_target_new.pos().z << ";" <<
