@@ -15,16 +15,15 @@ bool DroneController::joystick_ready() {
     return joystick.isFound();
 }
 
-void DroneController::init(std::ofstream *logger,string replay_dir,bool generator,bool airsim, Rc * rc, tracking::DroneTracker *dtrk, CameraView *camview, float exposure) {
+void DroneController::init(std::ofstream *logger,string replay_dir,bool generator,bool airsim, Rc * rc, tracking::DroneTracker *dtrk, FlightArea *flight_area, float exposure) {
     _rc = rc;
     _dtrk = dtrk;
     _logger = logger;
     log_replay_mode = replay_dir!="";
     generator_mode = generator;
     airsim_mode = airsim;
-    _camview = camview;
+    _flight_area = flight_area;
 
-    kiv_ctrl.init(camview, &calibration);
     control_history_max_size = pparams.fps;
     (*_logger) << "valid;flight_mode;" <<
                "target_pos_x;target_pos_y;target_pos_z;" <<
@@ -192,7 +191,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         float remaining_aim_duration = remaing_spinup_time+aim_duration  - static_cast<float>(time - take_off_start_time);
         if (remaining_aim_duration <= aim_duration) {
             cv::Point3f burn_direction;
-            std::tie (auto_roll, auto_pitch,auto_burn_duration,burn_direction) = calc_directional_burn(state_drone_takeoff,data_raw_insect.state,0);
+            std::tie (auto_roll,auto_pitch,auto_burn_duration,burn_direction) = calc_directional_burn(state_drone_takeoff,data_raw_insect.state,0);
             if (burn_limit_hack)
                 auto_burn_duration = dparams.target_takeoff_velocity/calibration.thrust;
             aim_direction_history.push_back(burn_direction);
@@ -265,14 +264,14 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         if (remaining_aim_duration<0)
             remaining_aim_duration = 0;
         std::vector<StateData> traj;
-        std::tie (auto_roll, auto_pitch, auto_burn_duration,burn_direction,traj) = calc_burn(state_drone_better,data_raw_insect.state,remaining_aim_duration);
+        std::tie (auto_roll,auto_pitch,auto_burn_duration,burn_direction,traj) = calc_burn(state_drone_better,data_raw_insect.state,remaining_aim_duration);
 
         if (log_replay_mode)
-            draw_viz(state_drone_better,data_raw_insect.state,time,burn_direction,auto_burn_duration,remaining_aim_duration,traj);
+            draw_viz(state_drone_better,data_raw_insect.state,time, burn_direction,auto_burn_duration,remaining_aim_duration,traj);
 
         auto_throttle = initial_hover_throttle_guess();
 
-        if (!kiv_ctrl.trajectory_in_view(traj,CameraView::relaxed) || auto_burn_duration > 1.1f || auto_burn_duration == 0.0f) {
+        if (!_flight_area->trajectory_in_view(traj, relaxed) || auto_burn_duration > 1.1f || auto_burn_duration == 0.0f) {
             _flight_mode = fm_flying_pid_init;
         } else {
             std::vector<StateData> traj_back;
@@ -282,7 +281,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
             target_back.vel = {0};
             target_back.acc = {0};
             std::tie (std::ignore, std::ignore,auto_burn_duration_back,burn_direction_back,traj_back) = calc_burn(traj.back(),target_back,aim_duration);
-            if (!kiv_ctrl.trajectory_in_view(traj_back,CameraView::relaxed)) {
+            if (!_flight_area->trajectory_in_view(traj_back, relaxed)) {
                 _flight_mode = fm_flying_pid_init;
             } else if (remaining_aim_duration < 0.01f)
                 _flight_mode = fm_interception_burn_start;
@@ -717,7 +716,8 @@ bool DroneController::pad_calibration_done() {
         calibration.pad_calib_date = ss.str();
         save_calibration();
         _dtrk->set_pad_location(calibration.pad_pos());
-        _camview->p0_bottom_plane(calibration.pad_pos_y, true);
+        _flight_area->update_bottom_plane_based_on_blink(calibration.pad_pos_y);
+        kiv_ctrl.init(_flight_area->flight_area_config(relaxed), &calibration); // kiv can only be initialized after the latest (potential) adding of a plane (bottom_plane)
         return true;
     } else {
         std::cout << "Drone calibration failed: attitude not within accetable bounds: [" << pad_att_calibration_roll.latest() << ", " << pad_att_calibration_pitch.latest() << "]" << std::endl;
@@ -755,7 +755,7 @@ std::vector<StateData> DroneController::predict_trajectory(float burn_duration, 
 
 
 std::tuple<float,float> DroneController::acc_to_deg(cv::Point3f acc) {
-    float norm_burn_vector_XZ = sqrt(powf(acc.x,2)+powf(acc.z,2));
+    float norm_burn_vector_XZ = sqrtf(powf(acc.x,2)+powf(acc.z,2));
     float rotation_angle = atan2f(norm_burn_vector_XZ,(acc.y))*rad2deg;
     float roll = -acc.x/norm_burn_vector_XZ*rotation_angle;
     float pitch = -acc.z/norm_burn_vector_XZ*rotation_angle;
@@ -886,8 +886,8 @@ cv::Point3f DroneController::compensate_gravity_and_crop_to_limit(cv::Point3f de
         return acc_backup;
     }
 
-    float k1 = -p/2.f + sqrt(root_square);
-    float k2 = -p/2.f - sqrt(root_square);
+    float k1 = -p/2.f + sqrtf(root_square);
+    float k2 = -p/2.f - sqrtf(root_square);
 
     // Avoid warnings based on rounding errors
     if(k1>1.f && k1<1.05f)
@@ -945,11 +945,9 @@ cv::Point3f DroneController::pid_error(TrackData data_drone, cv::Point3f setpoin
         enable_horizontal_integrators = horizontal_integrators(setpoint_vel,data_drone.time);
     }
 
-    cv::Point3f kp_pos, ki_pos, kd_pos, kp_vel, kd_vel;
-    std::tie(kp_pos, ki_pos, kd_pos, kp_vel, kd_vel) = adjust_control_gains(data_drone, setpoint_pos, setpoint_vel,enable_horizontal_integrators);
 
-    cv::Point3f pos_err_p, pos_err_d;
-    std::tie(pos_err_p, pos_err_d) = control_error(data_drone, setpoint_pos, enable_horizontal_integrators,dry_run);
+    auto [kp_pos, ki_pos, kd_pos, kp_vel, kd_vel] = adjust_control_gains(data_drone, setpoint_pos, setpoint_vel,enable_horizontal_integrators);
+    auto [pos_err_p, pos_err_d] = control_error(data_drone, setpoint_pos, enable_horizontal_integrators,dry_run);
 
     cv::Point3f error = {0};
     error += multf(kp_pos, pos_err_p) + multf(ki_pos, pos_err_i) + multf(kd_pos, pos_err_d); // position controld
@@ -1284,7 +1282,9 @@ void DroneController::load_calibration(std::string replay_dir) {
     calibration.serialize(calib_wfn);
 
     _dtrk->set_pad_location(calibration.pad_pos());
-    _camview->p0_bottom_plane(calibration.pad_pos_y, true);
+    _flight_area->update_bottom_plane_based_on_blink(calibration.pad_pos_y);
+    kiv_ctrl.init(_flight_area->flight_area_config(relaxed), &calibration);// kiv can only be initialized after the latest (potential) adding of a plane (bottom_plane)
+
 }
 
 void DroneController::save_calibration() {

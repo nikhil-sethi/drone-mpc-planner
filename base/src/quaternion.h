@@ -13,8 +13,8 @@ struct Quaternion {
     }
 
     Quaternion(float theta, cv::Point3f rot_axis) { // theta is the transformation angle; not the rotation angle!
-        s = cos(-theta/2);
-        v = rot_axis*sin(-theta/2);
+        s = cosf(-theta/2);
+        v = rot_axis*sinf(-theta/2);
     }
 
     Quaternion(float qs, float qx, float qy, float qz) {

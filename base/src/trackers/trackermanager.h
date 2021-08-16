@@ -132,7 +132,7 @@ private:
 
     std::ofstream *_logger;
     VisionData *_visdat;
-    CameraView *_camview;
+    FlightArea *_flight_area;
     Interceptor * _iceptor;
 
     std::vector<FalsePositive> false_positives;

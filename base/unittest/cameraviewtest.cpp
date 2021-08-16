@@ -25,8 +25,8 @@ TEST(Cameraview, inview) {
     CameraView camview;
     camview.init(point_left_top, point_right_top, point_left_bottom, point_right_bottom, b_depth, b_height, camera_pitch_deg);
     bool inview;
-    std::array<bool, N_PLANES> plane_violations;
-    std::tie(inview, plane_violations) = camview.in_view({0,-1.,-2}, CameraView::relaxed);
+    std::array<bool, MAX_PLANES> plane_violations;
+    std::tie(inview, plane_violations) = camview.in_view({0,-1.,-2}, CameraView::complete_area, CameraView::relaxed);
     CHECK_TRUE(inview);
 }
 
@@ -34,8 +34,8 @@ TEST(Cameraview, notinview) {
     CameraView camview;
     camview.init(point_left_top, point_right_top, point_left_bottom, point_right_bottom, b_depth, b_height, camera_pitch_deg);
     bool inview;
-    std::array<bool, N_PLANES> plane_violations;
-    std::tie(inview, plane_violations) = camview.in_view({0,-1.73,-2}, CameraView::relaxed);
+    std::array<bool, MAX_PLANES> plane_violations;
+    std::tie(inview, plane_violations) = camview.in_view({0,-1.73,-2}, CameraView::complete_area, CameraView::relaxed);
     CHECK_FALSE(inview);
 }
 
@@ -45,18 +45,18 @@ TEST(Cameraview, project_in_view_relaxed) {
     cv::Point3f corrected;
     bool inview;
     float error, plane_error;
-    std::array<bool, N_PLANES> plane_violations;
+    std::array<bool, MAX_PLANES> plane_violations;
     for (float x=-10.0f; x<10.f; x+=0.2f) {
         for (float y=-4.0f; y<=0.f; y+=0.2f) {
             for (float z=-13.0f; z<=0.f; z+=0.2f) {
-                corrected = camview.setpoint_in_cameraview({x,y,z}, CameraView::relaxed);
-                std::tie(inview, plane_violations) = camview.in_view(corrected, CameraView::relaxed);
+                corrected = camview.setpoint_in_cameraview({x,y,z}, CameraView::complete_area, CameraView::relaxed);
+                std::tie(inview, plane_violations) = camview.in_view(corrected, CameraView::complete_area, CameraView::relaxed);
                 if(!inview) {
                     error = 0;
                     // Check if the point is not in view due to some rounding errors.
-                    for(uint i=0; i<N_PLANES; i++) {
+                    for(uint i=0; i<MAX_PLANES; i++) {
                         if(plane_violations.at(i)) {
-                            plane_error = shortest_distance_to_plane(corrected, camview.support_vector(i)+camview.safety_margin(CameraView::relaxed)*camview.normal_vector(i), camview.normal_vector(i));
+                            plane_error = distance(corrected, camview.support_vector(CameraView::complete_area, i)+camview.safety_margin(CameraView::relaxed)*camview.normal_vector(CameraView::complete_area, i), camview.normal_vector(CameraView::complete_area, i));
                             error += abs(plane_error);
                         }
                     }
@@ -76,18 +76,18 @@ TEST(Cameraview, project_in_view_strict) {
     cv::Point3f corrected;
     bool inview;
     float error, plane_error;
-    std::array<bool, N_PLANES> plane_violations;
+    std::array<bool, MAX_PLANES> plane_violations;
     for (float x=-10.0f; x<10.f; x+=0.8f) {
         for (float y=-4.0f; y<=0.f; y+=0.8f) {
             for (float z=-13.0f; z<=0.f; z+=0.8f) {
-                corrected = camview.setpoint_in_cameraview({x,y,z}, CameraView::strict);
-                std::tie(inview, plane_violations) = camview.in_view(corrected, CameraView::strict);
+                corrected = camview.setpoint_in_cameraview({x,y,z}, CameraView::complete_area, CameraView::strict);
+                std::tie(inview, plane_violations) = camview.in_view(corrected, CameraView::complete_area, CameraView::strict);
                 if(!inview) {
                     error = 0;
                     // Check if the point is not in view due to some rounding errors.
-                    for(uint i=0; i<N_PLANES; i++) {
+                    for(uint i=0; i<MAX_PLANES; i++) {
                         if(plane_violations.at(i)) {
-                            plane_error = shortest_distance_to_plane(corrected, camview.support_vector(i)+camview.safety_margin(CameraView::strict)*camview.normal_vector(i), camview.normal_vector(i));
+                            plane_error = distance(corrected, camview.support_vector(CameraView::complete_area, i) + camview.safety_margin(CameraView::strict)*camview.normal_vector(CameraView::complete_area, i), camview.normal_vector(CameraView::complete_area, i));
                             error += abs(plane_error);
                         }
                     }
@@ -107,18 +107,18 @@ TEST(Cameraview, project_in_view_without_changing_direction) {
     cv::Point3f corrected;
     bool inview;
     float error, plane_error;
-    std::array<bool, N_PLANES> plane_violations;
+    std::array<bool, MAX_PLANES> plane_violations;
     for (float x=-10.0f; x<10.f; x+=0.8f) {
         for (float y=-4.0f; y<=0.f; y+=0.8f) {
             for (float z=-13.0f; z<=0.f; z+=0.8f) {
-                corrected = camview.setpoint_in_cameraview({x,y,z}, drone_pos, CameraView::relaxed);
-                std::tie(inview, plane_violations) = camview.in_view(corrected, CameraView::relaxed);
+                corrected = camview.setpoint_in_cameraview({x,y,z}, drone_pos, CameraView::complete_area, CameraView::relaxed);
+                std::tie(inview, plane_violations) = camview.in_view(corrected, CameraView::complete_area, CameraView::relaxed);
                 if(!inview) {
                     error = 0;
                     // Check if the point is not in view due to some rounding errors.
-                    for(uint i=0; i<N_PLANES; i++) {
+                    for(uint i=0; i<MAX_PLANES; i++) {
                         if(plane_violations.at(i)) {
-                            plane_error = shortest_distance_to_plane(corrected, camview.support_vector(i)+camview.safety_margin(CameraView::relaxed)*camview.normal_vector(i), camview.normal_vector(i));
+                            plane_error = distance(corrected, camview.support_vector(CameraView::complete_area, i)+camview.safety_margin(CameraView::relaxed)*camview.normal_vector(CameraView::complete_area, i), camview.normal_vector(CameraView::complete_area, i));
                             error += abs(plane_error);
                         }
                     }

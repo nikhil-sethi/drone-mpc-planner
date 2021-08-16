@@ -21,7 +21,7 @@
 #include "opencv2/highgui/highgui.hpp"
 
 #include "common.h"
-#include "cameraview.h"
+#include "flightarea/flightarea.h"
 #include "smoother.h"
 #include "multimodule.h"
 #include "replayrc.h"
@@ -79,6 +79,7 @@ std::string pats_xml_fn="../xml/pats.xml",drone_xml_fn,monitor_video_fn;
 std::ofstream logger;
 std::ofstream logger_video_ids;
 std::unique_ptr<Rc> rc;
+FlightArea flight_area;
 DroneController dctrl;
 navigation::DroneNavigation dnav;
 tracking::TrackerManager trackers;
@@ -840,17 +841,18 @@ void init() {
 
     rc->init(drone_id);
     cam->init();
+    flight_area.init(replay_dir, cam.get());
     prev_frame = cam->current();
     visdat.init(cam.get()); // do after cam update to populate frames
     trackers.init(&logger,replay_dir, &visdat, &iceptor);
-    iceptor.init(&trackers,&visdat,&(cam->camera_volume),&logger,&dctrl);
-    dnav.init(&logger,&trackers,&dctrl,&visdat, &(cam->camera_volume),replay_dir, &iceptor);
+    iceptor.init(&trackers,&visdat,&flight_area,&logger,&dctrl);
+    dnav.init(&logger,&trackers,&dctrl,&visdat, &flight_area,replay_dir, &iceptor);
     if (log_replay_mode) {
         if (logreader.blink_at_startup())
             dnav.replay_detect_drone_location();
     }
     if (pparams.op_mode != op_mode_monitoring)
-        dctrl.init(&logger,replay_dir,generator_mode,airsim_mode,rc.get(),trackers.dronetracker(), &(cam->camera_volume),cam->measured_exposure());
+        dctrl.init(&logger,replay_dir,generator_mode,airsim_mode,rc.get(),trackers.dronetracker(), &flight_area,cam->measured_exposure());
 
     if (render_monitor_video_mode)
         dnav.render_now_override();
@@ -860,7 +862,7 @@ void init() {
         if (generator_mode) {
             visualizer.set_generator_cam(static_cast<GeneratorCam *>(cam.get()));
         }
-        visualizer_3d.init(&trackers, &(cam->camera_volume), &dctrl, &dnav);
+        visualizer_3d.init(&trackers, &flight_area, &dctrl, &dnav);
         if (log_replay_mode)
             visualizer.first_take_off_time = logreader.first_takeoff_time();
     }

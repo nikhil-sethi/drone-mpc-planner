@@ -27,7 +27,6 @@ void AirSimCam::init()
     camparams.serialize(calib_wfn);
     imwrite(depth_map_wfn,depth_background);
 
-    def_volume();
     update();
 }
 

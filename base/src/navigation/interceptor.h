@@ -1,5 +1,5 @@
 #pragma once
-#include "cameraview.h"
+#include "flightarea/flightarea.h"
 #include "insecttracker.h"
 #include "dronetracker.h"
 #include "trackermanager.h"
@@ -31,8 +31,9 @@ private:
 
     cv::Point3f _aim_pos,_aim_vel,_aim_acc;
 
-    CameraView* _camview;
-    CameraView::hunt_check_result target_in_hunt_volume = CameraView::HuntVolume_Unknown;
+    FlightArea* _flight_area;
+    bool target_in_flight_area = false;
+
     bool aim_in_view = false;
     uint _n_frames_aim_not_in_range = 0;
     float n_frames_target_cleared_timeout;
@@ -41,7 +42,7 @@ private:
     float _horizontal_separation, _vertical_separation;
     float total_separation;
     float _best_distance = -1;
-    double _tti =-1;
+    double _tti = -1;
     enum interceptor_states {
         is_init=0,
         is_waiting_for_target,
@@ -67,7 +68,7 @@ private:
     tracking::InsectTracker *update_target_insecttracker();
 
 public:
-    void init(tracking::TrackerManager *trackers, VisionData *visdat, CameraView *camview, ofstream *logger, DroneController *dctrl);
+    void init(tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, ofstream *logger, DroneController *dctrl);
     void update(bool drone_at_base, double time);
     tracking::InsectTracker *target_insecttracker() {return _target_insecttracker;}
 
@@ -78,11 +79,11 @@ public:
         if (!best_itrkr)
             return false;
         return !_n_frames_aim_not_in_range
-               && target_in_hunt_volume == CameraView::HuntVolume_OK
+               && target_in_flight_area
                && !best_itrkr->false_positive();
     }
     bool aim_in_range() {return !_n_frames_aim_not_in_range;}
-    bool target_cleared() {return _n_frames_aim_not_in_range > n_frames_target_cleared_timeout; }
+    bool target_cleared() {return _n_frames_aim_not_in_range > n_frames_target_cleared_timeout;}
     cv::Point3f aim_pos() {return _aim_pos;}
     cv::Point3f aim_vel() {return _aim_vel;}
     cv::Point3f aim_acc() {return _aim_acc;}

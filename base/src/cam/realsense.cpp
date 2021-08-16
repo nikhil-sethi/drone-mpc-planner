@@ -329,8 +329,6 @@ void Realsense::init_real() {
     if (pparams.video_raw == video_bag)
         dev = rs2::recorder(bag_fn,dev);
 
-    def_volume();
-
     rs_depth_sensor.open({infrared1,infrared2});
     rs_depth_sensor.start([&](rs2::frame f) { rs_callback(f); });
     update_real();

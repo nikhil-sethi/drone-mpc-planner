@@ -8,12 +8,12 @@ using namespace std;
 namespace navigation {
 
 
-void DroneNavigation::init(std::ofstream *logger, tracking::TrackerManager * trackers, DroneController * dctrl, VisionData *visdat, CameraView *camview,std::string replay_dir, Interceptor *iceptor) {
+void DroneNavigation::init(std::ofstream *logger, tracking::TrackerManager * trackers, DroneController * dctrl, VisionData *visdat, FlightArea *flight_area,std::string replay_dir, Interceptor *iceptor) {
     _logger = logger;
     _trackers = trackers;
     _dctrl = dctrl;
     _visdat = visdat;
-    _camview = camview;
+    _flight_area = flight_area;
     _iceptor = iceptor;
 
     deserialize_settings();
@@ -359,7 +359,7 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_chasing_insect: {
             setpoint_pos_world = _iceptor->aim_pos();
-            setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, _trackers->dronetracker()->last_track_data().pos(), CameraView::relaxed);
+            setpoint_pos_world = _flight_area->move_inside(setpoint_pos_world, relaxed, _trackers->dronetracker()->last_track_data().pos());
             setpoint_vel_world = _iceptor->aim_vel();
             setpoint_acc_world = _iceptor->aim_acc();
 
@@ -418,7 +418,7 @@ void DroneNavigation::update(double time) {
                 setpoint_pos_world.x = waypoints[wpid].xyz.x + (250-setpoint_slider_X)/100.f;
                 setpoint_pos_world.y = waypoints[wpid].xyz.y + (250-setpoint_slider_Y)/100.f;
                 setpoint_pos_world.z = waypoints[wpid].xyz.z + (setpoint_slider_Z-250)/100.f;
-                setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, CameraView::relaxed);
+                setpoint_pos_world = _flight_area->move_inside(setpoint_pos_world, relaxed);
             }
 
             if (current_waypoint->mode == wfm_long_range) {
@@ -681,7 +681,7 @@ void DroneNavigation::next_waypoint(Waypoint wp, double time) {
     if (wp.mode == wfm_takeoff) {
         cv::Point3f p = _trackers->dronetracker()->pad_location(true);
         setpoint_pos_world =  p + wp.xyz;
-        setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, CameraView::relaxed);
+        setpoint_pos_world = _flight_area->move_inside(setpoint_pos_world, relaxed);
     } else if (wp.mode == wfm_landing || wp.mode == wfm_yaw_reset || wp.mode == wfm_thrust_calib) {
         _dctrl->kiv_ctrl.disable();
         cv::Point3f p = _trackers->dronetracker()->pad_location(true);
@@ -691,7 +691,7 @@ void DroneNavigation::next_waypoint(Waypoint wp, double time) {
         setpoint_pos_world_landing = setpoint_pos_world;
     } else {
         setpoint_pos_world =  wp.xyz;
-        setpoint_pos_world = _camview->setpoint_in_cameraview(setpoint_pos_world, CameraView::relaxed);
+        setpoint_pos_world = _flight_area->move_inside(setpoint_pos_world, relaxed);
     }
     if (dist_to_new_wp > 0.1f)
         _dctrl->nav_waypoint_moved(time);
@@ -768,7 +768,7 @@ cv::Point3f DroneNavigation::square_point(cv::Point3f center, float width, float
     z_offset = 0;
     // Miss use this function to tune the pid controller:
     //x_offset = 0; z_offset = 0;
-    //float y_offset = width/2 * sin(si/width*2*M_PIf32);
+    //float y_offset = width/2 * sinf(si/width*2*M_PIf32);
 
     return {center.x+x_offset, center.y+y_offset, center.z+z_offset};
 }

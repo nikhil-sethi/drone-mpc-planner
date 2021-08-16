@@ -1,0 +1,32 @@
+<SerializableClass Type="LocationXML" Version="1.0">
+    <Member Name="name">test-room</Member>
+    <Collection Name="planes">
+        <Class Type="Plane" Version="1.0">
+            <Member Name="type">back_plane</Member>
+            <Member Name="support_vector_x">0.</Member>
+            <Member Name="support_vector_y">-3.1</Member>
+            <Member Name="support_vector_z">0.</Member>
+            <Member Name="normal_vector_x">0.</Member>
+            <Member Name="normal_vector_y">1.</Member>
+            <Member Name="normal_vector_z">0.</Member>
+        </Class>
+        <Class Type="Plane" Version="1.0">
+            <Member Name="type">unspecified_plane</Member>
+            <Member Name="support_vector_x">-2.3</Member>
+            <Member Name="support_vector_y">0.</Member>
+            <Member Name="support_vector_z">0.</Member>
+            <Member Name="normal_vector_x">1.</Member>
+            <Member Name="normal_vector_y">0.</Member>
+            <Member Name="normal_vector_z">0.</Member>
+        </Class>
+        <Class Type="Plane" Version="1.0">
+            <Member Name="type">unspecified_plane</Member>
+            <Member Name="support_vector_x">3.</Member>
+            <Member Name="support_vector_y">0</Member>
+            <Member Name="support_vector_z">0.</Member>
+            <Member Name="normal_vector_x">-1</Member>
+            <Member Name="normal_vector_y">0.</Member>
+            <Member Name="normal_vector_z">0.</Member>
+        </Class>
+    </Collection>
+</SerializableClass>

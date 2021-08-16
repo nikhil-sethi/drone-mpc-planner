@@ -1,4 +1,4 @@
-<SerializableClass Type="PatsParameters" Version="1.11">
+<SerializableClass Type="PatsParameters" Version="1.12">
     <Member Name="wdt_timeout_us">500000</Member>
     <Member Name="exposure_threshold">0</Member>
     <Member Name="gain_threshold">16</Member>
@@ -22,6 +22,7 @@
     <Member Name="viz_plots">false</Member>
     <Member Name="viz_tracking">true</Member>
     <Member Name="imscalef">2</Member>
+    <Member Name="location">test-room</Member>
     <Member Name="flightplan">../xml/flightplans/simple-demo-darkroom.xml</Member>
     <Member Name="flightplan_calib_thrust">../xml/flightplans/thrust-calib.xml</Member>
     <Member Name="live_image_frq">0</Member>

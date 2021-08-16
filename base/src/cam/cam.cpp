@@ -53,70 +53,15 @@ void Cam::convert_depth_background_to_world() {
         }
 }
 
-void Cam::def_volume () {
-
-    float b_depth, b_ground;
-
-    cv::Point3f point_left_top, point_right_top, point_left_bottom, point_right_bottom;
-
+ViewLimit Cam::view_limits () {
     // Some planes are defined with the slopes of the corner pixels:
     // In the past this was more precice then the difintion with background pixels.
-    point_left_top = get_SlopesOfPixel(0,0); // ..get_SlopesOfPixel(width, height)
-    point_right_top = get_SlopesOfPixel(847, 0);
-    point_left_bottom = get_SlopesOfPixel(0, 479);
-    point_right_bottom = get_SlopesOfPixel(847, 479);
-
-    // For the groundplane the offset in y direction is directly calculated;
-    float y_sum = 0;
-    uint n=0;
-    for(uint row=300; row<480; row+=5) {
-        for(uint col=212; col<636; col+=5) {
-
-            if(depth_background_3mm_world.at<cv::Vec3f>(row,col)[1]!=0) {
-                y_sum += depth_background_3mm_world.at<cv::Vec3f>(row,col)[1];
-                n+=1;
-            }
-        }
-    }
-    b_ground = -y_sum/n;
-
-    float z_sum = 0;
-    n=0;
-    for(uint row=0; row<10; row+=1) {
-        for(uint col=0; col<848; col+=5) {
-
-            if(depth_background_3mm_world.at<cv::Vec3f>(row, col)[2]!=0) {
-                z_sum += depth_background_3mm_world.at<cv::Vec3f>(row, col)[2];
-                n+=1;
-            }
-        }
-    }
-    if (pparams.long_range_mode)
-        b_depth = -100;
-    else {
-        b_depth = -z_sum/n;
-        if(b_depth<-10.f)
-            b_depth = -10.f; //10 m is the max supported depth by the realsense
-    }
-    camera_volume.init(point_left_top, point_right_top, point_left_bottom, point_right_bottom, b_depth, b_ground, camparams.camera_angle_y);
-}
-
-cv::Point3f Cam::get_SlopesOfPixel(uint x, uint y) {
-    std::vector<cv::Point3d> camera_coordinates, world_coordinates;
-    camera_coordinates.push_back(cv::Point3d(x,y,-1));
-    cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
-
-    cv::Point3f w;
-    w.x = world_coordinates[0].x;
-    w.y = world_coordinates[0].y;
-    w.z = world_coordinates[0].z;
-    //compensate camera rotation:
-    float theta = camparams.camera_angle_y * deg2rad;
-    float temp_y = w.y * cosf(theta) + w.z * sinf(theta);
-    w.z = -w.y * sinf(theta) + w.z * cosf(theta);
-    w.y = temp_y;
-
-    return w;
+    auto point_left_top = im2world(cv::Point2f(0,0),1,Qf,camparams.camera_angle_y);
+    auto point_right_top = im2world(cv::Point2f(IMG_W,0),1,Qf,camparams.camera_angle_y);
+    auto point_left_bottom = im2world(cv::Point2f(0,IMG_H),1,Qf,camparams.camera_angle_y);
+    auto point_right_bottom = im2world(cv::Point2f(IMG_W,IMG_H),1,Qf,camparams.camera_angle_y);
+    ViewLimit ret = ViewLimit(point_left_top, point_right_top, point_left_bottom, point_right_bottom);
+    return ret;
 }
 
 void Cam::delete_old_frames() {

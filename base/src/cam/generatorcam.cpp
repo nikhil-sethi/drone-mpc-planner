@@ -21,8 +21,6 @@ void GeneratorCam::init () {
 
     convert_depth_background_to_world();
 
-    def_volume();
-
     cv::Mat clt = cv::Mat::zeros(5000,5000,CV_8UC1);
     cv::Mat cdt = cv::Mat::zeros(5000,5000,CV_8UC1);
     int cirk_size = 150;

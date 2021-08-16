@@ -134,8 +134,8 @@ public:
     cv::Point3f new_sample(cv::Point3f uk) {
         yk2 = yk1;
         yk1 = yk;
-        yk = uk*K*pow(sample_time, 2) + yk1*(2*T1*T2+(T1+T2)*sample_time) - yk2*T1*T2;
-        yk /= T1*T2 + (T1+T2)*sample_time + static_cast<float>(pow(sample_time, 2));
+        yk = uk*K*powf(sample_time, 2) + yk1*(2*T1*T2+(T1+T2)*sample_time) - yk2*T1*T2;
+        yk /= T1*T2 + (T1+T2)*sample_time + powf(sample_time, 2);
 
         return yk;
     }

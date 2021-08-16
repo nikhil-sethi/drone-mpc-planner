@@ -1,0 +1,5 @@
+<SerializableClass Type="LocationXML" Version="1.0">
+    <Member Name="name">Open space</Member>
+    <Collection Name="planes">
+    </Collection>
+</SerializableClass>

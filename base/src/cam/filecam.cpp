@@ -39,7 +39,6 @@ void FileCam::init () {
 
     convert_depth_background_to_world();
 
-    def_volume();
     read_frame_ids();
     swc.Start();
     update();

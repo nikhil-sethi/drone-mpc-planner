@@ -3,18 +3,18 @@
 
 using namespace tracking;
 
-void Interceptor::init(tracking::TrackerManager* trackers, VisionData* visdat, CameraView* camview, std::ofstream* logger, DroneController *dctrl) {
+void Interceptor::init(tracking::TrackerManager* trackers, VisionData* visdat, FlightArea* flight_area, std::ofstream* logger, DroneController *dctrl) {
     _logger = logger;
     _trackers = trackers;
     _visdat = visdat;
-    _camview = camview;
+    _flight_area = flight_area;
     _dctrl = dctrl;
     n_frames_target_cleared_timeout = pparams.fps * 1.f;
     (*_logger) << "interceptor_state;hunt_vol_check;";
 }
 
 void Interceptor::write_dummy_csv() {
-    (*_logger) << static_cast<int16_t>(_interceptor_state) << ";" << static_cast<int16_t>(target_in_hunt_volume) << ";";
+    (*_logger) << static_cast<int16_t>(_interceptor_state) << ";" << static_cast<int16_t>(target_in_flight_area) << ";";
 }
 void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
     auto target_trkr = update_target_insecttracker();
@@ -22,7 +22,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
     switch (_interceptor_state) {
     case  is_init: {
         _interceptor_state = is_waiting_for_target;
-        _aim_pos = _camview->center_of_volume;
+        _aim_pos = _flight_area->move_inside(cv::Point3f(0,0,0), strict);
         [[fallthrough]];
     }
 
@@ -139,7 +139,7 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
         break;
     }
     }
-    (*_logger) << static_cast<int16_t>(_interceptor_state) << ";" << static_cast<int16_t>(target_in_hunt_volume) << ";";
+    (*_logger) << static_cast<int16_t>(_interceptor_state) << ";" << static_cast<int16_t>(target_in_flight_area) << ";";
 }
 cv::Point3f Interceptor::update_far_target(bool drone_at_base) {
     TrackData target = target_last_trackdata();
@@ -211,8 +211,8 @@ cv::Point3f Interceptor::update_close_target(bool drone_at_base) {
 }
 
 void Interceptor::update_interceptability(cv::Point3f req_aim_pos) {
-    target_in_hunt_volume = _camview->in_hunt_area (target_last_trackdata().pos());
-    std::tie(aim_in_view, ignore) = _camview->in_view(req_aim_pos, CameraView::relaxed);
+    target_in_flight_area = _flight_area->inside(target_last_trackdata().pos(), relaxed);
+    aim_in_view = _flight_area->inside(req_aim_pos, bare);
 
     if (aim_in_view) {
         _aim_pos = req_aim_pos;

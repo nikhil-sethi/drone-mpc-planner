@@ -1,42 +1,12 @@
 #include "linalg.h"
-
-cv::Mat intersection_of_3_planes(cv::Mat p0_1, cv::Mat n_1, cv::Mat p0_2, cv::Mat n_2, cv::Mat p0_3, cv::Mat n_3) {
-    cv::Mat n01, n02, n03;
-    float d1, d2, d3;
-
-    std::tie(d1, n01) = hesse_normal_form(p0_1, n_1);
-    std::tie(d2, n02) = hesse_normal_form(p0_2, n_2);
-    std::tie(d3, n03) = hesse_normal_form(p0_3, n_3);
-
-    cv::Mat b, A;
-
-    b = (cv::Mat_<float>(3,1) << d1, d2, d3);
-
-    cv::hconcat(n01, n02, A);
-    cv::hconcat(A, n03, A);
-
-    return  A.t().inv() * (b.reshape(1,3));
-}
-
-std::tuple<float, cv::Mat> hesse_normal_form(cv::Mat p0, cv::Mat n) {
-    cv::Mat n0;
-
-    n0 = n.mul(cv::norm(n));
-    double d = p0.dot(n0);
-
-    return std::make_tuple(d, n0);
-}
+#include <opencv2/highgui/highgui.hpp>
+#include "opencv2/imgproc/imgproc.hpp"
 
 float distance_to_plane_along_vec(cv::Mat vec, cv::Mat plane) {
-    cv::Mat b(3, 1, CV_32F);
-    b = vec.col(0) - plane.col(0);
-
-    cv::Mat n(3, 1, CV_32F);
-    n = plane.col(1)/norm(plane.col(1));
-    cv::Mat e1(3, 1, CV_32F);
-    e1 = get_orthogonal_vector(n);
-    cv::Mat e2(3, 1, CV_32F);
-    e2 = n.cross(e1);
+    cv::Mat b = vec.col(0) - plane.col(0);
+    cv::Mat n = plane.col(1)/norm(plane.col(1));
+    cv::Mat e1 = orthogonal_vector(n);
+    cv::Mat e2 = n.cross(e1);
 
     cv::Mat A(3, 3, CV_32F);
     e1.copyTo (A.col(0));
@@ -50,14 +20,12 @@ float distance_to_plane_along_vec(cv::Mat vec, cv::Mat plane) {
         return std::numeric_limits<float>::max();
     }
 
-    cv::Mat params(3, 1, CV_32F);
-    params = A.inv()*b;
+    cv::Mat params = A.inv()*b;
     float sgn_param3 = 1 - 2*(params.at<float>(2,0)<0);
-
     return sgn_param3 * static_cast<float>(norm( params.at<float>(2,0)*vec.col(1) ));
 }
 
-cv::Mat get_orthogonal_vector(cv::Mat vec) {
+cv::Mat orthogonal_vector(cv::Mat vec) {
     cv::Mat rt;
     if(vec.at<float>(2,0)!=0) {
         rt = (cv::Mat_<float>(3,1) << 1,1,(-vec.at<float>(0,0) -vec.at<float>(1,0))/vec.at<float>(2,0) );
@@ -66,14 +34,12 @@ cv::Mat get_orthogonal_vector(cv::Mat vec) {
     } else if(vec.at<float>(0,0)!=0) {
         rt = (cv::Mat_<float>(3,1) << (-vec.at<float>(1,0) -vec.at<float>(2,0))/vec.at<float>(0,0),1,1 );
     }
-
     return rt;
 }
 
-std::tuple<cv::Mat, cv::Mat> get_orthogonal_vectors(cv::Mat vec) {
-    cv::Mat orth1 = get_orthogonal_vector(vec);
+std::tuple<cv::Mat, cv::Mat> orthogonal_vectors(cv::Mat vec) {
+    cv::Mat orth1 = orthogonal_vector(vec);
     cv::Mat orth2 = vec.cross(orth1);
-
     return std::tuple<cv::Mat, cv::Mat>(orth1, orth2);
 }
 
@@ -91,25 +57,10 @@ std::tuple<cv::Mat, cv::Mat, cv::Mat> split_vector_to_basis_vectors(cv::Mat vec,
             params.at<float>(2,0)*b3);
 }
 
-cv::Mat get_plane_normal_vector(cv::Point3f x1, cv::Point3f x2) {
-    cv::Point3f n = x1.cross (x2);
-    return cv::Mat(n)/norm(n);
-}
-
-bool on_normal_side(cv::Mat p0, cv::Mat n, cv::Mat p) {
-    cv::Mat v = cv::Mat::zeros(cv::Size(1,3), CV_32F);
-    v = p-p0;
-    if(v.dot(n)>0)
-        return true;
-    else
-        return false;
-}
-
 float projection_length_of_vec_along_dir(cv::Point3f vec, cv::Point3f dir) {
     dir = dir/norm(dir);
     return vec.dot(dir);
 }
-
 
 float angle_to_horizontal(cv::Point3f direction) {
     //https://onlinemschool.com/math/library/analytic_geometry/plane_line/
@@ -117,7 +68,7 @@ float angle_to_horizontal(cv::Point3f direction) {
     float B = 1;
     float C = 0;
 
-    return asinf(abs(A*direction.x + B*direction.y + C*direction.z) /normf({A, B, C}) /normf(direction));
+    return asinf(fabs(A*direction.x + B*direction.y + C*direction.z) /normf({A, B, C}) /normf(direction));
 }
 
 cv::Point3f lowest_direction_to_horizontal(cv::Point3f direction, float min_angle) {
@@ -128,24 +79,15 @@ cv::Point3f lowest_direction_to_horizontal(cv::Point3f direction, float min_angl
     return direction;
 }
 
-
-float shortest_distance_to_plane(cv::Point3f pnt, cv::Point3f pln_spprt, cv::Point3f pln_nrm) {
-    cv::Point3f plnspprt2pnt = pnt - pln_spprt;
-    pln_nrm = pln_nrm/norm(pln_nrm);
-    return plnspprt2pnt.dot(pln_nrm);
+float shortest_distance_to_line(cv::Point3f pnt, cv::Point3f line_support, cv::Point3f line_direction) {
+    return norm((pnt-line_support).cross(line_direction))/norm(line_direction);
 }
 
-
-float shortest_distance_to_line(cv::Point3f pnt, cv::Point3f ln_spprt, cv::Point3f ln_dir) {
-    return norm((pnt-ln_spprt).cross(ln_dir))/norm(ln_dir);
-}
-
-
-cv::Point3f intersection_of_plane_and_line(cv::Point3f pln_spprt, cv::Point3f pln_nrm, cv::Point3f ln_spprt, cv::Point3f ln_nrm) {
-    float dot = pln_nrm.dot(ln_nrm);
-    assert(abs(dot)>=0.0001f); // Line and plane are parallel and it exists no/inf intersection points.
-    float d =(pln_spprt-ln_spprt).dot(pln_nrm)/dot;
-    return ln_spprt+d*ln_nrm;
+cv::Point3f intersection_of_plane_and_line(cv::Point3f plane_support, cv::Point3f plane_normal, cv::Point3f line_support, cv::Point3f ln_nrm) {
+    float dot = plane_normal.dot(ln_nrm);
+    assert(fabs(dot)>=0.0001f); // Line and plane are parallel and it exists no/inf intersection points.
+    float d =(plane_support-line_support).dot(plane_normal)/dot;
+    return line_support+d*ln_nrm;
 }
 
 cv::Point3f project_between_two_points(cv::Point3f p, cv::Point3f p1, cv::Point3f p2) {
@@ -153,15 +95,27 @@ cv::Point3f project_between_two_points(cv::Point3f p, cv::Point3f p1, cv::Point3
     float lsqr = (p2-p1).dot(p2-p1);
     float dot = (p-p1).dot(p2-p1)/lsqr;
     float t = max(0.f,min(1.f,dot));
-
     return p1 + t*(p2-p1);
 }
 
-
 float angle_between_points(cv::Point3f p1, cv::Point3f p2, cv::Point3f p3) {
     //https://stackoverflow.com/a/19730129/12960292
-    cv::Point3f v1 = (p1-p2)/norm(p1-p2);
-    cv::Point3f v2 = (p3-p2)/norm(p3-p2);
+    cv::Point3f v1 = (p1-p2)/normf(p1-p2);
+    cv::Point3f v2 = (p3-p2)/normf(p3-p2);
+    return acosf(v1.dot(v2));
+}
 
-    return acos(v1.dot(v2));
+cv::Point3f rotate_vector_around_x_axis(cv::Point3f vector, float angle) {
+    cv::Matx33f rot(1.f, 0.f, 0.f, 0.f, cosf(angle), -sinf(angle), 0.f, sinf(angle), cosf(angle));
+    return rot * vector;
+}
+
+cv::Point3f rotate_vector_around_y_axis(cv::Point3f vector, float angle) {
+    cv::Matx33f rot(cosf(angle), 0.f, sinf(angle), 0.f, 1.f, 0.f, -sinf(angle), 0.f, cosf(angle));
+    return rot*vector;
+}
+
+cv::Point3f rotate_vector_around_z_axis(cv::Point3f vector, float angle) {
+    cv::Matx33f rot(cosf(angle), -sinf(angle), 0.f, sinf(angle), cosf(angle), 0.f, 0.f, 0.f, 1.f);
+    return rot*vector;
 }

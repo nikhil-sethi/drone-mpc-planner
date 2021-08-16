@@ -15,17 +15,13 @@ TEST(Filtering, PT1_T_larger_dt) {
     f.reset(0.f);
 
     float y = f.new_sample(1.f);
-    std::cout << "y: " << y << std::endl;
     float t = dt;
     float error = y - (1-exp(-t/T));
-    std::cout << "error: " << error << std::endl;
     CHECK( abs(error)<0.1f);
 
     y = f.new_sample(1.f);
-    std::cout << "y: " << y << std::endl;
     t = 2*dt;
     error = y - (1-exp(-t/T));
-    std::cout << "error: " << error << std::endl;
     CHECK( abs(error)<0.1f);
 }
 
@@ -36,21 +32,17 @@ TEST(Filtering, PT1_T_smaller_dt) {
     f.reset(0.f);
 
     float y = f.new_sample(1.f);
-    std::cout << "y: " << y << std::endl;
     float t = dt;
     float error = y - (1-exp(-t/T));
-    std::cout << "error: " << error << std::endl;
     CHECK( abs(error)<0.1f);
 
     y = f.new_sample(1.f);
-    std::cout << "y: " << y << std::endl;
     t = 2*dt;
     error = y - (1-exp(-t/T));
-    std::cout << "error: " << error << std::endl;
     CHECK( abs(error)<0.1f);
 }
 
-TEST(Filtering, PT2_T_larger_dt){
+TEST(Filtering, PT2_T_larger_dt) {
     filtering::Tf_PT2_f f;
     float T = 0.02f;
     f.init(dt, K, T, T);
@@ -65,11 +57,10 @@ TEST(Filtering, PT2_T_larger_dt){
 
     float y;
     float y1, y2;
-    for (int i=1; i<100; i++){
+    for (int i=1; i<100; i++) {
         y = f.new_sample(1.f);
         y1 = f1.new_sample(1.);
         y2 = f2.new_sample(y1);
 
-        std::cout << "PT2 t: " << i*dt << " y: " << y << " y12: "<< y2 << " error: " << (y-y2)/y2 << std::endl;
     }
 }

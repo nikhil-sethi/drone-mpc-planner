@@ -1,6 +1,5 @@
 #pragma once
 #include "common.h"
-#include "cameraview.h"
 
 #include <iostream>
 #include <fstream>
@@ -11,6 +10,16 @@
 #include <thread>
 
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
+
+struct ViewLimit {
+    cv::Point3f point_left_top;
+    cv::Point3f point_right_top;
+    cv::Point3f point_left_bottom;
+    cv::Point3f point_right_bottom;
+
+    ViewLimit() {}
+    ViewLimit(cv::Point3f plt, cv::Point3f prt, cv::Point3f plb, cv::Point3f prb) : point_left_top(plt),point_right_top(prt), point_left_bottom(plb),point_right_bottom(prb)  {}
+};
 
 class Cam {
 protected:
@@ -43,8 +52,6 @@ protected:
     void set_read_file_paths(std::string replay_dir);
     void set_write_file_paths(std::string output_dir);
     void convert_depth_background_to_world();
-    void def_volume();
-    cv::Point3f get_SlopesOfPixel(uint x, uint y);
     virtual void delete_old_frames();
     virtual void delete_all_frames();
 
@@ -57,7 +64,6 @@ public:
     cv::Mat depth_background_3mm_world;
     cv::Mat depth_background_mm;
     cv::Mat disparity_background;
-    CameraView camera_volume;
 
     virtual void init() = 0;
     virtual void close() {
@@ -68,12 +74,12 @@ public:
         depth_background_3mm_world.release();
         depth_background_mm.release();
         disparity_background.release();
-        camera_volume.release();
         delete_all_frames();
     }
     virtual StereoPair * update() = 0;
     float camera_pitch() { return camparams.camera_angle_y; }
     float camera_roll() { return camparams.camera_angle_x; }
+    ViewLimit view_limits ();
 
     float measured_exposure() { return camparams.measured_exposure; }
     float measured_gain() { return camparams.measured_gain; }

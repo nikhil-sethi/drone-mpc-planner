@@ -3,7 +3,7 @@
 #include "joystick.hpp"
 #include "multimodule.h"
 #include "common.h"
-#include "cameraview.h"
+#include "flightarea/flightarea.h"
 #include "tracking.h"
 #include "landingcontroller.h"
 #include "keepinviewcontroller.h"
@@ -155,7 +155,7 @@ private:
 
     Rc * _rc;
     tracking::DroneTracker * _dtrk;
-    CameraView *_camview;
+    FlightArea *_flight_area;
     std::ofstream *_logger;
 
     std::string control_parameters_rfn;
@@ -221,9 +221,6 @@ private:
     filtering::Tf_D_f d_vel_err_x, d_vel_err_y, d_vel_err_z;
     filtering::Tf_PT2_f pos_modelx, pos_modely, pos_modelz;
 
-    std::array<float, N_PLANES> pos_err_kiv= {0}, vel_err_kiv= {0};
-    std::array<filtering::Tf_D_f, N_PLANES> d_pos_err_kiv, d_vel_err_kiv;
-
     float time_spent_spinning_up(double time) {
         if (spin_up_start_time> 0)
             return static_cast<float>(time - spin_up_start_time );
@@ -257,9 +254,7 @@ private:
     std::vector<tracking::StateData> predict_trajectory(float burn_duration, float remaining_aim_duration, cv::Point3f burn_direction, tracking::StateData state_drone);
     void draw_viz(tracking::StateData state_drone, tracking::StateData state_target, double time, cv::Point3f burn_direction, float burn_duration, float remaining_aim_duration, std::vector<tracking::StateData> traj);
     void calibrate_pad_attitude();
-    bool trajectory_in_view(std::vector<tracking::StateData> traj, CameraView::view_volume_check_mode c);
     cv::Point3f keep_in_volume_correction_acceleration(tracking::TrackData data_drone);
-    cv::Point3f kiv_acceleration(std::array<bool, N_PLANES> violated_planes_inview, std::array<bool, N_PLANES> violated_planes_brakedistance);
     float duration_since_waypoint_moved(double time) { return  static_cast<float>(time - time_waypoint_moved); }
     bool horizontal_integrators(cv::Point3f setpoint_vel,double time);
 
@@ -462,7 +457,7 @@ public:
     float dist_to_setpoint() { return _dist_to_setpoint; }
 
     void close (void);
-    void init(std::ofstream *logger, std::string replay_dir, bool generator_mode, bool airsim, Rc *rc, tracking::DroneTracker *dtrk, CameraView* camvol,float exposure);
+    void init(std::ofstream *logger, std::string replay_dir, bool generator_mode, bool airsim, Rc *rc, tracking::DroneTracker *dtrk, FlightArea* flight_area,float exposure);
     void control(tracking::TrackData, tracking::TrackData, tracking::TrackData, double);
     bool active() {
         if (_flight_mode == fm_inactive || _flight_mode == fm_disarmed || _flight_mode == fm_joystick_check)

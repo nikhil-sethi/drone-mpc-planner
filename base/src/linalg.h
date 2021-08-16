@@ -1,49 +1,38 @@
 #pragma once
 #include "common.h"
-#include <opencv2/highgui/highgui.hpp>
-#include "opencv2/imgproc/imgproc.hpp"
-
 
 float angle_to_horizontal(cv::Point3f direction);
 cv::Point3f lowest_direction_to_horizontal(cv::Point3f direction, float min_angle);
 
 /** @brief Calculates an orthogonal vector to a given vector. */
-cv::Mat get_orthogonal_vector(cv::Mat vec);
+cv::Mat orthogonal_vector(cv::Mat vec);
 
 /** @brief Calculates the two orthogonal vectors to a given vector.*/
-std::tuple<cv::Mat, cv::Mat> get_orthogonal_vectors(cv::Mat vec);
+std::tuple<cv::Mat, cv::Mat> orthogonal_vectors(cv::Mat vec);
 
 /** @brief Splits a vector in 3 vectors which are pointing along given basis vectors. */
 std::tuple<cv::Mat, cv::Mat, cv::Mat> split_vector_to_basis_vectors(cv::Mat vec, cv::Mat b1, cv::Mat b2, cv::Mat b3);
 
-/** @brief  Generates the plane normal vector based on 3 points. The third point is always asumed to be (0,0,0)^T. */
-cv::Mat get_plane_normal_vector(cv::Point3f x1, cv::Point3f x2);
-
-/** @brief Determines on which side of the plane a point is.
-* Returns true if the point is on the point the side the normal vector is looking to, else false is returned. */
-bool on_normal_side(cv::Mat p0, cv::Mat n, cv::Mat p);
-
 /** @brief  Calculates the length of the projection of a vector vec on the direction of dir.*/
 float projection_length_of_vec_along_dir(cv::Point3f vec, cv::Point3f dir);
 
-/** @brief Determines the intersection point of 3 planes. */
-cv::Mat intersection_of_3_planes(cv::Mat p0_1, cv::Mat n_1, cv::Mat p0_2, cv::Mat n_2, cv::Mat p0_3, cv::Mat n_3);
-
-std::tuple<float, cv::Mat> hesse_normal_form(cv::Mat p0, cv::Mat n);
+std::tuple<float, cv::Point3f> hesse_normal_form(cv::Point3f p0, cv::Point3f n);
 
 /** @brief Calculates the distance along vec till the plane is intercepted.*/
 float distance_to_plane_along_vec(cv::Mat vec, cv::Mat plane);
 
-/**
- * Return negavtive distanes if pnt is on the opposite side in which pln_nrm points. */
-float shortest_distance_to_plane(cv::Point3f pnt, cv::Point3f pln_spprt, cv::Point3f pln_nrm);
-
 float shortest_distance_to_line(cv::Point3f pnt, cv::Point3f ln_spprt, cv::Point3f ln_nrm);
 
-cv::Point3f intersection_of_plane_and_line(cv::Point3f pln_spprt, cv::Point3f pln_nrm, cv::Point3f ln_spprt, cv::Point3f ln_nrm);
+cv::Point3f intersection_of_plane_and_line(cv::Point3f plane_support, cv::Point3f plane_normal, cv::Point3f ln_spprt, cv::Point3f ln_nrm);
 
 /** @brief Calculates the point p* which is at closest to p and on aline between p1 and p2. */
 cv::Point3f project_between_two_points(cv::Point3f p, cv::Point3f p1, cv::Point3f p2);
 
 /** @brief Calculates the angle between the 3 given points where point p2 is considered as middle point. */
 float angle_between_points(cv::Point3f p1, cv::Point3f p2, cv::Point3f p3);
+
+cv::Point3f rotate_vector_around_x_axis(cv::Point3f vector, float angle);
+
+cv::Point3f rotate_vector_around_y_axis(cv::Point3f vector, float angle);
+
+cv::Point3f rotate_vector_around_z_axis(cv::Point3f vector, float angle);

@@ -1,4 +1,5 @@
-<SerializableClass Type="PatsParameters" Version="1.11">
+<SerializableClass Type="PatsParameters" Version="1.12">
+    <Member Name="location">openspace</Member>
     <Member Name="wdt_timeout_us">500000</Member>
     <Member Name="exposure_threshold">5000</Member>
     <Member Name="gain_threshold">16</Member>

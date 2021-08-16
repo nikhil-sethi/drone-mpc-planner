@@ -45,7 +45,7 @@ TEST(Quaternions, restore_quat) {
     cv::Point3f bf_hover = cv::Point3f(0, 0, -1);
     cv::Point3f acc = cv::Point3f(1, 1, 1);
     Quaternion qrot = rot_quat(bf_hover, acc);
-    float qs = sqrt(1-powf(qrot.v.x, 2) - powf(qrot.v.y, 2));
+    float qs = sqrtf(1-powf(qrot.v.x, 2) - powf(qrot.v.y, 2));
     Quaternion qrot2(qs, qrot.v.x, qrot.v.y, 0);
     CHECK(abs(normq(qrot2)-1)<eps);
     CHECK(normq(qrot-qrot2)<eps);

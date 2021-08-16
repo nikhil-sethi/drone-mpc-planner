@@ -6,7 +6,7 @@ std::ostream& operator <<(std::ostream& os, const Quaternion& q) {
 }
 
 float normq(Quaternion q) {
-    return sqrt(powf(q.s, 2) + powf(q.v.x, 2) + powf(q.v.y, 2) + powf(q.v.z, 2));
+    return sqrtf(powf(q.s, 2) + powf(q.v.x, 2) + powf(q.v.y, 2) + powf(q.v.z, 2));
 }
 
 std::tuple<float, cv::Point3f> qcharacteristics(Quaternion q) {
@@ -14,8 +14,8 @@ std::tuple<float, cv::Point3f> qcharacteristics(Quaternion q) {
     cv::Point3f axis;
     q /= normq(q);
 
-    theta = -2*acos(q.s);
-    axis = q.v/sin(-theta/2);
+    theta = -2*acosf(q.s);
+    axis = q.v/sinf(-theta/2);
 
     return std::make_tuple(theta, axis);
 }
@@ -52,7 +52,7 @@ cv::Point3f rotate(cv::Point3f vec0, Quaternion rot_quat) {
 }
 
 cv::Point3f restore_direction(float qx, float qy) {
-    float qs = sqrt(1-powf(qx, 2) - powf(qy, 2));
+    float qs = sqrtf(1-powf(qx, 2) - powf(qy, 2));
     Quaternion qrot(qs, qx, qy, 0);
     cv::Point3f bf_hover = {0,0,-1};
     return rotate(bf_hover, qrot);

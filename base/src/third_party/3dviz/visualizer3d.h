@@ -18,7 +18,7 @@ public:
     bool init(tracking::TrackerManager *trackers, CameraView *cam_volume, DroneController *dctrl, navigation::DroneNavigation *dnav);
     void run();
 #else
-    bool init(tracking::TrackerManager *trackers [[maybe_unused]], CameraView *cam_volume [[maybe_unused]], DroneController *dctrl [[maybe_unused]], navigation::DroneNavigation *dnav [[maybe_unused]]) {return true;}
+    bool init(tracking::TrackerManager *trackers [[maybe_unused]], FlightArea *flight_area [[maybe_unused]], DroneController *dctrl [[maybe_unused]], navigation::DroneNavigation *dnav [[maybe_unused]]) {return true;}
     void run() {}
 #endif
 

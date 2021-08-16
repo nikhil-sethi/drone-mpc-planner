@@ -17,3 +17,4 @@ false_positives.csv
 mpc-design/*.csv
 *.p
 *.pyc
+.clangd/*
