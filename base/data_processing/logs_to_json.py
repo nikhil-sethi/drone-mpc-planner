@@ -175,7 +175,7 @@ def autocorr(x, lags):
 def process_log(detection_fn, folder, mode, monitoring_start_datetime):
     logger = logging.getLogger('logs_to_json')
     try:
-        log = pd.read_csv(detection_fn, sep=";")
+        log = pd.read_csv(detection_fn, sep=";",dtype=float,converters={'fp':str})
     except Exception as e:
         logger.info(detection_fn + ': ' + str(e))
         return {}
