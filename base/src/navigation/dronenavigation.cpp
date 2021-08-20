@@ -178,8 +178,10 @@ void DroneNavigation::update(double time) {
             break;
         } case ns_check_pad_att: {
             maintain_motion_map(time);
-            if (_dctrl->attitude_on_pad_OK() || ! dparams.Telemetry())
+            if (_dctrl->attitude_on_pad_OK() || ! dparams.Telemetry()) {
                 _navigation_status = ns_wait_to_arm;
+                _trackers->dronetracker()->drone_on_landing_pad(true);
+            }
             break;
         } case ns_wait_to_arm: {
             maintain_motion_map(time);
@@ -323,8 +325,9 @@ void DroneNavigation::update(double time) {
                 setpoint_pos_world = _iceptor->aim_pos();
                 setpoint_vel_world = _iceptor->aim_vel();
                 setpoint_acc_world = _iceptor->aim_acc();
-            } else if (_nav_flight_mode == nfm_hunt && _dctrl->abort_take_off()) {
-                _navigation_status = ns_wait_for_insect;
+            } else if (_nav_flight_mode == nfm_hunt && _trackers->dronetracker()->drone_on_landing_pad()) {
+                if ( _dctrl->abort_take_off())
+                    _navigation_status = ns_wait_for_insect;
             }
 
             if (!_trackers->dronetracker()->taking_off())
