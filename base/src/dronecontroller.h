@@ -297,6 +297,8 @@ public:
             if (remaining_spinup_duration  < 0.05f)
                 return false;
             _flight_mode = fm_spinup ;
+            if (spin_up_start_time < take_off_start_time)
+                spin_up_start_time = take_off_start_time;
             return true;
 
         } else if (_flight_mode == fm_spinup || _flight_mode==fm_start_takeoff) {
