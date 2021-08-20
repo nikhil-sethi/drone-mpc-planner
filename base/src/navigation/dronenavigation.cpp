@@ -262,7 +262,7 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_manual;
             } else if (_nav_flight_mode == nfm_hunt) {
 
-                if (_dctrl->telemetry().batt_cell_v > 2 && _dctrl->telemetry().batt_cell_v < dparams.min_hunt_cell_v && time - time_take_off > 15) {
+                if (_dctrl->telemetry().batt_cell_v > 2 && _dctrl->telemetry().batt_cell_v < dparams.min_hunt_cell_v && (time - time_take_off > 15 || time_take_off < 0.01)) {
                     _navigation_status = ns_batlow;
                     break;
                 } else if (_trackers->too_many_false_positives()) {
