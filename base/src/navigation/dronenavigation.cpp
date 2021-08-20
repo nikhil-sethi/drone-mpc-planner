@@ -576,6 +576,7 @@ void DroneNavigation::update(double time) {
             _dctrl->kiv_ctrl.enable();
             _flight_time+= static_cast<float>(time-time_take_off);
             _n_landings++;
+            _n_shakes_after_landing = 0;
             [[fallthrough]];
         } case ns_start_shaking: {
             if (static_cast<float>(time - time_landed) > 1.0f) {
@@ -589,13 +590,25 @@ void DroneNavigation::update(double time) {
         } case ns_shaking_drone: {
             _dctrl->flight_mode(DroneController::fm_shake_it_baby);
             if (static_cast<float>(time - time_shake_start) > duration_shake) {
-                _navigation_status = ns_wait_after_shake;
                 _dctrl->flight_mode(DroneController::fm_disarmed);
+                _n_shakes_after_landing++;
+                _navigation_status = ns_wait_after_shake;
+                _dctrl->new_attitude_package_available(); // reset internal counter so that we can use it in ns_wait_after_shake
             }
             break;
         } case ns_wait_after_shake: {
-            if (static_cast<float>(time - time_landed) > time_out_after_landing + duration_shake )
-                _navigation_status = ns_start_calibrating_motion;
+            if (static_cast<float>(time - time_shake_start) > time_out_after_landing + duration_shake ) {
+                if (dparams.Telemetry()) {
+                    if (!_dctrl->new_attitude_package_available() ) { /* wait some more until we receive new package */ }
+                    else if (_dctrl->attitude_on_pad_OK())
+                        _navigation_status = ns_start_calibrating_motion;
+                    else if (_n_shakes_after_landing <= 5)
+                        _navigation_status = ns_start_shaking;
+                    else
+                        _navigation_status = ns_drone_lost; // bit of a tmp solution until we get the retry-landing feature #75
+                } else
+                    _navigation_status = ns_start_calibrating_motion;
+            }
             break;
         } case ns_manual: { // also used for disarmed
             wpid = 0;

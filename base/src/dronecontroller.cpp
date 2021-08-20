@@ -671,15 +671,22 @@ bool check_att_bounds(cv::Point2f att, cv::Point2f att_min,cv::Point2f att_max) 
     return att_check;
 }
 void DroneController::calibrate_pad_attitude() {
-    static uint32_t prev_roll_pitch_package_id = 0;
-    if (_rc->telemetry.roll_pitch_package_id > prev_roll_pitch_package_id) {
-        prev_roll_pitch_package_id = _rc->telemetry.roll_pitch_package_id;
+    if (new_attitude_package_available()) {
         if (check_att_bounds(cv::Point2f(_rc->telemetry.roll,_rc->telemetry.pitch),cv::Point2f(-360,-360),cv::Point2f(360,360))) {
             pad_att_calibration_roll.addSample(_rc->telemetry.roll);
             pad_att_calibration_pitch.addSample(_rc->telemetry.pitch);
         }
     }
 }
+bool DroneController::new_attitude_package_available() {
+    static uint32_t prev_roll_pitch_package_id = 0;
+    if (_rc->telemetry.roll_pitch_package_id > prev_roll_pitch_package_id) {
+        prev_roll_pitch_package_id = _rc->telemetry.roll_pitch_package_id;
+        return true;
+    }
+    return false;
+}
+
 bool DroneController::attitude_on_pad_OK() {
     static bool landing_att_calibration_msg_printed = false;
     if (pad_att_calibration_roll.ready()) {

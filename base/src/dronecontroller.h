@@ -517,6 +517,7 @@ public:
 
     void init_thrust_calibration();
     void save_thrust_calibration();
+    bool new_attitude_package_available();
     bool attitude_on_pad_OK();
     void invalidize_blink();
     bool pad_calibration_done();
