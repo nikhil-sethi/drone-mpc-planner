@@ -166,6 +166,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         break;
     } case fm_start_takeoff: {
         take_off_start_time = time;
+        remaining_spinup_duration_t0 = max(0.f,dparams.full_bat_and_throttle_spinup_duration - aim_duration - time_spent_spinning_up(time));
         _flight_mode = fm_take_off_aim;
         _burn_direction_for_thrust_approx = {0};
         auto_throttle = spinup_throttle();
@@ -183,12 +184,8 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         state_drone_takeoff.pos = _dtrk->pad_location() + cv::Point3f(0,lift_off_dist_take_off_aim,0);
         state_drone_takeoff.vel = {0};
 
-        float remaing_spinup_time = dparams.full_bat_and_throttle_spinup_duration - aim_duration - time_spent_spinning_up(take_off_start_time);
-        if (remaing_spinup_time< 0)
-            remaing_spinup_time = 0;
-
         bool burn_limit_hack = true;
-        float remaining_aim_duration = remaing_spinup_time+aim_duration  - static_cast<float>(time - take_off_start_time);
+        float remaining_aim_duration = remaining_spinup_duration_t0 + aim_duration  - static_cast<float>(time - take_off_start_time);
         if (remaining_aim_duration <= aim_duration) {
             cv::Point3f burn_direction;
             std::tie (auto_roll,auto_pitch,auto_burn_duration,burn_direction) = calc_directional_burn(state_drone_takeoff,data_raw_insect.state,0);

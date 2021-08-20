@@ -182,6 +182,7 @@ private:
     float min_takeoff_angle = 45.f/180.f*static_cast<float>(M_PI);
 
     double take_off_start_time = 0;
+    float remaining_spinup_duration_t0 = 0;
     double interception_start_time = 0;
     double in_flight_start_time = -1;
     double ff_land_start_time = 0;
@@ -292,8 +293,8 @@ public:
         //check if the take off is not yet too far progressed to abort, if not go to spin up else return true
 
         if (_flight_mode == fm_take_off_aim) {
-            float remaing_spinup_duration = dparams.full_bat_and_throttle_spinup_duration - aim_duration - time_spent_spinning_up(take_off_start_time);
-            if (remaing_spinup_duration  < 0.05f)
+            float remaining_spinup_duration = dparams.full_bat_and_throttle_spinup_duration - aim_duration - time_spent_spinning_up(_time);
+            if (remaining_spinup_duration  < 0.05f)
                 return false;
             _flight_mode = fm_spinup ;
             return true;
