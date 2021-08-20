@@ -119,7 +119,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         read_joystick();
     process_joystick();
 
-    if (_joy_state== js_waypoint)
+    if (_joy_state == js_waypoint || _flight_mode == fm_start_takeoff || _flight_mode == fm_take_off_aim)
         data_raw_insect = data_target_new; // the takeoff burn uses raw insect, but wp flight mode also uses takeoff burn
     _dtrk->update_target(data_raw_insect.pos());
 
@@ -944,7 +944,7 @@ void DroneController::control_model_based(TrackData data_drone, cv::Point3f setp
 cv::Point3f DroneController::pid_error(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool dry_run ) {
     //WARNING: this function is not allowed to store any information (or apply filters that store),
     //because it is also being used for dummy calculations in the interceptor! See also the dry_run variable
-    bool enable_horizontal_integrators = false;
+    integrator_state enable_horizontal_integrators = hold;
 
     if(!dry_run) {
         pos_modelx.new_sample(setpoint_pos.x);
@@ -968,9 +968,17 @@ cv::Point3f DroneController::pid_error(TrackData data_drone, cv::Point3f setpoin
     return error;
 }
 
-bool DroneController::horizontal_integrators(cv::Point3f setpoint_vel,double time) {
+integrator_state DroneController::horizontal_integrators(cv::Point3f setpoint_vel, double time) {
     float duration_waypoint_update = duration_since_waypoint_moved(time);
-    return  thrust_calibration || _flight_mode == fm_headed || (normf(setpoint_vel) < 0.01f && duration_waypoint_update > 1);
+
+    if(thrust_calibration
+            || (_flight_mode == fm_headed && duration_waypoint_update > 1)
+            || (normf(setpoint_vel) < 0.01f && duration_waypoint_update > 2))
+        return running;
+    else if(_flight_mode == fm_headed && duration_waypoint_update <= 1)
+        return hold;
+    else
+        return reset;
 }
 
 std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_control_gains(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool enable_horizontal_integrators) {
@@ -1037,7 +1045,7 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> Dron
     return std::tuple(kp_pos, ki_pos, kd_pos, kp_vel, kd_vel);
 }
 
-std::tuple<cv::Point3f, cv::Point3f> DroneController::control_error(TrackData data_drone, cv::Point3f setpoint_pos, bool enable_horizontal_integrators, bool dry_run) {
+std::tuple<cv::Point3f, cv::Point3f> DroneController::control_error(TrackData data_drone, cv::Point3f setpoint_pos, integrator_state enable_horizontal_integrators, bool dry_run) {
     //WARNING: this function is not allowed to store any information (or apply filters that store), because it is also being used for dummy calculations in the interceptor!
 
     float err_x_filtered = 0, err_y_filtered = 0, err_z_filtered = 0;
@@ -1071,7 +1079,7 @@ std::tuple<cv::Point3f, cv::Point3f> DroneController::control_error(TrackData da
 
     cv::Point3f pos_err_d = {errDx, errDy, errDz};
 
-    if (enable_horizontal_integrators) {
+    if (enable_horizontal_integrators == running) {
         pos_err_i.x += (err_x_filtered - setpoint_pos.x + pos_modelx.current_output());
         pos_err_i.z += (err_z_filtered - setpoint_pos.z + pos_modelz.current_output());
         if (thrust_calibration) {
@@ -1079,7 +1087,7 @@ std::tuple<cv::Point3f, cv::Point3f> DroneController::control_error(TrackData da
             pos_err_i.y = 0;
         } else
             pos_err_i.y += (err_y_filtered - setpoint_pos.y + pos_modely.current_output());
-    } else if (!dry_run) {
+    } else if (enable_horizontal_integrators == reset && !dry_run) {
         pos_err_i = {0};
     }
 

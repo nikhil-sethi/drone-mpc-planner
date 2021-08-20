@@ -51,6 +51,11 @@ static const char* flight_mode_names[] = { "fm_joystick_check",
                                            "fm_abort"
                                          };
 
+enum integrator_state {
+    reset,
+    hold,
+    running
+};
 class DroneController {
 
 public:
@@ -257,7 +262,7 @@ private:
     void calibrate_pad_attitude();
     cv::Point3f keep_in_volume_correction_acceleration(tracking::TrackData data_drone);
     float duration_since_waypoint_moved(double time) { return  static_cast<float>(time - time_waypoint_moved); }
-    bool horizontal_integrators(cv::Point3f setpoint_vel,double time);
+    integrator_state horizontal_integrators(cv::Point3f setpoint_vel,double time);
 
     std::tuple<float,float> acc_to_deg(cv::Point3f acc);
     std::tuple<float,float> acc_to_quaternion(cv::Point3f acc);
@@ -268,7 +273,7 @@ private:
     void blink_motors(double time);
 
     std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> adjust_control_gains(tracking::TrackData drone_data, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel,bool enable_horizontal_integrators);
-    std::tuple<cv::Point3f, cv::Point3f> control_error(tracking::TrackData data_drone, cv::Point3f setpoint_pos, bool enable_horizontal_integrators, bool dry_run);
+    std::tuple<cv::Point3f, cv::Point3f> control_error(tracking::TrackData data_drone, cv::Point3f setpoint_pos, integrator_state enable_horizontal_integrators, bool dry_run);
     std::tuple<int,int,int> calc_feedforward_control(cv::Point3f desired_acceleration);
     cv::Point3f compensate_gravity_and_crop_to_limit(cv::Point3f des_acc, float thrust);
     void control_model_based(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
