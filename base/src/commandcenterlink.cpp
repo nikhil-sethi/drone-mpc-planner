@@ -158,6 +158,8 @@ void CommandCenterLink::write_commandcenter_status_image() {
                 putText(out_rgb,"State: " + _dnav->navigation_status() + " " + _trackers->mode_str() + " " + _dctrl->flight_mode() +
                         " "  + _trackers->dronetracker()->drone_tracking_state(),cv::Point(5,14),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
                 putText(out_rgb,"Time:       " + to_string_with_precision(_time_since_start,2),cv::Point(5,28),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
+                if (pparams.op_mode != op_mode_monitoring)
+                    cv::circle(out_rgb,_trackers->dronetracker()->pad_im_location(),_trackers->dronetracker()->pad_im_size()/2,cv::Scalar(0,255,0));
 
                 cv::imwrite("../../../../pats/status/monitor_tmp.jpg", out_rgb);
             }
