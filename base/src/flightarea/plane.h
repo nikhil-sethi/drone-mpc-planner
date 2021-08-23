@@ -9,9 +9,9 @@ enum plane_types {
     top_plane,
     back_plane,
     left_plane,
-    front_plane,
+    lower_plane,
     right_plane,
-    camera_plane,
+    camera_protector_plane,
 };
 
 inline const char* plane_types_str[] = {
@@ -20,9 +20,9 @@ inline const char* plane_types_str[] = {
     "top_plane",
     "back_plane",
     "left_plane",
-    "front_plane",
+    "lower_plane",
     "right_plane",
-    "camera_plane",
+    "camera_protector_plane",
     "" // must be the last entry! (check in serializer)
 };
 struct Plane {

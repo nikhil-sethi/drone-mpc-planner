@@ -30,6 +30,7 @@ private:
     float bottom_plane_above_pad = 0.1f;
 
     // Data;
+    Cam* _cam;
     std::string _name;
     safety_margin_types _safety_margin_type;
     std::vector<Plane> _planes = {};
@@ -44,8 +45,8 @@ private:
     void find_active_planes_and_their_corner_points();
     cv::Point3f project_into_flight_area_towards_point(cv::Point3f point, cv::Point3f drone_pos, std::vector<bool> violated_planes);
     cv::Point3f project_to_closest_point_in_flight_area(cv::Point3f point, std::vector<bool> violated_planes);
-    cv::Point3f project_inside_plane_polygon(cv::Point3f, std::vector<CornerPoint> crnr_pnts);
-    bool in_plane_polygon(cv::Point3f);
+    cv::Point3f project_inside_plane_polygon(cv::Point3f point, std::vector<CornerPoint> corner_points);
+    bool in_plane_polygon(cv::Point3f point, std::vector<CornerPoint> corner_points);
     std::vector<CornerPoint> corner_points_of_plane(uint plane_id);
     bool vertices_on_one_edge(CornerPoint cp1, CornerPoint cp2);
 
@@ -54,17 +55,17 @@ private:
         case bare:
             return 0.;
         case relaxed:
-            return 0.15;
+            return 0.15f;
         case strict:
-            return 0.3;
+            return 0.3f;
         default:
-            return 0.3;
+            return 0.3f;
         }
     };
 
 public:
     FlightAreaConfig() {}
-    FlightAreaConfig(Cam* cam, std::string name, safety_margin_types safety_margin_type): _name(name),_safety_margin_type(safety_margin_type), view_data(cam->view_limits()) {
+    FlightAreaConfig(Cam* cam, std::string name, safety_margin_types safety_margin_type): _cam(cam), _name(name),_safety_margin_type(safety_margin_type), view_data(cam->view_limits()) {
         create_camera_planes();
     }
     void update_config();

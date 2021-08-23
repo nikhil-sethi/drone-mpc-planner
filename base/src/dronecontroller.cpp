@@ -587,11 +587,6 @@ std::tuple<int,int,float,cv::Point3f> DroneController::calc_directional_burn(Sta
         }
     }
 
-    if(burn_direction.z>0) { // Quick hack to ensure that the drone is not taking of twards the camera
-        burn_direction.z = 0;
-        burn_direction = burn_direction/norm(burn_direction);
-    }
-
     burn_direction = lowest_direction_to_horizontal(burn_direction, min_takeoff_angle);
 
     auto [roll_quat, pitch_quat] = acc_to_quaternion(burn_direction);
@@ -954,7 +949,7 @@ cv::Point3f DroneController::pid_error(TrackData data_drone, cv::Point3f setpoin
     }
 
 
-    auto [kp_pos, ki_pos, kd_pos, kp_vel, kd_vel] = adjust_control_gains(data_drone, setpoint_pos, setpoint_vel,enable_horizontal_integrators);
+    auto [kp_pos, ki_pos, kd_pos] = adjust_control_gains(data_drone, setpoint_pos, setpoint_vel,enable_horizontal_integrators);
     auto [pos_err_p, pos_err_d] = control_error(data_drone, setpoint_pos, enable_horizontal_integrators,dry_run);
 
     cv::Point3f error = {0};
@@ -981,7 +976,7 @@ integrator_state DroneController::horizontal_integrators(cv::Point3f setpoint_ve
         return reset;
 }
 
-std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_control_gains(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool enable_horizontal_integrators) {
+std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_control_gains(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool enable_horizontal_integrators) {
     float kp_pos_roll_scaled, kp_pos_throttle_scaled, kp_pos_pitch_scaled, ki_pos_roll_scaled, ki_thrust_scaled, ki_pos_pitch_scaled, kd_pos_roll_scaled, kd_pos_throttle_scaled, kd_pos_pitch_scaled, kp_v_roll_scaled, kp_v_throttle_scaled, kp_v_pitch_scaled, kd_v_roll_scaled, kd_v_throttle_scaled, kd_v_pitch_scaled;
 
     cv::Point3f scale_pos_p = {0.01f, 0.01f, 0.01f};
@@ -1042,7 +1037,7 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f, cv::Point3f> Dron
     cv::Point3f kp_vel(kp_v_roll_scaled,kp_v_throttle_scaled,kp_v_pitch_scaled);
     cv::Point3f kd_vel(kd_v_roll_scaled,kd_v_throttle_scaled,kd_v_pitch_scaled);
 
-    return std::tuple(kp_pos, ki_pos, kd_pos, kp_vel, kd_vel);
+    return std::tuple(kp_pos, ki_pos, kd_pos);
 }
 
 std::tuple<cv::Point3f, cv::Point3f> DroneController::control_error(TrackData data_drone, cv::Point3f setpoint_pos, integrator_state enable_horizontal_integrators, bool dry_run) {
