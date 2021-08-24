@@ -276,6 +276,11 @@ void process_video() {
                 exit_now = true;
             }
         }
+        if (cam->frame_loss_cnt() > 500) {
+            std::cout << "Error: Too many frames lost, assuming there's some camera problem. Cowardly exiting." << std::endl;
+            set_frame_loss_warning_flag();
+            exit_now = true;
+        }
 
         std::cout <<
                   //   "\r\e[K" <<

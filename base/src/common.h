@@ -45,6 +45,7 @@ void set_external_wdt_flag();
 void set_no_realsense_flag();
 std::string exec(const char* cmd);
 void set_fps_warning_flag();
+void set_frame_loss_warning_flag();
 
 const float rad2deg = 180.f/M_PIf32;
 const float deg2rad = M_PIf32/180.f;

@@ -144,7 +144,7 @@ void Realsense::rs_callback(rs2::frame f) {
                 StereoPair * sp = new StereoPair(frameL,frameR,rs_frameL_cbtmp.get_frame_number(),rs_frameL_cbtmp.get_timestamp()/1.e3 - _frame_time_start);
                 rs_buf.insert(std::pair(rs_frameL_cbtmp.get_frame_number(),rsp));
                 buf.insert(std::pair(rs_frameL_cbtmp.get_frame_number(),sp));
-            } else if(last_sync_id> pparams.fps*2)
+            } else if(last_sync_id > pparams.fps*2)
                 std::cout << "BUF OVERFLOW, SKIPPING A FRAME" << std::endl;
 
             {   // signal to processor that a new frame is ready to be processed

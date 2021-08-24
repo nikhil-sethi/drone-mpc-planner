@@ -308,6 +308,5 @@ std::string exec(const char* cmd) {
     return result;
 }
 
-void set_fps_warning_flag() {
-    std::ofstream output("../../../../pats/flags/fps_warning_flag");
-}
+void set_fps_warning_flag() { std::ofstream output("../../../../pats/flags/fps_warning_flag"); }
+void set_frame_loss_warning_flag() { std::ofstream output("../../../../pats/flags/frame_loss_warning_flag"); }
