@@ -67,7 +67,6 @@ private:
     void plot(void);
 
     bool _fromfile;
-    float _res_mult;
 
     cv::Mat cir8,dif8,approx;
     float closest_dist;
@@ -143,8 +142,8 @@ public:
     cv::Mat gen_im_disp_drone;
     cv::Mat gen_im_size_drone;
 
-    cv::Size viz_frame_size() {
-        return cv::Size(IMG_W*_res_mult + IMG_W,IMG_H*_res_mult+IMG_H*_res_mult/4);
+    static cv::Size viz_frame_size() {
+        return cv::Size(IMG_W + IMG_W,IMG_H+IMG_H/4);
     }
     bool tracking_viz_initialized() { return _tracking_viz_initialized; }
 

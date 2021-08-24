@@ -851,6 +851,7 @@ void init() {
         trackers.init_replay_moth(logreader.replay_moths());
     }
     init_loggers();
+    init_video_recorders();
 
     rc->init(drone_id);
     cam->init();
@@ -867,6 +868,9 @@ void init() {
     if (pparams.op_mode != op_mode_monitoring)
         dctrl.init(&logger,replay_dir,generator_mode,airsim_mode,rc.get(),trackers.dronetracker(), &flight_area,cam->measured_exposure());
 
+    if (!render_hunt_mode && !render_monitor_video_mode)
+        cmdcenter.init(log_replay_mode,&dnav,&dctrl,rc.get(),&trackers,&visdat);
+
     if (render_monitor_video_mode)
         dnav.render_now_override();
 
@@ -880,15 +884,11 @@ void init() {
             visualizer.first_take_off_time = logreader.first_takeoff_time();
     }
 
-    init_video_recorders();
-
     init_thread_pool();
-
     if ((render_monitor_video_mode || render_hunt_mode) && !pparams.has_screen) //for normal operation there's a watchdog in the realsense cam class.
         thread_watchdog = std::thread(&watchdog_worker);
 
-    if (!render_hunt_mode && !render_monitor_video_mode)
-        cmdcenter.init(log_replay_mode,&dnav,&dctrl,rc.get(),&trackers,&visdat);
+
 
 #ifdef PROFILING
     logger << "t_visdat;t_trkrs;t_nav;t_ctrl;t_prdct;t_frame;"; // trail of the logging heads, needs to happen last

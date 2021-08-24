@@ -23,12 +23,6 @@ void Visualizer::init(VisionData *visdat, tracking::TrackerManager *trackers, Dr
     _iceptor = iceptor;
 
     _fromfile = fromfile;
-    if (_fromfile) {
-        _res_mult = 1.f;
-    } else {
-        _res_mult = 1;
-    }
-
     thread_viz = std::thread(&Visualizer::workerThread,this);
     initialized = true;
 }
@@ -349,20 +343,20 @@ void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis,float
     ss_min << "Closest: " << (roundf(min_dis*100)/100) << " [m]";
     ss_dis << "|" << (roundf(dis*100)/100) << "|";
 
-    putText(resFrame,ss_time.str(),cv::Point(220*_res_mult,12*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame,ss_time.str(),cv::Point(220,12),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     if (min_dis<9999) {
-        putText(resFrame,ss_dis.str(),cv::Point(300*_res_mult,12*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-        putText(resFrame,ss_min.str(),cv::Point(360*_res_mult,12*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+        putText(resFrame,ss_dis.str(),cv::Point(300,12),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+        putText(resFrame,ss_min.str(),cv::Point(360,12),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
     }
 
-    putText(resFrame,_dctrl->flight_mode(),cv::Point(220*_res_mult,70*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-    putText(resFrame,_dnav->navigation_status(),cv::Point(220*_res_mult,82*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-    putText(resFrame, _rc->Armed(),cv::Point(450*_res_mult,82*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-    putText(resFrame, _dctrl->Joy_State_str(),cv::Point(525*_res_mult,82*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-    putText(resFrame,_trackers->mode_str(),cv::Point(220*_res_mult,96*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame,_dctrl->flight_mode(),cv::Point(220,70),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame,_dnav->navigation_status(),cv::Point(220,82),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame, _rc->Armed(),cv::Point(450,82),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame, _dctrl->Joy_State_str(),cv::Point(525,82),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame,_trackers->mode_str(),cv::Point(220,96),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
 
-    putText(resFrame,_trackers->dronetracker()->drone_tracking_state(),cv::Point(450*_res_mult,96*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
-    putText(resFrame,_iceptor->Interceptor_State(),cv::Point(450*_res_mult,70*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame,_trackers->dronetracker()->drone_tracking_state(),cv::Point(450,96),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+    putText(resFrame,_iceptor->Interceptor_State(),cv::Point(450,70),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
 
     if (_fromfile) {
         static int popcorn_cnt = 0;
@@ -370,7 +364,7 @@ void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis,float
         std::string popstr = "POPCORN TIME";
         if (first_take_off_time - time > 0 )
             popstr += " IN " + to_string_with_precision( first_take_off_time - time,1);
-        putText(resFrame,popstr,cv::Point(400*_res_mult,28*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255-popcorn_cnt,popcorn_cnt,255));
+        putText(resFrame,popstr,cv::Point(400,28),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255-popcorn_cnt,popcorn_cnt,255));
         popcorn_cnt = popcorn_cnt % 255;
 
     }
@@ -468,9 +462,9 @@ void Visualizer::draw_tracker_viz() {
     cv::Mat resFrame = cv::Mat::zeros(resFrame_size,CV_8UC3);
     cv::Mat frameL_color;
     cvtColor(frameL,frameL_color,cv::COLOR_GRAY2BGR);
-    cv::Rect rect(0,frameL.rows*_res_mult/4,frameL.cols*_res_mult,frameL.rows*_res_mult);
+    cv::Rect rect(0,frameL.rows/4,frameL.cols,frameL.rows);
     cv::Mat roi = resFrame(rect);
-    cv::Size size (frameL.cols*_res_mult,frameL.rows*_res_mult);
+    cv::Size size (frameL.cols,frameL.rows);
 
     if ( last_drone_detection.predicted_image_item.valid) {
         auto pred =  last_drone_detection.predicted_image_item;
@@ -520,7 +514,7 @@ void Visualizer::draw_tracker_viz() {
 
         if (!_dctrl->viz_trajectory.empty() && ! drn_path.empty()) {
             double raak = norm(_dctrl->viz_trajectory.back() .pos- last_drone_detection.world_item.pt);
-            putText(resFrame,"trgt: |"  + to_string_with_precision(raak,2) + "|",cv::Point(460*_res_mult,12*_res_mult),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
+            putText(resFrame,"trgt: |"  + to_string_with_precision(raak,2) + "|",cv::Point(460,12),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(125,125,255));
         }
 
         cv::circle(frameL_color,viz_target_pos_after_burn_im,2,white);
