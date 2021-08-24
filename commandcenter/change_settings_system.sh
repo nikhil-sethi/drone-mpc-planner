@@ -3,7 +3,7 @@ set -e
 
 echo "Changing xml settings $1"
 count=0
-until (( count++ >= 5 )) || rsync -ze "ssh -o StrictHostKeyChecking=no" pats.tmp $1:code/pats/base/xml/pats_deploy.xml
+until (( count++ >= 5 )) || rsync -ze "ssh -o StrictHostKeyChecking=no" pats.tmp $1:pats/pats.xml
 do
   echo "$1 retry $count"
   paplay /usr/share/sounds/ubuntu/stereo/bell.ogg

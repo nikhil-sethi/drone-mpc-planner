@@ -17,8 +17,11 @@ def send_status_update():
             if (lines[0] != first_read):
                 first_read = lines[0]
 
-                if os.path.exists(lb.local_pats_xml):
-                    cmd = 'rsync -az ' + lb.local_pats_xml + ' dash:' + lb.remote_pats_xml
+                if os.path.exists(lb.local_xml_folder):
+                    cmd = 'rsync -az ' + lb.local_xml_folder + ' dash:' + lb.remote_xml_folder
+                    lb.execute(cmd, 1, 'status_cc')
+                if os.path.exists(lb.local_pats_xml_override):
+                    cmd = 'rsync -az ' + lb.local_pats_xml_override + ' dash:' + lb.remote_pats_xml_override
                     lb.execute(cmd, 1, 'status_cc')
                 if os.path.exists(lb.local_status_txt_file):
                     cmd = 'rsync -az ' + lb.local_status_txt_file + ' dash:' + lb.remote_status_txt_file

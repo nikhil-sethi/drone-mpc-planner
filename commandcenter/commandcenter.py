@@ -11,6 +11,15 @@ import os
 import re
 import subprocess
 import math
+from shutil import copyfile
+
+
+def arrange_pats_xml(source_folder, system_folder):
+    pats_xml_path = Path(source_folder, system_folder, 'pats_override.xml')
+    pats_xml_path_default = Path(source_folder, system_folder, 'pats_deploy.xml')
+    if not os.path.exists(pats_xml_path) and os.path.exists(pats_xml_path_default):
+        copyfile(pats_xml_path_default, pats_xml_path)
+    return pats_xml_path
 
 
 class CommandCenterWindow(QMainWindow):
@@ -330,7 +339,8 @@ class SystemWidget(QWidget):
     def mode_change(self):
         if (self.updating_combos):
             return
-        self.pats_xml_path = Path(self.source_folder, self.system_folder, 'pats_deploy.xml')
+        self.pats_xml_path = arrange_pats_xml(self.source_folder, self.system_folder)
+
         with open(self.pats_xml_path, "r") as path_xml:
             xml_lines = path_xml.readlines()
             new_xml_lines = ''
@@ -347,58 +357,15 @@ class SystemWidget(QWidget):
                         line = '    <Member Name=\"live_image_frq\">1</Member>\n'
                     else:
                         line = '    <Member Name=\"live_image_frq\">30</Member>\n'
-                elif line.find('\"exposure_threshold\"') != -1:
-                    if self.combo_mode.currentText() == "Monitoring":
-                        if self.combo_sub_mode.currentText() == 'Koppert':
-                            line = '    <Member Name=\"exposure_threshold\">9500</Member>\n'
-                        elif self.combo_sub_mode.currentText() == 'Vogel':
-                            line = '    <Member Name=\"exposure_threshold\">300</Member>\n'
-                        else:
-                            line = '    <Member Name=\"exposure_threshold\">5000</Member>\n'
-                    elif self.combo_mode.currentText() == "Hunt":
-                        if self.combo_sub_mode.currentText() == 'Koppert':
-                            line = '    <Member Name=\"exposure_threshold\">9500</Member>\n'
-                        else:
-                            line = '    <Member Name=\"exposure_threshold\">5000</Member>\n'
-                    else:
-                        line = '    <Member Name=\"exposure_threshold\">0</Member>\n'
-                elif line.find('\"brightness_threshold\"') != -1:
-                    if self.combo_mode.currentText() == "Monitoring":
-                        if self.combo_sub_mode.currentText() == 'Koppert':
-                            line = '    <Member Name=\"brightness_threshold\">50</Member>\n'
-                        elif self.combo_sub_mode.currentText() == 'Holstein':
-                            line = '    <Member Name=\"brightness_threshold\">100</Member>\n'
-                        else:
-                            line = '    <Member Name=\"brightness_threshold\">128</Member>\n'
-                    elif self.combo_mode.currentText() == "Hunt":
-                        if self.combo_sub_mode.currentText() == 'Koppert':
-                            line = '    <Member Name=\"brightness_threshold\">50</Member>\n'
-                        else:
-                            line = '    <Member Name=\"brightness_threshold\">90</Member>\n'
-                    else:
-                        line = '    <Member Name=\"brightness_threshold\">255</Member>\n'
                 elif line.find('\"close_after_n_images\"') != -1:
                     if self.combo_mode.currentText() == "Hunt":
                         line = '    <Member Name=\"close_after_n_images\">10800</Member>\n'
                     else:
                         line = '    <Member Name=\"close_after_n_images\">324000</Member>\n'
-                elif line.find('\"max_cam_roll\"') != -1:
-                    self.max_cam_roll = 0.5
-                    if self.combo_mode.currentText() == "Monitoring":
-                        if self.combo_sub_mode.currentText() == 'TomatoWorld':
-                            self.max_cam_roll = 360
-                        else:
-                            self.max_cam_roll = 5
-                    else:
-                        self.max_cam_roll = 0.5
-                    line = '    <Member Name=\"max_cam_roll\">' + str(self.max_cam_roll) + '</Member>\n'
-                elif line.find('\"watchdog\"') != -1:
-                    line = '    <Member Name="watchdog">true</Member>\n'
                 elif line.find('\"sub_mode\"') != -1:
                     line = '    <Member Name="sub_mode">' + self.combo_sub_mode.currentText() + '</Member>\n'
 
                 new_xml_lines = new_xml_lines + line
-
         pats_xml_tmp_file = open("pats.tmp", "w")
         pats_xml_tmp_file.write(new_xml_lines)
         pats_xml_tmp_file.close()
@@ -437,10 +404,6 @@ class SystemWidget(QWidget):
 
     def git_update(self):
         subprocess.Popen(['./update_system.sh', 'pats' + self.host_id])
-        self.updating_combos = True
-        self.combo_mode.setCurrentIndex(0)
-        self.combo_sub_mode.setCurrentIndex(0)
-        self.updating_combos = False
 
     def reboot_dont_ask(self):
         subprocess.Popen(['./reboot_system.sh', 'pats' + self.host_id])
@@ -451,7 +414,8 @@ class SystemWidget(QWidget):
             subprocess.Popen(['./reboot_system.sh', 'pats' + self.host_id])
 
     def flightplan_takeoff(self):
-        self.pats_xml_path = Path(self.source_folder, self.system_folder, 'pats_deploy.xml')
+        self.pats_xml_path = arrange_pats_xml(self.source_folder, self.system_folder)
+
         with open(self.pats_xml_path, "r") as path_xml:
             xml_lines = path_xml.readlines()
             for line in xml_lines:
@@ -460,7 +424,8 @@ class SystemWidget(QWidget):
                     subprocess.Popen(['./demo_system.sh', 'pats' + self.host_id, self.flightplan_xml_path])
 
     def flightplan_calib_thrust_takeoff(self):
-        self.pats_xml_path = Path(self.source_folder, self.system_folder, 'pats_deploy.xml')
+        self.pats_xml_path = arrange_pats_xml(self.source_folder, self.system_folder)
+
         with open(self.pats_xml_path, "r") as path_xml:
             xml_lines = path_xml.readlines()
             for line in xml_lines:
@@ -478,7 +443,8 @@ class SystemWidget(QWidget):
 
     def update_combos(self):
         self.updating_combos = True
-        self.pats_xml_path = Path(self.source_folder, self.system_folder, 'pats_deploy.xml')
+        self.pats_xml_path = arrange_pats_xml(self.source_folder, self.system_folder)
+
         with open(self.pats_xml_path, "r") as path_xml:
             xml_lines = path_xml.readlines()
             new_xml_lines = ''
@@ -498,7 +464,8 @@ class SystemWidget(QWidget):
 
     def refresh(self):
         self.check_theme()
-        self.pats_xml_path = Path(self.source_folder, self.system_folder, 'pats_deploy.xml')
+        self.pats_xml_path = arrange_pats_xml(self.source_folder, self.system_folder)
+
         with open(self.pats_xml_path, "r") as path_xml:
             xml_lines = path_xml.readlines()
             new_xml_lines = ''
@@ -763,7 +730,7 @@ class ImDialog(QDialog):
         self.system_folder = system_folder
         self.host_id = host_id
         self.source_im_file = Path(self.source_folder, self.system_folder, 'status.jpg')
-        self.pats_xml_path = Path(self.source_folder, self.system_folder, 'pats_deploy.xml')
+        self.pats_xml_path = arrange_pats_xml(self.source_folder, self.system_folder)
 
         self.pats_xml_txt = ''
         self.drone_xml_txt = ''

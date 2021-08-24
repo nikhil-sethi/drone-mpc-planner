@@ -782,6 +782,14 @@ void process_arg(int argc, char **argv) {
             }
         }
     }
+
+    if (pats_xml_fn.find("pats_deploy.xml") != string::npos) {
+        if (file_exist("../../../../pats/pats.xml"))
+            pats_xml_fn = "../../../../pats/pats.xml";
+        else
+            pats_xml_fn = "../xml/pats_deploy.xml";
+    }
+
 }
 
 void check_hardware() {

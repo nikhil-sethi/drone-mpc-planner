@@ -24,11 +24,14 @@ no_realsense_flag = flags_dir + 'no_realsense_flag'
 local_status_txt_file = os.path.expanduser('~/pats/status/status.txt')
 local_system_txt_file = os.path.expanduser('~/pats/status/system_info.txt')
 local_status_im_file = os.path.expanduser('~/pats/status/monitor_tmp.jpg')
-local_pats_xml = os.path.expanduser('~/code/pats/base/xml/')
+local_xml_folder = os.path.expanduser('~/code/pats/base/xml/')
+local_pats_xml_override = os.path.expanduser('~/pats/pats.xml')
+
 remote_status_txt_file = 'status/' + socket.gethostname() + '/status.txt'
 remote_system_txt_file = 'status/' + socket.gethostname() + '/system.txt'
 remote_status_im_file = 'status/' + socket.gethostname() + '/status.jpg'
-remote_pats_xml = 'status/' + socket.gethostname() + '/'
+remote_xml_folder = 'status/' + socket.gethostname() + '/'
+remote_pats_xml_override = 'status/' + socket.gethostname() + '/pats_override.xml'
 
 
 def str_to_datetime(string):
