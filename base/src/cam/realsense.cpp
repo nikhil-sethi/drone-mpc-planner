@@ -375,8 +375,8 @@ std::tuple<float,float,cv::Mat,cv::Mat,cv::Mat,float> Realsense::measure_auto_ex
     cv::Mat frameLt,frameRt;
 
     rs2::frameset frame;
-    float new_expos;
-    float new_gain;
+    float new_expos = -1;
+    float new_gain = -1;
 
     float tmp_exposure =0, tmp_gain = 0;
     int tmp_last_ae_change_frame_id = 0;
