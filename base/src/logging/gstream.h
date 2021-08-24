@@ -12,8 +12,11 @@ class GStream {
 private:
 
     enum vp9_modes {
-        normal,
-        nuc11
+        nuc7_8,
+        nuc11,
+        amd_ryzen,
+        jetson,
+        unknown
     };
     GstElement *_pipeline,*_appsrc;
 

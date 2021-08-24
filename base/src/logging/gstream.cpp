@@ -41,14 +41,16 @@ void GStream::manual_unblock() {
 GStream::vp9_modes GStream::vp9_mode() {
     auto res = exec("lscpu | grep -i 'model name' | uniq");
     if (res.find("i3-7100U") != string::npos)
-        return vp9_modes::normal;
+        return vp9_modes::nuc7_8;
     else if(res.find("i3-8109U") != string::npos)
-        return vp9_modes::normal;
+        return vp9_modes::nuc7_8;
     else if(res.find("AMD") != string::npos)
-        return vp9_modes::nuc11;
+        return vp9_modes::amd_ryzen;
     else if(res.find("i3-1115G4") != string::npos)
         return vp9_modes::nuc11;
-    return vp9_modes::normal;
+    else if(res.find("tegra") != string::npos)
+        return vp9_modes::jetson;
+    return vp9_modes::unknown;
 }
 
 int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std::string ip, int port, bool color) {
@@ -64,11 +66,9 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
     }
 
     auto vp9 = vp9_mode();
-
+    bgr_mode = color;
     _cols = sizeX;
     _rows = sizeY;
-
-    bgr_mode = color;
 
     if (mode == video_mp4_opencv) {
 
@@ -100,7 +100,6 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
             //gst-launch-1.0 videotestsrc ! video/x-raw,format=GRAY8,framerate=\(fraction\)90/1,width=1696,height=480 ! videoconvert ! vaapivp9enc ! matroskamux ! filesink location=test.mkv
 
             _pipeline = gst_pipeline_new ("pipeline");
-
             _appsrc = gst_element_factory_make ("appsrc", "source");
             videoconvert = gst_element_factory_make ("videoconvert", "videoconvert");
             capsfilter = gst_element_factory_make ("capsfilter", NULL);
@@ -111,7 +110,6 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
                 mux = gst_element_factory_make ("matroskamux", "mux");
 
             videosink = gst_element_factory_make ("filesink", "videosink");
-
             g_object_set (G_OBJECT (_appsrc),
                           "stream-type", 0, // GST_APP_STREAM_TYPE_STREAM
                           "format", GST_FORMAT_TIME,
@@ -121,7 +119,6 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
             g_signal_connect (_appsrc, "need-data", G_CALLBACK(cb_need_data), NULL);
             g_signal_connect (_appsrc, "enough-data", G_CALLBACK(cb_enough_data), NULL);
             g_object_set (G_OBJECT (videosink), "location", file.c_str(), NULL);
-
 
             if(bgr_mode) {
                 if (vp9 == nuc11) {
@@ -176,13 +173,23 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
                 g_object_set (G_OBJECT (_appsrc), "caps",caps_appsrc, NULL);
                 gst_caps_unref(caps_appsrc);
 
-                // verify that vaapivp9enc is available
-                if(gst_element_factory_find ("vaapivp9enc") && vp9 != nuc11) {
+                if(gst_element_factory_find ("vaapih264enc")) {
+                    std::cout << "Using h264 vaapi encoding" << std::endl;
+                    encoder = gst_element_factory_make ("vaapih264enc", "encoder"); // hardware encoding
+                    g_object_set (G_OBJECT (encoder),  "rate-control", 2,"bitrate", 15000, NULL);
+                    auto parser = gst_element_factory_make ("h264parse", "parser");
+                    gst_bin_add_many (GST_BIN (_pipeline),_appsrc,videoconvert,encoder,parser,mux,videosink,NULL);
+                    gst_element_link_many (_appsrc,videoconvert,encoder,parser,mux,videosink,NULL);
+                } else if(gst_element_factory_find ("omxh264enc")) {
+                    std::cout << "Using h264 omx encoding" << std::endl;
+                    encoder = gst_element_factory_make ("omxh264enc", "encoder"); // hardware encoding
+                    g_object_set (G_OBJECT (encoder),"control-rate",2,"bitrate", 15000, NULL);
+                    gst_bin_add_many (GST_BIN (_pipeline),_appsrc,encoder,mux,videosink,NULL);
+                    gst_element_link_many (_appsrc,encoder,mux,videosink,NULL);
+                } else if(gst_element_factory_find ("vaapivp9enc")) {
                     std::cout << "Using vp9 vaapi encoding" << std::endl;
                     encoder = gst_element_factory_make ("vaapivp9enc", "encoder"); // hardware encoding
-
-                    g_object_set (G_OBJECT (encoder),"rate-control",2, "bitrate", 7500, NULL);
-
+                    g_object_set (G_OBJECT (encoder),"rate-control",2, "bitrate", 7500, NULL); // quality of vp9 is about 2x of comparible bitrate h264
                     if (vp9 == nuc11) { // For reasons I don't understand, 1.18 needs an extra videoconvert element...
                         gst_bin_add_many (GST_BIN (_pipeline),_appsrc,videoconvert,encoder,mux,videosink,NULL);
                         gst_element_link_many (_appsrc,videoconvert,encoder,mux,videosink,NULL);
@@ -190,20 +197,17 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY,int fps, std:
                         gst_bin_add_many (GST_BIN (_pipeline),_appsrc,encoder,mux,videosink,NULL);
                         gst_element_link_many (_appsrc,encoder,mux,videosink,NULL);
                     }
-
-                    // } else if(gst_element_factory_find ("vaapih265enc")) { // seems to be problematic on AMD
-                    //     encoder = gst_element_factory_make ("vaapih265enc", "encoder"); // hardware encoding
-                    //     //The cqp rate-control setting seems to leave noticable noice, so we set a fixed bitrate. 5000 seems to be a nice compromise between quality and size.
-                    //     //For logging (with stringent size and download constraints), cqp could be better though. It is about 5x smaller and the noise does not really influence our algorithms.
-                    //     //To have a similar size as the intel rs bag one would need to increase to 5000000 (5M), but they are using mjpeg which is much less efficient
-                    //     g_object_set (G_OBJECT (encoder),  "rate-control", 2,"bitrate", 5000, NULL);
-                } else if(gst_element_factory_find ("vaapih264enc")) {
-                    std::cout << "Using h264 vaapi encoding" << std::endl;
-                    encoder = gst_element_factory_make ("vaapih264enc", "encoder"); // hardware encoding
-                    g_object_set (G_OBJECT (encoder),  "rate-control", 2,"bitrate", 15000, NULL);
-                    auto parser = gst_element_factory_make ("h264parse", "parser");
-                    gst_bin_add_many (GST_BIN (_pipeline),_appsrc,videoconvert,encoder,parser,mux,videosink,NULL);
-                    gst_element_link_many (_appsrc,videoconvert,encoder,parser,mux,videosink,NULL);
+                } else if(gst_element_factory_find ("vaapih265enc") && vp9 != amd_ryzen) { // seems to be problematic on AMD
+                    encoder = gst_element_factory_make ("vaapih265enc", "encoder"); // hardware encoding
+                    //The cqp rate-control setting seems to leave noticable noice, so we set a fixed bitrate. 5000 seems to be a nice compromise between quality and size.
+                    //For logging (with stringent size and download constraints), cqp could be better though. It is about 5x smaller and the noise does not really influence our algorithms.
+                    //To have a similar size as the intel rs bag one would need to increase to 5000000 (5M), but they are using mjpeg which is much less efficient
+                    g_object_set (G_OBJECT (encoder),  "rate-control", 2,"bitrate", 5000, NULL);
+                } else if(gst_element_factory_find ("omxh265enc")) {
+                    std::cout << "Using h265 omx encoding" << std::endl;
+                    encoder = gst_element_factory_make ("omxh265enc", "encoder"); // hardware encoding
+                    gst_bin_add_many (GST_BIN (_pipeline),_appsrc,encoder,mux,videosink,NULL);
+                    gst_element_link_many (_appsrc,encoder,mux,videosink,NULL);
                 } else {
                     std::cout << "Warning: could not find vaapi, falling back to x264" << std::endl;
                     encoder = gst_element_factory_make ("x264enc", "encoder");
