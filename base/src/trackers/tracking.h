@@ -166,13 +166,13 @@ struct TrackData {
     cv::Point3f acc() {return state.acc;}
     float dt = 0;
     bool pos_valid = false;
-    bool spos_valid = false;
     bool vel_valid = false;
     bool acc_valid = false;
     bool out_of_image() {return predicted_image_item.out_of_image;}
     double time = 0;
     float yaw_deviation = 0;
     bool yaw_deviation_valid = 0;
+    bool using_prediction = false;
 };
 
 [[maybe_unused]] static const char* false_positive_names[] = {"fp_not_a_fp",

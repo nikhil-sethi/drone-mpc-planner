@@ -8,7 +8,6 @@ bool BlinkTracker::init(int id, VisionData *visdat, int motion_thresh, int16_t v
     pos_smth_width = pparams.fps/15;
     vel_smth_width = pparams.fps/10;
     acc_smth_width = pparams.fps/5;
-    skip_wait_smth_spos = false;
 
     ItemTracker::init(visdat,motion_thresh,"blink",viz_id);
 

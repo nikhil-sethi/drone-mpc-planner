@@ -23,7 +23,7 @@ private:
     float disparity_prev = 0;
 
     void update_disparity(float disparity, float dt);
-    void update_state(cv::Point3f measured_world_coordinates, double time);
+    void update_state(cv::Point3f measured_world_coordinates, double time, bool using_prediction);
     void update_blob_filters();
 
 protected:
@@ -75,7 +75,7 @@ protected:
     int vel_smth_width = -1;
     int acc_smth_width = -1;
     const int smooth_blob_props_width = 10;
-    bool skip_wait_smth_spos = true;
+    // bool skip_wait_smth_spos = true;
     filtering::Smoother smoother_im_size;
     filtering::Smoother smoother_brightness;
     filtering::Smoother smoother_posX, smoother_posY, smoother_posZ;

@@ -554,8 +554,7 @@ void DroneNavigation::update(double time) {
                 _dctrl->hover_mode(true);
                 _trackers->dronetracker()->hover_mode(true);
             }
-            if(_dctrl->land_ctrl.switch_to_ff_landing(_trackers->dronetracker()->last_track_data(),
-                    new_pos_setpoint, pad_pos, _dctrl->landing()))
+            if(!_dctrl->landing() && _dctrl->land_ctrl.switch_to_ff_landing(_trackers->dronetracker()->last_track_data(),new_pos_setpoint, pad_pos))
                 _dctrl->flight_mode(DroneController::fm_ff_landing_start);
 
             setpoint_pos_world = new_pos_setpoint;

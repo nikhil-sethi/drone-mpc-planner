@@ -78,7 +78,6 @@ void ItemTracker::init_logger(std::ofstream *logger) {
         (*_logger) << "posX_" << _name << ";";
         (*_logger) << "posY_" << _name << ";";
         (*_logger) << "posZ_" << _name << ";";
-        (*_logger) << "spos_valid_" << _name << ";";
         (*_logger) << "sposX_" << _name << ";";
         (*_logger) << "sposY_" << _name << ";";
         (*_logger) << "sposZ_" << _name << ";";
@@ -164,7 +163,7 @@ void ItemTracker::update_blob_filters() {
 void ItemTracker::update(double time) {
     _n_frames++;
     if ( _world_item.valid) {
-        update_state(_world_item.pt,time);
+        update_state(_world_item.pt,time,false);
         update_blob_filters();
         _tracking = true;
         _n_frames_lost = 0; // update this after calling update_state, so that it can determine how long tracking was lost
@@ -175,12 +174,8 @@ void ItemTracker::update(double time) {
         _n_frames_tracking = 0;
         if(( _n_frames_lost >= n_frames_lost_threshold && ! _image_item.blob_is_fused) || !_tracking ) {
             _tracking = false;
-        } else {
-            TrackData data;
-            data.predicted_image_item = _image_predict_item;
-            data.time = time;
-            _track.push_back(data);
-        }
+        } else
+            update_state(im2world(_image_predict_item.pt_unbound,_image_predict_item.disparity,_visdat->Qf,_visdat->camera_pitch),time,true);
     }
 
     cleanup_history();
@@ -211,7 +206,7 @@ void ItemTracker::append_log() {
         //log all world stuff
         TrackData last = last_track_data();
         (*_logger) << last.pos_valid << ";" << last.state.pos.x << ";" << last.state.pos.y << ";" << last.state.pos.z << ";" ;
-        (*_logger) << last.spos_valid << ";" << last.state.spos.x << ";" << last.state.spos.y << ";" << last.state.spos.z << ";";
+        (*_logger) << last.state.spos.x << ";" << last.state.spos.y << ";" << last.state.spos.z << ";";
         (*_logger) << last.vel_valid << ";" << last.state.vel.x << ";" << last.state.vel.y << ";" << last.state.vel.z << ";" ;
         (*_logger) << last.acc_valid << ";" << last.state.acc.x << ";" << last.state.acc.y << ";" << last.state.acc.z << ";" ;
         if (_world_item.valid)
@@ -617,8 +612,9 @@ void ItemTracker::update_prediction(double time) {
     }
 }
 
-void ItemTracker::update_state(Point3f measured_world_coordinates,double time) {
+void ItemTracker::update_state(Point3f measured_world_coordinates,double time, bool using_prediction) {
     TrackData data;
+    data.using_prediction = using_prediction;
     data.pos_valid = true;
     data.state.pos = measured_world_coordinates;
 
@@ -642,7 +638,7 @@ void ItemTracker::update_state(Point3f measured_world_coordinates,double time) {
         data.state.spos.y = smoother_posY.addSample(data.state.pos.y);
         data.state.spos.z = smoother_posZ.addSample(data.state.pos.z);
 
-        if (data_prev.pos_valid && (data.spos_valid || skip_wait_smth_spos )) {
+        if (data_prev.pos_valid) {
             dt = static_cast<float>(time - data_prev.time);
             data.state.vel_unfiltered = (data.state.pos - data_prev.state.pos) / dt;
             cv::Point3f v_pt = vel_filt.new_sample(data.state.vel_unfiltered);
