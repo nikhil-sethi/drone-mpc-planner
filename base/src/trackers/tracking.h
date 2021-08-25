@@ -131,9 +131,7 @@ struct WorldItem {
         distance = wbp.distance;
         distance_bkg = wbp.distance_bkg;
         radius = wbp.radius;
-        pt.x = wbp.x;
-        pt.y = wbp.y;
-        pt.z = wbp.z;
+        pt = wbp.pt();
         valid = wbp.valid;
     }
     cv::Point3f pt = {0};

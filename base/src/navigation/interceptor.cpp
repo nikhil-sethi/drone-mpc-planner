@@ -305,11 +305,22 @@ tracking::InsectTracker *Interceptor::update_target_insecttracker() {
         //Decision could be made when drone hasn't taken off yet
         tracking_data.pos_valid = true;
         tracking_data.state.pos = _trackers->dronetracker()->pad_location();
+        tracking_data.state.spos = _trackers->dronetracker()->pad_location();
     }
     for (auto trkr : all_trackers) {
         if (trkr->tracking()) {
-            cv::Point3f current_insect_pos =trkr->last_track_data().pos();
-            cv::Point3f current_insect_vel =trkr->last_track_data().vel();
+            auto insect_state = trkr->last_track_data();
+            cv::Point3f current_insect_pos =insect_state.pos();
+            if (!insect_state.pos_valid) {
+                auto prediction = trkr->image_predict_item();
+                if (prediction.valid)
+                    current_insect_pos = im2world(prediction.pt_unbound,prediction.disparity,_visdat->Qf,_visdat->camera_roll,_visdat->camera_pitch);
+                else
+                    current_insect_pos = {0};
+            }
+            cv::Point3f current_insect_vel =insect_state.vel();
+            if (!insect_state.vel_valid)
+                current_insect_vel = {0};
             if (trkr->type() == tt_insect || trkr->type() == tt_replay || trkr->type() == tt_virtualmoth) {
                 float req_acceleration = normf(_dctrl->pid_error(tracking_data,current_insect_pos, current_insect_vel,true));
                 if (best_acceleration > req_acceleration) {
