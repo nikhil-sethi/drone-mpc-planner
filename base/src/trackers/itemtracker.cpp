@@ -175,7 +175,7 @@ void ItemTracker::update(double time) {
         if(( _n_frames_lost >= n_frames_lost_threshold && ! _image_item.blob_is_fused) || !_tracking ) {
             _tracking = false;
         } else
-            update_state(im2world(_image_predict_item.pt_unbound,_image_predict_item.disparity,_visdat->Qf,_visdat->camera_pitch),time,true);
+            update_state(im2world(_image_predict_item.pt_unbound,_image_predict_item.disparity,_visdat->Qf,_visdat->camera_roll,_visdat->camera_pitch),time,true);
     }
 
     cleanup_history();
