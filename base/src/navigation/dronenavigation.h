@@ -151,35 +151,6 @@ public:
         }
     }
 
-    cv::Point2i drone_v_setpoint_im() {
-
-        cv::Point3f tmp = 0.1*setpoint_vel_world + setpoint_pos_world;
-        if (!drone_flying())
-            tmp = {0};
-
-        std::vector<cv::Point3d> world_pts,im_pts;
-        cv::Point3d tmpd;
-        float theta = -_visdat->camera_pitch * deg2rad;
-        float temp_y = tmp.y * cosf(theta) + tmp.z * sinf(theta);
-        tmpd.z = static_cast<double>(-tmp.y * sinf(theta) + tmp.z * cosf(theta));
-        tmpd.y = static_cast<double>(temp_y);
-        tmpd.x = static_cast<double>(tmp.x);
-
-        world_pts.push_back(tmpd);
-        cv::perspectiveTransform(world_pts,im_pts,_visdat->Qfi);
-
-        if (im_pts[0].x > IMG_W)
-            im_pts[0].x = IMG_W;
-        if (im_pts[0].y > IMG_H)
-            im_pts[0].y = IMG_H;
-
-        if (im_pts[0].x < 0)
-            im_pts[0].x = 0;
-        if (im_pts[0].y < 0)
-            im_pts[0].y = 0;
-
-        return cv::Point2i(im_pts[0].x,im_pts[0].y);
-    }
     cv::Point2i drone_setpoint_im() {
         //transform to image coordinates:
 
@@ -190,7 +161,7 @@ public:
             tmp.z = _trackers->dronetracker()->pad_location().z;
         }
 
-        cv::Point3f resf = world2im_3d(tmp,_visdat->Qfi,_visdat->camera_pitch);
+        cv::Point3f resf = world2im_3d(tmp,_visdat->Qfi,_visdat->camera_roll,_visdat->camera_pitch);
         return cv::Point2i(roundf(resf.x),round(resf.y));
     }
 

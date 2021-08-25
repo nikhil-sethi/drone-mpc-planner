@@ -56,10 +56,10 @@ void Cam::convert_depth_background_to_world() {
 ViewLimit Cam::view_limits () {
     // Some planes are defined with the slopes of the corner pixels:
     // In the past this was more precice then the difintion with background pixels.
-    auto point_left_top = im2world(cv::Point2f(0,0),1,Qf,camparams.camera_angle_y);
-    auto point_right_top = im2world(cv::Point2f(IMG_W,0),1,Qf,camparams.camera_angle_y);
-    auto point_left_bottom = im2world(cv::Point2f(0,IMG_H),1,Qf,camparams.camera_angle_y);
-    auto point_right_bottom = im2world(cv::Point2f(IMG_W,IMG_H),1,Qf,camparams.camera_angle_y);
+    auto point_left_top = im2world(cv::Point2f(0,0),1,Qf,camparams.camera_angle_x,camparams.camera_angle_y);
+    auto point_right_top = im2world(cv::Point2f(IMG_W,0),1,Qf,camparams.camera_angle_x,camparams.camera_angle_y);
+    auto point_left_bottom = im2world(cv::Point2f(0,IMG_H),1,Qf,camparams.camera_angle_x,camparams.camera_angle_y);
+    auto point_right_bottom = im2world(cv::Point2f(IMG_W,IMG_H),1,Qf,camparams.camera_angle_x,camparams.camera_angle_y);
     ViewLimit ret = ViewLimit(point_left_top, point_right_top, point_left_bottom, point_right_bottom);
     return ret;
 }

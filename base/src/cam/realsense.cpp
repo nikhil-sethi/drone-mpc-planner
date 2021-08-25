@@ -463,15 +463,14 @@ std::tuple<float,float,double,cv::Mat> Realsense::measure_angle() {
         frame = cam.wait_for_frames();
         frameLt = Mat(im_size, CV_8UC1, const_cast<void *>(frame.get_infrared_frame(1).get_data()), Mat::AUTO_STEP);
         auto frame_acc = frame.first(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F);
-
         if (frame_acc.is<rs2::motion_frame>()) {
             rs2::motion_frame mf = frame_acc.as<rs2::motion_frame>();
             rs2_vector xyz = mf.get_motion_data();
             x = smx.addSample(xyz.x);
             y = smy.addSample(xyz.y);
             z = smz.addSample(xyz.z);
-            roll = atanf(-x/sqrtf(y*y + z*z)) * rad2deg;
-            pitch = 90.f-atanf(y/z) * rad2deg;
+            roll = atan2f(-x, sqrtf(y*y + z*z)) * rad2deg;
+            pitch = -(atan2f(y, z) * rad2deg+90);
         }
     }
 

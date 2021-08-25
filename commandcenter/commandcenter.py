@@ -211,7 +211,7 @@ class SystemWidget(QWidget):
         QWidget.__init__(self, parent=parent)
         self.dark_mode = True
         self.refresh_darkmode = True
-        self.max_cam_roll = 0.5
+        self.max_cam_roll = 30
 
         self.system_folder = system_folder
         self.source_folder = source_folder

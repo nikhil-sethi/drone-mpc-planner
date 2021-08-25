@@ -92,8 +92,8 @@ StereoPair * GeneratorCam::update() {
         }
     }
 
-    auto drone_im_pos = world2im_3d(current_drone_pos,Qfi,camparams.camera_angle_y);
-    float drone_im_half_size = world2im_sizef(current_drone_pos - cv::Point3f(dparams.radius,0,0),current_drone_pos + cv::Point3f(dparams.radius,0,0),Qfi,camparams.camera_angle_y)/4;
+    auto drone_im_pos = world2im_3d(current_drone_pos,Qfi,camparams.camera_angle_x,camparams.camera_angle_y);
+    float drone_im_half_size = world2im_sizef(current_drone_pos - cv::Point3f(dparams.radius,0,0),current_drone_pos + cv::Point3f(dparams.radius,0,0),Qfi,camparams.camera_angle_x,camparams.camera_angle_y)/4;
 
     generated_world_pos = current_drone_pos;
     generated_im_pos = drone_im_pos;

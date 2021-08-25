@@ -115,12 +115,12 @@ void ItemTracker::calc_world_props_blob_generic(BlobProps * blob) {
             else
                 w.disparity = disparity;
 
-            std::vector<Point3d> camera_coordinates, world_coordinates;
-            camera_coordinates.push_back(Point3d(p.x,p.y,-w.disparity));
-            camera_coordinates.push_back(Point3d(p.x+size,p.y,-w.disparity)); // to calc world radius
-            cv::perspectiveTransform(camera_coordinates,world_coordinates,_visdat->Qf);
+            cv::Point3f world_coordinates = im2world(p,w.disparity,_visdat->Qf,_visdat->camera_roll,_visdat->camera_pitch);
+            cv::Point2f p_size = p;
+            p_size.x += size;
+            cv::Point3f world_coordinates_size = im2world(p_size,w.disparity,_visdat->Qf,_visdat->camera_roll,_visdat->camera_pitch);
 
-            w.radius = cv::norm(world_coordinates[0]-world_coordinates[1]) / 2;
+            w.radius = cv::norm(world_coordinates_size-world_coordinates) / 2;
             w.radius_in_range = w.radius < max_size;
 
             if (w.radius_in_range) {
@@ -137,14 +137,9 @@ void ItemTracker::calc_world_props_blob_generic(BlobProps * blob) {
                 w.motion_sum = cv::sum(_visdat->diffL(roi_brightness_sum))[0];
             }
 
-            w.x = world_coordinates[0].x;
-            w.y = world_coordinates[0].y;
-            w.z = world_coordinates[0].z;
-            //compensate camera rotation:
-            float theta = _visdat->camera_pitch * deg2rad;
-            float temp_y = w.y * cosf(theta) + w.z * sinf(theta);
-            w.z = -w.y * sinf(theta) + w.z * cosf(theta);
-            w.y = temp_y;
+            w.x = world_coordinates.x;
+            w.y = world_coordinates.y;
+            w.z = world_coordinates.z;
 
             w.distance_bkg = _visdat->depth_background_mm.at<float>(p.y,p.x);
             w.distance = sqrtf(powf(w.x,2) + powf(w.y,2) +powf(w.z,2));
@@ -613,8 +608,8 @@ void ItemTracker::update_prediction(double time) {
         }
         cv::Point3f predicted_pos = pos + vel*dt_pred + 0.5*acc*powf(dt_pred,2);
 
-        auto p = world2im_3d(predicted_pos,_visdat->Qfi,_visdat->camera_pitch);
-        float size = world2im_size(last_valid_trackdata_for_prediction.world_item.pt+cv::Point3f(expected_radius,0,0),last_valid_trackdata_for_prediction.world_item.pt-cv::Point3f(expected_radius,0,0),_visdat->Qfi,_visdat->camera_pitch);
+        auto p = world2im_3d(predicted_pos,_visdat->Qfi,_visdat->camera_roll,_visdat->camera_pitch);
+        float size = world2im_size(last_valid_trackdata_for_prediction.world_item.pt+cv::Point3f(expected_radius,0,0),last_valid_trackdata_for_prediction.world_item.pt-cv::Point3f(expected_radius,0,0),_visdat->Qfi,_visdat->camera_roll,_visdat->camera_pitch);
         float pixel_max = _image_predict_item.pixel_max;
         if (_image_item.valid)
             pixel_max = _image_item.pixel_max;
@@ -702,8 +697,8 @@ float ItemTracker::score(BlobProps * blob, ImageItem * ref) {
     const float max_world_dist = 0.05f; // max distance a blob can travel in one frame
 
     if (_image_item.valid && _world_item.valid) {
-        cv::Point3f last_world_pos = im2world(_image_item.pt(),_image_item.disparity,_visdat->Qf,_visdat->camera_pitch);
-        float max_im_dist = world2im_dist(last_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_pitch);
+        cv::Point3f last_world_pos = im2world(_image_item.pt(),_image_item.disparity,_visdat->Qf,_visdat->camera_roll,_visdat->camera_pitch);
+        float max_im_dist = world2im_dist(last_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_roll,_visdat->camera_pitch);
         float world_projected_im_err = normf(blob->pt_unscaled() - _image_item.pt());
         float world_projected_pred_im_err = INFINITY;
         if (_image_predict_item.valid)
@@ -721,8 +716,8 @@ float ItemTracker::score(BlobProps * blob, ImageItem * ref) {
                 im_dist_err_ratio = 0.1f* (im_dist / prev_size);
         }
     } else if (_image_predict_item.valid) {
-        cv::Point3f predicted_world_pos = im2world(_image_predict_item.pt,_image_predict_item.disparity,_visdat->Qf,_visdat->camera_pitch);
-        float max_im_dist = world2im_dist(predicted_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_pitch);
+        cv::Point3f predicted_world_pos = im2world(_image_predict_item.pt,_image_predict_item.disparity,_visdat->Qf,_visdat->camera_roll,_visdat->camera_pitch);
+        float max_im_dist = world2im_dist(predicted_world_pos,max_world_dist,_visdat->Qfi,_visdat->camera_roll,_visdat->camera_pitch);
         float world_projected_im_err = normf(blob->pt_unscaled() - _image_predict_item.pt);
         im_dist_err_ratio = world_projected_im_err/max_im_dist;
         im_size_pred_err_ratio = fabs(_image_predict_item.size - blob->size_unscaled()) / (blob->size_unscaled()+_image_predict_item.size);

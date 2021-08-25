@@ -34,57 +34,68 @@ vector<string> split_csv_line(string line, char denominator) {
 
 
 //strips disparity from world2im_3d
-cv::Point2f world2im_2d(cv::Point3f p_world, cv::Mat Qfi, float camera_pitch) {
-    cv::Point3f p_im = world2im_3d(p_world,Qfi,camera_pitch);
+cv::Point2f world2im_2d(cv::Point3f w, cv::Mat Qfi, float camera_roll, float camera_pitch) {
+    cv::Point3f p_im = world2im_3d(w,Qfi,camera_roll,camera_pitch);
     return cv::Point2f(p_im.x,p_im.y);
 }
 
-cv::Point3f world2im_3d(cv::Point3f p_world, cv::Mat Qfi, float camera_pitch) {
-    //transform back to image coordinates
+cv::Point3f world2im_3d(cv::Point3f w, cv::Mat Qfi, float camera_roll, float camera_pitch) {
+    float phi = camera_roll * deg2rad;
+    float theta = camera_pitch * deg2rad;
+    float sin_theta = sinf(theta);
+    float cos_theta = cosf(theta);
+    float sin_phi = sinf(phi);
+    float cos_phi = cosf(phi);
+
+    cv::Matx33f R_pitch_mat( 1, 0,         0,
+                             0, cos_theta, -sin_theta,
+                             0, sin_theta, cos_theta);
+    cv::Matx33f R_roll_mat( cos_phi,  sin_phi, 0,
+                            -sin_phi, cos_phi, 0,
+                            0,        0,       1);
+    cv::Point3f w_rot_f = R_roll_mat * (R_pitch_mat * w);
+    cv::Point3d w_rot_d(w_rot_f.x,w_rot_f.y,w_rot_f.z); // convert to double because perspectiveTransform gives wrong results
+
     std::vector<cv::Point3d> world_coordinates,camera_coordinates;
-    //derotate camera and convert to double:
-    cv::Point3d tmpd (p_world.x,p_world.y,p_world.z);
-    float theta = -camera_pitch * deg2rad;
-    float temp_y = p_world.y * cosf(theta) + p_world.z * sinf(theta);
-    tmpd.z = -p_world.y * sinf(theta) + p_world.z * cosf(theta);
-    tmpd.y = temp_y;
-    tmpd.x = p_world.x;
-
-    world_coordinates.push_back(tmpd);
+    world_coordinates.push_back(w_rot_d);
     cv::perspectiveTransform(world_coordinates,camera_coordinates,Qfi);
+    camera_coordinates.at(0).z = -camera_coordinates.at(0).z;
 
-    camera_coordinates.at(0).z = -camera_coordinates.at(0).z; // negate disparity
-    return camera_coordinates.at(0);
+    return cv::Point3f(camera_coordinates.at(0).x,camera_coordinates.at(0).y,camera_coordinates.at(0).z); // convert to float
 }
 
-cv::Point3f im2world(cv::Point2f p_im,float disparity, cv::Mat Qf, float camera_pitch) {
+cv::Point3f im2world(cv::Point2f p_im,float disparity, cv::Mat Qf, float camera_roll, float camera_pitch) {
     std::vector<cv::Point3d> camera_coordinates, world_coordinates;
     camera_coordinates.push_back(cv::Point3d(p_im.x,p_im.y,-disparity));
     cv::perspectiveTransform(camera_coordinates,world_coordinates,Qf);
+    cv::Point3f w(world_coordinates[0].x,world_coordinates[0].y,world_coordinates[0].z); // convert the output to floats because perspectiveTransform only does doubles but we want floats:
 
-    cv::Point3f w;
-    w.x = world_coordinates[0].x;
-    w.y = world_coordinates[0].y;
-    w.z = world_coordinates[0].z;
-    //compensate camera rotation:
-    float theta = camera_pitch * deg2rad;
-    float temp_y = w.y * cosf(theta) + w.z * sinf(theta);
-    w.z = -w.y * sinf(theta) + w.z * cosf(theta);
-    w.y = temp_y;
-
-    return w;
+    float phi = -camera_roll * deg2rad;
+    float theta = -camera_pitch * deg2rad;
+    float sin_theta = sinf(theta);
+    float cos_theta = cosf(theta);
+    float sin_phi = sinf(phi);
+    float cos_phi = cosf(phi);
+    cv::Matx33f R_pitch( 1, 0,         0,
+                         0, cos_theta, -sin_theta,
+                         0, sin_theta, cos_theta);
+    cv::Matx33f R_roll( cos_phi,  sin_phi, 0,
+                        -sin_phi, cos_phi, 0,
+                        0,        0,       1);
+    cv::Point3f w_rot = R_pitch * (R_roll * w);
+    return w_rot;
 }
 
-int world2im_dist(cv::Point3f p1, float dist, cv::Mat Qfi, float camera_pitch) {
-    return world2im_size(p1 - cv::Point3f(dist,0,0),p1 + cv::Point3f(dist,0,0),Qfi,camera_pitch);
+int world2im_dist(cv::Point3f p1, float dist, cv::Mat Qfi, float camera_roll, float camera_pitch) {
+    return world2im_size(p1 - cv::Point3f(dist,0,0),p1 + cv::Point3f(dist,0,0),Qfi,camera_roll,camera_pitch);
 }
 //returns the pixel size of a world object
-int world2im_size(cv::Point3f p1, cv::Point3f p2, cv::Mat Qfi, float camera_pitch) {
-    return round(normf(world2im_2d(p1,Qfi,camera_pitch)-world2im_2d(p2,Qfi,camera_pitch)));
+int world2im_size(cv::Point3f p1, cv::Point3f p2, cv::Mat Qfi, float camera_roll, float camera_pitch) {
+    return round(normf(world2im_2d(p1,Qfi,camera_roll,camera_pitch)-world2im_2d(p2,Qfi,camera_roll,camera_pitch)));
 }
 
-float world2im_sizef(cv::Point3f p1, cv::Point3f p2, cv::Mat Qfi, float camera_pitch) {
-    return normf(world2im_2d(p1,Qfi,camera_pitch)-world2im_2d(p2,Qfi,camera_pitch));
+float world2im_sizef(cv::Point3f p1, cv::Point3f p2, cv::Mat Qfi, float camera_roll, float camera_pitch) {
+    return normf(world2im_2d(p1,Qfi,camera_roll,camera_pitch)-world2im_2d(p2,Qfi,camera_roll,camera_pitch));
 }
 
 bool file_exist (const std::string& name) {

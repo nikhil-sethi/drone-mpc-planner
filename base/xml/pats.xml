@@ -26,7 +26,7 @@
     <Member Name="flightplan">../xml/flightplans/simple-demo-darkroom.xml</Member>
     <Member Name="flightplan_calib_thrust">../xml/flightplans/thrust-calib.xml</Member>
     <Member Name="live_image_frq">0</Member>
-    <Member Name="max_cam_roll">5</Member>
+    <Member Name="max_cam_roll">50</Member>
     <Member Name="n_cams">1</Member>
     <Member Name="long_range_mode">false</Member>
 </SerializableClass>
