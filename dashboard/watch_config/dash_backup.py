@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 import subprocess
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from pytz import timezone
 
 
 def execute(cmd):
     p_result = None
 
-    popen = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+    popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
     for stdout_line in iter(popen.stdout.readline, ""):
         p_result = popen.poll()
-        if p_result != None:
+        if p_result is not None:
             break
         print(stdout_line.decode('utf-8'), end='')
     popen.stdout.close()

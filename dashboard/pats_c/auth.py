@@ -56,8 +56,8 @@ def signup_post():
 
     new_user = User(username=username, password=generate_password_hash(password, method='sha256'))
 
-    db.session.add(new_user)
-    db.session.commit()
+    db.session.add(new_user)  # pylint: disable=no-member
+    db.session.commit()  # pylint: disable=no-member
     flash('User added!')
 
     return redirect(url_for('auth.signup'))

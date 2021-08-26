@@ -3,7 +3,7 @@ import datetime
 import math
 import os
 import re
-from dash_html_components.Br import Br
+from typing import List, Dict, Tuple
 from dateutil.relativedelta import relativedelta
 import numpy as np
 import pandas as pd
@@ -17,14 +17,13 @@ import plotly.graph_objects as go
 import plotly.io as pio
 from dash.dependencies import Output, Input, State
 import dash_bootstrap_components as dbc
-import dash_daq as daq
 import pats_c.lib.lib_patsc as patsc
 
 from flask_login import current_user
 from urllib.parse import quote as urlquote
 
-customer_dict = {}
-insect_columns = []
+customer_dict: Dict[str, List[Tuple[str, str]]] = {}
+insect_columns: List[str] = []
 heatmap_max = 50
 classification_options = ['Not classified', 'Moth!', 'Empty/nothing to see', 'Other insect', 'Plant', 'Other false positive']
 scatter_columns = {'duration': 'Duration (s)',
@@ -43,8 +42,11 @@ class Heatmap_Cell(Enum):
 
 
 def load_systems_customer(customer_name, cur):
-    sql_str = f'''SELECT system,location FROM systems JOIN customers ON customers.customer_id = systems.customer_id WHERE customers.name = "{customer_name}" ORDER BY system_id'''
-    systems = cur.execute(sql_str).fetchall()
+    sql_str = '''SELECT system,location FROM systems
+                 JOIN customers ON customers.customer_id = systems.customer_id
+                 WHERE customers.name = :customer_name
+                 ORDER BY system_id''', {'customer_name': customer_name}
+    systems = cur.execute(*sql_str).fetchall()
     return systems
 
 
@@ -53,8 +55,12 @@ def load_customers():
         if current_user.is_authenticated:
             username = current_user.username
             with patsc.open_systems_db() as con:
-                sql_str = f'''SELECT customers.name FROM customers JOIN user_customer_connection ON user_customer_connection.customer_id = customers.customer_id JOIN users ON users.user_id = user_customer_connection.user_id WHERE users.name = "{username}" ORDER BY customers.name'''
-                cur = con.execute(sql_str)
+                sql_str = '''SELECT customers.name FROM customers
+                             JOIN user_customer_connection ON user_customer_connection.customer_id=customers.customer_id
+                             JOIN users ON users.user_id=user_customer_connection.user_id
+                             WHERE users.name = :username
+                             ORDER BY customers.name''', {'username': username}
+                cur = con.execute(*sql_str)
                 customers = cur.fetchall()
                 customer_dict = {}
                 for customer in customers:
@@ -116,7 +122,9 @@ def init_system_and_customer_dropdown():
 
 def load_systems(username):
     with patsc.open_systems_db() as con:
-        sql_str = '''SELECT DISTINCT systems.system FROM systems,user_customer_connection,users WHERE  systems.customer_id = user_customer_connection.customer_id AND user_customer_connection.user_id = users.user_id AND users.name = ? ORDER BY systems.system_id '''
+        sql_str = '''SELECT DISTINCT systems.system FROM systems,user_customer_connection,users
+                     WHERE  systems.customer_id = user_customer_connection.customer_id AND user_customer_connection.user_id = users.user_id AND users.name = ?
+                     ORDER BY systems.system_id '''
         systems = con.execute(sql_str, (username,)).fetchall()
     authorized_systems = [d[0] for d in systems]
     return authorized_systems
@@ -126,7 +134,7 @@ def create_insect_filter_sql_str(start_date, insect_type):
     duration_str = ' AND duration > 1 AND duration < 10'
     insect_str = ''
     close_insect_str = ''
-    if start_date < datetime.datetime.strptime("20210101_000000", '%Y%m%d_%H%M%S'):  # new (size) filtering was introduced on 24th december 2020 #648
+    if start_date < datetime.datetime.strptime('20210101_000000', '%Y%m%d_%H%M%S'):  # new (size) filtering was introduced on 24th december 2020 #648
         insect_str = '((Version="1.0" AND time < "20210101_000000") OR ('
         close_insect_str = '))'
     min_size = insect_type['avg_size'] - insect_type['std_dev']
@@ -134,20 +142,20 @@ def create_insect_filter_sql_str(start_date, insect_type):
     if insect_type['avg_size'] > 0:
         insect_str = insect_str + f'''Dist_traveled > 0.15 AND Dist_traveled < 4 AND Size > {min_size} AND Size < {max_size}''' + close_insect_str
     else:
-        insect_str = insect_str + f'''Dist_traveled > 0.15 AND Dist_traveled < 4 ''' + close_insect_str
+        insect_str = insect_str + '''Dist_traveled > 0.15 AND Dist_traveled < 4 ''' + close_insect_str
 
     return insect_str + duration_str
 
 
 def use_proto(start_date):
-    return start_date <= datetime.datetime.strptime("20210401_000000", '%Y%m%d_%H%M%S')
+    return start_date <= datetime.datetime.strptime('20210401_000000', '%Y%m%d_%H%M%S')
 
 
 def create_system_filter_sql_str(start_date, system):
     if use_proto(start_date):  # remove proto #533 closed in march 2021, so most systems probably were updated in april
-        return f'''(system = "{system}" OR system = "{system.replace('pats','pats-proto')}")'''
+        return '''(system = :system OR system = :system_proto''', {'system': system, 'system_proto': system.replace('pats', 'pats-proto')}
     else:
-        return f'''system = "{system}"'''
+        return '''system = :system''', {'system': system}
 
 
 def load_insect_df(selected_systems, start_date, end_date, insect_type):
@@ -157,7 +165,7 @@ def load_insect_df(selected_systems, start_date, end_date, insect_type):
         JOIN user_customer_connection ON systems.customer_id = user_customer_connection.customer_id
         JOIN users ON users.user_id = user_customer_connection.user_id WHERE
         systems.customer_id = customers.customer_id AND users.name = ? AND systems.system IN (%s)
-        ORDER BY systems.system_id''' % ('?,' * len(selected_systems))[:-1], (username, *selected_systems)).fetchall()
+        ORDER BY systems.system_id''' % ('?,' * len(selected_systems))[:-1], (username, *selected_systems)).fetchall()  # nosec see #952
 
     insect_df = pd.DataFrame()
     with patsc.open_data_db() as con:
@@ -170,15 +178,14 @@ def load_insect_df(selected_systems, start_date, end_date, insect_type):
                 real_start_date = start_date
 
             time_str = f'''time > "{real_start_date.strftime('%Y%m%d_%H%M%S')}" AND time <= "{end_date.strftime('%Y%m%d_%H%M%S')}"'''
-            system_str = create_system_filter_sql_str(start_date, system)
+            system_str, system_params = create_system_filter_sql_str(start_date, system)
             insect_str = create_insect_filter_sql_str(start_date, insect_type)
-
+            # We can use f-string here because we are just pasting strings, so no sql injection risk.
             sql_str = f'''SELECT moth_records.* FROM moth_records
-                WHERE {system_str}
-                AND {time_str}
-                AND {insect_str}'''
-            sql_str = " ".join(sql_str.split())  # removes any double spaces and newlines etc
-            insect_df = insect_df.append(pd.read_sql_query(sql_str, con))
+                         WHERE {system_str}
+                         AND {time_str}
+                         AND {insect_str}'''  # nosec see #952
+            insect_df = insect_df.append(pd.read_sql_query(sql_str, con, params=system_params))
     insect_df['time'] = pd.to_datetime(insect_df['time'], format='%Y%m%d_%H%M%S')
     if use_proto(start_date):
         insect_df['system'].replace({'-proto': ''}, regex=True, inplace=True)
@@ -192,7 +199,7 @@ def load_insects_of_hour(selected_systems, start_date, end_date, hour, insect_ty
         JOIN user_customer_connection ON systems.customer_id = user_customer_connection.customer_id
         JOIN users ON users.user_id = user_customer_connection.user_id WHERE
         systems.customer_id = customers.customer_id AND users.name = ? AND systems.system IN (%s)
-        ORDER BY systems.system_id''' % ('?,' * len(selected_systems))[:-1], (username, *selected_systems)).fetchall()
+        ORDER BY systems.system_id''' % ('?,' * len(selected_systems))[:-1], (username, *selected_systems)).fetchall()  # nosec see #952
 
     hour_str = str(hour)
     if len(hour_str) == 1:
@@ -207,17 +214,15 @@ def load_insects_of_hour(selected_systems, start_date, end_date, hour, insect_ty
                 print(f'ERROR startdate {system}: ' + str(e))
                 real_start_date = start_date
 
-            system_str = create_system_filter_sql_str(start_date, system)
+            system_str, system_params = create_system_filter_sql_str(start_date, system)
             insect_str = create_insect_filter_sql_str(start_date, insect_type)
 
             sql_str = f'''SELECT moth_records.* FROM moth_records
                 WHERE {system_str}
-                AND time > "{real_start_date.strftime('%Y%m%d_%H%M%S')}" AND time <= "{end_date.strftime('%Y%m%d_%H%M%S')}"
+                AND time > :start_time AND time <= :end_time
                 AND time LIKE "_________{hour_str}____"
-                AND {insect_str}'''
-            sql_str = " ".join(sql_str.split())  # removes any double spaces and newlines etc
-
-            insect_df = insect_df.append(pd.read_sql_query(sql_str, con))
+                AND {insect_str}'''  # nosec see #952
+            insect_df = insect_df.append(pd.read_sql_query(sql_str, con, params={**system_params, 'start_time': real_start_date.strftime('%Y%m%d_%H%M%S'), 'end_time': end_date.strftime('%Y%m%d_%H%M%S')}))
     insect_df['time'] = pd.to_datetime(insect_df['time'], format='%Y%m%d_%H%M%S')
     if use_proto(start_date):
         insect_df['system'].replace({'-proto': ''}, regex=True, inplace=True)
@@ -263,7 +268,7 @@ def load_insect_data(selected_systems, start_date, end_date, insect_type):
     hist_data.fillna(0, inplace=True)
     hist_24h_data.fillna(0, inplace=True)
 
-    heatmap_df = pd.DataFrame(np.zeros((24, len(unique_dates))), index=range(24), columns=(unique_dates.strftime('%Y%m%d_%H%M%S')))
+    heatmap_df = pd.DataFrame(np.zeros((24, len(unique_dates))), index=range(24), columns=(unique_dates.strftime('%Y%m%d_%H%M%S')))  # pylint: disable=no-member
     for date, hours in (insect_df[['time']] - datetime.timedelta(hours=12)).groupby((insect_df.time - datetime.timedelta(hours=12)).dt.date):
         heatmap_df[date.strftime('%Y%m%d_%H%M%S')] = (hours.groupby(hours.time.dt.hour).count())
     heatmap_data = ((heatmap_df.fillna(0)).to_numpy()).T
@@ -292,13 +297,11 @@ def load_mode_data(unique_dates, heatmap_data, selected_systems, start_date, end
     if not len(unique_dates):
         return [], []
     systems_str = system_sql_str(selected_systems)
-    sql_str = 'SELECT * FROM mode_records WHERE ' + systems_str
     start_date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time()) + datetime.timedelta(hours=12) - datetime.timedelta(days=(end_date - start_date).days)
     start_date_str = start_date.strftime('%Y%m%d_%H%M%S')
-    sql_str += 'AND start_datetime > "' + start_date_str + '"'
-    sql_str += ' ORDER BY "start_datetime"'
+    sql_str = f'SELECT * FROM mode_records WHERE {systems_str} AND start_datetime > :start_date ORDER BY start_datetime', {'start_date': start_date_str}  # nosec see #952
     with patsc.open_data_db() as con:
-        modes = con.execute(sql_str).fetchall()
+        modes = con.execute(*sql_str).fetchall()
         mode_columns = [i[1] for i in con.execute('PRAGMA table_info(mode_records)')]
     start_col = mode_columns.index('start_datetime')
     end_col = mode_columns.index('end_datetime')
@@ -335,10 +338,13 @@ def load_mode_data(unique_dates, heatmap_data, selected_systems, start_date, end
     return heatmap_data
 
 
-def natural_sort_systems(l):
-    def convert(text): return int(text) if text.isdigit() else text.lower()
-    def alphanum_key(key): return [convert(c) for c in re.split('([0-9]+)', key[0][10:])]
-    return sorted(l, key=alphanum_key)
+def natural_sort_systems(line):
+    def convert(text):
+        return int(text) if text.isdigit() else text.lower()
+
+    def alphanum_key(key):
+        return [convert(c) for c in re.split('([0-9]+)', key[0][10:])]
+    return sorted(line, key=alphanum_key)
 
 
 def create_heatmap(unique_dates, heatmap_counts, xlabels, selected_heat):
@@ -627,7 +633,7 @@ def dash_application():
     @app.callback(
         Output('systems_dropdown', 'value'),
         Input('customers_dropdown', 'value'))
-    def select_system_customer(selected_customer):
+    def select_system_customer(selected_customer):  # pylint: disable=unused-variable
         customer_dict = load_customers()
         value = []
         if selected_customer:
@@ -684,7 +690,7 @@ def dash_application():
         Input('hete_kaart', 'clickData'),
         State('selected_heatmap_data', 'children'),
         State('systems_dropdown', 'options'))
-    def update_ui_hist_and_heat(start_date, end_date, selected_systems, insect_types, clickData_hm, selected_heat, system_options):
+    def update_ui_hist_and_heat(start_date, end_date, selected_systems, insect_types, clickData_hm, selected_heat, system_options):  # pylint: disable=unused-variable
         hm_fig = go.Figure(data=go.Heatmap())
         hist_fig = go.Figure(data=go.Histogram())
         hist24h_fig = go.Figure(data=go.Histogram())
@@ -736,7 +742,7 @@ def dash_application():
         Input('scatter_y_dropdown', 'value'),
         State('selected_heatmap_data', 'children'),
         State('systems_dropdown', 'options'))
-    def update_ui_scatter(start_date, end_date, selected_systems, insect_types, clickData_hm, hist_selected_bars, hist24h_selected_bars, scatter_x_value, scatter_y_value, selected_heat, system_options):
+    def update_ui_scatter(start_date, end_date, selected_systems, insect_types, clickData_hm, hist_selected_bars, hist24h_selected_bars, scatter_x_value, scatter_y_value, selected_heat, system_options):  # pylint: disable=unused-variable
         scat_fig = go.Figure(data=go.Scatter())
         scat_style = {'display': 'none'}
         scat_axis_select_style = {'display': 'none'}
@@ -803,7 +809,7 @@ def dash_application():
         Input('staaf24h_kaart', 'clickData'),
         Input('verstrooide_kaart', 'clickData'),
         State('verstrooide_kaart', 'figure'))
-    def update_insect_ui(start_date, end_date, selected_systems, selected_insects, clickData_hm, clickData_hist, clickData_hist24h, clickData_dot, scatter_fig_state):
+    def update_insect_ui(start_date, end_date, selected_systems, selected_insects, clickData_hm, clickData_hist, clickData_hist24h, clickData_dot, scatter_fig_state):  # pylint: disable=unused-variable
         target_video_fn = ''
         video_style = {'display': 'none'}
         path_fig = go.Figure(data=go.Scatter3d())
@@ -817,12 +823,13 @@ def dash_application():
 
         selected_systems = remove_unauthoirized_system(selected_systems)
         prop_id = dash.callback_context.triggered[0]['prop_id']
-        if not 'selectedpoints' in scatter_fig_state['data'][0] or prop_id != 'verstrooide_kaart.clickData' or not selected_systems or not selected_insects:
+        if 'selectedpoints' not in scatter_fig_state['data'][0] or prop_id != 'verstrooide_kaart.clickData' or not selected_systems or not selected_insects:
             return target_video_fn, video_style, path_fig, path_style, file_link, file_link_style, selected_insect, classification, classify_style, loading_animation_style
 
-        sql_str = 'SELECT * FROM moth_records WHERE uid=' + str(clickData_dot['points'][0]['customdata'][4])
+        sql_str = 'SELECT * FROM moth_records WHERE uid=:uid'
+        sql_params = {'uid': str(clickData_dot['points'][0]['customdata'][4])}
         with patsc.open_data_db() as con:
-            entry = con.execute(sql_str).fetchall()
+            entry = con.execute(sql_str, sql_params).fetchall()
         if not len(entry):
             return target_video_fn, video_style, path_fig, path_style, file_link, file_link_style, selected_insect, classification, classify_style, loading_animation_style
         selected_insect = entry[0]
@@ -851,7 +858,7 @@ def dash_application():
         Output(component_id='classification_hidden', component_property='children'),
         Input('classification_dropdown', 'value'),
         Input('selected_scatter_insect', 'children'))
-    def classification_value(selected_classification, selected_insect):
+    def classification_value(selected_classification, selected_insect):  # pylint: disable=unused-variable
         prop_id = dash.callback_context.triggered[0]['prop_id']
         if not selected_insect or prop_id != 'classification_dropdown.value':
             return []
@@ -860,9 +867,9 @@ def dash_application():
         if not current_classification:
             current_classification = classification_options[0]
         if current_classification != selected_classification:
-            sql_str = 'UPDATE moth_records SET Human_classification="' + selected_classification + '" WHERE uid=' + str(selected_insect[insect_columns.index('uid')])
+            sql_str = 'UPDATE moth_records SET Human_classification=:selected_classification WHERE uid=:uid', {'selected_classification': selected_classification, 'uid': str(selected_insect[insect_columns.index('uid')])}
             with patsc.open_data_db() as con:
-                con.execute(sql_str)
+                con.execute(*sql_str)
 
             # also save user classifications to a seperate database, because the insect database sometimes needs to be rebuild from the logs/jsons
             with patsc.open_classification_db() as con_class:
@@ -895,9 +902,12 @@ def dash_application():
                     classification_data = con_class.execute(sql_str).fetchall()
 
                 for entry in classification_data:
-                    sql_where = ' WHERE uid=' + str(entry[classification_columns.index('moth_uid')]) + ' AND time="' + str(entry[classification_columns.index('time')]) + '" AND duration=' + str(entry[classification_columns.index('duration')])
-                    sql_str = 'UPDATE moth_records SET Human_classification="' + entry[classification_columns.index('classification')] + '"' + sql_where
-                    con.execute(sql_str)
+                    sql_str = '''UPDATE moth_records
+                                 SET Human_classification=:entry:
+                                 WHERE uid=:uid
+                                 AND time=:time
+                                 AND duration=:duration''', {'entry': entry[classification_columns.index('classification')], 'uid': str(entry[classification_columns.index('moth_uid')]), 'time': str(entry[classification_columns.index('time')]), 'duration': str(entry[classification_columns.index('duration')])}
+                    con.execute(*sql_str)
                 con.commit()
                 print('Re-added cliassification results to main db. Added ' + str(len(classification_data)) + ' classifications.')
 

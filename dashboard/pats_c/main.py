@@ -1,7 +1,6 @@
 from flask.helpers import url_for
 from flask_login import current_user
-from flask import Blueprint, render_template, redirect, url_for, request
-from . import db
+from flask import Blueprint, redirect, request
 
 
 main = Blueprint('main', __name__)

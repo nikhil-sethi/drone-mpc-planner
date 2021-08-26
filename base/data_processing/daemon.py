@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import time
 import threading
+from typing import List
 import pause
 import os
-import time
 import logging
 import logging.handlers
 import abc
@@ -13,7 +13,6 @@ import socket
 import re
 import serial
 from datetime import date, datetime, timedelta
-from datetime import time as dttime
 from pathlib import Path
 import lib_base as lb
 from clean_hd import clean_hd
@@ -163,7 +162,7 @@ class logs_to_json_task(pats_task):
 
 class errors_to_vps_task(pats_task):
     def __init__(self, error_file_handler, rotate_time):
-        super(errors_to_vps_task, self).__init__('errors_to_vps', datetime.combine(date.min, rotate_time) - datetime.min + timedelta(minutes=5), timedelta(hours=24), False, error_file_handler)
+        super(errors_to_vps_task, self).__init__('errors_to_vps', timedelta(hours=rotate_time.hour, minutes=rotate_time.minute + 5), timedelta(hours=24), False, error_file_handler)
 
     def task_func(self):
         self.logger.error('Rotate!')  # this forces the rotation of all_errors.log
@@ -194,7 +193,7 @@ class wdt_pats_task(pats_task):
         try:
             self.base_serial = serial.Serial('/dev/baseboard', 115200, timeout=0.01)
             self.logger.info("Connected to baseboard")
-        except:
+        except Exception:
             self.base_serial = None
             self.logger.warning("No baseboard found")
 
@@ -252,9 +251,9 @@ class wdt_tunnel_task(pats_task):
         cmd = 'lsof -i tcp:22'
         output = ''
         try:
-            output = subprocess.check_output(cmd, shell=True)
-        except:
-            pass
+            output = subprocess.check_output(cmd.split(' '))
+        except Exception as e:
+            self.logger.error('Error in getting tunnel info: ' + str(e))
         if output:
             output = output.decode(sys.stdout.encoding)
             output = output.splitlines()
@@ -282,7 +281,7 @@ class check_system_task(pats_task):
 
     def task_func(self):
         cmd = 'sensors'
-        output = subprocess.check_output(cmd, shell=True).decode(sys.stdout.encoding)
+        output = subprocess.check_output(cmd).decode(sys.stdout.encoding)
         output_lines = output.splitlines()
         for line in output_lines:
             if 'Package id 0' in line:
@@ -313,7 +312,7 @@ if not os.path.exists(lb.flags_dir):
     os.mkdir(lb.flags_dir)
 init_status_cc()
 
-rotate_time = dttime(hour=9, minute=25)
+rotate_time = datetime(1, 1, 1, hour=9, minute=25)  # for the rotate time only hour and minute are used so year, month and day are irrelevant
 file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 error_file_handler = logging.handlers.TimedRotatingFileHandler(filename=lb.daily_errs_log, when='MIDNIGHT', backupCount=10, atTime=rotate_time)
 error_file_handler.setFormatter(file_format)
@@ -321,7 +320,7 @@ error_file_handler.level = logging.ERROR
 error_file_handler.suffix = "%Y%m%d"  # Use the date as suffixs for old logs. e.g. all_errors.log.20210319.
 error_file_handler.extMatch = re.compile(r"^\d{8}$")  # Reformats the suffix such that it is predictable.
 
-tasks = []
+tasks: List[pats_task] = []
 tasks.append(clean_hd_task(error_file_handler))
 tasks.append(cut_moths_task(error_file_handler))
 tasks.append(logs_to_json_task(error_file_handler))
@@ -335,7 +334,7 @@ start_sha = subprocess.check_output(["git", "describe"]).decode(sys.stdout.encod
 start_time = datetime.today().strftime("%d-%m-%Y %H:%M:%S")
 
 while True:
-    os.system('clear')
+    os.system('clear')  # nosec
     print('PATS daemon ' + start_sha + '. Started: ' + start_time)
     print('Status sender: ' + status_cc_status_str)
 

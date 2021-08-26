@@ -42,10 +42,13 @@ def datetime_to_str(d):
     return d.strftime('%Y%m%d_%H%M%S')
 
 
-def natural_sort(l):
-    def convert(text): return int(text) if text.isdigit() else text.lower()
-    def alphanum_key(key): return [convert(c) for c in re.split('([0-9]+)', key)]
-    return sorted(l, key=alphanum_key)
+def natural_sort(line):
+    def convert(text):
+        return int(text) if text.isdigit() else text.lower()
+
+    def alphanum_key(key):
+        return [convert(c) for c in re.split('([0-9]+)', key)]
+    return sorted(line, key=alphanum_key)
 
 
 def execute(cmd, retry=1, logger_name='', render_process_dir=None, verbose=True):
@@ -55,10 +58,10 @@ def execute(cmd, retry=1, logger_name='', render_process_dir=None, verbose=True)
     p_result = None
     n = 0
     while p_result != 0 and n < retry:
-        popen = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, cwd=render_process_dir)
+        popen = subprocess.Popen(cmd, stdout=subprocess.PIPE, cwd=render_process_dir, shell=True)
         for stdout_line in iter(popen.stdout.readline, ""):
             p_result = popen.poll()
-            if p_result != None:
+            if p_result is not None:
                 n = n + 1
                 break
             if verbose and logger_name == '':
@@ -70,9 +73,8 @@ def execute(cmd, retry=1, logger_name='', render_process_dir=None, verbose=True)
 
 
 def check_if_metered():
-    cmd = 'ip route'
-    output = subprocess.check_output(cmd, shell=True).decode(sys.stdout.encoding)
-    ip = ''
+    cmd = ['ip', 'route']
+    output = subprocess.check_output(cmd).decode(sys.stdout.encoding)
 
     output_lines = output.splitlines()
     if len(output_lines):

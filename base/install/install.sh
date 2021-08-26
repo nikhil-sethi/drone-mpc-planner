@@ -116,12 +116,16 @@ pushd ~/dependencies
 	touch librealsense-packages_v1.1.done
 }
 
-[ -f python-packages-v1.0.done ] || {
-	pip3 install cython pyserial
+[ -f python-packages-v1.1.done ] || {
+	pip3 install cython pyserial types-pytz
 	pip3 install numpy pandas scipy sklearn tqdm pause
 	pip3 install xmltodict requests # for huawei-hilink-status
 	pip3 install torch torchvision umap bioinfokit # deep learning
-	touch python-packages-v1.0.done
+
+	#vscode linting and formatting:
+	pip3 install pylint flake8 bandit mypy autopep8
+
+	touch python-packages-v1.1.done
 }
 
 # Install dev packages

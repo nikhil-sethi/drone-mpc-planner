@@ -8,6 +8,7 @@ import datetime
 import glob
 import os
 import math
+import argparse
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
@@ -84,7 +85,7 @@ def write_values(token, module_id, col_id, name, json):
             if resp.status_code != 200:
                 print(name + ':')
                 raise Exception('POST /tasks/ {}'.format(resp.status_code))
-        except requests.exceptions.ConnectionError as e:
+        except requests.exceptions.ConnectionError:
             print('LG throttling... Retrying in 1s\n\n')
             sleep(5)
             write_values(token, module_id, col_id, name, json)
@@ -132,7 +133,7 @@ def sys_info_table(token):
                 row = pd.DataFrame([[module['Name'], module['Id'], '?', module_item['ColId'], datetime.datetime.strptime(module['StartDate'], '%Y-%m-%dT%H:%M:%S'), datetime.datetime.strptime(module['ExpirationDate'], '%Y-%m-%dT%H:%M:%S')]], columns=columns)
                 if existing_module_row_id >= 0:
                     existing_module_row = LG_df.loc[LG_df['lg_module_id'] == module['Id']]
-                    #print(module_item['CustomerDescription'] + ' ' + module_item['Description'] + ': ' + str(module['Id']) + ' onoff: ' + str(module_item['ColId']) + ' moth: ' + str(existing_module_row['moth_col_id'][0]))
+                    # print(module_item['CustomerDescription'] + ' ' + module_item['Description'] + ': ' + str(module['Id']) + ' onoff: ' + str(module_item['ColId']) + ' moth: ' + str(existing_module_row['moth_col_id'][0]))
                     if existing_module_row['start_date'][0] != row['start_date'][0] or existing_module_row['expiration_date'][0] != row['expiration_date'][0]:
                         raise ValueError('Dates between the MOTHNU and PATSONOF dont match! Complain at LG to make them them same.')
                     if not module_item['IsWriteable']:
@@ -246,13 +247,15 @@ def process_mode_in_json(data, sys_info):
     return LG_data
 
 
-def upload_json_to_LG(token, json_data, sys_info):
+def upload_json_to_LG(token, json_data, sys_info, dry_run):
     binned_moth_data = process_moth_in_json(json_data, sys_info)
     binned_mode_data = process_mode_in_json(json_data, sys_info)
-    if len(binned_moth_data) or len(binned_mode_data):
+    if (len(binned_moth_data) or len(binned_mode_data)) and not dry_run:
         write_values(token, sys_info['lg_module_id'], sys_info['moth_col_id'], sys_info['name'], binned_moth_data)
         write_values(token, sys_info['lg_module_id'], sys_info['onoff_col_id'], sys_info['name'], binned_mode_data)
         return 'OK'
+    elif dry_run:
+        return 'DRY RUN'
     else:
         return 'WARNING: EMPTY'
 
@@ -267,7 +270,7 @@ def load_system_info():
     return systems
 
 
-def jsons_to_LG(input_folder):
+def jsons_to_LG(input_folder, dry_run=False):
     token = retrieve_token()
     LG_lookup = sys_info_table(token)
     systems_df = load_system_info()
@@ -293,7 +296,7 @@ def jsons_to_LG(input_folder):
                                         sys_info = pd.concat([sys_info.reset_index(drop=True), sys_LG.reset_index(drop=True)], axis=1)
                                         sys_info = sys_info.to_dict('records')[0]
                                         try:
-                                            res = upload_json_to_LG(token, json_data, sys_info)
+                                            res = upload_json_to_LG(token, json_data, sys_info, dry_run)
                                         except Exception as e:
                                             if '404' in e.args[0]:
                                                 LG_404_err = True
@@ -320,4 +323,9 @@ def jsons_to_LG(input_folder):
 
 
 if __name__ == "__main__":
-    jsons_to_LG('~/jsons/')
+    parser = argparse.ArgumentParser(description='Script that adds the json files or incoming json files to the database that is reable for the electron app.')
+    parser.add_argument('-i', '--input_folder', help="Path to the folder with json files", default='~/jsons/')
+    parser.add_argument('--dry-run', help="Run script now without sending mail", dest='dry_run', action='store_true')
+    args = parser.parse_args()
+
+    jsons_to_LG(args.input_folder, args.dry_run)

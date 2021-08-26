@@ -14,10 +14,13 @@ from pytz import timezone
 import pandas as pd
 
 
-def natural_sort_systems(l):
-    def convert(text): return int(text) if text.isdigit() else text.lower()
-    def alphanum_key(key): return [convert(c) for c in re.split('([0-9]+)', key[0][10:])]
-    return sorted(l, key=alphanum_key)
+def natural_sort_systems(line):
+    def convert(text):
+        return int(text) if text.isdigit() else text.lower()
+
+    def alphanum_key(key):
+        return [convert(c) for c in re.split('([0-9]+)', key[0][10:])]
+    return sorted(line, key=alphanum_key)
 
 
 def load_systems():
@@ -33,7 +36,7 @@ def execute(cmd):
     popen = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     for stdout_line in iter(popen.stdout.readline, ""):
         p_result = popen.poll()
-        if p_result != None:
+        if p_result is not None:
             break
         print(stdout_line.decode('utf-8'), end='')
     popen.stdout.close()
@@ -47,9 +50,7 @@ def get_moth_counts(now):
     for file in files:
         f = os.path.splitext(os.path.basename((file)))[0]
         if f.startswith('pats'):
-            f_date = f.split('_')[-2] + '_' + f.split('_')[-1]
             try:
-                d = datetime.strptime(f_date, "%Y%m%d_%H%M%S")
                 f_sys = f.split('_')[0].replace('-proto', '')
                 with open(file, "r") as fr_processed:
                     if f_sys in systems['system'].values:
@@ -57,7 +58,7 @@ def get_moth_counts(now):
                         systems.loc[systems['system'] == f_sys, 'msg'] = msg
                     else:
                         print('Warning, system does not exist: ' + f_sys)
-            except:
+            except Exception:
                 pass
     return systems
 
@@ -71,9 +72,7 @@ def get_daily_errors(now):
     for err_file in err_files:
         e_f = os.path.splitext(os.path.basename((err_file)))[0]
         if e_f.startswith('pats'):
-            e_f_date = e_f.split('_')[-2] + '_' + e_f.split('_')[-1]
             try:
-                d = datetime.strptime(e_f_date, "%Y%m%d_%H%M%S")
                 f_sys = e_f.split('_')[0].replace('-proto', '')
                 with open(err_file, "r") as fr_processed:
                     if f_sys in systems['system'].values:
@@ -97,7 +96,7 @@ def get_daily_errors(now):
                         systems.loc[systems['system'] == f_sys, 'err'] = n_errs
                     else:
                         print('Warning, system does not exist: ' + f_sys)
-            except Exception as e:
+            except Exception:
                 pass
     return systems
 
@@ -108,57 +107,57 @@ def send_mail(now, dry_run):
 
     mail_warnings = ''
     if (sum(systems['msg'] == '') > 0):
-        for sys, maintenance, _, _, _ in systems[systems['msg'] == ''].to_numpy():
+        for system, maintenance, _, _, _ in systems[systems['msg'] == ''].to_numpy():
             if maintenance:
                 try:
                     date = datetime.strptime(maintenance, '%Y%m%d')
                     if datetime.today() - date <= timedelta(days=1):
-                        systems.loc[systems['system'] == sys, 'msg'] = 'OK. under maintenance \n'
+                        systems.loc[systems['system'] == system, 'msg'] = 'OK. under maintenance \n'
                     else:
-                        mail_warnings += sys + ', '
-                except:
-                    mail_warnings += sys + ': date_error, '
+                        mail_warnings += system + ', '
+                except Exception:
+                    mail_warnings += system + ': date_error, '
             else:
-                mail_warnings += sys + ', '
+                mail_warnings += system + ', '
         mail_warnings = mail_warnings[:-2] + '\n'
 
-        for sys, _, message, err, _ in systems.to_numpy():
+        for system, _, message, err, _ in systems.to_numpy():
             if not message.startswith('OK.') and message:
                 err_message = ''
                 if err > 1:
                     err_message = ' System errors: ' + str(err - 1) + '. '
-                mail_warnings += sys + ': ' + message.strip() + err_message + '\n'
+                mail_warnings += system + ': ' + message.strip() + err_message + '\n'
 
     mail_err = ''
     if (sum(systems['err'] > 1) > 0):  # err > 1 because we force rotation with an error
-        for sys, maintenance, _, _, _ in systems[systems['err'] > 1].to_numpy():
+        for system, maintenance, _, _, _ in systems[systems['err'] > 1].to_numpy():
             if maintenance:
                 try:
                     date = datetime.strptime(maintenance, '%Y%m%d')
                     if datetime.today() - date <= timedelta(days=1):
-                        systems.loc[systems['system'] == sys, 'msg'] = 'OK. under maintenance \n'
+                        systems.loc[systems['system'] == system, 'msg'] = 'OK. under maintenance \n'
                     else:
-                        mail_err += sys + ', '
-                except:
-                    mail_err += sys + ': date_error, '
+                        mail_err += system + ', '
+                except Exception:
+                    mail_err += system + ': date_error, '
             else:
-                mail_err += sys + ', '
+                mail_err += system + ', '
         mail_err = mail_err[:-2] + '\n'
 
     mail_overheat = ''
     if (sum(systems['overheat_temp'] > 0) > 0):
-        for sys, maintenance, _, _, temp in systems[systems['overheat_temp'] > 1].to_numpy():
+        for system, maintenance, _, _, temp in systems[systems['overheat_temp'] > 1].to_numpy():
             if maintenance:
                 try:
                     date = datetime.strptime(maintenance, '%Y%m%d')
                     if datetime.today() - date <= timedelta(days=1):
-                        systems.loc[systems['system'] == sys, 'msg'] = 'OK. under maintenance \n'
+                        systems.loc[systems['system'] == system, 'msg'] = 'OK. under maintenance \n'
                     else:
-                        mail_overheat += sys + ' (' + str(round(temp)) + '°C)' + ', '
-                except:
-                    mail_overheat += sys + ': date_error, '
+                        mail_overheat += system + ' (' + str(round(temp)) + '°C)' + ', '
+                except Exception:
+                    mail_overheat += system + ': date_error, '
             else:
-                mail_overheat += sys + ' (' + str(round(temp)) + '°C)' + ', '
+                mail_overheat += system + ' (' + str(round(temp)) + '°C)' + ', '
         mail_overheat = mail_overheat[:-2] + '\n'
 
     mail_txt = 'Pats status report ' + str(now) + '\n\n'
@@ -173,14 +172,14 @@ def send_mail(now, dry_run):
         mail_txt += '\n\n'
 
     mail_txt += 'System status:\n'
-    for sys, _, message, err, _ in systems.to_numpy():
+    for system, _, message, err, _ in systems.to_numpy():
         if message.startswith('OK. '):
             err_message = ''
             if err > 1:
                 err_message = ' System errors: ' + str(err - 1) + '. '
             elif not err:
                 err_message = ' System errors error!!!'
-            mail_txt += sys + ':\t' + message.replace('OK.', '').strip() + err_message + '\n'
+            mail_txt += system + ':\t' + message.replace('OK.', '').strip() + err_message + '\n'
 
     print(mail_txt)
     with open('mail.tmp', 'w') as mail_f:

@@ -39,10 +39,13 @@ def open_systems_db():
     return con
 
 
-def natural_sort(l):
-    def convert(text): return int(text) if text.isdigit() else text.lower()
-    def alphanum_key(key): return [convert(c) for c in re.split('([0-9]+)', key)]
-    return sorted(l, key=alphanum_key)
+def natural_sort(line):
+    def convert(text):
+        return int(text) if text.isdigit() else text.lower()
+
+    def alphanum_key(key):
+        return [convert(c) for c in re.split('([0-9]+)', key)]
+    return sorted(line, key=alphanum_key)
 
 
 def clean_moth_json_entry(moth, data):
@@ -89,7 +92,7 @@ def execute(cmd, retry=1, logger_name=''):
         popen = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
         for stdout_line in iter(popen.stdout.readline, ""):
             p_result = popen.poll()
-            if p_result != None:
+            if p_result is not None:
                 n = n + 1
                 break
             if logger_name == '':

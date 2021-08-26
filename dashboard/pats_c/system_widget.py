@@ -1,21 +1,10 @@
-import subprocess
-import sqlite3
-import datetime
-import time
-import math
-import os
-import re
-import numpy as np
 import pandas as pd
-
 import dash
 import dash_table
 import dash_core_components as dcc
 import dash_html_components as html
-from dash.dependencies import Output, Input, State
+from dash.dependencies import Output, Input
 import dash_bootstrap_components as dbc
-import dash_daq as daq
-
 from flask_login import current_user
 from pats_c.lib.lib_patsc import open_systems_db
 
@@ -27,10 +16,11 @@ def load_user_data():
     user_data['customers'] = ''
     for id in user_data['user_id']:
         cur = con.cursor()
-        customers_sql = f'''SELECT customers.name FROM customers
+        customers_sql = '''SELECT customers.name FROM customers
                         JOIN user_customer_connection ON customers.customer_id = user_customer_connection.customer_id
-                        WHERE user_customer_connection.user_id = {id} ORDER BY customers.name COLLATE NOCASE'''
-        customers_data = cur.execute(customers_sql).fetchall()
+                        WHERE user_customer_connection.user_id = :id
+                        ORDER BY customers.name COLLATE NOCASE''', {'id': id}
+        customers_data = cur.execute(*customers_sql).fetchall()
         customers_str = ''
         for d in customers_data:
             customers_str += d[0] + ', '
@@ -62,7 +52,7 @@ def dash_application():
         Output('table_holder', 'children'),
         Output('table_holder', 'style'),
         Input('table_dropdown', 'value'))
-    def select_table(choosen_table):
+    def select_table(choosen_table):  # pylint: disable=unused-variable
         data = None
         if not isinstance(choosen_table, list):
             choosen_table = [choosen_table]

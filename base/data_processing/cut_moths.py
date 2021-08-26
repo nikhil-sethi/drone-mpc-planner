@@ -5,8 +5,6 @@ import os
 import glob
 import argparse
 import logging
-from datetime import datetime
-from datetime import timedelta
 from pathlib import Path
 import lib_base as lb
 
@@ -45,6 +43,7 @@ def cut_moths(folder, dry_run=False):
                 ffmpeg_cmd = ffmpeg_cmd_init
                 arg_cnt = 0
                 if os.path.exists(video_in_file):
+                    clog.write('Video file size: ' + str(os.path.getsize(video_in_file) / 1024 / 1024 / 1024) + 'GB')
                     for file in files:
                         logger.info('Processing ' + file)
                         clog.write(os.path.basename(file) + ': ')

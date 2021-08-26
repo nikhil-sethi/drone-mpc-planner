@@ -2,7 +2,6 @@
 import os
 import subprocess
 import time
-import datetime
 import glob
 import re
 import argparse
@@ -17,7 +16,7 @@ def execute(cmd, retry=1):
         popen = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
         for stdout_line in iter(popen.stdout.readline, ""):
             p_result = popen.poll()
-            if p_result != None:
+            if p_result is not None:
                 n = n + 1
                 break
             print(stdout_line.decode('utf-8'), end='')
@@ -55,10 +54,13 @@ def download_renders_all():
     download_renders(69)
 
 
-def natural_sort(l):
-    def convert(text): return int(text) if text.isdigit() else text.lower()
-    def alphanum_key(key): return [convert(c) for c in re.split('([0-9]+)', key)]
-    return sorted(l, key=alphanum_key)
+def natural_sort(line):
+    def convert(text):
+        return int(text) if text.isdigit() else text.lower()
+
+    def alphanum_key(key):
+        return [convert(c) for c in re.split('([0-9]+)', key)]
+    return sorted(line, key=alphanum_key)
 
 
 def download_raw_logs_all():

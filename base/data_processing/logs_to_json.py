@@ -8,7 +8,7 @@ import socket
 import logging
 import subprocess
 import shutil
-#import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -72,7 +72,7 @@ def process_system_status_in_folder(folder):
                 prev_line = line
                 while True:
                     line = terminal_log.readline()
-                    if not 'Measured exposure' in line:
+                    if 'Measured exposure' not in line:
                         daylight_end = prev_line.split('Measured')[0]
                         break
                     prev_line = line
@@ -167,8 +167,7 @@ def process_hunts_in_folder(folder, operational_log_start):
 
 def autocorr(x, lags):
     '''numpy.corrcoef, partial'''
-
-    corr = [1. if l == 0 else np.corrcoef(x[l:], x[:-l])[0][1] for l in lags]
+    corr = [1. if lag == 0 else np.corrcoef(x[lag:], x[:-lag])[0][1] for lag in lags]
     return np.array(corr)
 
 
@@ -195,7 +194,6 @@ def process_log(detection_fn, folder, mode, monitoring_start_datetime):
         remove_ids.extend(inf_ids)
         logger.warning('Detected infs in velocity. See #540')
 
-    time = elapsed_time.astype('float64')
     RS_ID = log['RS_ID'].values
 
     xs = log['sposX_insect'].values

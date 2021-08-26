@@ -39,7 +39,7 @@ def create_app():
     from .models import User
 
     @login_manager.user_loader
-    def load_user(user_id):
+    def load_user(user_id):  # pylint: disable=unused-variable
         return User.query.get(int(user_id))
 
     from .auth import auth as auth_blueprint
@@ -51,7 +51,7 @@ def create_app():
     # Function is necessary for the video requests of pats-c
     @server.route('/static/<path:filename>')
     @login_required
-    def base_static(filename):
+    def base_static(filename):  # pylint: disable=unused-variable
         return send_from_directory(os.path.join('../static/'), filename)
 
     return server

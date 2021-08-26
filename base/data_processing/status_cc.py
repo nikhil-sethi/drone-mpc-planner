@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
 import os
-import shutil
-import datetime
-import glob
-import logging
 import lib_base as lb
-from pathlib import Path
 
 
 def send_status_update():
@@ -32,7 +27,7 @@ def send_status_update():
                 if os.path.exists(lb.local_status_im_file):
                     cmd = 'rsync -a ' + lb.local_status_im_file + ' dash:' + lb.remote_status_im_file
                     lb.execute(cmd, 1, 'status_cc')
-    except:
+    except Exception:
         pass
 
     f.close()

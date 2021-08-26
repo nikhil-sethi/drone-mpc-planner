@@ -160,8 +160,8 @@ def concat_modes():
         all_modes_cleaned = []
         pbar = tqdm(systems, desc='Concatenating modes db')
         for system in pbar:
-            sql_str = 'SELECT * FROM mode_records WHERE system="' + system + '" ORDER BY "start_datetime"'
-            cur.execute(sql_str)
+            sql_str = 'SELECT * FROM mode_records WHERE system=":system" ORDER BY "start_datetime"', {'system': system}
+            cur.execute(*sql_str)
             modes = cur.fetchall()
 
             prev_i = 0
@@ -260,14 +260,13 @@ def remove_double_data(table_name_prefix):
         for system in pbar_systems:
             pbar_systems.set_description('Cleaning double ' + table_name_prefix + ' FROM db, system: ' + system)
 
-            sql_str = 'SELECT count(system) FROM ' + table_name_prefix + '_records WHERE system="' + system + '"'
-            cur.execute(sql_str)
+            sql_str = 'SELECT count(system) FROM :table_name WHERE system=:system)', {'table_name': table_name_prefix + '_records', 'system': system}
+            cur.execute(*sql_str)
             totn = int(cur.fetchall()[0][0])
             pbar_entries = tqdm(total=2 * totn, leave=False)
-            n = 0
 
-            sql_str = 'SELECT * FROM ' + table_name_prefix + '_records WHERE system="' + system + '" ORDER BY ' + order_by
-            cur.execute(sql_str)
+            sql_str = 'SELECT * FROM :table_name WHERE system=:system ORDER BY :order_by', {'table_name': table_name_prefix + '_records', 'system': system, 'order_by': order_by}
+            cur.execute(*sql_str)
 
             prev_entry = cur.fetchone()
             entry = cur.fetchone()
@@ -291,11 +290,10 @@ def remove_double_data(table_name_prefix):
 
             if (len(doubles_uids)):
                 tot_doubles += len(doubles_uids)
-                sql_del_str = 'DELETE FROM ' + table_name_prefix + '_records WHERE uid='
+                sql_del_str, params = 'DELETE FROM :table_name WHERE uid=:uid', {'table_name_prefix': table_name_prefix + '_records', }
                 for entry in doubles_uids:
                     pbar_entries.update(1)
-                    sql_str = sql_del_str + str(entry)
-                    cur.execute(sql_str)
+                    cur.execute(sql_del_str, {**params, 'uid': str(entry)})
                     _ = cur.fetchall()
             pbar_entries.close()
         con.commit()

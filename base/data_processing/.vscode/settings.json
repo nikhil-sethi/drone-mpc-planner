@@ -4,5 +4,17 @@
     "editor.formatOnSave": true,
     "python.formatting.autopep8Args": [
         "--ignore=E501"
-    ]
+    ],
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": true,
+    "python.linting.banditEnabled": true,
+    "python.linting.banditArgs": [
+        "-s=B110,B404,B602,B603,B607"
+    ],
+    "python.linting.flake8Enabled": true,
+    "python.linting.flake8Args": [
+        "--max-line-length=999",
+        "--ignore=E402"
+    ],
+    "python.linting.mypyEnabled": true
 }

@@ -3,7 +3,6 @@ import os
 import shutil
 import glob
 import logging
-import socket
 import lib_base as lb
 from pathlib import Path
 from datetime import datetime, timedelta
@@ -26,7 +25,7 @@ def clean_hd():
             for dir in found_dirs:
                 try:
                     dir_date = datetime.strptime(os.path.basename(dir), "%Y%m%d_%H%M%S")
-                except:
+                except Exception:
                     logger.error('could not get date from: ' + dir)
                     logger.info('removing: ' + dir)
                     shutil.rmtree(dir)
