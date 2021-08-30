@@ -258,6 +258,16 @@ fi
 	touch pats_code_v1.1.done
 }
 
+# Install pats-c dev packages
+if [[ $1 -eq 0 ]] ; then
+	[ -f patsc-dependencies-packages-v1.0.done ] || {
+		pip3 install types-python-dateutil
+		pip3 install types-requests
+		pip3 install -r ~/code/pats/dashboard/pats_c/requirements.txt
+		touch patsc-dependencies-packages-v1.0.done
+	}
+fi
+
 if [[ $1 -eq 1 ]] ; then
 
 	mkdir -p ~/pats/data
