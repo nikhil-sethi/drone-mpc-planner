@@ -42,8 +42,9 @@ class Heatmap_Cell(Enum):
 
 
 def load_systems_customer(customer_name, cur):
-    sql_str = '''SELECT system,location FROM systems
+    sql_str = '''SELECT system,location,crops.name FROM systems
                  JOIN customers ON customers.customer_id = systems.customer_id
+                 JOIN crops ON crops.crop_id = customers.crop_id
                  WHERE customers.name = :customer_name
                  ORDER BY system_id''', {'customer_name': customer_name}
     systems = cur.execute(*sql_str).fetchall()
@@ -100,12 +101,19 @@ def init_system_and_customer_dropdown():
     customer_style = {'width': '30%', 'display': 'inline-block'}
     sys_style = {'width': '70%', 'display': 'inline-block'}
 
+    demo = False
+    if current_user:
+        demo = 'demo' in current_user.username
+
     for customer in customer_dict.keys():
         if not (customer == 'Maintance' or customer == 'Admin' or customer == 'Unassigned_systems' or customer == 'Deactivated_systems'):
             customer_options.append({'label': customer, 'value': customer})
-            for i, (system, location) in enumerate(customer_dict[customer]):
+            for i, (system, location, crop) in enumerate(customer_dict[customer]):
                 if customer == 'Pats':
                     sys_options.append({'label': system, 'value': system, 'title': system})
+                elif demo:
+                    sys_options.append({'label': 'Demo ' + crop, 'value': system, 'title': system})
+                    break  # This break makes sure that only one system per customer is added for the demo user, like Bram wanted.
                 elif location:
                     if len(customer_dict.keys()) == 1:
                         sys_options.append({'label': location, 'value': system, 'title': system})
@@ -113,8 +121,8 @@ def init_system_and_customer_dropdown():
                         sys_options.append({'label': customer + ' ' + location, 'value': system, 'title': system})
                 else:
                     sys_options.append({'label': customer + ' ' + str(i + 1), 'value': system, 'title': system})
-    if len(customer_dict.keys()) == 1:
-        customer_value = list(customer_dict.keys())
+    if len(customer_dict.keys()) == 1 or demo:
+        customer_value = [list(customer_dict)[0]]
         customer_style = {'width': '0%', 'display': 'none'}
         sys_style = {'width': '100%', 'display': 'inline-block'}
     return sys_options, sys_style, customer_options, customer_value, customer_style
