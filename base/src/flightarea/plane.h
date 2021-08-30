@@ -2,6 +2,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
 #include "common.h"
+#include "linalg.h"
 
 enum plane_types {
     unspecified_plane,
@@ -58,6 +59,26 @@ struct Plane {
         is_active(true),
         cam_corner_1(cam_corner_1_),
         cam_corner_2(cam_corner_2_) { }
+
+    Plane(int direction, cv::Point3f point1, cv::Point3f point2, cv::Point3f point3, plane_types type_) :
+        support(point1),
+        normal(direction * create_plane_normal_vector(point2-point1, point3-point1)),
+        type(type_),
+        id(0),
+        is_active(true) {
+        if(normf(normal) == 0)
+            throw std::runtime_error("Plane configuration invalid: Normal vector has no direction");
+    }
+
+    Plane(float distance, float roll_deg, float pitch_deg, plane_types type_) :
+        support(cv::Point3f(0, 0, -distance)),
+        normal(cv::Point3f(0, 1, 0)),
+        type(type_),
+        id(0),
+        is_active(true) {
+        normal = rotate_vector_around_z_axis(normal, roll_deg*deg2rad);
+        normal = rotate_vector_around_x_axis(normal, pitch_deg*deg2rad);
+    }
 
     cv::Point3f create_plane_normal_vector(cv::Point3f cam_corner_1_, cv::Point3f cam_corner_2_);
     float distance(cv::Point3f pnt);

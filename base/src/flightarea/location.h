@@ -28,6 +28,50 @@ public:
 
 class XML_Plane: public xmls::Serializable
 {
+private:
+    enum definition_type {
+        vector_based,
+        point_based,
+        angle_based
+    };
+
+    definition_type identify_definition_type() {
+        std::vector<float> vector_based_plane_params = {
+            support_vector_x.value(),
+            support_vector_y.value(),
+            support_vector_z.value(),
+            normal_vector_x.value(),
+            normal_vector_y.value(),
+            normal_vector_z.value()
+        };
+        std::vector<float> point_based_plane_params = {
+            direction.value(),
+            point1_x.value(),
+            point1_y.value(),
+            point1_z.value(),
+            point2_x.value(),
+            point2_y.value(),
+            point2_z.value(),
+            point3_x.value(),
+            point3_y.value(),
+            point3_z.value()
+        };
+        std::vector<float> angle_based_plane_params = {
+            distance.value(),
+            roll_deg.value(),
+            pitch_deg.value()
+        };
+        if(!std::equal(vector_based_plane_params.begin()+1, vector_based_plane_params.end(), vector_based_plane_params.begin()))
+            return vector_based;
+        else if(!std::equal(point_based_plane_params.begin()+1, point_based_plane_params.end(), point_based_plane_params.begin()))
+            return point_based;
+        else if(!std::equal(angle_based_plane_params.begin()+1, angle_based_plane_params.end(), angle_based_plane_params.begin()))
+            return angle_based;
+        else
+            throw std::runtime_error("Plane configuration is empty");
+    }
+
+
 public:
     XML_Plane_Type type;
     xmls::xFloat support_vector_x;
@@ -37,16 +81,46 @@ public:
     xmls::xFloat normal_vector_y;
     xmls::xFloat normal_vector_z;
 
+    xmls::xFloat direction;
+    xmls::xFloat point1_x;
+    xmls::xFloat point1_y;
+    xmls::xFloat point1_z;
+    xmls::xFloat point2_x;
+    xmls::xFloat point2_y;
+    xmls::xFloat point2_z;
+    xmls::xFloat point3_x;
+    xmls::xFloat point3_y;
+    xmls::xFloat point3_z;
+
+    xmls::xFloat distance;
+    xmls::xFloat roll_deg;
+    xmls::xFloat pitch_deg;
+
     XML_Plane() {
         setClassName("Plane");
         setVersion("1.0"); // not used at the moment
         Register("type",&type);
-        Register("support_vector_x",&support_vector_x);
-        Register("support_vector_y",&support_vector_y);
-        Register("support_vector_z",&support_vector_z);
-        Register("normal_vector_x",&normal_vector_x);
-        Register("normal_vector_y",&normal_vector_y);
-        Register("normal_vector_z",&normal_vector_z);
+        Register("support_vector_x", &support_vector_x);
+        Register("support_vector_y", &support_vector_y);
+        Register("support_vector_z", &support_vector_z);
+        Register("normal_vector_x", &normal_vector_x);
+        Register("normal_vector_y", &normal_vector_y);
+        Register("normal_vector_z", &normal_vector_z);
+
+        Register("direction", &direction);
+        Register("point1_x", &point1_x);
+        Register("point1_y", &point1_y);
+        Register("point1_z", &point1_z);
+        Register("point2_x", &point2_x);
+        Register("point2_y", &point2_y);
+        Register("point2_z", &point2_z);
+        Register("point3_x", &point3_x);
+        Register("point3_y", &point3_y);
+        Register("point3_z", &point3_z);
+
+        Register("distance", &distance);
+        Register("roll_deg", &roll_deg);
+        Register("pitch_deg", &pitch_deg);
     }
 
     XML_Plane(Plane plane) : XML_Plane() {
@@ -60,9 +134,23 @@ public:
     }
 
     Plane plane() {
-        Plane plane(support_vector_x.value(), support_vector_y.value(), support_vector_z.value(),
-                  normal_vector_x.value(), normal_vector_y.value(), normal_vector_z.value(), type.value());
-        return plane;
+        definition_type def_typ = identify_definition_type();
+        if(def_typ == vector_based) {
+            std::cout << "Vector based plane definition" << std::endl;
+            return Plane(support_vector_x.value(), support_vector_y.value(), support_vector_z.value(),
+                         normal_vector_x.value(), normal_vector_y.value(), normal_vector_z.value(), type.value());
+        } else if(def_typ == point_based) {
+            std::cout << "Point based plane definition" << std::endl;
+            return Plane(direction.value(), cv::Point3f(point1_x.value(), point1_y.value(), point1_z.value()),
+                         cv::Point3f(point2_x.value(), point2_y.value(), point2_z.value()),
+                         cv::Point3f(point3_x.value(), point3_y.value(), point3_z.value()),
+                         type.value());
+        } else if(def_typ == angle_based) {
+            std::cout << "Angle based plane definition" << std::endl;
+            return Plane(distance.value(), roll_deg.value(), pitch_deg.value(), type.value());
+        } else {
+            throw std::runtime_error("Plane configuration invalid: Normal vector has no direction");
+        }
     }
 };
 
