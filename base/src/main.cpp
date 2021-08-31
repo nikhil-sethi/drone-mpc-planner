@@ -1099,8 +1099,8 @@ int main( int argc, char **argv )
             drone_xml_fn = "../xml/" + string(drone_types_str[pparams.drone]) + ".xml";
         dparams.deserialize(drone_xml_fn);
 
-        // if (log_replay_mode)
-        //     pparams.video_raw = video_disabled;
+        if (log_replay_mode)
+            pparams.video_raw = video_disabled;
         if ( log_replay_mode && !render_hunt_mode && !render_monitor_video_mode )
             pparams.has_screen = true; // override log so that vizs always are on when replaying because most of the logs are deployed system now (without a screen)
         if (render_hunt_mode)
