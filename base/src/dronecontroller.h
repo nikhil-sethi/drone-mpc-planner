@@ -46,6 +46,7 @@ static const char* flight_mode_names[] = { "fm_joystick_check",
                                            "fm_prep_to_land",
                                            "fm_ff_landing_start",
                                            "fm_ff_landing",
+                                           "fm_start_shake",
                                            "fm_shake_it_baby",
                                            "fm_monitoring",
                                            "fm_abort"
@@ -88,6 +89,7 @@ public:
         fm_prep_to_land,
         fm_ff_landing_start,
         fm_ff_landing,
+        fm_start_shake,
         fm_shake_it_baby,
         fm_monitoring,
         fm_abort
@@ -202,6 +204,7 @@ private:
     uint16_t kill_cnt_down = 0;
     double spin_up_start_time = 0;
     double start_takeoff_burn_time = 0;
+    int _n_shakes = 0;
 
     std::vector<cv::Point3f> aim_direction_history;
 
@@ -293,6 +296,8 @@ public:
     void flight_mode(flight_modes f) { _flight_mode = f; }
     void hover_mode(bool value) { _hover_mode = value;}
     void double_led_strength() { dparams.drone_led_strength = std::clamp(dparams.drone_led_strength*2,5,100); }
+
+    int n_shake() {return _n_shakes;}
 
     bool abort_take_off() {
         //check if the take off is not yet too far progressed to abort, if not go to spin up else return true

@@ -386,34 +386,152 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         if (dt > land_ctrl.time_ff_landing()) {
             auto_throttle = RC_BOUND_MIN;
             if (dparams.static_shakeit_throttle>0)
-                _flight_mode = fm_shake_it_baby;
+                _flight_mode = fm_start_shake;
             else
                 _flight_mode = fm_inactive;
         }
         break;
+    } case fm_start_shake: {
+        _n_shakes = 0;
+        _flight_mode = fm_shake_it_baby;
+        [[fallthrough]];
     } case fm_shake_it_baby: {
         _rc->arm(bf_disarmed);
-        mode+=bf_spin_motor;
-        int itime = round(time*5);
-        int staticspin = RC_BOUND_MIN + dparams.static_shakeit_throttle;
-        auto_roll = staticspin;
-        auto_pitch = staticspin;
-        auto_throttle = staticspin;
-        auto_yaw = staticspin;
 
-        int spin_value = RC_BOUND_MIN + 325;
-        if (itime % 5 == 3) {
-            auto_pitch = spin_value;
-        } else if (itime % 5 == 1) {
-            auto_roll = spin_value;
-        } else if (itime % 5 == 2) {
-            auto_throttle = spin_value;
-        } else if (itime % 5 == 0) {
-            auto_yaw = spin_value;
-        } else if (itime % 5 == 4) {
-            auto_roll = spin_value + 50;
-            auto_throttle = spin_value +50;
+        const double shake_period = 0.6;
+        const double shake_pause_period = 0.2;
+        const int spin_value_static = RC_BOUND_MIN + dparams.static_shakeit_throttle;
+        const int spin_value_shake = spin_value_static + 75;
+        const int spin_value_shake_reversed = spin_value_static + 150;
+
+        //defaults:
+        mode+=bf_spin_motor;
+        auto_roll = RC_BOUND_MIN;
+        auto_pitch = RC_BOUND_MIN;
+        auto_throttle = RC_BOUND_MIN;
+        auto_yaw = RC_BOUND_MIN;
+
+        static int shake_state = 0;
+        static double state_start_time = 0;
+        switch (shake_state) {
+        case 0: // yaw
+            auto_pitch = spin_value_shake;
+            auto_throttle = spin_value_shake;
+            if (time - state_start_time > shake_period) {
+                state_start_time = 0;
+                shake_state++;
+            }
+            break;
+        case 2:
+            auto_pitch = spin_value_shake;
+            auto_throttle = spin_value_shake;
+            if (time - state_start_time > shake_period) {
+                state_start_time = 0;
+                shake_state++;
+            }
+            break;
+        case 4:
+            mode+=bf_spin_motor_reversed;
+            auto_roll = spin_value_shake_reversed;
+            auto_yaw = spin_value_shake_reversed;
+            if (time - state_start_time > shake_period) {
+                state_start_time = 0;
+                shake_state++;
+            }
+            break;
+        case 6:
+            mode+=bf_spin_motor_reversed;
+            auto_roll = spin_value_shake_reversed;
+            auto_yaw = spin_value_shake_reversed;
+            if (time - state_start_time > shake_period) {
+                state_start_time = 0;
+                shake_state++;
+            }
+            break;
+
+        case 8: // pitch
+            auto_roll = spin_value_shake;
+            auto_throttle = spin_value_shake;
+            if (time - state_start_time > shake_period) {
+                state_start_time = 0;
+                shake_state++;
+            }
+            break;
+        case 10:
+            auto_pitch = spin_value_shake;
+            auto_yaw = spin_value_shake;
+            if (time - state_start_time > shake_period) {
+                state_start_time = 0;
+                shake_state++;
+            }
+            break;
+
+        case 12: // roll
+            auto_roll = spin_value_shake;
+            auto_pitch = spin_value_shake;
+            if (time - state_start_time > shake_period) {
+                state_start_time = 0;
+                shake_state++;
+            }
+            break;
+        case 14:
+            auto_throttle = spin_value_shake;
+            auto_yaw = spin_value_shake;
+            if (time - state_start_time > shake_period) {
+                state_start_time = 0;
+                shake_state++;
+            }
+            break;
+        case 16:
+            _n_shakes++;
+            shake_state = 0;
+            break;
+        default:
+            auto_roll = spin_value_static;
+            auto_pitch = spin_value_static;
+            auto_throttle = spin_value_static;
+            auto_yaw = spin_value_static;
+            if (time - state_start_time > shake_pause_period) {
+                state_start_time = 0;
+                shake_state++;
+            }
+            break;
         }
+
+        // // double yaw
+        // if (time -shake_period_start_time < shake_period) {
+        //     auto_pitch = spin_value_shake;
+        //     auto_throttle = spin_value_shake;
+        // } else if (time -shake_period_start_time > 2*shake_period && time -shake_period_start_time < 3*shake_period) {
+        //     auto_pitch = spin_value_shake;
+        //     auto_throttle = spin_value_shake;
+        // } else if (time -shake_period_start_time > 4*shake_period && time -shake_period_start_time < 5*shake_period) {
+        //     auto_roll = spin_value_shake;
+        //     auto_yaw = spin_value_shake;
+        // } else if (time -shake_period_start_time > 6*shake_period && time -shake_period_start_time < 7*shake_period) {
+        //     auto_roll = spin_value_shake;
+        //     auto_yaw = spin_value_shake;
+
+        //     // pitch
+        // } else if (time -shake_period_start_time > 8*shake_period && time -shake_period_start_time < 9*shake_period) {
+        //     auto_roll = spin_value_shake;
+        //     auto_throttle = spin_value_shake;
+        // } else if (time -shake_period_start_time > 10*shake_period && time -shake_period_start_time < 11*shake_period) {
+        //     auto_pitch = spin_value_shake;
+        //     auto_yaw = spin_value_shake;
+
+        //     // roll
+        // } else if (time -shake_period_start_time > 12*shake_period && time -shake_period_start_time < 13*shake_period) {
+        //     auto_roll = spin_value_shake;
+        //     auto_pitch = spin_value_shake;
+        // } else if (time -shake_period_start_time > 14*shake_period && time -shake_period_start_time < 15*shake_period) {
+        //     auto_throttle = spin_value_shake;
+        //     auto_yaw = spin_value_shake;
+
+        // } else if (time -shake_period_start_time > 17*shake_period) {
+        //     _n_shakes++;
+        //     shake_period_start_time = time;
+        // }
         break;
     } case fm_disarmed: {
         auto_roll = RC_MIDDLE;
@@ -489,7 +607,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
     auto_roll = std::clamp(auto_roll,RC_BOUND_MIN,RC_BOUND_MAX);
     auto_yaw = std::clamp(auto_yaw,RC_BOUND_MIN,RC_BOUND_MAX);
 
-    // std::cout << time <<  " rpyt: " << roll << ", " << pitch << ", " << yaw << ", " << throttle << std::endl;
+    // std::cout <<  " rpyt: " << roll << ", " << pitch << ", " << yaw << ", " << throttle << std::endl;
     _rc->queue_commands(throttle,roll,pitch,yaw,mode,time);
 
     ControlData c(Roll(), Throttle(), Pitch(), time);

@@ -43,7 +43,7 @@ private:
     double time_take_off = 0;
     double time_shake_start = 0;
     float time_out_after_landing = 0;
-    const float duration_shake = 10;
+    const float duration_shake = 20;
     const float duration_motion_calibration = 2;
     const double duration_correct_yaw = 6;
     const double duration_reset_headless_yaw = 2;
@@ -57,7 +57,7 @@ private:
 
     int _n_take_offs = 0;
     int _n_landings = 0;
-    int _n_shakes_after_landing = 0;
+    int _n_shakes_sessions_after_landing = 0;
     int _n_drone_detects = 0;
     int _n_drone_readys = 0;
     int _n_wp_flights = 0;
@@ -122,7 +122,7 @@ public:
         } else if (_navigation_status == ns_wait_locate_drone || _navigation_status == ns_locate_drone_wait_led_on) {
             return static_cast<string>(navigation_status_names[_navigation_status]) + " " + std::to_string(locate_drone_attempts);
         } else if (_navigation_status == ns_shaking_drone || _navigation_status == ns_wait_after_shake) {
-            return static_cast<string>(navigation_status_names[_navigation_status]) + " " + std::to_string(_n_shakes_after_landing);
+            return static_cast<string>(navigation_status_names[_navigation_status]) + " " + std::to_string(_n_shakes_sessions_after_landing);
         } else
             return navigation_status_names[_navigation_status];
     }
