@@ -22,7 +22,7 @@ def get_column_data_type(column):
 def store_moths(data):
     moths = data["moths"]
     if not len(moths):
-        return
+        return 0
     with patsc.open_data_db() as con:
         cur = con.cursor()
         cur.execute('''SELECT count(name) FROM sqlite_master WHERE type='table' AND name='moth_records' ''')
@@ -133,6 +133,7 @@ def store_mode(data):
                 dt_till = sub_entry['till']
                 cur.execute(sql_insert, (data["system"], dt_from, dt_till, sub_entry['mode']))
         con.commit()
+        return len(mode_data)
 
 
 def load_systems(cur):
@@ -344,10 +345,10 @@ def count_errors(data):
 
 def process_json(data):
     n_moths = store_moths(data)
-    store_mode(data)
+    n_modes = store_mode(data)
     n_hunts = store_hunts(data)
     n_errors = count_errors(data)
-    return n_moths, n_hunts, n_errors
+    return n_moths, n_modes, n_hunts, n_errors
 
 
 def jsons_to_db(input_folder):
@@ -364,12 +365,15 @@ def jsons_to_db(input_folder):
                             data = json.load(json_file)
                             min_required_version = 1.0
                             if "version" in data and float(data["version"]) >= min_required_version:
-                                n_moths, n_hunts, n_errors = process_json(data)
-                                flag_f.write('OK')
-                                flag_f.write('. Insect detections: ' + str(n_moths))
-                                flag_f.write('. Hunts: ' + str(n_hunts))
-                                flag_f.write('. Errors from jsons: ' + str(n_errors))
-                                flag_f.write('.\n')
+                                n_moths, n_modes, n_hunts, n_errors = process_json(data)
+                                if n_modes:
+                                    flag_f.write('OK')
+                                    flag_f.write('. Insect detections: ' + str(n_moths))
+                                    flag_f.write('. Hunts: ' + str(n_hunts))
+                                    flag_f.write('. Errors from jsons: ' + str(n_errors))
+                                    flag_f.write('.\n')
+                                else:
+                                    flag_f.write('PROCESS NOT RUNNING')
                             elif "version" in data:
                                 flag_f.write('WRONG VERSION ' + data["version"] + '. Want: ' + min_required_version + '\n')
                             else:
