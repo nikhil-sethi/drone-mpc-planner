@@ -282,7 +282,7 @@ if [[ $1 -eq 1 ]] ; then
 	}
 
 	# Create nice symlinks
-	[ -f symlinks-v1.3.done ] || {
+	[ -f symlinks-v1.4.done ] || {
 		[ -f ~/.screenrc ] && {
 			cp ~/.screenrc{,.bak} --backup=numbered
 			rm ~/.screenrc
@@ -333,6 +333,12 @@ if [[ $1 -eq 1 ]] ; then
 
 		rm ~/.ssh/config -f
 		ln -s ~/code/pats/base/install/sshconfig ~/.ssh/config
+
+		[ -f ~/.gdbinit ] && {
+			sudo cp  ~/.gdbinit{,.bak} --backup=numbered
+			sudo rm ~/.gdbinit
+		}
+		sudo ln -s ~/code/pats/base/install/.gdbinit ~/.gdbinit
 
 		sudo cp  /etc/sudoers{,.bak} --backup=numbered
 		sudo cp ~/code/pats/base/install/sudoers /etc/sudoers
