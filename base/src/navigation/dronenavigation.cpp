@@ -323,6 +323,7 @@ void DroneNavigation::update(double time) {
 
             if (_iceptor->trigger_takeoff() && _nav_flight_mode == nfm_hunt) {
                 setpoint_pos_world = _iceptor->aim_pos();
+                setpoint_pos_world = _flight_area->move_inside(setpoint_pos_world, relaxed, _trackers->dronetracker()->pad_location(false));
                 setpoint_vel_world = _iceptor->aim_vel();
                 setpoint_acc_world = _iceptor->aim_acc();
             } else if (_nav_flight_mode == nfm_hunt && _trackers->dronetracker()->drone_on_landing_pad()) {
@@ -474,6 +475,7 @@ void DroneNavigation::update(double time) {
             setpoint_acc_world = (new_vel_setpoint - setpoint_vel_world)*static_cast<float>(pparams.fps);
             setpoint_vel_world = new_vel_setpoint;
             setpoint_pos_world = new_pos_setpoint;
+            setpoint_pos_world = _flight_area->move_inside(setpoint_pos_world, relaxed);
             check_abort_autonomus_flight_conditions();
             break;
         } case ns_brick_waypoint: {
@@ -486,6 +488,7 @@ void DroneNavigation::update(double time) {
             setpoint_acc_world = (new_vel_setpoint - setpoint_vel_world)*static_cast<float>(pparams.fps);
             setpoint_vel_world = new_vel_setpoint;
             setpoint_pos_world = new_pos_setpoint;
+            setpoint_pos_world = _flight_area->move_inside(setpoint_pos_world, relaxed);
             check_abort_autonomus_flight_conditions();
             break;
         } case ns_reset_headless_yaw: {
