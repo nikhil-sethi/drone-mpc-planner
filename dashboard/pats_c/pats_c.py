@@ -521,8 +521,8 @@ def remove_nones_classification(x):
 
 def video_available_to_symbol(x):
     if not x or x.startswith('NA'):
-        return 1
-    return 0
+        return 0
+    return 300
 
 
 def create_scatter(insects, system_labels, scatter_x_value, scatter_y_value):
@@ -532,7 +532,7 @@ def create_scatter(insects, system_labels, scatter_x_value, scatter_y_value):
     df_scatter['classification_symbol'] = df_scatter['Human_classification'].apply(classification_to_symbol)
     df_scatter['Human_classification'] = df_scatter['Human_classification'].apply(remove_nones_classification)
     df_scatter['video_symbol'] = df_scatter['Video_Filename'].apply(video_available_to_symbol)
-    df_scatter['classification_symbol'] = df_scatter['classification_symbol']
+    df_scatter['symbol'] = df_scatter['video_symbol'] + df_scatter['classification_symbol']
 
     scat_fig = go.Figure()
     scat_fig.update_yaxes({'range': (df_scatter[scatter_y_value].min() - 0.005, df_scatter[scatter_y_value].max() + 0.005)})
@@ -565,9 +565,9 @@ def create_scatter(insects, system_labels, scatter_x_value, scatter_y_value):
                         cmax=9,
                         color=df['system_color'],
                         colorscale=px.colors.qualitative.Vivid,
-                        symbol=df['classification_symbol'],
+                        symbol=df_scatter['symbol'],
                         size=10,
-                        line=dict(width=2, color='DarkSlateGrey')
+                        line=dict(width=2, color="rgba(0,0, 0, 255)")
                     ),
                     hovertemplate='<b>System %{customdata[3]}</b><br><br>' +
                     'x: %{x}<br>' +
