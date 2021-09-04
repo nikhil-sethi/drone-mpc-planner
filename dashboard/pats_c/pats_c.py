@@ -55,6 +55,7 @@ def load_customers():
     if current_user:
         if current_user.is_authenticated:
             username = current_user.username
+            demo = 'demo' in username
             with patsc.open_systems_db() as con:
                 sql_str = '''SELECT customers.name FROM customers
                              JOIN user_customer_connection ON user_customer_connection.customer_id=customers.customer_id
@@ -66,8 +67,8 @@ def load_customers():
                 customer_dict = {}
                 for customer in customers:
                     customer_dict[customer[0]] = load_systems_customer(customer[0], cur)
-            return customer_dict
-    return {}
+            return customer_dict, demo
+    return {}, False
 
 
 def init_insects_dropdown():
@@ -94,16 +95,12 @@ def init_insects_dropdown():
 
 
 def init_system_and_customer_dropdown():
-    customer_dict = load_customers()
+    customer_dict, demo = load_customers()
     sys_options = []
     customer_options = []
     customer_value = None
     customer_style = {'width': '30%', 'display': 'inline-block'}
     sys_style = {'width': '70%', 'display': 'inline-block'}
-
-    demo = False
-    if current_user:
-        demo = 'demo' in current_user.username
 
     for customer in customer_dict.keys():
         if not (customer == 'Maintance' or customer == 'Admin' or customer == 'Unassigned_systems' or customer == 'Deactivated_systems'):
@@ -369,11 +366,10 @@ def natural_sort_systems(line):
 def create_heatmap(unique_dates, heatmap_counts, xlabels, selected_heat):
     hover_label = pd.DataFrame(heatmap_counts).astype(int).astype(str)
     hover_label[hover_label == '-1'] = 'NA'
-    if current_user:
-        if current_user.username == 'kevin' or current_user.username == 'jorn' or current_user.username == 'bram' or current_user.username == 'sjoerd':
-            heatmap_data = np.clip(heatmap_counts, Heatmap_Cell.system_down_cell.value, heatmap_max)
-        else:
-            heatmap_data = np.clip(heatmap_counts, Heatmap_Cell.system_offline_cell.value, heatmap_max)
+    if current_user.username == 'kevin' or current_user.username == 'jorn' or current_user.username == 'bram' or current_user.username == 'sjoerd':
+        heatmap_data = np.clip(heatmap_counts, Heatmap_Cell.system_down_cell.value, heatmap_max)
+    else:
+        heatmap_data = np.clip(heatmap_counts, Heatmap_Cell.system_offline_cell.value, heatmap_max)
     if selected_heat:
         selected_heat = pd.read_json(selected_heat, orient='split')
         for _, cel in selected_heat.iterrows():
