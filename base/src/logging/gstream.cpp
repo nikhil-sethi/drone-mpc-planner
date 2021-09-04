@@ -349,10 +349,11 @@ int GStream::prepare_buffer(GstAppSrc* appsrc, cv::Mat image) {
     if (vp9_mode() == nuc11 && bgr_mode) {
         cv::cvtColor(image,image_converted,cv::COLOR_BGR2YUV_I420);
         cmult =1.5;
-    } else if (bgr_mode)
+    } else if (bgr_mode) {
+        image_converted = image;
         cmult =3;
-    else {
-        image = image_converted;
+    } else {
+        image_converted = image;
         cmult = 1;
     }
     gsize size = image.rows * image.cols * cmult ;
