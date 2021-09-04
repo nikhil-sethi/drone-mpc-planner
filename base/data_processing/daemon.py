@@ -24,6 +24,7 @@ from render_videos import render_last_day
 from logs_to_json import process_all_logs_to_jsons, send_all_jsons
 from cut_moths import cut_all
 import lib_serialization as ls
+sys.path.append('ai')  # noqa
 
 status_cc_status_str = '-'
 daemon2baseboard_pkg = ls.SocketDaemon2BaseboardLinkPackage()

@@ -1,0 +1,70 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: Current File",
+      "type": "python",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Current File",
+      "type": "python",
+      "args": [],
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "data_preprocess",
+      "type": "python",
+      "args": [
+        "~/Downloads/4class_pats_dataset",
+        "~/Downloads/smaller_cleaned_4dataset"
+      ],
+      "request": "launch",
+      "program": "${workspaceFolder}/data_preprocess.py",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "train_new_3model",
+      "type": "python",
+      "args": [
+        "~/Downloads/three_dataset",
+        "cnn",
+        "False",
+        "3"
+      ],
+      "request": "launch",
+      "program": "${workspaceFolder}/train_new_model.py",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "train_4class_model",
+      "type": "python",
+      "args": [
+        "~/Downloads/smaller_cleaned_4dataset",
+        "transformer",
+        "False",
+        "4",
+      ],
+      "request": "launch",
+      "program": "${workspaceFolder}/train_new_model.py",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "train_5class_model",
+      "type": "python",
+      "args": [
+        "~/yeah",
+        "cnn",
+        "False",
+        "5",
+      ],
+      "request": "launch",
+      "program": "${workspaceFolder}/train_new_model.py",
+      "console": "integratedTerminal"
+    }
+  ]
+}

@@ -5,6 +5,10 @@
     "python.formatting.autopep8Args": [
         "--ignore=E501"
     ],
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/../base",
+        "./ai"
+    ],
     "python.linting.enabled": true,
     "python.linting.pylintEnabled": true,
     "python.linting.pylintArgs": [
@@ -19,5 +23,8 @@
         "--max-line-length=999",
         "--ignore=E402"
     ],
-    "python.linting.mypyEnabled": true
+    "python.linting.mypyEnabled": true,
+    "python.linting.pylintArgs": [
+        "--generated-members=numpy.* ,torch.*"
+    ]
 }

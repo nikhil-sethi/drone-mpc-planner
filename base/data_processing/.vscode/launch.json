@@ -14,7 +14,10 @@
       "type": "python",
       "request": "launch",
       "program": "${workspaceFolder}/logs_to_json.py",
-      "args": [],
+      "args": [
+        "--dry-run",
+        "1"
+      ],
       "console": "integratedTerminal"
     },
     {
@@ -48,6 +51,17 @@
       "request": "launch",
       "program": "${workspaceFolder}/baseboardtool.py",
       "console": "integratedTerminal"
-    }
+    },
+    {
+      "name": "use_model",
+      "type": "python",
+      "args": [
+        "cnn",
+        "~/Downloads/test_dupo/duponchelia",
+      ],
+      "request": "launch",
+      "program": "${workspaceFolder}/ai/use_model.py",
+      "console": "integratedTerminal"
+    },
   ]
 }

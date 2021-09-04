@@ -8,6 +8,7 @@ import socket
 import logging
 import subprocess
 import shutil
+import sys
 # import matplotlib.pyplot as plt
 from pathlib import Path
 from datetime import datetime, timedelta
@@ -16,10 +17,15 @@ import numpy as np
 import pandas as pd
 import lib_base as lb
 from lib_base import datetime_to_str, natural_sort, str_to_datetime
+sys.path.append('ai')  # noqa
+import use_model as ai
 from cut_moths import cut_all
+
 
 version_c = "2.1"
 version_x = "1.1"
+lia_model = "cnn5_size_v1"
+n_insects = 5
 
 
 def measured_exposure(terminal_log_path):
@@ -314,6 +320,15 @@ def process_detection_log(log_fn, folder, mode, session_start_datetime):
     v_mean = v.mean()
     v_std = v.std()
 
+    insect_chances = ai.use_the_model("cnn", log, amount_classes=n_insects, restrict_var=0)  # hardcoded which model to use
+
+    if insect_chances:
+        average_insect_chance = np.mean(np.array(insect_chances), axis=0,).flatten()
+        pred_insect_from_trajectory = int(np.argmax(average_insect_chance))
+    else:
+        average_insect_chance = np.zeros((5, 1))
+        pred_insect_from_trajectory = -1
+
     radiuss = np.delete(log['radius_insect'].values, remove_ids)
     size = np.mean(radiuss) * 2
 
@@ -375,6 +390,13 @@ def process_detection_log(log_fn, folder, mode, session_start_datetime):
                       "vel_mean": v_mean,
                       "vel_std": v_std,
                       "vel_max": v.max(),
+                      "lia_insect": pred_insect_from_trajectory,
+                      "lia_version": lia_model,
+                      "chance_chrysodeixis_chalcites": float(average_insect_chance[0]),
+                      "chance_duponchelia_fovealis": float(average_insect_chance[1]),
+                      "chance_plutella_xylostella": float(average_insect_chance[2]),
+                      "chance_tuta_absoluta": float(average_insect_chance[3]),
+                      "chance_opogona_sacchari": float(average_insect_chance[4]),
                       "alpha_horizontal_start": alpha_horizontal_start,
                       "alpha_horizontal_end": alpha_horizontal_end,
                       "alpha_vertical_start": alpha_vertical_start,
@@ -560,7 +582,7 @@ if __name__ == "__main__":
     sys_str = args.system
 
     if args.dry_run:
-        process_system_status_in_folder(args.dry_run)
+        process_all_logs_to_jsons()
     else:
         process_all_logs_to_jsons()
         send_all_jsons()
