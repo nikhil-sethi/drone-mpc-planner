@@ -91,6 +91,7 @@ def init_insects_dropdown():
                     insect_options.append({'label': name, 'value': {'label': name, 'avg_size': avg_size, 'std_dev': std_size}})
 
     insect_options.append({'label': 'No size filter', 'value': {'label': 'No size filter', 'avg_size': 0, 'std_dev': 0}})
+    insect_options.append({'label': 'Anomalies', 'value': {'label': 'Anomalies', 'avg_size': 0, 'std_dev': 0}})
     return insect_options, date_style, insect_style
 
 
@@ -136,6 +137,8 @@ def load_systems(username):
 
 
 def create_insect_filter_sql_str(start_date, insect_type):
+    if 'Anomalies' in insect_type['label']:
+        return 'Monster'
     duration_str = ' AND duration > 1 AND duration < 10'
     insect_str = ''
     close_insect_str = ''
@@ -145,11 +148,11 @@ def create_insect_filter_sql_str(start_date, insect_type):
     min_size = insect_type['avg_size'] - insect_type['std_dev']
     max_size = insect_type['avg_size'] + 2 * insect_type['std_dev']
     if insect_type['avg_size'] > 0:
-        insect_str = insect_str + f'''Dist_traveled > 0.15 AND Dist_traveled < 4 AND Size > {min_size} AND Size < {max_size}''' + close_insect_str
+        insect_str = insect_str + f'''Dist_traveled > 0.15 AND Dist_traveled < 4 AND Size > {min_size} AND Size < {max_size} ''' + close_insect_str
     else:
         insect_str = insect_str + '''Dist_traveled > 0.15 AND Dist_traveled < 4 ''' + close_insect_str
 
-    return insect_str + duration_str
+    return '((' + insect_str + duration_str + ') OR Monster)'
 
 
 def use_proto(start_date):
@@ -164,6 +167,11 @@ def create_system_filter_sql_str(start_date, system):
 
 
 def window_filter_monster(insect_df, monster_df):
+    # optimisation oppurtunity:
+    # monster_times = monster_df['time'].values
+    # insects_with_monsters = [np.sum((monster_times > insect_time - pd.Timedelta(minutes=5)*(monster_times < insect_time + pd.Timedelta(minutes=5)) for insect_time in insect_df['time'].value]
+    # insect_without_monsters = insect_df.loc[!insects_with_monsters]
+
     monster_id = 0
     insect_id = 0
     associated_monster_ids = []
@@ -174,8 +182,8 @@ def window_filter_monster(insect_df, monster_df):
             monster_start = monster['time'] - datetime.timedelta(minutes=5)
             monster_end = monster['time'] + datetime.timedelta(minutes=5)
             if insect['time'] > monster_start and insect['time'] <= monster_end:
-                insect_id += 1
                 associated_monster_ids.append(insect_id)
+                insect_id += 1
                 break
             elif insect['time'] > monster_end:
                 monster_id += 1
@@ -216,14 +224,18 @@ def load_insect_df(selected_systems, start_date, end_date, insect_type):
             insect_sys_df = pd.read_sql_query(sql_str, con, params=system_params)
 
             insect_sys_df['time'] = pd.to_datetime(insect_sys_df['time'], format='%Y%m%d_%H%M%S')
-            monster_sys_df = insect_sys_df.loc[insect_sys_df['Monster'] == 1]
 
-            insect_sys_df = insect_sys_df.loc[insect_sys_df['Monster'] != 1]
-            insect_sys_df = insect_sys_df.loc[insect_sys_df['time'] > real_start_date]  # remove the added monster window added to detect monster just outside the user selected window:
-            insect_sys_df = insect_sys_df.loc[insect_sys_df['time'] < end_date]
-            insect_sys_df = window_filter_monster(insect_sys_df, monster_sys_df)
-            insect_df = insect_df.append(insect_sys_df)
+            monster_sys_df = insect_sys_df.loc[insect_sys_df['Monster'] == 1]
+            monster_sys_df = monster_sys_df[(monster_sys_df['time'] > real_start_date) & (monster_sys_df['time'] < end_date)]  # remove the added monster window added to detect monster just outside the user selected window
             monster_df = monster_df.append(monster_sys_df)
+
+            if 'Anomalies' not in insect_type['label']:
+                insect_sys_df = insect_sys_df.loc[insect_sys_df['Monster'] != 1]
+                insect_sys_df = insect_sys_df[(insect_sys_df['time'] > real_start_date) & (insect_sys_df['time'] < end_date)]  # remove the added monster window added to detect monster just outside the user selected window
+                insect_sys_df = window_filter_monster(insect_sys_df, monster_sys_df)
+                insect_df = insect_df.append(insect_sys_df)
+            else:
+                insect_df = insect_df.append(monster_sys_df)
 
     if use_proto(start_date):
         insect_df['system'].replace({'-proto': ''}, regex=True, inplace=True)
@@ -307,11 +319,15 @@ def load_insect_data(selected_systems, start_date, end_date, insect_type):
     hist_24h_data.fillna(0, inplace=True)
 
     heatmap_insect_df = pd.DataFrame(np.zeros((24, len(unique_dates))), index=range(24), columns=(unique_dates.strftime('%Y%m%d_%H%M%S')))  # pylint: disable=no-member
-    heatmap_monster_df = pd.DataFrame(np.zeros((24, len(unique_dates))), index=range(24), columns=(unique_dates.strftime('%Y%m%d_%H%M%S')))  # pylint: disable=no-member
     for date, hours in (insect_df[['time']] - datetime.timedelta(hours=12)).groupby((insect_df.time - datetime.timedelta(hours=12)).dt.date):
-        heatmap_insect_df[date.strftime('%Y%m%d_%H%M%S')] = (hours.groupby(hours.time.dt.hour).count())
-        heatmap_monster_df[date.strftime('%Y%m%d_%H%M%S')] = (hours.groupby(hours.time.dt.hour).count())
+        if date.strftime('%Y-%m-%d') in unique_dates:
+            heatmap_insect_df[date.strftime('%Y%m%d_%H%M%S')] = (hours.groupby(hours.time.dt.hour).count())
     heatmap_insect_counts = ((heatmap_insect_df.fillna(0)).to_numpy()).T
+
+    heatmap_monster_df = pd.DataFrame(np.zeros((24, len(unique_dates))), index=range(24), columns=(unique_dates.strftime('%Y%m%d_%H%M%S')))  # pylint: disable=no-member
+    for date, hours in (monster_df[['time']] - datetime.timedelta(hours=12)).groupby((monster_df.time - datetime.timedelta(hours=12)).dt.date):
+        if date.strftime('%Y-%m-%d') in unique_dates:
+            heatmap_monster_df[date.strftime('%Y%m%d_%H%M%S')] = (hours.groupby(hours.time.dt.hour).count())
     heatmap_monster_counts = ((heatmap_monster_df.fillna(0)).to_numpy()).T
 
     return unique_dates, heatmap_insect_counts, heatmap_monster_counts, [], hist_data, hist_24h_data
@@ -522,7 +538,7 @@ def remove_nones_classification(x):
 def video_available_to_symbol(x):
     if not x or x.startswith('NA'):
         return 0
-    return 300
+    return 300  # see "Custom Marker Symbols" https://plotly.com/python/marker-style/
 
 
 def create_scatter(insects, system_labels, scatter_x_value, scatter_y_value):
@@ -677,7 +693,7 @@ def dash_application():
         Output('systems_dropdown', 'value'),
         Input('customers_dropdown', 'value'))
     def select_system_customer(selected_customer):  # pylint: disable=unused-variable
-        customer_dict = load_customers()
+        customer_dict, _ = load_customers()
         value = []
         if selected_customer:
             for customer in selected_customer:
@@ -812,19 +828,22 @@ def dash_application():
                     if hour < 12:
                         hour += 24
                     start_date = datetime.datetime.strptime(hm_cell['lalaladate'], '%d-%m-%Y') + datetime.timedelta(hours=hour)
-                    insects = insects.append(load_insect_df(selected_systems, start_date, start_date + datetime.timedelta(hours=1), insect_types))
+                    insects_hour, _ = load_insect_df(selected_systems, start_date, start_date + datetime.timedelta(hours=1), insect_types)
+                    insects = insects.append(insects_hour)
             elif hist_selected_bars:
                 for bar in hist_selected_bars['points']:
                     sys = bar['customdata'][1]
                     start_date = datetime.datetime.strptime(bar['x'], '%d-%m-%Y') + datetime.timedelta(hours=12)
-                    insects = insects.append(load_insect_df([sys], start_date, start_date + datetime.timedelta(days=1), insect_types))
+                    insects_day, _ = load_insect_df([sys], start_date, start_date + datetime.timedelta(days=1), insect_types)
+                    insects = insects.append(insects_day)
             elif hist24h_selected_bars:
                 start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
                 end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
                 for bar in hist24h_selected_bars['points']:
                     sys = bar['customdata'][1]
                     hour = int(bar['x'].replace('h', ''))
-                    insects = insects.append(load_insects_of_hour([sys], start_date, end_date, hour, insect_types))
+                    insects_hour, _ = load_insects_of_hour([sys], start_date, end_date, hour, insect_types)
+                    insects = insects.append(insects_hour)
 
             if not insects.empty:
                 scat_fig = create_scatter(insects, system_labels, scatter_x_value, scatter_y_value)
