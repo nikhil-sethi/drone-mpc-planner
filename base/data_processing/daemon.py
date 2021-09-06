@@ -187,26 +187,32 @@ class render_task(pats_task):
         render_last_day(abort_deadline=datetime.now() + timedelta(hours=7))
 
 
-class wdt_pats_task(pats_task):
-
-    def start_baseboard_serial(self):
-        try:
-            self.base_serial = serial.Serial('/dev/baseboard', 115200, timeout=0.01)
-            self.logger.info("Connected to baseboard")
-        except Exception:
-            self.base_serial = None
-            self.logger.warning("No baseboard found")
-
-    def __init__(self, error_file_handler):
-        super(wdt_pats_task, self).__init__('wdt_pats', timedelta(), timedelta(seconds=300), False, error_file_handler)
-        self.no_realsense_cnt = 0
-        self.start_baseboard_serial()
-        if self.base_serial:
-            self.base_serial.write(b'enable watchdog')
+class baseboard_log_task(pats_task):
+    def __init__(self, error_file_handler, baseboard_serial):
+        super(baseboard_log_task, self).__init__('baseboard', timedelta(), timedelta(seconds=1), False, error_file_handler)
+        self.baseboard_serial = baseboard_serial
 
     def task_func(self):
-        if self.base_serial:
-            self.base_serial.write(b'Harrow!')
+        if self.baseboard_serial.base_serial:
+            while True:
+                line = self.baseboard_serial.base_serial.read_until()
+                if (len(line) > 0):
+                    self.logger.info('{}'.format(line.decode("utf-8")))
+                else:
+                    time.sleep(1.)
+
+
+class wdt_pats_task(pats_task):
+    def __init__(self, error_file_handler, baseboard_serial):
+        super(wdt_pats_task, self).__init__('wdt_pats', timedelta(), timedelta(seconds=300), False, error_file_handler)
+        self.no_realsense_cnt = 0
+        self.baseboard_serial = baseboard_serial
+        if self.baseboard_serial.base_serial:
+            self.baseboard_serial.base_serial.write(b'enable watchdog')
+
+    def task_func(self):
+        if self.baseboard_serial.base_serial:
+            self.baseboard_serial.base_serial.write(b'Harrow!')
 
         if not os.path.exists(lb.no_realsense_flag):
             self.no_realsense_cnt = 0
@@ -293,6 +299,18 @@ class check_system_task(pats_task):
                     self.logger.info('CPU Temperature: ' + cpu_temp_str)
 
 
+class baseboard_serial():
+    logger = logging.Logger
+    def __init__(self):
+        self.logger = logging.getLogger("baseboard_serial")
+        try:
+            self.base_serial = serial.Serial('/dev/baseboard', 115200, timeout=0.01)
+            self.logger.info("Connected to baseboard")
+        except Exception:
+            self.base_serial = None
+            self.logger.warning("No baseboard found")
+
+
 def init_status_cc():
     file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     logger_status_cc = logging.getLogger('status_cc')
@@ -312,6 +330,7 @@ if not os.path.exists(lb.flags_dir):
     os.mkdir(lb.flags_dir)
 init_status_cc()
 
+baseboard_serial_device = baseboard_serial()
 rotate_time = datetime(1, 1, 1, hour=9, minute=25)  # for the rotate time only hour and minute are used so year, month and day are irrelevant
 file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 error_file_handler = logging.handlers.TimedRotatingFileHandler(filename=lb.daily_errs_log, when='MIDNIGHT', backupCount=10, atTime=rotate_time)
@@ -325,7 +344,8 @@ tasks.append(clean_hd_task(error_file_handler))
 tasks.append(cut_moths_task(error_file_handler))
 tasks.append(logs_to_json_task(error_file_handler))
 tasks.append(render_task(error_file_handler))
-tasks.append(wdt_pats_task(error_file_handler))
+tasks.append(wdt_pats_task(error_file_handler, baseboard_serial_device))
+tasks.append(baseboard_log_task(error_file_handler, baseboard_serial_device))
 tasks.append(wdt_tunnel_task(error_file_handler))
 tasks.append(errors_to_vps_task(error_file_handler, rotate_time))
 tasks.append(check_system_task(error_file_handler))
