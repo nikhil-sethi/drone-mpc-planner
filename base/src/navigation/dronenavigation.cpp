@@ -563,8 +563,6 @@ void DroneNavigation::update(double time) {
             setpoint_pos_world = new_pos_setpoint;
             if (!_dctrl->active())
                 _navigation_status = ns_landed;
-            if (_nav_flight_mode == nfm_hunt && _iceptor->aim_in_range() && !_dctrl->landing()  && !low_battery_triggered)
-                _navigation_status = ns_start_the_chase;
             if (_nav_flight_mode == nfm_manual)
                 _navigation_status = ns_manual;
             break;
