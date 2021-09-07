@@ -406,7 +406,7 @@ def natural_sort_systems(line):
 
 def create_heatmap(unique_dates, insect_counts, monster_counts, xlabels, selected_heat):
     insect_count_hover_label = pd.DataFrame(insect_counts).astype(int).astype(str)
-    insect_count_hover_label[insect_count_hover_label == '-1'] = 'NA'
+    insect_count_hover_label[insect_count_hover_label == str(Heatmap_Cell.system_down_cell.value) or insect_count_hover_label == str(Heatmap_Cell.system_offline_cell.value)] = 'NA'
     monster_count_hover_label = pd.DataFrame(monster_counts).astype(int).astype(str)
     if current_user.username == 'kevin' or current_user.username == 'jorn' or current_user.username == 'bram' or current_user.username == 'sjoerd':
         heatmap_data = np.clip(insect_counts, Heatmap_Cell.system_down_cell.value, heatmap_max)
