@@ -3,7 +3,6 @@
 using namespace cv;
 using namespace std;
 
-//void VisionData::init(cv::Mat new_Qf, StereoPair * frame, float new_camera_angle, float new_camera_gain, float new_camera_exposure, cv::Mat new_depth_background_mm) {
 void VisionData::init(Cam * cam) {
     _cam = cam;
     Qf = cam->Qf;

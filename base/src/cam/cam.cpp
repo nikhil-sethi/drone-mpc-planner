@@ -50,6 +50,8 @@ void Cam::convert_depth_background_to_world() {
                                     p[1]*sinf(-camparams.camera_angle_y*deg2rad) + p[2]*cosf(camparams.camera_angle_y*deg2rad));
             depth_background_3mm_world.at<cv::Vec3f>(j,i) = pixelWorldPos;
             depth_background_mm.at<float>(j,i) = sqrtf(powf(p[0],2)+powf(p[1],2)+powf(p[2],2));
+            if (depth_background_mm.at<float>(j,i) < 0.3f) // prevent holes in the depth map from loosing tracking
+                depth_background_mm.at<float>(j,i) = INFINITY;
         }
 }
 
