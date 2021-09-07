@@ -49,8 +49,9 @@ private:
     float time_out_after_landing = 8;
     const float duration_shake = 3;
     const float duration_motion_calibration = 2;
-    const double duration_correct_yaw = 6;
-    const double duration_reset_headless_yaw = 2;
+    const float duration_correct_yaw = 6;
+    const float duration_trigger_bowling = duration_motion_calibration + .4f;
+    const float duration_reset_headless_yaw = 2;
     const float duration_wait_after_landing = 0.8;
     const float duration_reset_yaw_on_pad = 1.5;
     const float duration_wait_before_shake = 1;

@@ -90,7 +90,7 @@ private:
 
     double deviation_angle;
     bool yaw_deviation_vec_length_OK = false;
-    const double min_deviate_vec_length = 0.05;
+    const float min_deviate_vec_length = 0.05;
     const double min_yaw_ok_time = 1.5;
 
     bool enable_viz_motion = false;
@@ -145,7 +145,7 @@ public:
     std::string drone_tracking_state() {return drone_tracking_state_names[_drone_tracking_status];}
     bool drone_on_landing_pad() {return drone_on_pad;}
     void drone_on_landing_pad(bool value) {drone_on_pad = value;}
-
+    bool bowl_nudge_needed(cv::Point3f setpoint_pos) {return normf(last_track_data().pos() - setpoint_pos) < min_deviate_vec_length;}
 };
 
 }

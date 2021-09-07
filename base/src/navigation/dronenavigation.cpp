@@ -514,17 +514,31 @@ void DroneNavigation::update(double time) {
                 _dctrl->hover_mode(true);
                 _trackers->dronetracker()->hover_mode(true);
             }
-            if(time-time_start_reset_headless_yaw>duration_reset_headless_yaw)
+            if(static_cast<float>(time-time_start_reset_headless_yaw)>duration_reset_headless_yaw)
                 _navigation_status = ns_correct_yaw;
             check_abort_autonomus_flight_conditions();
             break;
         } case ns_correct_yaw: {
             _trackers->dronetracker()->detect_yaw(time);
             _dctrl->flight_mode(DroneController::fm_correct_yaw);
-            _navigation_status = ns_correcting_yaw;
+            if(_trackers->dronetracker()->bowl_nudge_needed(setpoint_pos_world))
+                _navigation_status = ns_bowling_nudge;
+            else
+                _navigation_status = ns_correcting_yaw;
             [[fallthrough]];
+        } case ns_bowling_nudge: {
+            if(static_cast<float>(time-time_start_reset_headless_yaw) < duration_trigger_bowling) {
+                setpoint_pos_world = _trackers->dronetracker()->last_track_data().pos() + cv::Point3f(0.2f, 0, 0);
+            }
+            else {
+                _navigation_status = ns_correcting_yaw;
+                setpoint_pos_world = _trackers->dronetracker()->pad_location(true);
+                setpoint_pos_world += current_waypoint->xyz;
+            }
+            setpoint_pos_world = _flight_area->move_inside(setpoint_pos_world, relaxed);
+            break;
         } case ns_correcting_yaw: {
-            if(!_trackers->dronetracker()->check_yaw(time) || (time-time_start_reset_headless_yaw > duration_correct_yaw && drone_at_wp()))
+            if(!_trackers->dronetracker()->check_yaw(time) || (static_cast<float>(time-time_start_reset_headless_yaw) > duration_correct_yaw && drone_at_wp()))
                 _navigation_status = ns_goto_thrust_calib_waypoint;
             check_abort_autonomus_flight_conditions();
             if (low_battery_triggered) {

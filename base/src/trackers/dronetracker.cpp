@@ -377,8 +377,8 @@ void DroneTracker::detect_deviation_yaw_angle() {
         vec1.at<double>(1) = 0;
         vec2.at<double>(1) = 0;
 
-        double deviation_vec1_length = norm(vec1);
-        double deviation_vec2_length = norm(vec2);
+        float deviation_vec1_length = norm(vec1);
+        float deviation_vec2_length = norm(vec2);
         yaw_deviation_vec_length_OK = deviation_vec1_length < min_deviate_vec_length && deviation_vec2_length < min_deviate_vec_length;
 
         // normalize vectors
