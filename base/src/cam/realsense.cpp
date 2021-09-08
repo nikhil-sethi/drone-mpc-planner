@@ -1,6 +1,7 @@
 #include "realsense.h"
 #include <sys/stat.h>
 #include "smoother.h"
+#include "common.h"
 #include "opencv2/imgproc/imgproc.hpp"
 #include <librealsense2/rsutil.h>
 #include "third_party/stopwatch.h"
@@ -137,6 +138,7 @@ void Realsense::rs_callback(rs2::frame f) {
             if (_frame_time_start <0)
                 _frame_time_start = rs_frameL_cbtmp.get_timestamp()/1.e3;
 
+            static int buf_overflow_count = 0;
             if (buf.size() < 5) {
                 RSStereoPair * rsp = new RSStereoPair(rs_frameL_cbtmp,rs_frameR_cbtmp);
                 cv::Mat frameL = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(rs_frameL_cbtmp.get_data()), Mat::AUTO_STEP);
@@ -144,8 +146,15 @@ void Realsense::rs_callback(rs2::frame f) {
                 StereoPair * sp = new StereoPair(frameL,frameR,rs_frameL_cbtmp.get_frame_number(),rs_frameL_cbtmp.get_timestamp()/1.e3 - _frame_time_start);
                 rs_buf.insert(std::pair(rs_frameL_cbtmp.get_frame_number(),rsp));
                 buf.insert(std::pair(rs_frameL_cbtmp.get_frame_number(),sp));
-            } else if(last_sync_id > pparams.fps*2)
-                std::cout << "BUF OVERFLOW, SKIPPING A FRAME" << std::endl;
+                buf_overflow_count = 0;
+            } else if(last_sync_id > pparams.fps*2) {
+                buf_overflow_count++;
+                std::cout << "BUF OVERFLOW, SKIPPING A FRAME" << buf_overflow_count << std::endl;
+                if (buf_overflow_count > 5*static_cast<int>(pparams.fps)) {
+                    throw std::runtime_error("Realsense issue!");
+                    set_realsense_buf_overflow_flag();
+                }
+            }
 
             {   // signal to processor that a new frame is ready to be processed
                 std::scoped_lock<std::mutex> lck(lock_newframe_mutex);

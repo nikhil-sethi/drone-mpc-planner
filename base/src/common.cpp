@@ -294,6 +294,9 @@ void set_external_wdt_flag() {
 void set_no_realsense_flag() {
     std::ofstream output("../../../../pats/flags/no_realsense_flag");
 }
+void set_realsense_buf_overflow_flag() {
+    std::ofstream output("../../../../pats/flags/buf_overflow_realsense_flag");
+}
 std::string exec(const char* cmd) {
     std::array<char, 128> buffer;
     std::string result;

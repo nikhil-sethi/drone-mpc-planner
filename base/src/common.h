@@ -43,6 +43,7 @@ cv::Point3f pats_to_betaflight_coord(cv::Point3f vec);
 cv::Point3f betaflight_to_pats_coord(cv::Point3f vec);
 void set_external_wdt_flag();
 void set_no_realsense_flag();
+void set_realsense_buf_overflow_flag();
 std::string exec(const char* cmd);
 void set_fps_warning_flag();
 void set_frame_loss_warning_flag();
