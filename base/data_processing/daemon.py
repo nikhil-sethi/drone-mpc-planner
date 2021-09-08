@@ -208,11 +208,11 @@ class wdt_pats_task(pats_task):
         self.no_realsense_cnt = 0
         self.baseboard_serial = baseboard_serial
         if self.baseboard_serial.base_serial:
-            self.baseboard_serial.base_serial.write(b'enable watchdog')
+            self.baseboard_serial.base_serial.write(b'enable watchdog\n')
 
     def task_func(self):
         if self.baseboard_serial.base_serial:
-            self.baseboard_serial.base_serial.write(b'Harrow!')
+            self.baseboard_serial.base_serial.write(b'Harrow!\n')
 
         if not os.path.exists(lb.no_realsense_flag):
             self.no_realsense_cnt = 0
