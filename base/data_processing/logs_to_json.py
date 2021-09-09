@@ -401,6 +401,9 @@ def send_all_jsons():
             json_sent_fn = lb.json_dir + '/sent/' + os.path.basename(json_fn)
             os.rename(json_fn, json_sent_fn)
             logger.info("Json sent: {0}".format(json_fn))
+        else:
+            return 1
+    return 0
 
 
 if __name__ == "__main__":
