@@ -101,24 +101,16 @@ void Realsense::update_real(void) {
     std::unique_lock<std::mutex> lk(lock_newframe_mutex);
     lock_newframe.wait(lk, [] { return new_frame_ready; }); // wait for a new frame passed by the rs callback
     new_frame_ready = false;
-    watchdog = true;
-    if (watchdog_attempt_to_continue) {
-        std::cout << "Frame processed. Buffer: ";
-        for (auto fr : rs_buf) {
-            std::cout << fr.first << " ";
-        }
-        std::cout << std::endl;
-    }
 }
 
 void Realsense::rs_callback(rs2::frame f) {
 
-    if (watchdog_attempt_to_continue) {
-        if (f.get_profile().stream_index() == 1 )
-            std::cout << "Received idL "         << f.get_frame_number() << ":" << f.get_timestamp()/1.e3- _frame_time_start << "@" << f.get_profile().stream_index() << "         Last: " << last_sync_id << std::endl;
-        if (f.get_profile().stream_index() == 2 )
-            std::cout << "Received idR         " << f.get_frame_number() << ":" << f.get_timestamp()/1.e3 -_frame_time_start << "@" << f.get_profile().stream_index() << " Last: " << last_sync_id << std::endl;
-    }
+
+    // if (f.get_profile().stream_index() == 1 )
+    //     std::cout << "Received idL "         << f.get_frame_number() << ":" << f.get_timestamp()/1.e3- _frame_time_start << "@" << f.get_profile().stream_index() << "         Last: " << last_sync_id << std::endl;
+    // if (f.get_profile().stream_index() == 2 )
+    //     std::cout << "Received idR         " << f.get_frame_number() << ":" << f.get_timestamp()/1.e3 -_frame_time_start << "@" << f.get_profile().stream_index() << " Last: " << last_sync_id << std::endl;
+
 
     if (f.get_frame_number() < last_sync_id-50 && last_sync_id > 300) {
         std::cout << "Warning: rs frame number reset happened!!!" << std::endl;
@@ -331,9 +323,6 @@ void Realsense::init_real() {
     calibration(infrared1,infrared2);
     camparams.serialize(calib_wfn);
     convert_depth_background_to_world();
-
-    if (pparams.watchdog)
-        thread_watchdog = std::thread(&Realsense::watchdog_thread,this);
 
     if (pparams.video_raw == video_bag)
         dev = rs2::recorder(bag_fn,dev);
@@ -580,7 +569,6 @@ void Realsense::calib_depth_background() {
 
 void Realsense::close() {
     if (initialized) {
-        exit_watchdog_thread = true;
         std::cout << "Closing camera" << std::endl;
         if (!dev.as<rs2::playback>()) {
             auto rs_depth_sensor = dev.first<rs2::depth_sensor>();
@@ -594,10 +582,6 @@ void Realsense::close() {
             }
         } else {
             cam_playback.stop();
-        }
-        if (pparams.watchdog) {
-            std::cout << "Waiting for camera watchdog." << std::endl;
-            thread_watchdog.join();
         }
         std::cout << "Camera closed" << std::endl;
         initialized = false;
@@ -634,38 +618,5 @@ void Realsense::reset() {
         usleep(1000000);
 
         exit (0);
-    }
-}
-
-void Realsense::watchdog_thread(void) {
-    std::cout << "Realsense watchdog thread started" << std::endl;
-    usleep(10000000); //wait until camera is running for sure
-    while (!exit_watchdog_thread) {
-        usleep(pparams.wdt_timeout_us);
-        if (!watchdog && !exit_watchdog_thread) {
-            std::cout << "Realsense  watchdog buf alert! Attempting to continue" << std::endl;
-            watchdog_attempt_to_continue = true;
-            new_frame1 =true;
-            new_frame2 = true;
-            std::cout << "RS frames in buf: ";
-            for (auto fr : rs_buf) {
-                std::cout << fr.first << " ";
-            }
-            std::cout << std::endl;
-            usleep(pparams.wdt_timeout_us);
-            if (!watchdog) {
-                std::cout << "Realsense  watchdog alert! Killing the process." << std::endl;
-                pid_t pid = getpid();
-                std::cout << "pid: " << pid << std::endl;
-                string kill_cmd = "kill -9 " + std::to_string(pid);
-                auto res [[maybe_unused]] = std::system(kill_cmd.c_str());
-            } else {
-                std::cout << "Seems to work again." << std::endl;
-            }
-        }
-        watchdog_attempt_to_continue = false;
-        watchdog = false;
-        set_external_wdt_flag();
-
     }
 }

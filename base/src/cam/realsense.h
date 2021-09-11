@@ -30,7 +30,6 @@ public:
     }
     void close();
     void reset();
-    void stop_watchdog() {exit_watchdog_thread = true;}
     StereoPair * update();
     std::tuple<float,float,cv::Mat,cv::Mat,cv::Mat,float> measure_auto_exposure();
     std::tuple<float,float,double,cv::Mat> measure_angle();
@@ -70,11 +69,6 @@ private:
     rs2::device dev;
     rs2::pipeline cam_playback;
     static inline rs2::context const ctx;
-
-    bool exit_watchdog_thread = false;
-    bool watchdog = true,watchdog_attempt_to_continue = false;
-    std::thread thread_watchdog;
-    void watchdog_thread(void);
 
     void calibration(rs2::stream_profile infrared1,rs2::stream_profile infrared2);
     void init_real();

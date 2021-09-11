@@ -896,7 +896,7 @@ void init() {
     }
 
     init_thread_pool();
-    if ((render_monitor_video_mode || render_hunt_mode) && !pparams.has_screen) //for normal operation there's a watchdog in the realsense cam class.
+    if (!pparams.has_screen)
         thread_watchdog = std::thread(&watchdog_worker);
 
 
@@ -952,7 +952,7 @@ void close(bool sig_kill) {
         cam.release();
     if(rc)
         rc.release();
-    if ((render_monitor_video_mode || render_hunt_mode) && !pparams.has_screen)
+    if (!pparams.has_screen)
         thread_watchdog.join();
     std::cout <<"Closed"<< std::endl;
 }
@@ -1067,7 +1067,7 @@ void wait_for_dark() {
 }
 
 void watchdog_worker(void) {
-    std::cout << "Main watchdog thread started" << std::endl;
+    std::cout << "Watchdog thread started" << std::endl;
     usleep(10000000); //wait until camera is running for sure
     while (!exit_now) {
         usleep(pparams.wdt_timeout_us);
@@ -1080,7 +1080,30 @@ void watchdog_worker(void) {
             watchdog_skip_video_delay_override = false;
         }
         if (!watchdog && !exit_now) {
-            std::cout << "Main watchdog alert! Killing the process." << std::endl;
+            std::cout << "Watchdog alert! Closing as much as possible." << std::endl;
+
+            if (imgcount>0)
+                save_results_log();
+
+            dctrl.close();
+            dnav.close();
+            trackers.close();
+            visdat.close();
+
+            logger_video_ids << std::flush;
+            logger << std::flush;
+            logger_video_ids.close();
+            logger.close();
+
+            if (pparams.video_result)
+                output_video_results.close();
+            if (pparams.video_raw && pparams.video_raw != video_bag)
+                output_video_LR.close();
+
+            print_warnings();
+
+            std::cout << "Watchdog is now killing the process. Nice knowing you." << std::endl;
+
             pid_t pid = getpid();
             std::cout << "pid: " << pid << std::endl;
             exit_now = true;
@@ -1089,6 +1112,7 @@ void watchdog_worker(void) {
             auto res [[maybe_unused]] = std::system(kill_cmd.c_str());
         }
         watchdog = false;
+        set_external_wdt_flag();
     }
 }
 
