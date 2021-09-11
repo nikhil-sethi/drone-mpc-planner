@@ -180,8 +180,11 @@ void TrackerManager::find_blobs() {
         } case roi_state_blink: {
             Point min_pos,max_pos;
             minMaxLoc(diff, &min_val_double, &max_val_double, &min_pos, &max_pos);
-            if (max_val_double > motion_thresh + dparams.drone_blink_strength)
+            if (max_val_double > motion_thresh + dparams.drone_blink_strength) {
+                motion_filtered_noise_mapL = motion_filtered_noise_mapL.clone();
+                motion_filtered_noise_mapL = motion_thresh + dparams.drone_blink_strength;
                 floodfind_and_remove(max_pos,max_val_double,0,diff,motion_filtered_noise_mapL);
+            }
             i++;
             break;
         } case roi_state_no_prior: {
