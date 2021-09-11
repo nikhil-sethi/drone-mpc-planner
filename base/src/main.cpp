@@ -1044,7 +1044,7 @@ void wait_for_dark() {
             auto [expo,gain,frameL,frameR,frame_bgr,avg_brightness] = static_cast<Realsense *>(cam.get())->measure_auto_exposure();
             auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
             std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << " Measured exposure: " << expo << ", gain: " << gain << ", brightness: " << avg_brightness << std::endl;
-            if (expo >pparams.exposure_threshold && gain >= pparams.gain_threshold && avg_brightness < pparams.brightness_threshold-10) {
+            if (expo >pparams.exposure_threshold && gain >= pparams.gain_threshold && avg_brightness < pparams.brightness_threshold) {
                 break;
             }
             cv::imwrite("../../../../pats/status/monitor_tmp.jpg", frameL);
