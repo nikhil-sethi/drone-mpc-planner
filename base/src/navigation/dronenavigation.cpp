@@ -198,7 +198,7 @@ void DroneNavigation::update(double time) {
                     time_start_motion_calibration = time;
                     _navigation_status = ns_wait_to_arm;
                 }
-            if (static_cast<float>(time-time_start_motion_calibration) > duration_motion_calibration) {
+            if (static_cast<float>(time-time_start_motion_calibration) > duration_motion_calibration && _visdat->motion_filtered_noise_initialized()) {
                 _navigation_status= ns_calibrating_motion_done;
             }
             break;
@@ -663,7 +663,7 @@ void DroneNavigation::update(double time) {
 
 void DroneNavigation::maintain_motion_map(double time) {
     float time_since_tracking_nothing = _trackers->tracking_anything_duration(time);
-    if (time_since_tracking_nothing > 20 || time_since_tracking_nothing == 0)
+    if (time_since_tracking_nothing > 20 || time_since_tracking_nothing == 0 || !_visdat->motion_filtered_noise_initialized())
         _visdat->maintain_noise_maps();
 }
 

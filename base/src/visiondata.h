@@ -46,6 +46,7 @@ private:
     Cam * _cam;
     int motion_update_iterator = 0;
     bool _calibrating_motion_noise_map = false;
+    bool _motion_filtered_noise_initialized = false;
     double calibrating_noise_map_end_time = 0;
     const float motion_buf_size_target = 60;
     int save_every_nth_frame_during_motion_calib = 3;
@@ -102,6 +103,7 @@ public:
     void enable_noise_map_calibration();
     void enable_noise_map_calibration(float duration);
     bool calibrating_background() {return _calibrating_motion_noise_map;}
+    bool motion_filtered_noise_initialized() {return _motion_filtered_noise_initialized;}
     void create_overexposed_removal_mask(bool filter_drone, cv::Point3f drone_im_location,float blink_size);
     void delete_from_motion_map(cv::Point p, int disparity, int radius, int duration);
     void reset_spot_on_motion_map(cv::Point p, int disparity, int radius, int duration);

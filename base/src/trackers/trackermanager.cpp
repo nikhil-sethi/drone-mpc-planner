@@ -193,7 +193,7 @@ void TrackerManager::find_blobs() {
             int motion_noise = motion_filtered_noise_mapL.at<uint8_t>(max_pos.y,max_pos.x);
             if (max_val_double > motion_noise * 2 + motion_thresh) {
                 int max_noise = _visdat->max_noise(max_pos);
-                if (max_val_double > max_noise +motion_thresh)
+                if (max_val_double > max_noise + motion_thresh)
                     floodfind_and_remove(max_pos,max_val_double,motion_noise,diff,motion_filtered_noise_mapL);
                 else  // probably noise spickle. Remove a very small area:
                     cv::circle(diff, max_pos, 3, Scalar(0), cv::FILLED);

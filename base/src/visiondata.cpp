@@ -161,7 +161,7 @@ void VisionData::maintain_noise_maps() {
         overexposed_mapR = overexposed_bufferL16 > 200;
     }
 
-    if ( _calibrating_motion_noise_map) {
+    if (_calibrating_motion_noise_map) {
         if (!(frame_id % save_every_nth_frame_during_motion_calib)) {
             motion_noise_bufferL.push_back(diffL.clone());
             motion_noise_bufferR.push_back(diffR.clone());
@@ -187,6 +187,7 @@ void VisionData::maintain_noise_maps() {
             GaussianBlur(bkgL,motion_filtered_noise_mapL,Size(9,9),0);
             GaussianBlur(bkgR,motion_filtered_noise_mapR,Size(9,9),0);
             cv::resize(bkgL,motion_filtered_noise_mapL_small,smallsize);
+            _motion_filtered_noise_initialized = true;
 
             motion_noise_bufferL.clear();
             motion_noise_bufferR.clear();
