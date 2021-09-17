@@ -13,12 +13,7 @@
     "editor.tabSize": 4,
     "editor.formatOnSave": true,
     "search.exclude": {
-        "**/build*/**": true,
-        "**/replay_insects/**": true,
-        "**/install/**": true,
-        "**/data_processing/**": true,
-        "**/third_party/**": true,
-        "/usr/**": true,
+        "**/bin*/**": true
     },
     "search.showLineNumbers": true,
     "C_Cpp.autoAddFileAssociations": false,

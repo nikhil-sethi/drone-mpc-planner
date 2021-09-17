@@ -12,9 +12,6 @@
 #define WATCHDOG_TIMEOUT HOUR_IN_MILLIS
 #define WATCHDOG_STATUS_LED 13
 
-#define VERSION "1.0"
-const char version_string[] = "vers_stmp: v = " VERSION;
-
 Charger charger;
 
 bool reset_nuc = false;
@@ -48,7 +45,6 @@ void setup() {
     charger.init();
 
     debugln("baseboard started");
-    Serial.println(version_string);
 }
 
 void init_values_from_eeprom() {
@@ -65,7 +61,7 @@ void apply_loop_delay(int loop_time) {
     int wait_time = min(loop_time, timer + loop_time - millis());
     timer = millis();
     if (wait_time > 0)
-        delay(min(wait_time,1));
+        delay(min(wait_time, 1));
 }
 
 void handle_serial_commands() {
@@ -73,8 +69,8 @@ void handle_serial_commands() {
     char input[size];
 
     if (serial_input(input, size)) {
-        Serial.println(input);
-        handle_watchdog_commands(input);
+        if (!handle_watchdog_commands(input))
+            Serial.println(input);
         handle_led_commands(input);
         handle_reboot_commands(input);
         handle_eeprom_commands(input);
@@ -91,46 +87,27 @@ void loop() {
 
     charger.run();
     if (!charger.calibrating())
-        run_display();
+        write_serial();
 }
 
-void add_header(char* buf) {
-    int header_length = 16;
-    char log_line[header_length] = "";
-    sprintf(log_line, "disp: len: %03d, ", min(header_length + strlen(buf), 999));
-    reverse_strcat(log_line, buf);
-}
-
-void run_display() {
+void write_serial() {
     static long value_update_time = 0;
-
     if (millis() - value_update_time < 500L)
         return;
-
-    uint8_t deci_hours_since_reset = (millis() - last_nuc_reset) * 10 / HOUR_IN_MILLIS;
-    write_watchdog_time_eeprom(millis() - last_nuc_reset);
-
     value_update_time = millis();
 
-    char log_line[200] = "";
-    append_log_line(log_line, "ver", LOG_LINE_VERSION);
-    append_log_line(log_line, "led", digitalRead(LED_ENABLE_PIN));
-    append_log_line(log_line, "upt", min(millis() / HOUR_IN_MILLIS, 999));
-    append_log_line(log_line, "wdg", watchdog_enabled);
-    if (watchdog_enabled) {
-        append_log_line(log_line, "wdt", max((int)((WATCHDOG_TIMEOUT + nuc_watchdog_timer - millis())/10000),0));
-        append_log_line(log_line, "tsr", min(deci_hours_since_reset, 999));
-        append_log_line(log_line, "wrc", watchdog_reset_count);
-        append_log_line(log_line, "wbc", watchdog_boot_count);
-        append_log_line(log_line, "bbc", baseboard_boot_count);
-    }
+    uint8_t deci_hours_since_reset = (value_update_time - last_nuc_reset) * 10 / HOUR_IN_MILLIS;
+    write_watchdog_time_eeprom(value_update_time - last_nuc_reset);
 
-    charger.append_charging_log(log_line);
-    add_header(log_line);
-    Serial.println(log_line);
+    SerialPackage pkg;
+    pkg.led_state = digitalRead(LED_ENABLE_PIN);
+    pkg.watchdog_state = watchdog_enabled;
+    pkg.up_duration = millis();
+    charger.fill_serial_package(&pkg);
+    Serial.write((char *)&pkg, sizeof(SerialPackage));
 
     if (watchdog_trigger_imminent)
-        debugln("Watchdog will trigger in %d seconds!", (int)((WATCHDOG_TIMEOUT + nuc_watchdog_timer - millis())/1000));
+        debugln("Watchdog will trigger in %d seconds!", (int)((WATCHDOG_TIMEOUT + nuc_watchdog_timer - millis()) / 1000));
 }
 
 void handle_nuc_reset() {
@@ -173,18 +150,20 @@ void disable_watchdog() {
     write_watchdog_state_eeprom(watchdog_enabled);
 }
 
-void handle_watchdog_commands(char * input) {
-    if (strlen(input) > 0) {
+bool handle_watchdog_commands(char *input) {
+    if ((match_command(input, "Harrow!"))) {
         nuc_watchdog_timer = millis();
         watchdog_trigger_imminent = false;
         nuc_has_been_reset = false;
         write_nuc_has_been_reset_eeprom(nuc_has_been_reset);
+        return true; // surpress serial output
     }
 
     if (match_command(input, "enable watchdog"))
         enable_watchdog();
     else if (match_command(input, "disable watchdog"))
         disable_watchdog();
+    return false;
 }
 
 void handle_watchdog() {
@@ -198,7 +177,7 @@ void handle_watchdog() {
         watchdog_trigger_imminent = true;
 }
 
-void handle_led_commands(char* input) {
+void handle_led_commands(char *input) {
     if (match_command(input, "enable led")) {
         debugln("Enable LED");
         digitalWrite(LED_ENABLE_PIN, 1);
@@ -209,14 +188,14 @@ void handle_led_commands(char* input) {
     }
 }
 
-void handle_reboot_commands(char* input) {
+void handle_reboot_commands(char *input) {
     if (match_command(input, "reboot nuc")) {
         debugln("Reboot NUC");
         reset_nuc = true;
     }
 }
 
-void handle_eeprom_commands(char* input) {
+void handle_eeprom_commands(char *input) {
     if (match_command(input, "clear config all")) {
         debugln("clear config all");
         clear_eeprom_all();

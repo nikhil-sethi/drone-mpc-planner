@@ -9,6 +9,7 @@ from datetime import datetime
 
 flags_dir = os.path.expanduser('~/pats/flags/')
 log_dir = os.path.expanduser('~/pats/logs/')
+socket_dir = os.path.expanduser('~/pats/sockets/')
 data_dir = os.path.expanduser('~/pats/data/')
 json_dir = os.path.expanduser('~/pats/jsons/')
 renders_dir = os.path.expanduser('~/pats/renders/')
@@ -22,9 +23,14 @@ daemon_wdt_flag = flags_dir + 'daemon_wdt_flag'
 proces_wdt_flag = flags_dir + 'proces_wdt_flag'
 no_realsense_flag = flags_dir + 'no_realsense_flag'
 reset_realsense_flag = flags_dir + 'reset_realsense_flag'
-baseboard_updated_flag = flags_dir + 'baseboard_software_uploaded'
+disable_baseboard_flag = flags_dir + 'disable_baseboard'
+disable_charging_flag = flags_dir + 'disable_charging'
+disable_watchdog_flag = flags_dir + 'disable_watchdog'
 
 wdt_fired_flag = pats_executable_dir + 'wdt_fired'
+
+socket_baseboard2pats = socket_dir + 'baseboard2pats.socket'
+socket_baseboard2daemon = socket_dir + 'baseboard2daemon.socket'
 
 local_status_txt_file = os.path.expanduser('~/pats/status/status.txt')
 local_system_txt_file = os.path.expanduser('~/pats/status/system_info.txt')

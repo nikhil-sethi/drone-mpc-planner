@@ -132,9 +132,6 @@ public:
     int arm_switch = RC_BOUND_MIN;
     int turtle_mode = RC_BOUND_MIN;
     Telemetry telemetry = {0};
-    const int bf_major_required = 4;
-    const int bf_minor_required = 2;
-    const int bf_patch_required = 107;
 
     virtual void init(int drone_id) = 0;
     virtual void init_logger() = 0;

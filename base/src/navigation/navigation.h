@@ -45,6 +45,7 @@ namespace navigation {
                                                                  "ns_monitoring",
                                                                  "ns_manual",
                                                                  "ns_batlow",
+                                                                 "ns_charging_problem",
                                                                  "ns_tracker_problem",
                                                                  "ns_drone_lost",
                                                                  "ns_unable_to_locate",
@@ -96,6 +97,7 @@ enum navigation_states {
     ns_manual, // also for disarmed
     ns_batlow,
     ns_tracker_problem,
+    ns_charging_problem,
     ns_drone_lost,
     ns_unable_to_locate,
     ns_drone_problem

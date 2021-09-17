@@ -42,6 +42,7 @@
 #include "airsimcam.h"
 #include "airsimcontroller.h"
 #include "interceptor.h"
+#include "baseboard.h"
 
 using namespace cv;
 using namespace std;
@@ -53,7 +54,7 @@ volatile std::sig_atomic_t term_sig_fired;
 int imgcount; // to measure fps
 int raw_video_frame_counter = 0;
 int n_fps_warnings = 0;
-GStream output_video_results,output_video_LR;
+GStream output_video_results, output_video_LR;
 time_t start_datetime;
 
 xmls::PatsParameters pparams;
@@ -74,7 +75,7 @@ uint8_t drone_id;
 std::string replay_dir;
 std::string airsim_map;
 std::string logger_fn; //contains filename of current log # for insect logging (same as video #)
-std::string pats_xml_fn="../xml/pats.xml",drone_xml_fn,monitor_video_fn;
+std::string pats_xml_fn = "../xml/pats.xml", drone_xml_fn, monitor_video_fn;
 
 std::ofstream logger;
 std::ofstream logger_video_ids;
@@ -87,6 +88,7 @@ Visualizer visualizer;
 Visualizer3D visualizer_3d;
 logging::LogReader logreader;
 CommandCenterLink cmdcenter;
+Baseboard baseboard;
 std::unique_ptr<Cam> cam;
 VisionData visdat;
 Interceptor iceptor;
@@ -95,22 +97,22 @@ Interceptor iceptor;
 #define NUM_OF_THREADS 1
 struct Processer {
     int id;
-    std::thread * thread;
-    std::mutex m1,m2;
-    std::condition_variable data_processed,new_data;
+    std::thread *thread;
+    std::mutex m1, m2;
+    std::condition_variable data_processed, new_data;
     bool data_is_new = false;
     bool data_is_processed = true;
-    StereoPair * frame;
+    StereoPair *frame;
 };
 Processer tp[NUM_OF_THREADS];
 std::thread thread_watchdog;
-StereoPair * prev_frame;
+StereoPair *prev_frame;
 
 /*******Private prototypes*********/
-void process_frame(StereoPair * frame);
+void process_frame(StereoPair *frame);
 void process_video();
-void skip_to_hunt(double,double);
-int main( int argc, char **argv);
+void skip_to_hunt(double, double);
+int main(int argc, char **argv);
 bool handle_key(double time);
 void save_results_log();
 void print_warnings();
@@ -127,14 +129,14 @@ void process_video() {
     //main while loop:
     while (!exit_now) {
         auto frame = cam->update();
-        std::unique_lock<std::mutex> lk(tp[0].m2,std::defer_lock);
+        std::unique_lock<std::mutex> lk(tp[0].m2, std::defer_lock);
         tp[0].data_processed.wait(lk, []() {return tp[0].data_is_processed; });
-        tp[0].data_is_processed= false;
+        tp[0].data_is_processed = false;
 
         bool escape_key_pressed = false;
         if (pparams.has_screen || render_hunt_mode || render_monitor_video_mode) {
             static int speed_div;
-            if (!(speed_div++ % 4) || (((log_replay_mode || generator_mode ) && !cam->turbo) || cam->frame_by_frame)) {
+            if (!(speed_div++ % 4) || (((log_replay_mode || generator_mode) && !cam->turbo) || cam->frame_by_frame)) {
                 visualizer_3d.run();
                 if (pparams.has_screen) {
                     visualizer.paint();
@@ -146,16 +148,16 @@ void process_video() {
             }
         }
         if (log_replay_mode && !skipped_to_hunt) {
-            skip_to_hunt(1.5,frame->time);
+            skip_to_hunt(1.5, frame->time);
             if (skipped_to_hunt && !render_monitor_video_mode && !render_hunt_mode)
                 cam->turbo = false;
         }
 
         if (render_hunt_mode) {
             if (dnav.drone_ready_and_waiting() && !skipped_to_hunt)
-                skip_to_hunt(1.5,frame->time);
+                skip_to_hunt(1.5, frame->time);
             if (dnav.drone_resetting_yaw()) {
-                std::cout <<"Render mode: yaw reset detected. Stopping." << std::endl;
+                std::cout << "Render mode: yaw reset detected. Stopping." << std::endl;
                 escape_key_pressed = true;
             }
         }
@@ -168,67 +170,67 @@ void process_video() {
         tp[0].new_data.notify_one();
         tp[0].m1.unlock();
 
-        if (term_sig_fired==2) {
-            std::cout <<"\nCaught ctrl-c: " << term_sig_fired << std::endl;
+        if (term_sig_fired == 2) {
+            std::cout << "\nCaught ctrl-c: " << term_sig_fired << std::endl;
             exit_now = true;
-        } else if (term_sig_fired==15) {
-            std::cout <<"\nCaught TERM signal: " << term_sig_fired << std::endl;
+        } else if (term_sig_fired == 15) {
+            std::cout << "\nCaught TERM signal: " << term_sig_fired << std::endl;
             exit_now = true;
         } else if (term_sig_fired) {
-            std::cout <<"\nCaught unknown signal: " << term_sig_fired << std::endl;
+            std::cout << "\nCaught unknown signal: " << term_sig_fired << std::endl;
             exit_now = true;
         } else if (escape_key_pressed)
             exit_now = true;
 
         if (rc->init_package_failure()) {
             exit_now = true;
-            cmdcenter.reset_commandcenter_status_file("MultiModule init package error",true);
+            cmdcenter.reset_commandcenter_status_file("MultiModule init package error", true);
         }
         if (rc->bf_version_error() and !dnav.drone_flying()) {
             exit_now = true;
-            cmdcenter.reset_commandcenter_status_file("Betaflight version error",true);
+            cmdcenter.reset_commandcenter_status_file("Betaflight version error", true);
         }
         if (rc->bf_uid_error()) {
             if (rc->bf_uid_str() == "hacr") {
-                std::cout <<"Detected a drone config that fits, reloading!" << std::endl;
-                pparams.drone= drone_hammer;
+                std::cout << "Detected a drone config that fits, reloading!" << std::endl;
+                pparams.drone = drone_hammer;
                 pparams.serialize(pats_xml_fn);
-            } else if(rc->bf_uid_str() == "ancr") {
-                std::cout <<"Detected a drone config that fits, reloading!" << std::endl;
-                pparams.drone= drone_anvil_crazybee;
+            } else if (rc->bf_uid_str() == "ancr") {
+                std::cout << "Detected a drone config that fits, reloading!" << std::endl;
+                pparams.drone = drone_anvil_crazybee;
                 pparams.serialize(pats_xml_fn);
-            } else if(rc->bf_uid_str() == "ansu") {
-                std::cout <<"Detected a drone config that fits, reloading!" << std::endl;
-                pparams.drone= drone_anvil_superbee;
+            } else if (rc->bf_uid_str() == "ansu") {
+                std::cout << "Detected a drone config that fits, reloading!" << std::endl;
+                pparams.drone = drone_anvil_superbee;
                 pparams.serialize(pats_xml_fn);
-            } else if(rc->bf_uid_str() == "andi") {
-                std::cout <<"Detected a drone config that fits, reloading!" << std::endl;
-                pparams.drone= drone_anvil_diamond;
+            } else if (rc->bf_uid_str() == "andi") {
+                std::cout << "Detected a drone config that fits, reloading!" << std::endl;
+                pparams.drone = drone_anvil_diamond;
                 pparams.serialize(pats_xml_fn);
-            } else if(rc->bf_uid_str() == "qutt") {
-                std::cout <<"Detected a drone config that fits, reloading!" << std::endl;
-                pparams.drone= drone_qutt;
+            } else if (rc->bf_uid_str() == "qutt") {
+                std::cout << "Detected a drone config that fits, reloading!" << std::endl;
+                pparams.drone = drone_qutt;
                 pparams.serialize(pats_xml_fn);
-            } else if(rc->bf_uid_str() == "quf4") {
-                std::cout <<"Detected a drone config that fits, reloading!" << std::endl;
-                pparams.drone= drone_quf4;
+            } else if (rc->bf_uid_str() == "quf4") {
+                std::cout << "Detected a drone config that fits, reloading!" << std::endl;
+                pparams.drone = drone_quf4;
                 pparams.serialize(pats_xml_fn);
-            } else if(rc->bf_uid_str() == "quto") {
-                std::cout <<"Detected a drone config that fits, reloading!" << std::endl;
-                pparams.drone= drone_quto;
+            } else if (rc->bf_uid_str() == "quto") {
+                std::cout << "Detected a drone config that fits, reloading!" << std::endl;
+                pparams.drone = drone_quto;
                 pparams.serialize(pats_xml_fn);
             }
-            if(!dnav.drone_flying()) {
+            if (!dnav.drone_flying()) {
                 exit_now = true;
-                cmdcenter.reset_commandcenter_status_file("Wrong drone config error",true);
+                cmdcenter.reset_commandcenter_status_file("Wrong drone config error", true);
             }
         }
 
         if (pparams.video_raw && pparams.video_raw != video_bag) {
             // cv::Mat id_fr = cam->frameL.clone();
             // putText(id_fr,std::to_string(frame->rs_id),cv::Point(0, 13),cv::FONT_HERSHEY_SIMPLEX,0.5,Scalar(255));
-            int frame_written = output_video_LR.write(frame->left,frame->right);
-            logger_video_ids << raw_video_frame_counter << ";" << imgcount << ";" << frame->rs_id<< ";" << frame->time << '\n';
+            int frame_written = output_video_LR.write(frame->left, frame->right);
+            logger_video_ids << raw_video_frame_counter << ";" << imgcount << ";" << frame->rs_id << ";" << frame->time << '\n';
             if (!frame_written)
                 raw_video_frame_counter++;
             else {
@@ -237,20 +239,20 @@ void process_video() {
         }
 
         if (render_hunt_mode) {
-            if (!dnav.n_drone_readys() && frame->time -3 > logreader.first_drone_ready_time() ) {
-                std::cout << "\n\nError: Log results differ from replay results, could not find drone in time.\n" << replay_dir <<"\n\n" << std::endl;
+            if (!dnav.n_drone_readys() && frame->time - 3 > logreader.first_drone_ready_time()) {
+                std::cout << "\n\nError: Log results differ from replay results, could not find drone in time.\n" << replay_dir << "\n\n" << std::endl;
                 exit_now = true;
             }
-            if (!dnav.drone_resetting_yaw() && frame->time -3 > logreader.first_yaw_reset_time() ) {
-                std::cout << "\n\nError: Log results differ from replay results, should have yaw reset already.\n" << replay_dir <<"\n\n" << std::endl;
+            if (!dnav.drone_resetting_yaw() && frame->time - 3 > logreader.first_yaw_reset_time()) {
+                std::cout << "\n\nError: Log results differ from replay results, should have yaw reset already.\n" << replay_dir << "\n\n" << std::endl;
                 exit_now = true;
             }
 
             static uint render_drone_problem_cnt = 0;
             if (dnav.drone_problem() || logreader.current_entry.nav_state == navigation::ns_drone_problem || logreader.current_entry.nav_state == navigation::ns_drone_lost || logreader.current_entry.nav_state == navigation::ns_batlow || logreader.current_entry.nav_state == navigation::ns_tracker_problem) {
                 render_drone_problem_cnt++;
-                if (render_drone_problem_cnt > pparams.fps*2) {
-                    std::cout << "\nProblem: " << dnav.navigation_status() << ". Stopping render\n" << replay_dir <<"\n\n" << std::endl;
+                if (render_drone_problem_cnt > pparams.fps * 2) {
+                    std::cout << "\nProblem: " << dnav.navigation_status() << ". Stopping render\n" << replay_dir << "\n\n" << std::endl;
                     exit_now = true;
                 }
             }
@@ -260,17 +262,17 @@ void process_video() {
         float t_pc = stopWatch.Read() / 1000.f;
         float t_cam = static_cast<float>(frame->time);
         float t;
-        if ( log_replay_mode || generator_mode || render_hunt_mode || render_monitor_video_mode)
+        if (log_replay_mode || generator_mode || render_hunt_mode || render_monitor_video_mode)
             t = t_pc;
         else
             t = t_cam;
-        static float prev_time = -1.f/pparams.fps;
+        static float prev_time = -1.f / pparams.fps;
         float current_fps = 1.f / (t - prev_time);
         float fps = fps_smoothed.addSample(current_fps);
         if (fps < pparams.fps / 6 * 5 && fps_smoothed.ready() && !log_replay_mode && !generator_mode && !airsim_mode && !render_hunt_mode && !render_monitor_video_mode) {
             n_fps_warnings++;
             std::cout << "FPS WARNING: " << n_fps_warnings << std::endl;
-            if (t_cam < 2 ) {
+            if (t_cam < 2) {
                 std::cout << "Error: Detected FPS warning during start up, assuming there's some camera problem. Cowardly exiting." << std::endl;
                 set_fps_warning_flag();
                 exit_now = true;
@@ -287,11 +289,11 @@ void process_video() {
                   dnav.navigation_status() <<
                   "; " << imgcount <<
                   ", " << frame->rs_id <<
-                  ", T: " << to_string_with_precision(frame->time,2)  <<
-                  " @ " << to_string_with_precision(fps,1) <<
+                  ", T: " << to_string_with_precision(frame->time, 2)  <<
+                  " @ " << to_string_with_precision(fps, 1) <<
                   ", exp: " << cam->measured_exposure() <<
                   ", gain: " << cam->measured_gain() <<
-                  ", bright: " << to_string_with_precision(visdat.average_brightness(),1);
+                  ", bright: " << to_string_with_precision(visdat.average_brightness(), 1);
 
         if (pparams.op_mode == op_mode_monitoring) {
             if (trackers.detections_count())
@@ -304,7 +306,8 @@ void process_video() {
                        "v, arm: " << static_cast<int>(rc->telemetry.arming_state) <<
                        ", thr: " << rc->throttle <<
                        ", att: [" << rc->telemetry.roll << "," << rc->telemetry.pitch << "]" <<
-                       ", rssi: " << static_cast<int>(rc->telemetry.rssi);
+                       ", rssi: " << static_cast<int>(rc->telemetry.rssi) <<
+                       ", t_base: " << static_cast<int>(baseboard.uptime());
         }
         if (trackers.monster_alert())
             std:: cout << ", monsters: " << trackers.fp_monsters_count();
@@ -320,27 +323,27 @@ void process_video() {
         if (fps != fps || isinf(fps))
             fps_smoothed.reset();
 
-        if (dctrl.in_flight_duration(frame->time) < 1.f/pparams.fps || dnav.drone_problem(1)) {
+        if (dctrl.in_flight_duration(frame->time) < 1.f / pparams.fps || dnav.drone_problem(1)) {
             if (!log_replay_mode  && ((imgcount > pparams.close_after_n_images && pparams.close_after_n_images > 0))) {
                 std::cout << "Initiating periodic restart" << std::endl;
                 exit_now = true;
             } else if ((cam->measured_exposure() <= pparams.exposure_threshold && pparams.exposure_threshold > 0 && frame->time > 3)) {
                 std::cout << "Initiating restart because exposure (" << cam->measured_exposure() << ") is lower than threshold (" << pparams.exposure_threshold << ")" << std::endl;
                 exit_now = true;
-            } else if ((cam->measured_gain() < pparams.gain_threshold && pparams.exposure_threshold > 0 && frame->time > 3 )) {
+            } else if ((cam->measured_gain() < pparams.gain_threshold && pparams.exposure_threshold > 0 && frame->time > 3)) {
                 std::cout << "Initiating restart because gain (" << cam->measured_gain() << ") is lower than threshold (" << pparams.gain_threshold << ")" << std::endl;
                 exit_now = true;
-            } else if (visdat.average_brightness() > pparams.brightness_threshold+10 && pparams.exposure_threshold > 0 && frame->time > 3) {
-                std::cout << "Initiating restart because avg brightness (" << visdat.average_brightness() << ") is higher than threshold (" << pparams.brightness_threshold+10 << ")" << std::endl;
+            } else if (visdat.average_brightness() > pparams.brightness_threshold + 10 && pparams.exposure_threshold > 0 && frame->time > 3) {
+                std::cout << "Initiating restart because avg brightness (" << visdat.average_brightness() << ") is higher than threshold (" << pparams.brightness_threshold + 10 << ")" << std::endl;
                 exit_now = true;
             }
         }
 
-        while(cam->frame_by_frame ) {
+        while (cam->frame_by_frame) {
             unsigned char k = cv::waitKey(0);
             if (k == 'f')
                 break;
-            else if (k== ' ') {
+            else if (k == ' ') {
                 cam->frame_by_frame = false;
                 break;
             }
@@ -350,7 +353,7 @@ void process_video() {
     std::cout << "Exiting main loop" << std::endl;
 }
 
-void process_frame(StereoPair * frame) {
+void process_frame(StereoPair *frame) {
     if (log_replay_mode && pparams.op_mode != op_mode_monitoring) {
         if (logreader.current_frame_number(frame->rs_id)) {
             exit_now = true;
@@ -359,7 +362,7 @@ void process_frame(StereoPair * frame) {
         static_cast<ReplayRc *>(rc.get())->telemetry_from_log(frame->time);
 
         trackers.process_replay_moth(frame->rs_id);
-        cmdcenter.trigger_demo_flight_from_log(replay_dir,logreader.current_entry.trkrs_state);
+        cmdcenter.trigger_demo_flight_from_log(replay_dir, logreader.current_entry.trkrs_state);
 
     } else if (generator_mode) {
         if (dnav.drone_ready_and_waiting()) {
@@ -385,16 +388,16 @@ void process_frame(StereoPair * frame) {
            << frame->time << ";"
            << cam->measured_exposure() << ";";
 
-    trackers.update(frame->time,dctrl.active());
+    trackers.update(frame->time, dctrl.active());
 #ifdef PROFILING
     auto profile_t2_trkrs = std::chrono::high_resolution_clock::now();
 #endif
 
     if (log_replay_mode && pparams.op_mode != op_mode_monitoring) {
-        dctrl.insert_log(logreader.current_entry.joyRoll, logreader.current_entry.joyPitch, logreader.current_entry.joyYaw, logreader.current_entry.joyThrottle,logreader.current_entry.joyArmSwitch,logreader.current_entry.joyModeSwitch,logreader.current_entry.joyTakeoffSwitch,logreader.current_entry.auto_roll,logreader.current_entry.auto_pitch,logreader.current_entry.auto_throttle, logreader.current_entry.telem_acc_z);
+        dctrl.insert_log(logreader.current_entry.joyRoll, logreader.current_entry.joyPitch, logreader.current_entry.joyYaw, logreader.current_entry.joyThrottle, logreader.current_entry.joyArmSwitch, logreader.current_entry.joyModeSwitch, logreader.current_entry.joyTakeoffSwitch, logreader.current_entry.auto_roll, logreader.current_entry.auto_pitch, logreader.current_entry.auto_throttle, logreader.current_entry.telem_acc_z);
     }
     if (pparams.op_mode == op_mode_hunt)
-        iceptor.update(dctrl.at_base(),frame->time);
+        iceptor.update(dctrl.at_base(), frame->time);
     else
         iceptor.write_dummy_csv();
     dnav.update(frame->time);
@@ -403,7 +406,7 @@ void process_frame(StereoPair * frame) {
 #endif
 
     if (pparams.op_mode != op_mode_monitoring)
-        dctrl.control(trackers.dronetracker()->last_track_data(),dnav.setpoint(),iceptor.target_last_trackdata(),frame->time);
+        dctrl.control(trackers.dronetracker()->last_track_data(), dnav.setpoint(), iceptor.target_last_trackdata(), frame->time);
 #ifdef PROFILING
     auto profile_t4_ctrl = std::chrono::high_resolution_clock::now();
 #endif
@@ -414,7 +417,7 @@ void process_frame(StereoPair * frame) {
 
     if (pparams.has_screen || render_hunt_mode || render_monitor_video_mode) {
         visualizer.add_plot_sample();
-        visualizer.update_tracker_data(visdat.frameL,dnav.setpoint().pos(),frame->time, draw_plots);
+        visualizer.update_tracker_data(visdat.frameL, dnav.setpoint().pos(), frame->time, draw_plots);
         if (pparams.video_result && !exit_now) {
             if ((render_hunt_mode && skipped_to_hunt) || !render_hunt_mode) {
                 if (log_replay_mode || render_monitor_video_mode || render_hunt_mode)
@@ -424,7 +427,7 @@ void process_frame(StereoPair * frame) {
         }
     }
     if (!render_hunt_mode && !render_monitor_video_mode && !log_replay_mode)
-        cmdcenter.update(frame->left,frame->time);
+        cmdcenter.update(frame->left, frame->time);
 
 #ifdef PROFILING
     auto dur1_visdat = std::chrono::duration_cast<std::chrono::microseconds>(profile_t1_visdat - profile_t0).count();
@@ -448,7 +451,7 @@ void process_frame(StereoPair * frame) {
 
 void skip_to_hunt(double pre_delay, double time) {
     double dt = logreader.first_takeoff_time() - time - pre_delay;
-    if (dt>0 && !isinf(dt) && dnav.drone_ready_and_waiting()) {
+    if (dt > 0 && !isinf(dt) && dnav.drone_ready_and_waiting()) {
         watchdog_skip_video_delay_override = true;
         static_cast<FileCam *>(cam.get())->skip(dt);
         skipped_to_hunt = true;
@@ -471,161 +474,161 @@ bool handle_key(double time [[maybe_unused]]) {
     if (key == 27)   //esc
         return true;
 
-    switch(key) {
-    case 'b':
-        rc->bind(true);
-        break;
-    case 's':
-        dnav.shake_drone();
-        break;
-    case 'B':
-        rc->beep();
-        break;
-    case 'c':
-        rc->calibrate_acc();
-        break;
-    case 'l':
-        dnav.redetect_drone_location();
-        break;
-    case 'p':
-        if(log_replay_mode || generator_mode || render_monitor_video_mode)
-            draw_plots = true;
-        break;
-    case '[':
-        if(log_replay_mode || generator_mode || render_monitor_video_mode)
-            trackers.enable_trkr_viz();
-        break;
-    case ']':
-        if(log_replay_mode || generator_mode || render_monitor_video_mode)
-            trackers.enable_blob_viz();
-        break;
-    case '\\':
-        if(log_replay_mode || generator_mode || render_monitor_video_mode)
-            trackers.enable_draw_stereo_viz();
-        break;
-    case ';':
-        if(log_replay_mode || generator_mode || render_monitor_video_mode)
-            visualizer.enable_draw_noise_viz();
-        break;
-    case '\'':
-        if(log_replay_mode || generator_mode || render_monitor_video_mode)
-            visualizer.enable_draw_exposure_viz();
-        break;
-    case 'o':
-        dctrl.LED(true);
-        dnav.nav_flight_mode(navigation::nfm_manual);
-        break;
-    case '1':
-        if (dnav.nav_flight_mode() == navigation::nfm_waypoint) {
-            if (dnav.drone_ready_and_waiting() ) {
-                std::string fp = "../xml/flightplans/thrust-calib.xml";
-                std::cout << "Flightplan trigger:" << fp << std::endl;
-                dnav.demo_flight(fp);
-                dctrl.joy_takeoff_switch_file_trigger(true);
-                experimental::filesystem::copy_file(fp,"./logging/pats_demo.xml");
-            }
-        } else
-            init_insect_log(56);
-        break;
-    case '2':
-        if (dnav.nav_flight_mode() == navigation::nfm_waypoint) {
-            if (dnav.drone_ready_and_waiting() ) {
-                std::string fp = "../xml/flightplans/simple-demo-darkroom.xml";
-                std::cout << "Flightplan trigger:" << fp << std::endl;
-                dnav.demo_flight(fp);
-                dctrl.joy_takeoff_switch_file_trigger(true);
-                experimental::filesystem::copy_file(fp,"./logging/pats_demo.xml");
-            }
-        } else
-            init_insect_log(66);
-        break;
-    case '3':
-        if (dnav.nav_flight_mode() == navigation::nfm_waypoint) {
-            if (dnav.drone_ready_and_waiting() ) {
-                std::string fp = "../xml/flightplans/simple-demo-koppert.xml";
-                std::cout << "Flightplan trigger:" << fp << std::endl;
-                dnav.demo_flight(fp);
-                dctrl.joy_takeoff_switch_file_trigger(true);
-                experimental::filesystem::copy_file(fp,"./logging/pats_demo.xml");
-            }
-        } else
-            init_insect_log(58);
-        break;
-    case '4':
-        if (dnav.nav_flight_mode() == navigation::nfm_waypoint) {
-            if (dnav.drone_ready_and_waiting() ) {
-                std::string fp = "../xml/flightplans/bejo.xml";
-                std::cout << "Flightplan trigger:" << fp << std::endl;
-                dnav.demo_flight(fp);
-                dctrl.joy_takeoff_switch_file_trigger(true);
-                experimental::filesystem::copy_file(fp,"./logging/pats_demo.xml");
-            }
-        } else
-            init_insect_log(54);
-        break;
-    case '5':
-        init_insect_log(63);
-        break;
-    case '6':
-        init_insect_log(64);
-        break;
-    case '7':
-        init_insect_log(20);
-        break;
-    case '8':
-        init_insect_log(61);
-        break;
-    case '9':
-        init_insect_log(15);
-        break;
-    case '0':
-        init_insect_log(62);
-        break;
-    case 'v':
-        trackers.init_virtual_moth(tracking::VirtualMothTracker::diving, &dctrl);
-        break;
-    case 82: // arrow up
-        dnav.manual_trigger_next_wp();
-        break;
-    case 84: // arrow down
-        dnav.manual_trigger_prev_wp();
-        break;
-    case ' ':
-    case 'f':
-        if(log_replay_mode || generator_mode || render_hunt_mode || render_monitor_video_mode || airsim_mode)
-            cam->frame_by_frame = true;
-        break;
-    case 't':
-        cam->turbo = !cam->turbo;
-        break;
-    case '.':
-        static_cast<FileCam *>(cam.get())->skip(5);
-        break;
-    case ',':
-        static_cast<FileCam *>(cam.get())->back_one_sec();
-        break;
-    case 'a':
-        rc->arm(bf_armed);
-        dnav.nav_flight_mode(navigation::nfm_waypoint);
-        break;
-    case 'h':
-        rc->arm(bf_armed);
-        dnav.nav_flight_mode(navigation::nfm_hunt);
-        break;
-    case 'd':
-        rc->arm(bf_disarmed);
-        dnav.nav_flight_mode(navigation::nfm_manual);
-        break;
+    switch (key) {
+        case 'b':
+            rc->bind(true);
+            break;
+        case 's':
+            dnav.shake_drone();
+            break;
+        case 'B':
+            rc->beep();
+            break;
+        case 'c':
+            rc->calibrate_acc();
+            break;
+        case 'l':
+            dnav.redetect_drone_location();
+            break;
+        case 'p':
+            if (log_replay_mode || generator_mode || render_monitor_video_mode)
+                draw_plots = true;
+            break;
+        case '[':
+            if (log_replay_mode || generator_mode || render_monitor_video_mode)
+                trackers.enable_trkr_viz();
+            break;
+        case ']':
+            if (log_replay_mode || generator_mode || render_monitor_video_mode)
+                trackers.enable_blob_viz();
+            break;
+        case '\\':
+            if (log_replay_mode || generator_mode || render_monitor_video_mode)
+                trackers.enable_draw_stereo_viz();
+            break;
+        case ';':
+            if (log_replay_mode || generator_mode || render_monitor_video_mode)
+                visualizer.enable_draw_noise_viz();
+            break;
+        case '\'':
+            if (log_replay_mode || generator_mode || render_monitor_video_mode)
+                visualizer.enable_draw_exposure_viz();
+            break;
+        case 'o':
+            dctrl.LED(true);
+            dnav.nav_flight_mode(navigation::nfm_manual);
+            break;
+        case '1':
+            if (dnav.nav_flight_mode() == navigation::nfm_waypoint) {
+                if (dnav.drone_ready_and_waiting()) {
+                    std::string fp = "../xml/flightplans/thrust-calib.xml";
+                    std::cout << "Flightplan trigger:" << fp << std::endl;
+                    dnav.demo_flight(fp);
+                    dctrl.joy_takeoff_switch_file_trigger(true);
+                    experimental::filesystem::copy_file(fp, "./logging/pats_demo.xml");
+                }
+            } else
+                init_insect_log(56);
+            break;
+        case '2':
+            if (dnav.nav_flight_mode() == navigation::nfm_waypoint) {
+                if (dnav.drone_ready_and_waiting()) {
+                    std::string fp = "../xml/flightplans/simple-demo-darkroom.xml";
+                    std::cout << "Flightplan trigger:" << fp << std::endl;
+                    dnav.demo_flight(fp);
+                    dctrl.joy_takeoff_switch_file_trigger(true);
+                    experimental::filesystem::copy_file(fp, "./logging/pats_demo.xml");
+                }
+            } else
+                init_insect_log(66);
+            break;
+        case '3':
+            if (dnav.nav_flight_mode() == navigation::nfm_waypoint) {
+                if (dnav.drone_ready_and_waiting()) {
+                    std::string fp = "../xml/flightplans/simple-demo-koppert.xml";
+                    std::cout << "Flightplan trigger:" << fp << std::endl;
+                    dnav.demo_flight(fp);
+                    dctrl.joy_takeoff_switch_file_trigger(true);
+                    experimental::filesystem::copy_file(fp, "./logging/pats_demo.xml");
+                }
+            } else
+                init_insect_log(58);
+            break;
+        case '4':
+            if (dnav.nav_flight_mode() == navigation::nfm_waypoint) {
+                if (dnav.drone_ready_and_waiting()) {
+                    std::string fp = "../xml/flightplans/bejo.xml";
+                    std::cout << "Flightplan trigger:" << fp << std::endl;
+                    dnav.demo_flight(fp);
+                    dctrl.joy_takeoff_switch_file_trigger(true);
+                    experimental::filesystem::copy_file(fp, "./logging/pats_demo.xml");
+                }
+            } else
+                init_insect_log(54);
+            break;
+        case '5':
+            init_insect_log(63);
+            break;
+        case '6':
+            init_insect_log(64);
+            break;
+        case '7':
+            init_insect_log(20);
+            break;
+        case '8':
+            init_insect_log(61);
+            break;
+        case '9':
+            init_insect_log(15);
+            break;
+        case '0':
+            init_insect_log(62);
+            break;
+        case 'v':
+            trackers.init_virtual_moth(tracking::VirtualMothTracker::diving, &dctrl);
+            break;
+        case 82: // arrow up
+            dnav.manual_trigger_next_wp();
+            break;
+        case 84: // arrow down
+            dnav.manual_trigger_prev_wp();
+            break;
+        case ' ':
+        case 'f':
+            if (log_replay_mode || generator_mode || render_hunt_mode || render_monitor_video_mode || airsim_mode)
+                cam->frame_by_frame = true;
+            break;
+        case 't':
+            cam->turbo = !cam->turbo;
+            break;
+        case '.':
+            static_cast<FileCam *>(cam.get())->skip(5);
+            break;
+        case ',':
+            static_cast<FileCam *>(cam.get())->back_one_sec();
+            break;
+        case 'a':
+            rc->arm(bf_armed);
+            dnav.nav_flight_mode(navigation::nfm_waypoint);
+            break;
+        case 'h':
+            rc->arm(bf_armed);
+            dnav.nav_flight_mode(navigation::nfm_hunt);
+            break;
+        case 'd':
+            rc->arm(bf_disarmed);
+            dnav.nav_flight_mode(navigation::nfm_manual);
+            break;
     } // end switch key
 
     return false;
 }
 
 //This is where frames get processed after it was received from the cam in the main thread
-void pool_worker(int id ) {
-    std::unique_lock<std::mutex> lk(tp[id].m1,std::defer_lock);
-    while(!exit_now) {
-        tp[id].new_data.wait(lk,[]() {return tp[0].data_is_new;});
+void pool_worker(int id) {
+    std::unique_lock<std::mutex> lk(tp[id].m1, std::defer_lock);
+    while (!exit_now) {
+        tp[id].new_data.wait(lk, []() {return tp[0].data_is_new;});
         tp[0].data_is_new = false;
         if (exit_now)
             break;
@@ -640,13 +643,13 @@ void pool_worker(int id ) {
 bool threads_initialised = false;
 void init_thread_pool() {
     for (uint i = 0; i < NUM_OF_THREADS; i++) {
-        tp[i].thread = new thread(&pool_worker,i);
+        tp[i].thread = new thread(&pool_worker, i);
     }
-    threads_initialised=true;
+    threads_initialised = true;
 }
 void close_thread_pool() {
     if (threads_initialised) {
-        std::cout <<"Stopping threads in pool"<< std::endl;
+        std::cout << "Stopping threads in pool" << std::endl;
         usleep(1000);
         for (uint i = 0; i < NUM_OF_THREADS; i++) {
             tp[i].data_is_processed = false;
@@ -665,7 +668,7 @@ void close_thread_pool() {
             delete tp[i].thread;
         }
 
-        std::cout <<"Threads in pool closed"<< std::endl;
+        std::cout << "Threads in pool closed" << std::endl;
         threads_initialised = false;
     }
 }
@@ -706,10 +709,10 @@ void init_loggers() {
         dparams.serialize("./logging/drone.xml");
     }
 
-    logger.open(data_output_dir  + "log.csv",std::ofstream::out);
+    logger.open(data_output_dir  + "log.csv", std::ofstream::out);
     logger << "ID;RS_ID;time;elapsed;Exposure;";
     logger_fn = data_output_dir  + "log" + to_string(0) + ".csv"; // only used with pparams.video_cuts
-    logger_video_ids.open(data_output_dir  + "frames.csv",std::ofstream::out);
+    logger_video_ids.open(data_output_dir  + "frames.csv", std::ofstream::out);
 
     if (rc->connected())
         rc->init_logger();
@@ -718,9 +721,9 @@ void init_loggers() {
 void init_video_recorders() {
     /*****init the video writer*****/
     if (pparams.video_result)
-        if (output_video_results.init(pparams.video_result, data_output_dir + "videoResult.mkv",visualizer.viz_frame_size().width,visualizer.viz_frame_size().height,pparams.fps,"192.168.1.255",5000,true)) {throw MyExit("could not open results video");}
+        if (output_video_results.init(pparams.video_result, data_output_dir + "videoResult.mkv", visualizer.viz_frame_size().width, visualizer.viz_frame_size().height, pparams.fps, "192.168.1.255", 5000, true)) {throw MyExit("could not open results video");}
     if (pparams.video_raw && pparams.video_raw != video_bag)
-        if (output_video_LR.init(pparams.video_raw,data_output_dir + "videoRawLR.mkv",IMG_W,IMG_H*2,pparams.fps, "192.168.1.255",5000,false)) {throw MyExit("could not open LR video");}
+        if (output_video_LR.init(pparams.video_raw, data_output_dir + "videoRawLR.mkv", IMG_W, IMG_H * 2, pparams.fps, "192.168.1.255", 5000, false)) {throw MyExit("could not open LR video");}
 }
 
 void process_arg(int argc, char **argv) {
@@ -751,7 +754,7 @@ void process_arg(int argc, char **argv) {
                 arg_recognized = true;
                 i++;
                 log_replay_mode = true;
-                replay_dir=argv[i];
+                replay_dir = argv[i];
                 pats_xml_fn = replay_dir + "/pats.xml";
                 drone_xml_fn = replay_dir + "/drone.xml";
             } else if (s.compare("--render") == 0) {
@@ -764,31 +767,31 @@ void process_arg(int argc, char **argv) {
                 i++;
                 render_monitor_video_mode = true;
                 log_replay_mode = false;
-                monitor_video_fn=argv[i];
+                monitor_video_fn = argv[i];
             } else if (s.compare("--airsim") == 0) {
                 arg_recognized = true;
                 i++;
-                if(HAS_AIRSIM) {
+                if (HAS_AIRSIM) {
                     airsim_mode = true;
                     airsim_map = (argv[i]) ? argv[i] : "";
                 } else {
-                    std::cout << "Error: using airsim mode but AirSim is not compiled. Add -DWITH_AIRSIM=TRUE flag when cmaking." <<std::endl;
+                    std::cout << "Error: using airsim mode but AirSim is not compiled. Add -DWITH_AIRSIM=TRUE flag when cmaking." << std::endl;
                     exit(1);
                 }
             } else if (s.compare("--airsim-wp") == 0) {
                 arg_recognized = true;
                 i++;
-                if(HAS_AIRSIM) {
+                if (HAS_AIRSIM) {
                     airsim_mode = true;
                     airsim_wp_mode = true;
                     airsim_map = (argv[i]) ? argv[i] : "";
                 } else {
-                    std::cout << "Error: using airsim mode but AirSim is not compiled. Add -DWITH_AIRSIM=TRUE flag when cmaking." <<std::endl;
+                    std::cout << "Error: using airsim mode but AirSim is not compiled. Add -DWITH_AIRSIM=TRUE flag when cmaking." << std::endl;
                     exit(1);
                 }
             }
             if (!arg_recognized) {
-                std::cout << "Error argument nog recognized: " << argv[i] <<std::endl;
+                std::cout << "Error argument nog recognized: " << argv[i] << std::endl;
                 exit(1);
             }
         }
@@ -811,9 +814,9 @@ void check_hardware() {
         }
 
         // init rc
-        if(airsim_mode) {
+        if (airsim_mode) {
             rc = std::unique_ptr<Rc>(new AirSimController());
-        } else if (dparams.tx != tx_none ) {
+        } else if (dparams.tx != tx_none) {
             rc = std::unique_ptr<Rc>(new MultiModule());
         }
         if (!rc->connect() && pparams.op_mode != op_mode_monitoring) {
@@ -828,36 +831,36 @@ void check_hardware() {
     //init cam and check version
     std::cout << "Connecting camera..." << std::endl;
     if (log_replay_mode && !render_monitor_video_mode) {
-        if (file_exist(replay_dir+'/' + FileCam::playback_filename()))
-            cam = std::unique_ptr<Cam>(new FileCam(replay_dir,&logreader));
+        if (file_exist(replay_dir + '/' + FileCam::playback_filename()))
+            cam = std::unique_ptr<Cam>(new FileCam(replay_dir, &logreader));
         else
             throw MyExit("Could not find a video in the replay folder!");
     } else if (render_monitor_video_mode) {
         if (file_exist(monitor_video_fn))
-            cam = std::unique_ptr<Cam>(new FileCam(replay_dir,monitor_video_fn));
+            cam = std::unique_ptr<Cam>(new FileCam(replay_dir, monitor_video_fn));
         else
             throw MyExit("Could not find a video file!");
     } else if (generator_mode) {
         cam = std::unique_ptr<Cam>(new GeneratorCam());
         static_cast<GeneratorCam *>(cam.get())->rc(rc.get());
-    } else if(airsim_mode) {
+    } else if (airsim_mode) {
         cam = std::unique_ptr<Cam>(new AirSimCam(airsim_map));
     } else {
         cam = std::unique_ptr<Cam>(new Realsense());
-        static_cast<Realsense *>(cam.get())->connect_and_check("",0);
+        static_cast<Realsense *>(cam.get())->connect_and_check("", 0);
     }
 }
 
 void init() {
     init_terminal_signals();
 
-    if (log_replay_mode && pparams.op_mode!=op_mode_monitoring) {
+    if (log_replay_mode && pparams.op_mode != op_mode_monitoring) {
         logreader.init(replay_dir);
 
         if (isinf(logreader.first_drone_ready_time()) && render_hunt_mode)
             throw MyExit("According to the log the drone was never ready: " + replay_dir);
         if (isinf(logreader.first_takeoff_time()) && render_hunt_mode)
-            throw MyExit("According to the log the drone never took off: " + replay_dir );
+            throw MyExit("According to the log the drone never took off: " + replay_dir);
 
         trackers.init_replay_moth(logreader.replay_moths());
     }
@@ -869,24 +872,25 @@ void init() {
     flight_area.init(replay_dir, cam.get());
     prev_frame = cam->current();
     visdat.init(cam.get()); // do after cam update to populate frames
-    trackers.init(&logger,replay_dir, &visdat, &iceptor);
-    iceptor.init(&trackers,&visdat,&flight_area,&logger,&dctrl);
-    dnav.init(&logger,&trackers,&dctrl,&visdat, &flight_area,replay_dir, &iceptor);
+    trackers.init(&logger, replay_dir, &visdat, &iceptor);
+    iceptor.init(&trackers, &visdat, &flight_area, &logger, &dctrl);
+    baseboard.init(log_replay_mode);
+    dnav.init(&logger, &trackers, &dctrl, &visdat, &flight_area, replay_dir, &iceptor, &baseboard);
     if (log_replay_mode) {
         if (logreader.blink_at_startup())
             dnav.replay_detect_drone_location();
     }
     if (pparams.op_mode != op_mode_monitoring)
-        dctrl.init(&logger,replay_dir,generator_mode,airsim_mode,rc.get(),trackers.dronetracker(), &flight_area,cam->measured_exposure());
+        dctrl.init(&logger, replay_dir, generator_mode, airsim_mode, rc.get(), trackers.dronetracker(), &flight_area, cam->measured_exposure());
 
     if (!render_hunt_mode && !render_monitor_video_mode)
-        cmdcenter.init(log_replay_mode,&dnav,&dctrl,rc.get(),&trackers,&visdat);
+        cmdcenter.init(log_replay_mode, &dnav, &dctrl, rc.get(), &trackers, &visdat);
 
     if (render_monitor_video_mode)
         dnav.render_now_override();
 
     if (pparams.has_screen || render_hunt_mode || render_monitor_video_mode) {
-        visualizer.init(&visdat,&trackers,&dctrl,&dnav,rc.get(),log_replay_mode,&iceptor);
+        visualizer.init(&visdat, &trackers, &dctrl, &dnav, rc.get(), log_replay_mode, &iceptor);
         if (generator_mode) {
             visualizer.set_generator_cam(static_cast<GeneratorCam *>(cam.get()));
         }
@@ -909,14 +913,18 @@ void init() {
 }
 
 void close(bool sig_kill) {
-    std::cout <<"Closing"<< std::endl;
+    std::cout << "Closing" << std::endl;
+
+    if (cam)
+        cam->stop(); //cam needs to be closed after dnav, because of the camview class!
+
     if (!render_hunt_mode && !render_monitor_video_mode)
-        cmdcenter.reset_commandcenter_status_file("Closing",false);
+        cmdcenter.reset_commandcenter_status_file("Closing", false);
 
     if (pparams.has_screen)
         cv::destroyAllWindows();
 
-    if (imgcount>0)
+    if (imgcount > 0)
         save_results_log();
 
     /*****Close everything down*****/
@@ -930,6 +938,7 @@ void close(bool sig_kill) {
     if (pparams.has_screen || render_hunt_mode || render_monitor_video_mode)
         visualizer.close();
     visdat.close();
+    baseboard.close();
     if (cam)
         cam->close(); //cam needs to be closed after dnav, because of the camview class!
 
@@ -948,19 +957,19 @@ void close(bool sig_kill) {
         cmdcenter.close();
 
     print_warnings();
-    if(cam)
+    if (cam)
         cam.release();
-    if(rc)
+    if (rc)
         rc.release();
     if (!pparams.has_screen)
         thread_watchdog.join();
-    std::cout <<"Closed"<< std::endl;
+    std::cout << "Closed" << std::endl;
 }
 
 void save_results_log() {
     auto end_datetime = chrono::system_clock::to_time_t(chrono::system_clock::now());
     std::ofstream results_log;
-    results_log.open(data_output_dir  + "results.txt",std::ofstream::out);
+    results_log.open(data_output_dir  + "results.txt", std::ofstream::out);
     results_log << "op_mode:" << pparams.op_mode << '\n';
     results_log << "n_detections:" << trackers.detections_count() << '\n';
     results_log << "n_monsters:" << trackers.fp_monsters_count() << '\n';
@@ -984,14 +993,14 @@ void save_results_log() {
 
 void print_warnings() {
     if (pparams.video_raw && !log_replay_mode) {
-        std::cout <<"Video frames written: " << raw_video_frame_counter-1 << std::endl;
+        std::cout << "Video frames written: " << raw_video_frame_counter - 1 << std::endl;
         if (raw_video_frame_counter != imgcount)
-            std::cout <<"WARNING VIDEO FRAMES MISSING: " << imgcount - raw_video_frame_counter << std::endl;
+            std::cout << "WARNING VIDEO FRAMES MISSING: " << imgcount - raw_video_frame_counter << std::endl;
     }
     if (n_fps_warnings)
-        std::cout <<"WARNING FPS PROBLEMS: : " << n_fps_warnings << std::endl;
+        std::cout << "WARNING FPS PROBLEMS: : " << n_fps_warnings << std::endl;
     if (cam->frame_loss_cnt())
-        std::cout <<"WARNING FRAME LOSSES: : " << cam->frame_loss_cnt() << std::endl;
+        std::cout << "WARNING FRAME LOSSES: : " << cam->frame_loss_cnt() << std::endl;
 
 }
 
@@ -1000,13 +1009,13 @@ void wait_for_cam_angle() {
     if (pparams.max_cam_roll > 0 && !log_replay_mode) {
         std::cout << "Checking cam angle..." << std::endl;
 
-        while(true) {
-            auto [roll,pitch,frame_time,frameL] = static_cast<Realsense *>(cam.get())->measure_angle();
+        while (true) {
+            auto [roll, pitch, frame_time, frameL] = static_cast<Realsense *>(cam.get())->measure_angle();
             static double roll_start_time = frame_time;
-            double elapsed_time = (frame_time- roll_start_time) / 1000.;
+            double elapsed_time = (frame_time - roll_start_time) / 1000.;
 
             auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
-            std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << ". Camera roll: " << to_string_with_precision(roll,2) << "°- max: " << pparams.max_cam_roll << "°. Pitch: " << to_string_with_precision(pitch,2) << "°" << std::endl;
+            std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << ". Camera roll: " << to_string_with_precision(roll, 2) << "°- max: " << pparams.max_cam_roll << "°. Pitch: " << to_string_with_precision(pitch, 2) << "°" << std::endl;
 
             static double prev_imwrite_time = -pparams.live_image_frq;
             if (elapsed_time - prev_imwrite_time > pparams.live_image_frq && pparams.live_image_frq >= 0) {
@@ -1019,7 +1028,7 @@ void wait_for_cam_angle() {
                 set_external_wdt_flag();
             }
 
-            cmdcenter.reset_commandcenter_status_file("Roll: " + to_string_with_precision(roll,2),false);
+            cmdcenter.reset_commandcenter_status_file("Roll: " + to_string_with_precision(roll, 2), false);
 
             if (fabs(roll)  < pparams.max_cam_roll && !enable_delay)
                 break;
@@ -1040,24 +1049,24 @@ void wait_for_dark() {
     if (pparams.exposure_threshold > 0 && !log_replay_mode) {
         std::cout << "Checking if dark..." << std::endl;
         int last_save_bgr_hour = -1;
-        while(true) {
-            auto [expo,gain,frameL,frameR,frame_bgr,avg_brightness] = static_cast<Realsense *>(cam.get())->measure_auto_exposure();
+        while (true) {
+            auto [expo, gain, frameL, frameR, frame_bgr, avg_brightness] = static_cast<Realsense *>(cam.get())->measure_auto_exposure();
             auto t = chrono::system_clock::to_time_t(chrono::system_clock::now());
             std::cout << std::put_time(std::localtime(&t), "%Y/%m/%d %T") << " Measured exposure: " << expo << ", gain: " << gain << ", brightness: " << avg_brightness << std::endl;
-            if (expo >pparams.exposure_threshold && gain >= pparams.gain_threshold && avg_brightness < pparams.brightness_threshold) {
+            if (expo > pparams.exposure_threshold && gain >= pparams.gain_threshold && avg_brightness < pparams.brightness_threshold) {
                 break;
             }
             cv::imwrite("../../../../pats/status/monitor_tmp.jpg", frameL);
-            cmdcenter.reset_commandcenter_status_file("Waiting. Exposure: " + std::to_string(static_cast<int>(expo)) + ", gain: " + std::to_string(static_cast<int>(gain))  + ", brightness: " + std::to_string(static_cast<int>(visdat.average_brightness())),false);
+            cmdcenter.reset_commandcenter_status_file("Waiting. Exposure: " + std::to_string(static_cast<int>(expo)) + ", gain: " + std::to_string(static_cast<int>(gain))  + ", brightness: " + std::to_string(static_cast<int>(visdat.average_brightness())), false);
 
-            if ((std::localtime(&t)->tm_hour == 13 && last_save_bgr_hour !=13 )  ||
-                    (std::localtime(&t)->tm_hour == 11 && last_save_bgr_hour !=11 ) ||
-                    (std::localtime(&t)->tm_hour == 15 && last_save_bgr_hour !=15 )) {
+            if ((std::localtime(&t)->tm_hour == 13 && last_save_bgr_hour != 13)  ||
+                    (std::localtime(&t)->tm_hour == 11 && last_save_bgr_hour != 11) ||
+                    (std::localtime(&t)->tm_hour == 15 && last_save_bgr_hour != 15)) {
                 std::stringstream date_ss;
                 date_ss << std::put_time(std::localtime(&t), "%Y%m%d_%H%M%S");
-                cv::imwrite("rgb_" + date_ss.str() + ".png",frame_bgr);
-                cv::imwrite("stereoL_" + date_ss.str() + ".png",frameL);
-                cv::imwrite("stereoR_" + date_ss.str() + ".png",frameR);
+                cv::imwrite("rgb_" + date_ss.str() + ".png", frame_bgr);
+                cv::imwrite("stereoL_" + date_ss.str() + ".png", frameL);
+                cv::imwrite("stereoR_" + date_ss.str() + ".png", frameR);
                 last_save_bgr_hour = std::localtime(&t)->tm_hour;
             }
             set_external_wdt_flag();
@@ -1082,7 +1091,7 @@ void watchdog_worker(void) {
         if (!watchdog && !exit_now) {
             std::cout << "Watchdog alert! Closing as much as possible." << std::endl;
 
-            if (imgcount>0)
+            if (imgcount > 0)
                 save_results_log();
 
             dctrl.close();
@@ -1116,18 +1125,32 @@ void watchdog_worker(void) {
     }
 }
 
-int main( int argc, char **argv )
+int main(int argc, char **argv)
 {
+
+
+
+    // baseboard.init(false);
+
+
+    // while (true)
+    // {
+    //     std::cout << "up: " << baseboard.uptime() << std::endl;
+    //     usleep(1e6);
+    // }
+
+
+
     try {
         data_output_dir = "./logging/";
         mkdir(data_output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
-        process_arg(argc,argv);
+        process_arg(argc, argv);
         if (!log_replay_mode && !generator_mode && !render_monitor_video_mode && !render_hunt_mode && !airsim_mode)
-            cmdcenter.reset_commandcenter_status_file("Starting",false);
+            cmdcenter.reset_commandcenter_status_file("Starting", false);
 
         if (realsense_reset) {
-            cmdcenter.reset_commandcenter_status_file("Reseting realsense",false);
+            cmdcenter.reset_commandcenter_status_file("Reseting realsense", false);
             Realsense rs;
             rs.reset();
             return 0;
@@ -1140,11 +1163,11 @@ int main( int argc, char **argv )
 
         if (log_replay_mode)
             pparams.video_raw = video_disabled;
-        if ( log_replay_mode && !render_hunt_mode && !render_monitor_video_mode )
+        if (log_replay_mode && !render_hunt_mode && !render_monitor_video_mode)
             pparams.has_screen = true; // override log so that vizs always are on when replaying because most of the logs are deployed system now (without a screen)
         if (render_hunt_mode)
             pparams.video_result = video_mkv;
-        if(render_monitor_video_mode) {
+        if (render_monitor_video_mode) {
             pparams.video_result = video_mkv;
             pparams.op_mode = op_mode_monitoring;
             pparams.video_raw = video_disabled;
@@ -1166,18 +1189,18 @@ int main( int argc, char **argv )
                 pparams.joystick = rc_none;
         }
 
-    } catch(MyExit const &err) {
+    } catch (MyExit const &err) {
         std::cout << "Error: " << err.msg << std::endl;
-        cmdcenter.reset_commandcenter_status_file(err.msg,true);
+        cmdcenter.reset_commandcenter_status_file(err.msg, true);
         return 1;
-    } catch(rs2::error const &err) {
+    } catch (rs2::error const &err) {
         std::cout << "Realsense error: " << err.what() << std::endl;
-        cmdcenter.reset_commandcenter_status_file("Resetting realsense",false);
+        cmdcenter.reset_commandcenter_status_file("Resetting realsense", false);
         try {
             static_cast<Realsense *>(cam.get())->reset();
-        } catch(MyExit const &err2) {
+        } catch (MyExit const &err2) {
             std::cout << "Error: " << err2.msg << std::endl;
-            cmdcenter.reset_commandcenter_status_file(err2.msg,true);
+            cmdcenter.reset_commandcenter_status_file(err2.msg, true);
         }
         return 1;
     } catch (NoRealsenseConnected const &err) {
@@ -1185,7 +1208,7 @@ int main( int argc, char **argv )
         std::cout << "Error: " << err.msg << std::endl;
         return 1;
     } catch (cv::Exception const &err) {
-        cmdcenter.reset_commandcenter_status_file(err.msg,true);
+        cmdcenter.reset_commandcenter_status_file(err.msg, true);
         std::cout << "Error: " << err.msg << std::endl;
         return 1;
     }
@@ -1193,14 +1216,14 @@ int main( int argc, char **argv )
     try {
         init();
         process_video();
-    } catch(ReplayVideoEnded const &err) {
+    } catch (ReplayVideoEnded const &err) {
         std::cout << "Video ended" << std::endl;
         exit_now = true;
-    } catch(MyExit const &e) {
+    } catch (MyExit const &e) {
         exit_now = true;
         close(false);
         std::cout << "Error: " << e.msg << std::endl;
-        cmdcenter.reset_commandcenter_status_file(e.msg,true);
+        cmdcenter.reset_commandcenter_status_file(e.msg, true);
         return 1;
     }
 

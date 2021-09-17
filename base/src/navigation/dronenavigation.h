@@ -7,6 +7,7 @@
 #include "interceptor.h"
 #include "navigation.h"
 #include "flightplan.h"
+#include "baseboard.h"
 #include <string>
 
 namespace navigation {
@@ -54,6 +55,7 @@ private:
     Interceptor * _iceptor;
     VisionData *_visdat;
     FlightArea *_flight_area;
+    Baseboard *_baseboard;
 
     int _n_take_offs = 0;
     int _n_landings = 0;
@@ -93,7 +95,7 @@ private:
 public:
 
     void close (void);
-    void init(std::ofstream *logger, tracking::TrackerManager * imngr, DroneController *dctrl, VisionData *visdat, FlightArea *flight_area, string replay_dir, Interceptor *iceptor);
+    void init(std::ofstream *logger, tracking::TrackerManager * imngr, DroneController *dctrl, VisionData *visdat, FlightArea *flight_area, string replay_dir, Interceptor *iceptor, Baseboard *baseboard);
     void update(double time);
     void redetect_drone_location() {_navigation_status = ns_locate_drone_init; force_pad_redetect=true; locate_drone_attempts=0;}
     void replay_detect_drone_location() { force_pad_redetect=true;}

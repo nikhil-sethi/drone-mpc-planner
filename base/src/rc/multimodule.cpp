@@ -1,4 +1,5 @@
 #include "multimodule.h"
+#include "versions.h"
 
 bool MultiModule::connect() {
     std::cout << "Connecting multimodule" << std::endl;
@@ -293,20 +294,20 @@ void MultiModule::process_pats_init_packages(std::string bufs) {
         uint str_length = 0;
 
         const std::string version_str = "Multiprotocol version: ";
-        const std::string required_firmwar_version = "6.0.0.20";
+
         auto found_version = bufs.rfind(version_str) ;
-        str_length = found_version+version_str.length()+required_firmwar_version.length();
+        str_length = found_version+version_str.length()+required_firmware_version_multimodule.length();
         if (found_version != std::string::npos && str_length < bufs.size()) {
 
-            std::string current_firmware_version = bufs.substr(found_version+version_str.length(),required_firmwar_version.length());
+            std::string current_firmware_version = bufs.substr(found_version+version_str.length(),required_firmware_version_multimodule.length());
 
-            if (current_firmware_version != required_firmwar_version) {
-                if (current_firmware_version.length() >= required_firmwar_version.length()) {
-                    std::cout << "Detected wrong MultiModule firmware version! Detected: " << current_firmware_version << ". Required: "  << required_firmwar_version << "." << std::endl;
+            if (current_firmware_version != required_firmware_version_multimodule) {
+                if (current_firmware_version.length() >= required_firmware_version_multimodule.length()) {
+                    std::cout << "Detected wrong MultiModule firmware version! Detected: " << current_firmware_version << ". Required: "  << required_firmware_version_multimodule << "." << std::endl;
                     exit(1);
                 }
             } else {
-                std::cout << "Detecting MultiProtocol version " << required_firmwar_version << ": OK" << std::endl;
+                std::cout << "Detecting MultiProtocol version " << required_firmware_version_multimodule << ": OK" << std::endl;
                 mm_version_check_OK = true;
             }
         }
@@ -391,9 +392,9 @@ bool MultiModule::receive_telemetry(std::string buffer) {
                 telemetry.bf_major = (bf_v & 0x00FF0000) >> 16;
                 telemetry.bf_minor = (bf_v & 0x0000FF00) >> 8;
                 telemetry.bf_patch = bf_v & 0x000000FF;
-                if (telemetry.bf_major != bf_major_required || telemetry.bf_minor != bf_minor_required || telemetry.bf_patch != bf_patch_required) {
+                if (telemetry.bf_major != required_version_bf_major || telemetry.bf_minor != required_version_bf_minor || telemetry.bf_patch != required_version_bf_patch) {
                     std::cout << "Wrong betaflight version detected: " << telemetry.bf_major << "." << telemetry.bf_minor << "." << telemetry.bf_patch <<
-                              ", required: " << bf_major_required << "." << bf_minor_required << "." << bf_patch_required << std::endl;
+                              ", required: " << required_version_bf_major << "." << required_version_bf_minor << "." << required_version_bf_patch << std::endl;
                     _bf_version_error += 1;
                 } else {
                     _bf_version_error = -1 ;

@@ -5,7 +5,7 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include <librealsense2/rsutil.h>
 #include "third_party/stopwatch.h"
-
+#include "versions.h"
 using namespace cv;
 using namespace std;
 
@@ -104,7 +104,8 @@ void Realsense::update_real(void) {
 }
 
 void Realsense::rs_callback(rs2::frame f) {
-
+    if (_stop)
+        return;
 
     // if (f.get_profile().stream_index() == 1 )
     //     std::cout << "Received idL "         << f.get_frame_number() << ":" << f.get_timestamp()/1.e3- _frame_time_start << "@" << f.get_profile().stream_index() << "         Last: " << last_sync_id << std::endl;
@@ -141,10 +142,12 @@ void Realsense::rs_callback(rs2::frame f) {
                 buf_overflow_count = 0;
             } else if(last_sync_id > pparams.fps*2) {
                 buf_overflow_count++;
-                std::cout << "BUF OVERFLOW, SKIPPING A FRAME" << buf_overflow_count << std::endl;
+                std::cout << "BUF OVERFLOW, SKIPPING A FRAME: " << buf_overflow_count << std::endl;
                 if (buf_overflow_count > 5*static_cast<int>(pparams.fps)) {
-                    throw std::runtime_error("Realsense issue!");
                     set_realsense_buf_overflow_flag();
+                    std::cout << "Realsense issue!" << std::endl;
+                    exit(1);
+                    throw std::runtime_error("Realsense issue!");
                 }
             }
 
@@ -253,19 +256,17 @@ void Realsense::connect_and_check(string ser_nr,int id) {
     isD455 = found!=std::string::npos;
 
     rs2::depth_sensor rs_depth_sensor = dev.first<rs2::depth_sensor>();
-    const std::string required_firmware1_version = "05.12.06.00";
-    const std::string required_firmware2_version = "05.12.14.50";
     std::string current_firmware_version = rs_depth_sensor.get_info(rs2_camera_info::RS2_CAMERA_INFO_FIRMWARE_VERSION);
-    current_firmware_version  = current_firmware_version.substr (0,required_firmware1_version.length()); //fix for what seems to be appended garbage...? 255.255.255.255 on a newline
+    current_firmware_version  = current_firmware_version.substr (0,required_firmware1_version_realsense.length()); //fix for what seems to be appended garbage...? 255.255.255.255 on a newline
 
     std::string master_or_slave_str = "master";
     if (!master())
         master_or_slave_str = "slave";
     std::cout << name << ", sn: " << serial_nr_str << ", fw: " << current_firmware_version << ", " << master_or_slave_str << std::endl;
 
-    if (current_firmware_version != required_firmware1_version && current_firmware_version != required_firmware2_version) {
+    if (current_firmware_version != required_firmware1_version_realsense && current_firmware_version != required_firmware2_version_realsense) {
         std::stringstream serr;
-        serr << "detected wrong RealSense firmware version! Detected: " << current_firmware_version << ". Required: "  << required_firmware1_version << " or " << required_firmware2_version << ".";
+        serr << "detected wrong RealSense firmware version! Detected: " << current_firmware_version << ". Required: "  << required_firmware1_version_realsense << " or " << required_firmware2_version_realsense << ".";
         throw MyExit(serr.str());
     }
     dev_initialized = true;

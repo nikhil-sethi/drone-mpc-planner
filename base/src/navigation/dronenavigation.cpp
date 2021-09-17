@@ -8,13 +8,14 @@ using namespace std;
 namespace navigation {
 
 
-void DroneNavigation::init(std::ofstream *logger, tracking::TrackerManager * trackers, DroneController * dctrl, VisionData *visdat, FlightArea *flight_area,std::string replay_dir, Interceptor *iceptor) {
+void DroneNavigation::init(std::ofstream *logger, tracking::TrackerManager * trackers, DroneController * dctrl, VisionData *visdat, FlightArea *flight_area,std::string replay_dir, Interceptor *iceptor, Baseboard* baseboard) {
     _logger = logger;
     _trackers = trackers;
     _dctrl = dctrl;
     _visdat = visdat;
     _flight_area = flight_area;
     _iceptor = iceptor;
+    _baseboard = baseboard;
 
     deserialize_settings();
     deserialize_flightplan(replay_dir);
@@ -251,6 +252,12 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_takeoff;
                 repeat = true;
             }
+                    if (_baseboard->charging_problem())
+                        _navigation_status = ns_charging_problem;
+                    if (_baseboard->contact_problem())
+                        _navigation_status = ns_start_shaking;
+                    if (!_baseboard->drone_on_pad())
+                        _navigation_status = ns_drone_lost;
             break;
         } case ns_monitoring: {
             maintain_motion_map(time);
@@ -288,6 +295,13 @@ void DroneNavigation::update(double time) {
                 _dctrl->flight_mode(DroneController::fm_inactive);
             } else if (_nav_flight_mode == nfm_waypoint)
                 _navigation_status = ns_wait_for_takeoff_command;
+
+                    if (_baseboard->charging_problem())
+                        _navigation_status = ns_charging_problem;
+                    if (_baseboard->contact_problem())
+                        _navigation_status = ns_start_shaking;
+                    if (!_baseboard->drone_on_pad())
+                        _navigation_status = ns_drone_lost;
             break;
         } case ns_takeoff: {
             _dctrl->reset_manual_override_take_off_now();
@@ -600,7 +614,7 @@ void DroneNavigation::update(double time) {
             if (static_cast<float>(time - time_shake_start) > time_out_after_landing + duration_shake ) {
                 if (dparams.Telemetry()) {
                     if (!_dctrl->new_attitude_package_available() ) { /* wait some more until we receive new package */ }
-                    else if (_dctrl->attitude_on_pad_OK())
+                    else if (_dctrl->attitude_on_pad_OK() && _baseboard->charging())
                         _navigation_status = ns_start_calibrating_motion;
                     else if (_n_shakes_sessions_after_landing <= 50)
                         _navigation_status = ns_start_shaking;
@@ -628,6 +642,12 @@ void DroneNavigation::update(double time) {
                 time_drone_problem = time;
             _dctrl->flight_mode(DroneController::fm_abort);
             _dctrl->LED(static_cast<int>((time - time_drone_problem) * 10.0) % 10 > 5, 5); // minimal blink every 5 seconds
+                    break;
+            } case ns_charging_problem: {
+                    if (time_drone_problem < 0)
+                        time_drone_problem = time;
+                    _dctrl->flight_mode(DroneController::fm_abort);
+                    _dctrl->LED(static_cast<int>((time - time_drone_problem) * 2.0) % 2 > 0, 5); // faster blink every second
             break;
         } case ns_tracker_problem: {
             if (time_drone_problem < 0)

@@ -5,12 +5,12 @@ float moving_average(float alpha, float value, float smoothed_value) {
     return alpha * value + (1.0f - alpha) * smoothed_value;
 }
 
-bool serial_input(char* buf, int size) {
+bool serial_input(char *buf, int size) {
     static int i = 0;
-    for (i; i < size; ) {
+    for (i; i < size;) {
         if (Serial.available() > 0) {
             buf[i] = Serial.read();
-            if (buf[i] == '\n' || buf[i] == '\0' ) {
+            if (buf[i] == '\n' || buf[i] == '\0') {
                 buf[i] = '\0';
                 i = 0;
                 return true;
@@ -26,7 +26,7 @@ bool serial_input(char* buf, int size) {
     return false;
 }
 
-bool match_command(char * input, const char * command) {
+bool match_command(char *input, const char *command) {
     int cmd_length = strlen(command);
     int inp_length = strlen(input);
 
@@ -39,23 +39,4 @@ bool match_command(char * input, const char * command) {
         }
 
     return true;
-}
-
-void append_log_line(char* log_line, const char* name, int val, bool add_comma) {
-    char buf[20];
-    if (add_comma)
-        sprintf(buf, "%03d, ", val);
-    else
-        sprintf(buf, "%03d", val);
-
-    strcat(log_line, name);
-    strcat(log_line, ": ");
-    strcat(log_line, buf);
-}
-
-void reverse_strcat(char* src, char* dst) {
-    strrev(src);
-    strrev(dst);
-    strcat(dst, src);
-    strrev(dst);
 }

@@ -26,6 +26,7 @@ protected:
     int _id = 0;
     uint replay_skip_n_frames = 0;
     bool initialized = false;
+    bool _stop = false;
     int _frame_loss_cnt = 0;
     std::map<unsigned long long,StereoPair *> buf;
     StereoPair * _current;
@@ -76,6 +77,7 @@ public:
         disparity_background.release();
         delete_all_frames();
     }
+    void stop() {_stop = true;}
     virtual StereoPair * update() = 0;
     float camera_pitch() { return camparams.camera_angle_y; }
     float camera_roll() { return camparams.camera_angle_x; }

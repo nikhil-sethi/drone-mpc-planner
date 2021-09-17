@@ -17,7 +17,7 @@ struct {
 
 template<typename Type>
 int get_address(Type &value) {
-    return (int)((uint8_t*) &value - (uint8_t*)&(eeprom_values));
+    return (int)((uint8_t *) &value - (uint8_t *) &eeprom_values);
 }
 
 void print_config() {
@@ -35,7 +35,7 @@ void print_config() {
     Serial.print("watchdog_count ");
     Serial.println(eeprom_values.watchdog_count);
     Serial.print("watchdog_time ");
-    Serial.print(eeprom_values.watchdog_time / (1000L*3600L));
+    Serial.print(eeprom_values.watchdog_time / (1000L * 3600L));
     Serial.print("H (");
     Serial.print(eeprom_values.watchdog_time);
     Serial.println(")");
@@ -63,13 +63,13 @@ void clear_eeprom_hard() {
 }
 
 void clear_eeprom_all() {
-    memset(&(eeprom_values.voltage_calibration_done), 0, sizeof( eeprom_values ) - get_address(eeprom_values.voltage_calibration_done) );
+    memset(&(eeprom_values.voltage_calibration_done), 0, sizeof(eeprom_values) - get_address(eeprom_values.voltage_calibration_done));
     print_config();
     EEPROM.put(0, eeprom_values);
 }
 
 void clear_eeprom_exept_calib() {
-    memset(&(eeprom_values.watchdog_enabled), 0, sizeof( eeprom_values ) - get_address(eeprom_values.watchdog_enabled) );
+    memset(&(eeprom_values.watchdog_enabled), 0, sizeof(eeprom_values) - get_address(eeprom_values.watchdog_enabled));
     print_config();
     EEPROM.put(0, eeprom_values);
 }
@@ -111,7 +111,7 @@ void write_watchdog_time_eeprom(int32_t watchdog_time) {
     static uint32_t last_update_time = 0;
     eeprom_values.watchdog_time = watchdog_time;
 
-    if (millis() - last_update_time > 10L*60L*1000L) {
+    if (millis() - last_update_time > 10L * 60L * 1000L) {
         write_read_config_to_eeprom();
         last_update_time = millis();
     }
