@@ -193,19 +193,12 @@ def window_filter_monster(insect_df, monster_df):
     return insect_df.drop(insect_df.index[associated_monster_ids])
 
 
-def load_insect_df(selected_systems, start_date, end_date, insect_type):
-    username = current_user.username
-    with patsc.open_systems_db() as con:
-        ordered_systems = con.execute('''SELECT systems.system, systems.installation_date FROM systems,customers
-        JOIN user_customer_connection ON systems.customer_id = user_customer_connection.customer_id
-        JOIN users ON users.user_id = user_customer_connection.user_id WHERE
-        systems.customer_id = customers.customer_id AND users.name = ? AND systems.system IN (%s)
-        ORDER BY systems.system_id''' % ('?,' * len(selected_systems))[:-1], (username, *selected_systems)).fetchall()  # nosec see #952
-
+def load_insect_df(systems, start_date, end_date, insect_type):
     insect_df = pd.DataFrame()
     monster_df = pd.DataFrame()
+    systems = installation_dates(systems)
     with patsc.open_data_db() as con:
-        for (system, installation_date) in ordered_systems:
+        for (system, installation_date) in systems:
             try:
                 installation_date = datetime.datetime.strptime(installation_date, '%Y%m%d_%H%M%S')
                 real_start_date = max([installation_date, start_date])
@@ -242,21 +235,14 @@ def load_insect_df(selected_systems, start_date, end_date, insect_type):
     return insect_df, monster_df
 
 
-def load_insects_of_hour(selected_systems, start_date, end_date, hour, insect_type):
-    username = current_user.username
-    with patsc.open_systems_db() as con:
-        ordered_systems = con.execute('''SELECT systems.system, systems.installation_date FROM systems,customers
-        JOIN user_customer_connection ON systems.customer_id = user_customer_connection.customer_id
-        JOIN users ON users.user_id = user_customer_connection.user_id WHERE
-        systems.customer_id = customers.customer_id AND users.name = ? AND systems.system IN (%s)
-        ORDER BY systems.system_id''' % ('?,' * len(selected_systems))[:-1], (username, *selected_systems)).fetchall()  # nosec see #952
-
+def load_insects_of_hour(systems, start_date, end_date, hour, insect_type):
+    systems = installation_dates(systems)
     hour_str = str(hour)
     if len(hour_str) == 1:
         hour_str = '0' + hour_str
     insect_df = pd.DataFrame()
     with patsc.open_data_db() as con:
-        for (system, installation_date) in ordered_systems:
+        for (system, installation_date) in systems:
             try:
                 installation_date = datetime.datetime.strptime(installation_date, '%Y%m%d_%H%M%S')
                 real_start_date = max([installation_date, start_date])
@@ -350,49 +336,83 @@ def convert_mode_to_number(mode):
         return -666
 
 
-def load_mode_data(unique_dates, heatmap_data, selected_systems, start_date, end_date):
+def insert_down_time(modes, start_date, end_date, t_start_id, t_end_id):
+    modes_with_down = []
+    if not len(modes):
+        modes_with_down.append([start_date.strftime('%Y%m%d_%H%M%S'), end_date.strftime('%Y%m%d_%H%M%S'), 'down'])
+        return modes_with_down
+    prev_end_time = modes[0][t_start_id]
+    for i in range(0, len(modes)):
+        if datetime.datetime.strptime(modes[i][t_start_id], '%Y%m%d_%H%M%S') - datetime.timedelta(minutes=10) > datetime.datetime.strptime(prev_end_time, '%Y%m%d_%H%M%S'):
+            modes_with_down.append([prev_end_time, modes[i][t_start_id], 'down'])
+        modes_with_down.append(modes[i])
+        prev_end_time = modes[i][t_end_id]
+    return modes_with_down
+
+
+def installation_dates(systems):
+    with patsc.open_systems_db() as con:
+        username = current_user.username
+        systems = con.execute('''SELECT systems.system, systems.installation_date FROM systems,customers
+        JOIN user_customer_connection ON systems.customer_id = user_customer_connection.customer_id
+        JOIN users ON users.user_id = user_customer_connection.user_id WHERE
+        systems.customer_id = customers.customer_id AND users.name = ? AND systems.system IN (%s)
+        ORDER BY systems.system_id''' % ('?,' * len(systems))[:-1], (username, *systems)).fetchall()  # nosec see #952
+        return systems
+
+
+def load_mode_data(unique_dates, heatmap_insect_counts, heatmap_monster_counts, systems, start_date, end_date):
     if not len(unique_dates):
         return [], []
-    systems_str = system_sql_str(selected_systems)
-    start_date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time()) + datetime.timedelta(hours=12) - datetime.timedelta(days=(end_date - start_date).days)
-    start_date_str = start_date.strftime('%Y%m%d_%H%M%S')
-    sql_str = f'SELECT * FROM mode_records WHERE {systems_str} AND start_datetime > :start_date ORDER BY start_datetime', {'start_date': start_date_str}  # nosec see #952
-    with patsc.open_data_db() as con:
-        modes = con.execute(*sql_str).fetchall()
-        mode_columns = [i[1] for i in con.execute('PRAGMA table_info(mode_records)')]
-    start_col = mode_columns.index('start_datetime')
-    end_col = mode_columns.index('end_datetime')
-    mode_col = mode_columns.index('op_mode')
 
-    modemap_data = heatmap_data.copy()
+    modemap_data = heatmap_insect_counts.copy()
     modemap_data.fill(-666)
-    for mode in modes:
-        d_mode_start = datetime.datetime.strptime(mode[start_col], '%Y%m%d_%H%M%S') - datetime.timedelta(hours=12)
-        d_mode_end = datetime.datetime.strptime(mode[end_col], '%Y%m%d_%H%M%S') - datetime.timedelta(hours=12)
-        if d_mode_end > d_mode_start:  # there were some wrong logs. This check can possibly be removed at some point.
-            len_hours = math.ceil((d_mode_end - d_mode_start).seconds / 3600)
-        else:
-            continue
+    sysdown_heatmap_counts = heatmap_insect_counts.copy()
+    sysdown_heatmap_counts.fill(0)
+    t_start_id = 0
+    t_end_id = 1
+    mode_id = 2
+    start_date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time()) + datetime.timedelta(hours=12) - datetime.timedelta(days=(end_date - start_date).days)
+    systems = installation_dates(systems)
 
-        day = (d_mode_start.date() - start_date.date()).days
-        hour = d_mode_start.hour
+    for (sys, installation_date) in systems:
+        installation_date = datetime.datetime.strptime(installation_date, '%Y%m%d_%H%M%S')
+        start_date = max([installation_date, start_date])
+        start_date_str = start_date.strftime('%Y%m%d_%H%M%S')
+        sql_str = f'SELECT start_datetime,end_datetime,op_mode FROM mode_records WHERE system="{sys}" AND start_datetime > :start_date ORDER BY start_datetime', {'start_date': start_date_str, 'sys': sys}  # nosec see #952
+        with patsc.open_data_db() as con:
+            modes = con.execute(*sql_str).fetchall()
+        modes = insert_down_time(modes, start_date, end_date, t_start_id, t_end_id)
 
-        m = convert_mode_to_number(mode[mode_col])
-        for h in range(0, len_hours):
-            nh = hour + h
-            nh = nh % 24
-            extra_days = ((hour + h) - nh) / 24
-            if day + int(extra_days) >= len(unique_dates):
-                break
-            modemap_data[day + int(extra_days), nh] = m
+        for mode in modes:
+            mode_start = datetime.datetime.strptime(mode[t_start_id], '%Y%m%d_%H%M%S') - datetime.timedelta(hours=12)
+            mode_end = datetime.datetime.strptime(mode[t_end_id], '%Y%m%d_%H%M%S') - datetime.timedelta(hours=12)
+            if mode_end > mode_start:  # there were some wrong logs. This check can possibly be removed at some point.
+                tot_hours = math.ceil((mode_end - mode_start).total_seconds() / 3600)
+            else:
+                continue
 
-    for i in range(0, modemap_data.shape[0]):
-        for j in range(0, modemap_data.shape[1]):
-            if modemap_data[i, j] == -5 and heatmap_data[i, j] == 0:
-                heatmap_data[i, j] = Heatmap_Cell.system_down_cell.value
-            elif modemap_data[i, j] < -1 and heatmap_data[i, j] == 0:
-                heatmap_data[i, j] = Heatmap_Cell.system_offline_cell.value
-    return heatmap_data
+            start_day = (mode_start.date() - start_date.date()).days
+            start_hour = mode_start.hour
+
+            m = convert_mode_to_number(mode[mode_id])
+            for hour in range(0, tot_hours):
+                nh = (start_hour + hour) % 24
+                extra_days = ((start_hour + hour) - nh) / 24
+                if start_day + int(extra_days) >= len(unique_dates):
+                    break
+                if modemap_data[start_day + int(extra_days), nh] < convert_mode_to_number('down'):  # TODO: we need to discuss this. Multi system mode mixing is ... complex
+                    modemap_data[start_day + int(extra_days), nh] = m
+                if m == convert_mode_to_number('down'):
+                    sysdown_heatmap_counts[start_day + int(extra_days), nh] += 1
+
+        for i in range(0, modemap_data.shape[0]):
+            for j in range(0, modemap_data.shape[1]):
+                if modemap_data[i, j] == convert_mode_to_number('down') and not heatmap_insect_counts[i, j] and not heatmap_monster_counts[i, j]:
+                    heatmap_insect_counts[i, j] = Heatmap_Cell.system_down_cell.value
+                elif modemap_data[i, j] < -1 and not heatmap_insect_counts[i, j] and not heatmap_monster_counts[i, j]:
+                    heatmap_insect_counts[i, j] = Heatmap_Cell.system_offline_cell.value
+    return heatmap_insect_counts, sysdown_heatmap_counts
 
 
 def natural_sort_systems(line):
@@ -404,14 +424,14 @@ def natural_sort_systems(line):
     return sorted(line, key=alphanum_key)
 
 
-def create_heatmap(unique_dates, insect_counts, monster_counts, xlabels, selected_heat):
+def create_heatmap(unique_dates, insect_counts, monster_counts, sysdown_counts, xlabels, selected_heat):
     insect_count_hover_label = pd.DataFrame(insect_counts).astype(int).astype(str)
-    insect_count_hover_label[insect_count_hover_label == str(Heatmap_Cell.system_down_cell.value) or insect_count_hover_label == str(Heatmap_Cell.system_offline_cell.value)] = 'NA'
+    insect_count_hover_label[insect_count_hover_label == str(Heatmap_Cell.system_down_cell.value)] = 'NA'
+    insect_count_hover_label[insect_count_hover_label == str(Heatmap_Cell.system_offline_cell.value)] = 'NA'
     monster_count_hover_label = pd.DataFrame(monster_counts).astype(int).astype(str)
-    if current_user.username == 'kevin' or current_user.username == 'jorn' or current_user.username == 'bram' or current_user.username == 'sjoerd':
-        heatmap_data = np.clip(insect_counts, Heatmap_Cell.system_down_cell.value, heatmap_max)
-    else:
-        heatmap_data = np.clip(insect_counts, Heatmap_Cell.system_offline_cell.value, heatmap_max)
+    sysdown_count_hover_label = pd.DataFrame(sysdown_counts).astype(int).astype(str)
+    heatmap_data = np.clip(insect_counts, Heatmap_Cell.system_down_cell.value, heatmap_max)
+
     if selected_heat:
         selected_heat = pd.read_json(selected_heat, orient='split')
         for _, cel in selected_heat.iterrows():
@@ -424,7 +444,7 @@ def create_heatmap(unique_dates, insect_counts, monster_counts, xlabels, selecte
         x=xlabels,
         y=unique_dates.strftime('%d-%m-%Y'),
         z=heatmap_data,
-        customdata=np.stack((insect_count_hover_label, monster_count_hover_label), axis=-1),
+        customdata=np.stack((insect_count_hover_label, monster_count_hover_label, sysdown_count_hover_label), axis=-1),
         zmin=Heatmap_Cell.selected_cell.value,
         zmid=heatmap_max / 2,
         zmax=heatmap_max,
@@ -438,7 +458,8 @@ def create_heatmap(unique_dates, insect_counts, monster_counts, xlabels, selecte
         hovertemplate='<b>Insects: %{customdata[0]}</b><br>' +
         'Date: %{y}<br>' +
         'Time: %{x}<br>' +
-        'Anomalies: %{customdata[1]}' +
+        'Anomalies: %{customdata[1]}<br>' +
+        'Systems down: %{customdata[2]}' +
         '<extra></extra>'
     )
     fig = go.Figure(data=hm)
@@ -689,7 +710,7 @@ def dash_application():
 
     pio.templates.default = 'plotly_dark'
 
-    @app.callback(
+    @ app.callback(
         Output('systems_dropdown', 'value'),
         Input('customers_dropdown', 'value'))
     def select_system_customer(selected_customer):  # pylint: disable=unused-variable
@@ -733,7 +754,7 @@ def dash_application():
             selected_heat = selected_heat.to_json(date_format='iso', orient='split')
         return selected_heat
 
-    @app.callback(
+    @ app.callback(
         Output('hete_kaart', 'figure'),
         Output('staaf_kaart', 'figure'),
         Output('staaf24h_kaart', 'figure'),
@@ -779,14 +800,14 @@ def dash_application():
         if prop_id == 'hete_kaart.clickData' or prop_id == 'classification_dropdown.value':
             selected_heat = update_selected_heat(clickData_hm, selected_heat)
 
-        heatmap_insect_counts = load_mode_data(unique_dates, heatmap_insect_counts, selected_systems, start_date, end_date)  # add mode info to heatmap, which makes the heatmap show when the system was online (color) or offline (black)
-        hm_fig, hm_style = create_heatmap(unique_dates, heatmap_insect_counts, heatmap_monster_counts, hour_labels, selected_heat)
+        heatmap_insect_counts, sysdown_heatmap_counts = load_mode_data(unique_dates, heatmap_insect_counts, heatmap_monster_counts, selected_systems, start_date, end_date)  # add mode info to heatmap, which makes the heatmap show when the system was online (color) or offline (black)
+        hm_fig, hm_style = create_heatmap(unique_dates, heatmap_insect_counts, heatmap_monster_counts, sysdown_heatmap_counts, hour_labels, selected_heat)
 
         loading_animation_style = {'display': 'none'}
 
         return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, loading_animation_style
 
-    @app.callback(
+    @ app.callback(
         Output('verstrooide_kaart', 'figure'),
         Output('verstrooide_kaart', 'style'),
         Output('scatter_dropdown_container', 'style'),
@@ -851,7 +872,7 @@ def dash_application():
                 scat_style = {'display': 'block', 'margin-left': 'auto', 'margin-right': 'auto', 'width': '80%'}
         return scat_fig, scat_style, scat_axis_select_style
 
-    @app.callback(
+    @ app.callback(
         Output('insect_video', 'src'),
         Output('insect_video', 'style'),
         Output('route_kaart', 'figure'),
@@ -916,7 +937,7 @@ def dash_application():
 
         return target_video_fn, video_style, path_fig, path_style, file_link, file_link_style, selected_insect, classification, classify_style, loading_animation_style
 
-    @app.callback(
+    @ app.callback(
         Output(component_id='classification_hidden', component_property='children'),
         Input('classification_dropdown', 'value'),
         Input('selected_scatter_insect', 'children'))
@@ -964,12 +985,9 @@ def dash_application():
                     classification_data = con_class.execute(sql_str).fetchall()
 
                 for entry in classification_data:
-                    sql_str = '''UPDATE moth_records
-                                 SET Human_classification=:entry:
-                                 WHERE uid=:uid
-                                 AND time=:time
-                                 AND duration=:duration''', {'entry': entry[classification_columns.index('classification')], 'uid': str(entry[classification_columns.index('moth_uid')]), 'time': str(entry[classification_columns.index('time')]), 'duration': str(entry[classification_columns.index('duration')])}
-                    con.execute(*sql_str)
+                    sql_where = ' WHERE uid=' + str(entry[classification_columns.index('moth_uid')]) + ' AND time="' + str(entry[classification_columns.index('time')]) + '" AND duration=' + str(entry[classification_columns.index('duration')])
+                    sql_str = 'UPDATE moth_records SET Human_classification="' + entry[classification_columns.index('classification')] + '"' + sql_where
+                    con.execute(sql_str)
                 con.commit()
                 print('Re-added cliassification results to main db. Added ' + str(len(classification_data)) + ' classifications.')
 
