@@ -52,7 +52,7 @@ def store_moths(data):
             cur.execute('ALTER TABLE moth_records ADD COLUMN Vel_max REAL')
         if 'Vel_std' not in columns:
             cur.execute('ALTER TABLE moth_records ADD COLUMN Vel_std REAL')
-        # v1.1/v1.2
+        # v1.1/v1.2:
         if 'Version' not in columns:
             cur.execute('ALTER TABLE moth_records ADD COLUMN Version REAL')
         if 'Mode' not in columns:
@@ -81,9 +81,10 @@ def store_moths(data):
         # v1.8:
         if 'Wing_beat' not in columns:
             cur.execute('ALTER TABLE moth_records ADD COLUMN Wing_beat REAL')
-        # v1.9
+        # v1.9:
         if 'Monster' not in columns:
             cur.execute('ALTER TABLE moth_records ADD COLUMN Monster INT')
+        # v1.10: implemented full widt third maximum
 
         sql_insert = ''
         for moth in moths:

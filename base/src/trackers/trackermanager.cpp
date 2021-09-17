@@ -262,12 +262,13 @@ void TrackerManager::floodfind_and_remove(cv::Point seed_max_pos, uint8_t seed_m
     std::vector<cv::Point2i> todo_pts;
 
     int npixels = 0;
-    uint32_t motion_sum = 0;
+    uint32_t motion_sum = 0; // a measure for the amount of measured photons from a blob
     cv::Point2l COG = {0};
 
     Point min_pos,max_pos = seed_max_pos;
     double min_val;
     uint8_t max_val = seed_max_val;
+    uint8_t max_diff = diff.at<uint8_t>(seed_max_pos);
 
     while (max_val > motion_filtered_noise_mapL.at<uint8_t>(max_pos)) {
         todo_pts.push_back(max_pos);
@@ -275,19 +276,22 @@ void TrackerManager::floodfind_and_remove(cv::Point seed_max_pos, uint8_t seed_m
             auto p = todo_pts.back();
             todo_pts.pop_back();
             if (diff.at<uint8_t>(p) > motion_filtered_noise_mapL.at<uint8_t>(p)) {
-                npixels++;
                 motion_sum += diff.at<uint8_t>(p) - motion_filtered_noise_mapL.at<uint8_t>(p);
-                COG.x+=p.x;
-                COG.y+=p.y;
+                // Only use the pixels that are 1/3 of the max diff, based on full width half max.
+                if (diff.at<uint8_t>(p) > max_diff/3) {
+                    npixels++;
+                    COG.x+=p.x;
+                    COG.y+=p.y;
+                    if (p.x < bound_min.x)
+                        bound_min.x = p.x;
+                    else if (p.x > bound_max.x)
+                        bound_max.x = p.x;
+                    if (p.y < bound_min.y)
+                        bound_min.y = p.y;
+                    else if (p.y > bound_max.y)
+                        bound_max.y = p.y;
+                }
                 diff.at<uint8_t>(p) = 0;
-                if (p.x < bound_min.x)
-                    bound_min.x = p.x;
-                else if (p.x > bound_max.x)
-                    bound_max.x = p.x;
-                if (p.y < bound_min.y)
-                    bound_min.y = p.y;
-                else if (p.y > bound_max.y)
-                    bound_max.y = p.y;
 
                 //add pixel directly above, below or besides the max point
                 if (p.x > 0)

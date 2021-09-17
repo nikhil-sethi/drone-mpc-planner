@@ -17,7 +17,7 @@ from lib_base import datetime_to_str, natural_sort, str_to_datetime
 from datetime import datetime, timedelta
 from cut_moths import cut_moths
 
-version = "1.9"
+version = "1.10"
 
 
 def process_system_status_in_folder(folder):
