@@ -15,6 +15,7 @@ from pathlib import Path
 import lib_base as lb
 from lib_base import datetime_to_str, natural_sort, str_to_datetime
 from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 from cut_moths import cut_moths
 
 version = "1.10"
@@ -311,55 +312,61 @@ def process_detections_in_folder(folder, operational_log_start, mode):
     return valid_detections
 
 
-def logs_to_json(start_datetime, end_datetime, json_fn, data_folder, sys_str):
+def logs_to_json(json_fn, data_folder, sys_str):
 
     Path(data_folder + '/processed').mkdir(parents=True, exist_ok=True)
     Path(data_folder + '/junk').mkdir(parents=True, exist_ok=True)
     Path(lb.json_dir).mkdir(parents=True, exist_ok=True)
 
     found_dirs = glob.glob(data_folder + "/202*_*")
-    filtered_dirs = [d for d in found_dirs if str_to_datetime(os.path.basename(os.path.normpath(d))) >= start_datetime and str_to_datetime(os.path.basename(os.path.normpath(d))) <= end_datetime]  # filter the list of dirs to only contain dirs between certain dates
-    filtered_dirs = natural_sort(filtered_dirs)
+    ordered_dirs = natural_sort(found_dirs)
 
     detections = []
     statuss = []
     hunts = []
     errors = []
     cam_resets = 0
+    t_start = datetime.max
+    t_end = datetime.min + relativedelta(years=1000)
 
     logger = logging.getLogger('logs_to_json')
-    for folder in filtered_dirs:
+    for folder in ordered_dirs:
         logger.info("Processing " + folder)
         if os.path.exists(folder + '/logging/videoRawLR.avi'):  # this folder was probably not yet processed in cut_moth.
             cut_moths(folder)
 
         top_folder = os.path.basename(folder)
-        dts = str_to_datetime(top_folder)
-        if dts > start_datetime and dts <= end_datetime:
+        t_folder = str_to_datetime(top_folder)
+        if t_folder > t_end:
+            t_end = t_folder
 
-            status_in_folder, mode, operational_log_start = process_system_status_in_folder(folder)
-            if status_in_folder != []:
-                statuss.append(status_in_folder)
-            if mode == 'monitoring' or mode == 'hunt':
-                detections_in_folder = process_detections_in_folder(folder, operational_log_start, mode)
-                if detections_in_folder != []:
-                    [detections.append(detection) for detection in detections_in_folder]
-            if mode == 'hunt' or mode == 'deploy':
-                hunts_in_folder = process_hunts_in_folder(folder, operational_log_start)
-                if hunts_in_folder != []:
-                    hunts.append(hunts_in_folder)
-            if mode.startswith('Error:'):
-                errors.append(mode + '(' + folder + ')')
-            if mode.startswith('Resetting cam'):
-                cam_resets += 1
+        status_in_folder, mode, operational_log_start = process_system_status_in_folder(folder)
 
-            if mode == 'monitoring' or mode == 'hunt' or mode == 'waypoint' or mode == 'deploy':
-                Path(folder + '/OK').touch()
-            else:
-                Path(folder + '/junk').touch()
+        if status_in_folder != []:
+            statuss.append(status_in_folder)
+            if lb.str_to_datetime(operational_log_start) < t_start:
+                t_start = lb.str_to_datetime(operational_log_start)
 
-    data_detections = {"from": lb.datetime_to_str(start_datetime),
-                       "till": lb.datetime_to_str(end_datetime),
+        if mode == 'monitoring' or mode == 'hunt':
+            detections_in_folder = process_detections_in_folder(folder, operational_log_start, mode)
+            if detections_in_folder != []:
+                [detections.append(detection) for detection in detections_in_folder]
+        if mode == 'hunt' or mode == 'deploy':
+            hunts_in_folder = process_hunts_in_folder(folder, operational_log_start)
+            if hunts_in_folder != []:
+                hunts.append(hunts_in_folder)
+        if mode.startswith('Error:'):
+            errors.append(mode + '(' + folder + ')')
+        if mode.startswith('Resetting cam'):
+            cam_resets += 1
+
+        if mode == 'monitoring' or mode == 'hunt' or mode == 'waypoint' or mode == 'deploy':
+            Path(folder + '/OK').touch()
+        else:
+            Path(folder + '/junk').touch()
+
+    data_detections = {"from": lb.datetime_to_str(t_start),
+                       "till": lb.datetime_to_str(t_end),
                        "moth_counts": len(detections),
                        "moths": detections,
                        "hunts": hunts,
@@ -374,7 +381,7 @@ def logs_to_json(start_datetime, end_datetime, json_fn, data_folder, sys_str):
 
     # move the folders so that we know if they were processed
     # moving is done after writing the json, so that if anything before that fails no data gets lost between the cracks
-    for folder in filtered_dirs:
+    for folder in ordered_dirs:
         top_folder = os.path.basename(folder)
         if os.path.exists(folder + '/OK'):
             processed_folder = folder[0:len(folder) - len(top_folder)] + 'processed/' + top_folder
@@ -388,7 +395,7 @@ def logs_to_json(start_datetime, end_datetime, json_fn, data_folder, sys_str):
 def process_all_logs_to_jsons():
     now = datetime.today()
     local_json_file = lb.json_dir + datetime_to_str(now) + '.json'
-    logs_to_json(datetime.min, now, local_json_file, lb.data_dir, socket.gethostname())
+    logs_to_json(local_json_file, lb.data_dir, socket.gethostname())
 
 
 def send_all_jsons():
@@ -409,8 +416,6 @@ def send_all_jsons():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Script that counts the number of valid insect detections in a directory, bound by the minimum and maximum date.')
     parser.add_argument('-i', help="Path to the folder with logs", required=False, default=lb.data_dir)
-    parser.add_argument('-s', help="Directory date to start from", required=False)
-    parser.add_argument('-e', help="Directory date to end on", required=False)
     parser.add_argument('--dry-run', help="Dry run process system status just this one log", required=False)
     parser.add_argument('--filename', help="Path and filename to store results in", default="./detections.json")
     parser.add_argument('--system', help="Override system name", default=socket.gethostname())
@@ -426,14 +431,6 @@ if __name__ == "__main__":
 
     if args.dry_run:
         status_in_folder, mode, operational_log_start = process_system_status_in_folder(args.dry_run)
-    elif not args.s and not args.e and not args.i:
+    else:
         process_all_logs_to_jsons()
         send_all_jsons()
-    elif not args.s and not args.e:
-        logs_to_json(lb.str_to_datetime('20000101_000000'), lb.str_to_datetime('30000101_000000'), json_fn, data_folder, sys_str)
-    elif not args.s:
-        logs_to_json(lb.str_to_datetime('20000101_000000'), str_to_datetime(args.e), json_fn, data_folder, sys_str)
-    elif not args.e:
-        logs_to_json(str_to_datetime(args.s), lb.str_to_datetime('30000101_000000'), json_fn, data_folder, sys_str)
-    else:
-        logs_to_json(str_to_datetime(args.s), str_to_datetime(args.e), json_fn, data_folder, sys_str)
