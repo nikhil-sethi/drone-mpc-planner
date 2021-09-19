@@ -324,13 +324,13 @@ void process_video() {
             if (!log_replay_mode  && ((imgcount > pparams.close_after_n_images && pparams.close_after_n_images > 0))) {
                 std::cout << "Initiating periodic restart" << std::endl;
                 exit_now = true;
-            } else if ((cam->measured_exposure() <= pparams.exposure_threshold && pparams.exposure_threshold > 0)) {
+            } else if ((cam->measured_exposure() <= pparams.exposure_threshold && pparams.exposure_threshold > 0 && frame->time > 3)) {
                 std::cout << "Initiating restart because exposure (" << cam->measured_exposure() << ") is lower than threshold (" << pparams.exposure_threshold << ")" << std::endl;
                 exit_now = true;
-            } else if ((cam->measured_gain() < pparams.gain_threshold && pparams.exposure_threshold > 0)) {
+            } else if ((cam->measured_gain() < pparams.gain_threshold && pparams.exposure_threshold > 0 && frame->time > 3 )) {
                 std::cout << "Initiating restart because gain (" << cam->measured_gain() << ") is lower than threshold (" << pparams.gain_threshold << ")" << std::endl;
                 exit_now = true;
-            } else if (visdat.average_brightness() > pparams.brightness_threshold+10 && pparams.exposure_threshold > 0) {
+            } else if (visdat.average_brightness() > pparams.brightness_threshold+10 && pparams.exposure_threshold > 0 && frame->time > 3) {
                 std::cout << "Initiating restart because avg brightness (" << visdat.average_brightness() << ") is higher than threshold (" << pparams.brightness_threshold+10 << ")" << std::endl;
                 exit_now = true;
             }
