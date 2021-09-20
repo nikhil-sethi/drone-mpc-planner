@@ -304,11 +304,15 @@ def load_insect_data(selected_systems, start_date, end_date, insect_type):
     hist_data.fillna(0, inplace=True)
     hist_24h_data.fillna(0, inplace=True)
 
-    heatmap_insect_df = pd.DataFrame(np.zeros((24, len(unique_dates))), index=range(24), columns=(unique_dates.strftime('%Y%m%d_%H%M%S')))  # pylint: disable=no-member
+    heatmap_insect_counts = pd.DataFrame(np.zeros((24, len(unique_dates))), index=range(24), columns=(unique_dates.strftime('%Y%m%d_%H%M%S')))  # pylint: disable=no-member
+    heatmap_date_df = pd.DataFrame(np.zeros((24, len(unique_dates))), index=range(24), columns=(unique_dates.strftime('%Y%m%d_%H%M%S')))  # pylint: disable=no-member
     for date, hours in (insect_df[['time']] - datetime.timedelta(hours=12)).groupby((insect_df.time - datetime.timedelta(hours=12)).dt.date):
         if date.strftime('%Y-%m-%d') in unique_dates:
-            heatmap_insect_df[date.strftime('%Y%m%d_%H%M%S')] = (hours.groupby(hours.time.dt.hour).count())
-    heatmap_insect_counts = ((heatmap_insect_df.fillna(0)).to_numpy()).T
+            heatmap_date_df.loc[0:11, date.strftime('%Y%m%d_%H%M%S')] = date.strftime('%d-%m-%Y')
+            heatmap_date_df.loc[12:23, date.strftime('%Y%m%d_%H%M%S')] = (date + datetime.timedelta(days=1)).strftime('%d-%m-%Y')
+            heatmap_insect_counts[date.strftime('%Y%m%d_%H%M%S')] = (hours.groupby(hours.time.dt.hour).count())
+    heatmap_insect_counts = ((heatmap_insect_counts.fillna(0)).to_numpy()).T
+    heatmap_date_df = heatmap_date_df.T
 
     heatmap_monster_df = pd.DataFrame(np.zeros((24, len(unique_dates))), index=range(24), columns=(unique_dates.strftime('%Y%m%d_%H%M%S')))  # pylint: disable=no-member
     for date, hours in (monster_df[['time']] - datetime.timedelta(hours=12)).groupby((monster_df.time - datetime.timedelta(hours=12)).dt.date):
@@ -316,7 +320,7 @@ def load_insect_data(selected_systems, start_date, end_date, insect_type):
             heatmap_monster_df[date.strftime('%Y%m%d_%H%M%S')] = (hours.groupby(hours.time.dt.hour).count())
     heatmap_monster_counts = ((heatmap_monster_df.fillna(0)).to_numpy()).T
 
-    return unique_dates, heatmap_insect_counts, heatmap_monster_counts, [], hist_data, hist_24h_data
+    return unique_dates, heatmap_insect_counts, heatmap_monster_counts, heatmap_date_df, hist_data, hist_24h_data
 
 
 def convert_mode_to_number(mode):
@@ -424,7 +428,7 @@ def natural_sort_systems(line):
     return sorted(line, key=alphanum_key)
 
 
-def create_heatmap(unique_dates, insect_counts, monster_counts, sysdown_counts, xlabels, selected_heat):
+def create_heatmap(unique_dates, heatmap_date_df, insect_counts, monster_counts, sysdown_counts, xlabels, selected_heat):
     insect_count_hover_label = pd.DataFrame(insect_counts).astype(int).astype(str)
     insect_count_hover_label[insect_count_hover_label == str(Heatmap_Cell.system_down_cell.value)] = 'NA'
     insect_count_hover_label[insect_count_hover_label == str(Heatmap_Cell.system_offline_cell.value)] = 'NA'
@@ -444,7 +448,7 @@ def create_heatmap(unique_dates, insect_counts, monster_counts, sysdown_counts, 
         x=xlabels,
         y=unique_dates.strftime('%d-%m-%Y'),
         z=heatmap_data,
-        customdata=np.stack((insect_count_hover_label, monster_count_hover_label, sysdown_count_hover_label), axis=-1),
+        customdata=np.stack((insect_count_hover_label, monster_count_hover_label, sysdown_count_hover_label, heatmap_date_df), axis=-1),
         zmin=Heatmap_Cell.selected_cell.value,
         zmid=heatmap_max / 2,
         zmax=heatmap_max,
@@ -456,7 +460,7 @@ def create_heatmap(unique_dates, insect_counts, monster_counts, sysdown_counts, 
             [1, 'rgba(255,0,0, 1.0)']
         ],
         hovertemplate='<b>Insects: %{customdata[0]}</b><br>' +
-        'Date: %{y}<br>' +
+        'Date: %{customdata[3]}<br>' +
         'Time: %{x}<br>' +
         'Anomalies: %{customdata[1]}<br>' +
         'Systems down: %{customdata[2]}' +
@@ -790,7 +794,7 @@ def dash_application():
             start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
         if not selected_systems or not insect_types or not end_date or not start_date or (end_date - start_date).days < 1:
             return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, loading_animation_style
-        unique_dates, heatmap_insect_counts, heatmap_monster_counts, _, df_hist, hist_24h_data = load_insect_data(selected_systems, start_date, end_date, insect_types)
+        unique_dates, heatmap_insect_counts, heatmap_monster_counts, heatmap_date_df, df_hist, hist_24h_data = load_insect_data(selected_systems, start_date, end_date, insect_types)
         if not len(unique_dates):
             return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, loading_animation_style
 
@@ -801,7 +805,7 @@ def dash_application():
             selected_heat = update_selected_heat(clickData_hm, selected_heat)
 
         heatmap_insect_counts, sysdown_heatmap_counts = load_mode_data(unique_dates, heatmap_insect_counts, heatmap_monster_counts, selected_systems, start_date, end_date)  # add mode info to heatmap, which makes the heatmap show when the system was online (color) or offline (black)
-        hm_fig, hm_style = create_heatmap(unique_dates, heatmap_insect_counts, heatmap_monster_counts, sysdown_heatmap_counts, hour_labels, selected_heat)
+        hm_fig, hm_style = create_heatmap(unique_dates, heatmap_date_df, heatmap_insect_counts, heatmap_monster_counts, sysdown_heatmap_counts, hour_labels, selected_heat)
 
         loading_animation_style = {'display': 'none'}
 
