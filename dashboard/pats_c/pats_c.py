@@ -111,7 +111,7 @@ def init_system_and_customer_dropdown():
                     sys_options.append({'label': system, 'value': system, 'title': system})
                 elif demo:
                     sys_options.append({'label': 'Demo ' + crop, 'value': system, 'title': system})
-                    break  # This break makes sure that only one system per customer is added for the demo user, like Bram wanted.
+                    break  # This break makes sure that only one system per customer is added for the demo user, like Bram wanted. Dirty demo hack part uno.
                 elif location:
                     if len(customer_dict.keys()) == 1:
                         sys_options.append({'label': location, 'value': system, 'title': system})
@@ -718,11 +718,14 @@ def dash_application():
         Output('systems_dropdown', 'value'),
         Input('customers_dropdown', 'value'))
     def select_system_customer(selected_customer):  # pylint: disable=unused-variable
-        customer_dict, _ = load_customers()
+        customer_dict, demo = load_customers()
         value = []
         if selected_customer:
             for customer in selected_customer:
-                systems = [d[0] for d in customer_dict[customer]]
+                if demo:  # dirty demo hack part deux
+                    systems = customer_dict[customer][0][0]
+                else:
+                    systems = [d[0] for d in customer_dict[customer]]
                 value.extend(systems)
         return value
 
