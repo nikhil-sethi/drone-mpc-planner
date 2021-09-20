@@ -21,21 +21,72 @@ from cut_moths import cut_moths
 version = "1.10"
 
 
+def measured_exposure(terminal_log_path):
+    daylight_start = ''
+    daylight_end = ''
+    prev_line = ''
+    cnt = 0
+    with open(terminal_log_path, "r") as terminal_log:
+        log_start = terminal_log.readline()
+        while not daylight_end:
+            line = terminal_log.readline()
+            if 'Measured exposure' in line:
+                daylight_start = line.split('Measured')[0]
+                prev_line = line
+                while True:
+                    line = terminal_log.readline()
+                    if 'Measured exposure' not in line:
+                        daylight_end = prev_line.split('Measured')[0]
+                        break
+                    prev_line = line
+                    cnt += 1
+            if line == '' and prev_line == '':
+                daylight_start = log_start
+                daylight_end = log_start
+                break
+
+    daylight_start = daylight_start.strip().replace('/', '').replace(':', '').replace(' ', '_')
+    daylight_end = daylight_end.strip().replace('/', '').replace(':', '').replace(' ', '_')
+
+    if cnt < 5:
+        return False, daylight_start, daylight_end
+    else:
+        return True, daylight_start, daylight_end
+
+
+def process_wait_for_dark_status(folder):
+    terminal_log_path = Path(folder, 'terminal.log')
+    if os.path.exists(terminal_log_path):
+        exposure_valid, daylight_start, daylight_end = measured_exposure(terminal_log_path)
+        if (exposure_valid):
+            data_wait_for_dark = {"from": daylight_start,
+                                  "till": daylight_end,
+                                  "mode": 'wait_for_dark'
+                                  }
+            return (exposure_valid, data_wait_for_dark, daylight_start, daylight_end)
+    return (False, [], daylight_start, daylight_end)
+
+
 def process_system_status_in_folder(folder):
     logging.getLogger('logs_to_json').info('Processing status...')
     pats_xml_mode = ''
     pats_xml_path = Path(folder, 'logging', 'pats.xml')
     terminal_log_path = Path(folder, 'terminal.log')
+    if not os.path.exists(terminal_log_path):
+        return ([], 'Error: terminal log do not exist', '')
+
+    with open(terminal_log_path, "r") as terminal_log:
+        log_start = terminal_log.readline().strip()
+    if log_start == 'Resetting cam':
+        return ([], 'Resetting cam', '')
+    if log_start.startswith('Error'):
+        return ([], 'Error: ' + log_start, '')
+    if log_start == '':
+        return ([], 'Error: log_start empty!?', '')
+
+    if os.path.exists(Path(folder, 'logging', 'cam_roll_problem_flag')):
+        return ([], 'Error: Cam roll angle problem!', '')
     if not os.path.exists(pats_xml_path):
-        if os.path.exists(Path(folder, 'logging', 'cam_roll_problem_flag')):
-            return ([], 'Error: Cam roll angle problem!', '')
-        if not os.path.exists(terminal_log_path):
-            return ([], 'Error: xml and terminal log do not exist', '')
-        else:
-            with open(terminal_log_path, "r") as terminal_log:
-                log_start = terminal_log.readline()
-                if log_start.strip() == 'Resetting cam':
-                    return ([], 'Resetting cam', '')
         line = subprocess.check_output(['tail', '-1', terminal_log_path]).decode("utf8").strip()
         return ([], 'Error: xml does not exist. Last terminal line: ' + line, '')
     with open(pats_xml_path, "r") as pats_xml:
@@ -59,61 +110,14 @@ def process_system_status_in_folder(folder):
         # something bad must have happened. A crash of the program prevents the writing of results.txt
         return ([], 'Error: results.txt does not contain run_time', '')
 
-    # open terminal log and check whether we were waiting for darkness
-    log_start = ''
-    daylight_start = ''
-    daylight_end = ''
-    prev_line = ''
-    with open(terminal_log_path, "r") as terminal_log:
-        log_start = terminal_log.readline()
-        while not daylight_end:
-            line = terminal_log.readline()
-            if 'Measured exposure' in line:
-                daylight_start = line.split('Measured')[0]
-                prev_line = line
-                while True:
-                    line = terminal_log.readline()
-                    if 'Measured exposure' not in line:
-                        daylight_end = prev_line.split('Measured')[0]
-                        break
-                    prev_line = line
-            if line == '' and prev_line == '':
-                daylight_start = log_start
-                daylight_end = log_start
-                break
-
-    daylight_start = daylight_start.strip().replace('/', '').replace(':', '').replace(' ', '_')
-    daylight_end = daylight_end.strip().replace('/', '').replace(':', '').replace(' ', '_')
-
-    if log_start.startswith('Error'):
-        return ([], 'Error: ' + log_start, '')
-    if log_start == '':
-        return ([], 'Error: log_start empty!?', '')
-    if log_start.startswith('Resetting cam'):
-        return ([], 'Error: ' + log_start, '')
-
-    log_start_datetime = datetime.strptime(log_start.strip(), '%d/%m/%Y %H:%M:%S')
     log_end_datetime = str_to_datetime(os.path.basename(folder))
-
-    log_start = datetime_to_str(log_start_datetime)
     operational_log_start = datetime_to_str(log_end_datetime - timedelta(seconds=runtime))
 
-    if daylight_start != daylight_end:
-        data_status1 = {"from": daylight_start,
-                        "till": daylight_end,
-                        "mode": 'wait_for_dark'
-                        }
-        data_status2 = {"from": operational_log_start,
-                        "till": os.path.basename(folder),
-                        "mode": pats_xml_mode
-                        }
-        return ([data_status1, data_status2], pats_xml_mode, operational_log_start)
-    else:
-        data_status = {"from": operational_log_start,
-                       "till": os.path.basename(folder),
-                       "mode": pats_xml_mode
-                       }
-        return (data_status, pats_xml_mode, operational_log_start)
+    data_status = {"from": operational_log_start,
+                   "till": os.path.basename(folder),
+                   "mode": pats_xml_mode
+                   }
+    return (data_status, pats_xml_mode, operational_log_start)
 
 
 def process_hunts_in_folder(folder, operational_log_start):
@@ -339,6 +343,12 @@ def logs_to_json(json_fn, data_folder, sys_str):
         t_folder = str_to_datetime(top_folder)
         if t_folder > t_end:
             t_end = t_folder
+
+        exposure_valid, data_wait_for_dark, daylight_start, _ = process_wait_for_dark_status(folder)
+        if exposure_valid:
+            statuss.append(data_wait_for_dark)
+            if lb.str_to_datetime(daylight_start) < t_start:
+                t_start = lb.str_to_datetime(daylight_start)
 
         status_in_folder, mode, operational_log_start = process_system_status_in_folder(folder)
 
