@@ -867,7 +867,7 @@ def dash_application():
                 for bar in hist24h_selected_bars['points']:
                     sys = bar['customdata'][1]
                     hour = int(bar['x'].replace('h', ''))
-                    insects_hour, _ = load_insects_of_hour([sys], start_date, end_date, hour, insect_types)
+                    insects_hour = load_insects_of_hour([sys], start_date, end_date, hour, insect_types)
                     insects = insects.append(insects_hour)
 
             if not insects.empty:
