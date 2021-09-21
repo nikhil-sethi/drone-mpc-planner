@@ -12,6 +12,7 @@ import sys
 import socket
 import re
 import serial
+import shutil
 from datetime import date, datetime, timedelta
 from pathlib import Path
 import lib_base as lb
@@ -327,6 +328,10 @@ class check_system_task(pats_task):
                     self.logger.error('CPU Temperature too high: ' + cpu_temp_str)
                 else:
                     self.logger.info('CPU Temperature: ' + cpu_temp_str)
+
+        _, _, free = shutil.disk_usage("/")
+        if free / (2**30) < 10:
+            self.logger.error('SSD almost full. Free space left: ' + str(free / (2**30)) + 'GB')
 
 
 class baseboard_serial():
