@@ -21,6 +21,7 @@ cc_update_request = flags_dir + 'cc_update_request'
 daemon_wdt_flag = flags_dir + 'daemon_wdt_flag'
 proces_wdt_flag = flags_dir + 'proces_wdt_flag'
 no_realsense_flag = flags_dir + 'no_realsense_flag'
+reset_realsense_flag = flags_dir + 'reset_realsense_flag'
 wdt_fired_flag = pats_executable_dir + 'wdt_fired'
 
 local_status_txt_file = os.path.expanduser('~/pats/status/status.txt')

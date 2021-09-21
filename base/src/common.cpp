@@ -294,6 +294,9 @@ void set_external_wdt_flag() {
 void set_no_realsense_flag() {
     std::ofstream output("../../../../pats/flags/no_realsense_flag");
 }
+void set_realsense_reset_flag() {
+    std::ofstream output("../../../../pats/flags/reset_realsense_flag");
+}
 void set_realsense_buf_overflow_flag() {
     std::ofstream output("../../../../pats/flags/buf_overflow_realsense_flag");
 }

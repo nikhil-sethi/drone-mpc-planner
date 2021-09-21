@@ -227,6 +227,7 @@ class wdt_pats_task(pats_task):
         super(wdt_pats_task, self).__init__('wdt_pats', timedelta(), timedelta(seconds=300), False, error_file_handler)
         self.no_realsense_cnt = 0
         self.baseboard_serial = baseboard_serial
+        self.last_realsense_reset = datetime.min
         if self.baseboard_serial.base_serial:
             self.baseboard_serial.base_serial.write(b'enable watchdog\n')
 
@@ -241,6 +242,7 @@ class wdt_pats_task(pats_task):
             else:
                 self.error_cnt += 1
                 self.logger.error('pats process watchdog alert! Pats Process does not seem to function. Restarting...')
+                os.mkdir(lb.pats_executable_dir)
                 Path(lb.wdt_fired_flag).touch()
                 cmd = 'killall -9 pats'
                 lb.execute(cmd, 1, logger_name=self.name)
@@ -252,6 +254,14 @@ class wdt_pats_task(pats_task):
             self.logger.error('Could not find realsense for over an hour! Rebooting...')
             cmd = 'sudo rtcwake -m off -s 120'
             lb.execute(cmd, 1, logger_name=self.name)
+
+        if os.path.exists(lb.reset_realsense_flag):
+            if (self.last_realsense_reset - datetime.now) > timedelta(minutes=10):
+                self.logger.error('Realsense reset unsuccessful?')
+            else:
+                self.logger.warning('Realsense was reset')
+            self.last_realsense_reset = datetime.now
+            os.remove(lb.reset_realsense_flag)
 
 
 class wdt_tunnel_task(pats_task):
