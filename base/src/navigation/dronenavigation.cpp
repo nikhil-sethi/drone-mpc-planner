@@ -604,7 +604,7 @@ void DroneNavigation::update(double time) {
                     if (!_dctrl->new_attitude_package_available() ) { /* wait some more until we receive new package */ }
                     else if (_dctrl->attitude_on_pad_OK())
                         _navigation_status = ns_start_calibrating_motion;
-                    else if (_n_shakes_sessions_after_landing <= 5)
+                    else if (_n_shakes_sessions_after_landing <= 50)
                         _navigation_status = ns_start_shaking;
                     else
                         _navigation_status = ns_drone_lost; // bit of a tmp solution until we get the retry-landing feature #75

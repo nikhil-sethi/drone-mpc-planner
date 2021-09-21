@@ -48,7 +48,7 @@ protected:
 struct Waypoint_Landing : Waypoint {
     Waypoint_Landing() {
         xyz = cv::Point3f(0,0.5f,0); // only for landing wp, relative to the startup location!
-        threshold_mm = 15;
+        threshold_mm = 10;
         threshold_v = 0.15f;
         hover_pause = 3;
         mode = wfm_landing;

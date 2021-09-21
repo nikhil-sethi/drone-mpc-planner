@@ -172,7 +172,7 @@ private:
 
     const int required_pad_att_calibration_cnt = 15;
     const cv::Point2f allowed_pad_att_calibration_range = cv::Point2f(7.5f,7.5f);
-    const cv::Point2f allowed_att_calibration_range = cv::Point2f(1.0f,1.0f); // the max difference between the current att and the att measured during the last blink detect
+    const cv::Point2f allowed_att_calibration_range = cv::Point2f(0.5f,0.25f); // the max difference between the current att and the att measured during the last blink detect
     bool pat_att_calibration_valid = false;
     filtering::Smoother pad_att_calibration_roll;
     filtering::Smoother pad_att_calibration_pitch;

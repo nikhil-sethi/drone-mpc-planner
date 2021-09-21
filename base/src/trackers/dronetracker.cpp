@@ -268,7 +268,10 @@ bool DroneTracker::detect_lift_off() {
     float dist2takeoff =normf(_world_item.pt - pad_location());
     float takeoff_y =  _world_item.pt.y - pad_location().y;
 
-    if (dist2takeoff > 0.1f && takeoff_y > 0.05f && _world_item.radius > dparams.radius*0.25f && _world_item.radius < dparams.radius*4.f) {
+    if (dist2takeoff > 0.1f
+            && takeoff_y > 0.05f
+            && _world_item.radius > dparams.radius*0.25f
+            && _world_item.radius < dparams.radius*4.f) {
         take_off_frame_cnt++;
         if (take_off_frame_cnt >= 3) {
             return true;
@@ -455,7 +458,7 @@ void DroneTracker::set_pad_location( cv::Point3f pad_world) {
 cv::Point3f DroneTracker::pad_location(bool landing_hack) {
     cv::Point3f hack = {0};
     if (landing_hack)
-        hack = cv::Point3f(0,0,0.04);
+        hack = cv::Point3f(0,0,0.02); //Landing in the back rather then landing to the front seems to work better
 
     return _pad_world_location + hack;
 }
