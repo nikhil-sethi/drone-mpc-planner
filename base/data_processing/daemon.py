@@ -236,6 +236,14 @@ class wdt_pats_task(pats_task):
 
         if not os.path.exists(lb.no_realsense_flag):
             self.no_realsense_cnt = 0
+            if os.path.exists(lb.proces_wdt_flag):
+                os.remove(lb.proces_wdt_flag)
+            else:
+                self.error_cnt += 1
+                self.logger.error('pats process watchdog alert! Pats Process does not seem to function. Restarting...')
+                Path(lb.wdt_fired_flag).touch()
+                cmd = 'killall -9 pats'
+                lb.execute(cmd, 1, logger_name=self.name)
         else:
             os.remove(lb.no_realsense_flag)
             self.no_realsense_cnt += 1
@@ -243,14 +251,6 @@ class wdt_pats_task(pats_task):
         if self.no_realsense_cnt > 12:  # 5 x 12 = 1 hour
             self.logger.error('Could not find realsense for over an hour! Rebooting...')
             cmd = 'sudo rtcwake -m off -s 120'
-            lb.execute(cmd, 1, logger_name=self.name)
-
-        if os.path.exists(lb.proces_wdt_flag):
-            os.remove(lb.proces_wdt_flag)
-        else:
-            self.error_cnt += 1
-            self.logger.error('pats process watchdog alert! Pats Process does not seem to function. Restarting...')
-            cmd = 'killall -9 pats'
             lb.execute(cmd, 1, logger_name=self.name)
 
 
@@ -321,6 +321,7 @@ class check_system_task(pats_task):
 
 class baseboard_serial():
     logger = logging.Logger
+
     def __init__(self):
         self.logger = logging.getLogger("baseboard_serial")
         try:

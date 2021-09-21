@@ -12,6 +12,7 @@ log_dir = os.path.expanduser('~/pats/logs/')
 data_dir = os.path.expanduser('~/pats/data/')
 json_dir = os.path.expanduser('~/pats/jsons/')
 renders_dir = os.path.expanduser('~/pats/renders/')
+pats_executable_dir = os.path.expanduser('~/code/pats/base/build/logging/')
 
 daily_errs_log = log_dir + 'all_errors.log'
 term_log_path = log_dir + 'term.log'
@@ -20,6 +21,7 @@ cc_update_request = flags_dir + 'cc_update_request'
 daemon_wdt_flag = flags_dir + 'daemon_wdt_flag'
 proces_wdt_flag = flags_dir + 'proces_wdt_flag'
 no_realsense_flag = flags_dir + 'no_realsense_flag'
+wdt_fired_flag = pats_executable_dir + 'wdt_fired'
 
 local_status_txt_file = os.path.expanduser('~/pats/status/status.txt')
 local_system_txt_file = os.path.expanduser('~/pats/status/system_info.txt')
