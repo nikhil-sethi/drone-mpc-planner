@@ -79,14 +79,14 @@ def init_insects_dropdown():
         if current_user.is_authenticated:
             username = current_user.username
             with patsc.open_systems_db() as con:
-                sql_str = '''SELECT DISTINCT insects.name,avg_size,std_size FROM insects
-                JOIN crop_insect_connection ON crop_insect_connection.insect_id = insects.insect_id
-                JOIN crops ON crops.crop_id = crop_insect_connection.crop_id
-                JOIN customers ON customers.crop_id = crops.crop_id
-                JOIN user_customer_connection ON user_customer_connection.customer_id = customers.customer_id
-                JOIN users ON users.user_id = user_customer_connection.user_id
-                WHERE users.name = :username ORDER BY insects.name'''
-                insects = con.execute(sql_str, (username,))
+                sql_str = 'SELECT DISTINCT insects.name,avg_size,std_size FROM insects' \
+                    + ' JOIN crop_insect_connection ON crop_insect_connection.insect_id = insects.insect_id' \
+                    + ' JOIN crops ON crops.crop_id = crop_insect_connection.crop_id' \
+                    + ' JOIN customers ON customers.crop_id = crops.crop_id' \
+                    + ' JOIN user_customer_connection ON user_customer_connection.customer_id = customers.customer_id' \
+                    + ' JOIN users ON users.user_id = user_customer_connection.user_id' \
+                    + ' WHERE users.name = "' + username + '" ORDER BY insects.name'
+                insects = con.execute(sql_str)
                 for name, avg_size, std_size in insects:
                     insect_options.append({'label': name, 'value': {'label': name, 'avg_size': avg_size, 'std_dev': std_size}})
 
