@@ -48,10 +48,10 @@ def download_renders_all():
     download_renders(38)
     download_renders(39)
 
-    download_renders(52)
-    download_renders(66)
-    download_renders(68)
-    download_renders(69)
+    #download_renders(52)
+    #download_renders(66)
+    #download_renders(68)
+    #download_renders(69)
 
 
 def natural_sort(line):
@@ -80,6 +80,8 @@ def download_raw_logs_all():
 parser = argparse.ArgumentParser(description='Script that periodically downloads data from deployed systems')
 
 args = parser.parse_args()
+
+subprocess.call(['mkdir -p ~/pats/renders'], shell=True)
 
 while True:
 
