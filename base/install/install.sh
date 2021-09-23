@@ -148,9 +148,10 @@ if [[ $1 -eq 0 ]] ; then
 	}
 
 	# Install command center packages
-	[ -f cc-dependencies-packages-v1.0.done ] || {
+	[ -f cc-dependencies-packages-v1.1.done ] || {
 		sudo apt install -y python3-pyqt5 python3-pyqt5.qtmultimedia python3-pyqt5.qtquick
-		touch cc-dependencies-packages-v1.0.done
+		sudo apt install ansible ansible-lint
+		touch cc-dependencies-packages-v1.1.done
 	}
 fi
 

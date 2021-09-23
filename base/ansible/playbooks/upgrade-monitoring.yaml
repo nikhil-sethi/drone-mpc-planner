@@ -1,0 +1,19 @@
+---
+- hosts: monitors
+  strategy: free
+  tasks:
+  - name: Pull pats
+    git:
+        repo: git@github.com:pats-drones/pats.git
+        dest: /home/pats/code/pats
+        update: yes
+        version: monitoring
+        force: yes
+        clone: no
+  - name: Build pats
+    make:
+        chdir: /home/pats/code/pats/base/build
+        params:
+            NUM_THREADS: 4
+  - name: Kill pats process
+    shell: "killall pats || true"
