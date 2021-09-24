@@ -1,0 +1,9 @@
+---
+- hosts: monitors
+  strategy: free
+  gather_facts: no
+  tasks:
+  - name: print git sha
+    shell: "cd ~/code/pats && git rev-parse HEAD"
+    register: output
+  - debug: var=output.stdout_lines
