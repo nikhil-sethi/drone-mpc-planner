@@ -290,7 +290,7 @@ class wdt_tunnel_task(pats_task):
         try:
             output = subprocess.check_output(cmd.split(' '))
         except Exception as e:
-            self.logger.error('Error in getting tunnel info: ' + str(e))
+            self.logger.warning('Error in getting tunnel info: ' + str(e))
         if output:
             output = output.decode(sys.stdout.encoding)
             output = output.splitlines()
@@ -304,7 +304,7 @@ class wdt_tunnel_task(pats_task):
 
         if (datetime.today() - self.tunnel_ok_time).total_seconds() > 3 * 60 * 60 and datetime.today().hour == 13:
             self.error_cnt += 1
-            self.logger.error('Tunnel watchdog alert! Rebooting!')
+            self.logger.warning('Tunnel watchdog alert! Rebooting!')
             cmd = 'sudo rtcwake -m off -s 120'
             lb.execute(cmd, 1, logger_name=self.name)
         elif not tunnel_ok:

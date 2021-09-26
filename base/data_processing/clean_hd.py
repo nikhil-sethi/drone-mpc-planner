@@ -107,7 +107,7 @@ def clean_hd():
         return
     if remove_folders_until(datetime.today() - timedelta(days=14), logger):
         return
-    logger.error('Could not remove enough files older than two weeks')
+    logger.warning('Could not remove enough files older than two weeks')
     if strip_folders_until(datetime.today() - timedelta(days=1), logger):
         return
     logger.error('Could not strip enough files younger than two weeks')
