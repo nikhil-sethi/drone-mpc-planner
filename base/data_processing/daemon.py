@@ -212,15 +212,27 @@ class baseboard_log_task(pats_task):
     def __init__(self, error_file_handler, baseboard_serial):
         super(baseboard_log_task, self).__init__('baseboard', timedelta(), timedelta(seconds=1), False, error_file_handler)
         self.baseboard_serial = baseboard_serial
+        self.software_version_log_timer = time.time()
 
     def task_func(self):
-        if self.baseboard_serial.base_serial:
-            while True:
-                line = self.baseboard_serial.base_serial.read_until()
-                if (len(line) > 0):
-                    self.logger.info('{}'.format(line.decode("utf-8")))
-                else:
-                    time.sleep(1.)
+        if self.baseboard_serial.baseboard_serial_enabled:
+            if self.baseboard_serial.base_serial:
+                while True:
+                    if len(self.baseboard_serial.software_version_warning) > 0 and time.time() - self.software_version_log_timer > 3:
+                        self.logger.error('Problem with baseboard software version: ' + self.baseboard_serial.software_version_warning)
+                        self.software_version_log_timer = time.time()
+
+                    line = self.baseboard_serial.base_serial.read_until()
+                    if (len(line) > 0):
+                        self.logger.info(line.decode('utf-8'))
+                    else:
+                        time.sleep(1.)
+            else:
+                self.logger.error('Problem with baseboard serial communciation. Restarting')
+
+                self.baseboard_serial.stop()
+                time.sleep(1.)
+                self.baseboard_serial.start()
 
 
 class wdt_pats_task(pats_task):
@@ -336,15 +348,79 @@ class check_system_task(pats_task):
 
 class baseboard_serial():
     logger = logging.Logger
+    baseboard_serial_enabled = False
 
     def __init__(self):
-        self.logger = logging.getLogger("baseboard_serial")
+        self.logger = logging.getLogger('baseboard_serial')
+        self.software_version_warning = ''
+        self.start()
+
+        if self.baseboard_serial_enabled:
+            if not self.check_version() and not os.path.isfile(lb.baseboard_updated_flag):
+                self.update_baseboard()
+                if self.check_version():
+                    self.write_version()
+
+    def write_version(self):
+        os.system('echo ' + self.get_system_version() + ' > ' + lb.baseboard_updated_flag)  # nosec
+        os.system('echo ' + self.get_git_revision_short_hash() + ' >> ' + lb.baseboard_updated_flag)  # nosec
+
+    def start(self):
         try:
             self.base_serial = serial.Serial('/dev/baseboard', 115200, timeout=0.01)
-            self.logger.info("Connected to baseboard")
-        except Exception:
+            self.logger.info('Connected to baseboard')
+            self.baseboard_serial_enabled = True
+        except Exception as e:
             self.base_serial = None
-            self.logger.warning("No baseboard found")
+            self.logger.warning('No baseboard found ' + str(e))
+
+    def stop(self):
+        if self.base_serial:
+            self.base_serial.close()
+
+    def get_git_revision_short_hash(self):
+        return subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
+
+    def get_system_version(self):
+        try:
+            command = os.path.expanduser('~') + '/code/pats/base/data_processing/get_baseboard_version.sh'
+            rtn = subprocess.check_output([command]).decode(sys.stdout.encoding).strip()
+            if len(rtn) == 0:
+                self.software_version_warning = 'get local version failed'
+            return rtn
+        except Exception as e:
+            self.software_version_warning = 'get local version failed'
+            print('get local version failed ', str(e))
+            return ''
+
+    def update_baseboard(self):
+        self.stop()
+        try:
+            command = os.path.expanduser('~') + '/code/pats/base/data_processing/update_baseboard.sh'
+            subprocess.check_output([command]).decode(sys.stdout.encoding).strip()
+        except Exception as e:
+            print('updating baseboard failed ' + str(e))
+            self.software_version_warning = 'updating baseboard failed'
+
+        self.base_serial = serial.Serial('/dev/baseboard', 115200, timeout=0.01)
+
+    def check_version(self):
+        if self.base_serial:
+            for _ in range(1000):
+                line = self.base_serial.read_until().decode('utf-8').strip()
+                if (len(line) > 9):
+                    if line[0:9] == 'vers_stmp':
+                        if (line == self.get_system_version()):
+                            print('Baseboard version correct')
+                            self.software_version_warning = ''
+                            self.write_version()
+                            return True
+                        else:
+                            self.software_version_warning = 'baseboard version incorrect. Quick fix: run \'rm ' + lb.baseboard_updated_flag + ' && pkill -f daemon.py\''
+                            return False
+
+        self.software_version_warning = 'get baseboard version failed'
+        return False
 
 
 def init_status_cc():

@@ -37,7 +37,7 @@ Same remarks as with drone flash script apply.
 ## Flashing Baseboard:
 
 ```
-  cd $HOME/code/pats/config/firmwares/charging/avrdude  && ./avrdude -C./avrdude.conf -v -patmega328p -carduino -P/dev/baseboard -b115200 -D -Uflash:w:$HOME/code/pats/config/firmwares/charging/baseboard.ino.standard.hex:i
+  cd $HOME/code/pats/config/firmwares/charging/avrdude  && ./avrdude -C./avrdude.conf -v -patmega328p -carduino -P/dev/baseboard -b115200 -D -Uflash:w:$HOME/code/pats/config/firmwares/charging/baseboard.ino.eightanaloginputs.hex:i
 ```
 
 ## Initializing new Anvil charging pad:
