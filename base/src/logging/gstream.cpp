@@ -324,7 +324,7 @@ int GStream::prepare_buffer(GstAppSrc* appsrc, cv::Mat frameL, cv::Mat frameR) {
     want = 0;
     lock_var.unlock();
     if (ret != GST_FLOW_OK) {
-        std::cout << "GST ERROR DE PERROR from " << _file << std::endl;
+        std::cout << "GST ERROR DE PERROR " << std::to_string(ret) << "from " << _file << std::endl;
         return 2;
 
     }
@@ -371,7 +371,7 @@ int GStream::prepare_buffer(GstAppSrc* appsrc, cv::Mat image) {
     want = 0;
     lock_var.unlock();
     if (ret != GST_FLOW_OK) {
-        std::cout << "GST ERROR DE PERROR from " << _file << std::endl;
+        std::cout << "GST ERROR DE PERROR " << std::to_string(ret) << "from " << _file << std::endl;
         return 2;
     }
     return 0;
