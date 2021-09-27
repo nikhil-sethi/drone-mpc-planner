@@ -22,8 +22,9 @@ daemon_wdt_flag = flags_dir + 'daemon_wdt_flag'
 proces_wdt_flag = flags_dir + 'proces_wdt_flag'
 no_realsense_flag = flags_dir + 'no_realsense_flag'
 reset_realsense_flag = flags_dir + 'reset_realsense_flag'
+baseboard_updated_flag = flags_dir + 'baseboard_software_uploaded'
+
 wdt_fired_flag = pats_executable_dir + 'wdt_fired'
-baseboard_updated_flag = pats_executable_dir + 'baseboard_software_uploaded'
 
 local_status_txt_file = os.path.expanduser('~/pats/status/status.txt')
 local_system_txt_file = os.path.expanduser('~/pats/status/system_info.txt')
