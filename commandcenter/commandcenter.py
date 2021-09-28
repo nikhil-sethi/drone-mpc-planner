@@ -358,8 +358,8 @@ class SystemWidget(QWidget):
                     else:
                         line = '    <Member Name=\"live_image_frq\">30</Member>\n'
                 elif line.find('\"close_after_n_images\"') != -1:
-                    if self.combo_mode.currentText() == "Hunt":
-                        line = '    <Member Name=\"close_after_n_images\">10800</Member>\n'
+                    if self.combo_mode.currentText() == "Hunt" or self.combo_mode.currentText() == "Waypoint":
+                        line = '    <Member Name=\"close_after_n_images\">5400</Member>\n'
                     else:
                         line = '    <Member Name=\"close_after_n_images\">324000</Member>\n'
                 elif line.find('\"sub_mode\"') != -1:
