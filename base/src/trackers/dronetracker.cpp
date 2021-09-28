@@ -270,7 +270,6 @@ bool DroneTracker::detect_lift_off() {
 
     if (dist2takeoff > 0.1f
             && takeoff_y > 0.05f
-            && _world_item.radius > dparams.radius*0.25f
             && _world_item.radius < dparams.radius*4.f) {
         take_off_frame_cnt++;
         if (take_off_frame_cnt >= 3) {
@@ -292,8 +291,7 @@ bool DroneTracker::detect_takeoff() {
         }
     }
 
-    return  _world_item.radius > dparams.radius*0.25f  &&
-            _world_item.radius < dparams.radius*4.f &&
+    return  _world_item.radius < dparams.radius*4.f &&
             closest_to_takeoff_point.x == static_cast<int>(_world_item.image_item.x) &&
             closest_to_takeoff_point.y == static_cast<int>(_world_item.image_item.y); // maybe should create an id instead of checking the distance
 
