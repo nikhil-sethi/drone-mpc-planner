@@ -15,9 +15,9 @@ import lib_base as lb
 
 class SerialPackage:
 
-    format = '=cHBBLBfffffffBLc'  # https://docs.python.org/3/library/struct.html?highlight=struct#format-characters
+    format = '=cHBBLBfffffffBLHc'  # https://docs.python.org/3/library/struct.html?highlight=struct#format-characters
     header = 'P'
-    version = 2,  # note: put this in __init__ as well. Because python bug
+    version = 4,  # note: put this in __init__ as well. Because python bug
     led_state = 0
     watchdog_state = 0
     up_duration = 0
@@ -31,10 +31,11 @@ class SerialPackage:
     drone_current_usage = 0
     charging_pwm = 0
     charging_duration = 0
+    fan_speed = 0
     ender = '\n'
 
     def __init__(self):
-        self.version = 2  # because python bug
+        self.version = 4  # because python bug
 
     def parse(self, data_bytes):
         fields = struct.unpack(self.format, data_bytes)
@@ -53,6 +54,7 @@ class SerialPackage:
          self.drone_current_usage,
          self.charging_pwm,
          self.charging_duration,
+         self.fan_speed,
          self.ender,
          ) = fields
 
@@ -161,7 +163,7 @@ while True:
                     else:
                         logger.warning('Uh oh. Nothing received from daemon.py. Do we need the hardware watchdog to hard reboot this thing?')
 
-                    logger.debug(str(round(new_pkg.up_duration / 1000, 2)) + 's: ' + charging_state_names[new_pkg.charging_state] + ' ' + str(round(new_pkg.mah_charged, 2)) + 'mah in ' + str(round(new_pkg.charging_duration / 1000, 2)) + 's ' + str(round(new_pkg.charging_current, 2)) + 'A / ' + str(round(new_pkg.desired_current, 2)) + 'A ' + str(round(new_pkg.smoothed_voltage, 2)) + 'v bat: ' + str(round(new_pkg.battery_voltage, 2)) + 'v ' + str(round(new_pkg.contact_resistance, 2)) + 'Ω. Drone: ' + str(round(new_pkg.drone_current_usage, 2)) + ' A. PWM: ' + str(new_pkg.charging_pwm))
+                    logger.debug(str(round(new_pkg.up_duration / 1000, 2)) + 's: ' + charging_state_names[new_pkg.charging_state] + ' ' + str("%.2f" % round(new_pkg.mah_charged, 2)) + 'mah in ' + str("%.2f" % round(new_pkg.charging_duration / 1000, 2)) + 's ' + str("%.2f" % round(new_pkg.charging_current, 2)) + 'A / ' + str("%.2f" % round(new_pkg.desired_current, 2)) + 'A ' + str("%.2f" % round(new_pkg.smoothed_voltage, 2)) + 'v bat: ' + str("%.2f" % round(new_pkg.battery_voltage, 2)) + 'v ' + str("%.2f" % round(new_pkg.contact_resistance, 2)) + 'Ω. Drone: ' + str("%.2f" % round(new_pkg.drone_current_usage, 2)) + ' A. PWM: ' + str(new_pkg.charging_pwm) + ' fan: ' + str(new_pkg.fan_speed))
                     pats_pkg = serial_data[pkg_start:]
                     pats.send(pats_pkg)
                     prev_pkg = new_pkg

@@ -34,17 +34,16 @@ void Charger::run() {
                 break;
         } case state_drone_not_on_pad: {
                 disable_charging();
-                update_readings(0.1f);
-                battery_volts = 0;
+                update_readings(0.5f);
+                battery_volts = smoothed_volts;
                 pv = 0;
-                pwm = 0;
                 volt_mode_pv_initialised = false;
                 setpoint_amp_prev = 0;
                 charging_duration = 0;
+                volts_before_measuring = 0;
                 mah_charged = 0;
                 if (smoothed_volts > min_volts_detection) {
-                    battery_volts = smoothed_volts;
-                    last_amps_measure_time = millis();
+                    measure_during_charge_start_time = millis();
                     _charging_state = state_measure;
                 }
                 break;
@@ -59,14 +58,14 @@ void Charger::run() {
                 break;
         } case state_bat_dead: {
                 disable_charging();
-                update_readings(0.1f);
+                update_readings(0.5f);
                 battery_volts = smoothed_volts;
                 if (smoothed_volts > min_volts_detection)
                     _charging_state = state_drone_not_on_pad;
                 break;
         } case state_bat_does_not_charge: {
                 disable_charging();
-                update_readings(0.1f);
+                update_readings(0.5f);
                 battery_volts = smoothed_volts;
                 if (smoothed_volts < min_volts_detection)
                     _charging_state = state_drone_not_on_pad;
@@ -99,20 +98,22 @@ void Charger::run() {
                 break;
         } case state_discharge: {
                 disable_charging();
-                update_readings(0.1f);
+                update_readings(0.5f);
                 battery_volts = smoothed_volts;
-                if (smoothed_volts < max_battery_volts)
+                if (smoothed_volts < max_battery_volts) {
+                    measure_during_charge_start_time = millis();
                     _charging_state = state_measure;
+                }
                 break;
         } case state_measure: {
                 disable_charging();
-                update_smoothed_volts(0.1f);
+                update_volts(0.5f);
                 if (fabs(d_smoothed_volts) < d_voltage_is_stable_threshold && millis() - measure_during_charge_start_time > min_volt_measuring_duration) {
                     d_battery_voltage = smoothed_volts - battery_volts;
                     measure_during_charge_end_time = millis();
                     if (smoothed_volts > dangerous_battery_volts)
                         _charging_state = state_discharge;
-                    else if (charging_duration >= periodic_volt_measuring_duration && measured_smoothed_amps < min_charge_amps && setpoint_amp > min_charge_amps)
+                    else if (charging_duration >= periodic_volt_measuring_duration && measured_smoothed_amps < min_charge_amps && setpoint_amp > min_charge_amps && volts_before_measuring > smoothed_volts + min_charge_volts_offset && smoothed_volts >= min_volts_detection)
                         _charging_state = state_contact_problem;
                     else if (smoothed_volts >= min_battery_volts_trickle_charge) {
                         if (!volt_mode_pv_initialised) {
@@ -172,10 +173,8 @@ bool Charger::measuring_time() {
 }
 
 void Charger::update_readings(float alpha) {
-    auto amps = update_amps();
-    update_smoothed_volts(alpha);
-    update_smoothed_amps(amps);
-    update_display_amps(amps);
+    update_amps();
+    update_volts(alpha);
     float dt = (millis() - last_amps_measure_time);
     last_amps_measure_time = millis();
     mah_charged += (measured_smoothed_amps - drone_amps_burn)  * dt / 3600.f ;
@@ -184,29 +183,25 @@ void Charger::update_readings(float alpha) {
 
 float Charger::volts_on_pads_uncalibrated() {
     // read volts pin twice to give the internal capacitor time to settle
-    analogRead(VOLTAGE_PIN);
-    delay(3);
+    // analogRead(VOLTAGE_PIN);
+    // delay(3);
     return (analogRead(VOLTAGE_PIN) + 0.5f) * 5.0f / 1024.0f;
 }
 float Charger::volts_on_pads() {
     return volts_on_pads_uncalibrated() + voltage_calibration_value;
 }
-void Charger::update_smoothed_volts(float alpha) {
+void Charger::update_volts(float alpha) {
     float v = moving_average(alpha, volts_on_pads(), smoothed_volts);
     d_smoothed_volts = v - smoothed_volts;
     smoothed_volts = v;
 }
 
-float Charger::update_amps() {
+void Charger::update_amps() {
     float volts = analogRead(CURRENT_PIN) / 1024.0f * 5.0f;
-    float amps = volts / current_measurement_resistance;
-    return amps;
-}
-void Charger::update_smoothed_amps(float amps) {
-    measured_smoothed_amps = moving_average(0.05, amps, measured_smoothed_amps);
-}
-void Charger::update_display_amps(float amps) {
-    measured_display_amps = moving_average(0.005, amps, measured_display_amps);
+    measured_amps = volts / current_measurement_resistance;
+    measured_smoothed_amps = moving_average(0.05, measured_amps, measured_smoothed_amps);
+    measured_display_amps = moving_average(0.005, measured_amps, measured_display_amps);
+
 }
 
 void Charger::disable_charging() {
@@ -215,6 +210,7 @@ void Charger::disable_charging() {
 }
 void Charger::charge(ChargingMode mode) {
     update_readings(0.1f);
+    volts_before_measuring = smoothed_volts;
     estimate_resistance();
     if (mode == charging_mode_contact_problem) {
         pwm = min_charge_pwm;
@@ -245,7 +241,7 @@ void Charger::current_control() {
         last_control_time = millis();
 
         //feedback
-        float fb_error = (setpoint_amp - measured_smoothed_amps);
+        float fb_error = (setpoint_amp - measured_amps);
         float fb_term = fb_error * p_current_gain;
         //feed forward, not completely ironed out. https://github.com/pats-drones/pats/issues/1047
         float ff_error = (setpoint_amp - setpoint_amp_prev);

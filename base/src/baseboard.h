@@ -41,6 +41,7 @@ private:
         float drone_amps_burn;
         unsigned char charging_pwm;
         uint32_t charging_duration;
+        uint16_t fan_speed;
         const char ender = '\n';
     };
 

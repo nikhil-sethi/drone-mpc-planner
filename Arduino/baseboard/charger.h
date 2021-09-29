@@ -50,7 +50,7 @@ private:
     const float min_charge_amps = 0.1f;
     const float min_charge_volts_offset = 0.4f; // the voltage over vbat at which current actually starts to flow. Probably related to the diode. And probably its not really const... https://github.com/pats-drones/pats/issues/1047
     const uint8_t min_charge_pwm = 35; // the minimum pwm at which current starts to flow
-    const float charge_max = battery_size_mah * 0.001f * 1.5f; // 1.5C. Because 2C seems to overload the charger...
+    const float charge_max = battery_size_mah * 0.001f * 1.2f; // 1.2C. Because more seems to overload the charger...
     const float charge_1C = battery_size_mah * 0.001f * 1.f;
     const float charge_half_C = battery_size_mah * 0.001f * 0.5f;
 
@@ -68,6 +68,8 @@ private:
     float d_smoothed_volts = 0.f;
     float battery_volts = 0.f;
     float d_battery_voltage = 0.f;
+    float volts_before_measuring = 0.f;
+    float measured_amps = 0.f;
     float measured_smoothed_amps = 0.f;
     float measured_display_amps = 0.f;
     float charge_resistance = 1.f;
@@ -85,13 +87,11 @@ private:
     void current_control();
     void volt_control(float measured_battery_volts);
 
-    float update_amps();
+    void update_amps();
     float volts_on_pads();
     float volts_on_pads_uncalibrated();
     void update_readings(float alpha);
-    void update_smoothed_volts(float alpha);
-    void update_smoothed_amps(float amps);
-    void update_display_amps(float amps);
+    void update_volts(float alpha);
 
     bool measuring_time();
     void measure_during_charge();

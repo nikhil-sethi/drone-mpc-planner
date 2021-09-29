@@ -28,7 +28,7 @@ void Baseboard::worker_receive() {
     char buffer[sizeof(SerialPackage)] = {0};
     SerialPackage ori_pkg;
     while (!exit_thread) {
-        usleep(1e6);
+        usleep(5e5);
         auto valread = read(sock, buffer, sizeof(SerialPackage));
         if (valread > 0)
             read_timeouts = 0;
@@ -55,8 +55,7 @@ void Baseboard::worker_receive() {
             }
         } else {
             read_timeouts++;
-            std::cout << "Warning: baseboard read timeout:" << read_timeouts << std::endl;
-            if (read_timeouts > 3) {
+            if (read_timeouts > 6) {
                 exit_thread = true;
                 std::cout << "Baseboard comm receive failed" << std::endl;
                 throw std::runtime_error("Baseboard comm receive failed");
@@ -70,7 +69,6 @@ void Baseboard::worker_send() {
     std::string msg = "Harrow from Pats!\n";
     while (!exit_thread) {
         ssize_t ret = send(sock, msg.c_str(), msg.length(), MSG_NOSIGNAL);
-        std::cout << "Send return code: " << ret << std::endl;
         if (ret != static_cast<ssize_t>(msg.length())) {
             std::cout << "Baseboard comm send failed" << std::endl;
             throw std::runtime_error("Baseboard comm send failed");

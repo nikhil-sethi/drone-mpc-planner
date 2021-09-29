@@ -3,6 +3,7 @@
 #include "eeprom_settings.h"
 
 #define NUC_ENABLE_PIN 8
+#define FAN_RPM_PIN 3
 
 #define SECOND_IN_MILLIS 1000L
 #define MINUTE_IN_MILLIS (60L * SECOND_IN_MILLIS)
@@ -23,6 +24,7 @@ unsigned long nuc_watchdog_timer = millis();
 uint8_t watchdog_reset_count = 0;
 uint16_t watchdog_boot_count = 0;
 uint16_t baseboard_boot_count = 0;
+uint16_t fan_speed = 0;
 
 void setup() {
     init_values_from_eeprom();
@@ -41,6 +43,8 @@ void setup() {
 
     pinMode(LED_ENABLE_PIN, OUTPUT);
     digitalWrite(LED_ENABLE_PIN, 1);
+
+    pinMode(FAN_RPM_PIN, INPUT_PULLUP);
 
     charger.init();
 
@@ -84,6 +88,7 @@ void loop() {
     handle_serial_commands();
     handle_watchdog();
     handle_nuc_reset();
+    // fan_speed = pulseInLong(FAN_RPM_PIN, LOW);
 
     charger.run();
     if (!charger.calibrating())
@@ -103,6 +108,7 @@ void write_serial() {
     pkg.led_state = digitalRead(LED_ENABLE_PIN);
     pkg.watchdog_state = watchdog_enabled;
     pkg.up_duration = millis();
+    pkg.fan_speed = fan_speed;
     charger.fill_serial_package(&pkg);
     Serial.write((char *)&pkg, sizeof(SerialPackage));
 

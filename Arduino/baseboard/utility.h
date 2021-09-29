@@ -2,7 +2,7 @@
 
 #include <WString.h>
 
-#define VERSION 2
+#define VERSION 4
 #define PATS_HEADER 'P'
 struct SerialPackage {
     const char header = 'P';
@@ -20,6 +20,7 @@ struct SerialPackage {
     float drone_amps_burn;
     unsigned char charging_pwm;
     uint32_t charging_duration;
+    uint16_t fan_speed;
     const char ender = '\n';
 };
 
