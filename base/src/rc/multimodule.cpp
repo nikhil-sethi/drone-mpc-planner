@@ -58,7 +58,7 @@ bool MultiModule::connect() {
 void MultiModule::init(int drone_id) {
 
     if (dparams.tx == tx_frskyd8 || drone_id > 50)
-        drone_id -=50; //TMP HACK
+        drone_id %=50; //TMP HACK
 
     _drone_id_rxnum = drone_id;
 
