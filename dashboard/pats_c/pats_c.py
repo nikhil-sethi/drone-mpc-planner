@@ -167,30 +167,12 @@ def create_system_filter_sql_str(start_date, system):
 
 
 def window_filter_monster(insect_df, monster_df):
-    # optimisation oppurtunity:
-    # monster_times = monster_df['time'].values
-    # insects_with_monsters = [np.sum((monster_times > insect_time - pd.Timedelta(minutes=5)*(monster_times < insect_time + pd.Timedelta(minutes=5)) for insect_time in insect_df['time'].value]
-    # insect_without_monsters = insect_df.loc[!insects_with_monsters]
-
-    monster_id = 0
-    insect_id = 0
-    associated_monster_ids = []
-    while insect_id < len(insect_df) and monster_id < len(monster_df):
-        insect = insect_df.iloc[insect_id]
-        while monster_id < len(monster_df):
-            monster = monster_df.iloc[monster_id]
-            monster_start = monster['time'] - datetime.timedelta(minutes=5)
-            monster_end = monster['time'] + datetime.timedelta(minutes=5)
-            if insect['time'] > monster_start and insect['time'] <= monster_end:
-                associated_monster_ids.append(insect_id)
-                insect_id += 1
-                break
-            elif insect['time'] > monster_end:
-                monster_id += 1
-            else:
-                insect_id += 1
-                break
-    return insect_df.drop(insect_df.index[associated_monster_ids])
+    monster_times = monster_df['time'].values
+    insect_times = insect_df['time'].values
+    monster_times_mesh, insect_times_mesh = np.meshgrid(monster_times, insect_times)
+    insects_with_monsters = np.sum((monster_times_mesh >= insect_times_mesh - pd.Timedelta(minutes=5)) * (monster_times_mesh <= insect_times_mesh + pd.Timedelta(minutes=5)), axis=1)
+    insect_without_monsters = insect_df.iloc[insects_with_monsters == 0]
+    return insect_without_monsters
 
 
 def load_insect_df(systems, start_date, end_date, insect_type):
