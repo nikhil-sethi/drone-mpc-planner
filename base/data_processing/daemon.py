@@ -316,12 +316,12 @@ class wdt_tunnel_task(pats_task):
 
         if (datetime.today() - self.tunnel_ok_time).total_seconds() > 3 * 60 * 60 and datetime.today().hour == 13:
             self.error_cnt += 1
-            self.logger.warning('Tunnel watchdog alert! Rebooting!')
+            self.logger.error('Tunnel watchdog alert! Rebooting!')
             cmd = 'sudo rtcwake -m off -s 120'
             lb.execute(cmd, 1, logger_name=self.name)
         elif not tunnel_ok:
             self.error_cnt += 1
-            self.logger.error('Tunnel watchdog alert! Holding of reboot until 13:00 though')
+            self.logger.warning('Tunnel watchdog alert! Holding of reboot until 13:00 though')
 
 
 class check_system_task(pats_task):
