@@ -28,6 +28,9 @@ void FlightArea::init(std::string replay_dir, Cam* cam) {
 std::vector<Plane> FlightArea::deserialize_location(std::string replay_dir) {
     XML_Location location;
     if (replay_dir == "") {
+
+        if (!file_exist("../xml/locations/" + pparams.location + ".xml"))
+            throw std::runtime_error("Location xml does not exist: " + pparams.location);
         location.deserialize("../xml/locations/" + pparams.location + ".xml");
         if (file_exist("./logging/location.xml")) {
             std::string rmcmd = "rm ./logging/location.xml";
