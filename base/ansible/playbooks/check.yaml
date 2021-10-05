@@ -1,6 +1,5 @@
 ---
 - hosts: monitors
-  strategy: free
   gather_facts: no
   tasks:
   - name: print git sha
