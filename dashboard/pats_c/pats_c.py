@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import datetime
-import math
 import os
 import re
 from typing import List, Dict, Tuple
@@ -161,21 +160,22 @@ def use_proto(start_date):
 
 def create_system_filter_sql_str(start_date, system):
     if use_proto(start_date):  # remove proto #533 closed in march 2021, so most systems probably were updated in april
-        return '''(system = :system OR system = :system_proto)''', {'system': system, 'system_proto': system.replace('pats', 'pats-proto')}
+        return f'''(system = '{system}' OR system = '{system.replace('pats', 'pats-proto')}') '''
     else:
-        return '''system = :system''', {'system': system}
+        return f'''system = '{system}' '''
 
 
 def window_filter_monster(insect_df, monster_df):
     monster_times = monster_df['time'].values
     insect_times = insect_df['time'].values
-    monster_times_mesh, insect_times_mesh = np.meshgrid(monster_times, insect_times)
+    monster_times_mesh, insect_times_mesh = np.meshgrid(monster_times, insect_times, sparse=True)
     insects_with_monsters = np.sum((monster_times_mesh >= insect_times_mesh - pd.Timedelta(minutes=5)) * (monster_times_mesh <= insect_times_mesh + pd.Timedelta(minutes=5)), axis=1)
     insect_without_monsters = insect_df.iloc[insects_with_monsters == 0]
     return insect_without_monsters
 
 
-def load_insect_df(systems, start_date, end_date, insect_type):
+def load_insect_df(systems, start_date, end_date, insect_type, columns=[]):
+    columns.extend(['system', 'time', 'Monster'])
     insect_df = pd.DataFrame()
     monster_df = pd.DataFrame()
     systems = installation_dates(systems)
@@ -188,16 +188,14 @@ def load_insect_df(systems, start_date, end_date, insect_type):
                 print(f'ERROR startdate {system}: ' + str(e))
                 real_start_date = start_date
 
-            time_str = f'''time > "{(real_start_date-datetime.timedelta(minutes=5)).strftime('%Y%m%d_%H%M%S')}" AND time <= "{(end_date+datetime.timedelta(minutes=5)).strftime('%Y%m%d_%H%M%S')}"'''  # with added monster window
-            system_str, system_params = create_system_filter_sql_str(start_date, system)
+            time_str = f'''time > '{(real_start_date-datetime.timedelta(minutes=5)).strftime('%Y%m%d_%H%M%S')}' AND time <= '{(end_date+datetime.timedelta(minutes=5)).strftime('%Y%m%d_%H%M%S')}' '''  # with added monster window
+            system_str = create_system_filter_sql_str(start_date, system)
             insect_str = create_insect_filter_sql_str(start_date, insect_type)
-            sql_str = f'''SELECT moth_records.* FROM moth_records
+            sql_str = f'''SELECT {', '.join(set(columns))} FROM moth_records
                          WHERE {system_str}
                          AND {time_str}
-                         AND {insect_str}
-                         ORDER BY time'''  # nosec see #952
-            insect_sys_df = pd.read_sql_query(sql_str, con, params=system_params)
-
+                         AND {insect_str}'''  # nosec see #952
+            insect_sys_df = pd.read_sql_query(sql_str, con)
             insect_sys_df['time'] = pd.to_datetime(insect_sys_df['time'], format='%Y%m%d_%H%M%S')
 
             monster_sys_df = insect_sys_df.loc[insect_sys_df['Monster'] == 1]
@@ -232,7 +230,7 @@ def load_insects_of_hour(systems, start_date, end_date, hour, insect_type):
                 print(f'ERROR startdate {system}: ' + str(e))
                 real_start_date = start_date
 
-            system_str, system_params = create_system_filter_sql_str(start_date, system)
+            system_str = create_system_filter_sql_str(start_date, system)
             insect_str = create_insect_filter_sql_str(start_date, insect_type)
 
             sql_str = f'''SELECT moth_records.* FROM moth_records
@@ -240,7 +238,7 @@ def load_insects_of_hour(systems, start_date, end_date, hour, insect_type):
                 AND time > :start_time AND time <= :end_time
                 AND time LIKE "_________{hour_str}____"
                 AND {insect_str}'''  # nosec see #952
-            insect_df = insect_df.append(pd.read_sql_query(sql_str, con, params={**system_params, 'start_time': real_start_date.strftime('%Y%m%d_%H%M%S'), 'end_time': end_date.strftime('%Y%m%d_%H%M%S')}))
+            insect_df = insect_df.append(pd.read_sql_query(sql_str, con, params={'start_time': real_start_date.strftime('%Y%m%d_%H%M%S'), 'end_time': end_date.strftime('%Y%m%d_%H%M%S')}))
     insect_df['time'] = pd.to_datetime(insect_df['time'], format='%Y%m%d_%H%M%S')
     if use_proto(start_date):
         insect_df['system'].replace({'-proto': ''}, regex=True, inplace=True)
@@ -479,6 +477,27 @@ def create_heatmap(unique_dates, heatmap_date_df, insect_counts, monster_counts,
     )
     style = {'display': 'block', 'margin-left': 'auto', 'margin-right': 'auto', 'width': '80%'}
     return fig, style
+
+
+def update_heatmap(selected_heat, unselected_heat, fig: go.Heatmap):
+    heatmap_data = np.array(fig['data'][0]['z'])
+    unique_dates = fig['data'][0]['y']
+    if selected_heat:
+        selected_heat = pd.read_json(selected_heat, orient='split')
+        for _, cel in selected_heat.iterrows():
+            x = cel['x']
+            y = unique_dates.index(cel['lalaladate'])
+            if heatmap_data[y, x] >= 0:
+                heatmap_data[y, x] = Heatmap_Cell.selected_cell.value - heatmap_data[y, x]
+    if unselected_heat:
+        unselected_heat = pd.read_json(unselected_heat, orient='split')
+        for _, cel in unselected_heat.iterrows():
+            x = cel['x']
+            y = unique_dates.index(cel['lalaladate'])
+            if heatmap_data[y, x] <= Heatmap_Cell.selected_cell.value:
+                heatmap_data[y, x] = Heatmap_Cell.selected_cell.value - heatmap_data[y, x]
+    fig['data'][0]['z'] = heatmap_data
+    return fig
 
 
 def create_hist(df_hist, unique_dates, system_labels):
@@ -727,22 +746,25 @@ def dash_application():
 
     def update_selected_heat(clickData_hm, selected_heat):
         if not clickData_hm:
-            return None
+            return None, None
         else:
+            columns = ['x', 'lalaladate', 'hour']  # lalaladate -> python bug prevents me from using 'date' https://stackoverflow.com/questions/48369578/prevent-pandas-to-json-from-adding-time-component-to-date-object
+            unselected_heat = pd.DataFrame(columns=columns)
             for cel in clickData_hm['points']:
                 if cel['z'] == Heatmap_Cell.system_offline_cell.value or cel['z'] == Heatmap_Cell.system_down_cell.value:
-                    return None  # if a black cell is clicked, interpret that as cancelling the whole selection
+                    return None, selected_heat  # if a black cell is clicked, interpret that as cancelling the whole selection
 
                 x = hour_labels.index(cel['x'])
 
                 unclicked = False
-                columns = ['x', 'lalaladate', 'hour']  # lalaladate -> python bug prevents me from using 'date' https://stackoverflow.com/questions/48369578/prevent-pandas-to-json-from-adding-time-component-to-date-object
+
                 if not selected_heat:
                     selected_heat = pd.DataFrame(columns=columns)
                 else:
                     selected_heat = pd.read_json(selected_heat, orient='split')
                 for index, _ in selected_heat.iterrows():
-                    if cel['z'] == Heatmap_Cell.selected_cell.value:
+                    if cel['z'] <= Heatmap_Cell.selected_cell.value:
+                        unselected_heat = unselected_heat.append(selected_heat.loc[index, :])
                         selected_heat = selected_heat.drop(index=index)
                         unclicked = True
                         break
@@ -755,7 +777,8 @@ def dash_application():
                         selected_heat = selected_heat.append(df_row, ignore_index=True)
 
             selected_heat = selected_heat.to_json(date_format='iso', orient='split')
-        return selected_heat
+            unselected_heat = unselected_heat.to_json(date_format='iso', orient='split')
+        return selected_heat, unselected_heat
 
     @ app.callback(
         Output('hete_kaart', 'figure'),
@@ -772,14 +795,14 @@ def dash_application():
         Input('insects_dropdown', 'value'),
         Input('hete_kaart', 'clickData'),
         State('selected_heatmap_data', 'children'),
-        State('systems_dropdown', 'options'))
-    def update_ui_hist_and_heat(start_date, end_date, selected_systems, insect_types, clickData_hm, selected_heat, system_options):  # pylint: disable=unused-variable
-        hm_fig = go.Figure(data=go.Heatmap())
-        hist_fig = go.Figure(data=go.Histogram())
-        hist24h_fig = go.Figure(data=go.Histogram())
-        hm_style = {'display': 'none'}
-        hist_style = {'display': 'none'}
-        hist24h_style = {'display': 'none'}
+        State('systems_dropdown', 'options'),
+        State('hete_kaart', 'figure'),
+        State('staaf_kaart', 'figure'),
+        State('staaf24h_kaart', 'figure'),
+        State('hete_kaart', 'style'),
+        State('staaf_kaart', 'style'),
+        State('staaf24h_kaart', 'style'))
+    def update_ui_hist_and_heat(start_date, end_date, selected_systems, insect_types, clickData_hm, selected_heat, system_options, hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style):  # pylint: disable=unused-variable
         loading_animation_style = {'display': 'block'}
         system_labels = {x['value']: x['label'] for x in system_options if x['value'] in selected_systems}
 
@@ -788,29 +811,33 @@ def dash_application():
             selected_heat = None
             clickData_hm = None
         selected_systems = remove_unauthoirized_system(selected_systems)
-        if not selected_systems or not insect_types or not end_date or not start_date:
+        if start_date and end_date:
+            end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+            start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+            end_date = datetime.datetime.combine(end_date, datetime.datetime.min.time())  # the 12:00 O'clock start time is not included here. (so not a datetime, but a date)
+            start_date = datetime.datetime.combine(start_date, datetime.datetime.min.time())  # idem
+        if not selected_systems or not insect_types or not end_date or not start_date or (end_date - start_date).days < 1:
+            hm_style = {'display': 'none'}
+            hist_style = {'display': 'none'}
+            hist24h_style = {'display': 'none'}
             return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, loading_animation_style
 
-        end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
-        start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
-        end_date = datetime.datetime.combine(end_date, datetime.datetime.min.time())  # the 12:00 O'clock start time is not included here. (so not a datetime, but a date)
-        start_date = datetime.datetime.combine(start_date, datetime.datetime.min.time())  # idem
-        if (end_date - start_date).days < 1:
-            return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, loading_animation_style
+        if prop_id != 'hete_kaart.clickData' and prop_id != 'classification_dropdown.value':
+            unique_dates, heatmap_insect_counts, heatmap_monster_counts, heatmap_date_df, df_hist, hist_24h_data = load_insect_data(selected_systems, start_date, end_date, insect_types)
+            if not len(unique_dates):
+                hm_style = {'display': 'none'}
+                hist_style = {'display': 'none'}
+                hist24h_style = {'display': 'none'}
+                return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, loading_animation_style
 
-        unique_dates, heatmap_insect_counts, heatmap_monster_counts, heatmap_date_df, df_hist, hist_24h_data = load_insect_data(selected_systems, start_date, end_date, insect_types)
-        if not len(unique_dates):
-            return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, loading_animation_style
+            hist_fig, hist_style = create_hist(df_hist, unique_dates, system_labels)
+            hist24h_fig, hist24h_style = create_24h_hist(hist_24h_data, hour_labels, system_labels)
 
-        hist_fig, hist_style = create_hist(df_hist, unique_dates, system_labels)
-        hist24h_fig, hist24h_style = create_24h_hist(hist_24h_data, hour_labels, system_labels)
-
-        if prop_id == 'hete_kaart.clickData' or prop_id == 'classification_dropdown.value':
-            selected_heat = update_selected_heat(clickData_hm, selected_heat)
-
-        heatmap_insect_counts, sysdown_heatmap_counts = load_mode_data(unique_dates, heatmap_insect_counts, heatmap_monster_counts, selected_systems, start_date, end_date)  # add mode info to heatmap, which makes the heatmap show when the system was online (color) or offline (black)
-        hm_fig, hm_style = create_heatmap(unique_dates, heatmap_date_df, heatmap_insect_counts, heatmap_monster_counts, sysdown_heatmap_counts, hour_labels, selected_heat)
-
+            heatmap_insect_counts, sysdown_heatmap_counts = load_mode_data(unique_dates, heatmap_insect_counts, heatmap_monster_counts, selected_systems, start_date, end_date)  # add mode info to heatmap, which makes the heatmap show when the system was online (color) or offline (black)
+            hm_fig, hm_style = create_heatmap(unique_dates, heatmap_date_df, heatmap_insect_counts, heatmap_monster_counts, sysdown_heatmap_counts, hour_labels, selected_heat)
+        elif prop_id == 'hete_kaart.clickData' or prop_id == 'classification_dropdown.value':
+            selected_heat, unselected_heat = update_selected_heat(clickData_hm, selected_heat)
+            hm_fig = update_heatmap(selected_heat, unselected_heat, hm_fig)
         loading_animation_style = {'display': 'none'}
 
         return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, loading_animation_style
@@ -846,7 +873,7 @@ def dash_application():
         prop_id = dash.callback_context.triggered[0]['prop_id']
         if prop_id == 'staaf_kaart.selectedData' or prop_id == 'staaf24h_kaart.selectedData' or prop_id == 'hete_kaart.clickData' or prop_id == 'scatter_x_dropdown.value' or prop_id == 'scatter_y_dropdown.value':
             if prop_id == 'hete_kaart.clickData':
-                selected_heat = update_selected_heat(clickData_hm, selected_heat)
+                selected_heat, _ = update_selected_heat(clickData_hm, selected_heat)
             elif prop_id == 'staaf_kaart.selectedData' or prop_id == 'staaf24h_kaart.selectedData':
                 selected_heat = None
             insects = pd.DataFrame()
@@ -857,13 +884,13 @@ def dash_application():
                     if hour < 12:
                         hour += 24
                     start_date = datetime.datetime.strptime(hm_cell['lalaladate'], '%d-%m-%Y') + datetime.timedelta(hours=hour)
-                    insects_hour, _ = load_insect_df(selected_systems, start_date, start_date + datetime.timedelta(hours=1), insect_types)
+                    insects_hour, _ = load_insect_df(selected_systems, start_date, start_date + datetime.timedelta(hours=1), insect_types, ['uid', 'Video_Filename', 'Folder', 'Filename', 'Human_Classification', scatter_x_value, scatter_y_value])
                     insects = insects.append(insects_hour)
             elif hist_selected_bars:
                 for bar in hist_selected_bars['points']:
                     sys = bar['customdata'][1]
                     start_date = datetime.datetime.strptime(bar['x'], '%d-%m-%Y') + datetime.timedelta(hours=12)
-                    insects_day, _ = load_insect_df([sys], start_date, start_date + datetime.timedelta(days=1), insect_types)
+                    insects_day, _ = load_insect_df([sys], start_date, start_date + datetime.timedelta(days=1), insect_types, ['uid', 'Video_Filename', 'Folder', 'Filename', 'Human_Classification', scatter_x_value, scatter_y_value])
                     insects = insects.append(insects_day)
             elif hist24h_selected_bars:
                 start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
