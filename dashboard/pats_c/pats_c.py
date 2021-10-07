@@ -273,9 +273,9 @@ def load_insect_data(selected_systems, start_date, end_date, insect_type):
     # We count insects from 12 in the afternoon to 12 in the afternoon. Therefore we shift the data in the for loops with 12 hours.
     # So a insect at 23:00 on 14-01 is counted at 14-01 and a insect at 2:00 on 15-01 also at 14-01
     # A insect seen at 13:00 on 14-01 still belongs to 14-01 but when seen at 11:00 on 14-01 is counted at 13-01
-    end_date = datetime.datetime.combine(end_date, datetime.datetime.min.time())
-    start_date = datetime.datetime.combine(start_date, datetime.datetime.min.time())
-    insect_df, monster_df = load_insect_df(selected_systems, start_date, end_date + datetime.timedelta(hours=12), insect_type)  # Shift to include the insects of today until 12:00 in the afternoon.
+    start_datetime = start_date + datetime.timedelta(hours=12)
+    end_datetime = end_date + datetime.timedelta(hours=12)
+    insect_df, monster_df = load_insect_df(selected_systems, start_datetime, end_datetime, insect_type)  # Shift to include the insects of today until 12:00 in the afternoon.
     unique_dates = pd.date_range(start_date, end_date - datetime.timedelta(days=1), freq='d')
 
     hist_data = pd.DataFrame(index=unique_dates, columns=selected_systems)
@@ -351,6 +351,9 @@ def load_mode_data(unique_dates, heatmap_insect_counts, heatmap_monster_counts, 
     if not len(unique_dates):
         return [], []
 
+    start_datetime = start_date + datetime.timedelta(hours=12)
+    end_datetime = end_date + datetime.timedelta(hours=12)
+
     modemap_data = heatmap_insect_counts.copy()
     modemap_data.fill(-666)
     sysdown_heatmap_counts = heatmap_insect_counts.copy()
@@ -358,28 +361,37 @@ def load_mode_data(unique_dates, heatmap_insect_counts, heatmap_monster_counts, 
     t_start_id = 0
     t_end_id = 1
     mode_id = 2
-    start_date = datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time()) + datetime.timedelta(hours=12) - datetime.timedelta(days=(end_date - start_date).days)
     systems = installation_dates(systems)
 
     for (sys, installation_date) in systems:
         installation_date = datetime.datetime.strptime(installation_date, '%Y%m%d_%H%M%S')
-        start_date = max([installation_date, start_date])
-        start_date_str = start_date.strftime('%Y%m%d_%H%M%S')
-        sql_str = f'SELECT start_datetime,end_datetime,op_mode FROM mode_records WHERE system="{sys}" AND start_datetime > :start_date ORDER BY start_datetime', {'start_date': start_date_str, 'sys': sys}  # nosec see #952
+        start_datetime_str = start_datetime.strftime('%Y%m%d_%H%M%S')
+        end_datetime_str = end_datetime.strftime('%Y%m%d_%H%M%S')
+        sql_str = 'SELECT start_datetime,end_datetime,op_mode FROM mode_records WHERE system="' + sys + '" AND end_datetime > "' + start_datetime_str + '" AND start_datetime < "' + end_datetime_str + '" ORDER BY start_datetime'  # nosec see #952
         with patsc.open_data_db() as con:
-            modes = con.execute(*sql_str).fetchall()
-        modes = insert_down_time(modes, start_date, end_date, t_start_id, t_end_id)
+            modes = con.execute(sql_str).fetchall()
+        modes = insert_down_time(modes, start_datetime, end_datetime, t_start_id, t_end_id)
 
         for mode in modes:
-            mode_start = datetime.datetime.strptime(mode[t_start_id], '%Y%m%d_%H%M%S') - datetime.timedelta(hours=12)
-            mode_end = datetime.datetime.strptime(mode[t_end_id], '%Y%m%d_%H%M%S') - datetime.timedelta(hours=12)
+            mode_start = datetime.datetime.strptime(mode[t_start_id], '%Y%m%d_%H%M%S')
+            mode_end = datetime.datetime.strptime(mode[t_end_id], '%Y%m%d_%H%M%S')
             if mode_end > mode_start:  # there were some wrong logs. This check can possibly be removed at some point.
-                tot_hours = math.ceil((mode_end - mode_start).total_seconds() / 3600)
+                tot_hours = round((mode_end - mode_start).total_seconds() / 3600)
             else:
                 continue
 
-            start_day = (mode_start.date() - start_date.date()).days
-            start_hour = mode_start.hour
+            if mode_start < start_datetime:
+                # the mode entrie started before the selected start_datetime.
+                start_day = 0
+                start_hour = 0
+                tot_hours -= round((start_datetime - mode_start).seconds / 3600)
+            else:
+                start_day = (mode_start.date() - start_datetime.date()).days
+                if mode_start.hour < 12:
+                    start_day -= 1
+                    start_hour = mode_start.hour + 12
+                else:
+                    start_hour = mode_start.hour - 12
 
             m = convert_mode_to_number(mode[mode_id])
             for hour in range(0, tot_hours):
@@ -391,13 +403,15 @@ def load_mode_data(unique_dates, heatmap_insect_counts, heatmap_monster_counts, 
                     modemap_data[start_day + int(extra_days), nh] = m
                 if m == convert_mode_to_number('down'):
                     sysdown_heatmap_counts[start_day + int(extra_days), nh] += 1
+                if m == convert_mode_to_number('monitoring') and modemap_data[start_day + int(extra_days), nh] <= -1:
+                    modemap_data[start_day + int(extra_days), nh] = m
 
-        for i in range(0, modemap_data.shape[0]):
-            for j in range(0, modemap_data.shape[1]):
-                if modemap_data[i, j] == convert_mode_to_number('down') and not heatmap_insect_counts[i, j] and not heatmap_monster_counts[i, j]:
-                    heatmap_insect_counts[i, j] = Heatmap_Cell.system_down_cell.value
-                elif modemap_data[i, j] < -1 and not heatmap_insect_counts[i, j] and not heatmap_monster_counts[i, j]:
-                    heatmap_insect_counts[i, j] = Heatmap_Cell.system_offline_cell.value
+    for i in range(0, modemap_data.shape[0]):
+        for j in range(0, modemap_data.shape[1]):
+            if modemap_data[i, j] == convert_mode_to_number('down') and not heatmap_insect_counts[i, j] and not heatmap_monster_counts[i, j]:
+                heatmap_insect_counts[i, j] = Heatmap_Cell.system_down_cell.value
+            elif modemap_data[i, j] < -1 and not heatmap_insect_counts[i, j] and not heatmap_monster_counts[i, j]:
+                heatmap_insect_counts[i, j] = Heatmap_Cell.system_offline_cell.value
     return heatmap_insect_counts, sysdown_heatmap_counts
 
 
@@ -774,11 +788,16 @@ def dash_application():
             selected_heat = None
             clickData_hm = None
         selected_systems = remove_unauthoirized_system(selected_systems)
-        if start_date and end_date:
-            end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
-            start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
-        if not selected_systems or not insect_types or not end_date or not start_date or (end_date - start_date).days < 1:
+        if not selected_systems or not insect_types or not end_date or not start_date:
             return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, loading_animation_style
+
+        end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+        start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+        end_date = datetime.datetime.combine(end_date, datetime.datetime.min.time())  # the 12:00 O'clock start time is not included here. (so not a datetime, but a date)
+        start_date = datetime.datetime.combine(start_date, datetime.datetime.min.time())  # idem
+        if (end_date - start_date).days < 1:
+            return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, loading_animation_style
+
         unique_dates, heatmap_insect_counts, heatmap_monster_counts, heatmap_date_df, df_hist, hist_24h_data = load_insect_data(selected_systems, start_date, end_date, insect_types)
         if not len(unique_dates):
             return hm_fig, hist_fig, hist24h_fig, hm_style, hist_style, hist24h_style, selected_heat, loading_animation_style
