@@ -161,7 +161,7 @@ def use_proto(start_date):
 
 def create_system_filter_sql_str(start_date, system):
     if use_proto(start_date):  # remove proto #533 closed in march 2021, so most systems probably were updated in april
-        return '''(system = :system OR system = :system_proto''', {'system': system, 'system_proto': system.replace('pats', 'pats-proto')}
+        return '''(system = :system OR system = :system_proto)''', {'system': system, 'system_proto': system.replace('pats', 'pats-proto')}
     else:
         return '''system = :system''', {'system': system}
 
