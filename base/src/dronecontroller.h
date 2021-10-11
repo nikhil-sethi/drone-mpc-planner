@@ -21,6 +21,7 @@ static const char* joy_states_names[] = { "js_manual",
 static const char* flight_mode_names[] = { "fm_joystick_check",
                                            "fm_disarmed",
                                            "fm_inactive",
+                                           "fm_wait",
                                            "fm_blink",
                                            "fm_spinup",
                                            "fm_manual",
@@ -40,6 +41,7 @@ static const char* flight_mode_names[] = { "fm_joystick_check",
                                            "fm_long_range_forth",
                                            "fm_long_range_back",
                                            "fm_headed",
+                                           "fm_reset_yaw_on_pad",
                                            "fm_reset_headless_yaw",
                                            "fm_correct_yaw",
                                            "fm_calib_thrust",
@@ -64,6 +66,7 @@ public:
         fm_joystick_check,
         fm_disarmed,
         fm_inactive,
+        fm_wait,
         fm_blink,
         fm_spinup,
         fm_manual,
@@ -83,6 +86,7 @@ public:
         fm_long_range_forth,
         fm_long_range_back,
         fm_headed,
+        fm_reset_yaw_on_pad,
         fm_reset_headless_yaw,
         fm_correct_yaw,
         fm_calib_thrust,
@@ -172,7 +176,9 @@ private:
 
     const int required_pad_att_calibration_cnt = 15;
     const cv::Point2f allowed_pad_att_calibration_range = cv::Point2f(7.5f,7.5f);
-    const cv::Point2f allowed_att_calibration_range = cv::Point2f(0.5f,0.25f); // the max difference between the current att and the att measured during the last blink detect
+    const cv::Point2f allowed_att_calibration_range = cv::Point2f(1.f,1.f); // the max difference between the current att and the att measured during the last blink detect
+    const cv::Point2f att_on_pad_range = cv::Point2f(30.f, 30.f);
+    cv::Point2f att_reset_yaw_on_pad;
     bool pat_att_calibration_valid = false;
     filtering::Smoother pad_att_calibration_roll;
     filtering::Smoother pad_att_calibration_pitch;
@@ -296,6 +302,7 @@ public:
     void flight_mode(flight_modes f) { _flight_mode = f; }
     void hover_mode(bool value) { _hover_mode = value;}
     void double_led_strength() { dparams.drone_led_strength = std::clamp(dparams.drone_led_strength*2,5,100); }
+    void freeze_attitude_reset_yaw_on_pad() { att_reset_yaw_on_pad = cv::Point2f(_rc->telemetry.roll, _rc->telemetry.pitch); };
 
     int n_shake() {return _n_shakes;}
 

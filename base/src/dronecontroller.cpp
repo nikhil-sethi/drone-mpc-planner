@@ -365,6 +365,13 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         auto_yaw = RC_MIDDLE;
         control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
         break;
+    } case fm_reset_yaw_on_pad: {
+        mode += bf_headless_disabled;
+        auto_throttle = dparams.spinup_throttle_non3d;
+        auto_roll = RC_MIDDLE + static_cast<int>(0.5f * att_reset_yaw_on_pad.x / 180.f  / 2.f * RC_BOUND_RANGE);
+        auto_pitch = RC_MIDDLE + static_cast<int>(0.5f * att_reset_yaw_on_pad.y / 180.f  / 2.f * RC_BOUND_RANGE);
+        auto_yaw = RC_MIDDLE;
+        break;
     } case fm_correct_yaw: {
         mode += bf_headless_disabled;
         control_model_based(data_drone, data_target_new.pos(), data_target_new.vel());
@@ -386,7 +393,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         if (dt > land_ctrl.time_ff_landing()) {
             auto_throttle = RC_BOUND_MIN;
             if (dparams.static_shakeit_throttle>0)
-                _flight_mode = fm_start_shake;
+                _flight_mode = fm_wait;
             else
                 _flight_mode = fm_inactive;
         }
@@ -560,6 +567,13 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         else if (dparams.mode3d)
             _rc->arm(bf_disarmed);
         calibrate_pad_attitude();
+        break;
+
+    } case fm_wait: {
+        auto_throttle = RC_BOUND_MIN;
+        auto_roll = RC_MIDDLE;
+        auto_pitch = RC_MIDDLE;
+        auto_yaw = RC_MIDDLE;
         break;
     } case fm_monitoring: {
         break;

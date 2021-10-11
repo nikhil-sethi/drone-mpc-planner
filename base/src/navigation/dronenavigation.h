@@ -31,6 +31,8 @@ private:
     double time_start_motion_calibration = 0;
     double time_start_reset_headless_yaw = 0;
     double time_start_thrust_calibration = 0;
+    double time_reset_yaw_on_pad = 0;
+    double time_start_wait_after_landing = 0;
     double time_prev_wp_reached = -1;
     double time_wp_reached = -1;
     double time_start_landing = -1;
@@ -43,11 +45,13 @@ private:
     double time_located_drone = 0;
     double time_take_off = 0;
     double time_shake_start = 0;
-    float time_out_after_landing = 0;
-    const float duration_shake = 5;
+    float time_out_after_landing = 8;
+    const float duration_shake = 3;
     const float duration_motion_calibration = 2;
     const double duration_correct_yaw = 6;
     const double duration_reset_headless_yaw = 2;
+    const float duration_wait_after_landing = 0.8;
+    const float duration_reset_yaw_on_pad = 1.5;
 
     std::ofstream *_logger;
     DroneController * _dctrl;
