@@ -195,6 +195,7 @@ private:
     float min_takeoff_angle = 45.f/180.f*static_cast<float>(M_PI);
 
     double take_off_start_time = 0;
+    double state_start_time = 0;
     float remaining_spinup_duration_t0 = 0;
     double interception_start_time = 0;
     double in_flight_start_time = -1;

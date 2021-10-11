@@ -97,7 +97,7 @@ class CommandCenterWindow(QMainWindow):
 
         timer = QTimer(self)
         timer.timeout.connect(self.refresh)
-        timer.start(1000)
+        timer.start(10000)
 
         self.refresh()
         self.show()

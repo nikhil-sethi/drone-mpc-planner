@@ -400,12 +400,13 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         break;
     } case fm_start_shake: {
         _n_shakes = 0;
+        state_start_time = time;
         _flight_mode = fm_shake_it_baby;
         [[fallthrough]];
     } case fm_shake_it_baby: {
         _rc->arm(bf_disarmed);
 
-        const double shake_period = 0.6;
+        const double shake_period = 0.2;
         const double shake_pause_period = 0.2;
         const int spin_value_static = RC_BOUND_MIN + dparams.static_shakeit_throttle;
         const int spin_value_shake = spin_value_static + 75;
@@ -419,13 +420,12 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         auto_yaw = RC_BOUND_MIN;
 
         static int shake_state = 0;
-        static double state_start_time = 0;
         switch (shake_state) {
         case 0: // yaw
             auto_pitch = spin_value_shake;
             auto_throttle = spin_value_shake;
             if (time - state_start_time > shake_period) {
-                state_start_time = 0;
+                state_start_time = time;
                 shake_state++;
             }
             break;
@@ -433,7 +433,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
             auto_pitch = spin_value_shake;
             auto_throttle = spin_value_shake;
             if (time - state_start_time > shake_period) {
-                state_start_time = 0;
+                state_start_time = time;
                 shake_state++;
             }
             break;
@@ -442,7 +442,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
             auto_roll = spin_value_shake_reversed;
             auto_yaw = spin_value_shake_reversed;
             if (time - state_start_time > shake_period) {
-                state_start_time = 0;
+                state_start_time = time;
                 shake_state++;
             }
             break;
@@ -451,7 +451,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
             auto_roll = spin_value_shake_reversed;
             auto_yaw = spin_value_shake_reversed;
             if (time - state_start_time > shake_period) {
-                state_start_time = 0;
+                state_start_time = time;
                 shake_state++;
             }
             break;
@@ -460,7 +460,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
             auto_roll = spin_value_shake;
             auto_throttle = spin_value_shake;
             if (time - state_start_time > shake_period) {
-                state_start_time = 0;
+                state_start_time = time;
                 shake_state++;
             }
             break;
@@ -468,7 +468,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
             auto_pitch = spin_value_shake;
             auto_yaw = spin_value_shake;
             if (time - state_start_time > shake_period) {
-                state_start_time = 0;
+                state_start_time = time;
                 shake_state++;
             }
             break;
@@ -477,7 +477,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
             auto_roll = spin_value_shake;
             auto_pitch = spin_value_shake;
             if (time - state_start_time > shake_period) {
-                state_start_time = 0;
+                state_start_time = time;
                 shake_state++;
             }
             break;
@@ -485,7 +485,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
             auto_throttle = spin_value_shake;
             auto_yaw = spin_value_shake;
             if (time - state_start_time > shake_period) {
-                state_start_time = 0;
+                state_start_time = time;
                 shake_state++;
             }
             break;
@@ -499,7 +499,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
             auto_throttle = spin_value_static;
             auto_yaw = spin_value_static;
             if (time - state_start_time > shake_pause_period) {
-                state_start_time = 0;
+                state_start_time = time;
                 shake_state++;
             }
             break;

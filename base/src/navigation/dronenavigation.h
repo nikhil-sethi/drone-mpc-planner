@@ -38,6 +38,7 @@ private:
     double time_start_landing = -1;
     double time_landed = 0;
     double time_start_locating_drone = 0;
+    double time_start_shaking = 0;
     int locate_drone_attempts = 0;
     double time_last_led_doubler = 0;
     double time_drone_problem = -1;
@@ -52,6 +53,7 @@ private:
     const double duration_reset_headless_yaw = 2;
     const float duration_wait_after_landing = 0.8;
     const float duration_reset_yaw_on_pad = 1.5;
+    const float duration_wait_before_shake = 1;
 
     std::ofstream *_logger;
     DroneController * _dctrl;

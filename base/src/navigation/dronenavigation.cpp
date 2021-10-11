@@ -616,10 +616,11 @@ void DroneNavigation::update(double time) {
                 _navigation_status = ns_start_shaking;
                 _dctrl->flight_mode(DroneController::fm_wait);
                 time_reset_yaw_on_pad = 0;
+                time_start_shaking = time;
             }
             break;
         } case ns_start_shaking: {
-            if (static_cast<float>(time - time_landed) > duration_reset_yaw_on_pad + 1.0f) {
+            if (static_cast<float>(time - time_start_shaking) > duration_wait_before_shake) {
                 _dctrl->flight_mode(DroneController::fm_start_shake);
                 _navigation_status = ns_shaking_drone;
                 time_shake_start = time;
@@ -629,7 +630,7 @@ void DroneNavigation::update(double time) {
             }
             break;
         } case ns_shaking_drone: {
-            if (_dctrl->n_shake() >= 3) {
+            if (_dctrl->n_shake() >= 1) {
                 _dctrl->flight_mode(DroneController::fm_disarmed);
                 _n_shakes_sessions_after_landing++;
                 _navigation_status = ns_wait_after_shake;
@@ -642,7 +643,7 @@ void DroneNavigation::update(double time) {
                     if (!_dctrl->new_attitude_package_available() ) { /* wait some more until we receive new package */ }
                     else if (_dctrl->attitude_on_pad_OK() && _baseboard->charging())
                         _navigation_status = ns_start_calibrating_motion;
-                    else if (_n_shakes_sessions_after_landing <= 50 && _dctrl->somewhere_on_pad())
+                    else if (_n_shakes_sessions_after_landing <= 10 && _dctrl->somewhere_on_pad())
                         _navigation_status = ns_start_shaking;
                     else
                         _navigation_status = ns_drone_lost; // bit of a tmp solution until we get the retry-landing feature #75
