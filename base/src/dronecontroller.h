@@ -177,7 +177,7 @@ private:
     const int required_pad_att_calibration_cnt = 15;
     const cv::Point2f allowed_pad_att_calibration_range = cv::Point2f(7.5f,7.5f);
     const cv::Point2f allowed_att_calibration_range = cv::Point2f(1.f,1.f); // the max difference between the current att and the att measured during the last blink detect
-    const cv::Point2f att_on_pad_range = cv::Point2f(30.f, 30.f);
+    const cv::Point2f somewhere_on_pad_att_range = cv::Point2f(30.f, 30.f);
     cv::Point2f att_reset_yaw_on_pad;
     bool pat_att_calibration_valid = false;
     filtering::Smoother pad_att_calibration_roll;
@@ -536,6 +536,7 @@ public:
     void save_thrust_calibration();
     bool new_attitude_package_available();
     bool attitude_on_pad_OK();
+    bool somewhere_on_pad();
     void invalidize_blink();
     bool pad_calibration_done();
     bool takeoff_calib_valid();

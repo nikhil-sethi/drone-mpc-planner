@@ -828,6 +828,15 @@ bool DroneController::attitude_on_pad_OK() {
     } else
         return false;
 }
+
+bool DroneController::somewhere_on_pad() {
+    cv::Point2f current_att(_rc->telemetry.roll, _rc->telemetry.pitch);
+    cv::Point2f pad_att_calibration(calibration.pad_roll,calibration.pad_pitch);
+    return check_att_bounds(current_att,
+                            pad_att_calibration - somewhere_on_pad_att_range,
+                            pad_att_calibration + somewhere_on_pad_att_range);
+}
+
 void DroneController::invalidize_blink() {
     calibration.pad_calib_date = "2000/01/01 00:00:00";
     save_calibration();
