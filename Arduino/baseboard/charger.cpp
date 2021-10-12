@@ -210,16 +210,16 @@ void Charger::update_display_amps(float amps) {
 }
 
 void Charger::disable_charging() {
-    setpoint_amp = 0.0f;
     pwm = 0;
     analogWrite(PWM_PIN, 0);
 }
 void Charger::charge(ChargingMode mode) {
     update_readings(0.1f);
     estimate_resistance();
-    if (mode == charging_mode_contact_problem)
+    if (mode == charging_mode_contact_problem) {
         pwm = min_charge_pwm;
-    else if (mode != charging_mode_trickle)
+        analogWrite(PWM_PIN, pwm);
+    } else if (mode != charging_mode_trickle)
         current_control();
 }
 
