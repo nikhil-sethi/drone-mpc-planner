@@ -11,14 +11,14 @@
 #define DRONECONTROLLER_DEBUG false
 #define ENABLE_SPINUP true
 
-static const char* joy_states_names[] = { "js_manual",
+static const char *joy_states_names[] = { "js_manual",
                                           "js_waypoint",
                                           "js_hunt",
                                           "js_disarmed",
                                           "js_checking",
                                           "js_none"
                                         };
-static const char* flight_mode_names[] = { "fm_joystick_check",
+static const char *flight_mode_names[] = { "fm_joystick_check",
                                            "fm_disarmed",
                                            "fm_inactive",
                                            "fm_wait",
@@ -116,14 +116,14 @@ private:
     class ControlParameters: public xmls::Serializable
     {
     public:
-        xmls::xInt kp_pos_roll,kp_pos_pitch,kp_pos_throttle;
-        xmls::xInt ki_pos_roll,ki_pos_pitch,ki_thrust;
-        xmls::xInt kd_pos_roll,kd_pos_pitch,kd_pos_throttle;
-        xmls::xInt kp_pos_roll_hover,kp_pos_pitch_hover,kp_pos_throttle_hover;
-        xmls::xInt ki_pos_roll_hover,ki_pos_pitch_hover,ki_thrust_hover;
-        xmls::xInt kd_pos_roll_hover,kd_pos_pitch_hover,kd_pos_throttle_hover;
-        xmls::xInt kp_v_roll,kp_v_pitch,kp_v_throttle;
-        xmls::xInt kd_v_roll,kd_v_pitch,kd_v_throttle;
+        xmls::xInt kp_pos_roll, kp_pos_pitch, kp_pos_throttle;
+        xmls::xInt ki_pos_roll, ki_pos_pitch, ki_thrust;
+        xmls::xInt kd_pos_roll, kd_pos_pitch, kd_pos_throttle;
+        xmls::xInt kp_pos_roll_hover, kp_pos_pitch_hover, kp_pos_throttle_hover;
+        xmls::xInt ki_pos_roll_hover, ki_pos_pitch_hover, ki_thrust_hover;
+        xmls::xInt kd_pos_roll_hover, kd_pos_pitch_hover, kd_pos_throttle_hover;
+        xmls::xInt kp_v_roll, kp_v_pitch, kp_v_throttle;
+        xmls::xInt kd_v_roll, kd_v_pitch, kd_v_throttle;
 
         ControlParameters() {
             // Set the XML class name.
@@ -164,8 +164,8 @@ private:
         }
     };
 
-    Rc * _rc;
-    tracking::DroneTracker * _dtrk;
+    Rc *_rc;
+    tracking::DroneTracker *_dtrk;
     FlightArea *_flight_area;
     std::ofstream *_logger;
 
@@ -175,8 +175,8 @@ private:
     xmls::DroneCalibration calibration;
 
     const int required_pad_att_calibration_cnt = 15;
-    const cv::Point2f allowed_pad_att_calibration_range = cv::Point2f(7.5f,7.5f);
-    const cv::Point2f allowed_att_calibration_range = cv::Point2f(1.f,1.f); // the max difference between the current att and the att measured during the last blink detect
+    const cv::Point2f allowed_pad_att_calibration_range = cv::Point2f(7.5f, 7.5f);
+    const cv::Point2f allowed_att_calibration_range = cv::Point2f(1.f, 1.f); // the max difference between the current att and the att measured during the last blink detect
     const cv::Point2f somewhere_on_pad_att_range = cv::Point2f(30.f, 30.f);
     cv::Point2f att_reset_yaw_on_pad;
     bool pat_att_calibration_valid = false;
@@ -192,7 +192,7 @@ private:
     float burn_thrust = -1;
 
     const float lift_off_dist_take_off_aim = 0.02f;
-    float min_takeoff_angle = 45.f/180.f*static_cast<float>(M_PI);
+    float min_takeoff_angle = 45.f / 180.f * static_cast<float>(M_PI);
 
     double take_off_start_time = 0;
     double state_start_time = 0;
@@ -238,8 +238,8 @@ private:
     filtering::Tf_PT2_f pos_modelx, pos_modely, pos_modelz;
 
     float time_spent_spinning_up(double time) {
-        if (spin_up_start_time> 0)
-            return static_cast<float>(time - spin_up_start_time );
+        if (spin_up_start_time > 0)
+            return static_cast<float>(time - spin_up_start_time);
         else
             return 0;
     }
@@ -255,7 +255,7 @@ private:
     }
     uint16_t spinup_throttle() {
         if (dparams.mode3d)
-            return RC_MIDDLE +1;
+            return RC_MIDDLE + 1;
         else {
             return dparams.spinup_throttle_non3d;
         }
@@ -272,19 +272,19 @@ private:
     void calibrate_pad_attitude();
     cv::Point3f keep_in_volume_correction_acceleration(tracking::TrackData data_drone);
     float duration_since_waypoint_moved(double time) { return  static_cast<float>(time - time_waypoint_moved); }
-    integrator_state horizontal_integrators(cv::Point3f setpoint_vel,double time);
+    integrator_state horizontal_integrators(cv::Point3f setpoint_vel, double time);
 
-    std::tuple<float,float> acc_to_deg(cv::Point3f acc);
-    std::tuple<float,float> acc_to_quaternion(cv::Point3f acc);
+    std::tuple<float, float> acc_to_deg(cv::Point3f acc);
+    std::tuple<float, float> acc_to_quaternion(cv::Point3f acc);
 
     void correct_yaw(float deviation_angle);
 
     void blink(double time);
     void blink_motors(double time);
 
-    std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> adjust_control_gains(tracking::TrackData drone_data, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel,bool enable_horizontal_integrators);
+    std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> adjust_control_gains(tracking::TrackData drone_data, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool enable_horizontal_integrators);
     std::tuple<cv::Point3f, cv::Point3f> control_error(tracking::TrackData data_drone, cv::Point3f setpoint_pos, integrator_state enable_horizontal_integrators, bool dry_run);
-    std::tuple<int,int,int> calc_feedforward_control(cv::Point3f desired_acceleration);
+    std::tuple<int, int, int> calc_feedforward_control(cv::Point3f desired_acceleration);
     cv::Point3f compensate_gravity_and_crop_to_limit(cv::Point3f des_acc, float thrust);
     void control_model_based(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel);
 
@@ -302,7 +302,7 @@ public:
     cv::Point3f pid_error(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool choosing_insect);
     void flight_mode(flight_modes f) { _flight_mode = f; }
     void hover_mode(bool value) { _hover_mode = value;}
-    void double_led_strength() { dparams.drone_led_strength = std::clamp(dparams.drone_led_strength*2,5,100); }
+    void double_led_strength() { dparams.drone_led_strength = std::clamp(dparams.drone_led_strength * 2, 5, 100); }
     void freeze_attitude_reset_yaw_on_pad() { att_reset_yaw_on_pad = cv::Point2f(_rc->telemetry.roll, _rc->telemetry.pitch); };
 
     int n_shake() {return _n_shakes;}
@@ -319,7 +319,7 @@ public:
                 spin_up_start_time = take_off_start_time;
             return true;
 
-        } else if (_flight_mode == fm_spinup || _flight_mode==fm_start_takeoff) {
+        } else if (_flight_mode == fm_spinup || _flight_mode == fm_start_takeoff) {
             _flight_mode = fm_spinup;
             return true;
         } else
@@ -343,7 +343,7 @@ public:
     }
 
     bool at_base() {
-        return _flight_mode<=fm_take_off_aim;
+        return _flight_mode <= fm_take_off_aim;
     }
 
     bool ff_completed() {
@@ -362,16 +362,16 @@ public:
     void joy_takeoff_switch_file_trigger(bool value) {
         _joy_takeoff_switch = value;
     }
-    void insert_log(int log_joy_roll, int log_joy_pitch, int log_joy_yaw, int log_joy_throttle, int log_joy_arm_switch, int log_joy_mode_switch, int log_joy_take_off_switch,int log_auto_roll, int log_auto_pitch, int log_auto_throttle, float log_acc_z) {
+    void insert_log(int log_joy_roll, int log_joy_pitch, int log_joy_yaw, int log_joy_throttle, int log_joy_arm_switch, int log_joy_mode_switch, int log_joy_take_off_switch, int log_auto_roll, int log_auto_pitch, int log_auto_throttle, float log_acc_z) {
         joy_roll = log_joy_roll;
-        joy_pitch= log_joy_pitch;
+        joy_pitch = log_joy_pitch;
         joy_yaw = log_joy_yaw;
         joy_throttle = log_joy_throttle;
         _joy_arm_switch = static_cast<betaflight_arming>(log_joy_arm_switch);
         _joy_mode_switch = static_cast<joy_mode_switch_modes>(log_joy_mode_switch);
         _joy_takeoff_switch = log_joy_take_off_switch;
         _log_auto_roll = log_auto_roll;
-        _log_auto_pitch= log_auto_pitch;
+        _log_auto_pitch = log_auto_pitch;
         _log_auto_throttle = log_auto_throttle;
         _log_acc_z = log_acc_z;
     }
@@ -392,11 +392,11 @@ public:
         return _flight_mode == fm_spinup;
     }
     bool landing() {
-        return _flight_mode == fm_ff_landing || _flight_mode ==fm_ff_landing_start;
+        return _flight_mode == fm_ff_landing || _flight_mode == fm_ff_landing_start;
     }
 
     float duration_spent_taking_off(double time) {
-        if (start_takeoff_burn_time< 0.01)
+        if (start_takeoff_burn_time < 0.01)
             return 0;
         return  static_cast<float>(time - start_takeoff_burn_time) ;
     }
@@ -455,8 +455,8 @@ public:
     /** @brief Determines the corresponding roll/pitch angle for a given command */
     float angle_of_command(int command) {
         command -= RC_MIDDLE;
-        float commandf = static_cast<float>(command)/static_cast<float>(RC_BOUND_MAX - RC_BOUND_MIN);
-        return commandf*max_bank_angle;
+        float commandf = static_cast<float>(command) / static_cast<float>(RC_BOUND_MAX - RC_BOUND_MIN);
+        return commandf * max_bank_angle;
     }
 
     bool _manual_override_take_off_now;
@@ -477,8 +477,8 @@ public:
 
     float dist_to_setpoint() { return _dist_to_setpoint; }
 
-    void close (void);
-    void init(std::ofstream *logger, std::string replay_dir, bool generator_mode, bool airsim, Rc *rc, tracking::DroneTracker *dtrk, FlightArea* flight_area,float exposure);
+    void close(void);
+    void init(std::ofstream *logger, std::string replay_dir, bool generator_mode, bool airsim, Rc *rc, tracking::DroneTracker *dtrk, FlightArea *flight_area, float exposure);
     void control(tracking::TrackData, tracking::TrackData, tracking::TrackData, double);
     bool active() {
         if (_flight_mode == fm_inactive || _flight_mode == fm_disarmed || _flight_mode == fm_joystick_check)
@@ -490,7 +490,7 @@ public:
         else if ((_joy_mode_switch == jmsm_manual && joy_throttle <= RC_BOUND_MIN) || _joy_arm_switch == bf_disarmed)
             return false;
         else
-            return ((auto_throttle > RC_BOUND_MIN && _flight_mode != fm_spinup) || _flight_mode == fm_start_takeoff || _flight_mode == fm_take_off_aim || _flight_mode == fm_max_burn || _flight_mode == fm_1g ); //FIXME: check if this goes well if due to extreme control throttle is set to 0
+            return ((auto_throttle > RC_BOUND_MIN && _flight_mode != fm_spinup) || _flight_mode == fm_start_takeoff || _flight_mode == fm_take_off_aim || _flight_mode == fm_max_burn || _flight_mode == fm_1g);  //FIXME: check if this goes well if due to extreme control throttle is set to 0
     }
     bool state_inactive() { return _flight_mode == fm_inactive; }
     bool state_disarmed() { return _flight_mode == fm_disarmed; }
@@ -510,11 +510,11 @@ public:
 
     void LED(bool b) {
         if (initialized)
-            _rc->LED_drone(b,dparams.drone_led_strength);
+            _rc->LED_drone(b, dparams.drone_led_strength);
     }
     void LED(bool b, int value) {
         if (initialized)
-            _rc->LED_drone(b,value);
+            _rc->LED_drone(b, value);
     }
     void stop_rc() {
         if (initialized)

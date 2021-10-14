@@ -3,7 +3,7 @@
 
 class CommandCenterLink {
 public :
-    void init(bool log_replay_mode, navigation::DroneNavigation * dnav,DroneController * dctrl,Rc * rc,tracking::TrackerManager * trackers,VisionData *visdat);
+    void init(bool log_replay_mode, navigation::DroneNavigation *dnav, DroneController *dctrl, Rc *rc, tracking::TrackerManager *trackers, VisionData *visdat);
     void close();
     void reset_commandcenter_status_file(std::string status_msg, bool never_overwrite);
     void trigger_demo_flight_from_log(std::string replay_dir, int tracker_mode);
@@ -12,7 +12,7 @@ public :
         _time_since_start = time;
         if (new_frame_request) {
             _frame = frame.clone();
-            new_frame_request =0;
+            new_frame_request = 0;
         }
     };
 
@@ -31,11 +31,11 @@ private:
     cv::Mat _frame;
     double _time_since_start = 0;
 
-    navigation::DroneNavigation * _dnav;
-    DroneController * _dctrl;
-    Rc * _rc;
-    tracking::TrackerManager * _trackers;
-    VisionData * _visdat;
+    navigation::DroneNavigation *_dnav;
+    DroneController *_dctrl;
+    Rc *_rc;
+    tracking::TrackerManager *_trackers;
+    VisionData *_visdat;
     bool _log_replay_mode = false;
     int reset_cnt = 0;
     int _n_replay_moth = 0;

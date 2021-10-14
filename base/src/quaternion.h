@@ -9,12 +9,12 @@ struct Quaternion {
 
     Quaternion() {
         s = 0;
-        v = cv::Point3f(0,0,0);
+        v = cv::Point3f(0, 0, 0);
     }
 
     Quaternion(float theta, cv::Point3f rot_axis) { // theta is the transformation angle; not the rotation angle!
-        s = cosf(-theta/2);
-        v = rot_axis*sinf(-theta/2);
+        s = cosf(-theta / 2);
+        v = rot_axis * sinf(-theta / 2);
     }
 
     Quaternion(float qs, float qx, float qy, float qz) {
@@ -24,8 +24,8 @@ struct Quaternion {
 
     Quaternion operator *(Quaternion q2) {
         Quaternion rt;
-        rt.s = this->s*q2.s - this->v.dot(q2.v);
-        rt.v = this->s*q2.v + q2.s*this->v + this->v.cross(q2.v);
+        rt.s = this->s * q2.s - this->v.dot(q2.v);
+        rt.v = this->s * q2.v + q2.s * this->v + this->v.cross(q2.v);
         return rt;
     }
 
@@ -51,14 +51,14 @@ struct Quaternion {
     }
 
     bool operator ==(Quaternion q2) {
-        if(this->s == q2.s && this->v==q2.v)
+        if (this->s == q2.s && this->v == q2.v)
             return true;
         return false;
     }
 
 };
 
-std::ostream& operator <<(std::ostream& os, const Quaternion& q);
+std::ostream &operator <<(std::ostream &os, const Quaternion &q);
 
 float normq(Quaternion q);
 std::tuple<float, cv::Point3f> qcharacteristics(Quaternion q);

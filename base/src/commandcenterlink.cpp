@@ -6,7 +6,7 @@
 #include <unistd.h> //usleep
 #include<iostream>
 
-void CommandCenterLink::init(bool log_replay_mode,navigation::DroneNavigation * dnav,DroneController * dctrl,Rc * rc,tracking::TrackerManager * trackers,VisionData *visdat) {
+void CommandCenterLink::init(bool log_replay_mode, navigation::DroneNavigation *dnav, DroneController *dctrl, Rc *rc, tracking::TrackerManager *trackers, VisionData *visdat) {
     remove(demo_insect_fn.c_str());
     remove(demo_waypoint_fn.c_str());
     remove(calib_fn.c_str());
@@ -21,7 +21,7 @@ void CommandCenterLink::init(bool log_replay_mode,navigation::DroneNavigation * 
     _visdat = visdat;
 
     if (!_log_replay_mode) {
-        thread = std::thread(&CommandCenterLink::background_worker,this);
+        thread = std::thread(&CommandCenterLink::background_worker, this);
         initialized = true;
     }
 }
@@ -32,11 +32,11 @@ void CommandCenterLink::close() {
         std::cout << "Closing CommandCenterLink" << std::endl;
         thread.join();
     }
-    reset_commandcenter_status_file("Closed",false);
+    reset_commandcenter_status_file("Closed", false);
 }
 
 void CommandCenterLink::background_worker() {
-    int fps = static_cast<int>(1.f/pparams.fps * 1e6f);
+    int fps = static_cast<int>(1.f / pparams.fps * 1e6f);
     while (!exit_thread) {
         if (!_log_replay_mode)
             check_commandcenter_triggers();
@@ -70,7 +70,7 @@ void CommandCenterLink::check_commandcenter_triggers() {
                 std::cout << "Waypoint demo!" << std::endl;
                 _dnav->demo_flight(demo_waypoint_fn);
                 _dctrl->joy_takeoff_switch_file_trigger(true);
-                rename(demo_waypoint_fn.c_str(),"./logging/pats_demo.xml");
+                rename(demo_waypoint_fn.c_str(), "./logging/pats_demo.xml");
             }
         }
         if (file_exist(demo_insect_fn)) {
@@ -122,16 +122,16 @@ void CommandCenterLink::write_commandcenter_status_file() {
     }
     if (status_update_needed) {
         std::ofstream status_file;
-        status_file.open("../../../../pats/status/status.txt",std::ofstream::out);
+        status_file.open("../../../../pats/status/status.txt", std::ofstream::out);
         auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
         status_file << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << '\n';
-        status_file << "Runtime: " << to_string_with_precision(_time_since_start,1) << "s" << '\n';
+        status_file << "Runtime: " << to_string_with_precision(_time_since_start, 1) << "s" << '\n';
         status_file << nav_status << std::endl;
-        status_file << "cell v: " << to_string_with_precision(_rc->telemetry.batt_cell_v,2) << std::endl;
+        status_file << "cell v: " << to_string_with_precision(_rc->telemetry.batt_cell_v, 2) << std::endl;
         status_file << "arming: " << _rc->telemetry.arming_state << std::endl;
         status_file << "rssi: " << static_cast<int>(_rc->telemetry.rssi) << std::endl;
-        status_file << "drone att: " << to_string_with_precision(_rc->telemetry.roll,1) << ", " << to_string_with_precision(_rc->telemetry.pitch,1) << std::endl;
-        status_file << "cam angles: " << to_string_with_precision(_visdat->camera_roll,1) << ", " << to_string_with_precision(_visdat->camera_pitch,1) << std::endl;
+        status_file << "drone att: " << to_string_with_precision(_rc->telemetry.roll, 1) << ", " << to_string_with_precision(_rc->telemetry.pitch, 1) << std::endl;
+        status_file << "cam angles: " << to_string_with_precision(_visdat->camera_roll, 1) << ", " << to_string_with_precision(_visdat->camera_pitch, 1) << std::endl;
         status_file.close();
     }
 }
@@ -141,9 +141,9 @@ void CommandCenterLink::reset_commandcenter_status_file(std::string status_msg, 
         return;
     _never_overwrite = never_overwrite;
 
-    reset_cnt = pparams.fps*3;
+    reset_cnt = pparams.fps * 3;
     std::ofstream status_file;
-    status_file.open("../../../../pats/status/status.txt",std::ofstream::out);
+    status_file.open("../../../../pats/status/status.txt", std::ofstream::out);
     auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
     status_file << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << '\n';
     status_file << "Runtime: " << 0 << "s" << '\n';
@@ -152,16 +152,16 @@ void CommandCenterLink::reset_commandcenter_status_file(std::string status_msg, 
 }
 
 void CommandCenterLink::write_commandcenter_status_image() {
-    if (_frame.cols>0) {
+    if (_frame.cols > 0) {
         if (!new_frame_request) {
             if (_frame.cols) {
                 cv::Mat out_rgb;
-                cvtColor(_frame,out_rgb,cv::COLOR_GRAY2BGR);
-                putText(out_rgb,"State: " + _dnav->navigation_status() + " " + _trackers->mode_str() + " " + _dctrl->flight_mode() +
-                        " "  + _trackers->dronetracker()->drone_tracking_state(),cv::Point(5,14),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
-                putText(out_rgb,"Time:       " + to_string_with_precision(_time_since_start,2),cv::Point(5,28),cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(0,0,255));
+                cvtColor(_frame, out_rgb, cv::COLOR_GRAY2BGR);
+                putText(out_rgb, "State: " + _dnav->navigation_status() + " " + _trackers->mode_str() + " " + _dctrl->flight_mode() +
+                        " "  + _trackers->dronetracker()->drone_tracking_state(), cv::Point(5, 14), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255));
+                putText(out_rgb, "Time:       " + to_string_with_precision(_time_since_start, 2), cv::Point(5, 28), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255));
                 if (pparams.op_mode != op_mode_monitoring)
-                    cv::circle(out_rgb,_trackers->dronetracker()->pad_im_location(),_trackers->dronetracker()->pad_im_size()/2,cv::Scalar(0,255,0));
+                    cv::circle(out_rgb, _trackers->dronetracker()->pad_im_location(), _trackers->dronetracker()->pad_im_size() / 2, cv::Scalar(0, 255, 0));
 
                 cv::imwrite("../../../../pats/status/monitor_tmp.jpg", out_rgb);
             }

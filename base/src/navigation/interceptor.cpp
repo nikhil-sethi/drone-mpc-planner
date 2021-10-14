@@ -3,7 +3,7 @@
 
 using namespace tracking;
 
-void Interceptor::init(tracking::TrackerManager* trackers, VisionData* visdat, FlightArea* flight_area, std::ofstream* logger, DroneController *dctrl) {
+void Interceptor::init(tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, std::ofstream *logger, DroneController *dctrl) {
     _logger = logger;
     _trackers = trackers;
     _visdat = visdat;
@@ -20,127 +20,127 @@ void Interceptor::update(bool drone_at_base, double time[[maybe_unused]]) {
     auto target_trkr = update_target_insecttracker();
 
     switch (_interceptor_state) {
-    case  is_init: {
-        _interceptor_state = is_waiting_for_target;
-        _aim_pos = _flight_area->move_inside(cv::Point3f(0,0,0), strict);
-        [[fallthrough]];
-    }
+        case  is_init: {
+                _interceptor_state = is_waiting_for_target;
+                _aim_pos = _flight_area->move_inside(cv::Point3f(0, 0, 0), strict);
+                [[fallthrough]];
+            }
 
-    case is_waiting_for_target: {
-        _aim_vel = {0, 0, 0};
-        _aim_acc = {0, 0, 0};
-        _n_frames_aim_not_in_range++;
+        case is_waiting_for_target: {
+                _aim_vel = {0, 0, 0};
+                _aim_acc = {0, 0, 0};
+                _n_frames_aim_not_in_range++;
 
-        if (!target_trkr)
-            break;
-        else  if ( target_trkr->tracking() && !target_trkr->false_positive() && !_trackers->monster_alert()) {
-            _interceptor_state = is_waiting_in_reach_zone;
-        } else
-            break;
+                if (!target_trkr)
+                    break;
+                else  if (target_trkr->tracking() && !target_trkr->false_positive() && !_trackers->monster_alert()) {
+                    _interceptor_state = is_waiting_in_reach_zone;
+                } else
+                    break;
 
-        [[fallthrough]];
-    }
+                [[fallthrough]];
+            }
 
-    case is_waiting_in_reach_zone: {
-        _aim_vel = {0, 0, 0};
-        _aim_acc = {0, 0, 0};
+        case is_waiting_in_reach_zone: {
+                _aim_vel = {0, 0, 0};
+                _aim_acc = {0, 0, 0};
 
-        if (!target_trkr) {
-            _interceptor_state = is_waiting_for_target;
-            break;
-        } if ( !target_trkr->tracking() || target_trkr->false_positive() || _trackers->monster_alert()) {
-            _interceptor_state = is_waiting_for_target;
-            break;
-        }
+                if (!target_trkr) {
+                    _interceptor_state = is_waiting_for_target;
+                    break;
+                } if (!target_trkr->tracking() || target_trkr->false_positive() || _trackers->monster_alert()) {
+                    _interceptor_state = is_waiting_for_target;
+                    break;
+                }
 
-        auto req_aim_pos = update_far_target(drone_at_base);
-        update_interceptability(req_aim_pos);
+                auto req_aim_pos = update_far_target(drone_at_base);
+                update_interceptability(req_aim_pos);
 
-        if (!_n_frames_aim_not_in_range)
-            _interceptor_state = is_move_to_intercept;
-        else
-            break;
+                if (!_n_frames_aim_not_in_range)
+                    _interceptor_state = is_move_to_intercept;
+                else
+                    break;
 
-        [[fallthrough]];
-    }
+                [[fallthrough]];
+            }
 
-    case is_move_to_intercept: {
-        if (!target_trkr) {
-            _interceptor_state = is_waiting_for_target;
-            break;
-        }
-        if ( target_trkr->n_frames_lost() > 0.112 * pparams.fps
-                || _n_frames_aim_not_in_range > 0.34 * pparams.fps
-                || target_trkr->false_positive()
-                || _trackers->monster_alert()) {
-            _interceptor_state = is_waiting_for_target;
-            break;
-        }
+        case is_move_to_intercept: {
+                if (!target_trkr) {
+                    _interceptor_state = is_waiting_for_target;
+                    break;
+                }
+                if (target_trkr->n_frames_lost() > 0.112 * pparams.fps
+                        || _n_frames_aim_not_in_range > 0.34 * pparams.fps
+                        || target_trkr->false_positive()
+                        || _trackers->monster_alert()) {
+                    _interceptor_state = is_waiting_for_target;
+                    break;
+                }
 
-        if (!target_trkr->n_frames_lost()) {
-            auto req_aim_pos = update_far_target(drone_at_base);
-            update_interceptability(req_aim_pos);
-        }
-
-#if !ENABLE_UNIFIED_DIRECTION_TRANSITION
-
-        if (fabs(_horizontal_separation) < 0.35f  && _vertical_separation < 0.8f && _vertical_separation > -0.1f)
-#else
-        if (total_separation < 0.4f)
-#endif
-            _interceptor_state = is_close_chasing;
-        else
-            break;
-
-        [[fallthrough]];
-    }
-
-    case is_close_chasing: {
-        if (!target_trkr) {
-            _interceptor_state = is_waiting_for_target;
-            break;
-        }
-        if ( target_trkr->n_frames_lost() > 0.15f * pparams.fps
-                || _n_frames_aim_not_in_range > 0.15f * pparams.fps
-                || target_trkr->false_positive()
-                || _trackers->monster_alert()) {
-            _interceptor_state = is_waiting_for_target;
-            break;
-        }
-
-        if (!target_trkr->n_frames_lost()) {
-            auto req_aim_pos = update_close_target(drone_at_base);
-            update_interceptability(req_aim_pos);
-            _interceptor_state = is_killing;
-            break;
-        }
-        break;
-    }
-    case is_killing: {
-        update_close_target(drone_at_base);
+                if (!target_trkr->n_frames_lost()) {
+                    auto req_aim_pos = update_far_target(drone_at_base);
+                    update_interceptability(req_aim_pos);
+                }
 
 #if !ENABLE_UNIFIED_DIRECTION_TRANSITION
 
-        if (!(fabs(_horizontal_separation) < 0.35f && _vertical_separation < 0.8f && _vertical_separation > -0.1f))
+                if (fabs(_horizontal_separation) < 0.35f  && _vertical_separation < 0.8f && _vertical_separation > -0.1f)
 #else
-        if (total_separation >= 0.45f)
+                if (total_separation < 0.4f)
 #endif
-            _interceptor_state = is_move_to_intercept;
+                    _interceptor_state = is_close_chasing;
+                else
+                    break;
+
+                [[fallthrough]];
+            }
+
+        case is_close_chasing: {
+                if (!target_trkr) {
+                    _interceptor_state = is_waiting_for_target;
+                    break;
+                }
+                if (target_trkr->n_frames_lost() > 0.15f * pparams.fps
+                        || _n_frames_aim_not_in_range > 0.15f * pparams.fps
+                        || target_trkr->false_positive()
+                        || _trackers->monster_alert()) {
+                    _interceptor_state = is_waiting_for_target;
+                    break;
+                }
+
+                if (!target_trkr->n_frames_lost()) {
+                    auto req_aim_pos = update_close_target(drone_at_base);
+                    update_interceptability(req_aim_pos);
+                    _interceptor_state = is_killing;
+                    break;
+                }
+                break;
+            }
+        case is_killing: {
+                update_close_target(drone_at_base);
+
+#if !ENABLE_UNIFIED_DIRECTION_TRANSITION
+
+                if (!(fabs(_horizontal_separation) < 0.35f && _vertical_separation < 0.8f && _vertical_separation > -0.1f))
+#else
+                if (total_separation >= 0.45f)
+#endif
+                    _interceptor_state = is_move_to_intercept;
 
 
-        if (!target_trkr) {
-            _interceptor_state = is_waiting_for_target;
-            break;
-        }
-        if ( target_trkr->n_frames_lost() > 0.15f * pparams.fps
-                || _n_frames_aim_not_in_range > 0.15f * pparams.fps
-                || target_trkr->false_positive()
-                || _trackers->monster_alert()) {
-            _interceptor_state = is_waiting_for_target;
-            break;
-        }
-        break;
-    }
+                if (!target_trkr) {
+                    _interceptor_state = is_waiting_for_target;
+                    break;
+                }
+                if (target_trkr->n_frames_lost() > 0.15f * pparams.fps
+                        || _n_frames_aim_not_in_range > 0.15f * pparams.fps
+                        || target_trkr->false_positive()
+                        || _trackers->monster_alert()) {
+                    _interceptor_state = is_waiting_for_target;
+                    break;
+                }
+                break;
+            }
     }
     (*_logger) << static_cast<int16_t>(_interceptor_state) << ";" << static_cast<int16_t>(target_in_flight_area) << ";";
 }
@@ -313,19 +313,19 @@ tracking::InsectTracker *Interceptor::update_target_insecttracker() {
     for (auto trkr : all_trackers) {
         if (trkr->tracking()) {
             auto insect_state = trkr->last_track_data();
-            cv::Point3f current_insect_pos =insect_state.pos();
+            cv::Point3f current_insect_pos = insect_state.pos();
             if (!insect_state.pos_valid) {
                 auto prediction = trkr->image_predict_item();
                 if (prediction.valid)
-                    current_insect_pos = im2world(prediction.pt_unbound,prediction.disparity,_visdat->Qf,_visdat->camera_roll,_visdat->camera_pitch);
+                    current_insect_pos = im2world(prediction.pt_unbound, prediction.disparity, _visdat->Qf, _visdat->camera_roll, _visdat->camera_pitch);
                 else
                     current_insect_pos = {0};
             }
-            cv::Point3f current_insect_vel =insect_state.vel();
+            cv::Point3f current_insect_vel = insect_state.vel();
             if (!insect_state.vel_valid)
                 current_insect_vel = {0};
             if (trkr->type() == tt_insect || trkr->type() == tt_replay || trkr->type() == tt_virtualmoth) {
-                float req_acceleration = normf(_dctrl->pid_error(tracking_data,current_insect_pos, current_insect_vel,true));
+                float req_acceleration = normf(_dctrl->pid_error(tracking_data, current_insect_pos, current_insect_vel, true));
                 if (best_acceleration > req_acceleration) {
                     best_acceleration = req_acceleration;
                     best_itrkr = static_cast<InsectTracker *>(trkr);

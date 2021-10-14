@@ -1,7 +1,7 @@
 #include "airsimcontroller.h"
 
 bool AirSimController::connect() {
-    if(notconnected) {
+    if (notconnected) {
         std::cout << "Connecting AirSimController" << std::endl;
         sim.init(drone_name);
         notconnected = false;
@@ -10,7 +10,7 @@ bool AirSimController::connect() {
 }
 
 void AirSimController::init(int __attribute__((unused))) {
-    send_thread_mm = std::thread(&AirSimController::send_thread,this);
+    send_thread_mm = std::thread(&AirSimController::send_thread, this);
     sim.rc_data_valid(true);
     initialized = true;
     sim.set_led(5000);
@@ -31,7 +31,7 @@ void AirSimController::init_logger() {
 
 float AirSimController::normalize_rc_input(float in_value, float lower_bound /*=-1*/, float upper_bound /*=1*/) {
     float x = (in_value - RC_BOUND_MIN);
-    return lower_bound + (upper_bound - lower_bound) * (x/RC_BOUND_RANGE);
+    return lower_bound + (upper_bound - lower_bound) * (x / RC_BOUND_RANGE);
 }
 
 void AirSimController::send_rc_data() {
@@ -55,7 +55,7 @@ void AirSimController::send_rc_data() {
         sim.set_led(led);
 
         // set the correct arming state in airsim
-        if(arm_switch != airsim_arm_state) {
+        if (arm_switch != airsim_arm_state) {
             sim.arm(arm_switch == bf_armed);
             airsim_arm_state = arm_switch;
         }

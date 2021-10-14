@@ -16,11 +16,11 @@ private:
     std::vector<Plane> deserialize_location(std::string replay_dir);
 
 public:
-    void init(std::string replay_dir, Cam* cam);
+    void init(std::string replay_dir, Cam *cam);
     void update_bottom_plane_based_on_blink(float pad_height);
     bool inside(cv::Point3f point, safety_margin_types margin);
     cv::Point3f move_inside(cv::Point3f point, safety_margin_types margin);
     cv::Point3f move_inside(cv::Point3f point, safety_margin_types margin, cv::Point3f drone_pos);
-    FlightAreaConfig* flight_area_config(safety_margin_types margin);
+    FlightAreaConfig *flight_area_config(safety_margin_types margin);
     bool trajectory_in_view(std::vector<tracking::StateData> traj, safety_margin_types margin);
 };

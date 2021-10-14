@@ -2,7 +2,7 @@
 #include "common.h"
 
 namespace navigation {
-[[maybe_unused]] static const char* navigation_status_names[] = {"ns_init",
+[[maybe_unused]] static const char *navigation_status_names[] = {"ns_init",
                                                                  "ns_init_render",
                                                                  "ns_locate_drone_init",
                                                                  "ns_locate_drone_led",
@@ -57,7 +57,7 @@ namespace navigation {
                                                                 };
 
 enum navigation_states {
-    ns_init=0,
+    ns_init = 0,
     ns_init_render,
     ns_locate_drone_init,
     ns_locate_drone_wait_led_on,
@@ -125,7 +125,7 @@ public:
         setVersion("1.1");
 
         // Register members. Like the class name, member names can differ from their xml depandants
-        Register("time_out_after_landing",&time_out_after_landing);
+        Register("time_out_after_landing", &time_out_after_landing);
     }
 };
 

@@ -40,7 +40,7 @@ public:
     void move_by_rc(float throttle, float yaw, float pitch, float roll);
     void arm(bool arm);
     void load_environment(std::string level_name);
-    StereoPair* new_frame(double desiredFrameTime);
+    StereoPair *new_frame(double desiredFrameTime);
     float cam_fov();
     cv::Mat depth_background();
     void init_logging();

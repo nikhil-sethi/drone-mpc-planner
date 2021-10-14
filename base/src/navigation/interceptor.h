@@ -9,7 +9,7 @@
 #define ENABLE_MOTH_PREDICTION true
 #define ENABLE_VELOCITY_COMPENSATION true
 
-static const char* interceptor_state_names[] = { "is_init",
+static const char *interceptor_state_names[] = { "is_init",
                                                  "is_await_target",
                                                  "is_await_reach_zone",
                                                  "is_move_to_intercept",
@@ -25,13 +25,13 @@ class Interceptor {
 
 private:
     std::ofstream *_logger;
-    tracking::TrackerManager * _trackers;
+    tracking::TrackerManager *_trackers;
     VisionData *_visdat;
     DroneController *_dctrl;
 
-    cv::Point3f _aim_pos,_aim_vel,_aim_acc;
+    cv::Point3f _aim_pos, _aim_vel, _aim_acc;
 
-    FlightArea* _flight_area;
+    FlightArea *_flight_area;
     bool target_in_flight_area = false;
 
     bool aim_in_view = false;
@@ -44,7 +44,7 @@ private:
     float _best_distance = -1;
     double _tti = -1;
     enum interceptor_states {
-        is_init=0,
+        is_init = 0,
         is_waiting_for_target,
         is_waiting_in_reach_zone,
         is_move_to_intercept,
@@ -75,13 +75,13 @@ public:
     tracking::TrackData target_last_trackdata();
 
     bool trigger_takeoff() {
-        tracking::InsectTracker * best_itrkr = target_insecttracker();
+        tracking::InsectTracker *best_itrkr = target_insecttracker();
         if (!best_itrkr)
             return false;
         return !_n_frames_aim_not_in_range
                && target_in_flight_area
                && !best_itrkr->false_positive()
-		&& !_trackers->monster_alert();
+               && !_trackers->monster_alert();
     }
     bool aim_in_range() {return !_n_frames_aim_not_in_range;}
     bool target_cleared() {return _n_frames_aim_not_in_range > n_frames_target_cleared_timeout;}

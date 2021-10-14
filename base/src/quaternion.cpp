@@ -1,6 +1,6 @@
 #include "quaternion.h"
 
-std::ostream& operator <<(std::ostream& os, const Quaternion& q) {
+std::ostream &operator <<(std::ostream &os, const Quaternion &q) {
     os << "[" << q.s << ", " << q.v << "]";
     return os;
 }
@@ -14,8 +14,8 @@ std::tuple<float, cv::Point3f> qcharacteristics(Quaternion q) {
     cv::Point3f axis;
     q /= normq(q);
 
-    theta = -2*acosf(q.s);
-    axis = q.v/sinf(-theta/2);
+    theta = -2 * acosf(q.s);
+    axis = q.v / sinf(-theta / 2);
 
     return std::make_tuple(theta, axis);
 }
@@ -26,7 +26,7 @@ Quaternion conjq(Quaternion q) {
 };
 
 Quaternion invq(Quaternion q) {
-    return conjq(q)/normq(q);
+    return conjq(q) / normq(q);
 }
 
 Quaternion rot_quat(cv::Point3f vec0, cv::Point3f vec1) {
@@ -35,8 +35,8 @@ Quaternion rot_quat(cv::Point3f vec0, cv::Point3f vec1) {
     vec0 /= norm(vec0);
     vec1 /= norm(vec1);
     double dot = vec0.dot(vec1);
-    if(dot<-0.999999)
-        return Quaternion(0,0,-1,0);
+    if (dot < -0.999999)
+        return Quaternion(0, 0, -1, 0);
     rt.s = 1 + dot;
     rt.v = vec0.cross(vec1);
     rt /= normq(rt);
@@ -47,13 +47,13 @@ cv::Point3f rotate(cv::Point3f vec0, Quaternion rot_quat) {
     Quaternion vec0q;
     vec0q.s = 0;
     vec0q.v = vec0;
-    Quaternion qrt = rot_quat*vec0q*invq(rot_quat);
+    Quaternion qrt = rot_quat * vec0q * invq(rot_quat);
     return qrt.v;
 }
 
 cv::Point3f restore_direction(float qx, float qy) {
-    float qs = sqrtf(1-powf(qx, 2) - powf(qy, 2));
+    float qs = sqrtf(1 - powf(qx, 2) - powf(qy, 2));
     Quaternion qrot(qs, qx, qy, 0);
-    cv::Point3f bf_hover = {0,0,-1};
+    cv::Point3f bf_hover = {0, 0, -1};
     return rotate(bf_hover, qrot);
 }

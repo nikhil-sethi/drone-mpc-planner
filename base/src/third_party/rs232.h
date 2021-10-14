@@ -21,11 +21,11 @@ extern "C" {
 
 int RS232_OpenComport_USBX(int);
 int RS232_OpenComport(int, const char *);
-int RS232_PollComport( unsigned char *, int);
-int RS232_SendByte( unsigned char);
-int RS232_SendBuf( unsigned char *, int);
+int RS232_PollComport(unsigned char *, int);
+int RS232_SendByte(unsigned char);
+int RS232_SendBuf(unsigned char *, int);
 void RS232_CloseComport();
-void RS232_cputs( const char *);
+void RS232_cputs(const char *);
 int RS232_IsDCDEnabled();
 int RS232_IsCTSEnabled();
 int RS232_IsDSREnabled();

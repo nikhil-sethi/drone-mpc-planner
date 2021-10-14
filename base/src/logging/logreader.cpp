@@ -15,12 +15,12 @@ void LogReader::init(string path) {
     cout << "Opening log folder: " << path << endl;
 
     string file = path + "/log.csv";
-    tie (log_main,headmap_main) = read_log(file);
+    tie(log_main, headmap_main) = read_log(file);
     read_multi_insect_logs(path);
 
 }
 
-tuple<map<int, LogEntryMain>,map<string, int>> LogReader::read_log(string file) {
+tuple<map<int, LogEntryMain>, map<string, int>> LogReader::read_log(string file) {
     ifstream infile(file);
     string heads;
     getline(infile, heads);
@@ -29,18 +29,18 @@ tuple<map<int, LogEntryMain>,map<string, int>> LogReader::read_log(string file) 
     map<int, LogEntryMain> log;
     while (getline(infile, line)) {
         try {
-            LogEntryMain entry = create_log_entry(line,headmap);
-            map<const int, LogEntryMain>::value_type item(entry.rs_id,entry);
+            LogEntryMain entry = create_log_entry(line, headmap);
+            map<const int, LogEntryMain>::value_type item(entry.rs_id, entry);
             rs_ids.push_back(entry.rs_id);
             log.insert(item);
-        } catch (exception& exp ) {
+        } catch (exception &exp) {
             string next_line;
             if (getline(infile, next_line))
-                throw MyExit("Could not read log! File: " +file + '\n' + "Err: " + string(exp.what()) + " at: " + line);
+                throw MyExit("Could not read log! File: " + file + '\n' + "Err: " + string(exp.what()) + " at: " + line);
         }
     }
     infile.close();
-    return make_tuple(log,headmap);
+    return make_tuple(log, headmap);
 
 }
 
@@ -53,7 +53,7 @@ void LogReader::read_multi_insect_logs(string path) {
                     entry.path().filename().string().rfind("log_i", 0) == 0 || entry.path().filename().string().rfind("log_r", 0) == 0))
             ins_logs.push_back(entry.path().string());
     }
-    for (auto & f : ins_logs) {
+    for (auto &f : ins_logs) {
         InsectReader ir;
         ir.init(f);
         log_insects.push_back(ir);
@@ -117,7 +117,7 @@ int LogReader::current_frame_number(unsigned long long rs_id) {
     //(Replay logs are inserted directly into the trackermanager from somewhere else)
     if (false) { // so, disable to slightly speed up log playback
         vector<LogEntryInsect> ins_entries;
-        for (auto & ins : log_insects) {
+        for (auto &ins : log_insects) {
             if (!ins.current_frame_number(rs_id)) {
                 ins_entries.push_back(ins.current_entry);
             }

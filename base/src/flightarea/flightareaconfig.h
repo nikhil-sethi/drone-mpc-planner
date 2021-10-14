@@ -8,7 +8,7 @@
 struct CornerPoint {
     cv::Point3f pos = {0};
     std::array<uint, 3> intersecting_planes = {0};
-    CornerPoint(cv::Point3f p, uint p1, uint p2, uint p3) : pos(p),intersecting_planes({p1, p2, p3}) {}
+    CornerPoint(cv::Point3f p, uint p1, uint p2, uint p3) : pos(p), intersecting_planes({p1, p2, p3}) {}
 };
 
 enum safety_margin_types {
@@ -18,7 +18,7 @@ enum safety_margin_types {
     number_safety_margin_types // only to get the length of the enum, must be the last element
 };
 
-inline const char* safety_margin_types_str[] = {
+inline const char *safety_margin_types_str[] = {
     "bare",
     "relaxed",
     "strict",
@@ -30,7 +30,7 @@ private:
     float bottom_plane_above_pad = 0.1f;
 
     // Data;
-    Cam* _cam;
+    Cam *_cam;
     std::string _name;
     safety_margin_types _safety_margin_type;
     std::vector<Plane> _planes = {};
@@ -51,21 +51,21 @@ private:
     bool vertices_on_one_edge(CornerPoint cp1, CornerPoint cp2);
 
     float safety_margin(safety_margin_types type) {
-        switch(type) {
-        case bare:
-            return 0.;
-        case relaxed:
-            return 0.15f;
-        case strict:
-            return 0.3f;
-        default:
-            return 0.3f;
+        switch (type) {
+            case bare:
+                return 0.;
+            case relaxed:
+                return 0.15f;
+            case strict:
+                return 0.3f;
+            default:
+                return 0.3f;
         }
     };
 
 public:
     FlightAreaConfig() {}
-    FlightAreaConfig(Cam* cam, std::string name, safety_margin_types safety_margin_type): _cam(cam), _name(name),_safety_margin_type(safety_margin_type), view_data(cam->view_limits()) {
+    FlightAreaConfig(Cam *cam, std::string name, safety_margin_types safety_margin_type): _cam(cam), _name(name), _safety_margin_type(safety_margin_type), view_data(cam->view_limits()) {
         create_camera_planes();
     }
     void update_config();

@@ -18,7 +18,7 @@ void AirSim::init(std::string name) {
 void AirSim::load_environment(std::string level_name) {
     std::cout << "Simulator loading level: "  << level_name << std::endl;
     bool succes = client.simLoadLevel("/Game/Maps/" + level_name);
-    if(!succes)
+    if (!succes)
         std::cout << "Failed to load level, using GreenhouseEmpty" << std::endl;
 }
 
@@ -47,7 +47,7 @@ void AirSim::pause(bool pause) {
     client.simPause(pause);
 }
 
-StereoPair* AirSim::new_frame(double desired_frame_time) {
+StereoPair *AirSim::new_frame(double desired_frame_time) {
     // first resume the simulation for a specified amount of time, this is the duration between each frame hence desired_frame_time
     client.simContinueForTime(desired_frame_time);
 
@@ -61,11 +61,11 @@ StereoPair* AirSim::new_frame(double desired_frame_time) {
             double frame_time = msr::airlib::ClockBase::elapsedBetween(response[0].time_stamp, start_timestamp);
 
             // store the first timestamp to calculate frame time
-            if(start_timestamp == 0)
+            if (start_timestamp == 0)
                 start_timestamp = response[0].time_stamp;
 
             // detect incorrect data, limit frame time to 100 days
-            if(frame_time < 8640000) {
+            if (frame_time < 8640000) {
                 ImageResponse front_left = response[0];
                 ImageResponse front_right  = response[1];
 
@@ -73,13 +73,13 @@ StereoPair* AirSim::new_frame(double desired_frame_time) {
                 cv::Mat frameL = cv::Mat(front_left.height,  front_left.width,  CV_8UC1, front_left.image_data_uint8.data()).clone();
                 cv::Mat frameR = cv::Mat(front_right.height, front_right.width, CV_8UC1, front_right.image_data_uint8.data()).clone();
 
-                StereoPair * sp = new StereoPair(frameL,frameR,++_frame_number,frame_time);
+                StereoPair *sp = new StereoPair(frameL, frameR, ++_frame_number, frame_time);
 
                 return sp;
             }
         }
         frame_retrieve_errors++;
-    } while(frame_retrieve_errors < 10);
+    } while (frame_retrieve_errors < 10);
 
     throw MyExit("Could net get new frame after 10 tries");
 }
@@ -90,7 +90,7 @@ void AirSim::rc_data_valid(bool valid) {
 
 void AirSim::set_led(float led) {
     // Check if led value has changed to save api calls
-    if(current_led != led) {
+    if (current_led != led) {
         client.simSetLedIntensity(led, client_name);
         current_led = led;
     }
@@ -162,13 +162,13 @@ void AirSim::log(unsigned long long frame_id) {
 void AirSim::close() {
     // check if connected to simulator
     ConnectionState conn_state = client.getConnectionState();
-    if(conn_state == ConnectionState::Connected) {
+    if (conn_state == ConnectionState::Connected) {
         // reset the simulator
         client.simPause(false);
         client.reset();
     }
 
-    if(logging_initialized)
+    if (logging_initialized)
         airsim_log_file.close();
 }
 
@@ -183,8 +183,8 @@ void AirSim::move_by_rc(float throttle, float yaw, float pitch, float roll) { (v
 void AirSim::arm(bool arm) { (void)arm; }
 void AirSim::load_environment(std::string level_name) { (void)level_name; }
 float AirSim::cam_fov() { return 0;}
-StereoPair*  AirSim::new_frame(double desired_frame_time) { (void)desired_frame_time; return nullptr;};
-cv::Mat AirSim::depth_background() {return cv::Mat::ones(IMG_H,IMG_W,CV_16UC1);}
+StereoPair  *AirSim::new_frame(double desired_frame_time) { (void)desired_frame_time; return nullptr;};
+cv::Mat AirSim::depth_background() {return cv::Mat::ones(IMG_H, IMG_W, CV_16UC1);}
 void AirSim::init_logging() {}
 void AirSim::log(unsigned long long frame_id) { (void)frame_id; }
 #endif

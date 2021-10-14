@@ -4,7 +4,7 @@ void Smoother::init(uint16_t width, float value) {
     _kernelsize = width;
     _rbuf.resize(_kernelsize + 1);
     _rotater = 0;
-    _runner = value*_kernelsize;
+    _runner = value * _kernelsize;
     for (uint16_t i = 0; i < _kernelsize + 1; i++) {
         _rbuf.at(i) = value;
     }
@@ -12,7 +12,7 @@ void Smoother::init(uint16_t width, float value) {
 }
 
 void Smoother::init(uint16_t width) {
-    init(width,0);
+    init(width, 0);
     _ready = false;
 }
 
@@ -22,7 +22,7 @@ void Smoother::reset() {
 
 void Smoother::change_width(int new_width) {
     float avg = latest();
-    init(new_width,avg);
+    init(new_width, avg);
 }
 
 float Smoother::addSample(float sample) {

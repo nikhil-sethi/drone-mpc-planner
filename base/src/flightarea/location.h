@@ -61,11 +61,11 @@ private:
             roll_deg.value(),
             pitch_deg.value()
         };
-        if(!std::equal(vector_based_plane_params.begin()+1, vector_based_plane_params.end(), vector_based_plane_params.begin()))
+        if (!std::equal(vector_based_plane_params.begin() + 1, vector_based_plane_params.end(), vector_based_plane_params.begin()))
             return vector_based;
-        else if(!std::equal(point_based_plane_params.begin()+1, point_based_plane_params.end(), point_based_plane_params.begin()))
+        else if (!std::equal(point_based_plane_params.begin() + 1, point_based_plane_params.end(), point_based_plane_params.begin()))
             return point_based;
-        else if(!std::equal(angle_based_plane_params.begin()+1, angle_based_plane_params.end(), angle_based_plane_params.begin()))
+        else if (!std::equal(angle_based_plane_params.begin() + 1, angle_based_plane_params.end(), angle_based_plane_params.begin()))
             return angle_based;
         else
             throw std::runtime_error("Plane configuration is empty");
@@ -99,7 +99,7 @@ public:
     XML_Plane() {
         setClassName("Plane");
         setVersion("1.0"); // not used at the moment
-        Register("type",&type);
+        Register("type", &type);
         Register("support_vector_x", &support_vector_x);
         Register("support_vector_y", &support_vector_y);
         Register("support_vector_z", &support_vector_z);
@@ -135,17 +135,17 @@ public:
 
     Plane plane() {
         definition_type def_typ = identify_definition_type();
-        if(def_typ == vector_based) {
+        if (def_typ == vector_based) {
             std::cout << "Vector based plane definition" << std::endl;
             return Plane(support_vector_x.value(), support_vector_y.value(), support_vector_z.value(),
                          normal_vector_x.value(), normal_vector_y.value(), normal_vector_z.value(), type.value());
-        } else if(def_typ == point_based) {
+        } else if (def_typ == point_based) {
             std::cout << "Point based plane definition" << std::endl;
             return Plane(direction.value(), cv::Point3f(point1_x.value(), point1_y.value(), point1_z.value()),
                          cv::Point3f(point2_x.value(), point2_y.value(), point2_z.value()),
                          cv::Point3f(point3_x.value(), point3_y.value(), point3_z.value()),
                          type.value());
-        } else if(def_typ == angle_based) {
+        } else if (def_typ == angle_based) {
             std::cout << "Angle based plane definition" << std::endl;
             return Plane(distance.value(), roll_deg.value(), pitch_deg.value(), type.value());
         } else {
@@ -164,13 +164,13 @@ public:
     XML_Location() {
         setClassName("LocationXML");
         setVersion("1.0");
-        Register("name",&_name);
-        Register("planes",&planes_xml);
+        Register("name", &_name);
+        Register("planes", &planes_xml);
     }
     XML_Location(std::string name, std::vector<Plane> planes) : XML_Location() {
         _name = name;
         for (auto plane : planes) {
-            XML_Plane * plane_xml = new XML_Plane(plane);
+            XML_Plane *plane_xml = new XML_Plane(plane);
             planes_xml.addItem(plane_xml);
         }
     }
@@ -200,14 +200,14 @@ public:
 
     void serialize(std::string filepath) {
         std::string xmlData = toXML();
-        std::ofstream outfile = std::ofstream (filepath);
+        std::ofstream outfile = std::ofstream(filepath);
         outfile << xmlData ;
         outfile.close();
 
     }
     std::vector<Plane> planes() {
         std::vector<Plane> res;
-        for (uint i = 0; i< planes_xml.size(); i++) {
+        for (uint i = 0; i < planes_xml.size(); i++) {
             res.push_back(planes_xml.getItem(i)->plane());
         }
         return res;

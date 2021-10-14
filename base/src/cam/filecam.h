@@ -7,9 +7,9 @@
 
 class FileCam : public Cam {
 private:
-    logging::LogReader * logreader;
+    logging::LogReader *logreader;
     std::string video_fn;
-    int im_width=0, im_height=0, nFrames=0,frame_cnt = 0;
+    int im_width = 0, im_height = 0, nFrames = 0, frame_cnt = 0;
     void read_frame_ids();
     void calibration();
     void init_gstream();
@@ -25,14 +25,14 @@ private:
 
 public:
     static std::string playback_filename() { return "videoRawLR.mkv"; }
-    FileCam(string replay_dir_, logging::LogReader * log) {
+    FileCam(string replay_dir_, logging::LogReader *log) {
         replay_dir = replay_dir_;
         logreader = log;
         set_read_file_paths(replay_dir);
         set_write_file_paths(data_output_dir);
         video_fn = replay_dir + '/' + playback_filename();
     }
-    FileCam(string replay_dir_,string monitor_video_fn) {
+    FileCam(string replay_dir_, string monitor_video_fn) {
         video_fn = monitor_video_fn;
         replay_dir = replay_dir_;
         set_read_file_paths(replay_dir);
@@ -51,11 +51,11 @@ public:
         uint video_id_now = 0;
         uint video_id_skip = 0;
         for (auto id : frames_ids) {
-            if (id.time> static_cast<double>(duration)+current_time) {
+            if (id.time > static_cast<double>(duration) + current_time) {
                 video_id_skip = id.raw_video_frame_counter;
                 break;
             }
-            if (id.time> current_time && !video_id_now)
+            if (id.time > current_time && !video_id_now)
                 video_id_now = id.raw_video_frame_counter;
         }
         replay_skip_n_frames = video_id_skip - video_id_now;
@@ -63,7 +63,7 @@ public:
 
     void init();
     void close();
-    StereoPair * update();
+    StereoPair *update();
 
     void back_one_sec() {}
 };

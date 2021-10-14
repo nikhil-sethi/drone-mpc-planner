@@ -5,7 +5,7 @@ using namespace cv;
 using namespace std;
 namespace tracking {
 
-void VirtualMothTracker::init(int id, mothbehavior mothbehavior_type, VisionData* visdat, DroneController* dctrl) {
+void VirtualMothTracker::init(int id, mothbehavior mothbehavior_type, VisionData *visdat, DroneController *dctrl) {
     _id = id;
     _visdat = visdat;
     _dctrl = dctrl;
@@ -45,25 +45,25 @@ void VirtualMothTracker::update(double time) {
 }
 
 void VirtualMothTracker::update_behavior_based(unsigned long long frame_number, double time) {
-    if(start_time<=0)
+    if (start_time <= 0)
         start_time = time;
 
-    if(_dctrl->auto_throttle>400) {
+    if (_dctrl->auto_throttle > 400) {
         escape_triggered = true;
     }
-    if(escape_triggered) {
-        insect_vel += cv::Point3f(0., -2, 0.)/static_cast<float>(pparams.fps);
+    if (escape_triggered) {
+        insect_vel += cv::Point3f(0., -2, 0.) / static_cast<float>(pparams.fps);
     }
 
     _n_frames_lost = 0;
     _n_frames_tracking++;
     _tracking = true;
 
-    insect_pos += 1./pparams.fps * insect_vel;
-    cv::Point3f insect_im = world2im_3d(insect_pos, _visdat->Qfi,_visdat->camera_roll,_visdat->camera_pitch);
-    _image_item = ImageItem (insect_im.x, insect_im.y, insect_im.z, frame_number);
+    insect_pos += 1. / pparams.fps * insect_vel;
+    cv::Point3f insect_im = world2im_3d(insect_pos, _visdat->Qfi, _visdat->camera_roll, _visdat->camera_pitch);
+    _image_item = ImageItem(insect_im.x, insect_im.y, insect_im.z, frame_number);
     _image_item.valid = true;
-    _image_predict_item = ImagePredictItem(cv::Point3f(insect_im.x, insect_im.y, insect_im.z),1,255,frame_number);
+    _image_predict_item = ImagePredictItem(cv::Point3f(insect_im.x, insect_im.y, insect_im.z), 1, 255, frame_number);
     _image_predict_item.valid = _image_predict_item.pt.x > 0;
 
     WorldItem w;
@@ -97,7 +97,7 @@ void VirtualMothTracker::update_behavior_based(unsigned long long frame_number, 
     data.world_item = w;
     data.predicted_image_item = _image_predict_item;
 
-    if(time-start_time>5)
+    if (time - start_time > 5)
         _delete_me = true;
 
     cleanup_history();

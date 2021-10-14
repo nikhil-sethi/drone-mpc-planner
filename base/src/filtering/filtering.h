@@ -28,14 +28,14 @@ public:
     }
 
     void change_dynamic(float T) {
-        if(T>0)
-            time_factor = 1 - exp(-sample_time/T);
+        if (T > 0)
+            time_factor = 1 - exp(-sample_time / T);
         else
             time_factor = 1.f;
     }
 
     float new_sample(float input) {
-        y = time_factor*(K*input - y) + y;
+        y = time_factor * (K * input - y) + y;
         return y;
     }
 
@@ -55,7 +55,7 @@ public:
         sample_time = init_sample_time;
         change_dynamic(T);
         K = init_K;
-        y = cv::Point3f(0,0,0);
+        y = cv::Point3f(0, 0, 0);
     }
 
     void reset(cv::Point3f y0) {
@@ -63,14 +63,14 @@ public:
     }
 
     void change_dynamic(float T) {
-        if(T>0)
-            time_factor = 1 - exp(-sample_time/T);
+        if (T > 0)
+            time_factor = 1 - exp(-sample_time / T);
         else
             time_factor = 1.f;
     }
 
     cv::Point3f new_sample(cv::Point3f input) {
-        y = time_factor*(K*input - y) + y;
+        y = time_factor * (K * input - y) + y;
         return y;
     }
 
@@ -96,8 +96,8 @@ public:
     float new_sample(float uk) {
         yk2 = yk1;
         yk1 = yk;
-        yk = uk*K*powf(sample_time, 2) + yk1*(2*T1*T2+(T1+T2)*sample_time) - yk2*T1*T2;
-        yk /= T1*T2 + (T1+T2)*sample_time + powf(sample_time, 2);
+        yk = uk * K * powf(sample_time, 2) + yk1 * (2 * T1 * T2 + (T1 + T2) * sample_time) - yk2 * T1 * T2;
+        yk /= T1 * T2 + (T1 + T2) * sample_time + powf(sample_time, 2);
 
         return yk;
     }
@@ -134,8 +134,8 @@ public:
     cv::Point3f new_sample(cv::Point3f uk) {
         yk2 = yk1;
         yk1 = yk;
-        yk = uk*K*powf(sample_time, 2) + yk1*(2*T1*T2+(T1+T2)*sample_time) - yk2*T1*T2;
-        yk /= T1*T2 + (T1+T2)*sample_time + powf(sample_time, 2);
+        yk = uk * K * powf(sample_time, 2) + yk1 * (2 * T1 * T2 + (T1 + T2) * sample_time) - yk2 * T1 * T2;
+        yk /= T1 * T2 + (T1 + T2) * sample_time + powf(sample_time, 2);
 
         return yk;
     }
@@ -172,7 +172,7 @@ public:
     }
 
     float new_sample(float input) {
-        y = (input-u_prev)/sample_time;
+        y = (input - u_prev) / sample_time;
         u_prev = input;
         return y;
     }
@@ -190,14 +190,14 @@ private:
 
 public:
     void init(float init_sample_time, float delay_time) {
-        uint discrete_delay = static_cast<uint>(delay_time/init_sample_time);
-        buffer_size = discrete_delay +1;
-        buffer.resize (buffer_size);
-        this->preset ({0});
+        uint discrete_delay = static_cast<uint>(delay_time / init_sample_time);
+        buffer_size = discrete_delay + 1;
+        buffer.resize(buffer_size);
+        this->preset({0});
     }
 
     void preset(cv::Point3f init_state) {
-        for (uint i=0; i<buffer_size; i++) {
+        for (uint i = 0; i < buffer_size; i++) {
             buffer.at(i) = init_state;
         }
     }

@@ -4,7 +4,7 @@
 #include "insecttracker.h"
 
 namespace tracking {
-static const char* drone_tracking_state_names[] = { "dts_init",
+static const char *drone_tracking_state_names[] = { "dts_init",
                                                     "dts_inactive",
                                                     "dts_detecting_takeoff_init",
                                                     "dts_detecting_takeoff",
@@ -110,8 +110,8 @@ public:
 
     bool init(std::ofstream *logger, VisionData *_visdat, int motion_thresh, int16_t viz_id);
     void update(double time, bool drone_is_active);
-    void calc_world_item(BlobProps * pbs, double time);
-    bool check_ignore_blobs(BlobProps * pbs);
+    void calc_world_item(BlobProps *pbs, double time);
+    bool check_ignore_blobs(BlobProps *pbs);
     void update_target(cv::Point3f target) { _target = target; }
     void land() {_drone_tracking_status = dts_landing_init;}
     void detect_yaw(double time) {
@@ -121,13 +121,13 @@ public:
     bool check_yaw(double time);
     bool delete_me() {return false;}
 
-    void manual_flight_mode(bool value) { _manual_flight_mode =value; }
+    void manual_flight_mode(bool value) { _manual_flight_mode = value; }
     void hover_mode(bool value);
 
     void delete_landing_motion(float duration);
 
     tracker_type type() { return tt_drone;}
-    float score(BlobProps * blob);
+    float score(BlobProps *blob);
     double time_since_take_off() {return start_take_off_time - current_time;}
     cv::Point3f pad_location(bool landing_hack);
     cv::Point3f pad_location() { return _pad_world_location; };
@@ -141,7 +141,7 @@ public:
     bool taking_off() { return _drone_tracking_status == dts_detecting_takeoff_init || _drone_tracking_status == dts_detecting_takeoff;}
     bool landing() { return _drone_tracking_status == dts_landing_init || _drone_tracking_status == dts_landing;}
     bool inactive() { return _drone_tracking_status == dts_inactive;}
-    bool lost() {return _n_frames_lost > static_cast<int>(pparams.fps*2);}
+    bool lost() {return _n_frames_lost > static_cast<int>(pparams.fps * 2);}
     std::string drone_tracking_state() {return drone_tracking_state_names[_drone_tracking_status];}
     bool drone_on_landing_pad() {return drone_on_pad;}
     void drone_on_landing_pad(bool value) {drone_on_pad = value;}

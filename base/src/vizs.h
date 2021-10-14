@@ -32,12 +32,12 @@ private:
     cv::Mat draw_sub_tracking_viz(cv::Mat frameL_small, cv::Size vizsizeL, cv::Point3d setpoint, std::vector<tracking::TrackData> path);
     void draw_tracker_viz();
 
-    VisionData * _visdat;
+    VisionData *_visdat;
     DroneController *_dctrl;
-    tracking::TrackerManager * _trackers;
+    tracking::TrackerManager *_trackers;
     navigation::DroneNavigation *_dnav;
     Rc *_rc;
-    GeneratorCam * generator_cam;
+    GeneratorCam *generator_cam;
     Interceptor *_iceptor;
     bool generator_cam_set = false;
     bool _tracking_viz_initialized = false;
@@ -48,8 +48,8 @@ private:
 
     const int bufsize = 600;
 
-    const int fsizex = 800/2;
-    const int fsizey = 800/3;
+    const int fsizex = 800 / 2;
+    const int fsizey = 800 / 3;
     const int line_width = 2;
     const float text_size = 0.3;
 
@@ -68,7 +68,7 @@ private:
 
     bool _fromfile;
 
-    cv::Mat cir8,dif8,approx;
+    cv::Mat cir8, dif8, approx;
     float closest_dist;
 
     struct Tracker_viz_base_data {
@@ -143,16 +143,16 @@ public:
     cv::Mat gen_im_size_drone;
 
     static cv::Size viz_frame_size() {
-        return cv::Size(IMG_W + IMG_W,IMG_H+IMG_H/4);
+        return cv::Size(IMG_W + IMG_W, IMG_H + IMG_H / 4);
     }
     bool tracking_viz_initialized() { return _tracking_viz_initialized; }
 
     void paint();
     void render();
     void add_plot_sample(void);
-    void set_generator_cam(GeneratorCam * cam) {generator_cam = cam; generator_cam_set=true;}
+    void set_generator_cam(GeneratorCam *cam) {generator_cam = cam; generator_cam_set = true;}
     void update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, double time, bool draw_plots);
-    void init(VisionData * visdat, tracking::TrackerManager *imngr, DroneController *dctrl, navigation::DroneNavigation *dnav, Rc *rc, bool fromfile, Interceptor *iceptor);
+    void init(VisionData *visdat, tracking::TrackerManager *imngr, DroneController *dctrl, navigation::DroneNavigation *dnav, Rc *rc, bool fromfile, Interceptor *iceptor);
     void close();
 
     void enable_draw_noise_viz() {

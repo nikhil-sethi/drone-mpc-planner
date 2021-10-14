@@ -10,7 +10,7 @@ private:
     uint16_t _fp_static_cnt = 0;
     uint16_t _fp_too_big_cnt = 0;
     uint16_t _fp_too_far_cnt = 0;
-    float dist_integrator_fp =0;
+    float dist_integrator_fp = 0;
     std::ofstream insectlogger;
 
 
@@ -24,8 +24,8 @@ public:
     void init(int id, VisionData *_visdat, int motion_thresh, int16_t viz_id, bool enable_stereo_viz);
     void init_logger();
     void append_log(double time, unsigned long long frame_number);
-    void calc_world_item(tracking::BlobProps * pbs, double time);
-    bool check_ignore_blobs(tracking::BlobProps * pbs);
+    void calc_world_item(tracking::BlobProps *pbs, double time);
+    bool check_ignore_blobs(tracking::BlobProps *pbs);
     void update(double time);
     bool delete_me();
 

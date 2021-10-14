@@ -21,10 +21,10 @@ private:
 
 public:
     AirSimCam(std::string as_map) {
-        if(as_map != "")
+        if (as_map != "")
             airsim_map = as_map;
     }
     void init();
     void close();
-    StereoPair * update();
+    StereoPair *update();
 };

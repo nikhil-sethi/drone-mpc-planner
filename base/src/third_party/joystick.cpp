@@ -50,7 +50,7 @@ void Joystick::openPath(std::string devicePath, bool blocking)
     _fd = open(devicePath.c_str(), blocking ? O_RDONLY : O_RDONLY | O_NONBLOCK);
 }
 
-bool Joystick::sample(JoystickEvent* event)
+bool Joystick::sample(JoystickEvent *event)
 {
     int bytes = read(_fd, event, sizeof(*event));
 
@@ -69,16 +69,14 @@ bool Joystick::isFound()
 
 Joystick::~Joystick()
 {
-    if (_fd>0)
+    if (_fd > 0)
         close(_fd);
 }
 
-std::ostream& operator<<(std::ostream& os, const JoystickEvent& e)
+std::ostream &operator<<(std::ostream &os, const JoystickEvent &e)
 {
     os << "type=" << static_cast<int>(e.type)
        << " number=" << static_cast<int>(e.number)
        << " value=" << static_cast<int>(e.value);
     return os;
 }
-
-

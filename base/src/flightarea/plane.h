@@ -15,7 +15,7 @@ enum plane_types {
     camera_protector_plane,
 };
 
-inline const char* plane_types_str[] = {
+inline const char *plane_types_str[] = {
     "unspecified_plane",
     "bottom_plane",
     "top_plane",
@@ -52,8 +52,8 @@ struct Plane {
         normal = normal_ / normf(normal_);
     }
     Plane(int direction, cv::Point3f cam_corner_1_, cv::Point3f cam_corner_2_, plane_types type_, uint id_) :
-        support(cv::Point3f(0,0,0)),
-        normal(direction * create_plane_normal_vector(cam_corner_1_,cam_corner_2_)),
+        support(cv::Point3f(0, 0, 0)),
+        normal(direction * create_plane_normal_vector(cam_corner_1_, cam_corner_2_)),
         type(type_),
         id(id_),
         is_active(true),
@@ -62,11 +62,11 @@ struct Plane {
 
     Plane(int direction, cv::Point3f point1, cv::Point3f point2, cv::Point3f point3, plane_types type_) :
         support(point1),
-        normal(direction * create_plane_normal_vector(point2-point1, point3-point1)),
+        normal(direction * create_plane_normal_vector(point2 - point1, point3 - point1)),
         type(type_),
         id(0),
         is_active(true) {
-        if(normf(normal) == 0)
+        if (normf(normal) == 0)
             throw std::runtime_error("Plane configuration invalid: Normal vector has no direction");
     }
 
@@ -76,8 +76,8 @@ struct Plane {
         type(type_),
         id(0),
         is_active(true) {
-        normal = rotate_vector_around_z_axis(normal, roll_deg*deg2rad);
-        normal = rotate_vector_around_x_axis(normal, pitch_deg*deg2rad);
+        normal = rotate_vector_around_z_axis(normal, roll_deg * deg2rad);
+        normal = rotate_vector_around_x_axis(normal, pitch_deg * deg2rad);
     }
 
     cv::Point3f create_plane_normal_vector(cv::Point3f cam_corner_1_, cv::Point3f cam_corner_2_);

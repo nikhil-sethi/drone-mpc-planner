@@ -30,9 +30,9 @@ protected:
     class TrackerParams: public xmls::Serializable
     {
     public:
-        xmls::xInt min_disparity,max_disparity;
+        xmls::xInt min_disparity, max_disparity;
         xmls::xInt background_subtract_zone_factor;
-        xmls::xFloat max_size,score_threshold;
+        xmls::xFloat max_size, score_threshold;
 
         TrackerParams() {
             // Set the XML class name.
@@ -43,12 +43,12 @@ protected:
             setVersion("1.0");
 
             // Register members. Like the class name, member names can differ from their xml depandants
-            Register("min_disparity",&min_disparity );
-            Register("max_disparity",&max_disparity );
+            Register("min_disparity", &min_disparity);
+            Register("max_disparity", &max_disparity);
 
-            Register("score_threshold",&score_threshold );
-            Register("background_subtract_zone_factor",&background_subtract_zone_factor );
-            Register("max_size",&max_size );
+            Register("score_threshold", &score_threshold);
+            Register("background_subtract_zone_factor", &background_subtract_zone_factor);
+            Register("max_size", &max_size);
         }
     };
 
@@ -57,7 +57,7 @@ protected:
     TrackerParams params;
     std::string logger_fn;
     std::ofstream *_logger;
-    VisionData * _visdat;
+    VisionData *_visdat;
     bool initialized = false;
     bool initialized_logger = false;
     uint track_history_max_size;
@@ -79,7 +79,7 @@ protected:
     filtering::Smoother smoother_im_size;
     filtering::Smoother smoother_brightness;
     filtering::Smoother smoother_posX, smoother_posY, smoother_posZ;
-    filtering::Smoother smoother_accX,smoother_accY,smoother_accZ;
+    filtering::Smoother smoother_accX, smoother_accY, smoother_accZ;
     filtering::Tf_PT2_3f vel_filt;
     bool reset_smoothers;
 
@@ -88,9 +88,9 @@ protected:
     TrackData last_vel_valid_trackdata_for_prediction;
     int _n_frames_lost = 100;
     int n_frames_lost_threshold = 10;
-    int _n_frames_tracking =0;  // reset after interruptions
-    int _n_frames_tracked =0;   // total tracked frames ever
-    int _n_frames =0;           // lifetime of the tracker
+    int _n_frames_tracking = 0; // reset after interruptions
+    int _n_frames_tracked = 0;  // total tracked frames ever
+    int _n_frames = 0;          // lifetime of the tracker
     double _last_detection = 0;
 
     ImageItem _image_item;
@@ -101,18 +101,18 @@ protected:
     std::vector<TrackData> _track;
 
     void init_logger(std::ofstream *logger);
-    float stereo_match(BlobProps * blob);
-    std::tuple<int,float,int,int,bool> disparity_search_rng(BlobProps * blob,int x,int radius);
-    int calc_rough_disparity(BlobProps * blob,int radius);
-    std::tuple<float,float> calc_match_score_masked(int i,int disp_end,int width,int height,cv::Mat diffL_mask_patch,cv::Mat diffR_mask_patch,cv::Mat grayL_patch,cv::Mat grayR_patch,int npixels);
-    float calc_match_score_motion(int i,int x, int y, int width, int height,float tmp_diffL_sum, cv::Mat diffL_roi, cv::Mat diffR);
-    float estimate_sub_disparity(int disparity,float * err);
+    float stereo_match(BlobProps *blob);
+    std::tuple<int, float, int, int, bool> disparity_search_rng(BlobProps *blob, int x, int radius);
+    int calc_rough_disparity(BlobProps *blob, int radius);
+    std::tuple<float, float> calc_match_score_masked(int i, int disp_end, int width, int height, cv::Mat diffL_mask_patch, cv::Mat diffR_mask_patch, cv::Mat grayL_patch, cv::Mat grayR_patch, int npixels);
+    float calc_match_score_motion(int i, int x, int y, int width, int height, float tmp_diffL_sum, cv::Mat diffL_roi, cv::Mat diffR);
+    float estimate_sub_disparity(int disparity, float *err);
 
     void reset_tracker_ouput(double time);
-    void calc_world_props_blob_generic(BlobProps * blob);
-    bool check_ignore_blobs_generic(BlobProps * blob);
+    void calc_world_props_blob_generic(BlobProps *blob);
+    bool check_ignore_blobs_generic(BlobProps *blob);
     void cleanup_history();
-    float score(BlobProps * blob, ImageItem * ref);
+    float score(BlobProps *blob, ImageItem *ref);
     void update_prediction(double time);
 
     void deserialize_settings();
@@ -139,8 +139,8 @@ public:
         }
         blobs_fused_update();
     }
-    virtual bool check_ignore_blobs(BlobProps * blob) = 0;
-    virtual void calc_world_item(BlobProps * blob, double time) = 0;
+    virtual bool check_ignore_blobs(BlobProps *blob) = 0;
+    virtual void calc_world_item(BlobProps *blob, double time) = 0;
     void append_log();
     void close(void);
     virtual bool delete_me() = 0;
@@ -179,11 +179,11 @@ public:
         _blobs_are_fused_cnt++;
     }
 
-    virtual float score(BlobProps * blob) { return score(blob,&_image_item); }
+    virtual float score(BlobProps *blob) { return score(blob, &_image_item); }
     float score_threshold() {
         if (_blobs_are_fused_cnt && type() == tt_insect)
             return _score_threshold * 2;
-        return std::clamp(_score_threshold+_n_frames_lost*0.3f*_score_threshold,0.f,1.5f*_score_threshold);
+        return std::clamp(_score_threshold + _n_frames_lost * 0.3f * _score_threshold, 0.f, 1.5f * _score_threshold);
     }
 
 };

@@ -16,17 +16,17 @@
 int sign(float x);
 vector
 <string> split_csv_line(string);
-vector<string> split_csv_line(string,char);
+vector<string> split_csv_line(string, char);
 cv::Point2f world2im_2d(cv::Point3f p, cv::Mat Qfi, float camera_roll, float camera_pitch);
 cv::Point3f world2im_3d(cv::Point3f p, cv::Mat Qfi, float camera_roll, float camera_pitch);
 cv::Point3f im2world(cv::Point2f p_im, float disparity, cv::Mat Qf, float camera_roll, float camera_pitch);
 int world2im_dist(cv::Point3f p1, float dist, cv::Mat Qfi, float camera_roll, float camera_pitch);
 int world2im_size(cv::Point3f p1, cv::Point3f p2, cv::Mat Qfi, float camera_roll, float camera_pitch);
 float world2im_sizef(cv::Point3f p1, cv::Point3f p2, cv::Mat Qfi, float camera_roll, float camera_pitch);
-bool file_exist (const std::string& name);
+bool file_exist(const std::string &name);
 bool path_exist(const std::string &s);
 void combine_image(cv::Mat iml, cv::Mat imr, cv::Mat *res);
-void combine_gray_image(cv::Mat iml,cv::Mat imr,cv::Mat *res);
+void combine_gray_image(cv::Mat iml, cv::Mat imr, cv::Mat *res);
 cv::Mat create_column_image(std::vector<cv::Mat> ims, int type, float resizef = 1);
 cv::Mat create_row_image(std::vector<cv::Mat> ims, int type, float resizef = 1);
 void show_column_image(std::vector<cv::Mat> ims, std::string window_name, int type, float resizef = 1);
@@ -37,19 +37,19 @@ std::string to_string_with_precision(double f, const int n);
 cv::Point3f multf(cv::Point3f  p1, cv::Point3f p2);
 float normf(cv::Point2f m);
 float normf(cv::Point3f m);
-float deadzone( float v, float lo, float hi );
-cv::Point3f deadzone(cv::Point3f p,float lo, float hi);
+float deadzone(float v, float lo, float hi);
+cv::Point3f deadzone(cv::Point3f p, float lo, float hi);
 cv::Point3f pats_to_betaflight_coord(cv::Point3f vec);
 cv::Point3f betaflight_to_pats_coord(cv::Point3f vec);
 void set_external_wdt_flag();
 void set_no_realsense_flag();
 void set_realsense_buf_overflow_flag();
-std::string exec(const char* cmd);
+std::string exec(const char *cmd);
 void set_fps_warning_flag();
 void set_frame_loss_warning_flag();
 
-const float rad2deg = 180.f/M_PIf32;
-const float deg2rad = M_PIf32/180.f;
+const float rad2deg = 180.f / M_PIf32;
+const float deg2rad = M_PIf32 / 180.f;
 
 extern std::string data_output_dir;
 
@@ -60,18 +60,18 @@ struct ControlData {
         pitch = p;
         time = t;
     }
-    float throttle,roll,pitch;
+    float throttle, roll, pitch;
     double time;
 };
 struct StereoPair {
-    StereoPair(cv::Mat left_,cv::Mat right_, unsigned long long rs_id_, double time_) {
+    StereoPair(cv::Mat left_, cv::Mat right_, unsigned long long rs_id_, double time_) {
         left = left_;
         right = right_;
         rs_id = rs_id_;
         time = time_;
         processing = false;
     }
-    cv::Mat left,right;
+    cv::Mat left, right;
     unsigned long long rs_id;
     double time;
     bool processing;
@@ -95,7 +95,7 @@ enum video_modes {
     video_mp4_opencv,
     video_bag
 };
-static const char* video_modes_str[] = {
+static const char *video_modes_str[] = {
     "video_disabled",
     "video_mkv",
     "video_stream",
@@ -108,7 +108,7 @@ enum rc_types {
     rc_devo,
     rc_xlite
 };
-static const char* rc_types_str[] = {
+static const char *rc_types_str[] = {
     "rc_none",
     "rc_devo",
     "rc_xlite"
@@ -130,11 +130,11 @@ enum d16_subprotocols {
     d16_xclone = 4
 };
 enum redpine_subprotocols {
-    redpine_fast= 0,
-    redpine_slow= 1
+    redpine_fast = 0,
+    redpine_slow = 1
 };
 
-static const char* led_types_str[] = {
+static const char *led_types_str[] = {
     "led_none",
     "led_strip",
     "led_fiber_ir",
@@ -150,7 +150,7 @@ enum led_types {
     led_top_uv
 };
 
-static const char* tx_protocols_str[] = {
+static const char *tx_protocols_str[] = {
     "tx_none",
     "tx_dsmx",
     "tx_cx10",
@@ -170,7 +170,7 @@ enum drone_types {
     drone_quto,
     drone_anvil_diamond
 };
-static const char* drone_types_str[] = {
+static const char *drone_types_str[] = {
     "drone_none",
     "drone_trashcan",
     "drone_hammer",
@@ -187,7 +187,7 @@ enum op_modes {
     op_mode_waypoint,
     op_mode_hunt
 };
-static const char* op_modes_str[] = {
+static const char *op_modes_str[] = {
     "op_mode_monitoring",
     "op_mode_waypoint",
     "op_mode_hunt",
@@ -331,15 +331,15 @@ public:
 
 class PatsParameters: public Serializable {
 private:
-    xBool _watchdog,_has_screen;
+    xBool _watchdog, _has_screen;
     xVideo_mode _video_raw, _video_result;
     xRc_type _joystick;
     xDrone_type _drone;
     xOp_mode _op_mode;
     xString _sub_mode;
-    xInt _wdt_timeout_us,_fps,_close_after_n_images;
-    xInt _exposure_threshold,_gain_threshold,_brightness_threshold;
-    xBool _cam_tuning, _control_tuning, _navigation_tuning,_vision_tuning,_drone_tracking_tuning,_insect_tracking_tuning;
+    xInt _wdt_timeout_us, _fps, _close_after_n_images;
+    xInt _exposure_threshold, _gain_threshold, _brightness_threshold;
+    xBool _cam_tuning, _control_tuning, _navigation_tuning, _vision_tuning, _drone_tracking_tuning, _insect_tracking_tuning;
     xBool _viz_plots, _viz_tracking;
     xInt _imscalef;
     xString _location;
@@ -351,16 +351,16 @@ private:
     xBool _long_range_mode;
 
 public:
-    int exposure_threshold,gain_threshold,brightness_threshold;
-    int wdt_timeout_us,close_after_n_images;
+    int exposure_threshold, gain_threshold, brightness_threshold;
+    int wdt_timeout_us, close_after_n_images;
     uint fps;
-    bool watchdog,has_screen;
+    bool watchdog, has_screen;
     video_modes video_raw, video_result;
     rc_types joystick;
     drone_types drone;
     op_modes op_mode;
     std::string sub_mode;
-    bool cam_tuning, control_tuning, navigation_tuning,vision_tuning,drone_tracking_tuning, insect_tracking_tuning;
+    bool cam_tuning, control_tuning, navigation_tuning, vision_tuning, drone_tracking_tuning, insect_tracking_tuning;
     bool viz_plots, viz_tracking;
     int imscalef;
     std::string location;
@@ -380,36 +380,36 @@ public:
         setVersion("1.12");
 
         // Register members. Like the class name, member names can differ from their xml depandants
-        Register("wdt_timeout_us",&_wdt_timeout_us);
-        Register("exposure_threshold",&_exposure_threshold);
-        Register("gain_threshold",&_gain_threshold);
-        Register("brightness_threshold",&_brightness_threshold);
-        Register("close_after_n_images",&_close_after_n_images);
-        Register("has_screen",&_has_screen);
-        Register("op_mode",&_op_mode);
-        Register("sub_mode",&_sub_mode);
-        Register("watchdog",&_watchdog);
-        Register("fps",&_fps);
-        Register("video_raw",&_video_raw);
-        Register("video_result",&_video_result);
-        Register("joystick",&_joystick);
-        Register("drone",&_drone);
-        Register("cam_tuning",&_cam_tuning);
-        Register("control_tuning",&_control_tuning);
-        Register("navigation_tuning",&_navigation_tuning);
-        Register("vision_tuning",&_vision_tuning);
-        Register("drone_tracking_tuning",&_drone_tracking_tuning);
-        Register("insect_tracking_tuning",&_insect_tracking_tuning);
-        Register("viz_plots",&_viz_plots);
-        Register("viz_tracking",&_viz_tracking);
-        Register("imscalef",&_imscalef);
-        Register("location",&_location);
-        Register("flightplan",&_flightplan);
-        Register("flightplan_calib_thrust",&_flightplan_calib_thrust);
-        Register("live_image_frq",&_live_image_frq);
-        Register("max_cam_roll",&_max_cam_roll);
-        Register("n_cams",&_n_cams);
-        Register("long_range_mode",&_long_range_mode);
+        Register("wdt_timeout_us", &_wdt_timeout_us);
+        Register("exposure_threshold", &_exposure_threshold);
+        Register("gain_threshold", &_gain_threshold);
+        Register("brightness_threshold", &_brightness_threshold);
+        Register("close_after_n_images", &_close_after_n_images);
+        Register("has_screen", &_has_screen);
+        Register("op_mode", &_op_mode);
+        Register("sub_mode", &_sub_mode);
+        Register("watchdog", &_watchdog);
+        Register("fps", &_fps);
+        Register("video_raw", &_video_raw);
+        Register("video_result", &_video_result);
+        Register("joystick", &_joystick);
+        Register("drone", &_drone);
+        Register("cam_tuning", &_cam_tuning);
+        Register("control_tuning", &_control_tuning);
+        Register("navigation_tuning", &_navigation_tuning);
+        Register("vision_tuning", &_vision_tuning);
+        Register("drone_tracking_tuning", &_drone_tracking_tuning);
+        Register("insect_tracking_tuning", &_insect_tracking_tuning);
+        Register("viz_plots", &_viz_plots);
+        Register("viz_tracking", &_viz_tracking);
+        Register("imscalef", &_imscalef);
+        Register("location", &_location);
+        Register("flightplan", &_flightplan);
+        Register("flightplan_calib_thrust", &_flightplan_calib_thrust);
+        Register("live_image_frq", &_live_image_frq);
+        Register("max_cam_roll", &_max_cam_roll);
+        Register("n_cams", &_n_cams);
+        Register("long_range_mode", &_long_range_mode);
     }
     void deserialize(std::string settings_file) {
         std::cout << "Reading settings from: " << settings_file << std::endl;
@@ -489,16 +489,16 @@ public:
         _viz_plots = viz_plots;
         _viz_tracking = viz_tracking;
         _imscalef = imscalef;
-        _location= location;
-        _flightplan= flightplan;
-        _flightplan_calib_thrust= flightplan_calib_thrust;
+        _location = location;
+        _flightplan = flightplan;
+        _flightplan_calib_thrust = flightplan_calib_thrust;
         _live_image_frq = live_image_frq;
         _max_cam_roll = max_cam_roll;
         _n_cams = n_cams;
         _long_range_mode = long_range_mode;
 
         std::string xmlData = toXML();
-        std::ofstream outfile = std::ofstream (settings_file);
+        std::ofstream outfile = std::ofstream(settings_file);
         outfile << xmlData ;
         outfile.close();
     }
@@ -572,32 +572,32 @@ public:
         setVersion("1.12");
 
         // Register members. Like the class name, member names can differ from their xml depandants
-        Register("name",&_name);
-        Register("initial_hover_throttle",&_initial_hover_throttle);
-        Register("throttle_bank_factor",&_throttle_bank_factor);
-        Register("max_burn_time",&_max_burn_time);
-        Register("min_throttle",&_min_throttle);
-        Register("full_bat_and_throttle_im_effect",&_full_bat_and_throttle_im_effect);
-        Register("full_bat_and_throttle_take_off_acc",&_full_bat_and_throttle_take_off_acc);
-        Register("full_bat_and_throttle_spinup_time",&_full_bat_and_throttle_spinup_duration);
-        Register("hover_throttle_a",&_hover_throttle_a);
-        Register("hover_throttle_b",&_hover_throttle_b);
-        Register("blink_period",&_blink_period);
-        Register("radius",&_radius);
-        Register("pad_radius",&_pad_radius);
-        Register("thrust",&_default_thrust);
-        Register("drone_blink_strength",&_drone_blink_strength);
-        Register("drone_led_strength",&_drone_led_strength);
-        Register("tx",&_tx);
-        Register("mode3d",&_mode3d);
-        Register("spinup_throttle_non3d",&_spinup_throttle_non3d);
-        Register("control",&_control);
-        Register("land_cell_v",&_land_cell_v);
-        Register("max_flight_time",&_max_flight_time);
-        Register("min_hunt_cell_v",&_min_hunt_cell_v);
-        Register("static_shakeit_throttle",&_static_shakeit_throttle);
+        Register("name", &_name);
+        Register("initial_hover_throttle", &_initial_hover_throttle);
+        Register("throttle_bank_factor", &_throttle_bank_factor);
+        Register("max_burn_time", &_max_burn_time);
+        Register("min_throttle", &_min_throttle);
+        Register("full_bat_and_throttle_im_effect", &_full_bat_and_throttle_im_effect);
+        Register("full_bat_and_throttle_take_off_acc", &_full_bat_and_throttle_take_off_acc);
+        Register("full_bat_and_throttle_spinup_time", &_full_bat_and_throttle_spinup_duration);
+        Register("hover_throttle_a", &_hover_throttle_a);
+        Register("hover_throttle_b", &_hover_throttle_b);
+        Register("blink_period", &_blink_period);
+        Register("radius", &_radius);
+        Register("pad_radius", &_pad_radius);
+        Register("thrust", &_default_thrust);
+        Register("drone_blink_strength", &_drone_blink_strength);
+        Register("drone_led_strength", &_drone_led_strength);
+        Register("tx", &_tx);
+        Register("mode3d", &_mode3d);
+        Register("spinup_throttle_non3d", &_spinup_throttle_non3d);
+        Register("control", &_control);
+        Register("land_cell_v", &_land_cell_v);
+        Register("max_flight_time", &_max_flight_time);
+        Register("min_hunt_cell_v", &_min_hunt_cell_v);
+        Register("static_shakeit_throttle", &_static_shakeit_throttle);
         Register("target_takeoff_velocity", &_target_takeoff_velocity);
-        Register("led_type",&_led_type);
+        Register("led_type", &_led_type);
     }
     void deserialize(std::string filepath) {
         std::cout << "Reading settings from: " << filepath << std::endl;
@@ -678,7 +678,7 @@ public:
         _led_type = led_type;
 
         std::string xmlData = toXML();
-        std::ofstream outfile = std::ofstream (filepath);
+        std::ofstream outfile = std::ofstream(filepath);
         outfile << xmlData ;
         outfile.close();
     }
@@ -820,7 +820,7 @@ public:
         _baseline = baseline;
 
         std::string xmlData = toXML();
-        std::ofstream outfile = std::ofstream (filepath);
+        std::ofstream outfile = std::ofstream(filepath);
         outfile << xmlData ;
         outfile.close();
     }
@@ -834,8 +834,8 @@ public: float pad_pos_z = 0;
 public: float pad_roll = 0;
 public: float pad_pitch = 0;
 public: string drone_name = "";
-public: int drone_id =-1;
-public: float thrust =-1;
+public: int drone_id = -1;
+public: float thrust = -1;
 public: string thrust_calib_date = "";
 private: xmls::xString _pad_calib_date;
 private: xmls::xFloat _pad_pos_x;
@@ -848,7 +848,7 @@ private: xmls::xString _drone_name;
 private: xmls::xFloat _thrust;
 private: xmls::xString _thrust_calib_date;
 
-public: cv::Point3f pad_pos() { return cv::Point3f(pad_pos_x,pad_pos_y,pad_pos_z);}
+public: cv::Point3f pad_pos() { return cv::Point3f(pad_pos_x, pad_pos_y, pad_pos_z);}
 
 public: DroneCalibration() {
         setClassName("DroneCalibration");
@@ -911,7 +911,7 @@ public: void serialize(std::string filepath) {
         _thrust_calib_date = thrust_calib_date;
 
         std::string xmlData = toXML();
-        std::ofstream outfile = std::ofstream (filepath);
+        std::ofstream outfile = std::ofstream(filepath);
         outfile << xmlData ;
         outfile.close();
     }

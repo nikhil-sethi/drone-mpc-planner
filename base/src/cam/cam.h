@@ -18,7 +18,7 @@ struct ViewLimit {
     cv::Point3f point_right_bottom;
 
     ViewLimit() {}
-    ViewLimit(cv::Point3f plt, cv::Point3f prt, cv::Point3f plb, cv::Point3f prb) : point_left_top(plt),point_right_top(prt), point_left_bottom(plb),point_right_bottom(prb)  {}
+    ViewLimit(cv::Point3f plt, cv::Point3f prt, cv::Point3f plb, cv::Point3f prb) : point_left_top(plt), point_right_top(prt), point_left_bottom(plb), point_right_bottom(prb)  {}
 };
 
 class Cam {
@@ -28,9 +28,9 @@ protected:
     bool initialized = false;
     bool _stop = false;
     int _frame_loss_cnt = 0;
-    std::map<unsigned long long,StereoPair *> buf;
-    StereoPair * _current;
-    StereoPair * _last;
+    std::map<unsigned long long, StereoPair *> buf;
+    StereoPair *_current;
+    StereoPair *_last;
 
     //read file names
     std::string calib_rfn;
@@ -47,7 +47,7 @@ protected:
     std::string depth_unfiltered_map_wfn;
     std::string disparity_map_wfn;
 
-    rs2_intrinsics * intr;
+    rs2_intrinsics *intr;
     xmls::CamCalibration camparams;
 
     void set_read_file_paths(std::string replay_dir);
@@ -78,16 +78,16 @@ public:
         delete_all_frames();
     }
     void stop() {_stop = true;}
-    virtual StereoPair * update() = 0;
+    virtual StereoPair *update() = 0;
     float camera_pitch() { return camparams.camera_angle_y; }
     float camera_roll() { return camparams.camera_angle_x; }
-    ViewLimit view_limits ();
+    ViewLimit view_limits();
 
     float measured_exposure() { return camparams.measured_exposure; }
     float measured_gain() { return camparams.measured_gain; }
 
-    StereoPair * current() { return _current; }
-    StereoPair * frame(unsigned long long rs_id) {return buf.at(rs_id);}
+    StereoPair *current() { return _current; }
+    StereoPair *frame(unsigned long long rs_id) {return buf.at(rs_id);}
 
     int frame_loss_cnt() {return _frame_loss_cnt;}
 };

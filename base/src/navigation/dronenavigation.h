@@ -25,7 +25,7 @@ private:
 
     uint wpid = 0;
     std::vector<Waypoint> waypoints;
-    Waypoint * current_waypoint = new Waypoint_Landing();
+    Waypoint *current_waypoint = new Waypoint_Landing();
 
     double time_first_frame = -1;
     double time_start_motion_calibration = 0;
@@ -57,9 +57,9 @@ private:
     const float duration_wait_before_shake = 1;
 
     std::ofstream *_logger;
-    DroneController * _dctrl;
-    tracking::TrackerManager * _trackers;
-    Interceptor * _iceptor;
+    DroneController *_dctrl;
+    tracking::TrackerManager *_trackers;
+    Interceptor *_iceptor;
     VisionData *_visdat;
     FlightArea *_flight_area;
     Baseboard *_baseboard;
@@ -101,11 +101,11 @@ private:
 
 public:
 
-    void close (void);
-    void init(std::ofstream *logger, tracking::TrackerManager * imngr, DroneController *dctrl, VisionData *visdat, FlightArea *flight_area, string replay_dir, Interceptor *iceptor, Baseboard *baseboard);
+    void close(void);
+    void init(std::ofstream *logger, tracking::TrackerManager *imngr, DroneController *dctrl, VisionData *visdat, FlightArea *flight_area, string replay_dir, Interceptor *iceptor, Baseboard *baseboard);
     void update(double time);
-    void redetect_drone_location() {_navigation_status = ns_locate_drone_init; force_pad_redetect=true; locate_drone_attempts=0;}
-    void replay_detect_drone_location() { force_pad_redetect=true;}
+    void redetect_drone_location() {_navigation_status = ns_locate_drone_init; force_pad_redetect = true; locate_drone_attempts = 0;}
+    void replay_detect_drone_location() { force_pad_redetect = true;}
     void shake_drone() {_navigation_status = ns_start_shaking;}
     void set_drone_problem() {_navigation_status = ns_drone_problem;}
     void demo_flight(std::string flightplan_fn);
@@ -127,7 +127,7 @@ public:
     }
     std::string navigation_status() {
         if (_navigation_status == ns_approach_waypoint || _navigation_status == ns_landing) {
-            return static_cast<string>(navigation_status_names[_navigation_status]) + " " + current_waypoint->name + " " + to_string_with_precision(_dctrl->dist_to_setpoint(),2);
+            return static_cast<string>(navigation_status_names[_navigation_status]) + " " + current_waypoint->name + " " + to_string_with_precision(_dctrl->dist_to_setpoint(), 2);
         } else if (_navigation_status == ns_wait_locate_drone || _navigation_status == ns_locate_drone_wait_led_on) {
             return static_cast<string>(navigation_status_names[_navigation_status]) + " " + std::to_string(locate_drone_attempts);
         } else if (_navigation_status == ns_shaking_drone || _navigation_status == ns_wait_after_shake) {
@@ -148,13 +148,13 @@ public:
     }
 
     void manual_trigger_next_wp() {
-        if (wpid < waypoints.size()-1 && _nav_flight_mode == nfm_waypoint ) {
+        if (wpid < waypoints.size() - 1 && _nav_flight_mode == nfm_waypoint) {
             wpid++;
             _navigation_status = ns_set_waypoint;
         }
     }
     void manual_trigger_prev_wp() {
-        if (wpid > 0 && _nav_flight_mode == nfm_waypoint ) {
+        if (wpid > 0 && _nav_flight_mode == nfm_waypoint) {
             wpid--;
             _navigation_status = ns_set_waypoint;
         }
@@ -166,12 +166,12 @@ public:
         cv::Point3f tmp = setpoint_pos_world;
         if (!drone_flying()) {
             tmp.x = _trackers->dronetracker()->pad_location().x;
-            tmp.y = _trackers->dronetracker()->pad_location().y+0.5f;
+            tmp.y = _trackers->dronetracker()->pad_location().y + 0.5f;
             tmp.z = _trackers->dronetracker()->pad_location().z;
         }
 
-        cv::Point3f resf = world2im_3d(tmp,_visdat->Qfi,_visdat->camera_roll,_visdat->camera_pitch);
-        return cv::Point2i(roundf(resf.x),round(resf.y));
+        cv::Point3f resf = world2im_3d(tmp, _visdat->Qfi, _visdat->camera_roll, _visdat->camera_pitch);
+        return cv::Point2i(roundf(resf.x), round(resf.y));
     }
 
     bool drone_ready_and_waiting() {return _navigation_status == ns_wait_for_insect || _navigation_status == ns_wait_for_takeoff_command;}
@@ -195,7 +195,7 @@ public:
     int n_wp_flights() {return _n_wp_flights;}
     int n_hunt_flights() {return _n_hunt_flights;}
     float flight_time() {return _flight_time;}
-    bool drone_problem() {return time_drone_problem>=0;}
-    bool drone_problem(float min_problem_duration) {return duration_drone_problem>=min_problem_duration;}
+    bool drone_problem() {return time_drone_problem >= 0;}
+    bool drone_problem(float min_problem_duration) {return duration_drone_problem >= min_problem_duration;}
 };
 }

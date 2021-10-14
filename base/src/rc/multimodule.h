@@ -40,7 +40,7 @@ private:
     void receive_thread(void);
     void send_rc_data(void);
     void receive_data(void);
-    void convert_channels(uint16_t *channels, unsigned char * packet);
+    void convert_channels(uint16_t *channels, unsigned char *packet);
     void zerothrottle();
     void send_pats_init_package();
     bool receive_telemetry(std::string buffer);

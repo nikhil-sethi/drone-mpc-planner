@@ -22,7 +22,7 @@ void InsectReader::init(string file) {
     _rs_id = current_entry.rs_id;
 }
 
-tuple<map<int, LogEntryInsect>,map<string, int>> InsectReader::read_log(string file) {
+tuple<map<int, LogEntryInsect>, map<string, int>> InsectReader::read_log(string file) {
     ifstream infile(file);
     string heads;
     getline(infile, heads);
@@ -31,9 +31,9 @@ tuple<map<int, LogEntryInsect>,map<string, int>> InsectReader::read_log(string f
     while (getline(infile, line)) {
         try {
             LogEntryInsect entry = create_log_entry(line);
-            map<const int, LogEntryInsect>::value_type item(entry.rs_id,entry);
+            map<const int, LogEntryInsect>::value_type item(entry.rs_id, entry);
             log.insert(item);
-        } catch (exception& exp ) {
+        } catch (exception &exp) {
             string next_line;
             if (getline(infile, next_line))
                 throw MyExit("Could not read insect log! \n" + string(exp.what()) + " at: " + line);
@@ -41,7 +41,7 @@ tuple<map<int, LogEntryInsect>,map<string, int>> InsectReader::read_log(string f
     }
     infile.close();
 
-    return make_tuple(log,headmap);
+    return make_tuple(log, headmap);
 
 }
 

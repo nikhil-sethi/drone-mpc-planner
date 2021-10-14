@@ -19,7 +19,7 @@ public:
     void bind(bool __attribute__((unused)));
     void init_logger();
     void send_rc_data(void);
-    void queue_commands(int,int, int, int );
+    void queue_commands(int, int, int, int);
     void telemetry_from_log(double time);
     int drone_id() { return 0; }
 };

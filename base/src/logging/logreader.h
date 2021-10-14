@@ -29,7 +29,7 @@ public:
     LogEntryMain current_entry;
     std::vector<InsectReader> replay_moths() {
         std::vector<InsectReader> replay_logs;
-        for (auto & log : log_insects) {
+        for (auto &log : log_insects) {
             if (log.replay_moth()) {
                 replay_logs.push_back(log);
             }
@@ -39,10 +39,10 @@ public:
 
 private:
     void read_multi_insect_logs(std::string path);
-    LogEntryMain create_log_entry(std::string line,std::map<std::string, int> headmap);
-    LogEntryInsect create_insect_log_entry(std::string line,std::map<std::string, int> headmap);
+    LogEntryMain create_log_entry(std::string line, std::map<std::string, int> headmap);
+    LogEntryInsect create_insect_log_entry(std::string line, std::map<std::string, int> headmap);
 
-    std::tuple<std::map<int, LogEntryMain>,std::map<std::string, int>> read_log(std::string file);
+    std::tuple<std::map<int, LogEntryMain>, std::map<std::string, int>> read_log(std::string file);
 
     std::map<int, LogEntryMain> log_main;
     std::map<std::string, int> headmap_main;

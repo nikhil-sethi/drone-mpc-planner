@@ -62,7 +62,7 @@ struct LogEntryMain {
     float   maxthrust;
     float   telem_thrust_rpm;
 
-    float imLx_drone,imLy_drone,disparity_drone;
+    float imLx_drone, imLy_drone, disparity_drone;
 
     std::vector<LogEntryInsect> insects;
 

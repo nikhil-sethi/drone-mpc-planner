@@ -88,14 +88,14 @@ public:
      * The ostream inserter needs to be a friend so it can access the
      * internal data structures.
      */
-    friend std::ostream& operator<<(std::ostream& os, const JoystickEvent& e);
+    friend std::ostream &operator<<(std::ostream &os, const JoystickEvent &e);
 };
 
 /**
  * Stream insertion function so you can do this:
  *    cout << event << endl;
  */
-std::ostream& operator<<(std::ostream& os, const JoystickEvent& e);
+std::ostream &operator<<(std::ostream &os, const JoystickEvent &e);
 
 /**
  * Represents a joystick device. Allows data to be sampled from it.
@@ -103,7 +103,7 @@ std::ostream& operator<<(std::ostream& os, const JoystickEvent& e);
 class Joystick
 {
 private:
-    void openPath(std::string devicePath, bool blocking=false);
+    void openPath(std::string devicePath, bool blocking = false);
 
     int _fd;
 
@@ -129,7 +129,7 @@ public:
     /**
      * Joystick objects cannot be copied
      */
-    Joystick(Joystick const&) = delete;
+    Joystick(Joystick const &) = delete;
 
     /**
      * Joystick objects can be moved
@@ -151,7 +151,7 @@ public:
      * Attempts to populate the provided JoystickEvent instance with data
      * from the joystick. Returns true if data is available, otherwise false.
      */
-    bool sample(JoystickEvent* event);
+    bool sample(JoystickEvent *event);
 };
 
 #endif

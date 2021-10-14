@@ -3,9 +3,9 @@
 #include "linalg.h"
 #include "location.h"
 
-void FlightArea::init(std::string replay_dir, Cam* cam) {
+void FlightArea::init(std::string replay_dir, Cam *cam) {
     FlightAreaConfig bare_area(cam, default_config_name, bare);
-    bare_area.add_plane(cv::Point3f( 0, 0, -10),cv::Point3f(0, 0, 1), back_plane);
+    bare_area.add_plane(cv::Point3f(0, 0, -10), cv::Point3f(0, 0, 1), back_plane);
 
     std::vector<Plane> location_planes = deserialize_location(replay_dir);
 
@@ -46,7 +46,7 @@ std::vector<Plane> FlightArea::deserialize_location(std::string replay_dir) {
 
 void FlightArea::update_bottom_plane_based_on_blink(float pad_height) {
     if (pad_height < 0) {
-        for (auto& flight_area_config_pair : flight_area_configs) {
+        for (auto &flight_area_config_pair : flight_area_configs) {
             flight_area_config_pair.second.update_bottom_plane_based_on_blink(pad_height);
 #if FLIGHT_AREA_DEBUG
             flight_area_config_pair.second.cout_debug_info();
@@ -59,9 +59,9 @@ bool FlightArea::inside(cv::Point3f point, safety_margin_types safety_margin_typ
     return flight_area_config(safety_margin_type)->inside(point);
 }
 
-FlightAreaConfig* FlightArea::flight_area_config(safety_margin_types safety_margin_type) {
+FlightAreaConfig *FlightArea::flight_area_config(safety_margin_types safety_margin_type) {
     std::map<safety_margin_types, FlightAreaConfig>::iterator ret = flight_area_configs.find(safety_margin_type);
-    if(ret == flight_area_configs.end())
+    if (ret == flight_area_configs.end())
         throw std::runtime_error("FlightAreaConfiguration error: configuration missing! Implementation error!");
 
     return &(ret->second);
@@ -75,7 +75,7 @@ cv::Point3f FlightArea::move_inside(cv::Point3f point, safety_margin_types safet
 }
 
 bool FlightArea::trajectory_in_view(std::vector<tracking::StateData> traj, safety_margin_types safety_margin_type) {
-    FlightAreaConfig* areaconfig = flight_area_config(safety_margin_type);
+    FlightAreaConfig *areaconfig = flight_area_config(safety_margin_type);
     for (auto state : traj) {
         if (!areaconfig->inside(state.pos))
             return false;
