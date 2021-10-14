@@ -35,7 +35,7 @@ void DroneNavigation::init(std::ofstream *logger, tracking::TrackerManager * tra
         createTrackbar ("v_sqr", "Nav", &v_sqr, 500);
     }
 
-    (*_logger) << "nav_state;nav_state_str;";
+    (*_logger) << "nav_state;nav_state_str;charge_state;";
 
     initialized = true;
 }
@@ -721,7 +721,7 @@ void DroneNavigation::update(double time) {
         }
         }
     }
-    (*_logger) << static_cast<int16_t>(_navigation_status) << ";" << navigation_status() << ";";
+    (*_logger) << static_cast<int16_t>(_navigation_status) << ";" << navigation_status() << ";" << _baseboard->charging_state() << ";";
 }
 
 void DroneNavigation::maintain_motion_map(double time) {
