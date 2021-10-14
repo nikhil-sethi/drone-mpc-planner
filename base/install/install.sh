@@ -13,18 +13,7 @@ set -ex
 mkdir -p ~/dependencies
 mkdir -p ~/code
 
-CPU_str=$(lscpu | grep -i 'model name' | uniq)
-CPU=0
-if [[ $CPU_str == *"AMD"* ]]; then
-	CPU=1
-elif [[ $CPU_str == *"i3-7100U"* ]]; then
-	CPU=1
-elif [[ $CPU_str == *"i3-8109U"* ]]; then
-	CPU=1
-elif [[ $CPU_str == *"i3-1115G4"* ]]; then
-	CPU=2
-fi
-echo "CPU type: $CPU"
+KERNEL=$(uname -r)
 
 if [ ! -f ~/dependencies/ssh_keys.done ] && [ $1 -eq 1 ] ; then
 
@@ -66,14 +55,9 @@ pushd ~/dependencies
 [ -f dependencies-packages-v1.15.done ] || {
 	sudo apt update
 	sudo apt install -y build-essential g++ gdb libva-dev libswresample-dev libavutil-dev pkg-config libcurl4-openssl-dev ncdu openssh-server ffmpeg unattended-upgrades inotify-tools cpputest python3-pip dfu-util exfat-utils vnstat ifmetric net-tools lm-sensors nethogs htop git nano screen autossh usb-modeswitch moreutils cmake vainfo intel-gpu-tools
-	if [ $CPU -eq 1 ]; then
-		# gstreamer packages:
-		sudo apt install -y gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav libgstreamer-plugins-base1.0-0 libgstreamer-plugins-bad1.0-0 libgstreamer-plugins-good1.0-0 gstreamer1.0-vaapi libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
-	elif [ $CPU -eq 2 ]; then
-		sudo apt install -y intel-media-va-driver-non-free
-		# gstreamer compile packages:
-		sudo apt install -y libudev-dev nasm meson ninja-build flex bison libdrm-dev
-	fi
+
+	# gstreamer packages:
+	sudo apt install -y gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav libgstreamer-plugins-base1.0-0 libgstreamer-plugins-bad1.0-0 libgstreamer-plugins-good1.0-0 gstreamer1.0-vaapi libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
 
 	#specific to enable opencv features and optimizations:
 	sudo apt install -y yasm gfortran libjpeg8-dev libpng-dev libtiff-dev libatlas-base-dev libprotobuf-dev protobuf-compiler libgoogle-glog-dev libgflags-dev libgphoto2-dev libeigen3-dev libhdf5-dev libatlas3-base libatlas-base-dev liblapack3 liblapacke liblapacke-dev liblapack-dev ccache qtbase5-dev
@@ -104,13 +88,16 @@ pushd ~/dependencies
 		rm librealsense-packages.done
 	}
 
-	if [ $CPU -eq 2 ] && [ ! -f librealsense-kernel-patch_v1.0.done ]; then
-		git clone git@github.com:IntelRealSense/librealsense.git
+	if ([[ $KERNEL == "5.11."* ]] || [[ $KERNEL == "5.8."* ]]) && [ ! -f librealsense-kernel-patch_v1.1.done ]; then
+		[ -d ./librealsense ] || {
+			git clone git@github.com:IntelRealSense/librealsense.git
+		}
 		pushd librealsense/
-		#./scripts/setup_udev_rules.sh
+		git remote add kevin https://github.com/kevindehecker/librealsense.git || true
+		git co patch_ubuntu_focal_5.11
 		./scripts/patch-realsense-ubuntu-lts.sh
 		popd
-		touch librealsense-kernel-patch_v1.0.done
+		touch librealsense-kernel-patch_v1.1.done
 	fi
 
 	touch librealsense-packages_v1.1.done
@@ -153,26 +140,6 @@ if [[ $1 -eq 0 ]] ; then
 		sudo apt install ansible ansible-lint
 		touch cc-dependencies-packages-v1.1.done
 	}
-fi
-
-if [ $CPU -eq 2 ] && [ $1 -eq 1 ] && [ ! -f gstreamer-v1.18.4.done ]; then
-	pushd ~/code/
-	[ -d pats ] || {
-		git clone git@github.com:pats-drones/pats.git # needed for the patch
-		pushd pats
-		popd
-	}
-	popd
-	git clone https://gitlab.freedesktop.org/gstreamer/gst-build.git
-	pushd gst-build/
-	git checkout 1.18.4
-	meson builddir -Dvaapi=enabled -Dgst_debug=false -Dgstreamer-vaapi:with_x11=no --buildtype=release --prefix=/usr/local
-	patch gst-plugins-base/gst-libs/gst/gl/meson.build ~/code/pats/base/install/gst_1.18.4_fix.patch
-	ninja -C builddir
-	sudo ninja install -C builddir
-	sudo ldconfig
-	popd
-	touch gstreamer-v1.18.4.done
 fi
 
 # Uninstall openCV 3
@@ -278,12 +245,14 @@ if [[ $1 -eq 1 ]] ; then
 	mkdir -p ~/pats/flags
 	mkdir -p ~/pats/status
 	mkdir -p ~/pats/images
-	[ -f symlinks-*.done ] || {
+	
+	SYMLINK_FLAG=symlinks-v1.4.done
+	[ -f $SYMLINK_FLAG ] || {
 		touch ~/pats/flags/disable
 	}
 
 	# Create nice symlinks
-	[ -f symlinks-v1.4.done ] || {
+	[ -f $SYMLINK_FLAG ] || {
 		[ -f ~/.screenrc ] && {
 			cp ~/.screenrc{,.bak} --backup=numbered
 			rm ~/.screenrc
@@ -366,11 +335,9 @@ if [[ $1 -eq 1 ]] ; then
 		}
 		sudo ln -s ~/code/pats/base/install/system.conf /etc/systemd/system.conf
 		
-
 		sudo systemctl restart ssh.service
 
-
-		touch symlinks-v1.3.done
+		touch $SYMLINK_FLAG
 	}
 fi
 
