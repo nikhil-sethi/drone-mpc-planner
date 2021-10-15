@@ -283,6 +283,8 @@ void DroneNavigation::update(double time) {
 
                         if (!itrkr) {
                             _dctrl->flight_mode(DroneController::fm_inactive);
+                            if(!_baseboard->charging())
+                                _navigation_status = ns_start_shaking;
                         } else if (_iceptor->trigger_takeoff() && _visdat->no_recent_large_brightness_events(time)) {
                             _navigation_status = ns_takeoff;
                             repeat = true;
@@ -290,6 +292,8 @@ void DroneNavigation::update(double time) {
                             _dctrl->flight_mode(DroneController::fm_spinup);
                         } else {
                             _dctrl->flight_mode(DroneController::fm_inactive);
+                            if(!_baseboard->charging())
+                                _navigation_status = ns_start_shaking;
                         }
                     } else if (_nav_flight_mode == nfm_none) {
                         _dctrl->flight_mode(DroneController::fm_inactive);
