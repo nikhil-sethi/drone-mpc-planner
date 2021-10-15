@@ -877,7 +877,7 @@ def dash_application():
             elif prop_id == 'staaf_kaart.selectedData' or prop_id == 'staaf24h_kaart.selectedData':
                 selected_heat = None
             insects = pd.DataFrame()
-            if selected_heat:
+            if selected_heat and prop_id == 'hete_kaart.clickData':
                 selected_heat = pd.read_json(selected_heat, orient='split')
                 for _, hm_cell in selected_heat.iterrows():
                     hour = hm_cell['hour']
@@ -886,13 +886,13 @@ def dash_application():
                     start_date = datetime.datetime.strptime(hm_cell['lalaladate'], '%d-%m-%Y') + datetime.timedelta(hours=hour)
                     insects_hour, _ = load_insect_df(selected_systems, start_date, start_date + datetime.timedelta(hours=1), insect_types, ['uid', 'Video_Filename', 'Folder', 'Filename', 'Human_Classification', scatter_x_value, scatter_y_value])
                     insects = insects.append(insects_hour)
-            elif hist_selected_bars:
+            elif hist_selected_bars and prop_id == 'staaf_kaart.selectedData':
                 for bar in hist_selected_bars['points']:
                     sys = bar['customdata'][1]
                     start_date = datetime.datetime.strptime(bar['x'], '%d-%m-%Y') + datetime.timedelta(hours=12)
                     insects_day, _ = load_insect_df([sys], start_date, start_date + datetime.timedelta(days=1), insect_types, ['uid', 'Video_Filename', 'Folder', 'Filename', 'Human_Classification', scatter_x_value, scatter_y_value])
                     insects = insects.append(insects_day)
-            elif hist24h_selected_bars:
+            elif hist24h_selected_bars and prop_id == 'staaf24h_kaart.selectedData':
                 start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
                 end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
                 for bar in hist24h_selected_bars['points']:
