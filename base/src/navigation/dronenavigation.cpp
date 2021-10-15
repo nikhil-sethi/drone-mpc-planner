@@ -684,6 +684,8 @@ void DroneNavigation::update(double time) {
                         time_drone_problem = time;
                     _dctrl->flight_mode(DroneController::fm_abort);
                     _dctrl->LED(static_cast<int>((time - time_drone_problem) * 10.0) % 10 > 5, 5); // minimal blink every 5 seconds
+                    if (_dctrl->telemetry().batt_cell_v > 4.1f  && _nav_flight_mode == nfm_hunt)
+                            _navigation_status = ns_wait_for_insect;
                     break;
             } case ns_charging_problem: {
                     if (time_drone_problem < 0)
