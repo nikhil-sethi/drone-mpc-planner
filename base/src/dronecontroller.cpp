@@ -25,7 +25,7 @@ void DroneController::init(std::ofstream *logger, string replay_dir, bool genera
     _flight_area = flight_area;
 
     control_history_max_size = pparams.fps;
-    (*_logger) << "valid;flight_mode;" <<
+    (*_logger) << "valid;flight_mode;flight_mode_str;" <<
                "target_pos_x;target_pos_y;target_pos_z;" <<
                "autoThrottle;autoRoll;autoPitch;autoYaw;" <<
                "joyThrottle;joyRoll;joyPitch;joyYaw; " <<
@@ -630,6 +630,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         control_history.erase(control_history.begin());
 
     (*_logger) << static_cast<int>(data_drone.pos_valid)  << ";" <<
+               _flight_mode << ";" <<
                flight_mode_names[_flight_mode] << ";" <<
                data_target_new.pos().x << ";" <<
                data_target_new.pos().y  << ";" <<
