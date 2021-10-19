@@ -830,12 +830,18 @@ bool DroneController::attitude_on_pad_OK() {
         return false;
 }
 
-bool DroneController::somewhere_on_pad() {
+decision_type DroneController::somewhere_on_pad() {
+    if(_rc->telemetry.roll<-180.f || _rc->telemetry.roll>180.f
+       || _rc->telemetry.pitch<-180.f || _rc->telemetry.pitch>180.f)
+        return maybe;
     cv::Point2f current_att(_rc->telemetry.roll, _rc->telemetry.pitch);
     cv::Point2f pad_att_calibration(calibration.pad_roll, calibration.pad_pitch);
-    return check_att_bounds(current_att,
+    if(check_att_bounds(current_att,
                             pad_att_calibration - somewhere_on_pad_att_range,
-                            pad_att_calibration + somewhere_on_pad_att_range);
+                            pad_att_calibration + somewhere_on_pad_att_range))
+        return yes;
+    else
+        return no;
 }
 
 void DroneController::invalidize_blink() {

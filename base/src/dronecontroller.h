@@ -59,6 +59,13 @@ enum integrator_state {
     hold,
     running
 };
+
+enum decision_type {
+    no,
+    yes,
+    maybe
+};
+
 class DroneController {
 
 public:
@@ -537,7 +544,7 @@ public:
     void save_thrust_calibration();
     bool new_attitude_package_available();
     bool attitude_on_pad_OK();
-    bool somewhere_on_pad();
+    decision_type somewhere_on_pad();
     void invalidize_blink();
     bool pad_calibration_done();
     bool takeoff_calib_valid();
