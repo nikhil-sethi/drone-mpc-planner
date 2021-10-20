@@ -20,14 +20,12 @@ sleep 15s # wait some time to enumerate device again after a reset
 HOST_ID=$( hostname | tr -dc '0-9' )
 DRONE_ID=$(( $HOST_ID ))
 
+#also done in .bashrc:
+export GST_VAAPI_ALL_DRIVERS=1
+export LIBVA_DRIVER_NAME=iHD
 CPU_str=$(lscpu | grep -i 'model name' | uniq)
-if [[ $CPU_str == *"i3-7100U"* ]] || [[ $CPU_str == *"i3-8109U"* ]]; then
-  #also done in .bashrc
-  echo $CPU_str
+if [[ $CPU_str == *"i3-11"* ]] || [[ $CPU_str == *"i5-11"* ]] || [[ $CPU_str == *"i7-11"* ]]; then
   export LIBVA_DRIVER_NAME=i965
-elif [[ $CPU_str == *"i3-10100"* ]]; then
-  export LIBVA_DRIVER_NAME=iHD
-  export GST_VAAPI_ALL_DRIVERS=1
 fi
 
 while [ 1 ]; do

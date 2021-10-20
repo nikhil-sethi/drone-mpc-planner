@@ -120,14 +120,12 @@ if [ -f /etc/bash_completion ]; then
 	. /etc/bash_completion
 fi
 
+#also done in .bashrc:
+export GST_VAAPI_ALL_DRIVERS=1
+export LIBVA_DRIVER_NAME=iHD
 CPU_str=$(lscpu | grep -i 'model name' | uniq)
-if [[ $CPU_str == *"i3-7100U"* ]] || [[ $CPU_str == *"i3-8109U"* ]]; then
-  #also done in .bashrc
-  echo $CPU_str
+if [[ $CPU_str == *"i3-11"* ]] || [[ $CPU_str == *"i5-11"* ]] || [[ $CPU_str == *"i7-11"* ]]; then
   export LIBVA_DRIVER_NAME=i965
-elif [[ $CPU_str == *"i3-10100"* ]]; then
-  export LIBVA_DRIVER_NAME=iHD
-  export GST_VAAPI_ALL_DRIVERS=1
 fi
 
 # Auto-screen invocation. see: http://taint.org/wk/RemoteLoginAutoScreen
