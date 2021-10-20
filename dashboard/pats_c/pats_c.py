@@ -199,16 +199,18 @@ def load_insect_df(systems, start_date, end_date, insect_type, columns=[]):
             insect_sys_df['time'] = pd.to_datetime(insect_sys_df['time'], format='%Y%m%d_%H%M%S')
 
             monster_sys_df = insect_sys_df.loc[insect_sys_df['Monster'] == 1]
-            monster_sys_df = monster_sys_df[(monster_sys_df['time'] > real_start_date) & (monster_sys_df['time'] < end_date)]  # remove the added monster window added to detect monster just outside the user selected window
-            monster_df = monster_df.append(monster_sys_df)
 
             if 'Anomalies' not in insect_type['label']:
                 insect_sys_df = insect_sys_df.loc[insect_sys_df['Monster'] != 1]
                 insect_sys_df = insect_sys_df[(insect_sys_df['time'] > real_start_date) & (insect_sys_df['time'] < end_date)]  # remove the added monster window added to detect monster just outside the user selected window
                 insect_sys_df = window_filter_monster(insect_sys_df, monster_sys_df)
+                monster_sys_df = monster_sys_df[(monster_sys_df['time'] > real_start_date) & (monster_sys_df['time'] < end_date)]  # remove the added monster window added to detect monster just outside the user selected window
                 insect_df = insect_df.append(insect_sys_df)
             else:
+                monster_sys_df = monster_sys_df[(monster_sys_df['time'] > real_start_date) & (monster_sys_df['time'] < end_date)]  # remove the added monster window added to detect monster just outside the user selected window
                 insect_df = insect_df.append(monster_sys_df)
+
+            monster_df = monster_df.append(monster_sys_df)
 
     if use_proto(start_date):
         insect_df['system'].replace({'-proto': ''}, regex=True, inplace=True)
@@ -217,10 +219,7 @@ def load_insect_df(systems, start_date, end_date, insect_type, columns=[]):
 
 def load_insects_of_hour(systems, start_date, end_date, hour, insect_type):
     systems = installation_dates(systems)
-    hour_strs = [str(hour - 1) + '55', str(hour - 1) + '56', str(hour - 1) + '57', str(hour - 1) + '58', str(hour - 1) + '59', str(hour) + '__', str(hour + 1) + '00', str(hour + 1) + '01', str(hour + 1) + '02', str(hour + 1) + '03', str(hour + 1) + '04']
-    for i, hour_str in enumerate(hour_strs):
-        if len(hour_str) == 3:
-            hour_strs[i] = '0' + hour_str
+    hour_strs = [str(hour - 1).rjust(2, '0'), str(hour).rjust(2, '0'), str(hour + 1).rjust(2, '0')]
     insect_df = pd.DataFrame()
     with patsc.open_data_db() as con:
         for (system, installation_date) in systems:
@@ -237,7 +236,7 @@ def load_insects_of_hour(systems, start_date, end_date, hour, insect_type):
             sql_str = f'''SELECT moth_records.* FROM moth_records
                 WHERE {system_str}
                 AND time > :start_time AND time <= :end_time
-                AND ( time LIKE {' OR time LIKE '.join([f'"_________{hour_str}__"' for hour_str in hour_strs])} )
+                AND time REGEXP '({hour_strs[0]}5(?=[56789])...$)|({hour_strs[1]}....$)|({hour_strs[2]}0(?=[01234])...$)'
                 AND {insect_str}'''  # nosec see #952
             insect_sys_df = pd.read_sql_query(sql_str, con, params={'start_time': real_start_date.strftime('%Y%m%d_%H%M%S'), 'end_time': end_date.strftime('%Y%m%d_%H%M%S')})
 

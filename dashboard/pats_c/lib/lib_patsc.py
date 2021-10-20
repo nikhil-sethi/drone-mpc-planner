@@ -14,11 +14,17 @@ db_systems_path = os.path.expanduser('~/patsc/db/pats_systems.db')
 monster_window = pd.Timedelta(minutes=5)
 
 
+def regexp(expr, item):
+    reg = re.compile(expr)
+    return reg.search(item) is not None
+
+
 def open_data_db():
     con = None
     try:
         con = sqlite3.connect(db_data_path, timeout=15.0)
         con.execute('pragma journal_mode=wal')
+        con.create_function("REGEXP", 2, regexp)
     except Exception as e:
         print(e)
     return con
