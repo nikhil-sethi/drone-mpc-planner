@@ -4,10 +4,14 @@ import os
 import re
 import subprocess
 import sqlite3
+import numpy as np
+import pandas as pd
 
 db_data_path = os.path.expanduser('~/patsc/db/pats.db')
 db_classification_path = os.path.expanduser('~/patsc/db/pats_human_classification.db')
 db_systems_path = os.path.expanduser('~/patsc/db/pats_systems.db')
+
+monster_window = pd.Timedelta(minutes=5)
 
 
 def open_data_db():
@@ -48,6 +52,15 @@ def natural_sort(line):
     return sorted(line, key=alphanum_key)
 
 
+def window_filter_monster(insect_df, monster_df):
+    monster_times = monster_df['time'].values
+    insect_times = insect_df['time'].values
+    monster_times_mesh, insect_times_mesh = np.meshgrid(monster_times, insect_times, sparse=True)
+    insects_with_monsters = np.sum((monster_times_mesh >= insect_times_mesh - monster_window) * (monster_times_mesh <= insect_times_mesh + monster_window), axis=1)
+    insect_without_monsters = insect_df.iloc[insects_with_monsters == 0]
+    return insect_without_monsters
+
+
 def clean_moth_json_entry(moth, data):
     # fix a bug that lived for a few days having different versioning in the system table and the moth table (can be removed if these jsons are obsolete)
     if "version" in data and "Version" in moth:
@@ -75,11 +88,24 @@ def clean_moth_json_entry(moth, data):
     return moth
 
 
-def true_positive(moth, minimal_size):
+def true_positive(moth):
     if moth['Version'] == '1.0':
         return moth['duration'] > 1 and moth['duration'] < 10
     else:
-        return moth['duration'] > 1 and moth['duration'] < 10 and moth['Dist_traveled'] > 0.15 and moth['Dist_traveled'] < 4 and moth['Size'] > minimal_size
+        return moth['duration'] > 1 and moth['duration'] < 10 and moth['Dist_traveled'] > 0.15 and moth['Dist_traveled'] < 4
+
+
+def get_insects_for_system(system):
+    sql_str = f'''  SELECT insects.LG_name,avg_size,std_size FROM insects
+                    JOIN crop_insect_connection ON insects.insect_id = crop_insect_connection.insect_id
+                    JOIN crops ON crop_insect_connection.crop_id = crops.crop_id
+                    JOIN customers ON crops.crop_id = customers.crop_id
+                    JOIN systems ON customers.customer_id = systems.customer_id
+                    WHERE systems.system = '{system}'  '''
+    with open_systems_db() as con:
+        insect_info = con.execute(sql_str).fetchall()
+        insect_info = [(name, avg_size - std_size, avg_size + 2 * std_size) for name, avg_size, std_size in insect_info]
+        return insect_info
 
 
 def execute(cmd, retry=1, logger_name=''):
