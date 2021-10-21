@@ -91,6 +91,7 @@ while True:
         continue
     logger.info('Connected to baseboard')
 
+    time.sleep(2)  # allow the baseboard to boot before sending commands:
     if not os.path.exists(lb.disable_watchdog_flag):
         comm.write(b'enable watchdog\n')
         logger.info('Watchdog enabled')
@@ -98,10 +99,10 @@ while True:
         comm.write(b'disable watchdog\n')
         logger.info('Watchdog DISABLED')
     if not os.path.exists(lb.disable_charging_flag):
-        comm.write(b'enable charging\n')
+        comm.write(b'enable charger\n')
         logger.info('Charging enabled')
     else:
-        comm.write(b'disable charging\n')
+        comm.write(b'disable charger\n')
         logger.info('Charging DISABLED')
 
     prev_pkg = SerialPackage()
