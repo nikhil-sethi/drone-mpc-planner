@@ -70,6 +70,10 @@ All done!
             - `sudo update-grub`
     - NUC 7/8:
         - Boot the NUC from the stick, select boot and install and reboot
+    - Ubuntu 20.04 server install: https://askubuntu.com/questions/1269493/ubuntu-server-20-04-1-lts-not-all-disk-space-was-allocated-during-installation
+        - `sudo vgdisplay`
+        - `sudo lvextend -l +100%FREE /dev/mapper/ubuntu--vg-ubuntu--lv`
+        - `sudo resize2fs /dev/mapper/ubuntu--vg-ubuntu--lv`
     - Install above packages (e.g. `mkdir -p ~/usb && sudo mount /dev/sda2 ~/usb -o rw` and cd to the folder with the debs and `sudo dpkg -i *`)
     - Enable WiFi (e.g. `sudo nmcli device wifi connect <SSID> password <PASS>`)
     - Run the install script
