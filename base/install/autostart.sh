@@ -13,10 +13,6 @@ mkdir -p /home/pats/pats/images
 STAT_FN=~/pats/status/system_info.txt
 #export LRS_LOG_LEVEL="DEBUG"
 
-#perform a one time hardware reset (fixes some issues with cold boot and plugged realsense)
-./pats --rs-reset | /usr/bin/tee terminal.log || true
-sleep 15s # wait some time to enumerate device again after a reset
-
 HOST_ID=$( hostname | tr -dc '0-9' )
 DRONE_ID=$(( $HOST_ID ))
 
@@ -27,6 +23,14 @@ CPU_str=$(lscpu | grep -i 'model name' | uniq)
 if [[ $CPU_str == *"i3-11"* ]] || [[ $CPU_str == *"i5-11"* ]] || [[ $CPU_str == *"i7-11"* ]]; then
   export LIBVA_DRIVER_NAME=i965
 fi
+ubuntu_str=$(lsb_release -a | grep Release)
+if [[ $ubuntu_str == *"18.04"* ]] ; then
+  unset LIBVA_DRIVER_NAME
+fi
+
+#perform a one time hardware reset (fixes some issues with cold boot and plugged realsense)
+./pats --rs-reset | /usr/bin/tee terminal.log || true
+sleep 15s # wait some time to enumerate device again after a reset
 
 while [ 1 ]; do
 

@@ -52,9 +52,10 @@ fi
 pushd ~/dependencies
 
 # Install pats dependency packages
-[ -f dependencies-packages-v1.15.done ] || {
+DEPENDENCIES_FLAG=dependencies-packages-v1.16.done
+[ -f $DEPENDENCIES_FLAG ] || {
 	sudo apt update
-	sudo apt install -y build-essential g++ gdb libva-dev libswresample-dev libavutil-dev pkg-config libcurl4-openssl-dev ncdu openssh-server ffmpeg unattended-upgrades inotify-tools cpputest python3-pip dfu-util exfat-utils vnstat ifmetric net-tools lm-sensors nethogs htop git nano screen autossh usb-modeswitch moreutils cmake vainfo intel-gpu-tools
+	sudo apt install -y build-essential g++ gdb libva-dev libswresample-dev libavutil-dev pkg-config libcurl4-openssl-dev ncdu openssh-server ffmpeg unattended-upgrades inotify-tools cpputest python3-pip dfu-util exfat-utils vnstat ifmetric net-tools lm-sensors nethogs htop git nano screen autossh usb-modeswitch moreutils cmake vainfo intel-gpu-tools lsb-core uptimed
 
 	# gstreamer packages:
 	sudo apt install -y gstreamer1.0-tools gstreamer1.0-alsa gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-ugly gstreamer1.0-plugins-bad gstreamer1.0-libav libgstreamer-plugins-base1.0-0 libgstreamer-plugins-bad1.0-0 libgstreamer-plugins-good1.0-0 gstreamer1.0-vaapi libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
@@ -68,7 +69,7 @@ pushd ~/dependencies
 		sudo apt purge -y snapd # remove snap, because it uses data
 	fi
 
-	touch dependencies-packages-v1.15.done
+	touch $DEPENDENCIES_FLAG
 }
 
 # Add librealsense repository
