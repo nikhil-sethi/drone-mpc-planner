@@ -82,6 +82,7 @@ All done!
     - Make sure both tunnels have been connected
 2. Prep the image
     - **Make sure the system hostname is called pats0**
+    - **update the image version number in `~/pats/flags/image_version_*`**
     - Set the disable flag
     - Delete all pats data, json and logs
 3. Create the image with clonezilla
