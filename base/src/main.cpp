@@ -136,7 +136,7 @@ void process_video() {
         bool escape_key_pressed = false;
         if (pparams.has_screen || render_hunt_mode || render_monitor_video_mode) {
             static int speed_div;
-            if (!(speed_div++ % 4) || (((log_replay_mode || generator_mode) && !cam->turbo) || cam->frame_by_frame)) {
+            if (!(speed_div++ % 4) || (((log_replay_mode || generator_mode) && (!cam->turbo || render_hunt_mode || render_monitor_video_mode)) || cam->frame_by_frame)) {
                 visualizer_3d.run();
                 if (pparams.has_screen) {
                     visualizer.paint();
