@@ -4,6 +4,7 @@
     <Member Name="gain_threshold">16</Member>
     <Member Name="brightness_threshold">255</Member>
     <Member Name="close_after_n_images">-1</Member>
+    <Member Name="plukker_start">""</Member>
     <Member Name="has_screen">true</Member>
     <Member Name="op_mode">op_mode_monitoring</Member>
     <Member Name="sub_mode">Default</Member>

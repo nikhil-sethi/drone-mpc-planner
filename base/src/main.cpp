@@ -61,6 +61,7 @@ xmls::PatsParameters pparams;
 xmls::DroneParameters dparams;
 stopwatch_c stopWatch;
 std::string data_output_dir;
+std::time_t plukker_time;
 bool draw_plots = false;
 bool realsense_reset = false;
 bool log_replay_mode = false;
@@ -332,6 +333,9 @@ void process_video() {
                 || dnav.navigation_status() == "ns_check_pad_att"
                 || dnav.navigation_status() == "ns_monitoring"
                 || dnav.drone_problem(1)) {
+
+            auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
+
             if (!log_replay_mode  && ((imgcount > pparams.close_after_n_images && pparams.close_after_n_images > 0))) {
                 std::cout << "Initiating periodic restart" << std::endl;
                 exit_now = true;
@@ -343,6 +347,9 @@ void process_video() {
                 exit_now = true;
             } else if (visdat.average_brightness() > pparams.brightness_threshold + 10 && pparams.exposure_threshold > 0 && frame->time > 3) {
                 std::cout << "Initiating restart because avg brightness (" << visdat.average_brightness() << ") is higher than threshold (" << pparams.brightness_threshold + 10 << ")" << std::endl;
+                exit_now = true;
+            } else if (plukker_time > 0 && !log_replay_mode && std::difftime(time_now, plukker_time) > 0 && std::difftime(time_now, plukker_time) < 60 * 60 * 4) {
+                std::cout << "Initiating restart because plukker humans are in the way" << std::endl;
                 exit_now = true;
             }
         }
@@ -1054,6 +1061,23 @@ void wait_for_cam_angle() {
     }
 }
 
+void wait_for_plukker() {
+    if (plukker_time > 0) {
+        std::cout << "Checking for plukker time..." << std::endl;
+        while (true) {
+            auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
+            if (std::difftime(time_now, plukker_time) > 0 && std::difftime(time_now, plukker_time) < 60 * 60 * 4) {
+                cmdcenter.reset_commandcenter_status_file("Waiting. Plukkers: ", false);
+                std::cout << std::put_time(std::localtime(&time_now), "%Y/%m/%d %T") << " Waiting for plukkers" << std::endl;
+                set_external_wdt_flag();
+                usleep(10000000);
+            } else {
+                break;
+            }
+        }
+    }
+}
+
 void wait_for_dark() {
     if (pparams.exposure_threshold > 0 && !log_replay_mode) {
         std::cout << "Checking if dark..." << std::endl;
@@ -1137,19 +1161,6 @@ void watchdog_worker(void) {
 int main(int argc, char **argv)
 {
 
-
-
-    // baseboard.init(false);
-
-
-    // while (true)
-    // {
-    //     std::cout << "up: " << baseboard.uptime() << std::endl;
-    //     usleep(1e6);
-    // }
-
-
-
     try {
         data_output_dir = "./logging/";
         mkdir(data_output_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
@@ -1183,8 +1194,18 @@ int main(int argc, char **argv)
             pparams.close_after_n_images = -1;
         }
 
+        auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
+        struct std::tm *tm_start = std::localtime(&time_now);;
+        if (pparams.plukker_start.length() > 0) {
+            std::istringstream ss(pparams.plukker_start);
+            ss >> std::get_time(tm_start, "%H:%M:%S");
+            plukker_time = mktime(tm_start);
+        } else
+            plukker_time = -1;
+
         check_hardware();
-        if (!log_replay_mode && !generator_mode && !render_monitor_video_mode && !render_hunt_mode && !airsim_mode) {
+        if (!generator_mode && !log_replay_mode && !render_monitor_video_mode && !render_hunt_mode && !airsim_mode) {
+            wait_for_plukker();
             wait_for_cam_angle();
             wait_for_dark();
         } else {

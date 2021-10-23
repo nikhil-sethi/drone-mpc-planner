@@ -6,6 +6,7 @@
     <Member Name="brightness_threshold">90</Member>
     <Member Name="close_after_n_images">324000</Member>
     <Member Name="has_screen">false</Member>
+    <Member Name="plukker_start">""</Member>
     <Member Name="op_mode">op_mode_monitoring</Member>
     <Member Name="sub_mode">Default</Member>
     <Member Name="watchdog">true</Member>
