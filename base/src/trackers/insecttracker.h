@@ -31,6 +31,7 @@ public:
 
     int16_t insect_trkr_id() {return _insect_trkr_id;}
     tracking::false_positive_type false_positive();
+    bool go_for_terminate();
     bool monster_alert() { return _fp_too_big_cnt > 30 || _fp_too_far_cnt > 30;}
     tracker_type type() {return tt_insect;}
 };

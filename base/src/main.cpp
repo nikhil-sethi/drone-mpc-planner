@@ -1196,7 +1196,7 @@ int main(int argc, char **argv)
 
         auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
         struct std::tm *tm_start = std::localtime(&time_now);;
-        if (pparams.plukker_start.length() > 0) {
+        if (pparams.plukker_start.compare("disabled") != 0) {
             std::istringstream ss(pparams.plukker_start);
             ss >> std::get_time(tm_start, "%H:%M:%S");
             plukker_time = mktime(tm_start);

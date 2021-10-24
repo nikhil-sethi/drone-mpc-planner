@@ -340,6 +340,7 @@ private:
     xInt _wdt_timeout_us, _fps, _close_after_n_images;
     xInt _exposure_threshold, _gain_threshold, _brightness_threshold;
     xString _plukker_start;
+    xFloat _min_hunt_size, _max_hunt_size;
     xBool _cam_tuning, _control_tuning, _navigation_tuning, _vision_tuning, _drone_tracking_tuning, _insect_tracking_tuning;
     xBool _viz_plots, _viz_tracking;
     xInt _imscalef;
@@ -362,6 +363,7 @@ public:
     op_modes op_mode;
     std::string sub_mode;
     std::string plukker_start;
+    float min_hunt_size, max_hunt_size;
     bool cam_tuning, control_tuning, navigation_tuning, vision_tuning, drone_tracking_tuning, insect_tracking_tuning;
     bool viz_plots, viz_tracking;
     int imscalef;
@@ -379,7 +381,7 @@ public:
         setClassName("PatsParameters");
 
         // Set class version
-        setVersion("1.12");
+        setVersion("1.13");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("wdt_timeout_us", &_wdt_timeout_us);
@@ -388,6 +390,8 @@ public:
         Register("brightness_threshold", &_brightness_threshold);
         Register("close_after_n_images", &_close_after_n_images);
         Register("plukker_start", &_plukker_start);
+        Register("min_hunt_size", &_min_hunt_size);
+        Register("max_hunt_size", &_max_hunt_size);
         Register("has_screen", &_has_screen);
         Register("op_mode", &_op_mode);
         Register("sub_mode", &_sub_mode);
@@ -442,6 +446,8 @@ public:
         brightness_threshold = _brightness_threshold.value();
         close_after_n_images = _close_after_n_images.value();
         plukker_start = _plukker_start.value();
+        min_hunt_size = _min_hunt_size.value();
+        max_hunt_size = _max_hunt_size.value();
         has_screen = _has_screen.value();
         op_mode = _op_mode.value();
         sub_mode = _sub_mode.value();
@@ -476,6 +482,8 @@ public:
         _brightness_threshold = brightness_threshold;
         _close_after_n_images = close_after_n_images;
         _plukker_start = plukker_start;
+        _max_hunt_size = max_hunt_size;
+        _min_hunt_size = min_hunt_size;
         _has_screen = has_screen;
         _op_mode = op_mode;
         _sub_mode = sub_mode;

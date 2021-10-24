@@ -105,6 +105,15 @@ tracking::false_positive_type InsectTracker::false_positive() {
         return tracking::false_positive_type::fp_not_a_fp;
 }
 
+int terminate = 0;
+bool InsectTracker::go_for_terminate() {
+    if (_world_item.valid && _world_item.radius * 2.f > pparams.min_hunt_size && _world_item.radius * 2.f < pparams.max_hunt_size) {
+        terminate += 1;
+        return true;
+    }
+    return terminate > 10;
+}
+
 void InsectTracker::update(double time) {
     start_new_log_line(time, _visdat->frame_id);
     ItemTracker::update(time);

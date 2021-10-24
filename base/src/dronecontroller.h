@@ -199,7 +199,7 @@ private:
     float burn_thrust = -1;
 
     const float lift_off_dist_take_off_aim = 0.02f;
-    float min_takeoff_angle = 60.f / 180.f * static_cast<float>(M_PI);
+    const float min_takeoff_angle = 60.f / 180.f * static_cast<float>(M_PI);
 
     double take_off_start_time = 0;
     double state_start_time = 0;

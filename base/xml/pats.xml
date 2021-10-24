@@ -1,11 +1,13 @@
-<SerializableClass Type="PatsParameters" Version="1.12">
+<SerializableClass Type="PatsParameters" Version="1.13">
     <Member Name="wdt_timeout_us">500000</Member>
     <Member Name="exposure_threshold">0</Member>
     <Member Name="gain_threshold">16</Member>
     <Member Name="brightness_threshold">255</Member>
     <Member Name="close_after_n_images">-1</Member>
-    <Member Name="plukker_start">""</Member>
     <Member Name="has_screen">true</Member>
+    <Member Name="plukker_start">disabled</Member>
+    <Member Name="min_hunt_size">0.01</Member>
+    <Member Name="max_hunt_size">0.05</Member>
     <Member Name="op_mode">op_mode_monitoring</Member>
     <Member Name="sub_mode">Default</Member>
     <Member Name="watchdog">false</Member>
