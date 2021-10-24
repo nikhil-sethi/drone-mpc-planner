@@ -68,7 +68,9 @@ public:
     void init(bool replay_mode);
     void close();
 
-    bool charging() {return _charging;};
+    void update_from_log(int s) {_charging_state  = static_cast<ChargingState>(s);}
+
+    bool charging() {return _charging_state == state_measure || _charging_state == state_normal_charging || _charging_state == state_trickle_charging || _charging_state == state_revive_charging;};
     bool contact_problem() {return _charging_state == state_contact_problem;}
     bool drone_on_pad() {return _charging_state != state_drone_not_on_pad;}
     bool charging_problem() {return _charging_state == state_bat_dead || _charging_state == state_bat_does_not_charge  || _charging_state == state_calibrating;};

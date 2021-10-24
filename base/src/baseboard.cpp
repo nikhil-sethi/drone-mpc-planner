@@ -43,7 +43,6 @@ void Baseboard::worker_receive() {
 
                 _uptime = static_cast<float>(pkg->up_duration) / 1000.f;
                 _charging_state = static_cast<ChargingState>(pkg->charging_state);
-                _charging = _charging_state == state_measure || _charging_state == state_normal_charging || _charging_state == state_trickle_charging || _charging_state == state_revive_charging;
             } else { // allign
                 std::cout << "Warning: realligning baseboard socket" << std::endl;
                 while (true) {

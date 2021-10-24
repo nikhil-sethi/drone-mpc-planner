@@ -363,6 +363,7 @@ void process_frame(StereoPair *frame) {
 
         trackers.process_replay_moth(frame->rs_id);
         cmdcenter.trigger_demo_flight_from_log(replay_dir, logreader.current_entry.trkrs_state);
+        baseboard.update_from_log(logreader.current_entry.charging_state);
 
     } else if (generator_mode) {
         if (dnav.drone_ready_and_waiting()) {

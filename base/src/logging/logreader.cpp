@@ -83,6 +83,7 @@ LogEntryMain LogReader::create_log_entry(string line, map<string, int> headmap) 
     entry.joyTakeoffSwitch = stoi(line_data.at(headmap["joyTakeoffSwitch"]));
     entry.trkrs_state = stoi(line_data.at(headmap["trkrs_state"]));
     entry.nav_state = stoi(line_data.at(headmap["nav_state"]));
+    entry.charging_state = stoi(line_data.at(headmap["charge_state"]));
 
     entry.imLx_drone = stof(line_data.at(headmap["imLx_drone"]));
     entry.imLy_drone = stof(line_data.at(headmap["imLy_drone"]));

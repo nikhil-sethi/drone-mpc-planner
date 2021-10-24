@@ -51,6 +51,7 @@ struct LogEntryMain {
     int joyTakeoffSwitch;
     int trkrs_state;
     int nav_state;
+    int charging_state;
 
     int auto_throttle;
     int auto_roll;
