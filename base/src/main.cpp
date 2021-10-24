@@ -161,7 +161,7 @@ void process_video() {
                 escape_key_pressed = true;
             }
         }
-        if (airsim_wp_mode && dnav.drone_ready_and_waiting() && rc->arm_switch == bf_armed)
+        if (airsim_wp_mode && dnav.drone_ready_and_waiting() && rc->arm_command())
             dnav.demo_flight(pparams.flightplan);
 
         tp[0].m1.lock();
@@ -314,7 +314,7 @@ void process_video() {
         std:: cout << std::endl;
         //   std::flush;
 
-        if (rc->telemetry.arming_state && !dnav.drone_ready_and_waiting())
+        if (rc->telemetry.arming_state && !dnav.drone_ready_and_waiting() && rc->arm_command())
             std::cout << rc->arming_state_str() << std::endl;
 
         imgcount++;

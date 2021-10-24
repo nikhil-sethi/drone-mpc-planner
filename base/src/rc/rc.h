@@ -153,7 +153,8 @@ public:
     bool bf_uid_error() { return _bf_uid_error > 10;}
     bool bf_telem_OK() { return _bf_uid_error < 0 && _bf_version_error < 0;}
     std::string bf_uid_str() {return telemetry.bf_uid_str;}
-    std::string Armed() { return armed_names[arm_switch > RC_MIDDLE]; }
+    std::string armed_str() { return armed_names[arm_switch > RC_MIDDLE]; }
+    bool arm_command() { return arm_switch == bf_armed; }
     bool connected() {return !notconnected;}
 
     void queue_commands(int new_throttle, int new_roll, int new_pitch, int new_yaw, int new_mode, double time) {

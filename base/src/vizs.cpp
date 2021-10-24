@@ -351,7 +351,7 @@ void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis, floa
 
     putText(resFrame, _dctrl->flight_mode(), cv::Point(220, 70), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
     putText(resFrame, _dnav->navigation_status(), cv::Point(220, 82), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
-    putText(resFrame, _rc->Armed(), cv::Point(450, 82), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
+    putText(resFrame, _rc->armed_str(), cv::Point(450, 82), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
     putText(resFrame, _dctrl->Joy_State_str(), cv::Point(525, 82), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
     putText(resFrame, _trackers->mode_str(), cv::Point(220, 96), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
 
