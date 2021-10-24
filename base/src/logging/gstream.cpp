@@ -177,7 +177,7 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY, int fps, std
                 if (gst_element_factory_find("vaapih264enc")) {
                     std::cout << "Using h264 vaapi encoding" << std::endl;
                     encoder = gst_element_factory_make("vaapih264enc", "encoder");  // hardware encoding
-                    g_object_set(G_OBJECT(encoder),  "rate-control", 2, "bitrate", 15000, NULL);
+                    g_object_set(G_OBJECT(encoder),  "rate-control", 2, "bitrate", 30000, NULL);
                     auto parser = gst_element_factory_make("h264parse", "parser");
                     gst_bin_add_many(GST_BIN(_pipeline), _appsrc, videoconvert, encoder, parser, mux, videosink, NULL);
                     gst_element_link_many(_appsrc, videoconvert, encoder, parser, mux, videosink, NULL);
