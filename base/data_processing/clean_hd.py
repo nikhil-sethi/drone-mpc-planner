@@ -107,13 +107,22 @@ def clean_hd():
         return
     if remove_folders_until(datetime.today() - timedelta(days=14), logger):
         return
-    logger.warning('Could not remove enough files older than two weeks')
+    try:
+        logger.warning('Could not remove enough files older than two weeks')
+    except OSError:  # OSError is called if we can not log because of full hd, so we catch that
+        pass
     if strip_folders_until(datetime.today() - timedelta(days=1), logger):
         return
-    logger.error('Could not strip enough files younger than two weeks')
+    try:
+        logger.error('Could not strip enough files younger than two weeks')
+    except OSError:  # OSError is called if we can not log because of full hd, so we catch that
+        pass
     if remove_folders_until(datetime.today() - timedelta(days=1), logger):
         return
-    logger.error('ONLY ONE DAY COULD BE KEPT!!!!!!!')
+    try:
+        logger.error('ONLY ONE DAY COULD BE KEPT!!!!!!!')
+    except OSError:  # OSError is called if we can not log because of full hd, so we catch that
+        pass
 
 
 if __name__ == "__main__":
