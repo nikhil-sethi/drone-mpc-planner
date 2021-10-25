@@ -62,8 +62,10 @@ class socket_communication:
 
     def close(self):
         self.exit_now = True
+        if self.connection_ok:
+            self.conn.shutdown(socket.SHUT_WR)
+            self.conn.close()
         self.connection_ok = False
-        self.conn.shutdown(socket.SHUT_WR)
         with self.send_trigger:
             self.send_trigger.notify()
         self.connecter_thread.join()
