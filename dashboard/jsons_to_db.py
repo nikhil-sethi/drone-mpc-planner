@@ -90,6 +90,9 @@ def store_moths(data):
         if 'Monster' not in columns:
             cur.execute('ALTER TABLE moth_records ADD COLUMN Monster INT')
         # v1.10: implemented full widt third maximum
+        # v1.11: Insect labeling from trajectory
+        if 'LIA_insect' not in columns:
+            cur.execute('ALTER TABLE moth_records ADD COLUMN LIA_insect INT')
 
         sql_insert = ''
         for moth in moths:
