@@ -12,6 +12,7 @@ void ReplayTracker::init(int id, std::string file, VisionData *visdat) {
     _name = "replay";
     track_history_max_size = pparams.fps;
     logreader.init(file);
+    max_radius = 0.03;
     init_logger();
     initialized = true;
 }
@@ -22,6 +23,7 @@ void ReplayTracker::init(int id, logging::InsectReader log, VisionData *visdat) 
     _n_frames_lost = 0;
     _name = "replay";
     track_history_max_size = pparams.fps;
+    max_radius = 0.03;
     init_logger();
     logreader = log;
     initialized = true;
@@ -65,6 +67,7 @@ void ReplayTracker::update_from_log(unsigned long long frame_number, double time
     w.pt.y = log.ins_pos_y;
     w.pt.z = log.ins_pos_z;
     w.distance = norm(w.pt);
+    w.radius = 0.015;
     w.image_item.x = std::clamp(static_cast<int>(w.image_item.x), 0, IMG_W);
     w.image_item.y = std::clamp(static_cast<int>(w.image_item.y), 0, IMG_H);
     w.distance_bkg = _visdat->depth_background_mm.at<float>(w.image_item.y, w.image_item.x);
