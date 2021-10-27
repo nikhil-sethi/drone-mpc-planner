@@ -96,11 +96,7 @@ void DroneTracker::update(double time, bool drone_is_active) {
                         if (!liftoff_detected)
                             std::cout << "Lift off detected after: " << takeoff_duration << "s" << std::endl;
                         liftoff_detected = true;
-                        if (detect_takeoff()) {
-                            std::cout << "Take off detected after: " << takeoff_duration << "s" << std::endl;
-                            _drone_tracking_status = dts_tracking;
-                            break;
-                        }
+                        _drone_tracking_status = dts_tracking;
                     }
                 } else if (spinup_detected < 3) {
                     spinup_detected = 0;
@@ -279,22 +275,6 @@ bool DroneTracker::detect_lift_off() {
         take_off_frame_cnt = 0;
     }
     return false;
-}
-bool DroneTracker::detect_takeoff() {
-    uint16_t closest_to_takeoff_im_dst = 999;
-    cv::Point2i closest_to_takeoff_point;
-    for (auto blob : _all_blobs) {
-        float takeoff_im_dst = normf(blob.pt_unscaled() - pad_im_location());
-        if (takeoff_im_dst < closest_to_takeoff_im_dst) {
-            closest_to_takeoff_im_dst = takeoff_im_dst;
-            closest_to_takeoff_point = cv::Point2i(blob.x * pparams.imscalef, blob.y * pparams.imscalef);
-        }
-    }
-
-    return  _world_item.radius < dparams.radius * 4.f &&
-            closest_to_takeoff_point.x == static_cast<int>(_world_item.image_item.x) &&
-            closest_to_takeoff_point.y == static_cast<int>(_world_item.image_item.y); // maybe should create an id instead of checking the distance
-
 }
 
 bool DroneTracker::check_ignore_blobs(BlobProps *pbs) {
