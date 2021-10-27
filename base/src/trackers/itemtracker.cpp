@@ -103,7 +103,7 @@ void ItemTracker::calc_world_props_blob_generic(BlobProps *blob) {
 
         float disparity = stereo_match(blob);
 
-        if (disparity < min_disparity || disparity > max_disparity) {
+        if (disparity < params.min_disparity.value() || disparity > params.max_disparity.value()) {
             w.disparity_in_range = false;
             w.disparity  = NAN;
         } else {
