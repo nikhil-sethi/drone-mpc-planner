@@ -217,6 +217,8 @@ class wdt_pats_task(pats_task):
 
     def task_func(self):
         self.baseboard_comm.send(b"Harrow from Daemon!")
+        if os.path.exists(lb.disable_flag):
+            return
 
         if not os.path.exists(lb.no_realsense_flag):
             self.no_realsense_cnt = 0
@@ -328,7 +330,6 @@ def init_status_cc():
 
 
 logging.basicConfig()
-lb.block_if_disabled()
 if not os.path.exists(lb.log_dir):
     os.mkdir(lb.log_dir)
 if not os.path.exists(lb.flags_dir):
@@ -346,11 +347,12 @@ error_file_handler.extMatch = re.compile(r"^\d{8}$")  # Reformats the suffix suc
 baseboard_comm = socket_communication('baseboard', lb.socket_baseboard2daemon, False)
 
 tasks: List[pats_task] = []
+tasks.append(wdt_pats_task(error_file_handler, baseboard_comm))
+lb.block_if_disabled()  # We need the wdt_pats to write to the baseboard, but the rest can wait until the disable flag is removed.
 tasks.append(clean_hd_task(error_file_handler))
 tasks.append(cut_moths_task(error_file_handler))
 tasks.append(logs_to_json_task(error_file_handler))
 tasks.append(render_task(error_file_handler))
-tasks.append(wdt_pats_task(error_file_handler, baseboard_comm))
 tasks.append(wdt_tunnel_task(error_file_handler))
 tasks.append(errors_to_vps_task(error_file_handler, rotate_time))
 tasks.append(check_system_task(error_file_handler))
