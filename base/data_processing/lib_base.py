@@ -77,7 +77,7 @@ def execute(cmd, retry=1, logger_name='', render_process_dir=None, verbose=True)
                 break
             if verbose and logger_name == '':
                 print(stdout_line.decode('utf-8'), end='')
-            elif logger_name != '':
+            elif logger_name != '' and stdout_line.decode('utf-8'):
                 logger.info(stdout_line.decode('utf-8'))
         popen.stdout.close()
     return p_result

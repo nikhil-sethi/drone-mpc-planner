@@ -180,7 +180,7 @@ class CommandCenterWindow(QMainWindow):
     def download(self, wait=False):
         rsync_src = 'dash:/home/pats/status/'
         subprocess.call(['mkdir -p ' + self.source_folder], shell=True)
-        cmd = ['rsync -zva --timeout=3 --exclude \'*.jpg.*\' --exclude \'*.xml.*\' --exclude \'*.txt.*\' ' + rsync_src + ' ' + self.source_folder]
+        cmd = ['rsync -zva  --timeout=3 --delete --exclude \'.select\' --exclude \'*.jpg.*\' --exclude \'*.xml.*\' --exclude \'*.txt.*\' ' + rsync_src + ' ' + self.source_folder]
         if wait:
             subprocess.call(cmd, shell=True, stdout=subprocess.PIPE)
         else:
