@@ -1091,7 +1091,7 @@ cv::Point3f DroneController::pid_error(TrackData data_drone, cv::Point3f setpoin
     }
 
 
-    auto [kp_pos, ki_pos, kd_pos] = adjust_control_gains(data_drone, setpoint_pos, setpoint_vel, enable_horizontal_integrators);
+    auto [kp_pos, ki_pos, kd_pos] = adjust_control_gains(data_drone, enable_horizontal_integrators);
     auto [pos_err_p, pos_err_d] = control_error(data_drone, setpoint_pos, enable_horizontal_integrators, dry_run);
 
     cv::Point3f error = {0};
@@ -1118,7 +1118,7 @@ integrator_state DroneController::horizontal_integrators(cv::Point3f setpoint_ve
         return reset;
 }
 
-std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_control_gains(TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool enable_horizontal_integrators) {
+std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_control_gains(TrackData data_drone, bool enable_horizontal_integrators) {
     float kp_pos_roll_scaled, kp_pos_throttle_scaled, kp_pos_pitch_scaled, ki_pos_roll_scaled, ki_thrust_scaled, ki_pos_pitch_scaled, kd_pos_roll_scaled, kd_pos_throttle_scaled, kd_pos_pitch_scaled, kp_v_roll_scaled, kp_v_throttle_scaled, kp_v_pitch_scaled, kd_v_roll_scaled, kd_v_throttle_scaled, kd_v_pitch_scaled;
 
     cv::Point3f scale_pos_p = {0.01f, 0.01f, 0.01f};
@@ -1151,9 +1151,8 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_contro
     } else {
         if (!data_drone.pos_valid) {
             scale_pos_p *= 0.8;
-        } else if (normf(data_drone.state.vel) < 0.1f && normf(setpoint_vel) < 0.1f && normf(setpoint_pos - data_drone.pos()) < 0.2f) {
-            scale_pos_d *= 1.1f;
-            scale_pos_i *= 1.1f;
+        } else if(norm(data_drone.vel())>2) { //Our tuning is such that the drone is aggressiv which includes overshoots. To limit the overshoot after high speed increase D at high speeds.
+            scale_pos_d *= 1.2;
         }
         kp_pos_roll_scaled = scale_pos_p.x * kp_pos_roll;
         kp_pos_throttle_scaled = scale_pos_p.y * kp_pos_throttle;
