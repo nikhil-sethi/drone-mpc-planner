@@ -10,6 +10,8 @@ import pandas as pd
 db_data_path = os.path.expanduser('~/patsc/db/pats.db')
 db_classification_path = os.path.expanduser('~/patsc/db/pats_human_classification.db')
 db_systems_path = os.path.expanduser('~/patsc/db/pats_systems.db')
+daemon_error_log = os.path.expanduser('~/patsc/logs/daemon_error.log')
+patsc_error_log = os.path.expanduser('~/patsc/logs/patsc_error.log')
 
 monster_window = pd.Timedelta(minutes=5)
 

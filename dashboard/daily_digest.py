@@ -101,9 +101,31 @@ def get_daily_errors(now):
     return systems
 
 
+def n_errors_from_file(file, now: datetime):
+    yesterday = now - timedelta(days=1)
+    cet = timezone('Europe/Amsterdam')
+    n_error = -1  # if the file can't be read for some reason the function will return -1
+    if os.path.exists(file):
+        with open(file, "r") as err_file:
+            msg = err_file.readline()
+            n_error = 0
+            log_date = datetime.now(cet)
+            while log_date > yesterday and msg:
+                try:
+                    log_date = datetime.strptime(msg.split(' - ')[0], '%Y-%m-%d %H:%M:%S,%f')  # The patsc log has an extended error so not every line is a date
+                    log_date = log_date.astimezone(cet)
+                    n_error += 1
+                except ValueError:
+                    log_date = datetime.now(cet)
+                msg = err_file.readline()
+    return n_error
+
+
 def send_mail(now, dry_run):
     systems = get_moth_counts(now)
     systems = systems.merge(get_daily_errors(now), how='inner', on=['system', 'maintenance'])
+    daemon_errors = n_errors_from_file(patsc.daemon_error_log, now)
+    patsc_errors = n_errors_from_file(patsc.patsc_error_log, now)
 
     mail_warnings = ''
     if (sum(systems['msg'] == '') > 0):
@@ -129,6 +151,8 @@ def send_mail(now, dry_run):
                 mail_warnings += system + ': ' + message.strip() + err_message + '\n'
 
     mail_err = ''
+    if daemon_errors or patsc_errors:
+        mail_err += ' DEAMON ERRORS: ' + str(daemon_errors) + ' PATSC ERRORS: ' + str(patsc_errors) + '\n'
     if (sum(systems['err'] > 1) > 0):  # err > 1 because we force rotation with an error
         for system, maintenance, _, _, _ in systems[systems['err'] > 1].to_numpy():
             if maintenance:

@@ -270,7 +270,7 @@ def jsons_to_LG(input_folder, dry_run=False):
     for filename in pbar:
         pbar.set_description('LG upload: ' + os.path.basename(filename))
         flag_fn = filename[:-4] + 'LG_processed'
-        if not os.path.exists(flag_fn):
+        if not os.path.exists(flag_fn) or dry_run:
             with open(filename) as json_file:
                 with open(flag_fn, 'w') as flag_f:
                     if os.stat(filename).st_size < 40000000:

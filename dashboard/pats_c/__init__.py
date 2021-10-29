@@ -1,7 +1,13 @@
 import os
+import sys
+import logging
+import logging.handlers
 from flask import Flask, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import login_required, LoginManager
+from pathlib import Path
+sys.path.append('pats_c/lib')  # noqa
+import lib_patsc as patsc
 
 from . import pats_c, system_widget
 
@@ -9,11 +15,17 @@ db = SQLAlchemy()
 dash_c = pats_c.dash_application()
 dash_sys_wid = system_widget.dash_application()
 
+Path(Path(patsc.patsc_error_log).parent.absolute()).mkdir(parents=True, exist_ok=True)
+file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+error_file_handler = logging.handlers.RotatingFileHandler(filename=patsc.patsc_error_log, maxBytes=1024 * 1024 * 100, backupCount=1)
+error_file_handler.setFormatter(file_format)
+error_file_handler.level = logging.ERROR
+
 
 def create_app():
     current_folder = os.path.dirname(os.path.realpath(__file__))
     server = Flask(__name__, static_folder=os.path.join(current_folder, 'assets'))
-
+    server.logger.addHandler(error_file_handler)
     db_path = os.path.expanduser('~/patsc/db/pats_creds.db')
     config_path = os.path.expanduser('~/patsc/db/.pats-c-key.py')
     db_uri = 'sqlite:///{}'.format(db_path)

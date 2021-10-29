@@ -35,7 +35,7 @@ def check_if_table_exists(table_name_prefix, con):
     return cur.fetchone()[0]
 
 
-def store_moths(data):
+def store_moths(data, dry_run):
     moths = data["moths"]
     if not len(moths):
         return 0
@@ -110,8 +110,10 @@ def store_moths(data):
                     sql_insert = sql_insert + s + ','
                     sql_values = sql_values + '?,'
                 sql_insert = sql_insert[:-1] + sql_values[:-1] + ')'
-
-            cur.execute(sql_insert, (data["system"], date, *list(moth.values())[1:]))
+            if not dry_run:
+                cur.execute(sql_insert, (data["system"], date, *list(moth.values())[1:]))
+            else:
+                print(sql_insert + ' ' + ' ,'.join([data["system"], date, *list(moth.values())[1:]]))
         con.commit()
     return len(moths)
 
@@ -123,7 +125,7 @@ def create_modes_table(con):
     con.commit()
 
 
-def store_mode(data):
+def store_mode(data, dry_run):
     with patsc.open_data_db() as con:
         if not check_if_table_exists('mode', con):
             create_modes_table(con)
@@ -139,7 +141,10 @@ def store_mode(data):
             for sub_entry in sub_entries:
                 dt_from = sub_entry['from']
                 dt_till = sub_entry['till']
-                cur.execute(sql_insert, (data["system"], dt_from, dt_till, sub_entry['mode']))
+                if dry_run:
+                    cur.execute(sql_insert, (data["system"], dt_from, dt_till, sub_entry['mode']))
+                else:
+                    print(sql_insert + ' ' + ' ,'.join([data["system"], dt_from, dt_till, sub_entry['mode']]))
         con.commit()
         return len(mode_data)
 
@@ -279,7 +284,7 @@ def create_hunt_table(hunt, con):
     con.commit()
 
 
-def store_hunts(data):
+def store_hunts(data, dry_run):
     hunts = data["hunts"]
     if not len(hunts):
         return 0
@@ -303,7 +308,10 @@ def store_hunts(data):
                     sql__insert_values = sql__insert_values + '?,'
                 sql_insert = sql_insert[:-1] + sql__insert_values[:-1] + ')'
 
-            cur.execute(sql_insert, (data["system"], dt_from, dt_till, *list(hunt.values())[2:]))
+            if dry_run:
+                cur.execute(sql_insert, (data["system"], dt_from, dt_till, *list(hunt.values())[2:]))
+            else:
+                print(sql_insert + ' ' + ' ,'.join([data["system"], dt_from, dt_till, *list(hunt.values())[2:]]))
         con.commit()
     return len(hunts)
 
@@ -316,22 +324,22 @@ def count_errors(data):
         return 0
 
 
-def process_json(data):
-    n_modes = store_mode(data)
-    n_moths = store_moths(data)
-    n_hunts = store_hunts(data)
+def process_json(data, dry_run):
+    n_modes = store_mode(data, dry_run)
+    n_moths = store_moths(data, dry_run)
+    n_hunts = store_hunts(data, dry_run)
     n_errors = count_errors(data)
     return n_moths, n_modes, n_hunts, n_errors
 
 
-def jsons_to_db(input_folder):
+def jsons_to_db(input_folder, dry_run):
     files = patsc.natural_sort([fp for fp in glob.glob(os.path.expanduser(input_folder + "/*.json"))])
     pbar = tqdm(files)
     first_date = datetime.datetime.now()
     for filename in pbar:
         pbar.set_description('DB update: ' + os.path.basename(filename))
         flag_fn = filename[:-4] + 'processed'
-        if not os.path.exists(flag_fn):
+        if not os.path.exists(flag_fn) or dry_run:
             with open(filename) as json_file:
                 with open(flag_fn, 'w') as flag_f:
                     if os.stat(filename).st_size < 40000000:
@@ -345,7 +353,7 @@ def jsons_to_db(input_folder):
                                 first_date = data_start
                             min_required_version = 1.0
                             if "version" in data and float(data["version"]) >= min_required_version:
-                                n_moths, n_modes, n_hunts, n_errors = process_json(data)
+                                n_moths, n_modes, n_hunts, n_errors = process_json(data, dry_run)
                                 if n_modes:
                                     flag_f.write('OK')
                                     flag_f.write('. Insect detections: ' + str(n_moths))
@@ -364,11 +372,11 @@ def jsons_to_db(input_folder):
                             flag_f.write('ERROR: ' + str(error))
                     else:
                         flag_f.write('File size too big \n')
-
-    concat_modes(first_date)
-    remove_double_data('moth', first_date)
-    remove_double_data('hunt', first_date)
+    if not dry_run:
+        concat_modes(first_date)
+        remove_double_data('moth', first_date)
+        remove_double_data('hunt', first_date)
 
 
 if __name__ == "__main__":
-    jsons_to_db('~/jsons/')
+    jsons_to_db('~/jsons/', False)

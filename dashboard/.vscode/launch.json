@@ -64,5 +64,15 @@
       "program": "${workspaceFolder}/jsons_to_LG.py",
       "console": "integratedTerminal"
     },
+    {
+      "name": "dash_daemon",
+      "type": "python",
+      "args": [
+        "--dry-run"
+      ],
+      "request": "launch",
+      "program": "${workspaceFolder}/dash_daemon.py",
+      "console": "integratedTerminal"
+    },
   ]
 }
