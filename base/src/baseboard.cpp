@@ -4,7 +4,11 @@
 
 void Baseboard::init(bool replay_mode) {
     _replay_mode = replay_mode;
-    if (!_replay_mode) {
+
+    if (file_exist(disable_flag)) 
+        _disabled = true;
+
+    if (!_replay_mode && !_disabled) {
 
         deamon_address.sun_family = AF_UNIX;
         strncpy(deamon_address.sun_path, "/home/pats/pats/sockets/baseboard2pats.socket", sizeof(deamon_address.sun_path) - 1);

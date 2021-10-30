@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include "versions.h"
+#include "common.h"
 
 
 class Baseboard {
@@ -45,13 +46,14 @@ private:
         const char ender = '\n';
     };
 
-
+    bool _disabled = false;
     bool _replay_mode;
     std::thread thread_send;
     std::thread thread_receive;
     bool initialized = false;
     bool exit_thread = false;
     int read_timeouts = 0;
+    std::string disable_flag = "/home/pats/pats/flags/disable_baseboard";
 
     int sock;
     sockaddr_un deamon_address;
