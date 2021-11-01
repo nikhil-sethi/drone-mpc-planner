@@ -39,9 +39,9 @@ while [ 1 ]; do
 		echo "Waiting until disable flag disappears"
 	done
 
-    dt=$(date '+%d/%m/%Y %H:%M:%S');
-    echo "$dt"
-    fdt=$(date '+%Y%m%d_%H%M%S');
+	dt=$(date '+%d/%m/%Y %H:%M:%S');
+	echo "$dt"
+	fdt=$(date '+%Y%m%d_%H%M%S');
 	OUTDIR_LOG=/home/pats/pats/data/$fdt
 	OUTDIR_IMAGES=/home/pats/pats/images/
 	echo Moving daytime monitoring images to $OUTDIR_IMAGES

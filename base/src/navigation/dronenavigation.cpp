@@ -251,6 +251,9 @@ void DroneNavigation::update(double time) {
                         next_waypoint(waypoints[wpid], time);
                         _navigation_status = ns_takeoff;
                         repeat = true;
+                    } else if (_dctrl->telemetry().batt_cell_v > 2 && _dctrl->telemetry().batt_cell_v < dparams.min_hunt_cell_v && (time - time_take_off > 15 || time_take_off < 0.01)) {
+                        _navigation_status = ns_batlow;
+                        repeat = true;
                     }
                     if (_baseboard->charging_problem())
                         _navigation_status = ns_charging_problem;

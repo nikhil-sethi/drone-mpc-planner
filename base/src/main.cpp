@@ -323,7 +323,15 @@ void process_video() {
         if (fps != fps || isinf(fps))
             fps_smoothed.reset();
 
-        if (dctrl.in_flight_duration(frame->time) < 1.f / pparams.fps || dnav.drone_problem(1)) {
+        if (dnav.navigation_status() == "ns_batlow"
+                || dnav.navigation_status() == "ns_check_telemetry"
+                || dnav.navigation_status() == "ns_wait_locate_drone"
+                || dnav.navigation_status() == "ns_drone_problem"
+                || dnav.navigation_status() == "ns_drone_lost"
+                || dnav.navigation_status() == "ns_wait_for_insect"
+                || dnav.navigation_status() == "ns_check_pad_att"
+                || dnav.navigation_status() == "ns_monitoring"
+                || dnav.drone_problem(1)) {
             if (!log_replay_mode  && ((imgcount > pparams.close_after_n_images && pparams.close_after_n_images > 0))) {
                 std::cout << "Initiating periodic restart" << std::endl;
                 exit_now = true;
