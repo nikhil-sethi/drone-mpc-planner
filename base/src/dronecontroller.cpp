@@ -369,8 +369,8 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
         } case fm_reset_yaw_on_pad: {
                 mode += bf_headless_disabled;
                 auto_throttle = dparams.spinup_throttle_non3d;
-                auto_roll = RC_MIDDLE + static_cast<int>(0.5f * att_reset_yaw_on_pad.x / 180.f  / 2.f * RC_BOUND_RANGE);
-                auto_pitch = RC_MIDDLE + static_cast<int>(0.5f * att_reset_yaw_on_pad.y / 180.f  / 2.f * RC_BOUND_RANGE);
+                auto_roll = RC_MIDDLE;
+                auto_pitch = RC_MIDDLE;
                 auto_yaw = RC_MIDDLE;
                 break;
         } case fm_correct_yaw: {
