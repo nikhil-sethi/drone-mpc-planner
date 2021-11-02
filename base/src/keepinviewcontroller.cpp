@@ -64,7 +64,7 @@ std::tuple<std::vector<bool>, std::vector<float>, bool> KeepInViewController::vi
     for (uint plane_id = 0; plane_id < _flight_area_config->n_planes(); plane_id++) {
         if (_flight_area_config->plane(plane_id).is_active) {
             Plane plane = _flight_area_config->plane(plane_id);
-            float current_drone_speed_normal_to_plane = data_drone.state.vel.dot(-cv::Point3f(plane.normal));
+            float current_drone_speed_normal_to_plane = data_drone.state.vel.dot(-plane.normal);
             float remaining_breaking_distance_normal_to_plane = plane.distance(data_drone.pos())
                     - current_drone_speed_normal_to_plane * (drone_rotating_time + transmission_delay_duration);
             if (remaining_breaking_distance_normal_to_plane < 0)
