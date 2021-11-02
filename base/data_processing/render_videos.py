@@ -18,7 +18,7 @@ def render_last_day(data_dir=lb.data_dir, abort_deadline=datetime.strptime('3000
 
 
 def check_if_hunt_mode(pats_xml_path):
-    with open(pats_xml_path, "r") as pats_xml:
+    with open(pats_xml_path, "r", encoding="utf-8") as pats_xml:
         xml_lines = pats_xml.readlines()
         for line in xml_lines:
             if line.find('op_mode_hunt') != -1 or line.find('op_mode_deploy') != -1:
@@ -29,7 +29,7 @@ def check_if_hunt_mode(pats_xml_path):
 def read_results_txt(results_txt_path):
     n_hunts = 0
     n_takeoffs = 0
-    with open(results_txt_path, "r") as results_txt:
+    with open(results_txt_path, "r", encoding="utf-8") as results_txt:
         results_lines = results_txt.readlines()
         for line in results_lines:
             if line.find('n_hunts') != -1:
@@ -61,7 +61,7 @@ def create_render_lists(data_folder, start_datetime, end_datetime):
     monitor_detections = []
     hunt_detections = []
     for folder in filtered_dirs:
-        logger.info(f"Preprocessing folder: {folder}")
+        logger.info("Preprocessing folder: " + folder)
         pats_xml_path = Path(folder, 'logging', 'pats.xml')
         results_txt_path = Path(folder, 'logging', 'results.txt')
 
@@ -99,8 +99,8 @@ def render(start_datetime, end_datetime, data_folder, abort_deadline=datetime.st
 
     if not len(monitor_detections) + len(hunt_detections):
         return
-    logger.info(f"Number of hunt renders: {str(len(hunt_detections))}")
-    logger.info(f"Number of monitor renders: {str(len(monitor_detections))}")
+    logger.info("Number of hunt renders: " + str(len(hunt_detections)))
+    logger.info("Number of monitor renders: " + str(len(monitor_detections)))
 
     original_process_dir = os.path.expanduser('~/code/pats/base/build/')
     render_process_dir = os.path.expanduser('~/code/pats/base/build_render/')
@@ -114,7 +114,7 @@ def render(start_datetime, end_datetime, data_folder, abort_deadline=datetime.st
             logger.warning('Time for rendering exceeded. Aborting rendering prematurely.')
             return
 
-        logger.info(f"Rendering hunt {detection['folder']}")
+        logger.info("Rendering hunt " + detection['folder'])
         cmd = './pats_render --log ' + detection['folder'] + '/logging --render'
         lb.execute(cmd, logger_name='render', render_process_dir=render_process_dir)
         video_result_path = Path(render_process_dir, 'logging/replay/videoResult.mkv')
@@ -123,7 +123,7 @@ def render(start_datetime, end_datetime, data_folder, abort_deadline=datetime.st
             shutil.copyfile(video_result_path, detection['target_path'])
             shutil.move(str(video_result_path), Path(detection['folder'], 'videoResult.mkv'))
         else:
-            logger.error(f"hunt render not found after rendering {detection['folder']}")
+            logger.error("hunt render not found after rendering " + detection['folder'])
 
     render_cnt = 0
     for detection in monitor_detections:
@@ -132,7 +132,7 @@ def render(start_datetime, end_datetime, data_folder, abort_deadline=datetime.st
             return
 
         render_cnt += 1
-        logger.info(f"{str(render_cnt)} / {str(len(monitor_detections))}. Rendering {detection['video_src_path']}.")
+        logger.info(str(render_cnt) + ' / ' + str(len(monitor_detections)) + '. Rendering ' + detection['video_src_path'] + '.')
         cmd = './pats_render --log ' + detection['folder'] + '/logging --monitor-render ' + detection['video_src_path'] + ' 2>&1 | /usr/bin/tee ' + detection['log_target_path']
         render_ok = False
         video_src_path = detection['video_src_path']
@@ -147,13 +147,13 @@ def render(start_datetime, end_datetime, data_folder, abort_deadline=datetime.st
         results_txt_path = Path(render_process_dir, 'logging', 'replay', 'results.txt')
 
         if not render_ok:
-            logger.error(f'Render failed for {video_src_path}')
+            logger.error('Render failed for ' + video_src_path)
         elif not os.path.exists(video_result_path):
-            logger.error(f'Render missing...? {video_src_path}')
+            logger.error('Render missing...? ' + video_src_path)
         elif not os.path.exists(results_txt_path):
-            logger.error(f'Results.txt missing...? {video_src_path}')
+            logger.error('Results.txt missing...? ' + video_src_path)
         else:
-            with open(results_txt_path, "r") as results_txt:
+            with open(results_txt_path, "r", encoding="utf-8") as results_txt:
                 results_lines = results_txt.readlines()
                 n_insects = -1
                 for line in results_lines:
@@ -162,7 +162,7 @@ def render(start_datetime, end_datetime, data_folder, abort_deadline=datetime.st
                         break
                 shutil.move(video_result_path, video_target_path)
                 if n_insects == 0:
-                    logger.warning(f'Rendered empty video...? {video_src_path}')
+                    logger.warning('Rendered empty video...? ' + video_src_path)
 
 
 if __name__ == "__main__":

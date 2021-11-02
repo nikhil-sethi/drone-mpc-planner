@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-from lib_socket import socket_communication
+import os
 import time
 import threading
 from typing import List
-import pause
-import os
 import logging
 import logging.handlers
 import abc
@@ -15,6 +13,8 @@ import re
 import shutil
 from datetime import date, datetime, timedelta
 from pathlib import Path
+import pause
+from lib_socket import socket_communication
 import lib_base as lb
 from clean_hd import clean_hd
 from status_cc import send_status_update
@@ -26,7 +26,7 @@ status_cc_status_str = ''
 
 
 def status_cc_worker():
-    global status_cc_status_str
+    global status_cc_status_str  # pylint: disable=global-statement
     logger = logging.getLogger('status_cc')
     logger.info('Status command center sender reporting in!')
     metered = lb.check_if_metered()
@@ -56,7 +56,7 @@ def status_cc_worker():
             if lb.check_if_metered() != metered:
                 logger.info('Metered mode now: ' + str(metered))
                 metered = lb.check_if_metered()
-            if (not metered):
+            if not metered:
                 logger.info("Wifi detected. Updating now: " + datetime.today().strftime("%d-%m-%Y %H:%M:%S"))
                 send_status_update()
                 status_cc_status_str = 'Auto sent at ' + datetime.today().strftime("%d-%m-%Y %H:%M:%S")
@@ -123,7 +123,7 @@ class pats_task(metaclass=abc.ABCMeta):
             pause.until(start_trigger_time)
             try:
                 self.task_func()
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-except
                 self.logger.error(str(e))
                 self.status_str = 'ERROR: ' + str(e)
                 self.error_cnt += 1
@@ -273,7 +273,7 @@ class wdt_tunnel_task(pats_task):
         output = ''
         try:
             output = subprocess.check_output(cmd.split(' '))
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             self.logger.warning('Error in getting tunnel info: ' + str(e))
         if output:
             output = output.decode(sys.stdout.encoding)

@@ -9,13 +9,13 @@ import logging
 import subprocess
 import shutil
 # import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
 from pathlib import Path
-import lib_base as lb
-from lib_base import datetime_to_str, natural_sort, str_to_datetime
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
+import numpy as np
+import pandas as pd
+import lib_base as lb
+from lib_base import datetime_to_str, natural_sort, str_to_datetime
 from cut_moths import cut_moths
 
 version = "1.10"
@@ -26,7 +26,7 @@ def measured_exposure(terminal_log_path):
     daylight_end = ''
     prev_line = ''
     cnt = 0
-    with open(terminal_log_path, "r") as terminal_log:
+    with open(terminal_log_path, "r", encoding="utf-8") as terminal_log:
         log_start = terminal_log.readline()
         while not daylight_end:
             line = terminal_log.readline()
@@ -58,7 +58,7 @@ def process_wait_for_dark_status(folder):
     terminal_log_path = Path(folder, 'terminal.log')
     if os.path.exists(terminal_log_path):
         exposure_valid, daylight_start, daylight_end = measured_exposure(terminal_log_path)
-        if (exposure_valid):
+        if exposure_valid:
             data_wait_for_dark = {"from": daylight_start,
                                   "till": daylight_end,
                                   "mode": 'wait_for_dark'
@@ -75,7 +75,7 @@ def process_system_status_in_folder(folder):
     if not os.path.exists(terminal_log_path):
         return ([], 'Error: terminal log do not exist', '')
 
-    with open(terminal_log_path, "r") as terminal_log:
+    with open(terminal_log_path, "r", encoding="utf-8") as terminal_log:
         log_start = terminal_log.readline().strip()
     if log_start == 'Resetting cam':
         return ([], 'Resetting cam', '')
@@ -89,7 +89,7 @@ def process_system_status_in_folder(folder):
     if not os.path.exists(pats_xml_path):
         line = subprocess.check_output(['tail', '-1', terminal_log_path]).decode("utf8").strip()
         return ([], 'Error: xml does not exist. Last terminal line: ' + line, '')
-    with open(pats_xml_path, "r") as pats_xml:
+    with open(pats_xml_path, "r", encoding="utf-8") as pats_xml:
         xml_lines = pats_xml.readlines()
         for line in xml_lines:
             if line.find('op_mode') != -1:
@@ -100,7 +100,7 @@ def process_system_status_in_folder(folder):
     if not os.path.exists(results_path):
         return ([], 'Error: results.txt does not exist', '')
     runtime = -1
-    with open(results_path, "r") as results_txt:
+    with open(results_path, "r", encoding="utf-8") as results_txt:
         result_lines = results_txt.readlines()
         for line in result_lines:
             if line.find('Run_time') != -1:
@@ -134,7 +134,7 @@ def process_hunts_in_folder(folder, operational_log_start):
     n_replay_hunts = 0
     best_interception_distance = -1
     drone_problem = 0
-    with open(results_path, "r") as results_txt:
+    with open(results_path, "r", encoding="utf-8") as results_txt:
         result_lines = results_txt.readlines()
         for line in result_lines:
             if line.find('n_drone_detects') != -1:
@@ -180,7 +180,7 @@ def process_log(detection_fn, folder, mode, monitoring_start_datetime):
     logger = logging.getLogger('logs_to_json')
     try:
         log = pd.read_csv(detection_fn, sep=";", dtype=float, converters={'fp': str})
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         logger.info(detection_fn + ': ' + str(e))
         return {}
 
@@ -195,7 +195,7 @@ def process_log(detection_fn, folder, mode, monitoring_start_datetime):
     vys = log['svelY_insect'].values
     vzs = log['svelZ_insect'].values
     inf_ids = [i for i, x in enumerate(vxs) if math.isinf(x) or math.isnan(x)]
-    if (len(inf_ids)):
+    if len(inf_ids):
         remove_ids.extend(inf_ids)
         logger.warning('Detected infs in velocity. See #540')
 
@@ -360,7 +360,7 @@ def logs_to_json(json_fn, data_folder, sys_str):
         if mode == 'monitoring' or mode == 'hunt':
             detections_in_folder = process_detections_in_folder(folder, operational_log_start, mode)
             if detections_in_folder != []:
-                [detections.append(detection) for detection in detections_in_folder]
+                detections.extend(detections_in_folder)
         if mode == 'hunt' or mode == 'deploy':
             hunts_in_folder = process_hunts_in_folder(folder, operational_log_start)
             if hunts_in_folder != []:
@@ -385,9 +385,9 @@ def logs_to_json(json_fn, data_folder, sys_str):
                        "cam_resets": cam_resets,
                        "system": sys_str,
                        "version": version}
-    with open(json_fn, 'w') as outfile:
+    with open(json_fn, 'w', encoding="utf-8") as outfile:
         json.dump(data_detections, outfile)
-    logger.info("Counting complete, saved in {0}".format(json_fn))
+    logger.info("Counting complete, saved in " + json_fn)
 
     # move the folders so that we know if they were processed
     # moving is done after writing the json, so that if anything before that fails no data gets lost between the cracks
@@ -417,7 +417,7 @@ def send_all_jsons():
         if lb.execute(cmd, 3, 'logs_to_json') == 0:
             json_sent_fn = lb.json_dir + '/sent/' + os.path.basename(json_fn)
             os.rename(json_fn, json_sent_fn)
-            logger.info("Json sent: {0}".format(json_fn))
+            logger.info("Json sent: " + json_fn)
         else:
             return 1
     return 0

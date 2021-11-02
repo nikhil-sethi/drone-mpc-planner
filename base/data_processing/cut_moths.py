@@ -14,7 +14,7 @@ def system_was_monitoring_in_folder(folder):
     if not os.path.exists(pats_xml_path):
         print("Error: pats.xml not found in: " + folder)
         return False
-    with open(pats_xml_path, "r") as pats_xml:
+    with open(pats_xml_path, "r", encoding="utf-8") as pats_xml:
         xml_lines = pats_xml.readlines()
         for line in xml_lines:
             if line.find('op_mode') != -1:
@@ -34,10 +34,10 @@ def cut_moths(folder, dry_run=False):
     if not os.path.exists(frames_fn):
         print("Frames.csv not found")
         exit()
-    with open(frames_fn, 'r') as flog:
+    with open(frames_fn, 'r', encoding="utf-8") as flog:
         if system_was_monitoring_in_folder(folder):
             files = lb.natural_sort([fp for fp in glob.glob(os.path.join(folder, "logging", "log_itrk*.csv")) if "itrk0" not in fp])
-            with open(cut_log_fn, 'w') as clog:
+            with open(cut_log_fn, 'w', encoding="utf-8") as clog:
                 video_in_file = folder + '/logging/videoRawLR.mkv'
                 ffmpeg_cmd_init = 'ffmpeg -y -i ' + video_in_file
                 ffmpeg_cmd = ffmpeg_cmd_init
@@ -47,7 +47,7 @@ def cut_moths(folder, dry_run=False):
                     for file in files:
                         logger.info('Processing ' + file)
                         clog.write(os.path.basename(file) + ': ')
-                        with open(file, 'r') as ilog:
+                        with open(file, 'r', encoding="utf-8") as ilog:
                             lines = ilog.read().splitlines()
                             fn = os.path.basename(file)
                             file_id = fn.split('.')[0][8:]
@@ -78,7 +78,7 @@ def cut_moths(folder, dry_run=False):
                                     if video_start_time < 0:
                                         continue
                                     video_start_time = video_start_time - 1
-                                    if (video_start_time < 0):
+                                    if video_start_time < 0:
                                         video_start_time = 0
                                     video_end_rs_id = int(lines[-2].split(';')[0])
                                     video_end_video_id = video_end_rs_id - (video_start_rs_id - video_start_video_id)
@@ -128,7 +128,7 @@ def cut_moths_all(dry_run=False):
                 cut_moths(folder, dry_run)
             else:
                 logger.info('Skipping ' + folder + ' because no videoRawLR.mkv')
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             logger.error('Error in ' + folder + '; ' + str(e))
 
 

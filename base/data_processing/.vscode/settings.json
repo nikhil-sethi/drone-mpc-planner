@@ -8,7 +8,7 @@
     "python.linting.enabled": true,
     "python.linting.pylintEnabled": true,
     "python.linting.pylintArgs": [
-        "--disable=missing-module-docstring,missing-class-docstring,missing-function-docstring,invalid-name,line-too-long,logging-not-lazy"
+        "--disable=missing-module-docstring,missing-class-docstring,missing-function-docstring,invalid-name,line-too-long,logging-not-lazy,redefined-outer-name"
     ],
     "python.linting.banditEnabled": true,
     "python.linting.banditArgs": [
