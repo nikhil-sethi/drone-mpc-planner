@@ -7,13 +7,11 @@
 
 #include <opencv2/highgui/highgui.hpp>
 #include "opencv2/features2d/features2d.hpp"
-#include "dronecontroller.h"
 #include "dronetracker.h"
 #include "insecttracker.h"
 #include "itemtracker.h"
-#include "dronenavigation.h"
+#include "pats.h"
 #include "generatorcam.h"
-#include "interceptor.h"
 
 
 class Visualizer {
@@ -33,12 +31,8 @@ private:
     void draw_tracker_viz();
 
     VisionData *_visdat;
-    DroneController *_dctrl;
-    tracking::TrackerManager *_trackers;
-    navigation::DroneNavigation *_dnav;
-    Rc *_rc;
     GeneratorCam *generator_cam;
-    Interceptor *_iceptor;
+    Patser *_patser;
     bool generator_cam_set = false;
     bool _tracking_viz_initialized = false;
     bool _viz_noise_initialized = false;
@@ -152,7 +146,7 @@ public:
     void add_plot_sample(void);
     void set_generator_cam(GeneratorCam *cam) {generator_cam = cam; generator_cam_set = true;}
     void update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, double time, bool draw_plots);
-    void init(VisionData *visdat, tracking::TrackerManager *imngr, DroneController *dctrl, navigation::DroneNavigation *dnav, Rc *rc, bool fromfile, Interceptor *iceptor);
+    void init(VisionData *visdat, Patser *patser, bool fromfile);
     void close();
 
     void enable_draw_noise_viz() {

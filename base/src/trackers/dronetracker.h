@@ -4,29 +4,28 @@
 #include "insecttracker.h"
 
 namespace tracking {
-static const char *drone_tracking_state_names[] = { "dts_init",
-                                                    "dts_inactive",
-                                                    "dts_detecting_takeoff_init",
-                                                    "dts_detecting_takeoff",
-                                                    "dts_detecting",
-                                                    "dts_tracking",
-                                                    "dts_detect_yaw",
-                                                    "dts_landing_init",
-                                                    "dts_landing"
-                                                  };
+static const char *drone_tracking_state_names[] = {
+    "dts_detecting_takeoff",
+    "dts_detecting_takeoff_fail",
+    "dts_detecting",
+    "dts_tracking",
+    "dts_detect_yaw",
+    "dts_landing_init",
+    "dts_landing",
+    "dts_landed"
+};
 class DroneTracker : public ItemTracker {
 
 private:
     enum drone_tracking_states {
-        dts_init = 0,
-        dts_inactive,
-        dts_detecting_takeoff_init,
         dts_detecting_takeoff,
+        dts_detecting_takeoff_failure,
         dts_detecting,
         dts_tracking,
         dts_detect_yaw,
         dts_landing_init,
-        dts_landing
+        dts_landing,
+        dts_landed
     };
     class DroneTrackerCalibrationData: public xmls::Serializable
     {
@@ -63,21 +62,20 @@ private:
         };
     };
 
-    drone_tracking_states _drone_tracking_status = dts_init;
+    drone_tracking_states _drone_tracking_status = dts_detecting_takeoff;
     cv::Point3f _target = {0};
     bool _manual_flight_mode = false;
     bool _hover_mode = false;
 
     double start_take_off_time = 0;
     double spinup_detect_time = 0;
-    double current_time = 0;
+    double _time = 0;
     double time_yaw_not_ok = -1;
 
     double takeoff_location_ignore_timeout = 1;
     double landing_ignore_timeout = 5;
     int spinup_detected = 0;
     bool liftoff_detected = false;
-    bool _take_off_detection_failed = false;
     uint16_t take_off_frame_cnt = 0;
     bool enable_takeoff_motion_delete = false;
 
@@ -96,7 +94,7 @@ private:
     bool enable_viz_motion = false;
     bool drone_on_pad = true;
 
-    void calc_takeoff_prediction();
+    void calc_takeoff_prediction(double time);
     void delete_takeoff_fake_motion();
     bool detect_lift_off();
     bool detect_takeoff();
@@ -106,10 +104,10 @@ private:
 
 public:
     cv::Mat diff_viz;
-    const float min_yaw_deviation = 0.5f;
 
-    bool init(std::ofstream *logger, VisionData *_visdat, int motion_thresh, int16_t viz_id);
-    void update(double time, bool drone_is_active);
+    bool init(VisionData *_visdat, int motion_thresh, int16_t viz_id);
+    void init_flight(std::ofstream *logger, double time);
+    void update(double time);
     void calc_world_item(BlobProps *pbs, double time);
     bool check_ignore_blobs(BlobProps *pbs);
     void update_target(cv::Point3f target) { _target = target; }
@@ -128,7 +126,7 @@ public:
 
     tracker_type type() { return tt_drone;}
     float score(BlobProps *blob);
-    double time_since_take_off() {return start_take_off_time - current_time;}
+    double time_since_take_off() {return start_take_off_time - _time;}
     cv::Point3f pad_location(bool landing_hack);
     cv::Point3f pad_location() { return _pad_world_location; };
     void set_pad_location_from_blink(cv::Point3f);
@@ -137,10 +135,9 @@ public:
     float pad_im_size() { return _pad_im_size; }
     float pad_disparity() { return _pad_disparity; }
     bool pad_location_valid() {return _pad_location_valid;}
-    bool take_off_detection_failed() { return _take_off_detection_failed;}
-    bool taking_off() { return _drone_tracking_status == dts_detecting_takeoff_init || _drone_tracking_status == dts_detecting_takeoff;}
+    bool take_off_detection_failed() { return _drone_tracking_status == dts_detecting_takeoff_failure;}
+    bool taking_off() { return  _drone_tracking_status == dts_detecting_takeoff;}
     bool landing() { return _drone_tracking_status == dts_landing_init || _drone_tracking_status == dts_landing;}
-    bool inactive() { return _drone_tracking_status == dts_inactive;}
     bool lost() {return _n_frames_lost > static_cast<int>(pparams.fps * 2);}
     std::string drone_tracking_state() {return drone_tracking_state_names[_drone_tracking_status];}
     bool drone_on_landing_pad() {return drone_on_pad;}

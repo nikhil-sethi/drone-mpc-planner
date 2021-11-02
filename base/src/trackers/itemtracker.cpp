@@ -32,12 +32,6 @@ void ItemTracker::init(VisionData *visdat, int motion_thresh, std::string name, 
 
     deserialize_settings();
 
-    if (pparams.insect_tracking_tuning || pparams.drone_tracking_tuning) {
-        namedWindow(window_name, WINDOW_NORMAL);
-        createTrackbar("Min disparity", window_name, &min_disparity, 255);
-        createTrackbar("Max disparity", window_name, &max_disparity, 255);
-        createTrackbar("background_subtract_zone_factor", window_name, &background_subtract_zone_factor, 100);
-    }
     if (pos_smth_width < 0)
         pos_smth_width = pparams.fps / 20;
     if (vel_smth_width < 0)
@@ -728,17 +722,17 @@ void ItemTracker::deserialize_settings() {
 
         if (!xmls::Serializable::fromXML(xmlData, &params))
         {   // Deserialization not successful
-            throw MyExit("Cannot read: " + settings_file);
+            throw std::runtime_error("Cannot read: " + settings_file);
         }
         TrackerParams tmp;
         auto v1 = params.getVersion();
         auto v2 = tmp.getVersion();
         if (v1 != v2) {
-            throw MyExit("XML version difference detected from " + settings_file);
+            throw std::runtime_error("XML version difference detected from " + settings_file);
         }
         infile.close();
     } else {
-        throw MyExit("File not found: " + settings_file);
+        throw std::runtime_error("File not found: " + settings_file);
     }
 
     min_disparity = params.min_disparity.value();
@@ -765,8 +759,6 @@ void ItemTracker::close() {
         (*_logger) << std::flush;
         _logger->close();
     }
-    if (initialized && (pparams.insect_tracking_tuning || pparams.drone_tracking_tuning))
-        serialize_settings();
     initialized_logger = false;
     initialized = false;
 }

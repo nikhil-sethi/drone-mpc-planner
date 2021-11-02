@@ -3,6 +3,7 @@
 set -ex
 cd /home/pats/code/pats/base/build/
 
+mkdir -p /home/pats/pats/xml
 mkdir -p /home/pats/pats/flags
 mkdir -p /home/pats/pats/status
 mkdir -p /home/pats/pats/logs
@@ -17,7 +18,7 @@ HOST_ID=$( hostname | tr -dc '0-9' )
 DRONE_ID=$(( $HOST_ID ))
 
 #perform a one time hardware reset (fixes some issues with cold boot and plugged realsense)
-./pats --rs-reset | /usr/bin/tee terminal.log || true
+./executor --rs-reset | /usr/bin/tee terminal.log || true
 sleep 15s # wait some time to enumerate device again after a reset
 
 while [ 1 ]; do
@@ -38,8 +39,9 @@ while [ 1 ]; do
 	/bin/mv stereo*.png $OUTDIR_IMAGES || true
 	echo Moving old data to $OUTDIR_LOG
 	/bin/mkdir -p $OUTDIR_LOG
-	/bin/mv terminal.log $OUTDIR_LOG || true
 	/bin/mv logging $OUTDIR_LOG || true
+	/bin/mkdir -p $OUTDIR_LOG/logging
+	/bin/mv terminal.log ${OUTDIR_LOG}/logging/ || true
 
 	echo "Hostname: $HOSTNAME" > $STAT_FN
 	echo "Drone ID: $DRONE_ID" >> $STAT_FN
@@ -54,7 +56,7 @@ while [ 1 ]; do
 	echo "Hostname: $HOSTNAME" >> terminal.log
 	echo "Drone ID: $DRONE_ID" >> terminal.log
 
-	./pats --pats-xml /home/pats/code/pats/base/xml/pats_deploy.xml --drone-id $DRONE_ID 2>&1 | /usr/bin/tee --append terminal.log || true
+	./executor --drone-id $DRONE_ID 2>&1 | /usr/bin/tee --append terminal.log || true
 
 	sleep 5s
 done

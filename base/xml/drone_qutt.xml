@@ -1,4 +1,4 @@
-<SerializableClass Type="DroneParameters" Version="1.12">
+<SerializableClass Type="DroneParameters" Version="1.13">
     <Member Name="name">qutt</Member>
     <Member Name="initial_hover_throttle">870</Member>
     <Member Name="throttle_bank_factor">0.75</Member>
@@ -17,7 +17,6 @@
     <Member Name="thrust">16</Member> <!-- overwritten, if xml/drone_calibration.xml exists -->
     <Member Name="tx">tx_frskyd8</Member>
     <Member Name="mode3d">false</Member>
-    <Member Name="control">control_tinywhoop</Member>
     <Member Name="spinup_throttle_non3d">330</Member>
     <Member Name="land_cell_v">3.0</Member>
     <Member Name="max_flight_time">180</Member>
@@ -25,4 +24,29 @@
     <Member Name="static_shakeit_throttle">-1</Member>
     <Member Name="target_takeoff_velocity">2.2</Member>
     <Member Name="led_type">led_none</Member>
+
+    <Member Name="kp_pos_roll">1090</Member>
+    <Member Name="kp_pos_pitch">1090</Member>
+    <Member Name="kp_pos_throttle">1345</Member>
+    <Member Name="ki_pos_roll">20</Member>
+    <Member Name="ki_pos_pitch">20</Member>
+    <Member Name="ki_thrust">100</Member>
+    <Member Name="kd_pos_roll">440</Member>
+    <Member Name="kd_pos_pitch">600</Member>
+    <Member Name="kd_pos_throttle">900</Member>
+    <Member Name="kp_pos_roll_hover">840</Member>
+    <Member Name="kp_pos_pitch_hover">925</Member>
+    <Member Name="kp_pos_throttle_hover">1345</Member>
+    <Member Name="ki_pos_roll_hover">20</Member>
+    <Member Name="ki_pos_pitch_hover">20</Member>
+    <Member Name="ki_thrust_hover">100</Member>
+    <Member Name="kd_pos_roll_hover">430</Member>
+    <Member Name="kd_pos_pitch_hover">430</Member>
+    <Member Name="kd_pos_throttle_hover">850</Member>
+    <Member Name="kp_v_roll">0</Member>
+    <Member Name="kp_v_pitch">0</Member>
+    <Member Name="kp_v_throttle">0</Member>
+    <Member Name="kd_v_roll">0</Member>
+    <Member Name="kd_v_pitch">0</Member>
+    <Member Name="kd_v_throttle">0</Member>
 </SerializableClass>

@@ -22,19 +22,18 @@ static const char *flight_mode_names[] = { "fm_joystick_check",
                                            "fm_disarmed",
                                            "fm_inactive",
                                            "fm_wait",
-                                           "fm_blink",
-                                           "fm_spinup",
                                            "fm_manual",
+                                           "fm_spinup",
                                            "fm_start_takeoff",
                                            "fm_take_off_aim",
                                            "fm_max_burn",
                                            "fm_max_burn_spin_down",
                                            "fm_1g",
-                                           "fm_interception_aim_start",
-                                           "fm_interception_aim",
-                                           "fm_interception_burn_start",
-                                           "fm_interception_burn",
-                                           "fm_interception_burn_spin_down",
+                                           "fm_aim_start",
+                                           "fm_aim",
+                                           "fm_burn_start",
+                                           "fm_burn",
+                                           "fm_burn_spin_down",
                                            "fm_retry_aim_start",
                                            "fm_pid_init",
                                            "fm_pid",
@@ -50,7 +49,6 @@ static const char *flight_mode_names[] = { "fm_joystick_check",
                                            "fm_ff_landing",
                                            "fm_start_shake",
                                            "fm_shake_it_baby",
-                                           "fm_monitoring",
                                            "fm_abort"
                                          };
 
@@ -60,10 +58,10 @@ enum integrator_state {
     running
 };
 
-enum decision_type {
-    no,
-    yes,
-    maybe
+enum drone_on_pad_state {
+    drone_not_on_pad,
+    drone_on_pad,
+    drone_maybe_on_pad
 };
 
 class DroneController {
@@ -74,9 +72,8 @@ public:
         fm_disarmed,
         fm_inactive,
         fm_wait,
-        fm_blink,
-        fm_spinup,
         fm_manual,
+        fm_spinup,
         fm_start_takeoff,
         fm_take_off_aim,
         fm_max_burn,
@@ -102,7 +99,6 @@ public:
         fm_ff_landing,
         fm_start_shake,
         fm_shake_it_baby,
-        fm_monitoring,
         fm_abort
     };
     enum joy_mode_switch_modes { // raw switch modes
@@ -120,58 +116,8 @@ public:
         js_none // in case of no joystick
     };
 private:
-    class ControlParameters: public xmls::Serializable
-    {
-    public:
-        xmls::xInt kp_pos_roll, kp_pos_pitch, kp_pos_throttle;
-        xmls::xInt ki_pos_roll, ki_pos_pitch, ki_thrust;
-        xmls::xInt kd_pos_roll, kd_pos_pitch, kd_pos_throttle;
-        xmls::xInt kp_pos_roll_hover, kp_pos_pitch_hover, kp_pos_throttle_hover;
-        xmls::xInt ki_pos_roll_hover, ki_pos_pitch_hover, ki_thrust_hover;
-        xmls::xInt kd_pos_roll_hover, kd_pos_pitch_hover, kd_pos_throttle_hover;
-        xmls::xInt kp_v_roll, kp_v_pitch, kp_v_throttle;
-        xmls::xInt kd_v_roll, kd_v_pitch, kd_v_throttle;
 
-        ControlParameters() {
-            // Set the XML class name.
-            // This name can differ from the C++ class name
-            setClassName("ControlParameters");
-
-            // Set class version
-            setVersion("1.4");
-
-            // Register members. Like the class name, member names can differ from their xml depandants
-            Register("kp_pos_roll", &kp_pos_roll);
-            Register("kp_pos_pitch", &kp_pos_pitch);
-            Register("kp_pos_throttle", &kp_pos_throttle);
-            Register("ki_pos_roll", &ki_pos_roll);
-            Register("ki_pos_pitch", &ki_pos_pitch);
-            Register("ki_thrust", &ki_thrust);
-            Register("kd_pos_roll", &kd_pos_roll);
-            Register("kd_pos_pitch", &kd_pos_pitch);
-            Register("kd_pos_throttle", &kd_pos_throttle);
-
-            Register("kp_pos_roll_hover", &kp_pos_roll_hover);
-            Register("kp_pos_pitch_hover", &kp_pos_pitch_hover);
-            Register("kp_pos_throttle_hover", &kp_pos_throttle_hover);
-            Register("ki_pos_roll_hover", &ki_pos_roll_hover);
-            Register("ki_pos_pitch_hover", &ki_pos_pitch_hover);
-            Register("ki_thrust_hover", &ki_thrust_hover);
-            Register("kd_pos_roll_hover", &kd_pos_roll_hover);
-            Register("kd_pos_pitch_hover", &kd_pos_pitch_hover);
-            Register("kd_pos_throttle_hover", &kd_pos_throttle_hover);
-
-            Register("kp_v_roll", &kp_v_roll);
-            Register("kp_v_pitch", &kp_v_pitch);
-            Register("kp_v_throttle", &kp_v_throttle);
-            Register("kd_v_roll", &kd_v_roll);
-            Register("kd_v_pitch", &kd_v_pitch);
-            Register("kd_v_throttle", &kd_v_throttle);
-
-        }
-    };
-
-    Rc *_rc;
+    RC *_rc;
     tracking::DroneTracker *_dtrk;
     FlightArea *_flight_area;
     std::ofstream *_logger;
@@ -193,7 +139,7 @@ private:
     const float transmission_delay_duration = 0.04f;
     const float max_bank_angle = 180;
     const float aim_duration = 0.0833333333333f; //Slightly related to full_bat_and_throttle_spinup_time. Should be 1/(bf_strenght/10) seconds
-    float effective_burn_spin_up_duration = 0.15f; // the time to spin up from hover to max
+    const float effective_burn_spin_up_duration = 0.15f; // the time to spin up from hover to max
     const float effective_burn_spin_down_duration = 0.1f; // the time to spin down from max to hover
     cv::Point3f vel_after_takeoff = {0};
     float burn_thrust = -1;
@@ -201,13 +147,16 @@ private:
     const float lift_off_dist_take_off_aim = 0.02f;
     const float min_takeoff_angle = 60.f / 180.f * static_cast<float>(M_PI);
 
+    const float min_yaw_deviation = 0.5f;
+
     double take_off_start_time = 0;
     double state_start_time = 0;
     float remaining_spinup_duration_t0 = 0;
     double interception_start_time = 0;
     double in_flight_start_time = -1;
     double ff_land_start_time = 0;
-    int ff_auto_throttle_start;
+    int ff_auto_throttle_start = RC_BOUND_MIN;
+    float auto_burn_duration = 0;
 
     cv::Point3f _burn_direction_for_thrust_approx = {0};
 
@@ -224,8 +173,6 @@ private:
 
     bool initialized = false;
     bool log_replay_mode = false;
-    bool airsim_mode = false;
-    bool generator_mode = false;
     bool thrust_calibration = false;
     flight_modes _flight_mode = fm_joystick_check; // only set externally (except for disarming), used internally
     joy_mode_switch_modes _joy_mode_switch = jmsm_none;
@@ -236,11 +183,11 @@ private:
     float scaledjoydial = 0;
 
     bool _hover_mode = false;
+    bool _landed = false;
+    bool _manual_override_take_off_now = false;
 
     cv::Point3f pos_err_i;
-    int kp_pos_roll, kp_pos_throttle, kp_pos_pitch, ki_pos_roll, ki_thrust, ki_pos_pitch, kd_pos_roll, kd_pos_throttle, kd_pos_pitch;
-    int kp_pos_roll_hover, kp_pos_throttle_hover, kp_pos_pitch_hover, ki_pos_roll_hover, ki_thrust_hover, ki_pos_pitch_hover, kd_pos_roll_hover, kd_pos_throttle_hover, kd_pos_pitch_hover;
-    int kp_v_roll, kp_v_throttle, kp_v_pitch, kd_v_roll, kd_v_throttle, kd_v_pitch;
+
     filtering::Tf_D_f d_vel_err_x, d_vel_err_y, d_vel_err_z;
     filtering::Tf_PT2_f pos_modelx, pos_modely, pos_modelz;
 
@@ -276,7 +223,6 @@ private:
     std::tuple<int, int, float, cv::Point3f> calc_directional_burn(tracking::StateData state_drone, tracking::StateData state_target, float remaining_aim_duration);
     std::vector<tracking::StateData> predict_trajectory(float burn_duration, float remaining_aim_duration, cv::Point3f burn_direction, tracking::StateData state_drone);
     void draw_viz(tracking::StateData state_drone, tracking::StateData state_target, double time, cv::Point3f burn_direction, float burn_duration, float remaining_aim_duration, std::vector<tracking::StateData> traj);
-    void calibrate_pad_attitude();
     cv::Point3f keep_in_volume_correction_acceleration(tracking::TrackData data_drone);
     float duration_since_waypoint_moved(double time) { return  static_cast<float>(time - time_waypoint_moved); }
     integrator_state horizontal_integrators(cv::Point3f setpoint_vel, double time);
@@ -285,9 +231,6 @@ private:
     std::tuple<float, float> acc_to_quaternion(cv::Point3f acc);
 
     void correct_yaw(float deviation_angle);
-
-    void blink(double time);
-    void blink_motors(double time);
 
     std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> adjust_control_gains(tracking::TrackData drone_data, bool enable_horizontal_integrators);
     std::tuple<cv::Point3f, cv::Point3f> control_error(tracking::TrackData data_drone, cv::Point3f setpoint_pos, integrator_state enable_horizontal_integrators, bool dry_run);
@@ -298,13 +241,14 @@ private:
     void send_data_joystick(void);
     void read_joystick(void);
     void process_joystick();
-    void load_calibration(std::string replay_dir);
+    void load_calibration();
     void load_control_parameters();
-    void serialize_settings();
 
 public:
     LandingController land_ctrl;
     KeepInViewController kiv_ctrl;
+
+    void calibrate_pad_attitude();
 
     cv::Point3f pid_error(tracking::TrackData data_drone, cv::Point3f setpoint_pos, cv::Point3f setpoint_vel, bool choosing_insect);
     void flight_mode(flight_modes f) { _flight_mode = f; }
@@ -314,24 +258,7 @@ public:
 
     int n_shake() {return _n_shakes;}
 
-    bool abort_take_off() {
-        //check if the take off is not yet too far progressed to abort, if not go to spin up else return true
-
-        if (_flight_mode == fm_take_off_aim) {
-            float remaining_spinup_duration = dparams.full_bat_and_throttle_spinup_duration - aim_duration - time_spent_spinning_up(_time);
-            if (remaining_spinup_duration  < 0.05f)
-                return false;
-            _flight_mode = fm_spinup ;
-            if (spin_up_start_time < take_off_start_time)
-                spin_up_start_time = take_off_start_time;
-            return true;
-
-        } else if (_flight_mode == fm_spinup || _flight_mode == fm_start_takeoff) {
-            _flight_mode = fm_spinup;
-            return true;
-        } else
-            return false;
-    }
+    bool abort_take_off();
 
     joy_states Joy_State() {
         return _joy_state;
@@ -366,10 +293,8 @@ public:
     bool joy_takeoff_switch() {
         return _joy_takeoff_switch;
     }
-    void joy_takeoff_switch_file_trigger(bool value) {
-        _joy_takeoff_switch = value;
-    }
     void insert_log(int log_joy_roll, int log_joy_pitch, int log_joy_yaw, int log_joy_throttle, int log_joy_arm_switch, int log_joy_mode_switch, int log_joy_take_off_switch, int log_auto_roll, int log_auto_pitch, int log_auto_throttle, float log_acc_z) {
+        //TODO
         joy_roll = log_joy_roll;
         joy_pitch = log_joy_pitch;
         joy_yaw = log_joy_yaw;
@@ -383,6 +308,8 @@ public:
         _log_acc_z = log_acc_z;
     }
 
+    bool spinup() {  return _flight_mode == fm_spinup; }
+    bool landing() { return _flight_mode == fm_ff_landing || _flight_mode == fm_ff_landing_start; }
     float in_flight_duration(double time) {
         if ((_flight_mode == fm_flying_pid || _flight_mode == fm_correct_yaw || _flight_mode == fm_ff_landing || _flight_mode == fm_reset_headless_yaw)
                 && in_flight_start_time < 0)
@@ -395,13 +322,6 @@ public:
         else
             return 0;
     }
-    bool spinup() {
-        return _flight_mode == fm_spinup;
-    }
-    bool landing() {
-        return _flight_mode == fm_ff_landing || _flight_mode == fm_ff_landing_start;
-    }
-
     float duration_spent_taking_off(double time) {
         if (start_takeoff_burn_time < 0.01)
             return 0;
@@ -419,7 +339,6 @@ public:
     int auto_roll = RC_MIDDLE;
     int auto_pitch = RC_MIDDLE;
     int auto_yaw = RC_MIDDLE;
-    float auto_burn_duration = 0;
 
     //Normalized throttle, between [-1 .. 1].
     //0 equals hoverthrottle
@@ -466,7 +385,6 @@ public:
         return commandf * max_bank_angle;
     }
 
-    bool _manual_override_take_off_now;
     bool manual_override_take_off_now() { return _manual_override_take_off_now;}
     void reset_manual_override_take_off_now() {
         _manual_override_take_off_now = false;
@@ -485,23 +403,13 @@ public:
     float dist_to_setpoint() { return _dist_to_setpoint; }
 
     void close(void);
-    void init(std::ofstream *logger, std::string replay_dir, bool generator_mode, bool airsim, Rc *rc, tracking::DroneTracker *dtrk, FlightArea *flight_area, float exposure);
-    void control(tracking::TrackData, tracking::TrackData, tracking::TrackData, double);
-    bool active() {
-        if (_flight_mode == fm_inactive || _flight_mode == fm_disarmed || _flight_mode == fm_joystick_check)
-            return false;
-        else if (_flight_mode == fm_abort || _flight_mode == fm_shake_it_baby || _flight_mode == fm_blink)
-            return false;
-        else if (_joy_mode_switch == jmsm_manual && joy_throttle > RC_BOUND_MIN && _joy_arm_switch == bf_armed)
-            return true;
-        else if ((_joy_mode_switch == jmsm_manual && joy_throttle <= RC_BOUND_MIN) || _joy_arm_switch == bf_disarmed)
-            return false;
-        else
-            return ((auto_throttle > RC_BOUND_MIN && _flight_mode != fm_spinup) || _flight_mode == fm_start_takeoff || _flight_mode == fm_take_off_aim || _flight_mode == fm_max_burn || _flight_mode == fm_1g);  //FIXME: check if this goes well if due to extreme control throttle is set to 0
-    }
+    void init(RC *rc, tracking::DroneTracker *dtrk, FlightArea *flight_area, float exposure);
+    void init_flight(std::ofstream *logger);
+    void control(tracking::TrackData, tracking::TrackData, tracking::TrackData, double, bool enable_logging);
+    bool landed() {return _landed; }
     bool state_inactive() { return _flight_mode == fm_inactive; }
     bool state_disarmed() { return _flight_mode == fm_disarmed; }
-    bool ready_for_first_arm(double time) {return time - _rc->time_disarmed() > 1.5 && _rc->time_disarmed() >= 0;}
+    bool ready_for_arm(double time) {return time - _rc->time_disarmed() > 1.5 && _rc->time_disarmed() >= 0;}
     bool telemetry_OK() {
         if (initialized)
             return _rc->bf_telem_OK();
@@ -514,6 +422,7 @@ public:
     }
 
     bool joystick_ready();
+    bool rc_ok(double time) { return _rc->ok(time); }
 
     void LED(bool b) {
         if (initialized)
@@ -526,10 +435,6 @@ public:
     void stop_rc() {
         if (initialized)
             _rc->close();
-    }
-    void beep(bool b) {
-        if (initialized)
-            _rc->beep(b);
     }
     Telemetry telemetry() {
         if (initialized)
@@ -544,7 +449,7 @@ public:
     void save_thrust_calibration();
     bool new_attitude_package_available();
     bool attitude_on_pad_OK();
-    decision_type somewhere_on_pad();
+    drone_on_pad_state somewhere_on_pad();
     void invalidize_blink();
     bool pad_calibration_done();
     bool takeoff_calib_valid();

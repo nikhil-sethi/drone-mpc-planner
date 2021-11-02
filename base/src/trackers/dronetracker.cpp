@@ -4,74 +4,64 @@
 
 namespace tracking {
 
-bool DroneTracker::init(std::ofstream *logger, VisionData *visdat, int motion_thresh, int16_t viz_id) {
+bool DroneTracker::init(VisionData *visdat, int motion_thresh, int16_t viz_id) {
     enable_viz_motion = false;
-    ItemTracker::init(logger, visdat, motion_thresh, "drone", viz_id);
+    ItemTracker::init(visdat, motion_thresh, "drone", viz_id);
     max_radius = dparams.radius * 3;
     expected_radius = dparams.radius;
-    (*_logger) << "dtrkr_state;yaw_deviation;";
+
     return false;
 }
-void DroneTracker::update(double time, bool drone_is_active) {
-    current_time = time;
+void DroneTracker::init_flight(std::ofstream *logger, double time) {
+    _logger = logger;
+    ItemTracker::init_logger(logger);
+    (*_logger) << "yaw_deviation;dtrkr_state;";
+
+    if (_pad_location_valid) {
+        cv::Point3f p = world2im_3d(pad_location(), _visdat->Qfi, _visdat->camera_roll, _visdat->camera_pitch);
+        float size = _drone_on_pad_im_size;
+        _image_predict_item = ImagePredictItem(p, size, 255, _visdat->frame_id);
+    } else {
+        _image_predict_item.valid = false;
+        reset_tracker_ouput(time);
+    }
+
+    if (_pad_location_valid && ignores_for_other_trkrs.size() == 0) {
+        //some times there is some motion noise around the drone when it is just sitting on the ground
+        //not sure what that is (might be a flickering led?), but the following makes the insect tracker
+        //ignore it. Can be better fixed by having a specialized landingspot detector.
+        ignores_for_other_trkrs.push_back(IgnoreBlob(_pad_im_location / pparams.imscalef,
+                                          _pad_im_size / pparams.imscalef,
+                                          time + takeoff_location_ignore_timeout,
+                                          IgnoreBlob::takeoff_spot));
+    }
+
+    _drone_tracking_status = dts_detecting_takeoff;
+    start_take_off_time = time;
+    _tracking = false;
+    enable_takeoff_motion_delete = true;
+    ignores_for_other_trkrs.clear();
+    ignores_for_other_trkrs.push_back(IgnoreBlob(_pad_im_location / pparams.imscalef, _pad_im_size / pparams.imscalef, time + takeoff_location_ignore_timeout, IgnoreBlob::takeoff_spot));
+    liftoff_detected = false;
+    spinup_detected = 0;
+    take_off_frame_cnt = 0;
+    min_disparity = std::clamp(static_cast<int>(roundf(_pad_disparity)) - 5, params.min_disparity.value(), params.max_disparity.value());
+    max_disparity = std::clamp(static_cast<int>(roundf(_pad_disparity)) + 5, params.min_disparity.value(), params.max_disparity.value());
+}
+
+void DroneTracker::update(double time) {
+    _time = time;
 
     if (enable_viz_motion)
         cv::cvtColor(_visdat->diffL * 10, diff_viz, cv::COLOR_GRAY2BGR);
 
     switch (_drone_tracking_status) {
-        case dts_init: {
-                append_log(); // no tracking needed in this stage
-                _drone_tracking_status = dts_inactive;
-                break;
-        }  case dts_inactive: {
-                start_take_off_time = time;
-                _tracking = false;
-                if (_pad_location_valid) {
-                    cv::Point3f p = world2im_3d(pad_location(), _visdat->Qfi, _visdat->camera_roll, _visdat->camera_pitch);
-                    float size = _drone_on_pad_im_size;
-                    _image_predict_item = ImagePredictItem(p, size, 255, _visdat->frame_id);
-                } else {
-                    _image_predict_item.valid = false;
-                    reset_tracker_ouput(time);
-                }
-
-                if (_pad_location_valid && ignores_for_other_trkrs.size() == 0) {
-                    //some times there is some motion noise around the drone when it is just sitting on the ground
-                    //not sure what that is (might be a flickering led?), but the following makes the insect tracker
-                    //ignore it. Can be better fixed by having a specialized landingspot detector.
-                    ignores_for_other_trkrs.push_back(IgnoreBlob(_pad_im_location / pparams.imscalef,
-                                                      _pad_im_size / pparams.imscalef,
-                                                      time + takeoff_location_ignore_timeout,
-                                                      IgnoreBlob::takeoff_spot));
-                }
-
-                if (drone_is_active)
-                    _drone_tracking_status = dts_detecting_takeoff_init;
-                else {
-                    ItemTracker::append_log(); //really no point in trying to detect the drone when it is inactive...
-                    break;
-                }
-                [[fallthrough]];
-        } case dts_detecting_takeoff_init: {
-                // remove the indefinite startup location and replace with a time out
-                start_take_off_time = time;
-                enable_takeoff_motion_delete = true;
-                ignores_for_other_trkrs.clear();
-                ignores_for_other_trkrs.push_back(IgnoreBlob(_pad_im_location / pparams.imscalef, _pad_im_size / pparams.imscalef, time + takeoff_location_ignore_timeout, IgnoreBlob::takeoff_spot));
-                _drone_tracking_status = dts_detecting_takeoff;
-                liftoff_detected = false;
-                spinup_detected = 0;
-                _take_off_detection_failed = false;
-                take_off_frame_cnt = 0;
-                min_disparity = std::clamp(static_cast<int>(roundf(_pad_disparity)) - 5, params.min_disparity.value(), params.max_disparity.value());
-                max_disparity = std::clamp(static_cast<int>(roundf(_pad_disparity)) + 5, params.min_disparity.value(), params.max_disparity.value());
-                [[fallthrough]];
-        } case dts_detecting_takeoff: {
+        case dts_detecting_takeoff: {
                 min_disparity = std::clamp(static_cast<int>(roundf(_pad_disparity)) - 5, params.min_disparity.value(), params.max_disparity.value());
                 max_disparity = std::clamp(static_cast<int>(roundf(_pad_disparity)) + 5, params.min_disparity.value(), params.max_disparity.value());
                 ItemTracker::update(time);
                 if (!_world_item.valid) {
-                    calc_takeoff_prediction();
+                    calc_takeoff_prediction(time);
                 } else {
                     update_prediction(time);
                 }
@@ -83,9 +73,7 @@ void DroneTracker::update(double time, bool drone_is_active) {
                     cv::circle(diff_viz, _world_item.image_coordinates(), 3, cv::Scalar(0, 255, 0), 2);
                 }
                 float takeoff_duration = static_cast<float>(time - start_take_off_time);
-                if (!drone_is_active)
-                    _drone_tracking_status = dts_inactive;
-                else if (_world_item.valid) {
+                if (_world_item.valid) {
                     spinup_detected++;
                     if (spinup_detected == 3) {
                         spinup_detect_time = time;
@@ -103,15 +91,17 @@ void DroneTracker::update(double time, bool drone_is_active) {
                 }
 
                 if (spinup_detected < 3 && takeoff_duration > dparams.full_bat_and_throttle_spinup_duration + 0.3f) { // hmm spinup detection really does not work with improper lighting conditions. Have set the time really high. (should be ~0.3-0.4s)
-                    _take_off_detection_failed = true;
+                    _drone_tracking_status = dts_detecting_takeoff_failure;
                     std::cout << "No spin up detected in time!" << std::endl;
                 } else if (takeoff_duration > dparams.full_bat_and_throttle_spinup_duration + 0.35f) {
-                    _take_off_detection_failed = true;
+                    _drone_tracking_status = dts_detecting_takeoff_failure;
                     if (liftoff_detected)
                         std::cout << "No takeoff detected in time!" << std::endl;
                     else
                         std::cout << "No liftoff_detected detected in time!" << std::endl;
                 }
+                break;
+        } case dts_detecting_takeoff_failure: {
                 break;
         } case dts_detecting: {
                 ItemTracker::update(time);
@@ -120,9 +110,7 @@ void DroneTracker::update(double time, bool drone_is_active) {
                 data.time = time;
                 _track.push_back(data);
                 update_drone_prediction(time);
-                if (!drone_is_active)
-                    _drone_tracking_status = dts_inactive;
-                else if (_n_frames_lost == 0)
+                if (_n_frames_lost == 0)
                     _drone_tracking_status = dts_tracking;
                 break;
         } case dts_tracking: {
@@ -131,9 +119,7 @@ void DroneTracker::update(double time, bool drone_is_active) {
                 min_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity)) - 5, params.min_disparity.value(), params.max_disparity.value());
                 max_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity)) + 5, params.min_disparity.value(), params.max_disparity.value());
                 _visdat->exclude_drone_from_motion_fading(_image_item.ptd(), _image_predict_item.size);
-                if (!drone_is_active)
-                    _drone_tracking_status = dts_inactive;
-                else if (!_tracking)
+                if (!_tracking)
                     _drone_tracking_status = dts_detecting;
                 break;
         } case dts_detect_yaw: {
@@ -154,17 +140,26 @@ void DroneTracker::update(double time, bool drone_is_active) {
                 min_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity)) - 5, params.min_disparity.value(), params.max_disparity.value());
                 max_disparity = std::clamp(static_cast<int>(roundf(_image_predict_item.disparity)) + 5, params.min_disparity.value(), params.max_disparity.value());
                 _visdat->exclude_drone_from_motion_fading(_image_item.ptd(), _image_predict_item.size);
-                if (!drone_is_active)
-                    _drone_tracking_status = dts_inactive;
-                else if (!_tracking)
-                    _drone_tracking_status = dts_detecting;
+                if (!_tracking)
+                    _drone_tracking_status = dts_landed; // TODO: check if near expected pad location!
+                break;
+        }  case dts_landed: {
+                ItemTracker::update(time);
+                TrackData data;
+                data.predicted_image_item = _image_predict_item;
+                data.time = time;
+                _track.push_back(data);
+                update_drone_prediction(time);
+                if (_n_frames_lost == 0)
+                    _drone_tracking_status = dts_landing;
                 break;
             }
+
     }
 
     delete_takeoff_fake_motion();
     clean_ignore_blobs(time);
-    (*_logger) << static_cast<int16_t>(_drone_tracking_status) << ";" << last_track_data().yaw_deviation << ";";
+    (*_logger) << last_track_data().yaw_deviation << ";" << drone_tracking_state() << ";";
 }
 
 float DroneTracker::score(BlobProps *blob) {
@@ -202,9 +197,7 @@ void DroneTracker::calc_world_item(BlobProps *props, double time [[maybe_unused]
     props->world_props.im_pos_ok = true;
     props->world_props.valid = props->world_props.bkg_check_ok && props->world_props.disparity_in_range && props->world_props.radius_in_range;
 
-    if (inactive())
-        props->world_props.valid = false;
-    else if (taking_off() && !_manual_flight_mode) {
+    if (taking_off() && !_manual_flight_mode) {
         float dist2takeoff = normf(props->world_props.pt() - _pad_world_location);
         float takeoff_y = props->world_props.y - _pad_world_location.y;
         if (dist2takeoff < 0.2f && !props->world_props.bkg_check_ok)
@@ -249,12 +242,12 @@ void DroneTracker::delete_landing_motion(float duration) {
     _visdat->reset_spot_on_motion_map(_pad_im_location, _pad_disparity, delete_dst, duration * pparams.fps);
 }
 
-void DroneTracker::calc_takeoff_prediction() {
+void DroneTracker::calc_takeoff_prediction(double time) {
 
     cv::Point3f acc = _target - _pad_world_location;
     acc = acc / (normf(acc));
     acc = acc * dparams.default_thrust;
-    float dt = std::clamp(static_cast<float>(current_time - (spinup_detect_time + 0.3)), 0.f, 1.f);
+    float dt = std::clamp(static_cast<float>(time - (spinup_detect_time + 0.3)), 0.f, 1.f);
     if (spinup_detected < 3)
         dt = 0;
     cv::Point3f expected_drone_location = pad_location() + 0.5 * acc * powf(dt, 2);

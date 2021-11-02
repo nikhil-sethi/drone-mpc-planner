@@ -4,6 +4,7 @@
 #include "dronetracker.h"
 #include "trackermanager.h"
 #include "visiondata.h"
+#include "drone.h"
 
 #define ENABLE_UNIFIED_DIRECTION_TRANSITION true
 #define ENABLE_MOTH_PREDICTION true
@@ -16,18 +17,15 @@ static const char *interceptor_state_names[] = { "is_init",
                                                  "is_close_chasing",
                                                  "is_killing"
                                                };
+class Drone;
 
-/*
- * This class calculates the best intersection location (aim), and whether that is even possible, etc
- *
- */
 class Interceptor {
 
 private:
-    std::ofstream *_logger;
     tracking::TrackerManager *_trackers;
     VisionData *_visdat;
-    DroneController *_dctrl;
+    Drone *_drone;
+    bool initialized = false;
 
     cv::Point3f _aim_pos, _aim_vel, _aim_acc;
 
@@ -53,44 +51,35 @@ private:
     };
     interceptor_states _interceptor_state = is_init;
 
-    int v_crcl1 = 250;
-    int v_crcl2 = 500;
-    int r_crcl1 = 10;
-    int r_crcl2 = 30;
-
-    void intercept_spiral();
     float calc_tti(cv::Point3f target_pos, cv::Point3f target_vel, cv::Point3f drone_pos, cv::Point3f drone_vel, bool drone_taking_off);
-    void update_flower_of_fire(double time);
     cv::Point3f update_far_target(bool drone_at_base);
     cv::Point3f update_close_target(bool drone_at_base);
     void update_interceptability(cv::Point3f req_aim_pos);
-    cv::Point3f get_circle_pos(float timef);
     tracking::InsectTracker *update_target_insecttracker();
 
 public:
-    void init(tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, ofstream *logger, DroneController *dctrl);
+    void init(tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Drone *drone);
     void update(bool drone_at_base, double time);
     tracking::InsectTracker *target_insecttracker() {return _target_insecttracker;}
 
     tracking::TrackData target_last_trackdata();
 
-    bool trigger_takeoff() {
-        tracking::InsectTracker *best_itrkr = target_insecttracker();
-        if (!best_itrkr)
+    bool target_acquired(double time) { return target_detected(time) && target_in_flight_area; }
+    bool target_detected(double time) {
+        if (!_target_insecttracker)
             return false;
         return !_n_frames_aim_not_in_range
-               && target_in_flight_area
-               && !best_itrkr->false_positive()
-               && !_trackers->monster_alert();
+               && _visdat->no_recent_large_brightness_events(time)
+               && !_trackers->monster_alert()
+               && !_target_insecttracker->false_positive()
+               && _target_insecttracker->properly_tracking();
     }
-    bool aim_in_range() {return !_n_frames_aim_not_in_range;}
     bool target_cleared() {return _n_frames_aim_not_in_range > n_frames_target_cleared_timeout;}
     cv::Point3f aim_pos() {return _aim_pos;}
     cv::Point3f aim_vel() {return _aim_vel;}
     cv::Point3f aim_acc() {return _aim_acc;}
     double time_to_intercept() {return _tti;}
     float best_distance() {return _best_distance;}
-    void write_dummy_csv();
 
     std::string Interceptor_State() {return interceptor_state_names[_interceptor_state];}
 };

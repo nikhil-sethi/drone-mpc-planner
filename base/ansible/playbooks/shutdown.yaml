@@ -3,8 +3,8 @@
   strategy: free
   gather_facts: no
   tasks:
-    - name: Kill pats process
-      shell: "killall pats || true"
+    - name: Kill executor process
+      shell: "killall executor || true"
     - name: Shutdown
       become: true
       ignore_errors: yes

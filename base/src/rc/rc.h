@@ -46,7 +46,7 @@ enum betaflight_headless_mode {
     bf_spin_motor_reversed = 250,
     bf_airmode = 300
 };
-static const char *armed_names[] = {"disarmed", "armed"};
+static const char *armed_names[] = {"rc_disarmed", "rc_armed"};
 enum betaflight_arming {
     bf_disarmed = RC_BOUND_MIN,
     bf_armed = RC_BOUND_MAX
@@ -113,6 +113,7 @@ struct Telemetry {
     uint32_t        batt_cell_v_package_id;
     float           batt_current;
     uint8_t         rssi;
+    double          rssi_last_received;
     float           roll;
     float           pitch;
     uint32_t        roll_pitch_package_id;
@@ -124,7 +125,7 @@ struct Telemetry {
     int             bf_patch;
     std::string     bf_uid_str;
 };
-class Rc {
+class RC {
 
 public:
     uint16_t mode = RC_BOUND_MIN; // set to angle mode in BF
@@ -158,7 +159,7 @@ public:
     bool arm_command() { return arm_switch == bf_armed; }
     bool connected() {return !notconnected;}
 
-    void queue_commands(int new_throttle, int new_roll, int new_pitch, int new_yaw, int new_mode, double time) {
+    void queue_commands(int new_throttle, int new_roll, int new_pitch, int new_yaw, int new_mode) {
         if (!exitSendThread) {
             g_lockData.lock();
             throttle = new_throttle;
@@ -166,8 +167,12 @@ public:
             pitch = new_pitch;
             yaw = new_yaw;
             mode = new_mode;
-            _time = time;
             g_lockData.unlock();
+        }
+    }
+    void send_commands(double time) {
+        if (!exitSendThread) {
+            _time = time;
             g_sendData.unlock();
         }
     }
@@ -198,6 +203,13 @@ public:
     void turtle(betaflight_turtle v) { turtle_mode = v; }
     void calibrate_acc() { calibrate_acc_cnt = 200; }
     double time_disarmed() { return _time_disarmed;}
+
+    bool ok(double time) {
+        if (dparams.Telemetry() && connected()) {
+            return (telemetry.rssi > 10 && time - telemetry.rssi_last_received < 5); // TODO tune rssi
+        } else
+            return connected();
+    }
 
     std::string arming_state_str() {
         std::string res = "";

@@ -226,10 +226,10 @@ class wdt_pats_task(pats_task):
                 os.remove(lb.proces_wdt_flag)
             else:
                 self.error_cnt += 1
-                self.logger.error('pats process watchdog alert! Pats Process does not seem to function. Restarting...')
-                Path(lb.pats_executable_dir).mkdir(parents=True, exist_ok=True)
+                self.logger.error('executor process watchdog alert! executor does not seem to function. Restarting...')
+                Path(lb.executor_dir).mkdir(parents=True, exist_ok=True)
                 Path(lb.wdt_fired_flag).touch()
-                cmd = 'killall -9 pats'
+                cmd = 'killall -9 executor'
                 lb.execute(cmd, 1, logger_name=self.name)
         else:
             os.remove(lb.no_realsense_flag)

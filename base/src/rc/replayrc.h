@@ -2,7 +2,7 @@
 #include "rc.h"
 #include "common.h"
 
-class ReplayRc : public Rc {
+class ReplayRC : public RC {
 private:
     std::string logger_rfn;
     ifstream infile;
@@ -10,7 +10,7 @@ private:
 
     std::string next_line;
 public:
-    ReplayRc(std::string replay_dir) {
+    ReplayRC(std::string replay_dir) {
         _replay_dir = replay_dir;
     }
     void init(int __attribute__((unused)));

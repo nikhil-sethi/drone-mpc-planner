@@ -246,7 +246,6 @@ cv::Rect clamp_rect(cv::Rect r, int w, int h) {
 std::string to_string_with_precision(float f, const int n)
 {
     std::ostringstream out;
-
     out << std::fixed << std::setprecision(n) << f;
     return out.str();
 }
@@ -254,7 +253,6 @@ std::string to_string_with_precision(float f, const int n)
 std::string to_string_with_precision(double f, const int n)
 {
     std::ostringstream out;
-
     out << std::fixed << std::setprecision(n) << f;
     return out.str();
 }

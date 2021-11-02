@@ -2,8 +2,8 @@
 - hosts: monitors
   strategy: free
   tasks:
-    - name: Kill pats process
-      shell: "killall pats || true"
+    - name: Kill executor process
+      shell: "killall executor || true"
     - name: Reboot
       become: true
       ignore_errors: yes

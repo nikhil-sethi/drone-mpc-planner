@@ -6,8 +6,8 @@
       ansible.builtin.file:
         path: ~/pats/flags/disable
         state: touch
-    - name: Kill (auto restart) pats process
-      shell: "killall pats || true"
+    - name: Kill (auto restart) executor process
+      shell: "killall executor || true"
     - name: Pull pats
       git:
         repo: git@github.com:pats-drones/pats.git
@@ -16,7 +16,7 @@
         version: monitoring
         force: yes
         clone: no
-    - name: Build pats
+    - name: Build executor
       make:
         chdir: /home/pats/code/pats/base/build
         params:

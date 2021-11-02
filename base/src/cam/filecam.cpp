@@ -18,7 +18,7 @@ void FileCam::init() {
     if (!file_exist(video_fn)) {
         std::stringstream serr;
         serr << "cannot not find " << video_fn;
-        throw MyExit(serr.str());
+        throw std::runtime_error(serr.str());
     }
     std::cout << "Reading video from " << video_fn << std::endl;
     init_gstream();
@@ -55,7 +55,7 @@ void FileCam::read_frame_ids() {
             auto data = split_csv_line(line);
             if (data.size() != 4) {
                 if (getline(infile, line))
-                    throw MyExit("Could not read log! File: " + framesfile + '\n' + " at: " + line);
+                    throw std::runtime_error("Could not read log! File: " + framesfile + '\n' + " at: " + line);
                 else {
                     std::cout << "Warning, last line corrupted of frames.csv. Processes did not close properly?" << std::endl;
                     break;
@@ -68,7 +68,7 @@ void FileCam::read_frame_ids() {
             entry.time = stod(data.at(3));
             frames_ids.push_back(entry);
         } catch (exception &exp) {
-            throw MyExit("Could not read log! File: " + framesfile + '\n' + "Err: " + string(exp.what()) + " at: " + line);
+            throw std::runtime_error("Could not read log! File: " + framesfile + '\n' + "Err: " + string(exp.what()) + " at: " + line);
         }
     }
     infile.close();

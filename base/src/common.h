@@ -80,10 +80,6 @@ struct NoRealsenseConnected : public std::exception {
     std::string msg;
     NoRealsenseConnected() : msg("no RealSense connected") {}
 };
-struct MyExit : public std::exception {
-    std::string msg;
-    MyExit(std::string return_value) : msg(return_value) {}
-};
 class NotImplemented : public std::logic_error
 {
 public:
@@ -100,28 +96,22 @@ struct ReplayVideoEnded : public std::exception {
 
 enum video_modes {
     video_disabled = 0,
-    video_mkv,
-    video_stream,
-    video_mp4_opencv,
-    video_bag
+    video_file,
+    video_stream
 };
 static const char *video_modes_str[] = {
     "video_disabled",
-    "video_mkv",
+    "video_file",
     "video_stream",
-    "video_mp4_opencv",
-    "video_bag"
     "" // must be the last entry! (check in serializer)
 };
 enum rc_types {
     rc_none = 0,
-    rc_devo,
     rc_xlite
 };
 static const char *rc_types_str[] = {
     "rc_none",
-    "rc_devo",
-    "rc_xlite"
+    "rc_xlite",
     "" // must be the last entry! (check in serializer)
 };
 enum tx_protocols {
@@ -193,14 +183,12 @@ static const char *drone_types_str[] = {
     "" // must be the last entry! (check in serializer)
 };
 enum op_modes {
-    op_mode_monitoring,
-    op_mode_waypoint,
-    op_mode_hunt
+    op_mode_c,
+    op_mode_x
 };
 static const char *op_modes_str[] = {
-    "op_mode_monitoring",
-    "op_mode_waypoint",
-    "op_mode_hunt",
+    "op_mode_c",
+    "op_mode_x"
     "" // must be the last entry! (check in serializer)
 };
 
@@ -220,24 +208,24 @@ public:
         string sHelp =  m_sValue;
         transform(sHelp.begin(), sHelp.end(), sHelp.begin(), ::tolower);
 
-        for (uint i = 0; video_modes_str[i] != string(""); i++) {
+        for (uint i = 0; strcmp(video_modes_str[i], ""); i++) {
             if (video_modes_str[i] == sHelp)
                 return static_cast<video_modes>(i);
         }
-        throw MyExit("wrong video_mode: " + sHelp);
+        throw std::runtime_error("wrong video_mode: " + sHelp);
     };
 
     xVideo_mode operator=(const video_modes value) {AssignValue(value); return *this;};
 };
 
-class xRc_type: public MemberBase {
+class xRC_type: public MemberBase {
 private:
     void AssignValue(const rc_types value) {
         m_sValue = rc_types_str[value];
     };
 public:
-    xRc_type() {AssignValue(static_cast<rc_types>(0));};
-    xRc_type(rc_types value) {AssignValue(value);};
+    xRC_type() {AssignValue(static_cast<rc_types>(0));};
+    xRC_type(rc_types value) {AssignValue(value);};
     rc_types value() {
         string sHelp =  m_sValue;
         transform(sHelp.begin(), sHelp.end(), sHelp.begin(), ::tolower);
@@ -246,10 +234,10 @@ public:
             if (rc_types_str[i] == sHelp)
                 return static_cast<rc_types>(i);
         }
-        throw MyExit("wrong rc_type: " + sHelp);
+        throw std::runtime_error("wrong rc_type: " + sHelp);
     };
 
-    xRc_type operator=(const rc_types value) {AssignValue(value); return *this;};
+    xRC_type operator=(const rc_types value) {AssignValue(value); return *this;};
 };
 
 class xTx_protocol: public MemberBase {
@@ -268,7 +256,7 @@ public:
             if (tx_protocols_str[i] == sHelp)
                 return static_cast<tx_protocols>(i);
         }
-        throw MyExit("wrong tx_protocol: " + sHelp);
+        throw std::runtime_error("wrong tx_protocol: " + sHelp);
     };
 
     xTx_protocol operator=(const tx_protocols value) {AssignValue(value); return *this;};
@@ -290,7 +278,7 @@ public:
             if (led_types_str[i] == sHelp)
                 return static_cast<led_types>(i);
         }
-        throw MyExit("wrong led_type: " + sHelp);
+        throw std::runtime_error("wrong led_type: " + sHelp);
     };
 
     xLed_types operator=(const led_types value) {AssignValue(value); return *this;};
@@ -311,7 +299,7 @@ public:
             if (op_modes_str[i] == sHelp)
                 return static_cast<op_modes>(i);
         }
-        throw MyExit("wrong op_mode: " + sHelp);
+        throw std::runtime_error("wrong op_mode: " + sHelp);
     };
 
     xOp_mode operator=(const op_modes value) {AssignValue(value); return *this;};
@@ -333,7 +321,7 @@ public:
             if (drone_types_str[i] == sHelp)
                 return static_cast<drone_types>(i);
         }
-        throw MyExit("wrong drone_type: " + sHelp);
+        throw std::runtime_error("wrong drone_type: " + sHelp);
     };
 
     xDrone_type operator=(const drone_types value) {AssignValue(value); return *this;};
@@ -343,16 +331,13 @@ class PatsParameters: public Serializable {
 private:
     xBool _watchdog, _has_screen;
     xVideo_mode _video_raw, _video_result;
-    xRc_type _joystick;
+    xRC_type _joystick;
     xDrone_type _drone;
     xOp_mode _op_mode;
-    xString _sub_mode;
     xInt _wdt_timeout_us, _fps, _close_after_n_images;
     xInt _exposure_threshold, _gain_threshold, _brightness_threshold;
     xString _plukker_start;
     xFloat _min_hunt_size, _max_hunt_size;
-    xBool _cam_tuning, _control_tuning, _navigation_tuning, _vision_tuning, _drone_tracking_tuning, _insect_tracking_tuning;
-    xBool _viz_plots, _viz_tracking;
     xInt _imscalef;
     xString _location;
     xString _flightplan;
@@ -371,11 +356,8 @@ public:
     rc_types joystick;
     drone_types drone;
     op_modes op_mode;
-    std::string sub_mode;
     std::string plukker_start;
     float min_hunt_size, max_hunt_size;
-    bool cam_tuning, control_tuning, navigation_tuning, vision_tuning, drone_tracking_tuning, insect_tracking_tuning;
-    bool viz_plots, viz_tracking;
     int imscalef;
     std::string location;
     std::string flightplan;
@@ -391,7 +373,7 @@ public:
         setClassName("PatsParameters");
 
         // Set class version
-        setVersion("1.13");
+        setVersion("1.15");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("wdt_timeout_us", &_wdt_timeout_us);
@@ -404,21 +386,12 @@ public:
         Register("max_hunt_size", &_max_hunt_size);
         Register("has_screen", &_has_screen);
         Register("op_mode", &_op_mode);
-        Register("sub_mode", &_sub_mode);
         Register("watchdog", &_watchdog);
         Register("fps", &_fps);
         Register("video_raw", &_video_raw);
         Register("video_result", &_video_result);
         Register("joystick", &_joystick);
         Register("drone", &_drone);
-        Register("cam_tuning", &_cam_tuning);
-        Register("control_tuning", &_control_tuning);
-        Register("navigation_tuning", &_navigation_tuning);
-        Register("vision_tuning", &_vision_tuning);
-        Register("drone_tracking_tuning", &_drone_tracking_tuning);
-        Register("insect_tracking_tuning", &_insect_tracking_tuning);
-        Register("viz_plots", &_viz_plots);
-        Register("viz_tracking", &_viz_tracking);
         Register("imscalef", &_imscalef);
         Register("location", &_location);
         Register("flightplan", &_flightplan);
@@ -437,17 +410,17 @@ public:
 
             if (!Serializable::fromXML(xmlData, this))
             {   // Deserialization not successful
-                throw MyExit("Cannot read: " + settings_file);
+                throw std::runtime_error("Cannot read: " + settings_file);
             }
             PatsParameters tmp;
             auto v1 = getVersion();
             auto v2 = tmp.getVersion();
             if (v1 != v2) {
-                throw MyExit("XML version difference detected from " + settings_file);
+                throw std::runtime_error("XML version difference detected from " + settings_file + std::string("\n") + v1 + std::string(" / ") + v2);
             }
             infile.close();
         } else {
-            throw MyExit("File not found: " + settings_file);
+            throw std::runtime_error("File not found: " + settings_file);
         }
 
         wdt_timeout_us = _wdt_timeout_us.value();
@@ -460,21 +433,12 @@ public:
         max_hunt_size = _max_hunt_size.value();
         has_screen = _has_screen.value();
         op_mode = _op_mode.value();
-        sub_mode = _sub_mode.value();
         watchdog = _watchdog.value();
         fps = _fps.value();
         video_raw = _video_raw.value();
         video_result = _video_result.value();
         joystick = _joystick.value();
         drone = _drone.value();
-        cam_tuning  = _cam_tuning.value();
-        control_tuning = _control_tuning.value();
-        navigation_tuning = _navigation_tuning.value();
-        vision_tuning = _vision_tuning.value();
-        drone_tracking_tuning = _drone_tracking_tuning.value();
-        insect_tracking_tuning = _insect_tracking_tuning.value();
-        viz_plots = _viz_plots.value();
-        viz_tracking = _viz_tracking.value();
         imscalef = _imscalef.value();
         location = _location.value();
         flightplan = _flightplan.value();
@@ -496,21 +460,12 @@ public:
         _min_hunt_size = min_hunt_size;
         _has_screen = has_screen;
         _op_mode = op_mode;
-        _sub_mode = sub_mode;
         _watchdog = watchdog;
         _fps = fps;
         _video_raw = video_raw;
         _video_result = video_result;
         _joystick = joystick;
         _drone = drone;
-        _cam_tuning  = cam_tuning;
-        _control_tuning = control_tuning;
-        _navigation_tuning = navigation_tuning;
-        _vision_tuning = vision_tuning;
-        _drone_tracking_tuning = drone_tracking_tuning;
-        _insect_tracking_tuning = insect_tracking_tuning;
-        _viz_plots = viz_plots;
-        _viz_tracking = viz_tracking;
         _imscalef = imscalef;
         _location = location;
         _flightplan = flightplan;
@@ -547,7 +502,6 @@ private:
     xInt _drone_led_strength;
     xTx_protocol _tx;
     xBool _mode3d;
-    xString _control;
     xInt _spinup_throttle_non3d;
     xFloat _land_cell_v;
     xInt _max_flight_time;
@@ -555,6 +509,15 @@ private:
     xInt _static_shakeit_throttle;
     xFloat _target_takeoff_velocity;
     xLed_types _led_type;
+
+    xInt _kp_pos_roll, _kp_pos_pitch, _kp_pos_throttle;
+    xInt _ki_pos_roll, _ki_pos_pitch, _ki_thrust;
+    xInt _kd_pos_roll, _kd_pos_pitch, _kd_pos_throttle;
+    xInt _kp_pos_roll_hover, _kp_pos_pitch_hover, _kp_pos_throttle_hover;
+    xInt _ki_pos_roll_hover, _ki_pos_pitch_hover, _ki_thrust_hover;
+    xInt _kd_pos_roll_hover, _kd_pos_pitch_hover, _kd_pos_throttle_hover;
+    xInt _kp_v_roll, _kp_v_pitch, _kp_v_throttle;
+    xInt _kd_v_roll, _kd_v_pitch, _kd_v_throttle;
 
 public:
     std::string name;
@@ -575,7 +538,6 @@ public:
     int drone_led_strength;
     tx_protocols tx;
     bool mode3d;
-    string control;
     int spinup_throttle_non3d;
     float land_cell_v;
     int max_flight_time;
@@ -583,8 +545,11 @@ public:
     int static_shakeit_throttle;
     float target_takeoff_velocity;
     led_types led_type;
-
     bool Telemetry() { return tx == tx_frskyd16; }
+
+    int kp_pos_roll, kp_pos_throttle, kp_pos_pitch, ki_pos_roll, ki_thrust, ki_pos_pitch, kd_pos_roll, kd_pos_throttle, kd_pos_pitch;
+    int kp_pos_roll_hover, kp_pos_throttle_hover, kp_pos_pitch_hover, ki_pos_roll_hover, ki_thrust_hover, ki_pos_pitch_hover, kd_pos_roll_hover, kd_pos_throttle_hover, kd_pos_pitch_hover;
+    int kp_v_roll, kp_v_throttle, kp_v_pitch, kd_v_roll, kd_v_throttle, kd_v_pitch;
 
     DroneParameters() {
         // Set the XML class name.
@@ -592,7 +557,7 @@ public:
         setClassName("DroneParameters");
 
         // Set class version
-        setVersion("1.12");
+        setVersion("1.13");
 
         // Register members. Like the class name, member names can differ from their xml depandants
         Register("name", &_name);
@@ -614,13 +579,41 @@ public:
         Register("tx", &_tx);
         Register("mode3d", &_mode3d);
         Register("spinup_throttle_non3d", &_spinup_throttle_non3d);
-        Register("control", &_control);
         Register("land_cell_v", &_land_cell_v);
         Register("max_flight_time", &_max_flight_time);
         Register("min_hunt_cell_v", &_min_hunt_cell_v);
         Register("static_shakeit_throttle", &_static_shakeit_throttle);
         Register("target_takeoff_velocity", &_target_takeoff_velocity);
         Register("led_type", &_led_type);
+
+        Register("kp_pos_roll", &_kp_pos_roll);
+        Register("kp_pos_pitch", &_kp_pos_pitch);
+        Register("kp_pos_throttle", &_kp_pos_throttle);
+        Register("ki_pos_roll", &_ki_pos_roll);
+        Register("ki_pos_pitch", &_ki_pos_pitch);
+        Register("ki_thrust", &_ki_thrust);
+        Register("kd_pos_roll", &_kd_pos_roll);
+        Register("kd_pos_pitch", &_kd_pos_pitch);
+        Register("kd_pos_throttle", &_kd_pos_throttle);
+
+        Register("kp_pos_roll_hover", &_kp_pos_roll_hover);
+        Register("kp_pos_pitch_hover", &_kp_pos_pitch_hover);
+        Register("kp_pos_throttle_hover", &_kp_pos_throttle_hover);
+        Register("ki_pos_roll_hover", &_ki_pos_roll_hover);
+        Register("ki_pos_pitch_hover", &_ki_pos_pitch_hover);
+        Register("ki_thrust_hover", &_ki_thrust_hover);
+        Register("kd_pos_roll_hover", &_kd_pos_roll_hover);
+        Register("kd_pos_pitch_hover", &_kd_pos_pitch_hover);
+        Register("kd_pos_throttle_hover", &_kd_pos_throttle_hover);
+
+        Register("kp_v_roll", &_kp_v_roll);
+        Register("kp_v_pitch", &_kp_v_pitch);
+        Register("kp_v_throttle", &_kp_v_throttle);
+        Register("kd_v_roll", &_kd_v_roll);
+        Register("kd_v_pitch", &_kd_v_pitch);
+        Register("kd_v_throttle", &_kd_v_throttle);
+
+
     }
     void deserialize(std::string filepath) {
         std::cout << "Reading settings from: " << filepath << std::endl;
@@ -631,17 +624,17 @@ public:
 
             if (!Serializable::fromXML(xmlData, this))
             {   // Deserialization not successful
-                throw MyExit("Cannot read: " + filepath);
+                throw std::runtime_error("Cannot read: " + filepath);
             }
             DroneParameters tmp;
             auto v1 = getVersion();
             auto v2 = tmp.getVersion();
             if (v1 != v2) {
-                throw MyExit("XML version difference detected from " + filepath);
+                throw std::runtime_error("XML version difference detected from " + filepath);
             }
             infile.close();
         } else {
-            throw MyExit("File not found: " + filepath);
+            throw std::runtime_error("File not found: " + filepath);
         }
 
         name = _name.value();
@@ -662,7 +655,6 @@ public:
         drone_led_strength = _drone_led_strength.value();
         tx = _tx.value();
         mode3d = _mode3d.value();
-        control = _control.value();
         spinup_throttle_non3d = _spinup_throttle_non3d.value();
         land_cell_v = _land_cell_v.value();
         max_flight_time = _max_flight_time.value();
@@ -670,6 +662,32 @@ public:
         static_shakeit_throttle = _static_shakeit_throttle.value();
         target_takeoff_velocity = _target_takeoff_velocity.value();
         led_type = _led_type.value();
+
+        kp_pos_roll = _kp_pos_roll.value();
+        kp_pos_pitch = _kp_pos_pitch.value();
+        kp_pos_throttle = _kp_pos_throttle.value();
+        ki_pos_roll = _ki_pos_roll.value();
+        ki_pos_pitch = _ki_pos_pitch.value();
+        ki_thrust = _ki_thrust.value();
+        kd_pos_roll = _kd_pos_roll.value();
+        kd_pos_pitch = _kd_pos_pitch.value();
+        kd_pos_throttle = _kd_pos_throttle.value();
+        kp_pos_roll_hover = _kp_pos_roll_hover.value();
+        kp_pos_pitch_hover = _kp_pos_pitch_hover.value();
+        kp_pos_throttle_hover = _kp_pos_throttle_hover.value();
+        ki_pos_roll_hover = _ki_pos_roll_hover.value();
+        ki_pos_pitch_hover = _ki_pos_pitch_hover.value();
+        ki_thrust_hover = _ki_thrust_hover.value();
+        kd_pos_roll_hover = _kd_pos_roll_hover.value();
+        kd_pos_pitch_hover = _kd_pos_pitch_hover.value();
+        kd_pos_throttle_hover = _kd_pos_throttle_hover.value();
+
+        kp_v_roll = _kp_v_roll.value();
+        kp_v_pitch = _kp_v_pitch.value();
+        kp_v_throttle = _kp_v_throttle.value();
+        kd_v_roll = _kd_v_roll.value();
+        kd_v_pitch = _kd_v_pitch.value();
+        kd_v_throttle = _kd_v_throttle.value();
     }
 
     void serialize(std::string filepath) {
@@ -691,7 +709,6 @@ public:
         _drone_led_strength = drone_led_strength;
         _tx = tx;
         _mode3d = mode3d;
-        _control = control;
         _spinup_throttle_non3d = spinup_throttle_non3d;
         _land_cell_v = land_cell_v;
         _max_flight_time = max_flight_time;
@@ -787,17 +804,17 @@ public:
 
             if (!Serializable::fromXML(xmlData, this))
             {   // Deserialization not successful
-                throw MyExit("Cannot read: " + filepath);
+                throw std::runtime_error("Cannot read: " + filepath);
             }
             CamCalibration tmp;
             auto v1 = getVersion();
             auto v2 = tmp.getVersion();
             if (v1 != v2) {
-                throw MyExit("XML version difference detected from " + filepath);
+                throw std::runtime_error("XML version difference detected from " + filepath);
             }
             infile.close();
         } else {
-            throw MyExit("File not found: " + filepath);
+            throw std::runtime_error("File not found: " + filepath);
         }
 
         camera_angle_x = _angle_x.value();
@@ -897,16 +914,16 @@ public: void deserialize(std::string filepath) {
 
             if (!Serializable::fromXML(xmlData, this))
             {   // Deserialization not successful
-                throw MyExit("Cannot read: " + filepath);
+                throw std::runtime_error("Cannot read: " + filepath);
             }
             DroneCalibration tmp;
             auto v1 = getVersion();
             auto v2 = tmp.getVersion();
             if (v1 != v2) {
-                throw MyExit("XML version difference detected from " + filepath);
+                throw std::runtime_error("XML version difference detected from " + filepath);
             }
         } else {
-            throw MyExit("File not found: " + filepath);
+            throw std::runtime_error("File not found: " + filepath);
         }
 
         pad_calib_date = _pad_calib_date.value();

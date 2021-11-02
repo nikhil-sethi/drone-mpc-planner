@@ -10,7 +10,7 @@ namespace logging
 
 void LogReader::init(string path) {
     if (!file_exist(path)) {
-        throw MyExit("log file not found!");
+        throw std::runtime_error("log file not found!");
     }
     cout << "Opening log folder: " << path << endl;
 
@@ -36,7 +36,7 @@ tuple<map<int, LogEntryMain>, map<string, int>> LogReader::read_log(string file)
         } catch (exception &exp) {
             string next_line;
             if (getline(infile, next_line))
-                throw MyExit("Could not read log! File: " + file + '\n' + "Err: " + string(exp.what()) + " at: " + line);
+                throw std::runtime_error("Could not read log! File: " + file + '\n' + "Err: " + string(exp.what()) + " at: " + line);
         }
     }
     infile.close();
@@ -95,14 +95,8 @@ LogEntryMain LogReader::create_log_entry(string line, map<string, int> headmap) 
 
     if (isinf(_takeoff_time) && (entry.nav_state == navigation::ns_chasing_insect_ff || entry.nav_state == navigation::ns_chasing_insect || entry.nav_state == navigation::ns_set_waypoint || entry.nav_state == navigation::ns_chasing_insect || entry.nav_state == navigation::ns_approach_waypoint))
         _takeoff_time = entry.elapsed;
-    if (isinf(_drone_ready_time) && entry.nav_state == navigation::ns_calibrating_motion_done)
-        _drone_ready_time = entry.elapsed;
     if (isinf(_yaw_reset_time) && entry.nav_state == navigation::ns_reset_headless_yaw)
         _yaw_reset_time = entry.elapsed;
-    if (isinf(_drone_problem_time) && entry.nav_state == navigation::ns_drone_problem)
-        _drone_problem_time = entry.elapsed;
-    if (isinf(_first_blink_time) && entry.nav_state == navigation::ns_wait_locate_drone)
-        _first_blink_time = entry.elapsed;
 
     return entry;
 }

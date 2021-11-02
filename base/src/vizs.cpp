@@ -14,13 +14,9 @@ cv::Scalar linecolors[] = {green, blue, red, cv::Scalar(0, 255, 255), cv::Scalar
 cv::Scalar fore_color(255, 255, 255);
 cv::Scalar background_color(0, 0, 0);
 
-void Visualizer::init(VisionData *visdat, tracking::TrackerManager *trackers, DroneController *dctrl, navigation::DroneNavigation *dnav, Rc *rc, bool fromfile, Interceptor *iceptor) {
+void Visualizer::init(VisionData *visdat, Patser *patser, bool fromfile) {
     _visdat = visdat;
-    _dctrl = dctrl;
-    _trackers = trackers;
-    _dnav = dnav;
-    _rc = rc;
-    _iceptor = iceptor;
+    _patser = patser;
 
     _fromfile = fromfile;
     thread_viz = std::thread(&Visualizer::workerThread, this);
@@ -28,27 +24,28 @@ void Visualizer::init(VisionData *visdat, tracking::TrackerManager *trackers, Dr
 }
 
 void Visualizer::add_plot_sample(void) {
-    if (pparams.viz_plots || enable_plots) {
+    if (enable_plots) {
         lock_plot_data.lock();
-        roll_joystick.push_back(static_cast<float>(_dctrl->joy_roll));
-        pitch_joystick.push_back(static_cast<float>(_dctrl->joy_pitch));
-        yaw_joystick.push_back(static_cast<float>(_dctrl->joy_pitch));
-        throttle_joystick.push_back(static_cast<float>(_dctrl->joy_throttle));
+        roll_joystick.push_back(static_cast<float>(_patser->drone.control.joy_roll));
+        pitch_joystick.push_back(static_cast<float>(_patser->drone.control.joy_pitch));
+        yaw_joystick.push_back(static_cast<float>(_patser->drone.control.joy_pitch));
+        throttle_joystick.push_back(static_cast<float>(_patser->drone.control.joy_throttle));
 
-        roll_calculated.push_back(static_cast<float>(_dctrl->auto_roll));
-        pitch_calculated.push_back(static_cast<float>(_dctrl->auto_pitch));
-        //    yaw_calculated.push_back(static_cast<float>(_dctrl->commandedYaw));
-        throttle_calculated.push_back(static_cast<float>(_dctrl->auto_throttle));
+        roll_calculated.push_back(static_cast<float>(_patser->drone.control.auto_roll));
+        pitch_calculated.push_back(static_cast<float>(_patser->drone.control.auto_pitch));
+        //    yaw_calculated.push_back(static_cast<float>(_patser->drone.control.commandedYaw));
+        throttle_calculated.push_back(static_cast<float>(_patser->drone.control.auto_throttle));
         throttle_min_bound.push_back(static_cast<float>(RC_BOUND_MIN));
         throttle_max_bound.push_back(static_cast<float>(RC_BOUND_MAX));
 
 
-        auto dtrkr = _trackers->dronetracker();
+        auto dtrkr = &_patser->drone.tracker;
         TrackData data = dtrkr->last_track_data();
         dt.push_back(data.dt);
         dt_target.push_back(1.f / pparams.fps);
 
-        TrackData data_target = _iceptor->target_last_trackdata();
+        TrackData data_target = _patser->interceptor.target_last_trackdata();
+        auto nav = &_patser->drone.nav;
 
         if (data.pos_valid) {
             posX_drone.push_back(-data.state.pos.x);
@@ -72,19 +69,19 @@ void Visualizer::add_plot_sample(void) {
                 gen_im_disp_drone.push_back(generator_cam->generated_im_pos.z);
             }
 
-            if (_dctrl->Joy_State() != DroneController::js_hunt) {
-                posX_target.push_back(-_dnav->setpoint().pos().x);
-                posY_target.push_back(-_dnav->setpoint().pos().y);
-                posZ_target.push_back(-_dnav->setpoint().pos().z);
+            if (_patser->drone.control.Joy_State() != DroneController::js_hunt) {
+                posX_target.push_back(-nav->setpoint().pos().x);
+                posY_target.push_back(-nav->setpoint().pos().y);
+                posZ_target.push_back(-nav->setpoint().pos().z);
             } else {
                 posX_target.push_back(-data_target.state.pos.x);
                 posY_target.push_back(data_target.state.pos.y);
                 posZ_target.push_back(-data_target.state.pos.z);
             }
 
-            setposX.push_back(-_dnav->setpoint().pos().x);
-            setposY.push_back(_dnav->setpoint().pos().y);
-            setposZ.push_back(-_dnav->setpoint().pos().z);
+            setposX.push_back(-nav->setpoint().pos().x);
+            setposY.push_back(nav->setpoint().pos().y);
+            setposZ.push_back(-nav->setpoint().pos().z);
         }
         if (data.vel_valid) {
             svelX.push_back(-data.state.vel.x);
@@ -101,6 +98,7 @@ void Visualizer::add_plot_sample(void) {
             saccY.push_back(data.state.acc.y);
             saccZ.push_back(-data.state.acc.z);
         }
+
 
         lock_plot_data.unlock();
         newdata.notify_all();
@@ -137,7 +135,7 @@ cv::Mat Visualizer::plot_xyd(void) {
     ims_xyd.push_back(plot({im_disp_drone}, "Disparity"));
 
 
-    cv::Point sp1(-_dctrl->viz_drone_pos_after_burn.x * 1000.f, -_dctrl->viz_drone_pos_after_burn.z * 1000.f);
+    cv::Point sp1(-_patser->drone.control.viz_drone_pos_after_burn.x * 1000.f, -_patser->drone.control.viz_drone_pos_after_burn.z * 1000.f);
     cv::Point min_xz_range, max_xz_range;
     min_xz_range.x = -2000;
     max_xz_range.x = 2000;
@@ -145,7 +143,7 @@ cv::Mat Visualizer::plot_xyd(void) {
     max_xz_range.y = 4000; // z
     ims_xyd.push_back(plotxy(posX_drone, posZ_drone, posX_target, posZ_target, sp1, "PosXZ", min_xz_range, max_xz_range));
 
-    cv::Point sp2(-_dctrl->viz_drone_pos_after_burn.x * 1000.f, _dctrl->viz_drone_pos_after_burn.y * 1000.f);
+    cv::Point sp2(-_patser->drone.control.viz_drone_pos_after_burn.x * 1000.f, _patser->drone.control.viz_drone_pos_after_burn.y * 1000.f);
     cv::Point min_xy_range, max_xy_range;
     min_xy_range.x = -2000;
     max_xy_range.x = 2000;
@@ -229,8 +227,8 @@ void Visualizer::plot(std::vector<cv::Mat> data, cv::Mat *frame, std::string nam
     amplify_y = fsizey / range;
     min *= amplify_y;
     max *= amplify_y;
-    min -= 1;
-    max += 1;
+    min--;
+    max++;
     const float scaleX = static_cast<float>(fsizex) / (bufsize);
     const float scaleY = static_cast<float>(fsizey) / (max - min);
 
@@ -329,8 +327,8 @@ cv::Mat Visualizer::plotxy(cv::Mat data1x, cv::Mat data1y, cv::Mat data2x, cv::M
     cv::line(frame, cv::Point(x, 0), cv::Point(x, frame.rows), blue);
 
 
-    float dist_th_x = (_dnav->distance_threshold_mm()) * scaleX + 2 * line_width;
-    float dist_th_y = (_dnav->distance_threshold_mm()) * scaleY + 2 * line_width;
+    float dist_th_x = (_patser->drone.nav.distance_threshold_mm()) * scaleX + 2 * line_width;
+    float dist_th_y = (_patser->drone.nav.distance_threshold_mm()) * scaleY + 2 * line_width;
     cv::rectangle(frame, Point(x - dist_th_x, y - dist_th_y), Point(x + dist_th_x, y + dist_th_y), red);
 
     return frame;
@@ -349,15 +347,21 @@ void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis, floa
         putText(resFrame, ss_min.str(), cv::Point(360, 12), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
     }
 
-    putText(resFrame, _dctrl->flight_mode(), cv::Point(220, 70), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
-    putText(resFrame, _dnav->navigation_status(), cv::Point(220, 82), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
-    putText(resFrame, _rc->armed_str(), cv::Point(450, 82), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
-    putText(resFrame, _dctrl->Joy_State_str(), cv::Point(525, 82), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
-    putText(resFrame, _trackers->mode_str(), cv::Point(220, 96), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
+    putText(resFrame, _patser->state_str(), cv::Point(220, 70), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
+    putText(resFrame, _patser->trackers.mode_str(), cv::Point(220, 82), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
+    if (pparams.op_mode == op_mode_x) {
+        putText(resFrame, _patser->drone.drone_state_str(), cv::Point(450, 70), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
+        putText(resFrame, _patser->baseboard()->charging_state_str(), cv::Point(450, 82), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
+        putText(resFrame, _patser->interceptor.Interceptor_State(), cv::Point(220, 94), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
+        if (pparams.joystick != rc_none)
+            putText(resFrame, _patser->drone.control.Joy_State_str(), cv::Point(220, 118), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
 
-    putText(resFrame, _trackers->dronetracker()->drone_tracking_state(), cv::Point(450, 96), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
-    putText(resFrame, _iceptor->Interceptor_State(), cv::Point(450, 70), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
-
+        if (_patser->drone.drone_flying()) {
+            putText(resFrame, _patser->drone.tracker.drone_tracking_state(), cv::Point(450, 106), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
+            putText(resFrame, _patser->drone.control.flight_mode(), cv::Point(450, 94), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
+        }
+        putText(resFrame, _patser->rc()->armed_str(), cv::Point(220, 106), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
+    }
 
     std::string warnings = "";
     static int warning_color_cnt = 0;
@@ -366,11 +370,11 @@ void Visualizer::draw_target_text(cv::Mat resFrame, double time, float dis, floa
 
     if (not _visdat->no_recent_large_brightness_events(time))
         warnings += "BRIGHTNESS ";
-    if (_trackers->monster_alert())
+    if (_patser->trackers.monster_alert())
         warnings += "MONSTER ALERT ";
     if (_fromfile) {
         warnings += "POPCORN TIME";
-        if (first_take_off_time - time > 0 && pparams.op_mode != op_mode_monitoring)
+        if (first_take_off_time - time > 0)
             warnings += " IN " + to_string_with_precision(first_take_off_time - time, 1);
         warnings += " ";
     }
@@ -421,8 +425,8 @@ void Visualizer::update_tracker_data(cv::Mat frameL, cv::Point3f setpoint, doubl
 
         static float min_dis = 9999;
         float dis = 0;
-        auto dtrkr = _trackers->dronetracker();
-        auto itrkr = _iceptor->target_insecttracker();
+        auto dtrkr = &_patser->drone.tracker;
+        auto itrkr = _patser->interceptor.target_insecttracker();
         if (dtrkr->tracking() && itrkr) {
 
             auto pd = dtrkr->world_item().pt;
@@ -457,14 +461,14 @@ void Visualizer::draw_tracker_viz() {
     cv::Point3f setpoint = tracker_viz_base_data.setpoint;
     double time = tracker_viz_base_data.time;
 
-    std::vector<tracking::TrackData> drn_path = _trackers->dronetracker()->track();
+    std::vector<tracking::TrackData> drn_path = _patser->drone.tracker.track();
     tracking::TrackData last_drone_detection;
     if (drn_path.size())
         last_drone_detection = drn_path.back();
 
     std::vector<tracking::TrackData> ins_path;
-    if (_iceptor->target_insecttracker())
-        ins_path = _iceptor->target_insecttracker()->track();
+    if (_patser->interceptor.target_insecttracker())
+        ins_path = _patser->interceptor.target_insecttracker()->track();
     tracking::TrackData last_insect_detection;
     if (ins_path.size())
         last_insect_detection = ins_path.back();
@@ -481,8 +485,8 @@ void Visualizer::draw_tracker_viz() {
     if (last_drone_detection.predicted_image_item.valid) {
         auto pred =  last_drone_detection.predicted_image_item;
         cv::circle(frameL_color, pred.pt, pred.size / 2, cv::Scalar(0, 255, 0));
-    } else if (_trackers->dronetracker()->pad_location_valid()) {
-        cv::circle(frameL_color, _trackers->dronetracker()->pad_im_location(), _trackers->dronetracker()->pad_im_size() / 2, cv::Scalar(0, 255, 0));
+    } else if (_patser->drone.tracker.pad_location_valid()) {
+        cv::circle(frameL_color, _patser->drone.tracker.pad_im_location(), _patser->drone.tracker.pad_im_size() / 2, cv::Scalar(0, 255, 0));
     }
     if (last_drone_detection.world_item.image_item.valid) {
         auto p =  last_drone_detection.world_item.image_item;
@@ -518,23 +522,23 @@ void Visualizer::draw_tracker_viz() {
 
     }
 
-    if (_dctrl->ff_interception()) {
+    if (_patser->drone.control.ff_interception()) {
         //burn:
-        cv::Point2f viz_drone_pos_after_burn_im = world2im_2d(_dctrl->viz_drone_pos_after_burn, _visdat->Qfi, _visdat->camera_roll, _visdat->camera_pitch);
-        cv::Point2f viz_target_pos_after_burn_im = world2im_2d(_dctrl->viz_target_pos_after_burn, _visdat->Qfi, _visdat->camera_roll, _visdat->camera_pitch);
+        cv::Point2f viz_drone_pos_after_burn_im = world2im_2d(_patser->drone.control.viz_drone_pos_after_burn, _visdat->Qfi, _visdat->camera_roll, _visdat->camera_pitch);
+        cv::Point2f viz_target_pos_after_burn_im = world2im_2d(_patser->drone.control.viz_target_pos_after_burn, _visdat->Qfi, _visdat->camera_roll, _visdat->camera_pitch);
 
 
-        if (!_dctrl->viz_trajectory.empty() && ! drn_path.empty()) {
-            double raak = norm(_dctrl->viz_trajectory.back() .pos - last_drone_detection.world_item.pt);
+        if (!_patser->drone.control.viz_trajectory.empty() && ! drn_path.empty()) {
+            double raak = norm(_patser->drone.control.viz_trajectory.back() .pos - last_drone_detection.world_item.pt);
             putText(resFrame, "trgt: |"  + to_string_with_precision(raak, 2) + "|", cv::Point(460, 12), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(125, 125, 255));
         }
 
         cv::circle(frameL_color, viz_target_pos_after_burn_im, 2, white);
         viz_drone_pos_after_burn_im.x += 15;
-        putText(frameL_color, to_string_with_precision(_dctrl->viz_time_after_burn, 2), viz_drone_pos_after_burn_im, cv::FONT_HERSHEY_SIMPLEX, 0.5, pink);
+        putText(frameL_color, to_string_with_precision(_patser->drone.control.viz_time_after_burn, 2), viz_drone_pos_after_burn_im, cv::FONT_HERSHEY_SIMPLEX, 0.5, pink);
 
-        for (uint i = 0; i < _dctrl->viz_trajectory.size(); i++) {
-            cv::Point2f p = world2im_2d(_dctrl->viz_trajectory.at(i).pos, _visdat->Qfi, _visdat->camera_roll, _visdat->camera_pitch);
+        for (uint i = 0; i < _patser->drone.control.viz_trajectory.size(); i++) {
+            cv::Point2f p = world2im_2d(_patser->drone.control.viz_trajectory.at(i).pos, _visdat->Qfi, _visdat->camera_roll, _visdat->camera_pitch);
             cv::circle(frameL_color, p, 1, pink);
         }
 
@@ -555,13 +559,13 @@ void Visualizer::draw_tracker_viz() {
         putText(frameL_color, ss.str(), drone_pos, cv::FONT_HERSHEY_SIMPLEX, 0.5, c);
         cv::line(frameL_color, drone_pos, drone_pos, c, 2);
 
-        if (_dnav->drone_flying() && !_dctrl->ff_interception()) { //draw line from drone to target setpoint
-            cv::Point2i target = _dnav->drone_setpoint_im();
+        if (_patser->drone.drone_flying() && !_patser->drone.control.ff_interception()) { //draw line from drone to target setpoint
+            cv::Point2i target = _patser->drone.tracker.image_item().pt();
             cv::Scalar c2;
-            if (_dnav->drone_hunting() && target.x + target.y > 0) {
+            if (_patser->drone.nav.drone_hunting() && target.x + target.y > 0) {
                 c2 = red;
                 cv::Point2i text_pos = drone_pos - (drone_pos - target) / 2;
-                putText(frameL_color, to_string_with_precision(_iceptor->time_to_intercept(), 2) + "s", text_pos, cv::FONT_HERSHEY_SIMPLEX, 0.5, c2);
+                putText(frameL_color, to_string_with_precision(_patser->interceptor.time_to_intercept(), 2) + "s", text_pos, cv::FONT_HERSHEY_SIMPLEX, 0.5, c2);
             } else
                 c2 = white;
             cv::line(frameL_color, drone_pos, target, c2, 1);
@@ -579,12 +583,12 @@ void Visualizer::draw_tracker_viz() {
     frameL_small_insect.copyTo(resFrame(cv::Rect(resFrame.cols - frameL_small_drone.cols, 0, frameL_small_drone.cols, frameL_small_drone.rows)));
     draw_target_text(resFrame, time, dis, min_dis);
 
-    if (_trackers->diff_viz_buf.cols > 0) {
+    if (_patser->trackers.diff_viz_buf.cols > 0) {
 
-        cv::Mat ext_res_frame = cv::Mat::zeros(resFrame.rows, resFrame.cols + _trackers->diff_viz_buf.cols, CV_8UC3);
+        cv::Mat ext_res_frame = cv::Mat::zeros(resFrame.rows, resFrame.cols + _patser->trackers.diff_viz_buf.cols, CV_8UC3);
         resFrame.copyTo(ext_res_frame(cv::Rect(0, 0, resFrame.cols, resFrame.rows)));
-        _trackers->diff_viz_buf.copyTo(ext_res_frame(cv::Rect(resFrame.cols, frameL_small_drone.rows, _trackers->diff_viz_buf.cols, _trackers->diff_viz_buf.rows)));
-        cv::Mat diff = ext_res_frame(cv::Rect(resFrame.cols, frameL_small_drone.rows, _trackers->diff_viz_buf.cols, _trackers->diff_viz_buf.rows));
+        _patser->trackers.diff_viz_buf.copyTo(ext_res_frame(cv::Rect(resFrame.cols - 1, frameL_small_drone.rows - 1, _patser->trackers.diff_viz_buf.cols, _patser->trackers.diff_viz_buf.rows)));
+        cv::Mat diff = ext_res_frame(cv::Rect(resFrame.cols, frameL_small_drone.rows, _patser->trackers.diff_viz_buf.cols, _patser->trackers.diff_viz_buf.rows));
 
         putText(diff, "Drone", cv::Point(3, diff.rows - 12), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(0, 255, 0));
         putText(diff, "Insect blb->trk", cv::Point(3, diff.rows - 24), FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(0, 0, 255));
@@ -623,7 +627,7 @@ void Visualizer::paint() {
         if (_viz_exposure_initialized && _visdat->overexposed_mapL.cols)
             cv::imshow("exposure map", _visdat->overexposed_mapL);
 
-        auto drone_diff_viz = _trackers->dronetracker()->diff_viz;
+        auto drone_diff_viz = _patser->drone.tracker.diff_viz;
         if (drone_diff_viz.cols) {
             static bool drn_diff_viz_initialized = false;
             if (!drn_diff_viz_initialized) {
@@ -632,38 +636,40 @@ void Visualizer::paint() {
             }
             cv::imshow("drn_diff", drone_diff_viz);
         }
-        if (_trackers->viz_trkrs_buf.cols) {
+        if (_patser->trackers.viz_trkrs_buf.cols) {
             static bool trkrs_blobs_viz_initialized = false;
             if (!trkrs_blobs_viz_initialized) {
                 trkrs_blobs_viz_initialized = true;
                 namedWindow("trackers & blobs", cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
             }
-            cv::imshow("trackers & blobs", _trackers->viz_trkrs_buf);
+            cv::imshow("trackers & blobs", _patser->trackers.viz_trkrs_buf);
         }
-        if (_trackers->viz_max_points.cols) {
+        if (_patser->trackers.viz_max_points.cols) {
             static bool motion_points_viz_initialized = false;
             if (!motion_points_viz_initialized) {
                 motion_points_viz_initialized = true;
                 namedWindow("motion blobs", cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
             }
-            cv::imshow("motion blobs", _trackers->viz_max_points);
+            cv::imshow("motion blobs", _patser->trackers.viz_max_points);
         }
-        if (_trackers->dronetracker()->viz_disp.cols > 0) {
-            static bool stereo_viz_initialized = false;
-            if (!stereo_viz_initialized) {
-                stereo_viz_initialized = true;
-                namedWindow("stereo drone", cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
+        for (auto drone : _patser->trackers.dronetrackers()) {
+            if (drone->viz_disp.cols > 0) {
+                static bool stereo_viz_initialized = false;
+                if (!stereo_viz_initialized) {
+                    stereo_viz_initialized = true;
+                    namedWindow("stereo drone " + std::to_string(drone->uid()), cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
+                }
+                imshow("stereo drone " + std::to_string(drone->uid()), drone->viz_disp);
             }
-            imshow("stereo drone", _trackers->dronetracker()->viz_disp);
         }
-        if (_iceptor->target_insecttracker()) {
-            if (_iceptor->target_insecttracker()->viz_disp.cols > 0) {
+        if (_patser->interceptor.target_insecttracker()) {
+            if (_patser->interceptor.target_insecttracker()->viz_disp.cols > 0) {
                 static bool stereo_viz_initialized = false;
                 if (!stereo_viz_initialized) {
                     stereo_viz_initialized = true;
                     namedWindow("stereo insect", cv::WINDOW_AUTOSIZE | cv::WINDOW_OPENGL);
                 }
-                imshow("stereo insect", _iceptor->target_insecttracker()->viz_disp);
+                imshow("stereo insect", _patser->interceptor.target_insecttracker()->viz_disp);
             }
         }
 
@@ -686,21 +692,20 @@ void Visualizer::workerThread(void) {
     while (!exitVizThread) {
         newdata.wait(lk);
         if (roll_joystick.rows > 0) {
-            if (pparams.viz_plots || enable_plots) {
+            if (enable_plots) {
                 lock_plot_data.lock();
                 plot();
                 request_plotframe_paint = true;
                 lock_plot_data.unlock();
             }
         }
-        if (pparams.viz_tracking) {
-            lock_frame_data.lock();
-            if (tracker_viz_base_data.frameL.rows > 0) {
-                draw_tracker_viz();
-                request_trackframe_paint = true;
-            }
-            lock_frame_data.unlock();
+        lock_frame_data.lock();
+        if (tracker_viz_base_data.frameL.rows > 0) {
+            draw_tracker_viz();
+            request_trackframe_paint = true;
         }
+        lock_frame_data.unlock();
+
 
     }
 }

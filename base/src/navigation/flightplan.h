@@ -5,8 +5,6 @@ namespace navigation {
 enum waypoint_flight_modes {
     wfm_takeoff,
     wfm_flying,
-    wfm_flower,
-    wfm_brick,
     wfm_wp_stay,
     wfm_landing,
     wfm_yaw_reset,
@@ -16,8 +14,6 @@ enum waypoint_flight_modes {
 static const char *waypoint_flight_modes_str[] = {
     "wfm_takeoff",
     "wfm_flying",
-    "wfm_flower",
-    "wfm_brick",
     "wfm_wp_stay",
     "wfm_landing",
     "wfm_yaw_reset",
@@ -82,16 +78,6 @@ struct Waypoint_Takeoff : Waypoint {
         name = "wp_takeoff";
     }
 };
-struct Waypoint_Flower : Waypoint {
-    Waypoint_Flower(cv::Point3f p, std::string wp_name) : Waypoint(p, 0, 0, 0, wp_name) {
-        mode = wfm_flower;
-    }
-};
-struct Waypoint_Brick : Waypoint {
-    Waypoint_Brick(cv::Point3f p, std::string wp_name) : Waypoint(p, 0, 0, 0, wp_name) {
-        mode = wfm_brick;
-    }
-};
 struct Waypoint_Stay : Waypoint {
     Waypoint_Stay(cv::Point3f p, std::string wp_name) : Waypoint(p, 0, 0, 0, wp_name) {
         mode = wfm_wp_stay;
@@ -121,7 +107,7 @@ public:
             if (waypoint_flight_modes_str[i] == sHelp)
                 return static_cast<waypoint_flight_modes>(i);
         }
-        throw MyExit("wrong waypoint_flight_mode: " + sHelp);
+        throw std::runtime_error("wrong waypoint_flight_mode: " + sHelp);
     };
 
     XML_Waypoint_Mode operator=(const waypoint_flight_modes value) {AssignValue(value); return *this;};
@@ -192,14 +178,6 @@ public:
                     Waypoint_Thrust_Calibration wp;
                     return wp;
                     break;
-            } case waypoint_flight_modes::wfm_brick: {
-                    Waypoint_Brick wp(cv::Point3f(x.value(), y.value(), z.value()), name.value());
-                    return wp;
-                    break;
-            } case waypoint_flight_modes::wfm_flower: {
-                    Waypoint_Flower wp(cv::Point3f(x.value(), y.value(), z.value()), name.value());
-                    return wp;
-                    break;
             } case waypoint_flight_modes::wfm_long_range: {
                     Waypoint_Long_Range wp(cv::Point3f(x.value(), y.value(), z.value()), name.value(), pitch_duration.value());
                     return wp;
@@ -244,17 +222,17 @@ public:
 
             if (!Serializable::fromXML(xmlData, this))
             {   // Deserialization not successful
-                throw MyExit("Cannot read: " + filepath);
+                throw std::runtime_error("Cannot read: " + filepath);
             }
             XML_FlightPlan tmp;
             auto v1 = getVersion();
             auto v2 = tmp.getVersion();
             if (v1 != v2) {
-                throw MyExit("XML version difference detected from " + filepath);
+                throw std::runtime_error("XML version difference detected from " + filepath);
             }
             infile.close();
         } else {
-            throw MyExit("File not found: " + filepath);
+            throw std::runtime_error("File not found: " + filepath);
         }
     }
 

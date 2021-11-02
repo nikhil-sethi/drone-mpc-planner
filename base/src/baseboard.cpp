@@ -5,8 +5,10 @@
 void Baseboard::init(bool replay_mode) {
     _replay_mode = replay_mode;
 
-    if (file_exist(disable_flag)) 
+    if (file_exist(disable_flag)) {
         _disabled = true;
+        _charging_state = state_init;
+    }
 
     if (!_replay_mode && !_disabled) {
 
@@ -47,6 +49,7 @@ void Baseboard::worker_receive() {
 
                 _uptime = static_cast<float>(pkg->up_duration) / 1000.f;
                 _charging_state = static_cast<ChargingState>(pkg->charging_state);
+                _bat_voltage = pkg->battery_volts;
             } else { // allign
                 std::cout << "Warning: realligning baseboard socket" << std::endl;
                 while (true) {

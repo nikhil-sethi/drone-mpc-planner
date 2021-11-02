@@ -39,11 +39,6 @@ void VisionData::init(Cam *cam) {
     cv::Mat element_mat = getStructuringElement(cv::MORPH_RECT, cv::Size(2 * dilation_size + 1, 2 * dilation_size + 1), cv::Point(dilation_size, dilation_size));
     element_mat.copyTo(dilate_element);
 
-    if (pparams.vision_tuning) {
-        namedWindow("Background", WINDOW_NORMAL);
-        createTrackbar("motion_update_iterator_max", "Background", &motion_update_iterator_max, 255);
-    }
-
     initialized = true;
 }
 
@@ -283,17 +278,17 @@ void VisionData::deserialize_settings() {
 
         if (!xmls::Serializable::fromXML(xmlData, &params))
         {   // Deserialization not successful
-            throw MyExit("Cannot read: " + settings_file);
+            throw std::runtime_error("Cannot read: " + settings_file);
         }
         VisionParameters tmp;
         auto v1 = params.getVersion();
         auto v2 = tmp.getVersion();
         if (v1 != v2) {
-            throw MyExit("XML version difference detected from " + settings_file);
+            throw std::runtime_error("XML version difference detected from " + settings_file);
         }
         infile.close();
     } else {
-        throw MyExit("File not found: " + settings_file);
+        throw std::runtime_error("File not found: " + settings_file);
     }
 
     motion_update_iterator_max = params.motion_update_iterator_max.value();
@@ -314,8 +309,6 @@ void VisionData::serialize_settings() {
 void VisionData::close() {
     if (initialized) {
         std::cout << "Closing visdat" << std::endl;
-        if (pparams.vision_tuning)
-            serialize_settings();
         initialized = false;
     }
 }

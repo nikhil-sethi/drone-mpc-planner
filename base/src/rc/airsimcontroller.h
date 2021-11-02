@@ -5,7 +5,7 @@
 #include "rc.h"
 #include "airsim.h"
 
-class AirSimController : public Rc {
+class AirSimController : public RC {
 private:
     AirSim sim;
     int airsim_arm_state = bf_disarmed;

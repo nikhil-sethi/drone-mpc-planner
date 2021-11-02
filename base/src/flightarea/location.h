@@ -20,7 +20,7 @@ public:
             if (plane_types_str[i] == sHelp)
                 return static_cast<plane_types>(i);
         }
-        throw MyExit("wrong plane type: " + sHelp);
+        throw std::runtime_error("wrong plane type: " + sHelp);
     };
 
     XML_Plane_Type operator=(const plane_types value) {AssignValue(value); return *this;};
@@ -184,17 +184,17 @@ public:
 
             if (!Serializable::fromXML(xmlData, this))
             {   // Deserialization not successful
-                throw MyExit("Cannot read: " + filepath);
+                throw std::runtime_error("Cannot read: " + filepath);
             }
             XML_Location tmp;
             auto v1 = getVersion();
             auto v2 = tmp.getVersion();
             if (v1 != v2) {
-                throw MyExit("XML version difference detected from " + filepath);
+                throw std::runtime_error("XML version difference detected from " + filepath);
             }
             infile.close();
         } else {
-            throw MyExit("File not found: " + filepath);
+            throw std::runtime_error("File not found: " + filepath);
         }
     }
 

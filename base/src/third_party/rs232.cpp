@@ -71,7 +71,8 @@ int calc_baud(int baudrate) {
 int RS232_OpenComport(int baudrate, const char *dev) {
     Cport = open(dev, O_RDWR | O_NOCTTY | O_NDELAY);
     if (Cport == -1) {
-        perror("unable to open comport ");
+        std::string bla = "Unable to open comport " + std::string(dev);
+        perror(bla.c_str());
         return (1);
     }
     int baudr, status;
@@ -81,7 +82,7 @@ int RS232_OpenComport(int baudrate, const char *dev) {
     if (error == -1)
     {
         close(Cport);
-        perror("unable to read portsettings ");
+        perror("unable to read portsettings");
         return (1);
     }
     memset(&new_port_settings, 0, sizeof(new_port_settings));  /* clear the new struct */
@@ -96,7 +97,7 @@ int RS232_OpenComport(int baudrate, const char *dev) {
     if (error == -1)
     {
         close(Cport);
-        perror("unable to adjust portsettings ");
+        perror("unable to adjust portsettings");
         return (1);
     }
 

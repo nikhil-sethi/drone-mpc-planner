@@ -6,9 +6,9 @@
       ansible.builtin.file:
         path: ~/pats/flags/disable
         state: touch
-    - name: Kill (auto restart) pats process
-      shell: "killall pats || true"
-    - name: Kill (auto restart) pats daemon
+    - name: Kill (auto restart) executor process
+      shell: "killall executor || true"
+    - name: Kill (auto restart) daemon
       shell: "kill $(pgrep -f daemon.py)"
       failed_when: false
       ignore_errors: yes

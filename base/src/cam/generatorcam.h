@@ -10,7 +10,7 @@ private:
     unsigned long long _frame_number = 0;
     double _frame_time = 0;
 
-    Rc *_rc;
+    RC *_rc;
     cv::Point3f drone_start_pos;
     cv::Mat Qfi;
     void calibration();
@@ -36,7 +36,7 @@ public:
     float generated_im_size = 0;
 
     void init();
-    void rc(Rc *rc) {_rc = rc;}
+    void rc(RC *rc) {_rc = rc;}
     void close();
     StereoPair *update();
 };

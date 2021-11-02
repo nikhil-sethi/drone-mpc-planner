@@ -9,7 +9,7 @@
 using namespace eprosima;
 using namespace eprosima::fastrtps;
 
-bool Visualizer3D::init(tracking::TrackerManager *trackers, CameraView *cam_volume, DroneController *dctrl, navigation::DroneNavigation *dnav)
+bool Visualizer3D::init(Patser *patser)
 {
     bool init_success = true;
 

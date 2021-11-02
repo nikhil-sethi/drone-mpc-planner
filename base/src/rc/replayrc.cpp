@@ -1,13 +1,13 @@
 #include "replayrc.h"
 
-void ReplayRc::init(int __attribute__((unused))) {
+void ReplayRC::init(int __attribute__((unused))) {
     logger_rfn = _replay_dir  + "/log_telem.txt";
     infile = ifstream(logger_rfn);
     getline(infile, next_line);
     initialized = true;
 }
 
-void ReplayRc::init_logger() {
+void ReplayRC::init_logger() {
     logger_initialized = true;
 }
 
@@ -21,7 +21,7 @@ std::tuple<double, std::string, std::string>  split_telem_line(std::string line)
     return std::make_tuple(INFINITY, "", "");
 }
 
-void ReplayRc::telemetry_from_log(double time) {
+void ReplayRC::telemetry_from_log(double time) {
     auto [log_time, id_str, val_str] = split_telem_line(next_line);
     while (log_time < time) {
         if (!strcmp(id_str.c_str(), "FSSP_DATAID_ROLL")) {
@@ -53,6 +53,6 @@ void ReplayRc::telemetry_from_log(double time) {
     }
 }
 
-void ReplayRc::close() {
+void ReplayRC::close() {
     initialized = false;
 }

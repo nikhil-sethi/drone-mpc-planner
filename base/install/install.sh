@@ -279,6 +279,7 @@ fi
 
 if [[ $1 -eq 1 ]] ; then
 
+	mkdir -p ~/pats/xml
 	mkdir -p ~/pats/data
 	mkdir -p ~/pats/jsons
 	mkdir -p ~/pats/renders

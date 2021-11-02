@@ -13,7 +13,7 @@
 #include "stopwatch.h"
 #include "rc.h"
 
-class MultiModule : public Rc {
+class MultiModule : public RC {
 
 public:
     void init(int drone_id);

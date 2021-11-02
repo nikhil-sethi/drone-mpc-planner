@@ -16,23 +16,20 @@
 class Interceptor;
 namespace tracking {
 
-static const char *trackermanager_mode_names[] = {"tm_idle",
-                                                  "tm_locate_drone",
-                                                  "tm_wait_for_insect",
-                                                  "tm_drone_only",
-                                                  "tm_hunt",
-                                                  "tm_hunt_replay_moth"
+static const char *trackermanager_mode_names[] = {"t_idle",
+                                                  "t_locate_drone",
+                                                  "t_c",
+                                                  "t_x"
                                                  };
 
 class TrackerManager {
 
 public:
     enum detection_mode {
-        mode_idle,
-        mode_locate_drone,
-        mode_wait_for_insect,
-        mode_drone_only,
-        mode_hunt
+        t_idle,
+        t_locate_drone,
+        t_c,
+        t_x
     };
 
 private:
@@ -130,7 +127,7 @@ private:
     const string false_positive_fn = "false_positives.csv";
 
     bool initialized = false;
-    detection_mode _mode = mode_idle;
+    detection_mode _mode = t_idle;
     std::string replay_dir;
 
     std::ofstream *_logger;
@@ -142,15 +139,11 @@ private:
     std::vector<tracking::BlobProps> _blobs;
 
     std::vector<ItemTracker *> _trackers;
-    DroneTracker *_dtrkr;
-    std::vector<BlinkTracker *> blinktrackers();
-    std::vector<InsectTracker *> insecttrackers();
-    std::vector<ReplayTracker *> replaytrackers();
-    std::vector<VirtualMothTracker *> virtualmothtrackers();
     std::vector<logging::InsectReader> replay_logs;
 
     uint16_t next_insecttrkr_id = 1;
     uint16_t next_blinktrkr_id = 1;
+    std::vector<cv::Point3f> _detected_pad_locations;
 
     cv::Mat diff_viz;
     bool _enable_viz_blob = false;
@@ -170,11 +163,11 @@ private:
 
     int max_points_per_frame;
     int default_roi_radius = 15; //this is the expected im size of the drone at the charging pad
-    int motion_thresh;
+    int _motion_thresh;
     const float chance_multiplier_pixel_max = 0.5f;
     const float chance_multiplier_dist = 3;
 
-    void update_trackers(double time, long long frame_number, bool drone_is_active);
+    void update_trackers(double time, long long frame_number);
     void find_blobs();
     void collect_static_ignores();
     void collect_static_ignores(ItemTracker *trkr);
@@ -182,16 +175,16 @@ private:
     void flag_used_static_ignores(std::vector<ProcessedBlob> *pbs);
     void prep_blobs(std::vector<ProcessedBlob> *pbs, double time);
     void erase_dissipated_fps(double time);
-    void match_existing_trackers(std::vector<ProcessedBlob> *pbs, bool drone_is_active, double time);
-    void rematch_drone_tracker(std::vector<ProcessedBlob> *pbs, bool drone_is_active, double time);
+    void match_existing_trackers(std::vector<ProcessedBlob> *pbs, double time);
+    void rematch_drone_tracker(std::vector<ProcessedBlob> *pbs,  double time);
     void rematch_blink_tracker(std::vector<ProcessedBlob> *pbs, double time);
     void create_new_insect_trackers(std::vector<ProcessedBlob> *pbs, double time);
     void create_new_blink_trackers(std::vector<ProcessedBlob> *pbs, double time);
-    void match_blobs_to_trackers(bool drone_is_active, double time);
-    std::tuple<float, bool, float> tune_detection_radius(cv::Point maxt);
+    void match_blobs_to_trackers(double time);
+    // std::tuple<float, bool, float> tune_detection_radius(cv::Point maxt);
     void floodfind_and_remove(cv::Point maxt, uint8_t max, uint8_t motion_noise, cv::Mat diff, cv::Mat motion_filtered_noise_mapL);
 
-    bool tracker_active(ItemTracker *trkr, bool drone_is_active);
+    bool tracker_active(ItemTracker *trkr);
 
     void prep_vizs();
     void draw_motion_viz(std::vector<ProcessedBlob> *pbs, double time);
@@ -210,8 +203,14 @@ private:
 
 public:
     cv::Mat viz_max_points, diff_viz_buf, viz_trkrs_buf;
+    std::vector<BlinkTracker *> blinktrackers();
+    std::vector<DroneTracker *> dronetrackers();
+    std::vector<InsectTracker *> insecttrackers();
+    std::vector<ReplayTracker *> replaytrackers();
+    std::vector<VirtualMothTracker *> virtualmothtrackers();
 
-    void init(ofstream *logger, string replay_dir, VisionData *visdat, Interceptor *iceptor);
+
+    void init(ofstream *logger, string replay_dir, VisionData *visdat, Interceptor *interceptor);
 
     void init_replay_moth(std::string file) {
         ReplayTracker *rt;
@@ -261,13 +260,13 @@ public:
         _trackers.push_back(vt);
         next_insecttrkr_id++;
     }
-    void update(double time, bool drone_is_active);
+    void update(double time);
     void close();
 
     void mode(detection_mode m) {_mode = m;}
     detection_mode mode()  {return _mode;}
     std::string mode_str() {
-        if (_mode == mode_locate_drone) {
+        if (_mode == t_locate_drone) {
             int best_state = 0;
             for (auto trkr : _trackers)   {
                 if (trkr->type() == tt_blink)   {
@@ -293,7 +292,16 @@ public:
 
     std::tuple<bool, BlinkTracker *> blinktracker_best();
     std::vector<ItemTracker *>all_target_trackers();
-    DroneTracker *dronetracker() { return _dtrkr; }
+    void start_drone_tracking(DroneTracker *dtrk);
+    void stop_drone_tracking(DroneTracker *dtrk);
+
+    std::string drone_tracking_state() {
+        auto drones = dronetrackers();
+        if (drones.size())
+            return drones.at(0)->drone_tracking_state();
+        else
+            return "dts_inactive";
+    }
     float tracking_anything_duration(double time) {
         for (auto trkr : _trackers) {
             if (trkr->n_frames_tracking() > 0)
@@ -302,6 +310,9 @@ public:
         time_since_tracking_nothing = time;
         return 0;
     }
+    int motion_thresh() {return _motion_thresh;}
+
+    std::vector<cv::Point3f> detected_pad_locations() {return _detected_pad_locations;}
 
     void enable_draw_stereo_viz() {
         _enable_draw_stereo_viz = true;

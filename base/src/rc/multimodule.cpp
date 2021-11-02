@@ -50,8 +50,12 @@ bool MultiModule::connect() {
             notconnected = RS232_OpenComport(115200, "/dev/pats_mm0");
             if (notconnected)
                 notconnected = RS232_OpenComport(115200, "/dev/pats_mm1");
+
+            if (notconnected)
+                std::cout << "Could not open multimodule port."  << std::endl;
+            else
+                std::cout << "Opened multimodule port."  << std::endl;
         }
-        std::cout << "Opened multimodule port: " << notconnected << std::endl;
     }
     return !notconnected;
 }
@@ -65,8 +69,8 @@ void MultiModule::init(int drone_id) {
 
     if (!notconnected) {
         send_init_package_now = true;
-        send_thread_mm = std::thread(&MultiModule::send_thread, this);
         receive_thread_mm = std::thread(&MultiModule::receive_thread, this);
+        send_thread_mm = std::thread(&MultiModule::send_thread, this);
         initialized = true;
     }
 }
@@ -100,6 +104,7 @@ void MultiModule::zerothrottle() {
 }
 
 void MultiModule::send_thread(void) {
+    usleep(100);
     std::cout << "Multimodule send thread ready!" << std::endl;
     g_sendData.lock();
     g_sendData.lock(); // wait for first frame to arrive to prevent triggering a wdt in the MM
@@ -122,7 +127,6 @@ void MultiModule::receive_thread(void) {
         usleep(100);
     }
 }
-
 
 void MultiModule::watchdog_pats_init_package() {
     if (init_package_nOK_cnt) {
@@ -321,16 +325,19 @@ void MultiModule::process_pats_init_packages(std::string bufs) {
         auto found_id_received = bufs.rfind(id_received);
         str_length = found_id_received + id_received.length();
         if (found_id_received != std::string::npos && str_length < bufs.size()) {
-            send_init_package_now = false;
+
 
             std::cout << "Multimodule received init package!" << std::endl;
-            init_package_nOK_cnt = 0;
+
             if (!mm_version_check_OK) {
                 std::cout << "MultiProtocol version was not received." << std::endl;
                 std::cout << "We did receive:\n" << bufs << std::endl;
-                std::cout << "However, I didn't really like that. So BYE!:\n" << bufs << std::endl;
-                exit(1);
+                std::cout << "However, I didn't really like that. So retry!:\n" << std::endl;
+                return;
             }
+
+            send_init_package_now = false;
+            init_package_nOK_cnt = 0;
 
             //below checks for the error message the MM gives if it is (already) waiting for the init package, but receives wrong bytes.
             const std::string i_want_66 = "I want 66";
@@ -383,6 +390,7 @@ bool MultiModule::receive_telemetry(std::string buffer) {
                     //rx rssi is the only one we really want to know:
                     int tmp_rssi = std::stoi(arr.at(1));
                     telemetry.rssi = tmp_rssi;
+                    telemetry.rssi_last_received = _time;
                     if (logger_initialized)
                         telem_logger << _time << ";FSSP_DATAID_RSSI;" << static_cast<int>(telemetry.rssi) << "\n";
                     break;
@@ -395,9 +403,9 @@ bool MultiModule::receive_telemetry(std::string buffer) {
                         if (telemetry.bf_major != required_version_bf_major || telemetry.bf_minor != required_version_bf_minor || telemetry.bf_patch != required_version_bf_patch) {
                             std::cout << "Wrong betaflight version detected: " << telemetry.bf_major << "." << telemetry.bf_minor << "." << telemetry.bf_patch <<
                                       ", required: " << required_version_bf_major << "." << required_version_bf_minor << "." << required_version_bf_patch << std::endl;
-                            _bf_version_error += 1;
+                            _bf_version_error++;
                         } else {
-                            _bf_version_error = -1 ;
+                            _bf_version_error--;
                             std::cout << "Determined bf version: " << telemetry.bf_major << "." << telemetry.bf_minor << "." << telemetry.bf_patch << std::endl;
                         }
                         if (logger_initialized)
@@ -413,9 +421,9 @@ bool MultiModule::receive_telemetry(std::string buffer) {
                             if (!utf8_check_is_valid(telemetry.bf_uid_str))
                                 telemetry.bf_uid_str = "????";
                             std::cout << "Wrong drone uid detected: " + telemetry.bf_uid_str + ", required: " + dparams.name + "." << std::endl;
-                            _bf_uid_error += 1;
+                            _bf_uid_error++;
                         } else {
-                            _bf_uid_error = -1;
+                            _bf_uid_error--;
                             std::cout << "Determined bf drone name: " << telemetry.bf_uid_str << std::endl;
 
                         }
@@ -501,6 +509,7 @@ bool MultiModule::receive_telemetry(std::string buffer) {
 void MultiModule::close() {
     if (initialized) {
         std::cout << "Closing multimodule" << std::endl;
+        beep(false);
         exitSendThread = true;
         g_sendData.unlock();
         g_lockData.unlock();

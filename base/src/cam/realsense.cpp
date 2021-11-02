@@ -131,7 +131,7 @@ void Realsense::rs_callback(rs2::frame f) {
             if (_frame_time_start < 0)
                 _frame_time_start = rs_frameL_cbtmp.get_timestamp() / 1.e3;
 
-            static int buf_overflow_count = 0;
+            static int buf_overflow_count [[maybe_unused]] = 0;
             if (buf.size() < 5) {
                 RSStereoPair *rsp = new RSStereoPair(rs_frameL_cbtmp, rs_frameR_cbtmp);
                 cv::Mat frameL = Mat(Size(IMG_W, IMG_H), CV_8UC1, const_cast<void *>(rs_frameL_cbtmp.get_data()), Mat::AUTO_STEP);
@@ -141,14 +141,14 @@ void Realsense::rs_callback(rs2::frame f) {
                 buf.insert(std::pair(rs_frameL_cbtmp.get_frame_number(), sp));
                 buf_overflow_count = 0;
             } else if (last_sync_id > pparams.fps * 2) {
-                buf_overflow_count++;
-                std::cout << "BUF OVERFLOW, SKIPPING A FRAME: " << buf_overflow_count << std::endl;
-                if (buf_overflow_count > 5 * static_cast<int>(pparams.fps)) {
-                    set_realsense_buf_overflow_flag();
-                    std::cout << "Realsense issue!" << std::endl;
-                    exit(1);
-                    throw std::runtime_error("Realsense issue!");
-                }
+                // buf_overflow_count++;
+                // std::cout << "BUF OVERFLOW, SKIPPING A FRAME: " << buf_overflow_count << std::endl;
+                // if (buf_overflow_count > 5 * static_cast<int>(pparams.fps)) {
+                //     set_realsense_buf_overflow_flag();
+                //     std::cout << "Realsense issue!" << std::endl;
+                //     exit(1);
+                //     throw std::runtime_error("Realsense issue!");
+                // }
             }
 
             {   // signal to processor that a new frame is ready to be processed
@@ -222,7 +222,7 @@ void Realsense::connect_and_check(string ser_nr, int id) {
     if (devices.size() == 0) {
         throw NoRealsenseConnected();
     } else if (devices.size() > 1 && !ser_nr.compare("")) {
-        throw MyExit("more than one RealSense connected....");
+        throw std::runtime_error("more than one RealSense connected....");
     } else if (ser_nr == "") {
         dev = devices[0];
     } else {
@@ -238,7 +238,7 @@ void Realsense::connect_and_check(string ser_nr, int id) {
             }
         }
         if (!found)
-            throw MyExit("Could not find RealSense with sn: " + ser_nr);
+            throw std::runtime_error("Could not find RealSense with sn: " + ser_nr);
     }
 
     std::string name = "Unknown Device";
@@ -250,7 +250,7 @@ void Realsense::connect_and_check(string ser_nr, int id) {
         serial_nr_str = std::string("#") + dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
         serial_nr = string(dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER));
     } else
-        throw MyExit("device does not support serial number?!");
+        throw std::runtime_error("device does not support serial number?!");
 
     std::size_t found = name.find("D455");
     isD455 = found != std::string::npos;
@@ -267,7 +267,7 @@ void Realsense::connect_and_check(string ser_nr, int id) {
     if (current_firmware_version != required_firmware1_version_realsense && current_firmware_version != required_firmware2_version_realsense) {
         std::stringstream serr;
         serr << "detected wrong RealSense firmware version! Detected: " << current_firmware_version << ". Required: "  << required_firmware1_version_realsense << " or " << required_firmware2_version_realsense << ".";
-        throw MyExit(serr.str());
+        throw std::runtime_error(serr.str());
     }
     dev_initialized = true;
 }
@@ -292,11 +292,11 @@ void Realsense::init_real() {
     if (rs_depth_sensor.supports(RS2_OPTION_EMITTER_ENABLED))
         rs_depth_sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 0.f);
     else
-        throw MyExit("No laser emmitter option?!");
+        throw std::runtime_error("No laser emmitter option?!");
     if (rs_depth_sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
         rs_depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1.0);
     else
-        throw MyExit("No auto exposure option?!");
+        throw std::runtime_error("No auto exposure option?!");
 
     std::vector<rs2::stream_profile> stream_profiles = rs_depth_sensor.get_stream_profiles();
     rs2::stream_profile infrared1, infrared2;
@@ -325,9 +325,6 @@ void Realsense::init_real() {
     camparams.serialize(calib_wfn);
     convert_depth_background_to_world();
 
-    if (pparams.video_raw == video_bag)
-        dev = rs2::recorder(bag_fn, dev);
-
     rs_depth_sensor.open({infrared1, infrared2});
     rs_depth_sensor.start([&](rs2::frame f) { rs_callback(f); });
     update_real();
@@ -344,7 +341,7 @@ std::tuple<float, float, cv::Mat, cv::Mat, cv::Mat, float> Realsense::measure_au
         if (devices.size() == 0) {
             throw NoRealsenseConnected();
         } else if (devices.size() > 1) {
-            throw MyExit("more than one RealSense connected....");
+            throw std::runtime_error("more than one RealSense connected....");
         } else {
             dev = devices[0];
             dev_initialized = true;
@@ -429,7 +426,7 @@ std::tuple<float, float, double, cv::Mat> Realsense::measure_angle() {
         if (devices.size() == 0) {
             throw NoRealsenseConnected();
         } else if (devices.size() > 1) {
-            throw MyExit("more than one RealSense connected....");
+            throw std::runtime_error("more than one RealSense connected....");
         } else {
             dev = devices[0];
             dev_initialized = true;
@@ -500,7 +497,7 @@ void Realsense::calib_depth_background() {
     {
         rs_depth_sensor.set_option(RS2_OPTION_VISUAL_PRESET, RS2_RS400_VISUAL_PRESET_HIGH_ACCURACY);
     } else {
-        throw MyExit("This is not a depth sensor");
+        throw std::runtime_error("This is not a depth sensor");
     }
 
     rs2::config cfg;

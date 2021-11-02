@@ -1,27 +1,3 @@
 <SerializableClass Type="ControlParameters" Version="1.4">
-    <Member Name="kp_pos_roll">1090</Member>
-    <Member Name="kp_pos_pitch">1090</Member>
-    <Member Name="kp_pos_throttle">1345</Member>
-    <Member Name="ki_pos_roll">20</Member>
-    <Member Name="ki_pos_pitch">20</Member>
-    <Member Name="ki_thrust">100</Member>
-    <Member Name="kd_pos_roll">440</Member>
-    <Member Name="kd_pos_pitch">600</Member>
-    <Member Name="kd_pos_throttle">900</Member>
-    <Member Name="kp_pos_roll_hover">840</Member>
-    <Member Name="kp_pos_pitch_hover">925</Member>
-    <Member Name="kp_pos_throttle_hover">1345</Member>
-    <Member Name="ki_pos_roll_hover">20</Member>
-    <Member Name="ki_pos_pitch_hover">20</Member>
-    <Member Name="ki_thrust_hover">100</Member>
-    <Member Name="kd_pos_roll_hover">430</Member>
-    <Member Name="kd_pos_pitch_hover">430</Member>
-    <Member Name="kd_pos_throttle_hover">850</Member>
-    <Member Name="kp_v_roll">0</Member>
-    <Member Name="kp_v_pitch">0</Member>
-    <Member Name="kp_v_throttle">0</Member>
-    <Member Name="kd_v_roll">0</Member>
-    <Member Name="kd_v_pitch">0</Member>
-    <Member Name="kd_v_throttle">0</Member>
-</SerializableClass>
 
+</SerializableClass>

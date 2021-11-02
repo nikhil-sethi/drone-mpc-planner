@@ -17,35 +17,13 @@ def render_last_day(data_dir=lb.data_dir, abort_deadline=datetime.strptime('3000
     render(yesterday, now, data_dir, abort_deadline)
 
 
-def check_if_hunt_mode(pats_xml_path):
-    with open(pats_xml_path, "r", encoding="utf-8") as pats_xml:
-        xml_lines = pats_xml.readlines()
-        for line in xml_lines:
-            if line.find('op_mode_hunt') != -1 or line.find('op_mode_deploy') != -1:
-                return True
-    return False
-
-
-def read_results_txt(results_txt_path):
-    n_hunts = 0
-    n_takeoffs = 0
-    with open(results_txt_path, "r", encoding="utf-8") as results_txt:
-        results_lines = results_txt.readlines()
-        for line in results_lines:
-            if line.find('n_hunts') != -1:
-                n_hunts = int(line.split(':')[1])
-            if line.find('n_takeoffs') != -1:
-                n_takeoffs = int(line.split(':')[1])
-    return n_hunts, n_takeoffs
-
-
 def check_for_hunt_render(pats_xml_path, results_txt_path, target_path):
     if not os.path.exists(target_path):
         hunt_mode = False
         n_hunts = 0
         n_takeoffs = 0
-        hunt_mode = check_if_hunt_mode(pats_xml_path)
-        n_hunts, n_takeoffs = read_results_txt(results_txt_path)
+        hunt_mode = lb.check_if_hunt_mode(pats_xml_path)
+        n_hunts, n_takeoffs = lb.read_results_txt(results_txt_path)
         if hunt_mode and n_hunts > 0 and n_takeoffs > 0:
             return True
     else:
@@ -107,7 +85,7 @@ def render(start_datetime, end_datetime, data_folder, abort_deadline=datetime.st
     if os.path.exists(render_process_dir):
         shutil.rmtree(render_process_dir)
     shutil.copytree(original_process_dir, render_process_dir, ignore=shutil.ignore_patterns('*logging*'))
-    shutil.move(render_process_dir + '/pats', render_process_dir + '/pats_render')
+    shutil.move(render_process_dir + '/executor', render_process_dir + '/executor_render')
 
     for detection in hunt_detections:
         if datetime.now() > abort_deadline:
@@ -115,7 +93,7 @@ def render(start_datetime, end_datetime, data_folder, abort_deadline=datetime.st
             return
 
         logger.info("Rendering hunt " + detection['folder'])
-        cmd = './pats_render --log ' + detection['folder'] + '/logging --render'
+        cmd = './executor_render --log ' + detection['folder'] + '/logging --render'
         lb.execute(cmd, logger_name='render', render_process_dir=render_process_dir)
         video_result_path = Path(render_process_dir, 'logging/replay/videoResult.mkv')
         if os.path.exists(video_result_path):
@@ -133,7 +111,7 @@ def render(start_datetime, end_datetime, data_folder, abort_deadline=datetime.st
 
         render_cnt += 1
         logger.info(str(render_cnt) + ' / ' + str(len(monitor_detections)) + '. Rendering ' + detection['video_src_path'] + '.')
-        cmd = './pats_render --log ' + detection['folder'] + '/logging --monitor-render ' + detection['video_src_path'] + ' 2>&1 | /usr/bin/tee ' + detection['log_target_path']
+        cmd = './executor_render --log ' + detection['folder'] + '/logging --monitor-render ' + detection['video_src_path'] + ' 2>&1 | /usr/bin/tee ' + detection['log_target_path']
         render_ok = False
         video_src_path = detection['video_src_path']
         video_target_path = detection['video_target_path']

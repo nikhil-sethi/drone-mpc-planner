@@ -1,26 +1,26 @@
 <SerializableClass Type="PatsParameters" Version="1.15">
     <Member Name="wdt_timeout_us">500000</Member>
-    <Member Name="exposure_threshold">5000</Member>
+    <Member Name="exposure_threshold">0</Member>
     <Member Name="gain_threshold">16</Member>
-    <Member Name="brightness_threshold">90</Member>
-    <Member Name="has_screen">false</Member>
-    <Member Name="close_after_n_images">324000</Member>
+    <Member Name="brightness_threshold">255</Member>
+    <Member Name="close_after_n_images">-1</Member>
     <Member Name="plukker_start">disabled</Member>
     <Member Name="min_hunt_size">0.01</Member>
     <Member Name="max_hunt_size">0.05</Member>
-    <Member Name="op_mode">op_mode_c</Member>
-    <Member Name="watchdog">true</Member>
+    <Member Name="has_screen">true</Member>
+    <Member Name="op_mode">op_mode_x</Member>
+    <Member Name="watchdog">false</Member>
     <Member Name="fps">90</Member>
     <Member Name="video_raw">video_file</Member>
     <Member Name="video_result">video_disabled</Member>
     <Member Name="joystick">rc_none</Member>
-    <Member Name="drone">drone_anvil_superbee</Member>
+    <Member Name="drone">drone_anvil_diamond</Member>
     <Member Name="imscalef">2</Member>
-    <Member Name="location">openspace</Member>
-    <Member Name="flightplan">../xml/flightplans/simple-demo-koppert.xml</Member>
+    <Member Name="location">test-room</Member>
+    <Member Name="flightplan">../xml/flightplans/simple-demo-darkroom.xml</Member>
     <Member Name="flightplan_calib_thrust">../xml/flightplans/thrust-calib.xml</Member>
-    <Member Name="live_image_frq">30</Member>
-    <Member Name="max_cam_roll">30</Member>
+    <Member Name="live_image_frq">0</Member>
+    <Member Name="max_cam_roll">50</Member>
     <Member Name="n_cams">1</Member>
     <Member Name="long_range_mode">false</Member>
 </SerializableClass>

@@ -352,16 +352,6 @@ class SystemWidget(QWidget):
                         line = '    <Member Name=\"op_mode\">op_mode_waypoint</Member>\n'
                     elif self.combo_mode.currentText() == "Monitoring":
                         line = '    <Member Name=\"op_mode\">op_mode_monitoring</Member>\n'
-                elif line.find('\"live_image_frq\"') != -1:
-                    if self.combo_mode.currentText() == "Hunt" or self.combo_mode.currentText() == "Waypoint":
-                        line = '    <Member Name=\"live_image_frq\">1</Member>\n'
-                    else:
-                        line = '    <Member Name=\"live_image_frq\">30</Member>\n'
-                elif line.find('\"close_after_n_images\"') != -1:
-                    if self.combo_mode.currentText() == "Hunt" or self.combo_mode.currentText() == "Waypoint":
-                        line = '    <Member Name=\"close_after_n_images\">5400</Member>\n'
-                    else:
-                        line = '    <Member Name=\"close_after_n_images\">324000</Member>\n'
                 elif line.find('\"sub_mode\"') != -1:
                     line = '    <Member Name="sub_mode">' + self.combo_sub_mode.currentText() + '</Member>\n'
 

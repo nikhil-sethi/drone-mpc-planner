@@ -6,24 +6,36 @@
 #include "versions.h"
 #include "common.h"
 
-
+static const char *charging_state_names[] = {
+    "disabled",
+    "init",
+    "drone_not_on_pad",
+    "contact_problem",
+    "bat_dead",
+    "bat_does_not_charge",
+    "revive_charging",
+    "charging",
+    "trickle",
+    "discharge",
+    "bat_measure",
+    "bat_calibrating"
+};
+//copy from charging.h Arduino code
+enum ChargingState {
+    state_disabled,
+    state_init,
+    state_drone_not_on_pad,
+    state_contact_problem,
+    state_bat_dead,
+    state_bat_does_not_charge,
+    state_revive_charging,
+    state_normal_charging,
+    state_trickle_charging,
+    state_discharge,
+    state_measure,
+    state_calibrating
+};
 class Baseboard {
-public:
-    //copy from charging.h Arduino code
-    enum ChargingState {
-        state_disabled,
-        state_init,
-        state_drone_not_on_pad,
-        state_contact_problem,
-        state_bat_dead,
-        state_bat_does_not_charge,
-        state_revive_charging,
-        state_normal_charging,
-        state_trickle_charging,
-        state_discharge,
-        state_measure,
-        state_calibrating
-    };
 private:
     //copy from utility.h Arduino code
     struct __attribute__((packed)) SerialPackage {
@@ -59,6 +71,7 @@ private:
     sockaddr_un deamon_address;
 
     ChargingState _charging_state = state_drone_not_on_pad;
+    float _bat_voltage = -1;
     bool _charging = false;
     float _uptime = 0;
 
@@ -72,11 +85,19 @@ public:
 
     void update_from_log(int s) {_charging_state  = static_cast<ChargingState>(s);}
 
+    bool disabled() {return _disabled;}
+    bool battery_ready_for_flight() { return _charging_state == state_trickle_charging || (_charging_state == state_normal_charging && _bat_voltage >= dparams.min_hunt_cell_v);}
     bool charging() {return _charging_state == state_measure || _charging_state == state_normal_charging || _charging_state == state_trickle_charging || _charging_state == state_revive_charging;};
     bool contact_problem() {return _charging_state == state_contact_problem;}
     bool drone_on_pad() {return _charging_state != state_drone_not_on_pad;}
     bool charging_problem() {return _charging_state == state_bat_dead || _charging_state == state_bat_does_not_charge  || _charging_state == state_calibrating;};
     ChargingState charging_state() {return _charging_state;};
+    std::string charging_state_str() {
+        if (!_disabled)
+            return charging_state_names[_charging_state];
+        else
+            return "baseboard disabled";
+    }
     float uptime() { return _uptime;}
-
+    float drone_battery_voltage() { return _bat_voltage;}
 };

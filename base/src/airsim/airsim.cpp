@@ -34,7 +34,7 @@ cv::Mat AirSim::depth_background() {
         ImageResponse depthVis = response[0];
         return cv::Mat(depthVis.height, depthVis.width, CV_8UC1, depthVis.image_data_uint8.data()).clone();
     } else {
-        throw MyExit("could not get depth map");
+        throw std::runtime_error("could not get depth map");
     }
 }
 
@@ -81,7 +81,7 @@ StereoPair *AirSim::new_frame(double desired_frame_time) {
         frame_retrieve_errors++;
     } while (frame_retrieve_errors < 10);
 
-    throw MyExit("Could net get new frame after 10 tries");
+    throw std::runtime_error("Could net get new frame after 10 tries");
 }
 
 void AirSim::rc_data_valid(bool valid) {

@@ -1,0 +1,168 @@
+#pragma once
+#include "dronetracker.h"
+#include "dronecontroller.h"
+#include "navigation.h"
+#include "dronenavigation.h"
+#include "baseboard.h"
+#include "interceptor.h"
+
+static const char *drone_state_names[] = {
+    "pre_flight",
+    "charging",
+    "ready",
+    "flight",
+    "post_flight",
+    "charge_fail",
+    "lost",
+    "crashed",
+    "beep"
+};
+static const char *pre_flight_state_names[] = {
+    "init",
+    "locate",
+    "locating",
+    "locating...",
+    "calibrating",
+    "check_telem",
+    "check_pad",
+    "wait to arm",
+    "arming",
+    "locate_fail"
+};
+static const char *post_flight_state_names[] = {
+    "init",
+    "yaw",
+    "shake",
+    "shaking",
+    "shaked...",
+    "lost"
+};
+class Drone {
+public:
+    enum drone_states {
+        ds_pre_flight = 0,
+        ds_charging,
+        ds_ready,
+        ds_flight,
+        ds_post_flight,
+        ds_charging_failure,
+        ds_rc_loss,
+        ds_crashed,
+        ds_beep
+    };
+    enum pre_flight_states {
+        pre_init = 0,
+        pre_locate_drone_init,
+        pre_locate_drone_wait_led_on,
+        pre_locate_drone,
+        pre_calibrating_pad,
+        pre_check_telemetry,
+        pre_check_pad_att,
+        pre_wait_to_arm,
+        pre_arming,
+        pre_locate_time_out
+    };
+    enum post_flight_states {
+        post_init = 0,
+        post_reset_yaw_on_pad,
+        post_start_shaking,
+        post_shaking_drone,
+        post_wait_after_shake,
+        post_lost
+    };
+private:
+    Interceptor *_interceptor;
+    Baseboard *_baseboard;
+    VisionData *_visdat;
+    tracking::TrackerManager *_trackers;
+
+    bool initialized = false;
+    drone_states _state = ds_pre_flight;
+    pre_flight_states pre_flight_state = pre_init;
+    post_flight_states post_flight_state = post_init;
+    uint _rc_id = 0;
+    RC *_rc;
+
+    //pre flight
+    int n_locate_drone_attempts = 0;
+    bool force_pad_redetect = false;
+    double time_start_locating_drone = 0;
+    double time_start_locating_drone_attempt = 0;
+    double time_last_led_doubler = 0;
+    double time_located_drone = 0;
+    uint n_detected_pad_locations = 0;
+
+    // flight
+    bool trigger_waypoint_flight = false;
+    std::string flightplan_fn = "";
+    int _n_take_offs = 0;
+    int _n_landings = 0;
+    int _n_drone_detects = 0;
+    int _n_wp_flights = 0;
+    int _n_hunt_flights = 0;
+
+    //post flight:
+    const float duration_shake = 3;
+    const float duration_reset_yaw_on_pad = 1.5;
+    const float duration_wait_before_shake = 1;
+    double time_reset_yaw_on_pad = 0;
+    double time_start_shaking = 0;
+    double time_shake_start = 0;
+    int n_shakes_sessions_after_landing = 0;
+
+    std::ofstream *main_logger;
+    std::ofstream flight_logger;
+
+    void pre_flight(double time);
+    void post_flight(double time);
+    void take_off(bool hunt, double time);
+    void blink(double time);
+
+public:
+    DroneController control;
+    navigation::DroneNavigation nav;
+    tracking::DroneTracker tracker;
+
+    bool in_flight() {return _state == ds_flight;}
+
+    std::string drone_state_str() {
+        if (_state == ds_pre_flight)
+            return std::string(drone_state_names[_state]) + " " + std::string(pre_flight_state_names[pre_flight_state]);
+        else if (_state == ds_post_flight)
+            return std::string(drone_state_names[_state]) + " " + std::string(post_flight_state_names[post_flight_state]);
+        else if (_state == ds_flight)
+            return nav.navigation_status();
+        else
+            return std::string(drone_state_names[_state]);
+    }
+    drone_states state() { return _state;}
+    RC *rc() { return _rc;}
+    uint rc_id() { return _rc_id;}
+
+    void demo_flight(std::string fp) {
+        flightplan_fn = fp;
+        trigger_waypoint_flight = true;
+    }
+
+    int n_take_offs() {return _n_take_offs;}
+    int n_landings() {return _n_landings;}
+    int n_drone_detects() {return _n_drone_detects;}
+    int n_wp_flights() {return _n_wp_flights;}
+    int n_hunt_flights() {return _n_hunt_flights;}
+
+    void shake_drone() {_state = ds_post_flight;}
+    bool drone_flying() {return _state == ds_flight;}
+    bool drone_ready_and_waiting() {return _state == ds_ready;}
+    bool program_restart_allowed() {return _state != ds_flight && _state != ds_post_flight;}
+    void beep_drone() {_state = ds_beep;}
+    void redetect_drone_location() {
+        force_pad_redetect = true;
+        _state = ds_pre_flight;
+    }
+
+    void init(std::ofstream *logger, int rc_id, RC *rc, tracking::TrackerManager *trackers, VisionData *visdat, FlightArea *flight_area, Interceptor *interceptor, Baseboard *baseboard);
+    void update(double time);
+    void dummy_log() {(*main_logger) << "NA;";}
+    void close();
+
+};

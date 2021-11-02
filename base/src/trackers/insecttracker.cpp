@@ -108,7 +108,7 @@ tracking::false_positive_type InsectTracker::false_positive() {
 int terminate = 0;
 bool InsectTracker::go_for_terminate() {
     if (_world_item.valid && _world_item.radius * 2.f > pparams.min_hunt_size && _world_item.radius * 2.f < pparams.max_hunt_size) {
-        terminate += 1;
+        terminate++;
         return true;
     }
     return terminate > 10;

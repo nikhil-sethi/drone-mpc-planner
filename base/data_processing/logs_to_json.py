@@ -55,7 +55,7 @@ def measured_exposure(terminal_log_path):
 
 
 def process_wait_for_dark_status(folder):
-    terminal_log_path = Path(folder, 'terminal.log')
+    terminal_log_path = Path(folder, 'logging', 'terminal.log')
     if os.path.exists(terminal_log_path):
         exposure_valid, daylight_start, daylight_end = measured_exposure(terminal_log_path)
         if exposure_valid:
@@ -72,7 +72,7 @@ def process_system_status_in_folder(folder):
     logging.getLogger('logs_to_json').info('Processing status...')
     pats_xml_mode = ''
     pats_xml_path = Path(folder, 'logging', 'pats.xml')
-    terminal_log_path = Path(folder, 'terminal.log')
+    terminal_log_path = Path(folder, 'logging', 'terminal.log')
     if not os.path.exists(terminal_log_path):
         return ([], 'Error: terminal log do not exist', '')
 

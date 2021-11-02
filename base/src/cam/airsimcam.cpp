@@ -17,7 +17,7 @@ void AirSimCam::init()
     if (file_exist(calib_airsim_cam))
         camparams.deserialize(calib_airsim_cam);
     else
-        throw MyExit("cannot find " + calib_airsim_cam);
+        throw std::runtime_error("cannot find " + calib_airsim_cam);
     calibration();
 
     // request a depth image which we then apply as depth_background

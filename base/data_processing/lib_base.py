@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 import subprocess
 import re
 import sys
@@ -13,7 +14,7 @@ socket_dir = os.path.expanduser('~/pats/sockets/')
 data_dir = os.path.expanduser('~/pats/data/')
 json_dir = os.path.expanduser('~/pats/jsons/')
 renders_dir = os.path.expanduser('~/pats/renders/')
-pats_executable_dir = os.path.expanduser('~/code/pats/base/build/logging/')
+executor_dir = os.path.expanduser('~/code/pats/base/build/logging/')
 
 daily_errs_log = log_dir + 'all_errors.log'
 term_log_path = log_dir + 'term.log'
@@ -27,7 +28,7 @@ disable_baseboard_flag = flags_dir + 'disable_baseboard'
 disable_charging_flag = flags_dir + 'disable_charging'
 disable_watchdog_flag = flags_dir + 'disable_watchdog'
 
-wdt_fired_flag = pats_executable_dir + 'wdt_fired'
+wdt_fired_flag = executor_dir + 'wdt_fired'
 
 socket_baseboard2pats = socket_dir + 'baseboard2pats.socket'
 socket_baseboard2daemon = socket_dir + 'baseboard2daemon.socket'
@@ -101,3 +102,43 @@ def block_if_disabled():
     while not os.path.exists(local_status_txt_file):
         print('Warning: ' + local_status_txt_file + ' does not exist')
         time.sleep(10)
+
+
+def system_was_monitoring_in_folder(folder):
+    pats_xml_path = Path(folder, 'logging', 'pats.xml')
+    if not os.path.exists(pats_xml_path):
+        print("Error: pats.xml not found in: " + folder)
+        return False
+    with open(pats_xml_path, "r", encoding="utf-8") as pats_xml:
+        xml_lines = pats_xml.readlines()
+        for line in xml_lines:
+            if line.find('op_mode') != -1:
+                if line.find('op_mode_monitoring') != -1:
+                    return True
+                else:
+                    print("Not a monitoring folder")
+                    return False
+    print("Error: op_mode not found in pats.xml not found in: " + folder)
+    return False
+
+
+def check_if_hunt_mode(pats_xml_path):
+    with open(pats_xml_path, "r", encoding="utf-8") as pats_xml:
+        xml_lines = pats_xml.readlines()
+        for line in xml_lines:
+            if line.find('op_mode_hunt') != -1 or line.find('op_mode_deploy') != -1:
+                return True
+    return False
+
+
+def read_results_txt(results_txt_path):
+    n_hunts = 0
+    n_takeoffs = 0
+    with open(results_txt_path, "r", encoding="utf-8") as results_txt:
+        results_lines = results_txt.readlines()
+        for line in results_lines:
+            if line.find('n_hunts') != -1:
+                n_hunts = int(line.split(':')[1])
+            if line.find('n_takeoffs') != -1:
+                n_takeoffs = int(line.split(':')[1])
+    return n_hunts, n_takeoffs

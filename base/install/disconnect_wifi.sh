@@ -10,7 +10,7 @@ killall ssh
 sudo nmcli c delete id "$1" &
 sleep 60
 set +e
-killall pats
+killall executor
 killall ssh
 sleep 2
 sudo rtcwake -m no -s 20

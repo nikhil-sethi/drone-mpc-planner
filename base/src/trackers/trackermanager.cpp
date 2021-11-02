@@ -5,11 +5,11 @@ using namespace std;
 
 namespace tracking {
 
-void TrackerManager::init(std::ofstream *logger, string replay_dir_, VisionData *visdat, Interceptor *iceptor) {
+void TrackerManager::init(std::ofstream *logger, string replay_dir_, VisionData *visdat, Interceptor *interceptor) {
     _visdat = visdat;
     _logger = logger;
 
-    _iceptor = iceptor;
+    _iceptor = interceptor;
     replay_dir = replay_dir_;
 
     if (pparams.has_screen || pparams.video_result) {
@@ -21,59 +21,29 @@ void TrackerManager::init(std::ofstream *logger, string replay_dir_, VisionData 
     deserialize_settings();
     read_false_positives();
 
-    _dtrkr = new DroneTracker();
-    _dtrkr->init(_logger, _visdat, motion_thresh, 1);
-    _trackers.push_back(_dtrkr);
-
     (*_logger) << "trkrs_state;n_trackers;n_blobs;monsters;";
-#ifdef PROLILING
-    (*_logger) << "dur1;dur2;dur3;dur4;dur5;";
-#endif
     initialized = true;
 }
 
-void TrackerManager::update(double time, bool drone_is_active) {
+void TrackerManager::start_drone_tracking(DroneTracker *dtrk) {
+    dtrk->init(_visdat, _motion_thresh, 1);
+    _trackers.push_back(dtrk);
+}
+void TrackerManager::stop_drone_tracking(DroneTracker *dtrk) {
+    _trackers.erase(std::remove_if(_trackers.begin(), _trackers.end(), [&](ItemTracker * trkr) {return (trkr->uid() == dtrk->uid());}));
+}
 
-#ifdef PROLILING
-    auto profile_t0 = std::chrono::high_resolution_clock::now();
-    auto dur1 = 0, dur2 = 0, dur3 = 0, dur4 = 0;
-#endif
+void TrackerManager::update(double time) {
     prep_vizs();
-
-#ifdef PROLILING
-    dur1 = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - profile_t0).count();
-#endif
-    if (_mode != mode_idle) {
+    if (_mode != t_idle) {
         find_blobs();
-#ifdef PROLILING
-        dur2 = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - profile_t0).count();
-#endif
         collect_static_ignores();
         erase_dissipated_fps(time);
-
-#ifdef PROLILING
-        dur3 = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - profile_t0).count();
-#endif
-        match_blobs_to_trackers(drone_is_active && !_dtrkr->inactive(), time);
-#ifdef PROLILING
-        dur4 = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - profile_t0).count();
-#endif
+        match_blobs_to_trackers(time);
     }
-
-    update_trackers(time, _visdat->frame_id, drone_is_active);
+    update_trackers(time, _visdat->frame_id);
     _monster_alert = time_since_monsters > 0 && time - time_since_monsters < 30;
-#ifdef PROLILING
-    auto dur5 = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - profile_t0).count();
-#endif
-
-    (*_logger) << static_cast<int16_t>(_mode) << ";" << _trackers.size() << ";" << _blobs.size() << ";" << time_since_monsters << ";";
-#ifdef PROLILING
-    (*_logger) << dur1 << ";"
-               << dur2 << ";"
-               << dur3 << ";"
-               << dur4 << ";"
-               << dur5 << ";";
-#endif
+    (*_logger) << trackermanager_mode_names[_mode] << ";" << _trackers.size() << ";" << _blobs.size() << ";" << time_since_monsters << ";";
     draw_trackers_viz();
     finish_vizs();
 }
@@ -112,6 +82,7 @@ void TrackerManager::find_blobs() {
     cv::Mat motion_filtered_noise_mapL = _visdat->motion_filtered_noise_mapL_small;
 
     auto insect_trackers = insecttrackers();
+    auto drone_trackers = dronetrackers();
     if (_iceptor->target_insecttracker()) {
         auto it = std::find(insect_trackers.begin(), insect_trackers.end(), _iceptor->target_insecttracker());
         if (it != insect_trackers.end())
@@ -119,29 +90,31 @@ void TrackerManager::find_blobs() {
     }
 
     auto roi_preselect_state = roi_state_drone;
-    if (_mode == mode_locate_drone)
+    if (_mode == t_locate_drone)
         roi_preselect_state = roi_state_blink;
-    else if (_mode == mode_wait_for_insect || _dtrkr->inactive()) {
-        if (!insect_trackers.size())
-            roi_preselect_state = roi_state_no_prior;
-        else
-            roi_preselect_state = roi_state_prior_insects;
-    }
+    else if (drone_trackers.size())
+        roi_preselect_state = roi_state_drone;
+    else if (!insect_trackers.size())
+        roi_preselect_state = roi_state_no_prior;
+    else
+        roi_preselect_state = roi_state_prior_insects;
+
 
     double min_val_double, max_val_double;
     auto itrkr = insect_trackers.begin();
+    auto dtrkr = drone_trackers.begin();
     unsigned int item_attempt = 0;
     int i = 0;
     while (i <= max_points_per_frame) {
         switch (roi_preselect_state) {
             case roi_state_drone: {
                     item_attempt++;
-                    auto pre_select_roi_rect = pre_select_roi(_dtrkr->image_predict_item(), diff);
+                    auto pre_select_roi_rect = pre_select_roi((*dtrkr)->image_predict_item(), diff);
                     Point min_pos_pre_roi, max_pos_pre_roi;
                     minMaxLoc(diff(pre_select_roi_rect), &min_val_double, &max_val_double, &min_pos_pre_roi, &max_pos_pre_roi);
                     uint8_t max_val = max_val_double;
                     uint8_t motion_noise = motion_filtered_noise_mapL(pre_select_roi_rect).at<uint8_t>(max_pos_pre_roi.y, max_pos_pre_roi.x);
-                    bool max_is_valid = max_val > motion_noise + motion_thresh;
+                    bool max_is_valid = max_val > motion_noise + _motion_thresh;
                     if (max_is_valid) {
                         cv::Point max_pos = max_pos_pre_roi + cv::Point(pre_select_roi_rect.x, pre_select_roi_rect.y);
                         floodfind_and_remove(max_pos, max_val, motion_noise, diff, motion_filtered_noise_mapL);
@@ -180,9 +153,9 @@ void TrackerManager::find_blobs() {
             } case roi_state_blink: {
                     Point min_pos, max_pos;
                     minMaxLoc(diff, &min_val_double, &max_val_double, &min_pos, &max_pos);
-                    if (max_val_double > motion_thresh + dparams.drone_blink_strength) {
+                    if (max_val_double > _motion_thresh + dparams.drone_blink_strength) {
                         motion_filtered_noise_mapL = motion_filtered_noise_mapL.clone();
-                        motion_filtered_noise_mapL = motion_thresh + dparams.drone_blink_strength;
+                        motion_filtered_noise_mapL = _motion_thresh + dparams.drone_blink_strength;
                         floodfind_and_remove(max_pos, max_val_double, 0, diff, motion_filtered_noise_mapL);
                     }
                     i++;
@@ -191,13 +164,13 @@ void TrackerManager::find_blobs() {
                     Point min_pos, max_pos;
                     minMaxLoc(diff, &min_val_double, &max_val_double, &min_pos, &max_pos);
                     int motion_noise = motion_filtered_noise_mapL.at<uint8_t>(max_pos.y, max_pos.x);
-                    if (max_val_double > motion_noise * 2 + motion_thresh) {
+                    if (max_val_double > motion_noise * 2 + _motion_thresh) {
                         int max_noise = _visdat->max_noise(max_pos);
-                        if (max_val_double > max_noise + motion_thresh)
+                        if (max_val_double > max_noise + _motion_thresh)
                             floodfind_and_remove(max_pos, max_val_double, motion_noise, diff, motion_filtered_noise_mapL);
                         else  // probably noise spickle. Remove a very small area:
                             cv::circle(diff, max_pos, 3, Scalar(0), cv::FILLED);
-                    } else if (max_val_double > 2 * motion_thresh)
+                    } else if (max_val_double > 2 * _motion_thresh)
                         cv::circle(diff, max_pos, 3, Scalar(0), cv::FILLED);
                     else
                         return;
@@ -207,52 +180,6 @@ void TrackerManager::find_blobs() {
         }
 
     }
-}
-
-std::tuple<float, bool, float> TrackerManager::tune_detection_radius(cv::Point maxt) {
-    int roi_radius = default_roi_radius;
-    bool enable_insect_drone_split = false;
-    float drn_ins_split_thresh = 0;
-    auto drn_predict = _dtrkr->image_predict_item();
-    if (_mode == mode_locate_drone || (!drn_predict.valid && _mode == mode_hunt))
-        return std::make_tuple(roi_radius, enable_insect_drone_split, drn_ins_split_thresh); // take a roi suited to prioritize finding (back) the drone
-
-    cv::Point2f max_unscaled = maxt * pparams.imscalef;
-    ItemTracker *likely_trkr = NULL;
-    float best_im_dist = INFINITY;
-    if (!drn_predict.valid || best_im_dist > drn_predict.size * 0.45f) { //0.45 -> divide by 2 and 10% margin
-        for (auto trkr : _trackers) {
-            if (trkr->image_predict_item().valid && trkr->type() != tt_replay && trkr->type() != tt_virtualmoth) {
-                float im_dist = normf(trkr->image_predict_item().pt - max_unscaled);
-                if (im_dist < best_im_dist) {
-                    best_im_dist = im_dist;
-                    likely_trkr = trkr;
-                }
-            }
-        }
-    }
-    if (!likely_trkr || (best_im_dist > 2 * drn_predict.size && drn_predict.valid)) {
-        roi_radius = default_roi_radius / 2; // we expect a (new) insect here, default_roi_radius is tuned for the drone size. So set it a bit smaller.
-    } else if (likely_trkr->type() != tt_drone) {
-        roi_radius = ceilf(likely_trkr->image_predict_item().size * 0.8f) / pparams.imscalef;
-        roi_radius = std::clamp(roi_radius, 5, 100);
-        if (drn_predict.valid) {
-            auto target_trkr = _iceptor->target_insecttracker();
-            if (target_trkr) {
-                if (target_trkr->uid() == likely_trkr->uid() && target_trkr->type() == tt_insect) {
-                    auto image_predict_item = target_trkr->image_predict_item();
-                    if (normf(drn_predict.pt - image_predict_item.pt) < roi_radius) {
-                        enable_insect_drone_split = true;
-                        drn_ins_split_thresh = image_predict_item.pixel_max * 0.2f;
-                    }
-                }
-            }
-        }
-    } else {
-        roi_radius = ceilf(drn_predict.size * 0.8f) / pparams.imscalef;
-        roi_radius = std::clamp(roi_radius, default_roi_radius / 2, 100);
-    }
-    return std::make_tuple(roi_radius, enable_insect_drone_split, drn_ins_split_thresh);
 }
 
 void TrackerManager::floodfind_and_remove(cv::Point seed_max_pos, uint8_t seed_max_val, uint8_t motion_noise, cv::Mat diff, cv::Mat motion_filtered_noise_mapL) {
@@ -386,7 +313,7 @@ void TrackerManager::erase_dissipated_fps(double time) {
     false_positives.end());
 }
 
-void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) {
+void TrackerManager::match_blobs_to_trackers(double time) {
 
     for (auto trkr : _trackers)
         trkr->all_blobs(_blobs);
@@ -394,13 +321,13 @@ void TrackerManager::match_blobs_to_trackers(bool drone_is_active, double time) 
     std::vector<ProcessedBlob> pbs;
     if (_blobs.size() > 0) {
         prep_blobs(&pbs, time);
-        match_existing_trackers(&pbs, drone_is_active, time);
+        match_existing_trackers(&pbs, time);
         check_match_conflicts(&pbs, time);
-        if (_mode == mode_locate_drone) {
+        if (_mode == t_locate_drone) {
             rematch_blink_tracker(&pbs, time);
             create_new_blink_trackers(&pbs, time);
         } else {
-            rematch_drone_tracker(&pbs, drone_is_active, time);
+            rematch_drone_tracker(&pbs, time);
             flag_used_static_ignores(&pbs);
             create_new_insect_trackers(&pbs, time);
         }
@@ -428,13 +355,13 @@ void TrackerManager::prep_blobs(std::vector<ProcessedBlob> *pbs, double time) {
         }
     }
 }
-void TrackerManager::match_existing_trackers(std::vector<ProcessedBlob> *pbs, bool drone_is_active, double time) {
+void TrackerManager::match_existing_trackers(std::vector<ProcessedBlob> *pbs, double time) {
     //first check if there are trackers that were already tracking something, which prediction matches a new keypoint
     for (auto trkr : _trackers) {
         float best_trkr_score = INFINITY;
         ProcessedBlob *best_blob;
 
-        if (tracker_active(trkr, drone_is_active) && trkr->tracking()) {
+        if (trkr->tracking()) {
             for (auto &blob : *pbs) {
                 auto *props = blob.props;
                 bool in_ignore_zone = trkr->check_ignore_blobs(props);
@@ -496,7 +423,7 @@ void TrackerManager::check_match_conflicts(std::vector<ProcessedBlob> *pbs, doub
                             if (blob_i.id != blob_j.id && !blob_j.tracked()) {
                                 auto props_j = blob_j.props;
                                 float dist = cv::norm(blob_i.pt() - blob_j.pt()) * pparams.imscalef;
-                                if (dist < _dtrkr->image_predict_item().size) {
+                                if (dist < dtrkr->image_predict_item().size) {
                                     if (blob_i.size() > blob_j.size()) {
                                         dtrkr->calc_world_item(props_i, time);
                                         tracking::WorldItem wi(tracking::ImageItem(*props_i, _visdat->frame_id, 0, blob_i.id), props_i->world_props);
@@ -561,37 +488,38 @@ void TrackerManager::check_match_conflicts(std::vector<ProcessedBlob> *pbs, doub
     }
 
 }
-void TrackerManager::rematch_drone_tracker(std::vector<ProcessedBlob> *pbs, bool drone_is_active, double time) {
-    auto trkr = _dtrkr;
-    if (!_dtrkr->tracking() && tracker_active(_dtrkr, drone_is_active)) {
-        for (auto &blob : *pbs) {
-            if (!blob.tracked() && (!blob.props->false_positive)) {
+void TrackerManager::rematch_drone_tracker(std::vector<ProcessedBlob> *pbs, double time) {
+    for (auto dtrkr : dronetrackers()) {
+        if (!dtrkr->tracking()) {
+            for (auto &blob : *pbs) {
+                if (!blob.tracked() && (!blob.props->false_positive)) {
 
-                //check against static ignore points
-                auto props = blob.props;
-                bool in_im_ignore_zone = _dtrkr->check_ignore_blobs(props);
-                if (in_im_ignore_zone)
-                    blob.ignored = true;
+                    //check against static ignore points
+                    auto props = blob.props;
+                    bool in_im_ignore_zone = dtrkr->check_ignore_blobs(props);
+                    if (in_im_ignore_zone)
+                        blob.ignored = true;
 
-                if (!in_im_ignore_zone) {
+                    if (!in_im_ignore_zone) {
 
-                    auto score = trkr->score(props);
-                    if (score < trkr->score_threshold()) {
+                        auto score = dtrkr->score(props);
+                        if (score < dtrkr->score_threshold()) {
 
-                        trkr->calc_world_item(props, time);
-                        tracking::WorldItem w(tracking::ImageItem(*props, _visdat->frame_id, 0, blob.id), props->world_props);
-                        if (w.valid) {
-                            trkr->world_item(w);
-                            blob.trackers.push_back(trkr);
+                            dtrkr->calc_world_item(props, time);
+                            tracking::WorldItem w(tracking::ImageItem(*props, _visdat->frame_id, 0, blob.id), props->world_props);
+                            if (w.valid) {
+                                dtrkr->world_item(w);
+                                blob.trackers.push_back(dtrkr);
 
-                            // There may be other interesting blobs to consider but since there is no
-                            // history available at this point, its hard to calculate which one would
-                            // be better. So just pick the first one...:
-                            break;
+                                // There may be other interesting blobs to consider but since there is no
+                                // history available at this point, its hard to calculate which one would
+                                // be better. So just pick the first one...:
+                                break;
+                            }
                         }
                     }
-                }
 
+                }
             }
         }
     }
@@ -643,23 +571,23 @@ void TrackerManager::flag_used_static_ignores(std::vector<ProcessedBlob> *pbs) {
 }
 void TrackerManager::create_new_insect_trackers(std::vector<ProcessedBlob> *pbs, double time) {
     //see if there are still blobs left untracked, create new trackers for them
-    if (_mode != mode_drone_only && _visdat->no_recent_large_brightness_events(time)) {
+    if (_visdat->no_recent_large_brightness_events(time)) {
         for (auto &blob : *pbs) {
             auto props = blob.props;
-            if (!blob.tracked() && (!props->in_overexposed_area || _mode == mode_locate_drone) && (!props->false_positive || _mode == mode_locate_drone) && !blob.ignored && _trackers.size() < 30) { // if so, start tracking it!
-                float im_dist_to_drone;
-                if (_dtrkr->tracking()) {
-                    im_dist_to_drone = normf(_dtrkr->image_item().pt() - props->pt_unscaled());
-                } else {
-                    if (_dtrkr->pad_location_valid())
-                        im_dist_to_drone = normf(_dtrkr->pad_im_location() - props->pt_unscaled());
-                    else
-                        im_dist_to_drone = INFINITY;
+            if (!blob.tracked() && (!props->in_overexposed_area || _mode == t_locate_drone) && (!props->false_positive || _mode == t_locate_drone) && !blob.ignored && _trackers.size() < 30) { // if so, start tracking it!
+                float im_dist_to_drone = INFINITY;
+                for (auto drone : dronetrackers()) {
+                    if (drone->tracking()) {
+                        float tmpf = normf(drone->image_item().pt() - props->pt_unscaled());
+                        if (tmpf < im_dist_to_drone)
+                            im_dist_to_drone = tmpf;
+                    }
                 }
-                if (im_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_im && blob.pixel_max() > blob.motion_noise() + motion_thresh) {
+
+                if (im_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_im && blob.pixel_max() > blob.motion_noise() + _motion_thresh) {
                     InsectTracker *it;
                     it = new InsectTracker();
-                    it->init(next_insecttrkr_id, _visdat, motion_thresh, _trackers.size(), _enable_draw_stereo_viz);
+                    it->init(next_insecttrkr_id, _visdat, _motion_thresh, _trackers.size(), _enable_draw_stereo_viz);
                     it->calc_world_item(props, time);
                     if (!props->world_props.bkg_check_ok)
                         tracking::WorldItem w(tracking::ImageItem(*props, _visdat->frame_id, -1, blob.id), props->world_props);
@@ -673,11 +601,15 @@ void TrackerManager::create_new_insect_trackers(std::vector<ProcessedBlob> *pbs,
                     }
                     if (!ignore) {
                         //ignore a region around the drone (or take off location)
-                        float world_dist_to_drone;
-                        if (_dtrkr->tracking())
-                            world_dist_to_drone = normf(_dtrkr->world_item().pt - props->world_props.pt());
-                        else
-                            world_dist_to_drone = normf(_dtrkr->pad_location() - props->world_props.pt());
+                        float world_dist_to_drone = INFINITY;
+                        for (auto drone : dronetrackers()) {
+                            if (drone->tracking()) {
+                                float tmpf  = normf(drone->world_item().pt - props->world_props.pt());
+                                if (tmpf < world_dist_to_drone) {
+                                    world_dist_to_drone = tmpf;
+                                }
+                            }
+                        }
 
                         if (world_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_world && im_dist_to_drone > InsectTracker::new_tracker_drone_ignore_zone_size_im) {
                             it->init_logger();
@@ -707,7 +639,7 @@ void TrackerManager::create_new_blink_trackers(std::vector<ProcessedBlob> *pbs, 
     //see if there are still blobs left untracked, create new trackers for them
     for (auto &blob : *pbs) {
         auto props = blob.props;
-        if (!blob.tracked() && (!props->in_overexposed_area || _mode == mode_locate_drone) && (!props->false_positive || _mode == mode_locate_drone) && !blob.ignored && _trackers.size() < 30) { // if so, start tracking it!
+        if (!blob.tracked() && (!props->in_overexposed_area || _mode == t_locate_drone) && (!props->false_positive || _mode == t_locate_drone) && !blob.ignored && _trackers.size() < 30) { // if so, start tracking it!
             bool too_close = false;
             for (auto btrkr : _trackers) {
                 if (btrkr->type() == tt_blink) {
@@ -720,7 +652,7 @@ void TrackerManager::create_new_blink_trackers(std::vector<ProcessedBlob> *pbs, 
             if (!too_close) {
                 BlinkTracker  *bt;
                 bt = new BlinkTracker();
-                bt->init(next_blinktrkr_id, _visdat, motion_thresh, _trackers.size());
+                bt->init(next_blinktrkr_id, _visdat, _motion_thresh, _trackers.size());
                 bt->calc_world_item(props, time);
                 bool ignore = true;
                 if (props->world_props.valid) {
@@ -742,7 +674,7 @@ void TrackerManager::create_new_blink_trackers(std::vector<ProcessedBlob> *pbs, 
         }
     }
 }
-void TrackerManager::update_trackers(double time, long long frame_number, bool drone_is_active) {
+void TrackerManager::update_trackers(double time, long long frame_number) {
     //perform all tracker update functions or logging placeholders, also delete old trackers
     for (uint ii = _trackers.size(); ii != 0; ii--) { // reverse because deleting from this list.
         uint i = ii - 1;
@@ -768,24 +700,21 @@ void TrackerManager::update_trackers(double time, long long frame_number, bool d
             delete trkr;
         } else if (_trackers.at(i)->type() == tt_drone) {
             DroneTracker *dtrkr = static_cast<DroneTracker *>(_trackers.at(i));
-            dtrkr->update(time, tracker_active(dtrkr, drone_is_active));
+            dtrkr->update(time);
         } else if (_trackers.at(i)->type() == tt_insect) {
             InsectTracker *itrkr = static_cast<InsectTracker *>(_trackers.at(i));
             switch (_mode) {
-                case mode_idle: {
+                case t_idle: {
                         itrkr->append_log(time, frame_number); // write dummy data
                         break;
-                } case mode_locate_drone: {
+                } case t_locate_drone: {
                         itrkr->append_log(time, frame_number); // write dummy data
                         break;
-                } case mode_wait_for_insect: {
+                } case t_c: {
                         itrkr->update(time);
                         break;
-                } case mode_hunt: {
+                } case t_x: {
                         itrkr->update(time);
-                        break;
-                } case mode_drone_only: {
-                        itrkr->append_log(time, frame_number); // write dummy data
                         break;
                     }
             }
@@ -800,10 +729,9 @@ void TrackerManager::update_trackers(double time, long long frame_number, bool d
         } else if (_trackers.at(i)->type() == tt_blink) {
             BlinkTracker *btrkr = static_cast<BlinkTracker *>(_trackers.at(i));
             btrkr->update(time);
-            if (_mode == mode_locate_drone) {
+            if (_mode == t_locate_drone) {
                 if (btrkr->state() == BlinkTracker::bds_found) {
-                    _dtrkr->set_pad_location_from_blink(btrkr->world_item().pt);
-                    _mode = mode_idle;
+                    _detected_pad_locations.push_back(btrkr->world_item().pt);
                 }
             } else if (btrkr->ignores_for_other_trkrs.size() == 0) {
                 if (btrkr->state() != BlinkTracker::bds_found) {
@@ -1069,14 +997,10 @@ void TrackerManager::reset_trkr_viz_ids() {
         trkr->viz_id(cnt++);
 }
 
-bool TrackerManager::tracker_active(ItemTracker *trkr, bool drone_is_active) {
-    if (_mode == mode_idle)
+bool TrackerManager::tracker_active(ItemTracker *trkr) {
+    if (_mode == t_idle)
         return false;
-    else if (trkr->type() == tt_drone && (_mode == mode_locate_drone || !drone_is_active)) {
-        return false;
-    } else if (trkr->type() == tt_insect && (_mode == mode_locate_drone || _mode == mode_drone_only)) {
-        return false;
-    } else if (trkr->type() == tt_blink && (_mode != mode_locate_drone)) {
+    else if (trkr->type() == tt_blink && (_mode != t_locate_drone)) {
         return false;
     } else if (trkr->type() == tt_replay) {
         return false;
@@ -1133,6 +1057,17 @@ std::vector<ItemTracker *> TrackerManager::all_target_trackers() {
     }
     return res;
 }
+std::vector<DroneTracker *> TrackerManager::dronetrackers() {
+    std::vector<DroneTracker *> res;
+    for (auto trkr : _trackers) {
+        if (trkr->type() == tt_drone) {
+            res.push_back(static_cast<DroneTracker *>(trkr));
+        }
+    }
+    //should do the same:
+    //std::copy_if (_trackers.begin(), _trackers.end(), std::back_inserter(res), [](ItemTracker *trkr){return (trkr->type == tt_insect);} );
+    return res;
+}
 
 std::tuple<bool, BlinkTracker *> TrackerManager::blinktracker_best() {
     BlinkTracker::blinking_drone_states best_state = BlinkTracker::bds_searching;
@@ -1158,27 +1093,27 @@ void TrackerManager::deserialize_settings() {
 
         if (!xmls::Serializable::fromXML(xmlData, &params))
         {   // Deserialization not successful
-            throw MyExit("Cannot read: " + settings_file);
+            throw std::runtime_error("Cannot read: " + settings_file);
         }
         TrackerManagerParameters tmp;
         auto v1 = params.getVersion();
         auto v2 = tmp.getVersion();
         if (v1 != v2) {
-            throw MyExit("XML version difference detected from " + settings_file);
+            throw std::runtime_error("XML version difference detected from " + settings_file);
         }
         infile.close();
     } else {
-        throw MyExit("File not found: " + settings_file);
+        throw std::runtime_error("File not found: " + settings_file);
     }
 
     max_points_per_frame = params.max_points_per_frame.value();
-    motion_thresh = params.motion_thresh.value();
+    _motion_thresh = params.motion_thresh.value();
 }
 
 void TrackerManager::serialize_settings() {
     TrackerManagerParameters params;
     params.max_points_per_frame = max_points_per_frame;
-    params.motion_thresh = motion_thresh;
+    params.motion_thresh = _motion_thresh;
 
     std::string xmlData = params.toXML();
     std::ofstream outfile = std::ofstream(settings_file);
@@ -1211,7 +1146,7 @@ void TrackerManager::read_false_positives() {
             else
                 save_false_positives("./logging/replay/initial_" + false_positive_fn);
         } catch (exception &exp) {
-            throw MyExit("Warning: could not read false positives file: " + false_positive_rfn + '\n' + "Line: " + string(exp.what()) + " at: " + line);
+            throw std::runtime_error("Warning: could not read false positives file: " + false_positive_rfn + '\n' + "Line: " + string(exp.what()) + " at: " + line);
         }
     }
 }

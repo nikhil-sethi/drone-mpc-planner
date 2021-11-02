@@ -10,7 +10,7 @@ namespace logging
 
 void InsectReader::init(string file) {
     if (!file_exist(file)) {
-        throw MyExit("log file not found!");
+        throw std::runtime_error("log file not found!");
     }
     _replay_moth = experimental::filesystem::path(file).filename().string().find("itrk") == string::npos;
     if (_replay_moth)
@@ -36,7 +36,7 @@ tuple<map<int, LogEntryInsect>, map<string, int>> InsectReader::read_log(string 
         } catch (exception &exp) {
             string next_line;
             if (getline(infile, next_line))
-                throw MyExit("Could not read insect log! \n" + string(exp.what()) + " at: " + line);
+                throw std::runtime_error("Could not read insect log! \n" + string(exp.what()) + " at: " + line);
         }
     }
     infile.close();

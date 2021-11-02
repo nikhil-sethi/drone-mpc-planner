@@ -51,8 +51,8 @@
         {
             "label": "Run (no debug)",
             "type": "shell",
-            "command": "${workspaceFolder}/build-vscode/pats",
-            "args": ["--drone-id", "1"],
+            "command": "${workspaceFolder}/build-vscode/executor",
+            "args": ["--drone-id", "1", "--pats-xml", "../xml/pats_debug.xml"],
             "dependsOn": ["make"],
             "options": {
                 "cwd": "${workspaceRoot}/build-vscode"

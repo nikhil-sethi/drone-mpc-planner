@@ -15,60 +15,34 @@ bool DroneController::joystick_ready() {
     return joystick.isFound();
 }
 
-void DroneController::init(std::ofstream *logger, string replay_dir, bool generator, bool airsim, Rc *rc, tracking::DroneTracker *dtrk, FlightArea *flight_area, float exposure) {
+void DroneController::init(RC *rc, tracking::DroneTracker *dtrk, FlightArea *flight_area, float exposure) {
     _rc = rc;
     _dtrk = dtrk;
-    _logger = logger;
-    log_replay_mode = replay_dir != "";
-    generator_mode = generator;
-    airsim_mode = airsim;
     _flight_area = flight_area;
-
     control_history_max_size = pparams.fps;
-    (*_logger) << "valid;flight_mode;flight_mode_str;" <<
+
+    std::cout << "Initialising control." << std::endl;
+
+    load_calibration();
+    set_led_strength(exposure);
+
+    pad_att_calibration_roll.init(required_pad_att_calibration_cnt);
+    pad_att_calibration_pitch.init(required_pad_att_calibration_cnt);
+
+    initialized = true;
+}
+
+void DroneController::init_flight(std::ofstream *logger) {
+    _logger = logger;
+    (*_logger) << "valid;flight_mode_str;" <<
                "target_pos_x;target_pos_y;target_pos_z;" <<
                "autoThrottle;autoRoll;autoPitch;autoYaw;" <<
                "joyThrottle;joyRoll;joyPitch;joyYaw; " <<
                "joyArmSwitch;joyModeSwitch;joyTakeoffSwitch;" <<
                "mmArmSwitch;mmModeSwitch;" <<
-               "dt;kiv;" <<
+               "kiv;" <<
                "thrust; integrator_x;integrator_y;integrator_z;" <<
-               "batt_cell_v;rssi;arm;";
-    ;
-    std::cout << "Initialising control." << std::endl;
-
-    load_calibration(replay_dir);
-    load_control_parameters();
-
-    if (pparams.control_tuning) {
-        std::cout << "Creating control tuning window." << std::endl;
-        // create GUI to set control parameters
-        namedWindow("Control", WINDOW_NORMAL);
-        createTrackbar("p_pos_roll", "Control", &kp_pos_roll, 3000);
-        createTrackbar("p_pos_pitch", "Control", &kp_pos_pitch, 3000);
-        createTrackbar("p_pos_throttle", "Control", &kp_pos_throttle, 3000);
-        createTrackbar("i_pos_roll", "Control", &ki_pos_roll, 1000);
-        createTrackbar("i_pos_pitch", "Control", &ki_pos_pitch, 1000);
-        createTrackbar("i_thrust", "Control", &ki_thrust, 1000);
-        createTrackbar("d_pos_roll", "Control", &kd_pos_roll, 1000);
-        createTrackbar("d_pos_pitch", "Control", &kd_pos_pitch, 1000);
-        createTrackbar("d_pos_throttle", "Control", &kd_pos_throttle, 1000);
-        createTrackbar("p_v_roll", "Control", &kp_v_roll, 1000);
-        createTrackbar("p_v_pitch", "Control", &kp_v_pitch, 1000);
-        createTrackbar("p_v_throttle", "Control", &kp_v_throttle, 1000);
-        createTrackbar("d_v_roll", "Control", &kd_v_roll, 100);
-        createTrackbar("d_v_pitch", "Control", &kd_v_pitch, 100);
-        createTrackbar("d_v_throttle", "Control", &kd_v_throttle, 200);
-        createTrackbar("Hover p_pos_roll", "Control", &kp_pos_roll_hover, 3000);
-        createTrackbar("Hover p_pos_pitch", "Control", &kp_pos_pitch_hover, 3000);
-        createTrackbar("Hover p_pos_throttle", "Control", &kp_pos_throttle_hover, 3000);
-        createTrackbar("Hover i_pos_roll", "Control", &ki_pos_roll_hover, 1000);
-        createTrackbar("Hover i_pos_pitch", "Control", &ki_pos_pitch_hover, 1000);
-        createTrackbar("Hover i_thrust", "Control", &ki_thrust_hover, 1000);
-        createTrackbar("Hover d_pos_roll", "Control", &kd_pos_roll_hover, 1000);
-        createTrackbar("Hover d_pos_pitch", "Control", &kd_pos_pitch_hover, 1000);
-        createTrackbar("Hover d_pos_throttle", "Control", &kd_pos_throttle_hover, 1000);
-    }
+               "batt_cell_v;rssi;";
 
     d_vel_err_x.init(1.f / pparams.fps);
     d_vel_err_y.init(1.f / pparams.fps);
@@ -77,14 +51,29 @@ void DroneController::init(std::ofstream *logger, string replay_dir, bool genera
     pos_modelx.init(1.f / pparams.fps, 1, 0.2, 0.38);
     pos_modely.init(1.f / pparams.fps, 1, 0.2, 0.38);
     pos_modelz.init(1.f / pparams.fps, 1, 0.2, 0.38);
-
-    set_led_strength(exposure);
-
     calibration.thrust = std::clamp(calibration.thrust, dparams.default_thrust / 2.f, dparams.default_thrust * 2.f);
-    pad_att_calibration_roll.init(required_pad_att_calibration_cnt);
-    pad_att_calibration_pitch.init(required_pad_att_calibration_cnt);
+
+    _landed = false;
+    _hover_mode = false;
+
+    take_off_start_time = 0;
+    state_start_time = 0;
+    remaining_spinup_duration_t0 = 0;
+    interception_start_time = 0;
+    in_flight_start_time = -1;
+    ff_land_start_time = 0;
+    ff_auto_throttle_start = RC_BOUND_MIN;
+
+    _dist_to_setpoint = 999;
+    time_waypoint_moved = 0;
+    kill_cnt_down = 0;
+    spin_up_start_time = 0;
+    start_takeoff_burn_time = 0;
+    _n_shakes = 0;
+    auto_burn_duration = 0;
+    _manual_override_take_off_now = false;
+
     initial_hover_throttle_guess_non3d = GRAVITY / dparams.default_thrust * RC_BOUND_RANGE + dparams.min_throttle;
-    initialized = true;
 }
 
 void DroneController::set_led_strength(float exposure) {
@@ -112,7 +101,7 @@ void DroneController::set_led_strength(float exposure) {
     std::cout << "Led strength set to: " << dparams.drone_led_strength << std::endl;
 }
 
-void DroneController::control(TrackData data_drone, TrackData data_target_new, TrackData data_raw_insect, double time) {
+void DroneController::control(TrackData data_drone, TrackData data_target_new, TrackData data_raw_insect, double time, bool enable_logging) {
     _time = time;
 
     if (!log_replay_mode && pparams.joystick != rc_none)
@@ -139,14 +128,6 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
                 pitch = joy_pitch;
                 yaw = joy_yaw;
                 joy_control = true;
-                break;
-        } case fm_blink: {
-                _rc->arm(bf_disarmed);
-                blink(time);
-                calibrate_pad_attitude();
-                //#268:
-                // mode+=bf_spin_motor;
-                // blink_motors(time);
                 break;
         } case fm_spinup: {
                 _rc->arm(bf_armed);
@@ -393,6 +374,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
 
                 if (dt > land_ctrl.time_ff_landing()) {
                     auto_throttle = RC_BOUND_MIN;
+                    _landed = true;
                     if (dparams.static_shakeit_throttle > 0)
                         _flight_mode = fm_wait;
                     else
@@ -515,7 +497,6 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
                 else
                     auto_throttle = RC_BOUND_MIN;
                 _rc->arm(bf_disarmed);
-                calibrate_pad_attitude();
                 break;
         } case fm_inactive: {
                 auto_roll = RC_MIDDLE;
@@ -532,16 +513,12 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
                     _rc->arm(bf_armed);
                 else if (dparams.mode3d)
                     _rc->arm(bf_disarmed);
-                calibrate_pad_attitude();
                 break;
-
         } case fm_wait: {
                 auto_throttle = RC_BOUND_MIN;
                 auto_roll = RC_MIDDLE;
                 auto_pitch = RC_MIDDLE;
                 auto_yaw = RC_MIDDLE;
-                break;
-        } case fm_monitoring: {
                 break;
         } case fm_abort: {
                 if (dparams.mode3d)
@@ -588,39 +565,37 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
     auto_yaw = std::clamp(auto_yaw, RC_BOUND_MIN, RC_BOUND_MAX);
 
     // std::cout <<  " rpyt: " << roll << ", " << pitch << ", " << yaw << ", " << throttle << std::endl;
-    _rc->queue_commands(throttle, roll, pitch, yaw, mode, time);
+    _rc->queue_commands(throttle, roll, pitch, yaw, mode);
 
     ControlData c(Roll(), Throttle(), Pitch(), time);
     control_history.push_back(c);
     while (control_history.size() > control_history_max_size)
         control_history.erase(control_history.begin());
 
-    (*_logger) << static_cast<int>(data_drone.pos_valid)  << ";" <<
-               _flight_mode << ";" <<
-               flight_mode_names[_flight_mode] << ";" <<
-               data_target_new.pos().x << ";" <<
-               data_target_new.pos().y  << ";" <<
-               data_target_new.pos().z << ";" <<
-               auto_throttle << ";" <<
-               auto_roll << ";" <<
-               auto_pitch << ";" <<
-               auto_yaw <<  ";" <<
-               joy_throttle <<  ";" <<
-               joy_roll <<  ";" <<
-               joy_pitch <<  ";" <<
-               joy_yaw << ";" <<
-               static_cast<int>(_joy_arm_switch) << ";" <<
-               static_cast<int>(_joy_mode_switch) << ";" <<
-               static_cast<int>(_joy_takeoff_switch) << ";" <<
-               _rc->arm_switch << ";" <<
-               _rc->mode << ";" <<
-               data_drone.dt << ";" <<
-               kiv_ctrl.active << ";" <<
-               calibration.thrust << ";" <<
-               pos_err_i.x << ";" << pos_err_i.y << ";" << pos_err_i.z << ";" <<
-               _rc->telemetry.batt_cell_v  << ";" <<
-               static_cast<int>(_rc->telemetry.rssi)  << ";" <<
-               _rc->telemetry.arming_state  << ";";
+    if (enable_logging)
+        (*_logger) << static_cast<int>(data_drone.pos_valid)  << ";" <<
+                   flight_mode_names[_flight_mode] << ";" <<
+                   data_target_new.pos().x << ";" <<
+                   data_target_new.pos().y  << ";" <<
+                   data_target_new.pos().z << ";" <<
+                   auto_throttle << ";" <<
+                   auto_roll << ";" <<
+                   auto_pitch << ";" <<
+                   auto_yaw <<  ";" <<
+                   joy_throttle <<  ";" <<
+                   joy_roll <<  ";" <<
+                   joy_pitch <<  ";" <<
+                   joy_yaw << ";" <<
+                   static_cast<int>(_joy_arm_switch) << ";" <<
+                   static_cast<int>(_joy_mode_switch) << ";" <<
+                   static_cast<int>(_joy_takeoff_switch) << ";" <<
+                   _rc->arm_switch << ";" <<
+                   _rc->mode << ";" <<
+                   kiv_ctrl.active << ";" <<
+                   calibration.thrust << ";" <<
+                   pos_err_i.x << ";" << pos_err_i.y << ";" << pos_err_i.z << ";" <<
+                   _rc->telemetry.batt_cell_v  << ";" <<
+                   static_cast<int>(_rc->telemetry.rssi)  << ";";
 }
 
 std::tuple<int, int, float, Point3f, std::vector<StateData> > DroneController::calc_burn(StateData state_drone, StateData state_target, float remaining_aim_duration) {
@@ -796,18 +771,18 @@ bool DroneController::attitude_on_pad_OK() {
         return false;
 }
 
-decision_type DroneController::somewhere_on_pad() {
-    if(_rc->telemetry.roll<-180.f || _rc->telemetry.roll>180.f
-       || _rc->telemetry.pitch<-180.f || _rc->telemetry.pitch>180.f)
-        return maybe;
+drone_on_pad_state DroneController::somewhere_on_pad() {
+    if (_rc->telemetry.roll < -180.f || _rc->telemetry.roll > 180.f
+            || _rc->telemetry.pitch < -180.f || _rc->telemetry.pitch > 180.f)
+        return drone_maybe_on_pad;
     cv::Point2f current_att(_rc->telemetry.roll, _rc->telemetry.pitch);
     cv::Point2f pad_att_calibration(calibration.pad_roll, calibration.pad_pitch);
-    if(check_att_bounds(current_att,
-                            pad_att_calibration - somewhere_on_pad_att_range,
-                            pad_att_calibration + somewhere_on_pad_att_range))
-        return yes;
+    if (check_att_bounds(current_att,
+                         pad_att_calibration - somewhere_on_pad_att_range,
+                         pad_att_calibration + somewhere_on_pad_att_range))
+        return drone_on_pad;
     else
-        return no;
+        return drone_not_on_pad;
 }
 
 void DroneController::invalidize_blink() {
@@ -819,7 +794,6 @@ bool DroneController::pad_calibration_done() {
         std::cout << "Warning: drone has no telemetry capability. Skipping att calibration." << std::endl;
         return true;
     } else if (!pad_att_calibration_roll.ready()) {
-        std::cout << "Drone calibration failed: attitude not received!" << std::endl;
         return false;
     } else if (check_att_bounds(cv::Point2f(pad_att_calibration_roll.latest(), pad_att_calibration_pitch.latest()), -allowed_pad_att_calibration_range, allowed_pad_att_calibration_range)) {
         calibration.pad_pos_x = _dtrk->pad_location().x;
@@ -843,7 +817,7 @@ bool DroneController::pad_calibration_done() {
 }
 
 void DroneController::init_thrust_calibration() {
-    calibration.thrust -= ki_thrust_hover * 0.001f * pos_err_i.y; //TODO: get the 0.001 from the scale constants
+    calibration.thrust -= dparams.ki_thrust_hover * 0.001f * pos_err_i.y;
     pos_err_i.y = 0;
     thrust_calibration = true;
 }
@@ -1105,15 +1079,15 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_contro
     }
 
     if (_hover_mode) {
-        kp_pos_roll_scaled = scale_pos_p.x * kp_pos_roll_hover;
-        kp_pos_throttle_scaled = scale_pos_p.y * kp_pos_throttle_hover;
-        kp_pos_pitch_scaled = scale_pos_p.z * kp_pos_pitch_hover;
-        ki_pos_roll_scaled = scale_pos_i.x * ki_pos_roll_hover;
-        ki_thrust_scaled = scale_pos_i.y * ki_thrust_hover;
-        ki_pos_pitch_scaled = scale_pos_i.z * ki_pos_pitch_hover;
-        kd_pos_roll_scaled = scale_pos_d.x * kd_pos_roll_hover;
-        kd_pos_throttle_scaled = scale_pos_d.y * kd_pos_throttle_hover;
-        kd_pos_pitch_scaled = scale_pos_d.z * kd_pos_pitch_hover;
+        kp_pos_roll_scaled = scale_pos_p.x * dparams.kp_pos_roll_hover;
+        kp_pos_throttle_scaled = scale_pos_p.y * dparams.kp_pos_throttle_hover;
+        kp_pos_pitch_scaled = scale_pos_p.z * dparams.kp_pos_pitch_hover;
+        ki_pos_roll_scaled = scale_pos_i.x * dparams.ki_pos_roll_hover;
+        ki_thrust_scaled = scale_pos_i.y * dparams.ki_thrust_hover;
+        ki_pos_pitch_scaled = scale_pos_i.z * dparams.ki_pos_pitch_hover;
+        kd_pos_roll_scaled = scale_pos_d.x * dparams.kd_pos_roll_hover;
+        kd_pos_throttle_scaled = scale_pos_d.y * dparams.kd_pos_throttle_hover;
+        kd_pos_pitch_scaled = scale_pos_d.z * dparams.kd_pos_pitch_hover;
         kp_v_roll_scaled = 0;
         kp_v_throttle_scaled = 0;
         kp_v_pitch_scaled = 0;
@@ -1123,24 +1097,24 @@ std::tuple<cv::Point3f, cv::Point3f, cv::Point3f> DroneController::adjust_contro
     } else {
         if (!data_drone.pos_valid) {
             scale_pos_p *= 0.8;
-        } else if(norm(data_drone.vel())>2) { //Our tuning is such that the drone is aggressiv which includes overshoots. To limit the overshoot after high speed increase D at high speeds.
+        } else if (norm(data_drone.vel()) > 2) { //Our tuning is such that the drone is aggressiv which includes overshoots. To limit the overshoot after high speed increase D at high speeds.
             scale_pos_d *= 1.2;
         }
-        kp_pos_roll_scaled = scale_pos_p.x * kp_pos_roll;
-        kp_pos_throttle_scaled = scale_pos_p.y * kp_pos_throttle;
-        kp_pos_pitch_scaled = scale_pos_p.z * kp_pos_pitch;
-        ki_pos_roll_scaled = scale_pos_i.x * ki_pos_roll;
-        ki_thrust_scaled = scale_pos_i.y * ki_thrust;
-        ki_pos_pitch_scaled = scale_pos_i.z * ki_pos_pitch;
-        kd_pos_roll_scaled = scale_pos_d.x * kd_pos_roll;
-        kd_pos_throttle_scaled = scale_pos_d.y * kd_pos_throttle;
-        kd_pos_pitch_scaled = scale_pos_d.z * kd_pos_pitch;
-        kp_v_roll_scaled = scale_vel_p.x * kp_v_roll;
-        kp_v_throttle_scaled = scale_vel_p.x * kp_v_throttle;
-        kp_v_pitch_scaled = scale_vel_p.x * kp_v_pitch;
-        kd_v_roll_scaled = scale_vel_d.x * kd_v_roll;
-        kd_v_throttle_scaled = scale_vel_d.x * kd_v_throttle;
-        kd_v_pitch_scaled = scale_vel_d.x * kd_v_pitch;
+        kp_pos_roll_scaled = scale_pos_p.x * dparams.kp_pos_roll;
+        kp_pos_throttle_scaled = scale_pos_p.y * dparams.kp_pos_throttle;
+        kp_pos_pitch_scaled = scale_pos_p.z * dparams.kp_pos_pitch;
+        ki_pos_roll_scaled = scale_pos_i.x * dparams.ki_pos_roll;
+        ki_thrust_scaled = scale_pos_i.y * dparams.ki_thrust;
+        ki_pos_pitch_scaled = scale_pos_i.z * dparams.ki_pos_pitch;
+        kd_pos_roll_scaled = scale_pos_d.x * dparams.kd_pos_roll;
+        kd_pos_throttle_scaled = scale_pos_d.y * dparams.kd_pos_throttle;
+        kd_pos_pitch_scaled = scale_pos_d.z * dparams.kd_pos_pitch;
+        kp_v_roll_scaled = scale_vel_p.x * dparams.kp_v_roll;
+        kp_v_throttle_scaled = scale_vel_p.x * dparams.kp_v_throttle;
+        kp_v_pitch_scaled = scale_vel_p.x * dparams.kp_v_pitch;
+        kd_v_roll_scaled = scale_vel_d.x * dparams.kd_v_roll;
+        kd_v_throttle_scaled = scale_vel_d.x * dparams.kd_v_throttle;
+        kd_v_pitch_scaled = scale_vel_d.x * dparams.kd_v_pitch;
     }
 
     // Arrange gains (needed because may be updated from trackbars)
@@ -1205,82 +1179,38 @@ std::tuple<cv::Point3f, cv::Point3f> DroneController::control_error(TrackData da
 void DroneController::correct_yaw(float deviation_angle) {
     int target_theta_velocity = 0;
 
-    if (deviation_angle < - _dtrk->min_yaw_deviation)
+    if (deviation_angle < - min_yaw_deviation)
         target_theta_velocity = -3;
-    else if (deviation_angle > _dtrk->min_yaw_deviation)
+    else if (deviation_angle > min_yaw_deviation)
         target_theta_velocity = 3;
 
     auto_yaw = RC_MIDDLE + target_theta_velocity;
 }
 
-void DroneController::blink(double time) {
-    static double last_blink_time = time;
-    static bool blink_state;
+bool DroneController::abort_take_off() {
+    //check if the take off is not yet too far progressed to abort, if not go to spin up else return true
 
-    if (static_cast<float>(time - last_blink_time) > dparams.blink_period) {
-        if (blink_state)
-            blink_state = false;
-        else
-            blink_state = true;
-        last_blink_time = time;
-    }
-    LED(blink_state);
-}
+    if (_flight_mode == fm_take_off_aim) {
+        float remaining_spinup_duration = dparams.full_bat_and_throttle_spinup_duration - aim_duration - time_spent_spinning_up(_time);
+        if (remaining_spinup_duration  < 0.05f)
+            return false;
+        _flight_mode = fm_spinup ;
+        if (spin_up_start_time < take_off_start_time)
+            spin_up_start_time = take_off_start_time;
+        return true;
 
-void DroneController::blink_motors(double time) {
-    int itime = round(time) * 3;
-    auto_roll = RC_BOUND_MIN;
-    auto_pitch = RC_BOUND_MIN;
-    auto_throttle = RC_BOUND_MIN;
-    auto_yaw = RC_BOUND_MIN;
-
-    int spin_value = RC_BOUND_MIN + 100;
-    if (itime % 4 == 0) {
-        auto_roll = spin_value;
-    } else if (itime % 4 == 1) {
-        auto_pitch = spin_value;
-    } else if (itime % 4 == 2) {
-        auto_yaw = spin_value;
-    } else if (itime % 4 == 3) {
-        auto_throttle = spin_value;
-    }
+    } else if (_flight_mode == fm_spinup || _flight_mode == fm_start_takeoff) {
+        _flight_mode = fm_spinup;
+        return true;
+    } else
+        return false;
 }
 
 void DroneController::read_joystick(void) {
     while (joystick.sample(&event))
     {
         if (event.isAxis()) {
-            if (pparams.joystick == rc_devo) {
-                switch (event.number) {
-                    case 0: // roll
-                        joy_roll = (event.value >> 5) + RC_MIDDLE;
-                        break;
-                    case 1: // pitch
-                        joy_pitch = (event.value >> 5) + RC_MIDDLE;
-                        break;
-                    case 2: //throttle
-                        joy_throttle = (event.value >> 5) + RC_MIDDLE - 100;
-                        break;
-                    case 5:  //switch
-                        if (event.value > 0) {
-                            _joy_arm_switch = bf_armed;
-                        } else {
-                            _joy_arm_switch = bf_disarmed;
-                        }
-                        break;
-                    case 3: //dial
-                        joyDial = event.value; // goes between +/-32768
-                        scaledjoydial = joyDial + 32767;
-                        scaledjoydial = (scaledjoydial / 65536) * 100 + 35;
-                        break;
-                    case 4: //yaw
-                        joy_yaw = (event.value >> 5) + RC_MIDDLE;
-                        break;
-                    default:
-                        std::cout << "Unkown joystick event: " << std::to_string(event.number) << ". Value: " << std::to_string(event.value) << std::endl;
-                        break;
-                }
-            }  else if (pparams.joystick == rc_xlite) {
+            if (pparams.joystick == rc_xlite) {
                 switch (event.number) {
                     case 0: // roll
                         joy_roll = static_cast<uint16_t>((event.value >> 5) * 0.8 + RC_MIDDLE);
@@ -1358,8 +1288,7 @@ void DroneController::process_joystick() {
             _joy_takeoff_switch = false;
             _manual_override_take_off_now = false;
             _joy_state = js_disarmed;
-            if (_flight_mode != fm_blink)
-                _flight_mode = fm_disarmed;
+            _flight_mode = fm_disarmed;
         } else {
             if (!dparams.mode3d)
                 _rc->arm(bf_armed);
@@ -1374,22 +1303,22 @@ void DroneController::process_joystick() {
     }
 }
 
-void DroneController::load_calibration(std::string replay_dir) {
+void DroneController::load_calibration() {
     std::string calib_wfn = "./logging/initial_" + calib_fn;
-    std::string calib_rfn = "../xml/" + calib_fn;
-    if (replay_dir != "") {
-        calib_rfn = replay_dir + "/initial_" + calib_fn;
-        calib_wfn = "./logging/replay/initial_" + calib_fn;
-    }
+    std::string calib_rfn = "../../../../pats/xml/" + calib_fn;
+    // if (replay_dir != "") {
+    //     calib_rfn = replay_dir + "/initial_" + calib_fn;
+    //     calib_wfn = "./logging/replay/initial_" + calib_fn;
+    // }
 
     if (file_exist(calib_rfn)) {
         xmls::DroneCalibration tmp;
         try {
             tmp.deserialize(calib_rfn);
-        } catch (MyExit const &err) {
-            std::cout << "Error, corrupted drone calibration xml:" << err.msg << std::endl;
+        } catch (std::runtime_error const &err) {
+            std::cout << "Error, corrupted drone calibration xml:" << err.what() << std::endl;
         }
-        if ((tmp.drone_id != _rc->drone_id() || tmp.drone_name.compare(dparams.name)) && replay_dir == "") {
+        if ((tmp.drone_id != _rc->drone_id() || tmp.drone_name.compare(dparams.name))) {
             std::cout << "Drone mismatch. Using default values, but calibration is needed!" << std::endl;
             calibration.thrust = dparams.default_thrust;
             calibration.drone_id = _rc->drone_id();
@@ -1415,7 +1344,7 @@ void DroneController::save_calibration() {
     if (log_replay_mode)
         calibration.serialize("./logging/replay/" + calib_fn);
     else {
-        calibration.serialize("../xml/" + calib_fn);
+        calibration.serialize("../../../../pats/xml/" + calib_fn);
         calibration.serialize("./logging/" + calib_fn);
     }
 }
@@ -1446,96 +1375,10 @@ bool DroneController::thrust_calib_valid() {
     return diff < 7;
 }
 
-void DroneController::load_control_parameters() {
-    control_parameters_rfn = "../xml/" + dparams.control + ".xml";
-    std::cout << "Reading settings from: " << control_parameters_rfn << std::endl;
-    ControlParameters params;
-    if (file_exist(control_parameters_rfn)) {
-        std::ifstream infile(control_parameters_rfn);
-        std::string xmlData((std::istreambuf_iterator<char>(infile)),
-                            std::istreambuf_iterator<char>());
-
-        if (!xmls::Serializable::fromXML(xmlData, &params))
-            throw MyExit("Cannot read: " + control_parameters_rfn);
-
-        ControlParameters tmp;
-        auto v1 = params.getVersion();
-        auto v2 = tmp.getVersion();
-        if (v1 != v2) {
-            throw MyExit("XML version difference detected from " + control_parameters_rfn);
-        }
-        infile.close();
-    } else {
-        throw MyExit("File not found: " + control_parameters_rfn);
-    }
-
-    kp_pos_roll = params.kp_pos_roll.value();
-    kp_pos_pitch = params.kp_pos_pitch.value();
-    kp_pos_throttle = params.kp_pos_throttle.value();
-    ki_pos_roll = params.ki_pos_roll.value();
-    ki_pos_pitch = params.ki_pos_pitch.value();
-    ki_thrust = params.ki_thrust.value();
-    kd_pos_roll = params.kd_pos_roll.value();
-    kd_pos_pitch = params.kd_pos_pitch.value();
-    kd_pos_throttle = params.kd_pos_throttle.value();
-    kp_pos_roll_hover = params.kp_pos_roll_hover.value();
-    kp_pos_pitch_hover = params.kp_pos_pitch_hover.value();
-    kp_pos_throttle_hover = params.kp_pos_throttle_hover.value();
-    ki_pos_roll_hover = params.ki_pos_roll_hover.value();
-    ki_pos_pitch_hover = params.ki_pos_pitch_hover.value();
-    ki_thrust_hover = params.ki_thrust_hover.value();
-    kd_pos_roll_hover = params.kd_pos_roll_hover.value();
-    kd_pos_pitch_hover = params.kd_pos_pitch_hover.value();
-    kd_pos_throttle_hover = params.kd_pos_throttle_hover.value();
-
-    kp_v_roll = params.kp_v_roll.value();
-    kp_v_pitch = params.kp_v_pitch.value();
-    kp_v_throttle = params.kp_v_throttle.value();
-    kd_v_roll = params.kd_v_roll.value();
-    kd_v_pitch = params.kd_v_pitch.value();
-    kd_v_throttle = params.kd_v_throttle.value();
-}
-
-void DroneController::serialize_settings() {
-    ControlParameters params;
-    params.kp_pos_roll = kp_pos_roll;
-    params.kp_pos_pitch = kp_pos_pitch;
-    params.kp_pos_throttle = kp_pos_throttle;
-    params.ki_pos_roll = ki_pos_roll;
-    params.ki_pos_pitch = ki_pos_pitch;
-    params.ki_thrust = ki_thrust;
-    params.kd_pos_roll = kd_pos_roll;
-    params.kd_pos_pitch = kd_pos_pitch;
-    params.kd_pos_throttle = kd_pos_throttle;
-    params.kp_pos_roll_hover = kp_pos_roll_hover;
-    params.kp_pos_pitch_hover = kp_pos_pitch_hover;
-    params.kp_pos_throttle_hover = kp_pos_throttle_hover;
-    params.ki_pos_roll_hover = ki_pos_roll_hover;
-    params.ki_pos_pitch_hover = ki_pos_pitch_hover;
-    params.ki_thrust_hover = ki_thrust_hover;
-    params.kd_pos_roll_hover = kd_pos_roll_hover;
-    params.kd_pos_pitch_hover = kd_pos_pitch_hover;
-    params.kd_pos_throttle_hover = kd_pos_throttle_hover;
-    params.kp_v_roll = kp_v_roll;
-    params.kp_v_pitch = kp_v_pitch;
-    params.kp_v_throttle = kp_v_throttle;
-    params.kd_v_roll = kd_v_roll;
-    params.kd_v_pitch = kd_v_pitch;
-    params.kd_v_throttle = kd_v_throttle;
-
-    std::string xmlData = params.toXML();
-    std::ofstream outfile = std::ofstream(control_parameters_rfn);
-    outfile << xmlData ;
-    outfile.close();
-}
-
 void DroneController::close() {
     if (initialized) {
         LED(true);
-        beep(false);
         std::cout << "Closing controller." << std::endl;
-        if (pparams.control_tuning)
-            serialize_settings();
         initialized = false;
     }
 }
