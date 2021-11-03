@@ -111,11 +111,13 @@ void Charger::run() {
                 if (fabs(d_smoothed_volts) < d_voltage_is_stable_threshold && millis() - measure_during_charge_start_time > min_volt_measuring_duration) {
                     d_battery_voltage = smoothed_volts - battery_volts;
                     measure_during_charge_end_time = millis();
-                    if (smoothed_volts > dangerous_battery_volts)
+                    if (smoothed_volts > dangerous_battery_volts) {
                         _charging_state = state_discharge;
-                    else if (charging_duration >= periodic_volt_measuring_duration && measured_smoothed_amps < min_charge_amps && setpoint_amp > min_charge_amps && volts_before_measuring > smoothed_volts + min_charge_volts_offset && smoothed_volts >= min_volts_detection)
+                        volt_mode_pv_initialised = false;
+                    } else if (charging_duration >= periodic_volt_measuring_duration && measured_smoothed_amps < min_charge_amps && setpoint_amp > min_charge_amps && volts_before_measuring > smoothed_volts + min_charge_volts_offset && smoothed_volts >= min_volts_detection) {
                         _charging_state = state_contact_problem;
-                    else if (smoothed_volts >= min_battery_volts_trickle_charge) {
+                        volt_mode_pv_initialised = false;
+                    } else if (smoothed_volts >= min_battery_volts_trickle_charge) {
                         if (!volt_mode_pv_initialised) {
                             //initialize the pv with some current base charging first, because convergence with volts based charging is tuned to takes very long
                             // current base charging is faster because it has a ff term
@@ -135,17 +137,23 @@ void Charger::run() {
                         _charging_state = state_normal_charging;
                     } else if (smoothed_volts >= min_battery_volts_normal_charge && smoothed_volts < battery_volts_very_empty) {
                         setpoint_amp = charge_1C + drone_amps_burn;
+                        volt_mode_pv_initialised = false;
                         _charging_state = state_normal_charging;
                     } else if (smoothed_volts >= min_battery_volts_normal_charge) {
                         setpoint_amp = charge_max + drone_amps_burn;
+                        volt_mode_pv_initialised = false;
                         _charging_state = state_normal_charging;
                     } else if (smoothed_volts >= min_battery_volts_revive_charge && millis() < revive_charge_timeout) {
                         setpoint_amp = charge_1C + drone_amps_burn;
+                        volt_mode_pv_initialised = false;
                         _charging_state = state_revive_charging;
-                    } else if (smoothed_volts > min_volts_detection)
+                    } else if (smoothed_volts > min_volts_detection) {
                         _charging_state = state_bat_dead;
-                    else
+                        volt_mode_pv_initialised = false;
+                    } else {
                         _charging_state = state_drone_not_on_pad;
+                        volt_mode_pv_initialised = false;
+                    }
 
                     battery_volts = smoothed_volts;
                 }

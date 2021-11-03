@@ -2,7 +2,7 @@
 
 #include <WString.h>
 
-#define VERSION 4
+#define VERSION 5
 #define PATS_HEADER 'P'
 struct SerialPackage {
     const char header = 'P';

@@ -17,7 +17,7 @@ class SerialPackage:
 
     format = '=cHBBLBfffffffBLHc'  # https://docs.python.org/3/library/struct.html?highlight=struct#format-characters
     header = 'P'
-    version = 4,  # note: put this in __init__ as well. Because python bug
+    version = 5,  # note: put this in __init__ as well. Because python bug
     led_state = 0
     watchdog_state = 0
     up_duration = 0
@@ -35,7 +35,7 @@ class SerialPackage:
     ender = '\n'
 
     def __init__(self):
-        self.version = 4  # because python bug
+        self.version = 5  # because python bug
 
     def parse(self, data_bytes):
         fields = struct.unpack(self.format, data_bytes)
