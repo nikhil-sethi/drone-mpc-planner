@@ -153,9 +153,11 @@ def process_insects_in_json(data, sys_info):
             LG_data[insect_name] = pd.DataFrame({'Offset': 0.0, 'TimeStamp': binned_insects.index.strftime('%Y-%m-%dT%H:%M:%S'), 'Value': binned_insects.values[:, 0]}).to_dict('records')
         else:
             LG_data[insect_name] = []
-
-    binned_insects = insects.resample(str(lg_bin_width) + 'T', on='time').count()
-    LG_data['MOTHNU'] = pd.DataFrame({'Offset': 0.0, 'TimeStamp': binned_insects.index.strftime('%Y-%m-%dT%H:%M:%S'), 'Value': binned_insects.values[:, 0]}).to_dict('records')
+    if not insects.empty:
+        binned_insects = insects.resample(str(lg_bin_width) + 'T', on='time').count()
+        LG_data['MOTHNU'] = pd.DataFrame({'Offset': 0.0, 'TimeStamp': binned_insects.index.strftime('%Y-%m-%dT%H:%M:%S'), 'Value': binned_insects.values[:, 0]}).to_dict('records')
+    else:
+        LG_data['MOTHNU'] = []
 
     return LG_data
 
