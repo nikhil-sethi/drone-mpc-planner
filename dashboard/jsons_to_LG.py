@@ -149,8 +149,11 @@ def process_insects_in_json(data, sys_info):
         insects = insects[insects.apply(patsc.true_positive, axis=1)]
 
     insects_info = patsc.get_insects_for_system(sys_info['system'].lower())
-    for insect_name, insect_min, insect_max in insects_info:
-        right_insects = insects.loc[(insects['Size'] >= insect_min) & (insects['Size'] <= insect_max), ['time', 'duration']]  # after this step we only need the time, we keep to columns otherwise the returned type is different
+    for insect_name, insect_min, insect_max, insect_floodfill_min, insect_floodfill_max in insects_info:
+        if patsc.check_verion(data['verion'], '1.10'):
+            right_insects = insects.loc[(insects['Size'] >= insect_floodfill_min) & (insects['Size'] <= insect_floodfill_max), ['time', 'duration']]  # after this step we only need the time, we keep to columns otherwise the returned type is different
+        else:
+            right_insects = insects.loc[(insects['Size'] >= insect_min) & (insects['Size'] <= insect_max), ['time', 'duration']]  # after this step we only need the time, we keep to columns otherwise the returned type is different
 
         if not right_insects.empty:
             binned_insects = right_insects.resample(str(lg_bin_width) + 'T', on='time').count()  # T means minute for some reason

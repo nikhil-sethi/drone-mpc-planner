@@ -102,7 +102,7 @@ def true_positive(moth):
 
 
 def get_insects_for_system(system):
-    sql_str = f'''  SELECT insects.LG_name,avg_size,std_size FROM insects
+    sql_str = f'''  SELECT insects.LG_name,avg_size,std_size,floodfill_avg_size,floodfill_std_size FROM insects
                     JOIN crop_insect_connection ON insects.insect_id = crop_insect_connection.insect_id
                     JOIN crops ON crop_insect_connection.crop_id = crops.crop_id
                     JOIN customers ON crops.crop_id = customers.crop_id
@@ -110,8 +110,21 @@ def get_insects_for_system(system):
                     WHERE systems.system = '{system}'  '''
     with open_systems_db() as con:
         insect_info = con.execute(sql_str).fetchall()
-        insect_info = [(name, avg_size - std_size, avg_size + 2 * std_size) for name, avg_size, std_size in insect_info]
+        insect_info = [(name, avg_size - std_size, avg_size + 2 * std_size, floodfill_avg_size - floodfill_std_size, floodfill_avg_size + 2 * floodfill_std_size) for name, avg_size, std_size, floodfill_avg_size, floodfill_std_size in insect_info]
         return insect_info
+
+
+def check_verion(current_version, minimal_version):
+    current_version = current_version.split('.')
+    minimal_version = minimal_version.split('.')
+    for i in range(0, np.max(len(current_version), len(minimal_version))):
+        if i == len(current_version) or i == len(minimal_version):
+            if int(current_version[i]) == int(minimal_version):
+                continue
+            else:
+                return int(current_version[i]) > int(minimal_version)
+        else:
+            return len(current_version) > len(minimal_version)
 
 
 def execute(cmd, retry=1, logger_name=''):

@@ -78,7 +78,7 @@ def init_insects_dropdown():
         if current_user.is_authenticated:
             username = current_user.username
             with patsc.open_systems_db() as con:
-                sql_str = 'SELECT DISTINCT insects.name,avg_size,std_size FROM insects' \
+                sql_str = 'SELECT DISTINCT insects.name,avg_size,std_size,floodfill_avg_size,floodfill_std_size FROM insects' \
                     + ' JOIN crop_insect_connection ON crop_insect_connection.insect_id = insects.insect_id' \
                     + ' JOIN crops ON crops.crop_id = crop_insect_connection.crop_id' \
                     + ' JOIN customers ON customers.crop_id = crops.crop_id' \
@@ -86,8 +86,8 @@ def init_insects_dropdown():
                     + ' JOIN users ON users.user_id = user_customer_connection.user_id' \
                     + ' WHERE users.name = "' + username + '" ORDER BY insects.name'
                 insects = con.execute(sql_str)
-                for name, avg_size, std_size in insects:
-                    insect_options.append({'label': name, 'value': {'label': name, 'avg_size': avg_size, 'std_dev': std_size}})
+                for name, avg_size, std_size, floodfill_avg_size, floodfill_std_size in insects:
+                    insect_options.append({'label': name, 'value': {'label': name, 'avg_size': avg_size, 'std_dev': std_size, 'floodfill_avg_size': floodfill_avg_size, 'floodfill_std_dev': floodfill_std_size}})
 
     insect_options.append({'label': 'No size filter', 'value': {'label': 'No size filter', 'avg_size': 0, 'std_dev': 0}})
     insect_options.append({'label': 'Anomalies', 'value': {'label': 'Anomalies', 'avg_size': 0, 'std_dev': 0}})
@@ -146,8 +146,13 @@ def create_insect_filter_sql_str(start_date, insect_type):
         close_insect_str = '))'
     min_size = insect_type['avg_size'] - insect_type['std_dev']
     max_size = insect_type['avg_size'] + 2 * insect_type['std_dev']
+    floodfill_min_size = insect_type['floodfill_avg_size'] - insect_type['floodfill_std_dev']
+    floodfill_max_size = insect_type['floodfill_avg_size'] + 2 * insect_type['floodfill_std_dev']
     if insect_type['avg_size'] > 0:
-        insect_str = insect_str + f'''Dist_traveled > 0.15 AND Dist_traveled < 4 AND Size > {min_size} AND Size < {max_size} ''' + close_insect_str
+        insect_str = insect_str + f'''Dist_traveled > 0.15 AND Dist_traveled < 4 AND
+                                      CASE WHEN CAST (substr(Version, 0, instr(Version, '.')) AS INTEGER) >= 1 AND CAST (substr(Version, instr(Version, '.')+1) AS INTEGER) >= 10
+                                      THEN Size > {floodfill_min_size} AND Size < {floodfill_max_size}
+                                      ELSE  Size > {min_size} AND Size < {max_size} END''' + close_insect_str
     else:
         insect_str = insect_str + '''Dist_traveled > 0.15 AND Dist_traveled < 4 ''' + close_insect_str
 
