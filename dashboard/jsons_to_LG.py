@@ -133,6 +133,11 @@ def process_insects_in_json(data, sys_info):
 
     # LG wants 5 minute binned data, so we need to align our window with that
     insects = pd.DataFrame(data['moths'])
+    LG_data: Dict[str, List] = {}
+    if insects.empty:
+        LG_data['MOTHNU'] = []
+        return LG_data
+
     insects['time'] = pd.to_datetime(insects['time'], format='%Y%m%d_%H%M%S')
     insects = insects.loc[(insects['time'] > sys_info['start_date']) & (insects['time'] < sys_info['expiration_date'])]
     if 'Monster' in insects:
@@ -143,7 +148,6 @@ def process_insects_in_json(data, sys_info):
     else:
         insects = insects[insects.apply(patsc.true_positive, axis=1)]
 
-    LG_data: Dict[str, List] = {}
     insects_info = patsc.get_insects_for_system(sys_info['system'].lower())
     for insect_name, insect_min, insect_max in insects_info:
         right_insects = insects.loc[(insects['Size'] >= insect_min) & (insects['Size'] <= insect_max), ['time', 'duration']]  # after this step we only need the time, we keep to columns otherwise the returned type is different
