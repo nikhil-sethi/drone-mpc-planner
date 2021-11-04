@@ -6,4 +6,4 @@ const std::string required_firmware_version_multimodule = "6.0.0.20";
 const uint16_t required_firmware_version_baseboard = 5;
 const int required_version_bf_major = 4;
 const int required_version_bf_minor = 2;
-const int required_version_bf_patch = 107;
+const int required_version_bf_patch = 108;

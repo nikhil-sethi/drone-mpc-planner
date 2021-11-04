@@ -43,7 +43,8 @@ enum betaflight_headless_mode {
     bf_yaw_reset = 100,
     bf_PID_loop_disabled = 150,
     bf_spin_motor = 200,
-    bf_spin_motor_reversed = 250
+    bf_spin_motor_reversed = 250,
+    bf_airmode = 300
 };
 static const char *armed_names[] = {"disarmed", "armed"};
 enum betaflight_arming {

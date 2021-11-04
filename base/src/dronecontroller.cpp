@@ -338,6 +338,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
                 }
                 [[fallthrough]];
         } case fm_flying_pid: {
+                mode += bf_airmode;
                 if (!data_drone.pos_valid) {
                     pos_err_i = {0};
                     if (_time - take_off_start_time < 0.5)
