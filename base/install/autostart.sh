@@ -20,9 +20,9 @@ DRONE_ID=$(( $HOST_ID ))
 export GST_VAAPI_ALL_DRIVERS=1
 export LIBVA_DRIVER_NAME=iHD
 CPU_str=$(lscpu | grep -i 'model name' | uniq)
-if [[ $CPU_str == *"i3-11"* ]] || [[ $CPU_str == *"i5-11"* ]] || [[ $CPU_str == *"i7-11"* ]]; then
-  export LIBVA_DRIVER_NAME=i965
-fi
+#if [[ $CPU_str == *"i3-11"* ]] || [[ $CPU_str == *"i5-11"* ]] || [[ $CPU_str == *"i7-11"* ]]; then
+#  export LIBVA_DRIVER_NAME=i965
+#fi
 ubuntu_str=$(lsb_release -a | grep Release)
 if [[ $ubuntu_str == *"18.04"* ]] ; then
   unset LIBVA_DRIVER_NAME
