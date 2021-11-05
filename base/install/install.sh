@@ -96,16 +96,15 @@ DEPENDENCIES_FLAG=dependencies-packages-v1.18.done
 		rm librealsense-packages.done
 	}
 
-	if ([[ $KERNEL == "5.11."* ]] || [[ $KERNEL == "5.8."* ]]) && [ ! -f librealsense-kernel-patch_v1.1.done ]; then
+	if ([[ $KERNEL == "5.11."* ]] || [[ $KERNEL == "5.8."* ]]) && [ ! -f librealsense-kernel-patch_v1.2.done ]; then
 		[ -d ./librealsense ] || {
 			git clone git@github.com:IntelRealSense/librealsense.git
 		}
 		pushd librealsense/
-		git remote add kevin https://github.com/kevindehecker/librealsense.git || true
-		git co patch_ubuntu_focal_5.11
+		git co development
 		./scripts/patch-realsense-ubuntu-lts.sh
 		popd
-		touch librealsense-kernel-patch_v1.1.done
+		touch librealsense-kernel-patch_v1.2.done
 	fi
 
 	touch librealsense-packages_v1.1.done
