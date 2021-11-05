@@ -65,10 +65,7 @@ All done!
     - Arrange pats ssh files and put it on the stick
     - NUC 11:
         - Boot the NUC from the stick, select boot and install **with  hwe** and reboot
-        - Enable GUC:
-            - `sudo nano /etc/default/grub`    ----> `GRUB_CMDLINE_LINUX_DEFAULT="i915.enable_guc=2"`
-            - `sudo update-grub`
-    - NUC 7/8:
+    - NUC 7/8/10:
         - Boot the NUC from the stick, select boot and install and reboot
     - Ubuntu 20.04 server install: https://askubuntu.com/questions/1269493/ubuntu-server-20-04-1-lts-not-all-disk-space-was-allocated-during-installation
         - `sudo vgdisplay`
@@ -76,6 +73,8 @@ All done!
         - `sudo resize2fs /dev/mapper/ubuntu--vg-ubuntu--lv`
     - Install above packages (e.g. `mkdir -p ~/usb && sudo mount /dev/sda2 ~/usb -o rw` and cd to the folder with the debs and `sudo dpkg -i *`)
     - Enable WiFi (e.g. `sudo nmcli device wifi connect <SSID> password <PASS>`)
+    - `sudo nano /etc/default/grub`    ----> `GRUB_CMDLINE_LINUX_DEFAULT="quiet splash fsck.repair=yes i915.enable_guc=2"`
+    - `sudo update-grub`
     - Run the install script
     - Reboot
     - Remotely open (via ssh) the base project with vscode, and install all extensions
