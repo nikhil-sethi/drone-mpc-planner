@@ -98,7 +98,7 @@ int GStream::init(int mode, std::string file, int sizeX, int sizeY, int fps, std
             //gst-launch-1.0 videotestsrc ! video/x-raw,format=GRAY8,framerate=\(fraction\)90/1,width=1280,height=720 ! videoconvert ! x264enc ! 'video/x-h264, stream-format=(string)byte-stream'  ! avimux ! filesink location=test.avi
             //gst-launch-1.0 videotestsrc ! video/x-raw,format=GRAY8,framerate=\(fraction\)90/1,width=1696,height=480 ! videoconvert ! vaapih265enc ! h265parse ! matroskamux ! filesink location=test.mkv
             //gst-launch-1.0 videotestsrc ! video/x-raw,format=GRAY8,framerate=\(fraction\)90/1,width=1696,height=480 ! videoconvert ! vaapivp9enc ! matroskamux ! filesink location=test.mkv
-            //gst-launch-1.0 videotestsrc ! video/x-raw,format=GRAY8,framerate=\(fraction\)90/1,width=1696,height=480 ! videoconvert ! vaapih264enc ! h264parse ! matroskamux ! filesink location=test.mkv
+            //gst-launch-1.0 videotestsrc ! video/x-raw,format=GRAY8,framerate=\(fraction\)90/1,width=1696,height=480 ! videoconvert ! vaapih264enc rate-control=2 ! h264parse ! matroskamux ! filesink location=test.mkv
 
             _pipeline = gst_pipeline_new("pipeline");
             _appsrc = gst_element_factory_make("appsrc", "source");
