@@ -93,6 +93,9 @@ def store_moths(data):
         # v1.11: Insect labeling from trajectory
         if 'LIA_insect' not in columns:
             cur.execute('ALTER TABLE moth_records ADD COLUMN LIA_insect INT')
+        # v1.12: Added a version str for the insect labeling
+        if 'LIA_version' not in columns:
+            cur.execute('ALTER TABLE moth_records ADD COLUMN LIA_version TEXT')
 
         sql_insert = ''
         for moth in moths:
