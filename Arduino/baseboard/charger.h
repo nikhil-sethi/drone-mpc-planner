@@ -38,8 +38,8 @@ private:
     const float current_measurement_resistance = 0.33f;
     const float battery_size_mah = 300.f;
 
-    const float min_volts_detection = 1.f;
-    const float min_battery_volts_revive_charge = 1.5f;
+    const float min_volts_detection = 0.6f;
+    const float min_battery_volts_revive_charge = 0.7f;
     const float min_battery_volts_normal_charge = 2.5f;
     const float battery_volts_very_empty = 3.5f;
     const float battery_volts_almost_full = 4.1f;
