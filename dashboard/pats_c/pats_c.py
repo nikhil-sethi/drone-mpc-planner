@@ -89,8 +89,8 @@ def init_insects_dropdown():
                 for name, avg_size, std_size, floodfill_avg_size, floodfill_std_size in insects:
                     insect_options.append({'label': name, 'value': {'label': name, 'avg_size': avg_size, 'std_dev': std_size, 'floodfill_avg_size': floodfill_avg_size, 'floodfill_std_dev': floodfill_std_size}})
 
-    insect_options.append({'label': 'No size filter', 'value': {'label': 'No size filter', 'avg_size': 0, 'std_dev': 0}})
-    insect_options.append({'label': 'Anomalies', 'value': {'label': 'Anomalies', 'avg_size': 0, 'std_dev': 0}})
+    insect_options.append({'label': 'No size filter', 'value': {'label': 'No size filter', 'avg_size': 0, 'std_dev': 0, 'floodfill_avg_size': 0, 'floodfill_std_dev': 0}})
+    insect_options.append({'label': 'Anomalies', 'value': {'label': 'Anomalies', 'avg_size': 0, 'std_dev': 0, 'floodfill_avg_size': 0, 'floodfill_std_dev': 0}})
     return insect_options, date_style, insect_style
 
 
