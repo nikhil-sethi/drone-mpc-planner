@@ -73,7 +73,7 @@ All done!
         - `sudo resize2fs /dev/mapper/ubuntu--vg-ubuntu--lv`
     - Install above packages (e.g. `mkdir -p ~/usb && sudo mount /dev/sda2 ~/usb -o rw` and cd to the folder with the debs and `sudo dpkg -i *`)
     - Enable WiFi (e.g. `sudo nmcli device wifi connect <SSID> password <PASS>`)
-    - `sudo nano /etc/default/grub`    ----> `GRUB_CMDLINE_LINUX_DEFAULT="quiet splash fsck.repair=yes i915.enable_guc=2"`
+    - `sudo nano /etc/default/grub`    ----> `GRUB_CMDLINE_LINUX_DEFAULT="quiet nosplash fsck.repair=yes i915.enable_guc=2"`
     - `sudo update-grub`
     - Run the install script
     - Reboot
