@@ -37,51 +37,58 @@ Same remarks as with drone flash script apply.
 ## Flashing Baseboard:
 
 ```
-  cd $HOME/code/pats/config/firmwares/charging/avrdude  && ./avrdude -C./avrdude.conf -v -patmega328p -carduino -P/dev/baseboard -b115200 -D -Uflash:w:$HOME/code/pats/config/firmwares/charging/baseboard.ino.eightanaloginputs.hex:i
+$HOME/code/pats/config/firmwares/baseboard/update_baseboard.sh
 ```
 
-## Initializing new Anvil charging pad:
+## Initializing new Baseboard:
+### Checklist
+1. Solder the MP1584EN dc-dc converter
+2. Solder the fan connector
+3. Solder 5pin connector
+4. Flash the cp2105 
+5. Program bootloader
+6. Init EEPROM
+
+charging only:
+
+7. Place fuse
+8. Enable charger
+9. Calibrate
+
+Version 1.3 (and up?) only
+
+10. Place jumpers 
+11. Cut redundant usb lines
+12. Pull down resistor 
+
 ### Programming Bootloader
-1. Run Adruino IDE
+1. Run Adruino IDE (with sudo)
 2. Select Tools->Board->Arduino_Nano
 3. Select Tools->Processor->Atmega328P
 4. Place Olimex AVR-ISP-MK2 pins on the board
 5. Select Tools->Burn_Bootloader 
 
-### Flashing the CP2105 (only for Revision D)
-1. Download AN721SW cp2105 costumizer (is available for Linux, but works best in Windows)
-2. Run costumizer and change "3. SCI/ECI in GPIO Mode" to "0 - SCI/ECI in Modem Mode"
-3. Program device
+### Flashing the CP2105 
+1. Unpack AN721SW cp2105 costumizer from the baseboard folder (is available for Linux, but works best in Windows)
+2. alternatively: https://www.silabs.com/documents/public/example-code/AN721SW.zip
+3. Install depencencies "sudo apt install libgtk2.0-0:i386 libxtst6:i386"
+4. Make sure you have the udev rules installed or run as root
+5. Run CP21xxCustomizationUtility in the Linux/customizer folder
+6. Run costumizer as sudo and change "3. SCI/ECI in GPIO Mode" to "0 - SCI/ECI in Modem Mode"
+7. Program device
+
+### Flash the baseboard
+1. $HOME/code/pats/config/firmwares/baseboard/update_baseboard.sh
+
+### Init EEPROM
+1. Type in serial console: "clear config hard"
 
 ### Calibrating voltage measurement
-1. Connect to charing pad and open in serial monitor
+1. Connect to charing pad and open in serial monitor (I recommend cutecom)
 2. Take a charged drone and measure the voltage on the charging pins
 3. Place the drone on the pad
-4. Type "calib {voltage}" into the serial monitor (for instance "calib 4.23")
-5. Serial monitor should now print correct voltage
-6. To undo calibration type "reset"
+4. Type "enable charger"
+5. Type "calib {voltage}" into the serial monitor (for instance "calib 4.23")
+6. Serial monitor should now print correct voltage
+7. To undo calibration type "reset"
 
-## Flashing Anvil charging pad:
-
-```
-  cd $HOME/code/pats/config/firmwares/charging/avrdude  && ./avrdude -C./avrdude.conf -v -patmega328p -carduino -P/dev/ttyUSB0 -b115200 -D -Uflash:w:$HOME/code/pats/config/firmwares/charging/charging_pad.ino.eightanaloginputs.hex:i
-```
-
-  Flash all connected charging pads:
-```
-  cd $HOME/code/pats/config/firmwares/charging/avrdude  &&  for i in {0..12}; do ./avrdude -C./avrdude.conf -v -patmega328p -carduino -P/dev/ttyUSB${i} -b115200 -D -Uflash:w:$HOME/code/pats/config/firmwares/charging/charging_pad.ino.eightanaloginputs.hex:i ; done
-```
-
-Sound decryption:
-
-| Sounds            | Meaning                          |
-|-------------------|----------------------------------|
-| Mario theme       | Drone not detected               |
-| Mario dies        | Drone removed                    |
-| Level up          | Drone connected                  |
-| Underground sound | Drone connected but no charging* |
-| Low ticks         | Current is flowing               |
-| Intermittent ticks| Needs calibration                |
-| Startup beeps     | Encodes software version         /
-
- \* Contact resistance to the battery too high (Charging legs, broken wires, etc)

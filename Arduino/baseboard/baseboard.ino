@@ -1,6 +1,11 @@
 #include "utility.h"
 #include "charger.h"
 #include "eeprom_settings.h"
+#include <FastLED.h>
+
+#define INDICATOR_LEDS_PIN 2
+#define NUM_INDICATOR_LEDS 2
+CRGB leds[NUM_INDICATOR_LEDS];
 
 #define NUC_ENABLE_PIN 8
 #define FAN_RPM_PIN 3
@@ -12,6 +17,10 @@
 #define NUC_OFF_TIME (30L * SECOND_IN_MILLIS)
 #define WATCHDOG_TIMEOUT HOUR_IN_MILLIS
 #define WATCHDOG_STATUS_LED 13
+#define HARDWARE_VERSION_PIN A1
+#define BUTTON_1_PIN 4
+#define BUTTON_2_PIN 6
+#define USB_ENABLE_PIN 5
 
 Charger charger;
 
@@ -35,6 +44,10 @@ void setup() {
     pinMode(NUC_ENABLE_PIN, OUTPUT);
     digitalWrite(NUC_ENABLE_PIN, 1);
 
+    digitalWrite(USB_ENABLE_PIN, 1);
+    pinMode(USB_ENABLE_PIN, OUTPUT);
+    digitalWrite(USB_ENABLE_PIN, 1);
+
     Serial.begin(115200);
     Serial.setTimeout(5);
 
@@ -45,8 +58,18 @@ void setup() {
     digitalWrite(LED_ENABLE_PIN, 1);
 
     pinMode(FAN_RPM_PIN, INPUT_PULLUP);
+    pinMode(BUTTON_1_PIN, INPUT);
+    pinMode(BUTTON_2_PIN, INPUT);
+    pinMode(HARDWARE_VERSION_PIN, INPUT);
 
     charger.init();
+
+    FastLED.addLeds<WS2812, INDICATOR_LEDS_PIN, GRB>(leds, NUM_INDICATOR_LEDS);
+
+    set_indicator_leds({0, 0, 100 }, {0, 100, 0});
+    hardware_version();
+    //restart_usb()
+    read_buttons();
 
     debugln("baseboard started");
 }
@@ -89,6 +112,7 @@ void loop() {
     handle_watchdog();
     handle_nuc_reset();
     // fan_speed = pulseInLong(FAN_RPM_PIN, LOW);
+    set_watchdog_indicator_led();
 
     charger.run();
     if (!charger.calibrating())
@@ -162,6 +186,8 @@ bool handle_watchdog_commands(char *input) {
         watchdog_trigger_imminent = false;
         nuc_has_been_reset = false;
         write_nuc_has_been_reset_eeprom(nuc_has_been_reset);
+        leds[0] = CRGB(0, 0, 0);
+        FastLED.show();
         return true; // surpress serial output
     }
 
@@ -199,6 +225,53 @@ void handle_reboot_commands(char *input) {
         debugln("Reboot NUC");
         reset_nuc = true;
     }
+}
+
+void hardware_version() {
+    uint16_t analog_value = analogRead(A1);
+    delay(10);
+    analog_value = analogRead(A1);
+    analog_value = ~analog_value;
+    analog_value = analog_value >> 4;
+    analog_value &= 0b11111;
+    Serial.print("Hardware version ");
+    Serial.println(analog_value);
+}
+
+void set_indicator_leds(CRGB led0, CRGB led1) {
+    leds[0] = led0;
+    leds[1] = led1;
+    FastLED.show();
+}
+
+void read_buttons() {
+    // button 2 does not work in hardware version 1
+    Serial.print("button 1 is ");
+    Serial.print(digitalRead(BUTTON_1_PIN) ? " on  " : " off ");
+    Serial.print("button 2 is ");
+    Serial.println(digitalRead(BUTTON_2_PIN) ? " on  " : " off ");
+}
+
+void restart_usb() {
+    // also restarts usb hub (whoops)
+    digitalWrite(USB_ENABLE_PIN, 0);
+    delay(1000);
+    digitalWrite(USB_ENABLE_PIN, 1);
+}
+
+void set_watchdog_indicator_led() {
+    static int blink = 0;
+    if (watchdog_enabled) {
+        if ((!watchdog_trigger_imminent && millis() - nuc_watchdog_timer > 50L) || blink++ % 100 > 50)
+            leds[0] = CRGB(0, 0, 100);
+        else
+            leds[0] = CRGB(0, 0, 0);
+    }
+    else
+        leds[0] = CRGB(0, 0, 0);
+
+    FastLED.show();
+
 }
 
 void handle_eeprom_commands(char *input) {
