@@ -332,6 +332,7 @@ void process_video() {
                 || dnav.navigation_status() == "ns_wait_for_insect"
                 || dnav.navigation_status() == "ns_check_pad_att"
                 || dnav.navigation_status() == "ns_monitoring"
+                || dnav.navigation_status() == "ns_tracker_problem"
                 || dnav.drone_problem(1)) {
 
             auto time_now = chrono::system_clock::to_time_t(chrono::system_clock::now());
