@@ -46,7 +46,7 @@ private:
     double time_located_drone = 0;
     double time_take_off = 0;
     double time_shake_start = 0;
-    float time_out_after_landing = 8;
+    float time_out_after_landing = 10;
     const float duration_shake = 3;
     const float duration_motion_calibration = 2;
     const float duration_correct_yaw = 6;
