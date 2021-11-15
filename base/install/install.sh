@@ -57,11 +57,14 @@ DEPENDENCIES_FLAG=dependencies-packages-v1.18.done
 	sudo apt update
 	sudo apt install -y build-essential g++ gdb libva-dev libswresample-dev libavutil-dev pkg-config libcurl4-openssl-dev ncdu openssh-server ffmpeg unattended-upgrades inotify-tools cpputest python3-pip dfu-util exfat-utils vnstat ifmetric net-tools lm-sensors nethogs htop git nano screen autossh usb-modeswitch moreutils cmake vainfo intel-gpu-tools lsb-core uptimed
 
-	if [[ $KERNEL == "5.11."* ]] || [[ $KERNEL == "5.8."* ]]; then
-		sudo apt remove intel-media-va-driver 
-		sudo apt install intel-media-va-driver-non-free
-	else
-		sudo apt remove intel-media-va-driver intel-media-va-driver-non-free
+	ubuntu_str=$(lsb_release -a | grep Release)
+	if [[ $ubuntu_str != *"18.04"* ]] ; then
+		if [[ $KERNEL == "5.11."* ]] || [[ $KERNEL == "5.8."* ]]; then
+			sudo apt remove intel-media-va-driver 
+			sudo apt install intel-media-va-driver-non-free
+		else
+			sudo apt remove intel-media-va-driver intel-media-va-driver-non-free
+		fi
 	fi
 
 	# gstreamer packages:
