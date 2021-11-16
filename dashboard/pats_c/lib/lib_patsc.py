@@ -95,11 +95,13 @@ def clean_moth_json_entry(moth, data):
 
 
 def true_positive(moth):
-    if moth['Version'] == '1.0':
-        return moth['duration'] > 1 and moth['duration'] < 10
+    if 'Version' in moth:
+        if moth['Version'] == '1.0':
+            return moth['duration'] > 1 and moth['duration'] < 10
+        else:
+            return moth['duration'] > 1 and moth['duration'] < 10 and moth['Dist_traveled'] > 0.15 and moth['Dist_traveled'] < 4
     else:
-        return moth['duration'] > 1 and moth['duration'] < 10 and moth['Dist_traveled'] > 0.15 and moth['Dist_traveled'] < 4
-
+        return False
 
 def get_insects_for_system(system):
     sql_str = f'''  SELECT insects.LG_name,avg_size,std_size,floodfill_avg_size,floodfill_std_size FROM insects
@@ -117,7 +119,7 @@ def get_insects_for_system(system):
 def check_verion(current_version, minimal_version):
     current_version = current_version.split('.')
     minimal_version = minimal_version.split('.')
-    for i in range(0, np.max(len(current_version), len(minimal_version))):
+    for i in range(0, np.max([len(current_version), len(minimal_version)])):
         if i == len(current_version) or i == len(minimal_version):
             if int(current_version[i]) == int(minimal_version):
                 continue
