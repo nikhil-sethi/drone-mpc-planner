@@ -18,7 +18,7 @@ def cleanWhitespaces(filepath):
 if __name__ == "__main__":
     original_samplerate = 60
     target_samplerate = 90
-    insectlog_filepath = os.path.expanduser('~/code/pats/pc/insect_logs/56.csv')
+    insectlog_filepath = os.path.expanduser('~/code/pats/base/replay_insects/56.csv')
 
     csv_string = cleanWhitespaces(insectlog_filepath)
     insect_log = pd.read_csv(csv_string, sep=';')
