@@ -141,7 +141,7 @@ def store_mode(data, dry_run):
             for sub_entry in sub_entries:
                 dt_from = sub_entry['from']
                 dt_till = sub_entry['till']
-                if dry_run:
+                if not dry_run:
                     cur.execute(sql_insert, (data["system"], dt_from, dt_till, sub_entry['mode']))
                 else:
                     print(sql_insert + ' ' + ' ,'.join([data["system"], dt_from, dt_till, sub_entry['mode']]))
@@ -308,7 +308,7 @@ def store_hunts(data, dry_run):
                     sql__insert_values = sql__insert_values + '?,'
                 sql_insert = sql_insert[:-1] + sql__insert_values[:-1] + ')'
 
-            if dry_run:
+            if not dry_run:
                 cur.execute(sql_insert, (data["system"], dt_from, dt_till, *list(hunt.values())[2:]))
             else:
                 print(sql_insert + ' ' + ' ,'.join([data["system"], dt_from, dt_till, *list(hunt.values())[2:]]))
