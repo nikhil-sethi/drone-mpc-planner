@@ -372,10 +372,10 @@ def jsons_to_db(input_folder, dry_run):
                             flag_f.write('ERROR: ' + str(error))
                     else:
                         flag_f.write('File size too big \n')
-    # if not dry_run:
-    concat_modes(first_date)
-    remove_double_data('moth', first_date)
-    remove_double_data('hunt', first_date)
+    if not dry_run:
+        concat_modes(first_date)
+        remove_double_data('moth', first_date)
+        remove_double_data('hunt', first_date)
 
 
 if __name__ == "__main__":
