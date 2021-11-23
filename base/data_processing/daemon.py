@@ -11,6 +11,7 @@ import sys
 import socket
 import re
 import shutil
+import pandas as pd
 from datetime import date, datetime, timedelta
 from pathlib import Path
 import pause
@@ -99,7 +100,7 @@ class pats_task(metaclass=abc.ABCMeta):
         else:
             start_trigger_time = datetime.combine(date.today(), datetime.min.time()) - self.periodic_td
 
-        while start_trigger_time <= datetime.today():
+        while pd.to_datetime(start_trigger_time).round('1s') <= pd.to_datetime(datetime.today()).round('1s'):
             start_trigger_time = start_trigger_time + self.periodic_td
 
         return start_trigger_time
@@ -127,7 +128,6 @@ class pats_task(metaclass=abc.ABCMeta):
                 self.logger.error(str(e))
                 self.status_str = 'ERROR: ' + str(e)
                 self.error_cnt += 1
-
             start_trigger_time = self.next_trigger()
             self.status_str = 'Ran at: ' + datetime.today().strftime("%d-%m-%Y %H:%M:%S") + ', next: ' + start_trigger_time.strftime("%d-%m-%Y %H:%M:%S")
 
