@@ -190,7 +190,7 @@ def concat_modes(start_date):
                 prev_entry = modes[i - 1]
                 if (prev_entry[t_start_id] == entry[t_start_id] and prev_entry[t_end_id] == entry[t_end_id]) or entry[t_start_id] > entry[t_end_id] or entry[mode_id] == 'down':
                     # remove duplicates and corrupted entries
-                    cur.execute(+ str(entry[entry_id]))
+                    cur.execute(sql_delete + str(entry[entry_id]))
                 elif prev_entry[mode_id] == entry[mode_id] and todatetime(entry[t_start_id]) - todatetime(prev_entry[t_end_id]) < datetime.timedelta(minutes=10):
                     # found two or more entries that can be merged.
                     if start_entrie is None:
@@ -372,10 +372,10 @@ def jsons_to_db(input_folder, dry_run):
                             flag_f.write('ERROR: ' + str(error))
                     else:
                         flag_f.write('File size too big \n')
-    if not dry_run:
-        concat_modes(first_date)
-        remove_double_data('moth', first_date)
-        remove_double_data('hunt', first_date)
+    # if not dry_run:
+    concat_modes(first_date)
+    remove_double_data('moth', first_date)
+    remove_double_data('hunt', first_date)
 
 
 if __name__ == "__main__":
