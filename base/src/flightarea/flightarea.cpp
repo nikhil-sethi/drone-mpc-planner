@@ -55,6 +55,20 @@ void FlightArea::update_bottom_plane_based_on_blink(float pad_height) {
     }
 }
 
+
+void FlightArea::set_vertical_camera_plane(float z) {
+    if (z < 0) {
+        for (auto &flight_area_config_pair : flight_area_configs) {
+            flight_area_config_pair.second.add_plane(cv::Point3f(0, 0, z), cv::Point3f(0, 0, -1), unspecified_plane);
+            flight_area_config_pair.second.update_config();
+#if FLIGHT_AREA_DEBUG
+            flight_area_config_pair.second.cout_debug_info();
+#endif
+        }
+    }
+}
+
+
 bool FlightArea::inside(cv::Point3f point, safety_margin_types safety_margin_type) {
     return flight_area_config(safety_margin_type)->inside(point);
 }
