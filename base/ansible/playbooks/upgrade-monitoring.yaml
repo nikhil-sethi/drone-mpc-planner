@@ -2,26 +2,26 @@
 - hosts: monitoring
   strategy: free
   tasks:
-  - name: Disable all pats daemons
-    ansible.builtin.file:
-     path: ~/pats/flags/disable
-     state: touch
-  - name: Kill (auto restart) pats process
-    shell: "killall pats || true"
-  - name: Pull pats
-    git:
+    - name: Disable all pats daemons
+      ansible.builtin.file:
+        path: ~/pats/flags/disable
+        state: touch
+    - name: Kill (auto restart) pats process
+      shell: "killall pats || true"
+    - name: Pull pats
+      git:
         repo: git@github.com:pats-drones/pats.git
         dest: /home/pats/code/pats
         update: yes
         version: monitoring
         force: yes
         clone: no
-  - name: Build pats
-    make:
+    - name: Build pats
+      make:
         chdir: /home/pats/code/pats/base/build
         params:
-            NUM_THREADS: 4
-  - name: Remove disable flag
-    ansible.builtin.file:
-     path: ~/pats/flags/disable
-     state: absent
+          NUM_THREADS: 4
+    - name: Remove disable flag
+      ansible.builtin.file:
+        path: ~/pats/flags/disable
+        state: absent

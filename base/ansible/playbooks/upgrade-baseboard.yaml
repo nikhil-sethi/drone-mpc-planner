@@ -1,32 +1,32 @@
 ---
-- hosts: hunt
+- hosts: tree
   strategy: free
   tasks:
-  - name: Disable all pats daemons
-    ansible.builtin.file:
-     path: ~/pats/flags/disable
-     state: touch
-  - name: Kill (auto restart) pats process
-    shell: "killall pats || true"
-  - name: Kill (auto restart) pats daemon
-    shell: "kill $(pgrep -f daemon.py)"
-    failed_when: false
-    ignore_errors: yes
-  - name: Pull pats
-    git:
+    - name: Disable all pats daemons
+      ansible.builtin.file:
+        path: ~/pats/flags/disable
+        state: touch
+    - name: Kill (auto restart) pats process
+      shell: "killall pats || true"
+    - name: Kill (auto restart) pats daemon
+      shell: "kill $(pgrep -f daemon.py)"
+      failed_when: false
+      ignore_errors: yes
+    - name: Pull pats
+      git:
         repo: git@github.com:pats-drones/pats.git
         dest: /home/pats/code/pats
         update: yes
         version: autonomy_test
         force: yes
         clone: no
-  - name: Flash the baseboard
-    shell: "cd ~/code/pats/base/data_processing/ && ./update_baseboard.sh"
-  - name: Remove disable flag
-    ansible.builtin.file:
-     path: ~/pats/flags/disable
-     state: absent
-  - name: print baseboard version and sha
-    shell: "cat ~/pats/flags/baseboard_software_uploaded"
-    register: output
-  - debug: var=output.stdout_lines
+    - name: Flash the baseboard
+      shell: "cd ~/code/pats/base/data_processing/ && ./update_baseboard.sh"
+    - name: Remove disable flag
+      ansible.builtin.file:
+        path: ~/pats/flags/disable
+        state: absent
+    - name: print baseboard version and sha
+      shell: "cat ~/pats/flags/baseboard_software_uploaded"
+      register: output
+    - debug: var=output.stdout_lines

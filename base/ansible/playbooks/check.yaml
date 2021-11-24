@@ -1,8 +1,24 @@
 ---
-- hosts: monitors
+- hosts: tree
+  strategy: linear
+  order: inventory
   gather_facts: no
   tasks:
-  - name: print git sha
-    shell: "cd ~/code/pats && git rev-parse HEAD"
-    register: output
-  - debug: var=output.stdout_lines
+    - name: checks
+      shell: "uptime -p &&
+        cd ~/code/pats && echo git sha: $(git rev-parse HEAD) &&
+        echo image version: $(cat ~/dependencies/image_version) kernel: $(uname -r) $(lsb_release -d) &&
+        if [ -e '/dev/baseboard' ] ; then echo 'Baseboard: OK' ; else echo 'Baseboard: NOT DETECTED' ; fi &&
+        if [ -e '/dev/pats_mm0' ] ; then echo 'MultiModule: OK' ; else echo 'MultiModule: NOT DETECTED' ; fi &&
+        echo RealSense: $(lsusb | grep RealSens) &&
+        echo 4G: $(lsusb | grep 'E353/E3131')"
+      register: output_checks
+    # - name: serial
+    #   become: true
+    #   shell: "cat /sys/class/dmi/id/product_serial"
+    #   register: output_serial
+    # - name: shutdown
+    #   become: true
+    #   shell: "halt -p"
+    - debug: var=output_checks.stdout_lines
+    # - debug: var=output_serial.stdout_lines

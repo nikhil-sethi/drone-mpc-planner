@@ -1,123 +1,35 @@
-#[gatewayed]
-#pats128 ansible_host=localhost ansible_port=12800 ansible_ssh_private_key_file=/home/pats/.ssh/pats_id_rsa.pub
-#pats116 ansible_host=localhost ansible_port=11600 ansible_ssh_private_key_file=/home/pats/.ssh/pats_id_rsa.pub
-
-[monitors]
-pats1
-pats2
-pats3
-pats4
-pats7
-pats9
-pats10
-pats11
-pats12
-pats13
-pats14
-pats15
-pats16
-pats17
-pats21
-pats22
-pats23
-pats24
-pats27
-pats28
-pats29
-pats42
-pats43
-pats44
-pats45
-pats46
-pats47
-pats48
-pats49
-pats50
-pats51
-pats54
-pats59
-pats60
-pats63
-pats64
-pats65
-pats67
-pats70
-pats71
-pats72
-pats73
-pats74
-pats75
-pats76
-pats78
-pats79
-pats80
-pats81
-pats83
-pats84
-pats85
-pats86
-pats87
-pats88
-pats89
-pats90
-pats91
-pats92
-pats93
-pats94
-pats96
-pats97
-pats98
-pats99
-pats100
-pats101
-pats102
-pats103
-pats104
-pats105
-pats106
-pats107
-pats108
-pats109
-pats110
-pats111
-pats112
-pats113
-pats114
-pats122
-pats123
-pats124
-pats125
-pats126
-pats127
-
-
 [koppert]
 pats4
 pats6
 pats77
 
-[beta]
-# pats31
-pats128
-# pats116 # 4g!
-#pats8
-#pats4
-#pats6
+[tree]
 
-[hunters]
+pats36 #NUC78
+pats37 #NUC11
+pats38 #NUC78
+pats39 #NUC11
+
+#NUC10
 pats30
-pats31
-pats32
 pats33
-pats34
 pats35
-pats36
-pats37
-pats38
-pats39
+pats141
 
+pats149
+pats150
+pats151
+pats152
+pats153
+pats154
+pats155
+pats156
 
-
+pats157
+pats158
+pats159
+pats160
+pats161
 
 [all:vars]
 ansible_python_interpreter=/usr/bin/python3

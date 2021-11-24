@@ -1,13 +1,14 @@
 ---
-- hosts: monitors
+- hosts: tree
   strategy: free
+  gather_facts: no
   tasks:
     - name: Kill pats process
       shell: "killall pats || true"
-    - name: Reboot
+    - name: Shutdown
       become: true
       ignore_errors: yes
       ignore_unreachable: yes
       async: yes
       poll: no
-      shell: "sleep 5 && sudo rtcwake -m no -s 120 &&  sudo systemctl poweroff"
+      shell: "halt -p"
