@@ -3,9 +3,9 @@ import datetime
 import numbers
 import pandas as pd
 import dash
-import dash_table
-import dash_core_components as dcc
-import dash_html_components as html
+from dash import dash_table
+from dash import dcc
+from dash import html
 import dash_bootstrap_components as dbc
 from dash.dependencies import Output, Input, State
 from aenum import Enum, NoAlias
@@ -719,22 +719,22 @@ def dash_application():
                                 )
                             ], id='dropdown_holder', className='dash-bootstrap', style={'width': '40%', 'display': 'inline-block', 'float': 'left'}),
                             html.Div([
-                                dbc.Button('edit', id='edit_button', color='dark', block=True, disabled=True, style={'width': '97%', 'margin-left': '3%'})
+                                dbc.Button('edit', id='edit_button', color='dark', disabled=True, style={'width': '97%', 'margin-left': '3%'})
                             ], style={'width': '10%', 'display': 'inline-block'}),
                             html.Div([
-                                dbc.Button('delete', id='delete_button', color='dark', block=True, disabled=True, style={'width': '97%', 'margin-left': '3%'})
+                                dbc.Button('delete', id='delete_button', color='dark', disabled=True, style={'width': '97%', 'margin-left': '3%'})
                             ], style={'width': '10%', 'display': 'inline-block'}),
                             html.Div([
-                                dbc.Button('new row', id='new_row_button', color='dark', block=True, disabled=True, style={'width': '97%', 'margin-left': '3%'})
+                                dbc.Button('new row', id='new_row_button', color='dark', disabled=True, style={'width': '97%', 'margin-left': '3%'})
                             ], style={'width': '10%', 'display': 'inline-block'}),
                             html.Div([
-                                dbc.Button('undo', id='undo_button', color='dark', block=True, disabled=True, style={'width': '97%', 'margin-left': '3%'})
+                                dbc.Button('undo', id='undo_button', color='dark', disabled=True, style={'width': '97%', 'margin-left': '3%'})
                             ], style={'width': '10%', 'display': 'inline-block'}),
                             html.Div([
-                                dbc.Button('save', id='save_button', color='dark', block=True, disabled=True, style={'width': '97%', 'margin-left': '3%'})
+                                dbc.Button('save', id='save_button', color='dark', disabled=True, style={'width': '97%', 'margin-left': '3%'})
                             ], style={'width': '10%', 'display': 'inline-block'}),
                             html.Div([
-                                dbc.Button('cancel', id='cancel_button', color='dark', block=True, disabled=True, style={'width': '97%', 'margin-left': '3%'})
+                                dbc.Button('cancel', id='cancel_button', color='dark', disabled=True, style={'width': '97%', 'margin-left': '3%'})
                             ], style={'width': '10%', 'display': 'inline-block', })
                         ], style={'display': 'block', 'textAlign': 'center', 'width': '70%', 'margin': 'auto'}),
                         html.Br(),
@@ -749,7 +749,7 @@ def dash_application():
                                 dbc.ModalBody([dbc.Label('', id='modal_label'),
                                               dbc.Input(id='modal_input', type="text")], id='modal_body'),
                                 dbc.ModalFooter([
-                                    dbc.Button('cancel', id='modal_cancel', color='danger', block=True, style={'width': '97%', 'margin-left': '3%'}),
+                                    dbc.Button('cancel', id='modal_cancel', color='danger', style={'width': '97%', 'margin-left': '3%'}),
                                     dbc.Button("save", id="modal_button", color="success", style={'width': '97%', 'margin-left': '3%'}),
                                 ]),
                                 html.Div([], id='modal_function_container', hidden=True)
