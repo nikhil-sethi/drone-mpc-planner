@@ -1442,7 +1442,7 @@ void DroneController::load_calibration(std::string replay_dir) {
 
     _dtrk->set_pad_location(calibration.pad_pos());
     _flight_area->update_bottom_plane_based_on_blink(calibration.pad_pos_y);
-    flight_area->set_vertical_camera_plane(calibration.pad_pos_z);
+    _flight_area->set_vertical_camera_plane(calibration.pad_pos_z);
     kiv_ctrl.init(_flight_area->flight_area_config(relaxed), &calibration);// kiv can only be initialized after the latest (potential) adding of a plane (bottom_plane)
 }
 
