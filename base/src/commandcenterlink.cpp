@@ -75,9 +75,15 @@ void CommandCenterLink::check_commandcenter_triggers() {
         }
         if (file_exist(demo_insect_fn)) {
             _n_replay_moth++;
-            std::cout << "Replay insect demo!" << std::endl;
+            std::cout << "Replay insect!" << std::endl;
             _trackers->init_replay_moth(demo_insect_fn);
             remove(demo_insect_fn.c_str());
+        }
+        if (file_exist(virt_insect_fn)) {
+            _n_replay_moth++;
+            std::cout << "Virtual insect!" << std::endl;
+            _trackers->init_virtual_moth();
+            remove(virt_insect_fn.c_str());
         }
         if (file_exist(shake_fn)) {
             std::cout << "Shaking drone!" << std::endl;

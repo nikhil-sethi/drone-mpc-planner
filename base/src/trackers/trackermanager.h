@@ -231,6 +231,9 @@ public:
         next_insecttrkr_id++;
     }
     void init_replay_moth(std::vector<logging::InsectReader> logs) { replay_logs = logs; }
+    void init_virtual_moth() {
+        init_virtual_moth(tracking::VirtualMothTracker::no_reaction, 0);
+    }
     void process_replay_moth(unsigned long long rs_id) {
         replay_logs.erase(
             std::remove_if(

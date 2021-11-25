@@ -6,6 +6,9 @@ using namespace std;
 namespace tracking {
 
 void VirtualMothTracker::init(int id, mothbehavior mothbehavior_type, VisionData *visdat, DroneController *dctrl) {
+    if(!dctrl && behavior_type!=no_reaction) {
+        std::cout << "VirtualMothTracker: Set moth behavior to 'no_reaction', since dctrl is pointing to null." << std::endl;
+    }
     _id = id;
     _visdat = visdat;
     _dctrl = dctrl;
@@ -15,8 +18,9 @@ void VirtualMothTracker::init(int id, mothbehavior mothbehavior_type, VisionData
     track_history_max_size = pparams.fps;
     init_logger();
     initialized = true;
-    insect_pos = {2., -0.4, -2};
-    insect_vel = {-1., 0, 0};
+    max_radius = 0.03;
+    insect_pos = {1., -0.4, -1.9};
+    insect_vel = {-.5, 0, 0};
 }
 
 void VirtualMothTracker::init_logger() {
@@ -48,11 +52,14 @@ void VirtualMothTracker::update_behavior_based(unsigned long long frame_number, 
     if (start_time <= 0)
         start_time = time;
 
-    if (_dctrl->auto_throttle > 400) {
-        escape_triggered = true;
+    if(behavior_type != no_reaction) {
+        if (_dctrl->auto_throttle > 400) {
+            escape_triggered = true;
+        }
     }
     if (escape_triggered) {
-        insect_vel += cv::Point3f(0., -2, 0.) / static_cast<float>(pparams.fps);
+        if(behavior_type == diving)
+            insect_vel += cv::Point3f(0., -2, 0.) / static_cast<float>(pparams.fps);
     }
 
     _n_frames_lost = 0;
@@ -76,6 +83,7 @@ void VirtualMothTracker::update_behavior_based(unsigned long long frame_number, 
     w.image_item.x = std::clamp(static_cast<int>(w.image_item.x), 0, IMG_W);
     w.image_item.y = std::clamp(static_cast<int>(w.image_item.y), 0, IMG_H);
     w.distance_bkg = _visdat->depth_background_mm.at<float>(w.image_item.y, w.image_item.x);
+    w.radius = 0.015;
     _world_item = w;
 
     TrackData data;

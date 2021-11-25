@@ -9,7 +9,8 @@ class VirtualMothTracker : public InsectTracker {
 public:
     enum mothbehavior {
         diving,
-        escape_turn
+        escape_turn,
+        no_reaction
     };
 
 private:
