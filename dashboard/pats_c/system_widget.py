@@ -119,8 +119,9 @@ def get_table_data(table_name):
         column_db_name = column['name'].replace('"', '')
         if column['fk']:
             fk_table = column['fk'].replace('"', '').split('(')[0]
+            fk_column = column['fk'].replace('"', '').split('(')[1].replace(')', '')
             sql_str += f''' {fk_table}.name AS '{fk_table[:-1]}', '''
-            join_str += f''' LEFT OUTER JOIN {fk_table} ON {fk_table}.{column_db_name} = {table_name}.{column_db_name} '''
+            join_str += f''' LEFT OUTER JOIN {fk_table} ON {fk_table}.{fk_column} = {table_name}.{column_db_name} '''
         elif column_db_name != 'system':
             sql_str += f''' {table_name}.{column_db_name}, '''
         if column_db_name == 'name':
@@ -248,7 +249,9 @@ def apply_unsaved_changes(data, table_name):
             else:
                 if len(pks) == 1:
                     if column_info.loc[column_info['name'] == f'"{column}"', 'fk'].values:
-                        data.loc[data[pks[0].replace('"', '')] == index_list[0], column.replace('_id', '')] = get_fk_values_for_ids(column_info.loc[column_info['name'] == f'"{column}"', 'fk'].values[0], [value])[0][0]
+                        fk = column_info.loc[column_info['name'] == f'"{column}"', 'fk'].values[0]
+                        fk_table = fk.replace('"', '').split('(')[0][:-1]
+                        data.loc[data[pks[0].replace('"', '')] == index_list[0], fk_table] = get_fk_values_for_ids(column_info.loc[column_info['name'] == f'"{column}"', 'fk'].values[0], [value])[0][0]
                     elif column == 'DELETE':
                         data = data.drop(data[data[pks[0].replace('"', '')] == index_list[0]].index)
                     else:
@@ -283,10 +286,11 @@ def handle_edit_button(choosen_table, selected_rows, rows):
                     label = ''
                     if col['fk'].split('"')[1][:-1] in values:  # To remove the s from customers, this should be solved better
                         label = values[col['fk'].split('"')[1][:-1]]
+                    fk_table = col['fk'].replace('"', '').split('(')[0]
                     options = get_fk_options(col['fk'])
                     options_dict = {option['label']: option['value']for option in options}
                     children.extend([dbc.Label(col['name'].replace('"', '') + ':'), dcc.Dropdown(
-                        id=col['name'],
+                        id=col['name'] + '_fk_' + fk_table[:-1],
                         options=options,
                         value='' if not label else options_dict[label],
                         style={'color': '#212121', },
@@ -394,8 +398,9 @@ def process_edit(children, choosen_table, selected_rows, current_data):
                         prop_type = props['type']
                     column_name = props['id'].replace('"', '')
                     if prop_type == 'dropdown':
-                        if len(selected_rows) > 1 and value:
-                            changes.append({'column': column_name, 'value': value})
+                        if len(selected_rows) > 1:
+                            if value or not isinstance(value, str):
+                                changes.append({'column': column_name, 'value': value})
                         elif len(selected_rows) == 1:
                             changes.append({'column': column_name, 'value': value})
                     else:
@@ -435,10 +440,13 @@ def process_edit(children, choosen_table, selected_rows, current_data):
             if input['column'] in current_data.columns:
                 if input['value'] != current_data[input['column']].values[row]:
                     sql_insert += f'''({now},'{choosen_table}','{input['column']}',{db_id},'{input['value']}','{username}',0), '''
-            elif 'id' in input['column'] and input['column'][:-3] in current_data.columns and input['value']:
-                named_value = get_fk_values_for_ids(column_info.loc[column_info['name'] == f'"{input["column"]}"', 'fk'].values[0], [input['value']])[0][0]
-                if named_value != current_data[input['column'][:-3]].values[row]:
-                    sql_insert += f'''({now},'{choosen_table}','{input['column']}',{db_id},'{input['value']}','{username}',0), '''
+            elif 'fk' in input['column']:
+                column_name = input['column'].split('_fk_')[0]
+                fk_table = input['column'].split('_fk_')[1]
+                if fk_table in current_data.columns:
+                    named_value = get_fk_values_for_ids(column_info.loc[column_info['name'] == f'"{column_name}"', 'fk'].values[0], [input['value']])[0][0]
+                    if named_value != current_data[fk_table].values[row]:
+                        sql_insert += f'''({now},'{choosen_table}','{column_name}',{db_id},'{input['value']}','{username}',0), '''
             elif 'connection' in input['column']:
                 connection_name, connection_info = get_table_connection(choosen_table)
                 if connection_name in input['column']:
