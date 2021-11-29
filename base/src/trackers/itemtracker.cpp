@@ -24,7 +24,7 @@ void ItemTracker::init(VisionData *visdat, int motion_thresh, std::string name, 
     _motion_thresh = motion_thresh;
     _name = name;
     track_history_max_size = pparams.fps;
-    n_frames_lost_threshold = pparams.fps / 9;
+    n_frames_lost_threshold = pparams.fps / 5;
     settings_file = "../xml/" + name + "tracker.xml";
     std::string window_name = name + "_trkr";
 
