@@ -83,91 +83,94 @@ pats = socket_communication('Pats', lb.socket_baseboard2pats, True)
 
 while True:
     try:
-        logger.info('Connecting baseboard...')
-        comm = serial.Serial('/dev/baseboard', 115200)
-    except Exception as e:  # pylint: disable=broad-except
-        logger.error('Connection to baseboard failed: ' + str(e))
-        time.sleep(10)
-        continue
-    logger.info('Connected to baseboard')
+        try:
+            logger.info('Connecting baseboard...')
+            comm = serial.Serial('/dev/baseboard', 115200)
+        except Exception as e:  # pylint: disable=broad-except
+            logger.error('Connection to baseboard failed: ' + str(e))
+            time.sleep(10)
+            continue
+        logger.info('Connected to baseboard')
 
-    time.sleep(2)  # allow the baseboard to boot before sending commands:
-    if not os.path.exists(lb.disable_watchdog_flag):
-        comm.write(b'enable watchdog\n')
-        logger.info('Watchdog enabled')
-    else:
-        comm.write(b'disable watchdog\n')
-        logger.info('Watchdog DISABLED')
-    if not os.path.exists(lb.disable_charging_flag):
-        comm.write(b'enable charger\n')
-        logger.info('Charging enabled')
-    else:
-        comm.write(b'disable charger\n')
-        logger.info('Charging DISABLED')
+        time.sleep(2)  # allow the baseboard to boot before sending commands:
+        if not os.path.exists(lb.disable_watchdog_flag):
+            comm.write(b'enable watchdog\n')
+            logger.info('Watchdog enabled')
+        else:
+            comm.write(b'disable watchdog\n')
+            logger.info('Watchdog DISABLED')
+        if not os.path.exists(lb.disable_charging_flag):
+            comm.write(b'enable charger\n')
+            logger.info('Charging enabled')
+        else:
+            comm.write(b'disable charger\n')
+            logger.info('Charging DISABLED')
 
-    prev_pkg = SerialPackage()
+        prev_pkg = SerialPackage()
 
-    charging_state_names = [
-        'disabled',
-        'init',
-        'drone_not_on_pad',
-        'contact_problem',
-        'bat_dead',
-        'bat_does_not_charge',
-        'revive_charging',
-        'normal_charging',
-        'trickle_charging',
-        'discharge',
-        'measure',
-        'calibratin']
+        charging_state_names = [
+            'disabled',
+            'init',
+            'drone_not_on_pad',
+            'contact_problem',
+            'bat_dead',
+            'bat_does_not_charge',
+            'revive_charging',
+            'normal_charging',
+            'trickle_charging',
+            'discharge',
+            'measure',
+            'calibratin']
 
-    prev_byte = ''
-    serial_data = bytearray()
-    prev_sha_check_time = datetime.now()
-    while True:
+        prev_byte = ''
+        serial_data = bytearray()
+        prev_sha_check_time = datetime.now()
+        while True:
 
-        if (datetime.now() - prev_sha_check_time).seconds > 10:
-            prev_sha_check_time = datetime.now()
-            current_sha = subprocess.check_output(["git", "describe"]).decode(sys.stdout.encoding).strip()
-            if start_sha != current_sha:
-                print("SHA change detected. Restarting!")
-                print("Closing serial...")
-                comm.close()
-                print("Closing pats socket...")
-                pats.close()
-                print("Closing daemon socket...")
-                daemon.close()
-                exit(0)
+            if (datetime.now() - prev_sha_check_time).seconds > 10:
+                prev_sha_check_time = datetime.now()
+                current_sha = subprocess.check_output(["git", "describe"]).decode(sys.stdout.encoding).strip()
+                if start_sha != current_sha:
+                    print("SHA change detected. Restarting!")
+                    print("Closing serial...")
+                    comm.close()
+                    print("Closing pats socket...")
+                    pats.close()
+                    print("Closing daemon socket...")
+                    daemon.close()
+                    exit(0)
 
-        c = comm.read(1)
-        serial_data += c
-        if len(serial_data) > 5 * struct.calcsize(prev_pkg.format):
-            logger.warning("Receiving serial data garbage...")
-            serial_data.clear()
+            c = comm.read(1)
+            serial_data += c
+            if len(serial_data) > 5 * struct.calcsize(prev_pkg.format):
+                logger.warning("Receiving serial data garbage...")
+                serial_data.clear()
 
-        if ord(c) == ord(prev_pkg.ender) and len(serial_data) >= struct.calcsize(prev_pkg.format):
-            pkg_start = len(serial_data) - struct.calcsize(prev_pkg.format)
-            if serial_data[pkg_start] == ord(prev_pkg.header):
-                new_pkg = SerialPackage()
-                new_pkg.parse(serial_data[pkg_start:])
+            if ord(c) == ord(prev_pkg.ender) and len(serial_data) >= struct.calcsize(prev_pkg.format):
+                pkg_start = len(serial_data) - struct.calcsize(prev_pkg.format)
+                if serial_data[pkg_start] == ord(prev_pkg.header):
+                    new_pkg = SerialPackage()
+                    new_pkg.parse(serial_data[pkg_start:])
 
-                if pkg_start > 0:
-                    try:
-                        logger.info(serial_data[:pkg_start].decode('utf-8'))
-                    except Exception as e:  # pylint: disable=broad-except
-                        logger.info('Received corrupted data from baseboard :( ' + str(e))
-                if new_pkg.version == prev_pkg.version:
+                    if pkg_start > 0:
+                        try:
+                            logger.info(serial_data[:pkg_start].decode('utf-8'))
+                        except Exception as e:  # pylint: disable=broad-except
+                            logger.info('Received corrupted data from baseboard :( ' + str(e))
+                    if new_pkg.version == prev_pkg.version:
 
-                    dt = (datetime.now() - daemon.last_msg_time).total_seconds()
-                    if new_pkg.up_duration > prev_pkg.up_duration and dt < 600:
-                        comm.write(b"Harrow!\n")
+                        dt = (datetime.now() - daemon.last_msg_time).total_seconds()
+                        if new_pkg.up_duration > prev_pkg.up_duration and dt < 600:
+                            comm.write(b"Harrow!\n")
+                        else:
+                            logger.warning('Uh oh. Nothing received from daemon.py. Do we need the hardware watchdog to hard reboot this thing?')
+
+                        logger.debug(str(round(new_pkg.up_duration / 1000, 2)) + 's: ' + charging_state_names[new_pkg.charging_state] + ' ' + str("%.2f" % round(new_pkg.mah_charged, 2)) + 'mah in ' + str("%.2f" % round(new_pkg.charging_duration / 1000, 2)) + 's ' + str("%.2f" % round(new_pkg.charging_current, 2)) + 'A / ' + str("%.2f" % round(new_pkg.desired_current, 2)) + 'A ' + str("%.2f" % round(new_pkg.smoothed_voltage, 2)) + 'v bat: ' + str("%.2f" % round(new_pkg.battery_voltage, 2)) + 'v ' + str("%.2f" % round(new_pkg.contact_resistance, 2)) + 'Ω. Drone: ' + str("%.2f" % round(new_pkg.drone_current_usage, 2)) + ' A. PWM: ' + str(new_pkg.charging_pwm) + ' fan: ' + str(new_pkg.fan_speed))
+                        pats_pkg = serial_data[pkg_start:]
+                        pats.send(pats_pkg)
+                        prev_pkg = new_pkg
+                        serial_data.clear()
                     else:
-                        logger.warning('Uh oh. Nothing received from daemon.py. Do we need the hardware watchdog to hard reboot this thing?')
-
-                    logger.debug(str(round(new_pkg.up_duration / 1000, 2)) + 's: ' + charging_state_names[new_pkg.charging_state] + ' ' + str("%.2f" % round(new_pkg.mah_charged, 2)) + 'mah in ' + str("%.2f" % round(new_pkg.charging_duration / 1000, 2)) + 's ' + str("%.2f" % round(new_pkg.charging_current, 2)) + 'A / ' + str("%.2f" % round(new_pkg.desired_current, 2)) + 'A ' + str("%.2f" % round(new_pkg.smoothed_voltage, 2)) + 'v bat: ' + str("%.2f" % round(new_pkg.battery_voltage, 2)) + 'v ' + str("%.2f" % round(new_pkg.contact_resistance, 2)) + 'Ω. Drone: ' + str("%.2f" % round(new_pkg.drone_current_usage, 2)) + ' A. PWM: ' + str(new_pkg.charging_pwm) + ' fan: ' + str(new_pkg.fan_speed))
-                    pats_pkg = serial_data[pkg_start:]
-                    pats.send(pats_pkg)
-                    prev_pkg = new_pkg
-                    serial_data.clear()
-                else:
-                    logger.warning('pkg version mismatch')
+                        logger.warning('pkg version mismatch')
+    except Exception as e:  # pylint: disable=broad-except
+        logger.error('Baseboard: ' + str(e))
