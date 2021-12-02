@@ -65,7 +65,11 @@ file_format = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(mess
 logger = logging.getLogger('baseboard')
 fh = logging.handlers.RotatingFileHandler(filename=lb.log_dir + 'baseboard.log', maxBytes=1024 * 1024 * 100, backupCount=1)
 fh.setFormatter(file_format)
+error_file_handler = logging.handlers.WatchedFileHandler(filename=lb.daily_errs_log)  # a watched file handler makes sure that logging continues to the new file if it is rotated.
+error_file_handler.setFormatter(file_format)
+error_file_handler.level = logging.ERROR
 logger.addHandler(fh)
+logger.addHandler(error_file_handler)
 logger.setLevel(logging.DEBUG)
 logger.info('Baseboard reporting in!')
 logger.info('sha: ' + start_sha)
