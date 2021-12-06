@@ -157,6 +157,7 @@ private:
     double ff_land_start_time = 0;
     int ff_auto_throttle_start = RC_BOUND_MIN;
     float auto_burn_duration = 0;
+    uint n_invalid_or_bad_telemetry_package = 0; // Counts when telemetry holds imposiible (invalid) data or (bad) data which will result in some undesired system state
 
     cv::Point3f _burn_direction_for_thrust_approx = {0};
 

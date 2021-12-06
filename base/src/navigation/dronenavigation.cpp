@@ -295,7 +295,7 @@ void DroneNavigation::update(double time) {
 
                 _control->flight_mode(DroneController::fm_wait);
                 if (static_cast<float>(time - time_start_wait_after_landing) > duration_wait_after_landing) {
-                    if (_control->somewhere_on_pad() == drone_on_pad && _control->new_attitude_package_available()) {
+                    if (_control->somewhere_on_pad() == drone_on_pad) {
                         _navigation_status = ns_flight_done;
                         time_start_wait_after_landing = -1;
                     } else if (!_control->somewhere_on_pad())

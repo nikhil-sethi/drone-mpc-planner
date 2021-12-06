@@ -349,7 +349,7 @@ void DroneController::control(TrackData data_drone, TrackData data_target_new, T
                 break;
         } case fm_reset_yaw_on_pad: {
                 mode += bf_headless_disabled;
-                auto_throttle = dparams.spinup_throttle_non3d;
+                auto_throttle = max(static_cast<int>(thrust_to_throttle(4.f/calibration.thrust)), dparams.spinup_throttle_non3d);
                 auto_roll = RC_MIDDLE;
                 auto_pitch = RC_MIDDLE;
                 auto_yaw = RC_MIDDLE;
@@ -772,17 +772,22 @@ bool DroneController::attitude_on_pad_OK() {
 }
 
 drone_on_pad_state DroneController::somewhere_on_pad() {
-    if (_rc->telemetry.roll < -180.f || _rc->telemetry.roll > 180.f
-            || _rc->telemetry.pitch < -180.f || _rc->telemetry.pitch > 180.f)
+    if(!new_attitude_package_available())
         return drone_maybe_on_pad;
+
     cv::Point2f current_att(_rc->telemetry.roll, _rc->telemetry.pitch);
     cv::Point2f pad_att_calibration(calibration.pad_roll, calibration.pad_pitch);
-    if (check_att_bounds(current_att,
-                         pad_att_calibration - somewhere_on_pad_att_range,
-                         pad_att_calibration + somewhere_on_pad_att_range))
+    if(check_att_bounds(current_att,
+                            pad_att_calibration - somewhere_on_pad_att_range,
+                            pad_att_calibration + somewhere_on_pad_att_range))
         return drone_on_pad;
-    else
+    else if(n_invalid_or_bad_telemetry_package < 3) {
+        n_invalid_or_bad_telemetry_package++;
+        return drone_maybe_on_pad;
+    } else {
+        n_invalid_or_bad_telemetry_package = 0;
         return drone_not_on_pad;
+    }
 }
 
 void DroneController::invalidize_blink() {

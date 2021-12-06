@@ -432,15 +432,18 @@ bool MultiModule::receive_telemetry(std::string buffer) {
                     }
                     break;
             } case FSSP_DATAID_VFAS: {
-                    float data = std::stof(arr.at(1));
-                    telemetry.batt_v = data / 100.f;
+                    float data = std::stof(arr.at(1)) / 100.f;
+                    if(data >= 0 && data <= batt_v_accepted_max)
+                        telemetry.batt_v = data;
                     if (logger_initialized)
                         telem_logger << _time << ";FSSP_DATAID_VFAS;" << telemetry.batt_v << "\n";
                     break;
             } case FSSP_DATAID_A4: {
-                    float data = std::stof(arr.at(1));
-                    telemetry.batt_cell_v = data / 100.f;
-                    telemetry.batt_cell_v_package_id++;
+                    float data = std::stof(arr.at(1)) / 100.f;
+                    if(data >= 0 && data <= batt_cell_v_accepted_max) {
+                        telemetry.batt_cell_v = data;
+                        telemetry.batt_cell_v_package_id++;
+                    }
                     if (logger_initialized)
                         telem_logger << _time << ";FSSP_DATAID_A4;" << telemetry.batt_cell_v << "\n";
                     break;
@@ -451,14 +454,16 @@ bool MultiModule::receive_telemetry(std::string buffer) {
                         telem_logger << _time << ";FSSP_DATAID_CURRENT;" << telemetry.batt_current << "\n";
                     break;
             } case FSSP_DATAID_ROLL: {
-                    float data = std::stof(arr.at(1));
-                    telemetry.roll = data / 100.f;
+                    float data = std::stof(arr.at(1)) / 100.f;
+                    if(data > -roll_accepted_max && data <= roll_accepted_max)
+                        telemetry.roll = data;
                     if (logger_initialized)
                         telem_logger << _time << ";FSSP_DATAID_ROLL;" << telemetry.roll << "\n";
                     break;
             } case FSSP_DATAID_PITCH: {
-                    float data = std::stof(arr.at(1));
-                    telemetry.pitch = data / 100.f;
+                    float data = std::stof(arr.at(1)) / 100.f;
+                    if(data > -pitch_accepted_max && data <= pitch_accepted_max)
+                        telemetry.pitch = data;
                     if (logger_initialized)
                         telem_logger << _time << ";FSSP_DATAID_PITCH;" << telemetry.pitch << "\n";
                     break;
@@ -489,11 +494,14 @@ bool MultiModule::receive_telemetry(std::string buffer) {
                     break;
             } case FSSP_DATAID_ROLL_PITCH: {
                     uint32_t data = std::stoi(arr.at(1));
-                    int16_t roll10 = data & 0xFFFF;
-                    int16_t pitch10 = (data >> 16) & 0xFFFF;
-                    telemetry.roll = static_cast<float>(roll10) / 10.f;
-                    telemetry.pitch = static_cast<float>(pitch10) / 10.f;
-                    telemetry.roll_pitch_package_id++;
+                    float rcvd_roll = static_cast<float>(data & 0xFFFF) / 10.f;
+                    float rcvd_pitch = static_cast<float>((data >> 16) & 0xFFFF) / 10.f;
+
+                    if(rcvd_roll > -roll_accepted_max && rcvd_roll < roll_accepted_max && rcvd_pitch > -pitch_accepted_max && rcvd_pitch < pitch_accepted_max) {
+                        telemetry.roll = rcvd_roll;
+                        telemetry.pitch = rcvd_pitch;
+                        telemetry.roll_pitch_package_id++;
+                    }
                     if (logger_initialized) {
                         telem_logger << _time << ";FSSP_DATAID_ROLL;" << telemetry.roll << "\n";
                         telem_logger << _time << ";FSSP_DATAID_PITCH;" << telemetry.pitch << "\n";

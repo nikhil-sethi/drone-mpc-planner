@@ -36,6 +36,11 @@ private:
     bool send_init_package_now = false;
     bool _bind = false;
 
+    float batt_v_accepted_max = 10.f;
+    float batt_cell_v_accepted_max = 10.f;
+    float roll_accepted_max = 180.f;
+    float pitch_accepted_max = 180.f;
+
     void send_thread(void);
     void receive_thread(void);
     void send_rc_data(void);
