@@ -60,7 +60,7 @@ DEPENDENCIES_FLAG=dependencies-packages-v1.18.done
 	ubuntu_str=$(lsb_release -a | grep Release)
 	if [[ $ubuntu_str != *"18.04"* ]] ; then
 		if [[ $KERNEL == "5.11."* ]] || [[ $KERNEL == "5.8."* ]]; then
-			sudo apt remove intel-media-va-driver 
+			sudo apt remove intel-media-va-driver
 			sudo apt install intel-media-va-driver-non-free
 		else
 			sudo apt remove intel-media-va-driver intel-media-va-driver-non-free
@@ -113,7 +113,7 @@ DEPENDENCIES_FLAG=dependencies-packages-v1.18.done
 	touch librealsense-packages_v1.1.done
 }
 
-[ -f python-packages-v1.1.done ] || {
+[ -f python-packages-v1.2.done ] || {
 	pip3 install cython pyserial types-pytz
 	pip3 install numpy pandas scipy sklearn tqdm pause
 	pip3 install xmltodict requests # for huawei-hilink-status
@@ -122,7 +122,10 @@ DEPENDENCIES_FLAG=dependencies-packages-v1.18.done
 	#vscode linting and formatting:
 	pip3 install pylint flake8 bandit mypy autopep8
 
-	touch python-packages-v1.1.done
+	#automatic timezone updater
+	pip3 install tzupdate
+
+	touch python-packages-v1.2.done
 }
 
 # Install dev packages
@@ -255,7 +258,7 @@ if [[ $1 -eq 1 ]] ; then
 	mkdir -p ~/pats/flags
 	mkdir -p ~/pats/status
 	mkdir -p ~/pats/images
-	
+
 	SYMLINK_FLAG=symlinks-v1.4.done
 	[ -f $SYMLINK_FLAG ] || {
 		touch ~/pats/flags/disable
@@ -344,7 +347,7 @@ if [[ $1 -eq 1 ]] ; then
 			sudo rm /etc/systemd/system.conf
 		}
 		sudo ln -s ~/code/pats/base/install/system.conf /etc/systemd/system.conf
-		
+
 		sudo systemctl restart ssh.service
 
 		touch $SYMLINK_FLAG

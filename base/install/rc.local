@@ -11,8 +11,11 @@
 #
 # By default this script does nothing.
 
-exec 1>/tmp/rc.local.log 2>&1 
+python3 /home/pats/.local/lib/python3.8/site-packages/tzupdate.py || true
+
+exec 1>/tmp/rc.local.log 2>&1
 set -x
+
 
 /home/pats/code/pats/base/install/daemon.sh
 
