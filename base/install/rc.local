@@ -11,6 +11,9 @@
 #
 # By default this script does nothing.
 
+exec 1>/tmp/rc.local.log 2>&1 
+set -x
+
 /home/pats/code/pats/base/install/daemon.sh
 
 exit 0
