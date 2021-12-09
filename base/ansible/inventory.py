@@ -22,10 +22,14 @@ sql_str = ''' SELECT system,active,customers.name FROM systems JOIN customers ON
 with open_systems_db() as con:
     systems = con.execute(sql_str).fetchall()
 
-groups: Dict[str, Dict[str, List[str]]] = {'monitoring': {'children': []}, 'hunts': {'children': []}, 'office': {'children': []}}
+groups: Dict[str, Dict[str, List[str]]] = {'all': {'children': []}, 'monitoring': {'children': []}, 'hunts': {'children': []}, 'office': {'children': []}}
+groups['all'] = {'hosts': []}
+
 for system, active, customer in systems:
     customer = customer.replace(' ', '_').replace('.', '_')
+
     if active:
+        groups['all']['hosts'].append(system)
         if customer in groups:
             groups[customer]['hosts'].append(system)
         else:
@@ -37,6 +41,7 @@ for system, active, customer in systems:
                 groups['office']['children'].append(customer)
             else:
                 groups['monitoring']['children'].append(customer)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Script that creates an inventory based on the system database')

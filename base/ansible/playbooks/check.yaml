@@ -1,5 +1,5 @@
 ---
-- hosts: tree
+- hosts: missing
   strategy: linear
   order: inventory
   gather_facts: no
@@ -13,12 +13,9 @@
         echo RealSense: $(lsusb | grep RealSens) &&
         echo 4G: $(lsusb | grep 'E353/E3131')"
       register: output_checks
-    # - name: serial
-    #   become: true
-    #   shell: "cat /sys/class/dmi/id/product_serial"
-    #   register: output_serial
-    # - name: shutdown
-    #   become: true
-    #   shell: "halt -p"
     - debug: var=output_checks.stdout_lines
-    # - debug: var=output_serial.stdout_lines
+    - name: serial
+      become: true
+      shell: "cat /sys/class/dmi/id/product_serial"
+      register: output_serial
+    - debug: var=output_serial.stdout_lines
